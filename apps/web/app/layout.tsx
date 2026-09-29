@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Gowun_Batang, Noto_Sans_KR } from "next/font/google";
+import { CharacterDefs } from "@/components/characters/defs";
 import { SITE } from "@/lib/config";
 import "./globals.css";
 
@@ -33,7 +34,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className={`${display.variable} ${body.variable}`}>
-      <body>{children}</body>
+      <body>
+        <CharacterDefs />
+        {children}
+      </body>
     </html>
   );
 }

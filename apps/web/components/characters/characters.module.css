@@ -1,0 +1,540 @@
+/* Characters: stage, idle life, tap reaction and actions. All motion is CSS keyframes on
+   named SVG groups (transform-box: fill-box unless a shared pivot is needed). */
+
+.frame {
+  position: relative;
+  display: inline-block;
+  width: var(--sl-size);
+  height: var(--sl-size);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  line-height: 0;
+  vertical-align: top;
+}
+
+.tappable {
+  cursor: pointer;
+  border-radius: 24px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tappable:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+}
+
+.art {
+  display: block;
+  overflow: visible;
+}
+
+.shadow,
+.float,
+.hop,
+.squish,
+.hat,
+.hatStar,
+.blink,
+.tail,
+.catEar,
+.burstStar,
+.crystalGlow,
+.crystalSpark,
+.pouchGlow,
+.riffleLeft,
+.riffleRight,
+.riffleFly,
+.goreum,
+.quill,
+.brush,
+.pageFlip {
+  transform-box: fill-box;
+}
+
+/* ---- idle ---- */
+
+.float {
+  animation: float 3.8s ease-in-out infinite;
+}
+
+.shadow {
+  transform-origin: center;
+  animation: shadowBreath 3.8s ease-in-out infinite;
+}
+
+.blink {
+  transform-origin: center;
+  animation: blink 4.4s infinite;
+}
+
+.tail {
+  transform-origin: 0% 100%;
+  animation: tailSway 2.6s ease-in-out infinite;
+}
+
+.catEar {
+  transform-origin: 70% 100%;
+  animation: catEar 6.2s ease-in-out infinite;
+}
+
+/* The folded ear and the ribbon on it are separate groups, so they share one pivot. */
+.earFlop {
+  transform-box: view-box;
+  transform-origin: 180px 124px;
+  animation: earTwitch 5s ease-in-out infinite;
+}
+
+.hatStar {
+  transform-origin: center;
+  animation: twinkle 2.4s ease-in-out infinite;
+}
+
+.goreum {
+  transform-origin: 40% 0%;
+  animation: goreumSway 3.8s ease-in-out infinite;
+}
+
+.hop,
+.squish,
+.hat {
+  transform-origin: 50% 100%;
+}
+
+/* ---- tap reaction (the hook sets data-tap on the button) ---- */
+
+.frame[data-tap] .hop {
+  animation: tapHop 0.65s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.frame[data-tap] .squish {
+  animation: tapSquish 0.65s ease;
+}
+
+.frame[data-tap] .hat {
+  animation: tapHat 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+.frame[data-tap] .earFlop {
+  animation: tapEar 0.7s ease;
+}
+
+.frame[data-tap] .shadow {
+  animation: tapShadow 0.65s cubic-bezier(0.3, 1.5, 0.5, 1);
+}
+
+.burstStar {
+  opacity: 0;
+  transform-origin: center;
+}
+
+.frame[data-tap] .burstStar {
+  animation: tapBurst 0.9s ease-out var(--delay) both;
+}
+
+.bubble {
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  z-index: 1;
+  padding: 0.5em 0.9em;
+  border-radius: 1.2em;
+  background: #fffdf7;
+  color: #2b2140;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: max(13px, calc(var(--sl-size) * 0.085));
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(5, 3, 15, 0.35);
+  transform: translate(-50%, -100%);
+  animation:
+    bubbleIn 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) both,
+    bubbleOut 0.25s ease-in 1.15s forwards;
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 50%;
+  border: 0.45em solid transparent;
+  border-top-color: #fffdf7;
+  transform: translateX(-50%);
+}
+
+/* ---- actions ---- */
+
+.crystalGlow,
+.pouchGlow {
+  transform-origin: center;
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+.crystalSpark {
+  transform-origin: center;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+.riffleLeft {
+  transform-origin: 100% 100%;
+  animation: riffleLeft 1.6s ease-in-out infinite;
+}
+
+.riffleRight {
+  transform-origin: 0% 100%;
+  animation: riffleRight 1.6s ease-in-out infinite;
+}
+
+.riffleFly {
+  opacity: 0;
+  transform-origin: 50% 100%;
+  animation: riffleFly 1.6s ease-in-out infinite;
+}
+
+.writing .quill {
+  transform-origin: 0% 100%;
+  animation: quillWrite 1.2s ease-in-out infinite;
+}
+
+.writing .brush {
+  transform-origin: 15% 100%;
+  animation: brushWrite 1.3s ease-in-out infinite;
+}
+
+.pageFlip {
+  opacity: 0;
+  transform-origin: 0% 50%;
+  animation: pageFlip 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .frame * {
+    animation: none !important;
+  }
+
+  .burst {
+    display: none;
+  }
+}
+
+/* ---- keyframes ---- */
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes shadowBreath {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.9);
+    opacity: 0.38;
+  }
+}
+
+@keyframes blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.08);
+  }
+}
+
+@keyframes tailSway {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(7deg);
+  }
+}
+
+@keyframes catEar {
+  0%,
+  86%,
+  100% {
+    transform: rotate(0);
+  }
+  90% {
+    transform: rotate(-9deg);
+  }
+  94% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes earTwitch {
+  0%,
+  82%,
+  100% {
+    transform: rotate(0);
+  }
+  87% {
+    transform: rotate(7deg);
+  }
+  92% {
+    transform: rotate(-3deg);
+  }
+  96% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.14) rotate(12deg);
+  }
+}
+
+@keyframes goreumSway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes tapHop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-22px);
+  }
+}
+
+@keyframes tapSquish {
+  0%,
+  100% {
+    transform: scale(1, 1);
+  }
+  15% {
+    transform: scale(1.07, 0.92);
+  }
+  45% {
+    transform: scale(0.97, 1.04);
+  }
+  80% {
+    transform: scale(1.02, 0.98);
+  }
+}
+
+@keyframes tapHat {
+  0%,
+  100% {
+    transform: none;
+  }
+  40% {
+    transform: translateY(-16px) rotate(-7deg);
+  }
+  70% {
+    transform: translateY(2px) rotate(2deg);
+  }
+}
+
+@keyframes tapEar {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  35% {
+    transform: rotate(-12deg);
+  }
+  70% {
+    transform: rotate(6deg);
+  }
+}
+
+@keyframes tapShadow {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(0.74);
+    opacity: 0.25;
+  }
+}
+
+@keyframes tapBurst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.3);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) scale(1.15) rotate(45deg);
+  }
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(0.6);
+  }
+}
+
+@keyframes bubbleOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -110%);
+  }
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.88);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes sparkle {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(45deg);
+  }
+}
+
+@keyframes riffleLeft {
+  0%,
+  100% {
+    transform: translate(-4px, 0) rotate(-6deg);
+  }
+  35% {
+    transform: translate(2px, -5px) rotate(-18deg);
+  }
+  60% {
+    transform: translate(12px, -1px) rotate(-3deg);
+  }
+  75% {
+    transform: translate(10px, 0) rotate(0);
+  }
+}
+
+@keyframes riffleRight {
+  0%,
+  100% {
+    transform: translate(4px, 0) rotate(6deg);
+  }
+  35% {
+    transform: translate(-2px, -5px) rotate(18deg);
+  }
+  60% {
+    transform: translate(-12px, -1px) rotate(3deg);
+  }
+  75% {
+    transform: translate(-10px, 0) rotate(0);
+  }
+}
+
+@keyframes riffleFly {
+  0%,
+  30% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(-14px) rotate(-8deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) rotate(4deg);
+  }
+  72%,
+  100% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes quillWrite {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-7deg) translateX(-2px);
+  }
+  50% {
+    transform: rotate(2deg) translateX(1px);
+  }
+  75% {
+    transform: rotate(-5deg);
+  }
+}
+
+@keyframes brushWrite {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  30% {
+    transform: rotate(-6deg) translateY(-2px);
+  }
+  60% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes pageFlip {
+  0%,
+  8% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+  14% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0.06) skewY(-6deg);
+  }
+  86% {
+    opacity: 1;
+    transform: scaleX(-1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(-1);
+  }
+}
