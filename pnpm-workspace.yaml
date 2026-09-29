@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+# D: is exFAT: no symlinks/junctions. isolated linker fails, so hoist.
+nodeLinker: hoisted
+allowBuilds:
+  esbuild: true
+  sharp: true
+  supabase: true

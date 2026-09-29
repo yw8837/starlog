@@ -1,0 +1,20 @@
+{
+  "name": "starlog",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "dev": "pnpm --filter @starlog/web dev",
+    "build": "pnpm --filter @starlog/web build",
+    "test": "vitest run",
+    "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && pnpm --filter @starlog/web typecheck",
+    "cards:build": "node scripts/build-cards.mjs",
+    "e2e": "pnpm --filter @starlog/web e2e"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.2"
+  }
+}
