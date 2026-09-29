@@ -1,12 +1,13 @@
 import { calculateFourPillars, getSolarTerm, isValidSolarDate, lunarToSolar, solarToLunar, LUNAR_MAX_YEAR, LUNAR_MIN_YEAR } from "manseryeok";
 import type { FourPillarsDetail, Pillar as EnginePillar } from "manseryeok";
 import {
-  BRANCHES, BRANCHES_KO, HIDDEN_STEMS, STEMS, STEMS_KO, branchElement, branchIndexOfKo, stemElement, stemIndexOfKo,
+  BRANCHES, BRANCHES_KO, HIDDEN_STEMS, STEMS, STEMS_KO, branchElement, branchIndexOfKo, ganzhiKo, shiftGanzhi, stemElement,
+  stemIndexOfKo,
 } from "./labels";
 import type { SajuElement } from "./labels";
 import {
   DEFAULT_POLICY, KOREA_LONGITUDE_RANGE, MAX_SUPPORTED_DATE, MIN_SUPPORTED_DATE, STANDARD_TIME_START, SUPPORTED_TIME_ZONE,
-  SajuError, correctedClockMs, koreaCivilOffsetAt, koreaWallClockInstants,
+  SajuError, correctedClockMs, koreaCivilOffsetAt, koreaWallClockInstants, validatePolicy,
 } from "./policy";
 import type { JasiRule, ResolvedCivilTime, SajuPolicy } from "./policy";
 
@@ -37,8 +38,19 @@ export interface Pillar {
   hidden: string[];
 }
 
-export type SajuWarningCode = "TERM_BOUNDARY" | "HOUR_BOUNDARY" | "AMBIGUOUS_CIVIL_TIME" | "PRE_1908";
-export interface SajuWarning { code: SajuWarningCode; message: string }
+export type SajuWarningCode =
+  | "TERM_BOUNDARY" | "HOUR_BOUNDARY" | "AMBIGUOUS_CIVIL_TIME" | "PRE_1908"
+  /** time unknown: a year/month pillar changes during the civil day (details in `ambiguous`) */
+  | "PILLAR_AMBIGUOUS"
+  /** time unknown: births inside `window` would get the day pillar `window.dayPillar` instead */
+  | "DAY_PILLAR_WINDOW";
+export interface SajuWarning {
+  code: SajuWarningCode;
+  /** Korean UI copy */
+  message: string;
+  /** DAY_PILLAR_WINDOW only: civil-clock minutes ("HH:mm", inclusive) and the day pillar they would get */
+  window?: { from: string; to: string; dayPillar: string };
+}
 
 /** Time unknown (P6): a pillar that changes during the civil day. `switchesAtKST` is the civil clock ("HH:mm"). */
 export interface AmbiguousPillar { pillar: "year" | "month"; candidates: string[]; switchesAtKST: string }
@@ -87,7 +99,8 @@ const TIME_UNKNOWN_NOTE = "태어난 시를 몰라 시주를 비웠어요. 시�
 
 interface CivilDate { year: number; month: number; day: number }
 
-export function computeChart(input: SajuInput, policy: SajuPolicy = DEFAULT_POLICY): SajuChart {
+export function computeChart(input: SajuInput, requestedPolicy: SajuPolicy = DEFAULT_POLICY): SajuChart {
+  const policy = validatePolicy(requestedPolicy); // a fresh copy, stored on the chart
   const longitude = validatePlace(input.place);
   if (input.gender !== "female" && input.gender !== "male") throw invalidInput();
   const date = toSolarDate(input);
@@ -256,8 +269,8 @@ function readKnownTime(date: CivilDate, time: NonNullable<SajuInput["time"]>, ge
       `${date.year}년 ${date.month}월 ${date.day}일 ${hhmm(wallMs)}은 시계를 앞당기며 건너뛴 시각이라 실제로는 없었어요. 출생 기록을 다시 확인해 주세요.`);
   }
   if (candidates.length > 1) {
-    const dst = civil.offsetMinutes !== civil.standardOffsetMinutes ? "(서머타임)" : "";
-    warnings.push({ code: "AMBIGUOUS_CIVIL_TIME", message: `시계를 되돌려 같은 시각이 두 번 있었던 날이에요. 앞의 시각${dst}으로 계산했어요.` });
+    const dst = civil.offsetMinutes !== civil.standardOffsetMinutes ? "(서머타임 기준)" : "";
+    warnings.push({ code: "AMBIGUOUS_CIVIL_TIME", message: `시계를 되돌려 같은 시각이 두 번 있었던 날이에요. 먼저 지나간 시각${dst}으로 계산했어요.` });
   }
 
   const clockMs = correctedClockMs(policy.clock, civil.instantMs, wallMs, civil, longitude);
@@ -270,16 +283,17 @@ function readKnownTime(date: CivilDate, time: NonNullable<SajuInput["time"]>, ge
     const at = new Date(near.ms + civilOffsetMinutesAt(near.ms, frame) * MINUTE_MS);
     warnings.push({
       code: "TERM_BOUNDARY",
-      message: `절입 시각(${near.name} ${at.getUTCMonth() + 1}월 ${at.getUTCDate()}일 ${hhmm(at.getTime())}) 앞뒤 ${spanLabel(policy.termBoundaryWarnSeconds)} 안에 태어나 ${near.name === "입춘" ? "연주·월주" : "월주"}가 기관·천문력에 따라 달라질 수 있어요.`,
+      message: `절입 시각(${near.name} ${at.getUTCMonth() + 1}월 ${at.getUTCDate()}일 ${hhmm(at.getTime())}) 앞뒤 ${spanLabel(policy.termBoundaryWarnSeconds)} 안에 태어나 ${near.name === "입춘" ? "연주·월주" : "월주"}가 만세력·천문 자료마다 달라질 수 있어요.`,
     });
   }
   // P13: 시진 boundary (odd hours) on the corrected clock
   const timeOfDay = ((clockMs % DAY_MS) + DAY_MS) % DAY_MS;
   for (let h = 1; h < 24; h += 2) {
     if (Math.abs(timeOfDay - h * HOUR_MS) <= policy.hourBoundaryWarnMinutes * MINUTE_MS) {
+      const dayToo = h === 23 && policy.jasi === "DAY_CHANGES_AT_23" ? " 23시에 날이 바뀌는 관법이라 일주도 바뀔 수 있어요." : "";
       warnings.push({
         code: "HOUR_BOUNDARY",
-        message: `보정 시각이 시진 경계(${pad(h)}:00) 앞뒤 ${policy.hourBoundaryWarnMinutes}분 안이라 출생 기록 오차에 따라 시주가 달라질 수 있어요.`,
+        message: `보정 시각이 시진 경계(${pad(h)}:00) 앞뒤 ${policy.hourBoundaryWarnMinutes}분 안이라 출생 기록 오차에 따라 시주가 달라질 수 있어요.${dayToo}`,
       });
     }
   }
@@ -307,17 +321,20 @@ function correctionNotes(date: CivilDate, civil: ResolvedCivilTime, clockMs: num
   const notes: string[] = [];
   if (frame.policy.applyHistoricalDst && !frame.pre1908) {
     const dstMinutes = civil.offsetMinutes - civil.standardOffsetMinutes;
-    if (dstMinutes !== 0) notes.push(`서머타임 기간이라 ${dstMinutes / 60}시간 빼서 계산했어요`);
-    if (civil.standardOffsetMinutes === 510) notes.push("당시 표준시(UTC+8:30) 기준으로 계산했어요");
+    if (dstMinutes !== 0) notes.push(`서머타임 기간이라 ${dstMinutes / 60}시간 빼서 계산했어요.`);
+    if (civil.standardOffsetMinutes === 510) notes.push("당시 표준시(UTC+8:30) 기준으로 계산했어요.");
   }
   const label = { LMT: "경도 보정으로", LAT: "경도·균시차 보정으로", FIXED_127_5: "동경 127.5도 기준으로", ERA_STANDARD: null, WALL: null }[frame.policy.clock];
   // shift relative to the era's standard clock, so DST (noted above) is not counted twice
-  const shift = Math.round((clockMs - (civil.instantMs + civil.standardOffsetMinutes * MINUTE_MS)) / MINUTE_MS);
+  const exactShift = (clockMs - (civil.instantMs + civil.standardOffsetMinutes * MINUTE_MS)) / MINUTE_MS;
+  const shift = Math.round(exactShift);
   if (label && shift !== 0) {
     const c = new Date(clockMs);
     const dayDiff = compareDates({ year: c.getUTCFullYear(), month: c.getUTCMonth() + 1, day: c.getUTCDate() }, date);
     const dayTag = dayDiff < 0 ? "전날 " : dayDiff > 0 ? "다음 날 " : "";
-    notes.push(`${label} ${Math.abs(shift)}분 ${shift < 0 ? "앞당겨" : "늦춰"} 계산했어요 (보정 시각 ${dayTag}${hhmm(clockMs)})`);
+    // "약" when the shift has seconds, so "약 32분" next to a truncated clock (12:00 → 11:27:55 → "11:27") reads right
+    const about = Math.abs(exactShift - shift) > 1e-6 ? "약 " : "";
+    notes.push(`${label} 시각을 ${about}${Math.abs(shift)}분 ${shift < 0 ? "앞당겨" : "늦춰"}(보정 시각 ${dayTag}${hhmm(clockMs)}) 계산했어요.`);
   }
   return notes;
 }
@@ -349,6 +366,7 @@ function readUnknownTime(date: CivilDate, gender: SajuInput["gender"], frame: Ci
     }
   }
 
+  const windows = dayPillarWindows(date, hanja(chosen.day), frame);
   const yearCertain = !ambiguous.some(x => x.pillar === "year");
   const monthCertain = !ambiguous.some(x => x.pillar === "month");
   const luck = chosen.luckPillars!;
@@ -365,9 +383,88 @@ function readUnknownTime(date: CivilDate, gender: SajuInput["gender"], frame: Ci
       pillars: yearCertain && monthCertain ? luck.pillars.map(p => ({ ganzhi: hanja(p.pillar), ko: p.korean, startAge: null })) : [],
     },
     ambiguous,
-    warnings: [],
-    notes: [TIME_UNKNOWN_NOTE],
+    warnings: [
+      ...ambiguous.map(x => ({ code: "PILLAR_AMBIGUOUS" as const, message: pillarAmbiguousMessage(x) })),
+      ...windows.map(w => w.warning),
+    ],
+    notes: windows.length
+      ? [TIME_UNKNOWN_NOTE, `태어난 시를 몰라 일주는 날짜 기준으로 봤어요. ${windows.map(w => w.sentence).join(" ")}`]
+      : [TIME_UNKNOWN_NOTE],
   };
+}
+
+function pillarAmbiguousMessage(x: AmbiguousPillar): string {
+  const [before, after] = x.candidates as [string, string];
+  return `태어난 시에 따라 ${x.pillar === "year" ? "연주" : "월주"}가 ${withKo(before)} 또는 ${withKo(after)}${josa(after, "이", "가")} 돼요. `
+    + `${x.switchesAtKST} 이후라면 ${after}${josa(after, "이에요", "예요")}.`;
+}
+
+/**
+ * Time unknown: the shown day pillar is the civil date's, but a birth at either edge of the civil day can
+ * read as the neighbouring day on the corrected clock (P5): LMT/DST pull the start of the day back into
+ * the previous day; DAY_CHANGES_AT_23 (or a forward correction) pushes the end into the next day.
+ * Computed minute by minute for this date and policy; nothing is returned when the windows are empty (WALL).
+ */
+function dayPillarWindows(date: CivilDate, dayPillar: string, frame: CivilFrame): { sentence: string; warning: SajuWarning }[] {
+  const midnight = Date.UTC(date.year, date.month - 1, date.day);
+  const shiftAt = (wallMs: number): number | null => {
+    const readings = wallClockInstants(wallMs, frame);
+    if (readings.length === 0) return null; // skipped by a clock jump
+    let shift = 0;
+    for (const r of readings) { // an overlap minute counts if either reading moves the day
+      const s = dayShift(correctedClockMs(frame.policy.clock, r.instantMs, wallMs, r, frame.longitude), midnight, frame.policy.jasi);
+      if (s !== 0) shift = s;
+    }
+    return shift;
+  };
+  const scan = (want: -1 | 1): { from: number; to: number } | null => {
+    let from: number | null = null;
+    let to: number | null = null;
+    for (let i = 0; i < 1440; i++) {
+      const wallMs = midnight + (want < 0 ? i : 1439 - i) * MINUTE_MS;
+      const s = shiftAt(wallMs);
+      if (s === null) continue;
+      if (s !== want) break;
+      if (want < 0) { from ??= wallMs; to = wallMs; } else { to ??= wallMs; from = wallMs; }
+    }
+    return from === null || to === null ? null : { from, to };
+  };
+
+  const out: { sentence: string; warning: SajuWarning }[] = [];
+  const start = scan(-1);
+  if (start) {
+    const [from, to] = [hhmm(start.from), hhmm(start.to)];
+    const prev = shiftGanzhi(dayPillar, -1);
+    out.push({
+      sentence: `${from}~${to} 사이에 태어났다면 일주가 전날로 바뀔 수 있어요.`,
+      warning: {
+        code: "DAY_PILLAR_WINDOW",
+        message: `${from}~${to} 사이에 태어났다면 일주가 전날 일진인 ${withKo(prev)}${josa(prev, "이", "가")} 돼요.`,
+        window: { from, to, dayPillar: prev },
+      },
+    });
+  }
+  const end = scan(1);
+  if (end) {
+    const [from, to] = [hhmm(end.from), hhmm(end.to)];
+    const next = shiftGanzhi(dayPillar, 1);
+    out.push({
+      sentence: `${from} 이후에 태어났다면 일주가 다음 날로 바뀔 수 있어요.`,
+      warning: {
+        code: "DAY_PILLAR_WINDOW",
+        message: `${from} 이후에 태어났다면 일주가 다음 날 일진인 ${withKo(next)}${josa(next, "이", "가")} 돼요.`,
+        window: { from, to, dayPillar: next },
+      },
+    });
+  }
+  return out;
+}
+
+/** -1 / 0 / +1: which day the corrected clock gives the day pillar, relative to the civil date (engine rule). */
+function dayShift(clockMs: number, civilMidnightMs: number, jasi: JasiRule): number {
+  let dayStart = Math.floor(clockMs / DAY_MS) * DAY_MS;
+  if (jasi === "DAY_CHANGES_AT_23" && clockMs - dayStart >= 23 * HOUR_MS) dayStart += DAY_MS;
+  return Math.sign(dayStart - civilMidnightMs);
 }
 
 /** First (or last) existing minute of the civil day and its instant (earliest reading first, latest last). */
@@ -422,6 +519,14 @@ function toPillar(p: EnginePillar, gods: { stem: string; branch: string }): Pill
     stem: STEMS[si]!, branch, ko: STEMS_KO[si]! + BRANCHES_KO[bi]!,
     stemGod: gods.stem, branchGod: gods.branch, hidden: [...HIDDEN_STEMS[branch]],
   };
+}
+
+const withKo = (ganzhi: string) => `${ganzhi}(${ganzhiKo(ganzhi)})`;
+
+/** Korean particle by whether the ganzhi's hangul reading ends in a final consonant (받침). */
+function josa(ganzhi: string, afterConsonant: string, afterVowel: string): string {
+  const code = ganzhiKo(ganzhi).charCodeAt(1) - 0xac00;
+  return code % 28 !== 0 ? afterConsonant : afterVowel;
 }
 
 function compareDates(a: CivilDate, b: CivilDate): number {

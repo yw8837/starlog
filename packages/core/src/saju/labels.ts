@@ -28,3 +28,17 @@ export const stemIndexOfKo = (ko: string) => indexOrThrow(STEMS_KO, ko, "stem");
 export const branchIndexOfKo = (ko: string) => indexOrThrow(BRANCHES_KO, ko, "branch");
 export const stemElement = (stem: string) => STEM_ELEMENTS[indexOrThrow(STEMS, stem, "stem")]!;
 export const branchElement = (branch: string) => BRANCH_ELEMENTS[indexOrThrow(BRANCHES, branch, "branch")]!;
+
+const mod = (n: number, m: number) => ((n % m) + m) % m;
+
+/** Hangul reading of a hanja ganzhi, e.g. "丙辰" → "병진". */
+export function ganzhiKo(ganzhi: string): string {
+  return STEMS_KO[indexOrThrow(STEMS, ganzhi.charAt(0), "stem")]! + BRANCHES_KO[indexOrThrow(BRANCHES, ganzhi.charAt(1), "branch")]!;
+}
+
+/** The ganzhi `delta` steps along the 60-cycle, e.g. shiftGanzhi("丙寅", -1) → "乙丑". */
+export function shiftGanzhi(ganzhi: string, delta: number): string {
+  const s = indexOrThrow(STEMS, ganzhi.charAt(0), "stem");
+  const b = indexOrThrow(BRANCHES, ganzhi.charAt(1), "branch");
+  return STEMS[mod(s + delta, 10)]! + BRANCHES[mod(b + delta, 12)]!;
+}

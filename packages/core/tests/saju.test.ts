@@ -120,6 +120,8 @@ describe("§9 golden four pillars (R / D / DU / DL)", () => {
     expect(c.ambiguous).toEqual([{ pillar: "month", candidates: ["乙卯", "丙辰"], switchesAtKST: "10:13" }]);
     // The shown month is the candidate that holds for most of the civil day (10:13 → 丙辰); ambiguous[] is the contract.
     expect(c.pillars.month.stem + c.pillars.month.branch).toBe("丙辰");
+    expect(c.warnings.filter(w => w.code === "PILLAR_AMBIGUOUS").map(w => w.message))
+      .toEqual(["태어난 시에 따라 월주가 乙卯(을묘) 또는 丙辰(병진)이 돼요. 10:13 이후라면 丙辰이에요."]);
   });
   it.each(allProfiles)("G21 1970-06-15, time unknown [%s] → 庚戌 壬午 丙寅 null, no ambiguity", profile => {
     const c = computeChart(solarAt("1970-06-15", null), PROFILES[profile]);
@@ -182,7 +184,8 @@ describe("§9 civil-time exceptions (P8)", () => {
     const [ymd, hm] = at.split(" ") as [string, string];
     const c = computeChart(solarAt(ymd, hm));
     expect(c.instantUTC).toBe(instant);
-    expect(c.warnings.map(w => w.code)).toContain("AMBIGUOUS_CIVIL_TIME");
+    expect(c.warnings.find(w => w.code === "AMBIGUOUS_CIVIL_TIME")?.message)
+      .toBe("시계를 되돌려 같은 시각이 두 번 있었던 날이에요. 먼저 지나간 시각(서머타임 기준)으로 계산했어요.");
   });
   it("also rejects the skipped hour when 1948–60 DST started at midnight", () => {
     expect(sajuErrorCode(() => computeChart(solarAt("1955-05-05", "00:30")))).toBe("NONEXISTENT_CIVIL_TIME");
@@ -201,6 +204,8 @@ describe("§9 대운 golden (P9: round, min 1)", () => {
     ["DY2", "1990-01-01 12:00", "female", true, 1, { years: 1, months: 5, days: 28 }, "丁丑"],
     ["DY3", "2000-02-04 21:00", "male", false, 10, null, "丙子"],
     ["DY4", "1988-05-10 01:30", "male", true, 9, null, "戊午"],
+    // contract (P9 min-1 clamp): exactly 1 day before 입춘 2024-02-04 17:27 → 1/3 rounds to 0 → 대운수 1
+    ["clamp", "2024-02-03 17:27", "female", true, 1, { years: 0, months: 4, days: 0 }, "丙寅"],
   ];
   it.each(DY)("%s %s %s", (_id, at, gender, forward, startAge, start, first) => {
     const [ymd, hm] = at.split(" ") as [string, string];
@@ -225,6 +230,10 @@ describe("§9 대운 golden (P9: round, min 1)", () => {
       { pillar: "month", candidates: ["乙丑", "丙寅"], switchesAtKST: "17:27" },
     ]);
     expect(four(c)).toBe("癸卯 乙丑 戊戌 null"); // 00:00–17:26 is the longer part of the day
+    expect(c.warnings.filter(w => w.code === "PILLAR_AMBIGUOUS").map(w => w.message)).toEqual([
+      "태어난 시에 따라 연주가 癸卯(계묘) 또는 甲辰(갑진)이 돼요. 17:27 이후라면 甲辰이에요.",
+      "태어난 시에 따라 월주가 乙丑(을축) 또는 丙寅(병인)이 돼요. 17:27 이후라면 丙寅이에요.",
+    ]);
     expect(c.luck).toEqual({ forward: null, startAge: null, start: null, pillars: [] });
   });
 });
@@ -236,7 +245,7 @@ describe("provenance, corrections and warnings (P3, P10, P12, P13)", () => {
     expect(c.correctedLocalTime).toBe("11:27");
     expect(c.correctionMinutes).toBe(-32.1);
     expect(c.monthStartTerm).toEqual({ name: "대설", hanja: "大雪", instantUTC: "1989-12-07T03:21:00.000Z" });
-    expect(c.notes).toContain("경도 보정으로 32분 앞당겨 계산했어요 (보정 시각 11:27)");
+    expect(c.notes).toEqual(["경도 보정으로 시각을 약 32분 앞당겨(보정 시각 11:27) 계산했어요."]);
     expect(c.warnings).toEqual([]);
     expect(c.ambiguous).toEqual([]);
   });
@@ -245,24 +254,59 @@ describe("provenance, corrections and warnings (P3, P10, P12, P13)", () => {
     expect(c.instantUTC).toBe("1988-05-09T15:30:00.000Z");
     expect(c.correctedLocalTime).toBe("23:57");
     expect(c.notes).toEqual([
-      "서머타임 기간이라 1시간 빼서 계산했어요",
-      "경도 보정으로 32분 앞당겨 계산했어요 (보정 시각 전날 23:57)",
+      "서머타임 기간이라 1시간 빼서 계산했어요.",
+      "경도 보정으로 시각을 약 32분 앞당겨(보정 시각 전날 23:57) 계산했어요.",
     ]);
   });
   it("explains the UTC+8:30 era", () => {
     const c = computeChart(solarAt("1958-01-15", "00:50"));
     expect(c.instantUTC).toBe("1958-01-14T16:20:00.000Z");
-    expect(c.notes).toEqual(["당시 표준시(UTC+8:30) 기준으로 계산했어요", "경도 보정으로 2분 앞당겨 계산했어요 (보정 시각 00:47)"]);
+    expect(c.notes).toEqual(["당시 표준시(UTC+8:30) 기준으로 계산했어요.", "경도 보정으로 시각을 약 2분 앞당겨(보정 시각 00:47) 계산했어요."]);
   });
-  it("time unknown: no instant or corrected clock, and the fixed note", () => {
+  it("time unknown: no instant or corrected clock; fixed note plus the day-pillar window (D, 1990-01-01 → 00:00~00:32)", () => {
     const c = computeChart(solarAt("1990-01-01", null));
     expect([c.instantUTC, c.correctedLocalTime, c.correctionMinutes]).toEqual([null, null, null]);
+    expect(c.notes).toEqual([
+      "태어난 시를 몰라 시주를 비웠어요. 시주가 다루는 해석은 하지 않아요.",
+      "태어난 시를 몰라 일주는 날짜 기준으로 봤어요. 00:00~00:32 사이에 태어났다면 일주가 전날로 바뀔 수 있어요.",
+    ]);
+    expect(c.warnings).toEqual([{
+      code: "DAY_PILLAR_WINDOW",
+      message: "00:00~00:32 사이에 태어났다면 일주가 전날 일진인 乙丑(을축)이 돼요.",
+      window: { from: "00:00", to: "00:32", dayPillar: "乙丑" },
+    }]);
+    // the window edge agrees with known-time charts: 00:32 → previous day, 00:33 → same day
+    expect(four(computeChart(solarAt("1990-01-01", "00:32"))).split(" ")[2]).toBe("乙丑");
+    expect(four(computeChart(solarAt("1990-01-01", "00:33"))).split(" ")[2]).toBe("丙寅");
+  });
+  it("time unknown on a DST date: the window grows by the DST hour (1987-07-01 D → 00:00~01:32)", () => {
+    const c = computeChart(solarAt("1987-07-01", null));
+    expect(c.warnings.map(w => w.window)).toEqual([{ from: "00:00", to: "01:32", dayPillar: "庚戌" }]);
+    expect(c.notes[1]).toBe("태어난 시를 몰라 일주는 날짜 기준으로 봤어요. 00:00~01:32 사이에 태어났다면 일주가 전날로 바뀔 수 있어요.");
+    // same date under DU: 00:33–01:32 reads 23:00+ of the previous day, which already counts as this day
+    expect(computeChart(solarAt("1987-07-01", null), PROFILES.DU).warnings.map(w => w.window))
+      .toEqual([{ from: "00:00", to: "00:32", dayPillar: "庚戌" }]);
+  });
+  it("time unknown under DU: the window sits at the end of the day (1990-01-01 → from 23:33)", () => {
+    const c = computeChart(solarAt("1990-01-01", null), PROFILES.DU);
+    expect(c.warnings).toEqual([{
+      code: "DAY_PILLAR_WINDOW",
+      message: "23:33 이후에 태어났다면 일주가 다음 날 일진인 丁卯(정묘)가 돼요.",
+      window: { from: "23:33", to: "23:59", dayPillar: "丁卯" },
+    }]);
+    expect(c.notes[1]).toBe("태어난 시를 몰라 일주는 날짜 기준으로 봤어요. 23:33 이후에 태어났다면 일주가 다음 날로 바뀔 수 있어요.");
+    expect(four(computeChart(solarAt("1990-01-01", "23:32"), PROFILES.DU)).split(" ")[2]).toBe("丙寅");
+    expect(four(computeChart(solarAt("1990-01-01", "23:33"), PROFILES.DU)).split(" ")[2]).toBe("丁卯");
+  });
+  it("time unknown with an uncorrected clock (WALL, split) has no day-pillar window", () => {
+    const c = computeChart(solarAt("1990-01-01", null), PROFILES.R);
+    expect(c.warnings).toEqual([]);
     expect(c.notes).toEqual(["태어난 시를 몰라 시주를 비웠어요. 시주가 다루는 해석은 하지 않아요."]);
   });
   it("warns within 120 s of a 절 (G13: 17:26 vs 입춘 17:27)", () => {
     const c = computeChart(solarAt("2024-02-04", "17:26"));
     expect(c.warnings.map(w => w.code)).toEqual(["TERM_BOUNDARY"]);
-    expect(c.warnings[0]!.message).toContain("입춘");
+    expect(c.warnings[0]!.message).toBe("절입 시각(입춘 2월 4일 17:27) 앞뒤 2분 안에 태어나 연주·월주가 만세력·천문 자료마다 달라질 수 있어요.");
     expect(computeChart(solarAt("2024-02-04", "17:24")).warnings).toEqual([]);
   });
   it("warns within 2 min of a 시진 boundary on the corrected clock (G19 D: 22:58:55)", () => {
@@ -270,6 +314,9 @@ describe("provenance, corrections and warnings (P3, P10, P12, P13)", () => {
     expect(c.correctedLocalTime).toBe("22:58");
     expect(c.warnings.map(w => w.code)).toEqual(["HOUR_BOUNDARY"]);
     expect(computeChart(solarAt("2024-03-10", "23:30")).warnings).toEqual([]); // 22:57:55 is 125 s away
+    expect(c.warnings[0]!.message).not.toContain("일주");
+    expect(computeChart(solarAt("2000-05-15", "23:31"), PROFILES.DU).warnings[0]!.message)
+      .toBe("보정 시각이 시진 경계(23:00) 앞뒤 2분 안이라 출생 기록 오차에 따라 시주가 달라질 수 있어요. 23시에 날이 바뀌는 관법이라 일주도 바뀔 수 있어요.");
   });
   it("before 1908-04-01 reads the input as birthplace local mean time and warns", () => {
     const c = computeChart(solarAt("1900-01-01", "12:00"));
@@ -285,6 +332,38 @@ describe("provenance, corrections and warnings (P3, P10, P12, P13)", () => {
     expect([g16.correctedLocalTime, g16.pillars.hour!.stem + g16.pillars.hour!.branch]).toEqual(["12:20", "壬午"]);
     const fixed = computeChart(solarAt("1990-01-01", "12:00"), { ...DEFAULT_POLICY, clock: "FIXED_127_5" });
     expect([fixed.correctedLocalTime, fixed.correctionMinutes]).toEqual(["11:30", -30]);
+    expect(fixed.notes).toEqual(["동경 127.5도 기준으로 시각을 30분 앞당겨(보정 시각 11:30) 계산했어요."]); // whole minutes: no "약"
+  });
+  it("every note and warning ends as a full 해요체 sentence", () => {
+    const charts = [
+      ...GOLDEN.flatMap(([, at]) => (Object.keys(PROFILES) as ProfileId[]).map(p => computeChart(solarAt(...(at.split(" ") as [string, string])), PROFILES[p]))),
+      ...["1990-01-01", "2024-02-04", "1987-07-01", "1900-01-01"].map(d => computeChart(solarAt(d, null))),
+      computeChart(solarAt("1987-10-11", "02:30")),
+    ];
+    const texts = charts.flatMap(c => [...c.notes, ...c.warnings.map(w => w.message)]);
+    expect(texts.length).toBeGreaterThan(50);
+    expect(texts.filter(t => !/요\.$/.test(t))).toEqual([]);
+  });
+});
+
+describe("policy validation", () => {
+  it("DEFAULT_POLICY is frozen and each chart carries its own copy", () => {
+    expect(Object.isFrozen(DEFAULT_POLICY)).toBe(true);
+    const c = computeChart(solarAt("1990-01-01", "12:00"));
+    expect(c.policy).toEqual(DEFAULT_POLICY);
+    expect(c.policy).not.toBe(DEFAULT_POLICY);
+  });
+  it.each([
+    ["unknown clock", { clock: "TRUE_SOLAR" }],
+    ["unknown jasi", { jasi: "same-day" }],
+    ["non-boolean DST flag", { applyHistoricalDst: "yes" }],
+    ["negative term window", { termBoundaryWarnSeconds: -1 }],
+    ["NaN hour window", { hourBoundaryWarnMinutes: Number.NaN }],
+    ["empty version", { version: "" }],
+  ])("INVALID_POLICY for %s", (_label, patch) => {
+    const policy = { ...DEFAULT_POLICY, ...patch } as unknown as SajuPolicy;
+    expect(sajuErrorCode(() => computeChart(solarAt("1990-01-01", "12:00"), policy))).toBe("INVALID_POLICY");
+    expect(sajuErrorCode(() => computeChart(solarAt("1990-01-01", null), policy))).toBe("INVALID_POLICY");
   });
 });
 
@@ -300,6 +379,14 @@ describe("input errors", () => {
     expect(sajuErrorCode(() => computeChart({ ...solarAt("1990-01-01", "12:00"), place: { name: "New York", longitude: -74.006 } }))).toBe("UNSUPPORTED_PLACE");
     expect(sajuErrorCode(() => computeChart({ ...solarAt("1990-01-01", "12:00"), place: { name: "도쿄", longitude: 139.69, timeZone: "Asia/Tokyo" } }))).toBe("UNSUPPORTED_PLACE");
     expect(sajuErrorCode(() => computeChart({ ...solarAt("1990-01-01", "12:00"), place: { name: "부산", longitude: 129.075, timeZone: "Asia/Seoul" } }))).toBe("no error");
+  });
+  it("INVALID_INPUT for a bad gender, calendar or longitude", () => {
+    const ok = solarAt("1990-01-01", "12:00");
+    expect(sajuErrorCode(() => computeChart({ ...ok, gender: "other" } as unknown as SajuInput))).toBe("INVALID_INPUT");
+    expect(sajuErrorCode(() => computeChart({ ...ok, gender: undefined } as unknown as SajuInput))).toBe("INVALID_INPUT");
+    expect(sajuErrorCode(() => computeChart({ ...ok, calendar: "julian" } as unknown as SajuInput))).toBe("INVALID_INPUT");
+    expect(sajuErrorCode(() => computeChart({ ...ok, place: { name: "?", longitude: Number.NaN } }))).toBe("INVALID_INPUT");
+    expect(sajuErrorCode(() => computeChart({ ...ok, place: { name: "?", longitude: Number.POSITIVE_INFINITY } }))).toBe("INVALID_INPUT");
   });
   it("INVALID_INPUT for impossible dates and clock values", () => {
     expect(sajuErrorCode(() => computeChart(solarAt("2023-02-29", "12:00")))).toBe("INVALID_INPUT");

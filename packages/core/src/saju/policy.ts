@@ -36,14 +36,33 @@ export interface SajuPolicy {
 }
 
 /** Profile D of the research: history + DST, Seoul-style LMT at the birthplace, no EoT, split 子 hour. */
-export const DEFAULT_POLICY: SajuPolicy = {
+export const DEFAULT_POLICY: Readonly<SajuPolicy> = Object.freeze({
   version: SAJU_POLICY_VERSION,
   clock: "LMT",
   jasi: "SPLIT_NEXT_DAY_STEM",
   applyHistoricalDst: true,
   termBoundaryWarnSeconds: 120,
   hourBoundaryWarnMinutes: 2,
-};
+});
+
+const CLOCKS: readonly SajuClock[] = ["LMT", "LAT", "ERA_STANDARD", "FIXED_127_5", "WALL"];
+const JASI_RULES: readonly JasiRule[] = ["SPLIT_NEXT_DAY_STEM", "DAY_CHANGES_AT_23"];
+
+/** Runtime check for policies built outside TypeScript (stored JSON, env); returns a copy. */
+export function validatePolicy(policy: SajuPolicy): SajuPolicy {
+  const p = policy as Partial<Record<keyof SajuPolicy, unknown>> | null | undefined;
+  const bad = (what: string) => new SajuError("INVALID_POLICY", `사주 계산 정책 설정이 올바르지 않아요(${what}).`);
+  if (!p || typeof p !== "object") throw bad("policy");
+  if (typeof p.version !== "string" || p.version === "") throw bad("version");
+  if (!CLOCKS.includes(p.clock as SajuClock)) throw bad(`clock=${String(p.clock)}`);
+  if (!JASI_RULES.includes(p.jasi as JasiRule)) throw bad(`jasi=${String(p.jasi)}`);
+  if (typeof p.applyHistoricalDst !== "boolean") throw bad("applyHistoricalDst");
+  for (const key of ["termBoundaryWarnSeconds", "hourBoundaryWarnMinutes"] as const) {
+    const v = p[key];
+    if (typeof v !== "number" || !Number.isFinite(v) || v < 0) throw bad(key);
+  }
+  return { ...policy };
+}
 
 /** Fallback birthplace when the user does not pick one (P3). */
 export const SEOUL = { name: "서울", longitude: 126.978 } as const;
@@ -53,7 +72,8 @@ export type SajuErrorCode =
   | "INVALID_LUNAR_DATE"
   | "UNSUPPORTED_PLACE"
   | "OUT_OF_RANGE"
-  | "INVALID_INPUT";
+  | "INVALID_INPUT"
+  | "INVALID_POLICY";
 
 /** Typed input error; `message` is Korean UI copy. */
 export class SajuError extends Error {
