@@ -31,6 +31,11 @@ describe("deck", () => {
   it("keeps the same order for the same seed regardless of reversal rate", () => {
     expect(createDeck("s1", 0).order).toEqual(createDeck("s1", 0.7).order);
   });
+  it("matches the golden vector, so the shuffle never changes silently", () => {
+    const d = createDeck("golden", 0.3);
+    expect(d.order.slice(0, 5)).toEqual(["major-00-fool", "wands-14", "major-11-justice", "major-18-moon", "swords-10"]);
+    expect(d.orientations.slice(0, 5)).toEqual(["reversed", "upright", "reversed", "reversed", "reversed"]);
+  });
 });
 
 describe("pickCards", () => {
@@ -129,6 +134,20 @@ describe("topics", () => {
       }
     }
   });
+  it("shares no condition object or options array between topics", () => {
+    const groups = WHOS.flatMap(who => TOPICS_BY_WHO[who].flatMap(t => t.conditions));
+    expect(new Set(groups).size).toBe(groups.length);
+    expect(new Set(groups.map(g => g.options)).size).toBe(groups.length);
+  });
+  it("uses exclusive, gap-free time buckets for reunion and relationship duration", () => {
+    const reunion = TOPICS_BY_WHO.us.find(t => t.id === "reunion")!;
+    expect(reunion.conditions.find(c => c.id === "since")!.options)
+      .toEqual(["1개월 미만", "1~6개월", "6개월~1년", "1년 넘음", "잘 모르겠어요"]);
+    const relationship = TOPICS_BY_WHO.us.find(t => t.id === "relationship")!;
+    const duration = relationship.conditions.find(c => c.id === "duration")!;
+    expect(duration.label).toBe("사귄 기간");
+    expect(duration.options).toEqual(["3개월 미만", "3개월~1년", "1년 넘음", "잘 모르겠어요"]);
+  });
   it("defines the contact conditions used by the gold sample", () => {
     const topic = TOPICS_BY_WHO.us.find(t => t.id === "contact")!;
     expect(topic.template).toBe("relationship-contact");
@@ -156,7 +175,7 @@ describe("questions", () => {
     expect(composeQuestion("me", TOPICS_BY_WHO.me.find(t => t.id === "daily")!, "today", "ja")).toMatch(/^今日の/);
   });
   it("never leaves a token, a middle dot or a repeated word in any question", () => {
-    for (const who of WHOS) for (const t of TOPICS_BY_WHO[who]) for (const when of WHENS) {
+    for (const who of WHOS) for (const t of TOPICS_BY_WHO[who]) for (const when of t.whens ?? WHENS) {
       for (const locale of ["ko", "ja"] as const) {
         const q = composeQuestion(who, t, when, locale);
         expect(q, `${who}/${t.id}/${locale}`).not.toMatch(/[{}·・]/);
@@ -169,5 +188,33 @@ describe("questions", () => {
   it("rejects a topic that does not belong to the chosen who", () => {
     const contact = TOPICS_BY_WHO.us.find(t => t.id === "contact")!;
     expect(() => composeQuestion("me", contact, "today")).toThrow();
+  });
+  it("checks topic identity, not just the id: me/career is not a work topic", () => {
+    const meCareer = TOPICS_BY_WHO.me.find(t => t.id === "career")!;
+    const workCareer = TOPICS_BY_WHO.work.find(t => t.id === "career")!;
+    expect(meCareer.id).toBe(workCareer.id);
+    expect(() => composeQuestion("work", meCareer, "week")).toThrow();
+    expect(() => composeQuestion("me", workCareer, "week")).toThrow();
+    expect(composeQuestion("me", meCareer, "week")).toBe("이번 주, 나의 일과 이직의 흐름은 어떨까");
+    expect(composeQuestion("work", workCareer, "week")).toBe("이번 주, 나의 일은 어떤 방향으로 나아갈까");
+  });
+  it("only allows today for the daily topic", () => {
+    const daily = TOPICS_BY_WHO.me.find(t => t.id === "daily")!;
+    expect(daily.whens).toEqual(["today"]);
+    for (const when of ["week", "month", "year"] as const) {
+      expect(() => composeQuestion("me", daily, when)).toThrow();
+      expect(() => composeQuestion("me", daily, when, "ja")).toThrow();
+    }
+    expect(composeQuestion("me", daily, "today")).toBe("오늘 나의 하루는 어떨까");
+    const others = WHOS.flatMap(who => TOPICS_BY_WHO[who]).filter(t => t !== daily);
+    expect(others.every(t => t.whens === undefined)).toBe(true);
+  });
+  it("varies question endings (at most 4 end with 어떻게 흘러갈까)", () => {
+    const questions = WHOS.flatMap(who => TOPICS_BY_WHO[who]).map(t => t.questionKo);
+    expect(questions.filter(q => q.endsWith("어떻게 흘러갈까")).length).toBeLessThanOrEqual(4);
+  });
+  it("uses the spaced form of 어 가다 and never the glued one", () => {
+    const questions = WHOS.flatMap(who => TOPICS_BY_WHO[who]).map(t => t.questionKo);
+    expect(questions.filter(q => /어가면|려갈까|해나가/.test(q))).toEqual([]);
   });
 });

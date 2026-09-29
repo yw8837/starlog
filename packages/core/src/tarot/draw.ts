@@ -24,7 +24,9 @@ export const DEFAULT_REVERSAL_RATE = 0.3;
 
 // Seeded PRNG: xmur3 string hash expands the seed into four 32-bit words, which initialise
 // xoshiro128**. Pure TypeScript and synchronous (no node:crypto / crypto.subtle), so the same
-// seed yields the same deck on the server and in the browser.
+// seed yields the same deck on the server and in the browser. Note: xmur3 folds the whole seed into
+// a single 32-bit hash state, so at most 2^32 distinct decks are reachable, and two different seeds can
+// (rarely) collide. Fine for our use: seeds are random session values, not secrets or unique keys.
 function xmur3(str: string): () => number {
   let h = (1779033703 ^ str.length) >>> 0;
   for (let i = 0; i < str.length; i++) {
