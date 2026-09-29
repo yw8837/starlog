@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Face, type FaceSpec } from "./Face";
+import { Rim } from "./parts/Rim";
+import { RABBIT_HEAD } from "./parts/silhouettes";
 import type { Expression } from "./types";
 import s from "./characters.module.css";
 
@@ -51,9 +53,9 @@ export function OnFoldedEar({ children }: { children: ReactNode }) {
 export function RabbitHead({ expression }: { expression: Expression }) {
   return (
     <g>
-      <path d="M150 110C192 110 219 132 221 164C223 198 192 222 150 222C108 222 77 198 79 164C81 132 108 110 150 110Z" fill="url(#sl-rabbit-fur)" />
+      <path d={RABBIT_HEAD} fill="url(#sl-rabbit-fur)" />
       <ellipse cx="118" cy="132" rx="20" ry="8" transform="rotate(-26 118 132)" fill="#fff" opacity=".7" filter="url(#sl-blush)" />
-      <path d="M213 184C203 206 182 221 150 222" stroke="#D8CFFF" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".7" filter="url(#sl-blur)" />
+      <Rim clip="sl-clip-rabbit-head" d="M221 164C223 198 192 222 150 222" color="#CFC4FF" opacity={0.7} />
       <ellipse cx="150" cy="196" rx="24" ry="14" fill="#FFFFFF" opacity=".8" filter="url(#sl-blur)" />
       <Face spec={RABBIT_FACE} expression={expression} />
     </g>

@@ -10,6 +10,8 @@ export type TapReaction = {
   ref: RefObject<HTMLButtonElement | null>;
   /** True for TAP_REACTION_MS after the latest tap. Drives the expression swap and bubble. */
   active: boolean;
+  /** Counts taps. Key per-tap elements (the speech bubble) on it so each tap replays them. */
+  tapId: number;
   trigger(): void;
 };
 
@@ -22,6 +24,7 @@ export function useTapReaction(): TapReaction {
   const ref = useRef<HTMLButtonElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [active, setActive] = useState(false);
+  const [tapId, setTapId] = useState(0);
 
   const trigger = useCallback(() => {
     clearTimeout(timer.current);
@@ -32,6 +35,7 @@ export function useTapReaction(): TapReaction {
       el.dataset.tap = "on";
     }
     setActive(true);
+    setTapId((n) => n + 1);
     timer.current = setTimeout(() => {
       timer.current = undefined;
       if (ref.current) delete ref.current.dataset.tap;
@@ -41,5 +45,5 @@ export function useTapReaction(): TapReaction {
 
   useEffect(() => () => clearTimeout(timer.current), []);
 
-  return { ref, active, trigger };
+  return { ref, active, tapId, trigger };
 }

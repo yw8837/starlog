@@ -1,5 +1,4 @@
 import { OnFoldedEar, RabbitEars, RabbitFeet, RabbitHead, RabbitPaw } from "./RabbitParts";
-import { Sleeve } from "./HanbokParts";
 import type { Expression } from "./types";
 import s from "./characters.module.css";
 
@@ -44,6 +43,24 @@ function Bow() {
       <path d="M186.5 121L191 134L194.5 131L198 133L189 120Z" />
       <circle cx="184" cy="119.5" r="4.4" fill="#8A73D6" />
       <path d="M168 116C170 112 175 112 178 115" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" fill="none" opacity=".6" />
+    </g>
+  );
+}
+
+/**
+ * Cardigan arm bent at the elbow: the upper arm hangs by the body, the forearm tapers in to
+ * a ribbed cuff at the book. Drawn for the viewer's left; `mirror` flips it to the right.
+ */
+function CardiganArm({ mirror }: { mirror?: boolean }) {
+  return (
+    <g transform={mirror ? "translate(3 0) matrix(-1 0 0 1 300 0)" : undefined}>
+      <path
+        d="M114 225C104 228 97 238 96 250C95 260 98 267 106 268C111 268.5 116 267 119 265.5L117.5 253.5C114 255 111 254.5 110.5 251C110 245 114 238 122 233Q120 226 114 225Z"
+        fill="url(#sl-cardigan)"
+      />
+      <path d="M100 242C98 250 99 259 104 264" stroke="#D9CCFA" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".7" />
+      <path d="M110.5 250.5C108.5 253 105.5 254.5 102.5 254.5" stroke="#8C76D0" strokeWidth="1.3" strokeLinecap="round" fill="none" opacity=".8" />
+      <path d="M116 253.8L118.6 266" stroke="#9A85DC" strokeWidth="4.2" />
     </g>
   );
 }
@@ -97,8 +114,8 @@ export function RabbitTarot({ expression, writing }: { expression: Expression; w
         <Bow />
       </OnFoldedEar>
       <Glasses />
-      <Sleeve x={108} y={232} angle={-40} fill="url(#sl-cardigan)" width={22} length={30} />
-      <Sleeve x={192} y={232} angle={16} fill="url(#sl-cardigan)" width={22} length={26} />
+      <CardiganArm />
+      <CardiganArm mirror />
       <OpenBook />
       {writing && (
         <g className={s.pageFlip}>
@@ -106,9 +123,11 @@ export function RabbitTarot({ expression, writing }: { expression: Expression; w
           <path d="M156 266Q172 260 186 263M156 272Q172 266 186 269" stroke="#CDBF9F" strokeWidth="1.3" strokeLinecap="round" fill="none" />
         </g>
       )}
-      <RabbitPaw x={127} y={258} />
-      <Quill />
-      <RabbitPaw x={185} y={259} />
+      <RabbitPaw x={125} y={259} />
+      <g transform="translate(-5 0)">
+        <Quill />
+      </g>
+      <RabbitPaw x={177} y={259} />
     </g>
   );
 }

@@ -1,5 +1,5 @@
 import type { Expression } from "./types";
-import { sparklePath } from "./shapes";
+import { starPath } from "./shapes";
 import s from "./characters.module.css";
 
 type Point = readonly [number, number];
@@ -8,7 +8,7 @@ export type FaceSpec = {
   eyes: readonly [Point, Point];
   eyeRx: number;
   eyeRy: number;
-  /** A tiny gold star in each eye (the cat's signature). */
+  /** A small five-point gold star in each eye (the cat's signature). */
   starEyes?: boolean;
   /** Top centre of the nose and its half width. */
   nose: Point;
@@ -38,7 +38,15 @@ function OpenEye({ at, rx, ry, star }: { at: Point; rx: number; ry: number; star
       <ellipse cx={x} cy={r2(y + ry * 0.5)} rx={r2(rx * 0.62)} ry={r2(ry * 0.3)} fill="#8C7BE6" opacity=".45" />
       <ellipse cx={r2(x + rx * 0.3)} cy={r2(y - ry * 0.38)} rx={r2(rx * 0.4)} ry={r2(ry * 0.37)} fill="#fff" />
       <circle cx={r2(x - rx * 0.38)} cy={r2(y + ry * 0.42)} r={r2(rx * 0.17)} fill="#fff" opacity=".85" />
-      {star && <path d={sparklePath(r2(x + rx * 0.34), r2(y + ry * 0.4), r2(rx * 0.3))} fill="#FFE9B0" />}
+      {star && (
+        <path
+          d={starPath(r2(x + rx * 0.3), r2(y + ry * 0.38), r2(rx * 0.4), 0.5)}
+          fill="#FFE9B0"
+          stroke="#FFE9B0"
+          strokeWidth=".8"
+          strokeLinejoin="round"
+        />
+      )}
     </>
   );
 }

@@ -1,4 +1,7 @@
-import { Collar, Goreum, Sleeve } from "./HanbokParts";
+import { Collar, Goreum } from "./HanbokParts";
+import { Rim } from "./parts/Rim";
+import { Sleeve } from "./parts/Sleeve";
+import { DURUMAGI } from "./parts/silhouettes";
 import { RabbitEars, RabbitFeet, RabbitHead, RabbitPaw } from "./RabbitParts";
 import type { Expression } from "./types";
 import s from "./characters.module.css";
@@ -19,37 +22,43 @@ function Brush() {
   );
 }
 
-/** 두루마리 (명식): small rolled scroll with wooden knobs and a red tie. */
+/** 두루마리 (명식): small rolled scroll with wooden knobs and a red tie, held upright at the side. */
 function Scroll() {
   return (
-    <g transform="rotate(-10 116 272)">
-      <rect x="95" y="265.5" width="42" height="13" rx="6.5" fill="url(#sl-scroll)" />
-      <path d="M101 269H131" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" opacity=".7" />
-      <ellipse cx="94" cy="272" rx="3" ry="7.6" fill="#8C3B3B" />
-      <ellipse cx="138" cy="272" rx="3" ry="7.6" fill="#7A3030" />
-      <rect x="129" y="265.5" width="3.4" height="13" fill="#C23A4E" />
+    <g transform="rotate(-72 113 268)">
+      <rect x="93" y="261.5" width="40" height="13" rx="6.5" fill="url(#sl-scroll)" />
+      <path d="M99 265H127" stroke="#fff" strokeWidth="1.4" strokeLinecap="round" opacity=".7" />
+      <ellipse cx="92" cy="268" rx="3" ry="7.6" fill="#8C3B3B" />
+      <ellipse cx="134" cy="268" rx="3" ry="7.6" fill="#7A3030" />
+      <rect x="123" y="261.5" width="3.4" height="13" fill="#C23A4E" />
     </g>
   );
 }
 
-/** Saju leader: the same rabbit in a navy 두루마기 over a 저고리, holding a 붓 and a 두루마리. */
+/** Saju leader: the same rabbit in a long navy 두루마기 over a jade 저고리, holding a 붓 and a 두루마리. */
 export function RabbitHanbok({ expression }: { expression: Expression }) {
   return (
     <g className={s.squish}>
-      <path d="M98 288C94 248 114 218 150 218C186 218 206 248 202 288Z" fill="url(#sl-navy)" />
-      <path d="M131 216L150 236L169 216Z" fill="#D6EBDD" />
-      <path d="M170 219L134 251V288" stroke="#18204C" strokeWidth="1.6" fill="none" />
-      <path d="M172 221L136.5 252.5V288" stroke="#5E6CC0" strokeWidth="1" fill="none" opacity=".6" />
-      <path d="M98.5 288C94.5 262 100 240 117 226M201.5 288C205.5 262 200 240 183 226" stroke="#A3ADFF" strokeWidth="2.4" strokeLinecap="round" fill="none" opacity=".5" filter="url(#sl-blur)" />
-      <Collar band="#1D2658" tieX={134} tieY={250} />
-      <Goreum x={134} y={250} />
+      <path d={DURUMAGI} fill="url(#sl-durumagi)" />
+      {/* jade 저고리 in the V, with its own small white 동정 */}
+      <path d="M122 214L178 214L149 252Z" fill="#CFE8D7" />
+      <path d="M134 220L149 236L164 220" stroke="#9FCBB0" strokeWidth="3" fill="none" />
+      <path d="M135.5 218.5L149 233L162.5 218.5" stroke="#FFFFFF" strokeWidth="2" fill="none" />
+      {/* front edge of the robe from the tie to the hem, with a lighter trim */}
+      <path d="M137 259L135 291" stroke="#1B2352" strokeWidth="1.6" />
+      <path d="M139.2 259.5L137.4 291" stroke="#8C98E6" strokeWidth="1.2" opacity=".75" />
+      <Rim clip="sl-clip-durumagi" d="M86 286C91 278 97 267 101 254C107 233 121 217 150 217" color="#A9B3FF" width={6} opacity={0.65} />
+      <Rim clip="sl-clip-durumagi" d="M150 217C179 217 193 233 199 254C203 267 209 278 214 286" color="#C2C9FF" width={6} opacity={0.6} />
+      <Rim clip="sl-clip-durumagi" d="M86 286Q150 294 214 286" color="#8C98E6" width={4} opacity={0.55} />
+      <Collar band="#1D2658" left={[126, 216]} right={[174, 216]} cross={[147, 247.5]} tie={[138, 258]} />
+      <Goreum x={138} y={258} length={24} />
       <RabbitFeet />
       <RabbitEars />
       <RabbitHead expression={expression} />
-      <Sleeve x={106} y={234} angle={-20} fill="url(#sl-navy)" width={27} length={36} />
-      <Sleeve x={194} y={232} angle={40} fill="url(#sl-navy)" width={27} length={32} />
+      <Sleeve x={106} y={234} angle={-12} fill="url(#sl-durumagi)" width={27} length={35} />
+      <Sleeve x={194} y={232} angle={40} fill="url(#sl-durumagi)" width={27} length={32} />
       <Scroll />
-      <RabbitPaw x={118} y={269} />
+      <RabbitPaw x={113} y={269} />
       <Brush />
       <RabbitPaw x={174} y={258} />
     </g>

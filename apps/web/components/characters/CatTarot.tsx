@@ -1,4 +1,6 @@
 import { CardRiffle, CatEars, CatFeet, CatHead, CatPaw, CatTail, TailStar } from "./CatParts";
+import { Rim } from "./parts/Rim";
+import { CAPE_LEFT, CAPE_RIGHT } from "./parts/silhouettes";
 import { sparklePath, starPath } from "./shapes";
 import type { CharacterAction, Expression } from "./types";
 import s from "./characters.module.css";
@@ -6,10 +8,10 @@ import s from "./characters.module.css";
 function Cape() {
   return (
     <g>
-      <path d="M150 224C124 224 104 236 96 258C92 270 91 280 95 287Q112 290 130 288C129 268 136 246 150 234Z" fill="url(#sl-cape)" />
-      <path d="M150 224C176 224 196 236 204 258C208 270 209 280 205 287Q188 290 170 288C171 268 164 246 150 234Z" fill="url(#sl-cape)" />
-      <path d="M97 257C104 237 122 226 146 224" stroke="#8E86E8" strokeWidth="2" strokeLinecap="round" fill="none" opacity=".55" filter="url(#sl-blur)" />
-      <path d="M204 258C208 270 209 280 205 287" stroke="#B9B0FF" strokeWidth="2.4" strokeLinecap="round" fill="none" opacity=".5" filter="url(#sl-blur)" />
+      <path d={CAPE_LEFT} fill="url(#sl-cape)" />
+      <path d={CAPE_RIGHT} fill="url(#sl-cape)" />
+      <Rim clip="sl-clip-cape" d="M96 258C104 236 124 224 150 224" color="#9C94F0" width={5} opacity={0.6} />
+      <Rim clip="sl-clip-cape" d="M196 238C202 246 209 262 208 276C207 282 206 285 205 287" color="#B9B0FF" width={6} opacity={0.6} />
       <path d="M150 234C136 246 129 268 130 288M150 234C164 246 171 268 170 288" stroke="url(#sl-gold)" strokeWidth="1.8" fill="none" />
       <g fill="url(#sl-gold)">
         <path d={starPath(108, 262, 4.6)} />

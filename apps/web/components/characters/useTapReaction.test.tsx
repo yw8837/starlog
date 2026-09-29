@@ -60,6 +60,18 @@ describe("useTapReaction", () => {
     expect(button.dataset.tap).toBeUndefined();
   });
 
+  it("counts taps so every tap can start its own bubble", () => {
+    const { result } = renderHook(() => useTapReaction());
+    expect(result.current.tapId).toBe(0);
+
+    act(() => result.current.trigger());
+    expect(result.current.tapId).toBe(1);
+
+    act(() => vi.advanceTimersByTime(500));
+    act(() => result.current.trigger());
+    expect(result.current.tapId).toBe(2);
+  });
+
   it("clears its timer on unmount", () => {
     const { result, unmount } = renderHook(() => useTapReaction());
     act(() => result.current.trigger());

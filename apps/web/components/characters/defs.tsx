@@ -1,5 +1,7 @@
+import { CAPE_LEFT, CAPE_RIGHT, CAT_HEAD, DURUMAGI, RABBIT_HEAD } from "./parts/silhouettes";
+
 /**
- * Shared SVG paint servers for every character on the page. Mounted once in the root
+ * Shared SVG paint servers and clip paths for every character on the page. Mounted once in the root
  * layout; characters reference these by id, so any number of instances can share a page
  * without duplicating ids. Kept out of display:none, which would disable the gradients.
  */
@@ -96,6 +98,12 @@ export function CharacterDefs() {
           <stop offset=".5" stopColor="#2E3A78" />
           <stop offset="1" stopColor="#1F2858" />
         </linearGradient>
+        <linearGradient id="sl-durumagi" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#5563BA" />
+          <stop offset=".45" stopColor="#3B4892" />
+          <stop offset=".8" stopColor="#2E3A78" />
+          <stop offset="1" stopColor="#28336C" />
+        </linearGradient>
         <linearGradient id="sl-jeogori" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#FFE4EB" />
           <stop offset=".6" stopColor="#F8C3D1" />
@@ -120,7 +128,7 @@ export function CharacterDefs() {
           <stop offset=".5" stopColor="#C9A45E" />
           <stop offset="1" stopColor="#9E7B3C" />
         </linearGradient>
-        {/* 색동: red, yellow, green, blue, pink bands across a sleeve drawn from y=0 down */}
+        {/* 색동: red, yellow, green, blue, pink bands across a sleeve drawn from y=0 down (parts/Sleeve.tsx) */}
         <pattern id="sl-saekdong" patternUnits="userSpaceOnUse" width="60" height="35" x="-30" y="0">
           <rect y="0" width="60" height="7" fill="#EC5B5E" />
           <rect y="7" width="60" height="7" fill="#F8CD50" />
@@ -135,6 +143,21 @@ export function CharacterDefs() {
           <stop offset=".6" stopColor="#FFFFFF" stopOpacity="0" />
           <stop offset="1" stopColor="#1A1440" stopOpacity=".3" />
         </linearGradient>
+
+        {/* rim-light clips (parts/Rim.tsx): same outlines as the shapes they light */}
+        <clipPath id="sl-clip-cat-head">
+          <path d={CAT_HEAD} />
+        </clipPath>
+        <clipPath id="sl-clip-rabbit-head">
+          <path d={RABBIT_HEAD} />
+        </clipPath>
+        <clipPath id="sl-clip-cape">
+          <path d={CAPE_LEFT} />
+          <path d={CAPE_RIGHT} />
+        </clipPath>
+        <clipPath id="sl-clip-durumagi">
+          <path d={DURUMAGI} />
+        </clipPath>
 
         {/* soft light */}
         <filter id="sl-soft" x="-50%" y="-50%" width="200%" height="200%">

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Face, type FaceSpec } from "./Face";
+import { Rim } from "./parts/Rim";
+import { CAT_HEAD } from "./parts/silhouettes";
 import { sparklePath, starPath } from "./shapes";
 import type { Expression } from "./types";
 import s from "./characters.module.css";
@@ -53,9 +55,9 @@ export function CatHead({ expression }: { expression: Expression }) {
     <g>
       <path d="M77 170C68 174 67 181 73 184C67 188 68 195 76 197C79 201 85 201 90 197Z" fill="#EBD8BE" />
       <path d="M223 170C232 174 233 181 227 184C233 188 232 195 224 197C221 201 215 201 210 197Z" fill="#DCC4A4" />
-      <path d="M150 100C194 100 224 124 227 158C230 194 198 220 150 220C102 220 70 194 73 158C76 124 106 100 150 100Z" fill="url(#sl-cat-fur)" />
+      <path d={CAT_HEAD} fill="url(#sl-cat-fur)" />
       <ellipse cx="116" cy="124" rx="22" ry="9" transform="rotate(-28 116 124)" fill="#fff" opacity=".5" filter="url(#sl-blush)" />
-      <path d="M219 180C208 205 184 219 150 220" stroke="#DCD2FF" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".6" filter="url(#sl-blur)" />
+      <Rim clip="sl-clip-cat-head" d="M227 158C230 194 198 220 150 220" opacity={0.6} />
       <g fill="#E0C197">
         <path d="M150 117C153.5 124 153.5 132 150 139C146.5 132 146.5 124 150 117Z" />
         <path d="M138.5 120C142.3 125.5 142 132 139 137C136 132 135.8 125.5 138.5 120Z" />

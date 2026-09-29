@@ -1,0 +1,15 @@
+// Outlines shared by the drawings and their rim-light clip paths (in defs.tsx), so the
+// clips always match the shapes they light.
+
+export const CAT_HEAD =
+  "M150 100C194 100 224 124 227 158C230 194 198 220 150 220C102 220 70 194 73 158C76 124 106 100 150 100Z";
+
+export const RABBIT_HEAD =
+  "M150 110C192 110 219 132 221 164C223 198 192 222 150 222C108 222 77 198 79 164C81 132 108 110 150 110Z";
+
+export const CAPE_LEFT = "M150 224C124 224 104 236 96 258C92 270 91 280 95 287Q112 290 130 288C129 268 136 246 150 234Z";
+export const CAPE_RIGHT = "M150 224C176 224 196 236 204 258C208 270 209 280 205 287Q188 290 170 288C171 268 164 246 150 234Z";
+
+/** 두루마기: long robe flaring from the shoulders to the hem at the bottom of the figure. */
+export const DURUMAGI =
+  "M150 217C121 217 107 233 101 254C97 267 91 278 86 286Q150 294 214 286C209 278 203 267 199 254C193 233 179 217 150 217Z";

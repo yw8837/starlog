@@ -41,7 +41,7 @@ export default function CharacterSheetPage() {
       <NightSky />
       <main className={s.sheet}>
         <h1>캐릭터 시트</h1>
-        <p className={s.note}>탭하면 반응해요. 동작 줄이기 설정에서는 움직임 없이 표정만 바뀌어요.</p>
+        <p className={s.note}>탭하면 반응해요. 동작 줄이기 설정에서는 움직임 없이 표정과 말풍선만 바뀌어요.</p>
 
         <section className={s.section}>
           <h2>모드별 두 캐릭터</h2>
@@ -94,6 +94,10 @@ export default function CharacterSheetPage() {
         <section className={s.section}>
           <h2>크기 · 탭 반응 없음</h2>
           <div className={s.sizes} data-shot="sizes">
+            <figure className={s.cell} data-shot="hit-area">
+              <Cat outfit="hanbok" size={32} />
+              <figcaption>32px · 탭 영역 44px</figcaption>
+            </figure>
             <Cat outfit="tarot" size={64} reactOnTap={false} />
             <Rabbit outfit="tarot" size={64} reactOnTap={false} />
             <Rabbit outfit="hanbok" size={96} reactOnTap={false} />

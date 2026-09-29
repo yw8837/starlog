@@ -26,7 +26,7 @@ const BURST = [
 
 /** Shared stage for a character: floor shadow, idle float, tap hop, star burst, speech bubble. */
 export function CharacterFrame({ size, reactOnTap, label, line, expression, children }: CharacterFrameProps) {
-  const { ref, active, trigger } = useTapReaction();
+  const { ref, active, tapId, trigger } = useTapReaction();
   const shown: Expression = active ? "happy" : expression;
   const style = { "--sl-size": `${size}px` } as CSSProperties;
 
@@ -53,7 +53,8 @@ export function CharacterFrame({ size, reactOnTap, label, line, expression, chil
         </g>
       </svg>
       {active && (
-        <span className={s.bubble} aria-hidden="true">
+        // Keyed per tap: a re-tap mounts a fresh bubble, restarting its pop-in and fade-out.
+        <span key={tapId} className={s.bubble} aria-hidden="true">
           {line}
         </span>
       )}
