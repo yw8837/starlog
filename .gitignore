@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+coverage/
+*.log
+.env*
+!.env.example
+assets/cards/rws1909/*.jpg
+apps/web/test-results/
+apps/web/playwright-report/
+.omc/
+.superpowers/
