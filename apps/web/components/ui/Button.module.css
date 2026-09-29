@@ -1,0 +1,89 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  border: 1px solid transparent;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:focus-visible {
+  outline: 2px solid #f3dca1;
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lg {
+  min-height: 52px;
+  padding: 0 28px;
+  border-radius: 26px;
+  font-size: 16px;
+}
+
+.md {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 22px;
+  font-size: 15px;
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+.primary {
+  background: #f3dca1;
+  color: #2a1b4d;
+}
+
+.primary:hover:not(:disabled) {
+  background: #f7e5b6;
+}
+
+.secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink-sub);
+  font-weight: 500;
+}
+
+.ghost:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.trailing {
+  display: inline-flex;
+  align-items: center;
+}

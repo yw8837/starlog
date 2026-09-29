@@ -10,3 +10,5 @@ apps/web/test-results/
 apps/web/playwright-report/
 .omc/
 .superpowers/
+apps/web/next-env.d.ts
+*.tsbuildinfo

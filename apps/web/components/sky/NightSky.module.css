@@ -1,0 +1,108 @@
+.sky {
+  --glow-x: 50%;
+  --glow-y: 0%;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 38% at var(--glow-x) var(--glow-y), rgba(124, 92, 255, 0.38), transparent 72%),
+    radial-gradient(48% 34% at 0% 42%, rgba(255, 122, 182, 0.2), transparent 72%),
+    radial-gradient(58% 40% at 100% 100%, rgba(45, 212, 191, 0.18), transparent 72%),
+    linear-gradient(180deg, #0d0a26 0%, #160e3a 100%);
+}
+
+.sky[data-glow="center"] {
+  --glow-y: 46%;
+}
+
+/* moon glow, top right */
+.moon {
+  position: absolute;
+  top: -70px;
+  right: -60px;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 240, 200, 0.22) 0%, rgba(255, 240, 200, 0.07) 38%, transparent 68%);
+}
+
+.moonCore {
+  position: absolute;
+  top: 34px;
+  right: 46px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff4d6;
+  opacity: 0.85;
+  box-shadow: 0 0 22px 6px rgba(255, 240, 200, 0.35);
+}
+
+.star {
+  position: absolute;
+  border-radius: 50%;
+  opacity: var(--o, 0.6);
+}
+
+.twinkle {
+  animation: twinkle var(--dur, 4s) ease-in-out var(--delay, 0s) infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: var(--o, 0.6);
+  }
+  50% {
+    opacity: calc(var(--o, 0.6) * 0.2);
+  }
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+}
+
+.lines polyline {
+  stroke: rgba(243, 220, 161, 0.4);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.node {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: #f3dca1;
+  box-shadow: 0 0 10px 2px rgba(243, 220, 161, 0.55);
+  animation: nodePulse 3.6s ease-in-out var(--delay, 0s) infinite;
+}
+
+@keyframes nodePulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .twinkle,
+  .node {
+    animation: none;
+  }
+}

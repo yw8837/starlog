@@ -1,0 +1,15 @@
+.footer {
+  padding: 32px 0 24px;
+  text-align: center;
+}
+
+.notice {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.7;
+  text-wrap: balance;
+}
+
+.field {
+  white-space: nowrap;
+}

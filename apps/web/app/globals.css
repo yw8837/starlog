@@ -1,0 +1,119 @@
+:root {
+  /* color */
+  --ink: #f1ecff;
+  --ink-sub: #c9c1ea;
+  --gold: #f3dca1;
+  --gold-deep: #e9c46f;
+  --navy: #2e2a78;
+  --paper: #f7efe0;
+  --paper-ink: #2b2140;
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-line: rgba(255, 255, 255, 0.14);
+  --line-strong: rgba(255, 255, 255, 0.3);
+  --surface-light: rgba(243, 220, 161, 0.22);
+  --night-0: #0d0a26;
+
+  /* type scale */
+  --fs-title: 26px;
+  --fs-h1: 22px;
+  --fs-h2: 17px;
+  --fs-body: 15px;
+  --fs-sub: 13px;
+  --fs-tab: 12px;
+  --fs-prose: 17px;
+  --lh-prose: 1.8;
+
+  /* layout */
+  --col-max: 480px;
+  --gutter: 20px;
+  --tab-h: 76px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  background: var(--night-0);
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--night-0);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display), "Noto Serif KR", serif;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+h1 {
+  font-size: var(--fs-h1);
+}
+
+h2 {
+  font-size: var(--fs-h2);
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Page frame: sky layer sits behind a centered mobile-first column. */
+.page-shell {
+  position: relative;
+  min-height: 100dvh;
+  overflow-x: clip;
+  isolation: isolate;
+}
+
+.page-col {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--col-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Reserve room for the fixed tab bar. */
+.with-tabbar {
+  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

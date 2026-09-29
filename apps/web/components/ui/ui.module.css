@@ -1,0 +1,72 @@
+/* Chip: 44px pill. Selected = light surface + gold border + gold text (never a gold fill). */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  margin: 0;
+  border: 1px solid var(--glass-line);
+  border-radius: 22px;
+  background: var(--glass);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.chip:focus-visible,
+.segment:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.chipSelected {
+  border-color: var(--gold);
+  background: var(--surface-light);
+  color: var(--gold);
+}
+
+/* Segmented control: active segment uses the same light surface. */
+.segmented {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--glass-line);
+  border-radius: 26px;
+  background: var(--glass);
+}
+
+.segment {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 0 14px;
+  margin: 0;
+  border: 1px solid transparent;
+  border-radius: 22px;
+  background: transparent;
+  color: var(--ink-sub);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.segmentActive {
+  border-color: var(--gold);
+  background: var(--surface-light);
+  color: var(--gold);
+}
