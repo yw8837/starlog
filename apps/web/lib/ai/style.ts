@@ -65,17 +65,31 @@ export function aiTells(text: string): AiTell[] {
   return TELLS.filter((tell) => tell.test(text)).map(({ id, label, hint }) => ({ id, label, hint }));
 }
 
-/** Soft violations carry this prefix: they cause one regeneration but never a QUALITY failure. */
+/**
+ * Soft violations carry this prefix. They never fail a reading, and they cost a regeneration only
+ * together (softWarrantsRegeneration): cost and latency (style-rules.md).
+ */
 export const SOFT_PREFIX = "[문체] ";
 
 export const isSoftViolation = (violation: string) => violation.startsWith(SOFT_PREFIX);
 
 export const AI_TELL_THRESHOLD = 3;
 
+const AI_TELL_MESSAGE = `${SOFT_PREFIX}AI가 쓴 티가 나는 문장이 있어요.`;
+
+/**
+ * The ≥3 rule for soft findings: regenerate for style only when the AI-tell score fired (itself 3+
+ * distinct tells) or when 3+ distinct soft checks fired together. One or two soft hits never do.
+ */
+export function softWarrantsRegeneration(violations: readonly string[]): boolean {
+  const soft = violations.filter(isSoftViolation);
+  return soft.some((v) => v.startsWith(AI_TELL_MESSAGE)) || soft.length >= AI_TELL_THRESHOLD;
+}
+
 /** Adds one soft violation listing the hits when the texts show three or more distinct tells. */
 export function aiTellViolations(texts: string[], out: string[]): void {
   const hits = aiTells(texts.join("\n"));
   if (hits.length >= AI_TELL_THRESHOLD) {
-    out.push(`${SOFT_PREFIX}AI가 쓴 티가 나는 문장이 있어요. ${hits.map((h) => `${h.id} ${h.label}: ${h.hint}`).join(" / ")}.`);
+    out.push(`${AI_TELL_MESSAGE} ${hits.map((h) => `${h.id} ${h.label}: ${h.hint}`).join(" / ")}.`);
   }
 }

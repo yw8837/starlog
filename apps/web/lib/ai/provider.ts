@@ -3,7 +3,7 @@ import type { z } from "zod";
 import { anthropicProvider } from "./anthropic";
 import type { Effort, ModelId } from "./config";
 import { mockProvider } from "./mock";
-import { isSoftViolation } from "./style";
+import { isSoftViolation, softWarrantsRegeneration } from "./style";
 
 /**
  * Where readings come from. `anthropic` calls Claude; `mock` builds deterministic text from the
@@ -61,6 +61,10 @@ export interface GenerationHooks {
   onText?: (snapshot: string) => void;
   /** called as each validated attempt starts (2 = the regeneration) */
   onAttempt?: (attempt: number) => void;
+  /** billed usage, reported by the provider as each upstream call completes (refused or cut-off ones too) */
+  onUsage?: (usage: Usage[]) => void;
+  /** epoch ms when the caller's budget runs out; no regeneration starts that cannot finish before it */
+  deadline?: number;
 }
 
 export interface ReadingProvider {
@@ -96,9 +100,14 @@ export interface Generated<T> {
 }
 
 /**
- * Generates, validates, and regenerates once with the violations as feedback. A second failure is
- * `QUALITY`; refusals and upstream errors are never retried here (the SDK already retried). Soft
- * (style) violations may trigger the regeneration but never fail the second draft on their own.
+ * Generates, validates, and regenerates at most once, with the violations as feedback.
+ * - Regenerates only for a hard violation, or for soft findings under the ≥3 rule
+ *   (softWarrantsRegeneration). A draft with fewer soft findings is returned as it is.
+ * - A soft-only draft is paid for and usable, so it is kept. If the regeneration fails (hard
+ *   violations, refusal, upstream error, abort) or could not finish before `hooks.deadline`, that
+ *   draft is returned instead of an error.
+ * - Two unusable drafts are `QUALITY`. Refusals and upstream errors are never retried here (the SDK
+ *   already retried).
  */
 export async function generateValidated<T>(
   provider: ReadingProvider,
@@ -108,8 +117,13 @@ export async function generateValidated<T>(
 ): Promise<Generated<T>> {
   const usage: Usage[] = [];
   let feedback: string[] | undefined;
+  /** attempt 1's soft-only draft, kept while the regeneration runs */
+  let kept: T | undefined;
   for (let attempt = 1; attempt <= 2; attempt++) {
-    if (hooks.signal?.aborted) throw new GenerationError("UPSTREAM", ["aborted"]);
+    if (hooks.signal?.aborted) {
+      if (kept !== undefined) return { data: kept, usage, attempts: attempt - 1 };
+      throw new GenerationError("UPSTREAM", ["aborted"]);
+    }
     hooks.onAttempt?.(attempt);
     const started = Date.now();
     let violations: string[];
@@ -122,14 +136,26 @@ export async function generateValidated<T>(
     } catch (error) {
       if (!(error instanceof GenerationError) || error.code !== "QUALITY") {
         logGeneration(task.name, provider.name, attempt, Date.now() - started, error instanceof GenerationError ? error.code : "UPSTREAM", usage);
+        if (kept !== undefined) return { data: kept, usage, attempts: attempt };
         throw error instanceof GenerationError ? error : new GenerationError("UPSTREAM", [errorName(error)]);
       }
       violations = error.detail.length ? error.detail : ["출력 형식이 맞지 않았어요"];
     }
     logGeneration(task.name, provider.name, attempt, Date.now() - started, violations.length ? `violations:${violations.length}` : "ok", usage);
-    if (violations.length === 0 && data !== undefined) return { data, usage, attempts: attempt };
-    if (attempt === 2 && data !== undefined && violations.every(isSoftViolation)) return { data, usage, attempts: attempt };
+    const usable = data !== undefined && violations.every(isSoftViolation);
+    if (usable && (attempt === 2 || !softWarrantsRegeneration(violations))) return { data: data!, usage, attempts: attempt };
+    if (attempt === 2) {
+      if (kept !== undefined) return { data: kept, usage, attempts: attempt };
+      feedback = violations;
+      break;
+    }
+    if (usable) kept = data;
     feedback = violations;
+    // A regeneration that cannot finish in time would be billed and then aborted: skip it.
+    if (hooks.deadline !== undefined && Date.now() + (Date.now() - started) > hooks.deadline) {
+      if (kept !== undefined) return { data: kept, usage, attempts: attempt };
+      break;
+    }
   }
   throw new GenerationError("QUALITY", (feedback ?? []).filter((v) => !isSoftViolation(v)));
 }

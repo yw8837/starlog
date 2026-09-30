@@ -5,7 +5,7 @@ import { SAJU_SYSTEM } from "./prompts/saju";
 import { TAROT_SYSTEM } from "./prompts/tarot";
 import { GenerationError, generateValidated, type ReadingProvider } from "./provider";
 import { TarotTeaserDraftSchema } from "./schemas";
-import { AI_TELL_THRESHOLD, STYLE_RULES, aiTellViolations, aiTells, isSoftViolation } from "./style";
+import { AI_TELL_THRESHOLD, STYLE_RULES, aiTellViolations, aiTells, isSoftViolation, softWarrantsRegeneration } from "./style";
 
 /** Built from the style rules' "나쁜 예" lines plus the other tells they name. */
 const SLOPPY = [
@@ -74,6 +74,90 @@ describe("soft violations in generateValidated", () => {
     const error = await generateValidated(provider, task, () => ["길이가 짧아요", soft]).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(GenerationError);
     expect((error as GenerationError).detail).toEqual(["길이가 짧아요"]);
+  });
+
+  // Drafts say which attempt wrote them; `findings[attempt]` is what the validator reports for it.
+  const QUOTE = "[문체] 같은 칩을 두 번 넘게 옮겼어요.";
+  const MOVES = "[문체] 행동 제안이 비슷하게 되풀이돼요.";
+  const AMOUNT = "[문체] 입력에 없는 금액을 썼어요.";
+  const drafts = (second?: (attempt: number, signal?: AbortSignal) => Promise<void>) => {
+    const calls: number[] = [];
+    const provider: ReadingProvider = {
+      name: "mock",
+      async generate(_t, attempt, _feedback, hooks) {
+        calls.push(attempt);
+        if (attempt === 2 && second) await second(attempt, hooks?.signal);
+        return { data: { cards: [], firstCard: { heading: "h", body: `draft-${attempt}` } } as never, usage: [] };
+      },
+    };
+    return { provider, calls };
+  };
+  const findings = (byAttempt: Record<number, string[]>) => (d: { firstCard: { body: string } }) => byAttempt[Number(d.firstCard.body.slice(-1))] ?? [];
+
+  it("returns a draft with one or two soft findings as it is, without a paid regeneration", async () => {
+    const { provider, calls } = drafts();
+    const result = await generateValidated(provider, task, findings({ 1: [QUOTE, MOVES] }));
+    expect(calls).toEqual([1]);
+    expect(result).toMatchObject({ attempts: 1, data: { firstCard: { body: "draft-1" } } });
+  });
+
+  it("regenerates for three distinct soft findings, and keeps the first draft when the second is unusable", async () => {
+    const { provider, calls } = drafts();
+    const result = await generateValidated(provider, task, findings({ 1: [QUOTE, MOVES, AMOUNT], 2: ["길이가 짧아요"] }));
+    expect(calls).toEqual([1, 2]);
+    expect(result.data.firstCard.body).toBe("draft-1");
+  });
+
+  it("returns the regeneration when it is usable", async () => {
+    const { provider } = drafts();
+    const result = await generateValidated(provider, task, findings({ 1: [soft], 2: [QUOTE] }));
+    expect(result).toMatchObject({ attempts: 2, data: { firstCard: { body: "draft-2" } } });
+  });
+
+  it("keeps the first draft when the regeneration fails upstream or is refused", async () => {
+    for (const code of ["UPSTREAM", "REFUSED"] as const) {
+      const { provider } = drafts(async () => {
+        throw new GenerationError(code);
+      });
+      const result = await generateValidated(provider, task, findings({ 1: [soft] }));
+      expect(result.data.firstCard.body).toBe("draft-1");
+    }
+  });
+
+  it("keeps the first draft when the budget aborts the regeneration", async () => {
+    const controller = new AbortController();
+    const { provider } = drafts((_attempt, signal) => new Promise((_, reject) => {
+      signal?.addEventListener("abort", () => reject(new GenerationError("UPSTREAM", ["aborted"])));
+      controller.abort();
+    }));
+    const result = await generateValidated(provider, task, findings({ 1: [soft] }), { signal: controller.signal });
+    expect(result.data.firstCard.body).toBe("draft-1");
+  });
+
+  it("skips a regeneration that cannot finish before the deadline: the soft draft is returned, a hard one fails at once", async () => {
+    const soft3 = drafts();
+    const kept = await generateValidated(soft3.provider, task, findings({ 1: [QUOTE, MOVES, AMOUNT] }), { deadline: Date.now() - 1 });
+    expect(soft3.calls).toEqual([1]);
+    expect(kept.data.firstCard.body).toBe("draft-1");
+
+    const hard = drafts();
+    const error = await generateValidated(hard.provider, task, findings({ 1: ["길이가 짧아요"] }), { deadline: Date.now() - 1 }).catch((e: unknown) => e);
+    expect(hard.calls).toEqual([1]);
+    expect(error).toMatchObject({ code: "QUALITY", detail: ["길이가 짧아요"] });
+  });
+
+  it("still regenerates a hard draft when there is time, and fails after two unusable drafts", async () => {
+    const { provider, calls } = drafts();
+    const error = await generateValidated(provider, task, findings({ 1: ["길이가 짧아요"], 2: ["길이가 짧아요", QUOTE] }), { deadline: Date.now() + 60_000 }).catch((e: unknown) => e);
+    expect(calls).toEqual([1, 2]);
+    expect(error).toMatchObject({ code: "QUALITY", detail: ["길이가 짧아요"] });
+  });
+
+  it("applies the ≥3 rule to soft findings: the AI-tell score alone, or three distinct soft checks", () => {
+    expect(softWarrantsRegeneration([QUOTE, MOVES])).toBe(false);
+    expect(softWarrantsRegeneration([QUOTE, MOVES, AMOUNT])).toBe(true);
+    expect(softWarrantsRegeneration([soft])).toBe(true);
+    expect(softWarrantsRegeneration(["길이가 짧아요"])).toBe(false);
   });
 });
 
