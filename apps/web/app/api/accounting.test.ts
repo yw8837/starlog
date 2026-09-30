@@ -1,0 +1,242 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mockProvider } from "@/lib/ai/mock";
+import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
+import { resetDailyStore } from "@/lib/api/dailyStore";
+import { clientKey, ipGroup } from "@/lib/api/http";
+import { clientCount, spentTodayKrw } from "@/lib/api/spend";
+import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { keyedHash } from "@/lib/security/sign";
+import { POST as daily } from "./tarot/daily/route";
+import { POST as draw } from "./tarot/draw/route";
+import { POST as followup } from "./followup/route";
+import { POST as owner } from "./owner/route";
+import { POST as reading } from "./tarot/reading/route";
+import { POST as teaser } from "./tarot/teaser/route";
+import { POST as sajuTeaser } from "./saju/teaser/route";
+
+type Handler = (request: Request) => Promise<Response>;
+
+const SECRET = "accounting-test-secret-0123456789-abcdef";
+const MONEY_INPUT = { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "" };
+
+/** A browser-like device (keeps cookies unless `cookieless`) behind one IP. */
+function device(ip: string, { cookieless = false } = {}) {
+  const jar = new Map<string, string>();
+  const request = (body: unknown, accept?: string) => new Request("http://localhost/api", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "cf-connecting-ip": ip,
+      cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "),
+      ...(accept ? { accept } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  const keep = (response: Response) => {
+    if (cookieless) return;
+    for (const header of response.headers.getSetCookie()) {
+      const [pair] = header.split(";");
+      const index = pair!.indexOf("=");
+      jar.set(pair!.slice(0, index), pair!.slice(index + 1));
+    }
+  };
+  const call = async (handler: Handler, body: unknown) => {
+    const response = await handler(request(body));
+    keep(response);
+    return { status: response.status, data: (await response.json()) as Record<string, any>, headers: response.headers };
+  };
+  /** NDJSON, and never POSTs the commit: the client that skips /api/commit. */
+  const stream = async (handler: Handler, body: unknown) => {
+    const response = await handler(request(body, "application/x-ndjson"));
+    keep(response);
+    const text = await response.text();
+    if (!response.headers.get("content-type")?.includes("ndjson")) return { status: response.status, events: [JSON.parse(text)] };
+    return { status: response.status, events: text.trim().split("\n").map((line) => JSON.parse(line) as Record<string, any>) };
+  };
+  return { call, stream, jar };
+}
+
+const drawFor = async (d: ReturnType<typeof device>) => (await d.call(draw, { templateId: "self-flow", picks: [3, 30, 60] })).data.drawToken as string;
+
+/** Usage that the price table prices at about 2,800원 (Opus 5.5: 100k output tokens = $2 × 1,400). */
+const EXPENSIVE = [{ model: "claude-opus-5-5", inputTokens: 0, outputTokens: 100_000, cacheReadTokens: 0, cacheWriteTokens: 0 }];
+
+/** The mock provider, reporting `usage` as billed like the real one does. */
+function billing(usage = EXPENSIVE) {
+  const real = mockProvider.generate.bind(mockProvider);
+  return vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+    hooks?.onUsage?.(usage);
+    return real(task, attempt, feedback, hooks);
+  });
+}
+
+beforeEach(() => {
+  vi.stubEnv("STARLOG_AI", "mock");
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("STARLOG_SIGNING_SECRET", SECRET);
+  vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
+  vi.stubEnv("KRW_PER_USD", "1400");
+  resetMemoryLimiter();
+  resetDailyStore();
+  vi.spyOn(console, "info").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+});
+
+describe("server-side day counters (per client network, whatever the cookies say)", () => {
+  it("counts a streamed generation at done without /api/commit, and stops the network at its limit", async () => {
+    vi.stubEnv("BETA_IP_TEASER_PER_DAY", "2");
+    const ip = "198.51.100.10";
+    const statuses: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      const d = device(ip); // a fresh device each time: no cookie carries over
+      const drawToken = await drawFor(d);
+      const res = await d.stream(teaser, { drawToken, input: MONEY_INPUT });
+      statuses.push(res.status === 200 && res.events.at(-1)!.type === "done" ? 200 : (res.events[0]!.code === "BETA_LIMIT" ? 429 : res.status));
+    }
+    expect(statuses).toEqual([200, 200, 429]);
+    // The network is counted under an HMAC of its IP, never the IP itself.
+    const hashed = await keyedHash(`client:${ip}`, SECRET);
+    expect(await clientCount(hashed, "teaser", Date.now())).toBe(2);
+    expect(await clientCount(ip, "teaser", Date.now())).toBe(0);
+  });
+
+  it("stops a cookie-less client on the JSON path too, and full readings separately from teasers", async () => {
+    vi.stubEnv("BETA_IP_FULL_PER_DAY", "1");
+    vi.stubEnv("BETA_FULL_PER_DAY", "100");
+    const d = device("198.51.100.11", { cookieless: true });
+    const drawToken = await drawFor(d);
+    expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    const limited = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    expect(limited.status).toBe(429);
+    expect(limited.data.code).toBe("BETA_LIMIT");
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+  });
+
+  it("does not count failed generations", async () => {
+    vi.stubEnv("BETA_IP_TEASER_PER_DAY", "1");
+    const d = device("198.51.100.12", { cookieless: true });
+    const drawToken = await drawFor(d);
+    vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(502);
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(429);
+  });
+
+  it("shares one counter across an IPv6 /64", async () => {
+    vi.stubEnv("BETA_IP_TEASER_PER_DAY", "1");
+    const first = device("2001:db8:1:2::a", { cookieless: true });
+    const drawToken = await drawFor(first);
+    expect((await first.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    const sameNet = device("2001:0db8:0001:0002:ffff:1:2:3", { cookieless: true });
+    expect((await sameNet.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(429);
+    const otherNet = device("2001:db8:1:3::a", { cookieless: true });
+    expect((await otherNet.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+  });
+
+  it("counts the daily card's generations per network", async () => {
+    vi.stubEnv("BETA_IP_DAILY_PER_DAY", "1");
+    expect((await device("198.51.100.13").call(daily, {})).status).toBe(200);
+    const next = await device("198.51.100.13").call(daily, {});
+    expect(next.status).toBe(429);
+    expect(next.data.card).toBeDefined();
+    expect(next.headers.getSetCookie().filter((c) => c.startsWith("sl_daily=")).length).toBe(1);
+  });
+
+  it("leaves the owner out of the network counters", async () => {
+    vi.stubEnv("BETA_IP_TEASER_PER_DAY", "1");
+    const boss = device("198.51.100.14");
+    expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
+    const drawToken = await drawFor(boss);
+    for (let i = 0; i < 3; i++) expect((await boss.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+  });
+});
+
+describe("global daily spend cap", () => {
+  it("adds the billed usage of every call and answers 503 to new generations, owner included, once over budget", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "5000");
+    billing();
+    const d = device("198.51.100.20");
+    const drawToken = await drawFor(d);
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect(Math.round(await spentTodayKrw(Date.now()))).toBe(2800);
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect(Math.round(await spentTodayKrw(Date.now()))).toBe(5600);
+    const over = await d.call(teaser, { drawToken, input: MONEY_INPUT });
+    expect(over.status).toBe(503);
+    expect(over.data.code).toBe("AI_UNAVAILABLE");
+    expect((await d.call(sajuTeaser, { birth: DEFAULT_SAJU_FORM })).status).toBe(503);
+
+    const boss = device("198.51.100.21");
+    await boss.call(owner, { code: "owner-code-for-tests-0001" });
+    const bossDraw = await drawFor(boss);
+    expect((await boss.call(teaser, { drawToken: bossDraw, input: MONEY_INPUT })).status).toBe(503);
+  });
+
+  it("counts what a failed generation billed", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "100000");
+    const real = mockProvider.generate.bind(mockProvider);
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+      hooks?.onUsage?.(EXPENSIVE);
+      const result = await real(task, attempt, feedback, hooks);
+      return { ...result, data: { ...(result.data as object), firstCard: { heading: "h", body: "짧아요" } } as never };
+    });
+    const d = device("198.51.100.22");
+    const drawToken = await drawFor(d);
+    const res = await d.stream(teaser, { drawToken, input: MONEY_INPUT });
+    expect(res.events.at(-1)).toMatchObject({ type: "error", body: { code: "QUALITY" } });
+    expect(Math.round(await spentTodayKrw(Date.now()))).toBe(5600); // both attempts
+  });
+
+  it("serves a stored daily fortune over budget, but generates no new one", async () => {
+    const d = device("198.51.100.23");
+    expect((await d.call(daily, {})).status).toBe(200);
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
+    expect((await d.call(daily, {})).status).toBe(200);
+    expect((await device("198.51.100.24").call(daily, {})).status).toBe(503);
+  });
+});
+
+describe("follow-ups per chapter, counted server-side", () => {
+  it("does not reset the chapter cap when an older chapter token is sent again", async () => {
+    vi.stubEnv("BETA_FOLLOWUPS_PER_CHAPTER", "2");
+    const d = device("198.51.100.30");
+    const drawToken = await drawFor(d);
+    const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    const first = r.data.chapterToken as string;
+    const one = await d.call(followup, { chapterToken: first, reading: r.data.reading, question: "지출은 어떻게 줄일까요?" });
+    expect(one.data.remaining).toBe(1);
+    const two = await d.call(followup, { chapterToken: one.data.chapterToken, reading: r.data.reading, question: "이번 주 안에 할 일은요?" });
+    expect(two.data.remaining).toBe(0);
+    const replay = await d.call(followup, { chapterToken: first, reading: r.data.reading, question: "처음 토큰으로 한 번 더요?" });
+    expect(replay.status).toBe(429);
+    expect(replay.data).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
+  });
+});
+
+describe("client network key", () => {
+  it.each([
+    ["203.0.113.9", "203.0.113.9"],
+    ["2001:db8:1:2::a", "2001:db8:1:2::/64"],
+    ["2001:0DB8:0001:0002:ffff:1:2:3", "2001:db8:1:2::/64"],
+    ["[2001:db8::1]", "2001:db8:0:0::/64"],
+    ["fe80::1%eth0", "fe80:0:0:0::/64"],
+    ["::ffff:192.0.2.5", "192.0.2.5"],
+    ["2001:db8:1:2::192.0.2.5", "2001:db8:1:2::/64"],
+    ["::1", "0:0:0:0::/64"],
+    ["not-an-ip", "not-an-ip"],
+  ])("groups %s as %s", (ip, group) => {
+    expect(ipGroup(ip)).toBe(group);
+  });
+
+  it("keys requests by that group", () => {
+    const req = (ip: string) => new Request("http://localhost/api", { headers: { "cf-connecting-ip": ip } });
+    expect(clientKey(req("2001:db8:1:2::a"))).toBe(clientKey(req("2001:db8:1:2:9:9:9:9")));
+    expect(clientKey(req("2001:db8:1:2::a"))).not.toBe(clientKey(req("2001:db8:1:3::a")));
+    expect(clientKey(new Request("http://localhost/api"))).toBe("local");
+  });
+});

@@ -12,6 +12,7 @@ import { DEFAULT_REVERSAL_RATE, TEMPLATES, computeChart, createDeck, pickCards }
 import { expect, test } from "vitest";
 import { anthropicProvider } from "@/lib/ai/anthropic";
 import { EFFORTS, KIND_ENV, MODELS, generationSetting } from "@/lib/ai/config";
+import { usdOf } from "@/lib/ai/cost";
 import { generateDaily, generateSajuReading, generateSajuTeaser, generateTarotReading, generateTarotTeaser } from "@/lib/ai/generate";
 import { buildFactSet, type SajuProfile } from "@/lib/ai/prompts/saju";
 import { buildTarotContext, type TarotContext } from "@/lib/ai/prompts/tarot";
@@ -23,15 +24,6 @@ import { LOVE_STATUS, WORK_STATUS } from "@/lib/api/inputs";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { dailyCard, dailyLuckyNumber } from "@/lib/security/drawToken";
 
-/** USD per million tokens (list prices; cache write = 5-minute TTL). Unknown models priced as Opus 5.5. */
-const PRICES: Record<string, { input: number; output: number; cacheWrite: number; cacheRead: number }> = {
-  "claude-opus-5-5": { input: 4, output: 20, cacheWrite: 5, cacheRead: 0.2 },
-  "claude-sonnet-5-5": { input: 2, output: 10, cacheWrite: 2.5, cacheRead: 0.2 },
-  // server-side fallback targets
-  "claude-sonnet-5": { input: 2, output: 10, cacheWrite: 2.5, cacheRead: 0.2 },
-  "claude-opus-5": { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
-  "claude-opus-4-8": { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
-};
 const krwFromEnv = Number(process.env.KRW_PER_USD);
 const KRW_PER_USD = Number.isFinite(krwFromEnv) && krwFromEnv > 0 ? krwFromEnv : 1400;
 const RUNS = Math.min(10, Math.max(1, Math.trunc(Number(process.env.SMOKE_RUNS ?? 1)) || 1));
@@ -62,11 +54,6 @@ interface Row {
   krw: number;
   seconds: number;
 }
-
-const usdOf = (usage: Usage[]) => usage.reduce((sum, u) => {
-  const p = PRICES[u.model] ?? PRICES["claude-opus-5-5"]!;
-  return sum + (u.inputTokens * p.input + u.outputTokens * p.output + u.cacheWriteTokens * p.cacheWrite + u.cacheReadTokens * p.cacheRead) / 1e6;
-}, 0);
 
 /** Wraps the real provider: counts attempts, keeps each attempt's violations and every usage entry. */
 function recording(real: ReadingProvider, validate: (draft: never) => string[]) {

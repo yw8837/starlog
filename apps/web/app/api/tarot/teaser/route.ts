@@ -18,6 +18,6 @@ export async function POST(request: Request): Promise<Response> {
 
   return respondGeneration(request, async (hooks) => {
     const teaser = (await generateTarotTeaser(gate.provider, parsed.ctx, hooks)).data;
-    return { body: teaser, cookies: await spendCookies(gate, quota, "teaser") };
+    return { body: teaser, cookies: await spendCookies(gate, quota, "teaser"), spend: "teaser" };
   }, { gate });
 }

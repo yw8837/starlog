@@ -85,7 +85,9 @@ export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(a
           const name = error instanceof Anthropic.APIError ? `${kind}:${error.status ?? "-"}` : kind;
           throw new GenerationError("UPSTREAM", [name]);
         }
-        usage.push(...usageOf(message));
+        const billed = usageOf(message);
+        usage.push(...billed);
+        hooks.onUsage?.(billed); // billed even if the draft below is refused, cut off or malformed
         // Branch on stop_reason before reading content (a refusal can come with empty or partial content).
         if (message.stop_reason === "refusal") throw new GenerationError("REFUSED");
         if (message.stop_reason === "max_tokens") {

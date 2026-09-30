@@ -6,7 +6,7 @@ import { issueChapter } from "@/lib/security/chapterToken";
 
 /**
  * POST {birth, loveStatus?, workStatus?, concern?} → {reading, chapterToken}: the paid prologue (the
- * seven SAJU_PROLOGUE_SECTIONS headings, the observation, story, follow-up suggestions). Spends one
+ * seven SAJU_PROLOGUE_SECTIONS headings, the observation, follow-up suggestions). Spends one
  * full unlock only after a validated generation. Streams NDJSON progress with
  * `Accept: application/x-ndjson`.
  */
@@ -23,6 +23,6 @@ export async function POST(request: Request): Promise<Response> {
   return respondGeneration(request, async (hooks) => {
     const reading = (await generateSajuReading(gate.provider, parsed.facts, hooks)).data;
     const chapterToken = await issueChapter({ kind: "saju", birth: parsed.body.birth, profile: parsed.profile }, reading, [], gate.secret, gate.now);
-    return { body: { reading, chapterToken }, cookies: await spendCookies(gate, quota, "full") };
+    return { body: { reading, chapterToken }, cookies: await spendCookies(gate, quota, "full"), spend: "full" };
   }, { gate });
 }

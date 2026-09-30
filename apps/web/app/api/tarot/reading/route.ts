@@ -25,6 +25,6 @@ export async function POST(request: Request): Promise<Response> {
       { kind: "tarot", templateId: parsed.draw.templateId, input: parsed.input, cards: parsed.draw.cards.map((c) => [c.cardId, c.orientation]) },
       reading, [], gate.secret, gate.now,
     );
-    return { body: { reading, chapterToken }, cookies: await spendCookies(gate, quota, "full") };
+    return { body: { reading, chapterToken }, cookies: await spendCookies(gate, quota, "full"), spend: "full" };
   }, { gate });
 }

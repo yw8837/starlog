@@ -107,6 +107,11 @@ export async function safeEqual(a: string, b: string, secret: string): Promise<b
   return diff === 0;
 }
 
+/** HMAC-SHA256 of `text` under the secret, base64url: a stable pseudonym that cannot be reversed without the secret. */
+export async function keyedHash(text: string, secret: string): Promise<string> {
+  return toBase64Url(new Uint8Array(await crypto.subtle.sign("HMAC", await hmacKey(secret), encoder.encode(text))));
+}
+
 /** URL-safe random id from `crypto.getRandomValues`. */
 export function randomId(bytes = 16): string {
   return toBase64Url(crypto.getRandomValues(new Uint8Array(bytes)));

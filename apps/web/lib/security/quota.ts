@@ -26,6 +26,29 @@ function envInt(value: string | undefined, fallback: number): number {
   return value !== undefined && value.trim() !== "" && Number.isInteger(n) && n >= 0 ? n : fallback;
 }
 
+/**
+ * Server-side day limits per client network (HMAC of the IP, IPv6 by /64), counted in KV whatever
+ * the cookies say. Generous on purpose: many phones share one carrier IP (CGNAT). They bound what a
+ * cookie-less script can spend; the device cookie stays the everyday limit.
+ */
+export interface NetworkLimits {
+  full: number;
+  teaser: number;
+  followup: number;
+  daily: number;
+}
+
+const DEFAULT_NETWORK_LIMITS: NetworkLimits = { full: 10, teaser: 40, followup: 60, daily: 20 };
+
+export function ipLimits(env: NodeJS.ProcessEnv = process.env): NetworkLimits {
+  return {
+    full: envInt(env.BETA_IP_FULL_PER_DAY, DEFAULT_NETWORK_LIMITS.full),
+    teaser: envInt(env.BETA_IP_TEASER_PER_DAY, DEFAULT_NETWORK_LIMITS.teaser),
+    followup: envInt(env.BETA_IP_FOLLOWUPS_PER_DAY, DEFAULT_NETWORK_LIMITS.followup),
+    daily: envInt(env.BETA_IP_DAILY_PER_DAY, DEFAULT_NETWORK_LIMITS.daily),
+  };
+}
+
 export function quotaLimits(env: NodeJS.ProcessEnv = process.env): QuotaLimits {
   return {
     full: envInt(env.BETA_FULL_PER_DAY, DEFAULT_LIMITS.full),

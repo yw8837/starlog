@@ -185,7 +185,7 @@ describe("NDJSON streaming", () => {
 });
 
 describe("respondGeneration timing", () => {
-  const gate = { secret: "test-secret-0123456789-0123456789-abcdef", provider: mockProvider, owner: false, now: Date.now(), cookies: {} };
+  const gate = { secret: "test-secret-0123456789-0123456789-abcdef", provider: mockProvider, owner: false, now: Date.now(), cookies: {}, client: "test-client" };
   const ndjson = (signal?: AbortSignal) => new Request("http://localhost/api", { method: "POST", headers: { accept: "application/x-ndjson" }, ...(signal ? { signal } : {}) });
   const eventsOf = async (response: Response) => (await response.text()).trim().split("\n").map((line) => JSON.parse(line) as Event);
 

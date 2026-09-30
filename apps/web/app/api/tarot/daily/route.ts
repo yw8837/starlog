@@ -2,7 +2,7 @@ import { generateDaily } from "@/lib/ai/generate";
 import { buildTarotContext } from "@/lib/ai/prompts/tarot";
 import type { DailyReading } from "@/lib/ai/schemas";
 import { getOrCreateDailyResult, readDailyResult } from "@/lib/api/dailyStore";
-import { errorResponse, openGate, readJson, serializeCookie, type CookieSpec } from "@/lib/api/http";
+import { checkServerLimits, errorResponse, openGate, readJson, serializeCookie, type CookieSpec } from "@/lib/api/http";
 import { respondGeneration } from "@/lib/api/stream";
 import { DAILY_COOKIE, dailyCookie, readDaily, type DailyState } from "@/lib/security/dailyCookie";
 import { dailyCard, dailyLuckyNumber } from "@/lib/security/drawToken";
@@ -33,8 +33,14 @@ export async function POST(request: Request): Promise<Response> {
     return respondGeneration(request, async () => ({ body: stored, cookies: [] }), { gate, startCookies: [deviceCookie] });
   }
 
+  const card = { cardId: state.cardId, orientation: state.orientation };
   if (!gate.owner && state.gen >= quotaLimits().daily) {
-    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), card: { cardId: state.cardId, orientation: state.orientation } }, [serializeCookie(deviceCookie)]);
+    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), card }, [serializeCookie(deviceCookie)]);
+  }
+  const limited = await checkServerLimits(gate, "daily", { card });
+  if (limited) {
+    limited.headers.append("Set-Cookie", serializeCookie(deviceCookie));
+    return limited;
   }
 
   const ctx = buildTarotContext("daily", [{ cardId: state.cardId, orientation: state.orientation, position: "오늘의 한 장", slot: 0 }], null);
@@ -50,7 +56,8 @@ export async function POST(request: Request): Promise<Response> {
         tip: data.tip.trim(),
       };
     });
-    return { body: result.reading, cookies: result.generated ? [await cookieOf({ ...state, gen: state.gen + 1 })] : [] };
+    if (!result.generated) return { body: result.reading, cookies: [] };
+    return { body: result.reading, cookies: [await cookieOf({ ...state, gen: state.gen + 1 })], spend: "daily" };
   }, { gate, startCookies: [deviceCookie] });
 }
 

@@ -86,6 +86,15 @@ describe("anthropic provider response handling (fake SDK)", () => {
     await expect(anthropicProvider("key", sdk).generate(task(), 1)).rejects.toMatchObject({ code: "REFUSED" });
   });
 
+  it("reports billed usage through onUsage for every call, refused and cut-off ones included", async () => {
+    const billed: string[] = [];
+    const onUsage = (usage: Array<{ model: string }>) => billed.push(...usage.map((u) => u.model));
+    await anthropicProvider("key", fake([message("refusal", null)])).generate(task(), 1, undefined, { onUsage }).catch(() => {});
+    expect(billed).toHaveLength(1);
+    await anthropicProvider("key", fake([message("max_tokens", "{"), message("max_tokens", "{")])).generate(task(), 1, undefined, { onUsage }).catch(() => {});
+    expect(billed).toHaveLength(3);
+  });
+
   it("retries once with twice the cap on max_tokens, and a regeneration keeps the raised cap", async () => {
     const t = task();
     const sdk = fake([message("max_tokens", '{"kind":"cla'), message("end_turn", ANSWER), message("end_turn", ANSWER)]);

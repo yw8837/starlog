@@ -8,9 +8,9 @@ import { canonicalJson, sha256, signToken, verifyToken, type SignedPayload } fro
 /**
  * A chapter token travels with every opened reading. It carries what follow-ups need (the draw or
  * the birth input, the follow-up turns so far) and a digest of the reading, so the client can send
- * the reading back without being able to rewrite it. Stateless: the per-chapter cap counts turns, and
- * the token expires 7 days after the reading (follow-up turns keep the original expiry), which bounds
- * how long an old token can be replayed.
+ * the reading back without being able to rewrite it. The token expires 7 days after the reading
+ * (follow-up turns keep the original expiry). The per-chapter cap is also counted server-side under
+ * the chapter's id (spend.ts), so replaying an older token with fewer turns does not reset it.
  */
 
 export const CHAPTER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -45,9 +45,10 @@ export async function issueChapter(
 /** The chapter behind a token, or null when the token is forged, expired or the reading was changed. */
 export async function openChapter(
   token: unknown, reading: unknown, secret: string, now: number,
-): Promise<{ ctx: ChapterContext; turns: FollowUpTurn[]; exp: number } | null> {
+): Promise<{ id: string; ctx: ChapterContext; turns: FollowUpTurn[]; exp: number } | null> {
   const p = await verifyToken<ChapterPayload>(token, "chapter", secret, now);
   if (!p || p.v !== 1 || !p.ctx || !Array.isArray(p.turns) || typeof p.exp !== "number") return null;
   if ((await readingDigest(reading)) !== p.h) return null;
-  return { ctx: p.ctx, turns: p.turns, exp: p.exp };
+  // Every token of one chapter shares the reading digest and the original expiry.
+  return { id: `${p.exp}.${p.h}`, ctx: p.ctx, turns: p.turns, exp: p.exp };
 }

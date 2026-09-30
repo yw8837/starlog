@@ -3,10 +3,11 @@ import { aiConfigProblems } from "@/lib/ai/config";
 import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/provider";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import {
-  QUOTA_COOKIE, QUOTA_COOKIE_MAX_AGE, hasQuota, nextKstMidnight, quotaLimits, readQuota, spendQuota, type QuotaKind, type QuotaState,
+  QUOTA_COOKIE, QUOTA_COOKIE_MAX_AGE, hasQuota, ipLimits, nextKstMidnight, quotaLimits, readQuota, spendQuota, type QuotaKind, type QuotaState,
 } from "@/lib/security/quota";
 import { rateLimit } from "@/lib/security/rateLimit";
-import { signingSecret } from "@/lib/security/sign";
+import { keyedHash, signingSecret } from "@/lib/security/sign";
+import { clientCount, overDailyBudget, type SpendKind } from "./spend";
 
 /**
  * Route handler plumbing: JSON bodies with a size cap, error codes, cookies, the client key for the
@@ -138,10 +139,32 @@ export function setCookie(name: string, value: string, maxAgeSeconds: number, en
   return `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; SameSite=Lax${secure}`;
 }
 
-/** The rate-limit key: the client IP from Cloudflare (never logged). */
+/**
+ * The network a client IP stands for: IPv4 as is, IPv6 by its /64 prefix. One host usually gets a
+ * whole /64, so keying on the full IPv6 address would give it a fresh bucket per request.
+ */
+export function ipGroup(ip: string): string {
+  const address = ip.trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/%.*$/, "");
+  if (!address.includes(":")) return address;
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(address);
+  if (mapped) return mapped[1]!;
+  const halves = address.split("::");
+  if (halves.length > 2) return address;
+  // An embedded IPv4 tail (x:x::1.2.3.4) takes two hextets; only the first four matter here.
+  const parts = (text: string | undefined) => (text ? text.split(":").flatMap((p) => (p.includes(".") ? ["0", "0"] : [p])) : []);
+  const head = parts(halves[0]);
+  const tail = parts(halves[1]);
+  const missing = 8 - head.length - tail.length;
+  if (halves.length === 1 ? head.length !== 8 : missing < 1) return address;
+  const hextets = [...head, ...Array<string>(halves.length === 2 ? missing : 0).fill("0"), ...tail];
+  if (!hextets.every((h) => /^[0-9a-f]{1,4}$/.test(h))) return address;
+  return `${hextets.slice(0, 4).map((h) => parseInt(h, 16).toString(16)).join(":")}::/64`;
+}
+
+/** The rate-limit key: the client's network (ipGroup) from Cloudflare's client IP; never logged. */
 export function clientKey(request: Request): string {
   const ip = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-forwarded-for")?.split(",")[0];
-  return ip?.trim() || "local";
+  return ip?.trim() ? ipGroup(ip) : "local";
 }
 
 export interface Gate {
@@ -150,6 +173,8 @@ export interface Gate {
   owner: boolean;
   now: number;
   cookies: Record<string, string>;
+  /** the client's network as an HMAC under the signing secret: the key of the server-side day counters (spend.ts) */
+  client: string;
 }
 
 let loggedConfigProblems = false;
@@ -171,8 +196,9 @@ export async function openGate(request: Request): Promise<Gate | Response> {
   const now = Date.now();
   const cookies = parseCookies(request);
   const owner = await isOwner(cookies[OWNER_COOKIE], secret, now);
-  if (!(await rateLimit(owner ? "OWNER_GEN_LIMITER" : "GEN_LIMITER", clientKey(request), now))) return errorResponse("RATE_LIMIT");
-  return { secret, provider, owner, now, cookies };
+  const network = clientKey(request);
+  if (!(await rateLimit(owner ? "OWNER_GEN_LIMITER" : "GEN_LIMITER", network, now))) return errorResponse("RATE_LIMIT");
+  return { secret, provider, owner, now, cookies, client: await keyedHash(`client:${network}`, secret) };
 }
 
 /** The full-reading limiter (the expensive calls), on top of the gate's limiter. Owners get 5x. */
@@ -181,8 +207,26 @@ export async function fullReadingLimit(request: Request, gate: Gate): Promise<Re
   return ok ? null : errorResponse("RATE_LIMIT");
 }
 
-/** Today's counters, or the 429 when `kind` is used up (the owner pass skips it). */
+/**
+ * The server's own limits before a new generation: 503 once the day's estimated spend passes
+ * BETA_DAILY_BUDGET_KRW (owners too), and 429 once this client's network has used up `kind` today
+ * (owners skip it). Both are counted server-side at `done` (spend.ts), whatever the cookies say.
+ */
+export async function checkServerLimits(gate: Gate, kind: SpendKind, extra: Record<string, unknown> = {}): Promise<Response | null> {
+  if (await overDailyBudget(gate.now)) return errorResponse("AI_UNAVAILABLE");
+  if (!gate.owner && (await clientCount(gate.client, kind, gate.now)) >= ipLimits()[kind]) {
+    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra });
+  }
+  return null;
+}
+
+/**
+ * Today's cookie counters, or the error when a new `kind` generation may not start: the server
+ * limits (checkServerLimits), then this device's cookie quota (the owner pass skips both counters).
+ */
 export async function checkQuota(gate: Gate, kind: QuotaKind, extra: Record<string, unknown> = {}): Promise<QuotaState | Response> {
+  const limited = await checkServerLimits(gate, kind, extra);
+  if (limited) return limited;
   const quota = await readQuota(gate.cookies[QUOTA_COOKIE], gate.secret, gate.now);
   if (!gate.owner && !hasQuota(quota, kind, quotaLimits())) return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra });
   return quota;
