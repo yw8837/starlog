@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DemoNotice } from "@/components/layout/DemoNotice";
 import { Footer } from "@/components/layout/Footer";
 import { NightSky } from "@/components/sky/NightSky";
 import { TAROT_SAMPLE, WALLET_FIXTURE } from "@/lib/fixtures";
@@ -13,6 +14,7 @@ export default async function TarotResultPage({ searchParams }: PageProps<"/taro
     <div className="page-shell">
       <NightSky fixed moon={false} />
       <main className="page-col page-wide">
+        <DemoNotice />
         <FreeResult
           fallback={{ question, template, input: { conditions: input.conditions, note: input.note } }}
           cards={cards}

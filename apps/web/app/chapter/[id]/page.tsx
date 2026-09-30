@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { DemoNotice } from "@/components/layout/DemoNotice";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
@@ -31,6 +32,7 @@ export default async function ChapterPage({ params, searchParams }: PageProps<"/
     <div className="page-shell with-tabbar">
       <NightSky fixed moon={false} />
       <main className="page-col page-wide">
+        <DemoNotice />
         {chapter.kind === "saju" ? (
           <SajuChapterView sample={SAJU_SAMPLE} followUps={SAJU_FOLLOW_UPS} chapterLabel={chapter.label} generate={generate} />
         ) : (

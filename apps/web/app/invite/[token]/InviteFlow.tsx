@@ -6,6 +6,7 @@ import { CardFan } from "@/components/tarot/CardFan";
 import { Paper } from "@/components/tarot/Paper";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
+import { DemoNotice } from "@/components/layout/DemoNotice";
 import { Button } from "@/components/ui/Button";
 import { SpeechBubble } from "@/components/ui/SpeechBubble";
 import { SITE } from "@/lib/config";
@@ -138,6 +139,7 @@ export function InviteFlow({ invite, instant }: InviteFlowProps) {
 
       {phase === "result" ? (
         <div className={s.result}>
+          <DemoNotice />
           <div className={s.reveal}>
             <TarotCard cardId={card.cardId} orientation={card.orientation} faceUp={faceUp} size="lg" className={s.revealCard} label={`${card.name} 카드`} />
           </div>
