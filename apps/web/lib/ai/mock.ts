@@ -1,8 +1,10 @@
 import "server-only";
 import type { KbCard, TopicAngle } from "@/lib/kb";
+import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import type { SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, WHEN_KO, cardLabel, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import type { GenerationTask, ReadingProvider } from "./provider";
-import type { DailyDraft, FollowUpAnswer, TarotReading, TarotTeaserDraft } from "./schemas";
+import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
 
 /**
  * Deterministic readings without a model, for tests, key-less local dev and e2e (STARLOG_AI=mock).
@@ -196,6 +198,144 @@ export function mockTarotFollowUp(ctx: TarotContext): FollowUpAnswer {
       `이 자리에서는 ${first.kb.core.oneLine[first.orientation]}로 읽었어요.`,
       "결론은 그대로 두고, 오늘 할 수 있는 크기로만 나눠서 해 보세요.",
       actionOf(first),
+    ].join(" "),
+  };
+}
+
+// ---- saju ----
+
+const joinList = (items: string[]) => items.join(", ");
+/** Particle by the Hangul before any "(漢字)" suffix: josa("병화(丙火)", "은", "는"). */
+const bare = (word: string) => word.replace(/\([^)]*\)$/, "");
+const josa = (word: string, withFinal: string, withoutFinal: string) => `${word}${hasFinal(bare(word)) ? withFinal : withoutFinal}`;
+/** 로/으로 (ㄹ-final words take 로). */
+const ro = (word: string) => {
+  const code = bare(word).charCodeAt(bare(word).length - 1) - 0xac00;
+  return `${word}${hasFinal(bare(word)) && code % 28 !== 8 ? "으로" : "로"}`;
+};
+
+export function mockSajuTeaser(f: SajuFactSet): SajuTeaserDraft {
+  const dm = f.dayMaster;
+  const month = f.pillars.find((p) => p.pillar.includes("월주"))!;
+  const counts = Object.entries(f.elements.counts).map(([e, n]) => `${e} ${n}`).join(", ");
+  return {
+    title: dm.image,
+    summary: [
+      `일간은 ${dm.display}, 명리에서는 ${dm.image}에 비유하는 글자예요.`,
+      f.season ? `${f.season.text}에 태어났어요.` : "",
+      `${f.elements.basis}로 세면 ${counts}이고, 가장 많은 기운은 ${joinList(f.elements.most)}개예요.`,
+      f.elements.missing.length ? `겉에 한 글자도 없는 기운도 있어요(${f.elements.missing.join("·")}).` : "",
+      `태어난 달의 지지는 ${month.branch.display}, 십성으로는 ${month.branch.mainTenGod} 자리예요.`,
+      "맡은 일을 내 방식으로 정리해 온 편이라면 이 구조와 맞물리고, 정해진 틀을 따르는 쪽이 늘 편했다면 이 부분은 덜 맞는 풀이예요.",
+      f.input.timeKnown ? "" : "태어난 시를 몰라 시주 없이 여섯 글자로 읽었어요.",
+    ].filter(Boolean).join(" "),
+  };
+}
+
+export function mockSajuReading(f: SajuFactSet): SajuReading {
+  const dm = f.dayMaster;
+  const day = f.pillars.find((p) => p.pillar.includes("일주"))!;
+  const month = f.pillars.find((p) => p.pillar.includes("월주"))!;
+  const others = f.pillars.filter((p) => p !== day);
+  const counts = Object.entries(f.elements.counts).map(([e, n]) => `${e} ${n}`).join(", ");
+  const relations = f.relations.length
+    ? `원국 안에는 ${f.relations.map((r) => `${r.members.join("와 ")} 사이의 ${r.type}`).join(", ")} 관계가 있어요. 이 풀이에서는 사건의 신호로 읽지 않고, 관계가 있다는 사실만 적어 둬요.`
+    : "원국 안에서 서로 묶이거나 부딪히는 지지 관계는 따로 보이지 않아요.";
+  const luck = f.luck;
+  const current = luck?.current;
+  const luckText = current
+    ? [
+      `대운은 10년 단위로 바뀌는 흐름이고, 이 명식에서는 ${luck.direction}이에요. ${luck.start}.`,
+      `지금은 ${current.from}부터 ${current.to}까지 이어지는 ${current.ko}(${current.gz}) 대운이에요.`,
+      `천간은 ${current.stemTenGod}, 지지의 대표 글자는 ${josa(current.branchMainTenGod, "이에요", "예요")}. ${current.halves}.`,
+      current.relationsToNatal.length ? `원국과는 ${current.relationsToNatal.map((r) => r.type).join(", ")} 관계가 있어요.` : "",
+    ].join(" ")
+    : luck
+      ? `대운은 ${luck.direction}이고, ${luck.start}. 지금은 첫 대운이 시작되기 전의 시기로 읽어요.`
+      : "태어난 시각에 따라 월주가 달라질 수 있어 대운은 계산하지 않았어요.";
+  const annual = f.annual;
+  const annualText = `${annual.year}년의 세운은 ${ro(`${annual.ko}(${annual.gz})`)}, 천간은 ${annual.stemTenGod}, 지지의 대표 글자는 ${josa(annual.branchMainTenGod, "이에요", "예요")}.${annual.relationsToNatal.length ? ` 원국과는 ${annual.relationsToNatal.map((r) => r.type).join(", ")} 관계가 생겨요.` : ""} 명리에서는 이런 접점을 움직임이 늘어나는 국면으로 읽어요.`;
+  const experiment = "이번 주에 힘이 난 순간과 빠진 순간을 하나씩 적어 두면, 이 풀이가 내 하루에 어떻게 닿는지 스스로 가늠해 볼 수 있어요.";
+
+  const bodies = [
+    [
+      "12운성은 일간의 기운이 각 지지에서 어느 단계에 있는지를 열두 단계로 나눠 보는 방법이에요.",
+      `${f.pillars.map((p) => `${p.pillar}의 지지 ${p.branch.display}에서는 ${p.branch.twelveStage}`).join(", ")} 단계예요.`,
+      f.season ? `태어난 달은 ${josa(f.season.text, "이라", "라")}, 계절이 일간에 힘을 얼마나 싣는지(월령)도 이 자리에서 봐요.` : "",
+      "이 단계들을 묶어 강하다·약하다 라벨을 붙이는 방법은 유파마다 결과가 달라 여기서는 붙이지 않았어요.",
+      "같은 글자라도 어느 자리에 놓였는지에 따라 쓰임이 달라진다고 보는 것이 명리의 기본 관점이에요.",
+      experiment,
+    ],
+    [
+      `${f.elements.basis}로 세면 ${counts}이에요.`,
+      `가장 많은 기운은 ${joinList(f.elements.most)}개예요. 명리에서는 많은 기운을 먼저 꺼내 쓰기 쉬운 힘으로 읽어요.`,
+      f.elements.missing.length ? `겉에 한 글자도 없는 기운도 있어요(${f.elements.missing.join("·")}). 부족하다기보다 의식해서 꺼내 써야 하는 힘에 가까워요.` : "다섯 기운이 모두 겉에 한 글자 이상 보여요.",
+      f.elements.hiddenOnly.length ? `겉에는 없지만 지장간에 숨은 기운도 있어요: ${f.elements.hiddenOnly.join("; ")}.` : "",
+      "많고 적음은 좋고 나쁨이 아니라, 어떤 힘을 먼저 꺼내 쓰기 쉬운지를 보여 주는 지도에 가까워요.",
+      "시작하는 일과 마무리하는 일 가운데 어느 쪽에서 힘이 더 드는지 한 줄씩 적어 보면 이 지도가 내게 맞는지 확인할 수 있어요.",
+    ],
+    [
+      "명리에서는 십성을 일간과 다른 글자 사이의 관계로 읽어요.",
+      ...others.map((p) => `${p.pillar}의 천간 ${josa(p.stem.display, "은", "는")} ${josa(p.stem.tenGod, "이고", "고")}, 지지 ${p.branch.display}의 대표 글자는 ${josa(p.branch.mainTenGod, "이에요", "예요")}.`),
+      "같은 십성이 여러 번 나오면 그 역할이 익숙한 편으로 읽어요.",
+      "십성은 성격을 정해 두는 이름표가 아니라, 어떤 자리에서 어떤 힘을 쓰기 쉬운지를 보는 틀이에요.",
+      "역할을 스스로 정해 움직일 때 속도가 붙었다면 이 구조와 맞물리고, 누가 정해 준 역할을 따를 때 가장 편했다면 이 부분은 덜 맞는 풀이예요.",
+      "다음에 역할을 나눌 일이 생기면 내가 먼저 맡고 싶은 일을 한 줄 적어 보세요.",
+    ],
+    [
+      `태어난 날의 지지 ${day.branch.display}의 십성은 ${josa(day.branch.mainTenGod, "이고", "고")}, 12운성으로는 ${day.branch.twelveStage} 자리예요.`,
+      "명리에서는 일지를 나 자신과 가까운 관계의 자리로 봐요.",
+      relations,
+      "가까운 사람과 보낸 시간 뒤에 힘이 났다면 이 자리와 맞물리고, 혼자 있을 때만 힘이 돌아왔다면 이 부분은 덜 맞는 풀이예요.",
+      "바쁜 주일수록 가까운 사람과 짧게라도 이야기 나눌 시간을 먼저 정해 보세요.",
+      "작은 약속 하나를 지켜 본 뒤의 느낌을 적어 두면 이 자리가 내게 어떻게 닿는지 알 수 있어요.",
+    ],
+    [
+      `태어난 달의 지지 ${month.branch.display}의 ${josa(month.branch.mainTenGod, "과", "와")} 일지의 ${josa(day.branch.mainTenGod, "을", "를")} 두 장면으로 확인해 볼 수 있어요.`,
+      "첫째, 일하는 장면이에요. 서로 진도가 보이는 자리에서 오히려 속도가 붙었다면 이 구조와 맞물리고, 진도가 보이면 손이 느려졌다면 이 부분은 덜 맞아요.",
+      "둘째, 쉬는 장면이에요. 내가 고른 한두 곳을 내 순서대로 돌 때 제대로 쉬었다고 느꼈다면 이 구조와 맞물리고, 누가 짜 준 일정이 가장 편했다면 이 부분은 덜 맞아요.",
+      "이번 주에 두 장면 중 하나를 만나면 그날 저녁 힘이 났는지 빠졌는지 한 줄로 적어 두세요. 두세 번 쌓이면 이 절이 내게 맞는지 스스로 판정할 수 있어요.",
+    ],
+    [
+      luckText,
+      annualText,
+      "대운과 세운은 방향을 보는 도구이지 특정한 일이 생긴다는 약속은 아니에요.",
+      "같은 국면이라도 무엇에 힘을 쓰느냐에 따라 체감은 달라질 수 있어요.",
+      "남은 올해 동안 새로 시작한 일과 마무리한 일을 한 줄씩 적어 두면, 이 국면이 내게 어떻게 닿는지 가늠해 볼 수 있어요.",
+    ],
+    [
+      "계산 기준은 만세력마다 조금씩 다를 수 있어서, 이 풀이가 어떤 기준으로 읽었는지 먼저 밝혀 둘게요.",
+      ...f.calculation.map((line) => `${line.replace(/[.。]$/, "")}.`),
+      ...f.limits,
+      "태어난 시각을 알게 되면 내 정보에서 고칠 수 있고, 이 풀이도 그때 다시 계산할 수 있어요.",
+    ],
+  ];
+  return {
+    sections: SAJU_PROLOGUE_SECTIONS.map((heading, i) => ({ heading, body: bodies[i]!.filter(Boolean).join(" ") })),
+    story: {
+      title: `프롤로그 · ${dm.image}`,
+      body: [
+        f.season ? `당신의 이야기는 ${f.season.text}에서 시작해요.` : "당신의 이야기는 한 글자의 빛에서 시작해요.",
+        `그 한가운데에 ${josa(dm.image, "이", "가")} 있어요.`,
+        `가장 많은 기운은 ${joinList(f.elements.most)}개, 그 곁에서 다른 기운들이 저마다 자리를 지켜요.`,
+        "어떤 힘은 겉에 드러나 있고, 어떤 힘은 안쪽 깊은 곳에서 꺼내 주기를 기다려요.",
+        "계절은 바뀌고, 흐름은 10년마다 새 옷을 갈아입어요. 그 사이에서 당신은 매일 작은 선택을 이어 가요.",
+        "이 이야기의 다음 장들은 그 힘을 언제, 어떻게 꺼내 쓰는지에 관한 이야기가 될지도 몰라요.",
+      ].join(" "),
+    },
+    followUps: ["지금 대운에서 해 볼 작은 실험은요?", "오행 지도를 일상에 어떻게 쓸까요?"],
+  };
+}
+
+export function mockSajuFollowUp(f: SajuFactSet): FollowUpAnswer {
+  const dm = f.dayMaster;
+  return {
+    kind: "clarify",
+    answer: [
+      `같은 명식으로 이어서 보면, 일간 ${josa(dm.display, "을", "를")} 먼저 떠올리는 게 좋아요.`,
+      `명리에서는 이 글자를 ${dm.image}에 비유해요.`,
+      `가장 많은 기운은 ${joinList(f.elements.most)}개라, 먼저 꺼내 쓰기 쉬운 힘도 그쪽으로 읽어요.`,
+      "결론은 그대로 두고, 이번 주에 힘이 난 순간과 빠진 순간을 한 줄씩 적어 보면 이 풀이가 내게 맞는지 스스로 확인할 수 있어요.",
     ].join(" "),
   };
 }

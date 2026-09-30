@@ -1,7 +1,9 @@
 import "server-only";
 import { KB_CARDS, type KbCard } from "@/lib/kb";
+import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import type { SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, cardLabel, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
-import type { DailyDraft, FollowUpAnswer, TarotReading, TarotTeaserDraft } from "./schemas";
+import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
 
 /**
  * Post-generation checks. Each returns a list of violations in Korean (fed back to the model on the
@@ -282,5 +284,92 @@ export function validateTarotFollowUp(a: FollowUpAnswer, ctx: TarotContext): str
   const out: string[] = [];
   lengthCheck("answer", a.answer, 150, 450, out);
   commonTarotViolations(a.answer, ctx, out, { topic: false });
+  return out;
+}
+
+// ---- saju ----
+
+const SAJU_BLOCKLIST: Array<[RegExp, string]> = [
+  [/반드시|무조건|확실히|틀림없|정해져 있|100\s*%|확률|퍼센트|점수/, "단정·수치 표현(반드시·무조건·확실히·확률·점수)"],
+  [/운명(?!의\s*(수레)?바퀴)/, "'운명'"],
+  [/질병|질환|진단|수술|병(에|이)\s?(걸|나)/, "건강·질병"],
+  [/사고(가 나|가 날|를 당|수)/, "사고"],
+  [/임신|출산/, "임신·출산"],
+  [/결혼|이혼|재회/, "결혼·이혼·재회"],
+  [/투자|로또|복권|부동산|주식|코인/, "투자"],
+  [/소송|재판/, "소송"],
+  [/수명|죽음|사망|요절/, "수명·죽음"],
+  [/삼재|원진|백호|도화|역마|공망|귀인|신살/, "신살·공포 개념"],
+  [/액땜|부적|굿을/, "주술 권유"],
+  [/(좋은|나쁜|최고의|최악의)\s?(해|달|날|시기|운)|(조심|주의)해야 할 (해|달|시기)/, "시기 등급"],
+];
+
+/** School-dependent labels: allowed only in a sentence that says they were not applied. */
+const SCHOOL_LABELS = /신강|신약|용신|희신|기신|격국|종격/;
+const NEGATED = /않|없|아니|달라|붙이지|쓰지/;
+
+const STEM_OR_BRANCH = /[甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥]/g;
+/** Ten-god names at a word start (so 결정인지 never reads as 정인, 상관없이 never as 상관). */
+const TEN_GOD_PATTERNS: Array<[string, RegExp]> = ["비견", "겁재", "식신", "상관", "편재", "정재", "편관", "정관", "편인", "정인"].map((name) => [
+  name,
+  new RegExp(`(?<![가-힣])${name}${name === "상관" ? "(?!없|이 없|하지|하고|할)" : ""}`),
+]);
+const CHECKED_STAGES = ["장생", "건록", "제왕"];
+const YEAR = /(?<!\d)(1[89]\d\d|20\d\d)(?!\d)/g;
+
+/** Glyphs, ten gods, stages and years must come from the FactSet; forbidden topics never appear. */
+function sajuFactViolations(text: string, facts: SajuFactSet, out: string[]): void {
+  const glyphs = new Set(facts.allowed.glyphs);
+  const invented = [...new Set(text.match(STEM_OR_BRANCH) ?? [])].filter((g) => !glyphs.has(g));
+  if (invented.length) out.push(`명식에 없는 간지 글자가 나왔어요: ${invented.join(", ")}. <facts>에 있는 글자만 써 주세요.`);
+  const gods = new Set(facts.allowed.tenGods);
+  const strayGods = TEN_GOD_PATTERNS.filter(([name, re]) => re.test(text) && !gods.has(name)).map(([name]) => name);
+  if (strayGods.length) out.push(`명식에 없는 십성이 나왔어요: ${strayGods.join(", ")}.`);
+  const stages = new Set(facts.allowed.stages);
+  const strayStages = CHECKED_STAGES.filter((stage) => text.includes(stage) && !stages.has(stage));
+  if (strayStages.length) out.push(`명식에 없는 12운성이 나왔어요: ${strayStages.join(", ")}.`);
+  const years = new Set(facts.allowed.years);
+  const strayYears = [...new Set([...text.matchAll(YEAR)].map((m) => Number(m[1])))].filter((y) => !years.has(y));
+  if (strayYears.length) out.push(`명식에서 나오지 않은 연도가 있어요: ${strayYears.join(", ")}.`);
+  for (const [pattern, label] of SAJU_BLOCKLIST) if (pattern.test(text)) out.push(`쓰지 않는 주제·표현이 있어요: ${label}. 부정문으로도 쓰지 마세요.`);
+  if (sentences(text).some((s) => SCHOOL_LABELS.test(s) && !NEGATED.test(s))) out.push("신강·신약·용신·격국 같은 라벨을 단정했어요. 라벨은 쓰지 않았다고만 밝혀 주세요.");
+  if (!hasHangul(text)) out.push("한국어로 써 주세요.");
+}
+
+const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;
+
+export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): string[] {
+  const out: string[] = [];
+  const titleLength = charCount(d.title);
+  if (titleLength < 2 || titleLength > 16) out.push("title은 4~12자로 써 주세요.");
+  lengthCheck("summary", d.summary, 250, 400, out);
+  if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(d.summary)) out.push("태어난 시를 몰라 여섯 글자로 읽었다는 한계를 summary에 한 문장 넣어 주세요.");
+  sajuFactViolations(`${d.title}\n${d.summary}`, facts, out);
+  return out;
+}
+
+export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[] {
+  const out: string[] = [];
+  if (r.sections.length !== SAJU_PROLOGUE_SECTIONS.length) out.push(`sections는 정확히 ${SAJU_PROLOGUE_SECTIONS.length}개여야 해요.`);
+  r.sections.forEach((section, i) => {
+    const n = charCount(section.body);
+    const heading = SAJU_PROLOGUE_SECTIONS[i] ?? `${i + 1}번째 절`;
+    if (n < 150 || n > 900) out.push(`'${heading}' 절이 공백 제외 ${n}자예요. 300~550자로 써 주세요.`);
+  });
+  const total = r.sections.reduce((sum, s) => sum + charCount(s.body), 0);
+  if (total < 2500 * (1 - TOLERANCE) || total > 3500 * (1 + TOLERANCE)) out.push(`프롤로그 분량이 공백 제외 ${total}자예요. 2,500~3,500자로 맞춰 주세요.`);
+  const basis = r.sections.at(-1)?.body ?? "";
+  if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(basis)) out.push("계산 기준 절에 태어난 시를 몰라 시주 없이 읽었다는 한계를 넣어 주세요.");
+  if (!r.story.title.trim() || charCount(r.story.title) > 24) out.push("story.title은 20자 이하로 채워 주세요.");
+  lengthCheck("story.body", r.story.body, 200, 350, out);
+  if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
+  sajuFactViolations([...r.sections.map((s) => s.body), r.story.title, r.story.body, ...r.followUps].join("\n"), facts, out);
+  return out;
+}
+
+export function validateSajuFollowUp(a: FollowUpAnswer, facts: SajuFactSet): string[] {
+  const out: string[] = [];
+  lengthCheck("answer", a.answer, 150, 450, out);
+  sajuFactViolations(a.answer, facts, out);
   return out;
 }

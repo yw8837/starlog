@@ -1,15 +1,19 @@
 import "server-only";
-import { mockDaily, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
+import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { mockDaily, mockSajuFollowUp, mockSajuReading, mockSajuTeaser, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
+import { SAJU_SYSTEM, sajuFollowUpPrompt, sajuReadingPrompt, sajuTeaserPrompt, type SajuFactSet } from "./prompts/saju";
 import {
   TAROT_SYSTEM, cardLabel, dailyPrompt, tarotFollowUpPrompt, tarotHeadings, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt,
   type FollowUpTurn, type TarotContext,
 } from "./prompts/tarot";
 import { generateValidated, type ReadingProvider, type Usage } from "./provider";
 import {
-  DailyDraftSchema, FollowUpAnswerSchema, TarotReadingSchema, TarotTeaserDraftSchema,
-  type DailyDraft, type FollowUpAnswer, type TarotReading, type TarotTeaser,
+  DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema,
+  type DailyDraft, type FollowUpAnswer, type SajuReading, type SajuTeaser, type TarotReading, type TarotTeaser,
 } from "./schemas";
-import { validateDaily, validateTarotFollowUp, validateTarotReading, validateTarotTeaser } from "./validate";
+import {
+  validateDaily, validateSajuFollowUp, validateSajuReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading, validateTarotTeaser,
+} from "./validate";
 
 /**
  * One function per reading kind: prompt + schema + validator + mock, then the parts code owns
@@ -92,4 +96,47 @@ export async function generateTarotFollowUp(
     maxTokens: 8000,
     mock: () => mockTarotFollowUp(ctx),
   }, (answer) => validateTarotFollowUp(answer, ctx));
+}
+
+// ---- saju ----
+
+export async function generateSajuTeaser(provider: ReadingProvider, facts: SajuFactSet): Promise<Result<SajuTeaser>> {
+  const { data, usage } = await generateValidated(provider, {
+    name: "saju-teaser",
+    system: SAJU_SYSTEM,
+    user: sajuTeaserPrompt(facts),
+    schema: SajuTeaserDraftSchema,
+    effort: "low",
+    maxTokens: 8000,
+    mock: () => mockSajuTeaser(facts),
+  }, (draft) => validateSajuTeaser(draft, facts));
+  return { data: { title: data.title.trim(), summary: data.summary.trim(), lockedToc: [...SAJU_PROLOGUE_SECTIONS] }, usage };
+}
+
+export async function generateSajuReading(provider: ReadingProvider, facts: SajuFactSet): Promise<Result<SajuReading>> {
+  const { data, usage } = await generateValidated(provider, {
+    name: "saju-reading",
+    system: SAJU_SYSTEM,
+    user: sajuReadingPrompt(facts),
+    schema: SajuReadingSchema,
+    effort: "medium",
+    maxTokens: 16000,
+    mock: () => mockSajuReading(facts),
+  }, (reading) => validateSajuReading(reading, facts));
+  // Headings are code-owned so the locked TOC stays 1:1 with the paid sections.
+  return { data: { ...data, sections: data.sections.map((section, i) => ({ heading: SAJU_PROLOGUE_SECTIONS[i]!, body: section.body.trim() })) }, usage };
+}
+
+export async function generateSajuFollowUp(
+  provider: ReadingProvider, facts: SajuFactSet, reading: SajuReading, turns: FollowUpTurn[], question: string,
+): Promise<Result<FollowUpAnswer>> {
+  return generateValidated(provider, {
+    name: "followup",
+    system: SAJU_SYSTEM,
+    user: sajuFollowUpPrompt(facts, reading, turns, question),
+    schema: FollowUpAnswerSchema,
+    effort: "low",
+    maxTokens: 8000,
+    mock: () => mockSajuFollowUp(facts),
+  }, (answer) => validateSajuFollowUp(answer, facts));
 }
