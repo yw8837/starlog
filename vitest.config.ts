@@ -13,6 +13,7 @@ export default defineConfig({
           alias: {
             "@starlog/core": fromRoot("./packages/core/src/index.ts"),
             "@": fromRoot("./apps/web"),
+            "@content": fromRoot("./content"),
           },
         },
         test: { name: "web", include: ["apps/web/**/*.test.{ts,tsx}"], exclude: ["apps/web/e2e/**", "**/node_modules/**"], environment: "node" },
