@@ -95,7 +95,7 @@ export async function generateTarotFollowUp(
     effort: "low",
     maxTokens: 8000,
     mock: () => mockTarotFollowUp(ctx),
-  }, (answer) => validateTarotFollowUp(answer, ctx));
+  }, (answer) => validateTarotFollowUp(answer, ctx, question));
 }
 
 // ---- saju ----
@@ -138,5 +138,5 @@ export async function generateSajuFollowUp(
     effort: "low",
     maxTokens: 8000,
     mock: () => mockSajuFollowUp(facts),
-  }, (answer) => validateSajuFollowUp(answer, facts));
+  }, (answer) => validateSajuFollowUp(answer, facts, question));
 }

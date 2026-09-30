@@ -2,6 +2,7 @@ import "server-only";
 import type { z } from "zod";
 import { anthropicProvider } from "./anthropic";
 import { mockProvider } from "./mock";
+import { isSoftViolation } from "./style";
 
 /**
  * Where readings come from. `anthropic` calls Claude; `mock` builds deterministic text from the
@@ -59,8 +60,17 @@ export interface ReadingProvider {
  * `mock` when STARLOG_AI=mock, or outside production without a key; `anthropic` when a key is set;
  * null (routes answer 503 AI_UNAVAILABLE) in production without a key.
  */
+let warnedMockInProduction = false;
+
 export function selectProvider(env: NodeJS.ProcessEnv = process.env): ReadingProvider | null {
-  if (env.STARLOG_AI === "mock") return mockProvider;
+  if (env.STARLOG_AI === "mock") {
+    // Meant for e2e on a production build; on a real deployment it would hide the real key.
+    if (env.NODE_ENV === "production" && env.ANTHROPIC_API_KEY?.trim() && !warnedMockInProduction) {
+      warnedMockInProduction = true;
+      console.warn(JSON.stringify({ evt: "config.mock_in_production", note: "STARLOG_AI=mock overrides ANTHROPIC_API_KEY" }));
+    }
+    return mockProvider;
+  }
   const key = env.ANTHROPIC_API_KEY?.trim();
   if (key) return anthropicProvider(key);
   return env.NODE_ENV === "production" ? null : mockProvider;
@@ -74,7 +84,8 @@ export interface Generated<T> {
 
 /**
  * Generates, validates, and regenerates once with the violations as feedback. A second failure is
- * `QUALITY`; refusals and upstream errors are never retried here (the SDK already retried).
+ * `QUALITY`; refusals and upstream errors are never retried here (the SDK already retried). Soft
+ * (style) violations may trigger the regeneration but never fail the second draft on their own.
  */
 export async function generateValidated<T>(
   provider: ReadingProvider,
@@ -101,9 +112,10 @@ export async function generateValidated<T>(
     }
     logGeneration(task.name, provider.name, attempt, Date.now() - started, violations.length ? `violations:${violations.length}` : "ok", usage);
     if (violations.length === 0 && data !== undefined) return { data, usage, attempts: attempt };
+    if (attempt === 2 && data !== undefined && violations.every(isSoftViolation)) return { data, usage, attempts: attempt };
     feedback = violations;
   }
-  throw new GenerationError("QUALITY", feedback ?? []);
+  throw new GenerationError("QUALITY", (feedback ?? []).filter((v) => !isSoftViolation(v)));
 }
 
 function errorName(error: unknown): string {

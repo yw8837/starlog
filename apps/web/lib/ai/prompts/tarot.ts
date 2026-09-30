@@ -1,6 +1,7 @@
 import "server-only";
 import { TOPICS_BY_WHO, composeQuestion, type DrawnCard, type Orientation, type TemplateId, type TopicDef, type When, type Who } from "@starlog/core";
 import { kbCard, positionHint, topicAngles, type KbCard, type ReversedMode, type TopicAngle } from "@/lib/kb";
+import { STYLE_RULES } from "../style";
 
 /**
  * Tarot prompt building. Everything the model may use arrives as data: the template and its
@@ -94,6 +95,14 @@ export function resolveTopic(templateId: TemplateId, topicId: string, whoId?: Wh
   return null;
 }
 
+/** `word` at a word start, so 우연인 never reads as 연인 (topic drift check and KB filtering). */
+export function mentionsWord(text: string, word: string): boolean {
+  return new RegExp(`(?<![가-힣])${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`).test(text);
+}
+
+/** False when the text uses a relationship word this topic must not drift into. */
+export const onTopic = (ctx: Pick<TarotContext, "bannedWords">, text: string) => !ctx.bannedWords.some((word) => mentionsWord(text, word));
+
 /** Strips tag delimiters so user text can never close a data tag. */
 export const cleanUserText = (text: string) => text.replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
 
@@ -129,7 +138,7 @@ export function buildTarotContext(templateId: TemplateId, drawn: DrawnCard[], in
   if (angles.includes("contact")) CONTACT_WORDS.forEach((w) => allowed.add(w));
   const relational = RELATIONAL_TEMPLATES.includes(templateId);
   // Relationship spreads and the daily card may use relationship words; other topics may not drift into them.
-  const bannedWords = relational || templateId === "daily" ? [] : [...ROMANCE_WORDS, ...CONTACT_WORDS].filter((w) => !allowed.has(w) && !userText.includes(w));
+  const bannedWords = relational || templateId === "daily" ? [] : [...ROMANCE_WORDS, ...CONTACT_WORDS].filter((w) => !allowed.has(w) && !mentionsWord(userText, w));
 
   return {
     templateId,
@@ -211,7 +220,7 @@ export const TAROT_SYSTEM = `너는 스타로그의 타로 리더예요. 라이�
 - 역방향이어도 그림은 원래 그림의 사실로 묘사해요. "뒤집혀 쏟아지는 물"처럼 그림을 바꿔 말하지 않아요.
 
 # 풀이
-- 카드 절은 그림 사실 → 이 자리가 묻는 것(positionLens) → 사용자의 상황에 적용 → 한 줄 정리 순서로 써요. 해석은 "~로 읽어요", "~처럼 보여요"처럼 해석임을 드러내요.
+- 카드 절은 그림 사실 → 이 자리가 묻는 것(positionLens) → 사용자의 상황에 적용 → 한 줄 정리 순서로 써요. 해석은 "~로 읽어요"처럼 해석임을 드러내요.
 - 사용자가 고른 조건 칩은 "잘 모르겠어요"·"아직 모르겠어요"를 빼고 모두, 칩 문구를 작은따옴표로 그대로 한 번 이상 인용해 반영해요(예: '수입이 들쭉날쭉'이라고 골랐죠). 메모가 있으면 "~라고 적었죠"처럼 사용자에게 돌려 말하되 부풀리지 않아요("조용해요"를 "차단"이나 "식었다"로 바꾸지 않아요). 메모와 칩이 부딪히면 메모를 우선하고 그렇게 읽었다고 한 번 밝혀요.
 - 칩이 카드와 부딪히면 숨기지 말고 그 긴장을 말해요.
 - 입력에 없는 사건·인물·감정·과거·장면을 만들지 않아요. 꼭 필요하면 "혹시 ~라면"처럼 조건문으로 한 번만 써요.
@@ -229,8 +238,10 @@ export const TAROT_SYSTEM = `너는 스타로그의 타로 리더예요. 라이�
 - 서비스나 제작 과정 이야기(샘플, 예시, 인공지능, 모델, 결제, 가격, 앱 기능)와 입력의 필드 이름(imageryFacts, positionLens, reversedMode 같은 말)을 본문에 쓰지 않아요.
 
 # 말투
-- 따뜻하고 구체적인 해요체로 통일해요. 번역투, 과장된 수식, 이모지, 느낌표 남발을 쓰지 않아요. 2인칭 대명사는 되도록 쓰지 않고, story에서만 '당신'을 써요.
+- 따뜻하고 구체적인 해요체로 통일해요. 2인칭 대명사는 되도록 쓰지 않고, story에서만 '당신'을 써요. 느낌표를 남발하지 않아요.
 - 글자 수는 모두 공백을 뺀 글자 수예요.
+
+${STYLE_RULES}
 
 # 작업별 형식
 
@@ -295,10 +306,15 @@ function userDataBlock(ctx: TarotContext): string {
   ].join("\n");
 }
 
-/** The KB slice for one drawn card, in the orientation drawn. */
+/**
+ * The KB slice for one drawn card, in the orientation drawn. KB lines that use a word this topic
+ * bans (a few work/group lines mention 연락 or 이별) are left out, so the prompt never asks for
+ * something the validator rejects.
+ */
 export function cardBrief(card: TarotCardContext, ctx: TarotContext): Record<string, unknown> {
   const { kb, orientation } = card;
   const drawnIds = new Set(ctx.cards.map((c) => c.cardId));
+  const keep = (text: string | null | undefined) => (text && onTopic(ctx, text) ? text : null);
   const number = kb.arcana === "major" ? `${kb.roman ?? kb.number} (${kb.number})` : `${kb.number}`;
   return {
     name: kb.names.ko,
@@ -315,11 +331,11 @@ export function cardBrief(card: TarotCardContext, ctx: TarotContext): Record<str
     core: kb.core[orientation],
     oneLine: kb.core.oneLine[orientation],
     shadow: kb.core.shadow,
-    positionLens: positionHint(kb, card.position, orientation),
-    topicAngle: ctx.angles.map((angle) => kb.topics[angle][orientation]),
-    actionHints: kb.actionHints.filter((a) => a.orientation === orientation || a.orientation === "both").map((a) => a.ko),
+    positionLens: keep(positionHint(kb, card.position, orientation)),
+    topicAngle: ctx.angles.map((angle) => keep(kb.topics[angle][orientation])).filter(Boolean),
+    actionHints: kb.actionHints.filter((a) => a.orientation === orientation || a.orientation === "both").map((a) => a.ko).filter((t) => keep(t)),
     cautions: kb.cautions.map((c) => `${c.doNotClaim} → ${c.instead}`),
-    combinations: kb.combinations.filter((c) => c.with && drawnIds.has(c.with) && c.with !== kb.id).map((c) => c.ko),
+    combinations: kb.combinations.filter((c) => c.with && drawnIds.has(c.with) && c.with !== kb.id).map((c) => c.ko).filter((t) => keep(t)),
     ...(kb.court ? { courtAttitude: kb.court.asAttitude } : {}),
     ...(kb.stage ? { stage: kb.stage } : {}),
     highRisk: kb.safety.highRisk,

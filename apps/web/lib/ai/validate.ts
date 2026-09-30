@@ -2,8 +2,9 @@ import "server-only";
 import { KB_CARDS, type KbCard } from "@/lib/kb";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import type { SajuFactSet } from "./prompts/saju";
-import { UNSURE_OPTIONS, cardLabel, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
+import { UNSURE_OPTIONS, cardLabel, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
+import { aiTellViolations } from "./style";
 
 /**
  * Post-generation checks. Each returns a list of violations in Korean (fed back to the model on the
@@ -67,11 +68,34 @@ const BLOCKLIST: Array<[RegExp, string]> = [
   [/죽(게 되|을 거|는다|을 수도)|사망|수명/, "죽음·수명 예언"],
   [/임신|출산/, "임신·출산 언급"],
   [/사고(가 나|가 날|를 당)/, "사고 예언"],
-  [/(투자|주식|코인|로또|복권|대출)[^.?!]{0,20}(하세요|사세요|해 보세요|오를|벌 수|수익)/, "투자 권유"],
   [/(지금|당장)\s?(결제|구매)/, "결제 압박"],
   [/때도 있지만[^.?!]{0,40}때도/, "양면 성격 문장(바넘)"],
   [/생각보다 강(해요|한 사람)/, "무조건적 위로(바넘)"],
 ];
+
+/**
+ * Money: only direct buy/invest/borrow orders and profit promises. Advice the prompt asks for
+ * ("무리한 투자보다는 지출 점검부터", "대출 이자부터 확인", "공부에 시간을 투자") passes.
+ */
+const MONEY_ORDERS = [
+  /(투자|매수)(를|을)?\s?(하세요|해\s?보세요|하셔도|해도\s?(돼요|좋아요)|할\s?때예요|하기\s?좋은)/,
+  /(주식|코인|로또|복권|부동산|청약|펀드|종목)[^.?!]{0,12}(사세요|사\s?(보세요|두세요)|넣(어\s?보세요|으세요)|하세요|해\s?보세요|시작하기\s?좋)/,
+  /대출(을|를)?\s?(받으세요|받아\s?보세요|받아도\s?(돼요|좋아요)|받기\s?좋)/,
+];
+const MONEY_PROMISE = /(수익|돈|목돈|큰돈)(이|을)?\s?(나요|날\s?거|생겨요|생길\s?거|벌\s?수\s?있|들어와요|들어올\s?거)|(값|주가|시세)(이|가)?\s?(오를|오릅|뛸)|대박/;
+/** Contrastive or preparatory sentences ("~보다는", "~대신", "~말고", "~전에") are advice, not orders. */
+const CONTRAST = /보다는|대신|말고|전에/;
+const NON_FINANCIAL = /(시간|노력|정성|마음|에너지|공부)[^.?!]{0,8}투자/;
+
+export function moneyPushSentences(text: string): string[] {
+  return sentences(text).filter((s) => (MONEY_ORDERS.some((re) => re.test(s)) || MONEY_PROMISE.test(s)) && !CONTRAST.test(s) && !NON_FINANCIAL.test(s));
+}
+
+/** Matches of `pattern` that the user did not write themselves (their own words may be quoted back). */
+function matchesBeyondUser(pattern: RegExp, text: string, userText: string): string[] {
+  const global = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
+  return [...text.matchAll(global)].map((m) => m[0]).filter((hit) => !userText.includes(hit));
+}
 
 const OTHER_MIND = /(그 사람|상대방?|그분|걔|그 친구|그녀|그는|그가)[^.?!]{0,15}(마음|속마음|감정|생각|진심)[^.?!]{0,20}(이에요|예요|확실|분명|거예요|있어요)/;
 const OTHER_FEELS = /(그 사람|상대방?|그분|걔|그녀|그)(은|는|이|가)\s[^.?!]{0,30}(좋아해|사랑해|싫어해|그리워해|원해|후회해|관심 있어)요/;
@@ -81,7 +105,10 @@ const HEDGE = /(없|아니|알 수|확인|모르|수도|지도 몰라|일 수|�
 const ABSOLUTE_DATE = /\d{1,2}\s?월\s?\d{1,2}\s?일|[월화수목금토일]요일|\d{1,2}\s?시\s?(에|쯤|경|까지|부터)/;
 
 function blocklistViolations(text: string, userText: string, out: string[]): void {
-  for (const [pattern, label] of BLOCKLIST) if (pattern.test(text)) out.push(`금지 표현이 있어요: ${label}. 부정문으로도 쓰지 마세요.`);
+  for (const [pattern, label] of BLOCKLIST) {
+    if (matchesBeyondUser(pattern, text, userText).length) out.push(`금지 표현이 있어요: ${label}. 부정문으로도 쓰지 마세요.`);
+  }
+  if (moneyPushSentences(text).length) out.push("투자·매수·대출을 권하거나 수익을 약속하는 문장이 있어요. 흐름과 점검할 점까지만 말해 주세요.");
   for (const sentence of sentences(text)) {
     if ((OTHER_MIND.test(sentence) || OTHER_FEELS.test(sentence)) && !HEDGE.test(sentence)) {
       out.push("다른 사람의 마음이나 감정을 사실처럼 단정한 문장이 있어요. 분위기·가능성으로만 말해 주세요.");
@@ -121,7 +148,7 @@ function foreignCardViolations(text: string, drawn: KbCard[], out: string[]): vo
 
 function topicDriftViolations(text: string, drawn: KbCard[], banned: string[], out: string[]): void {
   const stripped = withoutDrawnNames(text, drawn);
-  const hits = banned.filter((word) => stripped.includes(word));
+  const hits = banned.filter((word) => mentionsWord(stripped, word));
   if (hits.length) out.push(`이 주제와 무관한 관계 어휘가 나왔어요: ${hits.join(", ")}. 고른 주제에 대해서만 써 주세요.`);
 }
 
@@ -139,13 +166,31 @@ function misdescriptionHits(text: string, card: KbCard): string[] {
   return card.imagery.misdescriptions.filter((m) => new RegExp(m.regex).test(text)).map((m) => m.wrong);
 }
 
-/** Misdescription regexes safe to run on text about several cards (they match no drawn card's own facts). */
+const legitimate = new Map<string, string>();
+
+/** A card's KB text without its misdescription list (what a reading may legitimately echo). */
+function legitimateText(card: KbCard): string {
+  let text = legitimate.get(card.id);
+  if (text === undefined) {
+    text = JSON.stringify({ ...card, imagery: { ...card.imagery, misdescriptions: [] } });
+    legitimate.set(card.id, text);
+  }
+  return text;
+}
+
+/**
+ * Misdescription regexes run on text about several cards (story, connection, follow-ups). A regex
+ * that another drawn card's own KB text matches is skipped: 검 2's woman is blindfolded, so "눈을
+ * 가린" in the story is not an invented detail of 정의.
+ */
 function sharedMisdescriptionHits(text: string, drawn: KbCard[]): string[] {
-  const factsText = drawn.flatMap((c) => c.imagery.facts.map((f) => f.ko)).join("\n");
-  return drawn.flatMap((card) => card.imagery.misdescriptions.filter((m) => {
-    const re = new RegExp(m.regex);
-    return !re.test(factsText) && re.test(text);
-  }).map((m) => m.wrong));
+  return drawn.flatMap((card) => {
+    const others = drawn.filter((c) => c.id !== card.id).map(legitimateText).join("\n");
+    return card.imagery.misdescriptions.filter((m) => {
+      const re = new RegExp(m.regex);
+      return !re.test(others) && re.test(text);
+    }).map((m) => m.wrong);
+  });
 }
 
 /** "역방향" only: 거꾸로/뒤집힌 also describe upright images (매달린 사람). */
@@ -181,11 +226,12 @@ function inputUseViolations(text: string, ctx: TarotContext, out: string[]): voi
   if (ctx.note && !mentions(text, ctx.note, 0.3)) out.push("사용자가 적은 메모가 본문에 반영되지 않았어요. '~라고 적었죠'처럼 돌려 말해 주세요.");
 }
 
-function commonTarotViolations(text: string, ctx: TarotContext, out: string[], opts: { topic: boolean } = { topic: true }): void {
+function commonTarotViolations(text: string, ctx: TarotContext, out: string[], opts: { topic: boolean; extraUserText?: string } = { topic: true }): void {
   const drawn = ctx.cards.map((c) => c.kb);
-  blocklistViolations(text, userTextOf(ctx), out);
+  const userText = `${userTextOf(ctx)} ${opts.extraUserText ?? ""}`;
+  blocklistViolations(text, userText, out);
   foreignCardViolations(text, drawn, out);
-  if (opts.topic) topicDriftViolations(text, drawn, ctx.bannedWords, out);
+  if (opts.topic) topicDriftViolations(text, drawn, ctx.bannedWords.filter((word) => !mentionsWord(userText, word)), out);
 }
 
 function cardIdentityViolations(cards: Array<{ position: string; cardId: string }>, ctx: TarotContext, out: string[]): void {
@@ -210,6 +256,7 @@ export function validateTarotTeaser(draft: TarotTeaserDraft, ctx: TarotContext):
   const usesInput = chosenChips(ctx).some((c) => mentions(body, c.value)) || (ctx.note !== "" && mentions(body, ctx.note, 0.3));
   if (hasInputs && !usesInput) out.push("첫 장 풀이에 사용자가 고른 조건이나 메모가 하나도 반영되지 않았어요.");
   commonTarotViolations([body, ...draft.cards.map((c) => c.keyword)].join("\n"), ctx, out);
+  aiTellViolations([body], out);
   return out;
 }
 
@@ -255,6 +302,7 @@ export function validateTarotReading(r: TarotReading, ctx: TarotContext): string
   inputUseViolations([paid, r.story.body].join("\n"), ctx, out);
   if (cardSubjectCount(all, ctx.cards) > 3) out.push("카드를 주어로 세운 문장('~는 ~라고 말해요')이 너무 많아요. 전체 3번 이하로 줄여 주세요.");
   commonTarotViolations(all, ctx, out);
+  aiTellViolations([paid, r.story.body], out);
   return out;
 }
 
@@ -277,36 +325,42 @@ export function validateDaily(d: DailyDraft, ctx: TarotContext): string[] {
   if (tipLength < 15 || tipLength > 100) out.push(`tip은 20~80자로 써 주세요(지금 ${tipLength}자).`);
   cardSectionViolations("body", d.body, card, out);
   commonTarotViolations([d.summary, d.body, d.areas.love, d.areas.money, d.areas.work, d.tip, d.keyword].join("\n"), ctx, out, { topic: false });
+  aiTellViolations([d.summary, d.body, d.areas.love, d.areas.money, d.areas.work, d.tip], out);
   return out;
 }
 
-export function validateTarotFollowUp(a: FollowUpAnswer, ctx: TarotContext): string[] {
+export function validateTarotFollowUp(a: FollowUpAnswer, ctx: TarotContext, question = ""): string[] {
   const out: string[] = [];
   lengthCheck("answer", a.answer, 150, 450, out);
-  commonTarotViolations(a.answer, ctx, out, { topic: false });
+  const wrong = sharedMisdescriptionHits(a.answer, ctx.cards.map((c) => c.kb));
+  if (wrong.length) out.push(`그림에 없는 묘사가 있어요: ${wrong.join(", ")}.`);
+  commonTarotViolations(a.answer, ctx, out, { topic: true, extraUserText: question });
+  aiTellViolations([a.answer], out);
   return out;
 }
 
 // ---- saju ----
 
-const SAJU_BLOCKLIST: Array<[RegExp, string]> = [
-  [/반드시|무조건|확실히|틀림없|정해져 있|100\s*%|확률|퍼센트|점수/, "단정·수치 표현(반드시·무조건·확실히·확률·점수)"],
-  [/운명(?!의\s*(수레)?바퀴)/, "'운명'"],
-  [/질병|질환|진단|수술|병(에|이)\s?(걸|나)/, "건강·질병"],
-  [/사고(가 나|가 날|를 당|수)/, "사고"],
-  [/임신|출산/, "임신·출산"],
-  [/결혼|이혼|재회/, "결혼·이혼·재회"],
-  [/투자|로또|복권|부동산|주식|코인/, "투자"],
-  [/소송|재판/, "소송"],
-  [/수명|죽음|사망|요절/, "수명·죽음"],
-  [/삼재|원진|백호|도화|역마|공망|귀인|신살/, "신살·공포 개념"],
-  [/액땜|부적|굿을/, "주술 권유"],
-  [/(좋은|나쁜|최고의|최악의)\s?(해|달|날|시기|운)|(조심|주의)해야 할 (해|달|시기)/, "시기 등급"],
+/** [pattern, label, negatable]: a negatable topic may be named in a sentence that declines it. */
+const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
+  [/반드시|무조건|확실히|틀림없|정해져 있|100\s*%|확률|퍼센트|점수/, "단정·수치 표현(반드시·무조건·확실히·확률·점수)", false],
+  [/운명(?!의\s*(수레)?바퀴)/, "'운명'", false],
+  [/질병|질환|진단|수술|병(에|이)\s?(걸|나)/, "건강·질병", true],
+  [/사고(가 나|가 날|를 당|수)/, "사고", true],
+  [/임신|출산/, "임신·출산", true],
+  [/결혼|이혼|재회/, "결혼·이혼·재회", true],
+  [/투자|로또|복권|부동산|주식|코인/, "투자", true],
+  [/소송|재판/, "소송", true],
+  [/수명|죽음|사망|요절/, "수명·죽음", true],
+  [/삼재|원진|백호|도화|역마|공망|귀인|신살/, "신살·공포 개념", true],
+  [/액땜|부적|굿을/, "주술 권유", false],
+  [/(좋은|나쁜|최고의|최악의)\s?(해|달|날|시기|운)|(조심|주의)해야 할 (해|달|시기)/, "시기 등급", false],
 ];
 
 /** School-dependent labels: allowed only in a sentence that says they were not applied. */
 const SCHOOL_LABELS = /신강|신약|용신|희신|기신|격국|종격/;
-const NEGATED = /않|없|아니|달라|붙이지|쓰지/;
+/** A sentence that declines or says something was not applied ("말하기 어려워요", "쓰지 않았어요"). */
+const NEGATED = /않|없|아니|달라|붙이지|쓰지|어려|어렵|말하지|다루지/;
 
 const STEM_OR_BRANCH = /[甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥]/g;
 /** Ten-god names at a word start (so 결정인지 never reads as 정인, 상관없이 never as 상관). */
@@ -317,8 +371,11 @@ const TEN_GOD_PATTERNS: Array<[string, RegExp]> = ["비견", "겁재", "식신",
 const CHECKED_STAGES = ["장생", "건록", "제왕"];
 const YEAR = /(?<!\d)(1[89]\d\d|20\d\d)(?!\d)/g;
 
-/** Glyphs, ten gods, stages and years must come from the FactSet; forbidden topics never appear. */
-function sajuFactViolations(text: string, facts: SajuFactSet, out: string[]): void {
+/**
+ * Glyphs, ten gods, stages and years must come from the FactSet; forbidden topics appear only in a
+ * sentence that declines them, or in the user's own words (`userText`, a follow-up question).
+ */
+function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], userText = ""): void {
   const glyphs = new Set(facts.allowed.glyphs);
   const invented = [...new Set(text.match(STEM_OR_BRANCH) ?? [])].filter((g) => !glyphs.has(g));
   if (invented.length) out.push(`명식에 없는 간지 글자가 나왔어요: ${invented.join(", ")}. <facts>에 있는 글자만 써 주세요.`);
@@ -331,7 +388,14 @@ function sajuFactViolations(text: string, facts: SajuFactSet, out: string[]): vo
   const years = new Set(facts.allowed.years);
   const strayYears = [...new Set([...text.matchAll(YEAR)].map((m) => Number(m[1])))].filter((y) => !years.has(y));
   if (strayYears.length) out.push(`명식에서 나오지 않은 연도가 있어요: ${strayYears.join(", ")}.`);
-  for (const [pattern, label] of SAJU_BLOCKLIST) if (pattern.test(text)) out.push(`쓰지 않는 주제·표현이 있어요: ${label}. 부정문으로도 쓰지 마세요.`);
+  for (const [pattern, label, negatable] of SAJU_BLOCKLIST) {
+    const offending = sentences(text).filter((s) => matchesBeyondUser(pattern, s, userText).length > 0 && !(negatable && NEGATED.test(s)));
+    if (offending.length) {
+      out.push(negatable
+        ? `쓰지 않는 주제가 있어요: ${label}. 이 풀이로는 말하기 어렵다고 짧게 밝히는 문장에서만 쓰세요.`
+        : `쓰지 않는 표현이 있어요: ${label}. 부정문으로도 쓰지 마세요.`);
+    }
+  }
   if (sentences(text).some((s) => SCHOOL_LABELS.test(s) && !NEGATED.test(s))) out.push("신강·신약·용신·격국 같은 라벨을 단정했어요. 라벨은 쓰지 않았다고만 밝혀 주세요.");
   if (!hasHangul(text)) out.push("한국어로 써 주세요.");
 }
@@ -345,6 +409,7 @@ export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): stri
   lengthCheck("summary", d.summary, 250, 400, out);
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(d.summary)) out.push("태어난 시를 몰라 여섯 글자로 읽었다는 한계를 summary에 한 문장 넣어 주세요.");
   sajuFactViolations(`${d.title}\n${d.summary}`, facts, out);
+  aiTellViolations([d.summary], out);
   return out;
 }
 
@@ -364,12 +429,14 @@ export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[
   lengthCheck("story.body", r.story.body, 200, 350, out);
   if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
   sajuFactViolations([...r.sections.map((s) => s.body), r.story.title, r.story.body, ...r.followUps].join("\n"), facts, out);
+  aiTellViolations([...r.sections.map((s) => s.body), r.story.body], out);
   return out;
 }
 
-export function validateSajuFollowUp(a: FollowUpAnswer, facts: SajuFactSet): string[] {
+export function validateSajuFollowUp(a: FollowUpAnswer, facts: SajuFactSet, question = ""): string[] {
   const out: string[] = [];
   lengthCheck("answer", a.answer, 150, 450, out);
-  sajuFactViolations(a.answer, facts, out);
+  sajuFactViolations(a.answer, facts, out, question);
+  aiTellViolations([a.answer], out);
   return out;
 }

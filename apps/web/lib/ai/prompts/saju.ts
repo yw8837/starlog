@@ -4,6 +4,7 @@ import {
   type SajuChart, type SajuElement,
 } from "@starlog/core";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { STYLE_RULES } from "../style";
 import type { FollowUpTurn } from "./tarot";
 import { cleanUserText } from "./tarot";
 
@@ -418,7 +419,10 @@ export const SAJU_SYSTEM = `너는 스타로그의 사주(명리) 해설가예�
 - 문단은 명식 근거 → 일상 장면 하나 → 작은 실험 순서로 써요. 약점에는 스스로 조절할 수 있는 행동을 붙여요.
 - 성향에 대한 주장에는 반증할 수 있는 확인 문장을 붙여요: "~했다면 이 구조와 맞물리고, ~였다면 이 부분은 덜 맞는 풀이예요." 풀이 전체에 2~4번.
 - 영역이 달라지면 같은 결론을 되풀이하지 않고 다른 장면으로 옮겨 말해요.
-- 따뜻하고 차분한 해요체. 공포·긴급 표현, 칭찬으로 끝내는 문장, 이모지를 쓰지 않아요. 글자 수는 모두 공백을 뺀 글자 수예요.
+- 따뜻하고 차분한 해요체. 공포·긴급 표현, 칭찬으로 끝내는 문장을 쓰지 않아요. 글자 수는 모두 공백을 뺀 글자 수예요.
+- 관점을 밝히는 "명리에서는 ~로 읽어요"는 규칙대로 쓰되, 한 문장 안에서 완곡 표현을 겹치지 않아요.
+
+${STYLE_RULES}
 
 # 작업별 형식
 

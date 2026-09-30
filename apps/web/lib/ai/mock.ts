@@ -2,7 +2,7 @@ import "server-only";
 import type { KbCard, TopicAngle } from "@/lib/kb";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import type { SajuFactSet } from "./prompts/saju";
-import { UNSURE_OPTIONS, WHEN_KO, cardLabel, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
+import { UNSURE_OPTIONS, WHEN_KO, cardLabel, onTopic, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import type { GenerationTask, ReadingProvider } from "./provider";
 import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
 
@@ -50,8 +50,6 @@ function angleText(card: TarotCardContext, angle: TopicAngle): string {
   return card.kb.topics[angle][card.orientation];
 }
 
-/** KB text that stays on topic (a few KB lines mention 연락/이별 in work or group angles). */
-const onTopic = (ctx: TarotContext, text: string) => !ctx.bannedWords.some((word) => text.includes(word));
 
 /** Card-section budget (chars without spaces): optional sentences stop once the section is full. */
 const SECTION_BUDGET = 230;

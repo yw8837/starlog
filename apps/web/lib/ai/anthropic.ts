@@ -48,18 +48,28 @@ export function buildRequest<T>(task: GenerationTask<T>, maxTokens: number, feed
   };
 }
 
-export function anthropicProvider(apiKey: string): ReadingProvider {
+/** The one SDK call the provider makes; tests pass a fake with the same shape. */
+export interface MessagesClient {
+  beta: { messages: { create(body: ReturnType<typeof buildRequest>): Promise<BetaMessage> } };
+}
+
+/** A max_tokens cap raised for a task stays raised for its regeneration (same task object). */
+const raisedCaps = new WeakMap<object, number>();
+
+export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(apiKey)): ReadingProvider {
   return {
     name: "anthropic",
     async generate<T>(task: GenerationTask<T>, _attempt: number, feedback?: string[]) {
       const usage: Usage[] = [];
-      let maxTokens = task.maxTokens;
+      let maxTokens = raisedCaps.get(task) ?? task.maxTokens;
       for (let call = 0; call < 2; call++) {
         let message: BetaMessage;
         try {
-          message = await client(apiKey).beta.messages.create(buildRequest(task, maxTokens, feedback));
+          message = await sdk.beta.messages.create(buildRequest(task, maxTokens, feedback));
         } catch (error) {
-          const name = error instanceof Anthropic.APIError ? `${error.name}:${error.status ?? "-"}` : error instanceof Error ? error.name : "unknown";
+          // The class name only (SDK errors keep name "Error"); never the message, which may echo the request.
+          const kind = error instanceof Error ? error.constructor.name : "unknown";
+          const name = error instanceof Anthropic.APIError ? `${kind}:${error.status ?? "-"}` : kind;
           throw new GenerationError("UPSTREAM", [name]);
         }
         usage.push(...usageOf(message));
@@ -67,11 +77,13 @@ export function anthropicProvider(apiKey: string): ReadingProvider {
         if (message.stop_reason === "refusal") throw new GenerationError("REFUSED");
         if (message.stop_reason === "max_tokens") {
           maxTokens *= 2; // thinking counts toward max_tokens; one retry with room to finish
+          raisedCaps.set(task, maxTokens);
           continue;
         }
         return { data: parseOutput(message, task), usage };
       }
-      throw new GenerationError("QUALITY", ["답이 길이 제한에서 잘렸어요. 더 짧게 써 주세요."]);
+      // Not "write shorter": the length targets still hold; the JSON just has to be finished.
+      throw new GenerationError("QUALITY", ["출력이 중간에 끊겼어요. 분량 목표는 그대로 지키면서 JSON을 끝까지 완성해 주세요."]);
     },
   };
 }
