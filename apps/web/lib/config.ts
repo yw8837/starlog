@@ -7,7 +7,7 @@ export const SITE = {
     ceo: "최용우",
     regNo: "665-38-01736",
     mailOrderNo: "2026-부산영도-0153",
-    address: "부산광역시 영도구 동삼서로 51-7",
+    address: "부산광역시 영도구 동삼서로 51-7, 3층 302호(동삼동, 금관빌리지)",
     email: "studioyeolmae.com@gmail.com",
     phone: "010-8282-8837",
   },

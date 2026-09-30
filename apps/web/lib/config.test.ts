@@ -3,7 +3,7 @@ import { SITE, footerNotice } from "./config";
 
 describe("SITE", () => {
   it("holds the business details the footer must show (전자상거래법 사업자 정보)", () => {
-    expect(SITE.business.address).toBe("부산광역시 영도구 동삼서로 51-7");
+    expect(SITE.business.address).toBe("부산광역시 영도구 동삼서로 51-7, 3층 302호(동삼동, 금관빌리지)");
     expect(SITE.business.mailOrderNo).toBe("2026-부산영도-0153");
     expect(SITE.business.email).toBe("studioyeolmae.com@gmail.com");
     expect(SITE.business.phone).toBe("010-8282-8837");
@@ -23,7 +23,7 @@ describe("footerNotice", () => {
       "대표 최용우",
       "사업자등록번호 665-38-01736",
       "통신판매업 신고번호 2026-부산영도-0153",
-      "사업장 주소 부산광역시 영도구 동삼서로 51-7",
+      "사업장 주소 부산광역시 영도구 동삼서로 51-7, 3층 302호(동삼동, 금관빌리지)",
       "이메일 studioyeolmae.com@gmail.com",
       "전화 010-8282-8837",
     ]);
