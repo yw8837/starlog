@@ -126,10 +126,22 @@ test("draw: a cards-only shuffle opens the fan; 다시 섞기 replays it; reduce
   await expect(page.locator("[data-fan-index]")).toHaveCount(21);
 
   // Reduced motion: not skipped. The stacked deck is shown for a moment (opacity only), then the fan.
+  // It lasts only ~0.8s, so record the draw phases (data-phase) as they happen instead of racing it.
+  await page.addInitScript(() => {
+    const seen: Array<{ phase: string; at: number }> = [];
+    (window as unknown as { __drawPhases: typeof seen }).__drawPhases = seen;
+    new MutationObserver(() => {
+      const phase = document.querySelector("[data-phase]")?.getAttribute("data-phase");
+      if (phase && seen.at(-1)?.phase !== phase) seen.push({ phase, at: performance.now() });
+    }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ["data-phase"] });
+  });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
-  await expect(page.getByText("카드를 섞고 있어요")).toBeVisible();
-  await expect(page.locator("[data-fan-index]")).toHaveCount(21, { timeout: 3_000 });
+  await expect(page.locator("[data-fan-index]")).toHaveCount(21, { timeout: 5_000 });
+  const phases = await page.evaluate(() => (window as unknown as { __drawPhases: Array<{ phase: string; at: number }> }).__drawPhases);
+  expect(phases.map((p) => p.phase)).toEqual(["shuffle", "pick"]);
+  // The gentle version runs its 0.8s after hydration, so the shuffle phase lasts at least that long.
+  expect(phases[1]!.at - phases[0]!.at).toBeGreaterThanOrEqual(700);
 });
 
 test("returning visitor sees 별조각, 달빛 (6 short) and direct pay", async ({ page }, info) => {

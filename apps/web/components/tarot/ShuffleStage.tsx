@@ -23,7 +23,7 @@ const HALF = 6;
 const SIDES = ["left", "right"] as const;
 
 /**
- * The deck, cards only, where the fan will open (the fan's own geometry): it splits into two
+ * The deck, cards only, in the fan's own geometry (where its middle card goes): it splits into two
  * stacks that riffle back together twice (~2.4s), then the fan opens out of it. Under reduced
  * motion the stacked deck pulses in place for 0.8s instead. 바로 펼치기 skips either way.
  */

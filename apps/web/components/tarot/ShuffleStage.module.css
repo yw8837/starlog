@@ -1,6 +1,8 @@
 /*
- * Laid out with the fan's own box (CardFan's .box/.wideBox/.wide, same width, height and card
- * size), so the deck sits exactly where the fan's middle card will be: 56px down, centred.
+ * Laid out with the fan's own box (CardFan's .box/.wideBox/.wide: same width, height and card
+ * size), with the deck where the fan's middle card goes: 56px down, centred. It lines up with the
+ * fan when the parent places both the same way (DrawStage wraps each in its .arc block and keeps
+ * the same room below).
  */
 .scene {
   position: relative;

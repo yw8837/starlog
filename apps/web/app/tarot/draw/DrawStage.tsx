@@ -91,6 +91,8 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   // 다시 섞기 after it; the status line says the deck was reshuffled.
   const [reshuffles, setReshuffles] = useState(0);
   const reshuffled = reshuffles > 0;
+  // A reshuffled deck nobody has picked from yet: until the first pick or undo, the status says so.
+  const [freshDeck, setFreshDeck] = useState(false);
   const reshuffleRef = useRef<HTMLDivElement>(null);
 
   // A fresh random deck per visit, made in the browser only.
@@ -124,11 +126,13 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   // on a lifted card can never drop a pick.
   const pick = (index: number) => {
     if (phase !== "pick") return;
+    setFreshDeck(false);
     setPicked((prev) => (prev.includes(index) || prev.length >= max ? prev : [...prev, index]));
   };
 
   const undo = () => {
     if (phase !== "pick") return;
+    setFreshDeck(false);
     setPicked((prev) => prev.slice(0, -1));
   };
 
@@ -139,6 +143,7 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
     setDeck(createDeck(randomSeed(), DEFAULT_REVERSAL_RATE));
     setPicked([]);
     setReshuffles((n) => n + 1);
+    setFreshDeck(true);
     if (!instant) setPhase("shuffle");
   };
 
@@ -170,7 +175,7 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
       : phase === "pick"
         ? picked.length === 0
           ? // Short enough to stay on one line at 360px, so the fan never moves when picking starts.
-            reshuffled
+            freshDeck
             ? `카드를 다시 섞었어요. ${cards(max)} 골라 주세요`
             : `마음이 가는 카드를 ${cards(max)} 골라 주세요`
           : remaining > 0
@@ -205,9 +210,12 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
 
       <div className={s.stage}>
         {phase === "shuffle" ? (
-          <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffled} />
+          // Wrapped like the fan below, so the deck sits exactly where the fan's middle card lands.
+          <div className={s.arc}>
+            <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffled} />
+          </div>
         ) : phase === "pick" && deck && known ? (
-          <div className={s.pick}>
+          <div className={s.arc}>
             {/* Keyed by the deck, so a reshuffled deck deals out afresh. */}
             <CardFan key={deck.seed} picked={picked} max={max} onPick={pick} />
             {/* After the fan in the tab order; drawn over the fan's hollow. */}

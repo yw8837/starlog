@@ -77,6 +77,12 @@ describe("DrawStage 다시 섞기", () => {
     // Same words, but a new node in the live region, so screen readers read it again.
     expect(status.textContent).toBe("카드를 다시 섞었어요. 한 장 골라 주세요");
     expect(firstLine.isConnected).toBe(false);
+
+    // Once a card is picked and taken back, the deck is no longer "just reshuffled".
+    fireEvent.click(fanCards()[3]!);
+    expect(status.textContent).toBe("모두 골랐어요");
+    click("다시 고르기");
+    expect(status.textContent).toBe("마음이 가는 카드를 한 장 골라 주세요");
   });
 
   it("shuffles with cards only, then brings focus back to 다시 섞기 after a reshuffle", () => {
