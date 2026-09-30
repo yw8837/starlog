@@ -14,7 +14,9 @@
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && pnpm --filter @starlog/web typecheck",
     "cards:build": "node scripts/build-cards.mjs",
     "e2e": "pnpm --filter @starlog/web e2e",
-    "e2e:screens": "pnpm --filter @starlog/web e2e:screens"
+    "e2e:screens": "pnpm --filter @starlog/web e2e:screens",
+    "kb:runtime": "node scripts/build-kb-runtime.mjs",
+    "ai:smoke": "vitest run -c vitest.smoke.config.ts"
   },
   "devDependencies": {
     "@types/node": "24.19.0",
