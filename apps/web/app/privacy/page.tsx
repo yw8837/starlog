@@ -37,7 +37,7 @@ const PROCESSORS: readonly Processor[] = [
       ["이전 항목", "서비스를 이용하며 주고받는 정보, 접속 기록(IP 주소, 브라우저 정보, 접속 일시)"],
       ["이전 시점과 방법", "서비스에 접속할 때마다 암호화된 네트워크(HTTPS)로 전송"],
       ["보유·이용 기간", "해당 사업자의 정책에 따름"],
-      ["개인정보 문의", <a href="https://vercel.com/legal/privacy-notice">vercel.com/legal/privacy-policy</a>],
+      ["개인정보 문의", <a href="https://vercel.com/legal/privacy-notice">vercel.com/legal/privacy-notice</a>],
     ],
   },
   {
