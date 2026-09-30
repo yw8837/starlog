@@ -7,6 +7,8 @@ import { SpreadRow } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet, type Wallet } from "@/components/tarot/UnlockSheet";
 import { SituationSummary } from "@/components/tarot/SituationSummary";
+import { ShareButton } from "@/components/ui/ShareButton";
+import { SITE } from "@/lib/config";
 import type { TarotSample } from "@/lib/fixtures";
 import { summarizeFlow, useFlowState, withFlags, type FlowFallback } from "@/lib/flowState";
 import s from "./FreeResult.module.css";
@@ -20,7 +22,10 @@ type FreeResultProps = {
   wallet: Wallet;
 };
 
-/** Step 3: the question as asked, the three cards face up, the first card read in full, the rest listed. */
+/**
+ * Step 3, in one scroll: the question as asked, the three cards face up, the first card read in
+ * full, the rest listed. Sharing sends the site and the card names, never the question or note.
+ */
 export function FreeResult({ fallback, cards, free, visit, instant, wallet }: FreeResultProps) {
   const { flow } = useFlowState();
   const summary = summarizeFlow(flow, fallback);
@@ -34,6 +39,9 @@ export function FreeResult({ fallback, cards, free, visit, instant, wallet }: Fr
           <header className={s.head}>
             <h1 className={s.question}>{flow ? summary.question : " "}</h1>
             {flow ? <SituationSummary conditions={summary.conditions} note={summary.note} /> : null}
+            <div className={s.share}>
+              <ShareButton text={`${SITE.nameKo}에서 뽑은 카드 · ${cards.map((card) => card.name).join(" · ")}`} />
+            </div>
           </header>
         }
         spread={

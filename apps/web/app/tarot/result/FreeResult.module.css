@@ -8,6 +8,10 @@
   text-wrap: balance;
 }
 
+.share {
+  margin-top: 14px;
+}
+
 .cardHeading {
   font-size: 19px;
 }
