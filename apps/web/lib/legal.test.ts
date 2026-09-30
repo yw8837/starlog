@@ -13,7 +13,8 @@ describe("legal helpers", () => {
   });
 
   it("lists contact channels only once they are filled", () => {
-    expect(contactChannels()).toEqual([]);
+    expect(contactChannels()).toEqual([["이메일", SITE.business.email]]);
+    expect(contactChannels({ ...SITE.business, email: "  ", phone: "" })).toEqual([]);
     expect(contactChannels({ ...SITE.business, email: " hello@example.com ", phone: "" })).toEqual([["이메일", "hello@example.com"]]);
   });
 });

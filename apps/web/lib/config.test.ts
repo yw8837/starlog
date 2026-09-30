@@ -22,6 +22,7 @@ describe("footerNotice", () => {
       "상호 열매스튜디오",
       "대표 최용우",
       "사업자등록번호 665-38-01736",
+      "이메일 studioyeolmae.com@gmail.com",
     ]);
   });
 
