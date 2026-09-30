@@ -10,13 +10,14 @@ import { SharePreview } from "@/components/tarot/SharePreview";
 import { SpreadRow, cardLabel, type SpreadCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { StoryPage } from "@/components/tarot/StoryPage";
-import { StoryToggle, type ReadingMode } from "@/components/tarot/StoryToggle";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { SITE } from "@/lib/config";
 import type { FollowUpFixture, TarotSample } from "@/lib/fixtures";
 import { summarizeFlow, useFlowState, type FlowFallback } from "@/lib/flowState";
+import { ChapterContents } from "./ChapterContents";
 import s from "./ChapterView.module.css";
 
 type ChapterViewProps = {
@@ -30,10 +31,9 @@ type ChapterViewProps = {
   fallback: FlowFallback;
 };
 
-/** An opened tarot chapter: story/plain toggle, the full reading, follow-ups, rating and friend invite. */
+/** An opened tarot chapter in one scroll: the story, the full reading, follow-ups, rating, friend invite. */
 export function ChapterView({ sample, chapterLabel, generate, inviteUrl, followUps, fallback }: ChapterViewProps) {
   const [writing, setWriting] = useState(generate);
-  const [mode, setMode] = useState<ReadingMode>("plain");
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const { flow } = useFlowState();
@@ -69,17 +69,24 @@ export function ChapterView({ sample, chapterLabel, generate, inviteUrl, followU
             <p className={s.eyebrow}>{`${bookTitle} · ${chapterLabel}`}</p>
             <h1 className={s.title}>{sample.story.title}</h1>
             <p className={s.question}>{flow ? summary.question : " "}</p>
+            {/* The chapter lives on this device only: the share carries its title and the site, nothing else. */}
+            <div className={s.share}>
+              <ShareButton text={`${bookTitle} · ${sample.story.title}`} />
+            </div>
           </header>
         }
         spread={<SpreadRow size="sm" cards={cards} onCardTap={setEnlarged} />}
       >
-        <div className={s.toggle}>
-          <StoryToggle value={mode} onChange={setMode} />
+        <ChapterContents />
+        <div id="chapter-story" className={s.anchor}>
+          <StoryPage title={sample.story.title} body={sample.story.body} />
         </div>
-
-        {mode === "plain" ? <ReadingArticle paid={sample.paid} /> : <StoryPage title={sample.story.title} body={sample.story.body} />}
-
-        <FollowUp suggestions={followUps.suggestions} answers={followUps.answers} otherAnswer={followUps.other} />
+        <div id="chapter-reading" className={s.anchor}>
+          <ReadingArticle paid={sample.paid} />
+        </div>
+        <div id="chapter-follow-up" className={s.anchor}>
+          <FollowUp suggestions={followUps.suggestions} answers={followUps.answers} otherAnswer={followUps.other} />
+        </div>
         <Feedback />
 
         <section className={s.invite} aria-labelledby="invite-title">

@@ -50,7 +50,7 @@ const SCREENS: Screen[] = [
     path: "/chapter/sample",
     spread: true,
     prepare: async (page) => {
-      await page.getByRole("button", { name: "이야기", exact: true }).click();
+      await page.getByRole("navigation", { name: "이 장의 차례" }).getByRole("link", { name: "이야기" }).click();
       await expect(page.getByText("기록 · 토끼 사서")).toBeVisible();
     },
   },

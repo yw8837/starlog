@@ -45,9 +45,39 @@
   line-height: var(--lh-prose);
 }
 
-.toggle {
-  width: min(100%, 280px);
-  margin: 0 auto 4px;
+.share {
+  margin-top: 14px;
+}
+
+/* In-page contents: small light pills that jump to the story, the reading and the follow-ups. */
+.contents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.contentsLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 22px;
+  background: var(--glass);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.contentsLink:hover {
+  border-color: var(--line-strong);
+}
+
+/* Anchored parts stop a little below the top edge. */
+.anchor {
+  min-width: 0;
+  scroll-margin-top: 16px;
 }
 
 .invite {

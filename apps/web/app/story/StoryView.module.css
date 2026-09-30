@@ -26,14 +26,11 @@
 
 .count {
   margin-top: 4px;
+  margin-bottom: 24px;
   color: var(--ink-sub);
   font-size: var(--fs-sub);
 }
 
-.toggle {
-  width: min(100%, 240px);
-  margin: 18px 0 24px;
-}
 
 .rail {
   display: none;

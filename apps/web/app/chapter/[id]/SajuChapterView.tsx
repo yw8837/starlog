@@ -12,10 +12,11 @@ import { Paper } from "@/components/tarot/Paper";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { Stepper } from "@/components/tarot/Stepper";
 import { StoryPage } from "@/components/tarot/StoryPage";
-import { StoryToggle, type ReadingMode } from "@/components/tarot/StoryToggle";
 import { Button } from "@/components/ui/Button";
+import { ShareButton } from "@/components/ui/ShareButton";
 import { SITE } from "@/lib/config";
 import type { FollowUpFixture, SajuSample } from "@/lib/fixtures";
+import { ChapterContents } from "./ChapterContents";
 import s from "./ChapterView.module.css";
 
 type SajuChapterViewProps = {
@@ -34,13 +35,13 @@ function splitHeading(heading: string): { label: string | null; title: string } 
 }
 
 /**
- * The opened saju prologue. The written sample (sections or story page, follow-ups, rating, next
- * chapter) appears only when the saved chart is the sample chart. Any other chart shows its own
- * computed chart and a calm "being written" state: P3 plugs the real, asynchronous generation in here.
+ * The opened saju prologue. The written sample (story page, then the sections, follow-ups, rating,
+ * next chapter, in one scroll) appears only when the saved chart is the sample chart. Any other
+ * chart shows its own computed chart and a calm "being written" state: P3 plugs the real,
+ * asynchronous generation in here.
  */
 export function SajuChapterView({ sample, followUps, chapterLabel, generate }: SajuChapterViewProps) {
   const [writing, setWriting] = useState(generate);
-  const [mode, setMode] = useState<ReadingMode>("plain");
   const { form, ready, result, isSample } = useSajuChart();
 
   const doneWriting = () => {
@@ -65,36 +66,39 @@ export function SajuChapterView({ sample, followUps, chapterLabel, generate }: S
             <p className={s.eyebrow}>{`${bookTitle} · ${chapterLabel}`}</p>
             <h1 className={s.title}>{title}</h1>
             <InputLine form={ready ? form : null} className={s.question} />
+            {/* Only the chapter's title and the site are shared, never the birth data above. */}
+            {ready ? (
+              <div className={s.share}>
+                <ShareButton text={`${bookTitle} · ${title}`} />
+              </div>
+            ) : null}
           </header>
         }
         spread={<ChartPanel result={result} />}
       >
         {!ready || !result || "error" in result ? null : isSample ? (
           <>
-            <div className={s.toggle}>
-              <StoryToggle value={mode} onChange={setMode} />
-            </div>
-
-            {mode === "plain" ? (
-              <div className={s.sections}>
-                {sample.paid.sections.map((section) => {
-                  const { label, title: heading } = splitHeading(section.heading);
-                  return (
-                    <Paper key={section.heading} as="article">
-                      <h2 className={s.sectionHeading}>
-                        {label ? <span className={s.sectionLabel}>{label}</span> : null}
-                        <span>{heading}</span>
-                      </h2>
-                      <p className={s.prose}>{section.body}</p>
-                    </Paper>
-                  );
-                })}
-              </div>
-            ) : (
+            <ChapterContents />
+            <div id="chapter-story" className={s.anchor}>
               <StoryPage mode="saju" title={sample.story.title} body={sample.story.body} />
-            )}
-
-            <FollowUp suggestions={followUps.suggestions} answers={followUps.answers} otherAnswer={followUps.other} reader="rabbit" />
+            </div>
+            <div id="chapter-reading" className={`${s.sections} ${s.anchor}`}>
+              {sample.paid.sections.map((section) => {
+                const { label, title: heading } = splitHeading(section.heading);
+                return (
+                  <Paper key={section.heading} as="article">
+                    <h2 className={s.sectionHeading}>
+                      {label ? <span className={s.sectionLabel}>{label}</span> : null}
+                      <span>{heading}</span>
+                    </h2>
+                    <p className={s.prose}>{section.body}</p>
+                  </Paper>
+                );
+              })}
+            </div>
+            <div id="chapter-follow-up" className={s.anchor}>
+              <FollowUp suggestions={followUps.suggestions} answers={followUps.answers} otherAnswer={followUps.other} reader="rabbit" />
+            </div>
             <Feedback />
 
             <section className={s.invite} aria-labelledby="next-title">

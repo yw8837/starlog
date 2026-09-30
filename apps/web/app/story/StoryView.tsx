@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { useSajuChart, type ChartResult } from "@/components/saju/useSajuChart";
 import { Timeline } from "@/components/story/Timeline";
-import { StoryToggle, type ReadingMode } from "@/components/tarot/StoryToggle";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
 import type { FriendScene, StoryChapter } from "@/lib/fixtures";
@@ -52,9 +50,8 @@ function ownPrologue(chapter: StoryChapter, result: ChartResult, isSample: boole
   };
 }
 
-/** 나의 스타로그: the timeline, the [이야기 | 풀이] switch, and the one way forward (새 장 열기). */
+/** 나의 스타로그: the whole story in one scroll, and the one way forward (새 장 열기). */
 export function StoryView({ nickname, chapters: storyChapters, scenes, nextChapter }: StoryViewProps) {
-  const [mode, setMode] = useState<ReadingMode>("story");
   const pending = scenes.filter((scene) => scene.status === "pending");
   const saju = storyChapters.find((chapter) => chapter.kind === "saju");
   const prologue = usePrologue(saju);
@@ -69,11 +66,7 @@ export function StoryView({ nickname, chapters: storyChapters, scenes, nextChapt
           <p className={s.count}>{`장 ${chapters.length}개${pending.length > 0 ? ` · 확인할 친구 장면 ${pending.length}개` : ""}`}</p>
         </header>
 
-        <div className={s.toggle}>
-          <StoryToggle value={mode} onChange={setMode} />
-        </div>
-
-        <Timeline chapters={chapters} scenes={scenes} mode={mode} loadingId={prologue?.loading ? saju?.id : undefined} />
+        <Timeline chapters={chapters} scenes={scenes} loadingId={prologue?.loading ? saju?.id : undefined} />
       </div>
 
       {/* Desktop: the next chapter sits in a side column. Phones get the floating button instead. */}

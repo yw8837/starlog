@@ -105,8 +105,11 @@ test("saju: input, consent, chart with 丙寅 and 병화, prologue, sign-in, ope
   await expect(followUp).toContainText("2번 남았어요");
   await expect(followUp).toContainText("뱀(巳) 속에 경금(庚金)이 숨어 있어요");
   await shot(page, info, "04-prologue-chapter");
-  await page.getByRole("button", { name: "이야기", exact: true }).click();
+  // One scroll: the story page sits above the sections, no switch between them.
+  await expect(page.getByRole("group", { name: "읽는 방식" })).toHaveCount(0);
+  await page.getByRole("navigation", { name: "이 장의 차례" }).getByRole("link", { name: "이야기" }).click();
   await expect(page.getByText("기록 · 토끼 선생님")).toBeVisible();
+  await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
 });
 
 test("saju: a known birth time adds the hour pillar and the correction note", async ({ page }, info) => {
@@ -161,7 +164,7 @@ test("saju: a known birth time adds the hour pillar and the correction note", as
   await shot(page, info, "06-saju-lunar-error");
 });
 
-test("story: three timeline items, story/plain switch, friend scene approval, empty state", async ({ page }, info) => {
+test("story: three timeline items read in one scroll, friend scene approval, empty state", async ({ page }, info) => {
   await page.goto("/story");
   await expect(page.getByRole("heading", { level: 1, name: "나의 스타로그" })).toBeVisible();
   const items = page.getByRole("list", { name: "이야기 목차" }).getByRole("listitem");
@@ -174,8 +177,11 @@ test("story: three timeline items, story/plain switch, friend scene approval, em
   await expect(page.getByRole("link", { name: "새 장 열기" })).toBeVisible();
   await shot(page, info, "07-story");
 
-  await page.getByRole("button", { name: "풀이", exact: true }).click();
+  // Every chapter shows its whole story and its short reading at once, with a link to the full reading.
+  await expect(page.getByRole("group", { name: "읽는 방식" })).toHaveCount(0);
   await expect(items.nth(0)).toContainText("일간은 병화(丙火)예요.");
+  await expect(items.nth(1)).toContainText("마지막 장면에서 구름 사이로 손 하나가 나와");
+  await expect(items.nth(1).getByRole("link", { name: "뜸해진 연락 앞에서 풀이 전체 보기" })).toHaveAttribute("href", "/chapter/sample");
 
   await items.nth(2).getByRole("button", { name: "이야기에 넣기" }).click();
   await expect(items.nth(2)).toContainText("나의 스타로그에 넣었어요");

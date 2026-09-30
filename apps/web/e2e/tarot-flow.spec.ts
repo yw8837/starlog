@@ -75,6 +75,8 @@ test("tarot flow: question, situation, draw, free result, login, opened chapter"
 
   await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("이번 달, 그 사람에게 먼저 연락해도 될까");
+  // Sharing is a secondary button here; the gold primary stays the unlock.
+  await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
   const situation = page.getByRole("region", { name: "선택한 상황" });
   for (const chip of ["알아가는 중", "뜸해짐", "가볍게 안부"]) await expect(situation).toContainText(chip);
   await expect(situation).toContainText("요즘은 제가 먼저 안 하면 조용해요");
@@ -121,7 +123,7 @@ test("returning visitor sees 별조각, 달빛 (6 short) and direct pay", async 
   await shot(page, info, "08-result-returning");
 });
 
-test("opened chapter: follow-up answer, story mode, rating and share preview", async ({ page }, info) => {
+test("opened chapter: one scroll (story, then reading), follow-up answer, rating, share and invite", async ({ page }, info) => {
   await page.goto("/chapter/sample");
   const followUp = page.getByRole("region", { name: /이어서 물어보기/ });
   await expect(followUp).toContainText("3번 남았어요");
@@ -146,9 +148,21 @@ test("opened chapter: follow-up answer, story mode, rating and share preview", a
   await page.getByRole("radio", { name: "5점 중 4점" }).click();
   await expect(page.getByRole("radio", { name: "5점 중 4점" })).toHaveAttribute("aria-checked", "true");
 
-  await page.getByRole("button", { name: "이야기" }).click();
+  // No 이야기/풀이 switch: the story page comes first and the full reading follows in the same scroll.
+  await expect(page.getByRole("group", { name: "읽는 방식" })).toHaveCount(0);
+  await page.getByRole("navigation", { name: "이 장의 차례" }).getByRole("link", { name: "이야기" }).click();
   await expect(page.getByText("기록 · 토끼 사서")).toBeVisible();
-  await expect(page.getByText(SAMPLE.paid.verdict)).toHaveCount(0);
+  await expect(page.getByText(SAMPLE.paid.verdict)).toBeAttached();
+  const storyTop = (await page.locator("#chapter-story").boundingBox())!.y;
+  const readingTop = (await page.locator("#chapter-reading").boundingBox())!.y;
+  expect(storyTop).toBeLessThan(readingTop);
+
+  // Sharing: no share sheet in the test browser, so the site link is copied (never a /chapter/ URL).
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.evaluate(() => Object.defineProperty(navigator, "share", { value: undefined, configurable: true }));
+  await page.getByRole("button", { name: "공유하기" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "링크를 복사했어요" })).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("https://starlog.yeolmaeapps.kr");
 
   await page.getByRole("button", { name: "친구에게 한 장 받아보기" }).click();
   const dialog = page.getByRole("dialog", { name: "친구에게 보낼 카드" });
