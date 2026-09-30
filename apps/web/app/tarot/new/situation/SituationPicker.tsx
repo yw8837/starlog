@@ -7,6 +7,7 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { NOTE_MAX, findTopic, useFlowState } from "@/lib/flowState";
+import { notePlaceholder } from "@/lib/notePlaceholder";
 import f from "../../flow.module.css";
 import s from "./SituationPicker.module.css";
 
@@ -77,7 +78,7 @@ export function SituationPicker() {
           maxLength={NOTE_MAX}
           value={flow.note}
           onChange={(e) => setFlow((prev) => ({ ...prev, note: e.target.value }))}
-          placeholder="예: 지난달엔 자주 연락했는데 요즘은 뜸해요"
+          placeholder={notePlaceholder(topic.id)}
           aria-describedby="situation-note-count"
         />
         <p id="situation-note-count" className={s.counter}>
