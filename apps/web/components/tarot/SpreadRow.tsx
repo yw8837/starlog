@@ -1,4 +1,4 @@
-import type { Orientation } from "@starlog/core";
+import { getCard, type Orientation } from "@starlog/core";
 import { TarotCard, type CardSize } from "./TarotCard";
 import s from "./SpreadRow.module.css";
 
@@ -25,6 +25,20 @@ type SpreadRowProps = {
 export function cardLabel(card: SpreadCard): string {
   if (!card.faceUp || !card.name) return `${card.position} 자리, 아직 뒤집지 않은 카드`;
   return `${card.position} · ${card.name} · ${card.orientation === "reversed" ? "역방향" : "정방향"}`;
+}
+
+/** A dealt card face up, named from the deck (major arcana also get their printed number). */
+export function faceUpCard(card: { position: string; cardId: string; orientation: Orientation; keyword?: string }): SpreadCard {
+  let name: string | undefined;
+  let number: string | undefined;
+  try {
+    const def = getCard(card.cardId);
+    name = def.names.ko;
+    number = def.arcana === "major" ? def.roman : undefined;
+  } catch {
+    // An id this deck does not know (an old saved reading): the image and position still show.
+  }
+  return { position: card.position, cardId: card.cardId, orientation: card.orientation, faceUp: true, name, number, keyword: card.keyword };
 }
 
 /** Cards laid side by side, position name above and name/keyword below each. */

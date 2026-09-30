@@ -1,54 +1,51 @@
-"use client";
-
-import { useEffect, useEffectEvent, useState } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import s from "./GeneratingState.module.css";
 
-export const GENERATING_CAPTIONS = {
-  tarot: ["카드를 다시 읽는 중이에요", "세 장의 연결을 살피는 중이에요", "이야기로 옮겨 적는 중이에요"],
-  saju: ["명식을 다시 살피는 중이에요", "오행과 대운을 맞춰 보는 중이에요", "이야기로 옮겨 적는 중이에요"],
-} as const;
-
 type GeneratingStateProps = {
-  onDone: () => void;
   /** Tarot: the cat reads, the rabbit librarian writes. Saju: roles swap, both in hanbok. */
   mode?: "tarot" | "saju";
-  /** Fixture latency (P3 replaces it with the real generation). */
-  duration?: number;
+  /** What is being written now (from the stream's section events). */
+  caption: string;
+  /** 0..1 */
+  fraction: number;
+  /** A calm line under the caption, e.g. how long it usually takes. */
+  hint?: string;
+  /**
+   * `page`: the whole screen while a full reading is written (the page's only heading).
+   * `inline`: in place of the text that is on its way, under the cards already shown.
+   */
+  layout?: "page" | "inline";
+  /** The page keeps its own stable live region; this caption then stays plain text. */
+  live?: boolean;
 };
 
-/** Waiting screen while a reading is written: the leader reads, the assistant joins on the last step. */
-export function GeneratingState({ onDone, mode = "tarot", duration = 2500 }: GeneratingStateProps) {
-  const [step, setStep] = useState(0);
-  const finish = useEffectEvent(() => onDone());
-  const captions = GENERATING_CAPTIONS[mode];
-
-  useEffect(() => {
-    const per = duration / captions.length;
-    const timers = [
-      ...captions.slice(1).map((_, i) => window.setTimeout(() => setStep(i + 1), per * (i + 1))),
-      window.setTimeout(() => finish(), duration),
-    ];
-    return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [duration, captions]);
-
-  const last = step === captions.length - 1;
+/** Waiting screen while a reading is written: the leader reads; the assistant joins near the end. */
+export function GeneratingState({ mode = "tarot", caption, fraction, hint, layout = "page", live = true }: GeneratingStateProps) {
+  const inline = layout === "inline";
+  const size = inline ? 120 : 188;
+  const late = fraction >= 0.7;
 
   return (
-    <section className={s.stage} aria-labelledby="generating-title">
-      {/* The page's only heading while the reading is written; the chapter view (with its own h1) replaces this screen. */}
-      <h1 id="generating-title" className="sr-only">
-        풀이를 적고 있어요
-      </h1>
+    <section className={inline ? `${s.stage} ${s.inline}` : s.stage} aria-labelledby="generating-title" aria-busy="true">
+      {/* The page's only heading while a full reading is written; inline, a section heading. */}
+      {inline ? (
+        <h2 id="generating-title" className="sr-only">
+          풀이를 적고 있어요
+        </h2>
+      ) : (
+        <h1 id="generating-title" className="sr-only">
+          풀이를 적고 있어요
+        </h1>
+      )}
       <div className={s.characters}>
         <span className={s.glow} aria-hidden="true" />
         {mode === "tarot" ? (
-          <Cat outfit="tarot" action="glow" expression="focus" size={188} reactOnTap={false} />
+          <Cat outfit="tarot" action="glow" expression="focus" size={size} reactOnTap={false} />
         ) : (
-          <Rabbit outfit="hanbok" expression="focus" size={188} reactOnTap={false} />
+          <Rabbit outfit="hanbok" expression="focus" size={size} reactOnTap={false} />
         )}
-        {last ? (
+        {late && !inline ? (
           <span className={s.rabbit}>
             {mode === "tarot" ? (
               <Rabbit outfit="tarot" action="write" expression="focus" size={112} reactOnTap={false} />
@@ -58,17 +55,16 @@ export function GeneratingState({ onDone, mode = "tarot", duration = 2500 }: Gen
           </span>
         ) : null}
       </div>
-      {/* One live region for the whole wait; only the text inside it changes (the span re-keys to replay its fade). */}
-      <p id="generating-caption" className={s.caption} role="status">
-        <span key={step} className={s.captionText}>
-          {captions[step]}
+      <p id="generating-caption" className={s.caption} role={live ? "status" : undefined}>
+        {/* Re-keyed per caption to replay its fade. */}
+        <span key={caption} className={s.captionText}>
+          {caption}
         </span>
       </p>
-      <ol className={s.dots} aria-hidden="true">
-        {captions.map((caption, i) => (
-          <li key={caption} className={i <= step ? s.dotOn : undefined} />
-        ))}
-      </ol>
+      <div className={s.track} aria-hidden="true">
+        <span className={s.fill} style={{ transform: `scaleX(${Math.max(0.04, fraction)})` }} />
+      </div>
+      {hint ? <p className={s.hint}>{hint}</p> : null}
     </section>
   );
 }

@@ -1,114 +1,102 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { AiNote } from "@/components/reading/AiNote";
 import { Feedback } from "@/components/tarot/Feedback";
-import { FollowUp } from "@/components/tarot/FollowUp";
-import { GeneratingState } from "@/components/tarot/GeneratingState";
-import { ReadingArticle } from "@/components/tarot/ReadingArticle";
+import { FollowUp, type AskResult } from "@/components/tarot/FollowUp";
+import { ReadingArticle, type ReadingBody } from "@/components/tarot/ReadingArticle";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SharePreview } from "@/components/tarot/SharePreview";
 import { SpreadRow, cardLabel, type SpreadCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
-import { StoryPage } from "@/components/tarot/StoryPage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { SITE } from "@/lib/config";
-import type { FollowUpFixture, TarotSample } from "@/lib/fixtures";
-import { summarizeFlow, useFlowState, type FlowFallback } from "@/lib/flowState";
+import type { TarotSampleCard } from "@/lib/fixtures";
 import { ChapterContents } from "./ChapterContents";
 import s from "./ChapterView.module.css";
 
+export interface ChapterFollowUp {
+  suggestions: string[];
+  turns: Array<{ question: string; answer: string }>;
+  remaining: number;
+  onAsk: (question: string) => Promise<AskResult>;
+}
+
 type ChapterViewProps = {
-  sample: TarotSample;
-  /** e.g. "1장" */
-  chapterLabel: string;
-  /** Show the writing state first (arriving from an unlock). */
-  generate: boolean;
-  inviteUrl: string;
-  followUps: FollowUpFixture;
-  fallback: FlowFallback;
+  /** e.g. "타로 기록 · 10월 1일" */
+  eyebrow: string;
+  question: string;
+  cards: SpreadCard[];
+  reading: ReadingBody;
+  followUp: ChapterFollowUp;
+  /** 돌아보기, shown first when it is due. */
+  checkin?: ReactNode;
+  /** The demo's friend invite (a real reading has none until 별자리 인연). */
+  invite?: { url: string; card: TarotSampleCard };
 };
 
-/** An opened tarot chapter in one scroll: the story, the full reading, follow-ups, rating, friend invite. */
-export function ChapterView({ sample, chapterLabel, generate, inviteUrl, followUps, fallback }: ChapterViewProps) {
-  const [writing, setWriting] = useState(generate);
+/**
+ * An opened tarot reading in one scroll: the question and cards, the full reading, follow-ups,
+ * rating. Sharing sends the site and the verdict's first words, never the question or note.
+ */
+export function ChapterView({ eyebrow, question, cards, reading, followUp, checkin, invite }: ChapterViewProps) {
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
-  const { flow } = useFlowState();
-  const summary = summarizeFlow(flow, fallback);
-
-  const doneWriting = () => {
-    setWriting(false);
-    // Drop ?from=unlock so a reload shows the chapter instead of writing it again.
-    window.history.replaceState(null, "", window.location.pathname);
-    window.scrollTo(0, 0);
-  };
-
-  if (writing) return <GeneratingState onDone={doneWriting} />;
-
-  const cards: SpreadCard[] = sample.cards.map((card) => ({
-    position: card.position,
-    cardId: card.cardId,
-    orientation: card.orientation,
-    faceUp: true,
-    number: card.number,
-    name: card.name,
-    keyword: card.keyword,
-  }));
   const shown = enlarged === null ? undefined : cards[enlarged];
-  const bookTitle = `나의 ${SITE.nameKo}`;
+  const names = cards.map((card) => card.name ?? card.position).join(" · ");
 
   return (
     <>
-      <Stepper label={bookTitle} backHref="/story" backLabel="내 이야기로" />
+      <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
       <ReadingLayout
         head={
           <header className={s.head}>
-            <p className={s.eyebrow}>{`${bookTitle} · ${chapterLabel}`}</p>
-            <h1 className={s.title}>{sample.story.title}</h1>
-            <p className={s.question}>{flow ? summary.question : " "}</p>
-            {/* The chapter lives on this device only: the share carries its title and the site, nothing else. */}
+            <p className={s.eyebrow}>{eyebrow}</p>
+            <h1 className={s.title}>{question}</h1>
+            {/* The reading lives on this device only: the share carries the card names and the site. */}
             <div className={s.share}>
-              <ShareButton text={`${bookTitle} · ${sample.story.title}`} />
+              <ShareButton text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} />
             </div>
           </header>
         }
         spread={<SpreadRow size="sm" cards={cards} onCardTap={setEnlarged} />}
       >
+        {checkin}
         <ChapterContents />
-        <div id="chapter-story" className={s.anchor}>
-          <StoryPage title={sample.story.title} body={sample.story.body} />
-        </div>
         <div id="chapter-reading" className={s.anchor}>
-          <ReadingArticle paid={sample.paid} />
+          <ReadingArticle paid={reading} />
         </div>
         <div id="chapter-follow-up" className={s.anchor}>
-          <FollowUp suggestions={followUps.suggestions} answers={followUps.answers} otherAnswer={followUps.other} />
+          <FollowUp {...followUp} />
         </div>
         <Feedback />
+        <AiNote />
 
-        <section className={s.invite} aria-labelledby="invite-title">
-          <h2 id="invite-title" className={s.inviteTitle}>
-            친구의 카드 한 장
-          </h2>
-          <p className={s.inviteText}>친구는 로그인 없이 카드 한 장을 뽑고, 자기 풀이도 짧게 받아요. 남긴 카드는 내가 확인한 뒤 이야기에 들어가요.</p>
-          <Button block onClick={() => setSharing(true)}>
-            친구에게 한 장 받아보기
-          </Button>
-        </section>
+        {invite ? (
+          <section className={s.invite} aria-labelledby="invite-title">
+            <h2 id="invite-title" className={s.inviteTitle}>
+              친구의 카드 한 장
+            </h2>
+            <p className={s.inviteText}>친구는 로그인 없이 카드 한 장을 뽑고, 자기 풀이도 짧게 받아요. 남긴 카드는 내가 확인한 뒤 기록에 들어가요.</p>
+            <Button block onClick={() => setSharing(true)}>
+              친구에게 한 장 받아보기
+            </Button>
+          </section>
+        ) : null}
       </ReadingLayout>
 
       <Modal open={shown !== undefined} onClose={() => setEnlarged(null)} labelledBy="enlarged-title">
         {shown ? (
           <div className={s.enlarged}>
             <h2 id="enlarged-title" className={s.enlargedTitle}>
-              {`${shown.position} · ${shown.name}`}
+              {`${shown.position} · ${shown.name ?? ""}`}
             </h2>
             <TarotCard cardId={shown.cardId} orientation={shown.orientation} faceUp size="lg" label={cardLabel(shown)} className={s.enlargedCard} />
             <p className={s.enlargedMeta}>
-              <span className={s.enlargedNumber}>{shown.number}</span>
+              {shown.number ? <span className={s.enlargedNumber}>{shown.number}</span> : null}
               {shown.orientation === "reversed" ? "역방향" : "정방향"}
               {shown.keyword ? ` · ${shown.keyword}` : ""}
             </p>
@@ -116,15 +104,17 @@ export function ChapterView({ sample, chapterLabel, generate, inviteUrl, followU
         ) : null}
       </Modal>
 
-      <Modal open={sharing} onClose={() => setSharing(false)} labelledBy="share-title">
-        <SharePreview
-          titleId="share-title"
-          card={sample.cards[0]}
-          question={summary.question}
-          chapter={`${bookTitle} · ${chapterLabel}`}
-          inviteUrl={inviteUrl}
-        />
-      </Modal>
+      {invite ? (
+        <Modal open={sharing} onClose={() => setSharing(false)} labelledBy="share-title">
+          <SharePreview
+            titleId="share-title"
+            card={invite.card}
+            question={question}
+            chapter={`나의 ${SITE.nameKo}`}
+            inviteUrl={invite.url}
+          />
+        </Modal>
+      ) : null}
     </>
   );
 }

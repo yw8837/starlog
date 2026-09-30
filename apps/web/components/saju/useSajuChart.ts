@@ -8,7 +8,8 @@ import { isSampleChart } from "@/lib/sajuPrologue";
 
 export type ChartResult = { chart: SajuChart } | { error: FieldError };
 
-function compute(form: SajuForm): ChartResult {
+/** The chart for a birth form, or the friendly error the engine raised. */
+export function chartFor(form: SajuForm): ChartResult {
   try {
     return { chart: computeChart(toSajuInput(form)) };
   } catch (error) {
@@ -29,11 +30,11 @@ export interface SajuChartState {
 
 /**
  * The chart for the saved birth profile, or for the sample input when nothing is saved. `result`
- * stays null until the browser has read sessionStorage, so no chart or text flashes before the user's own.
+ * stays null until the browser has read the saved profile, so no chart or text flashes before the user's own.
  */
 export function useSajuChart(): SajuChartState {
   const { profile } = useSajuProfile();
-  const result = useMemo(() => (profile === undefined ? null : compute(profile ?? DEFAULT_SAJU_FORM)), [profile]);
+  const result = useMemo(() => (profile === undefined ? null : chartFor(profile ?? DEFAULT_SAJU_FORM)), [profile]);
   return {
     form: profile ?? DEFAULT_SAJU_FORM,
     ready: profile !== undefined,

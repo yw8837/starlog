@@ -1,74 +1,62 @@
-import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
-import { SITE, won } from "@/lib/config";
+import { SITE } from "@/lib/config";
+import type { ErrorView } from "@/lib/reading/errors";
 import s from "./UnlockSheet.module.css";
 
+/** 달빛/별조각 balances (payments are off in the beta; the home and 내 정보 keep the type). */
 export interface Wallet {
   moonlight: number;
   stardust: number;
 }
 
 type UnlockSheetProps = {
-  /** First visit: log in (gift) or pay. Returning: 별조각 / 달빛 / pay. */
-  visit: "first" | "returning";
-  wallet: Wallet;
-  /** Where a first-time visitor goes to sign in. */
-  loginHref: string;
-  /** Where a signed-in visitor goes once the reading is opened. */
-  openHref: string;
-  priceKrw?: number;
-  title?: string;
+  kind: "tarot" | "saju";
+  /** Full readings left today on this device; undefined until read. */
+  remaining: number | undefined;
+  onUnlock: () => void;
+  /** The last try's error, shown above the button (the button tries again). */
+  error?: ErrorView | null;
+  /** Where "카드 다시 뽑기" / "질문 고치기" go when the error calls for it. */
+  redrawHref?: string;
+  editHref?: string;
+  /** This draw was opened already: go to the saved reading instead of opening it again. */
+  openedHref?: string;
 };
 
-function TwoLine({ main, sub }: { main: string; sub: string }) {
-  return (
-    <span className={s.twoLine}>
-      <span>{main}</span>
-      <span className={s.subLine}>{sub}</span>
-    </span>
-  );
-}
+const CheckIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </svg>
+);
 
-/** Bottom sheet that opens the full reading. Lists what is included before any payment. */
-export function UnlockSheet({ visit, wallet, loginHref, openHref, priceKrw = SITE.price.tarotStandardKrw, title = "전체 풀이 보기" }: UnlockSheetProps) {
-  const { paid, free } = SITE.currency;
-  const units = SITE.price.unitsPerReading;
-  const payLabel = `바로 결제하고 보기 · ${won(priceKrw)}`;
+/**
+ * Beta unlock: what the full reading holds (length, follow-ups, kept on this device) before the
+ * one gold button that opens it. Free during the beta, within the day's count.
+ */
+export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, editHref, openedHref }: UnlockSheetProps) {
+  const chars = new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars[kind]);
+  const usedUp = remaining === 0;
+  const label = remaining === undefined || usedUp ? "전체 풀이 보기" : `전체 풀이 보기 · 오늘 ${remaining}번 남았어요`;
+  const redraw = error?.action === "redraw" && redrawHref;
 
-  let actions: ReactNode;
-  if (visit === "first") {
-    actions = (
-      <>
-        <div className={s.primaryGroup}>
-          <Button href={loginHref} block>
-            로그인하고 무료로 보기
-          </Button>
-          <p className={s.caption}>{`가입 선물 ${free} ${SITE.price.signupGiftFree}개로 열려요`}</p>
-        </div>
-        <Button href={loginHref} variant="secondary" block>
-          {payLabel}
-        </Button>
-      </>
+  let primary;
+  if (openedHref) {
+    primary = (
+      <Button href={openedHref} block trailing="→">
+        열어 둔 풀이 보기
+      </Button>
+    );
+  } else if (redraw) {
+    primary = (
+      <Button href={redrawHref} block>
+        카드 다시 뽑기
+      </Button>
     );
   } else {
-    const stardustEnough = wallet.stardust >= units;
-    const moonShort = Math.max(0, units - wallet.moonlight);
-    const moonLabel = `${paid}으로 보기 · ${units}`;
-    actions = (
-      <>
-        <p className={s.balance}>{`내 ${free} ${wallet.stardust} · ${paid} ${wallet.moonlight}`}</p>
-        {stardustEnough ? (
-          <Button href={openHref} block>
-            {`${free}으로 보기 · ${units}`}
-          </Button>
-        ) : null}
-        <Button href={openHref} variant={stardustEnough ? "secondary" : "primary"} block>
-          {moonShort > 0 ? <TwoLine main={moonLabel} sub={`${moonShort}개 부족해요 · 충전하고 바로 열기`} /> : moonLabel}
-        </Button>
-        <Button href={openHref} variant="ghost" size="md" block>
-          {payLabel}
-        </Button>
-      </>
+    primary = (
+      <Button block onClick={onUnlock}>
+        {label}
+      </Button>
     );
   }
 
@@ -76,15 +64,46 @@ export function UnlockSheet({ visit, wallet, loginHref, openHref, priceKrw = SIT
     <section className={s.sheet} aria-labelledby="unlock-title">
       <span className={s.handle} aria-hidden="true" />
       <h2 id="unlock-title" className={s.title}>
-        {title}
+        전체 풀이에 담긴 것
       </h2>
-      <p className={s.includes}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-          <path d="m5 12.5 4.5 4.5L19 7.5" />
-        </svg>
-        {`후속 질문 ${SITE.reading.followUps}번 · 내 ${SITE.nameKo}에 보관`}
-      </p>
-      <div className={s.actions}>{actions}</div>
+      <ul className={s.includes}>
+        <li>
+          <CheckIcon />
+          {`풀이 전체 · 약 ${chars}자`}
+        </li>
+        <li>
+          <CheckIcon />
+          {`이어서 물어보기 ${SITE.reading.followUps}번`}
+        </li>
+        <li>
+          <CheckIcon />
+          이 기기에 계속 보관
+        </li>
+      </ul>
+
+      {error && !openedHref ? (
+        <div className={s.error}>
+          <p className={s.errorTitle}>{error.title}</p>
+          {error.body ? <p className={s.errorBody}>{error.body}</p> : null}
+          {error.care ? (
+            <a className={s.care} href="tel:109">
+              109에 전화하기
+            </a>
+          ) : null}
+        </div>
+      ) : usedUp && !openedHref ? (
+        <p className={s.limit}>{`오늘 열 수 있는 ${SITE.beta.fullPerDay}번을 모두 썼어요 · 내일 0시에 다시 열려요`}</p>
+      ) : null}
+
+      <div className={s.actions}>
+        {primary}
+        {error?.action === "edit" && editHref && !openedHref ? (
+          <Button href={editHref} variant="secondary" block>
+            질문 고치기
+          </Button>
+        ) : null}
+        <p className={s.caption}>베타 기간에는 무료예요</p>
+      </div>
     </section>
   );
 }

@@ -1,7 +1,7 @@
 /* A sheet: brighter than glass cards, darker than paper. */
 .sheet {
   position: relative;
-  padding: 12px var(--gutter) 24px;
+  padding: 12px var(--gutter) 22px;
   border: 1px solid rgba(243, 220, 161, 0.22);
   border-radius: 28px;
   background: linear-gradient(180deg, #2c2670 0%, #1d1850 100%);
@@ -18,18 +18,27 @@
 }
 
 .title {
-  font-size: var(--fs-h1);
+  font-size: var(--fs-h2);
   text-align: center;
 }
 
+/* What opening gives, before the button: three short lines. */
 .includes {
+  display: grid;
+  gap: 8px;
+  width: fit-content;
+  margin: 14px auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.includes li {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 6px;
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
+  gap: 8px;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.4;
 }
 
 .includes svg {
@@ -37,39 +46,52 @@
   color: var(--gold);
 }
 
+.error,
+.limit {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(13, 10, 38, 0.45);
+  text-align: center;
+}
+
+.errorTitle {
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.errorBody,
+.limit {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.errorBody {
+  margin-top: 2px;
+}
+
+.care {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .actions {
   display: grid;
   gap: 10px;
-  margin-top: 20px;
-}
-
-.primaryGroup {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 4px;
+  margin-top: 18px;
 }
 
 .caption {
   color: var(--gold);
   font-size: var(--fs-sub);
   text-align: center;
-}
-
-.balance {
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  text-align: center;
-}
-
-.twoLine {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 8px 0;
-}
-
-.subLine {
-  color: var(--gold);
-  font-size: var(--fs-sub);
-  font-weight: 500;
 }

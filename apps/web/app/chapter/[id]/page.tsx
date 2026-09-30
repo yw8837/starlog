@@ -5,44 +5,35 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
-import { INVITE_FIXTURE_TOKEN, SAJU_FOLLOW_UPS, SAJU_SAMPLE, STORY_FIXTURE, TAROT_FALLBACK, TAROT_FOLLOW_UPS, TAROT_SAMPLE } from "@/lib/fixtures";
-import { ChapterView } from "./ChapterView";
-import { SajuChapterView } from "./SajuChapterView";
+import { INVITE_FIXTURE_TOKEN, TAROT_FOLLOW_UPS, TAROT_SAMPLE } from "@/lib/fixtures";
+import { LocalChapter } from "./LocalChapter";
+import { SampleChapter } from "./SampleChapter";
 
-const findChapter = (id: string) => STORY_FIXTURE.chapters.find((c) => c.id === id);
+/** Saved readings get short random ids; `sample` is the fixture demo. */
+const LOCAL_ID = /^[a-z0-9]{6,32}$/;
 
-// Personal readings stay out of search (spec section 10).
+// Personal readings stay out of search (spec section 10); the demo too.
 export async function generateMetadata({ params }: PageProps<"/chapter/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const chapter = findChapter(id);
-  // The saju prologue's text depends on the saved chart (read in the browser), so its tab title stays generic.
-  const title = chapter?.kind === "saju" ? "나의 프롤로그" : TAROT_SAMPLE.story.title;
-  return { title, robots: { index: false, follow: false } };
+  return { title: id === "sample" ? TAROT_SAMPLE.question : "내 기록", robots: { index: false, follow: false } };
 }
 
-export default async function ChapterPage({ params, searchParams }: PageProps<"/chapter/[id]">) {
+export default async function ChapterPage({ params }: PageProps<"/chapter/[id]">) {
   const { id } = await params;
-  const chapter = findChapter(id);
-  if (!chapter) notFound();
-  const query = await searchParams;
-  const generate = query.from === "unlock" && query.instant !== "1";
+  if (id !== "sample" && !LOCAL_ID.test(id)) notFound();
 
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed moon={false} />
       <main className="page-col page-wide">
-        <DemoNotice />
-        {chapter.kind === "saju" ? (
-          <SajuChapterView sample={SAJU_SAMPLE} followUps={SAJU_FOLLOW_UPS} chapterLabel={chapter.label} generate={generate} />
+        {id === "sample" ? (
+          <>
+            <DemoNotice />
+            <SampleChapter sample={TAROT_SAMPLE} followUps={TAROT_FOLLOW_UPS} inviteUrl={`${SITE.url}/invite/${INVITE_FIXTURE_TOKEN}`} />
+          </>
         ) : (
-          <ChapterView
-            sample={TAROT_SAMPLE}
-            chapterLabel={chapter.label}
-            generate={generate}
-            inviteUrl={`${SITE.url}/invite/${INVITE_FIXTURE_TOKEN}`}
-            followUps={TAROT_FOLLOW_UPS}
-            fallback={TAROT_FALLBACK}
-          />
+          // Saved on this device only: read in the browser.
+          <LocalChapter id={id} />
         )}
       </main>
       <Footer />

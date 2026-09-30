@@ -1,8 +1,8 @@
 import s from "./DemoNotice.module.css";
 
-export const DEMO_NOTICE = "지금은 예시 풀이를 보여드려요. AI 풀이는 곧 열려요.";
+export const DEMO_NOTICE = "예시로 보여드리는 풀이예요.";
 
-/** One calm line above sample readings while AI generation is not open yet. */
+/** One calm line above the fixture demo screens (the sample reading, the invite preview). */
 export function DemoNotice() {
   return (
     <p className={s.notice} role="note">

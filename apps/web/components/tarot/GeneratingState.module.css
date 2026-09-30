@@ -2,11 +2,23 @@
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 18px;
+  gap: 16px;
   /* Full height keeps the footer below the fold while the reading is written. */
   min-height: 100dvh;
   padding: 40px 0;
   text-align: center;
+}
+
+/* In place of the text on its way: a calm card under the cards already shown. */
+.inline {
+  min-height: 0;
+  align-self: start;
+  padding: 26px 20px 24px;
+  border: 1px solid var(--glass-line);
+  border-radius: 24px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .characters {
@@ -14,7 +26,6 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  min-height: 200px;
 }
 
 .glow {
@@ -29,7 +40,13 @@
   pointer-events: none;
 }
 
-/* The rabbit joins beside the cat without pushing it off centre. */
+.inline .glow {
+  width: 180px;
+  height: 180px;
+  margin: -96px 0 0 -90px;
+}
+
+/* The assistant joins beside the leader without pushing it off centre. */
 .rabbit {
   position: absolute;
   right: -88px;
@@ -42,6 +59,11 @@
   font-family: var(--font-display), serif;
   font-size: 19px;
   font-weight: 700;
+  text-wrap: balance;
+}
+
+.inline .caption {
+  font-size: var(--fs-h2);
 }
 
 .captionText {
@@ -49,24 +71,31 @@
   animation: captionIn 420ms ease-out;
 }
 
-.dots {
-  display: flex;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.dots li {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+/* Section progress: a thin gold line that only ever grows. */
+.track {
+  width: min(220px, 70%);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
   background: var(--glass-line);
-  transition: background-color 300ms ease;
 }
 
-.dots .dotOn {
+.fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
   background: var(--gold);
+  transform-origin: left center;
+  transition: transform 600ms ease-out;
+}
+
+.hint {
+  max-width: 22em;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+  text-wrap: balance;
 }
 
 @keyframes captionIn {

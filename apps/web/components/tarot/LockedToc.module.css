@@ -12,6 +12,14 @@
   font-size: var(--fs-h2);
 }
 
+/* Scope before opening: how much the reading holds, right under the title. */
+.meta {
+  margin: -2px 0 6px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
 .list {
   margin: 0;
   padding: 0;

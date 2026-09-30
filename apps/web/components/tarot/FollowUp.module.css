@@ -162,3 +162,11 @@
     transform: translateY(6px);
   }
 }
+
+/* What went wrong with the last question (nothing was used up). */
+.error {
+  margin-top: 12px;
+  color: var(--error);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}

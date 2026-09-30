@@ -2,11 +2,10 @@ import "server-only";
 import { TEMPLATES, type Orientation, type TemplateId } from "@starlog/core";
 import sajuJson from "@content/samples/saju-prologue.ko.json";
 import tarotJson from "@content/samples/tarot-contact.ko.json";
-import type { FlowFallback } from "./flowState";
 
 /**
- * Gold fixtures for P1 screens. Real readings arrive in P3; until then every result and chapter
- * screen renders these, so their text always matches the three fixture cards.
+ * Gold fixtures: the noindex demo reading (/chapter/sample), the invite preview and tests. Real
+ * readings come from the API; no reading screen falls back to these.
  */
 
 export interface Section {
@@ -70,13 +69,6 @@ export const TAROT_SAMPLE: TarotSample = {
   ...tarotJson,
   template: toTemplateId(tarotJson.template),
   cards: tarotJson.cards.map((card) => ({ ...card, orientation: toOrientation(card.orientation) })),
-};
-
-/** What the tarot screens show on a direct visit, when no question was built in this tab. */
-export const TAROT_FALLBACK: FlowFallback = {
-  question: TAROT_SAMPLE.question,
-  template: TAROT_SAMPLE.template,
-  input: { conditions: TAROT_SAMPLE.input.conditions, note: TAROT_SAMPLE.input.note },
 };
 
 export type SajuSample = typeof sajuJson;

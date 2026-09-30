@@ -3,15 +3,18 @@ import s from "./LockedToc.module.css";
 type LockedTocProps = {
   items: string[];
   title?: string;
+  /** What the whole reading holds, e.g. "소제목 11개 · 약 2,000자". */
+  meta?: string;
 };
 
 /** Headings of the paid reading, listed as they are (never faked or blurred text). */
-export function LockedToc({ items, title = "이어지는 풀이" }: LockedTocProps) {
+export function LockedToc({ items, title = "이어지는 풀이", meta }: LockedTocProps) {
   return (
     <section className={s.toc} aria-labelledby="locked-toc-title">
       <h2 id="locked-toc-title" className={s.title}>
         {title}
       </h2>
+      {meta ? <p className={s.meta}>{meta}</p> : null}
       <ol className={s.list}>
         {items.map((item) => (
           <li key={item} className={s.item}>

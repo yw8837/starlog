@@ -10,8 +10,8 @@
 
 .title {
   margin-top: 4px;
-  font-size: 28px;
-  line-height: 1.35;
+  font-size: var(--fs-title);
+  line-height: 1.4;
 }
 
 .question {
@@ -130,28 +130,27 @@
   font-weight: 700;
 }
 
-/* Saju prologue that is still being written (any chart other than the sample). */
-/* align-self keeps the card its own height beside the taller chart column on desktop. */
-.pending {
+/* A reading id this device does not have. */
+.missing {
   display: grid;
-  align-self: start;
-  align-content: start;
-  justify-items: center;
-  gap: 14px;
-  padding: 28px 20px 26px;
+  gap: 12px;
+  max-width: 480px;
+  margin: 32px auto 0;
+  padding: 28px 20px 24px;
   border: 1px solid var(--glass-line);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--glass);
   text-align: center;
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
 }
 
-.pendingText {
-  max-width: 22em;
-  font-family: var(--font-display), serif;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.6;
-  text-wrap: balance;
+.missingTitle {
+  font-size: var(--fs-h1);
+}
+
+.missingText {
+  margin-bottom: 8px;
+  color: var(--ink-sub);
+  line-height: 1.7;
 }

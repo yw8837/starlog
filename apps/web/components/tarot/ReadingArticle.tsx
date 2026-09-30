@@ -1,13 +1,16 @@
-import type { TarotPaid } from "@/lib/fixtures";
+import type { TarotReadingData } from "@/lib/reading/types";
 import { CopyButton } from "./CopyButton";
 import { Paper } from "./Paper";
 import s from "./ReadingArticle.module.css";
 
+/** The paid sections (the fixture sample has no observation; saved readings may carry a story, never shown). */
+export type ReadingBody = Omit<TarotReadingData, "story" | "followUps">;
+
 type ReadingArticleProps = {
-  paid: TarotPaid;
+  paid: ReadingBody;
 };
 
-/** The opened reading in plain (풀이) mode: verdict callout, then every paid section in order. */
+/** The opened reading: verdict callout, then every paid section in order. */
 export function ReadingArticle({ paid }: ReadingArticleProps) {
   return (
     <div className={s.article}>
@@ -26,7 +29,7 @@ export function ReadingArticle({ paid }: ReadingArticleProps) {
         </Paper>
       ))}
 
-      {[paid.connection, paid.timing].map((section) => (
+      {[paid.connection, paid.timing, ...(paid.observation ? [paid.observation] : [])].map((section) => (
         <Paper key={section.heading}>
           <h2 className={s.heading}>{section.heading}</h2>
           <p className={s.prose}>{section.body}</p>

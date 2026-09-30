@@ -1,0 +1,50 @@
+.card {
+  display: grid;
+  gap: 10px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.eyebrow {
+  color: var(--gold);
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.source {
+  color: var(--ink-sub);
+  font-weight: 500;
+}
+
+.observation {
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+
+.answers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thanks {
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
