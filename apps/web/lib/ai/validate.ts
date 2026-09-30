@@ -127,7 +127,14 @@ const QUOTED = /'[^'\n]*'|"[^"\n]*"|“[^”]*”|‘[^’]*’/g;
 const HAERACHE = /(한다|는다|했다|였다|이다|았다|었다|겠다|된다|인다|린다|진다|간다|온다|본다|낸다|준다|있다|없다|같다)$/;
 /** Unmistakable 반말 endings (a lone "해" is the sun, so single words are not judged). */
 const BANMAL = /(할게|볼게|줄게|낼게|갈게|올게|보낼게|거야|이야|잖아|거든|했어|있어|없어|하자|보자|해줘|할래|볼래|같아|좋아|싫어|해봐|알아|몰라|했지|하지 마)$/;
-const HAE_NOUNS = new Set(["올해", "피해", "이해", "방해", "손해", "오해", "작년해"]);
+/**
+ * Words ending in 해 that are not 반말 verbs: nouns (새해, 견해…) and the fragments a noun ending
+ * can leave ("나를 위해.", "빛을 향해."). The style rules invite noun endings, so these must pass.
+ */
+const HAE_NOUNS = new Set([
+  "올해", "새해", "지난해", "이듬해", "그해", "첫해", "매해", "작년해", "피해", "이해", "방해", "손해", "오해", "견해", "재해", "침해",
+  "무해", "유해", "위해", "통해", "대해", "향해", "의해", "인해", "관해",
+]);
 
 /** Sentences that are not 해요체 (quotes removed first). */
 export function nonHaeyoSentences(text: string): string[] {

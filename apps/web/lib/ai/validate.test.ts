@@ -189,6 +189,9 @@ describe("A2 reading-quality checks (blind judge 2026-09-30)", () => {
     expect(nonHaeyoSentences("등불을 높이 들었다. 오늘은 쉬어도 돼. 먼저 보낼게. 그림 속 노인이 서 있어요. 작은 새싹 하나.")).toEqual(["등불을 높이 들었다.", "먼저 보낼게."]);
     expect(nonHaeyoSentences("오늘은 먼저 연락해.")).toEqual(["오늘은 먼저 연락해."]);
     expect(nonHaeyoSentences("하늘의 해. 서로에 대한 이해.")).toEqual([]);
+    // noun endings the style rules invite (a real draft must not fail hard on them)
+    expect(nonHaeyoSentences("새해를 앞둔 조용한 결심. 오늘 하루를 나를 위해. 멀리 있는 빛을 향해. 서로 다른 견해.")).toEqual([]);
+    expect(nonHaeyoSentences("지금 시작해. 그 사람을 기억해.")).toEqual(["지금 시작해.", "그 사람을 기억해."]);
     expect(nonHaeyoSentences("'요즘 어떻게 지내? 문득 생각나서'라고 보내 보세요.")).toEqual([]);
     const r = base();
     const haera = { ...r, alternatives: { ...r.alternatives, body: `${r.alternatives.body} 이 그림은 다른 길을 보여 준다.` } };

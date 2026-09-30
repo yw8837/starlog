@@ -79,6 +79,9 @@ function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: number, 
     angleText(card, ctx.angles[0] ?? "self"),
     `이 자리에서는 ${card.kb.core[card.orientation].join(", ")} 같은 결을 떠올려 보면 좋아요.`,
     ...extra,
+    // The card's other image facts come last: a card whose KB text is mostly off this topic (8 of
+    // Wands' 연락·소식 on a health reading) still reaches the section length with what it shows.
+    ...facts.filter((f) => f !== fact).map((f) => factSentence(f.ko)),
   ].filter((s): s is string => Boolean(s) && onTopic(ctx, s!));
   const parts = [...required];
   for (const sentence of optional) {
@@ -227,10 +230,10 @@ export function mockTarotFollowUp(ctx: TarotContext): FollowUpAnswer {
     kind: "clarify",
     answer: [
       `같은 카드로 이어서 보면, ${cardLabel(first)} 자리의 그림에서 다시 시작하는 게 좋아요.`,
-      factSentence(fact.ko),
-      `이 자리에서는 ${first.kb.core.oneLine[first.orientation]}로 읽었어요.`,
+      // KB lines that stray off this topic (8 of Wands' 연락 on a money reading) are left out.
+      ...[factSentence(fact.ko), `이 자리에서는 ${first.kb.core.oneLine[first.orientation]}로 읽었어요.`].filter((sentence) => onTopic(ctx, sentence)),
       "결론은 그대로 두고, 오늘 할 수 있는 크기로만 나눠서 해 보세요.",
-      actionOf(first),
+      actionOf(first, ctx),
     ].join(" "),
   };
 }

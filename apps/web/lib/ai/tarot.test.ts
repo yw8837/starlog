@@ -7,13 +7,13 @@ import { kbCard } from "@/lib/kb";
 import { FALLBACK_BETA, MODEL, buildRequest } from "./anthropic";
 import { generateTarotReading, generateTarotTeaser } from "./generate";
 import { mockDaily, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
-import { TAROT_SYSTEM, buildTarotContext, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt, type TarotInput } from "./prompts/tarot";
+import { CUSTOM_TEMPLATE, TAROT_SYSTEM, buildTarotContext, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt, type TarotInput } from "./prompts/tarot";
 import { GenerationError, generateValidated, selectProvider, type ReadingProvider } from "./provider";
 import {
   DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, SajuTeaserSchema, StoredSajuReadingSchema, StoredTarotReadingSchema,
   TarotReadingSchema, TarotTeaserDraftSchema, TarotTeaserSchema, type TarotReading,
 } from "./schemas";
-import { validateDaily, validateTarotReading, validateTarotTeaser } from "./validate";
+import { validateDaily, validateTarotFollowUp, validateTarotReading, validateTarotTeaser } from "./validate";
 import { isSoftViolation } from "./style";
 
 /** Hard violations only (soft style hints may regenerate but never fail a reading). */
@@ -204,6 +204,54 @@ describe("mock provider", () => {
       expect([s, validateDaily(mockDaily(ctx), ctx)]).toEqual([s, []]);
     }
   });
+
+  // Draws are random on the server, so a card the mock cannot write for is a flaky 502 in e2e and
+  // route tests (8 of Wands' KB is mostly 연락·소식, dropped on non-relationship topics).
+  it("passes its validators for every card and orientation in every spread and topic (no draw can flake)", () => {
+    const upright = createDeck("sweep-order", 0);
+    const reversed = { ...upright, orientations: upright.orientations.map(() => "reversed" as const) };
+    const contexts: Array<{ label: string; templateId: TemplateId; input: (i: number) => TarotInput }> = [];
+    for (const [who, topics] of Object.entries(TOPICS_BY_WHO) as Array<[keyof typeof TOPICS_BY_WHO, (typeof TOPICS_BY_WHO)[keyof typeof TOPICS_BY_WHO]]>) {
+      for (const topic of topics.filter((t) => t.template !== "daily")) {
+        contexts.push({
+          label: `${who}/${topic.id}`, templateId: topic.template,
+          // bare chips on even cards, every chip and a note on odd ones
+          input: (i) => ({
+            topicId: topic.id, whoId: who, whenId: "week", question: "", note: i % 2 ? "요즘 고민이 많아요" : "",
+            conditions: i % 2 ? topic.conditions.map((c) => ({ label: c.label, value: c.options[0]! })) : [],
+          }),
+        });
+      }
+    }
+    for (const [who, templateId] of Object.entries(CUSTOM_TEMPLATE) as Array<[keyof typeof CUSTOM_TEMPLATE, TemplateId]>) {
+      contexts.push({ label: `custom/${who}`, templateId, input: () => ({ topicId: "custom", whoId: who, topicText: "창업 준비", question: "", conditions: [], note: "" }) });
+    }
+    const failures: string[] = [];
+    for (const { label, templateId, input } of contexts) {
+      const n = TEMPLATES[templateId].positions.length;
+      for (const deck of [upright, reversed]) {
+        for (let i = 0; i < 78; i++) {
+          // card i in the first slot (the free teaser), the others spread over the deck
+          const cards = pickCards(deck, TEMPLATES[templateId], Array.from({ length: n }, (_, k) => (i + k * Math.floor(78 / n)) % 78));
+          const ctx = buildTarotContext(templateId, cards, input(i));
+          const found = [
+            ...validateTarotTeaser(mockTarotTeaser(ctx), ctx),
+            ...hard(validateTarotReading(mockTarotReading(ctx), ctx)),
+            ...validateTarotFollowUp(mockTarotFollowUp(ctx), ctx, "이번 주에 무엇을 먼저 하면 좋을까요?"),
+          ];
+          if (found.length) failures.push(`${label} ${cards.map((c) => `${c.cardId}:${c.orientation}`).join(",")}: ${found.join(" | ")}`);
+        }
+      }
+    }
+    for (const deck of [upright, reversed]) {
+      for (let i = 0; i < 78; i++) {
+        const ctx = buildTarotContext("daily", pickCards(deck, TEMPLATES.daily, [i]), null);
+        const found = validateDaily(mockDaily(ctx), ctx);
+        if (found.length) failures.push(`daily ${ctx.cards[0]!.cardId}:${ctx.cards[0]!.orientation}: ${found.join(" | ")}`);
+      }
+    }
+    expect(failures.slice(0, 10)).toEqual([]);
+  }, 120_000); // about 3,000 draws × 3 validators
 
   it("answers a money question with money text, never the relationship sample", async () => {
     const provider = selectProvider({ STARLOG_AI: "mock" } as unknown as NodeJS.ProcessEnv)!;
