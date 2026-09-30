@@ -53,10 +53,20 @@ export interface GenerationTask<T> {
   mock: (attempt: number) => T;
 }
 
+/** Live progress and cancellation for one generation (streaming routes, client disconnects). */
+export interface GenerationHooks {
+  /** aborts the upstream request (client gone, or the 240 s budget spent) */
+  signal?: AbortSignal;
+  /** the model's output text so far (partial JSON), on every streamed chunk */
+  onText?: (snapshot: string) => void;
+  /** called as each validated attempt starts (2 = the regeneration) */
+  onAttempt?: (attempt: number) => void;
+}
+
 export interface ReadingProvider {
   readonly name: "anthropic" | "mock";
   /** `feedback` lists the previous attempt's violations (regeneration). */
-  generate<T>(task: GenerationTask<T>, attempt: number, feedback?: string[]): Promise<{ data: T; usage: Usage[] }>;
+  generate<T>(task: GenerationTask<T>, attempt: number, feedback?: string[], hooks?: GenerationHooks): Promise<{ data: T; usage: Usage[] }>;
 }
 
 /**
@@ -94,15 +104,18 @@ export async function generateValidated<T>(
   provider: ReadingProvider,
   task: GenerationTask<T>,
   validate: (data: T) => string[],
+  hooks: GenerationHooks = {},
 ): Promise<Generated<T>> {
   const usage: Usage[] = [];
   let feedback: string[] | undefined;
   for (let attempt = 1; attempt <= 2; attempt++) {
+    if (hooks.signal?.aborted) throw new GenerationError("UPSTREAM", ["aborted"]);
+    hooks.onAttempt?.(attempt);
     const started = Date.now();
     let violations: string[];
     let data: T | undefined;
     try {
-      const result = await provider.generate(task, attempt, feedback);
+      const result = await provider.generate(task, attempt, feedback, hooks);
       usage.push(...result.usage);
       data = result.data;
       violations = validate(result.data);

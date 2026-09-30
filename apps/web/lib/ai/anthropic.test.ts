@@ -23,19 +23,32 @@ function message(stop: Message["stop_reason"], text: string | null, extra: Parti
   } as unknown as Message;
 }
 
-/** A fake SDK that answers from a script and records the requested max_tokens. */
-function fake(script: Array<Message | Error>): MessagesClient & { maxTokens: number[] } {
+/** A fake SDK stream: replays the script, records max_tokens and signals, and streams text snapshots. */
+function fake(script: Array<Message | Error>): MessagesClient & { maxTokens: number[]; signals: Array<AbortSignal | undefined> } {
   const maxTokens: number[] = [];
+  const signals: Array<AbortSignal | undefined> = [];
   return {
-    maxTokens,
+    maxTokens, signals,
     beta: {
       messages: {
-        async create(body) {
+        stream(body, options) {
           maxTokens.push(body.max_tokens);
+          signals.push(options?.signal);
           const next = script.shift();
-          if (!next) throw new Error("script exhausted");
-          if (next instanceof Error) throw next;
-          return next;
+          const listeners: Array<(delta: string, snapshot: string) => void> = [];
+          return {
+            on(_event: "text", listener: (delta: string, snapshot: string) => void) {
+              listeners.push(listener);
+              return this;
+            },
+            async finalMessage() {
+              if (!next) throw new Error("script exhausted");
+              if (next instanceof Error) throw next;
+              const text = next.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("");
+              for (let i = 1; i <= text.length; i += 8) for (const l of listeners) l(text.slice(i - 1, i + 7), text.slice(0, i + 7));
+              return next;
+            },
+          };
         },
       },
     },
@@ -50,6 +63,22 @@ describe("anthropic provider response handling (fake SDK)", () => {
     const result = await anthropicProvider("key", sdk).generate(task(), 1);
     expect(result.data).toEqual({ kind: "clarify", answer: "그림 속 노인은 등불을 높이 들었어요." });
     expect(result.usage).toEqual([{ model: "claude-opus-5-5", inputTokens: 100, outputTokens: 50, cacheReadTokens: 0, cacheWriteTokens: 0 }]);
+  });
+
+  it("streams: forwards text snapshots and the abort signal", async () => {
+    const sdk = fake([message("end_turn", ANSWER)]);
+    const snapshots: string[] = [];
+    const controller = new AbortController();
+    await anthropicProvider("key", sdk).generate(task(), 1, undefined, { signal: controller.signal, onText: (s) => snapshots.push(s) });
+    expect(sdk.signals[0]).toBe(controller.signal);
+    expect(snapshots.at(-1)).toBe(ANSWER);
+    expect(snapshots.length).toBeGreaterThan(3);
+  });
+
+  it("maps an aborted stream to UPSTREAM", async () => {
+    const caught = await anthropicProvider("key", fake([new Anthropic.APIUserAbortError()])).generate(task(), 1).catch((e: unknown) => e);
+    expect(caught).toMatchObject({ code: "UPSTREAM" });
+    expect((caught as GenerationError).detail[0]).toMatch(/APIUserAbortError/);
   });
 
   it("maps a refusal to REFUSED before reading any content", async () => {

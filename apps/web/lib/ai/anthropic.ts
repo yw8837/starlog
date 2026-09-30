@@ -2,7 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { DEFAULT_MODEL } from "./config";
-import { GenerationError, type GenerationTask, type ReadingProvider, type Usage } from "./provider";
+import { GenerationError, type GenerationHooks, type GenerationTask, type ReadingProvider, type Usage } from "./provider";
 
 type BetaMessage = Anthropic.Beta.BetaMessage;
 type BetaTextBlockParam = Anthropic.Beta.BetaTextBlockParam;
@@ -11,13 +11,15 @@ type BetaTextBlockParam = Anthropic.Beta.BetaTextBlockParam;
  * Claude provider: claude-opus-5-5 by default or claude-sonnet-5-5 (lib/ai/config.ts), adaptive
  * thinking, explicit effort, structured JSON output, a cached system prompt, and the server-side
  * refusal fallback (`fallbacks: "default"`; both models take it on the Claude API with the
- * -2026-07-01 header).
+ * -2026-07-01 header). Every call streams (`beta.messages.stream` + `finalMessage()`), so a long
+ * reading never hits an HTTP timeout; the caller's AbortSignal cancels it upstream.
  */
 
 export const MODEL = DEFAULT_MODEL;
 /** The `"default"` scalar form of `fallbacks` needs exactly this beta header. */
 export const FALLBACK_BETA = "server-side-fallback-2026-07-01";
-const TIMEOUT_MS = 110_000;
+/** Matches the routes' overall generation budget (lib/api/stream.ts). */
+const TIMEOUT_MS = 240_000;
 
 const clients = new Map<string, Anthropic>();
 
@@ -51,9 +53,15 @@ export function buildRequest<T>(task: GenerationTask<T>, maxTokens: number, feed
   };
 }
 
+/** What the provider uses of an SDK message stream. */
+export interface MessageStreamLike {
+  on(event: "text", listener: (delta: string, snapshot: string) => void): unknown;
+  finalMessage(): Promise<BetaMessage>;
+}
+
 /** The one SDK call the provider makes; tests pass a fake with the same shape. */
 export interface MessagesClient {
-  beta: { messages: { create(body: ReturnType<typeof buildRequest>): Promise<BetaMessage> } };
+  beta: { messages: { stream(body: ReturnType<typeof buildRequest>, options?: { signal?: AbortSignal }): MessageStreamLike } };
 }
 
 /** A max_tokens cap raised for a task stays raised for its regeneration (same task object). */
@@ -62,13 +70,15 @@ const raisedCaps = new WeakMap<object, number>();
 export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(apiKey)): ReadingProvider {
   return {
     name: "anthropic",
-    async generate<T>(task: GenerationTask<T>, _attempt: number, feedback?: string[]) {
+    async generate<T>(task: GenerationTask<T>, _attempt: number, feedback?: string[], hooks: GenerationHooks = {}) {
       const usage: Usage[] = [];
       let maxTokens = raisedCaps.get(task) ?? task.maxTokens;
       for (let call = 0; call < 2; call++) {
         let message: BetaMessage;
         try {
-          message = await sdk.beta.messages.create(buildRequest(task, maxTokens, feedback));
+          const stream = sdk.beta.messages.stream(buildRequest(task, maxTokens, feedback), hooks.signal ? { signal: hooks.signal } : undefined);
+          if (hooks.onText) stream.on("text", (_delta, snapshot) => hooks.onText!(snapshot));
+          message = await stream.finalMessage();
         } catch (error) {
           // The class name only (SDK errors keep name "Error"); never the message, which may echo the request.
           const kind = error instanceof Error ? error.constructor.name : "unknown";
