@@ -1,6 +1,7 @@
 import "server-only";
 import type { z } from "zod";
 import { anthropicProvider } from "./anthropic";
+import type { Effort, ModelId } from "./config";
 import { mockProvider } from "./mock";
 import { isSoftViolation } from "./style";
 
@@ -23,7 +24,7 @@ export class GenerationError extends Error {
   }
 }
 
-export type Effort = "low" | "medium";
+export type { Effort } from "./config";
 
 export interface Usage {
   /** the model that produced the tokens (a server-side fallback reports its own) */
@@ -44,6 +45,8 @@ export interface GenerationTask<T> {
   /** user data (inside delimited tags) and the task */
   user: string;
   schema: z.ZodType<T>;
+  /** defaults to claude-opus-5-5 (lib/ai/config.ts decides per kind) */
+  model?: ModelId;
   effort: Effort;
   maxTokens: number;
   /** what the mock provider returns; `attempt` is 1 or 2 */

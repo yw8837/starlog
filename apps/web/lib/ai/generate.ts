@@ -6,6 +6,7 @@ import {
   TAROT_SYSTEM, cardLabel, dailyPrompt, tarotFollowUpPrompt, tarotHeadings, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt,
   type FollowUpTurn, type TarotContext,
 } from "./prompts/tarot";
+import { generationSetting } from "./config";
 import { generateValidated, type ReadingProvider, type Usage } from "./provider";
 import {
   DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema,
@@ -31,8 +32,7 @@ export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotC
     system: TAROT_SYSTEM,
     user: tarotTeaserPrompt(ctx),
     schema: TarotTeaserDraftSchema,
-    effort: "low",
-    maxTokens: 8000,
+    ...generationSetting("tarot-teaser"),
     mock: () => mockTarotTeaser(ctx),
   }, (draft) => validateTarotTeaser(draft, ctx));
   return {
@@ -51,8 +51,7 @@ export async function generateTarotReading(provider: ReadingProvider, ctx: Tarot
     system: TAROT_SYSTEM,
     user: tarotReadingPrompt(ctx),
     schema: TarotReadingSchema,
-    effort: "medium",
-    maxTokens: 16000,
+    ...generationSetting("tarot-reading"),
     mock: () => mockTarotReading(ctx),
   }, (reading) => validateTarotReading(reading, ctx));
   const h = tarotHeadings(ctx);
@@ -78,8 +77,7 @@ export async function generateDaily(provider: ReadingProvider, ctx: TarotContext
     system: TAROT_SYSTEM,
     user: dailyPrompt(ctx),
     schema: DailyDraftSchema,
-    effort: "low",
-    maxTokens: 8000,
+    ...generationSetting("tarot-daily"),
     mock: () => mockDaily(ctx),
   }, (draft) => validateDaily(draft, ctx));
 }
@@ -92,8 +90,7 @@ export async function generateTarotFollowUp(
     system: TAROT_SYSTEM,
     user: tarotFollowUpPrompt(ctx, reading, turns, question),
     schema: FollowUpAnswerSchema,
-    effort: "low",
-    maxTokens: 8000,
+    ...generationSetting("followup"),
     mock: () => mockTarotFollowUp(ctx),
   }, (answer) => validateTarotFollowUp(answer, ctx, question));
 }
@@ -106,8 +103,7 @@ export async function generateSajuTeaser(provider: ReadingProvider, facts: SajuF
     system: SAJU_SYSTEM,
     user: sajuTeaserPrompt(facts),
     schema: SajuTeaserDraftSchema,
-    effort: "low",
-    maxTokens: 8000,
+    ...generationSetting("saju-teaser"),
     mock: () => mockSajuTeaser(facts),
   }, (draft) => validateSajuTeaser(draft, facts));
   return { data: { title: data.title.trim(), summary: data.summary.trim(), lockedToc: [...SAJU_PROLOGUE_SECTIONS] }, usage };
@@ -119,8 +115,7 @@ export async function generateSajuReading(provider: ReadingProvider, facts: Saju
     system: SAJU_SYSTEM,
     user: sajuReadingPrompt(facts),
     schema: SajuReadingSchema,
-    effort: "medium",
-    maxTokens: 16000,
+    ...generationSetting("saju-reading"),
     mock: () => mockSajuReading(facts),
   }, (reading) => validateSajuReading(reading, facts));
   // Headings are code-owned so the locked TOC stays 1:1 with the paid sections.
@@ -135,8 +130,7 @@ export async function generateSajuFollowUp(
     system: SAJU_SYSTEM,
     user: sajuFollowUpPrompt(facts, reading, turns, question),
     schema: FollowUpAnswerSchema,
-    effort: "low",
-    maxTokens: 8000,
+    ...generationSetting("followup"),
     mock: () => mockSajuFollowUp(facts),
   }, (answer) => validateSajuFollowUp(answer, facts, question));
 }

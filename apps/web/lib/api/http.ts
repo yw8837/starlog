@@ -1,4 +1,5 @@
 import "server-only";
+import { aiConfigProblems } from "@/lib/ai/config";
 import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/provider";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import {
@@ -131,14 +132,22 @@ export interface Gate {
   cookies: Record<string, string>;
 }
 
+let loggedConfigProblems = false;
+
 /**
- * What every generation route checks first: signing secret and provider configured (503 otherwise),
- * owner pass, and the per-IP limiter (owners get the 5x limiter).
+ * What every generation route checks first: signing secret, provider and model/effort config valid
+ * (503 otherwise; a bad config is logged once, by variable name), owner pass, and the per-IP
+ * limiter (owners get the 5x limiter).
  */
 export async function openGate(request: Request): Promise<Gate | Response> {
   const secret = signingSecret();
   const provider = selectProvider();
-  if (!secret || !provider) return errorResponse("AI_UNAVAILABLE");
+  const problems = aiConfigProblems();
+  if (problems.length && !loggedConfigProblems) {
+    loggedConfigProblems = true;
+    console.error(JSON.stringify({ evt: "config.invalid_ai", problems }));
+  }
+  if (!secret || !provider || problems.length) return errorResponse("AI_UNAVAILABLE");
   const now = Date.now();
   const cookies = parseCookies(request);
   const owner = await isOwner(cookies[OWNER_COOKIE], secret, now);

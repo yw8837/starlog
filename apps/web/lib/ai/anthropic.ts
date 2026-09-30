@@ -1,17 +1,20 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import { DEFAULT_MODEL } from "./config";
 import { GenerationError, type GenerationTask, type ReadingProvider, type Usage } from "./provider";
 
 type BetaMessage = Anthropic.Beta.BetaMessage;
 type BetaTextBlockParam = Anthropic.Beta.BetaTextBlockParam;
 
 /**
- * Claude provider: claude-opus-5-5, adaptive thinking, explicit effort, structured JSON output,
- * a cached system prompt, and the server-side refusal fallback (`fallbacks: "default"`).
+ * Claude provider: claude-opus-5-5 by default or claude-sonnet-5-5 (lib/ai/config.ts), adaptive
+ * thinking, explicit effort, structured JSON output, a cached system prompt, and the server-side
+ * refusal fallback (`fallbacks: "default"`; both models take it on the Claude API with the
+ * -2026-07-01 header).
  */
 
-export const MODEL = "claude-opus-5-5";
+export const MODEL = DEFAULT_MODEL;
 /** The `"default"` scalar form of `fallbacks` needs exactly this beta header. */
 export const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 const TIMEOUT_MS = 110_000;
@@ -37,7 +40,7 @@ export function buildRequest<T>(task: GenerationTask<T>, maxTokens: number, feed
     });
   }
   return {
-    model: MODEL,
+    model: task.model ?? DEFAULT_MODEL,
     max_tokens: maxTokens,
     betas: [FALLBACK_BETA],
     fallbacks: "default" as const,

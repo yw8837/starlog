@@ -322,6 +322,16 @@ describe("production configuration", () => {
     expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM })).data.code).toBe("AI_UNAVAILABLE");
   });
 
+  it("answers 503 AI_UNAVAILABLE when the model or effort config is invalid", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.stubEnv("STARLOG_MODEL_TAROT_FULL", "claude-haiku-4-5");
+    const d = device();
+    const { drawToken } = await drawSelfFlow(d);
+    const res = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    expect(res.status).toBe(503);
+    expect(res.data.code).toBe("AI_UNAVAILABLE");
+  });
+
   it("answers 503 without a signing secret in production", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("STARLOG_SIGNING_SECRET", "");
