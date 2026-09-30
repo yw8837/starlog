@@ -17,11 +17,17 @@
   "observability": {
     "enabled": true
   },
-  // Per-IP limits for AI generation (lib/security/quota.ts LIMITS_PER_MINUTE must match).
-  // Owners get the 5x limiter; owner-code attempts have their own small one.
+  // Per-IP limits for AI generation (lib/security/rateLimit.ts LIMITS_PER_MINUTE must match).
+  // Owners get the 5x limiters; full readings have their own tighter one; owner-code attempts too.
   "ratelimits": [
     { "name": "GEN_LIMITER", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
     { "name": "OWNER_GEN_LIMITER", "namespace_id": "1002", "simple": { "limit": 150, "period": 60 } },
-    { "name": "OWNER_LOGIN_LIMITER", "namespace_id": "1003", "simple": { "limit": 5, "period": 60 } }
+    { "name": "OWNER_LOGIN_LIMITER", "namespace_id": "1003", "simple": { "limit": 5, "period": 60 } },
+    { "name": "FULL_LIMITER", "namespace_id": "1004", "simple": { "limit": 5, "period": 60 } },
+    { "name": "OWNER_FULL_LIMITER", "namespace_id": "1005", "simple": { "limit": 25, "period": 60 } }
+  ],
+  // 오늘의 한 장 results, one per device per KST day (lib/api/dailyStore.ts).
+  "kv_namespaces": [
+    { "binding": "DAILY_KV", "id": "fbb538757609409c94a386390809926a" }
   ]
 }

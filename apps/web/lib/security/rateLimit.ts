@@ -1,27 +1,17 @@
 import "server-only";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { cloudflareEnv, warnMissingBinding } from "@/lib/cloudflare";
 
 /** Per-IP rate limiter: the Workers Rate Limiting bindings, with an in-memory fallback. */
 
-/** Workers Rate Limiting binding (wrangler.jsonc `ratelimits`). */
-interface RateLimitBinding {
-  limit(options: { key: string }): Promise<{ success: boolean }>;
-}
-
-declare global {
-  interface CloudflareEnv {
-    GEN_LIMITER?: RateLimitBinding;
-    OWNER_GEN_LIMITER?: RateLimitBinding;
-    OWNER_LOGIN_LIMITER?: RateLimitBinding;
-  }
-}
-
-export type LimiterName = "GEN_LIMITER" | "OWNER_GEN_LIMITER" | "OWNER_LOGIN_LIMITER";
+export type LimiterName = "GEN_LIMITER" | "OWNER_GEN_LIMITER" | "FULL_LIMITER" | "OWNER_FULL_LIMITER" | "OWNER_LOGIN_LIMITER";
 
 /** Requests per 60 s; must match wrangler.jsonc so the in-memory fallback behaves like production. */
 export const LIMITS_PER_MINUTE: Record<LimiterName, number> = {
   GEN_LIMITER: 30,
   OWNER_GEN_LIMITER: 150,
+  /** full readings (the expensive calls), on top of GEN_LIMITER */
+  FULL_LIMITER: 5,
+  OWNER_FULL_LIMITER: 25,
   OWNER_LOGIN_LIMITER: 5,
 };
 
@@ -33,28 +23,25 @@ const windows = new Map<string, number[]>();
 function memoryLimit(name: LimiterName, key: string, now: number): boolean {
   const id = `${name}:${key}`;
   const recent = (windows.get(id) ?? []).filter((t) => now - t < WINDOW_MS);
+  windows.delete(id); // re-inserted below, so the Map stays in least-recently-used order
   if (recent.length >= LIMITS_PER_MINUTE[name]) {
     windows.set(id, recent);
     return false;
   }
   recent.push(now);
-  if (!windows.has(id) && windows.size >= MAX_TRACKED_KEYS) windows.clear();
+  // Evict the least recently used keys instead of forgetting every window at once.
+  while (windows.size >= MAX_TRACKED_KEYS) windows.delete(windows.keys().next().value!);
   windows.set(id, recent);
   return true;
 }
 
-function binding(name: LimiterName): RateLimitBinding | undefined {
-  try {
-    return getCloudflareContext().env[name];
-  } catch {
-    return undefined; // not running on Workers
-  }
-}
-
 /** True when the request may proceed. `key` is the client IP; it is never logged. */
 export async function rateLimit(name: LimiterName, key: string, now = Date.now()): Promise<boolean> {
-  const limiter = binding(name);
+  const env = cloudflareEnv();
+  const limiter = env?.[name];
   if (limiter) return (await limiter.limit({ key })).success;
+  // On Workers a missing binding is a deploy mistake: say so once, then limit per isolate.
+  if (env) warnMissingBinding(name);
   return memoryLimit(name, key, now);
 }
 

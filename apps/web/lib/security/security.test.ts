@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DRAW_TOKEN_TTL_MS, dailyCard, issueDraw, openDraw } from "./drawToken";
 import { isOwner, ownerCookie } from "./owner";
 import { hasQuota, kstDay, nextKstMidnight, quotaLimits, readQuota, spendQuota } from "./quota";
@@ -115,5 +115,52 @@ describe("rate limiter (in-memory fallback)", () => {
     expect(await rateLimit("GEN_LIMITER", "5.6.7.8", 1_000)).toBe(true);
     expect(await rateLimit("OWNER_GEN_LIMITER", "1.2.3.4", 1_000)).toBe(true);
     expect(await rateLimit("GEN_LIMITER", "1.2.3.4", 61_001)).toBe(true);
+  });
+});
+
+describe("rate limiter bindings", () => {
+  const CONTEXT = Symbol.for("__cloudflare-context__");
+  const setEnv = (env: Record<string, unknown> | null) => {
+    if (env) (globalThis as Record<symbol, unknown>)[CONTEXT] = { env, cf: undefined, ctx: {} };
+    else delete (globalThis as Record<symbol, unknown>)[CONTEXT];
+  };
+
+  it("uses the Workers binding when present", async () => {
+    const keys: string[] = [];
+    setEnv({ FULL_LIMITER: { async limit({ key }: { key: string }) { keys.push(key); return { success: keys.length < 2 }; } } });
+    try {
+      expect(await rateLimit("FULL_LIMITER", "9.9.9.9")).toBe(true);
+      expect(await rateLimit("FULL_LIMITER", "9.9.9.9")).toBe(false);
+      expect(keys).toEqual(["9.9.9.9", "9.9.9.9"]);
+    } finally {
+      setEnv(null);
+    }
+  });
+
+  it("warns once and limits in memory when running on Workers without the binding", async () => {
+    resetMemoryLimiter();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    setEnv({});
+    try {
+      for (let i = 0; i < LIMITS_PER_MINUTE.OWNER_FULL_LIMITER; i++) expect(await rateLimit("OWNER_FULL_LIMITER", "8.8.8.8", 1_000)).toBe(true);
+      expect(await rateLimit("OWNER_FULL_LIMITER", "8.8.8.8", 1_000)).toBe(false);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn.mock.calls[0]![0]).toContain("OWNER_FULL_LIMITER");
+    } finally {
+      setEnv(null);
+      warn.mockRestore();
+    }
+  });
+});
+
+describe("wrangler.jsonc", () => {
+  it("declares every limiter with the limits the in-memory fallback uses, and the daily KV", async () => {
+    const { readFileSync } = await import("node:fs");
+    const raw = readFileSync(new URL("../../wrangler.jsonc", import.meta.url), "utf8").replace(/^\s*\/\/.*$/gm, "");
+    const config = JSON.parse(raw) as { ratelimits: Array<{ name: string; simple: { limit: number; period: number } }>; kv_namespaces: Array<{ binding: string }> };
+    const declared = Object.fromEntries(config.ratelimits.map((r) => [r.name, r.simple.limit]));
+    expect(declared).toEqual(LIMITS_PER_MINUTE);
+    expect(config.ratelimits.every((r) => r.simple.period === 60)).toBe(true);
+    expect(config.kv_namespaces.map((k) => k.binding)).toContain("DAILY_KV");
   });
 });

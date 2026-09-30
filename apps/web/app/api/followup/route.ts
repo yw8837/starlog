@@ -2,16 +2,17 @@ import { TEMPLATES, type DrawnCard } from "@starlog/core";
 import { generateSajuFollowUp, generateTarotFollowUp } from "@/lib/ai/generate";
 import { buildTarotContext } from "@/lib/ai/prompts/tarot";
 import { SajuReadingSchema, TarotReadingSchema, type FollowUpAnswer } from "@/lib/ai/schemas";
-import { crisisResponse, errorFromGeneration, errorResponse, json, openGate, readJson, setCookie } from "@/lib/api/http";
+import { checkQuota, crisisResponse, errorFromGeneration, errorResponse, json, openGate, readJson, spendCookies } from "@/lib/api/http";
 import { FollowUpBody } from "@/lib/api/inputs";
 import { factsFromBirth } from "@/lib/api/sajuRequest";
 import { issueChapter, openChapter } from "@/lib/security/chapterToken";
-import { QUOTA_COOKIE, QUOTA_COOKIE_MAX_AGE, hasQuota, nextKstMidnight, quotaLimits, readQuota, spendQuota } from "@/lib/security/quota";
+import { quotaLimits } from "@/lib/security/quota";
 
 /**
  * POST {chapterToken, reading, question} → {kind, answer, chapterToken, remaining}. The reading must
  * be the one the token was issued for (digest check); the returned token carries the new turn.
  * Capped per chapter (BETA_FOLLOWUPS_PER_CHAPTER) and per day; the owner pass skips both caps.
+ * Chapter tokens expire 7 days after the reading.
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
@@ -19,12 +20,12 @@ export async function POST(request: Request): Promise<Response> {
   const body = FollowUpBody.safeParse(await readJson(request, 64_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
   const chapter = await openChapter(body.data.chapterToken, body.data.reading, gate.secret, gate.now);
-  if (!chapter) return errorResponse("BAD_TOKEN", { message: "풀이 정보가 맞지 않아요. 풀이를 다시 열어 주세요." });
+  if (!chapter) return errorResponse("BAD_TOKEN", { message: "후속 질문을 이어 갈 수 없는 풀이예요. 풀이를 받은 지 7일이 지났거나 내용이 달라졌어요." });
 
   const limits = quotaLimits();
   if (!gate.owner && chapter.turns.length >= limits.followupsPerChapter) return errorResponse("BETA_LIMIT", { scope: "chapter", remaining: 0 });
-  const quota = await readQuota(gate.cookies[QUOTA_COOKIE], gate.secret, gate.now);
-  if (!gate.owner && !hasQuota(quota, "followup", limits)) return errorResponse("BETA_LIMIT", { scope: "day", resetsAt: nextKstMidnight(gate.now) });
+  const quota = await checkQuota(gate, "followup", { scope: "day" });
+  if (quota instanceof Response) return quota;
   const question = body.data.question;
   const crisis = crisisResponse(question);
   if (crisis) return crisis;
@@ -50,8 +51,8 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const turns = [...chapter.turns, { question, answer: answer.answer }];
-  const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now);
-  const cookies = gate.owner ? [] : [setCookie(QUOTA_COOKIE, await spendQuota(quota, "followup", gate.secret), QUOTA_COOKIE_MAX_AGE)];
+  const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now, chapter.exp);
+  const cookies = await spendCookies(gate, quota, "followup");
   const remaining = Math.max(0, limits.followupsPerChapter - turns.length);
   return json({ kind: answer.kind, answer: answer.answer, chapterToken, remaining }, { cookies });
 }

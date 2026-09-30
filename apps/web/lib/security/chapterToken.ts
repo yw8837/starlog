@@ -7,8 +7,12 @@ import { canonicalJson, sha256, signToken, verifyToken, type SignedPayload } fro
 /**
  * A chapter token travels with every opened reading. It carries what follow-ups need (the draw or
  * the birth input, the follow-up turns so far) and a digest of the reading, so the client can send
- * the reading back without being able to rewrite it. Stateless: the per-chapter cap counts turns.
+ * the reading back without being able to rewrite it. Stateless: the per-chapter cap counts turns, and
+ * the token expires 7 days after the reading (follow-up turns keep the original expiry), which bounds
+ * how long an old token can be replayed.
  */
+
+export const CHAPTER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type ChapterContext =
   | { kind: "tarot"; templateId: TemplateId; input: TarotInputData; cards: Array<[string, Orientation]> }
@@ -22,21 +26,27 @@ interface ChapterPayload extends SignedPayload {
   h: string;
   turns: FollowUpTurn[];
   iat: number;
+  exp: number;
 }
 
 export async function readingDigest(reading: unknown): Promise<string> {
   return sha256(canonicalJson(reading));
 }
 
-export async function issueChapter(ctx: ChapterContext, reading: unknown, turns: FollowUpTurn[], secret: string, now: number): Promise<string> {
-  const payload: ChapterPayload = { k: "chapter", v: 1, ctx, h: await readingDigest(reading), turns, iat: now };
+/** `exp` defaults to 7 days from now (a new reading); follow-ups pass the chapter's own expiry. */
+export async function issueChapter(
+  ctx: ChapterContext, reading: unknown, turns: FollowUpTurn[], secret: string, now: number, exp = now + CHAPTER_TOKEN_TTL_MS,
+): Promise<string> {
+  const payload: ChapterPayload = { k: "chapter", v: 1, ctx, h: await readingDigest(reading), turns, iat: now, exp };
   return signToken(payload, secret);
 }
 
-/** The chapter behind a token, or null when the token is forged or the reading was changed. */
-export async function openChapter(token: unknown, reading: unknown, secret: string, now: number): Promise<{ ctx: ChapterContext; turns: FollowUpTurn[] } | null> {
+/** The chapter behind a token, or null when the token is forged, expired or the reading was changed. */
+export async function openChapter(
+  token: unknown, reading: unknown, secret: string, now: number,
+): Promise<{ ctx: ChapterContext; turns: FollowUpTurn[]; exp: number } | null> {
   const p = await verifyToken<ChapterPayload>(token, "chapter", secret, now);
-  if (!p || p.v !== 1 || !p.ctx || !Array.isArray(p.turns)) return null;
+  if (!p || p.v !== 1 || !p.ctx || !Array.isArray(p.turns) || typeof p.exp !== "number") return null;
   if ((await readingDigest(reading)) !== p.h) return null;
-  return { ctx: p.ctx, turns: p.turns };
+  return { ctx: p.ctx, turns: p.turns, exp: p.exp };
 }

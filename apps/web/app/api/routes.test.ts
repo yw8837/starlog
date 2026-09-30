@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
-import { resetDailyCache } from "@/lib/api/dailyCache";
+import { resetDailyStore } from "@/lib/api/dailyStore";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { dailyCard } from "@/lib/security/drawToken";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
@@ -56,7 +56,7 @@ beforeEach(() => {
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
   resetMemoryLimiter();
-  resetDailyCache();
+  resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
@@ -188,6 +188,37 @@ describe("quota", () => {
     for (let i = 0; i < 31; i++) last = (await d.call(teaser, { drawToken, input: MONEY_INPUT })).status;
     expect(last).toBe(429);
   });
+
+  it("limits full readings to 5 a minute per IP (25 for the owner), on top of the daily quota", async () => {
+    vi.stubEnv("BETA_FULL_PER_DAY", "100");
+    const d = device("192.0.2.60");
+    const { drawToken } = await drawSelfFlow(d);
+    const statuses: number[] = [];
+    for (let i = 0; i < 6; i++) statuses.push((await d.call(reading, { drawToken, input: MONEY_INPUT })).status);
+    expect(statuses).toEqual([200, 200, 200, 200, 200, 429]);
+    vi.setSystemTime(T0 + 61_000);
+    expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+
+    const boss = device("192.0.2.61");
+    expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
+    const bossDraw = await drawSelfFlow(boss);
+    for (let i = 0; i < 6; i++) expect((await boss.call(reading, { drawToken: bossDraw.drawToken, input: MONEY_INPUT })).status).toBe(200);
+  });
+});
+
+describe("chapter tokens", () => {
+  it("expire 7 days after the reading; follow-ups keep the original expiry", async () => {
+    const d = device();
+    const { drawToken } = await drawSelfFlow(d);
+    const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    vi.setSystemTime(T0 + 6 * 24 * HOUR);
+    const f = await d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" });
+    expect(f.status).toBe(200);
+    vi.setSystemTime(T0 + 7 * 24 * HOUR + 1);
+    const late = await d.call(followup, { chapterToken: f.data.chapterToken, reading: r.data.reading, question: "하나 더 물어봐도 될까요?" });
+    expect(late.status).toBe(400);
+    expect(late.data.code).toBe("BAD_TOKEN");
+  });
 });
 
 describe("오늘의 한 장", () => {
@@ -217,14 +248,35 @@ describe("오늘의 한 장", () => {
     expect(spy).toHaveBeenCalledTimes(2);
   });
 
-  it("regenerates the same card on a cache miss, at most twice a day, then answers 429 with the card", async () => {
+  it("generates once for concurrent requests from the same device", async () => {
+    const d = device();
+    await d.call(daily, {}); // sets this device's cookie
+    resetDailyStore();
+    const spy = vi.spyOn(mockProvider, "generate");
+    const [a, b] = await Promise.all([d.call(daily, {}), d.call(daily, {})]);
+    expect(a.status).toBe(200);
+    expect(b.data).toEqual(a.data);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("serves the stored fortune even after the generation cap is used up", async () => {
     const d = device();
     const first = await d.call(daily, {});
-    resetDailyCache();
+    resetDailyStore();
+    await d.call(daily, {}); // second generation (store lost), cap now reached
+    const third = await d.call(daily, {});
+    expect(third.status).toBe(200);
+    expect(third.data.card).toEqual(first.data.card);
+  });
+
+  it("regenerates the same card when nothing is stored, at most twice a day, then answers 429 with the card", async () => {
+    const d = device();
+    const first = await d.call(daily, {});
+    resetDailyStore();
     const second = await d.call(daily, {});
     expect(second.status).toBe(200);
     expect(second.data.card).toEqual(first.data.card);
-    resetDailyCache();
+    resetDailyStore();
     const third = await d.call(daily, {});
     expect(third.status).toBe(429);
     expect(third.data).toMatchObject({ code: "BETA_LIMIT", card: { cardId: first.data.card.cardId, orientation: first.data.card.orientation } });

@@ -1,8 +1,7 @@
 import { generateSajuTeaser } from "@/lib/ai/generate";
-import { errorFromGeneration, errorResponse, json, openGate, readJson, setCookie } from "@/lib/api/http";
+import { checkQuota, errorFromGeneration, errorResponse, json, openGate, readJson, spendCookies } from "@/lib/api/http";
 import { SajuBody } from "@/lib/api/inputs";
 import { factsFromBirth } from "@/lib/api/sajuRequest";
-import { QUOTA_COOKIE, QUOTA_COOKIE_MAX_AGE, hasQuota, nextKstMidnight, quotaLimits, readQuota, spendQuota } from "@/lib/security/quota";
 
 /**
  * POST {birth} → free saju summary {title, summary, lockedToc}, written from the chart the server
@@ -16,8 +15,8 @@ export async function POST(request: Request): Promise<Response> {
   const facts = factsFromBirth(body.data.birth, gate.now);
   if (facts instanceof Response) return facts;
 
-  const quota = await readQuota(gate.cookies[QUOTA_COOKIE], gate.secret, gate.now);
-  if (!gate.owner && !hasQuota(quota, "teaser", quotaLimits())) return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now) });
+  const quota = await checkQuota(gate, "teaser");
+  if (quota instanceof Response) return quota;
 
   let teaser;
   try {
@@ -25,6 +24,5 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     return errorFromGeneration(error);
   }
-  const cookies = gate.owner ? [] : [setCookie(QUOTA_COOKIE, await spendQuota(quota, "teaser", gate.secret), QUOTA_COOKIE_MAX_AGE)];
-  return json(teaser, { cookies });
+  return json(teaser, { cookies: await spendCookies(gate, quota, "teaser") });
 }

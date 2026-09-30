@@ -1,6 +1,9 @@
 import "server-only";
 import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/provider";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
+import {
+  QUOTA_COOKIE, QUOTA_COOKIE_MAX_AGE, hasQuota, nextKstMidnight, quotaLimits, readQuota, spendQuota, type QuotaKind, type QuotaState,
+} from "@/lib/security/quota";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 
@@ -141,6 +144,24 @@ export async function openGate(request: Request): Promise<Gate | Response> {
   const owner = await isOwner(cookies[OWNER_COOKIE], secret, now);
   if (!(await rateLimit(owner ? "OWNER_GEN_LIMITER" : "GEN_LIMITER", clientKey(request), now))) return errorResponse("RATE_LIMIT");
   return { secret, provider, owner, now, cookies };
+}
+
+/** The full-reading limiter (the expensive calls), on top of the gate's limiter. Owners get 5x. */
+export async function fullReadingLimit(request: Request, gate: Gate): Promise<Response | null> {
+  const ok = await rateLimit(gate.owner ? "OWNER_FULL_LIMITER" : "FULL_LIMITER", clientKey(request), gate.now);
+  return ok ? null : errorResponse("RATE_LIMIT");
+}
+
+/** Today's counters, or the 429 when `kind` is used up (the owner pass skips it). */
+export async function checkQuota(gate: Gate, kind: QuotaKind, extra: Record<string, unknown> = {}): Promise<QuotaState | Response> {
+  const quota = await readQuota(gate.cookies[QUOTA_COOKIE], gate.secret, gate.now);
+  if (!gate.owner && !hasQuota(quota, kind, quotaLimits())) return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra });
+  return quota;
+}
+
+/** Set-Cookie for spending one `kind`; call only after a validated generation. None for the owner. */
+export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKind): Promise<string[]> {
+  return gate.owner ? [] : [setCookie(QUOTA_COOKIE, await spendQuota(quota, kind, gate.secret), QUOTA_COOKIE_MAX_AGE)];
 }
 
 /** Words that mean the person may be in crisis: no reading, a gentle pointer to help instead. */
