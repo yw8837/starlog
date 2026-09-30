@@ -18,55 +18,210 @@ type Screen = {
   path: string;
   /** Screens whose spread cards must stay at least 100px wide. */
   spread?: boolean;
-  /** Seeds the tarot question flow (sessionStorage) before the page loads. */
-  flow?: boolean;
+  /** Before the page loads: seed this device's storage, deal cards, hold or fake API answers. */
+  setup?: (page: Page) => Promise<void>;
   /** Extra steps after the page loads (open a state worth seeing). */
   prepare?: (page: Page) => Promise<void>;
+  /** A request is held open on purpose (a waiting screen): do not wait for the network to go idle. */
+  busy?: boolean;
 };
+
+/** 나와 그 사람 · 연락 · 이번 달, two conditions and a note (what a user would have chosen). */
+const FLOW = {
+  who: "us",
+  topicId: "contact",
+  when: "month",
+  conditions: { relation: "알아가는 중", "recent-contact": "뜸해짐" },
+  note: "요즘은 제가 먼저 안 하면 조용해요",
+};
+
+/** Typed parts: 나와 그 사람 (엄마) · 전세 계약 · 다음 주 금요일 면접. */
+const FLOW_CUSTOM = { who: "us", whoText: "엄마", topicText: "전세 계약", whenText: "다음 주 금요일 면접", conditions: {}, note: "" };
+
+const CONTACT_INPUT = {
+  topicId: "contact",
+  whoId: "us",
+  whenId: "month",
+  question: "이번 달, 그 사람에게 먼저 연락해도 될까",
+  conditions: [
+    { label: "관계", value: "알아가는 중" },
+    { label: "최근 연락", value: "뜸해짐" },
+  ],
+  note: "요즘은 제가 먼저 안 하면 조용해요",
+};
+
+/** A saju profile that is not the sample chart (time known). */
+const BIRTH = { calendar: "solar", year: 1990, month: 1, day: 1, isLeapMonth: false, timeKnown: true, hour: 9, minute: 30, gender: "female", placeId: "seoul" };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Each screen gets its own client address, so the per-IP generation limiter never spans screens. */
+async function ownAddress(page: Page) {
+  const n = () => Math.floor(Math.random() * 250);
+  await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `10.5.${n()}.${n()}` });
+}
+
+async function setStorage(page: Page, area: "sessionStorage" | "localStorage", key: string, value: unknown) {
+  await page.addInitScript(([a, k, v]) => window[a as "localStorage"].setItem(k, v), [area, key, JSON.stringify(value)] as const);
+}
+
+const seedFlow = (page: Page, flow: object) => setStorage(page, "sessionStorage", "starlog.tarot-flow", flow);
+
+/** The contact question with three cards the server dealt (a signed draw), as the draw page leaves it. */
+async function dealtFlow(page: Page) {
+  await ownAddress(page);
+  const draw = await (await page.request.post("/api/tarot/draw", { data: { templateId: "relationship-contact", picks: [2, 9, 15] } })).json();
+  await seedFlow(page, { ...FLOW, draw: { templateId: "relationship-contact", ...draw } });
+  return draw as { drawToken: string; cards: Array<{ position: string; cardId: string; orientation: string }> };
+}
+
+/** A full tarot reading from the API, stored as this device keeps it (`age` days old). */
+async function tarotChapter(page: Page, id: string, age = 0) {
+  // One full reading a day per device: a fresh quota cookie for each seeded reading.
+  await page.context().clearCookies();
+  const draw = await dealtFlow(page);
+  const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: CONTACT_INPUT } })).json();
+  return {
+    id,
+    kind: "tarot",
+    createdAt: Date.now() - age * DAY_MS,
+    chapterToken: res.chapterToken,
+    turns: [],
+    followUpsLeft: 3,
+    question: CONTACT_INPUT.question,
+    conditions: CONTACT_INPUT.conditions,
+    note: CONTACT_INPUT.note,
+    cards: draw.cards,
+    reading: res.reading,
+  };
+}
+
+/** A full saju reading from the API for BIRTH, stored as this device keeps it. */
+async function sajuChapter(page: Page, id: string, age = 0) {
+  await page.context().clearCookies();
+  await ownAddress(page);
+  const teaser = await (await page.request.post("/api/saju/teaser", { data: { birth: BIRTH } })).json();
+  const res = await (await page.request.post("/api/saju/reading", { data: { birth: BIRTH } })).json();
+  return { id, kind: "saju", createdAt: Date.now() - age * DAY_MS, chapterToken: res.chapterToken, turns: [], followUpsLeft: 3, birth: BIRTH, title: teaser.title, summary: teaser.summary, reading: res.reading };
+}
+
+/** Holds a request open (the waiting screens). */
+const hold = (page: Page, pattern: string) => page.route(pattern, () => new Promise<void>(() => {}));
+
+const fail = (page: Page, pattern: string, status: number, body: object) =>
+  page.route(pattern, (route) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) }));
+
+const waitForSheet = (page: Page) => expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: 30_000 });
 
 const SCREENS: Screen[] = [
   { name: "home", path: "/" },
-  { name: "home-first", path: "/?visit=first" },
+  { name: "home-checkin", path: "/", setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await tarotChapter(page, "screenaa01", 4)]) },
   { name: "tarot-new", path: "/tarot/new" },
-  { name: "tarot-new-filled", path: "/tarot/new", flow: true },
-  { name: "tarot-situation", path: "/tarot/new/situation", flow: true },
-  { name: "tarot-draw", path: "/tarot/draw?instant=1" },
+  { name: "tarot-new-filled", path: "/tarot/new", setup: (page) => seedFlow(page, FLOW) },
+  { name: "tarot-new-custom", path: "/tarot/new", setup: (page) => seedFlow(page, FLOW_CUSTOM) },
+  { name: "tarot-situation", path: "/tarot/new/situation", setup: (page) => seedFlow(page, FLOW) },
+  { name: "tarot-situation-custom", path: "/tarot/new/situation", setup: (page) => seedFlow(page, FLOW_CUSTOM) },
+  { name: "tarot-draw", path: "/tarot/draw?instant=1", setup: (page) => seedFlow(page, FLOW) },
   {
     name: "tarot-draw-picked",
     path: "/tarot/draw?instant=1",
+    setup: (page) => seedFlow(page, FLOW),
     prepare: async (page) => {
       await settleAnimations(page);
       for (const n of [3, 10, 17]) await pickFanCard(page, n);
       await expect(page.getByText("모두 골랐어요")).toBeVisible();
     },
   },
-  { name: "tarot-draw-daily", path: "/tarot/draw?template=daily&instant=1" },
-  { name: "tarot-result", path: "/tarot/result", spread: true },
-  { name: "tarot-result-returning", path: "/tarot/result?visit=returning", spread: true },
-  { name: "login", path: "/login" },
-  { name: "chapter-sample", path: "/chapter/sample", spread: true },
+  { name: "tarot-result", path: "/tarot/result", spread: true, setup: async (page) => void (await dealtFlow(page)), prepare: waitForSheet },
   {
-    name: "chapter-sample-story",
-    path: "/chapter/sample",
+    name: "tarot-result-generating",
+    path: "/tarot/result",
     spread: true,
-    prepare: async (page) => {
-      await page.getByRole("navigation", { name: "이 장의 차례" }).getByRole("link", { name: "이야기" }).click();
-      await expect(page.getByText("기록 · 토끼 사서")).toBeVisible();
+    busy: true,
+    setup: async (page) => {
+      await dealtFlow(page);
+      await hold(page, "**/api/tarot/teaser");
     },
   },
-  { name: "chapter-generating", path: "/chapter/sample?from=unlock" },
-  { name: "chapter-prologue", path: "/chapter/prologue" },
+  {
+    name: "tarot-result-error",
+    path: "/tarot/result",
+    setup: async (page) => {
+      await dealtFlow(page);
+      await fail(page, "**/api/tarot/teaser", 502, { code: "QUALITY", message: "…" });
+    },
+    prepare: async (page) => expect(page.getByRole("button", { name: "다시 시도" })).toBeVisible(),
+  },
+  {
+    name: "tarot-result-limit",
+    path: "/tarot/result",
+    setup: async (page) => {
+      await dealtFlow(page);
+      await fail(page, "**/api/tarot/reading", 429, { code: "BETA_LIMIT", resetsAt: new Date(Date.now() + DAY_MS).toISOString() });
+    },
+    prepare: async (page) => {
+      await waitForSheet(page);
+      await page.getByRole("button", { name: /전체 풀이 보기/ }).click();
+      await expect(page.getByText("오늘 열 수 있는 풀이를 모두 열었어요").first()).toBeVisible();
+    },
+  },
+  {
+    name: "tarot-unlock-generating",
+    path: "/tarot/result",
+    setup: async (page) => {
+      await dealtFlow(page);
+      await hold(page, "**/api/tarot/reading");
+    },
+    prepare: async (page) => {
+      await waitForSheet(page);
+      await page.getByRole("button", { name: /전체 풀이 보기/ }).click();
+      await expect(page.getByText("보통 1분 남짓 걸려요", { exact: false })).toBeVisible();
+    },
+  },
+  { name: "login", path: "/login" },
+  { name: "chapter-sample", path: "/chapter/sample", spread: true },
+  { name: "chapter-local", path: "/chapter/screenbb02", spread: true, setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await tarotChapter(page, "screenbb02")]) },
+  { name: "chapter-local-checkin", path: "/chapter/screencc03", spread: true, setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await tarotChapter(page, "screencc03", 4)]) },
+  { name: "chapter-missing", path: "/chapter/abcdef12" },
   { name: "saju-new", path: "/saju/new" },
+  { name: "saju-new-status", path: "/saju/new", prepare: async (page) => page.getByRole("button", { name: /요즘 상황도 알려 주기/ }).click() },
   { name: "saju-chart", path: "/saju/chart" },
+  {
+    name: "saju-chart-own",
+    path: "/saju/chart",
+    setup: async (page) => {
+      await ownAddress(page);
+      await setStorage(page, "localStorage", "starlog.saju-profile", BIRTH);
+    },
+    prepare: waitForSheet,
+  },
+  { name: "saju-reading", path: "/chapter/screendd04", setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screendd04")]) },
+  { name: "today", path: "/today" },
+  {
+    name: "today-opened",
+    path: "/today",
+    setup: async (page) => {
+      await ownAddress(page);
+      const reading = await (await page.request.post("/api/tarot/daily", { data: {} })).json();
+      await page.addInitScript((r) => {
+        const day = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10);
+        window.localStorage.setItem("starlog.daily", JSON.stringify({ day, reading: JSON.parse(r) }));
+      }, JSON.stringify(reading));
+    },
+  },
   { name: "story", path: "/story" },
-  { name: "story-empty", path: "/story?empty=1" },
+  {
+    name: "story-records",
+    path: "/story",
+    setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screenee05", 5), await tarotChapter(page, "screenff06", 1)]),
+  },
   { name: "me", path: "/me" },
   {
-    name: "me-packs",
+    name: "me-erase",
     path: "/me",
     prepare: async (page) => {
-      await page.getByRole("button", { name: "달빛 충전하기" }).click();
-      await expect(page.getByRole("dialog", { name: "달빛 충전" })).toBeVisible();
+      await page.getByRole("button", { name: "이 기기에 저장된 기록 모두 지우기" }).click();
+      await expect(page.getByRole("dialog", { name: "이 기기의 기록을 모두 지울까요?" })).toBeVisible();
     },
   },
   { name: "invite", path: "/invite/abc123?instant=1" },
@@ -78,14 +233,6 @@ const SCREENS: Screen[] = [
   { name: "dev-characters", path: "/dev/characters" },
 ];
 
-/** 나와 그 사람 · 연락 · 이번 달, two conditions and a note (what a user would have chosen). */
-const FLOW = {
-  who: "us",
-  topicId: "contact",
-  when: "month",
-  conditions: { relation: "알아가는 중", "recent-contact": "뜸해짐" },
-  note: "요즘은 제가 먼저 안 하면 조용해요",
-};
 
 /** Product meta copy that must never appear on a user screen (global constraints). */
 const META_COPY = ["무료로 다 보여드려요", "예시예요", "같은 품질"];
@@ -279,11 +426,9 @@ async function audit(page: Page, metaCopy: string[]): Promise<Audit> {
 async function capture(page: Page, info: TestInfo, screen: Screen) {
   const dir = `test-results/screens/${info.project.name}`;
   mkdirSync(dir, { recursive: true });
-  if (screen.flow) {
-    await page.addInitScript((flow) => window.sessionStorage.setItem("starlog.tarot-flow", flow), JSON.stringify(FLOW));
-  }
+  if (screen.setup) await screen.setup(page);
   await page.goto(screen.path);
-  await page.waitForLoadState("networkidle");
+  if (!screen.busy) await page.waitForLoadState("networkidle");
   await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }); // dev-only overlay badge
   await page.evaluate(() => document.fonts.ready);
   if (screen.prepare) await screen.prepare(page);
@@ -322,7 +467,7 @@ for (const screen of SCREENS) {
 
 test("@screens reduced motion stops every animation that moves", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  for (const path of ["/", "/tarot/draw?instant=1", "/chapter/sample?from=unlock", "/story", "/dev/characters"]) {
+  for (const path of ["/", "/today", "/tarot/draw?instant=1", "/chapter/sample", "/story", "/dev/characters"]) {
     await page.goto(path);
     await page.waitForLoadState("networkidle");
     const running = await page.evaluate(() =>

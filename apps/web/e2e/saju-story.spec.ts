@@ -39,83 +39,74 @@ async function pickFanCard(page: Page, n: number) {
   await page.mouse.click(point!.x, point!.y);
 }
 
-test("saju: input, consent, chart with 丙寅 and 병화, prologue, sign-in, opened prologue", async ({ page }, info) => {
-  // Nothing saved yet: the sample is labelled as an example and asks for the user's own birth data.
+/** Each test gets its own client address, so the per-IP generation limiter never spans tests. */
+async function ownAddress(page: Page, info: TestInfo) {
+  await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.2.${info.workerIndex}.${Math.floor(Math.random() * 250)}` });
+}
+
+test("saju: input, consent, the example chart, then the user's own chart with 丙寅 and 병화", async ({ page }, info) => {
+  // Nothing saved yet: an example chart (computed, no reading text) asks for the user's own birth data.
   await page.goto("/saju/chart");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("예시 명식");
   await expect(page.getByRole("link", { name: "태어난 날 입력하기" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "전체 풀이 보기" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toHaveCount(0);
+  expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
   await shot(page, info, "00-saju-chart-example");
 
+  await ownAddress(page, info);
   await page.goto("/");
   await page.getByRole("link", { name: /사주 보기/ }).click();
   await expect(page).toHaveURL(/\/saju\/new$/);
   await expect(page.getByRole("heading", { level: 1, name: "태어난 날을 알려주세요" })).toBeVisible();
   await expect(page.getByText("→ 1990년 1월 1일 (양력)")).toBeVisible();
   await expect(page.getByText("10년 흐름(대운)의 방향을 정하는 데만 써요")).toBeVisible();
-  await shot(page, info, "01-saju-new");
 
   // 윤달 is offered for lunar dates only.
   await page.getByRole("button", { name: "음력", exact: true }).click();
   await expect(page.getByLabel("윤달이에요")).toBeVisible();
-  await expect(page.getByText("→ 1990년 1월 1일 (음력)")).toBeVisible();
   await page.getByRole("button", { name: "양력", exact: true }).click();
   await expect(page.getByLabel("윤달이에요")).toHaveCount(0);
+
+  // The optional status chips are folded until asked for.
+  const more = page.getByRole("button", { name: /요즘 상황도 알려 주기/ });
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  await more.click();
+  await page.getByRole("button", { name: "연애 중" }).click();
+  await page.getByRole("button", { name: "직장인" }).click();
+  await page.getByRole("textbox", { name: "요즘 고민 한 줄" }).fill("이직을 고민하고 있어요");
+  await shot(page, info, "01-saju-new-status");
 
   // Consent is required; the button explains what is missing.
   await page.getByRole("button", { name: "명식 보기" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "출생 정보를 풀이에 쓰는 데 먼저 동의해 주세요." })).toBeVisible();
   await expect(page).toHaveURL(/\/saju\/new$/);
-  await shot(page, info, "02-saju-consent-required");
   await page.getByText("출생 정보를 풀이에 쓰는 데 동의해요").click();
+  const teaserRequest = page.waitForRequest((r) => r.url().endsWith("/api/saju/teaser"));
   await page.getByRole("button", { name: "명식 보기" }).click();
 
-  // Birth data never travels in the URL.
+  // Birth data never travels in the URL; the chips go in the request body.
   await expect(page).toHaveURL(/\/saju\/chart$/);
+  expect(JSON.parse((await teaserRequest).postData() ?? "{}")).toMatchObject({
+    birth: { year: 1990, month: 1, day: 1, calendar: "solar" },
+    loveStatus: "dating",
+    workStatus: "employee",
+    concern: "이직을 고민하고 있어요",
+  });
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("나의 명식");
   const chart = page.getByRole("complementary", { name: "명식" });
-  const table = chart.getByRole("table");
-  await expect(table.getByRole("columnheader")).toHaveText(["시주", "일주", "월주", "연주"]);
-  await expect(table).toContainText("모름");
+  await expect(chart.getByRole("table").getByRole("columnheader")).toHaveText(["시주", "일주", "월주", "연주"]);
   await expect(chart).toContainText("丙寅");
   await expect(chart).toContainText("병화");
-  await expect(chart).toContainText("보이는 6글자 기준");
-  await chart.getByText("적용한 기준").click();
-  await expect(chart).toContainText("00:00~00:32 사이에 태어났다면 일주가 전날 일진인 乙丑(을축)이 돼요.");
-  await expect(page.getByRole("heading", { level: 2, name: SAJU.free.title })).toBeVisible();
-  const toc = page.getByRole("region", { name: "이어지는 풀이" }).getByRole("listitem");
-  await expect(toc).toHaveCount(SAJU.free.lockedToc.length);
-  // The paid prologue is not on the page at all.
-  expect(await page.content()).not.toContain(SAJU.paid.sections[0]!.body.slice(0, 40));
+  await expect(page.getByRole("region", { name: "이어지는 풀이" })).toContainText(/소제목 \d+개 · 약 3,000자/, { timeout: 30_000 });
+  // The sample's written prologue is never shown, even for the sample chart.
+  expect(await page.locator("body").innerText()).not.toContain(SAJU.paid.sections[0]!.body.slice(0, 40));
   await shot(page, info, "03-saju-chart");
-
-  await page.goto("/saju/chart?instant=1");
-  await page.getByRole("link", { name: "로그인하고 무료로 보기" }).click();
-  await expect(page).toHaveURL(/\/login\?chapter=prologue&instant=1$/);
-  await page.getByText("만 14세 이상이에요").click();
-  await page.getByRole("button", { name: "카카오로 계속하기" }).click();
-  await expect(page).toHaveURL(/\/chapter\/prologue/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(SAJU.free.title);
-  for (const section of SAJU.paid.sections) await expect(page.getByText(section.body)).toBeVisible();
-  const followUp = page.getByRole("region", { name: /이어서 물어보기/ });
-  await expect(followUp).toContainText("3번 남았어요");
-  await followUp.getByRole("button", { name: "겉에 금이 없다는 건 어떤 뜻이에요?" }).click();
-  // A pointer tap does not move focus into the field (no phone keyboard popping up).
-  await expect(followUp.getByRole("textbox", { name: "이어서 물어볼 내용" })).not.toBeFocused();
-  await expect(followUp).toContainText("2번 남았어요");
-  await expect(followUp).toContainText("뱀(巳) 속에 경금(庚金)이 숨어 있어요");
-  await shot(page, info, "04-prologue-chapter");
-  // One scroll: the story page sits above the sections, no switch between them.
-  await expect(page.getByRole("group", { name: "읽는 방식" })).toHaveCount(0);
-  await page.getByRole("navigation", { name: "이 장의 차례" }).getByRole("link", { name: "이야기" }).click();
-  await expect(page.getByText("기록 · 토끼 선생님")).toBeVisible();
-  await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
 });
 
-test("saju: a known birth time adds the hour pillar and the correction note", async ({ page }, info) => {
+test("saju: a non-sample chart gets its own reading, saved on this device", async ({ page }, info) => {
+  await ownAddress(page, info);
   await page.goto("/saju/new");
   await page.getByRole("button", { name: "알아요" }).click();
-  await expect(page.getByText("시간을 모르면 시주 없이 풀어요")).toBeVisible();
   await page.getByText("출생 정보를 풀이에 쓰는 데 동의해요").click();
   await page.getByRole("button", { name: "명식 보기" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "태어난 시각을 골라 주세요." })).toBeVisible();
@@ -125,34 +116,39 @@ test("saju: a known birth time adds the hour pillar and the correction note", as
   await expect(page).toHaveURL(/\/saju\/chart$/);
   const chart = page.getByRole("complementary", { name: "명식" });
   await expect(chart.getByRole("table")).toContainText("壬");
-  await expect(chart.getByRole("table")).toContainText("辰");
-  await expect(chart).toContainText("보이는 8글자 기준");
   await expect(chart).toContainText("보정 시각 08:57");
   await expect(page.getByText("1990년 1월 1일 (양력) · 9시 30분 · 여성 · 서울")).toBeVisible();
-  // Not the sample chart: a teaser of this chart's own facts and the generic sections, no sample text.
-  await expect(page.getByRole("heading", { level: 2, name: "명식에서 바로 보이는 것" })).toBeVisible();
-  await expect(page.getByText("보이는 여덟 글자 가운데 불(火)이 셋이고, 쇠(金)는 하나도 없어요.", { exact: false })).toBeVisible();
-  const toc = page.getByRole("region", { name: "이어지는 풀이" });
-  await expect(toc).toContainText("계산 기준 · 보지 않은 것과 달라질 수 있는 것");
+
+  // The free reading from the API, then the scope, then one gold button.
+  const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
+  await expect(sheet).toBeVisible({ timeout: 30_000 });
+  await expect(sheet).toContainText("풀이 전체 · 약 3,000자");
+  await expect(page.getByRole("region", { name: "이어지는 풀이" })).toContainText("계산 기준");
   expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
   await shot(page, info, "05-saju-chart-known-time");
 
-  // Opening it: the chapter is being written; still no sample text anywhere, story view included.
-  await page.goto("/saju/chart?visit=returning&instant=1");
-  await page.getByRole("link", { name: "별조각으로 보기 · 10" }).click();
-  await expect(page).toHaveURL(/\/chapter\/prologue/);
-  await expect(page.getByText("풀이를 적고 있어요. 다 적으면 내 이야기에 넣어 둘게요.")).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("나의 프롤로그");
-  await expect(page.getByRole("link", { name: "내 이야기로" }).last()).toBeVisible();
-  expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
-  await shot(page, info, "05b-prologue-pending");
-  await page.goto("/story");
-  const prologue = page.getByRole("list", { name: "이야기 목차" }).getByRole("listitem").first();
-  await expect(prologue).toContainText("나의 프롤로그");
-  await expect(prologue).toContainText("풀이를 적고 있어요.");
-  expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
+  await sheet.getByRole("button", { name: /^전체 풀이 보기 · 오늘 \d+번 남았어요$/ }).click();
+  await expect(page).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: 90_000 });
+  await expect(page.getByText("사주 기록 ·", { exact: false })).toBeVisible();
+  const sections = page.locator("#chapter-reading article");
+  expect(await sections.count()).toBeGreaterThanOrEqual(7);
+  await expect(page.getByText("풀이를 적고 있어요")).toHaveCount(0);
+  await expect(page.getByText("기록 · 토끼 선생님")).toHaveCount(0);
+  await expect(page.getByRole("complementary", { name: "명식" })).toContainText("壬");
+  const firstSection = (await sections.first().textContent()) ?? "";
+  await shot(page, info, "06-saju-reading");
 
-  // A lunar day that does not exist is explained next to the date.
+  await page.reload();
+  await expect(page.locator("#chapter-reading article").first()).toHaveText(firstSection);
+  await page.goto("/story");
+  const records = page.getByRole("list", { name: "기록 목록" }).getByRole("listitem");
+  await expect(records).toHaveCount(1);
+  await expect(records.first()).toContainText("사주");
+  await expect(records.first()).toContainText("일간 병화");
+  await shot(page, info, "07-records");
+});
+
+test("saju: a lunar day that does not exist is explained next to the date", async ({ page }, info) => {
   await page.goto("/saju/new");
   await page.getByRole("button", { name: "음력", exact: true }).click();
   await page.getByLabel("윤달이에요").check({ force: true });
@@ -161,30 +157,37 @@ test("saju: a known birth time adds the hour pillar and the correction note", as
   await page.getByRole("button", { name: "명식 보기" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "음력으로는 없는 날짜예요." })).toBeVisible();
   await expect(page).toHaveURL(/\/saju\/new$/);
-  await shot(page, info, "06-saju-lunar-error");
+  await shot(page, info, "08-saju-lunar-error");
 });
 
-test("story: timeline items read in one scroll (friend scenes off in beta), empty state", async ({ page }, info) => {
+test("오늘의 한 장: the cookie opens once a day; a reload opens straight to the same result", async ({ page }, info) => {
+  await ownAddress(page, info);
+  await page.goto("/");
+  await page.getByRole("link", { name: /오늘의 한 장/ }).click();
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("오늘의 쿠키를 열어 볼까요?");
+  await shot(page, info, "09-today-cookie");
+  await page.getByRole("button", { name: "쿠키 열기" }).last().click();
+  const line = page.locator("#today-line");
+  await expect(line).toBeVisible({ timeout: 30_000 });
+  const summary = await line.innerText();
+  await expect(page.getByRole("heading", { level: 2, name: "오늘의 흐름" })).toBeVisible();
+  for (const area of ["애정", "금전", "일"]) await expect(page.getByText(area, { exact: true })).toBeVisible();
+  await expect(page.getByText("AI가 만든 풀이예요 · 재미와 자기 성찰을 위한 참고용이에요")).toBeVisible();
+  await shot(page, info, "10-today-opened");
+
+  await page.reload();
+  await expect(page.getByText("오늘의 쿠키는 이미 열었어요 · 내일 새 쿠키가 기다려요")).toBeVisible();
+  await expect(page.locator("#today-line")).toHaveText(summary);
+  await expect(page.getByRole("button", { name: "쿠키 열기" })).toHaveCount(0);
+});
+
+test("내 기록: the empty state", async ({ page }, info) => {
   await page.goto("/story");
-  await expect(page.getByRole("heading", { level: 1, name: "나의 스타로그" })).toBeVisible();
-  const items = page.getByRole("list", { name: "이야기 목차" }).getByRole("listitem");
-  await expect(items).toHaveCount(2);
-  await expect(items.nth(0)).toContainText("프롤로그");
-  await expect(items.nth(1)).toContainText("뜸해진 연락 앞에서");
-  await expect(page.getByText("지인 A")).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "새 장 열기" })).toBeVisible();
-  await shot(page, info, "07-story");
-
-  // Every chapter shows its whole story and its short reading at once, with a link to the full reading.
-  await expect(page.getByRole("group", { name: "읽는 방식" })).toHaveCount(0);
-  await expect(items.nth(0)).toContainText("일간은 병화(丙火)예요.");
-  await expect(items.nth(1)).toContainText("마지막 장면에서 구름 사이로 손 하나가 나와");
-  await expect(items.nth(1).getByRole("link", { name: "뜸해진 연락 앞에서 풀이 전체 보기" })).toHaveAttribute("href", "/chapter/sample");
-
-  await page.goto("/story?empty=1");
-  await expect(page.getByText("아직 첫 장이 비어 있어요")).toBeVisible();
+  await expect(page.getByText("아직 기록이 없어요")).toBeVisible();
   await expect(page.getByRole("link", { name: "첫 타로 보기" })).toBeVisible();
-  await shot(page, info, "09-story-empty");
+  await expect(page.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: "내 기록" })).toHaveAttribute("aria-current", "page");
+  await shot(page, info, "11-records-empty");
 });
 
 test("invite: guest picks one card, reads the sun, leaves it for 하늘", async ({ page }, info) => {
@@ -219,35 +222,42 @@ test("invite: guest picks one card, reads the sun, leaves it for 하늘", async 
 
 test("home, 내 정보 and guide", async ({ page }, info) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: /나의 스타로그 · 2장/ })).toBeVisible();
-  await expect(page.getByRole("link", { name: /타로 보기/ })).toBeVisible();
-  await expect(page.getByRole("region", { name: "친구 장면" })).toHaveCount(0);
+  // No story hero and no balance pill in the beta.
+  await expect(page.getByRole("link", { name: /나의 스타로그 · \d장/ })).toHaveCount(0);
+  const tarot = page.getByRole("link", { name: /타로 보기/ });
+  const saju = page.getByRole("link", { name: /사주 보기/ });
+  await expect(tarot).toHaveAttribute("href", "/tarot/new");
+  await expect(saju).toHaveAttribute("href", "/saju/new");
+  await expect(page.getByRole("link", { name: /지금의 한 장/ })).toHaveAttribute("href", "/now");
+  await expect(page.getByRole("link", { name: /오늘의 한 장/ })).toHaveAttribute("href", "/today");
+  await expect(page.getByRole("link", { name: /내 재화/ })).toHaveCount(0);
+  // 타로 then 사주 then the quick cards, in reading order; both entries above the fold on a phone.
+  const tarotBox = (await tarot.boundingBox())!;
+  const sajuBox = (await saju.boundingBox())!;
+  expect(tarotBox.y).toBeLessThanOrEqual(sajuBox.y);
+  expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   await shot(page, info, "14-home");
 
-  await page.goto("/?visit=first");
-  await expect(page.getByText("고양이가 카드를, 토끼가 기록을 맡아요.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "첫 타로 보기" })).toBeVisible();
-  await expect(page.getByRole("link", { name: /나의 스타로그 · 2장/ })).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "친구 장면" })).toHaveCount(0);
-  await shot(page, info, "15-home-first");
-
   await page.goto("/me");
-  await expect(page.getByRole("heading", { level: 1, name: "별지기" })).toBeVisible();
-  await expect(page.getByText("1990년 1월 1일 · 양력 · 시간 모름")).toBeVisible();
-  await expect(page.getByRole("link", { name: "고치기" })).toHaveAttribute("href", "/saju/new");
+  await expect(page.getByRole("heading", { level: 1, name: "내 정보" })).toBeVisible();
+  await expect(page.getByText(/^베타 기간에는 모든 풀이가 무료예요 · 하루 \d+번$/)).toBeVisible();
+  await expect(page.getByText("아직 입력하지 않았어요")).toBeVisible();
+  await expect(page.getByRole("link", { name: "입력하기" })).toHaveAttribute("href", "/saju/new");
+  await expect(page.getByRole("button", { name: "달빛 충전하기" })).toHaveCount(0);
+  await expect(page.getByText("별지기")).toHaveCount(0);
   await shot(page, info, "16-me");
-  await page.getByRole("button", { name: "달빛 충전하기" }).click();
-  const packs = page.getByRole("dialog", { name: "달빛 충전" });
-  await expect(packs).toContainText("8,500원");
-  await expect(packs).toContainText("+ 보너스 6");
-  await expect(packs).toContainText("16,900원");
-  await expect(packs).toContainText("+ 보너스 20");
-  await shot(page, info, "17-me-packs");
-  await packs.getByRole("button", { name: "8,500원 결제하기" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "달빛 30개를 충전했어요" })).toBeVisible();
-  await page.getByRole("button", { name: "친구 초대하기" }).click();
-  await expect(page.getByRole("dialog", { name: "친구에게 보낼 카드" })).toContainText("https://starlog.yeolmaeapps.kr/invite/abc123");
-  await page.keyboard.press("Escape");
+  // Erasing asks first, then clears this device.
+  await page.evaluate(() => localStorage.setItem("starlog.saju-profile", JSON.stringify({ calendar: "solar", year: 1993, month: 8, day: 17, isLeapMonth: false, timeKnown: false, hour: null, minute: null, gender: "male", placeId: "busan" })));
+  await page.reload();
+  await expect(page.getByText("1993년 8월 17일 · 양력 · 시간 모름")).toBeVisible();
+  await page.getByRole("button", { name: "이 기기에 저장된 기록 모두 지우기" }).click();
+  const confirm = page.getByRole("dialog", { name: "이 기기의 기록을 모두 지울까요?" });
+  await expect(confirm).toBeVisible();
+  await shot(page, info, "17-me-erase");
+  await confirm.getByRole("button", { name: "모두 지우기" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "이 기기에 저장된 기록을 모두 지웠어요" })).toBeVisible();
+  await expect(page.getByText("아직 입력하지 않았어요")).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem("starlog.saju-profile"))).toBeNull();
 
   // /guide moved to the tarot tab; each tab lists only its own articles.
   await page.goto("/guide");

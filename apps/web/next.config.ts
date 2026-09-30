@@ -12,13 +12,23 @@ const SECURITY_HEADERS = [
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
 ];
 
+/**
+ * Dev servers only: says whether generation runs on the mock provider, so the e2e suite can refuse
+ * to run against a server that would call the real API (apps/web/.env.local holds a real key).
+ * Never sent by a production build.
+ */
+function devProviderHeader(): Array<{ key: string; value: string }> {
+  if (process.env.NODE_ENV === "production") return [];
+  return [{ key: "X-Starlog-Dev-Provider", value: process.env.STARLOG_AI === "mock" ? "mock" : "live" }];
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // @starlog/core is resolved through tsconfig "paths" (D: is exFAT, so pnpm cannot symlink it).
   transpilePackages: ["@starlog/core"],
   images: { unoptimized: true },
   headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [{ source: "/:path*", headers: [...SECURITY_HEADERS, ...devProviderHeader()] }];
   },
   // The guide index is split into tabs (/guide/tarot, /guide/saju). /guide moved to the first tab
   // for good: a 308 before rendering, so search engines carry its signals over to the tab.

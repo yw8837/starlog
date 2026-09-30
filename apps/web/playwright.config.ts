@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { chromium, defineConfig } from "@playwright/test";
 
 const PORT = 3100;
+/** Signs draw tokens and cookies on the e2e server (32+ characters; not a production secret). */
+const E2E_SIGNING_SECRET = "e2e-only-signing-secret-0123456789abcdef";
 /** E2E_BASE_URL runs the suite against an already running build (e.g. the Workers preview on :8787). */
 const BASE_URL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
@@ -79,5 +81,8 @@ export default defineConfig({
         url: BASE_URL,
         reuseExistingServer: true,
         timeout: 180_000,
+        // Never the real API: .env.local holds a real key. e2e/global-setup.ts also refuses a
+        // reused server that is not in mock mode.
+        env: { STARLOG_AI: "mock", STARLOG_SIGNING_SECRET: E2E_SIGNING_SECRET },
       },
 });
