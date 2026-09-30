@@ -1,0 +1,16 @@
+.slot {
+  margin-block: 28px;
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-sub);
+}
+
+.unit {
+  display: block;
+  min-height: 100px;
+}

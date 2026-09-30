@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Facts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import s from "@/components/legal/legal.module.css";
+import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
 
@@ -53,6 +54,7 @@ const PROCESSORS: readonly Processor[] = [
 
 export default function PrivacyPage() {
   const contacts = contactChannels();
+  const ads = adsConfig();
 
   return (
     <LegalPage
@@ -123,10 +125,31 @@ export default function PrivacyPage() {
 
       <LegalSection id="cookies" title="5. 쿠키와 브라우저 저장소">
         <ul className={s.list}>
-          <li>운영자는 로그인 유지처럼 서비스 제공에 필요한 범위에서만 쿠키를 쓰며, 광고나 행동 추적을 위한 쿠키는 쓰지 않습니다.</li>
+          {ads ? (
+            <li>운영자는 로그인 유지처럼 서비스 제공에 필요한 범위에서 쿠키를 쓰고, 가이드 글 페이지에서는 아래 광고 쿠키가 쓰일 수 있습니다. 타로·사주 풀이 화면에는 광고를 싣지 않습니다.</li>
+          ) : (
+            <li>운영자는 로그인 유지처럼 서비스 제공에 필요한 범위에서만 쿠키를 쓰며, 광고나 행동 추적을 위한 쿠키는 쓰지 않습니다.</li>
+          )}
           <li>입력하신 내용과 풀이 기록은 쿠키가 아닌 브라우저 저장소에 보관합니다.</li>
           <li>브라우저 설정에서 쿠키 저장을 거부하거나 저장된 쿠키와 사이트 데이터를 지울 수 있습니다. 거부하시면 로그인 유지 등 일부 기능을 쓰기 어려울 수 있습니다.</li>
         </ul>
+        {ads ? (
+          <>
+            <h3 className={s.sub}>광고 쿠키와 행태정보</h3>
+            <ul className={s.list}>
+              <li>가이드 글 페이지에는 Google 애드센스 광고가 실립니다. Google 등 제3자 광고 사업자는 쿠키를 써서 이 사이트와 다른 사이트 방문 기록을 바탕으로 광고를 보여 줄 수 있습니다.</li>
+              <li>수집되는 행태정보: 웹 방문 기록, 광고 노출과 클릭 기록, 쿠키 등 온라인 식별자. 가이드 글 페이지를 열 때 광고 사업자가 자동으로 수집하며, 운영자는 이 정보를 받거나 보관하지 않습니다.</li>
+              <li>
+                보유 기간과 처리 방식은 광고 사업자의 정책을 따릅니다. Google이 정보를 쓰는 방식은{" "}
+                <a href="https://policies.google.com/technologies/partner-sites">Google 파트너 사이트 정보 이용 안내</a>에서 볼 수 있습니다.
+              </li>
+              <li>
+                맞춤 광고는 <a href="https://adssettings.google.com">Google 광고 설정</a>에서 끌 수 있고, 브라우저에서 제3자 쿠키를 차단해도 됩니다. 꺼도 광고 수는 줄지 않고 관심사와 관계없는 광고가 보입니다.
+              </li>
+              <li>만 14세 미만 아동을 대상으로 한 맞춤형 광고는 하지 않습니다.</li>
+            </ul>
+          </>
+        ) : null}
       </LegalSection>
 
       <LegalSection id="rights" title="6. 이용자의 권리와 행사 방법">

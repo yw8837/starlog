@@ -2,6 +2,7 @@ import { getCard } from "@starlog/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
@@ -9,6 +10,7 @@ import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
+import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle } from "@/lib/guide";
 import { OG_ALT } from "@/lib/og";
@@ -54,6 +56,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   const card = article.cardId ? getCard(article.cardId) : null;
   const cta = CTA[article.category];
   const others = GUIDE_ARTICLES.filter((other) => other.slug !== article.slug);
+  const ads = adsConfig();
 
   return (
     <div className="page-shell with-tabbar">
@@ -83,6 +86,8 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
               </section>
             ))}
           </Paper>
+
+          {ads?.guideSlot ? <AdSlot client={ads.client} slot={ads.guideSlot} /> : null}
 
           <aside className={s.cta} aria-label={cta.label}>
             <p className={s.ctaText}>{cta.text}</p>
