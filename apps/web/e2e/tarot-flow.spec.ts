@@ -152,7 +152,7 @@ test("opened chapter: follow-up answer, story mode, rating and share preview", a
 
   await page.getByRole("button", { name: "친구에게 한 장 받아보기" }).click();
   const dialog = page.getByRole("dialog", { name: "친구에게 보낼 카드" });
-  await expect(dialog).toContainText("https://taro.yeolmaeapps.kr/invite/abc123");
+  await expect(dialog).toContainText("https://starlog.yeolmaeapps.kr/invite/abc123");
   await shot(page, info, "10-share");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();

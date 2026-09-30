@@ -12,7 +12,7 @@ describe("SITE", () => {
   it("names the service and the production origin from one place", () => {
     expect(SITE.name).toBe("Starlog");
     expect(SITE.nameKo).toBe("스타로그");
-    expect(SITE.url).toBe("https://taro.yeolmaeapps.kr");
+    expect(SITE.url).toBe("https://starlog.yeolmaeapps.kr");
   });
 });
 

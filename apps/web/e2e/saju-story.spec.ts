@@ -246,7 +246,7 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await packs.getByRole("button", { name: "8,500원 결제하기" }).click();
   await expect(page.getByRole("status").filter({ hasText: "달빛 30개를 충전했어요" })).toBeVisible();
   await page.getByRole("button", { name: "친구 초대하기" }).click();
-  await expect(page.getByRole("dialog", { name: "친구에게 보낼 카드" })).toContainText("https://taro.yeolmaeapps.kr/invite/abc123");
+  await expect(page.getByRole("dialog", { name: "친구에게 보낼 카드" })).toContainText("https://starlog.yeolmaeapps.kr/invite/abc123");
   await page.keyboard.press("Escape");
 
   await page.goto("/guide");

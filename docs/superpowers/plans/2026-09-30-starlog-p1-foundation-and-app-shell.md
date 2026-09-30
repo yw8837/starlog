@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Service name `Starlog` / `스타로그`; production URL `https://taro.yeolmaeapps.kr`. Both come from one config module; never hard-code them in components.
+- Service name `Starlog` / `스타로그`; production URL `https://starlog.yeolmaeapps.kr`. Both come from one config module; never hard-code them in components.
 - Business notice (footer): `상호 열매스튜디오 · 대표 최용우 · 사업자등록번호 665-38-01736`. **Never write any street address anywhere in the repo** (user instruction). Address and 통신판매업 number are config fields left empty.
 - Currencies: paid `달빛`, free `별조각`. Per-reading direct pay is a third option. Prices are config values; UI shows `2,900원` only as the current config default.
 - Characters: tarot mode = cat astrologer (leader, shuffles/reads) + rabbit librarian (staff, records). Saju mode = roles swap (rabbit leader, cat assistant), both in hanbok. Rabbit never wears the astrologer hat.
@@ -472,7 +472,7 @@ describe("computeChart", () => {
 - `lib/config.ts`:
 ```ts
 export const SITE = {
-  name: "Starlog", nameKo: "스타로그", url: "https://taro.yeolmaeapps.kr",
+  name: "Starlog", nameKo: "스타로그", url: "https://starlog.yeolmaeapps.kr",
   business: { name: "열매스튜디오", ceo: "최용우", regNo: "665-38-01736", mailOrderNo: "", address: "", email: "", phone: "" },
   currency: { paid: "달빛", free: "별조각" },
   price: { tarotStandardKrw: 2900, sajuStandardKrw: 2900, unitsPerReading: 10, signupGiftFree: 10 }
@@ -549,7 +549,7 @@ Visual spec (2.5D): start from the v3 SVGs shown to the user on 2026-09-30 (radi
   - Sheet lists includes `후속 질문 3번 · 내 스타로그에 보관`.
 - Login page: rabbit (tarot) says `이 풀이를 스타로그에 적어둘게요`; buttons `카카오로 계속하기` (#FEE500, text #191600) and `Google로 계속하기`; consent line `계속하면 이용약관과 개인정보처리방침에 동의하게 돼요` with links; `만 14세 이상이에요` checkbox required before buttons enable (buttons stay enabled; show inline error if unchecked). Continue → `/chapter/sample?from=unlock`.
 - Generating state (before chapter renders, 2.5s fixture delay, skippable in tests via `?instant=1`): cat with `action="glow"` + rotating captions `카드를 다시 읽는 중이에요`, `세 장의 연결을 살피는 중이에요`, `이야기로 옮겨 적는 중이에요` (rabbit writing appears on the last one).
-- Chapter page: header (chapter number/title from `story.title`), 3 cards row (sm, tappable to enlarge in a modal), `StoryToggle` [이야기 | 풀이] (light surface active), verdict callout, sections from `paid` in order (cards, connection, timing, scenarios as 4 cards, messages with copy buttons, avoid list, alternatives, action), story mode shows `story.body` as a single paper page with a rabbit signature `기록 · 토끼 사서`. Follow-up box (`이어서 물어보기 · 3번 남았어요`, 2 suggestion chips, input + 보내기; fixture answer appears after 1s, counter becomes 2). Feedback `이 풀이, 얼마나 와닿았나요?` 5-step emoji-free scale (별 1-5 icons). Share card CTA `친구에게 한 장 받아보기` (opens a share preview modal with the card image, question, and invite link placeholder `https://taro.yeolmaeapps.kr/invite/abc123`).
+- Chapter page: header (chapter number/title from `story.title`), 3 cards row (sm, tappable to enlarge in a modal), `StoryToggle` [이야기 | 풀이] (light surface active), verdict callout, sections from `paid` in order (cards, connection, timing, scenarios as 4 cards, messages with copy buttons, avoid list, alternatives, action), story mode shows `story.body` as a single paper page with a rabbit signature `기록 · 토끼 사서`. Follow-up box (`이어서 물어보기 · 3번 남았어요`, 2 suggestion chips, input + 보내기; fixture answer appears after 1s, counter becomes 2). Feedback `이 풀이, 얼마나 와닿았나요?` 5-step emoji-free scale (별 1-5 icons). Share card CTA `친구에게 한 장 받아보기` (opens a share preview modal with the card image, question, and invite link placeholder `https://starlog.yeolmaeapps.kr/invite/abc123`).
 - Desktop (>=1024px) for result and chapter: left column sticky spread (lg cards), right column reading max-width 640px.
 
 - [ ] Step 1: fixtures module + unit test that fixture paid headings equal free `lockedToc` minus "한 줄 결론" mapping (test: every `lockedToc` item except the first appears as a heading in `paid`).
@@ -586,4 +586,4 @@ Visual spec (2.5D): start from the v3 SVGs shown to the user on 2026-09-30 (radi
 
 - **P2 Data, auth, wallet:** Supabase schema + RLS, Kakao/Google/dev-email auth, session restore tokens, wallet ledger functions (grant/reserve/commit/release/refund, idempotency), chapters/stories persistence, invites/guest scenes, Toss Payments test mode (direct pay + 달빛 packs), wallet history.
 - **P3 Reading generation:** 78-card knowledge base, saju rule knowledge, outline→prose pipeline with Anthropic (fixture provider when no key), automatic checks, follow-ups, story mode rendering, eval harness with the rubric from `docs/research/`.
-- **P4 Launch readiness:** legal pages (약관, 개인정보, 환불), business footer config, SEO (metadata, sitemap, OG images from share cards), guide CMS-lite, ja locale strings, analytics events, error pages, Vercel config for `taro.yeolmaeapps.kr`, production checklist.
+- **P4 Launch readiness:** legal pages (약관, 개인정보, 환불), business footer config, SEO (metadata, sitemap, OG images from share cards), guide CMS-lite, ja locale strings, analytics events, error pages, Vercel config for `starlog.yeolmaeapps.kr`, production checklist.

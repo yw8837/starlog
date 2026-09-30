@@ -1,7 +1,7 @@
 export const SITE = {
   name: "Starlog",
   nameKo: "스타로그",
-  url: "https://taro.yeolmaeapps.kr",
+  url: "https://starlog.yeolmaeapps.kr",
   business: {
     name: "열매스튜디오",
     ceo: "최용우",
