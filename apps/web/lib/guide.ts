@@ -8,6 +8,14 @@ export type GuideCategory = "tarot" | "saju";
 
 export const GUIDE_CATEGORY_LABEL: Record<GuideCategory, string> = { tarot: "타로", saju: "사주" };
 
+/**
+ * The guide index is one tab per category, in this order, each a static route `/guide/<category>`.
+ * A static segment wins over `/guide/[slug]`, so no article slug may equal a category.
+ */
+export const GUIDE_CATEGORIES: readonly GuideCategory[] = ["tarot", "saju"];
+
+export const guideIndexPath = (category: GuideCategory): string => `/guide/${category}`;
+
 export interface GuideSection {
   heading: string;
   body: string;
@@ -186,3 +194,6 @@ export const GUIDE_ARTICLES: readonly GuideArticle[] = [
 ];
 
 export const findArticle = (slug: string): GuideArticle | undefined => GUIDE_ARTICLES.find((article) => article.slug === slug);
+
+/** One tab's list: the category's articles in their GUIDE_ARTICLES order. */
+export const articlesIn = (category: GuideCategory): GuideArticle[] => GUIDE_ARTICLES.filter((article) => article.category === category);

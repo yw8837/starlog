@@ -12,7 +12,7 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle } from "@/lib/guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath } from "@/lib/guide";
 import { OG_ALT } from "@/lib/og";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
@@ -55,6 +55,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   if (!article) notFound();
   const card = article.cardId ? getCard(article.cardId) : null;
   const cta = CTA[article.category];
+  const tab = GUIDE_CATEGORY_LABEL[article.category];
   const others = GUIDE_ARTICLES.filter((other) => other.slug !== article.slug);
   const ads = adsConfig();
 
@@ -63,7 +64,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
       <NightSky fixed seed={41} moon={false} />
       <main className="page-col page-wide">
         <article className={s.article}>
-          <Stepper label="가이드" backHref="/guide" backLabel="가이드 목록으로" />
+          <Stepper label={`${tab} 가이드`} backHref={guideIndexPath(article.category)} backLabel={`${tab} 가이드 목록으로`} />
 
           <header className={s.head}>
             <p className={s.eyebrow}>{GUIDE_CATEGORY_LABEL[article.category]}</p>

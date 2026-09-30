@@ -249,14 +249,24 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await expect(page.getByRole("dialog", { name: "친구에게 보낼 카드" })).toContainText("https://starlog.yeolmaeapps.kr/invite/abc123");
   await page.keyboard.press("Escape");
 
+  // /guide moved to the tarot tab; each tab lists only its own articles.
   await page.goto("/guide");
-  const articles = page.getByRole("main").getByRole("link");
-  await expect(articles).toHaveCount(6);
+  await expect(page).toHaveURL(/\/guide\/tarot$/);
+  const guideTabs = page.getByRole("navigation", { name: "가이드 분류" });
+  await expect(guideTabs.getByRole("link", { name: "타로" })).toHaveAttribute("aria-current", "page");
+  const articles = page.getByRole("main").getByRole("list").getByRole("link");
+  await expect(articles).toHaveCount(4);
   await shot(page, info, "18-guide");
+  await guideTabs.getByRole("link", { name: "사주" }).click();
+  await expect(page).toHaveURL(/\/guide\/saju$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("사주 가이드");
+  await expect(articles).toHaveCount(2);
+  await guideTabs.getByRole("link", { name: "타로" }).click();
   await page.getByRole("link", { name: /은둔자 카드 이야기/ }).click();
   await expect(page).toHaveURL(/\/guide\/the-hermit$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("은둔자 카드 이야기");
   await expect(page).toHaveTitle(/은둔자 카드 이야기/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /9번 은둔자/);
+  await expect(page.getByRole("link", { name: "타로 가이드 목록으로" })).toHaveAttribute("href", "/guide/tarot");
   await shot(page, info, "19-guide-article");
 });

@@ -1,6 +1,6 @@
 import { getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
-import { GUIDE_ARTICLES, findArticle } from "./guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideIndexPath } from "./guide";
 
 describe("GUIDE_ARTICLES", () => {
   it("holds the six articles, in order, with the agreed titles", () => {
@@ -46,8 +46,29 @@ describe("GUIDE_ARTICLES", () => {
     for (const article of GUIDE_ARTICLES) if (article.cardId) expect(() => getCard(article.cardId ?? "")).not.toThrow();
   });
 
+  it("never uses a tab segment as a slug (/guide/tarot and /guide/saju are static routes that win over [slug])", () => {
+    expect(GUIDE_CATEGORIES).toEqual(["tarot", "saju"]);
+    for (const article of GUIDE_ARTICLES) expect(GUIDE_CATEGORIES as readonly string[], article.slug).not.toContain(article.slug);
+  });
+
   it("makes no promises about outcomes", () => {
     const text = JSON.stringify(GUIDE_ARTICLES);
     for (const word of ["보장", "확률", "반드시 이뤄", "무조건", "합격", "재회"]) expect(text).not.toContain(word);
+  });
+});
+
+describe("guide tabs", () => {
+  it("lists each category's articles in their original order", () => {
+    expect(articlesIn("tarot").map((a) => a.slug)).toEqual(["how-to-read-tarot", "upright-and-reversed", "the-hermit", "the-star"]);
+    expect(articlesIn("saju").map((a) => a.slug)).toEqual(["saju-without-birth-time", "five-elements"]);
+  });
+
+  it("puts every article in exactly one tab", () => {
+    const listed = GUIDE_CATEGORIES.flatMap((category) => articlesIn(category).map((a) => a.slug));
+    expect([...listed].sort()).toEqual(GUIDE_ARTICLES.map((a) => a.slug).sort());
+  });
+
+  it("gives each tab its own path", () => {
+    expect(GUIDE_CATEGORIES.map(guideIndexPath)).toEqual(["/guide/tarot", "/guide/saju"]);
   });
 });

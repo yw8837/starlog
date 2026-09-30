@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
   headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
+  // The guide index is split into tabs (/guide/tarot, /guide/saju). /guide moved to the first tab
+  // for good: a 308 before rendering, so search engines carry its signals over to the tab.
+  async redirects() {
+    return [{ source: "/guide", destination: "/guide/tarot", permanent: true }];
+  },
 };
 
 export default nextConfig;

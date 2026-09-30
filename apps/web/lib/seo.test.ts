@@ -7,8 +7,8 @@ import { GUIDE_ARTICLES } from "./guide";
 describe("sitemap", () => {
   const urls = sitemap().map((entry) => entry.url);
 
-  it("lists the entry points, the guide, pricing and every policy page on the production origin", () => {
-    for (const path of ["/tarot/new", "/saju/new", "/guide", "/pricing", "/refund", "/terms", "/privacy"]) {
+  it("lists the entry points, both guide tabs, pricing and every policy page on the production origin", () => {
+    for (const path of ["/tarot/new", "/saju/new", "/guide/tarot", "/guide/saju", "/pricing", "/refund", "/terms", "/privacy"]) {
       expect(urls).toContain(`${SITE.url}${path}`);
     }
     expect(urls).toContain(`${SITE.url}/`);
@@ -17,6 +17,11 @@ describe("sitemap", () => {
 
   it("includes every guide article", () => {
     for (const article of GUIDE_ARTICLES) expect(urls).toContain(`${SITE.url}/guide/${article.slug}`);
+  });
+
+  it("leaves out /guide, which permanently redirects to the first tab", () => {
+    expect(urls).not.toContain(`${SITE.url}/guide`);
+    expect(new Set(urls).size).toBe(urls.length);
   });
 
   it("leaves out personal pages", () => {
@@ -34,7 +39,7 @@ describe("robots", () => {
   });
 
   it("does not block the public pages and points at the sitemap", () => {
-    for (const path of ["/", "/pricing", "/refund", "/terms", "/privacy", "/guide"]) {
+    for (const path of ["/", "/pricing", "/refund", "/terms", "/privacy", "/guide", "/guide/tarot", "/guide/saju"]) {
       expect(disallow.some((rule) => path.startsWith(rule))).toBe(false);
     }
     expect(result.sitemap).toBe(`${SITE.url}/sitemap.xml`);
