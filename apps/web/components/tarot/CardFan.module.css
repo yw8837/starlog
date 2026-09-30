@@ -1,0 +1,101 @@
+/* Arc of face-down cards; each card turns around a pivot well below it. */
+.fan {
+  --fw: 58px;
+  --fh: calc(var(--fw) * 1040 / 600);
+  position: relative;
+  height: calc(var(--fh) + 84px);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (min-width: 400px) {
+  .fan {
+    --fw: 64px;
+  }
+}
+
+@media (min-width: 480px) {
+  .fan {
+    --fw: 70px;
+  }
+}
+
+.slot {
+  --lift: 0px;
+  position: absolute;
+  top: 44px;
+  left: 50%;
+  width: var(--fw);
+  margin: 0 0 0 calc(var(--fw) / -2);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform-origin: 50% 270%;
+  transform: rotate(var(--angle)) translateY(var(--lift));
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.3, 1),
+    filter 200ms ease;
+  animation: deal 520ms cubic-bezier(0.2, 0.8, 0.3, 1) calc(var(--i) * 18ms) backwards;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card {
+  --card-w: var(--fw);
+}
+
+.slot:focus-visible {
+  outline: none;
+}
+
+.slot:focus-visible .card {
+  border-radius: 7px;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .slot:hover:not(.picked):not(.dim) {
+    --lift: -12px;
+  }
+}
+
+.active {
+  --lift: -12px;
+}
+
+.picked {
+  --lift: -30px;
+}
+
+/* Stays opaque so the overlapped backs never show through each other. */
+.dim {
+  filter: brightness(0.5) saturate(0.6);
+  cursor: default;
+}
+
+.badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #2a1b4d;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 8px rgba(5, 3, 15, 0.45);
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: rotate(0deg) translateY(24px);
+  }
+}

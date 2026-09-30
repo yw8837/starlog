@@ -1,0 +1,51 @@
+.head {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.question {
+  font-size: 20px;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.status {
+  min-height: 1.6em;
+  margin-top: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.slots {
+  margin-top: 20px;
+}
+
+.single {
+  --spread-card-max: 150px;
+  margin-top: 20px;
+}
+
+/* Fan, shuffle and reveal share the space between the slots and the CTA, centred. */
+.stage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  margin-top: 8px;
+}
+
+.stage > * {
+  width: 100%;
+}
+
+.reader {
+  display: flex;
+  justify-content: center;
+}
+
+.cta {
+  min-height: 52px;
+  margin-top: 12px;
+}

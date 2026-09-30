@@ -10,6 +10,10 @@ type NightSkyProps = {
   glow?: "top" | "center";
   /** Seed for star placement; same seed gives the same sky on server and client. */
   seed?: number;
+  /** Pin the sky to the viewport instead of stretching it over a long page. */
+  fixed?: boolean;
+  /** Draw the moon disc; pages with a step count in the top-right corner turn it off (the glow stays). */
+  moon?: boolean;
 };
 
 const BASE_STARS = 40;
@@ -69,14 +73,14 @@ export function makeStars(count: number, seed: number): Star[] {
   });
 }
 
-export function NightSky({ density = 1, constellation = false, glow = "top", seed = 7 }: NightSkyProps) {
+export function NightSky({ density = 1, constellation = false, glow = "top", seed = 7, fixed = false, moon = true }: NightSkyProps) {
   const count = Math.min(MAX_STARS, Math.max(0, Math.round(BASE_STARS * density)));
   const stars = makeStars(count, seed);
 
   return (
-    <div className={styles.sky} data-glow={glow} aria-hidden="true">
+    <div className={fixed ? `${styles.sky} ${styles.fixed}` : styles.sky} data-glow={glow} aria-hidden="true">
       <div className={styles.moon} />
-      <div className={styles.moonCore} />
+      {moon ? <div className={styles.moonCore} /> : null}
 
       {stars.map((star, i) => (
         <span

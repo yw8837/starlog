@@ -12,6 +12,8 @@
   --line-strong: rgba(255, 255, 255, 0.3);
   --surface-light: rgba(243, 220, 161, 0.22);
   --night-0: #0d0a26;
+  /* Focus ring; paper surfaces switch it to navy so it stays visible on #F7EFE0. */
+  --focus-ring: var(--gold);
 
   /* type scale */
   --fs-title: 26px;
@@ -82,7 +84,7 @@ a {
 }
 
 :focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -101,6 +103,19 @@ a {
   max-width: var(--col-max);
   margin-inline: auto;
   padding-inline: var(--gutter);
+}
+
+/* Result and chapter screens widen to a two-column spread + reading layout on desktop. */
+@media (min-width: 1024px) {
+  .page-col.page-wide {
+    max-width: 1280px;
+    padding-inline: 40px;
+  }
+}
+
+/* Keep the page still behind an open modal dialog. */
+:root:has(dialog[open]) {
+  overflow: hidden;
 }
 
 /* Reserve room for the fixed tab bar. */

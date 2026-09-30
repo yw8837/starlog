@@ -1,0 +1,43 @@
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.header {
+  padding: 64px 0 8px;
+}
+
+.wordmark {
+  font-size: 34px;
+  letter-spacing: 0.02em;
+}
+
+.sub {
+  margin-top: 2px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  letter-spacing: 0.3em;
+}
+
+.pair {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+.lead {
+  max-width: 18em;
+  margin-top: 12px;
+  color: var(--ink-sub);
+  text-wrap: balance;
+}
+
+.actions {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  margin-top: 36px;
+}

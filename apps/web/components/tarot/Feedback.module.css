@@ -1,0 +1,67 @@
+.feedback {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px 16px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  text-align: center;
+}
+
+.title {
+  font-size: var(--fs-h2);
+}
+
+.stars {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: none;
+  color: rgba(241, 236, 255, 0.4);
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    transform 140ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.star svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.star:hover {
+  color: rgba(243, 220, 161, 0.75);
+}
+
+.star:active {
+  transform: scale(0.92);
+}
+
+.on,
+.on:hover {
+  color: var(--gold);
+}
+
+.on svg {
+  fill: currentColor;
+}
+
+.thanks {
+  min-height: 1.5em;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}

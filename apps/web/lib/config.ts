@@ -18,6 +18,10 @@ export const SITE = {
     unitsPerReading: 10,
     signupGiftFree: 10,
   },
+  reading: {
+    /** Follow-up questions included with every opened reading. */
+    followUps: 3,
+  },
 } as const;
 
 type Business = Readonly<Record<keyof (typeof SITE)["business"], string>>;

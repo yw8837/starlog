@@ -1,0 +1,71 @@
+/* Shared layout for the question flow screens (builder, situation, draw). */
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.intro {
+  margin-top: 20px;
+}
+
+.title {
+  font-size: var(--fs-title);
+}
+
+.lead {
+  margin-top: 6px;
+  color: var(--ink-sub);
+}
+
+/* The sentence being built: display type on a glass card. */
+.sentence {
+  margin-top: 20px;
+  padding: 18px 20px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.sentenceText {
+  font-family: var(--font-display), serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.sentencePlaceholder {
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+}
+
+.group {
+  margin-top: 26px;
+}
+
+.groupLabel {
+  margin-bottom: 10px;
+  color: var(--gold);
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.groupHint {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.footer {
+  margin-top: auto;
+  padding-top: 32px;
+}

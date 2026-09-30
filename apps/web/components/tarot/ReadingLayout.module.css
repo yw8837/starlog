@@ -1,0 +1,52 @@
+/* minmax(0, 1fr) keeps every track inside the column, whatever its content's intrinsic width. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "head"
+    "spread"
+    "body";
+  gap: 28px;
+}
+
+.head {
+  grid-area: head;
+  min-width: 0;
+}
+
+.spread {
+  grid-area: spread;
+  min-width: 0;
+}
+
+.body {
+  grid-area: body;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-areas:
+      "spread head"
+      "spread body";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 640px);
+    grid-template-rows: auto 1fr;
+    column-gap: 56px;
+    row-gap: 28px;
+    justify-content: center;
+  }
+
+  .spread {
+    --spread-card-max: 168px;
+    position: sticky;
+    top: 32px;
+    align-self: start;
+    padding: 28px 16px 32px;
+    border: 1px solid var(--glass-line);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.04);
+  }
+}

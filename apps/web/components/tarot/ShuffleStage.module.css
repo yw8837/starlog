@@ -1,0 +1,49 @@
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.halo {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 220px;
+  height: 220px;
+  margin-left: -110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(243, 220, 161, 0.16), transparent 68%);
+  pointer-events: none;
+}
+
+.caption {
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+}
+
+.caption::after {
+  content: "";
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% {
+    content: "";
+  }
+  25% {
+    content: ".";
+  }
+  50% {
+    content: "..";
+  }
+  75%,
+  100% {
+    content: "...";
+  }
+}

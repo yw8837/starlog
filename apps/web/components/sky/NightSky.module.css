@@ -13,6 +13,10 @@
     linear-gradient(180deg, #0d0a26 0%, #160e3a 100%);
 }
 
+.fixed {
+  position: fixed;
+}
+
 .sky[data-glow="center"] {
   --glow-y: 46%;
 }

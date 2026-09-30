@@ -1,0 +1,40 @@
+.toc {
+  padding: 20px 20px 8px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.title {
+  margin-bottom: 6px;
+  font-size: var(--fs-h2);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 0;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+.item + .item {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lock {
+  flex: none;
+  margin-top: 2px;
+  color: var(--gold);
+  opacity: 0.8;
+}

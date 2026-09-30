@@ -1,65 +1,39 @@
-"use client";
-
-// Temporary shell preview. Replaced when the real home page lands.
-import { useState } from "react";
+import { Cat } from "@/components/characters/Cat";
+import { Rabbit } from "@/components/characters/Rabbit";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { Button } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
-import { Segmented } from "@/components/ui/Segmented";
 import { SITE } from "@/lib/config";
+import s from "./page.module.css";
 
-type Mode = "tarot" | "saju";
-const TOPICS = ["연애", "일", "관계", "오늘"] as const;
-
+// Minimal home for the tarot flow. The full home (story card, today's card, friends, guide) lands next.
 export default function HomePage() {
-  const [mode, setMode] = useState<Mode>("tarot");
-  const [topic, setTopic] = useState<(typeof TOPICS)[number]>("오늘");
-
   return (
-    <div className="page-shell">
+    <div className="page-shell with-tabbar">
       <NightSky constellation />
-      <main className="page-col with-tabbar">
-        <header style={{ padding: "72px 0 28px" }}>
-          <h1 style={{ fontSize: "var(--fs-title)" }}>{SITE.name}</h1>
-          <p style={{ color: "var(--ink-sub)", marginTop: 8 }}>
-            {SITE.nameKo}에서 오늘의 별을 따라 읽어요
-          </p>
+      <main className={`page-col ${s.home}`}>
+        <header className={s.header}>
+          <h1 className={s.wordmark}>{SITE.name}</h1>
+          <p className={s.sub}>{SITE.nameKo}</p>
         </header>
 
-        <div style={{ display: "grid", gap: 20 }}>
-          <Segmented
-            label="보기 방식"
-            options={[
-              { value: "tarot", label: "타로" },
-              { value: "saju", label: "사주" },
-            ]}
-            value={mode}
-            onChange={setMode}
-          />
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {TOPICS.map((t) => (
-              <Chip key={t} selected={t === topic} onClick={() => setTopic(t)}>
-                {t}
-              </Chip>
-            ))}
-          </div>
-          <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
-            <Button block trailing="→">
-              카드 한 장 뽑기
-            </Button>
-            <Button block variant="secondary">
-              사주 살펴보기
-            </Button>
-            <Button block variant="ghost" size="md">
-              나중에 할게요
-            </Button>
-          </div>
+        <div className={s.pair}>
+          <Cat outfit="tarot" size={168} />
+          <Rabbit outfit="tarot" size={128} />
         </div>
+        <p className={s.lead}>타로와 사주로 오늘의 마음을 차분히 돌아보는 밤하늘 기록</p>
 
-        <Footer />
+        <div className={s.actions}>
+          <Button href="/tarot/new" block trailing="→">
+            타로 보기
+          </Button>
+          <Button href="/tarot/draw?template=daily" variant="secondary" block>
+            오늘의 한 장
+          </Button>
+        </div>
       </main>
+      <Footer />
       <TabBar active="home" />
     </div>
   );

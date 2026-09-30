@@ -1,0 +1,36 @@
+.optional {
+  color: var(--ink-sub);
+  font-weight: 500;
+}
+
+.note {
+  display: block;
+  width: 100%;
+  min-height: 76px;
+  padding: 12px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: rgba(13, 10, 38, 0.55);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  resize: none;
+}
+
+.note::placeholder {
+  color: rgba(201, 193, 234, 0.75);
+}
+
+.note:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.counter {
+  margin-top: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

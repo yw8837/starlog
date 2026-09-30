@@ -1,0 +1,183 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Rabbit and title sit centred in the space above the sign-in buttons. */
+.intro {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 12px;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bubble {
+  position: relative;
+  margin-bottom: 4px;
+  padding: 10px 16px;
+  border-radius: 18px;
+  background: #fffdf7;
+  color: var(--paper-ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(5, 3, 15, 0.35);
+  animation: bubbleIn 420ms cubic-bezier(0.3, 1.5, 0.5, 1) 200ms backwards;
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 50%;
+  border: 8px solid transparent;
+  border-top-color: #fffdf7;
+  transform: translateX(-50%);
+}
+
+.title {
+  margin-top: 12px;
+  font-size: var(--fs-title);
+  text-align: center;
+}
+
+.gift {
+  margin-top: 6px;
+  color: var(--gold);
+  font-size: var(--fs-body);
+  text-align: center;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+  padding-top: 28px;
+}
+
+.check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.check input {
+  position: absolute;
+  top: 50%;
+  left: 28px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.box {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--ink-sub);
+  border-radius: 7px;
+  color: transparent;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.check input:checked + .box {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: #2a1b4d;
+}
+
+.check input:focus-visible + .box {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.check input[aria-invalid="true"] + .box {
+  border-color: #ff9aa8;
+}
+
+.error {
+  margin-top: -4px;
+  padding-left: 4px;
+  color: #ffb3bd;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.provider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  margin: 0;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 12px;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.provider:active {
+  transform: scale(0.98);
+}
+
+.provider:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.kakao {
+  background: #fee500;
+  color: #191600;
+}
+
+.google {
+  border: 1px solid #dadce0;
+  background: #ffffff;
+  color: #1f1f1f;
+}
+
+.consent {
+  margin-top: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.consent a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+}

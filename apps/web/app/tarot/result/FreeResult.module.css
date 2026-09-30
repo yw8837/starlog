@@ -1,0 +1,19 @@
+.head {
+  padding-top: 12px;
+}
+
+.question {
+  font-size: var(--fs-title);
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.cardHeading {
+  font-size: 19px;
+}
+
+.prose {
+  margin-top: 12px;
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+}

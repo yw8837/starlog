@@ -22,13 +22,14 @@ const body = Noto_Sans_KR({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: `${SITE.name} · ${SITE.nameKo}`,
+  title: { default: `${SITE.name} · ${SITE.nameKo}`, template: `%s · ${SITE.name}` },
   description: "타로와 사주로 오늘의 마음을 차분히 돌아보는 밤하늘 기록",
 };
 
 export const viewport: Viewport = {
   themeColor: "#0D0A26",
   colorScheme: "dark",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

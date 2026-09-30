@@ -1,0 +1,75 @@
+/* A sheet: brighter than glass cards, darker than paper. */
+.sheet {
+  position: relative;
+  padding: 12px var(--gutter) 24px;
+  border: 1px solid rgba(243, 220, 161, 0.22);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #2c2670 0%, #1d1850 100%);
+  box-shadow: 0 -10px 40px rgba(5, 3, 15, 0.4);
+}
+
+.handle {
+  display: block;
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 16px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.title {
+  font-size: var(--fs-h1);
+  text-align: center;
+}
+
+.includes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.includes svg {
+  flex: none;
+  color: var(--gold);
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.primaryGroup {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.caption {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
+.balance {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
+.twoLine {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 0;
+}
+
+.subLine {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 500;
+}

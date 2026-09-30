@@ -1,0 +1,47 @@
+.summary {
+  margin-top: 16px;
+}
+
+.title {
+  margin-bottom: 8px;
+  color: var(--ink-sub);
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.label {
+  color: var(--ink-sub);
+  font-weight: 500;
+}
+
+.note {
+  margin-top: 10px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(243, 220, 161, 0.5);
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}

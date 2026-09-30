@@ -1,0 +1,76 @@
+.head {
+  padding-top: 12px;
+}
+
+.eyebrow {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.title {
+  margin-top: 4px;
+  font-size: 28px;
+  line-height: 1.35;
+}
+
+.question {
+  margin-top: 8px;
+  color: var(--ink-sub);
+  line-height: 1.6;
+}
+
+.toggle {
+  width: min(100%, 280px);
+  margin: 0 auto 4px;
+}
+
+.invite {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 22px 20px 20px;
+  border: 1px solid rgba(243, 220, 161, 0.3);
+  border-radius: 20px;
+  background:
+    radial-gradient(90% 100% at 100% 0%, rgba(255, 122, 182, 0.14), transparent 60%),
+    rgba(255, 255, 255, 0.06);
+}
+
+.inviteTitle {
+  font-size: var(--fs-h2);
+}
+
+.inviteText {
+  color: var(--ink-sub);
+  line-height: 1.7;
+}
+
+.enlarged {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding-top: 8px;
+  text-align: center;
+}
+
+.enlargedTitle {
+  padding: 0 40px;
+  font-size: var(--fs-h1);
+}
+
+.enlargedCard {
+  --card-w: min(240px, 62vw);
+}
+
+.enlargedMeta {
+  margin-top: 6px;
+  color: var(--ink-sub);
+}
+
+.enlargedNumber {
+  margin-right: 8px;
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-weight: 700;
+}

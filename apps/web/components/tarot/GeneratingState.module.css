@@ -1,0 +1,80 @@
+.stage {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 18px;
+  /* Full height keeps the footer below the fold while the reading is written. */
+  min-height: 100dvh;
+  padding: 40px 0;
+  text-align: center;
+}
+
+.characters {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  height: 280px;
+  margin: -150px 0 0 -140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(243, 220, 161, 0.2), transparent 65%);
+  pointer-events: none;
+}
+
+/* The rabbit joins beside the cat without pushing it off centre. */
+.rabbit {
+  position: absolute;
+  right: -88px;
+  bottom: -2px;
+  animation: rabbitIn 480ms cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+.caption {
+  min-height: 1.6em;
+  font-family: var(--font-display), serif;
+  font-size: 19px;
+  font-weight: 700;
+  animation: captionIn 420ms ease-out;
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dots li {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--glass-line);
+  transition: background-color 300ms ease;
+}
+
+.dots .dotOn {
+  background: var(--gold);
+}
+
+@keyframes captionIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes rabbitIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.9);
+  }
+}
