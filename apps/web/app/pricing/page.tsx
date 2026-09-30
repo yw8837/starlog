@@ -3,31 +3,33 @@ import Link from "next/link";
 import { LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import s from "@/components/legal/legal.module.css";
 import { SITE, won } from "@/lib/config";
+import { times } from "@/lib/helpGuide";
 import { packReadings, perReadingLabel } from "@/lib/pricing";
 
-const { price, currency, reading, nameKo } = SITE;
+const { price, currency, reading, nameKo, beta } = SITE;
+const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 export const metadata: Metadata = {
   title: "가격 안내",
-  description: `타로 심층 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}. 무료로 볼 수 있는 부분과 ${currency.paid} 충전 상품, ${currency.free}, 결제 수단을 안내해요.`,
+  description: `타로 심층 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 베타 기간의 무료 범위와 ${currency.paid} 충전 상품, 결제 수단을 안내해요.`,
   alternates: { canonical: "/pricing" },
 };
 
-const count = (n: number) => (n === 1 ? "한 번" : `${n}번`);
 const giftReadings = Math.floor(price.signupGiftFree / price.unitsPerReading);
 
+/** The standard readings: what one opening includes, lengths from SITE.reading.approxChars. */
 const PRODUCTS = [
   {
     name: "타로 심층 풀이",
     sub: "카드 3장으로 보는 지금",
     krw: price.tarotStandardKrw,
-    includes: ["카드별 풀이 전체", "세 카드의 연결, 시기, 오늘 해볼 행동"],
+    includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.tarot)}자`, "카드별 풀이와 세 카드의 연결, 시기, 상황별 갈래, 오늘 해 볼 일"],
   },
   {
     name: "사주 프롤로그",
     sub: "타고난 결로 보는 나",
     krw: price.sajuStandardKrw,
-    includes: ["명식을 주제별로 읽은 풀이 전체", "오행과 십신, 지금의 10년(대운)"],
+    includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.saju)}자`, "명식을 주제별로 읽은 풀이, 오행과 십신, 지금의 10년(대운)"],
   },
 ] as const;
 
@@ -43,8 +45,8 @@ export default function PricingPage() {
   return (
     <LegalPage title="가격 안내" lead="풀이 한 번의 가격과 무료로 볼 수 있는 부분, 달빛과 별조각을 한곳에 모았어요.">
       <LegalNote>
-        <p className={s.noteTitle}>결제는 심사 완료 후 열려요.</p>
-        <p>지금은 결제 기능을 준비하고 있어서 결제가 되지 않아요. 가격이 바뀌면 이 페이지에 먼저 알려 드려요.</p>
+        <p className={s.noteTitle}>지금은 베타 기간이라 무료예요.</p>
+        <p>{`전체 풀이를 하루 ${times(beta.fullPerDay)} 무료로 열 수 있어요. 결제는 심사 완료 후 열려요. 결제가 열리기 전이나 가격이 바뀔 때는 이 페이지에 먼저 알려 드려요.`}</p>
       </LegalNote>
 
       <LegalSection id="readings" title="풀이 가격">
@@ -62,7 +64,7 @@ export default function PricingPage() {
                 <span className={s.priceUnit}>1회</span>
               </p>
               <ul className={s.checks}>
-                {[...product.includes, `후속 질문 ${reading.followUps}번`, `내 ${nameKo}에 보관`].map((item) => (
+                {[...product.includes, `이어서 물어보기 ${reading.followUps}번`, "이 기기에 계속 보관"].map((item) => (
                   <li key={item}>
                     <Check />
                     <span>{item}</span>
@@ -77,12 +79,35 @@ export default function PricingPage() {
         </p>
       </LegalSection>
 
+      <LegalSection id="premium" title="준비 중인 풀이">
+        <div className={s.cards}>
+          {price.premium.map((product) => (
+            <section key={product.id} className={s.card} aria-labelledby={`premium-${product.id}`}>
+              <div>
+                <h3 id={`premium-${product.id}`} className={s.cardTitle}>
+                  {product.name} <span className={s.badge}>{product.open ? "판매 중" : "준비 중"}</span>
+                </h3>
+                <p className={s.cardSub}>{product.sub}</p>
+              </div>
+              <p className={s.price}>
+                {won(product.krw)}
+                <span className={s.priceUnit}>1회</span>
+              </p>
+              {product.opens ? <p className={s.muted}>{product.opens}</p> : null}
+            </section>
+          ))}
+        </div>
+        <p>준비 중인 풀이는 아직 결제할 수 없어요. 열리기 전에 담기는 내용과 함께 이 페이지에 먼저 알려 드려요.</p>
+      </LegalSection>
+
       <LegalSection id="free" title="무료로 볼 수 있는 부분">
         <ul className={s.list}>
-          <li>타로는 카드 3장의 앞면과 자리별 한 줄 키워드, 첫 번째 카드 풀이를 로그인 없이 무료로 볼 수 있어요.</li>
-          <li>사주는 명식(네 기둥, 오행 분포, 일간)과 요약 풀이를 무료로 볼 수 있어요.</li>
+          <li>{`베타 기간에는 타로와 사주 전체 풀이를 합쳐 하루 ${times(beta.fullPerDay)} 무료로 열 수 있어요. 한국 시간 0시에 다시 채워져요.`}</li>
+          <li>{`타로는 뽑은 카드 3장과 첫 풀이, 이어지는 풀이의 소제목을 먼저 무료로 볼 수 있어요. 첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 볼 수 있어요.`}</li>
+          <li>사주는 명식(네 기둥, 오행 분포, 일간)과 첫 장 요약을 무료로 볼 수 있어요.</li>
+          <li>지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요.</li>
           <li>
-            {`처음 가입하면 가입 선물로 ${currency.free} ${price.signupGiftFree}개를 드려요. 전체 풀이를 ${count(giftReadings)} 무료로 열 수 있어요.`}
+            {`회원 가입이 열리면 가입 선물로 ${currency.free} ${price.signupGiftFree}개를 드려요. 전체 풀이를 ${times(giftReadings)} 무료로 열 수 있어요.`}
           </li>
         </ul>
       </LegalSection>
