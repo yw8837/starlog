@@ -27,7 +27,7 @@ type Sheet = "packs" | "share" | null;
 function Soon({ children }: { children: string }) {
   return (
     <li>
-      <span className={`${s.item} ${s.itemSoon}`} aria-disabled="true">
+      <span className={`${s.item} ${s.itemSoon}`}>
         <span>{children}</span>
         <span className={s.soon}>준비 중</span>
       </span>

@@ -6,6 +6,7 @@ import {
   INVITE_FIXTURE,
   INVITE_FIXTURE_TOKEN,
   ME_FIXTURE,
+  SAJU_FOLLOW_UPS,
   SAJU_SAMPLE,
   STORY_FIXTURE,
   TAROT_SAMPLE,
@@ -110,6 +111,26 @@ describe("fixture extras", () => {
   });
 });
 
+describe("SAJU_FOLLOW_UPS", () => {
+  it("offers two suggestions and one 해요체 answer", () => {
+    expect(SAJU_FOLLOW_UPS.suggestions).toHaveLength(2);
+    for (const q of SAJU_FOLLOW_UPS.suggestions) expect(q).toMatch(/요\?$/);
+    expect(SAJU_FOLLOW_UPS.answer).toMatch(/요\.$/);
+  });
+
+  it("states only the sample chart's facts, with the reading hedged", () => {
+    const { answer } = SAJU_FOLLOW_UPS;
+    const { dayMaster, elements, hiddenStems } = SAJU_SAMPLE.chart;
+    expect(answer).toContain(`일간은 ${dayMaster.ko}(${dayMaster.stem}火)`);
+    expect(elements.금).toBe(0);
+    expect(answer).toContain("보이는 여섯 글자 가운데 금(金)은 없어요");
+    expect(hiddenStems.year).toContain("庚");
+    expect(answer).toContain("뱀(巳) 속에 경금(庚金)");
+    expect(answer).toContain("읽기도 해요");
+    for (const word of ["반드시", "보장", "확률", "무조건"]) expect(answer).not.toContain(word);
+  });
+});
+
 describe("INVITE_FIXTURE", () => {
   it("is 하늘's invite, on the placeholder token", () => {
     expect(INVITE_FIXTURE.token).toBe(INVITE_FIXTURE_TOKEN);
@@ -135,11 +156,19 @@ describe("INVITE_FIXTURE", () => {
 });
 
 describe("SITE.moonPacks", () => {
-  it("starts with 30 달빛 for 9,900원, then 60 + 6 bonus for 19,800원", () => {
-    expect(SITE.moonPacks.slice(0, 2)).toEqual([
-      { units: 30, bonus: 0, krw: 9900 },
-      { units: 60, bonus: 6, krw: 19800 },
+  it("offers 30 for 8,500원, 60 + 6 for 16,900원 and 100 + 20 for 27,000원", () => {
+    expect(SITE.moonPacks).toEqual([
+      { units: 30, bonus: 0, krw: 8500 },
+      { units: 60, bonus: 6, krw: 16900 },
+      { units: 100, bonus: 20, krw: 27000 },
     ]);
+  });
+
+  it("makes a reading cheaper with 달빛 than paying for it directly, in every pack (spec §5)", () => {
+    const direct = Math.min(SITE.price.tarotStandardKrw, SITE.price.sajuStandardKrw);
+    for (const pack of SITE.moonPacks) {
+      expect((pack.krw / (pack.units + pack.bonus)) * SITE.price.unitsPerReading, `${pack.units}+${pack.bonus}`).toBeLessThan(direct);
+    }
   });
 
   it("lists bigger packs at higher prices", () => {

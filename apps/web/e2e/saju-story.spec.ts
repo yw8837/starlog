@@ -9,8 +9,6 @@ type SajuSample = {
 const SAJU: SajuSample = JSON.parse(readFileSync(new URL("../../../content/samples/saju-prologue.ko.json", import.meta.url), "utf8"));
 
 const SHOTS = "test-results/saju-story";
-/** The dev server compiles a route on its first visit, which can take well over the default 10s on this disk. */
-const NAV = { timeout: 60_000 };
 
 async function shot(page: Page, info: TestInfo, name: string) {
   await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }); // dev-only overlay badge
@@ -42,9 +40,16 @@ async function pickFanCard(page: Page, n: number) {
 }
 
 test("saju: input, consent, chart with 丙寅 and 병화, prologue, sign-in, opened prologue", async ({ page }, info) => {
+  // Nothing saved yet: the sample is labelled as an example and asks for the user's own birth data.
+  await page.goto("/saju/chart");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("예시 명식");
+  await expect(page.getByRole("link", { name: "태어난 날 입력하기" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "전체 풀이 보기" })).toHaveCount(0);
+  await shot(page, info, "00-saju-chart-example");
+
   await page.goto("/");
   await page.getByRole("link", { name: /사주 보기/ }).click();
-  await expect(page).toHaveURL(/\/saju\/new$/, NAV);
+  await expect(page).toHaveURL(/\/saju\/new$/);
   await expect(page.getByRole("heading", { level: 1, name: "태어난 날을 알려주세요" })).toBeVisible();
   await expect(page.getByText("→ 1990년 1월 1일 (양력)")).toBeVisible();
   await expect(page.getByText("10년 흐름(대운)의 방향을 정하는 데만 써요")).toBeVisible();
@@ -60,13 +65,14 @@ test("saju: input, consent, chart with 丙寅 and 병화, prologue, sign-in, ope
   // Consent is required; the button explains what is missing.
   await page.getByRole("button", { name: "명식 보기" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "출생 정보를 풀이에 쓰는 데 먼저 동의해 주세요." })).toBeVisible();
-  await expect(page).toHaveURL(/\/saju\/new$/, NAV);
+  await expect(page).toHaveURL(/\/saju\/new$/);
   await shot(page, info, "02-saju-consent-required");
   await page.getByText("출생 정보를 풀이에 쓰는 데 동의해요").click();
   await page.getByRole("button", { name: "명식 보기" }).click();
 
   // Birth data never travels in the URL.
-  await expect(page).toHaveURL(/\/saju\/chart$/, NAV);
+  await expect(page).toHaveURL(/\/saju\/chart$/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("나의 명식");
   const chart = page.getByRole("complementary", { name: "명식" });
   const table = chart.getByRole("table");
   await expect(table.getByRole("columnheader")).toHaveText(["시주", "일주", "월주", "연주"]);
@@ -85,12 +91,17 @@ test("saju: input, consent, chart with 丙寅 and 병화, prologue, sign-in, ope
 
   await page.goto("/saju/chart?instant=1");
   await page.getByRole("link", { name: "로그인하고 무료로 보기" }).click();
-  await expect(page).toHaveURL(/\/login\?chapter=prologue&instant=1$/, NAV);
+  await expect(page).toHaveURL(/\/login\?chapter=prologue&instant=1$/);
   await page.getByText("만 14세 이상이에요").click();
   await page.getByRole("button", { name: "카카오로 계속하기" }).click();
-  await expect(page).toHaveURL(/\/chapter\/prologue/, NAV);
+  await expect(page).toHaveURL(/\/chapter\/prologue/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(SAJU.free.title);
   for (const section of SAJU.paid.sections) await expect(page.getByText(section.body)).toBeVisible();
+  const followUp = page.getByRole("region", { name: /이어서 물어보기/ });
+  await expect(followUp).toContainText("3번 남았어요");
+  await followUp.getByRole("button", { name: "겉에 금이 없다는 건 어떤 뜻이에요?" }).click();
+  await expect(followUp).toContainText("2번 남았어요");
+  await expect(followUp).toContainText("뱀(巳) 속에 경금(庚金)이 숨어 있어요");
   await shot(page, info, "04-prologue-chapter");
   await page.getByRole("button", { name: "이야기", exact: true }).click();
   await expect(page.getByText("기록 · 토끼 선생님")).toBeVisible();
@@ -106,14 +117,35 @@ test("saju: a known birth time adds the hour pillar and the correction note", as
   await page.getByLabel("태어난 시", { exact: true }).selectOption("9");
   await page.getByLabel("태어난 분").selectOption("30");
   await page.getByRole("button", { name: "명식 보기" }).click();
-  await expect(page).toHaveURL(/\/saju\/chart$/, NAV);
+  await expect(page).toHaveURL(/\/saju\/chart$/);
   const chart = page.getByRole("complementary", { name: "명식" });
   await expect(chart.getByRole("table")).toContainText("壬");
   await expect(chart.getByRole("table")).toContainText("辰");
   await expect(chart).toContainText("보이는 8글자 기준");
   await expect(chart).toContainText("보정 시각 08:57");
   await expect(page.getByText("1990년 1월 1일 (양력) · 9시 30분 · 여성 · 서울")).toBeVisible();
+  // Not the sample chart: a teaser of this chart's own facts and the generic sections, no sample text.
+  await expect(page.getByRole("heading", { level: 2, name: "명식에서 바로 보이는 것" })).toBeVisible();
+  await expect(page.getByText("보이는 여덟 글자 가운데 불(火)이 셋이고, 쇠(金)는 하나도 없어요.", { exact: false })).toBeVisible();
+  const toc = page.getByRole("region", { name: "이어지는 풀이" });
+  await expect(toc).toContainText("계산 기준 · 보지 않은 것과 달라질 수 있는 것");
+  expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
   await shot(page, info, "05-saju-chart-known-time");
+
+  // Opening it: the chapter is being written; still no sample text anywhere, story view included.
+  await page.goto("/saju/chart?visit=returning&instant=1");
+  await page.getByRole("link", { name: "별조각으로 보기 · 10" }).click();
+  await expect(page).toHaveURL(/\/chapter\/prologue/);
+  await expect(page.getByText("풀이를 적고 있어요. 다 적으면 내 이야기에 넣어 둘게요.")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("나의 프롤로그");
+  await expect(page.getByRole("link", { name: "내 이야기로" }).last()).toBeVisible();
+  expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
+  await shot(page, info, "05b-prologue-pending");
+  await page.goto("/story");
+  const prologue = page.getByRole("list", { name: "이야기 목차" }).getByRole("listitem").first();
+  await expect(prologue).toContainText("나의 프롤로그");
+  await expect(prologue).toContainText("풀이를 적고 있어요.");
+  expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
 
   // A lunar day that does not exist is explained next to the date.
   await page.goto("/saju/new");
@@ -123,7 +155,7 @@ test("saju: a known birth time adds the hour pillar and the correction note", as
   await page.getByText("출생 정보를 풀이에 쓰는 데 동의해요").click();
   await page.getByRole("button", { name: "명식 보기" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "음력으로는 없는 날짜예요." })).toBeVisible();
-  await expect(page).toHaveURL(/\/saju\/new$/, NAV);
+  await expect(page).toHaveURL(/\/saju\/new$/);
   await shot(page, info, "06-saju-lunar-error");
 });
 
@@ -180,7 +212,7 @@ test("invite: guest picks one card, reads the sun, leaves it for 하늘", async 
   await expect(page.getByRole("heading", { level: 1, name: "하늘님 이야기에 남겼어요" })).toBeVisible();
   await shot(page, info, "13-invite-sent");
   await page.getByRole("link", { name: "나도 내 스타로그 시작하기" }).click();
-  await expect(page).toHaveURL(/\/\?visit=first$/, NAV);
+  await expect(page).toHaveURL(/\/\?visit=first$/);
 });
 
 test("home, 내 정보 and guide", async ({ page }, info) => {
@@ -204,11 +236,12 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await shot(page, info, "16-me");
   await page.getByRole("button", { name: "달빛 충전하기" }).click();
   const packs = page.getByRole("dialog", { name: "달빛 충전" });
-  await expect(packs).toContainText("9,900원");
+  await expect(packs).toContainText("8,500원");
   await expect(packs).toContainText("+ 보너스 6");
-  await expect(packs).toContainText("19,800원");
+  await expect(packs).toContainText("16,900원");
+  await expect(packs).toContainText("+ 보너스 20");
   await shot(page, info, "17-me-packs");
-  await packs.getByRole("button", { name: "9,900원 결제하기" }).click();
+  await packs.getByRole("button", { name: "8,500원 결제하기" }).click();
   await expect(page.getByRole("status").filter({ hasText: "달빛 30개를 충전했어요" })).toBeVisible();
   await page.getByRole("button", { name: "친구 초대하기" }).click();
   await expect(page.getByRole("dialog", { name: "친구에게 보낼 카드" })).toContainText("https://taro.yeolmaeapps.kr/invite/abc123");
@@ -219,7 +252,7 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await expect(articles).toHaveCount(6);
   await shot(page, info, "18-guide");
   await page.getByRole("link", { name: /은둔자 카드 이야기/ }).click();
-  await expect(page).toHaveURL(/\/guide\/the-hermit$/, NAV);
+  await expect(page).toHaveURL(/\/guide\/the-hermit$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("은둔자 카드 이야기");
   await expect(page).toHaveTitle(/은둔자 카드 이야기/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /9번 은둔자/);

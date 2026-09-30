@@ -22,11 +22,15 @@ export const SITE = {
     /** Follow-up questions included with every opened reading. */
     followUps: 3,
   },
-  /** 달빛 top-up packs (placeholder values; set with real pricing before launch). */
+  /**
+   * 달빛 top-up packs. Provisional: every pack must make one reading (unitsPerReading 달빛)
+   * cheaper than direct pay, per spec §5 (checked in fixtures.test.ts). Real prices are set
+   * after measuring generation cost and conversion.
+   */
   moonPacks: [
-    { units: 30, bonus: 0, krw: 9900 },
-    { units: 60, bonus: 6, krw: 19800 },
-    { units: 90, bonus: 12, krw: 29700 },
+    { units: 30, bonus: 0, krw: 8500 },
+    { units: 60, bonus: 6, krw: 16900 },
+    { units: 100, bonus: 20, krw: 27000 },
   ],
 } as const;
 

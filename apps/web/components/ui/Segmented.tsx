@@ -6,11 +6,13 @@ type SegmentedProps<T extends string> = {
   onChange: (value: T) => void;
   /** Accessible name for the group. */
   label?: string;
+  /** id of a helper line that describes the choice. */
+  describedBy?: string;
 };
 
-export function Segmented<T extends string>({ options, value, onChange, label }: SegmentedProps<T>) {
+export function Segmented<T extends string>({ options, value, onChange, label, describedBy }: SegmentedProps<T>) {
   return (
-    <div className={styles.segmented} role="group" aria-label={label}>
+    <div className={styles.segmented} role="group" aria-label={label} aria-describedby={describedBy}>
       {options.map((option) => {
         const active = option.value === value;
         return (

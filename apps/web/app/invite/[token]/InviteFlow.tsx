@@ -157,13 +157,17 @@ export function InviteFlow({ invite, instant }: InviteFlowProps) {
               <form className={s.leave} onSubmit={send} noValidate>
                 <h2 className={s.leaveTitle}>{`${inviter}에게 이 카드 남기기`}</h2>
                 <label className={s.field}>
-                  <span className={s.fieldLabel}>{`${inviter}에게 보일 이름`}</span>
+                  <span className={s.fieldLabel}>
+                    {`${inviter}에게 보일 이름`}
+                    <span className={s.requiredHint}> (필수)</span>
+                  </span>
                   <input
                     ref={nameRef}
                     className={s.input}
                     value={name}
                     maxLength={NAME_MAX}
                     autoComplete="nickname"
+                    aria-required="true"
                     onChange={(e) => {
                       setName(e.target.value);
                       if (e.target.value.trim()) setNameError(false);

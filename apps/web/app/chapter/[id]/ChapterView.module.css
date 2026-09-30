@@ -99,3 +99,29 @@
   font-family: var(--font-display), serif;
   font-weight: 700;
 }
+
+/* Saju prologue that is still being written (any chart other than the sample). */
+/* align-self keeps the card its own height beside the taller chart column on desktop. */
+.pending {
+  display: grid;
+  align-self: start;
+  align-content: start;
+  justify-items: center;
+  gap: 14px;
+  padding: 28px 20px 26px;
+  border: 1px solid var(--glass-line);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  text-align: center;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.pendingText {
+  max-width: 22em;
+  font-family: var(--font-display), serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.6;
+  text-wrap: balance;
+}

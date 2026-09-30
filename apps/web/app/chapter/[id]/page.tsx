@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
-import { FOLLOW_UP_ANSWER, INVITE_FIXTURE_TOKEN, SAJU_SAMPLE, STORY_FIXTURE, TAROT_SAMPLE } from "@/lib/fixtures";
+import { FOLLOW_UP_ANSWER, INVITE_FIXTURE_TOKEN, SAJU_FOLLOW_UPS, SAJU_SAMPLE, STORY_FIXTURE, TAROT_SAMPLE } from "@/lib/fixtures";
 import { ChapterView } from "./ChapterView";
 import { SajuChapterView } from "./SajuChapterView";
 
@@ -14,7 +14,8 @@ const findChapter = (id: string) => STORY_FIXTURE.chapters.find((c) => c.id === 
 export async function generateMetadata({ params }: PageProps<"/chapter/[id]">): Promise<Metadata> {
   const { id } = await params;
   const chapter = findChapter(id);
-  const title = chapter?.kind === "saju" ? SAJU_SAMPLE.free.title : TAROT_SAMPLE.story.title;
+  // The saju prologue's text depends on the saved chart (read in the browser), so its tab title stays generic.
+  const title = chapter?.kind === "saju" ? "나의 프롤로그" : TAROT_SAMPLE.story.title;
   return { title, robots: { index: false, follow: false } };
 }
 
@@ -31,7 +32,7 @@ export default async function ChapterPage({ params, searchParams }: PageProps<"/
       <NightSky fixed moon={false} />
       <main className="page-col page-wide">
         {chapter.kind === "saju" ? (
-          <SajuChapterView sample={SAJU_SAMPLE} chapterLabel={chapter.label} generate={generate} />
+          <SajuChapterView sample={SAJU_SAMPLE} followUps={SAJU_FOLLOW_UPS} chapterLabel={chapter.label} generate={generate} />
         ) : (
           <ChapterView
             sample={TAROT_SAMPLE}

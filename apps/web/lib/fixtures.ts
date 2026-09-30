@@ -155,6 +155,16 @@ export const WALLET_FIXTURE = { moonlight: 4, stardust: 12 };
 export const FOLLOW_UP_ANSWER =
   "가벼운 안부로 정했으니 첫 문장은 한 줄이면 충분해요. 두 번째 예시처럼 내 요즘 이야기를 조금 먼저 꺼내고, 질문은 하나만 붙여 보세요. 저녁에 다시 읽었을 때 반가운 마음이 먼저 들면 그대로 보내고, 숙제처럼 느껴지면 이번 주 안에 한 번 더 읽고 정해도 늦지 않아요.";
 
+/**
+ * Follow-ups on the sample prologue (P3 answers real questions). The one answer covers both
+ * suggestions and states only the sample chart's facts, with the reading hedged.
+ */
+export const SAJU_FOLLOW_UPS = {
+  suggestions: ["겉에 금이 없다는 건 어떤 뜻이에요?", "태어난 시를 알게 되면 뭐가 달라져요?"],
+  answer:
+    "확실한 것부터 말하면, 일간은 병화(丙火)이고 보이는 여섯 글자 가운데 금(金)은 없어요. 대신 태어난 해의 뱀(巳) 속에 경금(庚金)이 숨어 있어요. 명리에서는 이런 구조를 금이 모자라다기보다 의식해서 꺼내 써야 하는 힘으로 읽기도 해요. 태어난 시를 알게 되면 시주 두 글자가 더해져 오행 개수와 대운이 시작되는 시기가 달라질 수 있으니, 그때 내 정보에서 고치고 다시 계산해 보세요.",
+};
+
 /** Placeholder invite token for the share preview (real tokens come with P2). */
 export const INVITE_FIXTURE_TOKEN = "abc123";
 

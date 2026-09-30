@@ -183,6 +183,11 @@
   font-weight: 700;
 }
 
+.requiredHint {
+  color: var(--ink-sub);
+  font-weight: 500;
+}
+
 .input {
   width: 100%;
   min-height: 48px;

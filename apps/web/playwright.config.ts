@@ -48,6 +48,8 @@ const executablePath = chromiumExecutable();
 
 export default defineConfig({
   testDir: "./e2e",
+  // Compiles every route once before the tests (see e2e/global-setup.ts).
+  globalSetup: "./e2e/global-setup.ts",
   // Playwright empties outputDir on every run; step screenshots live next to it in test-results/tarot-flow.
   outputDir: "./test-results/playwright",
   timeout: 120_000,

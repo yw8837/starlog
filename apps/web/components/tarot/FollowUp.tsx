@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Cat } from "@/components/characters/Cat";
+import { Rabbit } from "@/components/characters/Rabbit";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { SITE } from "@/lib/config";
@@ -14,6 +15,8 @@ type FollowUpProps = {
   total?: number;
   /** Fixture latency before the answer shows. */
   delayMs?: number;
+  /** Who answers: the cat astrologer (tarot) or the rabbit in hanbok (saju). */
+  reader?: "cat" | "rabbit";
 };
 
 type Turn = { id: number; question: string; answer?: string };
@@ -21,7 +24,7 @@ type Turn = { id: number; question: string; answer?: string };
 const MAX_LENGTH = 120;
 
 /** Follow-up questions on an opened reading. Only an answered question uses up a turn. */
-export function FollowUp({ suggestions, answer, total = SITE.reading.followUps, delayMs = 1000 }: FollowUpProps) {
+export function FollowUp({ suggestions, answer, total = SITE.reading.followUps, delayMs = 1000, reader = "cat" }: FollowUpProps) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
   const timer = useRef<number | undefined>(undefined);
@@ -65,7 +68,11 @@ export function FollowUp({ suggestions, answer, total = SITE.reading.followUps, 
               <p className={s.question}>{turn.question}</p>
               <div className={s.reply}>
                 <span className={s.avatar} aria-hidden="true">
-                  <Cat outfit="tarot" size={44} expression={turn.answer ? "happy" : "focus"} reactOnTap={false} />
+                  {reader === "cat" ? (
+                    <Cat outfit="tarot" size={44} expression={turn.answer ? "happy" : "focus"} reactOnTap={false} />
+                  ) : (
+                    <Rabbit outfit="hanbok" size={44} expression={turn.answer ? "happy" : "focus"} reactOnTap={false} />
+                  )}
                 </span>
                 {turn.answer ? (
                   <p className={s.answer}>{turn.answer}</p>

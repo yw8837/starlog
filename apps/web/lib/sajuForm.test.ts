@@ -177,6 +177,15 @@ describe("checkSajuForm", () => {
     expect(result).toEqual({ error: { field: "date", message: "오늘 이후의 날짜는 고를 수 없어요." } });
   });
 
+  it("rejects lunar dates whose solar day is after today, and accepts ones already past", () => {
+    // 음력 2026-08-21 is 양력 2026-10-01 (TODAY is 2026-09-30); 음력 2026-08-01 is 양력 2026-09-11.
+    const future = checkSajuForm({ ...DEFAULT_SAJU_FORM, calendar: "lunar", year: 2026, month: 8, day: 21 }, TODAY);
+    expect(future).toEqual({ error: { field: "date", message: "오늘 이후의 날짜는 고를 수 없어요." } });
+    const past = checkSajuForm({ ...DEFAULT_SAJU_FORM, calendar: "lunar", year: 2026, month: 8, day: 1 }, TODAY);
+    if (!("chart" in past)) throw new Error("expected a chart");
+    expect(past.chart.solarDate).toBe("2026-09-11");
+  });
+
   it("turns engine errors into field errors: a lunar day that does not exist, a skipped DST minute", () => {
     const lunar = checkSajuForm({ ...DEFAULT_SAJU_FORM, calendar: "lunar", isLeapMonth: true, day: 30 }, TODAY);
     expect(lunar).toEqual({ error: SAJU_ERROR_MESSAGES.INVALID_LUNAR_DATE });

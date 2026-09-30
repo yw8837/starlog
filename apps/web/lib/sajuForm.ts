@@ -160,14 +160,18 @@ export function checkSajuForm(form: SajuForm, today: CivilDay): { chart: SajuCha
   if (form.timeKnown && (form.hour === null || form.minute === null)) {
     return { error: { field: "time", message: "태어난 시각을 골라 주세요." } };
   }
-  if (form.calendar === "solar" && dayNumber(form) > dayNumber(today)) {
-    return { error: { field: "date", message: "오늘 이후의 날짜는 고를 수 없어요." } };
-  }
+  let chart: SajuChart;
   try {
-    return { chart: computeChart(toSajuInput(form)) };
+    chart = computeChart(toSajuInput(form));
   } catch (error) {
     return { error: describeSajuError(error) };
   }
+  // The engine's solar date covers lunar input too (a lunar day can fall after today in solar terms).
+  const [year = 0, month = 0, day = 0] = chart.solarDate.split("-").map(Number);
+  if (dayNumber({ year, month, day }) > dayNumber(today)) {
+    return { error: { field: "date", message: "오늘 이후의 날짜는 고를 수 없어요." } };
+  }
+  return { chart };
 }
 
 // ---- display ----

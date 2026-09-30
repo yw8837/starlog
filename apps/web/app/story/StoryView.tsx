@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
+import { useSajuChart } from "@/components/saju/useSajuChart";
 import { Timeline } from "@/components/story/Timeline";
 import { StoryToggle, type ReadingMode } from "@/components/tarot/StoryToggle";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
 import type { FriendScene, StoryChapter } from "@/lib/fixtures";
+import { composeChartTeaser } from "@/lib/sajuPrologue";
 import s from "./StoryView.module.css";
 
 type StoryViewProps = {
@@ -24,9 +26,32 @@ const PlusIcon = () => (
 );
 
 /** 나의 스타로그: the timeline, the [이야기 | 풀이] switch, and the one way forward (새 장 열기). */
-export function StoryView({ nickname, chapters, scenes, nextChapter }: StoryViewProps) {
+const PROLOGUE_PENDING = "풀이를 적고 있어요. 다 적으면 여기에 넣어 둘게요.";
+
+/**
+ * The saju prologue as the saved chart allows: the written sample only for the sample chart,
+ * otherwise the chart's own day pillar with its computed facts and a "being written" line.
+ */
+function usePrologue(chapter: StoryChapter): StoryChapter {
+  const { ready, result, isSample } = useSajuChart();
+  if (ready && isSample) return chapter;
+  const generic = { ...chapter, title: "나의 프롤로그", saju: undefined };
+  if (!ready || !result) return { ...generic, excerpt: { story: " ", plain: " " } };
+  if ("error" in result) return { ...generic, excerpt: { story: PROLOGUE_PENDING, plain: PROLOGUE_PENDING } };
+  const { chart } = result;
+  return {
+    ...generic,
+    excerpt: { story: PROLOGUE_PENDING, plain: composeChartTeaser(chart) },
+    saju: { dayPillar: chart.pillars.day.stem + chart.pillars.day.branch, dayMaster: chart.dayMaster.ko },
+  };
+}
+
+export function StoryView({ nickname, chapters: fixtureChapters, scenes, nextChapter }: StoryViewProps) {
   const [mode, setMode] = useState<ReadingMode>("story");
   const pending = scenes.filter((scene) => scene.status === "pending");
+  const saju = fixtureChapters.find((chapter) => chapter.kind === "saju");
+  const prologue = usePrologue(saju ?? fixtureChapters[0]!);
+  const chapters = fixtureChapters.map((chapter) => (chapter === saju ? prologue : chapter));
 
   return (
     <div className={s.layout}>

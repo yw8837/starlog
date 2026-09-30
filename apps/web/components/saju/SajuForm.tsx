@@ -87,7 +87,8 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
     setErrors((prev) => (prev.consent ? { consent: prev.consent } : {}));
   };
 
-  const describedBy = (key: ErrorKey) => (errors[key] ? `${key}-error` : undefined);
+  /** The field's helper line (if any) plus its error (when shown). */
+  const describedBy = (key: ErrorKey, helper?: string) => [helper, errors[key] ? `${key}-error` : undefined].filter(Boolean).join(" ") || undefined;
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -117,7 +118,7 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
             <span className={s.selectWrap}>
               <select
                 ref={yearRef}
-                aria-label="태어난 년도"
+                aria-label="태어난 연도"
                 className={s.select}
                 value={form.year}
                 onChange={(e) => change(withDate(form, { year: Number(e.target.value) }))}
@@ -189,6 +190,7 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
         <legend className={s.label}>태어난 시</legend>
         <Segmented
           label="태어난 시를 아는지"
+          describedBy="time-help"
           options={TIME_OPTIONS}
           value={form.timeKnown ? "known" : "unknown"}
           onChange={(value) => change({ ...form, timeKnown: value === "known" })}
@@ -204,7 +206,7 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
                   value={form.hour ?? ""}
                   onChange={(e) => change({ ...form, hour: e.target.value === "" ? null : Number(e.target.value) })}
                   aria-invalid={Boolean(errors.time)}
-                  aria-describedby={describedBy("time")}
+                  aria-describedby={describedBy("time", "time-help")}
                 >
                   <option value="">--</option>
                   {range(0, 23).map((hour) => (
@@ -224,7 +226,7 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
                   value={form.minute ?? ""}
                   onChange={(e) => change({ ...form, minute: e.target.value === "" ? null : Number(e.target.value) })}
                   aria-invalid={Boolean(errors.time)}
-                  aria-describedby={describedBy("time")}
+                  aria-describedby={describedBy("time", "time-help")}
                 >
                   <option value="">--</option>
                   {range(0, 59).map((minute) => (
@@ -238,14 +240,24 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
             </label>
           </div>
         ) : null}
-        <p className={s.helper}>시간을 모르면 시주 없이 풀어요</p>
+        <p id="time-help" className={s.helper}>
+          시간을 모르면 시주 없이 풀어요
+        </p>
         <FieldError id="time-error" message={errors.time} />
       </fieldset>
 
       <fieldset className={s.group}>
         <legend className={s.label}>성별</legend>
-        <Segmented<Gender> label="성별" options={GENDER_OPTIONS} value={form.gender} onChange={(gender) => change({ ...form, gender })} />
-        <p className={s.helper}>10년 흐름(대운)의 방향을 정하는 데만 써요</p>
+        <Segmented<Gender>
+          label="성별"
+          describedBy="gender-help"
+          options={GENDER_OPTIONS}
+          value={form.gender}
+          onChange={(gender) => change({ ...form, gender })}
+        />
+        <p id="gender-help" className={s.helper}>
+          10년 흐름(대운)의 방향을 정하는 데만 써요
+        </p>
       </fieldset>
 
       <div className={s.group}>
@@ -282,6 +294,7 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
           }}
           invalid={Boolean(errors.consent)}
           describedBy={describedBy("consent")}
+          required
         >
           출생 정보를 풀이에 쓰는 데 동의해요
         </Checkbox>

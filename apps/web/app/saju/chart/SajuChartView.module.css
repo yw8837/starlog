@@ -64,3 +64,26 @@
   font-size: var(--fs-sub);
   font-weight: 700;
 }
+
+/* Example chart (nothing saved): the gold button asks for the user's own birth data. */
+.cta {
+  display: grid;
+  gap: 12px;
+  padding: 22px 20px 20px;
+  border: 1px solid rgba(243, 220, 161, 0.3);
+  border-radius: 20px;
+  background:
+    radial-gradient(90% 100% at 100% 0%, rgba(243, 220, 161, 0.12), transparent 60%),
+    rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.ctaTitle {
+  font-size: var(--fs-h2);
+}
+
+.ctaText {
+  color: var(--ink-sub);
+  line-height: 1.7;
+}
