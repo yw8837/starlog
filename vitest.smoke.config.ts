@@ -21,7 +21,8 @@ export default defineConfig({
     environment: "node",
     // apps/web/.env.local (gitignored) may hold the key; the shell environment wins.
     env: { ...loadEnv("", fromRoot("./apps/web"), ""), ...process.env } as Record<string, string>,
-    testTimeout: 900_000,
+    // SMOKE_RUNS=5 makes ~25 sequential model calls; allow up to an hour.
+    testTimeout: 3_600_000,
     silent: false,
   },
 });

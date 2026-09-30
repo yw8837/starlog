@@ -1,78 +1,202 @@
-// Real-API smoke run (not in CI): one money-template teaser + full reading, one daily card and one
-// saju teaser for a non-sample chart. Prints validation results, token usage and an estimated cost.
-// usage: pnpm ai:smoke   (ANTHROPIC_API_KEY in the environment or apps/web/.env.local)
+// Real-API smoke run (not in CI; costs money). Per run: 재물운 tarot teaser + full reading, 오늘의 한 장,
+// saju teaser + full prologue for a non-sample chart. SMOKE_RUNS repeats the set (default 1).
+// Records attempts, validation, AI-tell score, tokens and cost per call; writes every output and a
+// summary to apps/web/test-results/ai-smoke/<timestamp>/. Never prints the key or any env value.
+// usage: SMOKE_RUNS=5 pnpm ai:smoke   (ANTHROPIC_API_KEY in the environment or apps/web/.env.local)
 import { mkdirSync, writeFileSync } from "node:fs";
 import { DEFAULT_REVERSAL_RATE, TEMPLATES, computeChart, createDeck, pickCards } from "@starlog/core";
 import { expect, test } from "vitest";
 import { anthropicProvider } from "@/lib/ai/anthropic";
-import { generateDaily, generateSajuTeaser, generateTarotReading, generateTarotTeaser } from "@/lib/ai/generate";
+import { generateDaily, generateSajuReading, generateSajuTeaser, generateTarotReading, generateTarotTeaser } from "@/lib/ai/generate";
 import { buildFactSet } from "@/lib/ai/prompts/saju";
-import { buildTarotContext } from "@/lib/ai/prompts/tarot";
-import type { Usage } from "@/lib/ai/provider";
-import { validateDaily, validateSajuTeaser, validateTarotReading, validateTarotTeaser } from "@/lib/ai/validate";
+import { buildTarotContext, type TarotContext } from "@/lib/ai/prompts/tarot";
+import { GenerationError, type ReadingProvider, type Usage } from "@/lib/ai/provider";
+import type { DailyDraft, SajuReading, SajuTeaser, TarotReading, TarotTeaser } from "@/lib/ai/schemas";
+import { aiTells } from "@/lib/ai/style";
+import { validateDaily, validateSajuReading, validateSajuTeaser, validateTarotReading, validateTarotTeaser } from "@/lib/ai/validate";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
+import { dailyCard, dailyLuckyNumber } from "@/lib/security/drawToken";
+import { kstDay } from "@/lib/security/quota";
+import { randomId } from "@/lib/security/sign";
 
-/** USD per million tokens, claude-opus-5-5 (fallback models are billed at their own rates; treated the same here). */
-const PRICE = { input: 4, output: 20, cacheWrite: 5, cacheRead: 0.2 };
-const KRW_PER_USD = Number(process.env.KRW_PER_USD ?? 1400);
+/** USD per million tokens (list prices; cache write = 5-minute TTL). Unknown models priced as Opus 5.5. */
+const PRICES: Record<string, { input: number; output: number; cacheWrite: number; cacheRead: number }> = {
+  "claude-opus-5-5": { input: 4, output: 20, cacheWrite: 5, cacheRead: 0.2 },
+  "claude-opus-5": { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
+  "claude-opus-4-8": { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
+};
+const krwFromEnv = Number(process.env.KRW_PER_USD);
+const KRW_PER_USD = Number.isFinite(krwFromEnv) && krwFromEnv > 0 ? krwFromEnv : 1400;
+const RUNS = Math.min(10, Math.max(1, Math.trunc(Number(process.env.SMOKE_RUNS ?? 1)) || 1));
 
-const costUsd = (usage: Usage[]) =>
-  usage.reduce((sum, u) => sum + (u.inputTokens * PRICE.input + u.outputTokens * PRICE.output + u.cacheWriteTokens * PRICE.cacheWrite + u.cacheReadTokens * PRICE.cacheRead) / 1e6, 0);
+type Kind = "tarot-teaser" | "tarot-reading" | "daily" | "saju-teaser" | "saju-reading";
+const ROUTE: Record<Kind, string> = {
+  "tarot-teaser": "/api/tarot/teaser", "tarot-reading": "/api/tarot/reading", daily: "/api/tarot/daily",
+  "saju-teaser": "/api/saju/teaser", "saju-reading": "/api/saju/reading",
+};
+
+interface Row {
+  run: number;
+  kind: Kind;
+  route: string;
+  ok: boolean;
+  error: string | null;
+  attempts: number;
+  attemptViolations: string[][];
+  finalViolations: string[];
+  aiTellScore: number;
+  aiTells: string[];
+  tokens: { input: number; output: number; cacheRead: number; cacheWrite: number };
+  models: string[];
+  usd: number;
+  krw: number;
+  seconds: number;
+}
+
+const usdOf = (usage: Usage[]) => usage.reduce((sum, u) => {
+  const p = PRICES[u.model] ?? PRICES["claude-opus-5-5"]!;
+  return sum + (u.inputTokens * p.input + u.outputTokens * p.output + u.cacheWriteTokens * p.cacheWrite + u.cacheReadTokens * p.cacheRead) / 1e6;
+}, 0);
+
+/** Wraps the real provider: counts attempts, keeps each attempt's violations and every usage entry. */
+function recording(real: ReadingProvider, validate: (draft: never) => string[]) {
+  const attempts: string[][] = [];
+  const usage: Usage[] = [];
+  const provider: ReadingProvider = {
+    name: real.name,
+    async generate(task, attempt, feedback) {
+      try {
+        const result = await real.generate(task, attempt, feedback);
+        usage.push(...result.usage);
+        attempts.push(validate(result.data as never));
+        return result;
+      } catch (error) {
+        attempts.push([`(${error instanceof GenerationError ? error.code : "error"})`]);
+        throw error;
+      }
+    },
+  };
+  return { provider, attempts, usage };
+}
+
+const tarotProse = (r: TarotReading) => [
+  r.verdict, ...r.cards.map((c) => c.body), r.connection.body, r.timing.body, ...r.scenarios.items.map((i) => i.body),
+  ...r.messages.items, r.messages.hint, ...r.avoid.items, r.alternatives.body, r.action.body, r.story.body,
+].join("\n");
 
 test("ai smoke", async () => {
   const key = process.env.ANTHROPIC_API_KEY?.trim();
   if (!key) {
-    console.log("ai:smoke: ANTHROPIC_API_KEY is not set, nothing was called.");
+    console.log("ai:smoke: no API key found, nothing was called.");
     return;
   }
-  const provider = anthropicProvider(key);
-  const rows: Array<{ name: string; ms: number; violations: string[]; usage: Usage[] }> = [];
-  const outputs: Record<string, unknown> = {};
-  const run = async <T>(name: string, fn: () => Promise<{ data: T; usage: Usage[] }>, recheck: (data: T) => string[]) => {
-    const started = Date.now();
-    try {
-      const { data, usage } = await fn();
-      rows.push({ name, ms: Date.now() - started, violations: recheck(data), usage });
-      outputs[name] = data;
-    } catch (error) {
-      rows.push({ name, ms: Date.now() - started, violations: [`FAILED: ${error instanceof Error ? error.message : String(error)}`], usage: [] });
-    }
-  };
-
-  const seed = `smoke-${Date.now()}`;
-  const cards = pickCards(createDeck(seed, DEFAULT_REVERSAL_RATE), TEMPLATES["self-flow"], [5, 25, 50]);
-  const money = buildTarotContext("self-flow", cards, {
-    topicId: "money", whoId: "me", whenId: "week", question: "",
-    conditions: [{ label: "지금 상황", value: "수입이 들쭉날쭉" }, { label: "관심 방향", value: "지출 줄이기" }],
-    note: "이번 달 카드값이 예상보다 많이 나왔어요",
-  });
-  await run("tarot-teaser (money)", () => generateTarotTeaser(provider, money), (d) => validateTarotTeaser(d, money));
-  await run("tarot-reading (money)", () => generateTarotReading(provider, money), (d) => validateTarotReading(d, money));
-
-  const dailyCards = pickCards(createDeck(`${seed}-daily`, DEFAULT_REVERSAL_RATE), TEMPLATES.daily, [0]);
-  const daily = buildTarotContext("daily", dailyCards, null);
-  await run("daily", () => generateDaily(provider, daily), (d) => validateDaily(d, daily));
-
-  const chart = computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: 1993, month: 8, day: 17, timeKnown: true, hour: 7, minute: 20, gender: "male", placeId: "busan" }));
-  const facts = buildFactSet(chart, Date.now());
-  await run("saju-teaser (1993-08-17 07:20 부산 남)", () => generateSajuTeaser(provider, facts), (d) => validateSajuTeaser(d, facts));
-
-  console.log("\nai:smoke results (model claude-opus-5-5; cost at Opus 5.5 list prices, KRW %d/USD)", KRW_PER_USD);
-  let total = 0;
-  for (const row of rows) {
-    const tokens = row.usage.reduce((s, u) => ({ in: s.in + u.inputTokens, out: s.out + u.outputTokens, cw: s.cw + u.cacheWriteTokens, cr: s.cr + u.cacheReadTokens }), { in: 0, out: 0, cw: 0, cr: 0 });
-    const usd = costUsd(row.usage);
-    total += usd;
-    console.log(`- ${row.name}: ${row.violations.length ? "VIOLATIONS" : "valid"} in ${(row.ms / 1000).toFixed(1)}s, calls ${row.usage.length}, models ${[...new Set(row.usage.map((u) => u.model))].join("/") || "-"}`);
-    console.log(`  tokens in ${tokens.in} / out ${tokens.out} / cache write ${tokens.cw} / cache read ${tokens.cr} → $${usd.toFixed(4)} ≈ ${Math.round(usd * KRW_PER_USD)}원`);
-    for (const v of row.violations) console.log(`  ! ${v}`);
-  }
-  console.log(`total ≈ $${total.toFixed(4)} ≈ ${Math.round(total * KRW_PER_USD)}원`);
-
-  const dir = new URL("../apps/web/test-results/", import.meta.url);
+  const real = anthropicProvider(key);
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const dir = new URL(`../apps/web/test-results/ai-smoke/${stamp}/`, import.meta.url);
   mkdirSync(dir, { recursive: true });
-  const file = new URL(`ai-smoke-${seed}.json`, dir);
-  writeFileSync(file, JSON.stringify({ cards, dailyCards, facts, outputs, rows }, null, 2));
-  console.log(`outputs written to ${file.pathname}`);
-  expect(rows.every((row) => !row.violations.some((v) => v.startsWith("FAILED")))).toBe(true);
+  const rows: Row[] = [];
+
+  const saju = buildFactSet(computeChart(toSajuInput({
+    ...DEFAULT_SAJU_FORM, year: 1993, month: 8, day: 17, timeKnown: true, hour: 7, minute: 20, gender: "male", placeId: "busan",
+  })), Date.now());
+
+  async function call<T>(run: number, kind: Kind, validate: (draft: never) => string[], generate: (p: ReadingProvider) => Promise<{ data: T }>,
+    recheck: (data: T) => string[], prose: (data: T) => string, input: unknown) {
+    const rec = recording(real, validate);
+    const started = Date.now();
+    let data: T | null = null;
+    let error: string | null = null;
+    try {
+      data = (await generate(rec.provider)).data;
+    } catch (e) {
+      error = e instanceof GenerationError ? `${e.code}${e.detail.length ? `: ${e.detail.join(" | ")}` : ""}` : e instanceof Error ? e.constructor.name : "error";
+    }
+    const finalViolations = data ? recheck(data) : [];
+    const tells = data ? aiTells(prose(data)) : [];
+    const usd = usdOf(rec.usage);
+    const row: Row = {
+      run, kind, route: ROUTE[kind],
+      ok: data !== null && !finalViolations.some((v) => !v.startsWith("[문체]")),
+      error, attempts: rec.attempts.length, attemptViolations: rec.attempts, finalViolations,
+      aiTellScore: tells.length, aiTells: tells.map((t) => `${t.id} ${t.label}`),
+      tokens: rec.usage.reduce((s, u) => ({ input: s.input + u.inputTokens, output: s.output + u.outputTokens, cacheRead: s.cacheRead + u.cacheReadTokens, cacheWrite: s.cacheWrite + u.cacheWriteTokens }), { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 }),
+      models: [...new Set(rec.usage.map((u) => u.model))],
+      usd, krw: Math.round(usd * KRW_PER_USD), seconds: Math.round((Date.now() - started) / 100) / 10,
+    };
+    rows.push(row);
+    writeFileSync(new URL(`${run}-${kind}.json`, dir), JSON.stringify({ ...row, input, output: data }, null, 2));
+    console.log(`run ${run} ${kind}: ${row.ok ? "통과" : "실패"} · 시도 ${row.attempts} · AI티 ${row.aiTellScore} · ${row.krw}원 · ${row.seconds}s${error ? ` · ${error.slice(0, 160)}` : ""}`);
+  }
+
+  for (let run = 1; run <= RUNS; run++) {
+    const cards = pickCards(createDeck(`smoke-${stamp}-${run}`, DEFAULT_REVERSAL_RATE), TEMPLATES["self-flow"], [5, 25, 50]);
+    const money: TarotContext = buildTarotContext("self-flow", cards, {
+      topicId: "money", whoId: "me", whenId: "week", question: "",
+      conditions: [{ label: "지금 상황", value: "지금은 수입이 없음" }, { label: "관심 방향", value: "새 수입원 찾기" }],
+      note: "퇴사하고 두 달째 쉬면서 다음 일을 찾고 있어요",
+    });
+    const moneyInput = { question: money.question, conditions: money.conditions, note: money.note, cards: cards.map((c) => `${c.position}: ${c.cardId} ${c.orientation}`) };
+    await call<TarotTeaser>(run, "tarot-teaser", (d) => validateTarotTeaser(d, money), (p) => generateTarotTeaser(p, money),
+      (d) => validateTarotTeaser(d, money), (d) => d.firstCard.body, moneyInput);
+
+    const did = randomId(12);
+    const day = kstDay(Date.now());
+    const card = dailyCard(did, day);
+    const daily = buildTarotContext("daily", [{ ...card, position: "오늘의 한 장", slot: 0 }], null);
+    await call<DailyDraft>(run, "daily", (d) => validateDaily(d, daily), (p) => generateDaily(p, daily),
+      (d) => validateDaily(d, daily), (d) => [d.summary, d.body, d.areas.love, d.areas.money, d.areas.work, d.tip].join("\n"),
+      { card, luckyNumber: dailyLuckyNumber(did, day) });
+
+    await call<TarotReading>(run, "tarot-reading", (d) => validateTarotReading(d, money), (p) => generateTarotReading(p, money),
+      (d) => validateTarotReading(d, money), tarotProse, moneyInput);
+
+    const chart = { chart: "1993-08-17 07:20 부산 남", pillars: saju.pillars.map((p) => p.gz) };
+    await call<SajuTeaser>(run, "saju-teaser", (d) => validateSajuTeaser(d, saju), (p) => generateSajuTeaser(p, saju),
+      (d) => validateSajuTeaser(d, saju), (d) => d.summary, chart);
+    await call<SajuReading>(run, "saju-reading", (d) => validateSajuReading(d, saju), (p) => generateSajuReading(p, saju),
+      (d) => validateSajuReading(d, saju), (d) => [...d.sections.map((s) => s.body), d.story.body].join("\n"), chart);
+  }
+
+  // ---- summary ----
+  const stat = (values: number[]) => ({
+    avg: values.length ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10 : 0,
+    min: values.length ? Math.min(...values) : 0,
+    max: values.length ? Math.max(...values) : 0,
+  });
+  const kinds: Kind[] = ["tarot-teaser", "tarot-reading", "daily", "saju-teaser", "saju-reading"];
+  const perKind = kinds.map((kind) => {
+    const r = rows.filter((row) => row.kind === kind);
+    return {
+      kind, route: ROUTE[kind], n: r.length,
+      passRate: r.length ? Math.round((r.filter((row) => row.ok).length / r.length) * 100) : 0,
+      attempts: stat(r.map((row) => row.attempts)),
+      krw: stat(r.map((row) => row.krw)),
+      aiTellScore: stat(r.map((row) => row.aiTellScore)),
+      seconds: stat(r.map((row) => row.seconds)),
+    };
+  });
+  const totalUsd = rows.reduce((sum, row) => sum + row.usd, 0);
+  const summary = {
+    runs: RUNS, model: "claude-opus-5-5",
+    krwPerUsd: Number.isFinite(krwFromEnv) && krwFromEnv > 0 ? "KRW_PER_USD 환경값" : 1400,
+    totalUsd: Math.round(totalUsd * 10000) / 10000, totalKrw: Math.round(totalUsd * KRW_PER_USD), perKind,
+  };
+  writeFileSync(new URL("summary.json", dir), JSON.stringify({ ...summary, rows }, null, 2));
+
+  const lines = [
+    `# ai:smoke 요약 (${stamp})`, "",
+    `실행 ${RUNS}회 · 모델 claude-opus-5-5 · 총비용 약 ${summary.totalKrw.toLocaleString("ko-KR")}원 ($${summary.totalUsd})`, "",
+    "| 호출 | 경로 | n | 통과율 | 시도 평균/최소/최대 | 비용(원) 평균/최소/최대 | AI티 평균 | 시간(초) 평균 |",
+    "|---|---|---|---|---|---|---|---|",
+    ...perKind.map((k) => `| ${k.kind} | ${k.route} | ${k.n} | ${k.passRate}% | ${k.attempts.avg}/${k.attempts.min}/${k.attempts.max} | ${k.krw.avg}/${k.krw.min}/${k.krw.max} | ${k.aiTellScore.avg} | ${k.seconds.avg} |`),
+    "", "## 실패·위반", "",
+    ...rows.filter((row) => !row.ok || row.finalViolations.length || row.attempts > 1).map((row) =>
+      `- run ${row.run} ${row.kind}: ${row.ok ? "통과" : "실패"}, 시도 ${row.attempts}${row.error ? `, 오류 ${row.error}` : ""}\n` +
+      row.attemptViolations.map((v, i) => `  - 시도 ${i + 1}: ${v.length ? v.join(" / ") : "위반 없음"}`).join("\n")),
+  ];
+  writeFileSync(new URL("summary.md", dir), `${lines.join("\n")}\n`);
+
+  console.log(`\n${lines.slice(0, 3 + 2 + perKind.length + 1).join("\n")}`);
+  console.log(`\n출력 폴더: apps/web/test-results/ai-smoke/${stamp}/`);
+  expect(rows.length).toBe(RUNS * kinds.length);
 });
