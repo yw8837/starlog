@@ -29,7 +29,8 @@ export const SITE = {
   },
   /** Public beta: every reading is free within a daily count (the server's BETA_FULL_PER_DAY). */
   beta: {
-    fullPerDay: 3,
+    fullPerDay: 1,
+    teaserPerDay: 5,
   },
   features: {
     /** 달빛/별조각 balances and packs. Off in the beta (no payments yet); the wallet UI stays hidden. */

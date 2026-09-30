@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { SITE } from "@/lib/config";
 import type { DailyData, TarotReadingData } from "@/lib/reading/types";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { BETA_USAGE_KEY, countFullReading, markDayUsedUp, remainingToday, useRemainingToday } from "./betaUsage";
@@ -183,12 +184,13 @@ describe("오늘의 한 장 cache by KST day", () => {
 
 describe("beta count shown on the unlock", () => {
   it("counts opened readings per KST day and resets the next day", () => {
+    const perDay = SITE.beta.fullPerDay;
     const { result } = renderHook(() => useRemainingToday(NOW));
-    expect(result.current).toBe(3);
+    expect(result.current).toBe(perDay);
     act(() => countFullReading(NOW));
-    expect(result.current).toBe(2);
+    expect(result.current).toBe(Math.max(0, perDay - 1));
     act(() => markDayUsedUp(NOW));
     expect(result.current).toBe(0);
-    expect(remainingToday(JSON.parse(localStorage.getItem(BETA_USAGE_KEY)!), NOW + DAY)).toBe(3);
+    expect(remainingToday(JSON.parse(localStorage.getItem(BETA_USAGE_KEY)!), NOW + DAY)).toBe(perDay);
   });
 });

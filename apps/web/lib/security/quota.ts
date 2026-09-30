@@ -18,7 +18,8 @@ export interface QuotaLimits {
   followupsPerChapter: number;
 }
 
-const DEFAULT_LIMITS: QuotaLimits = { full: 3, teaser: 20, followup: 15, daily: 2, followupsPerChapter: 3 };
+// Owner's beta offer: one free full reading and five teasers per device per KST day.
+const DEFAULT_LIMITS: QuotaLimits = { full: 1, teaser: 5, followup: 15, daily: 2, followupsPerChapter: 3 };
 
 function envInt(value: string | undefined, fallback: number): number {
   const n = Number(value);
