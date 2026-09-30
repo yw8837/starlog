@@ -1,6 +1,18 @@
 import { TEMPLATES, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
-import { FOLLOW_UP_ANSWER, SAJU_SAMPLE, STORY_FIXTURE, TAROT_SAMPLE, WALLET_FIXTURE, paidHeadings } from "./fixtures";
+import { SITE } from "./config";
+import {
+  FOLLOW_UP_ANSWER,
+  INVITE_FIXTURE,
+  INVITE_FIXTURE_TOKEN,
+  ME_FIXTURE,
+  SAJU_SAMPLE,
+  STORY_FIXTURE,
+  TAROT_SAMPLE,
+  WALLET_FIXTURE,
+  nextChapterNumber,
+  paidHeadings,
+} from "./fixtures";
 
 describe("TAROT_SAMPLE", () => {
   const toc = TAROT_SAMPLE.free.lockedToc;
@@ -46,8 +58,30 @@ describe("SAJU_SAMPLE", () => {
 describe("STORY_FIXTURE", () => {
   it("starts with the saju prologue, then the tarot chapter", () => {
     expect(STORY_FIXTURE.chapters.map((c) => c.id)).toEqual(["prologue", "sample"]);
-    expect(STORY_FIXTURE.chapters[0]?.title).toBe(SAJU_SAMPLE.story.title);
+    expect(STORY_FIXTURE.chapters[0]?.title).toBe(SAJU_SAMPLE.free.title);
     expect(STORY_FIXTURE.chapters[1]?.title).toBe(TAROT_SAMPLE.story.title);
+  });
+
+  it("gives every chapter a story excerpt and a plain excerpt taken from its own sample", () => {
+    const [prologue, first] = STORY_FIXTURE.chapters;
+    expect(prologue?.excerpt).toEqual({ story: SAJU_SAMPLE.story.body, plain: SAJU_SAMPLE.free.summary });
+    expect(first?.excerpt).toEqual({ story: TAROT_SAMPLE.story.body, plain: TAROT_SAMPLE.paid.verdict });
+  });
+
+  it("marks the prologue with the sample's day pillar and day master", () => {
+    const { day } = SAJU_SAMPLE.chart.pillars;
+    expect(STORY_FIXTURE.chapters[0]?.saju).toEqual({ dayPillar: day.stem + day.branch, dayMaster: SAJU_SAMPLE.chart.dayMaster.ko });
+    expect(STORY_FIXTURE.chapters[0]?.saju?.dayPillar).toBe("丙寅");
+  });
+
+  it("links each chapter to its chapter page, and the tarot chapter carries its three cards", () => {
+    expect(STORY_FIXTURE.chapters.map((c) => c.href)).toEqual(["/chapter/prologue", "/chapter/sample"]);
+    expect(STORY_FIXTURE.chapters[1]?.cards.map((c) => c.cardId)).toEqual(TAROT_SAMPLE.cards.map((c) => c.cardId));
+  });
+
+  it("numbers the next chapter after the tarot chapters (the prologue is not counted)", () => {
+    expect(nextChapterNumber(STORY_FIXTURE.chapters)).toBe(2);
+    expect(nextChapterNumber([])).toBe(1);
   });
 
   it("holds one pending friend scene with the sun card under the friend's own nickname", () => {
@@ -68,5 +102,50 @@ describe("fixture extras", () => {
   it("has a follow-up answer in 해요체", () => {
     expect(FOLLOW_UP_ANSWER.length).toBeGreaterThan(40);
     expect(FOLLOW_UP_ANSWER).toMatch(/요\.$/);
+  });
+
+  it("signs the user in as 별지기", () => {
+    expect(ME_FIXTURE.nickname).toBe("별지기");
+    expect(ME_FIXTURE.provider).toBe("카카오");
+  });
+});
+
+describe("INVITE_FIXTURE", () => {
+  it("is 하늘's invite, on the placeholder token", () => {
+    expect(INVITE_FIXTURE.token).toBe(INVITE_FIXTURE_TOKEN);
+    expect(INVITE_FIXTURE.inviter).toBe("하늘");
+  });
+
+  it("gives the friend the same sun card the story's friend scene shows", () => {
+    const scene = STORY_FIXTURE.friendScenes[0];
+    expect(INVITE_FIXTURE.card).toMatchObject({ cardId: scene?.cardId, orientation: scene?.orientation });
+    const card = getCard(INVITE_FIXTURE.card.cardId);
+    expect(INVITE_FIXTURE.card.name).toBe(card.names.ko);
+    expect(card.arcana === "major" ? card.roman : "").toBe(INVITE_FIXTURE.card.number);
+  });
+
+  it("reads the friend's own card in 2-3 sentences of 해요체", () => {
+    const { result } = INVITE_FIXTURE;
+    expect(result.startsWith("오늘은 숨기지 않아도 되는 날이에요.")).toBe(true);
+    const sentences = result.split(/(?<=요\.)\s+/);
+    expect(sentences.length).toBeGreaterThanOrEqual(2);
+    expect(sentences.length).toBeLessThanOrEqual(3);
+    for (const sentence of sentences) expect(sentence).toMatch(/요\.$/);
+  });
+});
+
+describe("SITE.moonPacks", () => {
+  it("starts with 30 달빛 for 9,900원, then 60 + 6 bonus for 19,800원", () => {
+    expect(SITE.moonPacks.slice(0, 2)).toEqual([
+      { units: 30, bonus: 0, krw: 9900 },
+      { units: 60, bonus: 6, krw: 19800 },
+    ]);
+  });
+
+  it("lists bigger packs at higher prices", () => {
+    for (let i = 1; i < SITE.moonPacks.length; i++) {
+      expect(SITE.moonPacks[i]!.units).toBeGreaterThan(SITE.moonPacks[i - 1]!.units);
+      expect(SITE.moonPacks[i]!.krw).toBeGreaterThan(SITE.moonPacks[i - 1]!.krw);
+    }
   });
 });

@@ -95,6 +95,10 @@ export interface StoryChapter {
   title: string;
   href: string;
   cards: Array<{ cardId: string; orientation: Orientation; name: string }>;
+  /** What the story timeline shows under the title in 이야기 / 풀이 mode. */
+  excerpt: { story: string; plain: string };
+  /** Saju chapters: the chart's day pillar (hanja) and day master. */
+  saju?: { dayPillar: string; dayMaster: string };
 }
 
 export interface FriendScene {
@@ -113,9 +117,14 @@ export const STORY_FIXTURE: { chapters: StoryChapter[]; friendScenes: FriendScen
       id: "prologue",
       kind: "saju",
       label: "프롤로그",
-      title: SAJU_SAMPLE.story.title,
+      title: SAJU_SAMPLE.free.title,
       href: "/chapter/prologue",
       cards: [],
+      excerpt: { story: SAJU_SAMPLE.story.body, plain: SAJU_SAMPLE.free.summary },
+      saju: {
+        dayPillar: SAJU_SAMPLE.chart.pillars.day.stem + SAJU_SAMPLE.chart.pillars.day.branch,
+        dayMaster: SAJU_SAMPLE.chart.dayMaster.ko,
+      },
     },
     {
       id: "sample",
@@ -124,6 +133,7 @@ export const STORY_FIXTURE: { chapters: StoryChapter[]; friendScenes: FriendScen
       title: TAROT_SAMPLE.story.title,
       href: "/chapter/sample",
       cards: TAROT_SAMPLE.cards.map(({ cardId, orientation, name }) => ({ cardId, orientation, name })),
+      excerpt: { story: TAROT_SAMPLE.story.body, plain: TAROT_SAMPLE.paid.verdict },
     },
   ],
   friendScenes: [
@@ -147,3 +157,23 @@ export const FOLLOW_UP_ANSWER =
 
 /** Placeholder invite token for the share preview (real tokens come with P2). */
 export const INVITE_FIXTURE_TOKEN = "abc123";
+
+/** Number of the chapter a new tarot reading would open ("2장" after the prologue and 1장). */
+export function nextChapterNumber(chapters: ReadonlyArray<Pick<StoryChapter, "kind">>): number {
+  return chapters.filter((chapter) => chapter.kind === "tarot").length + 1;
+}
+
+/** The signed-in fixture user. */
+export const ME_FIXTURE = { nickname: "별지기", provider: "카카오" } as const;
+
+/**
+ * What a friend opening 하늘's invite sees. The friend always turns over the sun here, the same
+ * card the story's pending friend scene shows (P2 stores the real draw).
+ */
+export const INVITE_FIXTURE = {
+  token: INVITE_FIXTURE_TOKEN,
+  inviter: "하늘",
+  card: { cardId: "major-19-sun", orientation: "upright" as Orientation, name: "태양", number: "XIX" },
+  result:
+    "오늘은 숨기지 않아도 되는 날이에요. 태양 카드에는 흰 말을 탄 아이가 커다란 해 아래에서 한 팔을 활짝 벌리고 있어요. 미뤄 둔 말이나 보여 주고 싶던 것이 있다면, 오늘 한 가지만 가볍게 꺼내 보세요.",
+};

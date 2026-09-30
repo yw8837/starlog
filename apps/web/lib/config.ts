@@ -22,7 +22,18 @@ export const SITE = {
     /** Follow-up questions included with every opened reading. */
     followUps: 3,
   },
+  /** 달빛 top-up packs (placeholder values; set with real pricing before launch). */
+  moonPacks: [
+    { units: 30, bonus: 0, krw: 9900 },
+    { units: 60, bonus: 6, krw: 19800 },
+    { units: 90, bonus: 12, krw: 29700 },
+  ],
 } as const;
+
+export type MoonPack = (typeof SITE)["moonPacks"][number];
+
+/** "2,900원" */
+export const won = (krw: number) => `${new Intl.NumberFormat("ko-KR").format(krw)}원`;
 
 type Business = Readonly<Record<keyof (typeof SITE)["business"], string>>;
 
