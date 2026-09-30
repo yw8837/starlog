@@ -38,7 +38,7 @@ describe("policy pages", () => {
   it("privacy: names every processor and the overseas transfer", () => {
     const { container } = render(<PrivacyPage />);
     const text = container.textContent ?? "";
-    for (const name of ["Anthropic, PBC", "Vercel Inc.", "토스페이먼츠"]) expect(text).toContain(name);
+    for (const name of ["Anthropic, PBC", "Cloudflare, Inc.", "토스페이먼츠"]) expect(text).toContain(name);
     expect(text).toContain("서버에 저장하지 않습니다");
     expect(text).toContain("만 14세 미만");
   });

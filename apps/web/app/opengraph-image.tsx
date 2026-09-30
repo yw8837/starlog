@@ -7,10 +7,19 @@ export const alt = OG_ALT;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// Offline subsets (scripts/build-og-fonts.py): without them next/og would fetch Korean glyphs from Google Fonts.
-const fontDir = join(process.cwd(), "assets", "og");
-const serif = await readFile(join(fontDir, "NotoSerifKR-Bold.og.ttf"));
-const sans = await readFile(join(fontDir, "NotoSansKR-Medium.og.ttf"));
+/**
+ * Offline subsets (scripts/build-og-fonts.py): without them next/og would fetch Korean glyphs from Google Fonts.
+ * Read inside the handler, not at module load: dynamic pages import this module for its metadata on
+ * Cloudflare Workers, which has no file system. The image itself is prerendered at build time.
+ */
+async function loadFonts() {
+  const fontDir = join(process.cwd(), "assets", "og");
+  const [serif, sans] = await Promise.all([
+    readFile(join(fontDir, "NotoSerifKR-Bold.og.ttf")),
+    readFile(join(fontDir, "NotoSansKR-Medium.og.ttf")),
+  ]);
+  return { serif, sans };
+}
 
 const INK = "#f1ecff";
 const INK_SUB = "#c9c1ea";
@@ -36,7 +45,8 @@ function stars(count: number) {
 
 const STARS = stars(90);
 
-export default function OpengraphImage() {
+export default async function OpengraphImage() {
+  const { serif, sans } = await loadFonts();
   return new ImageResponse(
     (
       <div

@@ -8,6 +8,8 @@
     "dev": "pnpm --filter @starlog/web dev",
     "build": "pnpm --filter @starlog/web build && node scripts/check-client-bundle.mjs",
     "check:bundle": "node scripts/check-client-bundle.mjs",
+    "cf:build": "pnpm --filter @starlog/web cf:build && node scripts/check-client-bundle.mjs",
+    "deploy": "pnpm cf:build && pnpm --filter @starlog/web cf:deploy",
     "test": "vitest run",
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && pnpm --filter @starlog/web typecheck",
     "cards:build": "node scripts/build-cards.mjs",

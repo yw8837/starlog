@@ -12,3 +12,10 @@ apps/web/playwright-report/
 .superpowers/
 apps/web/next-env.d.ts
 *.tsbuildinfo
+
+# Cloudflare (OpenNext) build output and local secrets
+.open-next/
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+.serena/

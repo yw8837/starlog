@@ -6,6 +6,9 @@
     "dev": "next dev --port 3100",
     "build": "next build",
     "start": "next start --port 3100",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare deploy",
     "typecheck": "next typegen && tsc --noEmit",
     "e2e": "playwright test",
     "e2e:screens": "playwright test --grep @screens"
@@ -16,11 +19,13 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.7",
     "@playwright/test": "1.63.0",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "jsdom": "30.1.1"
+    "jsdom": "30.1.1",
+    "wrangler": "^4.143.0"
   }
 }

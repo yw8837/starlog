@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { chromium, defineConfig } from "@playwright/test";
 
 const PORT = 3100;
+/** E2E_BASE_URL runs the suite against an already running build (e.g. the Workers preview on :8787). */
+const BASE_URL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`;
 
 function browserCache(): string {
   if (process.env.PLAYWRIGHT_BROWSERS_PATH) return process.env.PLAYWRIGHT_BROWSERS_PATH;
@@ -58,7 +60,7 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: BASE_URL,
     trace: "retain-on-failure",
     launchOptions: executablePath ? { executablePath } : {},
   },
@@ -70,10 +72,12 @@ export default defineConfig({
     // Real touch input (pointerType "touch") for the card fan.
     { name: "touch", testMatch: /fan-touch/, use: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
   ],
-  webServer: {
-    command: "pnpm dev",
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: true,
-    timeout: 180_000,
-  },
+  webServer: process.env.E2E_BASE_URL
+    ? undefined
+    : {
+        command: "pnpm dev",
+        url: BASE_URL,
+        reuseExistingServer: true,
+        timeout: 180_000,
+      },
 });
