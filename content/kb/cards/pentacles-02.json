@@ -1,0 +1,268 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "pentacles-02",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/pentacles-02.webp",
+  "names": {
+    "ko": "펜타클 2",
+    "ja": "ペンタクルの2",
+    "en": "Two of Pentacles",
+    "koAliases": [
+      "펜타클 2",
+      "동전 2"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "pentacles",
+  "rank": "2",
+  "number": 2,
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "염소자리의 목성(Jupiter in Capricorn)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "균형 잡기",
+    "여러 일 굴리기",
+    "유연한 대처",
+    "오르내림"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "juggling",
+        "ko": "높은 붉은 모자를 쓴 젊은이가 두 손에 펜타클을 하나씩 들고 춤추듯 균형을 잡는다",
+        "salience": 1
+      },
+      {
+        "id": "infinity-band",
+        "ko": "두 펜타클이 옆으로 누운 8자 모양 초록 띠로 이어져 있다",
+        "salience": 1
+      },
+      {
+        "id": "one-foot",
+        "ko": "한쪽 발을 들어 춤추는 걸음이다",
+        "salience": 2
+      },
+      {
+        "id": "ships-waves",
+        "ko": "뒤쪽 바다에 높은 물결이 일고 배 두 척이 파도를 탄다",
+        "salience": 1
+      },
+      {
+        "id": "blue-sky",
+        "ko": "배경은 푸른 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "펜타클 세 개를 저글링한다",
+        "correct": "펜타클은 두 개다",
+        "regex": "펜타클\\s*(세|3)\\s*개"
+      },
+      {
+        "wrong": "잔잔한 바다",
+        "correct": "뒤쪽 바다는 물결이 높다",
+        "regex": "잔잔한\\s*바다"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "infinity-band",
+        "ko": "끝없는 끈으로 이어진 두 개(8자를 눕힌 모양)",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "ships-waves",
+        "ko": "오르내리는 상황 속에서도 떠 있는 배",
+        "school": "modern"
+      },
+      {
+        "factId": "juggling",
+        "ko": "놀이하듯 가볍게 균형을 잡는 기술",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A young man, in the act of dancing, has a pentacle in either hand, and they are joined by that endless cord which is like the number 8 reversed.",
+    "verified": {
+      "scan": "apps/web/public/cards/pentacles-02.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "균형 잡기",
+      "여러 일 굴리기",
+      "유연한 대처",
+      "가볍게 즐기기"
+    ],
+    "reversed": [
+      "균형이 무너짐",
+      "일이 넘침",
+      "흐려진 우선순위",
+      "억지 명랑함"
+    ],
+    "oneLine": {
+      "upright": "오르내리는 상황 속에서 여러 일을 유연하게 굴리며 균형을 잡는 때",
+      "reversed": "일이 넘쳐 균형이 무너지거나, 괜찮은 척 버티며 허둥대는 상태"
+    },
+    "shadow": "모든 걸 다 잡으려다 하나도 제대로 못 하는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "internalized"
+    ],
+    "gloss": {
+      "excess": "맡은 일이 넘쳐 균형이 무너짐",
+      "internalized": "겉으론 즐거운 척하지만 속으로 허둥댐"
+    }
+  },
+  "asFeelings": {
+    "upright": "바쁘지만 그럭저럭 잘 굴리고 있다는 느낌이에요.",
+    "reversed": "해야 할 게 너무 많아 정신이 없어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "바쁜 일상 속에서도 관계를 가볍고 유연하게 챙기는 흐름으로 읽어요. 짧게라도 자주 연락하는 리듬이 잘 맞아요.",
+      "reversed": "일과 관계 사이에서 균형이 무너져 한쪽이 소홀해지는 쪽으로 읽어요. 이번 주 관계를 위한 시간 하나를 먼저 잡아 보세요."
+    },
+    "contact": {
+      "upright": "바쁜 중에도 가볍게 주고받는 연락이 어울리는 그림이에요. 부담 없는 짧은 메시지로 리듬을 이어 보세요.",
+      "reversed": "바빠서 답을 미루거나 연락이 들쭉날쭉한 쪽으로 읽어요. 여유가 있는 시간대를 정해 두세요."
+    },
+    "work": {
+      "upright": "여러 업무를 동시에 굴리며 조율하는 흐름으로 읽어요. 우선순위를 정하면 유연함이 강점이 돼요.",
+      "reversed": "업무가 넘쳐 실수가 생기기 쉬운 쪽으로 읽어요. 이번 주 할 일 중 하나는 미루거나 맡겨 보세요."
+    },
+    "choice": {
+      "upright": "둘을 한꺼번에 조금씩 해 볼 수 있는 배치로 읽어요. 시간을 나눠 병행할 수 있는지 보세요.",
+      "reversed": "둘 다 붙잡느라 어느 쪽도 제대로 못 하는 상태로 읽어요. 하나를 먼저 정해 보세요."
+    },
+    "self": {
+      "upright": "바쁜 일상과 쉼 사이에서 리듬을 찾는 시기로 읽어요. 놀이처럼 즐길 틈을 하나 넣어 보세요.",
+      "reversed": "일정과 돈 관리가 흔들려 정신없는 시기로 읽어요. 할 일 목록을 세 개로 줄여 보세요."
+    },
+    "group": {
+      "upright": "모임의 여러 일을 유연하게 조율하는 역할이 어울리는 흐름으로 읽어요. 일정표를 함께 정리해 보세요.",
+      "reversed": "일정이 자주 바뀌어 모두가 허둥대는 분위기로 읽어요. 고정 일정 하나를 정해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "바쁘지만 균형을 잡으려는 마음이에요.",
+      "reversed": "해야 할 게 넘쳐 정신없는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "오르내림 속에서도 가볍게 이어지는 흐름으로 읽어요.",
+      "reversed": "바쁜 일정 때문에 흐름이 들쭉날쭉한 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "가볍고 짧은 연락으로 리듬을 이어 가면 된다는 쪽으로 읽어요.",
+      "reversed": "지금은 여유가 없어 연락이 서두르게 될 수 있다는 쪽으로 읽어요. 여유 있는 시간대를 정한 조건에서 다시 보세요."
+    },
+    "막힌 곳": {
+      "upright": "너무 많은 일을 동시에 붙잡은 게 막힌 곳일 수 있어요.",
+      "reversed": "우선순위가 무너진 게 막힌 곳일 수 있어요."
+    },
+    "도움이 될 태도": {
+      "upright": "상황에 맞춰 유연하게 조율하는 태도가 도움이 돼요.",
+      "reversed": "다 하려 하지 말고 하나를 내려놓는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "여러 일을 가볍게 굴리되 순서를 정하는 날로 읽어요.",
+      "reversed": "할 일을 줄이고 하나에 집중하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "오늘 할 일 중 가장 중요한 두 가지에만 표시해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "바쁜 중에도 좋아하는 사람에게 짧은 메시지 하나를 보내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "이번 주 일정에서 하나를 빼거나 미뤄 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "이번 달 들어오고 나갈 돈을 한 장에 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "돈 문제가 저절로 해결된다고 말하기",
+      "instead": "수입과 지출의 균형을 점검하자고 해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "두 가지 모두 잘 된다고 보장",
+      "instead": "균형을 잡는 방법까지만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "pentacles-01",
+      "ko": "얻은 기회를 여러 일 사이에서 굴려 가는 흐름"
+    },
+    {
+      "with": "major-10-wheel-of-fortune",
+      "ko": "오르내림 속에서 균형을 잡는 연습"
+    },
+    {
+      "with": "major-14-temperance",
+      "ko": "여러 일 사이에서 알맞은 비율을 찾는 조합"
+    },
+    {
+      "with": "wands-10",
+      "ko": "굴리던 일이 짐으로 쌓이지 않게 살필 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "둘 사이의 균형·첫 선택"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MONEY",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "On the one hand it is represented as a card of gaiety, recreation and its connexions, which is the subject of the design; but it is read also as news and messages in writing, as obstacles, agitation, trouble, embroilment.",
+    "reversed": "Enforced gaiety, simulated enjoyment, literal sense, handwriting, composition, letters of exchange.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/pentacles-02.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 pentacles"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

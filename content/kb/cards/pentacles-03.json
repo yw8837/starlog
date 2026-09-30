@@ -1,0 +1,273 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "pentacles-03",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/pentacles-03.webp",
+  "names": {
+    "ko": "펜타클 3",
+    "ja": "ペンタクルの3",
+    "en": "Three of Pentacles",
+    "koAliases": [
+      "펜타클 3",
+      "동전 3"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "pentacles",
+  "rank": "3",
+  "number": 3,
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "염소자리의 화성(Mars in Capricorn)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "협력",
+    "기술과 숙련",
+    "인정받는 작업",
+    "함께 짓기"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "mason-bench",
+        "ko": "석공이 긴 의자 위에 올라서서 돌로 지은 실내 벽을 다듬고 있다",
+        "salience": 1
+      },
+      {
+        "id": "two-figures",
+        "ko": "오른쪽에 두건 쓴 수도사와 무늬 망토를 두른 사람이 서서 석공과 이야기를 나눈다",
+        "salience": 1
+      },
+      {
+        "id": "plan-paper",
+        "ko": "가운데 사람은 설계도 같은 종이를 들고 있다",
+        "salience": 2
+      },
+      {
+        "id": "carved-pentacles",
+        "ko": "머리 위 아치에 펜타클 세 개가 새겨져 있다",
+        "salience": 1
+      },
+      {
+        "id": "stone-arch",
+        "ko": "배경은 돌로 지은 아치형 실내다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "혼자 일한다",
+        "correct": "석공과 두 사람이 함께 있다",
+        "regex": "혼자\\s*(일|작업)"
+      },
+      {
+        "wrong": "펜타클을 손에 들고 있다",
+        "correct": "펜타클은 아치에 새겨져 있다",
+        "regex": "펜타클을\\s*(손에\\s*)?(들|쥐)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "mason-bench",
+        "ko": "견습을 마치고 이제 본격적으로 일하는 장인",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "two-figures",
+        "ko": "기술과 계획, 의뢰인이 함께 만드는 결과",
+        "school": "modern"
+      },
+      {
+        "factId": "carved-pentacles",
+        "ko": "함께 지어 올려 오래 남는 것",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A sculptor at his work in a monastery. Compare the design which illustrates the Eight of Pentacles. The apprentice or amateur therein has received his reward and is now at work in earnest.",
+    "verified": {
+      "scan": "apps/web/public/cards/pentacles-03.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "협력",
+      "기술과 숙련",
+      "인정받는 작업",
+      "함께 짓기"
+    ],
+    "reversed": [
+      "손발이 안 맞음",
+      "평범한 결과",
+      "인정받지 못함",
+      "혼자 하려 함"
+    ],
+    "oneLine": {
+      "upright": "각자의 기술과 역할이 맞물려 함께 무언가를 지어 올리고 인정받는 때",
+      "reversed": "협업이 엇갈리거나 노력에 비해 결과와 인정이 부족한 상태"
+    },
+    "shadow": "완벽을 고집해 남의 의견을 받아들이지 않는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "waning"
+    ],
+    "gloss": {
+      "blocked": "역할과 소통이 엇갈려 협업이 막힘",
+      "waning": "의욕과 품질이 떨어져 결과가 평범해짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "함께 해내고 있다는 뿌듯함이 있어요.",
+    "reversed": "혼자 애쓰는 것 같아 서운하거나 결과가 아쉬워요."
+  },
+  "topics": {
+    "love": {
+      "upright": "함께 계획을 세우고 관계를 지어 가는 흐름으로 읽어요. 각자 잘하는 걸 나눠 맡아 보세요.",
+      "reversed": "관계에서 역할이나 기대가 맞지 않아 삐걱대는 쪽으로 읽어요. 서로 바라는 것을 구체적으로 말해 보세요."
+    },
+    "contact": {
+      "upright": "함께할 일이나 도움을 청하는 연락이 어울리는 그림이에요. 구체적인 부탁이나 제안이 잘 맞아요.",
+      "reversed": "의견이 엇갈려 대화가 겉도는 쪽으로 읽어요. 공통의 목표 하나를 먼저 확인해 보세요."
+    },
+    "work": {
+      "upright": "팀워크와 전문성이 인정받는 흐름으로 읽어요. 피드백을 받아 결과물을 다듬어 보세요.",
+      "reversed": "협업이 삐걱대거나 품질이 기대에 못 미치는 쪽으로 읽어요. 역할과 기준을 다시 맞춰 보세요."
+    },
+    "choice": {
+      "upright": "배우고 성장할 수 있고 함께할 사람이 있는 쪽에 힘이 실리는 배치로 읽어요. 그곳에서 누구와 일하게 될지 보세요.",
+      "reversed": "혼자 모든 걸 해야 하는 쪽을 고르려는 건 아닌지 살펴보는 쪽으로 읽어요. 도움받을 곳을 확인해 보세요."
+    },
+    "self": {
+      "upright": "기술을 익히고 실력을 쌓는 재미가 있는 시기로 읽어요. 배운 걸 누군가에게 보여 주세요.",
+      "reversed": "노력에 비해 성장이 더디게 느껴지는 시기로 읽어요. 조언을 구하면 방향이 보여요."
+    },
+    "group": {
+      "upright": "모임이 함께 무언가를 만들며 손발이 맞는 흐름으로 읽어요. 각자의 역할을 분명히 해 보세요.",
+      "reversed": "역할 분담이 흐려 몇 사람만 애쓰는 분위기로 읽어요. 할 일을 목록으로 나눠 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "함께 무언가를 만들어 가고 싶은 마음이에요.",
+      "reversed": "혼자 애쓰는 것 같아 서운한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "서로의 역할이 맞물려 함께 짓는 흐름으로 읽어요.",
+      "reversed": "기대와 역할이 엇갈린 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "함께할 일을 제안하는 연락이 흐름을 단단하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 서로 기대가 달라 겉돌 수 있다는 쪽으로 읽어요. 목표를 맞춘 조건에서 다시 보세요."
+    },
+    "나의 자리": {
+      "upright": "내 기술과 역할이 인정받는 자리로 읽어요.",
+      "reversed": "역할이 분명하지 않아 애매한 자리로 읽어요."
+    },
+    "도움이 될 태도": {
+      "upright": "의견을 나누고 피드백을 받아들이는 태도가 도움이 돼요.",
+      "reversed": "혼자 하지 말고 역할을 나누는 태도가 도움이 돼요."
+    },
+    "나아갈 방향": {
+      "upright": "함께 배우고 실력을 쌓는 쪽이에요.",
+      "reversed": "기준과 역할을 다시 맞추는 쪽이에요."
+    },
+    "오늘의 한 장": {
+      "upright": "누군가와 함께 일하거나 조언을 구하는 날로 읽어요.",
+      "reversed": "역할과 기대를 확인하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "진행 중인 일에 대해 한 사람에게 피드백을 구해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "함께하는 일에서 내가 맡을 부분을 분명히 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "협업에서 엇갈리는 기대 하나를 적고 이야기해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 끌어안은 일 중 도움을 청할 부분을 골라 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "승진이나 계약이 성사된다고 확정",
+      "instead": "협력과 인정의 흐름까지만 말해요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "공동 투자를 부추기기",
+      "instead": "함께할 때의 역할과 조건을 확인하자고 해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-05-hierophant",
+      "ko": "배우고 협력하며 기술을 인정받는 과정"
+    },
+    {
+      "with": "wands-03",
+      "ko": "협력으로 키워 가는 일"
+    },
+    {
+      "with": "pentacles-08",
+      "ko": "혼자 익힌 기술이 함께하는 작업으로 이어지는 흐름"
+    },
+    {
+      "with": "cups-03",
+      "ko": "함께 이룬 것을 축하하는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "첫 결실·함께 키움"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MONEY"
+    ]
+  },
+  "waite": {
+    "upright": "Métier, trade, skilled labour; usually, how-ever, regarded as a card of nobility, aristocracy, renown, glory.",
+    "reversed": "Mediocrity, in work and otherwise, puerility, pettiness, weakness.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 펜타클 8의 견습생이 보상을 받고 본격적으로 일하는 모습이라고 이어서 설명했다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/pentacles-03.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 pentacles"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

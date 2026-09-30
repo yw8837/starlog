@@ -1,0 +1,275 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "pentacles-09",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/pentacles-09.webp",
+  "names": {
+    "ko": "펜타클 9",
+    "ja": "ペンタクルの9",
+    "en": "Nine of Pentacles",
+    "koAliases": [
+      "펜타클 9",
+      "동전 9"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "pentacles",
+  "rank": "9",
+  "number": 9,
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "처녀자리의 금성(Venus in Virgo)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "자립과 여유",
+    "스스로 이룬 풍요",
+    "품위 있는 혼자",
+    "누림"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "woman-vineyard",
+        "ko": "꽃무늬 옷을 입은 여인이 포도밭 한가운데 서 있다",
+        "salience": 1
+      },
+      {
+        "id": "hooded-falcon",
+        "ko": "장갑 낀 한 손 위에 머리에 두건을 씌운 새(매)가 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "nine-pentacles",
+        "ko": "주변 포도 덩굴 사이에 펜타클 아홉 개가 있다(왼쪽 여섯, 오른쪽 셋)",
+        "salience": 1
+      },
+      {
+        "id": "hand-on-pentacle",
+        "ko": "다른 손은 펜타클과 포도송이 쪽에 얹었다",
+        "salience": 2
+      },
+      {
+        "id": "manor",
+        "ko": "오른쪽 뒤로 저택과 나무들이 보이고 하늘은 노랗다",
+        "salience": 2
+      },
+      {
+        "id": "snail",
+        "ko": "발치 길 위에 작은 달팽이 한 마리가 있다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "남자가 포도밭에 서 있다",
+        "correct": "인물은 여인이다",
+        "regex": "남자가"
+      },
+      {
+        "wrong": "새가 날아오른다",
+        "correct": "새는 두건을 쓴 채 손 위에 앉아 있다",
+        "regex": "새가\\s*날"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "hooded-falcon",
+        "ko": "다스려진 본능, 절제된 자유",
+        "school": "modern"
+      },
+      {
+        "factId": "woman-vineyard",
+        "ko": "자기 소유일지 모를 넓은 땅, 물질적 안녕",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "snail",
+        "ko": "천천히 와도 닿는 걸음",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A woman, with a bird upon her wrist, stands amidst a great abundance of grapevines in the garden of a manorial house. It is a wide domain, suggesting plenty in all things. Possibly it is her own possession and testifies to material well-being.",
+    "verified": {
+      "scan": "apps/web/public/cards/pentacles-09.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "자립과 여유",
+      "스스로 이룬 풍요",
+      "품위 있는 혼자",
+      "누림"
+    ],
+    "reversed": [
+      "겉만 번듯함",
+      "기대는 불안",
+      "지나친 소비",
+      "외로운 안정"
+    ],
+    "oneLine": {
+      "upright": "스스로 가꾼 것을 누리며 혼자서도 넉넉하고 품위 있게 서는 때",
+      "reversed": "겉으로는 안정돼 보여도 속으로 불안하거나, 누림이 과소비로 흐르는 상태"
+    },
+    "shadow": "혼자 누리는 데 익숙해져 곁을 내주지 않는 것"
+  },
+  "reversedModes": {
+    "default": "internalized",
+    "allowed": [
+      "internalized",
+      "excess",
+      "blocked"
+    ],
+    "gloss": {
+      "internalized": "겉은 넉넉하지만 속으로 외롭거나 불안함",
+      "excess": "누림이 지나쳐 낭비나 과시로 흐름",
+      "blocked": "자립에 필요한 기반이 아직 흔들림"
+    }
+  },
+  "asFeelings": {
+    "upright": "내 힘으로 이룬 것에 뿌듯하고 여유로워요.",
+    "reversed": "혼자인 게 편하면서도 가끔 외롭거나 불안해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에 기대지 않고도 스스로 충분한 상태에서 사랑을 나누는 흐름으로 읽어요. 나다운 여유가 매력이 돼요.",
+      "reversed": "혼자가 편해 곁을 내주지 않거나, 반대로 외로움에 기대고 싶은 쪽으로 읽어요. 내가 바라는 거리를 적어 보세요."
+    },
+    "contact": {
+      "upright": "여유 있는 마음에서 보내는 품위 있는 연락이 어울리는 그림이에요. 내 일상의 좋은 소식을 가볍게 나눠 보세요.",
+      "reversed": "외로움 때문에 보내는 연락이 되기 쉬운 쪽으로 읽어요. 보내기 전 내 마음을 먼저 채워 보세요."
+    },
+    "work": {
+      "upright": "스스로 쌓은 실력과 결과로 자립하는 흐름으로 읽어요. 이룬 것을 인정하고 누려도 좋아요.",
+      "reversed": "겉으로는 안정적이지만 속으로 불안한 쪽으로 읽어요. 수입과 지출을 한 번 점검해 보세요."
+    },
+    "choice": {
+      "upright": "내 힘으로 여유 있게 설 수 있는 쪽이 기준이 되는 배치로 읽어요. 독립성을 지켜 주는지 보세요.",
+      "reversed": "편안함만 보고 고르다 기반이 약한 쪽으로 기울 수 있는 상태로 읽어요. 오래 유지할 수 있는지 확인해 보세요."
+    },
+    "self": {
+      "upright": "혼자 있는 시간을 누리고 나를 대접하기 좋은 시기로 읽어요. 좋아하는 것에 시간을 써 보세요.",
+      "reversed": "혼자 버티는 게 익숙하지만 지친 시기로 읽어요. 가까운 사람에게 작은 도움을 청해 보세요."
+    },
+    "group": {
+      "upright": "모임에서 자기 몫을 해내며 품위 있게 어울리는 흐름으로 읽어요. 여유가 있다면 먼저 나눠 보세요.",
+      "reversed": "각자 따로 노는 듯한 분위기로 읽어요. 함께할 작은 거리를 만들어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "스스로 충분하고 여유로운 마음이에요.",
+      "reversed": "혼자가 편하면서도 외로운 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 기대지 않고도 편안한 흐름으로 읽어요.",
+      "reversed": "거리가 편하면서도 외로움이 섞인 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "여유로운 마음에서 건네는 연락이 흐름을 편하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "외로움이 앞선 연락이 되기 쉽다는 쪽으로 읽어요. 내 마음을 먼저 채운 조건에서 다시 보세요."
+    },
+    "지금의 나": {
+      "upright": "스스로 이룬 것에 기대 설 수 있는 상태로 읽어요.",
+      "reversed": "겉은 괜찮지만 속이 허전한 상태로 읽어요."
+    },
+    "상대에게 비친 나": {
+      "upright": "여유 있고 자기 삶이 분명한 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "가까워지기 어려운 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "나를 대접하며 혼자만의 시간을 누리는 날로 읽어요.",
+      "reversed": "과한 소비를 줄이고 기반을 점검하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "스스로 이룬 것 하나를 떠올리고 나에게 작은 선물을 해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "혼자 보내는 시간 30분을 좋아하는 일로 채워 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "외로움과 혼자 있고 싶은 마음을 나눠 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "이번 달 과하게 쓴 항목 하나를 점검해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "부자가 된다, 재산이 늘어난다고 말하기",
+      "instead": "스스로 쌓은 여유와 관리 방법까지만 말해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "혼자 살게 된다, 결혼하지 않는다고 단정",
+      "instead": "자립과 여유의 흐름으로만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-03-empress",
+      "ko": "스스로 가꾼 넉넉함을 누리는 때"
+    },
+    {
+      "with": "cups-09",
+      "ko": "스스로 이룬 만족을 누리는 흐름"
+    },
+    {
+      "with": "pentacles-10",
+      "ko": "개인의 여유가 가족과 공동체의 안정으로 넓어지는 흐름(9→10)"
+    },
+    {
+      "with": "major-09-hermit",
+      "ko": "혼자의 시간이 충만함이 되는 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "거의 다 옴·혼자 감당"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MONEY",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Prudence, safety, success, accomplishment, certitude, discernment.",
+    "reversed": "Roguery, deception, voided project, bad faith.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/pentacles-09.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 pentacles"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

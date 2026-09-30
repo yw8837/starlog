@@ -1,0 +1,282 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-09",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-09.webp",
+  "names": {
+    "ko": "검 9",
+    "ja": "ソードの9",
+    "en": "Nine of Swords",
+    "koAliases": [
+      "소드 9",
+      "검 9"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "9",
+  "number": 9,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "쌍둥이자리의 화성(Mars in Gemini)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "밤의 걱정",
+    "불안과 자책",
+    "잠 못 드는 생각",
+    "혼자 커지는 두려움"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "hands-face",
+        "ko": "침대에서 몸을 일으킨 사람이 두 손으로 얼굴을 감싸고 있다",
+        "salience": 1
+      },
+      {
+        "id": "nine-swords",
+        "ko": "검은 벽에 칼 아홉 자루가 가로로 나란히 걸려 있다",
+        "salience": 1
+      },
+      {
+        "id": "not-pierced",
+        "ko": "칼들은 몸에 닿지 않고 벽에만 걸려 있다",
+        "salience": 2
+      },
+      {
+        "id": "quilt",
+        "ko": "이불에는 붉은 장미와 별자리 기호가 번갈아 그려져 있다",
+        "salience": 2
+      },
+      {
+        "id": "carving",
+        "ko": "침대 옆판에 한 사람이 다른 사람을 쓰러뜨리는 장면이 새겨져 있다",
+        "salience": 3
+      },
+      {
+        "id": "black-bg",
+        "ko": "배경은 칠흑처럼 검다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "칼이 사람을 찌르고 있다",
+        "correct": "칼은 벽에 걸려 있을 뿐 몸에 닿지 않는다",
+        "regex": "(칼이|칼에)[^.]{0,6}찔|찌르"
+      },
+      {
+        "wrong": "피를 흘린다",
+        "correct": "피는 그려져 있지 않다",
+        "regex": "피를|피가"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "not-pierced",
+        "ko": "두려움이 실제로 닿기보다 머릿속에서 크게 걸려 있음",
+        "school": "modern"
+      },
+      {
+        "factId": "hands-face",
+        "ko": "누구의 슬픔과도 비길 수 없다고 여기는 깊은 비탄",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "quilt",
+        "ko": "밤을 덮는 이불 위에도 남아 있는 장미",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "One seated on her couch in lamentation, with the swords over her. She is as one who knows no sorrow which is like unto hers. It is a card of utter desolation.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-09.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "밤의 걱정",
+      "불안과 자책",
+      "잠 못 드는 생각",
+      "혼자 커지는 두려움"
+    ],
+    "reversed": [
+      "걱정이 옅어짐",
+      "도움을 청함",
+      "속으로 곪는 불안",
+      "악몽에서 깨어남"
+    ],
+    "oneLine": {
+      "upright": "밤이 되면 걱정과 자책이 커져 혼자 잠 못 드는 때(실제 재난의 예언이 아님)",
+      "reversed": "불안이 조금씩 옅어지고 도움을 청할 수 있게 되거나, 말 못 한 걱정이 속에서 커지는 상태"
+    },
+    "shadow": "걱정을 사실처럼 믿어 스스로를 더 몰아붙이는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "internalized",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "밤이 지나가듯 불안이 조금씩 옅어짐",
+      "internalized": "걱정을 누구에게도 말하지 못하고 혼자 삭임",
+      "excess": "불안이 커져 일상까지 흔듦"
+    }
+  },
+  "asFeelings": {
+    "upright": "걱정과 자책이 머릿속을 떠나지 않아 괴로워요.",
+    "reversed": "조금씩 걱정이 가라앉거나, 누군가에게 말하고 싶어졌어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에 대한 걱정이 밤마다 커지는 흐름으로 읽어요. 머릿속 시나리오와 실제로 일어난 일을 나눠 적어 보세요.",
+      "reversed": "혼자 키우던 걱정을 털어놓으며 조금씩 가벼워지는 쪽으로 읽어요. 믿을 만한 사람에게 이야기해 보세요."
+    },
+    "contact": {
+      "upright": "답이 없거나 애매할 때 걱정이 밤새 커지기 쉬운 그림이에요. 늦은 밤에 보내기보다 아침에 다시 읽고 정해 보세요.",
+      "reversed": "걱정이 가라앉아 차분하게 연락할 수 있는 쪽으로 읽어요. 불안을 담기보다 사실만 담아 보세요."
+    },
+    "work": {
+      "upright": "일 걱정이나 실수에 대한 자책으로 잠을 설치는 흐름으로 읽어요. 걱정을 할 일 목록으로 바꿔 적어 보세요.",
+      "reversed": "걱정했던 일이 생각보다 풀리거나 도움을 받을 수 있는 쪽으로 읽어요. 혼자 끌어안지 말고 공유해 보세요."
+    },
+    "choice": {
+      "upright": "최악의 경우만 떠올라 결정이 어려운 배치로 읽어요. 걱정 하나마다 대비책을 한 줄씩 붙여 보세요.",
+      "reversed": "걱정이 걷히며 현실적인 판단이 가능해지는 쪽으로 읽어요. 밝은 시간에 다시 비교해 보세요."
+    },
+    "self": {
+      "upright": "불안과 자책으로 잠이 부족한 시기로 읽어요. 잠들기 전 걱정을 종이에 적어 두고 휴대폰을 멀리 두세요.",
+      "reversed": "불안이 조금씩 누그러지는 시기로 읽어요. 여전히 힘들다면 전문가와 이야기해 보는 것도 방법이에요."
+    },
+    "group": {
+      "upright": "모임 안의 걱정이나 뒷말 때문에 마음이 불안한 흐름으로 읽어요. 확인되지 않은 이야기는 붙잡지 마세요.",
+      "reversed": "걱정했던 모임 분위기가 생각보다 괜찮아지는 쪽으로 읽어요. 직접 확인해 보는 게 도움이 돼요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "걱정과 자책이 커져 잠 못 드는 마음이에요.",
+      "reversed": "걱정이 조금씩 가라앉는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "실제 일보다 걱정이 크게 자리한 흐름으로 읽어요. 속마음을 짐작하기보다 확인할 수 있는 것을 보세요.",
+      "reversed": "걱정이 걷히며 흐름이 조금 가벼워지는 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 불안이 담긴 연락이 되기 쉽다는 쪽으로 읽어요. 밤보다 아침에 다시 읽은 조건에서 보세요.",
+      "reversed": "걱정이 가라앉은 뒤라면 차분한 확인 연락이 도움이 될 수 있다는 쪽으로 읽어요."
+    },
+    "막힌 곳": {
+      "upright": "머릿속에서 커진 걱정이 막힌 곳일 수 있어요.",
+      "reversed": "혼자 삭이는 불안이 막힌 곳일 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "걱정을 밖으로 꺼내 크기를 확인하는 일이 필요해요.",
+      "reversed": "도움을 청하고 쉬는 시간이 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "잠들기 전 걱정을 적어 두고 일찍 쉬는 날로 읽어요.",
+      "reversed": "마음에 걸린 일 하나를 누군가와 나누는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "잠들기 전 걱정을 모두 종이에 적고 '내일 아침에 다시 보기'라고 써 두세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "걱정 하나를 골라 실제로 일어난 일과 상상한 일을 나눠 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 끌어안던 걱정을 믿을 만한 사람에게 한 가지 털어놓아 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "불안이 오래 가면 상담이나 전문가 도움을 알아봐 두세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "불면이나 불안 장애, 질병을 진단하거나 예고",
+      "instead": "불안을 다루는 작은 방법을 말하고, 오래 힘들면 전문가 상담을 권해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "걱정하는 일이 실제로 일어난다고 말하기",
+      "instead": "걱정과 사실을 나누도록 돕는 데서 멈춰요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 싫어한다고 단정",
+      "instead": "걱정이 커진 상태라는 점을 짚고 확인할 수 있는 것을 제안해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-18-moon",
+      "ko": "밤에 커지는 걱정, 사실과 상상을 나눌 때"
+    },
+    {
+      "with": "swords-08",
+      "ko": "갇힌 생각이 밤의 걱정으로 커지는 흐름"
+    },
+    {
+      "with": "swords-10",
+      "ko": "걱정이 바닥까지 내려간 뒤 새벽을 맞는 흐름(9→10)"
+    },
+    {
+      "with": "major-17-star",
+      "ko": "불안한 밤 뒤에 오는 조용한 회복"
+    }
+  ],
+  "numerology": {
+    "stage": "거의 다 옴·혼자 감당"
+  },
+  "safety": {
+    "highRisk": true,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Death, failure, miscarriage, delay, deception, disappointment, despair.",
+    "reversed": "Imprisonment, suspicion, doubt, reasonable fear, shame.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite의 점술 의미에는 죽음·실패가 있지만 출력하지 않는다. 역방향은 의심·합리적인 두려움 등이다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-09.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

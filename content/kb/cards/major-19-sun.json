@@ -1,0 +1,285 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-19-sun",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-19-sun.webp",
+  "names": {
+    "ko": "태양",
+    "ja": "太陽",
+    "en": "The Sun"
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 19,
+  "roman": "XIX",
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "태양(Sun)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "밝고 분명함",
+    "솔직한 기쁨",
+    "드러내기",
+    "활력"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "sun-face",
+        "ko": "위쪽에 사람 얼굴이 그려진 큰 해가 곧은 빛살과 물결 빛살을 번갈아 뻗는다",
+        "salience": 1
+      },
+      {
+        "id": "child-horse",
+        "ko": "벌거벗은 아이가 안장 없이 흰 말을 타고 두 팔을 벌리고 있다",
+        "salience": 1
+      },
+      {
+        "id": "red-banner",
+        "ko": "아이 곁으로 커다란 주황빛 붉은 깃발이 휘날린다",
+        "salience": 1
+      },
+      {
+        "id": "wreath-feather",
+        "ko": "아이 머리에 꽃 화관과 붉은 깃털이 있다",
+        "salience": 3
+      },
+      {
+        "id": "sunflowers",
+        "ko": "회색 돌담 위로 해바라기 네 송이가 피어 있다",
+        "salience": 2
+      },
+      {
+        "id": "wall",
+        "ko": "말 뒤로 회색 돌담이 가로질러 있다",
+        "salience": 2
+      },
+      {
+        "id": "blue-sky",
+        "ko": "해 둘레의 하늘은 옅은 푸른색이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "두 아이가 손을 잡고 있다",
+        "correct": "아이는 한 명이고 말을 타고 있다(두 아이 구도는 옛 마르세유 계열)",
+        "regex": "두\\s*(아이|쌍둥이)|쌍둥이"
+      },
+      {
+        "wrong": "안장을 얹은 말을 탄다",
+        "correct": "말은 안장 없이 맨등이다",
+        "regex": "안장을?\\s*(얹|올|단)|안장\\s*위"
+      },
+      {
+        "wrong": "넓은 해바라기 밭",
+        "correct": "해바라기는 담 위로 네 송이다",
+        "regex": "해바라기\\s*밭"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "child-horse",
+        "ko": "단순함과 순수함, 담장 안에서 나와 길을 떠나는 아이",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "sun-face",
+        "ko": "숨길 것 없이 또렷하게 비추는 빛",
+        "school": "modern"
+      },
+      {
+        "factId": "red-banner",
+        "ko": "기쁨을 숨기지 않고 드러냄",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-19-sun.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "밝고 분명한 흐름",
+      "솔직한 기쁨",
+      "자신감",
+      "함께 누리기"
+    ],
+    "reversed": [
+      "구름 낀 날의 해",
+      "기쁨이 줄어듦",
+      "과한 낙관",
+      "억지 밝음"
+    ],
+    "oneLine": {
+      "upright": "숨길 것 없이 또렷하고 밝게, 기쁨을 드러내도 좋은 때",
+      "reversed": "밝음이 잠시 가려졌거나, 괜찮은 척하는 밝음이 과해진 상태"
+    },
+    "shadow": "밝음만 보려다 확인할 것을 건너뛰는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess",
+      "blocked"
+    ],
+    "gloss": {
+      "waning": "해가 구름에 가린 듯 기쁨과 자신감이 약해짐",
+      "excess": "지나친 낙관이나 괜찮은 척",
+      "blocked": "좋은 일이 있어도 마음껏 누리지 못함"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음이 가볍고 밝아요. 좋은 건 좋다고 말하고 싶은 상태예요.",
+    "reversed": "좋은 일이 있어도 마음이 다 개지 않았어요. 밝은 척이 조금 피곤할 수 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "숨기지 않고 밝게 마음을 나누는 흐름으로 읽어요. 함께 웃는 시간을 늘리는 게 관계를 또렷하게 해요.",
+      "reversed": "설렘이 잠시 흐려졌거나, 괜찮은 척하며 서운함을 덮고 있는 쪽으로 읽어요. 작은 기쁨을 다시 함께 만들어 보세요."
+    },
+    "contact": {
+      "upright": "밝고 솔직한 연락이 어울리는 그림이에요. 좋았던 일이나 반가움을 꾸밈없이 전해 보세요.",
+      "reversed": "억지로 밝은 척하는 연락이 되기 쉬운 쪽으로 읽어요. 지금 내 기분에 맞는 온도로 쓰면 충분해요."
+    },
+    "work": {
+      "upright": "성과가 드러나고 인정받기 쉬운 흐름으로 읽어요. 한 일을 분명하게 보여 주고 공유해 보세요.",
+      "reversed": "결과가 기대보다 덜 드러나거나, 낙관해서 확인을 빠뜨리는 쪽으로 읽어요. 마감 전에 한 번 더 점검해 보세요."
+    },
+    "choice": {
+      "upright": "마음이 밝아지고 떳떳한 쪽이 기준이 되는 배치로 읽어요. 숨길 게 없는 선택지를 골라 보세요.",
+      "reversed": "좋아 보이는 면만 보고 고르려는 건 아닌지 살펴보는 쪽으로 읽어요. 단점도 한 줄씩 적어 보세요."
+    },
+    "self": {
+      "upright": "활력이 돌고 기분이 밝아지는 시기로 읽어요. 햇볕 아래 걷기처럼 몸을 쓰는 일이 기분을 더 올려 줘요.",
+      "reversed": "기운이 조금 가라앉아 있는 시기로 읽어요. 억지로 밝아지려 하기보다 작은 즐거움 하나를 챙겨 보세요."
+    },
+    "group": {
+      "upright": "모임이 밝고 편안하게 어울리는 흐름으로 읽어요. 함께 축하하거나 즐길 거리를 제안해 보세요.",
+      "reversed": "겉으로는 즐거워 보이지만 속으로 지친 사람이 있는 분위기로 읽어요. 부담 없는 자리로 가볍게 가 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "마음이 밝고 솔직해요. 좋아하는 마음을 숨길 이유가 없는 상태예요.",
+      "reversed": "밝고 싶은데 마음 한쪽이 흐려져 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "밝고 편안하게 드러나는 흐름으로 읽어요.",
+      "reversed": "밝은 분위기가 잠시 가려진 흐름으로 읽어요. 무엇이 가렸는지 보는 자리예요."
+    },
+    "먼저 움직이면": {
+      "upright": "반가움을 밝게 전하는 연락이 흐름을 환하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금 기분보다 과하게 밝은 연락이 될 수 있다는 쪽으로 읽어요. 내 기분에 맞는 온도로 쓰는 조건에서 다시 보세요."
+    },
+    "나아갈 방향": {
+      "upright": "한 일을 드러내고 인정받는 쪽이에요.",
+      "reversed": "낙관을 잠시 내려놓고 확인하는 쪽이에요."
+    },
+    "이 시기의 흐름": {
+      "upright": "밝고 활력 있는 시기로 읽어요.",
+      "reversed": "구름 낀 날처럼 기운이 잠시 가라앉는 시기로 읽어요."
+    },
+    "모임의 분위기": {
+      "upright": "밝고 편하게 어울리는 분위기로 읽어요.",
+      "reversed": "즐거운 척하는 분위기가 섞여 있을 수 있어요."
+    },
+    "오늘의 한 장": {
+      "upright": "좋은 소식을 나누거나 밖에서 햇볕을 쬐는 날로 읽어요.",
+      "reversed": "기분이 흐려도 작은 즐거움 하나를 찾는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "최근 좋았던 일 하나를 누군가에게 꾸밈없이 전해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "오늘 15분 햇볕 아래 걸어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "괜찮은 척하고 있는 부분 하나를 스스로에게 솔직하게 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "낙관하던 계획에서 확인하지 않은 점 하나를 점검해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "모든 일이 잘 풀린다, 성공이 확정이라고 말하기",
+      "instead": "밝게 드러나는 흐름과 확인할 점을 함께 말해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "임신이나 출산을 암시한다고 말하기",
+      "instead": "밝음과 활력의 그림으로만 읽어요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-18-moon",
+      "ko": "흐릿함 뒤에 또렷해지는 흐름"
+    },
+    {
+      "with": "cups-10",
+      "ko": "함께 누리는 밝은 기쁨"
+    },
+    {
+      "with": "major-00-fool",
+      "ko": "순수하게 즐기며 시작하는 흐름"
+    },
+    {
+      "with": "wands-06",
+      "ko": "드러나는 성과와 인정"
+    }
+  ],
+  "numerology": {
+    "stage": "19 · 모든 것이 또렷이 드러나는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Material happiness, fortunate marriage, contentment.",
+    "reversed": "The same in a lesser sense.",
+    "loc": "PKT Part III §3",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-19-sun.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 XIX, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

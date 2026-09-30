@@ -1,0 +1,280 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-05",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-05.webp",
+  "names": {
+    "ko": "검 5",
+    "ja": "ソードの5",
+    "en": "Five of Swords",
+    "koAliases": [
+      "소드 5",
+      "검 5"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "5",
+  "number": 5,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "물병자리의 금성(Venus in Aquarius)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "이겨도 남는 씁쓸함",
+    "갈등의 뒤끝",
+    "자존심 싸움",
+    "물러날 때"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "smirking-man",
+        "ko": "붉은 머리의 남자가 옅게 웃으며 떠나는 사람들을 돌아본다",
+        "salience": 1
+      },
+      {
+        "id": "swords-held",
+        "ko": "그는 칼 두 자루를 어깨에 걸치고 한 손에 칼 하나를 쥐었다",
+        "salience": 1
+      },
+      {
+        "id": "swords-ground",
+        "ko": "땅에 칼 두 자루가 떨어져 있다",
+        "salience": 2
+      },
+      {
+        "id": "walking-away",
+        "ko": "두 사람이 등을 돌려 물가 쪽으로 걸어가고, 한 사람은 손으로 얼굴을 감싸는 듯하다",
+        "salience": 1
+      },
+      {
+        "id": "jagged-clouds",
+        "ko": "하늘에 찢긴 듯한 구름이 비스듬히 흐른다",
+        "salience": 2
+      },
+      {
+        "id": "sea",
+        "ko": "뒤로 바다가 보인다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "피 흘리며 쓰러진 사람이 있다",
+        "correct": "쓰러진 사람은 없고 두 사람이 걸어가고 있다",
+        "regex": "피를|쓰러진|시체"
+      },
+      {
+        "wrong": "칼 다섯 자루를 모두 쥐었다",
+        "correct": "셋은 그가 가졌고 둘은 땅에 떨어져 있다",
+        "regex": "다섯\\s*자루(를)?\\s*모두"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "smirking-man",
+        "ko": "싸움터를 차지한 사람, 그러나 불명예와 손실도 함께 뜻함",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "walking-away",
+        "ko": "진 쪽이 떠나며 관계가 남긴 상처",
+        "school": "modern"
+      },
+      {
+        "factId": "jagged-clouds",
+        "ko": "다툼 뒤의 어수선한 공기",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A disdainful man looks after two retreating and dejected figures. Their swords lie upon the ground. He carries two others on his left shoulder, and a third sword is in his right hand, point to earth. He is the master in possession of the field.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-05.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "이겨도 씁쓸함",
+      "갈등의 뒤끝",
+      "자존심 싸움",
+      "관계의 손실"
+    ],
+    "reversed": [
+      "물러나 화해함",
+      "앙금이 남음",
+      "패배 인정",
+      "싸움을 내려놓음"
+    ],
+    "oneLine": {
+      "upright": "다툼에서 이겨도 관계와 신뢰를 잃어 씁쓸함이 남는 때",
+      "reversed": "싸움을 내려놓고 물러나거나, 끝난 다툼의 앙금이 오래 남는 상태"
+    },
+    "shadow": "이기는 것 자체가 목적이 되어 사람을 잃는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "internalized"
+    ],
+    "gloss": {
+      "waning": "다툼이 가라앉고 물러서거나 화해할 틈이 생김",
+      "internalized": "겉으로는 끝났지만 속에 앙금이 남음"
+    }
+  },
+  "asFeelings": {
+    "upright": "이겼는데도 마음이 편하지 않거나, 진 것 같아 억울한 마음이에요.",
+    "reversed": "이제는 싸움을 그만두고 싶은 마음이에요."
+  },
+  "topics": {
+    "love": {
+      "upright": "말다툼에서 이기려다 관계가 상처를 입은 흐름으로 읽어요. 이기는 것과 지키고 싶은 것 중 무엇이 중요한지 물어보세요.",
+      "reversed": "다툼 뒤 한발 물러서 화해를 시도할 수 있는 쪽으로 읽어요. 자존심보다 먼저 건넬 한마디를 골라 보세요."
+    },
+    "contact": {
+      "upright": "지난 다툼의 뒤끝이 연락에 묻어나기 쉬운 그림이에요. 누가 옳았는지는 빼고 지금 하고 싶은 말만 전해 보세요.",
+      "reversed": "다툼을 내려놓고 먼저 손을 내밀 수 있는 쪽으로 읽어요. 짧은 사과나 안부로 시작해 보세요."
+    },
+    "work": {
+      "upright": "경쟁에서 이겨도 동료 관계가 상하는 흐름으로 읽어요. 성과를 나누고 상처 난 관계를 챙겨 보세요.",
+      "reversed": "소모적인 다툼에서 물러나 손실을 줄이는 쪽으로 읽어요. 지켜야 할 것만 남기고 나머지는 양보해 보세요."
+    },
+    "choice": {
+      "upright": "이기는 선택이 오히려 잃는 것이 많을 수 있는 배치로 읽어요. 이 선택으로 잃게 될 관계를 적어 보세요.",
+      "reversed": "체면 때문에 붙잡던 선택을 내려놓을 수 있는 쪽으로 읽어요. 물러나는 것도 선택이에요."
+    },
+    "self": {
+      "upright": "자존심 싸움에 지쳐 마음이 날카로워진 시기로 읽어요. 이기고 싶은 이유를 적어 보세요.",
+      "reversed": "싸움에서 물러나 마음을 추스르는 시기로 읽어요. 나에게 먼저 너그러워져 보세요."
+    },
+    "group": {
+      "upright": "모임 안에서 이긴 쪽과 진 쪽이 나뉘어 불편한 흐름으로 읽어요. 떠난 사람의 입장을 한 번 들어 보세요.",
+      "reversed": "갈등이 가라앉고 화해할 틈이 생기는 쪽으로 읽어요. 가벼운 자리로 다시 모여 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "이기고 싶거나, 진 것 같아 억울한 마음이에요.",
+      "reversed": "이제는 싸움을 내려놓고 싶은 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "다툼의 뒤끝으로 거리가 생긴 흐름으로 읽어요.",
+      "reversed": "앙금이 조금씩 풀릴 여지가 있는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 지난 다툼의 옳고 그름이 연락에 묻어나기 쉽다는 쪽으로 읽어요. 그 이야기를 뺀 조건에서 다시 보세요.",
+      "reversed": "먼저 손을 내미는 짧은 말이 앙금을 풀 수 있다는 쪽으로 읽어요."
+    },
+    "막힌 곳": {
+      "upright": "이기려는 마음이 막힌 곳일 수 있어요.",
+      "reversed": "끝난 다툼의 앙금이 막힌 곳일 수 있어요."
+    },
+    "도움이 될 태도": {
+      "upright": "이기기보다 관계를 지키는 태도가 도움이 돼요.",
+      "reversed": "먼저 물러서서 화해를 제안하는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "말다툼에서 이기려 하지 않는 날로 읽어요.",
+      "reversed": "미안한 일에 짧게 먼저 사과하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "이기고 싶은 논쟁 하나를 골라 '이겨서 얻는 것'과 '잃는 것'을 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "다툼 뒤라면 옳고 그름 말고 하고 싶은 말 하나만 정리해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "먼저 건넬 수 있는 짧은 사과나 안부를 한 줄 써 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "끝난 다툼에서 내려놓을 것 하나를 정해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 이용하거나 무시했다고 단정",
+      "instead": "다툼의 흐름과 내 쪽의 선택을 다뤄요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "관계가 깨졌다고 확정",
+      "instead": "앙금을 다루는 방법까지만 말해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "폭력이나 부상을 예고",
+      "instead": "말과 관계의 다툼으로만 읽어요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "wands-05",
+      "ko": "다툼이 상처로 번지지 않게 살필 조합"
+    },
+    {
+      "with": "wands-07",
+      "ko": "이기려는 싸움이 상처를 남기지 않게"
+    },
+    {
+      "with": "swords-06",
+      "ko": "다툼을 뒤로하고 떠나는 흐름(5→6)"
+    },
+    {
+      "with": "major-14-temperance",
+      "ko": "갈등 뒤의 조율과 화해"
+    }
+  ],
+  "numerology": {
+    "stage": "흔들림·마찰"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Degradation, destruction, revocation, infamy, dishonour, loss, with the variants and analogues of these.",
+    "reversed": "The same; burial and obsequies.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 싸움터를 차지한 사람의 그림으로, 점술 의미는 불명예·손실 쪽으로 적었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-05.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

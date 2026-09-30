@@ -1,0 +1,284 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-07-chariot",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-07-chariot.webp",
+  "names": {
+    "ko": "전차",
+    "ja": "戦車",
+    "en": "The Chariot"
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 7,
+  "roman": "VII",
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "게자리(Cancer)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "의지로 밀고 나가기",
+    "방향 잡기",
+    "전진",
+    "자기 통제"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "canopy",
+        "ko": "별이 박힌 푸른 천막 아래, 돌로 된 전차 위에 서 있다",
+        "salience": 2
+      },
+      {
+        "id": "wand-no-reins",
+        "ko": "오른손에 끝이 뾰족한 긴 지팡이를 들었고, 고삐는 어디에도 없다",
+        "salience": 1
+      },
+      {
+        "id": "star-crown",
+        "ko": "머리에 금색 별 장식이 달린 관을 썼다",
+        "salience": 3
+      },
+      {
+        "id": "armor-moons",
+        "ko": "가슴에 네모 판이 달린 갑옷을 입었고 양 어깨에 초승달 장식이 있다",
+        "salience": 3
+      },
+      {
+        "id": "sphinxes",
+        "ko": "앞에 검은 스핑크스(왼쪽)와 흰 스핑크스(오른쪽)가 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "winged-disc",
+        "ko": "전차 앞면에 날개 달린 원반과 붉은 문양이 든 방패가 있다",
+        "salience": 3
+      },
+      {
+        "id": "city-river",
+        "ko": "뒤로 붉은 지붕의 성벽 도시와 강이 보인다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "말 두 마리가 전차를 끈다",
+        "correct": "전차 앞에는 말이 아니라 흑백 스핑크스 두 마리가 앉아 있다",
+        "regex": "말(이|들이)\\s*(끄|끌)|말\\s*두\\s*마리|두\\s*마리(의)?\\s*말"
+      },
+      {
+        "wrong": "고삐를 쥐고 몬다",
+        "correct": "고삐는 그려져 있지 않다",
+        "regex": "고삐를\\s*(쥐|잡)"
+      },
+      {
+        "wrong": "칼을 뽑아 들고 있다",
+        "correct": "손에 든 것은 칼이 아니라 긴 지팡이다(Waite 글은 칼이라 썼지만 그림은 다르다)",
+        "regex": "칼을\\s*(뽑|든|쥔)|검을\\s*(뽑|든|쥔)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "wand-no-reins",
+        "ko": "고삐 없이 의지로 방향을 잡음",
+        "school": "modern"
+      },
+      {
+        "factId": "sphinxes",
+        "ko": "서로 다른 두 힘(검정·흰색)을 한 방향으로 모아야 함",
+        "school": "modern"
+      },
+      {
+        "factId": "city-river",
+        "ko": "익숙한 성을 뒤로하고 나아가는 출발",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-07-chariot.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "의지로 밀고 나가기",
+      "방향 잡기",
+      "통제된 추진력",
+      "목표를 향한 전진"
+    ],
+    "reversed": [
+      "방향 없이 서두름",
+      "힘이 엇갈려 멈춤",
+      "과한 밀어붙이기",
+      "주도권 잃음"
+    ],
+    "oneLine": {
+      "upright": "서로 다른 힘을 한 방향으로 모아 목표 쪽으로 밀고 나가는 때",
+      "reversed": "의욕은 큰데 방향이 엇갈려 제자리를 돌거나, 밀어붙임이 지나친 상태"
+    },
+    "shadow": "이기려는 마음이 관계나 몸을 돌보지 않는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "excess"
+    ],
+    "gloss": {
+      "blocked": "두 힘이 다른 쪽으로 당겨 앞으로 못 나감",
+      "excess": "속도와 승부욕이 지나쳐 주변을 놓침"
+    }
+  },
+  "asFeelings": {
+    "upright": "해내겠다는 의지가 강하게 올라와 있어요. 방향이 보이니 움직이고 싶은 상태예요.",
+    "reversed": "마음은 급한데 뜻대로 굴러가지 않아 초조해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "원하는 관계를 향해 내가 주도적으로 움직이는 흐름으로 읽어요. 망설임과 기대를 한 방향으로 정리하면 발걸음이 가벼워져요.",
+      "reversed": "빨리 결론을 내고 싶어 밀어붙이거나, 마음이 두 갈래로 나뉘어 제자리인 쪽으로 읽어요. 내가 원하는 속도를 먼저 정해 보세요."
+    },
+    "contact": {
+      "upright": "마음을 정했다면 망설이지 않고 먼저 연락해 볼 만한 흐름으로 읽어요. 목적이 분명한 짧은 메시지가 잘 맞아요.",
+      "reversed": "답을 빨리 받으려고 연달아 보내거나, 보낼지 말지 오가다 지치는 쪽으로 읽어요. 한 번 보내고 기다리는 선을 정해 두세요."
+    },
+    "work": {
+      "upright": "목표가 분명한 프로젝트를 밀고 나가기 좋은 흐름으로 읽어요. 이동·출장·경쟁처럼 속도가 필요한 일에 힘이 실려요.",
+      "reversed": "여러 목표가 서로 당겨 진도가 안 나가거나, 성과에 쫓겨 무리하는 쪽으로 읽어요. 이번 주 목표를 하나로 줄여 보세요."
+    },
+    "choice": {
+      "upright": "망설임을 정리하고 한쪽으로 정해 움직일 수 있는 배치로 읽어요. 목표가 더 분명하게 보이는 길에 힘이 실려요.",
+      "reversed": "두 선택지를 동시에 붙잡고 있어 어느 쪽도 나아가지 못하는 상태로 읽어요. 하나를 고르면 무엇을 내려놓는지 적어 보세요."
+    },
+    "self": {
+      "upright": "몸과 마음을 목표 쪽으로 모을 수 있는 시기로 읽어요. 이동하거나 환경을 바꾸는 일도 힘을 받아요.",
+      "reversed": "속도를 내다 지치거나, 하고 싶은 마음과 쉬고 싶은 마음이 부딪힌 상태로 읽어요. 쉬는 시간도 일정에 넣어 방향을 다시 잡아 보세요."
+    },
+    "group": {
+      "upright": "모임의 목표를 정하고 앞장서 이끄는 역할이 어울리는 흐름으로 읽어요. 방향을 제시하면 함께 움직이기 쉬워요.",
+      "reversed": "각자 다른 방향으로 당겨 모임이 제자리인 분위기로 읽어요. 주도권 다툼보다 공동 목표 하나를 합의해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "이 관계를 원하는 방향으로 움직이고 싶은 의지가 분명해요.",
+      "reversed": "빨리 결론 내고 싶은 조급함과 망설임이 동시에 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "한 방향으로 속도가 붙는 흐름으로 읽어요.",
+      "reversed": "두 사람이 원하는 속도나 방향이 엇갈리는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "내가 먼저 방향을 정해 움직이면 흐름이 앞으로 나갈 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 서두름이 흐름을 어지럽힐 수 있다는 쪽으로 읽어요. 한 번 보내고 기다리는 조건에서 다시 보세요."
+    },
+    "막힌 곳": {
+      "upright": "앞만 보고 달리느라 주변과 속도를 맞추지 못한 게 막힌 곳일 수 있어요.",
+      "reversed": "서로 다른 목표가 힘을 나눠 가지는 게 막힌 곳일 수 있어요."
+    },
+    "나아갈 방향": {
+      "upright": "목표 하나를 정하고 속도를 내는 쪽이에요.",
+      "reversed": "속도를 줄이고 방향부터 다시 맞추는 쪽이에요."
+    },
+    "이 시기의 흐름": {
+      "upright": "움직임과 전진이 많은 시기로 읽어요.",
+      "reversed": "뜻대로 속도가 안 나 조율이 필요한 시기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "미뤄 둔 일을 밀고 나가기 좋은 날로 읽어요.",
+      "reversed": "서두르다 실수하기 쉬우니 확인을 한 번 더 하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "이번 주 목표를 한 문장으로 적고, 오늘 할 첫 행동 하나를 정하세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "마음이 정해졌다면 목적이 분명한 짧은 메시지를 보내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "동시에 붙잡고 있는 목표를 적고 이번 주에는 하나만 남겨 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "답을 재촉하고 싶을 때는 휴대폰을 30분 멀리 두고 다른 일을 해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "경쟁이나 시험에서 이긴다고 단정",
+      "instead": "밀고 나갈 힘과 조율할 점까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대를 이끌어 원하는 반응을 얻을 수 있다고 말하기",
+      "instead": "내가 정할 수 있는 방향과 속도를 다뤄요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-08-strength",
+      "ko": "밀어붙이는 힘과 부드럽게 다스리는 힘의 균형"
+    },
+    {
+      "with": "wands-08",
+      "ko": "속도가 붙는 흐름, 확인을 빠뜨리지 않게"
+    },
+    {
+      "with": "swords-02",
+      "ko": "움직이고 싶은데 결정을 못 내려 멈춘 조합"
+    },
+    {
+      "with": "swords-06",
+      "ko": "지금 자리를 떠나 다른 곳으로 옮겨 가는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "7 · 배운 것을 들고 밖으로 나서는 단계(첫 일곱 장의 끝)"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Succour, providence; also war, triumph, presumption, vengeance, trouble.",
+    "reversed": "Riot, quarrel, dispute, litigation, defeat.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite 본문은 '칼을 든 인물'이라 썼지만 1909 그림에서는 지팡이를 들고 있다. 그림 묘사는 스캔을 따른다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-07-chariot.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 VII, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

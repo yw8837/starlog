@@ -1,0 +1,284 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-07",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-07.webp",
+  "names": {
+    "ko": "컵 7",
+    "ja": "カップの7",
+    "en": "Seven of Cups",
+    "koAliases": [
+      "컵 7",
+      "성배 7"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "7",
+  "number": 7,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "전갈자리의 금성(Venus in Scorpio)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "여러 가능성",
+    "환상과 상상",
+    "선택의 혼란",
+    "달콤한 유혹"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "silhouette",
+        "ko": "검은 그림자 같은 사람이 등을 보인 채 구름 위의 컵들을 바라본다",
+        "salience": 1
+      },
+      {
+        "id": "seven-cups",
+        "ko": "구름 위에 컵 일곱 개가 떠 있고 저마다 다른 것이 담겨 있다",
+        "salience": 1
+      },
+      {
+        "id": "top-row",
+        "ko": "윗줄 컵에는 사람 머리, 빛에 싸인 천을 쓴 형상, 뱀이 담겨 있다",
+        "salience": 2
+      },
+      {
+        "id": "bottom-row",
+        "ko": "아랫줄 컵에는 성, 보석, 월계관, 용이 담겨 있다",
+        "salience": 2
+      },
+      {
+        "id": "skull-cup",
+        "ko": "월계관이 담긴 컵 몸체에 해골 모양이 그려져 있다",
+        "salience": 3
+      },
+      {
+        "id": "clouds-sky",
+        "ko": "회색 구름과 푸른 하늘이 배경이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "컵이 여덟 개(또는 여섯 개) 떠 있다",
+        "correct": "컵은 일곱 개다",
+        "regex": "컵이?\\s*(여덟|여섯|8|6)\\s*개"
+      },
+      {
+        "wrong": "컵 하나를 손에 쥐었다",
+        "correct": "사람은 손을 내밀 뿐 어느 컵도 쥐지 않았다",
+        "regex": "컵(을|\\s*하나를)\\s*(손에\\s*)?(쥐|잡|들)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "seven-cups",
+        "ko": "요정의 선물 같은 환상, 영속적인 것은 없음",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "silhouette",
+        "ko": "정체가 흐릿한 채 가능성에 둘러싸인 나",
+        "school": "modern"
+      },
+      {
+        "factId": "skull-cup",
+        "ko": "영광 뒤에 숨은 대가",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "Strange chalices of vision, but the images are more especially those of the fantastic spirit.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-07.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "여러 가능성",
+      "환상과 상상",
+      "선택의 혼란",
+      "달콤한 유혹"
+    ],
+    "reversed": [
+      "현실로 돌아옴",
+      "하나로 좁힘",
+      "결단",
+      "환상이 깨짐"
+    ],
+    "oneLine": {
+      "upright": "눈앞의 여러 가능성과 상상에 끌려 무엇이 진짜인지 가려내기 어려운 때",
+      "reversed": "환상에서 깨어나 현실적인 하나를 고르거나 결단하려는 상태"
+    },
+    "shadow": "상상 속 선택지를 고르며 현실의 한 걸음을 미루는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "안개가 걷히며 현실적인 선택지만 남음",
+      "excess": "상상이 더 부풀어 현실과 멀어짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "이것도 저것도 끌려 마음이 들뜨고 어수선해요.",
+    "reversed": "이제 하나를 정해야겠다는 마음이 생겼어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "상대나 관계에 대한 상상과 기대가 커지는 흐름으로 읽어요. 내가 그린 모습과 실제로 확인한 모습을 나눠 보세요.",
+      "reversed": "기대와 현실의 차이를 받아들이고 실제 관계를 보기 시작하는 쪽으로 읽어요. 확인된 것만으로 다시 그려 보세요."
+    },
+    "contact": {
+      "upright": "보낼 말이 여러 버전으로 떠올라 결정을 못 하는 흐름으로 읽어요. 가장 단순한 한 문장만 고르세요.",
+      "reversed": "상상 속 대화를 멈추고 실제로 한 번 연락해 보는 쪽으로 읽어요. 답을 상상하기보다 확인해 보세요."
+    },
+    "work": {
+      "upright": "아이디어와 선택지가 많아 산만한 흐름으로 읽어요. 현실성과 필요성으로 하나씩 걸러 보세요.",
+      "reversed": "여러 아이디어 중 실행할 하나를 골라 집중하는 쪽으로 읽어요. 우선순위 1번을 정해 보세요."
+    },
+    "choice": {
+      "upright": "선택지가 너무 많거나 모두 그럴듯해 보이는 배치로 읽어요. 환상을 빼고 사실만 남겨 비교해 보세요.",
+      "reversed": "선택지를 줄이고 현실적인 결정을 내릴 수 있는 쪽으로 읽어요. 두 개만 남기고 나머지는 지워 보세요."
+    },
+    "self": {
+      "upright": "상상과 공상이 많아지는 시기로 읽어요. 떠오르는 생각을 적어 두되 실천은 하나만 골라 보세요.",
+      "reversed": "흐릿하던 목표가 또렷해지는 시기로 읽어요. 이번 달 목표 하나를 정해 보세요."
+    },
+    "group": {
+      "upright": "모임에 아이디어는 많은데 방향이 흩어진 흐름으로 읽어요. 투표나 기준으로 하나를 정해 보세요.",
+      "reversed": "거창한 계획보다 할 수 있는 한 가지에 모이는 쪽으로 읽어요. 첫 실행 날짜를 정해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "여러 기대와 상상이 섞여 무엇을 원하는지 흐릿한 마음이에요.",
+      "reversed": "상상에서 깨어나 원하는 걸 좁히는 중이에요."
+    },
+    "두 사람 사이": {
+      "upright": "기대와 상상이 실제보다 크게 자리한 흐름으로 읽어요.",
+      "reversed": "환상이 걷히고 실제 모습이 보이는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 상상한 반응을 기대하며 보내기 쉽다는 쪽으로 읽어요. 기대를 내려놓은 단순한 한 줄이라는 조건에서 보세요.",
+      "reversed": "상상 대신 실제로 확인하는 연락이 흐름을 또렷하게 할 수 있다는 쪽으로 읽어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "달콤한 선택지 뒤의 대가를 놓치고 있을 수 있어요.",
+      "reversed": "고른 뒤에 필요한 현실적인 준비를 놓치고 있을 수 있어요."
+    },
+    "이쪽을 고르면": {
+      "upright": "기대가 크지만 실제 모습은 확인이 더 필요한 선택으로 읽어요.",
+      "reversed": "환상을 걷어 내고 보면 현실적인 선택으로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "떠오르는 아이디어를 적되 결정은 미루는 날로 읽어요.",
+      "reversed": "할 일 하나를 골라 실제로 시작하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "떠오른 선택지를 모두 적고, 각 옆에 '확인된 사실'을 한 줄씩 붙여 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "보낼 문장을 여러 개 쓰지 말고 가장 단순한 하나만 남겨 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "선택지를 두 개로 줄이고 오늘 그중 하나를 작게 시험해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "상상한 결과 대신 확인할 질문 하나를 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 속이고 있다고 단정",
+      "instead": "기대와 사실이 섞여 있을 수 있으니 확인하자고 제안해요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "달콤한 제안이나 투자에 뛰어들라고 부추기기",
+      "instead": "조건을 확인하고 한 번 더 따져 보자고 해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "원하는 것이 다 이뤄진다고 말하기",
+      "instead": "여러 가능성 중 현실적인 하나를 고르도록 도와요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "cups-04",
+      "ko": "많은 선택지 앞의 무관심과 혼란"
+    },
+    {
+      "with": "major-18-moon",
+      "ko": "상상과 환상이 겹쳐 판단이 흐려짐"
+    },
+    {
+      "with": "major-15-devil",
+      "ko": "달콤한 상상과 유혹이 겹침"
+    },
+    {
+      "with": "swords-02",
+      "ko": "선택지 앞에서 눈을 가리고 미루는 상태"
+    },
+    {
+      "with": "major-08-strength",
+      "ko": "흔들리는 욕망 앞에서 차분하게 고르는 힘"
+    }
+  ],
+  "numerology": {
+    "stage": "점검·버티기"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_MONEY",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Fairy favours, images of reflection, sentiment, imagination, things seen in the glass of contemplation; some attainment in these degrees, but nothing permanent or substantial is suggested.",
+    "reversed": "Desire, will, determination, project.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 환상과 공상의 잔들로 영속적인 것은 없다고 설명했고, 역방향은 욕망·의지·결단이다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-07.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

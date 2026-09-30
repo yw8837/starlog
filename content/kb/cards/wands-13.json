@@ -1,0 +1,284 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-13",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-13.webp",
+  "names": {
+    "ko": "완드 여왕",
+    "ja": "ワンドのクイーン",
+    "en": "Queen of Wands",
+    "koAliases": [
+      "지팡이 여왕",
+      "완드 퀸"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "queen",
+  "number": 13,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "따뜻한 자신감",
+    "당당한 매력",
+    "밝은 리더십",
+    "주변을 밝힘"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "lion-throne",
+        "ko": "사자 머리가 새겨진 왕좌에 정면으로 앉아 있다",
+        "salience": 2
+      },
+      {
+        "id": "wand-sunflower",
+        "ko": "오른손에 지팡이, 왼손에 해바라기 한 송이를 들었다",
+        "salience": 1
+      },
+      {
+        "id": "black-cat",
+        "ko": "발치 앞에 검은 고양이 한 마리가 정면을 보고 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "banner",
+        "ko": "왕좌 뒤 휘장에 붉은 사자 두 마리와 해바라기가 그려져 있다",
+        "salience": 3
+      },
+      {
+        "id": "yellow-dress",
+        "ko": "노란 드레스에 흰 망토를 두르고 잎 장식 관을 썼다",
+        "salience": 3
+      },
+      {
+        "id": "landscape",
+        "ko": "왼쪽 뒤로 피라미드 모양 언덕과 푸른 하늘이 보인다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "흰 고양이가 앉아 있다",
+        "correct": "고양이는 검은색이다",
+        "regex": "흰\\s*고양이"
+      },
+      {
+        "wrong": "해바라기 밭을 배경으로 앉아 있다",
+        "correct": "해바라기는 손에 든 한 송이와 휘장 무늬뿐이다",
+        "regex": "해바라기\\s*밭"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "black-cat",
+        "ko": "밝음 속에 감춘 직감과 독립적인 면",
+        "school": "modern"
+      },
+      {
+        "factId": "wand-sunflower",
+        "ko": "활기와 따뜻함을 함께 쥔 자신감",
+        "school": "modern"
+      },
+      {
+        "factId": "lion-throne",
+        "ko": "당당함과 용기가 받쳐 주는 자리",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "The Wands throughout this suit are always in leaf, as it is a suit of life and animation. Emotionally and otherwise, the Queen's personality corresponds to that of the King, but is more magnetic.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-13.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "따뜻한 자신감",
+      "당당한 매력",
+      "사람을 끄는 활기",
+      "밝은 리더십"
+    ],
+    "reversed": [
+      "질투와 예민함",
+      "자신감이 꺾임",
+      "과한 존재감",
+      "지친 활기"
+    ],
+    "oneLine": {
+      "upright": "따뜻한 자신감으로 주변을 밝히고 스스로 빛나는 때",
+      "reversed": "자신감이 꺾여 예민해지거나, 존재감이 지나쳐 주변을 압도하는 상태"
+    },
+    "shadow": "빛나고 싶은 마음이 남의 빛을 경쟁으로 보는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess",
+      "internalized"
+    ],
+    "gloss": {
+      "waning": "활기와 자신감이 떨어져 움츠러듦",
+      "excess": "존재감이 지나쳐 질투나 과시로 흐름",
+      "internalized": "드러내지 못한 열정이 속에서 예민함이 됨"
+    }
+  },
+  "asFeelings": {
+    "upright": "나를 믿는 마음이 있고 주변에 따뜻함을 나누고 싶어요.",
+    "reversed": "자신감이 흔들려 다른 사람과 비교하게 돼요."
+  },
+  "topics": {
+    "love": {
+      "upright": "나다운 매력을 자신 있게 드러내는 흐름으로 읽어요. 먼저 웃고 먼저 초대하는 쪽이 잘 맞아요.",
+      "reversed": "비교나 질투로 마음이 예민해지거나 자신감이 꺾인 쪽으로 읽어요. 나를 기분 좋게 하는 일부터 챙겨 보세요."
+    },
+    "contact": {
+      "upright": "밝고 당당하게 먼저 연락하는 흐름으로 읽어요. 내 일상의 즐거운 소식을 나누며 여는 게 어울려요.",
+      "reversed": "반응에 자존심이 걸려 예민해지기 쉬운 쪽으로 읽어요. 이기려는 마음을 내려놓고 편한 톤으로 써 보세요."
+    },
+    "work": {
+      "upright": "사람을 모으고 분위기를 이끄는 역할에 힘이 실리는 흐름으로 읽어요. 내 의견을 자신 있게 말해 보세요.",
+      "reversed": "지쳐서 열정이 식거나, 주도권 문제로 신경이 곤두선 쪽으로 읽어요. 내 몫과 남의 몫을 나눠 보세요."
+    },
+    "choice": {
+      "upright": "내가 더 나답게 빛날 수 있는 쪽이 기준이 되는 배치로 읽어요. 그곳에서 내 기운이 살아나는지 보세요.",
+      "reversed": "남에게 지고 싶지 않은 마음이 선택을 끌고 가는 상태로 읽어요. 비교를 빼고 다시 적어 보세요."
+    },
+    "self": {
+      "upright": "자신감과 활기가 차오르는 시기로 읽어요. 나를 표현하는 일에 시간을 써 보세요.",
+      "reversed": "지치고 예민해진 시기로 읽어요. 잠깐 무대에서 내려와 쉬어도 괜찮아요."
+    },
+    "group": {
+      "upright": "모임의 분위기를 따뜻하게 이끄는 역할이 어울리는 흐름으로 읽어요. 먼저 사람들을 챙겨 보세요.",
+      "reversed": "주목받고 싶은 마음들이 부딪히는 분위기로 읽어요. 무대를 나눠 쓰는 방법을 찾아보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "나를 믿고 따뜻하게 다가가고 싶은 마음이에요.",
+      "reversed": "자신감이 흔들려 예민해진 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "밝고 따뜻한 기운이 도는 흐름으로 읽어요.",
+      "reversed": "자존심과 비교가 끼어드는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "밝고 당당한 연락이 흐름을 환하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 자존심이 앞선 연락이 되기 쉽다는 쪽으로 읽어요. 편한 톤으로 바꾼 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "따뜻하고 당당한 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "예민하거나 기가 센 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "나의 자리": {
+      "upright": "분위기를 밝히고 사람을 모으는 자리로 읽어요.",
+      "reversed": "주목과 경쟁 사이에서 지치기 쉬운 자리로 읽어요."
+    },
+    "도움이 될 태도": {
+      "upright": "먼저 웃고 먼저 챙기는 따뜻한 태도가 도움이 돼요.",
+      "reversed": "비교를 내려놓고 남의 빛도 인정하는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "나를 드러내고 먼저 다가가는 날로 읽어요.",
+      "reversed": "비교를 멈추고 나를 챙기는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "하고 싶었던 말이나 제안을 오늘 자신 있게 꺼내 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "주변 한 사람을 먼저 챙기고 초대해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "요즘 비교하게 되는 대상을 적고, 그 대신 내 장점 세 가지를 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "지쳐 있다면 오늘 약속 하나를 줄이고 쉬어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "특정 여성이 나에게 호감이 있거나 질투한다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 인물의 속마음은 다루지 않아요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "리더 자리나 승진이 확정된다고 말하기",
+      "instead": "리더십을 발휘하기 좋은 흐름까지만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-19-sun",
+      "ko": "밝게 드러나는 자신감과 활기"
+    },
+    {
+      "with": "wands-14",
+      "ko": "열정을 비전으로 이끄는 짝(여왕과 왕)"
+    },
+    {
+      "with": "cups-13",
+      "ko": "따뜻함과 공감이 함께하는 조합"
+    },
+    {
+      "with": "major-08-strength",
+      "ko": "사자를 다루는 다정한 힘이 겹침"
+    }
+  ],
+  "court": {
+    "asPerson": "따뜻하고 당당해 사람들이 모이는, 중심에 선 누군가(나이·성별 무관)",
+    "asAttitude": "나를 숨기지 않고 따뜻하게 드러내는 태도"
+  },
+  "numerology": {
+    "stage": "안에서 다스리는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "A dark woman, countrywoman, friendly, chaste, loving, honourable. If the card beside her signifies a man, she is well disposed towards him; if a woman, she is interested in the Querent. Also, love of money, or a certain success in business.",
+    "reversed": "Good, economical, obliging, serviceable. Signifies also—but in certain positions and in the neighbourhood of other cards tending in such directions—opposition, jealousy, even deceit and infidelity.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite의 인물 묘사(피부·머리색, 성품 판정)는 출력하지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-13.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

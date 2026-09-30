@@ -1,0 +1,273 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-12",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-12.webp",
+  "names": {
+    "ko": "검 기사",
+    "ja": "ソードのナイト",
+    "en": "Knight of Swords",
+    "koAliases": [
+      "소드 기사",
+      "소드 나이트"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "knight",
+  "number": 12,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "거침없는 돌진",
+    "빠른 판단",
+    "직설",
+    "성급함"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "charging",
+        "ko": "기사가 칼을 높이 치켜들고 흰 말을 전속력으로 몰아 왼쪽으로 돌진한다",
+        "salience": 1
+      },
+      {
+        "id": "red-cape",
+        "ko": "붉은 망토와 투구의 붉은 장식이 바람에 휘날린다",
+        "salience": 2
+      },
+      {
+        "id": "harness",
+        "ko": "말의 가슴띠에 나비와 새 무늬가 있다",
+        "salience": 3
+      },
+      {
+        "id": "bent-trees",
+        "ko": "뒤쪽 나무들이 바람에 휘어 있다",
+        "salience": 2
+      },
+      {
+        "id": "torn-clouds",
+        "ko": "하늘에 찢긴 듯한 구름이 빠르게 흐른다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "말이 천천히 걷는다",
+        "correct": "말은 전속력으로 달린다",
+        "regex": "천천히\\s*걷"
+      },
+      {
+        "wrong": "칼을 칼집에 넣었다",
+        "correct": "칼을 뽑아 높이 들었다",
+        "regex": "칼집에\\s*(넣|꽂)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "charging",
+        "ko": "적을 흩어 버리듯 달리는, 기사도 이야기 속 영웅",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "bent-trees",
+        "ko": "주변을 휩쓰는 속도와 바람",
+        "school": "modern"
+      },
+      {
+        "factId": "torn-clouds",
+        "ko": "빠르게 흩어지는 생각",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "He is riding in full course, as if scattering his enemies. In the design he is really a prototypical hero of romantic chivalry. He might almost be Galahad, whose sword is swift and sure because he is clean of heart.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-12.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "거침없는 돌진",
+      "빠른 판단",
+      "직설적인 말",
+      "문제에 뛰어듦"
+    ],
+    "reversed": [
+      "성급한 충돌",
+      "말로 상처 줌",
+      "방향 없는 질주",
+      "힘이 빠져 멈춤"
+    ],
+    "oneLine": {
+      "upright": "망설임 없이 문제에 뛰어들어 빠르게 판단하고 밀어붙이는 때",
+      "reversed": "속도와 직설이 지나쳐 부딪치거나, 달리다 방향을 잃은 상태"
+    },
+    "shadow": "옳다고 믿는 쪽으로 달리다 주변을 베는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "blocked"
+    ],
+    "gloss": {
+      "excess": "속도와 공격성이 지나쳐 충돌을 부름",
+      "blocked": "달려야 할 때 힘이 빠져 멈춤"
+    }
+  },
+  "asFeelings": {
+    "upright": "당장 해결하고 싶은 급한 마음이에요.",
+    "reversed": "화가 나거나 조급해서 말이 먼저 나갈 것 같아요."
+  },
+  "topics": {
+    "love": {
+      "upright": "하고 싶은 말을 망설이지 않고 꺼내는 흐름으로 읽어요. 솔직함에 배려 한 스푼을 더해 보세요.",
+      "reversed": "감정이 격해져 날 선 말이 오가기 쉬운 쪽으로 읽어요. 중요한 대화는 하루 두고 해 보세요."
+    },
+    "contact": {
+      "upright": "용건을 곧바로 전하는 빠른 연락이 어울리는 그림이에요. 핵심만 담아 짧게 보내 보세요.",
+      "reversed": "홧김에 보내거나 따지는 연락이 되기 쉬운 쪽으로 읽어요. 보내기 전에 한 시간만 두세요."
+    },
+    "work": {
+      "upright": "빠른 판단과 추진이 필요한 흐름으로 읽어요. 막힌 문제에 바로 뛰어들어 보세요.",
+      "reversed": "서두르다 실수하거나 동료와 부딪히기 쉬운 쪽으로 읽어요. 결정 전에 확인 목록을 한 번 보세요."
+    },
+    "choice": {
+      "upright": "빠르게 결정하고 움직일 수 있는 쪽에 힘이 실리는 배치로 읽어요. 다만 핵심 조건 하나는 꼭 확인하세요.",
+      "reversed": "성급하게 결론 내리려는 상태로 읽어요. 반대 의견을 하나 듣고 다시 보세요."
+    },
+    "self": {
+      "upright": "머리가 빠르게 돌고 추진력이 있는 시기로 읽어요. 미뤄 둔 문제를 해결해 보세요.",
+      "reversed": "조급함과 신경이 곤두선 시기로 읽어요. 속도를 줄이는 시간 하나를 넣어 보세요."
+    },
+    "group": {
+      "upright": "모임에서 문제를 빠르게 정리하고 밀어붙이는 역할이 필요한 흐름으로 읽어요.",
+      "reversed": "말이 날카롭게 부딪히는 분위기로 읽어요. 속도를 늦추고 순서대로 말하자고 제안해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "바로 부딪혀 해결하고 싶은 마음이에요.",
+      "reversed": "조급하고 날이 선 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "말과 행동이 빠르게 오가는 흐름으로 읽어요.",
+      "reversed": "성급한 말이 부딪히는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "핵심만 담아 빠르게 전하는 연락이 어울린다는 쪽으로 읽어요.",
+      "reversed": "홧김의 연락이 되기 쉽다는 쪽으로 읽어요. 한 시간 두고 다시 읽은 조건에서 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "결단력 있고 솔직한 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "성급하고 공격적인 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "망설이지 않고 문제에 뛰어드는 쪽이에요.",
+      "reversed": "속도를 늦추고 방향부터 확인하는 쪽이에요."
+    },
+    "오늘의 한 장": {
+      "upright": "미뤄 둔 일을 빠르게 처리하는 날로 읽어요.",
+      "reversed": "홧김의 말과 결정을 피하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "미뤄 둔 문제 하나를 골라 오늘 바로 해결해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "하고 싶은 말을 핵심 한 문장으로 줄여 전해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "화가 날 때 보내려던 메시지는 한 시간 뒤에 다시 읽어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "결정 전에 확인할 것 세 가지를 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 공격하려 한다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 인물의 의도는 다루지 않아요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "사고나 부상을 예고",
+      "instead": "속도와 성급함을 조심하자는 정도로 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "swords-11",
+      "ko": "살피던 생각이 빠른 행동으로 옮겨 가는 흐름"
+    },
+    {
+      "with": "wands-12",
+      "ko": "속도와 충동이 겹쳐 확인이 필요한 조합"
+    },
+    {
+      "with": "major-07-chariot",
+      "ko": "빠르게 밀고 나가는 힘이 겹침"
+    },
+    {
+      "with": "major-14-temperance",
+      "ko": "돌진과 조율의 균형이 필요한 조합"
+    }
+  ],
+  "court": {
+    "asPerson": "생각이 빠르고 말이 직설적인, 밀어붙이는 누군가(나이·성별 무관)",
+    "asAttitude": "생각하면 바로 부딪혀 해결하려는 태도"
+  },
+  "numerology": {
+    "stage": "밀고 나가는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Skill, bravery, capacity, defence, address, enmity, wrath, war, destruction, opposition, resistance, ruin. There is therefore a sense in which the card signifies death, but it carries this meaning only in its proximity to other cards of fatality.",
+    "reversed": "Imprudence, incapacity, extravagance.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite의 점술 의미에는 파괴·죽음도 있지만 '다른 불길한 카드 곁에서만'이라고 제한했다. 출력하지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-12.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

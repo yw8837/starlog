@@ -1,0 +1,278 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-04-emperor",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-04-emperor.webp",
+  "names": {
+    "ko": "황제",
+    "ja": "皇帝",
+    "en": "The Emperor"
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 4,
+  "roman": "IV",
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "양자리(Aries)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "기준 세우기",
+    "책임",
+    "안정된 틀",
+    "약속"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "stone-throne",
+        "ko": "회색 돌 왕좌에 정면을 보고 앉았고, 팔걸이와 등받이 위에 숫양 머리 장식이 있다",
+        "salience": 1
+      },
+      {
+        "id": "ankh-scepter",
+        "ko": "오른손에 윗부분이 고리 모양인 노란 홀(앙크 모양)을 쥐었다",
+        "salience": 2
+      },
+      {
+        "id": "orb",
+        "ko": "왼손에 금색 구슬을 들었다",
+        "salience": 2
+      },
+      {
+        "id": "beard-crown",
+        "ko": "길고 흰 수염에 금관을 썼다",
+        "salience": 2
+      },
+      {
+        "id": "armor",
+        "ko": "붉은 망토 아래로 갑옷 입은 다리와 쇠 장화가 드러난다",
+        "salience": 2
+      },
+      {
+        "id": "bare-mountains",
+        "ko": "뒤로 풀 한 포기 없는 주황빛 바위산이 솟아 있고 하늘도 주황색이다",
+        "salience": 1
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "칼을 들고 있다",
+        "correct": "칼이 아니라 앙크 모양 홀과 구슬을 들고 있다",
+        "regex": "칼을\\s*(든|쥔|들고)|검을\\s*(든|쥔|들고)"
+      },
+      {
+        "wrong": "푸른 초원과 강이 있는 풍요로운 배경",
+        "correct": "배경은 헐벗은 바위산이다",
+        "regex": "초원|푸른\\s*들판"
+      },
+      {
+        "wrong": "사자 머리가 새겨진 왕좌",
+        "correct": "왕좌의 장식은 숫양 머리다",
+        "regex": "사자\\s*(머리|장식)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "stone-throne",
+        "ko": "쉽게 흔들리지 않는 구조와 책임",
+        "school": "modern"
+      },
+      {
+        "factId": "bare-mountains",
+        "ko": "거친 환경에서도 세운 질서",
+        "school": "modern"
+      },
+      {
+        "factId": "armor",
+        "ko": "왕좌에 앉아서도 풀지 않은 긴장, 지키려는 태세",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-04-emperor.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "틀과 기준 세우기",
+      "책임지는 자리",
+      "안정된 통제",
+      "약속 지키기"
+    ],
+    "reversed": [
+      "고집과 경직",
+      "통제가 지나침",
+      "기준이 흔들림",
+      "책임 떠넘기기"
+    ],
+    "oneLine": {
+      "upright": "흔들리지 않는 기준을 세우고 내가 책임질 범위를 정하는 때",
+      "reversed": "지키려는 마음이 고집이나 통제로 굳거나, 기준이 무너진 상태"
+    },
+    "shadow": "질서가 상대를 누르는 통제로 바뀌는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "waning"
+    ],
+    "gloss": {
+      "excess": "규칙과 통제가 지나쳐 숨이 막힘",
+      "waning": "세웠던 기준과 권위가 힘을 잃어 흐트러짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "상황을 내 손으로 정리하고 싶은 마음이 커요. 책임감이 든든함으로 느껴지는 상태예요.",
+    "reversed": "통제하고 싶은 마음과 뜻대로 안 되는 답답함이 함께 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "약속과 일관성으로 믿음을 쌓는 관계 흐름으로 읽어요. 감정 표현보다 지키는 행동이 마음을 보여 주는 방식이 될 수 있어요.",
+      "reversed": "한쪽이 정한 규칙대로만 움직이거나, 서로 기준 없이 흔들리는 쪽으로 읽어요. 함께 정할 수 있는 약속 하나가 무엇인지 보세요."
+    },
+    "contact": {
+      "upright": "연락을 한다면 용건과 경계가 분명한 방식이 어울리는 그림이에요. 시간과 목적을 정해 두면 흔들리지 않아요.",
+      "reversed": "답을 받아 내려는 식의 연락이나, 내 규칙을 요구하는 말투로 기울 수 있다는 쪽으로 읽어요. 요구 대신 제안의 문장으로 바꿔 보세요."
+    },
+    "work": {
+      "upright": "구조를 세우고 책임을 맡는 역할에 힘이 실리는 흐름으로 읽어요. 일정과 역할 분담을 분명히 하는 게 성과로 이어져요.",
+      "reversed": "위계나 규정에 갇혀 움직이기 어렵거나, 관리가 지나쳐 팀이 지치는 쪽으로 읽어요. 꼭 지킬 규칙과 풀어도 될 규칙을 나눠 보세요."
+    },
+    "choice": {
+      "upright": "더 안정적이고 예측 가능한 구조를 가진 쪽이 기준이 되는 배치로 읽어요. 계약·조건·책임 범위를 문서로 비교해 보세요.",
+      "reversed": "안정만 보고 고르다 내가 숨 막힐 수 있는 쪽인지 살펴보는 쪽으로 읽어요. 그 규칙이 나를 지키는지 묶는지 물어보세요."
+    },
+    "self": {
+      "upright": "생활 리듬과 루틴을 세우기 좋은 시기로 읽어요. 스스로 정한 작은 규칙 하나가 힘이 돼요.",
+      "reversed": "모든 걸 통제하려다 지치거나, 생활의 틀이 무너진 상태로 읽어요. 지킬 수 있는 규칙 하나만 남겨 보세요."
+    },
+    "group": {
+      "upright": "모임에 질서와 역할이 필요한 때로 읽어요. 정리하고 결정하는 역할을 맡으면 흐름이 안정돼요.",
+      "reversed": "한 사람의 결정이 너무 커서 다른 목소리가 묻히는 분위기로 읽어요. 결정 방식을 함께 정하자고 제안할 수 있어요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "관계를 흔들림 없이 지키고, 내가 책임지고 싶은 마음이에요.",
+      "reversed": "상황을 내 뜻대로 정리하고 싶은 조급함이 있을 수 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "약속과 역할이 비교적 분명한 흐름으로 읽어요.",
+      "reversed": "한쪽 기준이 강하게 작용하는 흐름으로 읽어요. 누가 정하고 누가 따르는지 보는 자리예요."
+    },
+    "먼저 움직이면": {
+      "upright": "분명한 용건과 경계를 갖고 연락하면 흐름이 정리될 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금 방식이면 요구처럼 들릴 수 있다는 쪽으로 읽어요. 말투를 제안으로 바꾸는 조건에서 다시 보세요."
+    },
+    "막힌 곳": {
+      "upright": "정해진 규칙이나 위계가 움직임을 붙잡고 있을 수 있어요.",
+      "reversed": "기준이 흐트러져 누가 무엇을 책임지는지 불분명한 게 막힌 곳일 수 있어요."
+    },
+    "나아갈 방향": {
+      "upright": "역할과 일정을 분명히 정리하는 쪽이에요.",
+      "reversed": "통제를 조금 내려놓고 맡기는 쪽이에요."
+    },
+    "도움이 될 태도": {
+      "upright": "결정은 분명하게, 약속은 지키는 태도가 도움이 돼요.",
+      "reversed": "내 방식만 고집하지 않고 규칙을 함께 정하는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "해야 할 일의 순서를 정하고 그대로 지키는 날로 읽어요.",
+      "reversed": "모든 걸 쥐려 하지 말고 하나는 남에게 맡기는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "이번 주 꼭 지킬 규칙 하나를 정해 눈에 보이는 곳에 적어 두세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "애매한 역할 분담이 있다면 누가 무엇을 맡는지 한 줄로 정리해 공유하세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "통제하려던 일 하나를 골라 이번엔 맡겨 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "보내려던 말에서 '해야 해'를 '해 볼래?'로 바꿔 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 지배하려 한다고 단정",
+      "instead": "관계에서 결정이 한쪽으로 쏠렸는지 확인해 보자고 제안해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "승진이나 합격이 확정된다고 말하기",
+      "instead": "책임을 맡는 자리에 힘이 실리는 흐름과 준비할 점을 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-03-empress",
+      "ko": "질서와 돌봄이 함께 서는 짝"
+    },
+    {
+      "with": "major-11-justice",
+      "ko": "규칙과 공정함, 문서와 계약을 꼼꼼히 볼 때"
+    },
+    {
+      "with": "wands-04",
+      "ko": "세운 틀 위에서 안정과 축하가 어울리는 흐름"
+    },
+    {
+      "with": "pentacles-04",
+      "ko": "지키려는 마음이 겹쳐 경직되기 쉬운 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "4 · 자란 것을 틀로 다지는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Stability, power, protection, realization; a great person; aid, reason, conviction; also authority and will.",
+    "reversed": "Benevolence, compassion, credit; also confusion to enemies, obstruction, immaturity.",
+    "loc": "PKT Part III §3",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-04-emperor.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 IV, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

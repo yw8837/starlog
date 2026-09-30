@@ -1,0 +1,268 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-09",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-09.webp",
+  "names": {
+    "ko": "컵 9",
+    "ja": "カップの9",
+    "en": "Nine of Cups",
+    "koAliases": [
+      "컵 9",
+      "성배 9"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "9",
+  "number": 9,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "물고기자리의 목성(Jupiter in Pisces)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "만족",
+    "바라던 것을 이룸",
+    "넉넉한 여유",
+    "스스로 즐김"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "seated-man",
+        "ko": "붉은 모자를 쓴 남자가 나무 의자에 앉아 팔짱을 끼고 흐뭇하게 웃는다",
+        "salience": 1
+      },
+      {
+        "id": "nine-cups-arc",
+        "ko": "뒤쪽 푸른 천을 덮은 긴 탁자 위에 컵 아홉 개가 반원으로 늘어서 있다",
+        "salience": 1
+      },
+      {
+        "id": "striped-robe",
+        "ko": "흰 바탕에 검은 줄무늬 옷을 입었다",
+        "salience": 3
+      },
+      {
+        "id": "feet-apart",
+        "ko": "두 발을 벌리고 편하게 앉았다",
+        "salience": 3
+      },
+      {
+        "id": "yellow-bg",
+        "ko": "배경은 온통 노란색이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "술에 취해 있다",
+        "correct": "흐뭇하게 앉아 있을 뿐 취한 모습은 아니다",
+        "regex": "취해"
+      },
+      {
+        "wrong": "컵이 열 개",
+        "correct": "컵은 아홉 개다",
+        "regex": "컵이?\\s*(열|10)\\s*개"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "seated-man",
+        "ko": "실컷 먹고 마셔 흡족한 사람, 앞날도 넉넉해 보임",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "seated-man",
+        "ko": "팔짱 낀 자세라 혼자 누리는 만족으로도 읽힘",
+        "school": "editorial"
+      },
+      {
+        "factId": "nine-cups-arc",
+        "ko": "뒤에 쌓아 둔 넉넉함",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A goodly personage has feasted to his heart's content, and abundant refreshment of wine is on the arched counter behind him, seeming to indicate that the future is also assured. The picture offers the material side only, but there are other aspects.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-09.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "만족",
+      "바라던 것을 이룸",
+      "넉넉한 여유",
+      "스스로 즐김"
+    ],
+    "reversed": [
+      "채워지지 않는 만족",
+      "지나친 욕심",
+      "겉으로만 만족",
+      "혼자만의 즐거움"
+    ],
+    "oneLine": {
+      "upright": "바라던 것이 채워져 흐뭇하게 누리는 만족의 때",
+      "reversed": "겉으로는 다 가졌는데 속이 허전하거나, 더 가지려는 욕심이 커진 상태"
+    },
+    "shadow": "만족에 안주해 혼자 누리며 나누지 않는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "internalized"
+    ],
+    "gloss": {
+      "excess": "만족을 넘어 과식·과소비 같은 지나침으로",
+      "internalized": "겉으로는 괜찮은데 속은 허전함"
+    }
+  },
+  "asFeelings": {
+    "upright": "원하던 걸 얻어 흐뭇하고 여유로워요.",
+    "reversed": "다 가진 것 같은데 뭔가 허전해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 바라던 것이 채워지고 만족스러운 흐름으로 읽어요. 지금의 좋은 점을 소리 내어 말해 보세요.",
+      "reversed": "겉으로는 괜찮지만 마음 한구석이 채워지지 않은 쪽으로 읽어요. 진짜 바라는 것이 무엇인지 적어 보세요."
+    },
+    "contact": {
+      "upright": "마음이 여유로운 상태에서 보내는 가벼운 연락이 어울리는 그림이에요. 좋은 소식을 나누며 시작해 보세요.",
+      "reversed": "원하는 반응을 얻고 싶은 마음이 앞서는 쪽으로 읽어요. 기대 없이 보낼 수 있는지 먼저 물어보세요."
+    },
+    "work": {
+      "upright": "노력한 만큼 결과가 나와 만족스러운 흐름으로 읽어요. 성과를 즐기되 다음 목표도 가볍게 적어 두세요.",
+      "reversed": "성과는 있는데 보람이 덜하거나 더 큰 것을 좇는 쪽으로 읽어요. 이 일에서 얻고 싶은 의미를 다시 적어 보세요."
+    },
+    "choice": {
+      "upright": "내가 더 만족하고 여유를 느낄 쪽이 기준이 되는 배치로 읽어요. 선택 후의 편안한 하루를 떠올려 보세요.",
+      "reversed": "더 좋아 보이는 것을 계속 찾느라 지금 좋은 선택지를 놓치는 상태로 읽어요. '충분하다'의 기준을 정해 보세요."
+    },
+    "self": {
+      "upright": "스스로를 대접하고 누려도 좋은 시기로 읽어요. 좋아하는 것을 마음껏 즐겨 보세요.",
+      "reversed": "즐거움이 지나치거나 채워도 허전한 시기로 읽어요. 나를 채우는 것과 잠깐 달래는 것을 나눠 보세요."
+    },
+    "group": {
+      "upright": "모임이 넉넉하고 흡족한 흐름으로 읽어요. 함께 즐기는 자리를 만들어 보세요.",
+      "reversed": "한 사람의 만족이 다른 사람의 불편이 되는 분위기로 읽어요. 모두가 누리는지 한 번 살펴보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "원하던 게 채워져 흐뭇한 마음이에요.",
+      "reversed": "다 가진 듯한데 허전한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "편안하고 만족스러운 흐름으로 읽어요.",
+      "reversed": "겉으로는 괜찮지만 채워지지 않은 부분이 있는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "여유로운 마음으로 보내는 연락이 흐름을 편하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "원하는 반응을 기대하는 연락이 되기 쉽다는 쪽으로 읽어요. 기대 없이 보낼 수 있는 조건에서 다시 보세요."
+    },
+    "지금의 나": {
+      "upright": "여유와 만족이 있는 상태로 읽어요.",
+      "reversed": "채워도 허전함이 남은 상태로 읽어요."
+    },
+    "이 시기의 흐름": {
+      "upright": "바라던 것이 채워지는 시기로 읽어요.",
+      "reversed": "만족의 기준을 다시 세워야 하는 시기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "나에게 작은 선물을 하는 날로 읽어요.",
+      "reversed": "과한 즐거움은 줄이고 진짜 원하는 걸 적어 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "최근 이룬 것 하나를 떠올리고 스스로 대접해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "지금 충분하다고 느끼는 것 세 가지를 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "채워도 허전한 이유를 한 줄로 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "이번 주 과하게 쓰는 것(돈·시간·음식) 하나를 줄여 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "소원이 이뤄진다고 보장",
+      "instead": "만족을 느낄 수 있는 흐름과 누리는 방법까지만 말해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "과식이나 과음을 건강 문제로 예고",
+      "instead": "즐거움의 균형을 보자는 정도로 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "cups-10",
+      "ko": "개인의 만족이 함께하는 기쁨으로 넓어지는 흐름(9→10)"
+    },
+    {
+      "with": "pentacles-09",
+      "ko": "스스로 이룬 넉넉함을 누리는 때"
+    },
+    {
+      "with": "major-19-sun",
+      "ko": "밝고 흡족한 기쁨"
+    },
+    {
+      "with": "cups-07",
+      "ko": "만족 뒤에 더 많은 것을 좇는 유혹"
+    }
+  ],
+  "numerology": {
+    "stage": "거의 다 옴·혼자 감당"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Concord, contentment, physical bien-être; also victory, success, advantage; satisfaction for the Querent or person for whom the consultation is made.",
+    "reversed": "Truth, loyalty, liberty; but the readings vary and include mistakes, imperfections, etc.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-09.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

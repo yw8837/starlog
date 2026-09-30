@@ -1,0 +1,285 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-11-justice",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-11-justice.webp",
+  "names": {
+    "ko": "정의",
+    "ja": "正義",
+    "en": "Justice"
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 11,
+  "roman": "XI",
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "천칭자리(Libra)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "공정한 판단",
+    "원인과 결과",
+    "책임",
+    "사실대로 보기"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "sword-upright",
+        "ko": "오른손에 양날 칼을 곧게 세워 들었다",
+        "salience": 1
+      },
+      {
+        "id": "scales",
+        "ko": "왼손에 저울을 들어 아래로 늘어뜨렸다",
+        "salience": 1
+      },
+      {
+        "id": "pillars-veil",
+        "ko": "회색 돌기둥 두 개 사이에 앉았고, 뒤에 보랏빛 휘장이 걸려 있다",
+        "salience": 2
+      },
+      {
+        "id": "crown",
+        "ko": "가운데 네모난 보석이 박힌 금관을 썼다",
+        "salience": 2
+      },
+      {
+        "id": "robes",
+        "ko": "붉은 옷 위에 초록 망토를 걸치고 가슴에 네모난 장식을 달았다",
+        "salience": 3
+      },
+      {
+        "id": "foot",
+        "ko": "옷자락 아래로 흰 신발 한쪽이 살짝 나와 있다",
+        "salience": 3
+      },
+      {
+        "id": "gaze-front",
+        "ko": "정면을 똑바로 바라본다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "눈을 가리고 있다",
+        "correct": "RWS 정의는 눈을 가리지 않고 정면을 본다",
+        "regex": "눈을\\s*가리|눈가리개"
+      },
+      {
+        "wrong": "저울이 한쪽으로 기울어 있다",
+        "correct": "두 접시는 거의 수평이다",
+        "regex": "저울[^.]{0,8}기울"
+      },
+      {
+        "wrong": "칼끝을 아래로 겨눈다",
+        "correct": "칼은 위를 향해 곧게 서 있다",
+        "regex": "칼(끝)?을?\\s*아래로"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "sword-upright",
+        "ko": "분명하게 가르고 결정하는 판단",
+        "school": "modern"
+      },
+      {
+        "factId": "scales",
+        "ko": "양쪽을 같은 무게로 달아 보는 공정함",
+        "school": "modern"
+      },
+      {
+        "factId": "foot",
+        "ko": "앉아 있지만 움직일 준비가 된 발, 판단 뒤의 행동",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-11-justice.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "공정한 판단",
+      "원인과 결과",
+      "책임지기",
+      "사실대로 보기"
+    ],
+    "reversed": [
+      "한쪽으로 기운 판단",
+      "책임 회피",
+      "불공평함",
+      "결정 미루기"
+    ],
+    "oneLine": {
+      "upright": "감정보다 사실을 같은 무게로 달아 보고 분명하게 정하는 때",
+      "reversed": "판단이 한쪽으로 기울었거나, 해야 할 결정과 책임을 미루는 상태"
+    },
+    "shadow": "옳고 그름을 따지다 관계의 온기를 잃는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "excess",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "결론이나 절차가 멈춰 결정이 미뤄짐",
+      "excess": "지나치게 엄격하게 따지고 재단함",
+      "internalized": "남을 판단하기보다 내 몫의 책임을 돌아볼 때"
+    }
+  },
+  "asFeelings": {
+    "upright": "감정을 한쪽에 두고 차분히 따져 보고 싶은 마음이에요.",
+    "reversed": "억울함이나 불공평하다는 느낌이 남아 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "서로 주고받는 것이 균형을 이루는지 솔직하게 살펴보는 흐름으로 읽어요. 관계에 필요한 약속과 책임을 분명히 하면 좋아요.",
+      "reversed": "한쪽만 맞추거나 서운함이 계산처럼 쌓이는 쪽으로 읽어요. 누가 옳은지보다 무엇이 공평한지를 함께 이야기해 보세요."
+    },
+    "contact": {
+      "upright": "감정보다 사실에 기반한 담백한 연락이 어울리는 그림이에요. 오해가 있다면 있었던 일만 정리해 전해 보세요.",
+      "reversed": "따지거나 해명을 요구하는 연락으로 흐를 수 있는 쪽으로 읽어요. 보내기 전 판단하는 말을 빼고 사실만 남겨 보세요."
+    },
+    "work": {
+      "upright": "계약·평가·서류처럼 공정한 기준이 작동하는 일에 힘이 실리는 흐름으로 읽어요. 근거를 정리해 두면 판단 받기 좋아요.",
+      "reversed": "평가가 불공평하게 느껴지거나 책임이 흐려진 쪽으로 읽어요. 사실관계와 기록을 먼저 모아 보세요."
+    },
+    "choice": {
+      "upright": "두 선택지를 같은 기준으로 달아 보는 게 핵심인 배치로 읽어요. 조건을 나란히 적어 비교해 보세요.",
+      "reversed": "이미 한쪽으로 기운 마음을 합리화하고 있지 않은지 살펴보는 쪽으로 읽어요. 반대쪽 선택의 장점을 일부러 세 가지 적어 보세요."
+    },
+    "self": {
+      "upright": "지금까지의 선택이 어떤 결과로 이어졌는지 정직하게 보는 시기로 읽어요. 내 몫의 책임을 정리하면 마음이 가벼워져요.",
+      "reversed": "스스로를 너무 엄격하게 재단하거나, 책임을 피하고 싶은 상태로 읽어요. 사실과 자책을 나눠 적어 보세요."
+    },
+    "group": {
+      "upright": "모임에서 공정한 규칙과 역할 분담이 필요한 흐름으로 읽어요. 기준을 투명하게 정하면 갈등이 줄어요.",
+      "reversed": "누군가 편애받거나 억울함이 쌓인 분위기로 읽어요. 규칙을 모두에게 같게 적용하자고 말해 볼 수 있어요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "이 관계를 공정하고 솔직하게 보고 싶은 마음이에요.",
+      "reversed": "억울함이나 서운함을 따져 보고 싶은 마음이 남아 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "주고받음의 균형을 맞춰 가는 흐름으로 읽어요.",
+      "reversed": "균형이 한쪽으로 기울어 있는 흐름으로 읽어요. 무엇이 기울었는지 보는 자리예요."
+    },
+    "먼저 움직이면": {
+      "upright": "사실을 담백하게 전하는 연락이 흐름을 정리할 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 판단하는 말투가 섞이기 쉽다는 쪽으로 읽어요. 사실만 남기는 조건에서 다시 보세요."
+    },
+    "막힌 곳": {
+      "upright": "옳고 그름을 따지는 데 힘이 쏠려 다음 걸음이 늦어지고 있을 수 있어요.",
+      "reversed": "결정이나 절차가 미뤄져 있는 게 막힌 곳일 수 있어요."
+    },
+    "나아갈 방향": {
+      "upright": "근거를 정리하고 공정한 기준으로 정하는 쪽이에요.",
+      "reversed": "책임질 부분을 인정하고 균형을 다시 맞추는 쪽이에요."
+    },
+    "이쪽을 고르면": {
+      "upright": "조건과 책임이 분명한 선택으로 읽어요.",
+      "reversed": "겉으로는 공정해 보여도 한쪽에 무게가 실린 선택일 수 있어요."
+    },
+    "오늘의 한 장": {
+      "upright": "미뤄 둔 결정이나 서류를 정리하는 날로 읽어요.",
+      "reversed": "남을 판단하기 전에 사실을 한 번 더 확인하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "고민 중인 일의 사실만 세 줄로 적고, 감정은 따로 한 줄로 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "미뤄 둔 계약서나 약속 내용을 오늘 다시 읽어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "억울한 일이 있다면 판단 없이 있었던 일만 시간순으로 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "내가 책임질 부분 하나를 인정하는 문장을 써 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "소송이나 분쟁에서 이긴다고 단정",
+      "instead": "법적인 판단은 전문가 상담을 권하고, 정리할 사실과 태도까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 잘못했다고 판정하기",
+      "instead": "무엇이 기울었는지 함께 볼 수 있게 사실 확인을 제안해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-04-emperor",
+      "ko": "규칙과 공정함, 문서와 계약을 꼼꼼히 볼 때"
+    },
+    {
+      "with": "major-08-strength",
+      "ko": "번호가 서로 바뀐 짝(RWS 정의 11·힘 8), 판단과 마음의 힘의 균형"
+    },
+    {
+      "with": "swords-02",
+      "ko": "저울질이 길어져 결정을 미루는 상태"
+    },
+    {
+      "with": "major-20-judgement",
+      "ko": "지난 일을 돌아보고 결론을 내리는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "11 · 선택의 결과를 달아 보는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Equity, rightness, probity, executive; triumph of the deserving side in law.",
+    "reversed": "Law in all its departments, legal complications, bigotry, bias, excessive severity.",
+    "loc": "PKT Part III §3",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-11-justice.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 XI, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

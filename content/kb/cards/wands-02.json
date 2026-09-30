@@ -1,0 +1,277 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-02",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-02.webp",
+  "names": {
+    "ko": "완드 2",
+    "ja": "ワンドの2",
+    "en": "Two of Wands",
+    "koAliases": [
+      "지팡이 2"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "2",
+  "number": 2,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "양자리의 화성(Mars in Aries)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "다음 방향 고르기",
+    "넓게 내다보기",
+    "계획",
+    "가진 것과 원하는 것"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "rooftop",
+        "ko": "성벽 위 돌난간에 서서 물가와 땅을 내려다본다",
+        "salience": 1
+      },
+      {
+        "id": "globe",
+        "ko": "한 손에 작은 지구본을 들고 들여다본다",
+        "salience": 1
+      },
+      {
+        "id": "wand-held",
+        "ko": "다른 손으로 지팡이 하나를 쥐었고, 오른쪽의 또 다른 지팡이는 벽의 고리에 고정되어 있다",
+        "salience": 2
+      },
+      {
+        "id": "rose-lily",
+        "ko": "왼쪽 아래 돌판에 붉은 장미와 흰 백합이 엇갈린 문양이 있다",
+        "salience": 3
+      },
+      {
+        "id": "cap-cloak",
+        "ko": "붉은 모자에 자줏빛 망토를 두른 남자가 옆모습으로 서 있다",
+        "salience": 3
+      },
+      {
+        "id": "landscape",
+        "ko": "아래로 물가와 초록 땅, 먼 산, 붉은 지붕 집 한 채가 펼쳐진다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "두 사람이 성 위에 서 있다",
+        "correct": "인물은 한 명이다",
+        "regex": "두\\s*(사람|남자)이?\\s*(서|성)"
+      },
+      {
+        "wrong": "수정구를 들고 있다",
+        "correct": "들고 있는 것은 땅이 그려진 지구본이다",
+        "regex": "수정\\s*구"
+      },
+      {
+        "wrong": "양손에 지팡이를 하나씩 쥐었다",
+        "correct": "손에 쥔 지팡이는 하나, 다른 하나는 벽에 고정되어 있다",
+        "regex": "양손에\\s*(지팡이|막대)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "globe",
+        "ko": "세상을 손 안에 두고 다음 행선지를 가늠함",
+        "school": "modern"
+      },
+      {
+        "factId": "rooftop",
+        "ko": "자기 영지를 내려다보면서도 어딘가 쓸쓸한 영주",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "wand-held",
+        "ko": "하나는 붙잡고 하나는 세워 둔, 떠날지 머물지의 갈림",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A tall man looks from a battlemented roof over sea and shore; he holds a globe in his right hand, while a staff in his left rests on the battlement; another is fixed in a ring. The Rose and Cross and Lily should be noticed on the left side.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-02.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "다음 방향 계획하기",
+      "넓게 내다보기",
+      "가진 것 위에서 더 원함",
+      "결정 전의 저울질"
+    ],
+    "reversed": [
+      "계획만 하고 머묾",
+      "익숙함에 갇힘",
+      "두려워서 못 떠남",
+      "방향이 흐려짐"
+    ],
+    "oneLine": {
+      "upright": "이미 가진 것 위에서 다음에 어디로 갈지 넓게 내다보며 계획하는 때",
+      "reversed": "계획은 세웠는데 떠나지 못하고 성벽 안에 머무는 상태"
+    },
+    "shadow": "내려다보며 따지기만 하고 한 발도 떼지 않는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "떠날 준비는 됐는데 익숙함이 발을 붙잡음",
+      "internalized": "밖으로는 그대로지만 마음속에서 다음 방향을 그리는 중"
+    }
+  },
+  "asFeelings": {
+    "upright": "지금 가진 것에 감사하면서도 더 넓은 곳이 궁금한 마음이에요.",
+    "reversed": "여기 머물러도 될지 떠나야 할지 마음이 오가요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계의 다음 단계를 그려 보는 흐름으로 읽어요. 지금의 편안함에 머물지, 함께 새 계획을 세울지 이야기해 보면 좋아요.",
+      "reversed": "익숙한 관계 안에서 답답함을 느끼면서도 움직이지 않는 쪽으로 읽어요. 원하는 변화를 한 가지만 구체적으로 적어 보세요."
+    },
+    "contact": {
+      "upright": "보내기 전에 대화가 어디로 이어지길 바라는지 넓게 그려 보는 흐름으로 읽어요. 방향이 정해지면 연락의 크기도 정해져요.",
+      "reversed": "보낼 계획만 여러 번 세우고 실제로는 성벽 안에 머무는 쪽으로 읽어요. 계획한 첫 문장을 오늘 한 번 꺼내 보세요."
+    },
+    "work": {
+      "upright": "현재 자리를 발판 삼아 다음 진로나 확장을 계획하는 흐름으로 읽어요. 선택지를 지도처럼 펼쳐 비교해 보세요.",
+      "reversed": "안정된 자리를 떠나기 두려워 계획이 서랍 속에 머무는 쪽으로 읽어요. 작은 시험 한 가지로 바깥을 살펴보세요."
+    },
+    "choice": {
+      "upright": "지금 자리와 새 길을 넓은 시야로 비교하는 배치로 읽어요. 각 길의 1년 뒤를 그려 보세요.",
+      "reversed": "비교만 반복하다 시간이 흐르는 상태로 읽어요. 정보를 더 모으기보다 결정 기준 하나를 정해 보세요."
+    },
+    "self": {
+      "upright": "지금의 나를 발판으로 다음 목표를 그리는 시기로 읽어요. 가고 싶은 곳을 적어 보세요.",
+      "reversed": "안정과 답답함이 함께 있는 시기로 읽어요. 익숙한 일상에 작은 변화 하나를 넣어 보세요."
+    },
+    "group": {
+      "upright": "모임의 다음 계획이나 방향을 넓게 그려 보는 흐름으로 읽어요. 장기 계획을 제안해 보세요.",
+      "reversed": "모임이 익숙한 방식에 머물러 새 시도를 망설이는 분위기로 읽어요. 작은 변화부터 제안해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "지금 관계를 넘어 다음 모습을 그려 보고 싶은 마음이에요.",
+      "reversed": "머물지 나아갈지 망설이는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "관계의 다음 방향을 가늠하는 흐름으로 읽어요.",
+      "reversed": "익숙함에 머물러 방향을 정하지 못한 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "어디로 가고 싶은지 정한 뒤 움직이면 흐름이 넓어질 수 있다는 쪽으로 읽어요.",
+      "reversed": "계획만 세우다 타이밍을 놓칠 수 있다는 쪽으로 읽어요. 첫 문장부터 보내는 조건에서 다시 보세요."
+    },
+    "나아갈 방향": {
+      "upright": "넓게 보고 다음 목적지를 정하는 쪽이에요.",
+      "reversed": "계획을 하나로 좁혀 첫발을 떼는 쪽이에요."
+    },
+    "이쪽을 고르면": {
+      "upright": "지금 가진 것을 발판으로 넓혀 가는 선택으로 읽어요.",
+      "reversed": "안전하지만 답답함이 남을 수 있는 선택으로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "큰 그림을 그리고 다음 목표를 적어 보는 날로 읽어요.",
+      "reversed": "계획 중 하나를 실제로 해 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "가고 싶은 방향 세 가지를 적고 각각의 첫걸음을 하나씩 써 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "지금 가진 자원과 원하는 것을 두 칸으로 나눠 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "서랍 속 계획 하나를 꺼내 이번 주에 한 단계만 실행해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "떠나지 못하는 이유를 적고 그중 사실인 것만 남겨 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "해외 이주나 이직이 성사된다고 단정",
+      "instead": "다음 방향을 계획하는 흐름과 확인할 점까지만 말해요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "확장이나 투자를 부추기기",
+      "instead": "계획을 넓히기 전에 조건과 위험을 비교하자고 해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "wands-01",
+      "ko": "막 쥔 불씨로 다음 방향을 정하는 흐름"
+    },
+    {
+      "with": "wands-03",
+      "ko": "계획이 실제 출발로 이어지는 흐름(2→3)"
+    },
+    {
+      "with": "major-07-chariot",
+      "ko": "계획을 정하고 실제로 밀고 나갈 때"
+    },
+    {
+      "with": "pentacles-04",
+      "ko": "지키려는 마음 때문에 떠나지 못하는 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "둘 사이의 균형·첫 선택"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MONEY"
+    ]
+  },
+  "waite": {
+    "upright": "Between the alternative readings there is no marriage possible; on the one hand, riches, fortune, magnificence; on the other, physical suffering, disease, chagrin, sadness, mortification. The design gives one suggestion; here is a lord overlooking his dominion and alternately contemplating a globe; it looks like the malady, the mortification, the sadness of Alexander amidst the grandeur of this world's wealth.",
+    "reversed": "Surprise, wonder, enchantment, emotion, trouble, fear.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-02.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

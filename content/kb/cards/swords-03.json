@@ -1,0 +1,286 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-03",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-03.webp",
+  "names": {
+    "ko": "검 3",
+    "ja": "ソードの3",
+    "en": "Three of Swords",
+    "koAliases": [
+      "소드 3",
+      "검 3"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "3",
+  "number": 3,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "천칭자리의 토성(Saturn in Libra)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "마음의 아픔",
+    "슬픔",
+    "상처의 인정",
+    "비 온 뒤"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "pierced-heart",
+        "ko": "붉은 하트 하나를 칼 세 자루가 위에서 꿰뚫고 있다",
+        "salience": 1
+      },
+      {
+        "id": "blades-through",
+        "ko": "칼날 끝이 하트 아래로 빠져나와 있다",
+        "salience": 2
+      },
+      {
+        "id": "clouds-rain",
+        "ko": "뒤로 회색 구름이 끼고 비가 비스듬히 내린다",
+        "salience": 1
+      },
+      {
+        "id": "no-figures",
+        "ko": "사람은 그려져 있지 않다",
+        "salience": 2
+      },
+      {
+        "id": "grey-bg",
+        "ko": "배경은 온통 잿빛이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "하트에서 피가 흐른다",
+        "correct": "하트에서 흐르는 피는 그려져 있지 않다",
+        "regex": "피가|피를|피투성"
+      },
+      {
+        "wrong": "칼 네 자루가 꽂혀 있다",
+        "correct": "칼은 세 자루다",
+        "regex": "칼\\s*(네|4)\\s*자루"
+      },
+      {
+        "wrong": "하트가 두 쪽으로 갈라졌다",
+        "correct": "하트는 온전한 모양 그대로 칼에 꿰뚫려 있다",
+        "regex": "두\\s*쪽으로|갈라졌"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "pierced-heart",
+        "ko": "그림이 뜻하는 그대로(떠남·분리·지연), 너무 단순해 설명이 필요 없다고 함",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "clouds-rain",
+        "ko": "아픔 뒤에 오는 눈물, 지나가는 비",
+        "school": "modern"
+      },
+      {
+        "factId": "no-figures",
+        "ko": "사건보다 마음 자체에 초점을 둔 그림",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "Three swords piercing a heart; cloud and rain behind.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-03.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "마음의 아픔",
+      "슬픔과 실망",
+      "상처의 인정",
+      "아픈 진실"
+    ],
+    "reversed": [
+      "아픔이 옅어짐",
+      "속으로 삭인 슬픔",
+      "상처를 되새김",
+      "회복의 시작"
+    ],
+    "oneLine": {
+      "upright": "아픈 말이나 실망으로 마음이 다친 것을 인정하고 슬퍼하는 때(사고나 질병의 예언이 아님)",
+      "reversed": "상처가 조금씩 아물기 시작하거나, 드러내지 못한 슬픔이 속에서 맴도는 상태"
+    },
+    "shadow": "아픔을 되새기며 같은 상처를 스스로 다시 찌르는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "internalized",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "비가 그치듯 아픔이 조금씩 옅어짐",
+      "internalized": "슬픔을 드러내지 못하고 속으로 삭임",
+      "excess": "상처를 계속 되새겨 아픔이 커짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음이 아프고 서운해요. 울고 싶은 마음이 있어요.",
+    "reversed": "아픈데 티를 못 내거나, 조금씩 괜찮아지고 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 아픈 말이나 실망으로 마음이 다친 흐름으로 읽어요. 아픔을 없는 척하지 말고 인정하는 게 회복의 시작이에요.",
+      "reversed": "상처가 아물기 시작하거나, 말하지 못한 서운함이 속에 남아 있는 쪽으로 읽어요. 믿을 만한 사람에게 조금씩 털어놓아 보세요."
+    },
+    "contact": {
+      "upright": "지금은 마음이 아픈 상태라 연락이 상처를 다시 건드릴 수 있는 그림이에요. 보낸다면 비난 없이 내 마음만 짧게 전하세요.",
+      "reversed": "아픔이 조금 가라앉아 차분하게 말할 수 있는 쪽으로 읽어요. 따지기보다 정리의 말을 골라 보세요."
+    },
+    "work": {
+      "upright": "일에서 실망이나 날 선 피드백으로 마음이 다친 흐름으로 읽어요. 사실과 감정을 나눠 정리해 보세요.",
+      "reversed": "아픈 피드백에서 배울 점을 추려 낼 수 있는 쪽으로 읽어요. 상처가 된 말 중 쓸 만한 것 하나만 남겨 보세요."
+    },
+    "choice": {
+      "upright": "어느 쪽을 골라도 아픈 부분이 있는 배치로 읽어요. 덜 아픈 쪽보다 회복할 수 있는 쪽을 보세요.",
+      "reversed": "지난 상처 때문에 선택이 흐려진 상태로 읽어요. 상처와 지금 조건을 나눠 적어 보세요."
+    },
+    "self": {
+      "upright": "슬픔을 충분히 느끼고 흘려보내야 하는 시기로 읽어요. 울어도 괜찮아요.",
+      "reversed": "아픔이 옅어지며 회복이 시작되는 시기로 읽어요. 나를 돌보는 작은 일을 챙겨 보세요."
+    },
+    "group": {
+      "upright": "모임 안에서 상처가 되는 말이나 이별이 있는 흐름으로 읽어요. 탓하기보다 마음이 다친 사람을 먼저 살펴보세요.",
+      "reversed": "지난 갈등의 앙금이 남은 분위기로 읽어요. 사과할 것이 있다면 짧게 먼저 전해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "상처받고 아픈 마음이에요. 그 아픔을 인정하는 자리로 읽어요.",
+      "reversed": "아픔을 속으로 삭이거나, 조금씩 아물어 가는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "아픈 말이나 실망이 흐름에 남아 있는 자리로 읽어요. 관계의 끝을 판정하는 그림은 아니에요.",
+      "reversed": "상처가 조금씩 가라앉는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금 연락은 아픈 곳을 다시 건드릴 수 있다는 쪽으로 읽어요. 비난 없이 내 마음만 전하는 조건에서 보세요.",
+      "reversed": "아픔이 가라앉은 뒤라면 정리의 말을 전할 수 있다는 쪽으로 읽어요."
+    },
+    "필요한 것": {
+      "upright": "아픔을 인정하고 슬퍼할 시간이 필요해요.",
+      "reversed": "상처를 되새기기보다 돌보는 쪽으로 옮겨 가는 게 필요해요."
+    },
+    "이 시기의 흐름": {
+      "upright": "마음이 아프고 비가 내리는 시기로 읽어요.",
+      "reversed": "비가 그치고 조금씩 개는 시기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "아픈 마음을 글로 적어 보는 날로 읽어요.",
+      "reversed": "아픈 마음에 따뜻한 것 하나를 건네는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "아픈 마음을 보내지 않을 편지로 한 번 써 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "믿을 만한 사람에게 '요즘 좀 힘들어'라고 한 줄 보내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "오늘 나를 위로하는 작은 일 하나(따뜻한 음료, 산책)를 해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "상처가 된 말 중 사실과 해석을 나눠 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "심장 질환이나 수술, 몸의 병을 예고한다고 말하기",
+      "instead": "마음의 아픔을 그린 그림으로만 읽고, 몸 걱정은 전문가 확인을 권해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "이별이나 배신이 확정된다고 단정",
+      "instead": "아픔을 인정하고 회복하는 방법까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 일부러 상처를 줬다고 단정",
+      "instead": "내가 느낀 아픔에 초점을 두고 상대 의도는 판정하지 않아요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "cups-05",
+      "ko": "마음의 아픔이 겹쳐 애도가 필요한 때"
+    },
+    {
+      "with": "major-17-star",
+      "ko": "비 온 뒤 천천히 회복되는 흐름"
+    },
+    {
+      "with": "swords-04",
+      "ko": "아픔 뒤에 쉬어 가는 흐름(3→4)"
+    },
+    {
+      "with": "cups-03",
+      "ko": "셋 사이의 기쁨과 아픔의 대비"
+    },
+    {
+      "with": "major-16-tower",
+      "ko": "갑작스러운 충격과 마음의 아픔이 겹침, 안정이 먼저"
+    }
+  ],
+  "numerology": {
+    "stage": "첫 결실·함께 키움"
+  },
+  "safety": {
+    "highRisk": true,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Removal, absence, delay, division, rupture, dispersion, and all that the design signifies naturally, being too simple and obvious to call for specific enumeration.",
+    "reversed": "Mental alienation, error, loss, distraction, disorder, confusion.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 '그림이 뜻하는 그대로'라며 떠남·분리·지연을 적었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-03.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

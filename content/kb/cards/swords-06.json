@@ -1,0 +1,277 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-06",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-06.webp",
+  "names": {
+    "ko": "검 6",
+    "ja": "ソードの6",
+    "en": "Six of Swords",
+    "koAliases": [
+      "소드 6",
+      "검 6"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "6",
+  "number": 6,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "물병자리의 수성(Mercury in Aquarius)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "떠나 건너감",
+    "힘든 곳을 벗어남",
+    "조용한 이동",
+    "회복을 향한 항해"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "ferryman",
+        "ko": "뱃사공이 등을 보인 채 긴 장대로 납작한 배를 밀어 물을 건넌다",
+        "salience": 1
+      },
+      {
+        "id": "passengers",
+        "ko": "배 안에 두건 쓴 사람이 고개를 숙이고 앉아 있고 곁에 아이가 있다",
+        "salience": 1
+      },
+      {
+        "id": "six-swords",
+        "ko": "배 앞쪽에 칼 여섯 자루가 세워져 있다",
+        "salience": 1
+      },
+      {
+        "id": "far-shore",
+        "ko": "건너편 물가에 나무들이 보인다",
+        "salience": 2
+      },
+      {
+        "id": "water-contrast",
+        "ko": "배 왼쪽 물은 잔잔하고 오른쪽 아래에는 물결이 인다",
+        "salience": 2
+      },
+      {
+        "id": "pale-sky",
+        "ko": "하늘은 옅은 회색빛이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "배가 폭풍에 흔들린다",
+        "correct": "물결은 오른쪽 아래에만 조금 일고 전체는 잔잔하다(Waite: 물길이 순탄함)",
+        "regex": "폭풍|거센\\s*파도"
+      },
+      {
+        "wrong": "사람들이 노를 저어 간다",
+        "correct": "뱃사공 한 명이 긴 장대로 배를 민다",
+        "regex": "노를\\s*(젓|저어|저으)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "ferryman",
+        "ko": "짐이 가벼워 힘에 부치지 않는 물길",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "passengers",
+        "ko": "슬픔을 안고 조용히 떠나는 사람",
+        "school": "modern"
+      },
+      {
+        "factId": "water-contrast",
+        "ko": "거친 물에서 잔잔한 쪽으로 옮겨 가는 이동",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A ferryman carrying passengers in his punt to the further shore. The course is smooth, and seeing that the freight is light, it may be noted that the work is not beyond his strength.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-06.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "떠나 건너감",
+      "힘든 곳 벗어나기",
+      "조용한 이동",
+      "회복을 향한 전환"
+    ],
+    "reversed": [
+      "떠나지 못함",
+      "짐을 그대로 들고 감",
+      "이동이 늦어짐",
+      "돌아가고 싶음"
+    ],
+    "oneLine": {
+      "upright": "힘들었던 곳을 뒤로하고 조용히 더 잔잔한 쪽으로 건너가는 때",
+      "reversed": "떠나야 하는데 발이 묶이거나, 옮겨 가도 같은 짐을 그대로 지고 가는 상태"
+    },
+    "shadow": "장소만 바꾸고 마음의 짐은 정리하지 않는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "옮겨 가려는데 사정이 발을 묶음",
+      "internalized": "몸은 떠났지만 마음은 아직 이전 자리에 머묾"
+    }
+  },
+  "asFeelings": {
+    "upright": "아쉽지만 이제는 조금 편한 쪽으로 가고 싶은 마음이에요.",
+    "reversed": "떠나고 싶은데 떠나지 못해 답답하거나, 떠나도 마음이 무거워요."
+  },
+  "topics": {
+    "love": {
+      "upright": "힘들었던 관계의 국면을 지나 조금 더 잔잔한 쪽으로 옮겨 가는 흐름으로 읽어요. 서두르지 않고 천천히 건너가도 괜찮아요.",
+      "reversed": "지난 상처를 그대로 안은 채 다음으로 넘어가려는 쪽으로 읽어요. 가져갈 것과 두고 갈 것을 나눠 보세요."
+    },
+    "contact": {
+      "upright": "무거운 이야기에서 벗어나 가벼운 거리로 옮겨 가는 연락이 어울리는 그림이에요. 지난 갈등 대신 지금의 안부로 건너가 보세요.",
+      "reversed": "지난 일을 다시 끌고 오는 연락이 되기 쉬운 쪽으로 읽어요. 이번 연락에서 꺼내지 않을 주제를 하나 정해 보세요."
+    },
+    "work": {
+      "upright": "부서 이동이나 이직처럼 더 나은 쪽으로 옮겨 가는 흐름으로 읽어요. 옮길 때 도와줄 사람을 챙겨 두세요.",
+      "reversed": "이동이나 변화가 늦어지거나, 옮겨도 같은 문제가 따라오는 쪽으로 읽어요. 문제의 원인이 장소인지 방식인지 나눠 보세요."
+    },
+    "choice": {
+      "upright": "지금보다 잔잔한 쪽으로 옮겨 가는 선택에 힘이 실리는 배치로 읽어요. 급하지 않게 이동 계획을 세워 보세요.",
+      "reversed": "떠나는 선택이 도피가 되지 않는지 살펴보는 쪽으로 읽어요. 가서도 계속될 문제를 적어 보세요."
+    },
+    "self": {
+      "upright": "힘든 시기를 지나 조금씩 안정으로 옮겨 가는 시기로 읽어요. 이동이나 여행이 기분 전환이 돼요.",
+      "reversed": "마음의 짐이 무거워 앞으로 나아가기 어려운 시기로 읽어요. 짐 하나를 내려놓을 방법을 찾아보세요."
+    },
+    "group": {
+      "upright": "모임이 갈등을 지나 차분한 국면으로 넘어가는 흐름으로 읽어요. 지난 일을 들추기보다 앞을 보는 이야기를 해 보세요.",
+      "reversed": "지난 갈등이 계속 따라다니는 분위기로 읽어요. 정리할 것은 한 번에 정리해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "힘든 곳을 지나 좀 더 편한 쪽으로 가고 싶은 마음이에요.",
+      "reversed": "떠나고 싶은데 발이 묶인 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "거친 국면을 지나 잔잔한 쪽으로 옮겨 가는 흐름으로 읽어요.",
+      "reversed": "지난 일이 계속 흐름을 붙잡는 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지난 갈등 대신 지금의 안부로 건너가는 연락이 어울린다는 쪽으로 읽어요.",
+      "reversed": "지난 일을 다시 끌고 오기 쉽다는 쪽으로 읽어요. 꺼내지 않을 주제를 정한 조건에서 다시 보세요."
+    },
+    "나아갈 방향": {
+      "upright": "힘든 곳을 떠나 잔잔한 쪽으로 옮겨 가는 쪽이에요.",
+      "reversed": "떠나기 전에 짐을 정리하는 쪽이에요."
+    },
+    "이 시기의 흐름": {
+      "upright": "조용히 이동하고 전환되는 시기로 읽어요.",
+      "reversed": "이동이 늦어지거나 마음이 뒤에 남는 시기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "환경을 바꾸거나 조용한 곳으로 가 보는 날로 읽어요.",
+      "reversed": "가져갈 것과 두고 갈 것을 적어 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "떠나고 싶은 상황에서 가져갈 것과 두고 갈 것을 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "조용한 곳으로 짧게 이동해 생각을 정리해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "옮겨도 따라올 문제 하나를 적고 지금 할 수 있는 정리를 해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "이동을 막는 조건 하나를 적고 풀 방법을 찾아보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "이사나 이직이 확정된다고 말하기",
+      "instead": "옮겨 가는 흐름과 준비할 점까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 떠나려 한다고 단정",
+      "instead": "자리의 주체를 먼저 확인하고 흐름으로만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-13-death",
+      "ko": "끝난 자리를 떠나 다른 곳으로 건너가는 흐름"
+    },
+    {
+      "with": "swords-05",
+      "ko": "다툼을 뒤로하고 떠나는 흐름"
+    },
+    {
+      "with": "cups-08",
+      "ko": "익숙한 자리를 두고 건너가는 흐름"
+    },
+    {
+      "with": "wands-03",
+      "ko": "먼 곳으로 넓혀 가는 이동"
+    },
+    {
+      "with": "major-07-chariot",
+      "ko": "스스로 방향을 잡아 옮겨 가는 이동"
+    }
+  ],
+  "numerology": {
+    "stage": "회복·주고받음"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Journey by water, route, way, envoy, commissionary, expedient.",
+    "reversed": "Declaration, confession, publicity; one account says that it is a proposal of love.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-06.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

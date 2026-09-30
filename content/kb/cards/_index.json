@@ -1,0 +1,267 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "schemaVersion": 1,
+  "deck": "rws-1909-pcs",
+  "generatedAt": "2026-09-30",
+  "count": 78,
+  "reversedModes": [
+    "blocked",
+    "internalized",
+    "excess",
+    "waning"
+  ],
+  "topicKeys": [
+    "love",
+    "contact",
+    "work",
+    "choice",
+    "self",
+    "group"
+  ],
+  "cautionCodes": [
+    "NO_EVENT",
+    "NO_MIND",
+    "NO_HEALTH",
+    "NO_MONEY",
+    "NO_DATE",
+    "NO_SCORE"
+  ],
+  "positions": [
+    "나의 마음",
+    "두 사람 사이",
+    "먼저 움직이면",
+    "상대에게 비친 나",
+    "두 사람의 흐름",
+    "지금 상황",
+    "막힌 곳",
+    "나아갈 방향",
+    "이쪽을 고르면",
+    "저쪽을 고르면",
+    "놓치고 있는 것",
+    "지금의 나",
+    "필요한 것",
+    "이 시기의 흐름",
+    "모임의 분위기",
+    "나의 자리",
+    "도움이 될 태도",
+    "오늘의 한 장"
+  ],
+  "topicMap": {
+    "me": {
+      "love": [
+        "love"
+      ],
+      "money": [
+        "self"
+      ],
+      "career": [
+        "work"
+      ],
+      "study": [
+        "work"
+      ],
+      "health": [
+        "self"
+      ],
+      "mind": [
+        "self"
+      ],
+      "move": [
+        "choice"
+      ],
+      "daily": [
+        "self"
+      ]
+    },
+    "us": {
+      "crush": [
+        "love"
+      ],
+      "relationship": [
+        "love"
+      ],
+      "contact": [
+        "contact"
+      ],
+      "reunion": [
+        "contact",
+        "love"
+      ],
+      "conflict": [
+        "love",
+        "contact"
+      ]
+    },
+    "work": {
+      "career": [
+        "work"
+      ],
+      "money": [
+        "work",
+        "self"
+      ],
+      "study": [
+        "work"
+      ],
+      "creative": [
+        "work"
+      ],
+      "negotiation": [
+        "work",
+        "contact"
+      ]
+    },
+    "group": {
+      "people": [
+        "group"
+      ],
+      "conflict": [
+        "group"
+      ],
+      "together": [
+        "group",
+        "work"
+      ],
+      "mood": [
+        "group"
+      ]
+    }
+  },
+  "positionFallback": {
+    "상대에게 비친 나": {
+      "topic": "love"
+    },
+    "두 사람의 흐름": {
+      "position": "두 사람 사이",
+      "topic": "love"
+    },
+    "지금 상황": {
+      "topic": "work"
+    },
+    "막힌 곳": {
+      "topic": "work"
+    },
+    "나아갈 방향": {
+      "topic": "work"
+    },
+    "이쪽을 고르면": {
+      "position": "저쪽을 고르면",
+      "topic": "choice"
+    },
+    "저쪽을 고르면": {
+      "position": "이쪽을 고르면",
+      "topic": "choice"
+    },
+    "놓치고 있는 것": {
+      "topic": "choice"
+    },
+    "지금의 나": {
+      "topic": "self"
+    },
+    "필요한 것": {
+      "topic": "self"
+    },
+    "이 시기의 흐름": {
+      "topic": "self"
+    },
+    "모임의 분위기": {
+      "topic": "group"
+    },
+    "나의 자리": {
+      "topic": "group"
+    },
+    "도움이 될 태도": {
+      "topic": "group"
+    }
+  },
+  "highRisk": [
+    "major-13-death",
+    "major-16-tower",
+    "major-15-devil",
+    "major-18-moon",
+    "swords-03",
+    "swords-09",
+    "swords-10",
+    "pentacles-05"
+  ],
+  "ids": [
+    "major-00-fool",
+    "major-01-magician",
+    "major-02-high-priestess",
+    "major-03-empress",
+    "major-04-emperor",
+    "major-05-hierophant",
+    "major-06-lovers",
+    "major-07-chariot",
+    "major-08-strength",
+    "major-09-hermit",
+    "major-10-wheel-of-fortune",
+    "major-11-justice",
+    "major-12-hanged-man",
+    "major-13-death",
+    "major-14-temperance",
+    "major-15-devil",
+    "major-16-tower",
+    "major-17-star",
+    "major-18-moon",
+    "major-19-sun",
+    "major-20-judgement",
+    "major-21-world",
+    "wands-01",
+    "wands-02",
+    "wands-03",
+    "wands-04",
+    "wands-05",
+    "wands-06",
+    "wands-07",
+    "wands-08",
+    "wands-09",
+    "wands-10",
+    "wands-11",
+    "wands-12",
+    "wands-13",
+    "wands-14",
+    "cups-01",
+    "cups-02",
+    "cups-03",
+    "cups-04",
+    "cups-05",
+    "cups-06",
+    "cups-07",
+    "cups-08",
+    "cups-09",
+    "cups-10",
+    "cups-11",
+    "cups-12",
+    "cups-13",
+    "cups-14",
+    "swords-01",
+    "swords-02",
+    "swords-03",
+    "swords-04",
+    "swords-05",
+    "swords-06",
+    "swords-07",
+    "swords-08",
+    "swords-09",
+    "swords-10",
+    "swords-11",
+    "swords-12",
+    "swords-13",
+    "swords-14",
+    "pentacles-01",
+    "pentacles-02",
+    "pentacles-03",
+    "pentacles-04",
+    "pentacles-05",
+    "pentacles-06",
+    "pentacles-07",
+    "pentacles-08",
+    "pentacles-09",
+    "pentacles-10",
+    "pentacles-11",
+    "pentacles-12",
+    "pentacles-13",
+    "pentacles-14"
+  ]
+}

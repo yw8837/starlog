@@ -1,0 +1,309 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-13-death",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-13-death.webp",
+  "names": {
+    "ko": "죽음",
+    "ja": "死神",
+    "en": "Death",
+    "koAliases": [
+      "사신"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 13,
+  "roman": "XIII",
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "전갈자리(Scorpio)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "한 국면의 끝",
+    "정리",
+    "변화 받아들이기",
+    "비워 내기"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "skeleton-rider",
+        "ko": "검은 갑옷을 입은 해골이 흰 말을 타고 오른쪽으로 나아간다",
+        "salience": 1
+      },
+      {
+        "id": "rose-banner",
+        "ko": "해골이 든 검은 깃발에 흰 장미 문양이 그려져 있다",
+        "salience": 1
+      },
+      {
+        "id": "no-weapon",
+        "ko": "기사는 낫이나 무기를 들고 있지 않다",
+        "salience": 1
+      },
+      {
+        "id": "fallen-king",
+        "ko": "왼쪽 아래에 왕이 쓰러져 있고 왕관이 땅에 떨어져 있다",
+        "salience": 2
+      },
+      {
+        "id": "bishop-child-maiden",
+        "ko": "오른쪽에 주교가 두 손을 모으고 서 있고, 그 앞에 아이와 소녀가 무릎을 꿇고 있다",
+        "salience": 2
+      },
+      {
+        "id": "sun-towers",
+        "ko": "멀리 오른쪽 두 탑 사이 지평선에 해가 걸려 있다",
+        "salience": 2
+      },
+      {
+        "id": "river-boat",
+        "ko": "뒤쪽 강 위에 작은 배가 떠 있다",
+        "salience": 3
+      },
+      {
+        "id": "horse-harness",
+        "ko": "말의 가슴띠에 해골과 뼈 무늬가 줄지어 있다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "낫을 든 해골",
+        "correct": "이 그림의 해골 기사는 낫을 들지 않았다(Waite: 보이는 무기가 없음)",
+        "regex": "낫을?\\s*(든|들고|휘두)|큰\\s*낫"
+      },
+      {
+        "wrong": "해가 지고 있다(끝의 상징)",
+        "correct": "두 탑 사이에 해가 걸려 있을 뿐, 뜨는지 지는지는 그림만으로 정할 수 없다",
+        "regex": "해가\\s*(지고|저물|뜨고|떠오)|석양|일몰|일출"
+      },
+      {
+        "wrong": "시체들이 널려 있다",
+        "correct": "쓰러진 사람은 왕 한 명이고, 나머지는 서 있거나 무릎을 꿇고 있다",
+        "regex": "시체|시신"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "rose-banner",
+        "ko": "흰 장미는 생명을 뜻함, 끝의 깃발에 새겨진 생명의 문양",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "sun-towers",
+        "ko": "지평선 두 기둥 사이의 해, 끝 너머로 이어지는 것",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "bishop-child-maiden",
+        "ko": "지위와 나이에 상관없이 누구에게나 오는 변화",
+        "school": "modern"
+      },
+      {
+        "factId": "no-weapon",
+        "ko": "변화는 공격이 아니라 지나감으로 옴",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-13-death.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "한 국면이 끝남",
+      "정리하고 넘어가기",
+      "피할 수 없는 변화",
+      "새 자리 비우기"
+    ],
+    "reversed": [
+      "끝을 붙잡고 버팀",
+      "변화를 미룸",
+      "천천히 끝나는 중",
+      "정리 못 한 미련"
+    ],
+    "oneLine": {
+      "upright": "한 국면을 닫고 다음으로 넘어가기 위해 정리하는 때(실제 죽음과 무관)",
+      "reversed": "이미 끝나 가는 것을 붙잡고 있거나, 정리가 느리게 진행되는 상태"
+    },
+    "shadow": "변화를 핑계로 소중한 것까지 한꺼번에 끊어 내는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "waning",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "끝내야 할 것을 붙잡고 있어 넘어가지 못함",
+      "waning": "끝이 천천히, 조금씩 진행되는 중",
+      "internalized": "겉은 그대로인데 마음속에서 먼저 정리가 일어남"
+    }
+  },
+  "asFeelings": {
+    "upright": "무언가 끝났다는 걸 받아들이는 중이에요. 아쉬움과 홀가분함이 함께 있을 수 있어요.",
+    "reversed": "끝을 인정하기 어려워 붙잡고 있는 마음이 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계의 한 방식이 끝나고 다른 모습으로 넘어가는 흐름으로 읽어요. 예전 방식을 정리해야 새 방식이 들어설 자리가 생겨요.",
+      "reversed": "이미 달라진 관계를 예전 모습으로 붙잡으려는 쪽으로 읽어요. 무엇이 이미 끝났는지 솔직하게 적어 보세요."
+    },
+    "contact": {
+      "upright": "예전과 같은 연락 방식은 한 번 정리되는 흐름으로 읽어요. 연락한다면 옛날로 돌아가자는 말보다 지금의 거리에서 시작하는 한 줄이 맞아요.",
+      "reversed": "끝난 흐름을 되살리려는 연락에 마음이 쏠리는 쪽으로 읽어요. 보내기 전에 내가 바라는 게 되돌리기인지 정리인지 먼저 정해 보세요."
+    },
+    "work": {
+      "upright": "한 업무나 역할이 마무리되고 다음 단계로 넘어가는 흐름으로 읽어요. 끝난 일을 깔끔하게 정리하는 게 다음 출발을 가볍게 해요.",
+      "reversed": "이미 맞지 않는 일이나 방식을 관성으로 붙잡고 있는 쪽으로 읽어요. 정리할 것 목록을 만들어 하나씩 닫아 보세요."
+    },
+    "choice": {
+      "upright": "한쪽을 고르면 다른 쪽은 확실히 닫힌다는 걸 받아들이는 게 핵심인 배치로 읽어요. 무엇을 끝내게 되는지 적어 보세요.",
+      "reversed": "둘 다 놓지 못해 변화가 미뤄지는 상태로 읽어요. 이미 마음이 떠난 쪽이 어디인지 보세요."
+    },
+    "self": {
+      "upright": "낡은 습관이나 생각을 정리하고 새로 채울 자리를 만드는 시기로 읽어요. 버리는 일 자체가 회복이 될 수 있어요.",
+      "reversed": "끝내야 할 습관을 알면서 계속 미루는 상태로 읽어요. 가장 작은 것 하나부터 정리해 보세요."
+    },
+    "group": {
+      "upright": "모임의 한 시기가 마무리되고 구성이나 방식이 바뀌는 흐름으로 읽어요. 끝나는 것을 인정하면 새 자리가 보여요.",
+      "reversed": "이미 맞지 않는 모임 방식을 억지로 이어 가는 쪽으로 읽어요. 계속 참여할지 스스로 정해 볼 때예요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "이전 마음이나 기대를 정리하고 넘어가려는 상태예요.",
+      "reversed": "끝났다는 걸 알면서도 붙잡고 싶은 마음이 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "관계의 한 방식이 끝나고 다른 형태로 넘어가는 흐름으로 읽어요. 관계 자체의 끝을 뜻하지는 않아요.",
+      "reversed": "달라진 흐름을 인정하지 못해 제자리에 머무는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "예전으로 돌아가자는 연락보다 지금에서 새로 시작하는 한 줄이 어울린다는 쪽으로 읽어요.",
+      "reversed": "지금 연락이 끝난 것을 되살리려는 시도가 되기 쉽다는 쪽으로 읽어요. 바라는 게 정리인지 먼저 정한 조건에서 다시 보세요."
+    },
+    "막힌 곳": {
+      "upright": "끝내야 할 것을 끝내지 못한 게 막힌 곳일 수 있어요.",
+      "reversed": "변화를 계속 미루는 관성이 막힌 곳일 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "끝난 것을 인정하고 비우는 정리가 필요해요.",
+      "reversed": "한 번에 끝내기 어렵다면 조금씩 정리하는 과정이 필요해요."
+    },
+    "이 시기의 흐름": {
+      "upright": "한 국면이 닫히고 다음으로 넘어가는 시기로 읽어요.",
+      "reversed": "끝이 느리게 진행되는 시기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "안 쓰는 물건이나 끝난 일 하나를 정리하는 날로 읽어요.",
+      "reversed": "미뤄 둔 정리를 작게라도 시작하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "이미 끝났다고 느끼는 것 하나를 적고 '고마웠어'라는 말로 마무리해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "안 쓰는 물건 세 개를 골라 정리해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "붙잡고 있는 것 하나를 적고, 놓으면 두려운 점과 가벼워지는 점을 나란히 써 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "끝내기 어려운 일은 오늘 한 단계만 정리해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "실제 죽음, 사고, 질병을 예고한다고 말하기",
+      "instead": "한 국면의 끝과 변화로만 읽고, 건강 걱정은 전문가 확인을 권해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "이별이나 퇴사가 확정된다고 단정",
+      "instead": "관계나 일의 한 방식이 달라지는 흐름으로 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대 마음이 완전히 끝났다고 단정",
+      "instead": "흐름이 바뀌는 중이라고만 말하고 속마음은 판정하지 않아요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-12-hanged-man",
+      "ko": "멈춘 뒤 한 국면을 닫고 넘어가는 흐름"
+    },
+    {
+      "with": "major-20-judgement",
+      "ko": "끝난 것을 돌아보고 새로 일어서는 연결"
+    },
+    {
+      "with": "cups-05",
+      "ko": "끝난 것을 아쉬워하되 남은 것을 보는 조합"
+    },
+    {
+      "with": "major-16-tower",
+      "ko": "갑작스러운 변화와 정리가 겹침, 속도를 스스로 조절할 필요"
+    },
+    {
+      "with": "swords-06",
+      "ko": "끝난 자리를 떠나 다른 곳으로 건너가는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "13 · 한 국면을 닫고 넘어가는 단계"
+  },
+  "safety": {
+    "highRisk": true,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "End, mortality, destruction, corruption; also, for a man, the loss of a benefactor; for a woman, many contrarieties; for a maid, failure of marriage projects.",
+    "reversed": "Inertia, sleep, lethargy, petrifaction, somnambulism; hope destroyed.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite는 낫 든 해골 대신 묵시록의 기사로 그렸고 변화와 이행을 강조했다. 점술 의미의 '죽음·파괴'는 출력하지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-13-death.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 XIII, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

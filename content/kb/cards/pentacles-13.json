@@ -1,0 +1,283 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "pentacles-13",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/pentacles-13.webp",
+  "names": {
+    "ko": "펜타클 여왕",
+    "ja": "ペンタクルのクイーン",
+    "en": "Queen of Pentacles",
+    "koAliases": [
+      "펜타클 여왕",
+      "펜타클 퀸"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "pentacles",
+  "rank": "queen",
+  "number": 13,
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "현실적인 돌봄",
+    "풍요로운 안정",
+    "실용적인 따뜻함",
+    "살림의 지혜"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "lap-pentacle",
+        "ko": "여왕이 무릎 위에 큰 펜타클을 두 손으로 받쳐 들고 내려다본다",
+        "salience": 1
+      },
+      {
+        "id": "rose-canopy",
+        "ko": "머리 위로 붉은 장미가 핀 덩굴이 드리워 있다",
+        "salience": 2
+      },
+      {
+        "id": "carved-throne",
+        "ko": "왕좌 팔걸이에 뿔 달린 염소 머리가 있고, 아기 얼굴과 과일 조각도 새겨져 있다",
+        "salience": 2
+      },
+      {
+        "id": "rabbit",
+        "ko": "오른쪽 아래 풀밭에 토끼 한 마리가 있다",
+        "salience": 2
+      },
+      {
+        "id": "landscape",
+        "ko": "뒤로 산과 강, 들판이 펼쳐지고 하늘은 노랗다",
+        "salience": 3
+      },
+      {
+        "id": "robes",
+        "ko": "붉은 옷에 초록 망토를 두르고 관을 썼다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "왕좌에 사자 머리가 있다",
+        "correct": "팔걸이의 짐승 머리는 뿔 달린 염소다",
+        "regex": "사자"
+      },
+      {
+        "wrong": "펜타클을 높이 들어 올린다",
+        "correct": "무릎 위에 받쳐 들고 내려다본다",
+        "regex": "높이\\s*들어"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "lap-pentacle",
+        "ko": "자기 상징을 들여다보며 그 안에서 세상을 보는 사람",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "rabbit",
+        "ko": "일상 가까이의 풍요와 생명력",
+        "school": "modern"
+      },
+      {
+        "factId": "rose-canopy",
+        "ko": "가꾼 정원에 둘러싸인 넉넉함",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "The face suggests that of a dark woman, whose qualities might be summed up in the idea of greatness of soul; she has also the serious cast of intelligence; she contemplates her symbol and may see worlds therein.",
+    "verified": {
+      "scan": "apps/web/public/cards/pentacles-13.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "현실적인 돌봄",
+      "풍요로운 안정",
+      "실용적인 따뜻함",
+      "살림의 지혜"
+    ],
+    "reversed": [
+      "돌봄에 지침",
+      "일과 생활의 불균형",
+      "물질에 치우침",
+      "나를 돌보지 못함"
+    ],
+    "oneLine": {
+      "upright": "따뜻함을 현실적인 돌봄으로 보여 주며 생활을 넉넉하게 가꾸는 때",
+      "reversed": "남을 챙기느라 지치거나, 일과 생활의 균형이 무너진 상태"
+    },
+    "shadow": "챙김이 지나쳐 상대의 몫까지 대신 해 주는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "돌보던 힘이 떨어져 나를 챙길 여유가 없음",
+      "excess": "물질적인 챙김이 지나쳐 간섭이 됨"
+    }
+  },
+  "asFeelings": {
+    "upright": "주변을 챙기며 안정감과 여유를 느끼는 마음이에요.",
+    "reversed": "챙길 게 너무 많아 지치고 내 몫이 없어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "말보다 챙겨 주는 행동으로 마음을 보여 주는 흐름으로 읽어요. 함께 먹고 쉬는 일상이 관계를 넉넉하게 해요.",
+      "reversed": "한쪽만 챙기다 지치거나, 현실 문제가 관계를 누르는 쪽으로 읽어요. 나를 챙기는 시간도 요구해 보세요."
+    },
+    "contact": {
+      "upright": "안부와 함께 작은 챙김을 담은 연락이 어울리는 그림이에요. '밥은 먹었어?' 같은 일상의 한마디가 잘 맞아요.",
+      "reversed": "챙기는 연락이 부담이나 간섭처럼 읽힐 수 있는 쪽으로 읽어요. 걱정은 한 줄로 줄여 보세요."
+    },
+    "work": {
+      "upright": "실무와 관리 능력이 빛나는 흐름으로 읽어요. 사람과 자원을 현실적으로 챙기는 역할이 어울려요.",
+      "reversed": "일과 집안일이 겹쳐 과부하인 쪽으로 읽어요. 맡길 수 있는 일 하나를 정해 보세요."
+    },
+    "choice": {
+      "upright": "생활이 안정되고 몸과 마음을 챙길 수 있는 쪽이 기준이 되는 배치로 읽어요. 그곳에서의 하루 일과를 떠올려 보세요.",
+      "reversed": "돈이나 조건만 보고 생활의 질을 놓치는 상태로 읽어요. 하루의 모습을 함께 떠올려 보세요."
+    },
+    "self": {
+      "upright": "생활을 가꾸고 몸을 돌보기 좋은 시기로 읽어요. 집이나 식사를 정성껏 챙겨 보세요.",
+      "reversed": "남을 챙기느라 내 생활이 흐트러진 시기로 읽어요. 오늘은 나를 위한 한 끼를 챙겨 보세요."
+    },
+    "group": {
+      "upright": "모임을 현실적으로 챙기고 넉넉하게 만드는 역할이 어울리는 흐름으로 읽어요. 필요한 준비물을 먼저 챙겨 보세요.",
+      "reversed": "챙기는 사람만 계속 챙기다 지친 분위기로 읽어요. 역할을 나눠 달라고 말해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "상대를 현실적으로 챙기고 싶은 따뜻한 마음이에요.",
+      "reversed": "챙기느라 지쳐 내 몫이 없는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "서로를 일상에서 챙기는 넉넉한 흐름으로 읽어요.",
+      "reversed": "돌봄이 한쪽으로 쏠린 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "일상의 작은 챙김을 담은 연락이 흐름을 따뜻하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "걱정이 간섭처럼 읽힐 수 있다는 쪽으로 읽어요. 한 줄로 줄인 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "든든하고 잘 챙겨 주는 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "현실적이기만 한 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "필요한 것": {
+      "upright": "생활을 가꾸는 현실적인 돌봄이 필요해요.",
+      "reversed": "챙기는 목록 맨 앞에 나를 올리는 게 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "집이나 식사를 정성껏 챙기는 날로 읽어요.",
+      "reversed": "챙김을 하나 줄이고 쉬는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "가까운 사람에게 '밥은 먹었어?' 같은 일상의 안부를 보내 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "이번 주 생활비나 장보기 계획을 한 장에 정리해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "오늘 나를 위한 한 끼를 제대로 챙겨 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "떠안은 챙김 중 하나를 누군가에게 부탁해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "재물이 크게 늘어난다고 말하기",
+      "instead": "살림과 관리의 흐름으로만 말해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "임신이나 출산을 암시한다고 말하기",
+      "instead": "돌봄과 풍요의 그림으로만 읽어요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "특정 여성이 나를 챙기고 싶어 한다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 속마음은 다루지 않아요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-03-empress",
+      "ko": "돌봄과 풍요가 겹치는 조합"
+    },
+    {
+      "with": "pentacles-14",
+      "ko": "살림과 경영, 돌봄과 책임의 짝(여왕과 왕)"
+    },
+    {
+      "with": "cups-13",
+      "ko": "마음의 돌봄과 현실의 돌봄이 함께함"
+    },
+    {
+      "with": "pentacles-09",
+      "ko": "스스로 가꾼 넉넉함"
+    }
+  ],
+  "court": {
+    "asPerson": "실용적으로 챙기고 살림과 돈 관리에 밝은 누군가(나이·성별 무관)",
+    "asAttitude": "마음을 현실적인 돌봄으로 보여 주는 태도"
+  },
+  "numerology": {
+    "stage": "안에서 다스리는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MONEY",
+      "NO_HEALTH",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Opulence, generosity, magnificence, security, liberty.",
+    "reversed": "Evil, suspicion, suspense, fear, mistrust.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/pentacles-13.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 pentacles"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

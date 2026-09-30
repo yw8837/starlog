@@ -1,0 +1,276 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-04",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-04.webp",
+  "names": {
+    "ko": "검 4",
+    "ja": "ソードの4",
+    "en": "Four of Swords",
+    "koAliases": [
+      "소드 4",
+      "검 4"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "4",
+  "number": 4,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "천칭자리의 목성(Jupiter in Libra)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "쉼과 회복",
+    "잠시 멈춤",
+    "조용한 재정비",
+    "혼자만의 시간"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "effigy",
+        "ko": "기사 조각상이 무덤 위에 누워 두 손을 가슴 위에 모아 기도하는 자세를 하고 있다",
+        "salience": 1
+      },
+      {
+        "id": "three-swords-wall",
+        "ko": "위쪽 벽에 칼 세 자루가 칼끝을 아래로 향해 걸려 있다",
+        "salience": 1
+      },
+      {
+        "id": "fourth-sword",
+        "ko": "무덤 옆면에 네 번째 칼 하나가 가로로 새겨져 있다",
+        "salience": 2
+      },
+      {
+        "id": "stained-glass",
+        "ko": "왼쪽 위 스테인드글라스 창에 무릎 꿇은 사람과 그를 축복하는 인물이 그려져 있다",
+        "salience": 2
+      },
+      {
+        "id": "eyes-closed",
+        "ko": "누운 기사의 눈은 감겨 있다",
+        "salience": 3
+      },
+      {
+        "id": "quiet-room",
+        "ko": "움직이는 사람 없이 조용한 실내다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "칼에 찔린 시체가 누워 있다",
+        "correct": "칼에 찔린 것이 아니라 무덤 위에 기도하는 자세의 조각상이다",
+        "regex": "찔린|시체|시신"
+      },
+      {
+        "wrong": "칼 네 자루가 모두 벽에 걸려 있다",
+        "correct": "벽에는 세 자루, 네 번째는 무덤 옆면에 있다",
+        "regex": "(네|4)\\s*자루(가)?\\s*(모두\\s*)?벽"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "effigy",
+        "ko": "무덤 위 조각상, 은둔자의 휴식과 물러남",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "three-swords-wall",
+        "ko": "잠시 벽에 걸어 둔 싸움, 내려놓은 긴장",
+        "school": "modern"
+      },
+      {
+        "factId": "stained-glass",
+        "ko": "위로와 돌봄을 받는 장면이 창에 비침",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "The effigy of a knight in the attitude of prayer, at full length upon his tomb.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-04.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "쉼과 회복",
+      "잠시 멈춤",
+      "조용한 재정비",
+      "혼자만의 시간"
+    ],
+    "reversed": [
+      "쉬지 못함",
+      "회복을 마치고 일어섬",
+      "억지로 버팀",
+      "길어진 고립"
+    ],
+    "oneLine": {
+      "upright": "싸움을 잠시 벽에 걸어 두고 조용히 쉬며 회복하는 때(죽음의 그림이 아님)",
+      "reversed": "쉬어야 하는데 쉬지 못하거나, 쉼을 마치고 다시 움직일 때가 된 상태"
+    },
+    "shadow": "쉼이 회피와 고립으로 길어지는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "waning",
+      "excess"
+    ],
+    "gloss": {
+      "blocked": "쉬어야 하는데 쉬지 못하고 버팀",
+      "waning": "회복을 마치고 다시 움직일 때가 다가옴",
+      "excess": "쉼이 길어져 세상과 멀어짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "지쳐서 잠시 모든 걸 내려놓고 싶은 마음이에요.",
+    "reversed": "쉬고 싶은데 쉴 수 없어 초조하거나, 이제는 다시 움직이고 싶어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 잠시 거리를 두고 쉬며 마음을 추스르는 흐름으로 읽어요. 쉼이 곧 끝을 뜻하지는 않아요.",
+      "reversed": "쉬어야 할 때 억지로 대화를 이어 가거나, 거리 두기가 너무 길어진 쪽으로 읽어요. 쉼의 기한을 정해 보세요."
+    },
+    "contact": {
+      "upright": "지금은 연락보다 잠시 쉬어 가는 흐름에 가까운 그림이에요. 연락한다면 '조금 쉬고 연락할게'처럼 쉼을 알리는 정도가 맞아요.",
+      "reversed": "쉬어야 할 때 계속 확인하거나, 쉼을 마치고 다시 연락할 때가 된 쪽으로 읽어요. 내 컨디션을 먼저 점검해 보세요."
+    },
+    "work": {
+      "upright": "휴가나 휴식, 재정비가 필요한 흐름으로 읽어요. 쉬는 것도 일의 일부로 일정에 넣어 보세요.",
+      "reversed": "지쳤는데 멈추지 못하거나, 쉼을 마치고 복귀할 준비를 하는 쪽으로 읽어요. 복귀의 첫 단계를 작게 정해 보세요."
+    },
+    "choice": {
+      "upright": "지금은 결정보다 쉬고 나서 판단하는 게 나은 배치로 읽어요. 결정을 며칠 미뤄도 괜찮아요.",
+      "reversed": "지쳐서 아무 쪽이나 고르려는 상태로 읽어요. 충분히 쉰 뒤 다시 보세요."
+    },
+    "self": {
+      "upright": "몸과 마음을 쉬게 해야 하는 시기로 읽어요. 잠과 조용한 시간을 우선하세요.",
+      "reversed": "쉬지 못해 피로가 쌓였거나, 이제 천천히 움직여도 되는 시기로 읽어요. 몸의 신호를 먼저 들어 보세요."
+    },
+    "group": {
+      "upright": "모임에서 잠시 빠져 쉬어 가는 흐름으로 읽어요. 쉬겠다고 가볍게 알리면 충분해요.",
+      "reversed": "쉬는 사람 없이 모두 지친 분위기로 읽어요. 쉬는 시간을 함께 정해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "지쳐서 잠시 쉬고 싶은 마음이에요.",
+      "reversed": "쉬고 싶은데 쉬지 못하는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "잠시 쉬어 가는 흐름으로 읽어요. 멈춤이 곧 끝을 뜻하지는 않아요.",
+      "reversed": "쉼이 길어져 거리가 굳어 가는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 움직이기보다 쉬고 나서 보는 게 맞다는 쪽으로 읽어요. 연락한다면 쉼을 알리는 정도가 어울려요.",
+      "reversed": "쉼을 마치고 가볍게 다시 연락해 볼 수 있다는 쪽으로 읽어요."
+    },
+    "필요한 것": {
+      "upright": "싸움을 내려놓고 쉬는 시간이 필요해요.",
+      "reversed": "쉼을 마치고 천천히 일어서는 첫 동작이 필요해요."
+    },
+    "지금의 나": {
+      "upright": "재충전이 필요한 상태로 읽어요.",
+      "reversed": "쉬지 못해 지쳐 있거나, 다시 움직일 준비가 된 상태로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "일정을 비우고 쉬는 날로 읽어요.",
+      "reversed": "무리하지 않는 선에서 하나만 다시 시작하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "오늘 30분은 아무것도 하지 않는 시간으로 정해 두세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "알림을 끄고 일찍 잠자리에 들어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "쉬지 못하게 하는 일 하나를 적고 미룰 수 있는지 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "다시 시작할 일의 가장 작은 첫 단계를 정해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "무덤과 죽음, 병상을 예고한다고 말하기",
+      "instead": "쉼과 회복의 그림으로만 읽고, 몸 상태는 전문가 확인을 권해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "관계가 끝나 조용해진다고 단정",
+      "instead": "잠시 쉬어 가는 흐름으로 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "swords-03",
+      "ko": "아픔 뒤에 쉬어 가는 흐름"
+    },
+    {
+      "with": "major-12-hanged-man",
+      "ko": "쉬면서 다시 생각하는 시간이 겹침"
+    },
+    {
+      "with": "wands-09",
+      "ko": "버틴 뒤 쉬어 가야 할 때"
+    },
+    {
+      "with": "major-03-empress",
+      "ko": "남을 돌보던 힘을 나의 회복으로 돌릴 때"
+    }
+  ],
+  "numerology": {
+    "stage": "다지기·멈춰 지킴"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Vigilance, retreat, solitude, hermit's repose, exile, tomb and coffin. It is these last that have suggested the design.",
+    "reversed": "Wise administration, circumspection, economy, avarice, precaution, testament.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 무덤 위 조각상에서 나온 의미(물러남·은둔·휴식)라고 설명했다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-04.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

@@ -1,0 +1,284 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-05-hierophant",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-05-hierophant.webp",
+  "names": {
+    "ko": "교황",
+    "ja": "教皇",
+    "en": "The Hierophant",
+    "koAliases": [
+      "교황",
+      "대사제"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 5,
+  "roman": "V",
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "황소자리(Taurus)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "배움과 전통",
+    "믿을 만한 조언",
+    "공식적인 약속",
+    "함께 지키는 규칙"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "triple-crown",
+        "ko": "머리에 금색 삼중관을 썼고, 붉은 예복 위에 작은 십자가가 그려진 흰 띠가 늘어져 있다",
+        "salience": 2
+      },
+      {
+        "id": "blessing-hand",
+        "ko": "오른손을 들어 두 손가락을 세운 축복의 손짓을 한다",
+        "salience": 1
+      },
+      {
+        "id": "triple-cross",
+        "ko": "왼손에 가로대가 세 개인 금색 십자 지팡이를 쥐었다",
+        "salience": 2
+      },
+      {
+        "id": "grey-pillars",
+        "ko": "회색 돌기둥 두 개 사이 높은 자리에 앉아 있다",
+        "salience": 2
+      },
+      {
+        "id": "two-ministers",
+        "ko": "앞쪽에 정수리를 민 두 사람이 등을 보인 채 무릎 꿇고 있다(한 사람 옷엔 붉은 장미, 다른 사람 옷엔 흰 꽃무늬)",
+        "salience": 1
+      },
+      {
+        "id": "crossed-keys",
+        "ko": "발치의 붉은 깔개 위에 금색 열쇠 두 개가 엇갈려 놓여 있다",
+        "salience": 1
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "책을 들고 가르친다",
+        "correct": "책은 없고, 한 손은 축복의 손짓, 한 손은 십자 지팡이를 쥐었다",
+        "regex": "책을\\s*(들|펼)"
+      },
+      {
+        "wrong": "많은 신도들 앞에서 설교한다",
+        "correct": "앞에 무릎 꿇은 사람은 둘뿐이다",
+        "regex": "(많은|여러)\\s*(신도|사람들)"
+      },
+      {
+        "wrong": "검은 기둥과 흰 기둥 사이에 앉아 있다",
+        "correct": "두 기둥 모두 회색 돌기둥이다(흑백 기둥은 여사제 카드)",
+        "regex": "검은\\s*기둥|흰\\s*기둥"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "crossed-keys",
+        "ko": "배움과 전통이 여는 문",
+        "school": "modern"
+      },
+      {
+        "factId": "two-ministers",
+        "ko": "혼자가 아니라 배우고 전하는 관계 속에 있음",
+        "school": "modern"
+      },
+      {
+        "factId": "blessing-hand",
+        "ko": "드러난 가르침과 감춰진 가르침을 구분하는 손짓",
+        "school": "waite-1911"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-05-hierophant.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "배움과 전통",
+      "믿을 만한 조언",
+      "함께 지키는 규칙",
+      "공식적인 약속"
+    ],
+    "reversed": [
+      "틀에 갇힌 생각",
+      "남의 기준 따르기",
+      "형식만 남은 관계",
+      "내 방식 찾기"
+    ],
+    "oneLine": {
+      "upright": "검증된 방법과 믿을 만한 사람에게 배우며 공식적인 틀을 따르는 때",
+      "reversed": "남의 기준이나 관습에 맞추느라 내 판단이 뒤로 밀린 상태"
+    },
+    "shadow": "전통을 지키는 것이 질문을 막는 것으로 바뀌는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "blocked",
+      "internalized"
+    ],
+    "gloss": {
+      "excess": "관습과 규칙에 너무 맞추느라 답답함",
+      "blocked": "조언을 구할 곳이 막혔거나 공식 절차가 멈춤",
+      "internalized": "남의 기준 대신 내 기준을 세우려는 안쪽의 움직임"
+    }
+  },
+  "asFeelings": {
+    "upright": "정해진 방법을 따를 때 안심이 되는 상태예요. 믿을 만한 누군가에게 묻고 싶은 마음도 있어요.",
+    "reversed": "해야 한다는 기준과 하고 싶은 마음이 부딪혀 답답해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "주변에 알리거나 약속을 분명히 하는 등, 관계를 공식적인 틀로 옮기는 흐름으로 읽어요. 서로 중요하게 여기는 가치를 맞춰 보기 좋아요.",
+      "reversed": "남들이 말하는 연애 공식에 맞추느라 두 사람만의 방식이 눌리는 쪽으로 읽어요. 우리에게 맞는 규칙을 따로 적어 보세요."
+    },
+    "contact": {
+      "upright": "예의와 형식을 갖춘 연락이 어울리는 그림이에요. 인사나 감사처럼 기본을 지키는 문장이 흐름을 편하게 해요.",
+      "reversed": "이렇게 보내야 한다는 공식에 얽매여 내 말이 사라지는 쪽으로 읽어요. 연애 조언보다 평소 내 말투로 한 줄 써 보세요."
+    },
+    "work": {
+      "upright": "선배·멘토·교육처럼 검증된 길에서 배우는 게 힘이 되는 흐름으로 읽어요. 공식 절차와 규정을 따르는 쪽이 유리해요.",
+      "reversed": "관행 때문에 더 나은 방식을 시도하지 못하거나, 조언자 없이 막혀 있는 쪽으로 읽어요. 규정 중 바꿀 수 있는 부분이 있는지 물어보세요."
+    },
+    "choice": {
+      "upright": "신뢰할 만한 조언과 검증된 경로가 있는 쪽이 기준이 돼요. 먼저 가 본 사람에게 한 번 물어보세요.",
+      "reversed": "남들이 다 그렇게 한다는 이유로 고르고 있지 않은지 살펴보는 쪽으로 읽어요. 내 기준 세 가지를 먼저 적고 비교해 보세요."
+    },
+    "self": {
+      "upright": "배우는 일이나 꾸준한 루틴이 마음을 붙잡아 주는 시기로 읽어요. 수업이나 모임처럼 틀이 있는 활동이 도움이 돼요.",
+      "reversed": "해야 한다는 목소리가 너무 커서 지친 상태로 읽어요. 내가 정말 믿는 기준 하나를 골라 보세요."
+    },
+    "group": {
+      "upright": "모임의 오래된 규칙과 관례를 존중하는 태도가 어울려요. 먼저 있던 사람에게 배우는 자세가 신뢰를 줘요.",
+      "reversed": "형식과 서열이 분위기를 딱딱하게 만드는 쪽으로 읽어요. 규칙의 이유를 함께 묻는 자리가 필요할 수 있어요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "관계를 제대로, 인정받는 방식으로 이어 가고 싶은 마음이에요.",
+      "reversed": "남의 기준에 맞춰야 한다는 부담이 내 마음을 가리고 있을 수 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 지키는 약속이나 공통의 가치가 흐름을 받치고 있다고 읽어요.",
+      "reversed": "관계가 형식이나 주변 시선에 끌려가는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "예의를 갖춘 기본적인 연락이 흐름을 편하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "정해진 공식대로 보내려는 방식이 오히려 어색함을 만들 수 있다는 쪽으로 읽어요. 평소 말투로 바꾸는 조건에서 다시 보세요."
+    },
+    "필요한 것": {
+      "upright": "믿을 만한 사람의 조언이나 검증된 방법이 필요해요.",
+      "reversed": "남의 정답보다 내 기준을 세우는 시간이 필요해요."
+    },
+    "나아갈 방향": {
+      "upright": "배우고 자격을 갖추는 쪽이에요.",
+      "reversed": "관행에서 벗어나 내 방식을 시험해 보는 쪽이에요."
+    },
+    "도움이 될 태도": {
+      "upright": "모임의 규칙을 존중하고 먼저 배우는 태도가 도움이 돼요.",
+      "reversed": "규칙의 이유를 묻고 함께 고쳐 가는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "궁금한 걸 아는 사람에게 묻거나 무언가를 배우는 날로 읽어요.",
+      "reversed": "당연하게 따르던 습관 하나를 점검해 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "이 문제를 먼저 겪어 본 사람 한 명에게 질문을 보내 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "지켜야 할 절차나 규정을 한 번 찾아 읽어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "'원래 그래야 해'라고 여긴 것 하나를 적고 정말 그런지 물어보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "남의 조언을 모두 지우고 내가 원하는 조건만 세 줄로 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "결혼이나 약혼이 성사된다고 단정",
+      "instead": "관계를 공식적인 틀로 옮기는 흐름이 있는지까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 관계를 진지하게 생각한다고 단정",
+      "instead": "관계가 약속과 형식 쪽으로 읽힌다고만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-02-high-priestess",
+      "ko": "밖에서 배운 기준과 안에서 느끼는 앎을 맞춰 볼 때"
+    },
+    {
+      "with": "major-06-lovers",
+      "ko": "마음의 선택을 공식적인 약속으로 옮기는 흐름"
+    },
+    {
+      "with": "pentacles-03",
+      "ko": "배우고 협력하며 기술을 인정받는 과정"
+    },
+    {
+      "with": "major-00-fool",
+      "ko": "관습과 새 시도가 부딪히는 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "5 · 틀 안에서 배우고 전해 받는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Marriage, alliance, captivity, servitude; by another account, mercy and goodness; inspiration; the man to whom the Querent has recourse.",
+    "reversed": "Society, good understanding, concord, over-kindness, weakness.",
+    "loc": "PKT Part III §3",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-05-hierophant.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 V, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

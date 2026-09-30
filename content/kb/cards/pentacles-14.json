@@ -1,0 +1,285 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "pentacles-14",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/pentacles-14.webp",
+  "names": {
+    "ko": "펜타클 왕",
+    "ja": "ペンタクルのキング",
+    "en": "King of Pentacles",
+    "koAliases": [
+      "펜타클 왕",
+      "펜타클 킹"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "pentacles",
+  "rank": "king",
+  "number": 14,
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "물질적 안정",
+    "든든한 책임",
+    "관리와 경영",
+    "넉넉한 성취"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "bull-throne",
+        "ko": "황소 머리 장식이 달린 왕좌에 왕이 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "grape-robe",
+        "ko": "포도송이와 덩굴 무늬가 가득한 검은 옷을 입었다",
+        "salience": 1
+      },
+      {
+        "id": "scepter-pentacle",
+        "ko": "오른손에 둥근 구슬이 달린 홀을 쥐고, 왼손으로 펜타클을 무릎에 받쳤다",
+        "salience": 1
+      },
+      {
+        "id": "flower-crown",
+        "ko": "꽃과 잎으로 장식한 관을 썼다",
+        "salience": 2
+      },
+      {
+        "id": "castle",
+        "ko": "오른쪽 뒤로 성과 성벽이 보인다",
+        "salience": 2
+      },
+      {
+        "id": "vines",
+        "ko": "주변에 포도 덩굴과 꽃이 무성하고 하늘은 노랗다",
+        "salience": 3
+      },
+      {
+        "id": "foot-carving",
+        "ko": "갑옷 신은 한쪽 발이 발치의 짐승 머리 조각 위에 놓여 있다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "금화 더미 위에 앉아 있다",
+        "correct": "주변은 포도 덩굴과 꽃이다",
+        "regex": "금화|동전\\s*더미"
+      },
+      {
+        "wrong": "사자 장식 왕좌",
+        "correct": "왕좌 장식은 황소 머리다",
+        "regex": "사자"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "bull-throne",
+        "ko": "되풀이되는 황소 머리, 약간 느긋하지만 용기 있는 얼굴",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "grape-robe",
+        "ko": "무르익은 결실을 두른 풍요",
+        "school": "modern"
+      },
+      {
+        "factId": "castle",
+        "ko": "쌓아 올린 기반과 영역",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "The figure calls for no special description; the face is rather dark, suggesting also courage, but somewhat lethargic in tendency. The bull's head should be noted as a recurrent symbol on the throne. The sign of this suit is represented throughout as engraved or blazoned with the pentagram, typifying the correspondence of the four elements in human nature and that by which they may be governed. In many old Tarot packs this suit stood for current coin, money, deniers. I have not invented the substitution of pentacles and I have no special cause to sustain in respect of the alternative. But the consensus of divinatory meanings is on the side of some change, because the cards do not happen to deal especially with questions of money.",
+    "verified": {
+      "scan": "apps/web/public/cards/pentacles-14.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30",
+      "uncertain": [
+        "발치의 짐승 머리 조각은 멧돼지 머리로 흔히 설명되지만, 이 스캔에서는 형태가 또렷하지 않다"
+      ]
+    }
+  },
+  "core": {
+    "upright": [
+      "물질적 안정",
+      "든든한 책임",
+      "관리와 경영",
+      "넉넉한 성취"
+    ],
+    "reversed": [
+      "물질에 매임",
+      "고집스러운 안정",
+      "욕심과 과시",
+      "무거운 책임"
+    ],
+    "oneLine": {
+      "upright": "오래 쌓은 성과로 안정을 이루고 현실을 든든하게 책임지는 때",
+      "reversed": "돈과 성과에 매이거나, 안정을 지키려는 고집이 유연함을 잃게 하는 상태"
+    },
+    "shadow": "가진 것으로 사람의 가치를 재는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "waning"
+    ],
+    "gloss": {
+      "excess": "물질과 성과에 지나치게 매임",
+      "waning": "쌓아 온 기반이 흔들려 책임이 무겁게 느껴짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "이룬 것이 있어 든든하고 여유로운 마음이에요.",
+    "reversed": "지켜야 할 게 많아 무겁고 조심스러워요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에 현실적인 안정과 든든함을 더하는 흐름으로 읽어요. 함께할 생활의 기반을 이야기해 보세요.",
+      "reversed": "조건이나 돈 문제가 관계의 중심이 되는 쪽으로 읽어요. 물질 말고 마음으로 주고받는 것도 챙겨 보세요."
+    },
+    "contact": {
+      "upright": "안정감 있고 믿음직한 연락이 어울리는 그림이에요. 구체적인 약속이나 도움을 담아 보세요.",
+      "reversed": "생색이나 조건이 섞인 연락이 되기 쉬운 쪽으로 읽어요. 계산 없이 안부만 전해 보세요."
+    },
+    "work": {
+      "upright": "관리와 경영, 재정 판단에 힘이 실리는 흐름으로 읽어요. 성과를 정리하고 장기 계획을 세워 보세요.",
+      "reversed": "성과와 숫자에 매여 사람을 놓치는 쪽으로 읽어요. 팀의 사정도 함께 살펴보세요."
+    },
+    "choice": {
+      "upright": "현실적으로 더 안정되고 성과가 쌓이는 쪽이 기준이 되는 배치로 읽어요. 장기적인 수입과 비용을 비교해 보세요.",
+      "reversed": "돈만 보고 고르려는 상태로 읽어요. 그 선택이 내 시간과 마음에 주는 영향도 적어 보세요."
+    },
+    "self": {
+      "upright": "생활 기반이 안정되고 자신감이 드는 시기로 읽어요. 이룬 것을 누리며 관리해 보세요.",
+      "reversed": "지켜야 할 것이 많아 부담스러운 시기로 읽어요. 꼭 쥐지 않아도 되는 것 하나를 내려놓아 보세요."
+    },
+    "group": {
+      "upright": "모임에 안정적인 후원이나 운영이 자리 잡는 흐름으로 읽어요. 재정과 역할을 분명히 해 보세요.",
+      "reversed": "돈이나 권한이 한 사람에게 몰린 분위기로 읽어요. 운영을 투명하게 공유해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "든든하게 책임지고 싶은 안정된 마음이에요.",
+      "reversed": "지켜야 할 게 많아 무거운 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "현실적인 안정이 흐름을 받치고 있는 자리로 읽어요.",
+      "reversed": "조건과 돈 문제가 흐름에 무게를 더하는 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "구체적인 약속이나 도움을 담은 연락이 믿음을 줄 수 있다는 쪽으로 읽어요.",
+      "reversed": "조건이 섞인 연락이 되기 쉽다는 쪽으로 읽어요. 계산 없이 안부만 담는 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "믿음직하고 여유 있는 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "현실만 따지는 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "성과를 관리하고 장기 기반을 다지는 쪽이에요.",
+      "reversed": "쥐고 있는 것을 점검하고 유연해지는 쪽이에요."
+    },
+    "오늘의 한 장": {
+      "upright": "돈과 일정 관리를 점검하는 날로 읽어요.",
+      "reversed": "지나친 소비나 욕심 하나를 줄이는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "이번 달 수입과 지출, 저축 계획을 한 장에 정리해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "이룬 성과 하나를 기록하고 다음 목표를 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "돈 때문에 미뤄 둔 마음의 일 하나를 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "꼭 쥐고 있지 않아도 되는 것 하나를 내려놓아 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "부자가 된다, 투자하면 성공한다고 말하기",
+      "instead": "관리와 기반의 흐름으로만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "특정 남성이나 윗사람이 나를 도와줄 거라고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 속마음은 다루지 않아요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-04-emperor",
+      "ko": "안정된 구조와 성과가 겹치는 조합"
+    },
+    {
+      "with": "pentacles-13",
+      "ko": "살림과 경영, 돌봄과 책임의 짝"
+    },
+    {
+      "with": "pentacles-10",
+      "ko": "오래 가는 기반과 성과"
+    },
+    {
+      "with": "wands-14",
+      "ko": "비전과 현실 관리가 함께하는 리더십"
+    }
+  ],
+  "court": {
+    "asPerson": "경제적으로 안정되고 현실 문제를 책임지는 누군가(나이·성별 무관)",
+    "asAttitude": "성과를 관리하고 지키며 넉넉하게 베푸는 태도"
+  },
+  "numerology": {
+    "stage": "밖으로 책임지는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MONEY",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Valour, realizing intelligence, business and normal intellectual aptitude, sometimes mathematical gifts and attainments of this kind; success in these paths.",
+    "reversed": "Vice, weakness, ugliness, perversity, corruption, peril.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/pentacles-14.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 pentacles"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

@@ -1,0 +1,273 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-04",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-04.webp",
+  "names": {
+    "ko": "컵 4",
+    "ja": "カップの4",
+    "en": "Four of Cups",
+    "koAliases": [
+      "컵 4",
+      "성배 4"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "4",
+  "number": 4,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "게자리의 달(Moon in Cancer)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "시큰둥함",
+    "권태",
+    "안으로 들어감",
+    "놓치는 제안"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "seated-tree",
+        "ko": "젊은이가 나무 아래 풀밭에 팔짱을 끼고 다리를 꼰 채 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "three-cups",
+        "ko": "앞 풀밭에 컵 세 개가 나란히 놓여 있고 그는 그쪽을 내려다본다",
+        "salience": 1
+      },
+      {
+        "id": "offered-cup",
+        "ko": "왼쪽 구름에서 나온 손이 네 번째 컵을 내밀고 있다",
+        "salience": 1
+      },
+      {
+        "id": "face",
+        "ko": "표정은 시큰둥하고, 내밀어진 컵 쪽을 쳐다보지 않는다",
+        "salience": 2
+      },
+      {
+        "id": "hill",
+        "ko": "초록 언덕과 푸른 하늘, 멀리 낮은 산이 보인다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "내민 컵을 받아 든다",
+        "correct": "내민 컵을 받지 않고 팔짱을 끼고 있다",
+        "regex": "컵을\\s*받아"
+      },
+      {
+        "wrong": "눈을 감고 명상한다",
+        "correct": "눈은 앞의 컵들 쪽으로 내리뜨고 있다",
+        "regex": "눈을\\s*감|명상"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "offered-cup",
+        "ko": "요정의 선물 같은 새 잔이 주어져도 위안을 보지 못함",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "seated-tree",
+        "ko": "팔짱 낀 자세, 마음을 닫고 안으로 들어감",
+        "school": "modern"
+      },
+      {
+        "factId": "three-cups",
+        "ko": "이미 가진 것에 대한 권태",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A young man is seated under a tree and contemplates three cups set on the grass before him; an arm issuing from a cloud offers him another cup. His expression notwithstanding is one of discontent with his environment.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-04.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "권태와 무관심",
+      "안으로 들어감",
+      "놓치는 제안",
+      "다시 따져 봄"
+    ],
+    "reversed": [
+      "다시 관심이 생김",
+      "제안을 알아봄",
+      "무기력에서 깨어남",
+      "움츠림이 깊어짐"
+    ],
+    "oneLine": {
+      "upright": "가진 것에 시큰둥해져 안으로 들어가 있느라 새로 내밀어진 것을 못 보는 때",
+      "reversed": "닫혀 있던 마음이 다시 바깥을 보기 시작하거나, 무기력이 더 깊어지는 상태"
+    },
+    "shadow": "불만에 머물러 모든 제안을 미리 거절하는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "권태가 걷히며 새 제안이 눈에 들어옴",
+      "excess": "무관심이 깊어져 모든 걸 밀어냄"
+    }
+  },
+  "asFeelings": {
+    "upright": "딱히 싫지도 좋지도 않은 시큰둥함이 있어요. 뭔가 부족한데 뭘 원하는지 모르겠는 상태예요.",
+    "reversed": "조금씩 다시 궁금해지거나, 반대로 아무것도 하기 싫은 마음이 커져요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계가 익숙해져 시큰둥하거나, 다가오는 관심을 알아채지 못하는 흐름으로 읽어요. 이미 받고 있는 것을 한 번 둘러보세요.",
+      "reversed": "잊고 있던 설렘이 다시 눈에 들어오기 시작하는 쪽으로 읽어요. 가볍게 먼저 반응해 보세요."
+    },
+    "contact": {
+      "upright": "보내기 싫은 건 아닌데 딱히 마음이 안 움직이는 흐름으로 읽어요. 억지로 보내기보다 내가 원하는 게 뭔지 먼저 적어 보세요.",
+      "reversed": "미뤄 두던 연락에 다시 관심이 생기는 쪽으로 읽어요. 가볍게 답하거나 먼저 안부를 건네 보세요."
+    },
+    "work": {
+      "upright": "일이 지루하고 의욕이 떨어져 새 기회를 흘려보내기 쉬운 흐름으로 읽어요. 들어온 제안을 한 번 다시 검토해 보세요.",
+      "reversed": "다시 의욕이 생기며 새 기회를 알아보는 쪽으로 읽어요. 관심 가는 일 하나에 손을 들어 보세요."
+    },
+    "choice": {
+      "upright": "두 선택지 모두 시큰둥하게 느껴지는 배치로 읽어요. 아직 보지 못한 세 번째 선택지가 있는지 살펴보세요.",
+      "reversed": "놓쳤던 선택지가 다시 보이는 쪽으로 읽어요. 처음에 흘려들은 제안을 다시 떠올려 보세요."
+    },
+    "self": {
+      "upright": "무기력하고 재미가 없는 시기로 읽어요. 작게라도 새로운 자극 하나를 들여 보세요.",
+      "reversed": "무기력에서 조금씩 깨어나는 시기로 읽어요. 관심이 가는 일을 하나 따라가 보세요."
+    },
+    "group": {
+      "upright": "모임에 시큰둥해 한발 빠져 있는 흐름으로 읽어요. 초대를 한 번은 받아 보는 것도 방법이에요.",
+      "reversed": "다시 모임에 참여하고 싶은 마음이 생기는 쪽으로 읽어요. 작은 역할 하나를 맡아 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "시큰둥하고 무엇을 원하는지 잘 모르겠는 마음이에요.",
+      "reversed": "닫혀 있던 마음이 조금씩 바깥을 보기 시작했어요."
+    },
+    "두 사람 사이": {
+      "upright": "익숙함 속에서 주고받는 것을 잘 보지 못하는 흐름으로 읽어요.",
+      "reversed": "잊고 있던 관심이 다시 보이는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 마음이 덜 움직인 상태라 억지 연락이 될 수 있다는 쪽으로 읽어요. 내가 원하는 걸 먼저 정한 조건에서 보세요.",
+      "reversed": "다시 생긴 관심을 가볍게 표현하면 흐름이 열릴 수 있다는 쪽으로 읽어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "이미 내밀어진 제안이나 관심을 보지 못하고 있을 수 있어요.",
+      "reversed": "다시 찾아온 기회를 또 흘려보낼 수 있어요."
+    },
+    "막힌 곳": {
+      "upright": "권태와 무관심이 막힌 곳일 수 있어요.",
+      "reversed": "무기력이 깊어져 움직이지 못하는 게 막힌 곳일 수 있어요."
+    },
+    "지금의 나": {
+      "upright": "안으로 들어가 재충전하는 중이에요.",
+      "reversed": "다시 밖을 볼 준비를 하는 중이에요."
+    },
+    "오늘의 한 장": {
+      "upright": "들어온 제안이나 초대를 다시 한번 보는 날로 읽어요.",
+      "reversed": "새로운 것 하나에 가볍게 응해 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "최근 받은 제안이나 초대를 목록으로 적고 하나만 다시 검토해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "지금 무엇이 부족하다고 느끼는지 한 줄로 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "관심이 다시 생긴 일 하나를 오늘 5분만 해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "흘려보냈던 연락이나 제안 하나에 답해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나에게 관심을 잃었다고 단정",
+      "instead": "내 쪽의 권태나 흐름의 정체로 읽고 속마음은 다루지 않아요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "우울증 같은 진단을 내리기",
+      "instead": "무기력이 길게 이어지면 전문가와 이야기해 보길 권해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-02-high-priestess",
+      "ko": "마음이 안으로 닫혀 바깥 제안이 잘 안 보임"
+    },
+    {
+      "with": "major-12-hanged-man",
+      "ko": "멈춘 채 주어진 것을 못 보는 상태, 관점 전환이 필요"
+    },
+    {
+      "with": "cups-07",
+      "ko": "많은 선택지 앞의 무관심과 혼란"
+    },
+    {
+      "with": "cups-01",
+      "ko": "권태 뒤에 새로 내밀어진 마음"
+    }
+  ],
+  "numerology": {
+    "stage": "다지기·멈춰 지킴"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Weariness, disgust, aversion, imaginary vexations, as if the wine of this world had caused satiety only; another wine, as if a fairy gift, is now offered the wastrel, but he sees no consolation therein. This is also a card of blended pleasure.",
+    "reversed": "Novelty, presage, new instruction, new relations.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 세상 술에 싫증 난 사람에게 요정의 선물 같은 새 잔이 주어져도 위안을 보지 못하는 그림으로 설명했다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-04.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

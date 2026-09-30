@@ -1,0 +1,283 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-08",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-08.webp",
+  "names": {
+    "ko": "완드 8",
+    "ja": "ワンドの8",
+    "en": "Eight of Wands",
+    "koAliases": [
+      "지팡이 8"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "8",
+  "number": 8,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "궁수자리의 수성(Mercury in Sagittarius)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "빠른 진행",
+    "소식이 오감",
+    "막힘 없는 흐름",
+    "도착 직전"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "eight-flying",
+        "ko": "지팡이 여덟 개가 나란히 비스듬히 날아간다",
+        "salience": 1
+      },
+      {
+        "id": "downward",
+        "ko": "지팡이들은 왼쪽 위에서 오른쪽 아래로 기울어 땅 쪽으로 내려오고 있다",
+        "salience": 2
+      },
+      {
+        "id": "no-figures",
+        "ko": "사람은 한 명도 없다",
+        "salience": 2
+      },
+      {
+        "id": "leaves",
+        "ko": "지팡이마다 작은 초록 잎이 돋아 있다",
+        "salience": 3
+      },
+      {
+        "id": "landscape",
+        "ko": "아래로 강과 초록 언덕, 언덕 위 작은 집 한 채가 보인다",
+        "salience": 2
+      },
+      {
+        "id": "blue-sky",
+        "ko": "배경은 넓은 푸른 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "화살이 날아간다",
+        "correct": "날아가는 것은 잎 돋은 지팡이다",
+        "regex": "화살"
+      },
+      {
+        "wrong": "지팡이가 하늘로 솟아오른다",
+        "correct": "지팡이는 땅 쪽으로 내려오는 방향이다(Waite: 끝에 거의 다다름)",
+        "regex": "하늘로\\s*솟|위로\\s*(솟|날아오)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "downward",
+        "ko": "날아가던 것이 끝에 다다르는 중, 기다리던 것이 가까이 옴",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "eight-flying",
+        "ko": "막힘 없이 한 방향으로 빠르게 움직이는 흐름",
+        "school": "modern"
+      },
+      {
+        "factId": "no-figures",
+        "ko": "사람보다 일과 소식이 먼저 움직임",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "The card represents motion through the immovable—a flight of wands through an open country; but they draw to the term of their course. That which they signify is at hand; it may be even on the threshold.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-08.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "빠른 진행",
+      "소식과 연락",
+      "한 방향의 흐름",
+      "도착 직전"
+    ],
+    "reversed": [
+      "엇갈리는 소식",
+      "속도 지연",
+      "조급한 서두름",
+      "흩어지는 기운"
+    ],
+    "oneLine": {
+      "upright": "멈춰 있던 일과 소식이 한 방향으로 빠르게 움직이는 때",
+      "reversed": "속도가 늦어지거나 소식이 엇갈려 조급함이 커지는 상태"
+    },
+    "shadow": "속도에 휩쓸려 확인 없이 결정하는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "excess"
+    ],
+    "gloss": {
+      "blocked": "날아가던 것이 걸려 소식과 진행이 늦어짐",
+      "excess": "서두름이 지나쳐 엇갈리고 흩어짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "일이 굴러가는 느낌에 속이 시원해요. 들뜬 기대가 있어요.",
+    "reversed": "빨리 알고 싶은데 소식이 늦어 조급해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계가 빠르게 가까워지거나 연락이 활발해지는 흐름으로 읽어요. 속도를 즐기되 중요한 대화는 놓치지 마세요.",
+      "reversed": "연락 속도가 서로 맞지 않거나, 너무 빨리 가려다 엇갈리는 쪽으로 읽어요. 편한 속도를 한 번 이야기해 보세요."
+    },
+    "contact": {
+      "upright": "연락이 오가고 대화가 빨리 이어질 수 있는 흐름으로 읽어요. 보낼 말이 정해졌다면 미루지 않아도 되는 그림이에요.",
+      "reversed": "답이 늦거나 메시지가 엇갈리기 쉬운 쪽으로 읽어요. 연달아 보내기보다 한 번 보내고 기다리는 게 좋아요."
+    },
+    "work": {
+      "upright": "일이 막힘 없이 빠르게 진행되는 흐름으로 읽어요. 결정과 회신을 미루지 말고 흐름을 타 보세요.",
+      "reversed": "일정이 밀리거나 소통이 엇갈려 진행이 더딘 쪽으로 읽어요. 공유 방식을 한 곳으로 모아 보세요."
+    },
+    "choice": {
+      "upright": "빠르게 움직일 수 있는 쪽, 이미 흐름이 생긴 쪽에 힘이 실리는 배치로 읽어요. 다만 속도에 휩쓸리지 않게 핵심 조건은 확인하세요.",
+      "reversed": "서두르다 판단을 그르치기 쉬운 상태로 읽어요. 결정 전에 하루만 두고 다시 보세요."
+    },
+    "self": {
+      "upright": "기운과 일정이 빠르게 돌아가는 시기로 읽어요. 미뤄 둔 일을 한꺼번에 처리하기 좋아요.",
+      "reversed": "할 일이 몰려 정신없고 조급한 시기로 읽어요. 오늘 할 일을 세 개로 줄여 보세요."
+    },
+    "group": {
+      "upright": "모임의 일정이나 소통이 빠르게 진행되는 흐름으로 읽어요. 결정 사항을 바로 공유해 보세요.",
+      "reversed": "연락이 엇갈리거나 공지가 늦어 혼선이 생기는 분위기로 읽어요. 정보를 한 곳에 정리해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "빨리 움직이고 싶은 들뜬 마음이에요.",
+      "reversed": "소식을 기다리며 조급한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "연락과 대화가 빠르게 오가는 흐름으로 읽어요.",
+      "reversed": "속도와 타이밍이 엇갈리는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "먼저 보내면 대화가 빠르게 이어질 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 서두름이 엇갈림을 부를 수 있다는 쪽으로 읽어요. 한 번 보내고 기다리는 조건에서 다시 보세요."
+    },
+    "이 시기의 흐름": {
+      "upright": "빠르게 진행되고 소식이 오가는 시기로 읽어요.",
+      "reversed": "진행이 늦어지고 소식이 엇갈리는 시기로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "흐름을 타고 빠르게 결정하는 쪽이에요.",
+      "reversed": "속도를 늦추고 소통을 정리하는 쪽이에요."
+    },
+    "오늘의 한 장": {
+      "upright": "미뤄 둔 답장이나 결정을 처리하는 날로 읽어요.",
+      "reversed": "서두르지 말고 확인하며 움직이는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "미뤄 둔 답장 세 개를 오늘 보내 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "결정할 일이 있다면 필요한 정보만 확인하고 바로 정해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "연락을 연달아 보내고 싶을 때는 한 번 보내고 기다리기로 정해 두세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "여기저기 흩어진 일정과 메시지를 한 곳에 모아 정리해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_DATE",
+      "doNotClaim": "소식이 며칠 안에 온다고 날짜로 말하기",
+      "instead": "빠른 흐름이라는 것만 말하고 시기는 사용자가 고른 기간 안에서만 다뤄요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "연락이 곧 온다고 보장",
+      "instead": "소통이 활발해지기 쉬운 흐름과 내가 할 일까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 곧 답할 마음이라고 단정",
+      "instead": "속도는 흐름으로만 말하고 속마음은 다루지 않아요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-00-fool",
+      "ko": "빠른 흐름을 타고 내딛는 첫걸음"
+    },
+    {
+      "with": "major-10-wheel-of-fortune",
+      "ko": "빠르게 바뀌는 흐름"
+    },
+    {
+      "with": "major-12-hanged-man",
+      "ko": "멈춰 있던 일이 다시 빠르게 움직이는 전환"
+    },
+    {
+      "with": "cups-02",
+      "ko": "마음이 빠르게 가까워지는 흐름"
+    },
+    {
+      "with": "swords-04",
+      "ko": "빠른 흐름 사이에 쉼이 필요한 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "움직임·익숙해짐"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_DATE",
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Activity in undertakings, the path of such activity, swiftness, as that of an express messenger; great haste, great hope, speed towards an end which promises assured felicity; generally, that which is on the move; also the arrows of love.",
+    "reversed": "Arrows of jealousy, internal dispute, stingings of conscience, quarrels; and domestic disputes for persons who are married.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 날아가는 지팡이들이 끝에 거의 다다랐다고 설명했다(기다리던 것이 가까이 옴).",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-08.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

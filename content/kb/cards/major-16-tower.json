@@ -1,0 +1,290 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-16-tower",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-16-tower.webp",
+  "names": {
+    "ko": "탑",
+    "ja": "塔",
+    "en": "The Tower",
+    "koAliases": [
+      "바벨탑"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 16,
+  "roman": "XVI",
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "화성(Mars)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "갑작스러운 흔들림",
+    "깨지는 착각",
+    "강제 재정비",
+    "드러나는 진실"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "lightning",
+        "ko": "오른쪽 위에서 노란 번개가 내리꽂혀 탑 꼭대기를 친다",
+        "salience": 1
+      },
+      {
+        "id": "crown-off",
+        "ko": "탑 꼭대기의 금관이 벗겨져 날아간다",
+        "salience": 1
+      },
+      {
+        "id": "flames-windows",
+        "ko": "탑 꼭대기와 창문들에서 불길이 치솟는다",
+        "salience": 2
+      },
+      {
+        "id": "falling-figures",
+        "ko": "두 사람이 거꾸로 떨어지고 있다(왼쪽은 붉은 망토, 오른쪽은 왕관을 쓴 사람)",
+        "salience": 1
+      },
+      {
+        "id": "yellow-drops",
+        "ko": "양쪽 검은 하늘에 노란 불똥 모양이 흩날린다",
+        "salience": 2
+      },
+      {
+        "id": "rocky-peak",
+        "ko": "회색 탑은 뾰족한 바위산 꼭대기에 서 있다",
+        "salience": 2
+      },
+      {
+        "id": "dark-sky",
+        "ko": "배경은 검은 하늘과 회색 구름이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "탑이 통째로 무너져 폐허가 됐다",
+        "correct": "탑은 아직 서 있고, 꼭대기 관이 날아가고 불이 났다",
+        "regex": "탑이\\s*(완전히\\s*|통째로\\s*)(무너|붕괴)|폐허"
+      },
+      {
+        "wrong": "비가 쏟아진다",
+        "correct": "떨어지는 것은 빗방울이 아니라 노란 불똥 모양이다",
+        "regex": "비가\\s*(내리|쏟)|빗방울"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "lightning",
+        "ko": "예상 밖의 충격이 굳어 있던 구조를 깨는 순간",
+        "school": "modern"
+      },
+      {
+        "factId": "crown-off",
+        "ko": "거짓 위에 세운 집이 무너짐",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "falling-figures",
+        "ko": "익숙한 자리에서 떠밀려 나오는 경험",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-16-tower.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "갑작스러운 흔들림",
+      "깨지는 착각",
+      "억지로 세운 것의 붕괴",
+      "드러나는 진실"
+    ],
+    "reversed": [
+      "피하려던 변화",
+      "안에서 먼저 무너짐",
+      "천천히 오는 흔들림",
+      "충격 뒤의 수습"
+    ],
+    "oneLine": {
+      "upright": "억지로 버티던 구조나 착각이 갑자기 흔들리며 드러나는 때(사고나 재난의 예언이 아님)",
+      "reversed": "필요한 흔들림을 미루고 있거나, 겉보다 속에서 먼저 무너지는 상태"
+    },
+    "shadow": "흔들림이 무서워 이미 금 간 것을 계속 덧칠하는 것"
+  },
+  "reversedModes": {
+    "default": "internalized",
+    "allowed": [
+      "internalized",
+      "blocked",
+      "waning"
+    ],
+    "gloss": {
+      "internalized": "겉은 멀쩡한데 속에서 먼저 무너지고 있음",
+      "blocked": "필요한 변화를 피하며 버티는 중",
+      "waning": "큰 충격이 지나가고 여진과 수습이 남음"
+    }
+  },
+  "asFeelings": {
+    "upright": "갑작스러운 일에 놀라고 흔들린 마음이에요. 믿던 게 깨진 허탈함이 있을 수 있어요.",
+    "reversed": "무너질 걸 알면서도 붙잡고 있는 긴장감이 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 덮어 두던 문제나 착각이 한꺼번에 드러나는 흐름으로 읽어요. 흔들림은 아프지만 무엇이 진짜인지 보게 해 줘요.",
+      "reversed": "문제를 알면서도 터지지 않게 버티고 있거나, 속으로 먼저 마음이 무너지고 있는 쪽으로 읽어요. 혼자 버티지 말고 한 가지는 말로 꺼내 보세요."
+    },
+    "contact": {
+      "upright": "예상 밖의 반응이나 소식으로 흐름이 크게 흔들릴 수 있는 그림이에요. 충동적으로 답하기보다 하루 정도 두고 대응하는 게 좋아요.",
+      "reversed": "터질까 봐 하고 싶은 말을 삼키고 있는 쪽으로 읽어요. 감정이 가장 센 순간을 피해 짧고 차분하게 전해 보세요."
+    },
+    "work": {
+      "upright": "계획이나 구조가 갑자기 바뀌어 다시 짜야 하는 흐름으로 읽어요. 무너진 부분보다 남은 기반이 무엇인지 먼저 확인하세요.",
+      "reversed": "문제가 커지기 전에 손볼 수 있는 신호가 보이는 쪽으로 읽어요. 미뤄 둔 위험 요소를 하나 점검해 보세요."
+    },
+    "choice": {
+      "upright": "기존 계획이 흔들려 선택을 다시 생각해야 하는 배치로 읽어요. 무엇이 확실히 끝났고 무엇이 남았는지부터 나눠 보세요.",
+      "reversed": "변화를 피하려고 이미 금 간 선택지를 붙잡고 있지 않은지 살펴보는 쪽으로 읽어요. 최악의 경우를 적어 보면 오히려 덜 두려울 수 있어요."
+    },
+    "self": {
+      "upright": "믿던 생각이나 습관이 깨지며 크게 흔들리는 시기로 읽어요. 지금은 판단보다 안정이 먼저라, 쉬고 기댈 곳을 챙기세요.",
+      "reversed": "겉으로는 괜찮은 척하지만 속으로 지쳐 있는 상태로 읽어요. 무너지기 전에 도움을 청해도 괜찮아요."
+    },
+    "group": {
+      "upright": "모임 안의 숨은 갈등이 한꺼번에 드러나는 흐름으로 읽어요. 누구 탓보다 무엇이 드러났는지에 집중해 보세요.",
+      "reversed": "터지기 직전의 긴장이 쌓인 분위기로 읽어요. 작은 대화 자리로 압력을 조금 빼 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "믿던 것이 흔들려 놀라고 혼란스러운 마음이에요.",
+      "reversed": "무너질까 봐 애써 버티고 있는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "덮어 둔 것이 드러나며 흐름이 크게 흔들리는 자리로 읽어요. 관계의 끝을 단정하는 그림은 아니에요.",
+      "reversed": "터지지 않은 긴장이 쌓여 있는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금 움직이면 숨어 있던 문제가 드러날 수 있다는 쪽으로 읽어요. 그걸 감당할 준비가 됐는지 먼저 보세요.",
+      "reversed": "지금은 감정이 가장 센 순간이라 충돌이 커질 수 있다는 쪽으로 읽어요. 하루 두고 차분해진 조건에서 다시 보세요."
+    },
+    "막힌 곳": {
+      "upright": "이미 금 간 구조를 억지로 유지하려는 게 막힌 곳일 수 있어요.",
+      "reversed": "변화를 피하려는 마음이 막힌 곳일 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "흔들린 뒤 남은 기반을 확인하고 안정부터 찾는 게 필요해요.",
+      "reversed": "무너지기 전에 먼저 손보는 용기가 필요해요."
+    },
+    "이 시기의 흐름": {
+      "upright": "예상 밖의 변화가 들어오는 시기로 읽어요.",
+      "reversed": "큰 충격 뒤 수습하고 정리하는 시기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "계획이 틀어져도 다시 짤 수 있다는 걸 기억하는 날로 읽어요.",
+      "reversed": "미뤄 둔 문제 하나를 작게라도 점검해 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "흔들린 일이 있다면 남은 것과 잃은 것을 두 칸으로 나눠 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "충격적인 소식에는 바로 답하지 말고 하루 뒤에 답해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "금이 간 것 같은데 모른 척하는 일 하나를 적고 점검해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 버티고 있다면 믿을 만한 사람 한 명에게 지금 상황을 알려 두세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "사고, 재난, 질병이 닥친다고 예언",
+      "instead": "익숙한 구조가 흔들리는 그림으로 읽고 공포를 주지 않아요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "이별이나 해고가 확정된다고 단정",
+      "instead": "드러나는 문제와 대응 방법까지만 말해요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "재정 파탄을 예고",
+      "instead": "점검할 위험 요소를 구체적으로 보자고 해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-15-devil",
+      "ko": "묶여 있던 것이 한꺼번에 흔들리는 흐름"
+    },
+    {
+      "with": "major-17-star",
+      "ko": "흔들림 뒤에 찾아오는 회복(번호 16과 17), 사용자가 큰일을 말하지 않았다면 사건으로 가정하지 않음"
+    },
+    {
+      "with": "major-10-wheel-of-fortune",
+      "ko": "예상 밖의 큰 전환"
+    },
+    {
+      "with": "swords-10",
+      "ko": "바닥을 친 뒤 더 내려갈 곳이 없는 지점"
+    }
+  ],
+  "numerology": {
+    "stage": "16 · 굳은 것이 깨지는 단계"
+  },
+  "safety": {
+    "highRisk": true,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_EVENT",
+      "NO_MONEY"
+    ]
+  },
+  "waite": {
+    "upright": "Misery, distress, indigence, adversity, calamity, disgrace, deception, ruin. It is a card in particular of unforeseen catastrophe.",
+    "reversed": "According to one account, the same in a lesser degree; also oppression, imprisonment, tyranny.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite는 이 카드를 거짓 위에 세운 집이 무너지는 것으로 읽었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-16-tower.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 XVI, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

@@ -1,0 +1,301 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-17-star",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-17-star.webp",
+  "names": {
+    "ko": "별",
+    "ja": "星",
+    "en": "The Star"
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 17,
+  "roman": "XVII",
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "물병자리(Aquarius)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "다시 채워지는 연못",
+    "조용한 회복",
+    "희망",
+    "나눠 붓기"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "big-star",
+        "ko": "가운데에 노란 여덟 줄기 큰 별 하나, 둘레에 흰 여덟 줄기 작은 별 일곱 개가 떠 있다",
+        "salience": 1
+      },
+      {
+        "id": "knee-foot",
+        "ko": "벌거벗은 여인이 왼 무릎은 땅에 대고 오른발은 물 위에 올렸다",
+        "salience": 1
+      },
+      {
+        "id": "two-jugs",
+        "ko": "두 항아리로 물을 붓는다. 오른손 항아리는 연못에, 왼손 항아리는 땅에 붓는다",
+        "salience": 1
+      },
+      {
+        "id": "streams",
+        "ko": "땅에 부은 물은 여러 갈래로 나뉘어 흐른다",
+        "salience": 2
+      },
+      {
+        "id": "ripples",
+        "ko": "연못에는 물을 붓는 자리에서 동그란 물결이 퍼진다",
+        "salience": 3
+      },
+      {
+        "id": "bird-tree",
+        "ko": "오른쪽 언덕 위 나무에 새 한 마리가 앉아 있다",
+        "salience": 2
+      },
+      {
+        "id": "far-mountain",
+        "ko": "왼쪽 멀리 산이 보이고, 초록 들판에 작은 풀꽃들이 있다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "한 발은 땅에, 한 발은 물에",
+        "correct": "왼 무릎이 땅, 오른발이 물 위다(2차 해설에 흔한 오류)",
+        "regex": "한\\s*발은\\s*땅"
+      },
+      {
+        "wrong": "캄캄한 밤하늘에 별이 빛난다",
+        "correct": "하늘은 옅은 푸른색으로 칠해져 있다",
+        "regex": "밤하늘|캄캄"
+      },
+      {
+        "wrong": "작은 별이 여섯 개(또는 여덟 개)",
+        "correct": "작은 흰 별은 일곱 개다",
+        "regex": "작은\\s*별이?\\s*(여섯|여덟|6|8)\\s*개"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "two-jugs",
+        "ko": "한곳에 다 쏟지 않고 마음과 일상 양쪽을 조금씩 채움",
+        "school": "modern"
+      },
+      {
+        "factId": "two-jugs",
+        "ko": "생명의 물을 땅과 물 양쪽에 아낌없이 나눠 붓는 것",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "big-star",
+        "ko": "요란하지 않고 오래 켜져 있는 빛",
+        "school": "modern"
+      },
+      {
+        "factId": "knee-foot",
+        "ko": "땅에 기대면서도 물(감정)에 발을 올린 자세",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-17-star.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "다시 채워지는 흐름",
+      "조용한 희망",
+      "회복과 치유",
+      "솔직하게 드러내기"
+    ],
+    "reversed": [
+      "희망이 흐려짐",
+      "스스로를 못 믿음",
+      "회복이 더딤",
+      "너무 많이 퍼 줌"
+    ],
+    "oneLine": {
+      "upright": "요란하지 않게 조금씩 다시 채워지는 회복과 희망의 때",
+      "reversed": "희망을 믿기 어려워졌거나, 나를 채우기보다 퍼 주기만 해서 회복이 더딘 상태"
+    },
+    "shadow": "막연한 기대만 품고 현실의 작은 행동을 미루는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "blocked",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "희망과 기운이 흐려져 스스로를 믿기 어려움",
+      "blocked": "회복의 흐름이 잠시 막혀 더디게 느껴짐",
+      "excess": "남에게 다 부어 주느라 내 연못이 마름"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음이 조금씩 가벼워지고 있어요. 조용한 기대가 다시 생기는 상태예요.",
+    "reversed": "기대했다가 실망할까 봐 희망을 접어 두고 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "상처나 거리감이 있었다 해도 천천히 다시 채워질 여지가 있는 흐름으로 읽어요. 꾸미지 않은 솔직한 모습이 관계를 편하게 해요.",
+      "reversed": "기대를 접어 버리거나, 관계에 다 쏟느라 내 마음이 비어 가는 쪽으로 읽어요. 나를 채우는 시간부터 챙겨 보세요."
+    },
+    "contact": {
+      "upright": "끊겼다기보다 쉬어 가며 다시 채워질 수 있는 흐름으로 읽어요. 부담 없는 안부 한 줄처럼 조금씩 붓는 연락이 어울려요.",
+      "reversed": "답이 없을까 봐 기대 자체를 접고 있거나, 한 번에 마음을 다 쏟는 연락으로 기우는 쪽으로 읽어요. 내가 편한 만큼만 조금 보내 보세요."
+    },
+    "work": {
+      "upright": "지친 뒤 다시 의욕이 차오르는 흐름으로 읽어요. 크게 벌이기보다 오래 할 수 있는 방향을 정하기 좋아요.",
+      "reversed": "의욕과 믿음이 떨어져 방향이 흐려진 쪽으로 읽어요. 처음 이 일을 택한 이유를 한 줄로 다시 적어 보세요."
+    },
+    "choice": {
+      "upright": "마음이 편안해지고 희망이 생기는 쪽이 어디인지가 기준이 되는 배치로 읽어요. 오래 두고 봐도 좋은 선택지를 골라 보세요.",
+      "reversed": "어느 쪽에도 기대가 안 생겨 고르기 어려운 상태로 읽어요. 작게라도 기대되는 점을 선택지마다 하나씩 적어 보세요."
+    },
+    "self": {
+      "upright": "몸과 마음이 천천히 회복되는 시기로 읽어요. 물 마시기나 산책처럼 작은 채움이 도움이 돼요.",
+      "reversed": "회복이 더디게 느껴져 조급하거나 기운이 빠진 상태로 읽어요. 스스로에게 기대치를 낮춰 주세요."
+    },
+    "group": {
+      "upright": "모임에 조용한 온기가 돌아오는 흐름으로 읽어요. 내가 가진 것을 조금 나누면 분위기가 부드러워져요.",
+      "reversed": "나만 계속 챙기다 지쳐 가는 쪽으로 읽어요. 받을 줄도 아는 게 균형이에요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "조용히 기대가 다시 생기는 마음이에요. 요란하지 않지만 꺼지지 않은 희망이에요.",
+      "reversed": "실망이 두려워 기대를 접어 둔 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "끊김보다 다시 채워질 여지가 남은 흐름으로 읽어요. 연락이 뜸해졌다면 멈춤보다 속도의 변화에 가까워요. 다만 관계의 분위기를 읽은 것이지 속마음을 확인한 건 아니에요.",
+      "reversed": "채워지는 속도가 더디거나 한쪽만 붓는 흐름으로 읽어요. 서두르지 않고 균형을 보는 자리예요."
+    },
+    "먼저 움직이면": {
+      "upright": "부담 없는 작은 연락이 흐름을 다시 채우는 계기가 될 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 기대를 크게 담은 연락이 되기 쉽다는 쪽으로 읽어요. 크기를 줄인 조건에서 다시 보세요."
+    },
+    "필요한 것": {
+      "upright": "나를 천천히 다시 채우는 시간이 필요해요.",
+      "reversed": "희망을 다시 믿어 볼 작은 근거 하나가 필요해요."
+    },
+    "이 시기의 흐름": {
+      "upright": "조용히 회복되고 나아지는 흐름이에요.",
+      "reversed": "회복이 더디게 느껴지지만 멈춘 건 아닌 흐름이에요."
+    },
+    "모임의 분위기": {
+      "upright": "조용한 온기와 신뢰가 돌아오는 분위기로 읽어요.",
+      "reversed": "지친 사람이 많아 온기가 잠시 식은 분위기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "나를 채우는 작은 일 하나를 하는 날로 읽어요.",
+      "reversed": "기대를 낮추고 작은 좋은 일을 찾아보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "오늘 나를 조금 채워 주는 일 하나(물 한 잔, 10분 산책)를 해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "부담 없는 안부 한 줄을 써 두고, 보낼지는 편한 때 정해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "요즘 내가 퍼 주기만 한 관계나 일을 적고 하나는 쉬어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "작더라도 기대되는 일 하나를 달력에 적어 두세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대도 다시 마음을 열었다고 단정",
+      "instead": "관계의 분위기가 다시 채워질 여지로 읽힌다고만 말하고, 속마음은 확인하지 않았다고 밝혀요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "재회나 소원이 이뤄진다고 보장",
+      "instead": "회복의 흐름과 할 수 있는 작은 행동까지만 말해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "병이 낫는다고 말하기",
+      "instead": "몸의 회복은 전문가 판단에 맡기고 마음의 회복만 다뤄요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-09-hermit",
+      "ko": "혼자 고른 마음 뒤에 오는 느린 회복"
+    },
+    {
+      "with": "wands-01",
+      "ko": "다시 채워진 흐름에서 돋는 작은 시작(골드 샘플 배치)"
+    },
+    {
+      "with": "major-16-tower",
+      "ko": "흔들림 뒤의 회복(번호 16과 17), 입력에 없는 사건은 가정하지 않음"
+    },
+    {
+      "with": "cups-06",
+      "ko": "지난 좋은 기억이 다시 힘이 되는 흐름"
+    },
+    {
+      "with": "major-18-moon",
+      "ko": "희망과 불안이 번갈아 오는 흐름, 확인할 수 있는 것부터"
+    }
+  ],
+  "numerology": {
+    "stage": "17 · 흔들림 뒤에 다시 채워지는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Loss, theft, privation, abandonment; another reading says—hope and bright prospects",
+    "reversed": "Arrogance, haughtiness, impotence.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite의 점술 의미는 '손실·도둑맞음'과 '희망' 두 갈래가 섞여 있다. 출력은 현대 해석(회복·희망)만 쓴다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-17-star.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 XVII, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

@@ -1,0 +1,278 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "pentacles-12",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/pentacles-12.webp",
+  "names": {
+    "ko": "펜타클 기사",
+    "ja": "ペンタクルのナイト",
+    "en": "Knight of Pentacles",
+    "koAliases": [
+      "펜타클 기사",
+      "펜타클 나이트"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "pentacles",
+  "rank": "knight",
+  "number": 12,
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "꾸준함",
+    "신중한 책임",
+    "느리지만 확실함",
+    "성실한 실행"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "still-horse",
+        "ko": "기사가 네 다리로 멈춰 선 검은 말 위에 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "pentacle-hand",
+        "ko": "한 손에 펜타클을 받쳐 들고 있다",
+        "salience": 1
+      },
+      {
+        "id": "oak-sprigs",
+        "ko": "투구와 말 머리에 초록 잎 장식이 달려 있다",
+        "salience": 3
+      },
+      {
+        "id": "plowed-field",
+        "ko": "뒤로 갈아 놓은 밭고랑이 펼쳐져 있다",
+        "salience": 2
+      },
+      {
+        "id": "yellow-sky",
+        "ko": "하늘은 노랗고 오른쪽 멀리 나무가 보인다",
+        "salience": 3
+      },
+      {
+        "id": "armor",
+        "ko": "갑옷 위에 붉은 줄무늬 겉옷을 입었다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "말이 힘차게 달린다",
+        "correct": "말은 멈춰 서 있다",
+        "regex": "말이\\s*(힘차게\\s*)?(달린|달려\\s*(간|나))|질주"
+      },
+      {
+        "wrong": "흰 말을 타고 있다",
+        "correct": "말은 검은색이다",
+        "regex": "흰\\s*말"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "still-horse",
+        "ko": "느리고 끈질기며 무거운 말, 탄 사람의 모습도 그와 같음",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "plowed-field",
+        "ko": "꾸준히 갈아 둔 땅, 시간을 들인 준비",
+        "school": "modern"
+      },
+      {
+        "factId": "pentacle-hand",
+        "ko": "책임을 손에 쥐고 서두르지 않는 태도",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "He rides a slow, enduring, heavy horse, to which his own aspect corresponds. He exhibits his symbol, but does not look therein.",
+    "verified": {
+      "scan": "apps/web/public/cards/pentacles-12.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "꾸준함",
+      "신중한 책임",
+      "느리지만 확실함",
+      "성실한 실행"
+    ],
+    "reversed": [
+      "정체",
+      "지나친 신중",
+      "지루함과 무기력",
+      "고집스러운 느림"
+    ],
+    "oneLine": {
+      "upright": "서두르지 않고 맡은 일을 꾸준히, 확실하게 해 나가는 때",
+      "reversed": "신중함이 지나쳐 멈춰 있거나, 지루함에 무기력해진 상태"
+    },
+    "shadow": "안전만 따지다 움직일 때를 놓치는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "waning"
+    ],
+    "gloss": {
+      "excess": "신중함이 지나쳐 제자리에 멈춤",
+      "waning": "꾸준하던 힘이 지루함에 꺾임"
+    }
+  },
+  "asFeelings": {
+    "upright": "급하지 않게, 할 일을 해 나가는 안정된 마음이에요.",
+    "reversed": "지루하고 답답해서 의욕이 떨어졌어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "화려하진 않아도 꾸준하고 믿을 수 있는 방식으로 관계를 쌓는 흐름으로 읽어요. 약속을 지키는 게 가장 큰 표현이에요.",
+      "reversed": "관계가 너무 느리거나 변화 없이 제자리인 쪽으로 읽어요. 작은 새로움을 하나 더해 보세요."
+    },
+    "contact": {
+      "upright": "천천히, 꾸준하게 이어 가는 연락이 어울리는 그림이에요. 급하게 가까워지려 하기보다 편한 리듬을 지켜 보세요.",
+      "reversed": "너무 조심하느라 연락을 계속 미루는 쪽으로 읽어요. 완벽한 때를 기다리기보다 짧게 한 번 보내 보세요."
+    },
+    "work": {
+      "upright": "성실함과 꾸준함이 인정받는 흐름으로 읽어요. 계획대로 한 단계씩 진행해 보세요.",
+      "reversed": "진행이 느려 답답하거나 반복에 지친 쪽으로 읽어요. 속도를 올릴 수 있는 한 가지를 찾아보세요."
+    },
+    "choice": {
+      "upright": "안정적이고 꾸준히 해 나갈 수 있는 쪽에 힘이 실리는 배치로 읽어요. 장기적으로 버틸 수 있는지 보세요.",
+      "reversed": "너무 따지다 결정을 미루는 상태로 읽어요. 충분히 검토했다면 이제 정해 보세요."
+    },
+    "self": {
+      "upright": "규칙적인 생활과 꾸준한 습관이 힘이 되는 시기로 읽어요. 매일 같은 시간에 할 일을 하나 정해 보세요.",
+      "reversed": "몸과 마음이 무거워 움직이기 싫은 시기로 읽어요. 아주 작은 변화 하나로 흐름을 바꿔 보세요."
+    },
+    "group": {
+      "upright": "모임에서 묵묵히 제 몫을 하는 역할이 신뢰를 얻는 흐름으로 읽어요. 맡은 일을 끝까지 챙겨 보세요.",
+      "reversed": "모임이 변화 없이 정체된 분위기로 읽어요. 새로운 활동 하나를 제안해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "서두르지 않고 꾸준히 가고 싶은 마음이에요.",
+      "reversed": "지루하고 답답한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "느리지만 믿을 수 있게 쌓이는 흐름으로 읽어요.",
+      "reversed": "변화 없이 제자리인 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "꾸준한 리듬의 연락이 흐름을 단단하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "완벽한 때를 기다리다 계속 미룰 수 있다는 쪽으로 읽어요. 짧게라도 보내는 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "말보다 행동으로 믿음을 주는 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "답답하거나 무심한 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "계획대로 한 단계씩 꾸준히 가는 쪽이에요.",
+      "reversed": "지나친 신중을 내려놓고 한 걸음 내딛는 쪽이에요."
+    },
+    "오늘의 한 장": {
+      "upright": "해야 할 일을 차근차근 끝내는 날로 읽어요.",
+      "reversed": "작은 변화 하나로 흐름을 바꾸는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "매일 같은 시간에 할 일 하나를 정해 이번 주 동안 지켜 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "진행 중인 일의 다음 단계 하나를 오늘 끝내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "너무 오래 검토한 결정 하나에 오늘 결론을 내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "평소와 다른 길로 걷거나 새로운 것 하나를 시도해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "안정된 직장이나 관계가 보장된다고 말하기",
+      "instead": "꾸준함의 흐름과 할 일까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 무심하거나 관심이 없다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 속마음은 다루지 않아요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "pentacles-11",
+      "ko": "배운 것을 꾸준히 실행하는 흐름"
+    },
+    {
+      "with": "wands-12",
+      "ko": "빠른 추진과 느린 꾸준함의 대비"
+    },
+    {
+      "with": "pentacles-08",
+      "ko": "꾸준한 연습이 겹치는 조합"
+    },
+    {
+      "with": "major-04-emperor",
+      "ko": "안정과 책임이 겹쳐 경직되지 않게 살필 조합"
+    }
+  ],
+  "court": {
+    "asPerson": "말보다 행동으로 꾸준히 책임을 다하는 누군가(나이·성별 무관)",
+    "asAttitude": "느려도 확실하게, 맡은 일을 끝까지 하는 태도"
+  },
+  "numerology": {
+    "stage": "밀고 나가는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Utility, serviceableness, interest, responsibility, rectitude—all on the normal and external plane.",
+    "reversed": "inertia, idleness, repose of that kind, stagnation; also placidity, discouragement, carelessness.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 '상징을 보여 주지만 들여다보지는 않는다'고 적었다. 1909 스캔에서는 시선 방향이 분명하지 않아 그림 사실에 넣지 않았다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/pentacles-12.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 pentacles"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

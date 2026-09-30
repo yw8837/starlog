@@ -1,0 +1,307 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-09-hermit",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-09-hermit.webp",
+  "names": {
+    "ko": "은둔자",
+    "ja": "隠者",
+    "en": "The Hermit",
+    "koAliases": [
+      "은자"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 9,
+  "roman": "IX",
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "처녀자리(Virgo)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "혼자 마음을 고르는 중",
+    "내 기준 세우기",
+    "한발 물러서기",
+    "스스로 밝힌 빛"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "lantern-raised",
+        "ko": "오른손을 머리 높이까지 들어 등불을 들어 올렸다",
+        "salience": 1
+      },
+      {
+        "id": "star-in-lantern",
+        "ko": "등불 안, 창살 사이로 별 모양 선이 비친다",
+        "salience": 1
+      },
+      {
+        "id": "gaze-down",
+        "ko": "고개를 숙여 시선은 아래를 향한다",
+        "salience": 2
+      },
+      {
+        "id": "staff-left",
+        "ko": "왼손으로 노란 지팡이를 짚었다",
+        "salience": 2
+      },
+      {
+        "id": "grey-hood",
+        "ko": "두건 달린 회색 망토를 입었고 수염이 희다",
+        "salience": 3
+      },
+      {
+        "id": "white-peak",
+        "ko": "하얀 봉우리 위에 홀로 서 있다(눈 덮인 산꼭대기처럼 보인다)",
+        "salience": 2
+      },
+      {
+        "id": "pale-sky",
+        "ko": "배경은 옅은 푸른빛 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "등불을 낮게 들어 발밑을 비춘다",
+        "correct": "등불은 머리 높이로 들려 있고, 아래를 향한 것은 시선이다",
+        "regex": "등불을?\\s*낮게|발밑을\\s*비추"
+      },
+      {
+        "wrong": "밤하늘이나 달빛 아래 장면",
+        "correct": "배경은 옅은 푸른빛이고 달은 그려져 있지 않다",
+        "regex": "밤하늘|달빛"
+      },
+      {
+        "wrong": "등불 속에 촛불이 타고 있다",
+        "correct": "등불 속에 그려진 것은 촛불이 아니라 별 모양이다",
+        "regex": "등불\\s*(안|속)(의|에)?\\s*(촛불|불꽃)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "lantern-raised",
+        "ko": "스스로 밝힌 빛으로 지금 선 자리를 확인함",
+        "school": "modern"
+      },
+      {
+        "factId": "lantern-raised",
+        "ko": "먼저 도달한 사람이 뒤따라올 이에게 보이는 표지",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "star-in-lantern",
+        "ko": "빛의 근원이 바깥이 아니라 안에 있음",
+        "school": "modern"
+      },
+      {
+        "factId": "staff-left",
+        "ko": "혼자 서 있어도 기댈 받침이 있음",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-09-hermit.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30",
+      "uncertain": [
+        "등불 속 별의 꼭짓점 수는 창살에 가려 이 스캔에서 세기 어렵다(조사 문서 2.4는 여섯 꼭짓점으로 기록)"
+      ]
+    }
+  },
+  "core": {
+    "upright": [
+      "혼자 정리하는 시간",
+      "내 기준 세우기",
+      "한발 물러서 보기",
+      "지금 선 자리 확인"
+    ],
+    "reversed": [
+      "고립이 길어짐",
+      "돌아올 때가 됨",
+      "혼자 결론 내리기",
+      "도움을 밀어냄"
+    ],
+    "oneLine": {
+      "upright": "멀리 있는 답보다 지금 선 자리를 확인하며 혼자 마음을 고르는 때",
+      "reversed": "혼자 있는 시간이 길어져 닫히거나, 이제 나올 때가 된 상태"
+    },
+    "shadow": "정리가 고립으로 굳는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "waning",
+      "blocked"
+    ],
+    "gloss": {
+      "excess": "혼자 있음이 지나쳐 닫힘",
+      "waning": "물러나 있던 시간이 끝나감",
+      "blocked": "생각은 끝났는데 밖으로 나오지 못함"
+    }
+  },
+  "asFeelings": {
+    "upright": "혼자 조용히 생각을 고르고 싶은 마음이에요. 남의 답보다 내 답을 먼저 찾고 싶은 상태에 가까워요.",
+    "reversed": "혼자 있는 시간이 편하면서도 조금 외롭게 느껴지기 시작했어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계를 서두르기보다 내 마음을 들여다보는 시간이 필요한 흐름으로 읽어요. 거리를 두는 게 끝이 아니라 기준을 세우는 과정일 수 있어요.",
+      "reversed": "혼자 있는 시간이 길어져 마음이 닫혀 가거나, 이제는 나와서 마음을 나눌 때가 된 쪽으로 읽어요. 믿을 만한 사람에게 지금 생각을 한 번 말해 보세요."
+    },
+    "contact": {
+      "upright": "상대 반응을 살피기보다 내 쪽 마음을 먼저 확인하는 시간으로 읽어요. 보낼지는 내 답이 분명해진 뒤에 정해도 늦지 않아요.",
+      "reversed": "혼자 생각을 오래 굴리다 결론만 무거워졌거나, 생각은 끝났는데 보내지 못하는 쪽으로 읽어요. 이미 정한 마음이라면 짧은 한 줄로 밖에 꺼내 보세요."
+    },
+    "work": {
+      "upright": "혼자 깊이 파고드는 일, 전문성을 다지는 일에 힘이 실리는 흐름으로 읽어요. 남의 속도보다 내 기준으로 점검해 보세요.",
+      "reversed": "혼자 끌어안고 있어 일이 늦어지거나, 도움을 청하지 않아 고립된 쪽으로 읽어요. 막힌 부분 하나를 누군가에게 물어보세요."
+    },
+    "choice": {
+      "upright": "주변 의견을 잠시 끄고 내가 정말 원하는 게 무엇인지 확인하는 게 기준이 돼요. 결정을 서두르지 않아도 되는 배치예요.",
+      "reversed": "혼자 생각만 반복하며 결정을 미루는 상태로 읽어요. 정리한 기준을 한 사람에게 설명해 보면 답이 분명해질 수 있어요."
+    },
+    "self": {
+      "upright": "조용히 혼자 있는 시간이 회복이 되는 시기로 읽어요. 산책이나 기록처럼 혼자 하는 정리가 도움이 돼요.",
+      "reversed": "혼자 있는 게 쉼이 아니라 고립처럼 느껴지기 시작한 상태로 읽어요. 가볍게 한 사람과 연결되는 일을 넣어 보세요."
+    },
+    "group": {
+      "upright": "모임에서 한발 물러나 전체를 보는 자리가 어울리는 흐름으로 읽어요. 필요할 때 경험을 나누는 조언자 역할이 맞아요.",
+      "reversed": "모임과 멀어져 겉도는 느낌이 커진 쪽으로 읽어요. 부담 없는 자리 하나에 먼저 얼굴을 비춰 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "멀리 있는 답이나 상대 반응보다 지금 내 마음이 어디에 서 있는지 확인하는 자리로 읽어요. 먼저 움직일지는 내 쪽 답이 분명해질 때 정하면 돼요.",
+      "reversed": "혼자 정리하던 마음이 닫힘으로 굳어 가거나, 정리는 끝났는데 나오지 못하는 자리로 읽어요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 한발 떨어져 각자의 시간을 보내는 흐름으로 읽어요. 거리가 곧 끊김을 뜻하지는 않아요.",
+      "reversed": "떨어져 있는 시간이 길어져 거리가 굳어 가는 흐름으로 읽어요. 먼저 신호를 보낼 쪽이 누구인지 보는 자리예요."
+    },
+    "먼저 움직이면": {
+      "upright": "내 마음이 정리된 상태에서 보내는 차분한 한 줄이 어울린다는 쪽으로 읽어요. 길게 설명할 필요는 없어요.",
+      "reversed": "생각이 정리되기 전에 보내면 무거운 말이 나올 수 있다는 쪽으로 읽어요. 하고 싶은 말을 한 줄로 줄일 수 있을 때 다시 보세요."
+    },
+    "필요한 것": {
+      "upright": "혼자 조용히 정리하는 시간이 필요해요.",
+      "reversed": "혼자 있는 시간을 끝내고 한 사람과 연결되는 일이 필요해요."
+    },
+    "지금의 나": {
+      "upright": "한발 물러서 나를 들여다보는 중이에요.",
+      "reversed": "혼자 있는 시간이 길어져 조금 닫혀 있어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "남의 답을 찾느라 이미 내 안에 있는 기준을 놓치고 있을 수 있어요.",
+      "reversed": "혼자 해결하려다 도움받을 기회를 놓치고 있을 수 있어요."
+    },
+    "오늘의 한 장": {
+      "upright": "혼자만의 시간을 조금 떼어 생각을 정리하는 날로 읽어요.",
+      "reversed": "생각만 하지 말고 누군가에게 한 번 말해 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "10분 동안 휴대폰 없이 걸으면서 지금 원하는 것 하나를 떠올려 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "메모장에 '내가 정말 바라는 것'을 한 줄로 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 끌어안고 있던 고민을 믿을 만한 사람 한 명에게 짧게 말해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "이미 정한 마음이 있다면 오늘 안에 작은 행동 하나로 옮겨 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "은둔자를 연락이 끊긴다, 이별이 확정된다는 뜻으로 쓰기",
+      "instead": "혼자 정리하는 시간과 거리의 뜻으로 읽고 관계를 판정하지 않아요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 피하고 있다고 단정",
+      "instead": "'나의 마음' 자리면 주체는 나라는 점을 먼저 확인하고, 상대 쪽은 분위기로만 말해요."
+    },
+    {
+      "code": "NO_DATE",
+      "doNotClaim": "혼자 있는 기간을 몇 주, 몇 달로 못박기",
+      "instead": "사용자가 고른 기간 안에서 정리할 시간을 두자고만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-17-star",
+      "ko": "혼자 고른 마음 뒤에 오는 느린 회복"
+    },
+    {
+      "with": "wands-01",
+      "ko": "정리된 마음에서 나오는 작은 시작(골드 샘플의 은둔자·별·완드 에이스 배치)"
+    },
+    {
+      "withGroup": "suit:wands",
+      "ko": "생각을 끝내고 행동으로 옮길 신호"
+    },
+    {
+      "with": "major-02-high-priestess",
+      "ko": "안으로 향하는 시간이 겹침, 혼자 내린 판단이 굳지 않게 확인이 필요"
+    },
+    {
+      "with": "cups-08",
+      "ko": "익숙한 것을 두고 혼자 떠나 찾는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "9 · 마무리 직전, 혼자 정리하는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND",
+      "NO_DATE"
+    ]
+  },
+  "waite": {
+    "upright": "Prudence, circumspection; also and especially treason, dissimulation, roguery, corruption.",
+    "reversed": "Concealment, disguise, policy, fear, unreasoned caution.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite는 등불을 '먼저 도달한 사람이 보이는 표지'로 읽었고, 점술 의미에 신중과 함께 배신·위장도 넣었다. 출력은 현대 해석만 쓴다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-09-hermit.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 IX, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

@@ -1,0 +1,280 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-03",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-03.webp",
+  "names": {
+    "ko": "컵 3",
+    "ja": "カップの3",
+    "en": "Three of Cups",
+    "koAliases": [
+      "컵 3",
+      "성배 3"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "3",
+  "number": 3,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "게자리의 수성(Mercury in Cancer)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "함께 기뻐함",
+    "우정과 축하",
+    "모임의 즐거움",
+    "나누는 풍요"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "three-toast",
+        "ko": "세 여인이 둥글게 모여 컵을 머리 위로 높이 들어 건배한다",
+        "salience": 1
+      },
+      {
+        "id": "middle-back",
+        "ko": "가운데 여인은 주황빛 옷을 입고 등을 보이고 있다",
+        "salience": 2
+      },
+      {
+        "id": "wreaths",
+        "ko": "여인들 머리에 꽃과 잎 장식이 있다",
+        "salience": 3
+      },
+      {
+        "id": "harvest",
+        "ko": "발치에 호박, 포도, 과일 같은 수확물이 놓여 있다",
+        "salience": 1
+      },
+      {
+        "id": "grapes-hand",
+        "ko": "오른쪽 여인은 다른 손에 포도송이를 들었다",
+        "salience": 3
+      },
+      {
+        "id": "blue-sky",
+        "ko": "배경은 푸른 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "네 사람이 춤춘다",
+        "correct": "여인은 세 명이다",
+        "regex": "(네|4)\\s*(사람|명|여인)"
+      },
+      {
+        "wrong": "술에 취해 쓰러져 있다",
+        "correct": "모두 서서 컵을 들어 올리고 있다",
+        "regex": "취해\\s*쓰러|쓰러져"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "three-toast",
+        "ko": "서로에게 맹세하듯 잔을 드는 기쁜 마무리",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "harvest",
+        "ko": "함께 거둔 결실을 나눔",
+        "school": "modern"
+      },
+      {
+        "factId": "middle-back",
+        "ko": "가운데가 등을 보여 셋이 둥글게 마주 보는 구도",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "Maidens in a garden-ground with cups uplifted, as if pledging one another.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-03.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "함께 기뻐함",
+      "우정과 축하",
+      "모임의 즐거움",
+      "나누는 풍요"
+    ],
+    "reversed": [
+      "지나친 즐거움",
+      "모임 피로",
+      "소외감",
+      "셋 사이의 틈"
+    ],
+    "oneLine": {
+      "upright": "가까운 사람들과 모여 결실과 기쁨을 함께 나누는 때",
+      "reversed": "즐거움이 지나쳐 지치거나, 모임 안에서 겉도는 느낌이 드는 상태"
+    },
+    "shadow": "어울림에 기대어 혼자 해야 할 일을 미루는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "waning",
+      "blocked"
+    ],
+    "gloss": {
+      "excess": "놀고 즐기는 것이 지나쳐 몸과 할 일이 밀림",
+      "waning": "모임의 흥이 식고 거리감이 생김",
+      "blocked": "함께 축하할 자리가 미뤄지거나 초대받지 못한 느낌"
+    }
+  },
+  "asFeelings": {
+    "upright": "사람들과 함께여서 가볍고 즐거운 마음이에요.",
+    "reversed": "어울리는 게 피곤하거나, 나만 빠진 것 같은 서운함이 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "친구 같은 편안함과 즐거움이 있는 흐름으로 읽어요. 둘만보다 여럿이 함께하는 자리가 관계를 편하게 해요.",
+      "reversed": "주변 관계가 끼어 서운함이 생기거나, 가볍게만 흘러가는 쪽으로 읽어요. 두 사람만의 시간을 따로 챙겨 보세요."
+    },
+    "contact": {
+      "upright": "축하나 모임 소식을 계기로 가볍게 연락하기 좋은 흐름으로 읽어요. 함께 아는 즐거운 이야기로 시작해 보세요.",
+      "reversed": "여럿 사이에서 연락이 애매해지거나, 가벼운 말만 오가 진짜 이야기는 빠지는 쪽으로 읽어요. 하고 싶은 말은 따로 전해 보세요."
+    },
+    "work": {
+      "upright": "팀워크가 좋고 함께 성과를 축하하는 흐름으로 읽어요. 협업의 공을 나누며 분위기를 이어 가세요.",
+      "reversed": "친목이 일보다 앞서거나, 무리 안의 편 가르기가 생기는 쪽으로 읽어요. 일과 친목의 선을 정해 보세요."
+    },
+    "choice": {
+      "upright": "함께할 사람들이 있고 즐겁게 지낼 수 있는 쪽에 힘이 실리는 배치로 읽어요. 그곳의 사람들을 떠올려 보세요.",
+      "reversed": "주변 분위기에 휩쓸려 고르려는 상태로 읽어요. 혼자 있을 때도 원하는 쪽인지 물어보세요."
+    },
+    "self": {
+      "upright": "사람들과 어울리며 기운을 얻는 시기로 읽어요. 좋아하는 사람들과 약속을 잡아 보세요.",
+      "reversed": "모임과 즐거움이 지나쳐 지친 시기로 읽어요. 이번 주엔 약속 하나를 줄여 보세요."
+    },
+    "group": {
+      "upright": "모임이 화기애애하고 함께 축하할 일이 있는 흐름으로 읽어요. 작은 기념 자리를 제안해 보세요.",
+      "reversed": "무리 안에서 누군가 소외되거나 뒷말이 도는 분위기로 읽어요. 모두가 함께할 수 있는 자리를 만들어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "함께 즐겁고 싶은 가벼운 마음이에요.",
+      "reversed": "어울림에 지쳤거나 소외된 듯한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "친구처럼 편하고 즐거운 흐름으로 읽어요.",
+      "reversed": "주변 관계가 끼어들어 흐름이 흐려지는 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "즐거운 소식이나 모임을 계기로 연락하면 흐름이 가벼워질 수 있다는 쪽으로 읽어요.",
+      "reversed": "가벼운 말만 오가고 핵심이 빠질 수 있다는 쪽으로 읽어요. 하고 싶은 말을 따로 담는 조건에서 다시 보세요."
+    },
+    "모임의 분위기": {
+      "upright": "즐겁고 화기애애한 분위기로 읽어요.",
+      "reversed": "겉은 즐겁지만 소외되거나 지친 사람이 있는 분위기로 읽어요."
+    },
+    "나의 자리": {
+      "upright": "함께 웃고 어울리는 자리로 읽어요.",
+      "reversed": "무리 안에서 자리를 찾느라 애쓰는 자리로 읽어요."
+    },
+    "도움이 될 태도": {
+      "upright": "기쁨을 함께 나누고 축하하는 태도가 도움이 돼요.",
+      "reversed": "겉도는 사람을 먼저 챙기는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "좋아하는 사람들과 가볍게 어울리는 날로 읽어요.",
+      "reversed": "무리한 약속은 줄이고 쉬는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "좋아하는 사람 두세 명에게 가벼운 모임을 제안해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "최근 함께 이룬 일을 같이 축하해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "이번 주 약속 중 하나를 줄이고 그 시간에 쉬어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "모임에서 소외된 사람이 있다면 먼저 말을 걸어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "제3자가 끼어들었다, 삼각관계라고 단정",
+      "instead": "주변 관계가 흐름에 영향을 주는지 살펴보자고만 말해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "과음이나 건강 문제를 예고",
+      "instead": "즐거움과 쉼의 균형을 보자는 정도로 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "cups-02",
+      "ko": "둘의 관계가 친구와 모임으로 넓어지는 흐름"
+    },
+    {
+      "with": "wands-04",
+      "ko": "함께 모여 축하하는 자리"
+    },
+    {
+      "with": "major-03-empress",
+      "ko": "함께 먹고 웃으며 자라는 관계"
+    },
+    {
+      "with": "swords-03",
+      "ko": "셋 사이의 기쁨과 아픔의 대비, 관계의 균형을 살필 때"
+    }
+  ],
+  "numerology": {
+    "stage": "첫 결실·함께 키움"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "The conclusion of any matter in plenty, perfection and merriment; happy issue, victory, fulfilment, solace, healing.",
+    "reversed": "Expedition, dispatch, achievement, end. It signifies also the side of excess in physical enjoyment, and the pleasures of the senses.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 역방향에 감각적 즐거움의 지나침도 넣었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-03.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

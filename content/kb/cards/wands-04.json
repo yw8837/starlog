@@ -1,0 +1,273 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-04",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-04.webp",
+  "names": {
+    "ko": "완드 4",
+    "ja": "ワンドの4",
+    "en": "Four of Wands",
+    "koAliases": [
+      "지팡이 4"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "4",
+  "number": 4,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "양자리의 금성(Venus in Aries)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "축하와 환영",
+    "안정된 기반",
+    "함께 기뻐함",
+    "쉼표"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "four-wands-garland",
+        "ko": "앞쪽에 세운 지팡이 네 개 위로 꽃과 과일로 엮은 화환이 걸려 있다",
+        "salience": 1
+      },
+      {
+        "id": "ribbons",
+        "ko": "바깥쪽 두 지팡이 끝에 붉은 리본이 묶여 있다",
+        "salience": 3
+      },
+      {
+        "id": "two-women",
+        "ko": "두 여인이 꽃다발을 머리 위로 들어 올리고 있다",
+        "salience": 1
+      },
+      {
+        "id": "castle",
+        "ko": "뒤쪽에 주황 지붕 탑이 있는 회색 성이 보인다",
+        "salience": 2
+      },
+      {
+        "id": "bridge",
+        "ko": "오른쪽에 해자 위로 걸린 다리가 있다",
+        "salience": 3
+      },
+      {
+        "id": "small-crowd",
+        "ko": "왼쪽 뒤로 사람 몇 명이 모여 있다",
+        "salience": 3
+      },
+      {
+        "id": "yellow-sky",
+        "ko": "하늘은 밝은 노란색이다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "결혼식 장면이다",
+        "correct": "두 여인이 꽃다발을 든 축하 장면일 뿐 결혼식으로 특정되지 않는다",
+        "regex": "결혼식|신랑|신부"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "four-wands-garland",
+        "ko": "세워 둔 기반 위에 거는 축하",
+        "school": "modern"
+      },
+      {
+        "factId": "two-women",
+        "ko": "함께 기뻐하고 환영하는 분위기",
+        "school": "modern"
+      },
+      {
+        "factId": "castle",
+        "ko": "옛 영주 저택으로 이어지는 다리, 쉴 곳과 안식처",
+        "school": "waite-1911"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "From the four great staves planted in the foreground there is a great garland suspended; two female figures uplift nose-gays; at their side is a bridge over a moat, leading to an old manorial house.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-04.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "축하와 환영",
+      "안정된 기반",
+      "함께 기뻐함",
+      "집 같은 편안함"
+    ],
+    "reversed": [
+      "흔들리는 기반",
+      "축하가 미뤄짐",
+      "소속감 부족",
+      "겉만 화목함"
+    ],
+    "oneLine": {
+      "upright": "쌓아 온 것이 자리 잡아 함께 축하하고 잠시 쉬어 가는 때",
+      "reversed": "축하할 일이 있어도 마음껏 누리지 못하거나 기반이 조금 흔들리는 상태"
+    },
+    "shadow": "편안함에 머물러 다음 준비를 잊는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "blocked"
+    ],
+    "gloss": {
+      "waning": "축하의 기운은 있지만 작고 소소하게 옴",
+      "blocked": "일정이나 사정으로 기념과 쉼이 미뤄짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "편안하고 기쁜 마음이에요. 함께한 사람들이 고마운 상태예요.",
+    "reversed": "어울리고 싶은데 어딘가 겉도는 느낌이 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계가 편안하게 자리 잡고 함께 기념할 만한 흐름으로 읽어요. 작은 기념일이나 주변에 소개하는 자리가 어울려요.",
+      "reversed": "겉으로는 괜찮지만 관계의 기반이 조금 흔들리거나 축하가 미뤄지는 쪽으로 읽어요. 서로 편안함을 느끼는 순간을 다시 만들어 보세요."
+    },
+    "contact": {
+      "upright": "반가움과 환영이 담긴 연락이 어울리는 그림이에요. 축하할 일이나 기념할 소식을 계기로 삼아 보세요.",
+      "reversed": "분위기를 억지로 밝게 만들려는 연락이 되기 쉬운 쪽으로 읽어요. 부담 없는 안부로 온도를 맞춰 보세요."
+    },
+    "work": {
+      "upright": "한 단계를 마치고 성과를 축하하는 흐름으로 읽어요. 팀과 함께 작은 마무리 자리를 가져 보세요.",
+      "reversed": "성과가 있어도 인정받는 자리가 없거나 팀 분위기가 겉도는 쪽으로 읽어요. 스스로라도 한 일을 기록해 두세요."
+    },
+    "choice": {
+      "upright": "더 편안하게 머물고 소속감을 느낄 수 있는 쪽이 기준이 되는 배치로 읽어요. 그곳에서의 평범한 하루를 떠올려 보세요.",
+      "reversed": "지금 자리의 소속감이 흔들려 다른 선택지를 보는 상태로 읽어요. 무엇이 편안함을 깨뜨렸는지 먼저 적어 보세요."
+    },
+    "self": {
+      "upright": "집이나 익숙한 공간에서 쉬며 재충전하는 시기로 읽어요. 나를 축하해 줄 이유 하나를 찾아보세요.",
+      "reversed": "편히 쉴 곳이 없다고 느끼는 시기로 읽어요. 작은 공간 하나라도 편하게 정리해 보세요."
+    },
+    "group": {
+      "upright": "모임이 화목하게 축하하고 어울리는 흐름으로 읽어요. 기념할 자리를 만들어 보세요.",
+      "reversed": "겉으로는 화목하지만 속으로 겉도는 사람이 있는 분위기로 읽어요. 소외된 사람에게 먼저 말을 걸어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "편안하고 반가운 마음이에요.",
+      "reversed": "함께하고 싶은데 어딘가 어색한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "편안하게 자리 잡은 흐름으로 읽어요. 함께 기념할 만한 결이에요.",
+      "reversed": "겉은 괜찮지만 기반이 조금 흔들리는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "반가움과 축하를 담은 연락이 흐름을 따뜻하게 만들 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 분위기를 억지로 띄우는 연락이 될 수 있다는 쪽으로 읽어요. 가벼운 안부 크기로 다시 보세요."
+    },
+    "모임의 분위기": {
+      "upright": "화목하고 환영하는 분위기로 읽어요.",
+      "reversed": "겉으로 화목하지만 조금 겉도는 분위기로 읽어요."
+    },
+    "나의 자리": {
+      "upright": "환영받고 편안하게 섞일 수 있는 자리로 읽어요.",
+      "reversed": "아직 자리를 찾는 중이라 조금 어색한 자리로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "작은 축하나 모임을 즐기는 날로 읽어요.",
+      "reversed": "쉬는 공간을 정리하고 나를 챙기는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "최근 이룬 일 하나를 골라 가까운 사람과 작게 축하해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "고마운 사람에게 짧은 감사 인사를 보내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "편안함을 깨뜨리는 요소 하나를 적고 바꿀 수 있는지 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "겉도는 사람이 있다면 먼저 한마디 건네 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "결혼이나 이사가 성사된다고 단정",
+      "instead": "안정과 축하의 흐름으로만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "가족이나 주변이 관계를 인정한다고 단정",
+      "instead": "함께 기뻐할 자리를 만들어 볼 수 있다는 정도로 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-04-emperor",
+      "ko": "세운 틀 위의 안정과 축하"
+    },
+    {
+      "with": "cups-03",
+      "ko": "함께 모여 기뻐하는 자리"
+    },
+    {
+      "with": "pentacles-10",
+      "ko": "오래 가는 안정과 가족 같은 소속감"
+    },
+    {
+      "with": "wands-05",
+      "ko": "축하 뒤 의견이 부딪히는 흐름(4→5)"
+    }
+  ],
+  "numerology": {
+    "stage": "다지기·멈춰 지킴"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "They are for once almost on the surface—country life, haven of refuge, a species of domestic harvest-home, repose, concord, harmony, prosperity, peace, and the perfected work of these.",
+    "reversed": "The meaning remains unaltered; it is prosperity, increase, felicity, beauty, embellishment.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 이 카드의 역방향 의미가 정방향과 거의 같다고 적었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-04.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

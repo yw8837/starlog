@@ -1,0 +1,279 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-10",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-10.webp",
+  "names": {
+    "ko": "컵 10",
+    "ja": "カップの10",
+    "en": "Ten of Cups",
+    "koAliases": [
+      "컵 10",
+      "성배 10"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "10",
+  "number": 10,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "물고기자리의 화성(Mars in Pisces)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "함께하는 행복",
+    "가족 같은 안정",
+    "마음의 평화",
+    "무지개"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "rainbow-cups",
+        "ko": "하늘에 무지개가 걸려 있고 그 위에 컵 열 개가 늘어서 있다",
+        "salience": 1
+      },
+      {
+        "id": "couple",
+        "ko": "남녀가 등을 보인 채 서로 허리를 감싸고 바깥쪽 팔을 무지개 쪽으로 들어 올린다",
+        "salience": 1
+      },
+      {
+        "id": "children",
+        "ko": "오른쪽에서 두 아이가 손을 잡고 춤춘다",
+        "salience": 1
+      },
+      {
+        "id": "home",
+        "ko": "멀리 나무 사이에 붉은 지붕 집이 보인다",
+        "salience": 2
+      },
+      {
+        "id": "river-hills",
+        "ko": "강이 흐르고 초록 언덕이 펼쳐진다",
+        "salience": 3
+      },
+      {
+        "id": "blue-sky",
+        "ko": "하늘은 옅은 푸른색이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "아이들도 무지개를 올려다본다",
+        "correct": "아이들은 무지개를 보지 않고 저희끼리 춤춘다",
+        "regex": "아이들[^.]{0,10}(올려다|바라)"
+      },
+      {
+        "wrong": "가족이 식탁에 둘러앉아 있다",
+        "correct": "야외 풍경 속에 서 있거나 춤추는 장면이다",
+        "regex": "식탁|둘러앉"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "children",
+        "ko": "아이들은 기적을 보지 못해도 그들 나름으로 행복함",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "rainbow-cups",
+        "ko": "함께 바라보는 마음의 충만함",
+        "school": "modern"
+      },
+      {
+        "factId": "home",
+        "ko": "돌아갈 곳이 있는 안정",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "Appearance of Cups in a rainbow; it is contemplated in wonder and ecstacy by a man and woman below, evidently husband and wife. His right arm is about her; his left is raised upward; she raises her right arm. The two children dancing near them have not observed the prodigy but are happy after their own manner. There is a home-scene beyond.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-10.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "함께하는 행복",
+      "가족 같은 안정",
+      "마음의 평화",
+      "오래 가는 유대"
+    ],
+    "reversed": [
+      "겉으로만 평화",
+      "가족 사이 갈등",
+      "기대와 다른 관계",
+      "소속감 흔들림"
+    ],
+    "oneLine": {
+      "upright": "가까운 사람들과 마음이 통해 평화롭고 충만함을 느끼는 때",
+      "reversed": "겉으로는 화목해 보여도 서로 다른 그림을 보거나 기대가 어긋난 상태"
+    },
+    "shadow": "완벽한 가정의 그림에 맞추느라 실제 감정을 덮는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "바라는 관계의 그림과 현실이 어긋남",
+      "internalized": "겉은 평화롭지만 속으로 쌓인 불만"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음이 평화롭고 함께여서 든든해요.",
+    "reversed": "모두 괜찮아 보이는데 나만 어긋난 느낌이 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "함께 미래를 그리며 안정되는 흐름으로 읽어요. 두 사람이 원하는 일상의 모습을 이야기해 보면 좋아요.",
+      "reversed": "서로 그리는 미래나 가족에 대한 생각이 다른 쪽으로 읽어요. 이상적인 그림보다 실제로 원하는 것을 맞춰 보세요."
+    },
+    "contact": {
+      "upright": "따뜻하고 편안한 안부가 어울리는 그림이에요. 함께 좋았던 순간을 떠올리며 시작해 보세요.",
+      "reversed": "좋은 분위기를 지키느라 해야 할 말을 미루는 쪽으로 읽어요. 부드럽게 한 가지는 꺼내 보세요."
+    },
+    "work": {
+      "upright": "팀이 가족처럼 편하고 서로를 챙기는 흐름으로 읽어요. 함께 이룬 것을 나누는 시간을 가져 보세요.",
+      "reversed": "겉으로는 화목하지만 불만이 쌓인 조직 분위기로 읽어요. 말하기 편한 창구를 만들어 보세요."
+    },
+    "choice": {
+      "upright": "가족이나 가까운 사람들과 함께 행복할 수 있는 쪽이 기준이 되는 배치로 읽어요. 그 선택이 곁의 사람들과 어떻게 이어지는지 보세요.",
+      "reversed": "남들이 말하는 행복의 그림에 맞춰 고르려는 상태로 읽어요. 내가 그리는 일상을 먼저 적어 보세요."
+    },
+    "self": {
+      "upright": "마음이 평화롭고 감사가 많은 시기로 읽어요. 고마운 사람에게 마음을 전해 보세요.",
+      "reversed": "기대한 행복과 지금 사이의 틈이 느껴지는 시기로 읽어요. 지금 가진 작은 평화를 적어 보세요."
+    },
+    "group": {
+      "upright": "모임이 가족처럼 따뜻하고 화목한 흐름으로 읽어요. 함께 기념할 자리를 만들어 보세요.",
+      "reversed": "화목한 겉모습 아래 서운함이 쌓인 분위기로 읽어요. 편하게 말할 수 있는 자리를 만들어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "함께여서 평화롭고 든든한 마음이에요.",
+      "reversed": "기대한 관계와 현실의 차이에 서운한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "같은 곳을 바라보며 안정되는 흐름으로 읽어요.",
+      "reversed": "서로 그리는 그림이 조금 다른 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "따뜻한 안부가 편안한 흐름을 이어 줄 수 있다는 쪽으로 읽어요.",
+      "reversed": "좋은 분위기만 지키려는 연락이 되기 쉽다는 쪽으로 읽어요. 할 말 하나를 담는 조건에서 다시 보세요."
+    },
+    "두 사람의 흐름": {
+      "upright": "함께 안정된 미래를 그리는 흐름으로 읽어요.",
+      "reversed": "서로의 기대를 맞춰 가야 하는 흐름으로 읽어요."
+    },
+    "모임의 분위기": {
+      "upright": "가족처럼 따뜻한 분위기로 읽어요.",
+      "reversed": "겉은 화목하지만 속으로 서운함이 있는 분위기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "가까운 사람과 편안한 시간을 보내는 날로 읽어요.",
+      "reversed": "미뤄 둔 이야기를 부드럽게 꺼내는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "가까운 사람에게 함께여서 좋은 점 하나를 말해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "원하는 일상의 모습을 세 줄로 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "좋은 분위기 때문에 미뤄 둔 이야기 하나를 부드럽게 꺼내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "남들이 말하는 행복 말고 내가 바라는 행복을 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "결혼이나 출산이 이뤄진다고 확정",
+      "instead": "함께하는 안정의 흐름과 맞춰 볼 점까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대도 같은 미래를 원한다고 단정",
+      "instead": "서로 그리는 그림을 확인해 보자고 제안해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "임신을 암시한다고 말하기",
+      "instead": "관계와 소속의 안정으로만 읽어요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "cups-09",
+      "ko": "개인의 만족이 함께하는 기쁨으로 넓어지는 흐름"
+    },
+    {
+      "with": "pentacles-10",
+      "ko": "마음의 행복과 생활의 안정이 함께함"
+    },
+    {
+      "with": "major-19-sun",
+      "ko": "함께 누리는 밝은 기쁨"
+    },
+    {
+      "with": "wands-04",
+      "ko": "함께 축하하는 안정된 기반"
+    }
+  ],
+  "numerology": {
+    "stage": "한 주기의 끝·무게"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Contentment, repose of the entire heart; the perfection of that state; also perfection of human love and friendship; if with several picture-cards, a person who is taking charge of the Querent's interests; also the town, village or country inhabited by the Querent.",
+    "reversed": "Repose of the false heart, indignation, violence.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-10.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

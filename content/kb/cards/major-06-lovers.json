@@ -1,0 +1,295 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-06-lovers",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-06-lovers.webp",
+  "names": {
+    "ko": "연인",
+    "ja": "恋人",
+    "en": "The Lovers",
+    "koAliases": [
+      "연인들"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 6,
+  "roman": "VI",
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "쌍둥이자리(Gemini)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "마음이 향하는 선택",
+    "끌림",
+    "가치 맞추기",
+    "마주 봄"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "big-sun",
+        "ko": "맨 위에 큰 노란 해가 빛살을 뻗는다",
+        "salience": 3
+      },
+      {
+        "id": "angel-cloud",
+        "ko": "해 아래 붉은 날개와 불꽃 같은 머리칼의 천사가 구름 위에서 두 팔을 벌리고 있다",
+        "salience": 1
+      },
+      {
+        "id": "two-figures",
+        "ko": "벌거벗은 여자는 왼쪽, 남자는 오른쪽에 떨어져 서 있다",
+        "salience": 1
+      },
+      {
+        "id": "gazes",
+        "ko": "여자는 위쪽 천사를 올려다보고, 남자는 여자 쪽을 바라본다",
+        "salience": 1
+      },
+      {
+        "id": "fruit-tree-serpent",
+        "ko": "여자 뒤 나무에는 붉은 열매가 달렸고 초록 뱀이 줄기를 감고 있다",
+        "salience": 2
+      },
+      {
+        "id": "flame-tree",
+        "ko": "남자 뒤 나무에는 불꽃 모양 열매가 달려 있다",
+        "salience": 2
+      },
+      {
+        "id": "mountain",
+        "ko": "두 사람 사이 뒤쪽에 뾰족한 산 하나가 솟아 있다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "두 사람이 손을 잡고 있다",
+        "correct": "두 사람은 떨어져 서서 손을 펼치고 있을 뿐 닿지 않는다",
+        "regex": "손을\\s*(맞)?잡|포옹|껴안"
+      },
+      {
+        "wrong": "큐피드가 화살을 겨눈다",
+        "correct": "큐피드와 화살은 없고, 구름 위 천사가 팔을 벌리고 있다",
+        "regex": "큐피드|화살"
+      },
+      {
+        "wrong": "한 남자가 두 여자 사이에서 고민한다",
+        "correct": "그림 속 사람은 남녀 두 명뿐이다(두 여자 구도는 옛 마르세유 계열)",
+        "regex": "두\\s*여자\\s*사이"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "gazes",
+        "ko": "서로 보는 곳이 달라, 무엇을 기준으로 고르는지가 드러남",
+        "school": "modern"
+      },
+      {
+        "factId": "angel-cloud",
+        "ko": "두 사람 위에서 선택을 비추는 더 큰 기준",
+        "school": "modern"
+      },
+      {
+        "factId": "fruit-tree-serpent",
+        "ko": "끌림에는 유혹과 선택의 책임이 함께 있음",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-06-lovers.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "마음이 향하는 선택",
+      "서로 끌림",
+      "가치가 맞는 관계",
+      "솔직하게 마주 봄"
+    ],
+    "reversed": [
+      "마음과 선택이 엇갈림",
+      "가치관 차이",
+      "유혹에 흔들림",
+      "선택을 미룸"
+    ],
+    "oneLine": {
+      "upright": "끌림을 따르되 내가 무엇을 소중히 여기는지 분명히 하고 고르는 때",
+      "reversed": "끌림과 가치가 엇갈리거나, 고르지 못해 관계가 맴도는 상태"
+    },
+    "shadow": "끌림을 핑계로 책임 있는 선택을 미루는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "internalized",
+      "excess"
+    ],
+    "gloss": {
+      "blocked": "서로 보는 방향이 달라 선택이 미뤄짐",
+      "internalized": "관계보다 나 자신과의 약속을 먼저 정리해야 함",
+      "excess": "끌림이 커서 판단이 흐려짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음이 분명히 한쪽으로 끌리고 있어요. 그 끌림을 솔직하게 인정할 수 있는 상태예요.",
+    "reversed": "끌리는 마음과 옳다고 생각하는 것 사이에서 갈등하고 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "서로 끌리고 가치가 맞는지 확인해 가는 흐름으로 읽어요. 좋아하는 마음과 함께 두 사람이 원하는 관계의 모양을 이야기해 보면 좋아요.",
+      "reversed": "끌림은 있는데 원하는 것이 서로 다르거나, 선택을 미루면서 관계가 제자리를 도는 쪽으로 읽어요. 내가 양보할 수 없는 것 하나를 먼저 정해 보세요."
+    },
+    "contact": {
+      "upright": "마음을 숨기지 않고 솔직하게 건네는 연락이 어울리는 그림이에요. 가볍더라도 진심이 담긴 한 줄이 이 흐름과 맞아요.",
+      "reversed": "보낼지 말지 저울질만 길어지거나, 끌림에 떠밀려 내 기준을 넘는 연락이 될 수 있다는 쪽으로 읽어요. 보내기 전 내가 원하는 결과를 한 줄로 적어 보세요."
+    },
+    "work": {
+      "upright": "내 가치와 맞는 일과 동료를 고르는 흐름으로 읽어요. 협업이나 계약처럼 서로 합을 맞추는 일에 힘이 실려요.",
+      "reversed": "조건은 좋은데 마음이 안 가거나, 팀과 가치관이 어긋나는 쪽으로 읽어요. 일에서 지키고 싶은 원칙을 적어 비교해 보세요."
+    },
+    "choice": {
+      "upright": "두 길 중 마음이 진심으로 끌리는 쪽이 어디인지가 핵심 기준이 되는 배치로 읽어요. 끌림과 함께 그 선택의 책임도 감당할 수 있는지 보세요.",
+      "reversed": "끌리는 쪽과 옳아 보이는 쪽이 달라 결정이 미뤄지는 상태로 읽어요. 각 선택이 지키는 가치를 한 단어씩 붙여 보세요."
+    },
+    "self": {
+      "upright": "내가 무엇을 좋아하고 소중히 여기는지 분명해지는 시기로 읽어요. 나와의 약속을 하나 세우기 좋아요.",
+      "reversed": "마음과 행동이 따로 가서 스스로 불편한 상태로 읽어요. 최근 선택 중 내 기준과 어긋난 것 하나를 돌아보세요."
+    },
+    "group": {
+      "upright": "마음이 잘 맞는 사람과 짝을 이루거나 가까워지는 흐름으로 읽어요. 함께할 사람을 고르는 기준을 세워 보세요.",
+      "reversed": "모임 안에서 편이 갈리거나 누구 편에 설지 고민하게 되는 쪽으로 읽어요. 사람보다 원칙을 기준으로 입장을 정해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "끌리는 마음이 분명하고, 그걸 인정할 준비가 된 상태예요.",
+      "reversed": "끌리는 마음과 망설이는 이유가 함께 있어요. 무엇이 걸리는지 보는 자리예요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 마주 보고 선택하는 단계의 흐름으로 읽어요. 관계의 방향을 함께 정할 여지가 있어요.",
+      "reversed": "원하는 방향이 조금 엇갈린 흐름으로 읽어요. 같은 것을 원하는지 확인이 필요한 자리예요."
+    },
+    "먼저 움직이면": {
+      "upright": "솔직한 마음을 담아 먼저 다가가는 것이 흐름을 분명하게 할 수 있다는 쪽으로 읽어요.",
+      "reversed": "마음을 확인받으려는 연락이 되면 엇갈릴 수 있다는 쪽으로 읽어요. 내 뜻을 전하는 데서 멈추는 조건으로 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "솔직하고 매력 있는 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "마음이 어디 있는지 잘 모르겠는 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "두 사람의 흐름": {
+      "upright": "끌림이 선택과 약속으로 이어지는 흐름으로 읽어요.",
+      "reversed": "선택이 미뤄져 관계가 제자리를 도는 흐름으로 읽어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "머리로 따지느라 내 마음이 어디로 끌리는지를 놓치고 있을 수 있어요.",
+      "reversed": "끌림에 가려 서로의 가치 차이를 놓치고 있을 수 있어요."
+    },
+    "오늘의 한 장": {
+      "upright": "좋아하는 것을 좋아한다고 말해 보는 날로 읽어요.",
+      "reversed": "미뤄 둔 결정 하나에 기준을 붙여 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "관계에서 내가 원하는 모습 세 가지를 적고 나눌 수 있는 것 하나를 골라 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "고민 중인 선택에서 마음이 먼저 반응하는 쪽을 솔직하게 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "끌림과 원칙이 부딪히는 지점을 한 문장으로 써 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "결정을 미루고 있다면 스스로 정한 기한 하나를 달력에 적어 두세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대도 나를 좋아한다고 단정",
+      "instead": "서로 끌림이 있는 흐름일 수 있다고만 말하고 확인 방법을 제안해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "연인이 된다, 결혼한다고 확정",
+      "instead": "관계의 방향을 함께 정할 여지가 있다는 데서 멈춰요."
+    },
+    {
+      "code": "NO_SCORE",
+      "doNotClaim": "궁합 점수나 확률로 말하기",
+      "instead": "두 사람이 맞춰 볼 가치와 조건을 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-05-hierophant",
+      "ko": "마음의 선택이 공식적인 약속으로 이어지는 흐름"
+    },
+    {
+      "with": "cups-02",
+      "ko": "서로 마음을 주고받는 끌림이 겹치는 조합"
+    },
+    {
+      "with": "major-15-devil",
+      "ko": "끌림이 집착이나 끊기 어려운 습관으로 바뀌지 않는지 살필 조합"
+    },
+    {
+      "with": "swords-02",
+      "ko": "끌림은 있는데 눈을 가린 채 선택을 미루는 상태"
+    }
+  ],
+  "numerology": {
+    "stage": "6 · 마음이 한쪽을 고르는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT",
+      "NO_SCORE"
+    ]
+  },
+  "waite": {
+    "upright": "Attraction, love, beauty, trials overcome.",
+    "reversed": "Failure, foolish designs. Another account speaks of marriage frustrated and contrarieties of all kinds.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite는 이 카드를 옛 '결혼' 카드와 '두 길 사이의 남자' 구도를 대체한 인간적 사랑의 카드로 설명했다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-06-lovers.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 VI, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

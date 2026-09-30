@@ -1,0 +1,278 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-03",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-03.webp",
+  "names": {
+    "ko": "완드 3",
+    "ja": "ワンドの3",
+    "en": "Three of Wands",
+    "koAliases": [
+      "지팡이 3"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "3",
+  "number": 3,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "양자리의 태양(Sun in Aries)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "멀리 내다보기",
+    "기다리는 결과",
+    "확장",
+    "먼저 떠난 배"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "back-view",
+        "ko": "한 남자가 등을 보인 채 절벽 위에서 바다를 내려다본다",
+        "salience": 1
+      },
+      {
+        "id": "three-wands",
+        "ko": "지팡이 세 개가 땅에 꽂혀 있고, 남자는 그중 오른쪽 하나를 한 손으로 쥐었다",
+        "salience": 1
+      },
+      {
+        "id": "ships",
+        "ko": "누런 바다 위에 작은 배 세 척이 떠 있다",
+        "salience": 1
+      },
+      {
+        "id": "robes",
+        "ko": "붉은 옷 위에 초록 망토를 한쪽 어깨에 걸치고 체크무늬 띠를 둘렀다",
+        "salience": 3
+      },
+      {
+        "id": "headband",
+        "ko": "머리에 흰 띠를 둘렀다",
+        "salience": 3
+      },
+      {
+        "id": "yellow-sky",
+        "ko": "하늘과 바다가 온통 노란빛이고 멀리 산이 보인다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "배를 타고 떠난다",
+        "correct": "남자는 절벽 위에 서서 배를 바라본다",
+        "regex": "배를\\s*타고|배에\\s*올라"
+      },
+      {
+        "wrong": "남자가 정면을 보고 서 있다",
+        "correct": "남자는 등을 보이고 서 있다",
+        "regex": "정면을\\s*(보|바라)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "ships",
+        "ko": "그의 물건을 싣고 바다를 건너는 배(사업과 교역)",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "back-view",
+        "ko": "이미 보낸 것을 기다리며 더 멀리 보는 시선",
+        "school": "modern"
+      },
+      {
+        "factId": "three-wands",
+        "ko": "기반을 세워 두고 다음을 내다봄",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A calm, stately personage, with his back turned, looking from a cliff's edge at ships passing over the sea. Three staves are planted in the ground, and he leans slightly on one of them.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-03.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "보낸 것을 기다림",
+      "시야 넓히기",
+      "확장과 협력",
+      "장기적인 전망"
+    ],
+    "reversed": [
+      "기다림이 길어짐",
+      "예상과 다른 결과",
+      "시야가 좁아짐",
+      "혼자 다 하려 함"
+    ],
+    "oneLine": {
+      "upright": "먼저 준비해 보낸 것이 돌아오길 기다리며 더 멀리 내다보는 때",
+      "reversed": "기다리던 결과가 늦어지거나 예상과 달라 시야가 좁아진 상태"
+    },
+    "shadow": "멀리만 보다 발밑의 일을 놓치는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "waning"
+    ],
+    "gloss": {
+      "blocked": "보낸 것이 돌아오지 않아 기다림이 길어짐",
+      "waning": "넓어지던 시야와 기대가 줄어듦"
+    }
+  },
+  "asFeelings": {
+    "upright": "해 둔 일이 있으니 기다려 볼 수 있다는 여유가 있어요. 앞날이 기대돼요.",
+    "reversed": "기다리는 게 지치고 결과가 불안해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계를 조금 더 긴 안목으로 보는 흐름으로 읽어요. 이미 전한 마음이 자리를 잡을 시간을 두면 좋아요.",
+      "reversed": "기대한 반응이 늦어 조급해지는 쪽으로 읽어요. 기다리는 동안 내 생활의 다른 배도 띄워 보세요."
+    },
+    "contact": {
+      "upright": "이미 보낸 연락이 있다면 여유를 갖고 기다려 보는 흐름으로 읽어요. 추가로 보내기보다 내 일을 하며 시야를 넓혀 두세요.",
+      "reversed": "답을 기다리는 시간이 길게 느껴지는 쪽으로 읽어요. 기다림의 기한을 스스로 정하고, 그 전에는 재촉하지 않는 게 좋아요."
+    },
+    "work": {
+      "upright": "준비한 일이 바깥으로 나가 확장되는 흐름으로 읽어요. 협력자나 새 시장을 넓게 살펴보세요.",
+      "reversed": "계획한 확장이 늦어지거나 협력이 기대만큼 안 되는 쪽으로 읽어요. 일정과 기대치를 현실에 맞게 조정해 보세요."
+    },
+    "choice": {
+      "upright": "더 멀리까지 이어지는 가능성이 있는 쪽에 힘이 실리는 배치로 읽어요. 장기적으로 어떤 문이 열리는지 보세요.",
+      "reversed": "당장의 결과만 보고 고르려는 상태로 읽어요. 1년 뒤의 모습을 기준으로 다시 비교해 보세요."
+    },
+    "self": {
+      "upright": "시야가 넓어지고 앞날을 계획하는 시기로 읽어요. 먼 곳이나 새 분야에 관심을 두기 좋아요.",
+      "reversed": "기대한 변화가 늦어 답답한 시기로 읽어요. 지금 할 수 있는 일로 관심을 돌려 보세요."
+    },
+    "group": {
+      "upright": "모임이 바깥으로 넓어지거나 협력 범위가 커지는 흐름으로 읽어요. 새 사람을 초대해 보세요.",
+      "reversed": "모임이 계획만큼 커지지 않아 실망이 도는 분위기로 읽어요. 목표를 한 단계 낮춰 다시 잡아 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "보낸 마음이 닿기를 여유 있게 기다리는 마음이에요.",
+      "reversed": "기다림이 길어져 조급해진 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "당장보다 멀리 보고 이어지는 흐름으로 읽어요.",
+      "reversed": "기대와 반응 사이에 시차가 생긴 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "먼저 보내 두고 여유 있게 기다리는 방식이 어울린다는 쪽으로 읽어요.",
+      "reversed": "보낸 뒤 기다리지 못하고 재촉하게 될 수 있다는 쪽으로 읽어요. 기다릴 기한을 정한 조건에서 다시 보세요."
+    },
+    "나아갈 방향": {
+      "upright": "더 넓은 곳으로 확장하는 쪽이에요.",
+      "reversed": "기대치를 조정하고 발밑부터 다지는 쪽이에요."
+    },
+    "이 시기의 흐름": {
+      "upright": "준비한 일이 밖으로 퍼져 가는 시기로 읽어요.",
+      "reversed": "결과를 기다리는 시간이 길어지는 시기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "먼 계획을 세우거나 소식을 기다리는 날로 읽어요.",
+      "reversed": "기다리는 동안 할 수 있는 다른 일을 하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "이미 보낸 것(연락·지원서·제안) 목록을 적고, 기다리는 동안 할 일 하나를 정해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "1년 뒤 가고 싶은 곳을 한 문장으로 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "기다림에 기한을 붙이고, 그 전까지는 재촉하지 않기로 정해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 다 하려던 일 중 도움을 청할 부분을 하나 골라 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "기다리던 답이나 합격 소식이 온다고 단정",
+      "instead": "기다리는 동안의 태도와 준비까지만 말해요."
+    },
+    {
+      "code": "NO_DATE",
+      "doNotClaim": "배가 돌아오는 때를 날짜로 말하기",
+      "instead": "사용자가 고른 기간 안에서 기다림의 크기만 말해요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "사업 확장이나 투자가 성공한다고 말하기",
+      "instead": "확장 전에 확인할 조건을 함께 봐요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "wands-02",
+      "ko": "계획이 실제 출발로 이어지는 흐름"
+    },
+    {
+      "with": "major-21-world",
+      "ko": "넓은 세계로 나아가는 확장"
+    },
+    {
+      "with": "swords-06",
+      "ko": "지금 자리를 떠나 다른 곳으로 옮겨 가는 흐름"
+    },
+    {
+      "with": "pentacles-03",
+      "ko": "협력으로 키워 가는 일"
+    }
+  ],
+  "numerology": {
+    "stage": "첫 결실·함께 키움"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_DATE",
+      "NO_MONEY"
+    ]
+  },
+  "waite": {
+    "upright": "He symbolizes established strength, enterprise, effort, trade, commerce, discovery; those are his ships, bearing his merchandise, which are sailing over the sea. The card also signifies able co-operation in business, as if the successful merchant prince were looking from his side towards yours with a view to help you.",
+    "reversed": "The end of troubles, suspension or cessation of adversity, toil and disappointment.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-03.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

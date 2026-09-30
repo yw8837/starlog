@@ -1,0 +1,288 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-14",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-14.webp",
+  "names": {
+    "ko": "완드 왕",
+    "ja": "ワンドのキング",
+    "en": "King of Wands",
+    "koAliases": [
+      "지팡이 왕",
+      "완드 킹"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "king",
+  "number": 14,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "비전을 이끎",
+    "결단력",
+    "대담한 책임",
+    "앞을 내다봄"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "profile-throne",
+        "ko": "왕이 옆모습으로 왕좌에 앉아 왼쪽을 바라본다",
+        "salience": 1
+      },
+      {
+        "id": "flowering-wand",
+        "ko": "오른손에 잎 돋은 지팡이를 세워 쥐었다",
+        "salience": 1
+      },
+      {
+        "id": "flame-crown",
+        "ko": "불꽃 모양 끝이 솟은 금관을 썼다",
+        "salience": 2
+      },
+      {
+        "id": "throne-lions",
+        "ko": "왕좌 등받이에 검은 사자와 도롱뇽 무늬가 새겨져 있다",
+        "salience": 2
+      },
+      {
+        "id": "lizard",
+        "ko": "발치 오른쪽에 작은 검은 도롱뇽 한 마리가 있다",
+        "salience": 2
+      },
+      {
+        "id": "robes",
+        "ko": "주황빛 옷 위에 초록 목깃과 도롱뇽 무늬 망토를 걸쳤다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "정면을 보고 앉아 있다",
+        "correct": "옆모습으로 왼쪽을 본다",
+        "regex": "정면을\\s*(보|바라)"
+      },
+      {
+        "wrong": "발치에 사자가 엎드려 있다",
+        "correct": "발치에 있는 것은 작은 도롱뇽이다(사자는 등받이 무늬)",
+        "regex": "발치[^.]{0,6}사자"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "lizard",
+        "ko": "불 속에서도 산다는 도롱뇽, 열정을 끝까지 다루는 힘",
+        "school": "modern"
+      },
+      {
+        "factId": "profile-throne",
+        "ko": "지금보다 앞날을 내다보는 시선",
+        "school": "modern"
+      },
+      {
+        "factId": "flowering-wand",
+        "ko": "여전히 자라는 계획을 손에 쥔 리더",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "The physical and emotional nature to which this card is attributed is dark, ardent, lithe, animated, impassioned, noble. The King uplifts a flowering wand, and wears, like his three correspondences in the remaining suits, what is called a cap of maintenance beneath his crown. He connects with the symbol of the lion, which is emblazoned on the back of his throne.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-14.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "비전 제시",
+      "결단과 리더십",
+      "대담한 책임",
+      "정직한 추진력"
+    ],
+    "reversed": [
+      "고집과 독단",
+      "성급한 결정",
+      "지나친 기대",
+      "리더십 부담"
+    ],
+    "oneLine": {
+      "upright": "앞을 내다보는 비전과 결단으로 흐름을 이끌고 책임지는 때",
+      "reversed": "추진력이 독단이나 성급함으로 흐르거나, 이끄는 자리가 버겁게 느껴지는 상태"
+    },
+    "shadow": "내 비전만 옳다고 여겨 남의 속도를 무시하는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "waning"
+    ],
+    "gloss": {
+      "excess": "결단이 독단과 성급함으로 흐름",
+      "waning": "이끌 힘과 확신이 약해져 부담이 커짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "해낼 수 있다는 확신과 앞을 보는 시야가 있어요.",
+    "reversed": "이끌어야 한다는 부담에 조급해져 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계의 방향을 먼저 제시하고 책임 있게 이끄는 흐름으로 읽어요. 원하는 미래를 솔직하게 말해 보세요.",
+      "reversed": "내 방식대로 관계를 끌고 가려 하거나, 기대가 커서 조급해지는 쪽으로 읽어요. 서로의 속도를 한 번 물어보세요."
+    },
+    "contact": {
+      "upright": "용건과 뜻이 분명한 연락을 먼저 하는 흐름으로 읽어요. 제안이나 약속을 구체적으로 담아 보세요.",
+      "reversed": "결정을 몰아붙이는 연락이 되기 쉬운 쪽으로 읽어요. 제안은 하되 선택은 열어 두세요."
+    },
+    "work": {
+      "upright": "비전을 세우고 팀을 이끄는 역할에 힘이 실리는 흐름으로 읽어요. 큰 방향을 먼저 공유해 보세요.",
+      "reversed": "혼자 결정하고 밀어붙여 마찰이 생기거나, 책임감에 지치는 쪽으로 읽어요. 결정 과정에 사람들을 참여시켜 보세요."
+    },
+    "choice": {
+      "upright": "더 큰 비전과 성장 가능성이 보이는 쪽에 힘이 실리는 배치로 읽어요. 그 비전을 한 문장으로 적어 보세요.",
+      "reversed": "성급하게 결론을 내리려는 상태로 읽어요. 반대 의견을 한 번 들어 보고 정해 보세요."
+    },
+    "self": {
+      "upright": "스스로 방향을 정하고 끌고 가는 힘이 있는 시기로 읽어요. 장기 목표를 세워 보세요.",
+      "reversed": "다 해내야 한다는 압박에 지친 시기로 읽어요. 이번 주 목표를 하나만 남겨 보세요."
+    },
+    "group": {
+      "upright": "모임에 방향을 제시하는 리더십이 필요한 흐름으로 읽어요. 목표와 역할을 분명히 말해 보세요.",
+      "reversed": "한 사람의 독단적인 결정에 반발이 생기는 분위기로 읽어요. 결정 방식을 함께 정해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "관계를 책임 있게 이끌고 싶은 확신이 있어요.",
+      "reversed": "빨리 결론 내고 싶은 조급함이 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "한쪽이 방향을 제시하며 이끄는 흐름으로 읽어요.",
+      "reversed": "한쪽의 뜻이 너무 강하게 작용하는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "분명한 제안을 담아 먼저 움직이면 흐름이 잡힐 수 있다는 쪽으로 읽어요.",
+      "reversed": "결정을 몰아붙이는 연락이 되기 쉽다는 쪽으로 읽어요. 선택지를 열어 두는 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "믿음직하고 추진력 있는 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "고집이 세고 밀어붙이는 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "큰 방향을 정하고 책임지고 이끄는 쪽이에요.",
+      "reversed": "혼자 결정하지 않고 의견을 모으는 쪽이에요."
+    },
+    "도움이 될 태도": {
+      "upright": "방향을 분명히 제시하는 태도가 도움이 돼요.",
+      "reversed": "밀어붙이기보다 설득하는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "큰 결정을 내리거나 장기 계획을 세우는 날로 읽어요.",
+      "reversed": "성급한 결론은 미루고 의견을 듣는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "앞으로 1년의 방향을 한 문장으로 적어 공유해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "미뤄 온 결정 하나에 기준을 세우고 오늘 결론을 내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 정하던 일 하나를 다른 사람과 함께 정해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "내가 책임질 범위와 맡길 범위를 나눠 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "특정 남성이나 윗사람이 나를 선택했다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 인물의 속마음은 다루지 않아요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "사업이나 창업이 성공한다고 확정",
+      "instead": "이끌 힘과 확인할 점까지만 말해요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "대담한 투자를 부추기기",
+      "instead": "큰 결정 전에 조건과 위험을 함께 봐요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "wands-13",
+      "ko": "열정을 비전으로 이끄는 짝"
+    },
+    {
+      "with": "major-04-emperor",
+      "ko": "구조와 비전이 함께 서는 리더십"
+    },
+    {
+      "with": "wands-03",
+      "ko": "멀리 내다보고 확장하는 흐름"
+    },
+    {
+      "with": "swords-14",
+      "ko": "결단과 판단력이 겹치는 조합, 따뜻함을 잃지 않게"
+    }
+  ],
+  "court": {
+    "asPerson": "방향을 제시하고 책임지고 이끄는 누군가(나이·성별 무관)",
+    "asAttitude": "멀리 보고 결정하며 결과를 책임지는 태도"
+  },
+  "numerology": {
+    "stage": "밖으로 책임지는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT",
+      "NO_MONEY"
+    ]
+  },
+  "waite": {
+    "upright": "Dark man, friendly, countryman, generally married, honest and conscientious. The card always signifies honesty, and may mean news concerning an unexpected heritage to fall in before very long.",
+    "reversed": "Good, but severe; austere, yet tolerant.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite의 인물 묘사(피부색, 결혼 여부, 유산 소식)는 출력하지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-14.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

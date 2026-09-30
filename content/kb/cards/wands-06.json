@@ -1,0 +1,278 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-06",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-06.webp",
+  "names": {
+    "ko": "완드 6",
+    "ja": "ワンドの6",
+    "en": "Six of Wands",
+    "koAliases": [
+      "지팡이 6"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "6",
+  "number": 6,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "사자자리의 목성(Jupiter in Leo)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "인정받는 성과",
+    "좋은 소식",
+    "자신감",
+    "함께 가는 행렬"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "rider-wreath",
+        "ko": "머리에 월계관을 쓴 남자가 흰 말을 타고 오른쪽으로 나아간다",
+        "salience": 1
+      },
+      {
+        "id": "wand-wreath",
+        "ko": "손에 든 지팡이 끝에 붉은 리본으로 묶은 월계 화환이 걸려 있다",
+        "salience": 1
+      },
+      {
+        "id": "crowd",
+        "ko": "왼쪽 아래로 걷는 사람들이 지팡이를 세워 들고 곁을 따른다(지팡이는 모두 여섯 개)",
+        "salience": 2
+      },
+      {
+        "id": "caparison",
+        "ko": "말은 무늬가 있는 초록 덮개를 두르고 붉은 굴레를 썼다",
+        "salience": 3
+      },
+      {
+        "id": "cloak",
+        "ko": "남자는 붉은 자줏빛 망토를 둘렀다",
+        "salience": 3
+      },
+      {
+        "id": "blue-sky",
+        "ko": "배경은 푸른 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "사람들이 그를 향해 지팡이를 겨눈다",
+        "correct": "곁의 사람들은 지팡이를 세워 들고 함께 걷는다",
+        "regex": "겨누|겨눈|겨냥|공격"
+      },
+      {
+        "wrong": "혼자 걸어서 돌아온다",
+        "correct": "말을 타고 있고 곁에 사람들이 있다",
+        "regex": "혼자\\s*(걸|걷)|말에서\\s*내려"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "wand-wreath",
+        "ko": "눈에 보이는 성취와 인정",
+        "school": "modern"
+      },
+      {
+        "factId": "crowd",
+        "ko": "왕의 전령이 전하는 큰 소식, 기대가 이뤄진 행렬",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "rider-wreath",
+        "ko": "스스로의 노력으로 얻은 자신감",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A laurelled horseman bears one staff adorned with a laurel crown; footmen with staves are at his side.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-06.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "인정받는 성과",
+      "좋은 소식",
+      "자신감",
+      "함께 축하받음"
+    ],
+    "reversed": [
+      "인정이 늦어짐",
+      "남의 시선에 흔들림",
+      "자만",
+      "기대보다 작은 박수"
+    ],
+    "oneLine": {
+      "upright": "애쓴 결과가 드러나 인정과 박수를 받는 때",
+      "reversed": "기대한 인정이 늦어지거나 남의 평가에 자신감이 흔들리는 상태"
+    },
+    "shadow": "박수에 기대어 다음 걸음을 남의 평가에 맡기는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "excess",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "성과는 있는데 인정과 소식이 늦어짐",
+      "excess": "자신감이 자만으로 흐름",
+      "internalized": "밖의 박수보다 스스로 인정하는 게 먼저인 때"
+    }
+  },
+  "asFeelings": {
+    "upright": "뿌듯하고 자신감이 올라온 상태예요.",
+    "reversed": "애쓴 만큼 알아주지 않는 것 같아 서운해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 내 매력이나 노력이 드러나고 인정받는 흐름으로 읽어요. 자신 있게 나를 보여 줘도 괜찮아요.",
+      "reversed": "주변의 반응이나 평가에 너무 기대고 있는 쪽으로 읽어요. 내가 나를 인정하는 말부터 해 보세요."
+    },
+    "contact": {
+      "upright": "좋은 소식이나 반가운 일을 계기로 연락하기 좋은 흐름으로 읽어요. 자신감 있게 먼저 말을 건네 보세요.",
+      "reversed": "인정받고 싶은 마음이 앞서 자랑처럼 들리는 연락이 되기 쉬운 쪽으로 읽어요. 내 소식보다 상대에 대한 관심을 한 줄 넣어 보세요."
+    },
+    "work": {
+      "upright": "성과가 드러나고 평가나 승진처럼 인정의 순간이 오기 쉬운 흐름으로 읽어요. 한 일을 정리해 보여 주세요.",
+      "reversed": "성과에 비해 인정이 늦거나, 평가에 신경 쓰느라 흔들리는 쪽으로 읽어요. 객관적인 기록을 남겨 두세요."
+    },
+    "choice": {
+      "upright": "내가 더 자신 있게 설 수 있고 인정받을 수 있는 쪽에 힘이 실리는 배치로 읽어요. 그 자리에서 잘할 수 있는 이유를 적어 보세요.",
+      "reversed": "남들이 보기에 좋은 쪽만 고르려는 건 아닌지 살펴보는 쪽으로 읽어요. 박수가 없어도 원하는 쪽이 어디인지 물어보세요."
+    },
+    "self": {
+      "upright": "자신감이 차오르는 시기로 읽어요. 작은 성취도 스스로 축하해 주세요.",
+      "reversed": "남의 평가에 기분이 오르내리는 시기로 읽어요. 오늘 스스로 잘한 일 하나를 적어 보세요."
+    },
+    "group": {
+      "upright": "모임에서 내 역할이나 기여가 인정받는 흐름으로 읽어요. 앞에 나서도 좋은 때예요.",
+      "reversed": "공이 한 사람에게만 몰리거나 인정받지 못한 사람이 있는 분위기로 읽어요. 함께한 사람들의 몫을 짚어 주세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "자신감이 생기고 나를 드러내고 싶은 마음이에요.",
+      "reversed": "인정받고 싶은데 확신이 흔들리는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "서로를 응원하고 좋은 소식이 오가는 흐름으로 읽어요.",
+      "reversed": "기대한 반응이 오지 않아 서운함이 생긴 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "자신감 있게 먼저 다가가면 흐름이 밝아질 수 있다는 쪽으로 읽어요.",
+      "reversed": "인정받으려는 연락이 되기 쉽다는 쪽으로 읽어요. 관심을 건네는 문장으로 바꾼 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "자신감 있고 빛나는 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "스스로를 증명하려 애쓰는 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "나의 자리": {
+      "upright": "기여가 드러나 인정받는 자리로 읽어요.",
+      "reversed": "애쓴 만큼 보이지 않아 서운할 수 있는 자리로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "해 온 일을 드러내고 인정받는 쪽이에요.",
+      "reversed": "남의 박수보다 내 기준으로 성과를 정리하는 쪽이에요."
+    },
+    "오늘의 한 장": {
+      "upright": "좋은 소식을 나누거나 해낸 일을 알리는 날로 읽어요.",
+      "reversed": "남의 평가에 흔들리지 않고 스스로를 칭찬하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "최근 해낸 일을 세 줄로 정리해 필요한 사람에게 공유해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "함께 애쓴 사람에게 고마움을 전해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "오늘 스스로 잘한 일 하나를 적고 남의 반응 없이 인정해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "평가가 늦다면 필요한 자료를 정리해 한 번 요청해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "승진이나 합격이 확정된다고 말하기",
+      "instead": "성과가 드러나기 쉬운 흐름과 준비할 점까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 대단하게 본다고 단정",
+      "instead": "자신감 있게 보일 수 있는 흐름이라고만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "wands-05",
+      "ko": "경쟁을 지나 인정받는 흐름"
+    },
+    {
+      "with": "major-19-sun",
+      "ko": "드러나는 성과와 밝은 인정"
+    },
+    {
+      "with": "major-07-chariot",
+      "ko": "목표를 향해 밀고 나가 얻는 승리"
+    },
+    {
+      "with": "wands-07",
+      "ko": "인정받은 뒤 자리를 지켜야 하는 흐름(6→7)"
+    }
+  ],
+  "numerology": {
+    "stage": "회복·주고받음"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "The card has been so designed that it can cover several significations; on the surface, it is a victor triumphing, but it is also great news, such as might be carried in state by the King's courier; it is expectation crowned with its own desire, the crown of hope, and so forth.",
+    "reversed": "Apprehension, fear, as of a victorious enemy at the gate; treachery, disloyalty, as of gates being opened to the enemy; also indefinite delay.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-06.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

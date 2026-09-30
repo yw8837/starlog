@@ -1,0 +1,282 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-02",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-02.webp",
+  "names": {
+    "ko": "컵 2",
+    "ja": "カップの2",
+    "en": "Two of Cups",
+    "koAliases": [
+      "컵 2",
+      "성배 2"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "2",
+  "number": 2,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "게자리의 금성(Venus in Cancer)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "마음을 주고받음",
+    "서로 끌림",
+    "화해와 약속",
+    "동등한 관계"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "pledging",
+        "ko": "젊은 여인(왼쪽)과 젊은 남자(오른쪽)가 마주 서서 컵을 든 손을 서로에게 내밀고 있다",
+        "salience": 1
+      },
+      {
+        "id": "caduceus-lion",
+        "ko": "두 사람 위에 두 마리 뱀이 감긴 지팡이와 날개 달린 붉은 사자 머리가 떠 있다",
+        "salience": 1
+      },
+      {
+        "id": "wreaths",
+        "ko": "여인은 초록 잎 관, 남자는 붉은 꽃 관을 썼다",
+        "salience": 3
+      },
+      {
+        "id": "clothes",
+        "ko": "여인은 흰 옷에 푸른 망토, 남자는 무늬가 있는 짧은 옷을 입었다",
+        "salience": 3
+      },
+      {
+        "id": "house-hill",
+        "ko": "뒤쪽 초록 언덕 위에 붉은 지붕 집이 있다",
+        "salience": 2
+      },
+      {
+        "id": "blue-sky",
+        "ko": "배경은 옅은 푸른 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "두 사람이 포옹하거나 입을 맞춘다",
+        "correct": "두 사람은 컵을 든 채 마주 서 있을 뿐이다",
+        "regex": "포옹|입맞|키스"
+      },
+      {
+        "wrong": "천사가 두 사람을 축복한다",
+        "correct": "위에 있는 것은 뱀 지팡이와 날개 달린 사자 머리다",
+        "regex": "천사"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "pledging",
+        "ko": "서로에게 맹세하듯 컵을 나눔",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "caduceus-lion",
+        "ko": "두 사람의 결합을 지켜보는 힘, 끌림과 치유",
+        "school": "modern"
+      },
+      {
+        "factId": "wreaths",
+        "ko": "둘 다 저마다의 관을 쓴 동등한 자리",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A youth and maiden are pledging one another, and above their cups rises the Caduceus of Hermes, between the great wings of which there appears a lion's head. It is a variant of a sign which is found in a few old examples of this card. Some curious emblematical meanings are attached to it, but they do not concern us in this place.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-02.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "서로 끌림",
+      "마음을 주고받음",
+      "화해와 약속",
+      "동등한 짝"
+    ],
+    "reversed": [
+      "균형이 깨짐",
+      "엇갈린 마음",
+      "서운함",
+      "관계를 다시 맞춤"
+    ],
+    "oneLine": {
+      "upright": "두 사람이 같은 높이에서 마음을 주고받으며 이어지는 때",
+      "reversed": "주고받는 균형이 흐트러지거나 마음이 엇갈려 다시 맞춰야 하는 상태"
+    },
+    "shadow": "관계를 이루느라 나라는 한쪽을 잃는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "waning",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "마음은 있는데 주고받는 흐름이 막힘",
+      "waning": "끌림과 교감이 식어 가는 중",
+      "internalized": "관계보다 나 자신과의 화해가 먼저 필요한 때"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음이 통한다고 느끼는 따뜻한 상태예요.",
+    "reversed": "나만 주는 것 같아 서운하거나, 마음이 엇갈린 것 같아 불안해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "서로에게 끌리고 마음이 오가는 흐름으로 읽어요. 한쪽이 기울지 않게 주고받는 균형을 지키면 좋아요.",
+      "reversed": "마음의 온도나 기대가 엇갈려 서운함이 생긴 쪽으로 읽어요. 내가 바라는 것 하나를 솔직하게 말해 보세요."
+    },
+    "contact": {
+      "upright": "마음을 나누는 대등한 대화가 어울리는 그림이에요. 묻고 답할 여지를 남기는 연락이 잘 맞아요.",
+      "reversed": "한쪽만 연락하는 흐름이 되었거나 오해가 생긴 쪽으로 읽어요. 따지기보다 확인하는 질문 하나로 시작해 보세요."
+    },
+    "work": {
+      "upright": "좋은 파트너나 협업 관계가 생기는 흐름으로 읽어요. 서로 주고받을 것을 분명히 하면 오래 가요.",
+      "reversed": "협업의 균형이 깨지거나 기대가 어긋난 쪽으로 읽어요. 역할과 몫을 다시 이야기해 보세요."
+    },
+    "choice": {
+      "upright": "마음이 통하는 사람과 함께할 수 있는 쪽에 힘이 실리는 배치로 읽어요. 누구와 함께하게 되는지도 기준에 넣어 보세요.",
+      "reversed": "관계 때문에 내 선택이 흐려지는 상태로 읽어요. 나만의 기준을 따로 적어 보세요."
+    },
+    "self": {
+      "upright": "나 자신과 잘 지내는 시기로 읽어요. 나에게 다정한 말을 건네 보세요.",
+      "reversed": "내 마음과 행동이 엇갈려 불편한 시기로 읽어요. 나와의 약속 하나를 다시 세워 보세요."
+    },
+    "group": {
+      "upright": "모임 안에서 마음 맞는 사람과 가까워지는 흐름으로 읽어요. 일대일 대화를 청해 보세요.",
+      "reversed": "두 사람 사이의 오해가 모임에 영향을 주는 분위기로 읽어요. 당사자끼리 먼저 풀도록 자리를 만들어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "마음을 주고받고 싶은, 통한다고 느끼는 마음이에요.",
+      "reversed": "나만 기울어 있는 것 같아 서운한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 같은 높이에서 마음이 오가는 흐름으로 읽어요. 다만 이는 분위기를 읽은 것이고 속마음을 확인한 건 아니에요.",
+      "reversed": "주고받는 균형이 어긋난 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "마음을 건네고 답을 기다리는 대등한 연락이 어울린다는 쪽으로 읽어요.",
+      "reversed": "지금은 서운함을 따지는 연락이 되기 쉽다는 쪽으로 읽어요. 확인하는 질문으로 바꾼 조건에서 다시 보세요."
+    },
+    "두 사람의 흐름": {
+      "upright": "서로 맞춰 가며 가까워지는 흐름으로 읽어요.",
+      "reversed": "엇갈린 마음을 다시 맞춰야 하는 흐름으로 읽어요."
+    },
+    "상대에게 비친 나": {
+      "upright": "마음이 통하는 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "마음을 알기 어려운 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "마음 맞는 사람과 대화하는 날로 읽어요.",
+      "reversed": "서운함을 한 가지만 부드럽게 말해 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "고마운 사람에게 받은 것 하나와 주고 싶은 것 하나를 적어 전해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "대화에 질문 하나를 넣어 상대가 답할 자리를 남겨 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "관계에서 내가 바라는 것 하나를 비난 없이 한 문장으로 써 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "오해가 있다면 '내가 이렇게 이해했는데 맞아?'로 확인해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대도 나를 좋아한다고 단정",
+      "instead": "마음이 오가는 흐름으로 읽힌다고만 말하고 확인 방법을 제안해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "연인이 되거나 재회한다고 확정",
+      "instead": "관계가 이어질 여지와 내가 할 수 있는 표현까지만 말해요."
+    },
+    {
+      "code": "NO_SCORE",
+      "doNotClaim": "궁합 점수로 말하기",
+      "instead": "주고받는 균형을 보는 관점으로 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-06-lovers",
+      "ko": "서로 마음을 주고받는 끌림이 겹침"
+    },
+    {
+      "with": "cups-01",
+      "ko": "넘친 마음이 한 사람과 오가는 흐름"
+    },
+    {
+      "with": "cups-03",
+      "ko": "둘의 관계가 친구와 모임으로 넓어지는 흐름"
+    },
+    {
+      "with": "swords-02",
+      "ko": "마음은 있는데 결정을 미루는 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "둘 사이의 균형·첫 선택"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT",
+      "NO_SCORE"
+    ]
+  },
+  "waite": {
+    "upright": "Love, passion, friendship, affinity, union, concord, sympathy, the interrelation of the sexes, and—as a suggestion apart from all offices of divination—that desire which is not in Nature, but by which Nature is sanctified.",
+    "reversed": null,
+    "loc": "PKT Part III §2",
+    "noteKo": "PKT 본문에는 이 카드의 역방향 의미가 적혀 있지 않다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-02.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

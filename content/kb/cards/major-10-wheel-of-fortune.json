@@ -1,0 +1,289 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-10-wheel-of-fortune",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-10-wheel-of-fortune.webp",
+  "names": {
+    "ko": "운명의 수레바퀴",
+    "ja": "運命の輪",
+    "en": "Wheel of Fortune",
+    "koAliases": [
+      "운명의 바퀴",
+      "포춘 휠"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 10,
+  "roman": "X",
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "목성(Jupiter)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "흐름의 전환",
+    "기회의 순간",
+    "순환",
+    "타이밍"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "orange-wheel",
+        "ko": "가운데 주황색 큰 바퀴에 T·A·R·O 글자와 히브리 문자가 번갈아 새겨져 있다",
+        "salience": 1
+      },
+      {
+        "id": "inner-symbols",
+        "ko": "바퀴 안쪽 원에 연금술 기호들과 여덟 개의 바큇살이 있다",
+        "salience": 3
+      },
+      {
+        "id": "sphinx-sword",
+        "ko": "바퀴 꼭대기에 푸른 스핑크스가 칼을 세워 들고 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "snake-left",
+        "ko": "바퀴 왼쪽으로 노란 뱀이 아래를 향해 내려간다",
+        "salience": 2
+      },
+      {
+        "id": "jackal-right",
+        "ko": "바퀴 오른쪽 아래에서 붉은 짐승 머리의 인물이 바퀴를 떠받치며 올라온다",
+        "salience": 2
+      },
+      {
+        "id": "four-creatures",
+        "ko": "네 모서리 구름 위에 날개 달린 사람·독수리·황소·사자가 있고 모두 책을 펴 들고 있다",
+        "salience": 1
+      },
+      {
+        "id": "cloud-sky",
+        "ko": "회색 구름과 푸른 하늘이 배경을 채운다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "여신이 바퀴를 돌리고 있다",
+        "correct": "바퀴를 돌리는 인물은 없다. 스핑크스·뱀·짐승 머리 인물이 바퀴 둘레에 있을 뿐이다",
+        "regex": "포르투나|여신이|바퀴를\\s*돌리"
+      },
+      {
+        "wrong": "사람들이 바퀴에 매달려 오르내린다",
+        "correct": "바퀴에 매달린 사람은 없다(옛 덱의 구도)",
+        "regex": "바퀴에\\s*매달|매달려\\s*(오르|떨어)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "orange-wheel",
+        "ko": "멈추지 않고 도는 상황의 흐름",
+        "school": "modern"
+      },
+      {
+        "factId": "sphinx-sword",
+        "ko": "움직임 한가운데에서 균형을 잡는 것(스핑크스)",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "snake-left",
+        "ko": "내려가는 것과 올라오는 것이 같은 바퀴 위에 있음",
+        "school": "modern"
+      },
+      {
+        "factId": "four-creatures",
+        "ko": "흐름이 바뀌어도 네 모서리에 고정된 채 배우는 것들",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-10-wheel-of-fortune.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "흐름이 바뀌는 때",
+      "기회의 순간",
+      "순환 받아들이기",
+      "타이밍 타기"
+    ],
+    "reversed": [
+      "흐름이 잠시 멈춤",
+      "같은 패턴 반복",
+      "통제 밖의 변화",
+      "타이밍 어긋남"
+    ],
+    "oneLine": {
+      "upright": "상황이 한 바퀴 돌아 흐름이 바뀌는 지점, 오는 기회를 알아보는 때",
+      "reversed": "바뀌는 흐름을 억지로 붙잡거나, 같은 패턴이 되풀이되며 타이밍이 어긋나는 상태"
+    },
+    "shadow": "모든 걸 운에 맡기고 내 몫의 선택을 놓는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "waning"
+    ],
+    "gloss": {
+      "blocked": "흐름이 잠시 걸려 멈춘 듯 느껴짐",
+      "waning": "좋던 흐름이 한 바퀴 돌아 내려오는 구간"
+    }
+  },
+  "asFeelings": {
+    "upright": "무언가 바뀌고 있다는 기대와 설렘이 있어요.",
+    "reversed": "뜻대로 안 되는 흐름에 휘둘리는 느낌이 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계의 흐름이 한 단계 바뀌는 지점으로 읽어요. 우연히 닿은 기회나 달라진 분위기를 알아보고 반응해 보세요.",
+      "reversed": "비슷한 갈등이나 패턴이 되풀이되는 쪽으로 읽어요. 이번엔 무엇을 다르게 해 볼지 하나만 정해 보세요."
+    },
+    "contact": {
+      "upright": "흐름이 바뀌는 때라 오래 멈춰 있던 연락을 다시 시도해 볼 만한 타이밍으로 읽어요. 계기가 될 만한 소식이나 날이 있다면 활용해 보세요.",
+      "reversed": "지금은 타이밍이 조금 어긋나 있는 흐름으로 읽어요. 답이 늦거나 엇갈려도 한 번의 결과로 전체를 판단하지 않는 게 좋아요."
+    },
+    "work": {
+      "upright": "일의 판도나 조건이 바뀌며 새 기회가 도는 흐름으로 읽어요. 변화에 빨리 올라탈 준비를 해 두세요.",
+      "reversed": "내가 통제할 수 없는 변수 때문에 일이 멈칫하는 쪽으로 읽어요. 바꿀 수 있는 것과 없는 것을 나눠 적어 보세요."
+    },
+    "choice": {
+      "upright": "지금 열린 기회의 흐름을 타는 쪽에 힘이 실리는 배치로 읽어요. 이 선택지가 언제까지 열려 있는지 확인해 보세요.",
+      "reversed": "예전과 같은 패턴을 반복하는 선택인지 살펴보는 쪽으로 읽어요. 지난번 비슷한 결정의 결과를 떠올려 보세요."
+    },
+    "self": {
+      "upright": "기분과 상황이 전환점을 맞는 시기로 읽어요. 새로운 리듬을 받아들이면 흐름이 가벼워져요.",
+      "reversed": "오르내림이 커서 지치기 쉬운 시기로 읽어요. 기분이 내려갈 때 붙잡을 작은 루틴 하나를 정해 두세요."
+    },
+    "group": {
+      "upright": "모임의 구성이나 분위기가 바뀌는 흐름으로 읽어요. 새 사람이나 새 역할을 반겨 보세요.",
+      "reversed": "같은 문제로 모임이 되풀이해 흔들리는 쪽으로 읽어요. 반복되는 패턴을 함께 짚어 보는 게 좋아요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "무언가 달라지길 바라는 마음과 기대가 있어요.",
+      "reversed": "흐름에 휘둘려 내 마음이 어디 있는지 흐려진 상태예요."
+    },
+    "두 사람 사이": {
+      "upright": "관계가 한 단계 전환되는 흐름으로 읽어요. 계기가 오면 알아보는 게 중요해요.",
+      "reversed": "엇갈리는 타이밍이 반복되는 흐름으로 읽어요. 같은 패턴을 짚어 보는 자리예요."
+    },
+    "먼저 움직이면": {
+      "upright": "흐름이 바뀌는 지점이라 먼저 움직이면 새 국면이 열릴 수 있다는 쪽으로 읽어요.",
+      "reversed": "타이밍이 어긋나기 쉬운 조건이라는 쪽으로 읽어요. 계기가 될 만한 때를 한 번 더 살피는 조건에서 다시 보세요."
+    },
+    "이 시기의 흐름": {
+      "upright": "변화와 전환이 많은 시기로 읽어요.",
+      "reversed": "흐름이 잠시 멈추거나 되풀이되는 시기로 읽어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "지금 열린 기회를 알아보지 못하고 있을 수 있어요.",
+      "reversed": "반복되는 패턴을 우연으로만 넘기고 있을 수 있어요."
+    },
+    "오늘의 한 장": {
+      "upright": "예상 밖의 제안이나 우연을 가볍게 받아 보는 날로 읽어요.",
+      "reversed": "계획이 어긋나도 다음 기회를 기다리는 여유를 갖는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "최근 달라진 상황 하나를 적고, 그 변화로 생긴 기회를 한 줄로 써 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "미뤄 둔 제안이나 연락 중 지금 다시 해 볼 만한 것 하나를 골라 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "요즘 반복되는 일을 적고 이번에 다르게 할 행동 하나를 정해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "바꿀 수 있는 것과 없는 것을 두 칸으로 나눠 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "행운이 온다, 곧 좋은 일이 생긴다고 보장",
+      "instead": "흐름이 바뀌는 지점이라는 것과 준비할 점까지만 말해요."
+    },
+    {
+      "code": "NO_DATE",
+      "doNotClaim": "바퀴가 도는 시점을 날짜로 말하기",
+      "instead": "사용자가 고른 기간 안에서 흐름의 변화만 말해요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "투자나 복권 같은 운을 부추기기",
+      "instead": "돈이 걸린 일은 운보다 확인 가능한 조건을 보자고 해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-21-world",
+      "ko": "한 바퀴를 끝내고 다음 순환으로 넘어가는 흐름"
+    },
+    {
+      "with": "major-16-tower",
+      "ko": "예상 밖의 큰 전환, 대비가 필요한 조합"
+    },
+    {
+      "with": "wands-08",
+      "ko": "빠르게 바뀌는 흐름, 소식이 오가는 속도"
+    },
+    {
+      "with": "pentacles-02",
+      "ko": "오르내림 속에서 균형을 잡는 연습"
+    }
+  ],
+  "numerology": {
+    "stage": "10 · 한 바퀴를 돌아 흐름이 바뀌는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_DATE",
+      "NO_MONEY"
+    ]
+  },
+  "waite": {
+    "upright": "Destiny, fortune, success, elevation, luck, felicity.",
+    "reversed": "Increase, abundance, superfluity.",
+    "loc": "PKT Part III §3",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-10-wheel-of-fortune.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 X, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

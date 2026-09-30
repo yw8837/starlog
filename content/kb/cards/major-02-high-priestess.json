@@ -1,0 +1,295 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-02-high-priestess",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-02-high-priestess.webp",
+  "names": {
+    "ko": "여사제",
+    "ja": "女教皇",
+    "en": "The High Priestess",
+    "koAliases": [
+      "여교황"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 2,
+  "roman": "II",
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "달(Moon)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "조용한 관찰",
+    "직감",
+    "말하지 않은 앎",
+    "기다림"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "pillars-bj",
+        "ko": "검은 기둥(B)은 왼쪽, 흰 기둥(J)은 오른쪽에 있고 그 사이에 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "veil",
+        "ko": "등 뒤 휘장에 붉은 석류와 초록 야자잎 무늬가 가득하다",
+        "salience": 2
+      },
+      {
+        "id": "tora-scroll",
+        "ko": "무릎 위 두루마리에 'TORA' 글자가 보이고, 일부는 옷자락에 가려 있다",
+        "salience": 1
+      },
+      {
+        "id": "horned-crown",
+        "ko": "머리에 양쪽으로 뿔처럼 휜 관을 썼고 가운데 둥근 원반이 있다",
+        "salience": 2
+      },
+      {
+        "id": "white-cross",
+        "ko": "가슴에 흰 십자가가 있다",
+        "salience": 3
+      },
+      {
+        "id": "crescent-feet",
+        "ko": "발치에 노란 초승달이 놓여 있다",
+        "salience": 2
+      },
+      {
+        "id": "blue-robe",
+        "ko": "푸른 망토와 흰 옷을 입었고 옷자락이 물결처럼 바닥으로 흘러내린다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "책을 펼쳐 읽고 있다",
+        "correct": "책이 아니라 두루마리를 무릎에 들고 있고, 읽는 동작은 없다",
+        "regex": "책을\\s*(펼|읽)"
+      },
+      {
+        "wrong": "흰 기둥이 왼쪽, 검은 기둥이 오른쪽에 있다",
+        "correct": "검은 기둥(B)이 왼쪽, 흰 기둥(J)이 오른쪽이다",
+        "regex": "흰\\s*기둥[^.]{0,6}왼쪽|검은\\s*기둥[^.]{0,6}오른쪽"
+      },
+      {
+        "wrong": "밤하늘에 보름달이 떠 있다",
+        "correct": "하늘의 달은 없고, 머리 관 가운데 원반과 발치 초승달만 있다",
+        "regex": "밤하늘|하늘에\\s*(뜬\\s*)?보름달"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "pillars-bj",
+        "ko": "둘 중 하나로 정하지 않고 그 사이에서 지켜봄",
+        "school": "modern"
+      },
+      {
+        "factId": "tora-scroll",
+        "ko": "어떤 것은 말하고 어떤 것은 감춰 둠(두루마리가 반쯤 가려짐)",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "veil",
+        "ko": "휘장 뒤에 아직 드러나지 않은 것이 있음",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-02-high-priestess.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "조용히 지켜보기",
+      "말하지 않은 앎",
+      "직감 믿기",
+      "서두르지 않는 판단"
+    ],
+    "reversed": [
+      "혼자 속으로 삭이기",
+      "직감 무시하기",
+      "비밀이 무거워짐",
+      "알면서 모른 척"
+    ],
+    "oneLine": {
+      "upright": "아직 말할 때가 아니니 조용히 보고 느끼는 것을 믿는 때",
+      "reversed": "안에서 느끼는 게 있는데 외면하거나 혼자 품고 있어 무거워진 상태"
+    },
+    "shadow": "지켜보기가 거리 두기와 차가움으로 굳는 것"
+  },
+  "reversedModes": {
+    "default": "internalized",
+    "allowed": [
+      "internalized",
+      "excess",
+      "blocked"
+    ],
+    "gloss": {
+      "internalized": "느낀 것을 밖으로 꺼내지 못하고 혼자 삭임",
+      "excess": "말을 아끼는 게 지나쳐 벽처럼 느껴짐",
+      "blocked": "바쁨과 소음에 가려 직감이 잘 안 들림"
+    }
+  },
+  "asFeelings": {
+    "upright": "겉으로는 차분하지만 속으로는 이미 느끼는 게 있어요. 말로 정리되기 전의 앎에 가까워요.",
+    "reversed": "느낌은 오는데 믿지 못하거나, 혼자 품은 생각이 무거워진 상태예요."
+  },
+  "topics": {
+    "love": {
+      "upright": "마음을 서둘러 드러내기보다 관계가 어떤 결인지 조용히 지켜보는 흐름으로 읽어요. 내가 이미 느끼고 있는 신호를 흘려보내지 않는 게 중요해요.",
+      "reversed": "말하지 않은 마음이 쌓여 거리가 생기거나, 느껴지는 신호를 애써 모른 척하는 쪽으로 읽어요. 혼자 판단하기 전에 한 가지는 직접 물어볼 수 있어요."
+    },
+    "contact": {
+      "upright": "지금은 먼저 많은 말을 하기보다 흐름을 조금 더 지켜보는 쪽이 어울리는 그림이에요. 보낸다면 짧게, 여지를 남기는 크기로 읽어요.",
+      "reversed": "하고 싶은 말을 오래 품고만 있어 오히려 부담이 커진 상태로 읽어요. 꺼내지 않은 말 중 가장 가벼운 것 하나부터 보내 볼 수 있어요."
+    },
+    "work": {
+      "upright": "드러나지 않은 정보나 흐름을 차분히 살필 때로 읽어요. 바로 결정하기보다 자료와 분위기를 더 모으는 게 맞아요.",
+      "reversed": "알고 있는 문제를 말하지 않고 넘기거나, 직감으로 느낀 위험을 무시하는 쪽으로 읽어요. 기록으로 남겨 두는 것부터 해 보세요."
+    },
+    "choice": {
+      "upright": "장단점 표보다 몸이 먼저 반응하는 쪽이 어디인지 살펴보는 게 기준이 돼요. 아직 드러나지 않은 정보가 있다면 조금 더 기다려도 괜찮아요.",
+      "reversed": "마음은 이미 한쪽으로 기울었는데 그걸 인정하지 않는 상태로 읽어요. 솔직한 선호를 한 줄로 적어 보세요."
+    },
+    "self": {
+      "upright": "혼자 조용히 있는 시간이 오히려 채워지는 시기로 읽어요. 메모나 산책처럼 속을 들여다보는 일이 도움이 돼요.",
+      "reversed": "속에 담아 둔 게 많아 머리가 무거운 상태로 읽어요. 믿을 만한 사람 한 명이나 글로 조금 덜어 내 보세요."
+    },
+    "group": {
+      "upright": "모임에서 나서기보다 분위기를 읽고 필요한 순간에만 말하는 태도가 어울려요. 조용한 관찰이 오히려 신뢰를 줄 수 있어요.",
+      "reversed": "말하지 않아서 오해가 쌓이거나, 뒤에서 오가는 이야기가 무겁게 느껴지는 쪽으로 읽어요. 확인 없이 추측을 넓히지 않는 게 좋아요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "말로 하기 전에 이미 느끼고 있는 게 있어요. 그 감각을 믿어 보는 자리로 읽어요.",
+      "reversed": "느끼는 걸 스스로 외면하고 있을 수 있어요. 무엇을 알면서 모른 척하는지 보는 자리예요."
+    },
+    "두 사람 사이": {
+      "upright": "겉으로 오간 말보다 말하지 않은 것이 많은 흐름으로 읽어요. 서두르지 않는 거리감이 있는 관계예요.",
+      "reversed": "서로 말하지 않은 것이 벽처럼 쌓여 가는 흐름으로 읽어요. 속마음을 짐작하기보다 확인할 수 있는 것부터 보세요."
+    },
+    "먼저 움직이면": {
+      "upright": "많이 말하기보다 조용히 여지를 남기는 방식이 어울린다는 쪽으로 읽어요.",
+      "reversed": "망설임이 길어져 오히려 타이밍을 놓칠 수 있다는 쪽으로 읽어요. 짧은 한 줄로 침묵을 깨는 조건에서 다시 보세요."
+    },
+    "놓치고 있는 것": {
+      "upright": "이미 느끼고 있는 직감을 근거가 없다고 흘려보내고 있을 수 있어요.",
+      "reversed": "혼자 짐작만 하고 확인하지 않은 부분이 있을 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "결정을 서두르지 않고 조용히 지켜볼 시간이 필요해요.",
+      "reversed": "속으로만 삭이던 것을 한 번은 밖으로 꺼내 볼 필요가 있어요."
+    },
+    "지금의 나": {
+      "upright": "겉은 차분하고 속은 깊게 움직이는 상태로 읽어요.",
+      "reversed": "혼자 생각이 많아 조금 닫혀 있는 상태로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "말을 아끼고 관찰하는 날로 읽어요. 떠오르는 생각을 메모해 두면 좋아요.",
+      "reversed": "혼자 짐작하던 걸 한 가지 확인해 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "오늘 든 느낌 하나를 이유를 붙이지 말고 메모에 적어 두세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "결정을 하루 미루고, 그사이 새로 알게 된 것이 있는지 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 짐작하던 일 중 하나를 사실로 확인해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "속에 담아 둔 말을 보내지 않을 편지로 한 번 써 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 비밀을 숨기고 있다고 단정",
+      "instead": "드러나지 않은 것이 있을 수 있다는 정도로만 말하고 확인 방법을 제안해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "직감이 맞으니 결과도 그렇게 된다고 보장",
+      "instead": "직감을 살펴볼 가치가 있다는 데서 멈춰요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "임신이나 몸의 변화를 카드가 알려 준다고 말하기",
+      "instead": "몸에 관한 건 검사와 전문가 확인을 권해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-01-magician",
+      "ko": "드러내는 힘과 아껴 두는 힘을 함께 쓰는 짝"
+    },
+    {
+      "with": "major-18-moon",
+      "ko": "보이지 않는 것이 많은 흐름, 짐작보다 확인이 필요"
+    },
+    {
+      "with": "cups-04",
+      "ko": "마음이 안으로 닫혀 바깥의 제안이 잘 안 보임"
+    },
+    {
+      "with": "major-05-hierophant",
+      "ko": "안에서 느끼는 앎과 밖에서 배운 기준을 맞춰 보는 짝"
+    }
+  ],
+  "numerology": {
+    "stage": "2 · 움직이기 전에 받아들이고 느끼는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Secrets, mystery, the future as yet unrevealed; the woman who interests the Querent, if male; the Querent herself, if female; silence, tenacity; mystery, wisdom, science.",
+    "reversed": "Passion, moral or physical ardour, conceit, surface knowledge.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite의 역방향 의미(열정·자만·얕은 지식)는 현대 해석과 결이 달라 쓰지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-02-high-priestess.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 II, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

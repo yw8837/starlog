@@ -1,0 +1,303 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-15-devil",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-15-devil.webp",
+  "names": {
+    "ko": "악마",
+    "ja": "悪魔",
+    "en": "The Devil"
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 15,
+  "roman": "XV",
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "염소자리(Capricorn)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "끊기 어려운 매임",
+    "집착과 습관",
+    "욕망 들여다보기",
+    "헐거운 사슬"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "horned-figure",
+        "ko": "염소 뿔과 박쥐 날개를 가진 형상이 검은 받침대 위에 웅크려 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "pentagram",
+        "ko": "두 뿔 사이 이마 위에 거꾸로 선 오각별이 있다",
+        "salience": 2
+      },
+      {
+        "id": "raised-hand",
+        "ko": "오른손을 들어 손바닥을 펼쳐 보인다",
+        "salience": 2
+      },
+      {
+        "id": "torch-down",
+        "ko": "왼손에 불붙은 횃불을 아래로 향하게 들었다",
+        "salience": 2
+      },
+      {
+        "id": "chained-pair",
+        "ko": "작은 뿔이 난 벌거벗은 남녀가 받침대의 고리에 사슬로 목이 이어진 채 서 있다",
+        "salience": 1
+      },
+      {
+        "id": "loose-chains",
+        "ko": "두 사람 목에 걸린 사슬 고리는 헐겁게 늘어져 있다",
+        "salience": 1
+      },
+      {
+        "id": "tails",
+        "ko": "여자의 꼬리 끝엔 포도송이, 남자의 꼬리 끝엔 불꽃이 달려 있다",
+        "salience": 3
+      },
+      {
+        "id": "black-ground",
+        "ko": "배경은 온통 검다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "사슬에 단단히 묶여 벗어날 수 없다",
+        "correct": "목의 사슬은 헐겁게 늘어져 있다",
+        "regex": "단단히\\s*묶|벗어날\\s*수\\s*없"
+      },
+      {
+        "wrong": "삼지창을 들고 있다",
+        "correct": "한 손엔 아래로 향한 횃불, 다른 손은 펼쳐 들었다",
+        "regex": "삼지창|쇠스랑"
+      },
+      {
+        "wrong": "두 사람이 고통에 몸부림친다",
+        "correct": "두 사람의 표정은 무덤덤하다",
+        "regex": "몸부림|울부짖|괴로워"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "loose-chains",
+        "ko": "스스로 벗을 수 있는데 벗지 않는 매임",
+        "school": "modern"
+      },
+      {
+        "factId": "torch-down",
+        "ko": "위가 아니라 땅을 향한 불",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "chained-pair",
+        "ko": "타락 뒤의 아담과 이브처럼 그려진, 연인 카드의 짝",
+        "school": "waite-1911"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-15-devil.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "끊기 어려운 습관",
+      "집착과 매임",
+      "욕망 인정하기",
+      "편한 쪽의 덫"
+    ],
+    "reversed": [
+      "사슬을 알아차림",
+      "벗어나려는 시도",
+      "더 깊어진 집착",
+      "숨긴 욕망 드러남"
+    ],
+    "oneLine": {
+      "upright": "알면서도 끊기 어려운 습관이나 관계에 묶여 있는 때(스스로 풀 여지가 있음)",
+      "reversed": "매임을 알아차리고 풀기 시작하거나, 더 깊이 빠져드는 상태"
+    },
+    "shadow": "욕망을 부정하다 오히려 더 붙잡히는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess",
+      "internalized"
+    ],
+    "gloss": {
+      "waning": "매임이 느슨해지며 벗어날 틈이 보임",
+      "excess": "집착이나 의존이 더 깊어짐",
+      "internalized": "겉으로는 자유로워 보여도 속으로 끌려다님"
+    }
+  },
+  "asFeelings": {
+    "upright": "끌려가는 걸 알면서도 멈추기 어려운 마음이에요. 편하면서도 찜찜한 상태에 가까워요.",
+    "reversed": "이대로는 안 되겠다는 자각이 올라오고 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "강한 끌림이나 익숙함 때문에 건강하지 않은 패턴을 반복하고 있지 않은지 보는 흐름으로 읽어요. 이 관계에서 내가 끊지 못하는 게 무엇인지 적어 보세요.",
+      "reversed": "집착이나 의존의 고리를 알아차리고 조금씩 풀어 가는 쪽으로 읽어요. 혼자 어렵다면 믿을 만한 사람에게 이야기해 보세요."
+    },
+    "contact": {
+      "upright": "보내고 싶은 충동이 습관처럼 반복되는지 먼저 살펴보는 흐름으로 읽어요. 확인받고 싶은 마음 때문에 보내는 연락이라면 한 번 멈춰 보세요.",
+      "reversed": "계속 확인하던 연락 습관을 끊을 틈이 보이는 쪽으로 읽어요. 오늘 하루 확인 횟수를 정해 두는 것부터 해 보세요."
+    },
+    "work": {
+      "upright": "돈이나 조건 때문에 맞지 않는 일에 묶여 있는 느낌을 들여다보는 흐름으로 읽어요. 무엇이 나를 붙잡는지 구체적으로 적어 보세요.",
+      "reversed": "과로나 건강하지 않은 업무 습관에서 벗어날 계기가 보이는 쪽으로 읽어요. 줄일 수 있는 것 하나부터 끊어 보세요."
+    },
+    "choice": {
+      "upright": "당장 편하거나 끌리는 쪽이 오래 묶이는 선택은 아닌지 살펴보는 배치로 읽어요. 이 선택을 되돌리기 얼마나 어려운지 확인해 보세요.",
+      "reversed": "나를 묶던 조건에서 벗어나는 선택지가 보이는 쪽으로 읽어요. 벗어나는 데 필요한 것을 하나씩 적어 보세요."
+    },
+    "self": {
+      "upright": "끊고 싶은데 반복되는 습관이 마음을 쥐고 있는 시기로 읽어요. 그 습관이 채워 주는 게 무엇인지 먼저 이해해 보세요.",
+      "reversed": "습관의 고리를 알아차리고 줄여 가기 좋은 시기로 읽어요. 혼자 버겁다면 도움을 청하는 것도 방법이에요."
+    },
+    "group": {
+      "upright": "모임 안에 눈치나 의무감으로 묶인 관계가 있는 쪽으로 읽어요. 내가 원해서 하는 것과 억지로 하는 것을 나눠 보세요.",
+      "reversed": "불편한 관계의 고리에서 한발 빠질 수 있는 흐름으로 읽어요. 거절할 수 있는 것 하나를 정해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "끌리는데 동시에 벗어나고 싶기도 한, 매인 마음이에요.",
+      "reversed": "매여 있던 마음을 알아차리고 풀어 보려는 상태예요."
+    },
+    "두 사람 사이": {
+      "upright": "익숙함이나 강한 끌림이 서로를 붙잡는 흐름으로 읽어요. 그 매임이 건강한지 보는 자리예요.",
+      "reversed": "붙잡던 고리가 느슨해지는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "확인하고 싶은 충동에서 나온 연락이라면 같은 패턴이 반복될 수 있다는 쪽으로 읽어요. 충동이 가라앉은 뒤 다시 보세요.",
+      "reversed": "반복되던 패턴을 끊는 방향의 연락이라면 흐름이 가벼워질 수 있다는 쪽으로 읽어요."
+    },
+    "막힌 곳": {
+      "upright": "끊지 못한 습관이나 의무감이 막힌 곳일 수 있어요.",
+      "reversed": "벗어나려다 다시 끌려 들어가는 반복이 막힌 곳일 수 있어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "사슬이 생각보다 헐겁다는 걸 놓치고 있을 수 있어요.",
+      "reversed": "벗어나는 데 도움을 청할 수 있다는 걸 놓치고 있을 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "무엇에 묶여 있는지 솔직하게 인정하는 게 필요해요.",
+      "reversed": "작은 것부터 끊어 내는 연습이 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "습관적으로 손이 가는 것 하나를 알아차려 보는 날로 읽어요.",
+      "reversed": "끊고 싶던 것 하나를 오늘만 쉬어 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "하루 동안 습관적으로 확인하거나 찾는 것을 횟수로 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "이 관계나 습관이 나에게 주는 것과 가져가는 것을 나란히 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "끊고 싶은 것 하나를 골라 오늘 하루만 쉬어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 풀기 어려운 고리라면 믿을 만한 사람이나 전문가에게 이야기해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 조종하거나 이용한다고 단정",
+      "instead": "관계에 반복되는 패턴이 있는지 함께 보자고 제안해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "중독이나 질병을 카드로 진단하기",
+      "instead": "습관을 돌아보는 데서 멈추고, 필요하면 전문 상담을 권해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "나쁜 일이 닥친다, 저주나 악운이 있다고 말하기",
+      "instead": "매임과 습관의 그림으로만 읽고 공포를 주지 않아요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "금전 문제가 한 번에 해결된다거나 운 탓이라고 말하기",
+      "instead": "구체적인 지출과 조건을 점검하자고 해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-06-lovers",
+      "ko": "번호로 짝을 이루는 두 장(6과 15), 자유로운 선택과 매인 끌림의 대비"
+    },
+    {
+      "with": "major-16-tower",
+      "ko": "묶여 있던 것이 한꺼번에 흔들리는 흐름"
+    },
+    {
+      "with": "cups-07",
+      "ko": "달콤한 상상과 유혹이 겹쳐 판단이 흐려짐"
+    },
+    {
+      "with": "swords-08",
+      "ko": "스스로 묶였다고 믿는 상태, 실은 풀 수 있는 매듭"
+    }
+  ],
+  "numerology": {
+    "stage": "15 · 세 번째 흐름의 시작, 매임을 마주하는 단계"
+  },
+  "safety": {
+    "highRisk": true,
+    "forbid": [
+      "NO_MIND",
+      "NO_HEALTH",
+      "NO_EVENT",
+      "NO_MONEY"
+    ]
+  },
+  "waite": {
+    "upright": "Ravage, violence, vehemence, extraordinary efforts, force, fatality; that which is predestined but is not for this reason evil.",
+    "reversed": "Evil fatality, weakness, pettiness, blindness.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite는 사슬을 물질적 삶의 매임으로, 두 사람이 영원히 그의 소유는 아니라고 설명했다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-15-devil.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 XV, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

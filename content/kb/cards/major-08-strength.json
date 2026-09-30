@@ -1,0 +1,292 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-08-strength",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-08-strength.webp",
+  "names": {
+    "ko": "힘",
+    "ja": "力",
+    "en": "Strength",
+    "koAliases": [
+      "용기"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 8,
+  "roman": "VIII",
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "사자자리(Leo)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "부드러운 힘",
+    "감정 다스리기",
+    "인내",
+    "다정한 단호함"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "hands-jaws",
+        "ko": "여인이 두 손으로 사자의 입 위아래를 감싸 쥐고 있다",
+        "salience": 1
+      },
+      {
+        "id": "bowed-head",
+        "ko": "여인은 고개를 숙여 사자를 내려다보고, 표정이 차분하다",
+        "salience": 2
+      },
+      {
+        "id": "lemniscate",
+        "ko": "여인의 머리 위에 옆으로 누운 8자(∞) 모양이 떠 있다",
+        "salience": 2
+      },
+      {
+        "id": "flower-chain",
+        "ko": "허리에 두른 꽃 넝쿨이 사자의 갈기 쪽까지 이어져 있다",
+        "salience": 2
+      },
+      {
+        "id": "lion-tongue",
+        "ko": "붉은 사자가 머리를 여인 쪽으로 들어 맡겼고, 입 밖으로 혀가 보인다",
+        "salience": 2
+      },
+      {
+        "id": "white-dress",
+        "ko": "여인은 흰 옷을 입고 머리에 꽃 화관을 썼다",
+        "salience": 3
+      },
+      {
+        "id": "landscape",
+        "ko": "노란 하늘 아래 초록 들판이 있고 왼쪽 뒤에 푸른 산 하나가 보인다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "사자의 입을 억지로 벌리고 있다",
+        "correct": "입을 감싸 쥐고 있을 뿐, 억지로 벌리거나 싸우는 장면이 아니다(Waite는 '턱을 닫는' 모습으로 설명)",
+        "regex": "입을\\s*(억지로\\s*)?(벌리|찢)"
+      },
+      {
+        "wrong": "사자와 싸워 제압한다",
+        "correct": "싸움의 흔적은 없고 사자는 순순히 머리를 맡기고 있다",
+        "regex": "싸우|격투|제압"
+      },
+      {
+        "wrong": "힘 카드는 11번이다",
+        "correct": "RWS에서 힘은 8번(VIII)이다. Waite가 전통 순서(정의 8, 힘 11)를 바꿨다",
+        "regex": "힘[^.]{0,8}(11번|열한\\s*번)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "hands-jaws",
+        "ko": "힘으로 누르기보다 부드럽게 다루는 힘",
+        "school": "modern"
+      },
+      {
+        "factId": "flower-chain",
+        "ko": "꽃 사슬로 이끄는 가벼운 멍에, 마음으로 받아들인 규율",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "lemniscate",
+        "ko": "끊기지 않는 인내",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-08-strength.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30",
+      "uncertain": [
+        "꽃 넝쿨이 사자 목을 한 바퀴 두르는지까지는 스캔에서 분명하지 않다. 갈기 쪽으로 이어지는 것까지만 확인했다"
+      ]
+    }
+  },
+  "core": {
+    "upright": [
+      "부드러운 힘",
+      "감정 다스리기",
+      "인내와 용기",
+      "다정한 단호함"
+    ],
+    "reversed": [
+      "억누른 감정",
+      "흔들리는 자신감",
+      "참다가 터짐",
+      "기운이 빠짐"
+    ],
+    "oneLine": {
+      "upright": "센 감정이나 상황을 억지로 누르지 않고 다정하게 다루는 힘이 있는 때",
+      "reversed": "참는 게 한계에 닿았거나 스스로를 믿는 힘이 약해진 상태"
+    },
+    "shadow": "참는 것을 다정함으로 착각해 내 감정을 계속 미루는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "internalized",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "버티던 힘과 자신감이 떨어짐",
+      "internalized": "감정을 다루는 대신 속으로 눌러 둠",
+      "excess": "참고 다스리려는 힘이 지나쳐 스스로를 몰아붙임"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음속에 센 감정이 있지만 다룰 수 있다는 차분함이 있어요.",
+    "reversed": "참고 있던 감정이 버겁거나, 나를 믿는 마음이 조금 흔들려 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "서두르거나 밀어붙이기보다 인내와 다정함으로 관계를 다루는 흐름으로 읽어요. 예민한 순간에도 부드럽게 말하는 태도가 힘이 돼요.",
+      "reversed": "서운함을 계속 참다 한꺼번에 터질 수 있는 상태로 읽어요. 작은 서운함일 때 부드럽게 꺼내 보세요."
+    },
+    "contact": {
+      "upright": "조급함을 다스린 뒤 차분하고 따뜻한 말투로 연락하는 게 어울리는 그림이에요. 감정이 가라앉은 뒤 보내면 이 흐름과 맞아요.",
+      "reversed": "참았던 말이 한꺼번에 튀어나오거나, 자신이 없어서 보내지 못하는 쪽으로 읽어요. 보내기 전에 감정 단어를 하나만 남기고 줄여 보세요."
+    },
+    "work": {
+      "upright": "까다로운 사람이나 어려운 일을 인내심 있게 다루는 힘이 있는 흐름으로 읽어요. 부드럽지만 물러서지 않는 태도가 신뢰를 얻어요.",
+      "reversed": "버티느라 지쳐 있거나, 자신감이 떨어져 역량보다 작게 움직이는 쪽으로 읽어요. 지금까지 해낸 일을 목록으로 적어 보세요."
+    },
+    "choice": {
+      "upright": "겁나는 쪽이라도 차분히 감당할 수 있는지가 기준이 되는 배치로 읽어요. 두려움을 없애기보다 다룰 수 있는지를 보세요.",
+      "reversed": "자신 없음 때문에 쉬운 쪽을 고르려는 건 아닌지 살펴보는 쪽으로 읽어요. 두려움과 실제 위험을 나눠 적어 보세요."
+    },
+    "self": {
+      "upright": "감정의 파도를 알아차리고 다룰 수 있는 시기로 읽어요. 몸을 천천히 움직이는 일이 마음을 붙잡아 줘요.",
+      "reversed": "참는 데 힘을 다 써서 기운이 빠진 상태로 읽어요. 오늘은 버티기보다 쉬는 쪽을 골라도 괜찮아요."
+    },
+    "group": {
+      "upright": "갈등이 있어도 부드럽게 중재하는 역할이 빛나는 흐름으로 읽어요. 목소리를 높이지 않고도 흐름을 바꿀 수 있어요.",
+      "reversed": "불편한 사람 앞에서 계속 참기만 하는 쪽으로 읽어요. 선을 정해 한 번은 차분히 말해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "센 감정이 있지만 다정하게 다룰 수 있는 마음이에요.",
+      "reversed": "참고 있는 감정이 무거워진 상태예요. 무엇을 참고 있는지 보는 자리예요."
+    },
+    "두 사람 사이": {
+      "upright": "밀어붙이지 않고 천천히 서로에게 익숙해지는 흐름으로 읽어요.",
+      "reversed": "한쪽이 참고 맞추는 쪽으로 기울어 있는 흐름일 수 있어요."
+    },
+    "먼저 움직이면": {
+      "upright": "감정을 가라앉힌 뒤 부드럽게 다가가면 흐름이 편해질 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 참았던 감정이 섞여 나올 수 있다는 쪽으로 읽어요. 마음을 먼저 가라앉히는 조건에서 다시 보세요."
+    },
+    "막힌 곳": {
+      "upright": "참는 힘이 오히려 말해야 할 때를 늦추고 있을 수 있어요.",
+      "reversed": "자신감이 떨어져 할 수 있는 일도 멈춰 있는 게 막힌 곳일 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "억누르지도 터뜨리지도 않고 다정하게 다루는 인내가 필요해요.",
+      "reversed": "참기보다 내 한계를 인정하고 쉬는 시간이 필요해요."
+    },
+    "도움이 될 태도": {
+      "upright": "부드럽지만 물러서지 않는 태도가 도움이 돼요.",
+      "reversed": "참기만 하지 말고 차분히 선을 말하는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "조급한 마음을 한 번 가라앉히고 움직이는 날로 읽어요.",
+      "reversed": "무리해서 버티기보다 쉬어 가는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "화가 나거나 조급할 때 숨을 세 번 쉬고 한 문장으로 말해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "까다로운 일 하나를 골라 오늘 15분만 차분히 붙잡아 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "요즘 참고 있는 것 하나를 적고 누구에게 어떻게 말할지 정해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "오늘 해낸 일 세 가지를 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "체력이 회복된다, 병을 이겨 낸다고 말하기",
+      "instead": "몸 상태는 전문가 확인을 권하고, 마음을 다루는 태도까지만 다뤄요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대를 길들일 수 있다고 말하기",
+      "instead": "내 감정과 태도를 다루는 쪽으로 읽어요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-07-chariot",
+      "ko": "밀고 나가는 힘과 부드럽게 다스리는 힘의 균형"
+    },
+    {
+      "with": "wands-09",
+      "ko": "지친 상태에서도 버티는 힘, 쉬는 법도 함께 필요"
+    },
+    {
+      "with": "major-11-justice",
+      "ko": "번호가 서로 바뀐 짝(RWS 힘 8·정의 11), 마음의 힘과 판단의 균형"
+    },
+    {
+      "with": "cups-07",
+      "ko": "흔들리는 욕망 앞에서 차분하게 고르는 힘"
+    }
+  ],
+  "numerology": {
+    "stage": "8 · 바깥보다 안의 힘을 다지는 두 번째 흐름의 시작"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Power, energy, action, courage, magnanimity; also complete success and honours.",
+    "reversed": "Despotism, abuse of power, weakness, discord, sometimes even disgrace.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite가 전통 순서(정의 8, 힘 11)를 바꿨다. 번호 연결은 RWS 인쇄 번호(VIII)를 따른다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-08-strength.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 VIII, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

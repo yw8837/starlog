@@ -1,0 +1,282 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-21-world",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-21-world.webp",
+  "names": {
+    "ko": "세계",
+    "ja": "世界",
+    "en": "The World",
+    "koAliases": [
+      "우주"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 21,
+  "roman": "XXI",
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "토성(Saturn)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "한 주기의 완성",
+    "통합",
+    "마무리와 다음 문",
+    "제자리 찾기"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "wreath",
+        "ko": "위아래를 붉은 리본으로 묶은 커다란 타원형 초록 화환이 있다",
+        "salience": 1
+      },
+      {
+        "id": "dancer",
+        "ko": "화환 안에서 한 여인이 보랏빛 천만 몸에 감은 채 떠 있듯 서 있다",
+        "salience": 1
+      },
+      {
+        "id": "two-wands",
+        "ko": "두 손에 흰 막대를 하나씩 들었다",
+        "salience": 1
+      },
+      {
+        "id": "crossed-legs",
+        "ko": "한쪽 다리를 굽혀 다른 다리 뒤로 걸쳤다",
+        "salience": 2
+      },
+      {
+        "id": "four-heads",
+        "ko": "네 모서리 구름 속에 사람·독수리·황소·사자의 머리가 보인다",
+        "salience": 2
+      },
+      {
+        "id": "blue-sky",
+        "ko": "배경은 푸른 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "지구본을 들고 있다",
+        "correct": "두 손에 든 것은 흰 막대 두 개다",
+        "regex": "지구본|지구를\\s*(들|안)"
+      },
+      {
+        "wrong": "뱀이 몸을 감고 있다",
+        "correct": "몸에 감긴 것은 보랏빛 천이다",
+        "regex": "뱀"
+      },
+      {
+        "wrong": "네 모서리 짐승이 책을 들고 있다",
+        "correct": "세계 카드의 네 모서리에는 머리만 보이고 책은 없다(책 든 네 형상은 운명의 수레바퀴)",
+        "regex": "책을\\s*(펴|들)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "wreath",
+        "ko": "한 바퀴를 온전히 마친 원",
+        "school": "modern"
+      },
+      {
+        "factId": "crossed-legs",
+        "ko": "매달린 사람의 다리 모양과 닮은 자세, 멈춤이 춤으로 바뀜",
+        "school": "editorial"
+      },
+      {
+        "factId": "four-heads",
+        "ko": "네 원소가 모두 모인 완성",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-21-world.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "한 주기의 완성",
+      "통합과 성취",
+      "마무리하고 다음 문",
+      "제자리 찾기"
+    ],
+    "reversed": [
+      "마지막 한 조각",
+      "마무리 미룸",
+      "끝맺지 못한 순환",
+      "완벽주의로 멈춤"
+    ],
+    "oneLine": {
+      "upright": "한 주기를 온전히 마치고 다음 문 앞에 서는 완성의 때",
+      "reversed": "거의 다 왔는데 마지막 정리가 남았거나, 끝맺지 못해 다음으로 못 넘어가는 상태"
+    },
+    "shadow": "완성에 머물러 다음 걸음을 두려워하는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "waning"
+    ],
+    "gloss": {
+      "blocked": "마지막 한 단계가 남아 끝맺음이 미뤄짐",
+      "waning": "완성의 흐름은 지났고 정리와 다음 준비가 남음"
+    }
+  },
+  "asFeelings": {
+    "upright": "해냈다는 뿌듯함과 홀가분함이 있어요.",
+    "reversed": "거의 다 왔는데 마무리가 안 돼 답답해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계가 한 단계를 온전히 지나 안정되거나 다음 장으로 넘어가는 흐름으로 읽어요. 함께 지나온 시간을 정리해 보면 좋아요.",
+      "reversed": "마무리되지 않은 이야기나 감정이 남아 다음으로 넘어가지 못하는 쪽으로 읽어요. 남은 한 가지를 정리해 보세요."
+    },
+    "contact": {
+      "upright": "하나의 이야기를 잘 마무리하거나 새 장을 여는 연락이 어울리는 그림이에요. 고마움이나 정리의 말을 담아 보세요.",
+      "reversed": "끝맺지 못한 대화가 마음에 걸려 있는 쪽으로 읽어요. 완벽한 말을 찾기보다 남은 한 문장만 전해 보세요."
+    },
+    "work": {
+      "upright": "프로젝트나 과정이 완성되어 성과를 정리하는 흐름으로 읽어요. 마무리를 기록하고 다음 목표를 정하기 좋아요.",
+      "reversed": "마지막 단계에서 일이 늘어지거나 완벽주의로 제출을 미루는 쪽으로 읽어요. 80%에서 한 번 내보내 보세요."
+    },
+    "choice": {
+      "upright": "지금의 단계를 온전히 마치고 넘어갈 수 있는 쪽이 기준이 되는 배치로 읽어요. 이 선택이 한 주기를 매듭짓는지 보세요.",
+      "reversed": "지금 일을 마무리하지 않은 채 새 선택으로 넘어가려는 건 아닌지 살펴보는 쪽으로 읽어요. 남은 정리부터 끝내 보세요."
+    },
+    "self": {
+      "upright": "스스로 이룬 것을 인정하고 쉬어 가도 좋은 시기로 읽어요. 지나온 시간을 축하해 주세요.",
+      "reversed": "끝내지 못한 일이 마음 한쪽을 붙잡고 있는 시기로 읽어요. 가장 작은 마무리 하나부터 해 보세요."
+    },
+    "group": {
+      "upright": "모임이 함께 한 일을 잘 마치고 성과를 나누는 흐름으로 읽어요. 마무리 자리를 만들어 보세요.",
+      "reversed": "모임의 일이 끝맺음 없이 흐지부지되는 쪽으로 읽어요. 누가 무엇을 정리할지 정해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "한 단계를 잘 지나왔다는 홀가분한 마음이에요.",
+      "reversed": "마무리가 남아 마음 한쪽이 걸려 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "관계가 한 주기를 지나 안정되거나 다음 장으로 넘어가는 흐름으로 읽어요.",
+      "reversed": "끝맺지 못한 이야기가 흐름을 붙잡고 있는 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "하나를 매듭짓고 새 장을 여는 연락이 어울린다는 쪽으로 읽어요.",
+      "reversed": "지금은 남은 정리 없이 새로 시작하려는 연락이 되기 쉽다는 쪽으로 읽어요. 남은 말부터 정리한 조건에서 다시 보세요."
+    },
+    "나아갈 방향": {
+      "upright": "완성한 것을 정리하고 다음 문으로 가는 쪽이에요.",
+      "reversed": "마지막 한 단계를 끝내는 쪽이에요."
+    },
+    "이 시기의 흐름": {
+      "upright": "한 주기가 완성되는 시기로 읽어요.",
+      "reversed": "마무리와 정리가 남은 시기로 읽어요."
+    },
+    "모임의 분위기": {
+      "upright": "함께 이룬 것을 나누는 넉넉한 분위기로 읽어요.",
+      "reversed": "끝맺음이 흐려 개운하지 않은 분위기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "끝낸 일을 축하하고 기록하는 날로 읽어요.",
+      "reversed": "미뤄 둔 마무리 하나를 끝내는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "최근 끝낸 일 하나를 기록하고 스스로 축하해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "다음 주기에 가져갈 것과 두고 갈 것을 한 줄씩 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "80% 된 일을 오늘 한 번 내보내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "끝맺지 못한 대화나 일 하나에 마지막 한 문장을 붙여 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "해외 이주, 결혼, 합격 같은 결과를 확정",
+      "instead": "한 주기가 완성되는 흐름과 정리할 점까지만 말해요."
+    },
+    {
+      "code": "NO_SCORE",
+      "doNotClaim": "완벽한 결말, 만점짜리 결과로 말하기",
+      "instead": "마무리와 다음 단계라는 흐름으로 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-00-fool",
+      "ko": "한 주기의 끝과 새 출발이 맞닿음(번호 21과 0)"
+    },
+    {
+      "with": "major-10-wheel-of-fortune",
+      "ko": "한 바퀴를 끝내고 다음 순환으로"
+    },
+    {
+      "with": "major-12-hanged-man",
+      "ko": "다리 모양이 닮은 짝, 멈춤이 끝나고 완성으로"
+    },
+    {
+      "with": "pentacles-10",
+      "ko": "오래 쌓은 것이 온전히 자리 잡는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "21 · 여정의 완성, 다음 출발 직전"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_SCORE"
+    ]
+  },
+  "waite": {
+    "upright": "Assured success, recompense, voyage, route, emigration, flight, change of place.",
+    "reversed": "Inertia, fixity, stagnation, permanence.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite의 점술 의미에는 성공과 함께 여행·이주도 있다. 출력은 완성·통합 쪽을 쓴다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-21-world.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 XXI, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

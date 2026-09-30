@@ -1,0 +1,284 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-14-temperance",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-14-temperance.webp",
+  "names": {
+    "ko": "절제",
+    "ja": "節制",
+    "en": "Temperance"
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 14,
+  "roman": "XIV",
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "궁수자리(Sagittarius)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "알맞게 섞기",
+    "균형과 조율",
+    "천천히 맞추기",
+    "중간 지점"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "pouring-cups",
+        "ko": "두 금색 컵 사이로 물을 옮겨 붓는다. 물줄기는 오른쪽 위 컵에서 왼쪽 아래 컵으로 비스듬히 흐른다",
+        "salience": 1
+      },
+      {
+        "id": "foot-water-land",
+        "ko": "오른발은 물에 담그고 왼발은 물가 바위 위에 올렸다",
+        "salience": 1
+      },
+      {
+        "id": "red-wings",
+        "ko": "붉은빛이 도는 큰 날개를 폈고 흰 옷을 입었다",
+        "salience": 2
+      },
+      {
+        "id": "triangle-square",
+        "ko": "가슴에 네모 안의 노란 세모 표시가 있다",
+        "salience": 3
+      },
+      {
+        "id": "forehead-disc",
+        "ko": "이마에 둥근 해 표시가 있고 머리 둘레로 빛살이 퍼진다",
+        "salience": 3
+      },
+      {
+        "id": "irises",
+        "ko": "오른쪽 풀숲에 노란 붓꽃이 피어 있다",
+        "salience": 2
+      },
+      {
+        "id": "path-light",
+        "ko": "왼쪽 물가에서 산 쪽으로 길이 이어지고, 산 위에 해 같은 빛이 떠 있다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "두 발을 모두 물에 담갔다",
+        "correct": "한 발은 물에, 다른 발은 물가 바위 위에 있다",
+        "regex": "두\\s*발(을)?\\s*(모두\\s*)?물"
+      },
+      {
+        "wrong": "흰 날개의 천사",
+        "correct": "날개는 붉은빛이다",
+        "regex": "흰\\s*날개"
+      },
+      {
+        "wrong": "여성 천사가 물을 붓는다",
+        "correct": "성별이 드러나지 않는다(Waite: 남도 여도 아닌 모습)",
+        "regex": "여자\\s*천사|여성\\s*천사"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "pouring-cups",
+        "ko": "두 가지를 알맞게 섞어 새 균형을 만드는 일",
+        "school": "modern"
+      },
+      {
+        "factId": "foot-water-land",
+        "ko": "한 발은 땅, 한 발은 물, 두 성질을 함께 딛음",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "path-light",
+        "ko": "천천히 가면 닿는 목표",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-14-temperance.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "알맞게 섞기",
+      "균형 잡기",
+      "서두르지 않는 조율",
+      "중간 지점 찾기"
+    ],
+    "reversed": [
+      "한쪽으로 치우침",
+      "지나침과 모자람",
+      "조율이 멈춤",
+      "조급하게 섞기"
+    ],
+    "oneLine": {
+      "upright": "극단 대신 알맞은 비율을 찾아 천천히 섞고 맞춰 가는 때",
+      "reversed": "한쪽으로 쏠리거나 지나쳐서 균형이 깨진 상태"
+    },
+    "shadow": "모두를 맞추려다 내 입장이 흐려지는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "blocked"
+    ],
+    "gloss": {
+      "excess": "한쪽으로 지나쳐 비율이 깨짐(과로·과몰입 등)",
+      "blocked": "섞이지 않는 두 입장 사이에서 조율이 멈춤"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음이 비교적 고르고 차분해요. 급하게 결론 내지 않아도 괜찮다고 느끼는 상태예요.",
+    "reversed": "무언가에 쏠려 균형이 깨졌다는 느낌이 있어요. 조급함이 올라와 있을 수 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "서로의 속도와 방식을 조금씩 맞춰 가는 흐름으로 읽어요. 한 번에 가까워지기보다 자주, 알맞게 만나는 쪽이 맞아요.",
+      "reversed": "한쪽이 너무 많이 주거나 관계에 지나치게 몰입한 쪽으로 읽어요. 연락 빈도나 만남 횟수의 균형을 한 번 돌아보세요."
+    },
+    "contact": {
+      "upright": "보낼 말과 기다릴 시간을 알맞게 섞는 흐름으로 읽어요. 짧은 안부와 적당한 간격이 이 그림과 잘 맞아요.",
+      "reversed": "연락이 너무 잦거나 너무 뜸해 리듬이 깨진 쪽으로 읽어요. 내가 편한 간격을 먼저 정해 두세요."
+    },
+    "work": {
+      "upright": "서로 다른 의견이나 자원을 조율해 좋은 결과를 만드는 흐름으로 읽어요. 중재·협의·일정 조정에 힘이 실려요.",
+      "reversed": "일과 쉼, 또는 사람들 사이의 균형이 깨져 일이 삐걱대는 쪽으로 읽어요. 과한 쪽 하나를 줄이는 게 먼저예요."
+    },
+    "choice": {
+      "upright": "둘 중 하나만 고르기보다 두 선택지를 섞거나 단계적으로 가는 방법이 있는 배치로 읽어요. 중간안을 한 번 그려 보세요.",
+      "reversed": "극단적인 선택지 사이에서 조급하게 고르려는 상태로 읽어요. 시간을 두고 작게 시험해 보는 방법이 있는지 보세요."
+    },
+    "self": {
+      "upright": "생활 리듬과 컨디션이 고르게 맞춰지는 시기로 읽어요. 먹고 자고 움직이는 비율을 조금씩 다듬기 좋아요.",
+      "reversed": "무언가를 지나치게 하고 있어 몸과 마음이 기운 상태로 읽어요. 줄여야 할 것 하나를 골라 보세요."
+    },
+    "group": {
+      "upright": "서로 다른 사람들을 잇고 조율하는 역할이 빛나는 흐름으로 읽어요. 양쪽 말을 섞어 한 문장으로 정리해 보세요.",
+      "reversed": "의견이 섞이지 않고 양쪽으로 갈라진 분위기로 읽어요. 서두르지 말고 공통점부터 찾아보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "서두르지 않고 알맞게 맞춰 가고 싶은 마음이에요.",
+      "reversed": "한쪽으로 쏠린 마음 때문에 균형이 흔들리고 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "서로의 속도를 맞춰 가며 섞이는 흐름으로 읽어요.",
+      "reversed": "주고받는 양이나 속도가 맞지 않는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "적당한 크기와 간격으로 연락하면 흐름이 고르게 이어질 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금 방식은 양이나 속도가 과할 수 있다는 쪽으로 읽어요. 간격을 정한 조건에서 다시 보세요."
+    },
+    "필요한 것": {
+      "upright": "지나침과 모자람 사이의 알맞은 비율이 필요해요.",
+      "reversed": "과한 것 하나를 줄이는 조정이 필요해요."
+    },
+    "나아갈 방향": {
+      "upright": "여러 요소를 조율해 함께 가는 쪽이에요.",
+      "reversed": "무리한 속도를 줄이고 균형부터 되찾는 쪽이에요."
+    },
+    "도움이 될 태도": {
+      "upright": "양쪽을 잇고 알맞게 섞는 태도가 도움이 돼요.",
+      "reversed": "한쪽 편을 들기보다 속도를 늦추는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "무리하지 않고 알맞은 속도로 움직이는 날로 읽어요.",
+      "reversed": "과하게 하던 것 하나를 줄여 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "오늘 일정에서 일과 쉼의 비율을 적어 보고 하나만 조정해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "서로 다른 두 의견의 공통점을 한 문장으로 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "요즘 지나치게 하고 있는 것 하나를 골라 이번 주에 절반으로 줄여 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "연락 간격이나 만남 빈도를 내가 편한 기준으로 정해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "식단이나 치료 효과를 보장하는 말로 쓰기",
+      "instead": "생활의 균형을 돌아보는 정도로 말하고 건강 판단은 전문가에게 맡겨요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "관계가 조율되어 잘 풀린다고 확정",
+      "instead": "맞춰 갈 여지와 방법까지만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-06-lovers",
+      "ko": "끌림을 알맞은 속도로 맞춰 가는 관계"
+    },
+    {
+      "with": "major-15-devil",
+      "ko": "번호가 이웃한 짝, 알맞은 섞임과 지나친 매임의 대비"
+    },
+    {
+      "with": "cups-02",
+      "ko": "두 마음이 고르게 섞이는 흐름"
+    },
+    {
+      "with": "pentacles-02",
+      "ko": "여러 일 사이에서 균형을 잡는 연습"
+    }
+  ],
+  "numerology": {
+    "stage": "14 · 서로 다른 것을 섞어 새 균형을 만드는 단계"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Economy, moderation, frugality, management, accommodation.",
+    "reversed": "Things connected with churches, religions, sects, the priesthood, sometimes even the priest who will marry the Querent; also disunion, unfortunate combinations, competing interests.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite는 천사를 남도 여도 아닌 모습으로 설명했다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-14-temperance.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 XIV, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

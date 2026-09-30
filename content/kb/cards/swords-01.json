@@ -1,0 +1,285 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-01",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-01.webp",
+  "names": {
+    "ko": "검 에이스",
+    "ja": "ソードのエース",
+    "en": "Ace of Swords",
+    "koAliases": [
+      "소드 에이스",
+      "검 1"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "ace",
+  "number": 1,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "분명한 진실",
+    "결단의 칼",
+    "생각의 돌파",
+    "새 기준"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "hand-sword",
+        "ko": "왼쪽 구름에서 나온 손이 칼을 곧게 세워 쥐었다",
+        "salience": 1
+      },
+      {
+        "id": "crown-tip",
+        "ko": "위로 향한 칼끝에 금관이 걸려 있다",
+        "salience": 1
+      },
+      {
+        "id": "branches",
+        "ko": "관에서 왼쪽으로 올리브 가지, 오른쪽으로 야자잎이 늘어져 있다",
+        "salience": 2
+      },
+      {
+        "id": "drops",
+        "ko": "칼 양옆으로 노란 방울 여섯 개가 떨어진다",
+        "salience": 3
+      },
+      {
+        "id": "mountains",
+        "ko": "아래쪽에 험한 회색 산들이 보인다",
+        "salience": 2
+      },
+      {
+        "id": "glow",
+        "ko": "손 둘레에 옅은 빛살이 퍼져 있다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "오른쪽 구름에서 손이 나온다",
+        "correct": "구름과 손은 왼쪽에 있다",
+        "regex": "오른쪽\\s*구름"
+      },
+      {
+        "wrong": "칼에 피가 묻어 있다",
+        "correct": "칼날은 깨끗하다",
+        "regex": "피가|피를"
+      },
+      {
+        "wrong": "칼끝이 아래를 향한다",
+        "correct": "칼끝은 위를 향하고 관이 걸려 있다",
+        "regex": "칼끝이?\\s*아래"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "crown-tip",
+        "ko": "힘의 승리, 점술 너머의 더 높은 뜻을 품은 관",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "hand-sword",
+        "ko": "흐릿한 것을 가르는 분명한 생각",
+        "school": "modern"
+      },
+      {
+        "factId": "branches",
+        "ko": "평화(올리브)와 승리(야자)가 함께 걸린 결단",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A hand issues from a cloud, grasping a sword, the point of which is encircled by a crown.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-01.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "분명한 진실",
+      "결단",
+      "생각의 돌파",
+      "새 기준 세우기"
+    ],
+    "reversed": [
+      "날 선 말",
+      "흐려진 판단",
+      "생각만 날카로움",
+      "결단을 미룸"
+    ],
+    "oneLine": {
+      "upright": "흐릿하던 것을 분명한 생각과 말로 가르고 새 기준을 세우는 때",
+      "reversed": "생각이 흩어져 판단이 흐리거나, 날카로움이 지나쳐 말로 상처를 주기 쉬운 상태"
+    },
+    "shadow": "옳음을 앞세워 상대를 베는 말"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "excess"
+    ],
+    "gloss": {
+      "blocked": "생각이 정리되지 않아 결단이 미뤄짐",
+      "excess": "날카로움이 지나쳐 공격적인 말이 됨"
+    }
+  },
+  "asFeelings": {
+    "upright": "머리가 맑아지고 무엇이 맞는지 보이는 느낌이에요.",
+    "reversed": "생각이 엉키거나, 말이 날카롭게 나올 것 같은 긴장이 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 흐릿했던 부분을 솔직하게 말하고 분명히 하는 흐름으로 읽어요. 돌려 말하기보다 정확한 한 문장이 힘이 돼요.",
+      "reversed": "옳고 그름을 따지다 말이 날카로워지거나, 해야 할 말을 미루는 쪽으로 읽어요. 사실과 감정을 나눠 말해 보세요."
+    },
+    "contact": {
+      "upright": "용건과 뜻이 분명한 연락이 어울리는 그림이에요. 오해가 있었다면 정확히 짚어 말하는 게 좋아요.",
+      "reversed": "보내는 말이 차갑거나 공격적으로 읽힐 수 있는 쪽으로 읽어요. 보내기 전에 날 선 단어를 한 번 부드럽게 바꿔 보세요."
+    },
+    "work": {
+      "upright": "문제의 핵심을 꿰뚫고 결정을 내리기 좋은 흐름으로 읽어요. 새 아이디어나 기획을 논리적으로 정리해 보세요.",
+      "reversed": "정보가 엉켜 판단이 흐려지거나 논쟁이 날카로워지는 쪽으로 읽어요. 핵심 쟁점 하나만 먼저 정리해 보세요."
+    },
+    "choice": {
+      "upright": "기준이 분명해져 결정할 수 있는 배치로 읽어요. 가장 중요한 기준 하나로 두 선택지를 잘라 보세요.",
+      "reversed": "생각이 너무 많아 결단이 미뤄지는 상태로 읽어요. 정보를 더 모으기보다 판단 기준을 하나 정해 보세요."
+    },
+    "self": {
+      "upright": "머리가 맑아지고 생각이 정리되는 시기로 읽어요. 미뤄 둔 결정을 내리기 좋아요.",
+      "reversed": "생각이 과열되거나 엉켜 피로한 시기로 읽어요. 머릿속 생각을 종이에 모두 쏟아 내 보세요."
+    },
+    "group": {
+      "upright": "모임에서 문제를 분명히 짚고 정리하는 역할이 필요한 흐름으로 읽어요. 사실 중심으로 말해 보세요.",
+      "reversed": "말이 날카로워져 상처가 오가기 쉬운 분위기로 읽어요. 감정이 가라앉은 뒤 이야기해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "무엇이 맞는지 분명해진 마음이에요.",
+      "reversed": "생각이 엉키거나 날이 선 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "흐릿했던 것이 분명해지는 흐름으로 읽어요.",
+      "reversed": "말이 날카롭게 오가거나 핵심을 피하는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "분명하고 정확한 말로 먼저 정리하면 흐름이 맑아질 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 말이 차갑게 전달되기 쉽다는 쪽으로 읽어요. 표현을 부드럽게 바꾼 조건에서 다시 보세요."
+    },
+    "나아갈 방향": {
+      "upright": "핵심을 짚고 분명하게 결정하는 쪽이에요.",
+      "reversed": "결정 전에 생각을 정리하는 쪽이에요."
+    },
+    "필요한 것": {
+      "upright": "흐릿한 것을 가르는 분명한 기준이 필요해요.",
+      "reversed": "날카로움을 다듬는 부드러운 말이 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "미뤄 둔 결정 하나를 내리는 날로 읽어요.",
+      "reversed": "말하기 전에 한 번 더 다듬는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "고민 중인 문제의 핵심을 한 문장으로 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "오해가 있다면 사실만 짧게 정리해 전해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "보낼 메시지에서 공격적으로 읽힐 수 있는 단어를 하나씩 바꿔 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "머릿속 생각을 10분 동안 종이에 모두 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "시험이나 소송에서 이긴다고 확정",
+      "instead": "판단을 정리하는 흐름과 준비까지만 말해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "수술이나 몸의 문제를 암시한다고 말하기",
+      "instead": "생각과 판단의 그림으로만 읽어요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 진실을 숨기고 있었다고 단정",
+      "instead": "분명히 확인할 것이 있다고만 말하고 확인 방법을 제안해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-11-justice",
+      "ko": "분명한 판단과 공정한 결론이 겹침"
+    },
+    {
+      "with": "swords-02",
+      "ko": "갈라낸 생각이 두 갈래 앞에서 멈추는 흐름(1→2)"
+    },
+    {
+      "with": "wands-01",
+      "ko": "생각과 행동의 새 시작이 함께 옴"
+    },
+    {
+      "with": "cups-01",
+      "ko": "머리의 분명함과 마음의 채움이 함께 필요한 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "씨앗·시작점"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_HEALTH",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Triumph, the excessive degree in everything, conquest, triumph of force. It is a card of great force, in love as well as in hatred. The crown may carry a much higher significance than comes usually within the sphere of fortune-telling.",
+    "reversed": "The same, but the results are disastrous; another account says—conception, childbirth, augmentation, multiplicity.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 사랑과 미움 모두에서 큰 힘의 카드라고 적었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-01.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

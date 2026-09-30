@@ -1,0 +1,292 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "major-01-magician",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/major-01-magician.webp",
+  "names": {
+    "ko": "마법사",
+    "ja": "魔術師",
+    "en": "The Magician",
+    "koAliases": [
+      "마술사"
+    ]
+  },
+  "arcana": "major",
+  "suit": null,
+  "rank": null,
+  "number": 1,
+  "roman": "I",
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "수성(Mercury)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "가진 것으로 시작",
+    "의지와 실행",
+    "표현력",
+    "집중"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "wand-raised",
+        "ko": "오른손에 쥔 흰 막대를 머리 위로 높이 치켜들었다",
+        "salience": 1
+      },
+      {
+        "id": "finger-down",
+        "ko": "왼손 검지로 땅을 가리킨다",
+        "salience": 1
+      },
+      {
+        "id": "lemniscate",
+        "ko": "머리 위에 옆으로 누운 8자(∞) 모양이 떠 있다",
+        "salience": 2
+      },
+      {
+        "id": "table-tools",
+        "ko": "앞 탁자 위에 컵, 별이 새겨진 원반(펜타클), 칼이 놓여 있고 지팡이도 함께 있다",
+        "salience": 1
+      },
+      {
+        "id": "robes",
+        "ko": "흰 옷 위에 붉은 겉옷을 걸쳤고 허리에 푸른 띠를 둘렀다",
+        "salience": 3
+      },
+      {
+        "id": "roses-lilies",
+        "ko": "아래쪽에 붉은 장미와 흰 백합이 피어 있고, 위쪽 가장자리에도 장미 넝쿨이 드리워 있다",
+        "salience": 2
+      },
+      {
+        "id": "yellow-ground",
+        "ko": "배경은 밝은 노란색이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "탁자 위에 수정구가 있다",
+        "correct": "탁자 위에는 컵·펜타클·칼·지팡이, 네 수트의 도구가 있다",
+        "regex": "수정\\s*구|수정구슬"
+      },
+      {
+        "wrong": "양손을 모두 하늘로 들었다",
+        "correct": "한 손은 위로, 다른 손은 아래 땅을 가리킨다",
+        "regex": "양손을?\\s*(모두\\s*)?(하늘|위)로"
+      },
+      {
+        "wrong": "지팡이에서 불꽃이 뿜어져 나온다",
+        "correct": "막대는 희고, 불꽃이나 빛줄기는 그려져 있지 않다",
+        "regex": "지팡이[^.]{0,8}(불꽃|빛줄기)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "wand-raised",
+        "ko": "위에서 받은 것을 아래로 내려보내는 몸짓(한 손은 위, 한 손은 아래)",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "table-tools",
+        "ko": "필요한 도구가 이미 손 닿는 곳에 있음",
+        "school": "modern"
+      },
+      {
+        "factId": "lemniscate",
+        "ko": "끊기지 않고 이어지는 의지와 집중",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "verified": {
+      "scan": "apps/web/public/cards/major-01-magician.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "가진 것으로 시작하기",
+      "의지와 실행력",
+      "말과 기술로 풀기",
+      "집중해서 보여 주기"
+    ],
+    "reversed": [
+      "재주만 앞서는 말",
+      "도구는 있는데 멈춤",
+      "흩어진 집중",
+      "보여 주기식 과장"
+    ],
+    "oneLine": {
+      "upright": "필요한 도구는 이미 탁자 위에 있으니 지금 써 보는 때",
+      "reversed": "재주와 준비가 있는데 방향이 흩어지거나 말만 앞서는 상태"
+    },
+    "shadow": "능숙함이 상대를 움직이려는 계산으로 기우는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "excess"
+    ],
+    "gloss": {
+      "blocked": "할 수 있는 게 있는데 시작을 못 누름",
+      "excess": "말솜씨와 연출이 실제 준비보다 앞섬"
+    }
+  },
+  "asFeelings": {
+    "upright": "할 수 있겠다는 자신감이 올라와 있어요. 손에 쥔 게 무엇인지 알고 있는 상태에 가까워요.",
+    "reversed": "해야 하는 건 아는데 손이 안 가는 답답함이 있어요. 스스로도 부풀리고 있다는 느낌이 들 수 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "마음을 말과 행동으로 분명히 보여 주는 쪽이 어울리는 흐름으로 읽어요. 기다리기보다 내가 할 수 있는 표현 하나를 골라 보세요.",
+      "reversed": "좋아 보이려는 연출에 힘이 들어가 있거나, 표현할 수 있는데 망설이는 쪽으로 읽어요. 꾸미지 않은 한 문장이 더 힘이 있을 수 있어요."
+    },
+    "contact": {
+      "upright": "무슨 말을 할지 이미 알고 있다면 지금 꺼내 볼 만한 흐름으로 읽어요. 짧고 분명한 첫 문장이 이 그림과 잘 맞아요.",
+      "reversed": "말을 너무 다듬다가 타이밍을 놓치거나, 반응을 끌어내려는 계산이 앞서는 쪽으로 읽어요. 의도를 한 줄로 정리한 뒤 보내 보세요."
+    },
+    "work": {
+      "upright": "가진 기술과 자원을 한 탁자에 올려놓고 직접 실행해 보는 흐름으로 읽어요. 발표·제안·새 기획처럼 보여 주는 일에 힘이 실려요.",
+      "reversed": "준비와 능력은 있는데 실행이 늦어지거나, 결과보다 포장이 앞서는 쪽으로 읽어요. 오늘 끝낼 수 있는 작은 결과물 하나로 범위를 줄여 보세요."
+    },
+    "choice": {
+      "upright": "지금 가진 도구로 바로 시작할 수 있는 쪽이 어디인지가 기준이 돼요. 새로 갖춰야 할 게 적은 선택지에 힘이 실려요.",
+      "reversed": "선택지마다 그럴듯한 설명은 있는데 실제로 해 볼 계획이 없는 상태로 읽어요. 각 길에서 첫 주에 할 일을 적어 비교해 보세요."
+    },
+    "self": {
+      "upright": "하고 싶은 일에 집중력이 모이는 시기로 읽어요. 미뤄 둔 일 하나에 직접 손대 보기 좋아요.",
+      "reversed": "여러 가지를 한꺼번에 벌여 힘이 흩어진 상태로 읽어요. 하나만 남기고 나머지는 잠시 내려놓아 보세요."
+    },
+    "group": {
+      "upright": "모임에서 내가 가진 재주나 정보로 흐름을 이끌 수 있는 때로 읽어요. 진행이나 제안 역할을 맡아 보기 좋아요.",
+      "reversed": "말이 앞서 기대를 키웠다가 실행이 따라가지 못하는 쪽으로 읽어요. 할 수 있는 만큼만 약속하는 게 좋아요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "원하는 걸 이미 알고 있고, 해 볼 수 있다는 마음이 있어요.",
+      "reversed": "할 말은 있는데 꺼내지 못하거나, 나를 부풀려 보이고 싶은 마음이 섞여 있어요."
+    },
+    "두 사람 사이": {
+      "upright": "대화와 표현이 흐름을 움직이는 관계로 읽어요. 말이 오가는 만큼 가까워지는 결이에요.",
+      "reversed": "말은 오가는데 진짜 의도가 잘 안 보이는 흐름으로 읽어요. 표현과 행동이 맞는지 보는 자리예요."
+    },
+    "먼저 움직이면": {
+      "upright": "내가 먼저 분명하게 말을 건네면 흐름이 움직일 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 말을 다듬는 데 힘이 너무 들어가 있다는 쪽으로 읽어요. 꾸밈을 덜고 짧게 보내는 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "말과 행동이 분명하고 능숙한 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "재치는 있는데 속을 알기 어려운 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "가진 기술을 직접 보여 줄 수 있는 쪽으로 나아가는 흐름이에요.",
+      "reversed": "계획을 더 세우기보다 작은 실행 하나로 막힌 걸 푸는 쪽이에요."
+    },
+    "필요한 것": {
+      "upright": "생각을 실제 행동으로 옮기는 첫 동작이 필요해요.",
+      "reversed": "보여 주기보다 실제로 해내는 것에 집중하는 태도가 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "미뤄 둔 일 하나를 직접 시작하기 좋은 날로 읽어요.",
+      "reversed": "약속을 늘리기보다 이미 벌인 일을 하나 마무리하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "지금 바로 쓸 수 있는 도구와 자원 네 가지를 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "하고 싶은 말을 한 문장으로 정리해 오늘 안에 전해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "벌여 놓은 일 목록에서 하나만 골라 오늘 끝내 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "보내려는 메시지에서 꾸밈말을 절반으로 줄여 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "계획한 일이 성공한다, 시험에 합격한다고 단정",
+      "instead": "쓸 수 있는 자원과 실행 방향까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대를 원하는 대로 움직일 수 있다고 말하기",
+      "instead": "내 표현과 행동이 할 수 있는 몫까지만 다뤄요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "역방향을 보고 상대를 거짓말하는 사람으로 단정",
+      "instead": "말과 행동이 어긋나는지 확인해 보자고 제안해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-02-high-priestess",
+      "ko": "드러내는 힘과 아껴 두는 힘, 말할 것과 기다릴 것을 나누는 짝"
+    },
+    {
+      "with": "major-00-fool",
+      "ko": "떠나고 싶은 마음에 쓸 도구가 갖춰짐"
+    },
+    {
+      "with": "wands-01",
+      "ko": "떠오른 생각을 곧바로 실행으로 옮길 때"
+    },
+    {
+      "with": "swords-07",
+      "ko": "재주가 요령이나 편법 쪽으로 기울지 않는지 살필 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "1 · 여정의 첫 단계, 가진 것으로 시작"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Skill, diplomacy, address, subtlety; sickness, pain, loss, disaster, snares of enemies; self-confidence, will; the Querent, if male.",
+    "reversed": "Physician, Magus, mental disease, disgrace, disquiet.",
+    "loc": "PKT Part III §3",
+    "noteKo": "Waite는 기술·외교 외에 질병·손실·함정도 함께 적어 두었다. 현대 해석은 실행력 쪽만 쓴다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/major-01-magician.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part II §2 I, Part III §3"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

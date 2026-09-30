@@ -1,0 +1,277 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-10",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-10.webp",
+  "names": {
+    "ko": "완드 10",
+    "ja": "ワンドの10",
+    "en": "Ten of Wands",
+    "koAliases": [
+      "지팡이 10"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "10",
+  "number": 10,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "궁수자리의 토성(Saturn in Sagittarius)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "무거운 짐",
+    "과한 책임",
+    "마지막 구간",
+    "혼자 다 짊어짐"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "ten-bundle",
+        "ko": "한 남자가 지팡이 열 개를 한 아름에 끌어안고 몸을 숙인 채 걷는다",
+        "salience": 1
+      },
+      {
+        "id": "face-hidden",
+        "ko": "얼굴은 지팡이 다발에 파묻혀 보이지 않는다",
+        "salience": 1
+      },
+      {
+        "id": "toward-house",
+        "ko": "오른쪽 멀리 나무 사이로 붉은 지붕 집이 보이고 그쪽으로 향한다",
+        "salience": 2
+      },
+      {
+        "id": "bent-back",
+        "ko": "허리를 굽히고 무게에 눌린 걸음이다",
+        "salience": 2
+      },
+      {
+        "id": "clothes",
+        "ko": "주황빛 옷을 입었다",
+        "salience": 3
+      },
+      {
+        "id": "ground-sky",
+        "ko": "노란 땅과 푸른 하늘이 배경이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "지팡이를 등에 지고 있다",
+        "correct": "지팡이 다발을 두 팔로 앞에 끌어안고 있다",
+        "regex": "등에\\s*지고|어깨에\\s*메"
+      },
+      {
+        "wrong": "집에 도착했다",
+        "correct": "아직 집을 향해 걷는 중이다",
+        "regex": "집에\\s*도착"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "face-hidden",
+        "ko": "짐에 가려 앞이 잘 보이지 않음",
+        "school": "modern"
+      },
+      {
+        "factId": "toward-house",
+        "ko": "목적지는 가까이 있지만 짐이 너무 무거움",
+        "school": "modern"
+      },
+      {
+        "factId": "ten-bundle",
+        "ko": "성공과 재산도 무게가 되면 억압이 됨",
+        "school": "waite-1911"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A man oppressed by the weight of the ten staves which he is carrying.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-10.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "무거운 책임",
+      "혼자 다 짊어짐",
+      "마지막 고비",
+      "과부하"
+    ],
+    "reversed": [
+      "짐 내려놓기",
+      "나눠 들기",
+      "버티다 무너짐",
+      "책임 떠넘김"
+    ],
+    "oneLine": {
+      "upright": "목적지는 가까운데 혼자 짊어진 짐이 너무 무거워 앞이 가려진 때",
+      "reversed": "짐을 내려놓고 나누기 시작하거나, 버티다 한계에 닿은 상태"
+    },
+    "shadow": "다 내가 해야 한다는 생각으로 도움을 거절하는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "짐을 하나씩 내려놓고 나누기 시작함",
+      "excess": "짐이 한계를 넘어 무너지기 직전"
+    }
+  },
+  "asFeelings": {
+    "upright": "해야 할 게 너무 많아 숨이 차요. 그래도 끝까지 가야 한다는 책임감이 있어요.",
+    "reversed": "더는 못 들겠다는 마음과 내려놓아도 될지 망설이는 마음이 함께 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 혼자 너무 많은 역할과 책임을 지고 있는지 보는 흐름으로 읽어요. 함께 들 수 있는 짐을 나눠 보자고 말해 보세요.",
+      "reversed": "무거웠던 짐을 조금씩 내려놓거나, 버티다 지쳐 관계 자체가 버거워진 쪽으로 읽어요. 무엇이 가장 무거운지 한 가지만 꼽아 보세요."
+    },
+    "contact": {
+      "upright": "연락이 또 하나의 부담처럼 느껴지는 흐름으로 읽어요. 지금 내 여력에 맞게 짧게 하거나, 여유가 생긴 뒤로 미뤄도 괜찮아요.",
+      "reversed": "연락을 의무처럼 붙잡고 있던 걸 내려놓을 수 있는 쪽으로 읽어요. 나를 지치게 하는 연락 패턴 하나를 정리해 보세요."
+    },
+    "work": {
+      "upright": "일과 책임이 몰려 과부하인 흐름으로 읽어요. 우선순위를 정하고 맡길 수 있는 일은 나누세요.",
+      "reversed": "업무를 나누고 정리할 계기가 보이거나, 한계에 닿아 멈춰 서는 쪽으로 읽어요. 지금 내려놓을 일 하나를 정해 보세요."
+    },
+    "choice": {
+      "upright": "어느 쪽이 짐을 더 늘리고 어느 쪽이 덜어 주는지가 기준이 되는 배치로 읽어요. 선택 뒤의 할 일 목록을 비교해 보세요.",
+      "reversed": "짐에서 벗어나고 싶은 마음이 선택을 몰아가는 상태로 읽어요. 피하고 싶은 것과 원하는 것을 나눠 적어 보세요."
+    },
+    "self": {
+      "upright": "책임과 할 일이 몸과 마음을 누르는 시기로 읽어요. 오늘 할 일에서 하나를 빼 보세요.",
+      "reversed": "쌓인 짐을 조금씩 내려놓으며 숨을 돌리는 시기로 읽어요. 도움을 받아도 괜찮아요."
+    },
+    "group": {
+      "upright": "모임의 일이 한 사람에게 몰린 흐름으로 읽어요. 역할 분담을 다시 정해 보세요.",
+      "reversed": "짐을 떠안던 사람이 지쳐 손을 놓기 직전인 분위기로 읽어요. 나눌 일을 구체적으로 적어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "해야 할 것에 눌려 여유가 없는 마음이에요.",
+      "reversed": "짐을 내려놓고 싶지만 망설이는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "한쪽이 많은 부담을 지고 있는 흐름으로 읽어요.",
+      "reversed": "부담을 나누거나 덜어 낼 여지가 생기는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금 연락이 또 하나의 짐이 될 수 있다는 쪽으로 읽어요. 여력이 있는 만큼만 짧게 하는 조건이 맞아요.",
+      "reversed": "의무처럼 붙잡던 방식을 내려놓으면 흐름이 가벼워질 수 있다는 쪽으로 읽어요."
+    },
+    "막힌 곳": {
+      "upright": "혼자 다 짊어지려는 태도가 막힌 곳일 수 있어요.",
+      "reversed": "쌓인 짐이 한계를 넘은 게 막힌 곳일 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "우선순위를 정하고 짐을 나누는 게 필요해요.",
+      "reversed": "완전히 내려놓기보다 하나씩 덜어 내는 과정이 필요해요."
+    },
+    "나의 자리": {
+      "upright": "일이 몰리는 자리에 서 있을 수 있어요.",
+      "reversed": "떠안던 역할을 나눠 줄 수 있는 자리로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "해야 할 일 중 가장 중요한 것 하나만 끝내는 날로 읽어요.",
+      "reversed": "도움을 청하거나 일을 하나 맡기는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "지금 짊어진 일을 모두 적고, 남에게 맡길 수 있는 것에 표시해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "오늘 할 일에서 하나를 내일로 옮겨 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "도움을 청할 사람 한 명과 부탁할 일 하나를 정해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "끝까지 들고 갈 것과 여기서 놓을 것을 두 칸으로 나눠 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "과로로 병이 난다고 예고",
+      "instead": "지친 상태를 돌보자는 정도로 말하고 건강 판단은 전문가에게 맡겨요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "결국 실패한다, 무너진다고 말하기",
+      "instead": "짐을 나누고 우선순위를 정하는 방법을 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "wands-09",
+      "ko": "버티다 짐이 너무 무거워지는 흐름"
+    },
+    {
+      "with": "major-04-emperor",
+      "ko": "책임을 혼자 쥐려는 경향이 겹침"
+    },
+    {
+      "with": "pentacles-02",
+      "ko": "여러 짐 사이에서 균형을 잡는 연습"
+    },
+    {
+      "with": "swords-10",
+      "ko": "과부하 뒤 바닥을 치고 멈추는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "한 주기의 끝·무게"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "A card of many significances, and some of the readings cannot be harmonized. I set aside that which connects it with honour and good faith. The chief meaning is oppression simply, but it is also fortune, gain, any kind of success, and then it is the oppression of these things. It is also a card of false-seeming, disguise, perfidy. The place which the figure is approaching may suffer from the rods that he carries. Success is stultified if the Nine of Swords follows, and if it is a question of a lawsuit, there will be certain loss.",
+    "reversed": "Contrarieties, difficulties, intrigues, and their analogies.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 성공과 재산도 무게가 되면 억압이 된다고 적었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-10.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

@@ -1,0 +1,280 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-07",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-07.webp",
+  "names": {
+    "ko": "검 7",
+    "ja": "ソードの7",
+    "en": "Seven of Swords",
+    "koAliases": [
+      "소드 7",
+      "검 7"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "7",
+  "number": 7,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "물병자리의 달(Moon in Aquarius)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "혼자만의 전략",
+    "요령과 편법",
+    "몰래 챙김",
+    "빠져나가기"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "sneaking",
+        "ko": "붉은 모자를 쓴 남자가 칼 다섯 자루를 품에 안고 발끝으로 살금살금 걸어간다",
+        "salience": 1
+      },
+      {
+        "id": "looking-back",
+        "ko": "고개를 돌려 뒤를 보며 옅게 웃고 있다",
+        "salience": 1
+      },
+      {
+        "id": "two-left",
+        "ko": "뒤쪽 땅에 칼 두 자루가 꽂힌 채 남아 있다",
+        "salience": 1
+      },
+      {
+        "id": "camp",
+        "ko": "오른쪽에 알록달록한 천막들이 모인 진영이 있다",
+        "salience": 2
+      },
+      {
+        "id": "distant-figures",
+        "ko": "왼쪽 멀리 사람 몇과 연기 같은 것이 보인다",
+        "salience": 3
+      },
+      {
+        "id": "yellow-bg",
+        "ko": "배경은 노란색이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "칼 일곱 자루를 모두 가져간다",
+        "correct": "가져가는 것은 다섯, 둘은 남아 있다",
+        "regex": "(일곱|7)\\s*자루(를)?\\s*(모두|다)"
+      },
+      {
+        "wrong": "칼날에 베여 피가 난다",
+        "correct": "피는 그려져 있지 않다",
+        "regex": "피가|피를"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "sneaking",
+        "ko": "계획과 시도, 그러나 실패할 수도 있는 계획",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "two-left",
+        "ko": "다 가져가지 못한 것, 남겨진 흔적",
+        "school": "modern"
+      },
+      {
+        "factId": "looking-back",
+        "ko": "들킬까 살피는 마음",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A man in the act of carrying away five swords rapidly; the two others of the card remain stuck in the ground. A camp is close at hand.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-07.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "혼자만의 전략",
+      "요령과 편법",
+      "몰래 챙김",
+      "빠져나가기"
+    ],
+    "reversed": [
+      "숨긴 것을 드러냄",
+      "양심의 가책",
+      "정면으로 말하기",
+      "혼자 하다 지침"
+    ],
+    "oneLine": {
+      "upright": "정면 대신 요령이나 혼자만의 방법으로 필요한 것을 챙겨 빠져나가려는 때",
+      "reversed": "숨기던 것을 드러내고 정면으로 풀거나, 혼자 꾸리던 전략에 지친 상태"
+    },
+    "shadow": "영리함이 신뢰를 깎는 편법이 되는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "internalized"
+    ],
+    "gloss": {
+      "waning": "숨기던 계획을 내려놓고 드러냄",
+      "internalized": "겉으론 아무렇지 않지만 속으로 찔림"
+    }
+  },
+  "asFeelings": {
+    "upright": "들키지 않고 조용히 처리하고 싶은 마음이에요.",
+    "reversed": "숨기는 게 불편해져 털어놓고 싶은 마음이에요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 솔직하게 말하기보다 혼자 계산하거나 피하는 흐름으로 읽어요. 숨기고 있는 마음이 있다면 작게라도 꺼내 보세요.",
+      "reversed": "숨겨 둔 이야기를 털어놓고 정면으로 풀 수 있는 쪽으로 읽어요. 변명보다 사실을 먼저 말해 보세요."
+    },
+    "contact": {
+      "upright": "속마음은 감추고 떠보는 연락이 되기 쉬운 그림이에요. 돌려 말하기보다 묻고 싶은 걸 직접 물어보세요.",
+      "reversed": "떠보는 대신 솔직하게 말할 수 있는 쪽으로 읽어요. 하고 싶은 말을 그대로 한 문장으로 써 보세요."
+    },
+    "work": {
+      "upright": "정면 돌파보다 전략과 요령이 필요한 흐름으로 읽어요. 다만 규칙을 넘는 편법은 피하세요.",
+      "reversed": "혼자 몰래 처리하던 일이 드러나거나 조언이 필요한 쪽으로 읽어요. 믿을 만한 사람에게 상황을 공유해 보세요."
+    },
+    "choice": {
+      "upright": "쉽게 빠져나갈 수 있는 쪽이 끌리는 배치로 읽어요. 그 선택이 나중에 신뢰를 깎지 않는지 확인해 보세요.",
+      "reversed": "편법 대신 정직한 방법을 고를 수 있는 쪽으로 읽어요. 모두에게 설명할 수 있는 선택인지 물어보세요."
+    },
+    "self": {
+      "upright": "혼자 해결하려고 머리를 굴리는 시기로 읽어요. 모든 걸 혼자 짊어지지 않아도 돼요.",
+      "reversed": "숨기던 마음이나 습관을 인정하고 가벼워지는 시기로 읽어요. 스스로에게 솔직한 한 줄을 적어 보세요."
+    },
+    "group": {
+      "upright": "모임 안에서 뒤에서 오가는 이야기나 몰래 하는 일이 있는 흐름으로 읽어요. 공개적으로 확인할 수 있는 것만 믿어 보세요.",
+      "reversed": "숨겨진 일이 드러나 정리가 필요한 분위기로 읽어요. 비난보다 사실 확인을 먼저 해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "솔직하게 말하기보다 조용히 처리하고 싶은 마음이에요.",
+      "reversed": "숨기던 걸 털어놓고 싶은 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 속을 다 드러내지 않는 흐름으로 읽어요. 속마음은 짐작하지 말고 확인할 것으로 남겨 두세요.",
+      "reversed": "숨겨 둔 것이 드러나며 솔직해질 수 있는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "떠보는 연락이 되기 쉽다는 쪽으로 읽어요. 묻고 싶은 걸 직접 묻는 조건에서 다시 보세요.",
+      "reversed": "솔직하게 먼저 털어놓는 연락이 흐름을 풀 수 있다는 쪽으로 읽어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "혼자 풀려다 믿을 만한 사람의 조언을 놓치고 있을 수 있어요.",
+      "reversed": "털어놓은 뒤의 수습을 준비하지 못했을 수 있어요."
+    },
+    "막힌 곳": {
+      "upright": "숨기거나 돌려 말하는 방식이 막힌 곳일 수 있어요.",
+      "reversed": "들킬까 걱정하는 마음이 막힌 곳일 수 있어요."
+    },
+    "오늘의 한 장": {
+      "upright": "전략은 세우되 선은 지키는 날로 읽어요.",
+      "reversed": "미뤄 둔 솔직한 말을 하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "지금 돌려 말하고 있는 것 하나를 적고, 직접 말한다면 어떻게 할지 써 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "혼자 처리하려던 일 중 공유해도 되는 부분을 골라 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "숨기던 것 하나를 믿을 만한 사람에게 털어놓아 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "누군가에게 조언을 한 가지 구해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 바람을 피우거나 속이고 있다고 단정",
+      "instead": "드러나지 않은 게 있을 수 있다는 정도로만 말하고 확인 방법을 제안해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "도둑맞거나 사기를 당한다고 예언",
+      "instead": "정보와 조건을 확인하자는 데서 멈춰요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "편법으로 돈을 버는 걸 부추기기",
+      "instead": "규칙 안에서의 전략만 다뤄요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-01-magician",
+      "ko": "재주가 요령이나 편법 쪽으로 기울지 않는지 살필 조합"
+    },
+    {
+      "with": "major-18-moon",
+      "ko": "드러나지 않은 것이 많은 흐름, 확인이 먼저"
+    },
+    {
+      "with": "swords-02",
+      "ko": "숨기고 미루는 태도가 겹침"
+    },
+    {
+      "with": "major-11-justice",
+      "ko": "숨긴 것이 드러나 공정하게 정리되는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "점검·버티기"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT",
+      "NO_MONEY"
+    ]
+  },
+  "waite": {
+    "upright": "Design, attempt, wish, hope, confidence; also quarrelling, a plan that may fail, annoyance. The design is uncertain in its import, because the significations are widely at variance with each other.",
+    "reversed": "Good advice, counsel, instruction, slander, babbling.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 뜻이 서로 크게 엇갈리는 카드라며 계획·희망과 다툼·실패할 계획을 함께 적었고, 역방향에 좋은 조언을 넣었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-07.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

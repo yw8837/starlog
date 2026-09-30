@@ -1,0 +1,277 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-07",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-07.webp",
+  "names": {
+    "ko": "완드 7",
+    "ja": "ワンドの7",
+    "en": "Seven of Wands",
+    "koAliases": [
+      "지팡이 7"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "7",
+  "number": 7,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "사자자리의 화성(Mars in Leo)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "내 자리 지키기",
+    "버티는 용기",
+    "소신",
+    "여럿에 맞섬"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "high-ground",
+        "ko": "초록 언덕 위 높은 곳에 선 젊은이가 두 손으로 지팡이를 비스듬히 들어 막아선다",
+        "salience": 1
+      },
+      {
+        "id": "six-below",
+        "ko": "아래쪽에서 지팡이 여섯 개가 그를 향해 솟아 있다",
+        "salience": 1
+      },
+      {
+        "id": "tense-face",
+        "ko": "얼굴은 긴장해 있다",
+        "salience": 2
+      },
+      {
+        "id": "mismatched-shoes",
+        "ko": "한 발엔 낮은 신, 다른 발엔 장화를 신어 신발이 짝짝이다",
+        "salience": 2
+      },
+      {
+        "id": "green-tunic",
+        "ko": "초록 옷을 입었다",
+        "salience": 3
+      },
+      {
+        "id": "blue-sky",
+        "ko": "배경은 푸른 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "여러 사람이 언덕을 올라와 공격한다",
+        "correct": "아래쪽 사람은 보이지 않고 지팡이 끝만 솟아 있다",
+        "regex": "(사람들?|적들?)이[^.]{0,10}(공격|올라)"
+      },
+      {
+        "wrong": "칼과 방패로 막는다",
+        "correct": "나무 지팡이 하나로 막는다",
+        "regex": "칼로|방패"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "high-ground",
+        "ko": "여섯이 하나를 상대하지만 그가 높은 자리를 차지함",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "mismatched-shoes",
+        "ko": "갑자기 맞선 싸움, 준비가 완벽하지 않아도 버팀",
+        "school": "modern"
+      },
+      {
+        "factId": "six-below",
+        "ko": "여러 방향에서 오는 압박과 반대 의견",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A young man on a craggy eminence brandishing a staff; six other staves are raised towards him from below.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-07.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "내 자리 지키기",
+      "소신 있게 버팀",
+      "여럿에 맞서는 용기",
+      "유리한 위치"
+    ],
+    "reversed": [
+      "지쳐서 물러섬",
+      "방어가 과함",
+      "압박에 흔들림",
+      "혼자 싸우는 느낌"
+    ],
+    "oneLine": {
+      "upright": "여러 압박 속에서도 높은 자리에서 내 입장과 경계를 지키는 때",
+      "reversed": "버티다 지쳐 물러서고 싶거나, 모든 걸 공격으로 받아들여 방어가 지나친 상태"
+    },
+    "shadow": "지킬 필요 없는 것까지 지키느라 소진되는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "버티던 힘이 빠져 물러서고 싶음",
+      "excess": "모든 말을 공격으로 듣고 방어가 지나침"
+    }
+  },
+  "asFeelings": {
+    "upright": "밀리고 싶지 않은 마음, 지켜야 할 것이 분명한 상태예요.",
+    "reversed": "혼자 버티느라 지쳤고 물러서고 싶은 마음이 있어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 내 기준과 경계를 지키는 게 중요한 흐름으로 읽어요. 맞춰 주기만 하지 말고 양보할 수 없는 것을 분명히 해 보세요.",
+      "reversed": "작은 말에도 방어적으로 반응하거나, 지켜 오던 선이 무너져 지친 쪽으로 읽어요. 지킬 것과 내려놓을 것을 나눠 보세요."
+    },
+    "contact": {
+      "upright": "보낸다면 내 입장을 분명히 하는 연락이 어울리는 그림이에요. 사과할 게 없는 일에 과하게 해명하지 않아도 돼요.",
+      "reversed": "방어적인 말투가 섞여 대화가 날카로워지기 쉬운 쪽으로 읽어요. 보내기 전에 날 선 단어를 하나씩 빼 보세요."
+    },
+    "work": {
+      "upright": "경쟁이나 반대 의견 속에서도 내 자리와 주장을 지킬 힘이 있는 흐름으로 읽어요. 근거를 준비해 두면 유리해요.",
+      "reversed": "여러 방향의 압박에 지쳐 소신이 흔들리는 쪽으로 읽어요. 혼자 막지 말고 지원을 요청해 보세요."
+    },
+    "choice": {
+      "upright": "주변 반대가 있더라도 내가 믿는 쪽을 지키는 게 핵심인 배치로 읽어요. 반대 의견 중 타당한 것만 골라 들어 보세요.",
+      "reversed": "압박에 밀려 원하지 않는 쪽으로 기울고 있는 상태로 읽어요. 남의 목소리를 빼고 다시 적어 보세요."
+    },
+    "self": {
+      "upright": "경계를 세우고 나를 지키는 힘이 필요한 시기로 읽어요. 거절 연습을 해 보기 좋아요.",
+      "reversed": "버티느라 소진된 시기로 읽어요. 지키지 않아도 되는 싸움 하나를 내려놓아 보세요."
+    },
+    "group": {
+      "upright": "모임에서 소수 의견이라도 내 입장을 지키는 흐름으로 읽어요. 차분하게 근거를 말해 보세요.",
+      "reversed": "모임 안에서 혼자 여럿을 상대하는 느낌에 지친 분위기로 읽어요. 같은 편이 되어 줄 한 사람을 찾아보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "지켜야 할 내 입장이 분명한 마음이에요.",
+      "reversed": "버티느라 지쳐 물러서고 싶은 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "서로의 경계가 분명하게 드러나는 흐름으로 읽어요.",
+      "reversed": "방어적인 태도가 오가는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "내 입장을 분명히 하는 연락이 흐름을 정리할 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 방어적인 말투가 섞이기 쉽다는 쪽으로 읽어요. 날 선 표현을 뺀 조건에서 다시 보세요."
+    },
+    "막힌 곳": {
+      "upright": "모든 걸 혼자 막으려는 태도가 막힌 곳일 수 있어요.",
+      "reversed": "압박에 밀려 내 기준이 흐려진 게 막힌 곳일 수 있어요."
+    },
+    "도움이 될 태도": {
+      "upright": "차분하게 근거를 대며 내 입장을 지키는 태도가 도움이 돼요.",
+      "reversed": "모든 말을 공격으로 듣지 않는 태도가 도움이 돼요."
+    },
+    "나의 자리": {
+      "upright": "소수라도 목소리를 낼 수 있는 자리로 읽어요.",
+      "reversed": "혼자 여럿을 상대하느라 지친 자리로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "부탁을 거절하거나 내 선을 지키는 날로 읽어요.",
+      "reversed": "모든 싸움에 응하지 않고 하나는 넘기는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "양보할 수 없는 것 세 가지를 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "반대 의견에 답할 근거 하나를 미리 정리해 두세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "지금 막고 있는 일 중 내려놓아도 되는 것 하나를 골라 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "보낼 메시지에서 방어적인 표현을 찾아 한 가지씩 바꿔 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "주변 사람들이 나를 공격한다고 단정",
+      "instead": "압박이 느껴지는 흐름이라고만 말하고 대응 방법을 제안해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "경쟁에서 이긴다고 확정",
+      "instead": "지킬 수 있는 위치와 준비까지만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "wands-06",
+      "ko": "인정받은 뒤 자리를 지켜야 하는 흐름"
+    },
+    {
+      "with": "wands-09",
+      "ko": "지친 상태에서도 경계를 지키는 흐름"
+    },
+    {
+      "with": "major-08-strength",
+      "ko": "부드럽지만 물러서지 않는 힘"
+    },
+    {
+      "with": "swords-05",
+      "ko": "이기려는 싸움이 상처를 남기지 않게 살필 조합"
+    }
+  ],
+  "numerology": {
+    "stage": "점검·버티기"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "It is a card of valour, for, on the surface, six are attacking one, who has, however, the vantage position. On the intellectual plane, it signifies discussion, wordy strife; in business—negotiations, war of trade, barter, competition. It is further a card of success, for the combatant is on the top and his enemies may be unable to reach him.",
+    "reversed": "Perplexity, embarrassments, anxiety. It is also a caution against indecision.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 여럿이 하나를 상대하지만 높은 곳을 차지한 쪽이 유리한 용기의 카드로 설명했다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-07.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

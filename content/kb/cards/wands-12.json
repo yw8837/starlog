@@ -1,0 +1,278 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "wands-12",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/wands-12.webp",
+  "names": {
+    "ko": "완드 기사",
+    "ja": "ワンドのナイト",
+    "en": "Knight of Wands",
+    "koAliases": [
+      "지팡이 기사",
+      "완드 나이트"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "wands",
+  "rank": "knight",
+  "number": 12,
+  "element": "fire",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "거침없는 추진",
+    "모험",
+    "충동적인 열정",
+    "빠른 이동"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "rearing-horse",
+        "ko": "앞다리를 높이 든 말 위에서 기사가 지팡이를 세워 들었다",
+        "salience": 1
+      },
+      {
+        "id": "flame-plume",
+        "ko": "투구 위에 불꽃 같은 주황 깃털이 달렸고, 갑옷 곳곳에 불꽃 모양 장식이 휘날린다",
+        "salience": 2
+      },
+      {
+        "id": "salamander-tunic",
+        "ko": "노란 겉옷에 검은 도롱뇽 무늬가 있다",
+        "salience": 2
+      },
+      {
+        "id": "pyramids",
+        "ko": "왼쪽 아래 멀리 피라미드 모양 언덕이 보인다",
+        "salience": 2
+      },
+      {
+        "id": "facing-left",
+        "ko": "말은 왼쪽을 향해 뛰어오른다",
+        "salience": 3
+      },
+      {
+        "id": "desert",
+        "ko": "누런 사막 같은 땅과 푸른 하늘이 배경이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "말이 조용히 서 있다",
+        "correct": "말은 앞다리를 들고 뛰어오른다",
+        "regex": "(말이|말은)\\s*(조용히|가만히)"
+      },
+      {
+        "wrong": "창을 든 기사",
+        "correct": "기사가 든 것은 잎 돋은 지팡이다",
+        "regex": "창을\\s*(든|들)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "rearing-horse",
+        "ko": "말의 움직임이 기사의 성미를 보여 줌, 서두르는 기분",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "flame-plume",
+        "ko": "타오르는 열정과 즉흥성",
+        "school": "modern"
+      },
+      {
+        "factId": "pyramids",
+        "ko": "먼 곳으로 떠나는 여행과 이동",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "He is shewn as if upon a journey, armed with a short wand, and although mailed is not on a warlike errand. He is passing mounds or pyramids. The motion of the horse is a key to the character of its rider, and suggests the precipitate mood, or things connected therewith.",
+    "verified": {
+      "scan": "apps/web/public/cards/wands-12.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "거침없는 추진",
+      "모험과 이동",
+      "열정적인 행동",
+      "빠른 결단"
+    ],
+    "reversed": [
+      "충동적인 결정",
+      "시작만 하고 떠남",
+      "조급함",
+      "방향 없는 질주"
+    ],
+    "oneLine": {
+      "upright": "열정에 불이 붙어 망설임 없이 움직이고 떠나는 때",
+      "reversed": "속도와 충동이 앞서 앞뒤 없이 달리거나, 달리다 흐지부지 끝나는 상태"
+    },
+    "shadow": "열정이 식으면 쉽게 떠나 버리는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "blocked"
+    ],
+    "gloss": {
+      "excess": "충동이 지나쳐 앞뒤 없이 달림",
+      "blocked": "움직이고 싶은데 발이 묶여 초조함"
+    }
+  },
+  "asFeelings": {
+    "upright": "당장 움직이고 싶은 뜨거운 마음이에요.",
+    "reversed": "마음이 급해 가만히 있기 힘들어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "열정적으로 다가가고 관계에 속도가 붙는 흐름으로 읽어요. 뜨거움과 함께 서로의 속도도 살펴보세요.",
+      "reversed": "빨리 타오르고 빨리 식거나, 충동적인 말과 행동이 앞서는 쪽으로 읽어요. 큰 결정은 하루 미뤄 보세요."
+    },
+    "contact": {
+      "upright": "망설이지 않고 바로 연락하는 기세가 어울리는 그림이에요. 다만 한 번 보내고 반응을 기다리는 여유도 챙겨 두세요.",
+      "reversed": "답을 기다리지 못하고 연달아 보내거나 충동적으로 큰 말을 꺼내기 쉬운 쪽으로 읽어요. 보내기 전 10분만 두세요."
+    },
+    "work": {
+      "upright": "새 프로젝트를 밀어붙이거나 출장과 이동이 많은 흐름으로 읽어요. 빠른 실행이 강점이 되는 때예요.",
+      "reversed": "시작한 일을 끝맺지 않고 다음으로 넘어가는 쪽으로 읽어요. 벌여 놓은 일의 마감부터 정해 보세요."
+    },
+    "choice": {
+      "upright": "더 역동적이고 움직임이 있는 쪽에 힘이 실리는 배치로 읽어요. 다만 충동과 확신을 구분해 보세요.",
+      "reversed": "지루함에서 벗어나려는 충동으로 고르려는 상태로 읽어요. 일주일 뒤에도 같은 선택을 할지 물어보세요."
+    },
+    "self": {
+      "upright": "몸을 움직이고 새로운 곳에 가 보면 기운이 사는 시기로 읽어요. 짧은 여행이나 산책도 좋아요.",
+      "reversed": "조급함과 들뜬 기운에 지치기 쉬운 시기로 읽어요. 속도를 줄이는 루틴 하나를 넣어 보세요."
+    },
+    "group": {
+      "upright": "모임에 추진력 있는 사람이 흐름을 이끄는 흐름으로 읽어요. 속도를 함께 맞출 규칙을 정해 보세요.",
+      "reversed": "한 사람의 속도에 다른 사람들이 지치는 분위기로 읽어요. 일정과 역할을 함께 정리해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "망설임 없이 다가가고 싶은 뜨거운 마음이에요.",
+      "reversed": "마음이 급해 앞뒤를 잘 못 보는 상태예요."
+    },
+    "두 사람 사이": {
+      "upright": "빠르게 달아오르는 흐름으로 읽어요.",
+      "reversed": "속도가 맞지 않아 한쪽이 앞서 달리는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "기세 있게 먼저 움직이면 흐름에 속도가 붙을 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 충동적인 연락이 되기 쉽다는 쪽으로 읽어요. 하루 두고 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "열정적이고 추진력 있는 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "성급하거나 금방 식을 사람처럼 비칠 수 있는 자리로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "빠르게 실행하고 움직이는 쪽이에요.",
+      "reversed": "속도를 줄이고 끝맺음을 먼저 챙기는 쪽이에요."
+    },
+    "오늘의 한 장": {
+      "upright": "미뤄 둔 일을 기세 있게 해치우는 날로 읽어요.",
+      "reversed": "충동적인 결정을 하루 미루는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "미뤄 둔 일 하나를 오늘 바로 시작해 끝까지 밀어붙여 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "가 보고 싶던 곳에 짧게라도 다녀와 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "충동적으로 하고 싶은 결정을 적어 두고 내일 다시 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "시작만 해 둔 일 하나의 마감일을 정해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "이사나 여행이 확정된다고 말하기",
+      "instead": "움직임이 많은 흐름과 준비할 점까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나에게 뜨겁게 빠져 있다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 속마음은 다루지 않아요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "wands-11",
+      "ko": "호기심이 행동으로 옮겨 가는 흐름"
+    },
+    {
+      "with": "wands-08",
+      "ko": "속도가 두 배로 붙는 흐름, 확인을 놓치지 않게"
+    },
+    {
+      "with": "major-07-chariot",
+      "ko": "밀고 나가는 추진력이 겹침"
+    },
+    {
+      "with": "pentacles-12",
+      "ko": "빠른 추진과 느린 꾸준함의 대비"
+    }
+  ],
+  "court": {
+    "asPerson": "열정적으로 밀어붙이거나 자주 이동하는, 움직임이 큰 누군가(나이·성별 무관)",
+    "asAttitude": "생각보다 몸이 먼저 움직이는 태도"
+  },
+  "numerology": {
+    "stage": "밀고 나가는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Departure, absence, flight, emigration. A dark young man, friendly. Change of residence.",
+    "reversed": "Rupture, division, interruption, discord.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite의 점술 의미는 출발·부재·이주이고, 역방향은 단절·중단이다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/wands-12.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 wands"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

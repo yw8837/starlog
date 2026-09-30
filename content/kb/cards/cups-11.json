@@ -1,0 +1,284 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-11",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-11.webp",
+  "names": {
+    "ko": "컵 시종",
+    "ja": "カップのペイジ",
+    "en": "Page of Cups",
+    "koAliases": [
+      "컵 시종",
+      "컵 페이지"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "page",
+  "number": 11,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "감성적인 소식",
+    "상상력",
+    "순수한 호기심",
+    "마음의 메시지"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "fish-cup",
+        "ko": "젊은 시종이 한 손에 든 컵에서 물고기 한 마리가 고개를 내밀고 있다",
+        "salience": 1
+      },
+      {
+        "id": "looking-fish",
+        "ko": "시종은 옅은 미소로 물고기를 바라본다",
+        "salience": 1
+      },
+      {
+        "id": "hand-hip",
+        "ko": "다른 손은 허리에 얹었다",
+        "salience": 3
+      },
+      {
+        "id": "blue-hat",
+        "ko": "긴 천이 늘어진 푸른 모자를 쓰고 연꽃 무늬 푸른 윗옷을 입었다",
+        "salience": 2
+      },
+      {
+        "id": "sea-behind",
+        "ko": "뒤로 물결치는 바다가 보인다",
+        "salience": 2
+      },
+      {
+        "id": "grey-bg",
+        "ko": "하늘 부분은 옅은 회색빛이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "컵에서 물이 넘친다",
+        "correct": "컵에서 나온 것은 물고기다",
+        "regex": "물이\\s*(넘|쏟)"
+      },
+      {
+        "wrong": "낚시로 물고기를 잡아 올렸다",
+        "correct": "물고기가 컵에서 스스로 고개를 내민 모습이다",
+        "regex": "낚시|잡아\\s*올"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "fish-cup",
+        "ko": "마음속 그림이 형태를 띠고 떠오름",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "looking-fish",
+        "ko": "예상 밖의 감정이나 아이디어를 호기심으로 받아들임",
+        "school": "modern"
+      },
+      {
+        "factId": "sea-behind",
+        "ko": "뒤에 펼쳐진 넓은 감정의 바다",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A fair, pleasing, somewhat effeminate page, of studious and intent aspect, contemplates a fish rising from a cup to look at him. It is the pictures of the mind taking form.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-11.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "감성적인 소식",
+      "상상력과 영감",
+      "순수한 호기심",
+      "마음을 여는 표현"
+    ],
+    "reversed": [
+      "서툰 감정 표현",
+      "비현실적 기대",
+      "숨긴 마음",
+      "감정의 기복"
+    ],
+    "oneLine": {
+      "upright": "예상 밖의 감정이나 영감이 떠올라 순수한 호기심으로 마음을 표현하는 때",
+      "reversed": "감정 표현이 서툴거나, 현실보다 상상 속 기대에 머무는 상태"
+    },
+    "shadow": "감정을 너무 쉽게 드러내 상처받기 쉬운 것"
+  },
+  "reversedModes": {
+    "default": "internalized",
+    "allowed": [
+      "internalized",
+      "excess"
+    ],
+    "gloss": {
+      "internalized": "마음은 있는데 표현하지 못하고 숨김",
+      "excess": "감정과 상상이 지나쳐 현실과 어긋남"
+    }
+  },
+  "asFeelings": {
+    "upright": "마음이 말랑해지고 뭔가 설레는 기분이에요.",
+    "reversed": "마음을 표현하고 싶은데 서툴러서 망설여요."
+  },
+  "topics": {
+    "love": {
+      "upright": "귀엽고 순수한 호감이나 설레는 신호가 오가는 흐름으로 읽어요. 부담 없이 마음을 살짝 보여 줘도 괜찮아요.",
+      "reversed": "기대가 현실보다 앞서거나, 마음을 숨겨 서운함이 생기는 쪽으로 읽어요. 상상 말고 확인할 수 있는 것부터 보세요."
+    },
+    "contact": {
+      "upright": "감성적이고 다정한 메시지가 어울리는 그림이에요. 재미있거나 귀여운 한 줄로 가볍게 시작해 보세요.",
+      "reversed": "마음을 담아 쓰다 지우기를 반복하거나 너무 감정적으로 쓰기 쉬운 쪽으로 읽어요. 한 가지 감정만 담아 짧게 보내 보세요."
+    },
+    "work": {
+      "upright": "창의적인 아이디어나 감성이 필요한 일에 영감이 떠오르는 흐름으로 읽어요. 떠오른 생각을 바로 메모해 두세요.",
+      "reversed": "아이디어는 있는데 현실성이 부족하거나 감정적으로 반응하기 쉬운 쪽으로 읽어요. 실행 가능한 부분만 골라 보세요."
+    },
+    "choice": {
+      "upright": "마음이 설레고 상상력이 살아나는 쪽에 힘이 실리는 배치로 읽어요. 그 설렘이 오래 갈지도 함께 보세요.",
+      "reversed": "상상 속 모습만 보고 고르려는 상태로 읽어요. 현실 조건을 옆에 나란히 적어 보세요."
+    },
+    "self": {
+      "upright": "감성이 풍부해지고 창작 욕구가 생기는 시기로 읽어요. 그리거나 쓰는 일로 마음을 표현해 보세요.",
+      "reversed": "감정이 예민해 작은 일에도 흔들리는 시기로 읽어요. 느낀 걸 적어 두면 한결 가벼워져요."
+    },
+    "group": {
+      "upright": "모임에 다정하고 순수한 분위기를 더하는 흐름으로 읽어요. 가벼운 칭찬 한마디가 힘이 돼요.",
+      "reversed": "작은 말에 서운함이 생기기 쉬운 분위기로 읽어요. 오해가 생기면 바로 가볍게 물어보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "설레고 말랑한 마음이 막 생겼어요.",
+      "reversed": "마음은 있는데 표현이 서툰 상태예요."
+    },
+    "두 사람 사이": {
+      "upright": "순수한 호감과 다정한 신호가 오가는 흐름으로 읽어요.",
+      "reversed": "기대와 표현이 엇갈리는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "다정하고 가벼운 메시지가 흐름을 부드럽게 열 수 있다는 쪽으로 읽어요.",
+      "reversed": "지금은 감정이 너무 실린 연락이 되기 쉽다는 쪽으로 읽어요. 한 가지 마음만 담는 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "다정하고 순수한 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "감정 기복이 있는 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "필요한 것": {
+      "upright": "느낀 것을 솔직하게 표현하는 용기가 필요해요.",
+      "reversed": "상상과 사실을 구분하는 확인이 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "마음을 담은 작은 메시지나 선물을 건네는 날로 읽어요.",
+      "reversed": "예민해진 마음을 글로 풀어 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "오늘 떠오른 귀엽거나 다정한 생각 하나를 한 줄로 전해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "떠오르는 아이디어를 바로 메모장에 적어 두세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "보내려는 메시지에서 감정 표현을 하나만 남기고 줄여 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "기대하는 것과 확인된 것을 두 칸으로 나눠 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나에게 고백할 마음이 있다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 속마음은 다루지 않아요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "임신 소식을 암시한다고 말하기",
+      "instead": "감성적인 소식과 표현으로만 읽어요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "좋은 소식이 온다고 보장",
+      "instead": "마음을 표현하기 좋은 흐름까지만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "cups-01",
+      "ko": "넘치는 마음을 처음 표현해 보는 흐름"
+    },
+    {
+      "with": "wands-11",
+      "ko": "설레는 소식과 감정이 함께 옴"
+    },
+    {
+      "with": "cups-12",
+      "ko": "여린 마음이 다가가는 행동으로 옮겨 가는 흐름(시종→기사)"
+    },
+    {
+      "with": "major-18-moon",
+      "ko": "상상이 커져 사실 확인이 필요한 조합"
+    }
+  ],
+  "court": {
+    "asPerson": "감수성이 풍부하고 다정한 소식을 전하는, 배우는 입장의 누군가(나이·성별 무관)",
+    "asAttitude": "느낀 것을 순수하게 표현하는 태도"
+  },
+  "numerology": {
+    "stage": "배우는 자리·소식"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_HEALTH",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Fair young man, one impelled to render service and with whom the Querent will be connected; a studious youth; news, message; application, reflection, meditation; also these things directed to business.",
+    "reversed": "Taste, inclination, attachment, seduction, deception, artifice.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 '마음속 그림이 형태를 띠는' 카드로 설명했다. 옛 점술의 인물 특정은 출력하지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-11.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

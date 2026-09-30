@@ -1,0 +1,278 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-08",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-08.webp",
+  "names": {
+    "ko": "검 8",
+    "ja": "ソードの8",
+    "en": "Eight of Swords",
+    "koAliases": [
+      "소드 8",
+      "검 8"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "8",
+  "number": 8,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "쌍둥이자리의 목성(Jupiter in Gemini)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "갇힌 느낌",
+    "스스로 묶은 생각",
+    "무력감",
+    "빠져나갈 틈"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "bound-blindfold",
+        "ko": "붉은 옷의 여인이 눈을 가리고 윗몸과 팔이 천으로 묶인 채 서 있다",
+        "salience": 1
+      },
+      {
+        "id": "eight-swords",
+        "ko": "여인 둘레 땅에 칼 여덟 자루가 꽂혀 있다(왼쪽 셋, 오른쪽 다섯)",
+        "salience": 1
+      },
+      {
+        "id": "open-front",
+        "ko": "칼은 양옆과 뒤에 있고 여인의 앞쪽은 막혀 있지 않다",
+        "salience": 2
+      },
+      {
+        "id": "legs-free",
+        "ko": "천은 윗몸에만 감겨 있고 다리는 자유롭다",
+        "salience": 2
+      },
+      {
+        "id": "castle",
+        "ko": "오른쪽 뒤 언덕 위에 성이 보인다",
+        "salience": 2
+      },
+      {
+        "id": "puddles",
+        "ko": "발밑 땅에 물웅덩이가 고여 있다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "칼에 완전히 둘러싸여 갇혔다",
+        "correct": "칼은 양옆에 있고 앞쪽은 열려 있다",
+        "regex": "완전히\\s*(둘러싸|갇)"
+      },
+      {
+        "wrong": "발까지 꽁꽁 묶여 있다",
+        "correct": "천은 윗몸에만 감겨 있다",
+        "regex": "(발|다리)[^.]{0,8}묶"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "bound-blindfold",
+        "ko": "돌이킬 수 없는 속박이 아니라 잠시 갇힌 상태",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "legs-free",
+        "ko": "생각보다 움직일 수 있는 자유가 남아 있음",
+        "school": "modern"
+      },
+      {
+        "factId": "open-front",
+        "ko": "빠져나갈 틈이 있는데 보지 못함",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A woman, bound and hoodwinked, with the swords of the card about her. Yet it is rather a card of temporary durance than of irretrievable bondage.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-08.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "갇힌 느낌",
+      "스스로 묶은 생각",
+      "무력감",
+      "보이지 않는 출구"
+    ],
+    "reversed": [
+      "가리개를 벗음",
+      "빠져나오기 시작",
+      "새 관점",
+      "두려움이 커짐"
+    ],
+    "oneLine": {
+      "upright": "상황에 갇힌 듯 무력하게 느껴지지만 실은 앞쪽이 열려 있는 때",
+      "reversed": "스스로 묶었던 생각을 풀고 빠져나오기 시작하거나, 두려움이 더 조여 오는 상태"
+    },
+    "shadow": "'어쩔 수 없다'는 말로 움직일 수 있는 걸음까지 막는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "묶었던 생각이 풀리며 출구가 보임",
+      "excess": "두려움이 커져 더 옴짝달싹 못함"
+    }
+  },
+  "asFeelings": {
+    "upright": "어떻게 해도 안 될 것 같은 답답함이 있어요.",
+    "reversed": "조금씩 숨통이 트이고 방법이 보이기 시작해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 선택지가 없다고 느끼며 갇힌 기분인 흐름으로 읽어요. '어쩔 수 없다'는 생각 중 사실인 것만 골라 보세요.",
+      "reversed": "스스로 묶던 두려움이나 생각에서 벗어나기 시작하는 쪽으로 읽어요. 작은 한 걸음으로 틀을 깨 보세요."
+    },
+    "contact": {
+      "upright": "보내도 안 보내도 문제일 것 같아 꼼짝 못 하는 흐름으로 읽어요. 최악의 경우를 적어 보면 생각보다 움직일 틈이 보여요.",
+      "reversed": "막혀 있던 마음이 풀리며 연락할 여유가 생기는 쪽으로 읽어요. 가볍게 한 줄부터 시작해 보세요."
+    },
+    "work": {
+      "upright": "규칙이나 상황에 묶여 할 수 있는 게 없다고 느끼는 흐름으로 읽어요. 바꿀 수 있는 작은 한 가지를 찾아보세요.",
+      "reversed": "막힌 상황에서 빠져나갈 방법이 보이기 시작하는 쪽으로 읽어요. 도움을 요청하는 것도 방법이에요."
+    },
+    "choice": {
+      "upright": "선택지가 없다고 느끼는 배치로 읽어요. 스스로 지운 선택지가 있는지 다시 적어 보세요.",
+      "reversed": "새로운 선택지가 눈에 들어오는 쪽으로 읽어요. 막혀 보이던 길을 다시 검토해 보세요."
+    },
+    "self": {
+      "upright": "걱정과 자기 비판에 갇혀 무력한 시기로 읽어요. 생각을 사실과 두려움으로 나눠 적어 보세요.",
+      "reversed": "스스로를 묶던 생각에서 벗어나는 시기로 읽어요. 작게라도 해낸 것을 적어 보세요."
+    },
+    "group": {
+      "upright": "모임 안에서 눈치와 규칙 때문에 움직이기 어려운 흐름으로 읽어요. 실제로 금지된 것과 짐작한 것을 나눠 보세요.",
+      "reversed": "답답했던 분위기에서 조금씩 숨통이 트이는 쪽으로 읽어요. 먼저 한 가지를 제안해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "갇힌 듯 답답하고 무력한 마음이에요.",
+      "reversed": "조금씩 숨통이 트이는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 꼼짝 못 하는 듯한 흐름으로 읽어요. 실제로 막힌 것과 두려움을 나눠 보는 자리예요.",
+      "reversed": "막혀 있던 흐름에 틈이 생기는 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 두려움이 판단을 가리고 있다는 쪽으로 읽어요. 최악의 경우를 적어 본 뒤 다시 보세요.",
+      "reversed": "작은 한 줄이 막힌 흐름을 푸는 계기가 될 수 있다는 쪽으로 읽어요."
+    },
+    "막힌 곳": {
+      "upright": "'어쩔 수 없다'는 생각 자체가 막힌 곳일 수 있어요.",
+      "reversed": "빠져나오려다 다시 두려움에 멈추는 게 막힌 곳일 수 있어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "앞쪽이 열려 있다는 걸 놓치고 있을 수 있어요.",
+      "reversed": "도움을 청할 수 있다는 걸 놓치고 있을 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "생각의 가리개를 벗는 새 관점이 필요해요.",
+      "reversed": "빠져나온 뒤 다시 묶이지 않게 기준을 세우는 게 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "'못 해'라는 생각 하나를 의심해 보는 날로 읽어요.",
+      "reversed": "작은 한 걸음으로 틀을 깨는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "'어쩔 수 없다'고 느끼는 일을 적고, 그중 사실인 것과 두려움을 나눠 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "지금 당장 할 수 있는 가장 작은 행동 하나를 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "막혀 있던 일에 대해 누군가에게 조언을 구해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "오늘 스스로 선택한 일 하나를 기록해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "우울이나 불안 장애를 진단하기",
+      "instead": "갇힌 느낌을 다루는 방법을 말하고, 힘들면 전문가 상담을 권해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 가두고 통제한다고 단정",
+      "instead": "관계에서 갇힌 느낌이 드는 지점을 함께 살펴보자고 해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "swords-02",
+      "ko": "스스로 가리고 묶여 움직이지 못하는 흐름"
+    },
+    {
+      "with": "major-15-devil",
+      "ko": "스스로 묶였다고 믿는 상태, 실은 풀 수 있는 매듭"
+    },
+    {
+      "with": "major-12-hanged-man",
+      "ko": "묶인 상황에서 관점을 바꾸는 흐름"
+    },
+    {
+      "with": "swords-09",
+      "ko": "갇힌 생각이 밤의 걱정으로 커지는 흐름(8→9)"
+    }
+  ],
+  "numerology": {
+    "stage": "움직임·익숙해짐"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "Bad news, violent chagrin, crisis, censure, power in trammels, conflict, calumny; also sickness.",
+    "reversed": "Disquiet, difficulty, opposition, accident, treachery; what is unforeseen; fatality.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 돌이킬 수 없는 속박이 아니라 잠시 갇힌 상태의 카드라고 적었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-08.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

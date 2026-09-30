@@ -1,0 +1,288 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "pentacles-10",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/pentacles-10.webp",
+  "names": {
+    "ko": "펜타클 10",
+    "ja": "ペンタクルの10",
+    "en": "Ten of Pentacles",
+    "koAliases": [
+      "펜타클 10",
+      "동전 10"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "pentacles",
+  "rank": "10",
+  "number": 10,
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "처녀자리의 수성(Mercury in Virgo)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "오래 가는 안정",
+    "가족과 유산",
+    "세대를 잇는 기반",
+    "든든한 소속"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "elder-dogs",
+        "ko": "앞쪽에 흰 머리의 노인이 무늬 가득한 옷을 입고 앉아 흰 개를 쓰다듬는다",
+        "salience": 1
+      },
+      {
+        "id": "two-dogs",
+        "ko": "흰 개 두 마리가 노인에게 다가와 있다",
+        "salience": 2
+      },
+      {
+        "id": "couple-arch",
+        "ko": "커다란 아치 아래 남자(등을 보임)와 여인이 서 있다",
+        "salience": 1
+      },
+      {
+        "id": "child",
+        "ko": "아이가 여인 옷자락 곁에서 개에게 손을 뻗는다",
+        "salience": 2
+      },
+      {
+        "id": "ten-pentacles",
+        "ko": "펜타클 열 개가 장면 위에 일정한 모양으로 겹쳐 놓여 있다",
+        "salience": 1
+      },
+      {
+        "id": "arch-shields",
+        "ko": "왼쪽 기둥에 성과 저울이 그려진 문장 방패가 있다",
+        "salience": 3
+      },
+      {
+        "id": "town-tower",
+        "ko": "아치 너머로 탑과 집들이 보인다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "노인이 개를 쫓아낸다",
+        "correct": "노인은 개를 쓰다듬고 있다",
+        "regex": "쫓"
+      },
+      {
+        "wrong": "펜타클 아홉 개",
+        "correct": "펜타클은 열 개다",
+        "regex": "펜타클\\s*(아홉|9)\\s*개"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "elder-dogs",
+        "ko": "앞선 세대와 이어지는 돌봄과 충성",
+        "school": "modern"
+      },
+      {
+        "factId": "ten-pentacles",
+        "ko": "생명나무 모양으로 놓인 펜타클, 흩어진 듯 연결된 기반",
+        "school": "editorial"
+      },
+      {
+        "factId": "couple-arch",
+        "ko": "집과 영지로 들어가는 문, 한 집안의 거처",
+        "school": "waite-1911"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A man and woman beneath an archway which gives entrance to a house and domain. They are accompanied by a child, who looks curiously at two dogs accosting an ancient personage seated in the foreground. The child's hand is on one of them.",
+    "verified": {
+      "scan": "apps/web/public/cards/pentacles-10.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "오래 가는 안정",
+      "가족과 유산",
+      "세대를 잇는 기반",
+      "든든한 소속"
+    ],
+    "reversed": [
+      "집안 갈등",
+      "유산과 돈 문제",
+      "틀에 갇힌 안정",
+      "소속감 흔들림"
+    ],
+    "oneLine": {
+      "upright": "오래 쌓아 온 기반이 가족과 공동체의 안정으로 자리 잡는 때",
+      "reversed": "가족이나 돈 문제로 기반이 흔들리거나, 물려받은 틀이 답답하게 느껴지는 상태"
+    },
+    "shadow": "안정과 체면을 지키느라 개인의 마음을 희생하는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "가족이나 재산 문제로 안정이 막힘",
+      "internalized": "겉은 안정적이지만 속으로 답답함"
+    }
+  },
+  "asFeelings": {
+    "upright": "든든한 울타리 안에 있다는 안정감이 있어요.",
+    "reversed": "가족이나 책임 때문에 답답하거나 소속감이 흔들려요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계가 가족이나 긴 미래를 함께 그리는 단계로 안정되는 흐름으로 읽어요. 서로의 가족과 생활 방식을 이야기해 보세요.",
+      "reversed": "가족의 기대나 현실 조건이 관계에 부담을 주는 쪽으로 읽어요. 두 사람이 원하는 것을 먼저 맞춰 보세요."
+    },
+    "contact": {
+      "upright": "안부와 소식을 편하게 나누는 가족 같은 연락이 어울리는 그림이에요. 오래된 인연에게도 연락하기 좋아요.",
+      "reversed": "가족이나 주변 사정이 연락에 무게를 더하는 쪽으로 읽어요. 두 사람 사이의 이야기만 담아 보세요."
+    },
+    "work": {
+      "upright": "오래 가는 기반과 안정적인 조직, 장기 계획에 힘이 실리는 흐름으로 읽어요. 길게 보는 선택이 유리해요.",
+      "reversed": "오래된 틀이 답답하거나 재정 문제가 걸리는 쪽으로 읽어요. 바꿀 수 있는 부분을 찾아보세요."
+    },
+    "choice": {
+      "upright": "장기적인 안정과 가족에게 도움이 되는 쪽이 기준이 되는 배치로 읽어요. 10년 뒤를 떠올려 보세요.",
+      "reversed": "가족의 기대 때문에 내 선택이 흐려지는 상태로 읽어요. 내가 원하는 것을 따로 적어 보세요."
+    },
+    "self": {
+      "upright": "생활 기반이 안정되고 소속감이 드는 시기로 읽어요. 가까운 사람들과 시간을 보내 보세요.",
+      "reversed": "가족이나 돈 문제로 마음이 무거운 시기로 읽어요. 할 수 있는 일과 없는 일을 나눠 보세요."
+    },
+    "group": {
+      "upright": "오래된 모임이 가족처럼 든든하게 이어지는 흐름으로 읽어요. 전통이나 기념을 함께 이어 가 보세요.",
+      "reversed": "오래된 규칙이나 돈 문제로 모임이 삐걱대는 분위기로 읽어요. 규칙과 회비를 투명하게 정리해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "든든한 울타리를 바라는 안정된 마음이에요.",
+      "reversed": "가족이나 책임 때문에 답답한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "길게 이어지는 안정된 흐름으로 읽어요.",
+      "reversed": "주변과 현실 조건이 흐름에 무게를 더하는 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "편안한 안부가 오래 가는 흐름을 이어 줄 수 있다는 쪽으로 읽어요.",
+      "reversed": "주변 사정이 끼어들기 쉬운 조건이라는 쪽으로 읽어요. 두 사람 이야기만 담는 조건에서 다시 보세요."
+    },
+    "두 사람의 흐름": {
+      "upright": "함께 기반을 쌓아 가는 흐름으로 읽어요.",
+      "reversed": "현실 조건을 맞춰야 하는 흐름으로 읽어요."
+    },
+    "모임의 분위기": {
+      "upright": "오래되고 든든한 분위기로 읽어요.",
+      "reversed": "오래된 틀이나 돈 문제로 무거운 분위기로 읽어요."
+    },
+    "이 시기의 흐름": {
+      "upright": "안정이 자리 잡는 시기로 읽어요.",
+      "reversed": "기반을 다시 점검하는 시기로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "가족이나 오래된 인연과 시간을 보내는 날로 읽어요.",
+      "reversed": "집안일이나 돈 문제 하나를 정리하는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "가족이나 오래된 친구에게 안부를 전해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "10년 뒤 원하는 생활의 모습을 세 줄로 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "가족의 기대와 내 바람을 두 칸으로 나눠 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "공동으로 쓰는 돈이나 규칙 하나를 투명하게 정리해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "유산이나 재산이 들어온다고 말하기",
+      "instead": "기반과 관리의 흐름으로만 말해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "결혼이나 가족 계획이 확정된다고 말하기",
+      "instead": "함께 그릴 수 있는 미래의 흐름까지만 말해요."
+    },
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "노인의 건강이나 죽음을 암시한다고 말하기",
+      "instead": "세대가 이어지는 안정의 그림으로만 읽어요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "cups-10",
+      "ko": "마음의 행복과 생활의 안정이 함께함"
+    },
+    {
+      "with": "pentacles-09",
+      "ko": "개인의 여유가 가족과 공동체의 안정으로 넓어지는 흐름"
+    },
+    {
+      "with": "major-21-world",
+      "ko": "오래 쌓은 것이 온전히 자리 잡는 흐름"
+    },
+    {
+      "with": "wands-04",
+      "ko": "오래 가는 안정과 가족 같은 소속감"
+    }
+  ],
+  "numerology": {
+    "stage": "한 주기의 끝·무게"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MONEY",
+      "NO_EVENT",
+      "NO_HEALTH"
+    ]
+  },
+  "waite": {
+    "upright": "Gain, riches; family matters, archives, extraction, the abode of a family.",
+    "reversed": "Chance, fatality, loss, robbery, games of hazard; sometimes gift, dowry, pension.",
+    "loc": "PKT Part III §2",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/pentacles-10.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 pentacles"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

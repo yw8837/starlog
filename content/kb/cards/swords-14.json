@@ -1,0 +1,286 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-14",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-14.webp",
+  "names": {
+    "ko": "검 왕",
+    "ja": "ソードのキング",
+    "en": "King of Swords",
+    "koAliases": [
+      "소드 왕",
+      "소드 킹"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "king",
+  "number": 14,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "공정한 판단",
+    "논리와 권위",
+    "명확한 결정",
+    "원칙"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "frontal-king",
+        "ko": "왕이 정면을 보고 왕좌에 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "sword-right",
+        "ko": "오른손에 칼을 약간 기울여 세워 들었다",
+        "salience": 1
+      },
+      {
+        "id": "throne-butterflies",
+        "ko": "왕좌 등받이에 나비와 초승달 무늬가 새겨져 있다",
+        "salience": 2
+      },
+      {
+        "id": "robes",
+        "ko": "푸른 옷 위에 주황빛 망토와 회색 겉옷을 걸치고 관을 썼다",
+        "salience": 3
+      },
+      {
+        "id": "trees-birds",
+        "ko": "양옆에 나무와 구름이 있고 오른쪽 하늘에 새 두 마리가 난다",
+        "salience": 3
+      },
+      {
+        "id": "blue-sky",
+        "ko": "배경은 푸른 하늘이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "저울을 들고 있다",
+        "correct": "들고 있는 것은 칼 하나다(저울은 정의 카드)",
+        "regex": "저울"
+      },
+      {
+        "wrong": "옆모습으로 앉아 있다",
+        "correct": "정면을 보고 있다",
+        "regex": "옆모습"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "frontal-king",
+        "ko": "심판의 자리에 앉은 사람, 법과 권위",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "sword-right",
+        "ko": "원칙에 따라 가르는 판단",
+        "school": "modern"
+      },
+      {
+        "factId": "throne-butterflies",
+        "ko": "변화하는 생각 위에 세운 판단",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "He sits in judgment, holding the unsheathed sign of his suit. He recalls, of course, the conventional Symbol of Justice in the Trumps Major, and he may represent this virtue, but he is rather the power of life and death, in virtue of his office.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-14.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "공정한 판단",
+      "논리와 원칙",
+      "명확한 결정",
+      "전문성과 권위"
+    ],
+    "reversed": [
+      "냉정한 통제",
+      "권위의 남용",
+      "머리만 앞섬",
+      "말로 누름"
+    ],
+    "oneLine": {
+      "upright": "감정보다 원칙과 논리로 명확하게 판단하고 책임지는 때",
+      "reversed": "판단이 냉정한 통제나 권위로 흐르거나, 논리만 앞서 사람을 놓치는 상태"
+    },
+    "shadow": "옳은 판단을 내세워 사람의 마음을 무시하는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "blocked"
+    ],
+    "gloss": {
+      "excess": "논리와 권위가 지나쳐 차갑게 누름",
+      "blocked": "판단이 흐려져 결정을 내리지 못함"
+    }
+  },
+  "asFeelings": {
+    "upright": "감정을 한쪽에 두고 냉정하게 판단하고 싶은 마음이에요.",
+    "reversed": "머리로는 아는데 마음이 따라오지 않아 답답해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계의 문제를 감정싸움보다 대화와 원칙으로 푸는 흐름으로 읽어요. 서로 합의할 규칙 하나를 정해 보세요.",
+      "reversed": "논리로 이기려 하거나 감정을 무시하는 쪽으로 읽어요. 옳고 그름보다 마음을 먼저 물어보세요."
+    },
+    "contact": {
+      "upright": "용건과 이유가 분명한 연락이 어울리는 그림이에요. 오해가 있다면 사실 순서대로 정리해 전해 보세요.",
+      "reversed": "가르치거나 따지는 말투가 되기 쉬운 쪽으로 읽어요. 설명보다 질문 하나로 시작해 보세요."
+    },
+    "work": {
+      "upright": "전문성과 판단력이 인정받는 흐름으로 읽어요. 계약·법률·분석처럼 정확성이 필요한 일에 힘이 실려요.",
+      "reversed": "권위적인 결정이나 차가운 평가로 마찰이 생기는 쪽으로 읽어요. 결정의 이유를 설명하고 의견을 들어 보세요."
+    },
+    "choice": {
+      "upright": "조건과 근거를 따져 논리적으로 고르는 배치로 읽어요. 판단 기준을 표로 정리해 보세요.",
+      "reversed": "머리로만 고르고 마음은 빠진 상태로 읽어요. 이 선택에서 내가 느낄 감정도 한 줄 적어 보세요."
+    },
+    "self": {
+      "upright": "생각이 명료하고 원칙이 선 시기로 읽어요. 미뤄 둔 판단을 내리기 좋아요.",
+      "reversed": "스스로에게 너무 엄격하거나 생각이 과열된 시기로 읽어요. 판단을 잠시 쉬어 가도 괜찮아요."
+    },
+    "group": {
+      "upright": "모임에 공정한 기준과 결정이 필요한 흐름으로 읽어요. 원칙을 분명히 제시해 보세요.",
+      "reversed": "한 사람의 논리나 권위가 분위기를 누르는 쪽으로 읽어요. 다른 의견을 들을 시간을 만들어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "감정을 내려놓고 분명하게 판단하고 싶은 마음이에요.",
+      "reversed": "머리와 마음이 따로 가는 상태예요."
+    },
+    "두 사람 사이": {
+      "upright": "원칙과 대화로 문제를 푸는 흐름으로 읽어요.",
+      "reversed": "논리와 권위가 한쪽으로 쏠린 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "분명한 이유를 담은 연락이 흐름을 정리할 수 있다는 쪽으로 읽어요.",
+      "reversed": "가르치는 말투가 되기 쉽다는 쪽으로 읽어요. 질문으로 시작하는 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "믿을 만하고 판단이 분명한 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "차갑고 권위적인 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "나아갈 방향": {
+      "upright": "근거를 갖추고 원칙대로 결정하는 쪽이에요.",
+      "reversed": "판단에 사람의 마음을 함께 넣는 쪽이에요."
+    },
+    "도움이 될 태도": {
+      "upright": "공정한 기준을 세우고 지키는 태도가 도움이 돼요.",
+      "reversed": "결정의 이유를 설명하고 듣는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "복잡한 일을 논리적으로 정리하는 날로 읽어요.",
+      "reversed": "옳음보다 배려를 먼저 고르는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "결정할 일의 근거를 세 줄로 정리해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "애매한 규칙이나 약속을 글로 분명히 해 두세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "설명하려던 말을 질문 하나로 바꿔 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "내 판단에 빠진 감정 하나를 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "특정 남성이나 윗사람이 나를 냉정하게 판단한다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 인물의 속마음은 다루지 않아요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "소송이나 계약에서 이긴다고 확정",
+      "instead": "법적인 판단은 전문가 상담을 권하고, 정리할 근거까지만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-11-justice",
+      "ko": "원칙과 공정한 결론이 겹침"
+    },
+    {
+      "with": "swords-13",
+      "ko": "판단과 경계, 권위가 함께 서는 짝"
+    },
+    {
+      "with": "cups-14",
+      "ko": "감정과 이성의 균형이 필요한 조합"
+    },
+    {
+      "with": "wands-14",
+      "ko": "결단과 판단력이 겹치는 조합, 따뜻함을 잃지 않게"
+    },
+    {
+      "with": "major-04-emperor",
+      "ko": "원칙과 구조가 겹쳐 경직되지 않게 살필 조합"
+    }
+  ],
+  "court": {
+    "asPerson": "전문 지식과 원칙으로 판단하는, 조언이나 결정을 내리는 누군가(나이·성별 무관)",
+    "asAttitude": "감정과 사실을 분리해 원칙대로 정하는 태도"
+  },
+  "numerology": {
+    "stage": "밖으로 책임지는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Whatsoever arises out of the idea of judgment and all its connexions—power, command, authority, militant intelligence, law, offices of the crown, and so forth.",
+    "reversed": "Cruelty, perversity, barbarity, perfidy, evil intention.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 정의 카드를 떠올리게 하는 판단의 자리로 설명했다. 옛 의미의 직업 특정(변호사·의사 등)은 출력하지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-14.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

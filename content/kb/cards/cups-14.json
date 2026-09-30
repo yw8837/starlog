@@ -1,0 +1,278 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-14",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-14.webp",
+  "names": {
+    "ko": "컵 왕",
+    "ja": "カップのキング",
+    "en": "King of Cups",
+    "koAliases": [
+      "컵 왕",
+      "컵 킹"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "king",
+  "number": 14,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "감정의 균형",
+    "너그러운 책임",
+    "침착함",
+    "흔들림 속 중심"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "sea-throne",
+        "ko": "바다 위에 놓인 돌 왕좌에 왕이 정면으로 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "cup-scepter",
+        "ko": "오른손에 큰 컵, 왼손에 짧은 홀을 들었다",
+        "salience": 1
+      },
+      {
+        "id": "fish-amulet",
+        "ko": "목에 물고기 모양 장식을 걸었다",
+        "salience": 3
+      },
+      {
+        "id": "dolphin-ship",
+        "ko": "왼쪽 바다에서 물고기가 뛰어오르고, 오른쪽엔 배가 떠 있다",
+        "salience": 2
+      },
+      {
+        "id": "robes",
+        "ko": "푸른 옷 위에 초록 망토를 걸치고 관을 썼다",
+        "salience": 3
+      },
+      {
+        "id": "grey-bg",
+        "ko": "배경은 회색빛이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "왕이 배를 타고 있다",
+        "correct": "왕은 바다 위 돌 왕좌에 앉아 있고 배는 멀리 떠 있다",
+        "regex": "배를\\s*타|배\\s*위에\\s*앉"
+      },
+      {
+        "wrong": "왕이 물속에 잠겨 있다",
+        "correct": "왕좌와 발은 물 위 돌 받침에 있다",
+        "regex": "잠겨|물에\\s*빠"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "sea-throne",
+        "ko": "출렁이는 감정 위에서도 중심을 잡음",
+        "school": "modern"
+      },
+      {
+        "factId": "dolphin-ship",
+        "ko": "한쪽엔 배, 다른 쪽엔 뛰어오르는 돌고래, 물의 상징",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "cup-scepter",
+        "ko": "감정과 책임을 함께 쥔 손",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "He holds a short sceptre in his left hand and a great cup in his right; his throne is set upon the sea; on one side a ship is riding and on the other a dolphin is leaping. The implicit is that the Sign of the Cup naturally refers to water, which appears in all the court cards.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-14.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "감정의 균형",
+      "너그러운 책임",
+      "침착한 태도",
+      "믿을 만한 조언"
+    ],
+    "reversed": [
+      "감정을 억누름",
+      "속을 알 수 없음",
+      "기분에 따른 판단",
+      "감정으로 끌고 가기"
+    ],
+    "oneLine": {
+      "upright": "출렁이는 감정 위에서도 중심을 잡고 너그럽게 책임지는 때",
+      "reversed": "감정을 누르고 괜찮은 척하거나, 기분이 판단을 흔드는 상태"
+    },
+    "shadow": "침착함이 감정을 드러내지 않는 벽으로 굳는 것"
+  },
+  "reversedModes": {
+    "default": "internalized",
+    "allowed": [
+      "internalized",
+      "excess"
+    ],
+    "gloss": {
+      "internalized": "감정을 누르고 겉으로만 침착함",
+      "excess": "감정이 판단을 흔들어 변덕스러움"
+    }
+  },
+  "asFeelings": {
+    "upright": "감정은 있지만 차분하게 다룰 수 있는 상태예요.",
+    "reversed": "괜찮은 척하느라 속이 답답해요."
+  },
+  "topics": {
+    "love": {
+      "upright": "감정을 성숙하게 다루며 관계를 안정시키는 흐름으로 읽어요. 흔들리는 순간에도 차분히 대화하는 태도가 힘이 돼요.",
+      "reversed": "감정을 드러내지 않아 거리감이 생기거나, 기분에 따라 태도가 바뀌는 쪽으로 읽어요. 느끼는 걸 한 문장이라도 말해 보세요."
+    },
+    "contact": {
+      "upright": "감정은 담되 차분하고 배려 있는 연락이 어울리는 그림이에요. 부담 없이 답할 수 있게 써 보세요.",
+      "reversed": "속마음을 감춘 형식적인 연락이 되거나 기분이 앞선 연락이 되기 쉬운 쪽으로 읽어요. 진짜 하고 싶은 말을 하나 넣어 보세요."
+    },
+    "work": {
+      "upright": "감정적인 상황에서도 중심을 잡고 사람을 챙기는 리더십이 필요한 흐름으로 읽어요. 중재와 조언 역할이 어울려요.",
+      "reversed": "스트레스를 속으로 삼키거나 감정적으로 결정하기 쉬운 쪽으로 읽어요. 결정 전에 하루 두고 보세요."
+    },
+    "choice": {
+      "upright": "감정과 현실을 모두 감당할 수 있는 쪽이 기준이 되는 배치로 읽어요. 마음과 조건을 함께 저울질해 보세요.",
+      "reversed": "감정을 무시하고 조건만 보거나, 기분만 보고 고르려는 상태로 읽어요. 둘 다 적어 비교해 보세요."
+    },
+    "self": {
+      "upright": "감정의 파도 속에서도 중심을 잡는 힘이 있는 시기로 읽어요. 나에게 너그러운 말을 건네 보세요.",
+      "reversed": "감정을 오래 눌러 두어 무거운 시기로 읽어요. 믿을 만한 사람에게 조금 털어놓아 보세요."
+    },
+    "group": {
+      "upright": "모임에서 갈등을 차분히 다독이는 역할이 어울리는 흐름으로 읽어요. 양쪽 이야기를 차례로 들어 보세요.",
+      "reversed": "겉으로는 조용하지만 서로 속마음을 숨긴 분위기로 읽어요. 편하게 말할 기회를 만들어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "감정을 차분하게 다룰 수 있는 상태예요.",
+      "reversed": "괜찮은 척 감정을 눌러 둔 상태예요."
+    },
+    "두 사람 사이": {
+      "upright": "감정을 안정적으로 주고받는 흐름으로 읽어요.",
+      "reversed": "속마음이 잘 드러나지 않는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "차분하고 배려 있는 연락이 흐름을 안정시킬 수 있다는 쪽으로 읽어요.",
+      "reversed": "속마음을 감춘 형식적인 연락이 되기 쉽다는 쪽으로 읽어요. 하고 싶은 말 하나를 담는 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "믿음직하고 너그러운 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "속을 알기 어려운 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "도움이 될 태도": {
+      "upright": "흔들림 속에서도 차분히 중심을 잡는 태도가 도움이 돼요.",
+      "reversed": "눌러 둔 감정을 조금씩 표현하는 태도가 도움이 돼요."
+    },
+    "오늘의 한 장": {
+      "upright": "감정적인 일에 차분하게 대응하는 날로 읽어요.",
+      "reversed": "눌러 둔 감정을 글로 풀어 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "감정이 올라올 때 한 번 숨을 고르고 차분한 한 문장으로 말해 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "고민하는 사람에게 판단 없이 한마디 조언을 건네 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "괜찮은 척했던 일 하나를 적고 실제 감정을 옆에 써 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "기분이 격할 때의 결정은 하루 미루기로 정해 두세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "특정 남성이나 윗사람이 감정을 숨기고 있다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 인물의 속마음은 다루지 않아요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "관계가 안정되어 오래 간다고 보장",
+      "instead": "감정을 다루는 태도와 흐름까지만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "cups-13",
+      "ko": "감정을 품는 힘과 다스리는 힘의 짝"
+    },
+    {
+      "with": "major-14-temperance",
+      "ko": "감정의 균형과 조율이 겹침"
+    },
+    {
+      "with": "swords-14",
+      "ko": "감정과 이성의 균형이 필요한 조합"
+    },
+    {
+      "with": "cups-10",
+      "ko": "안정된 감정이 가족 같은 평화로 이어지는 흐름"
+    }
+  ],
+  "court": {
+    "asPerson": "감정에 흔들리지 않고 너그럽게 조언하는 누군가(나이·성별 무관)",
+    "asAttitude": "느끼되 휩쓸리지 않고 책임 있게 다루는 태도"
+  },
+  "numerology": {
+    "stage": "밖으로 책임지는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Fair man, man of business, law, or divinity; responsible, disposed to oblige the Querent; also equity, art and science, including those who profess science, law and art; creative intelligence.",
+    "reversed": "Dishonest, double-dealing man; roguery, exaction, injustice, vice, scandal, pillage, considerable loss.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite의 역방향 의미(부정직한 사람 등)는 인물 판정이라 출력하지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-14.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

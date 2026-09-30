@@ -1,0 +1,282 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-13",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-13.webp",
+  "names": {
+    "ko": "검 여왕",
+    "ja": "ソードのクイーン",
+    "en": "Queen of Swords",
+    "koAliases": [
+      "소드 여왕",
+      "소드 퀸"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "queen",
+  "number": 13,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": null,
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "분명한 경계",
+    "솔직한 판단",
+    "경험에서 나온 지혜",
+    "독립"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "profile-throne",
+        "ko": "여왕이 옆모습으로 왕좌에 앉아 오른쪽을 바라본다",
+        "salience": 1
+      },
+      {
+        "id": "upright-sword",
+        "ko": "오른손에 칼을 곧게 세워 들었다",
+        "salience": 1
+      },
+      {
+        "id": "extended-hand",
+        "ko": "왼손을 앞으로 들어 손바닥을 내밀었고, 손목에 끈 장식이 달려 있다",
+        "salience": 1
+      },
+      {
+        "id": "butterfly-crown",
+        "ko": "나비 장식이 달린 관을 썼고, 왕좌에 날개 달린 아기 얼굴과 나비가 새겨져 있다",
+        "salience": 2
+      },
+      {
+        "id": "cloud-cape",
+        "ko": "구름 무늬 망토를 걸쳤다",
+        "salience": 3
+      },
+      {
+        "id": "clouds-bird",
+        "ko": "아래로 구름이 깔려 있고 하늘 높이 새 한 마리가 난다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "눈을 가리고 있다",
+        "correct": "눈을 뜨고 앞을 본다",
+        "regex": "눈을\\s*가리"
+      },
+      {
+        "wrong": "칼을 무릎에 눕혀 두었다",
+        "correct": "칼을 곧게 세워 들었다",
+        "regex": "칼을?\\s*(무릎에|눕)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "extended-hand",
+        "ko": "판단한 뒤에도 내미는 손, 대화의 여지",
+        "school": "modern"
+      },
+      {
+        "factId": "profile-throne",
+        "ko": "엄하지만 다듬어진 얼굴, 슬픔을 아는 사람",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "clouds-bird",
+        "ko": "흐린 것 위로 높이 나는 명료함",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "Her right hand raises the weapon vertically and the hilt rests on an arm of her royal chair; the left hand is extended, the arm raised; her countenance is severe but chastened; it suggests familiarity with sorrow. It does not represent mercy, and, her sword notwithstanding, she is scarcely a symbol of power.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-13.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "분명한 경계",
+      "솔직한 판단",
+      "경험에서 나온 지혜",
+      "독립적인 태도"
+    ],
+    "reversed": [
+      "차갑게 굳음",
+      "날 선 비판",
+      "상처로 닫힌 마음",
+      "지나친 냉정"
+    ],
+    "oneLine": {
+      "upright": "겪은 일에서 얻은 분명함으로 솔직하게 말하고 경계를 지키는 때",
+      "reversed": "상처 때문에 마음을 닫고 차갑게 굳거나, 판단이 비판으로 날카로워진 상태"
+    },
+    "shadow": "명료함이 차가움으로 굳어 다가오는 손까지 밀어내는 것"
+  },
+  "reversedModes": {
+    "default": "excess",
+    "allowed": [
+      "excess",
+      "internalized"
+    ],
+    "gloss": {
+      "excess": "냉정과 비판이 지나쳐 차갑게 느껴짐",
+      "internalized": "슬픔을 드러내지 않고 속으로 굳힘"
+    }
+  },
+  "asFeelings": {
+    "upright": "감정에 휘둘리지 않고 분명하게 보고 싶은 마음이에요.",
+    "reversed": "상처 때문에 마음이 차갑게 굳었어요."
+  },
+  "topics": {
+    "love": {
+      "upright": "원하는 것과 원하지 않는 것을 분명히 말하는 흐름으로 읽어요. 솔직함이 오히려 관계를 편하게 해요.",
+      "reversed": "지난 상처 때문에 마음을 닫고 날카롭게 반응하는 쪽으로 읽어요. 경계와 벽을 구분해 보세요."
+    },
+    "contact": {
+      "upright": "분명하고 담백한 연락이 어울리는 그림이에요. 돌려 말하지 않되 손은 내미는 한 줄을 써 보세요.",
+      "reversed": "차갑거나 비판적으로 읽힐 수 있는 연락이 되기 쉬운 쪽으로 읽어요. 따뜻한 한마디를 하나 더해 보세요."
+    },
+    "work": {
+      "upright": "객관적인 판단과 정확한 피드백이 필요한 흐름으로 읽어요. 사실 중심으로 분명하게 말해 보세요.",
+      "reversed": "비판이 지나쳐 관계가 굳거나, 혼자 다 판단하려는 쪽으로 읽어요. 칭찬 하나를 먼저 건네 보세요."
+    },
+    "choice": {
+      "upright": "감정보다 사실과 경험을 기준으로 고르는 배치로 읽어요. 이전 경험에서 배운 점을 적어 보세요.",
+      "reversed": "상처를 피하려고 차갑게만 판단하는 상태로 읽어요. 원하는 마음도 함께 적어 보세요."
+    },
+    "self": {
+      "upright": "스스로의 기준이 분명해지는 시기로 읽어요. 거절과 경계를 연습하기 좋아요.",
+      "reversed": "슬픔을 누르고 단단한 척하는 시기로 읽어요. 굳은 마음을 조금 풀어 줄 시간을 가져 보세요."
+    },
+    "group": {
+      "upright": "모임에서 공정하고 분명한 의견이 필요한 흐름으로 읽어요. 사실을 짚어 주는 역할이 어울려요.",
+      "reversed": "날 선 비판이 분위기를 굳게 만드는 쪽으로 읽어요. 비판에 대안을 붙여 말해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "감정보다 사실을 보고 분명히 하고 싶은 마음이에요.",
+      "reversed": "상처로 마음이 굳어 있는 상태예요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 경계를 분명히 하며 솔직하게 대하는 흐름으로 읽어요.",
+      "reversed": "차가운 말과 거리가 생긴 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "분명하지만 손을 내미는 담백한 연락이 어울린다는 쪽으로 읽어요.",
+      "reversed": "차갑게 읽힐 수 있다는 쪽으로 읽어요. 따뜻한 한마디를 더한 조건에서 다시 보세요."
+    },
+    "상대에게 비친 나": {
+      "upright": "똑 부러지고 믿을 만한 사람으로 비칠 수 있는 자리로 읽어요.",
+      "reversed": "차갑고 날카로운 사람으로 비칠 수 있는 자리로 읽어요."
+    },
+    "도움이 될 태도": {
+      "upright": "사실은 분명하게, 태도는 정중하게 말하는 게 도움이 돼요.",
+      "reversed": "비판에 대안을 붙이는 태도가 도움이 돼요."
+    },
+    "필요한 것": {
+      "upright": "분명한 경계와 솔직한 말이 필요해요.",
+      "reversed": "굳은 마음을 풀어 줄 따뜻함이 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "하고 싶은 말을 분명하게 전하는 날로 읽어요.",
+      "reversed": "날카로운 말 대신 부드러운 말을 고르는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "관계에서 지키고 싶은 경계 하나를 한 문장으로 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "돌려 말하던 것 하나를 담백하게 전해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "비판하고 싶은 일에 대안 하나를 붙여 말해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "마음이 굳게 된 일을 적고 나에게 위로의 말을 써 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "특정 여성이 나를 차갑게 대한다고 단정",
+      "instead": "궁정 카드는 태도로 먼저 읽고 인물의 속마음은 다루지 않아요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "이별이나 혼자 남는 것을 예고",
+      "instead": "분명한 경계와 판단의 태도로만 읽어요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-11-justice",
+      "ko": "분명한 판단과 공정함이 겹침"
+    },
+    {
+      "with": "cups-13",
+      "ko": "깊은 공감과 분명한 판단의 대비"
+    },
+    {
+      "with": "swords-14",
+      "ko": "판단과 경계, 권위가 함께 서는 짝(여왕과 왕)"
+    },
+    {
+      "with": "swords-03",
+      "ko": "아픔을 겪은 뒤 얻은 분명함"
+    }
+  ],
+  "court": {
+    "asPerson": "경험이 많고 말이 분명한, 기대기보다 스스로 판단하는 누군가(나이·성별 무관)",
+    "asAttitude": "감정은 인정하되 사실로 판단하고 경계를 말하는 태도"
+  },
+  "numerology": {
+    "stage": "안에서 다스리는 자리"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Widowhood, female sadness and embarrassment, absence, sterility, mourning, privation, separation.",
+    "reversed": "Malice, bigotry, artifice, prudery, bale, deceit.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite의 점술 의미(과부·상실 등)는 인물과 사건을 단정하므로 출력하지 않는다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-13.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

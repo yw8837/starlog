@@ -1,0 +1,286 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "pentacles-05",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/pentacles-05.webp",
+  "names": {
+    "ko": "펜타클 5",
+    "ja": "ペンタクルの5",
+    "en": "Five of Pentacles",
+    "koAliases": [
+      "펜타클 5",
+      "동전 5"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "pentacles",
+  "rank": "5",
+  "number": 5,
+  "element": "earth",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "황소자리의 수성(Mercury in Taurus)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "결핍과 소외",
+    "어려운 시기",
+    "곁에 있는 도움",
+    "추운 길"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "two-in-snow",
+        "ko": "눈보라 속에 두 사람이 추위에 움츠린 채 걷고 있다",
+        "salience": 1
+      },
+      {
+        "id": "crutches",
+        "ko": "한 사람은 목발을 짚고 머리에 붕대를 감았으며 목에 방울을 달았다",
+        "salience": 1
+      },
+      {
+        "id": "shawl-barefoot",
+        "ko": "다른 사람은 숄을 뒤집어쓰고 고개를 숙인 채 맨발로 걷는다",
+        "salience": 2
+      },
+      {
+        "id": "lit-window",
+        "ko": "뒤쪽 벽에 불 켜진 스테인드글라스 창이 있고 펜타클 다섯 개가 그려져 있다",
+        "salience": 1
+      },
+      {
+        "id": "passing-by",
+        "ko": "두 사람은 창 앞을 지나쳐 걷는다",
+        "salience": 2
+      },
+      {
+        "id": "snow",
+        "ko": "검은 배경에 눈송이가 흩날리고 땅은 눈으로 덮여 있다",
+        "salience": 2
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "교회 안으로 들어간다",
+        "correct": "창 앞을 지나칠 뿐 안으로 들어가지 않는다",
+        "regex": "(교회|건물)\\s*안으로|안으로\\s*들어가"
+      },
+      {
+        "wrong": "세 사람이 걷고 있다",
+        "correct": "사람은 두 명이다",
+        "regex": "세\\s*사람|세\\s*명"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "lit-window",
+        "ko": "가까이 있는데 보지 못한 도움과 온기",
+        "school": "modern"
+      },
+      {
+        "factId": "two-in-snow",
+        "ko": "물질적 어려움과 곤궁",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "crutches",
+        "ko": "다쳐도 함께 걷는 동행",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "Two mendicants in a snow-storm pass a lighted casement.",
+    "verified": {
+      "scan": "apps/web/public/cards/pentacles-05.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "결핍과 걱정",
+      "소외감",
+      "어려운 시기",
+      "도움을 못 봄"
+    ],
+    "reversed": [
+      "회복의 시작",
+      "도움을 받아들임",
+      "깊어진 고립",
+      "혼자 버팀"
+    ],
+    "oneLine": {
+      "upright": "돈이나 마음이 부족하고 소외된 듯 추운 길을 걷지만 가까이 도움의 불빛이 있는 때(가난이나 병의 예언이 아님)",
+      "reversed": "도움을 받아들이며 조금씩 회복하거나, 도움을 거절하고 혼자 버티며 고립이 깊어지는 상태"
+    },
+    "shadow": "부끄러움 때문에 가까이 있는 도움의 문을 두드리지 않는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "internalized",
+      "excess"
+    ],
+    "gloss": {
+      "waning": "추운 시기가 지나 회복과 도움이 보이기 시작함",
+      "internalized": "어려움을 숨기고 혼자 삭임",
+      "excess": "결핍감이 커져 모든 게 부족하게 느껴짐"
+    }
+  },
+  "asFeelings": {
+    "upright": "혼자 추운 곳에 남겨진 듯 서럽고 불안해요.",
+    "reversed": "조금씩 기댈 곳이 보이거나, 아무에게도 말 못 해 더 외로워요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 외롭고 소외된 느낌이 크거나, 함께 어려운 시기를 걷는 흐름으로 읽어요. 곁에 있는 사람과 어려움을 나눠 보세요.",
+      "reversed": "외로움에서 벗어나 다시 온기를 찾기 시작하는 쪽으로 읽어요. 먼저 내미는 손을 밀어내지 마세요."
+    },
+    "contact": {
+      "upright": "마음이 춥고 지친 상태에서 연락을 떠올리는 흐름으로 읽어요. 위로가 필요하다면 그 마음을 솔직히 말해도 괜찮아요.",
+      "reversed": "도움을 청하거나 받아들이는 연락이 어울리는 쪽으로 읽어요. '요즘 좀 힘들어'라는 한 줄도 충분해요."
+    },
+    "work": {
+      "upright": "일이나 수입이 불안정해 걱정이 큰 흐름으로 읽어요. 혼자 버티지 말고 도움받을 제도나 사람을 찾아보세요.",
+      "reversed": "어려운 시기를 지나 조금씩 회복하는 쪽으로 읽어요. 받을 수 있는 지원을 적극적으로 알아보세요."
+    },
+    "choice": {
+      "upright": "부족한 조건 때문에 선택지가 좁아 보이는 배치로 읽어요. 도움을 받으면 가능해지는 선택지도 적어 보세요.",
+      "reversed": "도움을 받아 선택지가 넓어지는 쪽으로 읽어요. 혼자 결정하지 말고 조언을 구해 보세요."
+    },
+    "self": {
+      "upright": "몸과 마음, 생활이 지치고 부족하게 느껴지는 시기로 읽어요. 따뜻한 곳에 머무는 시간을 챙기세요.",
+      "reversed": "조금씩 기운과 여유를 되찾는 시기로 읽어요. 도움받은 것을 적어 두면 힘이 돼요."
+    },
+    "group": {
+      "upright": "모임 안에서 소외감을 느끼거나 어려운 사람이 있는 흐름으로 읽어요. 겉도는 사람에게 먼저 문을 열어 주세요.",
+      "reversed": "서로 돕는 분위기가 돌아오는 쪽으로 읽어요. 도움이 필요한 걸 말하기 쉬운 자리를 만들어 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "외롭고 부족하다는 느낌이 큰 마음이에요.",
+      "reversed": "조금씩 기댈 곳을 찾는 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "함께 어려운 시기를 지나거나 한쪽이 소외감을 느끼는 흐름으로 읽어요.",
+      "reversed": "추운 시기를 지나 온기가 돌아오는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 힘든 마음을 솔직히 나누는 연락이 더 어울린다는 쪽으로 읽어요. 괜찮은 척하지 않아도 돼요.",
+      "reversed": "도움을 청하거나 받아들이는 연락이 흐름을 따뜻하게 할 수 있다는 쪽으로 읽어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "바로 곁에 켜진 도움의 불빛을 보지 못하고 있을 수 있어요.",
+      "reversed": "도움을 받고도 혼자 해내야 한다고 여기고 있을 수 있어요."
+    },
+    "필요한 것": {
+      "upright": "혼자 버티지 않고 도움을 청하는 용기가 필요해요.",
+      "reversed": "받은 도움을 고맙게 받아들이는 여유가 필요해요."
+    },
+    "나의 자리": {
+      "upright": "모임 안에서 조금 겉도는 자리로 읽어요.",
+      "reversed": "다시 안으로 들어올 수 있는 자리로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "따뜻한 곳에서 몸과 마음을 녹이는 날로 읽어요.",
+      "reversed": "도움을 청하거나 받아들이는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "지금 필요한 도움 한 가지를 적고, 청할 수 있는 사람이나 곳을 하나 찾아보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "오늘은 따뜻한 음식과 휴식을 먼저 챙겨 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "최근 받은 도움 하나를 떠올리고 고맙다고 전해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "혼자 버티던 일을 믿을 만한 사람에게 말해 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_HEALTH",
+      "doNotClaim": "병이나 장애가 생긴다고 예고",
+      "instead": "어려운 시기의 그림으로만 읽고, 몸 걱정은 전문가 확인을 권해요."
+    },
+    {
+      "code": "NO_MONEY",
+      "doNotClaim": "가난해진다, 파산한다고 예언",
+      "instead": "지출과 도움받을 곳을 점검하자고 해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "관계에서 버림받는다고 단정",
+      "instead": "소외감을 다루는 방법과 도움을 청하는 길을 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "pentacles-06",
+      "ko": "어려움 뒤에 도움을 주고받는 흐름(5→6)"
+    },
+    {
+      "with": "major-17-star",
+      "ko": "추운 시기 뒤의 조용한 회복"
+    },
+    {
+      "with": "cups-05",
+      "ko": "잃은 것에 머물러 남은 것을 못 보는 조합"
+    },
+    {
+      "with": "major-09-hermit",
+      "ko": "혼자 버티는 고립, 도움을 청할 때"
+    }
+  ],
+  "numerology": {
+    "stage": "흔들림·마찰"
+  },
+  "safety": {
+    "highRisk": true,
+    "forbid": [
+      "NO_HEALTH",
+      "NO_MONEY",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "The card foretells material trouble above all, whether in the form illustrated—that is, destitution—or otherwise. For some cartomancists, it is a card of love and lovers—wife, husband, friend, mistress; also concordance, affinities. These alternatives cannot be harmonized.",
+    "reversed": "Disorder, chaos, ruin, discord, profligacy.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 물질적 어려움을 주로 적었지만 '연인'의 카드로 보는 해석도 있다고 함께 적었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/pentacles-05.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 pentacles"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

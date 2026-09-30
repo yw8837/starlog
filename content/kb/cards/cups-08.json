@@ -1,0 +1,276 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "cups-08",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/cups-08.webp",
+  "names": {
+    "ko": "컵 8",
+    "ja": "カップの8",
+    "en": "Eight of Cups",
+    "koAliases": [
+      "컵 8",
+      "성배 8"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "cups",
+  "rank": "8",
+  "number": 8,
+  "element": "water",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "물고기자리의 토성(Saturn in Pisces)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "떠나는 결심",
+    "더 깊은 것을 찾음",
+    "미련을 두고 감",
+    "뒤돌아서기"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "walking-away",
+        "ko": "붉은 망토를 입은 사람이 지팡이를 짚고 등을 보인 채 바위산 쪽으로 걸어간다",
+        "salience": 1
+      },
+      {
+        "id": "stacked-cups",
+        "ko": "앞쪽에 컵 여덟 개가 쌓여 있다(아래 다섯, 위 셋)",
+        "salience": 1
+      },
+      {
+        "id": "gap",
+        "ko": "윗줄 컵 사이에 한 칸이 비어 있다",
+        "salience": 2
+      },
+      {
+        "id": "moon-face",
+        "ko": "왼쪽 위 하늘에 눈을 감은 얼굴이 있는 달이 떠 있다(둥근 달에 초승달이 겹친 모양)",
+        "salience": 2
+      },
+      {
+        "id": "water-rocks",
+        "ko": "사람과 컵 사이로 물이 흐르고 바위 언덕이 이어진다",
+        "salience": 3
+      },
+      {
+        "id": "grey-sky",
+        "ko": "하늘은 옅은 잿빛 푸른색이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "컵 하나를 들고 떠난다",
+        "correct": "컵은 모두 두고 지팡이만 짚었다",
+        "regex": "컵(을|\\s*하나를)\\s*(들고|챙겨|가지고)"
+      },
+      {
+        "wrong": "해가 떠 있다",
+        "correct": "하늘에 떠 있는 것은 얼굴 있는 달이다",
+        "regex": "해가\\s*(떠|비)"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "walking-away",
+        "ko": "행복의 잔과 벌여 놓은 일을 두고 떠나는 사람",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "gap",
+        "ko": "가진 것은 많지만 무언가 빠져 있음",
+        "school": "modern"
+      },
+      {
+        "factId": "moon-face",
+        "ko": "눈을 감은 달, 밖보다 안의 이유를 따르는 떠남",
+        "school": "modern"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A man of dejected aspect is deserting the cups of his felicity, enterprise, under-taking or previous concern.",
+    "verified": {
+      "scan": "apps/web/public/cards/cups-08.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "떠나는 결심",
+      "더 깊은 의미 찾기",
+      "미련 두고 가기",
+      "익숙함에서 벗어남"
+    ],
+    "reversed": [
+      "떠나지 못함",
+      "돌아옴",
+      "도망치듯 떠남",
+      "결정을 미룸"
+    ],
+    "oneLine": {
+      "upright": "쌓아 둔 것을 두고 더 의미 있는 것을 찾아 스스로 떠나는 때",
+      "reversed": "떠날지 머물지 결정하지 못하거나, 정리 없이 도망치듯 떠나려는 상태"
+    },
+    "shadow": "문제를 마주하기보다 늘 떠나는 것으로 해결하려는 것"
+  },
+  "reversedModes": {
+    "default": "blocked",
+    "allowed": [
+      "blocked",
+      "excess",
+      "internalized"
+    ],
+    "gloss": {
+      "blocked": "떠날 마음은 있는데 발을 떼지 못함",
+      "excess": "정리 없이 도망치듯 떠나려 함",
+      "internalized": "몸은 머물러 있어도 마음은 이미 떠나 있음"
+    }
+  },
+  "asFeelings": {
+    "upright": "아쉽지만 이제는 여기서 떠나야겠다는 마음이에요.",
+    "reversed": "떠나고 싶기도, 붙잡고 싶기도 해서 마음이 오가요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 채워지지 않는 부분을 인정하고 한발 떠나거나 거리를 두는 흐름으로 읽어요. 떠남이 곧 실패는 아니에요.",
+      "reversed": "떠날지 머물지 결정을 미루거나, 충분히 이야기하지 않고 끊으려는 쪽으로 읽어요. 떠나기 전에 할 말을 정리해 보세요."
+    },
+    "contact": {
+      "upright": "지금은 연락을 이어 가기보다 한발 물러서는 흐름에 가까운 그림이에요. 정리의 말이 필요하다면 짧고 담담하게 전해 보세요.",
+      "reversed": "연락을 끊었다 이었다 반복하는 쪽으로 읽어요. 내가 원하는 거리를 먼저 정해 보세요."
+    },
+    "work": {
+      "upright": "익숙한 일이나 자리를 떠나 더 의미 있는 길을 찾는 흐름으로 읽어요. 떠나기 전 정리할 목록을 만들어 보세요.",
+      "reversed": "떠나고 싶지만 조건 때문에 머물거나, 충동적으로 그만두려는 쪽으로 읽어요. 남을 이유와 떠날 이유를 나란히 적어 보세요."
+    },
+    "choice": {
+      "upright": "가진 것을 두고 새 방향으로 가는 쪽에 힘이 실리는 배치로 읽어요. 무엇이 빠져 있어 떠나려는지 한 줄로 적어 보세요.",
+      "reversed": "떠날 결심이 서지 않아 제자리를 맴도는 상태로 읽어요. 떠난다면 첫날 무엇을 할지 떠올려 보세요."
+    },
+    "self": {
+      "upright": "익숙한 것에서 벗어나 나를 찾는 시기로 읽어요. 혼자 떠나는 짧은 산책이나 여행이 도움이 돼요.",
+      "reversed": "변화가 필요하다는 걸 알면서 머뭇거리는 시기로 읽어요. 작은 습관 하나부터 떠나 보세요."
+    },
+    "group": {
+      "upright": "모임에서 한발 물러나거나 떠날 때가 된 흐름으로 읽어요. 정리하고 인사하는 방식을 정해 보세요.",
+      "reversed": "떠날지 말지 애매한 채 모임에 반쯤 걸쳐 있는 쪽으로 읽어요. 참여 정도를 스스로 정해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "아쉽지만 이제 떠나야겠다는 마음이에요.",
+      "reversed": "떠나고 싶기도 붙잡고 싶기도 한 마음이에요."
+    },
+    "두 사람 사이": {
+      "upright": "한쪽이 거리를 두거나 물러서는 흐름으로 읽어요. 관계의 끝을 단정하는 그림은 아니에요.",
+      "reversed": "멀어졌다 가까워지기를 반복하는 흐름으로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 이어 가기보다 한발 물러서는 방향이 어울린다는 쪽으로 읽어요. 정리의 말이 필요하다면 짧게 전해 보세요.",
+      "reversed": "충분히 정리하지 않은 연락이 되기 쉽다는 쪽으로 읽어요. 원하는 거리를 정한 조건에서 다시 보세요."
+    },
+    "나아갈 방향": {
+      "upright": "익숙한 것을 두고 더 의미 있는 쪽으로 가는 쪽이에요.",
+      "reversed": "떠나기 전에 남은 것을 정리하는 쪽이에요."
+    },
+    "필요한 것": {
+      "upright": "놓아줄 것을 놓아주는 용기가 필요해요.",
+      "reversed": "떠날지 머물지 기준을 세우는 시간이 필요해요."
+    },
+    "오늘의 한 장": {
+      "upright": "더는 맞지 않는 것 하나에서 조용히 물러서는 날로 읽어요.",
+      "reversed": "도망치듯 결정하지 말고 이유를 적어 보는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "지금 가진 것 중 이제 놓아줄 것 하나를 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "떠나기 전에 정리할 일 목록을 만들어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "머물 이유와 떠날 이유를 나란히 세 가지씩 적어 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "충동적으로 떠나고 싶을 때는 일주일 뒤에 다시 결정하기로 정해 두세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "이별이나 퇴사가 확정된다고 말하기",
+      "instead": "거리를 두거나 물러서는 흐름과 정리 방법까지만 말해요."
+    },
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 나를 떠나려 한다고 단정",
+      "instead": "자리의 주체를 먼저 확인하고, 상대 쪽은 흐름으로만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-09-hermit",
+      "ko": "익숙한 것을 두고 혼자 떠나 찾는 흐름"
+    },
+    {
+      "with": "cups-06",
+      "ko": "추억을 두고 새 길을 찾아 떠나는 대비"
+    },
+    {
+      "with": "cups-09",
+      "ko": "떠난 뒤 다른 곳에서 만족을 찾아가는 흐름(8→9)"
+    },
+    {
+      "with": "swords-06",
+      "ko": "지금 자리를 떠나 건너가는 흐름"
+    }
+  ],
+  "numerology": {
+    "stage": "움직임·익숙해짐"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_EVENT",
+      "NO_MIND"
+    ]
+  },
+  "waite": {
+    "upright": "The card speaks for itself on the surface, but other readings are entirely antithetical—giving joy, mildness, timidity, honour, modesty. In practice, it is usually found that the card shews the decline of a matter, or that a matter which has been thought to be important is really of slight consequence—either for good or evil.",
+    "reversed": "Great joy, happiness, feasting.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 중요하다고 여긴 일이 실은 가벼운 것이었음을 보여 주는 카드라고도 적었다. 역방향 의미는 큰 기쁨·잔치다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/cups-08.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 cups"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}

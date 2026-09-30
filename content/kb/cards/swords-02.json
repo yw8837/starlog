@@ -1,0 +1,289 @@
+{
+  "schema": "starlog-tarot-kb/1",
+  "id": "swords-02",
+  "deck": "rws-1909-pcs",
+  "image": "/cards/swords-02.webp",
+  "names": {
+    "ko": "검 2",
+    "ja": "ソードの2",
+    "en": "Two of Swords",
+    "koAliases": [
+      "소드 2",
+      "검 2"
+    ]
+  },
+  "arcana": "minor",
+  "suit": "swords",
+  "rank": "2",
+  "number": 2,
+  "element": "air",
+  "attributions": {
+    "system": "golden-dawn",
+    "astrology": "천칭자리의 달(Moon in Libra)",
+    "use": "study-only"
+  },
+  "keywordsKo": [
+    "결정 보류",
+    "눈 가린 균형",
+    "팽팽한 교착",
+    "마음 닫기"
+  ],
+  "imagery": {
+    "sideConvention": "장면 속 위치(왼쪽·오른쪽·위·아래)는 보는 사람 기준, 손·발·무릎은 그림 속 인물 자신 기준",
+    "facts": [
+      {
+        "id": "blindfold",
+        "ko": "흰 옷을 입은 여인이 눈을 가린 채 돌 의자에 앉아 있다",
+        "salience": 1
+      },
+      {
+        "id": "crossed-arms",
+        "ko": "두 팔을 가슴 앞에서 엇갈려 칼 두 자루를 어깨 너머로 치켜들고 있다",
+        "salience": 1
+      },
+      {
+        "id": "back-to-sea",
+        "ko": "뒤로 바다가 펼쳐지고 물 위로 바위들이 솟아 있다",
+        "salience": 2
+      },
+      {
+        "id": "crescent",
+        "ko": "오른쪽 위 하늘에 초승달이 떠 있다",
+        "salience": 2
+      },
+      {
+        "id": "grey-ground",
+        "ko": "발밑은 회색 바닥이다",
+        "salience": 3
+      }
+    ],
+    "commonMisdescriptions": [
+      {
+        "wrong": "눈을 뜨고 앞을 본다",
+        "correct": "눈을 천으로 가렸다",
+        "regex": "눈을\\s*뜨"
+      },
+      {
+        "wrong": "칼을 땅에 꽂아 두었다",
+        "correct": "칼 두 자루는 팔로 들어 올리고 있다",
+        "regex": "칼을?\\s*(땅에|바닥에)"
+      },
+      {
+        "wrong": "보름달이 떠 있다",
+        "correct": "하늘의 달은 초승달이다",
+        "regex": "보름달"
+      }
+    ],
+    "glosses": [
+      {
+        "factId": "blindfold",
+        "ko": "보고 싶지 않은 것을 가리고 결정을 미룸",
+        "school": "modern"
+      },
+      {
+        "factId": "crossed-arms",
+        "ko": "마음을 닫고 균형만 붙잡은 자세",
+        "school": "modern"
+      },
+      {
+        "factId": "crossed-arms",
+        "ko": "무장한 채의 화합, 팽팽한 평형",
+        "school": "waite-1911"
+      },
+      {
+        "factId": "crescent",
+        "ko": "아직 차지 않은 달, 드러나지 않은 정보",
+        "school": "editorial"
+      }
+    ],
+    "reversedImageryMetaphor": [],
+    "waiteDescription": "A hoodwinked female figure balances two swords upon her shoulders.",
+    "verified": {
+      "scan": "apps/web/public/cards/swords-02.webp",
+      "method": "1909 스캔을 직접 보고 작성 + PKT(1910) 그림 설명과 대조",
+      "by": "ai-draft",
+      "humanReviewed": false,
+      "at": "2026-09-30"
+    }
+  },
+  "core": {
+    "upright": [
+      "결정 보류",
+      "팽팽한 균형",
+      "보고 싶지 않음",
+      "마음 닫고 버팀"
+    ],
+    "reversed": [
+      "가리개를 벗음",
+      "결정이 터져 나옴",
+      "버티기 한계",
+      "정보가 드러남"
+    ],
+    "oneLine": {
+      "upright": "두 갈래 사이에서 눈을 가리고 팔짱 낀 채 결정을 미루며 균형만 버티는 때",
+      "reversed": "가리개를 벗고 결정하게 되거나, 버티던 균형이 무너지는 상태"
+    },
+    "shadow": "평화를 핑계로 봐야 할 것을 보지 않는 것"
+  },
+  "reversedModes": {
+    "default": "waning",
+    "allowed": [
+      "waning",
+      "excess",
+      "blocked"
+    ],
+    "gloss": {
+      "waning": "버티던 교착이 풀려 결정할 때가 옴",
+      "excess": "지나치게 오래 버텨 압박이 커짐",
+      "blocked": "정보가 부족해 결정이 계속 막힘"
+    }
+  },
+  "asFeelings": {
+    "upright": "어느 쪽도 고르기 싫어 마음을 닫고 버티는 중이에요.",
+    "reversed": "더는 미룰 수 없다는 압박이 느껴져요."
+  },
+  "topics": {
+    "love": {
+      "upright": "관계에서 결정을 미루거나 불편한 사실을 보지 않으려는 흐름으로 읽어요. 무엇을 보기 싫은지 먼저 솔직하게 적어 보세요.",
+      "reversed": "미뤄 두던 결정이나 대화가 표면으로 올라오는 쪽으로 읽어요. 피하기보다 한 가지씩 확인해 보세요."
+    },
+    "contact": {
+      "upright": "보낼지 말지 팽팽하게 망설이며 멈춰 있는 흐름으로 읽어요. 보내지 않는 것도 선택이라는 걸 인정하고 기한을 정해 보세요.",
+      "reversed": "망설임이 한계에 닿아 결정할 때가 된 쪽으로 읽어요. 충동적으로 보내기보다 정리한 한 문장으로 보내 보세요."
+    },
+    "work": {
+      "upright": "두 의견이나 선택지 사이에서 교착 상태인 흐름으로 읽어요. 부족한 정보 하나를 찾아 가리개를 벗겨 보세요.",
+      "reversed": "미뤄 온 결정이 외부 사정으로 내려지게 되는 쪽으로 읽어요. 내가 정할 수 있는 부분을 먼저 정해 두세요."
+    },
+    "choice": {
+      "upright": "양쪽이 비슷해 보여 결정을 미루는 배치로 읽어요. 두려워서 안 보고 있는 조건이 있는지 살펴보세요.",
+      "reversed": "미뤄 둔 선택을 이제는 해야 하는 상태로 읽어요. 가장 걱정되는 점부터 확인해 보세요."
+    },
+    "self": {
+      "upright": "감정을 닫고 겉으로 평온을 유지하는 시기로 읽어요. 닫아 둔 감정을 조용히 들여다보세요.",
+      "reversed": "눌러 둔 감정이 올라오는 시기로 읽어요. 편한 사람에게 조금 털어놓아 보세요."
+    },
+    "group": {
+      "upright": "두 편 사이에서 중립을 지키느라 지치는 흐름으로 읽어요. 내 입장을 조용히 정리해 두세요.",
+      "reversed": "미뤄 둔 갈등이 드러나 결정을 요구하는 분위기로 읽어요. 사실 확인부터 차분히 해 보세요."
+    }
+  },
+  "positionHints": {
+    "나의 마음": {
+      "upright": "결정하기 싫어 마음을 닫고 버티는 상태예요.",
+      "reversed": "더는 미룰 수 없다는 압박을 느끼는 상태예요."
+    },
+    "두 사람 사이": {
+      "upright": "서로 한 발도 움직이지 않는 팽팽한 흐름으로 읽어요.",
+      "reversed": "멈춰 있던 흐름이 움직이려는 자리로 읽어요."
+    },
+    "먼저 움직이면": {
+      "upright": "지금은 보낼지 말지 스스로 정하는 게 먼저라는 쪽으로 읽어요. 기한을 정해 두는 조건에서 다시 보세요.",
+      "reversed": "망설임이 풀리며 정리된 한 줄을 보낼 때가 될 수 있다는 쪽으로 읽어요."
+    },
+    "막힌 곳": {
+      "upright": "보고 싶지 않은 사실을 가리고 있는 게 막힌 곳일 수 있어요.",
+      "reversed": "너무 오래 미룬 결정이 막힌 곳일 수 있어요."
+    },
+    "놓치고 있는 것": {
+      "upright": "가리개 뒤에 있는 중요한 정보를 놓치고 있을 수 있어요.",
+      "reversed": "결정을 서두르다 확인할 것을 놓칠 수 있어요."
+    },
+    "이쪽을 고르면": {
+      "upright": "아직 판단할 정보가 부족한 선택으로 읽어요.",
+      "reversed": "미뤄 둔 사실이 드러나며 조건이 분명해지는 선택으로 읽어요."
+    },
+    "오늘의 한 장": {
+      "upright": "결정을 서두르지 말고 부족한 정보 하나를 찾는 날로 읽어요.",
+      "reversed": "미뤄 둔 결정 하나에 답을 내는 날로 읽어요."
+    }
+  },
+  "actionHints": [
+    {
+      "orientation": "upright",
+      "ko": "결정을 미루는 이유를 '정보 부족'과 '두려움'으로 나눠 적어 보세요."
+    },
+    {
+      "orientation": "upright",
+      "ko": "결정 기한을 스스로 하나 정해 달력에 적어 두세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "가장 걱정되는 점 하나를 사실로 확인해 보세요."
+    },
+    {
+      "orientation": "reversed",
+      "ko": "눌러 둔 감정을 한 문장으로 적어 보세요."
+    }
+  ],
+  "cautions": [
+    {
+      "code": "NO_MIND",
+      "doNotClaim": "상대가 결정을 피하고 있다고 단정",
+      "instead": "자리의 주체를 먼저 확인하고, 흐름이 멈춰 있다고만 말해요."
+    },
+    {
+      "code": "NO_EVENT",
+      "doNotClaim": "결국 한쪽으로 결정된다고 예고",
+      "instead": "결정을 돕는 정보와 기준까지만 말해요."
+    }
+  ],
+  "combinations": [
+    {
+      "with": "major-06-lovers",
+      "ko": "끌림은 있는데 눈을 가린 채 선택을 미룸"
+    },
+    {
+      "with": "major-07-chariot",
+      "ko": "움직이고 싶은데 결정을 못 내려 멈춘 조합"
+    },
+    {
+      "with": "cups-07",
+      "ko": "선택지 앞에서 눈을 가리고 미루는 상태"
+    },
+    {
+      "with": "swords-08",
+      "ko": "스스로 가리고 묶여 움직이지 못하는 흐름"
+    },
+    {
+      "with": "major-11-justice",
+      "ko": "저울질이 길어져 결정을 미루는 상태"
+    }
+  ],
+  "numerology": {
+    "stage": "둘 사이의 균형·첫 선택"
+  },
+  "safety": {
+    "highRisk": false,
+    "forbid": [
+      "NO_MIND",
+      "NO_EVENT"
+    ]
+  },
+  "waite": {
+    "upright": "Conformity and the equipoise which it suggests, courage, friendship, concord in a state of arms; another reading gives tenderness, affection, intimacy. The suggestion of harmony and other favourable readings must be considered in a qualified manner, as Swords generally are not symbolical of beneficent forces in human affairs.",
+    "reversed": "Imposture, falsehood, duplicity, disloyalty.",
+    "loc": "PKT Part III §2",
+    "noteKo": "Waite는 무장한 상태의 화합으로 보고, 호의적인 의미도 조건부로만 읽어야 한다고 적었다.",
+    "doNotOutput": true
+  },
+  "sources": [
+    {
+      "id": "scan-1909",
+      "loc": "apps/web/public/cards/swords-02.webp"
+    },
+    {
+      "id": "PKT-1910",
+      "loc": "Part III §2 swords"
+    },
+    {
+      "id": "editorial",
+      "loc": "Starlog 편집 원고(현대 해석, 자체 문장)"
+    }
+  ],
+  "review": {
+    "status": "draft",
+    "reviewer": null,
+    "history": []
+  }
+}
