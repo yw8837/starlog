@@ -1,5 +1,6 @@
 // Real-API smoke run (not in CI; costs money). Per run: 재물운 tarot teaser + full reading, 오늘의 한 장,
-// saju teaser + full prologue for a non-sample chart. SMOKE_RUNS repeats the set (default 1).
+// saju teaser + full prologue for a non-sample chart with a personal context (연애·일 상태, 고민).
+// SMOKE_RUNS repeats the set (default 1).
 // SMOKE_MODEL / SMOKE_EFFORT apply one model and effort to every kind (default: the app's config).
 // SMOKE_STAMP reuses an earlier run's stamp, so run N draws the same cards and daily card (A/B).
 // Records attempts, validation, AI-tell score, tokens and cost per call; writes every output and a
@@ -12,12 +13,13 @@ import { expect, test } from "vitest";
 import { anthropicProvider } from "@/lib/ai/anthropic";
 import { EFFORTS, KIND_ENV, MODELS, generationSetting } from "@/lib/ai/config";
 import { generateDaily, generateSajuReading, generateSajuTeaser, generateTarotReading, generateTarotTeaser } from "@/lib/ai/generate";
-import { buildFactSet } from "@/lib/ai/prompts/saju";
+import { buildFactSet, type SajuProfile } from "@/lib/ai/prompts/saju";
 import { buildTarotContext, type TarotContext } from "@/lib/ai/prompts/tarot";
 import { GenerationError, type ReadingProvider, type Usage } from "@/lib/ai/provider";
 import type { DailyDraft, SajuReading, SajuTeaser, TarotReading, TarotTeaser } from "@/lib/ai/schemas";
 import { aiTells } from "@/lib/ai/style";
 import { validateDaily, validateSajuReading, validateSajuTeaser, validateTarotReading, validateTarotTeaser } from "@/lib/ai/validate";
+import { LOVE_STATUS, WORK_STATUS } from "@/lib/api/inputs";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { dailyCard, dailyLuckyNumber } from "@/lib/security/drawToken";
 
@@ -89,7 +91,7 @@ function recording(real: ReadingProvider, validate: (draft: never) => string[]) 
 
 const tarotProse = (r: TarotReading) => [
   r.verdict, ...r.cards.map((c) => c.body), r.connection.body, r.timing.body, ...r.scenarios.items.map((i) => i.body),
-  ...r.messages.items, r.messages.hint, ...r.avoid.items, r.alternatives.body, r.action.body, r.story.body,
+  ...r.messages.items, r.messages.hint, ...r.avoid.items, r.alternatives.body, r.action.body, r.observation.body,
 ].join("\n");
 
 test("ai smoke", async () => {
@@ -119,9 +121,11 @@ test("ai smoke", async () => {
   console.log(`ai:smoke stamp ${stamp} · 실행 ${RUNS}회 · 모델 ${SMOKE_MODEL ?? "앱 설정"} · effort ${SMOKE_EFFORT ?? "앱 설정"}`);
   const rows: Row[] = [];
 
+  // The saju form's optional context, as the route maps it (profileOf): ids to labels, concern as typed.
+  const profile: SajuProfile = { loveStatus: LOVE_STATUS.dating, workStatus: WORK_STATUS.employee, concern: "지금 회사에 남을지 옮길지 고민이에요" };
   const saju = buildFactSet(computeChart(toSajuInput({
     ...DEFAULT_SAJU_FORM, year: 1993, month: 8, day: 17, timeKnown: true, hour: 7, minute: 20, gender: "male", placeId: "busan",
-  })), Date.now());
+  })), Date.now(), profile);
 
   async function call<T>(run: number, kind: Kind, validate: (draft: never) => string[], generate: (p: ReadingProvider) => Promise<{ data: T }>,
     recheck: (data: T) => string[], prose: (data: T) => string, input: unknown) {
@@ -174,11 +178,11 @@ test("ai smoke", async () => {
     await call<TarotReading>(run, "tarot-reading", (d) => validateTarotReading(d, money), (p) => generateTarotReading(p, money),
       (d) => validateTarotReading(d, money), tarotProse, moneyInput);
 
-    const chart = { chart: "1993-08-17 07:20 부산 남", pillars: saju.pillars.map((p) => p.gz) };
+    const chart = { chart: "1993-08-17 07:20 부산 남", pillars: saju.pillars.map((p) => p.gz), profile };
     await call<SajuTeaser>(run, "saju-teaser", (d) => validateSajuTeaser(d, saju), (p) => generateSajuTeaser(p, saju),
       (d) => validateSajuTeaser(d, saju), (d) => d.summary, chart);
     await call<SajuReading>(run, "saju-reading", (d) => validateSajuReading(d, saju), (p) => generateSajuReading(p, saju),
-      (d) => validateSajuReading(d, saju), (d) => [...d.sections.map((s) => s.body), d.story.body].join("\n"), chart);
+      (d) => validateSajuReading(d, saju), (d) => [...d.sections.map((s) => s.body), d.observation.body].join("\n"), chart);
   }
 
   // ---- summary ----
