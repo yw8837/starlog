@@ -3,13 +3,14 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 8px;
+  gap: 4px;
   max-width: var(--col-max);
   margin-inline: auto;
   padding: 32px var(--gutter) 24px;
   text-align: center;
 }
 
+/* Service links, then policies: each row wraps between links, centred. */
 .links {
   display: flex;
   flex-wrap: wrap;
@@ -27,10 +28,11 @@
   opacity: 0.6;
 }
 
+/* 44px rows: a comfortable target even where the row wraps on a phone. */
 .link {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 8px;
   color: var(--ink-sub);
   font-size: var(--fs-sub);
@@ -51,6 +53,7 @@
 }
 
 .notice {
+  margin-top: 8px;
   color: var(--ink-sub);
   font-size: var(--fs-sub);
   line-height: 1.7;

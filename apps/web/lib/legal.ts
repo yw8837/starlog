@@ -9,12 +9,12 @@ export function koreanDate(iso: string): string {
   return `${year}년 ${month}월 ${day}일`;
 }
 
-/** Footer order. 개인정보처리방침 is set apart visually, as Korean sites customarily do. */
+/** Footer's second row, in order. 개인정보처리방침 is set apart visually, as Korean sites customarily do. */
 export const LEGAL_LINKS = [
+  { href: "/pricing", label: "가격 안내" },
   { href: "/terms", label: "이용약관" },
   { href: "/privacy", label: "개인정보처리방침", emphasis: true },
   { href: "/refund", label: "환불 정책" },
-  { href: "/pricing", label: "가격 안내" },
 ] as const;
 
 type Business = Readonly<Record<keyof (typeof SITE)["business"], string>>;
