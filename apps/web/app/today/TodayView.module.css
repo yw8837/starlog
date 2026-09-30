@@ -1,0 +1,311 @@
+/* ---- closed: the cookie waits to be tapped ---- */
+
+.closed,
+.limited,
+.errorWrap {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 24px 0 8px;
+  text-align: center;
+}
+
+.title {
+  font-size: var(--fs-title);
+  line-height: 1.4;
+}
+
+.lead {
+  min-height: 1.6em;
+  color: var(--ink-sub);
+}
+
+.cookieButton {
+  display: grid;
+  place-items: center;
+  margin: 12px 0 4px;
+  padding: 16px;
+  border: 0;
+  border-radius: 32px;
+  background: radial-gradient(closest-side, rgba(243, 220, 161, 0.18), transparent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cookieButton:disabled {
+  cursor: default;
+}
+
+.cookieButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.cookieSmall {
+  margin: 8px auto 4px;
+}
+
+.cta {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.note {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.progress {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.caption {
+  font-family: var(--font-display), serif;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+}
+
+.track {
+  width: min(220px, 70%);
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--glass-line);
+}
+
+.fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--gold);
+  transform-origin: left center;
+  transition: transform 600ms ease-out;
+}
+
+.errorWrap {
+  gap: 8px;
+}
+
+.errorWrap > section {
+  width: 100%;
+}
+
+/* ---- the day's card when the text cannot be handed out again ---- */
+
+.limitText {
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+.limitSub {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+/* ---- opened: in the order the reveal reads ---- */
+
+.opened {
+  display: grid;
+  gap: 18px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 0 8px;
+}
+
+.revisit {
+  justify-self: center;
+  padding: 8px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
+/* The slip: the biggest thing on the screen. */
+.slip {
+  padding: 22px 20px 20px;
+  border: 1px solid #e8dcc0;
+  border-radius: 6px;
+  background: #fffdf7;
+  color: var(--paper-ink);
+  text-align: center;
+  box-shadow: 0 14px 34px rgba(5, 3, 15, 0.4);
+  --focus-ring: var(--navy);
+}
+
+.slipLabel {
+  color: #8a6a2e;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.line {
+  margin-top: 6px;
+  font-size: 24px;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.line:focus {
+  outline: none;
+}
+
+.cardBlock {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.card {
+  --card-w: min(150px, 42vw);
+  margin-bottom: 8px;
+}
+
+.cardName {
+  font-weight: 700;
+}
+
+.keyword {
+  color: var(--gold);
+  font-size: var(--fs-body);
+}
+
+.prose {
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+}
+
+.sectionTitle {
+  margin-bottom: 10px;
+  font-size: var(--fs-h2);
+}
+
+.areas,
+.lucky,
+.tip {
+  padding: 18px 18px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.areaList {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.area {
+  display: grid;
+  grid-template-columns: 3.2em minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+
+.areaLabel {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.areaText {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.luckyRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+
+.colorChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 16px 0 8px;
+  border: 1px solid var(--glass-line);
+  border-radius: 22px;
+  background: rgba(13, 10, 38, 0.4);
+}
+
+.swatch {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+}
+
+.luckyLabel {
+  margin-right: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.numberWrap {
+  display: flex;
+  align-items: center;
+}
+
+/* A lottery-style ball. */
+.ball {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #fff7dc, var(--gold) 55%, var(--gold-deep));
+  color: var(--paper-ink);
+  font-family: var(--font-display), serif;
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 12px rgba(5, 3, 15, 0.4);
+}
+
+.tipTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--gold);
+  font-size: var(--fs-h2);
+}
+
+.tipText {
+  line-height: 1.7;
+}
+
+.after {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* The reveal: each part rises in turn, in reading order (none under reduced motion). */
+.reveal {
+  animation: rise 520ms ease-out both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
