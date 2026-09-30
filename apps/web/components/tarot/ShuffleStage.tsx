@@ -19,7 +19,7 @@ const RIFFLE_MS = 1300;
 const RIFFLES = 2;
 /** After the riffles the cat fans the deck out in its paws, then the stage hands over. */
 const FAN_MS = 600;
-export const SHUFFLE_MS = RIFFLE_MS * RIFFLES + FAN_MS;
+const SHUFFLE_MS = RIFFLE_MS * RIFFLES + FAN_MS;
 
 const CAT_SIZE = 210;
 /** Cards in each half of the deck. */

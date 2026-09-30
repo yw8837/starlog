@@ -59,12 +59,18 @@
   transform-origin: 0 0;
 }
 
-/* Where the arc's cards meet: the fan seems to open out from behind this button. */
+/*
+ * Where the arc's cards meet: the fan seems to open out from behind this button. The secondary
+ * button is transparent, so a night-coloured pill keeps its label clear of the card tips behind it.
+ */
 .reshuffle {
   position: absolute;
   bottom: 0;
   left: 50%;
   z-index: 1;
+  border-radius: 22px;
+  background: rgba(13, 10, 38, 0.88);
+  box-shadow: 0 6px 18px rgba(5, 3, 15, 0.5);
   transform: translateX(-50%);
 }
 
