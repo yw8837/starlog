@@ -6,11 +6,11 @@
 
 /* Sized and dropped to sit where a lowercase o would. */
 .star {
-  width: 0.7em;
-  height: 0.7em;
-  margin: 0 0.03em;
+  width: 0.84em;
+  height: 0.84em;
+  margin: 0 0.01em 0 0.02em;
   align-self: center;
-  transform: translateY(0.1em);
+  transform: translateY(0.07em);
   fill: var(--gold);
 }
 
@@ -24,10 +24,10 @@
   0%,
   100% {
     opacity: 1;
-    transform: translateY(0.1em) scale(1);
+    transform: translateY(0.07em) scale(1);
   }
   50% {
     opacity: 0.82;
-    transform: translateY(0.1em) scale(0.9);
+    transform: translateY(0.07em) scale(0.9);
   }
 }
