@@ -66,3 +66,13 @@ export function dailyCard(deviceId: string, day: string): { cardId: string; orie
   const deck = createDeck(`daily:${deviceId}:${day}`, DEFAULT_REVERSAL_RATE);
   return { cardId: deck.order[0]!, orientation: deck.orientations[0]! };
 }
+
+/** 1-45, fixed by the device id and the KST day (FNV-1a), like the card. */
+export function dailyLuckyNumber(deviceId: string, day: string): number {
+  let hash = 0x811c9dc5;
+  for (const ch of `lucky:${deviceId}:${day}`) {
+    hash ^= ch.charCodeAt(0);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return (hash % 45) + 1;
+}

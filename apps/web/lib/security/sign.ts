@@ -71,7 +71,7 @@ export async function signToken(payload: SignedPayload, secret: string): Promise
  * null for anything else (tampered, malformed, expired, other kind).
  */
 export async function verifyToken<T extends SignedPayload>(token: unknown, kind: T["k"], secret: string, now = Date.now()): Promise<T | null> {
-  if (typeof token !== "string" || token.length > 16_384) return null;
+  if (typeof token !== "string" || token.length > 32_768) return null;
   const [body, mac, extra] = token.split(".");
   if (!body || !mac || extra !== undefined) return null;
   const macBytes = fromBase64Url(mac);
