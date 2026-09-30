@@ -1,0 +1,55 @@
+"use client";
+
+import { useId } from "react";
+import s from "./CustomField.module.css";
+
+type CustomFieldProps = {
+  /** Accessible name, e.g. "누구인지 더 적기". */
+  label: string;
+  /** Shown in the empty field, e.g. "누구인지 더 적기 (예: 엄마, 팀장님, 전 남친)". */
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  maxLength: number;
+};
+
+const ClearIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" focusable="false">
+    <path d="M7 7l10 10M17 7 7 17" />
+  </svg>
+);
+
+/**
+ * An optional one-line "직접 쓰기" field under a chip group: quieter than the chips (dashed line,
+ * no fill), with a count and a clear button once something is typed.
+ */
+export function CustomField({ label, placeholder, value, onChange, maxLength }: CustomFieldProps) {
+  const countId = useId();
+  const filled = value.length > 0;
+  return (
+    <div className={s.field} data-filled={filled ? "" : undefined}>
+      <input
+        className={s.input}
+        type="text"
+        value={value}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        aria-label={label}
+        aria-describedby={filled ? countId : undefined}
+        onChange={(e) => onChange(e.target.value)}
+        enterKeyHint="done"
+      />
+      {filled ? (
+        <>
+          <span id={countId} className={s.count}>
+            <span className="sr-only">글자 수 </span>
+            {`${value.length}/${maxLength}`}
+          </span>
+          <button type="button" className={s.clear} onClick={() => onChange("")} aria-label={`${label} 지우기`}>
+            <ClearIcon />
+          </button>
+        </>
+      ) : null}
+    </div>
+  );
+}

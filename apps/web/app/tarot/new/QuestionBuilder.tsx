@@ -1,36 +1,43 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { TOPICS_BY_WHO, composeQuestion, type When, type Who } from "@starlog/core";
+import type { When, Who } from "@starlog/core";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
-import { EMPTY_FLOW, WHEN_OPTIONS, WHO_OPTIONS, allowedWhens, findTopic, useFlowState } from "@/lib/flowState";
+import { CustomField } from "@/components/ui/CustomField";
+import { EMPTY_FLOW, WHEN_OPTIONS, WHO_OPTIONS, allowedWhens, builderTopics, findTopic, summarizeFlow, useFlowState, type FlowState } from "@/lib/flowState";
+import { CUSTOM_MAX } from "@/lib/question";
 import f from "../flow.module.css";
 
-/** Step 1a: build the question from 누구 × 무엇 × 언제. Picking 누구 narrows the topics. */
+/**
+ * Step 1a: build the question from 누구 × 무엇 × 언제. Picking 누구 narrows the topics. Under each
+ * chip group an optional field takes the user's own words: 누구 adds detail (the chip still picks
+ * the spread); 무엇 and 언제 replace their chip (typing clears the chip, a chip clears the text).
+ */
 export function QuestionBuilder() {
   const router = useRouter();
   const { flow, setFlow } = useFlowState();
   const state = flow ?? EMPTY_FLOW;
   const topic = findTopic(state.who, state.topicId);
   const whens = allowedWhens(topic);
-  const question = state.who && topic && state.when ? composeQuestion(state.who, topic, state.when) : null;
+  const question = summarizeFlow(flow)?.question ?? null;
 
-  const pickWho = (who: Who) =>
-    setFlow((prev) => (prev.who === who ? prev : { ...prev, who, topicId: undefined, conditions: {} }));
+  // Any change to the question drops cards dealt for an earlier one.
+  const update = (change: (prev: FlowState) => FlowState) => setFlow((prev) => ({ ...change(prev), draw: undefined }));
+
+  const pickWho = (who: Who) => update((prev) => (prev.who === who ? prev : { ...prev, who, topicId: undefined, conditions: {} }));
 
   const pickTopic = (topicId: string) =>
-    setFlow((prev) => {
-      if (prev.topicId === topicId) return prev;
+    update((prev) => {
+      if (prev.topicId === topicId && !prev.topicText) return prev;
       const next = findTopic(prev.who, topicId);
       const nextWhens = allowedWhens(next);
-      // A topic with a single allowed time (오늘의 운) picks it for the user.
-      const when = nextWhens.length === 1 ? nextWhens[0] : prev.when && nextWhens.includes(prev.when) ? prev.when : undefined;
-      return { ...prev, topicId, when, conditions: {} };
+      const when = prev.when && nextWhens.includes(prev.when) ? prev.when : undefined;
+      return { ...prev, topicId, topicText: undefined, when, conditions: {} };
     });
 
-  const pickWhen = (when: When) => setFlow((prev) => ({ ...prev, when }));
+  const pickWhen = (when: When) => update((prev) => ({ ...prev, when, whenText: undefined }));
 
   return (
     <div className={f.screen}>
@@ -59,6 +66,16 @@ export function QuestionBuilder() {
             </Chip>
           ))}
         </div>
+        {/* 나 needs no detail; for anyone else a name or role makes the reading specific. */}
+        {state.who && state.who !== "me" ? (
+          <CustomField
+            label="누구인지 더 적기"
+            placeholder="누구인지 더 적기 (예: 엄마, 팀장님, 전 남친)"
+            value={state.whoText ?? ""}
+            maxLength={CUSTOM_MAX}
+            onChange={(whoText) => update((prev) => ({ ...prev, whoText }))}
+          />
+        ) : null}
       </section>
 
       <section className={f.group} aria-labelledby="what-label">
@@ -66,13 +83,22 @@ export function QuestionBuilder() {
           무엇
         </h2>
         {state.who ? (
-          <div className={f.chips}>
-            {TOPICS_BY_WHO[state.who].map((option) => (
-              <Chip key={option.id} selected={state.topicId === option.id} onClick={() => pickTopic(option.id)}>
-                {option.ko}
-              </Chip>
-            ))}
-          </div>
+          <>
+            <div className={f.chips}>
+              {builderTopics(state.who).map((option) => (
+                <Chip key={option.id} selected={!state.topicText && state.topicId === option.id} onClick={() => pickTopic(option.id)}>
+                  {option.ko}
+                </Chip>
+              ))}
+            </div>
+            <CustomField
+              label="무엇을 볼지 직접 쓰기"
+              placeholder="직접 쓰기 (예: 창업 준비, 전세 계약)"
+              value={state.topicText ?? ""}
+              maxLength={CUSTOM_MAX}
+              onChange={(topicText) => update((prev) => ({ ...prev, topicText, ...(topicText.trim() ? { topicId: undefined, conditions: {} } : {}) }))}
+            />
+          </>
         ) : (
           <p className={f.groupHint}>누구를 먼저 고르면 맞는 주제가 보여요</p>
         )}
@@ -84,11 +110,18 @@ export function QuestionBuilder() {
         </h2>
         <div className={f.chips}>
           {WHEN_OPTIONS.filter((option) => whens.includes(option.value)).map((option) => (
-            <Chip key={option.value} selected={state.when === option.value} onClick={() => pickWhen(option.value)}>
+            <Chip key={option.value} selected={!state.whenText && state.when === option.value} onClick={() => pickWhen(option.value)}>
               {option.label}
             </Chip>
           ))}
         </div>
+        <CustomField
+          label="언제인지 직접 쓰기"
+          placeholder="직접 쓰기 (예: 다음 주 금요일 면접)"
+          value={state.whenText ?? ""}
+          maxLength={CUSTOM_MAX}
+          onChange={(whenText) => update((prev) => ({ ...prev, whenText, ...(whenText.trim() ? { when: undefined } : {}) }))}
+        />
       </section>
 
       <div className={f.footer}>

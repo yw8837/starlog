@@ -1,0 +1,87 @@
+/* Optional, so quieter than the chips above: dashed outline, no fill until something is typed. */
+.field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 0 4px 0 16px;
+  border: 1px dashed var(--glass-line);
+  border-radius: 22px;
+  background: transparent;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+/* Typed: it now stands in for a chip, so it takes the selected chip's surface. */
+.field[data-filled] {
+  border-style: solid;
+  border-color: var(--gold);
+  background: var(--surface-light);
+}
+
+.field:focus-within {
+  border-color: var(--line-strong);
+}
+
+.field[data-filled]:focus-within {
+  border-color: var(--gold);
+}
+
+.input {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  /* 16px keeps phones from zooming in on focus. */
+  font-size: 16px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: rgba(201, 193, 234, 0.8);
+  font-size: var(--fs-body);
+}
+
+/* The ring sits on the whole pill, not the bare input inside it. */
+.field:has(.input:focus-visible) {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.count {
+  flex: none;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.clear {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 21px;
+  background: transparent;
+  color: var(--ink-sub);
+  cursor: pointer;
+}
+
+.clear:hover {
+  color: var(--ink);
+}
+
+.clear:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
