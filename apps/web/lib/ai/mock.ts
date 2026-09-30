@@ -1,10 +1,11 @@
 import "server-only";
 import type { KbCard, TopicAngle } from "@/lib/kb";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
-import type { SajuFactSet } from "./prompts/saju";
+import { SAJU_OBSERVATION_HEADING, type SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, WHEN_KO, cardLabel, onTopic, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
-import type { GenerationTask, ReadingProvider } from "./provider";
+import { GenerationError, type GenerationHooks, type GenerationTask, type ReadingProvider } from "./provider";
 import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
+import { actionVerbs } from "./validate";
 
 /**
  * Deterministic readings without a model, for tests, key-less local dev and e2e (STARLOG_AI=mock).
@@ -14,8 +15,16 @@ import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotRea
 
 export const mockProvider: ReadingProvider = {
   name: "mock",
-  async generate<T>(task: GenerationTask<T>, attempt: number) {
-    return { data: task.schema.parse(task.mock(attempt)), usage: [] };
+  async generate<T>(task: GenerationTask<T>, attempt: number, _feedback?: string[], hooks: GenerationHooks = {}) {
+    if (hooks.signal?.aborted) throw new GenerationError("UPSTREAM", ["aborted"]);
+    const data = task.schema.parse(task.mock(attempt));
+    if (hooks.onText) {
+      // Replays the JSON in chunks, like a stream, so progress events work without a model.
+      const text = JSON.stringify(data);
+      for (let end = 120; end < text.length; end += 120) hooks.onText(text.slice(0, end));
+      hooks.onText(text);
+    }
+    return { data, usage: [] };
   },
 };
 
@@ -30,7 +39,8 @@ function hasFinal(word: string): boolean {
 /** "은둔자는", "별은": topic particle chosen by the last syllable (digits read as-is: 컵 2 → 는). */
 const topic = (word: string) => `${word}${hasFinal(word) ? "은" : "는"}`;
 
-const factSentence = (fact: string) => `${fact}는 장면이 그려져 있어요.`;
+/** A KB fact as one 해요체 sentence (two facts hold two sentences: "붓는다. 물줄기는 …" → "붓고, 물줄기는 …"). */
+const factSentence = (fact: string) => `${fact.replace(/(는)?다\.\s+/g, "고, ")}는 장면이 그려져 있어요.`;
 
 /** The card's facts, most salient first. */
 const factsOf = (kb: KbCard) => [...kb.imagery.facts].sort((a, b) => a.salience - b.salience);
@@ -77,9 +87,37 @@ function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: number, 
   return parts.join(" ");
 }
 
-function actionOf(card: TarotCardContext, ctx?: TarotContext): string {
-  const hint = card.kb.actionHints.find((a) => (a.orientation === card.orientation || a.orientation === "both") && (!ctx || onTopic(ctx, a.ko)));
-  return hint?.ko ?? "오늘 할 일 하나를 골라 작게 시작해 보세요.";
+/** Writing-down suggestions are allowed once per reading; the mock avoids them in action fields. */
+const WRITES = /적어|적고|써\s?(보|두)|기록|메모/;
+const FALLBACK_ACTIONS = [
+  "지금 할 수 있는 일 하나를 골라 20분만 해 보세요.",
+  "도움을 줄 만한 사람 한 명에게 먼저 물어보세요.",
+  "필요한 정보를 한 가지만 찾아보세요.",
+];
+
+/** The card's action hints that fit the orientation and topic, without writing-down tasks. */
+function actionsOf(card: TarotCardContext, ctx?: TarotContext): string[] {
+  return card.kb.actionHints
+    .filter((a) => (a.orientation === card.orientation || a.orientation === "both") && (!ctx || onTopic(ctx, a.ko)) && !WRITES.test(a.ko))
+    .map((a) => a.ko);
+}
+
+/** The first `n` candidates whose action verbs do not overlap. */
+function distinctActions(candidates: string[], n: number): string[] {
+  const picked: string[] = [];
+  const used = new Set<string>();
+  for (const candidate of candidates) {
+    const verbs = actionVerbs(candidate);
+    if (verbs.some((v) => used.has(v))) continue;
+    verbs.forEach((v) => used.add(v));
+    picked.push(candidate);
+    if (picked.length === n) break;
+  }
+  return picked;
+}
+
+function actionOf(card: TarotCardContext, ctx?: TarotContext, index = 0): string {
+  return actionsOf(card, ctx)[index] ?? FALLBACK_ACTIONS[(card.slot + index) % FALLBACK_ACTIONS.length]!;
 }
 
 // ---- tarot ----
@@ -111,24 +149,30 @@ export function mockTarotReading(ctx: TarotContext): TarotReading {
 
   const labels = ctx.relational ? ["답이 빨리 오면", "답이 늦게 오면", "답이 없으면"] : ["흐름이 좋아지면", "그대로 머물면", "잠시 막히면"];
   const scenarioCards = [first, ctx.cards[1] ?? first, last];
+  // Three different moves, so the action fields never repeat one verb.
+  const moves = distinctActions([...actionsOf(first, ctx), ...actionsOf(last, ctx), ...FALLBACK_ACTIONS], 3);
   return {
     verdict: `지금은 '${keyword}' 쪽으로 작게 움직여 보는 편이 좋아요.`,
     cards,
     connection: {
       heading: h.connection,
-      body: `차례로 보면 ${ctx.cards.map((c) => `${c.name}(${c.kb.core.oneLine[c.orientation]})`).join(", 그다음 ")}로 이어져요. 세 흐름이 한 방향을 가리키는지, 어디서 갈라지는지 살펴보면 좋아요.`,
+      body: `차례로 보면 ${ctx.cards.map((c) => `${c.name}(${c.kb.core.oneLine[c.orientation]})`).join(", 그다음 ")}로 이어져요. 세 흐름이 한 방향을 가리키는지, 어디서 갈라지는지가 이 상황의 핵심이에요.`,
     },
-    timing: { heading: h.timing, body: `${when} 안에서는 ${actionOf(last, ctx)} 그렇게 준비가 된 뒤에 움직이는 편이 자연스러워요.` },
+    timing: { heading: h.timing, body: `${when} 안에서는 ${first.name} 그림처럼 준비가 됐다고 느끼는 날에 움직이는 편이 자연스러워요. 서두르지 않아도 흐름은 이어져요.` },
+    observation: {
+      heading: h.observation,
+      body: `며칠 안에 ${first.name} 그림의 '${keyword}' 같은 순간이 언제 오는지 눈여겨보세요. 그 순간이 먼저 온다면 이 풀이의 방향이 맞은 거예요.`,
+    },
     scenarios: {
       heading: h.scenarios,
       items: labels.map((label, i) => {
         const line = firstSentence(angleText(scenarioCards[i]!, angle));
-        return { label, body: `${scenarioCards[i]!.name} 그림을 떠올려 보세요. ${onTopic(ctx, line) ? line : "서두르지 말고 지금 할 수 있는 한 가지부터 해 보세요."}` };
+        return { label, body: `${scenarioCards[i]!.name} 그림이 이 갈래의 기준이 돼요. ${onTopic(ctx, line) ? line : "서두르지 않고 지금 할 수 있는 한 가지부터 하는 흐름이에요."}` };
       }),
     },
     messages: {
       heading: h.messages,
-      items: ctx.relational ? ["요즘 어떻게 지내? 문득 생각나서", "나 요즘 ○○ 하면서 지내. 너는 어때?"] : [actionOf(first, ctx), actionOf(last, ctx)],
+      items: ctx.relational ? ["요즘 어떻게 지내? 문득 생각나서", "나 요즘 ○○ 하면서 지내. 너는 어때?"] : [moves[0]!, moves[1]!],
       hint: "말투는 평소 쓰던 대로 바꾸고, 부담 없는 크기로 시작해요.",
     },
     avoid: { heading: h.avoid, items: ["한 번에 결론을 내려는 조급함", "결과를 재촉하는 말", "모든 걸 혼자 떠안는 계획"] },
@@ -136,16 +180,7 @@ export function mockTarotReading(ctx: TarotContext): TarotReading {
       heading: h.alternatives,
       body: `다르게 보면 '${first.kb.core.shadow}' 쪽일 수도 있어요. 그렇게 느껴진다면 서두르지 말고 한 걸음 물러서 보는 것도 이 배치에 맞는 선택이에요.`,
     },
-    action: { heading: h.action, body: `${actionOf(first, ctx)} 작게 시작할수록 부담이 줄고, 해 본 뒤의 느낌이 다음 걸음을 알려 줘요.` },
-    story: {
-      title: `${keyword} 이야기`.slice(0, 20),
-      body: [
-        `이번 장은 ${ctx.cards.map((c) => `${factsOf(c.kb)[0]!.ko}는 장면`).join("에서, 그리고 ")}으로 이어져요.`,
-        ...ctx.cards.map((c) => `${topic(c.name)} '${c.kb.core.oneLine[c.orientation]}' 쪽을 비춰요.`),
-        ctx.note ? `당신은 '${ctx.note}'라고 적었죠.` : "",
-        "어느 쪽으로 걸음을 옮길지는 당신이 정해요.",
-      ].filter(Boolean).join(" "),
-    },
+    action: { heading: h.action, body: `${moves[2]} 작게 시작할수록 부담이 줄고, 해 본 뒤의 느낌이 다음 걸음을 알려 줘요.` },
     followUps: ["이 흐름에서 먼저 해 볼 일은 뭘까요?", "막힐 때는 어떻게 하면 좋을까요?"],
   };
 }
@@ -212,6 +247,18 @@ const ro = (word: string) => {
   return `${word}${hasFinal(bare(word)) && code % 28 !== 8 ? "으로" : "로"}`;
 };
 
+/** One sentence that shows the user's own context was heard (each item quoted once). */
+function profileSentence(f: SajuFactSet): string {
+  const p = f.profile;
+  if (!p) return "";
+  const states = [p.workStatus, p.loveStatus].filter((v) => v && v !== "잘 모르겠어요");
+  const parts = [
+    states.length ? `지금은 ${josa(states.join(", "), "이라고", "라고")} 알려 줬죠.` : "",
+    p.concern ? `'${p.concern}'라는 고민에는 이 명식의 두드러진 기운부터 차분히 비춰 볼게요.` : "",
+  ];
+  return parts.filter(Boolean).join(" ");
+}
+
 export function mockSajuTeaser(f: SajuFactSet): SajuTeaserDraft {
   const dm = f.dayMaster;
   const month = f.pillars.find((p) => p.pillar.includes("월주"))!;
@@ -225,6 +272,7 @@ export function mockSajuTeaser(f: SajuFactSet): SajuTeaserDraft {
       f.elements.missing.length ? `겉에 한 글자도 없는 기운도 있어요(${f.elements.missing.join("·")}).` : "",
       `태어난 달의 지지는 ${month.branch.display}, 십성으로는 ${month.branch.mainTenGod} 자리예요.`,
       "맡은 일을 내 방식으로 정리해 온 편이라면 이 구조와 맞물리고, 정해진 틀을 따르는 쪽이 늘 편했다면 이 부분은 덜 맞는 풀이예요.",
+      profileSentence(f),
       f.input.timeKnown ? "" : "태어난 시를 몰라 시주 없이 여섯 글자로 읽었어요.",
     ].filter(Boolean).join(" "),
   };
@@ -237,7 +285,7 @@ export function mockSajuReading(f: SajuFactSet): SajuReading {
   const others = f.pillars.filter((p) => p !== day);
   const counts = Object.entries(f.elements.counts).map(([e, n]) => `${e} ${n}`).join(", ");
   const relations = f.relations.length
-    ? `원국 안에는 ${f.relations.map((r) => `${r.members.join("와 ")} 사이의 ${r.type}`).join(", ")} 관계가 있어요. 이 풀이에서는 사건의 신호로 읽지 않고, 관계가 있다는 사실만 적어 둬요.`
+    ? `원국 안에는 ${f.relations.map((r) => `${r.members.join("와 ")} 사이의 ${r.type}`).join(", ")} 관계가 있어요. 이 풀이에서는 사건의 신호로 읽지 않고, 관계가 있다는 사실만 짚어 둬요.`
     : "원국 안에서 서로 묶이거나 부딪히는 지지 관계는 따로 보이지 않아요.";
   const luck = f.luck;
   const current = luck?.current;
@@ -253,10 +301,11 @@ export function mockSajuReading(f: SajuFactSet): SajuReading {
       : "태어난 시각에 따라 월주가 달라질 수 있어 대운은 계산하지 않았어요.";
   const annual = f.annual;
   const annualText = `${annual.year}년의 세운은 ${ro(`${annual.ko}(${annual.gz})`)}, 천간은 ${annual.stemTenGod}, 지지의 대표 글자는 ${josa(annual.branchMainTenGod, "이에요", "예요")}.${annual.relationsToNatal.length ? ` 원국과는 ${annual.relationsToNatal.map((r) => r.type).join(", ")} 관계가 생겨요.` : ""} 명리에서는 이런 접점을 움직임이 늘어나는 국면으로 읽어요.`;
-  const experiment = "이번 주에 힘이 난 순간과 빠진 순간을 하나씩 적어 두면, 이 풀이가 내 하루에 어떻게 닿는지 스스로 가늠해 볼 수 있어요.";
+  const experiment = "이번 주에 힘이 난 순간이 언제였는지 하루 끝에 떠올려 보면, 이 풀이가 내 하루에 어떻게 닿는지 가늠할 수 있어요.";
 
   const bodies = [
     [
+      profileSentence(f),
       "12운성은 일간의 기운이 각 지지에서 어느 단계에 있는지를 열두 단계로 나눠 보는 방법이에요.",
       `${f.pillars.map((p) => `${p.pillar}의 지지 ${p.branch.display}에서는 ${p.branch.twelveStage}`).join(", ")} 단계예요.`,
       f.season ? `태어난 달은 ${josa(f.season.text, "이라", "라")}, 계절이 일간에 힘을 얼마나 싣는지(월령)도 이 자리에서 봐요.` : "",
@@ -278,7 +327,7 @@ export function mockSajuReading(f: SajuFactSet): SajuReading {
       "같은 십성이 여러 번 나오면 그 역할이 익숙한 편으로 읽어요.",
       "십성은 성격을 정해 두는 이름표가 아니라, 어떤 자리에서 어떤 힘을 쓰기 쉬운지를 보는 틀이에요.",
       "역할을 스스로 정해 움직일 때 속도가 붙었다면 이 구조와 맞물리고, 누가 정해 준 역할을 따를 때 가장 편했다면 이 부분은 덜 맞는 풀이예요.",
-      "다음에 역할을 나눌 일이 생기면 내가 먼저 맡고 싶은 일을 한 줄 적어 보세요.",
+      "다음에 역할을 나눌 일이 생기면 내가 먼저 맡고 싶은 일을 말로 먼저 꺼내 보세요.",
     ],
     [
       `태어난 날의 지지 ${day.branch.display}의 십성은 ${josa(day.branch.mainTenGod, "이고", "고")}, 12운성으로는 ${day.branch.twelveStage} 자리예요.`,
@@ -286,20 +335,20 @@ export function mockSajuReading(f: SajuFactSet): SajuReading {
       relations,
       "가까운 사람과 보낸 시간 뒤에 힘이 났다면 이 자리와 맞물리고, 혼자 있을 때만 힘이 돌아왔다면 이 부분은 덜 맞는 풀이예요.",
       "바쁜 주일수록 가까운 사람과 짧게라도 이야기 나눌 시간을 먼저 정해 보세요.",
-      "작은 약속 하나를 지켜 본 뒤의 느낌을 적어 두면 이 자리가 내게 어떻게 닿는지 알 수 있어요.",
+      "작은 약속 하나를 지켜 본 뒤의 느낌을 떠올려 보면 이 자리가 내게 어떻게 닿는지 알 수 있어요.",
     ],
     [
       `태어난 달의 지지 ${month.branch.display}의 ${josa(month.branch.mainTenGod, "과", "와")} 일지의 ${josa(day.branch.mainTenGod, "을", "를")} 두 장면으로 확인해 볼 수 있어요.`,
       "첫째, 일하는 장면이에요. 서로 진도가 보이는 자리에서 오히려 속도가 붙었다면 이 구조와 맞물리고, 진도가 보이면 손이 느려졌다면 이 부분은 덜 맞아요.",
       "둘째, 쉬는 장면이에요. 내가 고른 한두 곳을 내 순서대로 돌 때 제대로 쉬었다고 느꼈다면 이 구조와 맞물리고, 누가 짜 준 일정이 가장 편했다면 이 부분은 덜 맞아요.",
-      "이번 주에 두 장면 중 하나를 만나면 그날 저녁 힘이 났는지 빠졌는지 한 줄로 적어 두세요. 두세 번 쌓이면 이 절이 내게 맞는지 스스로 판정할 수 있어요.",
+      "이번 주에 두 장면 중 하나를 만나면 그날 저녁 힘이 났는지 빠졌는지 스스로에게 물어보세요. 두세 번 쌓이면 이 이야기가 내게 맞는지 판정할 수 있어요.",
     ],
     [
       luckText,
       annualText,
       "대운과 세운은 방향을 보는 도구이지 특정한 일이 생긴다는 약속은 아니에요.",
       "같은 국면이라도 무엇에 힘을 쓰느냐에 따라 체감은 달라질 수 있어요.",
-      "남은 올해 동안 새로 시작한 일과 마무리한 일을 한 줄씩 적어 두면, 이 국면이 내게 어떻게 닿는지 가늠해 볼 수 있어요.",
+      "남은 올해 동안 새로 시작한 일과 마무리한 일이 무엇이었는지 달력에서 확인해 보면, 이 국면이 내게 어떻게 닿는지 가늠할 수 있어요.",
     ],
     [
       "계산 기준은 만세력마다 조금씩 다를 수 있어서, 이 풀이가 어떤 기준으로 읽었는지 먼저 밝혀 둘게요.",
@@ -310,16 +359,9 @@ export function mockSajuReading(f: SajuFactSet): SajuReading {
   ];
   return {
     sections: SAJU_PROLOGUE_SECTIONS.map((heading, i) => ({ heading, body: bodies[i]!.filter(Boolean).join(" ") })),
-    story: {
-      title: `프롤로그 · ${dm.image}`,
-      body: [
-        f.season ? `당신의 이야기는 ${f.season.text}에서 시작해요.` : "당신의 이야기는 한 글자의 빛에서 시작해요.",
-        `그 한가운데에 ${josa(dm.image, "이", "가")} 있어요.`,
-        `가장 많은 기운은 ${joinList(f.elements.most)}개, 그 곁에서 다른 기운들이 저마다 자리를 지켜요.`,
-        "어떤 힘은 겉에 드러나 있고, 어떤 힘은 안쪽 깊은 곳에서 꺼내 주기를 기다려요.",
-        "계절은 바뀌고, 흐름은 10년마다 새 옷을 갈아입어요. 그 사이에서 당신은 매일 작은 선택을 이어 가요.",
-        "이 이야기의 다음 장들은 그 힘을 언제, 어떻게 꺼내 쓰는지에 관한 이야기가 될지도 몰라요.",
-      ].join(" "),
+    observation: {
+      heading: SAJU_OBSERVATION_HEADING,
+      body: `앞으로 몇 주 동안 ${joinList(f.elements.most)}개로 가장 많은 기운이 일하는 방식에서 먼저 드러나는지 눈여겨보세요. 새 일을 먼저 집어 드는 순간이 잦다면 이 풀이의 방향과 맞아요.`,
     },
     followUps: ["지금 대운에서 해 볼 작은 실험은요?", "오행 지도를 일상에 어떻게 쓸까요?"],
   };
@@ -333,7 +375,7 @@ export function mockSajuFollowUp(f: SajuFactSet): FollowUpAnswer {
       `같은 명식으로 이어서 보면, 일간 ${josa(dm.display, "을", "를")} 먼저 떠올리는 게 좋아요.`,
       `명리에서는 이 글자를 ${dm.image}에 비유해요.`,
       `가장 많은 기운은 ${joinList(f.elements.most)}개라, 먼저 꺼내 쓰기 쉬운 힘도 그쪽으로 읽어요.`,
-      "결론은 그대로 두고, 이번 주에 힘이 난 순간과 빠진 순간을 한 줄씩 적어 보면 이 풀이가 내게 맞는지 스스로 확인할 수 있어요.",
+      "결론은 그대로 두고, 이번 주에 힘이 난 순간과 빠진 순간을 떠올려 보면 이 풀이가 내게 맞는지 스스로 확인할 수 있어요.",
     ].join(" "),
   };
 }

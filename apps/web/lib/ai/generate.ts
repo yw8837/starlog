@@ -1,16 +1,17 @@
 import "server-only";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { mockDaily, mockSajuFollowUp, mockSajuReading, mockSajuTeaser, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
-import { SAJU_SYSTEM, sajuFollowUpPrompt, sajuReadingPrompt, sajuTeaserPrompt, type SajuFactSet } from "./prompts/saju";
+import { SAJU_LOCKED_TOC, SAJU_OBSERVATION_HEADING, SAJU_SYSTEM, sajuFollowUpPrompt, sajuReadingPrompt, sajuTeaserPrompt, type SajuFactSet } from "./prompts/saju";
 import {
   TAROT_SYSTEM, cardLabel, dailyPrompt, tarotFollowUpPrompt, tarotHeadings, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt,
   type FollowUpTurn, type TarotContext,
 } from "./prompts/tarot";
 import { generationSetting } from "./config";
-import { generateValidated, type ReadingProvider, type Usage } from "./provider";
+import { generateValidated, type GenerationHooks, type ReadingProvider, type Usage } from "./provider";
 import {
   DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema,
-  type DailyDraft, type FollowUpAnswer, type SajuReading, type SajuTeaser, type TarotReading, type TarotTeaser,
+  type DailyDraft, type FollowUpAnswer, type SajuReading, type SajuTeaser, type StoredSajuReading, type StoredTarotReading, type TarotReading,
+  type TarotTeaser,
 } from "./schemas";
 import {
   validateDaily, validateSajuFollowUp, validateSajuReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading, validateTarotTeaser,
@@ -26,7 +27,7 @@ export interface Result<T> {
   usage: Usage[];
 }
 
-export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotContext): Promise<Result<TarotTeaser>> {
+export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotContext, hooks?: GenerationHooks): Promise<Result<TarotTeaser>> {
   const { data, usage } = await generateValidated(provider, {
     name: "tarot-teaser",
     system: TAROT_SYSTEM,
@@ -34,7 +35,7 @@ export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotC
     schema: TarotTeaserDraftSchema,
     ...generationSetting("tarot-teaser"),
     mock: () => mockTarotTeaser(ctx),
-  }, (draft) => validateTarotTeaser(draft, ctx));
+  }, (draft) => validateTarotTeaser(draft, ctx), hooks);
   return {
     data: {
       cards: ctx.cards.map((card, i) => ({ position: card.position, cardId: card.cardId, keyword: data.cards[i]!.keyword.trim() })),
@@ -45,7 +46,7 @@ export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotC
   };
 }
 
-export async function generateTarotReading(provider: ReadingProvider, ctx: TarotContext): Promise<Result<TarotReading>> {
+export async function generateTarotReading(provider: ReadingProvider, ctx: TarotContext, hooks?: GenerationHooks): Promise<Result<TarotReading>> {
   const { data, usage } = await generateValidated(provider, {
     name: "tarot-reading",
     system: TAROT_SYSTEM,
@@ -53,7 +54,7 @@ export async function generateTarotReading(provider: ReadingProvider, ctx: Tarot
     schema: TarotReadingSchema,
     ...generationSetting("tarot-reading"),
     mock: () => mockTarotReading(ctx),
-  }, (reading) => validateTarotReading(reading, ctx));
+  }, (reading) => validateTarotReading(reading, ctx), hooks);
   const h = tarotHeadings(ctx);
   return {
     data: {
@@ -66,12 +67,13 @@ export async function generateTarotReading(provider: ReadingProvider, ctx: Tarot
       avoid: { ...data.avoid, heading: h.avoid },
       alternatives: { ...data.alternatives, heading: h.alternatives },
       action: { ...data.action, heading: h.action },
+      observation: { ...data.observation, heading: h.observation },
     },
     usage,
   };
 }
 
-export async function generateDaily(provider: ReadingProvider, ctx: TarotContext): Promise<Result<DailyDraft>> {
+export async function generateDaily(provider: ReadingProvider, ctx: TarotContext, hooks?: GenerationHooks): Promise<Result<DailyDraft>> {
   return generateValidated(provider, {
     name: "tarot-daily",
     system: TAROT_SYSTEM,
@@ -79,11 +81,11 @@ export async function generateDaily(provider: ReadingProvider, ctx: TarotContext
     schema: DailyDraftSchema,
     ...generationSetting("tarot-daily"),
     mock: () => mockDaily(ctx),
-  }, (draft) => validateDaily(draft, ctx));
+  }, (draft) => validateDaily(draft, ctx), hooks);
 }
 
 export async function generateTarotFollowUp(
-  provider: ReadingProvider, ctx: TarotContext, reading: TarotReading, turns: FollowUpTurn[], question: string,
+  provider: ReadingProvider, ctx: TarotContext, reading: StoredTarotReading, turns: FollowUpTurn[], question: string, hooks?: GenerationHooks,
 ): Promise<Result<FollowUpAnswer>> {
   return generateValidated(provider, {
     name: "followup",
@@ -92,12 +94,12 @@ export async function generateTarotFollowUp(
     schema: FollowUpAnswerSchema,
     ...generationSetting("followup"),
     mock: () => mockTarotFollowUp(ctx),
-  }, (answer) => validateTarotFollowUp(answer, ctx, question));
+  }, (answer) => validateTarotFollowUp(answer, ctx, question), hooks);
 }
 
 // ---- saju ----
 
-export async function generateSajuTeaser(provider: ReadingProvider, facts: SajuFactSet): Promise<Result<SajuTeaser>> {
+export async function generateSajuTeaser(provider: ReadingProvider, facts: SajuFactSet, hooks?: GenerationHooks): Promise<Result<SajuTeaser>> {
   const { data, usage } = await generateValidated(provider, {
     name: "saju-teaser",
     system: SAJU_SYSTEM,
@@ -105,11 +107,11 @@ export async function generateSajuTeaser(provider: ReadingProvider, facts: SajuF
     schema: SajuTeaserDraftSchema,
     ...generationSetting("saju-teaser"),
     mock: () => mockSajuTeaser(facts),
-  }, (draft) => validateSajuTeaser(draft, facts));
-  return { data: { title: data.title.trim(), summary: data.summary.trim(), lockedToc: [...SAJU_PROLOGUE_SECTIONS] }, usage };
+  }, (draft) => validateSajuTeaser(draft, facts), hooks);
+  return { data: { title: data.title.trim(), summary: data.summary.trim(), lockedToc: [...SAJU_LOCKED_TOC] }, usage };
 }
 
-export async function generateSajuReading(provider: ReadingProvider, facts: SajuFactSet): Promise<Result<SajuReading>> {
+export async function generateSajuReading(provider: ReadingProvider, facts: SajuFactSet, hooks?: GenerationHooks): Promise<Result<SajuReading>> {
   const { data, usage } = await generateValidated(provider, {
     name: "saju-reading",
     system: SAJU_SYSTEM,
@@ -117,13 +119,20 @@ export async function generateSajuReading(provider: ReadingProvider, facts: Saju
     schema: SajuReadingSchema,
     ...generationSetting("saju-reading"),
     mock: () => mockSajuReading(facts),
-  }, (reading) => validateSajuReading(reading, facts));
+  }, (reading) => validateSajuReading(reading, facts), hooks);
   // Headings are code-owned so the locked TOC stays 1:1 with the paid sections.
-  return { data: { ...data, sections: data.sections.map((section, i) => ({ heading: SAJU_PROLOGUE_SECTIONS[i]!, body: section.body.trim() })) }, usage };
+  return {
+    data: {
+      ...data,
+      sections: data.sections.map((section, i) => ({ heading: SAJU_PROLOGUE_SECTIONS[i]!, body: section.body.trim() })),
+      observation: { heading: SAJU_OBSERVATION_HEADING, body: data.observation.body.trim() },
+    },
+    usage,
+  };
 }
 
 export async function generateSajuFollowUp(
-  provider: ReadingProvider, facts: SajuFactSet, reading: SajuReading, turns: FollowUpTurn[], question: string,
+  provider: ReadingProvider, facts: SajuFactSet, reading: StoredSajuReading, turns: FollowUpTurn[], question: string, hooks?: GenerationHooks,
 ): Promise<Result<FollowUpAnswer>> {
   return generateValidated(provider, {
     name: "followup",
@@ -132,5 +141,5 @@ export async function generateSajuFollowUp(
     schema: FollowUpAnswerSchema,
     ...generationSetting("followup"),
     mock: () => mockSajuFollowUp(facts),
-  }, (answer) => validateSajuFollowUp(answer, facts, question));
+  }, (answer) => validateSajuFollowUp(answer, facts, question), hooks);
 }

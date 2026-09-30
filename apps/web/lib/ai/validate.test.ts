@@ -7,7 +7,11 @@ import { mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
 import { buildFactSet } from "./prompts/saju";
 import { buildTarotContext, cardBrief, mentionsWord, tarotReadingPrompt, type TarotInput } from "./prompts/tarot";
 import type { SajuReading, TarotReading } from "./schemas";
-import { moneyPushSentences, validateSajuFollowUp, validateSajuReading, validateTarotFollowUp, validateTarotReading, validateTarotTeaser } from "./validate";
+import { moneyPushSentences, nonHaeyoSentences, validateSajuFollowUp, validateSajuReading, validateTarotFollowUp, validateTarotReading, validateTarotTeaser } from "./validate";
+import { isSoftViolation } from "./style";
+
+/** Hard violations only (soft style hints may regenerate but never fail a reading). */
+const hard = (violations: string[]) => violations.filter((v) => !isSoftViolation(v));
 
 const MONEY_INPUT: TarotInput = {
   topicId: "money", whoId: "me", whenId: "week", question: "",
@@ -45,7 +49,7 @@ describe("money advice vs money pushing (review important 2)", () => {
 
 describe("saju: forbidden topics may be named only while declining them (review important 2)", () => {
   const facts = buildFactSet(computeChart(toSajuInput(DEFAULT_SAJU_FORM)), Date.parse("2026-09-30T03:00:00Z"));
-  const gold: SajuReading = { ...sajuSample.paid, story: sajuSample.story, followUps: ["지금 대운에서 해 볼 작은 실험은요?", "오행 지도를 일상에 어떻게 쓸까요?"] };
+  const gold: SajuReading = { ...sajuSample.paid, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "앞으로 몇 주 동안 끝낸 일의 시간과 돈을 셀 때 힘이 빠지는지, 오히려 개운한지 눈여겨보세요. 개운하다면 巳 속의 경금(庚金)을 꺼내 쓰고 있다는 뜻으로 읽을 수 있어요." }, followUps: ["지금 대운에서 해 볼 작은 실험은요?", "오행 지도를 일상에 어떻게 쓸까요?"] };
   const edit = (extra: string): SajuReading => ({ ...gold, sections: gold.sections.map((s, i) => (i === 5 ? { ...s, body: `${s.body} ${extra}` } : s)) });
 
   it.each([
@@ -54,7 +58,7 @@ describe("saju: forbidden topics may be named only while declining them (review 
     "건강이나 질병은 이 풀이에서 다루지 않아요.",
     "재회 여부는 명식으로 말할 수 없어요.",
   ])("passes a declining sentence: %s", (sentence) => {
-    expect(validateSajuReading(edit(sentence), facts)).toEqual([]);
+    expect(hard(validateSajuReading(edit(sentence), facts))).toEqual([]);
   });
 
   it.each([
@@ -63,7 +67,7 @@ describe("saju: forbidden topics may be named only while declining them (review 
     "재회할 수 있는 흐름이에요.",
     "수술을 조심하세요.",
   ])("fails an actual claim: %s", (sentence) => {
-    expect(validateSajuReading(edit(sentence), facts).length).toBeGreaterThan(0);
+    expect(hard(validateSajuReading(edit(sentence), facts)).length).toBeGreaterThan(0);
   });
 
   it("lets a follow-up answer name the user's own topic while declining it", () => {
@@ -121,7 +125,7 @@ describe("word boundaries and the user's own words (review minors 1-4)", () => {
     expect(validateTarotFollowUp({ kind: "clarify", answer: `${answer} 노인은 등불을 낮게 들어 발밑을 비춰요.` }, hermit, "").join(" ")).toMatch(/그림에 없는 묘사/);
   });
 
-  it("does not flag a blindfold in the story as 정의's misdescription when 검 2 is drawn", () => {
+  it("does not flag a blindfold in shared text as 정의's misdescription when 검 2 is drawn", () => {
     const drawn: DrawnCard[] = [
       { cardId: "cups-12", position: "지금의 나", orientation: "reversed", slot: 0 },
       { cardId: "major-11-justice", position: "필요한 것", orientation: "upright", slot: 1 },
@@ -141,6 +145,73 @@ describe("word boundaries and the user's own words (review minors 1-4)", () => {
   it("still passes the gold relationship reading", () => {
     const draw: DrawnCard[] = tarotSample.cards.map((c, slot) => ({ cardId: c.cardId, position: c.position, orientation: "upright", slot }));
     const ctx = buildTarotContext("relationship-contact", draw, { topicId: "contact", whoId: "us", whenId: "month", question: tarotSample.question, conditions: tarotSample.input.conditions, note: tarotSample.input.note });
-    expect(validateTarotReading({ ...tarotSample.paid, story: tarotSample.story, followUps: tarotSample.followUps }, ctx)).toEqual([]);
+    expect(hard(validateTarotReading({ ...tarotSample.paid, observation: { heading: "며칠 안에 확인해 볼 신호", body: "이번 주 안에 안부를 떠올릴 때 반가움이 먼저 드는지, 숙제처럼 느껴지는지 눈여겨보세요. 반가움이 먼저라면 등불 든 노인처럼 내 쪽 답이 분명해진 거예요." }, followUps: tarotSample.followUps }, ctx))).toEqual([]);
+  });
+});
+
+describe("A2 reading-quality checks (blind judge 2026-09-30)", () => {
+  const ctx = moneyCtx("a2-quality");
+  const base = () => mockTarotReading(ctx);
+
+  it("soft-flags a chip or the note quoted more than once", () => {
+    const r = base();
+    const twice = { ...r, action: { ...r.action, body: `${r.action.body} '수입이 들쭉날쭉'이라는 상황을 다시 떠올려요.` } };
+    const found = validateTarotReading(twice, ctx);
+    expect(found.join(" ")).toMatch(/같은 입력을 여러 번/);
+    expect(hard(found)).toEqual([]);
+  });
+
+  it("soft-flags repeated moves and writing-down tasks across action fields", () => {
+    const r = base();
+    const writing = { ...r, action: { ...r.action, body: "오늘 할 일을 종이에 적어 보세요." }, timing: { ...r.timing, body: `${r.timing.body} 떠오른 생각은 메모장에 적어 두세요.` } };
+    expect(validateTarotReading(writing, ctx).join(" ")).toMatch(/행동 제안이 비슷하게/);
+    const sameVerb = { ...r, action: { ...r.action, body: "통장 잔액을 확인해 보세요." }, observation: { ...r.observation, body: `${r.observation.body} 이번 주 지출도 확인해 보세요.` } };
+    expect(validateTarotReading(sameVerb, ctx).join(" ")).toMatch(/'확인'/);
+  });
+
+  it("requires every reversed card to be read reversed: 역방향/거꾸로, or its KB reversed mode", () => {
+    const drawn = [
+      { cardId: "major-09-hermit", position: "지금의 나", orientation: "reversed" as const, slot: 0 },
+      { cardId: "pentacles-03", position: "필요한 것", orientation: "upright" as const, slot: 1 },
+      { cardId: "cups-04", position: "이 시기의 흐름", orientation: "upright" as const, slot: 2 },
+    ];
+    const rctx = buildTarotContext("self-flow", drawn, MONEY_INPUT);
+    const r = mockTarotReading(rctx);
+    expect(hard(validateTarotReading(r, rctx))).toEqual([]);
+    const upright = r.cards.map((c, i) => (i === 0 ? { ...c, body: c.body.replace(/'지금의 나' 자리의 카드는 역방향으로 나왔어요\. /, "").replace(/역방향이라 '[^']*' 쪽으로 읽어요\. /, "") } : c));
+    expect(validateTarotReading({ ...r, cards: upright }, rctx).join(" ")).toMatch(/역방향으로 읽지 않았어요/);
+    const gloss = rctx.cards[0]!.kb.reversedModes.gloss[rctx.cards[0]!.reversedMode!]!;
+    const byMode = r.cards.map((c, i) => (i === 0 ? { ...upright[0]!, body: `${upright[0]!.body} 지금은 ${gloss} 쪽으로 읽어요.` } : c));
+    expect(validateTarotReading({ ...r, cards: byMode }, rctx).join(" ")).not.toMatch(/역방향으로 읽지 않았어요/);
+  });
+
+  it("fails sentences that are not 해요체, except suggested messages in relationship spreads", () => {
+    expect(nonHaeyoSentences("등불을 높이 들었다. 오늘은 쉬어도 돼. 먼저 보낼게. 그림 속 노인이 서 있어요. 작은 새싹 하나.")).toEqual(["등불을 높이 들었다.", "먼저 보낼게."]);
+    expect(nonHaeyoSentences("오늘은 먼저 연락해.")).toEqual(["오늘은 먼저 연락해."]);
+    expect(nonHaeyoSentences("하늘의 해. 서로에 대한 이해.")).toEqual([]);
+    expect(nonHaeyoSentences("'요즘 어떻게 지내? 문득 생각나서'라고 보내 보세요.")).toEqual([]);
+    const r = base();
+    const haera = { ...r, alternatives: { ...r.alternatives, body: `${r.alternatives.body} 이 그림은 다른 길을 보여 준다.` } };
+    expect(hard(validateTarotReading(haera, ctx)).join(" ")).toMatch(/해요체가 아닌 문장/);
+    // non-relational: messages are actions and must be 해요체 too
+    const banmalAction = { ...r, messages: { ...r.messages, items: ["오늘 이력서 하나 보낼게.", r.messages.items[1]!] } };
+    expect(hard(validateTarotReading(banmalAction, ctx)).join(" ")).toMatch(/해요체가 아닌 문장/);
+    // relationship spread: a 반말 first message is allowed
+    const draw: DrawnCard[] = tarotSample.cards.map((c, slot) => ({ cardId: c.cardId, position: c.position, orientation: "upright", slot }));
+    const rel = buildTarotContext("relationship-contact", draw, { topicId: "contact", whoId: "us", whenId: "month", question: tarotSample.question, conditions: tarotSample.input.conditions, note: tarotSample.input.note });
+    const relReading = mockTarotReading(rel);
+    expect(relReading.messages.items[0]).toMatch(/지내\?/);
+    expect(hard(validateTarotReading(relReading, rel))).toEqual([]);
+  });
+
+  it("soft-flags money amounts the user never gave", () => {
+    const r = base();
+    const amount = { ...r, action: { ...r.action, body: `${r.action.body} 한 달 생활비 150만 원을 기준으로 잡아요.` } };
+    expect(validateTarotReading(amount, ctx).join(" ")).toMatch(/입력에 없는 금액/);
+  });
+
+  it("requires the observation", () => {
+    const r = base();
+    expect(hard(validateTarotReading({ ...r, observation: { ...r.observation, body: "" } }, ctx)).join(" ")).toMatch(/observation/);
   });
 });

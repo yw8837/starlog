@@ -46,14 +46,25 @@ export function json(data: unknown, init: { status?: number; cookies?: string[] 
   return new Response(JSON.stringify(data), { status: init.status ?? 200, headers });
 }
 
-export function errorResponse(code: ErrorCode, extra: Record<string, unknown> = {}, cookies: string[] = []): Response {
-  return json({ code, message: MESSAGE[code], ...extra }, { status: STATUS[code], cookies });
+/** Status and body of an error, for a JSON response or an NDJSON `error` event. */
+export function errorPayload(code: ErrorCode, extra: Record<string, unknown> = {}): { status: number; body: Record<string, unknown> } {
+  return { status: STATUS[code], body: { code, message: MESSAGE[code], ...extra } };
 }
 
-export function errorFromGeneration(error: unknown): Response {
-  if (error instanceof GenerationError) return errorResponse(error.code);
-  console.error(JSON.stringify({ evt: "api.error", error: error instanceof Error ? error.name : typeof error }));
-  return errorResponse("UPSTREAM");
+export function errorResponse(code: ErrorCode, extra: Record<string, unknown> = {}, cookies: string[] = []): Response {
+  const { status, body } = errorPayload(code, extra);
+  return json(body, { status, cookies });
+}
+
+export function generationErrorPayload(error: unknown): { status: number; body: Record<string, unknown> } {
+  if (error instanceof GenerationError) return errorPayload(error.code);
+  console.error(JSON.stringify({ evt: "api.error", error: error instanceof Error ? error.constructor.name : typeof error }));
+  return errorPayload("UPSTREAM");
+}
+
+export function errorFromGeneration(error: unknown, cookies: string[] = []): Response {
+  const { status, body } = generationErrorPayload(error);
+  return json(body, { status, cookies });
 }
 
 /**
@@ -112,6 +123,15 @@ export function parseCookies(request: Request): Record<string, string> {
   return out;
 }
 
+/** A cookie to set, before it is serialised (a stream sends it later through /api/commit). */
+export interface CookieSpec {
+  name: string;
+  value: string;
+  maxAge: number;
+}
+
+export const serializeCookie = (spec: CookieSpec) => setCookie(spec.name, spec.value, spec.maxAge);
+
 /** httpOnly, SameSite=Lax, Secure (except plain-http local dev). */
 export function setCookie(name: string, value: string, maxAgeSeconds: number, env: NodeJS.ProcessEnv = process.env): string {
   const secure = env.NODE_ENV === "production" ? "; Secure" : "";
@@ -168,9 +188,9 @@ export async function checkQuota(gate: Gate, kind: QuotaKind, extra: Record<stri
   return quota;
 }
 
-/** Set-Cookie for spending one `kind`; call only after a validated generation. None for the owner. */
-export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKind): Promise<string[]> {
-  return gate.owner ? [] : [setCookie(QUOTA_COOKIE, await spendQuota(quota, kind, gate.secret), QUOTA_COOKIE_MAX_AGE)];
+/** The cookie that spends one `kind`; set only after a validated generation. None for the owner. */
+export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKind): Promise<CookieSpec[]> {
+  return gate.owner ? [] : [{ name: QUOTA_COOKIE, value: await spendQuota(quota, kind, gate.secret), maxAge: QUOTA_COOKIE_MAX_AGE }];
 }
 
 /** Words that mean the person may be in crisis: no reading, a gentle pointer to help instead. */

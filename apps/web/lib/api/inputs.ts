@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { HistorySchema } from "@/lib/ai/history";
 import { BIRTH_PLACES } from "@/lib/sajuForm";
 
 /** Request bodies. Every string is capped; unknown keys are dropped. */
@@ -14,6 +15,12 @@ export const DrawBody = z.object({
   picks: z.array(z.number().int().min(0).max(77)).min(1).max(3),
 });
 
+/** Free text the user typed under a chip (question builder C4): trimmed, at most 30 characters. */
+const customText = z.string().trim().max(30).optional();
+
+/** `topicId: "custom"` means the user typed the topic (`topicText`); the spread then follows `whoId`. */
+export const CUSTOM_TOPIC_ID = "custom";
+
 export const TarotInputBody = z.object({
   topicId: z.string().trim().min(1).max(40),
   whoId: WHO.optional(),
@@ -21,6 +28,14 @@ export const TarotInputBody = z.object({
   question: z.string().max(120).default(""),
   conditions: z.array(z.object({ label: z.string().trim().min(1).max(30), value: z.string().trim().min(1).max(40) })).max(8).default([]),
   note: z.string().max(200).optional(),
+  /** a custom 무엇 (replaces the topic chip) */
+  topicText: customText,
+  /** who exactly (e.g. 엄마, 팀장님); the who chip still picks the spread */
+  whoText: customText,
+  /** a custom 언제 (replaces the when chip) */
+  whenText: customText,
+  /** up to three earlier readings from this device (lib/ai/history.ts) */
+  history: HistorySchema.optional(),
 });
 
 export const TarotBody = z.object({
@@ -42,7 +57,22 @@ export const BirthBody = z.object({
   placeId: z.string().refine((id) => BIRTH_PLACES.some((place) => place.id === id)),
 });
 
-export const SajuBody = z.object({ birth: BirthBody });
+export const LOVE_STATUS = {
+  single: "솔로", dating: "연애 중", engaged: "결혼 준비 중", married: "기혼", "fresh-start": "새로운 출발", unsure: "잘 모르겠어요",
+} as const;
+export const WORK_STATUS = {
+  student: "학생", employee: "직장인", "self-employed": "자영업·프리랜서", "between-jobs": "구직·쉬는 중", unsure: "잘 모르겠어요",
+} as const;
+
+export const SajuBody = z.object({
+  birth: BirthBody,
+  loveStatus: z.enum(Object.keys(LOVE_STATUS) as [keyof typeof LOVE_STATUS, ...Array<keyof typeof LOVE_STATUS>]).optional(),
+  workStatus: z.enum(Object.keys(WORK_STATUS) as [keyof typeof WORK_STATUS, ...Array<keyof typeof WORK_STATUS>]).optional(),
+  /** one line about what is on the user's mind */
+  concern: z.string().trim().max(60).optional(),
+  /** up to three earlier readings from this device (lib/ai/history.ts) */
+  history: HistorySchema.optional(),
+});
 
 export const FollowUpBody = z.object({
   chapterToken: z.string().min(1).max(32_768),
@@ -54,4 +84,5 @@ export const FollowUpBody = z.object({
 export const OwnerBody = z.object({ code: z.string().min(1).max(200) });
 
 export type BirthInput = z.infer<typeof BirthBody>;
+export type SajuBodyData = z.infer<typeof SajuBody>;
 export type TarotInputData = z.infer<typeof TarotInputBody>;

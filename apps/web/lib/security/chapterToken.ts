@@ -1,5 +1,6 @@
 import "server-only";
 import type { Orientation, TemplateId } from "@starlog/core";
+import type { SajuProfile } from "@/lib/ai/prompts/saju";
 import type { BirthInput, TarotInputData } from "@/lib/api/inputs";
 import type { FollowUpTurn } from "@/lib/ai/prompts/tarot";
 import { canonicalJson, sha256, signToken, verifyToken, type SignedPayload } from "./sign";
@@ -15,8 +16,8 @@ import { canonicalJson, sha256, signToken, verifyToken, type SignedPayload } fro
 export const CHAPTER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type ChapterContext =
-  | { kind: "tarot"; templateId: TemplateId; input: TarotInputData; cards: Array<[string, Orientation]> }
-  | { kind: "saju"; birth: BirthInput };
+  | { kind: "tarot"; templateId: TemplateId; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]> }
+  | { kind: "saju"; birth: BirthInput; profile?: SajuProfile };
 
 interface ChapterPayload extends SignedPayload {
   k: "chapter";

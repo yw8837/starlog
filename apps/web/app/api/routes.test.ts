@@ -290,10 +290,13 @@ describe("saju", () => {
     const d = device();
     const t = await d.call(sajuTeaser, { birth });
     expect(t.status).toBe(200);
-    expect(t.data.lockedToc).toHaveLength(7);
+    expect(t.data.lockedToc).toHaveLength(8);
+    expect(t.data.lockedToc.at(-1)).toBe("앞으로 몇 주 · 확인해 볼 신호");
     const r = await d.call(sajuReading, { birth });
     expect(r.status).toBe(200);
     expect(r.data.reading.sections).toHaveLength(7);
+    expect(r.data.reading.observation.heading).toBe("앞으로 몇 주 · 확인해 볼 신호");
+    expect(r.data.reading).not.toHaveProperty("story");
     const f = await d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question: "올해는 무엇을 해 보면 좋을까요?" });
     expect(f.status).toBe(200);
     expect(f.data.remaining).toBe(2);

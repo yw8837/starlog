@@ -9,6 +9,10 @@ import { buildFactSet, glyphDisplay, sajuReadingPrompt, tenGod, twelveStage } fr
 import { mockProvider } from "./mock";
 import type { SajuReading } from "./schemas";
 import { validateSajuFollowUp, validateSajuReading, validateSajuTeaser } from "./validate";
+import { isSoftViolation } from "./style";
+
+/** Hard violations only (soft style hints may regenerate but never fail a reading). */
+const hard = (violations: string[]) => violations.filter((v) => !isSoftViolation(v));
 
 const NOW = Date.parse("2026-09-30T03:00:00Z"); // 2026-09-30 12:00 KST
 const factsOf = (patch: Partial<SajuForm> = {}, now = NOW) => buildFactSet(computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, ...patch })), now);
@@ -72,10 +76,12 @@ describe("saju helpers", () => {
 
 describe("saju validator", () => {
   const facts = factsOf();
-  const gold: SajuReading = { ...sajuSample.paid, story: sajuSample.story, followUps: ["지금 대운에서 해 볼 작은 실험은요?", "오행 지도를 일상에 어떻게 쓸까요?"] };
+  const gold: SajuReading = { ...sajuSample.paid, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "앞으로 몇 주 동안 끝낸 일의 시간과 돈을 셀 때 힘이 빠지는지, 오히려 개운한지 눈여겨보세요. 개운하다면 巳 속의 경금(庚金)을 꺼내 쓰고 있다는 뜻으로 읽을 수 있어요." }, followUps: ["지금 대운에서 해 볼 작은 실험은요?", "오행 지도를 일상에 어떻게 쓸까요?"] };
 
   it("passes the gold prologue for its own chart", () => {
-    expect(validateSajuReading(gold, facts)).toEqual([]);
+    expect(hard(validateSajuReading(gold, facts))).toEqual([]);
+    // The judge's finding: the gold asks the reader to write things down in six places.
+    expect(validateSajuReading(gold, facts).join(" ")).toMatch(/\[문체\] 행동 제안이 비슷하게/);
     expect(validateSajuTeaser({ title: sajuSample.free.title, summary: sajuSample.free.summary }, facts)).toEqual([]);
   });
 
@@ -87,8 +93,8 @@ describe("saju validator", () => {
     for (const bad of ["결혼 운이 들어와요.", "건강 진단을 받아 보세요.", "올해는 좋은 해예요.", "도화가 있어 인기가 많아요.", "신강한 명식이에요.", "반드시 성공해요."]) {
       expect(validateSajuReading(edit(bad), facts).length).toBeGreaterThan(0);
     }
-    expect(validateSajuReading(edit("신강·신약 라벨은 붙이지 않았어요."), facts)).toEqual([]);
-    expect(validateSajuReading(edit("결정인지 아닌지는 상관없이 기록해 보세요."), facts)).toEqual([]);
+    expect(hard(validateSajuReading(edit("신강·신약 라벨은 붙이지 않았어요."), facts))).toEqual([]);
+    expect(hard(validateSajuReading(edit("결정인지 아닌지는 상관없이 기록해 보세요."), facts))).toEqual([]);
   });
 
   it("catches a missing section and a missing time-unknown limit", () => {

@@ -4,7 +4,7 @@ import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import type { SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, cardLabel, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
-import { aiTellViolations } from "./style";
+import { SOFT_PREFIX, aiTellViolations } from "./style";
 
 /**
  * Post-generation checks. Each returns a list of violations in Korean (fed back to the model on the
@@ -119,6 +119,76 @@ function blocklistViolations(text: string, userText: string, out: string[]): voi
   if (!hasHangul(text)) out.push("한국어로 써 주세요.");
 }
 
+// ---- voice, repetition, action variety (judge findings 2026-09-30) ----
+
+/** Spans in quotes are the user's words or a suggested message; they keep their own voice. */
+const QUOTED = /'[^'\n]*'|"[^"\n]*"|“[^”]*”|‘[^’]*’/g;
+/** 해라체 endings ("~한다", "~이다"): the reading voice is 해요체. */
+const HAERACHE = /(한다|는다|했다|였다|이다|았다|었다|겠다|된다|인다|린다|진다|간다|온다|본다|낸다|준다|있다|없다|같다)$/;
+/** Unmistakable 반말 endings (a lone "해" is the sun, so single words are not judged). */
+const BANMAL = /(할게|볼게|줄게|낼게|갈게|올게|보낼게|거야|이야|잖아|거든|했어|있어|없어|하자|보자|해줘|할래|볼래|같아|좋아|싫어|해봐|알아|몰라|했지|하지 마)$/;
+const HAE_NOUNS = new Set(["올해", "피해", "이해", "방해", "손해", "오해", "작년해"]);
+
+/** Sentences that are not 해요체 (quotes removed first). */
+export function nonHaeyoSentences(text: string): string[] {
+  return sentences(text.replace(QUOTED, "''")).filter((sentence) => {
+    const bare = sentence.replace(/[.?!…"'’”)\]\s]+$/, "");
+    if (bare.endsWith("요") || bare.length === 0) return false;
+    if (HAERACHE.test(bare) || BANMAL.test(bare)) return true;
+    const last = bare.split(/\s+/).at(-1) ?? "";
+    return last.length >= 2 && last.endsWith("해") && !HAE_NOUNS.has(last);
+  });
+}
+
+function voiceViolations(text: string, out: string[]): void {
+  const off = nonHaeyoSentences(text);
+  if (off.length) out.push(`해요체가 아닌 문장이 있어요: "${off[0]!.slice(0, 40)}". 모든 문장을 해요체로 맺어 주세요(관계 주제의 보낼 문장 예시만 예외).`);
+}
+
+const occurrences = (text: string, phrase: string) => (phrase ? text.split(phrase).length - 1 : 0);
+
+/** Soft: a chip or the note quoted verbatim more than once (the judge's "입력 되풀이 공식"). */
+function inputRepeatViolations(text: string, phrases: string[], out: string[]): void {
+  const repeated = phrases.filter((p) => p.length >= 2 && occurrences(text, p) > 1);
+  if (repeated.length) {
+    out.push(`${SOFT_PREFIX}같은 입력을 여러 번 그대로 되풀이했어요: ${repeated.map((p) => `'${p.slice(0, 20)}'`).join(", ")}. 한 번만 인용하고 나머지는 그 상황에서 나오는 구체적인 말로 바꿔 주세요.`);
+  }
+}
+
+const WRITING = /적어|적고|적는|적을|써\s?(보|두)|기록|메모해|메모장/;
+/** Not moves of their own: "해 보세요", "~지 마세요". */
+const GENERIC_VERBS = new Set(["해", "하", "보", "봐", "두", "마", "지 마"]);
+
+/** The verbs of the suggested actions in a field ("연락해 보세요" → 연락, "확인하세요" → 확인). */
+export function actionVerbs(text: string): string[] {
+  const verbs: string[] = [];
+  for (const m of text.matchAll(/([가-힣]+)\s?(?:보세요|두세요)/g)) verbs.push(m[1]!.replace(/(해|어|아|여)$/, ""));
+  for (const m of text.matchAll(/([가-힣]+?)(?:하세요|세요)(?=[.!?\s]|$)/g)) if (!/(보|두|주)$/.test(m[1]!)) verbs.push(m[1]!);
+  return verbs.filter((v) => v && !GENERIC_VERBS.has(v));
+}
+
+/** Soft: two or more action fields end in the same move, or keep asking the user to write things down. */
+function actionVarietyViolations(fields: string[], out: string[]): void {
+  const writing = fields.filter((f) => WRITING.test(f)).length;
+  const counts = new Map<string, number>();
+  for (const field of fields) for (const verb of new Set(actionVerbs(field))) counts.set(verb, (counts.get(verb) ?? 0) + 1);
+  const repeated = [...counts].filter(([, n]) => n >= 2).map(([verb]) => verb);
+  if (writing >= 2 || repeated.length) {
+    const what = [writing >= 2 ? `적어 보기 ${writing}곳` : "", ...repeated.map((v) => `'${v}'`)].filter(Boolean).join(", ");
+    out.push(`${SOFT_PREFIX}행동 제안이 비슷하게 되풀이돼요(${what}). 이 사람 상황에 맞게 연락하기, 찾아보기, 신청하기, 확인하기, 직접 가 보기처럼 섞어 주세요.`);
+  }
+}
+
+const MONEY_AMOUNT = /\d[\d,]*\s?(?:만|천|백)?\s?원/g;
+
+/** Soft: money amounts the user never gave (the reading must not assume numbers). */
+function inventedAmountViolations(text: string, userText: string, out: string[]): void {
+  const invented = [...text.matchAll(MONEY_AMOUNT)].map((m) => m[0]).filter((amount) => !userText.includes(amount));
+  if (invented.length) out.push(`${SOFT_PREFIX}입력에 없는 금액을 썼어요: ${[...new Set(invented)].join(", ")}. 금액은 사용자가 적은 것만 쓰거나 빼 주세요.`);
+}
+
+const observationViolations = (body: string, out: string[]) => lengthCheck("observation", body, 60, 200, out);
+
 // ---- card fidelity ----
 
 /** Card names that are also everyday words; they cannot be checked by string match. */
@@ -193,17 +263,22 @@ function sharedMisdescriptionHits(text: string, drawn: KbCard[]): string[] {
   });
 }
 
-/** "역방향" only: 거꾸로/뒤집힌 also describe upright images (매달린 사람). */
+/** Upright sections must not say "역방향" (거꾸로/뒤집힌 also describe upright images, e.g. 매달린 사람). */
 const REVERSED_MARK = /역방향/;
+/** A reversed card counts as read reversed when it says so, or reads it through its KB reversed mode. */
+const REVERSED_READ = /역방향|거꾸로|뒤집/;
 
 /** Image grounding, misdescriptions and the reversed marker for one card's own section. */
 function cardSectionViolations(label: string, body: string, card: TarotCardContext, out: string[]): void {
   if (!citesImagery(body, card.kb)) out.push(`${label}에 그 카드의 그림 사실(imageryFacts)이 인용되지 않았어요. 그림 사실 하나를 거의 그대로 써 주세요.`);
   const wrong = misdescriptionHits(body, card.kb);
   if (wrong.length) out.push(`${label}에 그림에 없는 묘사가 있어요: ${wrong.join(", ")}. imageryFacts대로 고쳐 주세요.`);
-  const marked = REVERSED_MARK.test(body);
-  if (card.orientation === "reversed" && !marked) out.push(`${label}은 역방향 카드인데 역방향이라는 말이 없어요. 첫 문장에서 밝혀 주세요.`);
-  if (card.orientation === "upright" && marked) out.push(`${label}은 정방향 카드인데 역방향처럼 썼어요.`);
+  if (card.orientation === "reversed") {
+    const gloss = card.reversedMode ? card.kb.reversedModes.gloss[card.reversedMode] ?? "" : "";
+    const readReversed = REVERSED_READ.test(body) || (gloss !== "" && mentions(body, gloss, 0.5));
+    if (!readReversed) out.push(`${label}은 역방향 카드인데 역방향으로 읽지 않았어요. 첫 문장에서 역방향이라고 밝히고 reversedMode의 뜻으로 읽어 주세요.`);
+  }
+  if (card.orientation === "upright" && REVERSED_MARK.test(body)) out.push(`${label}은 정방향 카드인데 역방향처럼 썼어요.`);
 }
 
 function cardSubjectCount(text: string, cards: TarotCardContext[]): number {
@@ -218,7 +293,9 @@ function chosenChips(ctx: TarotContext): Array<{ label: string; value: string }>
   return ctx.conditions.filter((c) => !UNSURE_OPTIONS.includes(c.value));
 }
 
-const userTextOf = (ctx: TarotContext) => [ctx.question, ...ctx.conditions.map((c) => c.value), ctx.note].join(" ");
+const userTextOf = (ctx: TarotContext) => [ctx.question, ...ctx.conditions.map((c) => c.value), ctx.note, ctx.custom.topic, ctx.custom.who, ctx.custom.when].join(" ");
+
+const quotedInputs = (ctx: TarotContext) => [...chosenChips(ctx).map((c) => c.value), ...(ctx.note ? [ctx.note] : [])];
 
 function inputUseViolations(text: string, ctx: TarotContext, out: string[]): void {
   const missing = chosenChips(ctx).filter((c) => !mentions(text, c.value)).map((c) => `'${c.value}'`);
@@ -256,14 +333,16 @@ export function validateTarotTeaser(draft: TarotTeaserDraft, ctx: TarotContext):
   const usesInput = chosenChips(ctx).some((c) => mentions(body, c.value)) || (ctx.note !== "" && mentions(body, ctx.note, 0.3));
   if (hasInputs && !usesInput) out.push("첫 장 풀이에 사용자가 고른 조건이나 메모가 하나도 반영되지 않았어요.");
   commonTarotViolations([body, ...draft.cards.map((c) => c.keyword)].join("\n"), ctx, out);
+  voiceViolations(body, out);
+  inputRepeatViolations(body, quotedInputs(ctx), out);
   aiTellViolations([body], out);
   return out;
 }
 
-/** Every string of the paid body except headings and the story. */
+/** Every string of the paid body except headings. */
 function paidBodyText(r: TarotReading): string[] {
   return [
-    r.verdict, ...r.cards.map((c) => c.body), r.connection.body, r.timing.body,
+    r.verdict, ...r.cards.map((c) => c.body), r.connection.body, r.timing.body, r.observation.body,
     ...r.scenarios.items.flatMap((i) => [i.label, i.body]), ...r.messages.items, r.messages.hint,
     ...r.avoid.items, r.alternatives.body, r.action.body,
   ];
@@ -288,21 +367,26 @@ export function validateTarotReading(r: TarotReading, ctx: TarotContext): string
   if (r.scenarios.items.length < 2 || r.scenarios.items.some((i) => !i.label.trim() || charCount(i.body) < 20)) out.push("시나리오는 3~4개, 각각 label과 40~120자 본문으로 써 주세요.");
   if (r.messages.items.length !== 2 || r.messages.items.some((m) => !m.trim()) || !r.messages.hint.trim()) out.push("messages.items는 정확히 2개, hint도 채워 주세요.");
   if (r.avoid.items.length < 2 || r.avoid.items.some((m) => !m.trim())) out.push("피할 것은 3~4개로 써 주세요.");
-  if (!r.story.title.trim() || charCount(r.story.title) > 24) out.push("story.title은 20자 이하로 채워 주세요.");
-  lengthCheck("story.body", r.story.body, 250, 450, out);
+  observationViolations(r.observation.body, out);
   if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
 
   const paid = paidBodyText(r).join("\n");
   const total = charCount(paid);
   if (total < 1200 * (1 - TOLERANCE) || total > 1800 * (1 + TOLERANCE)) out.push(`전체 풀이 분량이 공백 제외 ${total}자예요. 1,200~1,800자로 맞춰 주세요.`);
 
-  const all = [paid, r.story.body, r.story.title, ...r.followUps, ...r.cards.map((c) => c.heading)].join("\n");
-  const shared = sharedMisdescriptionHits([r.connection.body, r.story.body, ...r.scenarios.items.map((i) => i.body), r.alternatives.body].join("\n"), ctx.cards.map((c) => c.kb));
+  const all = [paid, ...r.followUps, ...r.cards.map((c) => c.heading)].join("\n");
+  const shared = sharedMisdescriptionHits([r.connection.body, r.observation.body, ...r.scenarios.items.map((i) => i.body), r.alternatives.body].join("\n"), ctx.cards.map((c) => c.kb));
   if (shared.length) out.push(`그림에 없는 묘사가 있어요: ${shared.join(", ")}.`);
-  inputUseViolations([paid, r.story.body].join("\n"), ctx, out);
+  inputUseViolations(paid, ctx, out);
   if (cardSubjectCount(all, ctx.cards) > 3) out.push("카드를 주어로 세운 문장('~는 ~라고 말해요')이 너무 많아요. 전체 3번 이하로 줄여 주세요.");
   commonTarotViolations(all, ctx, out);
-  aiTellViolations([paid, r.story.body], out);
+  // Suggested first messages may be 반말 in relationship spreads; everything else is 해요체.
+  const prose = paidBodyText(r).filter((text) => !(ctx.relational && r.messages.items.includes(text)));
+  voiceViolations([...prose, ...r.followUps].join("\n"), out);
+  inputRepeatViolations(paid, quotedInputs(ctx), out);
+  actionVarietyViolations([r.action.body, r.timing.body, r.observation.body, r.messages.hint, ...r.scenarios.items.map((i) => i.body), ...(ctx.relational ? [] : r.messages.items)], out);
+  inventedAmountViolations(paid, userTextOf(ctx), out);
+  aiTellViolations([paid], out);
   return out;
 }
 
@@ -325,6 +409,8 @@ export function validateDaily(d: DailyDraft, ctx: TarotContext): string[] {
   if (tipLength < 15 || tipLength > 100) out.push(`tip은 20~80자로 써 주세요(지금 ${tipLength}자).`);
   cardSectionViolations("body", d.body, card, out);
   commonTarotViolations([d.summary, d.body, d.areas.love, d.areas.money, d.areas.work, d.tip, d.keyword].join("\n"), ctx, out, { topic: false });
+  voiceViolations([d.body, d.areas.love, d.areas.money, d.areas.work, d.tip].join("\n"), out);
+  actionVarietyViolations([d.tip, d.areas.love, d.areas.money, d.areas.work], out);
   aiTellViolations([d.summary, d.body, d.areas.love, d.areas.money, d.areas.work, d.tip], out);
   return out;
 }
@@ -335,6 +421,7 @@ export function validateTarotFollowUp(a: FollowUpAnswer, ctx: TarotContext, ques
   const wrong = sharedMisdescriptionHits(a.answer, ctx.cards.map((c) => c.kb));
   if (wrong.length) out.push(`그림에 없는 묘사가 있어요: ${wrong.join(", ")}.`);
   commonTarotViolations(a.answer, ctx, out, { topic: true, extraUserText: question });
+  voiceViolations(a.answer, out);
   aiTellViolations([a.answer], out);
   return out;
 }
@@ -402,13 +489,26 @@ function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], use
 
 const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;
 
+/** Soft: the user's own context (love/work status, concern) should show in the reading. */
+function profileUseViolations(text: string, facts: SajuFactSet, out: string[]): void {
+  const p = facts.profile;
+  if (!p) return;
+  const missing = [p.loveStatus, p.workStatus].filter((v): v is string => Boolean(v) && v !== "잘 모르겠어요" && !mentions(text, v!));
+  if (p.concern && !mentions(text, p.concern, 0.3)) missing.push("한 줄 고민");
+  if (missing.length) out.push(`${SOFT_PREFIX}사용자가 알려 준 상황이 풀이에 보이지 않아요: ${missing.join(", ")}. 그 사람의 상황에 맞춰 장면과 실험을 골라 주세요.`);
+}
+
+const profileText = (facts: SajuFactSet) => [facts.profile?.loveStatus, facts.profile?.workStatus, facts.profile?.concern].filter(Boolean).join(" ");
+
 export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): string[] {
   const out: string[] = [];
   const titleLength = charCount(d.title);
   if (titleLength < 2 || titleLength > 16) out.push("title은 4~12자로 써 주세요.");
   lengthCheck("summary", d.summary, 250, 400, out);
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(d.summary)) out.push("태어난 시를 몰라 여섯 글자로 읽었다는 한계를 summary에 한 문장 넣어 주세요.");
-  sajuFactViolations(`${d.title}\n${d.summary}`, facts, out);
+  sajuFactViolations(`${d.title}\n${d.summary}`, facts, out, profileText(facts));
+  voiceViolations(d.summary, out);
+  profileUseViolations(d.summary, facts, out);
   aiTellViolations([d.summary], out);
   return out;
 }
@@ -425,18 +525,22 @@ export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[
   if (total < 2500 * (1 - TOLERANCE) || total > 3500 * (1 + TOLERANCE)) out.push(`프롤로그 분량이 공백 제외 ${total}자예요. 2,500~3,500자로 맞춰 주세요.`);
   const basis = r.sections.at(-1)?.body ?? "";
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(basis)) out.push("계산 기준 절에 태어난 시를 몰라 시주 없이 읽었다는 한계를 넣어 주세요.");
-  if (!r.story.title.trim() || charCount(r.story.title) > 24) out.push("story.title은 20자 이하로 채워 주세요.");
-  lengthCheck("story.body", r.story.body, 200, 350, out);
+  observationViolations(r.observation.body, out);
   if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
-  sajuFactViolations([...r.sections.map((s) => s.body), r.story.title, r.story.body, ...r.followUps].join("\n"), facts, out);
-  aiTellViolations([...r.sections.map((s) => s.body), r.story.body], out);
+  const bodies = [...r.sections.map((s) => s.body), r.observation.body];
+  sajuFactViolations([...bodies, ...r.followUps].join("\n"), facts, out, profileText(facts));
+  voiceViolations([...bodies, ...r.followUps].join("\n"), out);
+  profileUseViolations(bodies.join("\n"), facts, out);
+  actionVarietyViolations(bodies, out);
+  aiTellViolations(bodies, out);
   return out;
 }
 
 export function validateSajuFollowUp(a: FollowUpAnswer, facts: SajuFactSet, question = ""): string[] {
   const out: string[] = [];
   lengthCheck("answer", a.answer, 150, 450, out);
-  sajuFactViolations(a.answer, facts, out, question);
+  sajuFactViolations(a.answer, facts, out, `${question} ${profileText(facts)}`);
+  voiceViolations(a.answer, out);
   aiTellViolations([a.answer], out);
   return out;
 }

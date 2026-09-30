@@ -10,10 +10,14 @@ import { mockDaily, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from 
 import { TAROT_SYSTEM, buildTarotContext, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt, type TarotInput } from "./prompts/tarot";
 import { GenerationError, generateValidated, selectProvider, type ReadingProvider } from "./provider";
 import {
-  DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, SajuTeaserSchema, TarotReadingSchema, TarotTeaserDraftSchema,
-  TarotTeaserSchema, type TarotReading,
+  DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, SajuTeaserSchema, StoredSajuReadingSchema, StoredTarotReadingSchema,
+  TarotReadingSchema, TarotTeaserDraftSchema, TarotTeaserSchema, type TarotReading,
 } from "./schemas";
 import { validateDaily, validateTarotReading, validateTarotTeaser } from "./validate";
+import { isSoftViolation } from "./style";
+
+/** Hard violations only (soft style hints may regenerate but never fail a reading). */
+const hard = (violations: string[]) => violations.filter((v) => !isSoftViolation(v));
 
 const GOLD_DRAW: DrawnCard[] = tarotSample.cards.map((c, slot) => ({ cardId: c.cardId, position: c.position, orientation: "upright", slot }));
 const GOLD_INPUT: TarotInput = {
@@ -22,7 +26,9 @@ const GOLD_INPUT: TarotInput = {
   conditions: tarotSample.input.conditions,
   note: tarotSample.input.note,
 };
-const GOLD_READING: TarotReading = { ...tarotSample.paid, story: tarotSample.story, followUps: tarotSample.followUps };
+/** The gold sample as a new reading: without the retired story, with an observation. */
+const GOLD_OBSERVATION = { heading: "며칠 안에 확인해 볼 신호", body: "이번 주 안에 안부를 떠올릴 때 반가움이 먼저 드는지, 숙제처럼 느껴지는지 눈여겨보세요. 반가움이 먼저라면 등불 든 노인처럼 내 쪽 답이 분명해진 거예요." };
+const GOLD_READING: TarotReading = { ...tarotSample.paid, observation: GOLD_OBSERVATION, followUps: tarotSample.followUps };
 
 /** The owner's failing case: 재물운 in self-flow, a money question. */
 const MONEY_INPUT: TarotInput = {
@@ -38,15 +44,18 @@ function draw(templateId: TemplateId, seed: string, picks?: number[]): DrawnCard
 }
 
 describe("schemas", () => {
-  it("accept the gold samples", () => {
+  it("accept the gold samples: new shape (observation, no story) and the stored shape of older readings", () => {
     expect(TarotReadingSchema.safeParse(GOLD_READING).success).toBe(true);
+    expect(TarotReadingSchema.safeParse({ ...tarotSample.paid, followUps: tarotSample.followUps }).success).toBe(false); // observation is required
+    expect(StoredTarotReadingSchema.safeParse({ ...tarotSample.paid, story: tarotSample.story, followUps: tarotSample.followUps }).success).toBe(true);
+    expect(StoredSajuReadingSchema.safeParse({ ...sajuSample.paid, story: sajuSample.story, followUps: [] }).success).toBe(true);
     expect(TarotTeaserSchema.safeParse({
       cards: tarotSample.cards.map(({ position, cardId, keyword }) => ({ position, cardId, keyword })),
       firstCard: tarotSample.free.firstCard,
       lockedToc: tarotSample.free.lockedToc,
     }).success).toBe(true);
     expect(SajuTeaserSchema.safeParse(sajuSample.free).success).toBe(true);
-    expect(SajuReadingSchema.safeParse({ ...sajuSample.paid, story: sajuSample.story, followUps: [] }).success).toBe(true);
+    expect(SajuReadingSchema.safeParse({ ...sajuSample.paid, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "앞으로 몇 주 동안 끝낸 일의 시간과 돈을 셀 때 힘이 빠지는지, 오히려 개운한지 눈여겨보세요. 개운하다면 巳 속의 경금(庚金)을 꺼내 쓰고 있다는 뜻으로 읽을 수 있어요." }, followUps: [] }).success).toBe(true);
   });
 });
 
@@ -55,7 +64,7 @@ describe("tarot context and prompts", () => {
     const ctx = buildTarotContext("relationship-contact", GOLD_DRAW, GOLD_INPUT);
     expect(tarotLockedToc(ctx)).toEqual([
       "한 줄 결론", "나의 마음 · 은둔자", "두 사람 사이 · 별", "먼저 움직이면 · 완드 에이스", "세 장을 이어 읽으면",
-      "이번 달, 언제 움직이면 좋을지", "상대 반응에 따라 달라지는 길", "보내기 좋은 첫 문장 2가지", "피하면 좋은 것", "다르게 볼 수 있는 부분", "오늘 해볼 작은 행동",
+      "이번 달, 언제 움직이면 좋을지", "며칠 안에 확인해 볼 신호", "상대 반응에 따라 달라지는 길", "보내기 좋은 첫 문장 2가지", "피하면 좋은 것", "다르게 볼 수 있는 부분", "오늘 해볼 작은 행동",
     ]);
   });
 
@@ -95,8 +104,8 @@ describe("validator", () => {
   const goldCtx = buildTarotContext("relationship-contact", GOLD_DRAW, GOLD_INPUT);
 
   it("passes the gold sample reading and first card", () => {
-    expect(validateTarotReading(GOLD_READING, goldCtx)).toEqual([]);
-    expect(validateTarotTeaser({ cards: tarotSample.cards.map(({ position, cardId, keyword }) => ({ position, cardId, keyword })), firstCard: tarotSample.free.firstCard }, goldCtx)).toEqual([]);
+    expect(hard(validateTarotReading(GOLD_READING, goldCtx))).toEqual([]);
+    expect(hard(validateTarotTeaser({ cards: tarotSample.cards.map(({ position, cardId, keyword }) => ({ position, cardId, keyword })), firstCard: tarotSample.free.firstCard }, goldCtx))).toEqual([]);
   });
 
   const withVerdict = (extra: string): TarotReading => ({ ...GOLD_READING, alternatives: { ...GOLD_READING.alternatives, body: `${GOLD_READING.alternatives.body} ${extra}` } });
@@ -120,7 +129,7 @@ describe("validator", () => {
   });
 
   it("allows a hedged boundary sentence about the other person", () => {
-    expect(validateTarotReading(withVerdict("상대의 속마음은 카드로 확인할 수 없어요."), goldCtx)).toEqual([]);
+    expect(hard(validateTarotReading(withVerdict("상대의 속마음은 카드로 확인할 수 없어요."), goldCtx))).toEqual([]);
   });
 
   it("catches topic drift: romance text for the money template", () => {
