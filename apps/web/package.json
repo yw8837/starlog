@@ -14,9 +14,11 @@
     "e2e:screens": "playwright test --grep @screens"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
     "next": "16.3.7",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.7",
