@@ -1,6 +1,7 @@
 import { clientKey, errorResponse, json, readJson, setCookie } from "@/lib/api/http";
 import { OwnerBody } from "@/lib/api/inputs";
-import { OWNER_COOKIE, OWNER_COOKIE_MAX_AGE, ownerCookie, rateLimit } from "@/lib/security/quota";
+import { OWNER_COOKIE, OWNER_COOKIE_MAX_AGE, ownerCookie } from "@/lib/security/owner";
+import { rateLimit } from "@/lib/security/rateLimit";
 import { safeEqual, signingSecret } from "@/lib/security/sign";
 
 /**

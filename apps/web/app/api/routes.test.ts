@@ -3,7 +3,7 @@ import { mockProvider } from "@/lib/ai/mock";
 import { resetDailyCache } from "@/lib/api/dailyCache";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { dailyCard } from "@/lib/security/drawToken";
-import { resetMemoryLimiter } from "@/lib/security/quota";
+import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";

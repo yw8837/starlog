@@ -1,6 +1,7 @@
 import "server-only";
 import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/provider";
-import { OWNER_COOKIE, isOwner, rateLimit } from "@/lib/security/quota";
+import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
+import { rateLimit } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 
 /**

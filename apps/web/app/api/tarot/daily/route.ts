@@ -4,9 +4,8 @@ import type { DailyReading } from "@/lib/ai/schemas";
 import { readDailyCache, writeDailyCache } from "@/lib/api/dailyCache";
 import { errorFromGeneration, errorResponse, json, openGate, readJson, setCookie } from "@/lib/api/http";
 import { dailyCard, dailyLuckyNumber } from "@/lib/security/drawToken";
-import {
-  DAILY_COOKIE, QUOTA_COOKIE_MAX_AGE, dailyCookie, kstDay, nextKstMidnight, quotaLimits, readDaily, type DailyState,
-} from "@/lib/security/quota";
+import { DAILY_COOKIE, dailyCookie, readDaily, type DailyState } from "@/lib/security/dailyCookie";
+import { QUOTA_COOKIE_MAX_AGE, kstDay, nextKstMidnight, quotaLimits } from "@/lib/security/quota";
 import { randomId } from "@/lib/security/sign";
 
 /**
