@@ -100,6 +100,8 @@ test("saju: input, consent, chart with 丙寅 and 병화, prologue, sign-in, ope
   const followUp = page.getByRole("region", { name: /이어서 물어보기/ });
   await expect(followUp).toContainText("3번 남았어요");
   await followUp.getByRole("button", { name: "겉에 금이 없다는 건 어떤 뜻이에요?" }).click();
+  // A pointer tap does not move focus into the field (no phone keyboard popping up).
+  await expect(followUp.getByRole("textbox", { name: "이어서 물어볼 내용" })).not.toBeFocused();
   await expect(followUp).toContainText("2번 남았어요");
   await expect(followUp).toContainText("뱀(巳) 속에 경금(庚金)이 숨어 있어요");
   await shot(page, info, "04-prologue-chapter");

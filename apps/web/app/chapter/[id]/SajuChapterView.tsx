@@ -15,12 +15,12 @@ import { StoryPage } from "@/components/tarot/StoryPage";
 import { StoryToggle, type ReadingMode } from "@/components/tarot/StoryToggle";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
-import type { SAJU_FOLLOW_UPS, SajuSample } from "@/lib/fixtures";
+import type { FollowUpFixture, SajuSample } from "@/lib/fixtures";
 import s from "./ChapterView.module.css";
 
 type SajuChapterViewProps = {
   sample: SajuSample;
-  followUps: typeof SAJU_FOLLOW_UPS;
+  followUps: FollowUpFixture;
   /** e.g. "프롤로그" */
   chapterLabel: string;
   /** Show the writing state first (arriving from an unlock). */
@@ -94,7 +94,7 @@ export function SajuChapterView({ sample, followUps, chapterLabel, generate }: S
               <StoryPage mode="saju" title={sample.story.title} body={sample.story.body} />
             )}
 
-            <FollowUp suggestions={followUps.suggestions} answer={followUps.answer} reader="rabbit" />
+            <FollowUp suggestions={followUps.suggestions} answers={followUps.answers} otherAnswer={followUps.other} reader="rabbit" />
             <Feedback />
 
             <section className={s.invite} aria-labelledby="next-title">

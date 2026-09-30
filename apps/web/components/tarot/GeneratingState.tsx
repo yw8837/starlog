@@ -54,8 +54,11 @@ export function GeneratingState({ onDone, mode = "tarot", duration = 2500 }: Gen
           </span>
         ) : null}
       </div>
-      <p id="generating-caption" key={step} className={s.caption} role="status">
-        {captions[step]}
+      {/* One live region for the whole wait; only the text inside it changes (the span re-keys to replay its fade). */}
+      <p id="generating-caption" className={s.caption} role="status">
+        <span key={step} className={s.captionText}>
+          {captions[step]}
+        </span>
       </p>
       <ol className={s.dots} aria-hidden="true">
         {captions.map((caption, i) => (

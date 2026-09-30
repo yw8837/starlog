@@ -59,7 +59,6 @@ tr:last-child .tile {
 }
 
 .tile {
-  --el: var(--el-metal);
   display: grid;
   place-items: center;
   align-content: center;
@@ -76,26 +75,6 @@ tr:last-child .tile {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     0 8px 18px rgba(5, 3, 15, 0.38);
-}
-
-.tile[data-el="wood"] {
-  --el: var(--el-wood);
-}
-
-.tile[data-el="fire"] {
-  --el: var(--el-fire);
-}
-
-.tile[data-el="earth"] {
-  --el: var(--el-earth);
-}
-
-.tile[data-el="metal"] {
-  --el: var(--el-metal);
-}
-
-.tile[data-el="water"] {
-  --el: var(--el-water);
 }
 
 .hanja {
@@ -178,13 +157,4 @@ tr:last-child .tile {
   color: var(--gold);
   font-family: var(--font-display), var(--font-body), serif;
   font-size: 17px;
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }

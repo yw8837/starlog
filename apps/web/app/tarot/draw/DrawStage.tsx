@@ -42,16 +42,29 @@ function randomSeed(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
 
+/** "한 장" for one card, "3장" otherwise (the flow's other screens count cards with digits). */
+const cards = (n: number) => (n === 1 ? "한 장" : `${n}장`);
+
 function cardNumber(cardId: string): string | undefined {
   const card = getCard(cardId);
   return card.arcana === "major" ? card.roman : undefined;
 }
+
+const UndoIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+  </svg>
+);
 
 /** Step 2: the cat shuffles, a fan opens, the user picks the spread's cards, then they turn over. */
 export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   const router = useRouter();
   const { flow } = useFlowState();
   const summary = summarizeFlow(flow, fallback);
+  // The question and slot names come from the saved flow, which only the browser can read; hold
+  // them until it has been read so the fixture question never flashes before the user's own.
+  const known = daily || flow !== null;
   const dailyTopic = TOPICS_BY_WHO.me.find((topic) => topic.id === "daily");
   const template = TEMPLATES[daily ? "daily" : summary.template];
   const question = daily && dailyTopic ? composeQuestion("me", dailyTopic, "today") : summary.question;
@@ -84,9 +97,16 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, [phase, drawn, instant, daily, router]);
 
-  const togglePick = (index: number) => {
+  // The fan only ever adds a card; taking one back is the explicit undo below, so a stray tap
+  // on a lifted card can never drop a pick.
+  const pick = (index: number) => {
     if (phase !== "pick") return;
-    setPicked((prev) => (prev.includes(index) ? prev.filter((i) => i !== index) : prev.length < max ? [...prev, index] : prev));
+    setPicked((prev) => (prev.includes(index) || prev.length >= max ? prev : [...prev, index]));
+  };
+
+  const undo = () => {
+    if (phase !== "pick") return;
+    setPicked((prev) => prev.slice(0, -1));
   };
 
   const reveal = () => {
@@ -110,14 +130,19 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   });
 
   const remaining = max - picked.length;
+  const allRevealed = drawn !== null && revealed >= drawn.length;
   const status =
-    phase === "shuffle"
+    phase === "shuffle" || !known
       ? ""
       : phase === "pick"
-        ? remaining > 0
-          ? `마음이 가는 카드를 ${remaining}장 더 골라 주세요`
-          : "모두 골랐어요"
-        : "카드를 뒤집었어요";
+        ? picked.length === 0
+          ? `마음이 가는 카드를 ${cards(max)} 골라 주세요`
+          : remaining > 0
+            ? `마음이 가는 카드를 ${cards(remaining)} 더 골라 주세요`
+            : "모두 골랐어요"
+        : allRevealed
+          ? "카드를 모두 뒤집었어요"
+          : "카드를 뒤집는 중이에요";
 
   return (
     <div className={f.screen}>
@@ -128,19 +153,19 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
       )}
 
       <div className={s.head}>
-        <h1 className={s.question}>{question}</h1>
+        <h1 className={s.question}>{known ? question : " "}</h1>
         <p className={s.status} role="status">
           {status}
         </p>
       </div>
 
-      <SpreadRow cards={slots} size="md" className={max === 1 ? s.single : s.slots} />
+      {known ? <SpreadRow cards={slots} size="md" className={max === 1 ? s.single : s.slots} /> : null}
 
       <div className={s.stage}>
         {phase === "shuffle" ? (
           <ShuffleStage onDone={() => setPhase("pick")} />
-        ) : phase === "pick" && deck ? (
-          <CardFan picked={picked} max={max} onPick={togglePick} />
+        ) : phase === "pick" && deck && known ? (
+          <CardFan picked={picked} max={max} onPick={pick} />
         ) : phase === "reveal" || phase === "done" ? (
           <div className={s.reader}>
             <Cat outfit="tarot" action="glow" expression={phase === "done" ? "happy" : "focus"} size={150} reactOnTap={false} />
@@ -148,11 +173,19 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
         ) : null}
       </div>
 
-      <div className={s.cta}>
+      <div className={s.cta} data-phase={phase}>
         {phase === "pick" && picked.length === max ? (
           <Button block onClick={reveal} trailing="→">
             {daily ? "카드 뒤집기" : "결과 보기"}
           </Button>
+        ) : null}
+        {phase === "pick" ? (
+          // Keeps its room while hidden, so the fan never moves under a finger on the first pick.
+          <div className={s.undo} data-hidden={picked.length === 0 ? "" : undefined}>
+            <Button variant="ghost" size="md" block onClick={undo} trailing={<UndoIcon />}>
+              {max === 1 ? "다시 고르기" : "방금 고른 카드 빼기"}
+            </Button>
+          </div>
         ) : null}
         {phase === "done" ? (
           <Button href="/" variant="secondary" block>

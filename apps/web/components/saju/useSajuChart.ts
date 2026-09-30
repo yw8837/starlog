@@ -23,7 +23,7 @@ export interface SajuChartState {
   /** The user saved their own birth data (otherwise the sample input is shown). */
   saved: boolean;
   result: ChartResult | null;
-  /** The sample prologue text describes this chart (same pillars, no hour, same gender). */
+  /** The sample prologue text describes this chart (same pillars, no hour, same gender, born in 서울). */
   isSample: boolean;
 }
 

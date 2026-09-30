@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCopy } from "@/lib/useCopy";
 import s from "./CopyButton.module.css";
 
 type CopyButtonProps = {
@@ -10,27 +10,11 @@ type CopyButtonProps = {
   className?: string;
 };
 
-type State = "idle" | "copied" | "failed";
-
 export function CopyButton({ text, label, className }: CopyButtonProps) {
-  const [state, setState] = useState<State>("idle");
-  const timer = useRef<number | undefined>(undefined);
-
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setState("copied");
-    } catch {
-      setState("failed");
-    }
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setState("idle"), 2000);
-  };
+  const { state, copy } = useCopy();
 
   return (
-    <button type="button" className={className ? `${s.copy} ${className}` : s.copy} onClick={copy} aria-label={label} data-state={state}>
+    <button type="button" className={className ? `${s.copy} ${className}` : s.copy} onClick={() => copy(text)} aria-label={label} data-state={state}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
         {state === "copied" ? (
           <path d="m5 12.5 4.5 4.5L19 7.5" />

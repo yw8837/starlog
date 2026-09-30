@@ -4,7 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
-import { FOLLOW_UP_ANSWER, INVITE_FIXTURE_TOKEN, SAJU_FOLLOW_UPS, SAJU_SAMPLE, STORY_FIXTURE, TAROT_SAMPLE } from "@/lib/fixtures";
+import { INVITE_FIXTURE_TOKEN, SAJU_FOLLOW_UPS, SAJU_SAMPLE, STORY_FIXTURE, TAROT_FALLBACK, TAROT_FOLLOW_UPS, TAROT_SAMPLE } from "@/lib/fixtures";
 import { ChapterView } from "./ChapterView";
 import { SajuChapterView } from "./SajuChapterView";
 
@@ -25,7 +25,6 @@ export default async function ChapterPage({ params, searchParams }: PageProps<"/
   if (!chapter) notFound();
   const query = await searchParams;
   const generate = query.from === "unlock" && query.instant !== "1";
-  const { question, template, input } = TAROT_SAMPLE;
 
   return (
     <div className="page-shell with-tabbar">
@@ -39,8 +38,8 @@ export default async function ChapterPage({ params, searchParams }: PageProps<"/
             chapterLabel={chapter.label}
             generate={generate}
             inviteUrl={`${SITE.url}/invite/${INVITE_FIXTURE_TOKEN}`}
-            followUpAnswer={FOLLOW_UP_ANSWER}
-            fallback={{ question, template, input: { conditions: input.conditions, note: input.note } }}
+            followUps={TAROT_FOLLOW_UPS}
+            fallback={TAROT_FALLBACK}
           />
         )}
       </main>

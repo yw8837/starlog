@@ -7,7 +7,7 @@ type ButtonProps = {
   size?: "lg" | "md";
   /** Stretch to the width of its container. */
   block?: boolean;
-  /** Renders a link instead of a button. */
+  /** Renders a link instead of a button. With `disabled`, a dimmed link that cannot be followed. */
   href?: string;
   onClick?: () => void;
   disabled?: boolean;
@@ -41,8 +41,14 @@ export function Button({
     </>
   );
 
-  if (href && !disabled) {
-    return (
+  if (href) {
+    // A disabled link stays a link for assistive tech ("link, dimmed") but has no href, so it
+    // cannot be focused or followed; it never silently turns into a button.
+    return disabled ? (
+      <a role="link" aria-disabled="true" className={className}>
+        {content}
+      </a>
+    ) : (
       <Link href={href} className={className} onClick={onClick}>
         {content}
       </Link>

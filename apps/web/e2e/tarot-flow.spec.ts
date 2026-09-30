@@ -125,9 +125,21 @@ test("opened chapter: follow-up answer, story mode, rating and share preview", a
   await page.goto("/chapter/sample");
   const followUp = page.getByRole("region", { name: /이어서 물어보기/ });
   await expect(followUp).toContainText("3번 남았어요");
-  await followUp.getByRole("button", { name: SAMPLE.followUps[0] }).click();
+  // Keyboard: the chip used goes away, so focus moves to the field, which stays focused (read-only,
+  // not disabled) while the answer is on its way.
+  await followUp.getByRole("button", { name: SAMPLE.followUps[0] }).press("Enter");
+  const field = followUp.getByRole("textbox", { name: "이어서 물어볼 내용" });
+  await expect(field).toBeFocused();
+  await expect(field).toHaveAttribute("aria-disabled", "true");
   await expect(followUp).toContainText("2번 남았어요");
-  await expect(followUp).toContainText("가벼운 안부로 정했으니");
+  await expect(followUp).toContainText("가벼운 안부라면");
+  await expect(followUp).toContainText("“문득 생각나서 연락해 봤어. 요즘 어떻게 지내?”");
+  await expect(field).toBeFocused();
+  // The chosen suggestion is a one-shot button, not a toggle.
+  await expect(followUp.getByRole("button", { name: SAMPLE.followUps[1] })).not.toHaveAttribute("aria-pressed");
+  await field.fill("다음 주에 보내도 괜찮을까요?");
+  await field.press("Enter");
+  await expect(followUp).toContainText("펼친 세 장에 비춰서 볼게요");
   await followUp.scrollIntoViewIfNeeded();
   await shot(page, info, "09-follow-up");
 
@@ -144,4 +156,17 @@ test("opened chapter: follow-up answer, story mode, rating and share preview", a
   await shot(page, info, "10-share");
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
+});
+
+test.describe("before hydration (no JavaScript)", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("the draw page holds the question, slots and fan until the saved flow is read", async ({ page }) => {
+    await page.goto("/tarot/draw?instant=1");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("");
+    // Rendered text only (the flight data in <script> tags is not on screen).
+    await expect(page.locator("main")).not.toContainText("뜸해진", { useInnerText: true });
+    await expect(page.locator("main")).not.toContainText("나의 마음", { useInnerText: true });
+    await expect(page.locator("[data-fan-index]")).toHaveCount(0);
+  });
 });

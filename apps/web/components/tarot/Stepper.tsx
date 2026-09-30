@@ -23,10 +23,10 @@ export function Stepper({ step, total = 3, label, backHref, backLabel = "뒤로 
         <p className={s.title}>{label}</p>
         {step ? (
           <p className={s.count}>
-            <span className={s.srOnly}>{`${total}단계 중 `}</span>
+            <span className="sr-only">{`${total}단계 중 `}</span>
             {step}
             <span aria-hidden="true">/{total}</span>
-            <span className={s.srOnly}>단계</span>
+            <span className="sr-only">단계</span>
           </p>
         ) : (
           <span className={s.spacer} aria-hidden="true" />

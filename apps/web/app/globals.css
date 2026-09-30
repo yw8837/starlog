@@ -94,6 +94,37 @@ a {
   outline-offset: 2px;
 }
 
+/* Visually hidden, still read by screen readers. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 오행 colour hook: data-el="wood|fire|earth|metal|water" sets --el (metal when unset or unknown). */
+[data-el] {
+  --el: var(--el-metal);
+}
+
+[data-el="wood"] {
+  --el: var(--el-wood);
+}
+
+[data-el="fire"] {
+  --el: var(--el-fire);
+}
+
+[data-el="earth"] {
+  --el: var(--el-earth);
+}
+
+[data-el="water"] {
+  --el: var(--el-water);
+}
+
 /* Page frame: sky layer sits behind a centered mobile-first column. */
 .page-shell {
   position: relative;

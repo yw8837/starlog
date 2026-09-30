@@ -11,7 +11,7 @@ export function HomeTopBar({ wallet }: { wallet: Wallet | null }) {
     <header className={s.topbar}>
       <h1 className={s.wordmark}>
         {SITE.name}
-        <span className={s.srOnly}>{` ${SITE.nameKo}`}</span>
+        <span className="sr-only">{` ${SITE.nameKo}`}</span>
       </h1>
       {wallet ? (
         <Link href="/me" className={s.balance} aria-label={`내 재화: ${paid} ${wallet.moonlight}개, ${free} ${wallet.stardust}개`}>

@@ -46,6 +46,19 @@
 }
 
 .cta {
+  display: grid;
+  align-content: end;
+  gap: 4px;
   min-height: 52px;
   margin-top: 12px;
+}
+
+/* Picking: room for the primary (52px) and the undo (44px) from the start, so nothing moves. */
+.cta[data-phase="pick"] {
+  min-height: 100px;
+}
+
+/* Hidden but still taking its room (no layout jump on the first pick); hidden from focus and AT. */
+.undo[data-hidden] {
+  visibility: hidden;
 }

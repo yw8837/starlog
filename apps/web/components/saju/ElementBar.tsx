@@ -36,7 +36,7 @@ export function ElementBar({ elements }: ElementBarProps) {
               </span>
               <span className={s.count}>
                 {count}
-                <span className={s.srOnly}>개</span>
+                <span className="sr-only">개</span>
               </span>
             </li>
           );

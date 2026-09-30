@@ -1,8 +1,9 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment } from "react";
 import { Button } from "@/components/ui/Button";
 import type { TarotSampleCard } from "@/lib/fixtures";
+import { useCopy } from "@/lib/useCopy";
 import { Paper } from "./Paper";
 import { TarotCard } from "./TarotCard";
 import s from "./SharePreview.module.css";
@@ -18,20 +19,7 @@ type SharePreviewProps = {
 
 /** What a friend will see when the invite link is shared, plus the link itself. */
 export function SharePreview({ titleId, card, question, chapter, inviteUrl }: SharePreviewProps) {
-  const [copied, setCopied] = useState<"idle" | "done" | "failed">("idle");
-  const timer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteUrl);
-      setCopied("done");
-    } catch {
-      setCopied("failed");
-    }
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setCopied("idle"), 2000);
-  };
+  const { state: copied, copy } = useCopy();
 
   return (
     <div className={s.share}>
@@ -62,11 +50,11 @@ export function SharePreview({ titleId, card, question, chapter, inviteUrl }: Sh
         </span>
       </div>
 
-      <Button block onClick={copy}>
-        {copied === "done" ? "복사했어요" : copied === "failed" ? "복사하지 못했어요" : "링크 복사"}
+      <Button block onClick={() => copy(inviteUrl)}>
+        {copied === "copied" ? "복사했어요" : copied === "failed" ? "복사하지 못했어요" : "링크 복사"}
       </Button>
-      <p className={s.srOnly} aria-live="polite">
-        {copied === "done" ? "초대 링크를 복사했어요" : ""}
+      <p className="sr-only" aria-live="polite">
+        {copied === "copied" ? "초대 링크를 복사했어요" : copied === "failed" ? "초대 링크를 복사하지 못했어요" : ""}
       </p>
     </div>
   );

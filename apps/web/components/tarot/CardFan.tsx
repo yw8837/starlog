@@ -13,7 +13,7 @@ type CardFanProps = {
   picked: number[];
   /** How many cards the spread needs. */
   max: number;
-  /** Called with a deck index; the parent decides whether it picks or un-picks. */
+  /** Called with the deck index of an unpicked card while the spread still has room. */
   onPick: (index: number) => void;
 };
 
@@ -28,7 +28,9 @@ export function fanIndexes(count: number, visible: number): number[] {
 /**
  * Arc of face-down cards. Tap (or click, or Enter) picks a card. On touch the finger can also
  * slide along the arc: the card under it rises, and lifting the finger picks that card, so the
- * narrow overlapped slivers never have to be hit exactly.
+ * narrow overlapped slivers never have to be hit exactly. A picked card stays picked here (a
+ * second tap on it does nothing); taking a card back is the parent's explicit undo. Vertical
+ * scrolling and pinch-zoom still work over the fan.
  */
 export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardFanProps) {
   const indexes = fanIndexes(count, visible);
@@ -40,7 +42,7 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
   const full = picked.length >= max;
 
-  const canPick = (index: number) => picked.includes(index) || !full;
+  const canPick = (index: number) => !full && !picked.includes(index);
 
   const setActive = (index: number | null) => {
     activeRef.current = index;
@@ -90,17 +92,18 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
     if (canPick(index)) onPick(index);
   };
 
-  // Roving focus: one tab stop for the whole fan, arrow keys move along the arc.
+  const last = indexes.length - 1;
+
+  // Roving focus: one tab stop for the whole fan; arrow keys move along the arc, Home/End jump to its ends.
   const onKeyDown = (e: KeyboardEvent, slot: number) => {
-    const step = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-    if (!step) return;
+    const target =
+      e.key === "ArrowRight" ? slot + 1 : e.key === "ArrowLeft" ? slot - 1 : e.key === "Home" ? 0 : e.key === "End" ? last : null;
+    if (target === null) return;
     e.preventDefault();
-    const next = Math.min(indexes.length - 1, Math.max(0, slot + step));
+    const next = Math.min(last, Math.max(0, target));
     setFocusSlot(next);
     buttons.current[next]?.focus();
   };
-
-  const last = indexes.length - 1;
 
   return (
     <div

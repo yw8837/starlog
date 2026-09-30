@@ -38,8 +38,8 @@ describe("footerNotice", () => {
   });
 
   it("never renders an address, even if one were configured", () => {
-    const notice = footerNotice({ ...SITE.business, address: "서울시 어딘가 1" });
-    expect(notice.some((line) => line.includes("서울시 어딘가"))).toBe(false);
+    const notice = footerNotice({ ...SITE.business, address: "ADDRESS-SENTINEL" });
+    expect(notice.some((line) => line.includes("ADDRESS-SENTINEL"))).toBe(false);
     expect(notice.some((line) => line.startsWith("주소"))).toBe(false);
   });
 });

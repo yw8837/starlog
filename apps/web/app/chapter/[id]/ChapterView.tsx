@@ -15,7 +15,7 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { SITE } from "@/lib/config";
-import type { TarotSample } from "@/lib/fixtures";
+import type { FollowUpFixture, TarotSample } from "@/lib/fixtures";
 import { summarizeFlow, useFlowState, type FlowFallback } from "@/lib/flowState";
 import s from "./ChapterView.module.css";
 
@@ -26,12 +26,12 @@ type ChapterViewProps = {
   /** Show the writing state first (arriving from an unlock). */
   generate: boolean;
   inviteUrl: string;
-  followUpAnswer: string;
+  followUps: FollowUpFixture;
   fallback: FlowFallback;
 };
 
 /** An opened tarot chapter: story/plain toggle, the full reading, follow-ups, rating and friend invite. */
-export function ChapterView({ sample, chapterLabel, generate, inviteUrl, followUpAnswer, fallback }: ChapterViewProps) {
+export function ChapterView({ sample, chapterLabel, generate, inviteUrl, followUps, fallback }: ChapterViewProps) {
   const [writing, setWriting] = useState(generate);
   const [mode, setMode] = useState<ReadingMode>("plain");
   const [enlarged, setEnlarged] = useState<number | null>(null);
@@ -79,7 +79,7 @@ export function ChapterView({ sample, chapterLabel, generate, inviteUrl, followU
 
         {mode === "plain" ? <ReadingArticle paid={sample.paid} /> : <StoryPage title={sample.story.title} body={sample.story.body} />}
 
-        <FollowUp suggestions={sample.followUps} answer={followUpAnswer} />
+        <FollowUp suggestions={followUps.suggestions} answers={followUps.answers} otherAnswer={followUps.other} />
         <Feedback />
 
         <section className={s.invite} aria-labelledby="invite-title">

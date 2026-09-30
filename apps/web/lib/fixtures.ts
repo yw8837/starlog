@@ -2,6 +2,7 @@ import "server-only";
 import { TEMPLATES, type Orientation, type TemplateId } from "@starlog/core";
 import sajuJson from "@content/samples/saju-prologue.ko.json";
 import tarotJson from "@content/samples/tarot-contact.ko.json";
+import type { FlowFallback } from "./flowState";
 
 /**
  * Gold fixtures for P1 screens. Real readings arrive in P3; until then every result and chapter
@@ -69,6 +70,13 @@ export const TAROT_SAMPLE: TarotSample = {
   ...tarotJson,
   template: toTemplateId(tarotJson.template),
   cards: tarotJson.cards.map((card) => ({ ...card, orientation: toOrientation(card.orientation) })),
+};
+
+/** What the tarot screens show on a direct visit, when no question was built in this tab. */
+export const TAROT_FALLBACK: FlowFallback = {
+  question: TAROT_SAMPLE.question,
+  template: TAROT_SAMPLE.template,
+  input: { conditions: TAROT_SAMPLE.input.conditions, note: TAROT_SAMPLE.input.note },
 };
 
 export type SajuSample = typeof sajuJson;
@@ -152,18 +160,50 @@ export const STORY_FIXTURE: { chapters: StoryChapter[]; friendScenes: FriendScen
 /** Signed-in fixture balance: enough 별조각 for one reading, 6 달빛 short of one. */
 export const WALLET_FIXTURE = { moonlight: 4, stardust: 12 };
 
-/** The one follow-up answer P1 can give (P3 generates real ones). */
-export const FOLLOW_UP_ANSWER =
-  "가벼운 안부로 정했으니 첫 문장은 한 줄이면 충분해요. 두 번째 예시처럼 내 요즘 이야기를 조금 먼저 꺼내고, 질문은 하나만 붙여 보세요. 저녁에 다시 읽었을 때 반가운 마음이 먼저 들면 그대로 보내고, 숙제처럼 느껴지면 이번 주 안에 한 번 더 읽고 정해도 늦지 않아요.";
+/**
+ * Follow-up fixtures for an opened reading (P3 answers real questions): the suggested questions,
+ * an answer written for each suggestion, and one answer for anything the user types.
+ */
+export interface FollowUpFixture {
+  suggestions: string[];
+  /** Keyed by the suggestion's exact text. */
+  answers: Record<string, string>;
+  /** Answer to a question the user typed. */
+  other: string;
+}
+
+const [draftLine = "", afterSending = ""] = tarotJson.followUps;
 
 /**
- * Follow-ups on the sample prologue (P3 answers real questions). The one answer covers both
- * suggestions and states only the sample chart's facts, with the reading hedged.
+ * Tarot sample follow-ups. The answers never assume what the user chose ("가벼운 안부라면…"), and
+ * the first one actually drafts the line it was asked for.
  */
-export const SAJU_FOLLOW_UPS = {
-  suggestions: ["겉에 금이 없다는 건 어떤 뜻이에요?", "태어난 시를 알게 되면 뭐가 달라져요?"],
-  answer:
-    "확실한 것부터 말하면, 일간은 병화(丙火)이고 보이는 여섯 글자 가운데 금(金)은 없어요. 대신 태어난 해의 뱀(巳) 속에 경금(庚金)이 숨어 있어요. 명리에서는 이런 구조를 금이 모자라다기보다 의식해서 꺼내 써야 하는 힘으로 읽기도 해요. 태어난 시를 알게 되면 시주 두 글자가 더해져 오행 개수와 대운이 시작되는 시기가 달라질 수 있으니, 그때 내 정보에서 고치고 다시 계산해 보세요.",
+export const TAROT_FOLLOW_UPS: FollowUpFixture = {
+  suggestions: [draftLine, afterSending],
+  answers: {
+    [draftLine]:
+      "가벼운 안부라면 첫 문장은 한 줄이면 충분해요. 이렇게 써 볼 수 있어요. “문득 생각나서 연락해 봤어. 요즘 어떻게 지내?” 두 사람이 나눴던 이야기가 떠오르면 “지난번에 얘기했던 ○○ 어떻게 됐어?”처럼 그 이야기로 바꿔도 좋아요. 말투는 평소 쓰던 대로 고치고, 질문은 하나만 남겨 두세요.",
+    [afterSending]:
+      "보낸 뒤 답을 기다리는 일이 숙제처럼 느껴진다면, 은둔자처럼 등불을 잠시 내 쪽으로 돌려 보세요. 휴대폰은 조금 멀리 두고, 읽었는지 확인하거나 한 번 더 보내는 일은 미뤄 두는 거예요. 답이 오면 그때 반갑게 이어 가면 충분해요. 답이 늦는다고 그 사람의 마음을 다 알 수 있는 건 아니니, 오늘은 내 할 일로 하루를 채워 보세요.",
+  },
+  other:
+    "펼친 세 장에 비춰서 볼게요. 은둔자는 먼저 내 마음을 고르라고, 별은 두 사람 사이가 천천히 다시 채워질 수 있다고, 완드 에이스는 작게 시작하라고 말해요. 궁금한 일도 이 순서로 살펴보세요. 내 마음이 먼저 분명해지면, 다음 한 걸음은 작고 가벼운 쪽이 잘 맞아요.",
+};
+
+const metalQuestion = "겉에 금이 없다는 건 어떤 뜻이에요?";
+const hourQuestion = "태어난 시를 알게 되면 뭐가 달라져요?";
+
+/** Follow-ups on the sample prologue. They state only the sample chart's facts, with the reading hedged. */
+export const SAJU_FOLLOW_UPS: FollowUpFixture = {
+  suggestions: [metalQuestion, hourQuestion],
+  answers: {
+    [metalQuestion]:
+      "확실한 것부터 말하면, 일간은 병화(丙火)이고 보이는 여섯 글자 가운데 금(金)은 없어요. 대신 태어난 해의 뱀(巳) 속에 경금(庚金)이 숨어 있어요. 명리에서는 이런 구조를 금이 모자라다기보다 의식해서 꺼내 써야 하는 힘으로 읽기도 해요.",
+    [hourQuestion]:
+      "지금은 태어난 시를 몰라 연주·월주·일주의 여섯 글자로만 읽었어요. 태어난 시를 알게 되면 시주 두 글자가 더해져 오행 개수와 대운이 시작되는 시기가 달라질 수 있어요. 그때 내 정보에서 고치고 다시 계산해 보세요.",
+  },
+  other:
+    "확실한 것부터 말하면, 일간은 병화(丙火)이고 한겨울인 자월(子月)에 태어났어요. 명리에서는 이 명식을 한겨울에 뜬 해, 곧 추운 계절에 주변을 데우는 불로 읽기도 해요. 궁금한 일도 이 그림에 비춰 보고, 위 풀이에서 내 경험과 맞물리는 장면부터 찾아보세요.",
 };
 
 /** Placeholder invite token for the share preview (real tokens come with P2). */

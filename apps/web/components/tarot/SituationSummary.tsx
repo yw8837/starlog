@@ -7,10 +7,11 @@ type SituationSummaryProps = {
   noteLimit?: number;
 };
 
-/** "선택한 상황": only the conditions the user picked, plus the start of their note. */
+/** "선택한 상황": only the conditions the user picked, plus the start of their note (a blank note shows nothing). */
 export function SituationSummary({ conditions, note, noteLimit = 48 }: SituationSummaryProps) {
-  if (conditions.length === 0 && !note) return null;
-  const excerpt = note.length > noteLimit ? `${note.slice(0, noteLimit).trimEnd()}…` : note;
+  const text = note.trim();
+  if (conditions.length === 0 && !text) return null;
+  const excerpt = text.length > noteLimit ? `${text.slice(0, noteLimit).trimEnd()}…` : text;
   return (
     <section className={s.summary} aria-labelledby="situation-title">
       <h2 id="situation-title" className={s.title}>

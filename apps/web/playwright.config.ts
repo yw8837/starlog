@@ -63,8 +63,10 @@ export default defineConfig({
     launchOptions: executablePath ? { executablePath } : {},
   },
   projects: [
-    { name: "mobile", use: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2 } },
-    { name: "desktop", use: { viewport: { width: 1280, height: 800 } } },
+    { name: "mobile", testIgnore: /fan-touch/, use: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2 } },
+    { name: "desktop", testIgnore: /fan-touch/, use: { viewport: { width: 1280, height: 800 } } },
+    // Real touch input (pointerType "touch") for the card fan.
+    { name: "touch", testMatch: /fan-touch/, use: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
   ],
   webServer: {
     command: "pnpm dev",

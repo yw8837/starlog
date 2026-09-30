@@ -17,6 +17,13 @@
   gap: 20px;
 }
 
+/* Narrow phones (360px): a tighter gap keeps three cards at least 100px wide in a 320px column. */
+@media (max-width: 379px) {
+  .row {
+    gap: 8px;
+  }
+}
+
 .item {
   display: flex;
   flex-direction: column;

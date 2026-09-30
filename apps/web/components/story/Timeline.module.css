@@ -147,7 +147,6 @@
 }
 
 .glyph {
-  --el: var(--el-metal);
   display: grid;
   place-items: center;
   width: 46px;
@@ -160,22 +159,6 @@
   font-weight: 700;
   line-height: 1;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-
-.glyph[data-el="wood"] {
-  --el: var(--el-wood);
-}
-
-.glyph[data-el="fire"] {
-  --el: var(--el-fire);
-}
-
-.glyph[data-el="earth"] {
-  --el: var(--el-earth);
-}
-
-.glyph[data-el="water"] {
-  --el: var(--el-water);
 }
 
 /* Tarot: the chapter's three cards, fanned a little. */

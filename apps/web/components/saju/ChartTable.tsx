@@ -21,10 +21,10 @@ const COLUMNS: ReadonlyArray<{ key: PillarKey; label: string }> = [
 function Glyph({ char, ko, element, row, isDayMaster }: { char: string; ko: string; element: ReturnType<typeof stemElement>; row: "천간" | "지지"; isDayMaster?: boolean }) {
   return (
     <span className={isDayMaster ? `${s.tile} ${s.dayMaster}` : s.tile} data-el={ELEMENT_KEY[element]}>
-      <span className={s.srOnly}>{`${row} `}</span>
+      <span className="sr-only">{`${row} `}</span>
       <span className={s.hanja}>{char}</span>
       <span className={s.ko}>{ko}</span>
-      <span className={s.srOnly}>{`, ${element}(${ELEMENT_HANJA[element]})`}</span>
+      <span className="sr-only">{`, ${element}(${ELEMENT_HANJA[element]})`}</span>
     </span>
   );
 }
@@ -61,7 +61,7 @@ export function ChartTable({ chart, title = "명식" }: ChartTableProps) {
         {title}
       </h2>
       <table className={s.table}>
-        <caption className={s.srOnly}>사주 명식, 왼쪽부터 시주·일주·월주·연주</caption>
+        <caption className="sr-only">사주 명식, 왼쪽부터 시주·일주·월주·연주</caption>
         <thead>
           <tr>
             {COLUMNS.map((column) => (

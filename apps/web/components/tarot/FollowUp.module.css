@@ -122,6 +122,10 @@
   font-size: 16px;
 }
 
+.input[aria-disabled] {
+  opacity: 0.6;
+}
+
 .input::placeholder {
   color: rgba(201, 193, 234, 0.75);
 }
@@ -136,13 +140,8 @@
   font-size: var(--fs-sub);
 }
 
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+.done:focus {
+  outline: none;
 }
 
 @keyframes bounce {

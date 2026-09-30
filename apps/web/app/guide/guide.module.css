@@ -104,7 +104,6 @@
 }
 
 .glyph {
-  --el: var(--el-metal);
   display: grid;
   place-items: center;
   flex: none;
@@ -116,10 +115,6 @@
   font-family: var(--font-display), var(--font-body), serif;
   font-size: 24px;
   font-weight: 700;
-}
-
-.glyph[data-el="wood"] {
-  --el: var(--el-wood);
 }
 
 /* ---- article (reading width 640px) ---- */

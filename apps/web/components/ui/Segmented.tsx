@@ -4,8 +4,8 @@ type SegmentedProps<T extends string> = {
   options: ReadonlyArray<{ value: T; label: string }>;
   value: T;
   onChange: (value: T) => void;
-  /** Accessible name for the group. */
-  label?: string;
+  /** Accessible name for the group (required: a toggle group is never unnamed). */
+  label: string;
   /** id of a helper line that describes the choice. */
   describedBy?: string;
 };

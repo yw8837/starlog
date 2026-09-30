@@ -2,13 +2,13 @@ import { TEMPLATES, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { SITE } from "./config";
 import {
-  FOLLOW_UP_ANSWER,
   INVITE_FIXTURE,
   INVITE_FIXTURE_TOKEN,
   ME_FIXTURE,
   SAJU_FOLLOW_UPS,
   SAJU_SAMPLE,
   STORY_FIXTURE,
+  TAROT_FOLLOW_UPS,
   TAROT_SAMPLE,
   WALLET_FIXTURE,
   nextChapterNumber,
@@ -100,34 +100,63 @@ describe("fixture extras", () => {
     expect(WALLET_FIXTURE).toEqual({ moonlight: 4, stardust: 12 });
   });
 
-  it("has a follow-up answer in 해요체", () => {
-    expect(FOLLOW_UP_ANSWER.length).toBeGreaterThan(40);
-    expect(FOLLOW_UP_ANSWER).toMatch(/요\.$/);
-  });
-
   it("signs the user in as 별지기", () => {
     expect(ME_FIXTURE.nickname).toBe("별지기");
     expect(ME_FIXTURE.provider).toBe("카카오");
   });
 });
 
+describe("TAROT_FOLLOW_UPS", () => {
+  const all = () => [...Object.values(TAROT_FOLLOW_UPS.answers), TAROT_FOLLOW_UPS.other];
+
+  it("answers each of the sample's suggestions with its own 해요체 answer, plus one for typed questions", () => {
+    expect(TAROT_FOLLOW_UPS.suggestions).toEqual(TAROT_SAMPLE.followUps);
+    for (const q of TAROT_FOLLOW_UPS.suggestions) expect(TAROT_FOLLOW_UPS.answers[q]).toBeTruthy();
+    expect(new Set(all()).size).toBe(all().length);
+    for (const answer of all()) expect(answer).toMatch(/요\.$/);
+  });
+
+  it("never asserts what the user chose, and drafts the line it was asked for", () => {
+    for (const answer of all()) expect(answer).not.toContain("정했으니");
+    const draft = TAROT_FOLLOW_UPS.answers[TAROT_SAMPLE.followUps[0] ?? ""] ?? "";
+    expect(draft).toContain("가벼운 안부라면");
+    expect(draft).toMatch(/“[^”]+\?”/);
+  });
+
+  it("makes no guarantees", () => {
+    for (const answer of all()) for (const word of ["반드시", "보장", "확률", "무조건"]) expect(answer).not.toContain(word);
+  });
+});
+
 describe("SAJU_FOLLOW_UPS", () => {
-  it("offers two suggestions and one 해요체 answer", () => {
+  const all = () => [...Object.values(SAJU_FOLLOW_UPS.answers), SAJU_FOLLOW_UPS.other];
+
+  it("offers two suggestions, each with its own 해요체 answer, plus one for typed questions", () => {
     expect(SAJU_FOLLOW_UPS.suggestions).toHaveLength(2);
-    for (const q of SAJU_FOLLOW_UPS.suggestions) expect(q).toMatch(/요\?$/);
-    expect(SAJU_FOLLOW_UPS.answer).toMatch(/요\.$/);
+    for (const q of SAJU_FOLLOW_UPS.suggestions) {
+      expect(q).toMatch(/요\?$/);
+      expect(SAJU_FOLLOW_UPS.answers[q]).toBeTruthy();
+    }
+    expect(new Set(all()).size).toBe(all().length);
+    for (const answer of all()) expect(answer).toMatch(/요\.$/);
   });
 
   it("states only the sample chart's facts, with the reading hedged", () => {
-    const { answer } = SAJU_FOLLOW_UPS;
-    const { dayMaster, elements, hiddenStems } = SAJU_SAMPLE.chart;
-    expect(answer).toContain(`일간은 ${dayMaster.ko}(${dayMaster.stem}火)`);
+    const [metal = "", hour = ""] = SAJU_FOLLOW_UPS.suggestions;
+    const metalAnswer = SAJU_FOLLOW_UPS.answers[metal] ?? "";
+    const { dayMaster, elements, hiddenStems, pillars } = SAJU_SAMPLE.chart;
+    expect(metalAnswer).toContain(`일간은 ${dayMaster.ko}(${dayMaster.stem}火)`);
     expect(elements.금).toBe(0);
-    expect(answer).toContain("보이는 여섯 글자 가운데 금(金)은 없어요");
+    expect(metalAnswer).toContain("보이는 여섯 글자 가운데 금(金)은 없어요");
     expect(hiddenStems.year).toContain("庚");
-    expect(answer).toContain("뱀(巳) 속에 경금(庚金)");
-    expect(answer).toContain("읽기도 해요");
-    for (const word of ["반드시", "보장", "확률", "무조건"]) expect(answer).not.toContain(word);
+    expect(metalAnswer).toContain("뱀(巳) 속에 경금(庚金)");
+    expect(metalAnswer).toContain("읽기도 해요");
+    expect(pillars.hour).toBeNull();
+    expect(SAJU_FOLLOW_UPS.answers[hour]).toContain("태어난 시를 몰라");
+    expect(pillars.month.branch).toBe("子");
+    expect(SAJU_FOLLOW_UPS.other).toContain("자월(子月)");
+    expect(SAJU_FOLLOW_UPS.other).toContain("읽기도 해요");
+    for (const answer of all()) for (const word of ["반드시", "보장", "확률", "무조건"]) expect(answer).not.toContain(word);
   });
 });
 

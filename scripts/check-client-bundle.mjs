@@ -49,6 +49,15 @@ if (!existsSync(staticDir)) {
 
 const escapeNonAscii = (text) => text.replace(/[^\x00-\x7f]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
 
+/**
+ * The forms a probe can take inside a bundle: as written, with its double quotes escaped (a string
+ * literal or JSON inside JS), and each of those with non-ASCII as \uXXXX escapes (either case).
+ */
+function forms(probe) {
+  const quoted = [...new Set([probe, probe.replaceAll('"', '\\"')])];
+  return [...new Set(quoted.flatMap((text) => [text, escapeNonAscii(text), escapeNonAscii(text).toLowerCase()]))];
+}
+
 function* files(dir) {
   for (const name of readdirSync(dir)) {
     const path = join(dir, name);
@@ -64,9 +73,7 @@ for (const path of files(staticDir)) {
   scanned++;
   const text = readFileSync(path, "utf8");
   for (const probe of probes) {
-    if (text.includes(probe) || text.includes(escapeNonAscii(probe)) || text.includes(escapeNonAscii(probe).toLowerCase())) {
-      hits.push(`${relative(root, path)}: ${probe}`);
-    }
+    if (forms(probe).some((form) => text.includes(form))) hits.push(`${relative(root, path)}: ${probe}`);
   }
 }
 

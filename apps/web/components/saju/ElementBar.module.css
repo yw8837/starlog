@@ -23,32 +23,11 @@
 }
 
 .row {
-  --el: var(--el-metal);
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr) 20px;
   align-items: center;
   gap: 12px;
   min-height: 30px;
-}
-
-.row[data-el="wood"] {
-  --el: var(--el-wood);
-}
-
-.row[data-el="fire"] {
-  --el: var(--el-fire);
-}
-
-.row[data-el="earth"] {
-  --el: var(--el-earth);
-}
-
-.row[data-el="metal"] {
-  --el: var(--el-metal);
-}
-
-.row[data-el="water"] {
-  --el: var(--el-water);
 }
 
 .name {
@@ -96,13 +75,4 @@
 .row[data-empty] .count,
 .row[data-empty] .name {
   color: var(--ink-sub);
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }

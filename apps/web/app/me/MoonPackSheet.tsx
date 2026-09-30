@@ -27,7 +27,7 @@ export function MoonPackSheet({ titleId, moonlight, onBuy }: MoonPackSheetProps)
       <p className={s.sheetBalance}>{`지금 ${paid} ${moonlight}개 · 한 장은 ${SITE.price.unitsPerReading}개로 열려요`}</p>
 
       <fieldset className={s.packs}>
-        <legend className={s.srOnly}>충전할 묶음</legend>
+        <legend className="sr-only">충전할 묶음</legend>
         {packs.map((option, i) => (
           <label key={option.units} className={s.pack}>
             <input type="radio" name="moon-pack" checked={picked === i} onChange={() => setPicked(i)} />
