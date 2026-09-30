@@ -20,6 +20,31 @@
   line-height: 1.6;
 }
 
+.sections {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionHeading {
+  display: grid;
+  gap: 2px;
+  font-size: 19px;
+  line-height: 1.45;
+}
+
+.sectionLabel {
+  color: #5d4d7a;
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.prose {
+  margin-top: 12px;
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+}
+
 .toggle {
   width: min(100%, 280px);
   margin: 0 auto 4px;

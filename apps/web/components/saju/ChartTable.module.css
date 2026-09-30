@@ -1,0 +1,190 @@
+.chart {
+  container-type: inline-size;
+}
+
+.title {
+  font-size: var(--fs-h2);
+}
+
+/* The negative margin pulls the outer border-spacing back, so the tiles line up with the section edges. */
+.table {
+  width: calc(100% + 16px);
+  margin: 10px -8px 0;
+  border-collapse: separate;
+  border-spacing: 8px 0;
+  table-layout: fixed;
+}
+
+.head {
+  padding-bottom: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-align: center;
+}
+
+.headDay {
+  color: var(--gold);
+}
+
+.cell {
+  position: relative;
+  padding: 0;
+  text-align: center;
+  vertical-align: top;
+}
+
+.god {
+  display: block;
+  padding: 4px 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.godDay {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* Stem and branch tiles meet in the middle with a small gap. */
+tr:first-child .tile {
+  margin-bottom: 4px;
+}
+
+tr:last-child .tile {
+  margin-top: 4px;
+}
+
+.tile {
+  --el: var(--el-metal);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  width: 100%;
+  max-width: 80px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.45), transparent 60%),
+    var(--el);
+  color: #221a38;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 8px 18px rgba(5, 3, 15, 0.38);
+}
+
+.tile[data-el="wood"] {
+  --el: var(--el-wood);
+}
+
+.tile[data-el="fire"] {
+  --el: var(--el-fire);
+}
+
+.tile[data-el="earth"] {
+  --el: var(--el-earth);
+}
+
+.tile[data-el="metal"] {
+  --el: var(--el-metal);
+}
+
+.tile[data-el="water"] {
+  --el: var(--el-water);
+}
+
+.hanja {
+  font-family: var(--font-display), var(--font-body), serif;
+  font-size: clamp(26px, 8.4cqi, 36px);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ko {
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #3a2d52;
+}
+
+/* The day master: gold ring and a soft halo. */
+.dayMaster {
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 0 22px 2px rgba(243, 220, 161, 0.45),
+    0 8px 18px rgba(5, 3, 15, 0.38);
+}
+
+.unknownCell {
+  vertical-align: middle;
+}
+
+.unknown {
+  position: absolute;
+  inset: 25px 0;
+  display: grid;
+  place-items: center;
+  max-width: 80px;
+  margin: 0 auto;
+  border: 1.5px dashed rgba(243, 220, 161, 0.45);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.unknownText {
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  writing-mode: vertical-rl;
+  letter-spacing: 0.3em;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.fact {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: var(--glass);
+}
+
+.fact dt {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.fact dd {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.factHanja {
+  margin-right: 6px;
+  color: var(--gold);
+  font-family: var(--font-display), var(--font-body), serif;
+  font-size: 17px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -1,0 +1,33 @@
+/* Glass panel on phones; on desktop the sticky spread column of ReadingLayout already draws one. */
+.panel {
+  display: grid;
+  gap: 24px;
+  padding: 20px 16px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+@media (min-width: 1024px) {
+  .panel {
+    padding: 0 8px;
+    border: 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+.placeholder {
+  min-height: 420px;
+}
+
+.failed {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  color: var(--ink);
+  line-height: 1.7;
+}

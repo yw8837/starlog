@@ -83,6 +83,25 @@
   color: var(--ink);
 }
 
+/* On paper: navy ink instead of the light sky styles (Paper also switches --focus-ring to navy). */
+.onPaper.secondary {
+  border-color: rgba(43, 33, 64, 0.38);
+  color: var(--paper-ink);
+  font-weight: 700;
+}
+
+.onPaper.secondary:hover:not(:disabled) {
+  background: rgba(43, 33, 64, 0.07);
+}
+
+.onPaper.ghost {
+  color: #4a3d63;
+}
+
+.onPaper.ghost:hover:not(:disabled) {
+  color: var(--paper-ink);
+}
+
 .trailing {
   display: inline-flex;
   align-items: center;

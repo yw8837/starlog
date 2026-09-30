@@ -62,59 +62,6 @@
   padding-top: 28px;
 }
 
-.check {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 0 16px;
-  border: 1px solid var(--glass-line);
-  border-radius: 16px;
-  background: var(--glass);
-  font-size: var(--fs-body);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.check input {
-  position: absolute;
-  top: 50%;
-  left: 28px;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.box {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 24px;
-  height: 24px;
-  border: 1.5px solid var(--ink-sub);
-  border-radius: 7px;
-  color: transparent;
-  transition:
-    background-color 120ms ease,
-    border-color 120ms ease;
-}
-
-.check input:checked + .box {
-  border-color: var(--gold);
-  background: var(--gold);
-  color: #2a1b4d;
-}
-
-.check input:focus-visible + .box {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.check input[aria-invalid="true"] + .box {
-  border-color: #ff9aa8;
-}
-
 .error {
   margin-top: -4px;
   padding-left: 4px;

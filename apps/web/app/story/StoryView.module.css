@@ -1,0 +1,150 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Room for the floating button above the tab bar. */
+.main {
+  min-width: 0;
+  padding-bottom: 84px;
+}
+
+.head {
+  padding-top: 28px;
+}
+
+.eyebrow {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.title {
+  margin-top: 2px;
+  font-size: 28px;
+}
+
+.count {
+  margin-top: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.toggle {
+  width: min(100%, 240px);
+  margin: 18px 0 24px;
+}
+
+.rail {
+  display: none;
+}
+
+.floating {
+  position: fixed;
+  right: 0;
+  bottom: calc(var(--tab-h) + 16px + env(safe-area-inset-bottom, 0px));
+  left: 0;
+  z-index: 15;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.floating > * {
+  box-shadow:
+    0 10px 28px rgba(5, 3, 15, 0.55),
+    0 0 24px rgba(243, 220, 161, 0.25);
+  pointer-events: auto;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 640px) 300px;
+    column-gap: 56px;
+    justify-content: center;
+  }
+
+  .main {
+    padding-bottom: 24px;
+  }
+
+  .rail {
+    display: block;
+    padding-top: 28px;
+  }
+
+  .floating {
+    display: none;
+  }
+}
+
+.next {
+  position: sticky;
+  top: 32px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px 20px 16px;
+  border: 1px solid rgba(243, 220, 161, 0.3);
+  border-radius: 24px;
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(243, 220, 161, 0.14), transparent 70%),
+    rgba(255, 255, 255, 0.05);
+  text-align: center;
+}
+
+.nextCat {
+  margin-bottom: -4px;
+}
+
+.nextTitle {
+  font-size: 20px;
+}
+
+.nextText {
+  margin-bottom: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}
+
+/* ---- empty ---- */
+
+/* Fills the screen above the tab bar, so the footer stays below the fold. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: var(--col-max);
+  min-height: calc(100dvh - var(--tab-h) - env(safe-area-inset-bottom, 0px));
+  margin: 0 auto;
+  padding: 28px 0 40px;
+  text-align: center;
+}
+
+.empty .title {
+  align-self: flex-start;
+}
+
+.emptyArt {
+  margin-top: auto;
+}
+
+.emptyTitle {
+  margin-top: 12px;
+  font-family: var(--font-display), serif;
+  font-size: var(--fs-h1);
+  font-weight: 700;
+}
+
+.emptyText {
+  margin-top: 6px;
+  color: var(--ink-sub);
+}
+
+.emptyCta {
+  width: 100%;
+  max-width: 320px;
+  margin-top: 28px;
+  margin-bottom: auto;
+}

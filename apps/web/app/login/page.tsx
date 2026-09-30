@@ -10,7 +10,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     <div className="page-shell">
       <NightSky fixed glow="center" />
       <main className="page-col">
-        <LoginPanel instant={query.instant === "1"} />
+        <LoginPanel instant={query.instant === "1"} chapter={query.chapter === "prologue" ? "prologue" : "sample"} />
       </main>
     </div>
   );

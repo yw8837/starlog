@@ -62,7 +62,7 @@ export function ChapterView({ sample, chapterLabel, generate, inviteUrl, followU
 
   return (
     <>
-      <Stepper label={bookTitle} backHref="/" backLabel="홈으로" />
+      <Stepper label={bookTitle} backHref="/story" backLabel="내 이야기로" />
       <ReadingLayout
         head={
           <header className={s.head}>

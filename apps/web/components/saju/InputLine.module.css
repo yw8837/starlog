@@ -1,0 +1,5 @@
+.line {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.55;
+}

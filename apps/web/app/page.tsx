@@ -1,36 +1,56 @@
-import { Cat } from "@/components/characters/Cat";
-import { Rabbit } from "@/components/characters/Rabbit";
+import { FriendScenesRow, GuideChips, SajuEntry, TarotEntry, TodayRow } from "@/components/home/HomeEntries";
+import { StoryHero, WelcomeHero } from "@/components/home/HomeHero";
+import { HomeTopBar } from "@/components/home/HomeTopBar";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
-import { Button } from "@/components/ui/Button";
-import { SITE } from "@/lib/config";
+import { STORY_FIXTURE, WALLET_FIXTURE, nextChapterNumber } from "@/lib/fixtures";
+import { GUIDE_ARTICLES } from "@/lib/guide";
 import s from "./page.module.css";
 
-// Minimal home for the tarot flow. The full home (story card, today's card, friends, guide) lands next.
-export default function HomePage() {
+/**
+ * Home. Returning visitor (fixture 별지기): story card, tarot (gold) and saju entries, today's card,
+ * friend scenes, guide. `?visit=first`: a welcome from both characters and a single first-reading button.
+ */
+export default async function HomePage({ searchParams }: PageProps<"/">) {
+  const query = await searchParams;
+  const first = query.visit === "first";
+  const pending = first ? [] : STORY_FIXTURE.friendScenes.filter((scene) => scene.status === "pending");
+  const lastChapter = STORY_FIXTURE.chapters.findLast((chapter) => chapter.kind === "tarot");
+
   return (
     <div className="page-shell with-tabbar">
       <NightSky constellation />
-      <main className={`page-col ${s.home}`}>
-        <header className={s.header}>
-          <h1 className={s.wordmark}>{SITE.name}</h1>
-          <p className={s.sub}>{SITE.nameKo}</p>
-        </header>
+      <main className={`page-col page-wide ${s.home}`}>
+        <HomeTopBar wallet={first ? null : WALLET_FIXTURE} />
 
-        <div className={s.pair}>
-          <Cat outfit="tarot" size={168} />
-          <Rabbit outfit="tarot" size={128} />
-        </div>
-        <p className={s.lead}>타로와 사주로 오늘의 마음을 차분히 돌아보는 밤하늘 기록</p>
+        <div className={first ? `${s.grid} ${s.gridFirst}` : s.grid}>
+          <div className={s.hero}>
+            {first ? <WelcomeHero /> : <StoryHero nextChapter={nextChapterNumber(STORY_FIXTURE.chapters)} lastTitle={lastChapter?.title ?? null} />}
+          </div>
 
-        <div className={s.actions}>
-          <Button href="/tarot/new" block trailing="→">
-            타로 보기
-          </Button>
-          <Button href="/tarot/draw?template=daily" variant="secondary" block>
-            오늘의 한 장
-          </Button>
+          <div className={s.entries}>
+            {first ? null : <TarotEntry />}
+            <SajuEntry />
+            {/* First visit: today's card joins the entries column (there is no story or friend row yet). */}
+            {first ? <TodayRow /> : null}
+          </div>
+
+          {first ? null : (
+            <div className={s.today}>
+              <TodayRow />
+            </div>
+          )}
+
+          {pending.length > 0 ? (
+            <div className={s.friends}>
+              <FriendScenesRow scenes={pending} />
+            </div>
+          ) : null}
+
+          <div className={s.guide}>
+            <GuideChips articles={GUIDE_ARTICLES} />
+          </div>
         </div>
       </main>
       <Footer />

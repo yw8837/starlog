@@ -5,38 +5,44 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { Stepper } from "@/components/tarot/Stepper";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { SITE } from "@/lib/config";
 import { withFlags } from "@/lib/flowState";
 import s from "./LoginPanel.module.css";
 
+/** Which reading the sign-in opens: the tarot sample chapter or the saju prologue. */
+export type LoginChapter = "sample" | "prologue";
+
 /**
- * Sign-in right before a reading opens (P1 fixture: both buttons continue to the sample chapter).
+ * Sign-in right before a reading opens (P1 fixture: both buttons continue to the chapter).
  * The age checkbox is required; the buttons stay enabled and explain what is missing.
  */
-export function LoginPanel({ instant }: { instant: boolean }) {
+export function LoginPanel({ instant, chapter }: { instant: boolean; chapter: LoginChapter }) {
   const router = useRouter();
   const [adult, setAdult] = useState(false);
   const [showError, setShowError] = useState(false);
   const checkbox = useRef<HTMLInputElement>(null);
 
-  // P2 wires the real Kakao / Google sign-in; in P1 both continue to the sample chapter.
+  const saju = chapter === "prologue";
+
+  // P2 wires the real Kakao / Google sign-in; in P1 both continue to the chapter.
   const continueToReading = () => {
     if (!adult) {
       setShowError(true);
       checkbox.current?.focus();
       return;
     }
-    router.push(withFlags("/chapter/sample?from=unlock", { instant }));
+    router.push(withFlags(`/chapter/${chapter}?from=unlock`, { instant }));
   };
 
   return (
     <div className={s.screen}>
-      <Stepper label="로그인" backHref={withFlags("/tarot/result", { instant })} backLabel="풀이로 돌아가기" />
+      <Stepper label="로그인" backHref={withFlags(saju ? "/saju/chart" : "/tarot/result", { instant })} backLabel="풀이로 돌아가기" />
 
       <div className={s.intro}>
         <div className={s.hero}>
           <p className={s.bubble}>{`이 풀이를 ${SITE.nameKo}에 적어둘게요`}</p>
-          <Rabbit outfit="tarot" action="write" size={168} />
+          {saju ? <Rabbit outfit="hanbok" size={168} /> : <Rabbit outfit="tarot" action="write" size={168} />}
         </div>
 
         <h1 className={s.title}>로그인하고 전체 풀이 보기</h1>
@@ -44,25 +50,18 @@ export function LoginPanel({ instant }: { instant: boolean }) {
       </div>
 
       <div className={s.form}>
-        <label className={s.check}>
-          <input
-            ref={checkbox}
-            type="checkbox"
-            checked={adult}
-            onChange={(e) => {
-              setAdult(e.target.checked);
-              if (e.target.checked) setShowError(false);
-            }}
-            aria-invalid={showError}
-            aria-describedby={showError ? "age-error" : undefined}
-          />
-          <span className={s.box} aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m5 12.5 4.5 4.5L19 7.5" />
-            </svg>
-          </span>
-          <span>만 14세 이상이에요</span>
-        </label>
+        <Checkbox
+          ref={checkbox}
+          checked={adult}
+          onChange={(checked) => {
+            setAdult(checked);
+            if (checked) setShowError(false);
+          }}
+          invalid={showError}
+          describedBy={showError ? "age-error" : undefined}
+        >
+          만 14세 이상이에요
+        </Checkbox>
         {showError ? (
           <p id="age-error" className={s.error} role="alert">
             만 14세 이상인지 먼저 확인해 주세요

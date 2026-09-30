@@ -1,0 +1,136 @@
+.form {
+  display: grid;
+  gap: 26px;
+}
+
+.group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* A floated <legend> is no longer drawn on the fieldset border; it becomes a plain grid item. */
+.label {
+  float: left;
+  width: 100%;
+  padding: 0;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.timeRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.unit {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+/* Native select on glass, with a drawn chevron. 16px text keeps iOS from zooming in. */
+.selectWrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.selectWrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.8px solid var(--ink-sub);
+  border-bottom: 1.8px solid var(--ink-sub);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.select {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  margin: 0;
+  padding: 0 34px 0 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  appearance: none;
+  cursor: pointer;
+}
+
+.select:hover {
+  border-color: var(--line-strong);
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.select[aria-invalid="true"] {
+  border-color: #ff9aa8;
+}
+
+.select option {
+  background: #1d1850;
+  color: var(--ink);
+}
+
+.confirm {
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.helper {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.error {
+  padding-left: 4px;
+  color: #ffb3bd;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.consent {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.submit {
+  display: grid;
+  gap: 10px;
+  outline: none;
+}

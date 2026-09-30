@@ -14,6 +14,8 @@ type ButtonProps = {
   type?: "button" | "submit";
   /** Icon or arrow shown after the label. */
   trailing?: ReactNode;
+  /** Dark-ink secondary/ghost styles for buttons placed on a paper card. */
+  onPaper?: boolean;
   children: ReactNode;
 };
 
@@ -26,9 +28,10 @@ export function Button({
   disabled = false,
   type = "button",
   trailing,
+  onPaper = false,
   children,
 }: ButtonProps) {
-  const className = [styles.btn, styles[variant], styles[size], block ? styles.block : ""]
+  const className = [styles.btn, styles[variant], styles[size], block ? styles.block : "", onPaper ? styles.onPaper : ""]
     .filter(Boolean)
     .join(" ");
   const content = (

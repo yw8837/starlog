@@ -5,50 +5,60 @@ import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import s from "./GeneratingState.module.css";
 
-export const GENERATING_CAPTIONS = [
-  "카드를 다시 읽는 중이에요",
-  "세 장의 연결을 살피는 중이에요",
-  "이야기로 옮겨 적는 중이에요",
-] as const;
+export const GENERATING_CAPTIONS = {
+  tarot: ["카드를 다시 읽는 중이에요", "세 장의 연결을 살피는 중이에요", "이야기로 옮겨 적는 중이에요"],
+  saju: ["명식을 다시 살피는 중이에요", "오행과 대운을 맞춰 보는 중이에요", "이야기로 옮겨 적는 중이에요"],
+} as const;
 
 type GeneratingStateProps = {
   onDone: () => void;
+  /** Tarot: the cat reads, the rabbit librarian writes. Saju: roles swap, both in hanbok. */
+  mode?: "tarot" | "saju";
   /** Fixture latency (P3 replaces it with the real generation). */
   duration?: number;
 };
 
-/** Waiting screen while a reading is written: the cat reads, the rabbit writes on the last step. */
-export function GeneratingState({ onDone, duration = 2500 }: GeneratingStateProps) {
+/** Waiting screen while a reading is written: the leader reads, the assistant joins on the last step. */
+export function GeneratingState({ onDone, mode = "tarot", duration = 2500 }: GeneratingStateProps) {
   const [step, setStep] = useState(0);
   const finish = useEffectEvent(() => onDone());
+  const captions = GENERATING_CAPTIONS[mode];
 
   useEffect(() => {
-    const per = duration / GENERATING_CAPTIONS.length;
+    const per = duration / captions.length;
     const timers = [
-      ...GENERATING_CAPTIONS.slice(1).map((_, i) => window.setTimeout(() => setStep(i + 1), per * (i + 1))),
+      ...captions.slice(1).map((_, i) => window.setTimeout(() => setStep(i + 1), per * (i + 1))),
       window.setTimeout(() => finish(), duration),
     ];
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [duration]);
+  }, [duration, captions]);
 
-  const last = step === GENERATING_CAPTIONS.length - 1;
+  const last = step === captions.length - 1;
 
   return (
     <section className={s.stage} aria-labelledby="generating-caption">
       <div className={s.characters}>
         <span className={s.glow} aria-hidden="true" />
-        <Cat outfit="tarot" action="glow" expression="focus" size={188} reactOnTap={false} />
+        {mode === "tarot" ? (
+          <Cat outfit="tarot" action="glow" expression="focus" size={188} reactOnTap={false} />
+        ) : (
+          <Rabbit outfit="hanbok" expression="focus" size={188} reactOnTap={false} />
+        )}
         {last ? (
           <span className={s.rabbit}>
-            <Rabbit outfit="tarot" action="write" expression="focus" size={112} reactOnTap={false} />
+            {mode === "tarot" ? (
+              <Rabbit outfit="tarot" action="write" expression="focus" size={112} reactOnTap={false} />
+            ) : (
+              <Cat outfit="hanbok" expression="happy" size={112} reactOnTap={false} />
+            )}
           </span>
         ) : null}
       </div>
       <p id="generating-caption" key={step} className={s.caption} role="status">
-        {GENERATING_CAPTIONS[step]}
+        {captions[step]}
       </p>
       <ol className={s.dots} aria-hidden="true">
-        {GENERATING_CAPTIONS.map((caption, i) => (
+        {captions.map((caption, i) => (
           <li key={caption} className={i <= step ? s.dotOn : undefined} />
         ))}
       </ol>

@@ -1,0 +1,81 @@
+/* ---- input (/saju/new) ---- */
+
+.inputScreen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "stepper"
+    "greeting"
+    "form";
+  max-width: var(--col-max);
+  margin: 0 auto;
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+}
+
+.stepper {
+  grid-area: stepper;
+}
+
+.greeting {
+  grid-area: greeting;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 12px;
+}
+
+.greeting h1 {
+  font-family: var(--font-display), serif;
+  font-size: 20px;
+}
+
+.cast {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* The cat assistant stands just behind the rabbit's shoulder, so the rabbit stays under the bubble. */
+.assistant {
+  position: absolute;
+  bottom: 0;
+  left: calc(100% - 46px);
+}
+
+.formCol {
+  grid-area: form;
+  margin-top: 20px;
+}
+
+@media (min-width: 1024px) {
+  .inputScreen {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
+    grid-template-areas:
+      "stepper stepper"
+      "greeting form";
+    column-gap: 72px;
+    max-width: 1040px;
+  }
+
+  .greeting {
+    position: sticky;
+    top: 48px;
+    align-self: start;
+    justify-content: center;
+    min-height: 520px;
+  }
+
+  .greeting h1 {
+    font-size: var(--fs-title);
+  }
+
+  /* The pair reads better larger beside the form; zoom keeps the SVG crisp and the layout box in step. */
+  .cast {
+    zoom: 1.45;
+  }
+
+  .formCol {
+    margin-top: 12px;
+  }
+}

@@ -1,43 +1,72 @@
 .home {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
+  padding-bottom: 8px;
 }
 
-.header {
-  padding: 64px 0 8px;
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 4px;
 }
 
-.wordmark {
-  font-size: 34px;
-  letter-spacing: 0.02em;
+.hero,
+.entries,
+.today,
+.friends,
+.guide {
+  min-width: 0;
 }
 
-.sub {
-  margin-top: 2px;
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  letter-spacing: 0.3em;
-}
-
-.pair {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  margin-top: 28px;
-}
-
-.lead {
-  max-width: 18em;
-  margin-top: 12px;
-  color: var(--ink-sub);
-  text-wrap: balance;
-}
-
-.actions {
+.entries {
   display: grid;
   gap: 12px;
-  width: 100%;
-  margin-top: 36px;
+}
+
+/* Desktop: story (or welcome) on the left, the two entries on the right, the rest below. */
+@media (min-width: 1024px) {
+  /* Narrower than the 1280 page-wide column: the home reads as one composed board. */
+  .home > * {
+    max-width: 1080px;
+    margin-inline: auto;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-areas:
+      "hero entries"
+      "today friends"
+      "guide guide";
+    column-gap: 32px;
+    row-gap: 28px;
+    align-items: center;
+    margin-top: 20px;
+  }
+
+  .gridFirst {
+    grid-template-areas:
+      "hero entries"
+      "guide guide";
+  }
+
+  .hero {
+    grid-area: hero;
+  }
+
+  .entries {
+    grid-area: entries;
+  }
+
+  .today {
+    grid-area: today;
+    align-self: start;
+  }
+
+  .friends {
+    grid-area: friends;
+    align-self: start;
+  }
+
+  .guide {
+    grid-area: guide;
+  }
 }

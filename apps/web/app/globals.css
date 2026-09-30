@@ -12,6 +12,12 @@
   --line-strong: rgba(255, 255, 255, 0.3);
   --surface-light: rgba(243, 220, 161, 0.22);
   --night-0: #0d0a26;
+  /* 오행 (saju chart tiles and the element bar) */
+  --el-wood: #7fc8a9;
+  --el-fire: #f08a7e;
+  --el-earth: #e3c07a;
+  --el-metal: #d9d9e3;
+  --el-water: #7fa7e8;
   /* Focus ring; paper surfaces switch it to navy so it stays visible on #F7EFE0. */
   --focus-ring: var(--gold);
 

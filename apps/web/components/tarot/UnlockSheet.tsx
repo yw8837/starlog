@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
-import { SITE } from "@/lib/config";
+import { SITE, won } from "@/lib/config";
 import s from "./UnlockSheet.module.css";
 
 export interface Wallet {
@@ -19,8 +19,6 @@ type UnlockSheetProps = {
   priceKrw?: number;
   title?: string;
 };
-
-const won = (krw: number) => `${new Intl.NumberFormat("ko-KR").format(krw)}원`;
 
 function TwoLine({ main, sub }: { main: string; sub: string }) {
   return (

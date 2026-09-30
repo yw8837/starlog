@@ -1,0 +1,346 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  padding: 28px 0 8px;
+}
+
+.col {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 32px;
+    max-width: 920px;
+    margin: 0 auto;
+    padding-top: 48px;
+  }
+}
+
+/* ---- profile ---- */
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 0 8px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.55), transparent 55%),
+    linear-gradient(135deg, #f3dca1, #cfa8ff);
+  color: #2a1b4d;
+  font-family: var(--font-display), serif;
+  font-size: 26px;
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(243, 220, 161, 0.25);
+}
+
+.profileText {
+  min-width: 0;
+}
+
+.nickname {
+  font-size: var(--fs-title);
+}
+
+.provider {
+  margin-top: 2px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+/* ---- wallet ---- */
+
+.wallet {
+  display: grid;
+  gap: 12px;
+  padding: 20px 18px 16px;
+  border: 1px solid rgba(243, 220, 161, 0.28);
+  border-radius: 24px;
+  background:
+    radial-gradient(90% 80% at 100% 0%, rgba(243, 220, 161, 0.12), transparent 60%),
+    rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.sectionTitle {
+  font-size: var(--fs-h2);
+}
+
+.balances {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0;
+}
+
+.balanceBox {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(13, 10, 38, 0.45);
+}
+
+.balanceLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.balanceValue {
+  margin: 0;
+  font-family: var(--font-display), serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.walletNote {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.notice {
+  min-height: 1.4em;
+  margin-top: -4px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-align: center;
+}
+
+.notice:empty {
+  display: none;
+}
+
+/* ---- saju profile ---- */
+
+.sajuInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 12px 16px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.sajuText {
+  flex: 1;
+  min-width: 0;
+}
+
+.sajuLabel {
+  color: var(--gold);
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.sajuValue {
+  min-height: 1.5em;
+  margin-top: 2px;
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.edit {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.edit:hover {
+  background: var(--glass);
+}
+
+.edit:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---- menu ---- */
+
+.list {
+  margin: 0;
+  padding: 4px 0;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  list-style: none;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.list li + li {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  margin: 0;
+  padding: 0 14px 0 18px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.item svg {
+  color: var(--ink-sub);
+}
+
+.item:hover:not(.itemSoon) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -3px;
+  border-radius: 14px;
+}
+
+.itemSoon {
+  color: var(--ink-sub);
+  cursor: default;
+}
+
+.soon {
+  padding: 1px 9px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  font-size: var(--fs-sub);
+}
+
+/* ---- 달빛 pack sheet ---- */
+
+.sheet {
+  display: grid;
+  gap: 14px;
+}
+
+.sheetTitle {
+  padding-right: 40px;
+  font-size: var(--fs-h1);
+}
+
+.sheetBalance {
+  margin-top: -8px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.packs {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pack {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+
+.pack input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.packBody {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+  padding: 0 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: rgba(13, 10, 38, 0.4);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.pack input:checked + .packBody {
+  border-color: var(--gold);
+  background: var(--surface-light);
+}
+
+.pack input:focus-visible + .packBody {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.packUnits {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.packBonus {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+}
+
+.packPrice {
+  flex: none;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
