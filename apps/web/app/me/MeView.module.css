@@ -31,23 +31,6 @@
   padding: 4px 0 8px;
 }
 
-.avatar {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.55), transparent 55%),
-    linear-gradient(135deg, #f3dca1, #cfa8ff);
-  color: #2a1b4d;
-  font-family: var(--font-display), serif;
-  font-size: 26px;
-  font-weight: 700;
-  box-shadow: 0 0 0 3px rgba(243, 220, 161, 0.25);
-}
-
 .profileText {
   min-width: 0;
 }
@@ -334,4 +317,105 @@
   font-size: 16px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* ---- beta (no balances yet) ---- */
+
+.beta {
+  display: grid;
+  gap: 4px;
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(243, 220, 161, 0.28);
+  border-radius: 24px;
+  background:
+    radial-gradient(90% 80% at 100% 0%, rgba(243, 220, 161, 0.12), transparent 60%),
+    rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.betaTitle {
+  font-size: var(--fs-h2);
+  line-height: 1.5;
+}
+
+.betaText {
+  min-height: 1.5em;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.sajuEmpty {
+  color: var(--ink-sub);
+  font-weight: 500;
+}
+
+/* ---- erase everything on this device: quiet, destructive, confirmed ---- */
+
+.erase {
+  justify-self: center;
+  min-height: 44px;
+  margin: 4px 0 0;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--error);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.erase:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.confirm {
+  display: grid;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.confirmTitle {
+  padding-right: 40px;
+  font-size: var(--fs-h1);
+  line-height: 1.4;
+}
+
+.confirmText {
+  color: var(--ink-sub);
+  line-height: 1.7;
+}
+
+.confirmActions {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.confirmErase {
+  min-height: 52px;
+  margin: 0;
+  border: 1px solid var(--error);
+  border-radius: 26px;
+  background: rgba(255, 179, 189, 0.12);
+  color: var(--error);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.confirmErase:hover {
+  background: rgba(255, 179, 189, 0.2);
+}
+
+.confirmErase:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

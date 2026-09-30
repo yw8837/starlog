@@ -31,7 +31,7 @@ const TABS: ReadonlyArray<{ id: TabId; href: string; label: string; icon: ReactN
   {
     id: "story",
     href: "/story",
-    label: "내 이야기",
+    label: "내 기록",
     icon: (
       <svg {...svgProps}>
         <path d="M12 6.5C10.4 5.3 8.2 4.8 5 5v13c3.2-.2 5.4.3 7 1.5 1.6-1.2 3.8-1.7 7-1.5V5c-3.2-.2-5.4.3-7 1.5z" />

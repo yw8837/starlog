@@ -1,97 +1,86 @@
-import { getCard } from "@starlog/core";
 import Link from "next/link";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { TarotCard } from "@/components/tarot/TarotCard";
-import type { FriendScene } from "@/lib/fixtures";
+import { FortuneCookie } from "@/components/today/FortuneCookie";
 import type { GuideArticle } from "@/lib/guide";
 import { ChevronIcon } from "./icons";
 import s from "./home.module.css";
 
-/** The screen's gold primary: three card backs, title and one line. */
+/**
+ * Row 1: the cat astrologer beside the gold 타로 보기 card, the screen's one primary. The character
+ * stands outside the link, so tapping it only makes it react.
+ */
 export function TarotEntry() {
   return (
-    <Link href="/tarot/new" className={`${s.entry} ${s.entryPrimary}`}>
-      <span className={s.entryArt} aria-hidden="true">
-        {[0, 1, 2].map((i) => (
-          <TarotCard key={i} faceUp={false} size="sm" className={s.entryCard} />
-        ))}
+    <div className={s.entryRow}>
+      <span className={s.entryCharacter}>
+        <Cat outfit="tarot" size={100} />
       </span>
-      <span className={s.entryText}>
-        <span className={s.entryTitle}>타로 보기</span>
-        <span className={s.entrySub}>카드 3장으로 지금을 봐요</span>
-      </span>
-      <span className={s.entryChevron}>
-        <ChevronIcon />
-      </span>
-    </Link>
-  );
-}
-
-/** Secondary entry, led by the rabbit in hanbok (saju mode). */
-export function SajuEntry() {
-  return (
-    <Link href="/saju/new" className={`${s.entry} ${s.entrySecondary}`}>
-      <span className={s.entryRabbit} aria-hidden="true">
-        <Rabbit outfit="hanbok" size={64} reactOnTap={false} />
-      </span>
-      <span className={s.entryText}>
-        <span className={s.entryTitle}>사주 보기</span>
-        <span className={s.entrySub}>타고난 결로 나를 봐요</span>
-      </span>
-      <span className={s.entryChevron}>
-        <ChevronIcon />
-      </span>
-    </Link>
-  );
-}
-
-/** 오늘의 한 장: one card, no sign-in. */
-export function TodayRow() {
-  return (
-    <Link href="/tarot/draw?template=daily" className={s.row}>
-      <span className={s.rowArt} aria-hidden="true">
-        <Cat outfit="tarot" size={52} reactOnTap={false} />
-      </span>
-      <span className={s.rowText}>
-        <span className={s.rowTitle}>오늘의 한 장</span>
-        <span className={s.rowSub}>하루를 여는 카드 한 장을 뽑아요</span>
-      </span>
-      <span className={s.rowChevron}>
-        <ChevronIcon />
-      </span>
-    </Link>
-  );
-}
-
-/** Cards friends left that wait for approval; rendered only when there are any. */
-export function FriendScenesRow({ scenes }: { scenes: FriendScene[] }) {
-  if (scenes.length === 0) return null;
-  const [first] = scenes;
-  if (!first) return null;
-  const card = getCard(first.cardId);
-  const who = scenes.length === 1 ? `${first.nickname}님이` : `${first.nickname}님 외 ${scenes.length - 1}명이`;
-  return (
-    <section className={s.section} aria-labelledby="friends-title">
-      <div className={s.sectionHead}>
-        <h2 id="friends-title" className={s.sectionTitle}>
-          친구 장면
-        </h2>
-        <span className={s.pendingTag}>{`확인 대기 ${scenes.length}`}</span>
-      </div>
-      <Link href="/story" className={s.row}>
-        <span className={s.rowArt} aria-hidden="true">
-          <TarotCard cardId={first.cardId} orientation={first.orientation} faceUp size="sm" className={s.friendCard} />
+      <Link href="/tarot/new" className={`${s.entry} ${s.entryPrimary}`}>
+        <span className={s.entryText}>
+          <span className={s.entryTitle}>타로 보기</span>
+          <span className={s.entrySub}>카드 3장으로 지금을 봐요</span>
         </span>
-        <span className={s.rowText}>
-          <span className={s.rowTitle}>{`${who} 카드를 남겼어요`}</span>
-          <span className={s.rowSub}>{`${card.names.ko} · 확인하면 이야기에 들어가요`}</span>
-        </span>
-        <span className={s.rowChevron}>
+        <span className={s.entryChevron}>
           <ChevronIcon />
         </span>
       </Link>
-    </section>
+    </div>
+  );
+}
+
+/** Row 2, mirrored: the hanji-cream 사주 보기 card, then the rabbit in hanbok (saju mode's leader). */
+export function SajuEntry() {
+  return (
+    <div className={s.entryRow}>
+      <Link href="/saju/new" className={`${s.entry} ${s.entryHanji}`}>
+        <span className={s.entryText}>
+          <span className={s.entryTitle}>사주 보기</span>
+          <span className={s.entrySub}>타고난 결로 나를 봐요</span>
+        </span>
+        <span className={s.entryChevron}>
+          <ChevronIcon />
+        </span>
+      </Link>
+      <span className={s.entryCharacter}>
+        <Rabbit outfit="hanbok" size={100} />
+      </span>
+    </div>
+  );
+}
+
+/** A face-down card with a big question mark: one card for whatever is on your mind now. */
+function NowIcon() {
+  return (
+    <span className={s.nowIcon} aria-hidden="true">
+      <TarotCard faceUp={false} size="sm" className={s.nowCard} />
+      <span className={s.nowMark}>?</span>
+    </span>
+  );
+}
+
+/** Row 3: the two quick, free cards side by side (지금의 한 장 wider, 오늘의 한 장 narrower). */
+export function QuickCards() {
+  return (
+    <div className={s.quick}>
+      <Link href="/now" className={`${s.quickCard} ${s.quickWide}`}>
+        <NowIcon />
+        <span className={s.quickText}>
+          <span className={s.quickTitle}>지금의 한 장</span>
+          <span className={s.quickSub}>고민 한 줄 쓰고 카드 한 장 · 무제한 무료</span>
+        </span>
+      </Link>
+      <Link href="/today" className={s.quickCard}>
+        <span className={s.cookieIcon} aria-hidden="true">
+          <FortuneCookie size={58} />
+        </span>
+        <span className={s.quickText}>
+          <span className={s.quickTitle}>오늘의 한 장</span>
+          <span className={s.quickSub}>매일 무료</span>
+        </span>
+      </Link>
+    </div>
   );
 }
 

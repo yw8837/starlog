@@ -18,13 +18,13 @@ describe("TabBar", () => {
     render(<TabBar active="story" />);
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
     const links = [...nav.querySelectorAll("a")];
-    expect(links.map((a) => a.textContent)).toEqual(["홈", "내 이야기", "가이드", "내 정보"]);
+    expect(links.map((a) => a.textContent)).toEqual(["홈", "내 기록", "가이드", "내 정보"]);
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/story", "/guide", "/me"]);
   });
 
   it("marks only the active tab as the current page", () => {
     render(<TabBar active="story" />);
-    expect(screen.getByRole("link", { name: "내 이야기" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "내 기록" }).getAttribute("aria-current")).toBe("page");
     for (const name of ["홈", "가이드", "내 정보"]) expect(screen.getByRole("link", { name }).hasAttribute("aria-current")).toBe(false);
   });
 });

@@ -53,149 +53,30 @@
   background: var(--glass-line);
 }
 
-/* ---- hero ---- */
+/* ---- entries: character beside card, zig-zag (타로: cat left; 사주: rabbit right) ---- */
 
-.hero {
+.entryRow {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
 }
 
-.heroCat {
+.entryCharacter {
+  display: flex;
   flex: none;
-  margin-left: -10px;
-}
-
-/* The story card is paper: the brightest surface on the screen after the gold entry. */
-.storyCard {
-  position: relative;
-  display: grid;
-  flex: 1;
-  gap: 3px;
-  min-width: 0;
-  padding: 18px 40px 18px 18px;
-  border-radius: 20px;
-  background:
-    radial-gradient(120% 70% at 0% 0%, rgba(255, 255, 255, 0.6), transparent 60%),
-    var(--paper);
-  color: var(--paper-ink);
-  text-decoration: none;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    0 14px 34px rgba(5, 3, 15, 0.4);
-  transition: transform 140ms ease;
-}
-
-.storyCard:hover {
-  transform: translateY(-2px);
-}
-
-.storyCard:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 3px;
-}
-
-.storyEyebrow {
-  color: #7a5a12;
-  font-size: var(--fs-sub);
-  font-weight: 700;
-}
-
-.storyTitle {
-  font-family: var(--font-display), serif;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.storyLast {
-  margin-top: 2px;
-  color: #5d4d7a;
-  font-size: var(--fs-sub);
-}
-
-.storyChevron {
-  position: absolute;
-  top: 50%;
-  right: 12px;
-  display: flex;
-  color: var(--navy);
-  transform: translateY(-50%);
-}
-
-@media (min-width: 1024px) {
-  .storyCard {
-    padding: 26px 48px 26px 26px;
-  }
-
-  .storyTitle {
-    font-size: 24px;
-  }
-}
-
-/* Glass behind the welcome line keeps the constellation from running through the text. */
-.welcome {
-  flex-direction: column;
-  padding: 8px 18px 20px;
-  border: 1px solid var(--glass-line);
-  border-radius: 28px;
-  background:
-    radial-gradient(90% 60% at 50% 0%, rgba(243, 220, 161, 0.12), transparent 70%),
-    rgba(20, 15, 56, 0.55);
-  text-align: center;
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-}
-
-.welcomeCast {
-  display: flex;
-  align-items: flex-end;
   justify-content: center;
-}
-
-.welcomeText {
-  margin-top: 6px;
-  font-family: var(--font-display), serif;
-  font-size: 19px;
-  font-weight: 700;
-  line-height: 1.55;
-  text-wrap: balance;
-}
-
-/* Phones: three short lines. Desktop: the greeting on one line, the roles on the next. */
-.welcomeLine {
-  display: block;
-}
-
-@media (min-width: 1024px) {
-  .welcomeLine + .welcomeLine + .welcomeLine {
-    display: inline;
-  }
-
-  .welcomeLine:nth-child(2) {
-    display: inline;
-  }
-}
-
-.welcomeCta {
-  width: 100%;
-  margin-top: 18px;
-}
-
-/* ---- entries ---- */
-
-.entries {
-  display: grid;
-  gap: 12px;
+  width: 96px;
+  margin: -6px 0;
 }
 
 .entry {
   position: relative;
   display: flex;
+  flex: 1;
   align-items: center;
-  gap: 14px;
-  min-height: 88px;
-  padding: 12px 44px 12px 14px;
+  min-width: 0;
+  min-height: 96px;
+  padding: 16px 44px 16px 20px;
   border-radius: 22px;
   text-decoration: none;
   transition: transform 120ms ease;
@@ -211,6 +92,7 @@
   outline-offset: 3px;
 }
 
+/* 타로 보기: gold, glowing: the screen's one primary. */
 .entryPrimary {
   background:
     radial-gradient(120% 120% at 0% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
@@ -227,57 +109,31 @@
     linear-gradient(135deg, #f9ebc6 0%, #f7e5b6 55%, #efd394 100%);
 }
 
-.entrySecondary {
-  border: 1px solid var(--line-strong);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--ink);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+/* 사주 보기: hanji — matte cream paper with a faint fibre, no glow (secondary). */
+.entryHanji {
+  border: 1px solid rgba(122, 90, 18, 0.25);
+  background:
+    repeating-linear-gradient(115deg, rgba(122, 90, 18, 0.035) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #f5eedf 0%, #ebe0c8 100%);
+  color: #3a2d4f;
+  box-shadow: 0 8px 22px rgba(5, 3, 15, 0.35);
 }
 
-.entrySecondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.entryArt {
-  display: flex;
-  flex: none;
-  justify-content: center;
-  width: 72px;
-}
-
-.entryCard {
-  --card-w: 30px;
-}
-
-.entryCard + .entryCard {
-  margin-left: -10px;
-}
-
-.entryCard:nth-child(1) {
-  transform: rotate(-10deg) translateY(2px);
-}
-
-.entryCard:nth-child(3) {
-  transform: rotate(10deg) translateY(2px);
-}
-
-.entryRabbit {
-  display: flex;
-  flex: none;
-  justify-content: center;
-  width: 72px;
-  margin: -6px 0;
+.entryHanji:hover {
+  background:
+    repeating-linear-gradient(115deg, rgba(122, 90, 18, 0.035) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #f8f2e6 0%, #efe5cf 100%);
 }
 
 .entryText {
   display: grid;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .entryTitle {
-  font-size: 18px;
+  font-family: var(--font-display), serif;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1.3;
 }
@@ -291,8 +147,8 @@
   color: #4a3a63;
 }
 
-.entrySecondary .entrySub {
-  color: var(--ink-sub);
+.entryHanji .entrySub {
+  color: #5a4a36;
 }
 
 .entryChevron {
@@ -303,14 +159,27 @@
   transform: translateY(-50%);
 }
 
-/* ---- rows (오늘의 한 장, 친구 장면) ---- */
+/* ---- quick cards: 지금의 한 장 (wider) · 오늘의 한 장 ---- */
 
-.row {
-  display: flex;
-  align-items: center;
+.quick {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 12px;
-  min-height: 72px;
-  padding: 10px 16px 10px 12px;
+}
+
+/* Only on the narrowest phones do the two stack. */
+@media (max-width: 339px) {
+  .quick {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.quickCard {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 132px;
+  padding: 14px 14px 16px;
   border: 1px solid var(--glass-line);
   border-radius: 20px;
   background: var(--glass);
@@ -320,56 +189,70 @@
   backdrop-filter: blur(12px);
 }
 
-.row:hover {
+.quickCard:hover {
   border-color: var(--line-strong);
 }
 
-.row:focus-visible {
+.quickCard:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
-.rowArt {
-  display: flex;
-  flex: none;
-  justify-content: center;
-  width: 56px;
-}
-
-.rowText {
+.quickText {
   display: grid;
-  flex: 1;
   gap: 2px;
-  min-width: 0;
 }
 
-.rowTitle {
+.quickTitle {
   font-size: var(--fs-body);
   font-weight: 700;
 }
 
-.rowSub {
+.quickSub {
   color: var(--ink-sub);
   font-size: var(--fs-sub);
+  line-height: 1.45;
 }
 
-.rowChevron {
-  display: flex;
-  color: var(--ink-sub);
+.nowIcon {
+  position: relative;
+  display: inline-grid;
+  justify-self: start;
+  place-items: center;
 }
 
-.friendCard {
+.nowCard {
   --card-w: 38px;
 }
 
-.pendingTag {
-  flex: none;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: #f1d48f;
-  color: #4a3508;
-  font-size: var(--fs-sub);
+.nowMark {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 28px;
   font-weight: 700;
+  text-shadow: 0 2px 6px rgba(5, 3, 15, 0.8);
+}
+
+.cookieIcon {
+  display: flex;
+  justify-self: start;
+  align-items: flex-end;
+  height: 58px;
+}
+
+@media (min-width: 1024px) {
+  .quickCard {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    align-content: center;
+    gap: 16px;
+    min-height: 96px;
+    padding: 16px 20px;
+  }
 }
 
 /* ---- sections ---- */

@@ -2,27 +2,29 @@
   padding-bottom: 8px;
 }
 
+/*
+ * One column on phones. Items are auto-placed (no named rows), so an optional row that renders
+ * nothing (돌아보기, the future 별자리 인연 card) leaves no empty track and no extra gap.
+ */
 .grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
+  gap: 14px;
   margin-top: 4px;
 }
 
-.hero,
-.entries,
-.today,
-.friends,
-.guide {
+.tarot,
+.saju,
+.wide {
   min-width: 0;
 }
 
-.entries {
-  display: grid;
-  gap: 12px;
+/* The two entries keep their zig-zag; the quick cards get a little more air above them. */
+.saju + .wide {
+  margin-top: 6px;
 }
 
-/* Desktop: story (or welcome) on the left, the two entries on the right, the rest below. */
+/* Desktop: 타로 · 사주 side by side, everything else full width below. */
 @media (min-width: 1024px) {
   /* Narrower than the 1280 page-wide column: the home reads as one composed board. */
   .home > * {
@@ -31,42 +33,17 @@
   }
 
   .grid {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-    grid-template-areas:
-      "hero entries"
-      "today friends"
-      "guide guide";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     column-gap: 32px;
-    row-gap: 28px;
-    align-items: center;
+    row-gap: 24px;
     margin-top: 20px;
   }
 
-  .gridFirst {
-    grid-template-areas:
-      "hero entries"
-      "guide guide";
+  .wide {
+    grid-column: 1 / -1;
   }
 
-  .hero {
-    grid-area: hero;
-  }
-
-  .entries {
-    grid-area: entries;
-  }
-
-  .today {
-    grid-area: today;
-    align-self: start;
-  }
-
-  .friends {
-    grid-area: friends;
-    align-self: start;
-  }
-
-  .guide {
-    grid-area: guide;
+  .saju + .wide {
+    margin-top: 0;
   }
 }
