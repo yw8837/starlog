@@ -19,3 +19,6 @@ apps/web/next-env.d.ts
 .dev.vars*
 !.dev.vars.example
 .serena/
+
+# Third-party result captures for internal blind comparison only (never publish)
+content/eval/competitors/
