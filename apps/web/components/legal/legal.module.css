@@ -122,6 +122,8 @@ ol.list {
   border: 1px solid var(--glass-line);
   border-radius: 16px;
   background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .noteTitle {

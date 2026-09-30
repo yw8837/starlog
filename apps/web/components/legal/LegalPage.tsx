@@ -27,7 +27,12 @@ export function LegalPage({ title, badge, lead, effective, children }: LegalPage
           <header className={s.head}>
             <h1 id="doc-title" className={s.title}>
               {title}
-              {badge ? <span className={s.badge}>{badge}</span> : null}
+              {badge ? (
+                <>
+                  {" "}
+                  <span className={s.badge}>{badge}</span>
+                </>
+              ) : null}
             </h1>
             {lead ? <p className={s.lead}>{lead}</p> : null}
             {effective ? (
