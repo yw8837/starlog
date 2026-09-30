@@ -1,12 +1,16 @@
 // Real-API smoke run (not in CI; costs money). Per run: 재물운 tarot teaser + full reading, 오늘의 한 장,
 // saju teaser + full prologue for a non-sample chart. SMOKE_RUNS repeats the set (default 1).
+// SMOKE_MODEL / SMOKE_EFFORT apply one model and effort to every kind (default: the app's config).
+// SMOKE_STAMP reuses an earlier run's stamp, so run N draws the same cards and daily card (A/B).
 // Records attempts, validation, AI-tell score, tokens and cost per call; writes every output and a
-// summary to apps/web/test-results/ai-smoke/<timestamp>/. Never prints the key or any env value.
-// usage: SMOKE_RUNS=5 pnpm ai:smoke   (ANTHROPIC_API_KEY in the environment or apps/web/.env.local)
+// summary to apps/web/test-results/ai-smoke/<folder>/. Never prints the key.
+// usage: SMOKE_RUNS=5 pnpm ai:smoke
+//        SMOKE_RUNS=5 SMOKE_MODEL=claude-sonnet-5-5 SMOKE_EFFORT=high SMOKE_STAMP=<stamp> pnpm ai:smoke
 import { mkdirSync, writeFileSync } from "node:fs";
 import { DEFAULT_REVERSAL_RATE, TEMPLATES, computeChart, createDeck, pickCards } from "@starlog/core";
 import { expect, test } from "vitest";
 import { anthropicProvider } from "@/lib/ai/anthropic";
+import { EFFORTS, KIND_ENV, MODELS, generationSetting } from "@/lib/ai/config";
 import { generateDaily, generateSajuReading, generateSajuTeaser, generateTarotReading, generateTarotTeaser } from "@/lib/ai/generate";
 import { buildFactSet } from "@/lib/ai/prompts/saju";
 import { buildTarotContext, type TarotContext } from "@/lib/ai/prompts/tarot";
@@ -16,18 +20,22 @@ import { aiTells } from "@/lib/ai/style";
 import { validateDaily, validateSajuReading, validateSajuTeaser, validateTarotReading, validateTarotTeaser } from "@/lib/ai/validate";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { dailyCard, dailyLuckyNumber } from "@/lib/security/drawToken";
-import { kstDay } from "@/lib/security/quota";
-import { randomId } from "@/lib/security/sign";
 
 /** USD per million tokens (list prices; cache write = 5-minute TTL). Unknown models priced as Opus 5.5. */
 const PRICES: Record<string, { input: number; output: number; cacheWrite: number; cacheRead: number }> = {
   "claude-opus-5-5": { input: 4, output: 20, cacheWrite: 5, cacheRead: 0.2 },
+  "claude-sonnet-5-5": { input: 2, output: 10, cacheWrite: 2.5, cacheRead: 0.2 },
+  // server-side fallback targets
+  "claude-sonnet-5": { input: 2, output: 10, cacheWrite: 2.5, cacheRead: 0.2 },
   "claude-opus-5": { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
   "claude-opus-4-8": { input: 5, output: 25, cacheWrite: 6.25, cacheRead: 0.5 },
 };
 const krwFromEnv = Number(process.env.KRW_PER_USD);
 const KRW_PER_USD = Number.isFinite(krwFromEnv) && krwFromEnv > 0 ? krwFromEnv : 1400;
 const RUNS = Math.min(10, Math.max(1, Math.trunc(Number(process.env.SMOKE_RUNS ?? 1)) || 1));
+const SMOKE_MODEL = process.env.SMOKE_MODEL?.trim() || null;
+const SMOKE_EFFORT = process.env.SMOKE_EFFORT?.trim() || null;
+const SMOKE_STAMP = process.env.SMOKE_STAMP?.trim() || null;
 
 type Kind = "tarot-teaser" | "tarot-reading" | "daily" | "saju-teaser" | "saju-reading";
 const ROUTE: Record<Kind, string> = {
@@ -90,10 +98,25 @@ test("ai smoke", async () => {
     console.log("ai:smoke: no API key found, nothing was called.");
     return;
   }
+  if (SMOKE_MODEL && !(MODELS as readonly string[]).includes(SMOKE_MODEL)) throw new Error(`SMOKE_MODEL must be one of ${MODELS.join(", ")}`);
+  if (SMOKE_EFFORT && !(EFFORTS as readonly string[]).includes(SMOKE_EFFORT)) throw new Error(`SMOKE_EFFORT must be one of ${EFFORTS.join(", ")}`);
+  if (SMOKE_STAMP && !/^[A-Za-z0-9_-]{1,80}$/.test(SMOKE_STAMP)) throw new Error("SMOKE_STAMP may use letters, digits, - and _ only");
+  // Every kind gets the smoke model/effort, whatever per-kind variables .env.local holds.
+  for (const suffix of Object.values(KIND_ENV)) {
+    if (SMOKE_MODEL) process.env[`STARLOG_MODEL_${suffix}`] = SMOKE_MODEL;
+    if (SMOKE_EFFORT) process.env[`STARLOG_EFFORT_${suffix}`] = SMOKE_EFFORT;
+  }
+  const settings = Object.fromEntries((Object.keys(KIND_ENV) as Array<keyof typeof KIND_ENV>).map((kind) => [kind, generationSetting(kind)]));
+
   const real = anthropicProvider(key);
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const dir = new URL(`../apps/web/test-results/ai-smoke/${stamp}/`, import.meta.url);
+  const now = new Date().toISOString().replace(/[:.]/g, "-");
+  /** Seeds the cards and the daily device; reuse it (SMOKE_STAMP) to compare models on identical inputs. */
+  const stamp = SMOKE_STAMP ?? now;
+  const label = `${SMOKE_MODEL ?? "config-model"}-${SMOKE_EFFORT ?? "config-effort"}`;
+  const folder = SMOKE_STAMP ? `${now}-${label}-from-${SMOKE_STAMP}` : `${now}-${label}`;
+  const dir = new URL(`../apps/web/test-results/ai-smoke/${folder}/`, import.meta.url);
   mkdirSync(dir, { recursive: true });
+  console.log(`ai:smoke stamp ${stamp} · 실행 ${RUNS}회 · 모델 ${SMOKE_MODEL ?? "앱 설정"} · effort ${SMOKE_EFFORT ?? "앱 설정"}`);
   const rows: Row[] = [];
 
   const saju = buildFactSet(computeChart(toSajuInput({
@@ -139,8 +162,9 @@ test("ai smoke", async () => {
     await call<TarotTeaser>(run, "tarot-teaser", (d) => validateTarotTeaser(d, money), (p) => generateTarotTeaser(p, money),
       (d) => validateTarotTeaser(d, money), (d) => d.firstCard.body, moneyInput);
 
-    const did = randomId(12);
-    const day = kstDay(Date.now());
+    // Fixed per stamp and run (not per day or device), so an A/B run sees the same daily card.
+    const did = `smoke-${stamp}-${run}`;
+    const day = "smoke";
     const card = dailyCard(did, day);
     const daily = buildTarotContext("daily", [{ ...card, position: "오늘의 한 장", slot: 0 }], null);
     await call<DailyDraft>(run, "daily", (d) => validateDaily(d, daily), (p) => generateDaily(p, daily),
@@ -177,15 +201,16 @@ test("ai smoke", async () => {
   });
   const totalUsd = rows.reduce((sum, row) => sum + row.usd, 0);
   const summary = {
-    runs: RUNS, model: "claude-opus-5-5",
+    runs: RUNS, stamp, folder,
+    model: SMOKE_MODEL ?? "앱 설정", effort: SMOKE_EFFORT ?? "앱 설정", settings,
     krwPerUsd: Number.isFinite(krwFromEnv) && krwFromEnv > 0 ? "KRW_PER_USD 환경값" : 1400,
     totalUsd: Math.round(totalUsd * 10000) / 10000, totalKrw: Math.round(totalUsd * KRW_PER_USD), perKind,
   };
   writeFileSync(new URL("summary.json", dir), JSON.stringify({ ...summary, rows }, null, 2));
 
   const lines = [
-    `# ai:smoke 요약 (${stamp})`, "",
-    `실행 ${RUNS}회 · 모델 claude-opus-5-5 · 총비용 약 ${summary.totalKrw.toLocaleString("ko-KR")}원 ($${summary.totalUsd})`, "",
+    `# ai:smoke 요약 (${folder})`, "",
+    `실행 ${RUNS}회 · stamp ${stamp} · 모델 ${summary.model} · effort ${summary.effort} · 총비용 약 ${summary.totalKrw.toLocaleString("ko-KR")}원 ($${summary.totalUsd})`, "",
     "| 호출 | 경로 | n | 통과율 | 시도 평균/최소/최대 | 비용(원) 평균/최소/최대 | AI티 평균 | 시간(초) 평균 |",
     "|---|---|---|---|---|---|---|---|",
     ...perKind.map((k) => `| ${k.kind} | ${k.route} | ${k.n} | ${k.passRate}% | ${k.attempts.avg}/${k.attempts.min}/${k.attempts.max} | ${k.krw.avg}/${k.krw.min}/${k.krw.max} | ${k.aiTellScore.avg} | ${k.seconds.avg} |`),
@@ -197,6 +222,6 @@ test("ai smoke", async () => {
   writeFileSync(new URL("summary.md", dir), `${lines.join("\n")}\n`);
 
   console.log(`\n${lines.slice(0, 3 + 2 + perKind.length + 1).join("\n")}`);
-  console.log(`\n출력 폴더: apps/web/test-results/ai-smoke/${stamp}/`);
+  console.log(`\n출력 폴더: apps/web/test-results/ai-smoke/${folder}/ (stamp ${stamp})`);
   expect(rows.length).toBe(RUNS * kinds.length);
 });
