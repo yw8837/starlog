@@ -13,7 +13,8 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
   const empty = query.empty === "1";
 
   return (
-    <div className="page-shell with-tabbar">
+    // The full story has a floating 새 장 열기 button on phones (.with-fab keeps the footer clear of it).
+    <div className={empty ? "page-shell with-tabbar" : "page-shell with-tabbar with-fab"}>
       <NightSky fixed seed={23} />
       <main className="page-col page-wide">
         {empty ? (

@@ -1,0 +1,19 @@
+.page {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 14px;
+  min-height: 70dvh;
+  padding-top: 48px;
+  text-align: center;
+}
+
+.title {
+  margin-top: 8px;
+  font-size: var(--fs-h1);
+}
+
+.text {
+  margin-bottom: 12px;
+  color: var(--ink-sub);
+}

@@ -75,6 +75,8 @@ h3 {
   font-family: var(--font-display), "Noto Serif KR", serif;
   font-weight: 700;
   line-height: 1.35;
+  /* Two-line headings split evenly instead of leaving one word (or a "·") alone on a line. */
+  text-wrap: balance;
 }
 
 h1 {
@@ -158,6 +160,13 @@ a {
 /* Reserve room for the fixed tab bar. */
 .with-tabbar {
   padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Phones: a floating button sits above the tab bar, so the page end (the footer) clears it too. */
+@media (max-width: 1023px) {
+  .with-tabbar.with-fab {
+    padding-bottom: calc(var(--tab-h) + 84px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

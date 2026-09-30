@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
-import { useSajuChart } from "@/components/saju/useSajuChart";
+import { useSajuChart, type ChartResult } from "@/components/saju/useSajuChart";
 import { Timeline } from "@/components/story/Timeline";
 import { StoryToggle, type ReadingMode } from "@/components/tarot/StoryToggle";
 import { Button } from "@/components/ui/Button";
@@ -30,13 +30,17 @@ const PROLOGUE_PENDING = "풀이를 적고 있어요. 다 적으면 여기에 �
 /**
  * The saju prologue as the saved chart allows: the written sample only for the sample chart,
  * otherwise the chart's own day pillar with its computed facts and a "being written" line.
- * Until the saved profile is read (server render, hydration) the card stays blank, so no title
- * is shown and then swapped for another.
+ * Until the saved profile is read (server render, hydration) the card is `loading`: the timeline
+ * shows a skeleton instead of a title that would then be swapped for another.
  */
-function usePrologue(chapter: StoryChapter | undefined): StoryChapter | undefined {
+function usePrologue(chapter: StoryChapter | undefined): { chapter: StoryChapter; loading: boolean } | undefined {
   const { ready, result, isSample } = useSajuChart();
   if (!chapter) return undefined;
-  if (!ready || !result) return { ...chapter, title: " ", saju: undefined, excerpt: { story: " ", plain: " " } };
+  if (!ready || !result) return { chapter: { ...chapter, title: "", saju: undefined, excerpt: { story: "", plain: "" } }, loading: true };
+  return { chapter: ownPrologue(chapter, result, isSample), loading: false };
+}
+
+function ownPrologue(chapter: StoryChapter, result: ChartResult, isSample: boolean): StoryChapter {
   if (isSample) return chapter;
   const own = { ...chapter, title: "나의 프롤로그" };
   if ("error" in result) return { ...own, saju: undefined, excerpt: { story: PROLOGUE_PENDING, plain: PROLOGUE_PENDING } };
@@ -54,7 +58,7 @@ export function StoryView({ nickname, chapters: storyChapters, scenes, nextChapt
   const pending = scenes.filter((scene) => scene.status === "pending");
   const saju = storyChapters.find((chapter) => chapter.kind === "saju");
   const prologue = usePrologue(saju);
-  const chapters = storyChapters.map((chapter) => (chapter === saju && prologue ? prologue : chapter));
+  const chapters = storyChapters.map((chapter) => (chapter === saju && prologue ? prologue.chapter : chapter));
 
   return (
     <div className={s.layout}>
@@ -69,7 +73,7 @@ export function StoryView({ nickname, chapters: storyChapters, scenes, nextChapt
           <StoryToggle value={mode} onChange={setMode} />
         </div>
 
-        <Timeline chapters={chapters} scenes={scenes} mode={mode} />
+        <Timeline chapters={chapters} scenes={scenes} mode={mode} loadingId={prologue?.loading ? saju?.id : undefined} />
       </div>
 
       {/* Desktop: the next chapter sits in a side column. Phones get the floating button instead. */}

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start --port 3100",
     "typecheck": "next typegen && tsc --noEmit",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:screens": "playwright test --grep @screens"
   },
   "dependencies": {
     "next": "16.3.7",

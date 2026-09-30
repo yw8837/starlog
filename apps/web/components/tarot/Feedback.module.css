@@ -28,7 +28,8 @@
   border: 0;
   border-radius: 24px;
   background: none;
-  color: rgba(241, 236, 255, 0.4);
+  /* Unselected outline: 3:1 against the glass box even under the brightest sky (WCAG 1.4.11). */
+  color: rgba(241, 236, 255, 0.55);
   cursor: pointer;
   transition:
     color 140ms ease,

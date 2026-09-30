@@ -117,7 +117,9 @@
   text-wrap: balance;
 }
 
+/* Inline links in the sentence; the vertical padding grows the tap area to 44px without moving the text. */
 .consent a {
+  padding-block: 13px;
   color: var(--ink);
   text-underline-offset: 3px;
 }

@@ -23,6 +23,8 @@ const ROUTES = [
   "/invite/abc123",
   "/guide",
   "/guide/the-hermit",
+  "/guide/five-elements",
+  "/dev/characters",
 ];
 
 export default async function globalSetup(config: FullConfig) {

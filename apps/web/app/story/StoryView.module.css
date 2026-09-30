@@ -3,10 +3,10 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* Room for the floating button above the tab bar. */
+/* The page shell (.with-fab) keeps the room for the floating button, below the footer. */
 .main {
   min-width: 0;
-  padding-bottom: 84px;
+  padding-bottom: 24px;
 }
 
 .head {
@@ -62,10 +62,6 @@
     grid-template-columns: minmax(0, 640px) 300px;
     column-gap: 56px;
     justify-content: center;
-  }
-
-  .main {
-    padding-bottom: 24px;
   }
 
   .rail {

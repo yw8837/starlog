@@ -36,7 +36,11 @@ export function GeneratingState({ onDone, mode = "tarot", duration = 2500 }: Gen
   const last = step === captions.length - 1;
 
   return (
-    <section className={s.stage} aria-labelledby="generating-caption">
+    <section className={s.stage} aria-labelledby="generating-title">
+      {/* The page's only heading while the reading is written; the chapter view (with its own h1) replaces this screen. */}
+      <h1 id="generating-title" className="sr-only">
+        풀이를 적고 있어요
+      </h1>
       <div className={s.characters}>
         <span className={s.glow} aria-hidden="true" />
         {mode === "tarot" ? (
