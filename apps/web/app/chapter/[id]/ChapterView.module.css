@@ -130,6 +130,17 @@
   font-weight: 700;
 }
 
+/* The browser would not keep the reading: said plainly above it. */
+.unsaved {
+  margin: 12px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--error);
+  border-radius: 16px;
+  color: var(--error);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}
+
 /* A reading id this device does not have. */
 .missing {
   display: grid;

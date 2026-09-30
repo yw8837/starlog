@@ -6,7 +6,10 @@ import { useSyncExternalStore } from "react";
  * Nothing here ever touches the URL.
  */
 export interface SessionStore<T> {
-  save(value: T): void;
+  /** True when the value reached storage; false when it is only kept in memory (blocked or full). */
+  save(value: T): boolean;
+  /** False while the current value lives only in memory (it is lost when the tab closes). */
+  persisted(): boolean;
   /** The saved value now (browser only), or null. */
   read(): T | null;
   /** Removes the saved value. */
@@ -72,14 +75,18 @@ function createStore<T>(area: Area, key: string, parse: (value: unknown) => T | 
   return {
     save(value: T) {
       const raw = JSON.stringify(value);
+      let stored = true;
       try {
         storage().setItem(key, raw);
         memoryRaw = null;
       } catch {
         memoryRaw = raw;
+        stored = false;
       }
       notify();
+      return stored;
     },
+    persisted: () => memoryRaw === null,
     read: getSnapshot,
     clear() {
       memoryRaw = null;

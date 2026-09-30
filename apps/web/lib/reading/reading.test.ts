@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { parseApiError, parseStreamLine, postGeneration, postJson, readLines, type ApiError } from "./api";
+import { commitQuota, parseApiError, parseStreamLine, postGeneration, postJson, readLines, type ApiError } from "./api";
 import { describeApiError, resetLine } from "./errors";
 import { RETRY_CAPTION, advanceProgress, progressPlan, startProgress } from "./progress";
 
@@ -35,7 +35,7 @@ describe("NDJSON stream", () => {
     expect(parseStreamLine("not json")).toEqual({ type: "other" });
   });
 
-  it("reports progress, returns the done data, then commits the quota", async () => {
+  it("reports progress and returns the done data with its commit token for the caller", async () => {
     const fetchImpl = vi.fn(async (url: string) =>
       url === "/api/commit"
         ? jsonResponse({ ok: true })
@@ -47,12 +47,18 @@ describe("NDJSON stream", () => {
     ) as unknown as typeof fetch;
     const progress: unknown[] = [];
     const result = await postGeneration("/api/tarot/reading", { drawToken: "d" }, { fetchImpl, onProgress: (p) => progress.push(p) });
-    expect(result).toEqual({ ok: true, data: { reading: { verdict: "v" }, chapterToken: "t" } });
+    // The caller keeps the reading first; the commit is not sent yet.
+    expect(result).toEqual({ ok: true, data: { reading: { verdict: "v" }, chapterToken: "t" }, commit: "quota.token" });
     expect(progress).toEqual([{ type: "section", key: "verdict", index: 0 }, { type: "retry" }]);
     const calls = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(1);
     expect(calls[0]![1].headers.Accept).toContain("application/x-ndjson");
+    await commitQuota("quota.token", fetchImpl);
     expect(calls[1]![0]).toBe("/api/commit");
     expect(JSON.parse(calls[1]![1].body)).toEqual({ commit: "quota.token" });
+    expect(calls[1]![1].keepalive).toBe(true);
+    // A failed commit never throws.
+    await expect(commitQuota("x", vi.fn(async () => Promise.reject(new TypeError("offline"))) as unknown as typeof fetch)).resolves.toBeUndefined();
   });
 
   it("maps an error event to the JSON route's error", async () => {
@@ -139,6 +145,12 @@ describe("error copy", () => {
     expect(describeApiError(err("REFUSED", { care: true })).body).toContain("109");
   });
 
+  it("says a teaser limit apart from the full-reading limit, and never mentions a count for a draw", () => {
+    expect(describeApiError(err("BETA_LIMIT"), "teaser", NOW)).toEqual({ title: "오늘 볼 수 있는 첫 장을 모두 봤어요", body: "내일 0시에 다시 열려요", action: null });
+    expect(describeApiError(err("NETWORK"), "tarot-draw", NOW)).toEqual({ title: "연결이 잠시 끊겼어요", body: "다시 시도해 주세요.", action: "retry" });
+    expect(describeApiError(err("UPSTREAM"), "tarot-draw", NOW).body).not.toContain("횟수");
+  });
+
   it("tells a follow-up limit per chapter from the day's", () => {
     expect(describeApiError(err("BETA_LIMIT", { scope: "chapter" }), "followup", NOW)).toEqual({ title: "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요", action: null });
     expect(describeApiError(err("BETA_LIMIT", { scope: "day" }), "followup", NOW).title).toBe("오늘 물어볼 수 있는 질문을 모두 썼어요");
@@ -174,6 +186,11 @@ describe("progress captions", () => {
     expect(state.fraction).toBe(before);
     // Unknown keys keep the place too.
     expect(advanceProgress(state, { type: "section", key: "story", index: 0 }, plan)).toBe(state);
+  });
+
+  it("follows the order the model writes the reading in (the observation comes after the action)", () => {
+    const keys = progressPlan("tarot-reading", { positions }).stages.map((stage) => stage.key);
+    expect(keys.indexOf("observation")).toBe(keys.indexOf("action") + 1);
   });
 
   it("uses the saju section names with the right particle", () => {

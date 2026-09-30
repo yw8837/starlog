@@ -23,6 +23,10 @@ export interface ChapterFollowUp {
   turns: Array<{ question: string; answer: string }>;
   remaining: number;
   onAsk: (question: string) => Promise<AskResult>;
+  /** A question sent earlier that is still being answered. */
+  awaiting?: { question: string; done: Promise<AskResult> };
+  /** Why no more questions can be asked, when it is not that they were all used. */
+  endedText?: string;
 }
 
 type ChapterViewProps = {

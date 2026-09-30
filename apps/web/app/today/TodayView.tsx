@@ -11,6 +11,7 @@ import { FortuneCookie } from "@/components/today/FortuneCookie";
 import { Button } from "@/components/ui/Button";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { prefersReducedMotion } from "@/lib/motion";
+import { commitQuota } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { progressPlan } from "@/lib/reading/progress";
 import type { DailyData } from "@/lib/reading/types";
@@ -87,8 +88,10 @@ export function TodayView() {
     const [result] = await Promise.all([daily.run("/api/tarot/daily", {}, DAILY_PLAN), crack]);
     setCracking(false);
     if (!result) return;
-    if (result.ok) saveDaily(result.data);
-    else if (result.error.code === "BETA_LIMIT" && result.error.card) setLimited({ card: result.error.card, view: describeApiError(result.error, "daily") });
+    if (result.ok) {
+      saveDaily(result.data);
+      if (result.commit) void commitQuota(result.commit);
+    } else if (result.error.code === "BETA_LIMIT" && result.error.card) setLimited({ card: result.error.card, view: describeApiError(result.error, "daily") });
   };
 
   const state = daily.state;

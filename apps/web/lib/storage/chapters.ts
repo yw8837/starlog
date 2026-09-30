@@ -1,4 +1,5 @@
 import type { Orientation } from "@starlog/core";
+import { SITE } from "@/lib/config";
 import { kstDate, kstDaysBetween } from "@/lib/kst";
 import { CHECKIN_ANSWERS, type CheckinAnswer, type HistoryItem, type SajuContext, type SajuReadingData, type TarotReadingData } from "@/lib/reading/types";
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
@@ -66,9 +67,6 @@ export type StoredChapter = TarotChapter | SajuChapter;
 
 type Fresh<T> = T extends StoredChapter ? Omit<T, "id" | "createdAt" | "turns" | "followUpsLeft" | "checkin"> : never;
 export type NewChapter = Fresh<StoredChapter>;
-
-/** Follow-up questions a fresh reading comes with (SITE.reading.followUps; the server enforces it). */
-const FOLLOW_UPS = 3;
 
 // ---- reading storage back ----
 
@@ -142,10 +140,38 @@ export function parseChapter(value: unknown): StoredChapter | null {
   return null;
 }
 
-const parseChapters = (value: unknown): StoredChapter[] | null =>
-  Array.isArray(value) ? value.map(parseChapter).filter((c): c is StoredChapter => c !== null) : null;
+/**
+ * What localStorage holds: `{v: 1, chapters: [...]}`. The entries stay as stored (raw), so a
+ * save, update or delete touches only its own entry and never drops one this version cannot read
+ * (a reading's only copy). The first versions stored a bare array; it reads as v1.
+ */
+interface Envelope {
+  v: 1;
+  chapters: unknown[];
+}
 
-const store = createLocalStore<StoredChapter[]>(CHAPTERS_KEY, parseChapters);
+const parseEnvelope = (value: unknown): Envelope | null => {
+  if (Array.isArray(value)) return { v: 1, chapters: value };
+  if (isRecord(value) && value.v === 1 && Array.isArray(value.chapters)) return { v: 1, chapters: value.chapters };
+  return null;
+};
+
+const store = createLocalStore<Envelope>(CHAPTERS_KEY, parseEnvelope);
+
+/** The readable chapters of an envelope, computed once per stored value. */
+const readable = new WeakMap<Envelope, StoredChapter[]>();
+function chaptersOf(envelope: Envelope | null): StoredChapter[] {
+  if (!envelope) return [];
+  let parsed = readable.get(envelope);
+  if (!parsed) {
+    parsed = envelope.chapters.map(parseChapter).filter((c): c is StoredChapter => c !== null);
+    readable.set(envelope, parsed);
+  }
+  return parsed;
+}
+
+const rawEntries = (): unknown[] => store.read()?.chapters ?? [];
+const idOf = (entry: unknown) => (isRecord(entry) && typeof entry.id === "string" ? entry.id : undefined);
 
 function newId(): string {
   const bytes = new Uint8Array(8);
@@ -154,36 +180,50 @@ function newId(): string {
 }
 
 export function listChapters(): StoredChapter[] {
-  return store.read() ?? [];
+  return chaptersOf(store.read());
 }
 
 export function getChapter(id: string): StoredChapter | undefined {
   return listChapters().find((chapter) => chapter.id === id);
 }
 
-/** Stores a freshly opened reading with the day's follow-up allowance; returns it with its new id. */
-export function saveChapter(input: NewChapter, now: number = Date.now()): StoredChapter {
-  const chapter = { ...input, id: newId(), createdAt: now, turns: [], followUpsLeft: FOLLOW_UPS } as StoredChapter;
-  store.save([...listChapters(), chapter]);
-  return chapter;
+/**
+ * Stores a freshly opened reading with its follow-up allowance. `persisted` is false when the
+ * browser would not keep it (storage full or blocked): it then lives only until the tab closes.
+ */
+export function saveChapter(input: NewChapter, now: number = Date.now()): { chapter: StoredChapter; persisted: boolean } {
+  const chapter = { ...input, id: newId(), createdAt: now, turns: [], followUpsLeft: SITE.reading.followUps } as StoredChapter;
+  const persisted = store.save({ v: 1, chapters: [...rawEntries(), chapter] });
+  return { chapter, persisted };
 }
 
+/** Changes one readable chapter; every other stored entry stays exactly as it was. */
 export function updateChapter(id: string, update: (chapter: StoredChapter) => StoredChapter) {
-  store.save(listChapters().map((chapter) => (chapter.id === id ? update(chapter) : chapter)));
+  store.save({
+    v: 1,
+    chapters: rawEntries().map((entry) => {
+      if (idOf(entry) !== id) return entry;
+      const chapter = parseChapter(entry);
+      return chapter ? update(chapter) : entry;
+    }),
+  });
 }
 
 export function deleteChapter(id: string) {
-  store.save(listChapters().filter((chapter) => chapter.id !== id));
+  store.save({ v: 1, chapters: rawEntries().filter((entry) => idOf(entry) !== id) });
 }
 
 export function clearChapters() {
   store.clear();
 }
 
-/** Every stored chapter, oldest first: undefined before hydration. */
+/** False while saved readings live only in memory (the browser refused to store them). */
+export const chaptersPersisted = () => store.persisted();
+
+/** Every readable stored chapter, oldest first: undefined before hydration. */
 export function useChapters(): StoredChapter[] | undefined {
   const value = store.useValue();
-  return value === undefined ? undefined : (value ?? []);
+  return value === undefined ? undefined : chaptersOf(value);
 }
 
 /** Newest first, for 내 기록 and the home. */

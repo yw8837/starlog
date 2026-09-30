@@ -3,8 +3,9 @@
  * NDJSON progress (streaming-protocol: start, section, retry, ping, done, error) and fall back to
  * reading JSON when the server answers with JSON (older deploy, proxy).
  *
- * After a streamed `done` that carries a `commit` token, the quota cookie is set by POST
- * /api/commit: in a stream the response headers leave before the reading is validated.
+ * A streamed `done` may carry a `commit` token: in a stream the response headers leave before the
+ * reading is validated, so the quota cookie is set by POST /api/commit. Callers keep what they got
+ * (save the reading) first, then call `commitQuota`.
  */
 
 export type ApiErrorCode =
@@ -38,7 +39,7 @@ export interface ApiError {
   field?: string;
 }
 
-export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: ApiError };
+export type ApiResult<T> = { ok: true; data: T; commit?: string } | { ok: false; error: ApiError };
 
 /** Progress the waiting screen can show. */
 export type Progress = { type: "section"; key: string; index: number } | { type: "retry" };
@@ -179,6 +180,25 @@ export async function postGeneration<T>(path: string, body: unknown, options: Ge
     // The connection dropped mid-stream (or the caller aborted).
   }
   if (!result) return { ok: false, error: NETWORK };
-  if (commit) await postJson("/api/commit", { commit }, options);
-  return result;
+  return result.ok && commit ? { ...result, commit } : result;
+}
+
+/**
+ * Sets the quota cookie a streamed generation earned. Call it after the result is kept: it outlives
+ * the page (keepalive), ignores the caller's abort, gives up after a few seconds, and never throws
+ * (the server also counts at `done`).
+ */
+export async function commitQuota(commit: string, fetchImpl: Fetch = fetch): Promise<void> {
+  try {
+    await fetchImpl("/api/commit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ commit }),
+      credentials: "same-origin",
+      keepalive: true,
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch {
+    // Not counted by cookie this time; the server-side count still holds.
+  }
 }

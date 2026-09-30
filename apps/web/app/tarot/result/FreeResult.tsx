@@ -15,6 +15,7 @@ import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { SITE } from "@/lib/config";
 import { resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
+import { commitQuota } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
 import { progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
@@ -71,6 +72,7 @@ export function FreeResult({ instant }: { instant: boolean }) {
       if (!result?.ok) return;
       saveTeaser("tarot", teaserKey, result.data);
       setFresh({ key: teaserKey, data: result.data });
+      if (result.commit) void commitQuota(result.commit);
     });
     return cancelTeaser;
   }, [teaserKey, attempt, runTeaser, cancelTeaser]);
@@ -78,9 +80,12 @@ export function FreeResult({ instant }: { instant: boolean }) {
   const openedId = draw?.chapterId && chapters?.some((chapter) => chapter.id === draw.chapterId) ? draw.chapterId : undefined;
   const unlockError = unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error) : null;
 
-  // After a failed unlock the result comes back; bring the sheet (with what went wrong) into view.
+  // After a failed unlock the result comes back; bring the reason into view and focus it.
   useEffect(() => {
-    if (unlockError) document.getElementById("unlock-title")?.scrollIntoView({ block: "center" });
+    if (!unlockError) return;
+    const reason = document.getElementById("unlock-error");
+    reason?.scrollIntoView({ block: "center" });
+    reason?.focus({ preventScroll: true });
   }, [unlockError]);
 
   const unlock = async () => {
@@ -95,7 +100,8 @@ export function FreeResult({ instant }: { instant: boolean }) {
     }
     countFullReading();
     const keywords = new Map(teaser?.cards.map((card) => [card.position, card.keyword]));
-    const chapter = saveChapter({
+    // Kept on this device first; only then is the quota cookie set.
+    const { chapter } = saveChapter({
       kind: "tarot",
       question: summary.question,
       conditions: summary.conditions,
@@ -108,11 +114,12 @@ export function FreeResult({ instant }: { instant: boolean }) {
       chapterToken: result.data.chapterToken,
     });
     setFlow((prev) => (prev.draw ? { ...prev, draw: { ...prev.draw, chapterId: chapter.id } } : prev));
+    if (result.commit) void commitQuota(result.commit);
     router.push(`/chapter/${chapter.id}`);
   };
 
   const teaserState = teaserGen.state;
-  const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error) : null;
+  const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
   const opening = unlockGen.state.status === "running" || unlockGen.state.status === "done";
   // One live region for the whole screen: progress, then what went wrong.
   const announce =

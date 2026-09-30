@@ -17,6 +17,7 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
+import { commitQuota } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
 import { progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
@@ -67,17 +68,24 @@ export function SajuChartView() {
       if (!res?.ok) return;
       saveTeaser("saju", teaserKey, res.data);
       setFresh({ key: teaserKey, data: res.data });
+      if (res.commit) void commitQuota(res.commit);
     });
     return cancelTeaser;
   }, [teaserKey, attempt, runTeaser, cancelTeaser]); // form and context are the key
 
   const opened = own
-    ? chapters?.findLast((c) => c.kind === "saju" && sameJson(c.birth, form) && sameJson(sajuContextBody(c.context ?? {}), sajuContextBody(context)))
+    ? chapters
+        ?.filter((c) => c.kind === "saju" && sameJson(c.birth, form) && sameJson(sajuContextBody(c.context ?? {}), sajuContextBody(context)))
+        .pop()
     : undefined;
   const unlockError = unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error) : null;
 
+  // After a failed unlock, bring the reason into view and focus it.
   useEffect(() => {
-    if (unlockError) document.getElementById("unlock-title")?.scrollIntoView({ block: "center" });
+    if (!unlockError) return;
+    const reason = document.getElementById("unlock-error");
+    reason?.scrollIntoView({ block: "center" });
+    reason?.focus({ preventScroll: true });
   }, [unlockError]);
 
   const unlock = async () => {
@@ -92,7 +100,8 @@ export function SajuChartView() {
     }
     countFullReading();
     const contextBody = sajuContextBody(context);
-    const chapter = saveChapter({
+    // Kept on this device first; only then is the quota cookie set.
+    const { chapter } = saveChapter({
       kind: "saju",
       birth: form,
       title: teaser.title,
@@ -101,11 +110,12 @@ export function SajuChartView() {
       reading: res.data.reading,
       chapterToken: res.data.chapterToken,
     });
+    if (res.commit) void commitQuota(res.commit);
     router.push(`/chapter/${chapter.id}`);
   };
 
   const teaserState = teaserGen.state;
-  const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error) : null;
+  const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
   const announce =
     unlockGen.state.status === "running"
       ? unlockGen.state.progress.caption

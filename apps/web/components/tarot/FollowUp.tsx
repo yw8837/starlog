@@ -19,6 +19,10 @@ type FollowUpProps = {
   remaining: number;
   /** Sends the question; the caller stores the answer and passes the new `turns` and `remaining`. */
   onAsk: (question: string) => Promise<AskResult>;
+  /** A question sent before this view mounted that is still being answered: shown as pending. */
+  awaiting?: { question: string; done: Promise<AskResult> };
+  /** Shown instead of the form when no question can be asked for a reason other than using them all. */
+  endedText?: string;
   /** Who answers: the cat astrologer (tarot) or the rabbit in hanbok (saju). */
   reader?: "cat" | "rabbit";
 };
@@ -26,9 +30,9 @@ type FollowUpProps = {
 const MAX_LENGTH = 120;
 
 /** Follow-up questions on an opened reading. Only an answered question uses up a turn. */
-export function FollowUp({ suggestions, turns, remaining, onAsk, reader = "cat" }: FollowUpProps) {
+export function FollowUp({ suggestions, turns, remaining, onAsk, awaiting, endedText, reader = "cat" }: FollowUpProps) {
   const [draft, setDraft] = useState("");
-  const [pending, setPending] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(awaiting?.question ?? null);
   const [error, setError] = useState<ErrorView | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const doneRef = useRef<HTMLParagraphElement>(null);
@@ -40,6 +44,17 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, reader = "cat" 
       mounted.current = false;
     };
   }, []);
+
+  // A question from an earlier visit to this page: wait for its answer like one sent here.
+  const awaitingDone = awaiting?.done;
+  useEffect(() => {
+    if (!awaitingDone) return;
+    void awaitingDone.then((result) => {
+      if (!mounted.current) return;
+      setPending(null);
+      if ("error" in result) setError(result.error);
+    });
+  }, [awaitingDone]);
 
   // The last answer replaces the form; if focus was in it, hand it to the closing line instead of the page.
   useEffect(() => {
@@ -82,7 +97,7 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, reader = "cat" 
     <section className={s.box} aria-labelledby="follow-up-title">
       <h2 id="follow-up-title" className={s.title}>
         이어서 물어보기
-        <span className={s.count}>{remaining > 0 ? ` · ${remaining}번 남았어요` : " · 모두 물어봤어요"}</span>
+        <span className={s.count}>{remaining > 0 ? ` · ${remaining}번 남았어요` : endedText ? "" : " · 모두 물어봤어요"}</span>
       </h2>
 
       {/* Answers and what went wrong are announced here; the list is always present. */}
@@ -155,7 +170,7 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, reader = "cat" 
         </form>
       ) : (
         <p ref={doneRef} className={s.done} tabIndex={-1}>
-          이 풀이에서 물어볼 수 있는 질문을 모두 썼어요
+          {endedText ?? "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요"}
         </p>
       )}
     </section>
