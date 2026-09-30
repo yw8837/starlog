@@ -62,16 +62,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* A full 44px target; it overhangs the 1px border of the pill by a pixel. */
 .clear {
   display: grid;
   flex: none;
   place-items: center;
   width: 44px;
-  height: 42px;
-  margin: 0;
+  height: 44px;
+  margin: -1px 0;
   padding: 0;
   border: 0;
-  border-radius: 21px;
+  border-radius: 22px;
   background: transparent;
   color: var(--ink-sub);
   cursor: pointer;

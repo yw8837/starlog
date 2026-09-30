@@ -130,6 +130,29 @@ describe("ShareButton with a Kakao key", () => {
     ]);
   });
 
+  it("says so when Kakao cannot start (a wrong key), and tries afresh on the next tap", async () => {
+    render(<ShareButton text={TEXT} kakao="bad-key" />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "카카오톡으로 보내기" }));
+    });
+    const script = document.querySelector<HTMLScriptElement>(`script[src="${KAKAO_SDK.src}"]`)!;
+    const sdk = stubSdk();
+    sdk.init = vi.fn(() => {
+      throw new Error("invalid app key");
+    });
+    await act(async () => {
+      window.Kakao = sdk;
+      script.dispatchEvent(new Event("load"));
+    });
+    expect(screen.getByRole("status").textContent).toBe("카카오톡을 열지 못했어요");
+    expect(script.isConnected).toBe(false);
+    expect(window.Kakao).toBeUndefined();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "카카오톡으로 보내기" }));
+    });
+    expect(document.querySelector(`script[src="${KAKAO_SDK.src}"]`)).not.toBeNull();
+  });
+
   it("uses an SDK that is already loaded without adding another script", async () => {
     const sdk = stubSdk();
     window.Kakao = sdk;

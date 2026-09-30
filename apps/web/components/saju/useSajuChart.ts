@@ -4,7 +4,6 @@ import { computeChart, type SajuChart } from "@starlog/core";
 import { useMemo } from "react";
 import { useSajuProfile } from "@/lib/sajuFlow";
 import { DEFAULT_SAJU_FORM, describeSajuError, toSajuInput, type FieldError, type SajuForm } from "@/lib/sajuForm";
-import { isSampleChart } from "@/lib/sajuPrologue";
 
 export type ChartResult = { chart: SajuChart } | { error: FieldError };
 
@@ -24,8 +23,6 @@ export interface SajuChartState {
   /** The user saved their own birth data (otherwise the sample input is shown). */
   saved: boolean;
   result: ChartResult | null;
-  /** The sample prologue text describes this chart (same pillars, no hour, same gender, born in 서울). */
-  isSample: boolean;
 }
 
 /**
@@ -40,6 +37,5 @@ export function useSajuChart(): SajuChartState {
     ready: profile !== undefined,
     saved: Boolean(profile),
     result,
-    isSample: Boolean(result && "chart" in result && isSampleChart(result.chart)),
   };
 }

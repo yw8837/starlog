@@ -29,3 +29,9 @@ export function readTeaser<T>(slot: Slot, key: string): T | null {
 export function saveTeaser(slot: Slot, key: string, value: unknown) {
   stores[slot].save({ key, value });
 }
+
+/** Forgets both teasers of this tab (내 정보 → 기록 모두 지우기). */
+export function clearTeasers() {
+  stores.tarot.clear();
+  stores.saju.clear();
+}

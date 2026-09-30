@@ -181,7 +181,7 @@ export function DrawStage({ instant }: DrawStageProps) {
     phase === "shuffle" || !known
       ? ""
       : dealError
-        ? [dealError.title, dealError.body].filter(Boolean).join(" ")
+        ? `${dealError.title}.${dealError.body ? ` ${dealError.body}` : ""}`
         : dealing
           ? "카드를 확인하고 있어요"
           : phase === "pick"

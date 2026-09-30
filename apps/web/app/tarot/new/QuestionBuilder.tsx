@@ -23,8 +23,13 @@ export function QuestionBuilder() {
   const whens = allowedWhens(topic);
   const question = summarizeFlow(flow)?.question ?? null;
 
-  // Any change to the question drops cards dealt for an earlier one.
-  const update = (change: (prev: FlowState) => FlowState) => setFlow((prev) => ({ ...change(prev), draw: undefined }));
+  // Any change to the question drops cards dealt for an earlier one (tapping the chip already
+  // chosen changes nothing, so the draw stays).
+  const update = (change: (prev: FlowState) => FlowState) =>
+    setFlow((prev) => {
+      const next = change(prev);
+      return next === prev ? prev : { ...next, draw: undefined };
+    });
 
   const pickWho = (who: Who) => update((prev) => (prev.who === who ? prev : { ...prev, who, topicId: undefined, conditions: {} }));
 
@@ -37,7 +42,7 @@ export function QuestionBuilder() {
       return { ...prev, topicId, topicText: undefined, when, conditions: {} };
     });
 
-  const pickWhen = (when: When) => update((prev) => ({ ...prev, when, whenText: undefined }));
+  const pickWhen = (when: When) => update((prev) => (prev.when === when && !prev.whenText ? prev : { ...prev, when, whenText: undefined }));
 
   return (
     <div className={f.screen}>

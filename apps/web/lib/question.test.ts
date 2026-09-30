@@ -52,8 +52,14 @@ describe("composeFlowQuestion", () => {
 
   it("falls back to a particle-free pattern when the ending cannot be read", () => {
     expect(composeFlowQuestion({ who: "me", topicText: "IPO", when: "year" })).toBe("올해, 나의 IPO — 어떻게 흘러갈까");
-    // A topic typed as a whole question is used as the question.
+    // A topic typed as a whole question is used as the question; an open clause gets no particle.
     expect(composeFlowQuestion({ who: "me", topicText: "이직해도 될까?", when: "month" })).toBe("이번 달, 이직해도 될까");
+    expect(composeFlowQuestion({ who: "me", topicText: "이직할지", when: "month" })).toBe("이번 달, 이직할지 — 어떻게 흘러갈까");
+    // Nothing but symbols is nothing typed.
+    expect(composeFlowQuestion({ who: "me", topicText: "!!!", when: "month" })).toBeNull();
+    // What the user typed is never read as a replacement pattern.
+    expect(composeFlowQuestion({ who: "group", whoText: "A$&", topic: topic("group", "people"), when: "month" })).toBe("이번 달, A$& 안의 인간관계는 어떻게 흘러갈까");
+    expect(composeFlowQuestion({ who: "me", topic: topic("me", "money"), whenText: "$1 월급날" })).toBe("$1 월급날, 나의 재물 흐름은 어떨까");
   });
 
   it("puts a named person or group where the catalog sentence has 그 사람 / 우리 모임", () => {
@@ -64,8 +70,10 @@ describe("composeFlowQuestion", () => {
     expect(composeFlowQuestion({ who: "group", whoText: "동아리", topic: topic("group", "people"), when: "month" })).toBe("이번 달, 동아리 안의 인간관계는 어떻게 흘러갈까");
     expect(composeFlowQuestion({ who: "group", whoText: "동아리", topic: topic("group", "together"), when: "month" })).toBe("이번 달, 동아리에서 함께하는 일은 어떤 흐름을 탈까");
     expect(composeFlowQuestion({ who: "work", whoText: "팀장님", topic: topic("work", "negotiation"), when: "week" })).toBe("이번 주, 나와 팀장님 사이 협상과 대화는 어떻게 될까");
-    // A Latin name: no guessed particle.
-    expect(composeFlowQuestion({ who: "us", whoText: "J", topic: topic("us", "crush"), when: "month" })).toBe("이번 달, 썸과 고백 — 어떻게 흘러갈까");
+    // A Latin name: no guessed particle — the catalog sentence stays, except before 에게.
+    expect(composeFlowQuestion({ who: "us", whoText: "J", topic: topic("us", "crush"), when: "month" })).toBe("이번 달, 그 사람과 나의 썸은 어떤 쪽으로 나아갈까");
+    expect(composeFlowQuestion({ who: "us", whoText: "J", topic: topic("us", "contact"), when: "month" })).toBe("이번 달, J에게 먼저 연락해도 될까");
+    expect(composeFlowQuestion({ who: "work", whoText: "PM", topic: topic("work", "negotiation"), when: "week" })).toBe("이번 주, 나와 PM 사이 협상과 대화는 어떻게 될까");
   });
 
   it("uses a typed time in place of the chip, and ignores 누구 detail for 나", () => {

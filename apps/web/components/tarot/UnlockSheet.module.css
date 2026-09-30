@@ -60,6 +60,10 @@
   line-height: 1.5;
 }
 
+.errorTitle:focus {
+  outline: none;
+}
+
 .errorBody,
 .limit {
   color: var(--ink-sub);

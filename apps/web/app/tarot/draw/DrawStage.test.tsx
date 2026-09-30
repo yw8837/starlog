@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FLOW_KEY } from "@/lib/flowState";
 import { DrawStage } from "./DrawStage";
@@ -62,7 +62,7 @@ describe("DrawStage deals through the server", () => {
     expect(await screen.findByRole("img", { name: "필요한 것 · 별 · 역방향" })).toBeTruthy();
     // Kept with the signed token for the result screen; nothing in the URL.
     expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw).toEqual({ templateId: "self-flow", ...DEALT });
-    expect(router.push).toHaveBeenCalledWith("/tarot/result?instant=1");
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/tarot/result?instant=1"));
   });
 
   it("keeps the picks and says what went wrong when the deal fails; 다시 시도 tries again", async () => {
@@ -76,13 +76,13 @@ describe("DrawStage deals through the server", () => {
     await act(async () => {
       click("결과 보기");
     });
-    expect(status()).toBe("연결이 잠시 끊겼어요 횟수는 그대로예요. 다시 시도해 주세요.");
+    expect(status()).toBe("연결이 잠시 끊겼어요. 다시 시도해 주세요.");
     expect(pickedCards()).toHaveLength(3);
     await act(async () => {
       click("다시 시도");
     });
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(router.push).toHaveBeenCalledWith("/tarot/result?instant=1");
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/tarot/result?instant=1"));
   });
 
   it("sends a visit without a question back to the builder", () => {

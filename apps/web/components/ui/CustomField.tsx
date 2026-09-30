@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, useRef } from "react";
 import s from "./CustomField.module.css";
 
 type CustomFieldProps = {
@@ -25,10 +25,12 @@ const ClearIcon = () => (
  */
 export function CustomField({ label, placeholder, value, onChange, maxLength }: CustomFieldProps) {
   const countId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const filled = value.length > 0;
   return (
     <div className={s.field} data-filled={filled ? "" : undefined}>
       <input
+        ref={inputRef}
         className={s.input}
         type="text"
         value={value}
@@ -45,7 +47,16 @@ export function CustomField({ label, placeholder, value, onChange, maxLength }: 
             <span className="sr-only">글자 수 </span>
             {`${value.length}/${maxLength}`}
           </span>
-          <button type="button" className={s.clear} onClick={() => onChange("")} aria-label={`${label} 지우기`}>
+          <button
+            type="button"
+            className={s.clear}
+            onClick={() => {
+              onChange("");
+              // The button goes away with the text; keep the user's place in the field.
+              inputRef.current?.focus();
+            }}
+            aria-label={`${label} 지우기`}
+          >
             <ClearIcon />
           </button>
         </>

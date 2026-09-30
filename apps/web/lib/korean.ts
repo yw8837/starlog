@@ -12,7 +12,8 @@ const HANGUL_LAST = 0xd7a3;
  * right particle cannot be told from spelling alone.
  */
 export function hasFinalConsonant(word: string): boolean | null {
-  const last = word.trim().at(-1);
+  const trimmed = word.trim();
+  const last = trimmed[trimmed.length - 1];
   if (!last) return null;
   const code = last.charCodeAt(0);
   if (code < HANGUL_FIRST || code > HANGUL_LAST) return null;

@@ -29,18 +29,23 @@ export interface QuestionParts {
 
 /**
  * Trims, folds spaces, drops angle brackets (the server strips them too) and trailing
- * commas/periods, so joins never read ",," or ".,".
+ * commas/periods, so joins never read ",," or ".,". Text without a single letter or digit counts
+ * as nothing typed.
  */
 export function cleanPart(text: string | undefined): string {
-  return (text ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().replace(/[\s,.·]+$/u, "");
+  const clean = (text ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().replace(/[\s,.·]+$/u, "");
+  return /[\p{L}\p{N}]/u.test(clean) ? clean : "";
 }
 
-/** A topic typed as a question or sentence ("이직해도 될까?"): it is used as the question itself. */
-const SENTENCE_END = /(까|까요|나요|는지|을지|할지|될지|\?|？)$/u;
+/** A topic typed as a whole question ("이직해도 될까?"): it is used as the question itself. */
+const QUESTION_END = /(까|까요|나요|\?|？)$/u;
+/** A topic typed as an open clause ("이직할지"): no particle fits after it. */
+const CLAUSE_END = /(는지|은지|을지|할지|될지|인지)$/u;
 
 function customTopicQuestion(when: string, who: Who, whoText: string, topicText: string): string {
   const topic = topicText.replace(/[?？]+$/u, "");
-  if (SENTENCE_END.test(topicText)) return `${when}, ${topic}`;
+  if (QUESTION_END.test(topicText)) return `${when}, ${topic}`;
+  if (CLAUSE_END.test(topic)) return `${when}, ${topic} — 어떻게 흘러갈까`;
   const prefix =
     who === "me"
       ? "나의"
@@ -57,18 +62,27 @@ function customTopicQuestion(when: string, who: Who, whoText: string, topicText:
   return topicParticle ? `${when}, ${prefix} ${topic}${topicParticle} 어떻게 될까` : `${when}, ${prefix} ${topic} — 어떻게 흘러갈까`;
 }
 
-/** A chip topic with a named person or group: put the name where the catalog sentence has "그 사람" / "우리 모임". */
+/**
+ * A chip topic with a named person or group: the name goes where the catalog sentence has
+ * "그 사람" / "우리 모임". When the particle after the name cannot be told (a Latin or digit
+ * ending), the catalog sentence stays as it is, except before 에게, which fits any name.
+ * Replacements are functions, so "$&" or "$1" in what the user typed stays literal.
+ */
 function namedChipQuestion(sentence: string, who: Who, whoText: string, topic: TopicDef, when: string): string {
-  if (sentence.includes("그 사람")) {
+  const match = /그 사람(과|에게)/u.exec(sentence);
+  if (match) {
+    if (match[1] === "에게") return sentence.replace(match[0], () => `${whoText}에게`);
     const withName = particle(whoText, "과/와");
-    if (withName) return sentence.replace(/그 사람(과|에게)/u, (_, p: string) => `${whoText}${p === "에게" ? "에게" : withName}`);
-  } else if (who === "group" && /우리 모임|우리가 /u.test(sentence)) {
-    return sentence.replace(/우리 모임/u, whoText).replace(/우리가 /u, `${whoText}에서 `);
-  } else if (who === "work") {
+    return withName ? sentence.replace(match[0], () => `${whoText}${withName}`) : sentence;
+  }
+  if (who === "group" && /우리 모임|우리가 /u.test(sentence)) {
+    return sentence.replace(/우리 모임/u, () => whoText).replace(/우리가 /u, () => `${whoText}에서 `);
+  }
+  if (who === "work") {
     const topicParticle = particle(topic.phrase, "은/는");
     if (topicParticle) return `${when}, 나와 ${whoText} 사이 ${topic.phrase}${topicParticle} 어떻게 될까`;
   }
-  return `${when}, ${topic.phrase} — 어떻게 흘러갈까`;
+  return sentence;
 }
 
 /**
@@ -88,6 +102,6 @@ export function composeFlowQuestion(parts: QuestionParts): string | null {
   if (!topic || !TOPICS_BY_WHO[parts.who].includes(topic)) return null;
   // A chip time must be one the topic allows; a typed time replaces the chip, so any is fine.
   if (!whenText && parts.when && topic.whens && !topic.whens.includes(parts.when)) return null;
-  const sentence = topic.questionKo.replace("{when}", when);
+  const sentence = topic.questionKo.replace("{when}", () => when);
   return whoText ? namedChipQuestion(sentence, parts.who, whoText, topic, when) : sentence;
 }

@@ -64,6 +64,16 @@ export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, edit
         카드 다시 뽑기
       </Button>
     );
+  } else if (error?.care) {
+    // Crisis words: no reading to open, only the way back to the question (below).
+    primary = null;
+  } else if (usedUp) {
+    // As far as this device knows, the day is used up: nothing to press until tomorrow.
+    primary = (
+      <Button block disabled>
+        전체 풀이 보기
+      </Button>
+    );
   } else {
     primary = (
       <Button block onClick={onUnlock}>
@@ -95,7 +105,10 @@ export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, edit
 
       {error && !openedHref ? (
         <div className={s.error}>
-          <p className={s.errorTitle}>{error.title}</p>
+          {/* Focused after a failed unlock, so the reason is the first thing read. */}
+          <p id="unlock-error" className={s.errorTitle} tabIndex={-1}>
+            {error.title}
+          </p>
           {error.body ? <p className={s.errorBody}>{error.body}</p> : null}
           {error.care ? (
             <a className={s.care} href="tel:109">

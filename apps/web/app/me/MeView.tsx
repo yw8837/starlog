@@ -9,6 +9,7 @@ import { DotLine } from "@/components/ui/DotLine";
 import { Modal } from "@/components/ui/Modal";
 import { SITE, type MoonPack } from "@/lib/config";
 import { clearFlow } from "@/lib/flowState";
+import { clearTeasers } from "@/lib/reading/teaserCache";
 import { clearSajuProfile, useSajuProfile } from "@/lib/sajuFlow";
 import { profileSummary } from "@/lib/sajuForm";
 import { useRemainingToday } from "@/lib/storage/betaUsage";
@@ -61,6 +62,7 @@ export function MeView({ wallet }: MeViewProps) {
     clearSajuProfile();
     clearDaily();
     clearFlow();
+    clearTeasers();
     setSheet(null);
     setNotice("이 기기에 저장된 기록을 모두 지웠어요");
   };

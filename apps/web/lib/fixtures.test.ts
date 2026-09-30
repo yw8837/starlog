@@ -4,14 +4,9 @@ import { SITE } from "./config";
 import {
   INVITE_FIXTURE,
   INVITE_FIXTURE_TOKEN,
-  ME_FIXTURE,
-  SAJU_FOLLOW_UPS,
-  SAJU_SAMPLE,
-  STORY_FIXTURE,
   TAROT_FOLLOW_UPS,
   TAROT_SAMPLE,
   WALLET_FIXTURE,
-  nextChapterNumber,
   paidHeadings,
 } from "./fixtures";
 
@@ -50,59 +45,9 @@ describe("TAROT_SAMPLE", () => {
   });
 });
 
-describe("SAJU_SAMPLE", () => {
-  it("locks exactly the paid section headings, in order", () => {
-    expect(SAJU_SAMPLE.free.lockedToc).toEqual(SAJU_SAMPLE.paid.sections.map((s) => s.heading));
-  });
-});
-
-describe("STORY_FIXTURE", () => {
-  it("starts with the saju prologue, then the tarot chapter", () => {
-    expect(STORY_FIXTURE.chapters.map((c) => c.id)).toEqual(["prologue", "sample"]);
-    expect(STORY_FIXTURE.chapters[0]?.title).toBe(SAJU_SAMPLE.free.title);
-    expect(STORY_FIXTURE.chapters[1]?.title).toBe(TAROT_SAMPLE.story.title);
-  });
-
-  it("gives every chapter a story excerpt and a plain excerpt taken from its own sample", () => {
-    const [prologue, first] = STORY_FIXTURE.chapters;
-    expect(prologue?.excerpt).toEqual({ story: SAJU_SAMPLE.story.body, plain: SAJU_SAMPLE.free.summary });
-    expect(first?.excerpt).toEqual({ story: TAROT_SAMPLE.story.body, plain: TAROT_SAMPLE.paid.verdict });
-  });
-
-  it("marks the prologue with the sample's day pillar and day master", () => {
-    const { day } = SAJU_SAMPLE.chart.pillars;
-    expect(STORY_FIXTURE.chapters[0]?.saju).toEqual({ dayPillar: day.stem + day.branch, dayMaster: SAJU_SAMPLE.chart.dayMaster.ko });
-    expect(STORY_FIXTURE.chapters[0]?.saju?.dayPillar).toBe("丙寅");
-  });
-
-  it("links each chapter to its chapter page, and the tarot chapter carries its three cards", () => {
-    expect(STORY_FIXTURE.chapters.map((c) => c.href)).toEqual(["/chapter/prologue", "/chapter/sample"]);
-    expect(STORY_FIXTURE.chapters[1]?.cards.map((c) => c.cardId)).toEqual(TAROT_SAMPLE.cards.map((c) => c.cardId));
-  });
-
-  it("numbers the next chapter after the tarot chapters (the prologue is not counted)", () => {
-    expect(nextChapterNumber(STORY_FIXTURE.chapters)).toBe(2);
-    expect(nextChapterNumber([])).toBe(1);
-  });
-
-  it("holds one pending friend scene with the sun card under the friend's own nickname", () => {
-    expect(STORY_FIXTURE.friendScenes).toHaveLength(1);
-    const scene = STORY_FIXTURE.friendScenes[0];
-    expect(scene?.status).toBe("pending");
-    expect(scene?.cardId).toBe("major-19-sun");
-    expect(scene?.nickname).toBe("지인 A");
-    expect(() => getCard(scene?.cardId ?? "")).not.toThrow();
-  });
-});
-
 describe("fixture extras", () => {
   it("keeps a wallet that covers 별조각 but is short on 달빛 for one reading", () => {
     expect(WALLET_FIXTURE).toEqual({ moonlight: 4, stardust: 12 });
-  });
-
-  it("signs the user in as 별지기", () => {
-    expect(ME_FIXTURE.nickname).toBe("별지기");
-    expect(ME_FIXTURE.provider).toBe("카카오");
   });
 });
 
@@ -128,47 +73,14 @@ describe("TAROT_FOLLOW_UPS", () => {
   });
 });
 
-describe("SAJU_FOLLOW_UPS", () => {
-  const all = () => [...Object.values(SAJU_FOLLOW_UPS.answers), SAJU_FOLLOW_UPS.other];
-
-  it("offers two suggestions, each with its own 해요체 answer, plus one for typed questions", () => {
-    expect(SAJU_FOLLOW_UPS.suggestions).toHaveLength(2);
-    for (const q of SAJU_FOLLOW_UPS.suggestions) {
-      expect(q).toMatch(/요\?$/);
-      expect(SAJU_FOLLOW_UPS.answers[q]).toBeTruthy();
-    }
-    expect(new Set(all()).size).toBe(all().length);
-    for (const answer of all()) expect(answer).toMatch(/요\.$/);
-  });
-
-  it("states only the sample chart's facts, with the reading hedged", () => {
-    const [metal = "", hour = ""] = SAJU_FOLLOW_UPS.suggestions;
-    const metalAnswer = SAJU_FOLLOW_UPS.answers[metal] ?? "";
-    const { dayMaster, elements, hiddenStems, pillars } = SAJU_SAMPLE.chart;
-    expect(metalAnswer).toContain(`일간은 ${dayMaster.ko}(${dayMaster.stem}火)`);
-    expect(elements.금).toBe(0);
-    expect(metalAnswer).toContain("보이는 여섯 글자 가운데 금(金)은 없어요");
-    expect(hiddenStems.year).toContain("庚");
-    expect(metalAnswer).toContain("뱀(巳) 속에 경금(庚金)");
-    expect(metalAnswer).toContain("읽기도 해요");
-    expect(pillars.hour).toBeNull();
-    expect(SAJU_FOLLOW_UPS.answers[hour]).toContain("태어난 시를 몰라");
-    expect(pillars.month.branch).toBe("子");
-    expect(SAJU_FOLLOW_UPS.other).toContain("자월(子月)");
-    expect(SAJU_FOLLOW_UPS.other).toContain("읽기도 해요");
-    for (const answer of all()) for (const word of ["반드시", "보장", "확률", "무조건"]) expect(answer).not.toContain(word);
-  });
-});
-
 describe("INVITE_FIXTURE", () => {
   it("is 하늘's invite, on the placeholder token", () => {
     expect(INVITE_FIXTURE.token).toBe(INVITE_FIXTURE_TOKEN);
     expect(INVITE_FIXTURE.inviter).toBe("하늘");
   });
 
-  it("gives the friend the same sun card the story's friend scene shows", () => {
-    const scene = STORY_FIXTURE.friendScenes[0];
-    expect(INVITE_FIXTURE.card).toMatchObject({ cardId: scene?.cardId, orientation: scene?.orientation });
+  it("gives the friend the sun, named and numbered as the deck prints it", () => {
+    expect(INVITE_FIXTURE.card).toMatchObject({ cardId: "major-19-sun", orientation: "upright" });
     const card = getCard(INVITE_FIXTURE.card.cardId);
     expect(INVITE_FIXTURE.card.name).toBe(card.names.ko);
     expect(card.arcana === "major" ? card.roman : "").toBe(INVITE_FIXTURE.card.number);

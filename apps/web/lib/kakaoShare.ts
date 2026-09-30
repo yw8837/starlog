@@ -37,6 +37,7 @@ declare global {
 /** The JavaScript key, inlined at build time; empty means no Kakao button. */
 export const kakaoKey = (): string => process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? "";
 
+/** The script being loaded (shared by taps while it loads). */
 let loading: Promise<KakaoSdk> | null = null;
 
 /** Loads the SDK once (script tag with integrity), then initializes it with the key. */
@@ -52,12 +53,24 @@ export function loadKakao(key: string): Promise<KakaoSdk> {
     script.integrity = KAKAO_SDK.integrity;
     script.crossOrigin = "anonymous";
     script.async = true;
-    script.onload = () => (window.Kakao ? resolve(ready(window.Kakao)) : reject(new Error("kakao sdk missing")));
-    script.onerror = () => {
+    const fail = (error: Error) => {
       loading = null;
       script.remove();
-      reject(new Error("kakao sdk failed to load"));
+      reject(error);
     };
+    script.onload = () => {
+      try {
+        if (!window.Kakao) throw new Error("kakao sdk missing");
+        resolve(ready(window.Kakao));
+        // Loaded: later taps use window.Kakao directly.
+        loading = null;
+      } catch (error) {
+        // A failed init (e.g. a wrong key) must not stick: the next tap tries again.
+        delete window.Kakao;
+        fail(error instanceof Error ? error : new Error("kakao init failed"));
+      }
+    };
+    script.onerror = () => fail(new Error("kakao sdk failed to load"));
     document.head.appendChild(script);
   });
   return loading;

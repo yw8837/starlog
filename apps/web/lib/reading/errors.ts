@@ -15,7 +15,7 @@ export interface ErrorView {
   care?: boolean;
 }
 
-export type ErrorContext = "reading" | "tarot-draw" | "followup" | "daily";
+export type ErrorContext = "reading" | "teaser" | "tarot-draw" | "followup" | "daily";
 
 const KST_MS = 9 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -43,6 +43,7 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       if (context === "followup" && error.scope === "chapter") return { title: "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요", action: null };
       if (context === "followup") return { title: "오늘 물어볼 수 있는 질문을 모두 썼어요", body: resetLine(error.resetsAt, now), action: null };
       if (context === "daily") return { title: "오늘은 쪽지를 더 펼 수 없어요", body: resetLine(error.resetsAt, now), action: null };
+      if (context === "teaser") return { title: "오늘 볼 수 있는 첫 장을 모두 봤어요", body: resetLine(error.resetsAt, now), action: null };
       return { title: "오늘 열 수 있는 풀이를 모두 열었어요", body: resetLine(error.resetsAt, now), action: null };
     case "RATE_LIMIT":
       return { title: "잠시 후 다시 해 주세요", body: "요청이 잠깐 몰렸어요.", action: "retry" };
@@ -53,8 +54,11 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       return { title: "이 내용으로는 풀이를 만들 수 없어요", body: "질문이나 메모를 바꿔 다시 시도해 주세요.", action: "edit" };
     case "QUALITY":
     case "UPSTREAM":
+      if (context === "tarot-draw") return { title: "카드를 나누지 못했어요", body: "다시 시도해 주세요.", action: "retry" };
       return { title: "풀이를 다 적지 못했어요", body: "횟수는 그대로예요. 한 번 더 시도해 주세요.", action: "retry" };
     case "NETWORK":
+      // Drawing cards costs nothing, so there is no count to reassure about.
+      if (context === "tarot-draw") return { title: "연결이 잠시 끊겼어요", body: "다시 시도해 주세요.", action: "retry" };
       return { title: "연결이 잠시 끊겼어요", body: "횟수는 그대로예요. 다시 시도해 주세요.", action: "retry" };
     case "BAD_TOKEN":
       if (context === "followup") return { title: "이 풀이에는 더 물어볼 수 없어요", body: error.message, action: null };

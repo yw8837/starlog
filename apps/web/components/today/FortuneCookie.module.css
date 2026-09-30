@@ -76,3 +76,21 @@
     transform: scaleX(0.9);
   }
 }
+
+/* Reduced motion: nothing moves or bobs; cracking only fades the halves and shows the slip. */
+@media (prefers-reduced-motion: reduce) {
+  .cookie[data-floating],
+  .cookie[data-floating] .shadow {
+    animation: none;
+  }
+
+  .cookie[data-state="cracked"] .left,
+  .cookie[data-state="cracked"] .right {
+    opacity: 0.35;
+    transform: none;
+  }
+
+  .cookie[data-state="cracked"] .slip {
+    transform: translate(-34px, -30px);
+  }
+}

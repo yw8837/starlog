@@ -49,12 +49,12 @@ export function progressPlan(kind: GenerationKind, opts: { positions?: readonly 
           ...cards,
           one("connection", "세 장의 연결을 살피고 있어요"),
           one("timing", "시기를 살피고 있어요"),
-          one("observation", "확인해 볼 신호를 고르고 있어요"),
           one("scenarios", "흘러갈 갈래를 적고 있어요"),
           one("messages", "건넬 말을 고르고 있어요"),
           one("avoid", "피할 것을 적고 있어요"),
           one("alternatives", "다른 길을 살피고 있어요"),
           one("action", "오늘 해 볼 일을 적고 있어요"),
+          one("observation", "확인해 볼 신호를 고르고 있어요"),
           one("followUps", "마무리하고 있어요"),
         ],
       };
