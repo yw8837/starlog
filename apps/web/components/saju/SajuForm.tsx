@@ -4,8 +4,19 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent, type RefObject } from "react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Chip } from "@/components/ui/Chip";
+import { CustomField } from "@/components/ui/CustomField";
 import { Segmented } from "@/components/ui/Segmented";
-import { useSajuProfile, saveSajuProfile } from "@/lib/sajuFlow";
+import type { SajuContext } from "@/lib/reading/types";
+import {
+  CONCERN_MAX,
+  LOVE_STATUS_OPTIONS,
+  WORK_STATUS_OPTIONS,
+  saveSajuContext,
+  saveSajuProfile,
+  useSajuContext,
+  useSajuProfile,
+} from "@/lib/sajuFlow";
 import {
   BIRTH_PLACES,
   CALENDAR_LABEL,
@@ -42,11 +53,21 @@ const ERROR_ORDER: readonly ErrorKey[] = ["date", "time", "place", "consent", "f
 
 const range = (from: number, to: number) => Array.from({ length: Math.abs(to - from) + 1 }, (_, i) => (from <= to ? from + i : from - i));
 
-/** Saju input. Starts from the saved profile (고치기) or the sample; birth data only ever goes to sessionStorage. */
+/**
+ * Saju input. Starts from the saved profile (고치기) or the sample; birth data and the optional
+ * status chips stay on this device (never in a URL).
+ */
 export function SajuForm() {
   const { profile } = useSajuProfile();
-  // Remount once a saved profile is read, so the fields start from it.
-  return <SajuFormFields key={profile ? "saved" : "fresh"} initial={profile ?? DEFAULT_SAJU_FORM} />;
+  const context = useSajuContext();
+  // Remount once the saved values are read, so the fields start from them.
+  return (
+    <SajuFormFields
+      key={`${profile ? "saved" : "fresh"}-${context ? "read" : "unread"}`}
+      initial={profile ?? DEFAULT_SAJU_FORM}
+      initialContext={context ?? {}}
+    />
+  );
 }
 
 function FieldError({ id, message }: { id: string; message: string | undefined }) {
@@ -58,9 +79,12 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
   );
 }
 
-function SajuFormFields({ initial }: { initial: SajuFormValues }) {
+function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; initialContext: SajuContext }) {
   const router = useRouter();
   const [form, setForm] = useState<SajuFormValues>(initial);
+  const [context, setContext] = useState<SajuContext>(initialContext);
+  // Optional, so folded until asked for (open when something was saved before).
+  const [moreOpen, setMoreOpen] = useState(Boolean(initialContext.loveStatus || initialContext.workStatus || initialContext.concern));
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
@@ -104,6 +128,7 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
       return;
     }
     saveSajuProfile(sanitizeSajuForm(form) ?? form);
+    saveSajuContext(context);
     router.push("/saju/chart");
   };
 
@@ -282,6 +307,57 @@ function SajuFormFields({ initial }: { initial: SajuFormValues }) {
           </select>
         </span>
         <FieldError id="place-error" message={errors.place} />
+      </div>
+
+      <div className={s.group}>
+        <button type="button" className={s.more} aria-expanded={moreOpen} aria-controls="saju-more" onClick={() => setMoreOpen((open) => !open)}>
+          <span>
+            요즘 상황도 알려 주기 <span className={s.optional}>(선택)</span>
+          </span>
+          <svg className={s.moreChevron} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+            <path d="m6 9.5 6 6 6-6" />
+          </svg>
+        </button>
+        {moreOpen ? (
+          <div id="saju-more" className={s.moreBody}>
+            <p className={s.helper}>고르면 지금 상황에 맞춰 조금 더 구체적으로 풀어요</p>
+            <fieldset className={s.group}>
+              <legend className={s.subLabel}>연애</legend>
+              <div className={s.chips}>
+                {LOVE_STATUS_OPTIONS.map((option) => (
+                  <Chip
+                    key={option.value}
+                    selected={context.loveStatus === option.value}
+                    onClick={() => setContext((prev) => ({ ...prev, loveStatus: prev.loveStatus === option.value ? undefined : option.value }))}
+                  >
+                    {option.label}
+                  </Chip>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className={s.group}>
+              <legend className={s.subLabel}>일</legend>
+              <div className={s.chips}>
+                {WORK_STATUS_OPTIONS.map((option) => (
+                  <Chip
+                    key={option.value}
+                    selected={context.workStatus === option.value}
+                    onClick={() => setContext((prev) => ({ ...prev, workStatus: prev.workStatus === option.value ? undefined : option.value }))}
+                  >
+                    {option.label}
+                  </Chip>
+                ))}
+              </div>
+            </fieldset>
+            <CustomField
+              label="요즘 고민 한 줄"
+              placeholder="요즘 고민 한 줄 (예: 이직을 고민하고 있어요)"
+              value={context.concern ?? ""}
+              maxLength={CONCERN_MAX}
+              onChange={(concern) => setContext((prev) => ({ ...prev, concern }))}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className={s.consent}>
