@@ -1,31 +1,59 @@
-/* Sits after <main>, above the sky, on the same centred column. */
+/*
+ * Sits after <main>, above the sky: a full-width band (a shade darker than the sky, one hairline on
+ * top) with the content on the page's column inside.
+ */
 .footer {
   position: relative;
   z-index: 1;
-  display: grid;
-  gap: 4px;
-  max-width: var(--col-max);
-  margin-inline: auto;
-  padding: 32px var(--gutter) 24px;
-  text-align: center;
+  margin-top: 48px;
+  border-top: 1px solid var(--glass-line);
+  background: rgba(5, 3, 15, 0.34);
 }
 
-/* Service links, then policies: each row wraps between links, centred. */
+/* minmax(0, 1fr): no child (a long address, a row of links) can widen the column past the screen. */
+.inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  width: 100%;
+  max-width: var(--col-max);
+  margin-inline: auto;
+  padding: 28px var(--gutter) 24px;
+}
+
+.brand {
+  display: grid;
+  gap: 2px;
+  justify-items: start;
+}
+
+.logo {
+  color: var(--ink);
+  font-family: var(--font-display), serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.nav {
+  min-width: 0;
+}
+
+/* Wraps between links; gaps only, so no line starts or ends on a separator. */
 .links {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   align-items: center;
-  margin: 0;
+  column-gap: 4px;
+  /* The links' own 8px padding hangs into the gutter, so their text lines up with the logo. */
+  margin: 0 -8px;
   padding: 0;
   list-style: none;
-}
-
-/* "·" between links, never at a line start. */
-.links li + li::before {
-  content: "·";
-  color: var(--ink-sub);
-  opacity: 0.6;
 }
 
 /* 44px rows: a comfortable target even where the row wraps on a phone. */
@@ -52,14 +80,52 @@
   font-weight: 700;
 }
 
-.notice {
-  margin-top: 8px;
+/* Business notice: small, muted, label + value; fields flow and wrap, the address inside itself. */
+.business {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  margin: 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--glass-line);
   color: var(--ink-sub);
   font-size: var(--fs-sub);
-  line-height: 1.7;
-  text-wrap: balance;
+  line-height: 1.65;
+  list-style: none;
 }
 
 .field {
-  white-space: nowrap;
+  min-width: 0;
+  /* Only a single unbroken token wider than the line (never today) may break mid-word. */
+  overflow-wrap: anywhere;
+}
+
+.fieldLabel {
+  color: rgba(201, 193, 234, 0.74);
+}
+
+@media (min-width: 1024px) {
+  .footer {
+    margin-top: 72px;
+  }
+
+  /* Wordmark left, links right, the business notice across the bottom. */
+  .inner {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    column-gap: 56px;
+    row-gap: 20px;
+    max-width: 1040px;
+    padding: 40px 40px 36px;
+  }
+
+  .links {
+    justify-content: flex-end;
+    margin-top: -6px;
+  }
+
+  .business {
+    grid-column: 1 / -1;
+    padding-top: 18px;
+  }
 }

@@ -14,6 +14,14 @@ const { SITE, footerNotice } = await import("@/lib/config");
 const { Footer } = await import("./Footer");
 
 const business = SITE.business as Record<keyof typeof SITE.business, string>;
+
+/** jsdom tests have no file: import.meta.url; vitest runs from the repo root or from apps/web. */
+function footerCss(): string {
+  const file = ["apps/web/components/layout/Footer.module.css", "components/layout/Footer.module.css"]
+    .map((path) => resolve(process.cwd(), path))
+    .find((path) => existsSync(path));
+  return file ?? "";
+}
 const original = { ...business };
 
 describe("Footer", () => {
@@ -41,21 +49,28 @@ describe("Footer", () => {
     ]);
   });
 
-  it("groups the links into two labelled rows", () => {
+  it("keeps every link in one labelled row", () => {
     render(<Footer />);
     const rows = screen.getAllByRole("navigation").map((nav) => [nav.getAttribute("aria-label"), within(nav).getAllByRole("link").length]);
-    expect(rows).toEqual([
-      ["서비스 안내", 5],
-      ["약관과 정책", 4],
-    ]);
+    expect(rows).toEqual([["사이트 안내", 9]]);
+  });
+
+  it("spaces items with gaps, never a '·' that could start or end a wrapped line", () => {
+    const { container } = render(<Footer />);
+    expect(container.textContent).not.toContain("·");
+    const css = readFileSync(footerCss(), "utf8");
+    expect(css).not.toMatch(/content:\s*"·"/);
+  });
+
+  it("lets every footer line wrap inside the column", () => {
+    const css = readFileSync(footerCss(), "utf8");
+    // The grid column may not grow past the screen, and business fields may wrap.
+    expect(css.match(/\.inner \{([^}]*)\}/)?.[1] ?? "").toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/);
+    expect(css.match(/\.field \{([^}]*)\}/)?.[1] ?? "").not.toMatch(/nowrap/);
   });
 
   it("gives every link a 44px row", () => {
-    // jsdom tests have no file: import.meta.url; vitest runs from the repo root or from apps/web.
-    const file = ["apps/web/components/layout/Footer.module.css", "components/layout/Footer.module.css"]
-      .map((path) => resolve(process.cwd(), path))
-      .find((path) => existsSync(path));
-    const css = readFileSync(file ?? "", "utf8");
+    const css = readFileSync(footerCss(), "utf8");
     const linkRule = css.match(/\.link \{([^}]*)\}/)?.[1] ?? "";
     expect(linkRule).toMatch(/min-height:\s*44px/);
   });
