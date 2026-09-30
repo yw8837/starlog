@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { guideIndexPath } from "@/lib/guide";
 import styles from "./TabBar.module.css";
 
 export type TabId = "home" | "story" | "guide" | "me";
@@ -41,7 +42,7 @@ const TABS: ReadonlyArray<{ id: TabId; href: string; label: string; icon: ReactN
   },
   {
     id: "guide",
-    href: "/guide",
+    href: guideIndexPath("tarot"),
     label: "가이드",
     icon: (
       <svg {...svgProps}>
@@ -63,6 +64,7 @@ const TABS: ReadonlyArray<{ id: TabId; href: string; label: string; icon: ReactN
   },
 ];
 
+/** `active` comes from the page: every /guide/* page passes "guide", so the tab stays lit across the guide. */
 export function TabBar({ active }: { active: TabId }) {
   return (
     <nav className={styles.bar} aria-label="주요 메뉴">

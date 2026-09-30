@@ -3,7 +3,7 @@ import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { FortuneCookie } from "@/components/today/FortuneCookie";
-import type { GuideArticle } from "@/lib/guide";
+import { guideIndexPath, type GuideArticle } from "@/lib/guide";
 import { ChevronIcon } from "./icons";
 import s from "./home.module.css";
 
@@ -64,7 +64,7 @@ function NowIcon() {
 export function QuickCards() {
   return (
     <div className={s.quick}>
-      <Link href="/now" className={`${s.quickCard} ${s.quickWide}`}>
+      <Link href="/now" className={s.quickCard}>
         <NowIcon />
         <span className={s.quickText}>
           <span className={s.quickTitle}>지금의 한 장</span>
@@ -92,7 +92,7 @@ export function GuideChips({ articles }: { articles: readonly GuideArticle[] }) 
         <h2 id="guide-title" className={s.sectionTitle}>
           가이드
         </h2>
-        <Link href="/guide" className={s.more}>
+        <Link href={guideIndexPath("tarot")} className={s.more}>
           전체 보기
         </Link>
       </div>

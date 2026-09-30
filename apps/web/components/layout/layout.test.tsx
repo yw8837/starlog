@@ -19,7 +19,7 @@ describe("TabBar", () => {
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
     const links = [...nav.querySelectorAll("a")];
     expect(links.map((a) => a.textContent)).toEqual(["홈", "내 기록", "가이드", "내 정보"]);
-    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/story", "/guide", "/me"]);
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/story", "/guide/tarot", "/me"]);
   });
 
   it("marks only the active tab as the current page", () => {
