@@ -8,7 +8,7 @@ export const SITE = {
     regNo: "665-38-01736",
     mailOrderNo: "",
     address: "",
-    email: "",
+    email: "studioyeolmae.com@gmail.com",
     phone: "",
   },
   currency: { paid: "달빛", free: "별조각" },
@@ -21,10 +21,19 @@ export const SITE = {
   reading: {
     /** Follow-up questions included with every opened reading. */
     followUps: 3,
+    /**
+     * Approximate length of a full reading in characters, shown before it is opened. Measured on
+     * real outputs (Opus 5.5 smoke runs, 2026-09-30): tarot about 2,000, saju about 3,000.
+     */
+    approxChars: { tarot: 2000, saju: 3000 },
+  },
+  /** Public beta: every reading is free within a daily count (the server's BETA_FULL_PER_DAY). */
+  beta: {
+    fullPerDay: 3,
   },
   features: {
-    /** The P1 friend-scene demo (지인 A). Off until 별자리 인연 replaces it (P3 spec). */
-    friendScenes: false,
+    /** 달빛/별조각 balances and packs. Off in the beta (no payments yet); the wallet UI stays hidden. */
+    payments: false,
   },
   /**
    * 달빛 top-up packs. Provisional: every pack must make one reading (unitsPerReading 달빛)

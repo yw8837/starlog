@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { SITE, footerNotice } from "./config";
 
 describe("SITE", () => {
-  it("keeps the postal address, mail-order number, email and phone empty", () => {
+  it("keeps the postal address, mail-order number and phone empty, and lists the contact email", () => {
     expect(SITE.business.address).toBe("");
     expect(SITE.business.mailOrderNo).toBe("");
-    expect(SITE.business.email).toBe("");
+    expect(SITE.business.email).toBe("studioyeolmae.com@gmail.com");
     expect(SITE.business.phone).toBe("");
   });
 
