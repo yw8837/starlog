@@ -16,17 +16,25 @@ const INK = "#f1ecff";
 const INK_SUB = "#c9c1ea";
 const GOLD = "#f3dca1";
 
-/** Fixed star field (same image on every build). */
+/** Text areas the stars keep clear of: wordmark and tagline, host line. */
+const CLEAR = [
+  { x0: 80, y0: 200, x1: 900, y1: 470 },
+  { x0: 80, y0: 520, x1: 420, y1: 590 },
+];
+
+/** Fixed star field (same image on every build), kept off the text. */
 function stars(count: number) {
   let seed = 7;
   const next = () => {
     seed = (seed * 1664525 + 1013904223) % 4294967296;
     return seed / 4294967296;
   };
-  return Array.from({ length: count }, () => ({ x: next() * 1200, y: next() * 630, r: 1 + next() * 2.2, a: 0.25 + next() * 0.6 }));
+  return Array.from({ length: count }, () => ({ x: next() * 1200, y: next() * 630, r: 1 + next() * 2.2, a: 0.25 + next() * 0.6 })).filter(
+    (star) => !CLEAR.some((box) => star.x > box.x0 && star.x < box.x1 && star.y > box.y0 && star.y < box.y1),
+  );
 }
 
-const STARS = stars(70);
+const STARS = stars(90);
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -46,17 +54,6 @@ export default function OpengraphImage() {
           fontFamily: "Sans",
         }}
       >
-        <div
-          style={{
-            position: "absolute",
-            top: -300,
-            right: -200,
-            width: 820,
-            height: 820,
-            borderRadius: 9999,
-            backgroundImage: "radial-gradient(circle, rgba(243,220,161,0.22) 0%, rgba(243,220,161,0) 62%)",
-          }}
-        />
         {STARS.map((star, i) => (
           <div
             key={i}
@@ -81,7 +78,7 @@ export default function OpengraphImage() {
             height: 112,
             borderRadius: 9999,
             backgroundColor: GOLD,
-            boxShadow: "0 0 70px 18px rgba(243,220,161,0.35)",
+            boxShadow: "0 0 90px 30px rgba(243,220,161,0.3)",
           }}
         />
 

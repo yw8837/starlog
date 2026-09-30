@@ -9,7 +9,9 @@ import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
+import { SITE } from "@/lib/config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle } from "@/lib/guide";
+import { OG_ALT } from "@/lib/og";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
 
@@ -27,7 +29,16 @@ export async function generateMetadata({ params }: PageProps<"/guide/[slug]">): 
     title: article.title,
     description: article.description,
     alternates: { canonical: `/guide/${article.slug}` },
-    openGraph: { type: "article", title: article.title, description: article.description, url: `/guide/${article.slug}` },
+    // A page-level openGraph replaces the root one, so the site name, locale and shared image are repeated here.
+    openGraph: {
+      type: "article",
+      title: article.title,
+      description: article.description,
+      url: `/guide/${article.slug}`,
+      siteName: `${SITE.name} · ${SITE.nameKo}`,
+      locale: "ko_KR",
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: OG_ALT }],
+    },
   };
 }
 
