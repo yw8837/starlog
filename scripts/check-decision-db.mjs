@@ -4,7 +4,7 @@
 //        node scripts/check-decision-db.mjs --partial  check only the cards written so far (drafting)
 //        node scripts/check-decision-db.mjs --strict   variety warnings fail too
 // Lengths count every character, spaces included.
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
@@ -13,6 +13,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dbFile = join(root, "content/kb/decision.ko.json");
 const kbDir = join(root, "content/kb/cards");
 const outFile = join(root, "apps/web/lib/decision.generated.json");
+/** Public yes/no votes per card side (docs/research, facts only). Leans that go against it need a leanNote. */
+const consensusFile = join(root, "docs/research/tarot-yes-no-consensus.json");
 
 const partial = process.argv.includes("--partial");
 const strict = process.argv.includes("--strict");
@@ -171,6 +173,34 @@ for (const id of expected) {
   }
 }
 
+// ---- lean vs the public yes/no consensus ----
+// go opposes no/lean-no and rethink opposes yes/lean-yes; a strong vote (share >= 0.9) that our lean
+// does not follow (yes -> go, maybe -> wait, no -> rethink) needs a reason too. Either way the entry
+// must say why in its leanNote.
+
+const LEAN_OF = { yes: "go", maybe: "wait", no: "rethink" };
+const STRONG_SHARE = 0.9;
+let leanChecked = 0;
+if (existsSync(consensusFile)) {
+  const consensus = JSON.parse(readFileSync(consensusFile, "utf8"));
+  for (const id of expected) {
+    for (const side of SIDES) {
+      const entry = cards[id]?.[side];
+      const vote = consensus[id]?.[side];
+      if (!entry || !vote) continue;
+      leanChecked++;
+      const label = String(vote.consensus).replace(/^lean-/, "");
+      const opposes = (entry.lean === "go" && label === "no") || (entry.lean === "rethink" && label === "yes");
+      const ignoresStrong = vote.consensus in LEAN_OF && vote.share >= STRONG_SHARE && entry.lean !== LEAN_OF[vote.consensus];
+      if ((opposes || ignoresStrong) && !entry.leanNote) {
+        err(`${id}/${side}`, `lean ${entry.lean} goes against the consensus ${vote.consensus} (${vote.share}); follow it or add a leanNote saying why`);
+      }
+    }
+  }
+} else {
+  warn("consensus", `${consensusFile.slice(root.length + 1)} not found; lean check skipped`);
+}
+
 // ---- variety (soft) ----
 
 const total = allAnswers.length;
@@ -198,7 +228,7 @@ if (writing > entries * 0.15) warn("variety", `${writing}/${entries} tips are wr
 // ---- report ----
 
 console.log(`check-decision-db: ${entries} entries (${Object.keys(cards).length} cards), ${total} answers`);
-console.log(`  lean: ${LEANS.map((lean) => `${lean} ${leanCount[lean]}`).join(", ")}`);
+console.log(`  lean: ${LEANS.map((lean) => `${lean} ${leanCount[lean]}`).join(", ")} (${leanChecked} checked against the yes/no consensus)`);
 console.log(`  top endings: ${topEndings}`);
 console.log(`  반말 lines: ${banmal}/${total}`);
 console.log(`  top last words: ${topWords}`);

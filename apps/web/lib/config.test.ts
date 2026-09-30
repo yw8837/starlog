@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { SITE, footerNotice } from "./config";
 
 describe("SITE", () => {
-  it("keeps the postal address, mail-order number and phone empty, and lists the contact email", () => {
+  it("keeps the postal address and phone empty, and lists the mail-order number and contact email", () => {
     expect(SITE.business.address).toBe("");
-    expect(SITE.business.mailOrderNo).toBe("");
+    expect(SITE.business.mailOrderNo).toBe("2026-부산영도-0153");
     expect(SITE.business.email).toBe("studioyeolmae.com@gmail.com");
     expect(SITE.business.phone).toBe("");
   });
@@ -22,6 +22,7 @@ describe("footerNotice", () => {
       "상호 열매스튜디오",
       "대표 최용우",
       "사업자등록번호 665-38-01736",
+      "통신판매업 신고번호 2026-부산영도-0153",
       "이메일 studioyeolmae.com@gmail.com",
     ]);
   });

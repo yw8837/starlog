@@ -6,7 +6,7 @@ export const SITE = {
     name: "열매스튜디오",
     ceo: "최용우",
     regNo: "665-38-01736",
-    mailOrderNo: "",
+    mailOrderNo: "2026-부산영도-0153",
     address: "",
     email: "studioyeolmae.com@gmail.com",
     phone: "",
