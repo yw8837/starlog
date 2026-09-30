@@ -94,7 +94,7 @@ describe("quota", () => {
 
   it("reads limits from the environment, ignoring junk", () => {
     expect(quotaLimits({} as NodeJS.ProcessEnv)).toEqual({ full: 3, teaser: 20, followup: 15, daily: 2, followupsPerChapter: 3 });
-    expect(quotaLimits({ BETA_FULL_PER_DAY: "5", BETA_TEASER_PER_DAY: "x", BETA_FOLLOWUPS_PER_CHAPTER: "-1" } as NodeJS.ProcessEnv))
+    expect(quotaLimits({ BETA_FULL_PER_DAY: "5", BETA_TEASER_PER_DAY: "x", BETA_FOLLOWUPS_PER_CHAPTER: "-1" } as unknown as NodeJS.ProcessEnv))
       .toMatchObject({ full: 5, teaser: 20, followupsPerChapter: 3 });
   });
 
