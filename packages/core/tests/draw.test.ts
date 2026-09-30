@@ -130,7 +130,9 @@ describe("topics", () => {
         expect(c.label.length).toBeGreaterThan(0);
         expect(new Set(c.options).size, `${who}/${t.id}/${c.id}`).toBe(c.options.length);
         expect(c.options.length, `${who}/${t.id}/${c.id}`).toBeGreaterThanOrEqual(3);
+        expect(c.options.length, `${who}/${t.id}/${c.id}`).toBeLessThanOrEqual(6);
         expect(c.options.at(-1), `${who}/${t.id}/${c.id}`).toMatch(/모르겠어요$/);
+        expect(c.options.slice(0, -1).filter(o => o.endsWith("모르겠어요")), `${who}/${t.id}/${c.id}`).toEqual([]);
       }
     }
   });
@@ -148,13 +150,29 @@ describe("topics", () => {
     expect(duration.label).toBe("사귄 기간");
     expect(duration.options).toEqual(["3개월 미만", "3개월~1년", "1년 넘음", "잘 모르겠어요"]);
   });
+  it("lets people with no income, no job or no partner describe themselves", () => {
+    const options = (who: Who, topicId: string, conditionId: string) =>
+      TOPICS_BY_WHO[who].find(t => t.id === topicId)!.conditions.find(c => c.id === conditionId)!.options;
+    expect(options("me", "money", "situation")).toContain("지금은 수입이 없음");
+    expect(options("work", "money", "income")).toContain("지금은 수입이 없음");
+    for (const who of ["me", "work"] as const) {
+      expect(options(who, "career", "status")).toEqual(
+        expect.arrayContaining(["재직 중", "휴직 중", "구직 중", "쉬는 중", "프리랜서·자영업"]),
+      );
+    }
+    expect(options("me", "career", "concern")).toContain("일자리가 잘 안 구해짐");
+    expect(options("work", "career", "blocker")).toContain("일자리가 잘 안 구해짐");
+    expect(options("me", "love", "status")).toEqual(expect.arrayContaining(["솔로", "짝사랑 중", "헤어진 지 얼마 안 됨"]));
+    expect(options("us", "contact", "recent-contact")).toContain("아직 연락한 적 없음");
+    expect(options("us", "conflict", "relation")).toContain("부부");
+  });
   it("defines the contact conditions used by the gold sample", () => {
     const topic = TOPICS_BY_WHO.us.find(t => t.id === "contact")!;
     expect(topic.template).toBe("relationship-contact");
     expect(topic.conditions).toEqual([
-      { id: "relation", label: "관계", options: ["알아가는 중", "연인", "친구", "헤어진 사이", "잘 모르겠어요"] },
-      { id: "recent-contact", label: "최근 연락", options: ["이어지고 있음", "뜸해짐", "끊긴 지 오래", "잘 모르겠어요"] },
-      { id: "goal", label: "원하는 방향", options: ["가볍게 안부", "대화 다시 시작", "오해 풀기", "아직 모르겠어요"] },
+      { id: "relation", label: "관계", options: ["알아가는 중", "짝사랑 상대", "연인", "친구", "헤어진 사이", "잘 모르겠어요"] },
+      { id: "recent-contact", label: "최근 연락", options: ["이어지고 있음", "뜸해짐", "끊긴 지 오래", "아직 연락한 적 없음", "잘 모르겠어요"] },
+      { id: "goal", label: "원하는 방향", options: ["가볍게 안부", "대화 다시 시작", "오해 풀기", "마음 전하기", "아직 모르겠어요"] },
     ]);
   });
 });
