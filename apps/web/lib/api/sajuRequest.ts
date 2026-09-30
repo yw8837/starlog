@@ -1,5 +1,5 @@
 import "server-only";
-import type { HistoryItem } from "@/lib/ai/history";
+import { historyTexts, type HistoryItem } from "@/lib/ai/history";
 import { buildFactSet, type SajuFactSet, type SajuProfile } from "@/lib/ai/prompts/saju";
 import { cleanUserText } from "@/lib/ai/prompts/tarot";
 import { checkSajuForm, todayInKorea } from "@/lib/sajuForm";
@@ -23,13 +23,17 @@ export function factsFromBirth(birth: BirthInput, now: number, profile?: SajuPro
   return buildFactSet(checked.chart, now, profile, history);
 }
 
+/** Largest accepted body; a schema-maximum body (concern and 3 full history items) is about 3.1 KB. */
+export const SAJU_BODY_MAX_BYTES = 8_000;
+
 /** Body → crisis check → FactSet, shared by the saju teaser and reading. */
 export async function sajuRequest(request: Request, now: number): Promise<{ body: SajuBodyData; profile?: SajuProfile; facts: SajuFactSet } | Response> {
-  const parsed = SajuBody.safeParse(await readJson(request, 3_000));
+  const parsed = SajuBody.safeParse(await readJson(request, SAJU_BODY_MAX_BYTES));
   if (!parsed.success) return errorResponse("BAD_REQUEST");
-  const crisis = crisisResponse(parsed.data.concern);
-  if (crisis) return crisis;
   const profile = profileOf(parsed.data);
+  // Every text that reaches the prompt: the concern, the status labels and earlier readings.
+  const crisis = crisisResponse(parsed.data.concern, profile?.loveStatus, profile?.workStatus, ...historyTexts(parsed.data.history));
+  if (crisis) return crisis;
   const facts = factsFromBirth(parsed.data.birth, now, profile, parsed.data.history);
   if (facts instanceof Response) return facts;
   return { body: parsed.data, profile, facts };

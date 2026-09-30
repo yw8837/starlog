@@ -6,9 +6,11 @@ import { buildFactSet, sajuReadingPrompt, sajuTeaserPrompt } from "@/lib/ai/prom
 import { buildTarotContext, tarotReadingPrompt, tarotTeaserPrompt } from "@/lib/ai/prompts/tarot";
 import { isSoftViolation } from "@/lib/ai/style";
 import { validateSajuReading, validateTarotReading } from "@/lib/ai/validate";
-import { profileOf } from "@/lib/api/sajuRequest";
+import { resetDailyStore } from "@/lib/api/dailyStore";
+import { SAJU_BODY_MAX_BYTES, profileOf } from "@/lib/api/sajuRequest";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";
 import { POST as teaser } from "./tarot/teaser/route";
@@ -37,6 +39,7 @@ beforeEach(() => {
   vi.stubEnv("BETA_FULL_PER_DAY", "100");
   vi.stubEnv("BETA_TEASER_PER_DAY", "100");
   resetMemoryLimiter();
+  resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
@@ -180,5 +183,61 @@ describe("history (earlier readings from the device)", () => {
     const drawToken = await drawFor("self-flow");
     await call(teaser, { drawToken, input: { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "", history: HISTORY } });
     expect(spy.mock.calls[0]![0].user).toContain("<history>");
+  });
+});
+
+describe("review fixes (A2 round 2)", () => {
+  /** Exactly `n` Hangul characters (3 UTF-8 bytes each, no spaces): the byte-heaviest legal text. */
+  const fill = (n: number) => "이번달에는지출을줄이고저축을늘리고싶어요".repeat(10).slice(0, n);
+
+  it("accepts a saju body at the schema maxima (concern, statuses, 3 full history items) and refuses one over the cap", async () => {
+    const item = { date: "2026-09-28", kind: "saju", question: fill(60), verdict: fill(80), observation: fill(120), checkin: "다르게 흘렀어요" };
+    const body = { birth: DEFAULT_SAJU_FORM, loveStatus: "fresh-start", workStatus: "self-employed", concern: fill(60), history: [item, item, item] };
+    const bytes = new TextEncoder().encode(JSON.stringify(body)).length;
+    expect(bytes).toBeGreaterThan(3_000); // the old cap refused this
+    expect(bytes).toBeLessThanOrEqual(SAJU_BODY_MAX_BYTES);
+    expect((await call(sajuTeaser, body)).status).toBe(200);
+    expect((await call(sajuReading, body)).status).toBe(200);
+    expect((await call(sajuTeaser, { ...body, padding: "x".repeat(SAJU_BODY_MAX_BYTES) })).status).toBe(400);
+  });
+
+  it.each([
+    ["question", { question: "요즘 죽고 싶다는 생각뿐이에요" }],
+    ["verdict", { verdict: "자해만 떠올라요" }],
+    ["observation", { observation: "사라지고 싶은 마음이 드는지 보세요" }],
+  ])("runs the crisis check over history %s (tarot and saju)", async (_field, patch) => {
+    const history = [{ ...HISTORY[0]!, ...patch }];
+    const drawToken = await drawFor("self-flow");
+    const tarot = await call(teaser, { drawToken, input: { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "", history } });
+    expect(tarot.status).toBe(422);
+    expect(tarot.data.care).toBe(true);
+    expect((await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, history: history.map((h) => ({ ...h, kind: "saju" })) })).status).toBe(422);
+  });
+
+  it("runs the crisis check over condition labels", async () => {
+    const drawToken = await drawFor("self-flow");
+    const input = { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [{ label: "죽고 싶은 이유", value: "돈" }], note: "" };
+    expect((await call(teaser, { drawToken, input })).status).toBe(422);
+  });
+
+  it("judges topicText after cleaning: nothing left is no topic, and a catalog topic ignores it", async () => {
+    const drawToken = await drawFor("self-flow");
+    expect((await call(teaser, { drawToken, input: { ...CUSTOM, topicText: "<>" } })).status).toBe(400);
+    expect((await call(teaser, { drawToken, input: { ...CUSTOM, topicText: " < > " } })).status).toBe(400);
+    const spy = vi.spyOn(mockProvider, "generate");
+    const chip = await call(teaser, { drawToken, input: { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "", topicText: "창업 준비" } });
+    expect(chip.status).toBe(200);
+    expect(spy.mock.calls[0]![0].user).not.toContain("<custom_topic>");
+    expect(spy.mock.calls[0]![0].user).not.toContain("창업 준비");
+  });
+
+  it("sends one sl_daily cookie on the JSON daily response", async () => {
+    const response = await daily(new Request("http://localhost/api", {
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.18.0.2" }, body: "{}",
+    }));
+    expect(response.status).toBe(200);
+    expect(response.headers.getSetCookie().filter((c) => c.startsWith("sl_daily=")).length).toBe(1);
+    const state = JSON.parse(Buffer.from(response.headers.getSetCookie().find((c) => c.startsWith("sl_daily="))!.slice(9).split(".")[0]!, "base64url").toString("utf8"));
+    expect(state.gen).toBe(1); // the outcome's cookie (count spent) replaced the start cookie
   });
 });
