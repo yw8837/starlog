@@ -113,6 +113,8 @@ describe("saju mock", () => {
     { year: 2020, month: 2, day: 4 },
     { year: 1964, month: 11, day: 30, gender: "male" },
     { year: 2003, month: 12, day: 22, timeKnown: true, hour: 0, minute: 10, placeId: "jeju" },
+    // the smoke chart: no missing element, time known, no user context (the teaser mock ran short)
+    { year: 1993, month: 8, day: 17, timeKnown: true, hour: 7, minute: 20, gender: "male", placeId: "busan" },
   ];
 
   it.each(cases.map((c) => [JSON.stringify(c), c] as const))("passes its own validators for %s", (_label, patch) => {
@@ -120,6 +122,24 @@ describe("saju mock", () => {
     expect(validateSajuTeaser(mockSajuTeaser(facts), facts)).toEqual([]);
     expect(validateSajuReading(mockSajuReading(facts), facts)).toEqual([]);
     expect(validateSajuFollowUp(mockSajuFollowUp(facts), facts)).toEqual([]);
+  });
+
+  it("passes its own validators across a spread of charts (e2e and key-less dev use the mock)", () => {
+    const failures: string[] = [];
+    for (let i = 0; i < 48; i++) {
+      const patch: Partial<SajuForm> = {
+        year: 1960 + ((i * 7) % 50), month: 1 + ((i * 5) % 12), day: 1 + ((i * 11) % 28), gender: i % 2 ? "male" : "female",
+        ...(i % 3 ? { timeKnown: true, hour: (i * 5) % 24, minute: (i * 13) % 60 } : {}),
+      };
+      const facts = factsOf(patch);
+      const found = [
+        ...validateSajuTeaser(mockSajuTeaser(facts), facts),
+        ...validateSajuReading(mockSajuReading(facts), facts),
+        ...validateSajuFollowUp(mockSajuFollowUp(facts), facts),
+      ];
+      if (found.length) failures.push(`${JSON.stringify(patch)}: ${found.join(" | ")}`);
+    }
+    expect(failures).toEqual([]);
   });
 
   it("writes a prologue for a non-sample chart through the provider", async () => {

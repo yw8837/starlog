@@ -261,6 +261,7 @@ function profileSentence(f: SajuFactSet): string {
 
 export function mockSajuTeaser(f: SajuFactSet): SajuTeaserDraft {
   const dm = f.dayMaster;
+  const day = f.pillars.find((p) => p.pillar.includes("일주"))!;
   const month = f.pillars.find((p) => p.pillar.includes("월주"))!;
   const counts = Object.entries(f.elements.counts).map(([e, n]) => `${e} ${n}`).join(", ");
   return {
@@ -271,6 +272,8 @@ export function mockSajuTeaser(f: SajuFactSet): SajuTeaserDraft {
       `${f.elements.basis}로 세면 ${counts}이고, 가장 많은 기운은 ${joinList(f.elements.most)}개예요.`,
       f.elements.missing.length ? `겉에 한 글자도 없는 기운도 있어요(${f.elements.missing.join("·")}).` : "",
       `태어난 달의 지지는 ${month.branch.display}, 십성으로는 ${month.branch.mainTenGod} 자리예요.`,
+      // Always there, so a chart with no missing element and no user context still reaches the length.
+      `태어난 날의 지지 ${day.branch.display}의 십성은 ${josa(day.branch.mainTenGod, "이고", "고")}, 12운성으로는 ${day.branch.twelveStage} 자리예요.`,
       "맡은 일을 내 방식으로 정리해 온 편이라면 이 구조와 맞물리고, 정해진 틀을 따르는 쪽이 늘 편했다면 이 부분은 덜 맞는 풀이예요.",
       profileSentence(f),
       f.input.timeKnown ? "" : "태어난 시를 몰라 시주 없이 여섯 글자로 읽었어요.",

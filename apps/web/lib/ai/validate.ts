@@ -155,7 +155,8 @@ function inputRepeatViolations(text: string, phrases: string[], out: string[]): 
   }
 }
 
-const WRITING = /적어|적고|적는|적을|써\s?(보|두)|기록|메모해|메모장/;
+/** Asking the user to write something down ("출생 기록" and other nouns are not). */
+const WRITING = /적어|적고|적는|적을|써\s?(보|두)|기록(해|하|을\s?남)|메모해|메모장/;
 /** Not moves of their own: "해 보세요", "~지 마세요". */
 const GENERIC_VERBS = new Set(["해", "하", "보", "봐", "두", "마", "지 마"]);
 
