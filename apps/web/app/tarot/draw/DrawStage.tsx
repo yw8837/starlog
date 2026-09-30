@@ -13,9 +13,7 @@ import {
   type DeckState,
   type DrawnCard,
 } from "@starlog/core";
-import { Cat } from "@/components/characters/Cat";
 import { CardFan } from "@/components/tarot/CardFan";
-import { CheerCat } from "@/components/tarot/CheerCat";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { SpreadRow, type SpreadCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
@@ -69,8 +67,8 @@ const ShuffleIcon = () => (
 );
 
 /**
- * Step 2: the cat shuffles, a fan opens, the user picks the spread's cards, then they turn over.
- * While picking, the cat watches and cheers each pick, and 다시 섞기 shuffles a fresh deck.
+ * Step 2: the deck is shuffled and opens into a fan, the user picks the spread's cards, then they
+ * turn over. While picking, 다시 섞기 shuffles a fresh deck.
  */
 export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   const router = useRouter();
@@ -132,13 +130,14 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
     setPicked((prev) => prev.slice(0, -1));
   };
 
-  // A new random deck (order and orientations), no picks, and the cat shuffles it again.
+  // A new random deck (order and orientations), no picks, and the shuffle plays again (its gentle
+  // version under reduced motion; tests' instant mode reshuffles in place).
   const reshuffle = () => {
     if (phase !== "pick") return;
     setDeck(createDeck(randomSeed(), DEFAULT_REVERSAL_RATE));
     setPicked([]);
     setReshuffled(true);
-    if (!instant && !prefersReducedMotion()) setPhase("shuffle");
+    if (!instant) setPhase("shuffle");
   };
 
   const reveal = () => {
@@ -198,9 +197,6 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
           <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffled} />
         ) : phase === "pick" && deck && known ? (
           <div className={s.pick}>
-            <div className={s.catSpot}>
-              <CheerCat picks={picked.length} done={picked.length === max} />
-            </div>
             <div ref={reshuffleRef} className={s.reshuffle}>
               <Button variant="secondary" size="md" onClick={reshuffle} trailing={<ShuffleIcon />}>
                 다시 섞기
@@ -208,10 +204,6 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
             </div>
             {/* Keyed by the deck, so a reshuffled deck deals out afresh. */}
             <CardFan key={deck.seed} picked={picked} max={max} onPick={pick} />
-          </div>
-        ) : phase === "reveal" || phase === "done" ? (
-          <div className={s.reader}>
-            <Cat outfit="tarot" action="glow" expression={phase === "done" ? "happy" : "focus"} size={150} reactOnTap={false} />
           </div>
         ) : null}
       </div>

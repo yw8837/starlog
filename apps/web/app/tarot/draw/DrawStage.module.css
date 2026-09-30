@@ -40,23 +40,9 @@
   width: 100%;
 }
 
-.reader {
-  display: flex;
-  justify-content: center;
-}
-
-/* Picking: the fan, the cat watching it from the empty corner above its left wing, 다시 섞기 in its hollow. */
+/* Picking: the fan, with 다시 섞기 in its hollow. */
 .pick {
   position: relative;
-}
-
-/* Phones: 72px (scaled down from 128px), reaching up into the empty name row under the slots. */
-.catSpot {
-  position: absolute;
-  top: -24px;
-  left: 0;
-  transform: scale(0.5625);
-  transform-origin: 0 0;
 }
 
 /*
@@ -72,22 +58,6 @@
   background: rgba(13, 10, 38, 0.88);
   box-shadow: 0 6px 18px rgba(5, 3, 15, 0.5);
   transform: translateX(-50%);
-}
-
-@media (min-width: 520px) {
-  .catSpot {
-    transform: scale(0.75);
-  }
-}
-
-/* Desktop: the cat sits beside the fan, at full size, outside the reading column. */
-@media (min-width: 900px) {
-  .catSpot {
-    top: 50%;
-    right: calc(100% + 24px);
-    left: auto;
-    transform: translateY(-50%);
-  }
 }
 
 .cta {

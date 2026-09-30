@@ -1,61 +1,56 @@
-.stage {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding-top: 8px;
-}
-
-/* The cat's art box; the deck and the paws are laid over it in the same 300-unit proportions. */
+/*
+ * Laid out with the fan's own box (CardFan's .box/.wideBox/.wide, same width, height and card
+ * size), so the deck sits exactly where the fan's middle card will be: 56px down, centred.
+ */
 .scene {
   position: relative;
-  display: grid;
-  width: var(--size);
-  height: var(--size);
+  perspective: 900px;
 }
 
-.halo {
+/* A soft gold light behind the deck. */
+.glow {
   position: absolute;
-  top: 50%;
+  top: calc(56px + var(--fh) / 2);
   left: 50%;
-  width: 130%;
-  height: 130%;
+  width: calc(var(--fw) * 3.4);
+  aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(243, 220, 161, 0.2), rgba(243, 220, 161, 0.06) 45%, transparent 68%);
+  background: radial-gradient(circle, rgba(243, 220, 161, 0.3), rgba(243, 220, 161, 0.08) 45%, transparent 68%);
   transform: translate(-50%, -50%);
   pointer-events: none;
-  animation: haloBreath 2.6s ease-in-out infinite;
+  animation: glowBreath var(--riffle) ease-in-out infinite;
 }
 
-/* In step with CharacterFrame's idle float (same length, same 5-unit rise, started together). */
-.props {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  animation: propsFloat 3.8s ease-in-out infinite;
-}
-
-/* The squared deck sits just under the cat's muzzle, between its paws (art box 131..169, 212..292). */
 .deck {
   position: absolute;
-  top: 70.67%;
+  top: 56px;
   left: 50%;
-  width: 15.33%;
+  width: var(--fw);
   aspect-ratio: 600 / 1040;
-  margin-left: -7.67%;
-}
-
-/* Each riffle ends with the pile squaring up in the paws. */
-.squareUp {
+  margin-left: calc(var(--fw) / -2);
+  transform-style: preserve-3d;
+  /* Each riffle ends with the pile squaring up with a little bounce. */
   animation: squareUp var(--riffle) ease-out both;
 }
 
-/* A half of the deck: slides out and tilts, then its cards spring back to the middle one by one. */
+/* Contact shadow on the "table": widens while the two halves are apart. */
+.floor {
+  position: absolute;
+  top: calc(100% - 6px);
+  left: 50%;
+  width: 150%;
+  height: 22px;
+  margin-left: -75%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(5, 3, 15, 0.55), transparent);
+  animation: floor var(--riffle) ease-in-out both;
+}
+
+/* A half of the deck: slides out, tilts and turns in a little, then its cards spring back one by one. */
 .half {
   position: absolute;
   inset: 0;
-  perspective: 420px;
+  transform-style: preserve-3d;
   animation: split var(--riffle) cubic-bezier(0.3, 0.7, 0.3, 1) both;
 }
 
@@ -67,13 +62,16 @@
   --dir: 1;
 }
 
+/* Stacked 1.2% apart, so the deck shows its thickness even when nothing moves. */
 .card {
   position: absolute;
   inset: 0;
-  border-radius: 4px;
+  border-radius: 6px;
   box-shadow:
     0 0 0 1px rgba(243, 220, 161, 0.55),
-    0 2px 4px rgba(5, 3, 15, 0.45);
+    0 3px 6px rgba(5, 3, 15, 0.45);
+  transform: translateY(calc(var(--n) * -1.2%));
+  animation: riffle 300ms cubic-bezier(0.35, 0.1, 0.25, 1) calc(290ms + var(--order) * 46ms) both;
 }
 
 .card img {
@@ -85,29 +83,16 @@
   -webkit-user-drag: none;
 }
 
-.half .card {
-  animation: riffle 320ms cubic-bezier(0.35, 0.1, 0.25, 1) calc(360ms + var(--order) * 62ms) both;
-}
-
-/* Last beat: the squared deck opens into a small fan held at its base. */
-.fanned {
-  transform-origin: 50% 92%;
-  animation: fanOut 440ms cubic-bezier(0.2, 0.8, 0.3, 1.15) calc(var(--k) * 22ms) both;
-}
-
-.paws {
+/* Below the arc's top, where 다시 섞기 sits once the fan is open. */
+.foot {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.spark {
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: spark 0.8s ease-out var(--delay) both;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .caption {
@@ -123,67 +108,17 @@
   animation: dots 1.2s steps(4, end) infinite;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .stage *,
-  .stage *::after {
-    animation: none !important;
-  }
-}
-
-@keyframes propsFloat {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(calc(var(--size) * -5 / 300));
-  }
-}
-
-@keyframes haloBreath {
-  0%,
-  100% {
-    opacity: 0.75;
-    transform: translate(-50%, -50%) scale(0.94);
-  }
-  50% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.04);
-  }
-}
-
-@keyframes split {
-  0% {
-    transform: translateX(0) rotate(0deg) translateY(0);
-  }
-  24%,
-  100% {
-    transform: translateX(calc(var(--dir) * 96%)) rotate(calc(var(--dir) * 9deg)) translateY(-3%);
-  }
-}
-
 /*
- * From its place in the half (stacked 1.6% apart), up over the gap and down onto the pile. The last
- * frame undoes the half's split (same origin, inverse order), plus the card's height in the pile.
+ * Reduced motion: nothing travels. The stacked deck dims and comes back once while the light
+ * behind it swells, so there is still a visible "shuffled" beat (opacity only).
  */
-@keyframes riffle {
-  0% {
-    transform: translateY(0) rotate(0deg) translateX(0) translateY(calc(var(--n) * -1.6%)) rotateX(0deg) scale(1);
-    box-shadow:
-      0 0 0 1px rgba(243, 220, 161, 0.55),
-      0 2px 4px rgba(5, 3, 15, 0.45);
+@media (prefers-reduced-motion: reduce) {
+  .deck {
+    animation: gentleDeck var(--gentle) ease-in-out both !important;
   }
-  50% {
-    transform: translateY(-34%) rotate(calc(var(--dir) * -5deg)) translateX(calc(var(--dir) * -52%)) translateY(0) rotateX(26deg) scale(1.1);
-    box-shadow:
-      0 0 0 1px rgba(243, 220, 161, 0.8),
-      0 12px 16px rgba(5, 3, 15, 0.4);
-  }
-  100% {
-    transform: translateY(3%) rotate(calc(var(--dir) * -9deg)) translateX(calc(var(--dir) * -96%)) translateY(calc(var(--order) * -0.7%)) rotateX(0deg) scale(1);
-    box-shadow:
-      0 0 0 1px rgba(243, 220, 161, 0.55),
-      0 2px 4px rgba(5, 3, 15, 0.45);
+
+  .glow {
+    animation: gentleGlow var(--gentle) ease-in-out both !important;
   }
 }
 
@@ -192,34 +127,95 @@
   92% {
     transform: none;
   }
-  96% {
+  95.5% {
     transform: translateY(4%) scale(1.05, 0.95);
+  }
+  98% {
+    transform: translateY(-1.5%) scale(0.99, 1.01);
   }
   100% {
     transform: none;
   }
 }
 
-@keyframes fanOut {
-  from {
-    transform: rotate(0deg);
+@keyframes floor {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
   }
-  to {
-    transform: rotate(var(--a));
+  22%,
+  60% {
+    transform: scaleX(2.1);
+    opacity: 0.75;
   }
 }
 
-@keyframes spark {
+@keyframes split {
   0% {
-    opacity: 0;
-    transform: translate(0, 0) scale(0.3);
+    transform: translateX(0) rotate(0deg) rotateY(0deg) translateY(0);
   }
-  25% {
-    opacity: 1;
+  22%,
+  100% {
+    transform: translateX(calc(var(--dir) * 92%)) rotate(calc(var(--dir) * 8deg)) rotateY(calc(var(--dir) * -16deg)) translateY(-4%);
+  }
+}
+
+/*
+ * From its place in the half, up over the gap and down onto the pile, with a small bounce. The
+ * last frames undo the half's split (same origin, inverse order) plus the card's place in the pile.
+ */
+@keyframes riffle {
+  0% {
+    transform: translateY(4%) rotateY(0deg) rotate(0deg) translateX(0) translateY(calc(var(--n) * -1.2% - 4%)) rotateX(0deg) scale(1);
+    box-shadow:
+      0 0 0 1px rgba(243, 220, 161, 0.55),
+      0 3px 6px rgba(5, 3, 15, 0.45);
+  }
+  50% {
+    transform: translateY(-30%) rotateY(calc(var(--dir) * 8deg)) rotate(calc(var(--dir) * -4deg)) translateX(calc(var(--dir) * -50%)) translateY(0) rotateX(22deg) scale(1.08);
+    box-shadow:
+      0 0 0 1px rgba(243, 220, 161, 0.85),
+      0 14px 20px rgba(5, 3, 15, 0.42);
+  }
+  84% {
+    transform: translateY(4%) rotateY(calc(var(--dir) * 16deg)) rotate(calc(var(--dir) * -8deg)) translateX(calc(var(--dir) * -92%)) translateY(calc(var(--order) * -0.6% + 1.5%)) rotateX(-4deg) scale(1);
   }
   100% {
-    opacity: 0;
-    transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(45deg);
+    transform: translateY(4%) rotateY(calc(var(--dir) * 16deg)) rotate(calc(var(--dir) * -8deg)) translateX(calc(var(--dir) * -92%)) translateY(calc(var(--order) * -0.6%)) rotateX(0deg) scale(1);
+    box-shadow:
+      0 0 0 1px rgba(243, 220, 161, 0.55),
+      0 3px 6px rgba(5, 3, 15, 0.45);
+  }
+}
+
+@keyframes glowBreath {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes gentleDeck {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes gentleGlow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
   }
 }
 

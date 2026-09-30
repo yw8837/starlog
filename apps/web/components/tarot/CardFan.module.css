@@ -107,13 +107,15 @@
 }
 
 /*
- * Wide fan (21 cards over 150°): cards 18.5% of the fan's width (52-80px), turning around a pivot
+ * Wide fan (21 cards over 150°): cards 20% of the fan's width (56-84px), turning around a pivot
  * 28px above the bottom edge, at the radius that lets the end cards just reach the sides
- * (--sin/--cos: the half-spread, set by CardFan). 56px on top leave room for a lifted card; the
- * hollow under the arc stays free for the parent (the draw screen puts 다시 섞기 there).
+ * (--sin/--cos from wideArcStyle). 56px on top leave room for a lifted card, so the middle card's
+ * top sits 56px down (ShuffleStage puts its deck there); the hollow under the arc stays free for
+ * the parent (the draw screen puts 다시 섞기 there).
  */
 .wide {
-  --fw: clamp(52px, 18.5cqw, 80px);
+  --fw: clamp(56px, 20cqw, 84px);
+  --fh: calc(var(--fw) * 1040 / 600);
   --r: calc((50cqw - 4px - var(--fw) * var(--cos) / 2) / var(--sin));
   height: calc(var(--r) + 84px);
 }
@@ -122,9 +124,8 @@
   top: auto;
   bottom: calc(28px + var(--r) - var(--fh));
   transform-origin: 50% var(--r);
-  /* Dealt from the middle outwards, each card swinging down from above the arc. */
-  animation-name: dealWide;
-  animation-delay: calc(var(--d) * 26ms);
+  /* Opens out of one stack at the top of the arc (where the shuffled deck was), with a little overshoot. */
+  animation: dealWide 640ms cubic-bezier(0.25, 0.9, 0.3, 1.12) calc(var(--d) * 6ms) backwards;
 }
 
 .wide .picked {
@@ -140,7 +141,19 @@
 
 @keyframes dealWide {
   from {
+    transform: rotate(0deg) translateY(0);
+  }
+}
+
+/* Reduced motion: no travel, the fan fades in where it lies (the global rule would drop it entirely). */
+@media (prefers-reduced-motion: reduce) {
+  .slot {
+    animation: fanFade 360ms ease-out both !important;
+  }
+}
+
+@keyframes fanFade {
+  from {
     opacity: 0;
-    transform: rotate(0deg) translateY(-44px);
   }
 }

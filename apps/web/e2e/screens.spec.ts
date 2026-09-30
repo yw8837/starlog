@@ -319,7 +319,7 @@ for (const screen of SCREENS) {
   });
 }
 
-test("@screens reduced motion stops every animation", async ({ page }) => {
+test("@screens reduced motion stops every animation that moves", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   for (const path of ["/", "/tarot/draw?instant=1", "/chapter/sample?from=unlock", "/story", "/dev/characters"]) {
     await page.goto(path);
@@ -328,6 +328,14 @@ test("@screens reduced motion stops every animation", async ({ page }) => {
       document
         .getAnimations()
         .filter((a) => a.playState === "running")
+        // Allowed: short opacity-only fades (nothing travels), e.g. the fan fading in or the deck's
+        // gentle shuffle pulse.
+        .filter((a) => {
+          const frames = (a.effect as KeyframeEffect | null)?.getKeyframes() ?? [];
+          const props = frames.flatMap((f) => Object.keys(f)).filter((k) => !["offset", "computedOffset", "easing", "composite"].includes(k));
+          const finite = a.effect?.getComputedTiming().iterations !== Infinity;
+          return !(finite && props.length > 0 && props.every((prop) => prop === "opacity"));
+        })
         .map((a) => (a.effect as KeyframeEffect | null)?.target ?? null)
         // Only the app's own elements (the dev overlay lives in a shadow root).
         .filter((target): target is Element => target !== null && target.getRootNode() === document)

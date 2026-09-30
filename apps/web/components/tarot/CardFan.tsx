@@ -25,6 +25,15 @@ const SPREAD_DEG = 54;
 const WIDE_FROM = 13;
 const WIDE_STEP_DEG = 7.5;
 
+/**
+ * Inline CSS variables that fit a wide arc of `cards` cards to its box (with the `.box`, `.wideBox`
+ * and `.wide` classes). ShuffleStage uses the full fan's (21) so its deck sits where the fan opens.
+ */
+export function wideArcStyle(cards = 21): CSSProperties {
+  const half = ((WIDE_STEP_DEG * (cards - 1)) / 2) * (Math.PI / 180);
+  return { "--sin": Math.sin(half).toFixed(4), "--cos": Math.cos(half).toFixed(4) } as CSSProperties;
+}
+
 /** Deck indexes shown in the fan: `visible` cards spread evenly through a deck of `count`. */
 export function fanIndexes(count: number, visible: number): number[] {
   const n = Math.min(count, visible);
@@ -101,9 +110,6 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
   const last = indexes.length - 1;
   const wide = indexes.length >= WIDE_FROM;
   const spread = wide ? WIDE_STEP_DEG * last : SPREAD_DEG;
-  // The CSS fits the arc to the fan's width from the half-spread's sine and cosine.
-  const halfSpread = (spread / 2) * (Math.PI / 180);
-  const fanStyle = { "--sin": Math.sin(halfSpread).toFixed(4), "--cos": Math.cos(halfSpread).toFixed(4) } as CSSProperties;
 
   // Roving focus: one tab stop for the whole fan; arrow keys move along the arc, Home/End jump to its ends.
   const onKeyDown = (e: KeyboardEvent, slot: number) => {
@@ -120,7 +126,7 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
     <div className={wide ? `${s.box} ${s.wideBox}` : s.box}>
       <div
         className={wide ? `${s.fan} ${s.wide}` : s.fan}
-        style={wide ? fanStyle : undefined}
+        style={wide ? wideArcStyle(indexes.length) : undefined}
         role="group"
         aria-label={`카드 ${indexes.length}장 중 ${max}장 고르기`}
         onPointerDown={onPointerDown}

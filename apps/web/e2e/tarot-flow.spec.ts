@@ -112,6 +112,26 @@ test("tarot flow: question, situation, draw, free result, login, opened chapter"
   await shot(page, info, "07-chapter");
 });
 
+test("draw: a cards-only shuffle opens the fan; 다시 섞기 replays it; reduced motion still shows a short one", async ({ page }) => {
+  await page.goto("/tarot/draw");
+  await expect(page.getByText("카드를 섞고 있어요")).toBeVisible();
+  // No character on the draw screen, only the deck.
+  await expect(page.getByRole("img", { name: /고양이/ })).toHaveCount(0);
+  await expect(page.locator("[data-fan-index]")).toHaveCount(21, { timeout: 6_000 });
+  await expect(page.getByRole("img", { name: /고양이/ })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "다시 섞기" }).click();
+  await expect(page.getByText("카드를 섞고 있어요")).toBeVisible();
+  await page.getByRole("button", { name: "바로 펼치기" }).click();
+  await expect(page.locator("[data-fan-index]")).toHaveCount(21);
+
+  // Reduced motion: not skipped. The stacked deck is shown for a moment (opacity only), then the fan.
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.reload();
+  await expect(page.getByText("카드를 섞고 있어요")).toBeVisible();
+  await expect(page.locator("[data-fan-index]")).toHaveCount(21, { timeout: 3_000 });
+});
+
 test("returning visitor sees 별조각, 달빛 (6 short) and direct pay", async ({ page }, info) => {
   await page.goto("/tarot/result?visit=returning");
   const sheet = page.getByRole("region", { name: "전체 풀이 보기" });
