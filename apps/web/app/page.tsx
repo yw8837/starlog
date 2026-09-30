@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { STORY_FIXTURE, WALLET_FIXTURE, nextChapterNumber } from "@/lib/fixtures";
+import { SITE } from "@/lib/config";
 import { GUIDE_ARTICLES } from "@/lib/guide";
 import s from "./page.module.css";
 
@@ -15,7 +16,8 @@ import s from "./page.module.css";
 export default async function HomePage({ searchParams }: PageProps<"/">) {
   const query = await searchParams;
   const first = query.visit === "first";
-  const pending = first ? [] : STORY_FIXTURE.friendScenes.filter((scene) => scene.status === "pending");
+  const pending =
+    first || !SITE.features.friendScenes ? [] : STORY_FIXTURE.friendScenes.filter((scene) => scene.status === "pending");
   const lastChapter = STORY_FIXTURE.chapters.findLast((chapter) => chapter.kind === "tarot");
 
   return (

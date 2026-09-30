@@ -164,16 +164,14 @@ test("saju: a known birth time adds the hour pillar and the correction note", as
   await shot(page, info, "06-saju-lunar-error");
 });
 
-test("story: three timeline items read in one scroll, friend scene approval, empty state", async ({ page }, info) => {
+test("story: timeline items read in one scroll (friend scenes off in beta), empty state", async ({ page }, info) => {
   await page.goto("/story");
   await expect(page.getByRole("heading", { level: 1, name: "나의 스타로그" })).toBeVisible();
   const items = page.getByRole("list", { name: "이야기 목차" }).getByRole("listitem");
-  await expect(items).toHaveCount(3);
+  await expect(items).toHaveCount(2);
   await expect(items.nth(0)).toContainText("프롤로그");
   await expect(items.nth(1)).toContainText("뜸해진 연락 앞에서");
-  await expect(items.nth(2)).toContainText("지인 A님이 남긴 카드");
-  await expect(items.nth(2)).toContainText("이 카드 보자마자 네 생각이 났어");
-  await expect(items.nth(2).locator('img[src*="/cards/major-19-sun"]')).toBeVisible();
+  await expect(page.getByText("지인 A")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "새 장 열기" })).toBeVisible();
   await shot(page, info, "07-story");
 
@@ -182,10 +180,6 @@ test("story: three timeline items read in one scroll, friend scene approval, emp
   await expect(items.nth(0)).toContainText("일간은 병화(丙火)예요.");
   await expect(items.nth(1)).toContainText("마지막 장면에서 구름 사이로 손 하나가 나와");
   await expect(items.nth(1).getByRole("link", { name: "뜸해진 연락 앞에서 풀이 전체 보기" })).toHaveAttribute("href", "/chapter/sample");
-
-  await items.nth(2).getByRole("button", { name: "이야기에 넣기" }).click();
-  await expect(items.nth(2)).toContainText("나의 스타로그에 넣었어요");
-  await shot(page, info, "08-story-approved");
 
   await page.goto("/story?empty=1");
   await expect(page.getByText("아직 첫 장이 비어 있어요")).toBeVisible();
@@ -227,7 +221,7 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: /나의 스타로그 · 2장/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /타로 보기/ })).toBeVisible();
-  await expect(page.getByRole("region", { name: "친구 장면" })).toContainText("지인 A님이 카드를 남겼어요");
+  await expect(page.getByRole("region", { name: "친구 장면" })).toHaveCount(0);
   await shot(page, info, "14-home");
 
   await page.goto("/?visit=first");

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
+import { SITE } from "@/lib/config";
 import { ME_FIXTURE, STORY_FIXTURE, nextChapterNumber } from "@/lib/fixtures";
 import { EmptyStory, StoryView } from "./StoryView";
 
@@ -23,7 +24,7 @@ export default async function StoryPage({ searchParams }: PageProps<"/story">) {
           <StoryView
             nickname={ME_FIXTURE.nickname}
             chapters={STORY_FIXTURE.chapters}
-            scenes={STORY_FIXTURE.friendScenes}
+            scenes={SITE.features.friendScenes ? STORY_FIXTURE.friendScenes : []}
             nextChapter={nextChapterNumber(STORY_FIXTURE.chapters)}
           />
         )}

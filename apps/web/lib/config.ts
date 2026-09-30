@@ -22,6 +22,10 @@ export const SITE = {
     /** Follow-up questions included with every opened reading. */
     followUps: 3,
   },
+  features: {
+    /** The P1 friend-scene demo (지인 A). Off until 별자리 인연 replaces it (P3 spec). */
+    friendScenes: false,
+  },
   /**
    * 달빛 top-up packs. Provisional: every pack must make one reading (unitsPerReading 달빛)
    * cheaper than direct pay, per spec §5 (checked in fixtures.test.ts). Real prices are set
