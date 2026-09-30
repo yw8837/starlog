@@ -5,7 +5,7 @@ import { SITE } from "@/lib/config";
 import { Footer } from "./Footer";
 import { TabBar } from "./TabBar";
 
-// The footer reads the business config; give it an address to prove it never prints one.
+// The footer reads the business config; a sentinel address proves it prints the configured one.
 vi.mock("@/lib/config", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/config")>();
   return { ...actual, SITE: { ...actual.SITE, business: { ...actual.SITE.business, address: "ADDRESS-SENTINEL" } } };
@@ -38,10 +38,9 @@ describe("Footer", () => {
     expect(footer.textContent).toContain("사업자등록번호 665-38-01736");
   });
 
-  it("never prints an address, even when the config has one", () => {
+  it("prints the business address from the config (전자상거래법 사업자 정보)", () => {
     expect(SITE.business.address).toBe("ADDRESS-SENTINEL");
     const { container } = render(<Footer />);
-    expect(container.innerHTML).not.toContain("ADDRESS-SENTINEL");
-    expect(container.textContent).not.toContain("주소");
+    expect(container.textContent).toContain("사업장 주소 ADDRESS-SENTINEL");
   });
 });

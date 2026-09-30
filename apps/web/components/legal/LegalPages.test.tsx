@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SITE } from "@/lib/config";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
 import TermsPage from "@/app/terms/page";
@@ -14,12 +15,16 @@ describe("policy pages", () => {
   });
 
   for (const [name, Page] of Object.entries(PAGES)) {
-    it(`${name}: one h1, effective 2026-10-01, and no address anywhere`, () => {
+    it(`${name}: one h1, effective 2026-10-01, and no address but the configured business one`, () => {
       const { container } = render(<Page />);
       expect(container.querySelectorAll("h1")).toHaveLength(1);
       expect(container.querySelector('time[datetime="2026-10-01"]')).not.toBeNull();
-      // "IP 주소" (a logged item in the privacy policy) is the only 주소 allowed.
-      expect((container.textContent ?? "").replaceAll("IP 주소", "")).not.toContain("주소");
+      // Allowed: "IP 주소" (a logged item in the privacy policy) and SITE.business.address with its label.
+      const rest = (container.textContent ?? "")
+        .replaceAll("IP 주소", "")
+        .replaceAll("사업장 주소", "")
+        .replaceAll(SITE.business.address, "");
+      expect(rest).not.toContain("주소");
       expect(container.textContent).toContain("665-38-01736");
     });
   }

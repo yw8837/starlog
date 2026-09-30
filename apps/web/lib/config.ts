@@ -7,9 +7,9 @@ export const SITE = {
     ceo: "최용우",
     regNo: "665-38-01736",
     mailOrderNo: "2026-부산영도-0153",
-    address: "",
+    address: "부산광역시 영도구 동삼서로 51-7",
     email: "studioyeolmae.com@gmail.com",
-    phone: "",
+    phone: "010-8282-8837",
   },
   currency: { paid: "달빛", free: "별조각" },
   price: {
@@ -56,19 +56,20 @@ export const won = (krw: number) => `${new Intl.NumberFormat("ko-KR").format(krw
 type Business = Readonly<Record<keyof (typeof SITE)["business"], string>>;
 
 /**
- * Footer business notice, in display order. The postal address is deliberately
- * absent: the footer must never render one, whatever the config holds.
+ * Footer business notice, in display order (전자상거래법 사업자 정보). The owner chose to show the
+ * address on the business registration once it is filled in SITE.business.address.
  */
 const FOOTER_FIELDS = [
   ["상호", "name"],
   ["대표", "ceo"],
   ["사업자등록번호", "regNo"],
   ["통신판매업 신고번호", "mailOrderNo"],
+  ["사업장 주소", "address"],
   ["이메일", "email"],
   ["전화", "phone"],
 ] as const satisfies ReadonlyArray<readonly [string, keyof Business]>;
 
-/** [label, value] for every non-empty business field, in display order. Never the address. */
+/** [label, value] for every non-empty business field, in display order. */
 export function businessFields(business: Business = SITE.business): Array<readonly [string, string]> {
   return FOOTER_FIELDS.flatMap(([label, key]) => {
     const value = business[key].trim();

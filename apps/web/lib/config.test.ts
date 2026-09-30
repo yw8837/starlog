@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { SITE, footerNotice } from "./config";
 
 describe("SITE", () => {
-  it("keeps the postal address and phone empty, and lists the mail-order number and contact email", () => {
-    expect(SITE.business.address).toBe("");
+  it("holds the business details the footer must show (전자상거래법 사업자 정보)", () => {
+    expect(SITE.business.address).toBe("부산광역시 영도구 동삼서로 51-7");
     expect(SITE.business.mailOrderNo).toBe("2026-부산영도-0153");
     expect(SITE.business.email).toBe("studioyeolmae.com@gmail.com");
-    expect(SITE.business.phone).toBe("");
+    expect(SITE.business.phone).toBe("010-8282-8837");
   });
 
   it("names the service and the production origin from one place", () => {
@@ -17,31 +17,23 @@ describe("SITE", () => {
 });
 
 describe("footerNotice", () => {
-  it("renders only the filled business fields", () => {
+  it("renders the filled business fields in display order", () => {
     expect(footerNotice()).toEqual([
       "상호 열매스튜디오",
       "대표 최용우",
       "사업자등록번호 665-38-01736",
       "통신판매업 신고번호 2026-부산영도-0153",
+      "사업장 주소 부산광역시 영도구 동삼서로 51-7",
       "이메일 studioyeolmae.com@gmail.com",
+      "전화 010-8282-8837",
     ]);
   });
 
-  it("includes optional fields once they are filled, and skips blank ones", () => {
-    const notice = footerNotice({
-      ...SITE.business,
-      mailOrderNo: "2026-서울-0001",
-      email: "  ",
-      phone: "02-000-0000",
-    });
-    expect(notice).toContain("통신판매업 신고번호 2026-서울-0001");
-    expect(notice).toContain("전화 02-000-0000");
+  it("skips blank fields", () => {
+    const notice = footerNotice({ ...SITE.business, address: " ", email: "  ", phone: "" });
+    expect(notice.some((line) => line.startsWith("사업장 주소"))).toBe(false);
     expect(notice.some((line) => line.startsWith("이메일"))).toBe(false);
-  });
-
-  it("never renders an address, even if one were configured", () => {
-    const notice = footerNotice({ ...SITE.business, address: "ADDRESS-SENTINEL" });
-    expect(notice.some((line) => line.includes("ADDRESS-SENTINEL"))).toBe(false);
-    expect(notice.some((line) => line.startsWith("주소"))).toBe(false);
+    expect(notice.some((line) => line.startsWith("전화"))).toBe(false);
+    expect(notice).toContain("통신판매업 신고번호 2026-부산영도-0153");
   });
 });
