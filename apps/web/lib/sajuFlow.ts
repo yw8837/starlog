@@ -1,17 +1,66 @@
-import { createSessionStore } from "./sessionStore";
+import type { LoveStatus, SajuContext, WorkStatus } from "./reading/types";
+import { createLocalStore } from "./sessionStore";
 import { sanitizeSajuForm, type SajuForm } from "./sajuForm";
 
 /**
- * The birth profile behind the saju screens (input → chart → prologue, 내 정보), kept in
- * sessionStorage for P1. Birth data never goes into a URL (spec §4).
+ * The birth profile behind the saju screens (input → chart → reading, 내 정보) and the optional
+ * status chips and concern, kept on this device (localStorage). Birth data never goes into a URL
+ * (spec §4); 내 정보 can erase it.
  */
 
 export const SAJU_PROFILE_KEY = "starlog.saju-profile";
+export const SAJU_CONTEXT_KEY = "starlog.saju-context";
 
-const store = createSessionStore<SajuForm>(SAJU_PROFILE_KEY, sanitizeSajuForm);
+/** Longest one-line concern the saju form accepts. */
+export const CONCERN_MAX = 60;
+
+export const LOVE_STATUS_OPTIONS: ReadonlyArray<{ value: LoveStatus; label: string }> = [
+  { value: "single", label: "솔로" },
+  { value: "dating", label: "연애 중" },
+  { value: "engaged", label: "결혼 준비 중" },
+  { value: "married", label: "기혼" },
+  { value: "fresh-start", label: "새로운 출발" },
+  { value: "unsure", label: "잘 모르겠어요" },
+];
+
+export const WORK_STATUS_OPTIONS: ReadonlyArray<{ value: WorkStatus; label: string }> = [
+  { value: "student", label: "학생" },
+  { value: "employee", label: "직장인" },
+  { value: "self-employed", label: "자영업·프리랜서" },
+  { value: "between-jobs", label: "구직·쉬는 중" },
+  { value: "unsure", label: "잘 모르겠어요" },
+];
+
+const profileStore = createLocalStore<SajuForm>(SAJU_PROFILE_KEY, sanitizeSajuForm);
+
+/** Keeps only known chip values and a trimmed, capped concern; empty fields are left out. */
+export function sanitizeSajuContext(value: unknown): SajuContext | null {
+  if (typeof value !== "object" || value === null) return null;
+  const v = value as Record<string, unknown>;
+  const loveStatus = LOVE_STATUS_OPTIONS.find((o) => o.value === v.loveStatus)?.value;
+  const workStatus = WORK_STATUS_OPTIONS.find((o) => o.value === v.workStatus)?.value;
+  const concern = typeof v.concern === "string" ? v.concern.slice(0, CONCERN_MAX) : "";
+  return {
+    ...(loveStatus ? { loveStatus } : {}),
+    ...(workStatus ? { workStatus } : {}),
+    ...(concern ? { concern } : {}),
+  };
+}
+
+const contextStore = createLocalStore<SajuContext>(SAJU_CONTEXT_KEY, sanitizeSajuContext);
 
 export function saveSajuProfile(form: SajuForm) {
-  store.save(form);
+  profileStore.save(form);
+}
+
+export function saveSajuContext(context: SajuContext) {
+  contextStore.save(sanitizeSajuContext(context) ?? {});
+}
+
+/** Erases the birth profile and the status chips from this device. */
+export function clearSajuProfile() {
+  profileStore.clear();
+  contextStore.clear();
 }
 
 /**
@@ -19,5 +68,21 @@ export function saveSajuProfile(form: SajuForm) {
  * null when nothing has been saved yet (screens then show the sample profile).
  */
 export function useSajuProfile(): { profile: SajuForm | null | undefined; saveProfile: (form: SajuForm) => void } {
-  return { profile: store.useValue(), saveProfile: saveSajuProfile };
+  return { profile: profileStore.useValue(), saveProfile: saveSajuProfile };
+}
+
+/** The saved status chips and concern: undefined before hydration, {} when none. */
+export function useSajuContext(): SajuContext | undefined {
+  const value = contextStore.useValue();
+  return value === undefined ? undefined : (value ?? {});
+}
+
+/** The body fields /api/saju/* take beside `birth`; empty ones are left out (a trimmed concern). */
+export function sajuContextBody(context: SajuContext): SajuContext {
+  const concern = context.concern?.trim();
+  return {
+    ...(context.loveStatus ? { loveStatus: context.loveStatus } : {}),
+    ...(context.workStatus ? { workStatus: context.workStatus } : {}),
+    ...(concern ? { concern } : {}),
+  };
 }

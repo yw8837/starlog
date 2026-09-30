@@ -1,0 +1,194 @@
+// @vitest-environment jsdom
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import type { DailyData, TarotReadingData } from "@/lib/reading/types";
+import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { BETA_USAGE_KEY, countFullReading, markDayUsedUp, remainingToday, useRemainingToday } from "./betaUsage";
+import {
+  CHAPTERS_KEY,
+  answerCheckin,
+  checkinDue,
+  clearChapters,
+  deleteChapter,
+  dueCheckin,
+  getChapter,
+  historyFor,
+  listChapters,
+  newestFirst,
+  parseChapter,
+  saveChapter,
+  updateChapter,
+  useChapters,
+  type NewChapter,
+} from "./chapters";
+import { DAILY_KEY, readDaily, saveDaily, useDaily } from "./daily";
+
+const DAY = 24 * 60 * 60 * 1000;
+// 2026-10-01 12:00 KST
+const NOW = Date.parse("2026-10-01T03:00:00.000Z");
+
+const READING: TarotReadingData = {
+  verdict: "지금은 지출을 먼저 줄여 보는 쪽이 맞아요",
+  cards: [{ position: "지금의 나", cardId: "major-09-hermit", heading: "은둔자 · 혼자 셈하는 시간", body: "…" }],
+  connection: { heading: "세 장의 연결", body: "…" },
+  timing: { heading: "시기", body: "…" },
+  observation: { heading: "며칠 안에 확인해 볼 신호", body: "이번 주 안에 고정 지출 하나가 눈에 띄는지 살펴보세요" },
+  scenarios: { heading: "흐름", items: [] },
+  messages: { heading: "말", items: [], hint: "" },
+  avoid: { heading: "피할 것", items: [] },
+  alternatives: { heading: "다른 길", body: "…" },
+  action: { heading: "오늘 해 볼 일", body: "…" },
+  followUps: [],
+};
+
+const TAROT: NewChapter = {
+  kind: "tarot",
+  question: "이번 주, 나의 재물 흐름은 어떨까",
+  conditions: [{ label: "지금 상황", value: "지금은 수입이 없음" }],
+  note: "",
+  cards: [{ position: "지금의 나", cardId: "major-09-hermit", orientation: "upright", keyword: "혼자 셈하기" }],
+  reading: READING,
+  chapterToken: "chapter.token",
+};
+
+const SAJU: NewChapter = {
+  kind: "saju",
+  birth: DEFAULT_SAJU_FORM,
+  title: "한겨울에 뜬 해",
+  summary: "한겨울에 태어난 병화 일간이에요.",
+  reading: { sections: [{ heading: "월령과 뿌리", body: "…" }], followUps: [] },
+  chapterToken: "saju.token",
+};
+
+afterEach(() => localStorage.clear());
+
+describe("chapters store", () => {
+  it("saves, lists, updates and deletes readings on this device", () => {
+    const a = saveChapter(TAROT, NOW);
+    const b = saveChapter(SAJU, NOW + 1000);
+    expect(a.id).toMatch(/^[a-z0-9]{8}$/);
+    expect(a).toMatchObject({ createdAt: NOW, turns: [], followUpsLeft: 3 });
+    expect(listChapters().map((c) => c.id)).toEqual([a.id, b.id]);
+    expect(newestFirst(listChapters()).map((c) => c.id)).toEqual([b.id, a.id]);
+    // Stored exactly as returned (follow-ups send it back for a digest check).
+    expect(getChapter(a.id)?.reading).toEqual(READING);
+
+    updateChapter(a.id, (c) => ({ ...c, chapterToken: "next", turns: [{ question: "q", answer: "a" }], followUpsLeft: 2 }));
+    expect(getChapter(a.id)).toMatchObject({ chapterToken: "next", followUpsLeft: 2, turns: [{ question: "q", answer: "a" }] });
+
+    deleteChapter(a.id);
+    expect(listChapters().map((c) => c.id)).toEqual([b.id]);
+    clearChapters();
+    expect(listChapters()).toEqual([]);
+    expect(localStorage.getItem(CHAPTERS_KEY)).toBeNull();
+  });
+
+  it("shares saves with every hook (undefined only before hydration)", () => {
+    const { result } = renderHook(() => useChapters());
+    expect(result.current).toEqual([]);
+    act(() => {
+      saveChapter(TAROT, NOW);
+    });
+    expect(result.current).toHaveLength(1);
+  });
+
+  it("skips stored entries that cannot be shown, keeps the rest", () => {
+    const good = { ...TAROT, id: "abcdef12", createdAt: NOW, turns: [], followUpsLeft: 3 };
+    localStorage.setItem(CHAPTERS_KEY, JSON.stringify([good, { ...good, id: "../x" }, { ...good, id: "zzzzzz99", cards: [] }, { kind: "saju", id: "yyyyyy99" }, "junk"]));
+    expect(listChapters().map((c) => c.id)).toEqual(["abcdef12"]);
+    expect(parseChapter({ ...SAJU, id: "abcdef12", createdAt: NOW, birth: { year: 1 } })).toBeNull();
+  });
+
+  it("keeps a reading saved before the story block was dropped", () => {
+    const old = { ...TAROT, id: "abcdef12", createdAt: NOW, reading: { ...READING, observation: undefined, story: { title: "t", body: "b" } } };
+    expect(parseChapter(old)?.reading.story).toEqual({ title: "t", body: "b" });
+  });
+});
+
+describe("돌아보기", () => {
+  it("asks about the observation 3 days later, and again 3 days after 아직이에요", () => {
+    const chapter = saveChapter(TAROT, NOW);
+    expect(checkinDue(chapter, NOW + 2 * DAY)).toBe(false);
+    expect(checkinDue(chapter, NOW + 3 * DAY)).toBe(true);
+    expect(dueCheckin(listChapters(), NOW + 3 * DAY)?.id).toBe(chapter.id);
+
+    answerCheckin(chapter.id, "아직이에요", NOW + 3 * DAY);
+    expect(dueCheckin(listChapters(), NOW + 4 * DAY)).toBeUndefined();
+    expect(dueCheckin(listChapters(), NOW + 6 * DAY)?.id).toBe(chapter.id);
+
+    answerCheckin(chapter.id, "맞았어요", NOW + 6 * DAY);
+    expect(dueCheckin(listChapters(), NOW + 30 * DAY)).toBeUndefined();
+    expect(getChapter(chapter.id)?.checkin).toEqual({ answer: "맞았어요", at: NOW + 6 * DAY });
+  });
+
+  it("never asks about a reading without an observation", () => {
+    const chapter = saveChapter({ ...TAROT, reading: { ...READING, observation: undefined } } as NewChapter, NOW);
+    expect(checkinDue(chapter, NOW + 10 * DAY)).toBe(false);
+  });
+});
+
+describe("history sent with a new reading", () => {
+  it("sends up to 3 newest records, clipped to the server's caps", () => {
+    saveChapter({ ...TAROT, question: "가".repeat(80) }, NOW - 3 * DAY);
+    saveChapter(SAJU, NOW - 2 * DAY);
+    const last = saveChapter(TAROT, NOW - DAY);
+    saveChapter(TAROT, NOW);
+    answerCheckin(last.id, "다르게 흘렀어요", NOW);
+    const history = historyFor(listChapters());
+    expect(history).toHaveLength(3);
+    expect(history[0]).toEqual({
+      date: "2026-10-01",
+      kind: "tarot",
+      question: TAROT.kind === "tarot" ? TAROT.question : "",
+      verdict: READING.verdict,
+      observation: READING.observation!.body,
+    });
+    expect(history[1]).toMatchObject({ date: "2026-09-30", checkin: "다르게 흘렀어요" });
+    expect(history[2]).toEqual({ date: "2026-09-29", kind: "saju", question: "사주 · 한겨울에 뜬 해", verdict: "한겨울에 태어난 병화 일간이에요." });
+    for (const item of history) {
+      expect(item.question.length).toBeLessThanOrEqual(60);
+      expect(item.verdict.length).toBeLessThanOrEqual(80);
+    }
+    expect(historyFor([])).toEqual([]);
+  });
+});
+
+describe("오늘의 한 장 cache by KST day", () => {
+  const DAILY: DailyData = {
+    card: { cardId: "major-19-sun", orientation: "upright", keyword: "숨기지 않기" },
+    summary: "오늘은 숨기지 않아도 되는 날",
+    body: "…",
+    areas: { love: "…", money: "…", work: "…" },
+    lucky: { color: "금색", number: 7 },
+    tip: "…",
+  };
+
+  it("keeps the day's cookie until KST midnight, then reads as nothing", () => {
+    const beforeMidnight = Date.parse("2026-10-01T14:59:00.000Z"); // 23:59 KST
+    const afterMidnight = Date.parse("2026-10-01T15:00:00.000Z"); // 00:00 KST next day
+    saveDaily(DAILY, NOW);
+    expect(readDaily(NOW)).toEqual(DAILY);
+    expect(readDaily(beforeMidnight)).toEqual(DAILY);
+    expect(readDaily(afterMidnight)).toBeNull();
+    expect(JSON.parse(localStorage.getItem(DAILY_KEY)!).day).toBe("2026-10-01");
+  });
+
+  it("reads as not opened before any save, then as today's cookie", () => {
+    const { result } = renderHook(() => useDaily(NOW));
+    expect(result.current).toBeNull();
+    act(() => saveDaily(DAILY, NOW));
+    expect(result.current).toEqual(DAILY);
+  });
+});
+
+describe("beta count shown on the unlock", () => {
+  it("counts opened readings per KST day and resets the next day", () => {
+    const { result } = renderHook(() => useRemainingToday(NOW));
+    expect(result.current).toBe(3);
+    act(() => countFullReading(NOW));
+    expect(result.current).toBe(2);
+    act(() => markDayUsedUp(NOW));
+    expect(result.current).toBe(0);
+    expect(remainingToday(JSON.parse(localStorage.getItem(BETA_USAGE_KEY)!), NOW + DAY)).toBe(3);
+  });
+});
