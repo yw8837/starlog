@@ -20,6 +20,8 @@
   --el-water: #7fa7e8;
   /* Focus ring; paper surfaces switch it to navy so it stays visible on #F7EFE0. */
   --focus-ring: var(--gold);
+  /* Error text on the night sky (≥ 4.5:1 on --night-0). */
+  --error: #ffb3bd;
 
   /* type scale */
   --fs-title: 26px;

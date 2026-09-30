@@ -49,5 +49,5 @@
 }
 
 .error {
-  color: #ffb4a8;
+  color: var(--error);
 }
