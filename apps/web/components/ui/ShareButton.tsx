@@ -1,19 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
+import { kakaoKey, shareToKakao } from "@/lib/kakaoShare";
 import { useCopy } from "@/lib/useCopy";
 import s from "./ShareButton.module.css";
 
 type ShareButtonProps = {
   /**
-   * What the share sheet says with the link, e.g. "나의 스타로그 · 뜸해진 연락 앞에서".
+   * What the share sheet says with the link, e.g. "스타로그에서 뽑은 카드 · 은둔자 · 별".
    * Never the user's question, note or birth data.
    */
   text: string;
   title?: string;
   /** Dark-ink style for a paper card. */
   onPaper?: boolean;
+  /** Kakao JavaScript key; defaults to NEXT_PUBLIC_KAKAO_JS_KEY. Empty: no Kakao button. */
+  kakao?: string;
 };
 
 const ShareIcon = () => (
@@ -24,13 +28,21 @@ const ShareIcon = () => (
   </svg>
 );
 
+const TalkIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" focusable="false">
+    <path d="M12 4C7 4 3 7.2 3 11.1c0 2.5 1.7 4.7 4.2 6l-1 3.6c-.1.3.3.6.6.4l4.2-2.8c.3 0 .7.1 1 .1 5 0 9-3.2 9-7.2S17 4 12 4z" fill="currentColor" />
+  </svg>
+);
+
 /**
  * 공유하기: the system share sheet where there is one (phones), otherwise the link is copied and a
  * small toast says so. Readings live on this device only, so the link is always the service's home
- * (SITE.url), never a page of a reading. Secondary style, never the screen's gold primary.
+ * (SITE.url), never a page of a reading. With a Kakao key, 카카오톡으로 보내기 sits beside it (the
+ * SDK loads on the first tap). Secondary style, never the screen's gold primary.
  */
-export function ShareButton({ text, title = SITE.nameKo, onPaper = false }: ShareButtonProps) {
+export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao = kakaoKey() }: ShareButtonProps) {
   const { state, copy } = useCopy();
+  const [kakaoFailed, setKakaoFailed] = useState(false);
   const url = SITE.url;
 
   const share = async () => {
@@ -47,13 +59,35 @@ export function ShareButton({ text, title = SITE.nameKo, onPaper = false }: Shar
     await copy(url);
   };
 
-  return (
+  const sendKakao = async () => {
+    setKakaoFailed(false);
+    try {
+      await shareToKakao(text, kakao);
+    } catch {
+      setKakaoFailed(true);
+    }
+  };
+
+  const toast = kakaoFailed ? "카카오톡을 열지 못했어요" : state === "copied" ? "링크를 복사했어요" : state === "failed" ? "링크를 복사하지 못했어요" : "";
+
+  const buttons = (
     <>
       <Button variant="secondary" size="md" onPaper={onPaper} onClick={share} trailing={<ShareIcon />}>
         공유하기
       </Button>
-      <p className={s.toast} role="status" data-shown={state === "idle" ? undefined : ""}>
-        {state === "copied" ? "링크를 복사했어요" : state === "failed" ? "링크를 복사하지 못했어요" : ""}
+      {kakao ? (
+        <Button variant="secondary" size="md" onPaper={onPaper} onClick={sendKakao} trailing={<TalkIcon />}>
+          카카오톡으로 보내기
+        </Button>
+      ) : null}
+    </>
+  );
+
+  return (
+    <>
+      {kakao ? <span className={s.row}>{buttons}</span> : buttons}
+      <p className={s.toast} role="status" data-shown={toast ? "" : undefined}>
+        {toast}
       </p>
     </>
   );

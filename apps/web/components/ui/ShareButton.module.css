@@ -31,3 +31,10 @@
     transform: translate(-50%, 10px);
   }
 }
+
+/* With Kakao: the two share buttons side by side, wrapping on narrow screens. */
+.row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
