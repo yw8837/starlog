@@ -51,7 +51,6 @@ export function ChartCriteria({ chart }: ChartCriteriaProps) {
               <li key={line}>{line}</li>
             ))}
           </ul>
-          <p className={s.version}>{`${chart.policy.version} · ${chart.engine}`}</p>
         </section>
       </div>
     </details>
