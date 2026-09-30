@@ -1,0 +1,62 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { Button } from "@/components/ui/Button";
+import s from "./OwnerForm.module.css";
+
+type Status = { kind: "idle" } | { kind: "sending" } | { kind: "done" } | { kind: "error"; message: string };
+
+/** One password field; the code goes only in the POST body, never in a URL. */
+export function OwnerForm() {
+  const [code, setCode] = useState("");
+  const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!code.trim()) {
+      setStatus({ kind: "error", message: "코드를 입력해 주세요." });
+      return;
+    }
+    setStatus({ kind: "sending" });
+    try {
+      const response = await fetch("/api/owner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      if (response.ok) {
+        setCode("");
+        setStatus({ kind: "done" });
+        return;
+      }
+      const data = (await response.json().catch(() => ({}))) as { message?: string };
+      setStatus({ kind: "error", message: data.message ?? "잠시 뒤에 다시 시도해 주세요." });
+    } catch {
+      setStatus({ kind: "error", message: "연결이 불안정해요. 잠시 뒤에 다시 시도해 주세요." });
+    }
+  };
+
+  return (
+    <form className={s.form} onSubmit={submit} noValidate>
+      <h1 className={s.title}>운영자 확인</h1>
+      <p className={s.lead}>코드를 넣으면 이 기기에서는 횟수 제한 없이 풀이를 볼 수 있어요.</p>
+      <label className={s.label} htmlFor="owner-code">운영자 코드</label>
+      <input
+        id="owner-code"
+        className={s.input}
+        type="password"
+        autoComplete="current-password"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        aria-invalid={status.kind === "error"}
+        aria-describedby="owner-status"
+      />
+      <p id="owner-status" className={status.kind === "error" ? s.error : s.status} role="status" aria-live="polite">
+        {status.kind === "done" ? "확인됐어요. 이 기기에서는 횟수 제한 없이 볼 수 있어요." : status.kind === "error" ? status.message : ""}
+      </p>
+      <Button type="submit" block disabled={status.kind === "sending"}>
+        {status.kind === "sending" ? "확인하는 중" : "확인하기"}
+      </Button>
+    </form>
+  );
+}
