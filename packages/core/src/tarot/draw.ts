@@ -55,6 +55,11 @@ function xoshiro128ss(seed: string): () => number {
   };
 }
 
+/** Deterministic floats in [0, 1) for a seed (xmur3 → xoshiro128**); same on server and browser. */
+export function seededRandom(seed: string): () => number {
+  return xoshiro128ss(seed);
+}
+
 function rotl(x: number, k: number): number {
   return (x << k) | (x >>> (32 - k));
 }
