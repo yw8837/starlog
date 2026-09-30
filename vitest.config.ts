@@ -14,6 +14,8 @@ export default defineConfig({
             "@starlog/core": fromRoot("./packages/core/src/index.ts"),
             "@": fromRoot("./apps/web"),
             "@content": fromRoot("./content"),
+            // lib/fixtures.ts is server-only; tests run on the server side, so use Next's empty stub.
+            "server-only": fromRoot("./node_modules/next/dist/compiled/server-only/empty.js"),
           },
         },
         test: { name: "web", include: ["apps/web/**/*.test.{ts,tsx}"], exclude: ["apps/web/e2e/**", "**/node_modules/**"], environment: "node" },

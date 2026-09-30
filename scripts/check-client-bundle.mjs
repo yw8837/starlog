@@ -1,0 +1,78 @@
+// Fails when paid reading text reaches the client bundle (apps/web/.next/static).
+// Paid text may only travel as server-rendered props of an opened chapter, never in static JS/CSS.
+// usage: pnpm check:bundle   (after `pnpm build`; `pnpm build` runs it too)
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const staticDir = join(root, "apps/web/.next/static");
+const samples = ["content/samples/saju-prologue.ko.json", "content/samples/tarot-contact.ko.json"];
+
+/** Every long string under `paid` (headings excepted: they are the free locked list) and the story body. */
+function probesFrom(sample) {
+  const out = [];
+  const walk = (value, key) => {
+    if (typeof value === "string") {
+      if (key !== "heading" && value.length >= 20) out.push(value.slice(0, 24));
+    } else if (Array.isArray(value)) {
+      value.forEach((item) => walk(item, key));
+    } else if (value && typeof value === "object") {
+      for (const [k, v] of Object.entries(value)) walk(v, k);
+    }
+  };
+  walk(sample.paid, "paid");
+  if (sample.story?.body) out.push(sample.story.body.slice(0, 24));
+  return out;
+}
+
+const probes = [
+  // The review's probe strings, kept verbatim.
+  "태어난 달의 지지 자수(子水)는 병화에게 정관",
+  "먼저 보내도 괜찮아요. 다만 카드가 힘을 실어",
+  ...samples.flatMap((file) => probesFrom(JSON.parse(readFileSync(join(root, file), "utf8")))),
+];
+
+// A probe must be real paid text, and never also free text (or the check would be meaningless).
+for (const file of samples) {
+  const sample = JSON.parse(readFileSync(join(root, file), "utf8"));
+  const freeText = JSON.stringify(sample.free);
+  for (const probe of probes) {
+    if (freeText.includes(probe)) throw new Error(`probe is free text in ${file}: ${probe}`);
+  }
+}
+
+if (!existsSync(staticDir)) {
+  console.error(`check-client-bundle: ${relative(root, staticDir)} not found. Run \`pnpm build\` first.`);
+  process.exit(2);
+}
+
+const escapeNonAscii = (text) => text.replace(/[^\x00-\x7f]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`);
+
+function* files(dir) {
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) yield* files(path);
+    else yield path;
+  }
+}
+
+let scanned = 0;
+const hits = [];
+for (const path of files(staticDir)) {
+  if (!/\.(js|mjs|css|json|txt|html|map)$/.test(path)) continue;
+  scanned++;
+  const text = readFileSync(path, "utf8");
+  for (const probe of probes) {
+    if (text.includes(probe) || text.includes(escapeNonAscii(probe)) || text.includes(escapeNonAscii(probe).toLowerCase())) {
+      hits.push(`${relative(root, path)}: ${probe}`);
+    }
+  }
+}
+
+if (hits.length > 0) {
+  console.error(`check-client-bundle: paid text found in the client bundle (${hits.length} hits):`);
+  for (const hit of hits) console.error(`  ${hit}`);
+  process.exit(1);
+}
+console.log(`check-client-bundle: ok, ${probes.length} paid-text probes, ${scanned} static files, 0 hits`);

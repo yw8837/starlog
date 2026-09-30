@@ -1,3 +1,4 @@
+import "server-only";
 import { TEMPLATES, type Orientation, type TemplateId } from "@starlog/core";
 import sajuJson from "@content/samples/saju-prologue.ko.json";
 import tarotJson from "@content/samples/tarot-contact.ko.json";

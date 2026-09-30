@@ -1,23 +1,31 @@
 import { BRANCHES, BRANCHES_KO, type SajuChart, type SajuElement } from "@starlog/core";
-import { SAJU_SAMPLE } from "./fixtures";
 
 /**
  * What the saju screens may say before P3 writes real prologues. The gold sample text belongs to
  * one chart only; every other chart gets a teaser built from its own computed facts and the
  * generic section list.
+ *
+ * Client-safe: this module must never import lib/fixtures (server-only; it carries paid text).
  */
 
-/** True when the sample prologue describes this chart: same four pillars (no hour) and same gender. */
+/**
+ * The chart the gold sample prologue was written for (content/samples/saju-prologue.ko.json, time
+ * unknown). The place matters: the sample's "0시 32분" and "약 −32분" are Seoul's correction.
+ * sajuPrologue.test.ts keeps this in step with the fixture.
+ */
+export const SAMPLE_CHART_KEY = Object.freeze({ year: "己巳", month: "丙子", day: "丙寅", gender: "female", place: "서울" });
+
+/** True when the sample prologue describes this chart: same pillars, no hour, same gender, born in 서울. */
 export function isSampleChart(chart: SajuChart): boolean {
-  const sample = SAJU_SAMPLE.chart.pillars;
-  const same = (p: { stem: string; branch: string }, s: { stem: string; branch: string }) => p.stem === s.stem && p.branch === s.branch;
+  const { year, month, day, hour } = chart.pillars;
+  const ganzhi = (p: { stem: string; branch: string }) => p.stem + p.branch;
   return (
-    chart.pillars.hour === null &&
-    sample.hour === null &&
-    same(chart.pillars.year, sample.year) &&
-    same(chart.pillars.month, sample.month) &&
-    same(chart.pillars.day, sample.day) &&
-    chart.input.gender === SAJU_SAMPLE.input.gender
+    hour === null &&
+    ganzhi(year) === SAMPLE_CHART_KEY.year &&
+    ganzhi(month) === SAMPLE_CHART_KEY.month &&
+    ganzhi(day) === SAMPLE_CHART_KEY.day &&
+    chart.input.gender === SAMPLE_CHART_KEY.gender &&
+    chart.input.place.name === SAMPLE_CHART_KEY.place
   );
 }
 

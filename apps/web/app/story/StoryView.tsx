@@ -25,33 +25,36 @@ const PlusIcon = () => (
   </svg>
 );
 
-/** 나의 스타로그: the timeline, the [이야기 | 풀이] switch, and the one way forward (새 장 열기). */
 const PROLOGUE_PENDING = "풀이를 적고 있어요. 다 적으면 여기에 넣어 둘게요.";
 
 /**
  * The saju prologue as the saved chart allows: the written sample only for the sample chart,
  * otherwise the chart's own day pillar with its computed facts and a "being written" line.
+ * Until the saved profile is read (server render, hydration) the card stays blank, so no title
+ * is shown and then swapped for another.
  */
-function usePrologue(chapter: StoryChapter): StoryChapter {
+function usePrologue(chapter: StoryChapter | undefined): StoryChapter | undefined {
   const { ready, result, isSample } = useSajuChart();
-  if (ready && isSample) return chapter;
-  const generic = { ...chapter, title: "나의 프롤로그", saju: undefined };
-  if (!ready || !result) return { ...generic, excerpt: { story: " ", plain: " " } };
-  if ("error" in result) return { ...generic, excerpt: { story: PROLOGUE_PENDING, plain: PROLOGUE_PENDING } };
+  if (!chapter) return undefined;
+  if (!ready || !result) return { ...chapter, title: " ", saju: undefined, excerpt: { story: " ", plain: " " } };
+  if (isSample) return chapter;
+  const own = { ...chapter, title: "나의 프롤로그" };
+  if ("error" in result) return { ...own, saju: undefined, excerpt: { story: PROLOGUE_PENDING, plain: PROLOGUE_PENDING } };
   const { chart } = result;
   return {
-    ...generic,
+    ...own,
     excerpt: { story: PROLOGUE_PENDING, plain: composeChartTeaser(chart) },
     saju: { dayPillar: chart.pillars.day.stem + chart.pillars.day.branch, dayMaster: chart.dayMaster.ko },
   };
 }
 
-export function StoryView({ nickname, chapters: fixtureChapters, scenes, nextChapter }: StoryViewProps) {
+/** 나의 스타로그: the timeline, the [이야기 | 풀이] switch, and the one way forward (새 장 열기). */
+export function StoryView({ nickname, chapters: storyChapters, scenes, nextChapter }: StoryViewProps) {
   const [mode, setMode] = useState<ReadingMode>("story");
   const pending = scenes.filter((scene) => scene.status === "pending");
-  const saju = fixtureChapters.find((chapter) => chapter.kind === "saju");
-  const prologue = usePrologue(saju ?? fixtureChapters[0]!);
-  const chapters = fixtureChapters.map((chapter) => (chapter === saju ? prologue : chapter));
+  const saju = storyChapters.find((chapter) => chapter.kind === "saju");
+  const prologue = usePrologue(saju);
+  const chapters = storyChapters.map((chapter) => (chapter === saju && prologue ? prologue : chapter));
 
   return (
     <div className={s.layout}>

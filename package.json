@@ -6,7 +6,8 @@
   "engines": { "node": ">=22.13" },
   "scripts": {
     "dev": "pnpm --filter @starlog/web dev",
-    "build": "pnpm --filter @starlog/web build",
+    "build": "pnpm --filter @starlog/web build && node scripts/check-client-bundle.mjs",
+    "check:bundle": "node scripts/check-client-bundle.mjs",
     "test": "vitest run",
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && pnpm --filter @starlog/web typecheck",
     "cards:build": "node scripts/build-cards.mjs",
