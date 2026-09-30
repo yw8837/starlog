@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   DEFAULT_REVERSAL_RATE,
   TEMPLATES,
@@ -15,6 +15,7 @@ import {
 } from "@starlog/core";
 import { Cat } from "@/components/characters/Cat";
 import { CardFan } from "@/components/tarot/CardFan";
+import { CheerCat } from "@/components/tarot/CheerCat";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { SpreadRow, type SpreadCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
@@ -57,7 +58,20 @@ const UndoIcon = () => (
   </svg>
 );
 
-/** Step 2: the cat shuffles, a fan opens, the user picks the spread's cards, then they turn over. */
+const ShuffleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+    <path d="M3 7h3.5c2 0 3.2 1 4.3 2.6l2.4 3.8C14.3 15 15.5 16 17.5 16H21" />
+    <path d="M3 16h3.5c1.3 0 2.3-.5 3.1-1.3" />
+    <path d="M13.4 8.3C14.2 7.5 15.2 7 16.5 7H21" />
+    <path d="m18 4 3 3-3 3" />
+    <path d="m18 13 3 3-3 3" />
+  </svg>
+);
+
+/**
+ * Step 2: the cat shuffles, a fan opens, the user picks the spread's cards, then they turn over.
+ * While picking, the cat watches and cheers each pick, and 다시 섞기 shuffles a fresh deck.
+ */
 export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   const router = useRouter();
   const { flow } = useFlowState();
@@ -75,11 +89,20 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   const [picked, setPicked] = useState<number[]>([]);
   const [drawn, setDrawn] = useState<DrawnCard[] | null>(null);
   const [revealed, setRevealed] = useState(0);
+  // The user reshuffled: focus follows the shuffle (바로 펼치기) and comes back to 다시 섞기 after it.
+  const [reshuffled, setReshuffled] = useState(false);
+  const reshuffleRef = useRef<HTMLDivElement>(null);
 
   // A fresh random deck per visit, made in the browser only.
   useEffect(() => {
     setDeck(createDeck(randomSeed(), DEFAULT_REVERSAL_RATE));
   }, []);
+
+  // Only when focus was lost with the shuffle's own button; never pulled away from anywhere else.
+  useEffect(() => {
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (phase === "pick" && reshuffled && lost) reshuffleRef.current?.querySelector("button")?.focus();
+  }, [phase, reshuffled]);
 
   // Turn the cards over one by one, then move on to the result.
   useEffect(() => {
@@ -107,6 +130,15 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   const undo = () => {
     if (phase !== "pick") return;
     setPicked((prev) => prev.slice(0, -1));
+  };
+
+  // A new random deck (order and orientations), no picks, and the cat shuffles it again.
+  const reshuffle = () => {
+    if (phase !== "pick") return;
+    setDeck(createDeck(randomSeed(), DEFAULT_REVERSAL_RATE));
+    setPicked([]);
+    setReshuffled(true);
+    if (!instant && !prefersReducedMotion()) setPhase("shuffle");
   };
 
   const reveal = () => {
@@ -163,9 +195,20 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
 
       <div className={s.stage}>
         {phase === "shuffle" ? (
-          <ShuffleStage onDone={() => setPhase("pick")} />
+          <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffled} />
         ) : phase === "pick" && deck && known ? (
-          <CardFan picked={picked} max={max} onPick={pick} />
+          <div className={s.pick}>
+            <div className={s.catSpot}>
+              <CheerCat picks={picked.length} done={picked.length === max} />
+            </div>
+            <div ref={reshuffleRef} className={s.reshuffle}>
+              <Button variant="secondary" size="md" onClick={reshuffle} trailing={<ShuffleIcon />}>
+                다시 섞기
+              </Button>
+            </div>
+            {/* Keyed by the deck, so a reshuffled deck deals out afresh. */}
+            <CardFan key={deck.seed} picked={picked} max={max} onPick={pick} />
+          </div>
         ) : phase === "reveal" || phase === "done" ? (
           <div className={s.reader}>
             <Cat outfit="tarot" action="glow" expression={phase === "done" ? "happy" : "focus"} size={150} reactOnTap={false} />

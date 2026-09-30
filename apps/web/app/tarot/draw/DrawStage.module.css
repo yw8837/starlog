@@ -45,6 +45,45 @@
   justify-content: center;
 }
 
+/* Picking: the fan, the cat watching it from the empty corner above its left wing, 다시 섞기 in its hollow. */
+.pick {
+  position: relative;
+}
+
+/* Phones: 72px (scaled down from 128px), reaching up into the empty name row under the slots. */
+.catSpot {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  transform: scale(0.5625);
+  transform-origin: 0 0;
+}
+
+/* Where the arc's cards meet: the fan seems to open out from behind this button. */
+.reshuffle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  z-index: 1;
+  transform: translateX(-50%);
+}
+
+@media (min-width: 520px) {
+  .catSpot {
+    transform: scale(0.75);
+  }
+}
+
+/* Desktop: the cat sits beside the fan, at full size, outside the reading column. */
+@media (min-width: 900px) {
+  .catSpot {
+    top: 50%;
+    right: calc(100% + 24px);
+    left: auto;
+    transform: translateY(-50%);
+  }
+}
+
 .cta {
   display: grid;
   align-content: end;

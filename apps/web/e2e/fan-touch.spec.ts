@@ -78,6 +78,17 @@ test("sliding along the arc and lifting the finger picks the card under it", asy
   expect(await page.evaluate(() => window.scrollX)).toBe(0);
 });
 
+test("다시 섞기 clears the picks and deals a fresh fan", async ({ page }) => {
+  const spot = await spotOn(page, 6);
+  await page.touchscreen.tap(spot.x, spot.y);
+  await expect(pickedFan(page)).toHaveCount(1);
+
+  await page.getByRole("button", { name: "다시 섞기" }).tap();
+  await expect(pickedFan(page)).toHaveCount(0);
+  await expect(page.locator("[data-fan-index]")).toHaveCount(21);
+  await expect(page.getByText("마음이 가는 카드를 3장 골라 주세요")).toBeVisible();
+});
+
 /**
  * The widest horizontal run (px) where each fan card is the top-most element: the slice a finger
  * can land on. Scans the fan's box on a 1px grid.
