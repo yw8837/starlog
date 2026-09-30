@@ -1,6 +1,7 @@
 import { TEMPLATES, TOPICS_BY_WHO, createDeck, pickCards, type DrawnCard, type TemplateId } from "@starlog/core";
 import sajuSample from "@content/samples/saju-prologue.ko.json";
 import tarotSample from "@content/samples/tarot-contact.ko.json";
+import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { describe, expect, it } from "vitest";
 import { kbCard } from "@/lib/kb";
 import { FALLBACK_BETA, MODEL, buildRequest } from "./anthropic";
@@ -8,7 +9,10 @@ import { generateTarotReading, generateTarotTeaser } from "./generate";
 import { mockDaily, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
 import { TAROT_SYSTEM, buildTarotContext, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt, type TarotInput } from "./prompts/tarot";
 import { GenerationError, generateValidated, selectProvider, type ReadingProvider } from "./provider";
-import { SajuReadingSchema, SajuTeaserSchema, TarotReadingSchema, TarotTeaserDraftSchema, TarotTeaserSchema, type TarotReading } from "./schemas";
+import {
+  DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, SajuTeaserSchema, TarotReadingSchema, TarotTeaserDraftSchema,
+  TarotTeaserSchema, type TarotReading,
+} from "./schemas";
 import { validateDaily, validateTarotReading, validateTarotTeaser } from "./validate";
 
 const GOLD_DRAW: DrawnCard[] = tarotSample.cards.map((c, slot) => ({ cardId: c.cardId, position: c.position, orientation: "upright", slot }));
@@ -250,6 +254,15 @@ describe("generateValidated", () => {
 });
 
 describe("anthropic request", () => {
+  it("turns every model-facing schema into a strict structured-output format", () => {
+    const schemas = [TarotTeaserDraftSchema, TarotReadingSchema, DailyDraftSchema, SajuTeaserDraftSchema, SajuReadingSchema, FollowUpAnswerSchema];
+    for (const schema of schemas) {
+      const format = betaZodOutputFormat(schema);
+      expect(format.type).toBe("json_schema");
+      expect(format.schema).toMatchObject({ type: "object", additionalProperties: false });
+    }
+  });
+
   it("uses claude-opus-5-5, adaptive thinking, explicit effort, structured output, a cached system prompt and the default fallback", () => {
     const ctx = buildTarotContext("relationship-contact", GOLD_DRAW, GOLD_INPUT);
     const body = buildRequest({ name: "tarot-reading", system: TAROT_SYSTEM, user: tarotReadingPrompt(ctx), schema: TarotReadingSchema, effort: "medium", maxTokens: 16000, mock: () => GOLD_READING }, 16000, ["고쳐 주세요"]);

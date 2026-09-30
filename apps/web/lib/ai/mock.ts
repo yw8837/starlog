@@ -64,7 +64,7 @@ function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: number, 
   if (card.orientation === "reversed") required.push(`'${card.position}' 자리의 카드는 역방향으로 나왔어요.`);
   required.push(factSentence(fact.ko));
   if (card.reversedMode) required.push(`역방향이라 '${card.kb.reversedModes.gloss[card.reversedMode] ?? card.kb.core.oneLine.reversed}' 쪽으로 읽어요.`);
-  for (const chip of chipsFor(ctx, card.slot)) required.push(`'${chip}'라고 골랐으니 이 그림을 그 상황에 비춰 보면 좋아요.`);
+  for (const chip of chipsFor(ctx, card.slot)) required.push(`'${chip}'${hasFinal(chip) ? "이라고" : "라고"} 골랐으니 이 그림을 그 상황에 비춰 보면 좋아요.`);
   if (withNote && ctx.note) required.push(`메모에 '${ctx.note}'라고 적었죠.`);
   const optional = [
     card.kb.positionHints[card.position]?.[card.orientation],
