@@ -3,6 +3,8 @@ packages:
   - "packages/*"
 # D: is exFAT: no symlinks/junctions. isolated linker fails, so hoist.
 nodeLinker: hoisted
+# Never auto-reinstall on `pnpm <script>`: several agents share this tree, and a mid-run reinstall on exFAT deletes node_modules under running processes. Run `pnpm install` explicitly.
+verifyDepsBeforeRun: warn
 allowBuilds:
   esbuild: true
   sharp: true
