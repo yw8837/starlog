@@ -46,9 +46,13 @@ describe("DrawStage 다시 섞기", () => {
     expect(pickedCards()).toHaveLength(1);
     expect(screen.getByRole("status").textContent).toBe("모두 골랐어요");
 
+    // 다시 섞기 comes after the fan in the tab order.
+    const reshuffleButton = screen.getByRole("button", { name: "다시 섞기" });
+    expect(fanCards().at(-1)!.compareDocumentPosition(reshuffleButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
     click("다시 섞기");
     expect(pickedCards()).toHaveLength(0);
-    expect(screen.getByRole("status").textContent).toBe("마음이 가는 카드를 한 장 골라 주세요");
+    expect(screen.getByRole("status").textContent).toBe("카드를 다시 섞었어요. 한 장 골라 주세요");
     // The fan is dealt afresh for the new deck.
     expect(first.isConnected).toBe(false);
     expect(fanCards()).toHaveLength(21);
@@ -61,6 +65,18 @@ describe("DrawStage 다시 섞기", () => {
     });
     expect(await screen.findByRole("img", { name: dailyCardLabel("seed-second", deckIndex) })).toBeTruthy();
     expect(createDeck("seed-second", DEFAULT_REVERSAL_RATE).order).not.toEqual(createDeck("seed-first", DEFAULT_REVERSAL_RATE).order);
+  });
+
+  it("announces every reshuffle, even with nothing picked", () => {
+    render(<DrawStage instant daily fallback={FALLBACK} />);
+    const status = screen.getByRole("status");
+    click("다시 섞기");
+    const firstLine = status.firstElementChild!;
+    expect(status.textContent).toBe("카드를 다시 섞었어요. 한 장 골라 주세요");
+    click("다시 섞기");
+    // Same words, but a new node in the live region, so screen readers read it again.
+    expect(status.textContent).toBe("카드를 다시 섞었어요. 한 장 골라 주세요");
+    expect(firstLine.isConnected).toBe(false);
   });
 
   it("shuffles with cards only, then brings focus back to 다시 섞기 after a reshuffle", () => {

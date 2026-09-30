@@ -87,7 +87,7 @@ const groupKind = () => cond("group-kind", "모임의 종류", "친구 모임", 
 const studyStage = () => cond("stage", "준비 상황", "아직 시작 전", "막 시작함", "한창 준비 중", "마무리 단계", "다시 도전하는 중", DUNNO);
 const studyDifficulty = () =>
   cond("difficulty", "어려운 점", "집중이 잘 안 됨", "진도가 느림", "성적이 잘 안 오름", "공부할 시간이 부족함", "불안감이 큼", DUNNO);
-const careerStatus = () => cond("status", "현재 상황", "재직 중", "휴직 중", "구직 중", "쉬는 중", "프리랜서·자영업", DUNNO);
+const careerStatus = () => cond("status", "현재 상황", "재직 중", "휴직·쉬는 중", "구직 중", "학생", "프리랜서·자영업", DUNNO);
 const groupMood = () => cond("mood", "요즘 분위기", "화기애애함", "조용함", "서먹함", "편이 갈림", DUNNO);
 
 export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
@@ -116,7 +116,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
       questionJa: "{when}、私の仕事と転職の流れはどうなるかな",
       conditions: [
         careerStatus(),
-        cond("concern", "고민의 종류", "일이 잘 맞지 않음", "성장이 막힌 느낌", "사람 관계가 어려움", "일자리가 잘 안 구해짐", "진로가 막막함", DUNNO),
+        cond("concern", "고민의 종류", "일이 잘 맞지 않음", "성장이 막힌 느낌", "인간관계가 어려움", "일자리가 잘 안 구해짐", "진로가 막막함", DUNNO),
         cond("goal", "원하는 방향", "지금 자리에서 버티기", "새 길 알아보기", "일자리 구하기", "잠시 쉬어 가기", NOT_YET),
       ],
     },
@@ -175,8 +175,8 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
       questionKo: "{when}, 그 사람과 나의 썸은 어떤 쪽으로 나아갈까",
       questionJa: "{when}、あの人との距離はどう変わっていくかな",
       conditions: [
-        cond("relation", "관계", "이제 막 알게 됨", "오래 알던 사이", "자주 연락함", "자주 만남", "연락이 뜸함", DUNNO),
-        cond("response", "내가 느끼는 상대의 반응", "적극적", "미지근함", "알쏭달쏭함", "거리를 두는 느낌", "아직 내 마음을 모름", DUNNO),
+        cond("relation", "관계", "아직 대화 전", "이제 막 알게 됨", "오래 알던 사이", "자주 연락하거나 만남", "연락이 뜸함", DUNNO),
+        cond("response", "내가 느끼는 상대의 반응", "적극적", "미지근함", "알쏭달쏭함", "거리를 두는 느낌", "내 마음을 아직 모르는 듯함", DUNNO),
         cond("goal", "원하는 방향", "마음 확인하기", "고백하기", "천천히 지켜보기", "마음 정리하기", NOT_YET),
       ],
     },
@@ -228,7 +228,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
       questionJa: "{when}、私の仕事はどんな方向に進むかな",
       conditions: [
         careerStatus(),
-        cond("blocker", "막힌 점", "인정받지 못하는 느낌", "일이 너무 많음", "성장이 멈춤", "사람 관계가 어려움", "일자리가 잘 안 구해짐", DUNNO),
+        cond("blocker", "막힌 점", "인정받지 못하는 느낌", "일이 너무 많음", "성장이 멈춤", "인간관계가 어려움", "일자리가 잘 안 구해짐", DUNNO),
         cond("goal", "원하는 방향", "지금 자리에서 버티기", "새 길 알아보기", "역할 바꾸기", "일자리 구하기", "잠시 쉬어 가기", NOT_YET),
       ],
     },
@@ -247,7 +247,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
       questionJa: "{when}、今の勉強と試験の準備をどう進めればいいかな",
       conditions: [
         studyStage(),
-        cond("time", "남은 시간", "넉넉함", "빠듯함", "시험이 코앞임", "시험 날짜가 아직 없음", DUNNO),
+        cond("time", "남은 시간", "넉넉함", "빠듯함", "시험이 코앞임", "시험 날짜가 아직 안 정해짐", DUNNO),
         studyDifficulty(),
       ],
     },
@@ -280,7 +280,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
       conditions: [
         groupKind(),
         groupMood(),
-        cond("focus", "궁금한 것", "특정 사람과의 거리", "내 자리", "새로 적응하기", "전체 흐름", NOT_YET),
+        cond("focus", "궁금한 것", "특정 사람과의 거리", "내 자리", "새 자리에 적응하기", "전체 흐름", NOT_YET),
       ],
     },
     {

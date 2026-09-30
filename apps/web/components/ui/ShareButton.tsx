@@ -11,8 +11,6 @@ type ShareButtonProps = {
    * Never the user's question, note or birth data.
    */
   text: string;
-  /** Readings live on this device only, so the service's home is what gets shared. */
-  url?: string;
   title?: string;
   /** Dark-ink style for a paper card. */
   onPaper?: boolean;
@@ -28,10 +26,12 @@ const ShareIcon = () => (
 
 /**
  * 공유하기: the system share sheet where there is one (phones), otherwise the link is copied and a
- * small toast says so. Secondary style, never the screen's gold primary.
+ * small toast says so. Readings live on this device only, so the link is always the service's home
+ * (SITE.url), never a page of a reading. Secondary style, never the screen's gold primary.
  */
-export function ShareButton({ text, url = SITE.url, title = SITE.nameKo, onPaper = false }: ShareButtonProps) {
+export function ShareButton({ text, title = SITE.nameKo, onPaper = false }: ShareButtonProps) {
   const { state, copy } = useCopy();
+  const url = SITE.url;
 
   const share = async () => {
     const data = { title, text, url };

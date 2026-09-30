@@ -86,7 +86,7 @@ test("다시 섞기 clears the picks and deals a fresh fan", async ({ page }) =>
   await page.getByRole("button", { name: "다시 섞기" }).tap();
   await expect(pickedFan(page)).toHaveCount(0);
   await expect(page.locator("[data-fan-index]")).toHaveCount(21);
-  await expect(page.getByText("마음이 가는 카드를 3장 골라 주세요")).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "카드를 다시 섞었어요. 3장 골라 주세요" })).toBeVisible();
 });
 
 /**
@@ -122,12 +122,37 @@ for (const width of [375, 360]) {
   test.describe(`${width}px wide`, () => {
     test.use({ viewport: { width, height: width === 360 ? 780 : 812 } });
 
-    test("every fan card keeps a slice of at least 20px, and the fan stays on screen", async ({ page }, info) => {
+    test("every fan card keeps a slice of at least 20px", async ({ page }, info) => {
       const slices = await visibleSlices(page);
       expect(slices).toHaveLength(21);
       info.annotations.push({ type: "fan slices", description: `${width}px: min ${Math.min(...slices)}px, max ${Math.max(...slices)}px` });
       expect(Math.min(...slices)).toBeGreaterThanOrEqual(20);
-      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    });
+
+    test("the two end cards, picked and lifted, stay on screen with their badges", async ({ page }) => {
+      for (const n of [0, 20]) {
+        const spot = await spotOn(page, n);
+        await page.touchscreen.tap(spot.x, spot.y);
+      }
+      await expect(pickedFan(page)).toHaveCount(2);
+      await settleAnimations(page);
+      // The page clips overflow, so measure the boxes themselves rather than the scroll width.
+      const boxes = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>('[data-fan-index][aria-pressed="true"]')].flatMap((button) => {
+          const card = button.firstElementChild!.getBoundingClientRect();
+          const badge = button.querySelector(":scope > span")!.getBoundingClientRect();
+          return [
+            { what: `card ${button.dataset.fanIndex}`, left: card.left, right: card.right },
+            { what: `badge ${button.dataset.fanIndex}`, left: badge.left, right: badge.right },
+          ];
+        }),
+      );
+      const innerWidth = await page.evaluate(() => window.innerWidth);
+      expect(boxes).toHaveLength(4);
+      for (const box of boxes) {
+        expect(box.left, `${box.what} left edge`).toBeGreaterThanOrEqual(0);
+        expect(box.right, `${box.what} right edge`).toBeLessThanOrEqual(innerWidth);
+      }
     });
   });
 }

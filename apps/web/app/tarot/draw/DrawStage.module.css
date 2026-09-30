@@ -20,6 +20,41 @@
   margin-top: 20px;
 }
 
+.spread {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Revealing: a soft gold light behind the slots (still under reduced motion, it just doesn't breathe). */
+.spread[data-glow]::before {
+  content: "";
+  position: absolute;
+  inset: 0 -8% -4%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(243, 220, 161, 0.24), rgba(243, 220, 161, 0.08) 55%, transparent);
+  pointer-events: none;
+  animation:
+    glowIn 700ms ease-out both,
+    glowBreath 2.4s ease-in-out 700ms infinite;
+}
+
+@keyframes glowIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes glowBreath {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
 .single {
   --spread-card-max: 150px;
   margin-top: 20px;

@@ -87,8 +87,10 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
   const [picked, setPicked] = useState<number[]>([]);
   const [drawn, setDrawn] = useState<DrawnCard[] | null>(null);
   const [revealed, setRevealed] = useState(0);
-  // The user reshuffled: focus follows the shuffle (바로 펼치기) and comes back to 다시 섞기 after it.
-  const [reshuffled, setReshuffled] = useState(false);
+  // How many times the user reshuffled. Focus follows the shuffle (바로 펼치기) and comes back to
+  // 다시 섞기 after it; the status line says the deck was reshuffled.
+  const [reshuffles, setReshuffles] = useState(0);
+  const reshuffled = reshuffles > 0;
   const reshuffleRef = useRef<HTMLDivElement>(null);
 
   // A fresh random deck per visit, made in the browser only.
@@ -136,7 +138,7 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
     if (phase !== "pick") return;
     setDeck(createDeck(randomSeed(), DEFAULT_REVERSAL_RATE));
     setPicked([]);
-    setReshuffled(true);
+    setReshuffles((n) => n + 1);
     if (!instant) setPhase("shuffle");
   };
 
@@ -167,7 +169,10 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
       ? ""
       : phase === "pick"
         ? picked.length === 0
-          ? `마음이 가는 카드를 ${cards(max)} 골라 주세요`
+          ? // Short enough to stay on one line at 360px, so the fan never moves when picking starts.
+            reshuffled
+            ? `카드를 다시 섞었어요. ${cards(max)} 골라 주세요`
+            : `마음이 가는 카드를 ${cards(max)} 골라 주세요`
           : remaining > 0
             ? `마음이 가는 카드를 ${cards(remaining)} 더 골라 주세요`
             : "모두 골랐어요"
@@ -186,24 +191,31 @@ export function DrawStage({ instant, daily, fallback }: DrawStageProps) {
       <div className={s.head}>
         <h1 className={s.question}>{known ? question : " "}</h1>
         <p className={s.status} role="status">
-          {status}
+          {/* A fresh node per reshuffle, so the same words are announced again each time. */}
+          <span key={reshuffles}>{status}</span>
         </p>
       </div>
 
-      {known ? <SpreadRow cards={slots} size="md" className={max === 1 ? s.single : s.slots} /> : null}
+      {known ? (
+        // A soft glow comes up behind the slots while the cards turn over.
+        <div className={s.spread} data-glow={phase === "reveal" || phase === "done" ? "" : undefined}>
+          <SpreadRow cards={slots} size="md" className={max === 1 ? s.single : s.slots} />
+        </div>
+      ) : null}
 
       <div className={s.stage}>
         {phase === "shuffle" ? (
           <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffled} />
         ) : phase === "pick" && deck && known ? (
           <div className={s.pick}>
+            {/* Keyed by the deck, so a reshuffled deck deals out afresh. */}
+            <CardFan key={deck.seed} picked={picked} max={max} onPick={pick} />
+            {/* After the fan in the tab order; drawn over the fan's hollow. */}
             <div ref={reshuffleRef} className={s.reshuffle}>
               <Button variant="secondary" size="md" onClick={reshuffle} trailing={<ShuffleIcon />}>
                 다시 섞기
               </Button>
             </div>
-            {/* Keyed by the deck, so a reshuffled deck deals out afresh. */}
-            <CardFan key={deck.seed} picked={picked} max={max} onPick={pick} />
           </div>
         ) : null}
       </div>

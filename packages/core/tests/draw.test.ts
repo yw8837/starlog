@@ -150,20 +150,20 @@ describe("topics", () => {
     expect(duration.label).toBe("사귄 기간");
     expect(duration.options).toEqual(["3개월 미만", "3개월~1년", "1년 넘음", "잘 모르겠어요"]);
   });
-  it("lets people with no income, no job or no partner describe themselves", () => {
+  it("lets people with no income, no job, students and people with no partner describe themselves", () => {
     const options = (who: Who, topicId: string, conditionId: string) =>
       TOPICS_BY_WHO[who].find(t => t.id === topicId)!.conditions.find(c => c.id === conditionId)!.options;
     expect(options("me", "money", "situation")).toContain("지금은 수입이 없음");
     expect(options("work", "money", "income")).toContain("지금은 수입이 없음");
     for (const who of ["me", "work"] as const) {
-      expect(options(who, "career", "status")).toEqual(
-        expect.arrayContaining(["재직 중", "휴직 중", "구직 중", "쉬는 중", "프리랜서·자영업"]),
-      );
+      // Students, people on leave or resting, and job seekers can all say where they are.
+      expect(options(who, "career", "status")).toEqual(["재직 중", "휴직·쉬는 중", "구직 중", "학생", "프리랜서·자영업", "잘 모르겠어요"]);
     }
     expect(options("me", "career", "concern")).toContain("일자리가 잘 안 구해짐");
     expect(options("work", "career", "blocker")).toContain("일자리가 잘 안 구해짐");
     expect(options("me", "love", "status")).toEqual(expect.arrayContaining(["솔로", "짝사랑 중", "헤어진 지 얼마 안 됨"]));
     expect(options("us", "contact", "recent-contact")).toContain("아직 연락한 적 없음");
+    expect(options("us", "crush", "relation")).toContain("아직 대화 전");
     expect(options("us", "conflict", "relation")).toContain("부부");
   });
   it("defines the contact conditions used by the gold sample", () => {
