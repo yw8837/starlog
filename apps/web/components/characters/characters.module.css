@@ -3,7 +3,8 @@
 
 .frame {
   position: relative;
-  display: inline-block;
+  display: inline-grid;
+  place-items: center;
   width: var(--sl-size);
   height: var(--sl-size);
   margin: 0;
@@ -38,8 +39,18 @@
   overflow: visible;
 }
 
+/* Shadow, character and burst layers share one cell. */
+.frame > .art,
+.float {
+  grid-area: 1 / 1;
+}
+
+/* The idle float moves this HTML wrapper, not an SVG group (see CharacterFrame). */
+.float {
+  display: block;
+}
+
 .shadow,
-.float,
 .hop,
 .squish,
 .hat,
@@ -237,7 +248,8 @@
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-5px);
+    /* 5 units of the 300-unit art box, as when this moved the SVG group. */
+    transform: translateY(calc(var(--sl-size) * -5 / 300));
   }
 }
 

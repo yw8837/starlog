@@ -92,11 +92,12 @@ export default function CharacterSheetPage() {
         </section>
 
         <section className={s.section}>
-          <h2>크기 · 탭 반응 없음</h2>
+          <h2>크기</h2>
+          <p className={s.note}>32px 고양이만 탭에 반응해요(탭 영역 44px). 나머지는 탭 반응 없이 그려요.</p>
           <div className={s.sizes} data-shot="sizes">
             <figure className={s.cell} data-shot="hit-area">
               <Cat outfit="hanbok" size={32} />
-              <figcaption>32px · 탭 영역 44px</figcaption>
+              <figcaption>32px · 탭 반응 · 탭 영역 44px</figcaption>
             </figure>
             <Cat outfit="tarot" size={64} reactOnTap={false} />
             <Rabbit outfit="tarot" size={64} reactOnTap={false} />

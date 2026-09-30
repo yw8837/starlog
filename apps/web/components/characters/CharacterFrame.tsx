@@ -30,13 +30,22 @@ export function CharacterFrame({ size, reactOnTap, label, line, expression, chil
   const shown: Expression = active ? "happy" : expression;
   const style = { "--sl-size": `${size}px` } as CSSProperties;
 
+  const layer = { viewBox: "0 0 300 300", width: size, height: size, "aria-hidden": true, focusable: false } as const;
+
+  // Three stacked layers in one grid cell: the floor shadow, the character, the tap burst. The idle
+  // float moves the character's HTML wrapper (a compositor transform), so the filtered SVG art is
+  // not repainted on every frame; the shadow stays on the floor.
   const art = (
     <>
-      <svg className={s.art} viewBox="0 0 300 300" width={size} height={size} aria-hidden="true" focusable="false">
+      <svg className={s.art} {...layer}>
         <ellipse className={s.shadow} cx="150" cy="287" rx="84" ry="9" fill="#05030F" opacity=".5" filter="url(#sl-soft)" />
-        <g className={s.float}>
+      </svg>
+      <span className={s.float}>
+        <svg className={s.art} {...layer}>
           <g className={s.hop}>{children(shown)}</g>
-        </g>
+        </svg>
+      </span>
+      <svg className={s.art} {...layer}>
         <g className={s.burst}>
           {BURST.map((b, i) => (
             <path

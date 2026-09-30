@@ -53,7 +53,7 @@ function Bow() {
  */
 function CardiganArm({ mirror }: { mirror?: boolean }) {
   return (
-    <g transform={mirror ? "translate(3 0) matrix(-1 0 0 1 300 0)" : undefined}>
+    <g transform={mirror ? "matrix(-1 0 0 1 300 0)" : undefined}>
       <path
         d="M114 225C104 228 97 238 96 250C95 260 98 267 106 268C111 268.5 116 267 119 265.5L117.5 253.5C114 255 111 254.5 110.5 251C110 245 114 238 122 233Q120 226 114 225Z"
         fill="url(#sl-cardigan)"
@@ -124,10 +124,10 @@ export function RabbitTarot({ expression, writing }: { expression: Expression; w
         </g>
       )}
       <RabbitPaw x={125} y={259} />
-      <g transform="translate(-5 0)">
+      <g transform="translate(-7 0)">
         <Quill />
       </g>
-      <RabbitPaw x={177} y={259} />
+      <RabbitPaw x={175} y={259} />
     </g>
   );
 }

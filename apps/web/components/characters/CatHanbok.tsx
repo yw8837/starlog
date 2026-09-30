@@ -49,7 +49,9 @@ export function CatHanbok({ expression, action }: { expression: Expression; acti
         <CatHead expression={expression} />
         {shuffling ? (
           <>
-            {/* pouch tied at the right hip while both paws handle the cards */}
+            {/* pouch tied at the right hip while both paws handle the cards: its gold cord loops to a knot at the side seam */}
+            <path d="M186 259C186 251 192 246 199 249M190 259C191 253 195 250 199 249" stroke="url(#sl-gold)" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+            <circle cx="199" cy="249" r="2.2" fill="url(#sl-gold)" />
             <Pouch x={188} y={258} glow={false} />
             <Sleeve x={110} y={231} angle={-36} fill="url(#sl-saekdong)" cuff="#FFFFFF" />
             <Sleeve x={190} y={231} angle={36} fill="url(#sl-saekdong)" cuff="#FFFFFF" />
