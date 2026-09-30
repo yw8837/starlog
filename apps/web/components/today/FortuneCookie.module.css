@@ -12,15 +12,16 @@
     opacity 400ms ease;
 }
 
-/* Each half hinges on the bottom of the crease. */
+/* Each half hinges at the pinch, where the crease meets the fold. */
 .left,
 .right {
-  transform-origin: 100px 118px;
+  transform-origin: 100px 112px;
 }
 
+/* Whole: tilted, peeking out of the pinch. */
 .slip {
-  transform-origin: 100px 76px;
-  opacity: 0;
+  transform-origin: 100px 108px;
+  transform: rotate(16deg);
 }
 
 .crease {
@@ -35,9 +36,9 @@
   transform: translate(14px, 6px) rotate(16deg);
 }
 
+/* Cracked: the slip rises out of the middle. */
 .cookie[data-state="cracked"] .slip {
-  opacity: 1;
-  transform: translateY(-26px) rotate(-6deg);
+  transform: translate(-34px, -52px) rotate(-6deg);
   transition-delay: 160ms;
 }
 

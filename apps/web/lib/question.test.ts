@@ -75,6 +75,9 @@ describe("composeFlowQuestion", () => {
 
   it("never doubles punctuation from what the user typed", () => {
     expect(cleanPart("  다음 주,  ")).toBe("다음 주");
+    // Angle brackets never reach the server (it strips them; nothing left means no topic).
+    expect(cleanPart("<b>창업</b>")).toBe("b창업/b");
+    expect(composeFlowQuestion({ who: "me", topicText: "<>", when: "week" })).toBeNull();
     expect(composeFlowQuestion({ who: "me", topicText: "창업 준비.", whenText: "다음 주,", when: "week" })).toBe("다음 주, 나의 창업 준비는 어떻게 될까");
   });
 });

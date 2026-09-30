@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
-import { TarotCard } from "@/components/tarot/TarotCard";
-import { FortuneCookie } from "@/components/today/FortuneCookie";
 import { guideIndexPath, type GuideArticle } from "@/lib/guide";
 import { ChevronIcon } from "./icons";
 import s from "./home.module.css";
@@ -53,9 +51,26 @@ export function SajuEntry() {
 /** A face-down card with a big question mark: one card for whatever is on your mind now. */
 function NowIcon() {
   return (
-    <span className={s.nowIcon} aria-hidden="true">
-      <TarotCard faceUp={false} size="sm" className={s.nowCard} />
-      <span className={s.nowMark}>?</span>
+    <span className={`${s.miniCard} ${s.nowIcon}`} aria-hidden="true">
+      ?
+    </span>
+  );
+}
+
+/**
+ * The day's card face up: a gold sun under a small 오늘 tab (no date, so a prerendered home never
+ * shows a stale one). Pairs with 지금의 한 장's card back.
+ */
+function TodayIcon() {
+  return (
+    <span className={`${s.miniCard} ${s.todayIcon}`} aria-hidden="true">
+      <span className={s.todayTab}>오늘</span>
+      <svg width="30" height="30" viewBox="0 0 32 32" focusable="false">
+        <g stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M16 2.5v3.5M16 26v3.5M2.5 16H6M26 16h3.5M6.5 6.5l2.5 2.5M23 23l2.5 2.5M6.5 25.5 9 23M23 9l2.5-2.5" />
+        </g>
+        <circle cx="16" cy="16" r="6.5" fill="currentColor" />
+      </svg>
     </span>
   );
 }
@@ -72,9 +87,7 @@ export function QuickCards() {
         </span>
       </Link>
       <Link href="/today" className={s.quickCard}>
-        <span className={s.cookieIcon} aria-hidden="true">
-          <FortuneCookie size={58} />
-        </span>
+        <TodayIcon />
         <span className={s.quickText}>
           <span className={s.quickTitle}>오늘의 한 장</span>
           <span className={s.quickSub}>매일 무료</span>

@@ -27,9 +27,12 @@ export interface QuestionParts {
   whenText?: string;
 }
 
-/** Trims, folds spaces, and drops trailing commas/periods so joins never read ",," or ".,". */
+/**
+ * Trims, folds spaces, drops angle brackets (the server strips them too) and trailing
+ * commas/periods, so joins never read ",," or ".,".
+ */
 export function cleanPart(text: string | undefined): string {
-  return (text ?? "").replace(/\s+/g, " ").trim().replace(/[\s,.·]+$/u, "");
+  return (text ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().replace(/[\s,.·]+$/u, "");
 }
 
 /** A topic typed as a question or sentence ("이직해도 될까?"): it is used as the question itself. */

@@ -90,6 +90,19 @@
   margin-top: 18px;
 }
 
+.twoLine {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+}
+
+.subLine {
+  color: #4a3a63;
+  font-size: var(--fs-sub);
+  font-weight: 500;
+}
+
 .caption {
   color: var(--gold);
   font-size: var(--fs-sub);

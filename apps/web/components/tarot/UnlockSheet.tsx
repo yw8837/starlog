@@ -36,7 +36,19 @@ const CheckIcon = () => (
 export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, editHref, openedHref }: UnlockSheetProps) {
   const chars = new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars[kind]);
   const usedUp = remaining === 0;
-  const label = remaining === undefined || usedUp ? "전체 풀이 보기" : `전체 풀이 보기 · 오늘 ${remaining}번 남았어요`;
+  // Two lines so the count never wraps mid-phrase on a phone; read as "전체 풀이 보기 · 오늘 N번 남았어요".
+  const label =
+    remaining === undefined || usedUp ? (
+      "전체 풀이 보기"
+    ) : (
+      <span className={s.twoLine}>
+        <span>전체 풀이 보기</span>
+        <span className={s.subLine}>
+          <span className="sr-only"> · </span>
+          {`오늘 ${remaining}번 남았어요`}
+        </span>
+      </span>
+    );
   const redraw = error?.action === "redraw" && redrawHref;
 
   let primary;
@@ -92,7 +104,7 @@ export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, edit
           ) : null}
         </div>
       ) : usedUp && !openedHref ? (
-        <p className={s.limit}>{`오늘 열 수 있는 ${SITE.beta.fullPerDay}번을 모두 썼어요 · 내일 0시에 다시 열려요`}</p>
+        <p className={s.limit}>오늘 열 수 있는 풀이를 모두 열었어요 · 내일 0시에 다시 열려요</p>
       ) : null}
 
       <div className={s.actions}>
