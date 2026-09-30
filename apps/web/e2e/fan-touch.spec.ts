@@ -77,3 +77,46 @@ test("sliding along the arc and lifting the finger picks the card under it", asy
   // No browser gesture took over: the page did not scroll sideways.
   expect(await page.evaluate(() => window.scrollX)).toBe(0);
 });
+
+/**
+ * The widest horizontal run (px) where each fan card is the top-most element: the slice a finger
+ * can land on. Scans the fan's box on a 1px grid.
+ */
+async function visibleSlices(page: Page): Promise<number[]> {
+  return page.evaluate(() => {
+    const cards = [...document.querySelectorAll<HTMLElement>("[data-fan-index]")];
+    const rects = cards.map((el) => el.getBoundingClientRect());
+    const box = {
+      left: Math.min(...rects.map((r) => r.left)),
+      top: Math.min(...rects.map((r) => r.top)),
+      right: Math.max(...rects.map((r) => r.right)),
+      bottom: Math.max(...rects.map((r) => r.bottom)),
+    };
+    const widest = new Map<HTMLElement, number>(cards.map((el) => [el, 0]));
+    for (let y = Math.ceil(box.top); y < box.bottom; y += 1) {
+      let run: HTMLElement | null = null;
+      let length = 0;
+      for (let x = Math.ceil(box.left); x <= box.right; x += 1) {
+        const hit = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-fan-index]") ?? null;
+        length = hit && hit === run ? length + 1 : 1;
+        run = hit;
+        if (hit) widest.set(hit, Math.max(widest.get(hit)!, length));
+      }
+    }
+    return cards.map((el) => widest.get(el)!);
+  });
+}
+
+for (const width of [375, 360]) {
+  test.describe(`${width}px wide`, () => {
+    test.use({ viewport: { width, height: width === 360 ? 780 : 812 } });
+
+    test("every fan card keeps a slice of at least 20px, and the fan stays on screen", async ({ page }, info) => {
+      const slices = await visibleSlices(page);
+      expect(slices).toHaveLength(21);
+      info.annotations.push({ type: "fan slices", description: `${width}px: min ${Math.min(...slices)}px, max ${Math.max(...slices)}px` });
+      expect(Math.min(...slices)).toBeGreaterThanOrEqual(20);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    });
+  });
+}

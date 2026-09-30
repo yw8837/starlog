@@ -18,6 +18,12 @@ type CardFanProps = {
 };
 
 const SPREAD_DEG = 54;
+/**
+ * A fan with at least this many cards opens into a wide arc, WIDE_STEP_DEG per card (21 cards: 150°),
+ * with larger cards around a closer pivot, so every card keeps a comfortably tappable slice on a phone.
+ */
+const WIDE_FROM = 13;
+const WIDE_STEP_DEG = 7.5;
 
 /** Deck indexes shown in the fan: `visible` cards spread evenly through a deck of `count`. */
 export function fanIndexes(count: number, visible: number): number[] {
@@ -26,11 +32,11 @@ export function fanIndexes(count: number, visible: number): number[] {
 }
 
 /**
- * Arc of face-down cards. Tap (or click, or Enter) picks a card. On touch the finger can also
- * slide along the arc: the card under it rises, and lifting the finger picks that card, so the
- * narrow overlapped slivers never have to be hit exactly. A picked card stays picked here (a
- * second tap on it does nothing); taking a card back is the parent's explicit undo. Vertical
- * scrolling and pinch-zoom still work over the fan.
+ * Arc of face-down cards; a big fan (21) opens wide, edge to edge on a phone. Tap (or click, or
+ * Enter) picks a card. On touch the finger can also slide along the arc: the card under it rises,
+ * and lifting the finger picks that card, so the overlapped slivers never have to be hit exactly.
+ * A picked card stays picked here (a second tap on it does nothing); taking a card back is the
+ * parent's explicit undo. Vertical scrolling and pinch-zoom still work over the fan.
  */
 export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardFanProps) {
   const indexes = fanIndexes(count, visible);
@@ -93,6 +99,11 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
   };
 
   const last = indexes.length - 1;
+  const wide = indexes.length >= WIDE_FROM;
+  const spread = wide ? WIDE_STEP_DEG * last : SPREAD_DEG;
+  // The CSS fits the arc to the fan's width from the half-spread's sine and cosine.
+  const halfSpread = (spread / 2) * (Math.PI / 180);
+  const fanStyle = { "--sin": Math.sin(halfSpread).toFixed(4), "--cos": Math.cos(halfSpread).toFixed(4) } as CSSProperties;
 
   // Roving focus: one tab stop for the whole fan; arrow keys move along the arc, Home/End jump to its ends.
   const onKeyDown = (e: KeyboardEvent, slot: number) => {
@@ -106,51 +117,55 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
   };
 
   return (
-    <div
-      className={s.fan}
-      role="group"
-      aria-label={`카드 ${indexes.length}장 중 ${max}장 고르기`}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={stopScrub}
-      onPointerLeave={stopScrub}
-    >
-      {indexes.map((deckIndex, slot) => {
-        const order = picked.indexOf(deckIndex);
-        const isPicked = order >= 0;
-        const angle = last === 0 ? 0 : -SPREAD_DEG / 2 + (SPREAD_DEG * slot) / last;
-        const style = { "--angle": `${angle.toFixed(2)}deg`, "--i": slot } as CSSProperties;
-        const classes = [s.slot, isPicked ? s.picked : "", active === deckIndex && !isPicked ? s.active : "", full && !isPicked ? s.dim : ""]
-          .filter(Boolean)
-          .join(" ");
-        return (
-          <button
-            key={deckIndex}
-            ref={(el) => {
-              buttons.current[slot] = el;
-            }}
-            type="button"
-            className={classes}
-            style={style}
-            data-fan-index={deckIndex}
-            tabIndex={slot === focusSlot ? 0 : -1}
-            aria-pressed={isPicked}
-            aria-disabled={!canPick(deckIndex)}
-            aria-label={isPicked ? `${order + 1}번째로 고른 카드` : `카드 ${slot + 1}`}
-            onClick={() => onClick(deckIndex)}
-            onFocus={() => setFocusSlot(slot)}
-            onKeyDown={(e) => onKeyDown(e, slot)}
-          >
-            <TarotCard faceUp={false} size="sm" highlight={isPicked} className={s.card} />
-            {isPicked ? (
-              <span className={s.badge} aria-hidden="true">
-                {order + 1}
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
+    <div className={wide ? `${s.box} ${s.wideBox}` : s.box}>
+      <div
+        className={wide ? `${s.fan} ${s.wide}` : s.fan}
+        style={wide ? fanStyle : undefined}
+        role="group"
+        aria-label={`카드 ${indexes.length}장 중 ${max}장 고르기`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={stopScrub}
+        onPointerLeave={stopScrub}
+      >
+        {indexes.map((deckIndex, slot) => {
+          const order = picked.indexOf(deckIndex);
+          const isPicked = order >= 0;
+          const angle = last === 0 ? 0 : -spread / 2 + (spread * slot) / last;
+          // --d: distance from the middle, so a wide fan deals out from its centre.
+          const style = { "--angle": `${angle.toFixed(2)}deg`, "--i": slot, "--d": Math.abs(slot - last / 2) } as CSSProperties;
+          const classes = [s.slot, isPicked ? s.picked : "", active === deckIndex && !isPicked ? s.active : "", full && !isPicked ? s.dim : ""]
+            .filter(Boolean)
+            .join(" ");
+          return (
+            <button
+              key={deckIndex}
+              ref={(el) => {
+                buttons.current[slot] = el;
+              }}
+              type="button"
+              className={classes}
+              style={style}
+              data-fan-index={deckIndex}
+              tabIndex={slot === focusSlot ? 0 : -1}
+              aria-pressed={isPicked}
+              aria-disabled={!canPick(deckIndex)}
+              aria-label={isPicked ? `${order + 1}번째로 고른 카드` : `카드 ${slot + 1}`}
+              onClick={() => onClick(deckIndex)}
+              onFocus={() => setFocusSlot(slot)}
+              onKeyDown={(e) => onKeyDown(e, slot)}
+            >
+              <TarotCard faceUp={false} size="sm" highlight={isPicked} className={s.card} />
+              {isPicked ? (
+                <span className={s.badge} aria-hidden="true">
+                  {order + 1}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

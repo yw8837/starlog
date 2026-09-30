@@ -1,3 +1,15 @@
+/* Size container for the wide fan (its cards and height are sized from the fan's width). */
+.box {
+  container-type: inline-size;
+}
+
+/* Phones: a wide fan spreads into the page gutters (6px short of the screen edge) for bigger slices. */
+@media (max-width: 519px) {
+  .wideBox {
+    margin-inline: calc(6px - var(--gutter));
+  }
+}
+
 /* Arc of face-down cards; each card turns around a pivot well below it. */
 .fan {
   --fw: 58px;
@@ -94,9 +106,41 @@
   box-shadow: 0 2px 8px rgba(5, 3, 15, 0.45);
 }
 
+/*
+ * Wide fan (21 cards over 150°): cards 18.5% of the fan's width (52-80px), turning around a pivot
+ * 28px above the bottom edge, at the radius that lets the end cards just reach the sides
+ * (--sin/--cos: the half-spread, set by CardFan). 56px on top leave room for a lifted card; the
+ * hollow under the arc stays free for the parent (the draw screen puts 다시 섞기 there).
+ */
+.wide {
+  --fw: clamp(52px, 18.5cqw, 80px);
+  --r: calc((50cqw - 4px - var(--fw) * var(--cos) / 2) / var(--sin));
+  height: calc(var(--r) + 84px);
+}
+
+.wide .slot {
+  top: auto;
+  bottom: calc(28px + var(--r) - var(--fh));
+  transform-origin: 50% var(--r);
+  /* Dealt from the middle outwards, each card swinging down from above the arc. */
+  animation-name: dealWide;
+  animation-delay: calc(var(--d) * 26ms);
+}
+
+.wide .picked {
+  --lift: -32px;
+}
+
 @keyframes deal {
   from {
     opacity: 0;
     transform: rotate(0deg) translateY(24px);
+  }
+}
+
+@keyframes dealWide {
+  from {
+    opacity: 0;
+    transform: rotate(0deg) translateY(-44px);
   }
 }
