@@ -1,0 +1,33 @@
+.wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+/* Sized and dropped to sit where a lowercase o would. */
+.star {
+  width: 0.7em;
+  height: 0.7em;
+  margin: 0 0.03em;
+  align-self: center;
+  transform: translateY(0.1em);
+  fill: var(--gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .star {
+    animation: twinkle 4.8s ease-in-out infinite;
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateY(0.1em) scale(1);
+  }
+  50% {
+    opacity: 0.82;
+    transform: translateY(0.1em) scale(0.9);
+  }
+}

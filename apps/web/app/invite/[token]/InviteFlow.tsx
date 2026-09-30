@@ -13,6 +13,7 @@ import { SITE } from "@/lib/config";
 import type { INVITE_FIXTURE } from "@/lib/fixtures";
 import { prefersReducedMotion } from "@/lib/motion";
 import s from "./InviteFlow.module.css";
+import { Wordmark } from "@/components/brand/Wordmark";
 
 type Phase = "intro" | "shuffle" | "pick" | "result" | "sent";
 
@@ -80,7 +81,7 @@ export function InviteFlow({ invite, instant }: InviteFlowProps) {
   return (
     <div className={s.flow}>
       <header className={s.bar}>
-        <span className={s.wordmark}>{SITE.name}</span>
+        <Wordmark className={s.wordmark} />
         <span className={s.guest}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
             <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />

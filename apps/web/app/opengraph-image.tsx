@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { WORDMARK_STAR_PATH, wordmarkParts } from "@/components/brand/Wordmark";
 import { OG_ALT, OG_TEXT } from "@/lib/og";
 
 export const alt = OG_ALT;
@@ -44,6 +45,7 @@ function stars(count: number) {
 }
 
 const STARS = stars(90);
+const WORDMARK = wordmarkParts(OG_TEXT.name);
 
 export default async function OpengraphImage() {
   const { serif, sans } = await loadFonts();
@@ -93,7 +95,13 @@ export default async function OpengraphImage() {
         />
 
         <div style={{ display: "flex", alignItems: "baseline", fontFamily: "Serif" }}>
-          <span style={{ fontSize: 132, fontWeight: 700, letterSpacing: -2 }}>{OG_TEXT.name}</span>
+          <span style={{ display: "flex", alignItems: "center", fontSize: 132, fontWeight: 700, letterSpacing: -2 }}>
+            {WORDMARK.head}
+            <svg width="92" height="92" viewBox="0 0 24 24" style={{ margin: "26px 4px 0" }}>
+              <path d={WORDMARK_STAR_PATH} fill={GOLD} />
+            </svg>
+            {WORDMARK.tail}
+          </span>
           <span style={{ marginLeft: 28, fontSize: 60, fontWeight: 700, color: INK_SUB }}>{`· ${OG_TEXT.nameKo}`}</span>
         </div>
         <div style={{ marginTop: 20, fontSize: 46, fontWeight: 500, color: INK_SUB }}>{OG_TEXT.tagline}</div>

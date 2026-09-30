@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Wordmark } from "@/components/brand/Wordmark";
 import type { Wallet } from "@/components/tarot/UnlockSheet";
 import { SITE } from "@/lib/config";
 import { MoonIcon, StarIcon } from "./icons";
@@ -10,7 +11,7 @@ export function HomeTopBar({ wallet }: { wallet: Wallet | null }) {
   return (
     <header className={s.topbar}>
       <h1 className={s.wordmark}>
-        {SITE.name}
+        <Wordmark />
         <span className="sr-only">{` ${SITE.nameKo}`}</span>
       </h1>
       {wallet ? (
