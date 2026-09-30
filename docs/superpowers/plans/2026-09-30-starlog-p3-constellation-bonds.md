@@ -1157,11 +1157,11 @@ git commit -m "feat(bonds): service rules — choose, join, switch, 새로 채�
   - `GET me` shows `completed[0].sign === "aries"`
   - `GET ranking/aries` shows the owner first
   - a join from the owner's own cookie → 403 `SELF_JOIN`
-  - a 7th code lookup within a minute from the same IP → 429 `RATE_LIMIT` (the in-memory limiter)
+  - an 11th code lookup within a minute from the same IP → 429 `RATE_LIMIT` (the in-memory limiter)
   - the request body of a join is not echoed in any response field except `nickname`
 
 ```ts
-// apps/web/app/api/bonds/bonds-api.test.ts (skeleton — fill each case as listed above)
+// apps/web/app/api/bonds/bonds-api.test.ts
 import { beforeEach, describe, expect, it } from "vitest";
 import { resetMemoryLimiter } from "@/lib/security/quota";
 import { POST as ownerPost } from "./owner/route";
