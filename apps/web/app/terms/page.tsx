@@ -1,0 +1,143 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/LegalPage";
+import s from "@/components/legal/legal.module.css";
+import { SITE } from "@/lib/config";
+import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
+
+const { paid, free } = SITE.currency;
+const host = new URL(SITE.url).host;
+
+export const metadata: Metadata = {
+  title: "이용약관",
+  description: `${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건, 유료 서비스와 결제, 이용자의 의무, 서비스 변경과 면책, 분쟁 해결을 정한 이용약관이에요.`,
+  alternates: { canonical: "/terms" },
+};
+
+export default function TermsPage() {
+  const hasContact = contactChannels().length > 0;
+
+  return (
+    <LegalPage title="이용약관" badge="베타" effective={LEGAL_EFFECTIVE_DATE}>
+      <LegalSection id="purpose" title="제1조 (목적)">
+        <p>
+          {`이 약관은 ${SITE.business.name}(이하 “운영자”)가 제공하는 ${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건과 절차, 운영자와 이용자의 권리·의무와 책임을 정합니다.`}
+        </p>
+      </LegalSection>
+
+      <LegalSection id="definitions" title="제2조 (정의)">
+        <ol className={s.list}>
+          <li>{`“${SITE.nameKo}”란 운영자가 ${host}에서 제공하는 타로·사주 풀이 서비스와 그 부가 서비스를 말합니다.`}</li>
+          <li>{`“이용자”란 이 약관에 따라 ${SITE.nameKo}를 이용하는 회원과 비회원을 말합니다.`}</li>
+          <li>“회원”이란 소셜 계정으로 로그인해 서비스를 이용하는 사람을, “비회원”이란 로그인하지 않고 이용하는 사람을 말합니다.</li>
+          <li>“풀이”란 이용자가 입력한 질문·상황·출생 정보와 뽑은 카드 또는 계산한 명식을 바탕으로 AI가 생성해 제공하는 타로·사주 해석 콘텐츠를 말합니다.</li>
+          <li>{`“${paid}”이란 이용자가 대금을 내고 충전해 풀이를 여는 데 쓰는 유료 재화를 말합니다.`}</li>
+          <li>{`“${free}”이란 운영자가 가입 선물 등으로 무료로 지급하고, 풀이를 여는 데 쓰는 무료 재화를 말합니다.`}</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="changes" title="제3조 (약관의 게시와 변경)">
+        <ol className={s.list}>
+          <li>운영자는 이 약관을 서비스 화면 아래의 링크로 누구나 볼 수 있게 게시합니다.</li>
+          <li>운영자는 관련 법령을 위반하지 않는 범위에서 이 약관을 바꿀 수 있습니다.</li>
+          <li>약관을 바꿀 때는 바뀌는 내용과 시행일을 시행일 7일 전부터 서비스 안에 공지합니다. 이용자에게 불리하게 바뀌는 경우에는 시행일 30일 전부터 공지합니다.</li>
+          <li>바뀐 약관에 동의하지 않는 이용자는 이용을 멈추고 탈퇴할 수 있습니다.</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="service" title="제4조 (서비스 내용)">
+        <ol className={s.list}>
+          <li>
+            운영자는 다음 서비스를 제공합니다.
+            <ul className={s.list}>
+              <li>AI가 생성하는 타로·사주 풀이와 후속 질문</li>
+              <li>풀이를 모아 보는 나의 이야기(보관)</li>
+              <li>친구 초대와 친구가 남긴 카드</li>
+              <li>타로·사주 가이드 글</li>
+            </ul>
+          </li>
+          <li>풀이는 오락과 자기 성찰을 위한 참고 콘텐츠입니다. 의료·법률·투자·진로 등 전문적인 판단을 대신하지 않으며, 중요한 결정은 해당 분야의 전문가와 상의하시기 바랍니다.</li>
+          <li>풀이는 AI가 생성하므로 부정확하거나 이용자의 실제 상황과 맞지 않는 내용이 들어 있을 수 있습니다.</li>
+          <li>베타 기간에는 AI 풀이, 로그인, 결제 등 일부 기능을 준비하고 있으며, 그동안 예시 풀이가 표시될 수 있습니다.</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="age" title="제5조 (이용 연령)">
+        <p>
+          {`${SITE.nameKo}는 만 14세 이상만 이용할 수 있습니다. 운영자는 만 14세 미만이 이용하고 있다는 사실을 알게 되면 이용을 제한할 수 있습니다.`}
+        </p>
+      </LegalSection>
+
+      <LegalSection id="members" title="제6조 (회원과 비회원 이용)">
+        <ol className={s.list}>
+          <li>비회원도 질문 만들기, 카드 뽑기, 무료로 공개하는 풀이 등 일부 서비스를 이용할 수 있습니다. 비회원의 기록은 이용 중인 기기의 브라우저에만 저장되며, 기기를 바꾸거나 브라우저 데이터를 지우면 사라질 수 있습니다.</li>
+          <li>{`회원 가입은 소셜 계정 로그인으로 하며, 가입하면 가입 선물로 ${free}을 드립니다.`}</li>
+          <li>{`회원은 언제든지 탈퇴할 수 있습니다. 탈퇴하면 남은 ${free}은 사라지고, 남은 ${paid}은 환불 정책에 따라 환불을 신청할 수 있습니다.`}</li>
+          <li>회원은 자신의 계정을 직접 관리해야 하며, 다른 사람이 자신의 계정을 쓰게 해서는 안 됩니다.</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="paid" title="제7조 (유료 서비스와 결제)">
+        <ol className={s.list}>
+          <li>
+            {`유료 풀이의 가격과 ${paid} 충전 상품은 `}
+            <Link href="/pricing">가격 안내</Link>
+            {"에 게시합니다."}
+          </li>
+          <li>결제는 토스페이먼츠를 통해 카드와 간편결제로 할 수 있습니다. 결제 기능은 결제대행사 심사가 끝난 뒤 열립니다.</li>
+          <li>운영자는 결제 전에 가격, 포함 내용, 청약철회가 제한되는 경우를 알립니다.</li>
+          <li>
+            {"청약철회와 환불은 "}
+            <Link href="/refund">환불 정책</Link>
+            {"을 따릅니다."}
+          </li>
+          <li>{`바로 결제, ${paid}, ${free} 중 어떤 방법으로 열어도 풀이의 내용과 후속 질문, 보관 범위는 같습니다.`}</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="duties" title="제8조 (이용자의 의무)">
+        <p>이용자는 다음 행위를 해서는 안 됩니다.</p>
+        <ul className={s.list}>
+          <li>다른 사람의 개인정보(이름, 생년월일, 연락처 등)를 그 사람의 동의 없이 입력하는 행위</li>
+          <li>다른 사람의 계정을 쓰거나 다른 사람인 것처럼 속이는 행위</li>
+          <li>자동화된 수단으로 풀이를 대량으로 요청·수집하거나, 보안을 우회하는 등 서비스 운영을 방해하는 행위</li>
+          <li>풀이를 운영자의 동의 없이 판매하는 등 영리 목적으로 쓰는 행위</li>
+          <li>법령이나 공공질서에 어긋나는 내용, 다른 사람의 권리를 침해하는 내용을 입력하거나 퍼뜨리는 행위</li>
+        </ul>
+      </LegalSection>
+
+      <LegalSection id="suspension" title="제9조 (서비스의 변경과 중단)">
+        <ol className={s.list}>
+          <li>운영자는 운영상·기술상 필요에 따라 서비스의 전부나 일부를 바꿀 수 있으며, 중요한 변경은 미리 공지합니다.</li>
+          <li>설비 점검·교체, 장애, 천재지변 등으로 서비스를 일시 중단할 수 있습니다. 미리 알릴 수 없었던 경우에는 중단 뒤에 알립니다.</li>
+          <li>{`유료 서비스를 종료할 때는 30일 전에 공지하고, 남은 ${paid}은 환불 정책에 따라 환불합니다.`}</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="disclaimer" title="제10조 (면책)">
+        <ol className={s.list}>
+          <li>풀이는 참고용 콘텐츠이며, 운영자는 이용자가 풀이를 근거로 내린 결정과 그 결과에 책임지지 않습니다.</li>
+          <li>천재지변, 이용자의 귀책사유, 이용자가 브라우저 데이터를 지워 기기에 저장된 기록이 사라진 경우처럼 운영자에게 책임이 없는 사유로 생긴 손해에 대해서는 책임지지 않습니다.</li>
+          <li>다만 운영자의 고의나 중대한 과실로 이용자에게 손해가 생긴 경우에는 관련 법령에 따라 책임집니다.</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="disputes" title="제11조 (분쟁 해결)">
+        <ol className={s.list}>
+          <li>운영자는 이용자의 의견과 불만을 아래 사업자 정보의 문의처로 받아 성실하게 처리합니다.</li>
+          <li>분쟁이 생기면 운영자와 이용자는 성실히 협의합니다. 협의로 해결되지 않으면 이용자는 한국소비자원이나 콘텐츠분쟁조정위원회 등에 조정을 신청할 수 있습니다.</li>
+          <li>이 약관은 대한민국 법령에 따라 해석하며, 소송이 필요한 경우 관련 법령에 따른 관할 법원에서 다룹니다.</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="business" title="제12조 (사업자 정보)">
+        {hasContact ? null : <p>문의 연락처는 결제가 열리기 전에 이 자리에 안내합니다.</p>}
+        <BusinessFacts />
+      </LegalSection>
+
+      <LegalSection id="addendum" title="부칙">
+        <p>{`이 약관은 ${koreanDate(LEGAL_EFFECTIVE_DATE)}부터 시행합니다.`}</p>
+      </LegalSection>
+    </LegalPage>
+  );
+}

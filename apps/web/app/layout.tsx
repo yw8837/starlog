@@ -20,10 +20,16 @@ const body = Noto_Sans_KR({
   preload: false,
 });
 
+const SITE_TITLE = `${SITE.name} · ${SITE.nameKo}`;
+const SITE_DESCRIPTION = "타로와 사주로 오늘의 마음을 차분히 돌아보는 밤하늘 기록";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: { default: `${SITE.name} · ${SITE.nameKo}`, template: `%s · ${SITE.name}` },
-  description: "타로와 사주로 오늘의 마음을 차분히 돌아보는 밤하늘 기록",
+  title: { default: SITE_TITLE, template: `%s · ${SITE.name}` },
+  description: SITE_DESCRIPTION,
+  // og:title and og:description follow each page's title and description (the defaults above on
+  // pages without their own); og:image comes from app/opengraph-image.tsx.
+  openGraph: { type: "website", siteName: SITE_TITLE, locale: "ko_KR" },
 };
 
 export const viewport: Viewport = {

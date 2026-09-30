@@ -54,10 +54,15 @@ const FOOTER_FIELDS = [
   ["전화", "phone"],
 ] as const satisfies ReadonlyArray<readonly [string, keyof Business]>;
 
-/** "상호 열매스튜디오" style entries for every non-empty footer field. */
-export function footerNotice(business: Business = SITE.business): string[] {
+/** [label, value] for every non-empty business field, in display order. Never the address. */
+export function businessFields(business: Business = SITE.business): Array<readonly [string, string]> {
   return FOOTER_FIELDS.flatMap(([label, key]) => {
     const value = business[key].trim();
-    return value ? [`${label} ${value}`] : [];
+    return value ? [[label, value] as const] : [];
   });
+}
+
+/** "상호 열매스튜디오" style entries for every non-empty footer field. */
+export function footerNotice(business: Business = SITE.business): string[] {
+  return businessFields(business).map(([label, value]) => `${label} ${value}`);
 }

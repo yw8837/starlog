@@ -2,10 +2,52 @@
 .footer {
   position: relative;
   z-index: 1;
+  display: grid;
+  gap: 8px;
   max-width: var(--col-max);
   margin-inline: auto;
   padding: 32px var(--gutter) 24px;
   text-align: center;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* "·" between links, never at a line start. */
+.links li + li::before {
+  content: "·";
+  color: var(--ink-sub);
+  opacity: 0.6;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 8px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.link:hover {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 개인정보처리방침 stands out, as Korean sites customarily do. */
+.strong {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .notice {

@@ -1,0 +1,15 @@
+/* Quiet sample-reading notice: glass pill, sub ink, never gold. */
+.notice {
+  width: fit-content;
+  max-width: 100%;
+  margin: 10px auto 0;
+  padding: 5px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: var(--glass);
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  text-align: center;
+  text-wrap: balance;
+}
