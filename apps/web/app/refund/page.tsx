@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/LegalPage";
+import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import s from "@/components/legal/legal.module.css";
 import { SITE, won } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
@@ -10,7 +10,7 @@ const { paid, free } = SITE.currency;
 
 export const metadata: Metadata = {
   title: "환불 정책",
-  description: `${SITE.nameKo} 풀이와 ${paid} 충전의 청약철회·환불 기준, 생성 오류 시 복구, 미성년자 결제 취소, 환불 신청 방법과 처리 기간을 안내해요.`,
+  description: `${SITE.nameKo} 풀이와 ${paid} 충전의 청약철회·환불 기준, 결제 전 무료로 보는 부분, 생성 오류 시 복구, 미성년자 결제 취소, 환불 신청 방법과 처리 기간을 안내해요.`,
   alternates: { canonical: "/refund" },
 };
 
@@ -38,11 +38,24 @@ export default function RefundPage() {
       effective={LEGAL_EFFECTIVE_DATE}
       lead={`${SITE.nameKo}의 풀이는 디지털 콘텐츠예요. 결제하기 전에 알아 두면 좋은 청약철회와 환불 기준을 정리했어요.`}
     >
+      <LegalNote>
+        <p className={s.noteTitle}>지금은 베타 기간이라 결제가 없어요.</p>
+        <p>
+          풀이를 무료로 열고, 풀이가 제대로 만들어지지 않으면 그날 열 수 있는 횟수도 차감하지 않아요. 아래 기준은 결제가 열린 뒤의 유료 풀이와{" "}
+          {`${paid} 충전에 적용해요.`}
+        </p>
+      </LegalNote>
+
       <LegalSection id="withdrawal" title="청약철회 제한 안내">
         <p>
           「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제2항 제5호에 따라, 디지털 콘텐츠는 제공이 시작되면 청약철회가 제한될 수 있어요.
           {` ${SITE.nameKo}에서는 결제한 풀이를 열어 생성이 시작된 때를 제공이 시작된 때로 봐요.`}
         </p>
+        <p>
+          그 대신 같은 법 제17조 제6항과 시행령 제21조의2에 따라, 결제하기 전에 풀이의 일부를 무료로 먼저 보여 드려요. 타로는 뽑은 카드와 첫 풀이,
+          이어지는 풀이의 소제목과 분량을, 사주는 명식과 첫 장 요약을 보고 나서 열지 정할 수 있어요.
+        </p>
+        <p>{`충전한 ${paid} 가운데 아직 쓰지 않은 부분은 제공이 시작되지 않은 것으로 보고, 아래 기준대로 환불해 드려요.`}</p>
         <p>이 내용은 결제하기 전에 결제 화면에서 먼저 알려 드려요.</p>
       </LegalSection>
 
@@ -53,6 +66,7 @@ export default function RefundPage() {
       <LegalSection id="failure" title="생성 실패와 오류">
         <ul className={s.list}>
           <li>{`풀이가 만들어지지 않았거나 오류로 끝까지 제공되지 않았다면, 쓰려던 ${paid}·${free}을 자동으로 되돌려 드려요. 같은 풀이를 다시 열 때 한 번 더 차감하지 않아요.`}</li>
+          <li>자동 품질 검사를 통과하지 못해 풀이를 보여 드리지 못한 경우도 생성 실패로 보고 같은 기준으로 처리해요.</li>
           <li>바로 결제로 연 풀이라면 결제한 금액을 전액 환불해 드려요. 원하시면 환불 대신 같은 풀이를 다시 열 수 있게 해 드려요.</li>
           <li>풀이가 결제 전에 안내한 내용과 다르게 제공됐다면, 확인한 뒤 같은 기준으로 처리해요.</li>
         </ul>
