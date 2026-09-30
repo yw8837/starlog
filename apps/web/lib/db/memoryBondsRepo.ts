@@ -1,0 +1,100 @@
+import type { SignId } from "@starlog/core";
+import { compareRanked, type BondsRepo, type ConstellationRow, type InviteRow, type OwnerRow, type RankingEntry, type StarRow } from "./bondsRepo";
+
+/** In-memory BondsRepo for tests and `next dev` without D1. Same semantics as the D1 one (contract.ts). */
+export function createMemoryBondsRepo(): BondsRepo {
+  const owners = new Map<string, OwnerRow>();
+  const invites = new Map<string, InviteRow>();
+  const constellations = new Map<string, ConstellationRow>();
+  const stars = new Map<string, StarRow>();
+
+  const copy = <T extends object>(row: T): T => structuredClone(row);
+  const ownedBy = (ownerId: string) => [...constellations.values()].filter((c) => c.ownerId === ownerId);
+
+  /** Complete constellations of public owners for a sign, in ranking order. */
+  const ranked = (sign: SignId, since: number | null) =>
+    [...constellations.values()]
+      .filter((c): c is ConstellationRow & { completedAt: number } =>
+        c.sign === sign && c.status === "complete" && c.completedAt !== null && owners.get(c.ownerId)?.rankingPublic === true && (since === null || c.completedAt >= since))
+      .sort(compareRanked);
+
+  return {
+    async getOwner(id) {
+      const row = owners.get(id);
+      return row ? copy(row) : null;
+    },
+    async upsertOwner(row) {
+      const existing = owners.get(row.id);
+      owners.set(row.id, copy({ ...row, createdAt: existing?.createdAt ?? row.createdAt }));
+    },
+    async activeInvite(ownerId) {
+      const row = [...invites.values()].filter((i) => i.ownerId === ownerId && i.revokedAt === null).sort((a, b) => b.createdAt - a.createdAt)[0];
+      return row ? copy(row) : null;
+    },
+    async inviteByCode(code) {
+      const row = invites.get(code);
+      return row ? copy(row) : null;
+    },
+    async insertInvite(row) {
+      if (invites.has(row.code)) throw new Error("UNIQUE");
+      invites.set(row.code, copy(row));
+    },
+    async revokeInvites(ownerId, at) {
+      for (const row of invites.values()) if (row.ownerId === ownerId && row.revokedAt === null) row.revokedAt = at;
+    },
+    async getConstellation(id) {
+      const row = constellations.get(id);
+      return row ? copy(row) : null;
+    },
+    async fillingOf(ownerId) {
+      const row = ownedBy(ownerId).find((c) => c.status === "filling");
+      return row ? copy(row) : null;
+    },
+    async completedOf(ownerId) {
+      return ownedBy(ownerId)
+        .filter((c) => c.status === "complete")
+        .sort((a, b) => (a.completedAt ?? 0) - (b.completedAt ?? 0))
+        .map(copy);
+    },
+    async insertConstellation(row) {
+      if (constellations.has(row.id)) throw new Error("UNIQUE");
+      constellations.set(row.id, copy(row));
+    },
+    async updateConstellation(id, patch) {
+      const row = constellations.get(id);
+      if (row) constellations.set(id, { ...row, ...patch });
+    },
+    async deleteConstellation(id) {
+      for (const [key, s] of stars) if (s.constellationId === id) stars.delete(key);
+      constellations.delete(id);
+    },
+    async starsOf(constellationId) {
+      return [...stars.values()].filter((s) => s.constellationId === constellationId).sort((a, b) => a.slot - b.slot).map(copy);
+    },
+    async insertStar(row) {
+      for (const s of stars.values()) {
+        if (s.constellationId === row.constellationId && (s.slot === row.slot || s.friendKey === row.friendKey)) throw new Error("UNIQUE");
+      }
+      if (stars.has(row.id)) throw new Error("UNIQUE");
+      stars.set(row.id, copy(row));
+    },
+    async deleteStar(id) {
+      stars.delete(id);
+    },
+    async starsSince(ownerId, since) {
+      const mine = new Set(ownedBy(ownerId).map((c) => c.id));
+      return [...stars.values()].filter((s) => mine.has(s.constellationId) && s.createdAt >= since).length;
+    },
+    async ranking(sign, since, limit) {
+      return ranked(sign, since)
+        .slice(0, limit)
+        .map((c): RankingEntry => ({ constellationId: c.id, nickname: owners.get(c.ownerId)!.nickname, total: c.total, completedAt: c.completedAt }));
+    },
+    async rankOf(constellationId, since) {
+      const row = constellations.get(constellationId);
+      if (!row) return null;
+      const index = ranked(row.sign, since).findIndex((c) => c.id === constellationId);
+      return index < 0 ? null : index + 1;
+    },
+  };
+}

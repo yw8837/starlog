@@ -34,5 +34,10 @@
   // 오늘의 한 장 results, one per device per KST day (lib/api/dailyStore.ts).
   "kv_namespaces": [
     { "binding": "DAILY_KV", "id": "fbb538757609409c94a386390809926a" }
+  ],
+  // App data (lib/db): 별자리 인연 first. Schema in migrations/, applied with
+  // `npx wrangler d1 migrations apply starlog --remote` before a deploy that needs it.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "starlog", "database_id": "78c6fb07-ee97-42d5-9633-21801fe596eb", "migrations_dir": "migrations" }
   ]
 }
