@@ -180,15 +180,15 @@ describe("topics", () => {
 describe("questions", () => {
   it("builds the contact question without duplicated words", () => {
     const topic = TOPICS_BY_WHO.us.find(t => t.id === "contact")!;
-    expect(composeQuestion("us", topic, "month")).toBe("이번 달, 그 사람에게 먼저 연락해도 될까");
+    expect(composeQuestion("us", topic, "month")).toBe("이번 달 그 사람에게 먼저 연락해도 될까?");
     const daily = TOPICS_BY_WHO.me.find(t => t.id === "daily")!;
-    expect(composeQuestion("me", daily, "today")).toBe("오늘 나의 하루는 어떨까");
+    expect(composeQuestion("me", daily, "today")).toBe("오늘 내 하루는 어떨까?");
   });
   it("fills the when prefix in Korean and Japanese", () => {
     const topic = TOPICS_BY_WHO.us.find(t => t.id === "contact")!;
-    expect(composeQuestion("us", topic, "today")).toBe("오늘, 그 사람에게 먼저 연락해도 될까");
-    expect(composeQuestion("us", topic, "week")).toMatch(/^이번 주, /);
-    expect(composeQuestion("us", topic, "year")).toMatch(/^올해, /);
+    expect(composeQuestion("us", topic, "today")).toBe("오늘 그 사람에게 먼저 연락해도 될까?");
+    expect(composeQuestion("us", topic, "week")).toMatch(/^이번 주 /);
+    expect(composeQuestion("us", topic, "year")).toMatch(/^올해 /);
     expect(composeQuestion("us", topic, "month", "ja")).toMatch(/^今月、/);
     expect(composeQuestion("me", TOPICS_BY_WHO.me.find(t => t.id === "daily")!, "today", "ja")).toMatch(/^今日の/);
   });
@@ -213,8 +213,8 @@ describe("questions", () => {
     expect(meCareer.id).toBe(workCareer.id);
     expect(() => composeQuestion("work", meCareer, "week")).toThrow();
     expect(() => composeQuestion("me", workCareer, "week")).toThrow();
-    expect(composeQuestion("me", meCareer, "week")).toBe("이번 주, 나의 일과 이직의 흐름은 어떨까");
-    expect(composeQuestion("work", workCareer, "week")).toBe("이번 주, 나의 일은 어떤 방향으로 나아갈까");
+    expect(composeQuestion("me", meCareer, "week")).toBe("이번 주 일과 이직, 어떻게 풀릴까?");
+    expect(composeQuestion("work", workCareer, "week")).toBe("이번 주 내 일은 어떻게 풀릴까?");
   });
   it("only allows today for the daily topic", () => {
     const daily = TOPICS_BY_WHO.me.find(t => t.id === "daily")!;
@@ -223,7 +223,7 @@ describe("questions", () => {
       expect(() => composeQuestion("me", daily, when)).toThrow();
       expect(() => composeQuestion("me", daily, when, "ja")).toThrow();
     }
-    expect(composeQuestion("me", daily, "today")).toBe("오늘 나의 하루는 어떨까");
+    expect(composeQuestion("me", daily, "today")).toBe("오늘 내 하루는 어떨까?");
     const others = WHOS.flatMap(who => TOPICS_BY_WHO[who]).filter(t => t !== daily && t.id !== "marriage");
     expect(others.every(t => t.whens === undefined)).toBe(true);
   });
@@ -245,9 +245,14 @@ describe("questions", () => {
     expect([us.ko, us.template]).toEqual(["결혼", "relationship"]);
     expect(us.conditions[0]!.options).toEqual(["연애 중", "결혼 이야기가 오가는 중", "상견례·준비 중", "결혼을 망설이는 중", "집안 반대가 있음", "잘 모르겠어요"]);
   });
-  it("varies question endings (at most 4 end with 어떻게 흘러갈까)", () => {
+  it("varies question endings (at most 4 end with 어떻게 될까?) and asks every one as a question", () => {
     const questions = WHOS.flatMap(who => TOPICS_BY_WHO[who]).map(t => t.questionKo);
-    expect(questions.filter(q => q.endsWith("어떻게 흘러갈까")).length).toBeLessThanOrEqual(4);
+    expect(questions.filter(q => q.endsWith("어떻게 될까?")).length).toBeLessThanOrEqual(4);
+    // Owner: written the way a person asks out loud; "어떤 쪽으로 나아갈까" read as translated.
+    for (const q of questions) {
+      expect(q, q).toMatch(/^\{when\} .+\?$/);
+      expect(q, q).not.toMatch(/나아가|흐름을 탈|향하고 있을까|나의 /);
+    }
   });
   it("uses the spaced form of 어 가다 and never the glued one", () => {
     const questions = WHOS.flatMap(who => TOPICS_BY_WHO[who]).map(t => t.questionKo);

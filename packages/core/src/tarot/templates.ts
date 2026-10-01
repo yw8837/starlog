@@ -70,7 +70,11 @@ export interface TopicDef {
   phrase: string;
   template: TemplateId;
   conditions: ConditionDef[];
-  /** Question templates; `{when}` is replaced by composeQuestion. Punctuation after {when} is part of the template. */
+  /**
+   * Question templates; `{when}` is replaced by composeQuestion. Written the way a person would ask
+   * it out loud, ending with "?", with "{when} " (no comma) at the start so the builder can swap in
+   * a typed time or leave the time out (lib/question.ts in the web app).
+   */
   questionKo: string;
   questionJa: string;
   /** `when` values this topic accepts; omitted = all four. composeQuestion throws for any other value. */
@@ -94,7 +98,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
   me: [
     {
       id: "love", ko: "연애운", ja: "恋愛運", phrase: "연애", template: "self-flow",
-      questionKo: "{when}, 나의 연애는 어떻게 흘러갈까",
+      questionKo: "{when} 내 연애는 어떻게 될까?",
       questionJa: "{when}、私の恋愛運はどう流れていくかな",
       conditions: [
         cond("status", "지금 상태", "솔로", "짝사랑 중", "썸 타는 중", "연애 중", "헤어진 지 얼마 안 됨", DUNNO),
@@ -113,7 +117,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "money", ko: "재물운", ja: "金運", phrase: "재물", template: "self-flow",
-      questionKo: "{when}, 나의 재물 흐름은 어떨까",
+      questionKo: "{when} 내 재물 흐름은 어떨까?",
       questionJa: "{when}、私のお金の流れはどうなるかな",
       conditions: [
         cond("situation", "지금 상황", "수입이 안정적", "수입이 들쭉날쭉", "지금은 수입이 없음", "지출이 늘어남", "갚을 빚이 있음", DUNNO),
@@ -122,7 +126,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "career", ko: "직업·이직", ja: "仕事・転職", phrase: "일과 이직", template: "work",
-      questionKo: "{when}, 나의 일과 이직의 흐름은 어떨까",
+      questionKo: "{when} 일과 이직, 어떻게 풀릴까?",
       questionJa: "{when}、私の仕事と転職の流れはどうなるかな",
       conditions: [
         careerStatus(),
@@ -132,7 +136,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "study", ko: "학업·시험", ja: "勉強・試験", phrase: "학업과 시험", template: "work",
-      questionKo: "{when}, 나의 학업과 시험 준비는 어떻게 풀려 갈까",
+      questionKo: "{when} 공부와 시험, 잘 풀릴까?",
       questionJa: "{when}、私の勉強と試験はどう進んでいくかな",
       conditions: [
         studyStage(),
@@ -141,7 +145,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "health", ko: "건강·컨디션", ja: "健康・体調", phrase: "건강과 컨디션", template: "self-flow",
-      questionKo: "{when}, 나의 컨디션은 어떤 리듬으로 이어질까",
+      questionKo: "{when} 내 컨디션은 괜찮을까?",
       questionJa: "{when}、私の体調はどう流れていくかな",
       conditions: [
         cond("state", "요즘 컨디션", "괜찮은 편", "피로가 쌓임", "잠이 불규칙함", "스트레스가 많음", "회복하는 중", DUNNO),
@@ -150,7 +154,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "mind", ko: "마음·감정", ja: "心・気持ち", phrase: "마음과 감정", template: "self-flow",
-      questionKo: "{when}, 나의 마음은 어디를 향하고 있을까",
+      questionKo: "{when} 내 마음, 어떻게 돌보면 좋을까?",
       questionJa: "{when}、私の心はどこに向かっているのかな",
       conditions: [
         cond("feeling", "요즘 마음", "불안함", "답답함", "외로움", "설렘", "무기력함", DUNNO),
@@ -160,7 +164,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "move", ko: "이사·선택", ja: "引っ越し・選択", phrase: "이사와 선택", template: "choice",
-      questionKo: "{when}, 갈림길에 선 나는 무엇을 살펴봐야 할까",
+      questionKo: "{when} 이 선택, 어느 쪽이 나을까?",
       questionJa: "{when}、分かれ道に立つ私は何を見ればいいかな",
       conditions: [
         cond("subject", "고민하는 것", "이사", "이직", "취업", "진학", "그 밖의 선택", DUNNO),
@@ -170,7 +174,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "daily", ko: "오늘의 운", ja: "今日の運勢", phrase: "오늘의 운", template: "daily",
-      questionKo: "{when} 나의 하루는 어떨까",
+      questionKo: "{when} 내 하루는 어떨까?",
       questionJa: "{when}の私の一日はどうなるかな",
       whens: ["today"],
       conditions: [
@@ -182,7 +186,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
   us: [
     {
       id: "crush", ko: "썸·고백", ja: "気になる人・告白", phrase: "썸과 고백", template: "relationship",
-      questionKo: "{when}, 그 사람과 나의 썸은 어떤 쪽으로 나아갈까",
+      questionKo: "{when} 그 사람과 나 사이는 어떻게 될까?",
       questionJa: "{when}、あの人との距離はどう変わっていくかな",
       conditions: [
         cond("relation", "관계", "아직 대화 전", "이제 막 알게 됨", "오래 알던 사이", "자주 연락하거나 만남", "연락이 뜸함", DUNNO),
@@ -192,7 +196,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "relationship", ko: "연애", ja: "恋愛", phrase: "연애", template: "relationship",
-      questionKo: "{when}, 그 사람과 나의 연애는 어떻게 흘러갈까",
+      questionKo: "{when} 그 사람과의 연애는 순탄할까?",
       questionJa: "{when}、あの人との恋はどう流れていくかな",
       conditions: [
         cond("duration", "사귄 기간", "3개월 미만", "3개월~1년", "1년 넘음", DUNNO),
@@ -212,7 +216,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "contact", ko: "연락", ja: "連絡", phrase: "연락", template: "relationship-contact",
-      questionKo: "{when}, 그 사람에게 먼저 연락해도 될까",
+      questionKo: "{when} 그 사람에게 먼저 연락해도 될까?",
       questionJa: "{when}、あの人に自分から連絡してもいいかな",
       conditions: [
         cond("relation", "관계", "알아가는 중", "짝사랑 상대", "연인", "친구", "헤어진 사이", DUNNO),
@@ -222,7 +226,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "reunion", ko: "재회", ja: "復縁", phrase: "재회", template: "relationship-contact",
-      questionKo: "{when}, 헤어진 그 사람과의 재회를 어떻게 바라보면 좋을까",
+      questionKo: "{when} 그 사람과 다시 이어질 수 있을까?",
       questionJa: "{when}、別れたあの人との再会をどう見ればいいかな",
       conditions: [
         cond("since", "헤어진 지", "1개월 미만", "1~6개월", "6개월~1년", "1년 넘음", DUNNO),
@@ -232,7 +236,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "conflict", ko: "갈등·화해", ja: "すれ違い・仲直り", phrase: "갈등과 화해", template: "relationship",
-      questionKo: "{when}, 그 사람과의 갈등을 어떻게 풀어 가면 좋을까",
+      questionKo: "{when} 그 사람과의 갈등, 어떻게 풀면 좋을까?",
       questionJa: "{when}、あの人とのすれ違いをどう解いていけばいいかな",
       conditions: [
         cond("relation", "관계", "연인", "부부", "친구", "가족", "직장 동료", DUNNO),
@@ -244,7 +248,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
   work: [
     {
       id: "career", ko: "직업·이직", ja: "仕事・転職", phrase: "일과 이직", template: "work",
-      questionKo: "{when}, 나의 일은 어떤 방향으로 나아갈까",
+      questionKo: "{when} 내 일은 어떻게 풀릴까?",
       questionJa: "{when}、私の仕事はどんな方向に進むかな",
       conditions: [
         careerStatus(),
@@ -254,7 +258,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "money", ko: "재물운", ja: "金運", phrase: "재물", template: "self-flow",
-      questionKo: "{when}, 일에서 들어오는 돈의 흐름은 어떨까",
+      questionKo: "{when} 내 수입은 어떻게 될까?",
       questionJa: "{when}、仕事でのお金の流れはどうなるかな",
       conditions: [
         cond("income", "수입 상황", "월급이 안정적", "수입이 들쭉날쭉", "수입이 줄어듦", "지금은 수입이 없음", DUNNO),
@@ -263,7 +267,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "study", ko: "학업·시험", ja: "勉強・試験", phrase: "학업과 시험", template: "work",
-      questionKo: "{when}, 지금 하는 공부와 시험 준비를 어떻게 해 나가면 좋을까",
+      questionKo: "{when} 공부와 시험 준비, 어떻게 하면 좋을까?",
       questionJa: "{when}、今の勉強と試験の準備をどう進めればいいかな",
       conditions: [
         studyStage(),
@@ -273,7 +277,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "creative", ko: "창작·도전", ja: "創作・挑戦", phrase: "창작과 도전", template: "work",
-      questionKo: "{when}, 나의 창작과 도전은 어떤 방향으로 나아갈까",
+      questionKo: "{when} 내 창작과 도전은 잘 될까?",
       questionJa: "{when}、私の創作と挑戦はどんな方向に進むかな",
       conditions: [
         cond("stage", "진행 단계", "구상 중", "시작한 지 얼마 안 됨", "한창 진행 중", "마무리를 앞둠", DUNNO),
@@ -283,7 +287,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "negotiation", ko: "협상·대화", ja: "交渉・対話", phrase: "협상과 대화", template: "work",
-      questionKo: "{when}, 중요한 협상과 대화를 어떻게 풀어 가면 좋을까",
+      questionKo: "{when} 중요한 협상, 어떻게 풀어 갈까?",
       questionJa: "{when}、大事な交渉と話し合いをどう進めればいいかな",
       conditions: [
         cond("counterpart", "상대", "상사", "동료", "거래처", "고객", "면접관", DUNNO),
@@ -295,7 +299,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
   group: [
     {
       id: "people", ko: "인간관계", ja: "人間関係", phrase: "인간관계", template: "group",
-      questionKo: "{when}, 우리 모임 안의 인간관계는 어떻게 흘러갈까",
+      questionKo: "{when} 우리 모임 사람들과 잘 지낼 수 있을까?",
       questionJa: "{when}、私たちの集まりの人間関係はどう流れていくかな",
       conditions: [
         groupKind(),
@@ -305,7 +309,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "conflict", ko: "갈등·화해", ja: "対立・仲直り", phrase: "갈등과 화해", template: "group",
-      questionKo: "{when}, 우리 모임의 갈등을 어떻게 풀어 가면 좋을까",
+      questionKo: "{when} 우리 모임 안의 갈등, 어떻게 풀면 좋을까?",
       questionJa: "{when}、私たちの集まりの衝突をどう解いていけばいいかな",
       conditions: [
         groupKind(),
@@ -315,7 +319,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "together", ko: "함께 하는 일", ja: "一緒に進めること", phrase: "함께 하는 일", template: "group",
-      questionKo: "{when}, 우리가 함께하는 일은 어떤 흐름을 탈까",
+      questionKo: "{when} 우리가 함께하는 일, 잘 될까?",
       questionJa: "{when}、私たちが一緒に進めていることはどう流れていくかな",
       conditions: [
         cond("kind", "함께 하는 일", "프로젝트", "팀 과제", "행사 준비", "모임 운영", "함께 하는 사업", DUNNO),
@@ -325,7 +329,7 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
     },
     {
       id: "mood", ko: "모임의 분위기", ja: "集まりの雰囲気", phrase: "모임의 분위기", template: "group",
-      questionKo: "{when}, 우리 모임의 분위기는 어떻게 흘러갈까",
+      questionKo: "{when} 우리 모임 분위기는 어떨까?",
       questionJa: "{when}、私たちの集まりの雰囲気はどう流れていくかな",
       conditions: [
         groupKind(),

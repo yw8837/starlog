@@ -14,7 +14,7 @@ import {
   useFlowState,
   withFlags,
 } from "./flowState";
-import { CUSTOM_MAX } from "./question";
+import { CUSTOM_MAX, WHO_MAX } from "./question";
 
 const CONTACT = { who: "us", topicId: "contact", when: "month" } as const;
 const MONEY = { who: "me", topicId: "money", when: "week" } as const;
@@ -65,6 +65,15 @@ describe("sanitizeFlow", () => {
   it("keeps 누구 detail only for someone other than 나", () => {
     expect(sanitizeFlow({ ...MONEY, whoText: "엄마" }).whoText).toBeUndefined();
     expect(sanitizeFlow({ ...CONTACT, whoText: "엄마" }).whoText).toBe("엄마");
+    // A name or a role, not a sentence: capped at WHO_MAX like the field.
+    expect(sanitizeFlow({ ...CONTACT, whoText: "가".repeat(WHO_MAX + 5) }).whoText).toHaveLength(WHO_MAX);
+  });
+
+  it("sends a 누구 detail that stays out of the question to the reading anyway", () => {
+    const flow = sanitizeFlow({ ...CONTACT, whoText: "티끌을 얼마나 모아야" });
+    const summary = summarizeFlow(flow)!;
+    expect(summary.question).toBe("이번 달 그 사람에게 먼저 연락해도 될까?");
+    expect(tarotInput(flow, summary).whoText).toBe("티끌을 얼마나 모아");
   });
 
   it("keeps a well-formed draw and drops a malformed one", () => {
@@ -87,7 +96,7 @@ describe("summarizeFlow", () => {
   it("uses only what the user chose, in the topic's condition order", () => {
     const summary = summarizeFlow({ ...CONTACT, conditions: { goal: "가볍게 안부", relation: "알아가는 중" }, note: "" });
     expect(summary).toMatchObject({
-      question: "이번 달, 그 사람에게 먼저 연락해도 될까",
+      question: "이번 달 그 사람에게 먼저 연락해도 될까?",
       template: "relationship-contact",
       conditions: [
         { label: "관계", value: "알아가는 중" },
@@ -102,7 +111,7 @@ describe("summarizeFlow", () => {
     const base = { conditions: {}, note: "", topicText: "전세 계약", whenText: "다음 주 금요일 면접" };
     expect(summarizeFlow({ ...base, who: "me" })?.template).toBe("self-flow");
     expect(summarizeFlow({ ...base, who: "us", whoText: "엄마" })).toMatchObject({
-      question: "다음 주 금요일 면접, 나와 엄마 사이 전세 계약은 어떻게 될까",
+      question: "다음 주 금요일 면접, 엄마와의 전세 계약은 어떻게 될까?",
       template: "relationship",
       conditions: [],
       custom: true,
@@ -141,7 +150,7 @@ describe("tarotInput", () => {
       topicId: "money",
       whoId: "me",
       whenId: "week",
-      question: "이번 주, 나의 재물 흐름은 어떨까",
+      question: "이번 주 내 재물 흐름은 어떨까?",
       conditions: [{ label: "지금 상황", value: "지금은 수입이 없음" }],
       note: "쉬는 중",
     });
@@ -152,7 +161,7 @@ describe("tarotInput", () => {
     expect(tarotInput(flow, summarizeFlow(flow)!)).toEqual({
       topicId: "custom",
       whoId: "us",
-      question: "다음 주 금요일 면접, 나와 엄마 사이 전세 계약은 어떻게 될까",
+      question: "다음 주 금요일 면접, 엄마와의 전세 계약은 어떻게 될까?",
       conditions: [],
       topicText: "전세 계약",
       whoText: "엄마",

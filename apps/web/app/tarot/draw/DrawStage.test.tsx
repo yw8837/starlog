@@ -47,7 +47,7 @@ describe("DrawStage deals through the server", () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify(DEALT), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
     render(<DrawStage instant />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("이번 주, 나의 재물 흐름은 어떨까");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("이번 주 내 재물 흐름은 어떨까?");
     for (const i of [2, 9, 15]) fireEvent.click(fanCards()[i]!);
     const picks = pickedCards().map((b) => Number(b.dataset.fanIndex));
     expect(status()).toBe("모두 골랐어요");

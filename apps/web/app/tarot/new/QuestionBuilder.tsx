@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { CustomField } from "@/components/ui/CustomField";
 import { EMPTY_FLOW, WHEN_OPTIONS, WHO_OPTIONS, allowedWhens, builderTopics, findTopic, summarizeFlow, useFlowState, type FlowState } from "@/lib/flowState";
-import { CUSTOM_MAX } from "@/lib/question";
+import { CUSTOM_MAX, WHO_MAX } from "@/lib/question";
 import f from "../flow.module.css";
 
 /**
@@ -71,13 +71,14 @@ export function QuestionBuilder() {
             </Chip>
           ))}
         </div>
-        {/* 나 needs no detail; for anyone else a name or role makes the reading specific. */}
+        {/* 나 needs no detail; for anyone else a name or role makes the reading specific. A short
+            one goes into the question; anything else only reaches the reading (lib/question.ts). */}
         {state.who && state.who !== "me" ? (
           <CustomField
             label="누구인지 더 적기"
-            placeholder="누구인지 더 적기 (예: 엄마, 팀장님, 전 남친)"
+            placeholder="누구인지 (예: 엄마, 팀장님, 전 남친)"
             value={state.whoText ?? ""}
-            maxLength={CUSTOM_MAX}
+            maxLength={WHO_MAX}
             onChange={(whoText) => update((prev) => ({ ...prev, whoText }))}
           />
         ) : null}

@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { TOPICS_BY_WHO, type TopicDef, type When, type Who } from "@starlog/core";
-import { CUSTOM_MAX, cleanPart, composeFlowQuestion } from "./question";
+import { CUSTOM_MAX, WHO_MAX, cleanPart, composeFlowQuestion } from "./question";
 import type { DrawTemplateId, DrawnCardData, TarotInput } from "./reading/types";
 
 /**
@@ -79,9 +79,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
 /** A typed part as the user typed it (capped), or undefined when there is nothing but spaces. */
-function typedPart(value: unknown): string | undefined {
+function typedPart(value: unknown, max = CUSTOM_MAX): string | undefined {
   if (typeof value !== "string") return undefined;
-  const text = value.slice(0, CUSTOM_MAX);
+  const text = value.slice(0, max);
   return text.trim() ? text : undefined;
 }
 
@@ -105,7 +105,7 @@ function sanitizeDraw(value: unknown): FlowDraw | undefined {
 export function sanitizeFlow(value: unknown): FlowState {
   if (!isRecord(value)) return EMPTY_FLOW;
   const who = WHO_OPTIONS.find((option) => option.value === value.who)?.value;
-  const whoText = who && who !== "me" ? typedPart(value.whoText) : undefined;
+  const whoText = who && who !== "me" ? typedPart(value.whoText, WHO_MAX) : undefined;
   // A typed 무엇 replaces the chip (and its situation chips); a typed 언제 replaces the time chip.
   const topicText = who ? typedPart(value.topicText) : undefined;
   const topic = topicText ? undefined : findTopic(who, typeof value.topicId === "string" ? value.topicId : undefined);

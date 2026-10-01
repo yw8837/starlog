@@ -36,7 +36,7 @@ describe("QuestionBuilder", () => {
     render(<QuestionBuilder />);
     fireEvent.change(screen.getByRole("textbox", { name: "무엇을 볼지 직접 쓰기" }), { target: { value: "창업 준비" } });
     expect(screen.getByRole("button", { name: "재물운" }).getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByText("이번 주, 나의 창업 준비는 어떻게 될까")).toBeTruthy();
+    expect(screen.getByText("이번 주 내 창업 준비는 어떻게 될까?")).toBeTruthy();
     // Clearing gives the field its focus back.
     fireEvent.click(screen.getByRole("button", { name: "무엇을 볼지 직접 쓰기 지우기" }));
     expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "무엇을 볼지 직접 쓰기" }));
@@ -44,5 +44,17 @@ describe("QuestionBuilder", () => {
     fireEvent.click(screen.getByRole("button", { name: "재물운" }));
     expect((screen.getByRole("textbox", { name: "무엇을 볼지 직접 쓰기" }) as HTMLInputElement).value).toBe("");
     expect(stored().topicId).toBe("money");
+  });
+
+  it("takes a short 누구 (10 characters) and keeps a sentence typed there out of the question", () => {
+    sessionStorage.setItem(FLOW_KEY, JSON.stringify({ who: "us", topicId: "crush", when: "week", conditions: {}, note: "" }));
+    render(<QuestionBuilder />);
+    const field = screen.getByRole("textbox", { name: "누구인지 더 적기" }) as HTMLInputElement;
+    expect(field.maxLength).toBe(10);
+    expect(field.placeholder).toBe("누구인지 (예: 엄마, 팀장님, 전 남친)");
+    fireEvent.change(field, { target: { value: "티끌을 얼마나 모아" } });
+    expect(screen.getByText("이번 주 그 사람과 나 사이는 어떻게 될까?")).toBeTruthy();
+    fireEvent.change(field, { target: { value: "엄마" } });
+    expect(screen.getByText("이번 주 엄마와 나 사이는 어떻게 될까?")).toBeTruthy();
   });
 });

@@ -52,11 +52,11 @@ async function buildMoneyQuestion(page: Page, info: TestInfo) {
   await expect(page.getByRole("textbox", { name: "누구인지 더 적기" })).toHaveCount(0);
   await page.getByRole("button", { name: "재물운" }).click();
   await page.getByRole("button", { name: "이번 주" }).click();
-  await expect(page.getByText("이번 주, 나의 재물 흐름은 어떨까")).toBeVisible();
+  await expect(page.getByText("이번 주 내 재물 흐름은 어떨까?")).toBeVisible();
   // A typed 언제 replaces the chip; the question updates from it.
   await page.getByRole("textbox", { name: "언제인지 직접 쓰기" }).fill("다음 주 금요일 면접");
   await expect(page.getByRole("button", { name: "이번 주" })).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByText("다음 주 금요일 면접, 나의 재물 흐름은 어떨까")).toBeVisible();
+  await expect(page.getByText("다음 주 금요일 면접, 내 재물 흐름은 어떨까?")).toBeVisible();
   await expect(page.getByText("11/30")).toBeVisible();
   await shot(page, info, "01-question-typed-when");
   await page.getByRole("button", { name: "다음" }).click();
@@ -89,7 +89,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   const cards = await drawThree(page);
 
   await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("다음 주 금요일 면접, 나의 재물 흐름은 어떨까");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("다음 주 금요일 면접, 내 재물 흐름은 어떨까?");
   const spread = page.getByRole("complementary", { name: "뽑은 카드" });
   for (const card of cards) await expect(spread.locator(`img[src*="/cards/${card.cardId}"]`)).toBeVisible();
 
@@ -113,7 +113,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await unlock.click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: 60_000 });
   const readingUrl = page.url();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("다음 주 금요일 면접, 나의 재물 흐름은 어떨까");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("다음 주 금요일 면접, 내 재물 흐름은 어떨까?");
   await expect(page.getByText("한 줄 결론")).toBeVisible();
   const verdict = await page.locator("#verdict-label + p").innerText();
   for (const card of cards) await expect(page.locator(`img[src*="/cards/${card.cardId}"]`).first()).toBeVisible();
@@ -149,7 +149,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await page.goto("/story");
   const records = page.getByRole("list", { name: "기록 목록" }).getByRole("listitem");
   await expect(records).toHaveCount(1);
-  await expect(records.first()).toContainText("다음 주 금요일 면접, 나의 재물 흐름은 어떨까");
+  await expect(records.first()).toContainText("다음 주 금요일 면접, 내 재물 흐름은 어떨까?");
   await expect(records.first()).toContainText(verdict.slice(0, 10));
   await records.first().getByRole("link").click();
   await expect(page).toHaveURL(readingUrl, { timeout: NAV });
@@ -185,7 +185,7 @@ test("a typed 무엇 with a named person reads with the 누구 chip's spread", a
   // Typing replaced the chip.
   await expect(page.getByRole("button", { name: "연락", exact: true })).toHaveAttribute("aria-pressed", "false");
   await page.getByRole("textbox", { name: "언제인지 직접 쓰기" }).fill("다음 주 금요일 면접");
-  await expect(page.getByText("다음 주 금요일 면접, 나와 엄마 사이 전세 계약은 어떻게 될까")).toBeVisible();
+  await expect(page.getByText("다음 주 금요일 면접, 엄마와의 전세 계약은 어떻게 될까?")).toBeVisible();
   await shot(page, info, "06-question-custom");
   await page.getByRole("button", { name: "다음" }).click();
   // A typed topic has no situation chips: only the note, with a neutral example.

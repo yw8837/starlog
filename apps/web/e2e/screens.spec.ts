@@ -42,7 +42,7 @@ const CONTACT_INPUT = {
   topicId: "contact",
   whoId: "us",
   whenId: "month",
-  question: "이번 달, 그 사람에게 먼저 연락해도 될까",
+  question: "이번 달 그 사람에게 먼저 연락해도 될까?",
   conditions: [
     { label: "관계", value: "알아가는 중" },
     { label: "최근 연락", value: "뜸해짐" },
