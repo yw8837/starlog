@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import legal from "@/components/legal/legal.module.css";
 import { Footer } from "@/components/layout/Footer";
+import { TabBar, type TabId } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { Stepper } from "@/components/tarot/Stepper";
 import { InfoIcon } from "./icons";
@@ -12,17 +13,21 @@ type InfoPageProps = {
   /** Small spaced caps line above the title. */
   eyebrow?: string;
   lead?: ReactNode;
+  /** The desktop header's pill to light (/faq has one); phones keep the back bar only. */
+  tab?: TabId;
   children: ReactNode;
 };
 
 /**
  * Frame for the service pages (/about, /how, /help, /faq): the policy pages' reading column and
- * back bar, with an eyebrow over the one <h1>.
+ * back bar, with an eyebrow over the one <h1>. Desktop adds the site header, so the header's FAQ
+ * pill never leads to a page without it.
  */
-export function InfoPage({ title, eyebrow, lead, children }: InfoPageProps) {
+export function InfoPage({ title, eyebrow, lead, tab, children }: InfoPageProps) {
   return (
     <div className="page-shell">
       <NightSky fixed moon={false} seed={31} />
+      <TabBar active={tab} only="desktop" />
       <main className={legal.col}>
         <Stepper label={title} backHref="/" backLabel="홈으로" />
         <article className={`${legal.doc} ${s.doc}`} aria-labelledby="doc-title">

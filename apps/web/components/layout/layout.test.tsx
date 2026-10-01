@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SITE } from "@/lib/config";
@@ -14,18 +16,56 @@ vi.mock("@/lib/config", async (importOriginal) => {
 afterEach(cleanup);
 
 describe("TabBar", () => {
-  it("is the named main navigation with four tabs", () => {
+  // Two variants share the name; CSS shows the bottom bar below 1024px and the header pills above.
+  const navs = () => screen.getAllByRole("navigation", { name: "주요 메뉴" });
+  const pills = () => navs()[0]!;
+  const bar = () => navs()[1]!;
+  const texts = (nav: HTMLElement) => [...nav.querySelectorAll("a")].map((a) => a.textContent);
+  const hrefs = (nav: HTMLElement) => [...nav.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+
+  it("is a header: the wordmark home link, the desktop pills, then the phone bottom bar", () => {
     render(<TabBar active="story" />);
-    const nav = screen.getByRole("navigation", { name: "주요 메뉴" });
-    const links = [...nav.querySelectorAll("a")];
-    expect(links.map((a) => a.textContent)).toEqual(["홈", "내 기록", "가이드", "내 정보"]);
-    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/", "/story", "/guide/tarot", "/me"]);
+    const header = screen.getByRole("banner");
+    expect(header.querySelector("a")?.getAttribute("href")).toBe("/");
+    expect(screen.getByRole("link", { name: "스타로그 홈" })).toBeTruthy();
+    expect(navs()).toHaveLength(2);
   });
 
-  it("marks only the active tab as the current page", () => {
+  it("desktop pills: 홈 · 가이드 · FAQ · 내 기록 · 내 정보", () => {
     render(<TabBar active="story" />);
-    expect(screen.getByRole("link", { name: "내 기록" }).getAttribute("aria-current")).toBe("page");
-    for (const name of ["홈", "가이드", "내 정보"]) expect(screen.getByRole("link", { name }).hasAttribute("aria-current")).toBe(false);
+    expect(texts(pills())).toEqual(["홈", "가이드", "FAQ", "내 기록", "내 정보"]);
+    expect(hrefs(pills())).toEqual(["/", "/guide/tarot", "/faq", "/story", "/me"]);
+  });
+
+  it("phone bottom bar: four tabs within thumb reach", () => {
+    render(<TabBar active="story" />);
+    expect(texts(bar())).toEqual(["홈", "내 기록", "가이드", "내 정보"]);
+    expect(hrefs(bar())).toEqual(["/", "/story", "/guide/tarot", "/me"]);
+  });
+
+  it("marks only the active tab as the current page, in both variants", () => {
+    render(<TabBar active="story" />);
+    for (const nav of navs()) {
+      const current = [...nav.querySelectorAll("a")].filter((a) => a.getAttribute("aria-current") === "page");
+      expect(current.map((a) => a.textContent)).toEqual(["내 기록"]);
+    }
+  });
+
+  it("desktop only: the header without the bottom bar (pages that keep a back bar on phones)", () => {
+    render(<TabBar active="faq" only="desktop" />);
+    expect(navs()).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "FAQ" }).getAttribute("aria-current")).toBe("page");
+  });
+
+  it("hides each variant at the other width", () => {
+    const file = ["apps/web/components/layout/TabBar.module.css", "components/layout/TabBar.module.css"]
+      .map((path) => resolve(process.cwd(), path))
+      .find((path) => existsSync(path));
+    const css = readFileSync(file ?? "", "utf8");
+    const desktop = css.slice(css.indexOf("@media (min-width: 1024px)"));
+    expect(css).toMatch(/\.top \{\s*display: none;/);
+    expect(desktop).toMatch(/\.bar \{\s*display: none;/);
+    expect(desktop).toMatch(/\.pill \{[^}]*min-height: 44px/);
   });
 });
 

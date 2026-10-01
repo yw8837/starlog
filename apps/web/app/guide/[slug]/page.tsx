@@ -62,6 +62,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={41} moon={false} />
+      <TabBar active="guide" />
       <main className="page-col page-wide">
         <article className={s.article}>
           <Stepper label={`${tab} 가이드`} backHref={guideIndexPath(article.category)} backLabel={`${tab} 가이드 목록으로`} />
@@ -117,7 +118,6 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
         </article>
       </main>
       <Footer />
-      <TabBar active="guide" />
     </div>
   );
 }

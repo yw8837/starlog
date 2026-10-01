@@ -18,7 +18,7 @@ export default function FaqPage() {
   const groups = faqGroups();
 
   return (
-    <InfoPage eyebrow="FAQ" title={page.title} lead="처음 쓰기 전에 많이 묻는 것부터 모았어요.">
+    <InfoPage eyebrow="FAQ" title={page.title} lead="처음 쓰기 전에 많이 묻는 것부터 모았어요." tab="faq">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(faqJsonLd(groups)) }} />
 
       {groups.map((group) => (

@@ -12,11 +12,11 @@ export default function StoryPage() {
     // Phones get a floating 새로 물어보기 button (.with-fab keeps the footer clear of it).
     <div className="page-shell with-tabbar with-fab">
       <NightSky fixed seed={23} />
+      <TabBar active="story" />
       <main className="page-col page-wide">
         <StoryView />
       </main>
       <Footer />
-      <TabBar active="story" />
     </div>
   );
 }

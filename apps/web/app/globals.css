@@ -18,6 +18,12 @@
   --el-earth: #e3c07a;
   --el-metal: #d9d9e3;
   --el-water: #7fa7e8;
+  /* Category dots (guide tabs, /help chips, home guide groups): one colour per topic everywhere. */
+  --tone-start: #cfc6ff;
+  --tone-tarot: var(--gold);
+  --tone-saju: var(--el-wood);
+  --tone-records: var(--el-water);
+  --tone-benefits: var(--el-fire);
   /* Focus ring; paper surfaces switch it to navy so it stays visible on #F7EFE0. */
   --focus-ring: var(--gold);
   /* Error text on the night sky (≥ 4.5:1 on --night-0). */
@@ -35,8 +41,11 @@
 
   /* layout */
   --col-max: 480px;
+  /* Desktop content column: home, header and footer share it. */
+  --content-max: 1040px;
   --gutter: 20px;
   --tab-h: 76px;
+  --header-h: 76px;
 }
 
 *,
@@ -162,6 +171,13 @@ a {
 /* Reserve room for the fixed tab bar. */
 .with-tabbar {
   padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Desktop: the tab bar is the header's pill row, so nothing is fixed at the bottom. */
+@media (min-width: 1024px) {
+  .with-tabbar {
+    padding-bottom: 0;
+  }
 }
 
 /* Phones: a floating button sits above the tab bar, so the page end (the footer) clears it too. */

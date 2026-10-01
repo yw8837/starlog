@@ -25,6 +25,7 @@ export default async function ChapterPage({ params }: PageProps<"/chapter/[id]">
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed moon={false} />
+      <TabBar active="story" />
       <main className="page-col page-wide">
         {id === "sample" ? (
           <>
@@ -37,7 +38,6 @@ export default async function ChapterPage({ params }: PageProps<"/chapter/[id]">
         )}
       </main>
       <Footer />
-      <TabBar active="story" />
     </div>
   );
 }

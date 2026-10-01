@@ -12,12 +12,12 @@ export default function MePage() {
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={31} />
+      <TabBar active="me" />
       <main className="page-col page-wide">
         {/* Balances are fixture data until payments exist; the beta shows none. */}
         <MeView wallet={SITE.features.payments ? WALLET_FIXTURE : null} />
       </main>
       <Footer />
-      <TabBar active="me" />
     </div>
   );
 }
