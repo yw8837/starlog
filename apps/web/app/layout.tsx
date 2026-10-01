@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Gowun_Batang, Noto_Sans_KR } from "next/font/google";
 import { CharacterDefs } from "@/components/characters/defs";
 import { RouteTracker } from "@/components/layout/RouteTracker";
+import { VersionCheck } from "@/components/layout/VersionCheck";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <CharacterDefs />
         {children}
         <RouteTracker />
+        <VersionCheck />
       </body>
     </html>
   );
