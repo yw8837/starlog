@@ -35,7 +35,7 @@ describe("robots", () => {
   const disallow = rules.flatMap((rule) => (Array.isArray(rule.disallow) ? rule.disallow : rule.disallow ? [rule.disallow] : []));
 
   it("keeps the API and personal pages out of crawlers", () => {
-    for (const path of ["/api", "/chapter", "/story", "/me", "/dev", "/invite"]) expect(disallow).toContain(path);
+    for (const path of ["/api", "/chapter", "/story", "/me", "/dev", "/invite", "/bonds", "/ranking", "/b/"]) expect(disallow).toContain(path);
   });
 
   it("does not block the public pages and points at the sitemap", () => {

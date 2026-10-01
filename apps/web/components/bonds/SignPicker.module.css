@@ -1,0 +1,96 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.cell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 14px 6px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  color: var(--ink);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 120ms ease, transform 120ms ease, background-color 120ms ease;
+}
+
+.cell:hover:not(:disabled) {
+  border-color: var(--line-strong);
+}
+
+.cell:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.cell[aria-pressed="true"] {
+  border-color: var(--gold);
+  background:
+    radial-gradient(90% 70% at 50% 35%, rgba(243, 220, 161, 0.2), transparent 70%),
+    var(--glass);
+  box-shadow: 0 0 0 1px var(--gold) inset;
+}
+
+.cell:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.cell[data-mine] {
+  border-color: rgba(243, 220, 161, 0.45);
+}
+
+.badge {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  padding: 0 8px;
+  border-radius: 9px;
+  background: var(--gold);
+  color: #2a1b4d;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.art {
+  width: 100%;
+  max-width: 88px;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.note {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.3;
+}

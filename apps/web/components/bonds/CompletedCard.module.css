@@ -1,0 +1,69 @@
+.card {
+  position: relative;
+  justify-items: center;
+  text-align: center;
+}
+
+.cheer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: -6px;
+}
+
+.title {
+  font-size: var(--fs-h1);
+}
+
+.en {
+  color: var(--ink-sub);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+.art {
+  width: 100%;
+  max-width: 320px;
+}
+
+.total {
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+}
+
+.total strong {
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.meta {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.ranks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ranks li {
+  padding: 4px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.actions {
+  width: 100%;
+}

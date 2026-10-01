@@ -1,0 +1,233 @@
+.screen {
+  display: grid;
+  gap: 22px;
+  padding: 8px 0 40px;
+}
+
+@media (min-width: 1024px) {
+  .screen {
+    max-width: 560px;
+    margin-inline: auto;
+  }
+}
+
+.head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding-top: 8px;
+}
+
+.headArt {
+  width: 96px;
+}
+
+.title {
+  font-size: var(--fs-title);
+  line-height: 1.3;
+}
+
+.en {
+  color: var(--ink-sub);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+.state {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 32px 0;
+  text-align: center;
+}
+
+.mine {
+  justify-items: center;
+  text-align: center;
+}
+
+.mine > a,
+.mine > button {
+  width: 100%;
+}
+
+.mineArt {
+  width: 100%;
+  max-width: 200px;
+}
+
+.progress {
+  color: var(--ink-sub);
+}
+
+.progress strong {
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  color: var(--ink);
+}
+
+.fold summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ---- boards ---- */
+
+.board {
+  display: grid;
+  gap: 8px;
+}
+
+.rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-areas:
+    "rank name total"
+    "rank date total";
+  align-items: center;
+  column-gap: 10px;
+  min-height: 56px;
+  padding: 8px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+}
+
+.row[data-mine] {
+  border-color: var(--gold);
+  background:
+    linear-gradient(90deg, rgba(243, 220, 161, 0.16), transparent 80%),
+    var(--glass);
+}
+
+.rank {
+  grid-area: rank;
+  color: var(--ink-sub);
+  font-family: var(--font-display), serif;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.row[data-top] .rank {
+  color: var(--gold);
+  font-size: 18px;
+}
+
+.name {
+  grid-area: name;
+  overflow: hidden;
+  color: var(--ink);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.me {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border-radius: 9px;
+  background: var(--gold);
+  color: #2a1b4d;
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  vertical-align: 1px;
+}
+
+.total {
+  grid-area: total;
+  color: var(--gold);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.date {
+  grid-area: date;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.empty {
+  padding: 16px;
+  border: 1px dashed var(--glass-line);
+  border-radius: 14px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
+/* ---- other signs ---- */
+
+.signs ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signChip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 22px;
+  background: var(--glass);
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.signChip:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.signChip[aria-current="page"] {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.signChip:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

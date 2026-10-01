@@ -1,0 +1,382 @@
+.screen {
+  display: grid;
+  gap: 22px;
+  padding: 8px 0 40px;
+}
+
+@media (min-width: 1024px) {
+  .screen {
+    max-width: 560px;
+    margin-inline: auto;
+  }
+}
+
+.state {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 0;
+  text-align: center;
+}
+
+/* ---- intro ---- */
+
+.intro {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.title {
+  font-size: var(--fs-title);
+  line-height: 1.35;
+}
+
+.lead {
+  color: var(--ink-sub);
+  line-height: 1.65;
+}
+
+.en {
+  color: var(--ink-sub);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+.section {
+  display: grid;
+  gap: 10px;
+}
+
+/* ---- the constellation being filled ---- */
+
+.current {
+  justify-items: center;
+  text-align: center;
+}
+
+.currentTitle {
+  font-size: var(--fs-h1);
+}
+
+.art {
+  width: 100%;
+  max-width: 320px;
+}
+
+.progress {
+  font-size: var(--fs-body);
+  color: var(--ink-sub);
+}
+
+.progress strong {
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- invite ---- */
+
+.invite {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  padding-top: 14px;
+  border-top: 1px solid var(--glass-line);
+}
+
+.invite > button,
+.invite > a {
+  width: 100%;
+}
+
+.code {
+  color: var(--ink);
+  font-family: var(--font-display), serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  padding-left: 0.22em;
+}
+
+.inviteTools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* ---- stars ---- */
+
+.emptyStars {
+  padding: 16px;
+  border: 1px dashed var(--glass-line);
+  border-radius: 16px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
+.stars {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.star {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+}
+
+.star[data-new] {
+  border-color: rgba(243, 220, 161, 0.5);
+  box-shadow: 0 0 18px rgba(243, 220, 161, 0.12);
+}
+
+.starHead {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+/* The card thumbnail: TarotCard's sm size narrowed for a list row. */
+.starCard.starCard {
+  --size-w: 52px;
+}
+
+.starText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.starName {
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.slot {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.newTag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border: 1px solid var(--gold);
+  border-radius: 9px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  vertical-align: 1px;
+}
+
+.message {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.score {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.score strong {
+  color: var(--gold);
+  font-size: 16px;
+}
+
+.energy {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.line {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.parts summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.parts summary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.parts ul {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.parts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+.parts li span:last-child {
+  flex: none;
+  color: var(--gold);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.starActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.todayButton {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.todayButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.todayButton:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.todayButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.today {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(243, 220, 161, 0.08);
+}
+
+.todayLine {
+  margin: 4px 0;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+/* ---- folds, lists ---- */
+
+.fold summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fold summary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.top {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.top li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+}
+
+.topRank {
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-weight: 700;
+}
+
+.topName {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topSign {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.topScore {
+  color: var(--gold);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.joinPanel {
+  gap: 10px;
+}
+
+.joinRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.inlineLink {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}

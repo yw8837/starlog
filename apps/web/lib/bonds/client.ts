@@ -1,0 +1,134 @@
+import { computeChart, isSignId, sunSign, type BondBirth, type SignId } from "@starlog/core";
+import { SITE } from "@/lib/config";
+
+/**
+ * Browser side of 별자리 인연: calls to /api/bonds/*, the Korean copy for their error codes, the
+ * invite link and share, and two small per-device memories (my sun sign, the newest star seen).
+ * Birth dates go only into POST bodies, never into URLs or storage.
+ */
+
+export type ApiResult<T> = ({ ok: true } & T) | { ok: false; code: string; field?: string; retryAt?: string };
+
+export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
+  try {
+    const res = await fetch(`/api/bonds/${path}`, {
+      method: body === undefined ? "GET" : "POST",
+      headers: body === undefined ? undefined : { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      cache: "no-store",
+    });
+    const data = (await res.json().catch(() => null)) as ApiResult<T> | null;
+    if (data && typeof data === "object" && "ok" in data) return data;
+    return { ok: false, code: res.status === 404 ? "NOT_FOUND" : "SERVER" };
+  } catch {
+    return { ok: false, code: "NETWORK" };
+  }
+}
+
+const MESSAGES: Record<string, string> = {
+  BAD_CODE: "코드를 다시 확인해 주세요",
+  CHOOSING: "다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요",
+  SELF_JOIN: "내 초대코드로는 내 별자리에 참여할 수 없어요",
+  ALREADY_JOINED: "이 기기로 이미 이 별자리에 참여했어요",
+  DAILY_STAR_LIMIT: "오늘은 이 별자리에 별이 많이 들어왔어요. 내일 다시 참여해 주세요",
+  FILLING_EXISTS: "이미 채우는 별자리가 있어요",
+  SIGN_COMPLETED: "이미 완성한 별자리예요",
+  NO_FILLING: "지금 채우는 별자리가 없어요",
+  COOLDOWN: "새로 채우기는 한 시간에 한 번 할 수 있어요",
+  NOT_FOUND: "찾을 수 없어요. 처음부터 다시 시도해 주세요",
+  NO_OWNER: "별자리 인연을 먼저 시작해 주세요",
+  RATE_LIMIT: "요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요",
+  NETWORK: "연결이 잠시 불안정해요. 다시 시도해 주세요",
+};
+
+const FIELD_MESSAGES: Record<string, string> = {
+  nickname: "이 닉네임은 쓸 수 없어요. 2~10자의 다른 별명을 지어 주세요",
+  message: "한 줄은 40자 안에서, 다른 말로 남겨 주세요",
+  birth: "생년월일을 다시 확인해 주세요",
+};
+
+export function bondsMessage(result: { code: string; field?: string; retryAt?: string }): string {
+  if (result.code === "BAD_INPUT") return (result.field && FIELD_MESSAGES[result.field]) || "입력한 내용을 다시 확인해 주세요";
+  if (result.code === "COOLDOWN" && result.retryAt) return `${MESSAGES.COOLDOWN}. ${clock(Date.parse(result.retryAt))}부터 다시 할 수 있어요`;
+  return MESSAGES[result.code] ?? "지금은 별자리를 불러올 수 없어요. 잠시 뒤에 다시 시도해 주세요";
+}
+
+/** "오후 3:05" in Korean time. */
+export function clock(ms: number): string {
+  return new Intl.DateTimeFormat("ko-KR", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Seoul" }).format(ms);
+}
+
+/** "10월 1일" in Korean time. */
+export function monthDay(ms: number): string {
+  return new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", timeZone: "Asia/Seoul" }).format(ms);
+}
+
+export const inviteUrl = (code: string) => `${SITE.url}/b/${code}`;
+
+export type ShareOutcome = "shared" | "copied" | "failed" | "cancelled";
+
+/** The system share sheet where there is one; otherwise the text and link go to the clipboard. */
+export async function shareLink(text: string, url: string): Promise<ShareOutcome> {
+  const data = { title: SITE.nameKo, text, url };
+  if (typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare(data))) {
+    try {
+      await navigator.share(data);
+      return "shared";
+    } catch (error) {
+      if ((error as { name?: unknown } | null)?.name === "AbortError") return "cancelled";
+    }
+  }
+  return copyText(`${text}\n${url}`);
+}
+
+export async function copyText(text: string): Promise<"copied" | "failed"> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return "copied";
+  } catch {
+    return "failed";
+  }
+}
+
+// ---- per-device memories (best effort; private mode may refuse) ----
+
+const SUN_KEY = "starlog.bonds.sun";
+const SEEN_KEY = "starlog.bonds.seen";
+
+function read(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function write(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // storage unavailable: the badge just does not show
+  }
+}
+
+/** The tropical sun sign of a birth date (lunar dates through their solar day), or null when invalid. */
+export function sunSignOf(birth: BondBirth): SignId | null {
+  try {
+    if (birth.calendar === "solar") return sunSign(birth.month, birth.day);
+    const chart = computeChart({ ...birth, time: null, gender: "female", place: { name: "서울", longitude: 126.978 } });
+    const [, m, d] = chart.solarDate.split("-").map(Number) as [number, number, number];
+    return sunSign(m, d);
+  } catch {
+    return null;
+  }
+}
+
+export const rememberSunSign = (sign: SignId) => write(SUN_KEY, sign);
+export function savedSunSign(): SignId | null {
+  const value = read(SUN_KEY);
+  return isSignId(value) ? value : null;
+}
+
+/** The newest star time this device has seen on the owner page (new stars sparkle until then). */
+export const seenUntil = (): number => Number(read(SEEN_KEY)) || 0;
+export const markSeen = (ms: number) => write(SEEN_KEY, String(ms));

@@ -61,10 +61,12 @@ export interface StarView {
   score: number;
   parts: BondPart[];
   createdAt: number;
+  /** the 인연 카드's "요즘 두 사람 사이" line */
+  line: string;
 }
 
 const constellationView = ({ ownerId: _owner, ...row }: ConstellationRow): ConstellationView => row;
-const starView = ({ friendKey: _key, constellationId: _c, ...star }: StarRow): StarView => star;
+const starView = ({ friendKey: _key, constellationId: _c, ...star }: StarRow): StarView => ({ ...star, line: bondCardLine(star.cardId, star.orientation) });
 
 // ---- helpers ----
 
@@ -411,6 +413,8 @@ export interface RankingView {
   /** the sign the viewer is filling now (any sign) */
   filling: { sign: SignId; filled: number; total: number } | null;
   owner: { nickname: string; rankingPublic: boolean; refillReadyAt: number | null } | null;
+  /** the viewer's invite code, for 초대하기 on this page */
+  invite: { code: string } | null;
 }
 
 export async function rankingView(repo: BondsRepo, now: number, sign: SignId, ownerId: string | null): Promise<RankingView> {
@@ -419,11 +423,12 @@ export async function rankingView(repo: BondsRepo, now: number, sign: SignId, ow
   const owner = ownerId ? await repo.getOwner(ownerId) : null;
   const done = owner ? (await repo.completedOf(owner.id)).find((c) => c.sign === sign) ?? null : null;
   const fillingRow = owner ? await repo.fillingOf(owner.id) : null;
-  const [weekRows, allRows, doneStars, fillingStars] = await Promise.all([
+  const [weekRows, allRows, doneStars, fillingStars, invite] = await Promise.all([
     repo.ranking(sign, since, RANKING_LIMIT),
     repo.ranking(sign, null, RANKING_LIMIT),
     done ? repo.starsOf(done.id) : Promise.resolve([]),
     fillingRow ? repo.starsOf(fillingRow.id) : Promise.resolve([]),
+    owner ? repo.activeInvite(owner.id) : Promise.resolve(null),
   ]);
   const rows = (list: typeof weekRows): RankingRowView[] =>
     list.map((e, i) => ({ rank: i + 1, nickname: e.nickname, total: e.total, completedAt: e.completedAt, mine: e.constellationId === done?.id }));
@@ -441,6 +446,7 @@ export async function rankingView(repo: BondsRepo, now: number, sign: SignId, ow
           refillReadyAt: owner.lastRefillAt !== null && now - owner.lastRefillAt < REFILL_COOLDOWN_MS ? owner.lastRefillAt + REFILL_COOLDOWN_MS : null,
         }
       : null,
+    invite: invite ? { code: invite.code } : null,
   };
 }
 

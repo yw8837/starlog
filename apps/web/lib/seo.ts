@@ -1,8 +1,11 @@
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, guideIndexPath } from "./guide";
 import { INFO_PAGES } from "./infoPages";
 
-/** Personal readings, stories, invites, the account page, dev screens and the API stay out of search (spec §10). */
-export const ROBOTS_DISALLOW = ["/api", "/chapter", "/story", "/me", "/dev", "/invite"] as const;
+/**
+ * Personal readings, stories, invites, the account page, dev screens and the API stay out of search
+ * (spec §10), and so do 별자리 인연's owner page, rankings and friend invites (`/b/<code>`; `/b` itself is noindex).
+ */
+export const ROBOTS_DISALLOW = ["/api", "/chapter", "/story", "/me", "/dev", "/invite", "/bonds", "/ranking", "/b/"] as const;
 
 /**
  * Public, indexable pages: entry points, the guide tabs and articles, the service pages (about, how,

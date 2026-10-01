@@ -1,0 +1,276 @@
+/* Shared pieces of the 별자리 인연 screens: form fields, glass panels, section heads, lists, toasts. */
+
+/* ---- form ---- */
+
+.form {
+  display: grid;
+  gap: 22px;
+}
+
+.group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* A floated <legend> becomes a plain grid item. */
+.label {
+  float: left;
+  width: 100%;
+  padding: 0;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.labelRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.count {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.input::placeholder {
+  color: rgba(201, 193, 234, 0.7);
+  font-weight: 500;
+}
+
+.input:hover {
+  border-color: var(--line-strong);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.input[aria-invalid="true"] {
+  border-color: #ff9aa8;
+}
+
+.codeInput {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.dateRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.dateField {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.unit {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 500;
+}
+
+.selectWrap {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.selectWrap::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.8px solid var(--ink-sub);
+  border-bottom: 1.8px solid var(--ink-sub);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.select {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  margin: 0;
+  padding: 0 30px 0 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  appearance: none;
+  cursor: pointer;
+}
+
+.select:hover {
+  border-color: var(--line-strong);
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.select[aria-invalid="true"] {
+  border-color: #ff9aa8;
+}
+
+.select option {
+  background: #1d1850;
+  color: var(--ink);
+}
+
+.helper {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.55;
+}
+
+.error {
+  color: var(--error);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* ---- panels ---- */
+
+.panel {
+  display: grid;
+  gap: 14px;
+  padding: 20px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.panelGold {
+  border-color: rgba(243, 220, 161, 0.35);
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(243, 220, 161, 0.12), transparent 70%),
+    var(--glass);
+}
+
+.eyebrow {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.sectionTitle {
+  font-size: var(--fs-h2);
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.actionsRow > * {
+  flex: 1 1 140px;
+}
+
+.toast {
+  min-height: 1.5em;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-align: center;
+}
+
+.textButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--ink-sub);
+  font-family: inherit;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.textButton:hover {
+  color: var(--ink);
+}
+
+.textButton:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---- dialog body ---- */
+
+.dialogTitle {
+  padding-right: 36px;
+  font-size: var(--fs-h1);
+}
+
+.dialogText {
+  margin-top: 10px;
+  color: var(--ink-sub);
+  line-height: 1.65;
+}
+
+.dialogActions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
