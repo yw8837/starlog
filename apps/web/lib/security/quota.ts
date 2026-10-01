@@ -36,9 +36,11 @@ export interface NetworkLimits {
   teaser: number;
   followup: number;
   daily: number;
+  /** 오늘의 인연 카드 lines written by the model (lib/bonds/todayLine.ts) */
+  line: number;
 }
 
-const DEFAULT_NETWORK_LIMITS: NetworkLimits = { full: 10, teaser: 40, followup: 60, daily: 20 };
+const DEFAULT_NETWORK_LIMITS: NetworkLimits = { full: 10, teaser: 40, followup: 60, daily: 20, line: 30 };
 
 export function ipLimits(env: NodeJS.ProcessEnv = process.env): NetworkLimits {
   return {
@@ -46,6 +48,7 @@ export function ipLimits(env: NodeJS.ProcessEnv = process.env): NetworkLimits {
     teaser: envInt(env.BETA_IP_TEASER_PER_DAY, DEFAULT_NETWORK_LIMITS.teaser),
     followup: envInt(env.BETA_IP_FOLLOWUPS_PER_DAY, DEFAULT_NETWORK_LIMITS.followup),
     daily: envInt(env.BETA_IP_DAILY_PER_DAY, DEFAULT_NETWORK_LIMITS.daily),
+    line: envInt(env.BETA_IP_LINES_PER_DAY, DEFAULT_NETWORK_LIMITS.line),
   };
 }
 

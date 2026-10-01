@@ -27,7 +27,7 @@ import { dailyStore, logKvError } from "./dailyStore";
  * client for its counters); that is the planned replacement for this module.
  */
 
-export type SpendKind = "full" | "teaser" | "followup" | "daily";
+export type SpendKind = "full" | "teaser" | "followup" | "daily" | "line";
 
 const COUNT_TTL_SECONDS = 36 * 60 * 60;
 const COST_TTL_SECONDS = 48 * 60 * 60;
