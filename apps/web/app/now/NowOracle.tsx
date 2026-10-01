@@ -24,14 +24,74 @@ const QUESTION_MAX = 40;
 const HOLD_MS = 450;
 /** The card is shown face down first, so the turn is seen; the page opens as it turns. */
 const TURN_MS = 250;
+/** One riffle (1.2s) per draw keeps unlimited repeat draws quick. */
+const SHUFFLE_RIFFLES = 1;
 
-const RITUAL = ["고민을 떠올려요 (적어도 좋아요)", "눈을 감고 숨을 한 번 쉬어요", "마음이 가는 카드를 한 장 골라요"];
+/** First visit: the steps show open; afterwards they stay folded behind 사용법 보기. */
+export const HOWTO_SEEN_KEY = "starlog.now.howto";
+
+const HOWTO_STEPS = [
+  { icon: "write", text: "고민을 한 줄 적어요 (마음속으로 떠올리기만 해도 돼요)" },
+  { icon: "card", text: "펼쳐진 카드 중 끌리는 한 장을 골라요" },
+  { icon: "spark", text: "카드가 고민에 건네는 한 문장, 그렇게 읽은 이유, 오늘 해 볼 일이 나와요" },
+] as const;
+
+function howtoSeen(): boolean {
+  try {
+    return window.localStorage.getItem(HOWTO_SEEN_KEY) === "seen";
+  } catch {
+    return false;
+  }
+}
+
+function rememberHowtoSeen(): void {
+  try {
+    window.localStorage.setItem(HOWTO_SEEN_KEY, "seen");
+  } catch {
+    // Private mode or blocked storage: the steps simply open again next time.
+  }
+}
 
 function randomSeed(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 }
 
 const newDeck = () => createDeck(randomSeed(), DEFAULT_REVERSAL_RATE);
+
+const StepIcon = ({ kind }: { kind: (typeof HOWTO_STEPS)[number]["icon"] }) =>
+  kind === "card" ? (
+    <img className={s.stepCard} src="/cards/back.svg" alt="" draggable={false} />
+  ) : (
+    <svg className={s.stepIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {kind === "write" ? (
+        <>
+          <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+          <path d="m13.5 6.5 4 4" />
+        </>
+      ) : (
+        <>
+          <path d="M12 3.5 13.8 10l6.2 2-6.2 2L12 20.5 10.2 14 4 12l6.2-2L12 3.5Z" />
+          <path d="M19 3v3M17.5 4.5h3" />
+        </>
+      )}
+    </svg>
+  );
+
+const Chevron = () => (
+  <svg className={s.chevron} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
+const ShuffleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+    <path d="M3 7h3.5c2 0 3.2 1 4.3 2.6l2.4 3.8C14.3 15 15.5 16 17.5 16H21" />
+    <path d="M3 16h3.5c1.3 0 2.3-.5 3.1-1.3" />
+    <path d="M13.4 8.3C14.2 7.5 15.2 7 16.5 7H21" />
+    <path d="m18 4 3 3-3 3" />
+    <path d="m18 13 3 3-3 3" />
+  </svg>
+);
 
 /** Corner flourish of the answer page, drawn for the top-left corner and mirrored for the others. */
 const Corner = ({ at }: { at: "tl" | "tr" | "bl" | "br" }) => (
@@ -59,19 +119,31 @@ const Emblem = () => (
  */
 export function NowOracle({ instant = false }: NowOracleProps) {
   const [question, setQuestion] = useState("");
-  // Draws so far in this visit; the ritual steps show before the first one only.
-  const [round, setRound] = useState(0);
+  // Shuffles asked for in this visit (한 번 더 뽑기 or 다시 섞기); focus follows them to 바로 펼치기.
+  const [reshuffles, setReshuffles] = useState(0);
   const [deck, setDeck] = useState<DeckState | null>(null);
   const [phase, setPhase] = useState<Phase>(instant ? "pick" : "shuffle");
   const [picked, setPicked] = useState<number[]>([]);
   const [draw, setDraw] = useState<NowDraw | null>(null);
   const [turned, setTurned] = useState(false);
+  // Open on the server and on a first visit; folded once the browser says the steps were seen.
+  const [howtoOpen, setHowtoOpen] = useState(true);
+  const [aboutOpen, setAboutOpen] = useState(false);
   const answerRef = useRef<HTMLHeadingElement>(null);
+  const howtoToggleRef = useRef<HTMLButtonElement>(null);
+  const reshuffleRef = useRef<HTMLDivElement>(null);
 
-  // A fresh random deck per visit, made in the browser only.
+  // A fresh random deck per visit, made in the browser only; the steps fold for a returning visitor.
   useEffect(() => {
     setDeck(newDeck());
+    if (howtoSeen()) setHowtoOpen(false);
   }, []);
+
+  // After 다시 섞기 the button is gone while the deck shuffles; bring focus back once the fan is out.
+  useEffect(() => {
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (phase === "pick" && reshuffles > 0 && lost) reshuffleRef.current?.querySelector("button")?.focus();
+  }, [phase, reshuffles]);
 
   // Picked: hold the raised card a moment, show it face down, then turn it and open the page.
   useEffect(() => {
@@ -86,9 +158,12 @@ export function NowOracle({ instant = false }: NowOracleProps) {
     return () => window.clearTimeout(timer);
   }, [phase, instant]);
 
-  // The answer takes focus once it is there, so it is read out and in view.
+  // The answer takes focus once it is there, so it is read out and in view. Having seen one
+  // answer counts as having learned the steps.
   useEffect(() => {
-    if (turned) answerRef.current?.focus();
+    if (!turned) return;
+    answerRef.current?.focus();
+    rememberHowtoSeen();
   }, [turned]);
 
   const pick = (index: number) => {
@@ -97,14 +172,31 @@ export function NowOracle({ instant = false }: NowOracleProps) {
     setDraw(drawNow(deck, index, Math.random()));
   };
 
-  const again = () => {
+  /** A new random deck, shuffled again (the gentle version under reduced motion). */
+  const shuffleAgain = () => {
     setDeck(newDeck());
     setPicked([]);
     setDraw(null);
     setTurned(false);
-    setRound((n) => n + 1);
+    setReshuffles((n) => n + 1);
     setPhase(instant ? "pick" : "shuffle");
+  };
+
+  const reshuffle = () => {
+    if (phase !== "pick" || picked.length > 0) return;
+    shuffleAgain();
+  };
+
+  const again = () => {
+    setHowtoOpen(false);
+    shuffleAgain();
     window.scrollTo({ top: 0 });
+  };
+
+  const closeHowto = () => {
+    setHowtoOpen(false);
+    rememberHowtoSeen();
+    howtoToggleRef.current?.focus();
   };
 
   const card = draw ? getCard(draw.cardId) : null;
@@ -128,15 +220,36 @@ export function NowOracle({ instant = false }: NowOracleProps) {
 
       {phase !== "reveal" ? (
         <>
-          {round === 0 ? (
-            <ol className={s.ritual} aria-label="뽑는 순서">
-              {RITUAL.map((step, i) => (
-                <li key={step} className={s.step} data-moon={i}>
-                  {step}
-                </li>
-              ))}
-            </ol>
-          ) : null}
+          <section className={s.howto} aria-label="지금의 한 장 사용법">
+            <button
+              ref={howtoToggleRef}
+              type="button"
+              className={s.howtoToggle}
+              aria-expanded={howtoOpen}
+              aria-controls="now-howto-steps"
+              onClick={() => setHowtoOpen((open) => !open)}
+            >
+              <span>사용법 보기</span>
+              <Chevron />
+            </button>
+            <div id="now-howto-steps" className={s.howtoPanel} hidden={!howtoOpen}>
+              <ol className={s.steps}>
+                {HOWTO_STEPS.map((step) => (
+                  <li key={step.icon} className={s.step}>
+                    <span className={s.stepMark} aria-hidden="true">
+                      <StepIcon kind={step.icon} />
+                    </span>
+                    <span>{step.text}</span>
+                  </li>
+                ))}
+              </ol>
+              <div className={s.howtoDone}>
+                <Button variant="secondary" size="md" onClick={closeHowto}>
+                  알겠어요
+                </Button>
+              </div>
+            </div>
+          </section>
 
           <div className={s.ask}>
             <div className={s.askHead}>
@@ -170,12 +283,20 @@ export function NowOracle({ instant = false }: NowOracleProps) {
           <div className={s.stage}>
             {phase === "shuffle" ? (
               <div className={s.arc}>
-                <ShuffleStage onDone={() => setPhase("pick")} focusSkip={round > 0} />
+                <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffles > 0} riffles={SHUFFLE_RIFFLES} />
               </div>
             ) : deck ? (
               <div className={s.arc}>
                 {/* Keyed by the deck, so every new draw deals out afresh. */}
                 <CardFan key={deck.seed} picked={picked} max={1} onPick={pick} />
+                {/* After the fan in the tab order; drawn over the fan's hollow. */}
+                {picked.length === 0 ? (
+                  <div ref={reshuffleRef} className={s.reshuffle}>
+                    <Button variant="secondary" size="md" onClick={reshuffle} trailing={<ShuffleIcon />}>
+                      다시 섞기
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -243,6 +364,39 @@ export function NowOracle({ instant = false }: NowOracleProps) {
           ) : null}
         </section>
       ) : null}
+
+      <section className={s.about}>
+        <div className={s.aboutHead}>
+          <button
+            id="now-about-toggle"
+            type="button"
+            className={s.aboutToggle}
+            aria-expanded={aboutOpen}
+            aria-controls="now-about-panel"
+            onClick={() => setAboutOpen((open) => !open)}
+          >
+            <span>어떻게 답이 나오나요?</span>
+            <Chevron />
+          </button>
+        </div>
+        <div id="now-about-panel" role="region" aria-labelledby="now-about-toggle" className={s.aboutPanel} hidden={!aboutOpen}>
+          <ul className={s.aboutList}>
+            <li>78장의 카드가 정방향과 역방향마다 그림 속 장면에 맞춘 답 문장을 갖고 있어요. 카드 지식으로 미리 준비한 답이에요.</li>
+            <li>고른 카드와 방향에 맞는 문장 가운데 하나가 나와요.</li>
+            <li>답은 가 보기, 조금 더 지켜보기, 다른 길도 살펴보기 가운데 한쪽으로 기울어요.</li>
+            <li>
+              횟수 제한 없이 무료예요. 다만 같은 고민으로 여러 번 다시 뽑기보다 처음 나온 카드를 곱씹어 보길 권해요.{" "}
+              <Link href="/guide/redrawing-same-question" className={s.aboutLink}>
+                같은 질문으로 다시 뽑아도 될까요?
+              </Link>
+            </li>
+            <li>건강, 돈, 법률처럼 무거운 결정은 꼭 전문가와 상의해 주세요.</li>
+          </ul>
+          <Link href="/guide/now-card-how-to" className={s.aboutMore}>
+            더 자세히: 지금의 한 장 사용법 <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

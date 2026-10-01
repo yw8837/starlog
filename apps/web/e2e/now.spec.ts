@@ -49,14 +49,25 @@ async function shot(page: Page, name: string, fullPage = false) {
   await page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage });
 }
 
-test("지금의 한 장: a question, one card, an answer from the DB and the upsell", async ({ page }) => {
+test("지금의 한 장: how-to, a question, a short shuffle, one card, an answer from the DB and the upsell", async ({ page }) => {
   await page.goto("/now");
   await expect(page.getByRole("heading", { level: 1, name: "지금의 한 장" })).toBeVisible();
   await expect(page.getByText("타로가 건네는 한 문장")).toBeVisible();
-  await expect(page.getByRole("list", { name: "뽑는 순서" }).getByRole("listitem")).toHaveCount(3);
 
+  // First visit: the three steps are open; 알겠어요 folds them behind 사용법 보기.
+  const howto = page.getByRole("region", { name: "지금의 한 장 사용법" });
+  const toggle = howto.getByRole("button", { name: "사용법 보기" });
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(howto.getByRole("listitem")).toHaveCount(3);
+  await howto.getByRole("button", { name: "알겠어요" }).click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(howto.getByRole("listitem")).toHaveCount(0);
+  await expect(toggle).toBeFocused();
+
+  // The shuffle is one riffle: the fan is out well within 2 seconds without skipping it.
   await page.getByLabel("고민 한 줄").fill("오늘 먼저 연락해도 될까?");
-  await openFan(page);
+  await expect(page.locator("[data-fan-index]")).toHaveCount(21, { timeout: 2500 });
+  await settleAnimations(page);
   await pickFanCard(page, 10);
 
   const answer = page.getByRole("heading", { level: 2 });
@@ -71,17 +82,36 @@ test("지금의 한 장: a question, one card, an answer from the DB and the ups
   await expect(upsell).toBeVisible();
   await expect(upsell).toHaveAttribute("href", "/tarot/new?new=1");
 
-  // 한 번 더 뽑기: a new shuffle, the question kept, the ritual steps skipped.
+  // How answers are made: folded until asked, with the two guide links.
+  const about = page.getByRole("button", { name: "어떻게 답이 나오나요?" });
+  await expect(about).toHaveAttribute("aria-expanded", "false");
+  await about.click();
+  const panel = page.getByRole("region", { name: "어떻게 답이 나오나요?" });
+  await expect(panel).toContainText("카드 지식으로 미리 준비한 답");
+  await expect(panel.getByRole("link", { name: "같은 질문으로 다시 뽑아도 될까요?" })).toHaveAttribute("href", "/guide/redrawing-same-question");
+  await expect(panel.getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ })).toHaveAttribute("href", "/guide/now-card-how-to");
+
+  // 한 번 더 뽑기: the deck shuffles again, the question stays, the steps stay folded.
   await page.getByRole("button", { name: "한 번 더 뽑기" }).click();
+  await expect(page.getByText("카드를 섞고 있어요")).toBeVisible();
   await expect(page.getByLabel("고민 한 줄")).toHaveValue("오늘 먼저 연락해도 될까?");
-  await expect(page.getByRole("list", { name: "뽑는 순서" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "사용법 보기" })).toHaveAttribute("aria-expanded", "false");
+  await openFan(page);
+  // 다시 섞기 before picking deals a new deck.
+  await page.getByRole("button", { name: "다시 섞기" }).click();
   await openFan(page);
   await pickFanCard(page, 4);
   await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+
+  // A later visit keeps the steps folded.
+  await page.reload();
+  await expect(page.getByRole("button", { name: "사용법 보기" })).toHaveAttribute("aria-expanded", "false");
 });
 
 test("지금의 한 장 screens at 375, 360 and 1280 wide @screens", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile", "one sweep sets its own viewports");
+  // Every size is shot as a first visit, with the how-to open.
+  await page.addInitScript(() => window.localStorage.removeItem("starlog.now.howto"));
   for (const size of SIZES) {
     const tag = `${size.width}x${size.height}`;
     await page.setViewportSize(size);
@@ -94,6 +124,7 @@ test("지금의 한 장 screens at 375, 360 and 1280 wide @screens", async ({ pa
     await settleAnimations(page);
     await page.evaluate(() => window.scrollTo(0, 0));
     await shot(page, `${tag}-02-result`);
+    await page.getByRole("button", { name: "어떻게 답이 나오나요?" }).click();
     await shot(page, `${tag}-03-result-full`, true);
   }
 });

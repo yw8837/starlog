@@ -43,42 +43,97 @@
   letter-spacing: 0.02em;
 }
 
-/* The three ritual steps, each led by a moon a little fuller than the one before. */
-.ritual {
-  display: grid;
-  gap: 8px;
-  margin: 18px 0 0;
-  padding: 14px 16px;
+/* How-to: open on a first visit, folded behind 사용법 보기 afterwards. */
+.howto {
+  margin-top: 16px;
   border: 1px solid var(--glass-line);
   border-radius: 16px;
   background: var(--glass);
+}
+
+.howtoToggle,
+.aboutToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  color: var(--gold);
+  font: inherit;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chevron {
+  flex: none;
+  transition: transform 200ms ease;
+}
+
+[aria-expanded="true"] > .chevron {
+  transform: rotate(180deg);
+}
+
+.howtoPanel {
+  padding: 0 16px 14px;
+  animation: fade 300ms ease-out both;
+}
+
+.steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
 
 .step {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: var(--ink);
   font-size: var(--fs-body);
   line-height: 1.5;
 }
 
-.step::before {
-  content: "";
+/* A small picture per step: a pen, a card back, a spark. */
+.stepMark {
+  display: grid;
   flex: none;
-  width: 14px;
-  height: 14px;
-  border: 1.5px solid var(--gold);
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(243, 220, 161, 0.4);
   border-radius: 50%;
+  background: rgba(243, 220, 161, 0.08);
+  color: var(--gold);
 }
 
-.step[data-moon="1"]::before {
-  background: linear-gradient(90deg, transparent 50%, var(--gold) 50%);
+.stepIcon {
+  width: 20px;
+  height: 20px;
 }
 
-.step[data-moon="2"]::before {
-  background: var(--gold);
+.stepCard {
+  width: 14px;
+  height: auto;
+  aspect-ratio: 600 / 1040;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(243, 220, 161, 0.6);
+}
+
+.howtoDone {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
 }
 
 .ask {
@@ -158,6 +213,68 @@
 
 .arc {
   position: relative;
+}
+
+/*
+ * 다시 섞기 sits where the arc's cards meet, as on the tarot draw screen; a night-coloured pill keeps
+ * its label clear of the card tips behind it.
+ */
+.reshuffle {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  z-index: 1;
+  border-radius: 22px;
+  background: rgba(13, 10, 38, 0.88);
+  box-shadow: 0 6px 18px rgba(5, 3, 15, 0.5);
+  transform: translateX(-50%);
+}
+
+/* ---- how answers are made ---- */
+
+.about {
+  margin-top: 28px;
+  border-top: 1px solid var(--glass-line);
+}
+
+.aboutHead {
+  margin-top: 6px;
+}
+
+.aboutToggle {
+  padding: 0;
+  border-radius: 8px;
+  color: var(--ink-sub);
+}
+
+.aboutPanel {
+  padding-bottom: 8px;
+  animation: fade 300ms ease-out both;
+}
+
+.aboutList {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding-left: 18px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.7;
+}
+
+.aboutLink {
+  color: var(--gold);
+}
+
+.aboutMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
 }
 
 /* ---- result ---- */
@@ -394,5 +511,10 @@
   .reading[data-open],
   .after {
     animation: fade 400ms ease-out both !important;
+  }
+
+  .howtoPanel,
+  .aboutPanel {
+    animation: fade 200ms ease-out both !important;
   }
 }

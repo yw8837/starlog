@@ -11,6 +11,8 @@ type ShuffleStageProps = {
   onDone: () => void;
   /** Put focus on "바로 펼치기" when the stage opens (the user asked for this shuffle). */
   focusSkip?: boolean;
+  /** Riffles before the fan opens; a quick repeatable screen (지금의 한 장) uses 1 (1.2s). */
+  riffles?: number;
 };
 
 /** One riffle: the deck splits in two, twelve cards spring back one by one, the pile squares up. */
@@ -24,10 +26,10 @@ const SIDES = ["left", "right"] as const;
 
 /**
  * The deck, cards only, in the fan's own geometry (where its middle card goes): it splits into two
- * stacks that riffle back together twice (~2.4s), then the fan opens out of it. Under reduced
- * motion the stacked deck pulses in place for 0.8s instead. 바로 펼치기 skips either way.
+ * stacks that riffle back together twice by default (~2.4s), then the fan opens out of it. Under
+ * reduced motion the stacked deck pulses in place for 0.8s instead. 바로 펼치기 skips either way.
  */
-export function ShuffleStage({ onDone, focusSkip = false }: ShuffleStageProps) {
+export function ShuffleStage({ onDone, focusSkip = false, riffles = RIFFLES }: ShuffleStageProps) {
   const [beat, setBeat] = useState(0);
   const skipRef = useRef<HTMLDivElement>(null);
   const finish = useEffectEvent(() => onDone());
@@ -37,12 +39,13 @@ export function ShuffleStage({ onDone, focusSkip = false }: ShuffleStageProps) {
       const timer = window.setTimeout(() => finish(), GENTLE_MS);
       return () => window.clearTimeout(timer);
     }
+    const count = Math.max(1, Math.round(riffles));
     const timers = [
-      ...Array.from({ length: RIFFLES - 1 }, (_, i) => window.setTimeout(() => setBeat(i + 1), RIFFLE_MS * (i + 1))),
-      window.setTimeout(() => finish(), RIFFLE_MS * RIFFLES),
+      ...Array.from({ length: count - 1 }, (_, i) => window.setTimeout(() => setBeat(i + 1), RIFFLE_MS * (i + 1))),
+      window.setTimeout(() => finish(), RIFFLE_MS * count),
     ];
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, []);
+  }, [riffles]);
 
   useEffect(() => {
     if (focusSkip) skipRef.current?.querySelector("button")?.focus();
