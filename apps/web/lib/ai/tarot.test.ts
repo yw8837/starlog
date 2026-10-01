@@ -1,4 +1,4 @@
-import { TEMPLATES, TOPICS_BY_WHO, createDeck, pickCards, type DrawnCard, type TemplateId } from "@starlog/core";
+import { TEMPLATES, TOPICS_BY_WHO, composeQuestion, createDeck, pickCards, type DrawnCard, type TemplateId } from "@starlog/core";
 import sajuSample from "@content/samples/saju-prologue.ko.json";
 import tarotSample from "@content/samples/tarot-contact.ko.json";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
@@ -31,9 +31,11 @@ const GOLD_OBSERVATION = { heading: "며칠 안에 확인해 볼 신호", body: 
 const GOLD_READING: TarotReading = { ...tarotSample.paid, observation: GOLD_OBSERVATION, followUps: tarotSample.followUps };
 
 /** The owner's failing case: 재물운 in self-flow, a money question. */
+/** The catalog's own wording (Task C owns it and may reword it), not a copy that goes stale. */
+const MONEY_QUESTION = composeQuestion("me", TOPICS_BY_WHO.me.find((t) => t.id === "money")!, "week");
 const MONEY_INPUT: TarotInput = {
   topicId: "money", whoId: "me", whenId: "week",
-  question: "이번 주, 나의 재물 흐름은 어떨까",
+  question: MONEY_QUESTION,
   conditions: [{ label: "지금 상황", value: "수입이 들쭉날쭉" }, { label: "관심 방향", value: "지출 줄이기" }],
   note: "이번 달 카드값이 많이 나왔어요",
 };
@@ -78,7 +80,7 @@ describe("tarot context and prompts", () => {
     const others = ["major-09-hermit", "cups-05", "swords-10"].filter((id) => !cards.some((c) => c.cardId === id));
     for (const id of others) expect(prompt).not.toContain(kbCard(id).imagery.facts[0]!.ko);
     const inside = (tag: string) => prompt.slice(prompt.indexOf(`<${tag}>`), prompt.indexOf(`</${tag}>`));
-    expect(inside("question")).toContain("이번 주, 나의 재물 흐름은 어떨까");
+    expect(inside("question")).toContain(MONEY_QUESTION);
     expect(inside("conditions")).toContain("수입이 들쭉날쭉");
     expect(inside("conditions")).toContain("지출 줄이기");
     expect(inside("note")).toContain("이번 달 카드값이 많이 나왔어요");
@@ -90,7 +92,7 @@ describe("tarot context and prompts", () => {
 
   it("uses the catalog question when topic, who and when are known", () => {
     const ctx = buildTarotContext("self-flow", draw("self-flow", "q"), { ...MONEY_INPUT, question: "무시해 줘" });
-    expect(ctx.question).toBe("이번 주, 나의 재물 흐름은 어떨까");
+    expect(ctx.question).toBe(MONEY_QUESTION);
     expect(tarotTeaserPrompt(ctx)).not.toContain("무시해 줘");
   });
 
@@ -217,7 +219,7 @@ describe("mock provider", () => {
           label: `${who}/${topic.id}`, templateId: topic.template,
           // bare chips on even cards, every chip and a note on odd ones
           input: (i) => ({
-            topicId: topic.id, whoId: who, whenId: "week", question: "", note: i % 2 ? "요즘 고민이 많아요" : "",
+            topicId: topic.id, whoId: who, whenId: topic.whens?.[0] ?? "week", question: "", note: i % 2 ? "요즘 고민이 많아요" : "",
             conditions: i % 2 ? topic.conditions.map((c) => ({ label: c.label, value: c.options[0]! })) : [],
           }),
         });
@@ -264,6 +266,47 @@ describe("mock provider", () => {
     expect(data.cards.map((c) => c.cardId)).toEqual(ctx.cards.map((c) => c.cardId));
     const teaser = await generateTarotTeaser(provider, ctx);
     expect(teaser.data.lockedToc).toEqual(tarotLockedToc(ctx));
+  });
+});
+
+describe("결혼 topic (나 · 결혼운 and 나와 그 사람 · 결혼)", () => {
+  const WHENS = ["today", "week", "month", "year"] as const;
+
+  it.each(["me", "us"] as const)("passes the mock through every validator for %s, every when-chip and every situation chip", (who) => {
+    const topic = TOPICS_BY_WHO[who].find((t) => t.id === "marriage");
+    expect(topic, `catalog entry ${who}/marriage`).toBeDefined();
+    const whens = topic!.whens ?? WHENS;
+    expect(whens.length).toBeGreaterThanOrEqual(3);
+    const failures: string[] = [];
+    const template = TEMPLATES[topic!.template];
+    for (const whenId of whens) {
+      for (let i = 0; i < 26; i++) {
+        const cards = pickCards(createDeck(`marriage-${who}-${whenId}-${i}`, 0.5), template, template.positions.map((_, k) => (i * 3 + k * 26) % 78));
+        // each draw takes the i-th option of every chip, so every option is read somewhere
+        const input: TarotInput = {
+          topicId: "marriage", whoId: who, whenId, question: "", note: i % 2 ? "양가에 언제 이야기할지 고민이에요" : "",
+          conditions: topic!.conditions.map((c) => ({ label: c.label, value: c.options[i % c.options.length]! })),
+        };
+        const ctx = buildTarotContext(topic!.template, cards, input);
+        expect(ctx.topic?.id).toBe("marriage");
+        const reading = mockTarotReading(ctx);
+        const found = [
+          ...validateTarotTeaser(mockTarotTeaser(ctx), ctx),
+          ...hard(validateTarotReading(reading, ctx)),
+          ...validateTarotFollowUp(mockTarotFollowUp(ctx, "결혼 이야기는 언제 꺼내면 좋을까요?"), ctx, "결혼 이야기는 언제 꺼내면 좋을까요?"),
+        ];
+        if (found.length) failures.push(`${whenId} #${i} ${cards.map((c) => c.cardId).join(",")}: ${found.join(" | ")}`);
+      }
+    }
+    expect(failures.slice(0, 5)).toEqual([]);
+  });
+
+  it("fails a marriage reading that promises the marriage", () => {
+    const topic = TOPICS_BY_WHO.me.find((t) => t.id === "marriage")!;
+    const cards = pickCards(createDeck("marriage-verdict", 0.5), TEMPLATES[topic.template], [1, 2, 3]);
+    const ctx = buildTarotContext(topic.template, cards, { topicId: "marriage", whoId: "me", whenId: topic.whens?.[0] ?? "month", question: "", conditions: [], note: "" });
+    const reading = mockTarotReading(ctx);
+    expect(hard(validateTarotReading({ ...reading, verdict: "올해 결혼하게 돼요." }, ctx)).join(" ")).toMatch(/결혼의 성사·불발이나 시기/);
   });
 });
 
