@@ -15,9 +15,9 @@ export function HomeHero() {
   return (
     <div className={s.hero}>
       <h1 className={s.heroTitle}>
-        <span className={s.heroLine}>마음에 걸리는 걸</span> <span className={s.heroLine}>카드와 사주로 차분히 풀어 봐요</span>
+        <span className={s.heroLine}>연애도 일도 사람 사이도</span> <span className={s.heroLine}>한 줄로 물어보세요</span>
       </h1>
-      <p className={s.heroSub}>타로는 고양이 점성술사가, 사주는 한복 입은 토끼 선생님이 읽어 줘요.</p>
+      <p className={s.heroSub}>타로는 고양이가, 사주는 토끼 선생님이 내 상황에 맞춰 읽어 드려요.</p>
     </div>
   );
 }
@@ -35,7 +35,7 @@ export function TarotEntry() {
           <span className={s.entryTitle}>타로 보기</span>
           <span className={s.entrySub}>카드 3장으로 지금을 봐요</span>
           <span className={s.entryCta}>
-            시작하기
+            카드 세 장 뽑기
             <ChevronIcon size={16} />
           </span>
         </span>
@@ -56,7 +56,7 @@ export function SajuEntry() {
           <span className={s.entryTitle}>사주 보기</span>
           <span className={s.entrySub}>타고난 결로 나를 봐요</span>
           <span className={s.entryCta}>
-            시작하기
+            내 사주 보기
             <ChevronIcon size={16} />
           </span>
         </span>
@@ -126,7 +126,7 @@ export function QuickCards() {
         <TodayIcon />
         <span className={s.quickText}>
           <span className={s.quickTitle}>오늘의 한 장</span>
-          <span className={s.quickSub}>포춘쿠키 속 오늘의 카드</span>
+          <span className={s.quickSub}>카드로 보는 오늘의 운세</span>
           <span className={s.quickTag}>매일 무료</span>
         </span>
       </Link>
