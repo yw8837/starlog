@@ -10,6 +10,7 @@ import s from "../saju.module.css";
 export const metadata: Metadata = {
   title: "사주 보기",
   description: "태어난 날과 시, 태어난 곳으로 사주 명식을 세우고 타고난 결을 차분히 읽어 봐요.",
+  alternates: { canonical: "/saju/new" },
 };
 
 export default function SajuNewPage() {

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { NightSky } from "@/components/sky/NightSky";
 import { QuestionBuilder } from "./QuestionBuilder";
 
-export const metadata: Metadata = { title: "질문 만들기" };
+export const metadata: Metadata = { title: "질문 만들기", alternates: { canonical: "/tarot/new" } };
 
 export default function TarotNewPage() {
   return (

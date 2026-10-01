@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { BondsHomeRow } from "@/components/bonds/BondsHomeRow";
 import { HomeFaq, HomeGuide, HomeHero, QuickCards, SajuEntry, TarotEntry } from "@/components/home/HomeEntries";
 import { HomeCheckin } from "@/components/home/HomeCheckin";
@@ -7,6 +8,13 @@ import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
 import s from "./page.module.css";
+
+// The site's defaults (title, description, og:image) with the home's own address. A page's
+// openGraph replaces the layout's, so the shared fields are repeated here.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: `${SITE.name} · ${SITE.nameKo}`, locale: "ko_KR", url: "/" },
+};
 
 /**
  * Home, the same for every visitor, in reading order: the hero line; 타로 보기 (gold, the one
