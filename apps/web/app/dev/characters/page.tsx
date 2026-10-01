@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { CONSTELLATIONS } from "@starlog/core";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
 import { Dogam } from "@/components/bonds/Dogam";
@@ -39,6 +40,8 @@ function Character({ who, ...props }: { who: Who; outfit: Outfit; expression?: E
 }
 
 export default function CharacterSheetPage() {
+  // A design review sheet: never served by a production build.
+  if (process.env.NODE_ENV === "production") notFound();
   return (
     <div className="page-shell">
       <NightSky />
