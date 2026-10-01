@@ -30,7 +30,7 @@ export default async function RankingPage({ params }: Props) {
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={21} />
       <TabBar />
-      <main className={`page-col ${s.screen}`}>
+      <main className={`page-col page-wide ${s.screen}`}>
         <RankingView sign={sign} />
       </main>
       <Footer />

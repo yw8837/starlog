@@ -69,8 +69,8 @@ export function CompletedCard({ row, ownerNickname, weekRank, allRank, filling, 
         {row.completedAt ? ` · ${monthDay(row.completedAt)} 완성` : ""}
       </p>
       <ul className={s.ranks}>
-        <li>{weekRank ? `이번 주 ${def.ko} ${weekRank}등` : "이번 주 랭킹에는 없어요"}</li>
-        <li>{allRank ? `명예의 전당 ${allRank}등` : "명예의 전당에는 없어요"}</li>
+        <li>{weekRank ? `이번 주 ${def.ko} ${weekRank}위` : "이번 주 랭킹에는 없어요"}</li>
+        <li>{allRank ? `명예의 전당 ${allRank}위` : "명예의 전당에는 없어요"}</li>
       </ul>
       <div className={`${b.actions} ${s.actions}`}>
         <ShareConstellation constellationId={row.id} sign={row.sign} total={row.total} primary={sharePrimary} />

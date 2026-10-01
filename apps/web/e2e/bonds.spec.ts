@@ -141,7 +141,9 @@ test.describe("별자리 인연 · owner", () => {
     await expect(page).toHaveURL(/\/ranking\/aries$/, { timeout: 60_000 });
     await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
     await expect(page.getByRole("button", { name: "새로 채우기" })).toBeVisible();
-    await expect(page.getByRole("region", { name: "이번 주 랭킹" }).getByRole("listitem").first()).toContainText("용우");
+    const board = page.getByRole("tabpanel", { name: "이번 주" });
+    await expect(board.getByRole("list", { name: "1~3위" }).getByRole("listitem").first()).toContainText("용우");
+    await expect(board.getByRole("region", { name: "내 순위" })).toContainText(/내 순위\d+위/);
     await shot(page, "ranking-mine");
 
     await page.getByRole("button", { name: "새로 채우기" }).click();

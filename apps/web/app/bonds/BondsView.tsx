@@ -250,7 +250,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
         <div className={s.moreLinks}>
           <Link href="/ranking" className={s.moreLink}>
             <span className={s.moreTitle}>별자리 리더보드</span>
-            <span className={s.moreSub}>이번 주 별자리마다 1~3등</span>
+            <span className={s.moreSub}>이번 주 별자리마다 1~3위</span>
           </Link>
           <Link href="/lucky" className={s.moreLink}>
             <span className={s.moreTitle}>이번 주 행운 번호</span>
