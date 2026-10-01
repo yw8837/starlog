@@ -36,8 +36,9 @@ const MESSAGE: Record<ErrorCode, string> = {
   RATE_LIMIT: "요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.",
   AI_UNAVAILABLE: "지금은 풀이를 만들 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
   REFUSED: "이 내용으로는 풀이를 만들 수 없어요. 질문이나 메모를 바꿔 다시 시도해 주세요.",
-  QUALITY: "풀이를 제대로 만들지 못했어요. 횟수는 차감되지 않았으니 다시 시도해 주세요.",
-  UPSTREAM: "풀이를 만드는 중에 문제가 생겼어요. 횟수는 차감되지 않았으니 다시 시도해 주세요.",
+  // No promise about counts: the network counter is charged when a generation starts.
+  QUALITY: "풀이를 제대로 만들지 못했어요. 잠시 뒤에 다시 시도해 주세요.",
+  UPSTREAM: "풀이를 만드는 중에 문제가 생겼어요. 잠시 뒤에 다시 시도해 주세요.",
 };
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -235,19 +236,25 @@ export async function fullReadingLimit(request: Request, gate: Gate): Promise<Re
 /** Shown for a per-network limit (many phones can share one carrier IP); the UI may replace it by `scope`. */
 const NETWORK_LIMIT_MESSAGE = "지금 쓰는 인터넷(와이파이·통신사)에서 오늘 열 수 있는 풀이를 모두 썼어요. 내일 다시 열려요.";
 
-/** Kinds that stop when the day's spend cannot be read at all (the expensive ones). */
-const FAIL_CLOSED: ReadonlySet<SpendKind> = new Set(["full", "teaser"]);
+/** Shown when the day's budget is used up (the UI may replace it by `reason`). */
+const BUDGET_MESSAGE = "오늘 준비한 풀이가 모두 나갔어요. 자정에 다시 열려요.";
+
+/** Kinds that stop for everyone, owner included, while the day's spend cannot be trusted (the expensive ones). */
+const CLOSED_FOR_OWNER_TOO: ReadonlySet<SpendKind> = new Set(["full", "teaser"]);
 
 /**
  * The server's own limits before a new generation, counted server-side whatever the cookies say
  * (spend.ts):
- * - 503 once the day's estimated spend reaches 80% of BETA_DAILY_BUDGET_KRW (owners too), and for
- *   full readings and teasers also when KV cannot be read at all (fail closed);
+ * - 503 `reason: "budget"` once the day's estimated spend reaches 80% of BETA_DAILY_BUDGET_KRW
+ *   (owners too);
+ * - 503 while the spend total cannot be trusted ("unknown": KV down, writes failing): full readings
+ *   and teasers for everyone, follow-ups and the daily card for everyone but the owner;
  * - 429 `scope: "network"` once this client's network has used up `kind` today (owners skip it).
  */
 export async function checkServerLimits(gate: Gate, kind: SpendKind, extra: Record<string, unknown> = {}): Promise<Response | null> {
   const budget = await budgetState(gate.now);
-  if (budget === "over" || (budget === "unknown" && FAIL_CLOSED.has(kind))) return errorResponse("AI_UNAVAILABLE");
+  if (budget === "over") return errorResponse("AI_UNAVAILABLE", { reason: "budget", resetsAt: nextKstMidnight(gate.now), message: BUDGET_MESSAGE });
+  if (budget === "unknown" && (!gate.owner || CLOSED_FOR_OWNER_TOO.has(kind))) return errorResponse("AI_UNAVAILABLE");
   if (!gate.owner && (await clientCount(gate.client, kind, gate.now)) >= ipLimits()[kind]) {
     return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, scope: "network", message: NETWORK_LIMIT_MESSAGE });
   }

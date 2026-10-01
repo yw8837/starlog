@@ -62,11 +62,31 @@ export function dailyStore(): Store {
 }
 
 /** A KV failure in the daily flow is logged and skipped: it never turns a reading into an error. */
+const LOG_EVERY_MS = 10_000;
+const logState = new Map<string, { last: number; suppressed: number }>();
+
+/**
+ * Logs a KV failure: every one is counted, but each `evt` writes at most one line per 10 s per
+ * isolate (with how many were suppressed since), so an outage cannot flood the logs.
+ */
+export function logKvError(evt: string, op: string, error: unknown): void {
+  const now = Date.now();
+  const state = logState.get(evt) ?? { last: 0, suppressed: 0 };
+  logState.set(evt, state);
+  if (now - state.last < LOG_EVERY_MS) {
+    state.suppressed++;
+    return;
+  }
+  console.error(JSON.stringify({ evt, op, error: error instanceof Error ? error.constructor.name : typeof error, suppressedSinceLast: state.suppressed }));
+  state.last = now;
+  state.suppressed = 0;
+}
+
 async function safely<T>(op: string, work: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await work();
   } catch (error) {
-    console.error(JSON.stringify({ evt: "daily.kv_error", op, error: error instanceof Error ? error.constructor.name : typeof error }));
+    logKvError("daily.kv_error", op, error);
     return fallback;
   }
 }
@@ -129,4 +149,5 @@ export async function getOrCreateDailyResult(
 export function resetDailyStore(): void {
   memory.clear();
   inFlight.clear();
+  logState.clear();
 }

@@ -119,6 +119,8 @@ function clientIdKey(secret: string): Promise<CryptoKey> {
       return crypto.subtle.importKey("raw", derived, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     })();
     clientIdKeys.set(secret, key);
+    // A failed derivation is not cached: the next request tries again.
+    key.catch(() => clientIdKeys.delete(secret));
   }
   return key;
 }

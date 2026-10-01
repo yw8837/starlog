@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
-import { resetDailyStore } from "@/lib/api/dailyStore";
+import { logKvError, resetDailyStore } from "@/lib/api/dailyStore";
 import { clientKey, ipGroup } from "@/lib/api/http";
-import { BUDGET_TRIP, SpendLedger, clientCount, spentTodayKrw } from "@/lib/api/spend";
+import { BUDGET_TRIP, SpendLedger, clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { keyedHash } from "@/lib/security/sign";
+import { kstDay } from "@/lib/security/quota";
+import { keyedHash, signToken } from "@/lib/security/sign";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as followup } from "./followup/route";
@@ -82,6 +83,7 @@ beforeEach(() => {
   vi.stubEnv("KRW_PER_USD", "1400");
   resetMemoryLimiter();
   resetDailyStore();
+  resetSpendState();
   vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
@@ -202,7 +204,8 @@ describe("global daily spend cap", () => {
     expect(await spent()).toBe(5600); // under the budget, at the trip point
     const over = await d.call(teaser, { drawToken, input: MONEY_INPUT });
     expect(over.status).toBe(503);
-    expect(over.data.code).toBe("AI_UNAVAILABLE");
+    expect(over.data).toMatchObject({ code: "AI_UNAVAILABLE", reason: "budget", message: "오늘 준비한 풀이가 모두 나갔어요. 자정에 다시 열려요." });
+    expect(Date.parse(over.data.resetsAt)).toBeGreaterThan(Date.now());
     expect((await d.call(sajuTeaser, { birth: DEFAULT_SAJU_FORM })).status).toBe(503);
 
     const boss = device("198.51.100.21");
@@ -249,6 +252,37 @@ describe("global daily spend cap", () => {
     expect(await spent()).toBe(1400 + 2800);
   });
 
+  it("releases the reservation of a call that failed before the model began answering", async () => {
+    const ledger = new SpendLedger();
+    ledger.reserve(EXPENSIVE); // a 529 or credit error before message_start: never billed
+    ledger.release();
+    ledger.reserve(HALF);
+    ledger.bill(HALF);
+    await ledger.finish();
+    expect(await spent()).toBe(1400);
+  });
+
+  it("settles a call into the KST day it was reserved in, across midnight", async () => {
+    const beforeMidnight = Date.parse("2026-10-01T14:59:00Z"); // 23:59 KST
+    let now = beforeMidnight;
+    const ledger = new SpendLedger(() => now);
+    ledger.reserve(EXPENSIVE);
+    now = beforeMidnight + 2 * 60_000; // 00:01 KST the next day
+    ledger.bill(HALF);
+    await ledger.finish();
+    expect(Math.round((await spentTodayKrw(beforeMidnight)) ?? -1)).toBe(1400);
+    expect(Math.round((await spentTodayKrw(now)) ?? -1)).toBe(0);
+    expect(kstDay(beforeMidnight)).not.toBe(kstDay(now));
+  });
+
+  it("never rejects its write chain, and logs a failure instead", async () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    const ledger = new SpendLedger(() => Number.NaN); // an unusable clock makes the write throw
+    ledger.reserve(EXPENSIVE);
+    await expect(ledger.finish()).resolves.toBeUndefined();
+    expect(errors.mock.calls.some((args: unknown[]) => String(args[0]).includes('"op":"ledger"'))).toBe(true);
+  });
+
   it("serves a stored daily fortune over budget, but generates no new one", async () => {
     const d = device("198.51.100.23");
     expect((await d.call(daily, {})).status).toBe(200);
@@ -272,6 +306,24 @@ describe("follow-ups per chapter, counted server-side", () => {
     const replay = await d.call(followup, { chapterToken: first, reading: r.data.reading, question: "처음 토큰으로 한 번 더요?" });
     expect(replay.status).toBe(429);
     expect(replay.data).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
+  });
+});
+
+describe("KV error logs", () => {
+  it("write one line per 10 s per event, with how many were suppressed", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(Date.parse("2026-10-01T03:00:00Z"));
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      for (let i = 0; i < 5; i++) logKvError("daily.kv_error", "write", new Error("429"));
+      expect(errors).toHaveBeenCalledTimes(1);
+      vi.setSystemTime(Date.parse("2026-10-01T03:00:11Z"));
+      logKvError("daily.kv_error", "write", new Error("429"));
+      expect(errors).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(String(errors.mock.calls[1]![0]))).toMatchObject({ evt: "daily.kv_error", suppressedSinceLast: 4 });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -309,5 +361,13 @@ describe("client network key", () => {
     expect(id).not.toBe(direct);
     expect(id).toBe(await keyedHash("client:192.0.2.5", SECRET));
     expect(id).not.toBe(await keyedHash("client:192.0.2.5", `${SECRET}x`));
+  });
+
+  it("does not cache a failed subkey derivation", async () => {
+    const secret = `${SECRET}-fresh`;
+    await signToken({ k: "warm" }, secret); // the signing key is cached first
+    vi.spyOn(crypto.subtle, "importKey").mockRejectedValueOnce(new Error("transient"));
+    await expect(keyedHash("client:192.0.2.6", secret)).rejects.toThrow("transient");
+    await expect(keyedHash("client:192.0.2.6", secret)).resolves.toMatch(/^[A-Za-z0-9_-]+$/);
   });
 });

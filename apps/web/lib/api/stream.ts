@@ -84,6 +84,7 @@ export async function respondGeneration(
     signal: abort.signal,
     deadline: Date.now() + budgetMs,
     onReserve: (usage: Parameters<SpendLedger["reserve"]>[0]) => ledger.reserve(usage),
+    onRelease: () => ledger.release(),
     onUsage: (usage: Parameters<SpendLedger["bill"]>[0]) => ledger.bill(usage),
   } satisfies GenerationHooks;
 

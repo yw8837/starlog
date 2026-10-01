@@ -56,6 +56,8 @@ export function buildRequest<T>(task: GenerationTask<T>, maxTokens: number, feed
 /** What the provider uses of an SDK message stream. */
 export interface MessageStreamLike {
   on(event: "text", listener: (delta: string, snapshot: string) => void): unknown;
+  /** every raw event; `message_start` means the model began answering (billing has started) */
+  on(event: "streamEvent", listener: (event: { type: string }) => void): unknown;
   finalMessage(): Promise<BetaMessage>;
 }
 
@@ -64,8 +66,10 @@ export interface MessagesClient {
   beta: { messages: { stream(body: ReturnType<typeof buildRequest>, options?: { signal?: AbortSignal }): MessageStreamLike } };
 }
 
-/** A max_tokens cap raised for a task stays raised for its regeneration (same task object). */
+/** A max_tokens cap raised for a task stays raised for its regeneration (same task object), never past 2×. */
 const raisedCaps = new WeakMap<object, number>();
+
+const OUTPUT_CUT_OFF = "출력이 중간에 끊겼어요. 분량 목표는 그대로 지키면서 JSON을 끝까지 완성해 주세요.";
 
 export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(apiKey)): ReadingProvider {
   return {
@@ -76,13 +80,20 @@ export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(a
       for (let call = 0; call < 2; call++) {
         let message: BetaMessage;
         const body = buildRequest(task, maxTokens, feedback);
-        // Reserved until the call reports its usage; an aborted call never does and stays reserved.
+        const started = Date.now();
+        let answering = false;
+        // Reserved until the call reports its usage. A call that fails before message_start was never
+        // billed and releases it; one cut off after it (disconnect, budget) keeps it.
         hooks.onReserve?.([worstCase(body)]);
         try {
           const stream = sdk.beta.messages.stream(body, hooks.signal ? { signal: hooks.signal } : undefined);
+          stream.on("streamEvent", (event) => {
+            if (event.type === "message_start") answering = true;
+          });
           if (hooks.onText) stream.on("text", (_delta, snapshot) => hooks.onText!(snapshot));
           message = await stream.finalMessage();
         } catch (error) {
+          if (!answering) hooks.onRelease?.();
           // The class name only (SDK errors keep name "Error"); never the message, which may echo the request.
           const kind = error instanceof Error ? error.constructor.name : "unknown";
           const name = error instanceof Anthropic.APIError ? `${kind}:${error.status ?? "-"}` : kind;
@@ -94,26 +105,35 @@ export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(a
         // Branch on stop_reason before reading content (a refusal can come with empty or partial content).
         if (message.stop_reason === "refusal") throw new GenerationError("REFUSED");
         if (message.stop_reason === "max_tokens") {
-          maxTokens *= 2; // thinking counts toward max_tokens; one retry with room to finish
+          // Thinking counts toward max_tokens: one more call with twice the room, but only once per
+          // task, only while the caller is still there, and only when it can finish in time.
+          if (hooks.signal?.aborted) throw new GenerationError("UPSTREAM", ["aborted"]);
+          const tooLate = hooks.deadline !== undefined && Date.now() + (Date.now() - started) > hooks.deadline;
+          if (maxTokens >= task.maxTokens * 2 || tooLate) break;
+          maxTokens = task.maxTokens * 2;
           raisedCaps.set(task, maxTokens);
           continue;
         }
         return { data: parseOutput(message, task), usage };
       }
       // Not "write shorter": the length targets still hold; the JSON just has to be finished.
-      throw new GenerationError("QUALITY", ["출력이 중간에 끊겼어요. 분량 목표는 그대로 지키면서 JSON을 끝까지 완성해 주세요."]);
+      throw new GenerationError("QUALITY", [OUTPUT_CUT_OFF]);
     },
   };
 }
 
+/** Tokens the request carries besides our text: the output schema and the API's own framing. */
+const REQUEST_OVERHEAD_TOKENS = 3_000;
+
 /**
- * An upper bound on what one call can bill: every prompt character as an uncached input token (Korean
- * runs at about one token per character or less) and the whole output budget.
+ * An upper bound on what one call can bill: every prompt character plus a fixed overhead as tokens
+ * written to the cache (1.25× the input price; Korean runs at about one token per character or less),
+ * and the whole output budget.
  */
 export function worstCase(body: ReturnType<typeof buildRequest>): Usage {
   const promptChars = body.system.reduce((n, block) => n + block.text.length, 0)
     + body.messages.reduce((n, m) => n + m.content.reduce((k, block) => k + block.text.length, 0), 0);
-  return { model: body.model, inputTokens: promptChars, outputTokens: body.max_tokens, cacheReadTokens: 0, cacheWriteTokens: 0 };
+  return { model: body.model, inputTokens: 0, outputTokens: body.max_tokens, cacheReadTokens: 0, cacheWriteTokens: promptChars + REQUEST_OVERHEAD_TOKENS };
 }
 
 function parseOutput<T>(message: BetaMessage, task: GenerationTask<T>): T {

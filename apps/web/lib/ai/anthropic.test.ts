@@ -23,7 +23,13 @@ function message(stop: Message["stop_reason"], text: string | null, extra: Parti
   } as unknown as Message;
 }
 
-/** A fake SDK stream: replays the script, records max_tokens and signals, and streams text snapshots. */
+/** An error the fake throws after `message_start` (the model had begun answering: billed). */
+class AfterStart extends Error {}
+
+/**
+ * A fake SDK stream: replays the script, records max_tokens and signals, emits `message_start` and
+ * text snapshots. A plain Error fails before message_start (never billed); AfterStart fails after it.
+ */
 function fake(script: Array<Message | Error>): MessagesClient & { maxTokens: number[]; signals: Array<AbortSignal | undefined> } {
   const maxTokens: number[] = [];
   const signals: Array<AbortSignal | undefined> = [];
@@ -35,20 +41,25 @@ function fake(script: Array<Message | Error>): MessagesClient & { maxTokens: num
           maxTokens.push(body.max_tokens);
           signals.push(options?.signal);
           const next = script.shift();
-          const listeners: Array<(delta: string, snapshot: string) => void> = [];
-          return {
-            on(_event: "text", listener: (delta: string, snapshot: string) => void) {
-              listeners.push(listener);
-              return this;
+          const text: Array<(delta: string, snapshot: string) => void> = [];
+          const events: Array<(event: { type: string }) => void> = [];
+          const stream = {
+            on(event: string, listener: never) {
+              if (event === "text") text.push(listener);
+              if (event === "streamEvent") events.push(listener);
+              return stream;
             },
             async finalMessage() {
               if (!next) throw new Error("script exhausted");
+              if (next instanceof Error && !(next instanceof AfterStart)) throw next;
+              for (const l of events) l({ type: "message_start" });
               if (next instanceof Error) throw next;
-              const text = next.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("");
-              for (let i = 1; i <= text.length; i += 8) for (const l of listeners) l(text.slice(i - 1, i + 7), text.slice(0, i + 7));
+              const body = next.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("");
+              for (let i = 1; i <= body.length; i += 8) for (const l of text) l(body.slice(i - 1, i + 7), body.slice(0, i + 7));
               return next;
             },
           };
+          return stream as unknown as ReturnType<MessagesClient["beta"]["messages"]["stream"]>;
         },
       },
     },
@@ -95,14 +106,42 @@ describe("anthropic provider response handling (fake SDK)", () => {
     expect(billed).toHaveLength(3);
   });
 
-  it("reserves each call's worst case before it starts, even when the call is then aborted", async () => {
-    const reserved: Array<{ model: string; outputTokens: number; inputTokens: number }> = [];
-    const onReserve = (usage: Array<{ model: string; outputTokens: number; inputTokens: number }>) => reserved.push(...usage);
+  it("reserves each call's worst case before it starts: prompt and schema overhead at the cache-write price, the whole output budget", async () => {
+    const reserved: Array<{ model: string; outputTokens: number; inputTokens: number; cacheWriteTokens: number }> = [];
+    const onReserve = (usage: typeof reserved) => reserved.push(...usage);
     await anthropicProvider("key", fake([message("max_tokens", "{"), message("end_turn", ANSWER)])).generate(task(), 1, undefined, { onReserve });
     expect(reserved.map((r) => r.outputTokens)).toEqual([1000, 2000]);
-    expect(reserved.every((r) => r.model === "claude-opus-5-5" && r.inputTokens > 0)).toBe(true);
-    await anthropicProvider("key", fake([new DOMException("aborted", "AbortError")])).generate(task(), 1, undefined, { onReserve }).catch(() => {});
-    expect(reserved).toHaveLength(3);
+    expect(reserved.every((r) => r.model === "claude-opus-5-5" && r.inputTokens === 0 && r.cacheWriteTokens > 3_000)).toBe(true);
+  });
+
+  it("releases the reservation when a call fails before message_start, and keeps it when it fails after", async () => {
+    const log: string[] = [];
+    const hooks = { onReserve: () => log.push("reserve"), onRelease: () => log.push("release"), onUsage: () => log.push("bill") };
+    const overloaded = new Anthropic.APIError(529, { type: "error" }, "overloaded", new Headers());
+    await anthropicProvider("key", fake([overloaded])).generate(task(), 1, undefined, hooks).catch(() => {});
+    expect(log).toEqual(["reserve", "release"]);
+    log.length = 0;
+    await anthropicProvider("key", fake([new AfterStart("network lost mid-answer")])).generate(task(), 1, undefined, hooks).catch(() => {});
+    expect(log).toEqual(["reserve"]); // billed for an unknown share: the reservation stays
+  });
+
+  it("makes no max_tokens re-call when the caller is gone or the budget would run out, and never raises the cap twice", async () => {
+    const aborted = new AbortController();
+    aborted.abort();
+    const gone = fake([message("max_tokens", "{"), message("end_turn", ANSWER)]);
+    await expect(anthropicProvider("key", gone).generate(task(), 1, undefined, { signal: aborted.signal })).rejects.toMatchObject({ code: "UPSTREAM" });
+    expect(gone.maxTokens).toEqual([1000]);
+
+    const late = fake([message("max_tokens", "{"), message("end_turn", ANSWER)]);
+    await expect(anthropicProvider("key", late).generate(task(), 1, undefined, { deadline: Date.now() - 1 })).rejects.toMatchObject({ code: "QUALITY" });
+    expect(late.maxTokens).toEqual([1000]);
+
+    const t = task();
+    const twice = fake([message("max_tokens", "{"), message("max_tokens", "{"), message("max_tokens", "{")]);
+    const provider = anthropicProvider("key", twice);
+    await expect(provider.generate(t, 1)).rejects.toMatchObject({ code: "QUALITY" });
+    await expect(provider.generate(t, 2, ["고쳐 주세요"])).rejects.toMatchObject({ code: "QUALITY" });
+    expect(twice.maxTokens).toEqual([1000, 2000, 2000]); // the regeneration starts raised and stops there, never 4000
   });
 
   it("retries once with twice the cap on max_tokens, and a regeneration keeps the raised cap", async () => {

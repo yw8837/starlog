@@ -2,16 +2,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import type { GenerationHooks } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
+import { budgetState, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
+import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
+import { POST as followup } from "./followup/route";
+import { POST as owner } from "./owner/route";
 import { POST as reading } from "./tarot/reading/route";
 import { POST as teaser } from "./tarot/teaser/route";
 
-/** A DAILY_KV binding that works, or fails every call, or fails only writes (KV's 429 on a hot key). */
+/**
+ * A DAILY_KV binding that works, or fails every call, or fails only writes (KV's 429 on a hot key),
+ * or fails reads of some keys; `bound: false` is a Worker deployed without the binding.
+ */
 const kv = vi.hoisted(() => {
   const data = new Map<string, string>();
-  const state = { mode: "ok" as "ok" | "down" | "no-writes" };
+  const state = { mode: "ok" as "ok" | "down" | "no-writes", unreadable: null as RegExp | null, bound: true };
   const fail = (what: string) => {
     throw new Error(`KV ${what} failed: 429 Too Many Requests`);
   };
@@ -20,7 +27,7 @@ const kv = vi.hoisted(() => {
     data,
     binding: {
       async get(key: string) {
-        if (state.mode === "down") fail("GET");
+        if (state.mode === "down" || state.unreadable?.test(key)) fail("GET");
         const value = data.get(key);
         return value === undefined ? null : JSON.parse(value);
       },
@@ -38,7 +45,7 @@ const kv = vi.hoisted(() => {
 
 vi.mock("@/lib/cloudflare", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/cloudflare")>()),
-  cloudflareEnv: () => ({ DAILY_KV: kv.binding }),
+  cloudflareEnv: () => (kv.state.bound ? { DAILY_KV: kv.binding } : {}),
 }));
 
 type Handler = (request: Request) => Promise<Response>;
@@ -61,8 +68,12 @@ beforeEach(() => {
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("BETA_FULL_PER_DAY", "100");
+  vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
   kv.state.mode = "ok";
+  kv.state.unreadable = null;
+  kv.state.bound = true;
   kv.data.clear();
+  resetSpendState();
   resetMemoryLimiter();
   resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -113,10 +124,51 @@ describe("DAILY_KV failures", () => {
     expect(events.at(-1)!.type).toBe("done");
   });
 
-  it("keep the daily card working when KV cannot be read at all (it is not fail-closed)", async () => {
+  it("close the daily card and follow-ups too while KV cannot be read, except for the owner", async () => {
+    const token = await drawToken();
+    const full = await call(reading, { drawToken: token, input: MONEY_INPUT }, "198.51.100.43");
     kv.state.mode = "down";
-    const fortune = await call(daily, {}, "198.51.100.43");
-    expect(fortune.status).toBe(200);
-    expect(fortune.data.summary).toBeTruthy();
+    expect((await call(daily, {}, "198.51.100.43")).status).toBe(503);
+    const answer = await call(followup, { chapterToken: full.data.chapterToken, reading: full.data.reading, question: "지출은 어떻게 줄일까요?" }, "198.51.100.43");
+    expect(answer.status).toBe(503); // without the chapter count an older token could reset the cap
+
+    kv.state.mode = "ok";
+    const login = await owner(new Request("http://localhost/api", {
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.44" }, body: JSON.stringify({ code: "owner-code-for-tests-0001" }),
+    }));
+    const cookie = login.headers.getSetCookie()[0]!.split(";")[0]!;
+    kv.state.mode = "down";
+    const asOwner = await daily(new Request("http://localhost/api", {
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.44", cookie }, body: "{}",
+    }));
+    expect(asOwner.status).toBe(200);
+  });
+
+  it("make the budget unknown after repeated failed cost writes, even while reads work", async () => {
+    const real = mockProvider.generate.bind(mockProvider);
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+      hooks?.onUsage?.([{ model: "claude-opus-5-5", inputTokens: 0, outputTokens: 1_000, cacheReadTokens: 0, cacheWriteTokens: 0 }]);
+      return real(task, attempt, feedback, hooks);
+    });
+    const token = await drawToken();
+    kv.state.mode = "no-writes";
+    for (let i = 0; i < 3; i++) expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45")).status).toBe(200);
+    expect(await budgetState(Date.now())).toBe("unknown");
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45")).status).toBe(503);
+  });
+
+  it("scale a partly readable total up to all shards", async () => {
+    const day = kstDay(Date.now());
+    for (let i = 0; i < 8; i++) kv.data.set(`cost:${day}:${i}`, JSON.stringify(100));
+    expect(await spentTodayKrw(Date.now())).toBe(800);
+    kv.state.unreadable = /^cost:.*:[0-3]$/;
+    expect(await spentTodayKrw(Date.now())).toBe(800); // 400 from four shards, scaled ×8/4
+  });
+
+  it("treat a Worker without the DAILY_KV binding as unknown (closed)", async () => {
+    kv.state.bound = false;
+    expect(await budgetState(Date.now())).toBe("unknown");
+    const token = await drawToken();
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.46")).status).toBe(503);
   });
 });

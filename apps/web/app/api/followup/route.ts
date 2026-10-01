@@ -26,7 +26,10 @@ export async function POST(request: Request): Promise<Response> {
   if (!chapter) return errorResponse("BAD_TOKEN", { message: "후속 질문을 이어 갈 수 없는 풀이예요. 풀이를 받은 지 7일이 지났거나 내용이 달라졌어요." });
 
   const limits = quotaLimits();
-  const answered = Math.max(chapter.turns.length, await chapterTurns(chapter.id));
+  const recorded = await chapterTurns(chapter.id);
+  // Without the server's count an older token could reset the chapter cap: no new answer until KV reads again.
+  if (recorded === null && !gate.owner) return errorResponse("AI_UNAVAILABLE");
+  const answered = Math.max(chapter.turns.length, recorded ?? 0);
   if (!gate.owner && answered >= limits.followupsPerChapter) return errorResponse("BETA_LIMIT", { scope: "chapter", remaining: 0 });
   const quota = await checkQuota(gate, "followup", { scope: "day" });
   if (quota instanceof Response) return quota;
