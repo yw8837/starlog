@@ -62,7 +62,7 @@ const newDeck = () => createDeck(randomSeed(), DEFAULT_REVERSAL_RATE);
 
 const StepIcon = ({ kind }: { kind: (typeof HOWTO_STEPS)[number]["icon"] }) =>
   kind === "card" ? (
-    <img className={s.stepCard} src="/cards/back.svg" alt="" draggable={false} />
+    <img className={s.stepCard} src="/cards/back.svg" alt="" width={600} height={1020} draggable={false} />
   ) : (
     <svg className={s.stepIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       {kind === "write" ? (

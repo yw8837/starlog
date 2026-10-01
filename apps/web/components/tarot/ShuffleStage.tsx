@@ -67,7 +67,7 @@ export function ShuffleStage({ onDone, focusSkip = false, riffles = RIFFLES }: S
                 const order = 2 * (HALF - 1 - n) + (side === "left" ? 0 : 1);
                 return (
                   <span key={n} className={s.card} style={{ "--n": n, "--order": order } as CSSProperties}>
-                    <img src="/cards/back.svg" alt="" draggable={false} />
+                    <img src="/cards/back.svg" alt="" width={600} height={1020} draggable={false} />
                   </span>
                 );
               })}

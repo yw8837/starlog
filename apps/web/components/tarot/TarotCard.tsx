@@ -39,7 +39,7 @@ export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md"
   const inner = (
     <span className={s.inner}>
       <span className={s.back}>
-        <img src={BACK} alt="" draggable={false} loading={loading} />
+        <img src={BACK} alt="" width={600} height={1020} draggable={false} loading={loading} />
       </span>
       {cardId ? (
         <span className={s.front}>
@@ -48,6 +48,8 @@ export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md"
             srcSet={`${cardImage(cardId, "sm")} 240w, ${cardImage(cardId, "lg")} 600w`}
             sizes={imageSizes ?? IMAGE_SIZES[size]}
             alt=""
+            width={600}
+            height={1040}
             draggable={false}
             loading={loading}
             decoding="async"
