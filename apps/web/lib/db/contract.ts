@@ -77,6 +77,21 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect(await repo.completedOf("o1")).toEqual([]);
   });
 
+  it("keeps one constellation per sign and only one being filled per owner", async () => {
+    const repo = await make();
+    await repo.upsertOwner(owner("o1", "용우"));
+    await repo.upsertOwner(owner("o2", "다른"));
+    await repo.insertConstellation(con("c1", "o1", 0, null, "aries"));
+    await expect(repo.insertConstellation(con("c2", "o1", 0, null, "leo"))).rejects.toThrow();
+    await repo.insertConstellation(con("c3", "o1", 300, 5, "leo"));
+    await expect(repo.insertConstellation(con("c4", "o1", 300, 6, "leo"))).rejects.toThrow();
+    await expect(repo.updateConstellation("c3", { status: "filling", completedAt: null })).rejects.toThrow();
+    await repo.insertConstellation(con("c5", "o2", 0, null, "aries"));
+    await repo.deleteConstellation("c1");
+    await repo.updateConstellation("c3", { status: "filling", completedAt: null });
+    expect((await repo.fillingOf("o1"))?.id).toBe("c3");
+  });
+
   it("counts an owner's stars since a time, across their constellations", async () => {
     const repo = await make();
     await repo.upsertOwner(owner("o1", "용우"));

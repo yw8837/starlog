@@ -25,6 +25,9 @@ CREATE TABLE constellations (
   completed_at INTEGER
 );
 CREATE INDEX constellations_owner ON constellations(owner_id, status);
+-- One constellation per sign per owner, and only one being filled at a time (spec §2).
+CREATE UNIQUE INDEX constellations_owner_sign ON constellations(owner_id, sign);
+CREATE UNIQUE INDEX constellations_one_filling ON constellations(owner_id) WHERE status = 'filling';
 CREATE INDEX constellations_rank ON constellations(sign, status, total DESC, completed_at ASC);
 CREATE TABLE stars (
   id TEXT PRIMARY KEY,

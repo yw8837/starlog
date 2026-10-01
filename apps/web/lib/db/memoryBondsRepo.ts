@@ -57,12 +57,15 @@ export function createMemoryBondsRepo(): BondsRepo {
         .map(copy);
     },
     async insertConstellation(row) {
-      if (constellations.has(row.id)) throw new Error("UNIQUE");
+      const clash = ownedBy(row.ownerId).some((c) => c.sign === row.sign || (row.status === "filling" && c.status === "filling"));
+      if (constellations.has(row.id) || clash) throw new Error("UNIQUE");
       constellations.set(row.id, copy(row));
     },
     async updateConstellation(id, patch) {
       const row = constellations.get(id);
-      if (row) constellations.set(id, { ...row, ...patch });
+      if (!row) return;
+      if (patch.status === "filling" && ownedBy(row.ownerId).some((c) => c.id !== id && c.status === "filling")) throw new Error("UNIQUE");
+      constellations.set(id, { ...row, ...patch });
     },
     async deleteConstellation(id) {
       for (const [key, s] of stars) if (s.constellationId === id) stars.delete(key);
