@@ -178,7 +178,7 @@ export function MeView({ wallet }: MeViewProps) {
             이 기기의 기록을 모두 지울까요?
           </h2>
           <p className={s.confirmText}>
-            {`열어 둔 풀이${chapters && chapters.length > 0 ? ` ${chapters.length}개` : ""}, 사주 정보, 오늘의 쿠키가 지워져요. 지운 기록은 되돌릴 수 없어요.`}
+            {`열어 둔 풀이${chapters && chapters.length > 0 ? ` ${chapters.length}개` : ""}, 사주 정보, 오늘의 한 장이 지워져요. 지운 기록은 되돌릴 수 없어요.`}
           </p>
           <div className={s.confirmActions}>
             <button type="button" className={s.confirmErase} onClick={erase}>
