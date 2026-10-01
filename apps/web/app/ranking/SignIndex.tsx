@@ -60,12 +60,12 @@ export function SignIndex({ leaders }: SignIndexProps) {
                 ))}
               </ol>
             ) : (
-              <p className={s.empty}>
-                아직 완성한 별자리가 없어요 ·{" "}
+              <div className={s.emptyBox}>
+                <p className={s.empty}>아직 완성한 별자리가 없어요</p>
                 <Link href={`/bonds?sign=${c.id}`} className={s.inline}>
                   첫 번째가 되어 보세요
                 </Link>
-              </p>
+              </div>
             )}
             <Link href={`/ranking/${c.id}`} className={s.all} aria-label={`${c.ko} 전체 순위`}>
               전체 순위

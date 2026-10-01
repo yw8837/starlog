@@ -40,7 +40,9 @@ describe("별자리 리더보드 (/ranking)", () => {
     const first = screen.getAllByRole("link", { name: "첫 번째가 되어 보세요" });
     expect(first).toHaveLength(10);
     expect(first[0]?.getAttribute("href")).toBe("/bonds?sign=taurus");
-    expect(screen.getAllByText(/아직 완성한 별자리가 없어요/)).toHaveLength(10);
+    // the sentence and the link stand on their own lines, with no separator left dangling
+    expect(screen.getAllByText("아직 완성한 별자리가 없어요")).toHaveLength(10);
+    expect(document.body.textContent).not.toContain("없어요 ·");
   });
 
   it("still shows every sign, without names, when the rankings cannot be read", () => {
