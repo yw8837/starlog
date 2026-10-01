@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import GuideArticlePage from "@/app/guide/[slug]/page";
 import GuideSajuPage, { metadata as sajuMetadata } from "@/app/guide/saju/page";
 import GuideTarotPage, { metadata as tarotMetadata } from "@/app/guide/tarot/page";
-import { GUIDE_CATEGORIES, articlesIn } from "@/lib/guide";
+import { GUIDE_CATEGORIES, articlesIn, findArticle } from "@/lib/guide";
 import nextConfig from "@/next.config";
 
 afterEach(cleanup);
@@ -67,9 +67,19 @@ describe("guide article", () => {
   it.each([
     ["the-hermit", "타로", "/guide/tarot"],
     ["five-elements", "사주", "/guide/saju"],
+    ["the-fool", "타로", "/guide/tarot"],
+    ["daewoon", "사주", "/guide/saju"],
   ])("%s: the back link returns to the %s tab", async (slug, label, href) => {
     render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
     const back = screen.getByRole("link", { name: `${label} 가이드 목록으로` });
     expect(back.getAttribute("href")).toBe(href);
+  });
+
+  it.each(["the-star", "the-fool", "daewoon"])("%s: lists its own related reads under 같이 읽어 볼 글, in order", async (slug) => {
+    render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
+    const related = findArticle(slug)?.related ?? [];
+    expect(related.length).toBeGreaterThanOrEqual(3);
+    const nav = screen.getByRole("navigation", { name: "같이 읽어 볼 글" });
+    expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(related.map((other) => `/guide/${other}`));
   });
 });
