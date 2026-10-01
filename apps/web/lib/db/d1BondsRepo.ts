@@ -1,5 +1,6 @@
 import type { BondBasis, BondPart, Orientation, SignId } from "@starlog/core";
-import type { BondsRepo, ConstellationRow, ConstellationStatus, InviteRow, OwnerRow, RankingEntry, StarRow } from "./bondsRepo";
+import { CONSTELLATIONS } from "@starlog/core";
+import type { BondsRepo, ConstellationRow, ConstellationStatus, InviteRow, OwnerRow, RankingEntry, SignTop, StarRow } from "./bondsRepo";
 import type { D1Binding } from "./d1";
 
 /** BondsRepo on Cloudflare D1 (migrations/0001_bonds.sql). JSON columns end in `_json`; booleans are 0/1. */
@@ -165,6 +166,21 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
         sign, since, limit,
       );
       return rows.map((r): RankingEntry => ({ constellationId: r.id, nickname: r.nickname, total: r.total, completedAt: r.completed_at }));
+    },
+    async topsBySign(since, perSign) {
+      const rows = await all<{ sign: string; rank: number; nickname: string; total: number; completed_at: number }>(
+        `SELECT sign, rank, nickname, total, completed_at FROM (
+           SELECT c.sign, o.nickname, c.total, c.completed_at,
+             ROW_NUMBER() OVER (PARTITION BY c.sign ORDER BY c.total DESC, c.completed_at ASC, c.id ASC) AS rank
+           FROM constellations c JOIN owners o ON o.id = c.owner_id
+           WHERE c.status = 'complete' AND o.ranking_public = 1 AND c.completed_at >= ?1
+         ) WHERE rank <= ?2 ORDER BY sign ASC, rank ASC`,
+        since, perSign,
+      );
+      const order = new Map(CONSTELLATIONS.map((c, i) => [c.id as string, i]));
+      return rows
+        .map((r): SignTop => ({ sign: r.sign as SignId, rank: r.rank, nickname: r.nickname, total: r.total, completedAt: r.completed_at }))
+        .sort((a, b) => (order.get(a.sign) ?? 0) - (order.get(b.sign) ?? 0) || a.rank - b.rank);
     },
     async rankOf(constellationId, since) {
       const row = await one<ConstellationRecord & { ranking_public: number }>(

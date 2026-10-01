@@ -149,6 +149,28 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect(await repo.bumpActions("o1", "2026-10-02")).toBe(1);
   });
 
+  it("gives every sign's top entries since a time in one call, with the ranking's order and visibility", async () => {
+    const repo = await make();
+    for (const [id, name, pub] of [["a", "가", true], ["b", "나", true], ["c", "다", false], ["d", "라", true], ["e", "마", true]] as const) {
+      await repo.upsertOwner(owner(id, name, pub));
+    }
+    await repo.insertConstellation(con("ca", "a", 350, 200));
+    await repo.insertConstellation(con("cb", "b", 350, 100));
+    await repo.insertConstellation(con("cc", "c", 390, 150));
+    await repo.insertConstellation(con("cd", "d", 300, 300));
+    await repo.insertConstellation(con("ce", "e", 400, 50));
+    await repo.insertConstellation(con("cl", "a", 380, 250, "leo"));
+    await repo.insertConstellation(con("cf", "b", 999, null, "leo"));
+    const tops = await repo.topsBySign(100, 3);
+    expect(tops.map((t) => [t.sign, t.rank, t.nickname, t.total])).toEqual([
+      ["aries", 1, "나", 350],
+      ["aries", 2, "가", 350],
+      ["aries", 3, "라", 300],
+      ["leo", 1, "가", 380],
+    ]);
+    expect((await repo.topsBySign(0, 1)).map((t) => t.nickname)).toEqual(["마", "가"]);
+  });
+
   it("ranks complete, public constellations by total then earlier completion", async () => {
     const repo = await make();
     await repo.upsertOwner(owner("a", "가"));

@@ -15,6 +15,7 @@ export interface StarRow {
   cardId: string; orientation: Orientation; score: number; parts: BondPart[]; friendKey: string; createdAt: number;
 }
 export interface RankingEntry { constellationId: string; nickname: string; total: number; completedAt: number }
+export interface SignTop { sign: SignId; rank: number; nickname: string; total: number; completedAt: number }
 
 export interface BondsRepo {
   getOwner(id: string): Promise<OwnerRow | null>;
@@ -47,6 +48,8 @@ export interface BondsRepo {
   deleteStar(id: string): Promise<void>;
   ranking(sign: SignId, since: number | null, limit: number): Promise<RankingEntry[]>; // public owners, complete, total desc, completedAt asc
   rankOf(constellationId: string, since: number | null): Promise<number | null>; // 1-based among public entries; null if not ranked
+  /** The first `perSign` of every sign's ranking since `since`, in one query (sign, then rank order). */
+  topsBySign(since: number, perSign: number): Promise<SignTop[]>;
 }
 
 /** Ranking order: higher total first, then the earlier completion, then the id (a stable last resort). */

@@ -1,5 +1,6 @@
 import type { SignId } from "@starlog/core";
-import { compareRanked, type BondsRepo, type ConstellationRow, type InviteRow, type OwnerRow, type RankingEntry, type StarRow } from "./bondsRepo";
+import { CONSTELLATIONS } from "@starlog/core";
+import { compareRanked, type BondsRepo, type ConstellationRow, type InviteRow, type OwnerRow, type RankingEntry, type SignTop, type StarRow } from "./bondsRepo";
 
 /**
  * In-memory BondsRepo for tests and `next dev` without D1. Same semantics as the D1 one (contract.ts);
@@ -137,6 +138,13 @@ export function createMemoryBondsRepo(): BondsRepo {
       return ranked(sign, since)
         .slice(0, limit)
         .map((c): RankingEntry => ({ constellationId: c.id, nickname: owners.get(c.ownerId)!.nickname, total: c.total, completedAt: c.completedAt }));
+    },
+    async topsBySign(since, perSign) {
+      return CONSTELLATIONS.flatMap((c) =>
+        ranked(c.id, since)
+          .slice(0, perSign)
+          .map((row, i): SignTop => ({ sign: c.id, rank: i + 1, nickname: owners.get(row.ownerId)!.nickname, total: row.total, completedAt: row.completedAt })),
+      );
     },
     async rankOf(constellationId, since) {
       const row = constellations.get(constellationId);

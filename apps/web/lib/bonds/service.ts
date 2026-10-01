@@ -501,3 +501,20 @@ export async function shareCard(repo: BondsRepo, constellationId: string) {
   const stars = await repo.starsOf(row.id);
   return { sign: row.sign, total: row.total, completedAt: row.completedAt, ownerNickname: owner.nickname, nicknames: stars.map((s) => s.nickname) };
 }
+
+export const LEADERS_PER_SIGN = 3;
+
+export interface LeaderView {
+  rank: number;
+  nickname: string;
+  total: number;
+}
+
+/** This KST week's top 3 of every sign (one query): 별자리 리더보드. Signs with no completion are left out. */
+export async function weeklyLeaders(repo: BondsRepo, now: number): Promise<Partial<Record<SignId, LeaderView[]>>> {
+  const out: Partial<Record<SignId, LeaderView[]>> = {};
+  for (const top of await repo.topsBySign(weekStart(now), LEADERS_PER_SIGN)) {
+    (out[top.sign] ??= []).push({ rank: top.rank, nickname: top.nickname, total: top.total });
+  }
+  return out;
+}
