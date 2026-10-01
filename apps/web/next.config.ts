@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import type { NextConfig } from "next";
 
 /**
@@ -22,8 +24,30 @@ function devProviderHeader(): Array<{ key: string; value: string }> {
   return [{ key: "X-Starlog-Dev-Provider", value: process.env.STARLOG_AI === "mock" ? "mock" : "live" }];
 }
 
+/**
+ * Skew protection (owner: a tab opened before a deploy kept showing the old /today). With a
+ * deploymentId, Next tags its assets with it and, when a page from an older deployment navigates,
+ * the server's newer id makes the client reload the page instead of mixing old JS with new pages.
+ * OpenNext Cloudflare hands it to the Worker (process.env.DEPLOYMENT_ID). Production builds only:
+ * NEXT_DEPLOYMENT_ID when set, otherwise the commit plus a hash of uncommitted changes, so the same
+ * tree always gets the same id (the config is read more than once during a build).
+ */
+function deploymentId(): string | undefined {
+  if (process.env.NEXT_DEPLOYMENT_ID) return process.env.NEXT_DEPLOYMENT_ID;
+  if (process.env.NODE_ENV !== "production") return undefined;
+  try {
+    const git = (args: string) => execSync(`git ${args}`, { stdio: ["ignore", "pipe", "ignore"], maxBuffer: 256 * 1024 * 1024 }).toString();
+    const head = git("rev-parse --short=12 HEAD").trim();
+    const changes = git("status --porcelain") ? git("diff HEAD") + git("ls-files --others --exclude-standard") : "";
+    return changes ? `${head}-${createHash("sha256").update(changes).digest("hex").slice(0, 8)}` : head;
+  } catch {
+    return undefined;
+  }
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  deploymentId: deploymentId(),
   // @starlog/core is resolved through tsconfig "paths" (D: is exFAT, so pnpm cannot symlink it).
   transpilePackages: ["@starlog/core"],
   images: { unoptimized: true },
