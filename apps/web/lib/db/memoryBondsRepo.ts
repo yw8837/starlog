@@ -139,6 +139,13 @@ export function createMemoryBondsRepo(): BondsRepo {
     async deleteStar(id) {
       stars.delete(id);
     },
+    async latestStarOf(ownerId, friendKey) {
+      const mine = new Set(ownedBy(ownerId).map((c) => c.id));
+      const star = [...stars.values()]
+        .filter((s) => s.friendKey === friendKey && mine.has(s.constellationId))
+        .sort((a, b) => b.createdAt - a.createdAt)[0];
+      return star ? { star: copy(star), constellation: copy(constellations.get(star.constellationId)!) } : null;
+    },
     async ranking(sign, since, limit) {
       return ranked(sign, since)
         .slice(0, limit)

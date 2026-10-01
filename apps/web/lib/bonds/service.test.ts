@@ -3,7 +3,7 @@ import { bondBasis, bondScore } from "@starlog/core";
 import { createMemoryBondsRepo } from "@/lib/db/memoryBondsRepo";
 import { CONSTELLATIONS } from "@starlog/core";
 import {
-  BondsError, chooseSign, inviteOf, joinStar, nextSignAfter, ownerView, rankingView, refill, regenerateInvite, removeStar, resolveInvite, saveOwner,
+  BondsError, chooseSign, inviteOf, invitePage, joinStar, nextSignAfter, ownerView, rankingView, refill, regenerateInvite, removeStar, resolveInvite, saveOwner,
   switchSign, todayBondCard,
 } from "./service";
 
@@ -353,5 +353,23 @@ describe("bonds service", () => {
     expect(new Set([a, ...days].map((x) => `${x.cardId}:${x.orientation}`)).size).toBeGreaterThan(1);
     expect((await repo.starsOf(r.star.constellationId))[0]?.score).toBe(r.score);
     await expect(todayBondCard(repo, t0, "o1", "nope")).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
+
+  it("shows the friend page as this visitor sees it: own link, a past join, or the form with an earlier star", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    expect(await invitePage(repo, code, { ownerId: "o1", friendKey: null })).toMatchObject({ kind: "self", sign: "aries", filled: 0, slots: 4 });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", sign: "aries", earlier: null });
+
+    const joined = await join(repo, t0, code, 0);
+    const again = await invitePage(repo, code, { ownerId: null, friendKey: "f0" });
+    expect(again).toMatchObject({ kind: "joined", result: { nickname: "친구0", score: joined.score, sign: "aries", slot: 0, completed: false } });
+    // the reasons are the friend's own side, the same as right after joining
+    expect(again.kind === "joined" && again.result.parts).toEqual(joined.parts);
+
+    for (let i = 1; i < 4; i++) await join(repo, t0, code, i);
+    const later = await invitePage(repo, code, { ownerId: null, friendKey: "f0" });
+    expect(later).toMatchObject({ kind: "open", sign: "taurus", earlier: { sign: "aries", completed: true } });
+    await expect(invitePage(repo, "ZZZZZZ", { ownerId: null, friendKey: null })).rejects.toMatchObject({ code: "BAD_CODE" });
   });
 });

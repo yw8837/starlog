@@ -173,6 +173,16 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
     async deleteStar(id) {
       await run("DELETE FROM stars WHERE id = ?", id);
     },
+    async latestStarOf(ownerId, friendKey) {
+      const star = await one<StarRecord>(
+        `SELECT s.* FROM stars s JOIN constellations c ON c.id = s.constellation_id
+         WHERE c.owner_id = ? AND s.friend_key = ? ORDER BY s.created_at DESC LIMIT 1`,
+        ownerId, friendKey,
+      );
+      if (!star) return null;
+      const constellation = await one<ConstellationRecord>("SELECT * FROM constellations WHERE id = ?", star.constellation_id);
+      return constellation ? { star: toStar(star), constellation: toConstellation(constellation) } : null;
+    },
     async ranking(sign, since, limit) {
       const rows = await all<RankingRecord>(
         `SELECT c.id, o.nickname, c.total, c.completed_at ${RANKED} ORDER BY c.total DESC, c.completed_at ASC, c.id ASC LIMIT ?3`,

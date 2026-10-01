@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SajuElement } from "../../src/saju/labels";
-import { BOND_MAX, BOND_MIN, bondBasis, bondScore, type BondBasis } from "../../src/bonds/score";
+import { BOND_MAX, BOND_MIN, bondBasis, bondScore, mirrorParts, type BondBasis } from "../../src/bonds/score";
 
 const el = (목: number, 화: number, 토: number, 금: number, 수: number): Record<SajuElement, number> => ({ 목, 화, 토, 금, 수 });
 const basis = (dayStem: string, yearBranch: string, dayBranch: string, elements: Record<SajuElement, number>): BondBasis =>
@@ -82,5 +82,12 @@ describe("bondScore", () => {
   it("adds a zero-point note when either date sits on a pillar boundary", () => {
     const r = bondScore({ ...best[0], uncertain: true }, best[1]);
     expect(r.parts.at(-1)).toMatchObject({ id: "uncertain", points: 0 });
+  });
+
+  it("mirrors the reasons to the other person's side (the friend's view from what the owner stored)", () => {
+    const days = [[1990, 1, 1], [1991, 5, 12], [1992, 8, 3], [1988, 11, 20], [1995, 2, 28], [2000, 2, 4], [1979, 12, 31], [2003, 6, 9]] as const;
+    const bases = days.map(([year, month, day]) => bondBasis({ calendar: "solar", year, month, day }));
+    for (const a of bases) for (const b of bases) expect(mirrorParts(bondScore(a, b).parts)).toEqual(bondScore(b, a).parts);
+    expect(mirrorParts(bondScore(best[0], best[1]).parts)).toEqual(bondScore(best[1], best[0]).parts);
   });
 });

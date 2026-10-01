@@ -127,3 +127,31 @@ export function bondScore(me: BondBasis, friend: BondBasis): BondScore {
   const raw = BOND_BASE + parts.reduce((n, p) => n + p.points, 0);
   return { score: Math.min(BOND_MAX, Math.max(BOND_MIN, raw)), parts };
 }
+
+const fillText = (id: "fill-mine" | "fill-theirs", element: string) =>
+  id === "fill-mine" ? `내게 부족한 ${element} 기운을 친구가 채워 줘요` : `친구에게 부족한 ${element} 기운을 내가 채워 줘요`;
+
+/**
+ * The same reasons told from the other person's side: `mirrorParts(bondScore(a, b).parts)` equals
+ * `bondScore(b, a).parts`. Only the two 오행 fills change sides; every other reason reads the same both
+ * ways. Lets a friend see their own reasons later from what was stored for the owner.
+ */
+export function mirrorParts(parts: readonly BondPart[]): BondPart[] {
+  const element = (p: BondPart) => /부족한 (\S+) 기운/.exec(p.text)?.[1] ?? "";
+  const mine = parts.find((p) => p.id === "fill-mine");
+  const theirs = parts.find((p) => p.id === "fill-theirs");
+  const out: BondPart[] = [];
+  for (const p of parts) {
+    if (p.id === "fill-mine" || p.id === "fill-theirs") continue;
+    if (p.id === "uncertain") {
+      if (theirs) out.push({ id: "fill-mine", points: theirs.points, text: fillText("fill-mine", element(theirs)) });
+      if (mine) out.push({ id: "fill-theirs", points: mine.points, text: fillText("fill-theirs", element(mine)) });
+    }
+    out.push({ ...p });
+  }
+  if (!parts.some((p) => p.id === "uncertain")) {
+    if (theirs) out.push({ id: "fill-mine", points: theirs.points, text: fillText("fill-mine", element(theirs)) });
+    if (mine) out.push({ id: "fill-theirs", points: mine.points, text: fillText("fill-theirs", element(mine)) });
+  }
+  return out;
+}

@@ -1,6 +1,7 @@
 import "server-only";
 import {
-  CARDS, CONSTELLATIONS, DEFAULT_REVERSAL_RATE, SajuError, bondBasis, bondScore, createDeck, getConstellation, isSignId, kstWeekId, seededRandom,
+  CARDS, CONSTELLATIONS, DEFAULT_REVERSAL_RATE, SajuError, bondBasis, bondScore, createDeck, getConstellation, isSignId, kstWeekId, mirrorParts,
+  seededRandom,
   type BondBasis, type BondBirth, type BondPart, type Orientation, type SignId,
 } from "@starlog/core";
 import type { BondsRepo, ConstellationRow, InviteRow, OwnerRow, StarRow } from "@/lib/db/bondsRepo";
@@ -547,4 +548,64 @@ export async function weeklyLeaders(repo: BondsRepo, now: number): Promise<Parti
     (out[top.sign] ??= []).push({ rank: top.rank, nickname: top.nickname, total: top.total });
   }
   return out;
+}
+
+// ---- the friend page ----
+
+/** A friend's star as their own result screen shows it (reasons from their side). */
+export interface FriendResultView {
+  nickname: string;
+  score: number;
+  parts: BondPart[];
+  /** the constellation is complete now */
+  completed: boolean;
+  sign: SignId;
+  slot: number;
+  ownerNickname: string;
+  card: { cardId: string; orientation: Orientation };
+  bondLine: string;
+}
+
+export type InvitePage =
+  /** the owner opened their own link */
+  | { kind: "self"; ownerNickname: string; sign: SignId | null; filled: number; slots: number }
+  /** this device is already a star of the sign being filled */
+  | { kind: "joined"; result: FriendResultView }
+  /** open for a new star; `earlier` is this device's star in an earlier sign of the same owner */
+  | { kind: "open"; ownerNickname: string; sign: SignId; filled: number; slots: number; earlier: FriendResultView | null }
+  | { kind: "choosing"; ownerNickname: string; earlier: FriendResultView | null }
+  | { kind: "alldone"; ownerNickname: string; earlier: FriendResultView | null };
+
+/**
+ * /b/<code> for this visitor (Q-05, Q-11): their own link, the result of a join this device already
+ * made (so a reload never shows the empty form again), or the form, with an earlier star noted.
+ * Unknown and revoked codes fail with BAD_CODE like every lookup.
+ */
+export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerId: string | null; friendKey: string | null }): Promise<InvitePage> {
+  const owner = await ownerOfCode(repo, code);
+  const filling = await repo.fillingOf(owner.id);
+  const stars = filling ? await repo.starsOf(filling.id) : [];
+  if (viewer.ownerId === owner.id) {
+    return { kind: "self", ownerNickname: owner.nickname, sign: filling?.sign ?? null, filled: stars.length, slots: filling ? getConstellation(filling.sign).slots : 0 };
+  }
+  const found = viewer.friendKey ? await repo.latestStarOf(owner.id, viewer.friendKey) : null;
+  const result: FriendResultView | null = found
+    ? {
+        nickname: found.star.nickname,
+        score: found.star.score,
+        parts: mirrorParts(found.star.parts),
+        completed: found.constellation.status === "complete",
+        sign: found.constellation.sign,
+        slot: found.star.slot,
+        ownerNickname: owner.nickname,
+        card: { cardId: found.star.cardId, orientation: found.star.orientation },
+        bondLine: bondCardLine(found.star.cardId, found.star.orientation),
+      }
+    : null;
+  if (filling && found && found.constellation.id === filling.id) return { kind: "joined", result: result! };
+  if (!filling) {
+    const allDone = (await repo.completedOf(owner.id)).length >= CONSTELLATIONS.length;
+    return allDone ? { kind: "alldone", ownerNickname: owner.nickname, earlier: result } : { kind: "choosing", ownerNickname: owner.nickname, earlier: result };
+  }
+  return { kind: "open", ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, earlier: result };
 }

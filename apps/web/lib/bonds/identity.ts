@@ -43,6 +43,12 @@ export async function ensureOwnerId(cookies: Record<string, string>, secret: str
   return { id, setCookie: await idCookie(OWNER_ID_COOKIE, "uid", id, secret) };
 }
 
+/** This device's friend key when it already has a device id (never mints one): to recognise a past join. */
+export async function existingFriendKey(cookies: Record<string, string>, secret: string): Promise<string | null> {
+  const id = await readId(cookies, FRIEND_ID_COOKIE, "fid", secret);
+  return id ? sha256(`fid:${id}`) : null;
+}
+
 /** The friend key of this device (a hash of its device id), minting the device id when there is none. */
 export async function friendKey(cookies: Record<string, string>, secret: string): Promise<{ key: string; setCookie: string | null }> {
   const existing = await readId(cookies, FRIEND_ID_COOKIE, "fid", secret);
