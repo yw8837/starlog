@@ -100,6 +100,13 @@ describe("QuestionBuilder", () => {
     expect(screen.getByText("이번 주 엄마와 나 사이는 어떻게 될까?")).toBeTruthy();
   });
 
+  it("shows a 무엇 said rather than named under the question, never in it", () => {
+    seed({ who: "group", whoText: "울산 AI 자동화방", topicText: "다같이 부자 되어봅시다~", when: "year" });
+    render(<QuestionBuilder />);
+    expect(screen.getByText("올해 울산 AI 자동화방, 어떻게 될까?")).toBeTruthy();
+    expect(screen.getByText("“다같이 부자 되어봅시다”")).toBeTruthy();
+  });
+
   it("starts clean when opened as a new question (?new=1) and drops the flag from the address", () => {
     seed({ who: "me", topicId: "money", when: "week", note: "메모", draw: DRAW });
     window.history.replaceState(null, "", "/tarot/new?new=1");

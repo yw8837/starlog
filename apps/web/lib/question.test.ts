@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { aiTells } from "@/lib/ai/style";
 import { builderTopics } from "./flowState";
 import { hasFinalConsonant, particle, withParticle } from "./korean";
-import { cleanPart, composeFlowQuestion, personRef, timePhrase } from "./question";
+import { cleanPart, composeFlowQuestion, flowQuote, personRef, timePhrase } from "./question";
 
 const WHOS: Who[] = ["me", "us", "work", "group"];
 const WHENS: When[] = ["today", "week", "month", "year"];
@@ -11,11 +11,17 @@ const topic = (who: Who, id: string) => TOPICS_BY_WHO[who].find((t) => t.id === 
 
 /** Owner's samples (2026-10-01): names, a Latin letter, two sentences typed as 누구, nothing; plus the
  * field's examples for 나의 일 and 우리 모임. */
-const WHO_SAMPLES = ["엄마", "팀장님", "J", "티끌을 얼마나 모아야", "돈 많이 벌고 싶어요", "", "우리 팀", "새 프로젝트", "첫 직장", "대학 동기", "독서 모임", "가족"];
+const WHO_SAMPLES = ["엄마", "팀장님", "J", "티끌을 얼마나 모아야", "돈 많이 벌고 싶어요", "", "우리 팀", "새 프로젝트", "첫 직장", "대학 동기", "독서 모임", "가족", "울산 AI 자동화방"];
 const SENTENCE_WHOS = ["티끌을 얼마나 모아야", "돈 많이 벌고 싶어요"];
 const WHEN_SAMPLES = ["다음 주 금요일", "면접 보는 날", "아무거나"];
 /** Typed 무엇: nouns, a Latin noun, a question, open clauses and whole sentences. */
-const TOPIC_SAMPLES = ["창업 준비", "전세 계약", "IPO", "이직해도 될까?", "이직할지 말지", "그 사람 진심인지", "돈 많이 벌고 싶어요", "티끌을 얼마나 모아야", "회사가 너무 힘들다"];
+const TOPIC_SAMPLES = [
+  "창업 준비", "전세 계약", "IPO", "이직해도 될까?", "이직할지 말지", "그 사람 진심인지", "돈 많이 벌고 싶어요", "티끌을 얼마나 모아야", "회사가 너무 힘들다",
+  // Owner, 2026-10-02: wishes, proposals and exclamations typed as 무엇.
+  "다같이 부자 되어봅시다~", "우리 대박나자!!", "이번엔 꼭 붙고 싶어요", "돈 벌자 ^^",
+];
+/** Typed 무엇 said rather than named: they never reach the question (shown under it instead). */
+const SAID_TOPICS = ["돈 많이 벌고 싶어요", "회사가 너무 힘들다", "다같이 부자 되어봅시다~", "우리 대박나자!!", "이번엔 꼭 붙고 싶어요", "돈 벌자 ^^"];
 
 const DOUBLED = /(과|와)(과|와)|(은|는)(은|는)(?=[\s,?])|(을|를)(을|를)|의의|에게에게|랑(과|와)|에게(과|와)/u;
 /** A particle glued to a verb ending, like "모아야와" or "싶어요의". */
@@ -28,7 +34,7 @@ function expectNatural(q: string | null, label: string, absent: readonly string[
   expect(sentence, label).not.toMatch(/나아가/);
   expect(sentence, label).not.toMatch(DOUBLED);
   expect(sentence, label).not.toMatch(GLUED);
-  expect(sentence, label).not.toMatch(/ {2}|,,|, ,|\?\?|—/);
+  expect(sentence, label).not.toMatch(/ {2}|,,|, ,|\?\?|—|[~～!！^]|\p{Extended_Pictographic}/u);
   // One comma at most: "다음 주 금요일, 팀장님과의 갈등, …" reads like a list.
   expect((sentence.match(/,/g) ?? []).length, `${label}: ${sentence}`).toBeLessThanOrEqual(1);
   expect(sentence.endsWith("?"), label).toBe(true);
@@ -94,7 +100,7 @@ describe("composeFlowQuestion", () => {
           for (const when of [...WHENS, ...WHEN_SAMPLES]) {
             const chip = (WHENS as string[]).includes(when);
             const q = composeFlowQuestion({ who, topicText, whoText, ...(chip ? { when: when as When } : { whenText: when }) });
-            expectNatural(q, `${who}/${topicText}/${whoText || "-"}/${when}`);
+            expectNatural(q, `${who}/${topicText}/${whoText || "-"}/${when}`, SAID_TOPICS.includes(topicText) ? [cleanPart(topicText)] : []);
           }
   });
 
@@ -159,15 +165,15 @@ describe("composeFlowQuestion", () => {
     expect(composeFlowQuestion({ who: "us", topicText: "그 사람 진심인지", when: "week" })).toBe("이번 주 그 사람 진심일까?");
     expect(composeFlowQuestion({ who: "us", topicText: "왜 연락이 없는지", when: "week" })).toBe("이번 주 왜 연락이 없는 걸까?");
     expect(composeFlowQuestion({ who: "me", topicText: "티끌을 얼마나 모아야", when: "week" })).toBe("이번 주 티끌을 얼마나 모아야 할까?");
-    expect(composeFlowQuestion({ who: "me", topicText: "돈 많이 벌고 싶어요", when: "week" })).toBe("돈 많이 벌고 싶어요. 이번 주엔 어떻게 될까요?");
-    expect(composeFlowQuestion({ who: "me", topicText: "회사가 너무 힘들다", whenText: "다음 주 금요일에" })).toBe("회사가 너무 힘들다. 다음 주 금요일엔 어떻게 될까?");
+    expect(composeFlowQuestion({ who: "me", topicText: "돈 많이 벌고 싶어요", when: "week" })).toBe("이번 주 나는 어떻게 될까?");
+    expect(composeFlowQuestion({ who: "me", topicText: "회사가 너무 힘들다", whenText: "다음 주 금요일에" })).toBe("다음 주 금요일에, 나는 어떻게 될까?");
   });
 
   it("leaves a typed 언제 that is not a time out of the sentence", () => {
     expect(composeFlowQuestion({ who: "me", topic: topic("me", "money"), whenText: "아무거나" })).toBe("내 재물 흐름은 어떨까?");
     expect(composeFlowQuestion({ who: "me", topic: topic("me", "money"), whenText: "다음 주에 면접이 있어요" })).toBe("내 재물 흐름은 어떨까?");
     expect(composeFlowQuestion({ who: "me", topic: topic("me", "money"), whenText: "다음 달 월급날" })).toBe("다음 달 월급날, 내 재물 흐름은 어떨까?");
-    expect(composeFlowQuestion({ who: "me", topicText: "돈 많이 벌고 싶어요", whenText: "아무거나" })).toBe("돈 많이 벌고 싶어요. 어떻게 될까요?");
+    expect(composeFlowQuestion({ who: "me", topicText: "돈 많이 벌고 싶어요", whenText: "아무거나" })).toBe("나는 어떻게 될까?");
   });
 
   it("returns null until 누구 · 무엇 · 언제 are all given, or for a time the topic does not allow", () => {
@@ -220,5 +226,37 @@ describe("cleanPart", () => {
     expect(cleanPart("<b>계약</b>")).toBe("b계약/b");
     expect(cleanPart("...")).toBe("");
     expect(cleanPart(undefined)).toBe("");
+  });
+});
+
+describe("a 무엇 said rather than named (owner, 2026-10-02)", () => {
+  const group = (topicText: string, whoText = "울산 AI 자동화방") => ({ who: "group" as const, whoText, topicText, when: "year" as const });
+
+  it("keeps wishes, proposals and exclamations out of the question and shows them under it", () => {
+    expect(composeFlowQuestion(group("다같이 부자 되어봅시다~"))).toBe("올해 울산 AI 자동화방, 어떻게 될까?");
+    expect(flowQuote({ topicText: "다같이 부자 되어봅시다~" })).toBe("다같이 부자 되어봅시다");
+    expect(composeFlowQuestion(group("우리 대박나자!!", ""))).toBe("올해 우리 모임, 어떻게 될까?");
+    expect(flowQuote({ topicText: "우리 대박나자!!" })).toBe("우리 대박나자");
+    expect(composeFlowQuestion({ who: "me", topicText: "이번엔 꼭 붙고 싶어요", when: "year" })).toBe("올해 나는 어떻게 될까?");
+    expect(flowQuote({ topicText: "이번엔 꼭 붙고 싶어요" })).toBe("이번엔 꼭 붙고 싶어요");
+    expect(composeFlowQuestion({ who: "work", whoText: "우리 팀", topicText: "돈 벌자 ^^", when: "month" })).toBe("이번 달 우리 팀, 어떻게 될까?");
+    expect(flowQuote({ topicText: "돈 벌자 ^^" })).toBe("돈 벌자");
+    expect(composeFlowQuestion({ who: "us", whoText: "엄마", topicText: "다같이 부자 되어봅시다~", when: "year" })).toBe("올해 엄마와 나, 어떻게 될까?");
+  });
+
+  it("still splices a named topic and keeps a typed question as the user's own", () => {
+    expect(composeFlowQuestion(group("창업 준비"))).toBe("올해 울산 AI 자동화방 창업 준비는 어떻게 될까?");
+    expect(flowQuote({ topicText: "창업 준비" })).toBeNull();
+    expect(composeFlowQuestion({ who: "me", topicText: "이직해도 될까?!", when: "month" })).toBe("이번 달 이직해도 될까?");
+    expect(flowQuote({ topicText: "이직해도 될까?" })).toBeNull();
+    expect(flowQuote({ topicText: "티끌을 얼마나 모아야" })).toBeNull();
+  });
+
+  it("takes a group or team name up to the 10-character field with two spaces, never a sentence", () => {
+    expect(personRef("울산 AI 자동화방", "group")).toBe("울산 AI 자동화방");
+    expect(personRef("울산 AI 자동화방", "work")).toBe("울산 AI 자동화방");
+    expect(personRef("울산 AI 자동화방", "us")).toBe("");
+    expect(personRef("우리 다 같이 하자", "group")).toBe("");
+    expect(cleanPart("울산 모임!! ^^")).toBe("울산 모임");
   });
 });

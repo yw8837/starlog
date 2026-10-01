@@ -33,7 +33,8 @@ export function QuestionBuilder() {
   const state = flow ?? EMPTY_FLOW;
   const topic = findTopic(state.who, state.topicId);
   const whens = allowedWhens(topic);
-  const question = summarizeFlow(flow)?.question ?? null;
+  const summary = summarizeFlow(flow);
+  const question = summary?.question ?? null;
 
   // Any change to the question drops cards dealt for an earlier one (tapping the chip already
   // chosen changes nothing, so the draw stays).
@@ -68,7 +69,10 @@ export function QuestionBuilder() {
 
       <div className={f.sentence} aria-live="polite">
         {question ? (
-          <p className={f.sentenceText}>{question}</p>
+          <>
+            <p className={f.sentenceText}>{question}</p>
+            {summary?.quote ? <p className={f.sentenceQuote}>{`“${summary.quote}”`}</p> : null}
+          </>
         ) : (
           <p className={f.sentencePlaceholder}>누구, 무엇, 언제를 고르면 질문이 완성돼요</p>
         )}

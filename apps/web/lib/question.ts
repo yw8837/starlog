@@ -30,22 +30,28 @@ export interface QuestionParts {
   whenText?: string;
 }
 
+/** Trailing decoration a sentence never carries: ~ ! ^^ ㅋㅋ ㅠㅠ and emoji (a ? stays: it marks a question). */
+const DECORATION = /[\s,.·~～!！^ㅋㅎㅠㅜ\p{Extended_Pictographic}\u{FE0F}\u{200D}]+$/u;
+
 /**
- * Trims, folds spaces, drops angle brackets (the server strips them too) and trailing
- * commas/periods, so joins never read ",," or ".,". Text without a single letter or digit counts
- * as nothing typed.
+ * Trims, folds spaces, drops angle brackets (the server strips them too) and trailing commas,
+ * periods and decoration (~ ! ^^ emoji), so joins never read ",," or "~,". Text without a single
+ * letter or digit counts as nothing typed.
  */
 export function cleanPart(text: string | undefined): string {
-  const clean = (text ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().replace(/[\s,.·]+$/u, "");
+  const clean = (text ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().replace(DECORATION, "");
   return /[\p{L}\p{N}]/u.test(clean) ? clean : "";
 }
+
+/** Typed text that ended in decoration (~ ! ^^ emoji) was said, not named: an exclamation or a wish. */
+const decorated = (text: string | undefined) => /[~～!！^ㅋㅎㅠㅜ\p{Extended_Pictographic}\u{FE0F}]$/u.test((text ?? "").trim());
 
 /**
  * Verb endings that make typed text a clause or a sentence ("모아야", "싶어요", "할지", "하면").
  * Bare 어/아/해/야 are left out: too many nouns end in them (커리어, 아이디어, 피해, 분야).
  */
 const CLAUSE_ENDING =
-  /(요|니다|다|까|죠|네|거야|이야|아야|어야|해야|여야|워야|는지|은지|인지|던지|하지|않지|겠지|하고|이고|라고|려고|자고|면서|아서|어서|해서|라서|니까|으면|하면|려면|다면|는데|은데|던데|지만|거든|잖아|싶어|싶음|있어|없어|같아|좋아|싫어|많아|않아|찮아|몰라|했어|됐어|겠어|힘들어|아파|바빠|어려워|무서워|외로워|없음|있음)$/u;
+  /(요|니다|다|시다|[하보가되나벌내살놀오]자|까|죠|네|거야|이야|아야|어야|해야|여야|워야|는지|은지|인지|던지|하지|않지|겠지|하고|이고|라고|려고|자고|면서|아서|어서|해서|라서|니까|으면|하면|려면|다면|는데|은데|던데|지만|거든|잖아|싶어|싶음|있어|없어|같아|좋아|싫어|많아|않아|찮아|몰라|했어|됐어|겠어|힘들어|아파|바빠|어려워|무서워|외로워|없음|있음)$/u;
 /** A clause ending in 지 after a syllable with ㄹ (할지, 될지, 좋을지). */
 const L_FINAL = 8;
 
@@ -73,7 +79,9 @@ function isClause(text: string): boolean {
  */
 export function personRef(text: string | undefined, who?: Who): string {
   const clean = cleanPart(text).replace(/(에게|한테|이랑|하고)$/u, "").trim();
-  if (!clean || clean.length > 8 || (clean.match(/ /g) ?? []).length > 1) return "";
+  // A team or group name may be longer ("울산 AI 자동화방"): the whole 10-character field, two spaces.
+  const group = who === "group" || who === "work";
+  if (!clean || clean.length > (group ? 10 : 8) || (clean.match(/ /g) ?? []).length > (group ? 2 : 1)) return "";
   if (/^[\d\s.,:/+-]+$/u.test(clean) || /https?:|www\.|\.(com|net|kr|io|me)\b|@/iu.test(clean)) return "";
   if (isClause(clean) || (who !== "group" && /[과와랑]$/u.test(clean))) return "";
   return clean;
@@ -98,7 +106,7 @@ export function timePhrase(text: string | undefined): string {
  * "새 프로젝트", "첫 직장"). Anything else only reaches the reading.
  */
 const WORK_PERSON = /(님|씨|선배|후배|동료|상사|고객|거래처|대표|교수|선생|사장|팀장|부장|과장|대리|사원|직원|클라이언트)$/u;
-const WORK_PLACE = /(팀|회사|직장|프로젝트|부서|사업|가게|매장|학교|학원|연구실|업무|과제|공모전|스터디|알바|아르바이트|인턴|창업)$/u;
+const WORK_PLACE = /(팀|회사|직장|프로젝트|부서|사업|가게|매장|학교|학원|연구실|업무|과제|공모전|스터디|알바|아르바이트|인턴|창업|방|모임)$/u;
 
 function workSide(name: string): "person" | "place" | null {
   if (!name) return null;
@@ -120,12 +128,6 @@ function withTime(when: { text: string; typed: boolean } | null, rest: string): 
   return when.typed && !rest.includes(",") ? `${when.text}, ${rest}` : `${when.text} ${rest}`;
 }
 
-/** "이번 주엔", "다음 주 금요일엔" (금요일에 → 금요일엔). */
-function withEn(time: string): string {
-  if (/(엔|에는|은|는)$/u.test(time)) return time;
-  return /에$/u.test(time) ? `${time.slice(0, -1)}엔` : `${time}엔`;
-}
-
 /** Question endings typed as is: "이직해도 될까", "괜찮을까요", "어떡하나요". */
 const QUESTION_END = /(까|까요|나요|가요|냐|는가)$/u;
 
@@ -139,22 +141,62 @@ function whetherQuestion(text: string): string | null {
   return null;
 }
 
+/** Two clauses in one ("회사를 그만두고 싶은데 돈이 걱정"): a sentence, whatever its last word. */
+const MID_CLAUSE = /(는데|은데|던데|지만|니까|어서|아서|해서|면서|으면|하면|려고)\s|[.!?？！。]\s/u;
+
+/** "티끌을 얼마나 모아야 (해요)" → "티끌을 얼마나 모아야 할까" */
+function mustQuestion(text: string): string | null {
+  const must = /(아야|어야|해야|여야|워야)( ?(해요|해|한다|합니다|돼요|돼|된다|하나|하나요))?$/u.exec(text);
+  return must ? `${text.slice(0, must.index + must[1]!.length)} 할까` : null;
+}
+
+/**
+ * A typed 무엇 that was said rather than named — a wish, a proposal, an exclamation or a statement
+ * ("다같이 부자 되어봅시다~", "우리 대박나자!!", "이번엔 꼭 붙고 싶어요"). It never goes into the
+ * question; the builder shows it under the question as the user wrote it, and the reading gets it.
+ */
+function isSaid(raw: string | undefined, text: string): boolean {
+  if (/[?？]$/u.test(text) || QUESTION_END.test(text) || mustQuestion(text) || whetherQuestion(text)) return false;
+  return decorated(raw) || MID_CLAUSE.test(text) || isClause(text);
+}
+
+/** The typed 무엇 to show under the question (decoration trimmed), when it was kept out of it. */
+export function flowQuote(parts: Pick<QuestionParts, "topicText">): string | null {
+  const text = cleanPart(parts.topicText);
+  return text && isSaid(parts.topicText, text) ? text : null;
+}
+
+/** The question when the typed 무엇 stays out of it: who (and when) only. */
+function plainQuestion(when: { text: string; typed: boolean } | null, who: Who, name: string): string {
+  if (who === "me") return withTime(when, "나는 어떻게 될까?");
+  const withName = name ? particle(name, "과/와") : null;
+  const side = who === "work" ? workSide(name) : null;
+  const subject =
+    who === "us"
+      ? `${withName ? `${name}${withName}` : "그 사람과"} 나`
+      : who === "work"
+        ? side === "person" && withName
+          ? `${name}${withName} 나`
+          : side === "place"
+            ? name
+            : "내 일"
+        : name
+          ? groupName(name)
+          : "우리 모임";
+  return withTime(when, `${subject}, 어떻게 될까?`);
+}
+
 /** The 무엇 typed by the user, built into a question that reads naturally. */
-function customTopicQuestion(when: { text: string; typed: boolean } | null, who: Who, name: string, topicText: string): string {
+function customTopicQuestion(when: { text: string; typed: boolean } | null, who: Who, name: string, topicText: string, raw: string | undefined): string {
   const text = topicText.replace(/[?？!！.]+$/u, "").trim();
   // Typed as a question already: used as is.
   if (/[?？]$/u.test(topicText) || QUESTION_END.test(text)) return withTime(when, `${text}?`);
-  // "티끌을 얼마나 모아야 (해요)" → "티끌을 얼마나 모아야 할까?"
-  const must = /(아야|어야|해야|여야|워야)( ?(해요|해|한다|합니다|돼요|돼|된다|하나|하나요))?$/u.exec(text);
-  if (must) return withTime(when, `${text.slice(0, must.index + must[1]!.length)} 할까?`);
+  const must = mustQuestion(text);
+  if (must) return withTime(when, `${must}?`);
   const whether = whetherQuestion(text);
   if (whether) return withTime(when, `${whether}?`);
-  // A whole sentence ("돈 많이 벌고 싶어요"): kept as the user said it, then the question.
-  if (isClause(text)) {
-    const polite = /(요|니다)$/u.test(text);
-    const time = when ? `${withEn(when.text)} ` : "";
-    return `${text}. ${time}어떻게 될까${polite ? "요" : ""}?`;
-  }
+  // Said, not named (see isSaid): the question is built from who and when only.
+  if (isSaid(raw, text)) return plainQuestion(when, who, name);
   // A noun phrase ("창업 준비"): whose it is, then the topic.
   const withName = name ? particle(name, "과/와") : null;
   const side = who === "work" ? workSide(name) : null;
@@ -221,7 +263,7 @@ export function composeFlowQuestion(parts: QuestionParts): string | null {
   const time = typedWhen ? timePhrase(typedWhen) : "";
   const when = typedWhen ? (time ? { text: time, typed: true } : null) : { text: WHEN_KO[parts.when!], typed: false };
 
-  if (topicText) return customTopicQuestion(when, parts.who, name, topicText);
+  if (topicText) return customTopicQuestion(when, parts.who, name, topicText, parts.topicText);
 
   const topic = parts.topic;
   if (!topic || !TOPICS_BY_WHO[parts.who].includes(topic)) return null;

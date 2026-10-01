@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { TOPICS_BY_WHO, type TopicDef, type When, type Who } from "@starlog/core";
 import { isStale } from "./freshStart";
-import { CUSTOM_MAX, WHO_MAX, cleanPart, composeFlowQuestion } from "./question";
+import { CUSTOM_MAX, WHO_MAX, cleanPart, composeFlowQuestion, flowQuote } from "./question";
 import type { DrawTemplateId, DrawnCardData, TarotInput } from "./reading/types";
 
 /**
@@ -148,6 +148,8 @@ export interface FlowSummary {
   note: string;
   /** A typed 무엇: no situation chips, a topic-neutral note example. */
   custom: boolean;
+  /** A typed 무엇 said rather than named (a wish, an exclamation): shown under the question, not in it. */
+  quote?: string;
   /** The chip topic (absent for a typed 무엇). */
   topic?: TopicDef;
 }
@@ -170,6 +172,7 @@ export function summarizeFlow(flow: FlowState | null): FlowSummary | null {
     note: flow.note,
     custom,
     ...(topic ? { topic } : {}),
+    ...(custom && flowQuote({ topicText: flow.topicText }) ? { quote: flowQuote({ topicText: flow.topicText })! } : {}),
   };
 }
 

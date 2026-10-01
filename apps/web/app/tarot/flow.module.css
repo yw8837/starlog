@@ -38,6 +38,15 @@
   text-wrap: balance;
 }
 
+/* A typed 무엇 said rather than named, as the user wrote it, under the question. */
+.sentenceQuote {
+  margin-top: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
 .sentencePlaceholder {
   color: var(--ink-sub);
   font-size: var(--fs-body);

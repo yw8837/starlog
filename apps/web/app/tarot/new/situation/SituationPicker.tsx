@@ -48,6 +48,7 @@ export function SituationPicker() {
 
       <div className={f.sentence}>
         <p className={f.sentenceText}>{summary.question}</p>
+        {summary.quote ? <p className={f.sentenceQuote}>{`“${summary.quote}”`}</p> : null}
       </div>
 
       <div className={f.intro}>
