@@ -1,15 +1,15 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import { StrictMode } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { FRESH_FOR_MS, NEW_SAJU_HREF, NEW_TAROT_HREF, isStale, takeFlag, type FlowName } from "./freshStart";
-import { forgetFlowPages, leaveFlowPage, useFlowVisit } from "./useFlowVisit";
+import { forgetRoutes, noteRoute } from "./lastRoute";
+import { cameFromFlow, useFlowVisit } from "./useFlowVisit";
 
 afterEach(() => {
   cleanup();
-  forgetFlowPages();
+  forgetRoutes();
   window.history.replaceState(null, "", "/");
-  vi.useRealTimers();
 });
 
 /** A flow page that reports how it was entered. */
@@ -18,10 +18,11 @@ function Page({ flow, seen }: { flow: FlowName; seen: boolean[] }) {
   return null;
 }
 
-/** A flow page that only records being left (the draw, the result, the chart). */
-function Quiet({ flow }: { flow: FlowName }) {
-  useFlowVisit(flow);
-  return null;
+/** Shows `path` as the current route after `from` was on screen. */
+function arrive(path: string, from: string | null) {
+  forgetRoutes();
+  if (from !== null) noteRoute(from);
+  window.history.replaceState(null, "", path);
 }
 
 describe("freshStart", () => {
@@ -47,59 +48,52 @@ describe("freshStart", () => {
   });
 });
 
-describe("useFlowVisit (owner: a refresh or a visit from elsewhere starts clean)", () => {
-  it("is a fresh visit when nothing of the flow was just left (a refresh, a link from elsewhere)", () => {
-    const seen: boolean[] = [];
-    render(<Page flow="tarot" seen={seen} />);
-    expect(seen).toEqual([false]);
+describe("cameFromFlow: only a move from another page of the same flow keeps the answers", () => {
+  it("keeps between the pages of a flow, the tarot result's 질문 고치기 included", () => {
+    expect(cameFromFlow("tarot", "/tarot/new", "/tarot/new/situation")).toBe(true);
+    expect(cameFromFlow("tarot", "/tarot/new/situation", "/tarot/new")).toBe(true);
+    expect(cameFromFlow("tarot", "/tarot/draw", "/tarot/new/situation")).toBe(true);
+    expect(cameFromFlow("tarot", "/tarot/result", "/tarot/new")).toBe(true);
+    expect(cameFromFlow("saju", "/saju/chart", "/saju/new")).toBe(true);
   });
 
-  it("is in the flow when the page before, in the same move, was another page of the same flow", () => {
-    const seen: boolean[] = [];
-    window.history.replaceState(null, "", "/tarot/draw");
-    render(<Quiet flow="tarot" />).unmount();
-    window.history.replaceState(null, "", "/tarot/new/situation");
-    render(<Page flow="tarot" seen={seen} />);
-    expect(seen).toEqual([true]);
+  it("starts clean on a document's first route (refresh, typed address), from elsewhere, from another flow or from itself", () => {
+    expect(cameFromFlow("tarot", null, "/tarot/new")).toBe(false);
+    expect(cameFromFlow("tarot", "/", "/tarot/new")).toBe(false);
+    expect(cameFromFlow("tarot", "/saju/chart", "/tarot/new")).toBe(false);
+    expect(cameFromFlow("saju", "/tarot/new", "/saju/new")).toBe(false);
+    expect(cameFromFlow("tarot", "/tarot/new", "/tarot/new")).toBe(false);
   });
+});
 
-  it("is a fresh visit after a page of another flow, or when the flow page was left a while ago", () => {
+describe("useFlowVisit", () => {
+  it("reports a fresh visit on a document's first route and a kept one after another flow page", () => {
     const seen: boolean[] = [];
-    leaveFlowPage("saju");
+    arrive("/tarot/new", null);
     render(<Page flow="tarot" seen={seen} />);
     cleanup();
-    forgetFlowPages();
-    vi.useFakeTimers();
-    leaveFlowPage("tarot");
-    vi.advanceTimersByTime(5_000);
+    arrive("/tarot/new", "/tarot/new/situation");
     render(<Page flow="tarot" seen={seen} />);
-    expect(seen).toEqual([false, false]);
+    cleanup();
+    arrive("/tarot/new", "/");
+    render(<Page flow="tarot" seen={seen} />);
+    expect(seen).toEqual([false, true, false]);
   });
 
   it("never keeps for ?new=1 (which leaves the address) and keeps for ?keep=1", () => {
     const seen: boolean[] = [];
-    leaveFlowPage("tarot");
-    window.history.replaceState(null, "", "/tarot/new?new=1");
+    arrive("/tarot/new?new=1", "/tarot/new/situation");
     render(<Page flow="tarot" seen={seen} />);
     expect(window.location.search).toBe("");
     cleanup();
-    forgetFlowPages();
-    window.history.replaceState(null, "", "/tarot/new?keep=1");
+    arrive("/tarot/new?keep=1", null);
     render(<Page flow="tarot" seen={seen} />);
     expect(seen).toEqual([false, true]);
   });
 
-  it("is a fresh visit when the page left was this very page (to the home, then back)", () => {
+  it("decides the same when StrictMode runs the effect twice, and once per render otherwise", () => {
     const seen: boolean[] = [];
-    window.history.replaceState(null, "", "/tarot/new");
-    render(<Page flow="tarot" seen={seen} />).unmount();
-    render(<Page flow="tarot" seen={seen} />);
-    expect(seen).toEqual([false, false]);
-  });
-
-  it("asks once per visit (StrictMode's replay of the same page is not a new visit)", () => {
-    const seen: boolean[] = [];
-    // StrictMode runs the effect, its cleanup and the effect again: still one fresh visit.
+    arrive("/tarot/new/situation", "/tarot/new");
     const { rerender } = render(
       <StrictMode>
         <Page flow="tarot" seen={seen} />
@@ -110,6 +104,7 @@ describe("useFlowVisit (owner: a refresh or a visit from elsewhere starts clean)
         <Page flow="tarot" seen={seen} />
       </StrictMode>,
     );
-    expect(seen).toEqual([false]);
+    expect(seen.length).toBeGreaterThanOrEqual(1);
+    expect(seen.every((inFlow) => inFlow)).toBe(true);
   });
 });

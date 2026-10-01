@@ -2,9 +2,10 @@
  * A question's answers live only while the user moves inside its flow (owner: "새로고침이나 페이지
  * 이동하면 초기화좀"). The tarot flow is 질문 ⇄ 상황 → 카드 뽑기 (and 결과, whose 질문 고치기 leads
  * back), the saju flow 입력 ⇄ 명식. The builder, the situation step and the saju form keep the
- * answers only when the page shown just before was a page of the same flow — a link, a push or
- * browser back/forward between them (lib/useFlowVisit.ts); a refresh, a link from elsewhere or back
- * from the home starts clean, and so do answers left alone for 30 minutes. `?new=1` on the links that
+ * answers only when the route shown just before was another page of the same flow — a link, a
+ * push or browser back/forward between them (lib/useFlowVisit.ts, with the route tracker in the
+ * root layout); a refresh, a link from elsewhere or back from the home starts clean, and so do
+ * answers left alone for 30 minutes. `?new=1` on the links that
  * start a question is dropped from the address on arrival; `?keep=1` asks to keep (tests) and stays.
  * No React here: server components import the hrefs. The saju birth profile is never reset: only
  * the chips and concern.

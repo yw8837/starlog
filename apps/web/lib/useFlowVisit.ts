@@ -1,49 +1,41 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { takeFlag, type FlowName } from "./freshStart";
+import { lastRoute } from "./lastRoute";
+
+/** Routes a move inside each flow comes from (the result's 질문 고치기 leads back into the tarot flow). */
+const FLOW_ROUTES: Readonly<Record<FlowName, readonly string[]>> = {
+  tarot: ["/tarot/new", "/tarot/new/situation", "/tarot/draw", "/tarot/result"],
+  saju: ["/saju/new", "/saju/chart"],
+};
 
 /**
- * Which flow page was left last, where it was and when (this tab's JS only: a refresh forgets it).
- * A page of a flow records itself when it goes away; the next page of the same flow, shown in the
- * same move, reads it. That covers links, pushes and browser back/forward alike, with no address
- * change. Coming back to the very page that was left (home, then back) is not a move inside the flow.
+ * True when `from` (the route shown before) is another page of `flow` than `here`. A document's
+ * first route (refresh, typed address, link from another site) has no route before it.
  */
-let left: { flow: FlowName; path: string; at: number; page: symbol } | null = null;
-
-/** The page shown next in the same move comes right after: a later visit is a new start. */
-const SAME_MOVE_MS = 2_000;
-
-/** As if a page of `flow` at `path` was just left (the hook's cleanup; tests). */
-export function leaveFlowPage(flow: FlowName, path = "/elsewhere-in-flow", page: symbol = Symbol("page")) {
-  left = { flow, path, at: performance.now(), page };
-}
-
-/** Forgets the last page left (tests: each starts like a fresh tab). */
-export function forgetFlowPages() {
-  left = null;
+export function cameFromFlow(flow: FlowName, from: string | null, here: string): boolean {
+  return from !== null && from !== here && FLOW_ROUTES[flow].includes(from);
 }
 
 /**
- * A page of `flow`. Before its first paint, `onEnter(inFlow)` is told whether it was reached from
- * another page of the same flow in this move, or asked to keep with `?keep=1` (tests; it stays in
- * the address). `?new=1` never keeps and is dropped from the address. React's StrictMode replay (the
- * same page left and shown again at once) is not a new visit.
+ * A page of `flow` that keeps its answers only on a move inside the flow. Before its first paint,
+ * `onEnter(inFlow)` says whether the route shown before was another page of the same flow (or the
+ * address asks to keep with `?keep=1`, tests; `?new=1` never keeps and leaves the address). The
+ * route before is read while the page first renders (lib/lastRoute.ts), so the decision does not
+ * depend on the order the router mounts and unmounts pages; running it twice decides the same.
  */
-export function useFlowVisit(flow: FlowName, onEnter?: (inFlow: boolean) => void) {
-  const page = useRef<symbol>(Symbol("page"));
-  const enter = useRef(onEnter);
-  enter.current = onEnter;
+export function useFlowVisit(flow: FlowName, onEnter: (inFlow: boolean) => void) {
+  // The route before, as it was when this page first rendered.
+  const [first] = useState(lastRoute);
+  const shown = useRef(false);
   useLayoutEffect(() => {
-    const now = performance.now();
-    const path = window.location.pathname;
-    const last = left;
-    left = null;
-    const replay = last?.page === page.current && now - last.at < 50;
-    if (!replay && enter.current) {
-      const fromFlow = Boolean(last && last.flow === flow && last.path !== path && now - last.at < SAME_MOVE_MS);
-      const keep = new URL(window.location.href).searchParams.has("keep");
-      const fresh = takeFlag("new");
-      enter.current(!fresh && (fromFlow || keep));
-    }
-    return () => leaveFlowPage(flow, path, page.current);
-  }, [flow]);
+    // Shown again later without a new render (a page kept by the router and brought back): the
+    // route before is the one just left.
+    const from = shown.current ? lastRoute() : first;
+    shown.current = true;
+    const here = window.location.pathname;
+    const keep = new URL(window.location.href).searchParams.has("keep");
+    const fresh = takeFlag("new");
+    onEnter(!fresh && (cameFromFlow(flow, from, here) || keep));
+    // Once per time the page is shown: a re-render must not decide again.
+  }, []);
 }

@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FLOW_KEY } from "@/lib/flowState";
-import { forgetFlowPages, leaveFlowPage } from "@/lib/useFlowVisit";
+import { forgetRoutes, noteRoute } from "@/lib/lastRoute";
 import { QuestionBuilder } from "./QuestionBuilder";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
@@ -16,7 +16,7 @@ const stored = () => JSON.parse(sessionStorage.getItem(FLOW_KEY) ?? "{}");
 
 afterEach(() => {
   cleanup();
-  forgetFlowPages();
+  forgetRoutes();
   sessionStorage.clear();
 });
 
@@ -27,7 +27,8 @@ afterEach(() => {
 const seed = (flow: object, ago = 0, fromFlow = true) => {
   sessionStorage.setItem(FLOW_KEY, JSON.stringify({ conditions: {}, note: "", ...flow, savedAt: Date.now() - ago }));
   window.history.replaceState(null, "", "/tarot/new");
-  if (fromFlow) leaveFlowPage("tarot");
+  forgetRoutes();
+  if (fromFlow) noteRoute("/tarot/new/situation");
 };
 const pressed = (name: string) => screen.getByRole("button", { name }).getAttribute("aria-pressed");
 const next = () => screen.getByRole("button", { name: /^다음/ }) as HTMLButtonElement;
