@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { LUCKY_NOTICE, kstWeekId } from "@starlog/core";
-import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
+import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
 import { Button } from "@/components/ui/Button";
 import { ShareImageButton } from "@/components/ui/ShareImageButton";
 import { SITE } from "@/lib/config";
@@ -96,13 +96,11 @@ export function LuckyView() {
 
 function LuckyForm({ onDone }: { onDone: (lucky: Lucky) => void }) {
   const { profile } = useSajuProfile();
-  const initial: BirthValue = profile
-    ? { calendar: profile.calendar, year: profile.year, month: profile.month, day: profile.day, isLeapMonth: profile.isLeapMonth }
-    : EMPTY_BIRTH;
-  return <Form key={profile ? "profile" : "fresh"} initial={initial} onDone={onDone} />;
+  const initial = savedBirth(profile);
+  return <Form key={initial ? "profile" : "fresh"} initial={initial ?? EMPTY_BIRTH} prefilled={Boolean(initial)} onDone={onDone} />;
 }
 
-function Form({ initial, onDone }: { initial: BirthValue; onDone: (lucky: Lucky) => void }) {
+function Form({ initial, prefilled, onDone }: { initial: BirthValue; prefilled: boolean; onDone: (lucky: Lucky) => void }) {
   const [birth, setBirth] = useState<BirthValue>(initial);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -126,7 +124,7 @@ function Form({ initial, onDone }: { initial: BirthValue; onDone: (lucky: Lucky)
   };
   return (
     <form className={`${b.panel} ${b.form}`} onSubmit={submit} noValidate>
-      <BirthFields id="lucky-birth" value={birth} onChange={setBirth} error={error} helper="번호를 고르는 데만 쓰고 저장하지 않아요. 태어난 시간은 쓰지 않아요." />
+      <BirthFields id="lucky-birth" prefilled={prefilled} value={birth} onChange={setBirth} error={error} helper="번호를 고르는 데만 쓰고 저장하지 않아요. 태어난 시간은 쓰지 않아요." />
       <Button type="submit" block disabled={busy}>
         이번 주 번호 받기
       </Button>

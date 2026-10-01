@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
+import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { bondsApi, bondsMessage, rememberSunSign, sunSignOf } from "@/lib/bonds/client";
@@ -15,14 +15,12 @@ import b from "@/components/bonds/bonds.module.css";
  */
 export function OwnerSetup({ onDone }: { onDone: () => void }) {
   const { profile } = useSajuProfile();
-  const initial: BirthValue | null = profile
-    ? { calendar: profile.calendar, year: profile.year, month: profile.month, day: profile.day, isLeapMonth: profile.isLeapMonth }
-    : null;
+  const initial = savedBirth(profile);
   // Remount once the saved profile is read, so the fields start from it.
-  return <SetupForm key={initial ? "profile" : "fresh"} initial={initial ?? EMPTY_BIRTH} onDone={onDone} />;
+  return <SetupForm key={initial ? "profile" : "fresh"} initial={initial ?? EMPTY_BIRTH} prefilled={Boolean(initial)} onDone={onDone} />;
 }
 
-function SetupForm({ initial, onDone }: { initial: BirthValue; onDone: () => void }) {
+function SetupForm({ initial, prefilled, onDone }: { initial: BirthValue; prefilled: boolean; onDone: () => void }) {
   const [nickname, setNickname] = useState("");
   const [birth, setBirth] = useState<BirthValue>(initial);
   const [consent, setConsent] = useState(false);
@@ -69,7 +67,7 @@ function SetupForm({ initial, onDone }: { initial: BirthValue; onDone: () => voi
           value={nickname}
           maxLength={NICKNAME_MAX + 4}
           onChange={(e) => setNickname(e.target.value)}
-          placeholder="예: 별빛용우"
+          placeholder="예: 불량감자, 불꽃속성 알감자"
           autoComplete="nickname"
           enterKeyHint="next"
           aria-invalid={Boolean(errors.nickname)}
@@ -87,6 +85,7 @@ function SetupForm({ initial, onDone }: { initial: BirthValue; onDone: () => voi
 
       <BirthFields
         id="bonds-birth"
+        prefilled={prefilled}
         value={birth}
         onChange={setBirth}
         error={errors.birth}

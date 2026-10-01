@@ -1,8 +1,9 @@
 "use client";
 
+import { useRef, type Ref } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Segmented } from "@/components/ui/Segmented";
-import { CALENDAR_LABEL, MIN_BIRTH_YEAR, daysInMonth, todayInKorea, type Calendar } from "@/lib/sajuForm";
+import { CALENDAR_LABEL, MIN_BIRTH_YEAR, daysInMonth, todayInKorea, type Calendar, type SajuForm } from "@/lib/sajuForm";
 import s from "./bonds.module.css";
 
 /** The date being entered; a part stays null until it is picked (no date is ever assumed). */
@@ -20,6 +21,11 @@ export const birthComplete = (value: BirthValue): value is BirthValue & { year: 
   value.year !== null && value.month !== null && value.day !== null;
 
 export const BIRTH_MISSING = "생년월일을 끝까지 골라 주세요";
+
+/** The date part of this device's saved saju profile (the user's own local data), or null without one. */
+export function savedBirth(profile: SajuForm | null | undefined): BirthValue | null {
+  return profile ? { calendar: profile.calendar, year: profile.year, month: profile.month, day: profile.day, isLeapMonth: profile.isLeapMonth } : null;
+}
 
 const CALENDAR_OPTIONS = (["solar", "lunar"] as const).map((value) => ({ value, label: CALENDAR_LABEL[value] }));
 const range = (from: number, to: number) => Array.from({ length: Math.abs(to - from) + 1 }, (_, i) => (from <= to ? from + i : from - i));
@@ -49,16 +55,23 @@ type BirthFieldsProps = {
   error?: string;
   /** the line under the fields (what the date is used for) */
   helper: string;
+  /** the date came from the saved saju profile: say so, with 바꾸기 to go to the fields */
+  prefilled?: boolean;
 };
 
 /** 생년월일: 양력/음력, year · month · day selects (each starts at 선택), 윤달. No time: the 인연 score is date-only. */
-export function BirthFields({ value, onChange, id, error, helper }: BirthFieldsProps) {
+export function BirthFields({ value, onChange, id, error, helper, prefilled = false }: BirthFieldsProps) {
   const today = todayInKorea();
+  const yearRef = useRef<HTMLSelectElement>(null);
   const describedBy = [`${id}-help`, error ? `${id}-error` : ""].filter(Boolean).join(" ");
-  const select = (label: string, current: number | null, options: number[], unit: string, patch: (n: number | null) => Partial<BirthValue>) => (
+  const select = (
+    label: string, current: number | null, options: number[], unit: string, patch: (n: number | null) => Partial<BirthValue>,
+    ref?: Ref<HTMLSelectElement>,
+  ) => (
     <label className={s.dateField}>
       <span className={s.selectWrap}>
         <select
+          ref={ref}
           aria-label={label}
           className={s.select}
           value={current ?? ""}
@@ -81,9 +94,17 @@ export function BirthFields({ value, onChange, id, error, helper }: BirthFieldsP
   return (
     <fieldset className={s.group}>
       <legend className={s.label}>생년월일</legend>
+      {prefilled ? (
+        <p className={s.prefilled}>
+          저장된 사주 정보로 채웠어요
+          <button type="button" className={s.textButton} onClick={() => yearRef.current?.focus()}>
+            바꾸기
+          </button>
+        </p>
+      ) : null}
       <Segmented<Calendar> label="양력 또는 음력" options={CALENDAR_OPTIONS} value={value.calendar} onChange={(calendar) => onChange(withDate(value, { calendar }))} />
       <div className={s.dateRow}>
-        {select("태어난 연도", value.year, range(today.year, MIN_BIRTH_YEAR), "년", (year) => ({ year }))}
+        {select("태어난 연도", value.year, range(today.year, MIN_BIRTH_YEAR), "년", (year) => ({ year }), yearRef)}
         {select("태어난 월", value.month, range(1, 12), "월", (month) => ({ month }))}
         {select("태어난 일", value.day, range(1, daysFor(value)), "일", (day) => ({ day }))}
       </div>

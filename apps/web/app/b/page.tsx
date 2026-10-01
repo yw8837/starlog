@@ -28,7 +28,7 @@ export default function InviteEntryPage() {
           <p className={b.helper}>친구에게 받은 6자리 코드를 넣으면 친구의 별자리에 별이 될 수 있어요. 대소문자는 상관없어요.</p>
         </header>
         <div className={b.panel}>
-          <CodeEntry autoFocus />
+          <CodeEntry autoFocus replace />
         </div>
         <Button href="/bonds" variant="secondary" block>
           나도 내 별자리 만들기

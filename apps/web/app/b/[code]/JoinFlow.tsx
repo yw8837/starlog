@@ -2,36 +2,29 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
-import { getCard, getConstellation, type BondPart, type Orientation, type SignId } from "@starlog/core";
-import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
+import { getCard, getConstellation } from "@starlog/core";
+import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
 import { CodeEntry } from "@/components/bonds/CodeEntry";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
+import { InviteShareButton } from "@/components/bonds/InviteShareButton";
 import { Cat } from "@/components/characters/Cat";
 import { CardFan, fanIndexes } from "@/components/tarot/CardFan";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { bondsApi, bondsMessage } from "@/lib/bonds/client";
+import { bondsApi, bondsMessage, copyText } from "@/lib/bonds/client";
 import { MESSAGE_MAX, NICKNAME_MAX, NICKNAME_MIN } from "@/lib/bonds/text";
-import type { InviteState } from "./loadInvite";
+import { useSajuProfile } from "@/lib/sajuFlow";
+import type { FriendResultView, InviteState } from "./loadInvite";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./JoinFlow.module.css";
 
 type Open = Extract<InviteState, { status: "open" }>;
+type Self = Extract<InviteState, { status: "self" }>;
 type Phase = "form" | "shuffle" | "pick" | "message" | "result";
 
-interface JoinResult {
-  nickname: string;
-  score: number;
-  parts: BondPart[];
-  completed: boolean;
-  sign: SignId;
-  slot: number;
-  ownerNickname: string;
-  card: { cardId: string; orientation: Orientation };
-  bondLine: string;
-}
+type JoinResult = FriendResultView;
 
 const FAN = fanIndexes(78, 21);
 
@@ -42,6 +35,9 @@ const FAN = fanIndexes(78, 21);
  */
 export function JoinFlow({ state }: { state: InviteState }) {
   if (state.status === "open") return <OpenInvite invite={state} />;
+  if (state.status === "self") return <SelfInvite invite={state} />;
+  if (state.status === "joined") return <Result result={state.result} again />;
+  const earlier = state.status === "choosing" || state.status === "alldone" ? state.earlier : null;
   return (
     <section className={s.closed}>
       <Cat outfit="tarot" expression={state.status === "alldone" ? "happy" : state.status === "choosing" ? "focus" : "surprise"} size={120} reactOnTap={false} />
@@ -58,9 +54,10 @@ export function JoinFlow({ state }: { state: InviteState }) {
       </h1>
       {state.status === "bad" ? (
         <div className={`${b.panel} ${s.entry}`}>
-          <CodeEntry id="retry-code" />
+          <CodeEntry id="retry-code" replace />
         </div>
       ) : null}
+      {earlier ? <EarlierStar earlier={earlier} /> : null}
       <Button href="/bonds" variant="secondary" block>
         나도 내 별자리 만들기
       </Button>
@@ -68,11 +65,83 @@ export function JoinFlow({ state }: { state: InviteState }) {
   );
 }
 
+/** The owner opened their own link (Q-11): the code to send, no form. */
+function SelfInvite({ invite }: { invite: Self }) {
+  const [toast, setToast] = useState("");
+  return (
+    <section className={s.closed} aria-labelledby="self-title">
+      {invite.sign ? <ConstellationArt sign={invite.sign} lit={invite.filled} size={180} className={s.headArt} /> : null}
+      <h1 id="self-title" className={s.title}>
+        내 초대코드예요
+      </h1>
+      <p className={b.helper}>친구에게 보내 주세요. 들어온 순서대로 내 별자리의 다음 별이 돼요.</p>
+      <p className={s.code} aria-label={`초대코드 ${invite.code.split("").join(" ")}`}>
+        {invite.code}
+      </p>
+      <div className={`${b.actions} ${s.wide}`}>
+        {invite.sign ? <InviteShareButton code={invite.code} sign={invite.sign} filled={invite.filled} /> : null}
+        <Button variant="secondary" block onClick={async () => setToast((await copyText(invite.code)) === "copied" ? "코드를 복사했어요" : "복사하지 못했어요. 코드를 직접 알려 주세요")}>
+          코드 복사
+        </Button>
+        <p className={b.toast} role="status">
+          {toast}
+        </p>
+        <Button href="/bonds" variant="ghost" block>
+          내 별자리로 가기
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+/** This device's star in an earlier sign of the same owner (Q-05), folded under 결과 보기. */
+function EarlierStar({ earlier }: { earlier: JoinResult }) {
+  const def = getConstellation(earlier.sign);
+  const card = getCard(earlier.card.cardId);
+  return (
+    <details className={`${b.panel} ${s.earlier}`}>
+      <summary>
+        <span className={s.earlierTitle}>이미 {def.ko}에 별이 됐어요</span>
+        <span className={s.earlierMore}>결과 보기</span>
+      </summary>
+      <p className={s.score}>
+        인연 <strong>{earlier.score}</strong>점
+      </p>
+      <ul className={s.parts} aria-label="점수 근거">
+        {earlier.parts.map((part) => (
+          <li key={part.id}>
+            <span>{part.text}</span>
+            <span>{part.points > 0 ? `+${part.points}` : part.points === 0 ? "" : part.points}</span>
+          </li>
+        ))}
+      </ul>
+      <p className={s.line}>
+        인연 카드 · {card.names.ko}
+        {earlier.card.orientation === "reversed" ? " 역방향" : ""}. {earlier.bondLine}
+      </p>
+    </details>
+  );
+}
+
 function OpenInvite({ invite }: { invite: Open }) {
   const def = getConstellation(invite.sign);
   const [phase, setPhase] = useState<Phase>("form");
   const [nickname, setNickname] = useState("");
-  const [birth, setBirth] = useState<BirthValue>(EMPTY_BIRTH);
+  const [birth, setBirthValue] = useState<BirthValue>(EMPTY_BIRTH);
+  // This device's own saved saju profile fills the date once it is read, unless the friend already chose one.
+  const { profile } = useSajuProfile();
+  const [prefilled, setPrefilled] = useState(false);
+  const [touched, setTouched] = useState(false);
+  const saved = savedBirth(profile);
+  useEffect(() => {
+    if (!saved || touched || prefilled) return;
+    setBirthValue(saved);
+    setPrefilled(true);
+  }, [saved, touched, prefilled]);
+  const setBirth = (value: BirthValue) => {
+    setTouched(true);
+    setBirthValue(value);
+  };
   const [consent, setConsent] = useState(false);
   const [pick, setPick] = useState<number | null>(null);
   const [message, setMessage] = useState("");
@@ -128,7 +197,7 @@ function OpenInvite({ invite }: { invite: Open }) {
     }
     const { ok: _ok, ...joined } = res;
     // The birth date and the rest of the form are not kept once the star is in.
-    setBirth(EMPTY_BIRTH);
+    setBirthValue(EMPTY_BIRTH);
     setMessage("");
     setResult(joined as JoinResult);
     setPhase("result");
@@ -151,6 +220,7 @@ function OpenInvite({ invite }: { invite: Open }) {
         </p>
       </header>
 
+      {phase === "form" && invite.earlier ? <EarlierStar earlier={invite.earlier} /> : null}
       {phase === "form" ? (
         <form className={`${b.panel} ${b.form}`} onSubmit={next} noValidate>
           <div className={b.group}>
@@ -168,7 +238,7 @@ function OpenInvite({ invite }: { invite: Open }) {
               value={nickname}
               maxLength={NICKNAME_MAX + 4}
               onChange={(e) => setNickname(e.target.value)}
-              placeholder="예: 하늘"
+              placeholder="예: 불꽃속성 알감자"
               autoComplete="nickname"
               aria-invalid={Boolean(errors.nickname)}
               aria-describedby="friend-nickname-help"
@@ -184,6 +254,7 @@ function OpenInvite({ invite }: { invite: Open }) {
           </div>
           <BirthFields
             id="friend-birth"
+            prefilled={prefilled}
             value={birth}
             onChange={setBirth}
             error={errors.birth}
@@ -280,7 +351,7 @@ function OpenInvite({ invite }: { invite: Open }) {
   );
 }
 
-function Result({ result, headingRef }: { result: JoinResult; headingRef: RefObject<HTMLHeadingElement | null> }) {
+function Result({ result, headingRef, again = false }: { result: JoinResult; headingRef?: RefObject<HTMLHeadingElement | null>; again?: boolean }) {
   const def = getConstellation(result.sign);
   const card = getCard(result.card.cardId);
   const reversed = result.card.orientation === "reversed";
@@ -290,7 +361,7 @@ function Result({ result, headingRef }: { result: JoinResult; headingRef: RefObj
         {result.ownerNickname}님의 {def.ko} · {result.slot + 1}번째 별
       </p>
       <h1 id="result-title" ref={headingRef} tabIndex={-1} className={s.title}>
-        {result.completed ? `${def.ko}가 완성됐어요` : `${def.ko}에 별이 됐어요`}
+        {again ? `이미 ${def.ko}에 별이 되어 있어요` : result.completed ? `${def.ko}가 완성됐어요` : `${def.ko}에 별이 됐어요`}
       </h1>
       <div className={`${b.panel} ${b.panelGold} ${s.scoreCard}`}>
         <p className={s.score}>

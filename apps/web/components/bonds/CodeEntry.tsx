@@ -7,7 +7,7 @@ import { normalizeCode } from "@/lib/bonds/text";
 import s from "./bonds.module.css";
 
 /** 초대코드 6자리 → /b/<CODE> (case and spaces do not matter). */
-export function CodeEntry({ id = "invite-code", autoFocus = false }: { id?: string; autoFocus?: boolean }) {
+export function CodeEntry({ id = "invite-code", autoFocus = false, replace = false }: { id?: string; autoFocus?: boolean; replace?: boolean }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -21,7 +21,9 @@ export function CodeEntry({ id = "invite-code", autoFocus = false }: { id?: stri
           setError("코드를 다시 확인해 주세요");
           return;
         }
-        router.push(`/b/${clean}`);
+        // From the code-entry screen itself, replace it: back from the friend page should not land on it again.
+        if (replace) router.replace(`/b/${clean}`);
+        else router.push(`/b/${clean}`);
       }}
       noValidate
     >

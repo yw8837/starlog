@@ -280,3 +280,13 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
 }
+
+/* "저장된 사주 정보로 채웠어요" + 바꾸기 on one line, wrapping as a whole on narrow phones. */
+.prefilled {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 8px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}

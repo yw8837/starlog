@@ -158,3 +158,50 @@
   color: var(--ink);
   text-underline-offset: 3px;
 }
+
+/* ---- the owner's own link ---- */
+
+.code {
+  color: var(--ink);
+  font-family: var(--font-display), serif;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  padding-left: 0.22em;
+  font-variant-numeric: tabular-nums;
+}
+
+.wide {
+  width: 100%;
+}
+
+/* ---- an earlier star of this device ---- */
+
+.earlier {
+  text-align: left;
+}
+
+.earlier summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.earlier summary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.earlierTitle {
+  font-weight: 700;
+}
+
+.earlierMore {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
