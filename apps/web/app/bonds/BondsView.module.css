@@ -370,12 +370,6 @@
   gap: 10px;
 }
 
-.joinRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
 .inlineLink {
   color: var(--ink);
   text-underline-offset: 3px;

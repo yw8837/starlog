@@ -59,6 +59,31 @@ async function inviteCode(page: Page): Promise<string> {
   return code;
 }
 
+/** Fan cards overlap, so click the card on a point where it is the top-most element. */
+async function pickFanCard(page: Page, n: number) {
+  const point = await page.evaluate((index) => {
+    const el = document.querySelectorAll("[data-fan-index]")[index];
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    for (let y = r.top + 6; y < r.bottom; y += 6)
+      for (let x = r.left + 2; x < r.right; x += 3)
+        if (document.elementFromPoint(x, y)?.closest("[data-fan-index]") === el) return { x, y };
+    return null;
+  }, n);
+  expect(point, `fan card ${n} has a visible spot`).not.toBeNull();
+  await page.mouse.click(point!.x, point!.y);
+}
+
+/** An owner made through the API (its own device and network), optionally with a chosen sign. */
+async function apiOwner(baseURL: string, nickname: string, sign: string | null): Promise<{ owner: APIRequestContext; code: string }> {
+  const owner = await playwrightRequest.newContext({ baseURL, extraHTTPHeaders: { "cf-connecting-ip": nextIp() } });
+  const res = await owner.post("/api/bonds/owner", { data: { nickname, birth: { calendar: "solar", year: 1990, month: 1, day: 1 } } });
+  expect(res.status(), await res.text()).toBe(200);
+  const { code } = (await res.json()) as { code: string };
+  if (sign) expect((await owner.post("/api/bonds/choose", { data: { sign } })).status()).toBe(200);
+  return { owner, code };
+}
+
 test.describe("별자리 인연 · owner", () => {
   test("start → 양자리 → 4 friends → complete → 도감 → ranking → 새로 채우기 → home badge", async ({ page, baseURL }) => {
     await startOwner(page);
@@ -129,5 +154,64 @@ test.describe("별자리 인연 · owner", () => {
     const start = page.getByRole("link", { name: "이 별자리 채우기" });
     await expect(start).toHaveAttribute("href", "/bonds?sign=leo");
     await shot(page, "ranking-visitor");
+  });
+});
+
+test.describe("별자리 인연 · friend", () => {
+  test("/b with a lower-case code → join → score, reasons, 인연 카드 → 나도 내 별자리 만들기", async ({ page, baseURL }) => {
+    const { code } = await apiOwner(baseURL!, "용우", "aries");
+    await friendJoin(baseURL!, code, FRIENDS[0]!, 0);
+
+    await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
+    await page.goto("/b", { timeout: 120_000 });
+    await page.getByLabel("초대코드").fill(code.toLowerCase());
+    await page.getByRole("button", { name: "참여하기" }).click();
+    await expect(page).toHaveURL(new RegExp(`/b/${code}$`), { timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "용우님의 양자리에 별이 되어 주세요" })).toBeVisible();
+    await expect(page.getByText("1/4", { exact: true })).toBeVisible();
+    await expect(page.getByText("용우님이 별자리를 공유하면 이 닉네임이 이미지에 보여요")).toBeVisible();
+    await shot(page, "friend-form");
+
+    await page.getByLabel("닉네임").fill("하늘");
+    await page.getByLabel("태어난 연도").selectOption("1992");
+    await page.getByLabel("태어난 월").selectOption("8");
+    await page.getByLabel("태어난 일").selectOption("3");
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "카드 고르러 가기" }).click();
+    await page.getByRole("button", { name: "바로 펼치기" }).click();
+    await expect(page.locator("[data-fan-index]")).toHaveCount(21);
+    await pickFanCard(page, 10);
+    await page.getByLabel("한 줄 남기기 (선택)").fill("늘 고마워");
+    await page.getByRole("button", { name: "별 되기" }).click();
+
+    await expect(page.getByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeVisible();
+    await expect(page.getByText(/^인연 \d+점$/)).toBeVisible();
+    expect(await page.getByRole("list", { name: "점수 근거" }).getByRole("listitem").count()).toBeGreaterThan(0);
+    await expect(page.getByText(/요즘 두 사람 사이/)).toBeVisible();
+    await expect(page.getByText(/인연 카드 · /)).toBeVisible();
+    await expect(page.getByRole("link", { name: "오늘의 한 장 받기" })).toHaveAttribute("href", "/today");
+    // the birth date and message are not shown back
+    await expect(page.locator("main")).not.toContainText("1992");
+    await shot(page, "friend-result");
+    await page.getByRole("link", { name: "나도 내 별자리 만들기" }).click();
+    await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
+  });
+
+  test("a revoked code and an unknown code get the same answer", async ({ page, baseURL }) => {
+    const { owner, code } = await apiOwner(baseURL!, "용우", "aries");
+    expect((await owner.post("/api/bonds/invite", { data: {} })).status()).toBe(200);
+    await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
+    await page.goto(`/b/${code}`, { timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "코드를 다시 확인해 주세요" })).toBeVisible();
+    await page.goto("/b/ZZZZZZ");
+    await expect(page.getByRole("heading", { level: 1, name: "코드를 다시 확인해 주세요" })).toBeVisible();
+    await shot(page, "friend-bad-code");
+  });
+
+  test("an owner choosing the next sign asks the friend to come back", async ({ page, baseURL }) => {
+    const { code } = await apiOwner(baseURL!, "용우", null);
+    await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
+    await page.goto(`/b/${code}`, { timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "용우님이 다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요" })).toBeVisible();
   });
 });

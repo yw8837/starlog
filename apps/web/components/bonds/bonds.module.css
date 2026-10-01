@@ -274,3 +274,9 @@
   gap: 10px;
   margin-top: 20px;
 }
+
+.codeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}

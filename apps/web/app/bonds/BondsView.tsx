@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getConstellation, type SignId } from "@starlog/core";
+import { CodeEntry } from "@/components/bonds/CodeEntry";
 import { CompletedCard } from "@/components/bonds/CompletedCard";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
@@ -105,37 +106,12 @@ function Intro() {
 
 /** 초대코드로 참여: someone else's code, for people who arrive here first. */
 function JoinByCode() {
-  const [code, setCode] = useState("");
-  const clean = code.replace(/[\s-]/g, "").toUpperCase();
   return (
     <section className={`${b.panel} ${s.joinPanel}`} aria-labelledby="join-title">
       <h2 id="join-title" className={b.sectionTitle}>
         친구의 초대코드가 있나요?
       </h2>
-      <form
-        className={s.joinRow}
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (clean.length === 6) window.location.assign(`/b/${clean}`);
-        }}
-      >
-        <label htmlFor="join-code" className="sr-only">
-          초대코드 6자리
-        </label>
-        <input
-          id="join-code"
-          className={`${b.input} ${b.codeInput}`}
-          value={code}
-          onChange={(e) => setCode(e.target.value.slice(0, 8))}
-          placeholder="초대코드 6자리"
-          autoComplete="off"
-          autoCapitalize="characters"
-          enterKeyHint="go"
-        />
-        <Button type="submit" variant="secondary" size="md" disabled={clean.length !== 6}>
-          참여하기
-        </Button>
-      </form>
+      <CodeEntry id="join-code" />
     </section>
   );
 }

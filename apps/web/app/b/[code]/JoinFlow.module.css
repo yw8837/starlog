@@ -1,0 +1,157 @@
+.screen {
+  display: grid;
+  gap: 20px;
+  padding: 16px 0 40px;
+}
+
+@media (min-width: 1024px) {
+  .screen {
+    max-width: 520px;
+    margin-inline: auto;
+  }
+}
+
+.head {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.headArt {
+  width: 100%;
+  max-width: 200px;
+}
+
+.title {
+  font-size: var(--fs-h1);
+  line-height: 1.4;
+  outline: none;
+}
+
+.progress {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.progress strong {
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- closed states (choosing, bad code) ---- */
+
+.closed {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding-top: 24px;
+  text-align: center;
+}
+
+.entry {
+  width: 100%;
+  text-align: left;
+}
+
+/* ---- the draw ---- */
+
+.draw {
+  display: grid;
+  gap: 8px;
+}
+
+.drawHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 250px;
+  margin-top: 4px;
+}
+
+.stage > * {
+  width: 100%;
+}
+
+/* ---- result ---- */
+
+.result {
+  display: grid;
+  gap: 16px;
+  text-align: center;
+}
+
+.scoreCard {
+  justify-items: center;
+}
+
+.score {
+  color: var(--ink-sub);
+}
+
+.score strong {
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 44px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.parts {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.parts li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.parts li span:last-child {
+  flex: none;
+  color: var(--gold);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cardPanel {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  text-align: left;
+}
+
+.cardText {
+  display: grid;
+  gap: 6px;
+}
+
+.line {
+  color: var(--ink);
+  line-height: 1.65;
+}
+
+.inlineLink {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
