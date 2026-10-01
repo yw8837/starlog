@@ -201,17 +201,37 @@ describe("review fixes (A2 round 2)", () => {
     expect((await call(sajuTeaser, { ...body, padding: "x".repeat(SAJU_BODY_MAX_BYTES) })).status).toBe(400);
   });
 
-  it.each([
-    ["question", { question: "요즘 죽고 싶다는 생각뿐이에요" }],
-    ["verdict", { verdict: "자해만 떠올라요" }],
-    ["observation", { observation: "사라지고 싶은 마음이 드는지 보세요" }],
-  ])("runs the crisis check over history %s (tarot and saju)", async (_field, patch) => {
-    const history = [{ ...HISTORY[0]!, ...patch }];
+  it("refuses with care when an earlier question the user wrote reads as a crisis (tarot and saju)", async () => {
+    const history = [{ ...HISTORY[0]!, question: "요즘 죽고 싶다는 생각뿐이에요" }];
     const drawToken = await drawFor("self-flow");
     const tarot = await call(teaser, { drawToken, input: { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "", history } });
     expect(tarot.status).toBe(422);
     expect(tarot.data.care).toBe(true);
     expect((await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, history: history.map((h) => ({ ...h, kind: "saju" })) })).status).toBe(422);
+  });
+
+  it.each([
+    ["verdict", { verdict: "자해만 떠올라요" }],
+    ["observation", { observation: "사라지고 싶은 마음이 드는지 보세요" }],
+  ])("drops a history item whose model-written %s trips the crisis words, instead of refusing", async (_field, patch) => {
+    const history = [{ ...HISTORY[0]!, ...patch }, { ...HISTORY[0]!, date: "2026-09-20", question: "이번 달 지출은 어떨까" }];
+    const spy = vi.spyOn(mockProvider, "generate");
+    const drawToken = await drawFor("self-flow");
+    const tarot = await call(teaser, { drawToken, input: { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "", history } });
+    expect(tarot.status).toBe(200);
+    const prompt = spy.mock.calls[0]![0].user;
+    expect(prompt).toContain("이번 달 지출은 어떨까");
+    expect(prompt).not.toContain("2026-09-28");
+    const saju = await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, history: history.map((h) => ({ ...h, kind: "saju" })) });
+    expect(saju.status).toBe(200);
+    expect(spy.mock.calls.at(-1)![0].user).not.toContain("2026-09-28");
+  });
+
+  it("judges crisis words on the text the prompt gets (markup cannot split them)", async () => {
+    const drawToken = await drawFor("self-flow");
+    const input = { topicId: "money", whoId: "me", whenId: "week", question: "죽<고> 싶어요", conditions: [], note: "" };
+    expect((await call(teaser, { drawToken, input })).status).toBe(422);
+    expect((await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, concern: "사라<지>고   싶어요" })).status).toBe(422);
   });
 
   it("runs the crisis check over condition labels", async () => {

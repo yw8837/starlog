@@ -1,8 +1,8 @@
 import "server-only";
-import { historyTexts } from "@/lib/ai/history";
+import { historyUserTexts, withoutCrisisItems } from "@/lib/ai/history";
 import { CUSTOM_TEMPLATE, buildTarotContext, cleanUserText, resolveTopic, type TarotContext } from "@/lib/ai/prompts/tarot";
 import { openDraw, type OpenedDraw } from "@/lib/security/drawToken";
-import { crisisResponse, errorResponse, readJson, type Gate } from "./http";
+import { crisisResponse, errorResponse, isCrisisText, readJson, type Gate } from "./http";
 import { CUSTOM_TOPIC_ID, TarotBody, type TarotInputData } from "./inputs";
 
 /**
@@ -28,10 +28,10 @@ export async function tarotContextFrom(request: Request, gate: Gate): Promise<{ 
   const input: TarotInputData = custom ? { ...parsed, topicText } : parsed;
   const crisis = crisisResponse(
     input.question, input.note, input.topicText, input.whoText, input.whenText,
-    ...input.conditions.flatMap((c) => [c.label, c.value]), ...historyTexts(input.history),
+    ...input.conditions.flatMap((c) => [c.label, c.value]), ...historyUserTexts(input.history),
   );
   if (crisis) return crisis;
   // History shapes this prompt only; the chapter token (follow-ups) keeps the input without it.
   const { history, ...rest } = input;
-  return { ctx: buildTarotContext(draw.templateId, draw.cards, rest, { history }), draw, input: rest };
+  return { ctx: buildTarotContext(draw.templateId, draw.cards, rest, { history: withoutCrisisItems(history, isCrisisText) }), draw, input: rest };
 }

@@ -1,9 +1,9 @@
 import "server-only";
-import { historyTexts, type HistoryItem } from "@/lib/ai/history";
+import { historyUserTexts, withoutCrisisItems, type HistoryItem } from "@/lib/ai/history";
 import { buildFactSet, type SajuFactSet, type SajuProfile } from "@/lib/ai/prompts/saju";
 import { cleanUserText } from "@/lib/ai/prompts/tarot";
 import { checkSajuForm, todayInKorea } from "@/lib/sajuForm";
-import { crisisResponse, errorResponse, readJson } from "./http";
+import { crisisResponse, errorResponse, isCrisisText, readJson } from "./http";
 import { LOVE_STATUS, SajuBody, WORK_STATUS, type BirthInput, type SajuBodyData } from "./inputs";
 
 /** The optional personal context (Korean labels, cleaned concern), or undefined when none was given. */
@@ -31,10 +31,11 @@ export async function sajuRequest(request: Request, now: number): Promise<{ body
   const parsed = SajuBody.safeParse(await readJson(request, SAJU_BODY_MAX_BYTES));
   if (!parsed.success) return errorResponse("BAD_REQUEST");
   const profile = profileOf(parsed.data);
-  // Every text that reaches the prompt: the concern, the status labels and earlier readings.
-  const crisis = crisisResponse(parsed.data.concern, profile?.loveStatus, profile?.workStatus, ...historyTexts(parsed.data.history));
+  // What the user wrote (the concern, earlier questions) and the status labels.
+  const crisis = crisisResponse(parsed.data.concern, profile?.loveStatus, profile?.workStatus, ...historyUserTexts(parsed.data.history));
   if (crisis) return crisis;
-  const facts = factsFromBirth(parsed.data.birth, now, profile, parsed.data.history);
+  const history = withoutCrisisItems(parsed.data.history, isCrisisText);
+  const facts = factsFromBirth(parsed.data.birth, now, profile, history);
   if (facts instanceof Response) return facts;
-  return { body: parsed.data, profile, facts };
+  return { body: { ...parsed.data, history }, profile, facts };
 }
