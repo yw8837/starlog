@@ -12,15 +12,17 @@ import nextConfig from "@/next.config";
 afterEach(cleanup);
 
 const TABS = [
-  { category: "tarot", Page: GuideTarotPage, metadata: tarotMetadata, title: "타로 가이드", host: "별을 읽는 점성술사 고양이", line: "카드 읽는 법, 제가 차근차근 알려 줄게요" },
-  { category: "saju", Page: GuideSajuPage, metadata: sajuMetadata, title: "사주 가이드", host: "한복 입은 토끼 선생님", line: "명식 읽는 법은 제가 맡을게요" },
+  { category: "tarot", Page: GuideTarotPage, metadata: tarotMetadata, title: "타로 가이드", hero: "타로 카드를 펼치기 전에 알아 두면 좋은 이야기", host: "별을 읽는 점성술사 고양이", line: "카드 읽는 법, 제가 차근차근 알려 줄게요" },
+  { category: "saju", Page: GuideSajuPage, metadata: sajuMetadata, title: "사주 가이드", hero: "사주 명식을 읽기 전에 알아 두면 좋은 이야기", host: "한복 입은 토끼 선생님", line: "명식 읽는 법은 제가 맡을게요" },
 ] as const;
 
 describe("guide tabs", () => {
   for (const tab of TABS) {
     it(`${tab.category}: tab links with the current one marked, its leader and line, only its articles`, () => {
       render(<tab.Page />);
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(tab.title);
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(tab.hero);
+      // The tab's own name heads its article list.
+      expect(screen.getByRole("heading", { level: 2, name: tab.title })).toBeTruthy();
 
       const links = within(screen.getByRole("navigation", { name: "가이드 분류" })).getAllByRole("link");
       expect(links.map((a) => [a.textContent, a.getAttribute("href")])).toEqual([

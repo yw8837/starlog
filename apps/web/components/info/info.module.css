@@ -57,6 +57,7 @@
 .chip {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   min-height: 44px;
   padding: 0 18px;
   border: 1px solid var(--glass-line);
@@ -76,6 +77,38 @@
 .chip:hover {
   border-color: var(--gold);
   color: var(--gold);
+}
+
+/* Category dot: one colour per topic, the same on the guide tabs and the home (tokens in globals.css). */
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone, var(--tone-start));
+  box-shadow: 0 0 8px var(--tone, var(--tone-start));
+}
+
+.dot[data-tone="tarot"] {
+  --tone: var(--tone-tarot);
+}
+
+.dot[data-tone="saju"] {
+  --tone: var(--tone-saju);
+}
+
+.dot[data-tone="records"] {
+  --tone: var(--tone-records);
+}
+
+.dot[data-tone="benefits"] {
+  --tone: var(--tone-benefits);
+}
+
+.groupTitleDot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* ---- accordion card ---- */
@@ -115,13 +148,14 @@
   outline-offset: 2px;
 }
 
+/* Rounded-square tile, the same slot the guide cards use for their card thumbnails. */
 .badge {
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
   border: 1px solid rgba(243, 220, 161, 0.35);
-  border-radius: 50%;
+  border-radius: 12px;
   background: rgba(243, 220, 161, 0.08);
   color: var(--gold);
 }

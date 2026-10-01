@@ -24,6 +24,7 @@ export default function HelpPage() {
           {groups.map((group) => (
             <li key={group.id}>
               <a href={`#${group.id}`} className={s.chip}>
+                <span className={s.dot} data-tone={group.id} aria-hidden="true" />
                 {group.label}
               </a>
             </li>
@@ -34,7 +35,8 @@ export default function HelpPage() {
       {groups.map((group) => (
         <section key={group.id} id={group.id} className={s.group} aria-labelledby={`${group.id}-title`}>
           <div className={s.groupHead}>
-            <h2 id={`${group.id}-title`} className={s.groupTitle}>
+            <h2 id={`${group.id}-title`} className={`${s.groupTitle} ${s.groupTitleDot}`}>
+              <span className={s.dot} data-tone={group.id} aria-hidden="true" />
               {group.label}
             </h2>
             <p className={s.groupSub}>{group.sub}</p>

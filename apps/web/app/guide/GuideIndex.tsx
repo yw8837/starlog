@@ -11,16 +11,20 @@ import { GuideThumb } from "./GuideThumb";
 import s from "./guide.module.css";
 
 /** Each tab has its leader: the cat astrologer reads cards, the rabbit in 두루마기 reads 명식. */
-const TAB_COPY: Record<GuideCategory, { title: string; description: string; line: string }> = {
+const TAB_COPY: Record<GuideCategory, { title: string; hero: [string, string]; description: string; line: string; sub: string }> = {
   tarot: {
     title: "타로 가이드",
+    hero: ["타로 카드를 펼치기 전에", "알아 두면 좋은 이야기"],
     description: "타로 카드 읽는 법, 정방향과 역방향, 은둔자와 별 카드 이야기까지. 카드를 펼치기 전에 알아 두면 좋은 이야기를 모았어요.",
     line: "카드 읽는 법, 제가 차근차근 알려 줄게요",
+    sub: "카드 읽는 법부터 카드 한 장의 이야기까지",
   },
   saju: {
     title: "사주 가이드",
+    hero: ["사주 명식을 읽기 전에", "알아 두면 좋은 이야기"],
     description: "출생시간을 모를 때 사주를 보는 법과 오행 이야기까지. 명식을 읽기 전에 알아 두면 좋은 이야기를 모았어요.",
     line: "명식 읽는 법은 제가 맡을게요",
+    sub: "태어난 시를 모를 때와 다섯 기운 이야기",
   },
 };
 
@@ -29,14 +33,35 @@ export function guideIndexMetadata(category: GuideCategory): Metadata {
   return { title: copy.title, description: copy.description, alternates: { canonical: guideIndexPath(category) } };
 }
 
-/** A guide tab: links to both tabs, the tab's character with a line, then its article cards. */
+/**
+ * A guide tab: a hero (eyebrow, two-line title, lead) with the tab's character as its host, the
+ * 타로 / 사주 tabs as category chips, then the tab's article cards (the /help card shape, with an
+ * arrow where the accordion has its +).
+ */
 export function GuideIndex({ category }: { category: GuideCategory }) {
   const copy = TAB_COPY[category];
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={41} />
+      <TabBar active="guide" />
       <main className="page-col page-wide">
         <div className={s.index}>
+          <header className={s.hero}>
+            <div className={s.heroText}>
+              <p className={s.heroEyebrow}>GUIDE</p>
+              <h1 className={s.heroTitle}>
+                <span className={s.heroLine}>{copy.hero[0]}</span> <span className={s.heroLine}>{copy.hero[1]}</span>
+              </h1>
+              <p className={s.heroLead}>{copy.description}</p>
+            </div>
+            <div className={s.hostRow}>
+              <div className={s.hostCast}>{category === "tarot" ? <Cat outfit="tarot" size={104} /> : <Rabbit outfit="hanbok" size={104} />}</div>
+              <SpeechBubble tail="left" className={s.hostLine}>
+                {copy.line}
+              </SpeechBubble>
+            </div>
+          </header>
+
           <nav className={s.tabs} aria-label="가이드 분류">
             {GUIDE_CATEGORIES.map((tab) => {
               const current = tab === category;
@@ -47,39 +72,43 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
                   className={current ? `${s.tab} ${s.tabCurrent}` : s.tab}
                   aria-current={current ? "page" : undefined}
                 >
+                  <span className={s.dot} data-tone={tab} aria-hidden="true" />
                   {GUIDE_CATEGORY_LABEL[tab]}
                 </Link>
               );
             })}
           </nav>
 
-          <header className={s.host}>
-            <h1 className={s.indexTitle}>{copy.title}</h1>
-            <div className={s.hostRow}>
-              <div className={s.hostCast}>{category === "tarot" ? <Cat outfit="tarot" size={104} /> : <Rabbit outfit="hanbok" size={104} />}</div>
-              <SpeechBubble tail="left" className={s.hostLine}>
-                {copy.line}
-              </SpeechBubble>
+          <section className={s.group} aria-labelledby="guide-group-title">
+            <div className={s.groupHead}>
+              <h2 id="guide-group-title" className={s.groupTitle}>
+                <span className={s.dot} data-tone={category} aria-hidden="true" />
+                {copy.title}
+              </h2>
+              <p className={s.groupSub}>{copy.sub}</p>
             </div>
-          </header>
-
-          <ul className={s.list}>
-            {articlesIn(category).map((article) => (
-              <li key={article.slug}>
-                <Link href={`/guide/${article.slug}`} className={s.item}>
-                  <GuideThumb article={article} />
-                  <span className={s.itemText}>
-                    <span className={s.itemTitle}>{article.title}</span>
-                    <span className={s.itemDesc}>{article.description}</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+            <ul className={s.list}>
+              {articlesIn(category).map((article) => (
+                <li key={article.slug}>
+                  <Link href={`/guide/${article.slug}`} className={s.item}>
+                    <GuideThumb article={article} />
+                    <span className={s.itemText}>
+                      <span className={s.itemTitle}>{article.title}</span>
+                      <span className={s.itemDesc}>{article.description}</span>
+                    </span>
+                    <span className={s.itemArrow} aria-hidden="true">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+                        <path d="M9 5.5 15.5 12 9 18.5" />
+                      </svg>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
       </main>
       <Footer />
-      <TabBar active="guide" />
     </div>
   );
 }
