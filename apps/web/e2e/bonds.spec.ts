@@ -167,6 +167,16 @@ test.describe("별자리 인연 · owner", () => {
     await expect(page.getByRole("heading", { name: /물고기자리/ }).first()).toBeVisible();
   });
 
+  test("/ranking is the 별자리 리더보드: twelve signs, each opening its full ranking", async ({ page }) => {
+    await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
+    await page.goto("/ranking", { timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "별자리 리더보드" })).toBeVisible({ timeout: 120_000 });
+    const all = page.getByRole("link", { name: /전체 순위$/ });
+    await expect(all).toHaveCount(12);
+    await expect(all.first()).toHaveAttribute("href", "/ranking/aries");
+    await shot(page, "leaderboard");
+  });
+
   test("a ranking page for someone who has not started offers 이 별자리 채우기", async ({ page }) => {
     await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
     await page.goto("/ranking/leo", { timeout: 120_000 });
