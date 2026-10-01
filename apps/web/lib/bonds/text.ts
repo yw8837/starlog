@@ -35,29 +35,40 @@ export function normalizeCode(raw: unknown): string | null {
 
 export type TextCheck<T> = { ok: true; value: T } | { ok: false; reason: "LENGTH" | "BLOCKED" };
 
-// Control and invisible formatting characters (zero-width, bidi overrides) never belong in a name.
-const CONTROL = /[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁤﻿]/;
+/** Control characters: a name or message with one is refused. */
+const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
+/**
+ * Invisible or blank-looking characters that fake an empty or look-alike name: Hangul fillers
+ * (U+3164, U+115F, U+1160, U+FFA0), braille blank, soft hyphen, grapheme joiner, zero-width and bidi
+ * controls, and tag characters. They are removed before anything is checked.
+ */
+const INVISIBLE = /[\u00ad\u034f\u115f\u1160\u200b-\u200f\u202a-\u202e\u2060-\u2069\u2800\u3164\ufeff\uffa0]|[\u{E0000}-\u{E007F}]/gu;
 const LINK = /https?:|www\.|\.(com|net|kr|io|me|ly)\b/i;
-/** Matched after spaces and punctuation are removed, lower-cased. A small list; the owner can remove any star. */
-const BLOCKED_WORDS = [
-  "시발", "씨발", "씨바", "ㅅㅂ", "ㅆㅂ", "병신", "ㅂㅅ", "븅신", "좆", "존나", "ㅈㄴ", "개새끼", "새끼", "지랄", "ㅈㄹ", "미친놈", "미친년",
-  "닥쳐", "꺼져", "염병", "엿먹", "섹스", "야동", "보지", "자지",
+/** Matched after NFKC, spaces and punctuation removed, lower-cased. A small list; the owner can remove any star. */
+const PROFANITY = [
+  "시발", "씨발", "씨바", "ㅅㅂ", "ㅆㅂ", "병신", "ㅂㅅ", "븅신", "좆", "존나", "ㅈㄴ", "개새끼", "지랄", "ㅈㄹ", "미친놈", "미친년",
+  "닥쳐", "꺼져", "염병", "엿먹", "섹스", "야동",
   "fuck", "shit", "bitch", "sex", "porn", "dick", "pussy",
-  "운영자", "관리자", "스타로그", "starlog", "admin",
 ];
+/** Only in public names: words that are fine inside a sentence ("보지 뭐") or that impersonate the service. */
+const NICKNAME_ONLY = ["보지", "자지", "운영자", "관리자", "스타로그", "starlog", "admin"];
 
-function isBlocked(text: string): boolean {
-  if (CONTROL.test(text) || LINK.test(text)) return true;
-  const squeezed = text.toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
-  return BLOCKED_WORDS.some((word) => squeezed.includes(word));
+const squeeze = (text: string) => text.toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
+
+function isBlocked(text: string, words: readonly string[]): boolean {
+  if (LINK.test(text)) return true;
+  const squeezed = squeeze(text);
+  return words.some((word) => squeezed.includes(word));
 }
 
-/** Trimmed, NFC, inner runs of whitespace as one space. */
+/** NFKC, invisible characters removed, trimmed, inner runs of whitespace as one space. */
 function tidy(raw: string): string {
-  return raw.normalize("NFC").trim().replace(/[ \t 　]+/g, " ");
+  return raw.normalize("NFKC").replace(INVISIBLE, "").trim().replace(/[ \t\u00a0\u3000]+/g, " ");
 }
 
 const length = (text: string) => Array.from(text).length;
+/** Seven or more digits in a row (separators ignored) look like a phone number: not in a public name. */
+const PHONE_LIKE = (text: string) => /\d{7,}/.test(text.replace(/[\s.\-_()]/g, ""));
 
 export function checkNickname(raw: unknown): TextCheck<string> {
   if (typeof raw !== "string") return { ok: false, reason: "LENGTH" };
@@ -65,7 +76,8 @@ export function checkNickname(raw: unknown): TextCheck<string> {
   const value = tidy(raw);
   const n = length(value);
   if (n < NICKNAME_MIN || n > NICKNAME_MAX) return { ok: false, reason: "LENGTH" };
-  return isBlocked(value) ? { ok: false, reason: "BLOCKED" } : { ok: true, value };
+  if (PHONE_LIKE(value) || isBlocked(value, [...PROFANITY, ...NICKNAME_ONLY])) return { ok: false, reason: "BLOCKED" };
+  return { ok: true, value };
 }
 
 /** The optional one-line message: null when empty. */
@@ -76,5 +88,5 @@ export function checkMessage(raw: unknown): TextCheck<string | null> {
   const value = tidy(raw.replace(/\s*\n\s*/g, " "));
   if (value === "") return { ok: true, value: null };
   if (length(value) > MESSAGE_MAX) return { ok: false, reason: "LENGTH" };
-  return isBlocked(value) ? { ok: false, reason: "BLOCKED" } : { ok: true, value };
+  return isBlocked(value, PROFANITY) ? { ok: false, reason: "BLOCKED" } : { ok: true, value };
 }
