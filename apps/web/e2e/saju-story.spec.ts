@@ -255,12 +255,15 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   const guideTabs = page.getByRole("navigation", { name: "가이드 분류" });
   await expect(guideTabs.getByRole("link", { name: "타로" })).toHaveAttribute("aria-current", "page");
   const articles = page.getByRole("main").getByRole("list").getByRole("link");
-  await expect(articles).toHaveCount(4);
+  // The library keeps growing (lib/guide-articles): each tab lists at least its first articles.
+  await expect(articles.first()).toBeVisible();
+  expect(await articles.count()).toBeGreaterThanOrEqual(4);
   await shot(page, info, "18-guide");
   await guideTabs.getByRole("link", { name: "사주" }).click();
   await expect(page).toHaveURL(/\/guide\/saju$/);
   await expect(page.getByRole("heading", { level: 2, name: "사주 가이드" })).toBeVisible();
-  await expect(articles).toHaveCount(2);
+  await expect(articles.first()).toBeVisible();
+  expect(await articles.count()).toBeGreaterThanOrEqual(2);
   await guideTabs.getByRole("link", { name: "타로" }).click();
   await page.getByRole("link", { name: /은둔자 카드 이야기/ }).click();
   await expect(page).toHaveURL(/\/guide\/the-hermit$/);

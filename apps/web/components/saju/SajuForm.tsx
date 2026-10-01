@@ -60,10 +60,12 @@ const range = (from: number, to: number) => Array.from({ length: Math.abs(to - f
 export function SajuForm() {
   const { profile } = useSajuProfile();
   const context = useSajuContext();
-  // Remount once the saved values are read, so the fields start from them.
+  // Remount once saved values are read, so the fields start from them. A first visit has none: its
+  // key stays the same through hydration, so an early tap is never thrown away by a remount.
+  const savedContext = Boolean(context && (context.loveStatus || context.workStatus || context.concern));
   return (
     <SajuFormFields
-      key={`${profile ? "saved" : "fresh"}-${context ? "read" : "unread"}`}
+      key={`${profile ? "saved" : "fresh"}-${savedContext ? "context" : "none"}`}
       initial={profile ?? DEFAULT_SAJU_FORM}
       initialContext={context ?? {}}
     />
