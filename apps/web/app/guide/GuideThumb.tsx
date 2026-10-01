@@ -6,6 +6,15 @@ import s from "./guide.module.css";
 const SAJU_GLYPH: Record<string, { char: string; el: string }> = {
   "saju-without-birth-time": { char: "時", el: "metal" },
   "five-elements": { char: "五", el: "wood" },
+  "heavenly-stems": { char: "甲", el: "wood" },
+  "earthly-branches": { char: "子", el: "water" },
+  "day-master": { char: "日", el: "fire" },
+  "ten-gods": { char: "十", el: "earth" },
+  daewoon: { char: "運", el: "metal" },
+  "saju-vs-astrology": { char: "星", el: "water" },
+  manseryeok: { char: "曆", el: "earth" },
+  "saju-compatibility": { char: "合", el: "fire" },
+  "new-year-fortune": { char: "年", el: "wood" },
 };
 
 /** Small picture for a guide article: its card, a card back, or a glyph tile. Decorative. */

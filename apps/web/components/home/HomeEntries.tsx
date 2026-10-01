@@ -134,7 +134,10 @@ export function QuickCards() {
   );
 }
 
-/** Row 5: the guide articles as cards, split 타로 / 사주 as on /guide/tarot and /guide/saju. */
+/** The home shows this many articles per tab; the rest are one tap away on the tab ("전체 보기"). */
+const HOME_GUIDE_PER_TAB = 4;
+
+/** Row 5: the first four guide articles of each tab as cards, split 타로 / 사주 as on /guide/tarot and /guide/saju. */
 export function HomeGuide() {
   return (
     <section className={s.section} aria-labelledby="home-guide-title">
@@ -162,7 +165,7 @@ export function HomeGuide() {
               </Link>
             </h3>
             <ul className={s.guideList}>
-              {articlesIn(category).map((article) => (
+              {articlesIn(category).slice(0, HOME_GUIDE_PER_TAB).map((article) => (
                 <li key={article.slug}>
                   <Link href={`/guide/${article.slug}`} className={s.guideItem}>
                     <GuideThumb article={article} />

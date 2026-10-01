@@ -56,7 +56,9 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   const card = article.cardId ? getCard(article.cardId) : null;
   const cta = CTA[article.category];
   const tab = GUIDE_CATEGORY_LABEL[article.category];
-  const others = GUIDE_ARTICLES.filter((other) => other.slug !== article.slug);
+  // The article's own picks; an article without them falls back to the first others in its tab.
+  const picked = (article.related ?? []).map((other) => findArticle(other)).filter((other) => other !== undefined);
+  const others = picked.length ? picked : GUIDE_ARTICLES.filter((other) => other.category === article.category && other.slug !== article.slug).slice(0, 4);
   const ads = adsConfig();
 
   return (
@@ -100,7 +102,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
 
           <nav className={s.more} aria-labelledby="more-title">
             <h2 id="more-title" className={s.moreTitle}>
-              다른 글
+              같이 읽어 볼 글
             </h2>
             <ul className={s.list}>
               {others.map((other) => (

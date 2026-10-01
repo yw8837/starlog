@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideIndexPath } from "./guide";
 
 describe("GUIDE_ARTICLES", () => {
-  it("holds the six articles, in order, with the agreed titles", () => {
-    expect(GUIDE_ARTICLES.map((a) => a.title)).toEqual([
+  it("starts with the six original articles, in order, with the agreed titles (the library follows)", () => {
+    expect(GUIDE_ARTICLES.slice(0, 6).map((a) => a.title)).toEqual([
       "타로 카드 읽는 법",
       "정방향과 역방향은 뭐가 달라요?",
       "출생시간을 모를 때 사주는?",
@@ -25,10 +25,10 @@ describe("GUIDE_ARTICLES", () => {
     expect(findArticle("nope")).toBeUndefined();
   });
 
-  it("keeps bodies short: 3-5 paragraphs, every one in 해요체", () => {
+  it("keeps bodies to 4-7 sections, every one in 해요체", () => {
     for (const article of GUIDE_ARTICLES) {
-      expect(article.sections.length, article.slug).toBeGreaterThanOrEqual(3);
-      expect(article.sections.length, article.slug).toBeLessThanOrEqual(5);
+      expect(article.sections.length, article.slug).toBeGreaterThanOrEqual(4);
+      expect(article.sections.length, article.slug).toBeLessThanOrEqual(7);
       for (const section of article.sections) expect(section.body, article.slug).toMatch(/요[.?]$/);
     }
   });
@@ -58,9 +58,9 @@ describe("GUIDE_ARTICLES", () => {
 });
 
 describe("guide tabs", () => {
-  it("lists each category's articles in their original order", () => {
-    expect(articlesIn("tarot").map((a) => a.slug)).toEqual(["how-to-read-tarot", "upright-and-reversed", "the-hermit", "the-star"]);
-    expect(articlesIn("saju").map((a) => a.slug)).toEqual(["saju-without-birth-time", "five-elements"]);
+  it("lists each category's original articles first, in their original order", () => {
+    expect(articlesIn("tarot").slice(0, 4).map((a) => a.slug)).toEqual(["how-to-read-tarot", "upright-and-reversed", "the-hermit", "the-star"]);
+    expect(articlesIn("saju").slice(0, 2).map((a) => a.slug)).toEqual(["saju-without-birth-time", "five-elements"]);
   });
 
   it("puts every article in exactly one tab", () => {

@@ -4,6 +4,8 @@
  * saju-policy@1 (no hour pillar when the time is unknown, LMT day boundary, visible-glyph 오행 count).
  */
 
+import { withGuideLibrary } from "./guide-articles";
+
 export type GuideCategory = "tarot" | "saju";
 
 export const GUIDE_CATEGORY_LABEL: Record<GuideCategory, string> = { tarot: "타로", saju: "사주" };
@@ -30,9 +32,11 @@ export interface GuideArticle {
   /** Card shown with a card article. */
   cardId?: string;
   sections: GuideSection[];
+  /** Slugs listed under "같이 읽어 볼 글" on the article page, in this order. */
+  related?: readonly string[];
 }
 
-export const GUIDE_ARTICLES: readonly GuideArticle[] = [
+const BASE_ARTICLES: readonly GuideArticle[] = [
   {
     slug: "how-to-read-tarot",
     title: "타로 카드 읽는 법",
@@ -192,6 +196,9 @@ export const GUIDE_ARTICLES: readonly GuideArticle[] = [
     ],
   },
 ];
+
+/** The six articles above first (their order is the home and tab order), then the library in lib/guide-articles. */
+export const GUIDE_ARTICLES: readonly GuideArticle[] = withGuideLibrary(BASE_ARTICLES);
 
 export const findArticle = (slug: string): GuideArticle | undefined => GUIDE_ARTICLES.find((article) => article.slug === slug);
 
