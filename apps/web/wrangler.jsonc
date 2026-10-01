@@ -22,6 +22,9 @@
   // Production origin (SITE.url). Wrangler creates the DNS record and certificate on deploy.
   "routes": [{ "pattern": "starlog.yeolmaeapps.kr", "custom_domain": true }],
   "workers_dev": true,
+  // Public-beta cost cap per KST day in KRW (lib/api/spend.ts trips at 80%). Prepaid Anthropic credits
+  // with auto-reload off are the hard backstop.
+  "vars": { "BETA_DAILY_BUDGET_KRW": "15000" },
   // Per-IP limits for AI generation (lib/security/rateLimit.ts LIMITS_PER_MINUTE must match).
   // Owners get the 5x limiters; full readings have their own tighter one; owner-code attempts too.
   "ratelimits": [
