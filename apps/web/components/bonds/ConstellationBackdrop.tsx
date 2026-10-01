@@ -11,7 +11,7 @@ const TWINKLES = 3;
  * A sign's constellation as a large, soft backdrop (behind the ranking podium): a purple nebula wash,
  * the figure's faint outline, thin gradient lines and the catalog stars in varied sizes with a glow,
  * over a scatter of dust stars. Purely decorative and static; with motion allowed, three stars twinkle
- * very slowly. The whole layer is drawn at low opacity by the caller's class (see the CSS module).
+ * very slowly. The layer is half transparent (see the CSS module); text over it needs its own halo.
  */
 export function ConstellationBackdrop({ sign, className }: { sign: SignId; className?: string }) {
   const def = getConstellation(sign);
@@ -23,7 +23,7 @@ export function ConstellationBackdrop({ sign, className }: { sign: SignId; class
   const cx = box.x + box.w / 2;
   const cy = box.y + box.h / 2;
   // Brighter stars first in fill order, a little variety after that (the same for every visit).
-  const radius = def.stars.map((_, i) => 13 - Math.min(i, 4) + rand() * 5);
+  const radius = def.stars.map((_, i) => 17 - Math.min(i, 4) + rand() * 5);
   // Three twinkling stars picked by a seeded shuffle (the same on the server and in every browser).
   const order = Array.from({ length: def.slots }, (_, i) => i);
   for (let i = order.length - 1; i > 0; i--) {
@@ -50,8 +50,8 @@ export function ConstellationBackdrop({ sign, className }: { sign: SignId; class
     >
       <defs>
         <radialGradient id={ids.nebula} cx="50%" cy="50%" r="50%">
-          <stop offset="0" stopColor="#8b74ff" stopOpacity="0.55" />
-          <stop offset="0.55" stopColor="#5b46c9" stopOpacity="0.22" />
+          <stop offset="0" stopColor="#8b74ff" stopOpacity="0.62" />
+          <stop offset="0.55" stopColor="#5b46c9" stopOpacity="0.28" />
           <stop offset="1" stopColor="#2e2a78" stopOpacity="0" />
         </radialGradient>
         <radialGradient id={ids.haze} cx="50%" cy="50%" r="50%">
@@ -87,9 +87,9 @@ export function ConstellationBackdrop({ sign, className }: { sign: SignId; class
 
       {def.stars.map(([x, y], i) => (
         <g key={i} className={twinkle.has(i) ? s.twinkle : undefined} style={{ "--i": i } as CSSProperties}>
-          <circle cx={x} cy={y} r={radius[i]! * 4.2} fill={`url(#${ids.glow})`} />
+          <circle cx={x} cy={y} r={radius[i]! * 5.6} fill={`url(#${ids.glow})`} />
           <circle className={s.core} cx={x} cy={y} r={radius[i]!} />
-          <path className={s.spark} d={`M${x} ${y - radius[i]! * 2.6}V${y + radius[i]! * 2.6}M${x - radius[i]! * 2.6} ${y}H${x + radius[i]! * 2.6}`} />
+          <path className={s.spark} d={`M${x} ${y - radius[i]! * 3.2}V${y + radius[i]! * 3.2}M${x - radius[i]! * 3.2} ${y}H${x + radius[i]! * 3.2}`} />
         </g>
       ))}
     </svg>

@@ -1,10 +1,10 @@
-/* Drawn soft: the whole layer stays faint so text over it keeps its contrast. */
+/* Clearly there but still a backdrop: text over it gets its own dark halo from the caller. */
 .backdrop {
   display: block;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  opacity: 0.24;
+  opacity: 0.55;
   pointer-events: none;
 }
 
@@ -15,15 +15,15 @@
 .figure {
   fill: none;
   stroke: #b9adff;
-  stroke-width: 1px;
+  stroke-width: 1.4px;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-opacity: 0.55;
+  stroke-opacity: 0.6;
   vector-effect: non-scaling-stroke;
 }
 
 .line {
-  stroke-width: 1.5px;
+  stroke-width: 2.4px;
   stroke-linecap: round;
   vector-effect: non-scaling-stroke;
 }
@@ -50,6 +50,6 @@
 
 @keyframes twinkle {
   50% {
-    opacity: 0.35;
+    opacity: 0.45;
   }
 }

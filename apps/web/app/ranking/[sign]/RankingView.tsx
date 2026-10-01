@@ -210,9 +210,10 @@ export function Board({ sign, tab, onTab, data, error, reload }: BoardProps) {
 }
 
 /**
- * 1~3위 on gold, silver and bronze steps: 1위 in the middle on the tallest, 2위 on the left, 3위 on the
- * right, each under a medal. The sign's constellation glows faintly behind the podium. Read in rank order
- * (1, 2, 3); an empty place is only drawn.
+ * 1~3위 on soft gold, silver and bronze steps: 1위 in the middle on the tallest, 2위 on the left, 3위 on the
+ * right, each step with its medal hung over the top edge, the name and 인연 total above it. The sign's
+ * constellation floats behind the podium; a soft dark halo keeps the names readable over it. Read in rank
+ * order (1, 2, 3); an empty place is only drawn.
  */
 function Podium({ sign, rows }: { sign: SignId; rows: RankingRowView[] }) {
   return (
@@ -224,7 +225,6 @@ function Podium({ sign, rows }: { sign: SignId; rows: RankingRowView[] }) {
           return (
             <li key={place} className={s.place} data-place={place} data-mine={row?.mine ? "" : undefined} aria-hidden={row ? undefined : true}>
               <div className={s.who}>
-                {row ? <Medal place={(i + 1) as 1 | 2 | 3} /> : <span className={s.ghost} />}
                 <span className={s.podName}>
                   {row ? (
                     <>
@@ -244,11 +244,7 @@ function Podium({ sign, rows }: { sign: SignId; rows: RankingRowView[] }) {
                   </span>
                 ) : null}
               </div>
-              <div className={s.step}>
-                <span className={s.stepNum} aria-hidden="true">
-                  {i + 1}
-                </span>
-              </div>
+              <div className={s.step}>{row ? <Medal place={(i + 1) as 1 | 2 | 3} /> : <span className={s.ghost} />}</div>
             </li>
           );
         })}
@@ -263,7 +259,7 @@ const METALS = {
   3: { stops: ["#f8d2ae", "#e2a46f", "#8a5a2b", "#c88a5a"], rim: "#6a4220", ink: "#3d2410" },
 } as const;
 
-/** A medal: two ribbon straps and a metal disc (gold, silver or bronze) with its place, and a soft sheen. */
+/** A medal hung on its step: two ribbon straps from the top edge and a metal disc (gold, silver or bronze) with its place. */
 function Medal({ place }: { place: 1 | 2 | 3 }) {
   const id = useId().replace(/:/g, "");
   const metal = METALS[place];
