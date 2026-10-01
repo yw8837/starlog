@@ -43,8 +43,11 @@ for (const file of samples) {
   }
 }
 
-/** Model and vendor names that must never ship to the browser (case-sensitive, as written). */
-const blindProbes = ["claude-", "Claude", "클로드", "Opus", "오푸스", "Sonnet", "GPT", "Gemini"];
+/**
+ * Model and vendor names that must never ship to the browser (case-sensitive, as written). Not the
+ * bare word "Gemini": it is also the zodiac sign 쌍둥이자리 in the 별자리 인연 catalog.
+ */
+const blindProbes = ["claude-", "Claude", "클로드", "Opus", "오푸스", "Sonnet", "GPT", "gemini-", "Google Gemini", "제미나이"];
 
 if (!existsSync(staticDir)) {
   console.error(`check-client-bundle: ${relative(root, staticDir)} not found. Run \`pnpm build\` first.`);
