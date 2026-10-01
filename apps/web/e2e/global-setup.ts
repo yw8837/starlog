@@ -56,6 +56,8 @@ export default async function globalSetup(config: FullConfig) {
   for (const route of ROUTES) {
     const response = await fetch(new URL(route, baseURL));
     await response.arrayBuffer();
-    if (!response.ok) throw new Error(`global-setup: ${route} answered ${response.status}`);
+    // Warm-up only: a production build answers 404 for dev-only routes (/dev/characters); only a
+    // server error means the server is unusable.
+    if (response.status >= 500) throw new Error(`global-setup: ${route} answered ${response.status}`);
   }
 }
