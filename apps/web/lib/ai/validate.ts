@@ -4,7 +4,7 @@ import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import type { SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, cardLabel, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
-import { SOFT_PREFIX, aiTellViolations } from "./style";
+import { MODEL_NAMES, SOFT_PREFIX, aiTellViolations } from "./style";
 
 /**
  * Post-generation checks. Each returns a list of violations in Korean (fed back to the model on the
@@ -117,6 +117,14 @@ function blocklistViolations(text: string, userText: string, out: string[]): voi
   }
   if (ABSOLUTE_DATE.test(text) && !ABSOLUTE_DATE.test(userText)) out.push("날짜·요일·시각을 지정한 문장이 있어요. 고른 시기 안에서 조건으로만 말해 주세요.");
   if (!hasHangul(text)) out.push("한국어로 써 주세요.");
+}
+
+// ---- model blinding (owner order) ----
+
+/** Hard: a model, vendor or technology name anywhere in the draft (every text field, any language). */
+export function modelNameViolations(draft: unknown, out: string[]): void {
+  const hit = MODEL_NAMES.exec(JSON.stringify(draft));
+  if (hit) out.push(`AI 모델·회사·기술 이름("${hit[0]}")을 쓰지 않아요. 풀이 도우미가 무엇으로 만들어졌는지는 밝히지 않아요.`);
 }
 
 // ---- voice, repetition, action variety (judge findings 2026-09-30) ----
@@ -328,6 +336,7 @@ function cardIdentityViolations(cards: Array<{ position: string; cardId: string 
 
 export function validateTarotTeaser(draft: TarotTeaserDraft, ctx: TarotContext): string[] {
   const out: string[] = [];
+  modelNameViolations(draft, out);
   cardIdentityViolations(draft.cards, ctx, out);
   for (const c of draft.cards) {
     const n = charCount(c.keyword);
@@ -358,6 +367,7 @@ function paidBodyText(r: TarotReading): string[] {
 
 export function validateTarotReading(r: TarotReading, ctx: TarotContext): string[] {
   const out: string[] = [];
+  modelNameViolations(r, out);
   cardIdentityViolations(r.cards, ctx, out);
 
   const verdictLength = charCount(r.verdict);
@@ -400,6 +410,7 @@ export function validateTarotReading(r: TarotReading, ctx: TarotContext): string
 
 export function validateDaily(d: DailyDraft, ctx: TarotContext): string[] {
   const out: string[] = [];
+  modelNameViolations(d, out);
   const card = ctx.cards[0]!;
   const summaryLength = charCount(d.summary);
   if (summaryLength < 5 || summaryLength > 30) out.push(`summary는 공백 제외 30자 이하 한 문장으로 써 주세요(지금 ${summaryLength}자).`);
@@ -425,6 +436,7 @@ export function validateDaily(d: DailyDraft, ctx: TarotContext): string[] {
 
 export function validateTarotFollowUp(a: FollowUpAnswer, ctx: TarotContext, question = ""): string[] {
   const out: string[] = [];
+  modelNameViolations(a, out);
   lengthCheck("answer", a.answer, 150, 450, out);
   const wrong = sharedMisdescriptionHits(a.answer, ctx.cards.map((c) => c.kb));
   if (wrong.length) out.push(`그림에 없는 묘사가 있어요: ${wrong.join(", ")}.`);
@@ -510,6 +522,7 @@ const profileText = (facts: SajuFactSet) => [facts.profile?.loveStatus, facts.pr
 
 export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): string[] {
   const out: string[] = [];
+  modelNameViolations(d, out);
   const titleLength = charCount(d.title);
   if (titleLength < 2 || titleLength > 16) out.push("title은 4~12자로 써 주세요.");
   lengthCheck("summary", d.summary, 250, 400, out);
@@ -523,6 +536,7 @@ export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): stri
 
 export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[] {
   const out: string[] = [];
+  modelNameViolations(r, out);
   if (r.sections.length !== SAJU_PROLOGUE_SECTIONS.length) out.push(`sections는 정확히 ${SAJU_PROLOGUE_SECTIONS.length}개여야 해요.`);
   r.sections.forEach((section, i) => {
     const n = charCount(section.body);
@@ -546,6 +560,7 @@ export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[
 
 export function validateSajuFollowUp(a: FollowUpAnswer, facts: SajuFactSet, question = ""): string[] {
   const out: string[] = [];
+  modelNameViolations(a, out);
   lengthCheck("answer", a.answer, 150, 450, out);
   sajuFactViolations(a.answer, facts, out, `${question} ${profileText(facts)}`);
   voiceViolations(a.answer, out);

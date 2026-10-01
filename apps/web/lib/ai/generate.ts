@@ -93,7 +93,7 @@ export async function generateTarotFollowUp(
     user: tarotFollowUpPrompt(ctx, reading, turns, question),
     schema: FollowUpAnswerSchema,
     ...generationSetting("followup"),
-    mock: () => mockTarotFollowUp(ctx),
+    mock: () => mockTarotFollowUp(ctx, question),
   }, (answer) => validateTarotFollowUp(answer, ctx, question), hooks);
 }
 
@@ -140,6 +140,6 @@ export async function generateSajuFollowUp(
     user: sajuFollowUpPrompt(facts, reading, turns, question),
     schema: FollowUpAnswerSchema,
     ...generationSetting("followup"),
-    mock: () => mockSajuFollowUp(facts),
+    mock: () => mockSajuFollowUp(facts, question),
   }, (answer) => validateSajuFollowUp(answer, facts, question), hooks);
 }

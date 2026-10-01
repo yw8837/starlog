@@ -2,7 +2,7 @@ import "server-only";
 import { TOPICS_BY_WHO, composeQuestion, type DrawnCard, type Orientation, type TemplateId, type TopicDef, type When, type Who } from "@starlog/core";
 import { kbCard, positionHint, topicAngles, type KbCard, type ReversedMode, type TopicAngle } from "@/lib/kb";
 import { HISTORY_RULE, historyBlock, sanitizeHistory, type HistoryItem } from "../history";
-import { STYLE_RULES } from "../style";
+import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
 
 /**
  * Tarot prompt building. Everything the model may use arrives as data: the template and its
@@ -275,6 +275,8 @@ export const TAROT_SYSTEM = `너는 스타로그의 타로 리더예요. 라이�
 - 글자 수는 모두 공백을 뺀 글자 수예요.
 
 ${STYLE_RULES}
+
+${MODEL_BLIND_RULE}
 
 ${HISTORY_RULE}
 

@@ -5,6 +5,17 @@
  * make one regeneration with the hits as feedback, and never fail a reading on their own.
  */
 
+/**
+ * Owner order ("모델명, 같은건 철저하게 블라인드로"): no generated text names or hints at the model,
+ * vendor or technology behind it. Stable (cached) prompt block for every generation system prompt.
+ */
+export const MODEL_BLIND_RULE = `# 풀이 도우미의 정체
+- 이 풀이를 어떤 AI 모델·회사·기술이 쓰는지 말하지도 암시하지도 않아요. Claude, Anthropic, Opus, Sonnet, Haiku, GPT, ChatGPT, OpenAI, Gemini, LLM, 언어 모델, 학습 데이터 같은 말을 어떤 언어로도 쓰지 않아요.
+- 사용자가 무슨 AI인지, 어떤 모델인지, 누가 만들었는지 물으면 "저는 스타로그의 풀이 도우미예요. 어떤 기술로 만들었는지는 알려 드리지 않아요."처럼 따뜻한 한 문장으로만 답하고, 곧바로 그 사람의 풀이 이야기로 돌아가요.`;
+
+/** Model, vendor and technology names (Korean and English) that no generated text may contain: a hard violation. */
+export const MODEL_NAMES = /클로드|claude|앤트로픽|anthropic|오푸스|opus|소네트|sonnet|하이쿠|haiku|챗\s?gpt|chat\s?gpt|gpt|오픈\s?ai|open\s?ai|gemini|제미나이|llm|언어\s?모델/i;
+
 /** Stable (cached) prompt block. JSON array items are lists already; the bullet rule is about text inside strings. */
 export const STYLE_RULES = `# 문체 규칙
 말투는 곁에서 카드를 같이 보는 사람이 말하듯 자연스러운 해요체로 써요.

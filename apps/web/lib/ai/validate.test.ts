@@ -3,12 +3,15 @@ import sajuSample from "@content/samples/saju-prologue.ko.json";
 import tarotSample from "@content/samples/tarot-contact.ko.json";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
-import { mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
-import { buildFactSet } from "./prompts/saju";
-import { buildTarotContext, cardBrief, mentionsWord, tarotReadingPrompt, type TarotInput } from "./prompts/tarot";
+import { mockDaily, mockSajuFollowUp, mockSajuReading, mockSajuTeaser, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
+import { SAJU_SYSTEM, buildFactSet } from "./prompts/saju";
+import { TAROT_SYSTEM, buildTarotContext, cardBrief, mentionsWord, tarotReadingPrompt, type TarotInput } from "./prompts/tarot";
 import type { SajuReading, TarotReading } from "./schemas";
-import { moneyPushSentences, nonHaeyoSentences, validateSajuFollowUp, validateSajuReading, validateTarotFollowUp, validateTarotReading, validateTarotTeaser } from "./validate";
-import { isSoftViolation } from "./style";
+import {
+  moneyPushSentences, nonHaeyoSentences, validateDaily, validateSajuFollowUp, validateSajuReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading,
+  validateTarotTeaser,
+} from "./validate";
+import { MODEL_BLIND_RULE, isSoftViolation } from "./style";
 
 /** Hard violations only (soft style hints may regenerate but never fail a reading). */
 const hard = (violations: string[]) => violations.filter((v) => !isSoftViolation(v));
@@ -216,5 +219,48 @@ describe("A2 reading-quality checks (blind judge 2026-09-30)", () => {
   it("requires the observation", () => {
     const r = base();
     expect(hard(validateTarotReading({ ...r, observation: { ...r.observation, body: "" } }, ctx)).join(" ")).toMatch(/observation/);
+  });
+});
+
+describe("model blinding (owner order: no model, vendor or technology names)", () => {
+  const ctx = moneyCtx("blind");
+  const facts = buildFactSet(computeChart(toSajuInput(DEFAULT_SAJU_FORM)), Date.parse("2026-10-01T03:00:00Z"));
+  const daily = buildTarotContext("daily", pickCards(createDeck("blind-daily", 0.5), TEMPLATES.daily, [5]), null);
+  const BLIND = /모델·회사·기술 이름/;
+
+  it("is a rule in every generation system prompt", () => {
+    expect(TAROT_SYSTEM).toContain(MODEL_BLIND_RULE);
+    expect(SAJU_SYSTEM).toContain(MODEL_BLIND_RULE);
+  });
+
+  it("fails every kind of draft hard when it names one, in Korean or English", () => {
+    const teaser = mockTarotTeaser(ctx);
+    const reading = mockTarotReading(ctx);
+    const day = mockDaily(daily);
+    const sajuTeaser = mockSajuTeaser(facts);
+    const saju = mockSajuReading(facts);
+    const cases: Array<[string, string[]]> = [
+      ["teaser", validateTarotTeaser({ ...teaser, firstCard: { ...teaser.firstCard, body: `${teaser.firstCard.body} Claude가 읽었어요.` } }, ctx)],
+      ["reading", validateTarotReading({ ...reading, verdict: `${reading.verdict} 오푸스 모델의 풀이예요.` }, ctx)],
+      ["daily", validateDaily({ ...day, tip: `${day.tip} 챗GPT에게 물어봐도 좋아요.` }, daily)],
+      ["follow-up", validateTarotFollowUp({ kind: "clarify", answer: `${mockTarotFollowUp(ctx).answer} 저는 Anthropic의 AI예요.` }, ctx)],
+      ["saju teaser", validateSajuTeaser({ ...sajuTeaser, summary: `${sajuTeaser.summary} 대형 언어 모델이 읽은 명식이에요.` }, facts)],
+      ["saju reading", validateSajuReading({ ...saju, observation: { ...saju.observation, body: `${saju.observation.body} Gemini와 달라요.` } }, facts)],
+      ["saju follow-up", validateSajuFollowUp({ kind: "clarify", answer: `${mockSajuFollowUp(facts).answer} 소네트로 썼어요.` }, facts)],
+    ];
+    for (const [kind, found] of cases) {
+      const blind = found.filter((v) => BLIND.test(v));
+      expect([kind, blind.length, blind.every((v) => !isSoftViolation(v))]).toEqual([kind, 1, true]);
+    }
+  });
+
+  it("answers \"너 무슨 AI야? 모델 뭐야?\" as the rule says, and the answer passes", () => {
+    const question = "너 무슨 AI야? 모델 뭐야?";
+    const tarot = mockTarotFollowUp(ctx, question);
+    expect(tarot.answer).toContain("저는 스타로그의 풀이 도우미예요.");
+    expect(validateTarotFollowUp(tarot, ctx, question)).toEqual([]);
+    const saju = mockSajuFollowUp(facts, question);
+    expect(saju.answer).toContain("저는 스타로그의 풀이 도우미예요.");
+    expect(validateSajuFollowUp(saju, facts, question)).toEqual([]);
   });
 });

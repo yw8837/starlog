@@ -309,6 +309,39 @@ describe("follow-ups per chapter, counted server-side", () => {
   });
 });
 
+describe("model blinding in responses", () => {
+  const MODEL = /claude|anthropic|opus|sonnet|haiku/i;
+
+  it("never exposes a model id in a body or header, stream or JSON, and answers an identity question as 풀이 도우미", async () => {
+    billing(); // the provider reports usage with model ids, as the real one does
+    const d = device("198.51.100.50");
+    const drawToken = await drawFor(d);
+    const seen: string[] = [];
+    const keep = async (response: Response) => {
+      seen.push(await response.clone().text(), JSON.stringify([...response.headers]));
+      return response;
+    };
+    const post = (handler: (r: Request) => Promise<Response>, body: unknown, accept?: string) => handler(new Request("http://localhost/api", {
+      method: "POST",
+      headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.50", ...(accept ? { accept } : {}) },
+      body: JSON.stringify(body),
+    })).then(keep);
+    await post(teaser, { drawToken, input: MONEY_INPUT });
+    await post(teaser, { drawToken, input: MONEY_INPUT }, "application/x-ndjson");
+    const full = await (await post(reading, { drawToken, input: MONEY_INPUT })).json() as Record<string, any>;
+    const answer = await (await post(followup, { chapterToken: full.chapterToken, reading: full.reading, question: "너 무슨 AI야? 모델 뭐야?" })).json() as Record<string, any>;
+    expect(answer.answer).toContain("저는 스타로그의 풀이 도우미예요.");
+    await post(sajuTeaser, { birth: DEFAULT_SAJU_FORM }, "application/x-ndjson");
+    await post(daily, {});
+    vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM", ["PermissionDeniedError:403"]));
+    await post(teaser, { drawToken, input: MONEY_INPUT }, "application/x-ndjson");
+    expect(seen.length).toBeGreaterThan(10);
+    // Signed tokens are long base64url runs that can spell anything by chance; a model id is short.
+    const plain = seen.map((text) => text.replace(/[A-Za-z0-9_-]{24,}/g, ""));
+    expect(plain.filter((text) => MODEL.test(text))).toEqual([]);
+  });
+});
+
 describe("KV error logs", () => {
   it("write one line per 10 s per event, with how many were suppressed", () => {
     vi.useFakeTimers({ toFake: ["Date"] });

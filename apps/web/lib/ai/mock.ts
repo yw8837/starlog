@@ -223,12 +223,18 @@ export function mockDaily(ctx: TarotContext): DailyDraft {
   };
 }
 
-export function mockTarotFollowUp(ctx: TarotContext): FollowUpAnswer {
+/** "너 무슨 AI야?", "모델 뭐야?", "누가 만들었어?": answered as the prompt's blinding rule says. */
+const IDENTITY_QUESTION = /\bai\b|에이아이|인공지능|모델|챗봇|누가 만들|무엇으로 만들|뭘로 만들/i;
+const IDENTITY_ANSWER = "저는 스타로그의 풀이 도우미예요. 어떤 기술로 만들었는지는 알려 드리지 않아요.";
+
+export function mockTarotFollowUp(ctx: TarotContext, question = ""): FollowUpAnswer {
   const first = ctx.cards[0]!;
   const fact = factsOf(first.kb)[0]!;
+  const identity = IDENTITY_QUESTION.test(question);
   return {
-    kind: "clarify",
+    kind: identity ? "out_of_scope" : "clarify",
     answer: [
+      ...(identity ? [IDENTITY_ANSWER] : []),
       `같은 카드로 이어서 보면, ${cardLabel(first)} 자리의 그림에서 다시 시작하는 게 좋아요.`,
       // KB lines that stray off this topic (8 of Wands' 연락 on a money reading) are left out.
       ...[factSentence(fact.ko), `이 자리에서는 ${first.kb.core.oneLine[first.orientation]}로 읽었어요.`].filter((sentence) => onTopic(ctx, sentence)),
@@ -373,11 +379,13 @@ export function mockSajuReading(f: SajuFactSet): SajuReading {
   };
 }
 
-export function mockSajuFollowUp(f: SajuFactSet): FollowUpAnswer {
+export function mockSajuFollowUp(f: SajuFactSet, question = ""): FollowUpAnswer {
   const dm = f.dayMaster;
+  const identity = IDENTITY_QUESTION.test(question);
   return {
-    kind: "clarify",
+    kind: identity ? "out_of_scope" : "clarify",
     answer: [
+      ...(identity ? [IDENTITY_ANSWER] : []),
       `같은 명식으로 이어서 보면, 일간 ${josa(dm.display, "을", "를")} 먼저 떠올리는 게 좋아요.`,
       `명리에서는 이 글자를 ${dm.image}에 비유해요.`,
       `가장 많은 기운은 ${joinList(f.elements.most)}개라, 먼저 꺼내 쓰기 쉬운 힘도 그쪽으로 읽어요.`,

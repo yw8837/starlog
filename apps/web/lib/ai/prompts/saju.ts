@@ -5,7 +5,7 @@ import {
 } from "@starlog/core";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { HISTORY_RULE, historyBlock, sanitizeHistory, type HistoryItem } from "../history";
-import { STYLE_RULES } from "../style";
+import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
 import type { FollowUpTurn } from "./tarot";
 import { cleanUserText } from "./tarot";
 
@@ -458,6 +458,8 @@ export const SAJU_SYSTEM = `너는 스타로그의 사주(명리) 해설가예�
 - 관점을 밝히는 "명리에서는 ~로 읽어요"는 규칙대로 쓰되, 한 문장 안에서 완곡 표현을 겹치지 않아요.
 
 ${STYLE_RULES}
+
+${MODEL_BLIND_RULE}
 
 ${HISTORY_RULE}
 
