@@ -230,4 +230,33 @@ describe("bonds API", () => {
     vi.stubEnv("STARLOG_SIGNING_SECRET", "");
     expect((await meGet(req("/api/bonds/me", new Map()))).status).toBe(503);
   });
+
+  it("serves the top lists from the edge cache, but fresh ones to an owner who just made the list", async () => {
+    const store = new Map<string, Response>();
+    vi.stubGlobal("caches", {
+      default: {
+        match: async (r: Request) => store.get(r.url)?.clone(),
+        put: async (r: Request, res: Response) => void store.set(r.url, res.clone()),
+      },
+    });
+    try {
+      const get = async (jar: Jar) =>
+        (await (await rankingGet(req("/api/bonds/ranking/aries", jar), { params: Promise.resolve({ sign: "aries" }) })).json()) as {
+          week: { nickname: string; mine: boolean }[];
+        };
+      const before = await get(new Map());
+      expect(store.size).toBe(1);
+      const { owner, code } = await startOwner("늦별", "aries");
+      for (const [i, [year, month, day]] of BIRTHS.entries()) {
+        await joinPost(req("/api/bonds/join", new Map(), { code, nickname: `늦벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `6.6.6.${i}`));
+      }
+      // a visitor within the minute still gets the cached lists
+      expect((await get(new Map())).week).toEqual(before.week);
+      // the owner who just completed is in them, and that refreshes the cache for everyone
+      expect((await get(owner)).week.find((r) => r.mine)).toMatchObject({ nickname: "늦별" });
+      expect((await get(new Map())).week.some((r) => r.nickname === "늦별")).toBe(true);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });

@@ -7,6 +7,7 @@ import { CONSTELLATIONS, getConstellation, type SignId } from "@starlog/core";
 import { CompletedCard } from "@/components/bonds/CompletedCard";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
+import { ConstellationBackdrop } from "@/components/bonds/ConstellationBackdrop";
 import { InviteShareButton } from "@/components/bonds/InviteShareButton";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -209,51 +210,86 @@ export function Board({ sign, tab, onTab, data, error, reload }: BoardProps) {
 }
 
 /**
- * 1~3위 on steps: 1위 in the middle on the tallest step with the sign's figure lit and a gold glow, 2위 on
- * the left, 3위 on the right. Read in rank order (1, 2, 3); an empty place is only drawn.
+ * 1~3위 on gold, silver and bronze steps: 1위 in the middle on the tallest, 2위 on the left, 3위 on the
+ * right, each under a medal. The sign's constellation glows faintly behind the podium. Read in rank order
+ * (1, 2, 3); an empty place is only drawn.
  */
 function Podium({ sign, rows }: { sign: SignId; rows: RankingRowView[] }) {
-  const def = getConstellation(sign);
   return (
-    <ol className={s.podium} aria-label="1~3위">
-      {PLACES.map((place, i) => {
-        const row = rows[i];
-        return (
-          <li key={place} className={s.place} data-place={place} data-mine={row?.mine ? "" : undefined} aria-hidden={row ? undefined : true}>
-            <div className={s.who}>
-              {row ? (
-                <ConstellationArt sign={sign} lit={def.slots} size={i === 0 ? 96 : 60} decorative className={s.podArt} />
-              ) : (
-                <span className={s.ghost} />
-              )}
-              <span className={s.podName}>
-                {row ? (
-                  <>
-                    <span className="sr-only">{i + 1}위 </span>
-                    {row.nickname}
-                  </>
-                ) : (
-                  "빈 자리"
-                )}
-              </span>
-              {row?.mine ? <span className={s.me}>나</span> : null}
-              {row ? (
-                <span className={s.podTotal}>
-                  <span className="sr-only">인연 </span>
-                  {row.total}
-                  <small>점</small>
+    <div className={s.stage}>
+      <ConstellationBackdrop sign={sign} className={s.backdrop} />
+      <ol className={s.podium} aria-label="1~3위">
+        {PLACES.map((place, i) => {
+          const row = rows[i];
+          return (
+            <li key={place} className={s.place} data-place={place} data-mine={row?.mine ? "" : undefined} aria-hidden={row ? undefined : true}>
+              <div className={s.who}>
+                {row ? <Medal place={(i + 1) as 1 | 2 | 3} /> : <span className={s.ghost} />}
+                <span className={s.podName}>
+                  {row ? (
+                    <>
+                      <span className="sr-only">{i + 1}위 </span>
+                      {row.nickname}
+                    </>
+                  ) : (
+                    "빈 자리"
+                  )}
                 </span>
-              ) : null}
-            </div>
-            <div className={s.step}>
-              <span className={s.medal} data-rank={i + 1} aria-hidden="true">
-                {i + 1}
-              </span>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+                {row?.mine ? <span className={s.me}>나</span> : null}
+                {row ? (
+                  <span className={s.podTotal}>
+                    <span className="sr-only">인연 </span>
+                    {row.total}
+                    <small>점</small>
+                  </span>
+                ) : null}
+              </div>
+              <div className={s.step}>
+                <span className={s.stepNum} aria-hidden="true">
+                  {i + 1}
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+const METALS = {
+  1: { stops: ["#fff0b8", "#f3c969", "#b8862b", "#e9c46f"], rim: "#8a6420", ink: "#4a3108" },
+  2: { stops: ["#ffffff", "#e8edf3", "#9aa6b2", "#d5dbe2"], rim: "#6c7682", ink: "#2c333c" },
+  3: { stops: ["#f8d2ae", "#e2a46f", "#8a5a2b", "#c88a5a"], rim: "#6a4220", ink: "#3d2410" },
+} as const;
+
+/** A medal: two ribbon straps and a metal disc (gold, silver or bronze) with its place, and a soft sheen. */
+function Medal({ place }: { place: 1 | 2 | 3 }) {
+  const id = useId().replace(/:/g, "");
+  const metal = METALS[place];
+  return (
+    <svg className={s.medal} data-rank={place} viewBox="0 0 48 62" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id={`${id}-m`} x1="0.15" y1="0" x2="0.85" y2="1">
+          {metal.stops.map((c, i) => (
+            <stop key={c} offset={[0, 0.35, 0.75, 1][i]} stopColor={c} />
+          ))}
+        </linearGradient>
+        <linearGradient id={`${id}-r`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#7d6cf0" />
+          <stop offset="1" stopColor="#4a3cae" />
+        </linearGradient>
+      </defs>
+      <path d="M9 0h12l10 30H19z" fill={`url(#${id}-r)`} />
+      <path d="M39 0H27L17 30h12z" fill={`url(#${id}-r)`} />
+      <path d="M15 0l10 30M33 0L23 30" stroke="#cfc6ff" strokeOpacity="0.55" strokeWidth="1.2" />
+      <circle cx="24" cy="42" r="17" fill={`url(#${id}-m)`} stroke={metal.rim} strokeWidth="1.5" />
+      <circle cx="24" cy="42" r="12.5" fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="1" />
+      <ellipse cx="17.5" cy="34.5" rx="6.5" ry="3" fill="#fff" fillOpacity="0.45" transform="rotate(-35 17.5 34.5)" />
+      <text x="24" y="47.5" textAnchor="middle" className={s.medalNum} fill={metal.ink}>
+        {place}
+      </text>
+    </svg>
   );
 }
 

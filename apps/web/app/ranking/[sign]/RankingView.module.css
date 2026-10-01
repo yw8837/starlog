@@ -154,7 +154,26 @@
   }
 }
 
-/* ---- podium: 2위 · 1위 · 3위 on steps ---- */
+/* ---- podium: 2위 · 1위 · 3위 on gold, silver and bronze steps, the constellation glowing behind ---- */
+
+.stage {
+  position: relative;
+  isolation: isolate;
+  padding-top: 36px;
+}
+
+/* The sign's constellation, large and faint behind the medals and names; it fades out at its edges. */
+.stage > .backdrop {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: -1;
+  width: 116%;
+  height: 80%;
+  transform: translateX(-50%);
+  -webkit-mask-image: radial-gradient(closest-side, #000 62%, transparent);
+  mask-image: radial-gradient(closest-side, #000 62%, transparent);
+}
 
 .podium {
   display: grid;
@@ -163,7 +182,7 @@
   align-items: end;
   gap: 8px;
   margin: 0;
-  padding: 18px 0 0;
+  padding: 0;
   border-bottom: 1px solid var(--line-strong);
   list-style: none;
 }
@@ -195,24 +214,38 @@
 }
 
 .place[data-place="first"] .who {
-  background: radial-gradient(closest-side at 50% 34%, rgba(243, 220, 161, 0.24), transparent);
+  background: radial-gradient(closest-side at 50% 22%, rgba(243, 201, 105, 0.14), transparent);
 }
 
-.podArt {
-  width: 56px;
-  opacity: 0.85;
+.place[aria-hidden] .who {
+  background: none;
 }
 
-.place[data-place="first"] .podArt {
-  width: 92px;
-  opacity: 1;
-  filter: drop-shadow(0 0 14px rgba(243, 220, 161, 0.55));
+/* ribbon + metal disc */
+.medal {
+  display: block;
+  width: 40px;
+  height: auto;
+  margin-bottom: 4px;
+  overflow: visible;
+  filter: drop-shadow(0 3px 6px rgba(5, 3, 20, 0.55));
+}
+
+.place[data-place="first"] .medal {
+  width: 54px;
+  filter: drop-shadow(0 0 12px rgba(243, 201, 105, 0.4)) drop-shadow(0 3px 6px rgba(5, 3, 20, 0.55));
+}
+
+.medalNum {
+  font-family: var(--font-display), serif;
+  font-size: 17px;
+  font-weight: 700;
 }
 
 .ghost {
-  width: 44px;
-  height: 44px;
-  margin: 6px 0;
+  width: 34px;
+  height: 34px;
+  margin: 14px 0 8px;
   border: 1px dashed var(--line-strong);
   border-radius: 50%;
 }
@@ -232,10 +265,6 @@
 
 .place[data-place="first"] .podName {
   font-size: 15px;
-}
-
-.place[aria-hidden] .who {
-  background: none;
 }
 
 .place[aria-hidden] .podName {
@@ -261,49 +290,121 @@
 .podTotal small {
   margin-left: 1px;
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   text-shadow: none;
 }
 
+/* Metal steps: a bright top face, the front darkening into the night, a soft diagonal sheen. */
 .step {
+  position: relative;
   display: grid;
   justify-items: center;
   align-content: start;
-  padding-top: 10px;
-  border: 1px solid var(--glass-line);
-  border-bottom: 0;
-  border-radius: 12px 12px 0 0;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  padding-top: 14px;
+  overflow: hidden;
+  border-radius: 10px 10px 0 0;
+}
+
+.step::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 8px;
+  background: var(--metal-top);
+  box-shadow: 0 1px 0 rgba(13, 10, 38, 0.25);
+}
+
+.step::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 0 28%, rgba(255, 255, 255, 0.2) 40%, transparent 54%);
+  pointer-events: none;
 }
 
 .place[data-place="first"] .step {
+  --metal-top: linear-gradient(180deg, #fff1c2, #f3c969);
   height: 108px;
-  border-color: rgba(243, 220, 161, 0.6);
-  background: linear-gradient(180deg, rgba(243, 220, 161, 0.3), rgba(243, 220, 161, 0.04));
-  box-shadow: 0 -10px 36px rgba(243, 220, 161, 0.22);
+  background: linear-gradient(180deg, #e3b95c 0%, #b8862b 50%, #6a4c1e 100%);
+  box-shadow:
+    0 -8px 34px rgba(243, 201, 105, 0.28),
+    inset 0 -28px 30px rgba(13, 10, 38, 0.34);
 }
 
 .place[data-place="second"] .step {
+  --metal-top: linear-gradient(180deg, #ffffff, #e8edf3);
   height: 78px;
+  background: linear-gradient(180deg, #d3dae2 0%, #9aa6b2 50%, #58616c 100%);
+  box-shadow: inset 0 -24px 26px rgba(13, 10, 38, 0.34);
 }
 
 .place[data-place="third"] .step {
+  --metal-top: linear-gradient(180deg, #f8d2ae, #e2a46f);
   height: 58px;
+  background: linear-gradient(180deg, #d4985f 0%, #8a5a2b 55%, #553619 100%);
+  box-shadow: inset 0 -20px 22px rgba(13, 10, 38, 0.34);
+}
+
+/* the place, pressed into the metal */
+.stepNum {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display), serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.place[data-place="first"] .stepNum {
+  color: rgba(74, 49, 8, 0.7);
+  font-size: 38px;
+}
+
+.place[data-place="second"] .stepNum {
+  color: rgba(40, 47, 56, 0.68);
+}
+
+.place[data-place="third"] .stepNum {
+  color: rgba(48, 26, 8, 0.78);
+  text-shadow: 0 1px 0 rgba(255, 222, 190, 0.45);
+}
+
+.place[aria-hidden] .step {
+  border: 1px dashed var(--line-strong);
+  border-bottom: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.place[aria-hidden] .step::before,
+.place[aria-hidden] .step::after {
+  display: none;
+}
+
+.place[aria-hidden] .stepNum {
+  color: var(--ink-sub);
+  text-shadow: none;
 }
 
 /* Desktop: the board column is wide, so the podium grows with it. */
 @media (min-width: 1024px) {
+  .stage {
+    padding-top: 52px;
+  }
+
   .podium {
+    max-width: 560px;
+    margin-inline: auto;
     gap: 12px;
-    padding-top: 24px;
   }
 
-  .podArt {
-    width: 76px;
+  .medal {
+    width: 50px;
   }
 
-  .place[data-place="first"] .podArt {
-    width: 124px;
+  .place[data-place="first"] .medal {
+    width: 68px;
   }
 
   .podName {
@@ -323,55 +424,24 @@
   }
 
   .place[data-place="first"] .step {
-    height: 132px;
+    height: 148px;
   }
 
   .place[data-place="second"] .step {
-    height: 96px;
+    height: 108px;
   }
 
   .place[data-place="third"] .step {
-    height: 72px;
+    height: 84px;
   }
-}
 
-.place[aria-hidden] .step {
-  border-style: dashed;
-  background: none;
-  box-shadow: none;
-}
+  .stepNum {
+    font-size: 34px;
+  }
 
-.medal {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  color: #2a1b4d;
-  font-family: var(--font-display), serif;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.medal[data-rank="1"] {
-  background: linear-gradient(160deg, #f7e5b6, #e9c46f);
-  box-shadow: 0 0 14px rgba(243, 220, 161, 0.6);
-}
-
-.medal[data-rank="2"] {
-  background: linear-gradient(160deg, #f1f1f7, #b9bccb);
-}
-
-.medal[data-rank="3"] {
-  background: linear-gradient(160deg, #f0c8a0, #c88a5a);
-}
-
-.place[aria-hidden] .medal {
-  border: 1px dashed var(--line-strong);
-  background: none;
-  box-shadow: none;
-  color: var(--ink-sub);
+  .place[data-place="first"] .stepNum {
+    font-size: 46px;
+  }
 }
 
 .me {
@@ -380,7 +450,7 @@
   border-radius: 9px;
   background: var(--gold);
   color: #2a1b4d;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.5;
 }
@@ -468,7 +538,7 @@
 .unit {
   margin-left: 1px;
   font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 

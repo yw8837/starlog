@@ -1,0 +1,55 @@
+/* Drawn soft: the whole layer stays faint so text over it keeps its contrast. */
+.backdrop {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+.dust {
+  fill: #e9e4ff;
+}
+
+.figure {
+  fill: none;
+  stroke: #b9adff;
+  stroke-width: 1px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-opacity: 0.55;
+  vector-effect: non-scaling-stroke;
+}
+
+.line {
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.core {
+  fill: #fff7dc;
+}
+
+.spark {
+  stroke: #fff7dc;
+  stroke-width: 1px;
+  stroke-linecap: round;
+  stroke-opacity: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Three stars breathe very slowly, only when motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  .twinkle {
+    animation: twinkle 7s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -2.3s);
+  }
+}
+
+@keyframes twinkle {
+  50% {
+    opacity: 0.35;
+  }
+}

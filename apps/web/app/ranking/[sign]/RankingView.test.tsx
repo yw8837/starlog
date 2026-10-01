@@ -36,9 +36,15 @@ describe("별자리 랭킹 board (/ranking/<sign>)", () => {
     const podium = screen.getByRole("list", { name: "1~3위" });
     const places = within(podium).getAllByRole("listitem");
     expect(places.map((li) => li.getAttribute("data-place"))).toEqual(["first", "second", "third"]);
-    expect(places.map((li) => li.textContent)).toEqual(["1위 별1인연 500점1", "2위 별2인연 495점2", "3위 별3인연 490점3"]);
-    // the lit figure only on the podium places that are taken
-    expect(places[0]!.querySelector("svg")).not.toBeNull();
+    places.forEach((li, i) => {
+      expect(li.textContent).toContain(`${i + 1}위 별${i + 1}인연 ${500 - i * 5}점`);
+      // a gold, silver or bronze medal over the name
+      expect(li.querySelector("svg[data-rank]")?.getAttribute("data-rank")).toBe(String(i + 1));
+    });
+    // the sign's constellation behind the podium: decorative, one star per catalog star (양자리: 4)
+    const backdrop = podium.parentElement!.querySelector(":scope > svg")!;
+    expect(backdrop.getAttribute("aria-hidden")).toBe("true");
+    expect(backdrop.querySelectorAll("line")).toHaveLength(3);
     const list = screen.getByRole("list", { name: "4~20위" });
     expect(list.getAttribute("start")).toBe("4");
     const items = within(list).getAllByRole("listitem");
