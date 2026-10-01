@@ -7,6 +7,9 @@ import { expect, request as playwrightRequest, test, type APIRequestContext, typ
  * per-IP join and code limiters (10 a minute) never trip across the suite.
  */
 
+// Long flows (four friends, three widths of screenshots, share images) on a dev server that compiles routes on first use.
+test.describe.configure({ timeout: 600_000 });
+
 const SHOTS = "test-results/screens/bonds";
 const SIZES = [
   { name: "375", width: 375, height: 812 },

@@ -1,7 +1,9 @@
 .screen {
   display: grid;
   gap: 20px;
-  padding: 16px 0 40px;
+  /* block padding only: .page-col keeps its side gutters */
+  padding-top: 16px;
+  padding-bottom: 40px;
 }
 
 @media (min-width: 1024px) {
