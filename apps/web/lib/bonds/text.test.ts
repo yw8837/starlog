@@ -43,6 +43,17 @@ describe("bonds text rules", () => {
     expect(checkNickname("ｆｕｃｋ")).toEqual({ ok: false, reason: "BLOCKED" });
   });
 
+  it("stores the user's own characters (ㅋ stays a compatibility jamo) and still catches folded look-alikes", () => {
+    const laugh = checkNickname("ㅋㅋㅋ");
+    expect(laugh).toEqual({ ok: true, value: "ㅋㅋㅋ" });
+    expect(laugh.ok && Array.from(laugh.value).map((ch) => ch.codePointAt(0))).toEqual([0x314b, 0x314b, 0x314b]);
+    expect(checkMessage("ㅋㅋㅋ 고마워")).toEqual({ ok: true, value: "ㅋㅋㅋ 고마워" });
+    expect(checkNickname("ㅅㅂ")).toEqual({ ok: false, reason: "BLOCKED" });
+    expect(checkNickname("\uffbb\uffbb\uffbb")).toEqual({ ok: true, value: "\uffbb\uffbb\uffbb" });
+    expect(checkNickname("ｆｕｃｋ")).toEqual({ ok: false, reason: "BLOCKED" });
+    expect(checkNickname("０１０１２３４５６７")).toEqual({ ok: false, reason: "BLOCKED" });
+  });
+
   it("refuses phone-like digit runs in public names", () => {
     expect(checkNickname("0101234567")).toEqual({ ok: false, reason: "BLOCKED" });
     expect(checkNickname("010-1234-5678")).toEqual({ ok: false, reason: "LENGTH" });

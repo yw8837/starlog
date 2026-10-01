@@ -21,6 +21,16 @@ describe("label layout", () => {
     }
   });
 
+  it("shrinks a long Latin name to fit instead of letting it run past its pill", () => {
+    const [box] = layoutLabels([[500, 500]], ["WWWWWWWWWW"], 46);
+    expect(box!.w).toBeLessThanOrEqual(420);
+    expect(box!.font).toBeLessThan(46);
+    // the text at its own size fits the pill that was drawn for it
+    expect(pillWidth("WWWWWWWWWW", box!.font)).toBeLessThanOrEqual(box!.w);
+    const [short] = layoutLabels([[500, 500]], ["민지"], 46);
+    expect(short!.font).toBe(46);
+  });
+
   it("leaves empty slots without a pill and sizes pills by their text", () => {
     const boxes = layoutLabels(CONSTELLATIONS[0]!.stars, ["민지", null, "", "하늘"], 40);
     expect(boxes.map((b) => b?.text ?? null)).toEqual(["민지", null, null, "하늘"]);

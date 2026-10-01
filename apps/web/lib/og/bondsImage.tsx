@@ -140,7 +140,9 @@ function pills(stars: readonly (readonly [number, number])[], nicknames: string[
               border: "2px solid rgba(243,220,161,0.6)",
               color: INK,
               fontFamily: "Sans",
-              fontSize: fontPx,
+              fontSize: Math.round(box.font * unit),
+              overflow: "hidden",
+              whiteSpace: "nowrap",
               fontWeight: 700,
             }}
           >

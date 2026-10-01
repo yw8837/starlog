@@ -77,7 +77,7 @@ export function ConstellationArt({
         box ? (
           <g key={`label-${i}`} className={s.label} style={order(i)}>
             <rect x={box.x} y={box.y} width={box.w} height={box.h} rx={box.h / 2} />
-            <text x={box.x + box.w / 2} y={box.y + box.h / 2} fontSize={font} dominantBaseline="central" textAnchor="middle">
+            <text x={box.x + box.w / 2} y={box.y + box.h / 2} fontSize={box.font} dominantBaseline="central" textAnchor="middle">
               {box.text}
             </text>
           </g>

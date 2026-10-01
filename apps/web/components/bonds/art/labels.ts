@@ -12,16 +12,28 @@ export interface LabelBox {
   w: number;
   h: number;
   text: string;
+  /** the label's text size in box units: the requested size, or smaller so a long name fits `maxWidth` */
+  font: number;
 }
+
+/** Labels never shrink below this share of the requested size. */
+const MIN_SHRINK = 0.55;
 
 const MARGIN = 8;
 
-/** Rough advance of one character in em: Hangul and CJK full width, Latin and digits narrower. */
+/**
+ * Advance of one character in em, on the generous side (bold sans): Hangul and CJK full width, wide
+ * Latin capitals (W, M) nearly so, other letters and digits narrower. Overestimating only leaves air.
+ */
 function charEm(ch: string): number {
-  if (/[ᄀ-ᇿ㄰-㆏가-힣　-鿿]/.test(ch)) return 1;
+  if (/[\u1100-\u11ff\u3130-\u318f\uac00-\ud7a3\u3000-\u9fff\uff00-\uffef]/.test(ch)) return 1;
   if (ch === " ") return 0.32;
-  if (/[A-Z0-9]/.test(ch)) return 0.66;
-  return 0.56;
+  if (/[WM@]/.test(ch)) return 0.98;
+  if (/[mw]/.test(ch)) return 0.86;
+  if (/[A-Z]/.test(ch)) return 0.74;
+  if (/[0-9]/.test(ch)) return 0.62;
+  if (/[ijlt.,'!|]/.test(ch)) return 0.34;
+  return 0.6;
 }
 
 /** Pill width for `text` at `font` units: text width plus padding on both sides. */
@@ -55,6 +67,8 @@ export function layoutLabels(
   font: number,
   starRadius = font * 0.5,
   size = 1000,
+  /** the widest a pill may be: a longer name gets a smaller font (shrink to fit) */
+  maxWidth = size * 0.42,
 ): Array<LabelBox | null> {
   const h = pillHeight(font);
   const gap = starRadius + font * 0.25;
@@ -63,7 +77,10 @@ export function layoutLabels(
   return stars.map(([sx, sy], i) => {
     const text = labels[i];
     if (!text) return null;
-    const w = pillWidth(text, font);
+    const natural = pillWidth(text, font);
+    const fit = natural > maxWidth ? Math.max(MIN_SHRINK, maxWidth / natural) : 1;
+    const own = font * fit;
+    const w = pillWidth(text, own);
     const spots = [
       { x: sx + gap * 0.6, y: sy - gap - h },
       { x: sx - gap * 0.6 - w, y: sy - gap - h },
@@ -82,6 +99,7 @@ export function layoutLabels(
         w,
         h,
         text,
+        font: own,
       };
       const moved = Math.abs(box.x - spot.x) + Math.abs(box.y - spot.y);
       const cost =

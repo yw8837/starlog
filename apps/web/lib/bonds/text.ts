@@ -44,7 +44,7 @@ const CONTROL = /[\u0000-\u001f\u007f-\u009f]/;
  */
 const INVISIBLE = /[\u00ad\u034f\u115f\u1160\u200b-\u200f\u202a-\u202e\u2060-\u2069\u2800\u3164\ufeff\uffa0]|[\u{E0000}-\u{E007F}]/gu;
 const LINK = /https?:|www\.|\.(com|net|kr|io|me|ly)\b/i;
-/** Matched after NFKC, spaces and punctuation removed, lower-cased. A small list; the owner can remove any star. */
+/** Compared folded (see `fold`). A small list; the owner can remove any star. */
 const PROFANITY = [
   "시발", "씨발", "씨바", "ㅅㅂ", "ㅆㅂ", "병신", "ㅂㅅ", "븅신", "좆", "존나", "ㅈㄴ", "개새끼", "지랄", "ㅈㄹ", "미친놈", "미친년",
   "닥쳐", "꺼져", "염병", "엿먹", "섹스", "야동",
@@ -53,22 +53,27 @@ const PROFANITY = [
 /** Only in public names: words that are fine inside a sentence ("보지 뭐") or that impersonate the service. */
 const NICKNAME_ONLY = ["보지", "자지", "운영자", "관리자", "스타로그", "starlog", "admin"];
 
-const squeeze = (text: string) => text.toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
+/**
+ * The form a text is compared in: NFKC (fullwidth and other look-alikes folded; Hangul compatibility
+ * jamo become conjoining jamo, on both sides), lower case, no spaces or punctuation. Only for checks:
+ * what is stored keeps the user's own characters ("ㅋㅋㅋ" stays U+314B).
+ */
+const fold = (text: string) => text.normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
 
 function isBlocked(text: string, words: readonly string[]): boolean {
-  if (LINK.test(text)) return true;
-  const squeezed = squeeze(text);
-  return words.some((word) => squeezed.includes(word));
+  if (LINK.test(text.normalize("NFKC"))) return true;
+  const folded = fold(text);
+  return words.some((word) => folded.includes(fold(word)));
 }
 
-/** NFKC, invisible characters removed, trimmed, inner runs of whitespace as one space. */
+/** NFC, invisible characters removed, trimmed, inner runs of whitespace as one space. */
 function tidy(raw: string): string {
-  return raw.normalize("NFKC").replace(INVISIBLE, "").trim().replace(/[ \t\u00a0\u3000]+/g, " ");
+  return raw.normalize("NFC").replace(INVISIBLE, "").trim().replace(/[ \t\u00a0\u3000]+/g, " ");
 }
 
 const length = (text: string) => Array.from(text).length;
 /** Seven or more digits in a row (separators ignored) look like a phone number: not in a public name. */
-const PHONE_LIKE = (text: string) => /\d{7,}/.test(text.replace(/[\s.\-_()]/g, ""));
+const PHONE_LIKE = (text: string) => /\d{7,}/.test(text.normalize("NFKC").replace(/[\s.\-_()]/g, ""));
 
 export function checkNickname(raw: unknown): TextCheck<string> {
   if (typeof raw !== "string") return { ok: false, reason: "LENGTH" };
