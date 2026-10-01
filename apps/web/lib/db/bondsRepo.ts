@@ -37,10 +37,12 @@ export interface BondsRepo {
   insertStar(row: StarRow): Promise<void>; // rejects duplicate (constellationId, slot) or (constellationId, friendKey)
   /**
    * One atomic step: insert the star, recount the constellation (total = sum of scores; complete with
-   * completedAt `now` once it holds `slots` stars) and count the join on the owner's `day`. Nothing is
-   * written when any part fails (a duplicate slot or friend). Returns the constellation after it.
+   * completedAt `now` once it holds `slots` stars), count the join on the owner's `day`, and when this
+   * star completes it, start `next` as the sign being filled (skipped if the owner already has that
+   * sign or a sign being filled). Nothing is written when the star cannot go in (a duplicate slot or
+   * friend). Returns the constellation after it.
    */
-  joinStar(row: StarRow, slots: number, day: string, now: number): Promise<ConstellationRow>;
+  joinStar(row: StarRow, slots: number, day: string, now: number, next?: { id: string; sign: SignId } | null): Promise<ConstellationRow>;
   /** Recount a constellation from its stars (total; complete when it holds `slots` stars). */
   tally(constellationId: string, slots: number, now: number): Promise<void>;
   /** Count one removal or switch on the owner's `day`; the count for that day after it. */

@@ -37,5 +37,8 @@ describe("JoinFlow", () => {
     cleanup();
     render(<JoinFlow state={{ status: "choosing", code: "K7M4QX", ownerNickname: "용우" }} />);
     expect(screen.getByRole("heading", { level: 1, name: "용우님이 다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요" })).toBeTruthy();
+    cleanup();
+    render(<JoinFlow state={{ status: "alldone", code: "K7M4QX", ownerNickname: "용우" }} />);
+    expect(screen.getByRole("heading", { level: 1, name: "용우님은 열두 별자리를 모두 채웠어요. 함께해 줘서 고마워요" })).toBeTruthy();
   });
 });

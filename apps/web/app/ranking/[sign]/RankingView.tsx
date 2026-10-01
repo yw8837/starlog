@@ -160,7 +160,7 @@ function MyCard({ sign, data, reload }: { sign: SignId; data: Ranking; reload: (
         <p className={s.note}>
           지금은 {current.ko}를 채우는 중이에요 ({data.filling.filled}/{current.slots}). 한 번에 하나씩 채울 수 있어요.
         </p>
-        <Button variant="secondary" block onClick={() => setConfirm(true)}>
+        <Button variant="secondary" block disabled={busy} onClick={() => (data.filling!.filled === 0 ? start() : setConfirm(true))}>
           {def.ko}로 바꾸기
         </Button>
         <Link href="/bonds" className={s.link}>

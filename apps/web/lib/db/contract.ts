@@ -116,6 +116,29 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect(await repo.getOwner("o1")).toMatchObject({ nickname: "다른이름", joinsCount: 1 });
   });
 
+  it("starts the next sign in the same step when a join completes a constellation", async () => {
+    const repo = await make();
+    await repo.upsertOwner(owner("o1", "용우"));
+    await repo.insertConstellation(con("c1", "o1", 0, null));
+    const next = { id: "c2", sign: "taurus" as const };
+    await repo.joinStar({ ...star("s0", "c1", 0, "f0"), score: 80 }, 2, "2026-10-01", 500, next);
+    expect(await repo.getConstellation("c2")).toBeNull(); // not complete yet: nothing starts
+    const after = await repo.joinStar({ ...star("s1", "c1", 1, "f1"), score: 70 }, 2, "2026-10-01", 600, next);
+    expect(after).toMatchObject({ status: "complete", completedAt: 600 });
+    expect(await repo.fillingOf("o1")).toMatchObject({ id: "c2", sign: "taurus", status: "filling", total: 0, startedAt: 600 });
+  });
+
+  it("does not start a next sign the owner already has", async () => {
+    const repo = await make();
+    await repo.upsertOwner(owner("o1", "용우"));
+    await repo.insertConstellation(con("done", "o1", 300, 5, "taurus"));
+    await repo.insertConstellation(con("c1", "o1", 0, null));
+    await repo.joinStar({ ...star("s0", "c1", 0, "f0"), score: 80 }, 1, "2026-10-01", 600, { id: "c2", sign: "taurus" });
+    expect(await repo.getConstellation("c1")).toMatchObject({ status: "complete" });
+    expect(await repo.getConstellation("c2")).toBeNull();
+    expect(await repo.fillingOf("o1")).toBeNull();
+  });
+
   it("writes nothing when any part of a join fails (all or nothing)", async () => {
     const repo = await make();
     await repo.upsertOwner(owner("o1", "용우"));

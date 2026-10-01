@@ -132,18 +132,31 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
     async insertStar(row) {
       await run(INSERT_STAR, ...starValues(row));
     },
-    async joinStar(row, slots, day, now) {
+    async joinStar(row, slots, day, now, next = null) {
       // A D1 batch is one transaction: a failing statement rolls back the whole sequence.
-      const results = await db.batch([
+      const statements = [
         db.prepare(INSERT_STAR).bind(...starValues(row)),
         db.prepare(TALLY).bind(row.constellationId, slots, now),
         db.prepare(
           `UPDATE owners SET joins_count = CASE WHEN joins_day = ?2 THEN joins_count + 1 ELSE 1 END, joins_day = ?2
            WHERE id = (SELECT owner_id FROM constellations WHERE id = ?1)`,
         ).bind(row.constellationId, day),
-        db.prepare("SELECT * FROM constellations WHERE id = ?").bind(row.constellationId),
-      ]);
-      const after = results[3]?.results[0] as ConstellationRecord | undefined;
+      ];
+      if (next) {
+        // Only when this star completed it, and never a second sign being filled or a second row of a sign
+        // (OR IGNORE: the unique indexes turn a lost race into a no-op, not a failed join).
+        statements.push(
+          db.prepare(
+            `INSERT OR IGNORE INTO constellations (id, owner_id, sign, status, total, started_at, completed_at)
+             SELECT ?1, c.owner_id, ?2, 'filling', 0, ?3, NULL FROM constellations c
+             WHERE c.id = ?4 AND c.status = 'complete' AND c.completed_at = ?3
+               AND NOT EXISTS (SELECT 1 FROM constellations f WHERE f.owner_id = c.owner_id AND f.status = 'filling')`,
+          ).bind(next.id, next.sign, now, row.constellationId),
+        );
+      }
+      statements.push(db.prepare("SELECT * FROM constellations WHERE id = ?").bind(row.constellationId));
+      const results = await db.batch(statements);
+      const after = results[results.length - 1]?.results[0] as ConstellationRecord | undefined;
       if (!after) throw new Error("constellation missing after join");
       return toConstellation(after);
     },

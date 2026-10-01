@@ -93,7 +93,7 @@ export function CompletedCard({ row, ownerNickname, weekRank, allRank, filling, 
       >
         <p>
           {def.ko} 카드와 랭킹 기록({row.total}점)이 사라지고 처음부터 다시 채워요.
-          {filling && filling.sign !== row.sign ? ` 채우던 ${getConstellation(filling.sign).ko} 별 ${filling.filled}개도 사라져요.` : ""}
+          {filling && filling.sign !== row.sign && filling.filled > 0 ? ` 채우던 ${getConstellation(filling.sign).ko} 별 ${filling.filled}개도 사라져요.` : ""}
         </p>
         <p>새로 채우기는 한 시간에 한 번 할 수 있어요.</p>
       </ConfirmDialog>

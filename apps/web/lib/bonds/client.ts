@@ -29,6 +29,7 @@ export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResu
 const MESSAGES: Record<string, string> = {
   BAD_CODE: "코드를 다시 확인해 주세요",
   CHOOSING: "다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요",
+  ALL_DONE: "열두 별자리가 모두 채워졌어요. 함께해 줘서 고마워요",
   SELF_JOIN: "내 초대코드로는 내 별자리에 참여할 수 없어요",
   ALREADY_JOINED: "이 기기로 이미 이 별자리에 참여했어요",
   DAILY_STAR_LIMIT: "오늘은 이 별자리에 별이 많이 들어왔어요. 내일 다시 참여해 주세요",

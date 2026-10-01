@@ -9,6 +9,7 @@ import { bondsRepo } from "@/lib/db";
 export type InviteState =
   | { status: "open"; code: string; ownerNickname: string; sign: SignId; filled: number; slots: number }
   | { status: "choosing"; code: string; ownerNickname: string }
+  | { status: "alldone"; code: string; ownerNickname: string }
   | { status: "bad" }
   | { status: "limited" }
   | { status: "error" };
@@ -35,7 +36,9 @@ export async function loadInvite(raw: string): Promise<InviteState> {
     const info = await resolveInvite(bondsRepo(), code);
     return info.sign
       ? { status: "open", code, ownerNickname: info.ownerNickname, sign: info.sign, filled: info.filled, slots: info.slots }
-      : { status: "choosing", code, ownerNickname: info.ownerNickname };
+      : info.allDone
+        ? { status: "alldone", code, ownerNickname: info.ownerNickname }
+        : { status: "choosing", code, ownerNickname: info.ownerNickname };
   } catch (error) {
     if (error instanceof BondsError && error.code === "BAD_CODE") {
       await guard.failed();

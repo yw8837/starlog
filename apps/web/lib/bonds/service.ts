@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  CARDS, DEFAULT_REVERSAL_RATE, SajuError, bondBasis, bondScore, createDeck, getConstellation, isSignId, kstWeekId, seededRandom,
+  CARDS, CONSTELLATIONS, DEFAULT_REVERSAL_RATE, SajuError, bondBasis, bondScore, createDeck, getConstellation, isSignId, kstWeekId, seededRandom,
   type BondBasis, type BondBirth, type BondPart, type Orientation, type SignId,
 } from "@starlog/core";
 import type { BondsRepo, ConstellationRow, InviteRow, OwnerRow, StarRow } from "@/lib/db/bondsRepo";
@@ -17,7 +17,7 @@ import { checkMessage, checkNickname, newInviteCode, normalizeCode } from "./tex
 
 export type BondsErrorCode =
   | "NO_OWNER" | "BAD_INPUT" | "SIGN_COMPLETED" | "FILLING_EXISTS" | "NO_FILLING" | "BAD_CODE" | "CHOOSING" | "SELF_JOIN"
-  | "ALREADY_JOINED" | "DAILY_STAR_LIMIT" | "DAILY_ACTION_LIMIT" | "COOLDOWN" | "INVITE_COOLDOWN" | "NOT_FOUND";
+  | "ALREADY_JOINED" | "DAILY_STAR_LIMIT" | "DAILY_ACTION_LIMIT" | "COOLDOWN" | "INVITE_COOLDOWN" | "NOT_FOUND" | "ALL_DONE";
 
 export class BondsError extends Error {
   constructor(
@@ -110,6 +110,25 @@ async function startSign(repo: BondsRepo, now: number, ownerId: string, sign: Si
     throw new BondsError("FILLING_EXISTS");
   }
   return constellationView(row);
+}
+
+/**
+ * The sign that starts by itself when `sign` is completed (owner decision 2026-10-01): the next one in
+ * zodiac order, wrapping, that the owner has not completed. Null once all twelve are done.
+ */
+export function nextSignAfter(sign: SignId, completed: ReadonlySet<SignId>): SignId | null {
+  const start = CONSTELLATIONS.findIndex((c) => c.id === sign);
+  for (let step = 1; step < CONSTELLATIONS.length; step++) {
+    const candidate = CONSTELLATIONS[(start + step) % CONSTELLATIONS.length]!.id;
+    if (!completed.has(candidate)) return candidate;
+  }
+  return null;
+}
+
+async function nextFor(repo: BondsRepo, ownerId: string, sign: SignId): Promise<SignId | null> {
+  const completed = new Set((await repo.completedOf(ownerId)).map((c) => c.sign));
+  completed.add(sign);
+  return nextSignAfter(sign, completed);
 }
 
 /** Counts one removal or switch for today; over the day's limit it is refused. */
@@ -250,18 +269,23 @@ async function ownerOfCode(repo: BondsRepo, raw: string): Promise<OwnerRow> {
 
 export interface InviteInfo {
   ownerNickname: string;
-  /** null while the owner is choosing the next sign */
+  /** null while the owner is choosing a sign, or once all twelve are done */
   sign: SignId | null;
   filled: number;
   slots: number;
+  /** all twelve signs completed: nothing left to join */
+  allDone: boolean;
 }
 
 export async function resolveInvite(repo: BondsRepo, code: string): Promise<InviteInfo> {
   const owner = await ownerOfCode(repo, code);
   const filling = await repo.fillingOf(owner.id);
-  if (!filling) return { ownerNickname: owner.nickname, sign: null, filled: 0, slots: 0 };
+  if (!filling) {
+    const allDone = (await repo.completedOf(owner.id)).length >= CONSTELLATIONS.length;
+    return { ownerNickname: owner.nickname, sign: null, filled: 0, slots: 0, allDone };
+  }
   const stars = await repo.starsOf(filling.id);
-  return { ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots };
+  return { ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, allDone: false };
 }
 
 // ---- joining ----
@@ -307,16 +331,6 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
 
   const owner = await ownerOfCode(repo, input.code);
   if (input.joinerOwnerId && input.joinerOwnerId === owner.id) throw new BondsError("SELF_JOIN");
-  const filling = await repo.fillingOf(owner.id);
-  if (!filling) throw new BondsError("CHOOSING");
-  const slots = getConstellation(filling.sign).slots;
-  let stars = await repo.starsOf(filling.id);
-  if (stars.some((s) => s.friendKey === input.friendKey)) throw new BondsError("ALREADY_JOINED");
-  if (stars.length >= slots) {
-    // Full but still marked as filling (a count that never landed): complete it now.
-    await repo.tally(filling.id, slots, now);
-    throw new BondsError("CHOOSING");
-  }
   const today = kstDay(now);
   if (owner.joinsDay === today && owner.joinsCount >= DAILY_STAR_LIMIT) throw new BondsError("DAILY_STAR_LIMIT");
 
@@ -324,21 +338,38 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
   const { score, parts } = bondScore(owner.basis, friend);
   const card = drawCard(input.pick);
 
-  // Each failed attempt means another friend took a slot, so slots + 1 attempts always settle it.
-  for (let attempt = 0; attempt <= slots; attempt++) {
+  // Each failed attempt means another friend took a slot (or completed the sign and the next one
+  // started), so a bounded number of attempts always settles it.
+  for (let attempt = 0; attempt < 16; attempt++) {
+    const filling = await repo.fillingOf(owner.id);
+    if (!filling) {
+      const done = await repo.completedOf(owner.id);
+      throw new BondsError(done.length >= CONSTELLATIONS.length ? "ALL_DONE" : "CHOOSING");
+    }
+    const slots = getConstellation(filling.sign).slots;
+    const stars = await repo.starsOf(filling.id);
+    if (stars.some((s) => s.friendKey === input.friendKey)) throw new BondsError("ALREADY_JOINED");
     const used = new Set(stars.map((s) => s.slot));
     const slot = Array.from({ length: slots }, (_, i) => i).find((i) => !used.has(i));
     if (slot === undefined) {
+      // Full but still marked as filling (filled by someone else just now, or a count that never
+      // landed): complete it, start the next sign, and try again there.
       await repo.tally(filling.id, slots, now);
-      throw new BondsError("CHOOSING"); // filled by someone else just now
+      const next = await nextFor(repo, owner.id, filling.sign);
+      if (next) {
+        await repo.insertConstellation({ id: randomId(), ownerId: owner.id, sign: next, status: "filling", total: 0, startedAt: now, completedAt: null }).catch(() => undefined);
+      }
+      continue;
     }
+    // Only a star that can complete the sign needs the next one ready.
+    const nextSign = stars.length + 1 >= slots ? await nextFor(repo, owner.id, filling.sign) : null;
     const row: StarRow = {
       id: randomId(), constellationId: filling.id, slot, nickname: nickname.value, message: message.value,
       cardId: card.cardId, orientation: card.orientation, score, parts, friendKey: input.friendKey, createdAt: now,
     };
     try {
-      // Insert, recount and count the join in one atomic step.
-      const after = await repo.joinStar(row, slots, today, now);
+      // Insert, recount, count the join and (when it completes) start the next sign, in one atomic step.
+      const after = await repo.joinStar(row, slots, today, now, nextSign ? { id: randomId(), sign: nextSign } : null);
       return {
         star: row,
         score,
@@ -351,12 +382,11 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
       };
     } catch (error) {
       // Another friend took the slot at the same moment, or this device joined twice at once.
-      stars = await repo.starsOf(filling.id);
-      if (stars.some((s) => s.friendKey === input.friendKey)) throw new BondsError("ALREADY_JOINED");
-      if (attempt === slots) throw error;
+      if ((await repo.starsOf(filling.id)).some((s) => s.friendKey === input.friendKey)) throw new BondsError("ALREADY_JOINED");
+      if (attempt === 15) throw error;
     }
   }
-  throw new Error("unreachable");
+  throw new BondsError("CHOOSING");
 }
 
 /**

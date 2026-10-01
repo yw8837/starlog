@@ -136,7 +136,28 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
       </header>
 
       {filling ? (
-        <FillingSection view={view} fresh={fresh} completedSigns={completedSigns} mySign={mySign} reload={reload} />
+        <>
+          {latest && filling.stars.length === 0 ? (
+            <CompletedCard
+              row={latest}
+              ownerNickname={owner.nickname}
+              weekRank={ranks[latest.sign]?.week ?? null}
+              allRank={ranks[latest.sign]?.all ?? null}
+              filling={fillingInfo}
+              sharePrimary={false}
+              celebrate={seenBefore > 0 && (latest.completedAt ?? 0) > seenBefore}
+              onRefilled={reload}
+            />
+          ) : null}
+          <FillingSection
+            view={view}
+            fresh={fresh}
+            completedSigns={completedSigns}
+            mySign={mySign}
+            reload={reload}
+            autoNext={Boolean(latest) && filling.stars.length === 0}
+          />
+        </>
       ) : (
         <>
           {latest ? (
@@ -162,7 +183,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
         </>
       )}
 
-      {!filling && latest ? (
+      {latest && (!filling || filling.stars.length === 0) ? (
         <details className={`${b.panel} ${s.fold}`}>
           <summary>
             {getConstellation(latest.sign).ko}의 별 {latest.stars.length}개 보기
@@ -225,8 +246,10 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
   );
 }
 
-function FillingSection({ view, fresh, completedSigns, mySign, reload }: {
+function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext }: {
   view: OwnerView; fresh: ReadonlySet<string>; completedSigns: SignId[]; mySign: SignId | null; reload: () => void;
+  /** started by itself after a completion, still empty: say so and offer a swap without a confirm */
+  autoNext: boolean;
 }) {
   const filling = view.filling!;
   const def = getConstellation(filling.row.sign);
@@ -257,10 +280,11 @@ function FillingSection({ view, fresh, completedSigns, mySign, reload }: {
   return (
     <>
       <section className={`${b.panel} ${s.current}`} aria-labelledby="current-title">
-        <p className={b.eyebrow}>지금 채우는 별자리</p>
+        <p className={b.eyebrow}>{autoNext ? "다음 별자리" : "지금 채우는 별자리"}</p>
         <h2 id="current-title" className={s.currentTitle}>
-          {def.ko} <span className={s.en}>· {def.en}</span>
+          {autoNext ? `다음은 ${def.ko}예요` : def.ko} <span className={s.en}>· {def.en}</span>
         </h2>
+        {autoNext ? <p className={b.helper}>바꾸고 싶으면 지금 바꿀 수 있어요. 아직 별이 없어서 바로 바뀌어요.</p> : null}
         <ConstellationArt sign={def.id} lit={litSlots} newSlots={newSlots} labels={labels} size={320} className={s.art} />
         <p className={s.progress}>
           <strong>
@@ -290,7 +314,7 @@ function FillingSection({ view, fresh, completedSigns, mySign, reload }: {
             <h2 className={b.sectionTitle}>바꿀 별자리를 골라요</h2>
             <SignPicker mySign={mySign} completed={completedSigns} current={def.id} selected={target} onSelect={setTarget} />
             <div className={b.actionsRow}>
-              <Button variant="secondary" disabled={!target} onClick={() => setConfirm(true)}>
+              <Button variant="secondary" disabled={!target || busy} onClick={() => (filled === 0 ? doSwitch() : setConfirm(true))}>
                 {target ? `${getConstellation(target).ko}로 바꾸기` : "별자리를 골라 주세요"}
               </Button>
               <Button variant="ghost" onClick={() => setSwitching(false)}>
@@ -338,7 +362,7 @@ function ChooseSection({ first, mySign, completed, initialSign, onChosen }: {
   if (allDone) {
     return (
       <section className={b.panel}>
-        <h2 className={b.sectionTitle}>열두 별자리를 모두 완성했어요</h2>
+        <h2 className={b.sectionTitle}>열두 별자리를 모두 채웠어요</h2>
         <p className={b.helper}>마음에 드는 별자리를 새로 채우면 다시 랭킹에 도전할 수 있어요.</p>
       </section>
     );

@@ -44,10 +44,12 @@ export function JoinFlow({ state }: { state: InviteState }) {
   if (state.status === "open") return <OpenInvite invite={state} />;
   return (
     <section className={s.closed}>
-      <Cat outfit="tarot" expression={state.status === "choosing" ? "focus" : "surprise"} size={120} reactOnTap={false} />
+      <Cat outfit="tarot" expression={state.status === "alldone" ? "happy" : state.status === "choosing" ? "focus" : "surprise"} size={120} reactOnTap={false} />
       <h1 className={s.title}>
         {state.status === "choosing"
           ? `${state.ownerNickname}님이 다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요`
+          : state.status === "alldone"
+            ? `${state.ownerNickname}님은 열두 별자리를 모두 채웠어요. 함께해 줘서 고마워요`
           : state.status === "limited"
             ? "코드 확인이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요"
             : state.status === "error"

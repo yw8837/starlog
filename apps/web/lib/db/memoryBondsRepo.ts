@@ -112,7 +112,7 @@ export function createMemoryBondsRepo(): BondsRepo {
       checkStar(row);
       stars.set(row.id, copy(row));
     },
-    async joinStar(row, slots, day, now) {
+    async joinStar(row, slots, day, now, next = null) {
       checkStar(row);
       const constellation = constellations.get(row.constellationId);
       if (!constellation) throw new Error("FOREIGN KEY");
@@ -120,7 +120,12 @@ export function createMemoryBondsRepo(): BondsRepo {
       tallyNow(row.constellationId, slots, now);
       const owner = owners.get(constellation.ownerId);
       if (owner) owners.set(owner.id, { ...owner, joinsCount: owner.joinsDay === day ? owner.joinsCount + 1 : 1, joinsDay: day });
-      return copy(constellations.get(row.constellationId)!);
+      const after = constellations.get(row.constellationId)!;
+      const theirs = ownedBy(after.ownerId);
+      if (next && after.status === "complete" && after.completedAt === now && !theirs.some((c) => c.status === "filling" || c.sign === next.sign)) {
+        constellations.set(next.id, { id: next.id, ownerId: after.ownerId, sign: next.sign, status: "filling", total: 0, startedAt: now, completedAt: null });
+      }
+      return copy(after);
     },
     async tally(constellationId, slots, now) {
       tallyNow(constellationId, slots, now);

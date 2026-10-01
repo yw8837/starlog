@@ -113,6 +113,9 @@ test.describe("별자리 인연 · owner", () => {
     for (const [i, friend] of FRIENDS.entries()) await friendJoin(baseURL!, code, friend, i);
     await page.reload();
     await expect(page.getByText("별자리를 완성했어요")).toBeVisible();
+    // the next sign started by itself, so the same link keeps working for friends
+    await expect(page.getByRole("heading", { name: /다음은 황소자리예요/ })).toBeVisible();
+    expect(await (await page.request.get(`/api/bonds/resolve?code=${code}`)).json()).toMatchObject({ sign: "taurus", filled: 0 });
     await expect(page.getByRole("link", { name: /양자리 완성/ })).toBeVisible();
     await expect(page.locator("section[aria-labelledby='top-title'] li")).toHaveCount(4);
     for (const friend of FRIENDS) await expect(page.getByRole("img", { name: /양자리/ }).first()).toContainText(friend.nickname);

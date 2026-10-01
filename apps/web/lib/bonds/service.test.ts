@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { bondBasis, bondScore } from "@starlog/core";
 import { createMemoryBondsRepo } from "@/lib/db/memoryBondsRepo";
+import { CONSTELLATIONS } from "@starlog/core";
 import {
-  BondsError, chooseSign, inviteOf, joinStar, ownerView, rankingView, refill, regenerateInvite, removeStar, resolveInvite, saveOwner, switchSign,
-  todayBondCard,
+  BondsError, chooseSign, inviteOf, joinStar, nextSignAfter, ownerView, rankingView, refill, regenerateInvite, removeStar, resolveInvite, saveOwner,
+  switchSign, todayBondCard,
 } from "./service";
 
 const HOUR = 3_600_000;
@@ -47,9 +48,11 @@ describe("bonds service", () => {
     const expected = friends.map((f) => bondScore(bondBasis(me), bondBasis(f)).score);
     expect(results.map((r) => r.score)).toEqual(expected);
     const view = await ownerView(repo, t0 + 10, "o1");
-    expect(view.filling).toBeNull();
+    // the next sign started by itself, empty
+    expect(view.filling?.row.sign).toBe("taurus");
+    expect(view.filling?.stars).toEqual([]);
     expect(view.completed[0]).toMatchObject({ sign: "aries", status: "complete", total: expected.reduce((a, b) => a + b, 0) });
-    await expect(chooseSign(repo, t0, "o1", "aries")).rejects.toMatchObject({ code: "SIGN_COMPLETED" });
+    await expect(switchSign(repo, t0, "o1", "aries")).rejects.toMatchObject({ code: "SIGN_COMPLETED" });
   });
 
   it("explains the score to the friend from the friend's side, and to the owner from the owner's side", async () => {
@@ -92,7 +95,7 @@ describe("bonds service", () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
     for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
-    await chooseSign(repo, t0, "o1", "libra");
+    await switchSign(repo, t0, "o1", "libra"); // taurus started by itself; switching it while empty
     await join(repo, t0, code, 0);
     await refill(repo, t0 + 1, "o1", "aries");
     let view = await ownerView(repo, t0 + 2, "o1");
@@ -161,7 +164,7 @@ describe("bonds service", () => {
     await chooseSign(repo, t0, "o1", "aries");
     const joined = [];
     for (let i = 0; i < 4; i++) joined.push(await join(repo, t0, code, i));
-    await chooseSign(repo, t0, "o1", "libra");
+    await switchSign(repo, t0, "o1", "libra");
     await joinStar(repo, t0, { code, friendKey: "z", nickname: "천칭", birth: friends[0]!, pick: 0, message: null });
     await removeStar(repo, t0 + 1, "o1", joined[0]!.star.id);
     const view = await ownerView(repo, t0 + 2, "o1");
@@ -235,11 +238,15 @@ describe("bonds service", () => {
     );
     const ok = results.filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof joinStar>>> => r.status === "fulfilled");
     const refused = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
-    expect(ok.map((r) => r.value.star.slot).sort()).toEqual([0, 1, 2, 3]);
+    expect(refused).toEqual([]);
+    // four fill 양자리; the two who arrive after it is full go into 황소자리, which started by itself
+    const aries = ok.filter((r) => r.value.sign === "aries");
+    expect(aries.map((r) => r.value.star.slot).sort()).toEqual([0, 1, 2, 3]);
+    expect(ok.filter((r) => r.value.sign === "taurus").map((r) => r.value.star.slot).sort()).toEqual([0, 1]);
     expect(ok.filter((r) => r.value.completed)).toHaveLength(1);
-    expect(refused.map((r) => (r.reason as BondsError).code)).toEqual(["CHOOSING", "CHOOSING"]);
     const view = await ownerView(repo, t0 + 1, "o1");
-    expect(view.completed[0]).toMatchObject({ sign: "aries", status: "complete", total: ok.reduce((n, r) => n + r.value.score, 0) });
+    expect(view.completed[0]).toMatchObject({ sign: "aries", status: "complete", total: aries.reduce((n, r) => n + r.value.score, 0) });
+    expect(view.filling?.row.sign).toBe("taurus");
   });
 
   it("leaves nothing behind when the join step fails", async () => {
@@ -264,8 +271,53 @@ describe("bonds service", () => {
         score: 70 + i, parts: [], friendKey: `raw${i}`, createdAt: t0,
       });
     }
-    await expect(join(repo, t0 + 5, code, 0)).rejects.toMatchObject({ code: "CHOOSING" });
+    // the friend is not turned away: the stuck sign completes, the next one starts, and they join that
+    const joined = await join(repo, t0 + 5, code, 0);
     expect(await repo.getConstellation(filling.id)).toMatchObject({ status: "complete", total: 70 + 71 + 72 + 73, completedAt: t0 + 5 });
+    expect(joined).toMatchObject({ sign: "scorpio", completed: false });
+    expect(joined.star.slot).toBe(0);
+  });
+
+  it("starts the next sign by itself (zodiac order, skipping completed ones, wrapping) so a friend never waits", async () => {
+    expect(nextSignAfter("aries", new Set(["aries"]))).toBe("taurus");
+    expect(nextSignAfter("aries", new Set(["aries", "taurus", "gemini"]))).toBe("cancer");
+    expect(nextSignAfter("pisces", new Set(["pisces"]))).toBe("aries");
+    expect(nextSignAfter("leo", new Set(CONSTELLATIONS.map((c) => c.id)))).toBeNull();
+
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
+    expect(await resolveInvite(repo, code)).toMatchObject({ sign: "taurus", filled: 0, slots: 5, allDone: false });
+    // the same friends can be stars again in the new round
+    const again = await join(repo, t0 + 1, code, 0);
+    expect(again).toMatchObject({ sign: "taurus" });
+    expect(again.star.slot).toBe(0);
+  });
+
+  it("lets the owner swap the auto-started sign while it is empty", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
+    await switchSign(repo, t0 + 1, "o1", "leo");
+    const view = await ownerView(repo, t0 + 2, "o1");
+    expect(view.filling?.row.sign).toBe("leo");
+    expect(view.completed.map((c) => c.sign)).toEqual(["aries"]);
+  });
+
+  it("says so when all twelve signs are done", async () => {
+    const { repo, t0, code } = await setup();
+    // eleven signs completed directly in storage, then the twelfth through joins
+    for (const c of CONSTELLATIONS.slice(1)) {
+      await repo.insertConstellation({ id: `done-${c.id}`, ownerId: "o1", sign: c.id, status: "complete", total: 300, startedAt: 1, completedAt: 2 });
+    }
+    await chooseSign(repo, t0, "o1", "aries");
+    for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
+    const view = await ownerView(repo, t0 + 1, "o1");
+    expect(view.filling).toBeNull();
+    expect(view.completed).toHaveLength(12);
+    expect(await resolveInvite(repo, code)).toMatchObject({ sign: null, allDone: true });
+    await expect(joinStar(repo, t0 + 2, { code, friendKey: "late", nickname: "늦은친구", birth: friends[0]!, pick: 0, message: null }))
+      .rejects.toMatchObject({ code: "ALL_DONE" });
   });
 
   it("answers FILLING_EXISTS, not a server error, to a double tap on choose", async () => {
