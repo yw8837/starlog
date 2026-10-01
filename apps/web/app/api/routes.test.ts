@@ -152,7 +152,8 @@ describe("quota", () => {
     expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     const limited = await d.call(reading, { drawToken, input: MONEY_INPUT });
     expect(limited.status).toBe(429);
-    expect(limited.data).toMatchObject({ code: "BETA_LIMIT", resetsAt: "2026-09-30T15:00:00.000Z" });
+    expect(limited.data).toMatchObject({ code: "BETA_LIMIT", resetsAt: "2026-09-30T15:00:00.000Z", message: "오늘의 오픈 기념 무료 풀이를 이미 받았어요. 자정에 다시 열려요." });
+    expect(JSON.stringify(limited.data)).not.toContain("베타");
 
     vi.setSystemTime(Date.parse("2026-09-30T15:00:01Z")); // 00:00:01 KST the next day
     const next = await drawSelfFlow(d);

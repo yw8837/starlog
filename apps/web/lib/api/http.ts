@@ -32,7 +32,8 @@ const STATUS: Record<ErrorCode, number> = {
 const MESSAGE: Record<ErrorCode, string> = {
   BAD_REQUEST: "요청을 읽지 못했어요. 처음부터 다시 시도해 주세요.",
   BAD_TOKEN: "카드 정보가 만료됐거나 맞지 않아요. 카드를 다시 뽑아 주세요.",
-  BETA_LIMIT: "오늘 쓸 수 있는 횟수를 모두 썼어요. 내일 다시 열려요.",
+  // The code name stays BETA_LIMIT internally; the copy is launch wording (resets at 0시 KST).
+  BETA_LIMIT: "오늘 쓸 수 있는 횟수를 모두 썼어요. 자정에 다시 열려요.",
   RATE_LIMIT: "요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.",
   AI_UNAVAILABLE: "지금은 풀이를 만들 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
   REFUSED: "이 내용으로는 풀이를 만들 수 없어요. 질문이나 메모를 바꿔 다시 시도해 주세요.",
@@ -234,7 +235,10 @@ export async function fullReadingLimit(request: Request, gate: Gate): Promise<Re
 }
 
 /** Shown for a per-network limit (many phones can share one carrier IP); the UI may replace it by `scope`. */
-const NETWORK_LIMIT_MESSAGE = "지금 쓰는 인터넷(와이파이·통신사)에서 오늘 열 수 있는 풀이를 모두 썼어요. 내일 다시 열려요.";
+const NETWORK_LIMIT_MESSAGE = "지금 쓰는 인터넷(와이파이·통신사)에서 오늘 열 수 있는 풀이를 모두 썼어요. 자정에 다시 열려요.";
+
+/** This device's daily free full reading is used (the launch offer: one a day, resets at 0시 KST). */
+const FULL_LIMIT_MESSAGE = "오늘의 오픈 기념 무료 풀이를 이미 받았어요. 자정에 다시 열려요.";
 
 /** Shown when the day's budget is used up (the UI may replace it by `reason`). */
 const BUDGET_MESSAGE = "오늘 준비한 풀이가 모두 나갔어요. 자정에 다시 열려요.";
@@ -269,7 +273,9 @@ export async function checkQuota(gate: Gate, kind: QuotaKind, extra: Record<stri
   const limited = await checkServerLimits(gate, kind, extra);
   if (limited) return limited;
   const quota = await readQuota(gate.cookies[QUOTA_COOKIE], gate.secret, gate.now);
-  if (!gate.owner && !hasQuota(quota, kind, quotaLimits())) return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra });
+  if (!gate.owner && !hasQuota(quota, kind, quotaLimits())) {
+    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, ...(kind === "full" ? { message: FULL_LIMIT_MESSAGE } : {}) });
+  }
   return quota;
 }
 
