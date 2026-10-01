@@ -78,9 +78,10 @@ describe("지금의 한 장", () => {
     expect(screen.getByText("오늘 먼저 연락해도 될까?")).toBeTruthy();
     expect(screen.getByRole("region", { name: "지금의 한 장 결과" }).dataset.lean).toBe(expected.lean);
 
-    const upsell = screen.getByRole("link", { name: /기본 타로 3장으로 자세히 보기/ });
+    const upsell = screen.getByRole("link", { name: /타로 전체 풀이 보기/ });
     expect(upsell.getAttribute("href")).toBe(NEW_TAROT_HREF);
-    expect(screen.getByText(new RegExp(`기본 타로 3장 \\(${won(SITE.price.tarotStandardKrw)}\\)`))).toBeTruthy();
+    expect(screen.getByText(new RegExp(`타로 전체 풀이 \\(${won(SITE.price.tarotStandardKrw)}\\)`))).toBeTruthy();
+    expect(screen.queryByText(/기본 타로 3장/)).toBeNull();
     expect(screen.getByRole("button", { name: "한 번 더 뽑기" })).toBeTruthy();
     // The fan, the question field and the how-to are gone while the answer is shown.
     expect(queryFanCards()).toHaveLength(0);

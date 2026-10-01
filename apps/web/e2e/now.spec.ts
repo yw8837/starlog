@@ -78,7 +78,7 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   await expect(page.getByText("오늘 먼저 연락해도 될까?")).toBeVisible();
   await expect(page.getByText("오늘 해 볼 일")).toBeVisible();
 
-  const upsell = page.getByRole("link", { name: /기본 타로 3장으로 자세히 보기/ });
+  const upsell = page.getByRole("link", { name: /타로 전체 풀이 보기/ });
   await expect(upsell).toBeVisible();
   await expect(upsell).toHaveAttribute("href", "/tarot/new?new=1");
 

@@ -24,6 +24,8 @@ const QUESTION_MAX = 40;
 const HOLD_MS = 450;
 /** The card is shown face down first, so the turn is seen; the page opens as it turns. */
 const TURN_MS = 250;
+/** The 3-card reading's name, as on the pricing and help pages (no shared label in SITE yet). */
+const FULL_READING = "타로 전체 풀이";
 /** One riffle (1.2s) per draw keeps unlimited repeat draws quick. */
 const SHUFFLE_RIFFLES = 1;
 
@@ -351,10 +353,10 @@ export function NowOracle({ instant = false }: NowOracleProps) {
 
               <div className={s.actions}>
                 <p className={s.more}>
-                  더 자세히 보고 싶다면 <span aria-hidden="true">→</span> 기본 타로 3장 ({won(SITE.price.tarotStandardKrw)})
+                  더 자세히 보고 싶다면 <span aria-hidden="true">→</span> {FULL_READING} ({won(SITE.price.tarotStandardKrw)})
                 </p>
                 <Button href={NEW_TAROT_HREF} block trailing="→">
-                  기본 타로 3장으로 자세히 보기
+                  {`${FULL_READING} 보기`}
                 </Button>
                 <Button variant="secondary" block onClick={again}>
                   한 번 더 뽑기
