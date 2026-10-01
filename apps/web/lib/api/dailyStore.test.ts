@@ -1,12 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DailyReading } from "@/lib/ai/schemas";
+import type { DailyReading, DailyResult } from "@/lib/ai/schemas";
 import { dailyStore, getOrCreateDailyResult, readDailyResult, resetDailyStore } from "./dailyStore";
 
 const CONTEXT = Symbol.for("__cloudflare-context__");
 
-const reading = (cardId: string): DailyReading => ({
+const reading = (cardId: string): DailyResult => ({
   card: { cardId, orientation: "upright", keyword: "k" },
   summary: "s", body: "b", areas: { love: "l", money: "m", work: "w" }, lucky: { color: "노란색", number: 7 }, tip: "t",
+  pick: 1,
 });
 
 /** A KV stand-in that records calls. */
@@ -61,6 +62,13 @@ describe("daily store", () => {
     expect(kv.puts).toContainEqual({ key: "daily-pending:dev-2:2026-09-30", ttl: 60 });
     expect(kv.data.has("daily-pending:dev-2:2026-09-30")).toBe(false); // marker cleared
     expect(await readDailyResult("dev-2", "2026-09-30")).toEqual(reading("wands-01"));
+  });
+
+  it("reads a result stored before the 3-card deal with pick null", async () => {
+    const legacy: DailyReading = { ...reading("cups-05"), pick: undefined } as unknown as DailyReading;
+    delete (legacy as Partial<DailyResult>).pick;
+    await dailyStore().put("daily:dev-legacy:2026-09-30", legacy, 60);
+    expect(await readDailyResult("dev-legacy", "2026-09-30")).toEqual({ ...legacy, pick: null });
   });
 
   it("warns once when running on Workers without the binding, then uses memory", async () => {

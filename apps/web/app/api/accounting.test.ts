@@ -182,6 +182,16 @@ describe("server-side day counters (per client network, whatever the cookies say
     expect(next.headers.getSetCookie().filter((c) => c.startsWith("sl_daily=")).length).toBe(1);
   });
 
+  it("accounts a picked daily card once: one network charge and its cost, nothing for the stored repeat", async () => {
+    billing();
+    const ip = "198.51.100.16";
+    const d = device(ip);
+    expect((await d.call(daily, { pick: 2 })).status).toBe(200);
+    expect((await d.call(daily, { pick: 0 })).data.pick).toBe(2);
+    expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "daily", Date.now())).toBe(1);
+    expect(await spent()).toBe(2800);
+  });
+
   it("leaves the owner out of the network counters", async () => {
     vi.stubEnv("BETA_IP_TEASER_PER_DAY", "1");
     const boss = device("198.51.100.14");

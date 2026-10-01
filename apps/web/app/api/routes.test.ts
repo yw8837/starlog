@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
+import { GenerationError } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { dailyCard } from "@/lib/security/drawToken";
+import { dailyDeal } from "@/lib/security/drawToken";
+import { signingSecret } from "@/lib/security/sign";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { POST as daily } from "./tarot/daily/route";
+import { GET as dailyDealState, POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";
 import { POST as teaser } from "./tarot/teaser/route";
@@ -139,7 +141,7 @@ describe("tarot flow with the mock provider", () => {
     const res = await d.call(reading, { drawToken, input: { ...MONEY_INPUT, note: "요즘 죽고 싶다는 생각이 들어요" } });
     expect(res.status).toBe(422);
     expect(res.data).toMatchObject({ code: "REFUSED", care: true });
-    expect(res.data.message).toContain("109");
+    expect(res.data.message).toBe("마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요."); // the UI lists the hotlines
     expect(d.jar.has("sl_q")).toBe(false);
   });
 });
@@ -223,12 +225,85 @@ describe("chapter tokens", () => {
 });
 
 describe("오늘의 한 장", () => {
-  it("returns the identical fortune all day with a single generation, and a new card the next KST day", async () => {
+  /** This device's id, read from its signed (not encrypted) cookie. */
+  const deviceId = (d: ReturnType<typeof device>) => JSON.parse(atob(d.jar.get("sl_daily")!.split(".")[0]!.replace(/-/g, "+").replace(/_/g, "/"))).did as string;
+  const getDeal = async (d: ReturnType<typeof device>) => {
+    const response = await dailyDealState(new Request("http://localhost/api", {
+      headers: { "cf-connecting-ip": "203.0.113.7", cookie: [...d.jar].map(([k, v]) => `${k}=${v}`).join("; ") },
+    }));
+    for (const header of response.headers.getSetCookie()) {
+      const [pair] = header.split(";");
+      const index = pair!.indexOf("=");
+      d.jar.set(pair!.slice(0, index), pair!.slice(index + 1));
+    }
+    return { status: response.status, text: await response.clone().text(), data: (await response.json()) as Record<string, any> };
+  };
+
+  it("deals three face-down slots before the pick, with no card id anywhere (body or cookie)", async () => {
+    const d = device();
+    const before = await getDeal(d);
+    expect(before.status).toBe(200);
+    expect(before.data).toEqual({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }] });
+    const deal = await dailyDeal(deviceId(d), "2026-09-30", signingSecret()!);
+    const cookiePayload = atob(d.jar.get("sl_daily")!.split(".")[0]!.replace(/-/g, "+").replace(/_/g, "/"));
+    for (const c of deal) {
+      expect(before.text).not.toContain(c.cardId);
+      expect(cookiePayload).not.toContain(c.cardId);
+    }
+    expect(new Set(deal.map((c) => c.cardId)).size).toBe(3); // a real choice: three distinct cards
+    expect((await getDeal(d)).data).toEqual(before.data);
+  });
+
+  it("deals deterministically per device and day: the picked slot's card, the same on every request", async () => {
+    const d = device();
+    await getDeal(d);
+    const did = deviceId(d);
+    const deal = await dailyDeal(did, "2026-09-30", signingSecret()!);
+    expect(await dailyDeal(did, "2026-09-30", signingSecret()!)).toEqual(deal);
+    const picked = await d.call(daily, { pick: 2 });
+    expect(picked.status).toBe(200);
+    expect(picked.data.pick).toBe(2);
+    expect(picked.data.card).toMatchObject(deal[2]!);
+    expect(picked.data).not.toHaveProperty("cards"); // the other two are never revealed
+    for (const other of [deal[0]!, deal[1]!]) if (other.cardId !== deal[2]!.cardId) expect(JSON.stringify(picked.data)).not.toContain(other.cardId);
+    // Another device gets its own deal; the next KST day deals again.
+    expect(await dailyDeal(`${did}x`, "2026-09-30", signingSecret()!)).not.toEqual(deal);
+    expect(await dailyDeal(did, "2026-10-01", signingSecret()!)).not.toEqual(deal);
+  });
+
+  it("never re-rolls: a second POST, even with another pick, and a GET return the stored result", async () => {
     const spy = vi.spyOn(mockProvider, "generate");
     const d = device();
-    const first = await d.call(daily, {});
+    const first = await d.call(daily, { pick: 1 });
     expect(first.status).toBe(200);
-    expect(first.data).toMatchObject({ card: { cardId: expect.any(String) }, summary: expect.any(String), areas: { love: expect.any(String), money: expect.any(String), work: expect.any(String) } });
+    const again = await d.call(daily, { pick: 0 });
+    expect(again.data).toEqual(first.data);
+    expect(again.data.pick).toBe(1);
+    expect((await getDeal(d)).data).toEqual(first.data);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("locks the first pick even when its generation failed", async () => {
+    const d = device();
+    vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
+    expect((await d.call(daily, { pick: 2 })).status).toBe(502);
+    const retry = await d.call(daily, { pick: 0 });
+    expect(retry.status).toBe(200);
+    expect(retry.data.pick).toBe(2);
+    expect(retry.data.card).toMatchObject((await dailyDeal(deviceId(d), "2026-09-30", signingSecret()!))[2]!);
+  });
+
+  it("refuses an invalid pick", async () => {
+    const d = device();
+    for (const pick of [3, -1, 1.5, "1", null]) expect((await d.call(daily, { pick })).status).toBe(400);
+  });
+
+  it("returns the identical fortune all day with a single generation, and a new deal the next KST day", async () => {
+    const spy = vi.spyOn(mockProvider, "generate");
+    const d = device();
+    const first = await d.call(daily, {}); // a client from before the deal: pick 0
+    expect(first.status).toBe(200);
+    expect(first.data).toMatchObject({ pick: 0, card: { cardId: expect.any(String) }, summary: expect.any(String), areas: { love: expect.any(String), money: expect.any(String), work: expect.any(String) } });
     expect(first.data.summary.replace(/\s/g, "").length).toBeLessThanOrEqual(30);
     expect(first.data.lucky.number).toBeGreaterThanOrEqual(1);
     expect(first.data.lucky.number).toBeLessThanOrEqual(45);
@@ -238,14 +313,13 @@ describe("오늘의 한 장", () => {
     expect(again.data).toEqual(first.data);
     expect(spy).toHaveBeenCalledTimes(1);
 
-    // The card is fixed by the device id and the KST day (dailyCard; "changes the next day" is pinned in
-    // security.test.ts with a fixed id). Read this device's id from its signed cookie.
-    const did = JSON.parse(atob(d.jar.get("sl_daily")!.split(".")[0]!.replace(/-/g, "+").replace(/_/g, "/"))).did as string;
-    expect(first.data.card).toMatchObject(dailyCard(did, "2026-09-30"));
+    const did = deviceId(d);
+    expect(first.data.card).toMatchObject((await dailyDeal(did, "2026-09-30", signingSecret()!))[0]!);
     vi.setSystemTime(T0 + 13 * HOUR); // 01:00 KST the next day
-    const tomorrow = await d.call(daily, {});
+    expect((await getDeal(d)).data).toEqual({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }] });
+    const tomorrow = await d.call(daily, { pick: 1 });
     expect(tomorrow.status).toBe(200);
-    expect(tomorrow.data.card).toMatchObject(dailyCard(did, "2026-10-01"));
+    expect(tomorrow.data.card).toMatchObject((await dailyDeal(did, "2026-10-01", signingSecret()!))[1]!);
     expect(spy).toHaveBeenCalledTimes(2);
   });
 

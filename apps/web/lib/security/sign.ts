@@ -108,30 +108,31 @@ export async function safeEqual(a: string, b: string, secret: string): Promise<b
 }
 
 const CLIENT_ID_LABEL = "starlog/client-id/v1";
-const clientIdKeys = new Map<string, Promise<CryptoKey>>();
+const derivedKeys = new Map<string, Promise<CryptoKey>>();
 
-/** HMAC(secret, label) as its own HMAC key: client ids never use the token-signing key itself. */
-function clientIdKey(secret: string): Promise<CryptoKey> {
-  let key = clientIdKeys.get(secret);
+/** HMAC(secret, label) as its own HMAC key: derived values never use the token-signing key itself. */
+function derivedKey(secret: string, label: string): Promise<CryptoKey> {
+  const id = `${label}\u0000${secret}`;
+  let key = derivedKeys.get(id);
   if (!key) {
     key = (async () => {
-      const derived = await crypto.subtle.sign("HMAC", await hmacKey(secret), encoder.encode(CLIENT_ID_LABEL));
+      const derived = await crypto.subtle.sign("HMAC", await hmacKey(secret), encoder.encode(label));
       return crypto.subtle.importKey("raw", derived, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
     })();
-    clientIdKeys.set(secret, key);
+    derivedKeys.set(id, key);
     // A failed derivation is not cached: the next request tries again.
-    key.catch(() => clientIdKeys.delete(secret));
+    key.catch(() => derivedKeys.delete(id));
   }
   return key;
 }
 
 /**
- * A stable pseudonym for a client network: HMAC-SHA256 under a subkey derived from the secret
- * ("starlog/client-id/v1"), base64url. It cannot be reversed or recomputed without the secret, and
- * it is never a valid MAC for a signed token.
+ * HMAC-SHA256 of `text` under a subkey derived from the secret for one purpose (`label`), base64url.
+ * By default the pseudonym of a client network ("starlog/client-id/v1"). It cannot be reversed or
+ * recomputed without the secret, and it is never a valid MAC for a signed token.
  */
-export async function keyedHash(text: string, secret: string): Promise<string> {
-  return toBase64Url(new Uint8Array(await crypto.subtle.sign("HMAC", await clientIdKey(secret), encoder.encode(text))));
+export async function keyedHash(text: string, secret: string, label = CLIENT_ID_LABEL): Promise<string> {
+  return toBase64Url(new Uint8Array(await crypto.subtle.sign("HMAC", await derivedKey(secret, label), encoder.encode(text))));
 }
 
 /** URL-safe random id from `crypto.getRandomValues`. */

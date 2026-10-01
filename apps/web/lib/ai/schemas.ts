@@ -91,3 +91,12 @@ export interface DailyReading {
   lucky: { color: string; number: number };
   tip: string;
 }
+
+/**
+ * A stored 오늘의 한 장: the reading of the picked card plus which face-down slot was picked. The
+ * other two cards are never stored or shown (owner order). Results from before the 3-card deal have
+ * pick null.
+ */
+export interface DailyResult extends DailyReading {
+  pick: number | null;
+}

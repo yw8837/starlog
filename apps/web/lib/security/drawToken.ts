@@ -1,6 +1,6 @@
 import "server-only";
 import { DEFAULT_REVERSAL_RATE, TEMPLATES, createDeck, pickCards, type DrawnCard, type Orientation, type TemplateId } from "@starlog/core";
-import { randomId, signToken, verifyToken, type SignedPayload } from "./sign";
+import { keyedHash, randomId, signToken, verifyToken, type SignedPayload } from "./sign";
 
 /**
  * Server-fixed tarot draws. The server shuffles with a random seed, the client only says which
@@ -65,6 +65,25 @@ function drawCards(seed: string, rate: number, templateId: TemplateId, picks: nu
 export function dailyCard(deviceId: string, day: string): { cardId: string; orientation: Orientation } {
   const deck = createDeck(`daily:${deviceId}:${day}`, DEFAULT_REVERSAL_RATE);
   return { cardId: deck.order[0]!, orientation: deck.orientations[0]! };
+}
+
+export interface DealtCard {
+  cardId: string;
+  orientation: Orientation;
+}
+
+export const DAILY_DEAL_SIZE = 3;
+
+/**
+ * 오늘의 한 장's three face-down cards for a device and KST day: distinct cards with their
+ * orientations, dealt from a deck seeded by HMAC(secret, device + day) under its own subkey. The
+ * same device gets the same three all day (a refresh cannot re-roll), and nobody without the secret
+ * can tell which card lies where before the pick.
+ */
+export async function dailyDeal(deviceId: string, day: string, secret: string): Promise<DealtCard[]> {
+  const seed = await keyedHash(`${deviceId}:${day}`, secret, "starlog/daily-deal/v1");
+  const deck = createDeck(`daily-deal:${seed}`, DEFAULT_REVERSAL_RATE);
+  return deck.order.slice(0, DAILY_DEAL_SIZE).map((cardId, i) => ({ cardId, orientation: deck.orientations[i]! }));
 }
 
 /** 1-45, fixed by the device id and the KST day (FNV-1a), like the card. */

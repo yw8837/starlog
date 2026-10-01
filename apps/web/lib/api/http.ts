@@ -295,6 +295,7 @@ export function crisisResponse(...texts: Array<string | undefined>): Response | 
   if (!texts.some(isCrisisText)) return null;
   return errorResponse("REFUSED", {
     care: true,
-    message: "지금 많이 힘든 마음이 느껴져요. 이 이야기는 풀이보다 사람과 나누는 게 좋아요. 자살예방상담전화 109에서 언제든 이야기를 들어 줘요.",
+    // The UI lists the hotlines (109, 1577-0199, 1388, 1588-9191) under this line; no numbers here.
+    message: "마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요.",
   });
 }

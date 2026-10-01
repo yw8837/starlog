@@ -1,5 +1,5 @@
 import "server-only";
-import type { DailyReading } from "@/lib/ai/schemas";
+import type { DailyReading, DailyResult } from "@/lib/ai/schemas";
 import { cloudflareEnv, warnMissingBinding, type KvBinding } from "@/lib/cloudflare";
 
 /**
@@ -91,12 +91,16 @@ async function safely<T>(op: string, work: () => Promise<T>, fallback: T): Promi
   }
 }
 
+/** A stored result as the API returns it; one stored before the 3-card deal gets pick null. */
+const asResult = (stored: DailyReading & Partial<DailyResult>): DailyResult => ({ ...stored, pick: stored.pick ?? null });
+
 /** The stored fortune for this device and day, if any (none when KV cannot be read). */
-export async function readDailyResult(deviceId: string, day: string): Promise<DailyReading | null> {
-  return safely("read", async () => ((await dailyStore().get(resultKey(deviceId, day))) as DailyReading | null) ?? null, null);
+export async function readDailyResult(deviceId: string, day: string): Promise<DailyResult | null> {
+  const stored = await safely("read", async () => ((await dailyStore().get(resultKey(deviceId, day))) as DailyReading | null) ?? null, null);
+  return stored ? asResult(stored) : null;
 }
 
-const inFlight = new Map<string, Promise<{ reading: DailyReading; generated: boolean }>>();
+const inFlight = new Map<string, Promise<{ reading: DailyResult; generated: boolean }>>();
 
 export interface DailyWaitOptions {
   /** how long to wait for another isolate's pending generation, in polls */
@@ -109,8 +113,8 @@ export interface DailyWaitOptions {
  * another request produced it (so the caller does not count a generation for this device).
  */
 export async function getOrCreateDailyResult(
-  deviceId: string, day: string, create: () => Promise<DailyReading>, options: DailyWaitOptions = {},
-): Promise<{ reading: DailyReading; generated: boolean }> {
+  deviceId: string, day: string, create: () => Promise<DailyResult>, options: DailyWaitOptions = {},
+): Promise<{ reading: DailyResult; generated: boolean }> {
   const key = resultKey(deviceId, day);
   const shared = inFlight.get(key);
   if (shared) return { reading: (await shared).reading, generated: false };
@@ -118,12 +122,15 @@ export async function getOrCreateDailyResult(
   // Registered before the first await, so a concurrent call in this isolate always joins it.
   const work = (async () => {
     const store = dailyStore();
+    // Another request may have stored it since the caller looked (a deal or a limit check in between).
+    const existing = (await safely("read", () => store.get(key), null)) as DailyReading | null;
+    if (existing) return { reading: asResult(existing), generated: false };
     if (await safely("pending-read", () => store.get(pendingKey(deviceId, day)), null)) {
       const { polls = 6, pollMs = 1_000 } = options;
       for (let i = 0; i < polls; i++) {
         await new Promise((resolve) => setTimeout(resolve, pollMs));
         const done = (await safely("poll", () => store.get(key), null)) as DailyReading | null;
-        if (done) return { reading: done, generated: false };
+        if (done) return { reading: asResult(done), generated: false };
       }
       // The other request failed or is slow; generate here rather than keep the user waiting.
     }
