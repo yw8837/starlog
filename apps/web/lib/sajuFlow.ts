@@ -1,5 +1,6 @@
 import type { LoveStatus, SajuContext, WorkStatus } from "./reading/types";
 import { isStale } from "./freshStart";
+import { useFlowVisit } from "./useFlowVisit";
 import { createLocalStore } from "./sessionStore";
 import { sanitizeSajuForm, type SajuForm } from "./sajuForm";
 
@@ -67,12 +68,18 @@ export function saveSajuContext(context: SajuContext) {
 }
 
 /**
- * On entering the form: a new question (`?new=1`, lib/freshStart.ts) or status chips and a concern
- * saved more than 30 minutes ago start clean. The birth profile always stays.
+ * On entering the form: unless it was reached from inside the saju flow (lib/freshStart.ts), or
+ * when they were saved more than 30 minutes ago, the status chips and concern start clean. The
+ * birth profile always stays.
  */
 export function freshSajuContextOnEntry(newQuestion: boolean, now = Date.now()) {
   const saved = contextStore.read();
   if (saved && (newQuestion || isStale(saved.savedAt, now))) contextStore.clear();
+}
+
+/** The form's entry rule (freshSajuContextOnEntry), before the first paint. */
+export function useFreshSajuContextOnEntry() {
+  useFlowVisit("saju", (inFlow) => freshSajuContextOnEntry(!inFlow));
 }
 
 /** Erases the birth profile and the status chips from this device. */

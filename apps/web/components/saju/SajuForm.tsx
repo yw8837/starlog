@@ -1,19 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useLayoutEffect, useRef, useState, type FormEvent, type RefObject } from "react";
+import { useRef, useState, type FormEvent, type RefObject } from "react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Chip } from "@/components/ui/Chip";
 import { CustomField } from "@/components/ui/CustomField";
 import { Segmented } from "@/components/ui/Segmented";
-import { takeNewFlag } from "@/lib/freshStart";
 import type { SajuContext } from "@/lib/reading/types";
 import {
   CONCERN_MAX,
   LOVE_STATUS_OPTIONS,
   WORK_STATUS_OPTIONS,
-  freshSajuContextOnEntry,
+  useFreshSajuContextOnEntry,
   saveSajuContext,
   saveSajuProfile,
   useSajuContext,
@@ -62,9 +61,9 @@ const range = (from: number, to: number) => Array.from({ length: Math.abs(to - f
 export function SajuForm() {
   const { profile } = useSajuProfile();
   const context = useSajuContext();
-  // A new question (?new=1) or chips left for 30 minutes start clean (the birth profile stays);
-  // before the first paint, so the cleared chips never flash.
-  useLayoutEffect(() => freshSajuContextOnEntry(takeNewFlag()), []);
+  // The chips and concern stay only on a move inside the saju flow; a refresh or an entry from
+  // elsewhere starts them clean (the birth profile stays), before the first paint.
+  useFreshSajuContextOnEntry();
   // Remount once saved values are read, so the fields start from them. A first visit has none: its
   // key stays the same through hydration, so an early tap is never thrown away by a remount.
   const savedContext = Boolean(context && (context.loveStatus || context.workStatus || context.concern));

@@ -15,6 +15,7 @@ import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import type { DrawResponse, DrawnCardData } from "@/lib/reading/types";
 import f from "../flow.module.css";
 import s from "./DrawStage.module.css";
+import { useFlowVisit } from "@/lib/useFlowVisit";
 
 type Phase = "shuffle" | "pick" | "reveal";
 
@@ -63,6 +64,8 @@ const ShuffleIcon = () => (
  */
 export function DrawStage({ instant }: DrawStageProps) {
   const router = useRouter();
+  // A page of the flow: going back to the question from here keeps the answers.
+  useFlowVisit("tarot");
   const { flow, setFlow } = useFlowState();
   const summary = summarizeFlow(flow);
   // The question and slot names come from the saved flow, which only the browser can read; hold

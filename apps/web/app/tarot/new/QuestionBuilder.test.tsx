@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FLOW_KEY } from "@/lib/flowState";
+import { forgetFlowPages, leaveFlowPage } from "@/lib/useFlowVisit";
 import { QuestionBuilder } from "./QuestionBuilder";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
@@ -15,11 +16,19 @@ const stored = () => JSON.parse(sessionStorage.getItem(FLOW_KEY) ?? "{}");
 
 afterEach(() => {
   cleanup();
+  forgetFlowPages();
   sessionStorage.clear();
 });
 
-/** A flow as the builder saved it `ago` ms before now (the builder starts clean after 30 minutes). */
-const seed = (flow: object, ago = 0) => sessionStorage.setItem(FLOW_KEY, JSON.stringify({ conditions: {}, note: "", ...flow, savedAt: Date.now() - ago }));
+/**
+ * A flow as the builder saved it `ago` ms before now, reached from inside the flow (as if the
+ * situation step was just left). With `fromFlow` false it is a refresh: the builder starts clean.
+ */
+const seed = (flow: object, ago = 0, fromFlow = true) => {
+  sessionStorage.setItem(FLOW_KEY, JSON.stringify({ conditions: {}, note: "", ...flow, savedAt: Date.now() - ago }));
+  window.history.replaceState(null, "", "/tarot/new");
+  if (fromFlow) leaveFlowPage("tarot");
+};
 const pressed = (name: string) => screen.getByRole("button", { name }).getAttribute("aria-pressed");
 const next = () => screen.getByRole("button", { name: /^다음/ }) as HTMLButtonElement;
 
@@ -117,6 +126,14 @@ describe("QuestionBuilder", () => {
     expect(stored().who).toBeUndefined();
     expect(stored().draw).toBeUndefined();
     expect(window.location.pathname + window.location.search).toBe("/tarot/new");
+  });
+
+  it("starts clean on a refresh or a visit from elsewhere (no in-flow mark)", () => {
+    seed({ who: "me", topicId: "money", when: "week", note: "메모" }, 0, false);
+    render(<QuestionBuilder />);
+    expect(pressed("나")).toBe("false");
+    expect(stored()).toMatchObject({ conditions: {}, note: "" });
+    expect(stored().topicId).toBeUndefined();
   });
 
   it("keeps answers on an in-flow return, and forgets them once they are 30 minutes old", () => {

@@ -30,6 +30,7 @@ import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storag
 import { historyFor, listChapters, saveChapter, useChapters } from "@/lib/storage/chapters";
 import s from "./SajuChartView.module.css";
 import { NEW_SAJU_HREF } from "@/lib/freshStart";
+import { useFlowVisit } from "@/lib/useFlowVisit";
 import { isSajuReadingResponse, isSajuTeaser } from "@/lib/reading/validate";
 
 /** The body /api/saju/* take: birth data, the optional chips, and recent readings as history. */
@@ -47,6 +48,8 @@ const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringif
  */
 export function SajuChartView() {
   const router = useRouter();
+  // A page of the flow: going back to the question from here keeps the answers.
+  useFlowVisit("saju");
   const { form, ready, saved, result } = useSajuChart();
   const context = useSajuContext();
   const chapters = useChapters();

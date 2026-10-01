@@ -356,6 +356,35 @@ test.describe("question builder: toggling chips and starting clean", () => {
     await expect(page.getByText(EMPTY)).toBeVisible();
   });
 
+  test("a refresh starts clean; 다음 → browser back keeps; home → browser back starts clean", async ({ page }) => {
+    await page.goto("/tarot/new?new=1");
+    await buildMoney(page);
+    await page.reload();
+    await expect(chip(page, "나")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText(EMPTY)).toBeVisible();
+
+    await buildMoney(page);
+    await next(page).click();
+    await expect(page).toHaveURL(/\/tarot\/new\/situation$/, { timeout: NAV });
+    await page.goBack();
+    await expect(page).toHaveURL(/\/tarot\/new$/, { timeout: NAV });
+    await expect(chip(page, "재물운")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("이번 주 내 재물 흐름은 어떨까?")).toBeVisible();
+    // Forward again is a move inside the flow too.
+    await page.goForward();
+    await expect(page).toHaveURL(/\/tarot\/new\/situation$/, { timeout: NAV });
+    await expect(page.getByText("이번 주 내 재물 흐름은 어떨까?")).toBeVisible();
+
+    await page.getByRole("link", { name: "질문 만들기로" }).click();
+    await expect(page).toHaveURL(/\/tarot\/new$/, { timeout: NAV });
+    await page.getByRole("link", { name: "홈으로" }).click();
+    await expect(page).toHaveURL(/localhost:\d+\/$/, { timeout: NAV });
+    await page.goBack();
+    await expect(page).toHaveURL(/\/tarot\/new$/, { timeout: NAV });
+    await expect(chip(page, "나")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText(EMPTY)).toBeVisible();
+  });
+
   test("answers left for 30 minutes are forgotten (fake clock)", async ({ page }) => {
     const start = new Date("2026-10-01T10:00:00+09:00").getTime();
     await page.clock.setFixedTime(start);

@@ -1,6 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { TOPICS_BY_WHO, type TopicDef, type When, type Who } from "@starlog/core";
 import { isStale } from "./freshStart";
+import { useFlowVisit } from "./useFlowVisit";
 import { CUSTOM_MAX, WHO_MAX, cleanPart, composeFlowQuestion, flowQuote } from "./question";
 import type { DrawTemplateId, DrawnCardData, TarotInput } from "./reading/types";
 
@@ -276,12 +277,17 @@ export function clearFlow() {
 }
 
 /**
- * On entering the builder: a new question (`?new=1`, lib/freshStart.ts) or answers left alone for
- * 30 minutes start clean; anything else (the back links inside the flow) keeps them.
+ * On entering the builder or the situation step: unless it was reached from inside the flow
+ * (lib/freshStart.ts), or when the answers are 30 minutes old, start clean.
  */
 export function freshFlowOnEntry(newQuestion: boolean, now = Date.now()) {
   if (readRaw() === null) return;
   if (newQuestion || isStale(getSnapshot().savedAt, now)) clearFlow();
+}
+
+/** The builder's and the situation step's entry rule (freshFlowOnEntry), before the first paint. */
+export function useFreshFlowOnEntry() {
+  useFlowVisit("tarot", (inFlow) => freshFlowOnEntry(!inFlow));
 }
 
 /** `flow` is null until the browser snapshot is read (server render and hydration). */

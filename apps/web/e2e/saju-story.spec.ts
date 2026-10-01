@@ -306,4 +306,10 @@ test("사주 from the home starts the status chips clean but keeps the birth pro
   await page.getByRole("link", { name: "입력으로 돌아가기" }).click();
   await expect(page).toHaveURL(/\/saju\/new$/, { timeout: NAV });
   await expect(page.getByRole("button", { name: "연애 중" })).toHaveAttribute("aria-pressed", "true");
+
+  // A refresh starts the chips clean; the birth profile stays.
+  await page.reload();
+  await expect(page.getByText("→ 1993년 8월 17일 (양력)")).toBeVisible();
+  await expect(page.getByRole("button", { name: /요즘 상황도 알려 주기/ })).toHaveAttribute("aria-expanded", "false");
+  expect(await page.evaluate(() => localStorage.getItem("starlog.saju-context"))).toBeNull();
 });

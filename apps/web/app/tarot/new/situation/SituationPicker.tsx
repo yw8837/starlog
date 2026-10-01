@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
-import { NOTE_MAX, summarizeFlow, useFlowState } from "@/lib/flowState";
+import { NOTE_MAX, summarizeFlow, useFlowState, useFreshFlowOnEntry } from "@/lib/flowState";
 import { notePlaceholder } from "@/lib/notePlaceholder";
 import f from "../../flow.module.css";
 import s from "./SituationPicker.module.css";
@@ -18,6 +18,8 @@ export function SituationPicker() {
   const router = useRouter();
   const { flow, setFlow } = useFlowState();
   const summary = summarizeFlow(flow);
+  // Answers stay only on a move inside the flow; a refresh or an entry from elsewhere starts clean.
+  useFreshFlowOnEntry();
 
   // A direct visit without a question goes back to the builder.
   useEffect(() => {

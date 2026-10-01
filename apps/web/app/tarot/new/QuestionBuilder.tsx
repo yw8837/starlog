@@ -1,14 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useLayoutEffect } from "react";
 import type { When, Who } from "@starlog/core";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { CustomField } from "@/components/ui/CustomField";
-import { EMPTY_FLOW, WHEN_OPTIONS, WHO_OPTIONS, allowedWhens, builderTopics, findTopic, freshFlowOnEntry, summarizeFlow, useFlowState, type FlowState } from "@/lib/flowState";
-import { takeNewFlag } from "@/lib/freshStart";
+import { EMPTY_FLOW, WHEN_OPTIONS, WHO_OPTIONS, allowedWhens, builderTopics, findTopic, summarizeFlow, useFlowState, useFreshFlowOnEntry, type FlowState } from "@/lib/flowState";
 import { CUSTOM_MAX, WHO_MAX } from "@/lib/question";
 import f from "../flow.module.css";
 
@@ -28,8 +26,8 @@ const WHO_DETAIL_EXAMPLE: Readonly<Record<Exclude<Who, "me">, string>> = {
 export function QuestionBuilder() {
   const router = useRouter();
   const { flow, setFlow } = useFlowState();
-  // A new question (?new=1) or answers left for 30 minutes start clean, before the first paint.
-  useLayoutEffect(() => freshFlowOnEntry(takeNewFlag()), []);
+  // Answers stay only on a move inside the flow; a refresh or an entry from elsewhere starts clean.
+  useFreshFlowOnEntry();
   const state = flow ?? EMPTY_FLOW;
   const topic = findTopic(state.who, state.topicId);
   const whens = allowedWhens(topic);

@@ -65,7 +65,7 @@ async function setStorage(page: Page, area: "sessionStorage" | "localStorage", k
   await page.addInitScript(([a, k, v]) => window[a as "localStorage"].setItem(k, v), [area, key, JSON.stringify(value)] as const);
 }
 
-// Saved just now: the builder starts clean from a flow left for 30 minutes (lib/freshStart.ts).
+// Saved just now: a 30-minute-old flow starts the builder clean (lib/freshStart.ts).
 const seedFlow = (page: Page, flow: object) => setStorage(page, "sessionStorage", "starlog.tarot-flow", { savedAt: Date.now(), ...flow });
 
 /** The contact question with three cards the server dealt (a signed draw), as the draw page leaves it. */
@@ -160,10 +160,11 @@ const SCREENS: Screen[] = [
   },
   { name: "lucky", path: "/lucky", setup: ownAddress },
   { name: "tarot-new", path: "/tarot/new" },
-  { name: "tarot-new-filled", path: "/tarot/new", setup: (page) => seedFlow(page, FLOW) },
-  { name: "tarot-new-custom", path: "/tarot/new", setup: (page) => seedFlow(page, FLOW_CUSTOM) },
-  { name: "tarot-situation", path: "/tarot/new/situation", setup: (page) => seedFlow(page, FLOW) },
-  { name: "tarot-situation-custom", path: "/tarot/new/situation", setup: (page) => seedFlow(page, FLOW_CUSTOM) },
+  // ?keep=1: as if reached from inside the flow (a plain visit starts the builder clean, lib/freshStart.ts).
+  { name: "tarot-new-filled", path: "/tarot/new?keep=1", setup: (page) => seedFlow(page, FLOW) },
+  { name: "tarot-new-custom", path: "/tarot/new?keep=1", setup: (page) => seedFlow(page, FLOW_CUSTOM) },
+  { name: "tarot-situation", path: "/tarot/new/situation?keep=1", setup: (page) => seedFlow(page, FLOW) },
+  { name: "tarot-situation-custom", path: "/tarot/new/situation?keep=1", setup: (page) => seedFlow(page, FLOW_CUSTOM) },
   { name: "tarot-draw", path: "/tarot/draw?instant=1", setup: (page) => seedFlow(page, FLOW) },
   {
     name: "tarot-draw-picked",

@@ -25,6 +25,7 @@ import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storag
 import { historyFor, listChapters, saveChapter, useChapters } from "@/lib/storage/chapters";
 import s from "./FreeResult.module.css";
 import { isTarotReadingResponse, isTarotTeaser } from "@/lib/reading/validate";
+import { useFlowVisit } from "@/lib/useFlowVisit";
 
 /** The reading input with up to 3 recent readings on this device (omitted when there are none). */
 function withHistory(input: TarotInput): TarotInput {
@@ -40,6 +41,8 @@ function withHistory(input: TarotInput): TarotInput {
  */
 export function FreeResult({ instant }: { instant: boolean }) {
   const router = useRouter();
+  // A page of the flow: going back to the question from here keeps the answers.
+  useFlowVisit("tarot");
   const { flow, setFlow } = useFlowState();
   const chapters = useChapters();
   const remaining = useRemainingToday();
