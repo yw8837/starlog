@@ -78,6 +78,25 @@ function imageStems(card) {
   return [...out];
 }
 
+/**
+ * The service speaks 해요체, oracle lines too: a line ends in …요 or …죠, or is a noun or adverb
+ * fragment ("완벽보다 완성", "망설임은 짧게"). A bare verb ending (…야, …해, …지, …둬, …마, …어) is 반말.
+ */
+const BANMAL_END = /(야|해|지|둬|돼|자|어|아|여|봐|마|와|워|려|꿔|쳐|라|니|냐|다)$/;
+/** Last words that only look like verb endings: …까지 and a few nouns. */
+const NOT_BANMAL = /(까지|^의지|^바다)$/;
+function isBanmal(answer) {
+  const line = answer.replace(/[.!]+$/, "").trim();
+  if (/[요?]$|죠$/.test(line)) return false;
+  const words = line.split(/\s+/);
+  const last = words.at(-1) ?? "";
+  const before = words.at(-2) ?? "";
+  if (last === "가") return true; // "못 가"
+  // 해 alone is the sun ("떠오르는 해") unless a verb leads into it ("봐야 해", "안 해").
+  if (last === "해") return /[야게어아도]$/.test(before) || ["안", "못", "다"].includes(before);
+  return BANMAL_END.test(line) && !NOT_BANMAL.test(last);
+}
+
 /** Same line with spacing, punctuation and a closing 요 ignored. */
 const normalize = (text) => text.replace(/[\s.,!?·…~]/g, "").replace(/요$/, "");
 const lastWord = (text) => text.replace(/[.!?]+$/, "").trim().split(/\s+/).at(-1) ?? "";
@@ -96,7 +115,7 @@ const FAMILIES = [
 function family(answer) {
   const line = answer.replace(/[.!?]+$/, "").trim();
   for (const [name, pattern] of FAMILIES) if (pattern.test(line)) return name;
-  if (!/요$/.test(line) && /[가-힣]$/.test(line) && /(어|아|해|봐|가|지|마|야|와|워|려|꿔|둬|여|쳐|내|래)$/.test(line)) return `반말 ~${line.at(-1)}`;
+  if (isBanmal(line)) return `반말 ~${line.at(-1)}`;
   return `끝말 ${lastWord(line)}`;
 }
 
@@ -148,6 +167,7 @@ for (const id of expected) {
       for (const answer of entry.answers) {
         checkText(where, "answer", answer, card);
         if (/[.!]$/.test(answer)) err(where, `answer ends with punctuation: ${answer}`);
+        if (isBanmal(answer)) err(where, `answer ends in 반말; use 해요체 or a noun ending: ${answer}`);
         const key = normalize(answer);
         if (seen.answer.has(key)) err(where, `answer "${answer}" repeats ${seen.answer.get(key)}`);
         else seen.answer.set(key, `${where} "${answer}"`);
