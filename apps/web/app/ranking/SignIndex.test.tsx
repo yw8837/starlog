@@ -28,18 +28,30 @@ describe("별자리 리더보드 (/ranking)", () => {
     const aries = screen.getByRole("heading", { level: 2, name: "양자리" }).closest("li")!;
     expect(aries.textContent).toContain("3월 21일 ~ 4월 19일");
     // each date is one unbreakable piece
-    expect([...aries.querySelectorAll("p span")].map((el) => el.textContent)).toEqual(["3월 21일", "4월 19일"]);
+    expect([...aries.querySelectorAll("h2 + p span")].map((el) => el.textContent)).toEqual(["3월 21일", "4월 19일"]);
   });
 
-  it("lists this week's 1·2·3 with nickname and total", () => {
+  it("gives this week's 1위 the showpiece (lit figure, nickname, big total) and lists 2·3위 beside it", () => {
     render(<SignIndex leaders={LEADERS} />);
-    const aries = screen.getByRole("list", { name: "양자리 이번 주 1~3등" });
-    expect(within(aries).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["1용우412점", "2하늘398점", "3별빛나리350점"]);
-    expect(within(screen.getByRole("list", { name: "사자자리 이번 주 1~3등" })).getAllByRole("listitem")).toHaveLength(1);
+    const aries = screen.getByRole("heading", { level: 2, name: "양자리" }).closest("li")!;
+    const champ = aries.querySelector("[data-champ='lit']")!;
+    expect(champ.textContent).toBe("이번 주 1위용우인연 412점");
+    // the figure is fully lit: every star of 양자리
+    expect(champ.querySelectorAll("[data-star='lit']")).toHaveLength(CONSTELLATIONS[0]!.slots);
+    const rest = within(aries).getByRole("list", { name: "양자리 이번 주 2·3위" });
+    expect(within(rest).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["2하늘398점", "3별빛나리350점"]);
+    // a sign with only a 1위 says the next place is open
+    const leo = screen.getByRole("heading", { level: 2, name: "사자자리" }).closest("li")!;
+    expect(leo.textContent).toContain("민지");
+    expect(leo.textContent).toContain("2위 자리는 아직 비어 있어요");
   });
 
-  it("invites to be first where no one has completed the sign this week", () => {
+  it("shows an unlit figure with 첫 1위 자리 and invites to be first where no one has completed the sign this week", () => {
     render(<SignIndex leaders={LEADERS} />);
+    expect(screen.getAllByText("첫 1위 자리")).toHaveLength(10);
+    const taurus = screen.getByRole("heading", { level: 2, name: "황소자리" }).closest("li")!;
+    expect(taurus.querySelector("[data-champ='empty']")).not.toBeNull();
+    expect(taurus.querySelectorAll("[data-star='lit']")).toHaveLength(0);
     const first = screen.getAllByRole("link", { name: "첫 번째가 되어 보세요" });
     expect(first).toHaveLength(10);
     expect(first[0]?.getAttribute("href")).toBe("/bonds?sign=taurus");
@@ -53,6 +65,7 @@ describe("별자리 리더보드 (/ranking)", () => {
     expect(screen.getAllByText("지금은 순위를 불러오지 못했어요")).toHaveLength(12);
     expect(screen.getAllByRole("link", { name: /전체 순위$/ })).toHaveLength(12);
     expect(screen.queryByRole("link", { name: "첫 번째가 되어 보세요" })).toBeNull();
+    expect(screen.queryByText("첫 1위 자리")).toBeNull();
   });
 
   it("marks this device's own sign once it is known", async () => {

@@ -45,16 +45,39 @@
   }
 }
 
+/*
+ * A sign card. Phones (two columns): name and dates, then the 1위 showpiece, then 2·3위.
+ * Desktop (four columns): name, dates and 2·3위 on the left, the 1위 showpiece on the right.
+ */
 .card {
   position: relative;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto;
+  grid-template-areas:
+    "head"
+    "champ"
+    "rest"
+    "all";
+  gap: 10px;
   min-width: 0;
-  padding: 14px 12px 6px;
+  padding: 14px 12px 4px;
   border: 1px solid var(--glass-line);
   border-radius: 18px;
   background: var(--glass);
+}
+
+@media (min-width: 1024px) {
+  .card {
+    grid-template-columns: minmax(0, 1fr) minmax(96px, 45%);
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas:
+      "head champ"
+      "rest champ"
+      "all all";
+    column-gap: 10px;
+    padding: 16px 14px 4px;
+  }
 }
 
 .card[data-mine] {
@@ -68,6 +91,7 @@
   position: absolute;
   top: -9px;
   left: 12px;
+  z-index: 1;
   padding: 0 8px;
   border-radius: 9px;
   background: var(--gold);
@@ -79,23 +103,13 @@
 }
 
 .head {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-}
-
-.art {
-  width: 44px;
-}
-
-.headText {
+  grid-area: head;
   display: grid;
   min-width: 0;
 }
 
 .name {
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.3;
   white-space: nowrap;
 }
@@ -109,6 +123,100 @@
 /* Each date stays whole; the range may break only at the "~". */
 .date {
   white-space: nowrap;
+}
+
+/* ---- the 1위 showpiece ---- */
+
+.champ {
+  grid-area: champ;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 6px 12px;
+  border-radius: 14px;
+  background: radial-gradient(75% 60% at 50% 34%, rgba(243, 220, 161, 0.2), transparent 72%);
+  text-align: center;
+}
+
+.champ[data-champ="empty"] {
+  background: none;
+  border: 1px dashed var(--glass-line);
+}
+
+.champArt {
+  width: min(100%, 84px);
+  filter: drop-shadow(0 0 10px rgba(243, 220, 161, 0.35));
+}
+
+.champ[data-champ="empty"] .champArt {
+  filter: none;
+  opacity: 0.55;
+}
+
+.champText {
+  display: grid;
+  justify-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.crown {
+  padding: 0 8px;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #f7e5b6, #e9c46f);
+  color: #2a1b4d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* Up to two lines, so a long nickname still reads whole in the narrow column. */
+.champName {
+  display: -webkit-box;
+  max-width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--ink);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.champTotal {
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+  text-shadow: 0 0 14px rgba(243, 220, 161, 0.4);
+}
+
+.champTotal small {
+  margin-left: 1px;
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 13px;
+  text-shadow: none;
+}
+
+.champHint {
+  margin-top: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+/* ---- 2·3위 ---- */
+
+.rest {
+  grid-area: rest;
+  display: grid;
+  align-content: start;
+  min-width: 0;
 }
 
 .top {
@@ -159,10 +267,6 @@
   line-height: 1;
 }
 
-.medal[data-rank="1"] {
-  background: linear-gradient(160deg, #f7e5b6, #e9c46f);
-}
-
 .medal[data-rank="2"] {
   background: linear-gradient(160deg, #f1f1f7, #b9bccb);
 }
@@ -187,28 +291,24 @@
 }
 
 .empty {
-  align-self: center;
   color: var(--ink-sub);
   font-size: var(--fs-sub);
   line-height: 1.5;
 }
 
-.emptyBox {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-}
-
 .inline {
   display: inline-flex;
   align-items: center;
+  justify-self: start;
   min-height: 44px;
   color: var(--ink);
+  font-size: var(--fs-sub);
   font-weight: 700;
   text-underline-offset: 3px;
 }
 
 .all {
+  grid-area: all;
   display: flex;
   align-items: center;
   justify-content: center;
