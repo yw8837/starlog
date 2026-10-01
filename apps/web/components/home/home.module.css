@@ -445,26 +445,16 @@
   line-height: 1;
 }
 
-/* 오늘의 한 장: the card face up (warm paper) with a gold sun and an 오늘 tab on top. */
+/* 오늘의 한 장: the card face up, a sunrise over the hills with a lucky sparkle (no words). */
 .todayIcon {
-  padding-top: 8px;
-  background: linear-gradient(170deg, #fbf3df 0%, #f1dfb4 100%);
-  color: #e0a63a;
+  overflow: hidden;
+  background: #fbf3df;
 }
 
-.todayTab {
-  position: absolute;
-  top: -9px;
-  left: 50%;
-  padding: 0 6px;
-  border-radius: 8px;
-  background: var(--gold);
-  color: #2a1b4d;
-  font-size: var(--fs-sub);
-  font-weight: 700;
-  line-height: 1.35;
-  white-space: nowrap;
-  transform: translateX(-50%);
+.todayArt {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 @media (min-width: 1024px) {

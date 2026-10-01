@@ -78,18 +78,33 @@ function NowIcon() {
 }
 
 /**
- * The day's card face up: a gold sun under a small 오늘 tab (no date, so a prerendered home never
- * shows a stale one). Pairs with 지금의 한 장's card back.
+ * The day's card face up, no words: a sun rising over the hills under a lucky sparkle — "today"
+ * and "fortune" in one picture. No date, so a prerendered home never shows a stale one. Pairs with
+ * 지금의 한 장's card back.
  */
 function TodayIcon() {
   return (
     <span className={`${s.miniCard} ${s.todayIcon}`} aria-hidden="true">
-      <span className={s.todayTab}>오늘</span>
-      <svg width="30" height="30" viewBox="0 0 32 32" focusable="false">
-        <g stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <path d="M16 2.5v3.5M16 26v3.5M2.5 16H6M26 16h3.5M6.5 6.5l2.5 2.5M23 23l2.5 2.5M6.5 25.5 9 23M23 9l2.5-2.5" />
+      <svg className={s.todayArt} viewBox="0 0 42 64" focusable="false">
+        <defs>
+          <linearGradient id="today-dawn" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#fff5de" />
+            <stop offset="1" stopColor="#f8cc88" />
+          </linearGradient>
+        </defs>
+        <rect width="42" height="64" fill="url(#today-dawn)" />
+        {/* rays, then the rising sun, then the low hills in front of it */}
+        <g stroke="#eb9f2c" strokeWidth="1.8" strokeLinecap="round">
+          <path d="M21 29.5V25M30.5 33.5l3.2-3.2M11.5 33.5l-3.2-3.2M34.2 39.6l4.3-1.2M7.8 39.6l-4.3-1.2" />
         </g>
-        <circle cx="16" cy="16" r="6.5" fill="currentColor" />
+        <path d="M10.5 44a10.5 10.5 0 0 1 21 0z" fill="#f0a32e" />
+        <path d="M0 44c6-3.6 11-3.8 16.5-1.6 5.5 2.2 11 2.4 17-.6 3-1.5 6-2 8.5-1.8V64H0z" fill="#e0a052" />
+        <path d="M0 52c7-3.4 13.5-3.2 20-.6 6.2 2.5 12.6 2.2 22-1V64H0z" fill="#c4843a" />
+        {/* the lucky sparkle and two small stars */}
+        <path d="M31 6c.7 3.5 1.9 4.7 5.4 5.4-3.5.7-4.7 1.9-5.4 5.4-.7-3.5-1.9-4.7-5.4-5.4 3.5-.7 4.7-1.9 5.4-5.4z" fill="#eea92a" />
+        <circle cx="10" cy="11" r="1.3" fill="#eea92a" />
+        <circle cx="14.5" cy="17.5" r="0.9" fill="#eea92a" fillOpacity="0.8" />
+        <rect x="3" y="3" width="36" height="58" rx="3.5" fill="none" stroke="#fff3d6" strokeOpacity="0.7" strokeWidth="0.9" />
       </svg>
     </span>
   );
