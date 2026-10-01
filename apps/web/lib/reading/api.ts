@@ -31,8 +31,11 @@ export interface ApiError {
   resetsAt?: string;
   /** REFUSED: the person may be in crisis. */
   care?: boolean;
-  /** Follow-up BETA_LIMIT: this chapter's questions or the day's. */
-  scope?: "chapter" | "day";
+  /**
+   * BETA_LIMIT: which count ran out — this chapter's questions, the device's day, or the day's
+   * count for the whole network (one Wi-Fi, office or school shares it).
+   */
+  scope?: "chapter" | "day" | "network";
   /** 오늘의 한 장 BETA_LIMIT: the day's card, without its text. */
   card?: { cardId: string; orientation: "upright" | "reversed" };
   /** BAD_REQUEST on saju input: the form field at fault. */
@@ -56,7 +59,7 @@ export function parseApiError(status: number, body: unknown): ApiError {
   if (typeof b.message === "string") error.message = b.message;
   if (typeof b.resetsAt === "string") error.resetsAt = b.resetsAt;
   if (b.care === true) error.care = true;
-  if (b.scope === "chapter" || b.scope === "day") error.scope = b.scope;
+  if (b.scope === "chapter" || b.scope === "day" || b.scope === "network") error.scope = b.scope;
   if (typeof b.field === "string") error.field = b.field;
   if (isRecord(b.card) && typeof b.card.cardId === "string" && (b.card.orientation === "upright" || b.card.orientation === "reversed")) {
     error.card = { cardId: b.card.cardId, orientation: b.card.orientation };

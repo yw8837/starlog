@@ -40,6 +40,10 @@ const CARE_FALLBACK = "지금 많이 힘든 마음이 느껴져요. 자살예방
 export function describeApiError(error: ApiError, context: ErrorContext = "reading", now: number = Date.now()): ErrorView {
   switch (error.code) {
     case "BETA_LIMIT":
+      // The network's day count (shared by everyone on one Wi-Fi, office or school), whatever was asked for.
+      if (error.scope === "network") {
+        return { title: "같은 네트워크(와이파이·회사·학교)에서 오늘 열 수 있는 횟수를 다 썼어요", body: resetLine(error.resetsAt, now), action: null };
+      }
       if (context === "followup" && error.scope === "chapter") return { title: "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요", action: null };
       if (context === "followup") return { title: "오늘 물어볼 수 있는 질문을 모두 썼어요", body: resetLine(error.resetsAt, now), action: null };
       if (context === "daily") return { title: "오늘은 쪽지를 더 펼 수 없어요", body: resetLine(error.resetsAt, now), action: null };

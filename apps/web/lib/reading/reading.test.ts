@@ -145,6 +145,15 @@ describe("error copy", () => {
     expect(describeApiError(err("REFUSED", { care: true })).body).toContain("109");
   });
 
+  it("says when the whole network's day count is used up, for any kind of reading", () => {
+    for (const context of ["reading", "teaser", "followup", "daily"] as const) {
+      const view = describeApiError(err("BETA_LIMIT", { scope: "network", resetsAt: "2026-10-01T15:00:00.000Z" }), context, NOW);
+      expect(`${view.title} · ${view.body}`).toBe("같은 네트워크(와이파이·회사·학교)에서 오늘 열 수 있는 횟수를 다 썼어요 · 내일 0시에 다시 열려요");
+      expect(view.action).toBeNull();
+    }
+    expect(parseApiError(429, { code: "BETA_LIMIT", scope: "network" }).scope).toBe("network");
+  });
+
   it("says a teaser limit apart from the full-reading limit, and never mentions a count for a draw", () => {
     expect(describeApiError(err("BETA_LIMIT"), "teaser", NOW)).toEqual({ title: "오늘 볼 수 있는 첫 장을 모두 봤어요", body: "내일 0시에 다시 열려요", action: null });
     expect(describeApiError(err("NETWORK"), "tarot-draw", NOW)).toEqual({ title: "연결이 잠시 끊겼어요", body: "다시 시도해 주세요.", action: "retry" });
