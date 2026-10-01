@@ -78,6 +78,14 @@ function OpenInvite({ invite }: { invite: Open }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<JoinResult | null>(null);
   const resultRef = useRef<HTMLHeadingElement>(null);
+  const drawRef = useRef<HTMLElement>(null);
+
+  // The form may have been scrolled far down: bring the shuffle and the fan into view.
+  useEffect(() => {
+    if (phase !== "shuffle") return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    drawRef.current?.scrollIntoView?.({ block: "start", behavior: reduce ? "auto" : "smooth" });
+  }, [phase]);
 
   useEffect(() => {
     if (phase === "result") resultRef.current?.focus();
@@ -196,7 +204,7 @@ function OpenInvite({ invite }: { invite: Open }) {
       ) : null}
 
       {phase === "shuffle" || phase === "pick" ? (
-        <section className={s.draw} aria-labelledby="draw-title">
+        <section ref={drawRef} className={s.draw} aria-labelledby="draw-title">
           <div className={s.drawHead}>
             <Cat outfit="tarot" action={phase === "shuffle" ? "shuffle" : "none"} expression="focus" size={96} reactOnTap={false} />
             <h2 id="draw-title" className={b.sectionTitle}>

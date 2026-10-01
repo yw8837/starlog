@@ -63,6 +63,7 @@
 .draw {
   display: grid;
   gap: 8px;
+  scroll-margin-top: 12px;
 }
 
 .drawHead {

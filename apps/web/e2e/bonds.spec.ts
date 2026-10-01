@@ -62,6 +62,13 @@ async function inviteCode(page: Page): Promise<string> {
   return code;
 }
 
+/** Waits until every finite CSS animation (the fan's deal-out) has finished. */
+async function settleAnimations(page: Page) {
+  await page.waitForFunction(() =>
+    document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity),
+  );
+}
+
 /** Fan cards overlap, so click the card on a point where it is the top-most element. */
 async function pickFanCard(page: Page, n: number) {
   const point = await page.evaluate((index) => {
@@ -193,8 +200,12 @@ test.describe("별자리 인연 · friend", () => {
     await page.getByRole("button", { name: "카드 고르러 가기" }).click();
     await page.getByRole("button", { name: "바로 펼치기" }).click();
     await expect(page.locator("[data-fan-index]")).toHaveCount(21);
+    // The fan sits below the friend's header: once it is dealt, scroll the card into view and find a free spot.
+    await settleAnimations(page);
+    await page.locator("[data-fan-index]").nth(10).scrollIntoViewIfNeeded();
+    await settleAnimations(page);
     await pickFanCard(page, 10);
-    await page.getByLabel("한 줄 남기기 (선택)").fill("늘 고마워");
+    await page.getByRole("textbox", { name: "한 줄 남기기 (선택)" }).fill("늘 고마워");
     await page.getByRole("button", { name: "별 되기" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeVisible();
