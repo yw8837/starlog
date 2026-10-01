@@ -93,11 +93,11 @@ describe("topics", () => {
   it("maps every topic to a template and matches the topic table", () => {
     const table = (who: Who) => TOPICS_BY_WHO[who].map(t => [t.ko, t.template]);
     expect(table("me")).toEqual([
-      ["연애운", "self-flow"], ["재물운", "self-flow"], ["직업·이직", "work"], ["학업·시험", "work"],
+      ["연애운", "self-flow"], ["결혼운", "self-flow"], ["재물운", "self-flow"], ["직업·이직", "work"], ["학업·시험", "work"],
       ["건강·컨디션", "self-flow"], ["마음·감정", "self-flow"], ["이사·선택", "choice"], ["오늘의 운", "daily"],
     ]);
     expect(table("us")).toEqual([
-      ["썸·고백", "relationship"], ["연애", "relationship"], ["연락", "relationship-contact"],
+      ["썸·고백", "relationship"], ["연애", "relationship"], ["결혼", "relationship"], ["연락", "relationship-contact"],
       ["재회", "relationship-contact"], ["갈등·화해", "relationship"],
     ]);
     expect(table("work")).toEqual([
@@ -224,8 +224,26 @@ describe("questions", () => {
       expect(() => composeQuestion("me", daily, when, "ja")).toThrow();
     }
     expect(composeQuestion("me", daily, "today")).toBe("오늘 나의 하루는 어떨까");
-    const others = WHOS.flatMap(who => TOPICS_BY_WHO[who]).filter(t => t !== daily);
+    const others = WHOS.flatMap(who => TOPICS_BY_WHO[who]).filter(t => t !== daily && t.id !== "marriage");
     expect(others.every(t => t.whens === undefined)).toBe(true);
+  });
+  it("offers 결혼운 after 연애운 (나) and 결혼 after 연애 (나와 그 사람), never for today", () => {
+    const ids = (who: Who) => TOPICS_BY_WHO[who].map(t => t.id);
+    expect(ids("me").indexOf("marriage")).toBe(ids("me").indexOf("love") + 1);
+    expect(ids("us").indexOf("marriage")).toBe(ids("us").indexOf("relationship") + 1);
+    for (const who of ["me", "us"] as const) {
+      const marriage = TOPICS_BY_WHO[who].find(t => t.id === "marriage")!;
+      expect(marriage.phrase).toBe("결혼");
+      expect(marriage.whens).toEqual(["week", "month", "year"]);
+      expect(() => composeQuestion(who, marriage, "today")).toThrow();
+      expect(marriage.conditions[0]!.options.slice(-1)).toEqual(["잘 모르겠어요"]);
+    }
+    const me = TOPICS_BY_WHO.me.find(t => t.id === "marriage")!;
+    expect([me.ko, me.template]).toEqual(["결혼운", "self-flow"]);
+    expect(me.conditions[0]!.options).toEqual(["지금은 솔로", "연애 중", "결혼 이야기가 오가는 중", "결혼 준비 중", "다시 시작하고 싶음 (재혼·새 출발)", "잘 모르겠어요"]);
+    const us = TOPICS_BY_WHO.us.find(t => t.id === "marriage")!;
+    expect([us.ko, us.template]).toEqual(["결혼", "relationship"]);
+    expect(us.conditions[0]!.options).toEqual(["연애 중", "결혼 이야기가 오가는 중", "상견례·준비 중", "결혼을 망설이는 중", "집안 반대가 있음", "잘 모르겠어요"]);
   });
   it("varies question endings (at most 4 end with 어떻게 흘러갈까)", () => {
     const questions = WHOS.flatMap(who => TOPICS_BY_WHO[who]).map(t => t.questionKo);

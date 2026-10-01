@@ -1,6 +1,7 @@
 /** Example line for the optional note, per topic id (topic ids repeat across `who`, meaning the same). */
 const BY_TOPIC: Readonly<Record<string, string>> = {
   love: "예: 소개팅을 몇 번 했는데 마음이 가는 사람이 없었어요",
+  marriage: "예: 3년째 연애 중인데 결혼 이야기는 아직 안 했어요",
   money: "예: 요즘 수입이 없어서 모아 둔 돈으로 지내고 있어요",
   career: "예: 3년째 같은 회사인데 이직을 고민하고 있어요",
   study: "예: 시험이 한 달 남았는데 집중이 잘 안 돼요",

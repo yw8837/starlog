@@ -102,6 +102,16 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
       ],
     },
     {
+      id: "marriage", ko: "결혼운", ja: "結婚運", phrase: "결혼", template: "self-flow",
+      questionKo: "{when} 내 결혼운은 어떨까?",
+      questionJa: "{when}、私の結婚運はどうかな",
+      whens: ["week", "month", "year"],
+      conditions: [
+        cond("status", "지금 상황", "지금은 솔로", "연애 중", "결혼 이야기가 오가는 중", "결혼 준비 중", "다시 시작하고 싶음 (재혼·새 출발)", DUNNO),
+        cond("focus", "가장 궁금한 것", "새로운 인연", "지금 관계의 다음 단계", "결혼 준비와 가족", "결혼에 대한 내 마음", NOT_YET),
+      ],
+    },
+    {
       id: "money", ko: "재물운", ja: "金運", phrase: "재물", template: "self-flow",
       questionKo: "{when}, 나의 재물 흐름은 어떨까",
       questionJa: "{when}、私のお金の流れはどうなるかな",
@@ -188,6 +198,16 @@ export const TOPICS_BY_WHO: Record<Who, TopicDef[]> = {
         cond("duration", "사귄 기간", "3개월 미만", "3개월~1년", "1년 넘음", DUNNO),
         cond("mood", "요즘 분위기", "좋은 편", "평범함", "권태기 같음", "다툼이 잦음", "연락이 줄어듦", DUNNO),
         cond("goal", "원하는 방향", "더 가까워지기", "서로 이해하기", "미래 이야기 나누기", "잠시 거리 두기", "마음 정리하기", NOT_YET),
+      ],
+    },
+    {
+      id: "marriage", ko: "결혼", ja: "結婚", phrase: "결혼", template: "relationship",
+      questionKo: "{when} 그 사람과의 결혼은 어떻게 될까?",
+      questionJa: "{when}、あの人との結婚はどうなるかな",
+      whens: ["week", "month", "year"],
+      conditions: [
+        cond("status", "지금 상황", "연애 중", "결혼 이야기가 오가는 중", "상견례·준비 중", "결혼을 망설이는 중", "집안 반대가 있음", DUNNO),
+        cond("goal", "원하는 방향", "결혼 이야기 꺼내기", "서로 생각 맞춰 보기", "가족 설득하기", "천천히 지켜보기", NOT_YET),
       ],
     },
     {
