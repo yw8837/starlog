@@ -30,7 +30,8 @@ pnpm --filter @starlog/web cf:deploy
 Before the first build with the flag:
 
 1. Apply `0001_bonds.sql` to the remote database (see above).
-2. Check that `wrangler.jsonc` still has the `DB` binding and the `BOND_JOIN_LIMITER` (namespace 1006) and `BOND_CODE_LIMITER` (namespace 1007) rate limits.
-3. The existing secrets cover it. `STARLOG_SIGNING_SECRET` signs the `sl_uid` and `sl_fid` cookies, and the API key is needed for the 오늘의 인연 카드 line (without a provider the line falls back to rule-based text).
+2. Check that `wrangler.jsonc` still has the `DB` binding, `DAILY_KV` (it also holds the 10-minute code-guessing blocks and the 오늘의 인연 카드 lines), and the `BOND_JOIN_LIMITER` (1006), `BOND_CODE_LIMITER` (1007) and `BOND_VIEW_LIMITER` (1008) rate limits.
+3. Share images (`/api/og/*`) use next/og on the Worker and fetch Korean glyph subsets from Google Fonts. Before the first launch, check them on `pnpm --filter @starlog/web cf:preview` (open `/api/og/invite/ZZZZZZ` and a completed constellation's `/api/og/bonds/<id>`), and check the Worker's gzip size in the build output, because next/og brings its WebAssembly renderer.
+4. The existing secrets cover it. `STARLOG_SIGNING_SECRET` signs the `sl_uid` and `sl_fid` cookies, and the API key is needed for the 오늘의 인연 카드 line (without a provider the line falls back to rule-based text).
 
 With the flag off, `/bonds`, `/ranking/*`, `/b`, `/lucky`, `/api/bonds/*`, `/api/lucky` and the 별자리·초대·행운 번호 share images answer 404, the home row renders nothing, and the privacy policy and terms leave the 별자리 인연 sections out.
