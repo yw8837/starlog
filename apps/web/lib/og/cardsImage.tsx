@@ -1,0 +1,211 @@
+import type { ReactElement } from "react";
+import { LUCKY_NOTICE, getCard, getConstellation, type Orientation, type SignId } from "@starlog/core";
+import { GOLD, INK, INK_SUB, NIGHT, constellationSvg, starField } from "./bondsImage";
+
+/**
+ * The other share images (spec §9): the invite link's OG card, 오늘의 한 장, a chapter title card and
+ * the weekly lucky numbers. Cards are drawn as framed name plates (satori cannot decode the WebP
+ * scans). Never a question, a note or birth data.
+ */
+
+export const OG_CARD = { width: 1200, height: 630 } as const;
+export const STORY = { width: 1080, height: 1920 } as const;
+
+/** One card as a gold-framed plate: roman numeral or suit rank, the Korean name, 역방향 when reversed. */
+function CardPlate({ cardId, orientation, width }: { cardId: string; orientation: Orientation; width: number }): ReactElement {
+  const card = getCard(cardId);
+  const height = Math.round(width * 1.62);
+  return (
+    <div
+      style={{
+        width,
+        height,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: Math.round(width * 0.08),
+        border: `4px solid ${GOLD}`,
+        backgroundImage: "linear-gradient(160deg, #3a3290 0%, #1d1850 100%)",
+        boxShadow: "0 18px 40px rgba(5,3,15,0.5)",
+        color: INK,
+      }}
+    >
+      {card.roman ? (
+        <div style={{ display: "flex", color: GOLD, fontFamily: "Serif", fontSize: Math.round(width * 0.16), fontWeight: 700 }}>{card.roman}</div>
+      ) : null}
+      <div style={{ display: "flex", marginTop: 18, padding: "0 12px", textAlign: "center", fontFamily: "Serif", fontSize: Math.round(width * 0.13), fontWeight: 700 }}>
+        {card.names.ko}
+      </div>
+      {orientation === "reversed" ? (
+        <div style={{ display: "flex", marginTop: 10, color: INK_SUB, fontSize: Math.round(width * 0.08) }}>역방향</div>
+      ) : null}
+    </div>
+  );
+}
+
+const frame = (width: number, height: number, children: ReactElement[] | ReactElement): ReactElement => (
+  <div style={{ position: "relative", display: "flex", width: "100%", height: "100%", backgroundColor: "#0d0a26", backgroundImage: NIGHT, color: INK, fontFamily: "Sans" }}>
+    {starField(width, height, Math.round((width * height) / 14000))}
+    {children}
+  </div>
+);
+
+// ---- invite OG (1200×630) ----
+
+export interface InviteOgData {
+  /** null when the code is unknown or revoked: a generic card */
+  ownerNickname: string | null;
+  sign: SignId | null;
+  filled: number;
+  host: string;
+}
+
+export function inviteOgImage(data: InviteOgData): ReactElement {
+  const { width, height } = OG_CARD;
+  const def = data.sign ? getConstellation(data.sign) : null;
+  const headline = data.ownerNickname && def ? `${data.ownerNickname}님의 ${def.ko} ${data.filled}/${def.slots}` : "별자리 인연 초대";
+  return frame(width, height, [
+    <div key="art" style={{ position: "absolute", right: 70, top: 55, display: "flex" }}>
+      {constellationSvg(data.sign ?? "libra", 520, def ? data.filled : 2)}
+    </div>,
+    <div key="text" style={{ position: "absolute", left: 80, top: 150, width: 600, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", color: GOLD, fontSize: 30, fontWeight: 700, letterSpacing: 5 }}>별자리 인연</div>
+      <div style={{ display: "flex", marginTop: 18, fontFamily: "Serif", fontSize: 64, fontWeight: 700, lineHeight: 1.25 }}>{headline}</div>
+      <div style={{ display: "flex", marginTop: 22, color: INK_SUB, fontSize: 36 }}>
+        {def ? "내 별자리에 별이 되어 주세요" : "친구의 별자리에 별이 되어 주세요"}
+      </div>
+    </div>,
+    <div key="host" style={{ position: "absolute", left: 80, bottom: 56, display: "flex", color: GOLD, fontSize: 26, letterSpacing: 2 }}>
+      {data.host}
+    </div>,
+  ]);
+}
+
+export function inviteOgText(data: InviteOgData): { serif: string; sans: string } {
+  const def = data.sign ? getConstellation(data.sign) : null;
+  return {
+    serif: `${data.ownerNickname ?? ""}님의 ${def?.ko ?? ""} ${data.filled}/${def?.slots ?? ""} 별자리 인연 초대`,
+    sans: `별자리 인연 내 친구의 별자리에 별이 되어 주세요 ${data.host}`,
+  };
+}
+
+// ---- 오늘의 한 장 (story) ----
+
+export interface DailyShareData {
+  cardId: string;
+  orientation: Orientation;
+  keyword: string;
+  summary: string;
+  date: string;
+  host: string;
+}
+
+export function dailyShareImage(data: DailyShareData): ReactElement {
+  const { width, height } = STORY;
+  return frame(width, height, [
+    <div key="body" style={{ position: "absolute", left: 0, top: 220, width, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ display: "flex", color: GOLD, fontSize: 36, fontWeight: 700, letterSpacing: 6 }}>오늘의 한 장</div>
+      <div style={{ display: "flex", marginTop: 12, color: INK_SUB, fontSize: 32 }}>{data.date}</div>
+      <div style={{ display: "flex", marginTop: 90 }}>
+        <CardPlate cardId={data.cardId} orientation={data.orientation} width={440} />
+      </div>
+      <div style={{ display: "flex", marginTop: 80, color: GOLD, fontFamily: "Serif", fontSize: 64, fontWeight: 700 }}>{data.keyword}</div>
+      <div style={{ display: "flex", marginTop: 36, width: 840, justifyContent: "center", textAlign: "center", fontSize: 44, lineHeight: 1.55 }}>
+        {data.summary}
+      </div>
+    </div>,
+    <div key="host" style={{ position: "absolute", left: 0, bottom: 140, width, display: "flex", justifyContent: "center", color: GOLD, fontSize: 30, letterSpacing: 2 }}>
+      {data.host}
+    </div>,
+  ]);
+}
+
+export function dailyShareText(data: DailyShareData): { serif: string; sans: string } {
+  const card = getCard(data.cardId);
+  return { serif: `${card.roman ?? ""}${card.names.ko}${data.keyword}`, sans: `오늘의 한 장 역방향 ${data.date} ${data.summary} ${data.host}` };
+}
+
+// ---- chapter title card (story) ----
+
+export interface ChapterShareData {
+  title: string;
+  cards: { cardId: string; orientation: Orientation }[];
+  host: string;
+}
+
+export function chapterShareImage(data: ChapterShareData): ReactElement {
+  const { width, height } = STORY;
+  return frame(width, height, [
+    <div key="body" style={{ position: "absolute", left: 0, top: 470, width, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ display: "flex", color: GOLD, fontSize: 34, fontWeight: 700, letterSpacing: 6 }}>나의 이야기 한 장</div>
+      <div style={{ display: "flex", marginTop: 40, width: 880, justifyContent: "center", textAlign: "center", fontFamily: "Serif", fontSize: 76, fontWeight: 700, lineHeight: 1.35 }}>
+        {data.title}
+      </div>
+      <div style={{ display: "flex", marginTop: 110, gap: 34 }}>
+        {data.cards.map((card, i) => (
+          <CardPlate key={`${card.cardId}-${i}`} cardId={card.cardId} orientation={card.orientation} width={data.cards.length > 2 ? 290 : 340} />
+        ))}
+      </div>
+    </div>,
+    <div key="host" style={{ position: "absolute", left: 0, bottom: 140, width, display: "flex", justifyContent: "center", color: GOLD, fontSize: 30, letterSpacing: 2 }}>
+      {data.host}
+    </div>,
+  ]);
+}
+
+export function chapterShareText(data: ChapterShareData): { serif: string; sans: string } {
+  const names = data.cards.map((c) => `${getCard(c.cardId).roman ?? ""}${getCard(c.cardId).names.ko}`).join("");
+  return { serif: `${data.title}${names}`, sans: `나의 이야기 한 장 역방향 ${data.host}` };
+}
+
+// ---- 이번 주 행운 번호 (story) ----
+
+export interface LuckyShareData {
+  numbers: number[];
+  week: string;
+  host: string;
+}
+
+export function luckyShareImage(data: LuckyShareData): ReactElement {
+  const { width, height } = STORY;
+  return frame(width, height, [
+    <div key="body" style={{ position: "absolute", left: 0, top: 470, width, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ display: "flex", color: GOLD, fontSize: 36, fontWeight: 700, letterSpacing: 6 }}>이번 주 행운 번호</div>
+      <div style={{ display: "flex", marginTop: 14, color: INK_SUB, fontSize: 32 }}>{data.week}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", marginTop: 110, width: 840, gap: 30 }}>
+        {data.numbers.map((n) => (
+          <div
+            key={n}
+            style={{
+              width: 220,
+              height: 220,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 9999,
+              border: `6px solid ${GOLD}`,
+              backgroundImage: "radial-gradient(circle at 40% 35%, rgba(243,220,161,0.28), rgba(13,10,38,0.6) 70%)",
+              color: INK,
+              fontFamily: "Serif",
+              fontSize: 96,
+              fontWeight: 700,
+            }}
+          >
+            {String(n)}
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", marginTop: 110, width: 860, justifyContent: "center", textAlign: "center", color: INK_SUB, fontSize: 34, lineHeight: 1.6 }}>
+        {LUCKY_NOTICE}
+      </div>
+    </div>,
+    <div key="host" style={{ position: "absolute", left: 0, bottom: 140, width, display: "flex", justifyContent: "center", color: GOLD, fontSize: 30, letterSpacing: 2 }}>
+      {data.host}
+    </div>,
+  ]);
+}
+
+export function luckyShareText(data: LuckyShareData): { serif: string; sans: string } {
+  return { serif: data.numbers.join(""), sans: `이번 주 행운 번호 ${data.week} ${LUCKY_NOTICE} ${data.host}` };
+}

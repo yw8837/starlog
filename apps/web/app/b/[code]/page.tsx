@@ -10,7 +10,8 @@ import s from "./JoinFlow.module.css";
 
 type Props = { params: Promise<{ code: string }> };
 
-// The title stays generic (no lookup here, so a link preview never spends the visitor's code lookups).
+// The title stays generic (no lookup here, so a link preview never spends the visitor's code lookups);
+// the OG image route draws "용우님의 양자리 2/4".
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { code } = await params;
   const clean = normalizeCode(decodeURIComponent(code));
@@ -18,7 +19,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: "별자리 인연 초대",
     description: "친구의 별자리에 별이 되어 주세요. 생년월일로 두 사람의 인연 점수를 바로 볼 수 있어요.",
     robots: { index: false, follow: false },
-    openGraph: clean ? { title: "별자리 인연 초대", description: "친구의 별자리에 별이 되어 주세요" } : undefined,
+    openGraph: clean
+      ? {
+          title: "별자리 인연 초대",
+          description: "친구의 별자리에 별이 되어 주세요",
+          images: [{ url: `/api/og/invite/${clean}`, width: 1200, height: 630, alt: "별자리 인연 초대" }],
+        }
+      : undefined,
   };
 }
 
