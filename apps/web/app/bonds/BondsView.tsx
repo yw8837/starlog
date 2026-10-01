@@ -204,6 +204,22 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
         )}
       </section>
 
+      <nav className={s.section} aria-labelledby="more-title">
+        <h2 id="more-title" className={b.sectionTitle}>
+          더 보기
+        </h2>
+        <div className={s.moreLinks}>
+          <Link href="/ranking" className={s.moreLink}>
+            <span className={s.moreTitle}>별자리 리더보드</span>
+            <span className={s.moreSub}>이번 주 별자리마다 1~3등</span>
+          </Link>
+          <Link href="/lucky" className={s.moreLink}>
+            <span className={s.moreTitle}>이번 주 행운 번호</span>
+            <span className={s.moreSub}>내 오행으로 고른 번호 6개</span>
+          </Link>
+        </div>
+      </nav>
+
       <Settings rankingPublic={owner.rankingPublic} reload={reload} />
     </>
   );

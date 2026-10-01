@@ -69,6 +69,26 @@ describe("BondsHomeRow", () => {
     expect(push).toHaveBeenCalledWith("/b/K7M4QX");
   });
 
+  it("leads on to the leaderboard and this week's lucky numbers in every state", async () => {
+    respond({ ok: true, owner: null });
+    render(<BondsHomeRow enabled />);
+    expect((await screen.findByRole("link", { name: "별자리 리더보드" })).getAttribute("href")).toBe("/ranking");
+    expect(screen.getByRole("link", { name: "이번 주 행운 번호" }).getAttribute("href")).toBe("/lucky");
+    cleanup();
+    respond({
+      ok: true,
+      owner: { nickname: "용우", rankingPublic: true, refillReadyAt: null },
+      invite: { code: "K7M4QX" },
+      filling: { row: { id: "c1", sign: "aries", status: "filling", total: 87, startedAt: 1, completedAt: null }, stars: [star(0, 87)] },
+      completed: [],
+      top5: [],
+      ranks: {},
+    });
+    render(<BondsHomeRow enabled />);
+    expect((await screen.findByRole("link", { name: "별자리 리더보드" })).getAttribute("href")).toBe("/ranking");
+    expect(screen.getByRole("navigation", { name: "별자리 인연 더 보기" })).toBeTruthy();
+  });
+
   it("renders nothing with the feature off or when the API fails", async () => {
     respond({ ok: true, owner: null });
     const off = render(<BondsHomeRow enabled={false} />);

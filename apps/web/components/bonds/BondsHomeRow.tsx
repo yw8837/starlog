@@ -54,6 +54,7 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
           </span>
           <span className={s.badge}>도감 {me.completed.length}/12</span>
         </Link>
+        <MoreLinks />
       </section>
     );
   }
@@ -79,6 +80,7 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
       <div className={s.actions}>
         <InviteShareButton code={me.invite.code} sign={def.id} filled={filling.stars.length} variant="secondary" />
       </div>
+      <MoreLinks />
     </section>
   );
 }
@@ -139,6 +141,21 @@ function StartRow({ className }: { className: string }) {
           </p>
         ) : null}
       </form>
+      <MoreLinks />
     </section>
+  );
+}
+
+/** The rest of 별자리 인연 from the home: the leaderboard and this week's lucky numbers (44px targets). */
+function MoreLinks() {
+  return (
+    <nav className={s.more} aria-label="별자리 인연 더 보기">
+      <Link href="/ranking" className={s.moreLink}>
+        별자리 리더보드
+      </Link>
+      <Link href="/lucky" className={s.moreLink}>
+        이번 주 행운 번호
+      </Link>
+    </nav>
   );
 }
