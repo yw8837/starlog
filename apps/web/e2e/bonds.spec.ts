@@ -44,7 +44,7 @@ async function friendJoin(baseURL: string, code: string, friend: (typeof FRIENDS
 async function startOwner(page: Page, nickname = "용우") {
   await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
   await page.goto("/bonds", { timeout: 120_000 });
-  await page.getByLabel("닉네임").fill(nickname);
+  await page.getByRole("textbox", { name: "닉네임" }).fill(nickname);
   await page.getByLabel("태어난 연도").selectOption("1990");
   await page.getByLabel("태어난 월").selectOption("1");
   await page.getByLabel("태어난 일").selectOption("1");
@@ -162,7 +162,7 @@ test.describe("별자리 인연 · owner", () => {
     await page.goto("/ranking/leo", { timeout: 120_000 });
     await expect(page.getByRole("heading", { level: 1, name: /사자자리/ })).toBeVisible();
     const start = page.getByRole("link", { name: "이 별자리 채우기" });
-    await expect(start).toHaveAttribute("href", "/bonds?sign=leo");
+    await expect(start).toHaveAttribute("href", "/bonds?sign=leo", { timeout: 120_000 });
     await shot(page, "ranking-visitor");
   });
 });
@@ -182,7 +182,7 @@ test.describe("별자리 인연 · friend", () => {
     await expect(page.getByText("용우님이 별자리를 공유하면 이 닉네임이 이미지에 보여요")).toBeVisible();
     await shot(page, "friend-form");
 
-    await page.getByLabel("닉네임").fill("하늘");
+    await page.getByRole("textbox", { name: "닉네임" }).fill("하늘");
     await page.getByLabel("태어난 연도").selectOption("1992");
     await page.getByLabel("태어난 월").selectOption("8");
     await page.getByLabel("태어난 일").selectOption("3");
