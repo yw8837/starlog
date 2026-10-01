@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { BirthFields, DEFAULT_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
+import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { bondsApi, bondsMessage, rememberSunSign, sunSignOf } from "@/lib/bonds/client";
@@ -19,7 +19,7 @@ export function OwnerSetup({ onDone }: { onDone: () => void }) {
     ? { calendar: profile.calendar, year: profile.year, month: profile.month, day: profile.day, isLeapMonth: profile.isLeapMonth }
     : null;
   // Remount once the saved profile is read, so the fields start from it.
-  return <SetupForm key={initial ? "profile" : "fresh"} initial={initial ?? DEFAULT_BIRTH} onDone={onDone} />;
+  return <SetupForm key={initial ? "profile" : "fresh"} initial={initial ?? EMPTY_BIRTH} onDone={onDone} />;
 }
 
 function SetupForm({ initial, onDone }: { initial: BirthValue; onDone: () => void }) {
@@ -34,18 +34,20 @@ function SetupForm({ initial, onDone }: { initial: BirthValue; onDone: () => voi
     const length = Array.from(nickname.trim()).length;
     const next: typeof errors = {};
     if (length < NICKNAME_MIN || length > NICKNAME_MAX) next.nickname = `닉네임은 ${NICKNAME_MIN}~${NICKNAME_MAX}자로 지어 주세요`;
+    const body = birthBody(birth);
+    if (!body) next.birth = BIRTH_MISSING;
     if (!consent) next.consent = "확인에 체크해 주세요";
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length || !body) return;
     setBusy(true);
-    const result = await bondsApi<{ code: string }>("owner", { nickname: nickname.trim(), birth: birthBody(birth) });
+    const result = await bondsApi<{ code: string }>("owner", { nickname: nickname.trim(), birth: body });
     setBusy(false);
     if (!result.ok) {
       const message = bondsMessage(result);
       setErrors(result.field === "nickname" ? { nickname: message } : result.field === "birth" ? { birth: message } : { form: message });
       return;
     }
-    const sun = sunSignOf(birth);
+    const sun = sunSignOf(body);
     if (sun) rememberSunSign(sun);
     onDone();
   };

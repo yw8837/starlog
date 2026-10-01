@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { LUCKY_NOTICE, kstWeekId } from "@starlog/core";
-import { BirthFields, DEFAULT_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
+import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
 import { Button } from "@/components/ui/Button";
 import { ShareImageButton } from "@/components/ui/ShareImageButton";
 import { SITE } from "@/lib/config";
@@ -98,7 +98,7 @@ function LuckyForm({ onDone }: { onDone: (lucky: Lucky) => void }) {
   const { profile } = useSajuProfile();
   const initial: BirthValue = profile
     ? { calendar: profile.calendar, year: profile.year, month: profile.month, day: profile.day, isLeapMonth: profile.isLeapMonth }
-    : DEFAULT_BIRTH;
+    : EMPTY_BIRTH;
   return <Form key={profile ? "profile" : "fresh"} initial={initial} onDone={onDone} />;
 }
 
@@ -108,9 +108,14 @@ function Form({ initial, onDone }: { initial: BirthValue; onDone: (lucky: Lucky)
   const [busy, setBusy] = useState(false);
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    const body = birthBody(birth);
+    if (!body) {
+      setError(BIRTH_MISSING);
+      return;
+    }
     setBusy(true);
     setError("");
-    const result = await bondsApi<Lucky>("/api/lucky", { birth: birthBody(birth) });
+    const result = await bondsApi<Lucky>("/api/lucky", { birth: body });
     setBusy(false);
     if (!result.ok) {
       setError(bondsMessage(result));

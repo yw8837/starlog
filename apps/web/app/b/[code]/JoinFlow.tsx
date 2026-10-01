@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { getCard, getConstellation, type BondPart, type Orientation, type SignId } from "@starlog/core";
-import { BirthFields, DEFAULT_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
+import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, type BirthValue } from "@/components/bonds/BirthFields";
 import { CodeEntry } from "@/components/bonds/CodeEntry";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
 import { Cat } from "@/components/characters/Cat";
@@ -70,7 +70,7 @@ function OpenInvite({ invite }: { invite: Open }) {
   const def = getConstellation(invite.sign);
   const [phase, setPhase] = useState<Phase>("form");
   const [nickname, setNickname] = useState("");
-  const [birth, setBirth] = useState<BirthValue>(DEFAULT_BIRTH);
+  const [birth, setBirth] = useState<BirthValue>(EMPTY_BIRTH);
   const [consent, setConsent] = useState(false);
   const [pick, setPick] = useState<number | null>(null);
   const [message, setMessage] = useState("");
@@ -88,19 +88,21 @@ function OpenInvite({ invite }: { invite: Open }) {
     const length = Array.from(nickname.trim()).length;
     const found: typeof errors = {};
     if (length < NICKNAME_MIN || length > NICKNAME_MAX) found.nickname = `닉네임은 ${NICKNAME_MIN}~${NICKNAME_MAX}자로 지어 주세요`;
+    if (!birthBody(birth)) found.birth = BIRTH_MISSING;
     if (!consent) found.consent = "확인에 체크해 주세요";
     setErrors(found);
     if (Object.keys(found).length === 0) setPhase("shuffle");
   };
 
   const submit = async () => {
-    if (pick === null) return;
+    const birthDate = birthBody(birth);
+    if (pick === null || !birthDate) return;
     setBusy(true);
     setErrors({});
     const res = await bondsApi<JoinResult>("join", {
       code: invite.code,
       nickname: nickname.trim(),
-      birth: birthBody(birth),
+      birth: birthDate,
       pick,
       message: message.trim() || null,
     });
@@ -116,7 +118,7 @@ function OpenInvite({ invite }: { invite: Open }) {
     }
     const { ok: _ok, ...joined } = res;
     // The birth date and the rest of the form are not kept once the star is in.
-    setBirth(DEFAULT_BIRTH);
+    setBirth(EMPTY_BIRTH);
     setMessage("");
     setResult(joined as JoinResult);
     setPhase("result");
@@ -316,7 +318,7 @@ function Result({ result, headingRef }: { result: JoinResult; headingRef: RefObj
         </Button>
       </div>
       <p className={b.helper}>
-        생년월일은 점수를 내는 데만 쓰고 저장하지 않았어요. {result.ownerNickname}님에게는 닉네임, 한 줄, 고른 카드, 인연 점수만 보여요.{" "}
+        생년월일은 점수를 내는 데만 쓰고 저장하지 않았어요. {result.ownerNickname}님에게는 닉네임, 한 줄, 고른 카드, 인연 점수와 점수 근거만 보여요.{" "}
         <Link href="/privacy" className={s.inlineLink}>
           개인정보처리방침
         </Link>
