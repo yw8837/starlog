@@ -7,7 +7,7 @@ import { expect, request as playwrightRequest, test, type APIRequestContext, typ
  * per-IP join and code limiters (10 a minute) never trip across the suite.
  */
 
-const SHOTS = "test-results/screens";
+const SHOTS = "test-results/screens/bonds";
 const SIZES = [
   { name: "375", width: 375, height: 812 },
   { name: "360", width: 360, height: 780 },
@@ -27,7 +27,7 @@ async function shot(page: Page, name: string) {
   await page.evaluate(() => document.fonts.ready);
   for (const size of SIZES) {
     await page.setViewportSize({ width: size.width, height: size.height });
-    await page.screenshot({ path: `${SHOTS}/bonds-${name}-${size.name}.png`, fullPage: true });
+    await page.screenshot({ path: `${SHOTS}/${name}-${size.name}.png`, fullPage: true });
   }
   await page.setViewportSize({ width: 375, height: 812 });
 }
@@ -107,6 +107,16 @@ test.describe("별자리 인연 · owner", () => {
     await expect(page.locator("section[aria-labelledby='top-title'] li")).toHaveCount(4);
     for (const friend of FRIENDS) await expect(page.getByRole("img", { name: /양자리/ }).first()).toContainText(friend.nickname);
     await shot(page, "complete");
+
+    // Share images: the completed constellation (feed and story) and the invite card are PNGs.
+    const me = (await (await page.request.get("/api/bonds/me")).json()) as { completed: { id: string }[] };
+    for (const url of [`/api/og/bonds/${me.completed[0]!.id}`, `/api/og/bonds/${me.completed[0]!.id}?size=story`, `/api/og/invite/${code}`]) {
+      const image = await page.request.get(url, { timeout: 120_000 });
+      expect(image.status(), url).toBe(200);
+      expect(image.headers()["content-type"]).toBe("image/png");
+      expect((await image.body()).byteLength).toBeGreaterThan(10_000);
+    }
+    expect((await page.request.get("/api/og/bonds/not-a-real-id")).status()).toBe(404);
 
     await page.getByRole("link", { name: /양자리 완성/ }).click();
     await expect(page).toHaveURL(/\/ranking\/aries$/, { timeout: 60_000 });
@@ -233,5 +243,8 @@ test.describe("이번 주 행운 번호", () => {
     await page.reload();
     await expect(balls).toHaveCount(6);
     expect(await balls.allTextContents()).toEqual(first);
+    const image = await page.request.get(`/api/og/lucky?n=${first.map((n) => n.trim()).join("-")}&w=2026-09-28`, { timeout: 120_000 });
+    expect(image.status()).toBe(200);
+    expect(image.headers()["content-type"]).toBe("image/png");
   });
 });

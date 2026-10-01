@@ -21,13 +21,13 @@ type Me = { owner: null } | OwnerView;
  * page is opened. Before the start: 별자리 인연 시작하기 and 초대코드로 참여. Secondary styles only (the
  * home keeps its one gold primary). Renders nothing while loading, on an error, or with the feature off.
  */
-export function BondsHomeRow({ enabled = SITE.features.bonds }: { enabled?: boolean }) {
+export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { enabled?: boolean; className?: string }) {
   const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
     let live = true;
-    void bondsApi<Me>("me").then((result) => {
+    void bondsApi<Me>("me?view=home").then((result) => {
       if (!live || !result.ok) return;
       const { ok: _ok, ...data } = result;
       setMe(data as Me);
@@ -38,12 +38,13 @@ export function BondsHomeRow({ enabled = SITE.features.bonds }: { enabled?: bool
   }, [enabled]);
 
   if (!enabled || !me) return null;
-  if (me.owner === null) return <StartRow />;
+  const rowClass = [s.row, className].filter(Boolean).join(" ");
+  if (me.owner === null) return <StartRow className={rowClass} />;
 
   const filling = me.filling;
   if (!filling) {
     return (
-      <section className={s.row} aria-labelledby="bonds-home-title">
+      <section className={rowClass} aria-labelledby="bonds-home-title">
         <Link href="/bonds" className={s.main}>
           <span className={s.text}>
             <span id="bonds-home-title" className={s.title}>
@@ -64,7 +65,7 @@ export function BondsHomeRow({ enabled = SITE.features.bonds }: { enabled?: bool
   const badge = `${def.ko} ${filling.stars.length}/${def.slots} · ${total}점`;
 
   return (
-    <section className={s.row} aria-labelledby="bonds-home-title">
+    <section className={rowClass} aria-labelledby="bonds-home-title">
       <Link href="/bonds" className={s.main} aria-label={`별자리 인연, ${badge}${newSlots.length ? `, 새 별 ${newSlots.length}개` : ""}`}>
         <ConstellationArt sign={def.id} lit={filling.stars.map((star) => star.slot)} newSlots={newSlots} size={64} decorative className={s.art} />
         <span className={s.text}>
@@ -82,12 +83,12 @@ export function BondsHomeRow({ enabled = SITE.features.bonds }: { enabled?: bool
   );
 }
 
-function StartRow() {
+function StartRow({ className }: { className: string }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   return (
-    <section className={s.row} aria-labelledby="bonds-home-title">
+    <section className={className} aria-labelledby="bonds-home-title">
       <div className={s.text}>
         <span id="bonds-home-title" className={s.title}>
           별자리 인연

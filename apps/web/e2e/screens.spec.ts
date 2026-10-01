@@ -1,5 +1,5 @@
 import { mkdirSync, writeFileSync } from "node:fs";
-import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { expect, request as playwrightRequest, test, type Page, type TestInfo } from "@playwright/test";
 
 /**
  * Screen sweep (@screens): a full-height screenshot of every route per viewport project
@@ -105,6 +105,28 @@ async function sajuChapter(page: Page, id: string, age = 0) {
   return { id, kind: "saju", createdAt: Date.now() - age * DAY_MS, chapterToken: res.chapterToken, turns: [], followUpsLeft: 3, birth: BIRTH, title: teaser.title, summary: teaser.summary, reading: res.reading };
 }
 
+const BOND_FRIENDS = [
+  { nickname: "민지", birth: { calendar: "solar", year: 1991, month: 5, day: 12 } },
+  { nickname: "하늘이", birth: { calendar: "solar", year: 1992, month: 8, day: 3 } },
+  { nickname: "도윤", birth: { calendar: "solar", year: 1988, month: 11, day: 20 } },
+  { nickname: "서아", birth: { calendar: "solar", year: 1995, month: 2, day: 28 } },
+];
+
+/** A 별자리 인연 owner on this device (용우, `sign` chosen) with `stars` friends joined from their own devices; the invite code. */
+async function bondsOwner(page: Page, stars: number, sign = "aries"): Promise<string> {
+  await ownAddress(page);
+  const owner = await page.request.post("/api/bonds/owner", { data: { nickname: "용우", birth: { calendar: "solar", year: 1990, month: 1, day: 1 } } });
+  const { code } = (await owner.json()) as { code: string };
+  await page.request.post("/api/bonds/choose", { data: { sign } });
+  for (const [i, friend] of BOND_FRIENDS.slice(0, stars).entries()) {
+    const n = Math.floor(Math.random() * 250);
+    const device = await playwrightRequest.newContext({ baseURL: test.info().project.use.baseURL, extraHTTPHeaders: { "x-forwarded-for": `10.6.${n}.${i + 1}` } });
+    await device.post("/api/bonds/join", { data: { ...friend, code, pick: i * 3 } });
+    await device.dispose();
+  }
+  return code;
+}
+
 /** Holds a request open (the waiting screens). */
 const hold = (page: Page, pattern: string) => page.route(pattern, () => new Promise<void>(() => {}));
 
@@ -116,6 +138,26 @@ const waitForSheet = (page: Page) => expect(page.getByRole("region", { name: "�
 const SCREENS: Screen[] = [
   { name: "home", path: "/" },
   { name: "home-checkin", path: "/", setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await tarotChapter(page, "screenaa01", 4)]) },
+  { name: "home-bonds", path: "/", setup: async (page) => void (await bondsOwner(page, 2)) },
+  { name: "bonds-start", path: "/bonds", setup: ownAddress },
+  { name: "bonds-filling", path: "/bonds", setup: async (page) => void (await bondsOwner(page, 2)) },
+  { name: "bonds-complete", path: "/bonds", setup: async (page) => void (await bondsOwner(page, 4)) },
+  { name: "bonds-ranking", path: "/ranking/aries", setup: async (page) => void (await bondsOwner(page, 4)) },
+  { name: "bonds-code", path: "/b", setup: ownAddress },
+  {
+    name: "bonds-join",
+    path: "/b",
+    setup: ownAddress,
+    prepare: async (page) => {
+      const owner = await playwrightRequest.newContext({ baseURL: test.info().project.use.baseURL, extraHTTPHeaders: { "x-forwarded-for": "10.7.0.1" } });
+      const { code } = (await (await owner.post("/api/bonds/owner", { data: { nickname: "용우", birth: { calendar: "solar", year: 1990, month: 1, day: 1 } } })).json()) as { code: string };
+      await owner.post("/api/bonds/choose", { data: { sign: "leo" } });
+      await owner.dispose();
+      await page.goto(`/b/${code}`);
+      await page.waitForLoadState("networkidle");
+    },
+  },
+  { name: "lucky", path: "/lucky", setup: ownAddress },
   { name: "tarot-new", path: "/tarot/new" },
   { name: "tarot-new-filled", path: "/tarot/new", setup: (page) => seedFlow(page, FLOW) },
   { name: "tarot-new-custom", path: "/tarot/new", setup: (page) => seedFlow(page, FLOW_CUSTOM) },

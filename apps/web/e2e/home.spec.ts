@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Home layout (design pass): the owner's reading order — hero, 타로, 사주, the two quick cards, the
- * guide, the FAQ — with both paid entries above the fold, and the navigation in the right place for
+ * Home layout (design pass): the owner's reading order — hero, 타로, 사주, the two quick cards,
+ * 별자리 인연, the guide, the FAQ — with both paid entries above the fold, and the navigation in the right place for
  * the width (bottom bar on phones, top-right pills from 1024px).
  */
 
-test("home: hero, then 타로 · 사주 above the fold, quick cards, guide, FAQ, in that order", async ({ page }) => {
+test("home: hero, then 타로 · 사주 above the fold, quick cards, 별자리 인연, guide, FAQ, in that order", async ({ page }) => {
   await page.goto("/");
   const main = page.getByRole("main");
   const h1 = page.getByRole("heading", { level: 1 });
@@ -21,18 +21,24 @@ test("home: hero, then 타로 · 사주 above the fold, quick cards, guide, FAQ,
   await expect(saju).toHaveAttribute("href", "/saju/new");
   await expect(now).toHaveAttribute("href", "/now");
   await expect(today).toHaveAttribute("href", "/today");
+  // 별자리 인연 loads this device's state first; a new visitor gets the start link and the code entry.
+  const bondsStart = main.getByRole("link", { name: "별자리 인연 시작하기" });
+  await expect(bondsStart).toHaveAttribute("href", "/bonds");
+  await expect(main.getByLabel("초대코드로 참여")).toBeVisible();
 
   const box = async (locator: typeof tarot) => (await locator.boundingBox())!;
   const [h1Box, tarotBox, sajuBox, nowBox, todayBox] = await Promise.all([box(h1), box(tarot), box(saju), box(now), box(today)]);
   const guide = await box(page.getByRole("heading", { level: 2, name: "알아 두면 좋은 이야기" }));
   const faq = await box(page.getByRole("heading", { level: 2, name: "자주 묻는 질문" }));
+  const bonds = await box(main.locator("section[aria-labelledby='bonds-home-title']"));
 
   // Reading order top to bottom (타로 and 사주 may share a row on desktop, 타로 first).
   expect(h1Box.y).toBeLessThan(tarotBox.y);
   expect(tarotBox.y).toBeLessThanOrEqual(sajuBox.y);
   if (tarotBox.y === sajuBox.y) expect(tarotBox.x).toBeLessThan(sajuBox.x);
   expect(sajuBox.y + sajuBox.height).toBeLessThanOrEqual(nowBox.y);
-  expect(guide.y).toBeGreaterThan(nowBox.y + nowBox.height);
+  expect(bonds.y).toBeGreaterThanOrEqual(nowBox.y + nowBox.height);
+  expect(guide.y).toBeGreaterThan(bonds.y + bonds.height);
   expect(faq.y).toBeGreaterThan(guide.y);
 
   // Both paid entries above the fold, and visibly bigger than the quick cards.
