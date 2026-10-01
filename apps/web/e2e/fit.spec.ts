@@ -6,7 +6,7 @@ import { expect, test, type Page } from "@playwright/test";
  * is cut off at the right edge without ever raising document.scrollWidth.
  */
 const WIDTHS = [360, 375];
-const PATHS = ["/"];
+const PATHS = ["/", "/guide/tarot", "/help", "/faq"];
 
 async function measure(page: Page) {
   return page.evaluate(() => {

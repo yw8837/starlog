@@ -3,7 +3,8 @@
 .index {
   display: grid;
   gap: 22px;
-  max-width: 880px;
+  /* Desktop: the header's 1040px column, so the hero lines up under the wordmark. */
+  max-width: var(--content-max);
   margin: 0 auto;
   padding: 16px 0 8px;
 }

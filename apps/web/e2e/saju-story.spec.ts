@@ -269,7 +269,7 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await shot(page, info, "18-guide");
   await guideTabs.getByRole("link", { name: "사주" }).click();
   await expect(page).toHaveURL(/\/guide\/saju$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("사주 가이드");
+  await expect(page.getByRole("heading", { level: 2, name: "사주 가이드" })).toBeVisible();
   await expect(articles).toHaveCount(2);
   await guideTabs.getByRole("link", { name: "타로" }).click();
   await page.getByRole("link", { name: /은둔자 카드 이야기/ }).click();

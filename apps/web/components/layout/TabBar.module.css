@@ -147,6 +147,8 @@
   .pill {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    min-width: 64px;
     min-height: 44px;
     padding: 0 18px;
     border-radius: 999px;

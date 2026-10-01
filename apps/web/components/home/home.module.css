@@ -76,27 +76,21 @@
   margin-top: 4px;
 }
 
+/* Each half of the sentence on its own line; the size follows the phone so the longer half fits. */
 .heroTitle {
-  font-size: 24px;
+  font-size: clamp(21px, 6.2vw, 26px);
   line-height: 1.38;
   letter-spacing: -0.01em;
+}
+
+.heroLine {
+  display: block;
 }
 
 .heroSub {
   color: var(--ink-sub);
   font-size: 14px;
   line-height: 1.6;
-}
-
-/* Wide enough for each half on its own line: break where the sentence breaks. */
-@media (min-width: 600px) {
-  .heroLine {
-    display: block;
-  }
-
-  .heroTitle {
-    font-size: 26px;
-  }
 }
 
 @media (min-width: 1024px) {
