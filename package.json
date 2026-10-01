@@ -16,7 +16,8 @@
     "e2e": "pnpm --filter @starlog/web e2e",
     "e2e:screens": "pnpm --filter @starlog/web e2e:screens",
     "kb:runtime": "node scripts/build-kb-runtime.mjs",
-    "ai:smoke": "vitest run -c vitest.smoke.config.ts"
+    "ai:smoke": "vitest run -c vitest.smoke.config.ts",
+    "indexnow": "node scripts/indexnow.mjs"
   },
   "devDependencies": {
     "@types/node": "24.19.0",
