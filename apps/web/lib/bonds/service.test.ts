@@ -372,4 +372,20 @@ describe("bonds service", () => {
     expect(later).toMatchObject({ kind: "open", sign: "taurus", earlier: { sign: "aries", completed: true } });
     await expect(invitePage(repo, "ZZZZZZ", { ownerId: null, friendKey: null })).rejects.toMatchObject({ code: "BAD_CODE" });
   });
+
+  it("lists the top 20 and still gives a viewer further down their own rank", async () => {
+    const { repo, t0 } = await setup();
+    for (let i = 0; i < 25; i++) {
+      await repo.upsertOwner({ id: `r${i}`, nickname: `주인${i}`, rankingPublic: true, basis: (await repo.getOwner("o1"))!.basis, lastRefillAt: null, createdAt: 1, joinsDay: null, joinsCount: 0 });
+      await repo.insertConstellation({ id: `rc${i}`, ownerId: `r${i}`, sign: "aries", status: "complete", total: 400 - i, startedAt: t0, completedAt: t0 + i });
+    }
+    const top = await rankingView(repo, t0 + 100, "aries", null);
+    expect(top.week).toHaveLength(20);
+    expect(top.all.map((r) => r.rank)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+    const far = await rankingView(repo, t0 + 100, "aries", "r24");
+    expect(far.mine).toMatchObject({ weekRank: 25, allRank: 25, row: { total: 376 } });
+    expect(far.week.some((r) => r.mine)).toBe(false);
+    const near = await rankingView(repo, t0 + 100, "aries", "r2");
+    expect(near.week.find((r) => r.mine)).toMatchObject({ rank: 3, nickname: "주인2" });
+  });
 });

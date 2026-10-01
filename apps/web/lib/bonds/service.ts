@@ -4,7 +4,7 @@ import {
   seededRandom,
   type BondBasis, type BondBirth, type BondPart, type Orientation, type SignId,
 } from "@starlog/core";
-import type { BondsRepo, ConstellationRow, InviteRow, OwnerRow, StarRow } from "@/lib/db/bondsRepo";
+import type { BondsRepo, ConstellationRow, InviteRow, OwnerRow, RankingEntry, StarRow } from "@/lib/db/bondsRepo";
 import { kstDay } from "@/lib/security/quota";
 import { randomId } from "@/lib/security/sign";
 import { bondCardLine } from "./bondCardText";
@@ -41,7 +41,8 @@ export const DAILY_ACTION_LIMIT = 20;
 /** 코드 새로 만들기 per owner per hour */
 export const INVITES_PER_HOUR = 5;
 const HOUR_MS = 60 * 60 * 1000;
-export const RANKING_LIMIT = 50;
+/** Rows shown per ranking (podium 1-3, list 4-20); anyone further down sees their own rank in 내 순위. */
+export const RANKING_LIMIT = 20;
 const TOP_STARS = 5;
 /** The friend picks from a fan of 21 face-down cards spread through a 78-card deck (components/tarot/CardFan). */
 const FAN_SIZE = 21;
@@ -478,15 +479,30 @@ export interface RankingView {
   invite: { code: string } | null;
 }
 
-export async function rankingView(repo: BondsRepo, now: number, sign: SignId, ownerId: string | null): Promise<RankingView> {
+/** The public part of a sign's ranking: this week's and all-time top RANKING_LIMIT (cacheable; ids stay server-side). */
+export interface RankingBoards {
+  week: RankingEntry[];
+  all: RankingEntry[];
+}
+
+export async function rankingBoards(repo: BondsRepo, now: number, sign: SignId): Promise<RankingBoards> {
+  const [week, all] = await Promise.all([repo.ranking(sign, weekStart(now), RANKING_LIMIT), repo.ranking(sign, null, RANKING_LIMIT)]);
+  return { week, all };
+}
+
+/**
+ * One sign's ranking for this viewer: the top lists (from `boards` when given, e.g. the edge cache) and
+ * the viewer's own record. Their rank is looked up even beyond the lists, and only when they have a
+ * completed constellation of the sign.
+ */
+export async function rankingView(repo: BondsRepo, now: number, sign: SignId, ownerId: string | null, boards?: RankingBoards): Promise<RankingView> {
   if (!isSignId(sign)) throw new BondsError("NOT_FOUND");
   const since = weekStart(now);
   const owner = ownerId ? await repo.getOwner(ownerId) : null;
   const done = owner ? (await repo.completedOf(owner.id)).find((c) => c.sign === sign) ?? null : null;
   const fillingRow = owner ? await repo.fillingOf(owner.id) : null;
-  const [weekRows, allRows, doneStars, fillingStars, invite] = await Promise.all([
-    repo.ranking(sign, since, RANKING_LIMIT),
-    repo.ranking(sign, null, RANKING_LIMIT),
+  const [{ week: weekRows, all: allRows }, doneStars, fillingStars, invite] = await Promise.all([
+    boards ?? rankingBoards(repo, now, sign),
     done ? repo.starsOf(done.id) : Promise.resolve([]),
     fillingRow ? repo.starsOf(fillingRow.id) : Promise.resolve([]),
     owner ? repo.activeInvite(owner.id) : Promise.resolve(null),
