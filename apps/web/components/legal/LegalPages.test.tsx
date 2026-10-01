@@ -64,6 +64,45 @@ describe("policy pages", () => {
     expect(on).toContain("풀이 화면에는 광고를 싣지 않습니다");
   });
 
+  it("privacy: discloses 별자리 인연 (stored items, public ranking, share images, D1, retention, age) while it is live", () => {
+    expect(SITE.features.bonds).toBe(true);
+    const { container } = render(<PrivacyPage />);
+    const text = container.textContent ?? "";
+    for (const phrase of [
+      "별자리 인연",
+      "닉네임",
+      "한 줄",
+      "인연 점수",
+      "생년월일은 점수를 계산하는 데만 쓰고 저장하지 않습니다",
+      "랭킹",
+      "공유 이미지",
+      "새로 채우거나 바꾸면 이전 별은 삭제",
+      "만 14세 이상인지 확인합니다",
+      "sl_uid",
+      "sl_fid",
+    ]) {
+      expect(text).toContain(phrase);
+    }
+    const cloudflare = container.querySelector('[aria-label="Cloudflare, Inc."]')?.textContent ?? "";
+    expect(cloudflare).toContain("Cloudflare D1");
+    expect(cloudflare).toMatch(/별자리 인연 정보의 저장/);
+    // sections stay numbered in order once 별자리 인연 is section 4
+    const titles = [...container.querySelectorAll("h2")].map((h) => h.textContent ?? "");
+    expect(titles.map((t) => Number(t.split(".")[0])).filter(Boolean)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(text).toContain("쿠키(아래 6항)");
+  });
+
+  it("terms: lists 별자리 인연 with its nickname and message rules and the owner's right to remove stars", () => {
+    const { container } = render(<TermsPage />);
+    const text = container.textContent ?? "";
+    expect(text).toContain("별자리 인연: 친구 초대");
+    expect(text).toContain("닉네임은 2~10자로");
+    expect(text).toContain("한 줄(40자 이내)");
+    expect(text).toContain("자기 별자리의 별을 언제든 지울 수 있습니다");
+    expect(text).toContain("모든 번호의 확률이 같습니다");
+    expect(text).not.toContain("로또");
+  });
+
   it("terms: calls readings entertainment, not professional advice, and sets the age at 14", () => {
     const { container } = render(<TermsPage />);
     const text = container.textContent ?? "";
