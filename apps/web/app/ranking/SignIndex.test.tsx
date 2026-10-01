@@ -25,7 +25,10 @@ describe("별자리 리더보드 (/ranking)", () => {
     const all = screen.getAllByRole("link", { name: /전체 순위$/ });
     expect(all.map((a) => a.getAttribute("href"))).toEqual(CONSTELLATIONS.map((c) => `/ranking/${c.id}`));
     expect(screen.getByRole("heading", { level: 2, name: "양자리" })).toBeTruthy();
-    expect(screen.getByText("3월 21일 ~ 4월 19일")).toBeTruthy();
+    const aries = screen.getByRole("heading", { level: 2, name: "양자리" }).closest("li")!;
+    expect(aries.textContent).toContain("3월 21일 ~ 4월 19일");
+    // each date is one unbreakable piece
+    expect([...aries.querySelectorAll("p span")].map((el) => el.textContent)).toEqual(["3월 21일", "4월 19일"]);
   });
 
   it("lists this week's 1·2·3 with nickname and total", () => {

@@ -8,14 +8,17 @@ import { savedSunSign } from "@/lib/bonds/client";
 import type { LeaderView } from "@/lib/bonds/service";
 import s from "./SignIndex.module.css";
 
-/** "3월 21일 ~ 4월 19일": from the sign's first day to the day before the next sign starts. */
-export function signDates(sign: ConstellationDef): string {
+/** The sign's first and last day: ["3월 21일", "4월 19일"] (the last is the day before the next sign starts). */
+export function signDateParts(sign: ConstellationDef): [string, string] {
   const index = CONSTELLATIONS.findIndex((c) => c.id === sign.id);
   const next = CONSTELLATIONS[(index + 1) % CONSTELLATIONS.length]!;
   // A non-leap year: the day before 3월 1일 would be 2월 28일.
   const end = new Date(Date.UTC(2001, next.from[0] - 1, next.from[1]) - 86_400_000);
-  return `${sign.from[0]}월 ${sign.from[1]}일 ~ ${end.getUTCMonth() + 1}월 ${end.getUTCDate()}일`;
+  return [`${sign.from[0]}월 ${sign.from[1]}일`, `${end.getUTCMonth() + 1}월 ${end.getUTCDate()}일`];
 }
+
+/** "3월 21일 ~ 4월 19일" */
+export const signDates = (sign: ConstellationDef) => signDateParts(sign).join(" ~ ");
 
 type SignIndexProps = {
   /** this week's top 3 per sign; null when they could not be read (cards without names) */
@@ -42,7 +45,9 @@ export function SignIndex({ leaders }: SignIndexProps) {
                 <h2 id={`sign-${c.id}`} className={s.name}>
                   {c.ko}
                 </h2>
-                <p className={s.dates}>{signDates(c)}</p>
+                <p className={s.dates}>
+                  <span className={s.date}>{signDateParts(c)[0]}</span> ~ <span className={s.date}>{signDateParts(c)[1]}</span>
+                </p>
               </div>
             </div>
             {leaders === null ? (
