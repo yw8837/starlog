@@ -150,7 +150,7 @@ describe("/faq", () => {
 
   it("answers the doubts people have before paying", () => {
     const questions = faqGroups().flatMap((group) => group.entries.map((entry) => entry.q));
-    for (const topic of ["무료", "열기 전에", "ChatGPT", "매번", "저장", "태어난 시간", "환불", "기록", "미성년자", "광고"]) {
+    for (const topic of ["무료", "열기 전에", "AI 챗봇", "매번", "저장", "태어난 시간", "환불", "기록", "미성년자", "광고"]) {
       expect(questions.some((q) => q.includes(topic))).toBe(true);
     }
   });

@@ -8,7 +8,7 @@ import s from "./legal.module.css";
 
 type LegalPageProps = {
   title: string;
-  /** Small pill after the title (e.g. "베타"). */
+  /** Small pill after the title (e.g. "개정"). */
   badge?: string;
   lead?: ReactNode;
   /** ISO date; shown as "시행일 2026년 10월 1일". */

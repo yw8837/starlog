@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
+import { times } from "@/lib/helpGuide";
 import type { ErrorView } from "@/lib/reading/errors";
 import s from "./UnlockSheet.module.css";
 
@@ -30,8 +31,8 @@ const CheckIcon = () => (
 );
 
 /**
- * Beta unlock: what the full reading holds (length, follow-ups, kept on this device) before the
- * one gold button that opens it. Free during the beta, within the day's count.
+ * The unlock: what the full reading holds (length, follow-ups, kept on this device) before the one
+ * gold button that opens it, and the 오픈 기념 free count (when used up, when it refills).
  */
 export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, editHref, openedHref }: UnlockSheetProps) {
   const chars = new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars[kind]);
@@ -117,7 +118,7 @@ export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, edit
           ) : null}
         </div>
       ) : usedUp && !openedHref ? (
-        <p className={s.limit}>오늘 열 수 있는 풀이를 모두 열었어요 · 내일 0시에 다시 열려요</p>
+        <p className={s.limit}>오늘 무료로 열 수 있는 풀이를 모두 열었어요 · 한국 시간 0시에 다시 채워져요</p>
       ) : null}
 
       <div className={s.actions}>
@@ -127,7 +128,7 @@ export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, edit
             질문 고치기
           </Button>
         ) : null}
-        <p className={s.caption}>베타 기간에는 무료예요</p>
+        <p className={s.caption}>{`오픈 기념으로 하루 ${times(SITE.beta.fullPerDay)} 무료예요`}</p>
       </div>
     </section>
   );

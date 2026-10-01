@@ -53,7 +53,7 @@ test("home: guide split 타로 / 사주 and four FAQ questions that open in plac
   const questions = faq.locator("summary");
   await expect(questions).toHaveCount(4);
   await questions.first().click();
-  await expect(faq.getByText(/베타 기간에는 모든 풀이가 무료예요/)).toBeVisible();
+  await expect(faq.getByText(/오픈 기념으로 타로와 사주 전체 풀이를/)).toBeVisible();
   await expect(faq.getByRole("link", { name: /전체 FAQ 보기/ })).toHaveAttribute("href", "/faq");
 });
 

@@ -80,7 +80,7 @@ export default function PrivacyPage() {
       <LegalNote>
         <p className={s.noteTitle}>한눈에 보기</p>
         <p>
-          베타 기간에는 로그인이 없어 이름이나 연락처를 받지 않습니다. 풀이에 쓰는 질문과 출생 정보는 풀이를 만드는 동안에만 운영자의 서버를 거쳐 AI
+          지금은 로그인이 없어 이름이나 연락처를 받지 않습니다. 풀이에 쓰는 질문과 출생 정보는 풀이를 만드는 동안에만 운영자의 서버를 거쳐 AI
           사업자에게 전달되고, 운영자의 서버에는 저장하지 않습니다. 연 풀이와 입력한 정보는 이용 중인 기기의 브라우저에 남습니다.
         </p>
       </LegalNote>
@@ -220,7 +220,7 @@ export default function PrivacyPage() {
             ...contacts,
           ]}
         />
-        {contacts.length > 0 ? null : <p className={s.muted}>연락처는 결제가 열리기 전에 이 자리에 안내합니다.</p>}
+        {contacts.length > 0 ? null : <p className={s.muted}>연락처는 이 자리에 안내합니다.</p>}
       </LegalSection>
 
       <LegalSection id="remedies" title="10. 권익침해 구제 방법">

@@ -11,7 +11,7 @@ const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 export const metadata: Metadata = {
   title: "가격 안내",
-  description: `타로 심층 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 베타 기간의 무료 범위와 ${currency.paid} 충전 상품, 결제 수단을 안내해요.`,
+  description: `타로 심층 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 오픈 기념 무료 범위와 ${currency.paid} 충전 상품, 결제 수단을 안내해요.`,
   alternates: { canonical: "/pricing" },
 };
 
@@ -45,8 +45,8 @@ export default function PricingPage() {
   return (
     <LegalPage title="가격 안내" lead="풀이 한 번의 가격과 무료로 볼 수 있는 부분, 달빛과 별조각을 한곳에 모았어요.">
       <LegalNote>
-        <p className={s.noteTitle}>지금은 베타 기간이라 무료예요.</p>
-        <p>{`전체 풀이를 하루 ${times(beta.fullPerDay)} 무료로 열 수 있어요. 결제는 심사 완료 후 열려요. 결제가 열리기 전이나 가격이 바뀔 때는 이 페이지에 먼저 알려 드려요.`}</p>
+        <p className={s.noteTitle}>{`오픈 기념으로 하루 ${times(beta.fullPerDay)} 전체 풀이를 무료로 열어 드려요.`}</p>
+        <p>한국 시간 0시에 다시 채워져요. 가격이 바뀔 때는 이 페이지에 먼저 알려 드려요.</p>
       </LegalNote>
 
       <LegalSection id="readings" title="풀이 가격">
@@ -97,12 +97,12 @@ export default function PricingPage() {
             </section>
           ))}
         </div>
-        <p>준비 중인 풀이는 아직 결제할 수 없어요. 열리기 전에 담기는 내용과 함께 이 페이지에 먼저 알려 드려요.</p>
+        <p>준비 중인 풀이는 열기 전에 담기는 내용과 함께 이 페이지에 먼저 알려 드려요.</p>
       </LegalSection>
 
       <LegalSection id="free" title="무료로 볼 수 있는 부분">
         <ul className={s.list}>
-          <li>{`베타 기간에는 타로와 사주 전체 풀이를 합쳐 하루 ${times(beta.fullPerDay)} 무료로 열 수 있어요. 한국 시간 0시에 다시 채워져요.`}</li>
+          <li>{`오픈 기념으로 타로와 사주 전체 풀이를 합쳐 하루 ${times(beta.fullPerDay)} 무료로 열 수 있어요. 한국 시간 0시에 다시 채워져요.`}</li>
           <li>{`타로는 뽑은 카드 3장과 첫 풀이, 이어지는 풀이의 소제목을 먼저 무료로 볼 수 있어요. 첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 볼 수 있어요.`}</li>
           <li>사주는 명식(네 기둥, 오행 분포, 일간)과 첫 장 요약을 무료로 볼 수 있어요.</li>
           <li>지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요.</li>

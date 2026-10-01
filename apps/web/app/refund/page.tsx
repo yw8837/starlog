@@ -39,9 +39,9 @@ export default function RefundPage() {
       lead={`${SITE.nameKo}의 풀이는 디지털 콘텐츠예요. 결제하기 전에 알아 두면 좋은 청약철회와 환불 기준을 정리했어요.`}
     >
       <LegalNote>
-        <p className={s.noteTitle}>지금은 베타 기간이라 결제가 없어요.</p>
+        <p className={s.noteTitle}>오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요.</p>
         <p>
-          풀이를 무료로 열고, 풀이가 제대로 만들어지지 않으면 그날 열 수 있는 횟수도 차감하지 않아요. 아래 기준은 결제가 열린 뒤의 유료 풀이와{" "}
+          풀이가 제대로 만들어지지 않으면 그날 무료로 열 수 있는 횟수도 차감하지 않아요. 아래 기준은 유료 풀이와{" "}
           {`${paid} 충전에 적용해요.`}
         </p>
       </LegalNote>
@@ -103,7 +103,7 @@ export default function RefundPage() {
       </LegalSection>
 
       <LegalSection id="contact" title="문의처">
-        {contacts.length > 0 ? null : <p>환불 신청과 문의를 받을 연락처는 결제가 열리기 전에 이 자리에 안내해 드려요.</p>}
+        {contacts.length > 0 ? null : <p>환불 신청과 문의를 받을 연락처는 이 자리에 안내해 드려요.</p>}
         <BusinessFacts />
       </LegalSection>
 

@@ -1,4 +1,5 @@
-// Fails when paid reading text reaches the client bundle (apps/web/.next/static).
+// Fails when paid reading text reaches the client bundle (apps/web/.next/static), or when an AI
+// model or vendor name does (model names stay blind on every user surface; ids like claude-…).
 // Paid text may only travel as server-rendered props of an opened chapter, never in static JS/CSS.
 // usage: pnpm check:bundle   (after `pnpm build`; `pnpm build` runs it too)
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -42,6 +43,9 @@ for (const file of samples) {
   }
 }
 
+/** Model and vendor names that must never ship to the browser (case-sensitive, as written). */
+const blindProbes = ["claude-", "Claude", "클로드", "Opus", "오푸스", "Sonnet", "GPT", "Gemini"];
+
 if (!existsSync(staticDir)) {
   console.error(`check-client-bundle: ${relative(root, staticDir)} not found. Run \`pnpm build\` first.`);
   process.exit(2);
@@ -75,11 +79,14 @@ for (const path of files(staticDir)) {
   for (const probe of probes) {
     if (forms(probe).some((form) => text.includes(form))) hits.push(`${relative(root, path)}: ${probe}`);
   }
+  for (const name of blindProbes) {
+    if (forms(name).some((form) => text.includes(form))) hits.push(`${relative(root, path)}: model/vendor name "${name}"`);
+  }
 }
 
 if (hits.length > 0) {
-  console.error(`check-client-bundle: paid text found in the client bundle (${hits.length} hits):`);
+  console.error(`check-client-bundle: paid text or a model name found in the client bundle (${hits.length} hits):`);
   for (const hit of hits) console.error(`  ${hit}`);
   process.exit(1);
 }
-console.log(`check-client-bundle: ok, ${probes.length} paid-text probes, ${scanned} static files, 0 hits`);
+console.log(`check-client-bundle: ok, ${probes.length} paid-text probes, ${blindProbes.length} model-name probes, ${scanned} static files, 0 hits`);

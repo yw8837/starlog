@@ -52,7 +52,7 @@ describe("policies match what the service does", () => {
     const text = textOf(RefundPage);
     expect(text).toContain("제17조 제6항");
     expect(text).toContain("시행령 제21조의2");
-    expect(text).toContain("지금은 베타 기간이라 결제가 없어요");
+    expect(text).toContain("오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요");
     expect(text).toContain("자동 품질 검사를 통과하지 못해");
   });
 });

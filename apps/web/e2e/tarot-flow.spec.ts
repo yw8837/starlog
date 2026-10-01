@@ -6,6 +6,9 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
  * reading is saved on this device and survives a reload, follow-ups go through /api/followup.
  */
 
+/** Client navigations wait for `next dev` to compile the next route, which is slow on this disk. */
+const NAV = 30_000;
+
 const SHOTS = "test-results/tarot-flow";
 
 async function shot(page: Page, info: TestInfo, name: string) {
@@ -58,12 +61,12 @@ async function buildMoneyQuestion(page: Page, info: TestInfo) {
   await shot(page, info, "01-question-typed-when");
   await page.getByRole("button", { name: "다음" }).click();
 
-  await expect(page).toHaveURL(/\/tarot\/new\/situation$/);
+  await expect(page).toHaveURL(/\/tarot\/new\/situation$/, { timeout: NAV });
   await page.getByRole("button", { name: "지금은 수입이 없음" }).click();
   await page.getByLabel("한 줄 메모").fill("퇴사하고 두 달째 쉬는 중이에요");
   await page.getByRole("button", { name: "카드 뽑기" }).click();
   // Nothing the user typed or chose travels in the URL.
-  await expect(page).toHaveURL(/\/tarot\/draw$/);
+  await expect(page).toHaveURL(/\/tarot\/draw$/, { timeout: NAV });
 }
 
 /** Picks three fan cards and returns the cards the server dealt for them. */
@@ -85,7 +88,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await buildMoneyQuestion(page, info);
   const cards = await drawThree(page);
 
-  await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/);
+  await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("다음 주 금요일 면접, 나의 재물 흐름은 어떨까");
   const spread = page.getByRole("complementary", { name: "뽑은 카드" });
   for (const card of cards) await expect(spread.locator(`img[src*="/cards/${card.cardId}"]`)).toBeVisible();
@@ -98,7 +101,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(sheet).toContainText("풀이 전체 · 약 2,000자");
   await expect(sheet).toContainText("이어서 물어보기 3번");
   await expect(sheet).toContainText("이 기기에 계속 보관");
-  await expect(sheet).toContainText("베타 기간에는 무료예요");
+  await expect(sheet).toContainText(/오픈 기념으로 하루 .+ 무료예요/);
   await expect(sheet.getByRole("link")).toHaveCount(0);
   const unlock = sheet.getByRole("button", { name: /^전체 풀이 보기 · 오늘 \d+번 남았어요$/ });
   await expect(unlock).toBeVisible();
@@ -149,7 +152,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(records.first()).toContainText("다음 주 금요일 면접, 나의 재물 흐름은 어떨까");
   await expect(records.first()).toContainText(verdict.slice(0, 10));
   await records.first().getByRole("link").click();
-  await expect(page).toHaveURL(readingUrl);
+  await expect(page).toHaveURL(readingUrl, { timeout: NAV });
 });
 
 test("the daily limit: opening past it says when it resets, no reading is shown", async ({ page }, info) => {

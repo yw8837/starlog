@@ -18,7 +18,7 @@ export default function TermsPage() {
   const hasContact = contactChannels().length > 0;
 
   return (
-    <LegalPage title="이용약관" badge="베타" effective={LEGAL_EFFECTIVE_DATE}>
+    <LegalPage title="이용약관" effective={LEGAL_EFFECTIVE_DATE}>
       <LegalSection id="purpose" title="제1조 (목적)">
         <p>
           {`이 약관은 ${SITE.business.name}(이하 “운영자”)가 제공하는 ${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건과 절차, 운영자와 이용자의 권리·의무와 책임을 정합니다.`}
@@ -59,7 +59,7 @@ export default function TermsPage() {
           <li>풀이는 오락과 자기 성찰을 위한 참고 콘텐츠입니다. 의료·법률·투자·진로 등 전문적인 판단을 대신하지 않으며, 중요한 결정은 해당 분야의 전문가와 상의하시기 바랍니다.</li>
           <li>풀이는 AI가 생성하므로 부정확하거나 이용자의 실제 상황과 맞지 않는 내용이 들어 있을 수 있습니다.</li>
           <li>
-            {`베타 기간에는 로그인과 결제를 준비하고 있으며, 풀이는 하루 이용 횟수 안에서 무료로 제공합니다. 이용 횟수는 서비스 화면과 `}
+            {`운영자는 오픈 기념으로 하루 이용 횟수 안에서 전체 풀이를 무료로 제공합니다. 이용 횟수는 서비스 화면과 `}
             <Link href="/pricing">가격 안내</Link>
             {"에 표시합니다."}
           </li>
@@ -68,7 +68,7 @@ export default function TermsPage() {
 
       <LegalSection id="ai" title="제4조의2 (AI가 만든 콘텐츠의 표시)">
         <ol className={s.list}>
-          <li>타로·사주 풀이, 후속 질문의 답, 오늘의 한 장은 생성형 인공지능(Anthropic의 Claude)이 만든 결과물입니다. 사주 명식은 운영자의 계산 프로그램이 먼저 계산하고, AI는 그 결과를 바탕으로 풀이를 씁니다.</li>
+          <li>타로·사주 풀이, 후속 질문의 답, 오늘의 한 장은 생성형 인공지능이 만든 결과물입니다. 사주 명식은 운영자의 계산 프로그램이 먼저 계산하고, AI는 그 결과를 바탕으로 풀이를 씁니다.</li>
           <li>운영자는 「인공지능 발전과 신뢰 기반 조성 등에 관한 기본법」 제31조에 따라 이 약관과 서비스 화면으로 생성형 인공지능을 쓴다는 사실을 미리 알리고, 풀이 화면마다 AI가 만든 풀이라는 사실을 표시합니다.</li>
           <li>지금의 한 장은 운영자가 카드마다 미리 준비한 문장 가운데 하나를 보여 주며, 요청할 때마다 새로 생성하지 않습니다.</li>
           <li>운영자는 AI가 만든 풀이를 보여 주기 전에 자동 검사로 카드 그림이나 명식에 없는 내용, 질문과 다른 주제, 결과를 보장하는 표현 등을 걸러 냅니다. 다만 검사가 모든 오류를 막지는 못합니다.</li>
@@ -97,7 +97,7 @@ export default function TermsPage() {
             <Link href="/pricing">가격 안내</Link>
             {"에 게시합니다."}
           </li>
-          <li>결제는 토스페이먼츠를 통해 카드와 간편결제로 할 수 있습니다. 결제 기능은 결제대행사 심사가 끝난 뒤 열립니다.</li>
+          <li>유료 서비스의 결제는 토스페이먼츠를 통해 카드와 간편결제로 합니다.</li>
           <li>운영자는 결제 전에 가격, 포함 내용, 청약철회가 제한되는 경우를 알립니다.</li>
           <li>
             {"청약철회와 환불은 "}
@@ -146,7 +146,7 @@ export default function TermsPage() {
       </LegalSection>
 
       <LegalSection id="business" title="제12조 (사업자 정보)">
-        {hasContact ? null : <p>문의 연락처는 결제가 열리기 전에 이 자리에 안내합니다.</p>}
+        {hasContact ? null : <p>문의 연락처는 이 자리에 안내합니다.</p>}
         <BusinessFacts />
       </LegalSection>
 

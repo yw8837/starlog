@@ -32,7 +32,7 @@ export const SITE = {
     followUps: 3,
     /**
      * Approximate length of a full reading in characters, shown before it is opened. Measured on
-     * real outputs (Opus 5.5 smoke runs, 2026-09-30): tarot about 2,000, saju about 3,000.
+     * real outputs (smoke runs, 2026-09-30): tarot about 2,000, saju about 3,000.
      */
     approxChars: { tarot: 2000, saju: 3000 },
   },

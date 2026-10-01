@@ -9,6 +9,7 @@ import { DotLine } from "@/components/ui/DotLine";
 import { Modal } from "@/components/ui/Modal";
 import { SITE, type MoonPack } from "@/lib/config";
 import { clearFlow } from "@/lib/flowState";
+import { times } from "@/lib/helpGuide";
 import { clearTeasers } from "@/lib/reading/teaserCache";
 import { clearSajuProfile, useSajuProfile } from "@/lib/sajuFlow";
 import { profileSummary } from "@/lib/sajuForm";
@@ -37,8 +38,8 @@ function Soon({ children }: { children: string }) {
 }
 
 /**
- * 내 정보: the beta's free count, the saju profile kept on this device (with 고치기), the menu, and
- * erasing everything this device keeps. Balances and 달빛 packs stay hidden until payments exist.
+ * 내 정보: the 오픈 기념 free count, the saju profile kept on this device (with 고치기), the menu,
+ * and erasing everything this device keeps. Balances and 달빛 packs stay hidden until payments exist.
  */
 export function MeView({ wallet }: MeViewProps) {
   const [balance, setBalance] = useState(wallet);
@@ -105,10 +106,14 @@ export function MeView({ wallet }: MeViewProps) {
         ) : (
           <section className={s.beta} aria-labelledby="beta-title">
             <h2 id="beta-title" className={s.betaTitle}>
-              {`베타 기간에는 모든 풀이가 무료예요 · 하루 ${SITE.beta.fullPerDay}번`}
+              {`오픈 기념으로 하루 ${times(SITE.beta.fullPerDay)} 전체 풀이를 무료로 열어 드려요`}
             </h2>
             <p className={s.betaText}>
-              {remaining === undefined ? " " : remaining > 0 ? `오늘 ${remaining}번 더 열 수 있어요` : "오늘은 모두 열었어요 · 내일 0시에 다시 열려요"}
+              {remaining === undefined
+                ? " "
+                : remaining > 0
+                  ? `오늘 ${remaining}번 더 열 수 있어요 · 한국 시간 0시에 다시 채워져요`
+                  : "오늘은 모두 열었어요 · 한국 시간 0시에 다시 채워져요"}
             </p>
           </section>
         )}
