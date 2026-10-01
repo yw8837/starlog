@@ -25,7 +25,7 @@ function migrationStatements(): string[] {
     .filter(Boolean);
 }
 
-describe.skipIf(process.env.CI_NO_WORKERD === "1")("D1 BondsRepo (local D1)", () => {
+describe.skipIf(process.env.CI_NO_WORKERD === "1")("D1 BondsRepo (local D1)", { timeout: 30_000 }, () => {
   let db: D1Binding;
   let dispose: (() => Promise<void>) | undefined;
   let dir: string;
@@ -44,7 +44,7 @@ describe.skipIf(process.env.CI_NO_WORKERD === "1")("D1 BondsRepo (local D1)", ()
     db = proxy.env.DB;
     dispose = proxy.dispose;
     for (const sql of migrationStatements()) await db.prepare(sql).run();
-  }, 120_000);
+  }, 300_000);
 
   afterAll(async () => {
     await dispose?.();

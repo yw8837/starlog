@@ -4,7 +4,10 @@ import type { D1Binding } from "./d1";
 
 /** BondsRepo on Cloudflare D1 (migrations/0001_bonds.sql). JSON columns end in `_json`; booleans are 0/1. */
 
-interface OwnerRecord { id: string; nickname: string; ranking_public: number; basis_json: string; last_refill_at: number | null; created_at: number }
+interface OwnerRecord {
+  id: string; nickname: string; ranking_public: number; basis_json: string; last_refill_at: number | null; created_at: number;
+  joins_day: string | null; joins_count: number;
+}
 interface InviteRecord { code: string; owner_id: string; created_at: number; revoked_at: number | null }
 interface ConstellationRecord {
   id: string; owner_id: string; sign: string; status: string; total: number; started_at: number; completed_at: number | null;
@@ -17,7 +20,7 @@ interface RankingRecord { id: string; nickname: string; total: number; completed
 
 const toOwner = (r: OwnerRecord): OwnerRow => ({
   id: r.id, nickname: r.nickname, rankingPublic: r.ranking_public === 1, basis: JSON.parse(r.basis_json) as BondBasis,
-  lastRefillAt: r.last_refill_at, createdAt: r.created_at,
+  lastRefillAt: r.last_refill_at, createdAt: r.created_at, joinsDay: r.joins_day, joinsCount: r.joins_count,
 });
 const toInvite = (r: InviteRecord): InviteRow => ({ code: r.code, ownerId: r.owner_id, createdAt: r.created_at, revokedAt: r.revoked_at });
 const toConstellation = (r: ConstellationRecord): ConstellationRow => ({
@@ -35,6 +38,21 @@ const RANKED = `FROM constellations c JOIN owners o ON o.id = c.owner_id
   WHERE c.sign = ?1 AND c.status = 'complete' AND o.ranking_public = 1 AND (?2 IS NULL OR c.completed_at >= ?2)`;
 
 const PATCH_COLUMNS = { status: "status", total: "total", completedAt: "completed_at" } as const;
+
+/** Recount from the stars: `?1` constellation id, `?2` slots, `?3` now. Completes once full, never un-completes. */
+const TALLY = `UPDATE constellations SET
+    total = (SELECT COALESCE(SUM(score), 0) FROM stars WHERE constellation_id = ?1),
+    status = CASE WHEN (SELECT COUNT(*) FROM stars WHERE constellation_id = ?1) >= ?2 THEN 'complete' ELSE status END,
+    completed_at = CASE WHEN completed_at IS NULL AND (SELECT COUNT(*) FROM stars WHERE constellation_id = ?1) >= ?2 THEN ?3 ELSE completed_at END
+  WHERE id = ?1`;
+
+const INSERT_STAR = `INSERT INTO stars (id, constellation_id, slot, nickname, message, card_id, orientation, score, parts_json, friend_key, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+const starValues = (row: StarRow) => [
+  row.id, row.constellationId, row.slot, row.nickname, row.message, row.cardId, row.orientation, row.score,
+  JSON.stringify(row.parts), row.friendKey, row.createdAt,
+];
 
 export function createD1BondsRepo(db: D1Binding): BondsRepo {
   const one = <T>(sql: string, ...values: unknown[]) => db.prepare(sql).bind(...values).first<T>();
@@ -69,6 +87,10 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
     },
     async revokeInvites(ownerId, at) {
       await run("UPDATE invites SET revoked_at = ? WHERE owner_id = ? AND revoked_at IS NULL", at, ownerId);
+    },
+    async invitesSince(ownerId, since) {
+      const r = await one<{ n: number }>("SELECT COUNT(*) AS n FROM invites WHERE owner_id = ? AND created_at >= ?", ownerId, since);
+      return r?.n ?? 0;
     },
     async getConstellation(id) {
       const r = await one<ConstellationRecord>("SELECT * FROM constellations WHERE id = ?", id);
@@ -107,22 +129,35 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
       return (await all<StarRecord>("SELECT * FROM stars WHERE constellation_id = ? ORDER BY slot ASC", constellationId)).map(toStar);
     },
     async insertStar(row) {
-      await run(
-        `INSERT INTO stars (id, constellation_id, slot, nickname, message, card_id, orientation, score, parts_json, friend_key, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        row.id, row.constellationId, row.slot, row.nickname, row.message, row.cardId, row.orientation, row.score,
-        JSON.stringify(row.parts), row.friendKey, row.createdAt,
-      );
+      await run(INSERT_STAR, ...starValues(row));
+    },
+    async joinStar(row, slots, day, now) {
+      // A D1 batch is one transaction: a failing statement rolls back the whole sequence.
+      const results = await db.batch([
+        db.prepare(INSERT_STAR).bind(...starValues(row)),
+        db.prepare(TALLY).bind(row.constellationId, slots, now),
+        db.prepare(
+          `UPDATE owners SET joins_count = CASE WHEN joins_day = ?2 THEN joins_count + 1 ELSE 1 END, joins_day = ?2
+           WHERE id = (SELECT owner_id FROM constellations WHERE id = ?1)`,
+        ).bind(row.constellationId, day),
+        db.prepare("SELECT * FROM constellations WHERE id = ?").bind(row.constellationId),
+      ]);
+      const after = results[3]?.results[0] as ConstellationRecord | undefined;
+      if (!after) throw new Error("constellation missing after join");
+      return toConstellation(after);
+    },
+    async tally(constellationId, slots, now) {
+      await run(TALLY, constellationId, slots, now);
+    },
+    async bumpActions(ownerId, day) {
+      const results = await db.batch([
+        db.prepare("UPDATE owners SET acts_count = CASE WHEN acts_day = ?2 THEN acts_count + 1 ELSE 1 END, acts_day = ?2 WHERE id = ?1").bind(ownerId, day),
+        db.prepare("SELECT acts_count AS n FROM owners WHERE id = ?").bind(ownerId),
+      ]);
+      return (results[1]?.results[0] as { n: number } | undefined)?.n ?? 0;
     },
     async deleteStar(id) {
       await run("DELETE FROM stars WHERE id = ?", id);
-    },
-    async starsSince(ownerId, since) {
-      const r = await one<{ n: number }>(
-        "SELECT COUNT(*) AS n FROM stars s JOIN constellations c ON c.id = s.constellation_id WHERE c.owner_id = ? AND s.created_at >= ?",
-        ownerId, since,
-      );
-      return r?.n ?? 0;
     },
     async ranking(sign, since, limit) {
       const rows = await all<RankingRecord>(

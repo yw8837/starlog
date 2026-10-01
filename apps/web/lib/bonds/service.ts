@@ -17,7 +17,7 @@ import { checkMessage, checkNickname, newInviteCode, normalizeCode } from "./tex
 
 export type BondsErrorCode =
   | "NO_OWNER" | "BAD_INPUT" | "SIGN_COMPLETED" | "FILLING_EXISTS" | "NO_FILLING" | "BAD_CODE" | "CHOOSING" | "SELF_JOIN"
-  | "ALREADY_JOINED" | "DAILY_STAR_LIMIT" | "COOLDOWN" | "NOT_FOUND";
+  | "ALREADY_JOINED" | "DAILY_STAR_LIMIT" | "DAILY_ACTION_LIMIT" | "COOLDOWN" | "INVITE_COOLDOWN" | "NOT_FOUND";
 
 export class BondsError extends Error {
   constructor(
@@ -33,7 +33,13 @@ export class BondsError extends Error {
 }
 
 export const REFILL_COOLDOWN_MS = 60 * 60 * 1000;
+/** join events per owner per KST day (a removed star still counted) */
 export const DAILY_STAR_LIMIT = 20;
+/** star removals and sign switches per owner per KST day */
+export const DAILY_ACTION_LIMIT = 20;
+/** 코드 새로 만들기 per owner per hour */
+export const INVITES_PER_HOUR = 5;
+const HOUR_MS = 60 * 60 * 1000;
 export const RANKING_LIMIT = 50;
 const TOP_STARS = 5;
 /** The friend picks from a fan of 21 face-down cards spread through a 78-card deck (components/tarot/CardFan). */
@@ -71,7 +77,6 @@ const starView = ({ friendKey: _key, constellationId: _c, ...star }: StarRow): S
 // ---- helpers ----
 
 const kstStart = (date: string) => Date.parse(`${date}T00:00:00+09:00`);
-const dayStart = (now: number) => kstStart(kstDay(now));
 /** This week's ranking starts on the KST Monday at 00:00. */
 export const weekStart = (now: number) => kstStart(kstWeekId(now));
 
@@ -98,8 +103,18 @@ export function basisOf(birth: BondBirth, now: number): BondBasis {
 
 async function startSign(repo: BondsRepo, now: number, ownerId: string, sign: SignId): Promise<ConstellationView> {
   const row: ConstellationRow = { id: randomId(), ownerId, sign, status: "filling", total: 0, startedAt: now, completedAt: null };
-  await repo.insertConstellation(row);
+  try {
+    await repo.insertConstellation(row);
+  } catch {
+    // The same request twice (a double tap): the first one already started a sign.
+    throw new BondsError("FILLING_EXISTS");
+  }
   return constellationView(row);
+}
+
+/** Counts one removal or switch for today; over the day's limit it is refused. */
+async function spendAction(repo: BondsRepo, now: number, ownerId: string): Promise<void> {
+  if ((await repo.bumpActions(ownerId, kstDay(now))) > DAILY_ACTION_LIMIT) throw new BondsError("DAILY_ACTION_LIMIT");
 }
 
 const sum = (stars: readonly { score: number }[]) => stars.reduce((n, s) => n + s.score, 0);
@@ -138,6 +153,9 @@ export async function saveOwner(repo: BondsRepo, now: number, ownerId: string, i
     basis,
     lastRefillAt: existing?.lastRefillAt ?? null,
     createdAt: existing?.createdAt ?? now,
+    // the join counters move only in joinStar; upsertOwner leaves them as stored
+    joinsDay: existing?.joinsDay ?? null,
+    joinsCount: existing?.joinsCount ?? 0,
   };
   await repo.upsertOwner(row);
   return row;
@@ -166,6 +184,7 @@ export async function switchSign(repo: BondsRepo, now: number, ownerId: string, 
   const filling = await repo.fillingOf(ownerId);
   if (!filling) throw new BondsError("NO_FILLING");
   if ((await repo.completedOf(ownerId)).some((c) => c.sign === sign)) throw new BondsError("SIGN_COMPLETED");
+  await spendAction(repo, now, ownerId);
   await repo.deleteConstellation(filling.id);
   return startSign(repo, now, ownerId, sign);
 }
@@ -214,6 +233,7 @@ export async function inviteOf(repo: BondsRepo, now: number, ownerId: string): P
 /** 코드 새로 만들기: the old code and link stop working at once. */
 export async function regenerateInvite(repo: BondsRepo, now: number, ownerId: string): Promise<InviteRow> {
   await requireOwner(repo, ownerId);
+  if ((await repo.invitesSince(ownerId, now - HOUR_MS)) >= INVITES_PER_HOUR) throw new BondsError("INVITE_COOLDOWN");
   await repo.revokeInvites(ownerId, now);
   return createInvite(repo, now, ownerId);
 }
@@ -289,66 +309,71 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
   if (input.joinerOwnerId && input.joinerOwnerId === owner.id) throw new BondsError("SELF_JOIN");
   const filling = await repo.fillingOf(owner.id);
   if (!filling) throw new BondsError("CHOOSING");
+  const slots = getConstellation(filling.sign).slots;
   let stars = await repo.starsOf(filling.id);
   if (stars.some((s) => s.friendKey === input.friendKey)) throw new BondsError("ALREADY_JOINED");
-  if ((await repo.starsSince(owner.id, dayStart(now))) >= DAILY_STAR_LIMIT) throw new BondsError("DAILY_STAR_LIMIT");
+  if (stars.length >= slots) {
+    // Full but still marked as filling (a count that never landed): complete it now.
+    await repo.tally(filling.id, slots, now);
+    throw new BondsError("CHOOSING");
+  }
+  const today = kstDay(now);
+  if (owner.joinsDay === today && owner.joinsCount >= DAILY_STAR_LIMIT) throw new BondsError("DAILY_STAR_LIMIT");
 
   const friend = basisOf(input.birth, now);
   const { score, parts } = bondScore(owner.basis, friend);
   const card = drawCard(input.pick);
-  const slots = getConstellation(filling.sign).slots;
 
-  let star: StarRow | null = null;
-  for (let attempt = 0; attempt < 3 && !star; attempt++) {
+  // Each failed attempt means another friend took a slot, so slots + 1 attempts always settle it.
+  for (let attempt = 0; attempt <= slots; attempt++) {
     const used = new Set(stars.map((s) => s.slot));
     const slot = Array.from({ length: slots }, (_, i) => i).find((i) => !used.has(i));
-    if (slot === undefined) throw new BondsError("CHOOSING"); // filled by someone else just now
+    if (slot === undefined) {
+      await repo.tally(filling.id, slots, now);
+      throw new BondsError("CHOOSING"); // filled by someone else just now
+    }
     const row: StarRow = {
       id: randomId(), constellationId: filling.id, slot, nickname: nickname.value, message: message.value,
       cardId: card.cardId, orientation: card.orientation, score, parts, friendKey: input.friendKey, createdAt: now,
     };
     try {
-      await repo.insertStar(row);
-      star = row;
+      // Insert, recount and count the join in one atomic step.
+      const after = await repo.joinStar(row, slots, today, now);
+      return {
+        star: row,
+        score,
+        parts: bondScore(friend, owner.basis).parts,
+        completed: after.status === "complete",
+        sign: filling.sign,
+        ownerNickname: owner.nickname,
+        card,
+        bondLine: bondCardLine(card.cardId, card.orientation),
+      };
     } catch (error) {
       // Another friend took the slot at the same moment, or this device joined twice at once.
       stars = await repo.starsOf(filling.id);
       if (stars.some((s) => s.friendKey === input.friendKey)) throw new BondsError("ALREADY_JOINED");
-      if (attempt === 2) throw error;
+      if (attempt === slots) throw error;
     }
   }
-
-  const after = await repo.starsOf(filling.id);
-  const completed = after.length >= slots;
-  await repo.updateConstellation(filling.id, completed ? { status: "complete", total: sum(after), completedAt: now } : { total: sum(after) });
-  return {
-    star: star!,
-    score,
-    parts: bondScore(friend, owner.basis).parts,
-    completed,
-    sign: filling.sign,
-    ownerNickname: owner.nickname,
-    card,
-    bondLine: bondCardLine(card.cardId, card.orientation),
-  };
+  throw new Error("unreachable");
 }
 
 /**
  * The owner removes one star (an unkind message, say). A completed sign goes back to being filled;
  * since only one sign fills at a time, the stars of the sign being filled go (the UI confirms first).
  */
-export async function removeStar(repo: BondsRepo, _now: number, ownerId: string, starId: string): Promise<void> {
+export async function removeStar(repo: BondsRepo, now: number, ownerId: string, starId: string): Promise<void> {
   await requireOwner(repo, ownerId);
-  const { row, stars } = await findOwnedStar(repo, ownerId, starId);
+  const { row } = await findOwnedStar(repo, ownerId, starId);
+  await spendAction(repo, now, ownerId);
   await repo.deleteStar(starId);
-  const total = sum(stars.filter((s) => s.id !== starId));
   if (row.status === "complete") {
     const other = await repo.fillingOf(ownerId);
     if (other) await repo.deleteConstellation(other.id);
-    await repo.updateConstellation(row.id, { status: "filling", total, completedAt: null });
-  } else {
-    await repo.updateConstellation(row.id, { total });
+    await repo.updateConstellation(row.id, { status: "filling", completedAt: null });
   }
+  await repo.tally(row.id, getConstellation(row.sign).slots, now);
 }
 
 // ---- views ----
@@ -364,7 +389,11 @@ export interface OwnerView {
   ranks: Partial<Record<SignId, { week: number | null; all: number | null }>>;
 }
 
-export async function ownerView(repo: BondsRepo, now: number, ownerId: string): Promise<OwnerView> {
+/**
+ * The owner page's data. Ranks are looked up for the latest completion only (the card the page shows);
+ * `light` (the home row) skips ranks and TOP 5.
+ */
+export async function ownerView(repo: BondsRepo, now: number, ownerId: string, { light = false }: { light?: boolean } = {}): Promise<OwnerView> {
   const owner = await requireOwner(repo, ownerId);
   const invite = await inviteOf(repo, now, ownerId);
   const [fillingRow, completedRows] = await Promise.all([repo.fillingOf(ownerId), repo.completedOf(ownerId)]);
@@ -374,10 +403,11 @@ export async function ownerView(repo: BondsRepo, now: number, ownerId: string): 
   ]);
   const since = weekStart(now);
   const ranks: OwnerView["ranks"] = {};
-  await Promise.all(completedRows.map(async (c) => {
-    const [week, all] = await Promise.all([repo.rankOf(c.id, since), repo.rankOf(c.id, null)]);
-    ranks[c.sign] = { week, all };
-  }));
+  const latest = completedRows.reduce<ConstellationRow | null>((a, c) => (a === null || (c.completedAt ?? 0) > (a.completedAt ?? 0) ? c : a), null);
+  if (latest && !light) {
+    const [week, all] = await Promise.all([repo.rankOf(latest.id, since), repo.rankOf(latest.id, null)]);
+    ranks[latest.sign] = { week, all };
+  }
   const withSign = [
     ...(fillingRow ? fillingStars!.map((s) => ({ ...starView(s), sign: fillingRow.sign })) : []),
     ...completedRows.flatMap((c, i) => completedStars[i]!.map((s) => ({ ...starView(s), sign: c.sign }))),
@@ -391,7 +421,7 @@ export async function ownerView(repo: BondsRepo, now: number, ownerId: string): 
     invite: { code: invite.code },
     filling: fillingRow ? { row: constellationView(fillingRow), stars: fillingStars!.map(starView) } : null,
     completed: completedRows.map((c, i) => ({ ...constellationView(c), stars: completedStars[i]!.map(starView) })),
-    top5: withSign.sort((a, b) => b.score - a.score || a.createdAt - b.createdAt).slice(0, TOP_STARS),
+    top5: light ? [] : withSign.sort((a, b) => b.score - a.score || a.createdAt - b.createdAt).slice(0, TOP_STARS),
     ranks,
   };
 }

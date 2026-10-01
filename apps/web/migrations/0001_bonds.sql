@@ -6,6 +6,12 @@ CREATE TABLE owners (
   ranking_public INTEGER NOT NULL DEFAULT 1,
   basis_json TEXT NOT NULL,
   last_refill_at INTEGER,
+  -- joins into this owner's constellations on one KST day (a join event counts even if the star is later removed)
+  joins_day TEXT,
+  joins_count INTEGER NOT NULL DEFAULT 0,
+  -- star removals and sign switches on one KST day
+  acts_day TEXT,
+  acts_count INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL
 );
 CREATE TABLE invites (
@@ -15,6 +21,7 @@ CREATE TABLE invites (
   revoked_at INTEGER
 );
 CREATE INDEX invites_owner ON invites(owner_id, revoked_at);
+CREATE INDEX invites_owner_created ON invites(owner_id, created_at);
 CREATE TABLE constellations (
   id TEXT PRIMARY KEY,
   owner_id TEXT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
@@ -44,4 +51,3 @@ CREATE TABLE stars (
   UNIQUE (constellation_id, slot),
   UNIQUE (constellation_id, friend_key)
 );
-CREATE INDEX stars_created ON stars(created_at);

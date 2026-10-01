@@ -203,13 +203,91 @@ describe("bonds service", () => {
     expect(view.mine).toMatchObject({ weekRank: null, allRank: null });
   });
 
-  it("caps new stars per owner per KST day", async () => {
+  it("caps join events per owner per KST day (removed stars still count)", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "pisces");
-    const repoAny = repo as unknown as { starsSince: (o: string, s: number) => Promise<number> };
-    repoAny.starsSince = async () => 20;
+    const real = repo.getOwner.bind(repo);
+    repo.getOwner = async (id) => {
+      const row = await real(id);
+      return row ? { ...row, joinsDay: "2026-10-01", joinsCount: 20 } : row;
+    };
     await expect(join(repo, t0, code, 0)).rejects.toMatchObject({ code: "DAILY_STAR_LIMIT" });
     await expect(join(repo, t0, code, 0)).rejects.toBeInstanceOf(BondsError);
+    // the next KST day opens again
+    expect((await join(repo, t0 + 24 * HOUR, code, 0)).star.slot).toBe(0);
+  });
+
+  it("counts every join event, so remove-and-rejoin cannot dodge the cap", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "pisces");
+    const first = await join(repo, t0, code, 0);
+    await removeStar(repo, t0, "o1", first.star.id);
+    await join(repo, t0, code, 0);
+    expect(await repo.getOwner("o1")).toMatchObject({ joinsDay: "2026-10-01", joinsCount: 2 });
+  });
+
+  it("fills every slot exactly once when friends join at the same moment", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    const birth = friends[0]!;
+    const results = await Promise.allSettled(
+      Array.from({ length: 6 }, (_, i) => joinStar(repo, t0, { code, friendKey: `c${i}`, nickname: `동시${i}`, birth, pick: i, message: null })),
+    );
+    const ok = results.filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<typeof joinStar>>> => r.status === "fulfilled");
+    const refused = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+    expect(ok.map((r) => r.value.star.slot).sort()).toEqual([0, 1, 2, 3]);
+    expect(ok.filter((r) => r.value.completed)).toHaveLength(1);
+    expect(refused.map((r) => (r.reason as BondsError).code)).toEqual(["CHOOSING", "CHOOSING"]);
+    const view = await ownerView(repo, t0 + 1, "o1");
+    expect(view.completed[0]).toMatchObject({ sign: "aries", status: "complete", total: ok.reduce((n, r) => n + r.value.score, 0) });
+  });
+
+  it("leaves nothing behind when the join step fails", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    const failing = { ...repo, joinStar: async () => Promise.reject(new Error("D1_ERROR: second statement failed")) };
+    await expect(join(failing, t0, code, 0)).rejects.toThrow("D1_ERROR");
+    const filling = (await repo.fillingOf("o1"))!;
+    expect(await repo.starsOf(filling.id)).toEqual([]);
+    expect(filling).toMatchObject({ status: "filling", total: 0 });
+    expect(await repo.getOwner("o1")).toMatchObject({ joinsCount: 0 });
+    expect((await join(repo, t0, code, 0)).star.slot).toBe(0);
+  });
+
+  it("completes a constellation that is full but still marked as filling, instead of leaving it stuck", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "libra");
+    const filling = (await repo.fillingOf("o1"))!;
+    for (let i = 0; i < 4; i++) {
+      await repo.insertStar({
+        id: `raw${i}`, constellationId: filling.id, slot: i, nickname: `별${i}`, message: null, cardId: "wands-01", orientation: "upright",
+        score: 70 + i, parts: [], friendKey: `raw${i}`, createdAt: t0,
+      });
+    }
+    await expect(join(repo, t0 + 5, code, 0)).rejects.toMatchObject({ code: "CHOOSING" });
+    expect(await repo.getConstellation(filling.id)).toMatchObject({ status: "complete", total: 70 + 71 + 72 + 73, completedAt: t0 + 5 });
+  });
+
+  it("answers FILLING_EXISTS, not a server error, to a double tap on choose", async () => {
+    const { repo, t0 } = await setup();
+    const results = await Promise.allSettled([chooseSign(repo, t0, "o1", "aries"), chooseSign(repo, t0, "o1", "aries")]);
+    expect(results.map((r) => r.status).sort()).toEqual(["fulfilled", "rejected"]);
+    expect((results.find((r) => r.status === "rejected") as PromiseRejectedResult).reason).toMatchObject({ code: "FILLING_EXISTS" });
+  });
+
+  it("caps star removals and sign switches per owner per day", async () => {
+    const { repo, t0 } = await setup();
+    await chooseSign(repo, t0, "o1", "leo");
+    for (let i = 0; i < 20; i++) await switchSign(repo, t0, "o1", i % 2 ? "leo" : "virgo");
+    await expect(switchSign(repo, t0, "o1", "aries")).rejects.toMatchObject({ code: "DAILY_ACTION_LIMIT" });
+    await switchSign(repo, t0 + 24 * HOUR, "o1", "aries");
+  });
+
+  it("lets an owner make at most 5 new codes an hour", async () => {
+    const { repo, t0 } = await setup(); // the first code counts
+    for (let i = 0; i < 4; i++) await regenerateInvite(repo, t0 + i, "o1");
+    await expect(regenerateInvite(repo, t0 + 10, "o1")).rejects.toMatchObject({ code: "INVITE_COOLDOWN" });
+    expect((await regenerateInvite(repo, t0 + HOUR + 1, "o1")).code).toMatch(/^[A-Z2-9]{6}$/);
   });
 
   it("draws the same 오늘의 인연 카드 all day and a new one the next KST day, without touching the score", async () => {

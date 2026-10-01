@@ -1,15 +1,20 @@
 import type { SignId } from "@starlog/core";
 import { compareRanked, type BondsRepo, type ConstellationRow, type InviteRow, type OwnerRow, type RankingEntry, type StarRow } from "./bondsRepo";
 
-/** In-memory BondsRepo for tests and `next dev` without D1. Same semantics as the D1 one (contract.ts). */
+/**
+ * In-memory BondsRepo for tests and `next dev` without D1. Same semantics as the D1 one (contract.ts);
+ * the multi-step writes run without an await in between, so they are atomic like a D1 batch.
+ */
 export function createMemoryBondsRepo(): BondsRepo {
   const owners = new Map<string, OwnerRow>();
+  const acts = new Map<string, { day: string; count: number }>();
   const invites = new Map<string, InviteRow>();
   const constellations = new Map<string, ConstellationRow>();
   const stars = new Map<string, StarRow>();
 
   const copy = <T extends object>(row: T): T => structuredClone(row);
   const ownedBy = (ownerId: string) => [...constellations.values()].filter((c) => c.ownerId === ownerId);
+  const starsIn = (constellationId: string) => [...stars.values()].filter((s) => s.constellationId === constellationId);
 
   /** Complete constellations of public owners for a sign, in ranking order. */
   const ranked = (sign: SignId, since: number | null) =>
@@ -18,6 +23,26 @@ export function createMemoryBondsRepo(): BondsRepo {
         c.sign === sign && c.status === "complete" && c.completedAt !== null && owners.get(c.ownerId)?.rankingPublic === true && (since === null || c.completedAt >= since))
       .sort(compareRanked);
 
+  const checkStar = (row: StarRow) => {
+    for (const s of stars.values()) {
+      if (s.constellationId === row.constellationId && (s.slot === row.slot || s.friendKey === row.friendKey)) throw new Error("UNIQUE");
+    }
+    if (stars.has(row.id)) throw new Error("UNIQUE");
+  };
+
+  const tallyNow = (constellationId: string, slots: number, now: number) => {
+    const row = constellations.get(constellationId);
+    if (!row) return;
+    const mine = starsIn(constellationId);
+    const full = mine.length >= slots;
+    constellations.set(constellationId, {
+      ...row,
+      total: mine.reduce((n, s) => n + s.score, 0),
+      status: full ? "complete" : row.status,
+      completedAt: row.completedAt === null && full ? now : row.completedAt,
+    });
+  };
+
   return {
     async getOwner(id) {
       const row = owners.get(id);
@@ -25,7 +50,12 @@ export function createMemoryBondsRepo(): BondsRepo {
     },
     async upsertOwner(row) {
       const existing = owners.get(row.id);
-      owners.set(row.id, copy({ ...row, createdAt: existing?.createdAt ?? row.createdAt }));
+      owners.set(row.id, copy({
+        ...row,
+        createdAt: existing?.createdAt ?? row.createdAt,
+        joinsDay: existing ? existing.joinsDay : null,
+        joinsCount: existing ? existing.joinsCount : 0,
+      }));
     },
     async activeInvite(ownerId) {
       const row = [...invites.values()].filter((i) => i.ownerId === ownerId && i.revokedAt === null).sort((a, b) => b.createdAt - a.createdAt)[0];
@@ -41,6 +71,9 @@ export function createMemoryBondsRepo(): BondsRepo {
     },
     async revokeInvites(ownerId, at) {
       for (const row of invites.values()) if (row.ownerId === ownerId && row.revokedAt === null) row.revokedAt = at;
+    },
+    async invitesSince(ownerId, since) {
+      return [...invites.values()].filter((i) => i.ownerId === ownerId && i.createdAt >= since).length;
     },
     async getConstellation(id) {
       const row = constellations.get(id);
@@ -72,21 +105,33 @@ export function createMemoryBondsRepo(): BondsRepo {
       constellations.delete(id);
     },
     async starsOf(constellationId) {
-      return [...stars.values()].filter((s) => s.constellationId === constellationId).sort((a, b) => a.slot - b.slot).map(copy);
+      return starsIn(constellationId).sort((a, b) => a.slot - b.slot).map(copy);
     },
     async insertStar(row) {
-      for (const s of stars.values()) {
-        if (s.constellationId === row.constellationId && (s.slot === row.slot || s.friendKey === row.friendKey)) throw new Error("UNIQUE");
-      }
-      if (stars.has(row.id)) throw new Error("UNIQUE");
+      checkStar(row);
       stars.set(row.id, copy(row));
+    },
+    async joinStar(row, slots, day, now) {
+      checkStar(row);
+      const constellation = constellations.get(row.constellationId);
+      if (!constellation) throw new Error("FOREIGN KEY");
+      stars.set(row.id, copy(row));
+      tallyNow(row.constellationId, slots, now);
+      const owner = owners.get(constellation.ownerId);
+      if (owner) owners.set(owner.id, { ...owner, joinsCount: owner.joinsDay === day ? owner.joinsCount + 1 : 1, joinsDay: day });
+      return copy(constellations.get(row.constellationId)!);
+    },
+    async tally(constellationId, slots, now) {
+      tallyNow(constellationId, slots, now);
+    },
+    async bumpActions(ownerId, day) {
+      const prev = acts.get(ownerId);
+      const next = { day, count: prev?.day === day ? prev.count + 1 : 1 };
+      acts.set(ownerId, next);
+      return next.count;
     },
     async deleteStar(id) {
       stars.delete(id);
-    },
-    async starsSince(ownerId, since) {
-      const mine = new Set(ownedBy(ownerId).map((c) => c.id));
-      return [...stars.values()].filter((s) => mine.has(s.constellationId) && s.createdAt >= since).length;
     },
     async ranking(sign, since, limit) {
       return ranked(sign, since)
