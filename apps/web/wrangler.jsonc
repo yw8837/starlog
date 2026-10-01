@@ -19,6 +19,10 @@
   "observability": {
     "enabled": true
   },
+  // Run the Worker near Tokyo. Korean visitors on Cloudflare's free zone plan are often served from
+  // other colos (e.g. Hong Kong), and the Anthropic API answers 403 "Request not allowed" to requests
+  // leaving from unsupported regions. Tokyo is supported and ~30 ms from Korea.
+  "placement": { "region": "aws:ap-northeast-1" },
   // Production origin (SITE.url). Wrangler creates the DNS record and certificate on deploy.
   "routes": [{ "pattern": "starlog.yeolmaeapps.kr", "custom_domain": true }],
   "workers_dev": true,
