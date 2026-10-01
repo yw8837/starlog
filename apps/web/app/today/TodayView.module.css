@@ -1,4 +1,4 @@
-/* ---- closed: the cookie waits to be tapped ---- */
+/* ---- before the pick: shuffle, then three face-down cards ---- */
 
 .closed,
 .limited,
@@ -20,36 +20,35 @@
   color: var(--ink-sub);
 }
 
-.cookieButton {
-  display: grid;
-  place-items: center;
-  margin: 12px 0 4px;
-  padding: 16px;
-  border: 0;
-  border-radius: 32px;
-  background: radial-gradient(closest-side, rgba(243, 220, 161, 0.18), transparent);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+/* Held while the server says whether today's card was picked: the shuffle's room, so nothing jumps. */
+.stagePlaceholder {
+  height: 220px;
 }
 
-.cookieButton:disabled {
-  cursor: default;
-}
-
-.cookieButton:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.cookieSmall {
-  margin: 8px auto 4px;
-}
-
-.cta {
-  display: grid;
-  gap: 10px;
+.shuffle {
   width: 100%;
-  max-width: 360px;
+  min-height: 220px;
+  margin: 8px 0;
+}
+
+/* Three face-down cards, side by side; after the pick only the chosen one stays. */
+.deal {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  min-height: 220px;
+  margin: 16px 0 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.dealItem {
+  display: flex;
+  align-items: center;
+}
+
+.dealCard {
+  --card-w: min(104px, 27vw);
 }
 
 .note {

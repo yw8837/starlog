@@ -71,10 +71,10 @@ export function progressPlan(kind: GenerationKind, opts: { positions?: readonly 
       };
     case "daily":
       return {
-        opening: "쿠키 속 쪽지를 꺼내고 있어요",
+        opening: "고른 카드를 펼치고 있어요",
         stages: [
           one("keyword", "오늘의 카드를 펼치고 있어요"),
-          one("summary", "쪽지를 적고 있어요"),
+          one("summary", "오늘의 한마디를 적고 있어요"),
           one("body", "하루의 결을 적고 있어요"),
           one("areas", "애정·금전·일을 살피고 있어요"),
           one("color", "행운의 색을 고르고 있어요"),

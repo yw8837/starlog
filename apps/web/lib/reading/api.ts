@@ -99,6 +99,17 @@ async function readJsonResult<T>(response: Response): Promise<ApiResult<T>> {
   return response.ok ? { ok: true, data: body as T } : { ok: false, error: parseApiError(response.status, body) };
 }
 
+/** GET a JSON answer (no body). */
+export async function getJson<T>(path: string, { signal, fetchImpl = fetch }: CallOptions = {}): Promise<ApiResult<T>> {
+  let response: Response;
+  try {
+    response = await fetchImpl(path, { method: "GET", headers: { Accept: "application/json" }, credentials: "same-origin", signal });
+  } catch {
+    return { ok: false, error: NETWORK };
+  }
+  return readJsonResult<T>(response);
+}
+
 /** POST a JSON body, read a JSON answer. */
 export async function postJson<T>(path: string, body: unknown, options: CallOptions = {}): Promise<ApiResult<T>> {
   const response = await send(path, body, "application/json", options);

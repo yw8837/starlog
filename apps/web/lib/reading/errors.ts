@@ -45,7 +45,7 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       }
       if (context === "followup" && error.scope === "chapter") return { title: "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요", action: null };
       if (context === "followup") return { title: "오늘 물어볼 수 있는 질문을 모두 썼어요", body: resetLine(error.resetsAt, now), action: null };
-      if (context === "daily") return { title: "오늘은 쪽지를 더 펼 수 없어요", body: resetLine(error.resetsAt, now), action: null };
+      if (context === "daily") return { title: "오늘의 운세를 더 적을 수 없어요", body: resetLine(error.resetsAt, now), action: null };
       if (context === "teaser") return { title: "오늘 볼 수 있는 첫 장을 모두 봤어요", body: resetLine(error.resetsAt, now), action: null };
       return { title: "오늘 열 수 있는 풀이를 모두 열었어요", body: resetLine(error.resetsAt, now), action: null };
     case "RATE_LIMIT":

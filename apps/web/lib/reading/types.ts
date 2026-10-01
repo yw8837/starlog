@@ -76,6 +76,13 @@ export interface DailyData {
   areas: { love: string; money: string; work: string };
   lucky: { color: string; number: number };
   tip: string;
+  /** Which of the three face-down cards was picked (null for a fortune stored before the pick). */
+  pick?: number | null;
+}
+
+/** GET /api/tarot/daily before today's pick: three face-down cards, nothing about their faces. */
+export interface DailyDeal {
+  deal: Array<{ index: number }>;
 }
 
 export interface FollowUpData {

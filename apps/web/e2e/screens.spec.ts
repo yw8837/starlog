@@ -238,13 +238,22 @@ const SCREENS: Screen[] = [
     prepare: waitForSheet,
   },
   { name: "saju-reading", path: "/chapter/screendd04", setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screendd04")]) },
-  { name: "today", path: "/today" },
+  { name: "today", path: "/today", setup: (page) => ownAddress(page) },
+  {
+    name: "today-pick",
+    path: "/today",
+    setup: (page) => ownAddress(page),
+    prepare: async (page) => {
+      await page.getByRole("button", { name: "바로 펼치기" }).click();
+      await expect(page.getByRole("button", { name: /번째 카드 고르기/ })).toHaveCount(3);
+    },
+  },
   {
     name: "today-opened",
     path: "/today",
     setup: async (page) => {
       await ownAddress(page);
-      const reading = await (await page.request.post("/api/tarot/daily", { data: {} })).json();
+      const reading = await (await page.request.post("/api/tarot/daily", { data: { pick: 1 } })).json();
       await page.addInitScript((r) => {
         const day = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10);
         window.localStorage.setItem("starlog.daily", JSON.stringify({ day, reading: JSON.parse(r) }));

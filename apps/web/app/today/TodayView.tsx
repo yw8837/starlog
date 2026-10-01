@@ -5,24 +5,21 @@ import { useEffect, useRef, useState, type RefObject } from "react";
 import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { Paper } from "@/components/tarot/Paper";
+import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
-import { FortuneCookie } from "@/components/today/FortuneCookie";
 import { Button } from "@/components/ui/Button";
 import { ShareButton } from "@/components/ui/ShareButton";
-import { prefersReducedMotion } from "@/lib/motion";
-import { commitQuota } from "@/lib/reading/api";
+import { commitQuota, getJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { progressPlan } from "@/lib/reading/progress";
-import type { DailyData } from "@/lib/reading/types";
+import type { DailyData, DailyDeal } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { saveDaily, useDaily } from "@/lib/storage/daily";
 import s from "./TodayView.module.css";
 
-/** How long the crack plays before the slip can show (the call runs meanwhile). */
-const CRACK_MS = 700;
-
 const DAILY_PLAN = progressPlan("daily");
+const DEAL = [0, 1, 2] as const;
 
 /** A swatch for the lucky colour's name (free text from the reading); gold when it is not one of these. */
 const SWATCHES: ReadonlyArray<[RegExp, string]> = [
@@ -57,101 +54,157 @@ function cardName(cardId: string, orientation: Orientation): string {
 
 type Limited = { card: { cardId: string; orientation: Orientation }; view: ErrorView };
 
+type Phase =
+  /** Asking the server whether today's card was picked already. */
+  | "checking"
+  | "shuffle"
+  | "pick"
+  /** The picked card is being read (or failed: see the generation state). */
+  | "reading";
+
+const isReading = (value: DailyData | DailyDeal): value is DailyData => "card" in value && Boolean((value as DailyData).card);
+
 /**
- * 오늘의 한 장 as a fortune cookie: tap to crack it open, then the day's line, the card, the
- * reading, the three areas, lucky colour and number, and a tip. One per device per KST day: a
- * revisit that day opens straight to it (kept on this device too, so it survives the server's
- * limits).
+ * 오늘의 한 장: a short shuffle, three face-down cards, tap one; it turns over with today's fortune
+ * (the line large first, then the card and keyword, the reading, 애정·금전·일, lucky colour and
+ * number, a tip). The server deals the three cards per device and KST day and only ever returns the
+ * picked one, so a revisit that day shows that card and its fortune, fixed (also kept on this
+ * device, so it survives the server's limits).
  */
 export function TodayView() {
   const saved = useDaily();
   const daily = useGeneration<DailyData>();
-  const [openedNow, setOpenedNow] = useState(false);
-  const [cracking, setCracking] = useState(false);
+  const [phase, setPhase] = useState<Phase>("checking");
+  const [picked, setPicked] = useState<number | null>(null);
+  const [justPicked, setJustPicked] = useState(false);
+  const [checkError, setCheckError] = useState<ErrorView | null>(null);
   const [limited, setLimited] = useState<Limited | null>(null);
-  const slipRef = useRef<HTMLHeadingElement>(null);
+  const [attempt, setAttempt] = useState(0);
+  const lineRef = useRef<HTMLHeadingElement>(null);
 
   const reading = saved ?? null;
-  const revisit = reading !== null && !openedNow;
 
-  // Once the slip is out, move focus to it so screen readers start at the day's line.
+  // Picked earlier today (this device keeps it, or the server has it): straight to the result.
+  // Otherwise the server deals three face-down cards and the shuffle plays.
   useEffect(() => {
-    if (reading && openedNow && !cracking) slipRef.current?.focus();
-  }, [reading, openedNow, cracking]);
+    if (saved === undefined || saved !== null) return;
+    let live = true;
+    void getJson<DailyData | DailyDeal>("/api/tarot/daily").then((result) => {
+      if (!live) return;
+      if (!result.ok) {
+        setCheckError(describeApiError(result.error, "daily"));
+        return;
+      }
+      setCheckError(null);
+      if (isReading(result.data)) saveDaily(result.data);
+      else setPhase("shuffle");
+    });
+    return () => {
+      live = false;
+    };
+  }, [saved, attempt]);
 
-  const open = async () => {
-    if (cracking) return;
-    setOpenedNow(true);
-    setCracking(true);
+  // Once the card has turned over, start reading at today's line.
+  useEffect(() => {
+    if (reading && justPicked) lineRef.current?.focus();
+  }, [reading, justPicked]);
+
+  const pick = async (index: number) => {
+    if (phase !== "pick" && phase !== "reading") return;
+    setPicked(index);
+    setPhase("reading");
     setLimited(null);
-    const crack = new Promise((resolve) => window.setTimeout(resolve, prefersReducedMotion() ? 0 : CRACK_MS));
-    const [result] = await Promise.all([daily.run("/api/tarot/daily", {}, DAILY_PLAN), crack]);
-    setCracking(false);
+    const result = await daily.run("/api/tarot/daily", { pick: index }, DAILY_PLAN);
     if (!result) return;
     if (result.ok) {
+      setJustPicked(true);
       saveDaily(result.data);
       if (result.commit) void commitQuota(result.commit);
-    } else if (result.error.code === "BETA_LIMIT" && result.error.card) setLimited({ card: result.error.card, view: describeApiError(result.error, "daily") });
+    } else if (result.error.code === "BETA_LIMIT" && result.error.card) {
+      setLimited({ card: result.error.card, view: describeApiError(result.error, "daily") });
+    }
   };
 
   const state = daily.state;
-  const error = !reading && !limited && state.status === "error" ? describeApiError(state.error, "daily") : null;
-  const waiting = !reading && (cracking || state.status === "running");
-  const announce = waiting && state.status === "running" ? state.progress.caption : error ? error.title : limited ? limited.view.title : "";
+  const pickError = !reading && !limited && state.status === "error" ? describeApiError(state.error, "daily") : null;
+  const announce =
+    phase === "pick" && !reading
+      ? "마음이 가는 카드를 한 장 골라 주세요"
+      : state.status === "running"
+        ? state.progress.caption
+        : (pickError ?? checkError ?? limited?.view)?.title ?? "";
 
   let content;
   if (saved === undefined) {
     content = null;
-  } else if (reading && !cracking) {
-    content = <Opened reading={reading} revisit={revisit} slipRef={slipRef} />;
+  } else if (reading) {
+    content = <Opened reading={reading} revisit={!justPicked} flip={justPicked} lineRef={lineRef} />;
   } else if (limited) {
     content = (
       <section className={s.limited} aria-labelledby="today-title">
         <h1 id="today-title" className={s.title}>
           오늘의 카드
         </h1>
-        <TarotCard cardId={limited.card.cardId} orientation={limited.card.orientation} faceUp size="md" className={s.card} />
+        <TarotCard cardId={limited.card.cardId} orientation={limited.card.orientation} faceUp size="md" highlight className={s.card} />
         <p className={s.cardName}>{cardName(limited.card.cardId, limited.card.orientation)}</p>
         <p className={s.limitText}>{limited.view.title}</p>
         {limited.view.body ? <p className={s.limitSub}>{limited.view.body}</p> : null}
       </section>
     );
-  } else if (error) {
+  } else if (checkError) {
     content = (
       <div className={s.errorWrap}>
         <h1 className="sr-only">오늘의 한 장</h1>
-        <FortuneCookie size={150} state="cracked" className={s.cookieSmall} />
-        <ErrorPanel
-          view={error}
-          onRetry={() => void open()}
-        />
+        <ErrorPanel view={checkError} onRetry={() => setAttempt((n) => n + 1)} />
       </div>
     );
   } else {
-    const caption = waiting ? (state.status === "running" ? state.progress.caption : DAILY_PLAN.opening) : null;
+    const waiting = phase === "reading";
     content = (
       <section className={s.closed} aria-labelledby="today-title">
         <h1 id="today-title" className={s.title}>
-          {waiting ? "쿠키를 열었어요" : "오늘의 쿠키를 열어 볼까요?"}
+          {waiting ? "고른 카드를 펼치고 있어요" : "오늘의 카드를 골라 볼까요?"}
         </h1>
-        <p className={s.lead}>{waiting ? " " : "쿠키 속 쪽지에 오늘의 카드와 한마디가 있어요"}</p>
-        <button type="button" className={s.cookieButton} onClick={() => void open()} disabled={waiting} aria-label="쿠키 열기">
-          <FortuneCookie size={220} state={waiting ? "cracked" : "whole"} floating={!waiting} />
-        </button>
-        {waiting ? (
-          <div className={s.progress}>
-            <p className={s.caption}>{caption}</p>
-            <div className={s.track} aria-hidden="true">
-              <span className={s.fill} style={{ transform: `scaleX(${Math.max(0.06, state.status === "running" ? state.progress.fraction : 0)})` }} />
-            </div>
+        <p className={s.lead}>{waiting ? " " : "섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 주세요"}</p>
+        {phase === "checking" ? (
+          <div className={s.stagePlaceholder} aria-hidden="true" />
+        ) : phase === "shuffle" ? (
+          <div className={s.shuffle}>
+            <ShuffleStage onDone={() => setPhase("pick")} />
           </div>
         ) : (
-          <div className={s.cta}>
-            <Button block onClick={() => void open()}>
-              쿠키 열기
-            </Button>
-            <p className={s.note}>하루 한 번 · 오늘은 같은 쪽지가 나와요</p>
-          </div>
+          <ol className={s.deal} aria-label="세 장의 카드">
+            {DEAL.map((index) => {
+              // After the pick only the chosen card stays: the other two are never shown.
+              if (waiting && picked !== index) return null;
+              return (
+                <li key={index} className={s.dealItem}>
+                  <TarotCard
+                    faceUp={false}
+                    size="md"
+                    highlight={picked === index}
+                    onFlip={waiting ? undefined : () => void pick(index)}
+                    label={`${index + 1}번째 카드 고르기`}
+                    className={s.dealCard}
+                  />
+                </li>
+              );
+            })}
+          </ol>
+        )}
+        {waiting ? (
+          pickError ? (
+            <ErrorPanel view={pickError} onRetry={() => picked !== null && void pick(picked)} />
+          ) : (
+            <div className={s.progress}>
+              <p className={s.caption}>{state.status === "running" ? state.progress.caption : DAILY_PLAN.opening}</p>
+              <div className={s.track} aria-hidden="true">
+                <span className={s.fill} style={{ transform: `scaleX(${Math.max(0.06, state.status === "running" ? state.progress.fraction : 0)})` }} />
+              </div>
+            </div>
+          )
+        ) : (
+          <p className={s.note}>하루 한 번 · 고른 카드는 오늘 하루 그대로예요</p>
         )}
       </section>
     );
@@ -160,7 +213,7 @@ export function TodayView() {
   return (
     <>
       <Stepper label="오늘의 한 장" backHref="/" backLabel="홈으로" />
-      {/* One live region for the screen: what the cookie is doing, then what went wrong. */}
+      {/* One live region for the screen: what to do, what the card is doing, what went wrong. */}
       <p className="sr-only" role="status">
         {announce}
       </p>
@@ -169,23 +222,30 @@ export function TodayView() {
   );
 }
 
-function Opened({ reading, revisit, slipRef }: { reading: DailyData; revisit: boolean; slipRef: RefObject<HTMLHeadingElement | null> }) {
+function Opened({ reading, revisit, flip, lineRef }: { reading: DailyData; revisit: boolean; flip: boolean; lineRef: RefObject<HTMLHeadingElement | null> }) {
   const { card, areas, lucky } = reading;
+  // Just picked: the card turns over (instantly under reduced motion); a revisit shows it face up.
+  const [faceUp, setFaceUp] = useState(!flip);
+  useEffect(() => {
+    if (faceUp) return;
+    const timer = window.setTimeout(() => setFaceUp(true), 60);
+    return () => window.clearTimeout(timer);
+  }, [faceUp]);
   return (
     <article className={s.opened} aria-labelledby="today-line">
-      {revisit ? <p className={s.revisit}>오늘의 쿠키는 이미 열었어요 · 내일 새 쿠키가 기다려요</p> : null}
+      {revisit ? <p className={s.revisit}>오늘의 카드는 이미 골랐어요 · 내일 새 카드가 기다려요</p> : null}
 
-      {/* 1. The fortune-cookie line, biggest. */}
+      {/* 1. Today's line, biggest. */}
       <div className={`${s.slip} ${s.reveal}`} style={{ animationDelay: "0ms" }}>
-        <p className={s.slipLabel}>오늘의 쪽지</p>
-        <h1 id="today-line" ref={slipRef} tabIndex={-1} className={s.line}>
+        <p className={s.slipLabel}>오늘의 한마디</p>
+        <h1 id="today-line" ref={lineRef} tabIndex={-1} className={s.line}>
           {reading.summary}
         </h1>
       </div>
 
       {/* 2. The card, face up, with its keyword. */}
       <div className={`${s.cardBlock} ${s.reveal}`} style={{ animationDelay: "160ms" }}>
-        <TarotCard cardId={card.cardId} orientation={card.orientation} faceUp size="md" className={s.card} label={cardName(card.cardId, card.orientation)} />
+        <TarotCard cardId={card.cardId} orientation={card.orientation} faceUp={faceUp} size="md" highlight className={s.card} label={cardName(card.cardId, card.orientation)} />
         <p className={s.cardName}>{cardName(card.cardId, card.orientation)}</p>
         <p className={s.keyword}>{card.keyword}</p>
       </div>
@@ -250,7 +310,7 @@ function Opened({ reading, revisit, slipRef }: { reading: DailyData; revisit: bo
       </section>
 
       <div className={s.after}>
-        <ShareButton text={`오늘의 쿠키: ${reading.summary}`} />
+        <ShareButton text={`오늘의 카드: ${reading.summary}`} />
         <Button href="/tarot/new" variant="ghost" size="md">
           카드 세 장으로 더 물어보기
         </Button>

@@ -162,12 +162,17 @@ test("saju: a lunar day that does not exist is explained next to the date", asyn
   await shot(page, info, "08-saju-lunar-error");
 });
 
-test("오늘의 한 장: the cookie opens once a day; a reload opens straight to the same result", async ({ page }, info) => {
+test("오늘의 한 장: shuffle, pick one of three; a reload shows only that card and its fortune", async ({ page }, info) => {
   await ownAddress(page, info);
   await page.goto("/today");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("오늘의 쿠키를 열어 볼까요?");
-  await shot(page, info, "09-today-cookie");
-  await page.getByRole("button", { name: "쿠키 열기" }).last().click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("오늘의 카드를 골라 볼까요?");
+  await page.getByRole("button", { name: "바로 펼치기" }).click();
+  const cards = page.getByRole("button", { name: /번째 카드 고르기/ });
+  await expect(cards).toHaveCount(3);
+  await shot(page, info, "09-today-pick");
+  const picked = page.waitForRequest((r) => r.url().endsWith("/api/tarot/daily") && r.method() === "POST");
+  await cards.nth(1).click();
+  expect(JSON.parse((await picked).postData() ?? "{}")).toEqual({ pick: 1 });
   const line = page.locator("#today-line");
   await expect(line).toBeVisible({ timeout: 30_000 });
   const summary = await line.innerText();
@@ -176,10 +181,16 @@ test("오늘의 한 장: the cookie opens once a day; a reload opens straight to
   await expect(page.getByText("AI가 만든 풀이예요 · 재미와 자기 성찰을 위한 참고용이에요")).toBeVisible();
   await shot(page, info, "10-today-opened");
 
+  // Only the picked card is ever shown: one card image on the page, no face-down ones to pick.
+  await expect(page.locator("main img[src*='/cards/']:not([src*='back'])")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /번째 카드 고르기/ })).toHaveCount(0);
+
   await page.reload();
-  await expect(page.getByText("오늘의 쿠키는 이미 열었어요 · 내일 새 쿠키가 기다려요")).toBeVisible();
+  await expect(page.getByText("오늘의 카드는 이미 골랐어요 · 내일 새 카드가 기다려요")).toBeVisible();
   await expect(page.locator("#today-line")).toHaveText(summary);
-  await expect(page.getByRole("button", { name: "쿠키 열기" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /번째 카드 고르기/ })).toHaveCount(0);
+  await expect(page.locator("main img[src*='/cards/']:not([src*='back'])")).toHaveCount(1);
+  await shot(page, info, "10b-today-revisit");
 });
 
 test("내 기록: the empty state", async ({ page }, info) => {
