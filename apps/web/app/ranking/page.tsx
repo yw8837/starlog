@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
+import { rankingItemListJsonLd } from "@/lib/jsonld";
 import { pageMetadata } from "@/lib/seo";
 import { loadLeaders } from "./loadLeaders";
 import { RankingIndexBody } from "./RankingIndexBody";
@@ -27,6 +29,7 @@ export default async function RankingIndexPage() {
       <NightSky fixed seed={21} />
       <TabBar />
       <main className={`page-col page-wide ${s.screen}`}>
+        <JsonLd data={rankingItemListJsonLd()} />
         <RankingIndexBody leaders={leaders} />
       </main>
       <Footer />
