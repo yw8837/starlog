@@ -48,6 +48,11 @@ function deploymentId(): string | undefined {
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   deploymentId: deploymentId(),
+  experimental: {
+    // STARLOG_DEV_FS_CACHE=0 turns Turbopack's on-disk dev cache off: on this exFAT disk its restore
+    // panics now and then ("Restore of All … restoring failed") and takes the dev server down.
+    turbopackFileSystemCacheForDev: process.env.STARLOG_DEV_FS_CACHE !== "0",
+  },
   // @starlog/core is resolved through tsconfig "paths" (D: is exFAT, so pnpm cannot symlink it).
   transpilePackages: ["@starlog/core"],
   images: { unoptimized: true },
