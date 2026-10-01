@@ -62,6 +62,18 @@ describe("ShareImageButton", () => {
     click.mockRestore();
   });
 
+  it("says honestly when the link could not be copied, and shows it", async () => {
+    stubNavigator({ clipboard: { writeText: vi.fn().mockRejectedValue(new Error("denied")) } });
+    URL.createObjectURL = vi.fn(() => "blob:starlog");
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+    render(<ShareImageButton {...PROPS} />);
+    await press();
+    expect(screen.getByRole("status").textContent).toBe("이미지를 저장했어요. 링크는 복사하지 못해서 아래에 적어 둘게요");
+    expect(screen.getByRole("link", { name: PROPS.shareUrl }).getAttribute("href")).toBe(PROPS.shareUrl);
+    click.mockRestore();
+  });
+
   it("says so when the image cannot be made", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("no", { status: 503 })));
     render(<ShareImageButton {...PROPS} />);

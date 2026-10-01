@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import s from "./ShareButton.module.css";
+import own from "./ShareImageButton.module.css";
 
 type ShareImageButtonProps = {
   /** a same-origin PNG route (e.g. /api/og/bonds/<id>) */
@@ -16,16 +17,19 @@ type ShareImageButtonProps = {
   label?: string;
 };
 
-type Toast = "" | "saved" | "failed";
+/** What actually happened, step by step: the toast never claims a step that failed. */
+type Toast = "" | "saved" | "savedNoCopy" | "failed";
 
 const TOAST: Record<Exclude<Toast, "">, string> = {
   saved: "이미지를 저장하고 링크를 복사했어요",
+  savedNoCopy: "이미지를 저장했어요. 링크는 복사하지 못해서 아래에 적어 둘게요",
   failed: "이미지를 만들지 못했어요. 잠시 뒤에 다시 시도해 주세요",
 };
 
 /**
  * Shares a PNG: the system share sheet with the file where the device can share files (phones);
- * otherwise the image is downloaded and the link copied, and a toast says so.
+ * otherwise the image is downloaded and the link copied. The toast reports each step as it went, and
+ * when the link could not be copied it is shown under the button to copy by hand.
  */
 export function ShareImageButton({ imageUrl, fileName, shareText, shareUrl, primary = false, label = "공유하기" }: ShareImageButtonProps) {
   const [busy, setBusy] = useState(false);
@@ -56,12 +60,14 @@ export function ShareImageButton({ imageUrl, fileName, shareText, shareUrl, prim
       a.click();
       a.remove();
       window.setTimeout(() => URL.revokeObjectURL(href), 10_000);
+      let copied = false;
       try {
         await navigator.clipboard.writeText(shareUrl);
+        copied = true;
       } catch {
-        // the image is saved either way
+        // the image is saved either way; the link is shown instead
       }
-      setToast("saved");
+      setToast(copied ? "saved" : "savedNoCopy");
     } catch {
       setToast("failed");
     } finally {
@@ -77,6 +83,11 @@ export function ShareImageButton({ imageUrl, fileName, shareText, shareUrl, prim
       <p className={s.toast} role="status" data-shown={toast ? "" : undefined}>
         {toast ? TOAST[toast] : ""}
       </p>
+      {toast === "savedNoCopy" ? (
+        <p className={own.manual}>
+          <span>링크</span> <a href={shareUrl}>{shareUrl}</a>
+        </p>
+      ) : null}
     </>
   );
 }

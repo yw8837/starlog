@@ -1,0 +1,13 @@
+/* The link, shown when it could not be copied: selectable, wraps anywhere on a phone. */
+.manual {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.manual a {
+  color: var(--ink);
+}
