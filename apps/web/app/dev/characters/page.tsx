@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { CONSTELLATIONS } from "@starlog/core";
+import { ConstellationArt } from "@/components/bonds/ConstellationArt";
+import { Dogam } from "@/components/bonds/Dogam";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import type { CharacterAction, Expression, Outfit } from "@/components/characters/types";
@@ -88,6 +91,30 @@ export default function CharacterSheetPage() {
                 </figcaption>
               </figure>
             ))}
+          </div>
+        </section>
+
+        <section className={s.section}>
+          <h2>별자리</h2>
+          <p className={s.note}>빈 별자리, 별 2개, 완성(친구 닉네임 포함). 새로 들어온 별은 반짝여요.</p>
+          <div className={s.grid}>
+            {CONSTELLATIONS.flatMap((c) => [
+              <figure key={`${c.id}-empty`} className={s.cell} data-shot={`bonds-${c.id}-empty`}>
+                <ConstellationArt sign={c.id} lit={0} size={180} />
+                <figcaption>{c.ko} · 0/{c.slots}</figcaption>
+              </figure>,
+              <figure key={`${c.id}-two`} className={s.cell} data-shot={`bonds-${c.id}-two`}>
+                <ConstellationArt sign={c.id} lit={2} newSlots={[1]} labels={["민지", "하늘이"]} size={180} />
+                <figcaption>{c.ko} · 2/{c.slots}</figcaption>
+              </figure>,
+              <figure key={`${c.id}-done`} className={s.cell} data-shot={`bonds-${c.id}-done`}>
+                <ConstellationArt sign={c.id} lit={c.slots} labels={["민지", "하늘이", "도윤", "서아", "별빛", "지우", "Momo"].slice(0, c.slots)} size={300} />
+                <figcaption>{c.ko} · 완성</figcaption>
+              </figure>,
+            ])}
+          </div>
+          <div className={s.section} data-shot="bonds-dogam">
+            <Dogam completed={["aries", "libra"]} filling={{ sign: "leo", filled: 2 }} />
           </div>
         </section>
 

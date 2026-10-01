@@ -1,0 +1,135 @@
+.art {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* The figure: fine line art, faint until the constellation is complete. */
+.figure {
+  fill: none;
+  stroke: rgba(241, 236, 255, 0.35);
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.complete .figure {
+  stroke: rgba(243, 220, 161, 0.6);
+  filter: drop-shadow(0 0 3px rgba(243, 220, 161, 0.45));
+}
+
+.lineOn,
+.lineOff {
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.lineOn {
+  stroke: var(--gold);
+  stroke-width: 2px;
+}
+
+.lineOff {
+  stroke: rgba(243, 220, 161, 0.35);
+  stroke-width: 1.5px;
+  stroke-dasharray: 2 6;
+}
+
+.halo {
+  fill: rgba(243, 220, 161, 0.2);
+}
+
+.dot {
+  fill: var(--gold);
+}
+
+.ring {
+  fill: rgba(13, 10, 38, 0.6);
+  stroke: rgba(243, 220, 161, 0.7);
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+}
+
+.sparkle {
+  fill: #fff7dc;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.label rect {
+  fill: rgba(13, 10, 38, 0.78);
+  stroke: rgba(243, 220, 161, 0.4);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+.label text {
+  fill: var(--ink);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sparkle {
+    animation: twinkle 1.6s ease-in-out infinite;
+  }
+
+  /* Completion: stars light one by one, the lines join, then the figure rises. */
+  .reveal .star,
+  .reveal .label {
+    animation: light 500ms ease-out both;
+    animation-delay: calc(var(--i) * 260ms);
+  }
+
+  .reveal .lineOn {
+    stroke-dasharray: 1000;
+    animation: draw 700ms ease-out both;
+    animation-delay: calc(var(--i) * 260ms + 200ms);
+  }
+
+  .reveal .figure {
+    animation: rise 1200ms ease-out both;
+    animation-delay: calc(var(--i) * 260ms);
+  }
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.6) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+@keyframes light {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    filter: none;
+  }
+  to {
+    opacity: 1;
+  }
+}
