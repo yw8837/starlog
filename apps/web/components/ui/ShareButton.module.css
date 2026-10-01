@@ -38,3 +38,30 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* The link to copy by hand when the clipboard refused it: a read-only field, selected on focus. */
+.manual {
+  display: grid;
+  flex-basis: 100%;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.manualLabel {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.manualField {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  /* 16px keeps phones from zooming in on focus. */
+  font-size: 16px;
+  user-select: all;
+}

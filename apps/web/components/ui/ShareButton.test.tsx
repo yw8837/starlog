@@ -66,6 +66,17 @@ describe("ShareButton", () => {
     await press();
     expect(writeText).toHaveBeenCalledWith(SITE.url);
     expect(screen.getByRole("status").textContent).toBe("링크를 복사하지 못했어요");
+    // QA Q-12: the link is then offered to copy by hand, and stays after the toast fades.
+    const field = screen.getByRole("textbox", { name: "링크를 길게 눌러 복사해 주세요" }) as HTMLInputElement;
+    expect(field.value).toBe(SITE.url);
+    expect(field.readOnly).toBe(true);
+  });
+
+  it("shows no hand-copy field when the link was copied", async () => {
+    stubNavigator({ clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } });
+    render(<ShareButton text={TEXT} />);
+    await press();
+    expect(screen.queryByRole("textbox")).toBeNull();
   });
 
   it("is a secondary button, not a gold primary", () => {

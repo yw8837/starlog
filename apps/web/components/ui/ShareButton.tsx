@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
 import { kakaoKey, shareToKakao } from "@/lib/kakaoShare";
@@ -36,16 +36,24 @@ const TalkIcon = () => (
 
 /**
  * 공유하기: the system share sheet where there is one (phones), otherwise the link is copied and a
- * small toast says so. Readings live on this device only, so the link is always the service's home
+ * small toast says so. When the copy is refused too, the link is shown in a field to copy by hand.
+ * Readings live on this device only, so the link is always the service's home
  * (SITE.url), never a page of a reading. With a Kakao key, 카카오톡으로 보내기 sits beside it (the
  * SDK loads on the first tap). Secondary style, never the screen's gold primary.
  */
 export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao = kakaoKey() }: ShareButtonProps) {
   const { state, copy } = useCopy();
   const [kakaoFailed, setKakaoFailed] = useState(false);
+  // The link to copy by hand, once the clipboard refused it (stays until the next try).
+  const [manual, setManual] = useState(false);
   const url = SITE.url;
 
+  useEffect(() => {
+    if (state === "failed") setManual(true);
+  }, [state]);
+
   const share = async () => {
+    setManual(false);
     const data = { title, text, url };
     if (typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare(data))) {
       try {
@@ -89,6 +97,12 @@ export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao 
       <p className={s.toast} role="status" data-shown={toast ? "" : undefined}>
         {toast}
       </p>
+      {manual ? (
+        <label className={s.manual}>
+          <span className={s.manualLabel}>링크를 길게 눌러 복사해 주세요</span>
+          <input className={s.manualField} type="url" readOnly value={url} onFocus={(e) => e.currentTarget.select()} />
+        </label>
+      ) : null}
     </>
   );
 }
