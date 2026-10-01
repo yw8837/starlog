@@ -377,46 +377,6 @@
   text-underline-offset: 3px;
 }
 
-/* ---- more: the leaderboard and the lucky numbers ---- */
-
-.moreLinks {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.moreLink {
-  display: grid;
-  gap: 2px;
-  min-height: 44px;
-  padding: 12px 14px;
-  border: 1px solid var(--glass-line);
-  border-radius: 16px;
-  background: var(--glass);
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.moreLink:hover {
-  border-color: var(--line-strong);
-}
-
-.moreLink:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.moreTitle {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.moreSub {
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  line-height: 1.4;
-}
-
 /* ---- loading: the final shape, a screen tall (Q-06, no layout shift when the data arrives) ---- */
 
 .skeleton {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { kstWeekId } from "@starlog/core";
 import { BondsHomeRow } from "./BondsHomeRow";
 
 const push = vi.fn();
@@ -72,8 +73,8 @@ describe("BondsHomeRow", () => {
   it("leads on to the leaderboard and this week's lucky numbers in every state", async () => {
     respond({ ok: true, owner: null });
     render(<BondsHomeRow enabled />);
-    expect((await screen.findByRole("link", { name: "별자리 리더보드" })).getAttribute("href")).toBe("/ranking");
-    expect(screen.getByRole("link", { name: "이번 주 행운 번호" }).getAttribute("href")).toBe("/lucky");
+    expect((await screen.findByRole("link", { name: /^별자리 리더보드/ })).getAttribute("href")).toBe("/ranking");
+    expect(screen.getByRole("link", { name: /^이번 주 행운 번호/ }).getAttribute("href")).toBe("/lucky");
     cleanup();
     respond({
       ok: true,
@@ -85,8 +86,40 @@ describe("BondsHomeRow", () => {
       ranks: {},
     });
     render(<BondsHomeRow enabled />);
-    expect((await screen.findByRole("link", { name: "별자리 리더보드" })).getAttribute("href")).toBe("/ranking");
+    expect((await screen.findByRole("link", { name: /^별자리 리더보드/ })).getAttribute("href")).toBe("/ranking");
     expect(screen.getByRole("navigation", { name: "별자리 인연 더 보기" })).toBeTruthy();
+  });
+
+  it("tiles say this week's best record and the way to my numbers", async () => {
+    respond({ ok: true, owner: null, weekTop: { sign: "aries", total: 422 } });
+    render(<BondsHomeRow enabled />);
+    expect((await screen.findByRole("link", { name: /^별자리 리더보드/ })).textContent).toBe("별자리 리더보드이번 주 양자리 1위 422점");
+    expect(screen.getByRole("link", { name: /^이번 주 행운 번호/ }).textContent).toBe("이번 주 행운 번호이번 주 내 번호 6개 보기");
+    cleanup();
+    respond({ ok: true, owner: null, weekTop: null });
+    render(<BondsHomeRow enabled />);
+    expect((await screen.findByRole("link", { name: /^별자리 리더보드/ })).textContent).toContain("첫 1위에 도전해 보세요");
+    cleanup();
+    // no record could be read: a plain line
+    respond({ ok: true, owner: null });
+    render(<BondsHomeRow enabled />);
+    expect((await screen.findByRole("link", { name: /^별자리 리더보드/ })).textContent).toContain("별자리마다 이번 주 1~3위");
+  });
+
+  it("previews this device's numbers once /lucky has shown them this week", async () => {
+    const weekId = kstWeekId(Date.now());
+    const numbers = [3, 12, 18, 27, 33, 41].map((n) => ({ n, reason: "" }));
+    window.localStorage.setItem("starlog.lucky", JSON.stringify({ weekId, numbers, card: { cardId: "wands-01", name: "" }, notice: "" }));
+    respond({ ok: true, owner: null, weekTop: null });
+    render(<BondsHomeRow enabled />);
+    const lucky = await screen.findByRole("link", { name: /^이번 주 행운 번호/ });
+    expect(lucky.textContent).toBe("이번 주 행운 번호내 번호 3, 12, 18, 27, 33, 41");
+    cleanup();
+    // last week's numbers are not shown
+    window.localStorage.setItem("starlog.lucky", JSON.stringify({ weekId: "2020-01-06", numbers, card: { cardId: "wands-01", name: "" }, notice: "" }));
+    respond({ ok: true, owner: null, weekTop: null });
+    render(<BondsHomeRow enabled />);
+    expect((await screen.findByRole("link", { name: /^이번 주 행운 번호/ })).textContent).toContain("이번 주 내 번호 6개 보기");
   });
 
   it("renders nothing with the feature off or when the API fails", async () => {

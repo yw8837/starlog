@@ -6,7 +6,7 @@ import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type Bi
 import { Button } from "@/components/ui/Button";
 import { ShareImageButton } from "@/components/ui/ShareImageButton";
 import { SITE } from "@/lib/config";
-import { bondsApi, bondsMessage } from "@/lib/bonds/client";
+import { LUCKY_STORE_KEY as STORE_KEY, bondsApi, bondsMessage } from "@/lib/bonds/client";
 import { useSajuProfile } from "@/lib/sajuFlow";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./LuckyView.module.css";
@@ -18,8 +18,7 @@ interface Lucky {
   notice: string;
 }
 
-/** This week's numbers only (no birth date), so a reload shows them again without asking. */
-const STORE_KEY = "starlog.lucky";
+// This week's numbers only (no birth date) are kept under STORE_KEY, so a reload shows them again without asking.
 
 function stored(): Lucky | null {
   try {

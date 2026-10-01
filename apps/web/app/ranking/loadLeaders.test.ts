@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createMemoryBondsRepo } from "@/lib/db/memoryBondsRepo";
 import { chooseSign, inviteOf, joinStar, saveOwner } from "@/lib/bonds/service";
-import { loadLeaders } from "./loadLeaders";
+import { loadLeaders, weekTop } from "./loadLeaders";
 
 const FRIENDS = [
   { calendar: "solar" as const, year: 1991, month: 5, day: 12 },
@@ -42,5 +42,15 @@ describe("loadLeaders", () => {
       throw new Error("DB binding missing");
     };
     expect(await loadLeaders(Date.now(), broken)).toBeNull();
+  });
+
+  it("picks this week's best record over all signs (1위 totals; a tie goes to the earlier sign)", () => {
+    expect(weekTop({})).toBeNull();
+    const leaders = {
+      leo: [{ rank: 1, nickname: "민지", total: 501 }, { rank: 2, nickname: "하늘", total: 510 }],
+      aries: [{ rank: 1, nickname: "용우", total: 422 }],
+      pisces: [{ rank: 1, nickname: "별", total: 501 }],
+    };
+    expect(weekTop(leaders)).toEqual({ sign: "leo", total: 501 });
   });
 });

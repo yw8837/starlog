@@ -1,0 +1,108 @@
+/* Two equal tiles, as the home's quick cards: icon, title, and a live line under it. */
+.tiles {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+/* Only on the narrowest phones do the two stack. */
+@media (max-width: 339px) {
+  .tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tile {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 14px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 140ms ease;
+}
+
+.tile:hover {
+  border-color: var(--line-strong);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(243, 220, 161, 0.45);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(243, 220, 161, 0.16), transparent 65%),
+    linear-gradient(160deg, #3a3290 0%, #1d1850 100%);
+}
+
+.icon svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+
+.text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.sub {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.45;
+}
+
+/* The device's numbers for this week, as small gold balls (wrap on narrow tiles). */
+.balls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.ball {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 4px;
+  border-radius: 13px;
+  background: linear-gradient(160deg, #f7e5b6, #e9c46f);
+  color: #2a1b4d;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+@media (min-width: 1024px) {
+  .tiles {
+    gap: 16px;
+  }
+
+  .tile {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+  }
+}

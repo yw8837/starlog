@@ -78,9 +78,13 @@ describe("bonds API", () => {
     expect(JSON.stringify(ranking)).not.toMatch(/constellationId/);
   });
 
-  it("answers `owner: null` for a device that has not started", async () => {
+  it("answers `owner: null` for a device that has not started, with this week's best record for the 리더보드 tile", async () => {
     const res = await meGet(req("/api/bonds/me", new Map()));
-    expect(await res.json()).toEqual({ ok: true, owner: null });
+    const body = (await res.json()) as { ok: true; owner: null; weekTop: { sign: string; total: number } | null };
+    expect(body).toMatchObject({ ok: true, owner: null });
+    expect(Object.keys(body).sort()).toEqual(["ok", "owner", "weekTop"]);
+    // the first test completed 양자리 this week
+    expect(body.weekTop).toMatchObject({ sign: expect.any(String), total: expect.any(Number) });
   });
 
   it("refuses self-joins", async () => {

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getConstellation, type SignId } from "@starlog/core";
+import type { WeekTop } from "@/app/ranking/loadLeaders";
+import { BondsMoreTiles } from "@/components/bonds/BondsMoreTiles";
 import { CodeEntry } from "@/components/bonds/CodeEntry";
 import { CompletedCard } from "@/components/bonds/CompletedCard";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
@@ -19,7 +21,7 @@ import { StarList } from "./StarList";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./BondsView.module.css";
 
-type Me = { owner: null } | OwnerView;
+type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null };
 
 /**
  * 별자리 인연, the owner's single scroll (spec §3): the constellation being filled with its stars, the
@@ -134,7 +136,7 @@ function JoinByCode() {
   );
 }
 
-function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
+function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
   const { owner, invite, filling, completed, top5, ranks } = view;
   const completedSigns = completed.map((c) => c.sign);
   const mySign = savedSunSign();
@@ -247,16 +249,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
         <h2 id="more-title" className={b.sectionTitle}>
           더 보기
         </h2>
-        <div className={s.moreLinks}>
-          <Link href="/ranking" className={s.moreLink}>
-            <span className={s.moreTitle}>별자리 리더보드</span>
-            <span className={s.moreSub}>이번 주 별자리마다 1~3위</span>
-          </Link>
-          <Link href="/lucky" className={s.moreLink}>
-            <span className={s.moreTitle}>이번 주 행운 번호</span>
-            <span className={s.moreSub}>내 오행으로 고른 번호 6개</span>
-          </Link>
-        </div>
+        <BondsMoreTiles weekTop={view.weekTop} />
       </nav>
 
       <Settings rankingPublic={owner.rankingPublic} reload={reload} />

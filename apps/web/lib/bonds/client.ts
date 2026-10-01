@@ -1,4 +1,4 @@
-import { computeChart, isSignId, sunSign, type BondBirth, type SignId } from "@starlog/core";
+import { computeChart, isSignId, kstWeekId, sunSign, type BondBirth, type SignId } from "@starlog/core";
 import { SITE } from "@/lib/config";
 
 /**
@@ -97,6 +97,8 @@ export async function copyText(text: string): Promise<"copied" | "failed"> {
 
 // ---- per-device memories (best effort; private mode may refuse) ----
 
+/** /lucky keeps this week's numbers on the device under this key (no birth date). */
+export const LUCKY_STORE_KEY = "starlog.lucky";
 const SUN_KEY = "starlog.bonds.sun";
 const SEEN_KEY = "starlog.bonds.seen";
 
@@ -137,3 +139,14 @@ export function savedSunSign(): SignId | null {
 /** The newest star time this device has seen on the owner page (new stars sparkle until then). */
 export const seenUntil = (): number => Number(read(SEEN_KEY)) || 0;
 export const markSeen = (ms: number) => write(SEEN_KEY, String(ms));
+
+/** This week's lucky numbers if /lucky already showed them on this device, else null. */
+export function storedLuckyNumbers(): number[] | null {
+  try {
+    const value = JSON.parse(read(LUCKY_STORE_KEY) ?? "null") as { weekId?: string; numbers?: { n: number }[] } | null;
+    if (!value || value.weekId !== kstWeekId(Date.now()) || !Array.isArray(value.numbers)) return null;
+    return value.numbers.map((x) => x.n);
+  } catch {
+    return null;
+  }
+}

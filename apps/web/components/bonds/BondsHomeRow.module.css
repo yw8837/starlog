@@ -136,36 +136,9 @@
   font-weight: 700;
 }
 
+/* 별자리 리더보드 · 이번 주 행운 번호 tiles under the row's own content */
 .more {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  margin-top: -4px;
-  border-top: 1px solid var(--glass-line);
-}
-
-.moreLink {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.moreLink::after {
-  content: " →";
-  white-space: pre;
-}
-
-.moreLink:hover {
-  color: var(--ink);
-}
-
-.moreLink:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+  margin-top: 2px;
 }
 
 @media (min-width: 1024px) {

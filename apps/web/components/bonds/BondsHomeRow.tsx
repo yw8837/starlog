@@ -4,16 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getConstellation } from "@starlog/core";
+import type { WeekTop } from "@/app/ranking/loadLeaders";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
 import { bondsApi, seenUntil } from "@/lib/bonds/client";
 import type { OwnerView } from "@/lib/bonds/service";
 import { normalizeCode } from "@/lib/bonds/text";
+import { BondsMoreTiles } from "./BondsMoreTiles";
 import { ConstellationArt } from "./ConstellationArt";
 import { InviteShareButton } from "./InviteShareButton";
 import s from "./BondsHomeRow.module.css";
 
-type Me = { owner: null } | OwnerView;
+type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null };
 
 /**
  * The home's 별자리 인연 row (spec §3 홈 화면 자리). Filling: the small figure, the badge
@@ -39,7 +41,7 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
 
   if (!enabled || !me) return null;
   const rowClass = [s.row, className].filter(Boolean).join(" ");
-  if (me.owner === null) return <StartRow className={rowClass} />;
+  if (me.owner === null) return <StartRow className={rowClass} weekTop={me.weekTop} />;
 
   const filling = me.filling;
   if (!filling) {
@@ -54,7 +56,7 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
           </span>
           <span className={s.badge}>도감 {me.completed.length}/12</span>
         </Link>
-        <MoreLinks />
+        <BondsMoreTiles weekTop={me.weekTop} className={s.more} />
       </section>
     );
   }
@@ -80,12 +82,12 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
       <div className={s.actions}>
         <InviteShareButton code={me.invite.code} sign={def.id} filled={filling.stars.length} variant="secondary" />
       </div>
-      <MoreLinks />
+      <BondsMoreTiles weekTop={me.weekTop} className={s.more} />
     </section>
   );
 }
 
-function StartRow({ className }: { className: string }) {
+function StartRow({ className, weekTop }: { className: string; weekTop?: WeekTop | null }) {
   const router = useRouter();
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -141,21 +143,7 @@ function StartRow({ className }: { className: string }) {
           </p>
         ) : null}
       </form>
-      <MoreLinks />
+      <BondsMoreTiles weekTop={weekTop} className={s.more} />
     </section>
-  );
-}
-
-/** The rest of 별자리 인연 from the home: the leaderboard and this week's lucky numbers (44px targets). */
-function MoreLinks() {
-  return (
-    <nav className={s.more} aria-label="별자리 인연 더 보기">
-      <Link href="/ranking" className={s.moreLink}>
-        별자리 리더보드
-      </Link>
-      <Link href="/lucky" className={s.moreLink}>
-        이번 주 행운 번호
-      </Link>
-    </nav>
   );
 }
