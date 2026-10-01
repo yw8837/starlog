@@ -139,9 +139,10 @@ export async function generateValidated<T>(
       violations = validate(result.data);
     } catch (error) {
       if (!(error instanceof GenerationError) || error.code !== "QUALITY") {
-        logGeneration(task.name, provider.name, attempt, Date.now() - started, error instanceof GenerationError ? error.code : "UPSTREAM", usage);
+        const failure = error instanceof GenerationError ? error : new GenerationError("UPSTREAM", [errorName(error)]);
+        logGeneration(task.name, provider.name, attempt, Date.now() - started, failureStatus(failure), usage, failure.code === "UPSTREAM" ? failure.detail : []);
         if (kept !== undefined) return { data: kept, usage, attempts: attempt };
-        throw error instanceof GenerationError ? error : new GenerationError("UPSTREAM", [errorName(error)]);
+        throw failure;
       }
       violations = error.detail.length ? error.detail : ["출력 형식이 맞지 않았어요"];
     }
@@ -168,11 +169,25 @@ function errorName(error: unknown): string {
   return error instanceof Error ? error.name : typeof error;
 }
 
-/** One line per attempt: ids, timings, token usage and status only (never user text). */
-function logGeneration(task: TaskName, provider: string, attempt: number, ms: number, status: string, usage: Usage[]): void {
+/**
+ * The log status of a failed attempt: its code, except an upstream 403 / permission error, which is
+ * UPSTREAM_FORBIDDEN (an unsupported region or a key without access, not a passing outage). Users
+ * still get UPSTREAM.
+ */
+export function failureStatus(error: GenerationError): string {
+  if (error.code === "UPSTREAM" && error.detail.some((d) => /:403$|^PermissionDenied/.test(d))) return "UPSTREAM_FORBIDDEN";
+  return error.code;
+}
+
+/** SDK error class and HTTP status only ("APIError:403", "aborted"); anything else is dropped. */
+const SAFE_DETAIL = /^(?:[A-Za-z]+(?::(?:\d{3}|-))?|aborted)$/;
+
+/** One line per attempt: ids, timings, token usage, status and upstream error class/status only (never user or model text). */
+function logGeneration(task: TaskName, provider: string, attempt: number, ms: number, status: string, usage: Usage[], detail: readonly string[] = []): void {
   const tokens = usage.reduce(
     (sum, u) => ({ in: sum.in + u.inputTokens, out: sum.out + u.outputTokens, cacheRead: sum.cacheRead + u.cacheReadTokens, cacheWrite: sum.cacheWrite + u.cacheWriteTokens }),
     { in: 0, out: 0, cacheRead: 0, cacheWrite: 0 },
   );
-  console.info(JSON.stringify({ evt: "ai.generate", task, provider, attempt, ms, status, tokens }));
+  const safe = detail.filter((d) => SAFE_DETAIL.test(d));
+  console.info(JSON.stringify({ evt: "ai.generate", task, provider, attempt, ms, status, ...(safe.length ? { detail: safe } : {}), tokens }));
 }

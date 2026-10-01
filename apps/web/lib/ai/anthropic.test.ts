@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { anthropicProvider, type MessagesClient } from "./anthropic";
-import { GenerationError, type GenerationTask } from "./provider";
+import { GenerationError, failureStatus, generateValidated, type GenerationTask } from "./provider";
 import { FollowUpAnswerSchema, type FollowUpAnswer } from "./schemas";
 
 type Message = Anthropic.Beta.BetaMessage;
@@ -171,6 +171,24 @@ describe("anthropic provider response handling (fake SDK)", () => {
     const caught = await anthropicProvider("key", fake([error])).generate(task(), 1).catch((e: unknown) => e);
     expect(caught).toMatchObject({ code: "UPSTREAM" });
     expect((caught as GenerationError).detail[0]).toMatch(/APIConnectionTimeoutError/);
+  });
+
+  it("logs an upstream 403 as UPSTREAM_FORBIDDEN with its class and status, while callers still get UPSTREAM", async () => {
+    const lines: string[] = [];
+    const info = vi.spyOn(console, "info").mockImplementation((line: unknown) => void lines.push(String(line)));
+    try {
+      const forbidden = new Anthropic.PermissionDeniedError(403, { type: "error", error: { type: "permission_error", message: "Request not allowed" } }, "Request not allowed", new Headers());
+      const provider = anthropicProvider("key", fake([forbidden]));
+      const caught = await generateValidated(provider, task(), () => []).catch((e: unknown) => e);
+      expect(caught).toMatchObject({ code: "UPSTREAM", detail: ["PermissionDeniedError:403"] });
+      const log = JSON.parse(lines.find((l) => l.includes('"evt":"ai.generate"'))!);
+      expect(log).toMatchObject({ status: "UPSTREAM_FORBIDDEN", detail: ["PermissionDeniedError:403"] });
+      expect(lines.join("")).not.toContain("Request not allowed"); // class and status only, never the message
+      expect(failureStatus(new GenerationError("UPSTREAM", ["APIError:403"]))).toBe("UPSTREAM_FORBIDDEN");
+      expect(failureStatus(new GenerationError("UPSTREAM", ["InternalServerError:529"]))).toBe("UPSTREAM");
+    } finally {
+      info.mockRestore();
+    }
   });
 
   it("counts every attempt in usage.iterations, fallback model included", async () => {
