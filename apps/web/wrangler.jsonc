@@ -37,9 +37,11 @@
     { "name": "OWNER_LOGIN_LIMITER", "namespace_id": "1003", "simple": { "limit": 5, "period": 60 } },
     { "name": "FULL_LIMITER", "namespace_id": "1004", "simple": { "limit": 5, "period": 60 } },
     { "name": "OWNER_FULL_LIMITER", "namespace_id": "1005", "simple": { "limit": 25, "period": 60 } },
-    // 별자리 인연: joins and invite-code lookups per IP (the spec's per-day rule as Workers' 60 s window).
+    // 별자리 인연 per IP: joins and new owners; failed invite-code lookups (strict); real code opens and
+    // share images (generous, link-preview crawlers included). Values match lib/security/rateLimit.ts.
     { "name": "BOND_JOIN_LIMITER", "namespace_id": "1006", "simple": { "limit": 10, "period": 60 } },
-    { "name": "BOND_CODE_LIMITER", "namespace_id": "1007", "simple": { "limit": 10, "period": 60 } }
+    { "name": "BOND_CODE_LIMITER", "namespace_id": "1007", "simple": { "limit": 10, "period": 60 } },
+    { "name": "BOND_VIEW_LIMITER", "namespace_id": "1008", "simple": { "limit": 120, "period": 60 } }
   ],
   // 오늘의 한 장 results, one per device per KST day (lib/api/dailyStore.ts).
   "kv_namespaces": [

@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { BirthSchema, allowed, body, bondsRoute, fail, ok } from "@/lib/bonds/api";
+import { codeGuard } from "@/lib/bonds/codeGuard";
 import { friendKey, readOwnerId } from "@/lib/bonds/identity";
-import { joinStar } from "@/lib/bonds/service";
+import { BondsError, joinStar } from "@/lib/bonds/service";
 
 const JoinBody = z.object({
   code: z.string().max(32),
@@ -16,13 +17,17 @@ const JoinBody = z.object({
 export async function POST(request: Request): Promise<Response> {
   return bondsRoute(request, "join", async ({ secret, now, cookies, repo }) => {
     if (!(await allowed(request, "BOND_JOIN_LIMITER", now))) return fail("RATE_LIMIT");
+    const guard = codeGuard(request, now);
+    if (!(await guard.allowed())) return fail("RATE_LIMIT");
     const input = await body(request, JoinBody);
     const device = await friendKey(cookies, secret);
-    const result = await joinStar(repo, now, {
-      ...input,
-      friendKey: device.key,
-      joinerOwnerId: await readOwnerId(cookies, secret),
-    });
+    let result: Awaited<ReturnType<typeof joinStar>>;
+    try {
+      result = await joinStar(repo, now, { ...input, friendKey: device.key, joinerOwnerId: await readOwnerId(cookies, secret) });
+    } catch (error) {
+      if (error instanceof BondsError && error.code === "BAD_CODE") await guard.failed();
+      throw error;
+    }
     return ok(
       {
         nickname: result.star.nickname,

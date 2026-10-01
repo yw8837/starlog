@@ -19,15 +19,17 @@ declare global {
   interface CloudflareEnv {
     BOND_JOIN_LIMITER?: RateLimitBinding;
     BOND_CODE_LIMITER?: RateLimitBinding;
+    BOND_VIEW_LIMITER?: RateLimitBinding;
   }
 }
 
-export type BondsApiCode = BondsErrorCode | "RATE_LIMIT" | "NOT_CONFIGURED" | "SERVER";
+export type BondsApiCode = BondsErrorCode | "RATE_LIMIT" | "NOT_CONFIGURED" | "SERVER" | "BAD_ORIGIN";
 
 const STATUS: Record<BondsApiCode, number> = {
   BAD_INPUT: 400,
   BAD_CODE: 400,
   SELF_JOIN: 403,
+  BAD_ORIGIN: 403,
   NOT_FOUND: 404,
   NO_OWNER: 404,
   FILLING_EXISTS: 409,
@@ -37,6 +39,8 @@ const STATUS: Record<BondsApiCode, number> = {
   NO_FILLING: 409,
   COOLDOWN: 429,
   DAILY_STAR_LIMIT: 429,
+  DAILY_ACTION_LIMIT: 429,
+  INVITE_COOLDOWN: 429,
   RATE_LIMIT: 429,
   SERVER: 500,
   NOT_CONFIGURED: 503,
@@ -59,9 +63,21 @@ export interface BondsContext {
   repo: BondsRepo;
 }
 
+/**
+ * A state-changing request from another site's page. JSON bodies already need a CORS preflight that
+ * this API never grants; this refuses a stated foreign Origin outright as well.
+ */
+function foreignOrigin(request: Request): boolean {
+  if (request.method === "GET" || request.method === "HEAD") return false;
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  return origin !== new URL(request.url).origin && origin !== new URL(SITE.url).origin;
+}
+
 /** Runs a bonds route: 404 while the feature is off, 503 without a secret or database, BondsError → its status. */
 export async function bondsRoute(request: Request, name: string, run: (ctx: BondsContext) => Promise<Response>): Promise<Response> {
   if (!SITE.features.bonds) return fail("NOT_FOUND");
+  if (foreignOrigin(request)) return fail("BAD_ORIGIN");
   const secret = signingSecret();
   if (!secret) return fail("NOT_CONFIGURED");
   let repo: BondsRepo;
@@ -93,7 +109,7 @@ export async function body<T>(request: Request, schema: z.ZodType<T>, maxBytes =
 }
 
 /** Per-IP limiter for bonds routes; throws nothing, answers whether to go on. */
-export function allowed(request: Request, limiter: Extract<LimiterName, "BOND_JOIN_LIMITER" | "BOND_CODE_LIMITER">, now: number): Promise<boolean> {
+export function allowed(request: Request, limiter: Extract<LimiterName, "BOND_JOIN_LIMITER" | "BOND_CODE_LIMITER" | "BOND_VIEW_LIMITER">, now: number): Promise<boolean> {
   return rateLimit(limiter, clientKey(request), now);
 }
 

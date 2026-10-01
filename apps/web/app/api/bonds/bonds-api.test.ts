@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetDailyStore } from "@/lib/api/dailyStore";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { POST as ownerPost } from "./owner/route";
 import { POST as choosePost } from "./choose/route";
@@ -43,6 +44,7 @@ describe("bonds API", () => {
     vi.stubEnv("STARLOG_AI", "mock");
     vi.stubEnv("ANTHROPIC_API_KEY", "");
     resetMemoryLimiter();
+    resetDailyStore();
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -81,15 +83,65 @@ describe("bonds API", () => {
     expect(await res.json()).toEqual({ ok: true, owner: null });
   });
 
-  it("refuses self-joins and throttles code lookups", async () => {
+  it("refuses self-joins", async () => {
     const { owner, code } = await startOwner("용우", "leo");
     const self = await joinPost(req("/api/bonds/join", owner, { code, nickname: "나야", birth: ME, pick: 0 }));
     expect(self.status).toBe(403);
     expect(await self.json()).toMatchObject({ ok: false, code: "SELF_JOIN" });
+  });
+
+  it("opens real codes generously but shuts a network out after 10 wrong codes a minute", async () => {
+    const { code } = await startOwner("용우", "leo");
+    const resolve = (c: string, ip: string) => resolveGet(req(`/api/bonds/resolve?code=${c}`, new Map(), undefined, ip));
+    for (let i = 0; i < 30; i++) expect((await resolve(code, "9.9.9.9")).status).toBe(200);
+    const wrong = [];
+    for (let i = 0; i < 11; i++) wrong.push((await resolve(`ZZZZZ${"ABCDEFGHJKM"[i]}`, "8.8.8.8")).status);
+    expect(wrong.slice(0, 10)).toEqual(Array(10).fill(400));
+    expect(wrong[10]).toBe(400); // the 11th wrong code is still answered, then the network is blocked
+    expect((await resolve(code, "8.8.8.8")).status).toBe(429);
+    const join = await joinPost(req("/api/bonds/join", new Map(), { code, nickname: "하늘", birth: ME, pick: 0 }, "8.8.8.8"));
+    expect(join.status).toBe(429);
+    expect((await resolve(code, "7.7.7.7")).status).toBe(200);
+  });
+
+  it("refuses a state change from another site's page", async () => {
+    const res = await ownerPost(new Request("http://localhost/api/bonds/owner", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "https://evil.example" },
+      body: JSON.stringify({ nickname: "용우", birth: ME }),
+    }));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ code: "BAD_ORIGIN" });
+    const same = await ownerPost(new Request("http://localhost/api/bonds/owner", {
+      method: "POST",
+      headers: { "content-type": "application/json", origin: "http://localhost" },
+      body: JSON.stringify({ nickname: "용우", birth: ME }),
+    }));
+    expect(same.status).toBe(200);
+  });
+
+  it("limits new owners per network, not renames", async () => {
     const statuses = [];
-    for (let i = 0; i < 11; i++) statuses.push((await resolveGet(req(`/api/bonds/resolve?code=${code}`, new Map(), undefined, "9.9.9.9"))).status);
-    expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
+    for (let i = 0; i < 11; i++) statuses.push((await ownerPost(req("/api/bonds/owner", new Map(), { nickname: `주인${i}`, birth: ME }, "6.6.6.6"))).status);
+    expect(statuses.slice(0, 10)).toEqual(Array(10).fill(200));
     expect(statuses[10]).toBe(429);
+    const owner: Jar = new Map();
+    absorb(owner, await ownerPost(req("/api/bonds/owner", owner, { nickname: "용우", birth: ME }, "5.4.3.2")));
+    for (let i = 0; i < 12; i++) expect((await ownerPost(req("/api/bonds/owner", owner, { nickname: `이름${i}` }, "5.4.3.2"))).status).toBe(200);
+  });
+
+  it("serves the home row a light view without ranks or TOP 5", async () => {
+    const { owner, code } = await startOwner("용우", "aries");
+    for (const [i, [year, month, day]] of BIRTHS.entries()) {
+      await joinPost(req("/api/bonds/join", new Map(), { code, nickname: `벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `3.3.3.${i + 10}`));
+    }
+    const light = (await (await meGet(req("/api/bonds/me?view=home", owner))).json()) as { ranks: object; top5: unknown[]; completed: unknown[] };
+    expect(light.ranks).toEqual({});
+    expect(light.top5).toEqual([]);
+    expect(light.completed).toHaveLength(1);
+    const full = (await (await meGet(req("/api/bonds/me", owner))).json()) as { ranks: Record<string, unknown>; top5: unknown[] };
+    expect(full.ranks.aries).toBeTruthy();
+    expect(full.top5).toHaveLength(4);
   });
 
   it("never echoes the friend's birth date and lets one device join a round once", async () => {
