@@ -1,3 +1,15 @@
+/* A quiet line above the field when it is shown (구체적으로 적기 (선택)). */
+.label {
+  display: block;
+  margin-top: 12px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.label + .field {
+  margin-top: 6px;
+}
+
 /* Optional, so quieter than the chips above: dashed outline, no fill until something is typed. */
 .field {
   display: flex;

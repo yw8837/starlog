@@ -9,8 +9,9 @@ const WHOS: Who[] = ["me", "us", "work", "group"];
 const WHENS: When[] = ["today", "week", "month", "year"];
 const topic = (who: Who, id: string) => TOPICS_BY_WHO[who].find((t) => t.id === id)!;
 
-/** Owner's samples (2026-10-01): names, a Latin letter, two sentences typed as 누구, nothing. */
-const WHO_SAMPLES = ["엄마", "팀장님", "J", "티끌을 얼마나 모아야", "돈 많이 벌고 싶어요", ""];
+/** Owner's samples (2026-10-01): names, a Latin letter, two sentences typed as 누구, nothing; plus the
+ * field's examples for 나의 일 and 우리 모임. */
+const WHO_SAMPLES = ["엄마", "팀장님", "J", "티끌을 얼마나 모아야", "돈 많이 벌고 싶어요", "", "우리 팀", "새 프로젝트", "첫 직장", "대학 동기", "독서 모임", "가족"];
 const SENTENCE_WHOS = ["티끌을 얼마나 모아야", "돈 많이 벌고 싶어요"];
 const WHEN_SAMPLES = ["다음 주 금요일", "면접 보는 날", "아무거나"];
 /** Typed 무엇: nouns, a Latin noun, a question, open clauses and whole sentences. */
@@ -116,6 +117,21 @@ describe("composeFlowQuestion", () => {
     expect(composeFlowQuestion({ who: "work", whoText: "팀장님", topic: topic("work", "money"), when: "week" })).toBe("이번 주 내 수입은 어떻게 될까?");
     // A typed time before a sentence that has its own comma: no second comma.
     expect(composeFlowQuestion({ who: "us", whoText: "팀장님", topic: topic("us", "conflict"), whenText: "다음 주 금요일" })).toBe("다음 주 금요일 팀장님과의 갈등, 어떻게 풀면 좋을까?");
+  });
+
+  it("reads a 나의 일 detail as a team or project when it looks like one, as a person when it looks like one, otherwise as context only", () => {
+    expect(composeFlowQuestion({ who: "work", whoText: "우리 팀", topic: topic("work", "career"), when: "week" })).toBe("이번 주 우리 팀은 어떻게 풀릴까?");
+    expect(composeFlowQuestion({ who: "work", whoText: "첫 직장", topic: topic("work", "career"), when: "year" })).toBe("올해 첫 직장은 어떻게 풀릴까?");
+    expect(composeFlowQuestion({ who: "work", whoText: "새 프로젝트", topic: topic("work", "negotiation"), when: "month" })).toBe("이번 달 새 프로젝트 협상, 어떻게 풀어 갈까?");
+    expect(composeFlowQuestion({ who: "work", whoText: "새 프로젝트", topic: topic("work", "money"), when: "month" })).toBe("이번 달 내 수입은 어떻게 될까?");
+    expect(composeFlowQuestion({ who: "work", whoText: "거래처", topic: topic("work", "negotiation"), when: "week" })).toBe("이번 주 거래처와의 협상, 어떻게 풀어 갈까?");
+    expect(composeFlowQuestion({ who: "work", whoText: "엄마", topic: topic("work", "negotiation"), when: "week" })).toBe("이번 주 중요한 협상, 어떻게 풀어 갈까?");
+    expect(composeFlowQuestion({ who: "work", whoText: "우리 팀", topicText: "연봉 협상", when: "year" })).toBe("올해 우리 팀 연봉 협상은 어떻게 될까?");
+  });
+
+  it("reads a 우리 모임 detail as the group", () => {
+    expect(composeFlowQuestion({ who: "group", whoText: "독서 모임", topic: topic("group", "mood"), when: "month" })).toBe("이번 달 독서 모임 분위기는 어떨까?");
+    expect(composeFlowQuestion({ who: "group", whoText: "대학 동기", topic: topic("group", "conflict"), when: "week" })).toBe("이번 주 대학 동기 모임 안의 갈등, 어떻게 풀면 좋을까?");
   });
 
   it("keeps the catalog wording when the particle after a name cannot be told, except before 에게", () => {

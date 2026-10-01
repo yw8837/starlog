@@ -93,6 +93,19 @@ export function timePhrase(text: string | undefined): string {
   return TIME_WORD.test(clean) ? clean : "";
 }
 
+/**
+ * 나의 일 detail: a person ("팀장님", "거래처") or a team, project or workplace ("우리 팀",
+ * "새 프로젝트", "첫 직장"). Anything else only reaches the reading.
+ */
+const WORK_PERSON = /(님|씨|선배|후배|동료|상사|고객|거래처|대표|교수|선생|사장|팀장|부장|과장|대리|사원|직원|클라이언트)$/u;
+const WORK_PLACE = /(팀|회사|직장|프로젝트|부서|사업|가게|매장|학교|학원|연구실|업무|과제|공모전|스터디|알바|아르바이트|인턴|창업)$/u;
+
+function workSide(name: string): "person" | "place" | null {
+  if (!name) return null;
+  if (WORK_PERSON.test(name)) return "person";
+  return WORK_PLACE.test(name) ? "place" : null;
+}
+
 /** A group for the 우리 모임 sentences: "동아리" as it is, "엄마" → "엄마 모임". */
 function groupName(name: string): string {
   return /(모임|동아리|동호회|팀|회사|학교|반|방|회|부|과|조|가족|친구들|교회)$/u.test(name) ? name : `${name} 모임`;
@@ -144,6 +157,7 @@ function customTopicQuestion(when: { text: string; typed: boolean } | null, who:
   }
   // A noun phrase ("창업 준비"): whose it is, then the topic.
   const withName = name ? particle(name, "과/와") : null;
+  const side = who === "work" ? workSide(name) : null;
   const prefix =
     who === "me"
       ? "내 "
@@ -152,9 +166,11 @@ function customTopicQuestion(when: { text: string; typed: boolean } | null, who:
           ? `${name}${withName}의 `
           : "그 사람과의 "
         : who === "work"
-          ? withName
+          ? side === "person" && withName
             ? `${name}${withName}의 `
-            : ""
+            : side === "place"
+              ? `${name} `
+              : ""
           : `${name ? groupName(name) : "우리 모임"} `;
   const topicParticle = particle(text, "은/는");
   return withTime(when, topicParticle ? `${prefix}${text}${topicParticle} 어떻게 될까?` : `${prefix}${text}, 어떻게 될까?`);
@@ -162,12 +178,23 @@ function customTopicQuestion(when: { text: string; typed: boolean } | null, who:
 
 /**
  * A chip topic with a named person or group: the name goes where the catalog sentence has
- * "그 사람" / "우리 모임" (and, for 나의 일, the other side of 일 or 협상). When the particle after
- * the name cannot be told (a Latin or digit ending), the catalog sentence stays as it is, except
- * before 에게, which fits any name. Replacements are functions, so "$&" or "$1" in what the user
- * typed stays literal.
+ * "그 사람" / "우리 모임" (and, for 나의 일, the other side of 일 or 협상, or the team or project they
+ * are about). When the particle after the name cannot be told (a Latin or digit ending), the catalog
+ * sentence stays as it is, except before 에게, which fits any name. Replacements are functions, so
+ * "$&" or "$1" in what the user typed stays literal.
  */
 function namedChipQuestion(sentence: string, who: Who, name: string): string {
+  if (who === "work") {
+    const side = workSide(name);
+    if (side === "place") {
+      // "우리 팀은 어떻게 풀릴까?", "새 프로젝트 협상, 어떻게 풀어 갈까?"
+      const topicParticle = particle(name, "은/는");
+      return sentence.replace(/중요한 협상|내 일은/u, (match) => (match === "내 일은" ? (topicParticle ? `${name}${topicParticle}` : match) : `${name} 협상`));
+    }
+    const withName = side === "person" ? particle(name, "과/와") : null;
+    if (!withName) return sentence;
+    return sentence.replace(/중요한 협상|내 일은/u, (match) => (match === "내 일은" ? `${name}${withName}의 일은` : `${name}${withName}의 협상`));
+  }
   if (who === "group") {
     const group = groupName(name);
     // "우리가 함께하는 일" → "가족이 함께하는 일", "동아리가 함께하는 일"
@@ -178,7 +205,6 @@ function namedChipQuestion(sentence: string, who: Who, name: string): string {
   const withName = particle(name, "과/와");
   if (!withName) return sentence;
   if (sentence.includes("그 사람과")) return sentence.replace("그 사람과", () => `${name}${withName}`);
-  if (who === "work") return sentence.replace(/중요한 협상|내 일은/u, (match) => (match === "내 일은" ? `${name}${withName}의 일은` : `${name}${withName}의 협상`));
   return sentence;
 }
 
