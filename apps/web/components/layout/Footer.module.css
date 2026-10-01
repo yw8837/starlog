@@ -115,13 +115,19 @@
     align-items: start;
     column-gap: 56px;
     row-gap: 20px;
-    max-width: 1040px;
+    /* Content 1040px: the same column as the header and the home. */
+    max-width: calc(var(--content-max) + 80px);
     padding: 40px 40px 36px;
   }
 
   .links {
     justify-content: flex-end;
-    margin-top: -6px;
+    column-gap: 0;
+    margin: -6px -6px 0;
+  }
+
+  .link {
+    padding: 0 6px;
   }
 
   .business {

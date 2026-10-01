@@ -38,9 +38,9 @@ describe("Footer", () => {
     const links = screen.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
     expect(links).toEqual([
       ["스타로그란?", "/about"],
-      ["풀이는 이렇게 만들어져요", "/how"],
+      ["풀이 과정", "/how"],
       ["이용 가이드", "/help"],
-      ["자주 묻는 질문", "/faq"],
+      ["FAQ", "/faq"],
       ["가이드 글", "/guide/tarot"],
       ["가격 안내", "/pricing"],
       ["이용약관", "/terms"],

@@ -1,16 +1,19 @@
-/* ---- top bar ---- */
+/* ---- top bar (phones; the desktop header shows the wordmark) ---- */
 
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 72px;
+  min-height: 64px;
   padding-top: 8px;
 }
 
 .wordmark {
+  font-family: var(--font-display), serif;
   font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
   letter-spacing: 0.02em;
 }
 
@@ -53,43 +56,139 @@
   background: var(--glass-line);
 }
 
-/* ---- entries: character beside card, zig-zag (타로: cat left; 사주: rabbit right) ---- */
+@media (min-width: 1024px) {
+  .topbar {
+    justify-content: flex-end;
+    min-height: 0;
+    padding-top: 0;
+  }
 
-.entryRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  .wordmark {
+    display: none;
+  }
 }
 
-.entryCharacter {
-  display: flex;
-  flex: none;
-  justify-content: center;
-  width: 96px;
-  margin: -6px 0;
+/* ---- hero: what the site is, in one line ---- */
+
+.hero {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.heroTitle {
+  font-size: 24px;
+  line-height: 1.38;
+  letter-spacing: -0.01em;
+}
+
+.heroSub {
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Wide enough for each half on its own line: break where the sentence breaks. */
+@media (min-width: 600px) {
+  .heroLine {
+    display: block;
+  }
+
+  .heroTitle {
+    font-size: 26px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    gap: 14px;
+    margin-top: 36px;
+  }
+
+  .heroTitle {
+    font-size: 44px;
+    line-height: 1.26;
+    letter-spacing: -0.015em;
+  }
+
+  .heroSub {
+    font-size: 17px;
+  }
+}
+
+/* ---- entries: the two paid cores, each with its character standing inside the card ---- */
+
+.entryRow {
+  position: relative;
 }
 
 .entry {
   position: relative;
   display: flex;
-  flex: 1;
   align-items: center;
   min-width: 0;
-  min-height: 96px;
-  padding: 16px 44px 16px 20px;
-  border-radius: 22px;
+  min-height: 148px;
+  padding: 20px;
+  border-radius: 24px;
   text-decoration: none;
-  transition: transform 120ms ease;
+  isolation: isolate;
+  transition:
+    box-shadow 160ms ease,
+    transform 120ms ease;
   -webkit-tap-highlight-color: transparent;
 }
 
+/* The character's column: cat on the left of 타로, rabbit on the right of 사주 (the zig-zag). */
+.entryRowStart .entry {
+  padding-left: 138px;
+}
+
+.entryRowEnd .entry {
+  padding-right: 138px;
+}
+
+/* A soft halo where the character stands, so it reads as part of the card. */
+.entry::before {
+  content: "";
+  position: absolute;
+  bottom: 10px;
+  z-index: -1;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+}
+
+.entryRowStart .entry::before {
+  left: 12px;
+}
+
+.entryRowEnd .entry::before {
+  right: 12px;
+}
+
 .entry:active {
-  transform: scale(0.98);
+  transform: scale(0.985);
 }
 
 .entry:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 3px;
+}
+
+/* Laid over the card, outside the link: a tap makes the character react. */
+.entryCharacter {
+  position: absolute;
+  bottom: 14px;
+  z-index: 1;
+  display: flex;
+}
+
+.entryRowStart .entryCharacter {
+  left: 12px;
+}
+
+.entryRowEnd .entryCharacter {
+  right: 12px;
 }
 
 /* 타로 보기: gold, glowing: the screen's one primary. */
@@ -99,48 +198,62 @@
     linear-gradient(135deg, #f7e5b6 0%, #f3dca1 55%, #ebcb82 100%);
   color: #2a1b4d;
   box-shadow:
-    0 12px 30px rgba(5, 3, 15, 0.45),
-    0 0 26px rgba(243, 220, 161, 0.22);
+    0 14px 34px rgba(5, 3, 15, 0.45),
+    0 0 30px rgba(243, 220, 161, 0.24);
+}
+
+.entryPrimary::before {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
 .entryPrimary:hover {
   background:
     radial-gradient(120% 120% at 0% 0%, rgba(255, 255, 255, 0.6), transparent 55%),
     linear-gradient(135deg, #f9ebc6 0%, #f7e5b6 55%, #efd394 100%);
+  box-shadow:
+    0 16px 38px rgba(5, 3, 15, 0.5),
+    0 0 40px rgba(243, 220, 161, 0.34);
 }
 
-/* 사주 보기: hanji — matte cream paper with a faint fibre, no glow (secondary). */
+/* 사주 보기: hanji — matte cream paper with a faint fibre, no glow. */
 .entryHanji {
   border: 1px solid rgba(122, 90, 18, 0.25);
   background:
     repeating-linear-gradient(115deg, rgba(122, 90, 18, 0.035) 0 2px, transparent 2px 7px),
     linear-gradient(160deg, #f5eedf 0%, #ebe0c8 100%);
   color: #3a2d4f;
-  box-shadow: 0 8px 22px rgba(5, 3, 15, 0.35);
+  box-shadow: 0 12px 30px rgba(5, 3, 15, 0.38);
+}
+
+.entryHanji::before {
+  background: radial-gradient(circle, rgba(58, 45, 79, 0.1) 0%, rgba(58, 45, 79, 0) 70%);
 }
 
 .entryHanji:hover {
   background:
     repeating-linear-gradient(115deg, rgba(122, 90, 18, 0.035) 0 2px, transparent 2px 7px),
     linear-gradient(160deg, #f8f2e6 0%, #efe5cf 100%);
+  box-shadow: 0 14px 34px rgba(5, 3, 15, 0.45);
 }
 
 .entryText {
   display: grid;
+  justify-items: start;
   gap: 3px;
   min-width: 0;
 }
 
 .entryTitle {
   font-family: var(--font-display), serif;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
 }
 
 .entrySub {
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .entryPrimary .entrySub {
@@ -151,19 +264,106 @@
   color: #5a4a36;
 }
 
-.entryChevron {
-  position: absolute;
-  top: 50%;
-  right: 16px;
-  display: flex;
-  transform: translateY(-50%);
+/* The explicit call to action: a small ink pill inside the card (the whole card is the link). */
+.entryCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 34px;
+  margin-top: 10px;
+  padding: 0 10px 0 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-/* ---- quick cards: 지금의 한 장 (wider) · 오늘의 한 장 ---- */
+.entryCta svg {
+  transition: transform 160ms ease;
+}
+
+.entry:hover .entryCta svg {
+  transform: translateX(2px);
+}
+
+.entryPrimary .entryCta {
+  background: #2a1b4d;
+  color: var(--gold);
+}
+
+.entryHanji .entryCta {
+  background: #3a2d4f;
+  color: #f5eedf;
+}
+
+@media (min-width: 1024px) {
+  .entry {
+    min-height: 236px;
+    padding: 32px;
+    border-radius: 28px;
+  }
+
+  .entryRowStart .entry {
+    padding-left: 212px;
+  }
+
+  .entryRowEnd .entry {
+    padding-right: 212px;
+  }
+
+  .entry::before {
+    bottom: 18px;
+    width: 184px;
+    height: 184px;
+  }
+
+  .entryRowStart .entry::before {
+    left: 16px;
+  }
+
+  .entryRowEnd .entry::before {
+    right: 16px;
+  }
+
+  /* zoom keeps the SVG crisp and scales the offsets with it (16px → 24px). */
+  .entryCharacter {
+    bottom: 16px;
+    zoom: 1.5;
+  }
+
+  .entryRowStart .entryCharacter {
+    left: 16px;
+  }
+
+  .entryRowEnd .entryCharacter {
+    right: 16px;
+  }
+
+  .entryText {
+    gap: 6px;
+  }
+
+  .entryTitle {
+    font-size: 32px;
+  }
+
+  .entrySub {
+    font-size: 16px;
+  }
+
+  .entryCta {
+    min-height: 40px;
+    margin-top: 14px;
+    padding: 0 14px 0 18px;
+    font-size: 15px;
+  }
+}
+
+/* ---- quick cards: 지금의 한 장 · 오늘의 한 장, equal halves, quieter than the entries ---- */
 
 .quick {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -177,9 +377,8 @@
 .quickCard {
   display: grid;
   align-content: start;
-  gap: 10px;
-  min-height: 132px;
-  padding: 14px 14px 16px;
+  gap: 12px;
+  padding: 18px 14px 16px;
   border: 1px solid var(--glass-line);
   border-radius: 20px;
   background: var(--glass);
@@ -187,6 +386,7 @@
   text-decoration: none;
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+  transition: border-color 140ms ease;
 }
 
 .quickCard:hover {
@@ -200,6 +400,7 @@
 
 .quickText {
   display: grid;
+  justify-items: start;
   gap: 2px;
 }
 
@@ -212,6 +413,17 @@
   color: var(--ink-sub);
   font-size: var(--fs-sub);
   line-height: 1.45;
+}
+
+.quickTag {
+  margin-top: 8px;
+  padding: 1px 9px;
+  border: 1px solid rgba(243, 220, 161, 0.38);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.6;
 }
 
 /* The two quick cards' icons: tarot cards in miniature, the same size so the row balances. */
@@ -262,77 +474,303 @@
 }
 
 @media (min-width: 1024px) {
+  .quick {
+    gap: 24px;
+  }
+
   .quickCard {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
     align-content: center;
-    gap: 16px;
-    min-height: 96px;
-    padding: 16px 20px;
+    gap: 20px;
+    min-height: 112px;
+    padding: 20px 24px;
+  }
+
+  /* Title and tag on one line, the sub line under them. */
+  .quickText {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 10px;
+  }
+
+  .quickTitle {
+    font-size: 17px;
+  }
+
+  .quickSub {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    font-size: 14px;
+  }
+
+  .quickTag {
+    grid-row: 1;
+    grid-column: 2;
+    margin-top: 0;
   }
 }
 
-/* ---- sections ---- */
+/* ---- sections (guide, FAQ): eyebrow + display title, as on /help ---- */
 
 .section {
   display: grid;
-  gap: 10px;
+  gap: 16px;
+  margin-top: 56px;
 }
 
 .sectionHead {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
-  min-height: 44px;
+}
+
+.sectionHeading {
+  display: grid;
+  gap: 4px;
+}
+
+.eyebrow {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  letter-spacing: 0.16em;
 }
 
 .sectionTitle {
-  font-size: var(--fs-h2);
+  font-size: 22px;
+  line-height: 1.35;
 }
 
 .more {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   min-height: 44px;
   color: var(--ink-sub);
-  font-size: var(--fs-sub);
+  font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .more:hover {
   color: var(--ink);
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
+.more svg {
+  transition: transform 160ms ease;
+}
+
+.more:hover svg {
+  transform: translateX(2px);
+}
+
+@media (min-width: 1024px) {
+  .section {
+    gap: 24px;
+    margin-top: 104px;
+  }
+
+  .sectionTitle {
+    font-size: 30px;
+  }
+}
+
+/* ---- guide: 타로 / 사주 groups of article cards ---- */
+
+.guideGroups {
+  display: grid;
+  gap: 20px;
+}
+
+.guideGroup {
+  display: grid;
+  gap: 6px;
+}
+
+.guideGroupTitle {
+  font-family: var(--font-body), sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.guideGroupLink {
+  display: inline-flex;
+  align-items: center;
   gap: 8px;
+  min-height: 44px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.guideGroupLink svg {
+  color: var(--ink-sub);
+}
+
+.guideGroupLink:hover svg {
+  color: var(--ink);
+}
+
+/* Colour dots shared with the guide tabs and the /help chips (tokens in globals.css). */
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--tone, var(--tone-start));
+  box-shadow: 0 0 8px var(--tone, var(--tone-start));
+}
+
+.dot[data-tone="tarot"] {
+  --tone: var(--tone-tarot);
+}
+
+.dot[data-tone="saju"] {
+  --tone: var(--tone-saju);
+}
+
+.guideList {
+  display: grid;
+  gap: 10px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.chip {
-  display: inline-flex;
+/* Same shape as the /help and /faq accordion cards: tile, title + sub, round control on the right. */
+.guideItem {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 14px;
   align-items: center;
-  min-height: 44px;
-  padding: 0 16px;
+  height: 100%;
+  min-height: 84px;
+  padding: 12px 14px 12px 12px;
   border: 1px solid var(--glass-line);
-  border-radius: 22px;
+  border-radius: 18px;
   background: var(--glass);
   color: var(--ink);
-  font-size: 14px;
-  font-weight: 500;
   text-decoration: none;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: border-color 140ms ease;
 }
 
-.chip:hover {
+.guideItem:hover {
   border-color: var(--line-strong);
 }
 
-.chip:focus-visible {
+.guideItem:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+.guideText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.guideTitle {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.guideDesc {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.roundArrow {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--glass-line);
+  border-radius: 50%;
+  color: var(--ink-sub);
+  transition: color 140ms ease;
+}
+
+.guideItem:hover .roundArrow {
+  color: var(--gold);
+}
+
+@media (min-width: 1024px) {
+  .guideGroups {
+    gap: 28px;
+  }
+
+  .guideList {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px 24px;
+  }
+
+  .guideItem {
+    min-height: 96px;
+    padding: 14px 18px 14px 14px;
+  }
+}
+
+/* ---- FAQ: heading, four questions, the link to all of them ---- */
+
+.faq {
+  grid-template-areas:
+    "head"
+    "list"
+    "more";
+}
+
+.faqHead {
+  display: grid;
+  grid-area: head;
+  gap: 4px;
+}
+
+.faqLead {
+  margin-top: 4px;
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.faqList {
+  grid-area: list;
+}
+
+.faqMore {
+  grid-area: more;
+  justify-self: start;
+  margin-top: -4px;
+}
+
+/* Desktop: heading and link in a left column, the questions beside them. */
+@media (min-width: 1024px) {
+  .faq {
+    grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "head list"
+      "more list";
+    column-gap: 64px;
+    row-gap: 12px;
+    align-items: start;
+  }
+
+  .faqLead {
+    font-size: 15px;
+  }
+
+  .faqMore {
+    margin-top: 0;
+  }
 }

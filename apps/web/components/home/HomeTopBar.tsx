@@ -5,15 +5,18 @@ import { SITE } from "@/lib/config";
 import { MoonIcon, StarIcon } from "./icons";
 import s from "./home.module.css";
 
-/** Wordmark and, once signed in, the balance pill that leads to 내 정보. */
+/**
+ * Phones: the wordmark and, once signed in, the balance pill that leads to 내 정보. From 1024px the
+ * site header (TabBar) shows the wordmark, so only the pill stays. The page's <h1> is the hero line.
+ */
 export function HomeTopBar({ wallet }: { wallet: Wallet | null }) {
   const { paid, free } = SITE.currency;
   return (
-    <header className={s.topbar}>
-      <h1 className={s.wordmark}>
+    <div className={s.topbar}>
+      <p className={s.wordmark}>
         <Wordmark />
         <span className="sr-only">{` ${SITE.nameKo}`}</span>
-      </h1>
+      </p>
       {wallet ? (
         <Link href="/me" className={s.balance} aria-label={`내 재화: ${paid} ${wallet.moonlight}개, ${free} ${wallet.stardust}개`}>
           <span className={s.balanceItem}>
@@ -27,6 +30,6 @@ export function HomeTopBar({ wallet }: { wallet: Wallet | null }) {
           </span>
         </Link>
       ) : null}
-    </header>
+    </div>
   );
 }
