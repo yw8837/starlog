@@ -88,10 +88,10 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
               <p className={s.groupSub}>{copy.sub}</p>
             </div>
             <ul className={s.list}>
-              {articlesIn(category).map((article) => (
+              {articlesIn(category).map((article, i) => (
                 <li key={article.slug}>
                   <Link href={`/guide/${article.slug}`} className={s.item}>
-                    <GuideThumb article={article} />
+                    <GuideThumb article={article} eager={i < 2} />
                     <span className={s.itemText}>
                       <span className={s.itemTitle}>{article.title}</span>
                       <span className={s.itemDesc}>{article.description}</span>

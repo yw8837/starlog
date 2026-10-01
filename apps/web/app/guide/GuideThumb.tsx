@@ -17,8 +17,12 @@ const SAJU_GLYPH: Record<string, { char: string; el: string }> = {
   "new-year-fortune": { char: "年", el: "wood" },
 };
 
-/** Small picture for a guide article: its card, a card back, or a glyph tile. Decorative. */
-export function GuideThumb({ article }: { article: GuideArticle }) {
+/**
+ * Small picture for a guide article: its card, a card back, or a glyph tile. Decorative. The card
+ * is 40px wide, so even a 3x phone takes the small scan; lists load all but their first couple
+ * lazily (`eager` for those).
+ */
+export function GuideThumb({ article, eager = false }: { article: GuideArticle; eager?: boolean }) {
   const glyph = SAJU_GLYPH[article.slug];
   if (glyph) {
     return (
@@ -29,7 +33,7 @@ export function GuideThumb({ article }: { article: GuideArticle }) {
   }
   return (
     <span className={s.thumb} aria-hidden="true">
-      <TarotCard cardId={article.cardId} faceUp={Boolean(article.cardId)} size="sm" className={s.thumbCard} />
+      <TarotCard cardId={article.cardId} faceUp={Boolean(article.cardId)} size="sm" className={s.thumbCard} imageSizes="40px" loading={eager ? "eager" : "lazy"} />
     </span>
   );
 }

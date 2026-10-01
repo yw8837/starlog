@@ -16,6 +16,10 @@ type TarotCardProps = {
   /** Gold ring and glow, e.g. a picked card in the fan. */
   highlight?: boolean;
   className?: string;
+  /** The rendered width when a class makes the card smaller than its size (e.g. a 40px thumbnail). */
+  imageSizes?: string;
+  /** "lazy" for cards below the fold (long lists). */
+  loading?: "lazy" | "eager";
 };
 
 const BACK = "/cards/back.svg";
@@ -27,7 +31,7 @@ const IMAGE_SIZES: Record<CardSize, string> = { sm: "120px", md: "140px", lg: "1
  * One tarot card in a fixed 600:1040 box (RWS scans vary 1.70-1.80, so the face is cropped
  * with object-fit). The flip is a real 3D turn; reversed faces are drawn upside down and tagged.
  */
-export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md", onFlip, label, highlight = false, className }: TarotCardProps) {
+export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md", onFlip, label, highlight = false, className, imageSizes, loading }: TarotCardProps) {
   const reversed = orientation === "reversed";
   const showFace = faceUp && Boolean(cardId);
   const classes = [s.card, s[size], highlight ? s.highlight : "", className ?? ""].filter(Boolean).join(" ");
@@ -35,16 +39,18 @@ export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md"
   const inner = (
     <span className={s.inner}>
       <span className={s.back}>
-        <img src={BACK} alt="" draggable={false} />
+        <img src={BACK} alt="" draggable={false} loading={loading} />
       </span>
       {cardId ? (
         <span className={s.front}>
           <img
             src={cardImage(cardId, "sm")}
             srcSet={`${cardImage(cardId, "sm")} 240w, ${cardImage(cardId, "lg")} 600w`}
-            sizes={IMAGE_SIZES[size]}
+            sizes={imageSizes ?? IMAGE_SIZES[size]}
             alt=""
             draggable={false}
+            loading={loading}
+            decoding="async"
             className={reversed ? s.upsideDown : undefined}
           />
         </span>
