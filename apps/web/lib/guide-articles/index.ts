@@ -1,4 +1,5 @@
 import type { GuideArticle } from "../guide";
+import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
 import { MAJOR_ARCANA_ARTICLES } from "./tarot";
 import { SAJU_ARTICLES } from "./saju";
 import { SPREAD_ARTICLES } from "./spreads";
@@ -19,6 +20,19 @@ const BASE_RELATED: Readonly<Record<string, readonly string[]>> = {
   "the-star": ["the-tower", "the-moon", "the-hermit"],
 };
 
+/** The 요약 lead, dates and HowTo steps kept in answers.ts, attached by slug. */
+function withAnswers(article: GuideArticle): GuideArticle {
+  const summary = article.summary ?? GUIDE_SUMMARIES[article.slug];
+  const dates = GUIDE_DATES[article.slug];
+  const howTo = article.howTo ?? GUIDE_HOWTO[article.slug];
+  return {
+    ...article,
+    ...(summary ? { summary } : {}),
+    ...(dates ? { published: article.published ?? dates.published, updated: article.updated ?? dates.updated } : {}),
+    ...(howTo ? { howTo } : {}),
+  };
+}
+
 /** Base articles first (their order is the tab and home order), then spreads, cards 0–21 and saju. */
 export function withGuideLibrary(base: readonly GuideArticle[]): GuideArticle[] {
   return [
@@ -29,5 +43,5 @@ export function withGuideLibrary(base: readonly GuideArticle[]): GuideArticle[] 
     ...SPREAD_ARTICLES,
     ...MAJOR_ARCANA_ARTICLES,
     ...SAJU_ARTICLES,
-  ];
+  ].map(withAnswers);
 }

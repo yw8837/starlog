@@ -4,6 +4,7 @@ import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { aiTells } from "../ai/style";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, findArticle, type GuideArticle } from "../guide";
+import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
 import { SAJU_ARTICLES } from "./saju";
 import { SPREAD_ARTICLES } from "./spreads";
 import { MAJOR_ARCANA_ARTICLES } from "./tarot";
@@ -12,7 +13,7 @@ const LIBRARY: readonly GuideArticle[] = [...SPREAD_ARTICLES, ...MAJOR_ARCANA_AR
 
 const bodyText = (article: GuideArticle) => article.sections.map((section) => section.body).join("\n");
 const allText = (article: GuideArticle) =>
-  [article.title, article.description, ...article.sections.flatMap((section) => [section.heading, section.body])].join("\n");
+  [article.title, article.description, article.summary ?? "", ...article.sections.flatMap((section) => [section.heading, section.body])].join("\n");
 const bodyLength = (article: GuideArticle) => article.sections.reduce((sum, section) => sum + section.body.length, 0);
 
 interface KbCard {
@@ -139,5 +140,43 @@ describe("upcoming products are introduced without a date", () => {
 
   it("no other article promises an opening date", () => {
     for (const article of GUIDE_ARTICLES) expect(allText(article), article.slug).not.toMatch(OPENING_DATE);
+  });
+});
+
+describe("answer-first fields (요약, HowTo, dates)", () => {
+  const slugs = GUIDE_ARTICLES.map((article) => article.slug);
+  const sentences = (text: string) => text.split(/(?<=[.?!])\s+/).filter(Boolean);
+
+  it("keeps answers.ts keyed by real slugs only", () => {
+    for (const map of [GUIDE_SUMMARIES, GUIDE_DATES, GUIDE_HOWTO]) for (const slug of Object.keys(map)) expect(slugs, slug).toContain(slug);
+  });
+
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: a 2-3 sentence 요약 in 해요체 with no AI tells", (_slug, article) => {
+    const summary = article.summary ?? "";
+    expect(sentences(summary).length).toBeGreaterThanOrEqual(2);
+    expect(sentences(summary).length).toBeLessThanOrEqual(3);
+    expect(summary.length).toBeGreaterThanOrEqual(60);
+    expect(summary.length).toBeLessThanOrEqual(260);
+    for (const sentence of sentences(summary)) expect(sentence, sentence).toMatch(/[요죠][.?]$/);
+    expect(summary).not.toBe(article.description);
+    const hits = aiTells(summary);
+    expect(hits.length, hits.map((hit) => `${hit.id} ${hit.label}`).join(", ")).toBe(0);
+  });
+
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: published and updated dates, updated not before published", (_slug, article) => {
+    expect(article.published).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(article.updated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect((article.updated ?? "") >= (article.published ?? "")).toBe(true);
+  });
+
+  it("gives the step-by-step articles HowTo steps quoted from their own body", () => {
+    for (const slug of ["now-card-how-to", "how-to-read-tarot", "one-card-yes-no", "three-card-spread", "manseryeok"]) {
+      expect(findArticle(slug)?.howTo, slug).toBeDefined();
+    }
+    for (const article of GUIDE_ARTICLES) {
+      if (!article.howTo) continue;
+      expect(article.howTo.steps.length, article.slug).toBeGreaterThanOrEqual(3);
+      for (const step of article.howTo.steps) expect(bodyText(article), `${article.slug}: ${step.name}`).toContain(step.text);
+    }
   });
 });

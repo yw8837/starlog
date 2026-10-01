@@ -23,6 +23,12 @@ export interface GuideSection {
   body: string;
 }
 
+/** schema.org HowTo for a step-by-step article; each step's text is quoted from the article body. */
+export interface GuideHowTo {
+  name: string;
+  steps: ReadonlyArray<{ name: string; text: string }>;
+}
+
 export interface GuideArticle {
   slug: string;
   title: string;
@@ -34,6 +40,15 @@ export interface GuideArticle {
   sections: GuideSection[];
   /** Slugs listed under "같이 읽어 볼 글" on the article page, in this order. */
   related?: readonly string[];
+  /**
+   * 요약: 2-3 sentences that answer the title's question, shown first on the page (search snippets
+   * and AI answers quote it). Filled from lib/guide-articles/answers.ts.
+   */
+  summary?: string;
+  /** First published and last content change, YYYY-MM-DD (lib/guide-articles/answers.ts). */
+  published?: string;
+  updated?: string;
+  howTo?: GuideHowTo;
 }
 
 const BASE_ARTICLES: readonly GuideArticle[] = [
@@ -44,7 +59,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
     description: "타로 78장의 구성과 라이더-웨이트-스미스 덱, 자리·그림·내 상황 순서로 카드를 읽는 방법을 정리했어요.",
     sections: [
       {
-        heading: "78장의 구성",
+        heading: "타로 카드는 모두 몇 장인가요",
         body: "타로는 78장으로 이뤄져 있어요. 인생의 큰 장면을 담은 메이저 아르카나 22장과, 일상의 장면을 담은 마이너 아르카나 56장이에요. 마이너 아르카나는 완드·컵·소드·펜타클 네 벌로 나뉘고, 벌마다 에이스부터 10까지의 숫자 카드 열 장과 시종·기사·여왕·왕 인물 카드 네 장이 있어요.",
       },
       {
@@ -60,7 +75,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
         body: "질문은 '될까, 안 될까'보다 '어떻게 하면 좋을까'처럼 열어 두면 읽을 거리가 많아져요. 누구의 일인지, 언제까지의 일인지를 정해 두면 풀이도 그만큼 구체적이 돼요.",
       },
       {
-        heading: "타로가 하는 일",
+        heading: "타로는 무엇을 하는 도구인가요",
         body: "타로는 앞일을 정해 주는 도구라기보다, 지금 상황을 다른 각도에서 보게 돕는 도구에 가까워요. 건강이나 돈, 법률처럼 중요한 결정은 전문가와 꼭 상의해 주세요.",
       },
     ],
@@ -72,7 +87,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
     description: "카드가 거꾸로 나오는 역방향은 어떻게 읽을까요? 여러 읽기 방식과 스타로그가 역방향을 보여 주는 방법을 알려 드려요.",
     sections: [
       {
-        heading: "거꾸로 놓인 카드",
+        heading: "역방향은 어떻게 생기나요",
         body: "카드를 펼쳤을 때 그림이 똑바로 보이면 정방향, 위아래가 뒤집혀 보이면 역방향이에요. 카드를 섞는 동안 위아래도 함께 섞이면서 생겨요.",
       },
       {
@@ -80,7 +95,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
         body: "역방향을 읽는 방식은 하나로 정해져 있지 않아요. 정방향 뜻의 반대로 읽기도 하고, 같은 기운이 약하거나 늦게 나타난다고 보기도 해요. 밖으로 드러나기보다 마음속에서 일어나는 일로 읽기도 하고, 역방향을 아예 쓰지 않는 사람도 있어요.",
       },
       {
-        heading: "나쁜 카드라는 뜻은 아니에요",
+        heading: "역방향은 나쁜 카드인가요",
         body: "역방향이 나왔다고 나쁜 일이 생긴다는 뜻은 아니에요. 예를 들어 별 카드의 정방향을 회복과 희망으로 읽는다면, 역방향은 그 희망이 잠시 흐려졌거나 나를 돌볼 여유가 줄어든 상태로 읽을 수 있어요. 같은 주제를 다른 쪽에서 비춰 보는 셈이에요.",
       },
       {
@@ -100,7 +115,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
         body: "사주는 태어난 해·달·날·시를 네 기둥으로 세우고, 기둥마다 천간과 지지 두 글자씩, 모두 여덟 글자로 읽어요. 그래서 사주를 팔자라고도 불러요.",
       },
       {
-        heading: "시를 모르면 세 기둥으로",
+        heading: "시를 모르면 어떻게 읽나요",
         body: "태어난 시를 모르면 시주를 비워 두고 나머지 세 기둥, 여섯 글자로 읽어요. 스타로그는 이때 정오 같은 시각을 대신 넣지 않아요. 넣은 시각이 틀리면 실제로는 없는 글자로 풀이하게 되기 때문이에요. 그 대신 자녀나 말년처럼 시주가 주로 맡는 해석은 다루지 않고, 대운이 시작되는 나이에도 앞뒤로 조금 오차가 생겨요.",
       },
       {
@@ -136,7 +151,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
         body: "스타로그 명식 화면의 오행 개수는 천간과 지지에 보이는 글자만 세요. 태어난 시를 알면 여덟 글자, 모르면 여섯 글자예요. 지지 속에 숨은 글자(지장간)는 개수에 넣지 않고, 풀이에서 따로 다뤄요.",
       },
       {
-        heading: "많고 적음보다 자리",
+        heading: "오행이 많거나 없으면 나쁜가요",
         body: "어떤 오행이 많거나 하나도 없다고 해서 좋고 나쁨이 정해지지는 않아요. 명리에서는 글자가 놓인 자리와 태어난 계절, 글자끼리의 관계를 함께 봐요. 겉으로 보이는 개수가 0이어도 지장간에 숨어 있을 수 있어요.",
       },
       {
