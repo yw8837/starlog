@@ -18,6 +18,6 @@ export async function POST(request: Request): Promise<Response> {
 
   return respondGeneration(request, async (hooks) => {
     const teaser = (await generateSajuTeaser(gate.provider, parsed.facts, hooks)).data;
-    return { body: teaser, cookies: await spendCookies(gate, quota, "teaser"), spend: "teaser" };
-  }, { gate });
+    return { body: teaser, cookies: await spendCookies(gate, quota, "teaser") };
+  }, { gate, spend: "teaser" });
 }

@@ -57,6 +57,6 @@ export async function POST(request: Request): Promise<Response> {
     const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now, chapter.exp);
     await recordChapterTurns(chapter.id, answered + 1);
     const remaining = Math.max(0, limits.followupsPerChapter - (answered + 1));
-    return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: await spendCookies(gate, quota, "followup"), spend: "followup" };
-  }, { gate });
+    return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: await spendCookies(gate, quota, "followup") };
+  }, { gate, spend: "followup" });
 }

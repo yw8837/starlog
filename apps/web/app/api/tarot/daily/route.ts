@@ -57,8 +57,8 @@ export async function POST(request: Request): Promise<Response> {
       };
     });
     if (!result.generated) return { body: result.reading, cookies: [] };
-    return { body: result.reading, cookies: [await cookieOf({ ...state, gen: state.gen + 1 })], spend: "daily" };
-  }, { gate, startCookies: [deviceCookie] });
+    return { body: result.reading, cookies: [await cookieOf({ ...state, gen: state.gen + 1 })] };
+  }, { gate, startCookies: [deviceCookie], spend: "daily" });
 }
 
 function newDay(did: string, day: string): DailyState {

@@ -75,8 +75,11 @@ export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(a
       let maxTokens = raisedCaps.get(task) ?? task.maxTokens;
       for (let call = 0; call < 2; call++) {
         let message: BetaMessage;
+        const body = buildRequest(task, maxTokens, feedback);
+        // Reserved until the call reports its usage; an aborted call never does and stays reserved.
+        hooks.onReserve?.([worstCase(body)]);
         try {
-          const stream = sdk.beta.messages.stream(buildRequest(task, maxTokens, feedback), hooks.signal ? { signal: hooks.signal } : undefined);
+          const stream = sdk.beta.messages.stream(body, hooks.signal ? { signal: hooks.signal } : undefined);
           if (hooks.onText) stream.on("text", (_delta, snapshot) => hooks.onText!(snapshot));
           message = await stream.finalMessage();
         } catch (error) {
@@ -101,6 +104,16 @@ export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(a
       throw new GenerationError("QUALITY", ["출력이 중간에 끊겼어요. 분량 목표는 그대로 지키면서 JSON을 끝까지 완성해 주세요."]);
     },
   };
+}
+
+/**
+ * An upper bound on what one call can bill: every prompt character as an uncached input token (Korean
+ * runs at about one token per character or less) and the whole output budget.
+ */
+export function worstCase(body: ReturnType<typeof buildRequest>): Usage {
+  const promptChars = body.system.reduce((n, block) => n + block.text.length, 0)
+    + body.messages.reduce((n, m) => n + m.content.reduce((k, block) => k + block.text.length, 0), 0);
+  return { model: body.model, inputTokens: promptChars, outputTokens: body.max_tokens, cacheReadTokens: 0, cacheWriteTokens: 0 };
 }
 
 function parseOutput<T>(message: BetaMessage, task: GenerationTask<T>): T {

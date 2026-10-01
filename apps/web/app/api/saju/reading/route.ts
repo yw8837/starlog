@@ -23,6 +23,6 @@ export async function POST(request: Request): Promise<Response> {
   return respondGeneration(request, async (hooks) => {
     const reading = (await generateSajuReading(gate.provider, parsed.facts, hooks)).data;
     const chapterToken = await issueChapter({ kind: "saju", birth: parsed.body.birth, profile: parsed.profile }, reading, [], gate.secret, gate.now);
-    return { body: { reading, chapterToken }, cookies: await spendCookies(gate, quota, "full"), spend: "full" };
-  }, { gate });
+    return { body: { reading, chapterToken }, cookies: await spendCookies(gate, quota, "full") };
+  }, { gate, spend: "full" });
 }

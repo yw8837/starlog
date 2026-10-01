@@ -61,9 +61,19 @@ export function dailyStore(): Store {
   return memoryStore;
 }
 
-/** The stored fortune for this device and day, if any. */
+/** A KV failure in the daily flow is logged and skipped: it never turns a reading into an error. */
+async function safely<T>(op: string, work: () => Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    console.error(JSON.stringify({ evt: "daily.kv_error", op, error: error instanceof Error ? error.constructor.name : typeof error }));
+    return fallback;
+  }
+}
+
+/** The stored fortune for this device and day, if any (none when KV cannot be read). */
 export async function readDailyResult(deviceId: string, day: string): Promise<DailyReading | null> {
-  return ((await dailyStore().get(resultKey(deviceId, day))) as DailyReading | null) ?? null;
+  return safely("read", async () => ((await dailyStore().get(resultKey(deviceId, day))) as DailyReading | null) ?? null, null);
 }
 
 const inFlight = new Map<string, Promise<{ reading: DailyReading; generated: boolean }>>();
@@ -88,22 +98,23 @@ export async function getOrCreateDailyResult(
   // Registered before the first await, so a concurrent call in this isolate always joins it.
   const work = (async () => {
     const store = dailyStore();
-    if (await store.get(pendingKey(deviceId, day))) {
+    if (await safely("pending-read", () => store.get(pendingKey(deviceId, day)), null)) {
       const { polls = 6, pollMs = 1_000 } = options;
       for (let i = 0; i < polls; i++) {
         await new Promise((resolve) => setTimeout(resolve, pollMs));
-        const done = (await store.get(key)) as DailyReading | null;
+        const done = (await safely("poll", () => store.get(key), null)) as DailyReading | null;
         if (done) return { reading: done, generated: false };
       }
       // The other request failed or is slow; generate here rather than keep the user waiting.
     }
-    await store.put(pendingKey(deviceId, day), 1, PENDING_TTL_SECONDS);
+    await safely("pending-write", () => store.put(pendingKey(deviceId, day), 1, PENDING_TTL_SECONDS), undefined);
     try {
       const reading = await create();
-      await store.put(key, reading, TTL_SECONDS);
+      // Billed and valid: a failed store write must not turn it into an error (the next visit regenerates).
+      await safely("write", () => store.put(key, reading, TTL_SECONDS), undefined);
       return { reading, generated: true };
     } finally {
-      await store.delete(pendingKey(deviceId, day));
+      await safely("pending-delete", () => store.delete(pendingKey(deviceId, day)), undefined);
     }
   })();
   inFlight.set(key, work);

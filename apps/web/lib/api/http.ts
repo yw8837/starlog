@@ -1,5 +1,6 @@
 import "server-only";
 import { aiConfigProblems } from "@/lib/ai/config";
+import { cleanUserText } from "@/lib/ai/prompts/tarot";
 import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/provider";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import {
@@ -7,7 +8,7 @@ import {
 } from "@/lib/security/quota";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
-import { clientCount, overDailyBudget, type SpendKind } from "./spend";
+import { budgetState, clientCount, type SpendKind } from "./spend";
 
 /**
  * Route handler plumbing: JSON bodies with a size cap, error codes, cookies, the client key for the
@@ -141,24 +142,48 @@ export function setCookie(name: string, value: string, maxAgeSeconds: number, en
 
 /**
  * The network a client IP stands for: IPv4 as is, IPv6 by its /64 prefix. One host usually gets a
- * whole /64, so keying on the full IPv6 address would give it a fresh bucket per request.
+ * whole /64, so keying on the full IPv6 address would give it a fresh bucket per request. An
+ * IPv4-mapped IPv6 address (::ffff:192.0.2.5, ::ffff:c000:205, 0:0:0:0:0:ffff:…) is its IPv4.
  */
 export function ipGroup(ip: string): string {
   const address = ip.trim().toLowerCase().replace(/^\[|\]$/g, "").replace(/%.*$/, "");
   if (!address.includes(":")) return address;
-  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(address);
-  if (mapped) return mapped[1]!;
+  const hextets = expandIpv6(address);
+  if (!hextets) return address;
+  if (hextets.slice(0, 5).every((h) => h === 0) && hextets[5] === 0xffff) {
+    return [hextets[6]! >> 8, hextets[6]! & 0xff, hextets[7]! >> 8, hextets[7]! & 0xff].join(".");
+  }
+  return `${hextets.slice(0, 4).map((h) => h.toString(16)).join(":")}::/64`;
+}
+
+/** The eight 16-bit groups of an IPv6 address (`::` and an embedded IPv4 tail expanded), or null. */
+function expandIpv6(address: string): number[] | null {
   const halves = address.split("::");
-  if (halves.length > 2) return address;
-  // An embedded IPv4 tail (x:x::1.2.3.4) takes two hextets; only the first four matter here.
-  const parts = (text: string | undefined) => (text ? text.split(":").flatMap((p) => (p.includes(".") ? ["0", "0"] : [p])) : []);
-  const head = parts(halves[0]);
-  const tail = parts(halves[1]);
+  if (halves.length > 2) return null;
+  const parse = (text: string | undefined): number[] | null => {
+    if (!text) return [];
+    const out: number[] = [];
+    const parts = text.split(":");
+    for (const [i, part] of parts.entries()) {
+      if (part.includes(".")) {
+        const octets = part.split(".").map(Number);
+        const valid = i === parts.length - 1 && octets.length === 4 && octets.every((o, j) => Number.isInteger(o) && o >= 0 && o <= 255 && /^\d{1,3}$/.test(part.split(".")[j]!));
+        if (!valid) return null;
+        out.push((octets[0]! << 8) | octets[1]!, (octets[2]! << 8) | octets[3]!);
+      } else if (/^[0-9a-f]{1,4}$/.test(part)) {
+        out.push(parseInt(part, 16));
+      } else {
+        return null;
+      }
+    }
+    return out;
+  };
+  const head = parse(halves[0]);
+  const tail = parse(halves[1]);
+  if (!head || !tail) return null;
+  if (halves.length === 1) return head.length === 8 ? head : null;
   const missing = 8 - head.length - tail.length;
-  if (halves.length === 1 ? head.length !== 8 : missing < 1) return address;
-  const hextets = [...head, ...Array<string>(halves.length === 2 ? missing : 0).fill("0"), ...tail];
-  if (!hextets.every((h) => /^[0-9a-f]{1,4}$/.test(h))) return address;
-  return `${hextets.slice(0, 4).map((h) => parseInt(h, 16).toString(16)).join(":")}::/64`;
+  return missing >= 1 ? [...head, ...Array<number>(missing).fill(0), ...tail] : null;
 }
 
 /** The rate-limit key: the client's network (ipGroup) from Cloudflare's client IP; never logged. */
@@ -207,15 +232,24 @@ export async function fullReadingLimit(request: Request, gate: Gate): Promise<Re
   return ok ? null : errorResponse("RATE_LIMIT");
 }
 
+/** Shown for a per-network limit (many phones can share one carrier IP); the UI may replace it by `scope`. */
+const NETWORK_LIMIT_MESSAGE = "지금 쓰는 인터넷(와이파이·통신사)에서 오늘 열 수 있는 풀이를 모두 썼어요. 내일 다시 열려요.";
+
+/** Kinds that stop when the day's spend cannot be read at all (the expensive ones). */
+const FAIL_CLOSED: ReadonlySet<SpendKind> = new Set(["full", "teaser"]);
+
 /**
- * The server's own limits before a new generation: 503 once the day's estimated spend passes
- * BETA_DAILY_BUDGET_KRW (owners too), and 429 once this client's network has used up `kind` today
- * (owners skip it). Both are counted server-side at `done` (spend.ts), whatever the cookies say.
+ * The server's own limits before a new generation, counted server-side whatever the cookies say
+ * (spend.ts):
+ * - 503 once the day's estimated spend reaches 80% of BETA_DAILY_BUDGET_KRW (owners too), and for
+ *   full readings and teasers also when KV cannot be read at all (fail closed);
+ * - 429 `scope: "network"` once this client's network has used up `kind` today (owners skip it).
  */
 export async function checkServerLimits(gate: Gate, kind: SpendKind, extra: Record<string, unknown> = {}): Promise<Response | null> {
-  if (await overDailyBudget(gate.now)) return errorResponse("AI_UNAVAILABLE");
+  const budget = await budgetState(gate.now);
+  if (budget === "over" || (budget === "unknown" && FAIL_CLOSED.has(kind))) return errorResponse("AI_UNAVAILABLE");
   if (!gate.owner && (await clientCount(gate.client, kind, gate.now)) >= ipLimits()[kind]) {
-    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra });
+    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, scope: "network", message: NETWORK_LIMIT_MESSAGE });
   }
   return null;
 }
@@ -240,8 +274,12 @@ export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKin
 /** Words that mean the person may be in crisis: no reading, a gentle pointer to help instead. */
 const CRISIS = /죽고\s?싶|자살|자해|극단적\s?(인\s?)?선택|살기\s?싫|사라지고\s?싶/;
 
+/** Judged on the text as the prompt will see it (cleanUserText), so markup cannot split a word. */
+export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS.test(cleanUserText(text!));
+
+/** The care response when any user-written text reads as a crisis; null otherwise. */
 export function crisisResponse(...texts: Array<string | undefined>): Response | null {
-  if (!texts.some((text) => text && CRISIS.test(text))) return null;
+  if (!texts.some(isCrisisText)) return null;
   return errorResponse("REFUSED", {
     care: true,
     message: "지금 많이 힘든 마음이 느껴져요. 이 이야기는 풀이보다 사람과 나누는 게 좋아요. 자살예방상담전화 109에서 언제든 이야기를 들어 줘요.",

@@ -61,6 +61,8 @@ export interface GenerationHooks {
   onText?: (snapshot: string) => void;
   /** called as each validated attempt starts (2 = the regeneration) */
   onAttempt?: (attempt: number) => void;
+  /** the worst-case usage of an upstream call about to start (the caller reserves its cost until onUsage) */
+  onReserve?: (usage: Usage[]) => void;
   /** billed usage, reported by the provider as each upstream call completes (refused or cut-off ones too) */
   onUsage?: (usage: Usage[]) => void;
   /** epoch ms when the caller's budget runs out; no regeneration starts that cannot finish before it */

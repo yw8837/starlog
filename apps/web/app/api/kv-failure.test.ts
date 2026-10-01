@@ -1,0 +1,122 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mockProvider } from "@/lib/ai/mock";
+import type { GenerationHooks } from "@/lib/ai/provider";
+import { resetDailyStore } from "@/lib/api/dailyStore";
+import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { POST as daily } from "./tarot/daily/route";
+import { POST as draw } from "./tarot/draw/route";
+import { POST as reading } from "./tarot/reading/route";
+import { POST as teaser } from "./tarot/teaser/route";
+
+/** A DAILY_KV binding that works, or fails every call, or fails only writes (KV's 429 on a hot key). */
+const kv = vi.hoisted(() => {
+  const data = new Map<string, string>();
+  const state = { mode: "ok" as "ok" | "down" | "no-writes" };
+  const fail = (what: string) => {
+    throw new Error(`KV ${what} failed: 429 Too Many Requests`);
+  };
+  return {
+    state,
+    data,
+    binding: {
+      async get(key: string) {
+        if (state.mode === "down") fail("GET");
+        const value = data.get(key);
+        return value === undefined ? null : JSON.parse(value);
+      },
+      async put(key: string, value: string) {
+        if (state.mode !== "ok") fail("PUT");
+        data.set(key, value);
+      },
+      async delete(key: string) {
+        if (state.mode !== "ok") fail("DELETE");
+        data.delete(key);
+      },
+    },
+  };
+});
+
+vi.mock("@/lib/cloudflare", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/cloudflare")>()),
+  cloudflareEnv: () => ({ DAILY_KV: kv.binding }),
+}));
+
+type Handler = (request: Request) => Promise<Response>;
+const MONEY_INPUT = { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "" };
+
+const request = (body: unknown, ip: string, accept?: string) => new Request("http://localhost/api", {
+  method: "POST",
+  headers: { "content-type": "application/json", "cf-connecting-ip": ip, ...(accept ? { accept } : {}) },
+  body: JSON.stringify(body),
+});
+const call = async (handler: Handler, body: unknown, ip = "198.51.100.40") => {
+  const response = await handler(request(body, ip));
+  return { status: response.status, data: (await response.json()) as Record<string, any> };
+};
+const drawToken = async () => (await call(draw, { templateId: "self-flow", picks: [3, 30, 60] })).data.drawToken as string;
+
+let errors: ReturnType<typeof vi.spyOn>;
+
+beforeEach(() => {
+  vi.stubEnv("STARLOG_AI", "mock");
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("BETA_FULL_PER_DAY", "100");
+  kv.state.mode = "ok";
+  kv.data.clear();
+  resetMemoryLimiter();
+  resetDailyStore();
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {}); // the limiter bindings are absent here
+  errors = vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+});
+
+describe("DAILY_KV failures", () => {
+  it("block new full readings and teasers while the spend total cannot be read (fail closed), and log it", async () => {
+    const token = await drawToken();
+    kv.state.mode = "down";
+    const blockedTeaser = await call(teaser, { drawToken: token, input: MONEY_INPUT });
+    expect(blockedTeaser.status).toBe(503);
+    expect(blockedTeaser.data.code).toBe("AI_UNAVAILABLE");
+    expect((await call(reading, { drawToken: token, input: MONEY_INPUT })).status).toBe(503);
+    expect(errors.mock.calls.some((args: unknown[]) => String(args[0]).includes('"evt":"spend.kv_error"'))).toBe(true);
+    kv.state.mode = "ok";
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT })).status).toBe(200);
+  });
+
+  it("never fail a reading when only writes fail (429): it is generated and returned", async () => {
+    const token = await drawToken();
+    kv.state.mode = "no-writes";
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT })).status).toBe(200);
+    expect((await call(reading, { drawToken: token, input: MONEY_INPUT })).status).toBe(200);
+    const fortune = await call(daily, {}, "198.51.100.41");
+    expect(fortune.status).toBe(200);
+    expect(fortune.data.card).toBeDefined();
+  });
+
+  it("never fail a generation already under way when KV goes down mid-stream", async () => {
+    const token = await drawToken();
+    const real = mockProvider.generate.bind(mockProvider);
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+      hooks?.onReserve?.([{ model: "claude-opus-5-5", inputTokens: 1000, outputTokens: 1000, cacheReadTokens: 0, cacheWriteTokens: 0 }]);
+      kv.state.mode = "down";
+      const result = await real(task, attempt, feedback, hooks);
+      hooks?.onUsage?.([{ model: "claude-opus-5-5", inputTokens: 500, outputTokens: 500, cacheReadTokens: 0, cacheWriteTokens: 0 }]);
+      return result;
+    });
+    const response = await teaser(request({ drawToken: token, input: MONEY_INPUT }, "198.51.100.42", "application/x-ndjson"));
+    const events = (await response.text()).trim().split("\n").map((line) => JSON.parse(line) as { type: string });
+    expect(events.at(-1)!.type).toBe("done");
+  });
+
+  it("keep the daily card working when KV cannot be read at all (it is not fail-closed)", async () => {
+    kv.state.mode = "down";
+    const fortune = await call(daily, {}, "198.51.100.43");
+    expect(fortune.status).toBe(200);
+    expect(fortune.data.summary).toBeTruthy();
+  });
+});

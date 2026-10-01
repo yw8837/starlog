@@ -95,6 +95,16 @@ describe("anthropic provider response handling (fake SDK)", () => {
     expect(billed).toHaveLength(3);
   });
 
+  it("reserves each call's worst case before it starts, even when the call is then aborted", async () => {
+    const reserved: Array<{ model: string; outputTokens: number; inputTokens: number }> = [];
+    const onReserve = (usage: Array<{ model: string; outputTokens: number; inputTokens: number }>) => reserved.push(...usage);
+    await anthropicProvider("key", fake([message("max_tokens", "{"), message("end_turn", ANSWER)])).generate(task(), 1, undefined, { onReserve });
+    expect(reserved.map((r) => r.outputTokens)).toEqual([1000, 2000]);
+    expect(reserved.every((r) => r.model === "claude-opus-5-5" && r.inputTokens > 0)).toBe(true);
+    await anthropicProvider("key", fake([new DOMException("aborted", "AbortError")])).generate(task(), 1, undefined, { onReserve }).catch(() => {});
+    expect(reserved).toHaveLength(3);
+  });
+
   it("retries once with twice the cap on max_tokens, and a regeneration keeps the raised cap", async () => {
     const t = task();
     const sdk = fake([message("max_tokens", '{"kind":"cla'), message("end_turn", ANSWER), message("end_turn", ANSWER)]);

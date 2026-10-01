@@ -3,7 +3,7 @@ import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { clientKey, ipGroup } from "@/lib/api/http";
-import { clientCount, spentTodayKrw } from "@/lib/api/spend";
+import { BUDGET_TRIP, SpendLedger, clientCount, spentTodayKrw } from "@/lib/api/spend";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { keyedHash } from "@/lib/security/sign";
@@ -59,8 +59,11 @@ function device(ip: string, { cookieless = false } = {}) {
 
 const drawFor = async (d: ReturnType<typeof device>) => (await d.call(draw, { templateId: "self-flow", picks: [3, 30, 60] })).data.drawToken as string;
 
-/** Usage that the price table prices at about 2,800원 (Opus 5.5: 100k output tokens = $2 × 1,400). */
+/** Usage that the price table prices at 2,800원 (Opus 5.5: 100k output tokens = $2 × 1,400). */
 const EXPENSIVE = [{ model: "claude-opus-5-5", inputTokens: 0, outputTokens: 100_000, cacheReadTokens: 0, cacheWriteTokens: 0 }];
+/** Half of EXPENSIVE: 1,400원. */
+const HALF = [{ ...EXPENSIVE[0]!, outputTokens: 50_000 }];
+const spent = async () => Math.round((await spentTodayKrw(Date.now())) ?? -1);
 
 /** The mock provider, reporting `usage` as billed like the real one does. */
 function billing(usage = EXPENSIVE) {
@@ -88,7 +91,7 @@ afterEach(() => {
 });
 
 describe("server-side day counters (per client network, whatever the cookies say)", () => {
-  it("counts a streamed generation at done without /api/commit, and stops the network at its limit", async () => {
+  it("charges the network when a streamed generation starts (no /api/commit needed), and stops it at its limit", async () => {
     vi.stubEnv("BETA_IP_TEASER_PER_DAY", "2");
     const ip = "198.51.100.10";
     const statuses: number[] = [];
@@ -113,18 +116,48 @@ describe("server-side day counters (per client network, whatever the cookies say
     expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     const limited = await d.call(reading, { drawToken, input: MONEY_INPUT });
     expect(limited.status).toBe(429);
-    expect(limited.data.code).toBe("BETA_LIMIT");
+    expect(limited.data).toMatchObject({ code: "BETA_LIMIT", scope: "network" });
+    expect(limited.data.message).toContain("와이파이·통신사");
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
   });
 
-  it("does not count failed generations", async () => {
-    vi.stubEnv("BETA_IP_TEASER_PER_DAY", "1");
-    const d = device("198.51.100.12", { cookieless: true });
+  it("charges a failed generation too: it was started and billed (the device cookie still is not spent)", async () => {
+    vi.stubEnv("BETA_IP_TEASER_PER_DAY", "2");
+    const d = device("198.51.100.12");
     const drawToken = await drawFor(d);
     vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(502);
+    expect(d.jar.has("sl_q")).toBe(false);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(429);
+  });
+
+  it("counts a client that disconnects mid-stream: the network charge and the reserved cost both stay", async () => {
+    let aborted = false;
+    vi.spyOn(mockProvider, "generate").mockImplementation((_task, _attempt, _feedback, hooks?: GenerationHooks) => new Promise((_, reject) => {
+      hooks?.onReserve?.(EXPENSIVE); // the real provider reserves before each upstream call
+      hooks?.onText?.('{"cards": [{');
+      hooks?.signal?.addEventListener("abort", () => {
+        aborted = true;
+        reject(new GenerationError("UPSTREAM", ["aborted"]));
+      });
+    }));
+    const ip = "198.51.100.15";
+    const d = device(ip);
+    const drawToken = await drawFor(d);
+    const client = new AbortController();
+    const response = await teaser(new Request("http://localhost/api", {
+      method: "POST", signal: client.signal,
+      headers: { "content-type": "application/json", "cf-connecting-ip": ip, accept: "application/x-ndjson" },
+      body: JSON.stringify({ drawToken, input: MONEY_INPUT }),
+    }));
+    const reader = response.body!.getReader();
+    const seen = new TextDecoder().decode((await reader.read()).value);
+    expect(seen).toContain('"type":"start"');
+    client.abort(); // gone before done: no /api/commit, no cookie
+    await vi.waitFor(() => expect(aborted).toBe(true));
+    await vi.waitFor(async () => expect(await spent()).toBe(2800));
+    expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "teaser", Date.now())).toBe(1);
   });
 
   it("shares one counter across an IPv6 /64", async () => {
@@ -157,15 +190,16 @@ describe("server-side day counters (per client network, whatever the cookies say
 });
 
 describe("global daily spend cap", () => {
-  it("adds the billed usage of every call and answers 503 to new generations, owner included, once over budget", async () => {
-    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "5000");
+  it("adds the billed usage of every call and answers 503 to new generations, owner included, at 80% of the budget", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "7000"); // trips at 5,600
+    expect(BUDGET_TRIP).toBe(0.8);
     billing();
     const d = device("198.51.100.20");
     const drawToken = await drawFor(d);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
-    expect(Math.round(await spentTodayKrw(Date.now()))).toBe(2800);
+    expect(await spent()).toBe(2800);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
-    expect(Math.round(await spentTodayKrw(Date.now()))).toBe(5600);
+    expect(await spent()).toBe(5600); // under the budget, at the trip point
     const over = await d.call(teaser, { drawToken, input: MONEY_INPUT });
     expect(over.status).toBe(503);
     expect(over.data.code).toBe("AI_UNAVAILABLE");
@@ -189,7 +223,30 @@ describe("global daily spend cap", () => {
     const drawToken = await drawFor(d);
     const res = await d.stream(teaser, { drawToken, input: MONEY_INPUT });
     expect(res.events.at(-1)).toMatchObject({ type: "error", body: { code: "QUALITY" } });
-    expect(Math.round(await spentTodayKrw(Date.now()))).toBe(5600); // both attempts
+    expect(await spent()).toBe(5600); // both attempts
+  });
+
+  it("reconciles each call's reservation to its real usage", async () => {
+    const real = mockProvider.generate.bind(mockProvider);
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+      hooks?.onReserve?.(EXPENSIVE);
+      const result = await real(task, attempt, feedback, hooks);
+      hooks?.onUsage?.(HALF);
+      return result;
+    });
+    const d = device("198.51.100.25");
+    const drawToken = await drawFor(d);
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect(await spent()).toBe(1400);
+  });
+
+  it("keeps a reservation whose call never reported usage, and adds usage beyond a reservation", async () => {
+    const ledger = new SpendLedger();
+    ledger.reserve(HALF); // a call cut off: billed for an unknown share
+    ledger.reserve(HALF); // next call (e.g. the max_tokens re-call)
+    ledger.bill(EXPENSIVE); // used more than reserved
+    await ledger.finish();
+    expect(await spent()).toBe(1400 + 2800);
   });
 
   it("serves a stored daily fortune over budget, but generates no new one", async () => {
@@ -226,6 +283,10 @@ describe("client network key", () => {
     ["[2001:db8::1]", "2001:db8:0:0::/64"],
     ["fe80::1%eth0", "fe80:0:0:0::/64"],
     ["::ffff:192.0.2.5", "192.0.2.5"],
+    ["::ffff:c000:205", "192.0.2.5"],
+    ["0:0:0:0:0:ffff:192.0.2.5", "192.0.2.5"],
+    ["0000:0000:0000:0000:0000:FFFF:C000:0205", "192.0.2.5"],
+    ["::ffff:1.2.3.999", "::ffff:1.2.3.999"],
     ["2001:db8:1:2::192.0.2.5", "2001:db8:1:2::/64"],
     ["::1", "0:0:0:0::/64"],
     ["not-an-ip", "not-an-ip"],
@@ -238,5 +299,15 @@ describe("client network key", () => {
     expect(clientKey(req("2001:db8:1:2::a"))).toBe(clientKey(req("2001:db8:1:2:9:9:9:9")));
     expect(clientKey(req("2001:db8:1:2::a"))).not.toBe(clientKey(req("2001:db8:1:3::a")));
     expect(clientKey(new Request("http://localhost/api"))).toBe("local");
+    expect(clientKey(req("::ffff:c000:205"))).toBe(clientKey(req("192.0.2.5")));
+  });
+
+  it("names a network by a subkey derived from the secret, never the token-signing key itself", async () => {
+    const raw = await crypto.subtle.importKey("raw", new TextEncoder().encode(SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const direct = Buffer.from(await crypto.subtle.sign("HMAC", raw, new TextEncoder().encode("client:192.0.2.5"))).toString("base64url");
+    const id = await keyedHash("client:192.0.2.5", SECRET);
+    expect(id).not.toBe(direct);
+    expect(id).toBe(await keyedHash("client:192.0.2.5", SECRET));
+    expect(id).not.toBe(await keyedHash("client:192.0.2.5", `${SECRET}x`));
   });
 });

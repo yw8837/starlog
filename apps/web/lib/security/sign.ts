@@ -107,9 +107,29 @@ export async function safeEqual(a: string, b: string, secret: string): Promise<b
   return diff === 0;
 }
 
-/** HMAC-SHA256 of `text` under the secret, base64url: a stable pseudonym that cannot be reversed without the secret. */
+const CLIENT_ID_LABEL = "starlog/client-id/v1";
+const clientIdKeys = new Map<string, Promise<CryptoKey>>();
+
+/** HMAC(secret, label) as its own HMAC key: client ids never use the token-signing key itself. */
+function clientIdKey(secret: string): Promise<CryptoKey> {
+  let key = clientIdKeys.get(secret);
+  if (!key) {
+    key = (async () => {
+      const derived = await crypto.subtle.sign("HMAC", await hmacKey(secret), encoder.encode(CLIENT_ID_LABEL));
+      return crypto.subtle.importKey("raw", derived, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    })();
+    clientIdKeys.set(secret, key);
+  }
+  return key;
+}
+
+/**
+ * A stable pseudonym for a client network: HMAC-SHA256 under a subkey derived from the secret
+ * ("starlog/client-id/v1"), base64url. It cannot be reversed or recomputed without the secret, and
+ * it is never a valid MAC for a signed token.
+ */
 export async function keyedHash(text: string, secret: string): Promise<string> {
-  return toBase64Url(new Uint8Array(await crypto.subtle.sign("HMAC", await hmacKey(secret), encoder.encode(text))));
+  return toBase64Url(new Uint8Array(await crypto.subtle.sign("HMAC", await clientIdKey(secret), encoder.encode(text))));
 }
 
 /** URL-safe random id from `crypto.getRandomValues`. */
