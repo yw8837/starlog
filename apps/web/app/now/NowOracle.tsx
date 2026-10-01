@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { SITE, won } from "@/lib/config";
 import { drawNow, type NowDraw } from "@/lib/decision";
 import s from "./NowOracle.module.css";
+import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
 type Phase = "shuffle" | "pick" | "reveal";
 
@@ -231,7 +232,7 @@ export function NowOracle({ instant = false }: NowOracleProps) {
                 <p className={s.more}>
                   더 자세히 보고 싶다면 <span aria-hidden="true">→</span> 기본 타로 3장 ({won(SITE.price.tarotStandardKrw)})
                 </p>
-                <Button href="/tarot/new" block trailing="→">
+                <Button href={NEW_TAROT_HREF} block trailing="→">
                   기본 타로 3장으로 자세히 보기
                 </Button>
                 <Button variant="secondary" block onClick={again}>

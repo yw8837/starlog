@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   EMPTY_FLOW,
   FLOW_KEY,
   NOTE_MAX,
   builderTopics,
+  freshFlowOnEntry,
   resultGate,
   sanitizeFlow,
   saveFlow,
@@ -197,5 +198,47 @@ describe("useFlowState", () => {
     const before = window.location.href;
     act(() => result.current.setFlow({ ...CONTACT, whoText: "전 남친", conditions: {}, note: "비밀 메모" }));
     expect(window.location.href).toBe(before);
+  });
+});
+
+describe("freshFlowOnEntry (a new question starts clean)", () => {
+  afterEach(() => {
+    sessionStorage.clear();
+    vi.useRealTimers();
+  });
+  const savedFlow = () => JSON.parse(sessionStorage.getItem(FLOW_KEY) ?? "{}");
+
+  it("stamps every save with the time it was saved", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-01T10:00:00+09:00"));
+    saveFlow({ ...MONEY, conditions: {}, note: "" });
+    expect(savedFlow().savedAt).toBe(Date.parse("2026-10-01T10:00:00+09:00"));
+    expect(sanitizeFlow(savedFlow()).savedAt).toBe(Date.parse("2026-10-01T10:00:00+09:00"));
+  });
+
+  it("clears the flow for a new question and keeps it otherwise, with a fake clock for the 30 minutes", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-01T10:00:00+09:00"));
+    saveFlow(sanitizeFlow({ ...MONEY, note: "메모", draw: DRAW }));
+
+    vi.setSystemTime(new Date("2026-10-01T10:29:00+09:00"));
+    freshFlowOnEntry(false);
+    expect(savedFlow()).toMatchObject({ topicId: "money", note: "메모" });
+
+    freshFlowOnEntry(true);
+    expect(savedFlow()).toMatchObject({ conditions: {}, note: "" });
+    expect(savedFlow().who).toBeUndefined();
+    expect(savedFlow().draw).toBeUndefined();
+
+    vi.setSystemTime(new Date("2026-10-01T11:00:00+09:00"));
+    saveFlow({ ...MONEY, conditions: {}, note: "" });
+    vi.setSystemTime(new Date("2026-10-01T11:31:00+09:00"));
+    freshFlowOnEntry(false);
+    expect(savedFlow().topicId).toBeUndefined();
+  });
+
+  it("leaves an empty session alone", () => {
+    freshFlowOnEntry(true);
+    expect(sessionStorage.getItem(FLOW_KEY)).toBeNull();
   });
 });

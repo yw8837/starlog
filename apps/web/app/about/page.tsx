@@ -12,6 +12,7 @@ import { SITE } from "@/lib/config";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { withParticle } from "@/lib/korean";
 import { contactChannels } from "@/lib/legal";
+import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
 
 const page = INFO_PAGES.about;
 
@@ -120,10 +121,10 @@ export default function AboutPage() {
       </section>
 
       <div className={s.actions}>
-        <Button href="/tarot/new" block>
+        <Button href={NEW_TAROT_HREF} block>
           타로 보기
         </Button>
-        <Button href="/saju/new" variant="secondary" block>
+        <Button href={NEW_SAJU_HREF} variant="secondary" block>
           사주 보기
         </Button>
       </div>

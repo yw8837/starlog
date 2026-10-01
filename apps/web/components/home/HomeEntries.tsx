@@ -9,6 +9,7 @@ import { GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath } fr
 import { INFO_PAGES } from "@/lib/infoPages";
 import { ArrowIcon, ChevronIcon } from "./icons";
 import s from "./home.module.css";
+import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
 
 /** What the site is, in one line, then who reads what. The page's one <h1>. */
 export function HomeHero() {
@@ -30,7 +31,7 @@ export function HomeHero() {
 export function TarotEntry() {
   return (
     <div className={`${s.entryRow} ${s.entryRowStart}`}>
-      <Link href="/tarot/new" className={`${s.entry} ${s.entryPrimary}`}>
+      <Link href={NEW_TAROT_HREF} className={`${s.entry} ${s.entryPrimary}`}>
         <span className={s.entryText}>
           <span className={s.entryTitle}>타로 보기</span>
           <span className={s.entrySub}>카드 3장으로 지금을 봐요</span>
@@ -51,7 +52,7 @@ export function TarotEntry() {
 export function SajuEntry() {
   return (
     <div className={`${s.entryRow} ${s.entryRowEnd}`}>
-      <Link href="/saju/new" className={`${s.entry} ${s.entryHanji}`}>
+      <Link href={NEW_SAJU_HREF} className={`${s.entry} ${s.entryHanji}`}>
         <span className={s.entryText}>
           <span className={s.entryTitle}>사주 보기</span>
           <span className={s.entrySub}>타고난 결로 나를 봐요</span>

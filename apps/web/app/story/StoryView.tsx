@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { kstMonthDay } from "@/lib/kst";
 import { checkinDue, newestFirst, recordLine, useChapters, type SajuChapter, type StoredChapter } from "@/lib/storage/chapters";
 import s from "./StoryView.module.css";
+import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
 const PlusIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true" focusable="false">
@@ -112,7 +113,7 @@ export function StoryView() {
             새로 물어볼까요?
           </h2>
           <p className={s.nextText}>요즘 마음에 걸리는 일을 카드 세 장으로 봐요.</p>
-          <Button href="/tarot/new" block trailing={<PlusIcon />}>
+          <Button href={NEW_TAROT_HREF} block trailing={<PlusIcon />}>
             새로 물어보기
           </Button>
           <Button href="/today" variant="ghost" size="md" block>
@@ -122,7 +123,7 @@ export function StoryView() {
       </aside>
 
       <div className={s.floating}>
-        <Button href="/tarot/new" trailing={<PlusIcon />}>
+        <Button href={NEW_TAROT_HREF} trailing={<PlusIcon />}>
           새로 물어보기
         </Button>
       </div>
@@ -141,7 +142,7 @@ export function EmptyStory() {
       <p className={s.emptyTitle}>아직 기록이 없어요</p>
       <p className={s.emptyText}>풀이를 열면 토끼가 여기에 적어 둬요.</p>
       <div className={s.emptyCta}>
-        <Button href="/tarot/new" block trailing="→">
+        <Button href={NEW_TAROT_HREF} block trailing="→">
           첫 타로 보기
         </Button>
       </div>

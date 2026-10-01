@@ -16,6 +16,7 @@ import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath } fro
 import { OG_ALT } from "@/lib/og";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
+import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
 
 export const dynamicParams = false;
 
@@ -45,8 +46,8 @@ export async function generateMetadata({ params }: PageProps<"/guide/[slug]">): 
 }
 
 const CTA = {
-  tarot: { text: "카드 3장으로 지금을 봐요", label: "타로 보기", href: "/tarot/new" },
-  saju: { text: "타고난 결로 나를 봐요", label: "사주 보기", href: "/saju/new" },
+  tarot: { text: "카드 3장으로 지금을 봐요", label: "타로 보기", href: NEW_TAROT_HREF },
+  saju: { text: "타고난 결로 나를 봐요", label: "사주 보기", href: NEW_SAJU_HREF },
 } as const;
 
 export default async function GuideArticlePage({ params }: PageProps<"/guide/[slug]">) {

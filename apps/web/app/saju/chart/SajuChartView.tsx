@@ -29,6 +29,7 @@ import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storage/betaUsage";
 import { historyFor, listChapters, saveChapter, useChapters } from "@/lib/storage/chapters";
 import s from "./SajuChartView.module.css";
+import { NEW_SAJU_HREF } from "@/lib/freshStart";
 
 /** The body /api/saju/* take: birth data, the optional chips, and recent readings as history. */
 function sajuBody(birth: SajuForm, context: SajuContext) {
@@ -147,7 +148,7 @@ export function SajuChartView() {
           내 명식은 어떨까요?
         </h2>
         <p className={s.ctaText}>태어난 날을 넣으면 내 명식을 세우고, 나에게 맞춘 풀이를 열 수 있어요.</p>
-        <Button href="/saju/new" block trailing="→">
+        <Button href={NEW_SAJU_HREF} block trailing="→">
           태어난 날 입력하기
         </Button>
       </section>

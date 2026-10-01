@@ -69,7 +69,7 @@ test("지금의 한 장: a question, one card, an answer from the DB and the ups
 
   const upsell = page.getByRole("link", { name: /기본 타로 3장으로 자세히 보기/ });
   await expect(upsell).toBeVisible();
-  await expect(upsell).toHaveAttribute("href", "/tarot/new");
+  await expect(upsell).toHaveAttribute("href", "/tarot/new?new=1");
 
   // 한 번 더 뽑기: a new shuffle, the question kept, the ritual steps skipped.
   await page.getByRole("button", { name: "한 번 더 뽑기" }).click();

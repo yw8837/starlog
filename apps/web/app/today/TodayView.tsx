@@ -17,6 +17,7 @@ import type { DailyData, DailyDeal } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { saveDaily, useDaily } from "@/lib/storage/daily";
 import s from "./TodayView.module.css";
+import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
 const DAILY_PLAN = progressPlan("daily");
 const DEAL = [0, 1, 2] as const;
@@ -311,7 +312,7 @@ function Opened({ reading, revisit, flip, lineRef }: { reading: DailyData; revis
 
       <div className={s.after}>
         <ShareButton text={`오늘의 카드: ${reading.summary}`} />
-        <Button href="/tarot/new" variant="ghost" size="md">
+        <Button href={NEW_TAROT_HREF} variant="ghost" size="md">
           카드 세 장으로 더 물어보기
         </Button>
       </div>

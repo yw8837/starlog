@@ -1,5 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { TOPICS_BY_WHO, type TopicDef, type When, type Who } from "@starlog/core";
+import { isStale } from "./freshStart";
 import { CUSTOM_MAX, WHO_MAX, cleanPart, composeFlowQuestion } from "./question";
 import type { DrawTemplateId, DrawnCardData, TarotInput } from "./reading/types";
 
@@ -57,6 +58,8 @@ export interface FlowState {
   conditions: Record<string, string>;
   note: string;
   draw?: FlowDraw;
+  /** When the flow was last saved (ms); the builder starts clean once it is 30 minutes old. */
+  savedAt?: number;
 }
 
 export const EMPTY_FLOW: FlowState = Object.freeze({ conditions: Object.freeze({}), note: "" }) as FlowState;
@@ -122,6 +125,7 @@ export function sanitizeFlow(value: unknown): FlowState {
 
   const note = typeof value.note === "string" ? value.note.slice(0, NOTE_MAX) : "";
   const draw = sanitizeDraw(value.draw);
+  const savedAt = typeof value.savedAt === "number" && Number.isFinite(value.savedAt) ? value.savedAt : undefined;
   return {
     ...(who ? { who } : {}),
     ...(whoText ? { whoText } : {}),
@@ -132,6 +136,7 @@ export function sanitizeFlow(value: unknown): FlowState {
     conditions,
     note,
     ...(draw ? { draw } : {}),
+    ...(savedAt !== undefined ? { savedAt } : {}),
   };
 }
 
@@ -252,7 +257,7 @@ function subscribe(listener: () => void) {
 }
 
 export function saveFlow(next: FlowState) {
-  const raw = JSON.stringify(sanitizeFlow(next));
+  const raw = JSON.stringify({ ...sanitizeFlow(next), savedAt: Date.now() });
   try {
     window.sessionStorage.setItem(FLOW_KEY, raw);
     memoryRaw = null;
@@ -265,6 +270,15 @@ export function saveFlow(next: FlowState) {
 /** Forgets the question in progress (내 정보 → 기록 모두 지우기). */
 export function clearFlow() {
   saveFlow(EMPTY_FLOW);
+}
+
+/**
+ * On entering the builder: a new question (`?new=1`, lib/freshStart.ts) or answers left alone for
+ * 30 minutes start clean; anything else (the back links inside the flow) keeps them.
+ */
+export function freshFlowOnEntry(newQuestion: boolean, now = Date.now()) {
+  if (readRaw() === null) return;
+  if (newQuestion || isStale(getSnapshot().savedAt, now)) clearFlow();
 }
 
 /** `flow` is null until the browser snapshot is read (server render and hydration). */

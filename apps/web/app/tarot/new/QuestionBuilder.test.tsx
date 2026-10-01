@@ -18,24 +18,49 @@ afterEach(() => {
   sessionStorage.clear();
 });
 
+/** A flow as the builder saved it `ago` ms before now (the builder starts clean after 30 minutes). */
+const seed = (flow: object, ago = 0) => sessionStorage.setItem(FLOW_KEY, JSON.stringify({ conditions: {}, note: "", ...flow, savedAt: Date.now() - ago }));
+const pressed = (name: string) => screen.getByRole("button", { name }).getAttribute("aria-pressed");
+const next = () => screen.getByRole("button", { name: /^다음/ }) as HTMLButtonElement;
+
+afterEach(() => window.history.replaceState(null, "", "/"));
+
 describe("QuestionBuilder", () => {
-  it("keeps the dealt cards when the chip already chosen is tapped again, and drops them on a real change", () => {
-    sessionStorage.setItem(FLOW_KEY, JSON.stringify({ who: "me", topicId: "money", when: "week", conditions: {}, note: "", draw: DRAW }));
+  it("keeps the dealt cards when the selected 누구 is tapped again, and drops them on a real change", () => {
+    seed({ who: "me", topicId: "money", when: "week", draw: DRAW });
     render(<QuestionBuilder />);
     fireEvent.click(screen.getByRole("button", { name: "나", exact: true } as never));
-    fireEvent.click(screen.getByRole("button", { name: "재물운" }));
-    fireEvent.click(screen.getByRole("button", { name: "이번 주" }));
+    expect(pressed("나")).toBe("true");
     expect(stored().draw).toEqual(DRAW);
     fireEvent.click(screen.getByRole("button", { name: "이번 달" }));
     expect(stored().draw).toBeUndefined();
     expect(stored().when).toBe("month");
   });
 
+  it("takes a 무엇 or 언제 chip back on a second tap; 다음 waits until both are set again", () => {
+    seed({ who: "me", topicId: "money", when: "week" });
+    render(<QuestionBuilder />);
+    expect(next().disabled).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "재물운" }));
+    expect(pressed("재물운")).toBe("false");
+    expect(stored().topicId).toBeUndefined();
+    expect(screen.getByText("누구, 무엇, 언제를 고르면 질문이 완성돼요")).toBeTruthy();
+    expect(next().disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "이번 주" }));
+    expect(pressed("이번 주")).toBe("false");
+    expect(stored().when).toBeUndefined();
+    fireEvent.click(screen.getByRole("button", { name: "재물운" }));
+    expect(next().disabled).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "이번 주" }));
+    expect(next().disabled).toBe(false);
+    expect(screen.getByText("이번 주 내 재물 흐름은 어떨까?")).toBeTruthy();
+  });
+
   it("lets typing replace the chip, and a chip clear the typing", () => {
-    sessionStorage.setItem(FLOW_KEY, JSON.stringify({ who: "me", topicId: "money", when: "week", conditions: {}, note: "" }));
+    seed({ who: "me", topicId: "money", when: "week" });
     render(<QuestionBuilder />);
     fireEvent.change(screen.getByRole("textbox", { name: "무엇을 볼지 직접 쓰기" }), { target: { value: "창업 준비" } });
-    expect(screen.getByRole("button", { name: "재물운" }).getAttribute("aria-pressed")).toBe("false");
+    expect(pressed("재물운")).toBe("false");
     expect(screen.getByText("이번 주 내 창업 준비는 어떻게 될까?")).toBeTruthy();
     // Clearing gives the field its focus back.
     fireEvent.click(screen.getByRole("button", { name: "무엇을 볼지 직접 쓰기 지우기" }));
@@ -46,15 +71,56 @@ describe("QuestionBuilder", () => {
     expect(stored().topicId).toBe("money");
   });
 
-  it("takes a short 누구 (10 characters) and keeps a sentence typed there out of the question", () => {
-    sessionStorage.setItem(FLOW_KEY, JSON.stringify({ who: "us", topicId: "crush", when: "week", conditions: {}, note: "" }));
+  it("labels the 누구 detail 구체적으로 적기 (선택) with an example for the chosen chip; 나 has none", () => {
+    seed({ who: "me" });
     render(<QuestionBuilder />);
-    const field = screen.getByRole("textbox", { name: "누구인지 더 적기" }) as HTMLInputElement;
+    expect(screen.queryByRole("textbox", { name: "구체적으로 적기 (선택)" })).toBeNull();
+    const examples: Array<[string, string]> = [
+      ["나와 그 사람", "예: 엄마, 팀장님, 전 남친"],
+      ["나의 일", "예: 우리 팀, 새 프로젝트, 첫 직장"],
+      ["우리 모임", "예: 대학 동기, 독서 모임, 가족"],
+    ];
+    for (const [chip, example] of examples) {
+      fireEvent.click(screen.getByRole("button", { name: chip }));
+      const field = screen.getByRole("textbox", { name: "구체적으로 적기 (선택)" }) as HTMLInputElement;
+      expect(field.placeholder, chip).toBe(example);
+      // The label is on screen, not only read out.
+      expect(screen.getByText("구체적으로 적기 (선택)").tagName).toBe("LABEL");
+    }
+  });
+
+  it("takes a short 누구 (10 characters) and keeps a sentence typed there out of the question", () => {
+    seed({ who: "us", topicId: "crush", when: "week" });
+    render(<QuestionBuilder />);
+    const field = screen.getByRole("textbox", { name: "구체적으로 적기 (선택)" }) as HTMLInputElement;
     expect(field.maxLength).toBe(10);
-    expect(field.placeholder).toBe("누구인지 (예: 엄마, 팀장님, 전 남친)");
     fireEvent.change(field, { target: { value: "티끌을 얼마나 모아" } });
     expect(screen.getByText("이번 주 그 사람과 나 사이는 어떻게 될까?")).toBeTruthy();
     fireEvent.change(field, { target: { value: "엄마" } });
     expect(screen.getByText("이번 주 엄마와 나 사이는 어떻게 될까?")).toBeTruthy();
+  });
+
+  it("starts clean when opened as a new question (?new=1) and drops the flag from the address", () => {
+    seed({ who: "me", topicId: "money", when: "week", note: "메모", draw: DRAW });
+    window.history.replaceState(null, "", "/tarot/new?new=1");
+    render(<QuestionBuilder />);
+    expect(pressed("나")).toBe("false");
+    expect(pressed("이번 주")).toBe("false");
+    expect(stored()).toMatchObject({ conditions: {}, note: "" });
+    expect(stored().who).toBeUndefined();
+    expect(stored().draw).toBeUndefined();
+    expect(window.location.pathname + window.location.search).toBe("/tarot/new");
+  });
+
+  it("keeps answers on an in-flow return, and forgets them once they are 30 minutes old", () => {
+    seed({ who: "me", topicId: "money", when: "week" }, 29 * 60 * 1000);
+    const first = render(<QuestionBuilder />);
+    expect(pressed("재물운")).toBe("true");
+    first.unmount();
+    cleanup();
+    seed({ who: "me", topicId: "money", when: "week" }, 31 * 60 * 1000);
+    render(<QuestionBuilder />);
+    expect(pressed("나")).toBe("false");
+    expect(stored().topicId).toBeUndefined();
   });
 });

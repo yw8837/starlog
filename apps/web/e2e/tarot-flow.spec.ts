@@ -49,7 +49,7 @@ async function buildMoneyQuestion(page: Page, info: TestInfo) {
   await page.goto("/tarot/new");
   await page.getByRole("button", { name: "나", exact: true }).click();
   // 나 needs no 누구 detail.
-  await expect(page.getByRole("textbox", { name: "누구인지 더 적기" })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "구체적으로 적기 (선택)" })).toHaveCount(0);
   await page.getByRole("button", { name: "재물운" }).click();
   await page.getByRole("button", { name: "이번 주" }).click();
   await expect(page.getByText("이번 주 내 재물 흐름은 어떨까?")).toBeVisible();
@@ -179,7 +179,7 @@ test("a typed 무엇 with a named person reads with the 누구 chip's spread", a
   await ownAddress(page, info);
   await page.goto("/tarot/new");
   await page.getByRole("button", { name: "나와 그 사람" }).click();
-  await page.getByRole("textbox", { name: "누구인지 더 적기" }).fill("엄마");
+  await page.getByRole("textbox", { name: "구체적으로 적기 (선택)" }).fill("엄마");
   await page.getByRole("button", { name: "연락", exact: true }).click();
   await page.getByRole("textbox", { name: "무엇을 볼지 직접 쓰기" }).fill("전세 계약");
   // Typing replaced the chip.
@@ -286,5 +286,87 @@ test.describe("before hydration (no JavaScript)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("");
     await expect(page.locator("main")).not.toContainText("나의 마음", { useInnerText: true });
     await expect(page.locator("[data-fan-index]")).toHaveCount(0);
+  });
+});
+
+test.describe("question builder: toggling chips and starting clean", () => {
+  const chip = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
+  const next = (page: Page) => page.getByRole("button", { name: /^다음/ });
+  const EMPTY = "누구, 무엇, 언제를 고르면 질문이 완성돼요";
+
+  async function buildMoney(page: Page) {
+    await chip(page, "나").click();
+    await chip(page, "재물운").click();
+    await chip(page, "이번 주").click();
+    await expect(page.getByText("이번 주 내 재물 흐름은 어떨까?")).toBeVisible();
+  }
+
+  test("무엇 and 언제 chips toggle off; 누구 stays chosen; the detail field fits the 누구 chip", async ({ page }) => {
+    await page.goto("/tarot/new?new=1");
+    // The flag is used once and leaves the address.
+    await expect(page).toHaveURL(/\/tarot\/new$/);
+    await buildMoney(page);
+    await expect(next(page)).toBeEnabled();
+
+    await chip(page, "재물운").click();
+    await expect(chip(page, "재물운")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText(EMPTY)).toBeVisible();
+    await expect(next(page)).toBeDisabled();
+    await chip(page, "재물운").click();
+    await chip(page, "이번 주").click();
+    await expect(chip(page, "이번 주")).toHaveAttribute("aria-pressed", "false");
+    await expect(next(page)).toBeDisabled();
+    await chip(page, "이번 주").click();
+    await expect(next(page)).toBeEnabled();
+    // 누구 is one of four: a second tap changes nothing.
+    await chip(page, "나").click();
+    await expect(chip(page, "나")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("textbox", { name: "구체적으로 적기 (선택)" })).toHaveCount(0);
+
+    const examples: Array<[string, string]> = [
+      ["나와 그 사람", "예: 엄마, 팀장님, 전 남친"],
+      ["나의 일", "예: 우리 팀, 새 프로젝트, 첫 직장"],
+      ["우리 모임", "예: 대학 동기, 독서 모임, 가족"],
+    ];
+    for (const [who, example] of examples) {
+      await chip(page, who).click();
+      await expect(page.getByRole("textbox", { name: "구체적으로 적기 (선택)" })).toHaveAttribute("placeholder", example);
+      await expect(page.getByText("구체적으로 적기 (선택)", { exact: true })).toBeVisible();
+    }
+  });
+
+  test("home → tarot → back home → tarot starts clean; situation → back keeps the answers", async ({ page }) => {
+    await page.goto("/");
+    const entry = page.getByRole("main").getByRole("link", { name: /타로 보기/ });
+    await entry.click();
+    await expect(page).toHaveURL(/\/tarot\/new$/, { timeout: NAV });
+    await buildMoney(page);
+    await next(page).click();
+    await expect(page).toHaveURL(/\/tarot\/new\/situation$/, { timeout: NAV });
+    await page.getByRole("link", { name: "질문 만들기로" }).click();
+    await expect(page).toHaveURL(/\/tarot\/new$/, { timeout: NAV });
+    await expect(chip(page, "재물운")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("이번 주 내 재물 흐름은 어떨까?")).toBeVisible();
+
+    await page.getByRole("link", { name: "홈으로" }).click();
+    await expect(page).toHaveURL(/localhost:\d+\/$/, { timeout: NAV });
+    await entry.click();
+    await expect(page).toHaveURL(/\/tarot\/new$/, { timeout: NAV });
+    await expect(chip(page, "나")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText(EMPTY)).toBeVisible();
+  });
+
+  test("answers left for 30 minutes are forgotten (fake clock)", async ({ page }) => {
+    const start = new Date("2026-10-01T10:00:00+09:00").getTime();
+    await page.clock.setFixedTime(start);
+    await page.goto("/tarot/new?new=1");
+    await buildMoney(page);
+    await next(page).click();
+    await expect(page).toHaveURL(/\/tarot\/new\/situation$/, { timeout: NAV });
+    await page.clock.setFixedTime(start + 31 * 60 * 1000);
+    await page.getByRole("link", { name: "질문 만들기로" }).click();
+    await expect(page).toHaveURL(/\/tarot\/new$/, { timeout: NAV });
+    await expect(chip(page, "나")).toHaveAttribute("aria-pressed", "false");
+    await expect(page.getByText(EMPTY)).toBeVisible();
   });
 });

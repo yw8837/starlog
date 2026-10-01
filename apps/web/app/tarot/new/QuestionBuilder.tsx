@@ -1,23 +1,35 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useLayoutEffect } from "react";
 import type { When, Who } from "@starlog/core";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { CustomField } from "@/components/ui/CustomField";
-import { EMPTY_FLOW, WHEN_OPTIONS, WHO_OPTIONS, allowedWhens, builderTopics, findTopic, summarizeFlow, useFlowState, type FlowState } from "@/lib/flowState";
+import { EMPTY_FLOW, WHEN_OPTIONS, WHO_OPTIONS, allowedWhens, builderTopics, findTopic, freshFlowOnEntry, summarizeFlow, useFlowState, type FlowState } from "@/lib/flowState";
+import { takeNewFlag } from "@/lib/freshStart";
 import { CUSTOM_MAX, WHO_MAX } from "@/lib/question";
 import f from "../flow.module.css";
+
+/** An example that fits the 누구 chip (나 has no detail field). */
+const WHO_DETAIL_EXAMPLE: Readonly<Record<Exclude<Who, "me">, string>> = {
+  us: "예: 엄마, 팀장님, 전 남친",
+  work: "예: 우리 팀, 새 프로젝트, 첫 직장",
+  group: "예: 대학 동기, 독서 모임, 가족",
+};
 
 /**
  * Step 1a: build the question from 누구 × 무엇 × 언제. Picking 누구 narrows the topics. Under each
  * chip group an optional field takes the user's own words: 누구 adds detail (the chip still picks
  * the spread); 무엇 and 언제 replace their chip (typing clears the chip, a chip clears the text).
+ * 무엇 and 언제 chips toggle off on a second tap; 누구 is always one of four.
  */
 export function QuestionBuilder() {
   const router = useRouter();
   const { flow, setFlow } = useFlowState();
+  // A new question (?new=1) or answers left for 30 minutes start clean, before the first paint.
+  useLayoutEffect(() => freshFlowOnEntry(takeNewFlag()), []);
   const state = flow ?? EMPTY_FLOW;
   const topic = findTopic(state.who, state.topicId);
   const whens = allowedWhens(topic);
@@ -35,14 +47,16 @@ export function QuestionBuilder() {
 
   const pickTopic = (topicId: string) =>
     update((prev) => {
-      if (prev.topicId === topicId && !prev.topicText) return prev;
+      // The chip already chosen: a second tap takes it back.
+      if (prev.topicId === topicId && !prev.topicText) return { ...prev, topicId: undefined, conditions: {} };
       const next = findTopic(prev.who, topicId);
       const nextWhens = allowedWhens(next);
       const when = prev.when && nextWhens.includes(prev.when) ? prev.when : undefined;
       return { ...prev, topicId, topicText: undefined, when, conditions: {} };
     });
 
-  const pickWhen = (when: When) => update((prev) => (prev.when === when && !prev.whenText ? prev : { ...prev, when, whenText: undefined }));
+  const pickWhen = (when: When) =>
+    update((prev) => (prev.when === when && !prev.whenText ? { ...prev, when: undefined } : { ...prev, when, whenText: undefined }));
 
   return (
     <div className={f.screen}>
@@ -75,8 +89,9 @@ export function QuestionBuilder() {
             one goes into the question; anything else only reaches the reading (lib/question.ts). */}
         {state.who && state.who !== "me" ? (
           <CustomField
-            label="누구인지 더 적기"
-            placeholder="누구인지 (예: 엄마, 팀장님, 전 남친)"
+            label="구체적으로 적기 (선택)"
+            showLabel
+            placeholder={WHO_DETAIL_EXAMPLE[state.who]}
             value={state.whoText ?? ""}
             maxLength={WHO_MAX}
             onChange={(whoText) => update((prev) => ({ ...prev, whoText }))}

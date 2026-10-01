@@ -65,7 +65,8 @@ async function setStorage(page: Page, area: "sessionStorage" | "localStorage", k
   await page.addInitScript(([a, k, v]) => window[a as "localStorage"].setItem(k, v), [area, key, JSON.stringify(value)] as const);
 }
 
-const seedFlow = (page: Page, flow: object) => setStorage(page, "sessionStorage", "starlog.tarot-flow", flow);
+// Saved just now: the builder starts clean from a flow left for 30 minutes (lib/freshStart.ts).
+const seedFlow = (page: Page, flow: object) => setStorage(page, "sessionStorage", "starlog.tarot-flow", { savedAt: Date.now(), ...flow });
 
 /** The contact question with three cards the server dealt (a signed draw), as the draw page leaves it. */
 async function dealtFlow(page: Page) {

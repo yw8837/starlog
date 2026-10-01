@@ -70,7 +70,7 @@ describe("지금의 한 장", () => {
     expect(screen.getByRole("region", { name: "지금의 한 장 결과" }).dataset.lean).toBe(expected.lean);
 
     const upsell = screen.getByRole("link", { name: /기본 타로 3장으로 자세히 보기/ });
-    expect(upsell.getAttribute("href")).toBe("/tarot/new");
+    expect(upsell.getAttribute("href")).toBe("/tarot/new?new=1");
     expect(screen.getByText(new RegExp(`기본 타로 3장 \\(${won(SITE.price.tarotStandardKrw)}\\)`))).toBeTruthy();
     expect(screen.getByRole("button", { name: "한 번 더 뽑기" })).toBeTruthy();
     // The fan and the question field are gone while the answer is shown.

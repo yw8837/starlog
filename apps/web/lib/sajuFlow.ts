@@ -1,4 +1,5 @@
 import type { LoveStatus, SajuContext, WorkStatus } from "./reading/types";
+import { isStale } from "./freshStart";
 import { createLocalStore } from "./sessionStore";
 import { sanitizeSajuForm, type SajuForm } from "./sajuForm";
 
@@ -47,14 +48,31 @@ export function sanitizeSajuContext(value: unknown): SajuContext | null {
   };
 }
 
-const contextStore = createLocalStore<SajuContext>(SAJU_CONTEXT_KEY, sanitizeSajuContext);
+/** The saved context with when it was saved (ms), so the form can start clean 30 minutes later. */
+type StoredSajuContext = SajuContext & { savedAt?: number };
+
+const contextStore = createLocalStore<StoredSajuContext>(SAJU_CONTEXT_KEY, (value) => {
+  const context = sanitizeSajuContext(value);
+  if (!context) return null;
+  const savedAt = (value as { savedAt?: unknown }).savedAt;
+  return typeof savedAt === "number" && Number.isFinite(savedAt) ? { ...context, savedAt } : context;
+});
 
 export function saveSajuProfile(form: SajuForm) {
   profileStore.save(form);
 }
 
 export function saveSajuContext(context: SajuContext) {
-  contextStore.save(sanitizeSajuContext(context) ?? {});
+  contextStore.save({ ...(sanitizeSajuContext(context) ?? {}), savedAt: Date.now() });
+}
+
+/**
+ * On entering the form: a new question (`?new=1`, lib/freshStart.ts) or status chips and a concern
+ * saved more than 30 minutes ago start clean. The birth profile always stays.
+ */
+export function freshSajuContextOnEntry(newQuestion: boolean, now = Date.now()) {
+  const saved = contextStore.read();
+  if (saved && (newQuestion || isStale(saved.savedAt, now))) contextStore.clear();
 }
 
 /** Erases the birth profile and the status chips from this device. */

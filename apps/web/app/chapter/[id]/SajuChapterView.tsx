@@ -18,6 +18,7 @@ import type { SajuForm } from "@/lib/sajuForm";
 import { ChapterContents } from "./ChapterContents";
 import type { ChapterFollowUp } from "./ChapterView";
 import s from "./ChapterView.module.css";
+import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
 type SajuChapterViewProps = {
   /** e.g. "사주 기록 · 10월 1일" */
@@ -87,7 +88,7 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
             카드로 이어서 보기
           </h2>
           <p className={s.inviteText}>요즘 마음에 걸리는 일 하나를 카드 세 장으로 물어봐요.</p>
-          <Button href="/tarot/new" block trailing="→">
+          <Button href={NEW_TAROT_HREF} block trailing="→">
             타로 보기
           </Button>
         </section>

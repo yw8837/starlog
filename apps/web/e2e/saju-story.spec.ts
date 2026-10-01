@@ -234,7 +234,7 @@ test("invite: guest picks one card, reads the sun, leaves it for 하늘", async 
 test("home, 내 정보 and guide", async ({ page }, info) => {
   await page.goto("/");
   // Every reading starts from the home; no story hero and no balance pill in the beta.
-  for (const href of ["/tarot/new", "/saju/new", "/now", "/today"]) await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
+  for (const href of ["/tarot/new?new=1", "/saju/new?new=1", "/now", "/today"]) await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
   await expect(page.getByRole("link", { name: /나의 스타로그 · \d장/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /내 재화/ })).toHaveCount(0);
   await shot(page, info, "14-home");
@@ -283,4 +283,27 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /9번 은둔자/);
   await expect(page.getByRole("link", { name: "타로 가이드 목록으로" })).toHaveAttribute("href", "/guide/tarot");
   await shot(page, info, "19-guide-article");
+});
+
+test("사주 from the home starts the status chips clean but keeps the birth profile; back from the chart keeps them", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => {
+    localStorage.setItem("starlog.saju-profile", JSON.stringify({ calendar: "solar", year: 1993, month: 8, day: 17, isLeapMonth: false, timeKnown: false, hour: null, minute: null, gender: "male", placeId: "busan" }));
+    localStorage.setItem("starlog.saju-context", JSON.stringify({ loveStatus: "married", concern: "지난번 고민", savedAt: Date.now() }));
+  });
+  await page.getByRole("main").getByRole("link", { name: /사주 보기/ }).click();
+  await expect(page).toHaveURL(/\/saju\/new$/, { timeout: NAV });
+  await expect(page.getByText("→ 1993년 8월 17일 (양력)")).toBeVisible();
+  const more = page.getByRole("button", { name: /요즘 상황도 알려 주기/ });
+  await expect(more).toHaveAttribute("aria-expanded", "false");
+  expect(await page.evaluate(() => localStorage.getItem("starlog.saju-context"))).toBeNull();
+
+  await more.click();
+  await page.getByRole("button", { name: "연애 중" }).click();
+  await page.getByText("출생 정보를 풀이에 쓰는 데 동의해요").click();
+  await page.getByRole("button", { name: "명식 보기" }).click();
+  await expect(page).toHaveURL(/\/saju\/chart$/, { timeout: NAV });
+  await page.getByRole("link", { name: "입력으로 돌아가기" }).click();
+  await expect(page).toHaveURL(/\/saju\/new$/, { timeout: NAV });
+  await expect(page.getByRole("button", { name: "연애 중" })).toHaveAttribute("aria-pressed", "true");
 });

@@ -14,6 +14,7 @@ import { answerCheckin, chaptersPersisted, checkinDue, getChapter, observationOf
 import { ChapterView, type ChapterFollowUp } from "./ChapterView";
 import { SajuChapterView } from "./SajuChapterView";
 import s from "./ChapterView.module.css";
+import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
 /** Chapter tokens expire 7 days after the reading (the server's rule): no follow-ups after that. */
 const FOLLOW_UP_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -122,7 +123,7 @@ export function LocalChapter({ id }: { id: string }) {
           이 기기에 없는 기록이에요
         </h1>
         <p className={s.missingText}>풀이는 연 기기에만 보관돼요. 지웠거나 다른 기기에서 열었다면 여기서는 볼 수 없어요.</p>
-        <Button href="/tarot/new" block trailing="→">
+        <Button href={NEW_TAROT_HREF} block trailing="→">
           타로 보기
         </Button>
         <Button href="/story" variant="ghost" size="md" block>
