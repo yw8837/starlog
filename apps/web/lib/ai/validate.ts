@@ -97,8 +97,24 @@ function matchesBeyondUser(pattern: RegExp, text: string, userText: string): str
   return [...text.matchAll(global)].map((m) => m[0]).filter((hit) => !userText.includes(hit));
 }
 
-const OTHER_MIND = /(그 사람|상대방?|그분|걔|그 친구|그녀|그는|그가)[^.?!]{0,15}(마음|속마음|감정|생각|진심)[^.?!]{0,20}(이에요|예요|확실|분명|거예요|있어요)/;
-const OTHER_FEELS = /(그 사람|상대방?|그분|걔|그녀|그)(은|는|이|가)\s[^.?!]{0,30}(좋아해|사랑해|싫어해|그리워해|원해|후회해|관심 있어)요/;
+/** Who "the other person" can be, a partner or spouse included (marriage readings). */
+const OTHER = "그 사람|상대방?|그분|걔|그 친구|그녀|그는|그가|배우자|남자\\s?친구|여자\\s?친구|남친|여친|예비\\s?(?:신랑|신부)";
+const OTHER_MIND = new RegExp(`(${OTHER})[^.?!]{0,15}(마음|속마음|감정|생각|진심)[^.?!]{0,20}(이에요|예요|확실|분명|거예요|있어요)`);
+const OTHER_FEELS = new RegExp(`(${OTHER.replace("그는|그가", "그")})(은|는|이|가)\\s[^.?!]{0,30}(좋아해|사랑해|싫어해|그리워해|원해|후회해|관심 있어)요`);
+
+/**
+ * Marriage verdicts: that it will or will not happen, or when (owner: 결혼운 readings never promise
+ * or deny a marriage). Judged outside quotes, so quoting the user's own question is fine.
+ */
+const MARRIAGE_VERDICT = new RegExp([
+  // declaratives only: "결혼하게 될지", "결혼할 수 있을지", "못 할까 봐" are worries, not verdicts
+  "결혼(?:을|은|이|도)?\\s?(?:하게\\s?(?:돼요|됩니다|될\\s?(?:거|것))|할\\s?(?:거예요|것이에요|수\\s?있어요|운명)|하겠어요|하실\\s?거|못\\s?(?:해요|할\\s?(?:거|것))|안\\s?(?:돼요|될\\s?(?:거|것))|어려워요|어려울\\s?(?:거|것)|늦어(?:져|질)?요|빨라(?:져|질)?요|성사|확정|운이\\s?(?:들어|와|있|없))",
+  // a year, month or count of months with a marriage that happens then
+  "(?:올해|내년|후년|이번\\s?(?:달|해)|\\d+\\s?(?:년|월|개월))\\s?(?:안에|뒤에|후에|에|쯤)?\\s?(?:[가-힣]+\\s)?결혼(?:해요|하게|할\\s?(?:거|것)|식을\\s?올)",
+].join("|"));
+/** 궁합 claims belong to the paid 궁합 product; declining to read it is fine. */
+const GUNGHAP_CLAIM = /궁합(?:이|은|도)?\s?[^.?!]{0,6}(?:좋|나쁘|맞|최고|최악|높|낮)/;
+const GUNGHAP_DECLINED = /궁합\s?풀이|보지\s?않|말하지\s?않|다루지\s?않|따로/;
 /** A sentence with one of these is a boundary or a possibility, not an assertion. */
 const HEDGE = /(없|아니|알 수|확인|모르|수도|지도 몰라|일 수|가능성|단정|읽은 것|처럼 보|혹시|라면)/;
 
@@ -115,6 +131,8 @@ function blocklistViolations(text: string, userText: string, out: string[]): voi
       break;
     }
   }
+  if (MARRIAGE_VERDICT.test(text.replace(QUOTED, "''"))) out.push("결혼의 성사·불발이나 시기를 단정한 문장이 있어요. 결혼을 둘러싼 흐름과 준비, 마음가짐까지만 말해 주세요.");
+  if (sentences(text).some((s) => GUNGHAP_CLAIM.test(s) && !GUNGHAP_DECLINED.test(s))) out.push("궁합을 단정한 문장이 있어요. 두 사람이 잘 맞는지는 말하지 말고 지금의 흐름만 읽어 주세요.");
   if (ABSOLUTE_DATE.test(text) && !ABSOLUTE_DATE.test(userText)) out.push("날짜·요일·시각을 지정한 문장이 있어요. 고른 시기 안에서 조건으로만 말해 주세요.");
   if (!hasHangul(text)) out.push("한국어로 써 주세요.");
 }
@@ -455,7 +473,7 @@ const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
   [/질병|질환|진단|수술|병(에|이)\s?(걸|나)/, "건강·질병", true],
   [/사고(가 나|가 날|를 당|수)/, "사고", true],
   [/임신|출산/, "임신·출산", true],
-  [/결혼|이혼|재회/, "결혼·이혼·재회", true],
+  [/이혼|재회/, "이혼·재회", true],
   [/투자|로또|복권|부동산|주식|코인/, "투자", true],
   [/소송|재판/, "소송", true],
   [/수명|죽음|사망|요절/, "수명·죽음", true],
@@ -503,18 +521,30 @@ function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], use
         : `쓰지 않는 표현이 있어요: ${label}. 부정문으로도 쓰지 마세요.`);
     }
   }
+  // 결혼 is the reading's subject when the user is dating, engaged or married; otherwise it is a
+  // topic this reading only declines. Verdicts (it will / won't happen, when) are never allowed.
+  if (!marriageContext(facts) && sentences(text).some((s) => matchesBeyondUser(/결혼/, s, userText).length > 0 && !NEGATED.test(s))) {
+    out.push("쓰지 않는 주제가 있어요: 결혼. 이 풀이로는 말하기 어렵다고 짧게 밝히는 문장에서만 쓰세요.");
+  }
+  if (MARRIAGE_VERDICT.test(text.replace(QUOTED, "''"))) out.push("결혼의 성사·불발이나 시기를 단정한 문장이 있어요. 결혼을 다루는 방식까지만 말해 주세요.");
+  if (sentences(text).some((s) => GUNGHAP_CLAIM.test(s) && !GUNGHAP_DECLINED.test(s))) out.push("궁합을 단정한 문장이 있어요. 두 사람이 잘 맞는지는 말하지 마세요.");
   if (sentences(text).some((s) => SCHOOL_LABELS.test(s) && !NEGATED.test(s))) out.push("신강·신약·용신·격국 같은 라벨을 단정했어요. 라벨은 쓰지 않았다고만 밝혀 주세요.");
   if (!hasHangul(text)) out.push("한국어로 써 주세요.");
 }
 
 const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;
 
-/** Soft: the user's own context (love/work status, concern) should show in the reading. */
+/** Love statuses (lib/api/inputs.ts LOVE_STATUS labels) for which the reading covers 결혼. */
+const MARRIAGE_STATUSES = new Set(["연애 중", "결혼 준비 중", "기혼"]);
+const marriageContext = (facts: SajuFactSet) => MARRIAGE_STATUSES.has(facts.profile?.loveStatus ?? "");
+
+/** Soft: the user's own context (love/work status, concern) should show in the reading, 결혼 included when it applies. */
 function profileUseViolations(text: string, facts: SajuFactSet, out: string[]): void {
   const p = facts.profile;
   if (!p) return;
   const missing = [p.loveStatus, p.workStatus].filter((v): v is string => Boolean(v) && v !== "잘 모르겠어요" && !mentions(text, v!));
   if (p.concern && !mentions(text, p.concern, 0.3)) missing.push("한 줄 고민");
+  if (marriageContext(facts) && !text.includes("결혼")) missing.push("결혼(연애 상태에 맞춰 한두 문장)");
   if (missing.length) out.push(`${SOFT_PREFIX}사용자가 알려 준 상황이 풀이에 보이지 않아요: ${missing.join(", ")}. 그 사람의 상황에 맞춰 장면과 실험을 골라 주세요.`);
 }
 

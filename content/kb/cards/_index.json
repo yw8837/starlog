@@ -71,6 +71,10 @@
       ],
       "daily": [
         "self"
+      ],
+      "marriage": [
+        "love",
+        "self"
       ]
     },
     "us": {
@@ -88,6 +92,10 @@
         "love"
       ],
       "conflict": [
+        "love",
+        "contact"
+      ],
+      "marriage": [
         "love",
         "contact"
       ]

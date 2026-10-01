@@ -264,6 +264,10 @@ function profileSentence(f: SajuFactSet): string {
   const parts = [
     states.length ? `지금은 ${josa(states.join(", "), "이라고", "라고")} 알려 줬죠.` : "",
     p.concern ? `'${p.concern}'라는 고민에는 이 명식의 두드러진 기운부터 차분히 비춰 볼게요.` : "",
+    // dating, engaged or married: the reading covers 결혼 as a way of living together, never its timing
+    p.loveStatus && ["연애 중", "결혼 준비 중", "기혼"].includes(p.loveStatus)
+      ? "결혼을 생각할 때도 이 명식은 함께 사는 생활의 크고 작은 결정을 둘이 나눠 정하는 쪽으로 읽어요."
+      : "",
   ];
   return parts.filter(Boolean).join(" ");
 }

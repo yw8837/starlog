@@ -3,12 +3,13 @@
 // SMOKE_RUNS repeats the set (default 1).
 // SMOKE_MODEL / SMOKE_EFFORT apply one model and effort to every kind (default: the app's config).
 // SMOKE_STAMP reuses an earlier run's stamp, so run N draws the same cards and daily card (A/B).
+// SMOKE_TAROT=marriage reads 결혼운 (나, self-flow) instead of 재물운 for the tarot teaser and reading.
 // Records attempts, validation, AI-tell score, tokens and cost per call; writes every output and a
 // summary to apps/web/test-results/ai-smoke/<folder>/. Never prints the key.
 // usage: SMOKE_RUNS=5 pnpm ai:smoke
 //        SMOKE_RUNS=5 SMOKE_MODEL=claude-sonnet-5-5 SMOKE_EFFORT=high SMOKE_STAMP=<stamp> pnpm ai:smoke
 import { mkdirSync, writeFileSync } from "node:fs";
-import { DEFAULT_REVERSAL_RATE, TEMPLATES, computeChart, createDeck, pickCards } from "@starlog/core";
+import { DEFAULT_REVERSAL_RATE, TEMPLATES, TOPICS_BY_WHO, computeChart, createDeck, pickCards } from "@starlog/core";
 import { expect, test } from "vitest";
 import { anthropicProvider } from "@/lib/ai/anthropic";
 import { EFFORTS, KIND_ENV, MODELS, generationSetting } from "@/lib/ai/config";
@@ -30,6 +31,26 @@ const RUNS = Math.min(10, Math.max(1, Math.trunc(Number(process.env.SMOKE_RUNS ?
 const SMOKE_MODEL = process.env.SMOKE_MODEL?.trim() || null;
 const SMOKE_EFFORT = process.env.SMOKE_EFFORT?.trim() || null;
 const SMOKE_STAMP = process.env.SMOKE_STAMP?.trim() || null;
+const SMOKE_TAROT = process.env.SMOKE_TAROT?.trim() || "money";
+
+/** The tarot input per SMOKE_TAROT: the owner's 재물운 case, or 결혼운 with its catalog chips (a talk of marriage under way). */
+function smokeTarotInput() {
+  if (SMOKE_TAROT === "money") {
+    return {
+      topicId: "money", whoId: "me" as const, whenId: "week" as const, question: "",
+      conditions: [{ label: "지금 상황", value: "지금은 수입이 없음" }, { label: "관심 방향", value: "새 수입원 찾기" }],
+      note: "퇴사하고 두 달째 쉬면서 다음 일을 찾고 있어요",
+    };
+  }
+  const topic = TOPICS_BY_WHO.me.find((t) => t.id === SMOKE_TAROT && t.template === "self-flow");
+  if (!topic) throw new Error(`SMOKE_TAROT must be "money" or a 나 topic on the self-flow spread (got ${SMOKE_TAROT})`);
+  const whenId = (topic.whens ?? ["month"]).includes("month") ? "month" as const : topic.whens![0]!;
+  return {
+    topicId: topic.id, whoId: "me" as const, whenId, question: "",
+    conditions: topic.conditions.map((c) => ({ label: c.label, value: c.options[Math.min(2, c.options.length - 2)]! })),
+    note: "",
+  };
+}
 
 type Kind = "tarot-teaser" | "tarot-reading" | "daily" | "saju-teaser" | "saju-reading";
 const ROUTE: Record<Kind, string> = {
@@ -144,11 +165,7 @@ test("ai smoke", async () => {
 
   for (let run = 1; run <= RUNS; run++) {
     const cards = pickCards(createDeck(`smoke-${stamp}-${run}`, DEFAULT_REVERSAL_RATE), TEMPLATES["self-flow"], [5, 25, 50]);
-    const money: TarotContext = buildTarotContext("self-flow", cards, {
-      topicId: "money", whoId: "me", whenId: "week", question: "",
-      conditions: [{ label: "지금 상황", value: "지금은 수입이 없음" }, { label: "관심 방향", value: "새 수입원 찾기" }],
-      note: "퇴사하고 두 달째 쉬면서 다음 일을 찾고 있어요",
-    });
+    const money: TarotContext = buildTarotContext("self-flow", cards, smokeTarotInput());
     const moneyInput = { question: money.question, conditions: money.conditions, note: money.note, cards: cards.map((c) => `${c.position}: ${c.cardId} ${c.orientation}`) };
     await call<TarotTeaser>(run, "tarot-teaser", (d) => validateTarotTeaser(d, money), (p) => generateTarotTeaser(p, money),
       (d) => validateTarotTeaser(d, money), (d) => d.firstCard.body, moneyInput);

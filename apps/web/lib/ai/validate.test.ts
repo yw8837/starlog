@@ -264,3 +264,62 @@ describe("model blinding (owner order: no model, vendor or technology names)", (
     expect(validateSajuFollowUp(saju, facts, question)).toEqual([]);
   });
 });
+
+describe("marriage (owner: 결혼운 — never promise or deny it, no dates, no 궁합)", () => {
+  const ctx = moneyCtx("marriage-rules");
+  const withVerdict = (sentence: string) => {
+    const r = mockTarotReading(ctx);
+    return hard(validateTarotReading({ ...r, verdict: `${r.verdict} ${sentence}` }, ctx));
+  };
+  const MARRIAGE = /결혼의 성사·불발이나 시기/;
+
+  it.each(["올해 결혼하게 돼요.", "결혼은 어려워요.", "내년에 결혼해요.", "결혼운이 들어와요.", "결혼할 거예요.", "3월에 결혼식을 올려요."])("fails %s hard", (sentence) => {
+    expect(withVerdict(sentence).join(" ")).toMatch(MARRIAGE);
+  });
+
+  it.each(["결혼하게 될지 마음이 쓰인다면 이번 주에 이야기를 꺼내 보세요.", "결혼할 수 있을지 고민된다면 준비 목록부터 같이 세워 보세요.", "결혼 준비를 서두르기보다 양가 일정부터 맞춰 보세요.", "'올해 결혼할 수 있을까'라고 물었죠."])("lets a worry or a quote pass: %s", (sentence) => {
+    expect(withVerdict(sentence).join(" ")).not.toMatch(MARRIAGE);
+  });
+
+  it("fails a 궁합 claim and a partner's feelings stated as fact, but not a declined 궁합", () => {
+    expect(withVerdict("두 사람은 궁합이 좋아요.").join(" ")).toMatch(/궁합을 단정/);
+    expect(withVerdict("궁합은 이 풀이에서 보지 않아요.").join(" ")).not.toMatch(/궁합을 단정/);
+    expect(withVerdict("예비 신랑의 마음은 이미 정해져 있어요.").join(" ")).toMatch(/마음이나 감정을 사실처럼/);
+  });
+
+  it("is a rule in the tarot system prompt", () => {
+    expect(TAROT_SYSTEM).toContain("결혼 주제(결혼운, 결혼)는 끝까지 결혼 이야기로 읽어요");
+  });
+});
+
+describe("saju and 결혼 by love status", () => {
+  const factsFor = (loveStatus?: string) => buildFactSet(computeChart(toSajuInput(DEFAULT_SAJU_FORM)), Date.parse("2026-10-01T03:00:00Z"), loveStatus ? { loveStatus } : undefined);
+
+  it.each(["연애 중", "결혼 준비 중", "기혼"])("covers 결혼 in the full reading when the user is %s, and the reading passes", (loveStatus) => {
+    const facts = factsFor(loveStatus);
+    const reading = mockSajuReading(facts);
+    expect([...reading.sections.map((s) => s.body), reading.observation.body].join(" ")).toContain("결혼");
+    expect(validateSajuReading(reading, facts)).toEqual([]);
+    // leaving 결혼 out is a soft finding (결혼 준비 중 names it in the status line already); promising it is hard
+    const silent = { ...reading, sections: reading.sections.map((s) => ({ ...s, body: s.body.replace(/결혼을 생각할 때도[^.]*\.\s?/, "") })) };
+    const soft = validateSajuReading(silent, facts).filter(isSoftViolation).join(" ");
+    if (loveStatus === "결혼 준비 중") expect(soft).not.toMatch(/결혼\(/);
+    else expect(soft).toMatch(/결혼\(연애 상태에 맞춰/);
+    const promised = { ...reading, observation: { ...reading.observation, body: `${reading.observation.body} 내년에 결혼해요.` } };
+    expect(hard(validateSajuReading(promised, facts)).join(" ")).toMatch(/결혼의 성사·불발이나 시기/);
+  });
+
+  it("keeps 결혼 out for other statuses unless a sentence declines it", () => {
+    const facts = factsFor("솔로");
+    const reading = mockSajuReading(facts);
+    expect(JSON.stringify(reading)).not.toContain("결혼");
+    const raised = { ...reading, observation: { ...reading.observation, body: `${reading.observation.body} 결혼을 준비하는 흐름으로 읽어요.` } };
+    expect(hard(validateSajuReading(raised, facts)).join(" ")).toMatch(/쓰지 않는 주제가 있어요: 결혼/);
+    const declined = { ...reading, observation: { ...reading.observation, body: `${reading.observation.body} 결혼 시기는 이 풀이로 말하기 어려워요.` } };
+    expect(hard(validateSajuReading(declined, facts)).join(" ")).not.toMatch(/결혼/);
+  });
+
+  it("is a rule in the saju system prompt", () => {
+    expect(SAJU_SYSTEM).toContain("연애 상태가 연애 중·결혼 준비 중·기혼이면");
+  });
+});
