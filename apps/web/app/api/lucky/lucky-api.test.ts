@@ -58,7 +58,9 @@ describe("/api/lucky", () => {
   });
 
   it("uses an owner's stored basis on GET, and asks for a birth date otherwise", async () => {
-    expect((await GET(req(new Map()))).status).toBe(404);
+    const visitor = await GET(req(new Map()));
+    expect(visitor.status).toBe(200);
+    expect(await visitor.json()).toEqual({ ok: true, numbers: null });
     const owner: Jar = new Map();
     absorb(owner, await ownerPost(new Request("http://localhost/api/bonds/owner", {
       method: "POST",

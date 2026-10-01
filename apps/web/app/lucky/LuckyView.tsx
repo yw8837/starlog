@@ -59,8 +59,8 @@ export function LuckyView() {
       return;
     }
     // A 별자리 인연 owner already has a stored basis: no form needed.
-    void bondsApi<Lucky>("/api/lucky").then((result) => {
-      if (result.ok) {
+    void bondsApi<Lucky | { numbers: null }>("/api/lucky").then((result) => {
+      if (result.ok && result.numbers) {
         const { ok: _ok, ...data } = result;
         store(data as Lucky);
         setLucky(data as Lucky);
