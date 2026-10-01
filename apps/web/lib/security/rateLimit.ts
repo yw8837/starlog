@@ -7,12 +7,17 @@ export type LimiterName =
   | "GEN_LIMITER" | "OWNER_GEN_LIMITER" | "FULL_LIMITER" | "OWNER_FULL_LIMITER" | "OWNER_LOGIN_LIMITER"
   | "BOND_JOIN_LIMITER" | "BOND_CODE_LIMITER" | "BOND_VIEW_LIMITER";
 
-/** Requests per 60 s; must match wrangler.jsonc so the in-memory fallback behaves like production. */
+/**
+ * Requests per 60 s; must match wrangler.jsonc so the in-memory fallback behaves like production.
+ * Keyed by IP (IPv6 /64), which many people can share (carrier CGNAT, office or café Wi-Fi), so the
+ * per-minute limits leave room for a crowd (final QA Q-01: the 6th full reading on one IP within a
+ * minute was refused at 5).
+ */
 export const LIMITS_PER_MINUTE: Record<LimiterName, number> = {
-  GEN_LIMITER: 30,
+  GEN_LIMITER: 60,
   OWNER_GEN_LIMITER: 150,
   /** full readings (the expensive calls), on top of GEN_LIMITER */
-  FULL_LIMITER: 5,
+  FULL_LIMITER: 20,
   OWNER_FULL_LIMITER: 25,
   OWNER_LOGIN_LIMITER: 5,
   /** 별자리 인연: joins and new owners; failed invite-code lookups (against guessing codes); opening real codes and share images */

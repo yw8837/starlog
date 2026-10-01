@@ -32,10 +32,10 @@
   // Per-IP limits for AI generation (lib/security/rateLimit.ts LIMITS_PER_MINUTE must match).
   // Owners get the 5x limiters; full readings have their own tighter one; owner-code attempts too.
   "ratelimits": [
-    { "name": "GEN_LIMITER", "namespace_id": "1001", "simple": { "limit": 30, "period": 60 } },
+    { "name": "GEN_LIMITER", "namespace_id": "1001", "simple": { "limit": 60, "period": 60 } },
     { "name": "OWNER_GEN_LIMITER", "namespace_id": "1002", "simple": { "limit": 150, "period": 60 } },
     { "name": "OWNER_LOGIN_LIMITER", "namespace_id": "1003", "simple": { "limit": 5, "period": 60 } },
-    { "name": "FULL_LIMITER", "namespace_id": "1004", "simple": { "limit": 5, "period": 60 } },
+    { "name": "FULL_LIMITER", "namespace_id": "1004", "simple": { "limit": 20, "period": 60 } },
     { "name": "OWNER_FULL_LIMITER", "namespace_id": "1005", "simple": { "limit": 25, "period": 60 } },
     // 별자리 인연 per IP: joins and new owners; failed invite-code lookups (strict); real code opens and
     // share images (generous, link-preview crawlers included). Values match lib/security/rateLimit.ts.

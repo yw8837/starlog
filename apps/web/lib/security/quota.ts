@@ -28,8 +28,12 @@ function envInt(value: string | undefined, fallback: number): number {
 
 /**
  * Server-side day limits per client network (HMAC of the IP, IPv6 by /64), counted in KV whatever
- * the cookies say. Generous on purpose: many phones share one carrier IP (CGNAT). They bound what a
- * cookie-less script can spend; the device cookie stays the everyday limit.
+ * the cookies say. They only stop a single abuser (a cookie-less script on one network); they must
+ * never stop real people, and many share one IP: Korean mobile carriers put whole neighbourhoods
+ * behind CGNAT, and an office, school or café Wi-Fi is one IP too (final QA Q-01: the 12th fresh
+ * device on one IP was refused). So they sit far above what a shared network uses in a day. The
+ * real cost backstop is the global daily budget (BETA_DAILY_BUDGET_KRW, closing at 80%), and the
+ * device cookie (1 full reading, 5 teasers a day) stays the everyday limit.
  */
 export interface NetworkLimits {
   full: number;
@@ -40,7 +44,7 @@ export interface NetworkLimits {
   line: number;
 }
 
-const DEFAULT_NETWORK_LIMITS: NetworkLimits = { full: 10, teaser: 40, followup: 60, daily: 20, line: 30 };
+const DEFAULT_NETWORK_LIMITS: NetworkLimits = { full: 60, teaser: 240, followup: 300, daily: 120, line: 120 };
 
 export function ipLimits(env: NodeJS.ProcessEnv = process.env): NetworkLimits {
   return {

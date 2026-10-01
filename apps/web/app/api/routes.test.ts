@@ -183,29 +183,46 @@ describe("quota", () => {
     expect((await guesser.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(429);
   });
 
-  it("rate limits generation per IP", async () => {
+  it("rate limits generation per IP at 60 a minute", async () => {
     const d = device("192.0.2.50");
     const { drawToken } = await drawSelfFlow(d);
     vi.stubEnv("BETA_TEASER_PER_DAY", "1000");
-    let last = 0;
-    for (let i = 0; i < 31; i++) last = (await d.call(teaser, { drawToken, input: MONEY_INPUT })).status;
-    expect(last).toBe(429);
+    const statuses: number[] = [];
+    for (let i = 0; i < 61; i++) statuses.push((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status);
+    expect(statuses.slice(0, 60).every((s) => s === 200)).toBe(true);
+    expect(statuses[60]).toBe(429);
   });
 
-  it("limits full readings to 5 a minute per IP (25 for the owner), on top of the daily quota", async () => {
+  it("limits full readings to 20 a minute per IP (25 for the owner), on top of the daily quota", async () => {
     vi.stubEnv("BETA_FULL_PER_DAY", "100");
     const d = device("192.0.2.60");
     const { drawToken } = await drawSelfFlow(d);
     const statuses: number[] = [];
-    for (let i = 0; i < 6; i++) statuses.push((await d.call(reading, { drawToken, input: MONEY_INPUT })).status);
-    expect(statuses).toEqual([200, 200, 200, 200, 200, 429]);
+    for (let i = 0; i < 21; i++) statuses.push((await d.call(reading, { drawToken, input: MONEY_INPUT })).status);
+    expect(statuses.slice(0, 20).every((s) => s === 200)).toBe(true);
+    expect(statuses[20]).toBe(429);
     vi.setSystemTime(T0 + 61_000);
     expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
 
     const boss = device("192.0.2.61");
     expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
     const bossDraw = await drawSelfFlow(boss);
-    for (let i = 0; i < 6; i++) expect((await boss.call(reading, { drawToken: bossDraw.drawToken, input: MONEY_INPUT })).status).toBe(200);
+    for (let i = 0; i < 21; i++) expect((await boss.call(reading, { drawToken: bossDraw.drawToken, input: MONEY_INPUT })).status).toBe(200);
+  });
+
+  it("lets a crowd on one shared IP (CGNAT, café Wi-Fi) each use their own free reading (final QA Q-01)", async () => {
+    const statuses: number[] = [];
+    let phone = device("198.18.40.1");
+    let drawToken = "";
+    for (let i = 0; i < 15; i++) {
+      phone = device("198.18.40.1"); // fresh cookies, same carrier IP, all within one minute
+      ({ drawToken } = await drawSelfFlow(phone));
+      expect((await phone.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+      statuses.push((await phone.call(reading, { drawToken, input: MONEY_INPUT })).status);
+    }
+    expect(statuses.every((s) => s === 200)).toBe(true);
+    // the device limit (one free full reading a day) still holds for each phone
+    expect((await phone.call(reading, { drawToken, input: MONEY_INPUT })).data.code).toBe("BETA_LIMIT");
   });
 });
 
