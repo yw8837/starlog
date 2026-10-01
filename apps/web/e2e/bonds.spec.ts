@@ -110,6 +110,12 @@ test.describe("별자리 인연 · owner", () => {
     const code = await inviteCode(page);
     await shot(page, "filling-empty");
 
+    // Q-11: the owner on their own link gets the code to send, not the form
+    await page.goto(`/b/${code}`, { timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "내 초대코드예요" })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveCount(0);
+    await page.goto("/bonds");
+
     for (const [i, friend] of FRIENDS.entries()) await friendJoin(baseURL!, code, friend, i);
     await page.reload();
     await expect(page.getByText("별자리를 완성했어요")).toBeVisible();
@@ -230,6 +236,10 @@ test.describe("별자리 인연 · friend", () => {
     // the birth date and message are not shown back
     await expect(page.locator("main")).not.toContainText("1992");
     await shot(page, "friend-result");
+    // Q-05: a reload shows this device's result again, not the empty form
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: "이미 양자리에 별이 되어 있어요" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveCount(0);
     await page.getByRole("link", { name: "나도 내 별자리 만들기" }).click();
     await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
   });
