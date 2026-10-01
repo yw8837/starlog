@@ -59,23 +59,17 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
   }, [me]);
 
   if (me === undefined) {
-    return (
+    return loadError ? (
       <div className={s.state}>
-        {loadError ? (
-          <>
-            <p className={b.error} role="alert">
-              {loadError}
-            </p>
-            <Button variant="secondary" onClick={load}>
-              다시 불러오기
-            </Button>
-          </>
-        ) : (
-          <p className={b.helper} role="status">
-            별자리를 불러오는 중이에요
-          </p>
-        )}
+        <p className={b.error} role="alert">
+          {loadError}
+        </p>
+        <Button variant="secondary" onClick={load}>
+          다시 불러오기
+        </Button>
       </div>
+    ) : (
+      <BondsSkeleton />
     );
   }
 
@@ -90,6 +84,30 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
   }
 
   return <OwnerScreen view={me} seenBefore={seenAtLoad.current ?? seenUntil()} initialSign={initialSign} reload={load} />;
+}
+
+/**
+ * Q-06: while this device's 별자리 loads, the page already has its final shape: the header and a
+ * panel at least a screen tall, so nothing visible moves when the data arrives (the footer starts below
+ * the fold instead of jumping down from the middle of the screen).
+ */
+function BondsSkeleton() {
+  return (
+    <div className={s.skeleton} aria-busy="true" data-skeleton="">
+      <header className={s.intro}>
+        <p className={b.eyebrow}>별자리 인연</p>
+        <h1 className={s.title}>별자리 인연</h1>
+      </header>
+      <div className={`${b.panel} ${s.skeletonPanel}`}>
+        <span className={s.skeletonBar} />
+        <span className={s.skeletonArt} />
+        <span className={s.skeletonBar} />
+      </div>
+      <p className="sr-only" role="status">
+        별자리를 불러오는 중이에요
+      </p>
+    </div>
+  );
 }
 
 function Intro() {

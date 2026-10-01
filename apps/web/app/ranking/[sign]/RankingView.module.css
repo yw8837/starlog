@@ -233,3 +233,15 @@
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+/* ---- loading: a screen tall, so the footer never jumps (Q-06) ---- */
+
+.skeleton {
+  display: grid;
+  min-height: calc(100svh + 120px);
+  align-content: start;
+}
+
+.skeletonPanel {
+  min-height: 420px;
+}

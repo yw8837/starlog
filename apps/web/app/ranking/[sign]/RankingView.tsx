@@ -54,22 +54,24 @@ export function RankingView({ sign }: { sign: SignId }) {
       </header>
 
       {data === undefined ? (
-        <div className={s.state}>
-          {error ? (
-            <>
-              <p className={b.error} role="alert">
-                {error}
-              </p>
-              <Button variant="secondary" onClick={load}>
-                다시 불러오기
-              </Button>
-            </>
-          ) : (
-            <p className={b.helper} role="status">
+        error ? (
+          <div className={s.state}>
+            <p className={b.error} role="alert">
+              {error}
+            </p>
+            <Button variant="secondary" onClick={load}>
+              다시 불러오기
+            </Button>
+          </div>
+        ) : (
+          // The final shape while loading (no layout shift when the lists arrive).
+          <div className={s.skeleton} aria-busy="true" data-skeleton="">
+            <div className={`${b.panel} ${s.skeletonPanel}`} />
+            <p className="sr-only" role="status">
               랭킹을 불러오는 중이에요
             </p>
-          )}
-        </div>
+          </div>
+        )
       ) : (
         <>
           <MyCard sign={sign} data={data} reload={load} />

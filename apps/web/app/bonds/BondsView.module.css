@@ -416,3 +416,44 @@
   font-size: var(--fs-sub);
   line-height: 1.4;
 }
+
+/* ---- loading: the final shape, a screen tall (Q-06, no layout shift when the data arrives) ---- */
+
+.skeleton {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+  min-height: calc(100svh + 160px);
+}
+
+.skeletonPanel {
+  justify-items: center;
+  min-height: 560px;
+}
+
+.skeletonBar {
+  width: 60%;
+  height: 18px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.skeletonArt {
+  width: min(100%, 320px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(243, 220, 161, 0.08), transparent 70%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .skeletonBar,
+  .skeletonArt {
+    animation: breathe 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
