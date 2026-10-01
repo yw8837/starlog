@@ -6,6 +6,10 @@
  * A streamed `done` may carry a `commit` token: in a stream the response headers leave before the
  * reading is validated, so the quota cookie is set by POST /api/commit. Callers keep what they got
  * (save the reading) first, then call `commitQuota`.
+ *
+ * Generation calls also check the `done` data's shape (`accept`, lib/reading/validate.ts) and give
+ * up on their own: an overall deadline a little above the server's, and a silence limit between
+ * stream lines (the server pings while it writes).
  */
 
 export type ApiErrorCode =
@@ -17,7 +21,11 @@ export type ApiErrorCode =
   | "REFUSED"
   | "QUALITY"
   | "UPSTREAM"
-  | "NETWORK";
+  | "NETWORK"
+  /** Client side: the answer took longer than the deadline, or the stream went silent. */
+  | "TIMEOUT"
+  /** Client side: an answer arrived but did not have the reading's shape (nothing was kept). */
+  | "INVALID";
 
 const CODES: readonly ApiErrorCode[] = ["BAD_REQUEST", "BAD_TOKEN", "BETA_LIMIT", "RATE_LIMIT", "AI_UNAVAILABLE", "REFUSED", "QUALITY", "UPSTREAM"];
 
@@ -161,40 +169,87 @@ export async function readLines(stream: ReadableStream<Uint8Array>, onLine: (lin
   }
 }
 
-export interface GenerationOptions extends CallOptions {
+/**
+ * Client deadlines, a little above the server's own: a teaser (and 오늘의 한 장) 90 s, a follow-up
+ * 120 s, a full reading 260 s. A stream silent for IDLE_MS (no line, not even a ping) is given up too.
+ */
+export function deadlineFor(path: string): number {
+  if (path.endsWith("/teaser") || path.endsWith("/daily")) return 90_000;
+  if (path.endsWith("/followup")) return 120_000;
+  return 260_000;
+}
+export const IDLE_MS = 30_000;
+
+export interface GenerationOptions<T> extends CallOptions {
   onProgress?: (progress: Progress) => void;
+  /** The `done` data's shape check; anything else is INVALID and nothing is handed back. */
+  accept: (data: unknown) => data is T;
+  /** Overrides `deadlineFor(path)` and IDLE_MS (tests). */
+  deadlineMs?: number;
+  idleMs?: number;
 }
 
 /**
  * POST a generation request with `Accept: application/x-ndjson`. Progress events go to
  * `onProgress`; the result is the `done` data or the error. A stream that ends without either is a
- * network error (nothing was spent: quota is only spent at `done`).
+ * network error (nothing was spent: quota is only spent at `done`). Past the deadline or after
+ * `idleMs` of silence the request is aborted (which stops the server too) and TIMEOUT comes back;
+ * `done` data that fails `accept` comes back as INVALID, without its commit token.
  */
-export async function postGeneration<T>(path: string, body: unknown, options: GenerationOptions = {}): Promise<ApiResult<T>> {
-  const response = await send(path, body, "application/x-ndjson, application/json", options);
-  if (!response) return { ok: false, error: NETWORK };
+export async function postGeneration<T>(path: string, body: unknown, options: GenerationOptions<T>): Promise<ApiResult<T>> {
+  const { accept, onProgress, deadlineMs = deadlineFor(path), idleMs = IDLE_MS } = options;
+  // One controller for this call: the caller's abort and both timers end it.
+  const controller = new AbortController();
+  let timedOut = false;
+  const giveUp = () => {
+    timedOut = true;
+    controller.abort();
+  };
+  const onCallerAbort = () => controller.abort();
+  if (options.signal?.aborted) controller.abort();
+  else options.signal?.addEventListener("abort", onCallerAbort, { once: true });
+  const deadline = setTimeout(giveUp, deadlineMs);
+  let idle: ReturnType<typeof setTimeout> | undefined;
+  const heard = () => {
+    clearTimeout(idle);
+    idle = setTimeout(giveUp, idleMs);
+  };
+
+  const finish = (result: ApiResult<T>): ApiResult<T> => {
+    clearTimeout(deadline);
+    clearTimeout(idle);
+    options.signal?.removeEventListener("abort", onCallerAbort);
+    if (result.ok) return accept(result.data) ? result : { ok: false, error: { code: "INVALID", status: 502 } };
+    // A timer ended the call (an answer or an error that did arrive stays as it is).
+    return timedOut && result.error.code === "NETWORK" ? { ok: false, error: { code: "TIMEOUT", status: 0 } } : result;
+  };
+
+  const response = await send(path, body, "application/x-ndjson, application/json", { signal: controller.signal, fetchImpl: options.fetchImpl });
+  if (!response) return finish({ ok: false, error: NETWORK });
   const type = response.headers.get("content-type") ?? "";
-  if (!type.includes("application/x-ndjson") || !response.body) return readJsonResult<T>(response);
+  if (!type.includes("application/x-ndjson") || !response.body) return finish(await readJsonResult<T>(response));
 
   // Assigned inside the line callback, so declared wide (no narrowing to null here).
   let result = null as ApiResult<T> | null;
   let commit = undefined as string | undefined;
+  heard();
   try {
     await readLines(response.body, (line) => {
       if (result) return;
+      heard();
       const event = parseStreamLine(line);
-      if (event.type === "section") options.onProgress?.({ type: "section", key: event.key, index: event.index });
-      else if (event.type === "retry") options.onProgress?.({ type: "retry" });
+      if (event.type === "section") onProgress?.({ type: "section", key: event.key, index: event.index });
+      else if (event.type === "retry") onProgress?.({ type: "retry" });
       else if (event.type === "done") {
         result = { ok: true, data: event.data as T };
         commit = event.commit;
       } else if (event.type === "error") result = { ok: false, error: parseApiError(event.status, event.body) };
     });
   } catch {
-    // The connection dropped mid-stream (or the caller aborted).
+    // The connection dropped mid-stream, the caller aborted, or a timer gave up.
   }
-  if (!result) return { ok: false, error: NETWORK };
-  return result.ok && commit ? { ...result, commit } : result;
+  if (!result) return finish({ ok: false, error: NETWORK });
+  return finish(result.ok && commit ? { ...result, commit } : result);
 }
 
 /**

@@ -14,9 +14,11 @@ import {
   deleteChapter,
   dueCheckin,
   getChapter,
+  hasChapterEntry,
   historyFor,
   listChapters,
   newestFirst,
+  observationOf,
   parseChapter,
   saveChapter,
   updateChapter,
@@ -226,5 +228,33 @@ describe("beta count shown on the unlock", () => {
     act(() => markDayUsedUp(NOW));
     expect(result.current).toBe(0);
     expect(remainingToday(JSON.parse(localStorage.getItem(BETA_USAGE_KEY)!), NOW + DAY)).toBe(perDay);
+  });
+});
+
+describe("never writing a broken reading (QA Q-02, Q-03)", () => {
+  it("keeps the chapter when an update would leave it unreadable (a follow-up without a token)", () => {
+    const { chapter } = saveChapter(TAROT, NOW);
+    updateChapter(chapter.id, (c) => ({ ...c, chapterToken: undefined as unknown as string, turns: [...c.turns, { question: "q", answer: "a" }] }));
+    expect(getChapter(chapter.id)).toMatchObject({ chapterToken: "chapter.token", turns: [] });
+    updateChapter(chapter.id, (c) => ({ ...c, chapterToken: "next.token", followUpsLeft: 2 }));
+    expect(getChapter(chapter.id)).toMatchObject({ chapterToken: "next.token", followUpsLeft: 2 });
+  });
+
+  it("tells a stored-but-unreadable entry apart from a missing one, and reads a malformed observation as none", () => {
+    localStorage.setItem(CHAPTERS_KEY, JSON.stringify({ v: 1, chapters: [{ id: "abcdef12", kind: "tarot" }] }));
+    expect(getChapter("abcdef12")).toBeUndefined();
+    expect(hasChapterEntry("abcdef12")).toBe(true);
+    expect(hasChapterEntry("zzzzzz99")).toBe(false);
+    const { chapter } = saveChapter({ ...TAROT, reading: { ...READING, observation: {} as TarotReadingData["observation"] } }, NOW);
+    expect(observationOf(getChapter(chapter.id)!)).toBeUndefined();
+  });
+
+  it("drops a kept 오늘의 한 장 with an unknown card or missing areas", () => {
+    const today = new Date(NOW + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const card = { cardId: "major-99-nope", orientation: "upright", keyword: "k" };
+    localStorage.setItem(DAILY_KEY, JSON.stringify({ day: today, reading: { card, summary: "s", body: "b", tip: "t", areas: { love: "", money: "", work: "" }, lucky: { color: "c", number: 1 } } }));
+    expect(readDaily(NOW)).toBeNull();
+    localStorage.setItem(DAILY_KEY, JSON.stringify({ day: today, reading: { card: { ...card, cardId: "major-19-sun" }, summary: "s", body: "b", tip: "t", areas: {}, lucky: {} } }));
+    expect(readDaily(NOW)).toBeNull();
   });
 });

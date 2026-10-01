@@ -30,6 +30,7 @@ import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storag
 import { historyFor, listChapters, saveChapter, useChapters } from "@/lib/storage/chapters";
 import s from "./SajuChartView.module.css";
 import { NEW_SAJU_HREF } from "@/lib/freshStart";
+import { isSajuReadingResponse, isSajuTeaser } from "@/lib/reading/validate";
 
 /** The body /api/saju/* take: birth data, the optional chips, and recent readings as history. */
 function sajuBody(birth: SajuForm, context: SajuContext) {
@@ -59,13 +60,13 @@ export function SajuChartView() {
   const unlockGen = useGeneration<SajuReadingResponse>();
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: SajuTeaserData } | null>(null);
-  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser<SajuTeaserData>("saju", teaserKey)) : null;
+  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("saju", teaserKey, isSajuTeaser)) : null;
 
   // The free reading, written once per birth data and chips (kept for this tab).
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
-    if (!teaserKey || !own || readTeaser("saju", teaserKey)) return;
-    void runTeaser("/api/saju/teaser", sajuBody(form, context), progressPlan("saju-teaser")).then((res) => {
+    if (!teaserKey || !own || readTeaser("saju", teaserKey, isSajuTeaser)) return;
+    void runTeaser("/api/saju/teaser", sajuBody(form, context), progressPlan("saju-teaser"), isSajuTeaser).then((res) => {
       if (!res?.ok) return;
       saveTeaser("saju", teaserKey, res.data);
       setFresh({ key: teaserKey, data: res.data });
@@ -93,7 +94,7 @@ export function SajuChartView() {
     if (!own || !teaser) return;
     window.scrollTo(0, 0);
     const plan = progressPlan("saju-reading", { sections: SAJU_PROLOGUE_SECTIONS });
-    const res = await unlockGen.run("/api/saju/reading", sajuBody(form, context), plan);
+    const res = await unlockGen.run("/api/saju/reading", sajuBody(form, context), plan, isSajuReadingResponse);
     if (!res) return;
     if (!res.ok) {
       if (res.error.code === "BETA_LIMIT") markDayUsedUp();

@@ -141,6 +141,45 @@
   line-height: 1.6;
 }
 
+/* A saved reading this device can read only in part: what is missing, and a way to erase it. */
+.broken {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  margin: 12px 0 0;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+}
+
+.brokenTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.brokenText {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.eraseConfirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: var(--fs-sub);
+}
+
+.eraseConfirm p {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 /* A reading id this device does not have. */
 .missing {
   display: grid;

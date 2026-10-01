@@ -19,6 +19,7 @@ import { ChapterContents } from "./ChapterContents";
 import type { ChapterFollowUp } from "./ChapterView";
 import s from "./ChapterView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
+import { isSection } from "@/lib/reading/validate";
 
 type SajuChapterViewProps = {
   /** e.g. "사주 기록 · 10월 1일" */
@@ -41,7 +42,8 @@ function splitHeading(heading: string): { label: string | null; title: string } 
 /** An opened saju reading in one scroll: the chart, the sections, follow-ups, rating, and a way on to tarot. */
 export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin }: SajuChapterViewProps) {
   const result = useMemo(() => chartFor(birth), [birth]);
-  const sections = reading.observation ? [...reading.sections, reading.observation] : reading.sections;
+  // A saved reading may be partial (an older version, edited storage): only whole sections show.
+  const sections = isSection(reading.observation) ? [...reading.sections, reading.observation] : reading.sections;
 
   return (
     <>

@@ -1,5 +1,6 @@
 import { kstDate } from "@/lib/kst";
 import type { DailyData } from "@/lib/reading/types";
+import { isDailyData } from "@/lib/reading/validate";
 import { createLocalStore } from "@/lib/sessionStore";
 
 /**
@@ -17,14 +18,10 @@ interface SavedDaily {
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
+/** A kept fortune with every part the screen shows (a known card, all three areas); otherwise none. */
 function parseSaved(value: unknown): SavedDaily | null {
-  if (!isRecord(value) || typeof value.day !== "string" || !isRecord(value.reading)) return null;
-  const r = value.reading;
-  const card = r.card;
-  if (!isRecord(card) || typeof card.cardId !== "string" || (card.orientation !== "upright" && card.orientation !== "reversed")) return null;
-  if (typeof r.summary !== "string" || typeof r.body !== "string" || typeof r.tip !== "string") return null;
-  if (!isRecord(r.areas) || !isRecord(r.lucky)) return null;
-  return { day: value.day, reading: r as unknown as DailyData };
+  if (!isRecord(value) || typeof value.day !== "string" || !isDailyData(value.reading)) return null;
+  return { day: value.day, reading: value.reading };
 }
 
 const store = createLocalStore<SavedDaily>(DAILY_KEY, parseSaved);

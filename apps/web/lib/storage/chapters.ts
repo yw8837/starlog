@@ -197,17 +197,25 @@ export function saveChapter(input: NewChapter, now: number = Date.now()): { chap
   return { chapter, persisted };
 }
 
-/** Changes one readable chapter; every other stored entry stays exactly as it was. */
+/**
+ * Changes one readable chapter; every other stored entry stays exactly as it was. A change that
+ * would leave the chapter unreadable (a missing token, say) is not written: the reading stays.
+ */
 export function updateChapter(id: string, update: (chapter: StoredChapter) => StoredChapter) {
   store.save({
     v: 1,
     chapters: rawEntries().map((entry) => {
       if (idOf(entry) !== id) return entry;
       const chapter = parseChapter(entry);
-      return chapter ? update(chapter) : entry;
+      if (!chapter) return entry;
+      const next = update(chapter);
+      return parseChapter(next) ? next : entry;
     }),
   });
 }
+
+/** True when this device holds an entry with this id, readable or not (a broken one can be erased). */
+export const hasChapterEntry = (id: string) => rawEntries().some((entry) => idOf(entry) === id);
 
 export function deleteChapter(id: string) {
   store.save({ v: 1, chapters: rawEntries().filter((entry) => idOf(entry) !== id) });
@@ -235,7 +243,10 @@ export const newestFirst = (chapters: readonly StoredChapter[]) => [...chapters]
 export const CHECKIN_AFTER_DAYS = 3;
 
 /** The observation to look back on, when the reading has one (newer readings only). */
-export const observationOf = (chapter: StoredChapter): string | undefined => chapter.reading.observation?.body.trim() || undefined;
+export const observationOf = (chapter: StoredChapter): string | undefined => {
+  const body: unknown = chapter.reading.observation?.body;
+  return typeof body === "string" ? body.trim() || undefined : undefined;
+};
 
 /** True when this reading's observation should be asked about now. */
 export function checkinDue(chapter: StoredChapter, now: number): boolean {

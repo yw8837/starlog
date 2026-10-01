@@ -18,6 +18,7 @@ import { useGeneration } from "@/lib/reading/useGeneration";
 import { saveDaily, useDaily } from "@/lib/storage/daily";
 import s from "./TodayView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
+import { isDailyData, isDailyDeal } from "@/lib/reading/validate";
 
 const DAILY_PLAN = progressPlan("daily");
 const DEAL = [0, 1, 2] as const;
@@ -63,8 +64,6 @@ type Phase =
   /** The picked card is being read (or failed: see the generation state). */
   | "reading";
 
-const isReading = (value: DailyData | DailyDeal): value is DailyData => "card" in value && Boolean((value as DailyData).card);
-
 /**
  * 오늘의 한 장: a short shuffle, three face-down cards, tap one; it turns over with today's fortune
  * (the line large first, then the card and keyword, the reading, 애정·금전·일, lucky colour and
@@ -96,9 +95,14 @@ export function TodayView() {
         setCheckError(describeApiError(result.error, "daily"));
         return;
       }
-      setCheckError(null);
-      if (isReading(result.data)) saveDaily(result.data);
-      else setPhase("shuffle");
+      // Kept only when it has the fortune's shape; anything else is a failed answer to retry.
+      if (isDailyData(result.data)) {
+        setCheckError(null);
+        saveDaily(result.data);
+      } else if (isDailyDeal(result.data)) {
+        setCheckError(null);
+        setPhase("shuffle");
+      } else setCheckError(describeApiError({ code: "INVALID", status: 502 }, "daily"));
     });
     return () => {
       live = false;
@@ -115,7 +119,7 @@ export function TodayView() {
     setPicked(index);
     setPhase("reading");
     setLimited(null);
-    const result = await daily.run("/api/tarot/daily", { pick: index }, DAILY_PLAN);
+    const result = await daily.run("/api/tarot/daily", { pick: index }, DAILY_PLAN, isDailyData);
     if (!result) return;
     if (result.ok) {
       setJustPicked(true);

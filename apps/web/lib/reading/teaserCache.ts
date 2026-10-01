@@ -21,9 +21,10 @@ const stores: Record<Slot, SessionStore<Entry>> = {
   saju: createSessionStore("starlog.teaser.saju", parseEntry),
 };
 
-export function readTeaser<T>(slot: Slot, key: string): T | null {
+/** The teaser kept for `key`, or null; a kept value that no longer has the teaser's shape counts as none. */
+export function readTeaser<T>(slot: Slot, key: string, accept: (value: unknown) => value is T): T | null {
   const entry = stores[slot].read();
-  return entry && entry.key === key ? (entry.value as T) : null;
+  return entry && entry.key === key && accept(entry.value) ? entry.value : null;
 }
 
 export function saveTeaser(slot: Slot, key: string, value: unknown) {

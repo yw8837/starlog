@@ -59,6 +59,11 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
     case "UPSTREAM":
       if (context === "tarot-draw") return { title: "카드를 나누지 못했어요", body: "다시 시도해 주세요.", action: "retry" };
       return { title: "풀이를 다 적지 못했어요", body: "횟수는 그대로예요. 한 번 더 시도해 주세요.", action: "retry" };
+    case "TIMEOUT":
+      // Given up on the client: whether the server had counted it is not known, so no promise about the count.
+      return { title: "답이 너무 오래 걸리고 있어요", body: "잠시 뒤 다시 시도해 주세요.", action: "retry" };
+    case "INVALID":
+      return { title: "풀이를 제대로 받지 못했어요", body: "다시 시도해 주세요.", action: "retry" };
     case "NETWORK":
       // Drawing cards costs nothing, so there is no count to reassure about.
       if (context === "tarot-draw") return { title: "연결이 잠시 끊겼어요", body: "다시 시도해 주세요.", action: "retry" };

@@ -11,7 +11,8 @@ export type GenerationState =
 /**
  * One generation call at a time with its waiting-screen progress. Leaving the screen (or starting
  * another call) aborts the request, which stops the server's generation too: nothing is spent
- * until the reading is done. `run` resolves null for an aborted call.
+ * until the reading is done. `run` resolves null for an aborted call. `accept` checks the answer's
+ * shape (lib/reading/validate.ts); a malformed answer is an INVALID error and is never handed back.
  */
 export function useGeneration<T>() {
   const [state, setState] = useState<GenerationState>({ status: "idle" });
@@ -24,13 +25,14 @@ export function useGeneration<T>() {
 
   useEffect(() => cancel, [cancel]);
 
-  const run = useCallback(async (path: string, body: unknown, plan: ProgressPlan): Promise<ApiResult<T> | null> => {
+  const run = useCallback(async (path: string, body: unknown, plan: ProgressPlan, accept: (data: unknown) => data is T): Promise<ApiResult<T> | null> => {
     current.current?.abort();
     const controller = new AbortController();
     current.current = controller;
     setState({ status: "running", progress: startProgress(plan) });
     const result = await postGeneration<T>(path, body, {
       signal: controller.signal,
+      accept,
       onProgress: (event) => {
         if (controller.signal.aborted) return;
         setState((prev) => (prev.status === "running" ? { status: "running", progress: advanceProgress(prev.progress, event, plan) } : prev));

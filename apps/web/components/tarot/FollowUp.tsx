@@ -35,6 +35,8 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, awaiting, ended
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState<string | null>(awaiting?.question ?? null);
   const [error, setError] = useState<ErrorView | null>(null);
+  /** The question whose answer failed, offered again by 다시 물어보기 when the error allows a retry. */
+  const [failed, setFailed] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const doneRef = useRef<HTMLParagraphElement>(null);
   const mounted = useRef(true);
@@ -48,14 +50,18 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, awaiting, ended
 
   // A question from an earlier visit to this page: wait for its answer like one sent here.
   const awaitingDone = awaiting?.done;
+  const awaitingQuestion = awaiting?.question ?? null;
   useEffect(() => {
     if (!awaitingDone) return;
     void awaitingDone.then((result) => {
       if (!mounted.current) return;
       setPending(null);
-      if ("error" in result) setError(result.error);
+      if ("error" in result) {
+        setError(result.error);
+        setFailed(awaitingQuestion);
+      }
     });
-  }, [awaitingDone]);
+  }, [awaitingDone, awaitingQuestion]);
 
   // The last answer replaces the form; if focus was in it, hand it to the closing line instead of the page.
   useEffect(() => {
@@ -72,6 +78,7 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, awaiting, ended
     if (!text || !canAsk) return;
     setPending(text);
     setError(null);
+    setFailed(null);
     setDraft("");
     // A keyboard user's chip or send button goes away or turns inactive; keep their place in the
     // form. A tap never matches :focus-visible, so this never pops up the phone keyboard.
@@ -82,6 +89,7 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, awaiting, ended
     setPending(null);
     if ("error" in result) {
       setError(result.error);
+      setFailed(text);
       // Nothing was used up: the question comes back to the field to send again.
       if (!suggestions.includes(text)) setDraft(text);
     }
@@ -136,6 +144,11 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, awaiting, ended
             {error.title}
             {error.body ? ` ${error.body}` : ""}
           </p>
+        ) : null}
+        {error?.action === "retry" && failed && canAsk ? (
+          <Button variant="secondary" size="md" onClick={() => void ask(failed)}>
+            다시 물어보기
+          </Button>
         ) : null}
         {error?.care ? <CrisisContacts lead={false} /> : null}
       </div>

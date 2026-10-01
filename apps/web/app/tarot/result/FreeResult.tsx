@@ -24,6 +24,7 @@ import { useGeneration } from "@/lib/reading/useGeneration";
 import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storage/betaUsage";
 import { historyFor, listChapters, saveChapter, useChapters } from "@/lib/storage/chapters";
 import s from "./FreeResult.module.css";
+import { isTarotReadingResponse, isTarotTeaser } from "@/lib/reading/validate";
 
 /** The reading input with up to 3 recent readings on this device (omitted when there are none). */
 function withHistory(input: TarotInput): TarotInput {
@@ -60,15 +61,15 @@ export function FreeResult({ instant }: { instant: boolean }) {
   const unlockGen = useGeneration<TarotReadingResponse>();
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: TarotTeaserData } | null>(null);
-  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser<TarotTeaserData>("tarot", teaserKey)) : null;
+  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("tarot", teaserKey, isTarotTeaser)) : null;
 
   // The free teaser, written once per draw and question (kept for this tab, so a reload shows it
   // again). Keyed by what it is written for: the draw and the input are both in the key.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
-    if (!teaserKey || !draw || !input || readTeaser("tarot", teaserKey)) return;
+    if (!teaserKey || !draw || !input || readTeaser("tarot", teaserKey, isTarotTeaser)) return;
     const plan = progressPlan("tarot-teaser", { positions: draw.cards.map((card) => card.position) });
-    void runTeaser("/api/tarot/teaser", { drawToken: draw.drawToken, input: withHistory(input) }, plan).then((result) => {
+    void runTeaser("/api/tarot/teaser", { drawToken: draw.drawToken, input: withHistory(input) }, plan, isTarotTeaser).then((result) => {
       if (!result?.ok) return;
       saveTeaser("tarot", teaserKey, result.data);
       setFresh({ key: teaserKey, data: result.data });
@@ -92,7 +93,7 @@ export function FreeResult({ instant }: { instant: boolean }) {
     if (!draw || !input || !summary) return;
     window.scrollTo(0, 0);
     const plan = progressPlan("tarot-reading", { positions });
-    const result = await unlockGen.run("/api/tarot/reading", { drawToken: draw.drawToken, input: withHistory(input) }, plan);
+    const result = await unlockGen.run("/api/tarot/reading", { drawToken: draw.drawToken, input: withHistory(input) }, plan, isTarotReadingResponse);
     if (!result) return;
     if (!result.ok) {
       if (result.error.code === "BETA_LIMIT") markDayUsedUp();

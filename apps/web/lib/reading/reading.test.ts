@@ -17,6 +17,9 @@ function streamed(chunks: string[], status = 200): Response {
   return new Response(body, { status, headers: NDJSON });
 }
 
+/** Accepts any `done` data (tests about the stream, not the shape). */
+const ANY = (value: unknown): value is never => (void value, true);
+
 const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 describe("NDJSON stream", () => {
@@ -46,7 +49,7 @@ describe("NDJSON stream", () => {
           ]),
     ) as unknown as typeof fetch;
     const progress: unknown[] = [];
-    const result = await postGeneration("/api/tarot/reading", { drawToken: "d" }, { fetchImpl, onProgress: (p) => progress.push(p) });
+    const result = await postGeneration("/api/tarot/reading", { drawToken: "d" }, { accept: ANY, fetchImpl, onProgress: (p) => progress.push(p) });
     // The caller keeps the reading first; the commit is not sent yet.
     expect(result).toEqual({ ok: true, data: { reading: { verdict: "v" }, chapterToken: "t" }, commit: "quota.token" });
     expect(progress).toEqual([{ type: "section", key: "verdict", index: 0 }, { type: "retry" }]);
@@ -63,21 +66,21 @@ describe("NDJSON stream", () => {
 
   it("maps an error event to the JSON route's error", async () => {
     const fetchImpl = vi.fn(async () => streamed(['{"type":"start"}\n{"type":"error","status":502,"body":{"code":"QUALITY","message":"m"}}\n'])) as unknown as typeof fetch;
-    expect(await postGeneration("/api/saju/reading", {}, { fetchImpl })).toEqual({ ok: false, error: { code: "QUALITY", status: 502, message: "m" } });
+    expect(await postGeneration("/api/saju/reading", {}, { accept: ANY, fetchImpl })).toEqual({ ok: false, error: { code: "QUALITY", status: 502, message: "m" } });
   });
 
   it("treats a stream that ends without done as a network error (nothing spent)", async () => {
     const fetchImpl = vi.fn(async () => streamed(['{"type":"start"}\n{"type":"section","key":"verdict","index":0}\n'])) as unknown as typeof fetch;
-    const result = await postGeneration("/api/tarot/reading", {}, { fetchImpl });
+    const result = await postGeneration("/api/tarot/reading", {}, { accept: ANY, fetchImpl });
     expect(result).toEqual({ ok: false, error: { code: "NETWORK", status: 0 } });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to plain JSON when the server does not stream", async () => {
     const ok = vi.fn(async () => jsonResponse({ title: "t", summary: "s", lockedToc: [] })) as unknown as typeof fetch;
-    expect(await postGeneration("/api/saju/teaser", {}, { fetchImpl: ok })).toEqual({ ok: true, data: { title: "t", summary: "s", lockedToc: [] } });
+    expect(await postGeneration("/api/saju/teaser", {}, { accept: ANY, fetchImpl: ok })).toEqual({ ok: true, data: { title: "t", summary: "s", lockedToc: [] } });
     const limited = vi.fn(async () => jsonResponse({ code: "BETA_LIMIT", resetsAt: "2026-10-01T15:00:00.000Z" }, 429)) as unknown as typeof fetch;
-    expect(await postGeneration("/api/tarot/reading", {}, { fetchImpl: limited })).toEqual({
+    expect(await postGeneration("/api/tarot/reading", {}, { accept: ANY, fetchImpl: limited })).toEqual({
       ok: false,
       error: { code: "BETA_LIMIT", status: 429, resetsAt: "2026-10-01T15:00:00.000Z" },
     });
@@ -207,5 +210,86 @@ describe("progress captions", () => {
     expect(captions).toContain("월령과 뿌리를 적고 있어요");
     expect(captions).toContain("지금의 10년을 적고 있어요");
     expect(captions).toContain("오행 지도를 적고 있어요");
+  });
+});
+
+describe("generation guards (QA Q-02, Q-04)", () => {
+  const TEASER = { title: "t", summary: "s", lockedToc: [] };
+  const isTeaserLike = (v: unknown): v is typeof TEASER => typeof v === "object" && v !== null && typeof (v as { title?: unknown }).title === "string";
+
+  it("refuses a malformed done (no data handed back, no commit token)", async () => {
+    const fetchImpl = vi.fn(async () => streamed(['{"type":"start"}\n{"type":"done","data":{},"commit":"quota.token"}\n'])) as unknown as typeof fetch;
+    expect(await postGeneration("/api/saju/teaser", {}, { accept: isTeaserLike, fetchImpl })).toEqual({ ok: false, error: { code: "INVALID", status: 502 } });
+    const json = vi.fn(async () => jsonResponse({ nope: 1 })) as unknown as typeof fetch;
+    expect(await postGeneration("/api/saju/teaser", {}, { accept: isTeaserLike, fetchImpl: json })).toEqual({ ok: false, error: { code: "INVALID", status: 502 } });
+    const good = vi.fn(async () => streamed([`{"type":"done","data":${JSON.stringify(TEASER)}}\n`])) as unknown as typeof fetch;
+    expect(await postGeneration("/api/saju/teaser", {}, { accept: isTeaserLike, fetchImpl: good })).toEqual({ ok: true, data: TEASER });
+  });
+
+  /** A response that never sends `done`: optional pings every `pingMs`, until the request is aborted. */
+  function silentServer(pingMs?: number) {
+    return vi.fn(async (_url: string, init: RequestInit) => {
+      const encoder = new TextEncoder();
+      let timer: ReturnType<typeof setInterval> | undefined;
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode('{"type":"start"}\n'));
+          if (pingMs) timer = setInterval(() => controller.enqueue(encoder.encode('{"type":"ping"}\n')), pingMs);
+          init.signal?.addEventListener("abort", () => {
+            clearInterval(timer);
+            controller.error(new DOMException("aborted", "AbortError"));
+          });
+        },
+      });
+      return new Response(body, { status: 200, headers: NDJSON });
+    }) as unknown as typeof fetch;
+  }
+
+  it("gives up when the stream goes silent (no line, not even a ping)", async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = postGeneration("/api/tarot/teaser", {}, { accept: ANY, fetchImpl: silentServer(), idleMs: 30_000 });
+      await vi.advanceTimersByTimeAsync(30_001);
+      expect(await pending).toEqual({ ok: false, error: { code: "TIMEOUT", status: 0 } });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("gives up at the overall deadline even while pings keep coming", async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = postGeneration("/api/tarot/teaser", {}, { accept: ANY, fetchImpl: silentServer(10_000), idleMs: 30_000, deadlineMs: 90_000 });
+      await vi.advanceTimersByTimeAsync(89_000);
+      let settled = false;
+      void pending.then(() => (settled = true));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(settled).toBe(false);
+      await vi.advanceTimersByTimeAsync(1_001);
+      expect(await pending).toEqual({ ok: false, error: { code: "TIMEOUT", status: 0 } });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("uses deadlines a little above the server's: teaser and daily 90 s, follow-up 120 s, full reading 260 s", async () => {
+    const { deadlineFor, IDLE_MS } = await import("./api");
+    expect(deadlineFor("/api/tarot/teaser")).toBe(90_000);
+    expect(deadlineFor("/api/saju/teaser")).toBe(90_000);
+    expect(deadlineFor("/api/tarot/daily")).toBe(90_000);
+    expect(deadlineFor("/api/followup")).toBe(120_000);
+    expect(deadlineFor("/api/tarot/reading")).toBe(260_000);
+    expect(deadlineFor("/api/saju/reading")).toBe(260_000);
+    expect(IDLE_MS).toBe(30_000);
+  });
+
+  it("says nothing about the count for a timeout or a malformed answer, and offers a retry", () => {
+    for (const code of ["TIMEOUT", "INVALID"] as const) {
+      for (const context of ["reading", "teaser", "followup", "daily"] as const) {
+        const view = describeApiError({ code, status: 0 }, context);
+        expect(view.action).toBe("retry");
+        expect(`${view.title} ${view.body ?? ""}`).not.toMatch(/횟수/);
+      }
+    }
   });
 });
