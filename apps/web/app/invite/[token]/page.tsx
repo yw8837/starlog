@@ -3,10 +3,14 @@ import { notFound } from "next/navigation";
 import { Footer } from "@/components/layout/Footer";
 import { NightSky } from "@/components/sky/NightSky";
 import { INVITE_FIXTURE } from "@/lib/fixtures";
+import { NOT_FOUND_METADATA } from "@/lib/seo";
 import { InviteFlow } from "./InviteFlow";
 
-// Invite details stay out of search (spec section 10).
-export const metadata: Metadata = { title: "카드 한 장 부탁", robots: { index: false, follow: false } };
+// Invite details stay out of search (spec section 10); an unknown token is a not-found page.
+export async function generateMetadata({ params }: PageProps<"/invite/[token]">): Promise<Metadata> {
+  const { token } = await params;
+  return token === INVITE_FIXTURE.token ? { title: "카드 한 장 부탁", robots: { index: false, follow: false } } : NOT_FOUND_METADATA;
+}
 
 export default async function InvitePage({ params, searchParams }: PageProps<"/invite/[token]">) {
   const { token } = await params;

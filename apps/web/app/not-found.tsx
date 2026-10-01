@@ -3,9 +3,10 @@ import { Rabbit } from "@/components/characters/Rabbit";
 import { Footer } from "@/components/layout/Footer";
 import { NightSky } from "@/components/sky/NightSky";
 import { Button } from "@/components/ui/Button";
+import { NOT_FOUND_METADATA } from "@/lib/seo";
 import s from "./not-found.module.css";
 
-export const metadata: Metadata = { title: "페이지를 찾을 수 없어요", robots: { index: false, follow: false } };
+export const metadata: Metadata = NOT_FOUND_METADATA;
 
 /** Any unknown address (and every `notFound()`): Korean copy, one way home. */
 export default function NotFound() {

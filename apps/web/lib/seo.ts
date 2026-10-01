@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, guideIndexPath } from "./guide";
 import { INFO_PAGES } from "./infoPages";
+
+/**
+ * Every not-found state has this title and stays out of search: app/not-found.tsx, and each page
+ * that calls notFound() returns it from its metadata too (otherwise the page's own title shows).
+ */
+export const NOT_FOUND_METADATA: Metadata = { title: "페이지를 찾을 수 없어요", robots: { index: false, follow: false } };
 
 /**
  * Personal readings, stories, invites, the account page, dev screens and the API stay out of search

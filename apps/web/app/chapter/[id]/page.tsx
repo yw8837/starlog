@@ -6,6 +6,7 @@ import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
 import { INVITE_FIXTURE_TOKEN, TAROT_FOLLOW_UPS, TAROT_SAMPLE } from "@/lib/fixtures";
+import { NOT_FOUND_METADATA } from "@/lib/seo";
 import { LocalChapter } from "./LocalChapter";
 import { SampleChapter } from "./SampleChapter";
 
@@ -15,6 +16,7 @@ const LOCAL_ID = /^[a-z0-9]{6,32}$/;
 // Personal readings stay out of search (spec section 10); the demo too.
 export async function generateMetadata({ params }: PageProps<"/chapter/[id]">): Promise<Metadata> {
   const { id } = await params;
+  if (id !== "sample" && !LOCAL_ID.test(id)) return NOT_FOUND_METADATA;
   return { title: id === "sample" ? TAROT_SAMPLE.question : "내 기록", robots: { index: false, follow: false } };
 }
 

@@ -8,12 +8,12 @@ import { Rabbit } from "@/components/characters/Rabbit";
 import type { CharacterAction, Expression, Outfit } from "@/components/characters/types";
 import { NightSky } from "@/components/sky/NightSky";
 import s from "./page.module.css";
+import { NOT_FOUND_METADATA } from "@/lib/seo";
 
-// Internal character sheet: not linked from navigation and kept out of search.
-export const metadata: Metadata = {
-  title: "캐릭터 시트",
-  robots: { index: false, follow: false },
-};
+// Internal character sheet: not linked from navigation and kept out of search; a production build
+// answers 404 with the not-found title.
+export const metadata: Metadata =
+  process.env.NODE_ENV === "production" ? NOT_FOUND_METADATA : { title: "캐릭터 시트", robots: { index: false, follow: false } };
 
 type Who = "cat" | "rabbit";
 

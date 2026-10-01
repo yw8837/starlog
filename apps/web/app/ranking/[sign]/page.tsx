@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
+import { NOT_FOUND_METADATA } from "@/lib/seo";
 import { RankingView } from "./RankingView";
 import s from "./RankingView.module.css";
 
@@ -12,7 +13,7 @@ type Props = { params: Promise<{ sign: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { sign } = await params;
-  if (!isSignId(sign)) return {};
+  if (!isSignId(sign)) return NOT_FOUND_METADATA;
   const def = getConstellation(sign);
   return {
     title: `${def.ko} 랭킹`,
