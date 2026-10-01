@@ -1,0 +1,195 @@
+import { CONSTELLATIONS, cardImage } from "@starlog/core";
+import { SITE } from "./config";
+import { GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, type GuideArticle, type GuideCategory } from "./guide";
+
+/**
+ * schema.org JSON-LD for search and answer engines (rendered as <script type="application/ld+json">,
+ * see components/seo/JsonLd.tsx). Every URL is absolute on the production origin, and every text is
+ * the same text the page shows. lib/jsonld.test.tsx parses each page's scripts and checks the shapes.
+ */
+
+const CONTEXT = "https://schema.org";
+
+export const absoluteUrl = (path: string): string => new URL(path, SITE.url).toString();
+
+export const ORGANIZATION_ID = absoluteUrl("/#organization");
+export const WEBSITE_ID = absoluteUrl("/#website");
+
+/** Square brand mark (public/logo.png, scripts/build-icons.mjs). */
+export const LOGO = { url: absoluteUrl("/logo.png"), width: 512, height: 512 } as const;
+
+/** The site's shared Open Graph image (app/opengraph-image.tsx). */
+export const SHARE_IMAGE = { url: absoluteUrl("/opengraph-image"), width: 1200, height: 630 } as const;
+
+/** One line on what the service is, used by WebSite and llms.txt. */
+export const SITE_SUMMARY = `${SITE.nameKo}(${SITE.name})는 내 질문과 상황에 맞춘 타로와 사주 풀이를 보는 곳이에요. 타로는 1909년 원판 그림으로 고양이 점성술사가, 사주는 만세력으로 세운 명식으로 한복 입은 토끼 선생님이 읽어 줘요.`;
+
+/** JSON for a <script type="application/ld+json">, with "<" escaped so no text can close the tag. */
+export function jsonLdScript(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
+}
+
+/** The publisher as embedded in other nodes: enough to stand on its own when read without the site graph. */
+function organizationRef() {
+  return {
+    "@type": "Organization",
+    "@id": ORGANIZATION_ID,
+    name: SITE.business.name,
+    url: absoluteUrl("/"),
+    logo: { "@type": "ImageObject", url: LOGO.url, width: LOGO.width, height: LOGO.height },
+  };
+}
+
+/** 열매스튜디오, which makes and runs 스타로그. */
+export function organizationJsonLd() {
+  const email = SITE.business.email.trim();
+  return {
+    "@context": CONTEXT,
+    ...organizationRef(),
+    ...(email
+      ? { email, contactPoint: [{ "@type": "ContactPoint", contactType: "customer support", email, availableLanguage: ["Korean"] }] }
+      : {}),
+    brand: { "@type": "Brand", name: SITE.nameKo, alternateName: SITE.name, logo: LOGO.url },
+  };
+}
+
+/** The site's name in results: 스타로그, also known as Starlog. */
+export function websiteJsonLd() {
+  return {
+    "@context": CONTEXT,
+    "@type": "WebSite",
+    "@id": WEBSITE_ID,
+    name: SITE.nameKo,
+    alternateName: [SITE.name, `${SITE.nameKo} ${SITE.name}`],
+    url: absoluteUrl("/"),
+    description: SITE_SUMMARY,
+    inLanguage: "ko-KR",
+    publisher: { "@id": ORGANIZATION_ID },
+  };
+}
+
+export interface Crumb {
+  name: string;
+  path: string;
+}
+
+export function breadcrumbJsonLd(crumbs: readonly Crumb[]) {
+  return {
+    "@context": CONTEXT,
+    "@type": "BreadcrumbList",
+    itemListElement: crumbs.map((crumb, i) => ({ "@type": "ListItem", position: i + 1, name: crumb.name, item: absoluteUrl(crumb.path) })),
+  };
+}
+
+const HOME_CRUMB: Crumb = { name: SITE.nameKo, path: "/" };
+
+const guideTabCrumb = (category: GuideCategory): Crumb => ({ name: `${GUIDE_CATEGORY_LABEL[category]} 가이드`, path: guideIndexPath(category) });
+
+export const guideArticlePath = (article: Pick<GuideArticle, "slug">) => `/guide/${article.slug}`;
+
+export function guideArticleBreadcrumbJsonLd(article: GuideArticle) {
+  return breadcrumbJsonLd([HOME_CRUMB, guideTabCrumb(article.category), { name: article.title, path: guideArticlePath(article) }]);
+}
+
+export function guideIndexBreadcrumbJsonLd(category: GuideCategory) {
+  return breadcrumbJsonLd([HOME_CRUMB, guideTabCrumb(category)]);
+}
+
+/** Article for a guide: dates from answers.ts, the card scan first for a card article, then the share image. */
+export function guideArticleJsonLd(article: GuideArticle) {
+  const url = absoluteUrl(guideArticlePath(article));
+  const images = [...(article.cardId ? [absoluteUrl(cardImage(article.cardId, "lg"))] : []), SHARE_IMAGE.url];
+  return {
+    "@context": CONTEXT,
+    "@type": "Article",
+    "@id": `${url}#article`,
+    headline: article.title,
+    description: article.description,
+    ...(article.summary ? { abstract: article.summary } : {}),
+    url,
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    inLanguage: "ko-KR",
+    articleSection: `${GUIDE_CATEGORY_LABEL[article.category]} 가이드`,
+    ...(article.published ? { datePublished: article.published } : {}),
+    ...(article.updated ? { dateModified: article.updated } : {}),
+    image: images,
+    author: organizationRef(),
+    publisher: organizationRef(),
+    isPartOf: { "@type": "WebSite", "@id": WEBSITE_ID, name: SITE.nameKo, url: absoluteUrl("/") },
+  };
+}
+
+/** A heading written as a question (…나요, …까요, …가요, or a question mark). */
+export const isQuestion = (text: string): boolean => /(\?|나요|까요|가요)$/.test(text.trim());
+
+const asQuestion = (text: string) => (text.trim().endsWith("?") ? text.trim() : `${text.trim()}?`);
+
+/**
+ * Question-and-answer pairs the page shows: the title when it asks a question (answered by the 요약),
+ * then every section whose heading is a question (answered by its body).
+ */
+export function guideQuestions(article: GuideArticle): Array<{ q: string; a: string }> {
+  const fromTitle = isQuestion(article.title) && article.summary ? [{ q: asQuestion(article.title), a: article.summary }] : [];
+  const fromSections = article.sections.filter((section) => isQuestion(section.heading)).map((section) => ({ q: asQuestion(section.heading), a: section.body }));
+  return [...fromTitle, ...fromSections];
+}
+
+/** FAQPage for an article with at least two question-style parts; null otherwise. */
+export function guideFaqJsonLd(article: GuideArticle) {
+  const questions = guideQuestions(article);
+  if (questions.length < 2) return null;
+  return {
+    "@context": CONTEXT,
+    "@type": "FAQPage",
+    mainEntity: questions.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+  };
+}
+
+/** HowTo for the step-by-step articles (lib/guide-articles/answers.ts); null for the rest. */
+export function guideHowToJsonLd(article: GuideArticle) {
+  if (!article.howTo) return null;
+  const url = absoluteUrl(guideArticlePath(article));
+  return {
+    "@context": CONTEXT,
+    "@type": "HowTo",
+    name: article.howTo.name,
+    description: article.summary ?? article.description,
+    inLanguage: "ko-KR",
+    url,
+    step: article.howTo.steps.map((step, i) => ({ "@type": "HowToStep", position: i + 1, name: step.name, text: step.text })),
+  };
+}
+
+export interface ListEntry {
+  name: string;
+  path: string;
+}
+
+export function itemListJsonLd(name: string, path: string, entries: readonly ListEntry[]) {
+  return {
+    "@context": CONTEXT,
+    "@type": "ItemList",
+    name,
+    url: absoluteUrl(path),
+    numberOfItems: entries.length,
+    itemListElement: entries.map((entry, i) => ({ "@type": "ListItem", position: i + 1, name: entry.name, url: absoluteUrl(entry.path) })),
+  };
+}
+
+/** A guide tab's articles, in the tab's order. */
+export function guideIndexItemListJsonLd(category: GuideCategory) {
+  return itemListJsonLd(
+    `${GUIDE_CATEGORY_LABEL[category]} 가이드`,
+    guideIndexPath(category),
+    articlesIn(category).map((article) => ({ name: article.title, path: guideArticlePath(article) })),
+  );
+}
+
+/** /ranking: the twelve sign rankings, in calendar order from 양자리. */
+export function rankingItemListJsonLd() {
+  return itemListJsonLd(
+    "별자리 리더보드",
+    "/ranking",
+    CONSTELLATIONS.map((sign) => ({ name: `${sign.ko} 랭킹`, path: `/ranking/${sign.id}` })),
+  );
+}

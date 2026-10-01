@@ -5,7 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
-import { NOT_FOUND_METADATA } from "@/lib/seo";
+import { NOT_FOUND_METADATA, pageMetadata } from "@/lib/seo";
 import { RankingView } from "./RankingView";
 import s from "./RankingView.module.css";
 
@@ -15,11 +15,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { sign } = await params;
   if (!isSignId(sign)) return NOT_FOUND_METADATA;
   const def = getConstellation(sign);
-  return {
+  return pageMetadata({
     title: `${def.ko} 랭킹`,
-    description: `${def.ko}를 완성한 사람들의 별자리 인연 랭킹이에요. 이번 주 랭킹과 명예의 전당을 봐요.`,
-    robots: { index: false, follow: false },
-  };
+    description: `${def.ko}를 완성한 사람들의 별자리 인연 랭킹이에요. 친구들이 별이 되어 채운 별자리의 인연 점수로 이번 주 순위와 명예의 전당을 봐요.`,
+    path: `/ranking/${sign}`,
+  });
 }
 
 export default async function RankingPage({ params }: Props) {

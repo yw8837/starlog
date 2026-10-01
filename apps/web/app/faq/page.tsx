@@ -5,14 +5,11 @@ import s from "@/components/info/info.module.css";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { faqGroups, faqJsonLd, jsonLdScript } from "@/lib/faq";
 import { INFO_PAGES } from "@/lib/infoPages";
+import { pageMetadata } from "@/lib/seo";
 
 const page = INFO_PAGES.faq;
 
-export const metadata: Metadata = {
-  title: page.title,
-  description: page.description,
-  alternates: { canonical: page.path },
-};
+export const metadata: Metadata = pageMetadata({ title: page.title, description: page.description, path: page.path });
 
 /** 자주 묻는 질문: the 이용 가이드 cards with a Q mark, and the same text as FAQPage JSON-LD. */
 export default function FaqPage() {

@@ -5,14 +5,15 @@ import s from "@/components/legal/legal.module.css";
 import { SITE, won } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
 import { moonRefundKrw } from "@/lib/pricing";
+import { pageMetadata } from "@/lib/seo";
 
 const { paid, free } = SITE.currency;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "환불 정책",
   description: `${SITE.nameKo} 풀이와 ${paid} 충전의 청약철회·환불 기준, 결제 전 무료로 보는 부분, 생성 오류 시 복구, 미성년자 결제 취소, 환불 신청 방법과 처리 기간을 안내해요.`,
-  alternates: { canonical: "/refund" },
-};
+  path: "/refund",
+});
 
 /** Worked example from the first pack that carries a bonus: one reading spent, then refunded. */
 function refundExample() {

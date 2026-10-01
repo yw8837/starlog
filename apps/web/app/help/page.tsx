@@ -5,14 +5,11 @@ import s from "@/components/info/info.module.css";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { helpGroups } from "@/lib/helpGuide";
 import { INFO_PAGES } from "@/lib/infoPages";
+import { pageMetadata } from "@/lib/seo";
 
 const page = INFO_PAGES.help;
 
-export const metadata: Metadata = {
-  title: page.title,
-  description: page.description,
-  alternates: { canonical: page.path },
-};
+export const metadata: Metadata = pageMetadata({ title: page.title, description: page.description, path: page.path });
 
 /** 이용 가이드: category chips jump to groups of cards that open in place. */
 export default function HelpPage() {

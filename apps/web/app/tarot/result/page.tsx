@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { NightSky } from "@/components/sky/NightSky";
+import { NOINDEX } from "@/lib/seo";
 import { FreeResult } from "./FreeResult";
 
-export const metadata: Metadata = { title: "카드 풀이" };
+export const metadata: Metadata = { title: "카드 풀이", robots: NOINDEX };
 
 export default async function TarotResultPage({ searchParams }: PageProps<"/tarot/result">) {
   const query = await searchParams;

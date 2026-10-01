@@ -42,7 +42,7 @@ describe("guide tabs", () => {
     });
 
     it(`${tab.category}: its own title, description and canonical`, () => {
-      expect(tab.metadata.title).toBe(tab.title);
+      expect(String(tab.metadata.title).startsWith(tab.title)).toBe(true);
       expect(tab.metadata.alternates?.canonical).toBe(`/guide/${tab.category}`);
       const description = String(tab.metadata.description);
       expect(description.length).toBeGreaterThan(20);

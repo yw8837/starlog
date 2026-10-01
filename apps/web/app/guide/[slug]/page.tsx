@@ -5,15 +5,17 @@ import { notFound } from "next/navigation";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { NightSky } from "@/components/sky/NightSky";
 import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig } from "@/lib/ads";
-import { SITE } from "@/lib/config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath } from "@/lib/guide";
-import { OG_ALT } from "@/lib/og";
+import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
+import { koreanDate } from "@/lib/legal";
+import { pageMetadata } from "@/lib/seo";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
 import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
@@ -28,21 +30,14 @@ export async function generateMetadata({ params }: PageProps<"/guide/[slug]">): 
   const { slug } = await params;
   const article = findArticle(slug);
   if (!article) return {};
-  return {
+  return pageMetadata({
     title: article.title,
     description: article.description,
-    alternates: { canonical: `/guide/${article.slug}` },
-    // A page-level openGraph replaces the root one, so the site name, locale and shared image are repeated here.
-    openGraph: {
-      type: "article",
-      title: article.title,
-      description: article.description,
-      url: `/guide/${article.slug}`,
-      siteName: `${SITE.name} · ${SITE.nameKo}`,
-      locale: "ko_KR",
-      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: OG_ALT }],
-    },
-  };
+    path: `/guide/${article.slug}`,
+    type: "article",
+    publishedTime: article.published,
+    modifiedTime: article.updated,
+  });
 }
 
 const CTA = {
@@ -67,13 +62,30 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
       <NightSky fixed seed={41} moon={false} />
       <TabBar active="guide" />
       <main className="page-col page-wide">
+        <JsonLd data={guideArticleJsonLd(article)} />
+        <JsonLd data={guideArticleBreadcrumbJsonLd(article)} />
+        <JsonLd data={guideFaqJsonLd(article)} />
+        <JsonLd data={guideHowToJsonLd(article)} />
         <article className={s.article}>
           <Stepper label={`${tab} 가이드`} backHref={guideIndexPath(article.category)} backLabel={`${tab} 가이드 목록으로`} />
 
           <header className={s.head}>
             <p className={s.eyebrow}>{GUIDE_CATEGORY_LABEL[article.category]}</p>
             <h1 className={s.title}>{article.title}</h1>
-            <p className={s.lead}>{article.description}</p>
+            {/* The answer first (요약), so a reader, a search snippet or an AI answer gets it in one place. */}
+            {article.summary ? (
+              <div className={s.answer}>
+                <p className={s.answerLabel}>요약</p>
+                <p className={s.answerText}>{article.summary}</p>
+              </div>
+            ) : (
+              <p className={s.lead}>{article.description}</p>
+            )}
+            {article.updated ? (
+              <p className={s.dates}>
+                <time dateTime={article.updated}>{koreanDate(article.updated)}</time> 업데이트
+              </p>
+            ) : null}
           </header>
 
           {card && article.cardId ? (

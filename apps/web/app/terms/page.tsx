@@ -4,17 +4,18 @@ import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/Legal
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
+import { pageMetadata } from "@/lib/seo";
 
 const { paid, free } = SITE.currency;
 const host = new URL(SITE.url).host;
 /** 별자리 인연 (with 이번 주 행운 번호) is in the service list and has its own article while it is live. */
 const BONDS = SITE.features.bonds;
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "이용약관",
   description: `${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건, 유료 서비스와 결제, 이용자의 의무, 서비스 변경과 면책, 분쟁 해결을 정한 이용약관이에요.`,
-  alternates: { canonical: "/terms" },
-};
+  path: "/terms",
+});
 
 export default function TermsPage() {
   const hasContact = contactChannels().length > 0;

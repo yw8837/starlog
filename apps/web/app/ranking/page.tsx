@@ -5,15 +5,16 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
+import { pageMetadata } from "@/lib/seo";
 import { loadLeaders } from "./loadLeaders";
 import { RankingIndexBody } from "./RankingIndexBody";
 import s from "./SignIndex.module.css";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "별자리 리더보드",
-  description: "열두 별자리마다 이번 주 인연 점수 합계 1~3위를 모아 봐요. 별자리를 골라 전체 순위와 명예의 전당도 볼 수 있어요.",
-  alternates: { canonical: "/ranking" },
-};
+  description: "열두 별자리마다 이번 주 인연 점수 합계 1~3위를 모아 봐요. 별자리를 골라 전체 순위와 명예의 전당도 볼 수 있어요. 순위는 매주 새로 쌓여요.",
+  path: "/ranking",
+});
 
 /** /ranking: 별자리 리더보드, this week's top 3 of every sign, each card opening the full ranking. */
 export default async function RankingIndexPage() {

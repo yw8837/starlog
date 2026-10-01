@@ -334,6 +334,33 @@
   line-height: 1.7;
 }
 
+/* 요약: the direct answer under the title, in the CTA's gold hairline. */
+.answer {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(243, 220, 161, 0.3);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.answerLabel {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.answerText {
+  margin-top: 6px;
+  font-size: var(--fs-body);
+  line-height: 1.7;
+}
+
+.dates {
+  margin-top: 10px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
 .figure {
   display: grid;
   justify-items: center;

@@ -4,16 +4,20 @@ import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { NightSky } from "@/components/sky/NightSky";
 import { SpeechBubble } from "@/components/ui/SpeechBubble";
 import { GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, type GuideCategory } from "@/lib/guide";
+import { guideIndexBreadcrumbJsonLd, guideIndexItemListJsonLd } from "@/lib/jsonld";
+import { pageMetadata } from "@/lib/seo";
 import { GuideThumb } from "./GuideThumb";
 import s from "./guide.module.css";
 
 /** Each tab has its leader: the cat astrologer reads cards, the rabbit in 두루마기 reads 명식. */
-const TAB_COPY: Record<GuideCategory, { title: string; hero: [string, string]; description: string; line: string; sub: string }> = {
+const TAB_COPY: Record<GuideCategory, { title: string; metaTitle: string; hero: [string, string]; description: string; line: string; sub: string }> = {
   tarot: {
     title: "타로 가이드",
+    metaTitle: "타로 가이드 · 카드 뜻과 읽는 법, 스프레드",
     hero: ["타로 카드를 펼치기 전에", "알아 두면 좋은 이야기"],
     description: "타로 카드 읽는 법과 여러 스프레드, 메이저 아르카나 22장의 뜻까지. 카드를 펼치기 전에 알아 두면 좋은 이야기를 모았어요.",
     line: "카드 읽는 법, 제가 차근차근 알려 줄게요",
@@ -21,6 +25,7 @@ const TAB_COPY: Record<GuideCategory, { title: string; hero: [string, string]; d
   },
   saju: {
     title: "사주 가이드",
+    metaTitle: "사주 가이드 · 오행과 천간·지지, 대운, 만세력",
     hero: ["사주 명식을 읽기 전에", "알아 두면 좋은 이야기"],
     description: "오행과 천간·지지, 일간과 십신, 대운과 만세력 보는 법까지. 사주 명식을 읽기 전에 알아 두면 좋은 이야기를 모았어요.",
     line: "명식 읽는 법은 제가 맡을게요",
@@ -30,7 +35,7 @@ const TAB_COPY: Record<GuideCategory, { title: string; hero: [string, string]; d
 
 export function guideIndexMetadata(category: GuideCategory): Metadata {
   const copy = TAB_COPY[category];
-  return { title: copy.title, description: copy.description, alternates: { canonical: guideIndexPath(category) } };
+  return pageMetadata({ title: copy.metaTitle, description: copy.description, path: guideIndexPath(category) });
 }
 
 /**
@@ -45,6 +50,8 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
       <NightSky fixed seed={41} />
       <TabBar active="guide" />
       <main className="page-col page-wide">
+        <JsonLd data={guideIndexBreadcrumbJsonLd(category)} />
+        <JsonLd data={guideIndexItemListJsonLd(category)} />
         <div className={s.index}>
           <header className={s.hero}>
             <div className={s.heroText}>

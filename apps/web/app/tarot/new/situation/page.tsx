@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { NightSky } from "@/components/sky/NightSky";
+import { NOINDEX } from "@/lib/seo";
 import { SituationPicker } from "./SituationPicker";
 
-export const metadata: Metadata = { title: "상황 고르기" };
+export const metadata: Metadata = { title: "상황 고르기", robots: NOINDEX };
 
 export default function TarotSituationPage() {
   return (

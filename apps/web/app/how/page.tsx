@@ -8,14 +8,11 @@ import legal from "@/components/legal/legal.module.css";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { SITE } from "@/lib/config";
 import { INFO_PAGES } from "@/lib/infoPages";
+import { pageMetadata } from "@/lib/seo";
 
 const page = INFO_PAGES.how;
 
-export const metadata: Metadata = {
-  title: page.title,
-  description: page.description,
-  alternates: { canonical: page.path },
-};
+export const metadata: Metadata = pageMetadata({ title: page.title, description: page.description, path: page.path });
 
 /** The steps a reading goes through (계산 → AI 해석 → 검수), each linking to its section below. */
 const FLOW = [

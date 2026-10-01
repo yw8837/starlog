@@ -5,6 +5,7 @@ import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
+import { pageMetadata } from "@/lib/seo";
 
 const { business, nameKo } = SITE;
 /** 별자리 인연 (and 이번 주 행운 번호) are disclosed while the feature is live. */
@@ -12,11 +13,11 @@ const BONDS = SITE.features.bonds;
 /** Section numbers: 별자리 인연 is section 4 while it is live, and the later sections move down one. */
 const num = (base: number) => (BONDS && base >= 4 ? base + 1 : base);
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "개인정보처리방침",
   description: `${nameKo}가 처리하는 개인정보 항목과 목적, 보유 기간, AI 풀이를 위한 국외 이전, 쿠키와 브라우저 저장소, 이용자의 권리와 행사 방법을 안내합니다.`,
-  alternates: { canonical: "/privacy" },
-};
+  path: "/privacy",
+});
 
 const BIRTH = "생년월일, 양력·음력(윤달 여부), 태어난 시(아는 경우), 성별, 출생 지역";
 

@@ -7,14 +7,11 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
+import { HOME_DESCRIPTION, pageMetadata } from "@/lib/seo";
 import s from "./page.module.css";
 
-// The site's defaults (title, description, og:image) with the home's own address. A page's
-// openGraph replaces the layout's, so the shared fields are repeated here.
-export const metadata: Metadata = {
-  alternates: { canonical: "/" },
-  openGraph: { type: "website", siteName: `${SITE.name} · ${SITE.nameKo}`, locale: "ko_KR", url: "/" },
-};
+// The layout's default title (HOME_TITLE) with the home's own description, canonical and og:url.
+export const metadata: Metadata = pageMetadata({ description: HOME_DESCRIPTION, path: "/" });
 
 /**
  * Home, the same for every visitor, in reading order: the hero line; 타로 보기 (gold, the one

@@ -10,17 +10,14 @@ import legal from "@/components/legal/legal.module.css";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
 import { INFO_PAGES } from "@/lib/infoPages";
+import { pageMetadata } from "@/lib/seo";
 import { withParticle } from "@/lib/korean";
 import { contactChannels } from "@/lib/legal";
 import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
 
 const page = INFO_PAGES.about;
 
-export const metadata: Metadata = {
-  title: page.title,
-  description: page.description,
-  alternates: { canonical: page.path },
-};
+export const metadata: Metadata = pageMetadata({ title: page.title, description: page.description, path: page.path });
 
 const WONT = [
   "합격, 재회, 수익 같은 결과를 약속하지 않아요.",

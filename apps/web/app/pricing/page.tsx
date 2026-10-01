@@ -5,15 +5,16 @@ import s from "@/components/legal/legal.module.css";
 import { SITE, won } from "@/lib/config";
 import { times } from "@/lib/helpGuide";
 import { packReadings, perReadingLabel } from "@/lib/pricing";
+import { pageMetadata } from "@/lib/seo";
 
 const { price, currency, reading, nameKo, beta } = SITE;
 const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "가격 안내",
   description: `타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 오픈 기념 무료 범위와 ${currency.paid} 충전 상품, 결제 수단을 안내해요.`,
-  alternates: { canonical: "/pricing" },
-};
+  path: "/pricing",
+});
 
 const giftReadings = Math.floor(price.signupGiftFree / price.unitsPerReading);
 
