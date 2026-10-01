@@ -82,7 +82,7 @@ async function requireOwner(repo: BondsRepo, ownerId: string): Promise<OwnerRow>
 }
 
 /** Date-only basis; an impossible or future date is bad input. */
-function basisOf(birth: BondBirth, now: number): BondBasis {
+export function basisOf(birth: BondBirth, now: number): BondBasis {
   const today = kstDay(now);
   const iso = `${String(birth.year).padStart(4, "0")}-${String(birth.month).padStart(2, "0")}-${String(birth.day).padStart(2, "0")}`;
   if (birth.year < 1900 || (birth.calendar === "solar" && iso > today) || birth.year > Number(today.slice(0, 4))) {

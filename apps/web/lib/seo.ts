@@ -1,3 +1,4 @@
+import { SITE } from "./config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, guideIndexPath } from "./guide";
 import { INFO_PAGES } from "./infoPages";
 
@@ -24,4 +25,6 @@ export const SITEMAP_PATHS: readonly string[] = [
   "/refund",
   "/terms",
   "/privacy",
+  // 이번 주 행운 번호 ships with 별자리 인연 (SITE.features.bonds)
+  ...(SITE.features.bonds ? ["/lucky"] : []),
 ];

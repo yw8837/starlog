@@ -1,0 +1,39 @@
+import { z } from "zod";
+import { LUCKY_NOTICE, kstWeekId, weeklyLucky, type BondBasis } from "@starlog/core";
+import { BirthSchema, body, bondsRoute, fail, ok } from "@/lib/bonds/api";
+import { friendKey, readOwnerId } from "@/lib/bonds/identity";
+import { basisOf } from "@/lib/bonds/service";
+
+/**
+ * 이번 주 행운 번호 (spec §8): six numbers for this KST week, the same all week for the same person.
+ * GET uses a 별자리 인연 owner's stored basis; POST {birth} works for anyone (the date is used in the
+ * request only). The seed is the owner id, else this device's id (hashed).
+ */
+
+const LuckyBody = z.object({ birth: BirthSchema });
+
+function answer(basis: BondBasis, seedKey: string, now: number, cookies: Array<string | null> = []): Response {
+  const weekId = kstWeekId(now);
+  const { numbers, card } = weeklyLucky({ basis, seedKey, weekId });
+  return ok({ weekId, numbers, card: { cardId: card.id, name: card.names.ko }, notice: LUCKY_NOTICE }, cookies);
+}
+
+export async function GET(request: Request): Promise<Response> {
+  return bondsRoute(request, "lucky", async ({ secret, now, cookies, repo }) => {
+    const ownerId = await readOwnerId(cookies, secret);
+    const owner = ownerId ? await repo.getOwner(ownerId) : null;
+    if (!owner) return fail("NO_OWNER");
+    return answer(owner.basis, `owner:${owner.id}`, now);
+  });
+}
+
+export async function POST(request: Request): Promise<Response> {
+  return bondsRoute(request, "lucky", async ({ secret, now, cookies }) => {
+    const { birth } = await body(request, LuckyBody);
+    const basis = basisOf(birth, now);
+    const ownerId = await readOwnerId(cookies, secret);
+    if (ownerId) return answer(basis, `owner:${ownerId}`, now);
+    const device = await friendKey(cookies, secret);
+    return answer(basis, `device:${device.key}`, now, [device.setCookie]);
+  });
+}

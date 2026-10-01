@@ -215,3 +215,23 @@ test.describe("별자리 인연 · friend", () => {
     await expect(page.getByRole("heading", { level: 1, name: "용우님이 다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요" })).toBeVisible();
   });
 });
+
+test.describe("이번 주 행운 번호", () => {
+  test("a birth date gives 6 numbers with the notice, and a reload shows the same ones", async ({ page }) => {
+    await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
+    await page.goto("/lucky", { timeout: 120_000 });
+    await expect(page.getByText("재미로 보는 번호예요. 추첨에서는 모든 번호의 확률이 같아요.")).toBeVisible();
+    await page.getByLabel("태어난 연도").selectOption("1993");
+    await page.getByLabel("태어난 월").selectOption("7");
+    await page.getByLabel("태어난 일").selectOption("14");
+    await page.getByRole("button", { name: "이번 주 번호 받기" }).click();
+    const balls = page.getByRole("list", { name: "이번 주 행운 번호" }).getByRole("listitem");
+    await expect(balls).toHaveCount(6);
+    const first = await balls.allTextContents();
+    await expect(page.locator("main")).not.toContainText("로또");
+    await shot(page, "lucky");
+    await page.reload();
+    await expect(balls).toHaveCount(6);
+    expect(await balls.allTextContents()).toEqual(first);
+  });
+});

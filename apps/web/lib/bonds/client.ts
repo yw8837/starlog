@@ -9,9 +9,10 @@ import { SITE } from "@/lib/config";
 
 export type ApiResult<T> = ({ ok: true } & T) | { ok: false; code: string; field?: string; retryAt?: string };
 
+/** `path` under /api/bonds/, or an absolute path such as "/api/lucky". */
 export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
   try {
-    const res = await fetch(`/api/bonds/${path}`, {
+    const res = await fetch(path.startsWith("/") ? path : `/api/bonds/${path}`, {
       method: body === undefined ? "GET" : "POST",
       headers: body === undefined ? undefined : { "content-type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
