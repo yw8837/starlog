@@ -254,7 +254,7 @@ export interface JoinInput {
   birth: BondBirth;
   /** index 0-20 into the friend's fan of face-down cards */
   pick: number;
-  message: string | null | undefined;
+  message?: string | null;
 }
 
 export interface JoinResult {

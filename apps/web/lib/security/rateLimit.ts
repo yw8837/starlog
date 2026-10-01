@@ -3,7 +3,8 @@ import { cloudflareEnv, warnMissingBinding } from "@/lib/cloudflare";
 
 /** Per-IP rate limiter: the Workers Rate Limiting bindings, with an in-memory fallback. */
 
-export type LimiterName = "GEN_LIMITER" | "OWNER_GEN_LIMITER" | "FULL_LIMITER" | "OWNER_FULL_LIMITER" | "OWNER_LOGIN_LIMITER";
+export type LimiterName =
+  | "GEN_LIMITER" | "OWNER_GEN_LIMITER" | "FULL_LIMITER" | "OWNER_FULL_LIMITER" | "OWNER_LOGIN_LIMITER" | "BOND_JOIN_LIMITER" | "BOND_CODE_LIMITER";
 
 /** Requests per 60 s; must match wrangler.jsonc so the in-memory fallback behaves like production. */
 export const LIMITS_PER_MINUTE: Record<LimiterName, number> = {
@@ -13,6 +14,9 @@ export const LIMITS_PER_MINUTE: Record<LimiterName, number> = {
   FULL_LIMITER: 5,
   OWNER_FULL_LIMITER: 25,
   OWNER_LOGIN_LIMITER: 5,
+  /** 별자리 인연: joins, and invite-code lookups (against guessing codes) */
+  BOND_JOIN_LIMITER: 10,
+  BOND_CODE_LIMITER: 10,
 };
 
 const WINDOW_MS = 60_000;

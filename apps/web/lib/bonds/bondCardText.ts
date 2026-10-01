@@ -20,5 +20,5 @@ export function todayCardLine(cardId: string, orientation: Orientation): string 
   const keyword = card.keywordsKo[1] ?? card.keywordsKo[0] ?? card.names.ko;
   return orientation === "upright"
     ? `오늘 두 사람 사이엔 ‘${keyword}’의 흐름이 가까이 있어요. 짧은 안부 하나로 이어 가 보세요`
-    : `오늘은 ‘${keyword}’의 흐름이 한 박자 쉬어 가요. 부담 없는 인사 정도가 잘 맞아요`;
+    : `오늘 두 사람 사이엔 ‘${keyword}’의 흐름이 한 박자 쉬어 가요. 부담 없는 인사 정도가 잘 맞아요`;
 }

@@ -44,6 +44,11 @@ export const SITE = {
   features: {
     /** 달빛/별조각 balances and packs. Off in the beta (no payments yet); the wallet UI stays hidden. */
     payments: false,
+    /**
+     * 별자리 인연 (/bonds, /ranking, /b, /api/bonds and the home row). On in dev and tests; a production
+     * build turns it on with NEXT_PUBLIC_FEATURE_BONDS=1 at build time, after the D1 migration is applied.
+     */
+    bonds: process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_FEATURE_BONDS === "1",
   },
   /**
    * 달빛 top-up packs. Provisional: every pack must make one reading (unitsPerReading 달빛)
