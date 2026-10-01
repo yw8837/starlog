@@ -11,7 +11,7 @@ const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 export const metadata: Metadata = {
   title: "가격 안내",
-  description: `타로 심층 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 오픈 기념 무료 범위와 ${currency.paid} 충전 상품, 결제 수단을 안내해요.`,
+  description: `타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 오픈 기념 무료 범위와 ${currency.paid} 충전 상품, 결제 수단을 안내해요.`,
   alternates: { canonical: "/pricing" },
 };
 
@@ -20,7 +20,7 @@ const giftReadings = Math.floor(price.signupGiftFree / price.unitsPerReading);
 /** The standard readings: what one opening includes, lengths from SITE.reading.approxChars. */
 const PRODUCTS = [
   {
-    name: "타로 심층 풀이",
+    name: "타로 전체 풀이",
     sub: "카드 3장으로 보는 지금",
     krw: price.tarotStandardKrw,
     includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.tarot)}자`, "카드별 풀이와 세 카드의 연결, 시기, 상황별 갈래, 오늘 해 볼 일"],
@@ -144,7 +144,7 @@ export default function PricingPage() {
           </table>
         </div>
         <p className={s.muted}>
-          {`1회당 가격은 충전 금액을 받는 ${currency.paid} 수(보너스 포함)로 나누고 ${price.unitsPerReading}개를 곱해 원 단위로 반올림한 값이에요. 풀이 횟수는 한 번에 ${price.unitsPerReading}개씩 쓸 때 열 수 있는 횟수이고, 남는 ${currency.paid}은 다음 충전과 합쳐 쓸 수 있어요. 바로 결제하면 타로 심층 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}이에요.`}
+          {`1회당 가격은 충전 금액을 받는 ${currency.paid} 수(보너스 포함)로 나누고 ${price.unitsPerReading}개를 곱해 원 단위로 반올림한 값이에요. 풀이 횟수는 한 번에 ${price.unitsPerReading}개씩 쓸 때 열 수 있는 횟수이고, 남는 ${currency.paid}은 다음 충전과 합쳐 쓸 수 있어요. 바로 결제하면 타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 프롤로그 ${won(price.sajuStandardKrw)}이에요.`}
         </p>
         <p>
           {`남은 ${currency.paid}의 환불은 `}

@@ -27,7 +27,7 @@ describe("service pages take every number from SITE", () => {
 
   it("/help", () => {
     const text = render(<HelpPage />).container.textContent ?? "";
-    expect(text).toContain("타로 심층 풀이는 한 번에 3,100원, 사주 프롤로그는 4,100원이에요.");
+    expect(text).toContain("타로 전체 풀이는 한 번에 3,100원, 사주 프롤로그는 4,100원이에요.");
     expect(text).toContain("전체 풀이 하루 두 번");
     expect(text).toContain("첫 풀이는 하루 4번까지");
     expect(text).toContain("이어서 물어보기 5번");
