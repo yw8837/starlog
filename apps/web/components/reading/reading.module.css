@@ -28,19 +28,10 @@
   margin-top: 6px;
 }
 
-/* The 109 line: a quiet link, never the loudest thing on the screen. */
+/* The helplines: calm, left-aligned under the centred message. */
 .care {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   justify-self: center;
-  min-height: 44px;
-  padding: 0 18px;
-  border: 1px solid var(--line-strong);
-  border-radius: 22px;
-  color: var(--ink);
-  font-weight: 700;
-  text-decoration: none;
+  max-width: 22em;
 }
 
 /* ---- honesty line ---- */

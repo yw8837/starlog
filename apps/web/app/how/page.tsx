@@ -5,6 +5,7 @@ import { InfoPage } from "@/components/info/InfoPage";
 import { StarNode } from "@/components/info/icons";
 import s from "@/components/info/info.module.css";
 import legal from "@/components/legal/legal.module.css";
+import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { SITE } from "@/lib/config";
 import { INFO_PAGES } from "@/lib/infoPages";
 
@@ -132,10 +133,8 @@ export default function HowPage() {
           <li>틀리거나 내 상황과 맞지 않는 내용이 들어 있을 수 있어요. 보여 드리기 전에 살피지만, 모든 실수를 잡지는 못해요.</li>
           <li>다른 사람의 마음은 풀이로 알 수 없어요. 관계 풀이는 내가 볼 수 있는 흐름과 내가 해 볼 일을 다뤄요.</li>
           <li>의료, 법률, 투자, 진로처럼 중요한 결정은 그 분야 전문가와 상의해 주세요.</li>
-          <li>
-            마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요. 자살예방상담전화 <a href="tel:109">109</a>는 24시간 열려 있어요.
-          </li>
         </ul>
+        <CrisisContacts />
         <p>
           {"자세한 이용 조건은 "}
           <Link href="/terms">이용약관</Link>

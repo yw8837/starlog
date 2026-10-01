@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import type { ErrorView } from "@/lib/reading/errors";
 import s from "./reading.module.css";
 
@@ -46,11 +47,7 @@ export function ErrorPanel({ view, onRetry, redrawHref, editHref, primary = true
         {view.title}
       </h2>
       {view.body ? <p className={s.errorBody}>{view.body}</p> : null}
-      {view.care ? (
-        <a className={s.care} href="tel:109">
-          109에 전화하기
-        </a>
-      ) : null}
+      {view.care ? <CrisisContacts lead={false} className={s.care} /> : null}
       {action ? <div className={s.errorActions}>{action}</div> : null}
       {action ? null : (
         <Button href="/" variant="ghost" size="md" block>

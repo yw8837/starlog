@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { SITE } from "@/lib/config";
 import { times } from "@/lib/helpGuide";
 import type { ErrorView } from "@/lib/reading/errors";
@@ -111,11 +112,7 @@ export function UnlockSheet({ kind, remaining, onUnlock, error, redrawHref, edit
             {error.title}
           </p>
           {error.body ? <p className={s.errorBody}>{error.body}</p> : null}
-          {error.care ? (
-            <a className={s.care} href="tel:109">
-              109에 전화하기
-            </a>
-          ) : null}
+          {error.care ? <CrisisContacts lead={false} className={s.care} /> : null}
         </div>
       ) : usedUp && !openedHref ? (
         <p className={s.limit}>오늘 무료로 열 수 있는 풀이를 모두 열었어요 · 한국 시간 0시에 다시 채워져요</p>

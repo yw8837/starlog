@@ -1,0 +1,62 @@
+.crisis {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
+.lead {
+  line-height: 1.7;
+}
+
+/* Quieter than the lead: smaller text beside a soft gold rule, one helpline per line. */
+.contacts {
+  display: grid;
+  padding-left: 12px;
+  border-left: 2px solid rgba(243, 220, 161, 0.55);
+}
+
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--fs-sub);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:hover .number {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.number {
+  margin-left: 2px;
+  color: var(--gold);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  margin-left: 2px;
+  color: var(--ink-sub);
+}
+
+@media (min-width: 1024px) {
+  .contact,
+  .link {
+    min-height: 32px;
+  }
+}

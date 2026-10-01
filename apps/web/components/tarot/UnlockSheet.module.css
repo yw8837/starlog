@@ -76,16 +76,7 @@
 }
 
 .care {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  margin-top: 6px;
-  padding: 0 16px;
-  border: 1px solid var(--line-strong);
-  border-radius: 22px;
-  color: var(--ink);
-  font-weight: 700;
-  text-decoration: none;
+  margin-top: 8px;
 }
 
 .actions {

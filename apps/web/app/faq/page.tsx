@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AccordionItem, InfoPage } from "@/components/info/InfoPage";
 import s from "@/components/info/info.module.css";
+import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { faqGroups, faqJsonLd, jsonLdScript } from "@/lib/faq";
 import { INFO_PAGES } from "@/lib/infoPages";
 
@@ -33,6 +34,7 @@ export default function FaqPage() {
                   {entry.a.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
+                  {entry.crisis ? <CrisisContacts /> : null}
                   {entry.link ? (
                     <Link href={entry.link.href} className={s.more}>
                       {entry.link.label}

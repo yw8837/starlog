@@ -1,6 +1,7 @@
 import { adsConfig } from "./ads";
 import { SITE } from "./config";
 import { times } from "./helpGuide";
+import { crisisLines } from "./crisis";
 import { contactChannels } from "./legal";
 
 /**
@@ -15,6 +16,8 @@ export interface FaqEntry {
   /** Paragraphs, plain text. */
   a: string[];
   link?: { href: string; label: string };
+  /** Ends with the helplines (components/ui/CrisisContacts). */
+  crisis?: boolean;
 }
 
 export interface FaqGroup {
@@ -102,6 +105,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
             "풀이는 AI가 만든 글이고, 재미와 자기 성찰을 위한 참고용이에요. 틀리거나 내 상황과 맞지 않는 내용이 들어 있을 수 있어요.",
             "합격, 재회, 수익 같은 결과를 약속하지 않고, 다른 사람의 마음을 사실처럼 말하지 않아요. 의료, 법률, 투자, 진로처럼 중요한 결정은 그 분야 전문가와 꼭 상의해 주세요.",
           ],
+          crisis: true,
         },
       ],
     },
@@ -192,7 +196,7 @@ export function faqJsonLd(groups: FaqGroup[]) {
       group.entries.map((entry) => ({
         "@type": "Question",
         name: entry.q,
-        acceptedAnswer: { "@type": "Answer", text: entry.a.join(" ") },
+        acceptedAnswer: { "@type": "Answer", text: [...entry.a, ...(entry.crisis ? crisisLines() : [])].join(" ") },
       })),
     ),
   };

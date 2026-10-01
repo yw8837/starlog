@@ -1,3 +1,4 @@
+import { CRISIS_LEAD } from "@/lib/crisis";
 import type { ApiError } from "./api";
 
 /**
@@ -11,7 +12,7 @@ export interface ErrorView {
   title: string;
   body?: string;
   action: ErrorAction | null;
-  /** Crisis words: calm copy and the 109 line, no reading. */
+  /** Crisis words: calm copy and the helplines (CrisisContacts), no reading. */
   care?: boolean;
 }
 
@@ -35,8 +36,6 @@ export function resetLine(resetsAt: string | undefined, now: number = Date.now()
   return `${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일 ${time}에 다시 열려요`;
 }
 
-const CARE_FALLBACK = "지금 많이 힘든 마음이 느껴져요. 자살예방상담전화 109에서 언제든 이야기를 들어 줘요.";
-
 export function describeApiError(error: ApiError, context: ErrorContext = "reading", now: number = Date.now()): ErrorView {
   switch (error.code) {
     case "BETA_LIMIT":
@@ -54,7 +53,7 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
     case "AI_UNAVAILABLE":
       return { title: "풀이를 준비하고 있어요", body: "조금 뒤에 다시 와 주세요.", action: "home" };
     case "REFUSED":
-      if (error.care) return { title: "잠시 멈춰도 괜찮아요", body: error.message || CARE_FALLBACK, action: "edit", care: true };
+      if (error.care) return { title: "잠시 멈춰도 괜찮아요", body: error.message || CRISIS_LEAD, action: "edit", care: true };
       return { title: "이 내용으로는 풀이를 만들 수 없어요", body: "질문이나 메모를 바꿔 다시 시도해 주세요.", action: "edit" };
     case "QUALITY":
     case "UPSTREAM":

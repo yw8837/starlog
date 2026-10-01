@@ -38,6 +38,8 @@ export interface HelpItem {
   steps?: string[];
   tip?: string;
   link?: { href: string; label: string };
+  /** Ends with the helplines (components/ui/CrisisContacts). */
+  crisis?: boolean;
 }
 
 export interface HelpGroup {
@@ -87,6 +89,14 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           sub: "기록은 이 기기에 남아요",
           body: "가입이나 로그인 없이 모든 기능을 쓸 수 있어요. 연 풀이와 입력한 정보는 지금 쓰는 브라우저에 보관돼요.",
           tip: "다른 기기나 다른 브라우저에서는 기록이 보이지 않아요. 브라우저의 사이트 데이터를 지우면 기록도 함께 지워져요.",
+        },
+        {
+          id: "care",
+          icon: "chat",
+          title: "마음이 힘든 날",
+          sub: "풀이보다 사람과 먼저",
+          body: "풀이는 재미와 자기 성찰을 위한 참고용이에요. 무거운 마음을 혼자 풀이에만 기대지 않아도 돼요.",
+          crisis: true,
         },
       ],
     },

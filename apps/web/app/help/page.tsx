@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AccordionItem, InfoPage, Steps, Tip } from "@/components/info/InfoPage";
 import s from "@/components/info/info.module.css";
+import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { helpGroups } from "@/lib/helpGuide";
 import { INFO_PAGES } from "@/lib/infoPages";
 
@@ -48,6 +49,7 @@ export default function HelpPage() {
                   {item.body ? <p>{item.body}</p> : null}
                   {item.steps ? <Steps steps={item.steps} /> : null}
                   {item.tip ? <Tip>{item.tip}</Tip> : null}
+                  {item.crisis ? <CrisisContacts /> : null}
                   {item.link ? (
                     <Link href={item.link.href} className={s.more}>
                       {item.link.label}

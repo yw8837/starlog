@@ -5,6 +5,7 @@ import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import type { ErrorView } from "@/lib/reading/errors";
 import s from "./FollowUp.module.css";
 
@@ -136,6 +137,7 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, awaiting, ended
             {error.body ? ` ${error.body}` : ""}
           </p>
         ) : null}
+        {error?.care ? <CrisisContacts lead={false} /> : null}
       </div>
 
       {canAsk && openSuggestions.length > 0 ? (

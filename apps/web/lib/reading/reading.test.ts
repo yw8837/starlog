@@ -99,7 +99,7 @@ describe("NDJSON stream", () => {
     });
     expect(parseApiError(503, { code: "WHO_KNOWS" }).code).toBe("UPSTREAM");
     expect(parseApiError(400, null).code).toBe("BAD_REQUEST");
-    expect(parseApiError(422, { code: "REFUSED", care: true, message: "109" })).toMatchObject({ care: true, message: "109" });
+    expect(parseApiError(422, { code: "REFUSED", care: true, message: "m" })).toMatchObject({ care: true, message: "m" });
   });
 });
 
@@ -138,11 +138,10 @@ describe("error copy", () => {
     for (const [code, view] of Object.entries(views)) expect(`${view.title} ${view.body ?? ""}`).not.toContain(code);
   });
 
-  it("shows the server's calm message for crisis words, with the 109 line", () => {
-    const view = describeApiError(err("REFUSED", { care: true, message: "…자살예방상담전화 109에서 언제든 이야기를 들어 줘요." }));
-    expect(view.care).toBe(true);
-    expect(view.body).toContain("109");
-    expect(describeApiError(err("REFUSED", { care: true })).body).toContain("109");
+  it("shows the server's calm message for crisis words (the screen adds the helplines)", () => {
+    const view = describeApiError(err("REFUSED", { care: true, message: "마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요." }));
+    expect(view).toMatchObject({ care: true, body: "마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요.", action: "edit" });
+    expect(describeApiError(err("REFUSED", { care: true })).body).toBe("마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요.");
   });
 
   it("says when the whole network's day count is used up, for any kind of reading", () => {
