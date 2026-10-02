@@ -2,6 +2,1620 @@
   "schema": "starlog-i18n-review/1",
   "locale": "zh-hant",
   "entries": {
+    "core:card:cups-01": {
+      "koHash": "fdf5954bf784b5d0",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-02": {
+      "koHash": "819cf825976d5c96",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-03": {
+      "koHash": "aaba2275b19b5ee2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-04": {
+      "koHash": "97d32feb6c56ba99",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-05": {
+      "koHash": "28070a4d29b016d6",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-06": {
+      "koHash": "9109d312b5846c84",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-07": {
+      "koHash": "b04b4e76e06a7d09",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-08": {
+      "koHash": "3d92d13d4ac7fc56",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-09": {
+      "koHash": "d8831be2348e5aed",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-10": {
+      "koHash": "baa68c1bf4d94466",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-11": {
+      "koHash": "e0f1325c3b13341b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-12": {
+      "koHash": "24b9f6881697224c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-13": {
+      "koHash": "91f7c8e03d21b26a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:cups-14": {
+      "koHash": "000701f69ab7af89",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-00-fool": {
+      "koHash": "75ec9fbe40cfbcc4",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-01-magician": {
+      "koHash": "c0aa4c4454df0376",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-02-high-priestess": {
+      "koHash": "f5da427242d13673",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-03-empress": {
+      "koHash": "b4d6144977a19e41",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-04-emperor": {
+      "koHash": "f05d2798375ed74a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-05-hierophant": {
+      "koHash": "d71aa8b1c0ba3c54",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-06-lovers": {
+      "koHash": "13447c06bce8a5aa",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-07-chariot": {
+      "koHash": "f601f7c97be1d7aa",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-08-strength": {
+      "koHash": "68de24edc341fabd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-09-hermit": {
+      "koHash": "2c8990839484d520",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-10-wheel-of-fortune": {
+      "koHash": "f251b36b73d76059",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-11-justice": {
+      "koHash": "87c242333a3e98e4",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-12-hanged-man": {
+      "koHash": "fc7977ced5308ee4",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-13-death": {
+      "koHash": "73f381e31e823f6e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-14-temperance": {
+      "koHash": "4d62c6337e96e884",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-15-devil": {
+      "koHash": "ec41d6c0e8755719",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-16-tower": {
+      "koHash": "b085b3dff6de4ca1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-17-star": {
+      "koHash": "ae3fc36d3a72017f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-18-moon": {
+      "koHash": "2f941e6eb2150679",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-19-sun": {
+      "koHash": "3cc1f372d2086037",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-20-judgement": {
+      "koHash": "54f768cdd8d6148f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:major-21-world": {
+      "koHash": "28403a52feffec21",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-01": {
+      "koHash": "169c1daeec16bce7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-02": {
+      "koHash": "e215ff1d99f0eca6",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-03": {
+      "koHash": "1bf65184b0e5768d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-04": {
+      "koHash": "f1ae52a099e81ec5",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-05": {
+      "koHash": "9c8525753de6e42d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-06": {
+      "koHash": "74bd24347b0829cf",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-07": {
+      "koHash": "e434404c21e1a7f6",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-08": {
+      "koHash": "4dd0d66ffab2ebe5",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-09": {
+      "koHash": "9dc1e6accd727490",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-10": {
+      "koHash": "2b02e95afb9db1ba",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-11": {
+      "koHash": "725cac926598b4aa",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-12": {
+      "koHash": "75842a2f9861b41d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-13": {
+      "koHash": "73ebd64c248c8fe7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:pentacles-14": {
+      "koHash": "c3e6b93caf62a17e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-01": {
+      "koHash": "b4e56c67b46b771c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-02": {
+      "koHash": "83028ce5c401ed05",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-03": {
+      "koHash": "0947e4e784daabfb",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-04": {
+      "koHash": "30ed25c814a4f5bd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-05": {
+      "koHash": "cc087baeaa6c848c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-06": {
+      "koHash": "9ecf8b5a89ee3f42",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-07": {
+      "koHash": "fb0322328a5f0db9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-08": {
+      "koHash": "7a451b090c656272",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-09": {
+      "koHash": "ac1885e055d1f053",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-10": {
+      "koHash": "20abe305b47985f7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-11": {
+      "koHash": "df30123a86f8e4ff",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-12": {
+      "koHash": "c5925b232b9af416",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-13": {
+      "koHash": "549c74582bcb85ee",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:swords-14": {
+      "koHash": "253830e031596afe",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-01": {
+      "koHash": "291e441f036fec03",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-02": {
+      "koHash": "a0a11effc1eea0bb",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-03": {
+      "koHash": "696f39ad70dc6cf9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-04": {
+      "koHash": "d48b077944591731",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-05": {
+      "koHash": "6fb6f5d900636b83",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-06": {
+      "koHash": "e1efc9d36962a4eb",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-07": {
+      "koHash": "13ede3912556b503",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-08": {
+      "koHash": "78a00d4249116652",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-09": {
+      "koHash": "65406e01ae87bddd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-10": {
+      "koHash": "34996bc36885fad3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-11": {
+      "koHash": "a13a2c910394373b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-12": {
+      "koHash": "c865d82887482569",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-13": {
+      "koHash": "03224fcce932bcfb",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:card:wands-14": {
+      "koHash": "7d090beaa833d47c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.conflict.goal": {
+      "koHash": "214eed5b7c175d03",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.conflict.group-kind": {
+      "koHash": "2c9edb2b83a91db3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.conflict.kind": {
+      "koHash": "d7df937b874b5e69",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.mood.group-kind": {
+      "koHash": "2c9edb2b83a91db3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.mood.mood": {
+      "koHash": "01a27c0466930b24",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.people.focus": {
+      "koHash": "743d751d2d28143f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.people.group-kind": {
+      "koHash": "2c9edb2b83a91db3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.people.mood": {
+      "koHash": "01a27c0466930b24",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.together.kind": {
+      "koHash": "0bd927634ebcf71d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.together.progress": {
+      "koHash": "54de9e6416518a0d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:group.together.role": {
+      "koHash": "db2759697a49ea03",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.career.concern": {
+      "koHash": "1bb2ebbb57ee5ec7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.career.goal": {
+      "koHash": "e77575db2357f22b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.career.status": {
+      "koHash": "604d7be7b268aeb7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.daily.mood": {
+      "koHash": "50e83594d68089aa",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.daily.want": {
+      "koHash": "20478bee1293c691",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.health.focus": {
+      "koHash": "513cf0c609468d3b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.health.state": {
+      "koHash": "a054343df58417ec",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.love.focus": {
+      "koHash": "0e20302d1f7b10ca",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.love.status": {
+      "koHash": "86b39a02b3ca21cf",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.marriage.focus": {
+      "koHash": "cd0b072e8592a3d2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.marriage.status": {
+      "koHash": "0f413de4df71627b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.mind.cause": {
+      "koHash": "2bb4b9b6dcd9f234",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.mind.feeling": {
+      "koHash": "5908e3d623434080",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.mind.goal": {
+      "koHash": "81bc2cad05160587",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.money.focus": {
+      "koHash": "1432322009bdb611",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.money.situation": {
+      "koHash": "b05807e79e4c4276",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.move.deadline": {
+      "koHash": "7665e59804cfa929",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.move.options": {
+      "koHash": "c8d448d3f16f6cc0",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.move.subject": {
+      "koHash": "9e4eaf09c0995926",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.study.difficulty": {
+      "koHash": "be6d3bd81eb3d4a3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:me.study.stage": {
+      "koHash": "b7010ce6f584f855",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.conflict.degree": {
+      "koHash": "a4806021a39b3c01",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.conflict.goal": {
+      "koHash": "425a172414fa5df5",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.conflict.relation": {
+      "koHash": "16c67d512e7a4cb7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.contact.goal": {
+      "koHash": "26614775311f11b0",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.contact.recent-contact": {
+      "koHash": "c3662d1c4cb93a5f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.contact.relation": {
+      "koHash": "44352848eae787dd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.crush.goal": {
+      "koHash": "e647a78b0f34d3ac",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.crush.relation": {
+      "koHash": "8da641a5c2989280",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.crush.response": {
+      "koHash": "bbe3746905669f33",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.marriage.goal": {
+      "koHash": "6e214ffc9b03a858",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.marriage.status": {
+      "koHash": "bec1d2cbaeb897df",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.relationship.duration": {
+      "koHash": "eed43ea8214403de",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.relationship.goal": {
+      "koHash": "444db20d8010900f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.relationship.mood": {
+      "koHash": "e2df90f8630a96ec",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.reunion.goal": {
+      "koHash": "5a2c3840cbe86c5a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.reunion.reason": {
+      "koHash": "70cba3437c6aa1b8",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:us.reunion.since": {
+      "koHash": "ba8d7494bb46c97c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.career.blocker": {
+      "koHash": "7c155a309bd466bf",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.career.goal": {
+      "koHash": "76056018a2749515",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.career.status": {
+      "koHash": "604d7be7b268aeb7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.creative.blocker": {
+      "koHash": "e3c40a627ee236ed",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.creative.goal": {
+      "koHash": "97f34dd1817b302f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.creative.stage": {
+      "koHash": "c013ef18885fc954",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.money.goal": {
+      "koHash": "a7fe97f773160038",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.money.income": {
+      "koHash": "52e228326ec892e2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.negotiation.counterpart": {
+      "koHash": "6ddd59d5f8c76cf2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.negotiation.goal": {
+      "koHash": "558634c29887fd87",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.negotiation.mood": {
+      "koHash": "86e3f0b6008b480c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.study.difficulty": {
+      "koHash": "be6d3bd81eb3d4a3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.study.stage": {
+      "koHash": "b7010ce6f584f855",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:condition:work.study.time": {
+      "koHash": "bb33fc386d666a27",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:가로막는 것": {
+      "koHash": "a3e3b685f88821ba",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:결과의 방향": {
+      "koHash": "2a6ede8a9b824998",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:그 사람 쪽 흐름": {
+      "koHash": "e40c996fb6873716",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:나아갈 방향": {
+      "koHash": "8d48df65b3640c76",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:나의 마음": {
+      "koHash": "e0146075191ee49b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:나의 자리": {
+      "koHash": "f1d3debac137f841",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:나의 태도": {
+      "koHash": "4a9483a8b4f3ebee",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:놓치고 있는 것": {
+      "koHash": "66f824441f14db28",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:다가올 것": {
+      "koHash": "ff1172bdb979defa",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:도움이 될 태도": {
+      "koHash": "428eee79d9127bdc",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:두 사람 사이": {
+      "koHash": "b808469036b80906",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:두 사람의 흐름": {
+      "koHash": "7b411594cc6de3de",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:막힌 곳": {
+      "koHash": "15b8ed6393dbf6c1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:먼저 움직이면": {
+      "koHash": "b572edc7281838a0",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:모임의 분위기": {
+      "koHash": "52b3ea12ae20a35b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:바라는 것": {
+      "koHash": "a51fb6f3a55148fe",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:바람과 걱정": {
+      "koHash": "74c9bf3b18b325a6",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:바탕": {
+      "koHash": "0764f371ef19fb89",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:상대에게 비친 나": {
+      "koHash": "5b927906d8cf6788",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:엇갈리는 지점": {
+      "koHash": "c848cb4a95e64a3a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:오늘의 한 장": {
+      "koHash": "0b799a54c2cbc333",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:이 시기의 흐름": {
+      "koHash": "40eacd23abee84f3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:이쪽을 고르면": {
+      "koHash": "a58fffe0437b0ba5",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:저쪽을 고르면": {
+      "koHash": "be93613f92750ecd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:주변": {
+      "koHash": "09bfd0c3a7d1a7b2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:지금 상황": {
+      "koHash": "766dee16b2558a51",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:지금의 나": {
+      "koHash": "92de22466e240e89",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:지나온 것": {
+      "koHash": "1eeda71af5551e9b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:필요한 것": {
+      "koHash": "3d258a88f52b93b6",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:position:함께 가꿀 방향": {
+      "koHash": "8ce18346444f5f8f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.卯": {
+      "koHash": "b37b57324dd37d14",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.未": {
+      "koHash": "5cba245d97e525e3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.巳": {
+      "koHash": "5ed38a144cbd9134",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.戌": {
+      "koHash": "a9669a4e7f83fef9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.申": {
+      "koHash": "76cae8e6b3972612",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.午": {
+      "koHash": "c474018aed9540b7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.酉": {
+      "koHash": "acfd6ac1eb05aedc",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.寅": {
+      "koHash": "d15ee42b9b573473",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.子": {
+      "koHash": "f21d9f961b594a79",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.辰": {
+      "koHash": "653ad3d621347ec1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.丑": {
+      "koHash": "de16a01e9a922258",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:branches.亥": {
+      "koHash": "75726d760cabf82c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:elements.금": {
+      "koHash": "d6f030e0b2b54ac2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:elements.목": {
+      "koHash": "5fbc9add7bd4911b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:elements.수": {
+      "koHash": "dcd19f5b5caac977",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:elements.토": {
+      "koHash": "164f51aa4871af06",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:elements.화": {
+      "koHash": "950afe85bf406364",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.건록": {
+      "koHash": "7c6fc650f6951f00",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.관대": {
+      "koHash": "e8ba3a18beee1386",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.목욕": {
+      "koHash": "ebe663609dd3c183",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.묘": {
+      "koHash": "2642a70f384a08a4",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.병": {
+      "koHash": "31eaf1068c99d7f1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.사": {
+      "koHash": "98ebd37ce3c1cd6a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.쇠": {
+      "koHash": "304789d778f40a47",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.양": {
+      "koHash": "2ce295bd7785c9ad",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.장생": {
+      "koHash": "40bd181c8166fa7c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.절": {
+      "koHash": "06b2f0759a245417",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.제왕": {
+      "koHash": "e7557a4f173fe898",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stages.태": {
+      "koHash": "2f6e995add9ad547",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.甲": {
+      "koHash": "53ee666eacb02e4d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.庚": {
+      "koHash": "f61e5543aea95878",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.癸": {
+      "koHash": "cf12e611f8fb2465",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.己": {
+      "koHash": "ef48463ac0ea715d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.戊": {
+      "koHash": "cfea9e3af8db929e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.丙": {
+      "koHash": "867c594f96271ef0",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.辛": {
+      "koHash": "060efc053bd4c057",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.乙": {
+      "koHash": "74819599603003bf",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.壬": {
+      "koHash": "3a9841a721c4b3ed",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:stems.丁": {
+      "koHash": "9ce89a1735b7db9f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.겁재": {
+      "koHash": "41e0c8af9ab21cd9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.비견": {
+      "koHash": "f59f748c2269e13a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.상관": {
+      "koHash": "7c0b2b950f7b1855",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.식신": {
+      "koHash": "c579175da03f31c1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.정관": {
+      "koHash": "4c65f98d1f048b7e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.정인": {
+      "koHash": "e3d5bf261d2cd77f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.정재": {
+      "koHash": "a61257705f0e7912",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.편관": {
+      "koHash": "a8ba71565c3d30b2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.편인": {
+      "koHash": "9cd7d295bcfe0a6d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:tenGods.편재": {
+      "koHash": "4685f8cc9ac53730",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.branches": {
+      "koHash": "6935358dd8eea6a4",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.dayMaster": {
+      "koHash": "58ea1d09d2dddb7e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.elements": {
+      "koHash": "5653883e6eb42a83",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.luck": {
+      "koHash": "8aacc266881c6d7a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.manseryeok": {
+      "koHash": "5b5dfbf33e5e49bd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.saju": {
+      "koHash": "35c3571ccfb9ea85",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.stages": {
+      "koHash": "b3273db8a1aa765e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.stems": {
+      "koHash": "5f4cb66d2ca6acfe",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:saju:terms.tenGods": {
+      "koHash": "d24dd46127d8f4fe",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:aquarius": {
+      "koHash": "52607d64981c8b59",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:aries": {
+      "koHash": "4afce5439ad289cd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:cancer": {
+      "koHash": "f1ca12462bf7c87a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:capricorn": {
+      "koHash": "140a872d70daa35d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:gemini": {
+      "koHash": "4713890fb984fedd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:leo": {
+      "koHash": "9b9677b009e44d81",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:libra": {
+      "koHash": "4d2a6c1e3cba9fe3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:pisces": {
+      "koHash": "8d9bb5b4d48e2c02",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:sagittarius": {
+      "koHash": "433805766e077cdf",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:scorpio": {
+      "koHash": "668a445d6a2e9f0e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:taurus": {
+      "koHash": "52acb80b9e96e4e1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:sign:virgo": {
+      "koHash": "a4686b0697cfff9a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:group.conflict": {
+      "koHash": "4487da903bdc0e92",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:group.mood": {
+      "koHash": "84ff8c8df41509d9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:group.people": {
+      "koHash": "16c9b71df630e314",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:group.together": {
+      "koHash": "de828917f5745730",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.career": {
+      "koHash": "52e33905c96a130c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.daily": {
+      "koHash": "b9e5eb93dea481cf",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.health": {
+      "koHash": "dd1fd8d5f3f81b05",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.love": {
+      "koHash": "56d9f10989118112",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.marriage": {
+      "koHash": "668e04a20807712e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.mind": {
+      "koHash": "1a7677b8f22925b4",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.money": {
+      "koHash": "f3981e7ba4cd68e0",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.move": {
+      "koHash": "045bc00731d22202",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:me.study": {
+      "koHash": "0a901f11dca8031d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:us.conflict": {
+      "koHash": "610f420dd3d53194",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:us.contact": {
+      "koHash": "8ba1cd5d7ca48c20",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:us.crush": {
+      "koHash": "2639b61506e9e9d7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:us.marriage": {
+      "koHash": "124daf3e7ce0b8fa",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:us.relationship": {
+      "koHash": "58d29bb51ed7c330",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:us.reunion": {
+      "koHash": "38044f988e7f99ca",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:work.career": {
+      "koHash": "71cbc5ea9114d05d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:work.creative": {
+      "koHash": "82f26e46a482058f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:work.money": {
+      "koHash": "5e581d9584c2ac88",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:work.negotiation": {
+      "koHash": "6a771b0b0de48ee5",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:topic:work.study": {
+      "koHash": "d84d77fa6bb20ecd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:when:month": {
+      "koHash": "847ba673b64ffe07",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:when:today": {
+      "koHash": "3bc6235e1d18162f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:when:week": {
+      "koHash": "3252b25f0f66e010",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "core:when:year": {
+      "koHash": "8a0cd9bb73fb17e9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
     "messages:common:currency.balance": {
       "koHash": "d603bcf5964b75a9",
       "status": "draft",

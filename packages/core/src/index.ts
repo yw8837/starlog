@@ -6,3 +6,4 @@ export * from "./saju/labels";
 export * from "./saju/policy";
 export * from "./saju/chart";
 export * from "./bonds";
+export * from "./i18n";
