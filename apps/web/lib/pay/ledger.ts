@@ -205,19 +205,23 @@ export type ReserveResult = { ok: true; unlockId: string; allocations: Allocatio
  * Toss keys (mode.ts payKeyMode): test payments never pay for live readings; null takes none.
  * A paid opening takes exactly one whole lot (one purchase), never parts of two, so `units` only
  * counts for 별조각: the units per reading may change after a purchase without splitting it.
+ * `earmarked` (premium readings, P5) takes only lots bought for `productId` itself.
  */
 export async function reserveUnlock(
   db: D1Binding,
-  input: { userId: string; productId: string; currency: Currency; units: number; now: number; payMode: PayKeyMode | null },
+  input: { userId: string; productId: string; currency: Currency; units: number; now: number; payMode: PayKeyMode | null; earmarked?: boolean },
 ): Promise<ReserveResult> {
-  const { userId, productId, currency, units, now, payMode } = input;
+  const { userId, productId, currency, units, now, payMode, earmarked = false } = input;
+  // Premium readings open only from lots bought for them: a future 달빛 pack (product_id NULL)
+  // must never open a 7,900원 product at one unit.
+  const scope = earmarked ? "product_id = ?" : "(product_id IS NULL OR product_id = ?)";
   await sweepUser(db, userId, now);
   for (let attempt = 0; attempt < 2; attempt++) {
     const { results } = await db
       .prepare(
         `SELECT id, units_left FROM credit_lots
          WHERE user_id = ? AND currency = ? AND status = 'active' AND units_left > 0
-           AND (expires_at IS NULL OR expires_at > ?) AND (product_id IS NULL OR product_id = ?)
+           AND (expires_at IS NULL OR expires_at > ?) AND ${scope}
            AND (order_id IS NULL OR EXISTS (SELECT 1 FROM payments p WHERE p.order_id = credit_lots.order_id AND p.mode = ?))
          ORDER BY product_id IS NULL, expires_at IS NULL, expires_at, created_at`,
       )
@@ -302,6 +306,19 @@ export async function releaseUnlock(db: D1Binding, input: { unlockId: string; no
     db.prepare("UPDATE unlocks SET status = 'released', settled_at = ? WHERE id = ? AND status = 'reserved'").bind(input.now, unlock.id),
   ]);
   return results[results.length - 1]?.meta?.changes === 1;
+}
+
+/**
+ * Pushes a live reservation's expiry to now + RESERVATION_MS, for a reading written over several
+ * requests (P5 parts). Only this user's reservation, only while it is still reserved and not yet
+ * expired (an expired one may already be swept back). False otherwise: the caller reserves again.
+ */
+export async function extendUnlock(db: D1Binding, input: { unlockId: string; userId: string; now: number }): Promise<boolean> {
+  const result = await db
+    .prepare("UPDATE unlocks SET reserved_until = ? WHERE id = ? AND user_id = ? AND status = 'reserved' AND reserved_until > ?")
+    .bind(input.now + RESERVATION_MS, input.unlockId, input.userId, input.now)
+    .run();
+  return result.meta?.changes === 1;
 }
 
 // ---- sweeps, expiry, forfeits ----
