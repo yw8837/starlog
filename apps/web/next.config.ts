@@ -1,14 +1,17 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
-import { hostRedirects, hostRewrites } from "./lib/hostRoutes";
+import { hostHeaders, hostRedirects, hostRewrites } from "./lib/hostRoutes";
+
+/** HSTS: https only for two years (browsers ignore it on http://localhost). */
+const HSTS_MAX_AGE = "max-age=63072000";
 
 /**
  * Baseline security headers on every response. No script-src CSP yet: Next injects inline
  * scripts, so a strict policy needs nonces first. frame-ancestors backs up X-Frame-Options.
- * HSTS: https only for two years, subdomains included (browsers ignore it on http://localhost).
+ * HSTS includes subdomains, except on the root domain (lib/hostRoutes.ts hostHeaders).
  */
 const SECURITY_HEADERS = [
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+  { key: "Strict-Transport-Security", value: `${HSTS_MAX_AGE}; includeSubDomains` },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -42,11 +45,13 @@ const nextConfig: NextConfig = {
   // @starlog/core is resolved through tsconfig "paths" (D: is exFAT, so pnpm cannot symlink it).
   transpilePackages: ["@starlog/core"],
   images: { unoptimized: true },
+  // The root domain's HSTS entry comes last: of the entries that match, the last one wins a header.
   headers() {
-    return [{ source: "/:path*", headers: [...SECURITY_HEADERS, ...devProviderHeader()] }];
+    return [{ source: "/:path*", headers: [...SECURITY_HEADERS, ...devProviderHeader()] }, ...hostHeaders(HSTS_MAX_AGE)];
   },
   // The guides live on the root domain and the app on starlog: the host rules (lib/hostRoutes.ts) come
-  // first and carry a `host` condition, so localhost, the preview and e2e are untouched.
+  // first and carry a `host` condition. They exist only in the deploy build (NEXT_PUBLIC_SPLIT_HOSTS=1),
+  // so next dev, the preview and e2e have none.
   // The guide index is split into tabs (/guide/tarot, /guide/saju). /guide moved to the first tab
   // for good: a 308 before rendering, so search engines carry its signals over to the tab.
   async redirects() {

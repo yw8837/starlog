@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { DRAW_TOKEN_TTL_MS, dailyCard, issueDraw, openDraw } from "./drawToken";
 import { isOwner, ownerCookie } from "./owner";
 import { hasQuota, kstDay, nextKstMidnight, quotaLimits, readQuota, spendQuota } from "./quota";
@@ -177,11 +177,34 @@ describe("wrangler.jsonc", () => {
 });
 
 describe("next.config.ts", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
   it("sends HSTS for two years, subdomains included, with the other security headers", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "");
     const { default: nextConfig } = await import("@/next.config");
-    const [rule] = await nextConfig.headers!();
+    const rules = await nextConfig.headers!();
+    expect(rules).toHaveLength(1);
+    const [rule] = rules;
     expect(rule?.source).toBe("/:path*");
+    expect(rule?.has).toBeUndefined();
     expect(rule?.headers).toContainEqual({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
     expect(rule?.headers).toContainEqual({ key: "X-Frame-Options", value: "DENY" });
+  });
+
+  it("in the deploy build, drops includeSubDomains on the root domain only, with an entry after the global one so it wins there", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    const { default: nextConfig } = await import("@/next.config");
+    const [global, apex, ...rest] = await nextConfig.headers!();
+    expect(rest).toEqual([]);
+    expect(global?.has).toBeUndefined();
+    expect(global?.headers).toContainEqual({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
+    expect(apex?.source).toBe("/:path*");
+    expect(apex?.headers).toEqual([{ key: "Strict-Transport-Security", value: "max-age=63072000" }]);
+    const [host, ...moreConditions] = apex?.has ?? [];
+    expect(moreConditions).toEqual([]);
+    expect(host?.type).toBe("host");
+    const onRootDomain = new RegExp(String(host?.value));
+    expect(onRootDomain.test("yeolmaeapps.kr")).toBe(true);
+    expect(onRootDomain.test("starlog.yeolmaeapps.kr")).toBe(false);
   });
 });
