@@ -1,0 +1,8 @@
+{
+  "site": { "name": "Starlog", "tagline": "Your story, told in tarot cards and the Four Pillars", "homeLabel": "{site} home" },
+  "nav": { "home": "Home", "story": "My readings", "guide": "Guides", "faq": "FAQ", "me": "Me", "mainMenu": "Main menu" },
+  "footer": { "siteInfo": "About this site", "business": "Business information", "how": "How readings work", "faq": "FAQ" },
+  "currency": { "paid": "Moonlight", "free": "Stardust", "balance": "Your balance: {paid} {paidName}, {free} {freeName}" },
+  "language": { "label": "Language", "current": "Language: {name}", "menu": "Choose a language" },
+  "notFound": { "title": "We couldn't find that page", "body": "The address may have changed, or the page isn't open yet.", "home": "Go home" }
+}

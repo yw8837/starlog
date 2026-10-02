@@ -1,0 +1,8 @@
+{
+  "site": { "name": "스타로그", "tagline": "카드와 사주로 쌓는 나의 이야기", "homeLabel": "{site} 홈" },
+  "nav": { "home": "홈", "story": "내 기록", "guide": "가이드", "faq": "FAQ", "me": "내 정보", "mainMenu": "주요 메뉴" },
+  "footer": { "siteInfo": "사이트 안내", "business": "사업자 정보", "how": "풀이 과정", "faq": "FAQ" },
+  "currency": { "paid": "달빛", "free": "별조각", "balance": "내 재화: {paidName} {paid}개, {freeName} {free}개" },
+  "language": { "label": "언어", "current": "언어: {name}", "menu": "언어 고르기" },
+  "notFound": { "title": "찾는 페이지가 없어요", "body": "주소가 바뀌었거나 아직 열리지 않은 페이지예요.", "home": "홈으로" }
+}

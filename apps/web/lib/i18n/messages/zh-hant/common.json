@@ -1,0 +1,8 @@
+{
+  "site": { "name": "Starlog", "tagline": "用塔羅與八字，寫下我的故事", "homeLabel": "{site} 首頁" },
+  "nav": { "home": "首頁", "story": "我的紀錄", "guide": "指南", "faq": "常見問題", "me": "我的", "mainMenu": "主選單" },
+  "footer": { "siteInfo": "網站說明", "business": "商家資訊", "how": "解讀流程", "faq": "常見問題" },
+  "currency": { "paid": "月光", "free": "星屑", "balance": "我的餘額：{paidName} {paid}、{freeName} {free}" },
+  "language": { "label": "語言", "current": "語言：{name}", "menu": "選擇語言" },
+  "notFound": { "title": "找不到這個頁面", "body": "網址可能已經變更，或頁面還沒開放。", "home": "回到首頁" }
+}

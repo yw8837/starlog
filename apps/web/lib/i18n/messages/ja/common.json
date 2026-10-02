@@ -1,0 +1,8 @@
+{
+  "site": { "name": "Starlog", "tagline": "タロットと四柱推命でつづる、わたしの物語", "homeLabel": "{site} ホーム" },
+  "nav": { "home": "ホーム", "story": "記録", "guide": "ガイド", "faq": "FAQ", "me": "マイページ", "mainMenu": "メインメニュー" },
+  "footer": { "siteInfo": "サイト案内", "business": "事業者情報", "how": "鑑定のしくみ", "faq": "FAQ" },
+  "currency": { "paid": "月あかり", "free": "星のかけら", "balance": "残高：{paidName} {paid}、{freeName} {free}" },
+  "language": { "label": "言語", "current": "言語：{name}", "menu": "言語を選ぶ" },
+  "notFound": { "title": "ページが見つかりません", "body": "アドレスが変わったか、まだ公開前のページです。", "home": "ホームへ" }
+}
