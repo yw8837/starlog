@@ -2,6 +2,7 @@ import "server-only";
 import { PREMIUM_TEMPLATES } from "@starlog/core";
 import { historyUserTexts, withoutCrisisItems } from "@/lib/ai/history";
 import { CUSTOM_TEMPLATE, buildTarotContext, cleanUserText, resolveTopic, type TarotContext } from "@/lib/ai/prompts/tarot";
+import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { openDraw, type OpenedDraw } from "@/lib/security/drawToken";
 import { crisisResponse, errorResponse, isCrisisText, readJson, type Gate } from "./http";
 import { CUSTOM_TOPIC_ID, TarotBody, type TarotInputData } from "./inputs";
@@ -13,7 +14,7 @@ import { CUSTOM_TOPIC_ID, TarotBody, type TarotInputData } from "./inputs";
  * `topicText` is judged after cleaning (as the prompt will see it): text that cleans to nothing is
  * no topic, and a catalog topic ignores it (the chip path).
  */
-export async function tarotContextFrom(request: Request, gate: Gate): Promise<{ ctx: TarotContext; draw: OpenedDraw; input: Omit<TarotInputData, "history"> } | Response> {
+export async function tarotContextFrom(request: Request, gate: Gate): Promise<{ ctx: TarotContext; draw: OpenedDraw; input: Omit<TarotInputData, "history">; unlock?: UnlockMethod } | Response> {
   const body = TarotBody.safeParse(await readJson(request, 8_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
   const draw = await openDraw(body.data.drawToken, gate.secret, gate.now);
@@ -35,5 +36,5 @@ export async function tarotContextFrom(request: Request, gate: Gate): Promise<{ 
   if (crisis) return crisis;
   // History shapes this prompt only; the chapter token (follow-ups) keeps the input without it.
   const { history, ...rest } = input;
-  return { ctx: buildTarotContext(draw.templateId, draw.cards, rest, { history: withoutCrisisItems(history, isCrisisText) }), draw, input: rest };
+  return { ctx: buildTarotContext(draw.templateId, draw.cards, rest, { history: withoutCrisisItems(history, isCrisisText) }), draw, input: rest, unlock: body.data.unlock?.method };
 }

@@ -1,14 +1,18 @@
 import { generateSajuReading } from "@/lib/ai/generate";
-import { checkQuota, fullReadingLimit, openGate, spendCookies } from "@/lib/api/http";
+import { fullReadingLimit, openGate, spendCookies } from "@/lib/api/http";
 import { sajuRequest } from "@/lib/api/sajuRequest";
 import { respondGeneration } from "@/lib/api/stream";
+import { planUnlock, settlementFor } from "@/lib/api/unlock";
+import { sajuChapter } from "@/lib/readings/chapters";
 import { issueChapter } from "@/lib/security/chapterToken";
 
 /**
- * POST {birth, loveStatus?, workStatus?, concern?} → {reading, chapterToken}: the paid prologue (the
- * seven SAJU_PROLOGUE_SECTIONS headings, the observation, follow-up suggestions). Spends one
- * full unlock only after a validated generation. Streams NDJSON progress with
- * `Accept: application/x-ndjson`.
+ * POST {birth, loveStatus?, workStatus?, concern?, unlock?, display?} → {reading, chapterToken, readingId?}:
+ * the paid prologue.
+ * - 오픈 기념: one daily unlock after a validated generation.
+ * - paid / 별조각: credit reserved, then saved and spent before the client sees it, released on
+ *   failure (spec 5.4).
+ * Streams NDJSON progress with `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
@@ -17,12 +21,26 @@ export async function POST(request: Request): Promise<Response> {
   if (limited) return limited;
   const parsed = await sajuRequest(request, gate.now);
   if (parsed instanceof Response) return parsed;
-  const quota = await checkQuota(gate, "full");
-  if (quota instanceof Response) return quota;
+  const plan = await planUnlock(request, gate, "saju", parsed.body.unlock?.method);
+  if (plan instanceof Response) return plan;
+  const { birth, loveStatus, workStatus, concern, display } = parsed.body;
 
-  return respondGeneration(request, async (hooks) => {
-    const reading = (await generateSajuReading(gate.provider, parsed.facts, hooks)).data;
-    const chapterToken = await issueChapter({ kind: "saju", birth: parsed.body.birth, profile: parsed.profile }, reading, [], gate.secret, gate.now);
-    return { body: { reading, chapterToken }, cookies: await spendCookies(gate, quota, "full") };
-  }, { gate, spend: "full" });
+  return respondGeneration(
+    request,
+    async (hooks) => {
+      const reading = (await generateSajuReading(gate.provider, parsed.facts, hooks)).data;
+      const chapterToken = await issueChapter({ kind: "saju", birth, profile: parsed.profile }, reading, [], gate.secret, gate.now);
+      return { body: { reading, chapterToken }, cookies: plan.quota ? await spendCookies(gate, plan.quota, "full") : [] };
+    },
+    {
+      gate,
+      spend: plan.spend,
+      paidCost: plan.paidCost,
+      settle: settlementFor(
+        plan,
+        (body) => sajuChapter({ birth, context: { loveStatus, workStatus, concern }, display }, body as { reading: unknown; chapterToken: string }, gate.now),
+        gate.now,
+      ),
+    },
+  );
 }

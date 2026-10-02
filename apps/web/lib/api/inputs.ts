@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { HistorySchema } from "@/lib/ai/history";
+import { UNLOCK_METHODS } from "@/lib/pay/unlockMethod";
 import { BIRTH_PLACES } from "@/lib/sajuForm";
 
 /** Request bodies. Every string is capped; unknown keys are dropped. */
@@ -39,9 +40,13 @@ export const TarotInputBody = z.object({
   history: HistorySchema.optional(),
 });
 
+/** How the full reading is opened (P4). Absent means the 오픈 기념 daily free reading. */
+export const UnlockBody = z.object({ method: z.enum(UNLOCK_METHODS) });
+
 export const TarotBody = z.object({
   drawToken: z.string().min(1).max(4096),
   input: TarotInputBody,
+  unlock: UnlockBody.optional(),
 });
 
 /** The saju form as the client holds it (lib/sajuForm.ts `SajuForm`). */
@@ -73,6 +78,13 @@ export const SajuBody = z.object({
   concern: z.string().trim().max(60).optional(),
   /** up to three earlier readings from this device (lib/ai/history.ts) */
   history: HistorySchema.optional(),
+  unlock: UnlockBody.optional(),
+  /**
+   * the free teaser's title and summary, kept with a reading saved to the account. The teaser's
+   * summary may run to 500 non-space characters (validateSajuTeaser: 250–400 with a 25% band), so
+   * with spaces it is capped well above that.
+   */
+  display: z.object({ title: z.string().trim().max(80), summary: z.string().trim().max(1000) }).optional(),
 });
 
 export const FollowUpBody = z.object({
