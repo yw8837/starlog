@@ -2,20 +2,21 @@ import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
-import { SITE } from "@/lib/config";
-import { WALLET_FIXTURE } from "@/lib/fixtures";
 import { MeView } from "./MeView";
+import { meStatusMessage } from "./meStatus";
 
 export const metadata: Metadata = { title: "내 정보", robots: { index: false, follow: false } };
 
-export default function MePage() {
+const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+
+export default async function MePage({ searchParams }: PageProps<"/me">) {
+  const query = await searchParams;
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={31} />
       <TabBar active="me" />
       <main className="page-col page-wide">
-        {/* Balances are fixture data until payments exist; the beta shows none. */}
-        <MeView wallet={SITE.features.payments ? WALLET_FIXTURE : null} />
+        <MeView status={meStatusMessage({ account: str(query.account), delete: str(query.delete), login: str(query.login) })} />
       </main>
       <Footer />
     </div>

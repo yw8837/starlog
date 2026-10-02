@@ -1,0 +1,174 @@
+/* 내 정보 for a logged-in user: the MeView tokens and card look, text ≥ 13px, targets ≥ 44px. */
+.account {
+  display: grid;
+  gap: 12px;
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(243, 220, 161, 0.28);
+  border-radius: 24px;
+  background:
+    radial-gradient(90% 80% at 100% 0%, rgba(243, 220, 161, 0.12), transparent 60%),
+    rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.name {
+  font-size: var(--fs-h1);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.muted {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.balance {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.balanceLabel {
+  color: var(--gold);
+}
+
+/* 결제한 풀이 not opened yet: name, 열기, 환불받기. */
+.unused {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.unusedItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  font-size: var(--fs-body);
+}
+
+.unusedItem > span {
+  flex: 1 1 160px;
+}
+
+/* Quiet text buttons and links. */
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-sub);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link:hover {
+  color: var(--ink);
+}
+
+.orders {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.sectionTitle {
+  font-size: var(--fs-h2);
+  line-height: 1.4;
+}
+
+.orderList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--glass-line);
+  font-size: var(--fs-sub);
+}
+
+.order:first-child {
+  border-top: 0;
+}
+
+.notice {
+  min-height: 1.4em;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-align: center;
+}
+
+.notice:empty {
+  display: none;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+}
+
+/* Confirm sheets (refund, deletion) inside Modal. */
+.confirm {
+  display: grid;
+  gap: 12px;
+  padding-top: 8px;
+  color: var(--ink-sub);
+  line-height: 1.7;
+}
+
+.confirm h2 {
+  padding-right: 40px;
+  color: var(--ink);
+}
+
+.list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+/* 회원 탈퇴: the erase sheet's red outline button. */
+.danger {
+  min-height: 52px;
+  margin: 0;
+  border: 1px solid var(--error);
+  border-radius: 26px;
+  background: rgba(255, 179, 189, 0.12);
+  color: var(--error);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.danger:hover {
+  background: rgba(255, 179, 189, 0.2);
+}

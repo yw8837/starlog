@@ -8,8 +8,10 @@ import { ELEMENT_KEY } from "@/components/saju/elements";
 import { chartFor } from "@/components/saju/useSajuChart";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
+import { useAccount } from "@/lib/account/client";
 import { kstMonthDay } from "@/lib/kst";
 import { checkinDue, newestFirst, recordLine, useChapters, type SajuChapter, type StoredChapter } from "@/lib/storage/chapters";
+import { useAccountSync } from "@/lib/storage/sync";
 import s from "./StoryView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
@@ -76,6 +78,8 @@ function Record({ chapter, now }: { chapter: StoredChapter; now: number }) {
 
 /** 내 기록: every reading opened on this device, newest first; each opens the saved reading. */
 export function StoryView() {
+  // Readings opened on another device while logged in come onto this one (once per tab).
+  useAccountSync(useAccount());
   const chapters = useChapters();
   if (chapters === undefined) {
     return (

@@ -1,5 +1,7 @@
-import { parseAccount } from "@/lib/account/client";
+import { useEffect } from "react";
+import { parseAccount, type AccountState } from "@/lib/account/client";
 import { getJson } from "@/lib/reading/api";
+import { forgetServerIds, mergeServerReadings } from "./chapters";
 
 /** The account's saved readings on this device (spec 5.7), and the check after a cut-off paid reading (M4). */
 
@@ -59,4 +61,48 @@ export async function checkDelivery(
     if (user && input.method === "free" && user.stardust >= input.units) return { status: "kept" };
   }
   return { status: "unknown" };
+}
+
+const SYNCED_KEY = "starlog.account-synced";
+/** 50 readings a page: 1,000 per pull is far beyond any account; the next pull goes on from the top. */
+const MAX_PAGES = 20;
+
+/** Brings every reading in the account onto this device, page by page; how many were new here. */
+export async function pullAccountReadings(fetchImpl: typeof fetch = fetch): Promise<number> {
+  let added = 0;
+  let before: string | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const result = await fetchReadingsPage(before ? { before } : {}, fetchImpl);
+    if (!result) break;
+    added += mergeServerReadings(result.readings);
+    if (!result.next) break;
+    before = result.next;
+  }
+  return added;
+}
+
+/** Deletes every reading saved in the account. This device keeps its own copies. */
+export async function deleteAccountReadings(fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  try {
+    const response = await fetchImpl("/api/readings?all=1", { method: "DELETE", credentials: "same-origin" });
+    if (response.ok) forgetServerIds();
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** Once per tab, when a user is logged in: pull the account's readings onto this device. */
+export function useAccountSync(account: AccountState | null | undefined): void {
+  const loggedIn = Boolean(account?.user);
+  useEffect(() => {
+    if (!loggedIn) return;
+    try {
+      if (sessionStorage.getItem(SYNCED_KEY)) return;
+      sessionStorage.setItem(SYNCED_KEY, "1");
+    } catch {
+      // storage blocked: pull anyway
+    }
+    void pullAccountReadings();
+  }, [loggedIn]);
 }

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronIcon, MoonIcon, StarIcon } from "@/components/home/icons";
-import type { Wallet } from "@/components/tarot/UnlockSheet";
+import { ChevronIcon } from "@/components/home/icons";
 import { Button } from "@/components/ui/Button";
 import { DotLine } from "@/components/ui/DotLine";
 import { Modal } from "@/components/ui/Modal";
-import { SITE, type MoonPack } from "@/lib/config";
+import { loginHref, useAccount } from "@/lib/account/client";
+import { SITE } from "@/lib/config";
 import { clearFlow } from "@/lib/flowState";
 import { times } from "@/lib/helpGuide";
 import { clearTeasers } from "@/lib/reading/teaserCache";
@@ -16,15 +16,17 @@ import { profileSummary } from "@/lib/sajuForm";
 import { useRemainingToday } from "@/lib/storage/betaUsage";
 import { clearChapters, useChapters } from "@/lib/storage/chapters";
 import { clearDaily } from "@/lib/storage/daily";
-import { MoonPackSheet } from "./MoonPackSheet";
+import { useAccountSync } from "@/lib/storage/sync";
+import { AccountPanel } from "./AccountPanel";
 import s from "./MeView.module.css";
+import a from "./account.module.css";
 
 type MeViewProps = {
-  /** Balances, only once payments exist (SITE.features.payments); null in the beta. */
-  wallet: Wallet | null;
+  /** The line for ?account=, ?delete= or ?login= (meStatus.ts); null when there is none. */
+  status: string | null;
 };
 
-type Sheet = "packs" | "erase" | null;
+type Sheet = "erase" | null;
 
 function Soon({ children }: { children: string }) {
   return (
@@ -38,25 +40,18 @@ function Soon({ children }: { children: string }) {
 }
 
 /**
- * 내 정보: the 오픈 기념 free count, the saju profile kept on this device (with 고치기), the menu,
- * and erasing everything this device keeps. Balances and 달빛 packs stay hidden until payments exist.
+ * 내 정보: the account when logged in (AccountPanel), a Kakao login while sales are open on this
+ * device, otherwise the 오픈 기념 free count; the saju profile kept on this device (with 고치기), the
+ * menu, and erasing everything this device keeps. A logged-in tab pulls the account's readings.
  */
-export function MeView({ wallet }: MeViewProps) {
-  const [balance, setBalance] = useState(wallet);
+export function MeView({ status }: MeViewProps) {
   const [sheet, setSheet] = useState<Sheet>(null);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState(status ?? "");
   const { profile } = useSajuProfile();
   const chapters = useChapters();
   const remaining = useRemainingToday();
-  const { paid, free } = SITE.currency;
-
-  // Mock payment until the payments task: add the pack and say so.
-  const buy = (pack: MoonPack) => {
-    const units = pack.units + pack.bonus;
-    setBalance((prev) => (prev ? { ...prev, moonlight: prev.moonlight + units } : prev));
-    setSheet(null);
-    setNotice(`${paid} ${units}개를 충전했어요`);
-  };
+  const account = useAccount();
+  useAccountSync(account);
 
   const erase = () => {
     clearChapters();
@@ -74,48 +69,43 @@ export function MeView({ wallet }: MeViewProps) {
         <header className={s.profile}>
           <div className={s.profileText}>
             <h1 className={s.nickname}>내 정보</h1>
-            <p className={s.provider}>로그인 없이, 기록은 이 기기에 보관돼요</p>
+            {account?.user ? null : <p className={s.provider}>로그인 없이, 기록은 이 기기에 보관돼요</p>}
           </div>
         </header>
 
-        {balance ? (
-          <section className={s.wallet} aria-labelledby="wallet-title">
-            <h2 id="wallet-title" className={s.sectionTitle}>
-              내 재화
+        {account?.user ? (
+          <AccountPanel account={{ ...account, user: account.user }} onNotice={setNotice} />
+        ) : account?.payments ? (
+          <section className={s.beta} aria-labelledby="login-title">
+            <h2 id="login-title" className={s.betaTitle}>
+              로그인하면 결제한 풀이를 다른 기기에서도 볼 수 있어요
             </h2>
-            <dl className={s.balances}>
-              <div className={s.balanceBox}>
-                <dt className={s.balanceLabel}>
-                  <MoonIcon size={20} />
-                  {paid}
-                </dt>
-                <dd className={s.balanceValue}>{balance.moonlight}</dd>
-              </div>
-              <div className={s.balanceBox}>
-                <dt className={s.balanceLabel}>
-                  <StarIcon size={20} />
-                  {free}
-                </dt>
-                <dd className={s.balanceValue}>{balance.stardust}</dd>
-              </div>
-            </dl>
-            <Button block onClick={() => setSheet("packs")}>
-              {`${paid} 충전하기`}
+            <Button href={loginHref("/me")} block>
+              카카오로 로그인
             </Button>
           </section>
         ) : (
-          <section className={s.beta} aria-labelledby="beta-title">
-            <h2 id="beta-title" className={s.betaTitle}>
-              {`오픈 기념으로 하루 ${times(SITE.beta.fullPerDay)} 전체 풀이를 무료로 열어 드려요`}
-            </h2>
-            <p className={s.betaText}>
-              {remaining === undefined
-                ? " "
-                : remaining > 0
-                  ? `오늘 ${remaining}번 더 열 수 있어요 · 한국 시간 0시에 다시 채워져요`
-                  : "오늘은 모두 열었어요 · 한국 시간 0시에 다시 채워져요"}
-            </p>
-          </section>
+          <>
+            <section className={s.beta} aria-labelledby="beta-title">
+              <h2 id="beta-title" className={s.betaTitle}>
+                {`오픈 기념으로 하루 ${times(SITE.beta.fullPerDay)} 전체 풀이를 무료로 열어 드려요`}
+              </h2>
+              <p className={s.betaText}>
+                {remaining === undefined
+                  ? " "
+                  : remaining > 0
+                    ? `오늘 ${remaining}번 더 열 수 있어요 · 한국 시간 0시에 다시 채워져요`
+                    : "오늘은 모두 열었어요 · 한국 시간 0시에 다시 채워져요"}
+              </p>
+            </section>
+            {account?.login ? (
+              <p className={s.provider}>
+                <Link href={loginHref("/me")} className={a.link}>
+                  결제한 풀이가 있다면 로그인
+                </Link>
+              </p>
+            ) : null}
+          </>
         )}
         <p className={s.notice} role="status">
           {notice}
@@ -167,18 +157,13 @@ export function MeView({ wallet }: MeViewProps) {
         </button>
       </div>
 
-      {balance ? (
-        <Modal open={sheet === "packs"} onClose={() => setSheet(null)} labelledBy="packs-title">
-          <MoonPackSheet titleId="packs-title" moonlight={balance.moonlight} onBuy={buy} />
-        </Modal>
-      ) : null}
       <Modal open={sheet === "erase"} onClose={() => setSheet(null)} labelledBy="erase-title">
         <div className={s.confirm}>
           <h2 id="erase-title" className={s.confirmTitle}>
             이 기기의 기록을 모두 지울까요?
           </h2>
           <p className={s.confirmText}>
-            {`열어 둔 풀이${chapters && chapters.length > 0 ? ` ${chapters.length}개` : ""}, 사주 정보, 오늘의 한 장이 지워져요. 지운 기록은 되돌릴 수 없어요.`}
+            {`열어 둔 풀이${chapters && chapters.length > 0 ? ` ${chapters.length}개` : ""}, 사주 정보, 오늘의 한 장이 지워져요. 지운 기록은 되돌릴 수 없어요.${account?.user ? " 계정에 보관한 풀이는 그대로예요." : ""}`}
           </p>
           <div className={s.confirmActions}>
             <button type="button" className={s.confirmErase} onClick={erase}>
