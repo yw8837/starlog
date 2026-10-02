@@ -5629,7 +5629,7 @@ git commit -m "feat(readings): encrypted saved readings, a paid cost book, settl
 - Produces:
   - `inputs.ts`:
     - `UnlockBody = z.object({ method: z.enum(UNLOCK_METHODS) })`; `TarotBody.unlock?`, `SajuBody.unlock?`
-    - `SajuBody.display?: { title ≤80, summary ≤400 }` (the teaser's title and summary, saved with the reading)
+    - `SajuBody.display?: { title ≤80, summary ≤1000 }` (the teaser's title and summary, saved with the reading; longer text is cut, an invalid display dropped, never a 400)
   - `tarotContextFrom` also returns `unlock?: UnlockMethod`.
   - `unlock.ts`:
     - `interface UnlockPlan { method; productId; quota: QuotaState | null; spend: SpendKind | undefined; paidCost: boolean; save: {db; accountSecret; userId; source; unlockId} | null }`
@@ -5918,7 +5918,7 @@ Add `unlock: UnlockBody.optional(),` to `TarotBody`. Add both of these to `SajuB
 ```ts
   unlock: UnlockBody.optional(),
   /** the free teaser's title and summary, kept with a reading saved to the account */
-  display: z.object({ title: z.string().trim().max(80), summary: z.string().trim().max(400) }).optional(),
+  display: z.object({ title: z.string().trim().max(80), summary: z.string().trim().max(1000) }).optional(),
 ```
 
 In `tarotContextFrom`, add `unlock?: UnlockMethod` to the returned object type (import `type UnlockMethod` from `@/lib/pay/unlockMethod`), and add `unlock: body.data.unlock?.method` to the object it returns. Keep everything else in that return as it is (the history filtering included).

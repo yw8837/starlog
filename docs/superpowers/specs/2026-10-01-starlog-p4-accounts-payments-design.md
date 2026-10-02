@@ -356,7 +356,7 @@
 | `GET /api/readings?before=&limit=` | 계정 풀이 50개씩, `next` 커서 |
 | `DELETE /api/readings?id=` · `?all=1` | 계정 풀이 지우기 |
 | `POST /api/internal/maintenance` | 정리 작업(`Bearer STARLOG_CRON_SECRET` 전용) |
-| `POST /api/tarot/reading`, `POST /api/saju/reading` | 본문에 `unlock: {method}`(opening/paid/free/owner). 사주는 저장용 `display` |
+| `POST /api/tarot/reading`, `POST /api/saju/reading` | 본문에 `unlock: {method}`(opening/paid/free/owner). 사주는 저장용 `display`(제목 80자, 요약 1000자까지; 넘치면 잘라 저장하고 막지 않는다) |
 | `POST /api/followup` | 본문에 `readingId`(계정 사본에 기록) |
 
 새 오류 코드:

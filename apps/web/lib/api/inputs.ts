@@ -63,6 +63,9 @@ export const BirthBody = z.object({
   placeId: z.string().refine((id) => BIRTH_PLACES.some((place) => place.id === id)),
 });
 
+/** Trimmed, then cut to `max` characters (whole code points, so no emoji is split): never a reason to refuse. */
+const clipped = (max: number) => z.string().trim().transform((text) => Array.from(text).slice(0, max).join(""));
+
 export const LOVE_STATUS = {
   single: "솔로", dating: "연애 중", engaged: "결혼 준비 중", married: "기혼", "fresh-start": "새로운 출발", unsure: "잘 모르겠어요",
 } as const;
@@ -82,9 +85,10 @@ export const SajuBody = z.object({
   /**
    * the free teaser's title and summary, kept with a reading saved to the account. The teaser's
    * summary may run to 500 non-space characters (validateSajuTeaser: 250–400 with a 25% band), so
-   * with spaces it is capped well above that.
+   * with spaces it is capped well above that (1000). Text past a cap is cut, and a display that is
+   * not one is dropped: it only labels the saved reading, so it never stops a paid opening.
    */
-  display: z.object({ title: z.string().trim().max(80), summary: z.string().trim().max(1000) }).optional(),
+  display: z.object({ title: clipped(80), summary: clipped(1000) }).optional().catch(undefined),
 });
 
 export const FollowUpBody = z.object({

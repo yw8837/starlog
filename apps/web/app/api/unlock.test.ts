@@ -235,4 +235,20 @@ describe("opening a full reading with credit", () => {
     const { readings } = await listReadings(db, accountSecret()!, await userId(db));
     expect(readings[0]?.chapter).toMatchObject({ kind: "saju", title: "타고난 결", summary: "요약 한 줄" });
   });
+
+  it("opens a paid saju reading whose teaser text runs long, keeping the text cut to fit", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    await buy(b, "saju");
+    const res = await b.send(sajuReading, "/api/saju/reading", {
+      body: { birth: DEFAULT_SAJU_FORM, unlock: { method: "paid" }, display: { title: "결".repeat(100), summary: "흐름".repeat(700) } },
+    });
+    expect(res.status).toBe(200);
+    const { readings } = await listReadings(db, accountSecret()!, await userId(db));
+    expect(readings[0]?.chapter).toMatchObject({ kind: "saju", title: "결".repeat(80), summary: "흐름".repeat(500) });
+    // A display that is not one at all is dropped, never a reason to refuse the opening.
+    await buy(b, "saju");
+    const odd = await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, unlock: { method: "paid" }, display: { title: 7 } } });
+    expect(odd.status).toBe(200);
+  });
 });
