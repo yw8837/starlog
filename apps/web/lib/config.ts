@@ -22,9 +22,9 @@ export const SITE = {
      * spread is never named after its tradition in the UI.
      */
     premium: [
-      { id: "tarot-deep", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 5900, open: false, opens: "" },
-      { id: "match", name: "우리 사이 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 9900, open: false, opens: "" },
-      { id: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 9900, open: false, opens: "11월 중순 오픈 예정" },
+      { id: "tarot-deep", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, open: false, opens: "" },
+      { id: "match", name: "우리 사이 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 7900, open: false, opens: "" },
+      { id: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 7900, open: false, opens: "11월 중순 오픈 예정" },
     ],
   },
   reading: {

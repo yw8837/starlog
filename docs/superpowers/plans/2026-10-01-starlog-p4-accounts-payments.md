@@ -813,7 +813,7 @@ describe("catalog", () => {
       expect(product).toMatchObject({ name: premium.name, krw: premium.krw, units: null, deliverable: false });
       expect(sellable(product!, Date.parse("2027-06-01T00:00:00+09:00"))).toBe(false);
     }
-    expect([productById("tarot-deep")?.krw, productById("match")?.krw, productById("newyear-2027")?.krw]).toEqual([5900, 9900, 9900]);
+    expect([productById("tarot-deep")?.krw, productById("match")?.krw, productById("newyear-2027")?.krw]).toEqual([7900, 7900, 7900]);
   });
 
   it("opens 2027 신년운세 at 2026-11-15 00:00 KST", () => {
@@ -983,9 +983,9 @@ If `SITE.price.premium` is missing from `apps/web/lib/config.ts` (Task 0 should 
      * spread is never named after its tradition in the UI.
      */
     premium: [
-      { id: "tarot-deep", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 5900, open: false, opens: "" },
-      { id: "match", name: "우리 사이 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 9900, open: false, opens: "" },
-      { id: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 9900, open: false, opens: "11월 중순 오픈 예정" },
+      { id: "tarot-deep", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, open: false, opens: "" },
+      { id: "match", name: "우리 사이 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 7900, open: false, opens: "" },
+      { id: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 7900, open: false, opens: "11월 중순 오픈 예정" },
     ],
 ```
 

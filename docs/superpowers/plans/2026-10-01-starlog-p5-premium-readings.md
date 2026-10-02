@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Sell three premium readings through P4's catalog and ledger: 심층 타로 · 카드 10장 (5,900원), 우리 사이 궁합 · 사주+타로 (9,900원) and 2027 신년운세 (9,900원, opens 2026-11-15 00:00 KST). Each is written over computed facts (server-dealt cards, server-computed charts), in 2–3 validated parts, one part per request, inside the 240 s budget, and charged only when the whole reading is saved.
+**Goal:** Sell three premium readings through P4's catalog and ledger: 심층 타로 · 카드 10장 (7,900원), 우리 사이 궁합 · 사주+타로 (7,900원) and 2027 신년운세 (7,900원, opens 2026-11-15 00:00 KST). Each is written over computed facts (server-dealt cards, server-computed charts), in 2–3 validated parts, one part per request, inside the 240 s budget, and charged only when the whole reading is saved.
 
 **Architecture:**
 - Generators live next to the standard ones in `apps/web/lib/ai/`: prompts per product (`prompts/deepTarot.ts`, `prompts/match.ts`, `prompts/newyear.ts`), zod draft schemas (`premiumSchemas.ts`), validators (`validatePremium.ts`), deterministic mocks (`mockPremium.ts`) and part generators (`generatePremium.ts`).
@@ -384,7 +384,7 @@ describe("premium products", () => {
   it("prices and names come from SITE", () => {
     for (const p of SITE.price.premium) expect(PREMIUM[p.id]).toMatchObject({ name: p.name, krw: p.krw, slug: p.slug });
     expect(PREMIUM_IDS).toEqual(["tarot-deep", "match", "newyear-2027"]);
-    expect([PREMIUM["tarot-deep"].krw, PREMIUM.match.krw, PREMIUM["newyear-2027"].krw]).toEqual([5900, 9900, 9900]);
+    expect([PREMIUM["tarot-deep"].krw, PREMIUM.match.krw, PREMIUM["newyear-2027"].krw]).toEqual([7900, 7900, 7900]);
   });
 
   it("maps slugs to products and paths", () => {
@@ -506,7 +506,7 @@ In P4's orders test (`apps/web/app/api/pay/pay.test.ts`), the premium refusal st
     vi.stubEnv("STARLOG_PREMIUM", "on");
     const res = await order(b, { productId: "match", returnTo: "/premium/match/preview", ack: true });
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ amount: 9900, orderName: "스타로그 우리 사이 궁합" });
+    expect(await res.json()).toMatchObject({ amount: 7900, orderName: "스타로그 우리 사이 궁합" });
   });
 ```
 
@@ -526,10 +526,10 @@ Expected: FAIL (modules not found; premium not deliverable).
      * named after its tradition in the UI.
      */
     premium: [
-      { id: "tarot-deep", slug: "deep-tarot", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 5900, opens: "", opensAt: "", closesAt: "" },
-      { id: "match", slug: "match", name: "우리 사이 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 9900, opens: "", opensAt: "", closesAt: "" },
+      { id: "tarot-deep", slug: "deep-tarot", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, opens: "", opensAt: "", closesAt: "" },
+      { id: "match", slug: "match", name: "우리 사이 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 7900, opens: "", opensAt: "", closesAt: "" },
       {
-        id: "newyear-2027", slug: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 9900,
+        id: "newyear-2027", slug: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 7900,
         opens: "11월 15일 0시 오픈", opensAt: "2026-11-15T00:00:00+09:00", closesAt: "2027-12-01T00:00:00+09:00",
       },
     ],
@@ -826,7 +826,7 @@ In `reserveUnlock`, add `earmarked?: boolean` to the input and make the lot quer
 ```ts
   const { userId, productId, currency, units, now, earmarked = false } = input;
   // Premium readings open only from lots bought for them: a future 달빛 pack (product_id NULL)
-  // must never open a 9,900원 product at one unit.
+  // must never open a 7,900원 product at one unit.
   const scope = earmarked ? "product_id = ?" : "(product_id IS NULL OR product_id = ?)";
 ```
 
@@ -5623,14 +5623,14 @@ describe("PremiumUnlock", () => {
   it("asks a guest to log in first, with the price and what it holds", () => {
     render(<PremiumUnlock id="match" account={{ payments: true, owner: false, user: null }} open opensAt={null} returnTo="/premium/match/preview" onOpen={vi.fn()} />);
     expect(screen.getByRole("link", { name: "로그인하고 결제하기" })).toBeTruthy();
-    expect(screen.getByText("9,900원")).toBeTruthy();
+    expect(screen.getByText("7,900원")).toBeTruthy();
     expect(screen.getByText("사주 궁합과 카드 5장 풀이 전체 · 약 5,000자")).toBeTruthy();
     expect(primaries()).toHaveLength(1);
   });
 
   it("sends a logged-in user to checkout for this product", () => {
     render(<PremiumUnlock id="tarot-deep" account={{ payments: true, owner: false, user: user() }} open opensAt={null} returnTo="/premium/deep-tarot/result" onOpen={vi.fn()} />);
-    expect(screen.getByRole("link", { name: "5,900원 결제하고 보기" }).getAttribute("href")).toBe("/pay/checkout?product=tarot-deep&returnTo=%2Fpremium%2Fdeep-tarot%2Fresult");
+    expect(screen.getByRole("link", { name: "7,900원 결제하고 보기" }).getAttribute("href")).toBe("/pay/checkout?product=tarot-deep&returnTo=%2Fpremium%2Fdeep-tarot%2Fresult");
   });
 
   it("opens a purchase already made, even while sales are closed", () => {
@@ -5993,7 +5993,7 @@ git commit -m "feat(web): 2027 신년운세 flow — profile, preview, three-par
 - [ ] **Step 1: Write the failing tests**
 
 `apps/web/app/premium/landing.test.tsx` (jsdom, render the three landing pages' bodies; mock `fetch` for the status):
-- each shows its name and price (`5,900원`, `9,900원`, `9,900원`), "이어서 물어보기 5번", a link to its sample and to `/refund`;
+- each shows its name and price (`7,900원` for all three), "이어서 물어보기 5번", a link to its sample and to `/refund`;
 - the JSON-LD parses and has `offers.priceCurrency === "KRW"` and the right price;
 - no page text matches `/켈틱|셀틱|celtic|베타|오픈 기념|Claude|Anthropic|GPT/i`;
 - the new-year CTA reads `11월 15일 0시에 열려요` when the status says closed with an `opensAt`.
@@ -6494,7 +6494,7 @@ console.log(`${pairs.length} pairs → ${join(out, "pairs")} (key: apps/web/test
   1. 6/6 golden cases complete (no `QUALITY`), mean attempts per part ≤ 1.3;
   2. judge mean ≥ 40/50; 안전 = 5 on every output; no criterion mean < 3.5;
   3. vs competitor captures: win or tie on ≥ 80% of pairs;
-  4. measured AI cost (reading + 2 follow-ups) ≤ 12% of the price, or the owner signs off in writing (expected: 심층 타로 needs the levers in spec §11 first);
+  4. measured AI cost (reading + 2 follow-ups) ≤ 12% of the price, or the owner signs off in writing (at 7,900원 the cap is 948원; expected: only 2027 신년운세's high end, about 965원, may need the levers in spec §11 first);
   5. part time p95 ≤ 150 s;
   6. the owner reads one output per product and approves it.
 
@@ -6518,7 +6518,7 @@ git commit -m "test(eval): premium golden set, blind judge, smoke results; promp
 - Modify: `apps/web/playwright.config.ts` (env `STARLOG_PREMIUM=owner` for the dev server, next to P4's `STARLOG_PAYMENTS=owner`)
 
 - [ ] **Step 1: e2e** (`STARLOG_AI=mock`, `STARLOG_PAY=mock`, `STARLOG_KAKAO=mock`, `STARLOG_CF_DEV=1`, owner pass set through `/api/owner` in a `beforeEach`):
-  - 심층 타로: `/premium/deep-tarot` → `시작하기` → builder (chip `심층 타로 · 카드 10장`) → situation → draw 10 → result shows 10 cards, the first paragraph, 17 locked headings → `로그인하고 결제하기` → mock login → `5,900원 결제하고 보기` → mock checkout → back with `unlock=paid` → waiting screen `1/2` then `2/2` → chapter with 10 position sections → one follow-up (`남은 질문 4번`).
+  - 심층 타로: `/premium/deep-tarot` → `시작하기` → builder (chip `심층 타로 · 카드 10장`) → situation → draw 10 → result shows 10 cards, the first paragraph, 17 locked headings → `로그인하고 결제하기` → mock login → `7,900원 결제하고 보기` → mock checkout → back with `unlock=paid` → waiting screen `1/2` then `2/2` → chapter with 10 position sections → one follow-up (`남은 질문 4번`).
   - 우리 사이 궁합: `/premium/match` → form (saved profile from a prior saju visit, partner fields, `친구`, consent) → draw 5 → preview with both charts → pay → chapter with the two groups.
   - 2027 신년운세: owner pass, preview → `운영자로 무료 열기` → `1/3`, `2/3`, `3/3` → chapter with 12 months.
   - Interrupt: start the deep reading, stop the server response after part 1 (route interception aborts the second request) → error copy with `이어서 쓰기` → click → only part 2 is requested again (count requests) → chapter.
@@ -6574,4 +6574,4 @@ git commit -m "test(e2e): premium flows end to end; runbook for the premium roll
 
 Known gaps an implementer should not "fix" silently:
 - The premium validators cannot judge every invented image detail (the standard ones cannot either); the blind judge covers it in Task 25.
-- The cost bar for 심층 타로 with follow-ups is expected to need the levers in spec §11 or an owner decision (Task 25 Step 8.4).
+- The cost bar for 2027 신년운세 with follow-ups (high end about 965원 against the 948원 cap at 7,900원) is expected to need the levers in spec §11 or an owner decision (Task 25 Step 8.4).
