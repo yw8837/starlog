@@ -82,7 +82,17 @@ export default defineConfig({
         reuseExistingServer: true,
         timeout: 180_000,
         // Never the real API: .env.local holds a real key. e2e/global-setup.ts also refuses a
-        // reused server that is not in mock mode.
-        env: { STARLOG_AI: "mock", STARLOG_SIGNING_SECRET: E2E_SIGNING_SECRET },
+        // reused server that is not in mock mode. Accounts and payments run in owner mode against
+        // the local D1 with mock Kakao and mock Toss: only a browser with the owner pass (e2e/pay-flow
+        // spec) sees sales, everyone else sees today's site. A reused dev server keeps its old env.
+        env: {
+          STARLOG_AI: "mock",
+          STARLOG_SIGNING_SECRET: E2E_SIGNING_SECRET,
+          STARLOG_CF_DEV: "1",
+          STARLOG_PAYMENTS: "owner",
+          STARLOG_PAY: "mock",
+          STARLOG_KAKAO: "mock",
+          STARLOG_OWNER_CODE: process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001",
+        },
       },
 });

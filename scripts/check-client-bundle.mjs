@@ -1,5 +1,6 @@
-// Fails when paid reading text reaches the client bundle (apps/web/.next/static), or when an AI
-// model or vendor name does (model names stay blind on every user surface; ids like claude-…).
+// Fails when paid reading text reaches the client bundle (apps/web/.next/static), when an AI
+// model or vendor name does (model names stay blind on every user surface; ids like claude-…), or
+// when a secret does (Toss secret-key prefixes, and the real values this shell holds).
 // Paid text may only travel as server-rendered props of an opened chapter, never in static JS/CSS.
 // usage: pnpm check:bundle   (after `pnpm build`; `pnpm build` runs it too)
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -49,6 +50,18 @@ for (const file of samples) {
  */
 const blindProbes = ["claude-", "Claude", "클로드", "Opus", "오푸스", "Sonnet", "GPT", "gemini-", "Google Gemini", "제미나이"];
 
+// Secrets must never reach the browser: Toss secret-key prefixes, and the real values when this shell
+// has them (reported by name only, never printed).
+const SECRET_PREFIXES = ["test_gsk_", "live_gsk_", "test_sk_", "live_sk_"];
+const SECRET_NAMES = ["TOSS_SECRET_KEY", "KAKAO_CLIENT_SECRET", "STARLOG_ACCOUNT_SECRET", "STARLOG_SIGNING_SECRET", "STARLOG_CRON_SECRET", "ANTHROPIC_API_KEY", "STARLOG_OWNER_CODE"];
+const secretProbes = [
+  ...SECRET_PREFIXES.map((prefix) => ({ label: `secret key prefix ${prefix}`, value: prefix })),
+  ...SECRET_NAMES.flatMap((name) => {
+    const value = process.env[name]?.trim();
+    return value && value.length >= 8 ? [{ label: `value of ${name}`, value }] : [];
+  }),
+];
+
 if (!existsSync(staticDir)) {
   console.error(`check-client-bundle: ${relative(root, staticDir)} not found. Run \`pnpm build\` first.`);
   process.exit(2);
@@ -85,11 +98,14 @@ for (const path of files(staticDir)) {
   for (const name of blindProbes) {
     if (forms(name).some((form) => text.includes(form))) hits.push(`${relative(root, path)}: model/vendor name "${name}"`);
   }
+  for (const probe of secretProbes) {
+    if (text.includes(probe.value)) hits.push(`${relative(root, path)}: ${probe.label}`);
+  }
 }
 
 if (hits.length > 0) {
-  console.error(`check-client-bundle: paid text or a model name found in the client bundle (${hits.length} hits):`);
+  console.error(`check-client-bundle: paid text, model names or secrets found in the client bundle (${hits.length} hits):`);
   for (const hit of hits) console.error(`  ${hit}`);
   process.exit(1);
 }
-console.log(`check-client-bundle: ok, ${probes.length} paid-text probes, ${blindProbes.length} model-name probes, ${scanned} static files, 0 hits`);
+console.log(`check-client-bundle: ok, ${probes.length} paid-text probes, ${blindProbes.length} model-name probes, ${secretProbes.length} secret probes, ${scanned} static files, 0 hits`);
