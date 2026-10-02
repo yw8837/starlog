@@ -53,7 +53,8 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
   const activeRef = useRef<number | null>(null);
   const [focusSlot, setFocusSlot] = useState(Math.floor(indexes.length / 2));
   const scrubbing = useRef(false);
-  const suppressClick = useRef(false);
+  /** Until when (Date.now()) the click that follows a touch is ignored; 0 when none is. */
+  const ignoreClickUntil = useRef(0);
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
   const full = picked.length >= max;
 
@@ -70,7 +71,7 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
   };
 
   const onPointerDown = (e: PointerEvent) => {
-    suppressClick.current = false;
+    ignoreClickUntil.current = 0;
     if (e.pointerType === "mouse") return;
     scrubbing.current = true;
     setActive(indexAt(e.clientX, e.clientY));
@@ -88,9 +89,9 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
     setActive(null);
     // A touch is decided here, on the card under the finger. The click the browser sends next is
     // ignored whether or not this picked: touch adjustment can retarget it to a neighbour (a re-tap
-    // on a picked, lifted card would otherwise pick the card beside it).
-    suppressClick.current = true;
-    window.setTimeout(() => (suppressClick.current = false), 500);
+    // on a picked, lifted card would otherwise pick the card beside it). A deadline, not a timer, so
+    // an earlier tap's wait cannot end this one's.
+    ignoreClickUntil.current = Date.now() + 500;
     if (index !== null && canPick(index)) onPick(index);
   };
 
@@ -100,10 +101,7 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
   };
 
   const onClick = (index: number) => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return;
-    }
+    if (Date.now() < ignoreClickUntil.current) return;
     if (canPick(index)) onPick(index);
   };
 

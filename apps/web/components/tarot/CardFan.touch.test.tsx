@@ -42,6 +42,29 @@ describe("CardFan on touch", () => {
     expect(onPick).not.toHaveBeenCalled();
   });
 
+  it("ignores the retargeted click of a quick second tap, even when the first tap's wait runs out in between", () => {
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn();
+      const { rerender } = render(<CardFan picked={[]} max={3} onPick={onPick} />);
+      touchTap(SIXTH!, SIXTH!);
+      expect(onPick).toHaveBeenCalledWith(SIXTH);
+      rerender(<CardFan picked={[SIXTH!]} max={3} onPick={onPick} />);
+
+      // 480 ms later the finger taps the lifted card again; its click arrives after the first tap's 500 ms.
+      vi.advanceTimersByTime(480);
+      Object.defineProperty(document, "elementFromPoint", { configurable: true, value: () => fanButton(SIXTH!) });
+      const fan = fanButton(SIXTH!).parentElement!;
+      fireEvent.pointerDown(fan, { pointerType: "touch", clientX: 85, clientY: 520 });
+      fireEvent.pointerUp(fan, { pointerType: "touch", clientX: 85, clientY: 520 });
+      vi.advanceTimersByTime(30);
+      fireEvent.click(fanButton(SEVENTH!));
+      expect(onPick).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("picks the card under the finger once, even with the click that follows", () => {
     const onPick = vi.fn();
     render(<CardFan picked={[]} max={3} onPick={onPick} />);
