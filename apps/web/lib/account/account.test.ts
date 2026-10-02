@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { errorPayload, type ErrorCode } from "@/lib/api/http";
+import { errorPayload, setCookie, type ErrorCode } from "@/lib/api/http";
 import { setTestDb } from "@/lib/db";
 import { migratedTestD1 } from "@/lib/db/testing/migrate";
 import { signingSecret } from "@/lib/security/sign";
@@ -7,7 +7,8 @@ import { openAccount, sameOrigin } from "./request";
 import { safeReturnTo, withQuery } from "./returnTo";
 import { SECRET_CHECK_KEY, accountSecretMatches, resetSecretCheck } from "./secretCheck";
 import { accountSecret, kakaoKey, openJson, sealJson, secretCheckValue } from "./secrets";
-import { CLEAR_SESSION, SESSION_COOKIE, SESSION_TTL_MS, createSession, readSession, revokeSession } from "./session";
+import { oauthCookieName } from "./oauthState";
+import { SESSION_TTL_MS, clearSession, createSession, readSession, revokeSession, sessionCookieName } from "./session";
 import { cleanNickname, loginKakaoUser, userByKakaoKey, userById } from "./users";
 
 const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
@@ -19,6 +20,7 @@ afterEach(() => {
   setTestDb(null);
   resetSecretCheck();
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 async function login(db: ReturnType<typeof migratedTestD1>, key: string, nickname = "별빛", now = NOW) {
@@ -128,7 +130,7 @@ describe("sessions", () => {
     const db = migratedTestD1();
     const { user } = await login(db, "k1");
     const { id, cookie } = await createSession(db, user.id, SIGNING, NOW);
-    expect(cookie).toMatchObject({ name: SESSION_COOKIE, maxAge: SESSION_TTL_MS / 1000 });
+    expect(cookie).toMatchObject({ name: "sl_sid", maxAge: SESSION_TTL_MS / 1000 });
     expect((await readSession(db, cookie.value, SIGNING, NOW + 1000))?.user.id).toBe(user.id);
     expect(await readSession(db, cookie.value, SIGNING, NOW + SESSION_TTL_MS)).toBeNull();
     expect(await readSession(db, cookie.value, `${SIGNING}x`, NOW)).toBeNull();
@@ -138,7 +140,31 @@ describe("sessions", () => {
     const second = await createSession(db, user.id, SIGNING, NOW);
     await db.prepare("UPDATE users SET deleted_at = ? WHERE id = ?").bind(NOW, user.id).run();
     expect(await readSession(db, second.cookie.value, SIGNING, NOW + 1)).toBeNull();
-    expect(CLEAR_SESSION).toEqual({ name: SESSION_COOKIE, value: "", maxAge: 0 });
+    expect(clearSession()).toEqual({ name: "sl_sid", value: "", maxAge: 0 });
+  });
+
+  it("names the login cookies __Host- in production (Secure, Path=/, no Domain) and plainly on http://localhost", () => {
+    const prod = env({ NODE_ENV: "production" });
+    expect([sessionCookieName(prod), oauthCookieName(prod)]).toEqual(["__Host-sl_sid", "__Host-sl_oauth"]);
+    expect([sessionCookieName(env({ NODE_ENV: "development" })), oauthCookieName(env({ NODE_ENV: "test" }))]).toEqual(["sl_sid", "sl_oauth"]);
+    expect(setCookie(sessionCookieName(prod), "v", 60, prod)).toBe("__Host-sl_sid=v; Path=/; Max-Age=60; HttpOnly; SameSite=Lax; Secure");
+  });
+
+  it("reads the session in production only from the __Host- cookie it writes", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("STARLOG_SIGNING_SECRET", SIGNING);
+    vi.stubEnv("STARLOG_ACCOUNT_SECRET", ACCOUNT);
+    const db = migratedTestD1();
+    setTestDb(db);
+    const { user } = await login(db, "k1", "별빛", Date.now());
+    const { cookie } = await createSession(db, user.id, SIGNING, Date.now());
+    expect(cookie.name).toBe("__Host-sl_sid");
+    expect(clearSession().name).toBe("__Host-sl_sid");
+    const request = (value: string) => new Request("https://starlog.yeolmaeapps.kr/api/me", { headers: { cookie: value } });
+    const hosted = await openAccount(request(`__Host-sl_sid=${encodeURIComponent(cookie.value)}`));
+    expect(hosted instanceof Response ? hosted.status : hosted.session?.user.id).toBe(user.id);
+    const plain = await openAccount(request(`sl_sid=${encodeURIComponent(cookie.value)}`));
+    expect(plain instanceof Response ? plain.status : plain.session).toBeNull();
   });
 });
 
@@ -161,7 +187,7 @@ describe("request guards", () => {
     setTestDb(db);
     const { user } = await login(db, "k1", "별빛", Date.now());
     const { cookie } = await createSession(db, user.id, signingSecret()!, Date.now());
-    const ctx = await openAccount(request({ cookie: `${SESSION_COOKIE}=${encodeURIComponent(cookie.value)}` }));
+    const ctx = await openAccount(request({ cookie: `${sessionCookieName()}=${encodeURIComponent(cookie.value)}` }));
     if (ctx instanceof Response) throw new Error(`unexpected ${ctx.status}`);
     expect(ctx.session?.user.id).toBe(user.id);
     expect(ctx.owner).toBe(false);

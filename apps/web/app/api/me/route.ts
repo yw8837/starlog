@@ -1,5 +1,5 @@
 import { openAccount } from "@/lib/account/request";
-import { CLEAR_SESSION, SESSION_COOKIE } from "@/lib/account/session";
+import { clearSession, sessionCookieName } from "@/lib/account/session";
 import { json, parseCookies, serializeCookie } from "@/lib/api/http";
 import { walletSummary } from "@/lib/pay/ledger";
 import { loginOpen, paymentsMode, salesOpen } from "@/lib/pay/mode";
@@ -23,10 +23,10 @@ export async function GET(request: Request): Promise<Response> {
   const mode = paymentsMode();
   const payments = salesOpen(mode, owner);
   const login = loginOpen(mode, owner);
-  if (!cookies[SESSION_COOKIE]) return json({ payments, login, owner, user: null });
+  if (!cookies[sessionCookieName()]) return json({ payments, login, owner, user: null });
   const ctx = await openAccount(request, now);
   if (ctx instanceof Response) return json({ payments: false, login: false, owner, user: null });
-  if (!ctx.session) return json({ payments, login, owner, user: null }, { cookies: [serializeCookie(CLEAR_SESSION)] });
+  if (!ctx.session) return json({ payments, login, owner, user: null }, { cookies: [serializeCookie(clearSession())] });
   const wallet = await walletSummary(ctx.db, ctx.session.user.id, now);
   return json({
     payments,

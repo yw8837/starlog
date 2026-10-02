@@ -1,11 +1,11 @@
 import type { CookieSpec } from "@/lib/api/http";
 import { deleteAccount } from "@/lib/account/deletion";
 import { KakaoError, kakaoConfigProblems, kakaoLogin, kakaoUnlink } from "@/lib/account/kakao";
-import { CLEAR_OAUTH, OAUTH_COOKIE, openOAuthState } from "@/lib/account/oauthState";
+import { clearOAuth, oauthCookieName, openOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute, type AccountContext } from "@/lib/account/request";
 import { kakaoKey } from "@/lib/account/secrets";
-import { CLEAR_SESSION, createSession, revokeSession } from "@/lib/account/session";
+import { clearSession, createSession, revokeSession } from "@/lib/account/session";
 import { loginKakaoUser, userByKakaoKey } from "@/lib/account/users";
 import { SITE } from "@/lib/config";
 import { grantSignupGift } from "@/lib/pay/ledger";
@@ -15,7 +15,7 @@ import { tossClient } from "@/lib/pay/toss";
 type Back = (flag: string, cookies?: Array<CookieSpec | string>) => Response;
 
 /**
- * GET ?code&state (or ?error&state) from Kakao. The state must match this browser's sl_oauth cookie,
+ * GET ?code&state (or ?error&state) from Kakao. The state must match this browser's OAuth state cookie (oauthCookieName),
  * and the Kakao settings are checked again before the code is used.
  * - login: find the account, or create one while sales are open for this device (paused: existing
  *   accounts only, else ?login=closed). While sales are open the signup gift is tried on every login
@@ -26,14 +26,14 @@ type Back = (flag: string, cookies?: Array<CookieSpec | string>) => Response;
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const ctx = await openAccountRoute(request, { limiter: "AUTH_LIMITER" });
-  if (ctx instanceof Response) return redirectTo(request, "/", { login: "unavailable" }, [CLEAR_OAUTH]);
-  const intent = await openOAuthState(ctx.cookies[OAUTH_COOKIE], url.searchParams.get("state"), ctx.secret, ctx.now);
-  if (!intent) return redirectTo(request, "/", { login: "failed" }, [CLEAR_OAUTH]);
+  if (ctx instanceof Response) return redirectTo(request, "/", { login: "unavailable" }, [clearOAuth()]);
+  const intent = await openOAuthState(ctx.cookies[oauthCookieName()], url.searchParams.get("state"), ctx.secret, ctx.now);
+  if (!intent) return redirectTo(request, "/", { login: "failed" }, [clearOAuth()]);
   const deleting = intent.purpose === "delete";
   const back: Back = (flag, cookies = []) =>
     deleting
-      ? redirectTo(request, "/me", { delete: flag }, [CLEAR_OAUTH, ...cookies])
-      : redirectTo(request, intent.returnTo, { login: flag }, [CLEAR_OAUTH, ...cookies]);
+      ? redirectTo(request, "/me", { delete: flag }, [clearOAuth(), ...cookies])
+      : redirectTo(request, intent.returnTo, { login: flag }, [clearOAuth(), ...cookies]);
   if (url.searchParams.get("error")) return back("cancel");
   const code = url.searchParams.get("code");
   if (!code) return back("failed");
@@ -76,5 +76,5 @@ async function finishDelete(request: Request, ctx: AccountContext, sid: string |
   const outcome = await deleteAccount(ctx.db, tossClient(), { userId: ctx.session.user.id, now: ctx.now });
   if (!outcome.ok) return back(outcome.code === "PENDING" ? "pending" : outcome.code === "IN_USE" ? "in-use" : "refund-failed");
   if (!(await kakaoUnlink(accessToken))) console.warn(JSON.stringify({ evt: "auth.kakao_unlink_failed" }));
-  return redirectTo(request, "/me", { account: "deleted" }, [CLEAR_OAUTH, CLEAR_SESSION]);
+  return redirectTo(request, "/me", { account: "deleted" }, [clearOAuth(), clearSession()]);
 }

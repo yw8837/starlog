@@ -1,5 +1,5 @@
 import "server-only";
-import type { CookieSpec } from "@/lib/api/http";
+import { hostCookieName, type CookieSpec } from "@/lib/api/http";
 import { randomId, safeEqual, signToken, verifyToken, type SignedPayload } from "@/lib/security/sign";
 import { safeReturnTo } from "./returnTo";
 
@@ -10,7 +10,8 @@ import { safeReturnTo } from "./returnTo";
  * re-check) and whether the 만 14세 box was ticked.
  */
 
-export const OAUTH_COOKIE = "sl_oauth";
+/** `__Host-sl_oauth` in production, `sl_oauth` on localhost (http.ts hostCookieName). */
+export const oauthCookieName = (env: NodeJS.ProcessEnv = process.env) => hostCookieName("sl_oauth", env);
 export const OAUTH_TTL_MS = 10 * 60 * 1000;
 
 export type OAuthPurpose = "login" | "delete";
@@ -32,7 +33,7 @@ interface OAuthPayload extends SignedPayload, OAuthIntent {
 export async function issueOAuthState(intent: OAuthIntent, secret: string, now: number): Promise<{ state: string; cookie: CookieSpec }> {
   const state = randomId(24);
   const payload: OAuthPayload = { k: "oauth", state, ...intent, exp: now + OAUTH_TTL_MS };
-  return { state, cookie: { name: OAUTH_COOKIE, value: await signToken(payload, secret), maxAge: OAUTH_TTL_MS / 1000 } };
+  return { state, cookie: { name: oauthCookieName(), value: await signToken(payload, secret), maxAge: OAUTH_TTL_MS / 1000 } };
 }
 
 /** The intent behind a callback, or null when the state is missing, forged, expired or not this browser's. */
@@ -48,4 +49,4 @@ export async function openOAuthState(cookie: string | undefined, state: string |
   };
 }
 
-export const CLEAR_OAUTH: CookieSpec = { name: OAUTH_COOKIE, value: "", maxAge: 0 };
+export const clearOAuth = (): CookieSpec => ({ name: oauthCookieName(), value: "", maxAge: 0 });

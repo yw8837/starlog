@@ -7,7 +7,7 @@ import { rateLimit, type LimiterName } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 import { accountSecretMatches } from "./secretCheck";
 import { accountSecret } from "./secrets";
-import { SESSION_COOKIE, readSession, type Session } from "./session";
+import { readSession, sessionCookieName, type Session } from "./session";
 
 export interface AccountContext {
   db: D1Binding;
@@ -56,7 +56,7 @@ export async function openAccount(request: Request, now: number = Date.now()): P
     now,
     cookies,
     owner: await isOwner(cookies[OWNER_COOKIE], secret, now),
-    session: await readSession(db, cookies[SESSION_COOKIE], secret, now),
+    session: await readSession(db, cookies[sessionCookieName()], secret, now),
   };
 }
 

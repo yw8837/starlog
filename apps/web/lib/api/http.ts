@@ -156,6 +156,15 @@ export interface CookieSpec {
 
 export const serializeCookie = (spec: CookieSpec) => setCookie(spec.name, spec.value, spec.maxAge);
 
+/**
+ * The name a login cookie goes by, for whoever reads or writes it: `__Host-<name>` in production,
+ * where setCookie makes every cookie Secure with Path=/ and no Domain, so only this origin over
+ * https can set it; the plain name on http://localhost, which cannot set a __Host- cookie.
+ */
+export function hostCookieName(name: string, env: NodeJS.ProcessEnv = process.env): string {
+  return env.NODE_ENV === "production" ? `__Host-${name}` : name;
+}
+
 /** httpOnly, SameSite=Lax, Secure (except plain-http local dev). */
 export function setCookie(name: string, value: string, maxAgeSeconds: number, env: NodeJS.ProcessEnv = process.env): string {
   const secure = env.NODE_ENV === "production" ? "; Secure" : "";
