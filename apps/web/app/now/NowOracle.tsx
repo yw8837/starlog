@@ -9,6 +9,7 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { SITE, won } from "@/lib/config";
 import { drawNow, type NowDraw } from "@/lib/decision";
+import { guideHref } from "@/lib/hosts";
 import s from "./NowOracle.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 
@@ -388,13 +389,13 @@ export function NowOracle({ instant = false }: NowOracleProps) {
             <li>답은 가 보기, 조금 더 지켜보기, 다른 길도 살펴보기 가운데 한쪽으로 기울어요.</li>
             <li>
               횟수 제한 없이 무료예요. 다만 같은 고민으로 여러 번 다시 뽑기보다 처음 나온 카드를 곱씹어 보길 권해요.{" "}
-              <Link href="/guide/redrawing-same-question" className={s.aboutLink}>
+              <Link href={guideHref("/guide/redrawing-same-question")} className={s.aboutLink}>
                 같은 질문으로 다시 뽑아도 될까요?
               </Link>
             </li>
             <li>건강, 돈, 법률처럼 무거운 결정은 꼭 전문가와 상의해 주세요.</li>
           </ul>
-          <Link href="/guide/now-card-how-to" className={s.aboutMore}>
+          <Link href={guideHref("/guide/now-card-how-to")} className={s.aboutMore}>
             더 자세히: 지금의 한 장 사용법 <span aria-hidden="true">→</span>
           </Link>
         </div>

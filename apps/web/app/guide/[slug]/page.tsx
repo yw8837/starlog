@@ -13,6 +13,7 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig } from "@/lib/ads";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath } from "@/lib/guide";
+import { appHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
 import { koreanDate } from "@/lib/legal";
 import { pageMetadata } from "@/lib/seo";
@@ -60,7 +61,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={41} moon={false} />
-      <TabBar active="guide" />
+      <TabBar active="guide" host="guide" />
       <main className="page-col page-wide">
         <JsonLd data={guideArticleJsonLd(article)} />
         <JsonLd data={guideArticleBreadcrumbJsonLd(article)} />
@@ -108,7 +109,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
 
           <aside className={s.cta} aria-label={cta.label}>
             <p className={s.ctaText}>{cta.text}</p>
-            <Button href={cta.href} block trailing="→">
+            <Button href={appHref(cta.href)} block trailing="→">
               {cta.label}
             </Button>
           </aside>
@@ -132,7 +133,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
           </nav>
         </article>
       </main>
-      <Footer />
+      <Footer host="guide" />
     </div>
   );
 }

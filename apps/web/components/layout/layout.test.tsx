@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SITE } from "@/lib/config";
 import { Footer } from "./Footer";
 import { TabBar } from "./TabBar";
@@ -13,7 +13,12 @@ vi.mock("@/lib/config", async (importOriginal) => {
   return { ...actual, SITE: { ...actual.SITE, business: { ...actual.SITE.business, address: "ADDRESS-SENTINEL" } } };
 });
 
-afterEach(cleanup);
+// The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; these tests run on one origin unless a test says so.
+beforeEach(() => vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", ""));
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 describe("TabBar", () => {
   // Two variants share the name; CSS shows the bottom bar below 1024px and the header pills above.
@@ -41,6 +46,31 @@ describe("TabBar", () => {
     render(<TabBar active="story" />);
     expect(texts(bar())).toEqual(["홈", "내 기록", "가이드", "내 정보"]);
     expect(hrefs(bar())).toEqual(["/", "/story", "/guide/tarot", "/me"]);
+  });
+
+  it("on an app page with the hosts split, only the guide tab leaves for the root domain", () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    render(<TabBar active="story" />);
+    expect(hrefs(pills())).toEqual(["/", `${SITE.guideUrl}/guide/tarot`, "/faq", "/story", "/me"]);
+    expect(hrefs(bar())).toEqual(["/", "/story", `${SITE.guideUrl}/guide/tarot`, "/me"]);
+    expect(screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href")).toBe("/");
+  });
+
+  it("on a guide page, the app tabs and the wordmark go to the app host when the hosts are split, and the guide tab stays a path", () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    render(<TabBar active="guide" host="guide" />);
+    expect(hrefs(pills())).toEqual([`${SITE.url}/`, "/guide/tarot", `${SITE.url}/faq`, `${SITE.url}/story`, `${SITE.url}/me`]);
+    expect(hrefs(bar())).toEqual([`${SITE.url}/`, `${SITE.url}/story`, "/guide/tarot", `${SITE.url}/me`]);
+    expect(screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href")).toBe(`${SITE.url}/`);
+    // The active tab is still marked.
+    for (const nav of navs()) expect([...nav.querySelectorAll("a")].filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent)).toEqual(["가이드"]);
+  });
+
+  it("on a guide page with one origin (dev, preview, e2e), every link is a path as before", () => {
+    render(<TabBar active="guide" host="guide" />);
+    expect(hrefs(pills())).toEqual(["/", "/guide/tarot", "/faq", "/story", "/me"]);
+    expect(hrefs(bar())).toEqual(["/", "/story", "/guide/tarot", "/me"]);
+    expect(screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href")).toBe("/");
   });
 
   it("marks only the active tab as the current page, in both variants", () => {

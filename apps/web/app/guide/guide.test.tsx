@@ -101,3 +101,64 @@ describe("guide article metadata", () => {
     }
   });
 });
+
+/** The links a rendered guide page carries, by landmark. */
+function navLinks() {
+  const hrefs = (nav: HTMLElement) => within(nav).getAllByRole("link").map((a) => a.getAttribute("href"));
+  const [pills, bar] = screen.getAllByRole("navigation", { name: "주요 메뉴" }) as [HTMLElement, HTMLElement];
+  return {
+    brand: screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href"),
+    pills: hrefs(pills),
+    bar: hrefs(bar),
+    footer: hrefs(screen.getByRole("navigation", { name: "사이트 안내" })),
+  };
+}
+
+const APP = SITE.url;
+
+describe("links from a guide page", () => {
+  it.each(TABS)("$category tab: with one origin (dev, preview, e2e) every link stays a path", ({ Page }) => {
+    render(<Page />);
+    expect(navLinks()).toEqual({
+      brand: "/",
+      pills: ["/", "/guide/tarot", "/faq", "/story", "/me"],
+      bar: ["/", "/story", "/guide/tarot", "/me"],
+      footer: ["/about", "/how", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"],
+    });
+  });
+
+  it.each(TABS)("$category tab: on the real hosts, links to the app are absolute on the app host and its own links stay paths", ({ Page, category }) => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    render(<Page />);
+    expect(navLinks()).toEqual({
+      brand: `${APP}/`,
+      pills: [`${APP}/`, "/guide/tarot", `${APP}/faq`, `${APP}/story`, `${APP}/me`],
+      bar: [`${APP}/`, `${APP}/story`, "/guide/tarot", `${APP}/me`],
+      footer: [`${APP}/about`, `${APP}/how`, `${APP}/help`, `${APP}/faq`, "/guide/tarot", `${APP}/pricing`, `${APP}/terms`, `${APP}/privacy`, `${APP}/refund`],
+    });
+    // The tabs and the article cards are the guide's own pages: paths, so they stay on the root domain.
+    const tabs = within(screen.getByRole("navigation", { name: "가이드 분류" })).getAllByRole("link");
+    expect(tabs.map((a) => a.getAttribute("href"))).toEqual(["/guide/tarot", "/guide/saju"]);
+    const items = within(screen.getByRole("main").querySelector("ul") as HTMLElement).getAllByRole("link");
+    expect(items.map((a) => a.getAttribute("href"))).toEqual(articlesIn(category).map((a) => `/guide/${a.slug}`));
+  });
+
+  it.each([
+    ["the-hermit", "타로 보기", "/tarot/new?new=1"],
+    ["five-elements", "사주 보기", "/saju/new?new=1"],
+  ])("%s: the %s button starts the flow on the app host when the hosts are split, and with a path otherwise", async (slug, label, path) => {
+    const page = async () => GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">);
+    render(await page());
+    expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(path);
+    cleanup();
+
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    render(await page());
+    expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(`${APP}${path}`);
+    expect(navLinks()).toMatchObject({ brand: `${APP}/`, pills: [`${APP}/`, "/guide/tarot", `${APP}/faq`, `${APP}/story`, `${APP}/me`] });
+    // The way back and the related reads are guide pages: paths.
+    expect(screen.getByRole("link", { name: /가이드 목록으로/ }).getAttribute("href")).toMatch(/^\/guide\/(tarot|saju)$/);
+    const related = within(screen.getByRole("navigation", { name: "같이 읽어 볼 글" })).getAllByRole("link");
+    expect(related.every((a) => a.getAttribute("href")?.startsWith("/guide/"))).toBe(true);
+  });
+});

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { SITE, businessFields } from "@/lib/config";
+import { linkHref, type SiteHost } from "@/lib/hosts";
 import { INFO_PAGES, SERVICE_LINKS } from "@/lib/infoPages";
 import { LEGAL_LINKS } from "@/lib/legal";
 import styles from "./Footer.module.css";
@@ -17,9 +18,11 @@ const LINKS: ReadonlyArray<FooterLink> = [...SERVICE_LINKS, ...LEGAL_LINKS].map(
  * One block: the wordmark and a one-line tagline, one wrapped row of links, then the business
  * notice (its fields come from businessFields in lib/config.ts). Items are spaced with gaps, never
  * with "·", so a wrapped line never starts or ends on a separator, and every line may wrap inside
- * the column (the address is longer than a phone is wide).
+ * the column (the address is longer than a phone is wide). The guide pages pass `host="guide"`: they
+ * live on the root domain, so their links to the app go to the app host when the hosts are split
+ * (lib/hosts.ts); on the app host only the guide link leaves the page.
  */
-export function Footer() {
+export function Footer({ host = "app" }: { host?: SiteHost }) {
   const fields = businessFields(SITE.business);
   return (
     <footer className={styles.footer}>
@@ -32,7 +35,7 @@ export function Footer() {
           <ul className={styles.links}>
             {LINKS.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className={styles.link}>
+                <Link href={linkHref(link.href, host)} className={styles.link}>
                   {link.emphasis ? <strong className={styles.strong}>{link.label}</strong> : link.label}
                 </Link>
               </li>

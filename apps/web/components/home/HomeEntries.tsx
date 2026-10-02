@@ -6,6 +6,7 @@ import { AccordionItem } from "@/components/info/InfoPage";
 import info from "@/components/info/info.module.css";
 import { faqGroups, type FaqEntry } from "@/lib/faq";
 import { GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath } from "@/lib/guide";
+import { guideHref } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { ArrowIcon, ChevronIcon } from "./icons";
 import s from "./home.module.css";
@@ -149,7 +150,7 @@ export function HomeGuide() {
             알아 두면 좋은 이야기
           </h2>
         </div>
-        <Link href={guideIndexPath("tarot")} className={s.more}>
+        <Link href={guideHref(guideIndexPath("tarot"))} className={s.more}>
           전체 보기
           <ArrowIcon />
         </Link>
@@ -159,7 +160,7 @@ export function HomeGuide() {
         {GUIDE_CATEGORIES.map((category) => (
           <div key={category} className={s.guideGroup}>
             <h3 className={s.guideGroupTitle}>
-              <Link href={guideIndexPath(category)} className={s.guideGroupLink}>
+              <Link href={guideHref(guideIndexPath(category))} className={s.guideGroupLink}>
                 <span className={s.dot} data-tone={category} aria-hidden="true" />
                 {GUIDE_CATEGORY_LABEL[category]} 가이드
                 <ChevronIcon size={16} />
@@ -168,7 +169,7 @@ export function HomeGuide() {
             <ul className={s.guideList}>
               {articlesIn(category).slice(0, HOME_GUIDE_PER_TAB).map((article) => (
                 <li key={article.slug}>
-                  <Link href={`/guide/${article.slug}`} className={s.guideItem}>
+                  <Link href={guideHref(`/guide/${article.slug}`)} className={s.guideItem}>
                     <GuideThumb article={article} />
                     <span className={s.guideText}>
                       <span className={s.guideTitle}>{article.title}</span>

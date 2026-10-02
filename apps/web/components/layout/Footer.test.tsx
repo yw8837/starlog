@@ -27,10 +27,13 @@ const original = { ...business };
 describe("Footer", () => {
   beforeEach(() => {
     Object.assign(business, original);
+    // The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; these tests run on one origin unless a test says so.
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "");
   });
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllEnvs();
   });
 
   it("links the service pages, the guide, pricing and the policies, in that order", () => {
@@ -47,6 +50,45 @@ describe("Footer", () => {
       ["개인정보처리방침", "/privacy"],
       ["환불 정책", "/refund"],
     ]);
+  });
+
+  it("on an app page with the hosts split, only the guide link leaves for the root domain", () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    render(<Footer />);
+    const links = screen.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
+    expect(links).toEqual([
+      ["스타로그란?", "/about"],
+      ["풀이 과정", "/how"],
+      ["이용 가이드", "/help"],
+      ["FAQ", "/faq"],
+      ["가이드 글", `${SITE.guideUrl}/guide/tarot`],
+      ["가격 안내", "/pricing"],
+      ["이용약관", "/terms"],
+      ["개인정보처리방침", "/privacy"],
+      ["환불 정책", "/refund"],
+    ]);
+  });
+
+  it("on a guide page, every link to the app goes to the app host when the hosts are split, and the guide link stays a path", () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    render(<Footer host="guide" />);
+    const links = screen.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
+    expect(links).toEqual([
+      ["스타로그란?", `${SITE.url}/about`],
+      ["풀이 과정", `${SITE.url}/how`],
+      ["이용 가이드", `${SITE.url}/help`],
+      ["FAQ", `${SITE.url}/faq`],
+      ["가이드 글", "/guide/tarot"],
+      ["가격 안내", `${SITE.url}/pricing`],
+      ["이용약관", `${SITE.url}/terms`],
+      ["개인정보처리방침", `${SITE.url}/privacy`],
+      ["환불 정책", `${SITE.url}/refund`],
+    ]);
+  });
+
+  it("on a guide page with one origin, every link is a path as before", () => {
+    render(<Footer host="guide" />);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"]);
   });
 
   it("keeps every link in one labelled row", () => {

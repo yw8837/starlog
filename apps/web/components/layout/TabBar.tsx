@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { SITE } from "@/lib/config";
 import { guideIndexPath } from "@/lib/guide";
+import { linkHref, type SiteHost } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
 import styles from "./TabBar.module.css";
 
@@ -83,6 +84,12 @@ type TabBarProps = {
   active?: TabId;
   /** "desktop": only the header (pages that keep a back bar on phones, such as /faq). */
   only?: "desktop";
+  /**
+   * The host serving the page. The guide pages pass "guide": they live on the root domain, so their
+   * links to the app go to the app host (when the hosts are split, lib/hosts.ts). Everywhere else the
+   * app host serves the page, and only the guide tab leaves it.
+   */
+  host?: SiteHost;
 };
 
 /**
@@ -91,11 +98,11 @@ type TabBarProps = {
  * with display:none at the other width, so only one nav is ever in the accessibility tree. Render it
  * before <main>: on desktop it is the top of the page, and focus order should match.
  */
-export function TabBar({ active, only }: TabBarProps) {
+export function TabBar({ active, only, host = "app" }: TabBarProps) {
   return (
     <header className={styles.header}>
       <div className={styles.top}>
-        <Link href="/" className={styles.brand} aria-label={`${SITE.nameKo} 홈`}>
+        <Link href={linkHref("/", host)} className={styles.brand} aria-label={`${SITE.nameKo} 홈`}>
           <Wordmark />
         </Link>
         <nav className={styles.pills} aria-label="주요 메뉴">
@@ -105,7 +112,7 @@ export function TabBar({ active, only }: TabBarProps) {
               return (
                 <li key={tab.id}>
                   <Link
-                    href={tab.href}
+                    href={linkHref(tab.href, host)}
                     className={isActive ? `${styles.pill} ${styles.pillActive}` : styles.pill}
                     aria-current={isActive ? "page" : undefined}
                   >
@@ -126,7 +133,7 @@ export function TabBar({ active, only }: TabBarProps) {
               return (
                 <li key={tab.id} className={styles.cell}>
                   <Link
-                    href={tab.href}
+                    href={linkHref(tab.href, host)}
                     className={isActive ? `${styles.tab} ${styles.active}` : styles.tab}
                     aria-current={isActive ? "page" : undefined}
                   >

@@ -32,6 +32,8 @@ function reducedMotion(on: boolean) {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  // The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; these tests run on one origin unless a test says so.
+  vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "");
   const seeds = ["now-seed-first", "now-seed-second", "now-seed-third"];
   vi.spyOn(crypto, "randomUUID").mockImplementation(() => seeds.shift() as ReturnType<Crypto["randomUUID"]>);
   vi.spyOn(Math, "random").mockReturnValue(0.5);
@@ -42,6 +44,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
   window.matchMedia = undefined as unknown as typeof window.matchMedia;
   window.localStorage.clear();
@@ -201,5 +204,14 @@ describe("지금의 한 장 how-to", () => {
     expect(text).not.toMatch(/AI|인공지능|모델/);
     expect(within(panel).getByRole("link", { name: "같은 질문으로 다시 뽑아도 될까요?" }).getAttribute("href")).toBe("/guide/redrawing-same-question");
     expect(within(panel).getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ }).getAttribute("href")).toBe("/guide/now-card-how-to");
+  });
+
+  it("sends its two guide links to the root domain when the hosts are split: the guide lives there, not on the app host", () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    render(<NowOracle instant />);
+    fireEvent.click(screen.getByRole("button", { name: "어떻게 답이 나오나요?" }));
+    const panel = screen.getByRole("region", { name: "어떻게 답이 나오나요?" });
+    expect(within(panel).getByRole("link", { name: "같은 질문으로 다시 뽑아도 될까요?" }).getAttribute("href")).toBe(`${SITE.guideUrl}/guide/redrawing-same-question`);
+    expect(within(panel).getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ }).getAttribute("href")).toBe(`${SITE.guideUrl}/guide/now-card-how-to`);
   });
 });
