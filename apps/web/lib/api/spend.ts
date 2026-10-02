@@ -153,6 +153,24 @@ export async function addCost(krw: number, now: number): Promise<void> {
   noteCostWrite(false, Date.now());
 }
 
+/** P4: where a SpendLedger writes: the free-tier day total (addCost) or the paid book (addPaidCost). */
+export type CostSink = (krw: number, at: number) => Promise<void>;
+
+/** P4: paid book entries live long enough for a monthly look in the runbook. */
+const PAID_COST_TTL_SECONDS = 35 * 24 * 60 * 60;
+
+/**
+ * P4: the model cost of readings opened with a purchase, in `paidcost:<kstDay>:<shard>`. budgetState
+ * never reads these keys, so paid readings never close the free tier; the purchase price covers
+ * them (spec 11). A failed write is logged (write()) and does not count toward "unknown".
+ */
+export async function addPaidCost(krw: number, now: number): Promise<void> {
+  if (!Number.isFinite(krw) || krw === 0) return;
+  const key = `paidcost:${kstDay(now)}:${Math.floor(Math.random() * COST_SHARDS)}`;
+  const current = await read(key);
+  if (current !== null) await write(key, current + krw, PAID_COST_TTL_SECONDS);
+}
+
 export const krwOf = (usage: readonly Usage[]) => usdOf(usage) * krwPerUsd();
 
 /** True unless the budget is known to have room ("unknown" counts as over: fail closed). */
@@ -180,7 +198,7 @@ export class SpendLedger {
   private billedSinceReserve = true;
   private chain: Promise<void> = Promise.resolve();
 
-  constructor(private readonly clock: () => number = Date.now) {}
+  constructor(private readonly clock: () => number = Date.now, private readonly sink: CostSink = addCost) {} // P4: sink
 
   reserve(usage: readonly Usage[]): void {
     this.settleCall();
@@ -223,7 +241,7 @@ export class SpendLedger {
 
   private add(krw: number, at: number): void {
     if (krw === 0) return;
-    this.chain = this.chain.then(() => addCost(krw, at)).catch((error: unknown) => logKvError("spend.kv_error", "ledger", error));
+    this.chain = this.chain.then(() => this.sink(krw, at)).catch((error: unknown) => logKvError("spend.kv_error", "ledger", error));
   }
 }
 

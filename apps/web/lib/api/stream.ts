@@ -4,7 +4,7 @@ import type { GenerationHooks } from "@/lib/ai/provider";
 import { issueCommit } from "@/lib/security/commit";
 import { generationErrorPayload, json, serializeCookie, type CookieSpec, type Gate } from "./http";
 import { SectionScanner } from "./sections";
-import { SpendLedger, recordClientSpend, type SpendKind } from "./spend";
+import { SpendLedger, addCost, addPaidCost, recordClientSpend, type SpendKind } from "./spend"; // P4: cost books
 
 /**
  * Generation responses (.superpowers/sdd/2026-09-30-starlog-p2b/streaming-protocol.md). A request
@@ -30,6 +30,22 @@ export interface GenerationOutcome {
   cookies: CookieSpec[];
 }
 
+/**
+ * P4: how a credit-backed generation settles (spec 5.4). Everything runs inside the generation's
+ * keepAlive work, after run() and before the JSON body or the `done` event leaves.
+ * - `deliver` saves the reading and spends the reservation; what it returns joins the body (the
+ *   saved reading's id).
+ * - `recover` runs when deliver threw: what deliver would have returned if the save landed anyway
+ *   (its D1 answer was lost), else null.
+ * - `release` runs on every failure: generation error, budget, client gone, a save that did not
+ *   land. It must be idempotent and a no-op once delivered.
+ */
+export interface Settlement {
+  deliver(outcome: GenerationOutcome): Promise<Record<string, unknown>>;
+  recover(): Promise<Record<string, unknown> | null>;
+  release(): Promise<void>;
+}
+
 export interface RespondOptions {
   gate: Gate;
   /** cookies that do not depend on the outcome (a device id), set with the response headers */
@@ -38,6 +54,10 @@ export interface RespondOptions {
   spend?: SpendKind;
   budgetMs?: number;
   pingMs?: number;
+  /** P4: saves the reading and settles its credit before the client sees it; none for 오픈 기념 readings */
+  settle?: Settlement;
+  /** P4: a paid opening: its model cost goes to the paid book (addPaidCost), never the free-tier total */
+  paidCost?: boolean;
 }
 
 /** One signal for everything that should stop the generation: client gone, stream cancelled, budget spent. */
@@ -71,7 +91,7 @@ export async function respondGeneration(
   run: (hooks: GenerationHooks) => Promise<GenerationOutcome>,
   options: RespondOptions,
 ): Promise<Response> {
-  const { gate, startCookies = [], spend, budgetMs = GENERATION_BUDGET_MS, pingMs = PING_MS } = options;
+  const { gate, startCookies = [], spend, budgetMs = GENERATION_BUDGET_MS, pingMs = PING_MS, settle, paidCost } = options; // P4: settle, paidCost
   const start = startCookies.map(serializeCookie);
   // What the browser holds once the stream's own Set-Cookie headers land (the commit replaces these).
   const cookiesAfterStart: Record<string, string> = { ...gate.cookies };
@@ -79,7 +99,7 @@ export async function respondGeneration(
   // Charged before anything starts: leaving before `done` (or skipping /api/commit) is still counted.
   if (spend && !gate.owner) await recordClientSpend(gate.client, spend, gate.now);
   const abort = generationSignal(request, budgetMs);
-  const ledger = new SpendLedger();
+  const ledger = new SpendLedger(Date.now, paidCost ? addPaidCost : addCost); // P4: paid book
   const accounting = {
     signal: abort.signal,
     deadline: Date.now() + budgetMs,
@@ -87,16 +107,41 @@ export async function respondGeneration(
     onRelease: () => ledger.release(),
     onUsage: (usage: Parameters<SpendLedger["bill"]>[0]) => ledger.bill(usage),
   } satisfies GenerationHooks;
+  // P4: a failed release is not lost: the reservation expires (RESERVATION_MS) and a sweep returns it.
+  const release = async () => {
+    if (!settle) return;
+    try {
+      await settle.release();
+    } catch (error) {
+      console.error(JSON.stringify({ evt: "settle.release_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
+    }
+  };
+  // P4: the body the client gets: unchanged without a settlement; with one, saved (or found saved) first.
+  const settled = async (outcome: GenerationOutcome): Promise<unknown> => {
+    if (!settle) return outcome.body;
+    let extra: Record<string, unknown>;
+    try {
+      extra = await settle.deliver(outcome);
+    } catch (error) {
+      const recovered = await settle.recover().catch(() => null);
+      if (!recovered) throw error;
+      console.warn(JSON.stringify({ evt: "settle.recovered" }));
+      extra = recovered;
+    }
+    return { ...(outcome.body as Record<string, unknown>), ...extra };
+  };
 
   if (!wantsStream(request)) {
     const work = (async () => {
       try {
         const outcome = await run(accounting);
+        const body = await settled(outcome); // P4
         // One Set-Cookie per name: the outcome's cookie replaces a start cookie of the same name.
         const names = new Set(outcome.cookies.map((c) => c.name));
         const cookies = [...startCookies.filter((c) => !names.has(c.name)), ...outcome.cookies];
-        return json(outcome.body, { cookies: cookies.map(serializeCookie) });
+        return json(body, { cookies: cookies.map(serializeCookie) });
       } catch (error) {
+        await release(); // P4
         const { status, body } = generationErrorPayload(error);
         return json(body, { status, cookies: start });
       } finally {
@@ -137,9 +182,11 @@ export async function respondGeneration(
       keepAlive((async () => {
         try {
           const outcome = await run(hooks);
+          const data = await settled(outcome); // P4: saved and spent before done
           const commit = outcome.cookies.length ? await issueCommit(outcome.cookies, cookiesAfterStart, gate.secret, gate.now) : null;
-          write({ type: "done", data: outcome.body, ...(commit ? { commit } : {}) });
+          write({ type: "done", data, ...(commit ? { commit } : {}) });
         } catch (error) {
+          await release(); // P4
           const { status, body: errorBody } = generationErrorPayload(error);
           write({ type: "error", status, body: errorBody });
         } finally {
