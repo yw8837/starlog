@@ -2,6 +2,8 @@
 
 스타로그(https://starlog.yeolmaeapps.kr)를 구글, 네이버, 빙, 다음에 등록하고 색인을 요청하는 순서예요. 코드 쪽 준비(robots.txt, sitemap.xml, 구조화 데이터, llms.txt, RSS, IndexNow 키)는 끝나 있으니 아래는 운영자가 콘솔에서 할 일만 적었어요. 색인과 노출 시점은 검색엔진이 정하고, 등록했다고 순위나 노출이 약속되지는 않아요.
 
+> 가이드(`/guide/*`)는 2026-10-03부터 루트 도메인 `https://yeolmaeapps.kr`에 있어요. 가이드의 사이트맵, RSS, 소유확인, URL 검사 주소는 [guide-domain.md](guide-domain.md)를 먼저 보세요. 이 문서의 `starlog.` 주소 가운데 가이드 글(`/guide/...`)과 가이드가 들어 있던 사이트맵 설명은 그쪽이 우선해요.
+
 ## 0. 먼저 확인할 주소
 
 배포 후 브라우저로 아래 주소가 열리는지 봐요.
