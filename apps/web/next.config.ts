@@ -1,5 +1,6 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
+import { hostRedirects, hostRewrites } from "./lib/hostRoutes";
 
 /**
  * Baseline security headers on every response. No script-src CSP yet: Next injects inline
@@ -44,10 +45,16 @@ const nextConfig: NextConfig = {
   headers() {
     return [{ source: "/:path*", headers: [...SECURITY_HEADERS, ...devProviderHeader()] }];
   },
+  // The guides live on the root domain and the app on starlog: the host rules (lib/hostRoutes.ts) come
+  // first and carry a `host` condition, so localhost, the preview and e2e are untouched.
   // The guide index is split into tabs (/guide/tarot, /guide/saju). /guide moved to the first tab
   // for good: a 308 before rendering, so search engines carry its signals over to the tab.
   async redirects() {
-    return [{ source: "/guide", destination: "/guide/tarot", permanent: true }];
+    return [...hostRedirects(), { source: "/guide", destination: "/guide/tarot", permanent: true }];
+  },
+  // The root domain's / shows the guide index. Before the files: the app's own page for / exists.
+  async rewrites() {
+    return { beforeFiles: hostRewrites(), afterFiles: [], fallback: [] };
   },
 };
 

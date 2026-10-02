@@ -14,6 +14,11 @@ describe("SITE", () => {
     expect(SITE.nameKo).toBe("스타로그");
     expect(SITE.url).toBe("https://starlog.yeolmaeapps.kr");
   });
+
+  it("puts the guides on the root domain, one level above the app's host", () => {
+    expect(SITE.guideUrl).toBe("https://yeolmaeapps.kr");
+    expect(new URL(SITE.url).hostname.endsWith(`.${new URL(SITE.guideUrl).hostname}`)).toBe(true);
+  });
 });
 
 describe("footerNotice", () => {

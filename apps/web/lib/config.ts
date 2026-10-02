@@ -19,6 +19,8 @@ export const SITE = {
   name: "Starlog",
   nameKo: "스타로그",
   url: "https://starlog.yeolmaeapps.kr",
+  /** The guides (/guide/*) live on the root domain, where AdSense is approved (lib/hosts.ts, lib/hostRoutes.ts). */
+  guideUrl: "https://yeolmaeapps.kr",
   business: {
     name: "열매스튜디오",
     ceo: "최용우",

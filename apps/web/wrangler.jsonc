@@ -24,8 +24,14 @@
   // other colos (e.g. Hong Kong), and the Anthropic API answers 403 "Request not allowed" to requests
   // leaving from unsupported regions. Tokyo is supported and ~30 ms from Korea.
   "placement": { "region": "aws:ap-northeast-1" },
-  // Production origin (SITE.url). Wrangler creates the DNS record and certificate on deploy.
-  "routes": [{ "pattern": "starlog.yeolmaeapps.kr", "custom_domain": true }],
+  // Production origins: the app (SITE.url) and, on the root domain, the guides (SITE.guideUrl).
+  // Wrangler creates the DNS records and certificates on deploy; an existing A, AAAA or CNAME
+  // record on the root domain can block that (docs/seo/guide-domain.md). lib/hostRoutes.ts sends
+  // each path to its host.
+  "routes": [
+    { "pattern": "starlog.yeolmaeapps.kr", "custom_domain": true },
+    { "pattern": "yeolmaeapps.kr", "custom_domain": true }
+  ],
   // No *.workers.dev origin: it would serve the same app outside the zone's WAF and rules.
   "workers_dev": false,
   // Every 10 minutes: settle stale payments and refunds, stale reservations, unfinished erasures and
