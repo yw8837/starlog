@@ -43,13 +43,10 @@ describe("/pricing", () => {
     expect(text).toContain("약 1,234자");
     expect(text).toContain("약 5,678자");
     expect(text).toContain("별조각 10개를 드려요. 전체 풀이를 두 번 무료로");
-    expect(text).toContain("하루 두 번 무료로 열 수 있어요");
     expect(text).toContain("첫 풀이는 하루 4번까지");
-    expect(text).toContain("풀이 한 번은 달빛 5개로 열려요");
-    expect(text).toContain("9,900원"); // pack price
-    expect(text).toContain("보너스 +5");
-    expect(text).toContain("1,980원"); // 9,900 ÷ 25 × 5, exact
+    expect(text).toContain("전체 풀이 한 번에 5개가 쓰여요");
     expect(text).not.toMatch(/2,900원|8,500원|16,900원|27,000원/);
+    expect(text).not.toContain("충전");
   });
 
   it("lists the premium readings as 준비 중 with their SITE prices, never naming the 10-card spread", () => {
@@ -66,9 +63,9 @@ describe("/pricing", () => {
     expect(container.textContent).not.toMatch(/켈틱|셀틱|Celtic/i);
   });
 
-  it("says payment opens after review and names Toss Payments", () => {
+  it("says readings are paid one by one and names Toss Payments", () => {
     const { container } = render(<PricingPage />);
-    expect(container.textContent).toContain("결제는 심사 완료 후 열려요");
+    expect(container.textContent).toContain("풀이는 건별로 결제하고, 결제하면 바로 열려요");
     expect(container.textContent).toContain("토스페이먼츠");
   });
 

@@ -1,7 +1,7 @@
 import { SITE } from "./config";
 
 /** 시행일 shared by the terms, privacy and refund pages. */
-export const LEGAL_EFFECTIVE_DATE = "2026-10-01";
+export const LEGAL_EFFECTIVE_DATE = "2026-10-15";
 
 /** "2026년 10월 1일" */
 export function koreanDate(iso: string): string {

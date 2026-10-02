@@ -3,9 +3,9 @@ import { SITE } from "./config";
 import { LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, contactChannels, koreanDate } from "./legal";
 
 describe("legal helpers", () => {
-  it("takes effect on 2026-10-01", () => {
-    expect(LEGAL_EFFECTIVE_DATE).toBe("2026-10-01");
-    expect(koreanDate(LEGAL_EFFECTIVE_DATE)).toBe("2026년 10월 1일");
+  it("takes effect on 2026-10-15", () => {
+    expect(LEGAL_EFFECTIVE_DATE).toBe("2026-10-15");
+    expect(koreanDate(LEGAL_EFFECTIVE_DATE)).toBe("2026년 10월 15일");
   });
 
   it("emphasizes only the privacy policy link", () => {

@@ -4,9 +4,10 @@ import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/Legal
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
+import { GIFT_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
-const { paid, free } = SITE.currency;
+const { free } = SITE.currency;
 const host = new URL(SITE.url).host;
 /** 별자리 인연 (with 이번 주 행운 번호) is in the service list and has its own article while it is live. */
 const BONDS = SITE.features.bonds;
@@ -32,9 +33,9 @@ export default function TermsPage() {
         <ol className={s.list}>
           <li>{`“${SITE.nameKo}”란 운영자가 ${host}에서 제공하는 타로·사주 풀이 서비스와 그 부가 서비스를 말합니다.`}</li>
           <li>{`“이용자”란 이 약관에 따라 ${SITE.nameKo}를 이용하는 회원과 비회원을 말합니다.`}</li>
-          <li>“회원”이란 소셜 계정으로 로그인해 서비스를 이용하는 사람을, “비회원”이란 로그인하지 않고 이용하는 사람을 말합니다.</li>
+          <li>“회원”이란 카카오 계정으로 로그인해 서비스를 이용하는 사람을, “비회원”이란 로그인하지 않고 이용하는 사람을 말합니다.</li>
           <li>“풀이”란 이용자가 입력한 질문·상황·출생 정보와 뽑은 카드 또는 계산한 명식을 바탕으로 AI가 생성해 제공하는 타로·사주 해석 콘텐츠를 말합니다.</li>
-          <li>{`“${paid}”이란 이용자가 대금을 내고 충전해 풀이를 여는 데 쓰는 유료 재화를 말합니다.`}</li>
+          <li>“전체 풀이”란 무료로 공개하는 부분을 넘어 소제목 전체와 이어서 물어보기를 담은 풀이를 말하며, 건별로 결제하거나 별조각으로 엽니다.</li>
           <li>{`“${free}”이란 운영자가 가입 선물 등으로 무료로 지급하고, 풀이를 여는 데 쓰는 무료 재화를 말합니다.`}</li>
         </ol>
       </LegalSection>
@@ -67,6 +68,7 @@ export default function TermsPage() {
             <Link href="/pricing">가격 안내</Link>
             {"에 표시합니다."}
           </li>
+          <li>결제가 모든 이용자에게 열리면 오픈 기념 무료 제공은 끝나고, 처음 가입하는 회원에게 드리는 가입 선물(별조각)로 바뀝니다. 운영자는 이를 7일 전부터 서비스 안에 공지합니다.</li>
         </ol>
       </LegalSection>
 
@@ -86,13 +88,18 @@ export default function TermsPage() {
         <p>
           {`${SITE.nameKo}는 만 14세 이상만 이용할 수 있습니다. 운영자는 만 14세 미만이 이용하고 있다는 사실을 알게 되면 이용을 제한할 수 있습니다.`}
         </p>
+        <p>
+          만 19세 미만인 미성년자가 법정대리인의 동의 없이 유료 서비스를 결제한 경우, 미성년자 본인이나 법정대리인은 그 계약을 취소할 수 있습니다(민법 제5조).
+          다만 미성년자가 속임수로 자신을 성년자로 믿게 하거나 법정대리인의 동의가 있는 것으로 믿게 한 경우(민법 제17조), 법정대리인이 처분을 허락한
+          재산의 범위에서 결제한 경우(민법 제6조)에는 취소할 수 없습니다. 운영자는 결제 화면에서 이 내용을 알립니다.
+        </p>
       </LegalSection>
 
       <LegalSection id="members" title="제6조 (회원과 비회원 이용)">
         <ol className={s.list}>
           <li>비회원도 질문 만들기, 카드 뽑기, 무료로 공개하는 풀이 등 일부 서비스를 이용할 수 있습니다. 비회원의 기록은 이용 중인 기기의 브라우저에만 저장되며, 기기를 바꾸거나 브라우저 데이터를 지우면 사라질 수 있습니다.</li>
-          <li>{`회원 가입은 소셜 계정 로그인으로 하며, 가입하면 가입 선물로 ${free}을 드립니다.`}</li>
-          <li>{`회원은 언제든지 탈퇴할 수 있습니다. 탈퇴하면 남은 ${free}은 사라지고, 남은 ${paid}은 환불 정책에 따라 환불을 신청할 수 있습니다.`}</li>
+          <li>{`회원 가입은 카카오 계정으로 로그인해서 하며, 처음 가입하면 가입 선물로 ${free}을 드립니다. 가입 선물은 카카오 계정 하나에 한 번만 드립니다.`}</li>
+          <li>{`회원은 언제든지 내 정보에서 탈퇴할 수 있습니다. 탈퇴하면 열지 않은 결제 풀이는 전액 환불하고, 남은 ${free}은 사라지며, 계정에 보관한 풀이는 지웁니다. 결제 기록은 관련 법령이 정한 기간 동안 보관합니다.`}</li>
           <li>회원은 자신의 계정을 직접 관리해야 하며, 다른 사람이 자신의 계정을 쓰게 해서는 안 됩니다.</li>
         </ol>
       </LegalSection>
@@ -100,20 +107,29 @@ export default function TermsPage() {
       <LegalSection id="paid" title="제7조 (유료 서비스와 결제)">
         <ol className={s.list}>
           <li>
-            {`유료 풀이의 가격과 ${paid} 충전 상품은 `}
+            {"전체 풀이의 가격은 "}
             <Link href="/pricing">가격 안내</Link>
-            {"에 게시합니다."}
+            {"에 게시합니다. 이용자는 전체 풀이를 건별로 결제하며, 결제 금액은 운영자가 상품별로 정한 금액입니다."}
           </li>
-          <li>유료 서비스의 결제는 토스페이먼츠를 통해 카드와 간편결제로 합니다.</li>
-          <li>운영자는 결제 전에 가격, 포함 내용, 청약철회가 제한되는 경우를 알립니다.</li>
+          <li>결제는 토스페이먼츠를 통해 카드와 간편결제로 할 수 있습니다. 결제하려면 회원으로 로그인해야 합니다.</li>
+          <li>운영자는 결제 전에 가격, 포함 내용, 청약철회가 제한되는 경우를 알리고 이용자의 확인을 받습니다.</li>
           <li>
-            {"청약철회와 환불은 "}
+            {"결제한 풀이는 완성되어 계정에 저장된 때 제공된 것으로 봅니다. 청약철회와 환불은 "}
             <Link href="/refund">환불 정책</Link>
             {"을 따릅니다."}
           </li>
-          <li>{`바로 결제, ${paid}, ${free} 중 어떤 방법으로 열어도 풀이의 내용과 후속 질문, 보관 범위는 같습니다.`}</li>
+          <li>{`결제로 열든 ${free}으로 열든 풀이의 내용과 이어서 물어보기, 보관 범위는 같습니다.`}</li>
           <li>가격 안내에 준비 중으로 표시한 풀이는 판매를 시작하기 전에 가격과 제공 내용을 알리며, 그 전에는 결제를 받지 않습니다.</li>
-          <li>{`풀이가 만들어지지 않았거나 오류로 끝까지 제공되지 않으면 이용 횟수나 ${paid}·${free}을 차감하지 않으며, 결제한 금액은 환불 정책에 따라 돌려드립니다.`}</li>
+          <li>{`풀이가 완성되어 저장되지 않으면 결제한 풀이나 ${free}을 쓰지 않습니다.`}</li>
+          <li>영수증은 내 정보의 결제 내역에서 확인할 수 있습니다.</li>
+        </ol>
+      </LegalSection>
+
+      <LegalSection id="stardust" title="제7조의2 (별조각)">
+        <ol className={s.list}>
+          <li>{`${free}은 무료로 지급하는 재화로, 환불하거나 현금으로 바꾸거나 다른 사람에게 넘길 수 없습니다.`}</li>
+          <li>{`${free}은 받은 날부터 ${GIFT_DAYS}일째 되는 날의 자정(한국 시간)까지 쓸 수 있으며, 여러 번 받은 경우 먼저 사라지는 것부터 씁니다.`}</li>
+          <li>{`탈퇴하면 남은 ${free}은 사라집니다.`}</li>
         </ol>
       </LegalSection>
 
@@ -146,7 +162,7 @@ export default function TermsPage() {
         <ol className={s.list}>
           <li>운영자는 운영상·기술상 필요에 따라 서비스의 전부나 일부를 바꿀 수 있으며, 중요한 변경은 미리 공지합니다.</li>
           <li>설비 점검·교체, 장애, 천재지변 등으로 서비스를 일시 중단할 수 있습니다. 미리 알릴 수 없었던 경우에는 중단 뒤에 알립니다.</li>
-          <li>{`유료 서비스를 종료할 때는 30일 전에 공지하고, 남은 ${paid}은 환불 정책에 따라 환불합니다.`}</li>
+          <li>유료 서비스를 종료할 때는 30일 전에 공지하고, 열지 않은 결제 풀이는 전액 환불합니다.</li>
         </ol>
       </LegalSection>
 

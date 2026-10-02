@@ -45,7 +45,7 @@ describe("policies match what the service does", () => {
     expect(text).not.toContain("친구 초대와 친구가 남긴 카드");
     expect(text).not.toContain("예시 풀이");
     expect(text).toContain("준비 중으로 표시한 풀이는 판매를 시작하기 전에");
-    expect(text).toContain("차감하지 않으며");
+    expect(text).toContain("결제한 풀이나 별조각을 쓰지 않습니다");
   });
 
   it("refund: the digital-content preview duty and the beta note", () => {
@@ -53,6 +53,6 @@ describe("policies match what the service does", () => {
     expect(text).toContain("제17조 제6항");
     expect(text).toContain("시행령 제21조의2");
     expect(text).toContain("오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요");
-    expect(text).toContain("자동 품질 검사를 통과하지 못해");
+    expect(text).toContain("자동 품질 검사 탈락");
   });
 });
