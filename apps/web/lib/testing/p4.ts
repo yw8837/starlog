@@ -1,3 +1,4 @@
+import { POST as agePost } from "@/app/api/auth/age/route";
 import { GET as kakaoCallback } from "@/app/api/auth/kakao/callback/route";
 import { GET as kakaoStart } from "@/app/api/auth/kakao/start/route";
 import { GET as meGet } from "@/app/api/me/route";
@@ -63,9 +64,20 @@ export function useTestDb(): TestD1 {
   return db;
 }
 
+/**
+ * The 만 14세 check as /login does it: a same-origin POST hands back the URL that starts Kakao login,
+ * with its 5-minute token. `mockUser` picks the mock Kakao account (STARLOG_KAKAO=mock).
+ */
+export async function startUrl(b: Browser, returnTo = "/tarot/result", mockUser?: string): Promise<string> {
+  const res = await b.send(agePost, "/api/auth/age", { body: { ageConfirmed: true, returnTo }, origin: true });
+  if (res.status !== 200) throw new Error(`age check answered ${res.status}`);
+  const { url } = (await res.json()) as { url: string };
+  return mockUser ? `${url}&mockUser=${encodeURIComponent(mockUser)}` : url;
+}
+
 /** Logs in through the mock Kakao flow (STARLOG_KAKAO=mock); returns the callback's 303. */
 export async function loginAs(b: Browser, name = "alice", returnTo = "/tarot/result"): Promise<Response> {
-  const start = await b.send(kakaoStart, `/api/auth/kakao/start?age=1&returnTo=${encodeURIComponent(returnTo)}&mockUser=${name}`);
+  const start = await b.send(kakaoStart, await startUrl(b, returnTo, name));
   const location = start.headers.get("location");
   if (!location?.includes("/api/auth/kakao/callback")) throw new Error(`login did not reach the callback: ${start.status} ${location}`);
   return b.send(kakaoCallback, location);

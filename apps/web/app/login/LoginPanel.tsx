@@ -20,21 +20,34 @@ type LoginPanelProps = {
 
 /**
  * Sign-in right before paying or claiming the gift (spec 5.1). Kakao only. The 만 14세 box must be
- * ticked first; it travels to the server as age=1 and is recorded on the account.
+ * ticked first; a same-origin POST (/api/auth/age) then hands back the Kakao start URL with a signed
+ * 5-minute token for it, and the check is recorded on the account.
  */
 export function LoginPanel({ next, status, navigate = (url) => window.location.assign(url) }: LoginPanelProps) {
   const [adult, setAdult] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   const checkbox = useRef<HTMLInputElement>(null);
-  const note = loginMessage(status);
+  const note = loginMessage(failure ?? status);
 
-  const kakao = () => {
+  const kakao = async () => {
     if (!adult) {
       setShowError(true);
       checkbox.current?.focus();
       return;
     }
-    navigate(`/api/auth/kakao/start?age=1&returnTo=${encodeURIComponent(next)}`);
+    try {
+      const res = await fetch("/api/auth/age", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ageConfirmed: true, returnTo: next }),
+      });
+      const body = res.ok ? ((await res.json()) as { url?: unknown }) : null;
+      if (typeof body?.url === "string") return navigate(body.url);
+      setFailure(res.status === 429 ? "busy" : "unavailable");
+    } catch {
+      setFailure("unavailable");
+    }
   };
 
   return (
@@ -73,7 +86,7 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
           </p>
         ) : null}
 
-        <button type="button" className={`${s.provider} ${s.kakao}`} onClick={kakao}>
+        <button type="button" className={`${s.provider} ${s.kakao}`} onClick={() => void kakao()}>
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
             <path fill="currentColor" d="M12 3.5c-5.2 0-9.4 3.3-9.4 7.4 0 2.6 1.7 4.9 4.3 6.2l-1 3.6c-.1.4.3.7.6.5l4.3-2.8c.4 0 .8.1 1.2.1 5.2 0 9.4-3.3 9.4-7.4S17.2 3.5 12 3.5z" />
           </svg>

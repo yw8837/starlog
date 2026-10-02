@@ -3,8 +3,9 @@ import { accountSecret, kakaoKey } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import { giftExpiry } from "@/lib/pay/ledger";
 import { LIMITS_PER_MINUTE, resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { browser, loginAs, me, useTestDb } from "@/lib/testing/p4";
+import { browser, loginAs, me, startUrl, useTestDb } from "@/lib/testing/p4";
 import { GET as meGet } from "../me/route";
+import { POST as agePost } from "./age/route";
 import { POST as ownerPost } from "../owner/route";
 import { GET as callback } from "./kakao/callback/route";
 import { GET as start } from "./kakao/start/route";
@@ -35,6 +36,22 @@ describe("Kakao login", () => {
     const res = await browser().send(start, "/api/auth/kakao/start?returnTo=%2Ftarot%2Fresult");
     expect(res.status).toBe(303);
     expect(res.headers.get("location")).toBe("http://localhost/login?next=%2Ftarot%2Fresult");
+  });
+
+  it("takes the 만 14세 check only as a 5-minute token from a same-origin POST, never a bare age=1", async () => {
+    useTestDb();
+    const b = browser();
+    const toLogin = "http://localhost/login?next=%2Fme";
+    expect((await b.send(start, "/api/auth/kakao/start?age=1&returnTo=%2Fme")).headers.get("location")).toBe(toLogin);
+    expect((await b.send(agePost, "/api/auth/age", { body: { ageConfirmed: true, returnTo: "/me" } })).status).toBe(403);
+    expect((await b.send(agePost, "/api/auth/age", { body: { returnTo: "/me" }, origin: true })).status).toBe(400);
+    const url = await startUrl(b, "/me", "dana");
+    expect(new URL(url, "http://localhost").searchParams.get("returnTo")).toBe("/me");
+    expect((await b.send(start, url.replace(/age=[^&]+/, "age=forged"))).headers.get("location")).toBe(toLogin);
+    vi.setSystemTime(T0 + 5 * 60_000 + 1);
+    expect((await b.send(start, url)).headers.get("location")).toBe(toLogin);
+    vi.setSystemTime(T0);
+    expect((await b.send(start, url)).headers.get("location")).toContain("/api/auth/kakao/callback?code=");
   });
 
   it("logs in, gives the signup gift once, shows it in /api/me, and logs out", async () => {
@@ -86,7 +103,7 @@ describe("Kakao login", () => {
     useTestDb();
     vi.spyOn(console, "error").mockImplementation(() => {});
     const b = browser();
-    const location = (await b.send(start, "/api/auth/kakao/start?age=1&returnTo=%2Fme&mockUser=erin")).headers.get("location")!;
+    const location = (await b.send(start, await startUrl(b, "/me", "erin"))).headers.get("location")!;
     vi.stubEnv("STARLOG_KAKAO", "kakao");
     vi.stubEnv("KAKAO_REST_API_KEY", "");
     vi.stubEnv("KAKAO_CLIENT_SECRET", "");
@@ -96,7 +113,8 @@ describe("Kakao login", () => {
 
   it("refuses a callback whose state belongs to another browser", async () => {
     useTestDb();
-    const first = await browser().send(start, "/api/auth/kakao/start?age=1&returnTo=%2Fme&mockUser=bob");
+    const owner = browser();
+    const first = await owner.send(start, await startUrl(owner, "/me", "bob"));
     const other = browser();
     const res = await other.send(callback, first.headers.get("location")!);
     expect(res.headers.get("location")).toBe("http://localhost/?login=failed");
@@ -106,7 +124,7 @@ describe("Kakao login", () => {
   it("comes back with login=cancel when consent was declined", async () => {
     useTestDb();
     const b = browser();
-    const location = new URL((await b.send(start, "/api/auth/kakao/start?age=1&returnTo=%2Fme")).headers.get("location")!);
+    const location = new URL((await b.send(start, await startUrl(b, "/me"))).headers.get("location")!);
     const res = await b.send(callback, `/api/auth/kakao/callback?error=access_denied&state=${location.searchParams.get("state")}`);
     expect(res.headers.get("location")).toBe("http://localhost/me?login=cancel");
   });
@@ -114,9 +132,10 @@ describe("Kakao login", () => {
   it("stays closed while payments are off, and opens for the owner pass in owner mode", async () => {
     useTestDb();
     vi.stubEnv("STARLOG_PAYMENTS", "off");
-    expect((await browser().send(start, "/api/auth/kakao/start?age=1&returnTo=%2Fme")).headers.get("location")).toBe("http://localhost/me?login=closed");
+    const visitor = browser("198.51.100.30");
+    expect((await visitor.send(start, await startUrl(visitor, "/me"))).headers.get("location")).toBe("http://localhost/me?login=closed");
     vi.stubEnv("STARLOG_PAYMENTS", "owner");
-    expect((await browser().send(start, "/api/auth/kakao/start?age=1&returnTo=%2Fme")).headers.get("location")).toBe("http://localhost/me?login=closed");
+    expect((await visitor.send(start, await startUrl(visitor, "/me"))).headers.get("location")).toBe("http://localhost/me?login=closed");
     const owner = browser("198.51.100.1");
     expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
     expect((await loginAs(owner, "owner")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");

@@ -50,3 +50,22 @@ export async function openOAuthState(cookie: string | undefined, state: string |
 }
 
 export const clearOAuth = (): CookieSpec => ({ name: oauthCookieName(), value: "", maxAge: 0 });
+
+/** How long the 만 14세 check from /login is good for. */
+export const AGE_CHECK_TTL_MS = 5 * 60 * 1000;
+
+interface AgeCheckPayload extends SignedPayload {
+  k: "age";
+  exp: number;
+}
+
+/** The 만 14세 check as a signed 5-minute token: only a same-origin POST from /login hands one out (api/auth/age). */
+export function issueAgeCheck(secret: string, now: number): Promise<string> {
+  const payload: AgeCheckPayload = { k: "age", exp: now + AGE_CHECK_TTL_MS };
+  return signToken(payload, secret);
+}
+
+/** The token from issueAgeCheck, unexpired and unaltered. `?age=1` or anything else is no check. */
+export async function ageChecked(token: string | null, secret: string, now: number): Promise<boolean> {
+  return (await verifyToken<AgeCheckPayload>(token, "age", secret, now)) !== null;
+}

@@ -1,6 +1,6 @@
 import { deleteIntentFor } from "@/lib/account/deletion";
 import { MOCK_CODE_PREFIX, authorizeUrl, isKakaoTalkInApp, kakaoConfigProblems, kakaoMode } from "@/lib/account/kakao";
-import { issueOAuthState } from "@/lib/account/oauthState";
+import { ageChecked, issueOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute } from "@/lib/account/request";
 import { safeReturnTo } from "@/lib/account/returnTo";
@@ -8,9 +8,10 @@ import { loginOpen, paymentsMode } from "@/lib/pay/mode";
 import { randomId } from "@/lib/security/sign";
 
 /**
- * GET ?returnTo=/path&age=1 → Kakao's consent screen, with a signed 10-minute state cookie guarding
- * the way back. It works only while login is open for this device (STARLOG_PAYMENTS on, owner mode
- * with the owner pass, or paused for existing accounts), and only after the 만 14세 check on /login. With STARLOG_KAKAO=mock it goes straight to the callback with a
+ * GET ?returnTo=/path&age=<token> → Kakao's consent screen, with a signed 10-minute state cookie
+ * guarding the way back. It works only while login is open for this device (STARLOG_PAYMENTS on, owner
+ * mode with the owner pass, or paused for existing accounts), and only after the 만 14세 check on
+ * /login: `age` is the 5-minute token POST /api/auth/age signs for it. With STARLOG_KAKAO=mock it goes straight to the callback with a
  * `mock:<mockUser>` code (tests, e2e). Without `mockUser` each login is a fresh mock account, so
  * repeated e2e runs on the same local D1 each start with the signup gift.
  */
@@ -39,7 +40,7 @@ export async function GET(request: Request): Promise<Response> {
     return redirectTo(request, target, {}, [cookie]);
   }
   if (!loginOpen(paymentsMode(), ctx.owner)) return redirectTo(request, returnTo, { login: "closed" });
-  if (url.searchParams.get("age") !== "1") return redirectTo(request, "/login", { next: returnTo });
+  if (!(await ageChecked(url.searchParams.get("age"), ctx.secret, ctx.now))) return redirectTo(request, "/login", { next: returnTo });
   const { state, cookie } = await issueOAuthState({ returnTo, purpose: "login", age: true }, ctx.secret, ctx.now);
   const target =
     kakaoMode() === "mock"
