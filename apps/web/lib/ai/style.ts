@@ -13,8 +13,9 @@ export const MODEL_BLIND_RULE = `# 풀이 도우미의 정체
 - 이 풀이를 어떤 AI 모델·회사·기술이 쓰는지 말하지도 암시하지도 않아요. Claude, Anthropic, Opus, Sonnet, Haiku, GPT, ChatGPT, OpenAI, Gemini, LLM, 언어 모델, 학습 데이터 같은 말을 어떤 언어로도 쓰지 않아요.
 - 사용자가 무슨 AI인지, 어떤 모델인지, 누가 만들었는지 물으면 "저는 스타로그의 풀이 도우미예요. 어떤 기술로 만들었는지는 알려 드리지 않아요."처럼 따뜻한 한 문장으로만 답하고, 곧바로 그 사람의 풀이 이야기로 돌아가요.`;
 
-/** Model, vendor and technology names (Korean and English) that no generated text may contain: a hard violation. */
-export const MODEL_NAMES = /클로드|claude|앤트로픽|anthropic|오푸스|opus|소네트|sonnet|하이쿠|haiku|챗\s?gpt|chat\s?gpt|gpt|오픈\s?ai|open\s?ai|gemini|제미나이|llm|언어\s?모델/i;
+/** Model, vendor and technology names in Korean, English, Japanese and Chinese that no generated text may contain: a hard violation. */
+export const MODEL_NAMES =
+  /클로드|claude|앤트로픽|anthropic|오푸스|opus|소네트|sonnet|하이쿠|haiku|챗\s?gpt|chat\s?gpt|gpt|오픈\s?ai|open\s?ai|gemini|제미나이|llm|언어\s?모델|クロード|アンソロピック|チャット\s?gpt|ジェミニ|言語モデル|克勞德|克劳德|語言模型|语言模型|大型語言模型/i;
 
 /** Stable (cached) prompt block. JSON array items are lists already; the bullet rule is about text inside strings. */
 export const STYLE_RULES = `# 문체 규칙
@@ -57,6 +58,19 @@ function repeatedEndings(text: string): boolean {
   return false;
 }
 
+/** Four or more sentences in a row with the same last two characters. */
+export function repeatedEndingsBy(sentences: readonly string[]): boolean {
+  let run = 1;
+  let previous = "";
+  for (const sentence of sentences) {
+    const ending = sentence.replace(/[.?!…"'’”)\s。！？」』）]+$/, "").slice(-2);
+    run = ending && ending === previous ? run + 1 : 1;
+    if (run >= 4) return true;
+    previous = ending;
+  }
+  return false;
+}
+
 const TELLS: Array<AiTell & { test: (text: string) => boolean }> = [
   { id: "D1", label: "결산어", hint: "결론적으로·요약하면·따라서로 문장을 열지 마세요", test: (t) => /(^|[.!?]\s*)(결론적으로|요약하면|정리하자면|종합하면|이를 통해|따라서|그러므로)/m.test(t) },
   { id: "D2", label: "의의 과장", hint: "'시사해요·주목할 만해요·매우 중요해요' 대신 그림과 상황을 말하세요", test: (t) => /시사하는 바|시사해|주목할 만|의미가 (크|적지 않)|매우 중요|간과할 수 없/.test(t) },
@@ -82,7 +96,10 @@ export function aiTells(text: string): AiTell[] {
  */
 export const SOFT_PREFIX = "[문체] ";
 
-export const isSoftViolation = (violation: string) => violation.startsWith(SOFT_PREFIX);
+/** The soft marker for en, ja and zh-hant feedback (P6). */
+export const SOFT_PREFIX_INTL = "[style] ";
+
+export const isSoftViolation = (violation: string) => violation.startsWith(SOFT_PREFIX) || violation.startsWith(SOFT_PREFIX_INTL);
 
 export const AI_TELL_THRESHOLD = 3;
 
