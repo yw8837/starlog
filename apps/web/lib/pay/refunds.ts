@@ -50,7 +50,7 @@ async function nextAttempt(db: D1Binding, orderId: string, now: number): Promise
  * - CANCELED → applied.
  * - 409 processing, 5xx or no answer → stays `refunding` (PAY_PENDING); reconcileRefunding decides.
  * - Any other error → the payment is looked up first. CANCELED → applied. DONE → the cancel was
- *   refused: the reading comes back with a new attempt (an orphan just moves to its next attempt).
+ *   refused: the reading comes back with a new attempt (an orphan waits for reconcileRefunding).
  *   Anything else → pending.
  */
 async function sendCancel(db: D1Binding, toss: TossClient, order: OrderRow, lot: Lot | null, reason: string, now: number): Promise<RefundOutcome> {
@@ -67,8 +67,9 @@ async function sendCancel(db: D1Binding, toss: TossClient, order: OrderRow, lot:
     if (found?.status === "CANCELED") {
       payment = found;
     } else if (found?.status === "DONE") {
+      // A refund: the reading comes back under the next attempt. An orphan keeps this attempt: only
+      // reconcileRefunding moves it on, right before it sends the next one (ORPHAN_MAX_ATTEMPTS in all).
       if (lot) await revertRefund(db, order.id, now);
-      else await nextAttempt(db, order.id, now);
       console.info(JSON.stringify({ evt: "pay.refund_refused", orderId: order.id, code: refusal.code }));
       return { ok: false, code: "PAY_FAILED", message: refusal.message || "환불하지 못했어요. 문의해 주세요." };
     } else {

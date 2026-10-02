@@ -219,6 +219,26 @@ describe("maintenance", () => {
     expect(await one(db, `SELECT status FROM orders WHERE id = '${fresh}'`)).toEqual({ status: "created" });
   });
 
+  it("tries a deleted account's payment five times in all, each under its own key, then leaves it to the operator", async () => {
+    const db = useTestDb();
+    const bob = await loggedIn("bob");
+    const orphan = await newOrder(bob);
+    await db.prepare("UPDATE users SET deleted_at = ?").bind(T0).run();
+    const keys: string[] = [];
+    vi.spyOn(mockToss, "cancel").mockImplementation(async (_paymentKey, input) => {
+      keys.push(input.idempotencyKey);
+      throw new TossError(403, "NOT_CANCELABLE_PAYMENT", "취소 할 수 없는 결제 입니다.");
+    });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await browser("192.0.2.92").send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_orphan_5", orderId: orphan, amount: 2900 }, origin: true })).status).toBe(402);
+    for (let run = 1; run <= 6; run++) {
+      vi.setSystemTime(T0 + run * 11 * MIN);
+      await report();
+    }
+    expect(keys).toEqual([1, 2, 3, 4, 5].map((n) => `cancel-${orphan}-${n}`));
+    expect(error).toHaveBeenCalledWith(JSON.stringify({ evt: "pay.orphan_refund_stuck", orderId: orphan }));
+  });
+
   it("returns any account's stale reservation", async () => {
     const db = useTestDb();
     const b = await loggedIn();
