@@ -75,6 +75,8 @@ async function finishDelete(request: Request, ctx: AccountContext, sid: string |
   if (ctx.session.user.kakao_key !== key) return back("mismatch");
   const outcome = await deleteAccount(ctx.db, tossClient(), { userId: ctx.session.user.id, now: ctx.now });
   if (!outcome.ok) return back(outcome.code === "PENDING" ? "pending" : outcome.code === "IN_USE" ? "in-use" : "refund-failed");
-  if (!(await kakaoUnlink(accessToken))) console.warn(JSON.stringify({ evt: "auth.kakao_unlink_failed" }));
+  // The account is gone either way: an unlink Kakao refused or never answered is logged, not an error.
+  const unlinked = await kakaoUnlink(accessToken).catch(() => false);
+  if (!unlinked) console.warn(JSON.stringify({ evt: "auth.kakao_unlink_failed" }));
   return redirectTo(request, "/me", { account: "deleted" }, [clearOAuth(), clearSession()]);
 }

@@ -140,6 +140,34 @@ describe("account deletion", () => {
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
   });
 
+  it("finishes, and logs out, when Kakao cannot be reached to unlink the app afterwards", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    // From here the real Kakao flow, with Kakao's answers stubbed: the unlink call never gets one.
+    vi.stubEnv("STARLOG_KAKAO", "");
+    vi.stubEnv("KAKAO_REST_API_KEY", "rest-key");
+    vi.stubEnv("KAKAO_CLIENT_SECRET", "client-secret");
+    vi.stubGlobal("fetch", async (url: string | URL | Request) => {
+      const target = String(url);
+      if (target.startsWith("https://kauth.kakao.com/oauth/token")) return Response.json({ access_token: "token" });
+      if (target.startsWith("https://kapi.kakao.com/v2/user/me")) return Response.json({ id: "mock-alice" });
+      throw new TypeError("fetch failed");
+    });
+    const warn = vi.mocked(console.warn);
+    try {
+      const { url } = (await (await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true })).json()) as { url: string };
+      const state = new URL((await b.send(start, url)).headers.get("location")!).searchParams.get("state");
+      const done = await b.send(callback, `/api/auth/kakao/callback?code=kakao-code&state=${state}`);
+      expect(done.status).toBe(303);
+      expect(done.headers.get("location")).toBe("http://localhost/me?account=deleted");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(b.jar.has("sl_sid")).toBe(false);
+    expect(await one(db, "SELECT erased_at FROM users")).toEqual({ erased_at: T0 });
+    expect(warn).toHaveBeenCalledWith(JSON.stringify({ evt: "auth.kakao_unlink_failed" }));
+  });
+
   it("waits while a reading is being opened", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
