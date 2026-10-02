@@ -31,8 +31,10 @@ export function useFlowVisit(flow: FlowName, onEnter: (inFlow: boolean) => void)
     // Shown again later without a new render (a page kept by the router and brought back): the
     // route before is the one just left.
     const from = shown.current ? lastRoute() : first;
-    shown.current = true;
     const here = window.location.pathname;
+    // StrictMode's dev replay runs after RouteTracker noted this very route: same showing, already decided.
+    if (shown.current && from === here) return;
+    shown.current = true;
     const keep = new URL(window.location.href).searchParams.has("keep");
     const fresh = takeFlag("new");
     onEnter(!fresh && (cameFromFlow(flow, from, here) || keep));

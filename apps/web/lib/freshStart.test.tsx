@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { FRESH_FOR_MS, NEW_SAJU_HREF, NEW_TAROT_HREF, isStale, takeFlag, type FlowName } from "./freshStart";
 import { forgetRoutes, noteRoute } from "./lastRoute";
@@ -15,6 +15,14 @@ afterEach(() => {
 /** A flow page that reports how it was entered. */
 function Page({ flow, seen }: { flow: FlowName; seen: boolean[] }) {
   useFlowVisit(flow, (inFlow) => seen.push(inFlow));
+  return null;
+}
+
+/** Like RouteTracker (components/layout/RouteTracker.tsx): notes the route on screen in a passive effect. */
+function Tracker() {
+  useEffect(() => {
+    noteRoute(window.location.pathname);
+  }, []);
   return null;
 }
 
@@ -101,6 +109,19 @@ describe("useFlowVisit", () => {
     );
     rerender(
       <StrictMode>
+        <Page flow="tarot" seen={seen} />
+      </StrictMode>,
+    );
+    expect(seen.length).toBeGreaterThanOrEqual(1);
+    expect(seen.every((inFlow) => inFlow)).toBe(true);
+  });
+
+  it("keeps the answers when StrictMode's dev replay comes after RouteTracker noted this very route", () => {
+    const seen: boolean[] = [];
+    arrive("/tarot/new/situation", "/tarot/new");
+    render(
+      <StrictMode>
+        <Tracker />
         <Page flow="tarot" seen={seen} />
       </StrictMode>,
     );
