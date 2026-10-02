@@ -1,3 +1,4 @@
+import { deleteIntentFor } from "@/lib/account/deletion";
 import { MOCK_CODE_PREFIX, authorizeUrl, kakaoConfigProblems, kakaoMode } from "@/lib/account/kakao";
 import { issueOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
@@ -18,12 +19,24 @@ export async function GET(request: Request): Promise<Response> {
   const returnTo = safeReturnTo(url.searchParams.get("returnTo"));
   const ctx = await openAccountRoute(request, { limiter: "AUTH_LIMITER" });
   if (ctx instanceof Response) return redirectTo(request, returnTo, { login: ctx.status === 429 ? "busy" : "unavailable" });
-  if (!loginOpen(paymentsMode(), ctx.owner)) return redirectTo(request, returnTo, { login: "closed" });
   const problems = kakaoConfigProblems();
   if (problems.length) {
     console.error(JSON.stringify({ evt: "config.kakao_invalid", problems }));
     return redirectTo(request, returnTo, { login: "unavailable" });
   }
+  if (url.searchParams.get("purpose") === "delete") {
+    // Only with the intent a same-origin POST handed to this very session.
+    if (!ctx.session || !(await deleteIntentFor(url.searchParams.get("intent"), ctx.session.id, ctx.secret, ctx.now))) {
+      return redirectTo(request, "/me", { delete: "failed" });
+    }
+    const { state, cookie } = await issueOAuthState({ returnTo: "/me", purpose: "delete", age: false, sid: ctx.session.id }, ctx.secret, ctx.now);
+    const target =
+      kakaoMode() === "mock"
+        ? `/api/auth/kakao/callback?code=${encodeURIComponent(MOCK_CODE_PREFIX + (url.searchParams.get("mockUser") ?? `e2e${randomId(6)}`))}&state=${state}`
+        : authorizeUrl(state);
+    return redirectTo(request, target, {}, [cookie]);
+  }
+  if (!loginOpen(paymentsMode(), ctx.owner)) return redirectTo(request, returnTo, { login: "closed" });
   if (url.searchParams.get("age") !== "1") return redirectTo(request, "/login", { next: returnTo });
   const { state, cookie } = await issueOAuthState({ returnTo, purpose: "login", age: true }, ctx.secret, ctx.now);
   const target =

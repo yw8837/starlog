@@ -1,22 +1,27 @@
 import type { CookieSpec } from "@/lib/api/http";
-import { KakaoError, kakaoConfigProblems, kakaoLogin } from "@/lib/account/kakao";
+import { deleteAccount } from "@/lib/account/deletion";
+import { KakaoError, kakaoConfigProblems, kakaoLogin, kakaoUnlink } from "@/lib/account/kakao";
 import { CLEAR_OAUTH, OAUTH_COOKIE, openOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
-import { openAccountRoute } from "@/lib/account/request";
+import { openAccountRoute, type AccountContext } from "@/lib/account/request";
 import { kakaoKey } from "@/lib/account/secrets";
-import { createSession, revokeSession } from "@/lib/account/session";
+import { CLEAR_SESSION, createSession, revokeSession } from "@/lib/account/session";
 import { loginKakaoUser, userByKakaoKey } from "@/lib/account/users";
 import { SITE } from "@/lib/config";
 import { grantSignupGift } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
+import { tossClient } from "@/lib/pay/toss";
+
+type Back = (flag: string, cookies?: Array<CookieSpec | string>) => Response;
 
 /**
- * GET ?code&state (or ?error&state) from Kakao. The state must match this browser's sl_oauth cookie.
- * - Login: find the account, or create one while sales are open for this device (paused: existing
+ * GET ?code&state (or ?error&state) from Kakao. The state must match this browser's sl_oauth cookie,
+ * and the Kakao settings are checked again before the code is used.
+ * - login: find the account, or create one while sales are open for this device (paused: existing
  *   accounts only, else ?login=closed). While sales are open the signup gift is tried on every login
  *   (once per Kakao account). Start a session and return with ?login=ok|cancel|failed.
- * - The Kakao settings are checked again here: the code is never used against a half-configured app.
- * - The account-deletion re-check (purpose "delete") is handled in Task 12.
+ * - delete: the same Kakao account as the session must answer. Then deleteAccount() settles,
+ *   refunds and erases, the app is unlinked from Kakao, and we land on /me?account=deleted (spec 5.8).
  */
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -24,11 +29,14 @@ export async function GET(request: Request): Promise<Response> {
   if (ctx instanceof Response) return redirectTo(request, "/", { login: "unavailable" }, [CLEAR_OAUTH]);
   const intent = await openOAuthState(ctx.cookies[OAUTH_COOKIE], url.searchParams.get("state"), ctx.secret, ctx.now);
   if (!intent) return redirectTo(request, "/", { login: "failed" }, [CLEAR_OAUTH]);
-  const back = (flag: string, cookies: Array<CookieSpec | string> = []) => redirectTo(request, intent.returnTo, { login: flag }, [CLEAR_OAUTH, ...cookies]);
+  const deleting = intent.purpose === "delete";
+  const back: Back = (flag, cookies = []) =>
+    deleting
+      ? redirectTo(request, "/me", { delete: flag }, [CLEAR_OAUTH, ...cookies])
+      : redirectTo(request, intent.returnTo, { login: flag }, [CLEAR_OAUTH, ...cookies]);
   if (url.searchParams.get("error")) return back("cancel");
   const code = url.searchParams.get("code");
   if (!code) return back("failed");
-  if (intent.purpose !== "login") return redirectTo(request, "/me", { delete: "failed" }, [CLEAR_OAUTH]);
   const problems = kakaoConfigProblems();
   if (problems.length) {
     console.error(JSON.stringify({ evt: "config.kakao_invalid", problems }));
@@ -43,9 +51,13 @@ export async function GET(request: Request): Promise<Response> {
     return back("failed");
   }
   const key = await kakaoKey(login.profile.id, ctx.accountSecret);
+  return deleting ? finishDelete(request, ctx, intent.sid, key, login.accessToken, back) : finishLogin(ctx, key, login.profile.nickname, intent.age, back);
+}
+
+async function finishLogin(ctx: AccountContext, key: string, nickname: string, age: boolean, back: Back): Promise<Response> {
   const open = salesOpen(paymentsMode(), ctx.owner);
   if (!open && !(await userByKakaoKey(ctx.db, key))) return back("closed");
-  const account = await loginKakaoUser(ctx.db, { key, nickname: login.profile.nickname, ageConfirmed: intent.age, now: ctx.now });
+  const account = await loginKakaoUser(ctx.db, { key, nickname, ageConfirmed: age, now: ctx.now });
   if (!account) {
     console.warn(JSON.stringify({ evt: "auth.account_still_erasing" }));
     return back("failed");
@@ -56,4 +68,13 @@ export async function GET(request: Request): Promise<Response> {
   const session = await createSession(ctx.db, user.id, ctx.secret, ctx.now);
   console.info(JSON.stringify({ evt: "auth.login", created, gifted }));
   return back("ok", [session.cookie]);
+}
+
+async function finishDelete(request: Request, ctx: AccountContext, sid: string | undefined, key: string, accessToken: string, back: Back): Promise<Response> {
+  if (!ctx.session || ctx.session.id !== sid) return back("failed");
+  if (ctx.session.user.kakao_key !== key) return back("mismatch");
+  const outcome = await deleteAccount(ctx.db, tossClient(), { userId: ctx.session.user.id, now: ctx.now });
+  if (!outcome.ok) return back(outcome.code === "PENDING" ? "pending" : outcome.code === "IN_USE" ? "in-use" : "refund-failed");
+  if (!(await kakaoUnlink(accessToken))) console.warn(JSON.stringify({ evt: "auth.kakao_unlink_failed" }));
+  return redirectTo(request, "/me", { account: "deleted" }, [CLEAR_OAUTH, CLEAR_SESSION]);
 }
