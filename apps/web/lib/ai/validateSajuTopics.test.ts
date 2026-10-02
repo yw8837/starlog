@@ -16,6 +16,20 @@ const hardOf = (topic: SajuTopicId, text: string, id = "C1") => {
   topicHardViolations({ whole: text, timing: text }, factsFor(topic, id), out);
   return out;
 };
+/** A clean mock reading with one sentence added to 4절 (the time checks read it too), or with other follow-up questions, judged by the whole reading validator. */
+const readingHard = (topic: SajuTopicId, sentence = "", followUps?: string[]) => {
+  const f = factsFor(topic);
+  const reading = mockSajuTopicReading(f);
+  if (sentence) reading.sections[3]!.body += ` ${sentence}`;
+  if (followUps) reading.followUps = followUps;
+  return validateSajuTopicReading(reading, f).filter((v) => !isSoftViolation(v));
+};
+/** A clean mock follow-up answer with one sentence added, judged against the question the user asked. */
+const followHard = (topic: SajuTopicId, question: string, sentence = "") => {
+  const f = factsFor(topic);
+  const answer = mockSajuTopicFollowUp(f, question);
+  return validateSajuTopicFollowUp({ ...answer, answer: sentence ? `${answer.answer} ${sentence}` : answer.answer }, f, question).filter((v) => !isSoftViolation(v));
+};
 
 const CAUGHT: Array<[SajuTopicId, string, RegExp]> = [
   ["money", "3일 뒤에 변화가 보여요.", /시기를 지정한 문장/],
@@ -197,14 +211,6 @@ describe("§8.2 near-variants of the banned promises, verdicts and orders (fix r
 });
 
 describe("the same sentences inside a whole reading and a follow-up answer (fix round 1)", () => {
-  /** A clean mock reading with one sentence added to 4절 (the time checks read it too), judged by the whole reading validator. */
-  const readingHard = (topic: SajuTopicId, sentence = "") => {
-    const f = factsFor(topic);
-    const reading = mockSajuTopicReading(f);
-    if (sentence) reading.sections[3]!.body += ` ${sentence}`;
-    return validateSajuTopicReading(reading, f).filter((v) => !isSoftViolation(v));
-  };
-
   it.each(["love", "reunion", "career"] as const)("the clean %s mock reading has no hard violation", (topic) => {
     expect(readingHard(topic)).toEqual([]);
   });
@@ -224,5 +230,291 @@ describe("the same sentences inside a whole reading and a follow-up answer (fix 
     expect(validateSajuTopicFollowUp(answer, f, question).filter((v) => !isSoftViolation(v))).toEqual([]);
     const pushed = { ...answer, answer: `${answer.answer} 지금은 이직을 하는 편이 좋아요.` };
     expect(validateSajuTopicFollowUp(pushed, f, question).join()).toMatch(/이직·퇴사를 정해 주는 문장/);
+  });
+});
+
+// ---- Fix round 2 (re-review of fix round 1): another person's mind, stems bound to their ending, hypothetical encounters, "~지 않아도" ----
+
+/** Claims about another person's mind: the review's sentences first (the first fix let them through), then the same shapes in other words and about other people. */
+const MIND_CAUGHT: Array<[SajuTopicId, string]> = [
+  ["reunion", "그 사람도 같은 마음일 거예요."],
+  ["reunion", "상대방도 당신과 같은 마음이에요."],
+  ["reunion", "그 사람은 지금도 당신을 생각하고 있어요."],
+  ["reunion", "그 사람도 당신 생각을 하고 있을 거예요."],
+  ["reunion", "그 사람은 분명 당신에게 미안한 마음이 있어요."],
+  ["career", "상사는 당신을 인정하는 성격이에요."],
+  ["reunion", "그 사람은 당신 앞에서는 마음이 확실해요."],
+  ["reunion", "그 사람은 속으로는 여전히 마음이 남아 있어요."],
+  ["reunion", "그 사람은 당신을 향한 마음이 확실해요."],
+  ["reunion", "그 사람 쪽에서도 마음이 남아 있어요."],
+  ["reunion", "그 사람이 지금 이 순간에도 마음이 있어요."],
+  ["reunion", "그 사람은 지금 이 순간에도 당신 생각을 하고 있어요."],
+  ["reunion", "상대방은 지금 당신 생각이 확실해요."],
+  ["reunion", "그 사람은 겉으로는 차가워도 마음은 따뜻한 사람이에요."],
+  ["career", "동료는 당신에게 호감이 있는 마음이에요."],
+  ["love", "썸 상대는 당신을 향한 마음이 확실해요."],
+  ["reunion", "그 사람은 당신을 대하는 마음이 진심이에요."],
+  ["reunion", "그 사람은 당신을 아끼는 마음이 확실해요."],
+  ["reunion", "그 사람은 당신과 이어지고 싶은 마음이 있어요."],
+  ["reunion", "그 사람은 당신에게 서운한 마음이 있어요."],
+  ["reunion", "그 사람은 이별 후에도 당신을 향한 마음이 분명해요."],
+  ["reunion", "그 사람은 당신을 놓지 못하는 마음이에요."],
+  ["reunion", "헤어진 사람은 당신에게 미안한 마음이 남아 있어요."],
+  ["career", "팀장님은 당신을 아끼는 마음이 있어요."],
+  ["career", "상사는 당신의 일을 인정하는 마음이 확실해요."],
+  ["career", "동료는 당신을 믿는 마음이 분명해요."],
+  ["reunion", "그 사람도 속으로는 같은 마음이에요."],
+  ["reunion", "그 사람도 지금쯤 마음이 흔들리고 있을 거예요."],
+  ["reunion", "그 사람은 이별 후에도 마음이 확실해요."],
+  ["reunion", "그 사람은 속으론 마음이 있어요."],
+  ["reunion", "그 사람은 분명히 당신에게 마음이 있어요."],
+  ["reunion", "그 사람도 분명히 마음이 남아 있어요."],
+  ["reunion", "그 사람도 헤어진 뒤에 마음이 많이 힘들 거예요."],
+  ["reunion", "헤어진 사람은 겉으로는 담담해도 마음이 복잡할 거예요."],
+  ["reunion", "그 사람은 당신 앞에서만 진심이 확실해요."],
+  ["reunion", "그 사람은 요즘 당신 생각이 많아요."],
+  ["reunion", "상대방은 지금도 당신 생각을 해요."],
+  ["love", "썸 상대도 지금 당신과 같은 마음이에요."],
+  ["love", "애인은 당신을 향한 마음이 확실해요."],
+  ["reunion", "그 사람 쪽에서도 당신을 향한 마음이 확실해요."],
+  ["career", "상사는 속으로는 당신을 믿는 마음이 있어요."],
+  ["career", "동료는 당신에게 질투하는 마음이 있어요."],
+  ["reunion", "그 사람은 정말 당신을 아끼는 마음이에요."],
+  ["reunion", "그 사람은 당신에 대해 생각하고 있을 거예요."],
+  ["reunion", "그 사람은 미안한 마음이 있어요."],
+  ["reunion", "그 사람도 후회하는 마음이 있을 거예요."],
+  ["reunion", "헤어진 사람은 그리워하는 마음이 있어요."],
+  ["career", "상사는 아끼는 마음이 있어요."],
+  ["love", "썸 상대는 설레는 마음이 있어요."],
+  ["reunion", "그 사람은 아직도 후회하는 마음이 있어요."],
+  ["reunion", "그 사람도 불안한 마음일 거예요."],
+];
+
+/**
+ * The reader's own mind with another person in the scene, a hedge, a wish and a question. The first block is what the review found passing; the
+ * rest are the shapes a gap of any words (instead of a claim shape) between the person and "마음" would flag.
+ */
+const MIND_PASSES: Array<[SajuTopicId, string]> = [
+  ["reunion", "헤어진 사람이 자꾸 떠오르는 건 마음이 아직 머물고 있다는 뜻이에요."],
+  ["reunion", "그 사람을 생각하면 마음이 먼저 가라앉는 편이에요."],
+  ["reunion", "그 사람과 있을 때의 내 마음을 먼저 적어 보세요."],
+  ["reunion", "그 사람의 연락을 기다리는 동안 마음이 조급해지는 편이에요."],
+  ["reunion", "그 사람의 마음을 읽으려고 애쓰다 보면 내 마음이 먼저 지쳐요."],
+  ["reunion", "헤어진 사람이 생각나는 밤에는 마음이 먼저 움직이는 편이에요."],
+  ["reunion", "전 연인과 주고받은 말이 떠오를 때 마음이 먼저 굳는 편이에요."],
+  ["reunion", "그 사람이 떠난 뒤로 마음이 비어 있는 느낌이 있어요."],
+  ["reunion", "그 사람이 아직 마음에 남아 있다면 천천히 정리해 봐요."],
+  ["reunion", "그 사람이 내 마음에 남긴 말이 있어요."],
+  ["reunion", "그 사람이 마음을 흔들 때도 내 하루를 먼저 지키는 편이에요."],
+  ["reunion", "그 사람 얘기만 나오면 마음이 먼저 움츠러드는 편이에요."],
+  ["reunion", "그 사람에게 마음을 쓰는 만큼 나에게도 마음을 써 보세요."],
+  ["reunion", "그 사람이 보낸 마지막 말에 마음이 오래 머무는 편이에요."],
+  ["reunion", "그 사람이 없는 하루에도 내 마음이 쉴 자리가 있어요."],
+  ["reunion", "그 사람이 생각날 때 마음이 어디에 머무는지 적어 보는 편이에요."],
+  ["love", "썸 상대의 말투에 내 마음이 먼저 흔들리는 편이에요."],
+  ["love", "연애 중에는 상대의 감정을 살피느라 내 마음을 놓치는 편이에요."],
+  ["love", "썸이 애매할 때는 상대에게 마음이 있는지부터 확인하려는 편이에요."],
+  ["love", "상대가 연락을 늦게 해도 내 마음을 먼저 들여다보는 편이에요."],
+  ["love", "애인과 다투고 나면 마음이 먼저 닫히는 편이에요."],
+  ["love", "상대가 내 마음을 몰라줄 때 말을 아끼는 편이에요."],
+  ["love", "상대방의 마음을 확인하기 전에 내 마음부터 정리하는 편이에요."],
+  ["love", "애인에게 마음을 다 주고 나서야 불안해지는 편이에요."],
+  ["career", "상사가 지시할 때 내 마음이 먼저 굳는 편이에요."],
+  ["career", "팀장님이 부르면 마음이 철렁하는 편이에요."],
+  ["career", "동료의 말에 마음이 흔들리는 편이에요."],
+  ["career", "회사 사람들 사이에서는 마음이 편한 쪽을 고르는 편이에요."],
+  ["career", "상사와의 대화에서 마음이 먼저 굳는 편이에요."],
+  ["career", "동료 눈치를 보느라 마음이 쉽게 지치는 편이에요."],
+  ["career", "회사 사람 때문에 마음이 무거운 날이 있어요."],
+  ["career", "상사 앞에서는 마음이 먼저 굳는 편이에요."],
+  ["career", "동료와 의견이 부딪히면 마음이 먼저 닫히는 편이에요."],
+  ["career", "상사의 성격보다 내 일의 기준을 먼저 세우는 편이에요."],
+  ["career", "회사 사람과 부딪히는 날에는 내 마음을 먼저 챙겨요."],
+  // a person is the subject of a clause of the reader's scene; a topic particle; the reader addressed as 당신
+  ["reunion", "헤어진 사람이 문득 떠오르는 건 마음이 머물던 자리가 있다는 뜻이에요."],
+  ["reunion", "그 사람이 보낸 편지를 다시 읽는 날에는 마음이 오래 무거운 편이에요."],
+  ["reunion", "헤어진 사람이 잘 지낸다는 얘기에 마음이 철렁하는 편이에요."],
+  ["reunion", "그 사람이 떠올라도 마음이 흔들리지 않는 날이 있어요."],
+  ["reunion", "헤어진 사람이 자꾸 생각이 나는 건 마음이 아직 정리 중이라는 신호예요."],
+  ["love", "썸 상대가 답장을 늦게 해도 마음이 크게 흔들리지 않는 편이에요."],
+  ["love", "애인이 바쁜 주에는 마음이 먼저 불안해지는 편이에요."],
+  ["career", "상사가 지시한 일이 많아도 마음이 흔들리지 않는 편이에요."],
+  ["career", "팀장님이 칭찬해 주는 날에는 마음이 가벼워지는 편이에요."],
+  ["career", "동료가 늘어난 날에는 마음이 한결 편해지는 편이에요."],
+  ["career", "상사가 있는 자리에서는 성격이 조금 달라지는 편이에요."],
+  ["career", "회사 사람이 던진 말 한마디에 마음이 오래 머무는 편이에요."],
+  ["reunion", "그 사람은 떠났지만 마음은 아직 그 자리에 머물러 있어요."],
+  ["reunion", "헤어진 사람은 멀어졌지만 마음은 쉽게 정리되지 않는 편이에요."],
+  ["career", "상사는 바뀌었지만 마음이 편해지는 데는 시간이 걸리는 편이에요."],
+  ["love", "썸 상대는 그대로인데 마음이 먼저 앞서가는 편이에요."],
+  ["love", "애인은 바쁘지만 마음이 서운한 건 어쩔 수 없는 일이에요."],
+  ["reunion", "그 사람은 잘 지낸다고 해도 마음이 놓이지 않는 편이에요."],
+  ["reunion", "그 사람도 나도 마음이 정리되는 데 시간이 걸리는 편이에요."],
+  ["reunion", "그 사람이 당신에게 건넨 말에 마음이 오래 머무는 편이에요."],
+  ["reunion", "그 사람이 당신에게 남긴 말이 마음에 오래 남아 있어요."],
+  ["reunion", "그 사람이 당신을 부를 때 마음이 철렁하는 편이에요."],
+  ["career", "상사가 당신에게 일을 맡긴 날에는 마음이 먼저 굳는 편이에요."],
+  ["reunion", "그 사람이 떠난 뒤 당신은 마음이 오래 머무는 편이에요."],
+  ["reunion", "그 사람이 당신에게 이별을 말한 순간의 마음이 아직 남아 있어요."],
+  ["reunion", "그 사람이 이별 후에 보낸 연락에 마음이 흔들리는 편이에요."],
+  ["reunion", "그 사람이 겉으로는 괜찮아 보여도 내 마음은 쉽게 놓이지 않는 편이에요."],
+  ["reunion", "그 사람이 같은 말을 반복할 때마다 마음이 먼저 지치는 편이에요."],
+  ["career", "동료가 같은 실수를 반복하면 마음이 먼저 굳는 편이에요."],
+  ["reunion", "당신을 향한 마음이 흔들릴 때는 일상의 리듬부터 지켜요."],
+  ["reunion", "당신에게 생각해 볼 질문 하나를 드려요."],
+  ["reunion", "당신에 대해 생각해 보면 일지의 결이 먼저 보여요."],
+  ["reunion", "그 사람이 당신에게 이별을 말한 뒤로 마음이 오래 머무는 편이에요."],
+  ["reunion", "그 사람이 당신을 떠난 뒤로 마음이 오래 머무는 편이에요."],
+  ["reunion", "그 사람이 당신에게 한 말 때문에 마음이 오래 무거운 편이에요."],
+  ["reunion", "그 사람이 당신에게 건넨 마지막 말이 후회로 마음에 남아 있어요."],
+  ["career", "당신은 상사가 지시한 일이 많을수록 마음이 차분해지는 편이에요."],
+  ["love", "일지가 가까운 관계의 자리라서, 애인이 다가오는 속도에 내 마음이 먼저 반응하는 편이에요."],
+  ["love", "관계에서 상대가 더 많이 표현하면 마음이 오히려 물러서는 편이에요."],
+  ["reunion", "헤어진 사람의 소식을 들은 날에는 마음이 하루 종일 머무는 편이에요."],
+  ["reunion", "전 연인이 잘 지낸다는 소식을 들으면 마음이 복잡해지는 편이에요."],
+  ["reunion", "그 사람이 남긴 말을 곱씹는 동안 마음이 쉽게 지치는 편이에요."],
+  ["career", "회사 사람이 많은 자리에서는 성격이 조금 조용해지는 편이에요."],
+  ["career", "동료와 비교될 때 마음이 먼저 움츠러드는 편이에요."],
+  ["career", "동료가 건네는 마음이 고마운 편이에요."],
+  ["love", "썸 상대가 보내는 마음이 조금 부담스러운 편이에요."],
+  ["reunion", "헤어진 사람이 남긴 마음이 오래 가는 편이에요."],
+  ["reunion", "그 사람이 주는 마음이 큰 날이 있어요."],
+  // wondering, wishing and hedging about the other person's mind is not claiming it
+  ["reunion", "그 사람도 같은 마음일까 궁금한 날이 있어요."],
+  ["reunion", "그 사람도 같은 마음이면 좋겠다는 생각이 들 때가 있어요."],
+  ["reunion", "그 사람도 같은 마음이었으면 좋겠다고 바라는 마음이 있어요."],
+  ["reunion", "그 사람이 지금쯤 마음이 어떨지 궁금한 날이 있어요."],
+  ["reunion", "헤어진 사람이 속으로는 어떤 마음일지 궁금한 건 자연스러운 일이에요."],
+  ["reunion", "그 사람이 후회하는 마음이 있는지 확인하고 싶어지는 날이 있어요."],
+  ["reunion", "그 사람이 당신에게 미안한 마음이 있는지 궁금한 건 자연스러워요."],
+  ["reunion", "그 사람이 당신을 향한 마음이 남아 있는지 따져 보기보다 내 하루를 먼저 살펴봐요."],
+  ["career", "상사가 당신을 인정하는 성격인지 헤아리기보다 내 기준을 먼저 세워요."],
+  ["reunion", "그 사람이 같은 마음이라고 믿고 싶은 마음이 있어요."],
+  ["reunion", "그 사람도 같은 마음일 수 있어요."],
+  ["reunion", "그 사람이 당신을 생각하고 있을지도 몰라요."],
+  ["reunion", "그 사람의 마음은 이 풀이로 알 수 없어요."],
+];
+
+describe("§8.2 another person's mind: the claims the first fix let through are caught again, the reader's own scene still passes (fix round 2)", () => {
+  it.each(MIND_CAUGHT)("%s catches %s", (topic, text) => {
+    const label = /다른 사람의 마음을 단정한 문장/;
+    expect(hardOf(topic, text).join("\n")).toMatch(label);
+    expect(readingHard(topic, text).join("\n")).toMatch(label);
+    expect(followHard(topic, "그 사람 마음은 어떨까요?", text).join("\n")).toMatch(label);
+  });
+
+  it.each(MIND_PASSES)("%s passes %s", (topic, text) => {
+    expect(hardOf(topic, text)).toEqual([]);
+    expect(readingHard(topic, text)).toEqual([]);
+    expect(followHard(topic, "마음 정리는 어디서부터 할까요?", text)).toEqual([]);
+  });
+});
+
+/** "가능성" and the verdict words only count with their ending: "재회 가능성이 높아요" is a verdict, "재회 가능성은 알 수 없어요" is not. */
+const POSSIBILITY_CAUGHT: Array<[SajuTopicId, string, RegExp]> = [
+  ["reunion", "재회 가능성이 없어요.", /재회를 판정한 문장/],
+  ["reunion", "재회 가능성이 낮아요.", /재회를 판정한 문장/],
+  ["reunion", "재회 가능성이 높은 편이에요.", /재회를 판정한 문장/],
+  ["reunion", "재회 가능성이 높지 않아요.", /재회를 판정한 문장/],
+  ["reunion", "재회할 가능성이 높아요.", /재회를 판정한 문장/],
+  ["reunion", "재회 가능성이 열려 있어요.", /재회를 판정한 문장/],
+  ["reunion", "재회 가능성이 엿보여요.", /재회를 판정한 문장/],
+  ["reunion", "재회 가능성이 전혀 없어요.", /재회를 판정한 문장/],
+  ["reunion", "재회 가능성이 안 보여요.", /재회를 판정한 문장/],
+  ["reunion", "다시 이어질 가능성이 충분히 있어요.", /재회를 판정한 문장/],
+  ["reunion", "그 사람을 다시 만날 가능성이 커요.", /재회를 판정한 문장/],
+  ["career", "이직하는 편이 나아요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "퇴사하는 편이 낫겠어요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "지금은 이직하는 편이 더 좋겠어요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "이직을 추천해 드려요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "퇴사를 권해 드립니다.", /이직·퇴사를 정해 주는 문장/],
+];
+
+/** Declines, an aside and questions that name the same stems. */
+const POSSIBILITY_PASSES: Array<[SajuTopicId, string]> = [
+  ["reunion", "재회 가능성은 알 수 없어요."],
+  ["reunion", "재회 가능성을 점치지 않아요."],
+  ["reunion", "재회 가능성을 따져 보기보다 지금 내 리듬을 먼저 살펴봐요."],
+  ["reunion", "재회 가능성이 자꾸 마음에 걸리는 건 자연스러워요."],
+  ["reunion", "재회 가능성은 어떻게 봐요?"],
+  ["reunion", "다시 이어질 가능성이 있을까요?"],
+  ["reunion", "재회 가능성이 있나요?"],
+  ["reunion", "재회 가능성이 높을까요?"],
+  ["career", "이직하는 편이 좋은지는 이 풀이로 말하기 어려워요."],
+  ["career", "이직하는 편이 나은지는 정해 드릴 수 없어요."],
+  ["career", "이직을 추천해 드리지는 않아요."],
+  ["career", "퇴사를 권해 드리지 않고 기준만 드려요."],
+  ["career", "이직을 추천할 수는 없어요."],
+  ["career", "이직하는 편이 좋을까요?"],
+  ["career", "지금 퇴사하는 편이 나을까요?"],
+];
+
+/** A verdict hidden behind the words of the user's own question: the answer's matched text must not be a piece of the question. */
+const ECHOES: Array<[SajuTopicId, string, string, RegExp]> = [
+  ["reunion", "재회 가능성이 있나요?", "재회 가능성이 높아요.", /재회를 판정한 문장/],
+  ["reunion", "재회 가능성이 있나요?", "재회 가능성이 없어요.", /재회를 판정한 문장/],
+  ["reunion", "다시 이어질 가능성이 있나요?", "다시 이어질 가능성이 커요.", /재회를 판정한 문장/],
+  ["career", "지금 이직을 하는 편이 좋을까요?", "지금은 이직을 하는 편이 좋아요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "이직하는 편이 나을까요?", "이직하는 편이 나아요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "퇴사를 추천하시나요?", "퇴사를 추천해요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "이직을 권하시나요?", "이직을 권해요.", /이직·퇴사를 정해 주는 문장/],
+];
+
+describe("§8.2 stems bound to the ending of the verdict (fix round 2)", () => {
+  it.each(POSSIBILITY_CAUGHT)("%s catches %s", (topic, text, label) => {
+    expect(hardOf(topic, text).join("\n")).toMatch(label);
+    expect(readingHard(topic, text).join("\n")).toMatch(label);
+    expect(followHard(topic, "올해 무엇부터 해 보면 좋을까요?", text).join("\n")).toMatch(label);
+  });
+
+  it.each(POSSIBILITY_PASSES)("%s passes %s", (topic, text) => {
+    expect(hardOf(topic, text)).toEqual([]);
+    expect(readingHard(topic, text)).toEqual([]);
+    expect(followHard(topic, "마음 정리는 어디서부터 할까요?", text)).toEqual([]);
+  });
+
+  it.each(ECHOES)("%s: a follow-up answer cannot hide behind the question's words (Q %s | A %s)", (topic, question, answer, label) => {
+    expect(followHard(topic, question, answer).join("\n")).toMatch(label);
+  });
+
+  it.each([
+    ["reunion", ["재회 가능성은 어떻게 봐요?", "다시 이어질 가능성이 있을까요?"]],
+    ["career", ["이직하는 편이 좋을까요?", "지금 퇴사하는 편이 나을까요?"]],
+  ] as const)("%s: followUps written as questions are not verdicts (%j)", (topic, followUps) => {
+    expect(readingHard(topic, "", [...followUps])).toEqual([]);
+  });
+});
+
+describe("§8.2 a hypothetical encounter is not a promise, a concession that goes on to a verdict is not a decline (fix round 2)", () => {
+  it.each([
+    ["love", "새로운 사람을 만날 거라면 먼저 속도를 정해 두세요."],
+    ["love", "좋은 사람이 나타날 거면 먼저 속도를 정해 두세요."],
+    ["love", "새로운 인연을 만날 것이라면 먼저 거리를 재는 방식부터 살펴봐요."],
+    ["love", "새로운 인연을 만날 가능성은 이 풀이로 말하기 어려워요."],
+    ["love", "새로운 사람을 만날 가능성이 있다면 먼저 속도를 정해 두세요."],
+    ["love", "상대의 사주는 묻지 않아도 돼요."],
+    ["love", "상대의 사주는 묻지 않아도 괜찮아요, 내 명식만 읽어요."],
+    ["love", "상대의 명식은 읽지 않았어요."],
+    ["love", "상대의 사주나 띠는 묻지 않고 내 명식만 읽었어요."],
+    ["reunion", "재회가 된다고 약속하지 않아요."],
+  ] as const)("%s passes %s", (topic, text) => {
+    expect(hardOf(topic, text)).toEqual([]);
+    expect(readingHard(topic, text)).toEqual([]);
+  });
+
+  it.each([
+    ["love", "새로운 사람을 곧 만날 거예요.", /만남·이별을 예언한 문장/],
+    ["love", "좋은 사람이 나타날 거예요. 그때는 속도를 정해 두세요.", /만남·이별을 예언한 문장/],
+    ["love", "새로운 인연을 만날 것 같아요.", /만남·이별을 예언한 문장/],
+    ["love", "새로운 인연을 만날 가능성이 높아요.", /만남·이별을 예언한 문장/],
+    ["reunion", "묻지 않아도 재회하게 돼요.", /재회를 판정한 문장/],
+    ["reunion", "묻지 않아도 되고 재회하게 돼요.", /재회를 판정한 문장/],
+    ["reunion", "읽지 않아도 다시 이어질 거예요.", /재회를 판정한 문장/],
+    ["reunion", "신경 쓰지 않아도 그 사람이 돌아올 거예요.", /재회를 판정한 문장/],
+    ["love", "상대의 명식을 읽지 않아도 궁합이 보여요.", /상대의 정보를 다룬 문장/],
+    ["love", "그 사람의 사주를 읽지 않아도 알 수 있어요.", /상대의 정보를 다룬 문장/],
+  ] as const)("%s catches %s", (topic, text, label) => {
+    expect(hardOf(topic, text).join("\n")).toMatch(label);
+    expect(readingHard(topic, text).join("\n")).toMatch(label);
   });
 });
