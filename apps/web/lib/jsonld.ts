@@ -188,7 +188,7 @@ export function guideIndexItemListJsonLd(category: GuideCategory) {
 /** /ranking: the twelve sign rankings, in calendar order from 양자리. */
 export function rankingItemListJsonLd() {
   return itemListJsonLd(
-    "별자리 리더보드",
+    "별자리 인연 랭킹",
     "/ranking",
     CONSTELLATIONS.map((sign) => ({ name: `${sign.ko} 랭킹`, path: `/ranking/${sign.id}` })),
   );

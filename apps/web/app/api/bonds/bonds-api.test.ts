@@ -78,7 +78,7 @@ describe("bonds API", () => {
     expect(JSON.stringify(ranking)).not.toMatch(/constellationId/);
   });
 
-  it("answers `owner: null` for a device that has not started, with this week's best record for the 리더보드 tile", async () => {
+  it("answers `owner: null` for a device that has not started, with this week's best record for the 인연 랭킹 tile", async () => {
     const res = await meGet(req("/api/bonds/me", new Map()));
     const body = (await res.json()) as { ok: true; owner: null; weekTop: { sign: string; total: number } | null };
     expect(body).toMatchObject({ ok: true, owner: null });

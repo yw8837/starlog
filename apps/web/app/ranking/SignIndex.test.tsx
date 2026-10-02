@@ -19,7 +19,7 @@ const LEADERS = {
   leo: [{ rank: 1, nickname: "민지", total: 501 }],
 };
 
-describe("별자리 리더보드 (/ranking)", () => {
+describe("별자리 인연 랭킹 (/ranking)", () => {
   it("shows a card per sign in zodiac order, each with its dates and a link to the full ranking", () => {
     render(<SignIndex leaders={LEADERS} />);
     const all = screen.getAllByRole("link", { name: /전체 순위$/ });

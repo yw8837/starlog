@@ -5,7 +5,7 @@ import { BondsError, ownerView } from "@/lib/bonds/service";
 
 /**
  * GET → this device's 별자리 인연: `{ owner: null }` before the first start, else the owner view (`?view=home`: no ranks or TOP 5).
- * Both carry `weekTop`, this week's best constellation for the 리더보드 tile (from the leaderboard's edge-cached
+ * Both carry `weekTop`, this week's best constellation for the 인연 랭킹 tile (from the leaderboard's edge-cached
  * query, no query of its own; null before any completion, left out when it cannot be read).
  */
 export async function GET(request: Request): Promise<Response> {

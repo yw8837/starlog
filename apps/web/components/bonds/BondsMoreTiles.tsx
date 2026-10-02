@@ -15,7 +15,7 @@ type BondsMoreTilesProps = {
 
 /**
  * The rest of 별자리 인연 as two equal tiles (stacked on the narrowest phones), on the home row and on
- * /bonds' 더 보기: 별자리 리더보드 with this week's best record, and 이번 주 행운 번호 with this device's
+ * /bonds' 더 보기: 별자리 인연 랭킹 with this week's best record, and 이번 주 행운 번호 with this device's
  * numbers once /lucky has shown them (else the way in).
  */
 export function BondsMoreTiles({ weekTop, className }: BondsMoreTilesProps) {
@@ -35,7 +35,7 @@ export function BondsMoreTiles({ weekTop, className }: BondsMoreTilesProps) {
       <Link href="/ranking" className={s.tile}>
         <TrophyIcon />
         <span className={s.text}>
-          <span className={s.title}>별자리 리더보드</span>
+          <span className={s.title}>별자리 인연 랭킹</span>
           <span className={s.sub}>{leader}</span>
         </span>
       </Link>

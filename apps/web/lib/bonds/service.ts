@@ -557,7 +557,7 @@ export interface LeaderView {
   total: number;
 }
 
-/** This KST week's top 3 of every sign (one query): 별자리 리더보드. Signs with no completion are left out. */
+/** This KST week's top 3 of every sign (one query): 별자리 인연 랭킹. Signs with no completion are left out. */
 export async function weeklyLeaders(repo: BondsRepo, now: number): Promise<Partial<Record<SignId, LeaderView[]>>> {
   const out: Partial<Record<SignId, LeaderView[]>> = {};
   for (const top of await repo.topsBySign(weekStart(now), LEADERS_PER_SIGN)) {

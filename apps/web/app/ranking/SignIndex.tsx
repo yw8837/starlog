@@ -26,7 +26,7 @@ type SignIndexProps = {
 };
 
 /**
- * 별자리 리더보드: one card per sign. This week's 1위 gets the card's showpiece (the sign's figure fully
+ * 별자리 인연 랭킹: one card per sign. This week's 1위 gets the card's showpiece (the sign's figure fully
  * lit, the nickname and the 인연 total in large type); 2·3위 are listed beside it. A sign with no 1위 yet
  * shows its figure unlit with "첫 1위 자리". The device's own sun sign (remembered when 별자리 인연 was
  * started here) is marked after load.
