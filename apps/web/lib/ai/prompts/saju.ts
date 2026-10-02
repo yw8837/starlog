@@ -204,7 +204,7 @@ function addSpan(date: Date, span: { years: number; months: number; days: number
 }
 
 /** First-대운 start dates: exact when the time is known; the earliest and latest over the day otherwise. */
-function luckStarts(chart: SajuChart): { earliest: Date; latest: Date } | null {
+export function luckStarts(chart: SajuChart): { earliest: Date; latest: Date } | null {
   const [y, m, d] = chart.solarDate.split("-").map(Number) as [number, number, number];
   const birth = new Date(Date.UTC(y, m - 1, d));
   if (chart.luck.start) {

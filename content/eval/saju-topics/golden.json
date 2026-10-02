@@ -1,0 +1,25 @@
+{
+  "evalNow": "2026-10-02T03:00:00.000Z",
+  "charts": [
+    { "id": "C1", "pillars": "己巳 丙子 丙寅", "birth": { "calendar": "solar", "year": 1990, "month": 1, "day": 1, "isLeapMonth": false, "timeKnown": false, "hour": null, "minute": null, "gender": "female", "placeId": "seoul" } },
+    { "id": "C2", "pillars": "甲戌 辛未 丙午", "birth": { "calendar": "solar", "year": 1994, "month": 7, "day": 19, "isLeapMonth": false, "timeKnown": false, "hour": null, "minute": null, "gender": "male", "placeId": "seoul" } },
+    { "id": "C3", "pillars": "乙卯 乙酉 甲子 己巳", "birth": { "calendar": "solar", "year": 1975, "month": 9, "day": 15, "isLeapMonth": false, "timeKnown": true, "hour": 10, "minute": 30, "gender": "male", "placeId": "seoul" } },
+    { "id": "C4", "pillars": "庚申 癸未 壬寅 丁未", "birth": { "calendar": "solar", "year": 1980, "month": 7, "day": 28, "isLeapMonth": false, "timeKnown": true, "hour": 14, "minute": 20, "gender": "female", "placeId": "seoul" } },
+    { "id": "C5", "pillars": "戊午 庚申 己酉 己巳", "birth": { "calendar": "solar", "year": 1978, "month": 8, "day": 15, "isLeapMonth": false, "timeKnown": true, "hour": 10, "minute": 30, "gender": "male", "placeId": "seoul" } },
+    { "id": "C6", "pillars": "乙卯 庚辰 癸卯 丁巳", "birth": { "calendar": "solar", "year": 1975, "month": 4, "day": 27, "isLeapMonth": false, "timeKnown": true, "hour": 10, "minute": 30, "gender": "female", "placeId": "seoul" } },
+    { "id": "C7", "pillars": "丁巳 丙午 丁酉 乙巳", "birth": { "calendar": "solar", "year": 1977, "month": 6, "day": 9, "isLeapMonth": false, "timeKnown": true, "hour": 10, "minute": 30, "gender": "female", "placeId": "seoul" } },
+    { "id": "C8", "pillars": "丁卯 丁未 乙酉 庚辰", "birth": { "calendar": "lunar", "year": 1987, "month": 6, "day": 10, "isLeapMonth": true, "timeKnown": true, "hour": 9, "minute": 0, "gender": "male", "placeId": "seoul" } },
+    { "id": "C9", "pillars": "乙丑 甲申 壬午", "birth": { "calendar": "solar", "year": 1985, "month": 8, "day": 11, "isLeapMonth": false, "timeKnown": false, "hour": null, "minute": null, "gender": "male", "placeId": "seoul" } }
+  ],
+  "situations": {
+    "love": { "C1": "long-single", "C2": "some", "C4": "marriage", "C6": "cooling" },
+    "reunion": { "C2": "fresh-breakup", "C3": "no-contact", "C8": "torn", "C9": "missing" },
+    "money": { "C3": "leaking", "C5": "side-income", "C7": "worry" },
+    "career": { "C2": "job-hunt", "C4": "move", "C6": "people", "C9": "exam" }
+  },
+  "overall": [
+    { "chart": "C1" },
+    { "chart": "C3", "loveStatus": "dating", "workStatus": "employee" }
+  ],
+  "realRun": { "topics": ["love", "reunion", "money", "career"], "charts": ["C1", "C3"] }
+}
