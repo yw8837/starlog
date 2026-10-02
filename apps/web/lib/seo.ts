@@ -156,7 +156,7 @@ export function sitemapEntriesFor(host: SiteHost, site: { features: { bonds: boo
 
 /**
  * app/sitemap.xml/route.ts: one host's sitemap, as the sitemaps.org XML Next's own sitemap route
- * wrote (a `sitemap.ts` cannot see the request's host, so the route builds it).
+ * wrote (a `sitemap.ts` is handed no request, so a route reads the host and builds it).
  */
 export function sitemapXml(host: SiteHost, site: { features: { bonds: boolean } } = SITE): string {
   const urls = sitemapEntriesFor(host, site).flatMap(({ path, lastModified, changeFrequency, priority }) => [

@@ -5,7 +5,7 @@ import { sitemapXml } from "@/lib/seo";
 export const dynamic = "force-dynamic";
 
 /**
- * /sitemap.xml as a route (not app/sitemap.ts, which cannot see the request's host): the root domain
+ * /sitemap.xml as a route (not app/sitemap.ts, whose function is handed no request): the root domain
  * lists the guide's URLs, every other host (the app, localhost) the app's. Entries: lib/seo.ts.
  */
 export function GET(request: Request) {
