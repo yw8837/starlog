@@ -1,5 +1,5 @@
 import { deleteIntentFor } from "@/lib/account/deletion";
-import { MOCK_CODE_PREFIX, authorizeUrl, kakaoConfigProblems, kakaoMode } from "@/lib/account/kakao";
+import { MOCK_CODE_PREFIX, authorizeUrl, isKakaoTalkInApp, kakaoConfigProblems, kakaoMode } from "@/lib/account/kakao";
 import { issueOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute } from "@/lib/account/request";
@@ -25,6 +25,8 @@ export async function GET(request: Request): Promise<Response> {
     return redirectTo(request, returnTo, { login: "unavailable" });
   }
   if (url.searchParams.get("purpose") === "delete") {
+    // KakaoTalk's in-app browser logs in with the app's own session: no real re-check there (?delete=in-app).
+    if (isKakaoTalkInApp(request)) return redirectTo(request, "/me", { delete: "in-app" });
     // Only with the intent a same-origin POST handed to this very session.
     if (!ctx.session || !(await deleteIntentFor(url.searchParams.get("intent"), ctx.session.id, ctx.secret, ctx.now))) {
       return redirectTo(request, "/me", { delete: "failed" });
@@ -33,7 +35,7 @@ export async function GET(request: Request): Promise<Response> {
     const target =
       kakaoMode() === "mock"
         ? `/api/auth/kakao/callback?code=${encodeURIComponent(MOCK_CODE_PREFIX + (url.searchParams.get("mockUser") ?? `e2e${randomId(6)}`))}&state=${state}`
-        : authorizeUrl(state);
+        : authorizeUrl(state, "delete");
     return redirectTo(request, target, {}, [cookie]);
   }
   if (!loginOpen(paymentsMode(), ctx.owner)) return redirectTo(request, returnTo, { login: "closed" });
@@ -42,6 +44,6 @@ export async function GET(request: Request): Promise<Response> {
   const target =
     kakaoMode() === "mock"
       ? `/api/auth/kakao/callback?code=${encodeURIComponent(MOCK_CODE_PREFIX + (url.searchParams.get("mockUser") ?? `e2e${randomId(6)}`))}&state=${state}`
-      : authorizeUrl(state);
+      : authorizeUrl(state, "login");
   return redirectTo(request, target, {}, [cookie]);
 }

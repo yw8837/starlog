@@ -21,7 +21,7 @@ describe("Kakao OAuth", () => {
   });
 
   it("builds the authorize URL with the state", () => {
-    const url = new URL(authorizeUrl("state-123", PROD));
+    const url = new URL(authorizeUrl("state-123", "login", PROD));
     expect(url.origin + url.pathname).toBe("https://kauth.kakao.com/oauth/authorize");
     expect(Object.fromEntries(url.searchParams)).toEqual({
       client_id: "rest-key",
@@ -29,6 +29,11 @@ describe("Kakao OAuth", () => {
       response_type: "code",
       state: "state-123",
     });
+  });
+
+  it("asks Kakao for a real login again before an account deletion", () => {
+    expect(new URL(authorizeUrl("state-123", "delete", PROD)).searchParams.get("prompt")).toBe("login");
+    expect(new URL(authorizeUrl("state-123", "login", PROD)).searchParams.has("prompt")).toBe(false);
   });
 
   it("trades the code with the client secret and reads the id and nickname", async () => {

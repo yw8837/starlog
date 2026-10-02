@@ -35,14 +35,22 @@ export function kakaoRedirectUri(env: NodeJS.ProcessEnv = process.env): string {
   return `${origin}/api/auth/kakao/callback`;
 }
 
-export function authorizeUrl(state: string, env: NodeJS.ProcessEnv = process.env): string {
+/**
+ * Kakao's consent screen. For an account deletion `prompt=login` makes Kakao ask for the login
+ * again, so the re-check is a real re-authentication, not the Kakao session the browser already has.
+ */
+export function authorizeUrl(state: string, purpose: "login" | "delete", env: NodeJS.ProcessEnv = process.env): string {
   const url = new URL(KAKAO_AUTHORIZE_URL);
   url.searchParams.set("client_id", env.KAKAO_REST_API_KEY?.trim() ?? "");
   url.searchParams.set("redirect_uri", kakaoRedirectUri(env));
   url.searchParams.set("response_type", "code");
   url.searchParams.set("state", state);
+  if (purpose === "delete") url.searchParams.set("prompt", "login");
   return url.toString();
 }
+
+/** KakaoTalk's in-app browser: its Kakao login rides on the app's own session, so it cannot re-check an account deletion. */
+export const isKakaoTalkInApp = (request: Request) => /KAKAOTALK/i.test(request.headers.get("user-agent") ?? "");
 
 export interface KakaoProfile {
   /** the Kakao member number as a string (hash it with kakaoKey before storing) */

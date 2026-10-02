@@ -5,6 +5,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { reserveUnlock } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
+import { meStatusMessage } from "@/app/me/meStatus";
 import { insertReadingStatement, newReadingId } from "@/lib/readings/store";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
@@ -156,7 +157,10 @@ describe("account deletion", () => {
     const warn = vi.mocked(console.warn);
     try {
       const { url } = (await (await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true })).json()) as { url: string };
-      const state = new URL((await b.send(start, url)).headers.get("location")!).searchParams.get("state");
+      const kakao = new URL((await b.send(start, url)).headers.get("location")!);
+      // The re-check is a real login at Kakao, not the session Kakao already has.
+      expect(kakao.searchParams.get("prompt")).toBe("login");
+      const state = kakao.searchParams.get("state");
       const done = await b.send(callback, `/api/auth/kakao/callback?code=kakao-code&state=${state}`);
       expect(done.status).toBe(303);
       expect(done.headers.get("location")).toBe("http://localhost/me?account=deleted");
@@ -182,6 +186,21 @@ describe("account deletion", () => {
     expect(body.message).toContain("청구된 금액은 없어요");
     expect(body.message).not.toContain("환불");
     expect(toss).not.toHaveBeenCalled();
+  });
+
+  it("sends KakaoTalk's in-app browser elsewhere: its Kakao login cannot be a re-check", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    const { url } = (await (await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true })).json()) as { url: string };
+    const cookie = [...b.jar].map(([name, value]) => `${name}=${value}`).join("; ");
+    const inApp = await start(
+      new Request(new URL(`${url}&mockUser=alice`, "http://localhost"), {
+        headers: { cookie, "cf-connecting-ip": "198.51.100.250", "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 KAKAOTALK 10.8.0" },
+      }),
+    );
+    expect(inApp.headers.get("location")).toBe("http://localhost/me?delete=in-app");
+    expect(meStatusMessage({ delete: "in-app" })).toBe("탈퇴는 카카오톡 밖의 브라우저에서 해 주세요.");
+    expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
   });
 
   it("waits while a reading is being opened", async () => {

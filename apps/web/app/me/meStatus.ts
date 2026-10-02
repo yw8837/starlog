@@ -8,6 +8,7 @@ const DELETE_MESSAGES: Record<string, string> = {
   "in-use": "지금 열고 있는 풀이가 있어요. 풀이가 끝난 뒤 다시 시도해 주세요.",
   cancel: "탈퇴를 취소했어요",
   unavailable: "지금은 탈퇴를 처리할 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
+  "in-app": "탈퇴는 카카오톡 밖의 브라우저에서 해 주세요.",
 };
 
 /** The one line 내 정보 shows for ?account=, ?delete= or ?login=. */
