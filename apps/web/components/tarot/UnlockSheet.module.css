@@ -22,6 +22,15 @@
   text-align: center;
 }
 
+/* "전체 풀이 · 2,900원" under the title, before the scope lines. */
+.price {
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  text-align: center;
+}
+
 /* What opening gives, before the button: three short lines. */
 .includes {
   display: grid;
@@ -102,4 +111,23 @@
   color: var(--gold);
   font-size: var(--fs-sub);
   text-align: center;
+}
+
+/* Quiet text links under the buttons (환불받기, the paused-sales login). */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+.links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-underline-offset: 3px;
 }

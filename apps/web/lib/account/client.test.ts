@@ -1,0 +1,41 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { loginHref, loginMessage, parseAccount, refreshAccount, resetAccountForTests } from "./client";
+
+afterEach(() => resetAccountForTests());
+
+describe("account client", () => {
+  it("reads /api/me and refuses odd shapes", () => {
+    const body = { payments: true, login: true, owner: false, user: { nickname: "별", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "o1", productId: "tarot" }] } };
+    expect(parseAccount(body)).toEqual(body);
+    expect(parseAccount({ payments: false, login: false, owner: false, user: null })).toEqual({ payments: false, login: false, owner: false, user: null });
+    expect(parseAccount({ payments: "yes" })).toBeNull();
+    expect(parseAccount({ payments: true, login: true, owner: false, user: { nickname: 1 } })).toBeNull();
+  });
+
+  it("asks /api/me once for many callers, and treats a failure as unknown", async () => {
+    let calls = 0;
+    const ok = (async () => {
+      calls++;
+      return Response.json({ payments: true, login: true, owner: false, user: null });
+    }) as typeof fetch;
+    const [a, b] = await Promise.all([refreshAccount(ok), refreshAccount(ok)]);
+    expect(calls).toBe(1);
+    expect(a).toEqual({ payments: true, login: true, owner: false, user: null });
+    expect(b).toBe(a);
+    const down = (async () => {
+      throw new TypeError("offline");
+    }) as typeof fetch;
+    expect(await refreshAccount(down)).toBeNull();
+  });
+
+  it("builds the login link and the messages for ?login=", () => {
+    expect(loginHref("/tarot/result")).toBe("/login?next=%2Ftarot%2Fresult");
+    expect(loginMessage("ok")).toBeNull();
+    expect(loginMessage(null)).toBeNull();
+    expect(loginMessage("cancel")).toBe("로그인을 취소했어요");
+    expect(loginMessage("failed")).toBe("로그인하지 못했어요. 다시 시도해 주세요.");
+    expect(loginMessage("closed")).toBe("지금은 새로 가입할 수 없어요");
+    expect(loginMessage("unavailable")).toBe("지금은 로그인할 수 없어요. 잠시 뒤에 다시 시도해 주세요.");
+    expect(loginMessage("busy")).toBe("요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.");
+  });
+});

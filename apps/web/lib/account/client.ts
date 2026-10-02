@@ -1,0 +1,111 @@
+import { useEffect, useSyncExternalStore } from "react";
+
+/**
+ * Browser side of accounts: GET /api/me, shared by every component through one small store (one
+ * request however many components ask). `undefined` until loaded, `null` when it failed (screens
+ * then behave as they do without accounts).
+ */
+
+export interface AccountUser {
+  nickname: string;
+  stardust: number;
+  /** ISO time the soonest 별조각 expire; null when there are none */
+  stardustExpiresAt: string | null;
+  /** paid readings bought and not opened yet */
+  unused: Array<{ orderId: string; productId: string }>;
+}
+
+export interface AccountState {
+  /** sales (new orders, sign-up, gift) are open for this device */
+  payments: boolean;
+  /** this device may log in (also while sales are paused, for existing accounts) */
+  login: boolean;
+  owner: boolean;
+  user: AccountUser | null;
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+function parseUser(v: unknown): AccountUser | null | undefined {
+  if (v === null) return null;
+  if (!isRecord(v) || typeof v.nickname !== "string" || typeof v.stardust !== "number" || !Array.isArray(v.unused)) return undefined;
+  if (v.stardustExpiresAt !== null && typeof v.stardustExpiresAt !== "string") return undefined;
+  const unused = v.unused.filter((u): u is { orderId: string; productId: string } => isRecord(u) && typeof u.orderId === "string" && typeof u.productId === "string");
+  return { nickname: v.nickname, stardust: v.stardust, stardustExpiresAt: v.stardustExpiresAt, unused: unused.map(({ orderId, productId }) => ({ orderId, productId })) };
+}
+
+export function parseAccount(value: unknown): AccountState | null {
+  if (!isRecord(value) || typeof value.payments !== "boolean" || typeof value.login !== "boolean" || typeof value.owner !== "boolean") return null;
+  const user = parseUser(value.user);
+  return user === undefined ? null : { payments: value.payments, login: value.login, owner: value.owner, user };
+}
+
+let snapshot: AccountState | null | undefined;
+let inflight: Promise<AccountState | null> | null = null;
+const listeners = new Set<() => void>();
+
+/** Asks /api/me again (after login, a payment, an opened reading); concurrent callers share one request. */
+export function refreshAccount(fetchImpl: typeof fetch = fetch): Promise<AccountState | null> {
+  if (inflight) return inflight;
+  inflight = (async () => {
+    let next: AccountState | null = null;
+    try {
+      const response = await fetchImpl("/api/me", { credentials: "same-origin", headers: { Accept: "application/json" }, cache: "no-store" });
+      next = response.ok ? parseAccount(await response.json()) : null;
+    } catch {
+      next = null;
+    }
+    snapshot = next;
+    inflight = null;
+    listeners.forEach((listener) => listener());
+    return next;
+  })();
+  return inflight;
+}
+
+const subscribe = (listener: () => void) => {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+};
+
+export function useAccount(): AccountState | null | undefined {
+  const value = useSyncExternalStore(subscribe, () => snapshot, () => undefined);
+  useEffect(() => {
+    if (snapshot === undefined) void refreshAccount();
+  }, []);
+  return value;
+}
+
+export function loginHref(returnTo: string): string {
+  return `/login?next=${encodeURIComponent(returnTo)}`;
+}
+
+export async function logout(fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  try {
+    const response = await fetchImpl("/api/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}", credentials: "same-origin" });
+    await refreshAccount(fetchImpl);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+const LOGIN_MESSAGES: Record<string, string> = {
+  cancel: "로그인을 취소했어요",
+  failed: "로그인하지 못했어요. 다시 시도해 주세요.",
+  closed: "지금은 새로 가입할 수 없어요",
+  unavailable: "지금은 로그인할 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
+  busy: "요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.",
+};
+
+/** What to say for the ?login= flag a login brought back (nothing for ok). */
+export function loginMessage(flag: string | null): string | null {
+  return flag ? (LOGIN_MESSAGES[flag] ?? null) : null;
+}
+
+/** Tests only. */
+export function resetAccountForTests(): void {
+  snapshot = undefined;
+  inflight = null;
+  listeners.clear();
+}

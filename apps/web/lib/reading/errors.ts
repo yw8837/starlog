@@ -16,7 +16,7 @@ export interface ErrorView {
   care?: boolean;
 }
 
-export type ErrorContext = "reading" | "teaser" | "tarot-draw" | "followup" | "daily";
+export type ErrorContext = "reading" | "teaser" | "tarot-draw" | "followup" | "daily" | "paid" | "stardust";
 
 const KST_MS = 9 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -34,6 +34,33 @@ export function resetLine(resetsAt: string | undefined, now: number = Date.now()
   if (days <= 0) return `오늘 ${time}에 다시 열려요`;
   if (days === 1) return `내일 ${time}에 다시 열려요`;
   return `${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일 ${time}에 다시 열려요`;
+}
+
+/**
+ * A paid or 별조각 reading that failed mid-way: nobody knows yet whether it was saved (M4). Shown
+ * until the result page has checked the account (lib/storage/sync.ts checkDelivery).
+ */
+export const CREDIT_CHECKING: ErrorView = { title: "풀이가 열렸는지 확인하고 있어요", body: "잠시만 기다려 주세요.", action: null };
+
+/** The check found the credit unused: only now may the page say so. */
+export function creditKept(context: "paid" | "stardust"): ErrorView {
+  return {
+    title: "풀이를 다 적지 못했어요",
+    body: context === "paid" ? "결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요." : "별조각은 그대로예요. 한 번 더 시도해 주세요.",
+    action: "retry",
+  };
+}
+
+/** The check could not tell yet: point to where the answer will show, promise nothing unseen. */
+export function creditUnknown(context: "paid" | "stardust"): ErrorView {
+  return {
+    title: "풀이가 열렸는지 아직 확인하지 못했어요",
+    body:
+      context === "paid"
+        ? "몇 분 안에 내 정보의 결제한 풀이나 기록에 나타나요. 열리지 않은 결제는 내 정보에서 다시 열거나 환불받을 수 있어요."
+        : "몇 분 안에 내 정보의 별조각이나 기록에 나타나요.",
+    action: null,
+  };
 }
 
 export function describeApiError(error: ApiError, context: ErrorContext = "reading", now: number = Date.now()): ErrorView {
@@ -57,14 +84,18 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       return { title: "이 내용으로는 풀이를 만들 수 없어요", body: "질문이나 메모를 바꿔 다시 시도해 주세요.", action: "edit" };
     case "QUALITY":
     case "UPSTREAM":
+      if (context === "paid" || context === "stardust") return CREDIT_CHECKING;
       if (context === "tarot-draw") return { title: "카드를 나누지 못했어요", body: "다시 시도해 주세요.", action: "retry" };
       return { title: "풀이를 다 적지 못했어요", body: "횟수는 그대로예요. 한 번 더 시도해 주세요.", action: "retry" };
     case "TIMEOUT":
+      if (context === "paid" || context === "stardust") return CREDIT_CHECKING;
       // Given up on the client: whether the server had counted it is not known, so no promise about the count.
       return { title: "답이 너무 오래 걸리고 있어요", body: "잠시 뒤 다시 시도해 주세요.", action: "retry" };
     case "INVALID":
+      if (context === "paid" || context === "stardust") return CREDIT_CHECKING;
       return { title: "풀이를 제대로 받지 못했어요", body: "다시 시도해 주세요.", action: "retry" };
     case "NETWORK":
+      if (context === "paid" || context === "stardust") return CREDIT_CHECKING;
       // Drawing cards costs nothing, so there is no count to reassure about.
       if (context === "tarot-draw") return { title: "연결이 잠시 끊겼어요", body: "다시 시도해 주세요.", action: "retry" };
       return { title: "연결이 잠시 끊겼어요", body: "횟수는 그대로예요. 다시 시도해 주세요.", action: "retry" };
@@ -74,5 +105,23 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
     case "BAD_REQUEST":
       if (error.field && error.message) return { title: error.message, action: "edit" };
       return { title: "요청을 읽지 못했어요", body: "처음부터 다시 시도해 주세요.", action: "edit" };
+    case "LOGIN_REQUIRED":
+      return { title: "로그인이 필요해요", body: "로그인하고 다시 열어 주세요.", action: null };
+    case "PAYMENT_REQUIRED":
+      return { title: "전체 풀이는 결제하거나 별조각으로 열 수 있어요", action: null };
+    case "NO_CREDIT":
+      return { title: "쓸 수 있는 결제한 풀이나 별조각이 없어요", body: "결제하고 열 수 있어요.", action: null };
+    case "PAY_UNAVAILABLE":
+      return { title: "지금은 결제를 쓸 수 없어요", body: "잠시 뒤에 다시 시도해 주세요.", action: "retry" };
+    case "FORBIDDEN":
+      return { title: "다시 시도해 주세요", body: "화면을 새로 고친 뒤 다시 눌러 주세요.", action: "retry" };
+    case "NOT_AVAILABLE":
+      return { title: "지금은 열 수 없는 상품이에요", action: "home" };
+    case "PAY_FAILED":
+      return { title: "결제를 마치지 못했어요", body: error.message || "청구된 금액은 없어요.", action: "retry" };
+    case "PAY_PENDING":
+      return { title: "결제를 확인하고 있어요", body: "잠시 뒤에 다시 확인해 주세요.", action: "retry" };
+    case "NOT_REFUNDABLE":
+      return { title: "환불할 수 없는 결제예요", body: "이미 연 풀이이거나 환불을 처리하고 있어요.", action: null };
   }
 }

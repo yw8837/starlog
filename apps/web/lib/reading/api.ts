@@ -25,9 +25,37 @@ export type ApiErrorCode =
   /** Client side: the answer took longer than the deadline, or the stream went silent. */
   | "TIMEOUT"
   /** Client side: an answer arrived but did not have the reading's shape (nothing was kept). */
-  | "INVALID";
+  | "INVALID"
+  // Accounts and payments (P4)
+  | "LOGIN_REQUIRED"
+  | "PAYMENT_REQUIRED"
+  | "NO_CREDIT"
+  | "PAY_FAILED"
+  | "FORBIDDEN"
+  | "NOT_AVAILABLE"
+  | "PAY_PENDING"
+  | "NOT_REFUNDABLE"
+  | "PAY_UNAVAILABLE";
 
-const CODES: readonly ApiErrorCode[] = ["BAD_REQUEST", "BAD_TOKEN", "BETA_LIMIT", "RATE_LIMIT", "AI_UNAVAILABLE", "REFUSED", "QUALITY", "UPSTREAM"];
+const CODES: readonly ApiErrorCode[] = [
+  "BAD_REQUEST",
+  "BAD_TOKEN",
+  "BETA_LIMIT",
+  "RATE_LIMIT",
+  "AI_UNAVAILABLE",
+  "REFUSED",
+  "QUALITY",
+  "UPSTREAM",
+  "LOGIN_REQUIRED",
+  "PAYMENT_REQUIRED",
+  "NO_CREDIT",
+  "PAY_FAILED",
+  "FORBIDDEN",
+  "NOT_AVAILABLE",
+  "PAY_PENDING",
+  "NOT_REFUNDABLE",
+  "PAY_UNAVAILABLE",
+];
 
 export interface ApiError {
   code: ApiErrorCode;
