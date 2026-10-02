@@ -75,7 +75,7 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   await more.click();
   await page.getByRole("button", { name: "연애 중" }).click();
   await page.getByRole("button", { name: "직장인" }).click();
-  await page.getByRole("textbox", { name: "요즘 고민 한 줄" }).fill("이직을 고민하고 있어요");
+  await expect(page.getByRole("textbox", { name: "요즘 고민 한 줄" })).toHaveCount(0);
   await shot(page, info, "01-saju-new-status");
 
   // Consent is required; the button explains what is missing.
@@ -92,8 +92,8 @@ test("saju: input, consent, the example chart, then the user's own chart with �
     birth: { year: 1990, month: 1, day: 1, calendar: "solar" },
     loveStatus: "dating",
     workStatus: "employee",
-    concern: "이직을 고민하고 있어요",
   });
+  expect(JSON.parse((await teaserRequest).postData() ?? "{}")).not.toHaveProperty("concern");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("나의 명식");
   const chart = page.getByRole("complementary", { name: "명식" });
   await expect(chart.getByRole("table").getByRole("columnheader")).toHaveText(["시주", "일주", "월주", "연주"]);

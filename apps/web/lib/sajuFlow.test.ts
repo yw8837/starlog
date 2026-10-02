@@ -2,7 +2,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  CONCERN_MAX,
   SAJU_CONTEXT_KEY,
   SAJU_PROFILE_KEY,
   clearSajuProfile,
@@ -51,9 +50,9 @@ describe("useSajuProfile", () => {
     const context = renderHook(() => useSajuContext());
     act(() => {
       saveSajuProfile(KNOWN);
-      saveSajuContext({ loveStatus: "dating", concern: "이직" });
+      saveSajuContext({ loveStatus: "dating" });
     });
-    expect(context.result.current).toMatchObject({ loveStatus: "dating", concern: "이직" });
+    expect(context.result.current).toMatchObject({ loveStatus: "dating" });
     act(() => clearSajuProfile());
     expect(profile.result.current.profile).toBeNull();
     expect(context.result.current).toEqual({});
@@ -62,18 +61,15 @@ describe("useSajuProfile", () => {
   });
 });
 
-describe("saju status chips and concern", () => {
-  it("keeps only known chip ids and caps the concern", () => {
-    expect(sanitizeSajuContext({ loveStatus: "dating", workStatus: "ceo", concern: "가".repeat(CONCERN_MAX + 5) })).toEqual({
-      loveStatus: "dating",
-      concern: "가".repeat(CONCERN_MAX),
-    });
+describe("saju status chips (no free text)", () => {
+  it("keeps only known chip ids and drops a concern an older version saved", () => {
+    expect(sanitizeSajuContext({ loveStatus: "dating", workStatus: "ceo", concern: "이직" })).toEqual({ loveStatus: "dating" });
     expect(sanitizeSajuContext("x")).toBeNull();
   });
 
-  it("sends only filled fields, with the concern trimmed", () => {
-    expect(sajuContextBody({ loveStatus: "married", concern: "  이사할까  " })).toEqual({ loveStatus: "married", concern: "이사할까" });
-    expect(sajuContextBody({ concern: "   " })).toEqual({});
+  it("sends only the filled chips and never a concern", () => {
+    expect(sajuContextBody({ loveStatus: "married", concern: "이사할까" } as Parameters<typeof sajuContextBody>[0])).toEqual({ loveStatus: "married" });
+    expect(sajuContextBody({})).toEqual({});
   });
 });
 
@@ -84,11 +80,11 @@ describe("freshSajuContextOnEntry (a new saju question starts clean)", () => {
   });
   const savedContext = () => JSON.parse(localStorage.getItem(SAJU_CONTEXT_KEY) ?? "null");
 
-  it("clears the status chips and concern for a new question but never the birth profile", () => {
+  it("clears the status chips for a new question but never the birth profile", () => {
     saveSajuProfile(KNOWN);
-    saveSajuContext({ loveStatus: "dating", workStatus: "employee", concern: "이직" });
+    saveSajuContext({ loveStatus: "dating", workStatus: "employee" });
     freshSajuContextOnEntry(false);
-    expect(savedContext()).toMatchObject({ loveStatus: "dating", concern: "이직" });
+    expect(savedContext()).toMatchObject({ loveStatus: "dating" });
     freshSajuContextOnEntry(true);
     expect(localStorage.getItem(SAJU_CONTEXT_KEY)).toBeNull();
     expect(JSON.parse(localStorage.getItem(SAJU_PROFILE_KEY) ?? "null")).toEqual(KNOWN);

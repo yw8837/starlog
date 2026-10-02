@@ -203,4 +203,9 @@ describe("/help", () => {
       expect(titles).toContain(title);
     }
   });
+
+  it("never asks for a one-line concern on the saju side", () => {
+    const saju = helpGroups().find((group) => group.id === "saju")!;
+    expect(JSON.stringify(saju)).not.toMatch(/고민 한 줄|고민을 한 줄/);
+  });
 });

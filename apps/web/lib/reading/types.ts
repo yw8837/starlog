@@ -137,9 +137,8 @@ export type DrawTemplateId = Exclude<TemplateId, "daily">;
 export type LoveStatus = "single" | "dating" | "engaged" | "married" | "fresh-start" | "unsure";
 export type WorkStatus = "student" | "employee" | "self-employed" | "between-jobs" | "unsure";
 
-/** What the saju form adds beside the birth data (all optional). */
+/** What the saju form adds beside the birth data (all optional). The saju side takes no free text. */
 export interface SajuContext {
   loveStatus?: LoveStatus;
   workStatus?: WorkStatus;
-  concern?: string;
 }

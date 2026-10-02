@@ -5,11 +5,9 @@ import { useRef, useState, type FormEvent, type RefObject } from "react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Chip } from "@/components/ui/Chip";
-import { CustomField } from "@/components/ui/CustomField";
 import { Segmented } from "@/components/ui/Segmented";
 import type { SajuContext } from "@/lib/reading/types";
 import {
-  CONCERN_MAX,
   LOVE_STATUS_OPTIONS,
   WORK_STATUS_OPTIONS,
   useFreshSajuContextOnEntry,
@@ -61,12 +59,12 @@ const range = (from: number, to: number) => Array.from({ length: Math.abs(to - f
 export function SajuForm() {
   const { profile } = useSajuProfile();
   const context = useSajuContext();
-  // The chips and concern stay only on a move inside the saju flow; a refresh or an entry from
+  // The chips stay only on a move inside the saju flow; a refresh or an entry from
   // elsewhere starts them clean (the birth profile stays), before the first paint.
   useFreshSajuContextOnEntry();
   // Remount once saved values are read, so the fields start from them. A first visit has none: its
   // key stays the same through hydration, so an early tap is never thrown away by a remount.
-  const savedContext = Boolean(context && (context.loveStatus || context.workStatus || context.concern));
+  const savedContext = Boolean(context && (context.loveStatus || context.workStatus));
   return (
     <SajuFormFields
       key={`${profile ? "saved" : "fresh"}-${savedContext ? "context" : "none"}`}
@@ -90,7 +88,7 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
   const [form, setForm] = useState<SajuFormValues>(initial);
   const [context, setContext] = useState<SajuContext>(initialContext);
   // Optional, so folded until asked for (open when something was saved before).
-  const [moreOpen, setMoreOpen] = useState(Boolean(initialContext.loveStatus || initialContext.workStatus || initialContext.concern));
+  const [moreOpen, setMoreOpen] = useState(Boolean(initialContext.loveStatus || initialContext.workStatus));
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
 
@@ -355,13 +353,6 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
                 ))}
               </div>
             </fieldset>
-            <CustomField
-              label="요즘 고민 한 줄"
-              placeholder="요즘 고민 한 줄 (예: 이직을 고민하고 있어요)"
-              value={context.concern ?? ""}
-              maxLength={CONCERN_MAX}
-              onChange={(concern) => setContext((prev) => ({ ...prev, concern }))}
-            />
           </div>
         ) : null}
       </div>

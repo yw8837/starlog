@@ -209,7 +209,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           icon: "chips",
           title: "상태 칩",
           sub: "요즘 상황을 알려 주면 더 구체적으로",
-          body: "요즘 상황도 알려 주기에서 연애 상태와 일 상태를 하나씩 고를 수 있어요. 요즘 고민을 한 줄로 적어도 돼요.",
+          body: "요즘 상황도 알려 주기에서 연애 상태와 일 상태를 하나씩 고를 수 있어요.",
           tip: "고르지 않아도 풀이는 열려요. 고른 상태는 다음에도 쓰도록 이 기기에 저장돼요.",
         },
         {

@@ -6,15 +6,12 @@ import { sanitizeSajuForm, type SajuForm } from "./sajuForm";
 
 /**
  * The birth profile behind the saju screens (input → chart → reading, 내 정보) and the optional
- * status chips and concern, kept on this device (localStorage). Birth data never goes into a URL
+ * status chips, kept on this device (localStorage). Birth data never goes into a URL
  * (spec §4); 내 정보 can erase it.
  */
 
 export const SAJU_PROFILE_KEY = "starlog.saju-profile";
 export const SAJU_CONTEXT_KEY = "starlog.saju-context";
-
-/** Longest one-line concern the saju form accepts. */
-export const CONCERN_MAX = 60;
 
 export const LOVE_STATUS_OPTIONS: ReadonlyArray<{ value: LoveStatus; label: string }> = [
   { value: "single", label: "솔로" },
@@ -35,17 +32,15 @@ export const WORK_STATUS_OPTIONS: ReadonlyArray<{ value: WorkStatus; label: stri
 
 const profileStore = createLocalStore<SajuForm>(SAJU_PROFILE_KEY, sanitizeSajuForm);
 
-/** Keeps only known chip values and a trimmed, capped concern; empty fields are left out. */
+/** Keeps only known chip values; empty fields are left out (a concern saved by an older version is dropped). */
 export function sanitizeSajuContext(value: unknown): SajuContext | null {
   if (typeof value !== "object" || value === null) return null;
   const v = value as Record<string, unknown>;
   const loveStatus = LOVE_STATUS_OPTIONS.find((o) => o.value === v.loveStatus)?.value;
   const workStatus = WORK_STATUS_OPTIONS.find((o) => o.value === v.workStatus)?.value;
-  const concern = typeof v.concern === "string" ? v.concern.slice(0, CONCERN_MAX) : "";
   return {
     ...(loveStatus ? { loveStatus } : {}),
     ...(workStatus ? { workStatus } : {}),
-    ...(concern ? { concern } : {}),
   };
 }
 
@@ -69,7 +64,7 @@ export function saveSajuContext(context: SajuContext) {
 
 /**
  * On entering the form: unless it was reached from inside the saju flow (lib/freshStart.ts), or
- * when they were saved more than 30 minutes ago, the status chips and concern start clean. The
+ * when they were saved more than 30 minutes ago, the status chips start clean. The
  * birth profile always stays.
  */
 export function freshSajuContextOnEntry(newQuestion: boolean, now = Date.now()) {
@@ -96,18 +91,16 @@ export function useSajuProfile(): { profile: SajuForm | null | undefined; savePr
   return { profile: profileStore.useValue(), saveProfile: saveSajuProfile };
 }
 
-/** The saved status chips and concern: undefined before hydration, {} when none. */
+/** The saved status chips: undefined before hydration, {} when none. */
 export function useSajuContext(): SajuContext | undefined {
   const value = contextStore.useValue();
   return value === undefined ? undefined : (value ?? {});
 }
 
-/** The body fields /api/saju/* take beside `birth`; empty ones are left out (a trimmed concern). */
+/** The body fields /api/saju/* take beside `birth`; empty ones are left out. */
 export function sajuContextBody(context: SajuContext): SajuContext {
-  const concern = context.concern?.trim();
   return {
     ...(context.loveStatus ? { loveStatus: context.loveStatus } : {}),
     ...(context.workStatus ? { workStatus: context.workStatus } : {}),
-    ...(concern ? { concern } : {}),
   };
 }

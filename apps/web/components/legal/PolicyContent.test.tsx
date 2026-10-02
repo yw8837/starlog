@@ -17,7 +17,8 @@ describe("policies match what the service does", () => {
     expect(text).toContain("제28조의8");
     expect(text).toContain("30일 안에 자동으로 삭제");
     expect(text).toContain("모델 학습에 쓰지 않습니다");
-    for (const item of ["메모", "요즘 상황과 고민 한 줄", "후속 질문", "지난 풀이 요약"]) expect(text).toContain(item);
+    for (const item of ["메모", "요즘 상황(고른 칩)", "후속 질문", "지난 풀이 요약"]) expect(text).toContain(item);
+    expect(text).not.toContain("고민 한 줄");
   });
 
   it("privacy: lists every cookie, the browser storage, the KV records and Kakao sharing", () => {
