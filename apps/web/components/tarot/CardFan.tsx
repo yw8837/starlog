@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { TarotCard } from "./TarotCard";
 import s from "./CardFan.module.css";
 
@@ -24,6 +24,9 @@ const SPREAD_DEG = 54;
  */
 const WIDE_FROM = 13;
 const WIDE_STEP_DEG = 7.5;
+/** A picked card's rise (CardFan.module.css: transform 220 ms, up to 32 px), with a margin. */
+const RISE_GUARD_MS = 300;
+const RISE_PX = 40;
 
 /**
  * Inline CSS variables that fit a wide arc of `cards` cards to its box (with the `.box`, `.wideBox`
@@ -56,9 +59,27 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
   /** Until when (Date.now()) the click that follows a touch is ignored; 0 when none is. */
   const ignoreClickUntil = useRef(0);
   const buttons = useRef<Array<HTMLButtonElement | null>>([]);
+  /** The last pick and when it was made (Date.now()). */
+  const lastPick = useRef<{ index: number; at: number } | null>(null);
   const full = picked.length >= max;
 
   const canPick = (index: number) => !full && !picked.includes(index);
+
+  const pick = (index: number) => {
+    lastPick.current = { index, at: Date.now() };
+    onPick(index);
+  };
+
+  /**
+   * A picked card rises for 220 ms (CardFan.module.css). A tap or click that soon, on or just below
+   * where that card is, is a re-tap on it: what the pointer now hits is the card that was behind it.
+   */
+  const reTapOnRisingCard = (x: number, y: number): boolean => {
+    const last = lastPick.current;
+    if (!last || Date.now() - last.at >= RISE_GUARD_MS) return false;
+    const box = buttons.current[indexes.indexOf(last.index)]?.getBoundingClientRect();
+    return !!box && x >= box.left && x <= box.right && y >= box.top && y <= box.bottom + RISE_PX;
+  };
 
   const setActive = (index: number | null) => {
     activeRef.current = index;
@@ -92,7 +113,7 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
     // on a picked, lifted card would otherwise pick the card beside it). A deadline, not a timer, so
     // an earlier tap's wait cannot end this one's.
     ignoreClickUntil.current = Date.now() + 500;
-    if (index !== null && canPick(index)) onPick(index);
+    if (index !== null && canPick(index) && !reTapOnRisingCard(e.clientX, e.clientY)) pick(index);
   };
 
   const stopScrub = () => {
@@ -100,9 +121,11 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
     setActive(null);
   };
 
-  const onClick = (index: number) => {
+  const onClick = (index: number, e: MouseEvent) => {
     if (Date.now() < ignoreClickUntil.current) return;
-    if (canPick(index)) onPick(index);
+    // detail 0: Enter or Space, which has no pointer position to doubt.
+    if (e.detail !== 0 && reTapOnRisingCard(e.clientX, e.clientY)) return;
+    if (canPick(index)) pick(index);
   };
 
   const last = indexes.length - 1;
@@ -156,7 +179,7 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
               aria-pressed={isPicked}
               aria-disabled={!canPick(deckIndex)}
               aria-label={isPicked ? `${order + 1}번째로 고른 카드` : `카드 ${slot + 1}`}
-              onClick={() => onClick(deckIndex)}
+              onClick={(e) => onClick(deckIndex, e)}
               onFocus={() => setFocusSlot(slot)}
               onKeyDown={(e) => onKeyDown(e, slot)}
             >

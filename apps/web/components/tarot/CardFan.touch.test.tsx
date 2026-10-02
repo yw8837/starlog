@@ -22,7 +22,8 @@ afterEach(() => {
   Reflect.deleteProperty(document, "elementFromPoint");
 });
 
-const [, , , , , , SIXTH, SEVENTH] = fanIndexes(78, 21);
+// Slots 4, 6, 7 and 12 of the 21-card fan: one behind, the picked one, its neighbour, one far away.
+const [, , , , BEHIND, , SIXTH, SEVENTH, , , , , FAR] = fanIndexes(78, 21);
 const fanButton = (deckIndex: number) => document.querySelector<HTMLElement>(`[data-fan-index="${deckIndex}"]`)!;
 
 /** A finger tap that the page's hit test puts on `under`, while the browser aims its click at `clickOn`. */
@@ -63,6 +64,51 @@ describe("CardFan on touch", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("treats a tap near the card just picked, while it still rises, as a re-tap on it; later or farther taps pick", () => {
+    vi.useFakeTimers();
+    try {
+      const onPick = vi.fn();
+      const { rerender } = render(<CardFan picked={[]} max={3} onPick={onPick} />);
+      touchTap(SIXTH!, SIXTH!);
+      rerender(<CardFan picked={[SIXTH!]} max={3} onPick={onPick} />);
+      // The picked card's box while it rises (it moves up 30 px).
+      fanButton(SIXTH!).getBoundingClientRect = () => ({ left: 69, right: 195, top: 454, bottom: 599, width: 126, height: 145, x: 69, y: 454, toJSON: () => ({}) });
+
+      // 70 ms later the finger lands where the card was; the hit test already finds the card behind it.
+      vi.advanceTimersByTime(70);
+      Object.defineProperty(document, "elementFromPoint", { configurable: true, value: () => fanButton(BEHIND!) });
+      const fan = fanButton(SIXTH!).parentElement!;
+      fireEvent.pointerDown(fan, { pointerType: "touch", clientX: 85, clientY: 590 });
+      fireEvent.pointerUp(fan, { pointerType: "touch", clientX: 85, clientY: 590 });
+      expect(onPick).toHaveBeenCalledTimes(1);
+
+      // A mouse double-click there does nothing either; a keyboard Enter (detail 0) still picks.
+      vi.advanceTimersByTime(600);
+      fireEvent.click(fanButton(SIXTH!), { detail: 1, clientX: 85, clientY: 590 });
+      expect(onPick).toHaveBeenCalledTimes(1);
+
+      // Once the card has risen, a tap far from it picks the card under the finger.
+      vi.advanceTimersByTime(400);
+      Object.defineProperty(document, "elementFromPoint", { configurable: true, value: () => fanButton(FAR!) });
+      fireEvent.pointerDown(fan, { pointerType: "touch", clientX: 300, clientY: 640 });
+      fireEvent.pointerUp(fan, { pointerType: "touch", clientX: 300, clientY: 640 });
+      expect(onPick).toHaveBeenLastCalledWith(FAR);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not hold back a quick mouse pick of a card away from the one just picked, nor the keyboard", () => {
+    const onPick = vi.fn();
+    const { rerender } = render(<CardFan picked={[]} max={3} onPick={onPick} />);
+    fireEvent.click(fanButton(SIXTH!), { detail: 1, clientX: 85, clientY: 560 });
+    rerender(<CardFan picked={[SIXTH!]} max={3} onPick={onPick} />);
+    fanButton(SIXTH!).getBoundingClientRect = () => ({ left: 69, right: 195, top: 454, bottom: 599, width: 126, height: 145, x: 69, y: 454, toJSON: () => ({}) });
+    fireEvent.click(fanButton(FAR!), { detail: 1, clientX: 320, clientY: 640 });
+    fireEvent.click(fanButton(BEHIND!), { detail: 0 });
+    expect(onPick.mock.calls.map(([index]) => index)).toEqual([SIXTH, FAR, BEHIND]);
   });
 
   it("picks the card under the finger once, even with the click that follows", () => {
