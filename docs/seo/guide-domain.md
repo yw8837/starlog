@@ -10,14 +10,20 @@
 | `https://yeolmaeapps.kr/guide`, `/guide/...` | 가이드 탭과 글 전체. `/guide`는 `/guide/tarot`으로 308 |
 | `https://yeolmaeapps.kr/` 의 그 밖의 경로 (`/tarot/new`, `/me`, `/story` ...) | `https://starlog.yeolmaeapps.kr` 의 같은 경로로 307(임시. 루트 도메인에 다른 앱의 페이지가 생길 수 있어서요) |
 | 루트 도메인에서 그대로 서빙하는 것 | `/guide/*`, `/_next/*`, `/api/*`, `/og/*`, `/opengraph-image`, `/cards/*`, 점이 들어간 파일(`robots.txt`, `sitemap.xml`, `ads.txt`, `llms.txt`, `llms-full.txt`, `rss.xml`, 파비콘과 아이콘, `logo.png`, IndexNow 키, `.well-known/...`) |
-| `https://starlog.yeolmaeapps.kr/guide`, `/guide/...` | `https://yeolmaeapps.kr` 의 같은 경로로 308(영구) |
-| 그 밖의 모든 호스트(localhost, 미리보기, e2e) | 규칙이 하나도 켜지지 않아요. 지금까지와 똑같이 한 주소에서 다 보여요 |
+| `https://starlog.yeolmaeapps.kr/guide` | `https://yeolmaeapps.kr/guide/tarot`으로 한 번에 308(영구) |
+| `https://starlog.yeolmaeapps.kr/guide/...` | `https://yeolmaeapps.kr` 의 같은 경로로 308(영구) |
+| 배포 빌드에서 그 밖의 호스트 | 규칙이 하나도 켜지지 않아요 |
+| `next dev`, 미리보기(`cf:preview`), e2e 빌드 | 플래그가 꺼져 있어서 호스트 규칙이 아예 없어요. 지금까지와 똑같이 한 주소에서 다 보여요 |
 
-규칙은 `apps/web/lib/hostRoutes.ts`에 있고 `next.config.ts`가 가져다 써요. 호스트는 `^yeolmaeapps\.kr$`처럼 끝까지 맞춰서 비교해요(Worker가 호스트 정규식을 앞뒤 고정 없이 검사해서, 고정하지 않으면 `starlog.` 쪽에도 걸려요). 같은 표를 `lib/hostRoutes.test.ts`가 Next 서버 방식과 OpenNext Worker 방식 둘 다로 돌려 봐요.
+규칙은 `apps/web/lib/hostRoutes.ts`에 있고 `next.config.ts`가 가져다 써요. 호스트는 `^yeolmaeapps\.kr(?::\d+)?$`처럼 끝까지 맞춰서 비교해요(포트는 붙어도 돼요). Worker가 호스트 정규식을 앞뒤 고정 없이, 포트까지 붙은 Host 헤더에 검사해서, 고정하지 않으면 `starlog.` 쪽에도 걸려요. 루트 도메인이 직접 서빙하는 첫 경로(`guide`, `_next`, `api`, `og`, `opengraph-image`, `cards`)는 대소문자와 상관없이 빼요. 그래서 `/Guide/tarot` 같은 주소도 앱으로 보내지 않아요. 같은 표를 `lib/hostRoutes.test.ts`가 Next 서버 방식과 OpenNext Worker 방식 둘 다로 돌려 봐요.
+
+보안 헤더 가운데 HSTS만 호스트마다 달라요. 루트 도메인은 `max-age=63072000`(includeSubDomains 없음)을 보내고, starlog와 그 밖의 호스트는 지금처럼 `max-age=63072000; includeSubDomains`를 보내요. `next.config.ts`의 `headers()`에서 루트 도메인 항목이 맨 뒤에 있어서, 같은 헤더 이름이면 그 값이 이겨요.
 
 ## 배포할 때: 빌드 플래그
 
-실제 배포 빌드만 `NEXT_PUBLIC_SPLIT_HOSTS=1`로 빌드해요. 이 값이 켜지면 호스트를 넘나드는 링크만 절대 주소가 돼요(앱 → 가이드는 `https://yeolmaeapps.kr/guide/...`, 가이드 → 앱은 `https://starlog.yeolmaeapps.kr/...`). 꺼져 있으면 모든 링크가 지금처럼 경로(`/guide/...`, `/story`)라서 `next dev`, `cf:preview`(localhost), e2e가 그대로 돌아요. 미리보기와 e2e 빌드에는 켜지 마세요.
+실제 배포 빌드만 `NEXT_PUBLIC_SPLIT_HOSTS=1`로 빌드해요. 이 값이 켜져야 호스트 규칙(리다이렉트, 루트 도메인 `/` rewrite, 루트 도메인 HSTS)이 빌드의 routes manifest에 들어가요. 그리고 호스트를 넘나드는 링크만 절대 주소가 돼요(앱 → 가이드는 `https://yeolmaeapps.kr/guide/...`, 가이드 → 앱은 `https://starlog.yeolmaeapps.kr/...`). 꺼져 있으면 호스트 규칙이 아예 없고, 모든 링크가 지금처럼 경로(`/guide/...`, `/story`)라서 `next dev`, `cf:preview`(localhost), e2e가 그대로 돌아요.
+
+미리보기와 e2e 빌드에는 켜지 마세요. `wrangler dev`(그래서 `cf:preview`와 e2e도)는 클라이언트가 보낸 Host와 상관없이 모든 요청을 첫 라우트의 호스트 `starlog.yeolmaeapps.kr`로 Worker에 넘겨요. 켜진 빌드라면 미리보기의 `/guide` 페이지가 모두 진짜 루트 도메인으로 308되고, e2e 준비 단계가 `ENOTFOUND yeolmaeapps.kr`로 멈춰요.
 
 ```sh
 # bash
@@ -30,16 +36,23 @@ pnpm --filter @starlog/web cf:deploy
 
 (`docs/runbook-deploy.md`의 다른 `NEXT_PUBLIC_*` 값, 예를 들어 별자리 인연의 `NEXT_PUBLIC_FEATURE_BONDS=1`도 같은 빌드에 함께 둬요.) 캐노니컬, Open Graph 주소, JSON-LD, 사이트맵, RSS, llms.txt는 플래그와 상관없이 항상 실제 주소(가이드는 루트 도메인)를 써요.
 
-배포 전에 Cloudflare 대시보드에서 `yeolmaeapps.kr`(@)에 A, AAAA, CNAME 레코드가 이미 있는지 봐요. 있으면 `wrangler.jsonc`의 `custom_domain` 라우트가 막힐 수 있어요. 배포하면 wrangler가 `yeolmaeapps.kr`의 DNS 레코드와 인증서를 만들어요(`routes`에 두 호스트).
+배포 전에 Cloudflare 대시보드에서 볼 것:
+
+- `yeolmaeapps.kr`(@)에 A, AAAA, CNAME 레코드가 이미 있는지. 있으면 `wrangler.jsonc`의 `custom_domain` 라우트가 막힐 수 있어요. 배포하면 wrangler가 `yeolmaeapps.kr`의 DNS 레코드와 인증서를 만들어요(`routes`에 두 호스트).
+- `yeolmaeapps.kr`에 걸리는 Redirect Rules, Page Rules, Bulk Redirects가 있는지. 이것들은 Worker보다 먼저 돌아서, 있으면 가이드 요청을 가로채요. 지우거나 가이드 경로에 걸리지 않게 고쳐요.
+- SSL/TLS → Edge Certificates의 HSTS 설정이 꺼져 있는지. 켜져 있으면 Cloudflare가 HSTS 헤더를 따로 붙일 수 있어서, 루트 도메인에서 includeSubDomains를 뺀 의미가 없어질 수 있어요.
 
 ## 배포한 뒤 확인
 
 ```sh
-curl -sI https://yeolmaeapps.kr/me                          # 307, location: https://starlog.yeolmaeapps.kr/me
-curl -sI https://yeolmaeapps.kr/guide                       # 308, location: /guide/tarot
-curl -sI https://starlog.yeolmaeapps.kr/guide/the-fool      # 308, location: https://yeolmaeapps.kr/guide/the-fool
-curl -sI https://starlog.yeolmaeapps.kr/guide               # 308, location: https://yeolmaeapps.kr/guide (다시 /guide/tarot으로)
+curl -sI https://yeolmaeapps.kr/                            # 200, location 없음 (가이드 목록을 같은 주소로 보여 줘요)
 curl -s  https://yeolmaeapps.kr/ | grep -o '<link rel="canonical"[^>]*>'   # https://yeolmaeapps.kr/guide/tarot
+curl -sI https://yeolmaeapps.kr/me                          # 307, location: https://starlog.yeolmaeapps.kr/me
+curl -sI https://yeolmaeapps.kr/guide                       # 308, location: /guide/tarot (같은 호스트로 가는 리다이렉트는 Worker가 경로만 보내요)
+curl -sI https://starlog.yeolmaeapps.kr/guide               # 308, location: https://yeolmaeapps.kr/guide/tarot (한 번에)
+curl -sI https://starlog.yeolmaeapps.kr/guide/the-fool      # 308, location: https://yeolmaeapps.kr/guide/the-fool
+curl -sI https://yeolmaeapps.kr/guide/tarot | grep -i strict-transport     # max-age=63072000 (includeSubDomains 없음)
+curl -sI https://starlog.yeolmaeapps.kr/ | grep -i strict-transport        # max-age=63072000; includeSubDomains
 curl -sI https://yeolmaeapps.kr/api/version                 # 200
 curl -s  https://yeolmaeapps.kr/robots.txt | grep Sitemap   # Sitemap: https://yeolmaeapps.kr/sitemap.xml
 curl -s  https://starlog.yeolmaeapps.kr/robots.txt | grep Sitemap
@@ -60,7 +73,7 @@ curl -sI https://yeolmaeapps.kr/74d8adb0a0b4d02a28602f80b163bf31.txt   # IndexNo
 ## 알아 둘 점
 
 - `/api/*` 전체가 루트 도메인에서도 열려 있어요(가이드 화면이 부르는 `/api/version`이 다른 호스트로 넘어가면 안 되어서요). 가이드 화면이 쓰는 것은 그것뿐이에요.
-- 보안 헤더의 HSTS에 `includeSubDomains`가 있어요(`next.config.ts`). 루트 도메인이 이 헤더를 내보내기 시작하면, 방문자 브라우저는 `yeolmaeapps.kr`의 모든 하위 도메인을 2년 동안 https로만 열어요. 다른 하위 도메인이 모두 https라면 문제없어요. 아니라면 루트 도메인 응답에서는 `includeSubDomains`를 빼야 해요.
+- HSTS: 루트 도메인만 `includeSubDomains`를 빼고 보내요(`lib/hostRoutes.ts`의 `hostHeaders`). 루트 도메인이 includeSubDomains를 보내면, 그 응답을 받은 브라우저는 `*.yeolmaeapps.kr` 전부를 2년 동안 https로만 열어요. 그러면 나중에 생길 하위 도메인(http로만 도는 개발·스테이징 주소 포함)이 묶이고, 되돌리려면 `max-age=0`을 보내고 각 브라우저가 다시 올 때까지 기다려야 해요. starlog는 지금처럼 includeSubDomains를 보내요(`*.starlog.yeolmaeapps.kr`에만 걸려요). 리다이렉트(307, 308) 응답에는 HSTS가 없어요. OpenNext가 리다이렉트를 설정 헤더를 붙이기 전에 돌려주기 때문이에요.
 - 루트 주소 `/`는 가이드 목록과 같은 화면이라 canonical이 `/guide/tarot`이에요. 사이트맵에도 `/`는 넣지 않았어요. 루트 도메인에 다른 앱의 페이지가 생기면 `hostRoutes.ts`의 307 규칙과 `/` rewrite를 손봐요.
 - 308은 브라우저와 검색엔진이 오래 기억해요. 가이드를 다시 앱 호스트로 되돌리면 이미 기억한 사람은 한동안 루트 도메인으로 가요.
 - `www.yeolmaeapps.kr`은 이 Worker에 연결하지 않았어요.
