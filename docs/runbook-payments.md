@@ -71,8 +71,9 @@ For the first 24 h, run the checks in section 7 every two hours.
 
 ## 7. Checks
 
-- Orders the cron has not settled (should be empty; it retries every 10 minutes):
-  `SELECT id, status, fail_code, cancel_attempt, updated_at FROM orders WHERE status IN ('confirming','refunding') AND updated_at < strftime('%s','now')*1000 - 1800000`
+- Orders the cron has not settled (should be empty). It looks again every 10 minutes, at most 30 Toss calls and 75 s of Toss work per run, oldest first; an order it cannot decide (failed look-up, stuck orphan, partial cancel) moves behind the others, so `updated_at` is only its last look. Read `cron.*_failed`, `pay.orphan_refund_stuck` and `pay.partial_cancel` in the logs with this (a refund started in the last 10 minutes can show too):
+  `SELECT id, status, fail_code, cancel_attempt, created_at, updated_at FROM orders WHERE status IN ('confirming','refunding') AND created_at < strftime('%s','now')*1000 - 86400000`
+- Orders left `created` for an hour are closed by the cron (`fail_code = 'ABANDONED'`); nothing was charged.
 - Refund lock pairs out of step (M1; both must be empty):
   `SELECT l.id, l.order_id, o.status FROM credit_lots l JOIN orders o ON o.id = l.order_id WHERE l.status = 'refunding' AND o.status <> 'refunding'`
   `SELECT o.id FROM orders o JOIN credit_lots l ON l.order_id = o.id WHERE o.status = 'refunding' AND l.status NOT IN ('refunding','refunded')`

@@ -55,8 +55,11 @@ export function createTossClient(secretKey: string, fetchImpl: typeof fetch = fe
 
 let loggedProblems = false;
 
-/** This deploy's Toss: the mock under STARLOG_PAY=mock, null when keys are missing or mixed (logged once, by name). */
-export function tossClient(env: NodeJS.ProcessEnv = process.env): TossClient | null {
+/**
+ * This deploy's Toss: the mock under STARLOG_PAY=mock, null when keys are missing or mixed (logged
+ * once, by name). `timeoutMs` shortens the 30 s wait per call (the Cron Trigger's own budget).
+ */
+export function tossClient(env: NodeJS.ProcessEnv = process.env, options: { timeoutMs?: number } = {}): TossClient | null {
   const problems = payConfigProblems(env);
   if (problems.length) {
     if (!loggedProblems) {
@@ -66,5 +69,5 @@ export function tossClient(env: NodeJS.ProcessEnv = process.env): TossClient | n
     return null;
   }
   if (payProvider(env) === "mock") return mockToss;
-  return createTossClient(env.TOSS_SECRET_KEY!.trim());
+  return createTossClient(env.TOSS_SECRET_KEY!.trim(), fetch, options.timeoutMs);
 }

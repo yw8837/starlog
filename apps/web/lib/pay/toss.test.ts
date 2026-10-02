@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createTossClient, tossAuthorization, tossClient } from "./toss";
 import { mockToss } from "./tossMock";
 import { TossError, isPendingTossError } from "./tossTypes";
@@ -87,6 +87,18 @@ describe("Toss client", () => {
     expect(isPendingTossError(new Error("anything else"))).toBe(true);
     expect(isPendingTossError(new TossError(403, "REJECT_CARD_PAYMENT", ""))).toBe(false);
     expect(isPendingTossError(new TossError(400, "ALREADY_PROCESSED_PAYMENT", ""))).toBe(false);
+  });
+
+  it("gives up on a call after the timeout it is given (the Cron Trigger's short one)", async () => {
+    const hanging = (async (_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => init?.signal?.addEventListener("abort", () => reject(new DOMException("timed out", "TimeoutError"))))) as typeof fetch;
+    vi.stubGlobal("fetch", hanging);
+    try {
+      const client = tossClient(env({ NEXT_PUBLIC_TOSS_CLIENT_KEY: "test_gck_a", TOSS_SECRET_KEY: SECRET }), { timeoutMs: 20 })!;
+      await expect(client.getPayment("tgen_x")).rejects.toMatchObject({ status: 0, code: "NETWORK" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("knows test from live by the secret key", () => {

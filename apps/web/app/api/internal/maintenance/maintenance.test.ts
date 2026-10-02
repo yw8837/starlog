@@ -3,7 +3,7 @@ import { accountSecret } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { RESERVATION_MS, reserveUnlock } from "@/lib/pay/ledger";
-import { GIFT_CLAIM_KEEP_MS, RECORD_KEEP_MS } from "@/lib/pay/maintenance";
+import { GIFT_CLAIM_KEEP_MS, RECORD_KEEP_MS, TOSS_CALLS_PER_RUN, TOSS_DEADLINE_MS, runMaintenance } from "@/lib/pay/maintenance";
 import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
 import { insertReadingStatement, newReadingId } from "@/lib/readings/store";
@@ -48,6 +48,22 @@ async function loggedIn(name = "alice", ip = "198.51.100.40"): Promise<Browser> 
   await loginAs(b, name);
   return b;
 }
+
+/** A 24-character order id. */
+const oid = (n: number) => `order_${String(n).padStart(18, "0")}`;
+
+async function insertOrder(db: D1Binding, input: { id: string; userId: string; status: string; at: number; productId?: string; failCode?: string; attempt?: number }) {
+  await db
+    .prepare(
+      `INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, payment_key, fail_code, cancel_attempt, created_at, updated_at)
+       VALUES (?, ?, ?, 2900, 'x', ?, '/', 0, ?, ?, ?, ?, ?)`,
+    )
+    .bind(input.id, input.userId, input.productId ?? "tarot", input.status, `mock_${input.id}`, input.failCode ?? null, input.attempt ?? 1, input.at, input.at)
+    .run();
+}
+
+const userIdOf = async (db: D1Binding) => (await db.prepare("SELECT id FROM users ORDER BY created_at LIMIT 1").first<{ id: string }>())!.id;
+const updatedAt = async (db: D1Binding, id: string) => (await db.prepare("SELECT updated_at FROM orders WHERE id = ?").bind(id).first<{ updated_at: number }>())!.updated_at;
 
 async function newOrder(b: Browser): Promise<string> {
   return ((await (await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true }, origin: true })).json()) as { orderId: string }).orderId;
@@ -113,6 +129,96 @@ describe("maintenance", () => {
     expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunding" });
   });
 
+  it("does the work that needs no Toss first, and an item that fails stops nothing", async () => {
+    const db = useTestDb();
+    await loggedIn("alice");
+    const userId = await userIdOf(db);
+    // Recording this one throws (an unknown product); the next one is fine.
+    await insertOrder(db, { id: oid(1), userId, status: "confirming", at: T0 - 20 * MIN, productId: "bogus" });
+    await insertOrder(db, { id: oid(2), userId, status: "confirming", at: T0 - 19 * MIN });
+    for (const id of [oid(1), oid(2)]) await mockToss.confirm({ paymentKey: `mock_${id}`, orderId: id, amount: 2900 });
+    await loggedIn("bob", "198.51.100.41");
+    await db.prepare("UPDATE users SET deleted_at = ? WHERE id <> ?").bind(T0, userId).run();
+    const realLookUp = mockToss.getPaymentByOrder;
+    let erasedBeforeToss: boolean | null = null;
+    vi.spyOn(mockToss, "getPaymentByOrder").mockImplementation(async (orderId) => {
+      erasedBeforeToss ??= (await one(db, "SELECT COUNT(*) AS n FROM users WHERE deleted_at IS NOT NULL AND erased_at IS NULL"))?.n === 0;
+      return realLookUp(orderId);
+    });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await report()).toMatchObject({ confirming: 2, failed: 1, erased: 1 });
+    expect(erasedBeforeToss).toBe(true);
+    expect(await one(db, `SELECT status FROM orders WHERE id = '${oid(2)}'`)).toEqual({ status: "paid" });
+    // Only the event, the order id and a code: never a message.
+    expect(error).toHaveBeenCalledWith(JSON.stringify({ evt: "cron.confirm_failed", orderId: oid(1), code: "Error" }));
+  });
+
+  it("asks Toss at most TOSS_CALLS_PER_RUN times a run, oldest first; the rest waits for the next run", async () => {
+    const db = useTestDb();
+    await loggedIn();
+    const userId = await userIdOf(db);
+    const total = TOSS_CALLS_PER_RUN + 5;
+    for (let n = 1; n <= total; n++) await insertOrder(db, { id: oid(n), userId, status: "confirming", at: T0 - 60 * MIN + n });
+    const lookUps = vi.spyOn(mockToss, "getPaymentByOrder");
+    expect(await report()).toMatchObject({ confirming: TOSS_CALLS_PER_RUN, refunding: 0 });
+    expect(lookUps).toHaveBeenCalledTimes(TOSS_CALLS_PER_RUN);
+    expect(TOSS_CALLS_PER_RUN).toBeLessThanOrEqual(30);
+    expect(await one(db, `SELECT status FROM orders WHERE id = '${oid(total)}'`)).toEqual({ status: "confirming" });
+    expect(await report()).toMatchObject({ confirming: 5 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM orders WHERE status = 'confirming'")).toEqual({ n: 0 });
+  });
+
+  it("stops starting Toss work once the run's deadline has passed", async () => {
+    const db = useTestDb();
+    await loggedIn();
+    const userId = await userIdOf(db);
+    for (let n = 1; n <= 3; n++) await insertOrder(db, { id: oid(n), userId, status: "confirming", at: T0 - 60 * MIN + n });
+    let clock = T0;
+    vi.spyOn(mockToss, "getPaymentByOrder").mockImplementation(async () => {
+      clock += TOSS_DEADLINE_MS;
+      throw new TossError(404, "NOT_FOUND_PAYMENT", "");
+    });
+    expect(await runMaintenance(db, mockToss, T0, { clock: () => clock })).toMatchObject({ confirming: 1 });
+  });
+
+  it("puts what it cannot decide behind the others: failed look-ups, a stuck orphan, a partial cancel", async () => {
+    const db = useTestDb();
+    await loggedIn();
+    const userId = await userIdOf(db);
+    const old = T0 - 30 * MIN;
+    await insertOrder(db, { id: oid(1), userId, status: "confirming", at: old });
+    await insertOrder(db, { id: oid(2), userId, status: "refunding", at: old });
+    await insertOrder(db, { id: oid(3), userId, status: "refunding", at: old, failCode: "ACCOUNT_DELETED", attempt: 5 });
+    await insertOrder(db, { id: oid(4), userId, status: "refunding", at: old });
+    for (const id of [oid(3), oid(4)]) {
+      await mockToss.confirm({ paymentKey: `mock_${id}`, orderId: id, amount: 2900 });
+      await db.prepare("INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES (?, ?, 2900, 'DONE', 'mock', 0)").bind(`mock_${id}`, id).run();
+    }
+    vi.spyOn(mockToss, "getPaymentByOrder").mockRejectedValue(new TossError(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", ""));
+    const realGet = mockToss.getPayment;
+    vi.spyOn(mockToss, "getPayment").mockImplementation(async (key) => {
+      if (key === `mock_${oid(2)}`) throw new TossError(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", "");
+      const payment = await realGet(key);
+      return key === `mock_${oid(4)}` ? { ...payment, status: "PARTIAL_CANCELED", balanceAmount: 900 } : payment;
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await report()).toMatchObject({ confirming: 1, refunding: 3 });
+    for (const n of [1, 2, 3, 4]) expect(await updatedAt(db, oid(n)), oid(n)).toBe(T0);
+    expect(await one(db, `SELECT status, cancel_attempt FROM orders WHERE id = '${oid(3)}'`)).toEqual({ status: "refunding", cancel_attempt: 5 });
+  });
+
+  it("closes an order nobody paid within the hour", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const stale = await newOrder(b);
+    vi.setSystemTime(T0 + 30 * MIN);
+    const fresh = await newOrder(b);
+    vi.setSystemTime(T0 + 60 * MIN + 1);
+    expect(await report()).toMatchObject({ abandoned: 1 });
+    expect(await one(db, `SELECT status, fail_code FROM orders WHERE id = '${stale}'`)).toEqual({ status: "failed", fail_code: "ABANDONED" });
+    expect(await one(db, `SELECT status FROM orders WHERE id = '${fresh}'`)).toEqual({ status: "created" });
+  });
+
   it("returns any account's stale reservation", async () => {
     const db = useTestDb();
     const b = await loggedIn();
@@ -150,10 +256,13 @@ describe("maintenance", () => {
       db.prepare("INSERT INTO gift_claims (kakao_key, claimed_at, account_deleted_at) VALUES ('k_gone', 0, ?)").bind(T0 - GIFT_CLAIM_KEEP_MS - 1),
       db.prepare("INSERT INTO gift_claims (kakao_key, claimed_at, account_deleted_at) VALUES ('k_kept', 0, ?)").bind(T0 - 1000),
       db.prepare("INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES ('s_old', 'u_recent', 0, ?)").bind(T0 - 1),
+      // A reading an interrupted erase left behind does not stop the purge.
+      db.prepare("INSERT INTO readings (id, user_id, kind, product_id, source, payload, key_version, created_at, updated_at) VALUES ('r_old', 'u_old', 'tarot', 'tarot', 'paid', 'p', 1, 0, 0)"),
     ]);
     expect(await report()).toMatchObject({ sessions: 1, giftClaims: 1, purgedAccounts: 1 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_old'")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM payments WHERE payment_key = 'pk_old'")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_recent'")).toEqual({ n: 1 });
     expect((await db.prepare("SELECT kakao_key FROM gift_claims ORDER BY kakao_key").all<{ kakao_key: string }>()).results.map((r) => r.kakao_key)).toEqual(expect.arrayContaining(["k_kept"]));
     expect(await one(db, "SELECT COUNT(*) AS n FROM gift_claims WHERE kakao_key = 'k_gone'")).toEqual({ n: 0 });
