@@ -75,7 +75,13 @@ export interface MeBody {
   payments: boolean;
   login: boolean;
   owner: boolean;
-  user: null | { nickname: string; stardust: number; stardustExpiresAt: string | null; unused: Array<{ orderId: string; productId: string }> };
+  user: null | {
+    nickname: string;
+    stardust: number;
+    stardustExpiresAt: string | null;
+    unused: Array<{ orderId: string; productId: string }>;
+    opening: Array<{ productId: string; currency: "paid" | "stardust"; orderId: string | null }>;
+  };
 }
 
 export async function me(b: Browser): Promise<MeBody> {

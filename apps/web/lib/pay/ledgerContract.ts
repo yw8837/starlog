@@ -89,7 +89,7 @@ export function ledgerContract(make: Make) {
   it("gives the signup gift once per Kakao account", async () => {
     const db = await giftedUser(make);
     expect(await grantSignupGift(db, { userId: "u_1", kakaoKey: "k_1", units: 10, now: NOW })).toBe(false);
-    expect(await walletSummary(db, "u_1", NOW)).toEqual({ stardust: 10, stardustExpiresAt: giftExpiry(NOW), unused: [] });
+    expect(await walletSummary(db, "u_1", NOW)).toEqual({ stardust: 10, stardustExpiresAt: giftExpiry(NOW), unused: [], opening: [] });
     await expectLotsMatchLedger(db);
   });
 
@@ -132,6 +132,26 @@ export function ledgerContract(make: Make) {
     expect((await walletSummary(db, "u_1", NOW)).unused).toEqual([]);
   });
 
+  it("lists the readings being opened, a paid one with its order, and never also as unused", async () => {
+    const db = await giftedUser(make);
+    await paidOrder(db, "order_a");
+    await paidOrder(db, "order_b");
+    const paid = await reserved(db, "paid");
+    const free = await reserved(db, "free", NOW + 1);
+    const opened = paid.allocations[0]![0] === "lot_order_a" ? "order_a" : "order_b";
+    const other = opened === "order_a" ? "order_b" : "order_a";
+    const wallet = await walletSummary(db, "u_1", NOW + 2);
+    expect(wallet.opening).toEqual([
+      { productId: "tarot", currency: "paid", orderId: opened },
+      { productId: "tarot", currency: "stardust", orderId: null },
+    ]);
+    expect(wallet.unused).toEqual([{ orderId: other, productId: "tarot" }]);
+    expect(await deliverUnlock(db, { unlockId: paid.unlockId, readingId: "r1", now: NOW + 3 })).toBe("delivered");
+    expect(await releaseUnlock(db, { unlockId: free.unlockId, now: NOW + 4 })).toBe(true);
+    expect(await walletSummary(db, "u_1", NOW + 5)).toMatchObject({ opening: [], unused: [{ orderId: other, productId: "tarot" }], stardust: 10 });
+    await expectLotsMatchLedger(db);
+  });
+
   it("takes 별조각 from the lot that expires first", async () => {
     const db = await setup(make);
     const lot = (id: string, units: number, expiresAt: number) =>
@@ -169,7 +189,7 @@ export function ledgerContract(make: Make) {
 
   it("expires 별조각 after their last day, with a ledger row", async () => {
     const db = await giftedUser(make);
-    expect(await walletSummary(db, "u_1", giftExpiry(NOW) + 1)).toEqual({ stardust: 0, stardustExpiresAt: null, unused: [] });
+    expect(await walletSummary(db, "u_1", giftExpiry(NOW) + 1)).toEqual({ stardust: 0, stardustExpiresAt: null, unused: [], opening: [] });
     expect(await count(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'expire'")).toBe(1);
     expect(await db.prepare("SELECT status, units_left FROM credit_lots").first()).toEqual({ status: "expired", units_left: 0 });
     await expectLotsMatchLedger(db);

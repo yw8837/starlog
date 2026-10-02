@@ -11,7 +11,8 @@ import { signingSecret } from "@/lib/security/sign";
  * - `payments`: whether sales are open for this device;
  * - `login`: whether this device may log in (also while sales are paused, for existing accounts);
  * - `owner`: whether it holds the owner pass;
- * - `user`: the logged-in user's nickname, 별조각 (with the soonest expiry) and unopened purchases.
+ * - `user`: the logged-in user's nickname, 별조각 (with the soonest expiry), unopened purchases and
+ *   `opening`, the readings being opened right now (a paid one is never also in `unused`).
  * Without a session cookie it never touches D1, so the site works with no database.
  */
 export async function GET(request: Request): Promise<Response> {
@@ -36,6 +37,7 @@ export async function GET(request: Request): Promise<Response> {
       stardust: wallet.stardust,
       stardustExpiresAt: wallet.stardustExpiresAt === null ? null : new Date(wallet.stardustExpiresAt).toISOString(),
       unused: wallet.unused,
+      opening: wallet.opening,
     },
   });
 }

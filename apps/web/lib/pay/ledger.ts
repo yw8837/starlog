@@ -406,17 +406,36 @@ export function revokeLotStatement(db: D1Binding, orderId: string): D1Statement 
 
 // ---- summary ----
 
+/** A reading being opened right now: reserved, not yet delivered or released. A paid one names its order. */
+export interface Opening {
+  productId: string;
+  currency: "paid" | "stardust";
+  orderId: string | null;
+}
+
 export interface WalletSummary {
   /** 별조각 that can be spent now */
   stardust: number;
   /** when the soonest of them expires (ms); null when there are none */
   stardustExpiresAt: number | null;
-  /** paid readings bought and not opened yet */
+  /** paid readings bought and not opened yet (a reading being opened is in `opening` instead) */
   unused: Array<{ orderId: string; productId: string }>;
+  /** readings being opened, oldest first */
+  opening: Opening[];
 }
 
 export async function walletSummary(db: D1Binding, userId: string, now: number): Promise<WalletSummary> {
   await sweepUser(db, userId, now);
+  // A paid reservation holds one whole lot (reserveUnlock), so its lot has nothing left for `unused`.
+  const reservations = await db
+    .prepare(
+      `SELECT u.product_id, u.currency,
+         CASE WHEN u.currency = 'paid' THEN (SELECT l.order_id FROM credit_lots l WHERE l.id = json_extract(u.allocations, '$[0][0]')) END AS order_id
+       FROM unlocks u WHERE u.user_id = ? AND u.status = 'reserved'
+       ORDER BY u.created_at, u.rowid`,
+    )
+    .bind(userId)
+    .all<{ product_id: string; currency: Currency; order_id: string | null }>();
   const { results } = await db
     .prepare(
       `SELECT currency, order_id, product_id, units_left, expires_at FROM credit_lots
@@ -433,5 +452,10 @@ export async function walletSummary(db: D1Binding, userId: string, now: number):
     unused: results
       .filter((lot) => lot.currency === "paid" && lot.order_id !== null && lot.product_id !== null)
       .map((lot) => ({ orderId: lot.order_id!, productId: lot.product_id! })),
+    opening: reservations.results.map((row) => ({
+      productId: row.product_id,
+      currency: row.currency === "paid" ? "paid" : "stardust",
+      orderId: row.currency === "paid" ? (row.order_id ?? null) : null,
+    })),
   };
 }

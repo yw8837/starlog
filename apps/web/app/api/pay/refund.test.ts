@@ -72,6 +72,8 @@ describe("refunds", () => {
     expect((await refundOf(b, orderId)).status).toBe(409);
     expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
     expect((await mockToss.getPaymentByOrder(orderId)).status).toBe("DONE");
+    // 내 정보 shows it as being opened, not as a purchase that can be refunded.
+    expect((await me(b)).user).toMatchObject({ unused: [], opening: [{ productId: "tarot", currency: "paid", orderId }] });
   });
 
   it("puts the reading back when Toss refuses, after looking the payment up, and uses a new key next time", async () => {
