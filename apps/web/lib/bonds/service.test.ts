@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { bondBasis, bondScore } from "@starlog/core";
 import { createMemoryBondsRepo } from "@/lib/db/memoryBondsRepo";
 import { CONSTELLATIONS } from "@starlog/core";
@@ -204,6 +204,45 @@ describe("bonds service", () => {
     const view = await rankingView(repo, t0 + 1, "aries", "o1");
     expect(view.all).toEqual([]);
     expect(view.mine).toMatchObject({ weekRank: null, allRank: null });
+  });
+
+  it("gives the home row's light view the latest completion's ranks too, and still skips TOP 5", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    for (let i = 0; i < 4; i++) await join(repo, t0 + i, code, i);
+    const rankOf = vi.spyOn(repo, "rankOf");
+    const light = await ownerView(repo, t0 + 10, "o1", { light: true });
+    expect(light.ranks).toEqual({ aries: { week: 1, all: 1 } });
+    expect(rankOf).toHaveBeenCalledTimes(2); // this week's and all-time, both indexed
+    expect(light.top5).toEqual([]);
+    const full = await ownerView(repo, t0 + 10, "o1");
+    expect(full.ranks).toEqual(light.ranks);
+    expect(full.top5).toHaveLength(4);
+  });
+
+  it("looks up no ranks for a light view without a completion, and ranks only the latest completion when there are several", async () => {
+    const { repo, t0 } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    const rankOf = vi.spyOn(repo, "rankOf");
+    expect(await ownerView(repo, t0 + 1, "o1", { light: true })).toMatchObject({ filling: { row: { sign: "aries" } }, completed: [], ranks: {}, top5: [] });
+    expect(rankOf).not.toHaveBeenCalled();
+    // two completed signs: only the later one is looked up (the same one the full view ranks)
+    await repo.insertConstellation({ id: "done-leo", ownerId: "o1", sign: "leo", status: "complete", total: 300, startedAt: t0, completedAt: t0 + 1 });
+    await repo.insertConstellation({ id: "done-virgo", ownerId: "o1", sign: "virgo", status: "complete", total: 280, startedAt: t0, completedAt: t0 + 2 });
+    const light = await ownerView(repo, t0 + 3, "o1", { light: true });
+    expect(light.ranks).toEqual({ virgo: { week: 1, all: 1 } });
+    expect(rankOf).toHaveBeenCalledTimes(2);
+    expect((await ownerView(repo, t0 + 3, "o1")).ranks).toEqual(light.ranks);
+  });
+
+  it("gives a hidden owner's light view no rank, as the full view does", async () => {
+    const { repo, t0, code } = await setup();
+    await saveOwner(repo, t0, "o1", { nickname: "용우", rankingPublic: false });
+    await chooseSign(repo, t0, "o1", "aries");
+    for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
+    const light = await ownerView(repo, t0 + 1, "o1", { light: true });
+    expect(light.owner.rankingPublic).toBe(false);
+    expect(light.ranks).toEqual({ aries: { week: null, all: null } });
   });
 
   it("caps join events per owner per KST day (removed stars still count)", async () => {

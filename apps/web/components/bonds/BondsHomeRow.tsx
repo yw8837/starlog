@@ -3,24 +3,26 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getConstellation } from "@starlog/core";
-import type { WeekTop } from "@/app/ranking/loadLeaders";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
 import { bondsApi, seenUntil } from "@/lib/bonds/client";
+import { homeRankLine } from "@/lib/bonds/rankLine";
 import type { OwnerView } from "@/lib/bonds/service";
 import { BondsMoreTiles } from "./BondsMoreTiles";
 import { ConstellationArt } from "./ConstellationArt";
 import { InviteShareButton } from "./InviteShareButton";
 import s from "./BondsHomeRow.module.css";
 
-type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null };
+type Me = { owner: null } | OwnerView;
 
 /**
  * The home's 별자리 인연 row (spec §3 홈 화면 자리). Filling: the small figure, the badge
  * `양자리 2/4 · 174점` (stars in / slots · 인연 total so far) and 초대하기; a new star sparkles until the owner
  * page is opened. Before the start: 별자리 인연 시작하기 only — a friend comes in through the invite link
  * (/b/<code> fills the code in), so the home has no code box. Secondary styles only (the home keeps its
- * one gold primary). Renders nothing while loading, on an error, or with the feature off.
+ * one gold primary). The 별자리 인연 랭킹 tile under it talks about me (`homeRankLine`: my score and rank, or
+ * the way in), not about this week's best record. Renders nothing while loading, on an error, or with the
+ * feature off.
  */
 export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { enabled?: boolean; className?: string }) {
   const [me, setMe] = useState<Me | null>(null);
@@ -40,7 +42,8 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
 
   if (!enabled || !me) return null;
   const rowClass = [s.row, className].filter(Boolean).join(" ");
-  if (me.owner === null) return <StartRow className={rowClass} weekTop={me.weekTop} />;
+  const rankLine = homeRankLine(me);
+  if (me.owner === null) return <StartRow className={rowClass} rankLine={rankLine} />;
 
   const filling = me.filling;
   if (!filling) {
@@ -55,7 +58,7 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
           </span>
           <span className={s.badge}>도감 {me.completed.length}/12</span>
         </Link>
-        <BondsMoreTiles weekTop={me.weekTop} className={s.more} />
+        <BondsMoreTiles rankLine={rankLine} className={s.more} />
       </section>
     );
   }
@@ -81,12 +84,12 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
       <div className={s.actions}>
         <InviteShareButton code={me.invite.code} sign={def.id} filled={filling.stars.length} variant="secondary" />
       </div>
-      <BondsMoreTiles weekTop={me.weekTop} className={s.more} />
+      <BondsMoreTiles rankLine={rankLine} className={s.more} />
     </section>
   );
 }
 
-function StartRow({ className, weekTop }: { className: string; weekTop?: WeekTop | null }) {
+function StartRow({ className, rankLine }: { className: string; rankLine: string }) {
   return (
     <section className={className} aria-labelledby="bonds-home-title">
       <div className={s.text}>
@@ -98,7 +101,7 @@ function StartRow({ className, weekTop }: { className: string; weekTop?: WeekTop
       <Button variant="secondary" size="md" block href="/bonds">
         별자리 인연 시작하기
       </Button>
-      <BondsMoreTiles weekTop={weekTop} className={s.more} />
+      <BondsMoreTiles rankLine={rankLine} className={s.more} />
     </section>
   );
 }

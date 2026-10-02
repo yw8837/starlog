@@ -10,15 +10,18 @@ import s from "./BondsMoreTiles.module.css";
 type BondsMoreTilesProps = {
   /** this week's best constellation; null before any completion; undefined when it could not be read */
   weekTop?: WeekTop | null;
+  /** the ranking tile's second line when the caller has its own (the home row: about me); it replaces the `weekTop` line */
+  rankLine?: string;
   className?: string;
 };
 
 /**
  * The rest of 별자리 인연 as two equal tiles (stacked on the narrowest phones), on the home row and on
- * /bonds' 더 보기: 별자리 인연 랭킹 with this week's best record, and 이번 주 행운 번호 with this device's
- * numbers once /lucky has shown them (else the way in).
+ * /bonds' 더 보기: 별자리 인연 랭킹 with this week's best record (the home row says where I stand instead,
+ * through `rankLine`), and 이번 주 행운 번호 with this device's numbers once /lucky has shown them (else
+ * the way in).
  */
-export function BondsMoreTiles({ weekTop, className }: BondsMoreTilesProps) {
+export function BondsMoreTiles({ weekTop, rankLine, className }: BondsMoreTilesProps) {
   // Both callers mount the tiles only after their client-side fetch, so the device's storage is read on
   // the first render (no swap from the plain line to the numbers).
   const [numbers] = useState<number[] | null>(() => (typeof window === "undefined" ? null : storedLuckyNumbers()));
@@ -36,7 +39,7 @@ export function BondsMoreTiles({ weekTop, className }: BondsMoreTilesProps) {
         <TrophyIcon />
         <span className={s.text}>
           <span className={s.title}>별자리 인연 랭킹</span>
-          <span className={s.sub}>{leader}</span>
+          <span className={s.sub}>{rankLine ?? leader}</span>
         </span>
       </Link>
       <Link href="/lucky" className={s.tile}>

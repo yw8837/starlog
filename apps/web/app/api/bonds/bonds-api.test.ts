@@ -134,17 +134,18 @@ describe("bonds API", () => {
     for (let i = 0; i < 12; i++) expect((await ownerPost(req("/api/bonds/owner", owner, { nickname: `이름${i}` }, "5.4.3.2"))).status).toBe(200);
   });
 
-  it("serves the home row a light view without ranks or TOP 5", async () => {
+  it("serves the home row a light view: the latest completion's ranks, but no TOP 5", async () => {
     const { owner, code } = await startOwner("용우", "aries");
     for (const [i, [year, month, day]] of BIRTHS.entries()) {
       await joinPost(req("/api/bonds/join", new Map(), { code, nickname: `벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `3.3.3.${i + 10}`));
     }
-    const light = (await (await meGet(req("/api/bonds/me?view=home", owner))).json()) as { ranks: object; top5: unknown[]; completed: unknown[] };
-    expect(light.ranks).toEqual({});
+    const light = (await (await meGet(req("/api/bonds/me?view=home", owner))).json()) as { ranks: Record<string, unknown>; top5: unknown[]; completed: unknown[] };
+    expect(Object.keys(light.ranks)).toEqual(["aries"]);
+    expect(light.ranks.aries).toEqual({ week: expect.any(Number), all: expect.any(Number) });
     expect(light.top5).toEqual([]);
     expect(light.completed).toHaveLength(1);
     const full = (await (await meGet(req("/api/bonds/me", owner))).json()) as { ranks: Record<string, unknown>; top5: unknown[] };
-    expect(full.ranks.aries).toBeTruthy();
+    expect(full.ranks).toEqual(light.ranks);
     expect(full.top5).toHaveLength(4);
   });
 

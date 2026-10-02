@@ -422,8 +422,9 @@ export interface OwnerView {
 }
 
 /**
- * The owner page's data. Ranks are looked up for the latest completion only (the card the page shows);
- * `light` (the home row) skips ranks and TOP 5.
+ * The owner page's data. Ranks are looked up for the latest completion only (the card the page shows;
+ * two indexed queries, and none without a completion), in both modes: the home row's tile needs them
+ * too. `light` (the home row) skips TOP 5.
  */
 export async function ownerView(repo: BondsRepo, now: number, ownerId: string, { light = false }: { light?: boolean } = {}): Promise<OwnerView> {
   const owner = await requireOwner(repo, ownerId);
@@ -436,7 +437,7 @@ export async function ownerView(repo: BondsRepo, now: number, ownerId: string, {
   const since = weekStart(now);
   const ranks: OwnerView["ranks"] = {};
   const latest = completedRows.reduce<ConstellationRow | null>((a, c) => (a === null || (c.completedAt ?? 0) > (a.completedAt ?? 0) ? c : a), null);
-  if (latest && !light) {
+  if (latest) {
     const [week, all] = await Promise.all([repo.rankOf(latest.id, since), repo.rankOf(latest.id, null)]);
     ranks[latest.sign] = { week, all };
   }

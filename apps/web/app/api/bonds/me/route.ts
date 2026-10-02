@@ -4,7 +4,7 @@ import { readOwnerId } from "@/lib/bonds/identity";
 import { BondsError, ownerView } from "@/lib/bonds/service";
 
 /**
- * GET → this device's 별자리 인연: `{ owner: null }` before the first start, else the owner view (`?view=home`: no ranks or TOP 5).
+ * GET → this device's 별자리 인연: `{ owner: null }` before the first start, else the owner view (`?view=home`: ranks as usual, no TOP 5).
  * Both carry `weekTop`, this week's best constellation for the 인연 랭킹 tile (from the leaderboard's edge-cached
  * query, no query of its own; null before any completion, left out when it cannot be read).
  */
