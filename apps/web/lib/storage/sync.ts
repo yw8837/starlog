@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { parseAccount, type AccountState } from "@/lib/account/client";
+import { parseAccount, type AccountState, type AccountUser } from "@/lib/account/client";
 import { getJson } from "@/lib/reading/api";
 import { forgetServerIds, mergeServerReadings } from "./chapters";
 
@@ -47,15 +47,31 @@ const sleep = (ms: number, signal?: AbortSignal) =>
     }, { once: true });
   });
 
+/** What the account held for an opening when it started: this product's purchases and the 별조각. */
+export interface HeldCredit {
+  orderIds: string[];
+  stardust: number;
+}
+
+/** The account's purchases of this product and its 별조각, counting a reservation of this product as held. */
+export function heldCredit(user: AccountUser | null | undefined, productId: string, units: number): HeldCredit {
+  const opening = (user?.opening ?? []).filter((item) => item.productId === productId);
+  return {
+    orderIds: [...(user?.unused ?? []).filter((item) => item.productId === productId).map((item) => item.orderId), ...opening.flatMap((item) => (item.orderId ? [item.orderId] : []))],
+    stardust: (user?.stardust ?? 0) + units * opening.filter((item) => item.currency === "stardust").length,
+  };
+}
+
 /**
  * After a paid or 별조각 opening failed mid-way (or was refused while its credit looked held): was it
- * delivered (the account has the reading), was the credit kept (the account shows it unused and
- * nothing of this kind being opened), or is it not known yet? One round per delay; the first answer
- * wins. Never "kept" on a guess. With `stopWhenNone`, a round where the account is sure nothing is
- * held or being opened and no reading came of it answers "none".
+ * delivered (the account has the reading), was the credit kept, or is it not known yet? Kept means
+ * nothing of this kind is being opened and everything `held` at the start is back: every purchase
+ * unused again (another purchase of the same reading proves nothing), all the 별조각. One round per
+ * delay; the first answer wins. Never "kept" on a guess. With `stopWhenNone`, a round where the
+ * account is sure nothing is held or being opened and no reading came of it answers "none".
  */
 export async function checkDelivery(
-  input: { startedAt: number; matches: (chapter: unknown) => boolean; method: "paid" | "free"; productId: string; units: number },
+  input: { startedAt: number; matches: (chapter: unknown) => boolean; method: "paid" | "free"; productId: string; units: number; held?: HeldCredit },
   options: { delays?: readonly number[]; fetchImpl?: typeof fetch; signal?: AbortSignal; stopWhenNone?: boolean } = {},
 ): Promise<DeliveryCheck> {
   const { delays = FIRST_CHECK_DELAYS, fetchImpl = fetch, signal, stopWhenNone = false } = options;
@@ -72,8 +88,10 @@ export async function checkDelivery(
     if (found) return { status: "delivered", reading: found };
     if (!user || !page) continue;
     if (user.opening.some((item) => item.productId === input.productId && item.currency === currency)) continue;
-    if (input.method === "paid" && user.unused.some((item) => item.productId === input.productId)) return { status: "kept" };
-    if (input.method === "free" && user.stardust >= input.units) return { status: "kept" };
+    const unused = new Set(user.unused.filter((item) => item.productId === input.productId).map((item) => item.orderId));
+    const held = input.held?.orderIds ?? [];
+    if (input.method === "paid" && (held.length > 0 ? held.every((id) => unused.has(id)) : unused.size > 0)) return { status: "kept" };
+    if (input.method === "free" && user.stardust >= Math.max(input.units, input.held?.stardust ?? 0)) return { status: "kept" };
     if (stopWhenNone) return { status: "none" };
   }
   return { status: "unknown" };

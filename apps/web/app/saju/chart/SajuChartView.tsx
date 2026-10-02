@@ -32,7 +32,7 @@ import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storage/betaUsage";
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
-import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, type DeliveryCheck } from "@/lib/storage/sync";
+import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
 import { NEW_SAJU_HREF } from "@/lib/freshStart";
 import { isSajuReadingResponse, isSajuTeaser } from "@/lib/reading/validate";
@@ -126,7 +126,7 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
    *   already delivered spent it); an account that is sure nothing is left then says so;
    * - "recheck": 다시 확인하기 on a reading being opened.
    */
-  const settle = async (chosen: "paid" | "free", startedAt: number, birth: SajuForm, after: "cut" | "refused" | "recheck") => {
+  const settle = async (chosen: "paid" | "free", startedAt: number, held: HeldCredit, birth: SajuForm, after: "cut" | "refused" | "recheck") => {
     checkAbort.current?.abort();
     const controller = new AbortController();
     checkAbort.current = controller;
@@ -137,7 +137,7 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
       const c = chapter as { kind?: string; birth?: unknown };
       return c.kind === "saju" && sent !== null && sameJson(sanitizeSajuForm(c.birth), sent);
     };
-    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0 };
+    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0, held };
     const stopWhenNone = after !== "cut";
     const apply = (result: DeliveryCheck): boolean => {
       if (result.status === "unknown") return false;
@@ -182,14 +182,16 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
     };
     const startedAt = Date.now();
     if (chosen === "paid" || chosen === "free") firstTry.current ??= startedAt;
+    // What the account held as it started: "kept" later means all of it is back.
+    const held = heldCredit(account?.user, product.id, product.units ?? 0);
     const res = await unlockGen.run("/api/saju/reading", body, plan, isSajuReadingResponse);
     if (!res) return;
     if (!res.ok) {
       const code = res.error.code;
       if (code === "BETA_LIMIT") markDayUsedUp();
       if (code === "LOGIN_REQUIRED") router.push(loginHref(RETURN_TO));
-      if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, form, "cut");
-      else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), form, "refused");
+      if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, held, form, "cut");
+      else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), held, form, "refused");
       else if (code === "NO_CREDIT" || code === "PAYMENT_REQUIRED") void refreshAccount();
       return;
     }
@@ -228,7 +230,7 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
   const recheck = () => {
     const busy = account?.user?.opening.find((item) => item.productId === product.id);
     const chosen = busy ? (busy.currency === "stardust" ? "free" : "paid") : method === "free" ? "free" : "paid";
-    void settle(chosen, since(Date.now()), form, check === "stalled" ? "cut" : "recheck");
+    void settle(chosen, since(Date.now()), heldCredit(account?.user, product.id, product.units ?? 0), form, check === "stalled" ? "cut" : "recheck");
   };
 
   const teaserState = teaserGen.state;

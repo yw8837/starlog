@@ -83,6 +83,23 @@ describe("FreeResult after a paid opening was cut off", () => {
     expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
   });
 
+  it("with two purchases of the same reading, the other one still unused does not count as the one used being kept", async () => {
+    seed();
+    const OTHER = "Zz9_yXw-Vu8tSr7Qp6On5Ml4";
+    stub({
+      me: [
+        () => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "tarot" }, { orderId: OTHER, productId: "tarot" }] })),
+        () => Response.json(meBody({ unused: [{ orderId: OTHER, productId: "tarot" }] })),
+      ],
+    });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).startsWith("/api/readings"))).toBe(true));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.queryByText(/결제한 풀이는 그대로 남아 있어요/)).toBeNull();
+    expect(screen.getByText("풀이가 열렸는지 확인하고 있어요", { selector: "#unlock-error" })).toBeTruthy();
+  });
+
   it("when the server refuses because the purchase is still taken, checks and opens the delivered reading instead of offering to pay", async () => {
     const question = seed();
     stub({

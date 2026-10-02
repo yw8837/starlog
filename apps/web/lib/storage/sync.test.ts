@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { parseAccount } from "@/lib/account/client";
 import { clearChapters, listChapters, mergeServerReadings } from "./chapters";
-import { checkDelivery } from "./sync";
+import { checkDelivery, heldCredit } from "./sync";
 
 afterEach(() => clearChapters());
 
@@ -55,6 +56,26 @@ describe("checking a cut-off paid or 별조각 reading", () => {
     expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: stub([], me(userWith({ unused: [{ orderId: "o1", productId: "tarot" }] }))) })).toEqual({ status: "kept" });
     expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0], fetchImpl: stub([], me(userWith({ stardust: 10 }))) })).toEqual({ status: "kept" });
     expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0, 0], fetchImpl: stub([], me(userWith({ stardust: 0 }))) })).toEqual({ status: "unknown" });
+  });
+
+  it("says kept only when every purchase held at the start is unused again, or all the 별조각 are back", async () => {
+    const held = { orderIds: ["o1", "o2"], stardust: 0 };
+    const onlyOther = me(userWith({ unused: [{ orderId: "o2", productId: "tarot" }] }));
+    expect(await checkDelivery({ ...flow, method: "paid", held }, { delays: [0], fetchImpl: stub([], onlyOther) })).toEqual({ status: "unknown" });
+    const both = me(userWith({ unused: [{ orderId: "o2", productId: "tarot" }, { orderId: "o1", productId: "tarot" }] }));
+    expect(await checkDelivery({ ...flow, method: "paid", held }, { delays: [0], fetchImpl: stub([], both) })).toEqual({ status: "kept" });
+    const twenty = { orderIds: [], stardust: 20 };
+    expect(await checkDelivery({ ...flow, method: "free", held: twenty }, { delays: [0], fetchImpl: stub([], me(userWith({ stardust: 10 }))) })).toEqual({ status: "unknown" });
+    expect(await checkDelivery({ ...flow, method: "free", held: twenty }, { delays: [0], fetchImpl: stub([], me(userWith({ stardust: 20 }))) })).toEqual({ status: "kept" });
+  });
+
+  it("counts what the account holds, a reservation of this kind included", () => {
+    const user = parseAccount({
+      payments: true, login: true, owner: false,
+      user: userWith({ stardust: 5, unused: [{ orderId: "o2", productId: "tarot" }, { orderId: "o3", productId: "saju" }], opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }, { productId: "tarot", currency: "stardust", orderId: null }, { productId: "saju", currency: "stardust", orderId: null }] }),
+    })!.user;
+    expect(heldCredit(user, "tarot", 10)).toEqual({ orderIds: ["o2", "o1"], stardust: 15 });
+    expect(heldCredit(null, "tarot", 10)).toEqual({ orderIds: [], stardust: 0 });
   });
 
   it("keeps checking while the account shows a reading of this kind being opened", async () => {
