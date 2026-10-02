@@ -92,6 +92,8 @@ export const FollowUpBody = z.object({
   /** the reading exactly as returned with the token (checked against the token's digest) */
   reading: z.unknown(),
   question: z.string().trim().min(1).max(200),
+  /** the reading's id in the account (P4): the answer is saved there too */
+  readingId: z.string().regex(/^[a-z0-9]{20}$/).optional(),
 });
 
 export const OwnerBody = z.object({ code: z.string().min(1).max(200) });

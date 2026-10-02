@@ -7,6 +7,7 @@ import { FollowUpBody } from "@/lib/api/inputs";
 import { factsFromBirth } from "@/lib/api/sajuRequest";
 import { chapterTurns, recordChapterTurns } from "@/lib/api/spend";
 import { respondGeneration } from "@/lib/api/stream";
+import { saveFollowUpTurn } from "@/lib/readings/turns";
 import { issueChapter, openChapter } from "@/lib/security/chapterToken";
 import { quotaLimits } from "@/lib/security/quota";
 
@@ -60,6 +61,7 @@ export async function POST(request: Request): Promise<Response> {
     const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now, chapter.exp);
     await recordChapterTurns(chapter.id, answered + 1);
     const remaining = Math.max(0, limits.followupsPerChapter - (answered + 1));
+    if (body.data.readingId) await saveFollowUpTurn(request, gate.now, body.data.readingId, { question, answer: answer.answer }, chapterToken, remaining);
     return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: await spendCookies(gate, quota, "followup") };
   }, { gate, spend: "followup" });
 }
