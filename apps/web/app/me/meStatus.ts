@@ -1,4 +1,4 @@
-import { loginMessage } from "@/lib/account/client";
+import { loginMessage } from "@/lib/account/loginMessage";
 
 const DELETE_MESSAGES: Record<string, string> = {
   failed: "탈퇴를 마치지 못했어요. 다시 시도해 주세요.",
