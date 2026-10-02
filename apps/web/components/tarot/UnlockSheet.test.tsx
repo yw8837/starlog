@@ -46,6 +46,38 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#orders");
   });
 
+  it("while a cut-off opening is being checked, offers nothing to press, whatever the offer says", () => {
+    const checking = { title: "풀이가 열렸는지 확인하고 있어요", body: "잠시만 기다려 주세요.", action: null };
+    for (const offer of [{ mode: "open-paid", orderId: "o1" }, { mode: "stardust", units: 10, balance: 10, priceKrw: 2900 }, { mode: "pay", priceKrw: 2900 }] as const) {
+      render(<UnlockSheet {...base} owner offer={offer} onUnlock={() => {}} error={checking} checking />);
+      expect(screen.getByText("풀이가 열렸는지 확인하고 있어요")).toBeTruthy();
+      expect(screen.queryAllByRole("button")).toEqual([]);
+      expect(screen.queryAllByRole("link")).toEqual([]);
+      cleanup();
+    }
+  });
+
+  it("once the check has run out, the only thing to press is checking again", () => {
+    const onCheck = vi.fn();
+    const onUnlock = vi.fn();
+    render(<UnlockSheet {...base} owner offer={{ mode: "open-paid", orderId: "o1" }} onUnlock={onUnlock} checking onCheck={onCheck}
+      error={{ title: "풀이가 열렸는지 아직 확인하지 못했어요", action: null }} />);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["다시 확인하기"]);
+    fireEvent.click(screen.getByRole("button", { name: "다시 확인하기" }));
+    expect(onCheck).toHaveBeenCalledTimes(1);
+    expect(onUnlock).not.toHaveBeenCalled();
+  });
+
+  it("while this kind of reading is being opened, says so instead of offering to buy or open", () => {
+    const onCheck = vi.fn();
+    render(<UnlockSheet {...base} owner offer={{ mode: "in-progress", currency: "paid" }} onUnlock={() => {}} onCheck={onCheck} />);
+    expect(screen.getByText("열고 있는 풀이가 있어요")).toBeTruthy();
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["다시 확인하기"]);
+    expect(screen.queryAllByRole("link")).toEqual([]);
+    fireEvent.click(screen.getByRole("button", { name: "다시 확인하기" }));
+    expect(onCheck).toHaveBeenCalledTimes(1);
+  });
+
   it("while sales are paused, shows buyers a quiet login link next to the 오픈 기념 reading", () => {
     render(<UnlockSheet {...base} remaining={1} offer={{ mode: "opening", login: true }} onUnlock={() => {}} />);
     expect(screen.getByRole("link", { name: "결제한 풀이가 있다면 로그인" }).getAttribute("href")).toBe(base.loginHref);

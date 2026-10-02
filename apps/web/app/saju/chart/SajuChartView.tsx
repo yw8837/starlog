@@ -32,7 +32,7 @@ import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storage/betaUsage";
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
-import { LATER_CHECK_DELAYS, checkDelivery, type DeliveryCheck } from "@/lib/storage/sync";
+import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, type DeliveryCheck } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
 import { NEW_SAJU_HREF } from "@/lib/freshStart";
 import { isSajuReadingResponse, isSajuTeaser } from "@/lib/reading/validate";
@@ -97,6 +97,10 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
   const offer = unlockOffer(account, product, SITE.price.signupGiftFree);
   const [method, setMethod] = useState<UnlockMethod>("opening");
   const [creditView, setCreditView] = useState<ErrorView | null>(null);
+  // A paid or 별조각 opening not settled yet: "running" while the account is asked, "stalled" once
+  // the rounds ran out. Either way the sheet offers nothing to buy or open (no second payment).
+  const [check, setCheck] = useState<"running" | "stalled" | null>(null);
+  const firstTry = useRef<number | null>(null);
   const checkAbort = useRef<AbortController | null>(null);
   useEffect(() => () => checkAbort.current?.abort(), []);
   const errorContext = method === "paid" ? "paid" : method === "free" ? "stardust" : "reading";
@@ -111,8 +115,18 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
     reason?.focus({ preventScroll: true });
   }, [unlockError]);
 
-  /** M4: after a cut-off paid or 별조각 opening, find out what happened before saying anything. */
-  const settle = async (chosen: "paid" | "free", startedAt: number, birth: SajuForm) => {
+  /** Since when an account reading of this flow counts as this opening's: a try made here, or the longest a reservation lives. */
+  const since = (now: number) => Math.min(now - OPENING_WINDOW_MS, firstTry.current ?? now);
+
+  /**
+   * M4: find out what happened to a paid or 별조각 opening before saying anything, with nothing to
+   * buy or open meanwhile.
+   * - "cut": the answer broke off; wait for delivered or kept (the rounds may run out: "stalled");
+   * - "refused": NO_CREDIT though the credit looked held (an opening still running took it, or one
+   *   already delivered spent it); an account that is sure nothing is left then says so;
+   * - "recheck": 다시 확인하기 on a reading being opened.
+   */
+  const settle = async (chosen: "paid" | "free", startedAt: number, birth: SajuForm, after: "cut" | "refused" | "recheck") => {
     checkAbort.current?.abort();
     const controller = new AbortController();
     checkAbort.current = controller;
@@ -124,31 +138,39 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
       return c.kind === "saju" && sent !== null && sameJson(sanitizeSajuForm(c.birth), sent);
     };
     const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0 };
-    const apply = (check: DeliveryCheck): boolean => {
-      if (check.status === "delivered") {
-        mergeServerReadings([check.reading]);
-        void refreshAccount();
-        router.push(`/chapter/${check.reading.id}`);
-        return true;
-      }
-      if (check.status === "kept") {
+    const stopWhenNone = after !== "cut";
+    const apply = (result: DeliveryCheck): boolean => {
+      if (result.status === "unknown") return false;
+      setCheck(null);
+      void refreshAccount();
+      if (result.status === "delivered") {
+        mergeServerReadings([result.reading]);
+        router.push(`/chapter/${result.reading.id}`);
+      } else if (result.status === "kept") {
         setCreditView(creditKept(credit));
-        void refreshAccount();
-        return true;
+      } else {
+        // Nothing held, nothing being opened: the refreshed offer is the truth.
+        setCreditView(after === "refused" ? describeApiError({ code: "NO_CREDIT", status: 402 }, credit) : null);
+        if (after === "recheck") unlockGen.reset();
       }
-      return false;
+      return true;
     };
+    setCheck("running");
     setCreditView(CREDIT_CHECKING);
-    if (apply(await checkDelivery(flow, { signal: controller.signal }))) return;
+    if (apply(await checkDelivery(flow, { signal: controller.signal, stopWhenNone }))) return;
     if (controller.signal.aborted) return;
     setCreditView(creditUnknown(credit));
-    apply(await checkDelivery(flow, { delays: LATER_CHECK_DELAYS, signal: controller.signal }));
+    if (apply(await checkDelivery(flow, { delays: LATER_CHECK_DELAYS, signal: controller.signal, stopWhenNone }))) return;
+    if (controller.signal.aborted) return;
+    setCheck("stalled");
+    void refreshAccount();
   };
 
   const unlock = async (chosen: UnlockMethod) => {
     if (!own || !teaser) return;
     setMethod(chosen);
     setCreditView(null);
+    setCheck(null);
     checkAbort.current?.abort();
     window.scrollTo(0, 0);
     const plan = progressPlan("saju-reading", { sections: SAJU_PROLOGUE_SECTIONS });
@@ -159,13 +181,16 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
       ...(chosen === "opening" ? {} : { unlock: { method: chosen }, display: { title: teaser.title, summary: teaser.summary } }),
     };
     const startedAt = Date.now();
+    if (chosen === "paid" || chosen === "free") firstTry.current ??= startedAt;
     const res = await unlockGen.run("/api/saju/reading", body, plan, isSajuReadingResponse);
     if (!res) return;
     if (!res.ok) {
-      if (res.error.code === "BETA_LIMIT") markDayUsedUp();
-      if (res.error.code === "LOGIN_REQUIRED") router.push(loginHref(RETURN_TO));
-      if (res.error.code === "NO_CREDIT" || res.error.code === "PAYMENT_REQUIRED") void refreshAccount();
-      if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(res.error.code)) void settle(chosen, startedAt, form);
+      const code = res.error.code;
+      if (code === "BETA_LIMIT") markDayUsedUp();
+      if (code === "LOGIN_REQUIRED") router.push(loginHref(RETURN_TO));
+      if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, form, "cut");
+      else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), form, "refused");
+      else if (code === "NO_CREDIT" || code === "PAYMENT_REQUIRED") void refreshAccount();
       return;
     }
     if (chosen === "opening") countFullReading();
@@ -198,6 +223,13 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
     router.replace(RETURN_TO);
     void unlock(autoUnlock);
   });
+
+  /** 다시 확인하기: after the rounds ran out, or on a reading of this kind being opened (another tab, a reload). */
+  const recheck = () => {
+    const busy = account?.user?.opening.find((item) => item.productId === product.id);
+    const chosen = busy ? (busy.currency === "stardust" ? "free" : "paid") : method === "free" ? "free" : "paid";
+    void settle(chosen, since(Date.now()), form, check === "stalled" ? "cut" : "recheck");
+  };
 
   const teaserState = teaserGen.state;
   const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
@@ -266,6 +298,8 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
           error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
           editHref="/saju/new"
           openedHref={opened ? `/chapter/${opened.id}` : undefined}
+          checking={check !== null}
+          onCheck={check === "stalled" || (check === null && offer.mode === "in-progress") ? recheck : undefined}
         />
         <AiNote />
       </>

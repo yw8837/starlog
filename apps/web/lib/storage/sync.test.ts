@@ -57,6 +57,31 @@ describe("checking a cut-off paid or 별조각 reading", () => {
     expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0, 0], fetchImpl: stub([], me(userWith({ stardust: 0 }))) })).toEqual({ status: "unknown" });
   });
 
+  it("keeps checking while the account shows a reading of this kind being opened", async () => {
+    const busy = me(userWith({ unused: [{ orderId: "o2", productId: "tarot" }], stardust: 10, opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }] }));
+    expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: stub([], busy), stopWhenNone: true })).toEqual({ status: "unknown" });
+    const spending = me(userWith({ stardust: 10, opening: [{ productId: "tarot", currency: "stardust", orderId: null }] }));
+    expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0], fetchImpl: stub([], spending), stopWhenNone: true })).toEqual({ status: "unknown" });
+  });
+
+  it("says nothing is left only when asked to, and only when the account is sure", async () => {
+    const empty = () => stub([], me(userWith()));
+    expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: empty(), stopWhenNone: true })).toEqual({ status: "none" });
+    expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: empty() })).toEqual({ status: "unknown" });
+    const down = vi.fn(async (url: string) => (url.startsWith("/api/readings") ? Response.json({ readings: [], next: null }) : new Response("", { status: 503 }))) as unknown as typeof fetch;
+    expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: down, stopWhenNone: true })).toEqual({ status: "unknown" });
+  });
+
+  it("asks the account before the readings, so a reading saved in between is never missed", async () => {
+    let saved = false;
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.startsWith("/api/readings")) return Response.json({ readings: saved ? [{ id: ID, createdAt: STARTED + 1, chapter: serverChapter("이번 질문") }] : [], next: null });
+      saved = true; // the opening is delivered right after the account answers
+      return me(userWith());
+    }) as unknown as typeof fetch;
+    expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl, stopWhenNone: true })).toMatchObject({ status: "delivered" });
+  });
+
   it("asks again until it knows, and stops when told to", async () => {
     let round = 0;
     const fetchImpl = vi.fn(async (url: string) => {

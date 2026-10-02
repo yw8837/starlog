@@ -5,11 +5,27 @@ afterEach(() => resetAccountForTests());
 
 describe("account client", () => {
   it("reads /api/me and refuses odd shapes", () => {
-    const body = { payments: true, login: true, owner: false, user: { nickname: "별", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "o1", productId: "tarot" }] } };
+    const body = {
+      payments: true,
+      login: true,
+      owner: false,
+      user: { nickname: "별", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "o1", productId: "tarot" }], opening: [{ productId: "saju", currency: "paid", orderId: "o2" }] },
+    };
     expect(parseAccount(body)).toEqual(body);
     expect(parseAccount({ payments: false, login: false, owner: false, user: null })).toEqual({ payments: false, login: false, owner: false, user: null });
     expect(parseAccount({ payments: "yes" })).toBeNull();
     expect(parseAccount({ payments: true, login: true, owner: false, user: { nickname: 1 } })).toBeNull();
+  });
+
+  it("reads the readings being opened, and takes a missing or odd list as none", () => {
+    const user = { nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [] };
+    const read = (opening: unknown) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, opening } })?.user?.opening;
+    expect(parseAccount({ payments: true, login: true, owner: false, user })?.user?.opening).toEqual([]);
+    expect(read("x")).toEqual([]);
+    expect(read([{ productId: "tarot", currency: "stardust", orderId: null }, { productId: "tarot", currency: "moon", orderId: null }, { productId: 1, currency: "paid", orderId: "o1" }, null])).toEqual([
+      { productId: "tarot", currency: "stardust", orderId: null },
+    ]);
+    expect(read([{ productId: "tarot", currency: "paid" }])).toEqual([{ productId: "tarot", currency: "paid", orderId: null }]);
   });
 
   it("asks /api/me once for many callers, and treats a failure as unknown", async () => {

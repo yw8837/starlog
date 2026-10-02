@@ -8,7 +8,7 @@ const account = {
   payments: true,
   login: true,
   owner: false,
-  user: { nickname: "별빛", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", productId: "tarot" }] },
+  user: { nickname: "별빛", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", productId: "tarot" }], opening: [] },
 } satisfies AccountState;
 
 let requests: Array<{ url: string; method: string; body: unknown }> = [];

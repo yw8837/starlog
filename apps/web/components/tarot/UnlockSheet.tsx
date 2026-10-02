@@ -37,6 +37,13 @@ type UnlockSheetProps = {
   editHref?: string;
   /** This draw was opened already: go to the saved reading instead of opening it again. */
   openedHref?: string;
+  /**
+   * A cut-off paid or 별조각 opening is not settled yet (the error says so): nothing to buy or open
+   * until it is, so a stale button can never charge twice.
+   */
+  checking?: boolean;
+  /** "다시 확인하기": while `checking` once the checks ran out, or with the in-progress offer. */
+  onCheck?: () => void;
 };
 
 const CheckIcon = () => (
@@ -48,7 +55,8 @@ const CheckIcon = () => (
 /**
  * The unlock: what the full reading holds (length, follow-ups, kept on this device) before the one
  * gold button that opens it. Without an offer (or with "opening") it is the 오픈 기념 free count
- * (when used up, when it refills); the other offers log in, open a purchase, spend 별조각 or pay.
+ * (when used up, when it refills); the other offers log in, open a purchase, spend 별조각 or pay,
+ * or say a reading of this kind is being opened. While a cut-off opening is checked, nothing opens.
  */
 export function UnlockSheet({
   kind,
@@ -63,6 +71,8 @@ export function UnlockSheet({
   redrawHref,
   editHref,
   openedHref,
+  checking = false,
+  onCheck,
 }: UnlockSheetProps) {
   const chars = new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars[kind]);
   const opening = offer.mode === "opening";
@@ -84,10 +94,21 @@ export function UnlockSheet({
   const { free } = SITE.currency;
   const priced = offer.mode === "login" || offer.mode === "pay" || offer.mode === "stardust";
 
+  const busy = offer.mode === "in-progress";
+  const checkAgain = onCheck ? (
+    <Button variant="secondary" block onClick={onCheck}>
+      다시 확인하기
+    </Button>
+  ) : null;
+
   let offerPrimary: ReactNode = null;
   let offerSecondary: ReactNode = null;
   let caption = `오픈 기념으로 하루 ${times(SITE.beta.fullPerDay)} 무료예요`;
   switch (offer.mode) {
+    case "in-progress":
+      offerPrimary = checkAgain;
+      caption = "다 열리면 기록에 나타나요";
+      break;
     case "login":
       offerPrimary = (
         <Button href={loginHref ?? "/login"} block>
@@ -136,6 +157,8 @@ export function UnlockSheet({
         열어 둔 풀이 보기
       </Button>
     );
+  } else if (checking) {
+    primary = checkAgain;
   } else if (redraw) {
     primary = (
       <Button href={redrawHref} block>
@@ -195,17 +218,19 @@ export function UnlockSheet({
         </div>
       ) : usedUp && !openedHref ? (
         <p className={s.limit}>오늘 무료로 열 수 있는 풀이를 모두 열었어요 · 한국 시간 0시에 다시 채워져요</p>
+      ) : busy && !openedHref ? (
+        <p className={s.limit}>열고 있는 풀이가 있어요</p>
       ) : null}
 
       <div className={s.actions}>
         {primary}
-        {error?.action === "edit" && editHref && !openedHref ? (
+        {error?.action === "edit" && editHref && !openedHref && !checking ? (
           <Button href={editHref} variant="secondary" block>
             질문 고치기
           </Button>
         ) : null}
-        {openedHref ? null : offerSecondary}
-        {owner && !opening && !openedHref ? (
+        {openedHref || checking ? null : offerSecondary}
+        {owner && !opening && !busy && !openedHref && !checking ? (
           <Button variant="ghost" block onClick={() => onUnlock("owner")}>
             운영자로 무료 열기
           </Button>
@@ -220,7 +245,7 @@ export function UnlockSheet({
             <Link href={loginHref}>결제한 풀이가 있다면 로그인</Link>
           </div>
         ) : null}
-        <p className={s.caption}>{caption}</p>
+        {checking ? null : <p className={s.caption}>{caption}</p>}
       </div>
     </section>
   );

@@ -11,8 +11,10 @@ export interface AccountUser {
   stardust: number;
   /** ISO time the soonest 별조각 expire; null when there are none */
   stardustExpiresAt: string | null;
-  /** paid readings bought and not opened yet */
+  /** paid readings bought and not opened yet (one being opened is in `opening` instead) */
   unused: Array<{ orderId: string; productId: string }>;
+  /** readings being opened right now with a purchase (its order) or 별조각; [] when /api/me leaves it out */
+  opening: Array<{ productId: string; currency: "paid" | "stardust"; orderId: string | null }>;
 }
 
 export interface AccountState {
@@ -31,7 +33,12 @@ function parseUser(v: unknown): AccountUser | null | undefined {
   if (!isRecord(v) || typeof v.nickname !== "string" || typeof v.stardust !== "number" || !Array.isArray(v.unused)) return undefined;
   if (v.stardustExpiresAt !== null && typeof v.stardustExpiresAt !== "string") return undefined;
   const unused = v.unused.filter((u): u is { orderId: string; productId: string } => isRecord(u) && typeof u.orderId === "string" && typeof u.productId === "string");
-  return { nickname: v.nickname, stardust: v.stardust, stardustExpiresAt: v.stardustExpiresAt, unused: unused.map(({ orderId, productId }) => ({ orderId, productId })) };
+  const opening = (Array.isArray(v.opening) ? v.opening : []).flatMap((o): AccountUser["opening"] =>
+    isRecord(o) && typeof o.productId === "string" && (o.currency === "paid" || o.currency === "stardust")
+      ? [{ productId: o.productId, currency: o.currency, orderId: typeof o.orderId === "string" ? o.orderId : null }]
+      : [],
+  );
+  return { nickname: v.nickname, stardust: v.stardust, stardustExpiresAt: v.stardustExpiresAt, unused: unused.map(({ orderId, productId }) => ({ orderId, productId })), opening };
 }
 
 export function parseAccount(value: unknown): AccountState | null {

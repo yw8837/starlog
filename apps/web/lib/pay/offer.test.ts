@@ -5,7 +5,7 @@ import { checkoutHref, unlockOffer } from "./offer";
 
 const tarot = standardProduct("tarot");
 const account = (over: Partial<AccountState> = {}): AccountState => ({ payments: true, login: true, owner: false, user: null, ...over });
-const user = (over: Partial<AccountUser> = {}): AccountUser => ({ nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [], ...over });
+const user = (over: Partial<AccountUser> = {}): AccountUser => ({ nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [], opening: [], ...over });
 
 describe("unlock offer", () => {
   it("keeps the 오픈 기념 reading while sales are closed for this device and nothing is held", () => {
@@ -26,6 +26,13 @@ describe("unlock offer", () => {
     expect(unlockOffer(account({ user: user({ stardust: 10, unused: [{ orderId: "o1", productId: "tarot" }] }) }), tarot, 10)).toEqual({ mode: "open-paid", orderId: "o1" });
     expect(unlockOffer(account({ user: user({ stardust: 10 }) }), tarot, 10)).toEqual({ mode: "stardust", units: 10, balance: 10, priceKrw: 2900 });
     expect(unlockOffer(account({ user: user({ stardust: 9 }) }), tarot, 10)).toEqual({ mode: "pay", priceKrw: 2900 });
+  });
+
+  it("while a reading of this kind is being opened, offers nothing to buy or open", () => {
+    const busy = user({ stardust: 10, unused: [{ orderId: "o2", productId: "tarot" }], opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }] });
+    expect(unlockOffer(account({ user: busy }), tarot, 10)).toEqual({ mode: "in-progress", currency: "paid" });
+    expect(unlockOffer(account({ payments: false, user: user({ opening: [{ productId: "tarot", currency: "stardust", orderId: null }] }) }), tarot, 10)).toEqual({ mode: "in-progress", currency: "stardust" });
+    expect(unlockOffer(account({ user: user({ stardust: 10, opening: [{ productId: "saju", currency: "stardust", orderId: null }] }) }), tarot, 10)).toMatchObject({ mode: "stardust" });
   });
 
   it("does not count a purchase of the other reading", () => {

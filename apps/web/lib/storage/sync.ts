@@ -20,7 +20,13 @@ export async function fetchReadingsPage(
   return res.ok && Array.isArray(res.data.readings) ? { readings: res.data.readings, next: res.data.next ?? null } : null;
 }
 
-export type DeliveryCheck = { status: "delivered"; reading: SavedReadingJson } | { status: "kept" } | { status: "unknown" };
+/**
+ * - delivered: the account has the reading;
+ * - kept: the credit is back, unused, and nothing of this kind is being opened;
+ * - none: nothing is being opened, the credit is not there and no reading came of it (only with `stopWhenNone`);
+ * - unknown: not known yet.
+ */
+export type DeliveryCheck = { status: "delivered"; reading: SavedReadingJson } | { status: "kept" } | { status: "none" } | { status: "unknown" };
 
 /** The first rounds, while CREDIT_CHECKING shows (ms before each). */
 export const FIRST_CHECK_DELAYS = [0, 2_000, 4_000];
@@ -28,6 +34,8 @@ export const FIRST_CHECK_DELAYS = [0, 2_000, 4_000];
 export const LATER_CHECK_DELAYS = [15_000, 30_000, 60_000, 120_000];
 /** Server and device clocks differ; a reading this much older than the request still counts. */
 const CLOCK_SLACK_MS = 2 * 60_000;
+/** A reservation lives at most 6 minutes (spec 5.4): a reading still being opened was started within this window. */
+export const OPENING_WINDOW_MS = 6 * 60_000;
 
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve) => {
@@ -40,25 +48,33 @@ const sleep = (ms: number, signal?: AbortSignal) =>
   });
 
 /**
- * After a paid or 별조각 opening failed mid-way: was it delivered (the account has the reading), was
- * the credit kept (the account shows it unused), or is it not known yet? One round per delay; the
- * first answer wins. Never "kept" on a guess.
+ * After a paid or 별조각 opening failed mid-way (or was refused while its credit looked held): was it
+ * delivered (the account has the reading), was the credit kept (the account shows it unused and
+ * nothing of this kind being opened), or is it not known yet? One round per delay; the first answer
+ * wins. Never "kept" on a guess. With `stopWhenNone`, a round where the account is sure nothing is
+ * held or being opened and no reading came of it answers "none".
  */
 export async function checkDelivery(
   input: { startedAt: number; matches: (chapter: unknown) => boolean; method: "paid" | "free"; productId: string; units: number },
-  options: { delays?: readonly number[]; fetchImpl?: typeof fetch; signal?: AbortSignal } = {},
+  options: { delays?: readonly number[]; fetchImpl?: typeof fetch; signal?: AbortSignal; stopWhenNone?: boolean } = {},
 ): Promise<DeliveryCheck> {
-  const { delays = FIRST_CHECK_DELAYS, fetchImpl = fetch, signal } = options;
+  const { delays = FIRST_CHECK_DELAYS, fetchImpl = fetch, signal, stopWhenNone = false } = options;
+  const currency = input.method === "paid" ? "paid" : "stardust";
   for (const delay of delays) {
     await sleep(delay, signal);
     if (signal?.aborted) break;
+    // The account first: a delivery is one batch (reading saved, credit spent), so a reading saved
+    // before this answer is surely in the list read after it.
+    const me = await getJson<unknown>("/api/me", { fetchImpl });
+    const user = me.ok ? parseAccount(me.data)?.user : null;
     const page = await fetchReadingsPage({ limit: 5 }, fetchImpl);
     const found = page?.readings.find((reading) => reading.createdAt >= input.startedAt - CLOCK_SLACK_MS && input.matches(reading.chapter));
     if (found) return { status: "delivered", reading: found };
-    const me = await getJson<unknown>("/api/me", { fetchImpl });
-    const user = me.ok ? parseAccount(me.data)?.user : null;
-    if (user && input.method === "paid" && user.unused.some((item) => item.productId === input.productId)) return { status: "kept" };
-    if (user && input.method === "free" && user.stardust >= input.units) return { status: "kept" };
+    if (!user || !page) continue;
+    if (user.opening.some((item) => item.productId === input.productId && item.currency === currency)) continue;
+    if (input.method === "paid" && user.unused.some((item) => item.productId === input.productId)) return { status: "kept" };
+    if (input.method === "free" && user.stardust >= input.units) return { status: "kept" };
+    if (stopWhenNone) return { status: "none" };
   }
   return { status: "unknown" };
 }
