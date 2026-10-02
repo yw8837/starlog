@@ -47,6 +47,7 @@ afterEach(() => {
   resetAccountForTests();
   clearChapters();
   sessionStorage.clear();
+  window.history.replaceState(null, "", "/");
 });
 
 describe("AccountPanel", () => {
@@ -58,6 +59,26 @@ describe("AccountPanel", () => {
     expect(screen.getByText("타로 전체 풀이 · 열지 않음")).toBeTruthy();
     expect((await screen.findByRole("link", { name: "영수증 보기" })).getAttribute("href")).toBe("https://dashboard.tosspayments.com/receipt/x");
     expect(screen.queryByText(/계정에 보관하기/)).toBeNull();
+  });
+
+  it("keeps 환불받기 under 결제한 풀이 (#purchases, where the result pages' 환불받기 lands), with or without purchases", () => {
+    render(<AccountPanel account={account} />);
+    const section = document.getElementById("purchases")!;
+    expect(within(section).getByRole("heading", { name: "결제한 풀이" })).toBeTruthy();
+    expect(within(section).getByRole("button", { name: "환불받기" })).toBeTruthy();
+    cleanup();
+    render(<AccountPanel account={{ ...account, user: { ...account.user, unused: [] } }} />);
+    expect(within(document.getElementById("purchases")!).getByText("열지 않은 결제가 없어요")).toBeTruthy();
+  });
+
+  it("arriving at /me#purchases, brings 결제한 풀이 into view once the account is shown", () => {
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this);
+    };
+    window.history.replaceState(null, "", "/me#purchases");
+    render(<AccountPanel account={account} />);
+    expect(scrolled.map((element) => element.id)).toEqual(["purchases"]);
   });
 
   it("refunds an unopened purchase after a confirm", async () => {

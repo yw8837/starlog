@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { logout, refreshAccount, type AccountState, type AccountUser } from "@/lib/account/client";
@@ -62,6 +62,12 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
   const refunding = useRef(false);
   const [refundBusy, setRefundBusy] = useState(false);
 
+  // /me#purchases (환불받기 on a result page): the panel appears only once the account is read,
+  // after the browser looked for the anchor, so bring it into view now.
+  useEffect(() => {
+    if (window.location.hash === "#purchases") document.getElementById("purchases")?.scrollIntoView({ block: "start" });
+  }, []);
+
   const refund = async () => {
     if (!refundId || refunding.current) return;
     refunding.current = true;
@@ -106,28 +112,36 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
         {user.stardust > 0 && user.stardustExpiresAt ? <span className={s.muted}>{` · ${lastDay(user.stardustExpiresAt)}까지`}</span> : null}
       </p>
 
-      {user.unused.length > 0 ? (
-        <ul className={s.unused} aria-label="결제한 풀이">
-          {user.unused.map((item) => (
-            <li key={item.orderId} className={s.unusedItem}>
-              <span>{`${productById(item.productId)?.name ?? "풀이"} · 열지 않음`}</span>
-              <Button href={openHref(item.productId)} variant="secondary" size="md">
-                열기
-              </Button>
-              <button
-                type="button"
-                className={s.link}
-                onClick={() => {
-                  setRefundId(item.orderId);
-                  setSheet("refund");
-                }}
-              >
-                환불받기
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {/* #purchases: where 환불받기 on a result page and the refund policy send the buyer. */}
+      <section id="purchases" className={s.orders} aria-labelledby="purchases-title">
+        <h3 id="purchases-title" className={s.sectionTitle}>
+          결제한 풀이
+        </h3>
+        {user.unused.length > 0 ? (
+          <ul className={s.unused}>
+            {user.unused.map((item) => (
+              <li key={item.orderId} className={s.unusedItem}>
+                <span>{`${productById(item.productId)?.name ?? "풀이"} · 열지 않음`}</span>
+                <Button href={openHref(item.productId)} variant="secondary" size="md">
+                  열기
+                </Button>
+                <button
+                  type="button"
+                  className={s.link}
+                  onClick={() => {
+                    setRefundId(item.orderId);
+                    setSheet("refund");
+                  }}
+                >
+                  환불받기
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className={s.muted}>열지 않은 결제가 없어요</p>
+        )}
+      </section>
 
       <OrderHistory key={historyKey} />
 

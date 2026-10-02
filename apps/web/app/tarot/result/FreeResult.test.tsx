@@ -83,6 +83,15 @@ describe("FreeResult after a paid opening was cut off", () => {
     expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
   });
 
+  it("once the check finds the purchase kept, 환불받기 goes to 결제한 풀이 in 내 정보, where its button is", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "tarot" }] }))] });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    expect(await screen.findByText(/결제한 풀이는 그대로 남아 있어요/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#purchases");
+  });
+
   it("with two purchases of the same reading, the other one still unused does not count as the one used being kept", async () => {
     seed();
     const OTHER = "Zz9_yXw-Vu8tSr7Qp6On5Ml4";

@@ -30,7 +30,9 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("완성되어 계정에 저장되면");
     expect(page).toContain("기한 없이 전액 환불");
     expect(page).toContain("계좌로 환불");
-    expect(page).toContain("내 정보 > 결제 내역");
+    expect(page).toContain("내 정보 > 결제한 풀이");
+    expect(page).not.toContain("결제 내역의 ‘환불받기’");
+    expect(page).not.toContain("결제 내역에서 ‘환불받기’");
     expect(page).toContain("90일");
     expect(page).toContain("법정대리인");
     expect(page).not.toContain("충전");

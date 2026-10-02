@@ -26,7 +26,7 @@ const day = (ms: number) => {
   return `${kst.getUTCFullYear()}. ${kst.getUTCMonth() + 1}. ${kst.getUTCDate()}.`;
 };
 
-/** 결제 내역 with Toss receipts (spec section 6). The 환불받기 link of a failed paid reading points here (#orders). */
+/** 결제 내역 with Toss receipts (spec section 6). 환불받기 is under 결제한 풀이 (AccountPanel, #purchases). */
 export function OrderHistory() {
   const [items, setItems] = useState<OrderItem[] | null>(null);
   useEffect(() => {

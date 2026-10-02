@@ -296,7 +296,7 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
           loginHref={loginHref(RETURN_TO)}
           payHref={checkoutHref("saju", RETURN_TO)}
           owner={account?.owner}
-          refundHref={method === "paid" && creditView?.action === "retry" ? "/me#orders" : undefined}
+          refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
           error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
           editHref="/saju/new"
           openedHref={opened ? `/chapter/${opened.id}` : undefined}

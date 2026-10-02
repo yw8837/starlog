@@ -40,10 +40,10 @@ describe("UnlockSheet offers", () => {
 
   it("offers the refund next to the retry after a failed paid reading", () => {
     render(
-      <UnlockSheet {...base} offer={{ mode: "open-paid", orderId: "o1" }} onUnlock={() => {}} refundHref="/me#orders"
+      <UnlockSheet {...base} offer={{ mode: "open-paid", orderId: "o1" }} onUnlock={() => {}} refundHref="/me#purchases"
         error={{ title: "풀이를 다 적지 못했어요", body: "결제한 풀이는 그대로 남아 있어요.", action: "retry" }} />,
     );
-    expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#orders");
+    expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#purchases");
   });
 
   it("while a cut-off opening is being checked, offers nothing to press, whatever the offer says", () => {

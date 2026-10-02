@@ -293,7 +293,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 loginHref={loginHref(RETURN_TO)}
                 payHref={checkoutHref("tarot", RETURN_TO)}
                 owner={account?.owner}
-                refundHref={method === "paid" && creditView?.action === "retry" ? "/me#orders" : undefined}
+                refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
                 error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
                 redrawHref={withFlags("/tarot/draw", { instant })}
                 editHref="/tarot/new"
