@@ -162,6 +162,24 @@ export function ledgerContract(make: Make) {
     expect((await paid("test")).ok).toBe(true);
   });
 
+  it("opens a paid reading with one whole purchase, never parts of two, whatever the units asked", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    await paidOrder(db, "order_b");
+    // The units per reading changed after both were bought: still one purchase per opening.
+    const first = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 12, now: NOW, payMode: "live" });
+    const second = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 5, now: NOW + 1, payMode: "live" });
+    if (!first.ok || !second.ok) throw new Error("not reserved");
+    expect([first.allocations.length, second.allocations.length]).toEqual([1, 1]);
+    expect([first.allocations[0]![1], second.allocations[0]![1]]).toEqual([10, 10]);
+    expect(new Set([first.allocations[0]![0], second.allocations[0]![0]])).toEqual(new Set(["lot_order_a", "lot_order_b"]));
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW + 2, payMode: "live" })).toEqual({ ok: false });
+    expect((await walletSummary(db, "u_1", NOW + 3)).unused).toEqual([]);
+    expect(await releaseUnlock(db, { unlockId: second.unlockId, now: NOW + 4 })).toBe(true);
+    expect((await walletSummary(db, "u_1", NOW + 5)).unused).toHaveLength(1);
+    await expectLotsMatchLedger(db);
+  });
+
   it("takes 별조각 from the lot that expires first", async () => {
     const db = await setup(make);
     const lot = (id: string, units: number, expiresAt: number) =>

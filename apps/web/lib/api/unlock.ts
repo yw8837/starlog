@@ -64,6 +64,7 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     userId: user.id,
     productId: kind,
     currency: method === "paid" ? "paid" : "free",
+    // 별조각 by the reading's price in units; a paid opening takes one whole purchase (reserveUnlock).
     units: unitsFor(standardProduct(kind)),
     now: gate.now,
     payMode: payKeyMode(),

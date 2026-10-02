@@ -203,6 +203,8 @@ export type ReserveResult = { ok: true; unlockId: string; allocations: Allocatio
  * deleted) fails the CHECK and rolls the reservation back; one retry from a fresh read, then no credit.
  * A lot bought with an order counts only when its payment was made under `payMode`, this deploy's
  * Toss keys (mode.ts payKeyMode): test payments never pay for live readings; null takes none.
+ * A paid opening takes exactly one whole lot (one purchase), never parts of two, so `units` only
+ * counts for 별조각: the units per reading may change after a purchase without splitting it.
  */
 export async function reserveUnlock(
   db: D1Binding,
@@ -221,7 +223,8 @@ export async function reserveUnlock(
       )
       .bind(userId, currency, now, productId, payMode)
       .all<{ id: string; units_left: number }>();
-    const allocations = allocate(results, units);
+    const whole = results[0];
+    const allocations: Allocation[] | null = currency === "paid" ? (whole ? [[whole.id, whole.units_left]] : null) : allocate(results, units);
     if (!allocations) return { ok: false };
     const unlockId = `ul_${randomId(12)}`;
     try {
