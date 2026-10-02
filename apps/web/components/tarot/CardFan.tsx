@@ -86,12 +86,12 @@ export function CardFan({ count = 78, visible = 21, picked, max, onPick }: CardF
     // Pick the card the user sees raised; the raise itself can move it out from under the finger.
     const index = activeRef.current ?? indexAt(e.clientX, e.clientY);
     setActive(null);
-    if (index !== null && canPick(index)) {
-      // The browser may follow with a click on the same card; that click must not un-pick it.
-      suppressClick.current = true;
-      window.setTimeout(() => (suppressClick.current = false), 500);
-      onPick(index);
-    }
+    // A touch is decided here, on the card under the finger. The click the browser sends next is
+    // ignored whether or not this picked: touch adjustment can retarget it to a neighbour (a re-tap
+    // on a picked, lifted card would otherwise pick the card beside it).
+    suppressClick.current = true;
+    window.setTimeout(() => (suppressClick.current = false), 500);
+    if (index !== null && canPick(index)) onPick(index);
   };
 
   const stopScrub = () => {
