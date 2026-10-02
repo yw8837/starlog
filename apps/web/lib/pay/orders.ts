@@ -117,6 +117,8 @@ export async function markPaid(db: D1Binding, order: OrderRow, payment: TossPaym
 
 /** Shown when a payment arrives for an account deleted in the meantime. */
 export const ORPHAN_MESSAGE = "탈퇴한 계정이라 이 결제는 바로 취소돼요. 청구된 금액은 카드사를 거쳐 환불돼요.";
+/** Shown for an order the account deletion closed before it was paid (eraseDeletedAccount): nothing was charged. */
+export const CLOSED_BY_DELETION_MESSAGE = "탈퇴한 계정의 주문이라 결제하지 않았어요. 청구된 금액은 없어요.";
 
 /** `orphaned`: the payment went through for a deleted account; the caller cancels it (Task 8). */
 export type ConfirmOutcome = { ok: true; order: OrderRow } | { ok: false; code: "PAY_FAILED" | "PAY_PENDING" | "BAD_REQUEST"; message?: string; orphaned?: boolean };
@@ -131,7 +133,11 @@ async function outcomeOfPaid(db: D1Binding, toss: TossClient, order: OrderRow, p
 /** The successUrl's confirm (spec 5.3): amount check, one claim per order, Toss confirm, then markPaid. */
 export async function confirmOrder(db: D1Binding, toss: TossClient, input: { order: OrderRow; paymentKey: string; amount: number; now: number }): Promise<ConfirmOutcome> {
   const { order, paymentKey, amount, now } = input;
-  if (order.fail_code === "ACCOUNT_DELETED") return { ok: false, code: "PAY_FAILED", message: ORPHAN_MESSAGE, orphaned: true };
+  if (order.fail_code === "ACCOUNT_DELETED") {
+    // Closed by the deletion before Toss confirmed anything: never confirmed, so nothing was charged.
+    if (order.status === "failed") return { ok: false, code: "PAY_FAILED", message: CLOSED_BY_DELETION_MESSAGE };
+    return { ok: false, code: "PAY_FAILED", message: ORPHAN_MESSAGE, orphaned: true };
+  }
   if (order.status === "paid" || order.status === "refunding" || order.status === "refunded") return { ok: true, order };
   if (order.status === "failed") return { ok: false, code: "PAY_FAILED" };
   if (amount !== order.amount_krw) {

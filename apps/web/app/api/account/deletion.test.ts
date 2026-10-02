@@ -168,6 +168,22 @@ describe("account deletion", () => {
     expect(warn).toHaveBeenCalledWith(JSON.stringify({ evt: "auth.kakao_unlink_failed" }));
   });
 
+  it("tells a buyer coming back to an order the deletion closed that nothing was charged", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    const { orderId } = (await (await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true }, origin: true })).json()) as { orderId: string };
+    expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
+    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "ACCOUNT_DELETED" });
+    const toss = vi.spyOn(mockToss, "confirm");
+    const res = await browser("192.0.2.91").send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_late", orderId, amount: 2900 }, origin: true });
+    expect(res.status).toBe(402);
+    const body = (await res.json()) as { code: string; message: string };
+    expect(body.code).toBe("PAY_FAILED");
+    expect(body.message).toContain("청구된 금액은 없어요");
+    expect(body.message).not.toContain("환불");
+    expect(toss).not.toHaveBeenCalled();
+  });
+
   it("waits while a reading is being opened", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
