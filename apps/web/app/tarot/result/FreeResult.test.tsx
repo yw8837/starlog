@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
-import { saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
+import { FLOW_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
 import { saveTeaser } from "@/lib/reading/teaserCache";
 import { clearChapters } from "@/lib/storage/chapters";
 import { FreeResult } from "./FreeResult";
@@ -110,6 +110,20 @@ describe("FreeResult after a paid opening was cut off", () => {
     render(<FreeResult instant />);
     fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+  });
+
+  it("binds a reading the check found delivered to these cards, so coming back offers it instead of a payment", async () => {
+    const question = seed();
+    stub({
+      me: [() => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "tarot" }] })), () => Response.json(meBody())],
+      readings: () => Response.json({ readings: [savedReading(question)], next: null }),
+    });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(JSON.parse(sessionStorage.getItem(FLOW_KEY) ?? "{}").draw.chapterId).toBe(ID);
+    expect((await screen.findByRole("link", { name: /열어 둔 풀이 보기/ })).getAttribute("href")).toBe(`/chapter/${ID}`);
+    expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
   });
 
   it("when the check finds nothing held, opened or saved, says there is nothing to use and offers to pay", async () => {

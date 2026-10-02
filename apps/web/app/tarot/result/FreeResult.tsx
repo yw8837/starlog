@@ -148,6 +148,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
       void refreshAccount();
       if (result.status === "delivered") {
         mergeServerReadings([result.reading]);
+        // Bound to these cards like a reading opened here, so this draw is never offered for sale again.
+        setFlow((prev) => (prev.draw ? { ...prev, draw: { ...prev.draw, chapterId: result.reading.id } } : prev));
         router.push(`/chapter/${result.reading.id}`);
       } else if (result.status === "kept") {
         setCreditView(creditKept(credit));
