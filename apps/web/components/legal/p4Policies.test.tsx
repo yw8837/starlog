@@ -68,6 +68,13 @@ describe("policies for the paid launch", () => {
     expect(page).not.toMatch(MODEL_NAMES);
   });
 
+  it("/privacy: what was deleted stays in the database's recovery copies (D1 Time Travel) for up to 30 days", () => {
+    const { container } = render(<PrivacyPage />);
+    const retention = container.querySelector("#retention")?.textContent ?? "";
+    expect(retention).toContain("Time Travel");
+    expect(retention).toContain("복구 기록에는 최대 30일 동안 남아 있다가 사라집니다");
+  });
+
   it("none of the four says 베타", () => {
     for (const page of [<PricingPage key="p" />, <RefundPage key="r" />, <TermsPage key="t" />, <PrivacyPage key="v" />]) {
       expect(text(page)).not.toContain("베타");
