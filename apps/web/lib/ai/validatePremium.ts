@@ -12,6 +12,7 @@ import {
   mentions, modelNameViolations, namesOf, profileUseViolations, quotedInputs, sentences, sharedMisdescriptionHits, userTextOf, voiceViolations,
   withoutDrawnNames,
 } from "./validate";
+import { maskGanzhiReadings } from "./ganzhi";
 
 /**
  * Premium validators (P5 spec §5). Same contract as validate.ts: a list of Korean violations, soft
@@ -29,14 +30,8 @@ export function premiumCommonViolations(draft: unknown, texts: string[], out: st
   if (SERVICE_TALK.test(all)) out.push("서비스 이야기('베타')를 본문에 쓰지 마세요.");
 }
 
-/**
- * 간지 readings that spell a banned word: "임신(壬申)" is a pillar, not 임신 (pregnancy). Read as a
- * pillar (next to its hanja, as in "임신(壬申)" or the engine's "壬申(임신)", or followed by
- * 대운·세운·일주·년·월·일 …) it becomes "壬申" before the topic blocklists, so the allow-list still
- * judges whether that pillar exists.
- */
-const GANZHI_HOMONYM = /(?<=壬申\()임신|임신(?=\(壬申\)|\s?(?:대운|세운|일주|월주|년주|시주|기둥)|(?:년|월|일)(?:[이은을의에도과와로]|(?![가-힣])))/g;
-export const maskGanzhiReadings = (text: string) => text.replace(GANZHI_HOMONYM, "壬申");
+/** 간지 readings that spell a banned word (임신 for 壬申): shared with the standard saju validators. */
+export { maskGanzhiReadings } from "./ganzhi";
 
 function followUpViolations(followUps: string[], out: string[]): void {
   if (followUps.length < 1 || followUps.length > 3 || followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
