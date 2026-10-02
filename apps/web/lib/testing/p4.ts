@@ -1,6 +1,8 @@
 import { GET as kakaoCallback } from "@/app/api/auth/kakao/callback/route";
 import { GET as kakaoStart } from "@/app/api/auth/kakao/start/route";
 import { GET as meGet } from "@/app/api/me/route";
+import { POST as confirmPost } from "@/app/api/pay/confirm/route";
+import { POST as ordersPost } from "@/app/api/pay/orders/route";
 import { setTestDb } from "@/lib/db";
 import { migratedTestD1 } from "@/lib/db/testing/migrate";
 import type { TestD1 } from "@/lib/db/testing/sqliteD1";
@@ -78,4 +80,16 @@ export interface MeBody {
 
 export async function me(b: Browser): Promise<MeBody> {
   return (await (await b.send(meGet, "/api/me")).json()) as MeBody;
+}
+
+let paymentSeq = 0;
+
+/** Buys through the mock Toss (STARLOG_PAY=mock): create the order, then confirm it. Returns the order id. */
+export async function buy(b: Browser, productId = "tarot"): Promise<string> {
+  const order = await b.send(ordersPost, "/api/pay/orders", { body: { productId, returnTo: "/tarot/result", ack: true }, origin: true });
+  if (order.status !== 200) throw new Error(`order answered ${order.status}`);
+  const { orderId, amount } = (await order.json()) as { orderId: string; amount: number };
+  const confirmed = await b.send(confirmPost, "/api/pay/confirm", { body: { paymentKey: `mock_${++paymentSeq}_${orderId}`, orderId, amount }, origin: true });
+  if (confirmed.status !== 200) throw new Error(`confirm answered ${confirmed.status}`);
+  return orderId;
 }
