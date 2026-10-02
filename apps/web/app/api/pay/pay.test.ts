@@ -115,27 +115,40 @@ describe("confirm", () => {
     expect((await elsewhere.send(confirm, "/api/pay/confirm", { body: { paymentKey: "x", orderId, amount: 2900 } })).status).toBe(403);
   });
 
-  it("refuses an amount that is not the order's, and never asks Toss", async () => {
+  it("refuses an amount that is not the order's, never asks Toss, and leaves the order to its buyer", async () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await newOrder(b);
     const spy = vi.spyOn(mockToss, "confirm");
-    expect((await confirmAs(b, orderId, "mock_x", 100)).status).toBe(400);
+    expect((await confirmAs(browser("192.0.2.66"), orderId, "mock_x", 100)).status).toBe(400);
     expect(spy).not.toHaveBeenCalled();
-    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "AMOUNT_MISMATCH" });
+    expect(await db.prepare("SELECT status, fail_code, payment_key FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "created", fail_code: null, payment_key: null });
+    expect((await confirmAs(b, orderId, "mock_real")).status).toBe(200);
   });
 
-  it("looks a declined payment up before failing it, then shows Toss's message", async () => {
+  it("looks a refused payment up; with none at Toss the order goes back to its buyer, untouched", async () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await newOrder(b);
     const lookUp = vi.spyOn(mockToss, "getPaymentByOrder");
-    const res = await confirmAs(b, orderId, "mock_fail_1");
+    // Someone else's paymentKey, or a decline Toss keeps no payment for: the order must not die of it.
+    const res = await confirmAs(browser("192.0.2.67"), orderId, "mock_fail_1");
     expect(res.status).toBe(402);
     expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." });
     expect(lookUp).toHaveBeenCalledWith(orderId);
-    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "REJECT_CARD_PAYMENT" });
+    expect(await db.prepare("SELECT status, fail_code, payment_key FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "created", fail_code: null, payment_key: null });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots WHERE currency = 'paid'").first()).toEqual({ n: 0 });
+  });
+
+  it("fails an order whose refusal Toss backs with a payment of its own", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    mockToss.failNext("confirm", new TossError(403, "REJECT_CARD_PAYMENT", "거절"));
+    const aborted = { paymentKey: "mock_aborted", orderId, status: "ABORTED", totalAmount: 2900, balanceAmount: 2900, method: null, approvedAt: null, receiptUrl: null };
+    vi.spyOn(mockToss, "getPaymentByOrder").mockResolvedValueOnce(aborted);
+    expect((await confirmAs(b, orderId, "mock_aborted")).status).toBe(402);
+    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "REJECT_CARD_PAYMENT" });
   });
 
   it("keeps a 5xx answer pending, then settles it from Toss and grants once", async () => {

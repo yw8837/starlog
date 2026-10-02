@@ -135,8 +135,8 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
   if (order.status === "paid" || order.status === "refunding" || order.status === "refunded") return { ok: true, order };
   if (order.status === "failed") return { ok: false, code: "PAY_FAILED" };
   if (amount !== order.amount_krw) {
-    // Toss lets an unconfirmed payment expire, so nothing is charged.
-    await setStatus(db, order.id, ["created"], "failed", now, "AMOUNT_MISMATCH");
+    // Nothing changes: anyone holding the order id could send a wrong amount, and the buyer's own
+    // confirm must still go through. Toss lets an unconfirmed payment expire, so nothing is charged.
     console.warn(JSON.stringify({ evt: "pay.amount_mismatch", orderId: order.id }));
     return { ok: false, code: "BAD_REQUEST" };
   }
@@ -165,6 +165,16 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
     const found = await lookUpByOrder(toss, order.id);
     if (found === "unknown") return { ok: false, code: "PAY_PENDING" };
     if (found !== "none" && matches(order, found)) return outcomeOfPaid(db, toss, order, found, now);
+    if (found === "none") {
+      // Toss holds no payment for this order: the paymentKey was not its own (a forged or stray one,
+      // or a decline Toss keeps nothing for). The order goes back to its buyer as it was.
+      await db
+        .prepare("UPDATE orders SET status = 'created', payment_key = NULL, updated_at = ? WHERE id = ? AND status = 'confirming' AND payment_key = ?")
+        .bind(now, order.id, paymentKey)
+        .run();
+      console.info(JSON.stringify({ evt: "pay.confirm_refused", orderId: order.id, code: refusal.code }));
+      return { ok: false, code: "PAY_FAILED", message: refusal.message };
+    }
     await setStatus(db, order.id, ["confirming"], "failed", now, refusal.code);
     console.info(JSON.stringify({ evt: "pay.confirm_declined", orderId: order.id, code: refusal.code }));
     return { ok: false, code: "PAY_FAILED", message: refusal.message };
