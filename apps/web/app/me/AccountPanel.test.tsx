@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests, type AccountState } from "@/lib/account/client";
 import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
@@ -66,6 +66,55 @@ describe("AccountPanel", () => {
     fireEvent.click(await screen.findByRole("button", { name: "전액 환불받기" }));
     await waitFor(() => expect(requests.some((r) => r.url === "/api/pay/refund" && (r.body as { orderId: string }).orderId === "Ab3_dEf-Gh5iJk7Lm9No1Pq2")).toBe(true));
     expect(await screen.findByText("환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
+  });
+
+  it("sends one refund however often 전액 환불받기 is tapped while it runs", async () => {
+    let answer: (response: Response) => void = () => {};
+    const base = vi.mocked(fetch).getMockImplementation()!;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url !== "/api/pay/refund") return base(url, init);
+      requests.push({ url, method: init?.method ?? "GET", body: init?.body ? JSON.parse(String(init.body)) : null });
+      return new Promise<Response>((resolve) => (answer = resolve));
+    }));
+    render(<AccountPanel account={account} />);
+    fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
+    const confirm = await screen.findByRole("button", { name: "전액 환불받기" });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    answer(Response.json({ ok: true, status: "refunded" }));
+    expect(await screen.findByText("환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
+    expect(requests.filter((r) => r.url === "/api/pay/refund")).toHaveLength(1);
+  });
+
+  it("says what went wrong with a refund in refund words, never payment ones", async () => {
+    for (const [body, status, line] of [
+      [{ code: "PAY_PENDING" }, 409, "환불을 처리하고 있어요. 결제 내역에서 확인할 수 있어요."],
+      [{ code: "PAY_FAILED", message: "환불하지 못했어요. 문의해 주세요." }, 402, "환불하지 못했어요. 문의해 주세요."],
+      [{ code: "PAY_FAILED", message: "취소 가능 기간이 지났어요." }, 402, "환불하지 못했어요. 취소 가능 기간이 지났어요."],
+    ] as const) {
+      const base = vi.mocked(fetch).getMockImplementation()!;
+      vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => (url === "/api/pay/refund" ? Response.json(body, { status }) : base(url, init))));
+      render(<AccountPanel account={account} />);
+      fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
+      fireEvent.click(await screen.findByRole("button", { name: "전액 환불받기" }));
+      expect(await screen.findByText(line)).toBeTruthy();
+      expect(screen.queryByText(/결제를 확인하고 있어요|결제를 마치지 못했어요/)).toBeNull();
+      cleanup();
+    }
+  });
+
+  it("asks before deleting the account's copies of readings, and says what goes", async () => {
+    render(<AccountPanel account={account} />);
+    fireEvent.click(screen.getByRole("button", { name: "계정에 보관한 풀이 모두 지우기" }));
+    expect(requests.some((r) => r.method === "DELETE")).toBe(false);
+    const sheet = (await screen.findByText("계정에 보관한 풀이를 모두 지울까요?")).closest("dialog")!;
+    expect(within(sheet).getByText(/다른 기기에서는 볼 수 없어요/)).toBeTruthy();
+    fireEvent.click(within(sheet).getByRole("button", { name: "취소" }));
+    expect(requests.some((r) => r.method === "DELETE")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "계정에 보관한 풀이 모두 지우기" }));
+    fireEvent.click(await screen.findByRole("button", { name: "모두 지우기" }));
+    await waitFor(() => expect(requests.some((r) => r.url === "/api/readings?all=1" && r.method === "DELETE")).toBe(true));
+    expect(await screen.findByText("계정에 보관한 풀이를 지웠어요. 이 기기의 기록은 그대로예요.")).toBeTruthy();
   });
 
   it("logs out and takes the account's readings off this device; readings opened here stay", async () => {

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { logout, refreshAccount, type AccountState, type AccountUser } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
 import { productById } from "@/lib/pay/catalog";
-import { postJson } from "@/lib/reading/api";
+import { postJson, type ApiError } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
 import { deleteAccountReadings, forgetAccountOnDevice } from "@/lib/storage/sync";
 import { OrderHistory } from "./OrderHistory";
@@ -17,6 +17,24 @@ const lastDay = (iso: string) => {
   return `${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일`;
 };
 const openHref = (productId: string) => (productId === "saju" ? "/saju/new" : "/tarot/new");
+
+/** A failed 환불받기 in refund words (the payment lines would say "결제를 확인하고 있어요"). */
+function refundNotice(error: ApiError): string {
+  switch (error.code) {
+    case "PAY_PENDING":
+      return "환불을 처리하고 있어요. 결제 내역에서 확인할 수 있어요.";
+    case "PAY_FAILED":
+      // Toss refused the cancel; the purchase is back as it was.
+      return error.message?.startsWith("환불하지 못했어요") ? error.message : `환불하지 못했어요. ${error.message ?? "문의해 주세요."}`;
+    case "NOT_REFUNDABLE":
+      return error.message ?? "환불할 수 없는 결제예요. 이미 연 풀이이거나 환불을 처리하고 있어요.";
+    case "NETWORK":
+    case "UPSTREAM":
+      return "환불됐는지 아직 확인하지 못했어요. 결제 내역에서 확인해 주세요.";
+    default:
+      return "지금은 환불할 수 없어요. 잠시 뒤에 다시 시도해 주세요.";
+  }
+}
 
 type AccountPanelProps = {
   account: AccountState & { user: AccountUser };
@@ -37,17 +55,33 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
   const { free } = SITE.currency;
   const [ownNotice, setOwnNotice] = useState("");
   const setNotice = onNotice ?? setOwnNotice;
-  const [sheet, setSheet] = useState<"refund" | "delete" | null>(null);
+  const [sheet, setSheet] = useState<"refund" | "delete" | "readings" | null>(null);
   const [refundId, setRefundId] = useState<string | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
+  // One refund at a time: a second tap would answer NOT_REFUNDABLE over "환불했어요".
+  const refunding = useRef(false);
+  const [refundBusy, setRefundBusy] = useState(false);
 
   const refund = async () => {
-    if (!refundId) return;
-    const res = await postJson("/api/pay/refund", { orderId: refundId });
+    if (!refundId || refunding.current) return;
+    refunding.current = true;
+    setRefundBusy(true);
+    try {
+      const res = await postJson("/api/pay/refund", { orderId: refundId });
+      setSheet(null);
+      setNotice(res.ok ? "환불했어요. 카드사에 따라 며칠 걸릴 수 있어요." : refundNotice(res.error));
+      await refreshAccount();
+      setHistoryKey((key) => key + 1);
+    } finally {
+      refunding.current = false;
+      setRefundBusy(false);
+    }
+  };
+
+  const eraseReadings = async () => {
+    const ok = await deleteAccountReadings();
     setSheet(null);
-    setNotice(res.ok ? "환불했어요. 카드사에 따라 며칠 걸릴 수 있어요." : describeApiError(res.error).title);
-    await refreshAccount();
-    setHistoryKey((key) => key + 1);
+    setNotice(ok ? "계정에 보관한 풀이를 지웠어요. 이 기기의 기록은 그대로예요." : "지우지 못했어요. 다시 시도해 주세요.");
   };
 
   const startDelete = async () => {
@@ -104,11 +138,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
       )}
 
       <div className={s.actions}>
-        <button
-          type="button"
-          className={s.link}
-          onClick={() => void deleteAccountReadings().then((ok) => setNotice(ok ? "계정에 보관한 풀이를 지웠어요. 이 기기의 기록은 그대로예요." : "지우지 못했어요. 다시 시도해 주세요."))}
-        >
+        <button type="button" className={s.link} onClick={() => setSheet("readings")}>
           계정에 보관한 풀이 모두 지우기
         </button>
         <button
@@ -135,9 +165,28 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
             이 결제를 환불할까요?
           </h2>
           <p>열지 않은 풀이라 결제한 금액 전액을 돌려 드려요.</p>
-          <Button block onClick={() => void refund()}>
-            전액 환불받기
+          <Button block disabled={refundBusy} onClick={() => void refund()}>
+            {refundBusy ? "환불하고 있어요" : "전액 환불받기"}
           </Button>
+          <Button variant="secondary" block onClick={() => setSheet(null)}>
+            취소
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal open={sheet === "readings"} onClose={() => setSheet(null)} labelledBy="readings-title">
+        <div className={s.confirm}>
+          <h2 id="readings-title" className={s.sectionTitle}>
+            계정에 보관한 풀이를 모두 지울까요?
+          </h2>
+          <ul className={s.list}>
+            <li>계정에 보관한 풀이와 이어서 물어본 내용이 지워져서, 다른 기기에서는 볼 수 없어요</li>
+            <li>이 기기에 저장된 기록은 그대로예요</li>
+            <li>지운 풀이는 되돌릴 수 없어요</li>
+          </ul>
+          <button type="button" className={s.danger} onClick={() => void eraseReadings()}>
+            모두 지우기
+          </button>
           <Button variant="secondary" block onClick={() => setSheet(null)}>
             취소
           </Button>
