@@ -1,12 +1,16 @@
 import "server-only";
-import type { DeepPartA, DeepPartB, DeepTeaserDraft, MatchPartA, MatchPartB, MatchTeaserDraft } from "./premiumSchemas";
+import type {
+  DeepPartA, DeepPartB, DeepTeaserDraft, MatchPartA, MatchPartB, MatchTeaserDraft, NewYearPartA, NewYearPartB, NewYearPartC, NewYearTeaserDraft,
+} from "./premiumSchemas";
 import { MATCH_HEADINGS, ROMANTIC_RELATIONS, matchUserText, type MatchFacts } from "./prompts/match";
+import { NEWYEAR_HEADINGS, type MonthFact, type NewYearFacts } from "./prompts/newyear";
 import { ROMANCE_WORDS, cardLabel, mentionsWord, type TarotContext } from "./prompts/tarot";
 import { SOFT_PREFIX, aiTellViolations } from "./style";
 import {
   HEDGE, TOLERANCE, actionVarietyViolations, allowedFactViolations, cardIdentityViolations, cardSectionViolations, cardSubjectCount, charCount,
-  chosenChips, commonTarotViolations, inputRepeatViolations, inputUseViolations, inventedAmountViolations, lengthCheck, mentions,
-  modelNameViolations, namesOf, quotedInputs, sentences, sharedMisdescriptionHits, userTextOf, voiceViolations, withoutDrawnNames,
+  chosenChips, commonTarotViolations, inputRepeatViolations, inputUseViolations, inventedAmountViolations, lengthCheck, marriageContext,
+  mentions, modelNameViolations, namesOf, profileUseViolations, quotedInputs, sentences, sharedMisdescriptionHits, userTextOf, voiceViolations,
+  withoutDrawnNames,
 } from "./validate";
 
 /**
@@ -27,10 +31,11 @@ export function premiumCommonViolations(draft: unknown, texts: string[], out: st
 
 /**
  * 간지 readings that spell a banned word: "임신(壬申)" is a pillar, not 임신 (pregnancy). Read as a
- * pillar (with its hanja, or followed by 대운·세운·일주·년·월·일 …) it becomes "壬申" before the topic
- * blocklists, so the allow-list still judges whether that pillar exists.
+ * pillar (next to its hanja, as in "임신(壬申)" or the engine's "壬申(임신)", or followed by
+ * 대운·세운·일주·년·월·일 …) it becomes "壬申" before the topic blocklists, so the allow-list still
+ * judges whether that pillar exists.
  */
-const GANZHI_HOMONYM = /임신(?=\(壬申\)|\s?(?:대운|세운|일주|월주|년주|시주|기둥)|(?:년|월|일)(?:[이은을의에도과와로]|(?![가-힣])))/g;
+const GANZHI_HOMONYM = /(?<=壬申\()임신|임신(?=\(壬申\)|\s?(?:대운|세운|일주|월주|년주|시주|기둥)|(?:년|월|일)(?:[이은을의에도과와로]|(?![가-힣])))/g;
 export const maskGanzhiReadings = (text: string) => text.replace(GANZHI_HOMONYM, "壬申");
 
 function followUpViolations(followUps: string[], out: string[]): void {
@@ -206,6 +211,101 @@ export function validateMatchPartB(b: MatchPartB, m: MatchFacts, ctx: TarotConte
   actionVarietyViolations([b.action.body, b.observation.body], out);
   if (cardSubjectCount(text, ctx.cards) > 3) out.push(`${SOFT_PREFIX}카드를 주어로 세운 문장이 많아요. 3번 이하로 줄여 주세요.`);
   aiTellViolations([text], out);
+  return out;
+}
+
+// ---- 2027 신년운세 ----
+
+const ORGANS = /(?<![가-힣])(간장|위장|폐|심장|신장|갑상선|자궁|대장|혈관|혈압|당뇨|관절|척추|두통|위염|질환|증상|병원)/;
+const LUCKY_FORBIDDEN = /(행운의|럭키)\s?(숫자|번호)|로또|복권|방위|동쪽|서쪽|남쪽|북쪽/;
+const DATE = /(\d{1,2})\s?월\s?(\d{1,2})\s?일/g;
+
+const newyearUserText = (n: NewYearFacts) => [n.facts.profile?.loveStatus, n.facts.profile?.workStatus, n.facts.profile?.concern].filter(Boolean).join(" ");
+
+function titleViolations(title: string, out: string[]): void {
+  const n = charCount(title);
+  if (n < 3 || n > 18) out.push(`title은 4~14자로 써 주세요(지금 ${n}자).`);
+}
+
+/** Dates other than the 절입 days the facts give are invented. */
+function dateViolations(text: string, n: NewYearFacts, out: string[]): void {
+  const known = new Set(n.year.months.flatMap((m) => (m.term ? [m.term.kst.replace(/ \d\d:\d\d$/, "")] : [])));
+  const bad = [...text.matchAll(DATE)].map((m) => `${Number(m[1])}월 ${Number(m[2])}일`).filter((d) => !known.has(d));
+  if (bad.length) out.push(`날짜를 지정한 문장이 있어요(${bad[0]}). 달과 국면으로만 말해 주세요.`);
+}
+
+function monthViolations(items: Array<{ body: string }>, n: NewYearFacts, start: 0 | 6, out: string[]): void {
+  if (items.length !== 6) out.push(`${start + 1}월부터 ${start + 6}월까지 정확히 6개를 써 주세요(지금 ${items.length}개).`);
+  items.slice(0, 6).forEach((item, i) => {
+    const m: MonthFact = n.year.months[start + i]!;
+    lengthCheck(`${m.month}월`, item.body, 280, 380, out);
+    if (![m.ko, m.gz, m.stemTenGod, m.branchMainTenGod].some((w) => item.body.includes(w))) out.push(`${m.month}월 문단에 그 달 월건(${m.display})이나 그 십성을 불러 주세요.`);
+  });
+  if (start === 0 && items[0] && !items[0].body.includes(n.year.january.ko)) out.push(`1월 문단에서 아직 ${n.year.january.ko}년이라는 점을 밝혀 주세요.`);
+}
+
+/** Facts, dates, voice and AI tells over the prose; 결혼 is a subject when the user's love status makes it one. */
+function newyearProse(texts: string[], n: NewYearFacts, out: string[]): void {
+  const text = texts.join("\n");
+  allowedFactViolations(maskGanzhiReadings(text), n.allowed, out, newyearUserText(n), { marriage: marriageContext(n.facts) });
+  dateViolations(text, n, out);
+  voiceViolations(text, out);
+  aiTellViolations([text], out);
+}
+
+export function validateNewYearTeaser(d: NewYearTeaserDraft, n: NewYearFacts): string[] {
+  const out: string[] = [];
+  premiumCommonViolations(d, [d.title, d.summary], out);
+  titleViolations(d.title, out);
+  lengthCheck("미리보기", d.summary, 300, 400, out);
+  if (!d.summary.includes(n.facts.annual.ko)) out.push(`미리보기에서 2027 세운(${n.facts.annual.ko})을 불러 주세요.`);
+  newyearProse([d.title, d.summary], n, out);
+  return out;
+}
+
+export function validateNewYearPartA(a: NewYearPartA, n: NewYearFacts): string[] {
+  const out: string[] = [];
+  const h = NEWYEAR_HEADINGS;
+  const areas = (["work", "money", "relations", "health"] as const).map((k) => a.areas[k].body);
+  const texts = [a.title, a.overview.body, a.luck.body, ...areas, a.lucky.body];
+  premiumCommonViolations(a, texts, out);
+  titleViolations(a.title, out);
+  lengthCheck(h.overview, a.overview.body, 500, 700, out);
+  lengthCheck(h.luck, a.luck.body, 300, 450, out);
+  (["work", "money", "relations", "health"] as const).forEach((k) => lengthCheck(h[k], a.areas[k].body, 280, 400, out));
+  lengthCheck(h.lucky, a.lucky.body, 120, 220, out);
+  const annual = n.facts.annual;
+  if (!a.overview.body.includes(annual.ko)) out.push(`${h.overview} 절에서 2027 세운(${annual.ko})을 불러 주세요.`);
+  if (!a.overview.body.includes(annual.stemTenGod) && !a.overview.body.includes(annual.branchMainTenGod)) out.push(`${h.overview} 절에 세운의 십성(${annual.stemTenGod} 또는 ${annual.branchMainTenGod})을 써 주세요.`);
+  const current = n.facts.luck?.current;
+  if (current && !a.luck.body.includes(current.ko)) out.push(`${h.luck} 절에 2027년의 대운(${current.ko})을 불러 주세요.`);
+  if (n.year.luckChange && !/바뀌|넘어가|접어들/.test(a.luck.body)) out.push(`${h.luck} 절에서 2027년 안에 대운이 바뀐다는 점을 분명하게 써 주세요.`);
+  if (ORGANS.test(a.areas.health.body)) out.push(`${h.health} 절은 생활 습관으로만 써 주세요. 장기·질병·증상 이름은 쓰지 않아요.`);
+  if (LUCKY_FORBIDDEN.test(a.lucky.body)) out.push(`${h.lucky} 절에 행운의 숫자·방위·복권 이야기는 쓰지 않아요.`);
+  if (!/재미/.test(a.lucky.body)) out.push(`${h.lucky} 절에서 재미로 보는 제안이라는 점을 밝혀 주세요.`);
+  profileUseViolations(texts.join("\n"), n.facts, out);
+  newyearProse(texts, n, out);
+  return out;
+}
+
+export function validateNewYearPartB(b: NewYearPartB, n: NewYearFacts): string[] {
+  const out: string[] = [];
+  const texts = b.firstHalf.map((m) => m.body);
+  premiumCommonViolations(b, texts, out);
+  monthViolations(b.firstHalf, n, 0, out);
+  newyearProse(texts, n, out);
+  return out;
+}
+
+export function validateNewYearPartC(c: NewYearPartC, n: NewYearFacts): string[] {
+  const out: string[] = [];
+  const texts = [...c.secondHalf.map((m) => m.body), c.closing.body, c.observation.body];
+  premiumCommonViolations(c, [...texts, ...c.followUps], out);
+  monthViolations(c.secondHalf, n, 6, out);
+  lengthCheck(NEWYEAR_HEADINGS.closing, c.closing.body, 250, 380, out);
+  lengthCheck(NEWYEAR_HEADINGS.observation, c.observation.body, 80, 180, out);
+  followUpViolations(c.followUps, out);
+  newyearProse([...texts, ...c.followUps], n, out);
   return out;
 }
 

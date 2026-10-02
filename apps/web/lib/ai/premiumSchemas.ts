@@ -106,3 +106,42 @@ export interface MatchPreview {
   summary: { heading: string; body: string };
   lockedToc: string[];
 }
+
+// ---- 2027 신년운세 ----
+
+export const NewYearTeaserDraftSchema = z.object({ title: z.string(), summary: z.string() });
+
+export const NewYearPartASchema = z.object({
+  title: z.string(),
+  overview: Body,
+  luck: Body,
+  areas: z.object({ work: Body, money: Body, relations: Body, health: Body }),
+  lucky: Body,
+});
+export const NewYearPartBSchema = z.object({ firstHalf: z.array(Body) });
+export const NewYearPartCSchema = z.object({ secondHalf: z.array(Body), closing: Body, observation: Body, followUps: z.array(z.string()) });
+
+export const NewYearReadingSchema = z.object({
+  title: z.string(),
+  overview: Section,
+  luck: Section,
+  areas: z.object({ heading: z.string(), work: Section, money: Section, relations: Section, health: Section }),
+  lucky: Section,
+  months: z.array(z.object({ month: z.number(), heading: z.string(), body: z.string() })),
+  closing: Section,
+  observation: Section,
+  followUps: z.array(z.string()),
+});
+
+export type NewYearTeaserDraft = z.infer<typeof NewYearTeaserDraftSchema>;
+export type NewYearPartA = z.infer<typeof NewYearPartASchema>;
+export type NewYearPartB = z.infer<typeof NewYearPartBSchema>;
+export type NewYearPartC = z.infer<typeof NewYearPartCSchema>;
+export type NewYearReading = z.infer<typeof NewYearReadingSchema>;
+
+export interface NewYearPreview {
+  title: string;
+  facts: string[];
+  summary: { heading: string; body: string };
+  lockedToc: string[];
+}

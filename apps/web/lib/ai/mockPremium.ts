@@ -1,8 +1,11 @@
 import "server-only";
-import type { DeepPartA, DeepPartB, DeepTeaserDraft, MatchPartA, MatchPartB, MatchTeaserDraft } from "./premiumSchemas";
-import { FALLBACK_ACTIONS, actionsOf, cardBody, distinctActions, factSentence, factsOf, hasFinal, josa } from "./mock";
+import type {
+  DeepPartA, DeepPartB, DeepTeaserDraft, MatchPartA, MatchPartB, MatchTeaserDraft, NewYearPartA, NewYearPartB, NewYearPartC, NewYearTeaserDraft,
+} from "./premiumSchemas";
+import { FALLBACK_ACTIONS, actionsOf, cardBody, distinctActions, factSentence, factsOf, hasFinal, josa, ro } from "./mock";
 import { previewKeyword } from "./prompts/deepTarot";
 import type { MatchFacts } from "./prompts/match";
+import type { MonthFact, NewYearFacts } from "./prompts/newyear";
 import type { Relation } from "./prompts/saju";
 import { WHEN_KO, onTopic, type TarotContext } from "./prompts/tarot";
 
@@ -214,5 +217,135 @@ export function mockMatchPartB(m: MatchFacts, ctx: TarotContext): MatchPartB {
     action: { body: fill(["이번 주에 둘이 함께 정할 일 하나를 골라 순서를 먼저 나눠 보세요."], ACTION_POOL, 85, 160) },
     observation: { body: fill([`몇 주 동안 ${c[1]!.name} 그림처럼 ${who} 쪽 흐름이 바뀌는 순간을 눈여겨보세요.`], ["그때 내 쪽 반응이 어떤지도 함께 보면 좋아요.", ...ACTION_POOL], 85, 180) },
     followUps: ["둘이 먼저 맞춰 볼 일은 뭘까요?", "엇갈릴 때는 어떻게 하면 좋을까요?"],
+  };
+}
+
+// ---- 2027 신년운세 ----
+
+/** One-person, year-neutral sentences: no glyphs, ten gods, years, dates, grades or organ names. */
+export const YEAR_POOL: readonly string[] = [
+  "이 무렵에는 한꺼번에 많이 벌이기보다 하나를 끝까지 해 보는 편이 맞아요.",
+  "작은 일정 하나를 미리 정해 두면 흐름을 놓치지 않아요.",
+  "미뤄 둔 일을 하나 꺼내 보면 손이 가볍게 풀리죠.",
+  "몸이 무거운 날에는 속도를 낮추고 순서만 지켜도 충분해요.",
+  "새로 만나는 사람에게 먼저 한 문장을 건네 보는 것도 방법이에요.",
+  "들어오고 나가는 돈의 흐름을 한 번 확인하는 데서 시작해요.",
+  "쉬는 날을 먼저 정해 두면 일하는 날의 집중이 달라져요.",
+  "해 보고 싶던 배움 하나를 짧게 시작해 보기에 알맞은 흐름이에요.",
+  "결정을 서두르기보다 정보를 한 가지 더 모아 보세요.",
+  "주변에 도움을 청하는 말이 생각보다 쉽게 받아들여지는 국면이에요.",
+  "한 주를 마칠 때 잘된 일 하나를 떠올려 보면 다음 주가 가벼워져요.",
+  "계획을 크게 세우기보다 이번 달 안에 끝낼 수 있는 크기로 나눠요.",
+  "익숙한 길 대신 한 번은 다른 방식으로 해 보면 새 자리가 보여요.",
+  "잠드는 시간을 일정하게 지키면 다음 날의 리듬이 한결 고르게 이어져요.",
+];
+
+const rotate = <T>(items: readonly T[], k: number) => [...items.slice(k % items.length), ...items.slice(0, k % items.length)];
+const UNSURE = "잘 모르겠어요";
+
+function monthBody(m: MonthFact, n: NewYearFacts): string {
+  return fill([
+    m.month === 1
+      ? `1월은 아직 ${n.year.january.ko}(${n.year.january.gz})년의 끝자락이고, 달로는 ${m.display}월이에요.`
+      : `${m.month}월은 ${m.display}월이에요.`,
+    `천간은 내 일간에게 ${m.stemTenGod}, 지지의 대표 글자는 ${josa(m.branchMainTenGod, "이에요", "예요")}.`,
+    m.relationsToNatal.length
+      ? `내 명식과는 ${m.relationsToNatal.map((r) => r.type).join(", ")} 관계가 있어 움직임이 늘어나는 달로 읽어요.`
+      : "내 명식과 따로 묶이거나 부딪히는 글자는 없어 차분히 이어 가기 쉬운 달로 읽어요.",
+  ], rotate(YEAR_POOL, m.month), 290, 380);
+}
+
+/** The user's own context, quoted once each: the concern in the overview, the love status (and 결혼) in relations. */
+function concernLineOf(n: NewYearFacts): string {
+  const concern = n.facts.profile?.concern;
+  return concern ? `'${concern}'라는 고민에는 올해 세운의 결부터 비춰 볼게요.` : "";
+}
+
+function relationLinesOf(n: NewYearFacts): string[] {
+  const love = n.facts.profile?.loveStatus;
+  if (!love || love === UNSURE) return [];
+  const marriage = ["연애 중", "결혼 준비 중", "기혼"].includes(love)
+    ? "결혼을 생각할 때도 이 명식은 함께 사는 생활의 크고 작은 결정을 둘이 나눠 정하는 쪽으로 읽어요."
+    : "";
+  return [`지금은 ${josa(love, "이라고", "라고")} 알려 줬죠.`, marriage];
+}
+
+export function mockNewYearTeaser(n: NewYearFacts): NewYearTeaserDraft {
+  const a = n.facts.annual;
+  return {
+    title: "차근차근 쌓아 가는 해",
+    summary: fill([
+      `2027년의 세운은 ${a.ko}(${a.gz})예요.`,
+      `명리에서는 세운의 천간을 내 일간에게 ${a.stemTenGod}, 지지의 대표 글자를 ${ro(a.branchMainTenGod)} 읽어요.`,
+      n.year.luckChange ? `${n.year.luckChange}.` : "2027년 안에는 대운이 바뀌지 않아요.",
+      "1월에는 올해 꼭 끝내고 싶은 일 하나를 골라 첫 단계만 해 보세요.",
+    ], YEAR_POOL, 310, 400),
+  };
+}
+
+export function mockNewYearPartA(n: NewYearFacts): NewYearPartA {
+  const a = n.facts.annual;
+  const current = n.facts.luck?.current;
+  const workStatus = n.facts.profile?.workStatus;
+  const work = workStatus && workStatus !== UNSURE ? workStatus : "지금의 일";
+  const area = (lead: string[], k: number) => ({ body: fill(lead, rotate(YEAR_POOL, k), 290, 400) });
+  return {
+    title: "차근차근 쌓아 가는 해",
+    overview: {
+      body: fill([
+        concernLineOf(n),
+        `2027년의 세운은 ${a.ko}(${a.gz})예요.`,
+        `명리에서는 세운의 천간을 내 일간에게 ${a.stemTenGod}, 지지의 대표 글자를 ${ro(a.branchMainTenGod)} 읽어요.`,
+        a.relationsToNatal.length ? `원국과는 ${a.relationsToNatal.map((r) => r.type).join(", ")} 관계가 생겨요. 사건이 아니라 움직임이 늘어나는 국면으로 읽어요.` : "원국과 따로 묶이거나 부딪히는 글자는 없어요.",
+        "새로 맡은 일이 늘수록 힘이 났다면 이 구조와 맞물리고, 익숙한 일만 이어 갈 때 편했다면 이 부분은 덜 맞는 풀이예요.",
+      ], YEAR_POOL, 510, 700),
+    },
+    luck: {
+      body: fill([
+        current ? `2027년은 ${current.from}부터 ${current.to}까지 이어지는 ${current.ko}(${current.gz}) 대운 안에 있어요.` : "2027년은 첫 대운이 시작되기 전의 흐름으로 읽어요.",
+        current ? `대운의 천간은 ${current.stemTenGod}, 지지의 대표 글자는 ${josa(current.branchMainTenGod, "이에요", "예요")}.` : "",
+        n.year.luckChange ? `${n.year.luckChange}. 바뀌는 무렵에는 앞뒤 몇 달의 차이가 있을 수 있어요.` : "2027년 안에는 대운이 바뀌지 않아 한 해의 결이 고르게 이어져요.",
+        // The limits, said once at the end of this section as the prompt asks.
+        ...n.facts.limits,
+      ], YEAR_POOL, 310, 450),
+    },
+    areas: {
+      work: area([`일에서는 ${work}의 자리에서 ${a.stemTenGod}의 결이 먼저 드러나기 쉬워요.`], 1),
+      money: area(["돈은 큰 결정보다 매달 들어오고 나가는 흐름을 한 번 정리하는 데서 시작해요."], 4),
+      relations: area(["관계에서는 먼저 연락하는 쪽이 되는 것이 올해의 작은 실험이에요.", ...relationLinesOf(n)], 7),
+      health: area(["몸과 생활 리듬은 잠드는 시간과 밥 먹는 시간을 일정하게 지키는 데서 시작해요."], 10),
+    },
+    lucky: {
+      body: fill([
+        `재미로 보는 가벼운 제안이에요. 올해는 ${n.year.lucky.element} 기운을 떠올리게 하는 ${n.year.lucky.color}을 가까이 두고, ${n.year.lucky.habit} 같은 작은 습관을 들여 보세요.`,
+      ], [
+        "작게 시작한 습관이 한 해의 리듬을 잡아 줘요.",
+        "색은 옷이나 소품처럼 눈에 자주 닿는 곳에 두면 충분해요.",
+        "꼭 지키기보다 생각날 때 한 번씩 해 보는 정도면 돼요.",
+      ], 130, 220),
+    },
+  };
+}
+
+export function mockNewYearPartB(n: NewYearFacts): NewYearPartB {
+  return { firstHalf: n.year.months.slice(0, 6).map((m) => ({ body: monthBody(m, n) })) };
+}
+
+export function mockNewYearPartC(n: NewYearFacts): NewYearPartC {
+  return {
+    secondHalf: n.year.months.slice(6).map((m) => ({ body: monthBody(m, n) })),
+    closing: {
+      body: fill([
+        "열두 달 가운데 명식과 관계가 생기는 달을 미리 표시해 두면 한 해의 리듬을 잡기 쉬워요.",
+        "그 달에는 새 일을 늘리기보다 이미 시작한 일을 다듬는 쪽에 힘을 써 보세요.",
+      ], YEAR_POOL, 260, 380),
+    },
+    observation: {
+      body: fill(["1월에는 새로 시작한 일 하나가 얼마나 이어지는지 눈여겨보세요."], [
+        "두 주를 넘겨 이어진다면 올해의 흐름과 맞물린 거예요.",
+        "중간에 멈췄다면 그 일을 더 작은 크기로 나눠 다시 시작해 보면 돼요.",
+      ], 85, 180),
+    },
+    followUps: ["올해 가장 힘을 줄 달은 언제예요?", "올해 새로 시작하기 좋은 무렵은요?"],
   };
 }

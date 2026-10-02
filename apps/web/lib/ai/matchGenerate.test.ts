@@ -141,6 +141,7 @@ describe("match validators and mocks", () => {
 
   it("reads 임신(壬申) as a pillar, not as pregnancy", () => {
     expect(maskGanzhiReadings("임신(壬申) 대운이에요. 그 사람은 임신 대운, 임신년에 있어요.")).toBe("壬申(壬申) 대운이에요. 그 사람은 壬申 대운, 壬申년에 있어요.");
+    expect(maskGanzhiReadings("일주가 전날 일진인 壬申(임신)이 돼요.")).toBe("일주가 전날 일진인 壬申(壬申)이 돼요.");
     expect(maskGanzhiReadings("임신과 출산은 다루지 않아요. 임신 일정은 쓰지 않아요.")).toBe("임신과 출산은 다루지 않아요. 임신 일정은 쓰지 않아요.");
   });
 

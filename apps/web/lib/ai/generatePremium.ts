@@ -1,11 +1,15 @@
 import "server-only";
 import { generationSetting } from "./config";
 import type { Result } from "./generate";
-import { mockDeepPartA, mockDeepPartB, mockDeepTeaser, mockMatchPartA, mockMatchPartB, mockMatchTeaser } from "./mockPremium";
 import {
-  DeepPartASchema, DeepPartBSchema, DeepTeaserDraftSchema, MatchPartASchema, MatchPartBSchema, MatchTeaserDraftSchema,
+  mockDeepPartA, mockDeepPartB, mockDeepTeaser, mockMatchPartA, mockMatchPartB, mockMatchTeaser, mockNewYearPartA, mockNewYearPartB,
+  mockNewYearPartC, mockNewYearTeaser,
+} from "./mockPremium";
+import {
+  DeepPartASchema, DeepPartBSchema, DeepTeaserDraftSchema, MatchPartASchema, MatchPartBSchema, MatchTeaserDraftSchema, NewYearPartASchema,
+  NewYearPartBSchema, NewYearPartCSchema, NewYearTeaserDraftSchema,
   type DeepPartA, type DeepPartB, type DeepTarotPreview, type DeepTarotReading, type MatchPartA, type MatchPartB, type MatchPreview,
-  type MatchReading,
+  type MatchReading, type NewYearPartA, type NewYearPartB, type NewYearPartC, type NewYearPreview, type NewYearReading,
 } from "./premiumSchemas";
 import {
   DEEP_TAROT_SYSTEM, deepHeadings, deepLockedToc, deepPartAPrompt, deepPartBPrompt, deepShared, deepTeaserPrompt, previewKeyword,
@@ -14,10 +18,15 @@ import {
   MATCH_HEADINGS, MATCH_SAJU_SYSTEM, MATCH_TAROT_SYSTEM, chartView, matchCardsShared, matchLockedToc, matchPartAPrompt, matchPartBPrompt,
   matchPreviewFacts, matchSajuShared, matchTeaserPrompt, type MatchFacts,
 } from "./prompts/match";
+import {
+  NEWYEAR_HEADINGS, NEWYEAR_SYSTEM, monthHeading, newyearLockedToc, newyearPartPrompt, newyearPreviewFacts, newyearShared, newyearTeaserPrompt,
+  type NewYearFacts,
+} from "./prompts/newyear";
 import { cardLabel, type TarotContext } from "./prompts/tarot";
 import { generateValidated, type GenerationHooks, type ReadingProvider } from "./provider";
 import {
-  validateDeepPartA, validateDeepPartB, validateDeepTeaser, validateMatchPartA, validateMatchPartB, validateMatchTeaser,
+  validateDeepPartA, validateDeepPartB, validateDeepTeaser, validateMatchPartA, validateMatchPartB, validateMatchTeaser, validateNewYearPartA,
+  validateNewYearPartB, validateNewYearPartC, validateNewYearTeaser,
 } from "./validatePremium";
 
 /**
@@ -155,5 +164,69 @@ export function assembleMatch(mc: MatchContext, parts: readonly unknown[]): Matc
     action: { heading: h.action, body: b.action.body.trim() },
     observation: { heading: h.observation, body: b.observation.body.trim() },
     followUps: b.followUps.map((q) => q.trim()).filter(Boolean).slice(0, 2),
+  };
+}
+
+// ---- 2027 신년운세 ----
+
+export const NEWYEAR_PART_COUNT = 3;
+
+export async function generateNewYearTeaser(provider: ReadingProvider, n: NewYearFacts, hooks?: GenerationHooks): Promise<Result<NewYearPreview>> {
+  const { data, usage } = await generateValidated(provider, {
+    name: "premium-teaser", system: NEWYEAR_SYSTEM, shared: newyearShared(n), user: newyearTeaserPrompt(),
+    schema: NewYearTeaserDraftSchema, ...generationSetting("premium-teaser"), mock: () => mockNewYearTeaser(n),
+  }, (draft) => validateNewYearTeaser(draft, n), hooks);
+  return {
+    data: { title: data.title.trim(), facts: newyearPreviewFacts(n), summary: { heading: "2027년 미리 보기", body: data.summary.trim() }, lockedToc: newyearLockedToc(n) },
+    usage,
+  };
+}
+
+export async function generateNewYearPart(
+  provider: ReadingProvider, n: NewYearFacts, index: number, prior: readonly unknown[], hooks?: GenerationHooks,
+): Promise<Result<NewYearPartA | NewYearPartB | NewYearPartC>> {
+  const common = { name: "newyear-part" as const, system: NEWYEAR_SYSTEM, shared: newyearShared(n), ...generationSetting("newyear-part") };
+  if (index === 0) {
+    const { data, usage } = await generateValidated(provider, {
+      ...common, user: newyearPartPrompt(0, {}), schema: NewYearPartASchema, mock: () => mockNewYearPartA(n),
+    }, (a) => validateNewYearPartA(a, n), hooks);
+    return { data, usage };
+  }
+  const a = NewYearPartASchema.parse(prior[0]);
+  if (index === 1) {
+    const { data, usage } = await generateValidated(provider, {
+      ...common, user: newyearPartPrompt(1, { a }), schema: NewYearPartBSchema, mock: () => mockNewYearPartB(n),
+    }, (b) => validateNewYearPartB(b, n), hooks);
+    return { data, usage };
+  }
+  const b = NewYearPartBSchema.parse(prior[1]);
+  const { data, usage } = await generateValidated(provider, {
+    ...common, user: newyearPartPrompt(2, { a, b }), schema: NewYearPartCSchema, mock: () => mockNewYearPartC(n),
+  }, (c) => validateNewYearPartC(c, n), hooks);
+  return { data, usage };
+}
+
+export function assembleNewYear(n: NewYearFacts, parts: readonly unknown[]): NewYearReading {
+  const a = NewYearPartASchema.parse(parts[0]);
+  const b = NewYearPartBSchema.parse(parts[1]);
+  const c = NewYearPartCSchema.parse(parts[2]);
+  const h = NEWYEAR_HEADINGS;
+  const bodies = [...b.firstHalf, ...c.secondHalf];
+  return {
+    title: a.title.trim(),
+    overview: { heading: h.overview, body: a.overview.body.trim() },
+    luck: { heading: h.luck, body: a.luck.body.trim() },
+    areas: {
+      heading: h.areas,
+      work: { heading: h.work, body: a.areas.work.body.trim() },
+      money: { heading: h.money, body: a.areas.money.body.trim() },
+      relations: { heading: h.relations, body: a.areas.relations.body.trim() },
+      health: { heading: h.health, body: a.areas.health.body.trim() },
+    },
+    lucky: { heading: h.lucky, body: a.lucky.body.trim() },
+    months: n.year.months.map((m, i) => ({ month: m.month, heading: monthHeading(m, n.year.january), body: bodies[i]!.body.trim() })),
+    closing: { heading: h.closing, body: c.closing.body.trim() },
+    observation: { heading: h.observation, body: c.observation.body.trim() },
+    followUps: c.followUps.map((q) => q.trim()).filter(Boolean).slice(0, 2),
   };
 }
