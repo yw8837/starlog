@@ -1,6 +1,6 @@
 import "server-only";
 import type { D1Binding } from "@/lib/db/d1";
-import { lockPaidLotForRefund, refundedLotStatements, refundingLot, revertRefund, revokeLotStatement, type Lot } from "./ledger";
+import { forfeitStatements, lockPaidLotForRefund, refundedLotStatements, refundingLot, revertRefund, revokeLotStatement, type Lot } from "./ledger";
 import { markPaid, orderById, type OrderRow } from "./orders";
 import { isPendingTossError, type TossClient, type TossError, type TossPayment } from "./tossTypes";
 
@@ -83,10 +83,35 @@ async function sendCancel(db: D1Binding, toss: TossClient, order: OrderRow, lot:
   return { ok: true };
 }
 
+/**
+ * A payment made under other Toss keys than these (a test payment once the deploy runs live keys).
+ * These keys can neither look it up nor cancel it, so it is never sent to Toss: the operator settles
+ * it by hand (runbook section 5). Logged with the order id.
+ */
+export async function paidUnderOtherKeys(db: D1Binding, toss: TossClient, orderId: string): Promise<boolean> {
+  const row = await db.prepare("SELECT mode FROM payments WHERE order_id = ?").bind(orderId).first<{ mode: string }>();
+  if (!row || row.mode === toss.mode) return false;
+  console.warn(JSON.stringify({ evt: "pay.other_keys", orderId }));
+  return true;
+}
+
+/** Shown when a payment can only be refunded by hand (paidUnderOtherKeys). */
+export const OTHER_KEYS_MESSAGE = "이 결제는 바로 환불할 수 없어요. 문의해 주시면 확인하고 처리해 드릴게요.";
+
+/**
+ * Account deletion, for an unopened reading paid under other keys: its lot leaves use (revoked, with
+ * its ledger row), the order stays as it is for the operator, and the deletion goes on.
+ */
+export async function setAsideForOperator(db: D1Binding, orderId: string, now: number): Promise<void> {
+  const lot = await db.prepare("SELECT * FROM credit_lots WHERE order_id = ? AND status = 'active' AND units_left > 0").bind(orderId).first<Lot>();
+  if (lot) await db.batch(forfeitStatements(db, lot, "revoked", now));
+}
+
 /** Cancels the payment of a paid reading that was never opened (the user's 환불, account deletion). */
 export async function refundUnusedOrder(db: D1Binding, toss: TossClient, input: { order: OrderRow; reason: string; now: number }): Promise<RefundOutcome> {
   const { order, reason, now } = input;
   if (order.status !== "paid" || !order.payment_key) return { ok: false, code: "NOT_REFUNDABLE" };
+  if (await paidUnderOtherKeys(db, toss, order.id)) return { ok: false, code: "NOT_REFUNDABLE", message: OTHER_KEYS_MESSAGE };
   const lot = await lockPaidLotForRefund(db, order.id, now);
   if (!lot) return { ok: false, code: "NOT_REFUNDABLE" };
   return sendCancel(db, toss, (await orderById(db, order.id)) ?? order, lot, reason, now);
@@ -97,6 +122,7 @@ const ORPHAN_REASON = "탈퇴한 계정에 도착한 결제 자동 취소";
 /** A payment that went through for a deleted account (Task 7 left it `refunding`, with no lot): cancel it. */
 export async function refundOrphan(db: D1Binding, toss: TossClient, order: OrderRow, now: number): Promise<RefundOutcome> {
   if (order.status !== "refunding" || order.fail_code !== "ACCOUNT_DELETED" || !order.payment_key) return { ok: false, code: "NOT_REFUNDABLE" };
+  if (await paidUnderOtherKeys(db, toss, order.id)) return { ok: false, code: "NOT_REFUNDABLE" };
   return sendCancel(db, toss, order, null, ORPHAN_REASON, now);
 }
 
@@ -109,6 +135,7 @@ export async function refundOrphan(db: D1Binding, toss: TossClient, order: Order
  */
 export async function reconcileRefunding(db: D1Binding, toss: TossClient, order: OrderRow, now: number): Promise<OrderRow> {
   if (order.status !== "refunding" || !order.payment_key || now - order.updated_at < REFUND_RECONCILE_AFTER_MS) return order;
+  if (await paidUnderOtherKeys(db, toss, order.id)) return order;
   const payment = await toss.getPayment(order.payment_key).catch(() => null);
   if (!payment) return order;
   const lot = await refundingLot(db, order.id);

@@ -3,7 +3,7 @@ import { openAccount } from "@/lib/account/request";
 import type { D1Binding } from "@/lib/db/d1";
 import { standardProduct, unitsFor, type StandardProductId } from "@/lib/pay/catalog";
 import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
-import { openingOffer, paymentsMode } from "@/lib/pay/mode";
+import { openingOffer, payKeyMode, paymentsMode } from "@/lib/pay/mode";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { insertReadingStatement, newReadingId, readingExists, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
 import type { QuotaState } from "@/lib/security/quota";
@@ -66,6 +66,7 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     currency: method === "paid" ? "paid" : "free",
     units: unitsFor(standardProduct(kind)),
     now: gate.now,
+    payMode: payKeyMode(),
   });
   if (!reserved.ok) return errorResponse("NO_CREDIT");
   console.info(JSON.stringify({ evt: "unlock.reserved", method, productId: kind }));

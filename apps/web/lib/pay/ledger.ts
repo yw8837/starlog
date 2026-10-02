@@ -3,6 +3,7 @@ import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
 import { GIFT_DAYS } from "./catalog";
+import type { PayKeyMode } from "./mode";
 
 export { GIFT_DAYS };
 
@@ -200,12 +201,14 @@ export type ReserveResult = { ok: true; unlockId: string; allocations: Allocatio
  * Holds `units` of `currency` for opening `productId`: lots earmarked for the product first, then
  * the ones that expire soonest. A lot changed meanwhile (spent elsewhere, refunded, expired, account
  * deleted) fails the CHECK and rolls the reservation back; one retry from a fresh read, then no credit.
+ * A lot bought with an order counts only when its payment was made under `payMode`, this deploy's
+ * Toss keys (mode.ts payKeyMode): test payments never pay for live readings; null takes none.
  */
 export async function reserveUnlock(
   db: D1Binding,
-  input: { userId: string; productId: string; currency: Currency; units: number; now: number },
+  input: { userId: string; productId: string; currency: Currency; units: number; now: number; payMode: PayKeyMode | null },
 ): Promise<ReserveResult> {
-  const { userId, productId, currency, units, now } = input;
+  const { userId, productId, currency, units, now, payMode } = input;
   await sweepUser(db, userId, now);
   for (let attempt = 0; attempt < 2; attempt++) {
     const { results } = await db
@@ -213,9 +216,10 @@ export async function reserveUnlock(
         `SELECT id, units_left FROM credit_lots
          WHERE user_id = ? AND currency = ? AND status = 'active' AND units_left > 0
            AND (expires_at IS NULL OR expires_at > ?) AND (product_id IS NULL OR product_id = ?)
+           AND (order_id IS NULL OR EXISTS (SELECT 1 FROM payments p WHERE p.order_id = credit_lots.order_id AND p.mode = ?))
          ORDER BY product_id IS NULL, expires_at IS NULL, expires_at, created_at`,
       )
-      .bind(userId, currency, now, productId)
+      .bind(userId, currency, now, productId, payMode)
       .all<{ id: string; units_left: number }>();
     const allocations = allocate(results, units);
     if (!allocations) return { ok: false };

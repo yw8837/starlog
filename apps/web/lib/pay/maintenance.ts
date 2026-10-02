@@ -56,9 +56,14 @@ export async function runMaintenance(db: D1Binding, toss: TossClient | null, now
       await reconcileConfirming(db, toss, order, now);
       report.confirming++;
     }
+    // A payment made under other keys is left to the operator (refunds.ts paidUnderOtherKeys): never picked up.
     const refunding = await db
-      .prepare("SELECT * FROM orders WHERE status = 'refunding' AND updated_at < ? ORDER BY updated_at LIMIT ?")
-      .bind(now - REFUND_RECONCILE_AFTER_MS, ORDERS_PER_RUN)
+      .prepare(
+        `SELECT * FROM orders o WHERE status = 'refunding' AND updated_at < ?
+           AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.id AND p.mode <> ?)
+         ORDER BY updated_at LIMIT ?`,
+      )
+      .bind(now - REFUND_RECONCILE_AFTER_MS, toss.mode, ORDERS_PER_RUN)
       .all<OrderRow>();
     for (const order of refunding.results) {
       await reconcileRefunding(db, toss, order, now);

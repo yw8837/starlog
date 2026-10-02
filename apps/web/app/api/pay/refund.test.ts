@@ -67,7 +67,7 @@ describe("refunds", () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: T0 });
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: T0, payMode: "mock" });
     if (!reserved.ok) throw new Error("not reserved");
     expect((await refundOf(b, orderId)).status).toBe(409);
     expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
@@ -121,6 +121,20 @@ describe("refunds", () => {
     expect((await me(b)).user?.unused).toEqual([]);
   });
 
+  it("never sends a payment made under other Toss keys to Toss: the buyer is asked to contact us", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    await db.prepare("UPDATE payments SET mode = 'test' WHERE order_id = ?").bind(orderId).run();
+    const cancel = vi.spyOn(mockToss, "cancel");
+    const res = await refundOf(b, orderId);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "NOT_REFUNDABLE", message: expect.stringContaining("문의") });
+    expect(cancel).not.toHaveBeenCalled();
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("pay.other_keys"));
+  });
+
   it("refunds only the buyer's own orders", async () => {
     useTestDb();
     const alice = await loggedIn("alice");
@@ -169,7 +183,7 @@ describe("webhook", () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: T0 });
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: T0, payMode: "mock" });
     if (!reserved.ok) throw new Error("not reserved");
     const paymentKey = await paymentKeyOf(db, orderId);
     await mockToss.cancel(paymentKey, { reason: "관리자 취소", idempotencyKey: "admin" });

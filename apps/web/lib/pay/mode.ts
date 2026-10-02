@@ -19,14 +19,19 @@ export function paymentsMode(env: NodeJS.ProcessEnv = process.env): PaymentsMode
   return value === "on" || value === "owner" || value === "paused" ? value : "off";
 }
 
-/** New orders, new accounts and signup gifts are open for this device. */
-export function salesOpen(mode: PaymentsMode, owner: boolean): boolean {
+/**
+ * New orders, new accounts and signup gifts are open for this device. A production deploy on test
+ * keys sells to the owner only, whatever STARLOG_PAYMENTS says: a test payment charges nobody, so the
+ * public must never be able to buy credit with one (security M1).
+ */
+export function salesOpen(mode: PaymentsMode, owner: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
+  if (env.NODE_ENV === "production" && payKeyMode(env) === "test") return owner && (mode === "on" || mode === "owner");
   return mode === "on" || (mode === "owner" && owner);
 }
 
 /** An existing account may log in on this device (a new one only while salesOpen). */
-export function loginOpen(mode: PaymentsMode, owner: boolean): boolean {
-  return salesOpen(mode, owner) || mode === "paused";
+export function loginOpen(mode: PaymentsMode, owner: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
+  return salesOpen(mode, owner, env) || mode === "paused";
 }
 
 /** The 오픈 기념 free daily full reading applies until sales open for everyone. */
@@ -38,6 +43,20 @@ export type PayProvider = "toss" | "mock";
 
 export function payProvider(env: NodeJS.ProcessEnv = process.env): PayProvider {
   return env.STARLOG_PAY?.trim().toLowerCase() === "mock" ? "mock" : "toss";
+}
+
+/** What `payments.mode` a payment made now records. */
+export type PayKeyMode = "test" | "live" | "mock";
+
+/**
+ * The Toss keys this deploy runs with, by TOSS_SECRET_KEY's prefix (the mock outside production);
+ * null without one. Paid credit is spent only from payments made in this mode (ledger reserveUnlock),
+ * and Toss is only asked about those (refunds).
+ */
+export function payKeyMode(env: NodeJS.ProcessEnv = process.env): PayKeyMode | null {
+  if (payProvider(env) === "mock") return env.NODE_ENV === "production" ? null : "mock";
+  const secret = env.TOSS_SECRET_KEY?.trim() ?? "";
+  return secret.startsWith("live_") ? "live" : secret.startsWith("test_") ? "test" : null;
 }
 
 /**

@@ -32,7 +32,7 @@ async function setup(make: Make) {
   return db;
 }
 
-async function paidOrder(db: D1Binding, orderId: string, productId = "tarot") {
+async function paidOrder(db: D1Binding, orderId: string, productId = "tarot", mode: "test" | "live" = "live") {
   await db
     .prepare(
       `INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at)
@@ -40,6 +40,7 @@ async function paidOrder(db: D1Binding, orderId: string, productId = "tarot") {
     )
     .bind(orderId, productId)
     .run();
+  await db.prepare("INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES (?, ?, 2900, 'DONE', ?, 0)").bind(`pk_${orderId}`, orderId, mode).run();
   await db.batch(paidLotStatements(db, { userId: "u_1", orderId, productId, units: 10, now: NOW }));
 }
 
@@ -70,7 +71,7 @@ async function giftedUser(make: Make) {
 }
 
 async function reserved(db: D1Binding, currency: "paid" | "free", now = NOW) {
-  const result = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency, units: 10, now });
+  const result = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency, units: 10, now, payMode: "live" });
   if (!result.ok) throw new Error("not reserved");
   return result;
 }
@@ -113,7 +114,7 @@ export function ledgerContract(make: Make) {
 
   it("releases a failed opening once, and a late delivery cannot spend it", async () => {
     const db = await giftedUser(make);
-    const unlock = await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "free", units: 10, now: NOW });
+    const unlock = await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "free", units: 10, now: NOW, payMode: "live" });
     if (!unlock.ok) throw new Error("not reserved");
     expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 1 })).toBe(true);
     expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 2 })).toBe(false);
@@ -127,8 +128,8 @@ export function ledgerContract(make: Make) {
     const db = await setup(make);
     await paidOrder(db, "order_tarot_1", "tarot");
     expect((await walletSummary(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot" }]);
-    expect(await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "paid", units: 10, now: NOW })).toEqual({ ok: false });
-    expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW })).ok).toBe(true);
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "paid", units: 10, now: NOW, payMode: "live" })).toEqual({ ok: false });
+    expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW, payMode: "live" })).ok).toBe(true);
     expect((await walletSummary(db, "u_1", NOW)).unused).toEqual([]);
   });
 
@@ -152,6 +153,15 @@ export function ledgerContract(make: Make) {
     await expectLotsMatchLedger(db);
   });
 
+  it("spends a paid lot only from a payment made under this deploy's keys", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_test", "tarot", "test");
+    const paid = (payMode: "test" | "live" | null) => reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW, payMode });
+    expect(await paid("live")).toEqual({ ok: false });
+    expect(await paid(null)).toEqual({ ok: false });
+    expect((await paid("test")).ok).toBe(true);
+  });
+
   it("takes 별조각 from the lot that expires first", async () => {
     const db = await setup(make);
     const lot = (id: string, units: number, expiresAt: number) =>
@@ -164,7 +174,7 @@ export function ledgerContract(make: Make) {
 
   it("refuses without enough credit and writes nothing", async () => {
     const db = await setup(make);
-    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW })).toEqual({ ok: false });
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW, payMode: "live" })).toEqual({ ok: false });
     expect(await count(db, "SELECT COUNT(*) AS n FROM unlocks")).toBe(0);
   });
 
@@ -244,7 +254,7 @@ export function ledgerContract(make: Make) {
     await db.batch(grantStatements(db, { id: "lot_admin", userId: "u_1", currency: "free", source: "admin", orderId: null, productId: null, units: 20, expiresAt: null }, NOW));
     const unlock = await reserved(db, "free");
     await db.prepare("UPDATE users SET deleted_at = ? WHERE id = 'u_1'").bind(NOW).run();
-    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW + 1 })).toEqual({ ok: false });
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW + 1, payMode: "live" })).toEqual({ ok: false });
     expect(await deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "r1", now: NOW + 2 })).toBe("lost");
     expect(await kinds(db, "lot_admin")).toEqual(["grant", "reserve"]);
     expect(await count(db, "SELECT COUNT(*) AS n FROM unlocks")).toBe(1);

@@ -75,6 +75,19 @@ describe("checkout and orders", () => {
   });
 });
 
+describe("a production deploy on test keys", () => {
+  it("is open to the owner only: no sales, sign-up or login for anyone else", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("STARLOG_PAY", "");
+    vi.stubEnv("NEXT_PUBLIC_TOSS_CLIENT_KEY", "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm");
+    vi.stubEnv("TOSS_SECRET_KEY", "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6");
+    expect(await me(browser("192.0.2.5"))).toEqual({ payments: false, login: false, owner: false, user: null });
+    vi.stubEnv("TOSS_SECRET_KEY", "live_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6");
+    vi.stubEnv("NEXT_PUBLIC_TOSS_CLIENT_KEY", "live_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm");
+    expect(await me(browser("192.0.2.5"))).toMatchObject({ payments: true, login: true });
+  });
+});
+
 describe("confirm", () => {
   it("confirms once and grants exactly one unopened reading, however often it is called", async () => {
     const db = useTestDb();

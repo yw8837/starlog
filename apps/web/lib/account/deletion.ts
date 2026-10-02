@@ -2,7 +2,7 @@ import "server-only";
 import type { D1Binding } from "@/lib/db/d1";
 import { forfeitStatements, sweepUser, walletSummary, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
-import { reconcileRefunding, refundUnusedOrder } from "@/lib/pay/refunds";
+import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
 import { signToken, verifyToken, type SignedPayload } from "@/lib/security/sign";
 
@@ -31,10 +31,16 @@ export async function deleteIntentFor(token: string | null, sessionId: string, s
 
 export type DeleteOutcome = { ok: true; refunded: number } | { ok: false; code: "PENDING" | "IN_USE" | "REFUND_FAILED" };
 
-const IN_FLIGHT = "('confirming', 'refunding')";
+/**
+ * Orders still settling with Toss. One paid under other keys than this deploy's (`?`, the Toss mode;
+ * null counts every order) never settles here: the operator does it by hand (runbook section 5), so it
+ * does not hold the deletion up.
+ */
+const IN_FLIGHT = `status IN ('confirming', 'refunding')
+  AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.order_id = orders.id AND p.mode <> COALESCE(?, p.mode))`;
 
-async function count(db: D1Binding, sql: string, userId: string): Promise<number> {
-  return (await db.prepare(sql).bind(userId).first<{ n: number }>())?.n ?? 0;
+async function count(db: D1Binding, sql: string, ...values: unknown[]): Promise<number> {
+  return (await db.prepare(sql).bind(...values).first<{ n: number }>())?.n ?? 0;
 }
 
 /**
@@ -44,20 +50,26 @@ async function count(db: D1Binding, sql: string, userId: string): Promise<number
 export async function deleteAccount(db: D1Binding, toss: TossClient | null, input: { userId: string; now: number }): Promise<DeleteOutcome> {
   const { userId, now } = input;
   await sweepUser(db, userId, now);
+  const mode = toss?.mode ?? null;
   if (toss) {
-    const { results } = await db.prepare(`SELECT * FROM orders WHERE user_id = ? AND status IN ${IN_FLIGHT}`).bind(userId).all<OrderRow>();
+    const { results } = await db.prepare(`SELECT * FROM orders WHERE user_id = ? AND ${IN_FLIGHT}`).bind(userId, mode).all<OrderRow>();
     for (const order of results) {
       if (order.status === "confirming") await reconcileConfirming(db, toss, order, now, { force: true });
       else await reconcileRefunding(db, toss, order, now);
     }
   }
-  if (await count(db, `SELECT COUNT(*) AS n FROM orders WHERE user_id = ? AND status IN ${IN_FLIGHT}`, userId)) return { ok: false, code: "PENDING" };
+  if (await count(db, `SELECT COUNT(*) AS n FROM orders WHERE user_id = ? AND ${IN_FLIGHT}`, userId, mode)) return { ok: false, code: "PENDING" };
   if (await count(db, "SELECT COUNT(*) AS n FROM unlocks WHERE user_id = ? AND status = 'reserved'", userId)) return { ok: false, code: "IN_USE" };
 
   const wallet = await walletSummary(db, userId, now);
   let refunded = 0;
   for (const { orderId } of wallet.unused) {
     const order = await orderForUser(db, orderId, userId);
+    if (order && toss && (await paidUnderOtherKeys(db, toss, order.id))) {
+      // These keys cannot cancel it: the reading leaves use, the order stays for the operator (runbook 5).
+      await setAsideForOperator(db, order.id, now);
+      continue;
+    }
     const outcome = order && toss ? await refundUnusedOrder(db, toss, { order, reason: "회원 탈퇴: 열지 않은 풀이 환불", now }) : null;
     if (!outcome?.ok) {
       console.warn(JSON.stringify({ evt: "account.delete_refund_failed", orderId }));
@@ -71,11 +83,11 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
     .prepare(
       `UPDATE users SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL
          AND NOT EXISTS (SELECT 1 FROM unlocks WHERE user_id = ? AND status = 'reserved')
-         AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = ? AND status IN ${IN_FLIGHT})
+         AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = ? AND ${IN_FLIGHT})
          AND NOT EXISTS (SELECT 1 FROM credit_lots WHERE user_id = ? AND currency = 'paid' AND status = 'active' AND units_left > 0 AND units_left = units_total)
        RETURNING id`,
     )
-    .bind(now, userId, userId, userId, userId)
+    .bind(now, userId, userId, userId, mode, userId)
     .first();
   if (!marked) {
     const inUse = await count(db, "SELECT COUNT(*) AS n FROM unlocks WHERE user_id = ? AND status = 'reserved'", userId);

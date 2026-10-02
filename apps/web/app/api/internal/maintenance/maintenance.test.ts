@@ -99,11 +99,25 @@ describe("maintenance", () => {
     expect((await mockToss.getPaymentByOrder(orphan)).status).toBe("CANCELED");
   });
 
+  it("leaves a refund paid under other Toss keys to the operator: never sent to Toss", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    mockToss.failNext("cancel", new TossError(409, "IDEMPOTENT_REQUEST_PROCESSING", ""));
+    expect((await b.send(refund, "/api/pay/refund", { body: { orderId }, origin: true })).status).toBe(409);
+    await db.prepare("UPDATE payments SET mode = 'test'").run();
+    const lookUp = vi.spyOn(mockToss, "getPayment");
+    vi.setSystemTime(T0 + 10 * MIN + 1);
+    expect(await report()).toMatchObject({ refunding: 0 });
+    expect(lookUp).not.toHaveBeenCalled();
+    expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunding" });
+  });
+
   it("returns any account's stale reservation", async () => {
     const db = useTestDb();
     const b = await loggedIn();
     const userId = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!.id;
-    expect((await reserveUnlock(db, { userId, productId: "tarot", currency: "free", units: 10, now: T0 })).ok).toBe(true);
+    expect((await reserveUnlock(db, { userId, productId: "tarot", currency: "free", units: 10, now: T0, payMode: "mock" })).ok).toBe(true);
     vi.setSystemTime(T0 + RESERVATION_MS + 1);
     expect(await report()).toMatchObject({ released: 1 });
     expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "released" });

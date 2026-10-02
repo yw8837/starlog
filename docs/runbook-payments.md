@@ -30,7 +30,7 @@ D1 queries: `npx wrangler d1 execute starlog --remote --command "<SQL>"`.
 
 ## 3. Owner check in production (test keys)
 
-`npx wrangler secret put STARLOG_PAYMENTS` → `owner`. On the owner-pass browser:
+`npx wrangler secret put STARLOG_PAYMENTS` → `owner`. While a production deploy runs test keys, sales, sign-up and login stay owner-only even if STARLOG_PAYMENTS says `on` (a test payment charges nobody). On the owner-pass browser:
 
 - [ ] result page shows `로그인하고 전체 풀이 보기`; another browser still shows the 오픈 기념 sheet
 - [ ] Kakao login (real) → back with login=ok; 내 정보 shows the nickname and 별조각 10개 with its last day
@@ -54,10 +54,14 @@ Apply for the live contract. The site already shows /pricing (products, prices),
 
 1. Refund every test-mode order first (minor 12): live keys cannot cancel test payments.
    `SELECT o.id FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.mode = 'test' AND o.status = 'paid'`
-   Refund each from the owner's 내 정보 while the test keys are still in place.
-2. `npx wrangler secret put NEXT_PUBLIC_TOSS_CLIENT_KEY` (live_gck_…) and `npx wrangler secret put TOSS_SECRET_KEY` (live_gsk_…), one right after the other.
-3. Check the webhook for the live MID (section 1).
-4. Still in owner mode: one real 2,900원 purchase opened, one real purchase refunded.
+   Refund each from the owner's 내 정보 while the test keys are still in place. Wait until none is still settling (the cron finishes a lost answer within 10 minutes):
+   `SELECT o.id FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.mode = 'test' AND o.status = 'refunding'` → empty.
+2. Revoke whatever test-mode purchase is still active (opened, or not refundable), right before the key swap:
+   `UPDATE credit_lots SET status = 'revoked' WHERE status = 'active' AND currency = 'paid' AND order_id IN (SELECT order_id FROM payments WHERE mode = 'test')`
+   The code already refuses them once live keys are in: a paid reading is opened only from a payment made under the deploy's own keys, and a test payment is never sent to Toss with live keys (`pay.other_keys` in the logs; 환불받기 asks the buyer to contact us; 회원 탈퇴 revokes its reading and completes). Anything left: `SELECT o.id, o.status FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.mode <> 'live' AND o.status IN ('paid','refunding')`. Settle it in the Toss test dashboard; no real money moved.
+3. `npx wrangler secret put NEXT_PUBLIC_TOSS_CLIENT_KEY` (live_gck_…) and `npx wrangler secret put TOSS_SECRET_KEY` (live_gsk_…), one right after the other.
+4. Check the webhook for the live MID (section 1).
+5. Still in owner mode: one real 2,900원 purchase opened, one real purchase refunded.
 
 ## 6. Switch on
 

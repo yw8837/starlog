@@ -12,6 +12,7 @@ import { GET as callback } from "../auth/kakao/callback/route";
 import { GET as start } from "../auth/kakao/start/route";
 import { POST as confirm } from "../pay/confirm/route";
 import { POST as ordersPost } from "../pay/orders/route";
+import { POST as refund } from "../pay/refund/route";
 import { POST as deleteIntent } from "./delete-intent/route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
@@ -109,6 +110,26 @@ describe("account deletion", () => {
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
   });
 
+  it("completes with payments made under other Toss keys: their readings leave use, the operator settles them", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    const unused = await buy(b);
+    const refunding = await buy(b);
+    mockToss.failNext("cancel", new TossError(409, "IDEMPOTENT_REQUEST_PROCESSING", "이전 요청이 처리 중입니다."));
+    expect((await b.send(refund, "/api/pay/refund", { body: { orderId: refunding }, origin: true })).status).toBe(409);
+    // The deploy moved to other keys (test → live) before either was settled.
+    await db.prepare("UPDATE payments SET mode = 'test'").run();
+    const cancel = vi.spyOn(mockToss, "cancel");
+    const lookUp = vi.spyOn(mockToss, "getPayment");
+    expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
+    expect(cancel).not.toHaveBeenCalled();
+    expect(lookUp).not.toHaveBeenCalled();
+    expect(await db.prepare("SELECT o.status AS o, l.status AS l, l.units_left AS left FROM orders o JOIN credit_lots l ON l.order_id = o.id WHERE o.id = ?").bind(unused).first()).toEqual({ o: "paid", l: "revoked", left: 0 });
+    expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(refunding).first()).toEqual({ status: "refunding" });
+    expect(await one(db, "SELECT erased_at FROM users")).toEqual({ erased_at: T0 });
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("pay.other_keys"));
+  });
+
   it("waits while a payment is still being confirmed", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
@@ -122,7 +143,7 @@ describe("account deletion", () => {
   it("waits while a reading is being opened", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
-    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "free", units: 10, now: T0 });
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "free", units: 10, now: T0, payMode: "mock" });
     expect(reserved.ok).toBe(true);
     expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=in-use");
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
