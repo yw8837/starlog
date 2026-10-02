@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { parseAccount, type AccountState, type AccountUser } from "@/lib/account/client";
 import { getJson } from "@/lib/reading/api";
-import { forgetServerIds, mergeServerReadings } from "./chapters";
+import { forgetServerIds, mergeServerReadings, removeServerChapters } from "./chapters";
 
 /** The account's saved readings on this device (spec 5.7), and the check after a cut-off paid reading (M4). */
 
@@ -124,6 +124,20 @@ export async function deleteAccountReadings(fetchImpl: typeof fetch = fetch): Pr
   } catch {
     return false;
   }
+}
+
+/**
+ * After a successful logout or the account's deletion: the account's readings leave this device
+ * (the ones opened here without it stay), and a later login in this tab pulls them again. Returns
+ * how many left.
+ */
+export function forgetAccountOnDevice(): number {
+  try {
+    sessionStorage.removeItem(SYNCED_KEY);
+  } catch {
+    // storage blocked: nothing was kept there
+  }
+  return removeServerChapters();
 }
 
 /** Once per tab, when a user is logged in: pull the account's readings onto this device. */

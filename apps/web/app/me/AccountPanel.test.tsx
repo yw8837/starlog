@@ -2,7 +2,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests, type AccountState } from "@/lib/account/client";
+import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
 import { AccountPanel } from "./AccountPanel";
+
+const reading = { verdict: "결론", cards: [], action: { heading: "오늘", body: "해 볼 일" } };
+const card = { position: "지금의 나", cardId: "major-00", orientation: "upright" as const };
 
 const account = {
   payments: true,
@@ -41,6 +45,8 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   resetAccountForTests();
+  clearChapters();
+  sessionStorage.clear();
 });
 
 describe("AccountPanel", () => {
@@ -60,6 +66,29 @@ describe("AccountPanel", () => {
     fireEvent.click(await screen.findByRole("button", { name: "전액 환불받기" }));
     await waitFor(() => expect(requests.some((r) => r.url === "/api/pay/refund" && (r.body as { orderId: string }).orderId === "Ab3_dEf-Gh5iJk7Lm9No1Pq2")).toBe(true));
     expect(await screen.findByText("환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
+  });
+
+  it("logs out and takes the account's readings off this device; readings opened here stay", async () => {
+    saveChapter({ kind: "tarot", question: "기기 질문", conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: "t" });
+    saveChapter({ kind: "tarot", question: "계정 질문", conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: "t", serverId: "abcdefghij0123456789" });
+    sessionStorage.setItem("starlog.account-synced", "1");
+    render(<AccountPanel account={account} />);
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+    expect(await screen.findByText("로그아웃했어요. 이 기기에 받아 둔 계정 풀이는 지웠어요.")).toBeTruthy();
+    expect(requests.some((r) => r.url === "/api/auth/logout" && r.method === "POST")).toBe(true);
+    expect(listChapters().map((chapter) => (chapter.kind === "tarot" ? chapter.question : chapter.title))).toEqual(["기기 질문"]);
+    expect(sessionStorage.getItem("starlog.account-synced")).toBeNull();
+  });
+
+  it("when the logout does not go through, keeps everything and says so", async () => {
+    saveChapter({ kind: "tarot", question: "계정 질문", conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: "t", serverId: "abcdefghij0123456789" });
+    vi.stubGlobal("fetch", vi.fn(async () => {
+      throw new TypeError("offline");
+    }));
+    render(<AccountPanel account={account} />);
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+    expect(await screen.findByText("로그아웃하지 못했어요. 다시 시도해 주세요.")).toBeTruthy();
+    expect(listChapters()).toHaveLength(1);
   });
 
   it("starts the deletion only through the Kakao re-check, and says what it does", async () => {

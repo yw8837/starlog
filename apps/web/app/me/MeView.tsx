@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronIcon } from "@/components/home/icons";
 import { Button } from "@/components/ui/Button";
 import { DotLine } from "@/components/ui/DotLine";
@@ -16,7 +16,7 @@ import { profileSummary } from "@/lib/sajuForm";
 import { useRemainingToday } from "@/lib/storage/betaUsage";
 import { clearChapters, useChapters } from "@/lib/storage/chapters";
 import { clearDaily } from "@/lib/storage/daily";
-import { useAccountSync } from "@/lib/storage/sync";
+import { forgetAccountOnDevice, useAccountSync } from "@/lib/storage/sync";
 import { AccountPanel } from "./AccountPanel";
 import s from "./MeView.module.css";
 import a from "./account.module.css";
@@ -24,6 +24,8 @@ import a from "./account.module.css";
 type MeViewProps = {
   /** The line for ?account=, ?delete= or ?login= (meStatus.ts); null when there is none. */
   status: string | null;
+  /** ?account=deleted: the account is gone, so its readings leave this device too. */
+  accountDeleted?: boolean;
 };
 
 type Sheet = "erase" | null;
@@ -44,7 +46,7 @@ function Soon({ children }: { children: string }) {
  * device, otherwise the 오픈 기념 free count; the saju profile kept on this device (with 고치기), the
  * menu, and erasing everything this device keeps. A logged-in tab pulls the account's readings.
  */
-export function MeView({ status }: MeViewProps) {
+export function MeView({ status, accountDeleted = false }: MeViewProps) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [notice, setNotice] = useState(status ?? "");
   const { profile } = useSajuProfile();
@@ -52,6 +54,11 @@ export function MeView({ status }: MeViewProps) {
   const remaining = useRemainingToday();
   const account = useAccount();
   useAccountSync(account);
+
+  useEffect(() => {
+    if (!accountDeleted) return;
+    if (forgetAccountOnDevice() > 0) setNotice((line) => `${line ? `${line} ` : ""}이 기기에 받아 둔 계정 풀이도 지웠어요.`);
+  }, [accountDeleted]);
 
   const erase = () => {
     clearChapters();

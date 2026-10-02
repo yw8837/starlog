@@ -8,7 +8,7 @@ import { SITE } from "@/lib/config";
 import { productById } from "@/lib/pay/catalog";
 import { postJson } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
-import { deleteAccountReadings } from "@/lib/storage/sync";
+import { deleteAccountReadings, forgetAccountOnDevice } from "@/lib/storage/sync";
 import { OrderHistory } from "./OrderHistory";
 import s from "./account.module.css";
 
@@ -111,7 +111,17 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
         >
           계정에 보관한 풀이 모두 지우기
         </button>
-        <button type="button" className={s.link} onClick={() => void logout().then(() => setNotice("로그아웃했어요"))}>
+        <button
+          type="button"
+          className={s.link}
+          onClick={() =>
+            void logout().then((ok) => {
+              if (!ok) return setNotice("로그아웃하지 못했어요. 다시 시도해 주세요.");
+              // On a shared phone the next person must not find the account's readings here.
+              setNotice(forgetAccountOnDevice() > 0 ? "로그아웃했어요. 이 기기에 받아 둔 계정 풀이는 지웠어요." : "로그아웃했어요");
+            })
+          }
+        >
           로그아웃
         </button>
         <button type="button" className={s.link} onClick={() => setSheet("delete")}>

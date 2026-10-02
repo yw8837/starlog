@@ -277,6 +277,18 @@ export function forgetServerIds() {
   });
 }
 
+/**
+ * After a logout or the account's deletion: every chapter that came from or went to the account
+ * (it has a serverId) leaves this device, so the next person on a shared phone does not see its
+ * birth data or questions. Chapters opened here without the account stay. Returns how many left.
+ */
+export function removeServerChapters(): number {
+  const entries = rawEntries();
+  const kept = entries.filter((entry) => !(isRecord(entry) && "serverId" in entry));
+  if (kept.length !== entries.length) store.save({ v: 1, chapters: kept });
+  return entries.length - kept.length;
+}
+
 export function clearChapters() {
   store.clear();
 }

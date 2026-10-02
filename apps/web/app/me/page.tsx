@@ -16,7 +16,10 @@ export default async function MePage({ searchParams }: PageProps<"/me">) {
       <NightSky fixed seed={31} />
       <TabBar active="me" />
       <main className="page-col page-wide">
-        <MeView status={meStatusMessage({ account: str(query.account), delete: str(query.delete), login: str(query.login) })} />
+        <MeView
+          status={meStatusMessage({ account: str(query.account), delete: str(query.delete), login: str(query.login) })}
+          accountDeleted={str(query.account) === "deleted"}
+        />
       </main>
       <Footer />
     </div>
