@@ -17,6 +17,15 @@ describe("crisis", () => {
     for (const locale of LOCALES.filter((l) => l !== "ko")) expect(HOTLINES[locale].some((h) => h.number === "109"), locale).toBe(true);
   });
 
+  it("pairs each Korean line of lib/crisis.ts with its official page, in that file's order", () => {
+    expect(HOTLINES.ko.map((h) => [h.number, h.source])).toEqual([
+      ["109", "https://www.129.go.kr/109"],
+      ["1577-0199", "https://www.mohw.go.kr/menu.es?mid=a10706040100"],
+      ["1388", "https://www.mogef.go.kr/cc/ccy/cc_ccy_f001.do"],
+      ["1588-9191", "https://www.lifeline.or.kr/business/phone.php"],
+    ]);
+  });
+
   it("cites an official source and a check date for every number outside the Korean list", () => {
     for (const locale of LOCALES.filter((l) => l !== "ko")) {
       for (const line of HOTLINES[locale]) {

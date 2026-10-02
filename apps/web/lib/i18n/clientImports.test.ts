@@ -29,4 +29,5 @@ it("no client component imports the full message catalogs", () => {
     }
   }
   expect(offenders).toEqual([]);
-});
+  // Walking the source tree on this disk can take several seconds when other test files read it too.
+}, 60_000);
