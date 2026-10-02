@@ -4,7 +4,7 @@ import { buildTarotContext } from "@/lib/ai/prompts/tarot";
 import { StoredSajuReadingSchema, StoredTarotReadingSchema, type FollowUpAnswer } from "@/lib/ai/schemas";
 import { checkQuota, crisisResponse, errorResponse, openGate, readJson, spendCookies } from "@/lib/api/http";
 import { FollowUpBody } from "@/lib/api/inputs";
-import { factsFromBirth } from "@/lib/api/sajuRequest";
+import { factsFromBirth, withoutConcern } from "@/lib/api/sajuRequest";
 import { chapterTurns, recordChapterTurns } from "@/lib/api/spend";
 import { respondGeneration } from "@/lib/api/stream";
 import { saveFollowUpTurn } from "@/lib/readings/turns";
@@ -50,7 +50,8 @@ export async function POST(request: Request): Promise<Response> {
   } else {
     const reading = StoredSajuReadingSchema.safeParse(body.data.reading);
     if (!reading.success) return errorResponse("BAD_TOKEN");
-    const facts = factsFromBirth(chapter.ctx.birth, gate.now, chapter.ctx.profile);
+    // An older chapter's token may still carry the one-line concern: it never reaches a prompt again.
+    const facts = factsFromBirth(chapter.ctx.birth, gate.now, withoutConcern(chapter.ctx.profile));
     if (facts instanceof Response) return errorResponse("BAD_TOKEN");
     generate = async (hooks) => (await generateSajuFollowUp(gate.provider, facts, reading.data, chapter.turns, question, hooks)).data;
   }

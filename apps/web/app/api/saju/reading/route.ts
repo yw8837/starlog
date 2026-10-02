@@ -7,7 +7,7 @@ import { sajuChapter } from "@/lib/readings/chapters";
 import { issueChapter } from "@/lib/security/chapterToken";
 
 /**
- * POST {birth, loveStatus?, workStatus?, concern?, unlock?, display?} → {reading, chapterToken, readingId?}:
+ * POST {birth, loveStatus?, workStatus?, unlock?, display?} → {reading, chapterToken, readingId?}:
  * the paid prologue.
  * - 오픈 기념: one daily unlock after a validated generation.
  * - paid / 별조각: credit reserved, then saved and spent before the client sees it, released on
@@ -23,7 +23,7 @@ export async function POST(request: Request): Promise<Response> {
   if (parsed instanceof Response) return parsed;
   const plan = await planUnlock(request, gate, "saju", parsed.body.unlock?.method);
   if (plan instanceof Response) return plan;
-  const { birth, loveStatus, workStatus, concern, display } = parsed.body;
+  const { birth, loveStatus, workStatus, display } = parsed.body;
 
   return respondGeneration(
     request,
@@ -38,7 +38,7 @@ export async function POST(request: Request): Promise<Response> {
       paidCost: plan.paidCost,
       settle: settlementFor(
         plan,
-        (body) => sajuChapter({ birth, context: { loveStatus, workStatus, concern }, display }, body as { reading: unknown; chapterToken: string }, gate.now),
+        (body) => sajuChapter({ birth, context: { loveStatus, workStatus }, display }, body as { reading: unknown; chapterToken: string }, gate.now),
         gate.now,
       ),
     },

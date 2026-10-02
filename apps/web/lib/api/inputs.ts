@@ -77,8 +77,7 @@ export const SajuBody = z.object({
   birth: BirthBody,
   loveStatus: z.enum(Object.keys(LOVE_STATUS) as [keyof typeof LOVE_STATUS, ...Array<keyof typeof LOVE_STATUS>]).optional(),
   workStatus: z.enum(Object.keys(WORK_STATUS) as [keyof typeof WORK_STATUS, ...Array<keyof typeof WORK_STATUS>]).optional(),
-  /** one line about what is on the user's mind */
-  concern: z.string().trim().max(60).optional(),
+  // No free text on the saju side (saju-topics spec §7.3): an older client's `concern` is an unknown key, dropped here.
   /** up to three earlier readings from this device (lib/ai/history.ts) */
   history: HistorySchema.optional(),
   unlock: UnlockBody.optional(),

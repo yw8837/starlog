@@ -4,7 +4,7 @@ import { sajuRequest } from "@/lib/api/sajuRequest";
 import { respondGeneration } from "@/lib/api/stream";
 
 /**
- * POST {birth, loveStatus?, workStatus?, concern?} → free saju summary {title, summary, lockedToc},
+ * POST {birth, loveStatus?, workStatus?} → free saju summary {title, summary, lockedToc},
  * written from the chart the server computes itself. Spends one teaser only after a validated
  * generation. Streams NDJSON progress with `Accept: application/x-ndjson`.
  */

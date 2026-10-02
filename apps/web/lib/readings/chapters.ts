@@ -30,15 +30,13 @@ export function tarotChapter(
 }
 
 export function sajuChapter(
-  input: { birth: unknown; context: { loveStatus?: string; workStatus?: string; concern?: string }; display?: { title: string; summary: string } },
+  input: { birth: unknown; context: { loveStatus?: string; workStatus?: string }; display?: { title: string; summary: string } },
   body: Body,
   now: number,
 ): ServerChapter {
-  const concern = input.context.concern?.trim();
   const context = {
     ...(input.context.loveStatus ? { loveStatus: input.context.loveStatus } : {}),
     ...(input.context.workStatus ? { workStatus: input.context.workStatus } : {}),
-    ...(concern ? { concern } : {}),
   };
   return {
     kind: "saju",

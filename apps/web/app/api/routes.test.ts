@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
+import { BirthBody } from "@/lib/api/inputs";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { issueChapter } from "@/lib/security/chapterToken";
 import { dailyDeal } from "@/lib/security/drawToken";
 import { signingSecret } from "@/lib/security/sign";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
@@ -392,6 +394,22 @@ describe("saju", () => {
     const f = await d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question: "올해는 무엇을 해 보면 좋을까요?" });
     expect(f.status).toBe(200);
     expect(f.data.remaining).toBe(2);
+  });
+
+  it("answers on an older chapter whose token still carries a concern, without that concern in the prompt", async () => {
+    const d = device();
+    const r = await d.call(sajuReading, { birth });
+    expect(r.status).toBe(200);
+    const token = await issueChapter(
+      { kind: "saju", birth: BirthBody.parse(birth), profile: { loveStatus: "솔로", concern: "이직이 고민이에요" } },
+      r.data.reading, [], signingSecret()!, T0,
+    );
+    const spy = vi.spyOn(mockProvider, "generate");
+    const f = await d.call(followup, { chapterToken: token, reading: r.data.reading, question: "올해는 무엇을 해 보면 좋을까요?" });
+    expect(f.status).toBe(200);
+    const prompt = spy.mock.calls.at(-1)![0].user;
+    expect(prompt).toContain("연애 상태: 솔로");
+    expect(prompt).not.toContain("이직이 고민이에요");
   });
 
   it("rejects a birth date in the future with the form's message", async () => {

@@ -1,5 +1,5 @@
 // Real-API smoke run (not in CI; costs money). Per run: 재물운 tarot teaser + full reading, 오늘의 한 장,
-// saju teaser + full prologue for a non-sample chart with a personal context (연애·일 상태, 고민).
+// saju teaser + full prologue for a non-sample chart with the status chips (연애·일 상태).
 // SMOKE_RUNS repeats the set (default 1).
 // SMOKE_MODEL / SMOKE_EFFORT apply one model and effort to every kind (default: the app's config).
 // SMOKE_STAMP reuses an earlier run's stamp, so run N draws the same cards and daily card (A/B).
@@ -129,8 +129,8 @@ test("ai smoke", async () => {
   console.log(`ai:smoke stamp ${stamp} · 실행 ${RUNS}회 · 모델 ${SMOKE_MODEL ?? "앱 설정"} · effort ${SMOKE_EFFORT ?? "앱 설정"}`);
   const rows: Row[] = [];
 
-  // The saju form's optional context, as the route maps it (profileOf): ids to labels, concern as typed.
-  const profile: SajuProfile = { loveStatus: LOVE_STATUS.dating, workStatus: WORK_STATUS.employee, concern: "지금 회사에 남을지 옮길지 고민이에요" };
+  // The saju form's optional status chips, as the route maps them (profileOf). The saju side takes no free text.
+  const profile: SajuProfile = { loveStatus: LOVE_STATUS.dating, workStatus: WORK_STATUS.employee };
   const saju = buildFactSet(computeChart(toSajuInput({
     ...DEFAULT_SAJU_FORM, year: 1993, month: 8, day: 17, timeKnown: true, hour: 7, minute: 20, gender: "male", placeId: "busan",
   })), Date.now(), profile);

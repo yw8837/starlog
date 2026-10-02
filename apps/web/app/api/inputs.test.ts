@@ -101,42 +101,49 @@ describe("custom topic, who and when (question builder C4)", () => {
   });
 });
 
-describe("saju personal context (loveStatus, workStatus, concern)", () => {
+describe("saju status chips (the saju side takes no free text)", () => {
   const birth = { ...DEFAULT_SAJU_FORM, year: 1995, month: 5, day: 20, timeKnown: true, hour: 14, minute: 5, gender: "male" };
 
-  it("maps ids to labels and puts them, with the concern, inside <user_context>", () => {
-    const profile = profileOf({ loveStatus: "single", workStatus: "between-jobs", concern: "이직을 <해야> 할지 고민이에요" })!;
-    expect(profile).toEqual({ loveStatus: "솔로", workStatus: "구직·쉬는 중", concern: "이직을 해야 할지 고민이에요" });
+  it("maps ids to labels inside <user_context> and never reads a concern", () => {
+    const profile = profileOf({ loveStatus: "single", workStatus: "between-jobs", concern: "이직을 해야 할지 고민이에요" } as Parameters<typeof profileOf>[0])!;
+    expect(profile).toEqual({ loveStatus: "솔로", workStatus: "구직·쉬는 중" });
     const facts = buildFactSet(computeChart(toSajuInput(birth as never)), Date.parse("2026-10-01T03:00:00Z"), profile);
     for (const prompt of [sajuTeaserPrompt(facts), sajuReadingPrompt(facts)]) {
       const context = prompt.slice(prompt.indexOf("<user_context>"), prompt.indexOf("</user_context>"));
       expect(context).toContain("연애 상태: 솔로");
       expect(context).toContain("일 상태: 구직·쉬는 중");
-      expect(context).toContain("이직을 해야 할지 고민이에요");
-      expect(prompt.slice(prompt.indexOf("<facts>"), prompt.indexOf("</facts>"))).not.toContain("이직");
+      expect(context).not.toContain("한 줄 고민");
     }
   });
 
-  it("uses the context in the mock prologue and soft-flags a reading that ignores it", () => {
-    const facts = buildFactSet(computeChart(toSajuInput(birth as never)), Date.parse("2026-10-01T03:00:00Z"), { workStatus: "구직·쉬는 중", concern: "이직을 해야 할지 고민이에요" });
+  it("uses the statuses in the mock prologue and soft-flags a reading that ignores them", () => {
+    const facts = buildFactSet(computeChart(toSajuInput(birth as never)), Date.parse("2026-10-01T03:00:00Z"), { workStatus: "구직·쉬는 중" });
     const r = mockSajuReading(facts);
     expect(validateSajuReading(r, facts)).toEqual([]);
-    const ignoring = { ...r, sections: r.sections.map((s) => ({ ...s, body: s.body.replace(/지금은 [^.]*알려 줬죠\. /, "").replace(/'이직을 해야 할지 고민이에요'[^.]*\. /, "") })) };
+    const ignoring = { ...r, sections: r.sections.map((s) => ({ ...s, body: s.body.replace(/지금은 [^.]*알려 줬죠\. /, "") })) };
     const found = validateSajuReading(ignoring, facts);
     expect(found.join(" ")).toMatch(/사용자가 알려 준 상황/);
     expect(found.every(isSoftViolation)).toBe(true);
   });
 
-  it("accepts the fields on both routes and refuses bad values", async () => {
-    const ok = await call(sajuTeaser, { birth, loveStatus: "dating", workStatus: "employee", concern: "회사 생활이 버거워요" });
-    expect(ok.status).toBe(200);
-    const full = await call(sajuReading, { birth, loveStatus: "married", workStatus: "self-employed" });
-    expect(full.status).toBe(200);
+  it("accepts the status chips on both routes and refuses unknown ones", async () => {
+    expect((await call(sajuTeaser, { birth, loveStatus: "dating", workStatus: "employee" })).status).toBe(200);
+    expect((await call(sajuReading, { birth, loveStatus: "married", workStatus: "self-employed" })).status).toBe(200);
     expect((await call(sajuTeaser, { birth, loveStatus: "complicated" })).status).toBe(400);
-    expect((await call(sajuTeaser, { birth, concern: "가".repeat(61) })).status).toBe(400);
-    const crisis = await call(sajuTeaser, { birth, concern: "요즘 죽고 싶다는 생각이 들어요" });
-    expect(crisis.status).toBe(422);
-    expect(crisis.data.care).toBe(true);
+  });
+
+  it("drops an older client's concern: 200, and no prompt ever sees it, crisis words included", async () => {
+    const spy = vi.spyOn(mockProvider, "generate");
+    expect((await call(sajuTeaser, { birth, loveStatus: "dating", concern: "회사 생활이 버거워요" })).status).toBe(200);
+    expect((await call(sajuTeaser, { birth, concern: "가".repeat(61) })).status).toBe(200);
+    expect((await call(sajuReading, { birth, concern: "요즘 죽고 싶다는 생각이 들어요" })).status).toBe(200);
+    expect(spy).toHaveBeenCalled();
+    for (const [task] of spy.mock.calls) {
+      expect(task.user).not.toContain("회사 생활이 버거워요");
+      expect(task.user).not.toContain("가가가");
+      expect(task.user).not.toContain("죽고 싶다");
+      expect(task.user).not.toContain("한 줄 고민");
+    }
   });
 });
 
@@ -231,7 +238,8 @@ describe("review fixes (A2 round 2)", () => {
     const drawToken = await drawFor("self-flow");
     const input = { topicId: "money", whoId: "me", whenId: "week", question: "죽<고> 싶어요", conditions: [], note: "" };
     expect((await call(teaser, { drawToken, input })).status).toBe(422);
-    expect((await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, concern: "사라<지>고   싶어요" })).status).toBe(422);
+    const history = [{ ...HISTORY[0]!, kind: "saju", question: "사라<지>고   싶어요" }];
+    expect((await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, history })).status).toBe(422);
   });
 
   it("runs the crisis check over condition labels", async () => {
