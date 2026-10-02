@@ -1,6 +1,7 @@
 import "server-only";
 import { KB_CARDS, type KbCard } from "@/lib/kb";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { maskGanzhiReadings } from "./ganzhi";
 import type { SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, cardLabel, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
@@ -569,7 +570,7 @@ export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): stri
   if (titleLength < 2 || titleLength > 16) out.push("title은 4~12자로 써 주세요.");
   lengthCheck("summary", d.summary, 250, 400, out);
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(d.summary)) out.push("태어난 시를 몰라 여섯 글자로 읽었다는 한계를 summary에 한 문장 넣어 주세요.");
-  sajuFactViolations(`${d.title}\n${d.summary}`, facts, out, profileText(facts));
+  sajuFactViolations(maskGanzhiReadings(`${d.title}\n${d.summary}`), facts, out, profileText(facts));
   voiceViolations(d.summary, out);
   profileUseViolations(d.summary, facts, out);
   aiTellViolations([d.summary], out);
@@ -592,7 +593,7 @@ export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[
   observationViolations(r.observation.body, out);
   if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
   const bodies = [...r.sections.map((s) => s.body), r.observation.body];
-  sajuFactViolations([...bodies, ...r.followUps].join("\n"), facts, out, profileText(facts));
+  sajuFactViolations(maskGanzhiReadings([...bodies, ...r.followUps].join("\n")), facts, out, profileText(facts));
   voiceViolations([...bodies, ...r.followUps].join("\n"), out);
   profileUseViolations(bodies.join("\n"), facts, out);
   actionVarietyViolations(bodies, out);
@@ -604,7 +605,7 @@ export function validateSajuFollowUp(a: FollowUpAnswer, facts: SajuFactSet, ques
   const out: string[] = [];
   modelNameViolations(a, out);
   lengthCheck("answer", a.answer, 150, 450, out);
-  sajuFactViolations(a.answer, facts, out, `${question} ${profileText(facts)}`);
+  sajuFactViolations(maskGanzhiReadings(a.answer), facts, out, `${question} ${profileText(facts)}`);
   voiceViolations(a.answer, out);
   aiTellViolations([a.answer], out);
   return out;
