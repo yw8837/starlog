@@ -21,18 +21,23 @@ export const ORPHAN_MAX_ATTEMPTS = 5;
 export const cancelKey = (order: Pick<OrderRow, "id" | "cancel_attempt">) => `cancel-${order.id}-${order.cancel_attempt}`;
 
 /**
- * Records a full cancellation Toss confirmed: order refunded, payment updated, the lot refunded when
- * it was locked for it, or revoked when its reading was open or opening (minor 1). One batch.
+ * Records a full cancellation Toss confirmed, in one batch, from what D1 holds now (never from what a
+ * caller read earlier), so applying it twice changes nothing the second time:
+ * - a lot locked for the refund leaves as a refund, booked once;
+ * - a lot still in use (its reading open or opening) is revoked (minor 1): the payment is gone;
+ * - the order becomes refunded and the payment row records the cancellation.
  */
-export async function applyCancel(db: D1Binding, order: OrderRow, lot: Lot | null, payment: TossPayment, now: number, options: { revoke?: boolean } = {}): Promise<void> {
-  await db.batch([
-    ...(options.revoke ? [revokeLotStatement(db, order.id)] : []),
+export async function applyCancel(db: D1Binding, order: OrderRow, payment: TossPayment, now: number): Promise<void> {
+  const [revoked] = await db.batch([
+    revokeLotStatement(db, order.id),
+    ...refundedLotStatements(db, order.id, now),
     db.prepare("UPDATE orders SET status = 'refunded', updated_at = ? WHERE id = ? AND status IN ('paid', 'refunding')").bind(now, order.id),
     db
-      .prepare("UPDATE payments SET status = ?, canceled_amount = ?, canceled_at = ?, updated_at = ? WHERE order_id = ?")
+      .prepare("UPDATE payments SET status = ?, canceled_amount = ?, canceled_at = COALESCE(canceled_at, ?), updated_at = ? WHERE order_id = ?")
       .bind(payment.status, payment.totalAmount - payment.balanceAmount, new Date(now).toISOString(), now, order.id),
-    ...(lot ? refundedLotStatements(db, lot, now) : []),
   ]);
+  // Cancelled in the dashboard while the reading was open or opening: it left use for good.
+  if (revoked?.meta?.changes) console.warn(JSON.stringify({ evt: "pay.canceled_after_open", orderId: order.id }));
   console.info(JSON.stringify({ evt: "pay.refunded", orderId: order.id }));
 }
 
@@ -74,7 +79,7 @@ async function sendCancel(db: D1Binding, toss: TossClient, order: OrderRow, lot:
     console.warn(JSON.stringify({ evt: "pay.refund_unexpected", orderId: order.id, status: payment.status }));
     return { ok: false, code: "PAY_PENDING" };
   }
-  await applyCancel(db, order, lot, payment, now);
+  await applyCancel(db, order, payment, now);
   return { ok: true };
 }
 
@@ -108,7 +113,7 @@ export async function reconcileRefunding(db: D1Binding, toss: TossClient, order:
   if (!payment) return order;
   const lot = await refundingLot(db, order.id);
   if (payment.status === "CANCELED") {
-    await applyCancel(db, order, lot, payment, now);
+    await applyCancel(db, order, payment, now);
   } else if (payment.status === "DONE" && lot) {
     await revertRefund(db, order.id, now);
     console.info(JSON.stringify({ evt: "pay.refund_reverted", orderId: order.id }));
@@ -138,17 +143,10 @@ export async function syncOrderWithToss(db: D1Binding, toss: TossClient, order: 
     return;
   }
   if (payment.status === "CANCELED") {
-    if (order.status === "paid") {
-      const locked = await lockPaidLotForRefund(db, order.id, now);
-      if (locked) {
-        await applyCancel(db, order, locked, payment, now);
-      } else {
-        // Cancelled in the dashboard while the reading was open or opening: it leaves use for good.
-        await applyCancel(db, order, null, payment, now, { revoke: true });
-        console.warn(JSON.stringify({ evt: "pay.canceled_after_open", orderId: order.id }));
-      }
-    } else if (order.status === "refunding") {
-      await applyCancel(db, order, await refundingLot(db, order.id), payment, now);
+    if (order.status === "paid" || order.status === "refunding") {
+      // An unopened reading is locked so it leaves as a refund; one open or opening is revoked (applyCancel).
+      if (order.status === "paid") await lockPaidLotForRefund(db, order.id, now);
+      await applyCancel(db, order, payment, now);
     }
     return;
   }

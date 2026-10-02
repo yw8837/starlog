@@ -179,6 +179,43 @@ describe("webhook", () => {
     expect((await me(b)).user?.unused).toEqual([]);
   });
 
+  it("lets the webhook and the buyer's own refund both apply one cancellation: one refund row, no error", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    const paymentKey = await paymentKeyOf(db, orderId);
+    const realCancel = mockToss.cancel;
+    vi.spyOn(mockToss, "cancel").mockImplementationOnce(async (key, input) => {
+      const payment = await realCancel(key, input);
+      // Toss's webhook lands before our own answer is applied.
+      expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "CANCELED" } })).status).toBe(200);
+      return payment;
+    });
+    const res = await refundOf(b, orderId);
+    expect(res.status).toBe(200);
+    expect(await db.prepare("SELECT o.status AS o, l.status AS l FROM orders o JOIN credit_lots l ON l.order_id = o.id").first()).toEqual({ o: "refunded", l: "refunded" });
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'refund' AND order_id = ?").bind(orderId).first()).toEqual({ n: 1 });
+  });
+
+  it("books the refund when the webhook read the order just before the buyer's refund locked it", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    const paymentKey = await paymentKeyOf(db, orderId);
+    await mockToss.cancel(paymentKey, { reason: "관리자 취소", idempotencyKey: "admin" });
+    const realGet = mockToss.getPayment;
+    vi.spyOn(mockToss, "getPayment").mockImplementationOnce(async (key) => {
+      // The webhook has read the order as paid; now the buyer's refund locks it and its cancel answer is lost.
+      mockToss.failNext("cancel", new TossError(0, "NETWORK", "no response from Toss"));
+      expect((await refundOf(b, orderId)).status).toBe(409);
+      return realGet(key);
+    });
+    expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "CANCELED" } })).status).toBe(200);
+    expect(await db.prepare("SELECT o.status AS o, l.status AS l FROM orders o JOIN credit_lots l ON l.order_id = o.id").first()).toEqual({ o: "refunded", l: "refunded" });
+    expect(await db.prepare("SELECT kind, units FROM ledger WHERE kind = 'refund' AND order_id = ?").bind(orderId).all()).toMatchObject({ results: [{ kind: "refund", units: 10 }] });
+    expect((await me(b)).user).toMatchObject({ unused: [], opening: [] });
+  });
+
   it("records a partial cancellation for the operator and leaves the reading alone", async () => {
     const db = useTestDb();
     const b = await loggedIn();

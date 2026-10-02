@@ -391,11 +391,21 @@ export function refundingLot(db: D1Binding, orderId: string): Promise<Lot | null
   return db.prepare("SELECT * FROM credit_lots WHERE order_id = ? AND status = 'refunding'").bind(orderId).first<Lot>();
 }
 
-/** A cancelled lot's final state and its ledger row (the whole grant leaves as a refund). */
-export function refundedLotStatements(db: D1Binding, lot: Lot, now: number): D1Statement[] {
+/**
+ * The final state of an order's lot locked for its refund, and its ledger row (the whole grant leaves
+ * as a refund). Both read the lot as it is in D1, so applying a cancellation twice (the webhook and the
+ * buyer's own refund) books it once, and a lot locked after the caller read the order is still booked.
+ */
+export function refundedLotStatements(db: D1Binding, orderId: string, now: number): D1Statement[] {
   return [
-    db.prepare("UPDATE credit_lots SET status = 'refunded' WHERE id = ? AND status = 'refunding'").bind(lot.id),
-    ledgerRow(db, { userId: lot.user_id, currency: lot.currency, kind: "refund", units: lot.units_total, lotId: lot.id, orderId: lot.order_id, idem: `refund:${lot.id}`, now }),
+    db
+      .prepare(
+        `INSERT INTO ledger ${COLUMNS}
+         SELECT user_id, currency, 'refund', units_total, id, NULL, order_id, 'refund:' || id, ? FROM credit_lots
+         WHERE order_id = ? AND status = 'refunding'`,
+      )
+      .bind(now, orderId),
+    db.prepare("UPDATE credit_lots SET status = 'refunded' WHERE order_id = ? AND status = 'refunding'").bind(orderId),
   ];
 }
 

@@ -208,7 +208,9 @@ export function ledgerContract(make: Make) {
     expect(locked).toMatchObject({ id: `lot_${unused}`, status: "refunding", units_left: 0 });
     expect(await orderOf(db, unused)).toEqual({ status: "refunding", cancel_attempt: 1 });
     expect(await lockPaidLotForRefund(db, unused, NOW + 1)).toBeNull();
-    await db.batch(refundedLotStatements(db, locked!, NOW));
+    await db.batch(refundedLotStatements(db, unused, NOW));
+    // Applied a second time (the webhook and the buyer's refund): nothing more is booked, nothing breaks.
+    await db.batch(refundedLotStatements(db, unused, NOW + 1));
     expect(await lotById(db, `lot_${unused}`)).toMatchObject({ status: "refunded", units_left: 0 });
     expect(await kinds(db, `lot_${unused}`)).toEqual(["grant", "refund"]);
     await expectLotsMatchLedger(db);
