@@ -91,22 +91,35 @@ export function secretCheckValue(secret: string): Promise<string> {
 /** The key version new readings are sealed with. Each row keeps its own (readings.key_version). */
 export const READING_KEY_VERSION = 1;
 
-/** JSON sealed with AES-GCM: base64url of the 12-byte IV followed by the ciphertext and tag. */
-export async function sealJson(value: unknown, secret: string, version: number = READING_KEY_VERSION): Promise<string> {
+/**
+ * JSON sealed with AES-GCM: base64url of the 12-byte IV followed by the ciphertext and tag.
+ * `context` is the AES-GCM additional data: a saved reading's `${userId}:${readingId}`, so a payload
+ * copied or moved to another row never opens there. It is the only format: no account existed before
+ * it (key_version still names only the derived key, readings-v<N>).
+ */
+export async function sealJson(value: unknown, secret: string, context: string, version: number = READING_KEY_VERSION): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const sealed = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await subkey(secret, `readings-v${version}`), encoder.encode(JSON.stringify(value)));
+  const sealed = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv, additionalData: encoder.encode(context) },
+    await subkey(secret, `readings-v${version}`),
+    encoder.encode(JSON.stringify(value)),
+  );
   const out = new Uint8Array(12 + sealed.byteLength);
   out.set(iv);
   out.set(new Uint8Array(sealed), 12);
   return toBase64Url(out);
 }
 
-/** The sealed JSON, or null when it was altered, or sealed under another secret or key version. */
-export async function openJson<T = unknown>(sealed: string, secret: string, version: number = READING_KEY_VERSION): Promise<T | null> {
+/** The sealed JSON, or null when it was altered, or sealed under another secret, key version or context. */
+export async function openJson<T = unknown>(sealed: string, secret: string, context: string, version: number = READING_KEY_VERSION): Promise<T | null> {
   const bytes = fromBase64Url(sealed);
   if (!bytes || bytes.length < 29) return null; // 12-byte IV + 16-byte tag + at least 1 byte
   try {
-    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, await subkey(secret, `readings-v${version}`), bytes.slice(12));
+    const plain = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv: bytes.slice(0, 12), additionalData: encoder.encode(context) },
+      await subkey(secret, `readings-v${version}`),
+      bytes.slice(12),
+    );
     return JSON.parse(decoder.decode(plain)) as T;
   } catch {
     return null;

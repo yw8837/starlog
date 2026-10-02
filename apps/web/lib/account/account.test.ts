@@ -46,18 +46,22 @@ describe("account secret", () => {
     expect(await secretCheckValue(ACCOUNT)).not.toBe(key);
   });
 
-  it("seals JSON with AES-GCM: round trip, a fresh IV each time, tampering, the wrong key and the wrong version rejected", async () => {
+  it("seals JSON with AES-GCM: round trip, a fresh IV each time, tampering, the wrong key, version or row rejected", async () => {
     const value = { question: "이번 주 재물 흐름", birth: { year: 1990 } };
-    const sealed = await sealJson(value, ACCOUNT);
+    const row = "u_1:r_1";
+    const sealed = await sealJson(value, ACCOUNT, row);
     expect(sealed).not.toContain("재물");
-    expect(await openJson(sealed, ACCOUNT)).toEqual(value);
-    expect(await openJson(sealed, ACCOUNT, 1)).toEqual(value);
-    expect(await sealJson(value, ACCOUNT)).not.toBe(sealed);
+    expect(await openJson(sealed, ACCOUNT, row)).toEqual(value);
+    expect(await openJson(sealed, ACCOUNT, row, 1)).toEqual(value);
+    expect(await sealJson(value, ACCOUNT, row)).not.toBe(sealed);
     const flipped = `${sealed.slice(0, -2)}${sealed.at(-2) === "A" ? "B" : "A"}${sealed.at(-1)}`;
-    expect(await openJson(flipped, ACCOUNT)).toBeNull();
-    expect(await openJson(sealed, `${ACCOUNT}x`)).toBeNull();
-    expect(await openJson(sealed, ACCOUNT, 2)).toBeNull();
-    expect(await openJson("", ACCOUNT)).toBeNull();
+    expect(await openJson(flipped, ACCOUNT, row)).toBeNull();
+    expect(await openJson(sealed, `${ACCOUNT}x`, row)).toBeNull();
+    expect(await openJson(sealed, ACCOUNT, row, 2)).toBeNull();
+    expect(await openJson("", ACCOUNT, row)).toBeNull();
+    // Bound to its account and reading (AES-GCM additional data): another row's label does not open it.
+    expect(await openJson(sealed, ACCOUNT, "u_2:r_1")).toBeNull();
+    expect(await openJson(sealed, ACCOUNT, "u_1:r_2")).toBeNull();
   });
 });
 

@@ -6,7 +6,8 @@ import type { D1Binding, D1Statement } from "@/lib/db/d1";
  * Readings kept in the account (spec 5.7). A reading opened with 결제, 별조각 or the owner pass
  * while logged in is saved automatically (device-only readings are not moved in P4).
  * - The payload is the chapter exactly as the device stores it (lib/storage/chapters.ts), sealed
- *   with AES-GCM under the row's key_version. It holds the question, note or birth data.
+ *   with AES-GCM under the row's key_version and bound to the row (`${userId}:${id}` as additional
+ *   data: copied or moved to another row, it does not open). It holds the question, note or birth data.
  * - Two identical readings are two rows: each is a purchase. One unlock saves at most one row.
  * - Nothing is saved for a deleted account.
  */
@@ -31,6 +32,9 @@ export interface SavedReading {
 }
 
 /** 20 characters of [a-z0-9]: also a valid device chapter id. */
+/** What a reading's payload is bound to (the AES-GCM additional data). */
+const sealedFor = (userId: string, id: string) => `${userId}:${id}`;
+
 export function newReadingId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(20));
   return Array.from(bytes, (b) => (b % 36).toString(36)).join("");
@@ -60,7 +64,7 @@ export async function insertReadingStatement(
       input.productId,
       input.source,
       input.unlockId,
-      await sealJson(input.chapter, secret),
+      await sealJson(input.chapter, secret, sealedFor(input.userId, input.id)),
       READING_KEY_VERSION,
       input.now,
       input.now,
@@ -75,8 +79,8 @@ interface Row {
   key_version: number;
 }
 
-async function open(row: Row, secret: string): Promise<SavedReading | null> {
-  const chapter = await openJson<ServerChapter>(row.payload, secret, row.key_version);
+async function open(row: Row, secret: string, userId: string): Promise<SavedReading | null> {
+  const chapter = await openJson<ServerChapter>(row.payload, secret, sealedFor(userId, row.id), row.key_version);
   if (!chapter) {
     console.error(JSON.stringify({ evt: "readings.unreadable", id: row.id, keyVersion: row.key_version }));
     return null;
@@ -116,7 +120,7 @@ export async function listReadings(
   const page = results.slice(0, limit);
   const readings: SavedReading[] = [];
   for (const row of page) {
-    const saved = await open(row, secret);
+    const saved = await open(row, secret, userId);
     if (saved) readings.push(saved);
   }
   return { readings, next: results.length > limit ? cursorOf(page[page.length - 1]!) : null };
@@ -124,7 +128,7 @@ export async function listReadings(
 
 export async function readingForUser(db: D1Binding, secret: string, userId: string, id: string): Promise<SavedReading | null> {
   const row = await db.prepare("SELECT id, created_at, payload, key_version FROM readings WHERE id = ? AND user_id = ?").bind(id, userId).first<Row>();
-  return row ? open(row, secret) : null;
+  return row ? open(row, secret, userId) : null;
 }
 
 /** The row is there (the settlement's recover(): a save whose answer was lost). */
@@ -145,7 +149,7 @@ export async function updateReadingChapter(
   if (!saved) return false;
   const result = await db
     .prepare("UPDATE readings SET payload = ?, key_version = ?, updated_at = ? WHERE id = ? AND user_id = ?")
-    .bind(await sealJson(update(saved.chapter), secret), READING_KEY_VERSION, now, id, userId)
+    .bind(await sealJson(update(saved.chapter), secret, sealedFor(userId, id)), READING_KEY_VERSION, now, id, userId)
     .run();
   return result.meta?.changes === 1;
 }

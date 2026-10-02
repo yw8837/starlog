@@ -100,6 +100,21 @@ describe("saved readings", () => {
     expect(await deleteAllReadings(db, "u_1")).toBe(2);
   });
 
+  it("binds each payload to its account and reading: copied or moved to another row, it does not open", async () => {
+    const db = await setup();
+    const mine = await save(db, "u_1", chapter("내 질문"));
+    const theirs = await save(db, "u_2", chapter("남의 질문"));
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    await db.prepare("UPDATE readings SET payload = (SELECT payload FROM readings WHERE id = ?) WHERE id = ?").bind(mine, theirs).run();
+    expect(await readingForUser(db, SECRET, "u_2", theirs)).toBeNull();
+    await db.prepare("UPDATE readings SET user_id = 'u_2' WHERE id = ?").bind(mine).run();
+    expect(await readingForUser(db, SECRET, "u_2", mine)).toBeNull();
+    await db.prepare("UPDATE readings SET user_id = 'u_1' WHERE id = ?").bind(mine).run();
+    expect((await readingForUser(db, SECRET, "u_1", mine))?.chapter.question).toBe("내 질문");
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("readings.unreadable"));
+    error.mockRestore();
+  });
+
   it("skips a payload that does not open (altered, or labelled with another key version), and says so in the log", async () => {
     const db = await setup();
     const altered = await save(db, "u_1", chapter("질문"));
