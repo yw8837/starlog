@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SAJU_OBSERVATION_HEADING } from "@/lib/ai/prompts/saju";
 import { SITE, sajuTopicsMode } from "./config";
 import {
@@ -62,13 +62,28 @@ describe("the five topics", () => {
 });
 
 describe("who sees the topics (spec §13)", () => {
-  it("parses the flag: on in dev and tests, off in production, anything else falls back", () => {
-    expect(sajuTopicsMode(undefined, false)).toBe("on");
-    expect(sajuTopicsMode(undefined, true)).toBe("off");
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("parses the flag: on in dev and tests, off in production, anything else falls back", async () => {
+    expect(sajuTopicsMode("", false)).toBe("on");
+    expect(sajuTopicsMode("", true)).toBe("off");
     expect(sajuTopicsMode(" Owner ", true)).toBe("owner");
     expect(sajuTopicsMode("yes", true)).toBe("off");
     expect(sajuTopicsMode("off", false)).toBe("off");
-    expect(SITE.features.sajuTopics).toBe("on");
+    // With no value passed it reads NEXT_PUBLIC_SAJU_TOPICS, and SITE reads it once when config.ts loads: set the env here
+    // (and load config.ts again), so the answer does not depend on the shell that runs the tests.
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "");
+    expect(sajuTopicsMode()).toBe("on");
+    vi.resetModules();
+    expect((await import("./config")).SITE.features.sajuTopics).toBe("on");
+    vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "owner");
+    expect(sajuTopicsMode()).toBe("owner");
+    vi.resetModules();
+    expect((await import("./config")).SITE.features.sajuTopics).toBe("owner");
   });
 
   it("shows them on Korean screens when on, or in owner mode with the owner pass", () => {

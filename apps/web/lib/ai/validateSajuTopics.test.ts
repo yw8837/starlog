@@ -3,9 +3,10 @@ import golden from "@content/eval/saju-topics/golden.json";
 import { describe, expect, it } from "vitest";
 import type { SajuTopicId } from "@/lib/reading/types";
 import { toSajuInput, type SajuForm } from "@/lib/sajuForm";
+import { mockSajuTopicFollowUp, mockSajuTopicReading } from "./mockSajuTopics";
 import { buildTopicFactSet } from "./prompts/sajuTopics";
 import { isSoftViolation } from "./style";
-import { topicHardViolations, validateSajuTopicFollowUp } from "./validateSajuTopics";
+import { topicHardViolations, validateSajuTopicFollowUp, validateSajuTopicReading } from "./validateSajuTopics";
 
 const NOW = Date.parse(golden.evalNow);
 const chartOf = (id: string) => computeChart(toSajuInput(golden.charts.find((c) => c.id === id)!.birth as SajuForm));
@@ -119,5 +120,109 @@ describe("§8.2 hard checks", () => {
     };
     expect(validateSajuTopicFollowUp(answer, f, "3월에 이직해도 될까요?").filter((v) => !isSoftViolation(v))).toEqual([]);
     expect(validateSajuTopicFollowUp(answer, f, "이직해도 될까요?").join()).toMatch(/달·계절로 시기를 짚은 문장/);
+  });
+});
+
+// ---- Fix round 1 (Bundle A review): near-variants of the banned promises, verdicts and orders, and four false positives ----
+
+/** Near-variants that passed with 0 hard violations, their closest siblings, and guards that must stay caught. */
+const NEAR_CAUGHT: Array<[SajuTopicId, string, RegExp]> = [
+  ["reunion", "재회 가능성이 높아요.", /재회를 판정한 문장/],
+  ["reunion", "다시 인연이 이어질 가능성이 커요.", /재회를 판정한 문장/],
+  ["reunion", "다시 인연이 이어질 거예요.", /재회를 판정한 문장/],
+  ["reunion", "재회의 가능성이 있어요.", /재회를 판정한 문장/],
+  ["reunion", "그 사람을 다시 만날 가능성이 높아요.", /재회를 판정한 문장/],
+  ["reunion", "다시 이어질 수 있어요.", /재회를 판정한 문장/],
+  ["love", "머지않아 좋은 사람이 나타날 거예요.", /만남·이별을 예언한 문장/],
+  ["love", "올해 안에 인연을 만날 수 있어요.", /만남·이별을 예언한 문장/],
+  ["love", "좋은 사람이 곧 나타나요.", /만남·이별을 예언한 문장/],
+  ["love", "귀인을 만날 거예요.", /만남·이별을 예언한 문장/],
+  ["love", "새로운 인연을 만날 수도 있어요.", /만남·이별을 예언한 문장/],
+  ["career", "이번 시험에는 합격하실 거예요.", /합격·승진을 판정한 문장/],
+  ["career", "이번에는 승진하실 수 있어요.", /합격·승진을 판정한 문장/],
+  ["career", "이번 면접에는 붙으실 거예요.", /합격·승진을 판정한 문장/],
+  ["career", "이번 시험에는 붙어요.", /합격·승진을 판정한 문장/],
+  ["career", "지금은 이직을 하는 편이 좋아요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "퇴사를 추천해요.", /이직·퇴사를 정해 주는 문장/],
+  ["career", "이직을 권해요.", /이직·퇴사를 정해 주는 문장/],
+  // guards: what the four false-positive fixes must not let through ("편이에요" is no hedge for another person's mind)
+  ["career", "팀장은 성격이 급한 편이에요.", /다른 사람의 마음을 단정한 문장/],
+  ["reunion", "그 사람은 마음을 잘 표현하지 않는 편이에요.", /다른 사람의 마음을 단정한 문장/],
+  ["reunion", "그 사람은 아직 마음이 있어요.", /다른 사람의 마음을 단정한 문장/],
+  ["reunion", "그 사람 마음은 확실해요.", /다른 사람의 마음을 단정한 문장/],
+  ["reunion", "그 사람의 마음에는 아직 당신이 있어요.", /다른 사람의 마음을 단정한 문장/],
+  ["reunion", "그는 아직 마음이 있어요.", /다른 사람의 마음을 단정한 문장/],
+  ["career", "팀장님의 성격은 꼼꼼한 편이에요.", /다른 사람의 마음을 단정한 문장/],
+  ["love", "썸 상대는 아직 당신에게 마음이 확실해요.", /다른 사람의 마음을 단정한 문장/],
+  ["career", "10년 후에 달라져요.", /시기를 지정한 문장/],
+];
+
+/** The four false positives of the review, the same shapes in other words, and neighbours of the new catches. */
+const NEAR_PASSES: Array<[SajuTopicId, string]> = [
+  ["career", "일에 속도가 붙어요."],
+  ["career", "회사 사람과 부딪히는 장면에서 내 마음이 먼저 굳는 편이에요."],
+  ["career", "지금의 10년 후반에는"],
+  ["career", "지금의 10년 후반에는 일의 방식이 조금씩 달라져요."],
+  ["love", "상대의 명식은 읽지 않았어요."],
+  ["career", "회사 사람 앞에서는 제 마음이 먼저 굳는 편이에요."],
+  // the reader's own mind without "내"/"제": an object, a place, a cause or a verb stands between the person and "마음"
+  ["career", "상사 앞에서는 마음이 먼저 굳는 편이에요."],
+  ["career", "동료의 말에 마음이 흔들리는 편이에요."],
+  ["reunion", "헤어진 사람이 떠오를 때 마음이 머무는 자리가 있어요."],
+  ["reunion", "그 사람을 떠올릴 때 마음이 먼저 가라앉는 편이에요."],
+  ["reunion", "그 사람 생각이 날 때 마음이 머무는 곳이 있어요."],
+  ["reunion", "헤어진 사람이 생각날 때 마음이 먼저 움츠러드는 편이에요."],
+  ["love", "썸 상대의 연락을 기다릴 때 마음이 조급해지는 편이에요."],
+  ["reunion", "그 사람의 마음을 읽으려고 애쓰는 편이에요."],
+  ["reunion", "그 사람 마음을 신경 쓰는 편이에요."],
+  ["reunion", "그 마음은 소중한 감정이에요."],
+  ["love", "상대의 사주나 띠는 묻지 않고 내 명식만 읽었어요."],
+  ["love", "새로운 사람을 만날 수 있는 자리를 하나 더 만들어 보세요."],
+  ["love", "새로운 사람을 만날 때 먼저 거리를 재는 편이에요."],
+  ["love", "마음에 드는 사람이 나타나도 먼저 다가가기까지 시간이 걸리는 편이에요."],
+  ["reunion", "재회 가능성은 이 풀이로 말하기 어려워요."],
+  ["career", "이직을 추천하지도 말리지도 않아요."],
+  ["career", "이직을 권하지 않고 두 길을 견줄 기준만 줘요."],
+  ["career", "이직을 하는 편이 아니라 오래 머무는 편이에요."],
+];
+
+describe("§8.2 near-variants of the banned promises, verdicts and orders (fix round 1)", () => {
+  it.each(NEAR_CAUGHT)("%s catches %s", (topic, text, label) => {
+    expect(hardOf(topic, text).join("\n")).toMatch(label);
+  });
+
+  it.each(NEAR_PASSES)("%s passes %s", (topic, text) => {
+    expect(hardOf(topic, text)).toEqual([]);
+  });
+});
+
+describe("the same sentences inside a whole reading and a follow-up answer (fix round 1)", () => {
+  /** A clean mock reading with one sentence added to 4절 (the time checks read it too), judged by the whole reading validator. */
+  const readingHard = (topic: SajuTopicId, sentence = "") => {
+    const f = factsFor(topic);
+    const reading = mockSajuTopicReading(f);
+    if (sentence) reading.sections[3]!.body += ` ${sentence}`;
+    return validateSajuTopicReading(reading, f).filter((v) => !isSoftViolation(v));
+  };
+
+  it.each(["love", "reunion", "career"] as const)("the clean %s mock reading has no hard violation", (topic) => {
+    expect(readingHard(topic)).toEqual([]);
+  });
+
+  it.each(NEAR_CAUGHT)("%s catches %s", (topic, text, label) => {
+    expect(readingHard(topic, text).join("\n")).toMatch(label);
+  });
+
+  it.each(NEAR_PASSES)("%s passes %s", (topic, text) => {
+    expect(readingHard(topic, text)).toEqual([]);
+  });
+
+  it("holds for a follow-up answer too", () => {
+    const f = factsFor("career");
+    const question = "올해 무엇부터 해 보면 좋을까요?";
+    const answer = mockSajuTopicFollowUp(f, question);
+    expect(validateSajuTopicFollowUp(answer, f, question).filter((v) => !isSoftViolation(v))).toEqual([]);
+    const pushed = { ...answer, answer: `${answer.answer} 지금은 이직을 하는 편이 좋아요.` };
+    expect(validateSajuTopicFollowUp(pushed, f, question).join()).toMatch(/이직·퇴사를 정해 주는 문장/);
   });
 });
