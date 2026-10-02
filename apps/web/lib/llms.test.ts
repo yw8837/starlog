@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { GET as llmsFullRoute } from "@/app/llms-full.txt/route";
 import { GET as llmsRoute } from "@/app/llms.txt/route";
 import { GET as rssRoute } from "@/app/rss.xml/route";
-import { buildPayloads, findKey, MAX_URLS, parseSitemap } from "../../../scripts/indexnow.mjs";
+import { buildPayloads, findKey, groupBySite, MAX_URLS, parseSitemap, plan, SITES } from "../../../scripts/indexnow.mjs";
 import { MODEL_NAMES } from "./ai/style";
 import { SITE, won } from "./config";
-import { GUIDE_ARTICLES } from "./guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES } from "./guide";
+import { FEED_URL } from "./hosts";
 import { serviceFacts } from "./llms";
 
 const llms = await llmsRoute().text();
@@ -24,11 +25,15 @@ describe("llms.txt", () => {
     for (const line of lines.filter((l) => l.startsWith("- ["))) expect(line).toMatch(/^- \[[^\]]+\]\(https:\/\/[^)]+\): .+/);
   });
 
-  it("links every guide article and the entry pages on the production origin", () => {
-    for (const article of GUIDE_ARTICLES) expect(llms).toContain(`(${SITE.url}/guide/${article.slug})`);
+  it("links every guide article and tab on the root domain, and the entry pages on the app host", () => {
+    for (const article of GUIDE_ARTICLES) expect(llms).toContain(`(${SITE.guideUrl}/guide/${article.slug})`);
+    for (const category of GUIDE_CATEGORIES) expect(llms).toContain(`(${SITE.guideUrl}/guide/${category})`);
     for (const path of ["/tarot/new", "/saju/new", "/now", "/today", "/faq", "/how", "/about", "/pricing", "/llms-full.txt"]) {
       expect(llms).toContain(`(${SITE.url}${path})`);
     }
+    // No guide address is left on the app host (it redirects), and the app's pages are not on the root domain.
+    expect(llms).not.toContain(`${SITE.url}/guide`);
+    expect(llms).not.toContain(`${SITE.guideUrl}/tarot`);
   });
 
   it("states the facts from SITE: the free daily reading, the price, the follow-ups", () => {
@@ -43,6 +48,7 @@ describe("llms.txt", () => {
   it("llms-full.txt carries every article in full, its 요약 first, and the FAQ", () => {
     for (const article of GUIDE_ARTICLES) {
       expect(llmsFull).toContain(`### ${article.title}`);
+      expect(llmsFull).toContain(`주소: ${SITE.guideUrl}/guide/${article.slug}`);
       expect(llmsFull).toContain(`요약: ${article.summary}`);
       for (const section of article.sections) expect(llmsFull).toContain(section.body);
     }
@@ -66,9 +72,17 @@ describe("rss.xml", () => {
     expect(rss.headers.get("Content-Type")).toBe("application/rss+xml; charset=utf-8");
     expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
     expect(xml.match(/<item>/g)).toHaveLength(GUIDE_ARTICLES.length);
-    for (const article of GUIDE_ARTICLES) expect(xml).toContain(`<link>${SITE.url}/guide/${article.slug}</link>`);
+    for (const article of GUIDE_ARTICLES) expect(xml).toContain(`<link>${SITE.guideUrl}/guide/${article.slug}</link>`);
     expect(xml.match(/<pubDate>/g)).toHaveLength(GUIDE_ARTICLES.length);
     expect(xml).not.toMatch(/&(?!amp;|lt;|gt;|quot;|apos;)/);
+  });
+
+  it("keeps the whole feed on the root domain: its guids, its channel link and its own address", () => {
+    expect(xml).not.toContain(`${SITE.url}/guide`);
+    for (const article of GUIDE_ARTICLES) expect(xml).toContain(`<guid isPermaLink="true">${SITE.guideUrl}/guide/${article.slug}</guid>`);
+    expect(xml).toContain(`<link>${SITE.guideUrl}/guide/tarot</link>`);
+    expect(xml).toContain(`<atom:link href="${FEED_URL}" rel="self" type="application/rss+xml"/>`);
+    expect(FEED_URL).toBe(`${SITE.guideUrl}/rss.xml`);
   });
 });
 
@@ -94,5 +108,69 @@ describe("IndexNow", () => {
     expect(payloads[0]).toMatchObject({ host: new URL(SITE.url).host, key: "k".repeat(32), keyLocation: `${SITE.url}/${"k".repeat(32)}.txt` });
     expect(payloads[0]?.urlList).toHaveLength(MAX_URLS);
     expect(() => buildPayloads({ site: SITE.url, key: "k", urls: ["https://example.com/"] })).toThrow(/outside/);
+  });
+
+  it("knows both hosts: the app's and the guide's on the root domain, as SITE has them", () => {
+    expect(SITES).toEqual([SITE.url, SITE.guideUrl]);
+  });
+
+  it("groups URLs by the host they are on, the app first, so each goes out under its own host and key location", () => {
+    const urls = [`${SITE.guideUrl}/guide/the-fool`, `${SITE.url}/tarot/new`, `${SITE.guideUrl}/guide/tarot`, `${SITE.url}/`];
+    const groups = groupBySite(urls);
+    expect(groups).toEqual([
+      { site: SITE.url, urls: [`${SITE.url}/tarot/new`, `${SITE.url}/`] },
+      { site: SITE.guideUrl, urls: [`${SITE.guideUrl}/guide/the-fool`, `${SITE.guideUrl}/guide/tarot`] },
+    ]);
+    for (const { site, urls: group } of groups) {
+      const [payload] = buildPayloads({ site, key: "k".repeat(32), urls: group });
+      expect(payload).toMatchObject({ host: new URL(site).host, keyLocation: `${site}/${"k".repeat(32)}.txt`, urlList: group });
+    }
+    expect(groupBySite([`${SITE.guideUrl}/guide/tarot`])).toEqual([{ site: SITE.guideUrl, urls: [`${SITE.guideUrl}/guide/tarot`] }]);
+    expect(() => groupBySite(["https://example.com/", `${SITE.url}/`])).toThrow(/outside/);
+    expect(() => groupBySite([`${SITE.url}.evil.example/`])).toThrow(/outside/);
+  });
+
+  describe("plan", () => {
+    const sitemaps: Record<string, string> = {
+      [`${SITE.url}/sitemap.xml`]: `<urlset><url><loc>${SITE.url}/</loc></url><url><loc>${SITE.url}/tarot/new</loc></url></urlset>`,
+      [`${SITE.guideUrl}/sitemap.xml`]: `<urlset><url><loc>${SITE.guideUrl}/guide/tarot</loc></url><url><loc>${SITE.guideUrl}/guide/saju</loc></url></urlset>`,
+      "https://preview.example/sitemap.xml": "<urlset><url><loc>https://preview.example/a</loc></url></urlset>",
+    };
+    const fetched: string[] = [];
+    const fetchSitemap = async (url: string) => {
+      fetched.push(url);
+      const xml = sitemaps[url];
+      if (xml === undefined) throw new Error(`no sitemap at ${url}`);
+      return xml;
+    };
+    const run = (options: { urls?: string[]; sitemap?: string | null; sites?: string[] }) => {
+      fetched.length = 0;
+      return plan({ urls: [], sitemap: null, sites: SITES, ...options }, fetchSitemap);
+    };
+
+    it("reads the sitemap of both hosts by default and sends each host's URLs under that host", async () => {
+      expect(await run({})).toEqual([
+        { site: SITE.url, urls: [`${SITE.url}/`, `${SITE.url}/tarot/new`] },
+        { site: SITE.guideUrl, urls: [`${SITE.guideUrl}/guide/tarot`, `${SITE.guideUrl}/guide/saju`] },
+      ]);
+      expect(fetched).toEqual([`${SITE.url}/sitemap.xml`, `${SITE.guideUrl}/sitemap.xml`]);
+    });
+
+    it("sends only the URLs it is given, grouped by host, without fetching a sitemap", async () => {
+      expect(await run({ urls: [`${SITE.guideUrl}/guide/the-fool`, `${SITE.url}/faq`] })).toEqual([
+        { site: SITE.url, urls: [`${SITE.url}/faq`] },
+        { site: SITE.guideUrl, urls: [`${SITE.guideUrl}/guide/the-fool`] },
+      ]);
+      expect(fetched).toEqual([]);
+    });
+
+    it("narrows a run to one host (INDEXNOW_SITE) or to one sitemap (--sitemap)", async () => {
+      expect(await run({ sites: [SITE.guideUrl] })).toEqual([{ site: SITE.guideUrl, urls: [`${SITE.guideUrl}/guide/tarot`, `${SITE.guideUrl}/guide/saju`] }]);
+      expect(fetched).toEqual([`${SITE.guideUrl}/sitemap.xml`]);
+      expect(await run({ sitemap: "https://preview.example/sitemap.xml" })).toEqual([{ site: "https://preview.example", urls: ["https://preview.example/a"] }]);
+      expect(fetched).toEqual(["https://preview.example/sitemap.xml"]);
+      // Explicit URLs outside the allowed hosts are refused.
+      await expect(run({ urls: [`${SITE.url}/faq`], sites: [SITE.guideUrl] })).rejects.toThrow(/outside/);
+    });
   });
 });

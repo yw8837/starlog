@@ -23,7 +23,10 @@ function jsonLdOf(ui: ReactElement): Node[] {
 
 const byType = (nodes: Node[], type: string) => nodes.filter((node) => node["@type"] === type);
 
+/** The app host's URLs (the publisher, the site, images, rankings) and the guide's, on the root domain. */
 const isSiteUrl = (value: unknown) => typeof value === "string" && value.startsWith(`${SITE.url}/`);
+const isGuideUrl = (value: unknown) => typeof value === "string" && value.startsWith(`${SITE.guideUrl}/guide/`);
+const isOwnUrl = (value: unknown) => isSiteUrl(value) || isGuideUrl(value);
 const nonEmpty = (value: unknown) => typeof value === "string" && value.trim().length > 0;
 const isoDate = (value: unknown) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
@@ -62,19 +65,22 @@ function problems(node: Node): string[] {
         const who = node[role] as Node | undefined;
         need(who?.["@type"] === "Organization" && nonEmpty(who.name) && isSiteUrl(who.url), role);
       }
-      need(isSiteUrl((node.mainEntityOfPage as Node | undefined)?.["@id"]), "mainEntityOfPage");
+      // The article itself is a guide page: on the root domain.
+      need(isGuideUrl(node.url), "url");
+      need(isGuideUrl((node.mainEntityOfPage as Node | undefined)?.["@id"]), "mainEntityOfPage");
       break;
     }
     case "BreadcrumbList": {
       const items = list("itemListElement");
       need(items.length >= 2, "2+ items");
-      items.forEach((item, i) => need(item.position === i + 1 && nonEmpty(item.name) && isSiteUrl(item.item), `item ${i + 1}`));
+      items.forEach((item, i) => need(item.position === i + 1 && nonEmpty(item.name) && isOwnUrl(item.item), `item ${i + 1}`));
       break;
     }
     case "ItemList": {
       const items = list("itemListElement");
       need(items.length > 0 && node.numberOfItems === items.length, "items");
-      items.forEach((item, i) => need(item.position === i + 1 && nonEmpty(item.name) && isSiteUrl(item.url), `item ${i + 1}`));
+      need(isOwnUrl(node.url), "url");
+      items.forEach((item, i) => need(item.position === i + 1 && nonEmpty(item.name) && isOwnUrl(item.url), `item ${i + 1}`));
       break;
     }
     case "FAQPage": {
@@ -90,6 +96,7 @@ function problems(node: Node): string[] {
     case "HowTo": {
       const steps = list("step");
       need(nonEmpty(node.name), "name");
+      need(isGuideUrl(node.url), "url");
       need(steps.length >= 3, "3+ steps");
       steps.forEach((step, i) => need(step["@type"] === "HowToStep" && step.position === i + 1 && nonEmpty(step.text), `step ${i + 1}`));
       break;
@@ -127,7 +134,11 @@ describe("JSON-LD", () => {
     expect(byType(nodes, "BreadcrumbList")).toHaveLength(1);
     const [list] = byType(nodes, "ItemList");
     const urls = (list?.itemListElement as Node[]).map((item) => item.url);
-    expect(urls).toEqual(articlesIn(category).map((article) => `${SITE.url}/guide/${article.slug}`));
+    // The guide lives on the root domain: its tab, its articles and its trail say so.
+    expect(urls).toEqual(articlesIn(category).map((article) => `${SITE.guideUrl}/guide/${article.slug}`));
+    expect(list?.url).toBe(`${SITE.guideUrl}/guide/${category}`);
+    const crumbs = (byType(nodes, "BreadcrumbList")[0]?.itemListElement as Node[]).map((item) => item.item);
+    expect(crumbs).toEqual([`${SITE.url}/`, `${SITE.guideUrl}/guide/${category}`]);
   });
 
   it.each(GUIDE_ARTICLES.map((article) => [article.slug] as const))("/guide/%s: Article and breadcrumb, plus FAQPage and HowTo where the article has them", async (slug) => {
@@ -136,10 +147,14 @@ describe("JSON-LD", () => {
     const nodes = jsonLdOf(await renderArticle(slug));
     for (const node of nodes) expect(problems(node), slug).toEqual([]);
 
+    const address = `${SITE.guideUrl}/guide/${slug}`;
     const [articleNode] = byType(nodes, "Article");
     expect(articleNode).toMatchObject({ headline: article.title, datePublished: article.published, dateModified: article.updated, abstract: article.summary });
+    expect(articleNode).toMatchObject({ url: address, "@id": `${address}#article`, mainEntityOfPage: { "@type": "WebPage", "@id": address } });
+    // The publisher and the site stay the app's: 스타로그's home is the app host. The trail goes home, to the tab, to the article.
+    expect(articleNode).toMatchObject({ publisher: { url: `${SITE.url}/` }, isPartOf: { url: `${SITE.url}/` } });
     const crumbs = (byType(nodes, "BreadcrumbList")[0]?.itemListElement as Node[]).map((item) => item.item);
-    expect(crumbs).toEqual([`${SITE.url}/`, `${SITE.url}/guide/${article.category}`, `${SITE.url}/guide/${slug}`]);
+    expect(crumbs).toEqual([`${SITE.url}/`, `${SITE.guideUrl}/guide/${article.category}`, address]);
 
     const questions = guideQuestions(article);
     expect(byType(nodes, "FAQPage")).toHaveLength(questions.length >= 2 ? 1 : 0);
@@ -154,6 +169,7 @@ describe("JSON-LD", () => {
     for (const slug of ["now-card-how-to", "how-to-read-tarot"]) {
       const nodes = jsonLdOf(await renderArticle(slug));
       expect(byType(nodes, "HowTo"), slug).toHaveLength(1);
+      expect(byType(nodes, "HowTo")[0]?.url, slug).toBe(`${SITE.guideUrl}/guide/${slug}`);
       cleanup();
     }
   });

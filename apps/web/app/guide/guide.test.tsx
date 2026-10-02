@@ -2,14 +2,20 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
-import GuideArticlePage from "@/app/guide/[slug]/page";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import GuideArticlePage, { generateMetadata as articleMetadata } from "@/app/guide/[slug]/page";
 import GuideSajuPage, { metadata as sajuMetadata } from "@/app/guide/saju/page";
 import GuideTarotPage, { metadata as tarotMetadata } from "@/app/guide/tarot/page";
+import { SITE } from "@/lib/config";
 import { GUIDE_CATEGORIES, articlesIn, findArticle } from "@/lib/guide";
 import nextConfig from "@/next.config";
 
-afterEach(cleanup);
+// The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; these tests run on one origin unless a test says so.
+beforeEach(() => vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", ""));
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 const TABS = [
   { category: "tarot", Page: GuideTarotPage, metadata: tarotMetadata, title: "타로 가이드", hero: "타로 카드를 펼치기 전에 알아 두면 좋은 이야기", host: "별을 읽는 점성술사 고양이", line: "카드 읽는 법, 제가 차근차근 알려 줄게요" },
@@ -41,9 +47,11 @@ describe("guide tabs", () => {
       for (const [i, article] of articles.entries()) expect(items[i]?.textContent).toContain(article.title);
     });
 
-    it(`${tab.category}: its own title, description and canonical`, () => {
+    it(`${tab.category}: its own title, description and canonical on the root domain`, () => {
       expect(String(tab.metadata.title).startsWith(tab.title)).toBe(true);
-      expect(tab.metadata.alternates?.canonical).toBe(`/guide/${tab.category}`);
+      // The guide lives on the root domain: the canonical and og:url name it in full, whatever host serves the page.
+      expect(tab.metadata.alternates?.canonical).toBe(`${SITE.guideUrl}/guide/${tab.category}`);
+      expect(tab.metadata.openGraph).toMatchObject({ url: `${SITE.guideUrl}/guide/${tab.category}` });
       const description = String(tab.metadata.description);
       expect(description.length).toBeGreaterThan(20);
       expect(description.length).toBeLessThanOrEqual(120);
@@ -81,5 +89,15 @@ describe("guide article", () => {
     expect(related.length).toBeGreaterThanOrEqual(3);
     const nav = screen.getByRole("navigation", { name: "같이 읽어 볼 글" });
     expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(related.map((other) => `/guide/${other}`));
+  });
+});
+
+describe("guide article metadata", () => {
+  it("names the article's address on the root domain as its canonical and og:url", async () => {
+    for (const slug of ["the-hermit", "five-elements", "how-to-read-tarot"]) {
+      const meta = await articleMetadata({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">);
+      expect(meta.alternates?.canonical, slug).toBe(`${SITE.guideUrl}/guide/${slug}`);
+      expect(meta.openGraph, slug).toMatchObject({ type: "article", url: `${SITE.guideUrl}/guide/${slug}` });
+    }
   });
 });

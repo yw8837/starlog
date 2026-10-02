@@ -1,10 +1,12 @@
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, type GuideArticle } from "./guide";
-import { absoluteUrl } from "./jsonld";
+import { FEED_URL, absoluteUrl } from "./hosts";
 
 /**
  * /rss.xml: the guide articles as RSS 2.0, for feed readers and 네이버 서치어드바이저's RSS 제출 (it
- * picks up new and updated articles from it). Newest first; each item carries the 요약.
+ * picks up new and updated articles from it). Newest first; each item carries the 요약. The articles
+ * and the feed itself are on the root domain (lib/hosts.ts), where the route answers as well as on
+ * the app host.
  */
 
 const escapeXml = (text: string) =>
@@ -39,7 +41,7 @@ export function guideRss(articles: readonly GuideArticle[] = GUIDE_ARTICLES): st
     `<description>${escapeXml("타로 카드 뜻과 읽는 법, 사주 명식 읽는 법을 차근차근 정리한 스타로그의 가이드 글이에요.")}</description>`,
     "<language>ko</language>",
     ...(updated ? [`<lastBuildDate>${rfc822(updated)}</lastBuildDate>`] : []),
-    `<atom:link href="${absoluteUrl("/rss.xml")}" rel="self" type="application/rss+xml"/>`,
+    `<atom:link href="${FEED_URL}" rel="self" type="application/rss+xml"/>`,
     ...newest.map(itemXml),
     "</channel>",
     "</rss>",

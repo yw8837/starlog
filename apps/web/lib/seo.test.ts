@@ -1,20 +1,46 @@
 import { CONSTELLATIONS } from "@starlog/core";
 import { describe, expect, it } from "vitest";
-import { GET as robotsRoute } from "@/app/robots.txt/route";
-import sitemap from "@/app/sitemap";
+import { dynamic as robotsDynamic, GET as robotsRoute } from "@/app/robots.txt/route";
+import { dynamic as sitemapDynamic, GET as sitemapRoute } from "@/app/sitemap.xml/route";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES } from "./guide";
+import { FEED_URL, absoluteUrl } from "./hosts";
 import { LEGAL_EFFECTIVE_DATE } from "./legal";
 import { NAMED_CRAWLERS, daumWebmasterLine, robotsTxt } from "./robots";
-import { pageMetadata, siteVerification, sitemapEntries } from "./seo";
+import { pageMetadata, siteVerification, sitemapEntries, sitemapEntriesFor, sitemapXml } from "./seo";
 
-describe("sitemap", () => {
-  const entries = sitemap();
+/** The two real hosts, and a host that is neither (localhost, a preview): that one gets the app. */
+const APP = SITE.url;
+const GUIDE = SITE.guideUrl;
+const request = (origin: string, path: string) => new Request(`${origin}${path}`);
+
+interface Listed {
+  url: string;
+  lastModified?: string;
+  changeFrequency?: string;
+  priority?: number;
+}
+
+/** The <url> blocks of a sitemap, as the route wrote them. */
+function parseSitemap(xml: string): Listed[] {
+  return [...xml.matchAll(/<url>\n([\s\S]*?)<\/url>/g)].map(([, body = ""]) => {
+    const field = (name: string) => new RegExp(`<${name}>(.*)</${name}>`).exec(body)?.[1];
+    const priority = field("priority");
+    return { url: field("loc") ?? "", lastModified: field("lastmod"), changeFrequency: field("changefreq"), priority: priority === undefined ? undefined : Number(priority) };
+  });
+}
+
+const appResponse = await sitemapRoute(request(APP, "/sitemap.xml"));
+const appXml = await appResponse.text();
+const guideXml = await (await sitemapRoute(request(GUIDE, "/sitemap.xml"))).text();
+
+describe("sitemap on the app host", () => {
+  const entries = parseSitemap(appXml);
   const urls = entries.map((entry) => entry.url);
-  const entry = (path: string) => entries.find((e) => e.url === new URL(path, SITE.url).toString());
+  const entry = (path: string) => entries.find((e) => e.url === absoluteUrl(path));
 
-  it("lists the entry points, the free daily cards, both guide tabs, pricing and every policy page on the production origin", () => {
-    for (const path of ["/tarot/new", "/saju/new", "/now", "/today", "/guide/tarot", "/guide/saju", "/pricing", "/refund", "/terms", "/privacy"]) {
+  it("lists the entry points, the free daily cards, pricing and every policy page on the app host", () => {
+    for (const path of ["/tarot/new", "/saju/new", "/now", "/today", "/pricing", "/refund", "/terms", "/privacy"]) {
       expect(urls).toContain(`${SITE.url}${path}`);
     }
     for (const path of ["/about", "/how", "/help", "/faq"]) expect(urls).toContain(`${SITE.url}${path}`);
@@ -22,12 +48,10 @@ describe("sitemap", () => {
     expect(urls.every((url) => url.startsWith(`${SITE.url}/`))).toBe(true);
   });
 
-  it("includes every guide article with its updated date as lastmod, and each tab with its newest article's", () => {
-    for (const article of GUIDE_ARTICLES) {
-      expect(entry(`/guide/${article.slug}`)?.lastModified, article.slug).toBe(article.updated);
-    }
-    const newest = GUIDE_ARTICLES.map((article) => article.updated ?? "").sort().at(-1);
-    expect(entry("/guide/tarot")?.lastModified).toBe(newest);
+  it("lists no guide page: they live on the root domain, and /guide on this host redirects there", () => {
+    expect(urls.filter((url) => new URL(url).pathname.startsWith("/guide"))).toEqual([]);
+    expect(urls).not.toContain(`${SITE.url}/guide`);
+    expect(urls).not.toContain(`${GUIDE}/guide/tarot`);
   });
 
   it("dates the policies by their 시행일 and leaves lastmod off pages without a content date", () => {
@@ -41,20 +65,84 @@ describe("sitemap", () => {
     expect(CONSTELLATIONS).toHaveLength(12);
     const off = sitemapEntries({ features: { bonds: false } }).map((e) => e.path);
     expect(off.some((path) => path === "/lucky" || path.startsWith("/ranking"))).toBe(false);
+    const offApp = sitemapEntriesFor("app", { features: { bonds: false } }).map((e) => e.path);
+    expect(offApp.some((path) => path === "/lucky" || path.startsWith("/ranking"))).toBe(false);
   });
 
-  it("leaves out /guide, which permanently redirects to the first tab, and lists each page once", () => {
-    expect(urls).not.toContain(`${SITE.url}/guide`);
+  it("lists each page once and leaves out personal and in-progress pages", () => {
     expect(new Set(urls).size).toBe(urls.length);
-  });
-
-  it("leaves out personal and in-progress pages", () => {
     const personal = /^\/(chapter|story|me|invite|dev|api|b|bonds|login|owner)(\/|$)|^\/tarot\/(draw|result|new\/situation)|^\/saju\/chart/;
     expect(urls.filter((url) => personal.test(new URL(url).pathname))).toEqual([]);
   });
 });
 
-const response = robotsRoute();
+describe("sitemap on the root domain", () => {
+  const entries = parseSitemap(guideXml);
+  const urls = entries.map((entry) => entry.url);
+  const entry = (path: string) => entries.find((e) => e.url === absoluteUrl(path));
+
+  it("lists both guide tabs and every article on the root domain, and nothing else", () => {
+    expect(urls).toEqual(expect.arrayContaining([`${GUIDE}/guide/tarot`, `${GUIDE}/guide/saju`]));
+    for (const article of GUIDE_ARTICLES) expect(urls, article.slug).toContain(`${GUIDE}/guide/${article.slug}`);
+    expect(urls).toHaveLength(2 + GUIDE_ARTICLES.length);
+    expect(urls.every((url) => url.startsWith(`${GUIDE}/guide/`))).toBe(true);
+  });
+
+  it("includes every guide article with its updated date as lastmod, and each tab with its newest article's", () => {
+    for (const article of GUIDE_ARTICLES) {
+      expect(entry(`/guide/${article.slug}`)?.lastModified, article.slug).toBe(article.updated);
+    }
+    const newest = GUIDE_ARTICLES.map((article) => article.updated ?? "").sort().at(-1);
+    expect(entry("/guide/tarot")?.lastModified).toBe(newest);
+  });
+
+  it("leaves out /guide, which permanently redirects to the first tab, and the root, whose canonical is the first tab", () => {
+    expect(urls).not.toContain(`${GUIDE}/guide`);
+    expect(urls).not.toContain(`${GUIDE}/`);
+    expect(new Set(urls).size).toBe(urls.length);
+  });
+});
+
+describe("sitemap.xml route", () => {
+  it("answers the root domain with the guide's sitemap, and every other host with the app's", async () => {
+    expect(await (await sitemapRoute(request(GUIDE, "/sitemap.xml"))).text()).toBe(sitemapXml("guide"));
+    for (const origin of [APP, "http://localhost:3100", "http://localhost:8787", "http://127.0.0.1:3100", "https://starlog.example.workers.dev"]) {
+      expect(await (await sitemapRoute(request(origin, "/sitemap.xml"))).text(), origin).toBe(sitemapXml("app"));
+    }
+    expect(sitemapXml("app")).not.toBe(sitemapXml("guide"));
+  });
+
+  it("keeps the shape Next's own sitemap route wrote: XML declaration, urlset, one <url> per entry in loc, lastmod, changefreq, priority order", () => {
+    for (const host of ["app", "guide"] as const) {
+      const xml = sitemapXml(host);
+      expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n<url>\n<loc>')).toBe(true);
+      expect(xml.endsWith("</url>\n</urlset>\n")).toBe(true);
+      expect(xml.match(/<url>/g)).toHaveLength(sitemapEntriesFor(host).length);
+    }
+    const guideEntry = sitemapEntriesFor("guide")[0];
+    expect(sitemapXml("guide")).toContain(
+      `<url>\n<loc>${absoluteUrl(guideEntry?.path ?? "")}</loc>\n<lastmod>${guideEntry?.lastModified}</lastmod>\n<changefreq>${guideEntry?.changeFrequency}</changefreq>\n<priority>${guideEntry?.priority}</priority>\n</url>\n`,
+    );
+    expect(sitemapXml("app")).toContain("<url>\n<loc>https://starlog.yeolmaeapps.kr/</loc>\n<changefreq>daily</changefreq>\n<priority>1</priority>\n</url>\n");
+  });
+
+  it("splits the entries by host and together they are every indexable page", () => {
+    const app = sitemapEntriesFor("app").map((e) => e.path);
+    const guide = sitemapEntriesFor("guide").map((e) => e.path);
+    expect(guide.every((path) => path.startsWith("/guide/"))).toBe(true);
+    expect(app.some((path) => path.startsWith("/guide"))).toBe(false);
+    expect([...app, ...guide].sort()).toEqual(sitemapEntries().map((e) => e.path).sort());
+  });
+
+  it("depends on the request's host, so it is never prerendered, and says it can be revalidated", () => {
+    expect(sitemapDynamic).toBe("force-dynamic");
+    expect(appResponse.headers.get("Content-Type")).toBe("application/xml; charset=utf-8");
+    expect(appResponse.headers.get("Cache-Control")).toBe("public, max-age=0, must-revalidate");
+  });
+});
+
+const robotsOf = async (origin: string) => (await robotsRoute(request(origin, "/robots.txt"))).text();
+const response = await robotsRoute(request(APP, "/robots.txt"));
 const text = await response.text();
 
 describe("robots.txt", () => {
@@ -81,11 +169,24 @@ describe("robots.txt", () => {
     expect(values("Allow")).toEqual(["/", "/api/og/"]);
   });
 
-  it("does not block the public pages, the rankings included, and points at the sitemap", () => {
+  it("does not block the public pages, the rankings included", () => {
     const disallow = values("Disallow");
     const publicPaths = ["/", "/pricing", "/refund", "/terms", "/privacy", "/guide/tarot", "/guide/the-fool", "/now", "/today", "/ranking", "/ranking/aries", "/lucky", "/llms.txt", "/tarot/new", "/saju/new"];
     for (const path of publicPaths) expect(disallow.some((rule) => path.startsWith(rule)), path).toBe(false);
+  });
+
+  it("points at its own host's sitemap and llms.txt: the root domain's for the guide, the app's for every other host", async () => {
+    const pointers = async (origin: string) => (await robotsOf(origin)).split("\n").filter((line) => line.startsWith("Sitemap: ") || line.includes("/llms.txt"));
+    expect(await pointers(GUIDE)).toEqual([`# About the service for language models: ${GUIDE}/llms.txt`, `Sitemap: ${GUIDE}/sitemap.xml`]);
+    expect(await pointers(APP)).toEqual([`# About the service for language models: ${APP}/llms.txt`, `Sitemap: ${APP}/sitemap.xml`]);
     expect(values("Sitemap")).toEqual([`${SITE.url}/sitemap.xml`]);
+    for (const origin of ["http://localhost:3100", "http://localhost:8787", "https://starlog.example.workers.dev"]) expect(await pointers(origin), origin).toEqual(await pointers(APP));
+  });
+
+  it("gives both hosts the same rules, and depends on the request's host, so it is never prerendered", async () => {
+    const rules = async (origin: string) => (await robotsOf(origin)).split("\n").filter((line) => /^(User-agent|Allow|Disallow): /.test(line));
+    expect(await rules(GUIDE)).toEqual(await rules(APP));
+    expect(robotsDynamic).toBe("force-dynamic");
   });
 
   it("adds the Daum 웹마스터도구 line only when its code is set, whole line or code alone", () => {
@@ -120,5 +221,21 @@ describe("pageMetadata", () => {
   it("marks articles with their dates and publisher", () => {
     const meta = pageMetadata({ title: "제목", description: "설명", path: "/guide/the-fool", type: "article", publishedTime: "2026-10-01", modifiedTime: "2026-10-02" });
     expect(meta.openGraph).toMatchObject({ type: "article", publishedTime: "2026-10-01", modifiedTime: "2026-10-02", authors: [SITE.business.name] });
+  });
+
+  it("gives a guide page the root domain's address in full as its canonical and og:url, whatever host serves it", () => {
+    for (const path of ["/guide/tarot", "/guide/saju", "/guide/the-fool"]) {
+      const meta = pageMetadata({ title: "제목", description: "설명", path });
+      expect(meta.alternates?.canonical, path).toBe(`${GUIDE}${path}`);
+      expect(meta.openGraph, path).toMatchObject({ url: `${GUIDE}${path}` });
+    }
+    expect(pageMetadata({ title: "제목", description: "설명", path: "/guide/the-fool", type: "article" }).openGraph).toMatchObject({ type: "article", url: `${GUIDE}/guide/the-fool` });
+  });
+
+  it("points every page's feed link at the guide's feed on the root domain", () => {
+    expect(FEED_URL).toBe(`${GUIDE}/rss.xml`);
+    for (const path of ["/faq", "/guide/tarot"]) {
+      expect(pageMetadata({ title: "제목", description: "설명", path }).alternates?.types).toEqual({ "application/rss+xml": [{ url: FEED_URL, title: `${SITE.nameKo} 가이드` }] });
+    }
   });
 });

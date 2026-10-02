@@ -5,6 +5,8 @@ import { SITE } from "./config";
  * read every public page; personal pages (readings, stories, invites, the account and 별자리 인연
  * owner pages), dev screens and the API stay out, except the share images under /api/og/ that link
  * previews fetch. In-progress flow screens are crawlable but carry noindex (lib/seo.ts NOINDEX).
+ * Both hosts (the app and the guide's root domain) get the same rules; `site`, the origin of the host
+ * that served the file, only sets the Sitemap and llms.txt lines (app/robots.txt/route.ts).
  */
 
 /** Path prefixes no crawler may fetch. `/b` itself is a noindex page; `/b/<code>` are friend invites. */

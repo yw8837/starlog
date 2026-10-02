@@ -1,16 +1,17 @@
 import { CONSTELLATIONS, cardImage } from "@starlog/core";
 import { SITE } from "./config";
 import { GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, type GuideArticle, type GuideCategory } from "./guide";
+import { absoluteUrl } from "./hosts";
 
 /**
  * schema.org JSON-LD for search and answer engines (rendered as <script type="application/ld+json">,
- * see components/seo/JsonLd.tsx). Every URL is absolute on the production origin, and every text is
- * the same text the page shows. lib/jsonld.test.tsx parses each page's scripts and checks the shapes.
+ * see components/seo/JsonLd.tsx). Every URL is absolute on the host that serves the page: guide pages
+ * (/guide/…) on the root domain, everything else, the publisher and the site included, on the app host
+ * (lib/hosts.ts absoluteUrl). Every text is the same text the page shows. lib/jsonld.test.tsx parses
+ * each page's scripts and checks the shapes.
  */
 
 const CONTEXT = "https://schema.org";
-
-export const absoluteUrl = (path: string): string => new URL(path, SITE.url).toString();
 
 export const ORGANIZATION_ID = absoluteUrl("/#organization");
 export const WEBSITE_ID = absoluteUrl("/#website");

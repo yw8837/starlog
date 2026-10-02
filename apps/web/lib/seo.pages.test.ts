@@ -33,13 +33,15 @@ import { metadata as termsMeta } from "@/app/terms/page";
 import { metadata as todayMeta } from "@/app/today/page";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES } from "./guide";
-import { HOME_TITLE, SITEMAP_PATHS } from "./seo";
+import { isGuidePath } from "./hosts";
+import { HOME_TITLE, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
 
 /**
  * The SEO audit: every indexable page has a unique title (60 characters or less with the site
  * suffix), a description, a canonical equal to its address and its own Open Graph block with the
- * shared image; every personal or in-progress page is noindex; and the sitemap lists exactly the
- * indexable pages.
+ * shared image; every personal or in-progress page is noindex; and the sitemaps list exactly the
+ * indexable pages, each on its own host. A page's address is its path (resolved against the app
+ * host), except the guide's: those pages live on the root domain, so theirs is the full URL there.
  */
 
 const params = <T extends Record<string, string>>(value: T) => ({ params: Promise.resolve(value) }) as never;
@@ -98,10 +100,11 @@ describe("indexable pages", () => {
     // Guide articles keep the guide's 80-character teaser; the other pages aim for 80-120.
     expect(description.length, description).toBeGreaterThanOrEqual(isArticle ? 20 : 60);
     expect(description.length, description).toBeLessThanOrEqual(isArticle ? 80 : 130);
-    expect(meta.alternates?.canonical).toBe(path);
+    const address = isGuidePath(path) ? `${SITE.guideUrl}${path}` : path;
+    expect(meta.alternates?.canonical).toBe(address);
     expect(meta.robots).toBeUndefined();
     const og = meta.openGraph as { url?: string; images?: Array<{ url: string; width: number; height: number }>; locale?: string; type?: string };
-    expect(og.url).toBe(path);
+    expect(og.url).toBe(address);
     expect(og.locale).toBe("ko_KR");
     expect(og.type).toBe(isArticle ? "article" : "website");
     expect(og.images?.[0]).toMatchObject({ url: "/opengraph-image", width: 1200, height: 630 });
@@ -114,8 +117,16 @@ describe("indexable pages", () => {
     expect(new Set(descriptions).size).toBe(descriptions.length);
   });
 
-  it("is exactly the set the sitemap lists", () => {
+  it("is exactly the set the sitemaps list", () => {
     expect([...SITEMAP_PATHS].sort()).toEqual(INDEXABLE.map(([path]) => path).sort());
+  });
+
+  it("is listed by the sitemap of the host that serves it: guide pages on the root domain, the rest on the app host", () => {
+    const listed = { guide: sitemapEntriesFor("guide").map((entry) => entry.path), app: sitemapEntriesFor("app").map((entry) => entry.path) };
+    for (const [path] of INDEXABLE) {
+      expect(listed[isGuidePath(path) ? "guide" : "app"], path).toContain(path);
+      expect(listed[isGuidePath(path) ? "app" : "guide"], path).not.toContain(path);
+    }
   });
 });
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CONSTELLATIONS } from "@starlog/core";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath } from "./guide";
+import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
 import { LEGAL_EFFECTIVE_DATE } from "./legal";
 import { OG_ALT } from "./og";
@@ -24,8 +25,8 @@ export const OG_SITE_NAME = `${SITE.name} · ${SITE.nameKo}`;
 /** The shared Open Graph image (app/opengraph-image.tsx). A page's openGraph replaces the layout's, so each page repeats it. */
 export const OG_IMAGE = { url: "/opengraph-image", width: 1200, height: 630, alt: OG_ALT } as const;
 
-/** <link rel="alternate" type="application/rss+xml">: the guide articles' feed (app/rss.xml/route.ts). */
-export const FEED_ALTERNATES = { "application/rss+xml": [{ url: "/rss.xml", title: `${SITE.nameKo} 가이드` }] };
+/** <link rel="alternate" type="application/rss+xml">: the guide articles' feed (app/rss.xml/route.ts), on the root domain with the articles. */
+export const FEED_ALTERNATES = { "application/rss+xml": [{ url: FEED_URL, title: `${SITE.nameKo} 가이드` }] };
 
 /** The home's title and the default for pages without one: brand first, then what the site is for. */
 export const HOME_TITLE = `${SITE.nameKo}(${SITE.name}) · 내 질문에 맞춘 타로와 사주 풀이`;
@@ -38,7 +39,7 @@ interface PageMetadataInput {
   /** Leave out to keep the layout's default title (the home). */
   title?: Metadata["title"];
   description: string;
-  /** Canonical path, also og:url. */
+  /** Canonical path, also og:url. A guide path (/guide/…) becomes a full URL on the root domain. */
   path: string;
   type?: "website" | "article";
   /** YYYY-MM-DD, for article pages. */
@@ -49,15 +50,18 @@ interface PageMetadataInput {
 /**
  * Title, description, canonical and Open Graph for an indexable page. og:title and og:description
  * follow the page's title and description (Next fills them in), Twitter follows Open Graph, and the
- * layout sets the large-image Twitter card.
+ * layout sets the large-image Twitter card. Paths resolve against metadataBase (the app host), except
+ * the guide's: those pages live on the root domain, so their canonical and og:url name it in full,
+ * whichever host serves them.
  */
 export function pageMetadata({ title, description, path, type = "website", publishedTime, modifiedTime }: PageMetadataInput): Metadata {
-  const shared = { url: path, siteName: OG_SITE_NAME, locale: "ko_KR", images: [{ ...OG_IMAGE }] };
+  const url = isGuidePath(path) ? absoluteUrl(path) : path;
+  const shared = { url, siteName: OG_SITE_NAME, locale: "ko_KR", images: [{ ...OG_IMAGE }] };
   return {
     ...(title === undefined ? {} : { title }),
     description,
     // A page's alternates replace the layout's, so the feed link rides along with the canonical.
-    alternates: { canonical: path, types: FEED_ALTERNATES },
+    alternates: { canonical: url, types: FEED_ALTERNATES },
     openGraph:
       type === "article"
         ? { ...shared, type: "article", ...(publishedTime ? { publishedTime } : {}), ...(modifiedTime ? { modifiedTime } : {}), authors: [SITE.business.name] }
@@ -101,10 +105,11 @@ const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
   dates.filter((date): date is string => Boolean(date)).sort().at(-1);
 
 /**
- * Public, indexable pages: the entry points, the free daily cards, the guide tabs and every article,
- * the service pages (about, how, help, FAQ), pricing, the policies, and with 별자리 인연 the weekly
- * lucky numbers and the sign rankings. `/guide` itself is a permanent redirect to the first tab
- * (next.config.ts), so it is not listed. Personal and in-progress screens never are (NOINDEX).
+ * Public, indexable pages of both hosts: the entry points, the free daily cards, the guide tabs and
+ * every article (on the root domain), the service pages (about, how, help, FAQ), pricing, the
+ * policies, and with 별자리 인연 the weekly lucky numbers and the sign rankings. `/guide` itself is a
+ * permanent redirect to the first tab (next.config.ts), so it is not listed. Personal and
+ * in-progress screens never are (NOINDEX). sitemapEntriesFor splits them by host.
  */
 export function sitemapEntries(site: { features: { bonds: boolean } } = SITE): SitemapEntry[] {
   return [
@@ -138,4 +143,29 @@ export function sitemapEntries(site: { features: { bonds: boolean } } = SITE): S
   ];
 }
 
+/** Every indexable path across both hosts' sitemaps. */
 export const SITEMAP_PATHS: readonly string[] = sitemapEntries().map((entry) => entry.path);
+
+/**
+ * What one host's sitemap lists: the guide URLs on the root domain, every other page on the app host
+ * (the app host's /guide URLs redirect to the root domain, so they are not listed there).
+ */
+export function sitemapEntriesFor(host: SiteHost, site: { features: { bonds: boolean } } = SITE): SitemapEntry[] {
+  return sitemapEntries(site).filter((entry) => isGuidePath(entry.path) === (host === "guide"));
+}
+
+/**
+ * app/sitemap.xml/route.ts: one host's sitemap, as the sitemaps.org XML Next's own sitemap route
+ * wrote (a `sitemap.ts` cannot see the request's host, so the route builds it).
+ */
+export function sitemapXml(host: SiteHost, site: { features: { bonds: boolean } } = SITE): string {
+  const urls = sitemapEntriesFor(host, site).flatMap(({ path, lastModified, changeFrequency, priority }) => [
+    "<url>",
+    `<loc>${absoluteUrl(path)}</loc>`,
+    ...(lastModified ? [`<lastmod>${lastModified}</lastmod>`] : []),
+    ...(changeFrequency ? [`<changefreq>${changeFrequency}</changefreq>`] : []),
+    ...(priority === undefined ? [] : [`<priority>${priority}</priority>`]),
+    "</url>",
+  ]);
+  return ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', ...urls, "</urlset>", ""].join("\n");
+}

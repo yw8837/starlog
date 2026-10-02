@@ -7,12 +7,12 @@ import AboutPage, { metadata as aboutMeta } from "@/app/about/page";
 import FaqPage, { metadata as faqMeta } from "@/app/faq/page";
 import HelpPage, { metadata as helpMeta } from "@/app/help/page";
 import HowPage, { metadata as howMeta } from "@/app/how/page";
-import sitemap from "@/app/sitemap";
 import { AI_TELL_THRESHOLD, aiTells } from "@/lib/ai/style";
 import { SITE, won } from "@/lib/config";
 import { faqGroups } from "@/lib/faq";
 import { helpGroups } from "@/lib/helpGuide";
 import { INFO_PAGES, type InfoPageId } from "@/lib/infoPages";
+import { sitemapXml } from "@/lib/seo";
 
 const PAGES: Record<InfoPageId, { Page: ComponentType; metadata: Metadata }> = {
   about: { Page: AboutPage, metadata: aboutMeta },
@@ -97,9 +97,9 @@ describe("service pages", () => {
     }
   });
 
-  it("lists the four pages in the sitemap", () => {
-    const urls = sitemap().map((entry) => entry.url);
-    for (const info of Object.values(INFO_PAGES)) expect(urls).toContain(`${SITE.url}${info.path}`);
+  it("lists the four pages in the app host's sitemap", () => {
+    const xml = sitemapXml("app");
+    for (const info of Object.values(INFO_PAGES)) expect(xml).toContain(`<loc>${SITE.url}${info.path}</loc>`);
   });
 });
 

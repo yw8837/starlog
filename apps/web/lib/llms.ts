@@ -2,8 +2,9 @@ import { SITE, won } from "./config";
 import { faqGroups } from "./faq";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, type GuideArticle } from "./guide";
 import { times } from "./helpGuide";
+import { absoluteUrl } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
-import { SITE_SUMMARY, absoluteUrl } from "./jsonld";
+import { SITE_SUMMARY } from "./jsonld";
 import { withParticle } from "./korean";
 
 /**
