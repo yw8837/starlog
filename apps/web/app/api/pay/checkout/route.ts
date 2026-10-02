@@ -3,6 +3,8 @@ import { errorResponse, json } from "@/lib/api/http";
 import { productById, sellable } from "@/lib/pay/catalog";
 import { payProvider, paymentsMode, salesOpen, tossClientKey } from "@/lib/pay/mode";
 import { tossClient } from "@/lib/pay/toss";
+import { premiumOpen } from "@/lib/premium/flags";
+import { isPremiumId } from "@/lib/premium/products";
 
 /**
  * GET ?product= → what the checkout page needs before any order exists: the product, the server's
@@ -19,6 +21,8 @@ export async function GET(request: Request): Promise<Response> {
   if (!tossClient()) return errorResponse("PAY_UNAVAILABLE");
   const product = productById(new URL(request.url).searchParams.get("product") ?? "");
   if (!product || !sellable(product, ctx.now)) return errorResponse("NOT_AVAILABLE");
+  // P5: like the order itself (orders/route.ts), a premium checkout also needs STARLOG_PREMIUM.
+  if (isPremiumId(product.id) && !premiumOpen(product.id, ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
   const mock = payProvider() === "mock";
   return json({
     productId: product.id,

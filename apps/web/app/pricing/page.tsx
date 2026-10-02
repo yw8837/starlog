@@ -89,7 +89,7 @@ export default function PricingPage() {
             <section key={product.id} className={s.card} aria-labelledby={`premium-${product.id}`}>
               <div>
                 <h3 id={`premium-${product.id}`} className={s.cardTitle}>
-                  {product.name} <span className={s.badge}>{product.open ? "판매 중" : "준비 중"}</span>
+                  {product.name} <span className={s.badge}>준비 중</span>
                 </h3>
                 <p className={s.cardSub}>{product.sub}</p>
               </div>

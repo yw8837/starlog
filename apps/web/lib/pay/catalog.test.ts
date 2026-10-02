@@ -11,20 +11,19 @@ describe("catalog", () => {
     expect(sellable(standardProduct("tarot"), NOW)).toBe(true);
   });
 
-  it("lists every premium reading from SITE at its price, none sellable before its generator exists", () => {
-    expect(SITE.price.premium.length).toBeGreaterThan(0);
+  it("sells every premium reading from SITE at its price within its window, one opening per purchase", () => {
     for (const premium of SITE.price.premium) {
-      const product = productById(premium.id);
-      expect(product).toMatchObject({ name: premium.name, krw: premium.krw, units: null, deliverable: false });
-      expect(sellable(product!, Date.parse("2027-06-01T00:00:00+09:00"))).toBe(false);
+      expect(productById(premium.id)).toMatchObject({ name: premium.name, krw: premium.krw, units: null, deliverable: true });
     }
+    expect(sellable(productById("match")!, Date.parse("2026-10-20T00:00:00+09:00"))).toBe(true);
+    expect(sellable(productById("newyear-2027")!, Date.parse("2027-12-01T00:00:00+09:00"))).toBe(false);
     expect([productById("tarot-deep")?.krw, productById("match")?.krw, productById("newyear-2027")?.krw]).toEqual([7900, 7900, 7900]);
   });
 
   it("opens 2027 신년운세 at 2026-11-15 00:00 KST", () => {
     expect(NEWYEAR_OPENS_AT).toBe(Date.parse("2026-11-15T00:00:00+09:00"));
     expect(productById("newyear-2027")?.opensAt).toBe(NEWYEAR_OPENS_AT);
-    const opened = { ...productById("newyear-2027")!, deliverable: true };
+    const opened = productById("newyear-2027")!;
     expect(sellable(opened, NEWYEAR_OPENS_AT - 1)).toBe(false);
     expect(sellable(opened, NEWYEAR_OPENS_AT)).toBe(true);
   });

@@ -1,5 +1,5 @@
 import type { AccountState } from "@/lib/account/client";
-import type { Product, StandardProductId } from "./catalog";
+import type { Product, ProductId } from "./catalog";
 
 /**
  * What the unlock sheet offers this device for a standard reading (spec section 9). There is one
@@ -36,6 +36,6 @@ export function unlockOffer(account: AccountState | null | undefined, product: P
   return { mode: "opening", login: Boolean(account?.login) };
 }
 
-export function checkoutHref(productId: StandardProductId, returnTo: string): string {
+export function checkoutHref(productId: ProductId, returnTo: string): string {
   return `/pay/checkout?${new URLSearchParams({ product: productId, returnTo })}`;
 }

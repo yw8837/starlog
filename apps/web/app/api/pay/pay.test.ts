@@ -63,7 +63,7 @@ describe("checkout and orders", () => {
     expect(await db.prepare("SELECT amount_krw, status, withdrawal_ack_at, cancel_attempt FROM orders WHERE id = ?").bind(body.orderId).first()).toEqual({ amount_krw: 2900, status: "created", withdrawal_ack_at: T0, cancel_attempt: 1 });
   });
 
-  it("refuses premium readings before P5, unknown products, guests, closed sales and other sites", async () => {
+  it("refuses premium readings while STARLOG_PREMIUM is off, unknown products, guests, closed sales and other sites", async () => {
     useTestDb();
     const b = await loggedIn();
     expect((await order(b, { productId: "match", ack: true })).status).toBe(409);
@@ -72,6 +72,18 @@ describe("checkout and orders", () => {
     expect((await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true } })).status).toBe(403);
     vi.stubEnv("STARLOG_PAYMENTS", "paused");
     expect((await order(b, { productId: "tarot", ack: true })).status).toBe(409);
+  });
+
+  it("sells a premium reading only while STARLOG_PREMIUM opens it", async () => {
+    useTestDb();
+    const b = await loggedIn();
+    expect((await order(b, { productId: "match", ack: true })).status).toBe(409);
+    expect((await b.send(checkout, "/api/pay/checkout?product=match")).status).toBe(409);
+    vi.stubEnv("STARLOG_PREMIUM", "on");
+    expect(await (await b.send(checkout, "/api/pay/checkout?product=match")).json()).toMatchObject({ productId: "match", amount: 7900 });
+    const res = await order(b, { productId: "match", returnTo: "/premium/match/preview", ack: true });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ amount: 7900, orderName: "스타로그 우리 사이 궁합" });
   });
 });
 

@@ -7,10 +7,7 @@ import type { DeepTarotReading, MatchReading, NewYearReading } from "@/lib/ai/pr
 import type { NewYearFacts } from "@/lib/ai/prompts/newyear";
 import type { TarotContext } from "@/lib/ai/prompts/tarot";
 import type { GenerationHooks, ReadingProvider, Usage } from "@/lib/ai/provider";
-import type { ProductId, StandardProductId } from "@/lib/pay/catalog";
-
-/** The three premium products (the same union lib/premium/products.ts names PremiumId, P5 Task 2). */
-type PremiumId = Exclude<ProductId, StandardProductId>;
+import type { PremiumId } from "./products";
 
 /** What a premium generation reads: the cards, the two charts and the cards, or the 2027 facts. */
 export type PremiumContext =

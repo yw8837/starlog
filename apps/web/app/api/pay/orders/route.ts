@@ -7,6 +7,8 @@ import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { RECONCILE_AFTER_MS, createOrder, orderById, orderHistory, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { reconcileRefunding } from "@/lib/pay/refunds";
 import { tossClient } from "@/lib/pay/toss";
+import { premiumOpen } from "@/lib/premium/flags";
+import { isPremiumId } from "@/lib/premium/products";
 
 /** `ack: true` = the buyer ticked the 청약철회 notice on the checkout page (its time is kept on the order). */
 const OrderBody = z.object({ productId: z.string().max(40), returnTo: z.string().max(200).optional(), ack: z.literal(true) });
@@ -23,6 +25,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!body.success) return errorResponse("BAD_REQUEST");
   const product = productById(body.data.productId);
   if (!product || !sellable(product, ctx.now)) return errorResponse("NOT_AVAILABLE");
+  // P5: premium orders also need STARLOG_PREMIUM (lib/premium/flags.ts).
+  if (isPremiumId(product.id) && !premiumOpen(product.id, ctx.owner, ctx.now)) return errorResponse("NOT_AVAILABLE");
   const order = await createOrder(ctx.db, { userId: session.user.id, product, returnTo: safeReturnTo(body.data.returnTo), now: ctx.now });
   const origin = new URL(request.url).origin;
   console.info(JSON.stringify({ evt: "pay.order_created", orderId: order.id, productId: product.id }));

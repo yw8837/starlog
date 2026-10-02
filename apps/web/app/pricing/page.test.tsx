@@ -15,8 +15,11 @@ vi.mock("@/lib/config", async (importOriginal) => {
         unitsPerReading: 5,
         signupGiftFree: 10,
         premium: [
-          { id: "deep", name: "심층 타로", sub: "카드 10장", krw: 6100, open: false, opens: "" },
-          { id: "year", name: "2027 신년운세", sub: "한 해", krw: 12100, open: false, opens: "11월 중순 오픈 예정" },
+          { id: "tarot-deep", slug: "deep-tarot", name: "심층 타로", sub: "카드 10장", krw: 6100, opens: "", opensAt: "", closesAt: "" },
+          {
+            id: "newyear-2027", slug: "newyear-2027", name: "2027 신년운세", sub: "한 해", krw: 12100,
+            opens: "11월 중순 오픈 예정", opensAt: "2026-11-15T00:00:00+09:00", closesAt: "2027-12-01T00:00:00+09:00",
+          },
         ],
       },
       reading: { followUps: 5, approxChars: { tarot: 1234, saju: 5678 } },

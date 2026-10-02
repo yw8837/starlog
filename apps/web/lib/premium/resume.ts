@@ -1,10 +1,7 @@
 import "server-only";
 import { openJson, sealJson } from "@/lib/account/secrets";
-import type { ProductId, StandardProductId } from "@/lib/pay/catalog";
 import { canonicalJson, keyedHash } from "@/lib/security/sign";
-
-/** The three premium products (the same union lib/premium/products.ts names PremiumId, P5 Task 2). */
-type PremiumId = Exclude<ProductId, StandardProductId>;
+import type { PremiumId } from "./products";
 
 /**
  * The resume token (P5 spec §6.1): the parts validated so far, sealed by the server (AES-GCM), bound

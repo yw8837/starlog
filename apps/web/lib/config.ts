@@ -18,13 +18,17 @@ export const SITE = {
     unitsPerReading: 10,
     signupGiftFree: 10,
     /**
-     * Premium readings, listed on /pricing as 준비 중 until each opens (`open: true`). The 10-card
-     * spread is never named after its tradition in the UI.
+     * Premium readings (P5). Sales open with STARLOG_PREMIUM (lib/premium/flags.ts) and, for a dated
+     * product, inside [opensAt, closesAt) (KST ISO, "" when undated). The 10-card spread is never
+     * named after its tradition in the UI.
      */
     premium: [
-      { id: "tarot-deep", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, open: false, opens: "" },
-      { id: "match", name: "우리 사이 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 7900, open: false, opens: "" },
-      { id: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 7900, open: false, opens: "11월 중순 오픈 예정" },
+      { id: "tarot-deep", slug: "deep-tarot", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, opens: "", opensAt: "", closesAt: "" },
+      { id: "match", slug: "match", name: "우리 사이 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 7900, opens: "", opensAt: "", closesAt: "" },
+      {
+        id: "newyear-2027", slug: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 7900,
+        opens: "11월 중순 오픈 예정", opensAt: "2026-11-15T00:00:00+09:00", closesAt: "2027-12-01T00:00:00+09:00",
+      },
     ],
   },
   reading: {
