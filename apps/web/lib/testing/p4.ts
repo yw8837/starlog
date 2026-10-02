@@ -1,0 +1,81 @@
+import { GET as kakaoCallback } from "@/app/api/auth/kakao/callback/route";
+import { GET as kakaoStart } from "@/app/api/auth/kakao/start/route";
+import { GET as meGet } from "@/app/api/me/route";
+import { setTestDb } from "@/lib/db";
+import { migratedTestD1 } from "@/lib/db/testing/migrate";
+import type { TestD1 } from "@/lib/db/testing/sqliteD1";
+
+/** Helpers for P4 route tests: a cookie-keeping browser, a test D1 for accountDb(), mock Kakao login. Tests only. */
+
+export type Handler = (request: Request) => Promise<Response>;
+
+export interface SendInit {
+  method?: string;
+  body?: unknown;
+  /** send Origin: http://localhost (our own pages) */
+  origin?: boolean;
+  accept?: string;
+  signal?: AbortSignal;
+}
+
+export interface Browser {
+  jar: Map<string, string>;
+  send(handler: Handler, url: string, init?: SendInit): Promise<Response>;
+}
+
+/** Keeps cookies between calls (Max-Age=0 deletes one), sends its IP and, when asked, our Origin. */
+export function browser(ip = "203.0.113.9"): Browser {
+  const jar = new Map<string, string>();
+  return {
+    jar,
+    async send(handler, url, init = {}) {
+      const headers: Record<string, string> = { "cf-connecting-ip": ip };
+      if (jar.size) headers.cookie = [...jar].map(([name, value]) => `${name}=${value}`).join("; ");
+      if (init.body !== undefined) headers["content-type"] = "application/json";
+      if (init.origin) headers.origin = "http://localhost";
+      if (init.accept) headers.accept = init.accept;
+      const response = await handler(
+        new Request(new URL(url, "http://localhost"), {
+          method: init.method ?? (init.body === undefined ? "GET" : "POST"),
+          headers,
+          body: init.body === undefined ? undefined : JSON.stringify(init.body),
+          signal: init.signal,
+        }),
+      );
+      for (const line of response.headers.getSetCookie()) {
+        const [pair = ""] = line.split(";");
+        const index = pair.indexOf("=");
+        const name = pair.slice(0, index);
+        if (/Max-Age=0(;|$)/.test(line)) jar.delete(name);
+        else jar.set(name, pair.slice(index + 1));
+      }
+      return response;
+    },
+  };
+}
+
+/** A fresh migrated test D1 that every accountDb() call returns until setTestDb(null). */
+export function useTestDb(): TestD1 {
+  const db = migratedTestD1();
+  setTestDb(db);
+  return db;
+}
+
+/** Logs in through the mock Kakao flow (STARLOG_KAKAO=mock); returns the callback's 303. */
+export async function loginAs(b: Browser, name = "alice", returnTo = "/tarot/result"): Promise<Response> {
+  const start = await b.send(kakaoStart, `/api/auth/kakao/start?age=1&returnTo=${encodeURIComponent(returnTo)}&mockUser=${name}`);
+  const location = start.headers.get("location");
+  if (!location?.includes("/api/auth/kakao/callback")) throw new Error(`login did not reach the callback: ${start.status} ${location}`);
+  return b.send(kakaoCallback, location);
+}
+
+export interface MeBody {
+  payments: boolean;
+  login: boolean;
+  owner: boolean;
+  user: null | { nickname: string; stardust: number; stardustExpiresAt: string | null; unused: Array<{ orderId: string; productId: string }> };
+}
+
+export async function me(b: Browser): Promise<MeBody> {
+  return (await (await b.send(meGet, "/api/me")).json()) as MeBody;
+}
