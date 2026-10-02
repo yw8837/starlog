@@ -99,7 +99,7 @@ export function matchesBeyondUser(pattern: RegExp, text: string, userText: strin
 }
 
 /** Who "the other person" can be, a partner or spouse included (marriage readings). */
-const OTHER = "그 사람|상대방?|그분|걔|그 친구|그녀|그는|그가|배우자|남자\\s?친구|여자\\s?친구|남친|여친|예비\\s?(?:신랑|신부)";
+export const OTHER = "그 사람|상대방?|그분|걔|그 친구|그녀|그는|그가|배우자|남자\\s?친구|여자\\s?친구|남친|여친|예비\\s?(?:신랑|신부)";
 const OTHER_MIND = new RegExp(`(${OTHER})[^.?!]{0,15}(마음|속마음|감정|생각|진심)[^.?!]{0,20}(이에요|예요|확실|분명|거예요|있어요)`);
 const OTHER_FEELS = new RegExp(`(${OTHER.replace("그는|그가", "그")})(은|는|이|가)\\s[^.?!]{0,30}(좋아해|사랑해|싫어해|그리워해|원해|후회해|관심 있어)요`);
 
@@ -149,7 +149,7 @@ export function modelNameViolations(draft: unknown, out: string[]): void {
 // ---- voice, repetition, action variety (judge findings 2026-09-30) ----
 
 /** Spans in quotes are the user's words or a suggested message; they keep their own voice. */
-const QUOTED = /'[^'\n]*'|"[^"\n]*"|“[^”]*”|‘[^’]*’/g;
+export const QUOTED = /'[^'\n]*'|"[^"\n]*"|“[^”]*”|‘[^’]*’/g;
 /** 해라체 endings ("~한다", "~이다"): the reading voice is 해요체. */
 const HAERACHE = /(한다|는다|했다|였다|이다|았다|었다|겠다|된다|인다|린다|진다|간다|온다|본다|낸다|준다|있다|없다|같다)$/;
 /** Unmistakable 반말 endings (a lone "해" is the sun, so single words are not judged). */
@@ -545,7 +545,7 @@ function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], use
   allowedFactViolations(text, facts.allowed, out, userText, { marriage: marriageContext(facts) });
 }
 
-const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;
+export const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;
 
 /** Love statuses (lib/api/inputs.ts LOVE_STATUS labels) for which the reading covers 결혼. */
 const MARRIAGE_STATUSES = new Set(["연애 중", "결혼 준비 중", "기혼"]);
