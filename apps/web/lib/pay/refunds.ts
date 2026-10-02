@@ -1,0 +1,170 @@
+import "server-only";
+import type { D1Binding } from "@/lib/db/d1";
+import { lockPaidLotForRefund, refundedLotStatements, refundingLot, revertRefund, revokeLotStatement, type Lot } from "./ledger";
+import { markPaid, orderById, type OrderRow } from "./orders";
+import { isPendingTossError, type TossClient, type TossError, type TossPayment } from "./tossTypes";
+
+/**
+ * Refunds and Toss reconciliation (spec 5.5, 5.6). The order and its lot leave use together before
+ * the cancel call (M1), so nobody can open a reading while its payment is being cancelled. An
+ * unknown answer is settled by looking the payment up, never by guessing or by the clock (M2).
+ */
+
+export type RefundOutcome = { ok: true } | { ok: false; code: "NOT_REFUNDABLE" | "PAY_FAILED" | "PAY_PENDING"; message?: string };
+
+/** How long a `refunding` order waits before Toss is asked: far past the 30 s client timeout and Toss's own processing. */
+export const REFUND_RECONCILE_AFTER_MS = 10 * 60_000;
+/** A deleted account's payment is cancelled at most this many times automatically; then the runbook takes over. */
+export const ORPHAN_MAX_ATTEMPTS = 5;
+
+/** Toss replays an Idempotency-Key's first answer for 15 days: each attempt has its own key. */
+export const cancelKey = (order: Pick<OrderRow, "id" | "cancel_attempt">) => `cancel-${order.id}-${order.cancel_attempt}`;
+
+/**
+ * Records a full cancellation Toss confirmed: order refunded, payment updated, the lot refunded when
+ * it was locked for it, or revoked when its reading was open or opening (minor 1). One batch.
+ */
+export async function applyCancel(db: D1Binding, order: OrderRow, lot: Lot | null, payment: TossPayment, now: number, options: { revoke?: boolean } = {}): Promise<void> {
+  await db.batch([
+    ...(options.revoke ? [revokeLotStatement(db, order.id)] : []),
+    db.prepare("UPDATE orders SET status = 'refunded', updated_at = ? WHERE id = ? AND status IN ('paid', 'refunding')").bind(now, order.id),
+    db
+      .prepare("UPDATE payments SET status = ?, canceled_amount = ?, canceled_at = ?, updated_at = ? WHERE order_id = ?")
+      .bind(payment.status, payment.totalAmount - payment.balanceAmount, new Date(now).toISOString(), now, order.id),
+    ...(lot ? refundedLotStatements(db, lot, now) : []),
+  ]);
+  console.info(JSON.stringify({ evt: "pay.refunded", orderId: order.id }));
+}
+
+async function nextAttempt(db: D1Binding, orderId: string, now: number): Promise<void> {
+  await db.prepare("UPDATE orders SET cancel_attempt = cancel_attempt + 1, updated_at = ? WHERE id = ? AND status = 'refunding'").bind(now, orderId).run();
+}
+
+/**
+ * Sends the cancel for a `refunding` order and settles what Toss answers (M2).
+ * - CANCELED → applied.
+ * - 409 processing, 5xx or no answer → stays `refunding` (PAY_PENDING); reconcileRefunding decides.
+ * - Any other error → the payment is looked up first. CANCELED → applied. DONE → the cancel was
+ *   refused: the reading comes back with a new attempt (an orphan just moves to its next attempt).
+ *   Anything else → pending.
+ */
+async function sendCancel(db: D1Binding, toss: TossClient, order: OrderRow, lot: Lot | null, reason: string, now: number): Promise<RefundOutcome> {
+  let payment: TossPayment;
+  try {
+    payment = await toss.cancel(order.payment_key!, { reason, idempotencyKey: cancelKey(order) });
+  } catch (error) {
+    if (isPendingTossError(error)) {
+      console.warn(JSON.stringify({ evt: "pay.refund_unknown", orderId: order.id }));
+      return { ok: false, code: "PAY_PENDING" };
+    }
+    const refusal = error as TossError;
+    const found = await toss.getPayment(order.payment_key!).catch(() => null);
+    if (found?.status === "CANCELED") {
+      payment = found;
+    } else if (found?.status === "DONE") {
+      if (lot) await revertRefund(db, order.id, now);
+      else await nextAttempt(db, order.id, now);
+      console.info(JSON.stringify({ evt: "pay.refund_refused", orderId: order.id, code: refusal.code }));
+      return { ok: false, code: "PAY_FAILED", message: refusal.message || "환불하지 못했어요. 문의해 주세요." };
+    } else {
+      return { ok: false, code: "PAY_PENDING" };
+    }
+  }
+  if (payment.status !== "CANCELED") {
+    console.warn(JSON.stringify({ evt: "pay.refund_unexpected", orderId: order.id, status: payment.status }));
+    return { ok: false, code: "PAY_PENDING" };
+  }
+  await applyCancel(db, order, lot, payment, now);
+  return { ok: true };
+}
+
+/** Cancels the payment of a paid reading that was never opened (the user's 환불, account deletion). */
+export async function refundUnusedOrder(db: D1Binding, toss: TossClient, input: { order: OrderRow; reason: string; now: number }): Promise<RefundOutcome> {
+  const { order, reason, now } = input;
+  if (order.status !== "paid" || !order.payment_key) return { ok: false, code: "NOT_REFUNDABLE" };
+  const lot = await lockPaidLotForRefund(db, order.id, now);
+  if (!lot) return { ok: false, code: "NOT_REFUNDABLE" };
+  return sendCancel(db, toss, (await orderById(db, order.id)) ?? order, lot, reason, now);
+}
+
+const ORPHAN_REASON = "탈퇴한 계정에 도착한 결제 자동 취소";
+
+/** A payment that went through for a deleted account (Task 7 left it `refunding`, with no lot): cancel it. */
+export async function refundOrphan(db: D1Binding, toss: TossClient, order: OrderRow, now: number): Promise<RefundOutcome> {
+  if (order.status !== "refunding" || order.fail_code !== "ACCOUNT_DELETED" || !order.payment_key) return { ok: false, code: "NOT_REFUNDABLE" };
+  return sendCancel(db, toss, order, null, ORPHAN_REASON, now);
+}
+
+/**
+ * A `refunding` order whose cancel answer was unknown, looked up REFUND_RECONCILE_AFTER_MS later.
+ * - CANCELED at Toss → refunded.
+ * - Still DONE → a refund: the reading comes back (revertRefund, next attempt). An orphan: the
+ *   next attempt is sent, up to ORPHAN_MAX_ATTEMPTS.
+ * - PARTIAL_CANCELED → logged for the operator. The look-up failing → unchanged.
+ */
+export async function reconcileRefunding(db: D1Binding, toss: TossClient, order: OrderRow, now: number): Promise<OrderRow> {
+  if (order.status !== "refunding" || !order.payment_key || now - order.updated_at < REFUND_RECONCILE_AFTER_MS) return order;
+  const payment = await toss.getPayment(order.payment_key).catch(() => null);
+  if (!payment) return order;
+  const lot = await refundingLot(db, order.id);
+  if (payment.status === "CANCELED") {
+    await applyCancel(db, order, lot, payment, now);
+  } else if (payment.status === "DONE" && lot) {
+    await revertRefund(db, order.id, now);
+    console.info(JSON.stringify({ evt: "pay.refund_reverted", orderId: order.id }));
+  } else if (payment.status === "DONE" && order.fail_code === "ACCOUNT_DELETED") {
+    if (order.cancel_attempt >= ORPHAN_MAX_ATTEMPTS) {
+      console.error(JSON.stringify({ evt: "pay.orphan_refund_stuck", orderId: order.id }));
+    } else {
+      await nextAttempt(db, order.id, now);
+      const next = await orderById(db, order.id);
+      if (next) await refundOrphan(db, toss, next, now);
+    }
+  } else if (payment.status === "PARTIAL_CANCELED") {
+    console.warn(JSON.stringify({ evt: "pay.partial_cancel", orderId: order.id }));
+  }
+  return (await orderById(db, order.id)) ?? order;
+}
+
+/** Brings an order in line with a payment Toss reported (webhook): the one place Toss's word is applied. */
+export async function syncOrderWithToss(db: D1Binding, toss: TossClient, order: OrderRow, payment: TossPayment, now: number): Promise<void> {
+  if (payment.orderId !== order.id) return;
+  if (payment.status === "DONE") {
+    if (order.status === "created" || order.status === "confirming" || order.status === "failed") {
+      // A deleted account's payment is left `refunding`; the Cron Trigger cancels it (the webhook answers within 10 s).
+      if (payment.totalAmount === order.amount_krw) await markPaid(db, order, payment, toss.mode, now);
+      else console.error(JSON.stringify({ evt: "pay.webhook_amount_mismatch", orderId: order.id }));
+    }
+    return;
+  }
+  if (payment.status === "CANCELED") {
+    if (order.status === "paid") {
+      const locked = await lockPaidLotForRefund(db, order.id, now);
+      if (locked) {
+        await applyCancel(db, order, locked, payment, now);
+      } else {
+        // Cancelled in the dashboard while the reading was open or opening: it leaves use for good.
+        await applyCancel(db, order, null, payment, now, { revoke: true });
+        console.warn(JSON.stringify({ evt: "pay.canceled_after_open", orderId: order.id }));
+      }
+    } else if (order.status === "refunding") {
+      await applyCancel(db, order, await refundingLot(db, order.id), payment, now);
+    }
+    return;
+  }
+  if (payment.status === "PARTIAL_CANCELED") {
+    // Only the operator cancels part of a payment (the Toss dashboard). Record it; the operator decides about the reading (runbook).
+    await db
+      .prepare("UPDATE payments SET status = ?, canceled_amount = ?, updated_at = ? WHERE order_id = ?")
+      .bind(payment.status, payment.totalAmount - payment.balanceAmount, now, order.id)
+      .run();
+    console.warn(JSON.stringify({ evt: "pay.partial_cancel", orderId: order.id }));
+    return;
+  }
+  if (payment.status === "ABORTED" || payment.status === "EXPIRED") {
+    await db
+      .prepare("UPDATE orders SET status = 'failed', fail_code = ?, updated_at = ? WHERE id = ? AND status IN ('created', 'confirming')")
+      .bind(payment.status, now, order.id)
+      .run();
+  }
+}

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { openAccountRoute } from "@/lib/account/request";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import { confirmOrder, orderById } from "@/lib/pay/orders";
+import { refundOrphan } from "@/lib/pay/refunds";
 import { tossClient } from "@/lib/pay/toss";
 
 const ConfirmBody = z.object({
@@ -28,6 +29,11 @@ export async function POST(request: Request): Promise<Response> {
   const order = await orderById(ctx.db, body.data.orderId);
   if (!order) return errorResponse("BAD_REQUEST");
   const outcome = await confirmOrder(ctx.db, toss, { order, paymentKey: body.data.paymentKey, amount: body.data.amount, now: ctx.now });
+  if (!outcome.ok && outcome.orphaned) {
+    // Paid for an account deleted meanwhile: never granted, cancelled now (the Cron Trigger retries a failure).
+    const current = await orderById(ctx.db, order.id);
+    if (current) await refundOrphan(ctx.db, toss, current, ctx.now);
+  }
   if (!outcome.ok) return errorResponse(outcome.code, outcome.message ? { message: outcome.message } : {});
   return json({
     status: "paid",

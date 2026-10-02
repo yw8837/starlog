@@ -4,7 +4,8 @@ import { safeReturnTo } from "@/lib/account/returnTo";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import { productById, sellable } from "@/lib/pay/catalog";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
-import { createOrder, orderById, orderHistory, reconcileConfirming } from "@/lib/pay/orders";
+import { RECONCILE_AFTER_MS, createOrder, orderById, orderHistory, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
+import { reconcileRefunding } from "@/lib/pay/refunds";
 import { tossClient } from "@/lib/pay/toss";
 
 /** `ack: true` = the buyer ticked the 청약철회 notice on the checkout page (its time is kept on the order). */
@@ -43,9 +44,20 @@ export async function GET(request: Request): Promise<Response> {
     let order = await orderById(ctx.db, id);
     if (!order) return errorResponse("BAD_REQUEST");
     if (toss) order = await reconcileConfirming(ctx.db, toss, order, ctx.now);
+    if (toss) order = await reconcileRefunding(ctx.db, toss, order, ctx.now);
     return json({ orderId: order.id, productId: order.product_id, status: order.status, returnTo: order.return_to, signedIn: ctx.session?.user.id === order.user_id });
   }
   const session = requireSession(ctx);
   if (session instanceof Response) return session;
+  if (toss) {
+    const { results } = await ctx.db
+      .prepare("SELECT * FROM orders WHERE user_id = ? AND status IN ('confirming', 'refunding') AND updated_at < ?")
+      .bind(session.user.id, ctx.now - RECONCILE_AFTER_MS)
+      .all<OrderRow>();
+    for (const stale of results) {
+      await reconcileConfirming(ctx.db, toss, stale, ctx.now);
+      await reconcileRefunding(ctx.db, toss, stale, ctx.now);
+    }
+  }
   return json({ orders: await orderHistory(ctx.db, session.user.id) });
 }

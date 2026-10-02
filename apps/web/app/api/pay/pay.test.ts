@@ -159,7 +159,7 @@ describe("confirm", () => {
     const res = await confirmAs(browser("192.0.2.78"), orderId, "mock_orphan");
     expect(res.status).toBe(402);
     expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: expect.stringContaining("탈퇴") });
-    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunding", fail_code: "ACCOUNT_DELETED" });
+    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunded", fail_code: "ACCOUNT_DELETED" });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots WHERE currency = 'paid'").first()).toEqual({ n: 0 });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 1 });
   });
