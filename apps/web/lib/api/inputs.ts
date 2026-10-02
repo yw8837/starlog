@@ -8,11 +8,12 @@ import { BIRTH_PLACES } from "@/lib/sajuForm";
 const WHO = z.enum(["me", "us", "work", "group"]);
 const WHEN = z.enum(["today", "week", "month", "year"]);
 
-export const DRAW_TEMPLATES = ["relationship-contact", "relationship", "work", "choice", "self-flow", "group"] as const;
+export const DRAW_TEMPLATES = ["relationship-contact", "relationship", "work", "choice", "self-flow", "group", "deep-tarot", "match"] as const;
 
 export const DrawBody = z.object({
   templateId: z.enum(DRAW_TEMPLATES),
-  picks: z.array(z.number().int().min(0).max(77)).min(1).max(3),
+  // The template fixes the exact count (pickCards throws → 400); 10 is the largest spread.
+  picks: z.array(z.number().int().min(0).max(77)).min(1).max(10),
 });
 
 /** Free text the user typed under a chip (question builder C4): trimmed, at most 30 characters. */

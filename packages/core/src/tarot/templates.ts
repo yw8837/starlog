@@ -7,7 +7,9 @@ export type TemplateId =
   | "choice"
   | "self-flow"
   | "group"
-  | "daily";
+  | "daily"
+  | "deep-tarot"
+  | "match";
 
 export interface SpreadTemplate {
   id: TemplateId;
@@ -52,7 +54,20 @@ export const TEMPLATES: Record<TemplateId, SpreadTemplate> = {
     positions: ["오늘의 한 장"],
     positionsJa: ["今日の一枚"],
   },
+  "deep-tarot": {
+    id: "deep-tarot",
+    positions: ["지금의 나", "가로막는 것", "바탕", "지나온 것", "바라는 것", "다가올 것", "나의 태도", "주변", "바람과 걱정", "결과의 방향"],
+    positionsJa: ["今の私", "立ちはだかるもの", "土台", "過ぎてきたこと", "望むこと", "近づくもの", "私の姿勢", "周り", "願いと不安", "結果の方向"],
+  },
+  match: {
+    id: "match",
+    positions: ["나의 마음", "그 사람 쪽 흐름", "두 사람 사이", "엇갈리는 지점", "함께 가꿀 방향"],
+    positionsJa: ["私の気持ち", "あの人の側の流れ", "二人のあいだ", "すれ違うところ", "一緒に育てる方向"],
+  },
 };
+
+/** Spreads sold as premium readings (P5): drawn like the others, never opened by the standard routes. */
+export const PREMIUM_TEMPLATES = ["deep-tarot", "match"] as const satisfies readonly TemplateId[];
 
 export interface ConditionDef {
   id: string;

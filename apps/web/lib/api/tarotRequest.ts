@@ -1,4 +1,5 @@
 import "server-only";
+import { PREMIUM_TEMPLATES } from "@starlog/core";
 import { historyUserTexts, withoutCrisisItems } from "@/lib/ai/history";
 import { CUSTOM_TEMPLATE, buildTarotContext, cleanUserText, resolveTopic, type TarotContext } from "@/lib/ai/prompts/tarot";
 import { openDraw, type OpenedDraw } from "@/lib/security/drawToken";
@@ -16,7 +17,8 @@ export async function tarotContextFrom(request: Request, gate: Gate): Promise<{ 
   const body = TarotBody.safeParse(await readJson(request, 8_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
   const draw = await openDraw(body.data.drawToken, gate.secret, gate.now);
-  if (!draw || draw.templateId === "daily") return errorResponse("BAD_TOKEN");
+  // The daily card and the premium spreads have their own routes.
+  if (!draw || draw.templateId === "daily" || (PREMIUM_TEMPLATES as readonly string[]).includes(draw.templateId)) return errorResponse("BAD_TOKEN");
   const { topicText: rawTopic, ...parsed } = body.data.input;
   const topicText = cleanUserText(rawTopic ?? "");
   const custom = parsed.topicId === CUSTOM_TOPIC_ID;
