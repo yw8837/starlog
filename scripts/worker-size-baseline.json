@@ -1,0 +1,9 @@
+{
+  "plan": "paid",
+  "limitKiB": 10240,
+  "budgetKiB": 614,
+  "gzipKiB": 5130,
+  "rawKiB": 24505,
+  "measuredAt": "2026-10-02",
+  "source": "wrangler summary of the last production deploy before P6 (Total Upload: 24505 KiB / gzip: 5130 KiB), reported by the controller; Workers Paid, 10 MB gzip limit"
+}

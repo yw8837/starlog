@@ -8,6 +8,7 @@
     "dev": "pnpm --filter @starlog/web dev",
     "build": "pnpm --filter @starlog/web build && node scripts/check-client-bundle.mjs",
     "check:bundle": "node scripts/check-client-bundle.mjs",
+    "check:worker": "node scripts/check-worker-size.mjs",
     "cf:build": "pnpm --filter @starlog/web cf:build && node scripts/check-client-bundle.mjs",
     "deploy": "pnpm cf:build && pnpm --filter @starlog/web cf:deploy",
     "test": "vitest run",
