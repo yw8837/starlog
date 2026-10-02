@@ -1,3 +1,20 @@
+/**
+ * 주제별 사주 (saju-topics spec §13, owner cut §0): `off` hides the row "다른 운도 볼 수 있어요" and the
+ * server refuses topic requests; `owner` shows the row only on the owner pass's device and the server
+ * serves only the owner pass; `on` is everyone. Korean screens only.
+ */
+export type SajuTopicsMode = "off" | "owner" | "on";
+
+/**
+ * NEXT_PUBLIC_SAJU_TOPICS: inlined into the screens at build time; the server reads the same value on
+ * every request. Empty or unknown: on in dev and tests, off in production (like 별자리 인연).
+ */
+export function sajuTopicsMode(raw: string | undefined = process.env.NEXT_PUBLIC_SAJU_TOPICS, production = process.env.NODE_ENV === "production"): SajuTopicsMode {
+  const value = raw?.trim().toLowerCase();
+  if (value === "off" || value === "owner" || value === "on") return value;
+  return production ? "off" : "on";
+}
+
 export const SITE = {
   name: "Starlog",
   nameKo: "스타로그",
@@ -53,6 +70,8 @@ export const SITE = {
      * build turns it on with NEXT_PUBLIC_FEATURE_BONDS=1 at build time, after the D1 migration is applied.
      */
     bonds: process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_FEATURE_BONDS === "1",
+    /** 주제별 사주 (NEXT_PUBLIC_SAJU_TOPICS): this build's mode; screens and the server call sajuTopicsMode(). */
+    sajuTopics: sajuTopicsMode(),
   },
   /**
    * 달빛 top-up packs. Provisional: every pack must make one reading (unitsPerReading 달빛)

@@ -137,6 +137,16 @@ export type DrawTemplateId = Exclude<TemplateId, "daily">;
 export type LoveStatus = "single" | "dating" | "engaged" | "married" | "fresh-start" | "unsure";
 export type WorkStatus = "student" | "employee" | "self-employed" | "between-jobs" | "unsure";
 
+/** 주제별 사주 (saju-topics spec §6.1): 전체 흐름 is today's reading; the other four read one area. */
+export type SajuTopic = "overall" | "love" | "reunion" | "money" | "career";
+export type SajuTopicId = Exclude<SajuTopic, "overall">;
+/** Situation chip ids; each belongs to one topic (lib/sajuTopics.ts SITUATIONS). */
+export type SajuSituationId =
+  | "long-single" | "some" | "cooling" | "marriage"
+  | "missing" | "no-contact" | "torn" | "fresh-breakup"
+  | "leaking" | "worry" | "side-income"
+  | "job-hunt" | "move" | "people" | "exam";
+
 /** What the saju form adds beside the birth data (all optional). The saju side takes no free text. */
 export interface SajuContext {
   loveStatus?: LoveStatus;
