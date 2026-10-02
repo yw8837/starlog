@@ -18,6 +18,7 @@ import { clearChapters, useChapters } from "@/lib/storage/chapters";
 import { clearDaily } from "@/lib/storage/daily";
 import { forgetAccountOnDevice, useAccountSync } from "@/lib/storage/sync";
 import { AccountPanel } from "./AccountPanel";
+import { InviteCodeRow } from "./InviteCodeRow";
 import s from "./MeView.module.css";
 import a from "./account.module.css";
 
@@ -142,6 +143,7 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
                 <ChevronIcon />
               </Link>
             </li>
+            <InviteCodeRow />
             <Soon>알림 설정</Soon>
             <li>
               <Link href="/terms" className={s.item}>

@@ -5,6 +5,8 @@ import { resetAccountForTests } from "@/lib/account/client";
 import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
 import { MeView } from "./MeView";
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 const reading = { verdict: "결론", cards: [], action: { heading: "오늘", body: "해 볼 일" } };
 const card = { position: "지금의 나", cardId: "major-00", orientation: "upright" as const };
 
@@ -32,6 +34,16 @@ afterEach(() => {
   resetAccountForTests();
   clearChapters();
   sessionStorage.clear();
+});
+
+describe("MeView menu", () => {
+  it("puts 초대코드로 참여 right under 내 기록, closed", async () => {
+    render(<MeView status={null} />);
+    const menu = await screen.findByRole("navigation", { name: "계정 메뉴" });
+    const rows = [...menu.querySelectorAll("li")].map((li) => li.textContent);
+    expect(rows.slice(0, 3)).toEqual([expect.stringMatching(/^내 기록/), "초대코드로 참여", "알림 설정준비 중"]);
+    expect(screen.getByRole("button", { name: "초대코드로 참여" }).getAttribute("aria-expanded")).toBe("false");
+  });
 });
 
 describe("MeView after the account was deleted", () => {

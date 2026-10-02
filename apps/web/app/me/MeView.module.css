@@ -235,6 +235,80 @@
   font-size: var(--fs-sub);
 }
 
+/* 초대코드로 참여: a menu row that opens a code box in place (InviteCodeRow) */
+.disclosure {
+  display: inline-flex;
+  transition: transform 0.18s ease;
+}
+
+.disclosureOpen {
+  transform: rotate(90deg);
+}
+
+.codePanel {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 16px 18px;
+}
+
+.codeRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.codeInput {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  margin: 0;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.codeInput::placeholder {
+  color: rgba(201, 193, 234, 0.7);
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.codeInput:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.codeInput[aria-invalid="true"] {
+  border-color: #ff9aa8;
+}
+
+.codeHint {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.codeError {
+  margin: 0;
+  color: var(--error);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure {
+    transition: none;
+  }
+}
+
 /* ---- 달빛 pack sheet ---- */
 
 .sheet {
