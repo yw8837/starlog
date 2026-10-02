@@ -26,7 +26,8 @@
   "placement": { "region": "aws:ap-northeast-1" },
   // Production origin (SITE.url). Wrangler creates the DNS record and certificate on deploy.
   "routes": [{ "pattern": "starlog.yeolmaeapps.kr", "custom_domain": true }],
-  "workers_dev": true,
+  // No *.workers.dev origin: it would serve the same app outside the zone's WAF and rules.
+  "workers_dev": false,
   // Every 10 minutes: settle stale payments and refunds, stale reservations, unfinished erasures and
   // old records (worker.mjs → /api/internal/maintenance, guarded by STARLOG_CRON_SECRET).
   "triggers": { "crons": ["*/10 * * * *"] },

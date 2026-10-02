@@ -166,10 +166,22 @@ describe("wrangler.jsonc", () => {
   it("declares every limiter with the limits the in-memory fallback uses, and the daily KV", async () => {
     const { readFileSync } = await import("node:fs");
     const raw = readFileSync(new URL("../../wrangler.jsonc", import.meta.url), "utf8").replace(/^\s*\/\/.*$/gm, "");
-    const config = JSON.parse(raw) as { ratelimits: Array<{ name: string; simple: { limit: number; period: number } }>; kv_namespaces: Array<{ binding: string }> };
+    const config = JSON.parse(raw) as { ratelimits: Array<{ name: string; simple: { limit: number; period: number } }>; kv_namespaces: Array<{ binding: string }>; workers_dev: boolean };
     const declared = Object.fromEntries(config.ratelimits.map((r) => [r.name, r.simple.limit]));
     expect(declared).toEqual(LIMITS_PER_MINUTE);
     expect(config.ratelimits.every((r) => r.simple.period === 60)).toBe(true);
     expect(config.kv_namespaces.map((k) => k.binding)).toContain("DAILY_KV");
+    // No second origin on workers.dev, outside the zone's WAF and rules.
+    expect(config.workers_dev).toBe(false);
+  });
+});
+
+describe("next.config.ts", () => {
+  it("sends HSTS for two years, subdomains included, with the other security headers", async () => {
+    const { default: nextConfig } = await import("@/next.config");
+    const [rule] = await nextConfig.headers!();
+    expect(rule?.source).toBe("/:path*");
+    expect(rule?.headers).toContainEqual({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
+    expect(rule?.headers).toContainEqual({ key: "X-Frame-Options", value: "DENY" });
   });
 });

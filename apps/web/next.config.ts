@@ -4,8 +4,10 @@ import type { NextConfig } from "next";
 /**
  * Baseline security headers on every response. No script-src CSP yet: Next injects inline
  * scripts, so a strict policy needs nonces first. frame-ancestors backs up X-Frame-Options.
+ * HSTS: https only for two years, subdomains included (browsers ignore it on http://localhost).
  */
 const SECURITY_HEADERS = [
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
