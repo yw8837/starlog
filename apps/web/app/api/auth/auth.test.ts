@@ -47,7 +47,7 @@ describe("Kakao login", () => {
       payments: true,
       login: true,
       owner: false,
-      user: { nickname: "테스트 별손님", stardust: 10, stardustExpiresAt: new Date(giftExpiry(T0)).toISOString(), unused: [] },
+      user: { nickname: "테스트 별손님", stardust: 10, stardustExpiresAt: new Date(giftExpiry(T0)).toISOString(), unused: [], opening: [] },
     });
     expect((await b.send(logout, "/api/auth/logout", { method: "POST", origin: true })).status).toBe(200);
     expect((await me(b)).user).toBeNull();
