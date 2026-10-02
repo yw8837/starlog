@@ -37,6 +37,7 @@ export interface Usage {
 
 export type TaskName =
   | "tarot-teaser" | "tarot-reading" | "tarot-daily" | "saju-teaser" | "saju-reading" | "followup"
+  | "saju-topic-teaser" | "saju-topic-reading"
   | "premium-teaser" | "deep-tarot-part" | "match-part" | "newyear-part" | "premium-followup";
 
 export interface GenerationTask<T> {

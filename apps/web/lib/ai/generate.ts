@@ -1,7 +1,12 @@
 import "server-only";
+import type { SajuTopicId } from "@/lib/reading/types";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { TOPIC_OBSERVATION_HEADING, TOPIC_SECTIONS, topicLockedToc } from "@/lib/sajuTopics";
 import { mockDaily, mockSajuFollowUp, mockSajuReading, mockSajuTeaser, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
+import { mockSajuTopicFollowUp, mockSajuTopicReading, mockSajuTopicTeaser } from "./mockSajuTopics";
 import { SAJU_LOCKED_TOC, SAJU_OBSERVATION_HEADING, SAJU_SYSTEM, sajuFollowUpPrompt, sajuReadingPrompt, sajuTeaserPrompt, type SajuFactSet } from "./prompts/saju";
+import { SAJU_TOPIC_SYSTEM, sajuTopicFollowUpPrompt, sajuTopicReadingPrompt, sajuTopicTeaserPrompt } from "./prompts/sajuTopicPrompts";
+import type { SajuTopicFactSet } from "./prompts/sajuTopics";
 import {
   TAROT_SYSTEM, cardLabel, dailyPrompt, tarotFollowUpPrompt, tarotHeadings, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt,
   type FollowUpTurn, type TarotContext,
@@ -16,6 +21,7 @@ import {
 import {
   validateDaily, validateSajuFollowUp, validateSajuReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading, validateTarotTeaser,
 } from "./validate";
+import { validateSajuTopicFollowUp, validateSajuTopicReading, validateSajuTopicTeaser } from "./validateSajuTopics";
 
 /**
  * One function per reading kind: prompt + schema + validator + mock, then the parts code owns
@@ -142,4 +148,61 @@ export async function generateSajuFollowUp(
     ...generationSetting("followup"),
     mock: () => mockSajuFollowUp(facts, question),
   }, (answer) => validateSajuFollowUp(answer, facts, question), hooks);
+}
+
+// ---- 주제별 사주 (saju-topics spec §7.6) ----
+
+/** A topic teaser as the API returns it: the model's title and summary, then what code owns (spec §6.5). */
+export interface SajuTopicTeaser extends SajuTeaser {
+  topic: SajuTopicId;
+  freshUntil: string;
+}
+
+export async function generateSajuTopicTeaser(provider: ReadingProvider, facts: SajuTopicFactSet, hooks?: GenerationHooks): Promise<Result<SajuTopicTeaser>> {
+  const { data, usage } = await generateValidated(provider, {
+    name: "saju-topic-teaser",
+    system: SAJU_TOPIC_SYSTEM,
+    user: sajuTopicTeaserPrompt(facts),
+    schema: SajuTeaserDraftSchema,
+    ...generationSetting("saju-topic-teaser"),
+    mock: () => mockSajuTopicTeaser(facts),
+  }, (draft) => validateSajuTopicTeaser(draft, facts), hooks);
+  return {
+    data: { title: data.title.trim(), summary: data.summary.trim(), lockedToc: topicLockedToc(facts.topic), topic: facts.topic, freshUntil: facts.freshUntil },
+    usage,
+  };
+}
+
+export async function generateSajuTopicReading(provider: ReadingProvider, facts: SajuTopicFactSet, hooks?: GenerationHooks): Promise<Result<SajuReading>> {
+  const { data, usage } = await generateValidated(provider, {
+    name: "saju-topic-reading",
+    system: SAJU_TOPIC_SYSTEM,
+    user: sajuTopicReadingPrompt(facts),
+    schema: SajuReadingSchema,
+    ...generationSetting("saju-topic-reading"),
+    mock: () => mockSajuTopicReading(facts),
+  }, (reading) => validateSajuTopicReading(reading, facts), hooks);
+  // Headings are code-owned so the locked list stays 1:1 with the paid sections.
+  const headings = TOPIC_SECTIONS[facts.topic];
+  return {
+    data: {
+      ...data,
+      sections: data.sections.map((section, i) => ({ heading: headings[i] ?? section.heading, body: section.body.trim() })),
+      observation: { heading: TOPIC_OBSERVATION_HEADING, body: data.observation.body.trim() },
+    },
+    usage,
+  };
+}
+
+export async function generateSajuTopicFollowUp(
+  provider: ReadingProvider, facts: SajuTopicFactSet, reading: StoredSajuReading, turns: FollowUpTurn[], question: string, hooks?: GenerationHooks,
+): Promise<Result<FollowUpAnswer>> {
+  return generateValidated(provider, {
+    name: "followup",
+    system: SAJU_TOPIC_SYSTEM,
+    user: sajuTopicFollowUpPrompt(facts, reading, turns, question),
+    schema: FollowUpAnswerSchema,
+    ...generationSetting("followup"),
+    mock: () => mockSajuTopicFollowUp(facts, question),
+  }, (answer) => validateSajuTopicFollowUp(answer, facts, question), hooks);
 }
