@@ -2,17 +2,32 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Sell the standard tarot and saju full readings at 2,900원 each through Kakao login and the Toss Payments widget. A paid reading is charged only when it is delivered, and a failed generation leaves it unused (open again for free, or refund it in one tap). New accounts get one reading's worth of 별조각. Everything sits behind `STARLOG_PAYMENTS`.
+**Revision 2 (2026-10-02), written against `aa70830`.** This revision answers the critic's REVISE verdict:
+- C1, M1–M9 and minors 1–14.
+- The coordinator's scope cut: no device→account claim flow and no 인연 link. Readings bought while logged in are still kept in the account.
 
-**Architecture:** Cloudflare D1 (binding `DB`, shared with P3) holds users, sessions, orders, payments, credit lots, unlock reservations, an append-only ledger and encrypted saved readings.
-- Money rules live in SQL: CHECK constraints, UNIQUE idempotency keys, and one D1 `batch()` per state change. Tests run the same SQL on `node:sqlite` in memory.
-- A reading route reserves credit before its stream starts. It saves the reading and spends the reservation before `done`, and releases the reservation on any failure. Toss is the source of truth for payment state (confirm, query, cancel, webhook re-query).
+**Goal:** Sell the standard tarot and saju full readings at 2,900원 each through Kakao login and the Toss Payments widget.
+- A paid reading is charged only when it is delivered.
+- A failed generation leaves it unused: open again for free, or refund it in one tap.
+- New accounts get one reading's worth of 별조각.
+- Everything sits behind `STARLOG_PAYMENTS`.
+
+**Architecture:**
+- **Storage:** Cloudflare D1 (binding `DB`, shared with P3) holds users, sessions, orders, payments, credit lots, unlock reservations, an append-only ledger, encrypted saved readings and a `meta` row that pins the account secret.
+- **Money rules live in SQL:** CHECK constraints, UNIQUE idempotency keys, guards against deleted accounts, and one D1 `batch()` per state change. Tests run the same SQL on `node:sqlite` in memory, and on local D1 (workerd) in `*.int.test.ts`.
+- **Reading routes:**
+  - credit is reserved before a stream starts;
+  - inside `respondGeneration`'s `keepAlive` work, the reading is saved and the reservation spent before the body or `done` leaves;
+  - every failure releases the reservation;
+  - a save whose answer was lost is recovered by re-reading.
+- **Cost books:** paid model cost goes to its own `paidcost:` book, so it never trips the free budget. 별조각 readings count as free.
+- **Toss is the source of truth** (confirm, look-up, cancel with attempt-scoped Idempotency-Keys, webhook re-query). A Cron Trigger settles what users leave behind.
 
 **Tech Stack:**
 - Existing: Next.js 16.3.7 (App Router) on Cloudflare Workers via OpenNext 1.20.7, TypeScript 6, zod 4, WebCrypto (`lib/security/sign.ts`), Vitest 5, Playwright.
-- New, with no new npm dependencies: Cloudflare D1, Node's built-in `node:sqlite` (tests only), and the Toss JS SDK v2 loaded by script tag (`https://js.tosspayments.com/v2/standard`).
+- New, with no new npm dependencies: Cloudflare D1, Node's built-in `node:sqlite` (tests only), the Toss JS SDK v2 by script tag (`https://js.tosspayments.com/v2/standard`), and a Workers Cron Trigger through a custom OpenNext worker entry.
 
-**Spec:** `docs/superpowers/specs/2026-10-01-starlog-p4-accounts-payments-design.md` (read sections 4, 5.4 and 14 before any task). Parent spec: `docs/superpowers/specs/2026-09-29-saju-tarot-story-app-design.md`.
+**Spec:** `docs/superpowers/specs/2026-10-01-starlog-p4-accounts-payments-design.md` (read sections 4, 5.4, 5.5, 5.8, 5.9 and 14 before any task). Parent spec: `docs/superpowers/specs/2026-09-29-saju-tarot-story-app-design.md`.
 
 ## Global Constraints
 
@@ -31,54 +46,67 @@
   - `git add <explicit paths>` (never `-A`); other agents edit the same tree;
   - the commit message ends with a blank line then `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`;
   - never push.
-- Money (spec 5.4):
+- Owner orders on copy:
+  - The word "베타" appears nowhere a user can see. The free daily full reading is the "오픈 기념" offer: reuse the wording already in `components/tarot/UnlockSheet.tsx`, `/pricing`, `lib/faq.ts`. After payments open for everyone, the signup gift replaces it.
+  - No model names (Claude, Opus…) on user screens or in the terms. The privacy policy names the company "Anthropic, PBC" only in its 국외 이전 table (개인정보보호법 제28조의8).
+- Money (spec 5.4–5.5):
   - The server decides every amount from `lib/pay/catalog.ts`; a client never sends one that is used.
   - Credit is spent only when a validated reading is saved to the account. Every failure path releases the reservation.
-  - Every ledger row has a UNIQUE `idem_key`. Every multi-step change is one `db.batch([...])`.
-- Toss:
-  - API base `https://api.tosspayments.com`; header `Authorization: Basic base64(TOSS_SECRET_KEY + ":")` (the colon is required).
-  - `Idempotency-Key` goes on POST only.
-  - Order ids are 24 chars of `[A-Za-z0-9_-]`. Confirm within 10 minutes.
-  - Never trust a webhook body; re-query the payment.
+  - Every ledger row has a UNIQUE `idem_key`, and every multi-step change is one `db.batch([...])`. A batch whose writes depend on each other checks `meta.changes`.
+  - Nothing is granted, reserved or saved for an account with `deleted_at` set.
+- Toss (docs.tosspayments.com):
+  - API base `https://api.tosspayments.com`; `Authorization: Basic base64(TOSS_SECRET_KEY + ":")`.
+  - `Idempotency-Key` goes on POST only. A key replays its first answer, errors included, for 15 days. **409 `IDEMPOTENT_REQUEST_PROCESSING`, 5xx and no answer mean "unknown": never treat them as a refusal.**
+  - After any other non-success, look the payment up before deciding. Use a new attempt-scoped key only after a look-up shows the payment is still `DONE`.
+  - Order ids are 24 chars of `[A-Za-z0-9_-]`; confirm within 10 minutes; never trust a webhook body.
 - Kakao:
   - authorize `https://kauth.kakao.com/oauth/authorize`;
   - token `POST https://kauth.kakao.com/oauth/token` (form, with `client_secret`);
   - profile `https://kapi.kakao.com/v2/user/me` (Bearer);
   - unlink `POST https://kapi.kakao.com/v1/user/unlink` (Bearer).
   - Never store Kakao tokens or the raw Kakao id.
-- Secrets:
-  - Env names only: `TOSS_SECRET_KEY`, `NEXT_PUBLIC_TOSS_CLIENT_KEY` (read at run time through `tossClientKey()`), `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`, `STARLOG_ACCOUNT_SECRET` (32+ chars, never rotated), and the existing `STARLOG_SIGNING_SECRET`.
-  - Flags: `STARLOG_PAYMENTS` (`off` | `owner` | `on`), `STARLOG_PAY` (`toss` | `mock`), `STARLOG_KAKAO` (`kakao` | `mock`).
-  - Mocks are refused in production.
+- Secrets (env names only):
+  - `TOSS_SECRET_KEY`, `NEXT_PUBLIC_TOSS_CLIENT_KEY` (read at run time through `tossClientKey()`);
+  - `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`;
+  - `STARLOG_ACCOUNT_SECRET` (32+ chars, pinned by the D1 `meta` check; never rotated in P4);
+  - `STARLOG_CRON_SECRET` (32+ chars), and the existing `STARLOG_SIGNING_SECRET`.
+- Flags: `STARLOG_PAYMENTS` (`off` | `owner` | `on`), `STARLOG_PAY` (`toss` | `mock`), `STARLOG_KAKAO` (`kakao` | `mock`), `STARLOG_CF_DEV` (`1` = local D1 in `next dev`). Mocks are refused in production.
+- `lib/api/stream.ts` and `lib/api/spend.ts` are owned by the P2b accounting work.
+  - Tasks 9–10 start from them as they are at `aa70830`: unchanged since `1d1e7c0` apart from the `"line"` spend kind. That means generation under `keepAlive`, `SpendLedger` reserve/release/bill/finish settling into the reserving KST day, and the `spend` option charged before the start.
+  - If they changed since, keep the newer code and add only the lines this plan marks `// P4`.
+- Rate limits at aa70830: `GEN_LIMITER` 60/min, `FULL_LIMITER` 20/min, network day caps (full 60, teaser 240, …). P4 does not change them.
 - Never log user text, birth data, Kakao ids, nicknames, tokens, payment keys or IPs. Log `evt`, order ids, codes and counts only. No personal data in URLs.
 - The 10-card product is never called "켈틱 크로스" (or any spelling of it) anywhere.
 - P3 coexistence (spec section 4; P3 Task 4 landed in acf4599):
-  - Use P3's `apps/web/lib/db/d1.ts` types (`D1Binding`, `D1Statement`, `D1Result`) and `getDb()`. Do not create or redefine them. P4 adds files next to them.
-  - Do not touch P3's `sl_uid`/`sl_fid` cookie formats or the `d1_databases` entry.
-  - Migrations are `apps/web/migrations/0002_…` and later, in the same `migrations_dir`. An applied migration is never edited.
-  - Rate-limit namespaces are 1101–1103.
+  - Use P3's `apps/web/lib/db/d1.ts` types (`D1Binding`, `D1Statement`, `D1Result`) and `getDb()`.
+  - Do not touch P3's `sl_uid`/`sl_fid` cookies, P3's tables or the `d1_databases` entry.
+  - P4 migrations are `apps/web/migrations/0002_…` and later. `0001_bonds.sql` is applied in production and is never edited.
+  - Rate-limit namespaces are 1101–1103 (P3 uses up to 1008).
 
 ## File Structure
 
 ```
-apps/web/migrations/0002_accounts_payments.sql     P4 tables (users, sessions, gift_claims, orders, payments, credit_lots, unlocks, ledger, readings)
+apps/web/migrations/0002_accounts_payments.sql     P4 tables (meta, users, sessions, gift_claims, orders, payments, credit_lots, unlocks, ledger, readings)
 apps/web/lib/db/d1.ts                               (P3, unchanged) D1Binding / D1Statement / D1Result, getDb()
-apps/web/lib/db/index.ts                            (P3's factory) + accountDb(), setTestDb()
+apps/web/lib/db/index.ts                            (P3's factory) + accountDb(), setTestDb(); header comment updated (M6)
 apps/web/lib/db/sqlErrors.ts                        isConstraintError()
 apps/web/lib/db/testing/sqliteD1.ts                 D1Binding over node:sqlite in memory (tests only)
 apps/web/lib/db/testing/migrate.ts                  migratedTestD1(): fresh test DB with every migration applied
-apps/web/lib/db/testing/localD1.ts                  openLocalD1(): real local D1 (workerd via getPlatformProxy) with every migration applied
-apps/web/lib/pay/catalog.ts                         products and prices (client-safe)
+apps/web/lib/db/testing/localD1.ts                  openLocalD1(): real local D1 (workerd via getPlatformProxy) with every migration
+apps/web/lib/pay/catalog.ts                         products, prices, GIFT_DAYS (client-safe)
 apps/web/lib/pay/mode.ts                            STARLOG_PAYMENTS / STARLOG_PAY, Toss key checks
-apps/web/lib/pay/ledger.ts                          lots, reserve / deliver / release, gift, expiry, refund lock, wallet summary
-apps/web/lib/pay/tossTypes.ts                       TossPayment, TossError, TossClient, parsePayment
+apps/web/lib/pay/ledger.ts                          lots, reserve / deliver / release, gift, expiry, refund lock (one batch), revoke, wallet summary
+apps/web/lib/pay/tossTypes.ts                       TossPayment, TossError, isPendingTossError, TossClient, parsePayment
 apps/web/lib/pay/toss.ts                            real Toss client + tossClient() selector
 apps/web/lib/pay/tossMock.ts                        in-memory Toss (STARLOG_PAY=mock)
-apps/web/lib/pay/orders.ts                          create, confirm (idempotent), markPaid, reconcile confirming, history
-apps/web/lib/pay/refunds.ts                         refund unused, applyCancel, reconcile refunding, syncOrderWithToss (webhook)
-apps/web/lib/pay/offer.ts                           UnlockMethod, UnlockOffer, unlockOffer(), checkoutHref() (client-safe)
-apps/web/lib/pay/tossSdk.ts                         browser loader for the Toss v2 script (client)
-apps/web/lib/account/secrets.ts                     STARLOG_ACCOUNT_SECRET, kakaoKey(), sealJson()/openJson() (AES-GCM)
+apps/web/lib/pay/orders.ts                          create, confirm (M2 rules, no session), markPaid (deleted-account guard), reconcile confirming, history
+apps/web/lib/pay/refunds.ts                         refund unused, orphan refund, reconcile refunding, applyCancel, webhook sync
+apps/web/lib/pay/maintenance.ts                     runMaintenance(): the Cron Trigger's work
+apps/web/lib/pay/offer.ts                           UnlockOffer, unlockOffer(), checkoutHref() (client-safe)
+apps/web/lib/pay/unlockMethod.ts                    UNLOCK_METHODS, UnlockMethod (client-safe, Task 2)
+apps/web/lib/pay/tossSdk.ts                         browser loader for the Toss v2 script
+apps/web/lib/account/secrets.ts                     account secret, HKDF subkeys, kakaoKey(), sealJson()/openJson(), ReadingKeys
+apps/web/lib/account/secretCheck.ts                 accountSecretMatches(): the D1 meta check (M8)
 apps/web/lib/account/users.ts                       users: login upsert, lookups
 apps/web/lib/account/session.ts                     sl_sid cookie + D1 sessions
 apps/web/lib/account/request.ts                     openAccount(), openAccountRoute(), requireSession(), sameOrigin()
@@ -86,83 +114,109 @@ apps/web/lib/account/redirect.ts                    303 helper for GET routes
 apps/web/lib/account/returnTo.ts                    safeReturnTo(), withQuery() (client-safe)
 apps/web/lib/account/oauthState.ts                  sl_oauth state cookie
 apps/web/lib/account/kakao.ts                       Kakao OAuth (real + mock), unlink
-apps/web/lib/account/deletion.ts                    delete intent token, deleteAccount()
-apps/web/lib/account/bondsLink.ts                   link the P3 bonds owner to the account
+apps/web/lib/account/deletion.ts                    delete intent token, deleteAccount(), eraseDeletedAccount()
 apps/web/lib/account/client.ts                      browser: /api/me store, useAccount(), logout(), loginHref(), loginMessage()
-apps/web/lib/readings/store.ts                      encrypted saved readings
+apps/web/lib/readings/store.ts                      encrypted saved readings (paged, versioned keys)
 apps/web/lib/readings/chapters.ts                   server-side chapter builders (tarot, saju)
 apps/web/lib/readings/turns.ts                      follow-up turns into the saved copy
 apps/web/lib/api/unlock.ts                          planUnlock() + settlementFor() for the reading routes
-apps/web/lib/storage/sync.ts                        browser: merge account readings, claim device ones
+apps/web/lib/storage/sync.ts                        browser: pull account readings, check a delivery after a cut (M4)
 apps/web/app/api/me/route.ts
 apps/web/app/api/auth/kakao/start/route.ts, callback/route.ts, apps/web/app/api/auth/logout/route.ts
 apps/web/app/api/account/delete-intent/route.ts
 apps/web/app/api/pay/{checkout,orders,confirm,refund,webhook}/route.ts
-apps/web/app/api/readings/route.ts, apps/web/app/api/readings/claim/route.ts
+apps/web/app/api/readings/route.ts
+apps/web/app/api/internal/maintenance/route.ts      cron-only route (STARLOG_CRON_SECRET)
+apps/web/worker.mjs                                 custom OpenNext entry: fetch + scheduled
 apps/web/app/pay/{checkout,success,fail}/…          payment pages
-apps/web/app/me/AccountPanel.tsx, OrderHistory.tsx  내 정보 account parts
+apps/web/app/me/AccountPanel.tsx, OrderHistory.tsx, meStatus.ts
 docs/runbook-payments.md                            rollout, secrets, checks, ops queries
 ```
 
-Modified: `next.config.ts` (opt-in local bindings for `next dev`), `lib/api/http.ts` (error codes), `lib/api/stream.ts` (settlement hook), `lib/api/inputs.ts`, `lib/api/tarotRequest.ts`, the tarot/saju reading routes and the follow-up route, `lib/security/rateLimit.ts`, `lib/security/chapterToken.ts`, `lib/cloudflare.ts`, `wrangler.jsonc` (ratelimits only), `components/tarot/UnlockSheet.tsx`, the result/chart/login/me pages, `lib/storage/chapters.ts`, `lib/reading/{api,errors,types}.ts`, the legal pages, `lib/seo.ts`, `scripts/check-client-bundle.mjs`, `apps/web/playwright.config.ts`, `apps/web/.env.example`, `apps/web/package.json` (scripts).
+Modified:
+- `next.config.ts` (opt-in local bindings), `wrangler.jsonc` (`main`, `triggers.crons`, ratelimits);
+- `lib/api/http.ts` (error codes), `lib/api/stream.ts` (settlement, paid cost book), `lib/api/spend.ts` (cost sinks), `lib/api/inputs.ts`, `lib/api/tarotRequest.ts`;
+- the tarot/saju reading routes and the follow-up route;
+- `lib/security/rateLimit.ts`, `lib/cloudflare.ts`;
+- `components/tarot/UnlockSheet.tsx`, the result/chart/login/me pages, `lib/storage/chapters.ts`, `lib/reading/{api,errors,types}.ts`;
+- the legal pages, `lib/robots.ts`, `scripts/check-client-bundle.mjs`, `apps/web/playwright.config.ts`, `apps/web/.env.example`, `apps/web/package.json`.
 
-## Task order
+## Task order, files and parallel lanes
 
-| # | Task | Needs |
-|---|---|---|
-| 0 | Preconditions (controller) | — |
-| 1 | Test D1 and the P4 schema | P3 Task 4 |
-| 2 | Product catalog and payment modes | — |
-| 3 | Account core: secrets, users, sessions, guards, error codes, limiters | 1 |
-| 4 | Ledger | 1 |
-| 5 | Kakao login, `/api/me`, logout | 2, 3, 4 |
-| 6 | Toss client and mock | 2 |
-| 7 | Orders, checkout info, confirm | 4, 5, 6 |
-| 8 | Refunds, reconciliation, webhook | 7 |
-| 9 | Saved readings store and the stream settlement hook | 3 |
-| 10 | Paid, 별조각 and owner unlocks on the reading routes | 4, 9 |
-| 11 | Readings API: list, claim, delete, follow-up turns | 9, 10 |
-| 12 | Account deletion | 5, 8, 11 |
-| 13 | Bonds identity link | 5, 12, P3 Task 6 |
-| 14 | Client account layer, unlock offers, error copy, UnlockSheet | 5 |
-| 15 | Result pages and the login page | 10, 14 |
-| 16 | Checkout, success and fail pages | 7, 14 |
-| 17 | 내 정보: account, purchases, receipts, sync, deletion | 8, 11, 12, 14 |
-| 18 | Legal pages | 2 |
-| 19 | Bundle guard, e2e pay flow, runbook | all |
+Written against `aa70830` (2026-10-02) and re-checked at `ba7e843`: the five P5 commits after aa70830 touch, among P4's files, only `lib/api/inputs.ts` (two new draw templates, up to 10 picks) and `lib/api/tarotRequest.ts` (premium templates refused on the standard route). Tasks 10 and 11 add to those two files and keep the P5 lines. P5 work runs in the same tree: never reformat or reorder those files. Every task lists the exact files it creates or modifies in its own **Files** block. The table repeats them so two implementers can be scheduled without overlapping files.
 
-Tasks 2 and 6 can run in parallel with 1, 3 and 4. Task 18 can run any time after 2.
+| # | Task | Depends on | Files (create / modify) | Lane |
+|---|---|---|---|---|
+| 0 | Preconditions (controller) | — | none | — |
+| 1 | Test D1 and the P4 schema | — | `migrations/0002_accounts_payments.sql`; `lib/db/{sqlErrors.ts, index.ts, accountDb.test.ts, accountSchema.int.test.ts}`; `lib/db/testing/{sqliteD1,migrate,localD1}.ts`; `next.config.ts`; `apps/web/package.json` | S |
+| 2 | Catalog, payment modes, unlock methods | — | `lib/pay/{catalog,mode,unlockMethod}.ts` (+ `catalog.test.ts`, `mode.test.ts`); `apps/web/.env.example` | C |
+| 3 | Account core: secrets (HKDF, D1 check), users, sessions, guards, error codes, limiters | 1 | `lib/account/{secrets,secretCheck,users,session,request,redirect,returnTo}.ts`, `lib/account/account.test.ts`; `lib/api/http.ts`; `lib/security/rateLimit.ts`; `lib/cloudflare.ts`; `wrangler.jsonc` (`ratelimits` only) | S |
+| 4 | Ledger | 1, 2 | `lib/pay/{ledger,ledgerContract}.ts`, `lib/pay/{ledger.test,ledger.int.test}.ts` | S |
+| 5 | Kakao login, `/api/me`, logout | 2, 3, 4 | `lib/account/{oauthState,kakao}.ts`, `lib/account/kakao.test.ts`; `app/api/auth/{kakao/start,kakao/callback,logout}/route.ts`, `app/api/auth/auth.test.ts`; `app/api/me/route.ts`; `lib/testing/p4.ts` | S |
+| 6 | Toss client and mock | 2 | `lib/pay/{tossTypes,toss,tossMock}.ts`, `lib/pay/toss.test.ts` | C |
+| 7 | Orders, checkout info, confirm (no session) | 4, 5, 6 | `lib/pay/orders.ts`; `app/api/pay/{checkout,orders,confirm}/route.ts`, `app/api/pay/pay.test.ts`; `lib/testing/p4.ts` (append `buy`) | S |
+| 8 | Refunds, reconciliation, webhook | 7 | `lib/pay/refunds.ts`; `app/api/pay/{refund,webhook}/route.ts`, `app/api/pay/refund.test.ts`; modify `app/api/pay/{orders,confirm}/route.ts`, `app/api/pay/pay.test.ts` | S |
+| 9 | Saved readings, cost books, stream settlement | 3 | `lib/readings/store.ts`, `lib/readings/store.test.ts`; `lib/api/{spend,stream}.ts`, `lib/api/settle.test.ts` | S |
+| 10 | Paid, 별조각 and owner unlocks on the reading routes | 4, 7, 9 | `lib/api/unlock.ts`; `lib/readings/chapters.ts`; `lib/api/{inputs,tarotRequest}.ts`; `app/api/tarot/reading/route.ts`; `app/api/saju/reading/route.ts`; `app/api/unlock.test.ts` | S |
+| 11 | Readings API: pages, delete, follow-up turns | 9, 10 | `app/api/readings/route.ts`, `app/api/readings/readings.test.ts`; `lib/readings/turns.ts`; `lib/api/inputs.ts` (`FollowUpBody`); `app/api/followup/route.ts` | S |
+| 12 | Account deletion | 5, 8, 9 | `lib/account/deletion.ts`; `app/api/account/delete-intent/route.ts`, `app/api/account/deletion.test.ts`; modify `app/api/auth/kakao/{start,callback}/route.ts` | S |
+| 13 | Scheduled maintenance (Cron Trigger) | 8, 12 | `lib/pay/maintenance.ts`; `app/api/internal/maintenance/{route.ts, maintenance.test.ts}`; `worker.mjs`; `wrangler.jsonc` (`main`, `triggers`) | S |
+| 14 | Client account layer, offers, error copy, UnlockSheet | 2 | `lib/account/client.ts` (+ test); `lib/pay/offer.ts` (+ test); `lib/reading/{api,errors}.ts`, `lib/reading/errors.p4.test.ts`; `components/tarot/UnlockSheet.{tsx,module.css,test.tsx}` | C |
+| 15 | Result pages, delivery check after a cut, login page | 3, 14 | `lib/storage/{sync.ts, sync.test.ts, serverId.test.ts, chapters.ts}`; `lib/reading/types.ts`; `app/tarot/result/{FreeResult.tsx,page.tsx}`; `app/saju/chart/{SajuChartView.tsx,page.tsx}`; `app/chapter/[id]/LocalChapter.tsx`; `app/login/{page.tsx,LoginPanel.tsx,LoginPanel.test.tsx}` | C |
+| 16 | Checkout, success and fail pages | 3, 14 | `lib/pay/tossSdk.ts`; `app/pay/**` (checkout, success, fail, `pay.module.css`, tests); `lib/robots.ts`; `lib/seo.test.ts` | C |
+| 17 | 내 정보: account, purchases, receipts, deletion | 14, 15 | `lib/storage/sync.ts` (append), `lib/storage/pull.test.ts`; `app/me/**` (AccountPanel, OrderHistory, meStatus, account.module.css, MeView, page; delete MoonPackSheet); `app/story/StoryView.tsx` | C |
+| 18 | Legal pages | 2, 14 | `components/legal/{PaymentsNote.tsx, p4Policies.test.tsx}`; `app/{pricing,refund,terms,privacy}/page.tsx`; `lib/legal.ts` (+ test); the legal and info tests that pin removed text | C |
+| 19 | Bundle guard, e2e pay flow, runbook | all | `scripts/check-client-bundle.mjs`; `apps/web/playwright.config.ts`; `apps/web/e2e/{global-setup.ts, pay-flow.spec.ts}`; `apps/web/package.json`; `docs/runbook-payments.md` | — |
+
+All paths are under `apps/web/` unless they start with `scripts/` or `docs/`.
+
+**Two implementers at once.** Lane S (server and money) and lane C (client, Toss SDK side, legal) never touch the same file:
+- Lane S, in order: 1 → 3 → 4 → 5 → 7 → 8 → 9 → 10 → 11 → 12 → 13.
+- Lane C, in order: 2 → 6 → 14 → 18 → 15 → 16 → 17.
+- Cross-lane waits:
+  - Task 4 needs Task 2 (lane C goes first with it).
+  - Task 7 needs Task 6.
+  - Tasks 15 and 16 need Task 3 (`returnTo.ts`). Lane C reaches them after 2, 6, 14 and 18, by which time Task 3 is long done.
+- Task 9 needs only Task 3, so lane S may take it right after 3 if 4 is waiting on 2.
+- Task 19 runs alone at the end, after both lanes.
+- Shared files are always in one lane and in order:
+  - `wrangler.jsonc`: 3 then 13;
+  - `lib/testing/p4.ts`: 5 then 7;
+  - `app/api/pay/*`: 7 then 8;
+  - `lib/api/inputs.ts`: 10 then 11;
+  - `app/api/auth/kakao/*`: 5 then 12;
+  - `lib/storage/sync.ts`: 15 then 17;
+  - `apps/web/package.json`: 1 now, 19 last.
+- Lane C's tests mock `fetch` for the account and payment APIs, so they pass before the lane S routes exist. The controller's e2e (Task 19) is where the two meet.
+- Other agents edit the tree too. `apps/web/lib/cloudflare.ts` had an uncommitted change at aa70830. Task 3 adds three optional bindings to it: keep whatever else is there.
+
+Dropped in revision 2 (the coordinator's scope cut): the device→account claim flow, and the P3 인연 link.
 
 ---
 
 ### Task 0: Preconditions (controller, no code)
 
-- [ ] **Step 1: Check the baseline is committed.**
-  - These must exist at `HEAD`, not only in the working tree:
-    - `apps/web/lib/api/spend.ts` (P2b server-side accounting, `recordCost`, `usdOf` in `lib/ai/cost.ts`);
-    - `keyedHash` in `apps/web/lib/security/sign.ts`;
-    - `ipGroup` in `apps/web/lib/api/http.ts`;
-    - `SITE.price.premium` in `apps/web/lib/config.ts`;
-    - P3 Task 4 (commit acf4599) and its follow-ups:
-      - `apps/web/migrations/0001_bonds.sql`, `apps/web/lib/db/d1.ts` (`D1Binding`, `getDb`), `apps/web/lib/db/index.ts`;
-      - a `d1_databases` entry with `"binding": "DB"`, `"database_id": "78c6fb07-ee97-42d5-9633-21801fe596eb"`, `"migrations_dir": "migrations"` in `apps/web/wrangler.jsonc`;
-      - P3's working-tree edits to `0001_bonds.sql`, `contract.ts` and `d1BondsRepo.int.test.ts` committed (P4 tests apply every migration file, so an uncommitted 0001 change would leak into P4 runs).
+- [ ] **Step 1: Check the baseline is committed** (at `aa70830` or later):
+  - P2b accounting: `apps/web/lib/api/spend.ts` with `SpendLedger`, `addCost` and `budgetState`; `apps/web/lib/api/stream.ts` with `keepAlive` and the `spend` option;
+  - `keyedHash` in `lib/security/sign.ts`; `ipGroup` and `checkServerLimits` in `lib/api/http.ts`; `getJson` in `lib/reading/api.ts`; `ROBOTS_DISALLOW` in `lib/robots.ts`;
+  - `SITE.price.premium` in `lib/config.ts`;
+  - P3: `apps/web/migrations/0001_bonds.sql` (applied in production), `apps/web/lib/db/{d1,index}.ts`, and the `d1_databases` entry (`binding` DB, `database_id` 78c6fb07-ee97-42d5-9633-21801fe596eb, `migrations_dir` migrations). No `0002_*` exists yet.
 
-Run: `git -C D:/Money/apps/saju-tarot ls-tree -r --name-only HEAD apps/web/lib/api/spend.ts apps/web/migrations/0001_bonds.sql apps/web/lib/db/index.ts apps/web/lib/db/d1.ts`
-Expected: all four paths printed.
+Run: `git -C D:/Money/apps/saju-tarot ls-tree -r --name-only HEAD apps/web/migrations apps/web/lib/api/spend.ts apps/web/lib/db/index.ts apps/web/lib/db/d1.ts apps/web/lib/robots.ts`
+Expected: `0001_bonds.sql` as the only migration, and the four files.
 
-Run: `git -C D:/Money/apps/saju-tarot status --short apps/web/migrations apps/web/lib/db`
-Expected: nothing printed.
+Run: `git -C D:/Money/apps/saju-tarot grep -n "class SpendLedger\|function keepAlive\|export async function getJson" HEAD -- apps/web/lib`
+Expected: all three found.
 
-Run: `git -C D:/Money/apps/saju-tarot grep -n "premium" HEAD -- apps/web/lib/config.ts`
-Expected: the `premium:` array with ids `tarot-deep`, `match`, `newyear-2027`.
+Run: `git -C D:/Money/apps/saju-tarot status --short apps/web/migrations apps/web/lib/db apps/web/lib/api/stream.ts apps/web/lib/api/spend.ts`
+Expected: nothing printed. Uncommitted edits there would leak into P4's tests.
 
 - [ ] **Step 2: Check the suite is green.**
 
 Run: `npx vitest run --maxWorkers=3` (repo root)
 Expected: every file passes, exit 0.
 
-If Step 1 or Step 2 fails, stop. Report what is missing, and do not start Task 1 until the owning agent has committed it: P4 edits the same files.
+If Step 1 or Step 2 fails, stop. Report what is missing, and do not start Task 1 until the owning agent has committed it.
 
 ---
 
@@ -190,7 +244,7 @@ If Step 1 or Step 2 fails, stop. Report what is missing, and do not start Task 1
 - P3's pattern is memory repos plus a contract suite run again on local D1.
 - P4 keeps the second half (local D1 through `getPlatformProxy`, as `d1BondsRepo.int.test.ts` does).
 - It replaces the Map-based memory store with node:sqlite in memory running the same SQL (spec section 4). The money rules are SQL constraints and batch atomicity, and a Map store would not exercise them.
-- `next dev` has no D1 unless `STARLOG_CF_DEV=1` (Step 8). Without it the account and payment routes answer 503, and the site stays in beta mode.
+- `next dev` has no D1 unless `STARLOG_CF_DEV=1` (Step 8). Without it the account and payment routes answer 503, and the site works as it does today (no login, no payments).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -219,7 +273,7 @@ describe("test D1 with every migration applied", () => {
       .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
       .all<{ name: string }>();
     expect(results.map((r) => r.name)).toEqual(
-      expect.arrayContaining(["owners", "credit_lots", "gift_claims", "ledger", "orders", "payments", "readings", "sessions", "unlocks", "users"]),
+      expect.arrayContaining(["owners", "meta", "credit_lots", "gift_claims", "ledger", "orders", "payments", "readings", "sessions", "unlocks", "users"]),
     );
   });
 
@@ -440,7 +494,7 @@ import type { D1Binding } from "../d1";
 const MIGRATIONS = fileURLToPath(new URL("../../../migrations/", import.meta.url));
 
 /** P4 tables, children before parents, for emptying a shared local D1 between tests. */
-export const P4_TABLES_CHILD_FIRST = ["readings", "ledger", "unlocks", "credit_lots", "payments", "orders", "gift_claims", "sessions", "users"];
+export const P4_TABLES_CHILD_FIRST = ["readings", "ledger", "unlocks", "credit_lots", "payments", "orders", "gift_claims", "sessions", "users", "meta"];
 
 /** Every migration's statements in file order (comment-only lines dropped, split at a ";" that ends a line). */
 export function migrationStatements(): string[] {
@@ -481,24 +535,32 @@ export async function openLocalD1(): Promise<{ db: D1Binding; dispose: () => Pro
 
 - [ ] **Step 6: Write `apps/web/migrations/0002_accounts_payments.sql`** (same `migrations_dir` as P3's `0001_bonds.sql`)
 
-Keep comments on their own lines or after a column (never after the final `;` of a statement); `migrationStatements()` splits at line-ending semicolons.
+Keep comments on their own lines or after a column (never after the final `;` of a statement), and never put a semicolon inside a comment: `migrationStatements()` splits at line-ending semicolons.
 
 ```sql
 -- P4: accounts, payments, the credit ledger and saved readings.
 -- Spec: docs/superpowers/specs/2026-10-01-starlog-p4-accounts-payments-design.md (sections 5.4 and 7).
 -- Times are epoch milliseconds. Money is whole KRW. Units are 달빛 (paid) or 별조각 (free) counts.
 
+-- Values that pin this database to its deploy, such as the account secret check (lib/account/secretCheck.ts).
+CREATE TABLE meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
-  kakao_key TEXT UNIQUE,              -- HMAC of the Kakao user id, NULL once deleted
-  nickname TEXT,                      -- NULL once deleted
+  kakao_key TEXT UNIQUE,              -- HMAC of the Kakao user id, NULL once erased
+  nickname TEXT,                      -- NULL once erased
   customer_key TEXT NOT NULL UNIQUE,  -- Toss customerKey
   age_confirmed_at INTEGER,
-  bonds_owner_id TEXT UNIQUE,         -- P3 owners.id linked to this account
   created_at INTEGER NOT NULL,
   last_login_at INTEGER NOT NULL,
-  deleted_at INTEGER
+  deleted_at INTEGER,                 -- 회원 탈퇴: nothing is granted, reserved or saved after this
+  erased_at INTEGER                   -- personal data erased (the cron finishes an interrupted erase)
 );
+CREATE INDEX users_deleted ON users(deleted_at, erased_at);
 
 CREATE TABLE sessions (
   id TEXT PRIMARY KEY,
@@ -508,12 +570,15 @@ CREATE TABLE sessions (
   revoked_at INTEGER
 );
 CREATE INDEX sessions_user ON sessions(user_id);
+CREATE INDEX sessions_expiry ON sessions(expires_at);
 
--- One signup gift per Kakao account, kept a year after the account is deleted.
+-- One signup gift per Kakao account. Kept while an account with this key exists, and for a year after it is deleted.
 CREATE TABLE gift_claims (
   kakao_key TEXT PRIMARY KEY,
-  claimed_at INTEGER NOT NULL
+  claimed_at INTEGER NOT NULL,
+  account_deleted_at INTEGER          -- set when the account is deleted, cleared if the same Kakao account joins again
 );
+CREATE INDEX gift_claims_deleted ON gift_claims(account_deleted_at);
 
 CREATE TABLE orders (
   id TEXT PRIMARY KEY,                -- the Toss orderId
@@ -526,10 +591,12 @@ CREATE TABLE orders (
   withdrawal_ack_at INTEGER NOT NULL, -- when the buyer confirmed the 청약철회 notice
   payment_key TEXT,
   fail_code TEXT,
+  cancel_attempt INTEGER NOT NULL DEFAULT 1, -- Toss Idempotency-Key cancel-<id>-<attempt>
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
 CREATE INDEX orders_user ON orders(user_id, created_at);
+CREATE INDEX orders_status ON orders(status, updated_at);
 
 CREATE TABLE payments (
   payment_key TEXT PRIMARY KEY,
@@ -559,6 +626,7 @@ CREATE TABLE credit_lots (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX credit_lots_user ON credit_lots(user_id, currency, status);
+CREATE INDEX credit_lots_expiry ON credit_lots(status, expires_at);
 
 CREATE TABLE unlocks (
   id TEXT PRIMARY KEY,
@@ -573,6 +641,7 @@ CREATE TABLE unlocks (
   settled_at INTEGER
 );
 CREATE INDEX unlocks_user ON unlocks(user_id, status);
+CREATE INDEX unlocks_status ON unlocks(status, reserved_until);
 
 CREATE TABLE ledger (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -589,24 +658,33 @@ CREATE TABLE ledger (
 CREATE INDEX ledger_user ON ledger(user_id, created_at);
 CREATE INDEX ledger_lot ON ledger(lot_id);
 
+-- Readings opened while logged in. No digest and no per-user uniqueness: two identical readings are two purchases.
 CREATE TABLE readings (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
   kind TEXT NOT NULL CHECK (kind IN ('tarot', 'saju')),
   product_id TEXT NOT NULL,
-  source TEXT NOT NULL CHECK (source IN ('paid', 'free', 'owner', 'claimed')),
+  source TEXT NOT NULL CHECK (source IN ('paid', 'free', 'owner')),
   unlock_id TEXT UNIQUE,
-  digest TEXT NOT NULL,               -- sha256 of the canonical reading JSON
   payload TEXT NOT NULL,              -- AES-GCM sealed chapter JSON (lib/account/secrets.ts)
-  key_version INTEGER NOT NULL,
+  key_version INTEGER NOT NULL,       -- which derived key sealed it, for a future key change
   created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL,
-  UNIQUE (user_id, digest)
+  updated_at INTEGER NOT NULL
 );
-CREATE INDEX readings_user ON readings(user_id, created_at);
+CREATE INDEX readings_user ON readings(user_id, created_at, id);
 ```
 
-- [ ] **Step 7: Append to `apps/web/lib/db/index.ts`** (keep everything P3 put there; it already imports `getDb` from `./d1`)
+- [ ] **Step 7: Update `apps/web/lib/db/index.ts`** (keep everything P3 put there; it already imports `getDb` from `./d1`)
+
+Replace the last bullet of the header comment, `- Never store birth dates, questions or notes.`, with these lines. The privacy policy changes with it in Task 18 (M6).
+
+```ts
+ * - Bonds (P3) never store birth dates, questions or notes.
+ * - Accounts (P4) keep readings opened while logged in: question, situation, note or birth data,
+ *   sealed with AES-256-GCM (lib/account/secrets.ts) and erased on account deletion or on request.
+```
+
+Then append:
 
 ```ts
 import type { D1Binding } from "./d1";
@@ -663,13 +741,18 @@ Expected:
 - In a non-interactive shell wrangler prints "Using fallback value in non-interactive context: yes".
 - It writes only to `apps/web/.wrangler/state` (gitignored).
 
-When this plan was written, these were checked on the D1 engine (wrangler 4.143 `d1 execute --local`):
-- The migration applied with "17 commands executed successfully", after P3's 0001.
+When the first revision of this plan was written, these were checked on the D1 engine (wrangler 4.143 `d1 execute --local`), against that revision's 0002:
+- The migration applied after P3's 0001 with no SQL error.
 - A statement that drove `units_left` below 0 rolled its whole multi-statement execute back.
 - The guarded `INSERT … SELECT … WHERE EXISTS (… status = 'reserved')` wrote nothing for a released unlock.
 - `UPDATE … RETURNING` returned the row.
 
-The ledger SQL also passed all 13 contract cases on node:sqlite. `openLocalD1()` (getPlatformProxy) could not start workerd from the planner's sandbox: `fetch failed` / `ECONNRESET` after about 100 s. If it fails for you as well, report it rather than skipping silently. The node:sqlite suites still gate the task, and the controller runs the `*.int.test.ts` files where workerd starts.
+Revision 2 adds `meta`, `users.erased_at`, `gift_claims.account_deleted_at`, `orders.cancel_attempt` and indexes, and drops `users.bonds_owner_id` and `readings.digest`. The revised file was checked in the planner's scratch folder:
+- on node:sqlite after P3's 0001, both whole and split the way `migrationStatements()` splits it (33 statements);
+- on the D1 engine with `wrangler d1 execute --local --file` (0001 then 0002): 14 tables, no error.
+- `wrangler d1 migrations apply --local` itself answered `read ECONNRESET` in that sandbox, so this step is its first real run: report its output.
+
+`openLocalD1()` (getPlatformProxy) could not start workerd from the planner's sandbox (`fetch failed` / `ECONNRESET`). The coordinator's environment ran P3's `d1BondsRepo.int.test.ts` with it (8 passed). If it fails for you, report it rather than skipping silently. The node:sqlite suites still gate the task.
 
 Run: `pnpm typecheck`
 Expected: exit 0.
@@ -683,10 +766,10 @@ git commit -m "feat(db): P4 schema, node:sqlite test D1 and local-D1 checks" -m 
 
 ---
 
-### Task 2: Product catalog and payment modes
+### Task 2: Catalog, payment modes, unlock methods
 
 **Files:**
-- Create: `apps/web/lib/pay/catalog.ts`, `apps/web/lib/pay/mode.ts`
+- Create: `apps/web/lib/pay/catalog.ts`, `apps/web/lib/pay/mode.ts`, `apps/web/lib/pay/unlockMethod.ts`
 - Modify: `apps/web/.env.example` (names only)
 - Test: `apps/web/lib/pay/catalog.test.ts`, `apps/web/lib/pay/mode.test.ts`
 
@@ -698,8 +781,11 @@ git commit -m "feat(db): P4 schema, node:sqlite test D1 and local-D1 checks" -m 
     - `type ProductId = StandardProductId | "tarot-deep" | "match" | "newyear-2027"`
     - `interface Product { id; name; orderName; krw; units: number | null; deliverable: boolean; opensAt?: number }`
     - `PRODUCTS`, `productById(id: string): Product | null`, `standardProduct(kind: StandardProductId): Product`, `sellable(p: Product, now: number): boolean`, `unitsFor(p: Product): number`, `NEWYEAR_OPENS_AT`
+    - `GIFT_DAYS = 90` (별조각 lifetime; the ledger and the terms page read it here)
   - `mode.ts` (server-only):
-    - `type PaymentsMode = "off" | "owner" | "on"`, `paymentsMode(env?)`, `salesOpen(mode, owner)`, `betaFullReadings(mode)`
+    - `type PaymentsMode = "off" | "owner" | "on" | "paused"`, `paymentsMode(env?)`
+    - `salesOpen(mode, owner)` (new orders, new accounts, signup gifts), `loginOpen(mode, owner)` (existing accounts may log in), `openingOffer(mode)` (the 오픈 기념 free daily full reading applies)
+  - `unlockMethod.ts` (client-safe): `UNLOCK_METHODS = ["opening", "paid", "free", "owner"] as const`, `type UnlockMethod` (here rather than in Task 10, so the client tasks 14–17 never wait for the server lane)
     - `type PayProvider = "toss" | "mock"`, `payProvider(env?)`, `tossClientKey(env?)`, `payConfigProblems(env?): string[]`
 
 - [ ] **Step 1: Write the failing tests**
@@ -709,7 +795,7 @@ git commit -m "feat(db): P4 schema, node:sqlite test D1 and local-D1 checks" -m 
 ```ts
 import { describe, expect, it } from "vitest";
 import { SITE } from "@/lib/config";
-import { NEWYEAR_OPENS_AT, PRODUCTS, productById, sellable, standardProduct, unitsFor } from "./catalog";
+import { GIFT_DAYS, NEWYEAR_OPENS_AT, PRODUCTS, productById, sellable, standardProduct, unitsFor } from "./catalog";
 
 const NOW = Date.parse("2026-10-01T12:00:00+09:00");
 
@@ -756,6 +842,10 @@ describe("catalog", () => {
     expect(unitsFor(standardProduct("tarot"))).toBe(SITE.price.unitsPerReading);
     expect(unitsFor(productById("match")!)).toBe(1);
   });
+
+  it("keeps 별조각 for 90 KST days", () => {
+    expect(GIFT_DAYS).toBe(90);
+  });
 });
 ```
 
@@ -763,25 +853,30 @@ describe("catalog", () => {
 
 ```ts
 import { describe, expect, it } from "vitest";
-import { betaFullReadings, payConfigProblems, payProvider, paymentsMode, salesOpen, tossClientKey } from "./mode";
+import { loginOpen, openingOffer, payConfigProblems, payProvider, paymentsMode, salesOpen, tossClientKey } from "./mode";
 
 const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
 const KEYS = { NEXT_PUBLIC_TOSS_CLIENT_KEY: "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm", TOSS_SECRET_KEY: "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6" };
 
 describe("payment modes", () => {
-  it("defaults to off and reads owner and on", () => {
+  it("defaults to off and reads owner, on and paused", () => {
     expect(paymentsMode(env({}))).toBe("off");
     expect(paymentsMode(env({ STARLOG_PAYMENTS: " ON " }))).toBe("on");
     expect(paymentsMode(env({ STARLOG_PAYMENTS: "owner" }))).toBe("owner");
+    expect(paymentsMode(env({ STARLOG_PAYMENTS: "paused" }))).toBe("paused");
     expect(paymentsMode(env({ STARLOG_PAYMENTS: "yes" }))).toBe("off");
   });
 
-  it("opens sales for everyone when on, for owner-pass devices when owner, for nobody when off", () => {
-    expect([salesOpen("on", false), salesOpen("owner", false), salesOpen("owner", true), salesOpen("off", true)]).toEqual([true, false, true, false]);
+  it("opens sales for everyone when on, for owner-pass devices when owner, for nobody when off or paused", () => {
+    expect([salesOpen("on", false), salesOpen("owner", false), salesOpen("owner", true), salesOpen("off", true), salesOpen("paused", true)]).toEqual([true, false, true, false, false]);
   });
 
-  it("ends the beta's free full reading only when sales are on for everyone", () => {
-    expect([betaFullReadings("off"), betaFullReadings("owner"), betaFullReadings("on")]).toEqual([true, true, false]);
+  it("keeps login open for existing accounts while paused, so a rollback never locks buyers out", () => {
+    expect([loginOpen("paused", false), loginOpen("on", false), loginOpen("owner", false), loginOpen("owner", true), loginOpen("off", true)]).toEqual([true, true, false, true, false]);
+  });
+
+  it("ends the 오픈 기념 free full reading only while sales are on for everyone", () => {
+    expect([openingOffer("off"), openingOffer("owner"), openingOffer("on"), openingOffer("paused")]).toEqual([true, true, false, true]);
   });
 
   it("accepts a matching test or live key pair and reads the client key at run time", () => {
@@ -837,6 +932,9 @@ export interface Product {
   /** first moment it may be sold (ms), for a product that opens later */
   opensAt?: number;
 }
+
+/** 별조각 from the signup gift last this many KST days after the day they arrive (spec 14, default 1). */
+export const GIFT_DAYS = 90;
 
 /** 2027 신년운세 opens mid-November (spec 14, default 9). */
 export const NEWYEAR_OPENS_AT = Date.parse("2026-11-15T00:00:00+09:00");
@@ -899,27 +997,34 @@ import "server-only";
 /**
  * Feature flags for accounts and payments (spec section 12):
  * - `STARLOG_PAYMENTS`:
- *   - `off` (default; the beta as it is);
- *   - `owner` (sales, sign-up and gifts open for owner-pass devices only);
- *   - `on`: open for everyone. The beta's free daily full reading ends.
+ *   - `off` (default): no login, no payments; the site as it is today;
+ *   - `owner`: sales, sign-up and gifts open for owner-pass devices only;
+ *   - `on`: open for everyone. The 오픈 기념 free daily full reading ends; the signup gift replaces it;
+ *   - `paused` (the rollback): no new orders, accounts or gifts, but existing accounts can still log
+ *     in to open, refund or delete what they hold, and the 오픈 기념 reading comes back.
  * - Spending credit a user already holds is never gated by it.
  * - `STARLOG_PAY=mock` swaps Toss for the in-memory mock (tests, e2e, local dev); refused in production.
  */
 
-export type PaymentsMode = "off" | "owner" | "on";
+export type PaymentsMode = "off" | "owner" | "on" | "paused";
 
 export function paymentsMode(env: NodeJS.ProcessEnv = process.env): PaymentsMode {
   const value = env.STARLOG_PAYMENTS?.trim().toLowerCase();
-  return value === "on" || value === "owner" ? value : "off";
+  return value === "on" || value === "owner" || value === "paused" ? value : "off";
 }
 
-/** New orders, sign-ups and signup gifts are open for this device. */
+/** New orders, new accounts and signup gifts are open for this device. */
 export function salesOpen(mode: PaymentsMode, owner: boolean): boolean {
   return mode === "on" || (mode === "owner" && owner);
 }
 
-/** The beta's free daily full reading applies until sales open for everyone. */
-export function betaFullReadings(mode: PaymentsMode): boolean {
+/** An existing account may log in on this device (a new one only while salesOpen). */
+export function loginOpen(mode: PaymentsMode, owner: boolean): boolean {
+  return salesOpen(mode, owner) || mode === "paused";
+}
+
+/** The 오픈 기념 free daily full reading applies until sales open for everyone. */
+export function openingOffer(mode: PaymentsMode): boolean {
   return mode !== "on";
 }
 
@@ -951,11 +1056,19 @@ export function payConfigProblems(env: NodeJS.ProcessEnv = process.env): string[
 }
 ```
 
-- [ ] **Step 5: Add the P4 names to `apps/web/.env.example`** (names and comments only, never values)
+- [ ] **Step 5: Write `apps/web/lib/pay/unlockMethod.ts`** (client-safe)
+
+```ts
+/** How a full reading is opened: the 오픈 기념 daily free one, a paid purchase, 별조각, or the owner pass. */
+export const UNLOCK_METHODS = ["opening", "paid", "free", "owner"] as const;
+export type UnlockMethod = (typeof UNLOCK_METHODS)[number];
+```
+
+- [ ] **Step 6: Add the P4 names to `apps/web/.env.example`** (names and comments only, never values)
 
 ```bash
 # ---- P4 accounts and payments (docs/runbook-payments.md) ----
-# off (default, the beta) | owner (only owner-pass devices see login and payments) | on
+# off (default: no login or payments) | owner (only owner-pass devices) | on | paused (rollback: no new sales, logins still work)
 STARLOG_PAYMENTS=
 # toss (default) | mock (in-memory Toss for tests, e2e and local dev; refused in production)
 STARLOG_PAY=
@@ -967,30 +1080,36 @@ TOSS_SECRET_KEY=
 # Kakao Login: REST API key and client secret (app console > 앱 > 플랫폼 키 > REST API 키).
 KAKAO_REST_API_KEY=
 KAKAO_CLIENT_SECRET=
-# 32+ random characters. Keys Kakao lookups and encrypts saved readings. NEVER rotate it.
+# 32+ random characters. Keys Kakao lookups and encrypts saved readings. NEVER rotate it: D1 pins
+# it (meta.account_secret_check) and account routes answer 503 when it changes.
 STARLOG_ACCOUNT_SECRET=
+# 32+ random characters. The Cron Trigger's bearer token for /api/internal/maintenance.
+STARLOG_CRON_SECRET=
+# 1 = `next dev` gets local D1, KV and limiters through Miniflare (run db:migrate:local first).
+STARLOG_CF_DEV=
 ```
 
-- [ ] **Step 6: Run the tests**
+- [ ] **Step 7: Run the tests**
 
 Run: `npx vitest run apps/web/lib/pay/catalog.test.ts apps/web/lib/pay/mode.test.ts`
-Expected: PASS (7 + 6 tests).
+Expected: PASS (8 + 7 tests).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add apps/web/lib/pay/catalog.ts apps/web/lib/pay/mode.ts apps/web/lib/pay/catalog.test.ts apps/web/lib/pay/mode.test.ts apps/web/.env.example
+git add apps/web/lib/pay/catalog.ts apps/web/lib/pay/mode.ts apps/web/lib/pay/unlockMethod.ts apps/web/lib/pay/catalog.test.ts apps/web/lib/pay/mode.test.ts apps/web/.env.example
 git commit -m "feat(pay): product catalog and payment modes" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
-### Task 3: Account core — secrets, users, sessions, request guards, error codes, limiters
+
+### Task 3: Account core — secrets (HKDF, D1 check), users, sessions, request guards, error codes, limiters
 
 **Files:**
-- Create: `apps/web/lib/account/secrets.ts`, `apps/web/lib/account/users.ts`, `apps/web/lib/account/session.ts`, `apps/web/lib/account/request.ts`, `apps/web/lib/account/redirect.ts`, `apps/web/lib/account/returnTo.ts`
+- Create: `apps/web/lib/account/secrets.ts`, `apps/web/lib/account/secretCheck.ts`, `apps/web/lib/account/users.ts`, `apps/web/lib/account/session.ts`, `apps/web/lib/account/request.ts`, `apps/web/lib/account/redirect.ts`, `apps/web/lib/account/returnTo.ts`
 - Modify: `apps/web/lib/api/http.ts` (error codes), `apps/web/lib/security/rateLimit.ts` (limiter names), `apps/web/lib/cloudflare.ts` (binding types), `apps/web/wrangler.jsonc` (`ratelimits` entries only)
 - Test: `apps/web/lib/account/account.test.ts`
 
@@ -1002,12 +1121,17 @@ git commit -m "feat(pay): product catalog and payment modes" -m "Co-Authored-By:
   - `rateLimit`, `LimiterName` from `lib/security/rateLimit.ts`;
   - `errorResponse`, `parseCookies`, `clientKey`, `serializeCookie`, `CookieSpec` from `lib/api/http.ts`.
 - Produces:
-  - `secrets.ts`: `accountSecret(env?): string | null`, `kakaoKey(kakaoId, secret): Promise<string>`, `sealJson(value, secret): Promise<string>`, `openJson<T>(sealed, secret): Promise<T | null>`, `READING_KEY_VERSION = 1`
+  - `secrets.ts`:
+    - `accountSecret(env?): string | null`
+    - `kakaoKey(kakaoId, secret): Promise<string>`, `secretCheckValue(secret): Promise<string>`
+    - `READING_KEY_VERSION = 1`, `sealJson(value, secret, version?): Promise<string>`, `openJson<T>(sealed, secret, version?): Promise<T | null>`
+    - every key is an HKDF-SHA256 subkey of the secret with its own purpose (`kakao-lookup`, `secret-check`, `readings-v<n>`)
+  - `secretCheck.ts`: `SECRET_CHECK_KEY = "account_secret_check"`, `accountSecretMatches(db, secret, now): Promise<boolean>`, `resetSecretCheck()` (tests)
   - `users.ts`:
-    - `interface UserRow { id; kakao_key: string | null; nickname: string | null; customer_key; age_confirmed_at: number | null; bonds_owner_id: string | null; created_at; last_login_at; deleted_at: number | null }`
+    - `interface UserRow { id; kakao_key: string | null; nickname: string | null; customer_key; age_confirmed_at: number | null; created_at; last_login_at; deleted_at: number | null; erased_at: number | null }`
     - `cleanNickname(v: unknown): string`
-    - `loginKakaoUser(db, {key, nickname, ageConfirmed, now}): Promise<{user: UserRow; created: boolean}>`
-    - `userById(db, id): Promise<UserRow | null>`
+    - `loginKakaoUser(db, {key, nickname, ageConfirmed, now}): Promise<{user: UserRow; created: boolean} | null>` (null: that Kakao account's previous account is still being erased)
+    - `userById(db, id)`, `userByKakaoKey(db, key)`: live accounts only
   - `session.ts`:
     - `SESSION_COOKIE = "sl_sid"`, `SESSION_TTL_MS`, `interface Session { id; user: UserRow }`
     - `createSession(db, userId, secret, now): Promise<{id; cookie: CookieSpec}>`
@@ -1015,8 +1139,8 @@ git commit -m "feat(pay): product catalog and payment modes" -m "Co-Authored-By:
     - `revokeSession(db, id, now)`, `CLEAR_SESSION: CookieSpec`
   - `request.ts`:
     - `interface AccountContext { db; secret; accountSecret; now; cookies; owner; session: Session | null }`
-    - `openAccount(request, now?)`, `openAccountRoute(request, {limiter, write?})`
-    - `requireSession(ctx): Session | Response`, `sameOrigin(request): boolean`
+    - `openAccount(request, now?)`: 503 `PAY_UNAVAILABLE` without D1 or a secret, or when the account secret does not match D1's check (M8)
+    - `openAccountRoute(request, {limiter, write?})`, `requireSession(ctx): Session | Response`, `sameOrigin(request): boolean`
   - `redirect.ts`: `redirectTo(request, target, query?, cookies?: Array<CookieSpec | string>): Response` (303)
   - `returnTo.ts` (client-safe): `safeReturnTo(v): string`, `withQuery(path, query): string`
   - `http.ts` `ErrorCode` gains:
@@ -1025,6 +1149,11 @@ git commit -m "feat(pay): product catalog and payment modes" -m "Co-Authored-By:
     - `NOT_AVAILABLE` 409, `PAY_PENDING` 409, `NOT_REFUNDABLE` 409;
     - `PAY_UNAVAILABLE` 503.
   - limiters: `AUTH_LIMITER` 20/60 s, `PAY_LIMITER` 20/60 s, `WEBHOOK_LIMITER` 60/60 s
+
+**Why the D1 check (M8):**
+- A changed `STARLOG_ACCOUNT_SECRET` would not fail loudly. Every Kakao lookup would miss, so returning users would get fresh empty accounts and fresh signup gifts, and no saved reading would open.
+- The first request on a database records an HMAC check value in `meta`. After that, a secret that does not produce the same value gets 503 on every account route, logged once by name. It never gets a wrong answer.
+- `key_version` on each reading and the `readings-v<n>` purpose leave room for a later key change. P4 never rotates: version 1 only.
 
 - [ ] **Step 1: Write the failing test** — `apps/web/lib/account/account.test.ts`
 
@@ -1036,9 +1165,10 @@ import { migratedTestD1 } from "@/lib/db/testing/migrate";
 import { signingSecret } from "@/lib/security/sign";
 import { openAccount, sameOrigin } from "./request";
 import { safeReturnTo, withQuery } from "./returnTo";
-import { accountSecret, kakaoKey, openJson, sealJson } from "./secrets";
+import { SECRET_CHECK_KEY, accountSecretMatches, resetSecretCheck } from "./secretCheck";
+import { accountSecret, kakaoKey, openJson, sealJson, secretCheckValue } from "./secrets";
 import { CLEAR_SESSION, SESSION_COOKIE, SESSION_TTL_MS, createSession, readSession, revokeSession } from "./session";
-import { cleanNickname, loginKakaoUser, userById } from "./users";
+import { cleanNickname, loginKakaoUser, userByKakaoKey, userById } from "./users";
 
 const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
 const ACCOUNT = "account-secret-for-tests-0123456789abcdef";
@@ -1047,8 +1177,15 @@ const NOW = Date.parse("2026-10-01T03:00:00Z");
 
 afterEach(() => {
   setTestDb(null);
+  resetSecretCheck();
   vi.restoreAllMocks();
 });
+
+async function login(db: ReturnType<typeof migratedTestD1>, key: string, nickname = "별빛", now = NOW) {
+  const result = await loginKakaoUser(db, { key, nickname, ageConfirmed: true, now });
+  if (!result) throw new Error("no account");
+  return result;
+}
 
 describe("account secret", () => {
   it("needs 32+ characters in production and falls back outside it", () => {
@@ -1058,24 +1195,49 @@ describe("account secret", () => {
     expect(accountSecret(env({ NODE_ENV: "development" }))!.length).toBeGreaterThanOrEqual(32);
   });
 
-  it("keeps a keyed hash of the Kakao id, never the id", async () => {
+  it("keeps a keyed hash of the Kakao id, never the id, under its own derived key", async () => {
     const key = await kakaoKey("1234567890", ACCOUNT);
     expect(key).toBe(await kakaoKey("1234567890", ACCOUNT));
     expect(key).not.toContain("1234567890");
     expect(key).not.toBe(await kakaoKey("1234567890", `${ACCOUNT}x`));
     expect(key).not.toBe(await kakaoKey("1234567891", ACCOUNT));
+    expect(await secretCheckValue(ACCOUNT)).not.toBe(key);
   });
 
-  it("seals JSON with AES-GCM: round trip, a fresh IV each time, tampering and the wrong key rejected", async () => {
+  it("seals JSON with AES-GCM: round trip, a fresh IV each time, tampering, the wrong key and the wrong version rejected", async () => {
     const value = { question: "이번 주 재물 흐름", birth: { year: 1990 } };
     const sealed = await sealJson(value, ACCOUNT);
     expect(sealed).not.toContain("재물");
     expect(await openJson(sealed, ACCOUNT)).toEqual(value);
+    expect(await openJson(sealed, ACCOUNT, 1)).toEqual(value);
     expect(await sealJson(value, ACCOUNT)).not.toBe(sealed);
     const flipped = `${sealed.slice(0, -2)}${sealed.at(-2) === "A" ? "B" : "A"}${sealed.at(-1)}`;
     expect(await openJson(flipped, ACCOUNT)).toBeNull();
     expect(await openJson(sealed, `${ACCOUNT}x`)).toBeNull();
+    expect(await openJson(sealed, ACCOUNT, 2)).toBeNull();
     expect(await openJson("", ACCOUNT)).toBeNull();
+  });
+});
+
+describe("the D1 secret check", () => {
+  it("pins a fresh database to the first secret and refuses any other", async () => {
+    const db = migratedTestD1();
+    expect(await accountSecretMatches(db, ACCOUNT, NOW)).toBe(true);
+    expect(await db.prepare("SELECT value FROM meta WHERE key = ?").bind(SECRET_CHECK_KEY).first()).toEqual({ value: await secretCheckValue(ACCOUNT) });
+    expect(await accountSecretMatches(db, ACCOUNT, NOW + 1)).toBe(true);
+    resetSecretCheck();
+    expect(await accountSecretMatches(db, `${ACCOUNT}-rotated`, NOW + 2)).toBe(false);
+    expect((await db.prepare("SELECT value FROM meta WHERE key = ?").bind(SECRET_CHECK_KEY).first<{ value: string }>())!.value).toBe(await secretCheckValue(ACCOUNT));
+  });
+
+  it("closes account routes with 503 when the secret changed, and says so once in the log", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const db = migratedTestD1();
+    setTestDb(db);
+    await db.prepare("INSERT INTO meta (key, value, updated_at) VALUES (?, 'made-by-another-secret', 0)").bind(SECRET_CHECK_KEY).run();
+    const res = await openAccount(new Request("http://localhost/api/me"));
+    expect(res instanceof Response && res.status).toBe(503);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("config.account_secret_mismatch"));
   });
 });
 
@@ -1090,30 +1252,41 @@ describe("users", () => {
 
   it("creates an account once per Kakao key and updates it on later logins", async () => {
     const db = migratedTestD1();
-    const first = await loginKakaoUser(db, { key: "k1", nickname: "별빛", ageConfirmed: true, now: NOW });
+    const first = await login(db, "k1");
     expect(first.created).toBe(true);
-    expect(first.user).toMatchObject({ kakao_key: "k1", nickname: "별빛", age_confirmed_at: NOW, created_at: NOW, bonds_owner_id: null });
+    expect(first.user).toMatchObject({ kakao_key: "k1", nickname: "별빛", age_confirmed_at: NOW, created_at: NOW, deleted_at: null, erased_at: null });
     expect(first.user.customer_key).toMatch(/^c_[A-Za-z0-9_-]{24}$/);
     const again = await loginKakaoUser(db, { key: "k1", nickname: "달빛", ageConfirmed: false, now: NOW + 1000 });
-    expect(again.created).toBe(false);
-    expect(again.user).toMatchObject({ id: first.user.id, nickname: "달빛", age_confirmed_at: NOW, last_login_at: NOW + 1000, customer_key: first.user.customer_key });
+    expect(again?.created).toBe(false);
+    expect(again?.user).toMatchObject({ id: first.user.id, nickname: "달빛", age_confirmed_at: NOW, last_login_at: NOW + 1000, customer_key: first.user.customer_key });
+    expect((await userByKakaoKey(db, "k1"))?.id).toBe(first.user.id);
   });
 
-  it("gives a deleted account's Kakao key a fresh account", async () => {
+  it("gives an erased account's Kakao key a fresh account, and refuses one still being erased", async () => {
     const db = migratedTestD1();
-    const { user } = await loginKakaoUser(db, { key: "k1", nickname: "별빛", ageConfirmed: true, now: NOW });
-    await db.prepare("UPDATE users SET kakao_key = NULL, nickname = NULL, deleted_at = ? WHERE id = ?").bind(NOW, user.id).run();
+    const { user } = await login(db, "k1");
+    await db.prepare("UPDATE users SET deleted_at = ? WHERE id = ?").bind(NOW, user.id).run();
     expect(await userById(db, user.id)).toBeNull();
-    const next = await loginKakaoUser(db, { key: "k1", nickname: "별빛", ageConfirmed: true, now: NOW + 1 });
+    expect(await userByKakaoKey(db, "k1")).toBeNull();
+    expect(await loginKakaoUser(db, { key: "k1", nickname: "별빛", ageConfirmed: true, now: NOW + 1 })).toBeNull();
+    await db.prepare("UPDATE users SET kakao_key = NULL, nickname = NULL, erased_at = ? WHERE id = ?").bind(NOW + 2, user.id).run();
+    const next = await login(db, "k1", "별빛", NOW + 3);
     expect(next.created).toBe(true);
     expect(next.user.id).not.toBe(user.id);
+  });
+
+  it("ties a deleted account's gift claim to the Kakao account again when it rejoins", async () => {
+    const db = migratedTestD1();
+    await db.prepare("INSERT INTO gift_claims (kakao_key, claimed_at, account_deleted_at) VALUES ('k1', 0, 5)").run();
+    await login(db, "k1");
+    expect(await db.prepare("SELECT account_deleted_at FROM gift_claims WHERE kakao_key = 'k1'").first()).toEqual({ account_deleted_at: null });
   });
 });
 
 describe("sessions", () => {
   it("reads a live session, never an expired, revoked, forged or deleted one", async () => {
     const db = migratedTestD1();
-    const { user } = await loginKakaoUser(db, { key: "k1", nickname: "별빛", ageConfirmed: true, now: NOW });
+    const { user } = await login(db, "k1");
     const { id, cookie } = await createSession(db, user.id, SIGNING, NOW);
     expect(cookie).toMatchObject({ name: SESSION_COOKIE, maxAge: SESSION_TTL_MS / 1000 });
     expect((await readSession(db, cookie.value, SIGNING, NOW + 1000))?.user.id).toBe(user.id);
@@ -1146,7 +1319,7 @@ describe("request guards", () => {
     expect(none instanceof Response && none.status).toBe(503);
     const db = migratedTestD1();
     setTestDb(db);
-    const { user } = await loginKakaoUser(db, { key: "k1", nickname: "별빛", ageConfirmed: true, now: Date.now() });
+    const { user } = await login(db, "k1", "별빛", Date.now());
     const { cookie } = await createSession(db, user.id, signingSecret()!, Date.now());
     const ctx = await openAccount(request({ cookie: `${SESSION_COOKIE}=${encodeURIComponent(cookie.value)}` }));
     if (ctx instanceof Response) throw new Error(`unexpected ${ctx.status}`);
@@ -1211,7 +1384,7 @@ Expected: FAIL (modules not found).
     - add to `LIMITS_PER_MINUTE`:
 
 ```ts
-  /** Kakao login start/callback, logout, delete intent (P4) */
+  /** Kakao login start/callback, logout, delete intent, account readings (P4) */
   AUTH_LIMITER: 20,
   /** checkout, orders, confirm, refund (P4) */
   PAY_LIMITER: 20,
@@ -1220,7 +1393,7 @@ Expected: FAIL (modules not found).
 ```
 
   - `apps/web/lib/cloudflare.ts`: add `AUTH_LIMITER?: RateLimitBinding; PAY_LIMITER?: RateLimitBinding; WEBHOOK_LIMITER?: RateLimitBinding;` to `CloudflareEnv`.
-  - `apps/web/wrangler.jsonc`: append to `ratelimits`. The 11xx namespaces stay clear of P2b's 1001–1005 and P3's bond limiters; if one is taken, pick the next free 11xx and say so in your report.
+  - `apps/web/wrangler.jsonc`: append to `ratelimits`. P2b uses 1001–1005 and P3 1006–1008 (`BOND_VIEW_LIMITER` is 1008 at aa70830); if an 11xx id is taken by then, pick the next free 11xx and say so in your report.
 
 ```jsonc
     { "name": "AUTH_LIMITER", "namespace_id": "1101", "simple": { "limit": 20, "period": 60 } },
@@ -1238,8 +1411,8 @@ const DEV_ACCOUNT_SECRET = "starlog-dev-only-account-secret-never-used-in-produc
 
 /**
  * STARLOG_ACCOUNT_SECRET keys the stored Kakao lookup value and encrypts saved readings. Never
- * rotate it: accounts and saved readings would become unreachable. Null in production when it is
- * missing or shorter than 32 characters; account routes then answer 503.
+ * rotate it: D1 pins it (secretCheck.ts) and account routes close when it changes. Null in
+ * production when it is missing or shorter than 32 characters; account routes then answer 503.
  */
 export function accountSecret(env: NodeJS.ProcessEnv = process.env): string | null {
   const secret = env.STARLOG_ACCOUNT_SECRET?.trim() ?? "";
@@ -1269,62 +1442,77 @@ function fromBase64Url(text: string): Uint8Array<ArrayBuffer> | null {
   }
 }
 
-const hmacKeys = new Map<string, Promise<CryptoKey>>();
-const readingKeys = new Map<string, Promise<CryptoKey>>();
+/**
+ * Every key is an HKDF-SHA256 subkey of the secret under its own purpose, so no two uses share key
+ * material:
+ * - `kakao-lookup`: HMAC key for kakaoKey();
+ * - `secret-check`: HMAC key for the value D1 keeps to recognise the secret;
+ * - `readings-v<n>`: the AES-256-GCM key for saved readings with key_version n.
+ */
+type Purpose = "kakao-lookup" | "secret-check" | `readings-v${number}`;
 
-function hmacKey(secret: string): Promise<CryptoKey> {
-  let key = hmacKeys.get(secret);
+const SALT = encoder.encode("starlog-account-v1");
+const baseKeys = new Map<string, Promise<CryptoKey>>();
+const subkeys = new Map<string, Promise<CryptoKey>>();
+
+function baseKey(secret: string): Promise<CryptoKey> {
+  let key = baseKeys.get(secret);
   if (!key) {
-    key = crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-    hmacKeys.set(secret, key);
+    key = crypto.subtle.importKey("raw", encoder.encode(secret), "HKDF", false, ["deriveKey"]);
+    baseKeys.set(secret, key);
   }
   return key;
 }
 
-/** HMAC-SHA256 of the Kakao user id: how a login finds its account. The raw id is never stored. */
-export async function kakaoKey(kakaoId: string, secret: string): Promise<string> {
-  const mac = await crypto.subtle.sign("HMAC", await hmacKey(secret), encoder.encode(`kakao:${kakaoId}`));
-  return toBase64Url(new Uint8Array(mac));
-}
-
-/** AES-256-GCM key for saved readings, derived from the account secret with HKDF-SHA256. */
-function readingKey(secret: string): Promise<CryptoKey> {
-  let key = readingKeys.get(secret);
+function subkey(secret: string, purpose: Purpose): Promise<CryptoKey> {
+  const id = `${purpose}\u0000${secret}`;
+  let key = subkeys.get(id);
   if (!key) {
     key = (async () => {
-      const base = await crypto.subtle.importKey("raw", encoder.encode(secret), "HKDF", false, ["deriveKey"]);
-      return crypto.subtle.deriveKey(
-        { name: "HKDF", hash: "SHA-256", salt: encoder.encode("starlog-readings"), info: encoder.encode("v1") },
-        base,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt", "decrypt"],
-      );
+      const params = { name: "HKDF", hash: "SHA-256", salt: SALT, info: encoder.encode(purpose) };
+      return purpose.startsWith("readings-v")
+        ? crypto.subtle.deriveKey(params, await baseKey(secret), { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])
+        : crypto.subtle.deriveKey(params, await baseKey(secret), { name: "HMAC", hash: "SHA-256", length: 256 }, false, ["sign"]);
     })();
-    readingKeys.set(secret, key);
+    subkeys.set(id, key);
   }
   return key;
 }
 
-/** Stored next to each sealed reading, for a future key change. */
+async function mac(secret: string, purpose: "kakao-lookup" | "secret-check", text: string): Promise<string> {
+  const signature = await crypto.subtle.sign("HMAC", await subkey(secret, purpose), encoder.encode(text));
+  return toBase64Url(new Uint8Array(signature));
+}
+
+/** How a login finds its account: an HMAC of the Kakao member number. The raw id is never stored. */
+export function kakaoKey(kakaoId: string, secret: string): Promise<string> {
+  return mac(secret, "kakao-lookup", `kakao:${kakaoId}`);
+}
+
+/** What D1 keeps (meta.account_secret_check) to recognise this secret. It reveals nothing about it. */
+export function secretCheckValue(secret: string): Promise<string> {
+  return mac(secret, "secret-check", "starlog-account-secret");
+}
+
+/** The key version new readings are sealed with. Each row keeps its own (readings.key_version). */
 export const READING_KEY_VERSION = 1;
 
 /** JSON sealed with AES-GCM: base64url of the 12-byte IV followed by the ciphertext and tag. */
-export async function sealJson(value: unknown, secret: string): Promise<string> {
+export async function sealJson(value: unknown, secret: string, version: number = READING_KEY_VERSION): Promise<string> {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const sealed = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await readingKey(secret), encoder.encode(JSON.stringify(value)));
+  const sealed = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await subkey(secret, `readings-v${version}`), encoder.encode(JSON.stringify(value)));
   const out = new Uint8Array(12 + sealed.byteLength);
   out.set(iv);
   out.set(new Uint8Array(sealed), 12);
   return toBase64Url(out);
 }
 
-/** The sealed JSON, or null when it was altered or sealed under another secret. */
-export async function openJson<T = unknown>(sealed: string, secret: string): Promise<T | null> {
+/** The sealed JSON, or null when it was altered, or sealed under another secret or key version. */
+export async function openJson<T = unknown>(sealed: string, secret: string, version: number = READING_KEY_VERSION): Promise<T | null> {
   const bytes = fromBase64Url(sealed);
   if (!bytes || bytes.length < 29) return null; // 12-byte IV + 16-byte tag + at least 1 byte
   try {
-    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, await readingKey(secret), bytes.slice(12));
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: bytes.slice(0, 12) }, await subkey(secret, `readings-v${version}`), bytes.slice(12));
     return JSON.parse(decoder.decode(plain)) as T;
   } catch {
     return null;
@@ -1332,7 +1520,43 @@ export async function openJson<T = unknown>(sealed: string, secret: string): Pro
 }
 ```
 
-- [ ] **Step 6: Write `apps/web/lib/account/users.ts`**
+The HKDF calls were run on Node 25 WebCrypto in the planner's scratch folder: the HMAC subkey signed 32 bytes, and the AES-GCM subkey round-tripped.
+
+- [ ] **Step 6: Write `apps/web/lib/account/secretCheck.ts`**
+
+```ts
+import "server-only";
+import type { D1Binding } from "@/lib/db/d1";
+import { secretCheckValue } from "./secrets";
+
+export const SECRET_CHECK_KEY = "account_secret_check";
+
+/** The secret that matched in this isolate (one check per isolate, not per request). */
+let confirmed: string | null = null;
+
+/**
+ * True when `secret` is the account secret this database was first used with (M8). The first call
+ * on a fresh database records the check value. After that, a different secret is refused: a typo, a
+ * rotation, or a dev secret against production data. Callers answer 503 instead of missing every
+ * Kakao lookup (fresh accounts and gifts for returning users) and failing to open every saved reading.
+ */
+export async function accountSecretMatches(db: D1Binding, secret: string, now: number): Promise<boolean> {
+  if (confirmed === secret) return true;
+  const value = await secretCheckValue(secret);
+  await db.prepare("INSERT INTO meta (key, value, updated_at) VALUES (?, ?, ?) ON CONFLICT (key) DO NOTHING").bind(SECRET_CHECK_KEY, value, now).run();
+  const row = await db.prepare("SELECT value FROM meta WHERE key = ?").bind(SECRET_CHECK_KEY).first<{ value: string }>();
+  if (row?.value !== value) return false;
+  confirmed = secret;
+  return true;
+}
+
+/** Tests only: forget the isolate's confirmed secret. */
+export function resetSecretCheck(): void {
+  confirmed = null;
+}
+```
+
+- [ ] **Step 7: Write `apps/web/lib/account/users.ts`**
 
 ```ts
 import "server-only";
@@ -1341,17 +1565,18 @@ import { randomId } from "@/lib/security/sign";
 
 export interface UserRow {
   id: string;
-  /** HMAC of the Kakao id (secrets.ts kakaoKey); null once the account is deleted */
+  /** HMAC of the Kakao id (secrets.ts kakaoKey); null once erased */
   kakao_key: string | null;
   nickname: string | null;
   /** Toss customerKey: random, 26 characters, includes "_" (Toss requires a special character) */
   customer_key: string;
   age_confirmed_at: number | null;
-  /** the P3 인연 owner linked to this account (Task 13) */
-  bonds_owner_id: string | null;
   created_at: number;
   last_login_at: number;
+  /** 회원 탈퇴: from this moment nothing is granted, reserved or saved for the account */
   deleted_at: number | null;
+  /** personal data erased (Task 12; the maintenance cron finishes an interrupted erase) */
+  erased_at: number | null;
 }
 
 /** At most 20 characters, no control characters or angle brackets; "별손님" when Kakao gave none. */
@@ -1362,13 +1587,16 @@ export function cleanNickname(value: unknown): string {
 
 /**
  * The account for a Kakao login, in one statement: an existing account gets its nickname and login
- * time updated, otherwise one is created. `created` is true only for a brand-new account (the caller
- * then offers the signup gift).
+ * time updated, otherwise one is created. `created` is true only for a brand-new account.
+ * Null when that Kakao key still belongs to a deleted account whose erase has not finished (the
+ * maintenance cron finishes it within minutes); the callback answers login=failed.
+ * A Kakao account that joins again takes its old gift claim back (no second signup gift, and the
+ * claim is no longer purged a year after the old account's deletion).
  */
 export async function loginKakaoUser(
   db: D1Binding,
   input: { key: string; nickname: string; ageConfirmed: boolean; now: number },
-): Promise<{ user: UserRow; created: boolean }> {
+): Promise<{ user: UserRow; created: boolean } | null> {
   const id = `u_${randomId(12)}`;
   const user = await db
     .prepare(
@@ -1378,11 +1606,13 @@ export async function loginKakaoUser(
          nickname = excluded.nickname,
          last_login_at = excluded.last_login_at,
          age_confirmed_at = COALESCE(users.age_confirmed_at, excluded.age_confirmed_at)
+       WHERE users.deleted_at IS NULL
        RETURNING *`,
     )
     .bind(id, input.key, cleanNickname(input.nickname), `c_${randomId(18)}`, input.ageConfirmed ? input.now : null, input.now, input.now)
     .first<UserRow>();
-  if (!user) throw new Error("user upsert returned no row");
+  if (!user) return null;
+  await db.prepare("UPDATE gift_claims SET account_deleted_at = NULL WHERE kakao_key = ? AND account_deleted_at IS NOT NULL").bind(input.key).run();
   return { user, created: user.id === id };
 }
 
@@ -1390,9 +1620,16 @@ export async function loginKakaoUser(
 export function userById(db: D1Binding, id: string): Promise<UserRow | null> {
   return db.prepare("SELECT * FROM users WHERE id = ? AND deleted_at IS NULL").bind(id).first<UserRow>();
 }
+
+/** The live account behind a Kakao key, if any (logins while sales are paused). */
+export function userByKakaoKey(db: D1Binding, key: string): Promise<UserRow | null> {
+  return db.prepare("SELECT * FROM users WHERE kakao_key = ? AND deleted_at IS NULL").bind(key).first<UserRow>();
+}
 ```
 
-- [ ] **Step 7: Write `apps/web/lib/account/session.ts`**
+The guarded upsert (`DO UPDATE … WHERE users.deleted_at IS NULL RETURNING *`) was run on node:sqlite in the planner's scratch folder: a live key returned the updated row, a deleted key returned no row, a new key returned the new row.
+
+- [ ] **Step 8: Write `apps/web/lib/account/session.ts`**
 
 ```ts
 import "server-only";
@@ -1450,7 +1687,7 @@ export async function revokeSession(db: D1Binding, id: string, now: number): Pro
 export const CLEAR_SESSION: CookieSpec = { name: SESSION_COOKIE, value: "", maxAge: 0 };
 ```
 
-- [ ] **Step 8: Write `apps/web/lib/account/returnTo.ts`** (no `server-only`: the login page uses it too)
+- [ ] **Step 9: Write `apps/web/lib/account/returnTo.ts`** (no `server-only`: the login page uses it too)
 
 ```ts
 /** Paths a login or a payment may come back to: this site only, no "//", no backslashes, 200 characters at most. */
@@ -1470,7 +1707,7 @@ export function withQuery(path: string, query: Record<string, string>): string {
 }
 ```
 
-- [ ] **Step 9: Write `apps/web/lib/account/redirect.ts`**
+- [ ] **Step 10: Write `apps/web/lib/account/redirect.ts`**
 
 ```ts
 import "server-only";
@@ -1478,7 +1715,7 @@ import { serializeCookie, type CookieSpec } from "@/lib/api/http";
 
 /**
  * 303 to `target` (a path on this site or an absolute URL) with query flags and cookies. Strings in
- * `cookies` are ready-made Set-Cookie values (P3's sl_uid). Never cached.
+ * `cookies` are ready-made Set-Cookie values. Never cached.
  */
 export function redirectTo(request: Request, target: string, query: Record<string, string> = {}, cookies: Array<CookieSpec | string> = []): Response {
   const url = new URL(target, request.url);
@@ -1489,7 +1726,7 @@ export function redirectTo(request: Request, target: string, query: Record<strin
 }
 ```
 
-- [ ] **Step 10: Write `apps/web/lib/account/request.ts`**
+- [ ] **Step 11: Write `apps/web/lib/account/request.ts`**
 
 ```ts
 import "server-only";
@@ -1499,6 +1736,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import { rateLimit, type LimiterName } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
+import { accountSecretMatches } from "./secretCheck";
 import { accountSecret } from "./secrets";
 import { SESSION_COOKIE, readSession, type Session } from "./session";
 
@@ -1515,8 +1753,14 @@ export interface AccountContext {
 }
 
 let loggedUnavailable = false;
+let loggedMismatch = false;
 
-/** What an account or payment route needs, or 503 PAY_UNAVAILABLE when D1 or a secret is missing (logged once, by name). */
+/**
+ * What an account or payment route needs, or 503 PAY_UNAVAILABLE:
+ * - D1 or a secret is missing (logged once, by name);
+ * - the account secret is not the one D1 was first used with (logged once). Fail closed: a wrong
+ *   secret would hand returning users fresh accounts and lose their saved readings.
+ */
 export async function openAccount(request: Request, now: number = Date.now()): Promise<AccountContext | Response> {
   const db = accountDb();
   const secret = signingSecret();
@@ -1525,6 +1769,13 @@ export async function openAccount(request: Request, now: number = Date.now()): P
     if (!loggedUnavailable) {
       loggedUnavailable = true;
       console.error(JSON.stringify({ evt: "config.account_unavailable", db: Boolean(db), signing: Boolean(secret), account: Boolean(sealing) }));
+    }
+    return errorResponse("PAY_UNAVAILABLE");
+  }
+  if (!(await accountSecretMatches(db, sealing, now))) {
+    if (!loggedMismatch) {
+      loggedMismatch = true;
+      console.error(JSON.stringify({ evt: "config.account_secret_mismatch" }));
     }
     return errorResponse("PAY_UNAVAILABLE");
   }
@@ -1572,19 +1823,21 @@ export function sameOrigin(request: Request): boolean {
 }
 ```
 
-- [ ] **Step 11: Run the tests**
+The "closes account routes with 503" test relies on `loggedMismatch` being false when it runs; it is the only test in this suite that trips the mismatch.
+
+- [ ] **Step 12: Run the tests**
 
 Run: `npx vitest run apps/web/lib/account/account.test.ts apps/web/lib/security`
-Expected: PASS (account: 12 tests; security tests unchanged).
+Expected: PASS (account: 14 tests; security tests unchanged).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
-- [ ] **Step 12: Commit**
+- [ ] **Step 13: Commit**
 
 ```bash
 git add apps/web/lib/account apps/web/lib/api/http.ts apps/web/lib/security/rateLimit.ts apps/web/lib/cloudflare.ts apps/web/wrangler.jsonc
-git commit -m "feat(account): secrets, users, sessions, request guards and P4 error codes" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat(account): HKDF-derived keys pinned by a D1 check, users, sessions, guards and P4 error codes" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1596,21 +1849,27 @@ git commit -m "feat(account): secrets, users, sessions, request guards and P4 er
 - Test: `apps/web/lib/pay/ledger.test.ts` (test D1), `apps/web/lib/pay/ledger.int.test.ts` (local D1)
 
 **Interfaces:**
-- Consumes: `D1Binding`, `D1Statement` (P3 `lib/db/d1.ts`), `isConstraintError` (Task 1, `lib/db/sqlErrors.ts`), `randomId` from `lib/security/sign.ts`
+- Consumes: `D1Binding`, `D1Statement` (P3 `lib/db/d1.ts`), `isConstraintError` (Task 1), `GIFT_DAYS` (Task 2), `randomId` from `lib/security/sign.ts`
 - Produces (`ledger.ts`):
   - `type Currency = "paid" | "free"`, `type LedgerKind`, `interface Lot` (the `credit_lots` row), `type Allocation = [lotId: string, units: number]`
-  - `GIFT_DAYS = 90`, `RESERVATION_MS = 360_000`, `giftExpiry(now, days?)`
+  - `GIFT_DAYS` (re-exported from the catalog), `RESERVATION_MS = 360_000`, `giftExpiry(now, days?)`
   - `interface NewLot { id; userId; currency; source; orderId; productId; units; expiresAt }`, `grantStatements(db, lot: NewLot, now): D1Statement[]`
-  - `grantSignupGift(db, {userId, kakaoKey, units, now}): Promise<boolean>`
-  - `paidLotStatements(db, {userId, orderId, productId, units, now}): D1Statement[]` (lot id `lot_<orderId>`)
+  - `grantSignupGift(db, {userId, kakaoKey, units, now}): Promise<boolean>` (one batch: claim, lot, ledger; false when the Kakao account was given one before)
+  - `paidLotStatements(db, {userId, orderId, productId, units, now}): D1Statement[]` (lot id `lot_<orderId>`, written only while the order is `paid`)
   - `allocate(lots, units): Allocation[] | null`
   - `reserveStatements(db, {unlockId, userId, productId, currency, allocations, now})`
   - `reserveUnlock(db, {userId, productId, currency, units, now}): Promise<{ok: true; unlockId; allocations} | {ok: false}>`
   - `deliverUnlock(db, {unlockId, readingId, now, before?: D1Statement[]}): Promise<"delivered" | "lost">`
   - `releaseUnlock(db, {unlockId, now}): Promise<boolean>`
-  - `sweepUser(db, userId, now)`, `forfeitStatements(db, lot, status: "expired" | "revoked", now)`
-  - `lockUnusedPaidLot(db, orderId): Promise<Lot | null>`, `unlockRefundingLot(db, orderId)`, `refundingLot(db, orderId): Promise<Lot | null>`, `refundedLotStatements(db, lot, now)`
+  - `sweepUser(db, userId, now)`, `sweepStale(db, now, limit?): Promise<{released; expired}>`, `forfeitStatements(db, lot, status: "expired" | "revoked", now)`
+  - `lockPaidLotForRefund(db, orderId, now): Promise<Lot | null>`, `revertRefund(db, orderId, now): Promise<boolean>`, `refundingLot(db, orderId)`, `refundedLotStatements(db, lot, now)`, `revokeLotStatement(db, orderId)`
   - `interface WalletSummary { stardust: number; stardustExpiresAt: number | null; unused: Array<{orderId; productId}> }`, `walletSummary(db, userId, now)`
+
+**What changed in revision 2:**
+- Nothing is reserved or spent for a deleted account (M3). Reserving takes the lot to -1 (the CHECK rejects the batch), and the spend rows and the `delivered` switch need the account to be live.
+- The refund lock moves the order to `refunding` and the lot out of use in one batch, each statement checking the other's condition, and checks the changes (M1). `revertRefund` is one batch too, and moves the order to its next cancel attempt (M2: a Toss Idempotency-Key replays its first answer for 15 days).
+- A release restores units only into a lot that is still `active`. A lot revoked because its payment was cancelled in the Toss dashboard never comes back (minor 1).
+- `sweepStale` gives the Cron Trigger (Task 13) every account's stale reservations and expired 별조각.
 
 - [ ] **Step 1: Write the failing tests** — the suite `apps/web/lib/pay/ledgerContract.ts`, then its two runners
 
@@ -1626,12 +1885,15 @@ import {
   giftExpiry,
   grantSignupGift,
   grantStatements,
-  lockUnusedPaidLot,
+  lockPaidLotForRefund,
   paidLotStatements,
   refundedLotStatements,
   releaseUnlock,
   reserveStatements,
   reserveUnlock,
+  revertRefund,
+  revokeLotStatement,
+  sweepStale,
   walletSummary,
   type Lot,
 } from "./ledger";
@@ -1658,6 +1920,7 @@ async function paidOrder(db: D1Binding, orderId: string, productId = "tarot") {
 }
 
 const lotById = (db: D1Binding, id: string) => db.prepare("SELECT * FROM credit_lots WHERE id = ?").bind(id).first<Lot>();
+const orderOf = (db: D1Binding, id: string) => db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(id).first<{ status: string; cancel_attempt: number }>();
 const kinds = async (db: D1Binding, lotId: string) =>
   (await db.prepare("SELECT kind FROM ledger WHERE lot_id = ? ORDER BY id").bind(lotId).all<{ kind: string }>()).results.map((row) => row.kind);
 const count = async (db: D1Binding, sql: string) => (await db.prepare(sql).first<{ n: number }>())!.n;
@@ -1680,6 +1943,12 @@ async function giftedUser(make: Make) {
   const db = await setup(make);
   expect(await grantSignupGift(db, { userId: "u_1", kakaoKey: "k_1", units: 10, now: NOW })).toBe(true);
   return db;
+}
+
+async function reserved(db: D1Binding, currency: "paid" | "free", now = NOW) {
+  const result = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency, units: 10, now });
+  if (!result.ok) throw new Error("not reserved");
+  return result;
 }
 
 /**
@@ -1708,26 +1977,25 @@ export function ledgerContract(make: Make) {
 
   it("reserves, then spends only on delivery", async () => {
     const db = await giftedUser(make);
-    const reserved = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW });
-    if (!reserved.ok) throw new Error("not reserved");
+    const unlock = await reserved(db, "free");
     expect((await walletSummary(db, "u_1", NOW)).stardust).toBe(0);
-    expect(await deliverUnlock(db, { unlockId: reserved.unlockId, readingId: "r1", now: NOW + 60_000 })).toBe("delivered");
-    expect(await kinds(db, reserved.allocations[0]![0])).toEqual(["grant", "reserve", "spend"]);
-    expect(await db.prepare("SELECT status, reading_id FROM unlocks WHERE id = ?").bind(reserved.unlockId).first()).toEqual({ status: "delivered", reading_id: "r1" });
-    expect(await releaseUnlock(db, { unlockId: reserved.unlockId, now: NOW + 70_000 })).toBe(false);
+    expect(await deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "r1", now: NOW + 60_000 })).toBe("delivered");
+    expect(await kinds(db, unlock.allocations[0]![0])).toEqual(["grant", "reserve", "spend"]);
+    expect(await db.prepare("SELECT status, reading_id FROM unlocks WHERE id = ?").bind(unlock.unlockId).first()).toEqual({ status: "delivered", reading_id: "r1" });
+    expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 70_000 })).toBe(false);
     expect((await walletSummary(db, "u_1", NOW + 70_000)).stardust).toBe(0);
     await expectLotsMatchLedger(db);
   });
 
   it("releases a failed opening once, and a late delivery cannot spend it", async () => {
     const db = await giftedUser(make);
-    const reserved = await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "free", units: 10, now: NOW });
-    if (!reserved.ok) throw new Error("not reserved");
-    expect(await releaseUnlock(db, { unlockId: reserved.unlockId, now: NOW + 1 })).toBe(true);
-    expect(await releaseUnlock(db, { unlockId: reserved.unlockId, now: NOW + 2 })).toBe(false);
+    const unlock = await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "free", units: 10, now: NOW });
+    if (!unlock.ok) throw new Error("not reserved");
+    expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 1 })).toBe(true);
+    expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 2 })).toBe(false);
     expect((await walletSummary(db, "u_1", NOW + 3)).stardust).toBe(10);
-    expect(await deliverUnlock(db, { unlockId: reserved.unlockId, readingId: "late", now: NOW + 4 })).toBe("lost");
-    expect(await kinds(db, reserved.allocations[0]![0])).toEqual(["grant", "reserve", "restore"]);
+    expect(await deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "late", now: NOW + 4 })).toBe("lost");
+    expect(await kinds(db, unlock.allocations[0]![0])).toEqual(["grant", "reserve", "restore"]);
     await expectLotsMatchLedger(db);
   });
 
@@ -1745,8 +2013,8 @@ export function ledgerContract(make: Make) {
     const lot = (id: string, units: number, expiresAt: number) =>
       grantStatements(db, { id, userId: "u_1", currency: "free", source: "admin", orderId: null, productId: null, units, expiresAt }, NOW);
     await db.batch([...lot("lot_late", 5, NOW + 10 * 86_400_000), ...lot("lot_soon", 7, NOW + 86_400_000)]);
-    const reserved = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW });
-    expect(reserved.ok && reserved.allocations).toEqual([["lot_soon", 7], ["lot_late", 3]]);
+    const unlock = await reserved(db, "free");
+    expect(unlock.allocations).toEqual([["lot_soon", 7], ["lot_late", 3]]);
     await expectLotsMatchLedger(db);
   });
 
@@ -1758,8 +2026,7 @@ export function ledgerContract(make: Make) {
 
   it("rolls a stale reservation back whole when its lot changed underneath it", async () => {
     const db = await giftedUser(make);
-    const first = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW });
-    if (!first.ok) throw new Error("not reserved");
+    const first = await reserved(db, "free");
     // A second device read the lot before the first reservation landed.
     const stale = reserveStatements(db, { unlockId: "ul_stale", userId: "u_1", productId: "tarot", currency: "free", allocations: first.allocations, now: NOW });
     await expect(db.batch(stale)).rejects.toSatisfy(isConstraintError);
@@ -1769,11 +2036,10 @@ export function ledgerContract(make: Make) {
 
   it("gives back a reservation nobody settled once it outlives RESERVATION_MS", async () => {
     const db = await giftedUser(make);
-    const reserved = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW });
-    if (!reserved.ok) throw new Error("not reserved");
+    const unlock = await reserved(db, "free");
     expect((await walletSummary(db, "u_1", NOW + RESERVATION_MS - 1)).stardust).toBe(0);
     expect((await walletSummary(db, "u_1", NOW + RESERVATION_MS + 1)).stardust).toBe(10);
-    expect(await db.prepare("SELECT status FROM unlocks WHERE id = ?").bind(reserved.unlockId).first()).toEqual({ status: "released" });
+    expect(await db.prepare("SELECT status FROM unlocks WHERE id = ?").bind(unlock.unlockId).first()).toEqual({ status: "released" });
     await expectLotsMatchLedger(db);
   });
 
@@ -1785,34 +2051,79 @@ export function ledgerContract(make: Make) {
     await expectLotsMatchLedger(db);
   });
 
-  it("locks only an unused paid lot for a refund, and books the refund", async () => {
+  it("locks an unused paid lot and its order together, never an opened one, and books the refund", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_a");
     await paidOrder(db, "order_b");
-    const reserved = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW });
-    if (!reserved.ok) throw new Error("not reserved");
-    const opened = reserved.allocations[0]![0] === "lot_order_a" ? "order_a" : "order_b";
+    const unlock = await reserved(db, "paid");
+    const opened = unlock.allocations[0]![0] === "lot_order_a" ? "order_a" : "order_b";
     const unused = opened === "order_a" ? "order_b" : "order_a";
-    expect(await lockUnusedPaidLot(db, opened)).toBeNull();
-    const locked = await lockUnusedPaidLot(db, unused);
+    expect(await lockPaidLotForRefund(db, opened, NOW)).toBeNull();
+    expect(await orderOf(db, opened)).toEqual({ status: "paid", cancel_attempt: 1 });
+    const locked = await lockPaidLotForRefund(db, unused, NOW);
     expect(locked).toMatchObject({ id: `lot_${unused}`, status: "refunding", units_left: 0 });
-    expect(await lockUnusedPaidLot(db, unused)).toBeNull();
+    expect(await orderOf(db, unused)).toEqual({ status: "refunding", cancel_attempt: 1 });
+    expect(await lockPaidLotForRefund(db, unused, NOW + 1)).toBeNull();
     await db.batch(refundedLotStatements(db, locked!, NOW));
     expect(await lotById(db, `lot_${unused}`)).toMatchObject({ status: "refunded", units_left: 0 });
     expect(await kinds(db, `lot_${unused}`)).toEqual(["grant", "refund"]);
     await expectLotsMatchLedger(db);
   });
 
+  it("puts a refund lock back in one batch and moves the order to its next cancel attempt", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    expect(await lockPaidLotForRefund(db, "order_a", NOW)).not.toBeNull();
+    expect(await revertRefund(db, "order_a", NOW + 1)).toBe(true);
+    expect(await orderOf(db, "order_a")).toEqual({ status: "paid", cancel_attempt: 2 });
+    expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 10 });
+    expect(await revertRefund(db, "order_a", NOW + 2)).toBe(false);
+    await expectLotsMatchLedger(db);
+  });
+
+  it("never brings a revoked lot back: a later release restores nothing into it", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    const unlock = await reserved(db, "paid");
+    await db.batch([revokeLotStatement(db, "order_a")]);
+    expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 1 })).toBe(true);
+    expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "revoked", units_left: 0 });
+    expect(await kinds(db, "lot_order_a")).toEqual(["grant", "reserve"]);
+    expect((await walletSummary(db, "u_1", NOW + 2)).unused).toEqual([]);
+    await expectLotsMatchLedger(db);
+  });
+
+  it("reserves and spends nothing for a deleted account", async () => {
+    const db = await setup(make);
+    await db.batch(grantStatements(db, { id: "lot_admin", userId: "u_1", currency: "free", source: "admin", orderId: null, productId: null, units: 20, expiresAt: null }, NOW));
+    const unlock = await reserved(db, "free");
+    await db.prepare("UPDATE users SET deleted_at = ? WHERE id = 'u_1'").bind(NOW).run();
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW + 1 })).toEqual({ ok: false });
+    expect(await deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "r1", now: NOW + 2 })).toBe("lost");
+    expect(await kinds(db, "lot_admin")).toEqual(["grant", "reserve"]);
+    expect(await count(db, "SELECT COUNT(*) AS n FROM unlocks")).toBe(1);
+    await expectLotsMatchLedger(db);
+  });
+
   it("keeps a delivery atomic with the reading it saves", async () => {
     const db = await giftedUser(make);
-    const reserved = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW });
-    if (!reserved.ok) throw new Error("not reserved");
+    const unlock = await reserved(db, "free");
     const broken = db.prepare(
-      "INSERT INTO readings (id, user_id, kind, product_id, source, digest, payload, key_version, created_at, updated_at) VALUES ('r1', 'nobody', 'tarot', 'tarot', 'free', 'd', 'p', 1, 0, 0)",
+      "INSERT INTO readings (id, user_id, kind, product_id, source, payload, key_version, created_at, updated_at) VALUES ('r1', 'nobody', 'tarot', 'tarot', 'free', 'p', 1, 0, 0)",
     );
-    await expect(deliverUnlock(db, { unlockId: reserved.unlockId, readingId: "r1", now: NOW, before: [broken] })).rejects.toSatisfy(isConstraintError);
-    expect(await db.prepare("SELECT status FROM unlocks WHERE id = ?").bind(reserved.unlockId).first()).toEqual({ status: "reserved" });
-    expect(await kinds(db, reserved.allocations[0]![0])).toEqual(["grant", "reserve"]);
+    await expect(deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "r1", now: NOW, before: [broken] })).rejects.toSatisfy(isConstraintError);
+    expect(await db.prepare("SELECT status FROM unlocks WHERE id = ?").bind(unlock.unlockId).first()).toEqual({ status: "reserved" });
+    expect(await kinds(db, unlock.allocations[0]![0])).toEqual(["grant", "reserve"]);
+  });
+
+  it("lets the scheduled sweep return any account's stale reservation and expire old 별조각", async () => {
+    const db = await giftedUser(make);
+    await reserved(db, "free");
+    expect(await sweepStale(db, NOW + RESERVATION_MS + 1)).toEqual({ released: 1, expired: 0 });
+    expect(await db.prepare("SELECT status FROM unlocks").first()).toEqual({ status: "released" });
+    expect(await sweepStale(db, giftExpiry(NOW) + 1)).toEqual({ released: 0, expired: 1 });
+    expect(await sweepStale(db, giftExpiry(NOW) + 2)).toEqual({ released: 0, expired: 0 });
+    await expectLotsMatchLedger(db);
   });
 }
 ```
@@ -1867,6 +2178,9 @@ import "server-only";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
+import { GIFT_DAYS } from "./catalog";
+
+export { GIFT_DAYS };
 
 /**
  * The one ledger for 달빛 (paid) and 별조각 (free), spec 5.4.
@@ -1876,6 +2190,7 @@ import { randomId } from "@/lib/security/sign";
  *   when the reading is delivered, or restored when it fails.
  * - Every movement is a ledger row with a UNIQUE idempotency key. Every multi-step change is one
  *   D1 batch, so a retry or a crash never moves credit twice.
+ * - Nothing is reserved or spent for a deleted account (users.deleted_at).
  * - Lot invariant (tested): units_left = grant - reserve + restore - refund - expire.
  */
 
@@ -1898,8 +2213,6 @@ export interface Lot {
 
 export type Allocation = [lotId: string, units: number];
 
-/** 별조각 from the signup gift last this many KST days after the day they arrive. */
-export const GIFT_DAYS = 90;
 /** How long an unlock holds its units: the 240 s generation budget plus margin. Then a sweep returns them. */
 export const RESERVATION_MS = 6 * 60 * 1000;
 
@@ -1934,11 +2247,7 @@ function ledgerRow(db: D1Binding, e: Entry): D1Statement {
 }
 
 const RESERVED = "EXISTS (SELECT 1 FROM unlocks WHERE id = ? AND status = 'reserved')";
-
-/** A ledger row written only while the unlock is still reserved: delivery and release race safely. */
-function ledgerRowIfReserved(db: D1Binding, e: Entry & { unlockId: string }): D1Statement {
-  return db.prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${RESERVED}`).bind(...values(e), e.unlockId);
-}
+const USER_LIVE = "EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NULL)";
 
 // ---- grants ----
 
@@ -1965,8 +2274,14 @@ export function grantStatements(db: D1Binding, lot: NewLot, now: number): D1Stat
   ];
 }
 
-/** The signup gift, once per Kakao account ever (gift_claims outlives the account). False when it was given before. */
+/**
+ * The signup gift, once per Kakao account (gift_claims outlives the account by a year). The claim,
+ * the lot and its ledger row are one batch: a failure leaves no claim behind, so the next login
+ * tries again (minor 5). False when it was given before.
+ */
 export async function grantSignupGift(db: D1Binding, input: { userId: string; kakaoKey: string; units: number; now: number }): Promise<boolean> {
+  const claimed = await db.prepare("SELECT 1 AS x FROM gift_claims WHERE kakao_key = ?").bind(input.kakaoKey).first();
+  if (claimed) return false;
   const lot: NewLot = {
     id: `lot_${randomId(12)}`,
     userId: input.userId,
@@ -1989,13 +2304,25 @@ export async function grantSignupGift(db: D1Binding, input: { userId: string; ka
   }
 }
 
-/** The paid lot an order grants. Its id comes from the order id, so it can exist only once. */
+/**
+ * The paid lot an order grants, written only while the order is `paid` (markPaid sets it in the same
+ * batch, and leaves a deleted account's order unpaid). Its id comes from the order id, so it can
+ * exist only once.
+ */
 export function paidLotStatements(db: D1Binding, input: { userId: string; orderId: string; productId: string; units: number; now: number }): D1Statement[] {
-  return grantStatements(
-    db,
-    { id: `lot_${input.orderId}`, userId: input.userId, currency: "paid", source: "order", orderId: input.orderId, productId: input.productId, units: input.units, expiresAt: null },
-    input.now,
-  );
+  const id = `lot_${input.orderId}`;
+  const PAID = "EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'paid')";
+  return [
+    db
+      .prepare(
+        `INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, expires_at, created_at)
+         SELECT ?, ?, 'paid', 'order', ?, ?, ?, ?, NULL, ? WHERE ${PAID}`,
+      )
+      .bind(id, input.userId, input.orderId, input.productId, input.units, input.units, input.now, input.orderId),
+    db
+      .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${PAID}`)
+      .bind(...values({ userId: input.userId, currency: "paid", kind: "grant", units: input.units, lotId: id, orderId: input.orderId, idem: `grant:${id}`, now: input.now }), input.orderId),
+  ];
 }
 
 // ---- reserve, deliver, release ----
@@ -2028,8 +2355,16 @@ export function reserveStatements(
       )
       .bind(unlockId, userId, productId, currency, JSON.stringify(allocations), now + RESERVATION_MS, now),
     ...allocations.flatMap(([lotId, units]) => [
-      // A lot that is no longer active becomes -1, which the CHECK rejects: the whole batch rolls back.
-      db.prepare("UPDATE credit_lots SET units_left = CASE WHEN status = 'active' THEN units_left - ? ELSE -1 END WHERE id = ?").bind(units, lotId),
+      // A lot that is no longer active, or whose account was deleted, becomes -1, which the CHECK
+      // rejects: the whole batch rolls back.
+      db
+        .prepare(
+          `UPDATE credit_lots SET units_left = CASE
+             WHEN status = 'active' AND EXISTS (SELECT 1 FROM users u WHERE u.id = credit_lots.user_id AND u.deleted_at IS NULL)
+             THEN units_left - ? ELSE -1 END
+           WHERE id = ?`,
+        )
+        .bind(units, lotId),
       ledgerRow(db, { userId, currency, kind: "reserve", units, lotId, unlockId, idem: `reserve:${unlockId}:${lotId}`, now }),
     ]),
   ];
@@ -2039,8 +2374,8 @@ export type ReserveResult = { ok: true; unlockId: string; allocations: Allocatio
 
 /**
  * Holds `units` of `currency` for opening `productId`: lots earmarked for the product first, then
- * the ones that expire soonest. A lot changed meanwhile (spent elsewhere, refunded, expired) fails
- * the CHECK and rolls the reservation back; one retry from a fresh read, then no credit.
+ * the ones that expire soonest. A lot changed meanwhile (spent elsewhere, refunded, expired, account
+ * deleted) fails the CHECK and rolls the reservation back; one retry from a fresh read, then no credit.
  */
 export async function reserveUnlock(
   db: D1Binding,
@@ -2086,8 +2421,9 @@ const allocationsOf = (row: UnlockRow) => JSON.parse(row.allocations) as Allocat
 
 /**
  * Spends a reservation once the reading is saved; `before` (the reading's INSERT) runs in the same
- * batch. "lost" means the reservation had already been released (it outlived RESERVATION_MS). The
- * reading is still saved and the user keeps the units: a slow generation never costs twice.
+ * batch. "lost" means nothing was spent: the reservation had already been released (it outlived
+ * RESERVATION_MS), or the account was deleted. After a release the reading is still saved and the
+ * user keeps the units: a slow generation never costs twice.
  */
 export async function deliverUnlock(
   db: D1Binding,
@@ -2098,21 +2434,39 @@ export async function deliverUnlock(
   const results = await db.batch([
     ...(input.before ?? []),
     ...allocationsOf(unlock).map(([lotId, units]) =>
-      ledgerRowIfReserved(db, { userId: unlock.user_id, currency: unlock.currency, kind: "spend", units, lotId, unlockId: unlock.id, idem: `spend:${unlock.id}:${lotId}`, now: input.now }),
+      db
+        .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${RESERVED} AND ${USER_LIVE}`)
+        .bind(
+          ...values({ userId: unlock.user_id, currency: unlock.currency, kind: "spend", units, lotId, unlockId: unlock.id, idem: `spend:${unlock.id}:${lotId}`, now: input.now }),
+          unlock.id,
+          unlock.user_id,
+        ),
     ),
-    db.prepare("UPDATE unlocks SET status = 'delivered', reading_id = ?, settled_at = ? WHERE id = ? AND status = 'reserved'").bind(input.readingId, input.now, unlock.id),
+    db
+      .prepare(`UPDATE unlocks SET status = 'delivered', reading_id = ?, settled_at = ? WHERE id = ? AND status = 'reserved' AND ${USER_LIVE}`)
+      .bind(input.readingId, input.now, unlock.id, unlock.user_id),
   ]);
   return results[results.length - 1]?.meta?.changes === 1 ? "delivered" : "lost";
 }
 
-/** Returns a reservation's units to their lots (failed or abandoned generation). Idempotent; false when it was not reserved. */
+/**
+ * Returns a reservation's units to their lots (failed or abandoned generation). Idempotent; false
+ * when it was not reserved. Units go back only into a lot that is still active: one that expired,
+ * or was revoked because its payment was cancelled, keeps nothing (minor 1).
+ */
 export async function releaseUnlock(db: D1Binding, input: { unlockId: string; now: number }): Promise<boolean> {
   const unlock = await unlockRow(db, input.unlockId);
   if (!unlock || unlock.status !== "reserved") return false;
   const results = await db.batch([
     ...allocationsOf(unlock).flatMap(([lotId, units]) => [
-      db.prepare(`UPDATE credit_lots SET units_left = units_left + ? WHERE id = ? AND ${RESERVED}`).bind(units, lotId, unlock.id),
-      ledgerRowIfReserved(db, { userId: unlock.user_id, currency: unlock.currency, kind: "restore", units, lotId, unlockId: unlock.id, idem: `restore:${unlock.id}:${lotId}`, now: input.now }),
+      db.prepare(`UPDATE credit_lots SET units_left = units_left + ? WHERE id = ? AND status = 'active' AND ${RESERVED}`).bind(units, lotId, unlock.id),
+      db
+        .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${RESERVED} AND EXISTS (SELECT 1 FROM credit_lots WHERE id = ? AND status = 'active')`)
+        .bind(
+          ...values({ userId: unlock.user_id, currency: unlock.currency, kind: "restore", units, lotId, unlockId: unlock.id, idem: `restore:${unlock.id}:${lotId}`, now: input.now }),
+          unlock.id,
+          lotId,
+        ),
     ]),
     db.prepare("UPDATE unlocks SET status = 'released', settled_at = ? WHERE id = ? AND status = 'reserved'").bind(input.now, unlock.id),
   ]);
@@ -2134,33 +2488,79 @@ export function forfeitStatements(db: D1Binding, lot: Lot, status: "expired" | "
   ];
 }
 
+const EXPIRED_LOTS = "status = 'active' AND expires_at IS NOT NULL AND expires_at <= ? AND units_left > 0";
+
 /** Releases this user's reservations older than RESERVATION_MS and expires their lots past expiry. */
 export async function sweepUser(db: D1Binding, userId: string, now: number): Promise<void> {
   const stale = await db.prepare("SELECT id FROM unlocks WHERE user_id = ? AND status = 'reserved' AND reserved_until < ?").bind(userId, now).all<{ id: string }>();
   for (const { id } of stale.results) await releaseUnlock(db, { unlockId: id, now });
-  const expired = await db
-    .prepare("SELECT * FROM credit_lots WHERE user_id = ? AND status IN ('active', 'expired') AND expires_at IS NOT NULL AND expires_at <= ? AND units_left > 0")
-    .bind(userId, now)
-    .all<Lot>();
+  const expired = await db.prepare(`SELECT * FROM credit_lots WHERE user_id = ? AND ${EXPIRED_LOTS}`).bind(userId, now).all<Lot>();
   for (const lot of expired.results) await db.batch(forfeitStatements(db, lot, "expired", now));
+}
+
+/** The same sweep over every account, at most `limit` of each per run (the Cron Trigger, Task 13). */
+export async function sweepStale(db: D1Binding, now: number, limit = 100): Promise<{ released: number; expired: number }> {
+  const stale = await db.prepare("SELECT id FROM unlocks WHERE status = 'reserved' AND reserved_until < ? ORDER BY reserved_until LIMIT ?").bind(now, limit).all<{ id: string }>();
+  let released = 0;
+  for (const { id } of stale.results) if (await releaseUnlock(db, { unlockId: id, now })) released++;
+  const lots = await db.prepare(`SELECT * FROM credit_lots WHERE ${EXPIRED_LOTS} ORDER BY expires_at LIMIT ?`).bind(now, limit).all<Lot>();
+  for (const lot of lots.results) await db.batch(forfeitStatements(db, lot, "expired", now));
+  return { released, expired: lots.results.length };
 }
 
 // ---- refunds ----
 
-/** Takes an unused paid lot out of use before its payment is cancelled; null when it was opened or is being opened. */
-export function lockUnusedPaidLot(db: D1Binding, orderId: string): Promise<Lot | null> {
-  return db
-    .prepare(
-      `UPDATE credit_lots SET units_left = 0, status = 'refunding'
-       WHERE order_id = ? AND currency = 'paid' AND status = 'active' AND units_left = units_total RETURNING *`,
-    )
-    .bind(orderId)
-    .first<Lot>();
+/**
+ * Marks a paid order `refunding` and takes its unused lot out of use, in one batch (M1). Each
+ * statement checks the other's condition, so both change or neither does, and nobody can open the
+ * reading while its payment is being cancelled. Null when the order is not paid, or its reading was
+ * opened or is being opened.
+ */
+export async function lockPaidLotForRefund(db: D1Binding, orderId: string, now: number): Promise<Lot | null> {
+  const [order, lot] = await db.batch([
+    db
+      .prepare(
+        `UPDATE orders SET status = 'refunding', updated_at = ? WHERE id = ? AND status = 'paid'
+           AND EXISTS (SELECT 1 FROM credit_lots WHERE order_id = ? AND status = 'active' AND units_left = units_total)`,
+      )
+      .bind(now, orderId, orderId),
+    db
+      .prepare(
+        `UPDATE credit_lots SET units_left = 0, status = 'refunding'
+         WHERE order_id = ? AND status = 'active' AND units_left = units_total
+           AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'refunding' AND updated_at = ?)
+         RETURNING *`,
+      )
+      .bind(orderId, orderId, now),
+  ]);
+  const changes = [order?.meta?.changes ?? 0, lot?.meta?.changes ?? 0];
+  if (changes[0] === 1 && changes[1] === 1) return (lot!.results[0] as unknown as Lot | undefined) ?? null;
+  if (changes[0] !== changes[1]) console.error(JSON.stringify({ evt: "pay.refund_lock_mismatch", orderId, changes }));
+  return null;
 }
 
-/** Puts a lot back in use when its cancellation was refused. */
-export async function unlockRefundingLot(db: D1Binding, orderId: string): Promise<void> {
-  await db.prepare("UPDATE credit_lots SET units_left = units_total, status = 'active' WHERE order_id = ? AND status = 'refunding'").bind(orderId).run();
+/**
+ * Puts a `refunding` order and its lot back in use, in one batch: Toss still shows the payment DONE.
+ * The order moves to its next cancel attempt, so the next refund sends a new Idempotency-Key (Toss
+ * replays an old key's first answer for 15 days). An order without a lot (a deleted account's
+ * payment, Task 7) is never put back. False when nothing changed.
+ */
+export async function revertRefund(db: D1Binding, orderId: string, now: number): Promise<boolean> {
+  const [, order] = await db.batch([
+    db
+      .prepare(
+        `UPDATE credit_lots SET units_left = units_total, status = 'active'
+         WHERE order_id = ? AND status = 'refunding' AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'refunding')`,
+      )
+      .bind(orderId, orderId),
+    db
+      .prepare(
+        `UPDATE orders SET status = 'paid', cancel_attempt = cancel_attempt + 1, updated_at = ?
+         WHERE id = ? AND status = 'refunding' AND EXISTS (SELECT 1 FROM credit_lots WHERE order_id = ? AND status = 'active')`,
+      )
+      .bind(now, orderId, orderId),
+  ]);
+  return order?.meta?.changes === 1;
 }
 
 export function refundingLot(db: D1Binding, orderId: string): Promise<Lot | null> {
@@ -2173,6 +2573,11 @@ export function refundedLotStatements(db: D1Binding, lot: Lot, now: number): D1S
     db.prepare("UPDATE credit_lots SET status = 'refunded' WHERE id = ? AND status = 'refunding'").bind(lot.id),
     ledgerRow(db, { userId: lot.user_id, currency: lot.currency, kind: "refund", units: lot.units_total, lotId: lot.id, orderId: lot.order_id, idem: `refund:${lot.id}`, now }),
   ];
+}
+
+/** A payment cancelled while its reading was open or opening (the Toss dashboard): the lot leaves use for good. */
+export function revokeLotStatement(db: D1Binding, orderId: string): D1Statement {
+  return db.prepare("UPDATE credit_lots SET status = 'revoked' WHERE order_id = ? AND status = 'active'").bind(orderId);
 }
 
 // ---- summary ----
@@ -2211,7 +2616,7 @@ export async function walletSummary(db: D1Binding, userId: string, now: number):
 - [ ] **Step 4: Run the tests**
 
 Run: `npx vitest run apps/web/lib/pay/ledger.test.ts apps/web/lib/pay/ledger.int.test.ts`
-Expected: PASS, 13 tests in each runner. The int runner takes a few seconds for workerd.
+Expected: PASS, 17 tests in each runner. The int runner takes a few seconds for workerd.
 
 Run: `pnpm typecheck`
 Expected: exit 0.
@@ -2220,7 +2625,7 @@ Expected: exit 0.
 
 ```bash
 git add apps/web/lib/pay/ledger.ts apps/web/lib/pay/ledgerContract.ts apps/web/lib/pay/ledger.test.ts apps/web/lib/pay/ledger.int.test.ts
-git commit -m "feat(pay): one ledger for 달빛 and 별조각 with reserve, deliver and release" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat(pay): one ledger for 달빛 and 별조각; refund lock in one batch; nothing for deleted accounts" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -2236,8 +2641,8 @@ git commit -m "feat(pay): one ledger for 달빛 and 별조각 with reserve, deli
 
 **Interfaces:**
 - Consumes:
-  - Task 2: `paymentsMode`, `salesOpen`.
-  - Task 3: `openAccount`, `openAccountRoute`, `redirectTo`, `safeReturnTo`, `kakaoKey`, `loginKakaoUser`, `createSession`, `revokeSession`, `SESSION_COOKIE`, `CLEAR_SESSION`.
+  - Task 2: `paymentsMode`, `salesOpen`, `loginOpen`.
+  - Task 3: `openAccount`, `openAccountRoute`, `redirectTo`, `safeReturnTo`, `kakaoKey`, `loginKakaoUser`, `userByKakaoKey`, `createSession`, `revokeSession`, `SESSION_COOKIE`, `CLEAR_SESSION`.
   - Task 4: `grantSignupGift`, `walletSummary`.
   - Existing: `SITE.price.signupGiftFree`; `isOwner`/`OWNER_COOKIE`; `signToken`/`verifyToken`/`safeEqual`/`randomId`; `json`, `parseCookies`, `serializeCookie`, `CookieSpec`.
 - Produces:
@@ -2255,10 +2660,14 @@ git commit -m "feat(pay): one ledger for 달빛 and 별조각 with reserve, deli
   - routes:
     - `GET /api/auth/kakao/start?returnTo&age=1[&mockUser]`, `GET /api/auth/kakao/callback`;
     - `POST /api/auth/logout`;
-    - `GET /api/me` → `{ payments: boolean; owner: boolean; user: null | { nickname; stardust; stardustExpiresAt: string | null; unused: Array<{orderId; productId}> } }`
+    - `GET /api/me` → `{ payments: boolean; login: boolean; owner: boolean; user: null | { nickname; stardust; stardustExpiresAt: string | null; unused: Array<{orderId; productId}> } }`
   - Callback outcomes:
     - `?login=ok|cancel|failed|closed|unavailable|busy` appended to the return path;
     - `/?login=failed` when the state is not this browser's.
+  - Rules (revision 2):
+    - Login is open while `loginOpen` (on; owner mode for owner-pass devices; paused). A new account is created only while `salesOpen`; while paused a Kakao account with no account here gets `login=closed`.
+    - The signup gift is tried on every login while sales are open. It is one batch and once per Kakao account, so a gift lost to an error at sign-up arrives on the next login (minor 5).
+    - The callback checks the Kakao settings again before using the code (minor 7).
   - `lib/testing/p4.ts`:
     - `type Handler`, `interface Browser { jar; send(handler, url, init?) }`, `browser(ip?)`;
     - `useTestDb(): TestD1`, `loginAs(b, name?, returnTo?)`, `me(b): Promise<MeBody>`, `interface MeBody`.
@@ -2339,6 +2748,7 @@ export async function loginAs(b: Browser, name = "alice", returnTo = "/tarot/res
 
 export interface MeBody {
   payments: boolean;
+  login: boolean;
   owner: boolean;
   user: null | { nickname: string; stardust: number; stardustExpiresAt: string | null; unused: Array<{ orderId: string; productId: string }> };
 }
@@ -2425,6 +2835,7 @@ describe("Kakao OAuth", () => {
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { accountSecret, kakaoKey } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import { giftExpiry } from "@/lib/pay/ledger";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
@@ -2470,6 +2881,7 @@ describe("Kakao login", () => {
     expect(b.jar.has("sl_oauth")).toBe(false);
     expect(await me(b)).toEqual({
       payments: true,
+      login: true,
       owner: false,
       user: { nickname: "테스트 별손님", stardust: 10, stardustExpiresAt: new Date(giftExpiry(T0)).toISOString(), unused: [] },
     });
@@ -2478,6 +2890,43 @@ describe("Kakao login", () => {
     await loginAs(b, "alice");
     expect((await me(b)).user?.stardust).toBe(10);
     expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'").first()).toEqual({ n: 1 });
+  });
+
+  it("gives a gift that did not arrive at sign-up on the next login", async () => {
+    const db = useTestDb();
+    // An account whose sign-up gift failed: it exists, and no claim or lot was written.
+    const key = await kakaoKey("mock-dave", accountSecret()!);
+    await db.prepare("INSERT INTO users (id, kakao_key, nickname, customer_key, created_at, last_login_at) VALUES ('u_dave', ?, '데이브', 'c_dave_000000000000000000', 0, 0)").bind(key).run();
+    const b = browser();
+    await loginAs(b, "dave");
+    expect((await me(b)).user?.stardust).toBe(10);
+    await loginAs(b, "dave");
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'").first()).toEqual({ n: 1 });
+  });
+
+  it("while paused, logs existing accounts in and creates none", async () => {
+    const db = useTestDb();
+    const alice = browser("198.51.100.20");
+    await loginAs(alice, "alice");
+    expect((await alice.send(logout, "/api/auth/logout", { method: "POST", origin: true })).status).toBe(200);
+    vi.stubEnv("STARLOG_PAYMENTS", "paused");
+    expect((await loginAs(alice, "alice")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
+    expect(await me(alice)).toMatchObject({ payments: false, login: true, user: { stardust: 10 } });
+    const bob = browser("198.51.100.21");
+    expect((await loginAs(bob, "bob")).headers.get("location")).toBe("http://localhost/tarot/result?login=closed");
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM users").first()).toEqual({ n: 1 });
+  });
+
+  it("checks the Kakao settings again in the callback", async () => {
+    useTestDb();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const b = browser();
+    const location = (await b.send(start, "/api/auth/kakao/start?age=1&returnTo=%2Fme&mockUser=erin")).headers.get("location")!;
+    vi.stubEnv("STARLOG_KAKAO", "kakao");
+    vi.stubEnv("KAKAO_REST_API_KEY", "");
+    vi.stubEnv("KAKAO_CLIENT_SECRET", "");
+    expect((await b.send(callback, location)).headers.get("location")).toBe("http://localhost/me?login=unavailable");
+    expect(b.jar.has("sl_sid")).toBe(false);
   });
 
   it("refuses a callback whose state belongs to another browser", async () => {
@@ -2506,7 +2955,7 @@ describe("Kakao login", () => {
     const owner = browser("198.51.100.1");
     expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
     expect((await loginAs(owner, "owner")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
-    expect(await me(owner)).toMatchObject({ payments: true, owner: true, user: { stardust: 10 } });
+    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { stardust: 10 } });
   });
 
   it("only comes back to paths on this site", async () => {
@@ -2524,7 +2973,7 @@ describe("Kakao login", () => {
 
   it("answers /api/me without D1 when there is no session", async () => {
     vi.stubEnv("STARLOG_PAYMENTS", "off");
-    expect(await me(browser())).toEqual({ payments: false, owner: false, user: null });
+    expect(await me(browser())).toEqual({ payments: false, login: false, owner: false, user: null });
   });
 });
 ```
@@ -2701,13 +3150,13 @@ import { issueOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute } from "@/lib/account/request";
 import { safeReturnTo } from "@/lib/account/returnTo";
-import { paymentsMode, salesOpen } from "@/lib/pay/mode";
+import { loginOpen, paymentsMode } from "@/lib/pay/mode";
 import { randomId } from "@/lib/security/sign";
 
 /**
  * GET ?returnTo=/path&age=1 → Kakao's consent screen, with a signed 10-minute state cookie guarding
- * the way back. It works only while sign-ups are open for this device (STARLOG_PAYMENTS), and only
- * after the 만 14세 check on /login. With STARLOG_KAKAO=mock it goes straight to the callback with a
+ * the way back. It works only while login is open for this device (STARLOG_PAYMENTS on, owner mode
+ * with the owner pass, or paused for existing accounts), and only after the 만 14세 check on /login. With STARLOG_KAKAO=mock it goes straight to the callback with a
  * `mock:<mockUser>` code (tests, e2e). Without `mockUser` each login is a fresh mock account, so
  * repeated e2e runs on the same local D1 each start with the signup gift.
  */
@@ -2716,7 +3165,7 @@ export async function GET(request: Request): Promise<Response> {
   const returnTo = safeReturnTo(url.searchParams.get("returnTo"));
   const ctx = await openAccountRoute(request, { limiter: "AUTH_LIMITER" });
   if (ctx instanceof Response) return redirectTo(request, returnTo, { login: ctx.status === 429 ? "busy" : "unavailable" });
-  if (!salesOpen(paymentsMode(), ctx.owner)) return redirectTo(request, returnTo, { login: "closed" });
+  if (!loginOpen(paymentsMode(), ctx.owner)) return redirectTo(request, returnTo, { login: "closed" });
   const problems = kakaoConfigProblems();
   if (problems.length) {
     console.error(JSON.stringify({ evt: "config.kakao_invalid", problems }));
@@ -2736,21 +3185,23 @@ export async function GET(request: Request): Promise<Response> {
 
 ```ts
 import type { CookieSpec } from "@/lib/api/http";
-import { KakaoError, kakaoLogin } from "@/lib/account/kakao";
+import { KakaoError, kakaoConfigProblems, kakaoLogin } from "@/lib/account/kakao";
 import { CLEAR_OAUTH, OAUTH_COOKIE, openOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute } from "@/lib/account/request";
 import { kakaoKey } from "@/lib/account/secrets";
 import { createSession, revokeSession } from "@/lib/account/session";
-import { loginKakaoUser } from "@/lib/account/users";
+import { loginKakaoUser, userByKakaoKey } from "@/lib/account/users";
 import { SITE } from "@/lib/config";
 import { grantSignupGift } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 
 /**
  * GET ?code&state (or ?error&state) from Kakao. The state must match this browser's sl_oauth cookie.
- * - Login: find or create the account, give the signup gift to a new account while sales are open
- *   (once per Kakao account), start a session, and return with ?login=ok|cancel|failed.
+ * - Login: find the account, or create one while sales are open for this device (paused: existing
+ *   accounts only, else ?login=closed). While sales are open the signup gift is tried on every login
+ *   (once per Kakao account). Start a session and return with ?login=ok|cancel|failed.
+ * - The Kakao settings are checked again here: the code is never used against a half-configured app.
  * - The account-deletion re-check (purpose "delete") is handled in Task 12.
  */
 export async function GET(request: Request): Promise<Response> {
@@ -2764,6 +3215,11 @@ export async function GET(request: Request): Promise<Response> {
   const code = url.searchParams.get("code");
   if (!code) return back("failed");
   if (intent.purpose !== "login") return redirectTo(request, "/me", { delete: "failed" }, [CLEAR_OAUTH]);
+  const problems = kakaoConfigProblems();
+  if (problems.length) {
+    console.error(JSON.stringify({ evt: "config.kakao_invalid", problems }));
+    return back("unavailable");
+  }
 
   let login: Awaited<ReturnType<typeof kakaoLogin>>;
   try {
@@ -2773,10 +3229,15 @@ export async function GET(request: Request): Promise<Response> {
     return back("failed");
   }
   const key = await kakaoKey(login.profile.id, ctx.accountSecret);
-  const { user, created } = await loginKakaoUser(ctx.db, { key, nickname: login.profile.nickname, ageConfirmed: intent.age, now: ctx.now });
-  const gifted = created && salesOpen(paymentsMode(), ctx.owner)
-    ? await grantSignupGift(ctx.db, { userId: user.id, kakaoKey: key, units: SITE.price.signupGiftFree, now: ctx.now })
-    : false;
+  const open = salesOpen(paymentsMode(), ctx.owner);
+  if (!open && !(await userByKakaoKey(ctx.db, key))) return back("closed");
+  const account = await loginKakaoUser(ctx.db, { key, nickname: login.profile.nickname, ageConfirmed: intent.age, now: ctx.now });
+  if (!account) {
+    console.warn(JSON.stringify({ evt: "auth.account_still_erasing" }));
+    return back("failed");
+  }
+  const { user, created } = account;
+  const gifted = open ? await grantSignupGift(ctx.db, { userId: user.id, kakaoKey: key, units: SITE.price.signupGiftFree, now: ctx.now }) : false;
   if (ctx.session) await revokeSession(ctx.db, ctx.session.id, ctx.now);
   const session = await createSession(ctx.db, user.id, ctx.secret, ctx.now);
   console.info(JSON.stringify({ evt: "auth.login", created, gifted }));
@@ -2807,30 +3268,34 @@ import { openAccount } from "@/lib/account/request";
 import { CLEAR_SESSION, SESSION_COOKIE } from "@/lib/account/session";
 import { json, parseCookies, serializeCookie } from "@/lib/api/http";
 import { walletSummary } from "@/lib/pay/ledger";
-import { paymentsMode, salesOpen } from "@/lib/pay/mode";
+import { loginOpen, paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import { signingSecret } from "@/lib/security/sign";
 
 /**
- * GET → { payments, owner, user }:
+ * GET → { payments, login, owner, user }:
  * - `payments`: whether sales are open for this device;
+ * - `login`: whether this device may log in (also while sales are paused, for existing accounts);
  * - `owner`: whether it holds the owner pass;
  * - `user`: the logged-in user's nickname, 별조각 (with the soonest expiry) and unopened purchases.
- * Without a session cookie it never touches D1, so the beta works with no database.
+ * Without a session cookie it never touches D1, so the site works with no database.
  */
 export async function GET(request: Request): Promise<Response> {
   const now = Date.now();
   const cookies = parseCookies(request);
   const secret = signingSecret();
   const owner = secret ? await isOwner(cookies[OWNER_COOKIE], secret, now) : false;
-  const payments = salesOpen(paymentsMode(), owner);
-  if (!cookies[SESSION_COOKIE]) return json({ payments, owner, user: null });
+  const mode = paymentsMode();
+  const payments = salesOpen(mode, owner);
+  const login = loginOpen(mode, owner);
+  if (!cookies[SESSION_COOKIE]) return json({ payments, login, owner, user: null });
   const ctx = await openAccount(request, now);
-  if (ctx instanceof Response) return json({ payments: false, owner, user: null });
-  if (!ctx.session) return json({ payments, owner, user: null }, { cookies: [serializeCookie(CLEAR_SESSION)] });
+  if (ctx instanceof Response) return json({ payments: false, login: false, owner, user: null });
+  if (!ctx.session) return json({ payments, login, owner, user: null }, { cookies: [serializeCookie(CLEAR_SESSION)] });
   const wallet = await walletSummary(ctx.db, ctx.session.user.id, now);
   return json({
     payments,
+    login,
     owner,
     user: {
       nickname: ctx.session.user.nickname ?? "별손님",
@@ -2845,7 +3310,7 @@ export async function GET(request: Request): Promise<Response> {
 - [ ] **Step 7: Run the tests**
 
 Run: `npx vitest run apps/web/lib/account apps/web/app/api/auth`
-Expected: PASS (kakao 5, auth 8, account 12).
+Expected: PASS (kakao 5, auth 11, account 14).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
@@ -2871,10 +3336,16 @@ git commit -m "feat(auth): Kakao login with signed state, sessions, /api/me and 
   - `tossTypes.ts`:
     - `interface TossPayment { paymentKey; orderId; status; totalAmount; balanceAmount; method: string | null; approvedAt: string | null; receiptUrl: string | null }`
     - `class TossError { status: number; code: string }` (status 0 = no response)
+    - `isPendingTossError(error): boolean`: no answer, 5xx or 409 `IDEMPOTENT_REQUEST_PROCESSING` (M2)
     - `interface TossClient { mode: "test" | "live" | "mock"; confirm({paymentKey, orderId, amount}); getPayment(paymentKey); getPaymentByOrder(orderId); cancel(paymentKey, {reason, idempotencyKey}) }`, all `Promise<TossPayment>`
     - `parsePayment(value: unknown): TossPayment`
   - `toss.ts`: `TOSS_API`, `tossAuthorization(secretKey)`, `createTossClient(secretKey, fetchImpl?, timeoutMs?)`, `tossClient(env?): TossClient | null`
-  - `tossMock.ts`: `createMockToss(): TossClient & { reset(): void }`, `mockToss` (the one instance `tossClient()` returns under `STARLOG_PAY=mock`)
+  - `tossMock.ts`: `interface MockToss extends TossClient { reset(); failNext(op, error, {applied?}) }`, `createMockToss(): MockToss`, `mockToss` (the one instance `tossClient()` returns under `STARLOG_PAY=mock`)
+
+**Toss's Idempotency-Key, as the mock reproduces it (M2):**
+- A POST with a key Toss has seen replays that key's first answer for 15 days, errors included.
+- 409 `IDEMPOTENT_REQUEST_PROCESSING` means the first request with that key is still running.
+- So a 409, a 5xx or no answer says nothing about the payment. Callers look the payment up before deciding (Tasks 7 and 8), and retry with a new, attempt-scoped key only after a look-up shows it is still `DONE`.
 
 - [ ] **Step 1: Write the failing test** — `apps/web/lib/pay/toss.test.ts`
 
@@ -2882,7 +3353,7 @@ git commit -m "feat(auth): Kakao login with signed state, sessions, /api/me and 
 import { beforeEach, describe, expect, it } from "vitest";
 import { createTossClient, tossAuthorization, tossClient } from "./toss";
 import { mockToss } from "./tossMock";
-import { TossError } from "./tossTypes";
+import { TossError, isPendingTossError } from "./tossTypes";
 
 const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
 const SECRET = "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6";
@@ -2961,6 +3432,15 @@ describe("Toss client", () => {
     await expect(odd.getPayment("k")).rejects.toBeInstanceOf(TossError);
   });
 
+  it("calls an answer unknown when Toss gave none, failed itself, or is still processing the key", () => {
+    expect(isPendingTossError(new TossError(0, "NETWORK", ""))).toBe(true);
+    expect(isPendingTossError(new TossError(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", ""))).toBe(true);
+    expect(isPendingTossError(new TossError(409, "IDEMPOTENT_REQUEST_PROCESSING", ""))).toBe(true);
+    expect(isPendingTossError(new Error("anything else"))).toBe(true);
+    expect(isPendingTossError(new TossError(403, "REJECT_CARD_PAYMENT", ""))).toBe(false);
+    expect(isPendingTossError(new TossError(400, "ALREADY_PROCESSED_PAYMENT", ""))).toBe(false);
+  });
+
   it("knows test from live by the secret key", () => {
     expect(createTossClient("test_gsk_x").mode).toBe("test");
     expect(createTossClient("live_gsk_x").mode).toBe("live");
@@ -2976,19 +3456,40 @@ describe("Toss client", () => {
 describe("mock Toss", () => {
   beforeEach(() => mockToss.reset());
 
-  it("approves once per payment key, like Toss", async () => {
+  it("approves a payment once: the same order replays its answer, another order is refused", async () => {
     const payment = await mockToss.confirm({ paymentKey: "mock_1", orderId: ORDER, amount: 2900 });
     expect(payment).toMatchObject({ status: "DONE", totalAmount: 2900, orderId: ORDER });
-    await expect(mockToss.confirm({ paymentKey: "mock_1", orderId: ORDER, amount: 2900 })).rejects.toMatchObject({ code: "ALREADY_PROCESSED_PAYMENT" });
+    expect(await mockToss.confirm({ paymentKey: "mock_1", orderId: ORDER, amount: 2900 })).toEqual(payment);
+    await expect(mockToss.confirm({ paymentKey: "mock_1", orderId: "Other_order_000000000001", amount: 2900 })).rejects.toMatchObject({ code: "ALREADY_PROCESSED_PAYMENT" });
     expect(await mockToss.getPaymentByOrder(ORDER)).toEqual(payment);
   });
 
-  it("declines mock_fail keys and cancels once", async () => {
+  it("replays a key's first answer, a refusal included, and cancels once", async () => {
     await expect(mockToss.confirm({ paymentKey: "mock_fail_1", orderId: ORDER, amount: 2900 })).rejects.toMatchObject({ status: 403, code: "REJECT_CARD_PAYMENT" });
-    await mockToss.confirm({ paymentKey: "mock_2", orderId: ORDER, amount: 2900 });
-    expect(await mockToss.cancel("mock_2", { reason: "r", idempotencyKey: "i" })).toMatchObject({ status: "CANCELED", balanceAmount: 0 });
-    await expect(mockToss.cancel("mock_2", { reason: "r", idempotencyKey: "i" })).rejects.toMatchObject({ code: "ALREADY_CANCELED_PAYMENT" });
+    // The same order (the same Idempotency-Key) gets the same refusal, whatever it sends now.
+    await expect(mockToss.confirm({ paymentKey: "mock_2", orderId: ORDER, amount: 2900 })).rejects.toMatchObject({ code: "REJECT_CARD_PAYMENT" });
+    const other = "Cc3_dEf-Gh5iJk7Lm9No1Pq2";
+    await mockToss.confirm({ paymentKey: "mock_2", orderId: other, amount: 2900 });
+    expect(await mockToss.cancel("mock_2", { reason: "r", idempotencyKey: "cancel-1" })).toMatchObject({ status: "CANCELED", balanceAmount: 0 });
+    expect(await mockToss.cancel("mock_2", { reason: "r", idempotencyKey: "cancel-1" })).toMatchObject({ status: "CANCELED" });
+    await expect(mockToss.cancel("mock_2", { reason: "r", idempotencyKey: "cancel-2" })).rejects.toMatchObject({ code: "ALREADY_CANCELED_PAYMENT" });
     await expect(mockToss.getPayment("nope")).rejects.toMatchObject({ status: 404, code: "NOT_FOUND_PAYMENT" });
+  });
+
+  it("can lose an answer after the work, or refuse before it", async () => {
+    await mockToss.confirm({ paymentKey: "mock_3", orderId: ORDER, amount: 2900 });
+    mockToss.failNext("cancel", new TossError(0, "NETWORK", "no response from Toss"), { applied: true });
+    await expect(mockToss.cancel("mock_3", { reason: "r", idempotencyKey: "cancel-a" })).rejects.toMatchObject({ status: 0 });
+    expect((await mockToss.getPayment("mock_3")).status).toBe("CANCELED");
+    expect(await mockToss.cancel("mock_3", { reason: "r", idempotencyKey: "cancel-a" })).toMatchObject({ status: "CANCELED" });
+  });
+
+  it("keeps no answer for a key that was still processing", async () => {
+    await mockToss.confirm({ paymentKey: "mock_4", orderId: ORDER, amount: 2900 });
+    mockToss.failNext("cancel", new TossError(409, "IDEMPOTENT_REQUEST_PROCESSING", "이전 요청이 처리 중입니다."));
+    await expect(mockToss.cancel("mock_4", { reason: "r", idempotencyKey: "cancel-b" })).rejects.toMatchObject({ status: 409 });
+    expect((await mockToss.getPayment("mock_4")).status).toBe("DONE");
+    expect(await mockToss.cancel("mock_4", { reason: "r", idempotencyKey: "cancel-b" })).toMatchObject({ status: "CANCELED" });
   });
 });
 ```
@@ -3027,6 +3528,16 @@ export class TossError extends Error {
   }
 }
 
+/**
+ * An answer that says nothing about the payment (M2): no answer, a Toss-side 5xx, or 409
+ * IDEMPOTENT_REQUEST_PROCESSING (the first request with this Idempotency-Key is still running).
+ * Anything that is not a TossError counts too. Never treat these as a refusal: look the payment up.
+ */
+export function isPendingTossError(error: unknown): boolean {
+  if (!(error instanceof TossError)) return true;
+  return error.status === 0 || error.status >= 500 || error.status === 409 || error.code === "IDEMPOTENT_REQUEST_PROCESSING";
+}
+
 export interface TossClient {
   readonly mode: "test" | "live" | "mock";
   confirm(input: { paymentKey: string; orderId: string; amount: number }): Promise<TossPayment>;
@@ -3061,49 +3572,105 @@ export function parsePayment(value: unknown): TossPayment {
 import "server-only";
 import { TossError, type TossClient, type TossPayment } from "./tossTypes";
 
+type Op = "confirm" | "cancel" | "get";
+
+export interface MockToss extends TossClient {
+  reset(): void;
+  /**
+   * The next `op` call fails with `error`. With `applied`, Toss did the work first and only the
+   * answer was lost (a timeout after success); without it, nothing happened.
+   */
+  failNext(op: Op, error: TossError, options?: { applied?: boolean }): void;
+}
+
 /**
  * STARLOG_PAY=mock: an in-memory Toss for tests, e2e and local dev. It behaves like the real API
  * where the app depends on it:
- * - confirm is once per paymentKey (again → ALREADY_PROCESSED_PAYMENT);
+ * - a POST replays its Idempotency-Key's first answer, a refusal included (confirm's key is
+ *   `confirm-<orderId>`, as the real client sends). 409 processing and no answer are not kept;
+ * - a payment is confirmed once (another order with that paymentKey → ALREADY_PROCESSED_PAYMENT);
  * - a paymentKey starting with "mock_fail" is declined;
- * - cancel empties the balance once.
+ * - cancel empties the balance once (a new key afterwards → ALREADY_CANCELED_PAYMENT).
  */
-export function createMockToss(): TossClient & { reset(): void } {
+export function createMockToss(): MockToss {
   const payments = new Map<string, TossPayment>();
+  const replies = new Map<string, { payment?: TossPayment; error?: TossError }>();
+  const planned = new Map<Op, { error: TossError; applied: boolean }>();
+  const notFound = () => new TossError(404, "NOT_FOUND_PAYMENT", "존재하지 않는 결제 정보 입니다.");
   const find = (paymentKey: string) => {
     const payment = payments.get(paymentKey);
-    if (!payment) throw new TossError(404, "NOT_FOUND_PAYMENT", "존재하지 않는 결제 정보 입니다.");
+    if (!payment) throw notFound();
     return payment;
   };
+  const kept = (error: TossError) => error.status >= 400 && error.status !== 409;
+
+  /** A POST under `key`: the first answer is kept and replayed; a planned failure goes first. */
+  async function post(op: Op, key: string, work: () => TossPayment): Promise<TossPayment> {
+    const seen = replies.get(key);
+    if (seen?.error) throw seen.error;
+    if (seen?.payment) return seen.payment;
+    const plan = planned.get(op);
+    planned.delete(op);
+    if (plan && !plan.applied) {
+      if (kept(plan.error)) replies.set(key, { error: plan.error });
+      throw plan.error;
+    }
+    let payment: TossPayment;
+    try {
+      payment = work();
+    } catch (error) {
+      if (error instanceof TossError && kept(error)) replies.set(key, { error });
+      throw error;
+    }
+    replies.set(key, { payment });
+    if (plan) throw plan.error;
+    return payment;
+  }
+
+  async function get(work: () => TossPayment): Promise<TossPayment> {
+    const plan = planned.get("get");
+    planned.delete("get");
+    if (plan) throw plan.error;
+    return work();
+  }
+
   return {
     mode: "mock",
-    async confirm({ paymentKey, orderId, amount }) {
-      if (payments.has(paymentKey)) throw new TossError(400, "ALREADY_PROCESSED_PAYMENT", "이미 처리된 결제 입니다.");
-      if (paymentKey.startsWith("mock_fail")) throw new TossError(403, "REJECT_CARD_PAYMENT", "한도초과 혹은 잔액부족으로 결제에 실패했습니다.");
-      const payment: TossPayment = { paymentKey, orderId, status: "DONE", totalAmount: amount, balanceAmount: amount, method: "카드", approvedAt: new Date().toISOString(), receiptUrl: null };
-      payments.set(paymentKey, payment);
-      return payment;
+    confirm: ({ paymentKey, orderId, amount }) =>
+      post("confirm", `confirm-${orderId}`, () => {
+        if (payments.has(paymentKey)) throw new TossError(400, "ALREADY_PROCESSED_PAYMENT", "이미 처리된 결제 입니다.");
+        if (paymentKey.startsWith("mock_fail")) throw new TossError(403, "REJECT_CARD_PAYMENT", "한도초과 혹은 잔액부족으로 결제에 실패했습니다.");
+        const payment: TossPayment = { paymentKey, orderId, status: "DONE", totalAmount: amount, balanceAmount: amount, method: "카드", approvedAt: new Date().toISOString(), receiptUrl: null };
+        payments.set(paymentKey, payment);
+        return payment;
+      }),
+    getPayment: (paymentKey) => get(() => find(paymentKey)),
+    getPaymentByOrder: (orderId) =>
+      get(() => {
+        for (const payment of payments.values()) if (payment.orderId === orderId) return payment;
+        throw notFound();
+      }),
+    cancel: (paymentKey, { idempotencyKey }) =>
+      post("cancel", idempotencyKey, () => {
+        const payment = find(paymentKey);
+        if (payment.status === "CANCELED") throw new TossError(400, "ALREADY_CANCELED_PAYMENT", "이미 취소된 결제 입니다.");
+        const canceled = { ...payment, status: "CANCELED", balanceAmount: 0 };
+        payments.set(paymentKey, canceled);
+        return canceled;
+      }),
+    failNext(op, error, options = {}) {
+      planned.set(op, { error, applied: options.applied === true });
     },
-    async getPayment(paymentKey) {
-      return find(paymentKey);
+    reset() {
+      payments.clear();
+      replies.clear();
+      planned.clear();
     },
-    async getPaymentByOrder(orderId) {
-      for (const payment of payments.values()) if (payment.orderId === orderId) return payment;
-      throw new TossError(404, "NOT_FOUND_PAYMENT", "존재하지 않는 결제 정보 입니다.");
-    },
-    async cancel(paymentKey) {
-      const payment = find(paymentKey);
-      if (payment.status === "CANCELED") throw new TossError(400, "ALREADY_CANCELED_PAYMENT", "이미 취소된 결제 입니다.");
-      const canceled = { ...payment, status: "CANCELED", balanceAmount: 0 };
-      payments.set(paymentKey, canceled);
-      return canceled;
-    },
-    reset: () => payments.clear(),
   };
 }
 
 /** The one mock instance (kept on globalThis so every route bundle in `next dev` shares it). */
-export const mockToss: TossClient & { reset(): void } = ((globalThis as unknown as { __starlogMockToss?: ReturnType<typeof createMockToss> }).__starlogMockToss ??= createMockToss());
+export const mockToss: MockToss = ((globalThis as unknown as { __starlogMockToss?: MockToss }).__starlogMockToss ??= createMockToss());
 ```
 
 - [ ] **Step 5: Write `apps/web/lib/pay/toss.ts`**
@@ -3118,8 +3685,13 @@ import { TossError, parsePayment, type TossClient, type TossPayment } from "./to
  * Toss Payments core API (docs.tosspayments.com/reference). Server only: the secret key never
  * leaves the Worker.
  * - Auth is `Basic base64(secretKey + ":")`; the colon is required.
- * - POSTs carry an Idempotency-Key, which Toss keeps for 15 days.
+ * - POSTs carry an Idempotency-Key. Toss keeps it 15 days and replays its first answer, errors
+ *   included; 409 IDEMPOTENT_REQUEST_PROCESSING means that first request is still running.
+ *   Confirm's key is `confirm-<orderId>` (an order is confirmed once); cancel's comes from the
+ *   caller (`cancel-<orderId>-<attempt>`, Task 8).
  * - Confirm must run within 10 minutes of the buyer's authentication.
+ * - Each call waits at most 30 s. A caller decides nothing from a missing answer: it looks the
+ *   payment up (isPendingTossError).
  */
 
 export const TOSS_API = "https://api.tosspayments.com";
@@ -3179,7 +3751,7 @@ export function tossClient(env: NodeJS.ProcessEnv = process.env): TossClient | n
 - [ ] **Step 6: Run the tests**
 
 Run: `npx vitest run apps/web/lib/pay/toss.test.ts`
-Expected: PASS (8 tests). One `config.pay_invalid` line on stderr is expected from the null case.
+Expected: PASS (11 tests). One `config.pay_invalid` line on stderr is expected from the null case.
 
 Run: `pnpm typecheck`
 Expected: exit 0.
@@ -3193,7 +3765,7 @@ git commit -m "feat(pay): Toss confirm, lookup and cancel client with an in-memo
 
 ---
 
-### Task 7: Orders, checkout info, confirm
+### Task 7: Orders, checkout info, confirm (no session needed)
 
 **Files:**
 - Create: `apps/web/lib/pay/orders.ts`, `apps/web/app/api/pay/checkout/route.ts`, `apps/web/app/api/pay/orders/route.ts`, `apps/web/app/api/pay/confirm/route.ts`
@@ -3204,23 +3776,33 @@ git commit -m "feat(pay): Toss confirm, lookup and cancel client with an in-memo
 - Consumes:
   - Task 2: `productById`, `sellable`, `unitsFor`, `paymentsMode`, `salesOpen`, `payProvider`, `tossClientKey`.
   - Task 3: `openAccountRoute`, `requireSession`, `safeReturnTo`.
-  - Task 4: `paidLotStatements`. Task 6: `tossClient`, `TossError`, `TossClient`, `TossPayment`.
+  - Task 4: `paidLotStatements`. Task 6: `tossClient`, `TossError`, `isPendingTossError`, `TossClient`, `TossPayment`, `mockToss.failNext` (tests).
   - Existing: `isConstraintError`, `randomId`, `json`, `errorResponse`, `readJson`.
 - Produces:
   - `orders.ts`:
-    - `type OrderStatus`, `interface OrderRow` (the `orders` row)
+    - `type OrderStatus`, `interface OrderRow` (the `orders` row, with `cancel_attempt`)
     - `createOrder(db, {userId, product, returnTo, now}): Promise<OrderRow>`
     - `orderById(db, id)`, `orderForUser(db, id, userId)`
-    - `markPaid(db, order, payment, mode, now): Promise<void>` (idempotent)
-    - `type ConfirmOutcome = {ok: true; order} | {ok: false; code: "PAY_FAILED" | "PAY_PENDING" | "BAD_REQUEST"; message?}`
+    - `type MarkPaidResult = "paid" | "orphaned" | "already"`, `markPaid(db, order, payment, mode, now): Promise<MarkPaidResult>`
+    - `ORPHAN_MESSAGE`, `type ConfirmOutcome = {ok: true; order} | {ok: false; code: "PAY_FAILED" | "PAY_PENDING" | "BAD_REQUEST"; message?; orphaned?}`
     - `confirmOrder(db, toss, {order, paymentKey, amount, now})`
-    - `RECONCILE_AFTER_MS = 30_000`, `reconcileConfirming(db, toss, order, now): Promise<OrderRow>`
+    - `RECONCILE_AFTER_MS = 30_000`, `STALE_CONFIRM_MS = 900_000`, `reconcileConfirming(db, toss, order, now, {force?}): Promise<OrderRow>`
     - `interface OrderListItem { orderId; productId; amount; status; createdAt; receiptUrl; method; refundable; opened }`, `orderHistory(db, userId, limit?)`
-  - `GET /api/pay/checkout?product=` → `{ productId, name, amount, customerKey, provider: "toss" | "mock", clientKey: string | null }`
-  - `POST /api/pay/orders {productId, returnTo?, ack: true}` → `{ orderId, orderName, amount, successUrl, failUrl }`
-  - `GET /api/pay/orders?id=` → `{ orderId, productId, status, returnTo }`; `GET /api/pay/orders` → `{ orders: OrderListItem[] }`
-  - `POST /api/pay/confirm {paymentKey, orderId, amount}` → `{ status: "paid", orderId, productId, returnTo }` or an error code
+  - `GET /api/pay/checkout?product=` → `{ productId, name, amount, customerKey, provider: "toss" | "mock", clientKey: string | null }` (session)
+  - `POST /api/pay/orders {productId, returnTo?, ack: true}` → `{ orderId, orderName, amount, successUrl, failUrl }` (session)
+  - `GET /api/pay/orders?id=` → `{ orderId, productId, status, returnTo, signedIn }` (no session needed); `GET /api/pay/orders` → `{ orders: OrderListItem[] }` (session)
+  - `POST /api/pay/confirm {paymentKey, orderId, amount}` → `{ status: "paid", orderId, productId, returnTo, signedIn }` or an error code (no session needed)
   - `lib/testing/p4.ts`: `buy(b, productId?): Promise<string>` (order id)
+
+**Rules (revision 2):**
+- **No session for confirm or the status look-up (M5).** A card app or the KakaoTalk in-app browser can bring the buyer back to `/pay/success` in another browser, without the session cookie.
+  - The order id (24 random characters) and Toss's paymentKey are the proof. The amount must be the order's. The grant always goes to `order.user_id`.
+  - The route keeps the PAY limiter and the same-origin check. `signedIn` tells the success page whether this browser holds the buyer's session (Task 16).
+- **Toss answers (M2):**
+  - 409 `IDEMPOTENT_REQUEST_PROCESSING`, a 5xx or no answer leave the order `confirming` (`PAY_PENDING`). They are never a refusal.
+  - Any other error answer is followed by a look-up of the payment before the order is decided. DONE is granted; a look-up that fails keeps it pending.
+  - `reconcileConfirming` decides from the look-up: DONE → paid; ABORTED, EXPIRED or CANCELED → failed. A payment still not done, or not found, 15 minutes later (past Toss's 10-minute confirm window) → failed.
+- **A deleted account is never granted anything (M3).** `markPaid` moves such an order to `refunding` with `fail_code` `ACCOUNT_DELETED`, keeps the payment row and writes no lot. Task 8 cancels the payment at once, and the Cron Trigger retries it (Task 13).
 
 - [ ] **Step 1: Add `buy` to `apps/web/lib/testing/p4.ts`**
 
@@ -3267,6 +3849,7 @@ beforeEach(() => {
   resetMemoryLimiter();
   mockToss.reset();
   vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -3283,6 +3866,9 @@ async function loggedIn(name = "alice"): Promise<Browser> {
 }
 
 const order = (b: Browser, body: Record<string, unknown>) => b.send(ordersPost, "/api/pay/orders", { body, origin: true });
+const newOrder = async (b: Browser) => ((await (await order(b, { productId: "tarot", returnTo: "/tarot/result", ack: true })).json()) as { orderId: string }).orderId;
+const confirmAs = (b: Browser, orderId: string, paymentKey: string, amount = 2900) => b.send(confirm, "/api/pay/confirm", { body: { paymentKey, orderId, amount }, origin: true });
+const statusOf = async (b: Browser, orderId: string) => (await (await b.send(ordersGet, `/api/pay/orders?id=${orderId}`)).json()) as Record<string, unknown>;
 
 describe("checkout and orders", () => {
   it("gives the checkout page the server's price and the buyer's customer key", async () => {
@@ -3304,7 +3890,7 @@ describe("checkout and orders", () => {
     const body = (await res.json()) as { orderId: string; amount: number; orderName: string; successUrl: string; failUrl: string };
     expect(body).toMatchObject({ amount: 2900, orderName: "스타로그 타로 전체 풀이", successUrl: "http://localhost/pay/success", failUrl: "http://localhost/pay/fail" });
     expect(body.orderId).toMatch(/^[A-Za-z0-9_-]{24}$/);
-    expect(await db.prepare("SELECT amount_krw, status, withdrawal_ack_at FROM orders WHERE id = ?").bind(body.orderId).first()).toEqual({ amount_krw: 2900, status: "created", withdrawal_ack_at: T0 });
+    expect(await db.prepare("SELECT amount_krw, status, withdrawal_ack_at, cancel_attempt FROM orders WHERE id = ?").bind(body.orderId).first()).toEqual({ amount_krw: 2900, status: "created", withdrawal_ack_at: T0, cancel_attempt: 1 });
   });
 
   it("refuses premium readings before P5, unknown products, guests, closed sales and other sites", async () => {
@@ -3314,7 +3900,7 @@ describe("checkout and orders", () => {
     expect((await order(b, { productId: "moon-30", ack: true })).status).toBe(409);
     expect((await order(browser("192.0.2.1"), { productId: "tarot", ack: true })).status).toBe(401);
     expect((await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true } })).status).toBe(403);
-    vi.stubEnv("STARLOG_PAYMENTS", "off");
+    vi.stubEnv("STARLOG_PAYMENTS", "paused");
     expect((await order(b, { productId: "tarot", ack: true })).status).toBe(409);
   });
 });
@@ -3325,58 +3911,87 @@ describe("confirm", () => {
     const b = await loggedIn();
     const orderId = await buy(b);
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
-    const again = await b.send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_again", orderId, amount: 2900 }, origin: true });
+    const again = await confirmAs(b, orderId, "mock_again");
     expect(again.status).toBe(200);
+    expect(await again.json()).toMatchObject({ status: "paid", signedIn: true });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots").first()).toEqual({ n: 1 });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant' AND order_id = ?").bind(orderId).first()).toEqual({ n: 1 });
     expect(await db.prepare("SELECT status, mode, total_amount FROM payments WHERE order_id = ?").bind(orderId).first()).toEqual({ status: "DONE", mode: "mock", total_amount: 2900 });
   });
 
+  it("confirms from a browser without the session (an in-app browser handing over), for the order's own account", async () => {
+    useTestDb();
+    const alice = await loggedIn();
+    const orderId = await newOrder(alice);
+    const elsewhere = browser("192.0.2.77");
+    const res = await confirmAs(elsewhere, orderId, "mock_handover");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ status: "paid", orderId, productId: "tarot", returnTo: "/tarot/result", signedIn: false });
+    expect(await statusOf(elsewhere, orderId)).toEqual({ orderId, productId: "tarot", status: "paid", returnTo: "/tarot/result", signedIn: false });
+    expect((await me(alice)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await elsewhere.send(confirm, "/api/pay/confirm", { body: { paymentKey: "x", orderId, amount: 2900 } })).status).toBe(403);
+  });
+
   it("refuses an amount that is not the order's, and never asks Toss", async () => {
     const db = useTestDb();
     const b = await loggedIn();
-    const { orderId } = (await (await order(b, { productId: "tarot", ack: true })).json()) as { orderId: string };
+    const orderId = await newOrder(b);
     const spy = vi.spyOn(mockToss, "confirm");
-    const res = await b.send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_x", orderId, amount: 100 }, origin: true });
-    expect(res.status).toBe(400);
+    expect((await confirmAs(b, orderId, "mock_x", 100)).status).toBe(400);
     expect(spy).not.toHaveBeenCalled();
     expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "AMOUNT_MISMATCH" });
   });
 
-  it("shows Toss's message for a declined card and grants nothing", async () => {
+  it("looks a declined payment up before failing it, then shows Toss's message", async () => {
     const db = useTestDb();
     const b = await loggedIn();
-    const { orderId } = (await (await order(b, { productId: "tarot", ack: true })).json()) as { orderId: string };
-    const res = await b.send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_fail_1", orderId, amount: 2900 }, origin: true });
+    const orderId = await newOrder(b);
+    const lookUp = vi.spyOn(mockToss, "getPaymentByOrder");
+    const res = await confirmAs(b, orderId, "mock_fail_1");
     expect(res.status).toBe(402);
     expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." });
+    expect(lookUp).toHaveBeenCalledWith(orderId);
+    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "REJECT_CARD_PAYMENT" });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots").first()).toEqual({ n: 0 });
   });
 
-  it("does not confirm someone else's order", async () => {
-    useTestDb();
-    const alice = await loggedIn("alice");
-    const { orderId } = (await (await order(alice, { productId: "tarot", ack: true })).json()) as { orderId: string };
-    const bob = await loggedIn("bob");
-    expect((await bob.send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_b", orderId, amount: 2900 }, origin: true })).status).toBe(400);
-  });
-
-  it("asks Toss again when the confirm answer was lost, and grants once", async () => {
+  it("keeps a 5xx answer pending, then settles it from Toss and grants once", async () => {
     useTestDb();
     const b = await loggedIn();
-    const { orderId } = (await (await order(b, { productId: "tarot", ack: true })).json()) as { orderId: string };
-    const real = mockToss.confirm.bind(mockToss);
-    vi.spyOn(mockToss, "confirm").mockImplementationOnce(async (input) => {
-      await real(input);
-      throw new TossError(0, "NETWORK", "no response from Toss");
-    });
-    const lost = await b.send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_lost", orderId, amount: 2900 }, origin: true });
+    const orderId = await newOrder(b);
+    mockToss.failNext("confirm", new TossError(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", ""), { applied: true });
+    const lost = await confirmAs(b, orderId, "mock_lost");
     expect(lost.status).toBe(409);
     expect(await lost.json()).toMatchObject({ code: "PAY_PENDING" });
-    expect(await (await b.send(ordersGet, `/api/pay/orders?id=${orderId}`)).json()).toMatchObject({ status: "confirming" });
+    expect(await statusOf(b, orderId)).toMatchObject({ status: "confirming" });
     vi.setSystemTime(T0 + 31_000);
-    expect(await (await b.send(ordersGet, `/api/pay/orders?id=${orderId}`)).json()).toEqual({ orderId, productId: "tarot", status: "paid", returnTo: "/tarot/result" });
+    expect(await statusOf(b, orderId)).toEqual({ orderId, productId: "tarot", status: "paid", returnTo: "/tarot/result", signedIn: true });
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+  });
+
+  it("never reads 409 processing as a refusal: the order waits until Toss's window has surely closed", async () => {
+    useTestDb();
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    mockToss.failNext("confirm", new TossError(409, "IDEMPOTENT_REQUEST_PROCESSING", "이전 요청이 처리 중입니다."));
+    expect((await confirmAs(b, orderId, "mock_busy")).status).toBe(409);
+    vi.setSystemTime(T0 + 31_000);
+    expect(await statusOf(b, orderId)).toMatchObject({ status: "confirming" });
+    vi.setSystemTime(T0 + 15 * 60_000 + 1);
+    expect(await statusOf(b, orderId)).toMatchObject({ status: "failed" });
+  });
+
+  it("never grants a payment that arrives for a deleted account", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    await db.prepare("UPDATE users SET deleted_at = ?").bind(T0).run();
+    const res = await confirmAs(browser("192.0.2.78"), orderId, "mock_orphan");
+    expect(res.status).toBe(402);
+    expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: expect.stringContaining("탈퇴") });
+    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunding", fail_code: "ACCOUNT_DELETED" });
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots").first()).toEqual({ n: 0 });
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM payments").first()).toEqual({ n: 1 });
   });
 
   it("lists the buyer's paid orders with what can still be refunded", async () => {
@@ -3385,6 +4000,7 @@ describe("confirm", () => {
     const orderId = await buy(b);
     const { orders } = (await (await b.send(ordersGet, "/api/pay/orders")).json()) as { orders: Array<Record<string, unknown>> };
     expect(orders).toEqual([{ orderId, productId: "tarot", amount: 2900, status: "paid", createdAt: T0, receiptUrl: null, method: "카드", refundable: true, opened: false }]);
+    expect((await browser("192.0.2.79").send(ordersGet, "/api/pay/orders")).status).toBe(401);
   });
 });
 ```
@@ -3403,12 +4019,12 @@ import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
 import { productById, unitsFor, type Product } from "./catalog";
 import { paidLotStatements } from "./ledger";
-import { TossError, type TossClient, type TossPayment } from "./tossTypes";
+import { TossError, isPendingTossError, type TossClient, type TossPayment } from "./tossTypes";
 
 /**
  * Orders and Toss confirmation (spec 5.2, 5.3). The amount always comes from the order row, which
- * came from the catalog. Toss is the source of truth: a lost or ambiguous answer is settled by
- * asking Toss again, never by guessing.
+ * came from the catalog. Toss is the source of truth: an unknown answer (409 processing, 5xx, none)
+ * is settled by looking the payment up, never by guessing.
  */
 
 export type OrderStatus = "created" | "confirming" | "paid" | "failed" | "refunding" | "refunded";
@@ -3424,6 +4040,8 @@ export interface OrderRow {
   withdrawal_ack_at: number;
   payment_key: string | null;
   fail_code: string | null;
+  /** the cancel Idempotency-Key is cancel-<id>-<cancel_attempt> (Task 8) */
+  cancel_attempt: number;
   created_at: number;
   updated_at: number;
 }
@@ -3459,34 +4077,76 @@ async function setStatus(db: D1Binding, id: string, from: OrderStatus[], to: Ord
 /** The Toss payment is the one this order expects: DONE, same order, same amount. */
 const matches = (order: OrderRow, payment: TossPayment) => payment.status === "DONE" && payment.orderId === order.id && payment.totalAmount === order.amount_krw;
 
+/** The payment Toss has for this order, "none" when it has none, "unknown" when it could not be asked. */
+async function lookUpByOrder(toss: TossClient, orderId: string): Promise<TossPayment | "none" | "unknown"> {
+  try {
+    return await toss.getPaymentByOrder(orderId);
+  } catch (error) {
+    return error instanceof TossError && error.code === "NOT_FOUND_PAYMENT" ? "none" : "unknown";
+  }
+}
+
+export type MarkPaidResult = "paid" | "orphaned" | "already";
+
+const LIVE_ACCOUNT = "EXISTS (SELECT 1 FROM users u WHERE u.id = orders.user_id AND u.deleted_at IS NULL)";
+
 /**
- * Records a DONE payment and grants its paid lot in one batch. UNIQUE payment_key, order_id and
- * idem_key make a second call (a repeated confirm, or the webhook first) a no-op.
+ * Records a DONE payment in one batch:
+ * - the order becomes `paid`, or `refunding` with fail_code ACCOUNT_DELETED when its account was
+ *   deleted meanwhile ("orphaned": Task 8 cancels the payment; nothing is granted);
+ * - the payment row (UNIQUE payment_key and order_id);
+ * - the paid lot and its grant, written only if the order became `paid`.
+ * A second call (a repeated confirm, or the webhook first) breaks a UNIQUE key and changes nothing.
  */
-export async function markPaid(db: D1Binding, order: OrderRow, payment: TossPayment, mode: TossClient["mode"], now: number): Promise<void> {
+export async function markPaid(db: D1Binding, order: OrderRow, payment: TossPayment, mode: TossClient["mode"], now: number): Promise<MarkPaidResult> {
   const product = productById(order.product_id);
   if (!product) throw new Error(`unknown product ${order.product_id}`);
   try {
     await db.batch([
       db
-        .prepare("UPDATE orders SET status = 'paid', payment_key = ?, fail_code = NULL, updated_at = ? WHERE id = ? AND status IN ('created', 'confirming', 'failed')")
+        .prepare(
+          `UPDATE orders SET
+             status = CASE WHEN ${LIVE_ACCOUNT} THEN 'paid' ELSE 'refunding' END,
+             fail_code = CASE WHEN ${LIVE_ACCOUNT} THEN NULL ELSE 'ACCOUNT_DELETED' END,
+             payment_key = ?, updated_at = ?
+           WHERE id = ? AND status IN ('created', 'confirming', 'failed')`,
+        )
         .bind(payment.paymentKey, now, order.id),
       db
         .prepare("INSERT INTO payments (payment_key, order_id, method, total_amount, status, approved_at, receipt_url, mode, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(payment.paymentKey, order.id, payment.method, payment.totalAmount, payment.status, payment.approvedAt, payment.receiptUrl, mode, now),
       ...paidLotStatements(db, { userId: order.user_id, orderId: order.id, productId: order.product_id, units: unitsFor(product), now }),
     ]);
-    console.info(JSON.stringify({ evt: "pay.paid", orderId: order.id, mode }));
   } catch (error) {
     if (!isConstraintError(error)) throw error;
+    return "already";
   }
+  const after = await orderById(db, order.id);
+  if (after?.status === "refunding") {
+    console.warn(JSON.stringify({ evt: "pay.paid_for_deleted_account", orderId: order.id, mode }));
+    return "orphaned";
+  }
+  console.info(JSON.stringify({ evt: "pay.paid", orderId: order.id, mode }));
+  return "paid";
 }
 
-export type ConfirmOutcome = { ok: true; order: OrderRow } | { ok: false; code: "PAY_FAILED" | "PAY_PENDING" | "BAD_REQUEST"; message?: string };
+/** Shown when a payment arrives for an account deleted in the meantime. */
+export const ORPHAN_MESSAGE = "탈퇴한 계정이라 이 결제는 바로 취소돼요. 청구된 금액은 카드사를 거쳐 환불돼요.";
+
+/** `orphaned`: the payment went through for a deleted account; the caller cancels it (Task 8). */
+export type ConfirmOutcome = { ok: true; order: OrderRow } | { ok: false; code: "PAY_FAILED" | "PAY_PENDING" | "BAD_REQUEST"; message?: string; orphaned?: boolean };
+
+async function outcomeOfPaid(db: D1Binding, toss: TossClient, order: OrderRow, payment: TossPayment, now: number): Promise<ConfirmOutcome> {
+  const result = await markPaid(db, order, payment, toss.mode, now);
+  const current = (await orderById(db, order.id)) ?? order;
+  if (result === "orphaned" || current.fail_code === "ACCOUNT_DELETED") return { ok: false, code: "PAY_FAILED", message: ORPHAN_MESSAGE, orphaned: true };
+  return { ok: true, order: current };
+}
 
 /** The successUrl's confirm (spec 5.3): amount check, one claim per order, Toss confirm, then markPaid. */
 export async function confirmOrder(db: D1Binding, toss: TossClient, input: { order: OrderRow; paymentKey: string; amount: number; now: number }): Promise<ConfirmOutcome> {
   const { order, paymentKey, amount, now } = input;
+  if (order.fail_code === "ACCOUNT_DELETED") return { ok: false, code: "PAY_FAILED", message: ORPHAN_MESSAGE, orphaned: true };
   if (order.status === "paid" || order.status === "refunding" || order.status === "refunded") return { ok: true, order };
   if (order.status === "failed") return { ok: false, code: "PAY_FAILED" };
   if (amount !== order.amount_krw) {
@@ -3509,46 +4169,49 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
   try {
     payment = await toss.confirm({ paymentKey, orderId: order.id, amount: order.amount_krw });
   } catch (error) {
-    if (error instanceof TossError && error.code === "ALREADY_PROCESSED_PAYMENT") {
-      try {
-        payment = await toss.getPaymentByOrder(order.id);
-      } catch {
-        return { ok: false, code: "PAY_PENDING" };
-      }
-    } else if (error instanceof TossError && error.status >= 400 && error.status < 500) {
-      await setStatus(db, order.id, ["confirming"], "failed", now, error.code);
-      console.info(JSON.stringify({ evt: "pay.confirm_declined", orderId: order.id, code: error.code }));
-      return { ok: false, code: "PAY_FAILED", message: error.message };
-    } else {
-      // No answer, or a Toss-side error: the payment may have gone through. The order stays
-      // `confirming` and reconcileConfirming() asks Toss after RECONCILE_AFTER_MS.
+    if (isPendingTossError(error)) {
+      // 409 processing, 5xx or no answer: the payment may have gone through. The order stays
+      // `confirming`; the success page asks again and reconcileConfirming() looks it up.
       console.warn(JSON.stringify({ evt: "pay.confirm_unknown", orderId: order.id, code: error instanceof TossError ? error.code : "UNKNOWN" }));
       return { ok: false, code: "PAY_PENDING" };
     }
+    const refusal = error as TossError;
+    // A definite answer (a decline, ALREADY_PROCESSED_PAYMENT, …): look the payment up before deciding.
+    const found = await lookUpByOrder(toss, order.id);
+    if (found === "unknown") return { ok: false, code: "PAY_PENDING" };
+    if (found !== "none" && matches(order, found)) return outcomeOfPaid(db, toss, order, found, now);
+    await setStatus(db, order.id, ["confirming"], "failed", now, refusal.code);
+    console.info(JSON.stringify({ evt: "pay.confirm_declined", orderId: order.id, code: refusal.code }));
+    return { ok: false, code: "PAY_FAILED", message: refusal.message };
   }
   if (!matches(order, payment)) {
     await setStatus(db, order.id, ["confirming"], "failed", now, `UNEXPECTED_${payment.status}`);
     console.error(JSON.stringify({ evt: "pay.confirm_mismatch", orderId: order.id, status: payment.status }));
     return { ok: false, code: "PAY_FAILED" };
   }
-  await markPaid(db, order, payment, toss.mode, now);
-  return { ok: true, order: (await orderById(db, order.id)) ?? order };
+  return outcomeOfPaid(db, toss, order, payment, now);
 }
 
 /** How long a `confirming` order waits before we ask Toss what became of it. */
 export const RECONCILE_AFTER_MS = 30_000;
+/** After this, a payment Toss has not approved never will be: its 10-minute confirm window is over. */
+export const STALE_CONFIRM_MS = 15 * 60_000;
 
-/** A `confirming` order whose confirm answer was lost: Toss decides (DONE → paid; ended or unknown → failed). */
-export async function reconcileConfirming(db: D1Binding, toss: TossClient, order: OrderRow, now: number): Promise<OrderRow> {
-  if (order.status !== "confirming" || now - order.updated_at < RECONCILE_AFTER_MS) return order;
-  try {
-    const payment = await toss.getPaymentByOrder(order.id);
-    if (matches(order, payment)) await markPaid(db, order, payment, toss.mode, now);
-    else if (["ABORTED", "EXPIRED", "CANCELED"].includes(payment.status)) await setStatus(db, order.id, ["confirming"], "failed", now, payment.status);
-  } catch (error) {
-    if (error instanceof TossError && error.code === "NOT_FOUND_PAYMENT") await setStatus(db, order.id, ["confirming"], "failed", now, "NOT_FOUND_PAYMENT");
-    else return order;
-  }
+/**
+ * A `confirming` order whose confirm answer was lost or unknown: Toss decides.
+ * - DONE → paid (or orphaned, for a deleted account).
+ * - ABORTED, EXPIRED, CANCELED → failed.
+ * - Not found, or still not done, after STALE_CONFIRM_MS → failed; before that it keeps waiting.
+ * `force` skips the RECONCILE_AFTER_MS wait (account deletion, the Cron Trigger).
+ */
+export async function reconcileConfirming(db: D1Binding, toss: TossClient, order: OrderRow, now: number, options: { force?: boolean } = {}): Promise<OrderRow> {
+  if (order.status !== "confirming") return order;
+  if (!options.force && now - order.updated_at < RECONCILE_AFTER_MS) return order;
+  const found = await lookUpByOrder(toss, order.id);
+  if (found === "unknown") return order;
+  if (found !== "none" && matches(order, found)) await markPaid(db, order, found, toss.mode, now);
+  else if (found !== "none" && ["ABORTED", "EXPIRED", "CANCELED"].includes(found.status)) await setStatus(db, order.id, ["confirming"], "failed", now, found.status);
+  else if (now - order.updated_at >= STALE_CONFIRM_MS) await setStatus(db, order.id, ["confirming"], "failed", now, found === "none" ? "NOT_FOUND_PAYMENT" : `UNCONFIRMED_${found.status}`);
   return (await orderById(db, order.id)) ?? order;
 }
 
@@ -3647,7 +4310,7 @@ import { safeReturnTo } from "@/lib/account/returnTo";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import { productById, sellable } from "@/lib/pay/catalog";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
-import { createOrder, orderForUser, orderHistory, reconcileConfirming } from "@/lib/pay/orders";
+import { createOrder, orderById, orderHistory, reconcileConfirming } from "@/lib/pay/orders";
 import { tossClient } from "@/lib/pay/toss";
 
 /** `ack: true` = the buyer ticked the 청약철회 notice on the checkout page (its time is kept on the order). */
@@ -3671,20 +4334,25 @@ export async function POST(request: Request): Promise<Response> {
   return json({ orderId: order.id, orderName: order.order_name, amount: order.amount_krw, successUrl: `${origin}/pay/success`, failUrl: `${origin}/pay/fail` });
 }
 
-/** GET ?id= → one order's status (settling a lost confirm with Toss); GET → 결제 내역. */
+/**
+ * GET ?id= → one order's status, settling a lost confirm with Toss. No session needed: the success
+ * page may run in another browser (spec 5.3); the 24-character order id is the proof.
+ * GET → 결제 내역 (session).
+ */
 export async function GET(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "PAY_LIMITER" });
   if (ctx instanceof Response) return ctx;
-  const session = requireSession(ctx);
-  if (session instanceof Response) return session;
   const toss = tossClient();
   const id = new URL(request.url).searchParams.get("id");
   if (id !== null) {
-    let order = await orderForUser(ctx.db, id, session.user.id);
+    if (!/^[A-Za-z0-9_-]{6,64}$/.test(id)) return errorResponse("BAD_REQUEST");
+    let order = await orderById(ctx.db, id);
     if (!order) return errorResponse("BAD_REQUEST");
     if (toss) order = await reconcileConfirming(ctx.db, toss, order, ctx.now);
-    return json({ orderId: order.id, productId: order.product_id, status: order.status, returnTo: order.return_to });
+    return json({ orderId: order.id, productId: order.product_id, status: order.status, returnTo: order.return_to, signedIn: ctx.session?.user.id === order.user_id });
   }
+  const session = requireSession(ctx);
+  if (session instanceof Response) return session;
   return json({ orders: await orderHistory(ctx.db, session.user.id) });
 }
 ```
@@ -3693,9 +4361,9 @@ export async function GET(request: Request): Promise<Response> {
 
 ```ts
 import { z } from "zod";
-import { openAccountRoute, requireSession } from "@/lib/account/request";
+import { openAccountRoute } from "@/lib/account/request";
 import { errorResponse, json, readJson } from "@/lib/api/http";
-import { confirmOrder, orderForUser } from "@/lib/pay/orders";
+import { confirmOrder, orderById } from "@/lib/pay/orders";
 import { tossClient } from "@/lib/pay/toss";
 
 const ConfirmBody = z.object({
@@ -3706,30 +4374,37 @@ const ConfirmBody = z.object({
 
 /**
  * POST {paymentKey, orderId, amount} from /pay/success (Toss's successUrl query) → confirm with Toss
- * and grant the reading once. Safe to repeat. Not gated by STARLOG_PAYMENTS: a payment that
- * already started must always be confirmable.
+ * and grant the reading to the order's account, once. Safe to repeat.
+ * - No session needed (M5): a card app or KakaoTalk can return the buyer in a browser without it.
+ *   The order id and Toss's paymentKey are the proof, the amount must be the order's, and the grant
+ *   goes to order.user_id. Rate-limited and same-origin like every payment POST.
+ * - Not gated by STARLOG_PAYMENTS: a payment that already started must always be confirmable.
  */
 export async function POST(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "PAY_LIMITER", write: true });
   if (ctx instanceof Response) return ctx;
-  const session = requireSession(ctx);
-  if (session instanceof Response) return session;
   const toss = tossClient();
   if (!toss) return errorResponse("PAY_UNAVAILABLE");
   const body = ConfirmBody.safeParse(await readJson(request, 2_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
-  const order = await orderForUser(ctx.db, body.data.orderId, session.user.id);
+  const order = await orderById(ctx.db, body.data.orderId);
   if (!order) return errorResponse("BAD_REQUEST");
   const outcome = await confirmOrder(ctx.db, toss, { order, paymentKey: body.data.paymentKey, amount: body.data.amount, now: ctx.now });
   if (!outcome.ok) return errorResponse(outcome.code, outcome.message ? { message: outcome.message } : {});
-  return json({ status: "paid", orderId: outcome.order.id, productId: outcome.order.product_id, returnTo: outcome.order.return_to });
+  return json({
+    status: "paid",
+    orderId: outcome.order.id,
+    productId: outcome.order.product_id,
+    returnTo: outcome.order.return_to,
+    signedIn: ctx.session?.user.id === outcome.order.user_id,
+  });
 }
 ```
 
 - [ ] **Step 6: Run the tests**
 
 Run: `npx vitest run apps/web/app/api/pay apps/web/app/api/auth apps/web/lib/pay`
-Expected: PASS (pay.test: 10 tests, plus the earlier suites).
+Expected: PASS (pay.test: 11 tests, plus the earlier suites).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
@@ -3738,7 +4413,7 @@ Expected: exit 0.
 
 ```bash
 git add apps/web/lib/pay/orders.ts apps/web/app/api/pay/checkout apps/web/app/api/pay/orders apps/web/app/api/pay/confirm apps/web/app/api/pay/pay.test.ts apps/web/lib/testing/p4.ts
-git commit -m "feat(pay): orders at catalog prices and idempotent Toss confirm" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat(pay): orders at catalog prices; confirm without a session, unknown Toss answers looked up" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -3747,40 +4422,59 @@ git commit -m "feat(pay): orders at catalog prices and idempotent Toss confirm" 
 
 **Files:**
 - Create: `apps/web/lib/pay/refunds.ts`, `apps/web/app/api/pay/refund/route.ts`, `apps/web/app/api/pay/webhook/route.ts`
-- Modify: `apps/web/app/api/pay/orders/route.ts` (also reconcile `refunding` orders)
+- Modify: `apps/web/app/api/pay/orders/route.ts` (also reconcile `refunding` orders), `apps/web/app/api/pay/confirm/route.ts` (cancel a deleted account's payment at once), `apps/web/app/api/pay/pay.test.ts` (that test's expectation)
 - Test: `apps/web/app/api/pay/refund.test.ts`
 
 **Interfaces:**
 - Consumes:
-  - Task 4: `lockUnusedPaidLot`, `unlockRefundingLot`, `refundingLot`, `refundedLotStatements`, `Lot`, plus `reserveUnlock`/`deliverUnlock` (tests only).
-  - Task 6: `tossClient`, `TossError`, `TossPayment`, `TossClient`.
-  - Task 7: `markPaid`, `orderById`, `orderForUser`, `OrderRow`, `buy` (p4 helper).
+  - Task 4: `lockPaidLotForRefund`, `revertRefund`, `refundingLot`, `refundedLotStatements`, `revokeLotStatement`, `Lot`, plus `reserveUnlock`/`releaseUnlock` (tests only).
+  - Task 6: `tossClient`, `TossError`, `isPendingTossError`, `TossPayment`, `TossClient`, `mockToss.failNext` (tests).
+  - Task 7: `markPaid`, `orderById`, `orderForUser`, `reconcileConfirming`, `OrderRow`, `ConfirmOutcome.orphaned`, `buy` (p4 helper).
   - `accountDb`, `rateLimit`, `clientKey`.
 - Produces:
   - `refunds.ts`:
     - `type RefundOutcome = {ok: true} | {ok: false; code: "NOT_REFUNDABLE" | "PAY_FAILED" | "PAY_PENDING"; message?}`
-    - `applyCancel(db, order, lot: Lot | null, payment, now)`
+    - `REFUND_RECONCILE_AFTER_MS = 600_000`, `ORPHAN_MAX_ATTEMPTS = 5`, `cancelKey(order)` = `cancel-<orderId>-<cancel_attempt>`
+    - `applyCancel(db, order, lot: Lot | null, payment, now, {revoke?})`
     - `refundUnusedOrder(db, toss, {order, reason, now}): Promise<RefundOutcome>`
-    - `REFUND_RECONCILE_AFTER_MS = 60_000`, `reconcileRefunding(db, toss, order, now): Promise<OrderRow>`
+    - `refundOrphan(db, toss, order, now): Promise<RefundOutcome>` (a payment that arrived for a deleted account)
+    - `reconcileRefunding(db, toss, order, now): Promise<OrderRow>`
     - `syncOrderWithToss(db, toss, order, payment, now): Promise<void>`
   - `POST /api/pay/refund {orderId}` → `{ ok: true, status: "refunded" }` | 409 `NOT_REFUNDABLE` | 402 `PAY_FAILED` | 409 `PAY_PENDING`
   - `POST /api/pay/webhook` (Toss `PAYMENT_STATUS_CHANGED`) → 200 `{ok: true}`; non-200 makes Toss retry
+
+**Rules (revision 2):**
+- **M1:** the refund starts with `lockPaidLotForRefund` (order `refunding` and lot out of use, one batch). Every way back is `revertRefund` (one batch).
+- **M2:** the cancel goes out with `Idempotency-Key: cancel-<orderId>-<attempt>`.
+  - 409 `IDEMPOTENT_REQUEST_PROCESSING`, a 5xx or no answer leave the order `refunding` (`PAY_PENDING`).
+  - Any other error is followed by `GET /v1/payments/{paymentKey}`:
+    - CANCELED → applied;
+    - DONE → the cancel was really refused: `revertRefund` puts the reading back and moves to the next attempt, so a later refund sends a new key;
+    - anything else → pending.
+  - `reconcileRefunding` waits 10 minutes, far past the client's 30 s timeout, then lets the same look-up decide. It never reverts on time alone: only a look-up that shows DONE puts the reading back.
+- **M3:** a payment that arrived for a deleted account (`fail_code = ACCOUNT_DELETED`, no lot) is cancelled at once by the confirm route.
+  - If that cancel is refused, the order moves to its next attempt and the Cron Trigger (Task 13) tries again.
+  - After `ORPHAN_MAX_ATTEMPTS` it stops and logs `pay.orphan_refund_stuck` for the runbook's manual refund.
+- **Minor 1:** a dashboard cancel of a reading that is open or opening revokes its lot in the same batch as the refund record, so a later release never brings it back.
+- **Minor 2:** `PARTIAL_CANCELED` comes only from the operator (the Toss dashboard). The payment row records it, no reading changes, and `pay.partial_cancel` is logged for the runbook.
 
 - [ ] **Step 1: Write the failing test** — `apps/web/app/api/pay/refund.test.ts`
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setTestDb } from "@/lib/db";
-import { deliverUnlock, reserveUnlock } from "@/lib/pay/ledger";
+import { releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
+import { POST as confirm } from "./confirm/route";
 import { GET as ordersGet, POST as ordersPost } from "./orders/route";
 import { POST as refund } from "./refund/route";
 import { POST as webhook } from "./webhook/route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
+const MIN = 60_000;
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -3807,60 +4501,85 @@ async function loggedIn(name = "alice"): Promise<Browser> {
   return b;
 }
 
+type Db = ReturnType<typeof useTestDb>;
 const refundOf = (b: Browser, orderId: string) => b.send(refund, "/api/pay/refund", { body: { orderId }, origin: true });
 const hook = (body: unknown) => browser("203.0.113.200").send(webhook, "/api/pay/webhook", { body });
-const paymentKeyOf = async (db: ReturnType<typeof useTestDb>, orderId: string) =>
+const statusOf = async (b: Browser, orderId: string) => ((await (await b.send(ordersGet, `/api/pay/orders?id=${orderId}`)).json()) as { status: string }).status;
+const orderRow = (db: Db, orderId: string) => db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(orderId).first();
+const paymentKeyOf = async (db: Db, orderId: string) =>
   (await db.prepare("SELECT payment_key FROM orders WHERE id = ?").bind(orderId).first<{ payment_key: string }>())!.payment_key;
+const userIdOf = async (db: Db) => (await db.prepare("SELECT id FROM users LIMIT 1").first<{ id: string }>())!.id;
 
 describe("refunds", () => {
-  it("refunds an unopened reading in full, once", async () => {
+  it("refunds an unopened reading in full, once, under the order's first cancel key", async () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
+    const cancel = vi.spyOn(mockToss, "cancel");
     const res = await refundOf(b, orderId);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, status: "refunded" });
+    expect(cancel.mock.calls[0]![1]).toMatchObject({ idempotencyKey: `cancel-${orderId}-1` });
     expect((await mockToss.getPaymentByOrder(orderId)).status).toBe("CANCELED");
     expect((await me(b)).user?.unused).toEqual([]);
     expect(await db.prepare("SELECT o.status AS o, p.status AS p, l.status AS l FROM orders o JOIN payments p ON p.order_id = o.id JOIN credit_lots l ON l.order_id = o.id").first()).toEqual({ o: "refunded", p: "CANCELED", l: "refunded" });
     expect((await refundOf(b, orderId)).status).toBe(409);
   });
 
-  it("will not refund a reading that was opened", async () => {
+  it("will not refund a reading that was opened or is being opened", async () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    const userId = (await db.prepare("SELECT user_id FROM orders WHERE id = ?").bind(orderId).first<{ user_id: string }>())!.user_id;
-    const reserved = await reserveUnlock(db, { userId, productId: "tarot", currency: "paid", units: 10, now: T0 });
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: T0 });
     if (!reserved.ok) throw new Error("not reserved");
     expect((await refundOf(b, orderId)).status).toBe(409);
-    await deliverUnlock(db, { unlockId: reserved.unlockId, readingId: "r1", now: T0 });
-    expect((await refundOf(b, orderId)).status).toBe(409);
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
     expect((await mockToss.getPaymentByOrder(orderId)).status).toBe("DONE");
   });
 
-  it("puts the reading back when Toss refuses the cancel", async () => {
-    useTestDb();
+  it("puts the reading back when Toss refuses, after looking the payment up, and uses a new key next time", async () => {
+    const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    vi.spyOn(mockToss, "cancel").mockRejectedValueOnce(new TossError(403, "NOT_CANCELABLE_PAYMENT", "취소 할 수 없는 결제 입니다."));
+    mockToss.failNext("cancel", new TossError(403, "NOT_CANCELABLE_PAYMENT", "취소 할 수 없는 결제 입니다."));
+    const lookUp = vi.spyOn(mockToss, "getPayment");
     const res = await refundOf(b, orderId);
     expect(res.status).toBe(402);
     expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "취소 할 수 없는 결제 입니다." });
+    expect(lookUp).toHaveBeenCalled();
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 2 });
+    // The first key would replay the refusal for 15 days; the next refund sends cancel-<id>-2.
+    expect((await refundOf(b, orderId)).status).toBe(200);
+  });
+
+  it("never reads 409 processing as a refusal, and never reverts on time alone", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    mockToss.failNext("cancel", new TossError(409, "IDEMPOTENT_REQUEST_PROCESSING", "이전 요청이 처리 중입니다."));
+    const res = await refundOf(b, orderId);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "PAY_PENDING" });
+    vi.setSystemTime(T0 + 61_000);
+    expect(await statusOf(b, orderId)).toBe("refunding");
+    expect((await me(b)).user?.unused).toEqual([]);
+    // Ten minutes on, Toss still shows the payment DONE: only now does the reading come back.
+    vi.setSystemTime(T0 + 10 * MIN + 1);
+    expect(await statusOf(b, orderId)).toBe("paid");
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 2 });
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
   });
 
-  it("asks Toss later when the cancel answer was lost", async () => {
+  it("applies a cancel whose answer was lost once Toss shows it cancelled", async () => {
     useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    vi.spyOn(mockToss, "cancel").mockRejectedValueOnce(new TossError(0, "NETWORK", "no response from Toss"));
+    mockToss.failNext("cancel", new TossError(0, "NETWORK", "no response from Toss"), { applied: true });
     expect((await refundOf(b, orderId)).status).toBe(409);
-    expect(await (await b.send(ordersGet, `/api/pay/orders?id=${orderId}`)).json()).toMatchObject({ status: "refunding" });
-    vi.setSystemTime(T0 + 61_000);
-    // Toss never cancelled it (the mock still says DONE): the reading comes back.
-    expect(await (await b.send(ordersGet, `/api/pay/orders?id=${orderId}`)).json()).toMatchObject({ status: "paid" });
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    vi.setSystemTime(T0 + 10 * MIN + 1);
+    expect(await statusOf(b, orderId)).toBe("refunded");
+    expect((await me(b)).user?.unused).toEqual([]);
   });
 
   it("refunds only the buyer's own orders", async () => {
@@ -3869,6 +4588,18 @@ describe("refunds", () => {
     const orderId = await buy(alice);
     const bob = await loggedIn("bob");
     expect((await refundOf(bob, orderId)).status).toBe(409);
+  });
+
+  it("cancels at once a payment that arrives for a deleted account", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const { orderId } = (await (await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true }, origin: true })).json()) as { orderId: string };
+    await db.prepare("UPDATE users SET deleted_at = ?").bind(T0).run();
+    const res = await browser("192.0.2.80").send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_orphan", orderId, amount: 2900 }, origin: true });
+    expect(res.status).toBe(402);
+    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunded", fail_code: "ACCOUNT_DELETED" });
+    expect((await mockToss.getPaymentByOrder(orderId)).status).toBe("CANCELED");
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots").first()).toEqual({ n: 0 });
   });
 });
 
@@ -3884,15 +4615,43 @@ describe("webhook", () => {
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
   });
 
-  it("applies a cancellation made in the Toss dashboard", async () => {
+  it("applies a dashboard cancellation of an unopened reading", async () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
     const paymentKey = await paymentKeyOf(db, orderId);
     await mockToss.cancel(paymentKey, { reason: "관리자 취소", idempotencyKey: "admin" });
     expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "CANCELED" } })).status).toBe(200);
-    expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunded" });
+    expect(await db.prepare("SELECT o.status AS o, l.status AS l FROM orders o JOIN credit_lots l ON l.order_id = o.id").first()).toEqual({ o: "refunded", l: "refunded" });
     expect((await me(b)).user?.unused).toEqual([]);
+  });
+
+  it("revokes a reading opened while its payment was cancelled: a later release brings nothing back", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: T0 });
+    if (!reserved.ok) throw new Error("not reserved");
+    const paymentKey = await paymentKeyOf(db, orderId);
+    await mockToss.cancel(paymentKey, { reason: "관리자 취소", idempotencyKey: "admin" });
+    expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "CANCELED" } })).status).toBe(200);
+    expect(await releaseUnlock(db, { unlockId: reserved.unlockId, now: T0 + 1 })).toBe(true);
+    expect(await db.prepare("SELECT o.status AS o, l.status AS l, l.units_left AS left FROM orders o JOIN credit_lots l ON l.order_id = o.id").first()).toEqual({ o: "refunded", l: "revoked", left: 0 });
+    expect((await me(b)).user?.unused).toEqual([]);
+  });
+
+  it("records a partial cancellation for the operator and leaves the reading alone", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    const paymentKey = await paymentKeyOf(db, orderId);
+    const done = await mockToss.getPayment(paymentKey);
+    vi.spyOn(mockToss, "getPayment").mockResolvedValueOnce({ ...done, status: "PARTIAL_CANCELED", balanceAmount: 900 });
+    expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "PARTIAL_CANCELED" } })).status).toBe(200);
+    expect(await db.prepare("SELECT status, canceled_amount FROM payments WHERE order_id = ?").bind(orderId).first()).toEqual({ status: "PARTIAL_CANCELED", canceled_amount: 2000 });
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("pay.partial_cancel"));
   });
 
   it("believes Toss, not the body: a forged DONE for an unknown payment changes nothing and asks Toss to retry", async () => {
@@ -3922,23 +4681,33 @@ Expected: FAIL (route modules not found).
 ```ts
 import "server-only";
 import type { D1Binding } from "@/lib/db/d1";
-import { lockUnusedPaidLot, refundedLotStatements, refundingLot, unlockRefundingLot, type Lot } from "./ledger";
+import { lockPaidLotForRefund, refundedLotStatements, refundingLot, revertRefund, revokeLotStatement, type Lot } from "./ledger";
 import { markPaid, orderById, type OrderRow } from "./orders";
-import { TossError, type TossClient, type TossPayment } from "./tossTypes";
+import { isPendingTossError, type TossClient, type TossError, type TossPayment } from "./tossTypes";
 
 /**
- * Refunds and Toss reconciliation (spec 5.5, 5.6). The lot leaves use before the cancel call, so
- * nobody can open a reading while its payment is being cancelled. An ambiguous answer is settled by
- * asking Toss later.
+ * Refunds and Toss reconciliation (spec 5.5, 5.6). The order and its lot leave use together before
+ * the cancel call (M1), so nobody can open a reading while its payment is being cancelled. An
+ * unknown answer is settled by looking the payment up, never by guessing or by the clock (M2).
  */
 
 export type RefundOutcome = { ok: true } | { ok: false; code: "NOT_REFUNDABLE" | "PAY_FAILED" | "PAY_PENDING"; message?: string };
 
-const CANCELED = new Set(["CANCELED", "PARTIAL_CANCELED"]);
+/** How long a `refunding` order waits before Toss is asked: far past the 30 s client timeout and Toss's own processing. */
+export const REFUND_RECONCILE_AFTER_MS = 10 * 60_000;
+/** A deleted account's payment is cancelled at most this many times automatically; then the runbook takes over. */
+export const ORPHAN_MAX_ATTEMPTS = 5;
 
-/** Records a cancellation Toss confirmed: order refunded, payment updated, and the lot refunded when it was still unused. */
-export async function applyCancel(db: D1Binding, order: OrderRow, lot: Lot | null, payment: TossPayment, now: number): Promise<void> {
+/** Toss replays an Idempotency-Key's first answer for 15 days: each attempt has its own key. */
+export const cancelKey = (order: Pick<OrderRow, "id" | "cancel_attempt">) => `cancel-${order.id}-${order.cancel_attempt}`;
+
+/**
+ * Records a full cancellation Toss confirmed: order refunded, payment updated, the lot refunded when
+ * it was locked for it, or revoked when its reading was open or opening (minor 1). One batch.
+ */
+export async function applyCancel(db: D1Binding, order: OrderRow, lot: Lot | null, payment: TossPayment, now: number, options: { revoke?: boolean } = {}): Promise<void> {
   await db.batch([
+    ...(options.revoke ? [revokeLotStatement(db, order.id)] : []),
     db.prepare("UPDATE orders SET status = 'refunded', updated_at = ? WHERE id = ? AND status IN ('paid', 'refunding')").bind(now, order.id),
     db
       .prepare("UPDATE payments SET status = ?, canceled_amount = ?, canceled_at = ?, updated_at = ? WHERE order_id = ?")
@@ -3948,48 +4717,93 @@ export async function applyCancel(db: D1Binding, order: OrderRow, lot: Lot | nul
   console.info(JSON.stringify({ evt: "pay.refunded", orderId: order.id }));
 }
 
-async function revertRefund(db: D1Binding, order: OrderRow, now: number): Promise<void> {
-  await unlockRefundingLot(db, order.id);
-  await db.prepare("UPDATE orders SET status = 'paid', updated_at = ? WHERE id = ? AND status = 'refunding'").bind(now, order.id).run();
+async function nextAttempt(db: D1Binding, orderId: string, now: number): Promise<void> {
+  await db.prepare("UPDATE orders SET cancel_attempt = cancel_attempt + 1, updated_at = ? WHERE id = ? AND status = 'refunding'").bind(now, orderId).run();
+}
+
+/**
+ * Sends the cancel for a `refunding` order and settles what Toss answers (M2).
+ * - CANCELED → applied.
+ * - 409 processing, 5xx or no answer → stays `refunding` (PAY_PENDING); reconcileRefunding decides.
+ * - Any other error → the payment is looked up first. CANCELED → applied. DONE → the cancel was
+ *   refused: the reading comes back with a new attempt (an orphan just moves to its next attempt).
+ *   Anything else → pending.
+ */
+async function sendCancel(db: D1Binding, toss: TossClient, order: OrderRow, lot: Lot | null, reason: string, now: number): Promise<RefundOutcome> {
+  let payment: TossPayment;
+  try {
+    payment = await toss.cancel(order.payment_key!, { reason, idempotencyKey: cancelKey(order) });
+  } catch (error) {
+    if (isPendingTossError(error)) {
+      console.warn(JSON.stringify({ evt: "pay.refund_unknown", orderId: order.id }));
+      return { ok: false, code: "PAY_PENDING" };
+    }
+    const refusal = error as TossError;
+    const found = await toss.getPayment(order.payment_key!).catch(() => null);
+    if (found?.status === "CANCELED") {
+      payment = found;
+    } else if (found?.status === "DONE") {
+      if (lot) await revertRefund(db, order.id, now);
+      else await nextAttempt(db, order.id, now);
+      console.info(JSON.stringify({ evt: "pay.refund_refused", orderId: order.id, code: refusal.code }));
+      return { ok: false, code: "PAY_FAILED", message: refusal.message || "환불하지 못했어요. 문의해 주세요." };
+    } else {
+      return { ok: false, code: "PAY_PENDING" };
+    }
+  }
+  if (payment.status !== "CANCELED") {
+    console.warn(JSON.stringify({ evt: "pay.refund_unexpected", orderId: order.id, status: payment.status }));
+    return { ok: false, code: "PAY_PENDING" };
+  }
+  await applyCancel(db, order, lot, payment, now);
+  return { ok: true };
 }
 
 /** Cancels the payment of a paid reading that was never opened (the user's 환불, account deletion). */
 export async function refundUnusedOrder(db: D1Binding, toss: TossClient, input: { order: OrderRow; reason: string; now: number }): Promise<RefundOutcome> {
   const { order, reason, now } = input;
   if (order.status !== "paid" || !order.payment_key) return { ok: false, code: "NOT_REFUNDABLE" };
-  const lot = await lockUnusedPaidLot(db, order.id);
+  const lot = await lockPaidLotForRefund(db, order.id, now);
   if (!lot) return { ok: false, code: "NOT_REFUNDABLE" };
-  await db.prepare("UPDATE orders SET status = 'refunding', updated_at = ? WHERE id = ? AND status = 'paid'").bind(now, order.id).run();
-  let payment: TossPayment;
-  try {
-    payment = await toss.cancel(order.payment_key, { reason, idempotencyKey: `cancel-${order.id}` });
-  } catch (error) {
-    if (error instanceof TossError && error.code === "ALREADY_CANCELED_PAYMENT") {
-      payment = await toss.getPayment(order.payment_key);
-    } else if (error instanceof TossError && error.status >= 400 && error.status < 500) {
-      await revertRefund(db, order, now);
-      console.info(JSON.stringify({ evt: "pay.refund_refused", orderId: order.id, code: error.code }));
-      return { ok: false, code: "PAY_FAILED", message: error.message || "환불하지 못했어요. 문의해 주세요." };
-    } else {
-      // No answer: Toss may have cancelled. Stay `refunding`; reconcileRefunding() decides after a minute.
-      console.warn(JSON.stringify({ evt: "pay.refund_unknown", orderId: order.id }));
-      return { ok: false, code: "PAY_PENDING" };
-    }
-  }
-  await applyCancel(db, order, lot, payment, now);
-  return { ok: true };
+  return sendCancel(db, toss, (await orderById(db, order.id)) ?? order, lot, reason, now);
 }
 
-/** How long a `refunding` order waits before we ask Toss what became of it. */
-export const REFUND_RECONCILE_AFTER_MS = 60_000;
+const ORPHAN_REASON = "탈퇴한 계정에 도착한 결제 자동 취소";
 
-/** A `refunding` order whose cancel answer was lost: cancelled at Toss → refunded; still DONE → back to paid. */
+/** A payment that went through for a deleted account (Task 7 left it `refunding`, with no lot): cancel it. */
+export async function refundOrphan(db: D1Binding, toss: TossClient, order: OrderRow, now: number): Promise<RefundOutcome> {
+  if (order.status !== "refunding" || order.fail_code !== "ACCOUNT_DELETED" || !order.payment_key) return { ok: false, code: "NOT_REFUNDABLE" };
+  return sendCancel(db, toss, order, null, ORPHAN_REASON, now);
+}
+
+/**
+ * A `refunding` order whose cancel answer was unknown, looked up REFUND_RECONCILE_AFTER_MS later.
+ * - CANCELED at Toss → refunded.
+ * - Still DONE → a refund: the reading comes back (revertRefund, next attempt). An orphan: the
+ *   next attempt is sent, up to ORPHAN_MAX_ATTEMPTS.
+ * - PARTIAL_CANCELED → logged for the operator. The look-up failing → unchanged.
+ */
 export async function reconcileRefunding(db: D1Binding, toss: TossClient, order: OrderRow, now: number): Promise<OrderRow> {
   if (order.status !== "refunding" || !order.payment_key || now - order.updated_at < REFUND_RECONCILE_AFTER_MS) return order;
   const payment = await toss.getPayment(order.payment_key).catch(() => null);
   if (!payment) return order;
-  if (CANCELED.has(payment.status)) await applyCancel(db, order, await refundingLot(db, order.id), payment, now);
-  else if (payment.status === "DONE") await revertRefund(db, order, now);
+  const lot = await refundingLot(db, order.id);
+  if (payment.status === "CANCELED") {
+    await applyCancel(db, order, lot, payment, now);
+  } else if (payment.status === "DONE" && lot) {
+    await revertRefund(db, order.id, now);
+    console.info(JSON.stringify({ evt: "pay.refund_reverted", orderId: order.id }));
+  } else if (payment.status === "DONE" && order.fail_code === "ACCOUNT_DELETED") {
+    if (order.cancel_attempt >= ORPHAN_MAX_ATTEMPTS) {
+      console.error(JSON.stringify({ evt: "pay.orphan_refund_stuck", orderId: order.id }));
+    } else {
+      await nextAttempt(db, order.id, now);
+      const next = await orderById(db, order.id);
+      if (next) await refundOrphan(db, toss, next, now);
+    }
+  } else if (payment.status === "PARTIAL_CANCELED") {
+    console.warn(JSON.stringify({ evt: "pay.partial_cancel", orderId: order.id }));
+  }
   return (await orderById(db, order.id)) ?? order;
 }
 
@@ -3998,17 +4812,34 @@ export async function syncOrderWithToss(db: D1Binding, toss: TossClient, order: 
   if (payment.orderId !== order.id) return;
   if (payment.status === "DONE") {
     if (order.status === "created" || order.status === "confirming" || order.status === "failed") {
+      // A deleted account's payment is left `refunding`; the Cron Trigger cancels it (the webhook answers within 10 s).
       if (payment.totalAmount === order.amount_krw) await markPaid(db, order, payment, toss.mode, now);
       else console.error(JSON.stringify({ evt: "pay.webhook_amount_mismatch", orderId: order.id }));
     }
     return;
   }
-  if (CANCELED.has(payment.status)) {
-    if (order.status === "paid" || order.status === "refunding") {
-      const lot = (await lockUnusedPaidLot(db, order.id)) ?? (await refundingLot(db, order.id));
-      if (!lot) console.warn(JSON.stringify({ evt: "pay.canceled_after_open", orderId: order.id }));
-      await applyCancel(db, order, lot, payment, now);
+  if (payment.status === "CANCELED") {
+    if (order.status === "paid") {
+      const locked = await lockPaidLotForRefund(db, order.id, now);
+      if (locked) {
+        await applyCancel(db, order, locked, payment, now);
+      } else {
+        // Cancelled in the dashboard while the reading was open or opening: it leaves use for good.
+        await applyCancel(db, order, null, payment, now, { revoke: true });
+        console.warn(JSON.stringify({ evt: "pay.canceled_after_open", orderId: order.id }));
+      }
+    } else if (order.status === "refunding") {
+      await applyCancel(db, order, await refundingLot(db, order.id), payment, now);
     }
+    return;
+  }
+  if (payment.status === "PARTIAL_CANCELED") {
+    // Only the operator cancels part of a payment (the Toss dashboard). Record it; the operator decides about the reading (runbook).
+    await db
+      .prepare("UPDATE payments SET status = ?, canceled_amount = ?, updated_at = ? WHERE order_id = ?")
+      .bind(payment.status, payment.totalAmount - payment.balanceAmount, now, order.id)
+      .run();
+    console.warn(JSON.stringify({ evt: "pay.partial_cancel", orderId: order.id }));
     return;
   }
   if (payment.status === "ABORTED" || payment.status === "EXPIRED") {
@@ -4094,19 +4925,31 @@ export async function POST(request: Request): Promise<Response> {
 }
 ```
 
-- [ ] **Step 5: Reconcile refunds in `apps/web/app/api/pay/orders/route.ts`.** In the `GET ?id=` branch, after `reconcileConfirming`, add:
+- [ ] **Step 5: Cancel a deleted account's payment in `apps/web/app/api/pay/confirm/route.ts`.** Right after `confirmOrder` returns, before the `if (!outcome.ok)` line:
+
+```ts
+  if (!outcome.ok && outcome.orphaned) {
+    // Paid for an account deleted meanwhile: never granted, cancelled now (the Cron Trigger retries a failure).
+    const current = await orderById(ctx.db, order.id);
+    if (current) await refundOrphan(ctx.db, toss, current, ctx.now);
+  }
+```
+
+Import `refundOrphan` from `@/lib/pay/refunds`. In `apps/web/app/api/pay/pay.test.ts`, the test "never grants a payment that arrives for a deleted account" now expects `{ status: "refunded", fail_code: "ACCOUNT_DELETED" }`. Change that one expectation and leave the rest of the test.
+
+- [ ] **Step 6: Reconcile refunds in `apps/web/app/api/pay/orders/route.ts`.** In the `GET ?id=` branch, after `reconcileConfirming`, add:
 
 ```ts
     if (toss) order = await reconcileRefunding(ctx.db, toss, order, ctx.now);
 ```
 
-Before building the history list, settle stale orders:
+In the history branch, after `requireSession`, settle this user's stale orders first:
 
 ```ts
   if (toss) {
     const { results } = await ctx.db
       .prepare("SELECT * FROM orders WHERE user_id = ? AND status IN ('confirming', 'refunding') AND updated_at < ?")
-      .bind(session.user.id, ctx.now - 30_000)
+      .bind(session.user.id, ctx.now - RECONCILE_AFTER_MS)
       .all<OrderRow>();
     for (const stale of results) {
       await reconcileConfirming(ctx.db, toss, stale, ctx.now);
@@ -4115,51 +4958,72 @@ Before building the history list, settle stale orders:
   }
 ```
 
-Import `reconcileRefunding` from `@/lib/pay/refunds` and `type OrderRow` from `@/lib/pay/orders`.
+Import `reconcileRefunding` from `@/lib/pay/refunds`, and `RECONCILE_AFTER_MS` and `type OrderRow` from `@/lib/pay/orders`. Each function checks its own status and wait, so calling both on one row is safe.
 
-- [ ] **Step 6: Run the tests**
+- [ ] **Step 7: Run the tests**
 
 Run: `npx vitest run apps/web/app/api/pay apps/web/lib/pay`
-Expected: PASS (refund.test: 9 tests; pay.test unchanged).
+Expected: PASS (refund.test: 13 tests; pay.test 11 with the changed expectation).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add apps/web/lib/pay/refunds.ts apps/web/app/api/pay/refund apps/web/app/api/pay/webhook apps/web/app/api/pay/orders/route.ts apps/web/app/api/pay/refund.test.ts
-git commit -m "feat(pay): refunds of unopened readings, Toss reconciliation and the webhook" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git add apps/web/lib/pay/refunds.ts apps/web/app/api/pay/refund apps/web/app/api/pay/webhook apps/web/app/api/pay/orders/route.ts apps/web/app/api/pay/confirm/route.ts apps/web/app/api/pay/pay.test.ts apps/web/app/api/pay/refund.test.ts
+git commit -m "feat(pay): refunds with attempt-scoped cancel keys, Toss look-ups before any decision, webhook" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 9: Saved readings store and the stream settlement hook
+### Task 9: Saved readings store, cost books and the stream settlement
 
 **Files:**
 - Create: `apps/web/lib/readings/store.ts`
-- Modify: `apps/web/lib/api/stream.ts` (the `Settlement` hook and the `credit` cost flag)
+- Modify: `apps/web/lib/api/spend.ts` (a cost sink for `SpendLedger`, the paid book), `apps/web/lib/api/stream.ts` (the `Settlement` and `paidCost` options)
 - Test: `apps/web/lib/readings/store.test.ts`, `apps/web/lib/api/settle.test.ts`
 
 **Interfaces:**
 - Consumes:
-  - `sealJson`, `openJson`, `READING_KEY_VERSION` (Task 3); `D1Binding`, `D1Statement`, `isConstraintError`.
-  - `readingDigest` from `lib/security/chapterToken.ts`.
-  - `stream.ts` as committed in a9fa89c: `respondGeneration`, `GenerationOutcome`, `RespondOptions`, the `account()` helper, `recordCost`, `recordClientSpend`.
-  - `usdOf` from `lib/ai/cost.ts`.
+  - `sealJson`, `openJson`, `READING_KEY_VERSION` (Task 3); `D1Binding`, `D1Statement`.
+  - `stream.ts` and `spend.ts` as committed at `1d1e7c0` or later:
+    - `respondGeneration(request, run, {gate, startCookies, spend, budgetMs, pingMs})`;
+    - generation under `keepAlive(work)` (`ctx.waitUntil`);
+    - `SpendLedger` (`reserve`/`release`/`bill`/`finish`) writing through `addCost` into `cost:<kstDay>:<shard>`;
+    - the network counter charged before the start through the `spend` option;
+    - `budgetState`, `spentTodayKrw`, `clientCount`, `resetSpendState`, and `dailyStore`/`resetDailyStore` from `dailyStore.ts`.
 - Produces:
   - `store.ts`:
-    - `type ReadingSource = "paid" | "free" | "owner" | "claimed"`
+    - `type ReadingSource = "paid" | "free" | "owner"`
     - `interface ServerChapter { kind: "tarot" | "saju"; reading: Record<string, unknown>; chapterToken: string; createdAt: number; turns: Array<{question; answer}>; followUpsLeft: number; [key: string]: unknown }`
     - `interface SavedReading { id; createdAt; chapter: ServerChapter }`
     - `newReadingId(): string` (20 chars `[a-z0-9]`, also a valid device chapter id)
-    - `insertReadingStatement(db, secret, {id, userId, productId, source, unlockId, chapter, now}): Promise<D1Statement>`
-    - `listReadings(db, secret, userId, limit?)`, `readingForUser(db, secret, userId, id)`
-    - `readingIdByDigest(db, userId, reading)`, `updateReadingChapter(db, secret, userId, id, update, now): Promise<boolean>`
-    - `deleteReading(db, userId, id): Promise<boolean>`, `deleteAllReadings(db, userId): Promise<number>`, `countReadings(db, userId)`
+    - `insertReadingStatement(db, secret, {id, userId, productId, source, unlockId, chapter, now}): Promise<D1Statement>`: written only for a live account, and a second insert for the same unlock does nothing
+    - `READINGS_PAGE = 50`, `listReadings(db, secret, userId, {before?, limit?}): Promise<{readings: SavedReading[]; next: string | null}>`
+    - `readingForUser(db, secret, userId, id)`, `readingExists(db, userId, id)`, `updateReadingChapter(db, secret, userId, id, update, now): Promise<boolean>`
+    - `deleteReading(db, userId, id): Promise<boolean>`, `deleteAllReadings(db, userId): Promise<number>`
+  - `spend.ts`:
+    - `type CostSink = (krw: number, at: number) => Promise<void>`
+    - `addPaidCost(krw, now)`: writes `paidcost:<kstDay>:<shard>`, never read by `budgetState`
+    - `new SpendLedger(clock?, sink?)`: `sink` defaults to `addCost`
   - `stream.ts`:
-    - `interface Settlement { deliver(outcome): Promise<Record<string, unknown>>; release(): Promise<void> }`
-    - `RespondOptions` gains `settle?: Settlement` and `credit?: boolean`.
+    - `interface Settlement { deliver(outcome): Promise<Record<string, unknown>>; recover(): Promise<Record<string, unknown> | null>; release(): Promise<void> }`
+    - `RespondOptions` gains `settle?: Settlement` and `paidCost?: boolean`
+
+**How the settlement sits in the current `respondGeneration` (C1):**
+- The generation already runs inside `keepAlive(work)`.
+- Both paths do this inside that work:
+  1. `const outcome = await run(hooks)`;
+  2. `settled(outcome)` → `settle.deliver()` saves the reading and spends the credit, and what it returns (the reading id) joins the body;
+  3. only then `json(body)` or `write({type: "done", data})`.
+- A client that leaves after `run()` cannot stop the save: the work is under `waitUntil`.
+- If `deliver()` throws, `settle.recover()` re-reads whether the reading row landed (a D1 answer lost after the commit). If it did, the client still gets the reading with its id (M4, server side). If it did not, the error goes on.
+- Both `catch` blocks call `release()`, which is logged and never thrown. It is a no-op once delivered, and a failed release is swept 6 minutes later.
+- Cost books:
+  - `SpendLedger` gets a sink. A paid opening (`paidCost: true`) books its model cost to `paidcost:` shards, which `budgetState` never reads, so paid usage never closes the free tier.
+  - Every other generation keeps `addCost` into `cost:`, the 별조각 reading included (minor 4).
+  - The `spend` option is unchanged: whoever passes `spend: "full"` (오픈 기념 and 별조각 readings) is charged on the network counter before the start.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -4168,17 +5032,15 @@ git commit -m "feat(pay): refunds of unopened readings, Toss reconciliation and 
 ```ts
 import { describe, expect, it, vi } from "vitest";
 import type { D1Binding } from "@/lib/db/d1";
-import { isConstraintError } from "@/lib/db/sqlErrors";
 import { migratedTestD1 } from "@/lib/db/testing/migrate";
 import {
-  countReadings,
   deleteAllReadings,
   deleteReading,
   insertReadingStatement,
   listReadings,
   newReadingId,
+  readingExists,
   readingForUser,
-  readingIdByDigest,
   updateReadingChapter,
   type ServerChapter,
 } from "./store";
@@ -4206,41 +5068,59 @@ async function setup() {
   return db;
 }
 
-async function save(db: D1Binding, userId: string, c: ServerChapter, now = 10) {
+async function save(db: D1Binding, userId: string, c: ServerChapter, now = 10, unlockId: string | null = null) {
   const id = newReadingId();
-  await (await insertReadingStatement(db, SECRET, { id, userId, productId: "tarot", source: "paid", unlockId: null, chapter: c, now })).run();
+  await (await insertReadingStatement(db, SECRET, { id, userId, productId: "tarot", source: "paid", unlockId, chapter: c, now })).run();
   return id;
 }
+
+const count = async (db: D1Binding) => (await db.prepare("SELECT COUNT(*) AS n FROM readings").first<{ n: number }>())!.n;
 
 describe("saved readings", () => {
   it("makes ids that are also valid device chapter ids", () => {
     for (let i = 0; i < 20; i++) expect(newReadingId()).toMatch(/^[a-z0-9]{20}$/);
   });
 
-  it("stores readings sealed and gives them back only to their owner, newest first", async () => {
+  it("stores readings sealed and gives them back only to their owner, newest first, a page at a time", async () => {
     const db = await setup();
     const first = await save(db, "u_1", chapter("첫 질문"), 10);
     await save(db, "u_1", chapter("둘째 질문"), 20);
-    const raw = await db.prepare("SELECT payload FROM readings WHERE id = ?").bind(first).first<{ payload: string }>();
+    await save(db, "u_1", chapter("셋째 질문"), 20);
+    const raw = await db.prepare("SELECT payload, key_version FROM readings WHERE id = ?").bind(first).first<{ payload: string; key_version: number }>();
     expect(raw!.payload).not.toContain("첫 질문");
-    expect((await listReadings(db, SECRET, "u_1")).map((r) => r.chapter.question)).toEqual(["둘째 질문", "첫 질문"]);
-    expect(await listReadings(db, SECRET, "u_2")).toEqual([]);
+    expect(raw!.key_version).toBe(1);
+    const page = await listReadings(db, SECRET, "u_1", { limit: 2 });
+    expect(page.readings).toHaveLength(2);
+    expect(page.next).not.toBeNull();
+    const rest = await listReadings(db, SECRET, "u_1", { before: page.next!, limit: 2 });
+    expect(rest.next).toBeNull();
+    const questions = [...page.readings, ...rest.readings].map((r) => r.chapter.question);
+    expect(questions).toHaveLength(3);
+    expect(new Set(questions)).toEqual(new Set(["첫 질문", "둘째 질문", "셋째 질문"]));
+    expect(questions[2]).toBe("첫 질문");
+    expect((await listReadings(db, SECRET, "u_2")).readings).toEqual([]);
     expect(await readingForUser(db, SECRET, "u_2", first)).toBeNull();
     expect((await readingForUser(db, SECRET, "u_1", first))?.chapter.question).toBe("첫 질문");
-    expect(await countReadings(db, "u_1")).toBe(2);
   });
 
-  it("keeps one copy of the same reading per user", async () => {
+  it("keeps two identical readings (two purchases), saves nothing twice for one unlock, and nothing for a deleted account", async () => {
     const db = await setup();
-    const id = await save(db, "u_1", chapter("같은 질문"));
-    await expect(save(db, "u_1", chapter("같은 질문"))).rejects.toSatisfy(isConstraintError);
-    expect(await readingIdByDigest(db, "u_1", chapter("같은 질문").reading)).toBe(id);
-    await save(db, "u_2", chapter("같은 질문"));
+    await save(db, "u_1", chapter("같은 질문"));
+    await save(db, "u_1", chapter("같은 질문"));
+    expect(await count(db)).toBe(2);
+    await save(db, "u_1", chapter("한 번"), 10, "ul_1");
+    await save(db, "u_1", chapter("한 번"), 11, "ul_1");
+    expect(await count(db)).toBe(3);
+    await db.prepare("UPDATE users SET deleted_at = 1 WHERE id = 'u_2'").run();
+    const id = await save(db, "u_2", chapter("탈퇴한 계정"));
+    expect(await count(db)).toBe(3);
+    expect(await readingExists(db, "u_2", id)).toBe(false);
   });
 
   it("updates a saved chapter and deletes one or all", async () => {
     const db = await setup();
     const id = await save(db, "u_1", chapter("질문"));
+    expect(await readingExists(db, "u_1", id)).toBe(true);
     const turn = { question: "더 물어볼게요", answer: "답이에요" };
     expect(await updateReadingChapter(db, SECRET, "u_1", id, (c) => ({ ...c, turns: [...c.turns, turn], followUpsLeft: 2 }), 30)).toBe(true);
     expect((await readingForUser(db, SECRET, "u_1", id))?.chapter).toMatchObject({ turns: [turn], followUpsLeft: 2 });
@@ -4252,12 +5132,15 @@ describe("saved readings", () => {
     expect(await deleteAllReadings(db, "u_1")).toBe(2);
   });
 
-  it("skips a payload that does not open, and says so in the log", async () => {
+  it("skips a payload that does not open (altered, or labelled with another key version), and says so in the log", async () => {
     const db = await setup();
-    const id = await save(db, "u_1", chapter("질문"));
-    await db.prepare("UPDATE readings SET payload = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' WHERE id = ?").bind(id).run();
+    const altered = await save(db, "u_1", chapter("질문"));
+    await db.prepare("UPDATE readings SET payload = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' WHERE id = ?").bind(altered).run();
+    // Sealed with version 1 but labelled 2: open() asks for the row's own version, whose key differs.
+    const relabelled = await save(db, "u_1", chapter("다른 키"));
+    await db.prepare("UPDATE readings SET key_version = 2 WHERE id = ?").bind(relabelled).run();
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    expect(await listReadings(db, SECRET, "u_1")).toEqual([]);
+    expect((await listReadings(db, SECRET, "u_1")).readings).toEqual([]);
     expect(error).toHaveBeenCalledWith(expect.stringContaining("readings.unreadable"));
     error.mockRestore();
   });
@@ -4267,31 +5150,47 @@ describe("saved readings", () => {
 `apps/web/lib/api/settle.test.ts`:
 
 ```ts
-import { afterEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("@/lib/api/spend", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/api/spend")>()),
-  recordCost: vi.fn(async () => {}),
-}));
-
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
-import { GenerationError } from "@/lib/ai/provider";
+import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
+import { kstDay } from "@/lib/security/quota";
+import { dailyStore, resetDailyStore } from "./dailyStore";
 import type { Gate } from "./http";
-import { recordCost } from "./spend";
+import { SpendLedger, addPaidCost, budgetState, clientCount, resetSpendState, spentTodayKrw } from "./spend";
 import { NDJSON, respondGeneration, type GenerationOutcome, type Settlement } from "./stream";
 
-const gate = { secret: "s".repeat(40), provider: mockProvider, owner: false, now: Date.now(), cookies: {}, client: "client" } as unknown as Gate;
+/** Priced at 2,800원 with KRW_PER_USD=1400 (Opus 5.5: 100k output tokens = $2). */
+const EXPENSIVE = [{ model: "claude-opus-5-5", inputTokens: 0, outputTokens: 100_000, cacheReadTokens: 0, cacheWriteTokens: 0 }];
+const HALF = [{ ...EXPENSIVE[0]!, outputTokens: 50_000 }];
 const READING_ID = "abcdefghij0123456789";
-const ok = async (): Promise<GenerationOutcome> => ({ body: { reading: { verdict: "v" }, chapterToken: "t" }, cookies: [] });
-const fail = async (): Promise<GenerationOutcome> => {
-  throw new GenerationError("UPSTREAM");
+const BODY = { reading: { verdict: "v" }, chapterToken: "t" };
+
+const gate = (): Gate => ({ secret: "s".repeat(40), provider: mockProvider, owner: false, now: Date.now(), cookies: {}, client: "client-hash" }) as unknown as Gate;
+
+/** A generation that is billed EXPENSIVE through the hooks, as the provider does, then succeeds or fails. */
+const billed = (fail = false) => async (hooks: GenerationHooks): Promise<GenerationOutcome> => {
+  hooks.onReserve?.(EXPENSIVE);
+  hooks.onUsage?.(EXPENSIVE);
+  if (fail) throw new GenerationError("UPSTREAM");
+  return { body: BODY, cookies: [] };
 };
 
-function settlement(calls: string[], deliver: () => Promise<Record<string, unknown>> = async () => ({ readingId: READING_ID })): Settlement {
+async function paidBook(): Promise<number> {
+  let sum = 0;
+  for (let shard = 0; shard < 8; shard++) sum += Number((await dailyStore().get(`paidcost:${kstDay(Date.now())}:${shard}`)) ?? 0);
+  return Math.round(sum);
+}
+const freeBook = async () => Math.round((await spentTodayKrw(Date.now())) ?? -1);
+
+function settlement(calls: string[], deliver: () => Promise<Record<string, unknown>> = async () => ({ readingId: READING_ID }), recovered: Record<string, unknown> | null = null): Settlement {
   return {
     deliver: async () => {
       calls.push("deliver");
       return deliver();
+    },
+    recover: async () => {
+      calls.push("recover");
+      return recovered;
     },
     release: async () => {
       calls.push("release");
@@ -4299,59 +5198,116 @@ function settlement(calls: string[], deliver: () => Promise<Record<string, unkno
   };
 }
 
-const post = (stream = false) => new Request("http://localhost/api/tarot/reading", { method: "POST", headers: stream ? { accept: NDJSON } : {} });
+const post = (stream = false, signal?: AbortSignal) =>
+  new Request("http://localhost/api/tarot/reading", { method: "POST", headers: stream ? { accept: NDJSON } : {}, signal });
 const events = async (response: Response) => (await response.text()).trim().split("\n").map((line) => JSON.parse(line) as Record<string, unknown>);
+const failedSave = async (): Promise<Record<string, unknown>> => {
+  throw new Error("D1 answer lost");
+};
+
+beforeEach(() => {
+  vi.stubEnv("KRW_PER_USD", "1400");
+  resetDailyStore();
+  resetSpendState();
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+});
 
 afterEach(() => {
-  vi.clearAllMocks();
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
-describe("credit settlement around a generation", () => {
-  it("JSON: saves before answering and adds the saved reading's id", async () => {
-    const calls: string[] = [];
-    const res = await respondGeneration(post(), ok, { gate, settle: settlement(calls) });
-    expect(await res.json()).toEqual({ reading: { verdict: "v" }, chapterToken: "t", readingId: READING_ID });
-    expect(calls).toEqual(["deliver"]);
+describe("cost books", () => {
+  it("SpendLedger writes to the sink it is given", async () => {
+    const writes: number[] = [];
+    const ledger = new SpendLedger(() => Date.now(), async (krw) => {
+      writes.push(Math.round(krw));
+    });
+    ledger.reserve(EXPENSIVE);
+    ledger.bill(HALF);
+    await ledger.finish();
+    expect(writes).toEqual([2800, -1400]);
   });
 
-  it("JSON: releases after a failed generation and after a failed save", async () => {
+  it("keeps the paid book out of the free-tier total and the budget", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "1000");
+    await addPaidCost(5000, Date.now());
+    expect(await paidBook()).toBe(5000);
+    expect(await freeBook()).toBe(0);
+    expect(await budgetState(Date.now())).toBe("ok");
+  });
+});
+
+describe("settlement inside the generation's keepAlive work", () => {
+  it("JSON: saves before answering, adds the reading id, and books a paid opening on the paid book only", async () => {
+    const calls: string[] = [];
+    const res = await respondGeneration(post(), billed(), { gate: gate(), paidCost: true, settle: settlement(calls) });
+    expect(await res.json()).toEqual({ ...BODY, readingId: READING_ID });
+    expect(calls).toEqual(["deliver"]);
+    expect(await paidBook()).toBe(2800);
+    expect(await freeBook()).toBe(0);
+    expect(await clientCount("client-hash", "full", Date.now())).toBe(0);
+  });
+
+  it("JSON: a 별조각 opening books the free total and is charged to the network before it starts", async () => {
+    const calls: string[] = [];
+    const res = await respondGeneration(post(), billed(), { gate: gate(), spend: "full", settle: settlement(calls) });
+    expect(res.status).toBe(200);
+    expect(await freeBook()).toBe(2800);
+    expect(await paidBook()).toBe(0);
+    expect(await clientCount("client-hash", "full", Date.now())).toBe(1);
+  });
+
+  it("JSON: releases after a failed generation, and after a save that did not land", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const calls: string[] = [];
-    expect((await respondGeneration(post(), fail, { gate, settle: settlement(calls) })).status).toBe(502);
+    expect((await respondGeneration(post(), billed(true), { gate: gate(), settle: settlement(calls) })).status).toBe(502);
     expect(calls).toEqual(["release"]);
     const again: string[] = [];
-    const res = await respondGeneration(post(), ok, { gate, settle: settlement(again, async () => { throw new Error("D1 down"); }) });
+    const res = await respondGeneration(post(), billed(), { gate: gate(), settle: settlement(again, failedSave, null) });
     expect(res.status).toBe(502);
-    expect(again).toEqual(["deliver", "release"]);
+    expect(again).toEqual(["deliver", "recover", "release"]);
   });
 
-  it("NDJSON: done carries the saved id, so the save came first", async () => {
+  it("JSON: a save whose answer was lost is recovered, not released", async () => {
     const calls: string[] = [];
-    const list = await events(await respondGeneration(post(true), ok, { gate, settle: settlement(calls) }));
-    expect(list.at(-1)).toEqual({ type: "done", data: { reading: { verdict: "v" }, chapterToken: "t", readingId: READING_ID } });
+    const res = await respondGeneration(post(), billed(), { gate: gate(), settle: settlement(calls, failedSave, { readingId: READING_ID }) });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ...BODY, readingId: READING_ID });
+    expect(calls).toEqual(["deliver", "recover"]);
+  });
+
+  it("NDJSON: done carries the saved id, so the save came first; paid cost stays off the free book", async () => {
+    const calls: string[] = [];
+    const list = await events(await respondGeneration(post(true), billed(), { gate: gate(), paidCost: true, settle: settlement(calls) }));
+    expect(list.at(-1)).toEqual({ type: "done", data: { ...BODY, readingId: READING_ID } });
     expect(calls).toEqual(["deliver"]);
+    await vi.waitFor(async () => expect(await paidBook()).toBe(2800));
+    expect(await freeBook()).toBe(0);
   });
 
   it("NDJSON: an error event comes after the release", async () => {
     const calls: string[] = [];
-    const list = await events(await respondGeneration(post(true), fail, { gate, settle: settlement(calls) }));
+    const list = await events(await respondGeneration(post(true), billed(true), { gate: gate(), settle: settlement(calls) }));
     expect(list.at(-1)).toMatchObject({ type: "error", status: 502 });
     expect(calls).toEqual(["release"]);
   });
 
-  it("keeps paid model cost out of the free-tier budget, and logs it instead", async () => {
-    const info = vi.spyOn(console, "info").mockImplementation(() => {});
-    await respondGeneration(post(), ok, { gate, credit: true, settle: settlement([]) });
-    expect(recordCost).not.toHaveBeenCalled();
-    expect(info).toHaveBeenCalledWith(expect.stringContaining("cost.paid"));
-    await respondGeneration(post(), ok, { gate });
-    expect(recordCost).toHaveBeenCalledTimes(1);
+  it("NDJSON: a client that leaves mid-generation gets its credit back", async () => {
+    const calls: string[] = [];
+    const controller = new AbortController();
+    const waiting = async (hooks: GenerationHooks): Promise<GenerationOutcome> =>
+      new Promise((_, reject) => hooks.signal?.addEventListener("abort", () => reject(new GenerationError("UPSTREAM", ["aborted"]))));
+    const res = await respondGeneration(post(true, controller.signal), waiting, { gate: gate(), settle: settlement(calls) });
+    controller.abort();
+    await res.text().catch(() => "");
+    await vi.waitFor(() => expect(calls).toEqual(["release"]));
   });
 
-  it("leaves beta responses exactly as before", async () => {
-    const res = await respondGeneration(post(), ok, { gate });
-    expect(await res.json()).toEqual({ reading: { verdict: "v" }, chapterToken: "t" });
+  it("leaves 오픈 기념 responses exactly as before", async () => {
+    const res = await respondGeneration(post(), billed(), { gate: gate(), spend: "full" });
+    expect(await res.json()).toEqual(BODY);
   });
 });
 ```
@@ -4361,7 +5317,7 @@ describe("credit settlement around a generation", () => {
 Run: `npx vitest run apps/web/lib/readings/store.test.ts apps/web/lib/api/settle.test.ts`
 Expected:
 - store.test fails with `Cannot find module './store'`.
-- settle.test fails: the `readingId` is missing from the body, and `deliver` is never called.
+- settle.test fails: `addPaidCost` is not exported, the `readingId` is missing from the body, and `deliver` is never called.
 
 - [ ] **Step 3: Write `apps/web/lib/readings/store.ts`**
 
@@ -4369,18 +5325,17 @@ Expected:
 import "server-only";
 import { READING_KEY_VERSION, openJson, sealJson } from "@/lib/account/secrets";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
-import { readingDigest } from "@/lib/security/chapterToken";
 
 /**
- * Readings kept in the account (spec 5.7).
- * - A reading opened with 결제, 별조각 or the owner pass while logged in is saved automatically.
- *   Device-only chapters are saved when the user claims them.
+ * Readings kept in the account (spec 5.7). A reading opened with 결제, 별조각 or the owner pass
+ * while logged in is saved automatically (device-only readings are not moved in P4).
  * - The payload is the chapter exactly as the device stores it (lib/storage/chapters.ts), sealed
- *   with AES-GCM. It holds the question, note or birth data.
- * - `digest` (of the reading itself) keeps one copy per user.
+ *   with AES-GCM under the row's key_version. It holds the question, note or birth data.
+ * - Two identical readings are two rows: each is a purchase. One unlock saves at most one row.
+ * - Nothing is saved for a deleted account.
  */
 
-export type ReadingSource = "paid" | "free" | "owner" | "claimed";
+export type ReadingSource = "paid" | "free" | "owner";
 
 /** A chapter as the device keeps it (StoredChapter) without its local id. */
 export interface ServerChapter {
@@ -4405,6 +5360,11 @@ export function newReadingId(): string {
   return Array.from(bytes, (b) => (b % 36).toString(36)).join("");
 }
 
+/**
+ * The INSERT for a reading, for a live account only (a deleted one gets nothing). A second insert
+ * for the same unlock does nothing (ON CONFLICT DO NOTHING), so a retried delivery never fails on
+ * its own first save.
+ */
 export async function insertReadingStatement(
   db: D1Binding,
   secret: string,
@@ -4412,8 +5372,10 @@ export async function insertReadingStatement(
 ): Promise<D1Statement> {
   return db
     .prepare(
-      `INSERT INTO readings (id, user_id, kind, product_id, source, unlock_id, digest, payload, key_version, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO readings (id, user_id, kind, product_id, source, unlock_id, payload, key_version, created_at, updated_at)
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+       WHERE EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NULL)
+       ON CONFLICT DO NOTHING`,
     )
     .bind(
       input.id,
@@ -4422,11 +5384,11 @@ export async function insertReadingStatement(
       input.productId,
       input.source,
       input.unlockId,
-      await readingDigest(input.chapter.reading),
       await sealJson(input.chapter, secret),
       READING_KEY_VERSION,
       input.now,
       input.now,
+      input.userId,
     );
 }
 
@@ -4434,35 +5396,64 @@ interface Row {
   id: string;
   created_at: number;
   payload: string;
+  key_version: number;
 }
 
 async function open(row: Row, secret: string): Promise<SavedReading | null> {
-  const chapter = await openJson<ServerChapter>(row.payload, secret);
+  const chapter = await openJson<ServerChapter>(row.payload, secret, row.key_version);
   if (!chapter) {
-    console.error(JSON.stringify({ evt: "readings.unreadable", id: row.id }));
+    console.error(JSON.stringify({ evt: "readings.unreadable", id: row.id, keyVersion: row.key_version }));
     return null;
   }
   return { id: row.id, createdAt: row.created_at, chapter };
 }
 
-export async function listReadings(db: D1Binding, secret: string, userId: string, limit = 100): Promise<SavedReading[]> {
-  const { results } = await db.prepare("SELECT id, created_at, payload FROM readings WHERE user_id = ? ORDER BY created_at DESC LIMIT ?").bind(userId, limit).all<Row>();
-  const out: SavedReading[] = [];
-  for (const row of results) {
+/** Readings per page of GET /api/readings. */
+export const READINGS_PAGE = 50;
+
+const cursorOf = (row: Row) => `${row.created_at}.${row.id}`;
+
+function parseCursor(cursor: string | undefined): [number, string] | null {
+  const match = cursor ? /^(\d{1,16})\.([a-z0-9]{20})$/.exec(cursor) : null;
+  return match ? [Number(match[1]), match[2]!] : null;
+}
+
+/** My readings, newest first, a page at a time: `next` continues after the last one (null at the end). */
+export async function listReadings(
+  db: D1Binding,
+  secret: string,
+  userId: string,
+  options: { before?: string; limit?: number } = {},
+): Promise<{ readings: SavedReading[]; next: string | null }> {
+  const limit = Math.min(Math.max(options.limit ?? READINGS_PAGE, 1), READINGS_PAGE);
+  const after = parseCursor(options.before);
+  const { results } = await (after
+    ? db
+        .prepare(
+          `SELECT id, created_at, payload, key_version FROM readings
+           WHERE user_id = ? AND (created_at < ? OR (created_at = ? AND id < ?))
+           ORDER BY created_at DESC, id DESC LIMIT ?`,
+        )
+        .bind(userId, after[0], after[0], after[1], limit + 1)
+    : db.prepare("SELECT id, created_at, payload, key_version FROM readings WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT ?").bind(userId, limit + 1)
+  ).all<Row>();
+  const page = results.slice(0, limit);
+  const readings: SavedReading[] = [];
+  for (const row of page) {
     const saved = await open(row, secret);
-    if (saved) out.push(saved);
+    if (saved) readings.push(saved);
   }
-  return out;
+  return { readings, next: results.length > limit ? cursorOf(page[page.length - 1]!) : null };
 }
 
 export async function readingForUser(db: D1Binding, secret: string, userId: string, id: string): Promise<SavedReading | null> {
-  const row = await db.prepare("SELECT id, created_at, payload FROM readings WHERE id = ? AND user_id = ?").bind(id, userId).first<Row>();
+  const row = await db.prepare("SELECT id, created_at, payload, key_version FROM readings WHERE id = ? AND user_id = ?").bind(id, userId).first<Row>();
   return row ? open(row, secret) : null;
 }
 
-export async function readingIdByDigest(db: D1Binding, userId: string, reading: unknown): Promise<string | null> {
-  const row = await db.prepare("SELECT id FROM readings WHERE user_id = ? AND digest = ?").bind(userId, await readingDigest(reading)).first<{ id: string }>();
-  return row?.id ?? null;
+/** The row is there (the settlement's recover(): a save whose answer was lost). */
+export async function readingExists(db: D1Binding, userId: string, id: string): Promise<boolean> {
+  return Boolean(await db.prepare("SELECT 1 AS x FROM readings WHERE id = ? AND user_id = ?").bind(id, userId).first());
 }
 
 /** Rewrites a saved chapter (follow-up turns, the newer chapter token). False when it is not this user's. */
@@ -4477,8 +5468,8 @@ export async function updateReadingChapter(
   const saved = await readingForUser(db, secret, userId, id);
   if (!saved) return false;
   const result = await db
-    .prepare("UPDATE readings SET payload = ?, updated_at = ? WHERE id = ? AND user_id = ?")
-    .bind(await sealJson(update(saved.chapter), secret), now, id, userId)
+    .prepare("UPDATE readings SET payload = ?, key_version = ?, updated_at = ? WHERE id = ? AND user_id = ?")
+    .bind(await sealJson(update(saved.chapter), secret), READING_KEY_VERSION, now, id, userId)
     .run();
   return result.meta?.changes === 1;
 }
@@ -4491,32 +5482,62 @@ export async function deleteReading(db: D1Binding, userId: string, id: string): 
 export async function deleteAllReadings(db: D1Binding, userId: string): Promise<number> {
   return (await db.prepare("DELETE FROM readings WHERE user_id = ?").bind(userId).run()).meta?.changes ?? 0;
 }
+```
 
-export async function countReadings(db: D1Binding, userId: string): Promise<number> {
-  return (await db.prepare("SELECT COUNT(*) AS n FROM readings WHERE user_id = ?").bind(userId).first<{ n: number }>())?.n ?? 0;
+- [ ] **Step 4: Give `SpendLedger` a sink and add the paid book in `apps/web/lib/api/spend.ts`.** Change only what is listed; mark each change `// P4`.
+
+Add after `addCost`:
+
+```ts
+/** P4: where a SpendLedger writes: the free-tier day total (addCost) or the paid book (addPaidCost). */
+export type CostSink = (krw: number, at: number) => Promise<void>;
+
+/** P4: paid book entries live long enough for a monthly look in the runbook. */
+const PAID_COST_TTL_SECONDS = 35 * 24 * 60 * 60;
+
+/**
+ * P4: the model cost of readings opened with a purchase, in `paidcost:<kstDay>:<shard>`. budgetState
+ * never reads these keys, so paid readings never close the free tier; the purchase price covers
+ * them (spec 11). A failed write is logged (write()) and does not count toward "unknown".
+ */
+export async function addPaidCost(krw: number, now: number): Promise<void> {
+  if (!Number.isFinite(krw) || krw === 0) return;
+  const key = `paidcost:${kstDay(now)}:${Math.floor(Math.random() * COST_SHARDS)}`;
+  const current = await read(key);
+  if (current !== null) await write(key, current + krw, PAID_COST_TTL_SECONDS);
 }
 ```
 
-- [ ] **Step 4: Add the settlement hook to `apps/web/lib/api/stream.ts`.** Change only what is listed here.
+In `class SpendLedger`:
+- change the constructor to `constructor(private readonly clock: () => number = Date.now, private readonly sink: CostSink = addCost) {} // P4: sink`;
+- in `add`, call `this.sink(krw, at)` instead of `addCost(krw, at)`.
 
-Add the import:
+Existing callers (`new SpendLedger()`, `new SpendLedger(() => now)` in `app/api/accounting.test.ts`) keep `addCost`.
+
+- [ ] **Step 5: Add the settlement to `apps/web/lib/api/stream.ts`.** Change only what is listed; mark each change `// P4`.
+
+Change the spend import to:
 
 ```ts
-import { usdOf } from "@/lib/ai/cost";
+import { SpendLedger, addCost, addPaidCost, recordClientSpend, type SpendKind } from "./spend";
 ```
 
 Add after `GenerationOutcome`:
 
 ```ts
 /**
- * How a credit-backed generation settles (spec 5.4).
- * - `deliver` runs after validation and before the JSON body or the `done` event leaves. It saves
- *   the reading and spends the reservation; what it returns joins the body (the saved reading's id).
- * - `release` runs on every failure: generation error, budget, client gone, a failed deliver.
- * Both must be idempotent.
+ * P4: how a credit-backed generation settles (spec 5.4). Everything runs inside the generation's
+ * keepAlive work, after run() and before the JSON body or the `done` event leaves.
+ * - `deliver` saves the reading and spends the reservation; what it returns joins the body (the
+ *   saved reading's id).
+ * - `recover` runs when deliver threw: what deliver would have returned if the save landed anyway
+ *   (its D1 answer was lost), else null.
+ * - `release` runs on every failure: generation error, budget, client gone, a save that did not
+ *   land. It must be idempotent and a no-op once delivered.
  */
 export interface Settlement {
   deliver(outcome: GenerationOutcome): Promise<Record<string, unknown>>;
+  recover(): Promise<Record<string, unknown> | null>;
   release(): Promise<void>;
 }
 ```
@@ -4524,59 +5545,70 @@ export interface Settlement {
 Add to `RespondOptions`:
 
 ```ts
-  /** saves the reading and settles its credit before the client sees it; none for beta readings */
+  /** P4: saves the reading and settles its credit before the client sees it; none for 오픈 기념 readings */
   settle?: Settlement;
-  /** a paid or 별조각 opening: its model cost is logged as `cost.paid`, outside the free-tier budget */
-  credit?: boolean;
+  /** P4: a paid opening: its model cost goes to the paid book (addPaidCost), never the free-tier total */
+  paidCost?: boolean;
 ```
 
-In `respondGeneration`, destructure `settle` and `credit` with the other options. Replace the `account` helper and add `release` and `settled`:
+In `respondGeneration`:
+- destructure `settle` and `paidCost` with the other options;
+- create the ledger with its book: `const ledger = new SpendLedger(Date.now, paidCost ? addPaidCost : addCost); // P4: paid book`;
+- add these two helpers right after `accounting`:
 
 ```ts
-  const account = async (outcome: GenerationOutcome | null) => {
-    const usage = billed.splice(0); // spliced: recorded once even if a later step fails
-    if (credit) console.info(JSON.stringify({ evt: "cost.paid", usd: usdOf(usage) }));
-    else await recordCost(usage, Date.now());
-    if (outcome?.spend && !gate.owner) await recordClientSpend(gate.client, outcome.spend, gate.now);
-  };
-  // A failed release is not lost: the reservation expires (RESERVATION_MS) and the next sweep returns it.
+  // P4: a failed release is not lost: the reservation expires (RESERVATION_MS) and a sweep returns it.
   const release = async () => {
+    if (!settle) return;
     try {
-      await settle?.release();
+      await settle.release();
     } catch (error) {
       console.error(JSON.stringify({ evt: "settle.release_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
     }
   };
-  // The body the client gets: unchanged without a settlement, plus what deliver() returns with one.
-  const settled = async (outcome: GenerationOutcome): Promise<unknown> =>
-    settle ? { ...(outcome.body as Record<string, unknown>), ...(await settle.deliver(outcome)) } : outcome.body;
+  // P4: the body the client gets: unchanged without a settlement; with one, saved (or found saved) first.
+  const settled = async (outcome: GenerationOutcome): Promise<unknown> => {
+    if (!settle) return outcome.body;
+    let extra: Record<string, unknown>;
+    try {
+      extra = await settle.deliver(outcome);
+    } catch (error) {
+      const recovered = await settle.recover().catch(() => null);
+      if (!recovered) throw error;
+      console.warn(JSON.stringify({ evt: "settle.recovered" }));
+      extra = recovered;
+    }
+    return { ...(outcome.body as Record<string, unknown>), ...extra };
+  };
 ```
 
-JSON path:
-- after `await account(outcome);` add `const body = await settled(outcome);`;
-- return `json(body, …)` instead of `json(outcome.body, …)`;
-- in its `catch`, call `await release();` right after `await account(null);`.
+JSON path (inside the existing `work`):
+- right after `const outcome = await run(accounting);` add `const body = await settled(outcome); // P4`;
+- return `json(body, { cookies: cookies.map(serializeCookie) })` instead of `json(outcome.body, …)`;
+- make `await release(); // P4` the first line of its `catch`.
 
-Stream path:
-- after `await account(outcome);` add `const data = await settled(outcome);`;
-- write `{ type: "done", data, ...(commit ? { commit } : {}) }`;
-- in its `catch`, call `await release();` right after `await account(null);`.
+Stream path (inside the existing `keepAlive((async () => { … })())`):
+- right after `const outcome = await run(hooks);` add `const data = await settled(outcome); // P4: saved and spent before done`;
+- write `{ type: "done", data, ...(commit ? { commit } : {}) }` instead of `data: outcome.body`;
+- make `await release(); // P4` the first line of its `catch`.
 
-- [ ] **Step 5: Run the tests**
+Nothing else moves: `recordClientSpend` before the start, `abort.done()`, `ledger.finish()` in the `finally` blocks, the ping, and `keepAlive` stay as they are.
+
+- [ ] **Step 6: Run the tests**
 
 Run: `npx vitest run apps/web/lib/readings apps/web/lib/api apps/web/app/api`
 Expected:
-- PASS: store 5 tests, settle 6 tests.
-- streaming.test, routes.test and accounting.test pass unchanged: without `settle` the body is byte-for-byte what it was.
+- PASS: store 5 tests, settle 10 tests.
+- streaming.test, routes.test, accounting.test and kv-failure.test pass unchanged: without `settle` and `paidCost` the body and the books are what they were.
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add apps/web/lib/readings/store.ts apps/web/lib/readings/store.test.ts apps/web/lib/api/stream.ts apps/web/lib/api/settle.test.ts
-git commit -m "feat(readings): encrypted saved readings and a settlement hook before done" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git add apps/web/lib/readings/store.ts apps/web/lib/readings/store.test.ts apps/web/lib/api/spend.ts apps/web/lib/api/stream.ts apps/web/lib/api/settle.test.ts
+git commit -m "feat(readings): encrypted saved readings, a paid cost book, settlement before done inside keepAlive" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -4584,49 +5616,64 @@ git commit -m "feat(readings): encrypted saved readings and a settlement hook be
 ### Task 10: Paid, 별조각 and owner unlocks on the reading routes
 
 **Files:**
-- Create: `apps/web/lib/pay/unlockMethod.ts`, `apps/web/lib/api/unlock.ts`, `apps/web/lib/readings/chapters.ts`
+- Create: `apps/web/lib/api/unlock.ts`, `apps/web/lib/readings/chapters.ts`
 - Modify: `apps/web/lib/api/inputs.ts`, `apps/web/lib/api/tarotRequest.ts`, `apps/web/app/api/tarot/reading/route.ts`, `apps/web/app/api/saju/reading/route.ts`
 - Test: `apps/web/app/api/unlock.test.ts`
 
 **Interfaces:**
 - Consumes:
-  - Task 2: `standardProduct`, `unitsFor`, `StandardProductId`, `paymentsMode`, `betaFullReadings`.
+  - Task 2: `standardProduct`, `unitsFor`, `StandardProductId`, `paymentsMode`, `openingOffer`, `UNLOCK_METHODS`, `UnlockMethod`.
   - Task 3: `openAccount`. Task 4: `reserveUnlock`, `deliverUnlock`, `releaseUnlock`.
-  - Task 9: `insertReadingStatement`, `newReadingId`, `ServerChapter`, `ReadingSource`, `Settlement`, `respondGeneration` with `settle` and `credit`.
-  - Existing: `Gate`, `checkQuota`, `spendCookies`, `fullReadingLimit`, `issueChapter`, `SITE.reading.followUps`.
+  - Task 9: `insertReadingStatement`, `newReadingId`, `readingExists`, `ServerChapter`, `ReadingSource`, `Settlement`, `respondGeneration` with `settle` and `paidCost`, `addPaidCost` book (tests read it).
+  - Existing: `Gate`, `checkQuota`, `checkServerLimits`, `spendCookies`, `fullReadingLimit`, `issueChapter`, `QuotaState`, `SpendKind`, `SITE.reading.followUps`.
 - Produces:
-  - `unlockMethod.ts` (client-safe): `UNLOCK_METHODS = ["beta", "paid", "free", "owner"] as const`, `type UnlockMethod`
   - `inputs.ts`:
     - `UnlockBody = z.object({ method: z.enum(UNLOCK_METHODS) })`; `TarotBody.unlock?`, `SajuBody.unlock?`
     - `SajuBody.display?: { title ≤80, summary ≤400 }` (the teaser's title and summary, saved with the reading)
   - `tarotContextFrom` also returns `unlock?: UnlockMethod`.
   - `unlock.ts`:
-    - `interface UnlockPlan { method; productId; credit: boolean; save: {db; accountSecret; userId; source; unlockId} | null }`
+    - `interface UnlockPlan { method; productId; quota: QuotaState | null; spend: SpendKind | undefined; paidCost: boolean; save: {db; accountSecret; userId; source; unlockId} | null }`
     - `planUnlock(request, gate, kind, method?): Promise<UnlockPlan | Response>`
     - `settlementFor(plan, chapterOf, now): Settlement | undefined`
   - `chapters.ts`: `tarotChapter(input, cards, body, now): ServerChapter`, `sajuChapter({birth, context, display?}, body, now): ServerChapter`
   - The routes' 200 body gains `readingId` when the reading was saved to an account. New pre-stream errors:
-    - 402 `PAYMENT_REQUIRED` (beta asked while payments are on);
+    - 402 `PAYMENT_REQUIRED` (the 오픈 기념 reading asked for while payments are on);
     - 401 `LOGIN_REQUIRED`;
     - 402 `NO_CREDIT`;
     - 403 `FORBIDDEN` (owner method without the pass);
     - 503 `PAY_UNAVAILABLE`.
+    - A 별조각 or owner opening also gets the existing 503 `reason: "budget"` and 429 `scope: "network"` answers (minor 4).
+
+**What each method passes to `respondGeneration` (C1, minor 4):**
+
+| method | checks before the start | `spend` | `paidCost` | `settle` |
+|---|---|---|---|---|
+| `opening` (absent) | `checkQuota(gate, "full")`: free budget, network cap, device cookie. 402 once payments are on for everyone (owner pass excepted) | `"full"` | no (`cost:` book) | none: the device keeps it, as today |
+| `free` (별조각) | login; `checkServerLimits(gate, "full")`: free budget and network cap; then the reservation | `"full"` | no (`cost:` book) | save + spend |
+| `paid` | login; the reservation. No free-budget or network check: the purchase pays for it | none | yes (`paidcost:` book) | save + spend |
+| `owner` | the owner pass; `checkServerLimits(gate, "full")` (owner rules) | `"full"` (owners are not counted) | no | save when logged in |
+
+- A 별조각 reading costs us what a free reading costs. It counts in the free budget and on the network's daily full-reading cap. Signing up many Kakao accounts on one network gets no more than that cap.
+- A paid reading stays rate-limited by `FULL_LIMITER` (20 per minute per IP at aa70830), like every full reading.
 
 - [ ] **Step 1: Write the failing test** — `apps/web/app/api/unlock.test.ts`
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
-import { GenerationError } from "@/lib/ai/provider";
+import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { accountSecret } from "@/lib/account/secrets";
-import { resetDailyStore } from "@/lib/api/dailyStore";
+import { dailyStore, resetDailyStore } from "@/lib/api/dailyStore";
+import { clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { NDJSON } from "@/lib/api/stream";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { mockToss } from "@/lib/pay/tossMock";
 import { listReadings } from "@/lib/readings/store";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { keyedHash, signingSecret } from "@/lib/security/sign";
 import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as ownerPost } from "./owner/route";
 import { POST as sajuReading } from "./saju/reading/route";
@@ -4640,6 +5687,8 @@ const MONEY_INPUT = {
   conditions: [{ label: "지금 상황", value: "수입이 들쭉날쭉" }, { label: "관심 방향", value: "지출 줄이기" }],
   note: "이번 달 카드값이 많이 나왔어요",
 };
+/** 2,800원 with KRW_PER_USD=1400. */
+const EXPENSIVE = [{ model: "claude-opus-5-5", inputTokens: 0, outputTokens: 100_000, cacheReadTokens: 0, cacheWriteTokens: 0 }];
 
 let ipSeq = 0;
 
@@ -4652,10 +5701,13 @@ beforeEach(() => {
   vi.stubEnv("STARLOG_KAKAO", "mock");
   vi.stubEnv("STARLOG_PAY", "mock");
   vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
+  vi.stubEnv("KRW_PER_USD", "1400");
   resetMemoryLimiter();
   resetDailyStore();
+  resetSpendState();
   mockToss.reset();
   vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -4665,10 +5717,11 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function loggedIn(name = "alice"): Promise<Browser> {
-  const b = browser(`198.51.100.${++ipSeq}`);
+async function loggedIn(name = "alice"): Promise<{ b: Browser; ip: string }> {
+  const ip = `198.51.100.${++ipSeq}`;
+  const b = browser(ip);
   await loginAs(b, name);
-  return b;
+  return { b, ip };
 }
 
 async function open(b: Browser, method?: string, accept?: string, signal?: AbortSignal) {
@@ -4677,10 +5730,26 @@ async function open(b: Browser, method?: string, accept?: string, signal?: Abort
   return b.send(reading, "/api/tarot/reading", { body: { drawToken, input: MONEY_INPUT, ...(method ? { unlock: { method } } : {}) }, accept, signal });
 }
 
+/** The mock provider, reporting EXPENSIVE as billed, like the real one does. */
+function billing() {
+  const real = mockProvider.generate.bind(mockProvider);
+  return vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+    hooks?.onUsage?.(EXPENSIVE);
+    return real(task, attempt, feedback, hooks);
+  });
+}
+
+async function paidBook(): Promise<number> {
+  let sum = 0;
+  for (let shard = 0; shard < 8; shard++) sum += Number((await dailyStore().get(`paidcost:${kstDay(Date.now())}:${shard}`)) ?? 0);
+  return Math.round(sum);
+}
+const freeBook = async () => Math.round((await spentTodayKrw(Date.now())) ?? -1);
 const userId = async (db: D1Binding) => (await db.prepare("SELECT id FROM users ORDER BY created_at LIMIT 1").first<{ id: string }>())!.id;
+const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
 
 describe("opening a full reading with credit", () => {
-  it("ends the free beta reading once payments are on for everyone, before any generation", async () => {
+  it("ends the free 오픈 기념 reading once payments are on for everyone, before any generation", async () => {
     useTestDb();
     const spy = vi.spyOn(mockProvider, "generate");
     const res = await open(browser("192.0.2.10"));
@@ -4692,30 +5761,50 @@ describe("opening a full reading with credit", () => {
   it("asks for login before spending credit, and says when there is none", async () => {
     useTestDb();
     expect((await open(browser("192.0.2.11"), "paid")).status).toBe(401);
-    const b = await loggedIn();
+    const { b } = await loggedIn();
     const res = await open(b, "paid");
     expect(res.status).toBe(402);
     expect(await res.json()).toMatchObject({ code: "NO_CREDIT" });
   });
 
-  it("opens with 별조각: saves the reading to the account and spends only then, with no beta cookie", async () => {
+  it("opens with 별조각: saved and spent only then, no quota cookie, counted like a free reading", async () => {
     const db = useTestDb();
-    const b = await loggedIn();
+    const { b, ip } = await loggedIn();
+    billing();
     const res = await open(b, "free");
     expect(res.status).toBe(200);
     const body = (await res.json()) as { readingId: string; chapterToken: string };
     expect(body.readingId).toMatch(/^[a-z0-9]{20}$/);
     expect(res.headers.getSetCookie().some((c) => c.startsWith("sl_q="))).toBe(false);
     expect((await me(b)).user?.stardust).toBe(0);
-    const saved = await listReadings(db, accountSecret()!, await userId(db));
-    expect(saved).toHaveLength(1);
-    expect(saved[0]).toMatchObject({ id: body.readingId, chapter: { kind: "tarot", question: MONEY_INPUT.question, chapterToken: body.chapterToken, followUpsLeft: 3 } });
-    expect((saved[0]!.chapter.cards as unknown[]).length).toBe(3);
+    const { readings } = await listReadings(db, accountSecret()!, await userId(db));
+    expect(readings).toHaveLength(1);
+    expect(readings[0]).toMatchObject({ id: body.readingId, chapter: { kind: "tarot", question: MONEY_INPUT.question, chapterToken: body.chapterToken, followUpsLeft: 3 } });
+    expect((readings[0]!.chapter.cards as unknown[]).length).toBe(3);
+    expect(await freeBook()).toBe(2800);
+    expect(await paidBook()).toBe(0);
+    expect(await clientCount(await keyedHash(`client:${ip}`, signingSecret()!), "full", Date.now())).toBe(1);
+  });
+
+  it("stops 별조각 when the free budget is spent, before reserving; a paid reading still opens, on the paid book", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
+    const free = await open(b, "free");
+    expect(free.status).toBe(503);
+    expect(await free.json()).toMatchObject({ reason: "budget" });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
+    expect((await me(b)).user?.stardust).toBe(10);
+    await buy(b);
+    billing();
+    expect((await open(b, "paid")).status).toBe(200);
+    expect(await paidBook()).toBe(2800);
+    expect(await freeBook()).toBe(0);
   });
 
   it("opens a paid reading once, then there is nothing left to spend", async () => {
     useTestDb();
-    const b = await loggedIn();
+    const { b } = await loggedIn();
     await buy(b);
     expect((await open(b, "paid")).status).toBe(200);
     expect((await me(b)).user?.unused).toEqual([]);
@@ -4725,18 +5814,18 @@ describe("opening a full reading with credit", () => {
 
   it("gives the credit back when the generation fails", async () => {
     const db = useTestDb();
-    const b = await loggedIn();
+    const { b } = await loggedIn();
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(mockProvider, "generate").mockRejectedValue(new GenerationError("UPSTREAM"));
     expect((await open(b, "free")).status).toBe(502);
     expect((await me(b)).user?.stardust).toBe(10);
-    expect(await db.prepare("SELECT status FROM unlocks").first()).toEqual({ status: "released" });
-    expect(await db.prepare("SELECT COUNT(*) AS n FROM readings").first()).toEqual({ n: 0 });
+    expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "released" });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
   });
 
   it("gives the credit back when the client leaves mid-stream", async () => {
     useTestDb();
-    const b = await loggedIn();
+    const { b } = await loggedIn();
     vi.spyOn(mockProvider, "generate").mockImplementation(
       (_task, _attempt, _feedback, hooks) => new Promise((_, reject) => hooks?.signal?.addEventListener("abort", () => reject(new GenerationError("UPSTREAM", ["aborted"])))),
     );
@@ -4751,10 +5840,29 @@ describe("opening a full reading with credit", () => {
 
   it("streams: the done event carries the saved reading's id", async () => {
     useTestDb();
-    const b = await loggedIn();
+    const { b } = await loggedIn();
     const lines = (await (await open(b, "free", NDJSON)).text()).trim().split("\n").map((line) => JSON.parse(line) as { type: string; data?: { readingId?: string } });
     const done = lines.find((event) => event.type === "done");
     expect(done?.data?.readingId).toMatch(/^[a-z0-9]{20}$/);
+  });
+
+  it("still ends in done when the save landed but its D1 answer was lost, spending the credit once", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    const realBatch = db.batch.bind(db);
+    let batches = 0;
+    // Batch 1 is the reservation, batch 2 the delivery: it commits, then its answer is lost.
+    vi.spyOn(db, "batch").mockImplementation(async (statements) => {
+      const results = await realBatch(statements);
+      if (++batches === 2) throw new Error("D1 answer lost");
+      return results;
+    });
+    const lines = (await (await open(b, "free", NDJSON)).text()).trim().split("\n").map((line) => JSON.parse(line) as { type: string; data?: { readingId?: string } });
+    expect(lines.at(-1)?.type).toBe("done");
+    expect(lines.at(-1)?.data?.readingId).toMatch(/^[a-z0-9]{20}$/);
+    expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "delivered" });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'spend'")).toEqual({ n: 1 });
+    expect((await me(b)).user?.stardust).toBe(0);
   });
 
   it("lets the owner open free, saved to the account when logged in, with no ledger movement", async () => {
@@ -4766,27 +5874,27 @@ describe("opening a full reading with credit", () => {
     const res = await open(owner, "owner");
     expect(res.status).toBe(200);
     expect(((await res.json()) as { readingId?: string }).readingId).toMatch(/^[a-z0-9]{20}$/);
-    expect(await db.prepare("SELECT source FROM readings").first()).toEqual({ source: "owner" });
-    expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind <> 'grant'").first()).toEqual({ n: 0 });
+    expect(await one(db, "SELECT source FROM readings")).toEqual({ source: "owner" });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind <> 'grant'")).toEqual({ n: 0 });
   });
 
   it("never traps credit: it can still be spent after payments are switched off", async () => {
     useTestDb();
-    const b = await loggedIn();
+    const { b } = await loggedIn();
     vi.stubEnv("STARLOG_PAYMENTS", "off");
     expect((await open(b, "free")).status).toBe(200);
   });
 
   it("saves the saju teaser's title with a paid saju reading", async () => {
     const db = useTestDb();
-    const b = await loggedIn();
+    const { b } = await loggedIn();
     await buy(b, "saju");
     const res = await b.send(sajuReading, "/api/saju/reading", {
       body: { birth: DEFAULT_SAJU_FORM, unlock: { method: "paid" }, display: { title: "타고난 결", summary: "요약 한 줄" } },
     });
     expect(res.status).toBe(200);
-    const [saved] = await listReadings(db, accountSecret()!, await userId(db));
-    expect(saved?.chapter).toMatchObject({ kind: "saju", title: "타고난 결", summary: "요약 한 줄" });
+    const { readings } = await listReadings(db, accountSecret()!, await userId(db));
+    expect(readings[0]?.chapter).toMatchObject({ kind: "saju", title: "타고난 결", summary: "요약 한 줄" });
   });
 });
 ```
@@ -4794,22 +5902,14 @@ describe("opening a full reading with credit", () => {
 - [ ] **Step 2: Run it and see it fail**
 
 Run: `npx vitest run apps/web/app/api/unlock.test.ts`
-Expected: FAIL. The first case answers 200 (the beta still opens). Credit methods are ignored and no `readingId` comes back.
+Expected: FAIL. The first case answers 200 (the 오픈 기념 reading still opens). Credit methods are ignored and no `readingId` comes back.
 
-- [ ] **Step 3: Write `apps/web/lib/pay/unlockMethod.ts`** (client-safe)
-
-```ts
-/** How a full reading is opened: the beta's daily free one, a paid purchase, 별조각, or the owner pass. */
-export const UNLOCK_METHODS = ["beta", "paid", "free", "owner"] as const;
-export type UnlockMethod = (typeof UNLOCK_METHODS)[number];
-```
-
-- [ ] **Step 4: Extend `apps/web/lib/api/inputs.ts` and `apps/web/lib/api/tarotRequest.ts`**
+- [ ] **Step 3: Extend `apps/web/lib/api/inputs.ts` and `apps/web/lib/api/tarotRequest.ts`**
 
 In `inputs.ts` add the import `import { UNLOCK_METHODS } from "@/lib/pay/unlockMethod";` and:
 
 ```ts
-/** How the full reading is opened (P4). Absent means the beta's daily free reading. */
+/** How the full reading is opened (P4). Absent means the 오픈 기념 daily free reading. */
 export const UnlockBody = z.object({ method: z.enum(UNLOCK_METHODS) });
 ```
 
@@ -4821,13 +5921,9 @@ Add `unlock: UnlockBody.optional(),` to `TarotBody`. Add both of these to `SajuB
   display: z.object({ title: z.string().trim().max(80), summary: z.string().trim().max(400) }).optional(),
 ```
 
-In `tarotContextFrom`, add `unlock?: UnlockMethod` to the returned object type (import `type UnlockMethod` from `@/lib/pay/unlockMethod`). Return:
+In `tarotContextFrom`, add `unlock?: UnlockMethod` to the returned object type (import `type UnlockMethod` from `@/lib/pay/unlockMethod`), and add `unlock: body.data.unlock?.method` to the object it returns. Keep everything else in that return as it is (the history filtering included).
 
-```ts
-  return { ctx: buildTarotContext(draw.templateId, draw.cards, rest, { history }), draw, input: rest, unlock: body.data.unlock?.method };
-```
-
-- [ ] **Step 5: Write `apps/web/lib/readings/chapters.ts`**
+- [ ] **Step 4: Write `apps/web/lib/readings/chapters.ts`**
 
 ```ts
 import "server-only";
@@ -4887,7 +5983,7 @@ export function sajuChapter(
 }
 ```
 
-- [ ] **Step 6: Write `apps/web/lib/api/unlock.ts`**
+- [ ] **Step 5: Write `apps/web/lib/api/unlock.ts`**
 
 ```ts
 import "server-only";
@@ -4895,67 +5991,95 @@ import { openAccount } from "@/lib/account/request";
 import type { D1Binding } from "@/lib/db/d1";
 import { standardProduct, unitsFor, type StandardProductId } from "@/lib/pay/catalog";
 import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
-import { betaFullReadings, paymentsMode } from "@/lib/pay/mode";
+import { openingOffer, paymentsMode } from "@/lib/pay/mode";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
-import { insertReadingStatement, newReadingId, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
-import { errorResponse, type Gate } from "./http";
+import { insertReadingStatement, newReadingId, readingExists, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
+import type { QuotaState } from "@/lib/security/quota";
+import { checkQuota, checkServerLimits, errorResponse, type Gate } from "./http";
+import type { SpendKind } from "./spend";
 import type { GenerationOutcome, Settlement } from "./stream";
 
 /**
- * How a full reading is paid for, decided before any generation starts (spec 5.4):
- * - `beta`: the daily free reading (the caller checks the cookie quota). Refused with 402
- *   PAYMENT_REQUIRED once payments are on for everyone; the owner pass is never refused.
- * - `paid` / `free`: reserves the user's credit for the standard product. 401 without login,
- *   402 NO_CREDIT without credit. Spending is never gated by STARLOG_PAYMENTS.
- * - `owner`: the owner pass, no ledger; the reading is saved to the account when logged in.
+ * How a full reading is paid for, decided before any generation starts (spec 5.4). See the table in
+ * the plan's Task 10:
+ * - `opening`: the 오픈 기념 daily free reading, exactly as before P4 (cookie quota, server limits,
+ *   network counter). 402 PAYMENT_REQUIRED once payments are on for everyone; never for the owner.
+ * - `free` (별조각): login, the free budget and network cap (it costs us what a free reading costs),
+ *   then the reservation. Spending is never gated by STARLOG_PAYMENTS.
+ * - `paid`: login, then the reservation. Its model cost goes to the paid book.
+ * - `owner`: the owner pass and the owner's server limits, no ledger; saved when logged in.
  */
 
 export interface UnlockPlan {
   method: UnlockMethod;
   productId: StandardProductId;
-  /** a reservation is held; its model cost stays out of the free-tier budget */
-  credit: boolean;
+  /** the device's cookie quota: the 오픈 기념 reading spends it after a validated generation */
+  quota: QuotaState | null;
+  /** RespondOptions.spend: the network day counter, charged before the start (none for a paid opening) */
+  spend: SpendKind | undefined;
+  /** RespondOptions.paidCost: a paid opening's model cost goes to the paid book */
+  paidCost: boolean;
   save: { db: D1Binding; accountSecret: string; userId: string; source: ReadingSource; unlockId: string | null } | null;
 }
 
-export async function planUnlock(request: Request, gate: Gate, kind: StandardProductId, method: UnlockMethod = "beta"): Promise<UnlockPlan | Response> {
-  if (method === "beta") {
-    if (!gate.owner && !betaFullReadings(paymentsMode())) return errorResponse("PAYMENT_REQUIRED");
-    return { method, productId: kind, credit: false, save: null };
+export async function planUnlock(request: Request, gate: Gate, kind: StandardProductId, method: UnlockMethod = "opening"): Promise<UnlockPlan | Response> {
+  const base = { method, productId: kind, quota: null, spend: "full" as const, paidCost: false, save: null };
+  if (method === "opening") {
+    if (!gate.owner && !openingOffer(paymentsMode())) return errorResponse("PAYMENT_REQUIRED");
+    const quota = await checkQuota(gate, "full");
+    if (quota instanceof Response) return quota;
+    return { ...base, quota };
   }
-  if (method === "owner" && !gate.owner) return errorResponse("FORBIDDEN");
-  const ctx = await openAccount(request, gate.now);
-  if (ctx instanceof Response) return method === "owner" ? { method, productId: kind, credit: false, save: null } : ctx;
-  const user = ctx.session?.user;
   if (method === "owner") {
-    const save = user ? { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: "owner" as const, unlockId: null } : null;
-    return { method, productId: kind, credit: false, save };
+    if (!gate.owner) return errorResponse("FORBIDDEN");
+    const limited = await checkServerLimits(gate, "full");
+    if (limited) return limited;
+    const ctx = await openAccount(request, gate.now);
+    const user = ctx instanceof Response ? null : ctx.session?.user;
+    if (ctx instanceof Response || !user) return base;
+    return { ...base, save: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: "owner", unlockId: null } };
   }
+  const ctx = await openAccount(request, gate.now);
+  if (ctx instanceof Response) return ctx;
+  const user = ctx.session?.user;
   if (!user) return errorResponse("LOGIN_REQUIRED");
-  const product = standardProduct(kind);
+  if (method === "free") {
+    // 별조각 readings cost us what free readings cost: the free budget and the network cap apply (minor 4).
+    const limited = await checkServerLimits(gate, "full");
+    if (limited) return limited;
+  }
   const reserved = await reserveUnlock(ctx.db, {
     userId: user.id,
     productId: kind,
     currency: method === "paid" ? "paid" : "free",
-    units: method === "paid" ? unitsFor(product) : (product.units ?? unitsFor(product)),
+    units: unitsFor(standardProduct(kind)),
     now: gate.now,
   });
   if (!reserved.ok) return errorResponse("NO_CREDIT");
   console.info(JSON.stringify({ evt: "unlock.reserved", method, productId: kind }));
-  return { method, productId: kind, credit: true, save: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: method, unlockId: reserved.unlockId } };
+  return {
+    method,
+    productId: kind,
+    quota: null,
+    spend: method === "free" ? "full" : undefined,
+    paidCost: method === "paid",
+    save: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: method, unlockId: reserved.unlockId },
+  };
 }
 
 /**
  * Saves the reading to the account, and spends the reservation, before the client sees the reading
- * (stream.ts Settlement). A failure releases the reservation. Without anything to save (beta, or an
- * owner who is not logged in) there is no settlement.
+ * (stream.ts Settlement, inside the generation's keepAlive work). recover() looks for exactly this
+ * generation's row, so a save whose answer was lost still reaches the client. Every failure
+ * releases the reservation. Without anything to save (오픈 기념, or an owner not logged in) there is
+ * no settlement.
  */
 export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string, unknown>) => ServerChapter, now: number): Settlement | undefined {
   const save = plan.save;
   if (!save) return undefined;
+  const readingId = newReadingId();
   return {
     async deliver(outcome: GenerationOutcome) {
-      const readingId = newReadingId();
       const insert = await insertReadingStatement(save.db, save.accountSecret, {
         id: readingId,
         userId: save.userId,
@@ -4968,10 +6092,15 @@ export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string,
       if (save.unlockId) {
         const result = await deliverUnlock(save.db, { unlockId: save.unlockId, readingId, now: Date.now(), before: [insert] });
         console.info(JSON.stringify({ evt: result === "delivered" ? "unlock.delivered" : "unlock.reservation_lost", unlockId: save.unlockId }));
+        if (result === "lost" && !(await readingExists(save.db, save.userId, readingId))) return {};
       } else {
-        await save.db.batch([insert]);
+        const [saved] = await save.db.batch([insert]);
+        if (saved?.meta?.changes !== 1) return {};
       }
       return { readingId };
+    },
+    async recover() {
+      return (await readingExists(save.db, save.userId, readingId)) ? { readingId } : null;
     },
     async release() {
       if (save.unlockId && (await releaseUnlock(save.db, { unlockId: save.unlockId, now: Date.now() }))) {
@@ -4982,13 +6111,13 @@ export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string,
 }
 ```
 
-- [ ] **Step 7: Rewire the two reading routes**
+- [ ] **Step 6: Rewire the two reading routes**
 
 `apps/web/app/api/tarot/reading/route.ts` (whole file):
 
 ```ts
 import { generateTarotReading } from "@/lib/ai/generate";
-import { checkQuota, fullReadingLimit, openGate, spendCookies } from "@/lib/api/http";
+import { fullReadingLimit, openGate, spendCookies } from "@/lib/api/http";
 import { respondGeneration } from "@/lib/api/stream";
 import { tarotContextFrom } from "@/lib/api/tarotRequest";
 import { planUnlock, settlementFor } from "@/lib/api/unlock";
@@ -4998,7 +6127,7 @@ import { issueChapter } from "@/lib/security/chapterToken";
 /**
  * POST {drawToken, input, unlock?} → {reading, chapterToken, readingId?}: the full reading for the
  * server-fixed cards.
- * - beta (no `unlock`): spends one daily unlock only after a validated generation.
+ * - 오픈 기념 (no `unlock`): spends one daily unlock only after a validated generation.
  * - paid / 별조각: reserves credit first, then saves the reading to the account and spends the
  *   credit before the client sees it. Any failure releases the credit (spec 5.4).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
@@ -5012,9 +6141,6 @@ export async function POST(request: Request): Promise<Response> {
   if (parsed instanceof Response) return parsed;
   const plan = await planUnlock(request, gate, "tarot", parsed.unlock);
   if (plan instanceof Response) return plan;
-  // Only the beta's free reading counts on the device cookie and the server's day counters.
-  const quota = plan.method === "beta" ? await checkQuota(gate, "full") : null;
-  if (quota instanceof Response) return quota;
 
   return respondGeneration(
     request,
@@ -5024,12 +6150,12 @@ export async function POST(request: Request): Promise<Response> {
         { kind: "tarot", templateId: parsed.draw.templateId, input: parsed.input, cards: parsed.draw.cards.map((c) => [c.cardId, c.orientation]) },
         reading, [], gate.secret, gate.now,
       );
-      const body = { reading, chapterToken };
-      return quota ? { body, cookies: await spendCookies(gate, quota, "full"), spend: "full" as const } : { body, cookies: [] };
+      return { body: { reading, chapterToken }, cookies: plan.quota ? await spendCookies(gate, plan.quota, "full") : [] };
     },
     {
       gate,
-      credit: plan.credit,
+      spend: plan.spend,
+      paidCost: plan.paidCost,
       settle: settlementFor(plan, (body) => tarotChapter(parsed.input, parsed.draw.cards, body as { reading: unknown; chapterToken: string }, gate.now), gate.now),
     },
   );
@@ -5040,7 +6166,7 @@ export async function POST(request: Request): Promise<Response> {
 
 ```ts
 import { generateSajuReading } from "@/lib/ai/generate";
-import { checkQuota, fullReadingLimit, openGate, spendCookies } from "@/lib/api/http";
+import { fullReadingLimit, openGate, spendCookies } from "@/lib/api/http";
 import { sajuRequest } from "@/lib/api/sajuRequest";
 import { respondGeneration } from "@/lib/api/stream";
 import { planUnlock, settlementFor } from "@/lib/api/unlock";
@@ -5050,7 +6176,7 @@ import { issueChapter } from "@/lib/security/chapterToken";
 /**
  * POST {birth, loveStatus?, workStatus?, concern?, unlock?, display?} → {reading, chapterToken, readingId?}:
  * the paid prologue.
- * - beta: one daily unlock after a validated generation.
+ * - 오픈 기념: one daily unlock after a validated generation.
  * - paid / 별조각: credit reserved, then saved and spent before the client sees it, released on
  *   failure (spec 5.4).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
@@ -5064,8 +6190,6 @@ export async function POST(request: Request): Promise<Response> {
   if (parsed instanceof Response) return parsed;
   const plan = await planUnlock(request, gate, "saju", parsed.body.unlock?.method);
   if (plan instanceof Response) return plan;
-  const quota = plan.method === "beta" ? await checkQuota(gate, "full") : null;
-  if (quota instanceof Response) return quota;
   const { birth, loveStatus, workStatus, concern, display } = parsed.body;
 
   return respondGeneration(
@@ -5073,12 +6197,12 @@ export async function POST(request: Request): Promise<Response> {
     async (hooks) => {
       const reading = (await generateSajuReading(gate.provider, parsed.facts, hooks)).data;
       const chapterToken = await issueChapter({ kind: "saju", birth, profile: parsed.profile }, reading, [], gate.secret, gate.now);
-      const body = { reading, chapterToken };
-      return quota ? { body, cookies: await spendCookies(gate, quota, "full"), spend: "full" as const } : { body, cookies: [] };
+      return { body: { reading, chapterToken }, cookies: plan.quota ? await spendCookies(gate, plan.quota, "full") : [] };
     },
     {
       gate,
-      credit: plan.credit,
+      spend: plan.spend,
+      paidCost: plan.paidCost,
       settle: settlementFor(
         plan,
         (body) => sajuChapter({ birth, context: { loveStatus, workStatus, concern }, display }, body as { reading: unknown; chapterToken: string }, gate.now),
@@ -5089,47 +6213,46 @@ export async function POST(request: Request): Promise<Response> {
 }
 ```
 
-If either route changed since commit a9fa89c (for example a new argument to `issueChapter` or new outcome fields), keep that change. Add only the plan, the quota condition and the two options.
+If either route changed since `aa70830` (a new argument to `issueChapter`, new outcome fields), keep that change. `inputs.ts` and `tarotRequest.ts` carry P5 lines since `ba7e843` (premium draw templates, the premium-template refusal in `tarotContextFrom`): add next to them, never over them. Add only the plan, the quota condition and the three options. The options keep `spend: "full"` for every opening except a paid one (`plan.spend`).
 
-- [ ] **Step 8: Run the tests**
+- [ ] **Step 7: Run the tests**
 
 Run: `npx vitest run apps/web/app/api apps/web/lib/api`
 Expected:
-- PASS: unlock.test 10 tests.
-- routes.test, streaming.test and accounting.test unchanged; they never send `unlock`, and `STARLOG_PAYMENTS` defaults to off.
+- PASS: unlock.test 12 tests.
+- routes.test, streaming.test, accounting.test and kv-failure.test unchanged. They never send `unlock`, and `STARLOG_PAYMENTS` defaults to off, so every reading takes the `opening` path with `spend: "full"`.
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add apps/web/lib/pay/unlockMethod.ts apps/web/lib/api/unlock.ts apps/web/lib/readings/chapters.ts apps/web/lib/api/inputs.ts apps/web/lib/api/tarotRequest.ts apps/web/app/api/tarot/reading/route.ts apps/web/app/api/saju/reading/route.ts apps/web/app/api/unlock.test.ts
+git add apps/web/lib/api/unlock.ts apps/web/lib/readings/chapters.ts apps/web/lib/api/inputs.ts apps/web/lib/api/tarotRequest.ts apps/web/app/api/tarot/reading/route.ts apps/web/app/api/saju/reading/route.ts apps/web/app/api/unlock.test.ts
 git commit -m "feat(api): open full readings with a purchase, 별조각 or the owner pass; charge only on delivery" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 11: Readings API — list, claim, delete, follow-up turns
+### Task 11: Readings API — pages, delete, follow-up turns
 
 **Files:**
-- Create: `apps/web/app/api/readings/route.ts`, `apps/web/app/api/readings/claim/route.ts`, `apps/web/lib/readings/turns.ts`
-- Modify: `apps/web/lib/security/chapterToken.ts` (add `chapterIsGenuine`), `apps/web/lib/api/inputs.ts` (`FollowUpBody.readingId`), `apps/web/app/api/followup/route.ts`
+- Create: `apps/web/app/api/readings/route.ts`, `apps/web/lib/readings/turns.ts`
+- Modify: `apps/web/lib/api/inputs.ts` (`FollowUpBody.readingId`), `apps/web/app/api/followup/route.ts`
 - Test: `apps/web/app/api/readings/readings.test.ts`
 
 **Interfaces:**
 - Consumes:
   - Task 3: `openAccountRoute`, `requireSession`, `openAccount`.
-  - Task 9: `listReadings`, `insertReadingStatement`, `readingIdByDigest`, `countReadings`, `deleteReading`, `deleteAllReadings`, `updateReadingChapter`, `newReadingId`, `ServerChapter`.
-  - `verifyToken`, `readingDigest`, `issueChapter`; `isConstraintError`.
+  - Task 9: `listReadings`, `READINGS_PAGE`, `insertReadingStatement`, `deleteReading`, `deleteAllReadings`, `updateReadingChapter`, `newReadingId`, `ServerChapter`.
   - Task 10's reading routes, in the tests.
 - Produces:
-  - `chapterIsGenuine(token, reading, secret): Promise<"tarot" | "saju" | null>`
-  - `GET /api/readings` → `{ readings: Array<{ id; createdAt; chapter: ServerChapter }> }`
+  - `GET /api/readings[?before=<cursor>][&limit=1..50]` → `{ readings: Array<{ id; createdAt; chapter: ServerChapter }>, next: string | null }`. Newest first, 50 per page; the client follows `next` to the end (minor 9: no cap at 100 or 300).
   - `DELETE /api/readings?id=<id>` or `?all=1` → `{ deleted: number }`
-  - `POST /api/readings/claim {chapters: Array<{localId, chapter}>}` (≤ 20 per call) → `{ claimed: Array<{localId, id}>, rejected: string[] }`; `MAX_SAVED_READINGS = 300`
-  - `FollowUpBody.readingId?` (20 chars `[a-z0-9]`); a follow-up answer is also written into that saved reading
+  - `FollowUpBody.readingId?` (20 chars `[a-z0-9]`): a follow-up answer is also written into that saved reading
   - `saveFollowUpTurn(request, now, readingId, turn, chapterToken, followUpsLeft): Promise<void>`
+
+**Scope (revision 2):** the coordinator cut the device→account claim. Readings reach the account only when they are opened while logged in (Task 10). There is no `POST /api/readings/claim`, no `chapterIsGenuine`, no digest and no per-account cap. A purchase is always saved.
 
 - [ ] **Step 1: Write the failing test** — `apps/web/app/api/readings/readings.test.ts`
 
@@ -5140,18 +6263,14 @@ import { resetDailyStore } from "@/lib/api/dailyStore";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { insertReadingStatement, listReadings, newReadingId, type ServerChapter } from "@/lib/readings/store";
-import { issueChapter } from "@/lib/security/chapterToken";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { signingSecret } from "@/lib/security/sign";
 import { browser, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as followup } from "../followup/route";
 import { POST as draw } from "../tarot/draw/route";
 import { POST as reading } from "../tarot/reading/route";
-import { POST as claim } from "./claim/route";
 import { DELETE as remove, GET as list } from "./route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
-const DAY = 86_400_000;
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -5174,75 +6293,53 @@ afterEach(() => {
 
 const userIdOf = async (db: D1Binding, nth = 0) => (await db.prepare("SELECT id FROM users ORDER BY created_at, id LIMIT 1 OFFSET ?").bind(nth).first<{ id: string }>())!.id;
 
-/** A device chapter the server once issued, `daysAgo` days ago (its token long expired). */
-async function deviceChapter(question: string, daysAgo = 30): Promise<ServerChapter> {
-  const readingBody = { verdict: `${question}의 결론`, cards: [], action: { heading: "오늘", body: "해 볼 일" } };
-  const ctx = { kind: "tarot", templateId: "self-flow", input: { topicId: "money", question, conditions: [] }, cards: [["major-00", "upright"]] } as unknown as Parameters<typeof issueChapter>[0];
-  const chapterToken = await issueChapter(ctx, readingBody, [], signingSecret()!, T0 - daysAgo * DAY);
-  return { kind: "tarot", question, conditions: [], note: "", cards: [], reading: readingBody, chapterToken, createdAt: T0 - daysAgo * DAY, turns: [], followUpsLeft: 3 };
+const chapterOf = (question: string): ServerChapter => ({
+  kind: "tarot", question, conditions: [], note: "", cards: [], reading: { verdict: `${question}의 결론` }, chapterToken: "t", createdAt: T0, turns: [], followUpsLeft: 3,
+});
+
+async function saveFor(db: D1Binding, userId: string, question: string, now: number): Promise<string> {
+  const id = newReadingId();
+  await (await insertReadingStatement(db, accountSecret()!, { id, userId, productId: "tarot", source: "paid", unlockId: null, chapter: chapterOf(question), now })).run();
+  return id;
 }
 
-const claimOf = (b: Browser, chapters: Array<{ localId: string; chapter: unknown }>) => b.send(claim, "/api/readings/claim", { body: { chapters }, origin: true });
+type Page = { readings: Array<{ id: string; chapter: ServerChapter }>; next: string | null };
+const page = async (b: Browser, query = "") => (await (await b.send(list, `/api/readings${query}`)).json()) as Page;
 
 describe("readings in the account", () => {
-  it("lists only my saved readings", async () => {
+  it("lists only my saved readings, newest first, a page at a time", async () => {
     const db = useTestDb();
     const alice = browser("192.0.2.21");
     await loginAs(alice, "alice");
     vi.setSystemTime(T0 + 1_000); // bob signs up later, so alice is the first user
     const bob = browser("192.0.2.22");
     await loginAs(bob, "bob");
-    const chapter = await deviceChapter("내 질문", 0);
-    await (await insertReadingStatement(db, accountSecret()!, { id: newReadingId(), userId: await userIdOf(db), productId: "tarot", source: "paid", unlockId: null, chapter, now: T0 })).run();
-    const mine = (await (await alice.send(list, "/api/readings")).json()) as { readings: Array<{ chapter: ServerChapter }> };
-    expect(mine.readings.map((r) => r.chapter.question)).toEqual(["내 질문"]);
-    expect(((await (await bob.send(list, "/api/readings")).json()) as { readings: unknown[] }).readings).toEqual([]);
+    const aliceId = await userIdOf(db);
+    for (const [i, question] of ["하나", "둘", "셋"].entries()) await saveFor(db, aliceId, question, T0 + i);
+    const first = await page(alice, "?limit=2");
+    expect(first.readings.map((r) => r.chapter.question)).toEqual(["셋", "둘"]);
+    expect(first.next).not.toBeNull();
+    const second = await page(alice, `?limit=2&before=${encodeURIComponent(first.next!)}`);
+    expect(second).toMatchObject({ readings: [{ chapter: { question: "하나" } }], next: null });
+    expect(await page(bob)).toEqual({ readings: [], next: null });
     expect((await browser("192.0.2.23").send(list, "/api/readings")).status).toBe(401);
-  });
-
-  it("claims genuine device chapters, however old, once each", async () => {
-    const db = useTestDb();
-    const b = browser("192.0.2.24");
-    await loginAs(b);
-    const genuine = await deviceChapter("예전 질문", 40);
-    const forged = { ...(await deviceChapter("다른 질문")), chapterToken: "forged.token" };
-    const edited = { ...(await deviceChapter("고친 질문")), reading: { verdict: "내가 바꾼 결론" } };
-    const res = await claimOf(b, [
-      { localId: "local001", chapter: genuine },
-      { localId: "local002", chapter: forged },
-      { localId: "local003", chapter: edited },
-      { localId: "local004", chapter: { ...genuine, kind: "saju" } },
-    ]);
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { claimed: Array<{ localId: string; id: string }>; rejected: string[] };
-    expect(body.claimed).toEqual([{ localId: "local001", id: expect.stringMatching(/^[a-z0-9]{20}$/) }]);
-    expect(body.rejected).toEqual(["local002", "local003", "local004"]);
-    const again = (await (await claimOf(b, [{ localId: "local009", chapter: genuine }])).json()) as { claimed: Array<{ id: string }> };
-    expect(again.claimed[0]!.id).toBe(body.claimed[0]!.id);
-    const saved = await listReadings(db, accountSecret()!, await userIdOf(db));
-    expect(saved).toHaveLength(1);
-    expect(await db.prepare("SELECT source FROM readings").first()).toEqual({ source: "claimed" });
-  });
-
-  it("claims only from our own pages, signed in", async () => {
-    useTestDb();
-    const chapter = await deviceChapter("질문");
-    expect((await claimOf(browser("192.0.2.25"), [{ localId: "local001", chapter }])).status).toBe(401);
-    const b = browser("192.0.2.26");
-    await loginAs(b);
-    expect((await b.send(claim, "/api/readings/claim", { body: { chapters: [{ localId: "local001", chapter }] } })).status).toBe(403);
+    expect((await alice.send(list, "/api/readings?before=not-a-cursor")).status).toBe(200);
   });
 
   it("deletes my saved readings, one or all, never someone else's", async () => {
     const db = useTestDb();
     const alice = browser("192.0.2.27");
     await loginAs(alice, "alice");
+    vi.setSystemTime(T0 + 1_000);
     const bob = browser("192.0.2.28");
     await loginAs(bob, "bob");
-    const { claimed } = (await (await claimOf(alice, [{ localId: "local001", chapter: await deviceChapter("하나") }, { localId: "local002", chapter: await deviceChapter("둘") }])).json()) as { claimed: Array<{ id: string }> };
-    const del = (b: Browser, query: string) => b.send(remove, `/api/readings?${query}`, { method: "DELETE", origin: true });
-    expect(await (await del(bob, `id=${claimed[0]!.id}`)).json()).toEqual({ deleted: 0 });
-    expect(await (await del(alice, `id=${claimed[0]!.id}`)).json()).toEqual({ deleted: 1 });
+    const aliceId = await userIdOf(db);
+    const one = await saveFor(db, aliceId, "하나", T0);
+    await saveFor(db, aliceId, "둘", T0 + 1);
+    const del = (b: Browser, query: string, origin = true) => b.send(remove, `/api/readings?${query}`, { method: "DELETE", origin });
+    expect((await del(alice, `id=${one}`, false)).status).toBe(403);
+    expect(await (await del(bob, `id=${one}`)).json()).toEqual({ deleted: 0 });
+    expect(await (await del(alice, `id=${one}`)).json()).toEqual({ deleted: 1 });
     expect(await (await del(alice, "all=1")).json()).toEqual({ deleted: 1 });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM readings").first()).toEqual({ n: 0 });
   });
@@ -5257,9 +6354,9 @@ describe("readings in the account", () => {
     const answer = await b.send(followup, "/api/followup", { body: { chapterToken: opened.chapterToken, reading: opened.reading, question: "조금 더 알려 주세요", readingId: opened.readingId } });
     expect(answer.status).toBe(200);
     const { chapterToken, remaining } = (await answer.json()) as { chapterToken: string; remaining: number };
-    const [saved] = await listReadings(db, accountSecret()!, await userIdOf(db));
-    expect(saved?.chapter.turns).toHaveLength(1);
-    expect(saved?.chapter).toMatchObject({ chapterToken, followUpsLeft: remaining });
+    const { readings } = await listReadings(db, accountSecret()!, await userIdOf(db));
+    expect(readings[0]?.chapter.turns).toHaveLength(1);
+    expect(readings[0]?.chapter).toMatchObject({ chapterToken, followUpsLeft: remaining });
   });
 });
 ```
@@ -5267,25 +6364,9 @@ describe("readings in the account", () => {
 - [ ] **Step 2: Run it and see it fail**
 
 Run: `npx vitest run apps/web/app/api/readings/readings.test.ts`
-Expected: FAIL (route modules not found).
+Expected: FAIL (route module not found).
 
-- [ ] **Step 3: Add `chapterIsGenuine` to `apps/web/lib/security/chapterToken.ts`**
-
-```ts
-/**
- * The chapter's kind when `token` is a chapter token we signed for exactly this reading, however old;
- * null otherwise. Used to claim device-only chapters into an account. Expiry is not checked: an old
- * reading is still one we wrote.
- */
-export async function chapterIsGenuine(token: unknown, reading: unknown, secret: string): Promise<"tarot" | "saju" | null> {
-  const p = await verifyToken<ChapterPayload>(token, "chapter", secret, 0);
-  if (!p || p.v !== 1 || !p.ctx) return null;
-  if ((await readingDigest(reading)) !== p.h) return null;
-  return p.ctx.kind;
-}
-```
-
-- [ ] **Step 4: Write `apps/web/lib/readings/turns.ts`**
+- [ ] **Step 3: Write `apps/web/lib/readings/turns.ts`**
 
 ```ts
 import "server-only";
@@ -5314,7 +6395,7 @@ export async function saveFollowUpTurn(
 }
 ```
 
-- [ ] **Step 5: Wire the follow-up route.**
+- [ ] **Step 4: Wire the follow-up route.**
   - In `apps/web/lib/api/inputs.ts`, add to `FollowUpBody`:
 
 ```ts
@@ -5328,24 +6409,31 @@ export async function saveFollowUpTurn(
     if (body.data.readingId) await saveFollowUpTurn(request, gate.now, body.data.readingId, { question, answer: answer.answer }, chapterToken, remaining);
 ```
 
-  - Add the import `import { saveFollowUpTurn } from "@/lib/readings/turns";`.
+  - Add the import `import { saveFollowUpTurn } from "@/lib/readings/turns";`. Change nothing else in the route: its caps, `spend: "followup"` and the chapter-turn count stay as they are.
 
-- [ ] **Step 6: Write the routes**
-
-`apps/web/app/api/readings/route.ts`:
+- [ ] **Step 5: Write `apps/web/app/api/readings/route.ts`**
 
 ```ts
 import { openAccountRoute, requireSession } from "@/lib/account/request";
 import { errorResponse, json } from "@/lib/api/http";
-import { deleteAllReadings, deleteReading, listReadings } from "@/lib/readings/store";
+import { READINGS_PAGE, deleteAllReadings, deleteReading, listReadings } from "@/lib/readings/store";
 
-/** GET → the readings saved in my account, newest first (내 기록 merges them into this device). */
+/**
+ * GET [?before=<cursor>][&limit=n] → { readings, next }: the readings saved in my account, newest
+ * first, READINGS_PAGE at a time. 내 정보 and the result pages follow `next` (lib/storage/sync.ts).
+ * A cursor that does not parse starts from the newest.
+ */
 export async function GET(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "AUTH_LIMITER" });
   if (ctx instanceof Response) return ctx;
   const session = requireSession(ctx);
   if (session instanceof Response) return session;
-  return json({ readings: await listReadings(ctx.db, ctx.accountSecret, session.user.id) });
+  const params = new URL(request.url).searchParams;
+  const limit = Number(params.get("limit") ?? READINGS_PAGE);
+  return json(await listReadings(ctx.db, ctx.accountSecret, session.user.id, {
+    before: params.get("before") ?? undefined,
+    limit: Number.isInteger(limit) ? limit : READINGS_PAGE,
+  }));
 }
 
 /** DELETE ?id=<id> → removes one saved reading; ?all=1 → all of them (개인정보 파기 on request). */
@@ -5362,98 +6450,21 @@ export async function DELETE(request: Request): Promise<Response> {
 }
 ```
 
-`apps/web/app/api/readings/claim/route.ts`:
+AUTH_LIMITER allows 20 calls per minute per IP. A full pull of 300 readings is 6 pages, so 내 정보 and a result page sharing the limiter stay well inside it.
 
-```ts
-import { z } from "zod";
-import { openAccountRoute, requireSession } from "@/lib/account/request";
-import { errorResponse, json, readJson } from "@/lib/api/http";
-import { isConstraintError } from "@/lib/db/sqlErrors";
-import { countReadings, insertReadingStatement, newReadingId, readingIdByDigest, type ServerChapter } from "@/lib/readings/store";
-import { chapterIsGenuine } from "@/lib/security/chapterToken";
+- [ ] **Step 6: Run the tests**
 
-/** At most this many readings per account. */
-export const MAX_SAVED_READINGS = 300;
-
-const ClaimedChapter = z
-  .object({
-    kind: z.enum(["tarot", "saju"]),
-    reading: z.record(z.string(), z.unknown()),
-    chapterToken: z.string().min(1).max(32_768),
-    createdAt: z.number().int().nonnegative(),
-    turns: z.array(z.object({ question: z.string().max(400), answer: z.string().max(4_000) })).max(10).default([]),
-    followUpsLeft: z.number().int().min(0).max(10).default(0),
-  })
-  .passthrough();
-
-const ClaimBody = z.object({
-  chapters: z.array(z.object({ localId: z.string().regex(/^[a-z0-9]{6,32}$/), chapter: ClaimedChapter })).min(1).max(20),
-});
-
-/**
- * POST {chapters: [{localId, chapter}]} → moves device-only readings into the account, only when the
- * user asks (내 정보 > 계정에 보관하기).
- * - Accepted only when the chapter token is one we signed for exactly that reading; expiry is
- *   ignored.
- * - The same reading is kept once.
- * - 20 per call, 300 per account.
- */
-export async function POST(request: Request): Promise<Response> {
-  const ctx = await openAccountRoute(request, { limiter: "AUTH_LIMITER", write: true });
-  if (ctx instanceof Response) return ctx;
-  const session = requireSession(ctx);
-  if (session instanceof Response) return session;
-  const body = ClaimBody.safeParse(await readJson(request, 512_000));
-  if (!body.success) return errorResponse("BAD_REQUEST");
-  const userId = session.user.id;
-  const claimed: Array<{ localId: string; id: string }> = [];
-  const rejected: string[] = [];
-  for (const { localId, chapter } of body.data.chapters) {
-    const kind = await chapterIsGenuine(chapter.chapterToken, chapter.reading, ctx.secret);
-    if (!kind || kind !== chapter.kind) {
-      rejected.push(localId);
-      continue;
-    }
-    const existing = await readingIdByDigest(ctx.db, userId, chapter.reading);
-    if (existing) {
-      claimed.push({ localId, id: existing });
-      continue;
-    }
-    if ((await countReadings(ctx.db, userId)) >= MAX_SAVED_READINGS) {
-      rejected.push(localId);
-      continue;
-    }
-    const { id: _localId, serverId: _serverId, ...rest } = chapter as Record<string, unknown>;
-    const id = newReadingId();
-    try {
-      const insert = await insertReadingStatement(ctx.db, ctx.accountSecret, { id, userId, productId: kind, source: "claimed", unlockId: null, chapter: rest as ServerChapter, now: ctx.now });
-      await insert.run();
-      claimed.push({ localId, id });
-    } catch (error) {
-      if (!isConstraintError(error)) throw error;
-      const raced = await readingIdByDigest(ctx.db, userId, chapter.reading);
-      if (raced) claimed.push({ localId, id: raced });
-      else rejected.push(localId);
-    }
-  }
-  console.info(JSON.stringify({ evt: "readings.claimed", claimed: claimed.length, rejected: rejected.length }));
-  return json({ claimed, rejected });
-}
-```
-
-- [ ] **Step 7: Run the tests**
-
-Run: `npx vitest run apps/web/app/api apps/web/lib/security apps/web/lib/readings`
-Expected: PASS (readings.test 5 tests; follow-up and security suites unchanged).
+Run: `npx vitest run apps/web/app/api apps/web/lib/readings`
+Expected: PASS (readings.test 3 tests; the follow-up suites unchanged).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add apps/web/app/api/readings apps/web/lib/readings/turns.ts apps/web/lib/security/chapterToken.ts apps/web/lib/api/inputs.ts apps/web/app/api/followup/route.ts
-git commit -m "feat(readings): list, claim and delete account readings; follow-ups saved there too" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git add apps/web/app/api/readings apps/web/lib/readings/turns.ts apps/web/lib/api/inputs.ts apps/web/app/api/followup/route.ts
+git commit -m "feat(readings): paged account readings, delete, follow-ups saved there too" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -5467,21 +6478,34 @@ git commit -m "feat(readings): list, claim and delete account readings; follow-u
 
 **Interfaces:**
 - Consumes:
-  - Task 3: `openAccountRoute`, `requireSession`, `CLEAR_SESSION`, `redirectTo`.
-  - Task 4: `walletSummary`, `forfeitStatements`, `Lot`.
-  - Task 5: `issueOAuthState`, `openOAuthState`, `CLEAR_OAUTH`, `kakaoLogin`, `kakaoUnlink`, `kakaoKey`, `loginKakaoUser`, `grantSignupGift`, `createSession`.
-  - Task 6: `tossClient`, `mockToss`. Task 7: `orderForUser`, `buy`. Task 8: `refundUnusedOrder`.
-  - Task 9: `insertReadingStatement`. P3's `owners` table (0001_bonds.sql, ON DELETE CASCADE to invites and constellations, and through those to stars).
+  - Task 3: `openAccountRoute`, `requireSession`, `CLEAR_SESSION`, `redirectTo`, `loginKakaoUser`, `userByKakaoKey`.
+  - Task 4: `walletSummary`, `forfeitStatements`, `sweepUser`, `reserveUnlock` (tests), `Lot`.
+  - Task 5: `issueOAuthState`, `openOAuthState`, `CLEAR_OAUTH`, `kakaoLogin`, `kakaoUnlink`, `kakaoConfigProblems`, `kakaoKey`, `grantSignupGift`, `createSession`.
+  - Task 6: `tossClient`, `mockToss`. Task 7: `orderForUser`, `reconcileConfirming`, `OrderRow`, `buy`. Task 8: `refundUnusedOrder`, `reconcileRefunding`.
 - Produces:
   - `deletion.ts`:
-    - `DELETE_INTENT_TTL_MS`, `GIFT_CLAIM_KEEP_MS`
+    - `DELETE_INTENT_TTL_MS`
     - `issueDeleteIntent(sessionId, secret, now): Promise<string>`, `deleteIntentFor(token, sessionId, secret, now): Promise<boolean>`
-    - `type DeleteOutcome = {ok: true; refunded: number} | {ok: false; code: "REFUND_FAILED"}`
+    - `type DeleteOutcome = {ok: true; refunded: number} | {ok: false; code: "PENDING" | "IN_USE" | "REFUND_FAILED"}`
     - `deleteAccount(db, toss, {userId, now}): Promise<DeleteOutcome>`
+    - `eraseDeletedAccount(db, userId, now): Promise<boolean>` (also run by the Cron Trigger, Task 13)
   - `POST /api/account/delete-intent` → `{ url: "/api/auth/kakao/start?purpose=delete&intent=…" }`
   - `GET /api/auth/kakao/start?purpose=delete&intent=…` → Kakao re-check. The callback ends at:
     - `/me?account=deleted` (session cookie cleared), or
-    - `/me?delete=failed|mismatch|refund-failed|cancel`.
+    - `/me?delete=failed|mismatch|refund-failed|pending|in-use|cancel|unavailable`.
+
+**Order of the deletion (M3):**
+1. Settle what is in flight:
+   - this account's stale reservations are swept;
+   - its `confirming` orders are looked up at Toss now;
+   - its `refunding` orders are reconciled (after their 10-minute wait, Task 8).
+2. Refuse while an order is still `confirming` or `refunding` (`pending`), or a reading is being opened (`in-use`). The user tries again later; the page says when.
+3. Refund every unopened purchase. Any failure stops here and nothing is deleted.
+4. Mark the account deleted with one guarded statement. It runs only if nothing is reserved, no order is in flight and no unopened paid reading is left: a payment that slipped in between makes it `pending`.
+   - From this moment nothing is granted, reserved or saved for the account (Tasks 4, 7, 9).
+   - A payment that still arrives is cancelled (Task 8).
+5. Erase personal data in one batch (`eraseDeletedAccount`). If the worker dies between 4 and 5, the Cron Trigger finishes it (Task 13), and the next login with that Kakao account is refused until then (Task 3).
+- The P3 인연 link is out of P4 (scope cut), so deletion touches no P3 table.
 
 - [ ] **Step 1: Write the failing test** — `apps/web/app/api/account/deletion.test.ts`
 
@@ -5490,6 +6514,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { accountSecret } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
+import { reserveUnlock } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
 import { insertReadingStatement, newReadingId } from "@/lib/readings/store";
@@ -5497,6 +6522,8 @@ import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { GET as callback } from "../auth/kakao/callback/route";
 import { GET as start } from "../auth/kakao/start/route";
+import { POST as confirm } from "../pay/confirm/route";
+import { POST as ordersPost } from "../pay/orders/route";
 import { POST as deleteIntent } from "./delete-intent/route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
@@ -5537,42 +6564,33 @@ async function deleteAs(b: Browser, kakaoUser: string): Promise<string> {
 }
 
 const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
+const userIdOf = async (db: D1Binding) => (await db.prepare("SELECT id FROM users ORDER BY created_at LIMIT 1").first<{ id: string }>())!.id;
 
 describe("account deletion", () => {
   it("re-checks with Kakao, refunds unopened purchases, erases personal data and keeps a tombstone", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
     const orderId = await buy(b);
-    const userId = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!.id;
-    const chapter = { kind: "tarot", question: "지울 질문", reading: { verdict: "v" }, chapterToken: "t", createdAt: T0, turns: [], followUpsLeft: 3 };
+    const userId = await userIdOf(db);
+    const chapter = { kind: "tarot" as const, question: "지울 질문", reading: { verdict: "v" }, chapterToken: "t", createdAt: T0, turns: [], followUpsLeft: 3 };
     await (await insertReadingStatement(db, accountSecret()!, { id: newReadingId(), userId, productId: "tarot", source: "paid", unlockId: null, chapter, now: T0 })).run();
 
     expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
     expect(b.jar.has("sl_sid")).toBe(false);
-    expect(await one(db, "SELECT kakao_key, nickname, deleted_at FROM users")).toEqual({ kakao_key: null, nickname: null, deleted_at: T0 });
+    expect(await one(db, "SELECT kakao_key, nickname, deleted_at, erased_at FROM users")).toEqual({ kakao_key: null, nickname: null, deleted_at: T0, erased_at: T0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM sessions")).toEqual({ n: 0 });
     expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunded" });
     expect((await mockToss.getPaymentByOrder(orderId)).status).toBe("CANCELED");
     expect(await one(db, "SELECT status, units_left FROM credit_lots WHERE currency = 'free'")).toEqual({ status: "revoked", units_left: 0 });
-    expect(await one(db, "SELECT COUNT(*) AS n FROM gift_claims")).toEqual({ n: 1 });
+    expect(await one(db, "SELECT account_deleted_at FROM gift_claims")).toEqual({ account_deleted_at: T0 });
     expect((await me(b)).user).toBeNull();
 
-    // Signing up again with the same Kakao account makes a new account, without a second gift.
+    // Joining again with the same Kakao account makes a new account, without a second gift.
     await loginAs(b, "alice");
     expect((await me(b)).user?.stardust).toBe(0);
     expect(await one(db, "SELECT COUNT(*) AS n FROM users")).toEqual({ n: 2 });
-  });
-
-  it("deletes the linked 인연 owner with its constellations", async () => {
-    const db = useTestDb();
-    const b = await loggedIn("alice");
-    await db.prepare("INSERT INTO owners (id, nickname, ranking_public, basis_json, created_at) VALUES ('owner_alice_0000001', '앨리스', 1, '{}', 0)").run();
-    await db.prepare("INSERT INTO constellations (id, owner_id, sign, status, total, started_at) VALUES ('c1', 'owner_alice_0000001', 'aries', 'filling', 0, 0)").run();
-    await db.prepare("UPDATE users SET bonds_owner_id = 'owner_alice_0000001'").run();
-    expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
-    expect(await one(db, "SELECT COUNT(*) AS n FROM owners")).toEqual({ n: 0 });
-    expect(await one(db, "SELECT COUNT(*) AS n FROM constellations")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT account_deleted_at FROM gift_claims")).toEqual({ account_deleted_at: null });
   });
 
   it("cannot be started by a link, another session, or another site", async () => {
@@ -5593,13 +6611,32 @@ describe("account deletion", () => {
     expect((await me(b)).user).not.toBeNull();
   });
 
-  it("deletes nothing when a refund fails", async () => {
+  it("deletes nothing when a refund is refused", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
     const orderId = await buy(b);
-    vi.spyOn(mockToss, "cancel").mockRejectedValueOnce(new TossError(403, "NOT_CANCELABLE_PAYMENT", "취소 할 수 없는 결제 입니다."));
+    mockToss.failNext("cancel", new TossError(403, "NOT_CANCELABLE_PAYMENT", "취소 할 수 없는 결제 입니다."));
     expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=refund-failed");
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
+  });
+
+  it("waits while a payment is still being confirmed", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    const { orderId } = (await (await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true }, origin: true })).json()) as { orderId: string };
+    mockToss.failNext("confirm", new TossError(409, "IDEMPOTENT_REQUEST_PROCESSING", "이전 요청이 처리 중입니다."));
+    expect((await b.send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_busy", orderId, amount: 2900 }, origin: true })).status).toBe(409);
+    expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=pending");
+    expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
+  });
+
+  it("waits while a reading is being opened", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "free", units: 10, now: T0 });
+    expect(reserved.ok).toBe(true);
+    expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=in-use");
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
   });
 });
@@ -5615,16 +6652,14 @@ Expected: FAIL (`./delete-intent/route` not found).
 ```ts
 import "server-only";
 import type { D1Binding } from "@/lib/db/d1";
-import { forfeitStatements, walletSummary, type Lot } from "@/lib/pay/ledger";
-import { orderForUser } from "@/lib/pay/orders";
-import { refundUnusedOrder } from "@/lib/pay/refunds";
+import { forfeitStatements, sweepUser, walletSummary, type Lot } from "@/lib/pay/ledger";
+import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
+import { reconcileRefunding, refundUnusedOrder } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
 import { signToken, verifyToken, type SignedPayload } from "@/lib/security/sign";
 
 /** How long the deletion intent from 내 정보 is good for. */
 export const DELETE_INTENT_TTL_MS = 5 * 60 * 1000;
-/** Gift claims of deleted accounts are kept this long (no second signup gift), then purged. */
-export const GIFT_CLAIM_KEEP_MS = 365 * 24 * 60 * 60 * 1000;
 
 interface DeleteIntentPayload extends SignedPayload {
   k: "delete-intent";
@@ -5646,20 +6681,31 @@ export async function deleteIntentFor(token: string | null, sessionId: string, s
   return payload?.sid === sessionId;
 }
 
-export type DeleteOutcome = { ok: true; refunded: number } | { ok: false; code: "REFUND_FAILED" };
+export type DeleteOutcome = { ok: true; refunded: number } | { ok: false; code: "PENDING" | "IN_USE" | "REFUND_FAILED" };
+
+const IN_FLIGHT = "('confirming', 'refunding')";
+
+async function count(db: D1Binding, sql: string, userId: string): Promise<number> {
+  return (await db.prepare(sql).bind(userId).first<{ n: number }>())?.n ?? 0;
+}
 
 /**
- * 회원 탈퇴 (spec 5.8).
- * 1. Refund every unopened purchase first. Any failure stops here and nothing is deleted.
- * 2. Then, in one batch:
- *    - forfeit the remaining 별조각 (ledger rows kept);
- *    - delete the saved readings and sessions;
- *    - delete the linked P3 인연 owner (its invites, constellations and stars cascade);
- *    - blank the user row to a tombstone: orders, payments and the ledger are kept 5 years by law.
- * 3. Gift claims of accounts deleted over a year ago are purged on the way.
+ * 회원 탈퇴 (spec 5.8, M3): settle what is in flight, refuse while anything still is, refund every
+ * unopened purchase, mark the account deleted with one guarded statement, then erase.
  */
 export async function deleteAccount(db: D1Binding, toss: TossClient | null, input: { userId: string; now: number }): Promise<DeleteOutcome> {
   const { userId, now } = input;
+  await sweepUser(db, userId, now);
+  if (toss) {
+    const { results } = await db.prepare(`SELECT * FROM orders WHERE user_id = ? AND status IN ${IN_FLIGHT}`).bind(userId).all<OrderRow>();
+    for (const order of results) {
+      if (order.status === "confirming") await reconcileConfirming(db, toss, order, now, { force: true });
+      else await reconcileRefunding(db, toss, order, now);
+    }
+  }
+  if (await count(db, `SELECT COUNT(*) AS n FROM orders WHERE user_id = ? AND status IN ${IN_FLIGHT}`, userId)) return { ok: false, code: "PENDING" };
+  if (await count(db, "SELECT COUNT(*) AS n FROM unlocks WHERE user_id = ? AND status = 'reserved'", userId)) return { ok: false, code: "IN_USE" };
+
   const wallet = await walletSummary(db, userId, now);
   let refunded = 0;
   for (const { orderId } of wallet.unused) {
@@ -5667,29 +6713,65 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
     const outcome = order && toss ? await refundUnusedOrder(db, toss, { order, reason: "회원 탈퇴: 열지 않은 풀이 환불", now }) : null;
     if (!outcome?.ok) {
       console.warn(JSON.stringify({ evt: "account.delete_refund_failed", orderId }));
-      return { ok: false, code: "REFUND_FAILED" };
+      return { ok: false, code: outcome && !outcome.ok && outcome.code === "PAY_PENDING" ? "PENDING" : "REFUND_FAILED" };
     }
     refunded++;
   }
-  const user = await db.prepare("SELECT bonds_owner_id FROM users WHERE id = ?").bind(userId).first<{ bonds_owner_id: string | null }>();
+
+  // One guarded statement: nothing reserved, nothing in flight, no unopened paid reading left.
+  const marked = await db
+    .prepare(
+      `UPDATE users SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL
+         AND NOT EXISTS (SELECT 1 FROM unlocks WHERE user_id = ? AND status = 'reserved')
+         AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = ? AND status IN ${IN_FLIGHT})
+         AND NOT EXISTS (SELECT 1 FROM credit_lots WHERE user_id = ? AND currency = 'paid' AND status = 'active' AND units_left > 0 AND units_left = units_total)
+       RETURNING id`,
+    )
+    .bind(now, userId, userId, userId, userId)
+    .first();
+  if (!marked) {
+    const inUse = await count(db, "SELECT COUNT(*) AS n FROM unlocks WHERE user_id = ? AND status = 'reserved'", userId);
+    return { ok: false, code: inUse ? "IN_USE" : "PENDING" };
+  }
+  await eraseDeletedAccount(db, userId, now);
+  console.info(JSON.stringify({ evt: "account.deleted", refunded }));
+  return { ok: true, refunded };
+}
+
+const DELETED = "EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NOT NULL)";
+
+/**
+ * Erases a deleted account's personal data in one batch, keeping what the law keeps:
+ * - the remaining 별조각 are forfeited (their ledger rows stay);
+ * - saved readings and sessions are deleted;
+ * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
+ * - orders that never reached Toss are closed;
+ * - kakao_key and nickname are blanked and erased_at set.
+ * Orders, payments, lots and the ledger stay 5 years under the tombstone (전자상거래법 제6조).
+ * Idempotent; only for an account already marked deleted. True when this call erased it.
+ */
+export async function eraseDeletedAccount(db: D1Binding, userId: string, now: number): Promise<boolean> {
   const { results: freeLots } = await db
     .prepare("SELECT * FROM credit_lots WHERE user_id = ? AND currency = 'free' AND status = 'active' AND units_left > 0")
     .bind(userId)
     .all<Lot>();
-  await db.batch([
+  const results = await db.batch([
     ...freeLots.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
-    db.prepare("DELETE FROM readings WHERE user_id = ?").bind(userId),
-    db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
-    ...(user?.bonds_owner_id ? [db.prepare("DELETE FROM owners WHERE id = ?").bind(user.bonds_owner_id)] : []),
-    db.prepare("UPDATE users SET kakao_key = NULL, nickname = NULL, bonds_owner_id = NULL, deleted_at = ? WHERE id = ?").bind(now, userId),
+    db.prepare(`DELETE FROM readings WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
+    db.prepare(`DELETE FROM sessions WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db
-      .prepare("DELETE FROM gift_claims WHERE claimed_at < ? AND kakao_key NOT IN (SELECT kakao_key FROM users WHERE kakao_key IS NOT NULL)")
-      .bind(now - GIFT_CLAIM_KEEP_MS),
+      .prepare(`UPDATE gift_claims SET account_deleted_at = ? WHERE kakao_key = (SELECT kakao_key FROM users WHERE id = ? AND deleted_at IS NOT NULL)`)
+      .bind(now, userId),
+    db
+      .prepare(`UPDATE orders SET status = 'failed', fail_code = 'ACCOUNT_DELETED', updated_at = ? WHERE user_id = ? AND status = 'created' AND ${DELETED}`)
+      .bind(now, userId, userId),
+    db.prepare("UPDATE users SET kakao_key = NULL, nickname = NULL, erased_at = ? WHERE id = ? AND deleted_at IS NOT NULL AND erased_at IS NULL").bind(now, userId),
   ]);
-  console.info(JSON.stringify({ evt: "account.deleted", refunded }));
-  return { ok: true, refunded };
+  return results[results.length - 1]?.meta?.changes === 1;
 }
 ```
+
+The `NOT EXISTS` on unopened paid lots matches `units_left = units_total`: a lot of a reading already opened (0 left) does not block deletion.
 
 - [ ] **Step 4: Write `apps/web/app/api/account/delete-intent/route.ts`**
 
@@ -5709,7 +6791,7 @@ export async function POST(request: Request): Promise<Response> {
 }
 ```
 
-- [ ] **Step 5: Accept the delete purpose in `apps/web/app/api/auth/kakao/start/route.ts`.** Right after the `kakaoConfigProblems` check, and before the `salesOpen` check, insert the block below. A deletion is always allowed, whatever STARLOG_PAYMENTS says. Move the `salesOpen` check below this block.
+- [ ] **Step 5: Accept the delete purpose in `apps/web/app/api/auth/kakao/start/route.ts`.** Right after the `kakaoConfigProblems` check, and before the `loginOpen` check, insert the block below. A deletion is always allowed, whatever STARLOG_PAYMENTS says. Move the `loginOpen` check below this block.
 
 ```ts
   if (url.searchParams.get("purpose") === "delete") {
@@ -5728,30 +6810,33 @@ export async function POST(request: Request): Promise<Response> {
 
 Import `deleteIntentFor` from `@/lib/account/deletion`. The `kakaoConfigProblems` check must run first, so a deletion without Kakao keys ends at `?login=unavailable` on `/`.
 
-- [ ] **Step 6: Replace `apps/web/app/api/auth/kakao/callback/route.ts`** with the version that also handles deletion:
+- [ ] **Step 6: Replace `apps/web/app/api/auth/kakao/callback/route.ts`** with the version that also handles deletion. It keeps every login rule from Task 5.
 
 ```ts
 import type { CookieSpec } from "@/lib/api/http";
 import { deleteAccount } from "@/lib/account/deletion";
-import { KakaoError, kakaoLogin, kakaoUnlink } from "@/lib/account/kakao";
+import { KakaoError, kakaoConfigProblems, kakaoLogin, kakaoUnlink } from "@/lib/account/kakao";
 import { CLEAR_OAUTH, OAUTH_COOKIE, openOAuthState } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute, type AccountContext } from "@/lib/account/request";
 import { kakaoKey } from "@/lib/account/secrets";
 import { CLEAR_SESSION, createSession, revokeSession } from "@/lib/account/session";
-import { loginKakaoUser } from "@/lib/account/users";
+import { loginKakaoUser, userByKakaoKey } from "@/lib/account/users";
 import { SITE } from "@/lib/config";
 import { grantSignupGift } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { tossClient } from "@/lib/pay/toss";
 
+type Back = (flag: string, cookies?: Array<CookieSpec | string>) => Response;
+
 /**
- * GET ?code&state (or ?error&state) from Kakao. The state must match this browser's sl_oauth cookie.
- * - login: find or create the account. A new account gets the signup gift while sales are open,
- *   once per Kakao account. Start a session and return with ?login=ok|cancel|failed.
- * - delete: the same Kakao account as the session must answer. Then unopened purchases are
- *   refunded, personal data is erased, the app is unlinked from Kakao, and we land on
- *   /me?account=deleted (spec 5.8).
+ * GET ?code&state (or ?error&state) from Kakao. The state must match this browser's sl_oauth cookie,
+ * and the Kakao settings are checked again before the code is used.
+ * - login: find the account, or create one while sales are open for this device (paused: existing
+ *   accounts only, else ?login=closed). While sales are open the signup gift is tried on every login
+ *   (once per Kakao account). Start a session and return with ?login=ok|cancel|failed.
+ * - delete: the same Kakao account as the session must answer. Then deleteAccount() settles,
+ *   refunds and erases, the app is unlinked from Kakao, and we land on /me?account=deleted (spec 5.8).
  */
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -5760,13 +6845,18 @@ export async function GET(request: Request): Promise<Response> {
   const intent = await openOAuthState(ctx.cookies[OAUTH_COOKIE], url.searchParams.get("state"), ctx.secret, ctx.now);
   if (!intent) return redirectTo(request, "/", { login: "failed" }, [CLEAR_OAUTH]);
   const deleting = intent.purpose === "delete";
-  const back = (flag: string, cookies: Array<CookieSpec | string> = []) =>
+  const back: Back = (flag, cookies = []) =>
     deleting
       ? redirectTo(request, "/me", { delete: flag }, [CLEAR_OAUTH, ...cookies])
       : redirectTo(request, intent.returnTo, { login: flag }, [CLEAR_OAUTH, ...cookies]);
   if (url.searchParams.get("error")) return back("cancel");
   const code = url.searchParams.get("code");
   if (!code) return back("failed");
+  const problems = kakaoConfigProblems();
+  if (problems.length) {
+    console.error(JSON.stringify({ evt: "config.kakao_invalid", problems }));
+    return back("unavailable");
+  }
 
   let login: Awaited<ReturnType<typeof kakaoLogin>>;
   try {
@@ -5779,35 +6869,27 @@ export async function GET(request: Request): Promise<Response> {
   return deleting ? finishDelete(request, ctx, intent.sid, key, login.accessToken, back) : finishLogin(ctx, key, login.profile.nickname, intent.age, back);
 }
 
-async function finishLogin(
-  ctx: AccountContext,
-  key: string,
-  nickname: string,
-  age: boolean,
-  back: (flag: string, cookies?: Array<CookieSpec | string>) => Response,
-): Promise<Response> {
-  const { user, created } = await loginKakaoUser(ctx.db, { key, nickname, ageConfirmed: age, now: ctx.now });
-  const gifted = created && salesOpen(paymentsMode(), ctx.owner)
-    ? await grantSignupGift(ctx.db, { userId: user.id, kakaoKey: key, units: SITE.price.signupGiftFree, now: ctx.now })
-    : false;
+async function finishLogin(ctx: AccountContext, key: string, nickname: string, age: boolean, back: Back): Promise<Response> {
+  const open = salesOpen(paymentsMode(), ctx.owner);
+  if (!open && !(await userByKakaoKey(ctx.db, key))) return back("closed");
+  const account = await loginKakaoUser(ctx.db, { key, nickname, ageConfirmed: age, now: ctx.now });
+  if (!account) {
+    console.warn(JSON.stringify({ evt: "auth.account_still_erasing" }));
+    return back("failed");
+  }
+  const { user, created } = account;
+  const gifted = open ? await grantSignupGift(ctx.db, { userId: user.id, kakaoKey: key, units: SITE.price.signupGiftFree, now: ctx.now }) : false;
   if (ctx.session) await revokeSession(ctx.db, ctx.session.id, ctx.now);
   const session = await createSession(ctx.db, user.id, ctx.secret, ctx.now);
   console.info(JSON.stringify({ evt: "auth.login", created, gifted }));
   return back("ok", [session.cookie]);
 }
 
-async function finishDelete(
-  request: Request,
-  ctx: AccountContext,
-  sid: string | undefined,
-  key: string,
-  accessToken: string,
-  back: (flag: string, cookies?: Array<CookieSpec | string>) => Response,
-): Promise<Response> {
+async function finishDelete(request: Request, ctx: AccountContext, sid: string | undefined, key: string, accessToken: string, back: Back): Promise<Response> {
   if (!ctx.session || ctx.session.id !== sid) return back("failed");
   if (ctx.session.user.kakao_key !== key) return back("mismatch");
   const outcome = await deleteAccount(ctx.db, tossClient(), { userId: ctx.session.user.id, now: ctx.now });
-  if (!outcome.ok) return back("refund-failed");
+  if (!outcome.ok) return back(outcome.code === "PENDING" ? "pending" : outcome.code === "IN_USE" ? "in-use" : "refund-failed");
   if (!(await kakaoUnlink(accessToken))) console.warn(JSON.stringify({ evt: "auth.kakao_unlink_failed" }));
   return redirectTo(request, "/me", { account: "deleted" }, [CLEAR_OAUTH, CLEAR_SESSION]);
 }
@@ -5816,7 +6898,7 @@ async function finishDelete(
 - [ ] **Step 7: Run the tests**
 
 Run: `npx vitest run apps/web/app/api`
-Expected: PASS (deletion.test 5 tests; auth.test still 8).
+Expected: PASS (deletion.test 6 tests; auth.test still 11).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
@@ -5825,45 +6907,69 @@ Expected: exit 0.
 
 ```bash
 git add apps/web/lib/account/deletion.ts apps/web/app/api/account apps/web/app/api/auth/kakao/start/route.ts apps/web/app/api/auth/kakao/callback/route.ts
-git commit -m "feat(account): deletion after a Kakao re-check; refunds first, then erase, keep a tombstone" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat(account): deletion after a Kakao re-check; settle in-flight payments, refund, mark, erase" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 13: Bonds identity link (after P3 Task 6)
-
-**Precondition:** P3 Task 6 is committed: `apps/web/lib/bonds/identity.ts` exports `OWNER_ID_COOKIE`, `readOwnerId(cookies, secret)` and `ensureOwnerId`, with the private `idCookie(name, kind, id, secret)`. If it is not committed yet, stop and report.
+### Task 13: Scheduled maintenance (Cron Trigger)
 
 **Files:**
-- Create: `apps/web/lib/account/bondsLink.ts`
-- Modify:
-  - `apps/web/lib/bonds/identity.ts` (P3's file): add the export `ownerIdCookie` only; change nothing else.
-  - `apps/web/app/api/auth/kakao/callback/route.ts`: link at login, clear `sl_uid` at deletion.
-- Test: `apps/web/app/api/account/bondsLink.test.ts`
+- Create: `apps/web/lib/pay/maintenance.ts`, `apps/web/app/api/internal/maintenance/route.ts`, `apps/web/worker.mjs`
+- Modify: `apps/web/wrangler.jsonc` (`main`, `triggers`), `apps/web/.env.example` (already lists `STARLOG_CRON_SECRET`, Task 2)
+- Test: `apps/web/app/api/internal/maintenance/maintenance.test.ts`
 
 **Interfaces:**
-- Consumes: P3 `readOwnerId`, `OWNER_ID_COOKIE`, `idCookie`; `setCookie` from `lib/api/http.ts`; `UserRow` (Task 3); the callback's `finishLogin`/`finishDelete` (Task 12); `isConstraintError`.
+- Consumes:
+  - Task 4: `sweepStale`. Task 7: `reconcileConfirming`, `RECONCILE_AFTER_MS`, `OrderRow`.
+  - Task 8: `reconcileRefunding`, `REFUND_RECONCILE_AFTER_MS`. Task 12: `eraseDeletedAccount`.
+  - `accountDb`, `tossClient`, `safeEqual`, `json`, `errorResponse`.
 - Produces:
-  - `identity.ts`: `ownerIdCookie(id: string, secret: string): Promise<string>` (a Set-Cookie value)
-  - `bondsLink.ts`: `linkBondsOwner(db, cookies, secret, user): Promise<string | null>`, `clearOwnerIdCookie(): string`
+  - `maintenance.ts`:
+    - `GIFT_CLAIM_KEEP_MS` (365 days), `RECORD_KEEP_MS` (5 years and a day of margin, 1,827 days)
+    - `interface MaintenanceReport { confirming; refunding; released; expired; erased; sessions; giftClaims; purgedAccounts }`
+    - `runMaintenance(db, toss, now): Promise<MaintenanceReport>`
+  - `POST /api/internal/maintenance` with `Authorization: Bearer <STARLOG_CRON_SECRET>` → the report. 403 for anyone else; 503 without the secret or D1.
+  - `apps/web/worker.mjs`: OpenNext's `fetch` plus `scheduled`, which calls the route above through the app's own fetch handler.
+  - Cron: `*/10 * * * *`.
 
-- [ ] **Step 1: Write the failing test** — `apps/web/app/api/account/bondsLink.test.ts`
+**Why a route instead of importing the work into `worker.mjs`:**
+- The app code imports `server-only`. That package throws outside the react-server build condition, which a hand-written worker entry is not bundled under.
+- Calling `handler.fetch()` with an internal request runs the work through the same Next bundle, bindings and env as any request.
+- The bearer secret keeps it private, and the work is the same code the request paths already use.
+
+**What a run does (each step bounded, so one run stays well inside the Workers time limit):**
+1. Up to 50 `confirming` orders older than 30 s: `reconcileConfirming` (Toss look-up).
+2. Up to 50 `refunding` orders older than 10 minutes: `reconcileRefunding`. This covers refunds whose answer was lost and payments for deleted accounts (orphans).
+3. `sweepStale`: every account's stale reservations back, expired 별조각 out (100 each).
+4. Up to 50 accounts marked deleted but not erased (a deletion cut short): `eraseDeletedAccount`.
+5. Purges (minors 3 and 11):
+   - expired or revoked sessions (500 per run);
+   - gift claims whose account was deleted more than a year ago (500 per run);
+   - erased accounts with no order younger than 5 years: their ledger, unlocks, lots, payments, orders and tombstone (20 per run). Live accounts keep their history. Their gift claim follows its own one-year rule.
+
+- [ ] **Step 1: Write the failing test** — `apps/web/app/api/internal/maintenance/maintenance.test.ts`
 
 ```ts
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OWNER_ID_COOKIE, ownerIdCookie, readOwnerId } from "@/lib/bonds/identity";
+import { accountSecret } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
+import { RESERVATION_MS, reserveUnlock } from "@/lib/pay/ledger";
+import { GIFT_CLAIM_KEEP_MS, RECORD_KEEP_MS } from "@/lib/pay/maintenance";
 import { mockToss } from "@/lib/pay/tossMock";
+import { TossError } from "@/lib/pay/tossTypes";
+import { insertReadingStatement, newReadingId } from "@/lib/readings/store";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { signingSecret } from "@/lib/security/sign";
-import { browser, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
-import { GET as callback } from "../auth/kakao/callback/route";
-import { GET as start } from "../auth/kakao/start/route";
-import { POST as deleteIntent } from "./delete-intent/route";
+import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
+import { POST as confirm } from "../../pay/confirm/route";
+import { POST as ordersPost } from "../../pay/orders/route";
+import { POST as refund } from "../../pay/refund/route";
+import { POST as maintenance } from "./route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
-const OWNER = "owner_device_000001";
+const MIN = 60_000;
+const CRON = "cron-secret-for-tests-0123456789abcdef";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -5871,9 +6977,11 @@ beforeEach(() => {
   vi.stubEnv("STARLOG_PAYMENTS", "on");
   vi.stubEnv("STARLOG_KAKAO", "mock");
   vi.stubEnv("STARLOG_PAY", "mock");
+  vi.stubEnv("STARLOG_CRON_SECRET", CRON);
   resetMemoryLimiter();
   mockToss.reset();
   vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -5883,135 +6991,308 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function withOwner(db: D1Binding, b: Browser, id = OWNER) {
-  await db.prepare("INSERT OR IGNORE INTO owners (id, nickname, ranking_public, basis_json, created_at) VALUES (?, '별', 1, '{}', 0)").bind(id).run();
-  const [pair = ""] = (await ownerIdCookie(id, signingSecret()!)).split(";");
-  b.jar.set(OWNER_ID_COOKIE, pair.slice(pair.indexOf("=") + 1));
+const run = (token: string | null = CRON) =>
+  maintenance(new Request("https://starlog.yeolmaeapps.kr/api/internal/maintenance", { method: "POST", headers: token === null ? {} : { authorization: `Bearer ${token}` } }));
+const report = async () => (await (await run()).json()) as Record<string, number>;
+const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
+
+async function loggedIn(name = "alice", ip = "198.51.100.40"): Promise<Browser> {
+  const b = browser(ip);
+  await loginAs(b, name);
+  return b;
 }
 
-const deviceOwner = (b: Browser) => readOwnerId(Object.fromEntries([...b.jar].map(([k, v]) => [k, decodeURIComponent(v)])), signingSecret()!);
-const linked = async (db: D1Binding) => (await db.prepare("SELECT bonds_owner_id FROM users ORDER BY created_at LIMIT 1").first<{ bonds_owner_id: string | null }>())!.bonds_owner_id;
+async function newOrder(b: Browser): Promise<string> {
+  return ((await (await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true }, origin: true })).json()) as { orderId: string }).orderId;
+}
 
-describe("인연 owner and the account", () => {
-  it("adopts this device's owner at login and brings it to a new device", async () => {
+describe("the Cron Trigger's route", () => {
+  it("runs only for the Cron Trigger's bearer secret", async () => {
+    useTestDb();
+    expect((await run(null)).status).toBe(403);
+    expect((await run("wrong-secret-0123456789abcdef-0123")).status).toBe(403);
+    expect((await run()).status).toBe(200);
+    vi.stubEnv("STARLOG_CRON_SECRET", "");
+    expect((await run()).status).toBe(503);
+  });
+});
+
+describe("maintenance", () => {
+  it("settles a payment Toss approved while nobody was asking", async () => {
     const db = useTestDb();
-    const phone = browser("192.0.2.41");
-    await withOwner(db, phone);
-    await loginAs(phone, "alice");
-    expect(await linked(db)).toBe(OWNER);
-    const laptop = browser("192.0.2.42");
-    await loginAs(laptop, "alice");
-    expect(await deviceOwner(laptop)).toBe(OWNER);
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    mockToss.failNext("confirm", new TossError(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", ""), { applied: true });
+    expect((await b.send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_left", orderId, amount: 2900 }, origin: true })).status).toBe(409);
+    vi.setSystemTime(T0 + 31_000);
+    expect(await report()).toMatchObject({ confirming: 1 });
+    expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "paid" });
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
   });
 
-  it("never takes an owner that already belongs to another account", async () => {
+  it("puts back a refund Toss never did, and retries a deleted account's payment until it is cancelled", async () => {
     const db = useTestDb();
-    const alice = browser("192.0.2.43");
-    await withOwner(db, alice);
-    await loginAs(alice, "alice");
-    vi.setSystemTime(T0 + 1_000);
-    const bob = browser("192.0.2.44");
-    await withOwner(db, bob);
-    await loginAs(bob, "bob");
-    expect(await db.prepare("SELECT bonds_owner_id FROM users ORDER BY created_at DESC LIMIT 1").first()).toEqual({ bonds_owner_id: null });
+    const alice = await loggedIn("alice");
+    const refunded = await buy(alice);
+    mockToss.failNext("cancel", new TossError(409, "IDEMPOTENT_REQUEST_PROCESSING", ""));
+    expect((await alice.send(refund, "/api/pay/refund", { body: { orderId: refunded }, origin: true })).status).toBe(409);
+
+    const bob = await loggedIn("bob", "198.51.100.41");
+    const orphan = await newOrder(bob);
+    await db.prepare("UPDATE users SET deleted_at = ? WHERE id = (SELECT user_id FROM orders WHERE id = ?)").bind(T0, orphan).run();
+    mockToss.failNext("cancel", new TossError(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", ""));
+    expect((await browser("192.0.2.90").send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_orphan", orderId: orphan, amount: 2900 }, origin: true })).status).toBe(402);
+    expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orphan).first()).toEqual({ status: "refunding" });
+
+    vi.setSystemTime(T0 + 10 * MIN + 1);
+    expect(await report()).toMatchObject({ refunding: 2 });
+    expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(refunded).first()).toEqual({ status: "paid", cancel_attempt: 2 });
+    expect((await me(alice)).user?.unused).toEqual([{ orderId: refunded, productId: "tarot" }]);
+    expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(orphan).first()).toEqual({ status: "refunded", cancel_attempt: 2 });
+    expect((await mockToss.getPaymentByOrder(orphan)).status).toBe("CANCELED");
   });
 
-  it("deletes the owner with the account and clears this device's sl_uid", async () => {
+  it("returns any account's stale reservation", async () => {
     const db = useTestDb();
-    const b = browser("192.0.2.45");
-    await withOwner(db, b);
-    await loginAs(b, "alice");
-    const { url } = (await (await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true })).json()) as { url: string };
-    const location = (await b.send(start, `${url}&mockUser=alice`)).headers.get("location")!;
-    expect((await b.send(callback, location)).headers.get("location")).toBe("http://localhost/me?account=deleted");
-    expect(await db.prepare("SELECT COUNT(*) AS n FROM owners").first()).toEqual({ n: 0 });
-    expect(b.jar.has(OWNER_ID_COOKIE)).toBe(false);
+    const b = await loggedIn();
+    const userId = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!.id;
+    expect((await reserveUnlock(db, { userId, productId: "tarot", currency: "free", units: 10, now: T0 })).ok).toBe(true);
+    vi.setSystemTime(T0 + RESERVATION_MS + 1);
+    expect(await report()).toMatchObject({ released: 1 });
+    expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "released" });
+    expect((await me(b)).user?.stardust).toBe(10);
+  });
+
+  it("finishes an erase that a deletion did not", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    await buy(b);
+    const userId = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!.id;
+    const chapter = { kind: "tarot" as const, reading: { verdict: "v" }, chapterToken: "t", createdAt: T0, turns: [], followUpsLeft: 3 };
+    await (await insertReadingStatement(db, accountSecret()!, { id: newReadingId(), userId, productId: "tarot", source: "paid", unlockId: null, chapter, now: T0 })).run();
+    await db.prepare("UPDATE users SET deleted_at = ? WHERE id = ?").bind(T0, userId).run();
+    expect(await report()).toMatchObject({ erased: 1 });
+    expect(await one(db, "SELECT kakao_key, nickname, erased_at FROM users")).toEqual({ kakao_key: null, nickname: null, erased_at: T0 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT account_deleted_at FROM gift_claims")).toEqual({ account_deleted_at: T0 });
+  });
+
+  it("purges sessions, year-old gift claims of deleted accounts, and records past five years", async () => {
+    const db = useTestDb();
+    await loggedIn("alice");
+    await db.batch([
+      db.prepare("INSERT INTO users (id, kakao_key, nickname, customer_key, created_at, last_login_at, deleted_at, erased_at) VALUES ('u_old', NULL, NULL, 'c_old', 0, 0, 1, 1)"),
+      db.prepare("INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at) VALUES ('order_old_000000000000001', 'u_old', 'tarot', 2900, 'x', 'paid', '/', 0, ?, ?)").bind(T0 - RECORD_KEEP_MS - 1, T0 - RECORD_KEEP_MS - 1),
+      db.prepare("INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES ('pk_old', 'order_old_000000000000001', 2900, 'DONE', 'live', 0)"),
+      db.prepare("INSERT INTO users (id, kakao_key, nickname, customer_key, created_at, last_login_at, deleted_at, erased_at) VALUES ('u_recent', NULL, NULL, 'c_recent', 0, 0, 1, 1)"),
+      db.prepare("INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at) VALUES ('order_recent_00000000001', 'u_recent', 'tarot', 2900, 'x', 'refunded', '/', 0, ?, ?)").bind(T0 - 1000, T0 - 1000),
+      db.prepare("INSERT INTO gift_claims (kakao_key, claimed_at, account_deleted_at) VALUES ('k_gone', 0, ?)").bind(T0 - GIFT_CLAIM_KEEP_MS - 1),
+      db.prepare("INSERT INTO gift_claims (kakao_key, claimed_at, account_deleted_at) VALUES ('k_kept', 0, ?)").bind(T0 - 1000),
+      db.prepare("INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES ('s_old', 'u_recent', 0, ?)").bind(T0 - 1),
+    ]);
+    expect(await report()).toMatchObject({ sessions: 1, giftClaims: 1, purgedAccounts: 1 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_old'")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM payments WHERE payment_key = 'pk_old'")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_recent'")).toEqual({ n: 1 });
+    expect((await db.prepare("SELECT kakao_key FROM gift_claims ORDER BY kakao_key").all<{ kakao_key: string }>()).results.map((r) => r.kakao_key)).toEqual(expect.arrayContaining(["k_kept"]));
+    expect(await one(db, "SELECT COUNT(*) AS n FROM gift_claims WHERE kakao_key = 'k_gone'")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE nickname IS NOT NULL")).toEqual({ n: 1 });
   });
 });
 ```
 
 - [ ] **Step 2: Run it and see it fail**
 
-Run: `npx vitest run apps/web/app/api/account/bondsLink.test.ts`
-Expected: FAIL (`ownerIdCookie` is not exported).
+Run: `npx vitest run apps/web/app/api/internal/maintenance/maintenance.test.ts`
+Expected: FAIL (`./route` and `@/lib/pay/maintenance` not found).
 
-- [ ] **Step 3: Add the export to `apps/web/lib/bonds/identity.ts`** (P3's file; add only this)
-
-```ts
-/** The sl_uid Set-Cookie for a given owner id (P4: an account brings its 인연 owner to another device). */
-export function ownerIdCookie(id: string, secret: string): Promise<string> {
-  return idCookie(OWNER_ID_COOKIE, "uid", id, secret);
-}
-```
-
-- [ ] **Step 4: Write `apps/web/lib/account/bondsLink.ts`**
+- [ ] **Step 3: Write `apps/web/lib/pay/maintenance.ts`**
 
 ```ts
 import "server-only";
-import { setCookie } from "@/lib/api/http";
-import { OWNER_ID_COOKIE, ownerIdCookie, readOwnerId } from "@/lib/bonds/identity";
-import type { D1Binding } from "@/lib/db/d1";
-import { isConstraintError } from "@/lib/db/sqlErrors";
-import type { UserRow } from "./users";
+import { eraseDeletedAccount } from "@/lib/account/deletion";
+import type { D1Binding, D1Statement } from "@/lib/db/d1";
+import { sweepStale } from "./ledger";
+import { RECONCILE_AFTER_MS, reconcileConfirming, type OrderRow } from "./orders";
+import { REFUND_RECONCILE_AFTER_MS, reconcileRefunding } from "./refunds";
+import type { TossClient } from "./tossTypes";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** A deleted account's gift claim is kept this long (no second signup gift), then purged. */
+export const GIFT_CLAIM_KEEP_MS = 365 * DAY_MS;
+/** 전자상거래법 제6조: contract, withdrawal and payment records 5 years (plus a day of margin). */
+export const RECORD_KEEP_MS = 1827 * DAY_MS;
+const ORDERS_PER_RUN = 50;
+const ERASES_PER_RUN = 50;
+const PURGES_PER_RUN = 20;
+const ROWS_PER_PURGE = 500;
+
+export interface MaintenanceReport {
+  confirming: number;
+  refunding: number;
+  released: number;
+  expired: number;
+  erased: number;
+  sessions: number;
+  giftClaims: number;
+  purgedAccounts: number;
+}
+
+/** Everything an erased account still has, for when its last order is older than RECORD_KEEP_MS. */
+function purgeStatements(db: D1Binding, userId: string): D1Statement[] {
+  return [
+    db.prepare("DELETE FROM ledger WHERE user_id = ?").bind(userId),
+    db.prepare("DELETE FROM unlocks WHERE user_id = ?").bind(userId),
+    db.prepare("DELETE FROM credit_lots WHERE user_id = ?").bind(userId),
+    db.prepare("DELETE FROM payments WHERE order_id IN (SELECT id FROM orders WHERE user_id = ?)").bind(userId),
+    db.prepare("DELETE FROM orders WHERE user_id = ?").bind(userId),
+    db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
+    db.prepare("DELETE FROM users WHERE id = ? AND erased_at IS NOT NULL").bind(userId),
+  ];
+}
 
 /**
- * Ties the P3 인연 owner to the account at login (spec 4).
- * - An account without an owner adopts this device's owner, unless another account already has it.
- * - An account with an owner brings it to this device: sl_uid is reissued with P3's own format.
- * - Owners are never merged: a different owner on this device stays unlinked.
- * Returns the sl_uid Set-Cookie value when the device should switch owners, else null.
+ * The Cron Trigger's work, every 10 minutes (worker.mjs → /api/internal/maintenance): settle what
+ * users left behind and purge what is past its keeping. Each step is bounded; whatever is left over
+ * goes in the next run. Toss steps are skipped when payments are not configured.
  */
-export async function linkBondsOwner(db: D1Binding, cookies: Record<string, string>, secret: string, user: UserRow): Promise<string | null> {
-  const deviceOwner = await readOwnerId(cookies, secret);
-  if (user.bonds_owner_id) return user.bonds_owner_id === deviceOwner ? null : ownerIdCookie(user.bonds_owner_id, secret);
-  if (!deviceOwner) return null;
-  const exists = await db.prepare("SELECT 1 AS ok FROM owners WHERE id = ?").bind(deviceOwner).first();
-  if (!exists) return null;
-  try {
-    await db.prepare("UPDATE users SET bonds_owner_id = ? WHERE id = ? AND bonds_owner_id IS NULL").bind(deviceOwner, user.id).run();
-  } catch (error) {
-    if (!isConstraintError(error)) throw error;
+export async function runMaintenance(db: D1Binding, toss: TossClient | null, now: number): Promise<MaintenanceReport> {
+  const report: MaintenanceReport = { confirming: 0, refunding: 0, released: 0, expired: 0, erased: 0, sessions: 0, giftClaims: 0, purgedAccounts: 0 };
+  if (toss) {
+    const confirming = await db
+      .prepare("SELECT * FROM orders WHERE status = 'confirming' AND updated_at < ? ORDER BY updated_at LIMIT ?")
+      .bind(now - RECONCILE_AFTER_MS, ORDERS_PER_RUN)
+      .all<OrderRow>();
+    for (const order of confirming.results) {
+      await reconcileConfirming(db, toss, order, now);
+      report.confirming++;
+    }
+    const refunding = await db
+      .prepare("SELECT * FROM orders WHERE status = 'refunding' AND updated_at < ? ORDER BY updated_at LIMIT ?")
+      .bind(now - REFUND_RECONCILE_AFTER_MS, ORDERS_PER_RUN)
+      .all<OrderRow>();
+    for (const order of refunding.results) {
+      await reconcileRefunding(db, toss, order, now);
+      report.refunding++;
+    }
   }
-  return null;
-}
+  const swept = await sweepStale(db, now);
+  report.released = swept.released;
+  report.expired = swept.expired;
 
-/** Forgets this device's 인연 owner after it was deleted with the account. */
-export function clearOwnerIdCookie(): string {
-  return setCookie(OWNER_ID_COOKIE, "", 0);
+  const unerased = await db.prepare("SELECT id FROM users WHERE deleted_at IS NOT NULL AND erased_at IS NULL LIMIT ?").bind(ERASES_PER_RUN).all<{ id: string }>();
+  for (const { id } of unerased.results) if (await eraseDeletedAccount(db, id, now)) report.erased++;
+
+  report.sessions =
+    (await db.prepare("DELETE FROM sessions WHERE id IN (SELECT id FROM sessions WHERE expires_at < ? OR revoked_at IS NOT NULL LIMIT ?)").bind(now, ROWS_PER_PURGE).run()).meta?.changes ?? 0;
+  report.giftClaims =
+    (await db
+      .prepare("DELETE FROM gift_claims WHERE kakao_key IN (SELECT kakao_key FROM gift_claims WHERE account_deleted_at < ? LIMIT ?)")
+      .bind(now - GIFT_CLAIM_KEEP_MS, ROWS_PER_PURGE)
+      .run()).meta?.changes ?? 0;
+  const purgeable = await db
+    .prepare(
+      `SELECT id FROM users u WHERE erased_at IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id AND o.created_at >= ?)
+       LIMIT ?`,
+    )
+    .bind(now - RECORD_KEEP_MS, PURGES_PER_RUN)
+    .all<{ id: string }>();
+  for (const { id } of purgeable.results) {
+    await db.batch(purgeStatements(db, id));
+    report.purgedAccounts++;
+  }
+  return report;
 }
 ```
 
-- [ ] **Step 5: Call it from the callback** (`apps/web/app/api/auth/kakao/callback/route.ts`).
-  - In `finishLogin`, after `createSession`:
+- [ ] **Step 4: Write `apps/web/app/api/internal/maintenance/route.ts`**
 
 ```ts
-  const bondsCookie = await linkBondsOwner(ctx.db, ctx.cookies, ctx.secret, user);
-  console.info(JSON.stringify({ evt: "auth.login", created, gifted }));
-  return back("ok", [session.cookie, ...(bondsCookie ? [bondsCookie] : [])]);
+import { errorResponse, json } from "@/lib/api/http";
+import { accountDb } from "@/lib/db";
+import { runMaintenance } from "@/lib/pay/maintenance";
+import { tossClient } from "@/lib/pay/toss";
+import { safeEqual } from "@/lib/security/sign";
+
+/**
+ * POST with `Authorization: Bearer <STARLOG_CRON_SECRET>` → the maintenance report. Called by the
+ * Cron Trigger every 10 minutes (apps/web/worker.mjs). Anyone else gets 403; a deploy without the
+ * secret (32+ characters) or D1 gets 503.
+ */
+export async function POST(request: Request): Promise<Response> {
+  const secret = process.env.STARLOG_CRON_SECRET?.trim() ?? "";
+  if (secret.length < 32) return errorResponse("PAY_UNAVAILABLE");
+  const given = (request.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!given || !(await safeEqual(given, secret, secret))) return errorResponse("FORBIDDEN");
+  const db = accountDb();
+  if (!db) return errorResponse("PAY_UNAVAILABLE");
+  const report = await runMaintenance(db, tossClient(), Date.now());
+  console.info(JSON.stringify({ evt: "cron.maintenance", ...report }));
+  return json(report);
+}
 ```
 
-  - In `finishDelete`, replace the final redirect with:
+- [ ] **Step 5: Write `apps/web/worker.mjs`** (the custom OpenNext entry, opennext.js.org/cloudflare/howtos/custom-worker)
 
-```ts
-  const cleared = ctx.session.user.bonds_owner_id ? [clearOwnerIdCookie()] : [];
-  return redirectTo(request, "/me", { account: "deleted" }, [CLEAR_OAUTH, CLEAR_SESSION, ...cleared]);
+```js
+// The Worker entry: OpenNext's generated handler for every request, plus the Cron Trigger.
+// `.open-next/worker.js` exists after `pnpm cf:build`. The app has no Durable Object caches
+// (open-next.config.ts), so nothing else needs re-exporting from it.
+import handler from "./.open-next/worker.js";
+
+/** Same host as SITE.url; the request never leaves the Worker (it goes straight to handler.fetch). */
+const MAINTENANCE_URL = "https://starlog.yeolmaeapps.kr/api/internal/maintenance";
+
+export default {
+  fetch: handler.fetch,
+
+  /**
+   * Every 10 minutes (wrangler.jsonc triggers.crons): settle stale payments and refunds, return
+   * stale reservations, finish erasures and purge old records (lib/pay/maintenance.ts). It goes
+   * through the app's own route so it runs with the same bundle, bindings and env as a request.
+   */
+  async scheduled(_controller, env, ctx) {
+    const secret = env.STARLOG_CRON_SECRET;
+    if (!secret) {
+      console.error(JSON.stringify({ evt: "cron.no_secret" }));
+      return;
+    }
+    const request = new Request(MAINTENANCE_URL, { method: "POST", headers: { authorization: `Bearer ${secret}` } });
+    ctx.waitUntil(
+      handler.fetch(request, env, ctx).then((response) => {
+        if (!response.ok) console.error(JSON.stringify({ evt: "cron.maintenance_failed", status: response.status }));
+      }),
+    );
+  },
+};
 ```
 
-  - Import `linkBondsOwner`, `clearOwnerIdCookie` from `@/lib/account/bondsLink`.
+- [ ] **Step 6: Point Wrangler at it.** In `apps/web/wrangler.jsonc`:
+  - change `"main": ".open-next/worker.js"` to `"main": "worker.mjs"`, with this comment above it: `// worker.mjs wraps OpenNext's .open-next/worker.js and adds the Cron Trigger (lib/pay/maintenance.ts).`;
+  - add, after `"workers_dev": true,`:
 
-- [ ] **Step 6: Run the tests**
+```jsonc
+  // Every 10 minutes: settle stale payments and refunds, stale reservations, unfinished erasures and
+  // old records (worker.mjs → /api/internal/maintenance, guarded by STARLOG_CRON_SECRET).
+  "triggers": { "crons": ["*/10 * * * *"] },
+```
 
-Run: `npx vitest run apps/web/app/api apps/web/lib/bonds apps/web/lib/db`
-Expected: PASS (bondsLink.test 3 tests; P3's bonds tests unchanged).
+`pnpm cf:build` still writes `.open-next/worker.js`; Wrangler bundles `worker.mjs` with it on deploy. The controller checks it once with `pnpm cf:build` and `npx wrangler deploy --dry-run --outdir .wrangler/dry` from `apps/web`: the bundle must build and the dry run must list the cron schedule. If OpenNext's deploy command refuses a custom `main`, report it. The runbook's fallback is to deploy with `npx wrangler deploy` directly after `pnpm cf:build`.
+
+- [ ] **Step 7: Run the tests**
+
+Run: `npx vitest run apps/web/app/api/internal apps/web/lib/pay`
+Expected: PASS (maintenance.test: 6 tests).
 
 Run: `pnpm typecheck`
-Expected: exit 0.
+Expected: exit 0 (`worker.mjs` is not in the TypeScript program).
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add apps/web/lib/account/bondsLink.ts apps/web/lib/bonds/identity.ts apps/web/app/api/auth/kakao/callback/route.ts apps/web/app/api/account/bondsLink.test.ts
-git commit -m "feat(account): link the 인연 owner to the account and follow it to new devices" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git add apps/web/lib/pay/maintenance.ts apps/web/app/api/internal apps/web/worker.mjs apps/web/wrangler.jsonc
+git commit -m "feat(pay): Cron Trigger maintenance for stale payments, refunds, reservations, erasures and purges" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -6024,22 +7305,34 @@ git commit -m "feat(account): link the 인연 owner to the account and follow it
 - Test: `apps/web/lib/pay/offer.test.ts`, `apps/web/lib/account/client.test.ts`, `apps/web/lib/reading/errors.p4.test.ts`, `apps/web/components/tarot/UnlockSheet.test.tsx`
 
 **Interfaces:**
-- Consumes: `GET /api/me` and `POST /api/auth/logout` (Task 5); `Product`, `standardProduct`, `StandardProductId` (Task 2); `UnlockMethod` (Task 10); `SITE`, `won`; `Button`.
+- Consumes: the `/api/me` and `/api/auth/logout` shapes (Task 5; the tests mock them, so this task does not wait for it); `Product`, `standardProduct`, `StandardProductId`, `UnlockMethod` (Task 2); `getJson` (already in `lib/reading/api.ts` at aa70830); `SITE`, `won`, `times`; `Button`.
 - Produces:
   - `client.ts` (browser):
-    - `interface AccountUser { nickname; stardust; stardustExpiresAt: string | null; unused: Array<{orderId; productId}> }`, `interface AccountState { payments; owner; user: AccountUser | null }`
+    - `interface AccountUser { nickname; stardust; stardustExpiresAt: string | null; unused: Array<{orderId; productId}> }`, `interface AccountState { payments; login; owner; user: AccountUser | null }`
     - `parseAccount(v): AccountState | null`, `refreshAccount(fetchImpl?): Promise<AccountState | null>`
     - `useAccount(): AccountState | null | undefined` (undefined until loaded, null if it failed)
     - `loginHref(returnTo): string`, `logout(fetchImpl?): Promise<boolean>`
     - `loginMessage(flag: string | null): string | null`, `resetAccountForTests()`
   - `offer.ts` (pure):
-    - `type UnlockOffer = {mode: "beta"} | {mode: "login"; priceKrw; giftUnits} | {mode: "open-paid"; orderId} | {mode: "stardust"; units; balance; priceKrw} | {mode: "pay"; priceKrw}`
+    - `type UnlockOffer = {mode: "opening"; login: boolean} | {mode: "login"; priceKrw; giftUnits} | {mode: "open-paid"; orderId} | {mode: "stardust"; units; balance; priceKrw} | {mode: "pay"; priceKrw}`
     - `unlockOffer(account, product, giftUnits): UnlockOffer`, `checkoutHref(productId, returnTo): string`
-  - `api.ts` `ApiErrorCode` gains `LOGIN_REQUIRED`, `PAYMENT_REQUIRED`, `NO_CREDIT`, `PAY_FAILED`, `FORBIDDEN`, `NOT_AVAILABLE`, `PAY_PENDING`, `NOT_REFUNDABLE`, `PAY_UNAVAILABLE`
-  - `errors.ts`: `ErrorContext` gains `"paid"` and `"stardust"` (a failed credit-backed reading says the credit is still there)
-  - `UnlockSheet` gains these optional props, so a caller without them keeps the beta sheet exactly:
-    - `offer` (default `{mode: "beta"}`), `onUnlock(method: UnlockMethod)`;
+  - `api.ts`:
+    - `ApiErrorCode` gains `LOGIN_REQUIRED`, `PAYMENT_REQUIRED`, `NO_CREDIT`, `PAY_FAILED`, `FORBIDDEN`, `NOT_AVAILABLE`, `PAY_PENDING`, `NOT_REFUNDABLE`, `PAY_UNAVAILABLE` (also added to `CODES`)
+  - `errors.ts`:
+    - `ErrorContext` gains `"paid"` and `"stardust"`;
+    - `CREDIT_CHECKING: ErrorView`, `creditKept(context): ErrorView`, `creditUnknown(context): ErrorView` (M4)
+  - `UnlockSheet` gains these optional props, so a caller without them keeps today's 오픈 기념 sheet exactly:
+    - `offer` (default `{mode: "opening", login: false}`), `onUnlock(method: UnlockMethod)`;
     - `loginHref`, `payHref`, `owner`, `refundHref`.
+
+**Copy rules (M4, M9):**
+- After a paid or 별조각 reading fails mid-way (QUALITY, UPSTREAM, TIMEOUT, INVALID, NETWORK, or a 5xx with an unknown code), nobody yet knows whether the save landed. So the first thing shown is `CREDIT_CHECKING` ("풀이가 열렸는지 확인하고 있어요"), never "그대로 남아 있어요".
+- Task 15 then checks the account:
+  - the reading was delivered → it opens;
+  - the credit is still there → `creditKept`;
+  - neither is known yet → `creditUnknown`, which promises nothing it has not seen.
+- Errors refused before any reservation (login, no credit, budget, limits, a bad request) say so plainly.
+- No "베타" anywhere. The free daily full reading keeps today's wording: "오픈 기념으로 하루 N번 무료예요" (`SITE.beta.fullPerDay`; the config key is internal and is not renamed here).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -6052,14 +7345,18 @@ import { standardProduct } from "./catalog";
 import { checkoutHref, unlockOffer } from "./offer";
 
 const tarot = standardProduct("tarot");
-const account = (over: Partial<AccountState> = {}): AccountState => ({ payments: true, owner: false, user: null, ...over });
+const account = (over: Partial<AccountState> = {}): AccountState => ({ payments: true, login: true, owner: false, user: null, ...over });
 const user = (over: Partial<AccountUser> = {}): AccountUser => ({ nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [], ...over });
 
 describe("unlock offer", () => {
-  it("keeps the beta while sales are closed for this device and nothing is held", () => {
-    expect(unlockOffer(undefined, tarot, 10)).toEqual({ mode: "beta" });
-    expect(unlockOffer(null, tarot, 10)).toEqual({ mode: "beta" });
-    expect(unlockOffer(account({ payments: false }), tarot, 10)).toEqual({ mode: "beta" });
+  it("keeps the 오픈 기념 reading while sales are closed for this device and nothing is held", () => {
+    expect(unlockOffer(undefined, tarot, 10)).toEqual({ mode: "opening", login: false });
+    expect(unlockOffer(null, tarot, 10)).toEqual({ mode: "opening", login: false });
+    expect(unlockOffer(account({ payments: false, login: false }), tarot, 10)).toEqual({ mode: "opening", login: false });
+  });
+
+  it("while sales are paused, offers buyers a quiet way to log in", () => {
+    expect(unlockOffer(account({ payments: false, login: true }), tarot, 10)).toEqual({ mode: "opening", login: true });
   });
 
   it("asks a guest to log in once sales are open", () => {
@@ -6078,7 +7375,7 @@ describe("unlock offer", () => {
 
   it("lets held credit open a reading after sales close", () => {
     expect(unlockOffer(account({ payments: false, user: user({ stardust: 10 }) }), tarot, 10)).toMatchObject({ mode: "stardust" });
-    expect(unlockOffer(account({ payments: false, user: user() }), tarot, 10)).toEqual({ mode: "beta" });
+    expect(unlockOffer(account({ payments: false, user: user() }), tarot, 10)).toEqual({ mode: "opening", login: false });
   });
 
   it("links the checkout with the product and the way back", () => {
@@ -6097,22 +7394,22 @@ afterEach(() => resetAccountForTests());
 
 describe("account client", () => {
   it("reads /api/me and refuses odd shapes", () => {
-    const body = { payments: true, owner: false, user: { nickname: "별", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "o1", productId: "tarot" }] } };
+    const body = { payments: true, login: true, owner: false, user: { nickname: "별", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "o1", productId: "tarot" }] } };
     expect(parseAccount(body)).toEqual(body);
-    expect(parseAccount({ payments: false, owner: false, user: null })).toEqual({ payments: false, owner: false, user: null });
+    expect(parseAccount({ payments: false, login: false, owner: false, user: null })).toEqual({ payments: false, login: false, owner: false, user: null });
     expect(parseAccount({ payments: "yes" })).toBeNull();
-    expect(parseAccount({ payments: true, owner: false, user: { nickname: 1 } })).toBeNull();
+    expect(parseAccount({ payments: true, login: true, owner: false, user: { nickname: 1 } })).toBeNull();
   });
 
   it("asks /api/me once for many callers, and treats a failure as unknown", async () => {
     let calls = 0;
     const ok = (async () => {
       calls++;
-      return Response.json({ payments: true, owner: false, user: null });
+      return Response.json({ payments: true, login: true, owner: false, user: null });
     }) as typeof fetch;
     const [a, b] = await Promise.all([refreshAccount(ok), refreshAccount(ok)]);
     expect(calls).toBe(1);
-    expect(a).toEqual({ payments: true, owner: false, user: null });
+    expect(a).toEqual({ payments: true, login: true, owner: false, user: null });
     expect(b).toBe(a);
     const down = (async () => {
       throw new TypeError("offline");
@@ -6126,7 +7423,7 @@ describe("account client", () => {
     expect(loginMessage(null)).toBeNull();
     expect(loginMessage("cancel")).toBe("로그인을 취소했어요");
     expect(loginMessage("failed")).toBe("로그인하지 못했어요. 다시 시도해 주세요.");
-    expect(loginMessage("closed")).toBe("지금은 로그인을 열지 않았어요");
+    expect(loginMessage("closed")).toBe("지금은 새로 가입할 수 없어요");
     expect(loginMessage("unavailable")).toBe("지금은 로그인할 수 없어요. 잠시 뒤에 다시 시도해 주세요.");
     expect(loginMessage("busy")).toBe("요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.");
   });
@@ -6138,7 +7435,7 @@ describe("account client", () => {
 ```ts
 import { describe, expect, it } from "vitest";
 import { parseApiError } from "./api";
-import { describeApiError } from "./errors";
+import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError } from "./errors";
 
 describe("P4 error copy", () => {
   it("knows the P4 codes", () => {
@@ -6147,11 +7444,26 @@ describe("P4 error copy", () => {
     expect(parseApiError(409, { code: "PAY_PENDING" }).code).toBe("PAY_PENDING");
   });
 
-  it("says a failed paid or 별조각 reading kept its credit", () => {
-    const failed = { code: "UPSTREAM" as const, status: 502 };
-    expect(describeApiError(failed, "paid").body).toBe("결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요.");
-    expect(describeApiError(failed, "stardust").body).toBe("별조각은 그대로예요. 한 번 더 시도해 주세요.");
-    expect(describeApiError({ code: "NETWORK", status: 0 }, "paid").body).toBe("결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요.");
+  it("never says a failed paid or 별조각 reading kept its credit before the account was checked", () => {
+    for (const context of ["paid", "stardust"] as const) {
+      for (const error of [
+        { code: "UPSTREAM" as const, status: 502 },
+        { code: "QUALITY" as const, status: 502 },
+        { code: "NETWORK" as const, status: 0 },
+        { code: "TIMEOUT" as const, status: 0 },
+        { code: "INVALID" as const, status: 502 },
+      ]) {
+        const view = describeApiError(error, context);
+        expect(view).toEqual(CREDIT_CHECKING);
+        expect(`${view.title} ${view.body ?? ""}`).not.toMatch(/그대로/);
+      }
+    }
+  });
+
+  it("says what the check found", () => {
+    expect(creditKept("paid")).toMatchObject({ title: "풀이를 다 적지 못했어요", body: "결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요.", action: "retry" });
+    expect(creditKept("stardust").body).toBe("별조각은 그대로예요. 한 번 더 시도해 주세요.");
+    for (const context of ["paid", "stardust"] as const) expect(`${creditUnknown(context).title} ${creditUnknown(context).body}`).not.toMatch(/그대로/);
   });
 
   it("shows Toss's own message for a declined payment", () => {
@@ -6212,10 +7524,18 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#orders");
   });
 
-  it("without an offer it is the beta sheet, unchanged", () => {
-    render(<UnlockSheet kind="tarot" remaining={1} onUnlock={() => {}} />);
-    expect(screen.getByRole("button", { name: /전체 풀이 보기/ })).toBeTruthy();
-    expect(screen.getByText("베타 기간에는 무료예요")).toBeTruthy();
+  it("while sales are paused, shows buyers a quiet login link next to the 오픈 기념 reading", () => {
+    render(<UnlockSheet {...base} remaining={1} offer={{ mode: "opening", login: true }} onUnlock={() => {}} />);
+    expect(screen.getByRole("link", { name: "결제한 풀이가 있다면 로그인" }).getAttribute("href")).toBe(base.loginHref);
+  });
+
+  it("without an offer it is today's 오픈 기념 sheet, unchanged, with no 베타 anywhere", () => {
+    const onUnlock = vi.fn();
+    const { container } = render(<UnlockSheet kind="tarot" remaining={1} onUnlock={onUnlock} />);
+    fireEvent.click(screen.getByRole("button", { name: /전체 풀이 보기/ }));
+    expect(onUnlock).toHaveBeenCalledWith("opening");
+    expect(screen.getByText(/^오픈 기념으로 하루 .+ 무료예요$/)).toBeTruthy();
+    expect(container.textContent).not.toMatch(/베타/);
   });
 });
 ```
@@ -6233,7 +7553,7 @@ import { useEffect, useSyncExternalStore } from "react";
 /**
  * Browser side of accounts: GET /api/me, shared by every component through one small store (one
  * request however many components ask). `undefined` until loaded, `null` when it failed (screens
- * then behave as the beta).
+ * then behave as they do without accounts).
  */
 
 export interface AccountUser {
@@ -6246,8 +7566,10 @@ export interface AccountUser {
 }
 
 export interface AccountState {
-  /** sales (login, payment, gift) are open for this device */
+  /** sales (new orders, sign-up, gift) are open for this device */
   payments: boolean;
+  /** this device may log in (also while sales are paused, for existing accounts) */
+  login: boolean;
   owner: boolean;
   user: AccountUser | null;
 }
@@ -6263,9 +7585,9 @@ function parseUser(v: unknown): AccountUser | null | undefined {
 }
 
 export function parseAccount(value: unknown): AccountState | null {
-  if (!isRecord(value) || typeof value.payments !== "boolean" || typeof value.owner !== "boolean") return null;
+  if (!isRecord(value) || typeof value.payments !== "boolean" || typeof value.login !== "boolean" || typeof value.owner !== "boolean") return null;
   const user = parseUser(value.user);
-  return user === undefined ? null : { payments: value.payments, owner: value.owner, user };
+  return user === undefined ? null : { payments: value.payments, login: value.login, owner: value.owner, user };
 }
 
 let snapshot: AccountState | null | undefined;
@@ -6321,7 +7643,7 @@ export async function logout(fetchImpl: typeof fetch = fetch): Promise<boolean> 
 const LOGIN_MESSAGES: Record<string, string> = {
   cancel: "로그인을 취소했어요",
   failed: "로그인하지 못했어요. 다시 시도해 주세요.",
-  closed: "지금은 로그인을 열지 않았어요",
+  closed: "지금은 새로 가입할 수 없어요",
   unavailable: "지금은 로그인할 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
   busy: "요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.",
 };
@@ -6348,7 +7670,8 @@ import type { Product, StandardProductId } from "./catalog";
 /**
  * What the unlock sheet offers this device for a standard reading (spec section 9). There is one
  * gold primary per mode:
- * - beta: the daily free reading (sales closed here, and no credit held);
+ * - opening: the 오픈 기념 daily free reading (sales closed here, no credit held). `login` adds a
+ *   quiet link for buyers while sales are paused;
  * - login: a guest while sales are open;
  * - open-paid: a purchase of this reading is waiting;
  * - stardust: enough 별조각; paying is the secondary choice;
@@ -6356,7 +7679,7 @@ import type { Product, StandardProductId } from "./catalog";
  * Credit already held always opens, whatever the sales flag says.
  */
 export type UnlockOffer =
-  | { mode: "beta" }
+  | { mode: "opening"; login: boolean }
   | { mode: "login"; priceKrw: number; giftUnits: number }
   | { mode: "open-paid"; orderId: string }
   | { mode: "stardust"; units: number; balance: number; priceKrw: number }
@@ -6368,9 +7691,10 @@ export function unlockOffer(account: AccountState | null | undefined, product: P
     const bought = user.unused.find((item) => item.productId === product.id);
     if (bought) return { mode: "open-paid", orderId: bought.orderId };
     if (product.units !== null && user.stardust >= product.units) return { mode: "stardust", units: product.units, balance: user.stardust, priceKrw: product.krw };
-    return account.payments ? { mode: "pay", priceKrw: product.krw } : { mode: "beta" };
+    return account.payments ? { mode: "pay", priceKrw: product.krw } : { mode: "opening", login: false };
   }
-  return account?.payments ? { mode: "login", priceKrw: product.krw, giftUnits } : { mode: "beta" };
+  if (account?.payments) return { mode: "login", priceKrw: product.krw, giftUnits };
+  return { mode: "opening", login: Boolean(account?.login) };
 }
 
 export function checkoutHref(productId: StandardProductId, returnTo: string): string {
@@ -6379,24 +7703,42 @@ export function checkoutHref(productId: StandardProductId, returnTo: string): st
 ```
 
 - [ ] **Step 5: Add the codes and the copy.**
-  - `apps/web/lib/reading/api.ts`: add the nine codes to the `ApiErrorCode` union and to `CODES`.
+  - `apps/web/lib/reading/api.ts`: add the nine codes to the `ApiErrorCode` union and to `CODES`. `getJson` is already there (aa70830); use it as it is.
   - `apps/web/lib/reading/errors.ts`:
-    - change `ErrorContext` to `"reading" | "tarot-draw" | "followup" | "daily" | "paid" | "stardust"`;
-    - add a `kept` helper above `describeApiError`;
-    - change the three retry cases;
+    - change `ErrorContext` by adding `| "paid" | "stardust"` to the union it has now;
+    - add the three exports below above `describeApiError`;
+    - in the `QUALITY`/`UPSTREAM`, `TIMEOUT`, `INVALID` and `NETWORK` cases, add as the first line `if (context === "paid" || context === "stardust") return CREDIT_CHECKING;` (keep the rest of each case as it is). `TIMEOUT` and `INVALID` are the client-side codes `postGeneration` returns since aa70830: the client gave up, or the answer it got did not have the reading's shape. Either way the server may have saved the reading;
     - add the new cases.
 
 ```ts
-/** After a failed credit-backed reading: the credit is still there (spec 5.4). */
-const kept = (context: ErrorContext, fallback: string) =>
-  context === "paid" ? "결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요." : context === "stardust" ? "별조각은 그대로예요. 한 번 더 시도해 주세요." : fallback;
+/**
+ * A paid or 별조각 reading that failed mid-way: nobody knows yet whether it was saved (M4). Shown
+ * until the result page has checked the account (lib/storage/sync.ts checkDelivery).
+ */
+export const CREDIT_CHECKING: ErrorView = { title: "풀이가 열렸는지 확인하고 있어요", body: "잠시만 기다려 주세요.", action: null };
 
-// inside the switch, replacing the QUALITY/UPSTREAM and NETWORK cases:
-    case "QUALITY":
-    case "UPSTREAM":
-      return { title: "풀이를 다 적지 못했어요", body: kept(context, "횟수는 그대로예요. 한 번 더 시도해 주세요."), action: "retry" };
-    case "NETWORK":
-      return { title: "연결이 잠시 끊겼어요", body: kept(context, "횟수는 그대로예요. 다시 시도해 주세요."), action: "retry" };
+/** The check found the credit unused: only now may the page say so. */
+export function creditKept(context: "paid" | "stardust"): ErrorView {
+  return {
+    title: "풀이를 다 적지 못했어요",
+    body: context === "paid" ? "결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요." : "별조각은 그대로예요. 한 번 더 시도해 주세요.",
+    action: "retry",
+  };
+}
+
+/** The check could not tell yet: point to where the answer will show, promise nothing unseen. */
+export function creditUnknown(context: "paid" | "stardust"): ErrorView {
+  return {
+    title: "풀이가 열렸는지 아직 확인하지 못했어요",
+    body:
+      context === "paid"
+        ? "몇 분 안에 내 정보의 결제한 풀이나 기록에 나타나요. 열리지 않은 결제는 내 정보에서 다시 열거나 환불받을 수 있어요."
+        : "몇 분 안에 내 정보의 별조각이나 기록에 나타나요.",
+    action: null,
+  };
+}
+
+// inside the switch, the new cases:
     case "LOGIN_REQUIRED":
       return { title: "로그인이 필요해요", body: "로그인하고 다시 열어 주세요.", action: null };
     case "PAYMENT_REQUIRED":
@@ -6418,7 +7760,7 @@ const kept = (context: ErrorContext, fallback: string) =>
 ```
 
 - [ ] **Step 6: Extend `apps/web/components/tarot/UnlockSheet.tsx`.**
-  - Keep the beta branch exactly as it is in the file when you start; the beta test above pins it.
+  - Keep the 오픈 기념 branch exactly as it is in the file when you start: label, used-up line, caption. The last UnlockSheet test pins it.
   - Add the props and the offer branches below.
   - Add `.price` and `.links` to `UnlockSheet.module.css`. Use the tokens the sheet already uses: `.price` like `.title` but `var(--fs-body)`; `.links` a centered row with `gap: 16px`, links ≥44px tall, `var(--fs-small)`. Both ≥13px.
 
@@ -6431,12 +7773,12 @@ import { won } from "@/lib/config";
 
 type UnlockSheetProps = {
   kind: "tarot" | "saju";
-  /** What this device may do now (lib/pay/offer.ts). Default: the beta's daily free reading. */
+  /** What this device may do now (lib/pay/offer.ts). Default: the 오픈 기념 daily free reading. */
   offer?: UnlockOffer;
-  /** Full readings left today on this device (beta only); undefined until read. */
+  /** Full readings left today on this device (오픈 기념 only); undefined until read. */
   remaining: number | undefined;
   onUnlock: (method: UnlockMethod) => void;
-  /** The login page with the way back (offer "login"). */
+  /** The login page with the way back (offer "login", and the paused-sales link). */
   loginHref?: string;
   /** The checkout for this reading (offers "pay" and "stardust"). */
   payHref?: string;
@@ -6451,7 +7793,7 @@ type UnlockSheetProps = {
 };
 ```
 
-Inside the component (with `offer = { mode: "beta" }` defaulted in the destructuring):
+Inside the component (with `offer = { mode: "opening", login: false }` defaulted in the destructuring):
 
 ```tsx
   const { free } = SITE.currency;
@@ -6459,7 +7801,7 @@ Inside the component (with `offer = { mode: "beta" }` defaulted in the destructu
 
   let offerPrimary: ReactNode = null;
   let offerSecondary: ReactNode = null;
-  let caption = "베타 기간에는 무료예요";
+  let caption = `오픈 기념으로 하루 ${times(SITE.beta.fullPerDay)} 무료예요`; // today's caption, unchanged
   switch (offer.mode) {
     case "login":
       offerPrimary = <Button href={loginHref ?? "/login"} block>로그인하고 전체 풀이 보기</Button>;
@@ -6478,29 +7820,30 @@ Inside the component (with `offer = { mode: "beta" }` defaulted in the destructu
       offerPrimary = <Button href={payHref ?? "/pricing"} block>{`${won(offer.priceKrw)} 결제하고 보기`}</Button>;
       caption = "결제하면 바로 열려요";
       break;
-    case "beta":
+    case "opening":
       break;
   }
 ```
 
 Where `primary` is chosen:
 - keep `openedHref`, then the `redraw` error, then `error?.care` first, as now;
-- next, when `offer.mode !== "beta"`, use `offerPrimary`;
-- only otherwise run the existing `usedUp` / beta branches. Show the `usedUp` limit line only in beta mode.
+- next, when `offer.mode !== "opening"`, use `offerPrimary`;
+- only otherwise run the existing `usedUp` / opening branches. Show the used-up limit line only in the opening mode.
 
 Render changes:
 - Under the title, when `priced`: `<p className={s.price}>{`전체 풀이 · ${won(offer.priceKrw)}`}</p>`.
 - In `.actions`, after the primary:
   - `{offerSecondary}`;
-  - `{owner && offer.mode !== "beta" ? <Button variant="ghost" block onClick={() => onUnlock("owner")}>운영자로 무료 열기</Button> : null}`;
-  - when `error && refundHref`: `<div className={s.links}><Link href={refundHref}>환불받기</Link></div>`.
-- Caption: `<p className={s.caption}>{caption}</p>` replaces the fixed beta caption.
-- The beta primary keeps calling `onUnlock` with `"beta"`: `onClick={() => onUnlock("beta")}`. The existing callers pass `() => unlock()`-style handlers that ignore the argument, so they compile unchanged until Task 15.
+  - `{owner && offer.mode !== "opening" ? <Button variant="ghost" block onClick={() => onUnlock("owner")}>운영자로 무료 열기</Button> : null}`;
+  - when `error && refundHref`: `<div className={s.links}><Link href={refundHref}>환불받기</Link></div>`;
+  - when `offer.mode === "opening" && offer.login && loginHref`: `<div className={s.links}><Link href={loginHref}>결제한 풀이가 있다면 로그인</Link></div>`.
+- Caption: `<p className={s.caption}>{caption}</p>` replaces the fixed caption.
+- The opening primary calls `onUnlock("opening")`. The existing callers pass `() => unlock()`-style handlers that ignore the argument, so they compile unchanged until Task 15.
 
 - [ ] **Step 7: Run the tests**
 
 Run: `npx vitest run apps/web/lib/pay/offer.test.ts apps/web/lib/account/client.test.ts apps/web/lib/reading apps/web/components/tarot`
-Expected: PASS (offer 6, client 3, errors.p4 3, UnlockSheet 6; existing reading tests unchanged).
+Expected: PASS (offer 7, client 3, errors.p4 4, UnlockSheet 7; existing reading and sheet tests unchanged).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
@@ -6509,32 +7852,50 @@ Expected: exit 0.
 
 ```bash
 git add apps/web/lib/account/client.ts apps/web/lib/account/client.test.ts apps/web/lib/pay/offer.ts apps/web/lib/pay/offer.test.ts apps/web/lib/reading/api.ts apps/web/lib/reading/errors.ts apps/web/lib/reading/errors.p4.test.ts apps/web/components/tarot/UnlockSheet.tsx apps/web/components/tarot/UnlockSheet.module.css apps/web/components/tarot/UnlockSheet.test.tsx
-git commit -m "feat(unlock): account store, unlock offers and paid states in the unlock sheet" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -m "feat(unlock): account store, unlock offers, honest copy after a failed credit reading" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 15: Result pages and the login page
+### Task 15: Result pages, the delivery check after a cut, the login page
 
 **Files:**
+- Create: `apps/web/lib/storage/sync.ts`
 - Modify:
   - `apps/web/app/tarot/result/FreeResult.tsx`, `apps/web/app/tarot/result/page.tsx`
   - `apps/web/app/saju/chart/SajuChartView.tsx`, `apps/web/app/saju/chart/page.tsx`
   - `apps/web/app/chapter/[id]/LocalChapter.tsx` (send `readingId` with follow-ups)
-  - `apps/web/lib/storage/chapters.ts` (`serverId`), `apps/web/lib/reading/types.ts` (`readingId`)
+  - `apps/web/lib/storage/chapters.ts` (`serverId`, `mergeServerReadings`, `forgetServerIds`), `apps/web/lib/reading/types.ts` (`readingId`)
   - `apps/web/app/login/page.tsx`, `apps/web/app/login/LoginPanel.tsx` (real Kakao; Google removed)
-- Test: `apps/web/app/login/LoginPanel.test.tsx`, `apps/web/lib/storage/serverId.test.ts`
+- Test: `apps/web/app/login/LoginPanel.test.tsx`, `apps/web/lib/storage/serverId.test.ts`, `apps/web/lib/storage/sync.test.ts`
 
 **Interfaces:**
 - Consumes:
-  - Task 14: `useAccount`, `refreshAccount`, `loginHref`, `loginMessage`, `unlockOffer`, `checkoutHref`, and the `UnlockSheet` props.
-  - `standardProduct` (Task 2), `UnlockMethod` (Task 10), `safeReturnTo` (Task 3).
-  - The reading routes' `unlock`, `display` and `readingId` (Task 10); `FollowUpBody.readingId` (Task 11).
+  - Task 14: `useAccount`, `refreshAccount`, `loginHref`, `loginMessage`, `unlockOffer`, `checkoutHref`, `CREDIT_CHECKING`, `creditKept`, `creditUnknown`, and the `UnlockSheet` props; `getJson` (already in `lib/reading/api.ts`).
+  - `standardProduct`, `UnlockMethod`, `paymentsMode` (Task 2), `safeReturnTo` (Task 3).
+  - The reading routes' `unlock`, `display` and `readingId` (Task 10); `GET /api/readings` (Task 11); `FollowUpBody.readingId` (Task 11).
 - Produces:
   - `StoredChapter.serverId?: string` (the account copy's id); `TarotReadingResponse.readingId?`, `SajuReadingResponse.readingId?`
+  - `chapters.ts`: `mergeServerReadings(readings: Array<{id; createdAt; chapter: unknown}>): number` (chapters added), `forgetServerIds()`
+  - `sync.ts`:
+    - `type SavedReadingJson = { id: string; createdAt: number; chapter: unknown }`
+    - `fetchReadingsPage({before?, limit?}, fetchImpl?): Promise<{readings: SavedReadingJson[]; next: string | null} | null>`
+    - `type DeliveryCheck = {status: "delivered"; reading: SavedReadingJson} | {status: "kept"} | {status: "unknown"}`
+    - `checkDelivery(input: {startedAt; matches(chapter): boolean; method: "paid" | "free"; productId; units}, options?: {delays?; fetchImpl?; signal?}): Promise<DeliveryCheck>`
+    - `FIRST_CHECK_DELAYS`, `LATER_CHECK_DELAYS`
   - `FreeResult({instant, autoUnlock?, loginFlag?})`, `SajuChartView({autoUnlock?, loginFlag?})`
-    - `autoUnlock` ("paid" | "free" | null, from `?unlock=`) opens the reading once after checkout.
+    - `autoUnlock` ("paid" | "free" | null, from `?unlock=`) opens the reading once after checkout or login.
   - `LoginPanel({ next, status, navigate? })`
+
+**After a paid or 별조각 reading is cut off (M4):**
+- The server may have saved the reading even though the client saw an error (the work runs under `waitUntil`), so the page never claims the credit is untouched.
+- For QUALITY, UPSTREAM, TIMEOUT, INVALID, NETWORK (or a 5xx with an unknown code, which arrives as UPSTREAM) on a `paid` or `free` opening, it shows `CREDIT_CHECKING` and runs `checkDelivery` with the time the request started. Each round:
+  1. `GET /api/readings?limit=5`: a reading created at or after that time (2 minutes of clock slack) that matches this flow means it was delivered. It goes into this device's storage and the page opens it.
+  2. `GET /api/me`: the purchase still unused (`paid`), or 별조각 enough again (`free`), means the credit was kept. The page shows `creditKept`, and the retry and refund stay available.
+  3. Otherwise wait and ask again.
+- Rounds after 0, 2 and 4 s; then `creditUnknown` while it keeps asking in the background after 15 s, 30 s, 1 min and 2 min. A cut connection aborts the generation on the server (`enable_request_signal`), but a save already under way still lands, and a release that failed is swept 6 minutes after the reservation. A later answer replaces the message, or opens the reading.
+- A flow matches on the tarot question and its exact cards, or on the saju birth data. A reading of the same flow opened twice within two minutes is the same reading to the user, so either match is correct.
+- Errors answered before any reservation (login, no credit, budget, limits, bad input) skip the check.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -6552,16 +7913,95 @@ const card = { position: "지금의 나", cardId: "major-00", orientation: "upri
 
 describe("serverId on stored chapters", () => {
   it("keeps the account copy's id with the chapter", () => {
-    const chapter = saveChapter({ kind: "tarot", question: "질문", conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: "t", serverId: "abcdefghij0123456789" });
+    const { chapter } = saveChapter({ kind: "tarot", question: "질문", conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: "t", serverId: "abcdefghij0123456789" });
     expect(chapter.serverId).toBe("abcdefghij0123456789");
     expect(listChapters()[0]?.serverId).toBe("abcdefghij0123456789");
-    expect(JSON.parse(localStorage.getItem(CHAPTERS_KEY)!)[0].serverId).toBe("abcdefghij0123456789");
+    expect(JSON.parse(localStorage.getItem(CHAPTERS_KEY)!).chapters[0].serverId).toBe("abcdefghij0123456789");
   });
 
   it("drops a malformed serverId instead of the whole chapter", () => {
     const parsed = parseChapter({ id: "abc123", createdAt: 1, chapterToken: "t", kind: "tarot", question: "q", cards: [card], reading, serverId: "../etc" });
     expect(parsed).not.toBeNull();
     expect(parsed?.serverId).toBeUndefined();
+  });
+});
+```
+
+`apps/web/lib/storage/sync.test.ts`:
+
+```ts
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { clearChapters, listChapters, mergeServerReadings } from "./chapters";
+import { checkDelivery } from "./sync";
+
+afterEach(() => clearChapters());
+
+const reading = { verdict: "결론", cards: [], action: { heading: "오늘", body: "해 볼 일" } };
+const card = { position: "지금의 나", cardId: "major-00", orientation: "upright" as const };
+const serverChapter = (question = "계정 질문", turns = 0) => ({
+  kind: "tarot", question, conditions: [], note: "", cards: [card], reading,
+  chapterToken: `t${turns}`, createdAt: 5, turns: Array.from({ length: turns }, (_, i) => ({ question: `q${i}`, answer: `a${i}` })), followUpsLeft: 3 - turns,
+});
+const ID = "abcdefghij0123456789";
+const STARTED = Date.parse("2026-10-01T03:00:00Z");
+const me = (user: unknown) => Response.json({ payments: true, login: true, owner: false, user });
+const userWith = (over: Record<string, unknown> = {}) => ({ nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [], ...over });
+
+function stub(readings: unknown[], account: Response) {
+  return vi.fn(async (url: string) => (url.startsWith("/api/readings") ? Response.json({ readings, next: null }) : account.clone())) as unknown as typeof fetch;
+}
+
+const flow = { startedAt: STARTED, matches: (chapter: unknown) => (chapter as { question?: string }).question === "이번 질문", productId: "tarot", units: 10 };
+
+describe("account readings on this device", () => {
+  it("adds readings from the account once, and takes newer follow-ups", () => {
+    expect(mergeServerReadings([{ id: ID, createdAt: 5, chapter: serverChapter() }])).toBe(1);
+    expect(mergeServerReadings([{ id: ID, createdAt: 5, chapter: serverChapter("계정 질문", 1) }])).toBe(0);
+    const [only] = listChapters();
+    expect(only).toMatchObject({ id: ID, serverId: ID, chapterToken: "t1", followUpsLeft: 2 });
+    expect(only?.turns).toHaveLength(1);
+  });
+
+  it("skips what does not parse", () => {
+    expect(mergeServerReadings([{ id: "bad", createdAt: 1, chapter: { kind: "tarot" } }])).toBe(0);
+    expect(listChapters()).toEqual([]);
+  });
+});
+
+describe("checking a cut-off paid or 별조각 reading", () => {
+  it("finds the reading the server saved after the request started", async () => {
+    const saved = { id: ID, createdAt: STARTED + 30_000, chapter: serverChapter("이번 질문") };
+    const result = await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: stub([saved], me(userWith())) });
+    expect(result).toEqual({ status: "delivered", reading: saved });
+  });
+
+  it("ignores an older reading and one of another flow", async () => {
+    const older = { id: ID, createdAt: STARTED - 10 * 60_000, chapter: serverChapter("이번 질문") };
+    const other = { id: "zzzzzzzzzz0123456789", createdAt: STARTED + 1, chapter: serverChapter("다른 질문") };
+    const result = await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: stub([older, other], me(userWith())) });
+    expect(result).toEqual({ status: "unknown" });
+  });
+
+  it("says kept only when the account shows the credit unused", async () => {
+    expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: stub([], me(userWith({ unused: [{ orderId: "o1", productId: "tarot" }] }))) })).toEqual({ status: "kept" });
+    expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0], fetchImpl: stub([], me(userWith({ stardust: 10 }))) })).toEqual({ status: "kept" });
+    expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0, 0], fetchImpl: stub([], me(userWith({ stardust: 0 }))) })).toEqual({ status: "unknown" });
+  });
+
+  it("asks again until it knows, and stops when told to", async () => {
+    let round = 0;
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.startsWith("/api/readings")) {
+        round++;
+        return Response.json({ readings: round < 3 ? [] : [{ id: ID, createdAt: STARTED + 1, chapter: serverChapter("이번 질문") }], next: null });
+      }
+      return me(userWith());
+    }) as unknown as typeof fetch;
+    expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0, 0, 0], fetchImpl })).toMatchObject({ status: "delivered" });
+    const controller = new AbortController();
+    controller.abort();
+    expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0, 0], fetchImpl, signal: controller.signal })).toEqual({ status: "unknown" });
   });
 });
 ```
@@ -6603,13 +8043,70 @@ describe("LoginPanel", () => {
 
 - [ ] **Step 2: Run them and see them fail**
 
-Run: `npx vitest run apps/web/lib/storage/serverId.test.ts apps/web/app/login/LoginPanel.test.tsx`
-Expected: FAIL. `serverId` is not kept, and LoginPanel has no `next` prop and still shows Google.
+Run: `npx vitest run apps/web/lib/storage/serverId.test.ts apps/web/lib/storage/sync.test.ts apps/web/app/login/LoginPanel.test.tsx`
+Expected: FAIL. `serverId` is not kept, `sync.ts` does not exist, and LoginPanel has no `next` prop and still shows Google.
 
-- [ ] **Step 3: `serverId` and `readingId`**
+- [ ] **Step 3: `serverId`, `readingId` and the merge helpers**
   - In `apps/web/lib/storage/chapters.ts`:
-    - add to `ChapterBase`: `/** The account copy's id (Task 10/11): follow-ups update it there too. */ serverId?: string;`;
-    - in `parseChapter`, after `base` is built: `if (isString(value.serverId) && /^[a-z0-9]{20}$/.test(value.serverId)) base.serverId = value.serverId;`.
+    - add to `ChapterBase`: `/** The account copy's id (Tasks 10–11): follow-ups update it there too. */ serverId?: string;`;
+    - in `parseChapter`, after `base` is built: `if (isString(value.serverId) && /^[a-z0-9]{20}$/.test(value.serverId)) base.serverId = value.serverId;`;
+    - below `deleteChapter`, add the two helpers below. They work on the stored envelope's raw entries, like `updateChapter`: an entry this version cannot read is kept as it is.
+
+```ts
+type AccountReading = { id: string; createdAt: number; chapter: unknown };
+
+const fromAccount = (remote: AccountReading, id: string) =>
+  isRecord(remote.chapter) ? parseChapter({ ...remote.chapter, id, serverId: remote.id, createdAt: remote.createdAt }) : null;
+
+/**
+ * Brings readings saved in the account onto this device (a reading opened elsewhere, a delivery
+ * this page lost, follow-ups answered on another device). A new one keeps its account id as its local
+ * id. A known one only takes newer follow-up turns. Returns how many chapters were added.
+ */
+export function mergeServerReadings(readings: readonly AccountReading[]): number {
+  const entries = rawEntries();
+  const byServerId = new Map(readings.map((remote) => [remote.id, remote]));
+  let changed = false;
+  const updated = entries.map((entry) => {
+    const chapter = parseChapter(entry);
+    const remote = chapter?.serverId ? byServerId.get(chapter.serverId) : undefined;
+    const parsed = chapter && remote ? fromAccount(remote, chapter.id) : null;
+    if (!chapter || !parsed || parsed.turns.length <= chapter.turns.length) return entry;
+    changed = true;
+    return { ...chapter, turns: parsed.turns, chapterToken: parsed.chapterToken, followUpsLeft: parsed.followUpsLeft };
+  });
+  const known = new Set<string>();
+  for (const entry of entries) {
+    const id = idOf(entry);
+    if (id) known.add(id);
+    const serverId = isRecord(entry) && isString(entry.serverId) ? entry.serverId : null;
+    if (serverId) known.add(serverId);
+  }
+  const fresh: StoredChapter[] = [];
+  for (const remote of readings) {
+    if (known.has(remote.id)) continue;
+    const parsed = fromAccount(remote, remote.id);
+    if (!parsed) continue;
+    fresh.push(parsed);
+    known.add(remote.id);
+  }
+  if (changed || fresh.length) store.save({ v: 1, chapters: [...updated, ...fresh] });
+  return fresh.length;
+}
+
+/** After the account's copies were deleted: this device's chapters stand alone again. */
+export function forgetServerIds() {
+  store.save({
+    v: 1,
+    chapters: rawEntries().map((entry) => {
+      if (!isRecord(entry) || !("serverId" in entry)) return entry;
+      const { serverId: _serverId, ...rest } = entry;
+      return rest;
+    }),
+  });
+}
+```
+
   - In `apps/web/lib/reading/types.ts`, add `/** The account copy's id, when the reading was saved to the account. */ readingId?: string;` to `TarotReadingResponse` and `SajuReadingResponse`.
   - In `apps/web/app/chapter/[id]/LocalChapter.tsx`, send the id with follow-ups:
 
@@ -6622,7 +8119,76 @@ Expected: FAIL. `serverId` is not kept, and LoginPanel has no `next` prop and st
     });
 ```
 
-- [ ] **Step 4: Wire `FreeResult.tsx`.** Change only these parts and keep everything else as it is when you start.
+- [ ] **Step 4: Write `apps/web/lib/storage/sync.ts`**
+
+```ts
+import { parseAccount } from "@/lib/account/client";
+import { getJson } from "@/lib/reading/api";
+
+/** The account's saved readings on this device (spec 5.7), and the check after a cut-off paid reading (M4). */
+
+export type SavedReadingJson = { id: string; createdAt: number; chapter: unknown };
+
+/** One page of GET /api/readings, or null when it could not be read. */
+export async function fetchReadingsPage(
+  query: { before?: string; limit?: number } = {},
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ readings: SavedReadingJson[]; next: string | null } | null> {
+  const params = new URLSearchParams();
+  if (query.before) params.set("before", query.before);
+  if (query.limit) params.set("limit", String(query.limit));
+  const search = params.toString();
+  const res = await getJson<{ readings: SavedReadingJson[]; next: string | null }>(`/api/readings${search ? `?${search}` : ""}`, { fetchImpl });
+  return res.ok && Array.isArray(res.data.readings) ? { readings: res.data.readings, next: res.data.next ?? null } : null;
+}
+
+export type DeliveryCheck = { status: "delivered"; reading: SavedReadingJson } | { status: "kept" } | { status: "unknown" };
+
+/** The first rounds, while CREDIT_CHECKING shows (ms before each). */
+export const FIRST_CHECK_DELAYS = [0, 2_000, 4_000];
+/** Then in the background, under creditUnknown: a cut-off generation can still finish for 4 minutes. */
+export const LATER_CHECK_DELAYS = [15_000, 30_000, 60_000, 120_000];
+/** Server and device clocks differ; a reading this much older than the request still counts. */
+const CLOCK_SLACK_MS = 2 * 60_000;
+
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    if (ms <= 0 || signal?.aborted) return resolve();
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timer);
+      resolve();
+    }, { once: true });
+  });
+
+/**
+ * After a paid or 별조각 opening failed mid-way: was it delivered (the account has the reading), was
+ * the credit kept (the account shows it unused), or is it not known yet? One round per delay; the
+ * first answer wins. Never "kept" on a guess.
+ */
+export async function checkDelivery(
+  input: { startedAt: number; matches: (chapter: unknown) => boolean; method: "paid" | "free"; productId: string; units: number },
+  options: { delays?: readonly number[]; fetchImpl?: typeof fetch; signal?: AbortSignal } = {},
+): Promise<DeliveryCheck> {
+  const { delays = FIRST_CHECK_DELAYS, fetchImpl = fetch, signal } = options;
+  for (const delay of delays) {
+    await sleep(delay, signal);
+    if (signal?.aborted) break;
+    const page = await fetchReadingsPage({ limit: 5 }, fetchImpl);
+    const found = page?.readings.find((reading) => reading.createdAt >= input.startedAt - CLOCK_SLACK_MS && input.matches(reading.chapter));
+    if (found) return { status: "delivered", reading: found };
+    const me = await getJson<unknown>("/api/me", { fetchImpl });
+    const user = me.ok ? parseAccount(me.data)?.user : null;
+    if (user && input.method === "paid" && user.unused.some((item) => item.productId === input.productId)) return { status: "kept" };
+    if (user && input.method === "free" && user.stardust >= input.units) return { status: "kept" };
+  }
+  return { status: "unknown" };
+}
+```
+
+`checkDelivery` asks for 5 readings: a page this small is enough, since the reading it looks for is the newest or nearly so.
+
+- [ ] **Step 5: Wire `FreeResult.tsx`.** Change only these parts and keep everything else as it is when you start.
 
 ```tsx
 // new imports
@@ -6631,34 +8197,80 @@ import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/accou
 import { standardProduct } from "@/lib/pay/catalog";
 import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
+import { CREDIT_CHECKING, creditKept, creditUnknown, type ErrorView } from "@/lib/reading/errors";
+import { mergeServerReadings } from "@/lib/storage/chapters";
+import { LATER_CHECK_DELAYS, checkDelivery, type DeliveryCheck } from "@/lib/storage/sync";
 
 const RETURN_TO = "/tarot/result";
+/** Errors after which the server may still have saved the reading (M4). */
+const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
 
 export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { instant: boolean; autoUnlock?: UnlockMethod | null; loginFlag?: string | null }) {
   // ...existing hooks...
   const account = useAccount();
-  const offer = unlockOffer(account, standardProduct("tarot"), SITE.price.signupGiftFree);
-  const [method, setMethod] = useState<UnlockMethod>("beta");
-  const unlockError = unlockGen.state.status === "error"
-    ? describeApiError(unlockGen.state.error, method === "paid" ? "paid" : method === "free" ? "stardust" : "reading")
-    : null;
+  const product = standardProduct("tarot");
+  const offer = unlockOffer(account, product, SITE.price.signupGiftFree);
+  const [method, setMethod] = useState<UnlockMethod>("opening");
+  const [creditView, setCreditView] = useState<ErrorView | null>(null);
+  const checkAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => checkAbort.current?.abort(), []);
+  const context = method === "paid" ? "paid" : method === "free" ? "stardust" : "reading";
+  const unlockError = creditView ?? (unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error, context) : null);
   const loginNote = loginMessage(loginFlag);
+
+  /** This flow's reading: the same question and the very same cards. */
+  const sameFlow = (chapter: unknown) => {
+    const c = chapter as { kind?: string; question?: string; cards?: Array<{ cardId: string; orientation: string }> };
+    return c.kind === "tarot" && c.question === input?.question && JSON.stringify(c.cards?.map((x) => [x.cardId, x.orientation])) === JSON.stringify(draw?.cards.map((x) => [x.cardId, x.orientation]));
+  };
+
+  /** M4: after a cut-off paid or 별조각 opening, find out what happened before saying anything. */
+  const settle = async (chosen: "paid" | "free", startedAt: number) => {
+    checkAbort.current?.abort();
+    const controller = new AbortController();
+    checkAbort.current = controller;
+    const credit = chosen === "paid" ? "paid" : "stardust";
+    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0 };
+    const apply = (check: DeliveryCheck): boolean => {
+      if (check.status === "delivered") {
+        mergeServerReadings([check.reading]);
+        void refreshAccount();
+        router.push(`/chapter/${check.reading.id}`);
+        return true;
+      }
+      if (check.status === "kept") {
+        setCreditView(creditKept(credit));
+        void refreshAccount();
+        return true;
+      }
+      return false;
+    };
+    setCreditView(CREDIT_CHECKING);
+    if (apply(await checkDelivery(flow, { signal: controller.signal }))) return;
+    if (controller.signal.aborted) return;
+    setCreditView(creditUnknown(credit));
+    apply(await checkDelivery(flow, { delays: LATER_CHECK_DELAYS, signal: controller.signal }));
+  };
 
   const unlock = async (chosen: UnlockMethod) => {
     if (!draw || !input || !summary) return;
     setMethod(chosen);
+    setCreditView(null);
+    checkAbort.current?.abort();
     window.scrollTo(0, 0);
     const plan = progressPlan("tarot-reading", { positions });
-    const body = { drawToken: draw.drawToken, input: withHistory(input), ...(chosen === "beta" ? {} : { unlock: { method: chosen } }) };
-    const result = await unlockGen.run("/api/tarot/reading", body, plan);
+    const body = { drawToken: draw.drawToken, input: withHistory(input), ...(chosen === "opening" ? {} : { unlock: { method: chosen } }) };
+    const startedAt = Date.now();
+    const result = await unlockGen.run("/api/tarot/reading", body, plan, isTarotReadingResponse);
     if (!result) return;
     if (!result.ok) {
       if (result.error.code === "BETA_LIMIT") markDayUsedUp();
       if (result.error.code === "LOGIN_REQUIRED") router.push(loginHref(RETURN_TO));
       if (result.error.code === "NO_CREDIT" || result.error.code === "PAYMENT_REQUIRED") void refreshAccount();
+      if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(result.error.code)) void settle(chosen, startedAt);
       return;
     }
-    if (chosen === "beta") countFullReading();
+    if (chosen === "opening") countFullReading();
     else void refreshAccount();
     // ...the existing saveChapter({...}) call, with one more field:
     //   ...(result.data.readingId ? { serverId: result.data.readingId } : {}),
@@ -6679,6 +8291,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   });
 ```
 
+Keep the `isTarotReadingResponse` check the `run` call has at aa70830; the response's extra `readingId` passes it. `UNSETTLED` holds the codes after which the server may have saved the reading. `parseApiError` maps a code it does not know by status (5xx → `UPSTREAM`), so a server failure with an unexpected code is covered too. Every refusal before a reservation has a known code outside `UNSETTLED` (the budget's 503 is `AI_UNAVAILABLE`, a missing account setup is `PAY_UNAVAILABLE`).
+
 Replace the `<UnlockSheet … />` element with:
 
 ```tsx
@@ -6690,13 +8304,15 @@ Replace the `<UnlockSheet … />` element with:
                 loginHref={loginHref(RETURN_TO)}
                 payHref={checkoutHref("tarot", RETURN_TO)}
                 owner={account?.owner}
-                refundHref={method === "paid" ? "/me#orders" : undefined}
+                refundHref={method === "paid" && creditView?.action === "retry" ? "/me#orders" : undefined}
                 error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
                 redrawHref={withFlags("/tarot/draw", { instant })}
                 editHref="/tarot/new"
                 openedHref={openedId ? `/chapter/${openedId}` : undefined}
               />
 ```
+
+`refundHref` appears only with `creditKept` (its action is `retry`): the refund link shows once the purchase is known to be unused.
 
 `apps/web/app/tarot/result/page.tsx` passes the flags:
 
@@ -6708,10 +8324,12 @@ Replace the `<UnlockSheet … />` element with:
         />
 ```
 
-- [ ] **Step 5: Wire `SajuChartView.tsx` the same way.**
+- [ ] **Step 6: Wire `SajuChartView.tsx` the same way.**
   - Use `standardProduct("saju")` and `RETURN_TO = "/saju/chart"`; the props are `{ autoUnlock?, loginFlag? }`.
-  - For a non-beta method, the request body adds `display: { title: teaser.title, summary: teaser.summary }` next to `unlock`.
+  - For a `paid` or `free` method, the request body adds `display: { title: teaser.title, summary: teaser.summary }` next to `unlock`.
   - Pass `checkoutHref("saju", RETURN_TO)` to the sheet, and save `serverId` with the chapter.
+  - The same `settle` after a cut-off opening. `sameFlow` matches `c.kind === "saju"` and the same birth data: compare `JSON.stringify(c.birth)` with the birth the request sent.
+  - Keep the `isSajuReadingResponse` check the `run` call has at aa70830; the response's extra `readingId` passes it.
   - `apps/web/app/saju/chart/page.tsx` becomes:
 
 ```tsx
@@ -6732,19 +8350,26 @@ export default async function SajuChartPage({ searchParams }: PageProps<"/saju/c
 }
 ```
 
-- [ ] **Step 6: Replace the login page.**
+Keep whatever wraps `SajuChartView` in the file you start from (`NightSky`, `Footer`, class names). Change only the props.
 
-`apps/web/app/login/page.tsx`:
+- [ ] **Step 7: Replace the login page.**
+
+`apps/web/app/login/page.tsx`. At aa70830 the page is a dev-only prototype (`PROTOTYPE_ONLY`, 404 in production builds, commit 964dbce). Replace that gate: the page exists whenever `STARLOG_PAYMENTS` is not `off`. The start route still decides who may log in (`loginOpen`, Task 5), so a visitor in owner mode without the pass gets `login=closed` there.
 
 ```tsx
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { NightSky } from "@/components/sky/NightSky";
 import { safeReturnTo } from "@/lib/account/returnTo";
+import { paymentsMode } from "@/lib/pay/mode";
+import { NOINDEX } from "@/lib/seo";
 import { LoginPanel } from "./LoginPanel";
 
-export const metadata: Metadata = { title: "로그인", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "로그인", robots: NOINDEX };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  // Dark deploy (STARLOG_PAYMENTS=off): no login anywhere, as before P4.
+  if (paymentsMode() === "off") notFound();
   const query = await searchParams;
   return (
     <div className="page-shell">
@@ -6853,21 +8478,21 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
 
 The status test reads `getByRole("status")`. The visible `.error` line repeats the note for sighted users; the sr-only status region announces it.
 
-- [ ] **Step 7: Run the tests**
+- [ ] **Step 8: Run the tests**
 
 Run: `npx vitest run apps/web/lib/storage apps/web/app/login apps/web/app/tarot apps/web/app/saju apps/web/app/chapter apps/web/components`
-Expected: PASS (serverId 2, LoginPanel 3; the existing storage, DrawStage and chapter tests unchanged).
+Expected: PASS (serverId 2, sync 6, LoginPanel 3; the existing storage, DrawStage and chapter tests unchanged).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
-The controller runs `pnpm e2e` after this task. The beta flows must stay green: with `STARLOG_PAYMENTS` unset, `/api/me` answers `payments: false`, so every sheet is the beta sheet.
+The controller runs `pnpm e2e` after this task. Today's flows must stay green: with `STARLOG_PAYMENTS` unset, `/api/me` answers `payments: false, login: false`, so every sheet is the 오픈 기념 sheet. The fresh-start rules of aa70830 (`lib/useFlowVisit.ts`) reset only the question builder, the situation step and the saju form; the result pages keep the tab's flow, so coming back from `/pay/success` to `/tarot/result?unlock=paid` in the same tab still finds the draw. The e2e `screens` case `login` opens `/login`; it renders only with `STARLOG_PAYMENTS` set (Task 19 sets `owner` for e2e).
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add apps/web/app/tarot/result apps/web/app/saju/chart apps/web/app/chapter/[id]/LocalChapter.tsx apps/web/lib/storage/chapters.ts apps/web/lib/storage/serverId.test.ts apps/web/lib/reading/types.ts apps/web/app/login
-git commit -m "feat(unlock): paid and 별조각 offers on the result pages; Kakao-only login" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git add apps/web/app/tarot/result apps/web/app/saju/chart apps/web/app/chapter/[id]/LocalChapter.tsx apps/web/lib/storage/chapters.ts apps/web/lib/storage/serverId.test.ts apps/web/lib/storage/sync.ts apps/web/lib/storage/sync.test.ts apps/web/lib/reading/types.ts apps/web/app/login
+git commit -m "feat(unlock): paid and 별조각 offers on the result pages, a delivery check after a cut, Kakao-only login" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -6880,19 +8505,25 @@ git commit -m "feat(unlock): paid and 별조각 offers on the result pages; Kaka
   - `apps/web/app/pay/checkout/page.tsx`, `apps/web/app/pay/checkout/CheckoutView.tsx`, `apps/web/app/pay/pay.module.css`
   - `apps/web/app/pay/success/page.tsx`, `apps/web/app/pay/success/PaySuccess.tsx`
   - `apps/web/app/pay/fail/page.tsx`, `apps/web/app/pay/fail/PayFail.tsx`
-- Modify: `apps/web/lib/reading/api.ts` (add `getJson`), `apps/web/lib/seo.ts` (`/pay` in `ROBOTS_DISALLOW`, plus its test if the test pins the list)
+- Modify: `apps/web/lib/robots.ts` (`/pay` in `ROBOTS_DISALLOW`); `apps/web/lib/seo.test.ts` only if it pins the whole list
 - Test: `apps/web/app/pay/checkout/CheckoutView.test.tsx`, `apps/web/app/pay/success/PaySuccess.test.tsx`
 
 **Interfaces:**
 - Consumes:
   - `GET /api/pay/checkout`, `POST /api/pay/orders`, `POST /api/pay/confirm`, `GET /api/pay/orders?id=` (Task 7).
-  - `loginHref`, `refreshAccount` (Task 14); `withQuery`, `safeReturnTo` (Task 3); `standardProduct` (Task 2).
+  - `loginHref`, `refreshAccount` (Task 14); `getJson` (already in `lib/reading/api.ts`); `withQuery`, `safeReturnTo` (Task 3); `standardProduct` (Task 2); `NOINDEX` (`lib/seo.ts`).
   - `postJson`, `describeApiError`, `ErrorView`; `Button`, `Checkbox`, `Stepper`, `NightSky`.
 - Produces:
-  - `tossSdk.ts`: `TOSS_SDK_URL`, `interface TossWidgets`, `loadTossSdk(): Promise<(clientKey: string) => { widgets(o: {customerKey}): TossWidgets }>`
-  - `api.ts`: `getJson<T>(path, options?): Promise<ApiResult<T>>`
+  - `tossSdk.ts`: `TOSS_SDK_URL`, `interface TossWidgets`, `loadTossSdk(): Promise<(clientKey: string) => { widgets(o: {customerKey}): TossWidgets }>`, `isPaymentWindowClosed(error): boolean`
   - `CheckoutView({ productId, returnTo, navigate? })`, `PaySuccess({ paymentKey, orderId, amount, navigate?, pollMs? })`, `PayFail({ code, message, orderId })`
   - Routes `/pay/checkout?product&returnTo`, `/pay/success` (Toss successUrl), `/pay/fail` (Toss failUrl); all noindex and disallowed in robots.
+
+**Revision 2:**
+- **M5:** the success page works without the session. When the confirm answers `signedIn: false` (the card app or KakaoTalk handed the buyer to another browser), it says the payment went through. Its gold button is `로그인하고 풀이 열기`, to `/login?next=<returnTo>?unlock=paid`; the reading opens after login.
+- **M7:** the checkout notice adds the minor's line: 만 19세 미만이 법정대리인의 동의 없이 결제하면 본인이나 법정대리인이 결제를 취소할 수 있어요.
+- **Minor 8:** `requestPayment` errors are told apart. The buyer closing the window (`USER_CANCEL`, `PAY_PROCESS_CANCELED`) stays quiet; anything else says the window could not open and nothing was charged.
+- No claim that a failed generation leaves the purchase "그대로": the notice states the rule (a purchase is used only when its reading is saved).
+- `components/layout/VersionCheck` (aa70830) reloads a tab whose build changed when the visitor comes back to it, but never while an element has `aria-busy="true"`. Coming back from a card app is exactly that moment. The checkout's container carries `aria-busy={busy}` while the order and the payment window are open, and the success page's carries `aria-busy="true"` until it has an answer. A reload of the success page anyway only repeats an idempotent confirm.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -6932,6 +8563,7 @@ describe("CheckoutView", () => {
     expect(await screen.findByText("2,900원")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "타로 전체 풀이" })).toBeTruthy();
     expect(screen.getByText(/청약철회가 제한돼요/)).toBeTruthy();
+    expect(screen.getByText("만 19세 미만이 법정대리인의 동의 없이 결제하면 본인이나 법정대리인이 결제를 취소할 수 있어요.")).toBeTruthy();
     expect(screen.getByText("이 기기에 계속 보관")).toBeTruthy();
     const pay = screen.getByRole("button", { name: "2,900원 결제하기" }) as HTMLButtonElement;
     expect(pay.disabled).toBe(true);
@@ -6954,6 +8586,45 @@ describe("CheckoutView", () => {
     stubFetch(Response.json({ code: "NOT_AVAILABLE", message: "지금은 열 수 없는 상품이에요." }, { status: 409 }));
     render(<CheckoutView productId="match" returnTo="/" navigate={() => {}} />);
     expect(await screen.findByText("지금은 열 수 없는 상품이에요")).toBeTruthy();
+  });
+
+  /** The Toss widget, faked: requestPayment rejects with `failure`. */
+  function fakeToss(failure: unknown) {
+    stubFetch(Response.json({ productId: "tarot", name: "타로 전체 풀이", amount: 2900, customerKey: "c_x", provider: "toss", clientKey: "test_gck_x" }));
+    const widgets = {
+      setAmount: async () => {},
+      renderPaymentMethods: async () => {},
+      renderAgreement: async () => {},
+      requestPayment: vi.fn(async () => {
+        throw failure;
+      }),
+    };
+    vi.stubGlobal("TossPayments", () => ({ widgets: () => widgets }));
+    return widgets;
+  }
+
+  async function payWithToss() {
+    render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={() => {}} />);
+    await screen.findByText("2,900원");
+    fireEvent.click(screen.getByRole("checkbox", { name: "위 내용을 확인했어요" }));
+    const pay = screen.getByRole("button", { name: "2,900원 결제하기" }) as HTMLButtonElement;
+    await waitFor(() => expect(pay.disabled).toBe(false));
+    fireEvent.click(pay);
+    return pay;
+  }
+
+  it("stays quiet when the buyer closes the payment window", async () => {
+    const widgets = fakeToss({ code: "USER_CANCEL", message: "사용자가 결제를 취소했습니다." });
+    const pay = await payWithToss();
+    await waitFor(() => expect(widgets.requestPayment).toHaveBeenCalled());
+    await waitFor(() => expect(pay.disabled).toBe(false));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("says so when the payment window could not open", async () => {
+    fakeToss({ code: "INVALID_PARAMETERS", message: "잘못된 요청입니다." });
+    await payWithToss();
+    expect((await screen.findByRole("alert")).textContent).toBe("결제창을 열지 못했어요");
   });
 });
 ```
@@ -6980,7 +8651,7 @@ function stub(routes: Record<string, Array<() => Response>>) {
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
     const key = url.split("?")[0]!;
     (bodies[key] ??= []).push(init?.body ? JSON.parse(String(init.body)) : null);
-    const queue = routes[key] ?? [() => Response.json({ payments: true, owner: false, user: null })];
+    const queue = routes[key] ?? [() => Response.json({ payments: true, login: true, owner: false, user: null })];
     return (queue.length > 1 ? queue.shift()! : queue[0]!)();
   }));
   return bodies;
@@ -6988,7 +8659,7 @@ function stub(routes: Record<string, Array<() => Response>>) {
 
 describe("PaySuccess", () => {
   it("confirms with the query's values and opens the reading", async () => {
-    const bodies = stub({ "/api/pay/confirm": [() => Response.json({ status: "paid", orderId: ORDER, productId: "tarot", returnTo: "/tarot/result" })] });
+    const bodies = stub({ "/api/pay/confirm": [() => Response.json({ status: "paid", orderId: ORDER, productId: "tarot", returnTo: "/tarot/result", signedIn: true })] });
     const navigate = vi.fn();
     render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={navigate} />);
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/tarot/result?unlock=paid"));
@@ -6999,14 +8670,23 @@ describe("PaySuccess", () => {
     stub({
       "/api/pay/confirm": [() => Response.json({ code: "PAY_PENDING" }, { status: 409 })],
       "/api/pay/orders": [
-        () => Response.json({ orderId: ORDER, productId: "saju", status: "confirming", returnTo: "/saju/chart" }),
-        () => Response.json({ orderId: ORDER, productId: "saju", status: "paid", returnTo: "/saju/chart" }),
+        () => Response.json({ orderId: ORDER, productId: "saju", status: "confirming", returnTo: "/saju/chart", signedIn: true }),
+        () => Response.json({ orderId: ORDER, productId: "saju", status: "paid", returnTo: "/saju/chart", signedIn: true }),
       ],
     });
     const navigate = vi.fn();
     render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={navigate} pollMs={5} />);
     expect(await screen.findByText("결제를 확인하고 있어요")).toBeTruthy();
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/saju/chart?unlock=paid"));
+  });
+
+  it("in a browser without the session, says the payment went through and asks for a login to open it", async () => {
+    stub({ "/api/pay/confirm": [() => Response.json({ status: "paid", orderId: ORDER, productId: "tarot", returnTo: "/tarot/result", signedIn: false })] });
+    const navigate = vi.fn();
+    render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={navigate} />);
+    expect(await screen.findByText("결제했어요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "로그인하고 풀이 열기" }).getAttribute("href")).toBe("/login?next=%2Ftarot%2Fresult%3Funlock%3Dpaid");
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("says why a payment was not completed", async () => {
@@ -7023,22 +8703,7 @@ describe("PaySuccess", () => {
 Run: `npx vitest run apps/web/app/pay`
 Expected: FAIL (modules not found).
 
-- [ ] **Step 3: Add `getJson` to `apps/web/lib/reading/api.ts`**
-
-```ts
-/** GET a JSON answer (account and payment pages). */
-export async function getJson<T>(path: string, { signal, fetchImpl = fetch }: CallOptions = {}): Promise<ApiResult<T>> {
-  let response: Response;
-  try {
-    response = await fetchImpl(path, { headers: { Accept: "application/json" }, credentials: "same-origin", signal });
-  } catch {
-    return { ok: false, error: NETWORK };
-  }
-  return readJsonResult<T>(response);
-}
-```
-
-- [ ] **Step 4: Write `apps/web/lib/pay/tossSdk.ts`**
+- [ ] **Step 3: Write `apps/web/lib/pay/tossSdk.ts`**
 
 ```ts
 /**
@@ -7081,9 +8746,15 @@ export function loadTossSdk(): Promise<TossPaymentsFactory> {
   });
   return loading;
 }
+
+/** The buyer closed the payment window (minor 8): every other requestPayment error is a real failure. */
+export function isPaymentWindowClosed(error: unknown): boolean {
+  const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code: unknown }).code) : "";
+  return code === "USER_CANCEL" || code === "PAY_PROCESS_CANCELED";
+}
 ```
 
-- [ ] **Step 5: Write `apps/web/app/pay/checkout/CheckoutView.tsx`**
+- [ ] **Step 4: Write `apps/web/app/pay/checkout/CheckoutView.tsx`**
 
 ```tsx
 "use client";
@@ -7095,7 +8766,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref } from "@/lib/account/client";
 import { SITE, won } from "@/lib/config";
-import { loadTossSdk, type TossWidgets } from "@/lib/pay/tossSdk";
+import { isPaymentWindowClosed, loadTossSdk, type TossWidgets } from "@/lib/pay/tossSdk";
 import { getJson, postJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import s from "../pay.module.css";
@@ -7205,13 +8876,15 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
     }
     try {
       await widgets.current!.requestPayment({ orderId: order.orderId, orderName: order.orderName, successUrl: order.successUrl, failUrl: order.failUrl });
-    } catch {
-      setBusy(false); // the buyer closed the payment window: stay here
+    } catch (error) {
+      setBusy(false);
+      // The buyer closed the window: stay here quietly. Anything else is a real failure.
+      if (!isPaymentWindowClosed(error)) setError({ title: "결제창을 열지 못했어요", body: "잠시 뒤에 다시 시도해 주세요. 청구된 금액은 없어요.", action: "retry" });
     }
   };
 
   return (
-    <div className={s.screen}>
+    <div className={s.screen} aria-busy={busy}>
       <Stepper label="결제" backHref={returnTo} backLabel="풀이로 돌아가기" />
       {info ? (
         <>
@@ -7230,9 +8903,10 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
             </h2>
             <p>결제한 풀이는 완성되어 열리는 순간부터 청약철회가 제한돼요(전자상거래법 제17조 제2항 제5호). 무료로 본 첫 풀이가 맛보기예요.</p>
             <p>
-              {"열리기 전에는 언제든 내 정보에서 전액 환불받을 수 있고, 풀이를 만들다 실패하면 결제한 풀이는 그대로 남아요. "}
+              {"결제는 풀이가 완성되어 저장될 때만 쓰여요. 열기 전에는 내 정보에서 전액 환불받을 수 있어요. "}
               <Link href="/refund">환불 정책</Link>
             </p>
+            <p>만 19세 미만이 법정대리인의 동의 없이 결제하면 본인이나 법정대리인이 결제를 취소할 수 있어요.</p>
           </section>
           <Checkbox checked={agreed} onChange={setAgreed} required>
             위 내용을 확인했어요
@@ -7283,14 +8957,14 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
 }
 ```
 
-- [ ] **Step 6: Write `apps/web/app/pay/success/PaySuccess.tsx`**
+- [ ] **Step 5: Write `apps/web/app/pay/success/PaySuccess.tsx`**
 
 ```tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { refreshAccount } from "@/lib/account/client";
+import { loginHref, refreshAccount } from "@/lib/account/client";
 import { withQuery } from "@/lib/account/returnTo";
 import { getJson, postJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
@@ -7310,38 +8984,51 @@ const POLLS = 30;
 /**
  * Toss's successUrl (spec 5.3). It confirms on the server, then goes back to the reading with
  * ?unlock=paid, and the reading opens. If Toss's answer is late, it asks for the order's status
- * every couple of seconds.
+ * every couple of seconds. Neither call needs the session (M5): in a browser without it (a card app
+ * or KakaoTalk handing over) the page says the payment went through and asks for a login, which
+ * returns to the reading and opens it.
  */
 export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => window.location.replace(url), pollMs = 2000 }: PaySuccessProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<ErrorView | null>(null);
+  const [loginTo, setLoginTo] = useState<string | null>(null);
   const started = useRef(false);
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    const finish = (returnTo: string) => {
+    const finish = (paid: { returnTo: string; signedIn?: boolean }) => {
+      const target = withQuery(paid.returnTo, { unlock: "paid" });
+      if (paid.signedIn === false) return setLoginTo(loginHref(target));
       void refreshAccount();
-      navigate(withQuery(returnTo, { unlock: "paid" }));
+      navigate(target);
     };
     void (async () => {
-      const res = await postJson<{ status: "paid"; returnTo: string }>("/api/pay/confirm", { paymentKey, orderId, amount: Number(amount) });
-      if (res.ok) return finish(res.data.returnTo);
+      const res = await postJson<{ status: "paid"; returnTo: string; signedIn: boolean }>("/api/pay/confirm", { paymentKey, orderId, amount: Number(amount) });
+      if (res.ok) return finish(res.data);
       if (res.error.code !== "PAY_PENDING") return setError(describeApiError(res.error));
       setPending(true);
       for (let i = 0; i < POLLS; i++) {
         await new Promise((resolve) => setTimeout(resolve, pollMs));
-        const status = await getJson<{ status: string; returnTo: string }>(`/api/pay/orders?id=${encodeURIComponent(orderId)}`);
-        if (status.ok && status.data.status === "paid") return finish(status.data.returnTo);
+        const status = await getJson<{ status: string; returnTo: string; signedIn: boolean }>(`/api/pay/orders?id=${encodeURIComponent(orderId)}`);
+        if (status.ok && status.data.status === "paid") return finish(status.data);
         if (status.ok && status.data.status === "failed") return setError({ title: "결제를 마치지 못했어요", body: "청구된 금액은 없어요.", action: "retry" });
       }
-      setError({ title: "결제를 확인하고 있어요", body: "내 정보의 결제 내역에서 확인할 수 있어요. 결제가 끝나면 결제한 풀이가 그곳에 남아 있어요.", action: null });
+      setError({ title: "결제를 확인하고 있어요", body: "확인이 늦어지고 있어요. 결제가 끝나면 내 정보의 결제 내역과 결제한 풀이에 나타나요.", action: null });
     })();
   }, [paymentKey, orderId, amount, navigate, pollMs]);
 
   return (
-    <div className={s.screen}>
-      {error ? (
+    <div className={s.screen} aria-busy={!loginTo && !error}>
+      {loginTo ? (
+        <div role="status" className={s.panel}>
+          <p className={s.title}>결제했어요</p>
+          <p>이 브라우저에서는 로그인되어 있지 않아요. 결제한 카카오 계정으로 로그인하면 바로 열려요.</p>
+          <Button href={loginTo} block>
+            로그인하고 풀이 열기
+          </Button>
+        </div>
+      ) : error ? (
         <div role="alert" className={s.panel}>
           <p className={s.title}>{error.title}</p>
           {error.body ? <p>{error.body}</p> : null}
@@ -7359,7 +9046,7 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
 }
 ```
 
-- [ ] **Step 7: Write the fail view and the three pages**
+- [ ] **Step 6: Write the fail view and the three pages**
 
 `apps/web/app/pay/fail/PayFail.tsx`:
 
@@ -7470,52 +9157,49 @@ export default async function PayFailPage({ searchParams }: PageProps<"/pay/fail
 
 `apps/web/app/pay/pay.module.css`: classes `screen`, `head`, `title`, `price`, `includes`, `notice`, `noticeTitle`, `widget`, `mock`, `error`, `actions`, `panel` and `status`. Use the tokens in `app/globals.css` and the paper/sheet look of `components/tarot/UnlockSheet.module.css`. Text ≥13px, buttons from `Button` (≥44px), one gold primary (결제하기 / 풀이로 돌아가기), `.widget` with `min-height: 120px` so the Toss iframe has room.
 
-In `apps/web/lib/seo.ts`, add `"/pay"` to `ROBOTS_DISALLOW`. If `lib/seo.test.ts` pins that list, add `"/pay"` there too.
+In `apps/web/lib/robots.ts`, add `"/pay"` to `ROBOTS_DISALLOW` (the list moved there before aa70830). `lib/seo.test.ts` checks that listed paths are present; add `"/pay"` to its list of private paths. The three pages also carry `robots: NOINDEX` from `@/lib/seo` instead of the inline object above.
 
-- [ ] **Step 8: Run the tests**
+- [ ] **Step 7: Run the tests**
 
 Run: `npx vitest run apps/web/app/pay apps/web/lib/seo.test.ts apps/web/lib/reading`
-Expected: PASS (CheckoutView 3, PaySuccess 3; seo and reading unchanged apart from `/pay`).
+Expected: PASS (CheckoutView 5, PaySuccess 4; seo and reading unchanged apart from `/pay`).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
-git add apps/web/lib/pay/tossSdk.ts apps/web/app/pay apps/web/lib/reading/api.ts apps/web/lib/seo.ts apps/web/lib/seo.test.ts
+git add apps/web/lib/pay/tossSdk.ts apps/web/app/pay apps/web/lib/robots.ts apps/web/lib/seo.test.ts
 git commit -m "feat(pay): checkout with the 청약철회 notice and Toss widget, success and fail pages" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-### Task 17: 내 정보 — account, purchases, receipts, sync, deletion
+### Task 17: 내 정보 — account, purchases, receipts, deletion
 
 **Files:**
-- Create:
-  - `apps/web/lib/storage/sync.ts`
-  - `apps/web/app/me/AccountPanel.tsx`, `apps/web/app/me/OrderHistory.tsx`, `apps/web/app/me/account.module.css`, `apps/web/app/me/meStatus.ts`
+- Create: `apps/web/app/me/AccountPanel.tsx`, `apps/web/app/me/OrderHistory.tsx`, `apps/web/app/me/account.module.css`, `apps/web/app/me/meStatus.ts`
 - Modify:
-  - `apps/web/lib/storage/chapters.ts` (`mergeServerReadings`, `markClaimed`, `forgetServerIds`, `unclaimedChapters`)
+  - `apps/web/lib/storage/sync.ts` (`pullAccountReadings`, `deleteAccountReadings`, `useAccountSync`)
   - `apps/web/app/me/MeView.tsx`, `apps/web/app/me/page.tsx`, `apps/web/app/story/StoryView.tsx` (pull account readings)
 - Delete: `apps/web/app/me/MoonPackSheet.tsx`. 달빛 packs are not sold in P4; the mock 충전 is gone. `SITE.moonPacks` stays in config for later.
-- Test: `apps/web/lib/storage/sync.test.ts`, `apps/web/app/me/AccountPanel.test.tsx`, `apps/web/app/me/meStatus.test.ts`
+- Test: `apps/web/lib/storage/pull.test.ts`, `apps/web/app/me/AccountPanel.test.tsx`, `apps/web/app/me/meStatus.test.ts`
 
 **Interfaces:**
 - Consumes:
-  - Task 14: `useAccount`, `refreshAccount`, `logout`, `loginHref`, `AccountState`, `loginMessage`.
-  - Task 16: `getJson`; plus `postJson` and `describeApiError`.
-  - `productById` (Task 2); `parseChapter`, `updateChapter`, `listChapters`, `StoredChapter` (chapters.ts).
-  - `GET /api/readings`, `POST /api/readings/claim`, `DELETE /api/readings?all=1` (Task 11); `GET /api/pay/orders`, `POST /api/pay/refund` (Tasks 7, 8); `POST /api/account/delete-intent` (Task 12).
+  - Task 14: `useAccount`, `refreshAccount`, `logout`, `loginHref`, `AccountState`, `loginMessage`, `getJson`.
+  - Task 15: `fetchReadingsPage`, `mergeServerReadings`, `forgetServerIds`.
+  - `postJson`, `describeApiError`; `productById` (Task 2).
+  - `GET /api/readings`, `DELETE /api/readings?all=1` (Task 11); `GET /api/pay/orders`, `POST /api/pay/refund` (Tasks 7, 8); `POST /api/account/delete-intent` (Task 12).
 - Produces:
-  - `chapters.ts`:
-    - `mergeServerReadings(readings: Array<{id; createdAt; chapter: unknown}>): number` (chapters added)
-    - `markClaimed(pairs: Array<{localId; id}>)`, `forgetServerIds()`, `unclaimedChapters(chapters)`
   - `sync.ts`:
-    - `pullAccountReadings(): Promise<number>`, `claimDeviceReadings(chapters, fetchImpl?): Promise<{claimed; rejected}>`
+    - `pullAccountReadings(fetchImpl?): Promise<number>`: every page, following `next` (minor 9), 20 pages at most per pull
     - `deleteAccountReadings(fetchImpl?): Promise<boolean>`, `useAccountSync(account)`
   - `meStatus.ts`: `meStatusMessage(query: {account?; delete?; login?}): string | null`
-  - `AccountPanel({ account, chapters, navigate? })`, `OrderHistory()` (anchor `#orders`)
+  - `AccountPanel({ account, navigate? })`, `OrderHistory()` (anchor `#orders`)
+
+**Scope (revision 2):** no device→account claim UI (the coordinator's cut). 내 정보 shows the account, purchases, receipts, the delete-all of account copies, logout and deletion. A reading reaches the account only when it is opened while logged in (Task 10), and every page brings the account's readings onto this device.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -7531,6 +9215,8 @@ describe("내 정보 status line", () => {
     expect(meStatusMessage({ delete: "failed" })).toBe("탈퇴를 마치지 못했어요. 다시 시도해 주세요.");
     expect(meStatusMessage({ delete: "mismatch" })).toBe("로그인한 카카오 계정과 달라요. 같은 계정으로 다시 시도해 주세요.");
     expect(meStatusMessage({ delete: "refund-failed" })).toBe("환불을 마치지 못해 탈퇴를 멈췄어요. 문의해 주세요.");
+    expect(meStatusMessage({ delete: "pending" })).toBe("결제 확인이나 환불이 아직 진행 중이에요. 10분쯤 뒤에 다시 시도해 주세요.");
+    expect(meStatusMessage({ delete: "in-use" })).toBe("지금 열고 있는 풀이가 있어요. 풀이가 끝난 뒤 다시 시도해 주세요.");
     expect(meStatusMessage({ delete: "cancel" })).toBe("탈퇴를 취소했어요");
     expect(meStatusMessage({ login: "cancel" })).toBe("로그인을 취소했어요");
     expect(meStatusMessage({})).toBeNull();
@@ -7538,54 +9224,43 @@ describe("내 정보 status line", () => {
 });
 ```
 
-`apps/web/lib/storage/sync.test.ts`:
+`apps/web/lib/storage/pull.test.ts`:
 
 ```ts
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { clearChapters, listChapters, markClaimed, mergeServerReadings, saveChapter, unclaimedChapters } from "./chapters";
-import { claimDeviceReadings } from "./sync";
+import { clearChapters, listChapters, saveChapter } from "./chapters";
+import { deleteAccountReadings, pullAccountReadings } from "./sync";
 
 afterEach(() => clearChapters());
 
 const reading = { verdict: "결론", cards: [], action: { heading: "오늘", body: "해 볼 일" } };
 const card = { position: "지금의 나", cardId: "major-00", orientation: "upright" as const };
-const serverChapter = (turns = 0) => ({
-  kind: "tarot", question: "계정 질문", conditions: [], note: "", cards: [card], reading,
-  chapterToken: `t${turns}`, createdAt: 5, turns: Array.from({ length: turns }, (_, i) => ({ question: `q${i}`, answer: `a${i}` })), followUpsLeft: 3 - turns,
+const remote = (n: number) => ({
+  id: `${String(n).padStart(2, "0")}cdefghij0123456789`.slice(0, 20),
+  createdAt: n,
+  chapter: { kind: "tarot", question: `질문 ${n}`, conditions: [], note: "", cards: [card], reading, chapterToken: `t${n}`, createdAt: n, turns: [], followUpsLeft: 3 },
 });
 
-describe("account readings on this device", () => {
-  it("adds readings from the account once, and takes newer follow-ups", () => {
-    expect(mergeServerReadings([{ id: "abcdefghij0123456789", createdAt: 5, chapter: serverChapter() }])).toBe(1);
-    expect(mergeServerReadings([{ id: "abcdefghij0123456789", createdAt: 5, chapter: serverChapter(1) }])).toBe(0);
-    const [only] = listChapters();
-    expect(only).toMatchObject({ id: "abcdefghij0123456789", serverId: "abcdefghij0123456789", chapterToken: "t1", followUpsLeft: 2 });
-    expect(only?.turns).toHaveLength(1);
-  });
-
-  it("skips what does not parse", () => {
-    expect(mergeServerReadings([{ id: "bad", createdAt: 1, chapter: { kind: "tarot" } }])).toBe(0);
-    expect(listChapters()).toEqual([]);
-  });
-
-  it("claims device-only chapters in batches of 20 and remembers their account ids", async () => {
-    for (let i = 0; i < 25; i++) saveChapter({ kind: "tarot", question: `질문 ${i}`, conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: `t${i}` });
-    const sizes: number[] = [];
-    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
-      const { chapters } = JSON.parse(String(init!.body)) as { chapters: Array<{ localId: string }> };
-      sizes.push(chapters.length);
-      return Response.json({ claimed: chapters.slice(1).map((c, i) => ({ localId: c.localId, id: `${String(i).padStart(2, "0")}${c.localId}`.slice(0, 20).padEnd(20, "x") })), rejected: [chapters[0]!.localId] });
+describe("pulling the account's readings", () => {
+  it("follows every page", async () => {
+    const urls: string[] = [];
+    const fetchImpl = vi.fn(async (url: string) => {
+      urls.push(url);
+      return url.includes("before=")
+        ? Response.json({ readings: [remote(1)], next: null })
+        : Response.json({ readings: [remote(3), remote(2)], next: "2.02cdefghij01234567" });
     }) as unknown as typeof fetch;
-    expect(await claimDeviceReadings(unclaimedChapters(listChapters()), fetchImpl)).toEqual({ claimed: 23, rejected: 2 });
-    expect(sizes).toEqual([20, 5]);
-    expect(unclaimedChapters(listChapters())).toHaveLength(2);
+    expect(await pullAccountReadings(fetchImpl)).toBe(3);
+    expect(urls).toEqual(["/api/readings", "/api/readings?before=2.02cdefghij01234567"]);
+    expect(listChapters()).toHaveLength(3);
   });
 
-  it("markClaimed sets the account id", () => {
-    const chapter = saveChapter({ kind: "tarot", question: "q", conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: "t" });
-    markClaimed([{ localId: chapter.id, id: "abcdefghij0123456789" }]);
-    expect(listChapters()[0]?.serverId).toBe("abcdefghij0123456789");
+  it("deletes the account's copies and lets this device's chapters stand alone", async () => {
+    saveChapter({ kind: "tarot", question: "q", conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: "t", serverId: "abcdefghij0123456789" });
+    const fetchImpl = vi.fn(async () => Response.json({ deleted: 1 })) as unknown as typeof fetch;
+    expect(await deleteAccountReadings(fetchImpl)).toBe(true);
+    expect(listChapters()[0]?.serverId).toBeUndefined();
   });
 });
 ```
@@ -7601,6 +9276,7 @@ import { AccountPanel } from "./AccountPanel";
 
 const account = {
   payments: true,
+  login: true,
   owner: false,
   user: { nickname: "별빛", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", productId: "tarot" }] },
 } satisfies AccountState;
@@ -7627,7 +9303,7 @@ beforeEach(() => {
     }
     if (url === "/api/pay/refund") return Response.json({ ok: true, status: "refunded" });
     if (url === "/api/account/delete-intent") return Response.json({ url: "/api/auth/kakao/start?purpose=delete&intent=x" });
-    return Response.json({ payments: true, owner: false, user: null });
+    return Response.json({ payments: true, login: true, owner: false, user: null });
   }));
 });
 
@@ -7639,27 +9315,29 @@ afterEach(() => {
 
 describe("AccountPanel", () => {
   it("shows the nickname, 별조각 with their last day, the unopened purchase and the receipt", async () => {
-    render(<AccountPanel account={account} chapters={[]} />);
+    render(<AccountPanel account={account} />);
     expect(screen.getByRole("heading", { name: "별빛" })).toBeTruthy();
     expect(screen.getByText("10개")).toBeTruthy();
     expect(screen.getByText(/12월 30일까지/)).toBeTruthy();
     expect(screen.getByText("타로 전체 풀이 · 열지 않음")).toBeTruthy();
     expect((await screen.findByRole("link", { name: "영수증 보기" })).getAttribute("href")).toBe("https://dashboard.tosspayments.com/receipt/x");
+    expect(screen.queryByText(/계정에 보관하기/)).toBeNull();
   });
 
   it("refunds an unopened purchase after a confirm", async () => {
-    render(<AccountPanel account={account} chapters={[]} />);
+    render(<AccountPanel account={account} />);
     fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
     fireEvent.click(await screen.findByRole("button", { name: "전액 환불받기" }));
     await waitFor(() => expect(requests.some((r) => r.url === "/api/pay/refund" && (r.body as { orderId: string }).orderId === "Ab3_dEf-Gh5iJk7Lm9No1Pq2")).toBe(true));
     expect(await screen.findByText("환불했어요. 카드사에 따라 며칠 걸릴 수 있어요.")).toBeTruthy();
   });
 
-  it("starts the deletion only through the Kakao re-check", async () => {
+  it("starts the deletion only through the Kakao re-check, and says what it does", async () => {
     const navigate = vi.fn();
-    render(<AccountPanel account={account} chapters={[]} navigate={navigate} />);
+    render(<AccountPanel account={account} navigate={navigate} />);
     fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
     expect(screen.getByText("열지 않은 결제 1건은 전액 환불돼요")).toBeTruthy();
+    expect(screen.queryByText(/별자리/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "카카오로 확인하고 탈퇴하기" }));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/api/auth/kakao/start?purpose=delete&intent=x"));
   });
@@ -7668,96 +9346,32 @@ describe("AccountPanel", () => {
 
 - [ ] **Step 2: Run them and see them fail**
 
-Run: `npx vitest run apps/web/app/me apps/web/lib/storage/sync.test.ts`
-Expected: FAIL (modules not found).
+Run: `npx vitest run apps/web/app/me apps/web/lib/storage/pull.test.ts`
+Expected: FAIL (modules and exports not found).
 
-- [ ] **Step 3: Add the merge helpers to `apps/web/lib/storage/chapters.ts`** (below `deleteChapter`)
-
-```ts
-/** Chapters only this device holds (no account copy yet). */
-export const unclaimedChapters = (chapters: readonly StoredChapter[]) => chapters.filter((chapter) => !chapter.serverId);
-
-/**
- * Brings readings saved in the account onto this device (another device's purchases, follow-ups
- * answered elsewhere). A new one keeps its account id as its local id. A known one only takes newer
- * follow-up turns. Returns how many chapters were added.
- */
-export function mergeServerReadings(readings: ReadonlyArray<{ id: string; createdAt: number; chapter: unknown }>): number {
-  const local = listChapters();
-  const parse = (r: { id: string; createdAt: number; chapter: unknown }, id: string) =>
-    typeof r.chapter === "object" && r.chapter !== null ? parseChapter({ ...(r.chapter as Record<string, unknown>), id, serverId: r.id, createdAt: r.createdAt }) : null;
-  const next = local.map((chapter) => {
-    const remote = chapter.serverId ? readings.find((r) => r.id === chapter.serverId) : undefined;
-    const parsed = remote ? parse(remote, chapter.id) : null;
-    return parsed && parsed.turns.length > chapter.turns.length
-      ? { ...chapter, turns: parsed.turns, chapterToken: parsed.chapterToken, followUpsLeft: parsed.followUpsLeft }
-      : chapter;
-  });
-  const known = new Set(local.flatMap((chapter) => [chapter.id, chapter.serverId ?? ""]));
-  let added = 0;
-  for (const remote of readings) {
-    if (known.has(remote.id)) continue;
-    const parsed = parse(remote, remote.id);
-    if (!parsed) continue;
-    next.push(parsed);
-    known.add(remote.id);
-    added++;
-  }
-  store.save(next.sort((a, b) => a.createdAt - b.createdAt));
-  return added;
-}
-
-/** Records the account ids the server gave claimed chapters. */
-export function markClaimed(pairs: ReadonlyArray<{ localId: string; id: string }>) {
-  const ids = new Map(pairs.map((pair) => [pair.localId, pair.id]));
-  store.save(listChapters().map((chapter) => (ids.has(chapter.id) ? { ...chapter, serverId: ids.get(chapter.id)! } : chapter)));
-}
-
-/** After the account's copies were deleted: this device's chapters stand alone again. */
-export function forgetServerIds() {
-  store.save(listChapters().map(({ serverId: _serverId, ...chapter }) => chapter as StoredChapter));
-}
-```
-
-- [ ] **Step 4: Write `apps/web/lib/storage/sync.ts`**
+- [ ] **Step 3: Add the pull and delete helpers to `apps/web/lib/storage/sync.ts`**
 
 ```ts
 import { useEffect } from "react";
 import type { AccountState } from "@/lib/account/client";
-import { getJson, postJson } from "@/lib/reading/api";
-import { forgetServerIds, markClaimed, mergeServerReadings, type StoredChapter } from "./chapters";
-
-/** Keeps this device and the account's saved readings together (spec 5.7). */
+import { forgetServerIds, mergeServerReadings } from "./chapters";
 
 const SYNCED_KEY = "starlog.account-synced";
-const CLAIM_BATCH = 20;
+/** 50 readings a page: 1,000 per pull is far beyond any account; the next pull goes on from the top. */
+const MAX_PAGES = 20;
 
-/** Brings the account's readings onto this device; how many were new here. */
-export async function pullAccountReadings(): Promise<number> {
-  const res = await getJson<{ readings: Array<{ id: string; createdAt: number; chapter: unknown }> }>("/api/readings");
-  return res.ok ? mergeServerReadings(res.data.readings) : 0;
-}
-
-/** Saves device-only chapters into the account, 20 per request; only when the user asks. */
-export async function claimDeviceReadings(chapters: readonly StoredChapter[], fetchImpl: typeof fetch = fetch): Promise<{ claimed: number; rejected: number }> {
-  let claimed = 0;
-  let rejected = 0;
-  for (let i = 0; i < chapters.length; i += CLAIM_BATCH) {
-    const batch = chapters.slice(i, i + CLAIM_BATCH);
-    const res = await postJson<{ claimed: Array<{ localId: string; id: string }>; rejected: string[] }>(
-      "/api/readings/claim",
-      { chapters: batch.map((chapter) => ({ localId: chapter.id, chapter })) },
-      { fetchImpl },
-    );
-    if (!res.ok) {
-      rejected += batch.length;
-      continue;
-    }
-    markClaimed(res.data.claimed);
-    claimed += res.data.claimed.length;
-    rejected += res.data.rejected.length;
+/** Brings every reading in the account onto this device, page by page; how many were new here. */
+export async function pullAccountReadings(fetchImpl: typeof fetch = fetch): Promise<number> {
+  let added = 0;
+  let before: string | undefined;
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const result = await fetchReadingsPage(before ? { before } : {}, fetchImpl);
+    if (!result) break;
+    added += mergeServerReadings(result.readings);
+    if (!result.next) break;
+    before = result.next;
   }
-  return { claimed, rejected };
+  return added;
 }
 
 /** Deletes every reading saved in the account. This device keeps its own copies. */
@@ -7787,7 +9401,9 @@ export function useAccountSync(account: AccountState | null | undefined): void {
 }
 ```
 
-- [ ] **Step 5: Write `apps/web/app/me/meStatus.ts`**
+Merge the imports with the ones Task 15 put at the top of the file. `fetchReadingsPage` is already there.
+
+- [ ] **Step 4: Write `apps/web/app/me/meStatus.ts`**
 
 ```ts
 import { loginMessage } from "@/lib/account/client";
@@ -7796,7 +9412,10 @@ const DELETE_MESSAGES: Record<string, string> = {
   failed: "탈퇴를 마치지 못했어요. 다시 시도해 주세요.",
   mismatch: "로그인한 카카오 계정과 달라요. 같은 계정으로 다시 시도해 주세요.",
   "refund-failed": "환불을 마치지 못해 탈퇴를 멈췄어요. 문의해 주세요.",
+  pending: "결제 확인이나 환불이 아직 진행 중이에요. 10분쯤 뒤에 다시 시도해 주세요.",
+  "in-use": "지금 열고 있는 풀이가 있어요. 풀이가 끝난 뒤 다시 시도해 주세요.",
   cancel: "탈퇴를 취소했어요",
+  unavailable: "지금은 탈퇴를 처리할 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
 };
 
 /** The one line 내 정보 shows for ?account=, ?delete= or ?login=. */
@@ -7807,7 +9426,7 @@ export function meStatusMessage(query: { account?: string; delete?: string; logi
 }
 ```
 
-- [ ] **Step 6: Write `apps/web/app/me/OrderHistory.tsx`**
+- [ ] **Step 5: Write `apps/web/app/me/OrderHistory.tsx`**
 
 ```tsx
 "use client";
@@ -7870,7 +9489,7 @@ export function OrderHistory() {
 }
 ```
 
-- [ ] **Step 7: Write `apps/web/app/me/AccountPanel.tsx`**
+- [ ] **Step 6: Write `apps/web/app/me/AccountPanel.tsx`**
 
 ```tsx
 "use client";
@@ -7883,8 +9502,7 @@ import { SITE } from "@/lib/config";
 import { productById } from "@/lib/pay/catalog";
 import { postJson } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
-import { unclaimedChapters, type StoredChapter } from "@/lib/storage/chapters";
-import { claimDeviceReadings, deleteAccountReadings } from "@/lib/storage/sync";
+import { deleteAccountReadings } from "@/lib/storage/sync";
 import { OrderHistory } from "./OrderHistory";
 import s from "./account.module.css";
 
@@ -7896,7 +9514,6 @@ const openHref = (productId: string) => (productId === "saju" ? "/saju/new" : "/
 
 type AccountPanelProps = {
   account: AccountState & { user: AccountUser };
-  chapters: StoredChapter[];
   /** tests: replaces the browser navigation */
   navigate?: (url: string) => void;
 };
@@ -7904,17 +9521,16 @@ type AccountPanelProps = {
 /**
  * 내 정보 for a logged-in user (spec section 9):
  * - nickname, 별조각 with their last day, unopened purchases (열기, 환불받기), 결제 내역 with receipts;
- * - 계정에 보관하기 for device-only readings, and deleting the account's copies;
+ * - deleting the account's copies of readings;
  * - 로그아웃, and 회원 탈퇴 (always through the Kakao re-check).
  */
-export function AccountPanel({ account, chapters, navigate = (url) => window.location.assign(url) }: AccountPanelProps) {
+export function AccountPanel({ account, navigate = (url) => window.location.assign(url) }: AccountPanelProps) {
   const { user } = account;
   const { free } = SITE.currency;
   const [notice, setNotice] = useState("");
   const [sheet, setSheet] = useState<"refund" | "delete" | null>(null);
   const [refundId, setRefundId] = useState<string | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
-  const deviceOnly = unclaimedChapters(chapters);
 
   const refund = async () => {
     if (!refundId) return;
@@ -7923,11 +9539,6 @@ export function AccountPanel({ account, chapters, navigate = (url) => window.loc
     setNotice(res.ok ? "환불했어요. 카드사에 따라 며칠 걸릴 수 있어요." : describeApiError(res.error).title);
     await refreshAccount();
     setHistoryKey((key) => key + 1);
-  };
-
-  const claim = async () => {
-    const { claimed, rejected } = await claimDeviceReadings(deviceOnly);
-    setNotice(rejected ? `${claimed}개를 계정에 보관했어요 · ${rejected}개는 옮기지 못했어요` : `${claimed}개를 계정에 보관했어요`);
   };
 
   const startDelete = async () => {
@@ -7977,15 +9588,6 @@ export function AccountPanel({ account, chapters, navigate = (url) => window.loc
 
       <OrderHistory key={historyKey} />
 
-      {deviceOnly.length > 0 ? (
-        <div className={s.claim}>
-          <p>{`이 기기에만 있는 풀이가 ${deviceOnly.length}개 있어요. 계정에 보관하면 다른 기기에서도 볼 수 있어요.`}</p>
-          <Button variant="secondary" block onClick={() => void claim()}>
-            계정에 보관하기
-          </Button>
-        </div>
-      ) : null}
-
       <p className={s.notice} role="status">
         {notice}
       </p>
@@ -8029,7 +9631,7 @@ export function AccountPanel({ account, chapters, navigate = (url) => window.loc
           <ul className={s.list}>
             {user.unused.length > 0 ? <li>{`열지 않은 결제 ${user.unused.length}건은 전액 환불돼요`}</li> : null}
             <li>{`남은 ${free}은 사라져요`}</li>
-            <li>계정에 보관한 풀이와 별자리 인연 기록이 지워져요</li>
+            <li>계정에 보관한 풀이가 지워져요</li>
             <li>결제 기록은 법에 따라 5년 동안 보관돼요</li>
             <li>이 기기의 기록은 아래 ‘이 기기에 저장된 기록 모두 지우기’로 따로 지울 수 있어요</li>
           </ul>
@@ -8046,12 +9648,12 @@ export function AccountPanel({ account, chapters, navigate = (url) => window.loc
 }
 ```
 
-`apps/web/app/me/account.module.css`: classes `account`, `name`, `muted`, `balance`, `balanceLabel`, `unused`, `unusedItem`, `link`, `orders`, `sectionTitle`, `orderList`, `order`, `claim`, `notice`, `actions`, `confirm`, `list` and `danger`.
+`apps/web/app/me/account.module.css`: classes `account`, `name`, `muted`, `balance`, `balanceLabel`, `unused`, `unusedItem`, `link`, `orders`, `sectionTitle`, `orderList`, `order`, `notice`, `actions`, `confirm`, `list` and `danger`.
 - Follow `MeView.module.css`: same tokens, ≥13px, tap targets ≥44px (`.link` and `.danger` with `min-height: 44px`).
 - `.danger` copies the existing `.confirmErase` look.
 - The 환불 modal's `전액 환불받기` is the only gold button on screen while it is open.
 
-- [ ] **Step 8: Rewire `MeView.tsx` and the page.**
+- [ ] **Step 7: Rewire `MeView.tsx` and the page.**
   - `apps/web/app/me/page.tsx`:
     - drop `WALLET_FIXTURE` and `SITE.features.payments`;
     - make it `async ({ searchParams }: PageProps<"/me">)`;
@@ -8061,60 +9663,75 @@ export function AccountPanel({ account, chapters, navigate = (url) => window.loc
     - remove `wallet`, `balance`, `buy`, the `packs` sheet and the `MoonPackSheet` import, then delete `MoonPackSheet.tsx`;
     - add `const account = useAccount(); useAccountSync(account);`;
     - show `status` in the existing `notice` line (initial state `status ?? ""`).
-  - Where the wallet/beta block was:
+  - Where the wallet block and the 오픈 기념 section (`s.beta`) are now:
 
 ```tsx
         {account?.user ? (
-          <AccountPanel account={{ ...account, user: account.user }} chapters={chapters ?? []} />
+          <AccountPanel account={{ ...account, user: account.user }} />
         ) : account?.payments ? (
           <section className={s.beta} aria-labelledby="login-title">
             <h2 id="login-title" className={s.betaTitle}>로그인하면 결제한 풀이를 다른 기기에서도 볼 수 있어요</h2>
             <Button href={loginHref("/me")} block>카카오로 로그인</Button>
           </section>
         ) : (
-          /* the existing beta section, unchanged */
+          <>
+            {/* the existing 오픈 기념 section, unchanged */}
+            {account?.login ? (
+              <p className={s.provider}>
+                <Link href={loginHref("/me")}>결제한 풀이가 있다면 로그인</Link>
+              </p>
+            ) : null}
+          </>
         )}
 ```
 
+  - While payments are on for this device the 오픈 기념 section is hidden: the free daily full reading has ended then, and the signup gift takes its place (spec 12). While paused, it shows again with the quiet login link.
   - The header's `로그인 없이, 기록은 이 기기에 보관돼요` line shows only when `!account?.user`.
   - The erase modal's text gains, when `account?.user` is set: ` 계정에 보관한 풀이는 그대로예요.`
-  - `apps/web/app/story/StoryView.tsx`: add `useAccountSync(useAccount());` at the top of the component, so 내 기록 shows readings bought on another device.
+  - `apps/web/app/story/StoryView.tsx`: add `useAccountSync(useAccount());` at the top of the component, so 내 기록 shows readings opened on another device.
 
-- [ ] **Step 9: Run the tests**
+- [ ] **Step 8: Run the tests**
 
 Run: `npx vitest run apps/web/app/me apps/web/lib/storage apps/web/app/story apps/web/components`
-Expected: PASS (meStatus 1, sync 4, AccountPanel 3; existing storage and layout tests unchanged).
+Expected: PASS (meStatus 1, pull 2, AccountPanel 3; the storage, sync and layout tests unchanged).
 
 Run: `pnpm typecheck`
 Expected: exit 0. `WALLET_FIXTURE` may now be unused in `lib/fixtures.ts`; leave it unless the typecheck or a test fails.
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git rm apps/web/app/me/MoonPackSheet.tsx
-git add apps/web/lib/storage/sync.ts apps/web/lib/storage/sync.test.ts apps/web/lib/storage/chapters.ts apps/web/app/me apps/web/app/story/StoryView.tsx
-git commit -m "feat(me): account, 별조각, purchases with refunds and receipts, sync and deletion" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git add apps/web/lib/storage/sync.ts apps/web/lib/storage/pull.test.ts apps/web/app/me apps/web/app/story/StoryView.tsx
+git commit -m "feat(me): account, 별조각, purchases with refunds and receipts, paged sync and deletion" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
 ### Task 18: Legal pages — pricing, refund, terms, privacy
 
-The four pages are owned jointly with the trust-pages work (P2b) and P3 Task 12, so edit them section by section.
+The four pages are owned jointly with the trust-pages work (P2b), P3 (별자리 인연 sections behind `SITE.features.bonds`), the copy pass of `97ec7df` (no 베타, no model names) and the SEO pass (`pageMetadata`), so edit them section by section. Written against aa70830.
 - Keep every section this task does not name, and keep later wording that does not contradict this task.
 - The pages describe the paid service as launched (what Toss's review reads).
-- While sales are not open for the visitor, one client-side note says so: `PaymentsNote`, driven by `/api/me`. The static pages need no rebuild when `STARLOG_PAYMENTS` flips.
+- While sales are not open for the visitor, one client-side note keeps today's 오픈 기념 line: `PaymentsNote`, driven by `/api/me`. The static pages need no rebuild when `STARLOG_PAYMENTS` flips.
 
 **Files:**
 - Create: `apps/web/components/legal/PaymentsNote.tsx`
-- Modify: `apps/web/app/pricing/page.tsx`, `apps/web/app/refund/page.tsx`, `apps/web/app/terms/page.tsx`, `apps/web/app/privacy/page.tsx`, `apps/web/lib/legal.ts` (`LEGAL_EFFECTIVE_DATE`), and the tests that pin text this task removes on purpose: `app/pricing/page.test.tsx`, `components/legal/LegalPages.test.tsx`, `components/legal/PolicyContent.test.tsx`, `lib/legal.test.ts`
+- Modify: `apps/web/app/pricing/page.tsx`, `apps/web/app/refund/page.tsx`, `apps/web/app/terms/page.tsx`, `apps/web/app/privacy/page.tsx`, `apps/web/lib/legal.ts` (`LEGAL_EFFECTIVE_DATE`), and the tests that pin text this task removes on purpose: `app/pricing/page.test.tsx`, `components/legal/LegalPages.test.tsx`, `components/legal/PolicyContent.test.tsx`, `lib/legal.test.ts`, `components/info/InfoPages.test.tsx`
 - Test: `apps/web/components/legal/p4Policies.test.tsx`
 
 **Interfaces:**
-- Consumes: `standardProduct` (Task 2), `GIFT_DAYS` (Task 4), `useAccount` (Task 14), `SITE`, `won`, `LegalPage`/`LegalSection`/`LegalNote`, the `times()` helper the pricing page already uses.
+- Consumes: `standardProduct`, `GIFT_DAYS` (Task 2), `useAccount` (Task 14), `SITE`, `won`, `LegalPage`/`LegalSection`/`LegalNote`, the `times()` helper the pages already use.
 - Produces:
   - `PaymentsNote({ children })`: renders its children only when `/api/me` says sales are closed for this visitor;
   - `LEGAL_EFFECTIVE_DATE = "2026-10-15"` (spec 14, default 17; the controller moves it if the deploy slips).
+
+**Critique items handled here:**
+- **M6:** the privacy policy no longer says that reading inputs are never stored on the server. Three places said so: the 한눈에 보기 note, the first 보유 기간 item and the 안전성 item. Each now separates readings opened without login (not stored, as before) from readings opened while logged in (stored encrypted in the account, erased on request or deletion). The closing sentence of 1항 that promised to add login and payment "before introducing them" goes.
+- **M7:** 제5조 of the terms gets the minor's right to cancel a contract made without the guardian's consent (민법 제5조, with the exceptions of 제6조 and 제17조). /refund keeps its 미성년자 section and says where to apply. The checkout line is in Task 16, and the manual refund path in the runbook (Task 19).
+- **M9:** no "베타" anywhere: the 오픈 기념 wording stays. 제4조 says the 오픈 기념 free reading ends when payments open for everyone and the signup gift replaces it. No model name on any page. "Anthropic, PBC" stays only as the company in the privacy policy's 국외 이전 cards (개인정보보호법 제28조의8).
+- **Minor 14:** "기한 없이 전액 환불" gets its fallback. When the card company's cancel window has passed, the refund goes to a bank account the buyer names.
+- The 민법 articles are cited for the minor's right. The notice duty of the 전자상거래법 is described without an article number, because its number was not checked against the statute text (spec 15).
 
 - [ ] **Step 1: Write the failing test** — `apps/web/components/legal/p4Policies.test.tsx`
 
@@ -8131,6 +9748,7 @@ import TermsPage from "@/app/terms/page";
 afterEach(cleanup);
 
 const text = (node: ReactElement) => render(node).container.textContent ?? "";
+const MODEL_NAMES = /Claude|클로드|Opus|오푸스|Sonnet|GPT|Gemini/;
 
 describe("policies for the paid launch", () => {
   it("/pricing sells the two standard readings by name and price, and no 달빛 packs", () => {
@@ -8140,40 +9758,57 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("2,900원");
     expect(page).toContain("이 기기에 계속 보관");
     expect(page).toContain("받은 날부터 90일째 되는 날까지 쓸 수 있어요");
-    expect(page).not.toContain("충전");
+    expect(page).not.toMatch(/충전|심층 풀이|프롤로그/);
     expect(page).not.toMatch(/켈틱|셀틱|celtic/i);
   });
 
-  it("/refund: 제공 means saved to the account; unopened is refundable any time; failures keep the credit", () => {
+  it("/refund: 제공 means saved to the account; unopened is refundable any time, with a fallback", () => {
     const page = text(<RefundPage />);
     expect(page).toContain("제17조 제2항 제5호");
     expect(page).toContain("완성되어 계정에 저장되면");
     expect(page).toContain("기한 없이 전액 환불");
+    expect(page).toContain("계좌로 환불");
     expect(page).toContain("내 정보 > 결제 내역");
-    expect(page).toContain("쓰이지 않고 그대로 남아요");
     expect(page).toContain("90일");
+    expect(page).toContain("법정대리인");
     expect(page).not.toContain("충전");
   });
 
-  it("/terms: Kakao members, item-by-item payment, 별조각 rules, deletion", () => {
+  it("/terms: Kakao members, item-by-item payment, 별조각 rules, minors, deletion, no model name", () => {
     const page = text(<TermsPage />);
     expect(page).toContain("카카오 계정으로 로그인");
     expect(page).toContain("건별로 결제");
     expect(page).toContain("제7조의2 (별조각)");
+    expect(page).toContain("민법 제5조");
     expect(page).toContain("열지 않은 결제 풀이는 전액 환불");
+    expect(page).toContain("가입 선물");
     expect(page).not.toContain("충전");
+    expect(page).not.toMatch(MODEL_NAMES);
+    expect(page).not.toContain("Anthropic");
   });
 
-  it("/privacy: what an account keeps, for how long, and who processes it", () => {
+  it("/privacy: what an account keeps, for how long, and who processes it; never 'not stored' without a condition", () => {
     const page = text(<PrivacyPage />);
     expect(page).toContain("카카오 회원번호");
     expect(page).toContain("되돌릴 수 없는 값");
     expect(page).toContain("암호화");
+    expect(page).toContain("로그인하지 않고 연 풀이");
     expect(page).toContain("5년");
     expect(page).toContain("3년");
     expect(page).toContain("토스페이먼츠 주식회사");
-    expect(page).not.toContain("결제 도입 시");
     expect(page).toContain("sl_sid");
+    expect(page).toContain("Anthropic, PBC");
+    expect(page).not.toContain("결제 도입 시");
+    expect(page).not.toContain("지금은 로그인이 없어");
+    expect(page).not.toContain("풀이 입력을 서버에 저장하지 않고");
+    expect(page).not.toMatch(MODEL_NAMES);
+  });
+
+  it("none of the four says 베타", () => {
+    for (const page of [<PricingPage key="p" />, <RefundPage key="r" />, <TermsPage key="t" />, <PrivacyPage key="v" />]) {
+      expect(text(page)).not.toContain("베타");
+      cleanup();
+    }
   });
 });
 ```
@@ -8181,7 +9816,7 @@ describe("policies for the paid launch", () => {
 - [ ] **Step 2: Run it and see it fail**
 
 Run: `npx vitest run apps/web/components/legal/p4Policies.test.tsx`
-Expected: FAIL. The pricing page still names "타로 심층 풀이" and the 달빛 충전 section; privacy still says "결제 도입 시".
+Expected: FAIL. The pricing page still names "타로 심층 풀이" and has the 달빛 충전 section; privacy still says "결제 도입 시" and "지금은 로그인이 없어".
 
 - [ ] **Step 3: Write `apps/web/components/legal/PaymentsNote.tsx`**
 
@@ -8193,8 +9828,8 @@ import { useAccount } from "@/lib/account/client";
 
 /**
  * The legal pages describe the paid service. While sales are closed for this visitor
- * (STARLOG_PAYMENTS off, or owner-only), this note says so. It is read at run time from /api/me,
- * so flipping the flag needs no rebuild of the static pages.
+ * (STARLOG_PAYMENTS off, owner-only or paused), this note keeps today's 오픈 기념 line. It is read at
+ * run time from /api/me, so flipping the flag needs no rebuild of the static pages.
  */
 export function PaymentsNote({ children }: { children: ReactNode }) {
   const account = useAccount();
@@ -8204,20 +9839,19 @@ export function PaymentsNote({ children }: { children: ReactNode }) {
 ```
 
 - [ ] **Step 4: `/pricing`** (`apps/web/app/pricing/page.tsx`)
-  - Lead: `풀이 한 번의 가격과 무료로 볼 수 있는 부분, 별조각을 한곳에 모았어요.`
-  - Wrap the existing `LegalNote` in `<PaymentsNote>`. Inside it, the note stays the beta note: `지금은 베타 기간이라 무료예요.` plus `전체 풀이를 하루 ${times(beta.fullPerDay)} 무료로 열 수 있어요. 결제는 심사 완료 후 열려요.`
+  - The `description` passed to `pageMetadata` (aa70830): `타로 전체 풀이 ${won(…)}, 사주 전체 풀이 ${won(…)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 무료로 볼 수 있는 부분과 별조각, 결제 수단을 안내해요.` Every `사주 프롤로그` left on the page becomes `사주 전체 풀이`.
+  - Wrap the existing `LegalNote` (the 오픈 기념 line) in `<PaymentsNote>`. Keep its wording.
   - `PRODUCTS`:
-    - names come from the catalog: `standardProduct("tarot").name` → `타로 전체 풀이`, `standardProduct("saju").name` → `사주 전체 풀이`;
+    - names from the catalog: `standardProduct("tarot").name` → `타로 전체 풀이`, `standardProduct("saju").name` → `사주 전체 풀이`;
     - prices from `standardProduct(…).krw`;
     - the card checklist keeps the owner's lines: `소제목으로 나눈 풀이 전체 · 약 N자`, `이어서 물어보기 N번`, `이 기기에 계속 보관`.
   - Under the cards: `결제하거나 ${currency.free}으로 열어도 풀이 내용과 이어서 물어보기, 보관 범위는 같아요. 로그인해서 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요.`
   - `#premium` stays as it is.
   - `#free`:
-    - remove the beta "하루 N번" line (it now lives in the note);
+    - wrap the 오픈 기념 "하루 N번" item in `<PaymentsNote>` (it shows while sales are closed);
     - keep the teaser, 오늘의 한 장 and 지금의 한 장 lines;
-    - the gift line becomes `처음 가입하면 ${currency.free} ${price.signupGiftFree}개를 드려요. 전체 풀이를 ${count(giftReadings)} 무료로 열 수 있어요. 받은 날부터 ${GIFT_DAYS}일째 되는 날까지 쓸 수 있어요.` (keep or reintroduce the `count` helper: 1 → `한 번`, n → `n번`);
-    - import `GIFT_DAYS` from a client-safe place: move `export const GIFT_DAYS = 90;` (with its comment) to `lib/pay/catalog.ts`. In `ledger.ts`, replace the declaration with `import { GIFT_DAYS } from "./catalog";` and `export { GIFT_DAYS };`; `giftExpiry` keeps using it.
-  - Remove the `#moonlight` section.
+    - the gift line becomes `처음 가입하면 ${currency.free} ${price.signupGiftFree}개를 드려요. 전체 풀이를 ${count(giftReadings)} 무료로 열 수 있어요. 받은 날부터 ${GIFT_DAYS}일째 되는 날까지 쓸 수 있어요.` (keep or reintroduce the `count` helper: 1 → `한 번`, n → `n번`). `GIFT_DAYS` comes from `@/lib/pay/catalog` (Task 2).
+  - Remove the `#moonlight` section and the sentence after its table that names the 바로 결제 prices.
   - `#stardust`:
 
 ```tsx
@@ -8245,33 +9879,32 @@ export function PaymentsNote({ children }: { children: ReactNode }) {
 ```
 
   - Drop the `packReadings`/`perReadingLabel` imports if nothing uses them now.
-  - Description metadata: `타로 전체 풀이 ${won(…)}, 사주 전체 풀이 ${won(…)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 무료로 볼 수 있는 부분과 별조각, 결제 수단을 안내해요.`
 
 - [ ] **Step 5: `/refund`** (`apps/web/app/refund/page.tsx`)
-  - Lead: `${SITE.nameKo}의 풀이는 디지털 콘텐츠예요. 결제하기 전에 알아 두면 좋은 청약철회와 환불 기준을 정리했어요.`
+  - The `description` passed to `pageMetadata`: `${SITE.nameKo} 풀이의 청약철회·환불 기준, 결제 전 무료로 보는 부분, 생성 실패 시 처리, 미성년자 결제 취소, 환불 신청 방법과 처리 기간을 안내해요.`
   - Remove the `refundExample` helper, the `moonRefundKrw` import and the `#moonlight` section.
-  - `#withdrawal`:
+  - The `LegalNote`: keep `오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요.`; its second paragraph ends `아래 기준은 결제한 풀이에 적용해요.` (no 충전).
+  - `#withdrawal`: in the first paragraph, the sentence about when 제공 starts becomes `${SITE.nameKo}에서는 결제한 풀이가 완성되어 계정에 저장되면(화면에 열리면) 제공이 시작된 것으로 봐요.` Keep the 제17조 제6항 paragraph about the free part. Remove the `충전한 … 가운데` paragraph.
+  - `#before-open`:
 
 ```tsx
-        <p>
-          「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제2항 제5호에 따라, 디지털 콘텐츠는 제공이 시작되면 청약철회가 제한될 수 있어요.
-          {` ${SITE.nameKo}에서는 결제한 풀이가 완성되어 계정에 저장되면(화면에 열리면) 제공이 시작된 것으로 봐요.`}
-        </p>
-        <p>무료로 공개하는 첫 풀이(타로는 첫 카드 풀이와 카드별 키워드, 사주는 요약 풀이)가 맛보기예요. 결제 화면에서 이 내용을 먼저 알려 드리고 확인을 받아요.</p>
+        <p>결제한 풀이를 열기 전에는 기한 없이 전액 환불받을 수 있어요. 내 정보 &gt; 결제 내역에서 ‘환불받기’를 누르면 바로 처리돼요.</p>
+        <p>카드사가 결제를 취소해 주는 기간이 지났다면, 알려 주신 본인 명의 계좌로 환불해 드려요.</p>
 ```
 
-  - `#before-open`: `<p>결제한 풀이를 열기 전에는 기한 없이 전액 환불받을 수 있어요. 내 정보 &gt; 결제 내역에서 ‘환불받기’를 누르면 바로 처리돼요.</p>`
   - `#failure`:
 
 ```tsx
         <ul className={s.list}>
-          <li>{`풀이를 만들다 실패하거나 중간에 연결이 끊겨 끝까지 만들어지지 않았다면, 결제한 풀이나 쓰려던 ${free}은 쓰이지 않고 그대로 남아요. 같은 풀이를 다시 열 때 한 번 더 결제하지 않아요.`}</li>
+          <li>{`풀이가 끝까지 완성되지 않았다면(생성 오류, 자동 품질 검사 탈락, 시간 초과) 결제한 풀이나 쓰려던 ${free}은 쓰이지 않아요. 같은 풀이를 다시 열 때 한 번 더 결제하지 않아요.`}</li>
+          <li>연결이 끊겼는데 풀이는 완성됐다면, 그 풀이는 내 기록과 계정에 남아 있어요. 내 정보에서 결제한 풀이와 기록을 확인할 수 있어요.</li>
           <li>결제한 풀이라면 다시 여는 대신 바로 전액 환불받을 수도 있어요.</li>
           <li>풀이가 결제 전에 안내한 내용과 다르게 제공됐다면, 확인한 뒤 같은 기준으로 처리해요.</li>
         </ul>
 ```
 
-  - `#stardust`: `<p>{`${free}은 가입 선물처럼 무료로 드린 재화라 환불 대상이 아니에요. 받은 날부터 90일째 되는 날까지 쓸 수 있고, 현금으로 바꾸거나 다른 사람에게 넘길 수 없어요.`}</p>`
+  - `#stardust`: `<p>{`${free}은 가입 선물처럼 무료로 드린 재화라 환불 대상이 아니에요. 받은 날부터 ${GIFT_DAYS}일째 되는 날까지 쓸 수 있고, 현금으로 바꾸거나 다른 사람에게 넘길 수 없어요.`}</p>`
+  - `#minor`: keep its three items and add `<li>취소는 아래 문의처로 신청해 주세요. 확인한 뒤 결제를 취소하고 결제한 수단으로 환불해 드려요.</li>`.
   - `#how`:
 
 ```tsx
@@ -8282,18 +9915,28 @@ export function PaymentsNote({ children }: { children: ReactNode }) {
         </ul>
 ```
 
-  - `#law`: replace `가격과 ${paid} 충전 상품은` with `가격은`.
+  - `#law`: replace `가격과 ${paid} 충전 상품은` with `가격은`. Remove `paid` from the destructuring if nothing uses it now.
 
 - [ ] **Step 6: `/terms`** (`apps/web/app/terms/page.tsx`; keep the formal 합니다체 the page uses)
-  - 제2조 (정의): replace the 회원/비회원 item and the 달빛 item, keep the others:
+  - 제2조 (정의): remove the 달빛 item (`…대금을 내고 충전해…`); replace the 회원/비회원 item, and add the 전체 풀이 item if missing:
 
 ```tsx
           <li>“회원”이란 카카오 계정으로 로그인해 서비스를 이용하는 사람을, “비회원”이란 로그인하지 않고 이용하는 사람을 말합니다.</li>
           <li>“전체 풀이”란 무료로 공개하는 부분을 넘어 소제목 전체와 이어서 물어보기를 담은 풀이를 말하며, 건별로 결제하거나 별조각으로 엽니다.</li>
 ```
 
-    The 별조각 item stays: `…가입 선물 등으로 무료로 지급하고, 전체 풀이를 여는 데 쓰는 무료 재화…`.
-  - 제4조 4항 (beta) becomes: `<li>결제가 열리기 전 베타 기간에는 전체 풀이를 하루 정해진 횟수만큼 무료로 제공합니다. 결제가 열리면 이 무료 제공은 끝나고 가입 선물(별조각)로 바뀌며, 운영자는 이를 시행일 7일 전부터 서비스 안에 공지합니다.</li>`
+    The 별조각 item stays.
+  - 제4조: after the item that starts `운영자는 오픈 기념으로 하루 이용 횟수 안에서`, add `<li>결제가 모든 이용자에게 열리면 오픈 기념 무료 제공은 끝나고, 처음 가입하는 회원에게 드리는 가입 선물(별조각)로 바뀝니다. 운영자는 이를 7일 전부터 서비스 안에 공지합니다.</li>`
+  - 제5조 (이용 연령): keep its paragraph, then add:
+
+```tsx
+        <p>
+          만 19세 미만인 미성년자가 법정대리인의 동의 없이 유료 서비스를 결제한 경우, 미성년자 본인이나 법정대리인은 그 계약을 취소할 수 있습니다(민법 제5조).
+          다만 미성년자가 속임수로 자신을 성년자로 믿게 하거나 법정대리인의 동의가 있는 것으로 믿게 한 경우(민법 제17조), 법정대리인이 처분을 허락한
+          재산의 범위에서 결제한 경우(민법 제6조)에는 취소할 수 없습니다. 운영자는 결제 화면에서 이 내용을 알립니다.
+        </p>
+```
+
   - 제6조 (회원과 비회원 이용), items 2 and 3:
 
 ```tsx
@@ -8301,7 +9944,7 @@ export function PaymentsNote({ children }: { children: ReactNode }) {
           <li>{`회원은 언제든지 내 정보에서 탈퇴할 수 있습니다. 탈퇴하면 열지 않은 결제 풀이는 전액 환불하고, 남은 ${free}은 사라지며, 계정에 보관한 풀이는 지웁니다. 결제 기록은 관련 법령이 정한 기간 동안 보관합니다.`}</li>
 ```
 
-  - 제7조 (유료 서비스와 결제):
+  - 제7조 (유료 서비스와 결제), the whole list:
 
 ```tsx
         <ol className={s.list}>
@@ -8318,6 +9961,8 @@ export function PaymentsNote({ children }: { children: ReactNode }) {
             {"을 따릅니다."}
           </li>
           <li>{`결제로 열든 ${free}으로 열든 풀이의 내용과 이어서 물어보기, 보관 범위는 같습니다.`}</li>
+          <li>가격 안내에 준비 중으로 표시한 풀이는 판매를 시작하기 전에 가격과 제공 내용을 알리며, 그 전에는 결제를 받지 않습니다.</li>
+          <li>{`풀이가 완성되어 저장되지 않으면 결제한 풀이나 ${free}을 쓰지 않습니다.`}</li>
           <li>영수증은 내 정보의 결제 내역에서 확인할 수 있습니다.</li>
         </ol>
 ```
@@ -8328,68 +9973,88 @@ export function PaymentsNote({ children }: { children: ReactNode }) {
       <LegalSection id="stardust" title="제7조의2 (별조각)">
         <ol className={s.list}>
           <li>{`${free}은 무료로 지급하는 재화로, 환불하거나 현금으로 바꾸거나 다른 사람에게 넘길 수 없습니다.`}</li>
-          <li>{`${free}은 받은 날부터 90일째 되는 날의 자정(한국 시간)까지 쓸 수 있으며, 여러 번 받은 경우 먼저 사라지는 것부터 씁니다.`}</li>
+          <li>{`${free}은 받은 날부터 ${GIFT_DAYS}일째 되는 날의 자정(한국 시간)까지 쓸 수 있으며, 여러 번 받은 경우 먼저 사라지는 것부터 씁니다.`}</li>
           <li>{`탈퇴하면 남은 ${free}은 사라집니다.`}</li>
         </ol>
       </LegalSection>
 ```
 
   - 제9조 3항: `<li>유료 서비스를 종료할 때는 30일 전에 공지하고, 열지 않은 결제 풀이는 전액 환불합니다.</li>`
-  - Remove `paid` from the destructuring if it is no longer used.
+  - Remove `paid` from the destructuring if it is no longer used. 제4조의2 (생성형 인공지능) stays as it is: no model name.
 
 - [ ] **Step 7: `/privacy`** (`apps/web/app/privacy/page.tsx`)
-  - `#items`, a sub-list for 회원:
+  - 한눈에 보기 (`LegalNote`), the first paragraph becomes (M6):
 
 ```tsx
-          <li>
-            회원(카카오 로그인)
-            <ul className={s.list}>
-              <li>카카오 회원번호: 되돌릴 수 없는 값(HMAC)으로 바꿔서만 저장하며, 카카오의 접근 토큰은 저장하지 않습니다</li>
-              <li>닉네임(카카오 동의 항목), 만 14세 이상 확인 시각, 로그인 세션</li>
-              <li>결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 주소. 카드번호 등 결제 정보는 토스페이먼츠가 처리하며 운영자는 받지 않습니다</li>
-              <li>계정에 보관한 풀이: 질문, 상황, 메모 또는 출생 정보와 풀이 결과. 암호화해서 저장합니다</li>
-            </ul>
-          </li>
-          <li>수집 출처: 카카오(카카오 로그인 시 회원번호와 닉네임)</li>
+        <p>
+          로그인하지 않으면 이름이나 연락처를 받지 않고, 풀이에 쓰는 질문과 출생 정보는 풀이를 만드는 동안에만 운영자의 서버를 거쳐 AI 사업자에게
+          전달될 뿐 서버에 남기지 않습니다. 카카오로 로그인해 결제하거나 별조각으로 연 풀이는 질문·출생 정보와 함께 암호화해 운영자의
+          저장소(Cloudflare D1)에 보관하고, 내 정보에서 지우거나 탈퇴하면 파기합니다. 회원 정보로는 카카오 회원번호를 되돌릴 수 없게 바꾼 값과
+          닉네임만 둡니다.
+        </p>
 ```
 
-  - `#purposes`: replace `(결제 도입 시) 결제와 환불 처리, 거래 기록 보관` with:
-    - `회원 관리(로그인, 탈퇴), 결제와 환불 처리, 거래 기록 보관`;
-    - `가입 선물의 중복 지급 방지`;
-    - `계정에 보관한 풀이를 다른 기기에서 보여 주기`.
-  - `#retention`: replace the `결제를 도입하면 …` item with:
+  - `#items`: add before the `서비스를 이용하는 동안 자동으로 생기는 정보` heading:
 
 ```tsx
-          <li>회원 정보는 탈퇴할 때까지 보관하고, 탈퇴하면 지체 없이 파기합니다. 계정에 보관한 풀이는 이용자가 지우거나 탈퇴할 때 파기합니다. 로그인 세션은 30일 뒤 끝납니다.</li>
-          <li>「전자상거래 등에서의 소비자보호에 관한 법률」에 따라 계약 또는 청약철회 등에 관한 기록과 대금결제 및 재화 등의 공급에 관한 기록은 5년, 소비자의 불만 또는 분쟁처리에 관한 기록은 3년 동안 보관합니다. 이 기록은 탈퇴 뒤에는 회원 식별 정보와 분리해 보관합니다.</li>
+        <h3 className={s.sub}>회원(카카오 로그인)</h3>
+        <ul className={s.list}>
+          <li>카카오 회원번호: 되돌릴 수 없는 값(HMAC)으로 바꿔서만 저장하며, 카카오의 접근 토큰은 저장하지 않습니다</li>
+          <li>닉네임(카카오 동의 항목), 만 14세 이상 확인 시각, 로그인 세션</li>
+          <li>결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 주소. 카드번호 등 결제 정보는 토스페이먼츠가 처리하며 운영자는 받지 않습니다</li>
+          <li>로그인해서 연 풀이: 질문, 상황, 메모 또는 출생 정보와 풀이 결과, 이어서 물어본 내용. 암호화해서 저장합니다</li>
+          <li>수집 출처: 카카오(카카오 로그인 시 회원번호와 닉네임)</li>
+        </ul>
+```
+
+    Remove the closing paragraph `로그인, 결제…처럼 운영자의 서버에 정보를 저장해야 하는 기능을 열 때는…`: those features are now described here.
+  - `#purposes`: replace `(결제 도입 시) 결제와 환불 처리, 거래 기록 보관` with three items:
+    - `회원 관리(로그인, 탈퇴), 결제와 환불 처리, 거래 기록 보관`;
+    - `가입 선물의 중복 지급 방지`;
+    - `로그인해서 연 풀이를 다른 기기에서 보여 주기`.
+  - `#retention`:
+    - the first item becomes `<li>로그인하지 않고 연 풀이의 입력(질문, 상황, 메모, 출생 정보, 후속 질문, 지난 풀이 요약)은 운영자의 서버에 저장하지 않습니다. 풀이를 생성하는 동안에만 쓰고, 생성이 끝나면 바로 파기합니다.</li>`;
+    - add after it: `<li>로그인해서 연 풀이는 계정에 암호화해 보관하고, 이용자가 내 정보에서 지우거나 탈퇴하면 지체 없이 파기합니다.</li>`;
+    - replace the `결제를 도입하면 …` item with:
+
+```tsx
+          <li>회원 정보는 탈퇴할 때까지 보관하고, 탈퇴하면 지체 없이 파기합니다. 로그인 세션은 30일 뒤 끝나고, 끝난 세션 기록은 지웁니다.</li>
+          <li>「전자상거래 등에서의 소비자보호에 관한 법률」에 따라 계약 또는 청약철회 등에 관한 기록과 대금결제 및 재화 등의 공급에 관한 기록은 5년, 소비자의 불만 또는 분쟁처리에 관한 기록은 3년 동안 보관합니다. 탈퇴한 회원의 이 기록은 회원 식별 정보(카카오 회원번호를 바꾼 값, 닉네임)를 지운 채 보관하고, 기간이 끝나면 파기합니다.</li>
           <li>가입 선물을 다시 받는 것을 막기 위해, 카카오 회원번호를 되돌릴 수 없게 바꾼 값과 지급 시각을 탈퇴 뒤 1년 동안 보관한 뒤 파기합니다.</li>
 ```
 
-  - `#processors`: the Toss entry's name becomes `토스페이먼츠 주식회사`, and its role `결제 처리(카드·간편결제 승인과 취소)`. The Cloudflare entry's role includes `회원·결제 기록과 계정에 보관한 풀이의 저장(D1)`; keep P3's wording if it already says 저장.
-  - `#cookies`, add:
-    - `sl_sid: 로그인 세션(30일, 로그아웃하면 끝납니다)`;
-    - `sl_oauth: 카카오 로그인 확인(10분)`.
-  - `#rights`, add: `계정에 보관한 풀이는 내 정보에서 지울 수 있고, 탈퇴도 내 정보에서 할 수 있습니다.`
+  - `#processors`: the Toss entry's name becomes `토스페이먼츠 주식회사` (drop `(결제 도입 시)`), and its `맡기는 일` becomes `결제 처리(카드·간편결제 승인과 취소)`. The Cloudflare entry's `맡기는 일` includes `회원·결제 기록과 로그인해서 연 풀이의 저장(D1)`; keep P3's wording if it already says 저장. The Anthropic, PBC entry stays as it is.
+  - `COOKIES`: add
+    - `["sl_sid", "로그인 세션을 알아보는 값입니다. 30일 뒤 만료되고, 로그아웃하면 바로 끝납니다."]`;
+    - `["sl_oauth", "카카오 로그인이 이 브라우저에서 시작됐는지 확인하는 값입니다. 10분 뒤 만료됩니다."]`.
+  - `#rights`, add: `<li>로그인해서 연 풀이는 내 정보에서 지울 수 있고, 탈퇴도 내 정보에서 할 수 있습니다.</li>`
+  - `#security`: the item `풀이 입력을 서버에 저장하지 않고, IP 주소는 …` becomes:
+
+```tsx
+          <li>로그인하지 않고 연 풀이의 입력은 서버에 저장하지 않고, 로그인해서 연 풀이는 AES-256-GCM으로 암호화해 저장하며, 카카오 회원번호와 IP 주소는 비밀 키로 변환한 값으로만 다루는 등 꼭 필요한 정보만 처리합니다.</li>
+```
 
 - [ ] **Step 8: `LEGAL_EFFECTIVE_DATE` and the old assertions**
   - `apps/web/lib/legal.ts`: `export const LEGAL_EFFECTIVE_DATE = "2026-10-15";`; update `lib/legal.test.ts` to match (`"2026년 10월 15일"`).
   - In `app/pricing/page.test.tsx`:
-    - remove the assertions on the 달빛 pack text (`풀이 한 번은 달빛 5개로 열려요`, the pack price, `보너스 +5`, the per-reading pack price) and on `하루 두 번 무료로 열 수 있어요` (now in the client-side note);
+    - remove the assertions on the 달빛 pack text (the pack price, `보너스`, the per-reading pack price) and on the 오픈 기념 line, which is now inside the client-side note;
     - add `expect(text).not.toContain("충전")`.
-  - In `LegalPages.test.tsx` / `PolicyContent.test.tsx`, replace only assertions on text this task removed (the 달빛 sections, `결제 도입 시`, `타로 심층 풀이`), each with the matching new text from Steps 4–7. Never delete an assertion about text that stays.
+  - In `LegalPages.test.tsx`, `PolicyContent.test.tsx` and `InfoPages.test.tsx`, replace only assertions on text this task removed (the 달빛 sections, `결제 도입 시`, `타로 심층 풀이`, `사주 프롤로그`, `지금은 로그인이 없어`), each with the matching new text from Steps 4–7. Never delete an assertion about text that stays.
 
 - [ ] **Step 9: Run the tests**
 
 Run: `npx vitest run apps/web/components/legal apps/web/app/pricing apps/web/lib/legal.test.ts apps/web/components/info apps/web/lib/pay`
-Expected: PASS (p4Policies 4; the edited pricing, legal and info tests).
+Expected: PASS (p4Policies 5; the edited pricing, legal and info tests).
 
 Run: `pnpm typecheck`
 Expected: exit 0.
 
+The controller also runs `e2e/blind.spec.ts` after this task: no model name and no 베타 on these pages, and Anthropic, PBC on privacy only.
+
 - [ ] **Step 10: Commit**
 
 ```bash
-git add apps/web/components/legal apps/web/app/pricing apps/web/app/refund/page.tsx apps/web/app/terms/page.tsx apps/web/app/privacy/page.tsx apps/web/lib/legal.ts apps/web/lib/legal.test.ts apps/web/lib/pay/catalog.ts apps/web/lib/pay/ledger.ts
+git add apps/web/components/legal apps/web/components/info/InfoPages.test.tsx apps/web/app/pricing apps/web/app/refund/page.tsx apps/web/app/terms/page.tsx apps/web/app/privacy/page.tsx apps/web/lib/legal.ts apps/web/lib/legal.test.ts
 git commit -m "docs(legal): pricing, refund, terms and privacy for item-by-item payments and accounts" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
@@ -8398,7 +10063,7 @@ git commit -m "docs(legal): pricing, refund, terms and privacy for item-by-item 
 ### Task 19: Bundle guard, e2e pay flow, runbook
 
 **Files:**
-- Modify: `scripts/check-client-bundle.mjs` (secret probes), `apps/web/playwright.config.ts` (webServer env), `apps/web/e2e/global-setup.ts` (compile `/pay/*`), `apps/web/package.json` (`e2e` migrates local D1 first), `apps/web/.env.example` (`STARLOG_CF_DEV`)
+- Modify: `scripts/check-client-bundle.mjs` (secret probes), `apps/web/playwright.config.ts` (webServer env), `apps/web/e2e/global-setup.ts` (compile `/pay/*`), `apps/web/package.json` (`e2e` migrates local D1 first)
 - Create: `apps/web/e2e/pay-flow.spec.ts`, `docs/runbook-payments.md`
 
 **Interfaces:**
@@ -8407,13 +10072,13 @@ git commit -m "docs(legal): pricing, refund, terms and privacy for item-by-item 
 
 The controller runs this task's builds and Playwright (global constraint). An implementer writes the files and runs only the Vitest parts.
 
-- [ ] **Step 1: Secret probes in `scripts/check-client-bundle.mjs`.** Add after the `probes` list:
+- [ ] **Step 1: Secret probes in `scripts/check-client-bundle.mjs`.** Add after the `blindProbes` list (keep both existing probe lists as they are at aa70830):
 
 ```js
 // Secrets must never reach the browser: Toss secret-key prefixes, and the real values when this shell
 // has them (reported by name only, never printed).
 const SECRET_PREFIXES = ["test_gsk_", "live_gsk_", "test_sk_", "live_sk_"];
-const SECRET_NAMES = ["TOSS_SECRET_KEY", "KAKAO_CLIENT_SECRET", "STARLOG_ACCOUNT_SECRET", "STARLOG_SIGNING_SECRET", "ANTHROPIC_API_KEY", "STARLOG_OWNER_CODE"];
+const SECRET_NAMES = ["TOSS_SECRET_KEY", "KAKAO_CLIENT_SECRET", "STARLOG_ACCOUNT_SECRET", "STARLOG_SIGNING_SECRET", "STARLOG_CRON_SECRET", "ANTHROPIC_API_KEY", "STARLOG_OWNER_CODE"];
 const secretProbes = [
   ...SECRET_PREFIXES.map((prefix) => ({ label: `secret key prefix ${prefix}`, value: prefix })),
   ...SECRET_NAMES.flatMap((name) => {
@@ -8423,7 +10088,7 @@ const secretProbes = [
 ];
 ```
 
-In the scan loop, after the paid-text probes:
+In the scan loop, after the `blindProbes` loop:
 
 ```js
   for (const probe of secretProbes) {
@@ -8431,10 +10096,10 @@ In the scan loop, after the paid-text probes:
   }
 ```
 
-Change the failure heading to `check-client-bundle: paid text or secrets found in the client bundle`. Change the success line to `check-client-bundle: ok, ${probes.length} paid-text probes, ${secretProbes.length} secret probes, ${scanned} static files, 0 hits`.
+Add `secrets` to the failure heading's wording (`paid text, model names or secrets found in the client bundle`) and `${secretProbes.length} secret probes` to the success line. Keep the rest of both lines.
 
 Run (controller, after `pnpm build`): `pnpm check:bundle`
-Expected: `check-client-bundle: ok, … secret probes, … 0 hits`.
+Expected: the success line with the secret probes and `0 hits`.
 
 - [ ] **Step 2: e2e server env.**
   - `apps/web/playwright.config.ts`: give `webServer` an `env`. It is merged over the inherited environment. Stop any dev server you already have running, because `reuseExistingServer` would keep its old env.
@@ -8450,15 +10115,9 @@ Expected: `check-client-bundle: ok, … secret probes, … 0 hits`.
         },
 ```
 
-  - `apps/web/package.json`: `"e2e": "wrangler d1 migrations apply starlog --local && playwright test"`.
+  - With `owner`, a browser without the owner pass sees exactly today's site (`/api/me` → `payments: false, login: false`), so the existing specs keep passing: `tarot-flow.spec.ts` asserts the sheet has no link, and it has none. `/login` renders (it is 404 only while `off`), so the `screens` case `login` keeps its page.
+  - `apps/web/package.json`: `"e2e": "wrangler d1 migrations apply starlog --local && playwright test"`. Keep `e2e:screens` as it is.
   - `apps/web/e2e/global-setup.ts`: add `"/pay/checkout?product=tarot&returnTo=%2Ftarot%2Fresult"`, `"/pay/success"` and `"/pay/fail?code=PAY_PROCESS_CANCELED"` to `ROUTES`. These render a client view with status 200 even without a session.
-  - `apps/web/.env.example`: add
-
-```bash
-# 1: `next dev` gets the Worker's bindings (local D1, KV, rate limiters) through Miniflare. Run
-# `pnpm --filter @starlog/web db:migrate:local` first. Leave empty for plain `next dev`.
-STARLOG_CF_DEV=
-```
 
 - [ ] **Step 3: Write `apps/web/e2e/pay-flow.spec.ts`**
 
@@ -8467,8 +10126,9 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 /**
  * Accounts and payments in owner mode (STARLOG_PAYMENTS=owner, mock Kakao and mock Toss, local D1):
- * the owner pass opens sales on this browser; everyone else keeps the beta, which the other specs cover.
- * A mock Kakao login without mockUser is a fresh account each time, so every run starts with the gift.
+ * the owner pass opens sales on this browser; everyone else keeps today's 오픈 기념 sheet, which the
+ * other specs cover. A mock Kakao login without mockUser is a fresh account each time, so every run
+ * starts with the gift. The question steps are the ones tarot-flow.spec.ts uses at aa70830.
  */
 
 const NAV = 30_000;
@@ -8513,7 +10173,7 @@ async function toResult(page: Page) {
   for (const n of [2, 9, 16]) await pickFanCard(page, n);
   await page.getByRole("button", { name: "결과 보기" }).click();
   await expect(page).toHaveURL(/\/tarot\/result/, { timeout: NAV });
-  await expect(page.getByRole("heading", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
+  await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
 }
 
 test("owner mode: log in for the gift, open with 별조각, pay for the next, see it in 내 정보 and refund an unopened one", async ({ page }, info) => {
@@ -8535,12 +10195,15 @@ test("owner mode: log in for the gift, open with 별조각, pay for the next, se
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
   const me = await (await page.request.get("/api/me")).json();
   expect(me.user.stardust).toBe(0);
+  const saved = await (await page.request.get("/api/readings?limit=5")).json();
+  expect(saved.readings).toHaveLength(1);
 
-  // 3. The next reading is paid: checkout with the 청약철회 check, mock Toss, back, opened automatically.
+  // 3. The next reading is paid: checkout with the 청약철회 and minor notices, mock Toss, back, opened automatically.
   await toResult(page);
   await page.getByRole("link", { name: "2,900원 결제하고 보기" }).click();
   await expect(page).toHaveURL(/\/pay\/checkout\?/, { timeout: NAV });
   await expect(page.getByText(/청약철회가 제한돼요/)).toBeVisible();
+  await expect(page.getByText(/법정대리인의 동의 없이/)).toBeVisible();
   await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
   await page.getByRole("button", { name: "2,900원 결제하기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
@@ -8564,7 +10227,18 @@ test("a cancelled Toss window charges nothing and goes back", async ({ page }, i
   await expect(page.getByText("결제를 취소했어요")).toBeVisible({ timeout: NAV });
   await expect(page.getByText("청구된 금액은 없어요.")).toBeVisible();
 });
+
+test("a browser without the owner pass keeps today's sheet in owner mode", async ({ page }, info) => {
+  test.setTimeout(300_000);
+  await ownAddress(page, info);
+  await toResult(page);
+  const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
+  await expect(sheet).toContainText(/오픈 기념으로 하루 .+ 무료예요/);
+  await expect(sheet.getByRole("link")).toHaveCount(0);
+});
 ```
+
+If a button name in `toResult` changed after aa70830, take the current one from `tarot-flow.spec.ts`, which walks the same steps.
 
 - [ ] **Step 4: Write `docs/runbook-payments.md`**
 
@@ -8573,90 +10247,113 @@ test("a cancelled Toss window charges nothing and goes back", async ({ page }, i
 
 Spec: docs/superpowers/specs/2026-10-01-starlog-p4-accounts-payments-design.md (sections 12, 14, 15).
 Commands run from `apps/web` unless noted. Never paste key values into chat, commits or logs.
+D1 queries: `npx wrangler d1 execute starlog --remote --command "<SQL>"`.
 
-## 1. One-time setup
+## 1. One-time setup (owner)
 
-- D1: `starlog` (id 78c6fb07-ee97-42d5-9633-21801fe596eb, binding DB), shared with P3.
+- D1: `starlog` (id 78c6fb07-ee97-42d5-9633-21801fe596eb, binding DB), shared with P3. 0001 is applied in production; P4 adds 0002.
 - Kakao developers console (the app that owns the REST API key):
-  - 카카오 로그인 ON; 동의 항목: 닉네임 (필수); 클라이언트 시크릿 사용 ON.
+  - 카카오 로그인 ON; 동의 항목: 닉네임 (필수); 클라이언트 시크릿 사용 ON (활성화 상태 "사용함").
   - Redirect URIs: https://starlog.yeolmaeapps.kr/api/auth/kakao/callback and http://localhost:3100/api/auth/kakao/callback.
   - Web platform domains: https://starlog.yeolmaeapps.kr, http://localhost:3100.
-- Toss developers center:
-  - 결제위젯(주문서형) variant DEFAULT with card + 간편결제 only (no 가상계좌, no 계좌이체); agreement variant AGREEMENT.
-  - Webhook: https://starlog.yeolmaeapps.kr/api/pay/webhook, event PAYMENT_STATUS_CHANGED.
-- Secrets (`npx wrangler secret put <NAME>`; each one makes a new Worker version at once):
-  - `STARLOG_ACCOUNT_SECRET`: 32+ random chars, NEVER rotate. Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+- Toss developers center (test keys first; the live ones come after the review, section 5):
+  - 결제위젯(주문서형): variant DEFAULT with card + 간편결제 only (no 가상계좌, no 계좌이체); agreement variant AGREEMENT.
+  - Webhook: https://starlog.yeolmaeapps.kr/api/pay/webhook, event PAYMENT_STATUS_CHANGED. Register it for the test MID now and check again after the live contract: the live MID may need its own registration (minor 13).
+- Secrets (`npx wrangler secret put <NAME>`; each makes a new Worker version at once):
+  - `STARLOG_ACCOUNT_SECRET`: 32+ random chars. NEVER rotate it: D1 pins it on first use (`meta.account_secret_check`) and every account route answers 503 if it changes. Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
+  - `STARLOG_CRON_SECRET`: 32+ random chars, same command. The Cron Trigger's bearer token.
   - `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`.
   - `NEXT_PUBLIC_TOSS_CLIENT_KEY` and `TOSS_SECRET_KEY`: both test_ keys first. A mixed test/live pair is refused (503).
-  - `STARLOG_PAYMENTS`: `off`, `owner` or `on`.
+  - `STARLOG_PAYMENTS`: `off` (dark), `owner`, `on`, `paused` (rollback).
 
 ## 2. Deploy dark
 
-1. `pnpm db:migrate:remote` → 0002_accounts_payments.sql ✅
-2. From the repo root: `pnpm deploy`.
-3. `curl -s https://starlog.yeolmaeapps.kr/api/me` → `{"payments":false,"owner":false,"user":null}`. The site is the beta.
+1. `pnpm db:migrate:remote` → 0002_accounts_payments.sql applied, no error.
+2. From the repo root: `pnpm deploy` (cf:build then OpenNext deploy; `wrangler.jsonc` `main` is `worker.mjs`, which wraps `.open-next/worker.js` and adds the cron). If OpenNext's deploy refuses the custom `main`, run `pnpm cf:build` and then `npx wrangler deploy` from apps/web.
+3. `curl -s https://starlog.yeolmaeapps.kr/api/me` → `{"payments":false,"login":false,"owner":false,"user":null}`; `/login` is 404. The site is unchanged.
+4. Cron: the Cloudflare dashboard (Workers > starlog > Triggers) lists `*/10 * * * *`. `npx wrangler tail` shows `cron.maintenance` every 10 minutes; none is `cron.no_secret` or `cron.maintenance_failed`.
 
 ## 3. Owner check in production (test keys)
 
 `npx wrangler secret put STARLOG_PAYMENTS` → `owner`. On the owner-pass browser:
 
-- [ ] result page shows `로그인하고 전체 풀이 보기`; another browser still shows the beta sheet
+- [ ] result page shows `로그인하고 전체 풀이 보기`; another browser still shows the 오픈 기념 sheet
 - [ ] Kakao login (real) → back with login=ok; 내 정보 shows the nickname and 별조각 10개 with its last day
-- [ ] `별조각 10개로 보기` opens the reading; 별조각 0; the reading is listed on another device after login
+- [ ] the first account request wrote `meta.account_secret_check` (`SELECT key FROM meta`)
+- [ ] `별조각 10개로 보기` opens the reading; 별조각 0; the reading shows on another device after login
 - [ ] test payment 2,900원 (test card) → reading opens by itself; 결제 내역 shows it with 영수증 보기
+- [ ] pay in the KakaoTalk in-app browser, finish in the card app, come back in another browser: the success page says 결제했어요 and 로그인하고 풀이 열기 opens it
 - [ ] buy another, leave it unopened → 환불받기 → Toss dashboard shows it cancelled; status 환불됨
 - [ ] cancel a payment in the Toss dashboard → webhook → order 환불됨 within a minute
-- [ ] 이어서 물어보기 on a paid reading → answer also appears on another device
-- [ ] cut the network during a paid generation → 결제한 풀이 열기 is offered again (no charge)
+- [ ] 이어서 물어보기 on a paid reading → the answer also appears on another device
+- [ ] turn on airplane mode during a paid generation → the page says 풀이가 열렸는지 확인하고 있어요, then either opens the reading or shows the purchase as still unopened (never both)
 - [ ] 회원 탈퇴 with an unopened purchase → refunded, logged out, /me says 탈퇴했어요
 - [ ] `pnpm check:bundle` on the deployed build: 0 hits
+- [ ] `SELECT mode FROM payments` shows `test` for every payment above
 
 ## 4. Toss review
 
-Apply for the live contract. The site already shows: /pricing (products, prices), /refund, /terms, /privacy, the business footer, the checkout with the 청약철회 notice. Follow the Toss sales contact's checklist.
+Apply for the live contract. The site already shows /pricing (products, prices), /refund, /terms, /privacy, the business footer, and the checkout with the 청약철회 and minor notices. Follow the Toss sales contact's checklist.
 
 ## 5. Live keys
 
-`npx wrangler secret put NEXT_PUBLIC_TOSS_CLIENT_KEY` (live_gck_…) and `npx wrangler secret put TOSS_SECRET_KEY` (live_gsk_…), one right after the other. Still in owner mode: one real 2,900원 purchase opened, one real purchase refunded.
+1. Refund every test-mode order first (minor 12): live keys cannot cancel test payments.
+   `SELECT o.id FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.mode = 'test' AND o.status = 'paid'`
+   Refund each from the owner's 내 정보 while the test keys are still in place.
+2. `npx wrangler secret put NEXT_PUBLIC_TOSS_CLIENT_KEY` (live_gck_…) and `npx wrangler secret put TOSS_SECRET_KEY` (live_gsk_…), one right after the other.
+3. Check the webhook for the live MID (section 1).
+4. Still in owner mode: one real 2,900원 purchase opened, one real purchase refunded.
 
 ## 6. Switch on
 
 After LEGAL_EFFECTIVE_DATE (lib/legal.ts; the changed terms are announced 7 days before):
-`npx wrangler secret put STARLOG_PAYMENTS` → `on`. The beta's free daily full reading ends; the signup gift starts.
+`npx wrangler secret put STARLOG_PAYMENTS` → `on`. The 오픈 기념 free daily full reading ends; the signup gift starts.
 For the first 24 h, run the checks in section 7 every two hours.
 
-## 7. Checks (`npx wrangler d1 execute starlog --remote --command "<SQL>"`)
+## 7. Checks
 
-- Stuck orders (should be empty; open 내 정보 or wait for the webhook to settle them):
-  `SELECT id, status, updated_at FROM orders WHERE status IN ('confirming','refunding') AND updated_at < strftime('%s','now')*1000 - 300000`
-- Reservations nobody settled (swept on the user's next request):
-  `SELECT COUNT(*) AS n FROM unlocks WHERE status = 'reserved' AND reserved_until < strftime('%s','now')*1000`
+- Orders the cron has not settled (should be empty; it retries every 10 minutes):
+  `SELECT id, status, fail_code, cancel_attempt, updated_at FROM orders WHERE status IN ('confirming','refunding') AND updated_at < strftime('%s','now')*1000 - 1800000`
+- Refund lock pairs out of step (M1; both must be empty):
+  `SELECT l.id, l.order_id, o.status FROM credit_lots l JOIN orders o ON o.id = l.order_id WHERE l.status = 'refunding' AND o.status <> 'refunding'`
+  `SELECT o.id FROM orders o JOIN credit_lots l ON l.order_id = o.id WHERE o.status = 'refunding' AND l.status NOT IN ('refunding','refunded')`
+- Payments for deleted accounts the cron could not cancel (`pay.orphan_refund_stuck` in the logs): cancel them in the Toss dashboard; the webhook records it.
+  `SELECT id, cancel_attempt FROM orders WHERE status = 'refunding' AND fail_code = 'ACCOUNT_DELETED' AND cancel_attempt >= 5`
+- Partial cancellations (`pay.partial_cancel`): decide by hand whether the reading stays; contact the buyer.
+  `SELECT order_id, canceled_amount FROM payments WHERE status = 'PARTIAL_CANCELED'`
+- Reservations nobody settled (the cron sweeps them; should stay near 0):
+  `SELECT COUNT(*) AS n FROM unlocks WHERE status = 'reserved' AND reserved_until < strftime('%s','now')*1000 - 600000`
+- Deletions not erased (the cron finishes them; should be empty):
+  `SELECT id FROM users WHERE deleted_at IS NOT NULL AND erased_at IS NULL AND deleted_at < strftime('%s','now')*1000 - 1800000`
 - Lot invariant (must be empty):
   `SELECT l.id FROM credit_lots l LEFT JOIN ledger g ON g.lot_id = l.id WHERE l.status <> 'refunding' GROUP BY l.id HAVING l.units_left <> COALESCE(SUM(CASE g.kind WHEN 'grant' THEN g.units WHEN 'restore' THEN g.units WHEN 'reserve' THEN -g.units WHEN 'refund' THEN -g.units WHEN 'expire' THEN -g.units ELSE 0 END), 0)`
 - Weekly (spec 14, default 6): paid, unopened, after a failed opening. Contact or refund them.
   `SELECT DISTINCT o.id, o.created_at FROM orders o JOIN credit_lots l ON l.order_id = o.id JOIN unlocks u ON u.user_id = o.user_id AND u.status = 'released' AND u.product_id = o.product_id WHERE o.status = 'paid' AND l.units_left = l.units_total`
-- Sales per KST day:
-  `SELECT date(created_at/1000, 'unixepoch', '+9 hours') AS day, COUNT(*) AS n, SUM(amount_krw) AS krw FROM orders WHERE status IN ('paid','refunded') GROUP BY day ORDER BY day DESC LIMIT 14`
-- Paid-reading model cost: Workers logs, `evt` = `cost.paid` (usd per generation).
+- Sales per KST day, live payments only (minor 12):
+  `SELECT date(o.created_at/1000, 'unixepoch', '+9 hours') AS day, COUNT(*) AS n, SUM(o.amount_krw) AS krw FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.mode = 'live' AND o.status IN ('paid','refunded') GROUP BY day ORDER BY day DESC LIMIT 14`
+- Paid-reading model cost: DAILY_KV keys `paidcost:<YYYY-MM-DD>:<0-7>` (sum the eight shards of a day). The free-tier total stays in `cost:` and closes at 80% of BETA_DAILY_BUDGET_KRW.
 
 ## 8. Refunds by hand
 
-Cancel in the Toss dashboard. The webhook applies it; if not, open the user's 내 정보, which reconciles after a minute. Never edit D1 rows by hand.
+- Any refund outside the 환불받기 button: cancel in the Toss dashboard. The webhook applies it (an opened reading's lot is revoked). If the webhook is missed, the cron settles it within 10 minutes. Never edit D1 rows by hand.
+- Card cancel window over (minor 14): Toss refuses the cancel. Ask the buyer for a bank account in their own name, transfer the amount, then record it: cancel in the Toss dashboard is not possible, so note the order id and the transfer in the refund log, and run `UPDATE orders SET status = 'refunded', fail_code = 'BANK_REFUND', updated_at = <ms> WHERE id = '<id>' AND status = 'paid'` together with the lot: `UPDATE credit_lots SET status = 'revoked' WHERE order_id = '<id>'` (the one sanctioned manual edit; do both in one `--command` separated by `;`).
+- A guardian cancels a minor's purchase (M7; 민법 제5조): ask for the minor's order id(s) or payment date and amount, and a document showing guardianship (가족관계증명서 or similar; do not keep a copy longer than needed). Cancel each payment in the Toss dashboard, opened or not; the webhook records it and revokes the lot. Reply within 3 business days.
 
 ## 9. Roll back
 
-`npx wrangler secret put STARLOG_PAYMENTS` → `off`. New sales, logins and gifts stop. Purchases and 별조각 already held still open and still refund.
+`npx wrangler secret put STARLOG_PAYMENTS` → `paused`. New sales, new accounts and gifts stop, and the 오픈 기념 reading comes back. Existing accounts can still log in to open, refund or delete what they hold. Use `off` only before launch: it also closes login.
 
 ## 10. Do not
 
-- Rotate STARLOG_ACCOUNT_SECRET: accounts and saved readings become unreachable.
+- Rotate STARLOG_ACCOUNT_SECRET: D1 refuses the new one (503 on every account route); accounts and saved readings would become unreachable.
 - Rotate STARLOG_SIGNING_SECRET without warning: everyone is logged out and tokens die.
 - Mix test and live Toss keys (refused anyway).
 - Set STARLOG_PAY=mock or STARLOG_KAKAO=mock in production (refused).
+- Delete the Cron Trigger: stale payments, refunds, erasures and purges depend on it.
 
 ## Follow-ups (not in P4)
 
-Kakao 연결 끊기 알림 callback (needs the admin key), 달빛 packs, premium generators (P5), cash receipts if 계좌이체 is ever enabled.
+Kakao 연결 끊기 알림 callback (needs the admin key), 달빛 packs, premium generators (P5), cash receipts if 계좌이체 is ever enabled, moving the device's earlier readings into an account (cut from P4), the P3 인연 link (cut from P4), a second reading-key version if the account secret must ever change.
 ````
 
 - [ ] **Step 5: Verify (controller)**
@@ -8669,63 +10366,64 @@ Expected: exit 0.
 
 Run: `pnpm --filter @starlog/web e2e`
 Expected:
-- the beta specs pass unchanged (they do not hold the owner pass, so they see the beta);
-- pay-flow passes 2 tests in each project it runs in.
+- the existing specs pass unchanged (they do not hold the owner pass, so they see today's site);
+- pay-flow passes 3 tests in each project it runs in.
 
 Run: `pnpm build && pnpm check:bundle`
 Expected: `0 hits`.
 
-Run: `pnpm cf:build`
-Expected: success. Report the Worker gzip size against the 3 MiB limit (it was 2.15 MiB before P4).
+Run: `pnpm cf:build`, then from apps/web `npx wrangler deploy --dry-run --outdir .wrangler/dry`
+Expected: success; the dry run lists the cron schedule. Report the Worker gzip size against the 3 MiB limit.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/check-client-bundle.mjs apps/web/playwright.config.ts apps/web/e2e/global-setup.ts apps/web/e2e/pay-flow.spec.ts apps/web/package.json apps/web/.env.example docs/runbook-payments.md
+git add scripts/check-client-bundle.mjs apps/web/playwright.config.ts apps/web/e2e/global-setup.ts apps/web/e2e/pay-flow.spec.ts apps/web/package.json docs/runbook-payments.md
 git commit -m "test(pay): secret probes in the bundle check, owner-mode e2e pay flow, payments runbook" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
 
-## Self-review against the spec
+## Self-review against the critique and the spec
 
-| Spec | Where |
+| Item | Where |
 |---|---|
-| 2 scope: login, sessions, logout, deletion | Tasks 3, 5, 12 |
-| 2 scope: one ledger, paid and free units | Task 4 |
-| 2 scope: item-by-item 2,900원; gift | Tasks 2, 7, 5 |
-| 2 scope: Toss widget v2, confirm, idempotency, webhook, cancel | Tasks 6, 7, 8, 16 |
-| 2 scope: streaming + money safety | Tasks 9, 10 |
-| 2 scope: account storage and claim | Tasks 9, 11, 17 |
-| 2 scope: 내 정보 | Task 17 |
-| 2 scope: premium catalog without sales | Task 2 (`deliverable: false`), Task 7 (409) |
-| 2 scope: legal pages, 청약철회 notice | Tasks 16, 18 |
-| 2 scope: local D1, mocks, rollout | Tasks 1, 6, 19 |
-| 4 P3 coexistence (D1 types, 0002, sl_uid, namespaces, order) | Tasks 0, 1, 3, 13 |
-| 5.1 login | Task 5 (+15 UI) |
-| 5.2 checkout | Tasks 7, 16 |
-| 5.3 confirm | Task 7 |
-| 5.4 unlock and invariants 1–7 | Tasks 4, 9, 10 (invariant check in the ledger suite and the runbook) |
-| 5.5 refunds | Task 8 (+17 UI) |
-| 5.6 webhook | Task 8 |
-| 5.7 account copies, claim | Tasks 9, 11, 17 |
-| 5.8 deletion | Tasks 12, 13 |
-| 6 legal | Task 18 |
-| 7 schema | Task 1 |
-| 8 API and error codes | Tasks 3, 5, 7, 8, 10, 11, 12 |
-| 9 screens | Tasks 14–17 |
-| 10 security | Tasks 2, 3, 5, 6, 7, 8, 19 |
-| 11 costs | the spec only (no code) |
-| 12 flags and rollout | Tasks 2, 10, 19 (runbook) |
-| 13 local dev and tests | Tasks 1, 5, 19 |
+| C1 settlement inside the current `respondGeneration` (keepAlive, SpendLedger, pre-counted `spend`) | Task 9 (`settled`/`release` in both paths, `recover`), Task 10 (`spend: "full"` kept for 오픈 기념 and 별조각, `paidCost` for paid). Checked: the Task 9 edits applied to aa70830's stream.ts and spend.ts pass settle.test (10), accounting, streaming and kv-failure tests, and typecheck |
+| C1 paid usage never in `cost:` | Task 9 (`CostSink`, `addPaidCost` → `paidcost:`; tests read the KV keys) |
+| M1 refund lock and revert in one batch, runbook query | Task 4 (`lockPaidLotForRefund`, `revertRefund`), Task 8, Task 19 §7 |
+| M2 Idempotency-Key semantics, 409/5xx/network pending, look-up first, attempt-scoped keys, no revert on time alone | Tasks 6, 7, 8 (10-minute look-up) |
+| M3 deletion settles first, refuses while unresolved, guards, orphan auto-refund, cron | Tasks 4, 7, 8, 9, 12, 13 |
+| M4 never claim "그대로" after a cut; server re-reads | Task 9 (`recover`), Tasks 14–15 (`CREDIT_CHECKING`, `checkDelivery`) |
+| M5 confirm without session | Task 7, Task 16 (`signedIn: false` UI) |
+| M6 privacy statements and lib/db comment | Task 1 (comment), Task 18 |
+| M7 minors: checkout line, terms clause, guardian refund path | Tasks 16, 18, 19 §8 |
+| M8 secret check in D1, HKDF subkeys, key_version | Tasks 1 (`meta`), 3, 9 |
+| M9 no 베타, no model names | Tasks 2, 10, 14, 15, 17, 18, 19 (e2e) |
+| Minors 1, 2 | Tasks 4, 8 |
+| Minor 3, 11 purges | Tasks 3 (claim re-tie), 12, 13 |
+| Minor 4 별조각 in the free budget and network cap | Tasks 9, 10 |
+| Minor 5 gift retry | Tasks 4, 5 |
+| Minor 6 no digest uniqueness, ON CONFLICT DO NOTHING | Tasks 1, 9 |
+| Minor 7 Kakao settings re-checked | Task 5 |
+| Minor 8 requestPayment errors | Task 16 |
+| Minor 9 paging | Tasks 9, 11, 17 |
+| Minors 12, 13, 14 | Task 19 runbook, Task 18 (refund fallback) |
+| Scope cut: no claim, no 인연 link | Tasks 1 (no digest, no bonds_owner_id), 11, 12, 17 |
+| Spec 5.1–5.9, 6–13 | Tasks 1–19 as listed in the task table |
 
 Type names used across tasks:
 - `D1Binding`, `D1Statement` (P3);
 - `AccountContext`, `Session`, `UserRow`;
 - `Lot`, `Allocation`, `WalletSummary`;
-- `TossClient`, `TossPayment`, `TossError`;
-- `OrderRow`, `OrderListItem`;
-- `ServerChapter`, `ReadingSource`;
-- `Settlement`, `UnlockPlan`, `UnlockMethod`, `UnlockOffer`;
-- `AccountState`, `AccountUser`.
+- `TossClient`, `TossPayment`, `TossError`, `MockToss`;
+- `OrderRow`, `OrderListItem`, `ConfirmOutcome`, `MarkPaidResult`, `RefundOutcome`, `MaintenanceReport`;
+- `ServerChapter`, `ReadingSource`, `SavedReading`;
+- `Settlement`, `CostSink`, `UnlockPlan`, `UnlockMethod`, `UnlockOffer`;
+- `AccountState`, `AccountUser`, `DeliveryCheck`.
 Each one is defined once (in the task that creates it) and used with the same signature afterwards.
+
+**P5 follow-through:** the P5 plan (`2026-10-01-starlog-p5-premium-readings.md`) was written against P4 revision 1. Before it runs, the coordinator should update these:
+- `Settlement` now also has `recover()`;
+- `RespondOptions.credit` is gone; use `paidCost`;
+- the readings `source` CHECK has no `'claimed'`, so P5's migration 0003 must not reintroduce it;
+- the claim path no longer exists.

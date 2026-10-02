@@ -1,14 +1,42 @@
 # Starlog P4 설계: 계정과 결제
 
-작성일 2026-10-01 · 상태: 구현 계획 작성 완료, 소유자 확인 대기(아래 "기본값" 절)
+작성 2026-10-01 · 개정 2: 2026-10-02 (비평 REVISE 반영, `aa70830` 기준, `ba7e843`에서 다시 확인) · 상태: 구현 계획 개정 완료, 소유자 확인 대기(14절 "기본값")
 
 구현 계획: `docs/superpowers/plans/2026-10-01-starlog-p4-accounts-payments.md`
 
-상위 설계: `docs/superpowers/specs/2026-09-29-saju-tarot-story-app-design.md`(5절 결제와 재화, 11절 오류 처리). 이 문서와 충돌하면 이 문서가 우선한다. 베타 운영 규칙은 `docs/superpowers/plans/2026-10-01-starlog-p2-beta-launch.md`, `.superpowers/sdd/2026-09-30-starlog-p2b/`(global-constraints, streaming-protocol, task-A 보고, A2 리뷰)를 따른다.
+상위 설계: `docs/superpowers/specs/2026-09-29-saju-tarot-story-app-design.md`(5절 결제와 재화, 11절 오류 처리). 이 문서와 충돌하면 이 문서가 우선한다. 운영 규칙은 `.superpowers/sdd/2026-09-30-starlog-p2b/`(global-constraints, streaming-protocol)를 따른다.
+
+## 0. 개정 2에서 바뀐 것
+
+- **C1:** 결제 정산을 지금의 `respondGeneration`에 맞춰 다시 설계했다.
+  - 정산은 `keepAlive`(waitUntil) 작업 안에서 이뤄진다. `run()` 다음, 본문이나 `done`보다 앞에서 저장과 차감을 하고, 두 경로의 `catch`에서 예약을 푼다.
+  - 결제한 풀이의 모델 비용은 `SpendLedger`의 별도 장부(`paidcost:`)에만 쌓이고, 무료 예산(`cost:`)에는 들어가지 않는다.
+- **M1:** 환불 잠금(주문 `refunding` + 로트 잠금)과 되돌리기를 각각 D1 batch 하나로 묶었다.
+- **M2:** 토스 Idempotency-Key 규칙을 따른다.
+  - 409(처리 중), 5xx, 응답 없음은 "모름"으로 본다. 그 밖의 오류는 결제를 조회한 뒤 결정한다.
+  - 같은 키를 다시 쓸 수 없으므로, 재시도는 시도 번호가 붙은 키로 한다.
+- **M3:** 회원 탈퇴는 진행 중인 결제와 환불을 먼저 정리하고, 남아 있으면 거절한다.
+  - 탈퇴한 계정에는 지급, 예약, 저장을 하지 않는다. 탈퇴 뒤 도착한 결제는 자동 취소한다.
+  - 10분마다 도는 Cron Trigger가 남은 일을 정리한다.
+- **M4:** 연결이 끊긴 뒤 "그대로 남아 있어요"라고 단정하지 않는다.
+  - 화면은 계정을 확인하는 동안 "확인하고 있어요"를 보인다.
+  - 서버는 저장 응답이 사라지면 다시 읽어 확인한다.
+- **M5:** 결제 승인과 주문 상태 조회에 로그인 세션이 필요 없다. 카카오톡 인앱 브라우저에서 결제한 경우에도 끝까지 간다.
+- **M6–M9:**
+  - 개인정보처리방침에서 "저장하지 않음" 문구 세 곳을 고쳤다.
+  - 미성년자 결제 취소를 결제 화면 문구, 약관 조항, 수동 환불 절차로 다뤘다.
+  - D1에 계정 비밀값 확인값을 두고, 키는 HKDF로 파생한다.
+  - "베타"와 모델명은 쓰지 않는다.
+- **범위 축소(코디네이터 결정):** 기기에만 있던 풀이를 계정으로 옮기기(claim)와 P3 인연 신원 연결을 뺐다. 로그인한 상태에서 연 풀이는 계속 계정에 보관한다.
+- **추가(안전 기본값):** 출시 뒤 되돌리기용 `STARLOG_PAYMENTS=paused`를 만들었다. 새 판매는 닫고, 기존 계정의 로그인과 사용·환불·탈퇴는 열어 둔다.
 
 ## 1. 한 줄 정의
 
-카카오 로그인과 토스페이먼츠 결제위젯으로 **표준 전체 풀이를 건별 2,900원에 판다.** 결제한 풀이는 **완성되어 계정에 저장될 때만** 차감되고, 생성에 실패하면 결제한 풀이가 그대로 남아 다시 열거나 바로 환불받을 수 있다. 가입 선물 별조각으로 한 번은 무료로 연다. 모든 것은 기능 플래그 뒤에서 켠다.
+카카오 로그인과 토스페이먼츠 결제위젯으로 **표준 전체 풀이를 건별 2,900원에 판다.**
+- 결제한 풀이는 **완성되어 계정에 저장될 때만** 쓰인다.
+- 생성이 완성되지 않으면 결제는 쓰이지 않고, 다시 열거나 바로 환불받을 수 있다.
+- 처음 가입하면 별조각으로 한 번은 무료로 연다.
+- 모든 것은 기능 플래그 뒤에서 켠다.
 
 ## 2. 범위
 
@@ -16,19 +44,22 @@
 
 - 카카오 로그인(서버 OAuth 코드 흐름), 서명 쿠키 + D1 세션, 로그아웃, 회원 탈퇴(개인정보 파기)
 - 원장 하나(지급·예약·차감·복구·환불·소멸), 유료(달빛)와 무료(별조각) 단위를 따로 기록
-- 건별 결제: 표준 타로·사주 전체 풀이 각 2,900원 → 결제 즉시 그 상품 1회분이 생긴다
+- 건별 결제: 표준 타로·사주 전체 풀이 각 2,900원. 결제하면 그 상품 1회분이 생긴다
 - 가입 선물: 별조각 `SITE.price.signupGiftFree`(10개 = 전체 풀이 1회), 카카오 계정당 한 번
 - 결제위젯 v2(주문서형) 연동, 서버 승인, 멱등, 웹훅, 취소·환불 API
-- 스트리밍 생성 경로와 결제의 연결(완성 전 차감 없음)
-- 계정에 풀이 보관(결제·별조각·운영자로 연 풀이는 자동, 기기에만 있던 풀이는 사용자가 원할 때 옮기기)
+- 스트리밍 생성 경로와 결제의 연결(완성 전 차감 없음, 결제 비용 장부 분리)
+- 계정에 풀이 보관: 로그인해서 결제·별조각·운영자로 연 풀이는 자동 저장, 다른 기기에서 받아 보기, 계정 사본 모두 지우기
 - 내 정보: 닉네임, 별조각과 소멸일, 열지 않은 결제 풀이와 환불, 결제 내역과 영수증, 로그아웃, 탈퇴
+- 10분마다 도는 정리 작업(Cron Trigger): 늦은 결제·환불 확인, 남은 예약 복구, 탈퇴 마무리, 보관 기간이 끝난 기록 파기
 - 프리미엄 상품의 카탈로그와 주문 경로(심층 타로 카드 10장 5,900원, 우리 사이 궁합 9,900원, 2027 신년운세 9,900원). **생성기가 생기는 P5 전에는 팔지 않는다**(구매 버튼 없음, 서버도 주문 거절)
-- /pricing, /refund, /terms, /privacy 개정, 결제 전 청약철회 안내와 동의
+- /pricing, /refund, /terms, /privacy 개정, 결제 전 청약철회·미성년자 안내와 확인
 - 로컬 D1, 모의 토스·모의 카카오로 e2e, 단계별 출시 절차
 
 ### P4에서 뺀다
 
-- 달빛 충전 상품(선불 재화의 환불·법적 부담 때문). 원장은 나중에 붙일 수 있게 만든다
+- 달빛 충전 상품(선불 재화의 환불·법적 부담). 원장은 나중에 붙일 수 있게 만든다
+- 기기에만 있던 풀이를 계정으로 옮기기(범위 축소)
+- P3 인연 주인과 계정 연결(범위 축소)
 - 프리미엄 풀이 생성기(P5)
 - 카카오 쪽 연결 끊기 알림 콜백(어드민 키가 필요, 후속)
 - 가상계좌·계좌이체(입금 대기·현금영수증 흐름), 구독, 쿠폰
@@ -39,375 +70,473 @@
 | 항목 | 결정 |
 |---|---|
 | 표준 가격 | 타로 전체 풀이 2,900원, 사주 전체 풀이 2,900원 |
-| 결제 전 보여 줄 범위 | 소제목 목록, 약 2,000자(타로)·약 3,000자(사주), 이어서 물어보기 3번, 이 기기에 계속 보관 |
-| 프리미엄 | 심층 타로·카드 10장 5,900원(화면에 "켈틱 크로스"를 쓰지 않는다), 우리 사이 궁합(사주+타로) 9,900원, 2027 신년운세 9,900원(11월 중순 오픈). P4는 카탈로그와 구매 배관만 |
+| 결제 전 보여 줄 범위 | 약 2,000자(타로)·약 3,000자(사주), 이어서 물어보기 3번, 이 기기에 계속 보관 |
+| 프리미엄 | 심층 타로·카드 10장 5,900원(화면에 "켈틱 크로스"를 쓰지 않는다), 우리 사이 궁합 9,900원, 2027 신년운세 9,900원(11월 중순 오픈). P4는 카탈로그와 구매 배관만 |
 | 재화 | 유료 달빛, 무료 별조각. 원장 하나, 유료·무료 단위 분리 |
-| 판매 방식 | 건별(2,900원 결제 → 그 풀이가 열린다). 달빛 묶음 판매는 P4에서 뺀다 |
-| 가입 선물 | 전체 풀이 1회분 별조각. 무료, 환불 불가, 명시한 규칙으로 소멸 |
-| 무료 범위 | 오늘의 한 장(매일), 지금의 한 장(무제한, 기기), 맛보기 하루 5번, 베타 동안 전체 풀이 하루 1번. 결제가 모두에게 열리면 하루 1번 무료 전체 풀이는 끄고 가입 선물로 바꾼다. 맛보기와 무료 부분은 그대로 |
-| 로그인 | 카카오만. REST API 키 + 클라이언트 시크릿, 서버 쪽 인가 코드 흐름. 리다이렉트 URI `https://starlog.yeolmaeapps.kr/api/auth/kakao/callback`, `http://localhost:3100/api/auth/kakao/callback`. 동의 항목 닉네임. 결제나 선물 받기 직전에만 로그인을 보여 준다 |
-| 세션 | `lib/security/sign.ts`(WebCrypto HMAC)로 서명한 HttpOnly 쿠키 + 취소할 수 있는 D1 세션 행. CSRF는 state 파라미터 + SameSite=Lax, 로그아웃 엔드포인트 |
-| 결제 | 토스페이먼츠 결제위젯 v2. 키 이름 `NEXT_PUBLIC_TOSS_CLIENT_KEY`(test_gck_…), `TOSS_SECRET_KEY`(test_gsk_…). 지금은 공개 문서의 테스트 키 |
-| 돈 안전 | 풀이가 전달될 때만 차감. 결제 뒤 생성이 실패하면 권리는 쓰지 않은 채 남고(무료로 다시 시도) 정책에 따라 환불 |
-| 저장소 | Cloudflare D1, 바인딩 `DB`. 결제한 풀이는 서버에도 보관(유료 콘텐츠를 잃지 않게) |
-| 보안 | 가격은 상품 id로 서버가 정한다(클라이언트 금액을 믿지 않음). 인증·결제 경로 속도 제한. 비밀값은 클라이언트 번들에 없다(`scripts/check-client-bundle.mjs`). 운영자 패스(`sl_owner`)로 QA 무료 열기 |
+| 판매 방식 | 건별. 달빛 묶음 판매는 P4에서 뺀다 |
+| 가입 선물 | 전체 풀이 1회분 별조각. 무료, 환불 불가, 정해진 규칙으로 소멸 |
+| 무료 범위 | 오늘의 한 장, 지금의 한 장, 맛보기, 그리고 결제가 모두에게 열리기 전까지 "오픈 기념" 전체 풀이 하루 1번. 결제가 모두에게 열리면 오픈 기념 무료 풀이는 끝나고 가입 선물로 바뀐다 |
+| 로그인 | 카카오만. REST API 키 + 클라이언트 시크릿, 서버 쪽 인가 코드 흐름. 리다이렉트 URI `https://starlog.yeolmaeapps.kr/api/auth/kakao/callback`, `http://localhost:3100/api/auth/kakao/callback`. 동의 항목 닉네임 |
+| 세션 | 서명한 HttpOnly 쿠키 + 취소할 수 있는 D1 세션 행. CSRF는 state 파라미터 + SameSite=Lax, 로그아웃 엔드포인트 |
+| 결제 | 토스페이먼츠 결제위젯 v2. 키 이름 `NEXT_PUBLIC_TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY` |
+| 돈 안전 | 풀이가 전달될 때만 차감. 생성이 실패하면 결제는 쓰이지 않고 다시 열거나 환불 |
+| 저장소 | Cloudflare D1, 바인딩 `DB` |
+| 문구 | "베타"를 어디에도 쓰지 않는다. 모델명을 쓰지 않는다(개인정보처리방침 국외 이전 표의 회사명 "Anthropic, PBC"만 예외) |
 
 ## 4. 의존성과 다른 단계와의 경계
 
 ### P3(별자리 인연)과 같이 쓰는 것
 
-P3가 지금 구현 중이고 D1을 먼저 도입한다. P4는 다음을 지킨다.
+- **D1:** `starlog`, id `78c6fb07-ee97-42d5-9633-21801fe596eb`, 바인딩 `DB`. `0001_bonds.sql`은 프로덕션에 적용돼 있고 고치지 않는다. P4는 `0002_accounts_payments.sql`을 더한다(같은 `migrations_dir`).
+- **`lib/db` 패턴:** P3의 `D1Binding`·`getDb()`를 그대로 쓴다. `lib/db/index.ts`에는 `accountDb()`·`setTestDb()`만 더하고, 머리말의 "생년월일·질문·메모를 저장하지 않는다"는 줄을 인연(P3)에 한정한다. 계정에 보관하는 풀이(P4)는 암호화해 저장한다고 따로 적는다(M6).
+- **테스트:** 원장 계약(`ledgerContract`)을 `node:sqlite` 메모리 DB와 로컬 D1(`getPlatformProxy`) 두 곳에서 돌린다. `Map` 대신 `node:sqlite`를 쓰는 이유는 돈 불변식이 SQL 제약과 batch 원자성에 기대기 때문이다.
+- **신원 쿠키:** P3의 `sl_uid`·`sl_fid`는 건드리지 않는다. P4 세션은 `sl_sid`.
+- **인연 연결은 하지 않는다**(범위 축소). 탈퇴는 P3 테이블을 건드리지 않는다. 인연 데이터 삭제는 P3의 요청 절차를 따른다.
+- **속도 제한 네임스페이스:** P2b 1001–1005, P3 1006–1008, P4 1101–1103(AUTH, PAY, WEBHOOK).
 
-- **D1 데이터베이스:** 이름 `starlog`, id `78c6fb07-ee97-42d5-9633-21801fe596eb`, 바인딩 `DB`(2026-10-01 생성, P3와 공유). `wrangler.jsonc`의 `d1_databases` 항목(`migrations_dir: "migrations"`)은 P3 Task 4(커밋 acf4599)가 넣었다. P4는 다시 넣지 않는다.
-- **마이그레이션 번호:** P3가 `apps/web/migrations/0001_bonds.sql`을 가진다. P4는 같은 폴더의 `0002_accounts_payments.sql`부터 쓰고, 적용한 마이그레이션은 고치지 않는다.
-  - wrangler는 적용하지 않은 파일을 이름 순서로 모두 적용하므로 순서가 섞여도 빠지지 않는다(설치된 wrangler 4.143 `getUnappliedMigrations` 확인).
-  - P3 작업 트리의 0001과 0002를 로컬 D1 엔진에 차례로 적용해 확인했다.
-- **`apps/web/lib/db/` 패턴:** P3가 정한 구성을 따른다.
-  - 구성: `lib/db/d1.ts`의 `D1Binding`·`D1Statement`·`getDb()`, 기능별 저장소, `lib/db/index.ts` 팩토리, 같은 계약 테스트를 메모리 구현과 로컬 D1(`*.int.test.ts`, `getPlatformProxy`)에서 모두 돌림.
-  - P4는 P3의 타입과 `getDb()`를 그대로 쓴다. `lib/db/index.ts`에는 `accountDb()`와 `setTestDb()`만 더한다. 새 타입 선언은 없으므로 `CloudflareEnv.DB`가 충돌하지 않는다.
-  - P4의 원장 테스트도 계약 하나(`ledgerContract`)를 두 곳에서 돌린다. 로컬 D1 쪽은 P3와 같은 `getPlatformProxy` 방식이다.
-  - **한 가지 다르게 한다:** P4의 "메모리 쪽"은 `Map` 구현이 아니라 **Node 내장 `node:sqlite` 메모리 DB 위에서 같은 SQL과 같은 마이그레이션을 돌리는 `D1Binding` 어댑터**다(`lib/db/testing/sqliteD1.ts`).
-    - 돈 불변식은 SQL 제약(CHECK, UNIQUE)과 batch 원자성에 기댄다. 그래서 `Map`으로 따로 짠 구현을 테스트하면 실제로 돌아갈 SQL은 검증되지 않는다.
-    - 의존성을 새로 설치하지 않는다(Node 22.13+ 내장).
-  - **로컬 개발:** P3는 `next dev`에서 메모리 저장소를 쓰고 `initOpenNextCloudflareForDev()`를 켜지 않았다. P4는 `STARLOG_CF_DEV=1`일 때만 `next.config.ts`가 그것을 호출해 Miniflare 로컬 D1을 쓴다. 기본 `next dev`에는 D1이 없어 계정·결제 경로가 503을 내고 화면은 베타 그대로다.
-- **신원 쿠키:** P3는 기기 신원 `sl_uid`(주인)와 `sl_fid`(친구 기기)를 쓴다. P4는 이 쿠키의 형식과 의미를 바꾸지 않는다. P4 세션 쿠키는 별개의 `sl_sid`이고 둘은 공존한다.
-  - 로그인할 때 이 기기의 `sl_uid`가 가리키는 인연 주인이 있고 계정에 연결된 주인이 아직 없으면, 그 주인을 계정에 연결한다(`users.bonds_owner_id`, UNIQUE).
-  - 계정에 이미 연결된 주인이 있고 이 기기의 `sl_uid`와 다르면, 계정의 주인으로 `sl_uid`를 다시 발급한다(다른 기기에서도 같은 별자리). 이 기기에 있던 다른 주인은 연결하지 않는다(별자리를 합치지 않는다, 기본값 14).
-  - 회원 탈퇴 때 연결된 인연 주인을 지운다(`owners` 행 삭제 → P3 스키마의 ON DELETE CASCADE로 초대·별자리·별 삭제). 내가 친구로 남긴 별은 기기 신원(`sl_fid`)에 묶여 있어 계정으로 찾을 수 없다. 개인정보처리방침에 적고 문의로 처리한다.
-  - `sl_uid` 쿠키를 만드는 함수는 P3의 `lib/bonds/identity.ts`에 있다. P4는 주어진 id로 쿠키를 만드는 내보내기(`ownerIdCookie`)가 없으면 같은 서명 방식으로 하나 더한다.
-- **속도 제한 네임스페이스:** P2b가 1001~1005를 쓰고, P3가 인연용 제한을 더한다. P4는 1101~1103(AUTH, PAY, WEBHOOK)을 쓴다.
-- **작업 순서:** P4의 D1 작업은 P3 Task 4가 병합된 뒤에 시작한다. 인연 신원 연결(P4 Task 13)은 P3 Task 6(identity.ts) 병합 뒤에 한다. 약관·개인정보 개정(P4 Task 18)은 P3 Task 12의 문구 위에 덧붙인다.
+### P2b와 지금의 코드(aa70830)
 
-### P2b와 같이 쓰는 것
-
-P4는 P2b 강화 작업(서버 쪽 지출 집계 `lib/api/spend.ts`, `keyedHash`, IPv6 /64 키, `stream.ts`의 비용 기록, `SITE.price.premium`, 신뢰 페이지)이 커밋된 뒤에 시작한다. 지금 작업 트리에서 다른 에이전트가 이 파일들을 고치고 있다. P4 Task 0은 이것이 커밋됐는지, 전체 테스트가 초록인지 확인하고 아니면 멈춘다.
+- `lib/api/stream.ts`, `lib/api/spend.ts`는 1d1e7c0 뒤로 바뀌지 않았다(`"line"` 종류 추가뿐). 정산은 그 구조 위에 붙는다(5.4).
+- 속도 제한은 aa70830에서 넓어졌다(GEN 60/분, FULL 20/분, 네트워크 하루 전체 풀이 60). P4는 바꾸지 않는다.
+- `/login`은 aa70830에서 개발 전용 시안이다(프로덕션 404). P4는 `STARLOG_PAYMENTS`가 `off`가 아닐 때 진짜 로그인 화면을 연다.
+- 새 질문 흐름 초기화 규칙(`useFlowVisit`)은 질문 만들기·상황·사주 입력 화면에만 적용된다. 결과 화면은 탭의 흐름을 유지하므로, 결제 뒤 같은 탭에서 결과 화면으로 돌아오면 자동으로 연다(확인함).
+- `VersionCheck`는 배포가 바뀐 탭을 다시 불러오지만 `aria-busy` 요소가 있으면 기다린다. 결제 화면과 성공 화면은 처리 중에 `aria-busy`를 둔다.
 
 ### P5와의 경계
 
-프리미엄 생성기(카드 10장, 궁합, 신년운세)는 P5다. P4의 주문·원장·잠금 해제는 상품 id로 일반화돼 있어서, P5는 생성 경로를 만들고 카탈로그의 `deliverable`을 켜면 된다.
+- 프리미엄 생성기는 P5다. P4의 주문·원장·정산은 상품 id로 일반화돼 있다.
+- P5 구현은 이미 같은 작업 트리에서 진행 중이다(ba7e843: `lib/api/inputs.ts`, `tarotRequest.ts` 수정). P4 Task 10·11은 그 줄을 지키고 옆에 더한다.
+- **P5 계획은 P4 개정 1 기준으로 쓰였다.** 실행 전에 다음을 맞춰야 한다.
+  - `Settlement`에 `recover()`가 생겼다.
+  - `credit` 옵션 대신 `paidCost`를 쓴다.
+  - readings `source`에 `'claimed'`가 없다.
+  - claim 경로가 없다.
 
 ## 5. 흐름
 
 ### 5.1 로그인 (결제나 선물 직전에만)
 
-1. 결과 화면의 잠금 시트에서 로그인하지 않은 사용자가 결제가 열린 상태면 주 버튼이 `로그인하고 전체 풀이 보기`다. 아래에 `처음 가입하면 별조각 10개를 드려요 · 전체 풀이 한 번을 무료로 열 수 있어요`와 가격 `전체 풀이 2,900원`을 보인다.
-2. `/login?next=/tarot/result`: `만 14세 이상이에요` 확인 → `카카오로 계속하기` → `GET /api/auth/kakao/start?age=1&returnTo=…`.
-3. 시작 경로는 서명한 10분짜리 `sl_oauth` 쿠키(state, 돌아갈 곳, 목적, 나이 확인)를 두고 카카오 인가 화면으로 303.
-4. 카카오가 `…/callback?code&state`로 돌려보낸다. 서버는 쿠키의 state와 상수 시간 비교 → 인가 코드로 토큰(`client_secret` 포함) → `GET /v2/user/me`로 회원번호와 닉네임 → 토큰은 버린다(저장하지 않는다).
-5. 회원번호는 `HMAC(STARLOG_ACCOUNT_SECRET, "kakao:"+id)`로만 저장한다. 처음 가입이면 사용자 행을 만들고 가입 선물을 준다(`gift_claims`로 카카오 계정당 한 번, 탈퇴 뒤에도 1년 기억).
-6. 세션 행을 만들고 `sl_sid` 쿠키(서명, HttpOnly, SameSite=Lax, Secure, 30일)를 둔 뒤 `returnTo?login=ok`로 303.
-7. 취소(`error` 파라미터)는 `login=cancel`, 실패는 `login=failed`, 판매가 닫혀 있으면 `login=closed`로 돌아간다. 화면은 이 값에 맞는 한 줄을 보인다. URL에는 개인정보를 넣지 않는다.
+1. 판매가 열린 기기에서 로그인하지 않은 사용자의 잠금 시트에는 주 버튼 `로그인하고 전체 풀이 보기`가 있다. 그 아래에 가입 선물 안내와 `전체 풀이 · 2,900원`이 보인다.
+2. `/login?next=…`: `만 14세 이상이에요` 확인 → `카카오로 계속하기` → `GET /api/auth/kakao/start?age=1&returnTo=…`.
+3. 시작 경로는 로그인이 열려 있는지(`loginOpen`)를 본다. 열려 있으면 서명한 10분짜리 `sl_oauth` 쿠키(state, 돌아갈 곳, 목적, 나이 확인)를 두고 카카오 인가 화면으로 303.
+4. 콜백 처리:
+   1. 쿠키의 state와 상수 시간으로 비교한다.
+   2. **카카오 설정을 다시 확인한다(minor 7).**
+   3. 인가 코드로 토큰을 받고(`client_secret` 포함), 회원번호와 닉네임을 읽는다.
+   4. 토큰은 버린다.
+5. 회원번호는 HKDF로 파생한 HMAC 키로만 바꿔 저장한다(`kakaoKey`).
+   - 판매가 열려 있으면 새 계정을 만든다.
+   - 판매가 멈춘(`paused`) 동안에는 기존 계정만 로그인한다. 새 카카오 계정이면 `login=closed`로 돌아간다.
+6. **가입 선물은 판매가 열린 동안 로그인할 때마다 시도한다(minor 5).** 청구 기록, 로트, 원장을 batch 하나로 쓴다. 카카오 계정당 한 번이고, 가입 때 실패했다면 다음 로그인에 받는다.
+7. 탈퇴 처리가 덜 끝난 계정의 카카오 키로 들어오면 `login=failed`로 돌아간다. 정리 작업이 몇 분 안에 마무리한다.
+8. 세션 행을 만들고 `sl_sid`(서명, HttpOnly, SameSite=Lax, Secure, 30일)를 둔 뒤 `returnTo?login=ok`로 303.
+9. 그 밖의 결과는 `login=cancel|failed|closed|unavailable|busy`. URL에 개인정보를 넣지 않는다.
 
 ### 5.2 건별 결제
 
 1. 잠금 시트의 `2,900원 결제하고 보기` → `/pay/checkout?product=tarot&returnTo=/tarot/result`.
-2. 결제 화면이 `GET /api/pay/checkout?product=tarot`로 상품명, 서버가 정한 금액, 고객 키, 클라이언트 키, 모드(toss/mock)를 받는다.
-3. 토스 SDK(`https://js.tosspayments.com/v2/standard`, 스크립트 태그로 로드, npm 의존성 추가 없음) → `TossPayments(clientKey).widgets({customerKey})` → `setAmount({currency:"KRW", value})` → `renderPaymentMethods({selector, variantKey:"DEFAULT"})`, `renderAgreement({selector, variantKey:"AGREEMENT"})`.
-4. 결제 화면에는 상품, 가격, 범위 3줄, **청약철회 안내와 필수 확인 체크**가 있다. 확인해야 금색 `2,900원 결제하기`가 켜진다.
-5. 누르면 `POST /api/pay/orders {productId, returnTo, ack:true}` → 서버가 카탈로그 가격으로 주문을 만든다(주문번호 24자 `[A-Za-z0-9_-]`, 확인 시각 저장). 클라이언트는 받은 금액이 화면 금액과 같은지 확인하고 `widgets.requestPayment({orderId, orderName, successUrl, failUrl})`.
-6. 토스가 `/pay/success?paymentType&orderId&paymentKey&amount`로 돌려보낸다. 성공 화면이 `POST /api/pay/confirm {paymentKey, orderId, amount}`.
-7. 서버 승인(5.3) → 성공이면 `returnTo?unlock=paid`로 이동 → 결과 화면이 자동으로 결제한 풀이를 연다(5.4).
-8. 실패는 `/pay/fail?code&message&orderId`. `PAY_PROCESS_CANCELED`(사용자가 닫음)는 "결제를 취소했어요 · 청구된 금액은 없어요". 승인 API를 부르지 않는다.
+2. 결제 화면이 `GET /api/pay/checkout`으로 상품명, 서버가 정한 금액, 고객 키, 클라이언트 키(실행 시점에 읽은 값), 모드를 받는다.
+3. 토스 SDK v2(스크립트 태그, npm 의존성 없음)로 결제수단과 약관 위젯을 그린다.
+4. 결제 화면에는 상품, 가격, 범위 3줄이 있다. 그리고 **청약철회 안내, 미성년자 안내("만 19세 미만이 법정대리인의 동의 없이 결제하면 본인이나 법정대리인이 결제를 취소할 수 있어요."), 필수 확인 체크**가 있다. 확인해야 금색 `2,900원 결제하기`가 켜진다.
+5. `POST /api/pay/orders {productId, returnTo, ack:true}` → 카탈로그 가격으로 주문(24자 id, 확인 시각 저장) → `requestPayment`.
+   - 사용자가 창을 닫은 경우(`USER_CANCEL`, `PAY_PROCESS_CANCELED`)는 조용히 머문다.
+   - 그 밖의 오류는 "결제창을 열지 못했어요"라고 알린다(minor 8).
+6. 토스가 `/pay/success?…`로 돌려보내면 성공 화면이 승인을 요청한다(5.3).
+   - `signedIn: true`이면 `returnTo?unlock=paid`로 가서 자동으로 연다.
+   - `signedIn: false`(다른 브라우저로 돌아옴)이면 "결제했어요"와 `로그인하고 풀이 열기`를 보인다. 로그인하면 같은 주소로 돌아와 연다(M5).
+7. 실패는 `/pay/fail?code&message&orderId`. 승인 API를 부르지 않고 "청구된 금액은 없어요"라고 알린다.
 
-### 5.3 서버 승인 (멱등)
+### 5.3 서버 승인 (멱등, 세션 없이)
 
-- 로그인과 주문 소유자를 확인한다. 쿼리의 `amount`가 **주문의 금액과 다르면** 승인하지 않고 주문을 실패로 둔다(토스 인증은 10분 뒤 만료되어 청구되지 않는다).
-- `created → confirming`을 조건부 UPDATE로 한 번만 가져간다. 두 번째 요청(새로고침, 두 번 누름)은 이미 결제면 성공, 아니면 `PAY_PENDING`.
-- `POST https://api.tosspayments.com/v1/payments/confirm`, 헤더 `Authorization: Basic base64(secretKey + ":")`, `Idempotency-Key: confirm-<orderId>`, 본문 `{paymentKey, orderId, amount}`(금액은 **주문의 금액**).
-- 응답이 `status: DONE`, 같은 주문번호, 같은 금액이면 한 D1 batch로: 주문 `paid`, 결제 행(UNIQUE paymentKey), 그 상품에 묶인 유료 로트(UNIQUE order_id), 원장 `grant`(UNIQUE idem). 같은 주문을 두 번 반영하면 UNIQUE 위반으로 batch 전체가 되돌려지고 "이미 반영됨"으로 처리한다 → **승인이 두 번 와도 지급은 한 번.**
-- `ALREADY_PROCESSED_PAYMENT`면 주문번호로 결제를 조회해 같은 반영을 한다.
-- 4xx(카드 거절 등)는 실패로 두고 토스의 메시지를 보인다.
-- 응답이 없거나 5xx면 `confirming`으로 두고 `PAY_PENDING`. 성공 화면은 2초마다 `GET /api/pay/orders?id=`를 부르고, 서버는 30초가 지난 `confirming` 주문을 **토스에 조회해서** 결정한다(토스가 기준).
+- **세션이 필요 없다(M5).**
+  - 주문번호(24자 무작위)와 토스의 paymentKey가 증표다. 금액은 주문의 금액과 같아야 하고, 지급은 언제나 `order.user_id`에게 간다.
+  - 속도 제한과 같은 출처 확인은 그대로 한다.
+  - 응답의 `signedIn`은 이 브라우저가 구매자의 세션을 가졌는지 알려 준다.
+- 쿼리 금액이 주문 금액과 다르면 승인하지 않고 주문을 실패로 둔다. 토스 인증은 10분 뒤 만료되어 청구되지 않는다.
+- `created → confirming`을 조건부 UPDATE로 한 번만 가져간다.
+- `POST /v1/payments/confirm`. 헤더는 `Authorization: Basic base64(secret + ":")`, `Idempotency-Key: confirm-<orderId>`이고, 금액은 주문의 금액이다.
+- **응답 해석(M2):**
+  - DONE·같은 주문·같은 금액 → `markPaid`(아래).
+  - 409 `IDEMPOTENT_REQUEST_PROCESSING`, 5xx, 응답 없음 → `confirming`으로 두고 `PAY_PENDING`. 거절로 보지 않는다.
+  - 그 밖의 오류(카드 거절, `ALREADY_PROCESSED_PAYMENT` 등)는 **주문번호로 결제를 조회한 뒤** 결정한다.
+    - DONE이면 반영한다.
+    - 조회가 실패하면 대기로 둔다.
+    - 그 밖이면 실패로 두고 토스의 메시지를 보인다.
+- **`markPaid`는 batch 하나다.**
+  - 주문은 `paid`가 된다. 다만 계정이 그사이 탈퇴했으면 `refunding` + `fail_code=ACCOUNT_DELETED`가 된다.
+  - 결제 행(UNIQUE paymentKey)을 쓴다.
+  - 주문이 `paid`일 때만 유료 로트와 원장 `grant`를 쓴다.
+  - 두 번 반영하면 UNIQUE 위반으로 batch 전체가 되돌려진다.
+  - 탈퇴한 계정의 결제는 승인 경로가 곧바로 취소한다(5.5). 실패하면 정리 작업이 재시도한다.
+- **대기 주문의 결정(`reconcileConfirming`):** 30초 뒤부터 조회하고, 토스가 기준이다.
+  - DONE → 결제 완료. ABORTED·EXPIRED·CANCELED → 실패.
+  - 15분이 지나도 결제가 없거나 미완료면 실패로 둔다(토스의 10분 승인 창이 끝났다).
+  - 성공 화면의 폴링, 결제 내역 화면, 정리 작업이 이 결정을 부른다.
 
 ### 5.4 풀이 열기와 돈 안전 불변식
 
 잠금 해제 방법은 요청 본문의 `unlock.method`다.
 
-| 방법 | 조건 | 기록 |
-|---|---|---|
-| `beta` | 결제가 모두에게 열리기 전(또는 운영자). 기존 쿠키 할당량과 서버 한도 | 기기 저장만(지금과 같음) |
-| `paid` | 로그인 + 그 상품에 묶인 쓰지 않은 유료 로트 | 원장 예약 → 전달 시 차감, 계정에 저장 |
-| `free` | 로그인 + 별조각 10개 이상(표준 상품만) | 같음 |
-| `owner` | `sl_owner` | 원장 없음. 로그인해 있으면 계정에 저장 |
+| 방법 | 시작 전 확인 | `spend`(네트워크 카운터) | 비용 장부 | 저장·정산 |
+|---|---|---|---|---|
+| `opening`(없음) | 오픈 기념이 끝났으면 402. 기기 쿠키 할당량, 무료 예산, 네트워크 한도 | `"full"` | `cost:`(무료) | 없음(기기 저장만) |
+| `free`(별조각) | 로그인, **무료 예산과 네트워크 한도(minor 4)**, 예약 | `"full"` | `cost:`(무료) | 저장 + 차감 |
+| `paid` | 로그인, 예약. 무료 예산·네트워크 한도는 보지 않는다(구매가 비용을 낸다) | 없음 | `paidcost:`(결제) | 저장 + 차감 |
+| `owner` | 운영자 패스, 운영자 기준 서버 한도 | `"full"`(운영자는 세지 않음) | `cost:` | 로그인했으면 저장 |
+
+**정산의 위치(C1).** 정산은 `respondGeneration`의 `keepAlive`(waitUntil) 작업 안에서 다음 순서로 일어난다.
+1. `run()`이 검증된 풀이를 돌려준다.
+2. `settle.deliver()`: 풀이 저장과 원장 `spend`를 batch 하나로 쓴다.
+3. 그 다음에야 JSON 본문이나 `done` 이벤트가 나간다. 이때 `readingId`가 붙는다.
+
+실패와 예외의 처리:
+- **`deliver`가 예외를 내면** `settle.recover()`가 이번 생성의 reading 행을 다시 읽는다. 있으면 저장된 것으로 보고 `done`을 보낸다. 없으면 오류로 간다.
+- **두 경로의 `catch`는 모두 `settle.release()`를 부른다.** 로그만 남기고 예외는 내지 않는다. 이미 전달됐으면 아무것도 하지 않는다.
+- 클라이언트가 `run()` 뒤에 떠나도 저장은 waitUntil 아래에서 끝난다. `run()` 중에 떠나면 생성이 중단되고 예약이 풀린다.
+- **비용 장부:** `SpendLedger`에 기록처(sink)를 준다. 결제 열기의 모델 비용은 `paidcost:<날짜>:<샤드>`로만 간다. `budgetState`는 이 키를 읽지 않으므로 결제 풀이가 무료 범위를 닫지 않는다.
 
 **불변식:**
+1. **전달 전에는 차감하지 않는다.** 시작 전에 예약하고, 저장과 함께 차감한다.
+2. **실패하면 되돌린다.** 생성 오류, 품질 실패, 240초 초과, 클라이언트 이탈, 저장 실패면 예약을 복구한다(멱등).
+3. **남은 예약은 스스로 풀린다.** 예약은 6분 동안만 유효하다. 그 사용자의 다음 요청이나 10분마다 도는 정리 작업이 복구한다.
+4. **경합해도 음수가 되지 않는다.** CHECK(0 ≤ units_left ≤ units_total)를 쓴다. 활성이 아닌 로트, **탈퇴한 계정의 로트**는 -1이 되어 batch 전체가 되돌려진다.
+5. **정확히 한 번.** 원장 행마다 UNIQUE `idem_key`가 있다. 차감과 복구는 "예약 상태일 때만" 쓰이고, 상태 전환이 batch의 마지막 문장이다.
+6. **사용자에게 불리하게 틀리지 않는다.** 예약이 먼저 만료·복구됐다면 풀이는 저장하고 단위는 돌려준 상태로 둔다.
+7. **로트 불변식:** `units_left = grant − reserve + restore − refund − expire`(`refunding` 로트 제외). 테스트와 런북 조회로 확인한다.
+8. **탈퇴한 계정에는 아무것도 하지 않는다.** 예약, 차감, 풀이 저장, 결제 지급이 모두 "계정이 살아 있을 때만" 쓰인다.
+9. **복구는 활성 로트에만 한다.** 결제가 대시보드에서 취소되어 회수된 로트(`revoked`)나 만료된 로트에는 복구하지 않는다(minor 1).
 
-1. **전달 전에는 차감하지 않는다.** 생성 경로는 스트림을 시작하기 전에 단위를 **예약**한다(로트 잔량에서 빼고 `unlocks` 행을 `reserved`로, 원장 `reserve`). 풀이가 검증을 통과하면, **`done` 이벤트(또는 JSON 응답)를 보내기 전에** 한 batch로 풀이를 계정에 저장하고 원장 `spend`, `unlocks`를 `delivered`로 바꾼다. "전달"은 검증된 풀이가 계정에 저장된 때다. 연결이 그 뒤에 끊겨도 풀이는 내 기록에서 다시 받는다.
-2. **실패하면 되돌린다.** 생성 오류, 품질 실패, 거절, 240초 예산 초과, 클라이언트 이탈(`request.signal`)이면 예약을 **복구**한다(로트에 되돌리고 원장 `restore`, `released`). 복구는 한 batch이고 멱등이다.
-3. **남은 예약은 스스로 풀린다.** 예약은 6분(생성 예산 240초 + 여유) 동안만 유효하다. 워커가 복구 전에 죽어도 그 사용자의 다음 요청에서 만료된 예약이 복구된다.
-4. **경합해도 음수가 되지 않는다.** 로트 잔량은 `CHECK (0 <= units_left <= units_total)`이다. 활성이 아닌 로트에서 빼려는 시도는 -1이 되어 CHECK에 걸리고 예약 batch 전체가 되돌려진다. 두 기기에서 동시에 열어도 한쪽만 예약된다.
-5. **정확히 한 번.** 원장 행마다 UNIQUE `idem_key`(`grant:<lot>`, `reserve:<unlock>:<lot>`, `spend:…`, `restore:…`, `refund:<lot>`, `expire:…`)가 있다. 전달과 복구의 원장 행과 로트 변경은 "예약 상태일 때만"(`WHERE EXISTS … status='reserved'`) 쓰이고, 상태 전환은 batch의 마지막 문장이다. 둘이 겹쳐도 먼저 끝난 쪽만 효과가 있다.
-6. **사용자에게 불리하게 틀리지 않는다.** 전달 시점에 예약이 이미 만료·복구됐다면(느린 생성) 풀이는 저장하고 단위도 돌려준 상태로 둔다(무료로 받은 셈). 로그를 남긴다.
-7. **로트 불변식:** 로트마다 `units_left = grant − reserve + restore − refund − expire`(원장 합). 환불 진행 중(`refunding`)인 로트만 예외다. 테스트가 매번 확인한다.
+**실패했을 때 화면(M4).** 결제나 별조각으로 열다가 끊기면(QUALITY, UPSTREAM, TIMEOUT, INVALID, NETWORK) 서버가 이미 저장했을 수 있다. 화면은 먼저 "풀이가 열렸는지 확인하고 있어요"를 보이고, 계정을 확인한다.
+- 0·2·4초에 확인한다. 요청 시작 뒤(시계 차 2분 허용) 저장된 같은 흐름의 풀이가 있으면 기기에 받아 바로 연다.
+- 없고 계정에 그 결제가 열지 않은 채로 있거나 별조각이 다시 충분하면, "결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요."(별조각은 "별조각은 그대로예요") + 다시 열기 + 환불 링크.
+- 아직 모르면 "풀이가 열렸는지 아직 확인하지 못했어요"와 내 정보 안내를 보인다. 확인은 15초·30초·1분·2분 뒤 계속하고, 결과가 나오면 화면을 바꾼다.
+- 예약 전에 거절된 오류(로그인, 쓸 수 있는 것 없음, 예산, 한도, 잘못된 요청)는 그 사실만 말한다.
 
-**실패했을 때 화면:** "풀이를 다 적지 못했어요. 결제한 풀이는 그대로 남아 있어요." 주 버튼 `다시 열기`, 보조 링크 `환불받기`(내 정보 결제 내역). 별조각이면 "별조각은 그대로예요".
-
-**자동 환불 정책(기본값 6):** 시간이 지나면 자동으로 환불하는 작업은 두지 않는다. 쓰지 않은 결제 풀이는 **사용자가 언제든 버튼 하나로 전액 환불**할 수 있다. 운영자는 주 1회 "생성 실패 뒤 열지 않은 결제"를 조회해 먼저 연락하거나 환불한다(런북).
+**자동 환불 정책(기본값 6):** 시간이 지나면 자동으로 환불하는 작업은 두지 않는다. 쓰지 않은 결제는 사용자가 버튼 하나로 전액 환불한다. 운영자는 주 1회 "생성 실패 뒤 열지 않은 결제"를 조회해 먼저 연락하거나 환불한다.
 
 ### 5.5 환불
 
-- **쓰지 않은 결제**(로트 잔량 = 전체, 예약 없음): 내 정보에서 `환불받기` → `POST /api/pay/refund {orderId}`.
-  1. 로트를 먼저 잠근다(`units_left = 0`, `refunding`, 조건부). 잠그는 사이 열 수 없다.
-  2. `POST /v1/payments/{paymentKey}/cancel {cancelReason}` + `Idempotency-Key: cancel-<orderId>`.
-  3. 성공이면 한 batch로 주문 `refunded`, 결제 행 갱신, 로트 `refunded`, 원장 `refund`.
-  4. 4xx면 로트와 주문을 되돌린다. 응답이 없으면 `refunding`으로 두고 60초 뒤 조회로 정한다(토스에서 취소됐으면 반영, 아니면 되돌림).
-- **이미 연 풀이**는 청약철회가 제한된다(6절). 내용이 안내와 다르게 제공된 경우 등은 문의로 처리한다.
-- **토스 관리자 화면에서 취소**하면 웹훅(`PAYMENT_STATUS_CHANGED`, `CANCELED`)이 와서 같은 반영을 한다. 이미 연 풀이였다면 주문만 환불로 표시하고 로그를 남긴다.
+- **쓰지 않은 결제의 환불:** 내 정보 `환불받기` → `POST /api/pay/refund {orderId}`.
+  1. **잠금(M1):** batch 하나로 주문을 `paid → refunding`으로, 로트를 `active·가득 → refunding·0`으로 바꾼다. 두 문장이 서로의 조건을 확인하므로 둘 다 바뀌거나 둘 다 그대로다. 변경 수도 확인한다.
+  2. `POST /v1/payments/{paymentKey}/cancel {cancelReason}`, `Idempotency-Key: cancel-<orderId>-<cancel_attempt>`.
+  3. **응답 해석(M2):**
+     - CANCELED → batch 하나로 주문 `refunded`, 결제 행 갱신, 로트 `refunded`, 원장 `refund`.
+     - 409·5xx·응답 없음 → `refunding`으로 둔다(`PAY_PENDING`).
+     - 그 밖의 오류 → 결제를 조회한다.
+       - CANCELED → 반영한다.
+       - **DONE → 취소가 거절된 것이다.** batch 하나로 되돌리고(`revertRefund`: 로트 `active`, 주문 `paid`, `cancel_attempt+1`), 다음 환불은 새 키로 보낸다.
+       - 그 밖 → 대기.
+  4. **대기한 환불(`reconcileRefunding`):** 10분 뒤 조회한다(클라이언트 30초 제한보다 훨씬 길게). CANCELED → 반영. DONE → 되돌림. 시간만 지났다고 되돌리지 않는다.
+- **탈퇴한 계정에 도착한 결제(고아):** 로트가 없는 `refunding` 주문이다.
+  - 승인 경로가 곧바로 취소한다.
+  - 거절되면 시도 번호를 올리고 정리 작업이 다시 보낸다. 5번까지 시도한다.
+  - 그래도 안 되면 `pay.orphan_refund_stuck` 로그와 런북의 수동 취소로 넘긴다.
+- **이미 연 풀이**는 청약철회가 제한된다(6절). 안내와 다르게 제공된 경우 등은 문의로 처리한다.
+- **카드사 취소 기한이 지난 경우(minor 14):** 본인 명의 계좌로 환불한다(런북 수동 절차).
 
 ### 5.6 웹훅
 
-- `POST /api/pay/webhook`(토스 개발자센터에 등록). `PAYMENT_STATUS_CHANGED`만 처리한다. 결제 웹훅에는 서명 헤더가 없으므로 **본문을 믿지 않고 `GET /v1/payments/{paymentKey}`로 다시 조회**해 그 결과만 반영한다.
-- `DONE` + 결제 전 상태 → 승인 반영(승인 응답을 놓친 경우). 취소 → 5.5와 같은 반영. `ABORTED`/`EXPIRED` → 실패.
-- 10초 안에 200을 준다. 조회가 실패하면 200이 아닌 응답을 줘서 토스가 다시 보내게 한다(최대 7회).
+- `POST /api/pay/webhook`, `PAYMENT_STATUS_CHANGED`만 처리한다. 서명이 없으므로 **본문은 단서로만 쓰고 결제를 다시 조회한다.**
+- DONE + 결제 전 상태 → `markPaid`. 고아는 정리 작업이 취소한다(웹훅은 10초 안에 답해야 하므로).
+- CANCELED:
+  - 열지 않은 결제 → 잠금 + 환불 반영.
+  - 열었거나 여는 중인 결제 → **로트를 `revoked`로** 두고 주문만 환불로 표시하고 로그를 남긴다(minor 1).
+- **PARTIAL_CANCELED(minor 2):** 운영자만 만들 수 있다(대시보드). 결제 행의 금액과 상태만 기록하고 풀이는 그대로 둔다. `pay.partial_cancel` 로그를 보고 운영자가 판단한다.
+- ABORTED/EXPIRED → 결제 전 주문을 실패로 둔다.
+- 조회가 실패하면 200이 아닌 응답을 줘서 토스가 다시 보내게 한다(최대 7회).
 
-### 5.7 계정에 보관과 옮기기
+### 5.7 계정에 보관
 
-- 로그인해서 연 풀이(결제·별조각·운영자)는 자동으로 계정에 저장한다. 저장 내용은 기기에 저장하는 장(章)과 같은 모양(질문, 상황, 메모 또는 출생 정보, 카드, 풀이, 장 토큰, 이어서 물어보기)이고, **AES-256-GCM으로 암호화**해 D1에 둔다(키는 `STARLOG_ACCOUNT_SECRET`에서 HKDF로 파생).
-- 다른 기기에서 로그인하면 내 정보·내 기록이 `GET /api/readings`로 받아 기기 저장소에 합친다. 이어서 물어보기는 계정 사본에도 기록된다.
-- **기기에만 있던 풀이 옮기기(claim):** 로그인하면 내 정보에 `이 기기에 있는 풀이 N개를 계정에 보관할까요?`와 `계정에 보관하기`가 보인다. 누르면 20개씩 `POST /api/readings/claim`. 서버는 각 풀이의 장 토큰이 **우리가 서명한 것이고 풀이 내용이 그대로인지**(서명 + 다이제스트, 만료는 보지 않음)만 받아들인다. 같은 풀이를 두 번 옮기면 한 번만 저장된다. 사용자당 300개까지.
-- 계정 사본 지우기: 내 정보의 `계정에 보관한 풀이 모두 지우기`가 서버 사본을 모두 지운다. 이 기기의 기록은 그대로 두고, 기기의 기록은 기존 `이 기기에 저장된 기록 모두 지우기`로 따로 지운다. 지금 기록 화면에는 한 건씩 지우는 기능이 없어 P4도 만들지 않는다.
+- 로그인해서 연 풀이(결제·별조각·운영자)는 자동으로 계정에 저장한다.
+  - 내용은 기기에 저장하는 장(章)과 같다. 질문, 상황, 메모 또는 출생 정보, 카드, 풀이, 장 토큰, 이어서 물어보기.
+  - **AES-256-GCM으로 암호화**하고, 키는 계정 비밀값에서 HKDF로 파생한다(`readings-v1`).
+- 같은 풀이를 두 번 사면 두 행이다. 한 번의 열기(unlock)는 한 행만 저장한다(`ON CONFLICT DO NOTHING`, minor 6).
+- 다른 기기에서 로그인하면 `GET /api/readings`를 **50개씩 끝까지 페이지로** 받아 기기에 합친다(minor 9). 개수 상한은 없다(산 것은 언제나 보관).
+- 이어서 물어보기는 계정 사본에도 기록된다.
+- 계정 사본 지우기: 내 정보의 `계정에 보관한 풀이 모두 지우기`. 이 기기의 기록은 따로 지운다.
+- **기기에만 있던 풀이를 계정으로 옮기는 기능은 없다**(범위 축소).
 
 ### 5.8 회원 탈퇴 (개인정보 파기)
 
-1. 내 정보 `회원 탈퇴` → 확인 시트(열지 않은 결제 N건은 전액 환불, 남은 별조각은 사라짐, 계정에 보관한 풀이와 연결된 별자리는 지워짐, 결제 기록은 법에 따라 5년 보관, 이 기기의 기록은 따로 지울 수 있음).
-2. `POST /api/account/delete-intent`(같은 출처 + 세션) → 세션에 묶인 5분짜리 서명 토큰 → `GET /api/auth/kakao/start?purpose=delete&intent=…` → 카카오 재인증.
-   - GET 한 번으로 탈퇴가 시작되지 않게 하려는 장치다(다른 사이트가 링크로 탈퇴를 유도하는 CSRF 방지).
+1. 내 정보 `회원 탈퇴` → 확인 시트. 열지 않은 결제 N건은 전액 환불, 남은 별조각은 사라짐, 계정에 보관한 풀이는 지워짐, 결제 기록은 법에 따라 5년 보관, 이 기기의 기록은 따로 지움.
+2. `POST /api/account/delete-intent`(같은 출처 + 세션) → 세션에 묶인 5분짜리 서명 토큰 → 카카오 재인증. GET 한 번으로 탈퇴가 시작되지 않는다.
 3. 콜백은 카카오 회원번호가 세션 사용자와 같은지 확인한다.
-4. 쓰지 않은 결제를 모두 환불한다. 하나라도 실패하면 탈퇴를 멈추고 `delete=refund-failed`로 돌아가 문의를 안내한다.
-5. 한 batch로 삭제한다.
-   - 남은 별조각 소멸(원장 `expire`), 계정 풀이 삭제, 세션 삭제, 연결된 인연 주인 삭제.
-   - 사용자 행은 식별값(`kakao_key`, 닉네임)을 비운 묘비로 남긴다(주문·원장이 5년 보관 대상이라 참조가 필요).
-6. 카카오 연결 끊기(`POST /v1/user/unlink`, 방금 받은 토큰) → 세션 쿠키 삭제 → `/me?account=deleted`.
+4. **정리 먼저(M3).**
+   - 이 계정의 남은 예약을 정리한다.
+   - `confirming` 주문은 지금 토스에 조회한다.
+   - `refunding` 주문은 10분 규칙대로 확인한다.
+5. **거절:** 아직 진행 중인 주문이 있으면 `delete=pending`("10분쯤 뒤에 다시"), 여는 중인 풀이가 있으면 `delete=in-use`.
+6. 열지 않은 결제를 모두 환불한다. 하나라도 실패하면 멈추고 `delete=refund-failed`.
+7. **표시:** 조건부 UPDATE 한 문장으로 `deleted_at`을 쓴다. 조건은 예약 없음, 진행 중 주문 없음, 열지 않은 결제 없음이다. 그 사이 결제가 끼어들면 `pending`.
+8. **파기:** batch 하나.
+   - 남은 별조각 소멸(원장 `expire`), 계정 풀이와 세션 삭제.
+   - 가입 선물 기록에 탈퇴 시각을 남긴다(1년 뒤 파기).
+   - 토스에 가지 않은 주문을 닫는다.
+   - 카카오 키와 닉네임을 비우고 `erased_at`을 쓴다.
+   - 주문·결제·원장은 5년 보관 대상이라 식별값 없는 묘비에 묶어 둔다.
+9. 7과 8 사이에서 작업이 끊기면 정리 작업이 8을 마무리한다.
+10. 카카오 연결 끊기(방금 받은 토큰) → 세션 쿠키 삭제 → `/me?account=deleted`.
+
+### 5.9 정리 작업 (Cron Trigger, 10분마다)
+
+- 진입점은 직접 만든 OpenNext 워커 `apps/web/worker.mjs`(`fetch` + `scheduled`)이고, `wrangler.jsonc`의 `main`이 이것을 가리킨다.
+- `scheduled`는 앱 자신의 `fetch`로 `POST /api/internal/maintenance`를 부르고 `Bearer STARLOG_CRON_SECRET`을 붙인다. 앱 코드는 `server-only`라 워커 진입점에 직접 묶을 수 없어, 같은 번들과 바인딩을 쓰는 경로로 돌린다.
+- 한 번에 하는 일(각각 상한 있음):
+  1. 30초 넘은 `confirming` 주문 확인(50건)
+  2. 10분 넘은 `refunding` 주문 확인. 고아 재시도 포함(50건)
+  3. 모든 계정의 오래된 예약 복구와 기한 지난 별조각 소멸(100건씩)
+  4. 표시만 되고 파기가 끝나지 않은 탈퇴 마무리(50건)
+  5. 파기(minor 3, 11):
+     - 끝난·취소된 세션(500건)
+     - 탈퇴 뒤 1년이 지난 가입 선물 기록(500건)
+     - 마지막 주문이 5년(+1일)보다 오래된 탈퇴 계정의 거래 기록과 묘비(20건)
 
 ## 6. 법무·심사
 
 - **청약철회(전자상거래법 제17조 제2항 제5호, 같은 조 제6항):**
-  - 디지털콘텐츠는 제공이 시작되면 청약철회가 제한된다. 대신 시험 사용 상품 제공 등의 조치가 필요하다.
-  - 맛보기가 시험 사용이다(타로 첫 카드 풀이 전체와 자리별 키워드, 사주 요약 풀이).
-  - 결제 화면에서 제한 사실을 알리고 확인 체크를 받는다. 확인 시각은 주문에 저장한다.
-  - **제공이 시작된 때는 "결제한 풀이가 완성되어 계정에 저장된 때"로 정한다.** 그 전(생성 실패 포함)에는 기한 없이 전액 환불한다. 법정 7일보다 넓다(기본값 5).
-- **영수증:** 토스 결제 객체의 `receipt.url`을 저장해 결제 내역에 `영수증 보기`로 연결한다. 이메일은 받지 않으므로 이메일 영수증은 없다.
-- **사업자 정보:** 푸터와 약관의 사업자 정보는 `SITE.business`에서 온다. 주소와 전화는 커밋 25fa670, da8effb로 채워졌다.
-- **개인정보처리방침에 더할 것:**
-  - 수집 항목: 카카오 회원번호(되돌릴 수 없는 값으로만 저장), 닉네임, 만 14세 확인 시각, 결제 기록(주문번호·금액·결제수단 종류·승인·취소 시각. 카드번호 등은 토스페이먼츠가 처리하고 운영자는 받지 않는다), 계정에 보관한 풀이(암호화 저장), 세션.
-  - 수집 출처: 카카오(로그인).
-  - 처리 위탁: 토스페이먼츠(결제), Cloudflare(저장, 국외 이전 미국).
-  - 보유 기간: 계약·청약철회 기록 5년, 대금결제·공급 기록 5년, 소비자 불만·분쟁 3년(전자상거래법 제6조와 시행령 제6조). 가입 선물 지급 기록(가명 값) 탈퇴 뒤 1년. 세션 30일.
-  - 파기 절차(5.8).
-- **약관:** 회원(카카오), 건별 결제, 별조각(무료·환불 불가·소멸 규칙), 탈퇴 시 처리, 서비스 종료 시 쓰지 않은 결제 환불. 달빛 충전은 판매하지 않으므로 뺀다. 시행일은 바꾼 약관을 공지하고 7일 뒤로 한다(약관 제3조, 기본값 17).
-- **토스 심사 준비물:** 사이트에 상품·가격(/pricing), 환불 정책(/refund), 이용약관, 사업자 정보 푸터, 결제 흐름(테스트 키로 동작). 실제 심사 요건은 토스 영업 담당 안내로 확인한다(문서로 확인하지 못함).
+  - 맛보기가 시험 사용이다.
+  - 결제 화면에서 제한 사실을 알리고 확인 체크를 받으며, 확인 시각은 주문에 저장한다.
+  - **제공 시작은 "결제한 풀이가 완성되어 계정에 저장된 때"로 정한다.** 그 전에는 기한 없이 전액 환불한다(기본값 5).
+  - 카드 취소 기한이 지났으면 계좌로 환불한다(minor 14).
+- **미성년자(M7):**
+  - 결제 화면 문구(5.2)를 둔다.
+  - 약관 제5조: 법정대리인 동의 없는 미성년자의 결제는 본인이나 법정대리인이 취소할 수 있다(민법 제5조). 속임수(제17조)와 처분을 허락한 재산(제6조)은 예외다.
+  - /refund의 미성년자 절과 신청처를 둔다. 런북에 보호자 취소 절차가 있다(서류 확인 뒤 토스에서 취소, 연 풀이도 포함).
+  - 전자상거래법상 고지 의무의 조문 번호는 원문으로 확인하지 못해 화면과 약관에 번호를 쓰지 않았다(15절).
+- **영수증:** 토스 결제 객체의 `receipt.url`을 저장해 결제 내역에 `영수증 보기`로 연결한다.
+- **사업자 정보:** 푸터와 약관은 `SITE.business`.
+- **개인정보처리방침(M6):**
+  - "운영자의 서버에 저장하지 않습니다"라고 단정한 세 곳(한눈에 보기, 보유 기간 첫 항목, 안전성 항목)을 고친다. 로그인하지 않은 풀이는 저장하지 않고, 로그인해서 연 풀이는 암호화해 계정에 보관하며 지우거나 탈퇴하면 파기한다고 나눠 적는다.
+  - 수집 항목: 카카오 회원번호(되돌릴 수 없는 값), 닉네임, 만 14세 확인 시각, 세션, 결제 기록, 로그인해서 연 풀이(암호화).
+  - 수집 출처: 카카오.
+  - 위탁: 토스페이먼츠(결제), Cloudflare(D1 저장, 국외).
+  - 보유: 계약·청약철회·대금결제 5년, 불만·분쟁 3년. 탈퇴 뒤에는 식별값을 지운 채 보관하고 기간이 끝나면 파기한다. 가입 선물 기록은 탈퇴 뒤 1년, 세션 30일.
+  - 쿠키 `sl_sid`, `sl_oauth`를 더한다.
+- **약관:**
+  - 회원(카카오), 건별 결제, 별조각(제7조의2), 미성년자(제5조), 탈퇴 시 처리, 서비스 종료 시 쓰지 않은 결제 환불.
+  - 오픈 기념 무료 풀이는 결제가 모두에게 열리면 끝나고 가입 선물로 바뀐다(제4조, 7일 전 공지).
+  - 달빛 충전 문구는 뺀다. 모델명은 쓰지 않는다.
+- **토스 심사 준비물:** /pricing, /refund, /terms, /privacy, 사업자 정보 푸터, 결제 흐름(테스트 키). 실제 요건은 토스 영업 담당 안내로 확인한다.
 
 ## 7. 데이터 모델 (D1, `0002_accounts_payments.sql`)
 
-시간은 epoch ms, 돈은 원 단위 정수, 단위는 달빛·별조각 개수다.
+시간은 epoch ms, 돈은 원 단위 정수다.
 
 | 테이블 | 핵심 열 | 제약·용도 |
 |---|---|---|
-| `users` | id, kakao_key(HMAC), nickname, customer_key(토스), age_confirmed_at, bonds_owner_id, created_at, last_login_at, deleted_at | kakao_key UNIQUE, customer_key UNIQUE, bonds_owner_id UNIQUE. 탈퇴하면 식별값을 비운 묘비 |
-| `sessions` | id, user_id, created_at, expires_at, revoked_at | 30일. 로그아웃·탈퇴로 취소 |
-| `gift_claims` | kakao_key, claimed_at | PK. 선물은 카카오 계정당 한 번. 탈퇴 뒤 1년 보관 |
-| `orders` | id(=토스 orderId), user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, payment_key, fail_code | status ∈ created, confirming, paid, failed, refunding, refunded |
-| `payments` | payment_key, order_id, method, total_amount, status, approved_at, receipt_url, canceled_amount, canceled_at, mode(test/live/mock) | payment_key PK, order_id UNIQUE |
-| `credit_lots` | id, user_id, currency(paid/free), source(order/gift/admin), order_id, product_id(용도 지정), units_total, units_left, status, expires_at | order_id UNIQUE, CHECK 0 ≤ units_left ≤ units_total |
-| `unlocks` | id, user_id, product_id, currency, allocations(JSON), status(reserved/delivered/released), reserved_until, reading_id | 예약 한 건 |
-| `ledger` | user_id, currency, kind, units(>0), lot_id, unlock_id, order_id, idem_key | idem_key UNIQUE. kind ∈ grant, reserve, spend, restore, refund, expire |
-| `readings` | id, user_id, kind, product_id, source(paid/free/owner/claimed), unlock_id, digest, payload(암호문), key_version | unlock_id UNIQUE, (user_id, digest) UNIQUE |
+| `meta` | key, value, updated_at | `account_secret_check`: 계정 비밀값 확인값(M8) |
+| `users` | id, kakao_key, nickname, customer_key, age_confirmed_at, created_at, last_login_at, deleted_at, erased_at | kakao_key UNIQUE, customer_key UNIQUE. 탈퇴하면 표시 → 파기(묘비) |
+| `sessions` | id, user_id, created_at, expires_at, revoked_at | 30일. 정리 작업이 끝난 세션을 지운다 |
+| `gift_claims` | kakao_key, claimed_at, account_deleted_at | PK. 계정이 살아 있는 동안과 탈퇴 뒤 1년. 같은 카카오로 다시 가입하면 탈퇴 시각을 지운다 |
+| `orders` | id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, payment_key, fail_code, cancel_attempt | status ∈ created, confirming, paid, failed, refunding, refunded. 취소 키 `cancel-<id>-<attempt>` |
+| `payments` | payment_key, order_id, method, total_amount, status, approved_at, receipt_url, canceled_amount, canceled_at, mode | payment_key PK, order_id UNIQUE, mode ∈ test/live/mock |
+| `credit_lots` | id, user_id, currency, source, order_id, product_id, units_total, units_left, status, expires_at | order_id UNIQUE, CHECK 0 ≤ units_left ≤ units_total, status ∈ active, refunding, refunded, expired, revoked |
+| `unlocks` | id, user_id, product_id, currency, allocations, status, reserved_until, reading_id | 예약 한 건 |
+| `ledger` | user_id, currency, kind, units, lot_id, unlock_id, order_id, idem_key | idem_key UNIQUE |
+| `readings` | id, user_id, kind, product_id, source(paid/free/owner), unlock_id, payload(암호문), key_version | unlock_id UNIQUE. 다이제스트·사용자별 유일 제약 없음 |
 
-- 달빛 묶음은 P4에서 팔지 않지만 같은 원장이 받는다. 묶음 주문은 `product_id`가 없는 유료 로트를 만들고, 풀이를 열 때 표준 상품의 단위만큼 예약하면 된다.
-- 묶음 환불 계산(보너스 먼저 쓴 것으로 봄)은 로트 단위로 하면 된다(`lib/pricing.ts moonRefundKrw`).
+정리 작업용 색인으로 `orders(status, updated_at)`, `unlocks(status, reserved_until)`, `credit_lots(status, expires_at)`, `sessions(expires_at)`, `users(deleted_at, erased_at)`, `gift_claims(account_deleted_at)`을 둔다.
 
 ## 8. API
 
 | 경로 | 설명 |
 |---|---|
-| `GET /api/me` | `{payments, owner, user: null \| {nickname, stardust, stardustExpiresAt, unused[{orderId, productId}]}}`. 세션 쿠키가 없으면 D1을 건드리지 않는다 |
+| `GET /api/me` | `{payments, login, owner, user: null \| {nickname, stardust, stardustExpiresAt, unused[]}}`. 세션 쿠키가 없으면 D1을 건드리지 않는다 |
 | `GET /api/auth/kakao/start?returnTo&age=1` (`&purpose=delete&intent=`) | 카카오로 303 |
 | `GET /api/auth/kakao/callback` | 로그인·탈퇴 처리 후 303 |
 | `POST /api/auth/logout` | 세션 취소 |
 | `POST /api/account/delete-intent` | 탈퇴 재인증 URL |
-| `GET /api/pay/checkout?product=` | 결제 화면 정보(금액·고객 키·클라이언트 키·모드) |
-| `POST /api/pay/orders` / `GET /api/pay/orders[?id=]` | 주문 생성(확인 필수) / 결제 내역·상태(대사 포함) |
-| `POST /api/pay/confirm` | 승인 |
-| `POST /api/pay/refund` | 쓰지 않은 결제 환불 |
+| `GET /api/pay/checkout?product=` | 결제 화면 정보(세션 필요) |
+| `POST /api/pay/orders` | 주문 생성(세션, 확인 필수) |
+| `GET /api/pay/orders?id=` | 주문 상태, 대기 주문 확인 포함. **세션 불필요**, `signedIn` 포함 |
+| `GET /api/pay/orders` | 결제 내역(세션) |
+| `POST /api/pay/confirm` | 승인. **세션 불필요**, 같은 출처·속도 제한, `signedIn` 포함 |
+| `POST /api/pay/refund` | 쓰지 않은 결제 환불(세션) |
 | `POST /api/pay/webhook` | 토스 웹훅 |
-| `GET /api/readings`, `DELETE /api/readings?id=`, `POST /api/readings/claim` | 계정 풀이 |
-| `POST /api/tarot/reading`, `POST /api/saju/reading` | 본문에 `unlock: {method}` 추가. 사주는 저장용 `display: {title, summary}` |
-| `POST /api/followup` | 본문에 `readingId` 추가(계정 사본에 이어서 물어보기 기록) |
+| `GET /api/readings?before=&limit=` | 계정 풀이 50개씩, `next` 커서 |
+| `DELETE /api/readings?id=` · `?all=1` | 계정 풀이 지우기 |
+| `POST /api/internal/maintenance` | 정리 작업(`Bearer STARLOG_CRON_SECRET` 전용) |
+| `POST /api/tarot/reading`, `POST /api/saju/reading` | 본문에 `unlock: {method}`(opening/paid/free/owner). 사주는 저장용 `display` |
+| `POST /api/followup` | 본문에 `readingId`(계정 사본에 기록) |
 
 새 오류 코드:
 
 | 코드 | 상태 | 의미 |
 |---|---|---|
 | `LOGIN_REQUIRED` | 401 | 로그인 필요 |
-| `PAYMENT_REQUIRED` | 402 | 결제가 열려 무료 전체 풀이가 끝남 |
+| `PAYMENT_REQUIRED` | 402 | 결제가 열려 오픈 기념 무료 풀이가 끝남 |
 | `NO_CREDIT` | 402 | 쓸 수 있는 결제·별조각 없음 |
-| `PAY_FAILED` | 402 | 승인·취소 실패 |
-| `FORBIDDEN` | 403 | 출처 불일치, 운영자 아님 |
+| `PAY_FAILED` | 402 | 승인·취소 실패(탈퇴 계정 결제 포함) |
+| `FORBIDDEN` | 403 | 출처 불일치, 운영자 아님, 정리 작업 토큰 불일치 |
 | `NOT_AVAILABLE` | 409 | 팔 수 없는 상품, 판매 닫힘 |
 | `PAY_PENDING` | 409 | 확인 중 |
 | `NOT_REFUNDABLE` | 409 | 환불할 수 없는 결제 |
-| `PAY_UNAVAILABLE` | 503 | D1·비밀값·키 없음 |
+| `PAY_UNAVAILABLE` | 503 | D1·비밀값·키 없음, 계정 비밀값 불일치 |
 
 ## 9. 화면
 
-- **잠금 시트(결과 화면):**
-  - 범위 3줄은 소유자 문구 그대로 둔다. 결제 모드에서는 위에 `전체 풀이 · 2,900원`을 둔다.
-  - 주 버튼 하나(금색)만 쓴다.
-    - 로그인 안 함: `로그인하고 전체 풀이 보기`
-    - 결제한 풀이가 있음: `결제한 풀이 열기`
-    - 별조각 10개 이상: `별조각 10개로 보기`(보조 `2,900원 결제하고 보기`)
-    - 그 밖: `2,900원 결제하고 보기`
-    - 베타: 지금과 같음
-  - 운영자에게는 흐린 보조 버튼 `운영자로 무료 열기`를 보인다.
-  - 청약철회 안내는 결제 화면에서 한다.
-- **결제 화면:** 단계 표시, 상품명·가격, 범위, 청약철회 안내 상자와 확인 체크, 토스 결제수단·약관 위젯, 금색 `2,900원 결제하기`. 모의 모드에서는 `테스트 결제예요` 안내와 `테스트 결제 실패` 보조 버튼을 보인다.
-- **성공 화면:** `결제를 확인하고 있어요` → 결과 화면으로 가서 자동으로 연다. **실패 화면:** 코드별 문구, `풀이로 돌아가기`.
-- **로그인 화면:** 카카오 버튼 하나(Google 제거), 만 14세 확인, 가입 선물 안내, 약관·개인정보 동의 문구, `login=` 상태 문구.
+- **잠금 시트(결과 화면):** 범위 3줄은 소유자 문구 그대로 둔다. 금색 주 버튼은 하나만 둔다.
+  - 판매 닫힘: 지금의 오픈 기념 시트 그대로("오픈 기념으로 하루 N번 무료예요").
+  - 판매가 멈춘(`paused`) 동안에는 그 아래에 조용한 링크 `결제한 풀이가 있다면 로그인`.
+  - 로그인 안 함: `로그인하고 전체 풀이 보기` + 가입 선물 안내.
+  - 결제한 풀이가 있음: `결제한 풀이 열기`.
+  - 별조각 충분: `별조각 10개로 보기`(보조 `2,900원 결제하고 보기`). 그 밖: `2,900원 결제하고 보기`.
+  - 운영자에게는 흐린 보조 버튼 `운영자로 무료 열기`.
+  - 끊긴 뒤에는 "확인하고 있어요" → 결과에 따라 열기, "그대로 남아 있어요 + 환불받기", "아직 확인하지 못했어요"(5.4).
+- **결제 화면:** 단계 표시, 상품명·가격, 범위, 청약철회 안내, 미성년자 안내, 확인 체크, 토스 위젯, 금색 `2,900원 결제하기`. 모의 모드는 `테스트 결제예요`와 `테스트 결제 실패`.
+- **성공 화면:** `결제를 마무리하고 있어요` → `결제를 확인하고 있어요` → 결과 화면에서 자동으로 연다. 다른 브라우저면 `결제했어요` + `로그인하고 풀이 열기`.
+- **실패 화면:** 코드별 문구, `청구된 금액은 없어요`, `풀이로 돌아가기`.
+- **로그인 화면:** 카카오 버튼 하나, 만 14세 확인, 가입 선물 안내, 약관·개인정보 문구, `login=` 상태 문구. `STARLOG_PAYMENTS=off`면 404.
 - **내 정보:**
-  - 로그인 안 함: 결제가 열렸으면 `로그인` 버튼, 베타면 지금과 같음.
-  - 로그인함: 닉네임, 별조각 N개와 `M월 D일까지`, 결제한 풀이(열기·환불받기), 결제 내역(날짜·상품·금액·상태·영수증), 계정에 보관하기(옮기기), 로그아웃, 회원 탈퇴.
-  - 달빛 충전 시트와 모의 충전 코드를 지운다.
-- 모든 문구는 해요체, 12px 미만 글자 없음, 44px 터치 영역, 금색 주 버튼 하나, 모션 줄이기 존중. 제품 메타 문구(라이브러리명, "예시예요")는 쓰지 않는다.
+  - 로그인함: 닉네임, 별조각 N개와 `M월 D일까지`, 결제한 풀이(열기·환불받기), 결제 내역(날짜·상품·금액·상태·영수증), 계정 사본 모두 지우기, 로그아웃, 회원 탈퇴.
+  - 판매가 열린 기기의 비로그인: `카카오로 로그인`.
+  - 그 밖: 지금의 오픈 기념 안내. 판매가 멈춘 동안에는 로그인 링크를 더한다.
+  - 탈퇴 상태 문구: deleted, failed, mismatch, refund-failed, pending, in-use, cancel, unavailable.
+  - 달빛 충전 시트를 지운다.
+- 모든 문구는 해요체, 13px 이상, 44px 터치 영역, 금색 주 버튼 하나, 모션 줄이기 존중. "베타"와 모델명은 쓰지 않는다.
 
 ## 10. 보안
 
-- 가격은 서버 카탈로그(`lib/pay/catalog.ts`, `SITE.price`)로만 정한다. 주문 요청에는 상품 id와 확인만 있다. 승인은 **주문의 금액**으로 부르고, 응답의 금액·주문번호·상태를 다시 확인한다.
-- 비밀값: `TOSS_SECRET_KEY`, `KAKAO_CLIENT_SECRET`, `STARLOG_ACCOUNT_SECRET`(32자 이상, 바꾸지 않음), 기존 `STARLOG_SIGNING_SECRET`. 모두 Worker 비밀값(`wrangler secret put`)이다.
-  - `NEXT_PUBLIC_TOSS_CLIENT_KEY`는 공개 키지만 **실행 시점에 서버가 읽어 결제 화면에 넘긴다**(빌드에 굽지 않아 테스트·라이브 키를 비밀 키와 함께 바꾼다).
-  - 서버는 두 키가 모두 test이거나 모두 live인지 확인하고, 섞였으면 503.
-- `check-client-bundle.mjs`는 유료 문구에 더해 `test_gsk_`, `live_gsk_`, `test_sk_`, `live_sk_` 접두사와, 셸에 값이 있으면 비밀값 자체를 찾는다(값은 출력하지 않음).
-- CSRF:
-  - OAuth state(서명 쿠키 + 상수 시간 비교).
-  - 모든 쿠키 SameSite=Lax.
-  - 상태를 바꾸는 계정·결제 POST는 Origin(없으면 Referer)이 자기 출처와 같아야 한다. JSON 본문만 받는다(폼 CSRF 차단).
-  - 탈퇴는 POST로 받은 의도 토큰이 있어야 시작한다.
-- 세션: 서명 쿠키 + D1 행(취소 가능). 서명 비밀을 바꾸면 모두 로그아웃된다.
-- 속도 제한(IP, IPv6는 /64):
-  - AUTH 20/분, PAY 20/분, WEBHOOK 60/분.
-  - 전체 풀이는 기존 FULL_LIMITER 5/분.
-  - 결제·별조각으로 여는 풀이는 베타의 기기·네트워크 하루 한도와 무료 지출 차단기(`BETA_DAILY_BUDGET_KRW`)를 거치지 않는다. 결제로 제한되기 때문이다. 대신 비용은 `cost.paid` 로그로 따로 남긴다(기본값 16).
-- 로그에는 주문번호, 상태, 코드만 남긴다. 카카오 회원번호, 닉네임, 토큰, 결제키, 질문, 출생 정보는 남기지 않는다.
-- 카카오 토큰은 저장하지 않는다. 카카오 회원번호는 HMAC 값만 저장한다.
-- 모의 토스(`STARLOG_PAY=mock`)와 모의 카카오(`STARLOG_KAKAO=mock`)는 프로덕션에서 거부한다.
+- 가격은 서버 카탈로그로만 정한다. 승인은 주문의 금액으로 부르고 응답의 금액·주문번호·상태를 다시 확인한다.
+- **계정 비밀값(M8):**
+  - `STARLOG_ACCOUNT_SECRET`(32자 이상)에서 HKDF-SHA256으로 용도별 하위 키를 파생한다: `kakao-lookup`, `secret-check`, `readings-v<n>`.
+  - 처음 쓰일 때 D1 `meta`에 확인값을 기록한다. 이후 다른 비밀값이면 모든 계정 경로가 503으로 닫힌다(로그 한 번). 잘못된 비밀값으로 기존 사용자에게 새 계정과 새 선물을 주거나 저장된 풀이를 못 여는 일을 막는다.
+  - 풀이 행마다 `key_version`을 둬 나중의 키 교체에 대비한다(P4는 1만 쓴다).
+- 비밀값: `TOSS_SECRET_KEY`, `KAKAO_CLIENT_SECRET`, `STARLOG_ACCOUNT_SECRET`, `STARLOG_CRON_SECRET`, `STARLOG_SIGNING_SECRET`. 모두 Worker 비밀값이다.
+  - `NEXT_PUBLIC_TOSS_CLIENT_KEY`는 실행 시점에 서버가 읽어 넘긴다. 테스트·라이브가 섞이면 503.
+- `check-client-bundle.mjs`가 시크릿 키 접두사와, 셸에 있으면 비밀값 자체를 찾는다(값은 출력하지 않음).
+- **CSRF:**
+  - OAuth state, SameSite=Lax.
+  - 상태를 바꾸는 POST는 같은 출처만 받는다(승인 포함). 본문은 JSON만 받는다.
+  - 탈퇴는 POST로 받은 의도 토큰이 있어야 한다.
+  - 승인은 세션 대신 주문번호·paymentKey·금액이 증표이고, 지급 대상은 주문의 계정으로 고정된다.
+- **정리 작업 경로:** Bearer 토큰을 상수 시간으로 비교하고, 다른 요청은 403이다.
+- **속도 제한(IP, IPv6 /64):**
+  - AUTH 20/분(로그인, 로그아웃, 탈퇴, 계정 풀이), PAY 20/분, WEBHOOK 60/분.
+  - 전체 풀이는 FULL_LIMITER 20/분.
+  - 별조각 열기는 무료 예산과 네트워크 하루 한도도 거친다(minor 4). 같은 네트워크에서 카카오 계정을 여러 개 만들어도 그 한도를 넘지 못한다.
+  - 결제 열기는 예산과 네트워크 한도를 거치지 않는다. 비용은 결제 장부에 남는다.
+- 로그에는 주문번호, 상태, 코드만 남긴다.
+- 카카오 토큰은 저장하지 않는다.
+- 모의 토스·카카오는 프로덕션에서 거부한다(Next가 프로덕션 빌드에 `NODE_ENV=production`을 넣는다).
 
 ## 11. 비용과 수수료 (단위 경제)
 
 | 항목 | 타로 2,900원 | 사주 2,900원 | 근거 |
 |---|---|---|---|
 | 부가세(포함가의 1/11) | 264원 | 264원 | 가격은 부가세 포함으로 가정 |
-| 토스 수수료 3.4% + 부가세 | 108원 | 108원 | tosspayments.com/about/fee(2026-10-01 열람): 신용·체크카드 일반 3.4%, 간편결제 3.4%, VAT 별도. 영·중소 우대율은 국세청 구간으로 반기마다 자동 적용되며 수치는 공개 페이지에 없음 → **가정: 우대 전 최대치** |
-| AI 비용(전체 풀이) | 약 214원 | 약 335원 | 소유자 측정값. ai:smoke 2026-09-30 5회 평균 타로 213.8원(최대 259), 사주 301.8원(최대 333) |
-| 이어서 물어보기 3번 | 측정 안 함 | 측정 안 함 | 맛보기(타로 약 49원, 사주 약 33원)와 비슷한 low effort로 추정. **P4 전에 측정 필요** |
+| 토스 수수료 3.4% + 부가세 | 108원 | 108원 | tosspayments.com/about/fee(2026-10-01 열람), 우대 전 최대치 가정 |
+| AI 비용(전체 풀이) | 약 214원 | 약 335원 | 소유자 측정값(ai:smoke 2026-09-30) |
+| 이어서 물어보기 3번 | 측정 안 함 | 측정 안 함 | P4 전에 측정 필요 |
 | 남는 돈(물어보기 제외) | 약 2,314원 | 약 2,193원 | |
-| 품질 재생성 최악(2회) | +214~259원 | +335원 | 드묾 |
 
-- 고정비: 가입비 220,000원(최초 1회), 연관리비 110,000원(공개 페이지 값, 프로모션 면제 여부는 영업 안내로 확인).
-- 가입 선물 1회 비용은 신규 가입자당 약 214~335원 + 이어서 물어보기다. 카카오 계정당 한 번으로 묶는다.
-- 결제 전 무료 비용(맛보기, 오늘의 한 장)은 기존 베타 한도가 막는다.
+- 고정비: 가입비 220,000원, 연관리비 110,000원(공개 페이지 값).
+- 가입 선물 1회 비용은 신규 가입자당 약 214~335원 + 이어서 물어보기다. 무료 예산 안에서 돈다.
+- 결제 풀이의 모델 비용은 `paidcost:` 장부로 따로 본다(런북).
 
 ## 12. 기능 플래그와 출시 순서
 
-환경 변수:
-
 | 이름 | 값 | 뜻 |
 |---|---|---|
-| `STARLOG_PAYMENTS` | `off`(기본) / `owner` / `on` | 새 판매·가입·선물을 누구에게 여는가. **이미 가진 결제·별조각을 쓰는 것은 어느 값에서도 막지 않는다**(되돌려도 산 사람이 갇히지 않음). `on`이면 베타의 하루 1번 무료 전체 풀이가 끝난다 |
-| `STARLOG_PAY` | `toss`(기본) / `mock` | 모의 토스(개발·e2e) |
-| `STARLOG_KAKAO` | `kakao`(기본) / `mock` | 모의 카카오(개발·e2e) |
+| `STARLOG_PAYMENTS` | `off`(기본) / `owner` / `on` / `paused` | `off`: 로그인·결제 없음(지금 그대로, `/login` 404). `owner`: 운영자 패스 기기만. `on`: 모두에게 열림, 오픈 기념 무료 풀이 종료. `paused`: 되돌리기. 새 판매·가입·선물은 닫고 기존 계정의 로그인·사용·환불·탈퇴와 오픈 기념 풀이는 연다. **가진 결제·별조각을 쓰는 것은 어느 값에서도 막지 않는다** |
+| `STARLOG_PAY` | `toss`(기본) / `mock` | 모의 토스(개발·e2e), 프로덕션 거부 |
+| `STARLOG_KAKAO` | `kakao`(기본) / `mock` | 모의 카카오(개발·e2e), 프로덕션 거부 |
+| `STARLOG_CF_DEV` | `1` | `next dev`에 로컬 D1·KV·제한기 연결 |
 
 순서:
-
-1. **어둡게 배포:** P4 병합 → D1 원격 마이그레이션(`wrangler d1 migrations apply starlog --remote`) → 비밀값 등록(테스트 키) → 배포, `STARLOG_PAYMENTS=off`. 사용자 화면은 그대로다.
-2. **운영자 확인(프로덕션, 테스트 키):** `STARLOG_PAYMENTS=owner` → 운영자 패스 기기만 로그인·결제가 보인다. 런북의 점검표(로그인, 선물, 테스트 결제, 자동 열기, 실패 뒤 다시 열기, 환불, 웹훅, 탈퇴, 영수증, 다른 기기 동기화)를 통과한다.
-3. **토스 심사:** 라이브 계약 신청. 사이트 점검 요소는 6절.
-4. **라이브 키:** `NEXT_PUBLIC_TOSS_CLIENT_KEY=live_gck_…`, `TOSS_SECRET_KEY=live_gsk_…`를 함께 바꾸고(섞이면 서버가 거부) 재배포한다. 여전히 `owner`에서 운영자가 실제 2,900원 결제 → 풀이 열기, 한 번 더 결제 → 환불을 확인한다.
-5. **켜기:** 약관 시행일 뒤에 `STARLOG_PAYMENTS=on`. 하루 1번 무료 전체 풀이가 끝나고 가입 선물이 시작된다. 첫 24시간은 런북의 조회(실패·대기 주문, 예약 누수, 로트 불변식)를 두 시간마다 본다.
-6. **되돌리기:** `STARLOG_PAYMENTS=off`로 새 판매만 닫는다. 가진 결제·별조각은 계속 쓰고 환불할 수 있다.
+1. **어둡게 배포:** D1 원격 마이그레이션 0002 → 비밀값(테스트 키, 계정·정리 작업 비밀값) → 배포(`main`=`worker.mjs`), `off`. 화면은 그대로이고, 정리 작업이 10분마다 돌기 시작한다.
+2. **운영자 확인(프로덕션, 테스트 키):** `owner`. 런북 점검표를 통과한다. 로그인, 선물, 결제, 자동 열기, 인앱 브라우저 결제, 끊김 확인, 환불, 대시보드 취소, 탈퇴, 영수증, 다른 기기 동기화.
+3. **토스 심사.**
+4. **라이브 키:** 테스트 결제를 먼저 모두 환불한다(minor 12). 두 키를 함께 바꾸고, 라이브 MID의 웹훅 등록을 확인한다(minor 13). 운영자가 실결제 1건 열기, 1건 환불을 확인한다.
+5. **켜기:** 약관 시행일 뒤에 `on`. 첫 24시간은 런북 조회를 두 시간마다 본다.
+6. **되돌리기:** `paused`. `off`는 출시 전에만 쓴다(로그인도 닫히므로).
 
 ## 13. 로컬 개발과 테스트
 
-- **단위·통합 테스트(Vitest):**
-  - `migratedTestD1()`이 `node:sqlite` 메모리 DB에 `apps/web/migrations/NNNN_*.sql`을 이름 순서로 적용한다. `setTestDb()`로 라우트가 그 DB를 쓴다.
-  - 라우트 핸들러를 `Request`로 직접 부른다(P2b 방식).
-  - 같은 스키마와 원장 계약은 `*.int.test.ts`에서 로컬 D1(workerd, `getPlatformProxy`)로도 돈다. `CI_NO_WORKERD=1`이면 건너뛴다.
-  - 모의 토스는 한 번 승인되면 `ALREADY_PROCESSED_PAYMENT`, `mock_fail…` 결제키는 거절, 취소는 잔액 0.
-  - 모의 카카오는 `mock:<이름>` 코드다. 이름이 없으면 로그인마다 새 계정이 된다. 같은 로컬 D1로 e2e를 되풀이해도 매번 가입 선물부터 시작한다.
-- **로컬 개발:**
-  - `STARLOG_CF_DEV=1 next dev --port 3100`이면 Miniflare 로컬 D1(`apps/web/.wrangler/state`)을 쓴다. 먼저 `pnpm --filter @starlog/web db:migrate:local`(= `wrangler d1 migrations apply starlog --local`).
-  - 플래그가 없으면 P3처럼 D1 없이 돌고, 계정·결제는 503이다.
-  - 카카오 실로그인은 localhost 리다이렉트가 등록돼 있어 로컬에서도 된다(`.env.local`에 키).
-  - 토스 테스트 키로 실제 위젯도 로컬에서 동작한다(successUrl이 localhost).
-- **e2e(Playwright):** 개발 서버 env `STARLOG_CF_DEV=1`, `STARLOG_PAYMENTS=owner`, `STARLOG_PAY=mock`, `STARLOG_KAKAO=mock`, `STARLOG_AI=mock`. `pnpm e2e`가 로컬 D1 마이그레이션을 먼저 적용한다.
-  - 기존 베타 흐름(운영자 아님)은 그대로 돌고, 결제 흐름 테스트는 운영자 패스로 판매를 연다.
-  - 시나리오: 로그인 → 선물로 열기 → 결제 → 자동 열기 → 내 정보 결제 내역 → 결제 한 번 더 → 환불.
-  - 실제 토스 테스트 결제는 2단계 운영자 확인에서 사람이 한다.
+- **단위·통합(Vitest):**
+  - `migratedTestD1()`이 `node:sqlite` 메모리 DB에 모든 마이그레이션을 적용한다.
+  - 라우트 핸들러를 `Request`로 직접 부른다.
+  - 원장 계약과 스키마는 `*.int.test.ts`에서 로컬 D1로도 돈다.
+  - 모의 토스는 Idempotency-Key의 첫 응답 재생(거절 포함), 409 처리 중, 응답 유실(`failNext`)을 흉내 낸다.
+  - 모의 카카오는 `mock:<이름>` 코드를 쓴다.
+- **로컬 개발:** `STARLOG_CF_DEV=1 next dev --port 3100` + `db:migrate:local`. 플래그가 없으면 D1 없이 돌고 계정·결제는 503이다.
+- **e2e:** 개발 서버 env는 `STARLOG_CF_DEV=1`, `STARLOG_PAYMENTS=owner`, `STARLOG_PAY=mock`, `STARLOG_KAKAO=mock`, `STARLOG_AI=mock`.
+  - 운영자 패스가 없는 기존 테스트는 지금 화면 그대로를 본다.
+  - 결제 흐름 테스트는 로그인 → 선물로 열기 → 결제 → 자동 열기 → 내 정보 → 환불이다.
+- **정리 작업:** 경로 테스트로 확인하고, 배포 뒤 `wrangler tail`의 `cron.maintenance`로 확인한다.
 
 ## 14. 기본값 (소유자 확인 필요)
 
-1. **별조각 소멸:** 받은 날부터 90일째 되는 날 밤 12시(한국 시간)까지 쓸 수 있다(예: 10월 1일에 받으면 12월 30일까지). 여러 번 받으면 먼저 사라지는 것부터 쓴다.
-2. **가입 선물:** 카카오 계정당 평생 한 번. 탈퇴 뒤 다시 가입해도 1년 안에는 다시 주지 않는다(가명 값으로 기록 보관, 개인정보처리방침에 명시).
-3. **세션:** 30일 고정(연장 없음). 로그아웃하면 그 기기 세션만 끝난다.
-4. **카카오 식별:** 회원번호는 HMAC 값으로만 저장하고, 카카오 토큰은 저장하지 않는다. 그래서 탈퇴할 때 카카오 재인증이 한 번 필요하다.
-5. **청약철회 제한 시점:** 풀이가 완성되어 계정에 저장된 때. 그 전에는 기한 없이 셀프 전액 환불(법정 7일보다 넓게).
-6. **생성 실패:** 시간 기반 자동 환불 없음. 결제한 풀이는 남고 사용자가 다시 열거나 즉시 환불한다. 운영자는 주 1회 조회해 먼저 연락·환불한다.
-7. **계정 보관:** 로그인해서 연 풀이는 자동 저장(암호화). 기기에만 있던 풀이는 사용자가 누를 때만 옮긴다. 사용자당 300개.
-8. **범위 문구:** 소유자 문구 "이 기기에 계속 보관"을 그대로 둔다(계정 보관은 내 정보·개인정보처리방침에서 안내).
-9. **프리미엄:** 목록과 가격만 보이고 P5 전에는 팔지 않는다. 2027 신년운세는 **2026-11-15 00:00(한국 시간)**부터 판매 가능으로 둔다(P5 생성기가 있을 때).
-10. **결제수단:** 토스 관리자에서 위젯 결제수단을 카드와 간편결제로만 둔다(가상계좌·계좌이체 없음 → 입금 대기·현금영수증 흐름 없음).
-11. **게스트 결제 없음:** 결제하려면 로그인. 토스 `customerKey`는 사용자마다 무작위(`c_`+24자, 50자 이내 규칙 충족).
-12. **탈퇴:** 쓰지 않은 결제는 자동 전액 환불(실패하면 탈퇴 중단). 결제·원장 기록은 가명 묘비에 묶어 5년 보관.
-13. **결제 열림(`on`) 뒤:** 하루 1번 무료 전체 풀이 종료. 맛보기 하루 5번, 오늘의 한 장, 지금의 한 장, 운영자 패스는 그대로.
-14. **인연 신원:** 로그인 때 기기의 인연 주인을 계정에 연결한다. 계정에 이미 다른 주인이 연결돼 있으면 계정 쪽이 이긴다(이 기기의 다른 별자리는 합치지 않음).
-15. **속도 제한:** AUTH 20/분, PAY 20/분, WEBHOOK 60/분(IP·/64 기준).
-16. **비용 차단기:** 결제·별조각으로 연 풀이의 AI 비용은 무료 지출 차단기(`BETA_DAILY_BUDGET_KRW`)에 넣지 않고 따로 기록한다. 그래서 유료 풀이가 무료 맛보기를 막지 않는다.
-17. **약관 시행일:** 배포하고 공지한 날부터 7일 뒤(계획의 기본 날짜 2026-10-15, 배포가 늦어지면 옮긴다). 결제는 이 날 이후에 켠다.
-18. **수수료 가정:** 카드·간편결제 3.4% + 부가세(공개 최대치). 가입비 220,000원, 연관리비 110,000원.
-19. **웹훅:** `PAYMENT_STATUS_CHANGED`만 등록. 검증은 재조회로 한다.
-20. **자동 열기:** 결제 성공 뒤 결과 화면으로 돌아가면 바로 생성을 시작한다(사용자가 한 번 더 누르지 않음). 흐름 상태가 사라진 경우(다른 브라우저로 돌아옴)에는 내 정보의 `결제한 풀이`에서 새로 뽑아 연다. 결제 권리는 특정 뽑기에 묶이지 않는다.
-21. **로컬 개발의 D1:** P3처럼 기본 `next dev`는 D1 없이 돌고, `STARLOG_CF_DEV=1`일 때만 Miniflare 로컬 D1을 붙인다(계정·결제 개발과 e2e용).
-22. **계정 사본 지우기:** 한 건씩이 아니라 내 정보에서 `계정에 보관한 풀이 모두 지우기`로 한다(지금 기록 화면에 개별 삭제가 없음).
-23. **`/api/me` 속도 제한 없음:** 세션 쿠키가 있을 때만 D1을 읽는 가벼운 조회라 페이지마다 불러도 되게 두었다.
+1. **별조각 소멸:** 받은 날부터 90일째 되는 날 밤 12시(한국 시간)까지. 먼저 사라지는 것부터 쓴다.
+2. **가입 선물:** 카카오 계정당 한 번. 탈퇴 뒤 다시 가입해도 1년 안에는 다시 주지 않는다. 다시 가입하면 그 기록은 새 계정이 살아 있는 동안 유지된다.
+3. **세션:** 30일 고정. 로그아웃하면 그 기기만 끝난다.
+4. **카카오 식별:** 회원번호는 파생 키의 HMAC 값으로만 저장한다. 그래서 탈퇴할 때 카카오 재인증이 한 번 필요하다.
+5. **청약철회 제한 시점:** 풀이가 완성되어 계정에 저장된 때. 그 전에는 기한 없이 셀프 전액 환불한다(카드 취소 기한이 지났으면 계좌 환불).
+6. **생성 실패:** 시간 기반 자동 환불 없음. 다시 열거나 즉시 환불한다. 운영자가 주 1회 조회한다.
+7. **계정 보관:** 로그인해서 연 풀이만 자동 저장(암호화). 개수 상한 없음. 기기 기록 옮기기 없음(범위 축소).
+8. **범위 문구:** "이 기기에 계속 보관" 그대로 둔다(계정 보관은 내 정보·개인정보처리방침에서 안내).
+9. **프리미엄:** 목록과 가격만, P5 전에는 판매하지 않는다. 2027 신년운세는 2026-11-15 00:00(한국 시간)부터.
+10. **결제수단:** 카드와 간편결제만.
+11. **게스트 결제 없음:** 결제하려면 로그인. `customerKey`는 `c_`+24자.
+12. **탈퇴:** 진행 중인 결제·환불·열기가 있으면 거절하고 나중에 다시 하게 한다. 쓰지 않은 결제는 자동 전액 환불(실패하면 중단). 거래 기록은 묘비에 묶어 5년 보관.
+13. **결제 열림(`on`) 뒤:** 오픈 기념 하루 1번 무료 전체 풀이 종료. 맛보기, 오늘의 한 장, 지금의 한 장, 운영자 패스는 그대로.
+14. **되돌리기:** `paused`(새 판매만 닫고 로그인·사용·환불·탈퇴는 연다. 오픈 기념 풀이가 돌아온다).
+15. **속도 제한:** AUTH 20/분, PAY 20/분, WEBHOOK 60/분.
+16. **비용 장부:** 결제 풀이 비용은 `paidcost:`(무료 예산 밖). 별조각·오픈 기념·운영자 풀이는 무료 예산(`cost:`)과 네트워크 한도 안.
+17. **약관 시행일:** 배포·공지 7일 뒤(계획의 기본 날짜 2026-10-15). 결제는 이 날 이후에 켠다.
+18. **수수료 가정:** 카드·간편결제 3.4% + 부가세. 가입비 220,000원, 연관리비 110,000원.
+19. **웹훅:** `PAYMENT_STATUS_CHANGED`만, 검증은 재조회. 부분 취소는 기록만 하고 운영자가 판단.
+20. **자동 열기:** 결제 뒤 같은 탭에서 돌아오면 바로 연다. 다른 브라우저면 로그인 뒤 연다. 흐름이 사라졌으면 내 정보의 결제한 풀이에서 새로 뽑아 연다.
+21. **로컬 개발의 D1:** 기본 `next dev`는 D1 없이, `STARLOG_CF_DEV=1`일 때만 로컬 D1.
+22. **계정 사본 지우기:** 한 건씩이 아니라 모두 지우기.
+23. **`/api/me` 속도 제한 없음:** 세션 쿠키가 있을 때만 D1을 읽는다.
+24. **정리 작업 주기와 기다림:** 10분마다. 승인 대기는 30초 뒤 조회하고, 15분 지나도 미완료면 실패. 환불 대기는 10분 뒤 조회.
+25. **고아 결제:** 자동 취소를 5번까지 시도하고, 그다음은 운영자 수동 취소.
+26. **파기:** 끝난 세션은 바로, 탈퇴 계정의 선물 기록은 1년 뒤, 탈퇴 계정의 거래 기록은 마지막 주문 뒤 5년+1일.
+27. **끊긴 뒤 확인:** 0·2·4초 확인 뒤 "아직 모름" 안내. 15초·30초·1분·2분 뒤 계속 확인.
+28. **로그인 화면:** `STARLOG_PAYMENTS=off`면 404, 그 밖에는 연다(누가 로그인할지는 시작 경로가 정함).
 
 ## 15. 막힌 것과 위험
 
-- **막힘(소유자):**
+- **소유자가 할 일:**
+  - Worker 비밀값 등록(채팅에 붙이지 않는다):
+    - `STARLOG_ACCOUNT_SECRET`, `STARLOG_CRON_SECRET`(둘 다 32자 이상 무작위, 런북의 생성 명령);
+    - `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`;
+    - `NEXT_PUBLIC_TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`(테스트 키 먼저);
+    - `STARLOG_PAYMENTS`.
+  - 카카오 콘솔: 카카오 로그인 ON, 동의 항목 닉네임, 클라이언트 시크릿 사용, 리다이렉트 URI 2개, Web 플랫폼 도메인.
+  - 토스 개발자센터:
+    - 결제위젯 variant(DEFAULT, 카드·간편결제만)와 약관 variant(AGREEMENT);
+    - 웹훅 URL 등록(라이브 MID는 계약 뒤 다시 확인).
   - 토스 라이브 계약·심사.
-  - Worker 비밀값 등록: `TOSS_SECRET_KEY`, `NEXT_PUBLIC_TOSS_CLIENT_KEY`, `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`, `STARLOG_ACCOUNT_SECRET`. 키는 채팅에 붙이지 않는다.
-  - 카카오 콘솔: 카카오 로그인 활성화, 동의 항목 닉네임, 클라이언트 시크릿 사용, Web 플랫폼 도메인.
-  - 토스 개발자센터: 웹훅 URL 등록.
-- **막힘(순서):** P2b 강화 작업과 P3 Task 4가 커밋되기 전에는 P4 D1 작업을 시작할 수 없다(같은 파일을 고침). 인연 연결은 P3 Task 6 뒤.
 - **위험:**
-  - `node:sqlite`와 D1의 SQL 차이. 둘 다 SQLite지만 D1 쪽 오류 메시지 형식이 다를 수 있다. 제약 위반 판별은 "constraint failed" 문자열로 한다.
-  - 운영자 확인 단계에서 실제 D1로 한 번 더 검증한다(런북).
-  - 계획을 쓰면서 `getPlatformProxy`(로컬 D1 int 테스트)는 이 샌드박스에서 workerd를 띄우지 못했다(`fetch failed`/`ECONNRESET`). 같은 엔진의 `wrangler d1 execute --local`은 동작했다. int 테스트가 구현 환경에서도 안 뜨면 보고하고 컨트롤러가 돌린다.
-  - P3의 `d1BondsRepo.int.test.ts`도 같은 방식이라 같은 영향을 받을 수 있다.
-  - 토스 문서의 `customerKey` 길이 표기가 두 곳에서 다르다(SDK 페이지 50자, 빠른 참조 300자). 짧은 쪽을 지킨다.
-  - 카카오톡 인앱 브라우저에서 앱카드 결제 뒤 다른 브라우저로 돌아오면 흐름 상태(sessionStorage)가 없다. 결제 권리가 뽑기에 묶이지 않으므로 내 정보에서 연다.
+  - OpenNext 배포 명령이 직접 만든 `main`(`worker.mjs`)을 받지 않을 수 있다. 공식 문서의 방식이지만 이 저장소에서 아직 빌드해 보지 않았다. 안 되면 `cf:build` 뒤 `wrangler deploy`로 배포한다(런북).
+  - `getPlatformProxy`(로컬 D1 int 테스트)는 계획 작성 환경에서 workerd를 띄우지 못했다. 코디네이터 환경에서는 P3 int 테스트 8개가 통과했다.
+  - `wrangler d1 migrations apply --local`도 계획 작성 환경에서 `ECONNRESET`이었다. 같은 엔진의 `d1 execute --local --file`은 통과했다.
+  - 전자상거래법의 미성년자 고지 의무 조문 번호(제13조 제4항으로 보이나)를 법령 원문으로 확인하지 못했다. 약관과 화면에는 민법 조문만 적었다.
   - 이어서 물어보기 비용을 측정하지 않았다.
-  - `enable_request_signal`로 인한 조기 중단이 실제 워커에서 확인되지 않았다(A2 리뷰). 조기 중단이 나도 복구되므로 돈은 안전하지만 사용자는 다시 열어야 한다. 운영자 확인에서 본다.
+  - P5 계획이 P4 개정 1의 이름(`credit`, `'claimed'`, claim 경로)을 쓴다. P5 실행 전에 맞춰야 한다(4절).
+  - 같은 작업 트리에서 P5 구현이 진행 중이다. `lib/api/inputs.ts`, `tarotRequest.ts`가 겹치므로 Task 10·11은 더하기만 한다.
+  - `customerKey` 길이 표기가 문서 두 곳에서 다르다(50자/300자). 짧은 쪽을 지킨다.
 
-## 16. 확인한 자료 (2026-10-01)
+## 16. 확인한 자료와 검증 (2026-10-01~02)
 
-- 토스페이먼츠(마크다운 원문을 내려받아 확인):
-  - `docs.tosspayments.com/sdk/v2/js/payment-widget.md`: `widgets({customerKey})`, `ANONYMOUS`, `setAmount({currency, value})`, render 함수, `requestPayment` 파라미터, orderId 6~64자 `[A-Za-z0-9-_=]`, successUrl 쿼리 `paymentType&amount&orderId&paymentKey`, failUrl `code&message&orderId`.
-  - `docs.tosspayments.com/sdk/v2/js/environment.md`: `https://js.tosspayments.com/v2/standard`, `@tosspayments/tosspayments-sdk`, 키 접두사 `test_gck`/`live_gck`.
-  - `docs.tosspayments.com/reference.md`: 승인 10분, 취소 `cancelReason`과 멱등키, 상태값, `receipt`, `secret`.
-  - `docs.tosspayments.com/guides/v2/get-started/llms-quick-reference.md`: Basic 인증의 콜론, Idempotency-Key(POST만, 15일), 승인 실패 시 조회 후 판단, 웹훅 무서명 → 재조회.
-  - `docs.tosspayments.com/guides/v2/webhook.md`: 10초 안 200, 7회 재전송.
-  - `tosspayments.com/about/fee`: 수수료.
-- 카카오: `developers.kakao.com/docs/latest/ko/kakaologin/rest-api`
-  - 인가 `GET kauth.kakao.com/oauth/authorize`(client_id, redirect_uri, response_type=code, state).
-  - 토큰 `POST kauth.kakao.com/oauth/token`(form, client_secret 기본 활성).
-  - 사용자 `kapi.kakao.com/v2/user/me`(Bearer), 연결 끊기 `POST kapi.kakao.com/v1/user/unlink`(Bearer 또는 어드민 키).
-- Cloudflare: D1 `batch()`는 SQL 트랜잭션(한 문장이 실패하면 전체 되돌림), `migrations_dir`와 `wrangler d1 migrations apply --local/--remote`.
-- 설치된 코드:
-  - `@opennextjs/cloudflare` 1.20.7의 `initOpenNextCloudflareForDev`(개발 프로세스에서만 `getPlatformProxy` 실행);
-  - wrangler 4.143의 비대화 모드 자동 승인과 미적용 마이그레이션 선택;
-  - Node 25.9 `node:sqlite`(UPSERT, RETURNING, CHECK 동작 확인);
-  - jsdom 30에 `<dialog>`의 `showModal`이 없음(모달 테스트에 폴리필 필요).
-- 계획의 코드를 직접 돌려 본 것(저장소 밖 작업 폴더):
-  - 원장 계약 13개 경우 중 11개 묶음을 `node:sqlite`에서 실행해 통과했다(예약·전달·복구·만료·환불 잠금·경합 롤백·로트 불변식).
-  - `secrets.ts`(HMAC, AES-GCM 봉인·위조 거부), 토스 클라이언트(Basic 인증 콜론, 네트워크 오류), 모의 토스 동작을 실행해 통과했다.
-  - 마이그레이션 0001+0002를 로컬 D1 엔진에 적용하는 데 성공했다.
-  - 조건부 `INSERT … SELECT … WHERE EXISTS`와 `UPDATE … RETURNING`, CHECK 위반 시 전체 롤백을 같은 엔진에서 확인했다.
-  - 저장소 안에서 `pnpm typecheck`나 Vitest는 돌리지 않았다(문서만 작성하는 작업).
+- 토스페이먼츠 문서(마크다운 원문):
+  - 결제위젯 v2: `widgets`, `setAmount`, render 함수, `requestPayment`, orderId 규칙, success/fail URL 쿼리.
+  - API 참조: 승인 10분, 취소 `cancelReason`, 상태값, `receipt`.
+  - 빠른 참조: Basic 인증의 콜론, Idempotency-Key(POST만, 15일, 첫 응답 재생, 409 처리 중), 실패 뒤 조회 후 판단, 웹훅 무서명 → 재조회.
+  - 웹훅: 10초 안 200, 7회 재전송. 수수료 페이지.
+- 카카오 REST API: 인가, 토큰(`client_secret`), 사용자 정보, 연결 끊기.
+- Cloudflare: D1 `batch()` 트랜잭션, 마이그레이션 명령. OpenNext 직접 만든 워커 진입점(`fetch` + `scheduled`) 문서.
+- **이번 개정에서 저장소 밖 작업 폴더로 직접 돌려 본 것:**
+  - `0001`(aa70830)+개정 `0002`:
+    - `node:sqlite`에서 통째로, 그리고 `migrationStatements()` 방식으로 33문장 적용 성공.
+    - D1 엔진(`wrangler d1 execute --local --file`)에서 33문장 성공, 테이블 14개.
+  - 원장 계약 17개와 저장소 테스트 5개: 계획의 코드 블록을 그대로 꺼내 `node:sqlite` + Vitest로 22개 통과.
+  - 토스 클라이언트·모의 토스 11개, 결제 모드 7개 통과.
+  - HKDF 하위 키(HMAC 32바이트, AES-GCM 왕복)와 조건부 upsert(`DO UPDATE … WHERE deleted_at IS NULL RETURNING`)를 Node에서 확인.
+  - **C1:** 저장소 현재 코드(ba7e843)의 `lib`·`app/api` 사본에 Task 9의 `spend.ts`·`stream.ts` 수정을 계획 문구대로 적용했다.
+    - settle 테스트 10개와 기존 accounting·streaming·kv-failure 테스트까지 63개 통과.
+    - `tsc`는 `next typegen`을 안 돌려 생긴 `PageProps` 오류 9개 외에 오류가 없었다.
+  - Task 14·15·17의 클라이언트 코드: catalog·offer·client 18개, 기기 저장소·끊김 확인·페이지 받기·내 정보 문구 23개 통과(현재 코드 사본 위).
+  - 저장소 안에서는 `pnpm typecheck`, 전체 Vitest, 빌드, e2e를 돌리지 않았다(문서만 작성하는 작업).
