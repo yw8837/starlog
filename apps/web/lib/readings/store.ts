@@ -1,6 +1,7 @@
 import "server-only";
 import { READING_KEY_VERSION, openJson, sealJson } from "@/lib/account/secrets";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
+import type { PremiumId } from "@/lib/premium/products";
 
 /**
  * Readings kept in the account (spec 5.7). A reading opened with 결제, 별조각 or the owner pass
@@ -16,7 +17,7 @@ export type ReadingSource = "paid" | "free" | "owner";
 
 /** A chapter as the device keeps it (StoredChapter) without its local id. */
 export interface ServerChapter {
-  kind: "tarot" | "saju";
+  kind: "tarot" | "saju" | PremiumId;
   reading: Record<string, unknown>;
   chapterToken: string;
   createdAt: number;
