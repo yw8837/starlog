@@ -1,156 +1,12 @@
-/* The home's 별자리 인연 section: a header like the home's other sections, then glass cards (no gold fill
-   except the first-visit 시작하기; the home's gold card is 타로 보기). */
-.section {
-  display: grid;
-  gap: 14px;
-  margin-top: 20px;
-  color: var(--ink);
-}
-
-.head {
-  display: grid;
-  gap: 4px;
-}
-
-.eyebrow {
-  color: var(--gold);
-  font-size: var(--fs-sub);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-}
-
-.heading {
-  font-size: 22px;
-  line-height: 1.35;
-}
-
-.lead {
-  color: var(--ink-sub);
-  font-size: var(--fs-body);
-  line-height: 1.55;
-}
-
-/* ---- first visit: two entry cards, 또는 between them on phones ---- */
-
-.choices {
-  display: grid;
-  gap: 10px;
-}
-
-.choice {
-  display: grid;
-  align-content: start;
-  gap: 8px;
-  padding: 16px 14px;
-  border: 1px solid var(--glass-line);
-  border-radius: 20px;
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
-
-.icon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(243, 220, 161, 0.45);
-  border-radius: 12px;
-  background:
-    radial-gradient(circle at 50% 40%, rgba(243, 220, 161, 0.16), transparent 65%),
-    linear-gradient(160deg, #3a3290 0%, #1d1850 100%);
-}
-
-.icon svg {
-  display: block;
-  width: 26px;
-  height: 26px;
-}
-
-.choiceTitle {
-  font-size: 17px;
-  line-height: 1.35;
-}
-
-.choiceSub {
-  margin-bottom: 4px;
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  line-height: 1.5;
-}
-
-/* "또는" between the stacked cards: a short line on each side. */
-.or {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-}
-
-.or::before,
-.or::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--glass-line);
-}
-
-.joinRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.input {
-  width: 100%;
-  min-width: 0;
-  height: 44px;
-  margin: 0;
-  padding: 0 14px;
-  border: 1px solid var(--glass-line);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--ink);
-  font-family: var(--font-body), system-ui, sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-/* The code is spaced out; the hint is plain text (T-11). */
-.input::placeholder {
-  color: rgba(201, 193, 234, 0.7);
-  font-weight: 500;
-  letter-spacing: normal;
-  text-transform: none;
-}
-
-.input:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.input[aria-invalid="true"] {
-  border-color: #ff9aa8;
-}
-
-.error {
-  color: var(--error);
-  font-size: var(--fs-sub);
-  font-weight: 700;
-}
-
-/* ---- an owner: the constellation card ---- */
-
-.card {
+/* Home row 4: a glass tile like the quick cards (no gold fill; the home's gold is 타로 보기). */
+.row {
   display: grid;
   gap: 12px;
-  padding: 14px 14px 6px;
+  padding: 14px 14px 16px;
   border: 1px solid var(--glass-line);
   border-radius: 20px;
   background: var(--glass);
+  color: var(--ink);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
@@ -223,76 +79,23 @@
   display: grid;
 }
 
-/* the code entry for an owner: one quiet line at the card's foot */
-.joinLine {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  border-top: 1px solid var(--glass-line);
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.joinLine::after {
-  content: " →";
-  white-space: pre;
-}
-
-.joinLine:hover {
-  color: var(--ink);
-}
-
-.joinLine:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+/* 별자리 인연 랭킹 · 이번 주 행운 번호 tiles under the row's own content */
+.more {
+  margin-top: 2px;
 }
 
 @media (min-width: 1024px) {
-  .section {
-    gap: 18px;
-    margin-top: 32px;
+  .row > .more {
+    grid-column: 1 / -1;
   }
 
-  .heading {
-    font-size: 30px;
-  }
-
-  /* the two entry cards side by side, equal height; no 또는 */
-  .choices {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  .or {
-    display: none;
-  }
-
-  .choice {
-    padding: 20px 22px;
-  }
-
-  /* 시작하기 lines up with the code field on the other card instead of stretching */
-  .choice > a {
-    justify-self: start;
-    width: auto;
-    min-width: 160px;
-  }
-
-  .joinRow {
-    grid-template-columns: minmax(0, 240px) auto;
-    justify-content: start;
-  }
-
-  .card {
+  .row {
     grid-template-columns: minmax(0, 1fr) minmax(200px, 280px);
     align-items: center;
-    padding: 16px 20px 6px;
+    padding: 16px 20px;
   }
 
-  .card > .joinLine {
-    grid-column: 1 / -1;
+  .row > .text {
+    grid-column: 1;
   }
 }

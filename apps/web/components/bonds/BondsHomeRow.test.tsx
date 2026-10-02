@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { kstWeekId } from "@starlog/core";
 import { BondsHomeRow } from "./BondsHomeRow";
@@ -57,39 +57,12 @@ describe("BondsHomeRow", () => {
     expect(container.querySelectorAll("[data-new]")).toHaveLength(1);
   });
 
-  it("is a section with its own h2, and offers two ways in on a first visit: start, or a friend's code to /b/<CODE>", async () => {
+  it("invites to start, with no code box: a friend comes in through the invite link /b/<CODE>", async () => {
     respond({ ok: true, owner: null });
     render(<BondsHomeRow enabled />);
-    const section = await screen.findByRole("region", { name: "별자리 인연" });
-    expect(within(section).getByRole("heading", { level: 2, name: "별자리 인연" })).toBeTruthy();
-    expect(within(section).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["내 별자리 만들기", "친구 초대코드로 참여"]);
-    expect(within(section).getByRole("link", { name: "시작하기" }).getAttribute("href")).toBe("/bonds");
-    const input = screen.getByLabelText("친구 초대코드로 참여");
-    fireEvent.change(input, { target: { value: "k7m" } });
-    fireEvent.click(screen.getByRole("button", { name: "참여하기" }));
-    expect(screen.getByRole("alert").textContent).toBe("코드를 다시 확인해 주세요");
-    fireEvent.change(input, { target: { value: "k7m4qx" } });
-    fireEvent.click(screen.getByRole("button", { name: "참여하기" }));
-    expect(push).toHaveBeenCalledWith("/b/K7M4QX");
-    // no quiet join line before there is a constellation (the card above is the way)
-    expect(screen.queryByRole("link", { name: /^친구 초대코드로 참여하기/ })).toBeNull();
-  });
-
-  it("keeps an owner's constellation first, with the code entry as one quiet line", async () => {
-    respond({
-      ok: true,
-      owner: { nickname: "용우", rankingPublic: true, refillReadyAt: null },
-      invite: { code: "K7M4QX" },
-      filling: { row: { id: "c1", sign: "aries", status: "filling", total: 87, startedAt: 1, completedAt: null }, stars: [star(0, 87)] },
-      completed: [],
-      top5: [],
-      ranks: {},
-    });
-    render(<BondsHomeRow enabled />);
-    expect((await screen.findByRole("link", { name: /^친구 초대코드로 참여하기/ })).getAttribute("href")).toBe("/b");
+    expect((await screen.findByRole("link", { name: "별자리 인연 시작하기" })).getAttribute("href")).toBe("/bonds");
     expect(screen.queryByRole("textbox")).toBeNull();
-    expect(screen.queryByRole("link", { name: "시작하기" })).toBeNull();
-    expect(screen.getByRole("heading", { level: 2, name: "별자리 인연" })).toBeTruthy();
+    expect(screen.queryByText(/초대코드/)).toBeNull();
   });
 
   it("leads on to the leaderboard and this week's lucky numbers in every state", async () => {

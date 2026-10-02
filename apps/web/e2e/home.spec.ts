@@ -21,12 +21,11 @@ test("home: hero, then 타로 · 사주 above the fold, quick cards, 별자리 �
   await expect(saju).toHaveAttribute("href", "/saju/new?new=1");
   await expect(now).toHaveAttribute("href", "/now");
   await expect(today).toHaveAttribute("href", "/today");
-  // 별자리 인연 loads this device's state first; a new visitor gets its h2 and two ways in: start, or a friend's code.
-  const bondsSection = main.locator("section[aria-labelledby='bonds-home-title']");
-  await expect(bondsSection.getByRole("heading", { level: 2, name: "별자리 인연" })).toBeVisible();
-  await expect(bondsSection.getByRole("link", { name: "시작하기", exact: true })).toHaveAttribute("href", "/bonds");
-  await expect(main.getByLabel("친구 초대코드로 참여")).toBeVisible();
-  await expect(bondsSection.getByRole("button", { name: "참여하기" })).toBeVisible();
+  // 별자리 인연 loads this device's state first; a new visitor gets the start link. Friends join through the
+  // invite link (/b/<code>), so the home has no code box.
+  const bondsStart = main.getByRole("link", { name: "별자리 인연 시작하기" });
+  await expect(bondsStart).toHaveAttribute("href", "/bonds");
+  await expect(main.getByText("초대코드로 참여")).toHaveCount(0);
 
   const box = async (locator: typeof tarot) => (await locator.boundingBox())!;
   const [h1Box, tarotBox, sajuBox, nowBox, todayBox] = await Promise.all([box(h1), box(tarot), box(saju), box(now), box(today)]);
