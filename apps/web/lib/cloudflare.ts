@@ -20,6 +20,9 @@ declare global {
     FULL_LIMITER?: RateLimitBinding;
     OWNER_FULL_LIMITER?: RateLimitBinding;
     OWNER_LOGIN_LIMITER?: RateLimitBinding;
+    AUTH_LIMITER?: RateLimitBinding;
+    PAY_LIMITER?: RateLimitBinding;
+    WEBHOOK_LIMITER?: RateLimitBinding;
     DAILY_KV?: KvBinding;
   }
 }

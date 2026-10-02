@@ -16,7 +16,9 @@ import { budgetState, clientCount, type SpendKind } from "./spend";
  */
 
 export type ErrorCode =
-  | "BAD_REQUEST" | "BAD_TOKEN" | "BETA_LIMIT" | "RATE_LIMIT" | "AI_UNAVAILABLE" | "REFUSED" | "QUALITY" | "UPSTREAM";
+  | "BAD_REQUEST" | "BAD_TOKEN" | "BETA_LIMIT" | "RATE_LIMIT" | "AI_UNAVAILABLE" | "REFUSED" | "QUALITY" | "UPSTREAM"
+  | "LOGIN_REQUIRED" | "PAYMENT_REQUIRED" | "NO_CREDIT" | "PAY_FAILED" | "FORBIDDEN"
+  | "NOT_AVAILABLE" | "PAY_PENDING" | "NOT_REFUNDABLE" | "PAY_UNAVAILABLE";
 
 const STATUS: Record<ErrorCode, number> = {
   BAD_REQUEST: 400,
@@ -27,6 +29,15 @@ const STATUS: Record<ErrorCode, number> = {
   REFUSED: 422,
   QUALITY: 502,
   UPSTREAM: 502,
+  LOGIN_REQUIRED: 401,
+  PAYMENT_REQUIRED: 402,
+  NO_CREDIT: 402,
+  PAY_FAILED: 402,
+  FORBIDDEN: 403,
+  NOT_AVAILABLE: 409,
+  PAY_PENDING: 409,
+  NOT_REFUNDABLE: 409,
+  PAY_UNAVAILABLE: 503,
 };
 
 const MESSAGE: Record<ErrorCode, string> = {
@@ -40,6 +51,15 @@ const MESSAGE: Record<ErrorCode, string> = {
   // No promise about counts: the network counter is charged when a generation starts.
   QUALITY: "풀이를 제대로 만들지 못했어요. 잠시 뒤에 다시 시도해 주세요.",
   UPSTREAM: "풀이를 만드는 중에 문제가 생겼어요. 잠시 뒤에 다시 시도해 주세요.",
+  LOGIN_REQUIRED: "로그인이 필요해요. 로그인하고 다시 시도해 주세요.",
+  PAYMENT_REQUIRED: "전체 풀이는 결제하거나 별조각으로 열 수 있어요.",
+  NO_CREDIT: "쓸 수 있는 결제한 풀이나 별조각이 없어요.",
+  PAY_FAILED: "결제를 마치지 못했어요. 청구된 금액은 없어요.",
+  FORBIDDEN: "이 요청은 받을 수 없어요. 화면을 새로 고친 뒤 다시 시도해 주세요.",
+  NOT_AVAILABLE: "지금은 열 수 없는 상품이에요.",
+  PAY_PENDING: "결제를 확인하고 있어요. 잠시 뒤에 다시 확인해 주세요.",
+  NOT_REFUNDABLE: "이미 연 풀이이거나 환불할 수 없는 결제예요.",
+  PAY_UNAVAILABLE: "지금은 로그인과 결제를 쓸 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
 };
 
 const NO_STORE = { "Cache-Control": "no-store" };

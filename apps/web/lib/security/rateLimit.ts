@@ -5,7 +5,8 @@ import { cloudflareEnv, warnMissingBinding } from "@/lib/cloudflare";
 
 export type LimiterName =
   | "GEN_LIMITER" | "OWNER_GEN_LIMITER" | "FULL_LIMITER" | "OWNER_FULL_LIMITER" | "OWNER_LOGIN_LIMITER"
-  | "BOND_JOIN_LIMITER" | "BOND_CODE_LIMITER" | "BOND_VIEW_LIMITER";
+  | "BOND_JOIN_LIMITER" | "BOND_CODE_LIMITER" | "BOND_VIEW_LIMITER"
+  | "AUTH_LIMITER" | "PAY_LIMITER" | "WEBHOOK_LIMITER";
 
 /**
  * Requests per 60 s; must match wrangler.jsonc so the in-memory fallback behaves like production.
@@ -24,6 +25,12 @@ export const LIMITS_PER_MINUTE: Record<LimiterName, number> = {
   BOND_JOIN_LIMITER: 10,
   BOND_CODE_LIMITER: 10,
   BOND_VIEW_LIMITER: 120,
+  /** Kakao login start/callback, logout, delete intent, account readings (P4) */
+  AUTH_LIMITER: 20,
+  /** checkout, orders, confirm, refund (P4) */
+  PAY_LIMITER: 20,
+  /** Toss webhooks (P4) */
+  WEBHOOK_LIMITER: 60,
 };
 
 const WINDOW_MS = 60_000;
