@@ -48,7 +48,8 @@
     { "name": "BOND_VIEW_LIMITER", "namespace_id": "1008", "simple": { "limit": 120, "period": 60 } },
     { "name": "AUTH_LIMITER", "namespace_id": "1101", "simple": { "limit": 20, "period": 60 } },
     { "name": "PAY_LIMITER", "namespace_id": "1102", "simple": { "limit": 20, "period": 60 } },
-    { "name": "WEBHOOK_LIMITER", "namespace_id": "1103", "simple": { "limit": 60, "period": 60 } }
+    { "name": "WEBHOOK_LIMITER", "namespace_id": "1103", "simple": { "limit": 60, "period": 60 } },
+    { "name": "ME_LIMITER", "namespace_id": "1104", "simple": { "limit": 120, "period": 60 } }
   ],
   // 오늘의 한 장 results, one per device per KST day (lib/api/dailyStore.ts).
   "kv_namespaces": [

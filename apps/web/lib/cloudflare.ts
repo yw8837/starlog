@@ -23,6 +23,7 @@ declare global {
     AUTH_LIMITER?: RateLimitBinding;
     PAY_LIMITER?: RateLimitBinding;
     WEBHOOK_LIMITER?: RateLimitBinding;
+    ME_LIMITER?: RateLimitBinding;
     DAILY_KV?: KvBinding;
   }
 }

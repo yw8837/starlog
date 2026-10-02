@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { accountSecret, kakaoKey } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import { giftExpiry } from "@/lib/pay/ledger";
-import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { LIMITS_PER_MINUTE, resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, loginAs, me, useTestDb } from "@/lib/testing/p4";
+import { GET as meGet } from "../me/route";
 import { POST as ownerPost } from "../owner/route";
 import { GET as callback } from "./kakao/callback/route";
 import { GET as start } from "./kakao/start/route";
@@ -136,6 +137,15 @@ describe("Kakao login", () => {
     await loginAs(b);
     expect((await b.send(logout, "/api/auth/logout", { method: "POST" })).status).toBe(403);
     expect((await me(b)).user).not.toBeNull();
+  });
+
+  it("rate-limits /api/me per network, generously (every page asks it)", async () => {
+    vi.stubEnv("STARLOG_PAYMENTS", "off");
+    const b = browser("198.51.100.77");
+    expect(LIMITS_PER_MINUTE.ME_LIMITER).toBeGreaterThanOrEqual(60);
+    for (let i = 0; i < LIMITS_PER_MINUTE.ME_LIMITER; i++) expect((await b.send(meGet, "/api/me")).status).toBe(200);
+    expect((await b.send(meGet, "/api/me")).status).toBe(429);
+    expect((await browser("198.51.100.78").send(meGet, "/api/me")).status).toBe(200);
   });
 
   it("answers /api/me without D1 when there is no session", async () => {

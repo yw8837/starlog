@@ -1,9 +1,10 @@
 import { openAccount } from "@/lib/account/request";
 import { clearSession, sessionCookieName } from "@/lib/account/session";
-import { json, parseCookies, serializeCookie } from "@/lib/api/http";
+import { clientKey, errorResponse, json, parseCookies, serializeCookie } from "@/lib/api/http";
 import { walletSummary } from "@/lib/pay/ledger";
 import { loginOpen, paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
+import { rateLimit } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 
 /**
@@ -13,9 +14,11 @@ import { signingSecret } from "@/lib/security/sign";
  * - `owner`: whether it holds the owner pass;
  * - `user`: the logged-in user's nickname, 별조각 (with the soonest expiry), unopened purchases and
  *   `opening`, the readings being opened right now (a paid one is never also in `unused`).
- * Without a session cookie it never touches D1, so the site works with no database.
+ * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
+ * network (ME_LIMITER, generous: every page with an account line asks it).
  */
 export async function GET(request: Request): Promise<Response> {
+  if (!(await rateLimit("ME_LIMITER", clientKey(request)))) return errorResponse("RATE_LIMIT");
   const now = Date.now();
   const cookies = parseCookies(request);
   const secret = signingSecret();

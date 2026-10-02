@@ -6,7 +6,7 @@ import { cloudflareEnv, warnMissingBinding } from "@/lib/cloudflare";
 export type LimiterName =
   | "GEN_LIMITER" | "OWNER_GEN_LIMITER" | "FULL_LIMITER" | "OWNER_FULL_LIMITER" | "OWNER_LOGIN_LIMITER"
   | "BOND_JOIN_LIMITER" | "BOND_CODE_LIMITER" | "BOND_VIEW_LIMITER"
-  | "AUTH_LIMITER" | "PAY_LIMITER" | "WEBHOOK_LIMITER";
+  | "AUTH_LIMITER" | "PAY_LIMITER" | "WEBHOOK_LIMITER" | "ME_LIMITER";
 
 /**
  * Requests per 60 s; must match wrangler.jsonc so the in-memory fallback behaves like production.
@@ -31,6 +31,8 @@ export const LIMITS_PER_MINUTE: Record<LimiterName, number> = {
   PAY_LIMITER: 20,
   /** Toss webhooks (P4) */
   WEBHOOK_LIMITER: 60,
+  /** /api/me, which every page with an account line asks (P4): generous, like BOND_VIEW_LIMITER */
+  ME_LIMITER: 120,
 };
 
 const WINDOW_MS = 60_000;
