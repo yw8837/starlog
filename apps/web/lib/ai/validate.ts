@@ -232,7 +232,7 @@ export const namesOf = (card: KbCard) => [card.names.ko, ...(card.names.koAliase
 const nameRegex = (name: string) => new RegExp(escapeRegex(name) + (/\d$/.test(name) ? "(?!\\d)" : ""), "g");
 
 /** Removes the drawn cards' names (longest first), so a drawn "여황제" never reads as "황제". */
-function withoutDrawnNames(text: string, drawn: KbCard[]): string {
+export function withoutDrawnNames(text: string, drawn: KbCard[]): string {
   const names = drawn.flatMap(namesOf).sort((a, b) => b.length - a.length);
   return names.reduce((t, name) => t.replace(nameRegex(name), "□"), text);
 }
@@ -499,10 +499,16 @@ const YEAR = /(?<!\d)(1[89]\d\d|20\d\d)(?!\d)/g;
 /**
  * Glyphs, ten gods, stages and years must come from an allow-list (a FactSet's, or a merged one for
  * two charts or a year); forbidden topics appear only in a sentence that declines them, or in the
- * user's own words (`userText`, a follow-up question). `marriage`: the user's love status makes 결혼
- * the reading's subject (verdicts stay banned either way).
+ * user's own words (`userText`, a follow-up question).
+ * - `marriage`: the user's love status makes 결혼 the reading's subject (verdicts stay banned either way).
+ * - `cardText`: the text is card prose (a premium card part that also cites saju facts). It skips the
+ *   saju blocklist and the 결혼 topic, which the tarot blocklist judges there ("좋은 시기" and the
+ *   card 죽음 are fine in a card reading); the facts, verdict and label checks still apply.
  */
-export function allowedFactViolations(text: string, allowed: SajuFactSet["allowed"], out: string[], userText = "", marriage = false): void {
+export function allowedFactViolations(
+  text: string, allowed: SajuFactSet["allowed"], out: string[], userText = "", opts: { marriage?: boolean; cardText?: boolean } = {},
+): void {
+  const { marriage = false, cardText = false } = opts;
   const glyphs = new Set(allowed.glyphs);
   const invented = [...new Set(text.match(STEM_OR_BRANCH) ?? [])].filter((g) => !glyphs.has(g));
   if (invented.length) out.push(`명식에 없는 간지 글자가 나왔어요: ${invented.join(", ")}. <facts>에 있는 글자만 써 주세요.`);
@@ -515,7 +521,7 @@ export function allowedFactViolations(text: string, allowed: SajuFactSet["allowe
   const years = new Set(allowed.years);
   const strayYears = [...new Set([...text.matchAll(YEAR)].map((m) => Number(m[1])))].filter((y) => !years.has(y));
   if (strayYears.length) out.push(`명식에서 나오지 않은 연도가 있어요: ${strayYears.join(", ")}.`);
-  for (const [pattern, label, negatable] of SAJU_BLOCKLIST) {
+  for (const [pattern, label, negatable] of cardText ? [] : SAJU_BLOCKLIST) {
     const offending = sentences(text).filter((s) => matchesBeyondUser(pattern, s, userText).length > 0 && !(negatable && NEGATED.test(s)));
     if (offending.length) {
       out.push(negatable
@@ -525,7 +531,7 @@ export function allowedFactViolations(text: string, allowed: SajuFactSet["allowe
   }
   // 결혼 is the reading's subject when the user is dating, engaged or married; otherwise it is a
   // topic this reading only declines. Verdicts (it will / won't happen, when) are never allowed.
-  if (!marriage && sentences(text).some((s) => matchesBeyondUser(/결혼/, s, userText).length > 0 && !NEGATED.test(s))) {
+  if (!cardText && !marriage && sentences(text).some((s) => matchesBeyondUser(/결혼/, s, userText).length > 0 && !NEGATED.test(s))) {
     out.push("쓰지 않는 주제가 있어요: 결혼. 이 풀이로는 말하기 어렵다고 짧게 밝히는 문장에서만 쓰세요.");
   }
   if (MARRIAGE_VERDICT.test(text.replace(QUOTED, "''"))) out.push("결혼의 성사·불발이나 시기를 단정한 문장이 있어요. 결혼을 다루는 방식까지만 말해 주세요.");
@@ -535,7 +541,7 @@ export function allowedFactViolations(text: string, allowed: SajuFactSet["allowe
 }
 
 function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], userText = ""): void {
-  allowedFactViolations(text, facts.allowed, out, userText, marriageContext(facts));
+  allowedFactViolations(text, facts.allowed, out, userText, { marriage: marriageContext(facts) });
 }
 
 const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;

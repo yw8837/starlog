@@ -59,3 +59,50 @@ export interface DeepTarotPreview {
   now: { heading: string; body: string };
   lockedToc: string[];
 }
+
+// ---- 우리 사이 궁합 ----
+
+export const MatchTeaserDraftSchema = z.object({ summary: z.string() });
+
+export const MatchPartASchema = z.object({ dayMasters: Body, elements: Body, pillars: Body, luck: Body });
+
+export const MatchPartBSchema = z.object({
+  verdict: z.string(),
+  cards: z.array(CardBody),
+  connection: Body,
+  bridge: Body,
+  action: Body,
+  observation: Body,
+  followUps: z.array(z.string()),
+});
+
+export const MatchReadingSchema = z.object({
+  verdict: z.string(),
+  saju: z.object({ dayMasters: Section, elements: Section, pillars: Section, luck: Section }),
+  cards: z.array(CardSection),
+  connection: Section,
+  bridge: Section,
+  action: Section,
+  observation: Section,
+  followUps: z.array(z.string()),
+});
+
+export type MatchTeaserDraft = z.infer<typeof MatchTeaserDraftSchema>;
+export type MatchPartA = z.infer<typeof MatchPartASchema>;
+export type MatchPartB = z.infer<typeof MatchPartBSchema>;
+export type MatchReading = z.infer<typeof MatchReadingSchema>;
+
+/** What a chart shows on screen (preview and chapter): no birth date, just the computed pillars. */
+export interface ChartView {
+  pillars: Array<{ label: string; gz: string; ko: string }>;
+  elements: Record<string, number>;
+  dayMaster: { display: string; image: string };
+}
+
+export interface MatchPreview {
+  facts: string[];
+  charts: { me: ChartView; partner: ChartView };
+  cards: PreviewCard[];
+  summary: { heading: string; body: string };
+  lockedToc: string[];
+}
