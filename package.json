@@ -18,6 +18,9 @@
     "e2e:screens": "pnpm --filter @starlog/web e2e:screens",
     "kb:runtime": "node scripts/build-kb-runtime.mjs",
     "ai:smoke": "vitest run -c vitest.smoke.config.ts",
+    "i18n:status": "vitest run -c vitest.i18n.config.ts scripts/i18n/status.test.ts",
+    "i18n:ledger": "vitest run -c vitest.i18n.config.ts scripts/i18n/ledger-write.test.ts",
+    "i18n:review": "vitest run -c vitest.i18n.config.ts scripts/i18n/review.test.ts",
     "indexnow": "node scripts/indexnow.mjs"
   },
   "devDependencies": {

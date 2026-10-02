@@ -1,0 +1,22 @@
+{
+  "schema": "starlog-glossary/1",
+  "terms": {
+    "brand": { "ko": "스타로그", "en": "Starlog", "ja": "Starlog", "zh-hant": "Starlog" },
+    "catAstrologer": { "ko": "고양이 점성술사", "en": "the cat astrologer", "ja": "猫の占星術師", "zh-hant": "貓咪占星師" },
+    "rabbitLibrarian": { "ko": "흰 토끼 사서", "en": "the white rabbit librarian", "ja": "白うさぎの司書", "zh-hant": "白兔圖書館員" },
+    "rabbitTeacher": { "ko": "한복 입은 토끼 선생님", "en": "the rabbit teacher in hanbok", "ja": "韓服姿のうさぎ先生", "zh-hant": "穿韓服的兔子老師" },
+    "moonlight": { "ko": "달빛", "en": "Moonlight", "ja": "月あかり", "zh-hant": "月光" },
+    "stardust": { "ko": "별조각", "en": "Stardust", "ja": "星のかけら", "zh-hant": "星屑" },
+    "tarot": { "ko": "타로", "en": "tarot", "ja": "タロット", "zh-hant": "塔羅" },
+    "saju": { "ko": "사주", "en": "Saju (Four Pillars)", "ja": "四柱推命", "zh-hant": "八字" },
+    "nowCard": { "ko": "지금의 한 장", "en": "One Card for Now", "ja": "いまの一枚", "zh-hant": "此刻一牌" },
+    "todayCard": { "ko": "오늘의 한 장", "en": "Today's Card", "ja": "今日の一枚", "zh-hant": "今日一牌" },
+    "bonds": { "ko": "별자리 인연", "en": "Constellation Bonds", "ja": "星座の縁", "zh-hant": "星座緣分" },
+    "luckyNumbers": { "ko": "이번 주 행운 번호", "en": "This week's lucky numbers", "ja": "今週のラッキーナンバー", "zh-hant": "本週幸運數字" },
+    "upright": { "ko": "정방향", "en": "upright", "ja": "正位置", "zh-hant": "正位" },
+    "reversed": { "ko": "역방향", "en": "reversed", "ja": "逆位置", "zh-hant": "逆位" },
+    "fullReading": { "ko": "전체 풀이", "en": "full reading", "ja": "全文の鑑定", "zh-hant": "完整解讀" },
+    "followUp": { "ko": "이어서 물어보기", "en": "Ask a follow-up", "ja": "続けて聞く", "zh-hant": "繼續追問" },
+    "rws1909": { "ko": "1909년 원판 라이더-웨이트-스미스", "en": "the original 1909 Rider–Waite–Smith deck", "ja": "1909年版ライダー・ウェイト・スミス", "zh-hant": "1909年原版萊德偉特史密斯" }
+  }
+}

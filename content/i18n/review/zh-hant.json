@@ -1,0 +1,138 @@
+{
+  "schema": "starlog-i18n-review/1",
+  "locale": "zh-hant",
+  "entries": {
+    "messages:common:currency.balance": {
+      "koHash": "d603bcf5964b75a9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:currency.free": {
+      "koHash": "e6024322b702247a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:currency.paid": {
+      "koHash": "b162f0baeac46602",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:footer.business": {
+      "koHash": "09f16ea5b25df41f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:footer.faq": {
+      "koHash": "dbc468a14b601d5d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:footer.how": {
+      "koHash": "48dc523b63d7ccd1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:footer.siteInfo": {
+      "koHash": "ad7b0869f5111a8b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:language.current": {
+      "koHash": "ce8d7d5e7d56be61",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:language.label": {
+      "koHash": "d870406c5d15f996",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:language.menu": {
+      "koHash": "026b34aba2097c80",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:nav.faq": {
+      "koHash": "dbc468a14b601d5d",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:nav.guide": {
+      "koHash": "e2e1efb2ea75dbd4",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:nav.home": {
+      "koHash": "034999faab0545b3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:nav.mainMenu": {
+      "koHash": "f00fbf9861fc3d52",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:nav.me": {
+      "koHash": "8faa8b81c683b2a2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:nav.story": {
+      "koHash": "05eed27ad4eceda1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:notFound.body": {
+      "koHash": "c61e5a72724d288c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:notFound.home": {
+      "koHash": "ffe893bace2a4aba",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:notFound.title": {
+      "koHash": "4417827fc9e01592",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:site.homeLabel": {
+      "koHash": "f12d8448a82f0b61",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:site.name": {
+      "koHash": "688197d4d85de53e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "messages:common:site.tagline": {
+      "koHash": "5bf3958ef60a981e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    }
+  }
+}
