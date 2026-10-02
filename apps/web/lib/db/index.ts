@@ -1,5 +1,6 @@
 import "server-only";
 import type { BondsRepo } from "./bondsRepo";
+import type { D1Binding } from "./d1";
 import { getDb } from "./d1";
 import { createD1BondsRepo } from "./d1BondsRepo";
 import { createMemoryBondsRepo } from "./memoryBondsRepo";
@@ -15,7 +16,9 @@ import { createMemoryBondsRepo } from "./memoryBondsRepo";
  *   with every migration applied.
  * - A factory below picks the store: D1 from `getDb()` on Workers; the in-memory one outside Workers,
  *   except in production, where a missing binding is an error (routes answer 503).
- * - Never store birth dates, questions or notes.
+ * - Bonds (P3) never store birth dates, questions or notes.
+ * - Accounts (P4) keep readings opened while logged in: question, situation, note or birth data,
+ *   sealed with AES-256-GCM (lib/account/secrets.ts) and erased on account deletion or on request.
  */
 
 export { getDb } from "./d1";
@@ -31,4 +34,22 @@ export function bondsRepo(): BondsRepo {
   if (db) return createD1BondsRepo(db);
   if (process.env.NODE_ENV === "production") throw new Error("DB binding missing");
   return memoryStore("__starlogMemoryBondsRepo", createMemoryBondsRepo);
+}
+
+let testDb: D1Binding | null = null;
+
+/**
+ * D1 for accounts, payments and saved readings (P4): the test database when one is set, else
+ * getDb(). Null outside Workers unless `next dev` runs with STARLOG_CF_DEV=1; account and payment
+ * routes then answer 503 PAY_UNAVAILABLE. Unlike the bonds repo there is no Map store: money rules
+ * live in SQL constraints, so tests run the same SQL on node:sqlite (testing/sqliteD1.ts) and on
+ * local D1 (testing/localD1.ts).
+ */
+export function accountDb(): D1Binding | null {
+  return testDb ?? getDb();
+}
+
+/** Tests only: accountDb() returns `db` until this is called again with null. */
+export function setTestDb(db: D1Binding | null): void {
+  testDb = db;
 }

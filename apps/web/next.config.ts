@@ -1,3 +1,4 @@
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
 /**
@@ -49,3 +50,8 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// STARLOG_CF_DEV=1: `next dev` gets the Worker's bindings from wrangler.jsonc through Miniflare (local
+// D1 for accounts and payments, simulated KV and rate limiters). Run `pnpm --filter @starlog/web
+// db:migrate:local` first. Off by default, so P3's memory repos keep serving plain `next dev`.
+if (process.env.STARLOG_CF_DEV === "1") void initOpenNextCloudflareForDev();
