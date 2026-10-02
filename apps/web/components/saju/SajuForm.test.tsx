@@ -2,7 +2,8 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
-import { clearSajuProfile } from "@/lib/sajuFlow";
+import { clearSajuProfile, saveSajuProfile } from "@/lib/sajuFlow";
+import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { SajuForm } from "./SajuForm";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -22,10 +23,63 @@ afterEach(() => {
   router.push.mockClear();
 });
 
+const pick = (label: string, value: number) => fireEvent.change(screen.getByLabelText(label), { target: { value: String(value) } });
+const pickDate = (year: number, month: number, day: number) => {
+  pick("태어난 연도", year);
+  pick("태어난 월", month);
+  pick("태어난 일", day);
+};
+const consent = () => fireEvent.click(screen.getByLabelText("출생 정보를 풀이에 쓰는 데 동의해요"));
+const submit = () => fireEvent.click(screen.getByRole("button", { name: "명식 보기" }));
+
 describe("SajuForm takes no free text", () => {
   it("has no concern field, even with the status chips open", () => {
     render(<SajuForm />);
     fireEvent.click(screen.getByRole("button", { name: /요즘 상황도 알려 주기/ }));
     expect(screen.queryByRole("textbox")).toBeNull();
+  });
+});
+
+describe("W-07: a first visit starts with the date and the gender empty", () => {
+  it("shows 연도·월·일 and no gender pressed, 1–31 days, 서울, and no echo line yet", () => {
+    render(<SajuForm />);
+    for (const label of ["태어난 연도", "태어난 월", "태어난 일"]) expect((screen.getByLabelText(label) as HTMLSelectElement).value).toBe("");
+    for (const name of ["여성", "남성"]) expect(screen.getByRole("button", { name }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByLabelText("태어난 일").querySelectorAll("option:not([disabled])")).toHaveLength(31);
+    expect(screen.queryByText(/^→ /)).toBeNull();
+    expect((screen.getByLabelText("태어난 곳") as HTMLSelectElement).value).toBe("seoul");
+  });
+
+  it("on 명식 보기 with nothing picked: says what is missing, focuses the year, saves nothing", () => {
+    render(<SajuForm />);
+    submit();
+    expect(screen.getByText("태어난 날을 골라 주세요.")).toBeTruthy();
+    expect(screen.getByText("성별을 골라 주세요.")).toBeTruthy();
+    expect(screen.getByText("출생 정보를 풀이에 쓰는 데 먼저 동의해 주세요.")).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByLabelText("태어난 연도"));
+    expect(router.push).not.toHaveBeenCalled();
+    expect(localStorage.getItem("starlog.saju-profile")).toBeNull();
+    expect((screen.getByRole("button", { name: "명식 보기" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("focuses the gender when only it is missing, then goes on once it is picked", () => {
+    render(<SajuForm />);
+    pickDate(1992, 8, 3);
+    expect(screen.getByText("→ 1992년 8월 3일 (양력)")).toBeTruthy();
+    consent();
+    submit();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "여성" }));
+    fireEvent.click(screen.getByRole("button", { name: "남성" }));
+    submit();
+    expect(router.push).toHaveBeenCalledWith("/saju/chart");
+    expect(JSON.parse(localStorage.getItem("starlog.saju-profile")!)).toMatchObject({ year: 1992, month: 8, day: 3, gender: "male", placeId: "seoul" });
+  });
+
+  it("starts filled from a saved profile", () => {
+    saveSajuProfile({ ...DEFAULT_SAJU_FORM, year: 1993, month: 8, day: 17, gender: "male" });
+    render(<SajuForm />);
+    expect((screen.getByLabelText("태어난 연도") as HTMLSelectElement).value).toBe("1993");
+    expect(screen.getByRole("button", { name: "남성" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("→ 1993년 8월 17일 (양력)")).toBeTruthy();
   });
 });

@@ -3,17 +3,23 @@ import { describe, expect, it } from "vitest";
 import {
   BIRTH_PLACES,
   DEFAULT_SAJU_FORM,
+  EMPTY_SAJU_DRAFT,
   SAJU_ERROR_MESSAGES,
   chartInputLine,
+  checkSajuDraft,
   checkSajuForm,
   confirmationLine,
   daysInMonth,
   describeSajuError,
+  draftConfirmation,
+  draftDays,
+  draftOf,
   profileSummary,
   sanitizeSajuForm,
   showLeapMonthOption,
   toSajuInput,
   withDate,
+  withDraftDate,
   type SajuForm,
 } from "./sajuForm";
 
@@ -227,5 +233,58 @@ describe("sanitizeSajuForm", () => {
 
   it("clears the time fields when the time is unknown", () => {
     expect(sanitizeSajuForm({ ...DEFAULT_SAJU_FORM, hour: 9, minute: 30 })).toEqual(DEFAULT_SAJU_FORM);
+  });
+});
+
+describe("W-07: the form's draft (date and gender empty until picked)", () => {
+  it("starts empty except the calendar, the unknown time and 서울", () => {
+    expect(EMPTY_SAJU_DRAFT).toEqual({
+      calendar: "solar", year: null, month: null, day: null, isLeapMonth: false,
+      timeKnown: false, hour: null, minute: null, gender: null, placeId: "seoul",
+    });
+    expect(draftOf(DEFAULT_SAJU_FORM)).toEqual(DEFAULT_SAJU_FORM);
+  });
+
+  it("offers 1–31 days (음력 1–30) until the year and month are picked, then the month's days", () => {
+    expect(draftDays(EMPTY_SAJU_DRAFT)).toBe(31);
+    expect(draftDays({ ...EMPTY_SAJU_DRAFT, calendar: "lunar" })).toBe(30);
+    expect(draftDays({ ...EMPTY_SAJU_DRAFT, year: 1990, month: 2 })).toBe(28);
+  });
+
+  it("keeps a picked day inside the month once the year and month are known", () => {
+    const draft = withDraftDate({ ...EMPTY_SAJU_DRAFT, day: 31 }, { year: 1990 });
+    expect(draft.day).toBe(31);
+    expect(withDraftDate(draft, { month: 2 }).day).toBe(28);
+    expect(withDraftDate({ ...EMPTY_SAJU_DRAFT, calendar: "lunar", isLeapMonth: true }, { calendar: "solar" }).isLeapMonth).toBe(false);
+  });
+
+  it("echoes the date only once year, month and day are all picked", () => {
+    expect(draftConfirmation({ ...EMPTY_SAJU_DRAFT, year: 1992, month: 8 })).toBeNull();
+    expect(draftConfirmation({ ...EMPTY_SAJU_DRAFT, year: 1992, month: 8, day: 3 })).toBe("→ 1992년 8월 3일 (양력)");
+  });
+
+  it("names every empty field, top to bottom, before the engine runs", () => {
+    expect(checkSajuDraft(EMPTY_SAJU_DRAFT, TODAY)).toEqual({
+      errors: [
+        { field: "date", message: "태어난 날을 골라 주세요." },
+        { field: "gender", message: "성별을 골라 주세요." },
+      ],
+    });
+    expect(checkSajuDraft({ ...EMPTY_SAJU_DRAFT, year: 1990, month: 1, day: 1, timeKnown: true, hour: 9 }, TODAY)).toEqual({
+      errors: [
+        { field: "time", message: "태어난 시각을 골라 주세요." },
+        { field: "gender", message: "성별을 골라 주세요." },
+      ],
+    });
+  });
+
+  it("hands back the complete form and its chart, or the engine's one error", () => {
+    const ok = checkSajuDraft({ ...EMPTY_SAJU_DRAFT, year: 1990, month: 1, day: 1, gender: "female" }, TODAY);
+    if (!("form" in ok)) throw new Error("expected a chart");
+    expect(ok.form).toEqual(DEFAULT_SAJU_FORM);
+    expect(ok.chart.pillars.day.stem + ok.chart.pillars.day.branch).toBe("丙寅");
+    expect(checkSajuDraft({ ...EMPTY_SAJU_DRAFT, calendar: "lunar", isLeapMonth: true, year: 1990, month: 1, day: 30, gender: "female" }, TODAY)).toEqual({
+      errors: [SAJU_ERROR_MESSAGES.INVALID_LUNAR_DATE],
+    });
   });
 });

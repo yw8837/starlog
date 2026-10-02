@@ -75,13 +75,41 @@ export const DEFAULT_SAJU_FORM: SajuForm = Object.freeze({
   placeId: "seoul",
 });
 
+/**
+ * The form while it is filled in (W-07): without a saved profile the date and the gender start
+ * empty, so nobody gets the sample's chart by leaving the fields as they are. 서울 stays the default
+ * birthplace (shown and changeable).
+ */
+export interface SajuDraft extends Omit<SajuForm, "year" | "month" | "day" | "gender"> {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+  gender: Gender | null;
+}
+
+export const EMPTY_SAJU_DRAFT: SajuDraft = Object.freeze({
+  calendar: "solar",
+  year: null,
+  month: null,
+  day: null,
+  isLeapMonth: false,
+  timeKnown: false,
+  hour: null,
+  minute: null,
+  gender: null,
+  placeId: "seoul",
+});
+
+/** A saved profile as a draft: every field filled. */
+export const draftOf = (form: SajuForm): SajuDraft => ({ ...form });
+
 /** Oldest year in the year select (the engine itself reaches back to 1800). */
 export const MIN_BIRTH_YEAR = 1900;
 
 export const CALENDAR_LABEL: Record<Calendar, string> = { solar: "양력", lunar: "음력" };
 export const GENDER_LABEL: Record<Gender, string> = { female: "여성", male: "남성" };
 
-export const showLeapMonthOption = (form: SajuForm): boolean => form.calendar === "lunar";
+export const showLeapMonthOption = (form: Pick<SajuForm, "calendar">): boolean => form.calendar === "lunar";
 
 /** Days offered in the day select. Lunar months have 29 or 30 days; the engine rejects a 30th that does not exist. */
 export function daysInMonth(calendar: Calendar, year: number, month: number): number {
@@ -94,6 +122,26 @@ export function withDate(form: SajuForm, patch: Partial<Pick<SajuForm, "calendar
   const next = { ...form, ...patch };
   const day = Math.min(next.day, daysInMonth(next.calendar, next.year, next.month));
   return { ...next, day, isLeapMonth: next.calendar === "lunar" ? next.isLeapMonth : false };
+}
+
+/** Days in the day select: 1–31 (음력 1–30) until the year and month are picked, then that month's. */
+export function draftDays(draft: SajuDraft): number {
+  if (draft.year === null || draft.month === null) return draft.calendar === "lunar" ? 30 : 31;
+  return daysInMonth(draft.calendar, draft.year, draft.month);
+}
+
+/** withDate for a draft: a picked day stays inside the month once it is known; solar dates drop 윤달. */
+export function withDraftDate(draft: SajuDraft, patch: Partial<Pick<SajuDraft, "calendar" | "year" | "month" | "day">>): SajuDraft {
+  const next = { ...draft, ...patch };
+  const day = next.day === null ? null : Math.min(next.day, draftDays(next));
+  return { ...next, day, isLeapMonth: next.calendar === "lunar" ? next.isLeapMonth : false };
+}
+
+/** The complete form, or null while the date or the gender is still empty. */
+export function completeForm(draft: SajuDraft): SajuForm | null {
+  const { year, month, day, gender } = draft;
+  if (year === null || month === null || day === null || gender === null) return null;
+  return { ...draft, year, month, day, gender };
 }
 
 export function toSajuInput(form: SajuForm): SajuInput {
@@ -113,7 +161,7 @@ export function toSajuInput(form: SajuForm): SajuInput {
 
 // ---- errors ----
 
-export type SajuField = "date" | "time" | "place" | "form";
+export type SajuField = "date" | "time" | "gender" | "place" | "form";
 
 export interface FieldError {
   field: SajuField;
@@ -175,17 +223,49 @@ export function checkSajuForm(form: SajuForm, today: CivilDay): { chart: SajuCha
   return { chart };
 }
 
+const BLANK_DATE: FieldError = { field: "date", message: "태어난 날을 골라 주세요." };
+const BLANK_TIME: FieldError = { field: "time", message: "태어난 시각을 골라 주세요." };
+const BLANK_GENDER: FieldError = { field: "gender", message: "성별을 골라 주세요." };
+
+/** Empty fields, top to bottom (W-07): checked on 명식 보기 before the engine runs. */
+export function blankFieldErrors(draft: SajuDraft): FieldError[] {
+  const out: FieldError[] = [];
+  if (draft.year === null || draft.month === null || draft.day === null) out.push(BLANK_DATE);
+  if (draft.timeKnown && (draft.hour === null || draft.minute === null)) out.push(BLANK_TIME);
+  if (draft.gender === null) out.push(BLANK_GENDER);
+  return out;
+}
+
+/** 명식 보기: every empty field at once, else the engine's one error, else the complete form and its chart. */
+export function checkSajuDraft(draft: SajuDraft, today: CivilDay): { form: SajuForm; chart: SajuChart } | { errors: FieldError[] } {
+  const blanks = blankFieldErrors(draft);
+  const form = completeForm(draft);
+  if (blanks.length || !form) return { errors: blanks };
+  const checked = checkSajuForm(form, today);
+  return "error" in checked ? { errors: [checked.error] } : { form, chart: checked.chart };
+}
+
 // ---- display ----
 
 export const formatTime = (hour: number, minute: number) => `${hour}시 ${minute}분`;
 
-export function formatBirthDate(form: SajuForm): string {
+/** The date part of the form (the echo line, record titles). */
+export type BirthDate = Pick<SajuForm, "calendar" | "year" | "month" | "day" | "isLeapMonth">;
+
+export function formatBirthDate(form: BirthDate): string {
   const leap = form.calendar === "lunar" && form.isLeapMonth ? "윤" : "";
   return `${form.year}년 ${leap}${form.month}월 ${form.day}일`;
 }
 
 /** Live echo under the date fields, e.g. "→ 1990년 1월 1일 (양력)". */
-export const confirmationLine = (form: SajuForm) => `→ ${formatBirthDate(form)} (${CALENDAR_LABEL[form.calendar]})`;
+export const confirmationLine = (form: BirthDate) => `→ ${formatBirthDate(form)} (${CALENDAR_LABEL[form.calendar]})`;
+
+/** The echo line once year, month and day are all picked (W-07); null before. */
+export function draftConfirmation(draft: SajuDraft): string | null {
+  const { calendar, year, month, day, isLeapMonth } = draft;
+  if (year === null || month === null || day === null) return null;
+  return confirmationLine({ calendar, year, month, day, isLeapMonth });
+}
 
 export function formatTimePart(form: SajuForm): string {
   return form.timeKnown && form.hour !== null && form.minute !== null ? formatTime(form.hour, form.minute) : "시간 모름";

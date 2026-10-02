@@ -60,6 +60,13 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   // The home's entry to it is checked in "home, 내 정보 and guide"; the home layout belongs to the design pass.
   await page.goto("/saju/new");
   await expect(page.getByRole("heading", { level: 1, name: "태어난 날을 알려주세요" })).toBeVisible();
+  // W-07: nothing is filled in before the user picks it.
+  await expect(page.getByLabel("태어난 연도")).toHaveValue("");
+  await expect(page.getByText(/^→ /)).toHaveCount(0);
+  await page.getByLabel("태어난 연도").selectOption("1990");
+  await page.getByLabel("태어난 월").selectOption("1");
+  await page.getByLabel("태어난 일").selectOption("1");
+  await page.getByRole("button", { name: "여성", exact: true }).click();
   await expect(page.getByText("→ 1990년 1월 1일 (양력)")).toBeVisible();
   await expect(page.getByText("10년 흐름(대운)의 방향을 정하는 데만 써요")).toBeVisible();
 
@@ -108,6 +115,10 @@ test("saju: input, consent, the example chart, then the user's own chart with �
 test("saju: a non-sample chart gets its own reading, saved on this device", async ({ page }, info) => {
   await ownAddress(page, info);
   await page.goto("/saju/new");
+  await page.getByLabel("태어난 연도").selectOption("1990");
+  await page.getByLabel("태어난 월").selectOption("1");
+  await page.getByLabel("태어난 일").selectOption("1");
+  await page.getByRole("button", { name: "여성", exact: true }).click();
   await page.getByRole("button", { name: "알아요" }).click();
   await page.getByText("출생 정보를 풀이에 쓰는 데 동의해요").click();
   await page.getByRole("button", { name: "명식 보기" }).click();
@@ -154,6 +165,9 @@ test("saju: a lunar day that does not exist is explained next to the date", asyn
   await page.goto("/saju/new");
   await page.getByRole("button", { name: "음력", exact: true }).click();
   await page.getByLabel("윤달이에요").check({ force: true });
+  await page.getByLabel("태어난 연도").selectOption("1990");
+  await page.getByLabel("태어난 월").selectOption("1");
+  await page.getByRole("button", { name: "여성", exact: true }).click();
   await page.getByLabel("태어난 일").selectOption("30");
   await page.getByText("출생 정보를 풀이에 쓰는 데 동의해요").click();
   await page.getByRole("button", { name: "명식 보기" }).click();

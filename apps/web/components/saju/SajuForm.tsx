@@ -19,20 +19,21 @@ import {
 import {
   BIRTH_PLACES,
   CALENDAR_LABEL,
-  DEFAULT_SAJU_FORM,
+  EMPTY_SAJU_DRAFT,
   GENDER_LABEL,
   MIN_BIRTH_YEAR,
-  checkSajuForm,
-  confirmationLine,
-  daysInMonth,
+  checkSajuDraft,
+  draftConfirmation,
+  draftDays,
+  draftOf,
   sanitizeSajuForm,
   showLeapMonthOption,
   todayInKorea,
-  withDate,
+  withDraftDate,
   type Calendar,
   type Gender,
+  type SajuDraft,
   type SajuField,
-  type SajuForm as SajuFormValues,
 } from "@/lib/sajuForm";
 import s from "./SajuForm.module.css";
 
@@ -48,13 +49,14 @@ const TIME_OPTIONS = [
 
 const CONSENT_ERROR = "출생 정보를 풀이에 쓰는 데 먼저 동의해 주세요.";
 /** Focus goes to the first problem, top to bottom. */
-const ERROR_ORDER: readonly ErrorKey[] = ["date", "time", "place", "consent", "form"];
+const ERROR_ORDER: readonly ErrorKey[] = ["date", "time", "gender", "place", "consent", "form"];
 
 const range = (from: number, to: number) => Array.from({ length: Math.abs(to - from) + 1 }, (_, i) => (from <= to ? from + i : from - i));
 
 /**
- * Saju input. Starts from the saved profile (고치기) or the sample; birth data and the optional
- * status chips stay on this device (never in a URL).
+ * Saju input. Starts from the saved profile (고치기). A first visit starts with the date and the
+ * gender empty (W-07): nobody gets the sample's chart by leaving the fields as they are. Birth data
+ * and the optional status chips stay on this device (never in a URL).
  */
 export function SajuForm() {
   const { profile } = useSajuProfile();
@@ -68,7 +70,7 @@ export function SajuForm() {
   return (
     <SajuFormFields
       key={`${profile ? "saved" : "fresh"}-${savedContext ? "context" : "none"}`}
-      initial={profile ?? DEFAULT_SAJU_FORM}
+      initial={profile ? draftOf(profile) : EMPTY_SAJU_DRAFT}
       initialContext={context ?? {}}
     />
   );
@@ -83,9 +85,9 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
   );
 }
 
-function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; initialContext: SajuContext }) {
+function SajuFormFields({ initial, initialContext }: { initial: SajuDraft; initialContext: SajuContext }) {
   const router = useRouter();
-  const [form, setForm] = useState<SajuFormValues>(initial);
+  const [draft, setDraft] = useState<SajuDraft>(initial);
   const [context, setContext] = useState<SajuContext>(initialContext);
   // Optional, so folded until asked for (open when something was saved before).
   const [moreOpen, setMoreOpen] = useState(Boolean(initialContext.loveStatus || initialContext.workStatus));
@@ -94,12 +96,14 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
 
   const yearRef = useRef<HTMLSelectElement>(null);
   const hourRef = useRef<HTMLSelectElement>(null);
+  const genderRef = useRef<HTMLButtonElement>(null);
   const placeRef = useRef<HTMLSelectElement>(null);
   const consentRef = useRef<HTMLInputElement>(null);
   const submitRef = useRef<HTMLDivElement>(null);
   const focusTargets: Record<ErrorKey, RefObject<HTMLElement | null>> = {
     date: yearRef,
     time: hourRef,
+    gender: genderRef,
     place: placeRef,
     consent: consentRef,
     form: submitRef,
@@ -107,11 +111,12 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
 
   const maxYear = todayInKorea().year;
   const years = range(maxYear, MIN_BIRTH_YEAR);
-  const days = range(1, daysInMonth(form.calendar, form.year, form.month));
+  const days = range(1, draftDays(draft));
+  const confirmation = draftConfirmation(draft);
 
   // Any edit clears the field errors (they can depend on several fields); consent keeps its own.
-  const change = (next: SajuFormValues) => {
-    setForm(next);
+  const change = (next: SajuDraft) => {
+    setDraft(next);
     setErrors((prev) => (prev.consent ? { consent: prev.consent } : {}));
   };
 
@@ -120,9 +125,9 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const result = checkSajuForm(form, todayInKorea());
+    const result = checkSajuDraft(draft, todayInKorea());
     const next: Errors = {};
-    if ("error" in result) next[result.error.field] = result.error.message;
+    if ("errors" in result) for (const error of result.errors) next[error.field] ??= error.message;
     if (!consent) next.consent = CONSENT_ERROR;
     setErrors(next);
 
@@ -131,7 +136,8 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
       focusTargets[first].current?.focus();
       return;
     }
-    saveSajuProfile(sanitizeSajuForm(form) ?? form);
+    if (!("form" in result)) return;
+    saveSajuProfile(sanitizeSajuForm(result.form) ?? result.form);
     saveSajuContext(context);
     router.push("/saju/chart");
   };
@@ -140,7 +146,7 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
     <form className={s.form} onSubmit={onSubmit} noValidate>
       <fieldset className={s.group}>
         <legend className={s.label}>태어난 날</legend>
-        <Segmented<Calendar> label="양력 또는 음력" options={CALENDAR_OPTIONS} value={form.calendar} onChange={(calendar) => change(withDate(form, { calendar }))} />
+        <Segmented<Calendar> label="양력 또는 음력" options={CALENDAR_OPTIONS} value={draft.calendar} onChange={(calendar) => change(withDraftDate(draft, { calendar }))} />
 
         <div className={s.row}>
           <label className={s.field}>
@@ -149,11 +155,14 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
                 ref={yearRef}
                 aria-label="태어난 연도"
                 className={s.select}
-                value={form.year}
-                onChange={(e) => change(withDate(form, { year: Number(e.target.value) }))}
+                value={draft.year ?? ""}
+                onChange={(e) => change(withDraftDate(draft, { year: Number(e.target.value) }))}
                 aria-invalid={Boolean(errors.date)}
                 aria-describedby={describedBy("date")}
               >
+                <option value="" disabled>
+                  연도
+                </option>
                 {years.map((year) => (
                   <option key={year} value={year}>
                     {year}
@@ -161,18 +170,21 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
                 ))}
               </select>
             </span>
-            <span className={s.unit}>년</span>
+            {draft.year === null ? null : <span className={s.unit}>년</span>}
           </label>
           <label className={s.field}>
             <span className={s.selectWrap}>
               <select
                 aria-label="태어난 월"
                 className={s.select}
-                value={form.month}
-                onChange={(e) => change(withDate(form, { month: Number(e.target.value) }))}
+                value={draft.month ?? ""}
+                onChange={(e) => change(withDraftDate(draft, { month: Number(e.target.value) }))}
                 aria-invalid={Boolean(errors.date)}
                 aria-describedby={describedBy("date")}
               >
+                <option value="" disabled>
+                  월
+                </option>
                 {range(1, 12).map((month) => (
                   <option key={month} value={month}>
                     {month}
@@ -180,18 +192,21 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
                 ))}
               </select>
             </span>
-            <span className={s.unit}>월</span>
+            {draft.month === null ? null : <span className={s.unit}>월</span>}
           </label>
           <label className={s.field}>
             <span className={s.selectWrap}>
               <select
                 aria-label="태어난 일"
                 className={s.select}
-                value={form.day}
-                onChange={(e) => change(withDate(form, { day: Number(e.target.value) }))}
+                value={draft.day ?? ""}
+                onChange={(e) => change(withDraftDate(draft, { day: Number(e.target.value) }))}
                 aria-invalid={Boolean(errors.date)}
                 aria-describedby={describedBy("date")}
               >
+                <option value="" disabled>
+                  일
+                </option>
                 {days.map((day) => (
                   <option key={day} value={day}>
                     {day}
@@ -199,18 +214,18 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
                 ))}
               </select>
             </span>
-            <span className={s.unit}>일</span>
+            {draft.day === null ? null : <span className={s.unit}>일</span>}
           </label>
         </div>
 
-        {showLeapMonthOption(form) ? (
-          <Checkbox checked={form.isLeapMonth} onChange={(isLeapMonth) => change({ ...form, isLeapMonth })}>
+        {showLeapMonthOption(draft) ? (
+          <Checkbox checked={draft.isLeapMonth} onChange={(isLeapMonth) => change({ ...draft, isLeapMonth })}>
             윤달이에요
           </Checkbox>
         ) : null}
 
         <p className={s.confirm} aria-live="polite">
-          {confirmationLine(form)}
+          {confirmation}
         </p>
         <FieldError id="date-error" message={errors.date} />
       </fieldset>
@@ -221,10 +236,10 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
           label="태어난 시를 아는지"
           describedBy="time-help"
           options={TIME_OPTIONS}
-          value={form.timeKnown ? "known" : "unknown"}
-          onChange={(value) => change({ ...form, timeKnown: value === "known" })}
+          value={draft.timeKnown ? "known" : "unknown"}
+          onChange={(value) => change({ ...draft, timeKnown: value === "known" })}
         />
-        {form.timeKnown ? (
+        {draft.timeKnown ? (
           <div className={`${s.row} ${s.timeRow}`}>
             <label className={s.field}>
               <span className={s.selectWrap}>
@@ -232,8 +247,8 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
                   ref={hourRef}
                   aria-label="태어난 시"
                   className={s.select}
-                  value={form.hour ?? ""}
-                  onChange={(e) => change({ ...form, hour: e.target.value === "" ? null : Number(e.target.value) })}
+                  value={draft.hour ?? ""}
+                  onChange={(e) => change({ ...draft, hour: e.target.value === "" ? null : Number(e.target.value) })}
                   aria-invalid={Boolean(errors.time)}
                   aria-describedby={describedBy("time", "time-help")}
                 >
@@ -252,8 +267,8 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
                 <select
                   aria-label="태어난 분"
                   className={s.select}
-                  value={form.minute ?? ""}
-                  onChange={(e) => change({ ...form, minute: e.target.value === "" ? null : Number(e.target.value) })}
+                  value={draft.minute ?? ""}
+                  onChange={(e) => change({ ...draft, minute: e.target.value === "" ? null : Number(e.target.value) })}
                   aria-invalid={Boolean(errors.time)}
                   aria-describedby={describedBy("time", "time-help")}
                 >
@@ -279,14 +294,16 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
         <legend className={s.label}>성별</legend>
         <Segmented<Gender>
           label="성별"
-          describedBy="gender-help"
+          describedBy={describedBy("gender", "gender-help")}
           options={GENDER_OPTIONS}
-          value={form.gender}
-          onChange={(gender) => change({ ...form, gender })}
+          value={draft.gender}
+          onChange={(gender) => change({ ...draft, gender })}
+          firstRef={genderRef}
         />
         <p id="gender-help" className={s.helper}>
           10년 흐름(대운)의 방향을 정하는 데만 써요
         </p>
+        <FieldError id="gender-error" message={errors.gender} />
       </fieldset>
 
       <div className={s.group}>
@@ -298,8 +315,8 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuFormValues; 
             id="birth-place"
             ref={placeRef}
             className={s.select}
-            value={form.placeId}
-            onChange={(e) => change({ ...form, placeId: e.target.value })}
+            value={draft.placeId}
+            onChange={(e) => change({ ...draft, placeId: e.target.value })}
             aria-invalid={Boolean(errors.place)}
             aria-describedby={describedBy("place")}
           >
