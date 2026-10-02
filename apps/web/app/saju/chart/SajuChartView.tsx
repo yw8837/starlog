@@ -230,6 +230,7 @@ export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnl
   const recheck = () => {
     const busy = account?.user?.opening.find((item) => item.productId === product.id);
     const chosen = busy ? (busy.currency === "stardust" ? "free" : "paid") : method === "free" ? "free" : "paid";
+    setMethod(chosen); // the lines and the refund link that follow are about this credit
     void settle(chosen, since(Date.now()), heldCredit(account?.user, product.id, product.units ?? 0), form, check === "stalled" ? "cut" : "recheck");
   };
 

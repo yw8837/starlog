@@ -89,6 +89,21 @@ describe("SajuChartView after a paid opening was cut off", () => {
     expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#purchases");
   });
 
+  it("checking again on a reading being opened that turns out kept offers it again with the refund link", async () => {
+    seed();
+    stub({
+      me: [
+        () => Response.json(meBody({ opening: [{ productId: "saju", currency: "paid", orderId: ORDER }] })),
+        () => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "saju" }] })),
+      ],
+    });
+    render(<SajuChartView />);
+    fireEvent.click(await screen.findByRole("button", { name: "다시 확인하기" }));
+    expect(await screen.findByText(/결제한 풀이는 그대로 남아 있어요/)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#purchases");
+    expect(await screen.findByRole("button", { name: "결제한 풀이 열기" })).toBeTruthy();
+  });
+
   it("while the account is opening a saju reading, says so instead of offering to buy or open", async () => {
     seed();
     stub({ me: [() => Response.json(meBody({ unused: [{ orderId: "other", productId: "saju" }], opening: [{ productId: "saju", currency: "paid", orderId: ORDER }] }))] });
