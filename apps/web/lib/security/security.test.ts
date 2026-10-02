@@ -98,11 +98,20 @@ describe("quota", () => {
   });
 
   it("issues an owner pass that expires after a year", async () => {
-    const cookie = await ownerCookie(SECRET, BEFORE_MIDNIGHT);
-    expect(await isOwner(cookie, SECRET, BEFORE_MIDNIGHT)).toBe(true);
-    expect(await isOwner(cookie, SECRET, BEFORE_MIDNIGHT + 366 * 24 * 3600 * 1000)).toBe(false);
-    expect(await isOwner(tamper(cookie), SECRET, BEFORE_MIDNIGHT)).toBe(false);
-    expect(await isOwner(undefined, SECRET, BEFORE_MIDNIGHT)).toBe(false);
+    const cookie = await ownerCookie(SECRET, BEFORE_MIDNIGHT, "owner-code-one");
+    expect(await isOwner(cookie, SECRET, BEFORE_MIDNIGHT, "owner-code-one")).toBe(true);
+    expect(await isOwner(cookie, SECRET, BEFORE_MIDNIGHT + 366 * 24 * 3600 * 1000, "owner-code-one")).toBe(false);
+    expect(await isOwner(tamper(cookie), SECRET, BEFORE_MIDNIGHT, "owner-code-one")).toBe(false);
+    expect(await isOwner(undefined, SECRET, BEFORE_MIDNIGHT, "owner-code-one")).toBe(false);
+  });
+
+  it("revokes every owner pass when STARLOG_OWNER_CODE changes or goes away", async () => {
+    const cookie = await ownerCookie(SECRET, BEFORE_MIDNIGHT, "owner-code-one");
+    expect(cookie).not.toContain("owner-code-one");
+    expect(await isOwner(cookie, SECRET, BEFORE_MIDNIGHT, "owner-code-two")).toBe(false);
+    expect(await isOwner(cookie, SECRET, BEFORE_MIDNIGHT, null)).toBe(false);
+    // A pass signed before fingerprints existed carries none: it is no pass.
+    expect(await isOwner(await signToken({ k: "owner", exp: BEFORE_MIDNIGHT + 1000 }, SECRET), SECRET, BEFORE_MIDNIGHT, "owner-code-one")).toBe(false);
   });
 });
 

@@ -120,6 +120,9 @@ describe("Kakao login", () => {
     expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
     expect((await loginAs(owner, "owner")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
     expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { stardust: 10 } });
+    // A new owner code revokes the passes handed out under the old one.
+    vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0002");
+    expect(await me(owner)).toMatchObject({ payments: false, owner: false });
   });
 
   it("only comes back to paths on this site", async () => {
