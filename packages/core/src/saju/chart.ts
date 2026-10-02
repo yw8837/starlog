@@ -6,10 +6,11 @@ import {
 } from "./labels";
 import type { SajuElement } from "./labels";
 import {
-  DEFAULT_POLICY, KOREA_LONGITUDE_RANGE, MAX_SUPPORTED_DATE, MIN_SUPPORTED_DATE, STANDARD_TIME_START, SUPPORTED_TIME_ZONE,
-  SajuError, correctedClockMs, koreaCivilOffsetAt, koreaWallClockInstants, validatePolicy,
+  DEFAULT_POLICY, MAX_SUPPORTED_DATE, MIN_SUPPORTED_DATE, STANDARD_TIME_START, SUPPORTED_TIME_ZONE, SUPPORTED_TIME_ZONES, ZONE_LONGITUDE_RANGE,
+  SajuError, correctedClockMs, koreaCivilOffsetAt, koreaWallClockInstants, sajuAbroadEnabled, validatePolicy,
 } from "./policy";
 import type { JasiRule, ResolvedCivilTime, SajuPolicy } from "./policy";
+import { zoneOffsetMsAt, zoneWallClockInstants } from "./zones";
 
 /** Pinned engine (package.json `"manseryeok": "2.0.0"`); stored on every chart (P12). */
 export const SAJU_ENGINE = "manseryeok@2.0.0" as const;
@@ -22,7 +23,7 @@ export interface SajuInput {
   /** civil wall clock at the birthplace; null = unknown (P6) */
   time: { hour: number; minute: number } | null;
   gender: "female" | "male";
-  /** `timeZone` (IANA) defaults to Asia/Seoul, the only zone supported until P11 */
+  /** `timeZone` (IANA) defaults to Asia/Seoul; SUPPORTED_TIME_ZONES lists the zones abroad (solar dates only) */
   place: { name: string; longitude: number; timeZone?: string };
 }
 
@@ -101,11 +102,12 @@ interface CivilDate { year: number; month: number; day: number }
 
 export function computeChart(input: SajuInput, requestedPolicy: SajuPolicy = DEFAULT_POLICY): SajuChart {
   const policy = validatePolicy(requestedPolicy); // a fresh copy, stored on the chart
-  const longitude = validatePlace(input.place);
+  const { longitude, timeZone } = validatePlace(input.place);
   if (input.gender !== "female" && input.gender !== "male") throw invalidInput();
+  if (timeZone !== "Asia/Seoul" && input.calendar === "lunar") throw new SajuError("UNSUPPORTED_CALENDAR", "해외 출생은 양력 생일로만 계산할 수 있어요.");
   const date = toSolarDate(input);
-  const pre1908 = compareDates(date, STANDARD_TIME_START) < 0;
-  const frame: CivilFrame = { longitude, policy, pre1908 };
+  const pre1908 = timeZone === "Asia/Seoul" && compareDates(date, STANDARD_TIME_START) < 0;
+  const frame: CivilFrame = { longitude, timeZone, policy, pre1908 };
 
   const warnings: SajuWarning[] = [];
   if (pre1908) {
@@ -157,13 +159,19 @@ function invalidInput(): SajuError {
   return new SajuError("INVALID_INPUT", "날짜나 시각이 올바르지 않아요. 다시 확인해 주세요.");
 }
 
-function validatePlace(place: SajuInput["place"]): number {
+type SupportedZone = (typeof SUPPORTED_TIME_ZONES)[number];
+
+function validatePlace(place: SajuInput["place"]): { longitude: number; timeZone: SupportedZone } {
   if (!place || !Number.isFinite(place.longitude)) throw invalidInput();
-  const { min, max } = KOREA_LONGITUDE_RANGE;
-  if ((place.timeZone ?? SUPPORTED_TIME_ZONE) !== SUPPORTED_TIME_ZONE || place.longitude < min || place.longitude > max) {
-    throw new SajuError("UNSUPPORTED_PLACE", "지금은 한국에서 태어난 경우만 계산할 수 있어요.");
+  const timeZone = place.timeZone ?? SUPPORTED_TIME_ZONE;
+  const abroad = sajuAbroadEnabled();
+  const range = timeZone === SUPPORTED_TIME_ZONE || abroad ? (ZONE_LONGITUDE_RANGE as Readonly<Record<string, { min: number; max: number }>>)[timeZone] : undefined;
+  if (!range || place.longitude < range.min || place.longitude > range.max) {
+    // Korean inputs (and every input while the flag is off) keep their sentence byte for byte; only other zones get the new one.
+    const message = timeZone === SUPPORTED_TIME_ZONE || !abroad ? "지금은 한국에서 태어난 경우만 계산할 수 있어요." : "지금은 한국, 일본, 대만, 홍콩에서 태어난 경우만 계산할 수 있어요.";
+    throw new SajuError("UNSUPPORTED_PLACE", message);
   }
-  return place.longitude;
+  return { longitude: place.longitude, timeZone: timeZone as SupportedZone };
 }
 
 function toSolarDate(input: SajuInput): CivilDate {
@@ -197,10 +205,14 @@ function outOfRange(): SajuError {
 // Civil time (P1, P8, P10)
 // ---------------------------------------------------------------------------------------------
 
-interface CivilFrame { longitude: number; policy: SajuPolicy; pre1908: boolean }
+interface CivilFrame { longitude: number; timeZone: string; policy: SajuPolicy; pre1908: boolean }
 
-/** Instants a wall-clock reading can denote under the policy (empty = skipped by a clock jump). */
+/**
+ * Instants a wall-clock reading can denote under the policy (empty = skipped by a clock jump).
+ * Zones abroad read the runtime's tzdata and ignore applyHistoricalDst: tzdata is their history.
+ */
 function wallClockInstants(wallMs: number, frame: CivilFrame): ResolvedCivilTime[] {
+  if (frame.timeZone !== "Asia/Seoul") return zoneWallClockInstants(wallMs, frame.timeZone);
   if (!frame.policy.applyHistoricalDst) {
     return [{ instantMs: wallMs - KST_OFFSET_MINUTES * MINUTE_MS, offsetMinutes: KST_OFFSET_MINUTES, standardOffsetMinutes: KST_OFFSET_MINUTES }];
   }
@@ -213,6 +225,7 @@ function wallClockInstants(wallMs: number, frame: CivilFrame): ResolvedCivilTime
 
 /** Civil offset at an instant, for showing engine moments (절입) on the user's clock. */
 function civilOffsetMinutesAt(instantMs: number, frame: CivilFrame): number {
+  if (frame.timeZone !== "Asia/Seoul") return zoneOffsetMsAt(instantMs, frame.timeZone) / 60_000;
   if (!frame.policy.applyHistoricalDst) return KST_OFFSET_MINUTES;
   return koreaCivilOffsetAt(instantMs)?.offsetMinutes ?? frame.longitude * 4;
 }

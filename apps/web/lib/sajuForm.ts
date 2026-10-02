@@ -133,6 +133,7 @@ export const SAJU_ERROR_MESSAGES: Readonly<Record<SajuErrorCode, FieldError>> = 
   },
   UNSUPPORTED_PLACE: { field: "place", message: "지금은 한국에서 태어난 경우만 계산할 수 있어요." },
   INVALID_POLICY: { field: "form", message: "계산 기준을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요." },
+  UNSUPPORTED_CALENDAR: { field: "date", message: "해외 출생은 양력 생일로만 계산할 수 있어요." },
 });
 
 const UNKNOWN_ERROR: FieldError = { field: "form", message: "명식을 계산하지 못했어요. 입력한 내용을 다시 확인해 주세요." };

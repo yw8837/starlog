@@ -73,7 +73,8 @@ export type SajuErrorCode =
   | "UNSUPPORTED_PLACE"
   | "OUT_OF_RANGE"
   | "INVALID_INPUT"
-  | "INVALID_POLICY";
+  | "INVALID_POLICY"
+  | "UNSUPPORTED_CALENDAR";
 
 /** Typed input error; `message` is Korean UI copy. */
 export class SajuError extends Error {
@@ -99,6 +100,21 @@ export const STANDARD_TIME_START = { year: 1908, month: 4, day: 1 } as const;
 export const SUPPORTED_TIME_ZONE = "Asia/Seoul";
 /** Longitudes a Korean birthplace can have (Baengnyeongdo ~124.6°E .. Dokdo ~131.9°E, with margin). */
 export const KOREA_LONGITUDE_RANGE = { min: 124, max: 132 } as const;
+
+/** Korea plus the P6 zones abroad (abroadPlaces.ts). Korea keeps its checked table; the others read tzdata. */
+export const SUPPORTED_TIME_ZONES = ["Asia/Seoul", "Asia/Tokyo", "Asia/Taipei", "Asia/Hong_Kong"] as const;
+export const ZONE_LONGITUDE_RANGE: Readonly<Record<(typeof SUPPORTED_TIME_ZONES)[number], { min: number; max: number }>> = {
+  "Asia/Seoul": KOREA_LONGITUDE_RANGE,
+  "Asia/Tokyo": { min: 122, max: 146 },
+  "Asia/Taipei": { min: 118, max: 123 },
+  "Asia/Hong_Kong": { min: 113.8, max: 114.5 },
+};
+
+/**
+ * Build flag for births abroad (P6 spec §8, §12.2): until NEXT_PUBLIC_SAJU_ABROAD is "1", the zones
+ * abroad are refused exactly as before (UNSUPPORTED_PLACE, Korean-only sentence). Read on every call.
+ */
+export const sajuAbroadEnabled = (): boolean => process.env.NEXT_PUBLIC_SAJU_ABROAD === "1";
 
 // ---------------------------------------------------------------------------------------------
 // P1 Korea civil-time history

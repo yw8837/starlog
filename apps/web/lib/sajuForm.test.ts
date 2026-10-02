@@ -135,7 +135,7 @@ describe("toSajuInput", () => {
 });
 
 describe("SAJU_ERROR_MESSAGES / describeSajuError", () => {
-  const CODES: SajuErrorCode[] = ["NONEXISTENT_CIVIL_TIME", "INVALID_LUNAR_DATE", "INVALID_INPUT", "OUT_OF_RANGE", "UNSUPPORTED_PLACE", "INVALID_POLICY"];
+  const CODES: SajuErrorCode[] = ["NONEXISTENT_CIVIL_TIME", "INVALID_LUNAR_DATE", "INVALID_INPUT", "OUT_OF_RANGE", "UNSUPPORTED_PLACE", "INVALID_POLICY", "UNSUPPORTED_CALENDAR"];
 
   it("has a friendly 해요체 message for every engine error code", () => {
     expect(Object.keys(SAJU_ERROR_MESSAGES).sort()).toEqual([...CODES].sort());
