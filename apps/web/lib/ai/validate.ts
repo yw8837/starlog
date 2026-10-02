@@ -18,10 +18,10 @@ import { MODEL_NAMES, SOFT_PREFIX, aiTellViolations } from "./style";
 /** Characters without whitespace (the unit of every length target). */
 export const charCount = (text: string) => text.replace(/\s/g, "").length;
 
-const TOLERANCE = 0.25;
+export const TOLERANCE = 0.25;
 
 /** Length target with the plan's ±25% band. */
-function lengthCheck(label: string, text: string, min: number, max: number, out: string[], tolerance = TOLERANCE): void {
+export function lengthCheck(label: string, text: string, min: number, max: number, out: string[], tolerance = TOLERANCE): void {
   const n = charCount(text);
   const lo = Math.floor(min * (1 - tolerance));
   const hi = Math.ceil(max * (1 + tolerance));
@@ -51,7 +51,7 @@ export function mentions(text: string, phrase: string, share = 0.5): boolean {
   return found >= Math.max(1, Math.ceil(s.length * share));
 }
 
-const sentences = (text: string) => text.split(/(?<=[.?!])\s+|\n+/).map((s) => s.trim()).filter(Boolean);
+export const sentences = (text: string) => text.split(/(?<=[.?!])\s+|\n+/).map((s) => s.trim()).filter(Boolean);
 const hasHangul = (text: string) => /[가-힣]/.test(text);
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -92,7 +92,7 @@ export function moneyPushSentences(text: string): string[] {
 }
 
 /** Matches of `pattern` that the user did not write themselves (their own words may be quoted back). */
-function matchesBeyondUser(pattern: RegExp, text: string, userText: string): string[] {
+export function matchesBeyondUser(pattern: RegExp, text: string, userText: string): string[] {
   const global = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
   return [...text.matchAll(global)].map((m) => m[0]).filter((hit) => !userText.includes(hit));
 }
@@ -116,11 +116,11 @@ const MARRIAGE_VERDICT = new RegExp([
 const GUNGHAP_CLAIM = /궁합(?:이|은|도)?\s?[^.?!]{0,6}(?:좋|나쁘|맞|최고|최악|높|낮)/;
 const GUNGHAP_DECLINED = /궁합\s?풀이|보지\s?않|말하지\s?않|다루지\s?않|따로/;
 /** A sentence with one of these is a boundary or a possibility, not an assertion. */
-const HEDGE = /(없|아니|알 수|확인|모르|수도|지도 몰라|일 수|가능성|단정|읽은 것|처럼 보|혹시|라면)/;
+export const HEDGE = /(없|아니|알 수|확인|모르|수도|지도 몰라|일 수|가능성|단정|읽은 것|처럼 보|혹시|라면)/;
 
 const ABSOLUTE_DATE = /\d{1,2}\s?월\s?\d{1,2}\s?일|[월화수목금토일]요일|\d{1,2}\s?시\s?(에|쯤|경|까지|부터)/;
 
-function blocklistViolations(text: string, userText: string, out: string[]): void {
+export function blocklistViolations(text: string, userText: string, out: string[]): void {
   for (const [pattern, label] of BLOCKLIST) {
     if (matchesBeyondUser(pattern, text, userText).length) out.push(`금지 표현이 있어요: ${label}. 부정문으로도 쓰지 마세요.`);
   }
@@ -173,7 +173,7 @@ export function nonHaeyoSentences(text: string): string[] {
   });
 }
 
-function voiceViolations(text: string, out: string[]): void {
+export function voiceViolations(text: string, out: string[]): void {
   const off = nonHaeyoSentences(text);
   if (off.length) out.push(`해요체가 아닌 문장이 있어요: "${off[0]!.slice(0, 40)}". 모든 문장을 해요체로 맺어 주세요(관계 주제의 보낼 문장 예시만 예외).`);
 }
@@ -181,7 +181,7 @@ function voiceViolations(text: string, out: string[]): void {
 const occurrences = (text: string, phrase: string) => (phrase ? text.split(phrase).length - 1 : 0);
 
 /** Soft: a chip or the note quoted verbatim more than once (the judge's "입력 되풀이 공식"). */
-function inputRepeatViolations(text: string, phrases: string[], out: string[]): void {
+export function inputRepeatViolations(text: string, phrases: string[], out: string[]): void {
   const repeated = phrases.filter((p) => p.length >= 2 && occurrences(text, p) > 1);
   if (repeated.length) {
     out.push(`${SOFT_PREFIX}같은 입력을 여러 번 그대로 되풀이했어요: ${repeated.map((p) => `'${p.slice(0, 20)}'`).join(", ")}. 한 번만 인용하고 나머지는 그 상황에서 나오는 구체적인 말로 바꿔 주세요.`);
@@ -202,7 +202,7 @@ export function actionVerbs(text: string): string[] {
 }
 
 /** Soft: two or more action fields end in the same move, or keep asking the user to write things down. */
-function actionVarietyViolations(fields: string[], out: string[]): void {
+export function actionVarietyViolations(fields: string[], out: string[]): void {
   const writing = fields.filter((f) => WRITING.test(f)).length;
   const counts = new Map<string, number>();
   for (const field of fields) for (const verb of new Set(actionVerbs(field))) counts.set(verb, (counts.get(verb) ?? 0) + 1);
@@ -216,19 +216,19 @@ function actionVarietyViolations(fields: string[], out: string[]): void {
 const MONEY_AMOUNT = /\d[\d,]*\s?(?:만|천|백)?\s?원/g;
 
 /** Soft: money amounts the user never gave (the reading must not assume numbers). */
-function inventedAmountViolations(text: string, userText: string, out: string[]): void {
+export function inventedAmountViolations(text: string, userText: string, out: string[]): void {
   const invented = [...text.matchAll(MONEY_AMOUNT)].map((m) => m[0]).filter((amount) => !userText.includes(amount));
   if (invented.length) out.push(`${SOFT_PREFIX}입력에 없는 금액을 썼어요: ${[...new Set(invented)].join(", ")}. 금액은 사용자가 적은 것만 쓰거나 빼 주세요.`);
 }
 
-const observationViolations = (body: string, out: string[]) => lengthCheck("observation", body, 60, 200, out);
+export const observationViolations = (body: string, out: string[]) => lengthCheck("observation", body, 60, 200, out);
 
 // ---- card fidelity ----
 
 /** Card names that are also everyday words; they cannot be checked by string match. */
 const AMBIGUOUS_NAMES = new Set(["별", "달", "힘", "탑", "바보", "연인", "정의", "죽음", "절제", "태양", "세계", "심판", "용기", "우주", "부활", "광대", "사신"]);
 
-const namesOf = (card: KbCard) => [card.names.ko, ...(card.names.koAliases ?? [])];
+export const namesOf = (card: KbCard) => [card.names.ko, ...(card.names.koAliases ?? [])];
 const nameRegex = (name: string) => new RegExp(escapeRegex(name) + (/\d$/.test(name) ? "(?!\\d)" : ""), "g");
 
 /** Removes the drawn cards' names (longest first), so a drawn "여황제" never reads as "황제". */
@@ -237,7 +237,7 @@ function withoutDrawnNames(text: string, drawn: KbCard[]): string {
   return names.reduce((t, name) => t.replace(nameRegex(name), "□"), text);
 }
 
-function foreignCardViolations(text: string, drawn: KbCard[], out: string[]): void {
+export function foreignCardViolations(text: string, drawn: KbCard[], out: string[]): void {
   const stripped = withoutDrawnNames(text, drawn);
   const drawnIds = new Set(drawn.map((c) => c.id));
   const found = new Set<string>();
@@ -266,7 +266,7 @@ export function citesImagery(section: string, card: KbCard): boolean {
   });
 }
 
-function misdescriptionHits(text: string, card: KbCard): string[] {
+export function misdescriptionHits(text: string, card: KbCard): string[] {
   return card.imagery.misdescriptions.filter((m) => new RegExp(m.regex).test(text)).map((m) => m.wrong);
 }
 
@@ -287,7 +287,7 @@ function legitimateText(card: KbCard): string {
  * that another drawn card's own KB text matches is skipped: 검 2's woman is blindfolded, so "눈을
  * 가린" in the story is not an invented detail of 정의.
  */
-function sharedMisdescriptionHits(text: string, drawn: KbCard[]): string[] {
+export function sharedMisdescriptionHits(text: string, drawn: KbCard[]): string[] {
   return drawn.flatMap((card) => {
     const others = drawn.filter((c) => c.id !== card.id).map(legitimateText).join("\n");
     return card.imagery.misdescriptions.filter((m) => {
@@ -303,7 +303,7 @@ const REVERSED_MARK = /역방향/;
 const REVERSED_READ = /역방향|거꾸로|뒤집/;
 
 /** Image grounding, misdescriptions and the reversed marker for one card's own section. */
-function cardSectionViolations(label: string, body: string, card: TarotCardContext, out: string[]): void {
+export function cardSectionViolations(label: string, body: string, card: TarotCardContext, out: string[]): void {
   if (!citesImagery(body, card.kb)) out.push(`${label}에 그 카드의 그림 사실(imageryFacts)이 인용되지 않았어요. 그림 사실 하나를 거의 그대로 써 주세요.`);
   const wrong = misdescriptionHits(body, card.kb);
   if (wrong.length) out.push(`${label}에 그림에 없는 묘사가 있어요: ${wrong.join(", ")}. imageryFacts대로 고쳐 주세요.`);
@@ -315,7 +315,7 @@ function cardSectionViolations(label: string, body: string, card: TarotCardConte
   if (card.orientation === "upright" && REVERSED_MARK.test(body)) out.push(`${label}은 정방향 카드인데 역방향처럼 썼어요.`);
 }
 
-function cardSubjectCount(text: string, cards: TarotCardContext[]): number {
+export function cardSubjectCount(text: string, cards: TarotCardContext[]): number {
   const names = cards.flatMap((c) => namesOf(c.kb)).map(escapeRegex).join("|");
   const re = new RegExp(`(${names}|이 카드)(은|는|이|가)\\s[^.?!]{0,60}(말해요|말하고|뜻해요|뜻이에요|뜻일|보여줘요|알려줘요|의미해요|약속하지|카드라)`, "g");
   return [...text.matchAll(re)].length;
@@ -323,21 +323,21 @@ function cardSubjectCount(text: string, cards: TarotCardContext[]): number {
 
 // ---- user inputs ----
 
-function chosenChips(ctx: TarotContext): Array<{ label: string; value: string }> {
+export function chosenChips(ctx: TarotContext): Array<{ label: string; value: string }> {
   return ctx.conditions.filter((c) => !UNSURE_OPTIONS.includes(c.value));
 }
 
-const userTextOf = (ctx: TarotContext) => [ctx.question, ...ctx.conditions.map((c) => c.value), ctx.note, ctx.custom.topic, ctx.custom.who, ctx.custom.when].join(" ");
+export const userTextOf = (ctx: TarotContext) => [ctx.question, ...ctx.conditions.map((c) => c.value), ctx.note, ctx.custom.topic, ctx.custom.who, ctx.custom.when].join(" ");
 
-const quotedInputs = (ctx: TarotContext) => [...chosenChips(ctx).map((c) => c.value), ...(ctx.note ? [ctx.note] : [])];
+export const quotedInputs = (ctx: TarotContext) => [...chosenChips(ctx).map((c) => c.value), ...(ctx.note ? [ctx.note] : [])];
 
-function inputUseViolations(text: string, ctx: TarotContext, out: string[]): void {
+export function inputUseViolations(text: string, ctx: TarotContext, out: string[]): void {
   const missing = chosenChips(ctx).filter((c) => !mentions(text, c.value)).map((c) => `'${c.value}'`);
   if (missing.length) out.push(`고른 조건이 본문에 반영되지 않았어요: ${missing.join(", ")}. 칩 문구를 그대로 인용해 주세요.`);
   if (ctx.note && !mentions(text, ctx.note, 0.3)) out.push("사용자가 적은 메모가 본문에 반영되지 않았어요. '~라고 적었죠'처럼 돌려 말해 주세요.");
 }
 
-function commonTarotViolations(text: string, ctx: TarotContext, out: string[], opts: { topic: boolean; extraUserText?: string } = { topic: true }): void {
+export function commonTarotViolations(text: string, ctx: TarotContext, out: string[], opts: { topic: boolean; extraUserText?: string } = { topic: true }): void {
   const drawn = ctx.cards.map((c) => c.kb);
   const userText = `${userTextOf(ctx)} ${opts.extraUserText ?? ""}`;
   blocklistViolations(text, userText, out);
@@ -345,7 +345,7 @@ function commonTarotViolations(text: string, ctx: TarotContext, out: string[], o
   if (opts.topic) topicDriftViolations(text, drawn, ctx.bannedWords.filter((word) => !mentionsWord(userText, word)), out);
 }
 
-function cardIdentityViolations(cards: Array<{ position: string; cardId: string }>, ctx: TarotContext, out: string[]): void {
+export function cardIdentityViolations(cards: Array<{ position: string; cardId: string }>, ctx: TarotContext, out: string[]): void {
   const same = cards.length === ctx.cards.length && cards.every((c, i) => c.position === ctx.cards[i]!.position && c.cardId === ctx.cards[i]!.cardId);
   if (!same) out.push(`cards는 뽑힌 순서대로 ${ctx.cards.map((c) => `${c.position}=${c.cardId}`).join(", ")}여야 해요.`);
 }
@@ -497,20 +497,22 @@ const CHECKED_STAGES = ["장생", "건록", "제왕"];
 const YEAR = /(?<!\d)(1[89]\d\d|20\d\d)(?!\d)/g;
 
 /**
- * Glyphs, ten gods, stages and years must come from the FactSet; forbidden topics appear only in a
- * sentence that declines them, or in the user's own words (`userText`, a follow-up question).
+ * Glyphs, ten gods, stages and years must come from an allow-list (a FactSet's, or a merged one for
+ * two charts or a year); forbidden topics appear only in a sentence that declines them, or in the
+ * user's own words (`userText`, a follow-up question). `marriage`: the user's love status makes 결혼
+ * the reading's subject (verdicts stay banned either way).
  */
-function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], userText = ""): void {
-  const glyphs = new Set(facts.allowed.glyphs);
+export function allowedFactViolations(text: string, allowed: SajuFactSet["allowed"], out: string[], userText = "", marriage = false): void {
+  const glyphs = new Set(allowed.glyphs);
   const invented = [...new Set(text.match(STEM_OR_BRANCH) ?? [])].filter((g) => !glyphs.has(g));
   if (invented.length) out.push(`명식에 없는 간지 글자가 나왔어요: ${invented.join(", ")}. <facts>에 있는 글자만 써 주세요.`);
-  const gods = new Set(facts.allowed.tenGods);
+  const gods = new Set(allowed.tenGods);
   const strayGods = TEN_GOD_PATTERNS.filter(([name, re]) => re.test(text) && !gods.has(name)).map(([name]) => name);
   if (strayGods.length) out.push(`명식에 없는 십성이 나왔어요: ${strayGods.join(", ")}.`);
-  const stages = new Set(facts.allowed.stages);
+  const stages = new Set(allowed.stages);
   const strayStages = CHECKED_STAGES.filter((stage) => text.includes(stage) && !stages.has(stage));
   if (strayStages.length) out.push(`명식에 없는 12운성이 나왔어요: ${strayStages.join(", ")}.`);
-  const years = new Set(facts.allowed.years);
+  const years = new Set(allowed.years);
   const strayYears = [...new Set([...text.matchAll(YEAR)].map((m) => Number(m[1])))].filter((y) => !years.has(y));
   if (strayYears.length) out.push(`명식에서 나오지 않은 연도가 있어요: ${strayYears.join(", ")}.`);
   for (const [pattern, label, negatable] of SAJU_BLOCKLIST) {
@@ -523,7 +525,7 @@ function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], use
   }
   // 결혼 is the reading's subject when the user is dating, engaged or married; otherwise it is a
   // topic this reading only declines. Verdicts (it will / won't happen, when) are never allowed.
-  if (!marriageContext(facts) && sentences(text).some((s) => matchesBeyondUser(/결혼/, s, userText).length > 0 && !NEGATED.test(s))) {
+  if (!marriage && sentences(text).some((s) => matchesBeyondUser(/결혼/, s, userText).length > 0 && !NEGATED.test(s))) {
     out.push("쓰지 않는 주제가 있어요: 결혼. 이 풀이로는 말하기 어렵다고 짧게 밝히는 문장에서만 쓰세요.");
   }
   if (MARRIAGE_VERDICT.test(text.replace(QUOTED, "''"))) out.push("결혼의 성사·불발이나 시기를 단정한 문장이 있어요. 결혼을 다루는 방식까지만 말해 주세요.");
@@ -532,14 +534,18 @@ function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], use
   if (!hasHangul(text)) out.push("한국어로 써 주세요.");
 }
 
+function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], userText = ""): void {
+  allowedFactViolations(text, facts.allowed, out, userText, marriageContext(facts));
+}
+
 const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;
 
 /** Love statuses (lib/api/inputs.ts LOVE_STATUS labels) for which the reading covers 결혼. */
 const MARRIAGE_STATUSES = new Set(["연애 중", "결혼 준비 중", "기혼"]);
-const marriageContext = (facts: SajuFactSet) => MARRIAGE_STATUSES.has(facts.profile?.loveStatus ?? "");
+export const marriageContext = (facts: SajuFactSet) => MARRIAGE_STATUSES.has(facts.profile?.loveStatus ?? "");
 
 /** Soft: the user's own context (love/work status, concern) should show in the reading, 결혼 included when it applies. */
-function profileUseViolations(text: string, facts: SajuFactSet, out: string[]): void {
+export function profileUseViolations(text: string, facts: SajuFactSet, out: string[]): void {
   const p = facts.profile;
   if (!p) return;
   const missing = [p.loveStatus, p.workStatus].filter((v): v is string => Boolean(v) && v !== "잘 모르겠어요" && !mentions(text, v!));

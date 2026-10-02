@@ -34,7 +34,11 @@ function client(apiKey: string): Anthropic {
 
 /** The request body; exported so tests can pin its shape without calling the API. */
 export function buildRequest<T>(task: GenerationTask<T>, maxTokens: number, feedback?: string[]) {
-  const content: BetaTextBlockParam[] = [{ type: "text", text: task.user }];
+  const content: BetaTextBlockParam[] = [
+    // Cached: the next part of the same reading starts with the same block (P5 spec §6.2).
+    ...(task.shared ? [{ type: "text" as const, text: task.shared, cache_control: { type: "ephemeral" as const } }] : []),
+    { type: "text", text: task.user },
+  ];
   if (feedback?.length) {
     content.push({
       type: "text",

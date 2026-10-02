@@ -23,6 +23,11 @@ export const KIND_ENV: Record<TaskName, string> = {
   "saju-teaser": "SAJU_TEASER",
   "saju-reading": "SAJU_FULL",
   followup: "FOLLOWUP",
+  "premium-teaser": "PREMIUM_TEASER",
+  "deep-tarot-part": "PREMIUM_DEEP",
+  "match-part": "PREMIUM_MATCH",
+  "newyear-part": "PREMIUM_NEWYEAR",
+  "premium-followup": "PREMIUM_FOLLOWUP",
 };
 
 export const DEFAULT_EFFORT: Record<TaskName, Effort> = {
@@ -32,6 +37,11 @@ export const DEFAULT_EFFORT: Record<TaskName, Effort> = {
   "saju-teaser": "low",
   "saju-reading": "medium",
   followup: "low",
+  "premium-teaser": "low",
+  "deep-tarot-part": "medium",
+  "match-part": "medium",
+  "newyear-part": "medium",
+  "premium-followup": "low",
 };
 
 /** Output budget per kind at today's effort; higher effort thinks more, so it gets room to finish. */
@@ -42,6 +52,12 @@ const BASE_MAX_TOKENS: Record<TaskName, number> = {
   "saju-teaser": 8000,
   "saju-reading": 16000,
   followup: 8000,
+  // A premium part writes ~2,000–3,000 characters (~10k output tokens with thinking); room for variance.
+  "premium-teaser": 8000,
+  "deep-tarot-part": 24000,
+  "match-part": 24000,
+  "newyear-part": 24000,
+  "premium-followup": 8000,
 };
 const MIN_MAX_TOKENS: Record<Effort, number> = { low: 8000, medium: 16000, high: 32000, xhigh: 64000, max: 64000 };
 

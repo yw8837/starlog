@@ -31,21 +31,21 @@ export const mockProvider: ReadingProvider = {
 // ---- Korean helpers ----
 
 /** True when the last Hangul syllable has a final consonant (받침). */
-function hasFinal(word: string): boolean {
+export function hasFinal(word: string): boolean {
   const code = word.charCodeAt(word.length - 1) - 0xac00;
   return code >= 0 && code <= 11171 && code % 28 !== 0;
 }
 
 /** "은둔자는", "별은": topic particle chosen by the last syllable (digits read as-is: 컵 2 → 는). */
-const topic = (word: string) => `${word}${hasFinal(word) ? "은" : "는"}`;
+export const topic = (word: string) => `${word}${hasFinal(word) ? "은" : "는"}`;
 
 /** A KB fact as one 해요체 sentence (two facts hold two sentences: "붓는다. 물줄기는 …" → "붓고, 물줄기는 …"). */
-const factSentence = (fact: string) => `${fact.replace(/(는)?다\.\s+/g, "고, ")}는 장면이 그려져 있어요.`;
+export const factSentence = (fact: string) => `${fact.replace(/(는)?다\.\s+/g, "고, ")}는 장면이 그려져 있어요.`;
 
 /** The card's facts, most salient first. */
-const factsOf = (kb: KbCard) => [...kb.imagery.facts].sort((a, b) => a.salience - b.salience);
+export const factsOf = (kb: KbCard) => [...kb.imagery.facts].sort((a, b) => a.salience - b.salience);
 
-const firstSentence = (text: string) => text.split(/(?<=[.?!])\s+/)[0] ?? text;
+export const firstSentence = (text: string) => text.split(/(?<=[.?!])\s+/)[0] ?? text;
 
 function chips(ctx: TarotContext): string[] {
   return ctx.conditions.filter((c) => !UNSURE_OPTIONS.includes(c.value)).map((c) => c.value);
@@ -65,7 +65,7 @@ function angleText(card: TarotCardContext, angle: TopicAngle): string {
 const SECTION_BUDGET = 230;
 const count = (text: string) => text.replace(/\s/g, "").length;
 
-function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: number, withNote: boolean, extra: string[] = [], budget = SECTION_BUDGET): string {
+export function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: number, withNote: boolean, extra: string[] = [], budget = SECTION_BUDGET): string {
   const facts = factsOf(card.kb);
   const fact = facts[factIndex % facts.length]!;
   const required: string[] = [];
@@ -92,21 +92,21 @@ function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: number, 
 
 /** Writing-down suggestions are allowed once per reading; the mock avoids them in action fields. */
 const WRITES = /적어|적고|써\s?(보|두)|기록|메모/;
-const FALLBACK_ACTIONS = [
+export const FALLBACK_ACTIONS = [
   "지금 할 수 있는 일 하나를 골라 20분만 해 보세요.",
   "도움을 줄 만한 사람 한 명에게 먼저 물어보세요.",
   "필요한 정보를 한 가지만 찾아보세요.",
 ];
 
 /** The card's action hints that fit the orientation and topic, without writing-down tasks. */
-function actionsOf(card: TarotCardContext, ctx?: TarotContext): string[] {
+export function actionsOf(card: TarotCardContext, ctx?: TarotContext): string[] {
   return card.kb.actionHints
     .filter((a) => (a.orientation === card.orientation || a.orientation === "both") && (!ctx || onTopic(ctx, a.ko)) && !WRITES.test(a.ko))
     .map((a) => a.ko);
 }
 
 /** The first `n` candidates whose action verbs do not overlap. */
-function distinctActions(candidates: string[], n: number): string[] {
+export function distinctActions(candidates: string[], n: number): string[] {
   const picked: string[] = [];
   const used = new Set<string>();
   for (const candidate of candidates) {
@@ -246,12 +246,12 @@ export function mockTarotFollowUp(ctx: TarotContext, question = ""): FollowUpAns
 
 // ---- saju ----
 
-const joinList = (items: string[]) => items.join(", ");
+export const joinList = (items: string[]) => items.join(", ");
 /** Particle by the Hangul before any "(漢字)" suffix: josa("병화(丙火)", "은", "는"). */
 const bare = (word: string) => word.replace(/\([^)]*\)$/, "");
-const josa = (word: string, withFinal: string, withoutFinal: string) => `${word}${hasFinal(bare(word)) ? withFinal : withoutFinal}`;
+export const josa = (word: string, withFinal: string, withoutFinal: string) => `${word}${hasFinal(bare(word)) ? withFinal : withoutFinal}`;
 /** 로/으로 (ㄹ-final words take 로). */
-const ro = (word: string) => {
+export const ro = (word: string) => {
   const code = bare(word).charCodeAt(bare(word).length - 1) - 0xac00;
   return `${word}${hasFinal(bare(word)) && code % 28 !== 8 ? "으로" : "로"}`;
 };

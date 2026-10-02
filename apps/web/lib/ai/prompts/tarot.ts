@@ -1,5 +1,5 @@
 import "server-only";
-import { TOPICS_BY_WHO, composeQuestion, type DrawnCard, type Orientation, type TemplateId, type TopicDef, type When, type Who } from "@starlog/core";
+import { PREMIUM_TEMPLATES, TOPICS_BY_WHO, composeQuestion, type DrawnCard, type Orientation, type TemplateId, type TopicDef, type When, type Who } from "@starlog/core";
 import { kbCard, positionHint, topicAngles, type KbCard, type ReversedMode, type TopicAngle } from "@/lib/kb";
 import { HISTORY_RULE, historyBlock, sanitizeHistory, type HistoryItem } from "../history";
 import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
@@ -73,11 +73,13 @@ export const WHEN_KO: Record<When, string> = { today: "오늘", week: "이번 �
 
 const RELATIONAL_TEMPLATES: readonly TemplateId[] = ["relationship-contact", "relationship"];
 
+const isPremiumSpread = (templateId: TemplateId) => (PREMIUM_TEMPLATES as readonly string[]).includes(templateId);
+
 /** Relationship-only words, allowed per topic angle (topic drift check, spec: money question → money). */
 export const ROMANCE_WORDS: readonly string[] = ["재회", "썸", "고백", "연인", "애인", "이별", "헤어진", "헤어지", "연애", "데이트"];
 export const CONTACT_WORDS: readonly string[] = ["연락", "답장"];
 
-const POSITION_LENS: Record<string, string> = {
+export const POSITION_LENS: Record<string, string> = {
   "나의 마음": "이 일에 대해 내가 원하고 망설이는 것",
   "두 사람 사이": "두 사람 사이에 흐르는 분위기(상대의 속마음이 아니라 관계의 흐름)",
   "먼저 움직이면": "내가 먼저 움직였을 때 열리는 흐름과 그 조건",
@@ -96,6 +98,20 @@ const POSITION_LENS: Record<string, string> = {
   "나의 자리": "모임 안에서 내가 서 있는 자리",
   "도움이 될 태도": "모임에서 도움이 될 나의 태도",
   "오늘의 한 장": "오늘 하루의 결",
+  // 심층 타로 · 카드 10장 ("지금의 나" keeps its line above)
+  "가로막는 것": "지금의 나를 가로지르며 막거나 시험하는 것",
+  "바탕": "지금 상황 밑에 깔린 뿌리",
+  "지나온 것": "막 지나왔거나 지나가고 있는 일",
+  "바라는 것": "내가 의식적으로 바라거나 목표로 삼는 것",
+  "다가올 것": "가까운 시기에 다가올 흐름",
+  "나의 태도": "이 일을 대하는 나의 태도",
+  "주변": "주변 사람과 환경의 분위기(다른 사람의 속마음이 아니라 분위기)",
+  "바람과 걱정": "마음속에서 바라면서도 걱정하는 것",
+  "결과의 방향": "지금 흐름이 이어질 때 닿는 방향(정해진 결말이 아님)",
+  // 우리 사이 궁합 · 카드 5장 ("나의 마음", "두 사람 사이" keep their lines above)
+  "그 사람 쪽 흐름": "그 사람이 놓인 상황과 그쪽에서 흐르는 분위기(속마음이 아니라 겉으로 드러나는 흐름)",
+  "엇갈리는 지점": "두 사람이 다르게 보거나 어긋나기 쉬운 지점",
+  "함께 가꿀 방향": "두 사람이 함께 키워 갈 수 있는 쪽",
 };
 
 const REVERSED_MODE_KO: Record<ReversedMode, string> = { blocked: "막힘", internalized: "안으로", excess: "과함", waning: "약해짐" };
@@ -108,10 +124,29 @@ const ELEMENT_KO: Record<string, string> = { fire: "불", water: "물", air: "�
 export function resolveTopic(templateId: TemplateId, topicId: string, whoId?: Who): { topic: TopicDef; who: Who } | null {
   const whos = whoId ? [whoId] : (Object.keys(TOPICS_BY_WHO) as Who[]);
   for (const who of whos) {
-    const topic = TOPICS_BY_WHO[who]?.find((t) => t.id === topicId && t.template === templateId);
+    // A premium spread reads any topic of the chosen who (its route refuses the one-card daily topic);
+    // the standard spreads need their own template, exactly as before.
+    const topic = TOPICS_BY_WHO[who]?.find((t) => t.id === topicId && (t.template === templateId || isPremiumSpread(templateId)));
     if (topic) return { topic, who };
   }
   return null;
+}
+
+/** The KB slice of each drawn card, in the orientation drawn (shared by the standard and premium contexts). */
+export function cardContexts(drawn: DrawnCard[]): TarotCardContext[] {
+  return drawn.map((card) => {
+    const kb = kbCard(card.cardId);
+    return {
+      slot: card.slot,
+      position: card.position,
+      lens: POSITION_LENS[card.position] ?? card.position,
+      cardId: card.cardId,
+      orientation: card.orientation,
+      name: kb.names.ko,
+      kb,
+      reversedMode: card.orientation === "reversed" ? chooseReversedMode(kb, card.position) : null,
+    };
+  });
 }
 
 /** `word` at a word start, so 우연인 never reads as 연인 (topic drift check and KB filtering). */
@@ -160,9 +195,11 @@ export function buildTarotContext(templateId: TemplateId, drawn: DrawnCard[], in
   const allowed = new Set<string>();
   if (angles.includes("love")) ROMANCE_WORDS.concat(CONTACT_WORDS).forEach((w) => allowed.add(w));
   if (angles.includes("contact")) CONTACT_WORDS.forEach((w) => allowed.add(w));
-  const relational = RELATIONAL_TEMPLATES.includes(templateId);
+  // A premium spread reads with the frame of the topic's own spread (or the who chip's, for a typed topic).
+  const frame: TemplateId = isPremiumSpread(templateId) ? topic?.template ?? (who ? CUSTOM_TEMPLATE[who] : "self-flow") : templateId;
+  const relational = RELATIONAL_TEMPLATES.includes(frame);
   // Relationship spreads, the daily card and a custom topic may use relationship words; catalog topics may not drift into them.
-  const bannedWords = relational || templateId === "daily" || custom.topic
+  const bannedWords = relational || frame === "daily" || custom.topic
     ? []
     : [...ROMANCE_WORDS, ...CONTACT_WORDS].filter((w) => !allowed.has(w) && !mentionsWord(userText, w));
 
@@ -179,19 +216,7 @@ export function buildTarotContext(templateId: TemplateId, drawn: DrawnCard[], in
     bannedWords,
     custom,
     history: sanitizeHistory(extras.history),
-    cards: drawn.map((card) => {
-      const kb = kbCard(card.cardId);
-      return {
-        slot: card.slot,
-        position: card.position,
-        lens: POSITION_LENS[card.position] ?? card.position,
-        cardId: card.cardId,
-        orientation: card.orientation,
-        name: kb.names.ko,
-        kb,
-        reversedMode: card.orientation === "reversed" ? chooseReversedMode(kb, card.position) : null,
-      };
-    }),
+    cards: cardContexts(drawn),
   };
 }
 
@@ -234,7 +259,7 @@ export function tarotLockedToc(ctx: TarotContext): string[] {
 
 // ---- system prompt ----
 
-export const TAROT_SYSTEM = `너는 스타로그의 타로 리더예요. 라이더-웨이트-스미스 1909년 원판 카드로, 사용자가 뽑은 카드와 사용자가 직접 고른 상황만 근거로 풀이해요. 결과는 JSON 스키마로만 내요.
+export const TAROT_PREAMBLE = `너는 스타로그의 타로 리더예요. 라이더-웨이트-스미스 1909년 원판 카드로, 사용자가 뽑은 카드와 사용자가 직접 고른 상황만 근거로 풀이해요. 결과는 JSON 스키마로만 내요.
 
 # 입력 읽는 법
 - <task>는 이번에 쓸 결과물의 종류예요(teaser, reading, daily, followup). 아래 "작업별 형식"을 따라요.
@@ -279,11 +304,9 @@ ${STYLE_RULES}
 
 ${MODEL_BLIND_RULE}
 
-${HISTORY_RULE}
+${HISTORY_RULE}`;
 
-# 작업별 형식
-
-## teaser (무료 첫 장)
+const TAROT_FORMATS = `## teaser (무료 첫 장)
 - cards: <cards>의 모든 카드를 순서대로. position과 cardId는 입력 그대로 복사해요. keyword는 그 자리에서 그 카드를 요약한 짧은 명사구(6~18자, 카드 이름 제외, 그림에 기댄 표현)예요.
 - firstCard.heading: <headings>의 firstCard 문구를 그대로 써요.
 - firstCard.body: 첫 번째 카드만 다루는 완결된 문단 250~350자. 그림 사실 1~2문장 → 이 자리가 묻는 것 → 사용자의 칩이나 메모 반영(적어도 하나 인용) → 오늘 해 볼 수 있는 한 가지. 다른 카드의 풀이나 전체 결론은 쓰지 않아요(그건 전체 풀이에 있어요).
@@ -315,9 +338,12 @@ ${HISTORY_RULE}
 - kind: clarify(설명 보충), scenario(같은 질문 안의 가정), new_fact(사용자가 사실을 더하거나 고침), pushback(결론을 뒤집어 달라는 압박), new_question(다른 질문), out_of_scope(의료·법률·투자·다른 사람의 사생활) 중 하나.
 - answer: 150~450자. 같은 카드와 같은 읽기 방식을 이어서 써요. 새 카드를 만들지 않아요. 결론은 새 사실 없이 바꾸지 않고, 바꾼다면 사용자가 새로 알려 준 어떤 사실 때문에 무엇이 바뀌는지 한 문장으로 밝혀요. 확답·보장 요구에는 경계를 한 번 말하되 쓸모 있는 조언을 줘요. 다른 질문이면 새 카드로 따로 보는 편이 맞다고 짧게 안내해요.`;
 
+/** The standard tarot system prompt: the shared rules (TAROT_PREAMBLE) and the standard task formats. */
+export const TAROT_SYSTEM = `${TAROT_PREAMBLE}\n\n# 작업별 형식\n\n${TAROT_FORMATS}`;
+
 // ---- user messages ----
 
-function templateBlock(ctx: TarotContext, headings?: Record<string, string>): string {
+export function templateBlock(ctx: TarotContext, headings?: Record<string, string>): string {
   const lines: string[] = [];
   const topic = ctx.topic
     ? `${ctx.topic.ko} (${ctx.topic.phrase})`
@@ -335,7 +361,7 @@ function templateBlock(ctx: TarotContext, headings?: Record<string, string>): st
   return block.join("\n");
 }
 
-function userDataBlock(ctx: TarotContext): string {
+export function userDataBlock(ctx: TarotContext): string {
   const chips = ctx.conditions.length
     ? ctx.conditions.map((c) => `- ${c.label}: ${c.value}${UNSURE_OPTIONS.includes(c.value) ? " (모른다는 뜻, 인용하지 않아도 돼요)" : ""}`).join("\n")
     : "(고른 조건 없음)";
@@ -389,7 +415,7 @@ export function cardBrief(card: TarotCardContext, ctx: TarotContext): Record<str
   };
 }
 
-function cardsBlock(ctx: TarotContext): string {
+export function cardsBlock(ctx: TarotContext): string {
   const cards = ctx.cards.map((card) => `[${card.slot + 1}] 자리 "${card.position}" · cardId ${card.cardId}\n${JSON.stringify(cardBrief(card, ctx))}`);
   return `<cards>\n${cards.join("\n")}\n</cards>`;
 }

@@ -36,7 +36,8 @@ export interface Usage {
 }
 
 export type TaskName =
-  | "tarot-teaser" | "tarot-reading" | "tarot-daily" | "saju-teaser" | "saju-reading" | "followup";
+  | "tarot-teaser" | "tarot-reading" | "tarot-daily" | "saju-teaser" | "saju-reading" | "followup"
+  | "premium-teaser" | "deep-tarot-part" | "match-part" | "newyear-part" | "premium-followup";
 
 export interface GenerationTask<T> {
   name: TaskName;
@@ -44,6 +45,11 @@ export interface GenerationTask<T> {
   system: string;
   /** user data (inside delimited tags) and the task */
   user: string;
+  /**
+   * User data shared by a premium product's parts (cards, charts): sent before `user` as its own
+   * block with cache_control, so the next part reads it from the 5-minute cache.
+   */
+  shared?: string;
   schema: z.ZodType<T>;
   /** defaults to claude-opus-5-5 (lib/ai/config.ts decides per kind) */
   model?: ModelId;
