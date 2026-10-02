@@ -58,8 +58,15 @@ describe("home 별자리 인연 랭킹 tile line", () => {
 
   it("shows the sign being filled with its score so far, and that finishing it puts the owner on the ranking", () => {
     expect(homeRankLine(view({ filling: filling("aries", [87, 87]) }))).toBe("지금 양자리 174점 · 완성하면 순위에 올라요");
-    // the row's badge reads 0점 for a sign with no stars yet, and so does the line
-    expect(homeRankLine(view({ filling: filling("libra", []) }))).toBe("지금 천칭자리 0점 · 완성하면 순위에 올라요");
+  });
+
+  it("leaves out the ranking promise while the sign is filled by an owner whose ranking is hidden", () => {
+    expect(homeRankLine(view({ filling: filling("aries", [87, 87]), rankingPublic: false }))).toBe("지금 양자리 174점");
+  });
+
+  it("invites while the sign being filled has no star yet (just chosen, no friend yet), hidden ranking or not", () => {
+    expect(homeRankLine(view({ filling: filling("libra", []) }))).toBe(INVITE);
+    expect(homeRankLine(view({ filling: filling("libra", []), rankingPublic: false }))).toBe(INVITE);
   });
 
   it("puts a completed constellation before the one being filled (the next sign starts by itself)", () => {
