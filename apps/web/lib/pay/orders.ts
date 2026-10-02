@@ -201,19 +201,36 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
 export const RECONCILE_AFTER_MS = 30_000;
 /** After this, a payment Toss has not approved never will be: its 10-minute confirm window is over. */
 export const STALE_CONFIRM_MS = 15 * 60_000;
+/** Toss confirms a payment only within 10 minutes of the buyer's authentication (which came before our claim). */
+export const CONFIRM_WINDOW_MS = 10 * 60_000;
 
 /**
  * A `confirming` order whose confirm answer was lost or unknown: Toss decides.
+ * - IN_PROGRESS (authenticated, never confirmed) within CONFIRM_WINDOW_MS of our claim → our confirm
+ *   never arrived: it is sent once more under the same Idempotency-Key (confirm-<orderId>; Toss
+ *   replays the first answer if it did), and its answer is used as below.
  * - DONE → paid (or orphaned, for a deleted account).
  * - ABORTED, EXPIRED, CANCELED → failed.
  * - Not found, or still not done, after STALE_CONFIRM_MS → failed; before that it keeps waiting.
- * `force` skips the RECONCILE_AFTER_MS wait (account deletion, the Cron Trigger).
+ * `force` skips the RECONCILE_AFTER_MS wait (account deletion). `confirmAgain: false` never sends the
+ * confirm again (account deletion: it waits for the payment instead of charging an account it closes).
  */
-export async function reconcileConfirming(db: D1Binding, toss: TossClient, order: OrderRow, now: number, options: { force?: boolean } = {}): Promise<OrderRow> {
+export async function reconcileConfirming(
+  db: D1Binding,
+  toss: TossClient,
+  order: OrderRow,
+  now: number,
+  options: { force?: boolean; confirmAgain?: boolean } = {},
+): Promise<OrderRow> {
   if (order.status !== "confirming") return order;
   if (!options.force && now - order.updated_at < RECONCILE_AFTER_MS) return order;
-  const found = await lookUpByOrder(toss, order.id);
+  let found = await lookUpByOrder(toss, order.id);
   if (found === "unknown") return order;
+  const again = options.confirmAgain !== false && now - order.updated_at < CONFIRM_WINDOW_MS;
+  if (again && found !== "none" && found.status === "IN_PROGRESS" && found.paymentKey === order.payment_key) {
+    const authenticated = found;
+    found = await toss.confirm({ paymentKey: authenticated.paymentKey, orderId: order.id, amount: order.amount_krw }).catch(() => authenticated);
+  }
   if (found !== "none" && matches(order, found)) await markPaid(db, order, found, toss.mode, now);
   else if (found !== "none" && ["ABORTED", "EXPIRED", "CANCELED"].includes(found.status)) await setStatus(db, order.id, ["confirming"], "failed", now, found.status);
   else if (now - order.updated_at >= STALE_CONFIRM_MS) await setStatus(db, order.id, ["confirming"], "failed", now, found === "none" ? "NOT_FOUND_PAYMENT" : `UNCONFIRMED_${found.status}`);

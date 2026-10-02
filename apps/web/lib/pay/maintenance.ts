@@ -15,7 +15,8 @@ export const RECORD_KEEP_MS = 1827 * DAY_MS;
 export const ABANDON_AFTER_MS = 60 * 60_000;
 /**
  * Toss requests one run may make, well under the Worker's 50 subrequests: a confirming order takes
- * one, a refunding one up to three (look-up, cancel, look-up after a refusal).
+ * up to two (look-up, a lost confirm sent again), a refunding one up to three (look-up, cancel,
+ * look-up after a refusal).
  */
 export const TOSS_CALLS_PER_RUN = 30;
 /** No Toss work starts after this long into a run; whatever is left goes in the next one. */
@@ -174,7 +175,7 @@ export async function runMaintenance(db: D1Binding, toss: TossClient | null, now
       .bind(now - RECONCILE_AFTER_MS, ORDERS_PER_RUN)
       .all<OrderRow>();
     for (const order of confirming.results) {
-      if (!room(1)) break;
+      if (!room(2)) break;
       report.confirming++;
       const after = await attempt("cron.confirm_failed", () => reconcileConfirming(db, budget.client, order, now), order.id);
       // Moved behind only once Toss's window has surely closed: before that the order is simply waiting.

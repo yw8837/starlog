@@ -54,7 +54,7 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
   if (toss) {
     const { results } = await db.prepare(`SELECT * FROM orders WHERE user_id = ? AND ${IN_FLIGHT}`).bind(userId, mode).all<OrderRow>();
     for (const order of results) {
-      if (order.status === "confirming") await reconcileConfirming(db, toss, order, now, { force: true });
+      if (order.status === "confirming") await reconcileConfirming(db, toss, order, now, { force: true, confirmAgain: false });
       else await reconcileRefunding(db, toss, order, now);
     }
   }

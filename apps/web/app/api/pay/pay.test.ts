@@ -165,6 +165,37 @@ describe("confirm", () => {
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
   });
 
+  it("sends a lost confirm once more, under the same key, while Toss holds the payment authenticated", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    mockToss.failNext("confirm", new TossError(0, "NETWORK", "no response from Toss"));
+    expect((await confirmAs(b, orderId, "mock_lost_confirm")).status).toBe(409);
+    const authenticated = { paymentKey: "mock_lost_confirm", orderId, status: "IN_PROGRESS", totalAmount: 2900, balanceAmount: 2900, method: "카드", approvedAt: null, receiptUrl: null };
+    vi.spyOn(mockToss, "getPaymentByOrder").mockResolvedValueOnce(authenticated);
+    const confirmCall = vi.spyOn(mockToss, "confirm");
+    vi.setSystemTime(T0 + 31_000);
+    expect(await statusOf(b, orderId)).toMatchObject({ status: "paid" });
+    expect(confirmCall).toHaveBeenCalledWith({ paymentKey: "mock_lost_confirm", orderId, amount: 2900 });
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots WHERE order_id = ?").bind(orderId).first()).toEqual({ n: 1 });
+  });
+
+  it("does not send it again once Toss's 10-minute confirm window is over", async () => {
+    useTestDb();
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    mockToss.failNext("confirm", new TossError(0, "NETWORK", "no response from Toss"));
+    expect((await confirmAs(b, orderId, "mock_too_late")).status).toBe(409);
+    const authenticated = { paymentKey: "mock_too_late", orderId, status: "IN_PROGRESS", totalAmount: 2900, balanceAmount: 2900, method: "카드", approvedAt: null, receiptUrl: null };
+    vi.spyOn(mockToss, "getPaymentByOrder").mockResolvedValue(authenticated);
+    const confirmCall = vi.spyOn(mockToss, "confirm");
+    vi.setSystemTime(T0 + 10 * 60_000);
+    expect(await statusOf(b, orderId)).toMatchObject({ status: "confirming" });
+    vi.setSystemTime(T0 + 15 * 60_000);
+    expect(await statusOf(b, orderId)).toMatchObject({ status: "failed" });
+    expect(confirmCall).not.toHaveBeenCalled();
+  });
+
   it("never reads 409 processing as a refusal: the order waits until Toss's window has surely closed", async () => {
     useTestDb();
     const b = await loggedIn();

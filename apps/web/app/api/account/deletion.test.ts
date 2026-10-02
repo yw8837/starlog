@@ -203,6 +203,20 @@ describe("account deletion", () => {
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
   });
 
+  it("never sends a lost confirm again while deleting: it waits for the payment instead", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    const { orderId } = (await (await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true }, origin: true })).json()) as { orderId: string };
+    mockToss.failNext("confirm", new TossError(0, "NETWORK", "no response from Toss"));
+    expect((await b.send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_waiting", orderId, amount: 2900 }, origin: true })).status).toBe(409);
+    const authenticated = { paymentKey: "mock_waiting", orderId, status: "IN_PROGRESS", totalAmount: 2900, balanceAmount: 2900, method: "카드", approvedAt: null, receiptUrl: null };
+    vi.spyOn(mockToss, "getPaymentByOrder").mockResolvedValue(authenticated);
+    const confirmCall = vi.spyOn(mockToss, "confirm");
+    expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=pending");
+    expect(confirmCall).not.toHaveBeenCalled();
+    expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
+  });
+
   it("waits while a reading is being opened", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");

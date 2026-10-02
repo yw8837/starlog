@@ -160,11 +160,13 @@ describe("maintenance", () => {
     const total = TOSS_CALLS_PER_RUN + 5;
     for (let n = 1; n <= total; n++) await insertOrder(db, { id: oid(n), userId, status: "confirming", at: T0 - 60 * MIN + n });
     const lookUps = vi.spyOn(mockToss, "getPaymentByOrder");
-    expect(await report()).toMatchObject({ confirming: TOSS_CALLS_PER_RUN, refunding: 0 });
-    expect(lookUps).toHaveBeenCalledTimes(TOSS_CALLS_PER_RUN);
+    // A confirming order may take two calls (the look-up, then a lost confirm sent again): each starts only with room for both.
+    const first = await report();
+    expect(first).toMatchObject({ confirming: TOSS_CALLS_PER_RUN - 1, refunding: 0 });
+    expect(lookUps).toHaveBeenCalledTimes(TOSS_CALLS_PER_RUN - 1);
     expect(TOSS_CALLS_PER_RUN).toBeLessThanOrEqual(30);
     expect(await one(db, `SELECT status FROM orders WHERE id = '${oid(total)}'`)).toEqual({ status: "confirming" });
-    expect(await report()).toMatchObject({ confirming: 5 });
+    expect(await report()).toMatchObject({ confirming: total - first.confirming! });
     expect(await one(db, "SELECT COUNT(*) AS n FROM orders WHERE status = 'confirming'")).toEqual({ n: 0 });
   });
 
