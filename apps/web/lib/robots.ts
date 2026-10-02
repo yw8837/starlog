@@ -8,7 +8,7 @@ import { SITE } from "./config";
  */
 
 /** Path prefixes no crawler may fetch. `/b` itself is a noindex page; `/b/<code>` are friend invites. */
-export const ROBOTS_DISALLOW = ["/api/", "/chapter", "/story", "/me", "/dev", "/invite", "/bonds", "/b/"] as const;
+export const ROBOTS_DISALLOW = ["/api/", "/chapter", "/story", "/me", "/dev", "/invite", "/bonds", "/b/", "/pay"] as const;
 
 /** Longest match wins, so the share images stay fetchable under the disallowed /api/. */
 export const ROBOTS_ALLOW = ["/", "/api/og/"] as const;

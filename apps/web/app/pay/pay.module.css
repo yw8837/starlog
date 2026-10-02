@@ -1,0 +1,126 @@
+/* Checkout, success and fail: one column, the unlock sheet's look, text ≥ 13px. */
+.screen {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 40px;
+}
+
+.head {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.title {
+  color: var(--ink);
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.price {
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: var(--fs-title);
+  font-weight: 700;
+}
+
+/* What the reading holds: the owner's three scope lines. */
+.includes {
+  display: grid;
+  gap: 6px;
+  width: fit-content;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.includes li {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+.includes li::before {
+  content: "✓";
+  margin-right: 8px;
+  color: var(--gold);
+}
+
+/* The 청약철회 and minors' notice, read before the box is ticked. */
+.notice {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: rgba(13, 10, 38, 0.45);
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.notice a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--gold);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.noticeTitle {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+/* Toss draws its payment methods and terms here on a white card (its own look). */
+.widget {
+  min-height: 120px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.mock {
+  padding: 12px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 16px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
+.error {
+  color: var(--error);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  text-align: center;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+}
+
+/* An answer card (failed, paid elsewhere, still checking), like the unlock sheet. */
+.panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 24px var(--gutter);
+  border: 1px solid rgba(243, 220, 161, 0.22);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #2c2670 0%, #1d1850 100%);
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.status {
+  padding: 48px 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+  text-align: center;
+}

@@ -77,7 +77,7 @@ describe("robots.txt", () => {
 
   it("keeps the API and personal pages out, but lets link previews fetch /api/og/", () => {
     const disallow = values("Disallow");
-    for (const path of ["/api/", "/chapter", "/story", "/me", "/dev", "/invite", "/bonds", "/b/"]) expect(disallow).toContain(path);
+    for (const path of ["/api/", "/chapter", "/story", "/me", "/dev", "/invite", "/bonds", "/b/", "/pay"]) expect(disallow).toContain(path);
     expect(values("Allow")).toEqual(["/", "/api/og/"]);
   });
 
