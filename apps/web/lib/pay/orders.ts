@@ -120,13 +120,16 @@ export const ORPHAN_MESSAGE = "탈퇴한 계정이라 이 결제는 바로 취�
 /** Shown for an order the account deletion closed before it was paid (eraseDeletedAccount): nothing was charged. */
 export const CLOSED_BY_DELETION_MESSAGE = "탈퇴한 계정의 주문이라 결제하지 않았어요. 청구된 금액은 없어요.";
 
-/** `orphaned`: the payment went through for a deleted account; the caller cancels it (Task 8). */
+/**
+ * `orphaned`: this very call recorded a payment for a deleted account; the caller cancels it (Task 8).
+ * A repeat (a reload of the success page) only gets the message: the Cron Trigger retries the cancel.
+ */
 export type ConfirmOutcome = { ok: true; order: OrderRow } | { ok: false; code: "PAY_FAILED" | "PAY_PENDING" | "BAD_REQUEST"; message?: string; orphaned?: boolean };
 
 async function outcomeOfPaid(db: D1Binding, toss: TossClient, order: OrderRow, payment: TossPayment, now: number): Promise<ConfirmOutcome> {
   const result = await markPaid(db, order, payment, toss.mode, now);
   const current = (await orderById(db, order.id)) ?? order;
-  if (result === "orphaned" || current.fail_code === "ACCOUNT_DELETED") return { ok: false, code: "PAY_FAILED", message: ORPHAN_MESSAGE, orphaned: true };
+  if (result === "orphaned" || current.fail_code === "ACCOUNT_DELETED") return { ok: false, code: "PAY_FAILED", message: ORPHAN_MESSAGE, orphaned: result === "orphaned" };
   return { ok: true, order: current };
 }
 
@@ -136,7 +139,8 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
   if (order.fail_code === "ACCOUNT_DELETED") {
     // Closed by the deletion before Toss confirmed anything: never confirmed, so nothing was charged.
     if (order.status === "failed") return { ok: false, code: "PAY_FAILED", message: CLOSED_BY_DELETION_MESSAGE };
-    return { ok: false, code: "PAY_FAILED", message: ORPHAN_MESSAGE, orphaned: true };
+    // Orphaned by an earlier call: its cancel was sent then, and the Cron Trigger retries it.
+    return { ok: false, code: "PAY_FAILED", message: ORPHAN_MESSAGE };
   }
   if (order.status === "paid" || order.status === "refunding" || order.status === "refunded") return { ok: true, order };
   if (order.status === "failed") return { ok: false, code: "PAY_FAILED" };

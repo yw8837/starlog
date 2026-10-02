@@ -156,6 +156,26 @@ describe("refunds", () => {
   });
 });
 
+describe("payments for deleted accounts", () => {
+  it("sends the cancel only from the confirm that found the payment orphaned, never from a repeat", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const { orderId } = (await (await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", ack: true }, origin: true })).json()) as { orderId: string };
+    await db.prepare("UPDATE users SET deleted_at = ?").bind(T0).run();
+    mockToss.failNext("cancel", new TossError(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", ""));
+    const cancel = vi.spyOn(mockToss, "cancel");
+    const send = () => browser("192.0.2.81").send(confirm, "/api/pay/confirm", { body: { paymentKey: "mock_orphan_twice", orderId, amount: 2900 }, origin: true });
+    expect((await send()).status).toBe(402);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(await orderRow(db, orderId)).toEqual({ status: "refunding", cancel_attempt: 1 });
+    const again = await send();
+    expect(again.status).toBe(402);
+    expect(await again.json()).toMatchObject({ code: "PAY_FAILED", message: expect.stringContaining("탈퇴") });
+    // The Cron Trigger retries the cancel (reconcileRefunding); a reload of the success page does not.
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("webhook", () => {
   it("re-queries Toss and settles a payment whose confirm answer never arrived", async () => {
     const db = useTestDb();

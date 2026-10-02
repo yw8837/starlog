@@ -30,7 +30,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!order) return errorResponse("BAD_REQUEST");
   const outcome = await confirmOrder(ctx.db, toss, { order, paymentKey: body.data.paymentKey, amount: body.data.amount, now: ctx.now });
   if (!outcome.ok && outcome.orphaned) {
-    // Paid for an account deleted meanwhile: never granted, cancelled now (the Cron Trigger retries a failure).
+    // This call found the payment for an account deleted meanwhile: never granted, cancelled now, once
+    // (a repeat of this POST does not send it again; the Cron Trigger retries a failure).
     const current = await orderById(ctx.db, order.id);
     if (current) await refundOrphan(ctx.db, toss, current, ctx.now);
   }
