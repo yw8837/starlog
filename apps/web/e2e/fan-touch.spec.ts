@@ -30,7 +30,14 @@ async function spotOn(page: Page, n: number) {
 const pickedFan = (page: Page) => page.locator('[data-fan-index][aria-pressed="true"]');
 const fanIndexAt = (page: Page, n: number) => page.locator("[data-fan-index]").nth(n).getAttribute("data-fan-index");
 
+/**
+ * The draw page deals only for a question (a visit without one goes back to the builder), so each test
+ * starts with one saved just now, as screens.spec.ts does (a 30-minute-old flow starts clean).
+ */
+const FLOW = { who: "us", topicId: "contact", when: "month", conditions: { relation: "알아가는 중", "recent-contact": "뜸해짐" }, note: "" };
+
 test.beforeEach(async ({ page }) => {
+  await page.addInitScript((value) => window.sessionStorage.setItem("starlog.tarot-flow", value), JSON.stringify({ savedAt: Date.now(), ...FLOW }));
   await page.goto("/tarot/draw?instant=1");
   await expect(page.locator("[data-fan-index]")).toHaveCount(21);
   await settleAnimations(page);
