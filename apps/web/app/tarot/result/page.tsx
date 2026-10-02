@@ -12,7 +12,11 @@ export default async function TarotResultPage({ searchParams }: PageProps<"/taro
     <div className="page-shell">
       <NightSky fixed moon={false} />
       <main className="page-col page-wide">
-        <FreeResult instant={query.instant === "1"} />
+        <FreeResult
+          instant={query.instant === "1"}
+          autoUnlock={query.unlock === "paid" || query.unlock === "free" ? query.unlock : null}
+          loginFlag={typeof query.login === "string" ? query.login : null}
+        />
       </main>
       <Footer />
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
@@ -13,18 +13,27 @@ import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { ShareButton } from "@/components/ui/ShareButton";
+import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
 import { resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
+import { standardProduct } from "@/lib/pay/catalog";
+import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
+import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { commitQuota } from "@/lib/reading/api";
-import { describeApiError } from "@/lib/reading/errors";
+import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { TarotInput, TarotReadingResponse, TarotTeaserData } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storage/betaUsage";
-import { historyFor, listChapters, saveChapter, useChapters } from "@/lib/storage/chapters";
+import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
+import { LATER_CHECK_DELAYS, checkDelivery, type DeliveryCheck } from "@/lib/storage/sync";
 import s from "./FreeResult.module.css";
 import { isTarotReadingResponse, isTarotTeaser } from "@/lib/reading/validate";
+
+const RETURN_TO = "/tarot/result";
+/** Errors after which the server may still have saved the reading (M4). */
+const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
 
 /** The reading input with up to 3 recent readings on this device (omitted when there are none). */
 function withHistory(input: TarotInput): TarotInput {
@@ -37,8 +46,11 @@ function withHistory(input: TarotInput): TarotInput {
  * read in full (the free teaser), the rest listed, and the unlock. Opening writes the full
  * reading, saves it on this device and goes to it. Sharing sends the site and the card names,
  * never the question or note.
+ *
+ * The sheet offers what this device may use (lib/pay/offer.ts): the 오픈 기념 reading, a login, a
+ * purchase, 별조각 or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
  */
-export function FreeResult({ instant }: { instant: boolean }) {
+export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { instant: boolean; autoUnlock?: UnlockMethod | null; loginFlag?: string | null }) {
   const router = useRouter();
   const { flow, setFlow } = useFlowState();
   const chapters = useChapters();
@@ -79,7 +91,16 @@ export function FreeResult({ instant }: { instant: boolean }) {
   }, [teaserKey, attempt, runTeaser, cancelTeaser]);
 
   const openedId = draw?.chapterId && chapters?.some((chapter) => chapter.id === draw.chapterId) ? draw.chapterId : undefined;
-  const unlockError = unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error) : null;
+  const account = useAccount();
+  const product = standardProduct("tarot");
+  const offer = unlockOffer(account, product, SITE.price.signupGiftFree);
+  const [method, setMethod] = useState<UnlockMethod>("opening");
+  const [creditView, setCreditView] = useState<ErrorView | null>(null);
+  const checkAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => checkAbort.current?.abort(), []);
+  const context = method === "paid" ? "paid" : method === "free" ? "stardust" : "reading";
+  const unlockError = creditView ?? (unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error, context) : null);
+  const loginNote = loginMessage(loginFlag);
 
   // After a failed unlock the result comes back; bring the reason into view and focus it.
   useEffect(() => {
@@ -89,17 +110,64 @@ export function FreeResult({ instant }: { instant: boolean }) {
     reason?.focus({ preventScroll: true });
   }, [unlockError]);
 
-  const unlock = async () => {
+  /** This flow's reading: the same question and the very same cards. */
+  const sameFlow = (chapter: unknown) => {
+    const c = chapter as { kind?: string; question?: string; cards?: Array<{ cardId: string; orientation: string }> };
+    return (
+      c.kind === "tarot" &&
+      c.question === input?.question &&
+      JSON.stringify(c.cards?.map((x) => [x.cardId, x.orientation])) === JSON.stringify(draw?.cards.map((x) => [x.cardId, x.orientation]))
+    );
+  };
+
+  /** M4: after a cut-off paid or 별조각 opening, find out what happened before saying anything. */
+  const settle = async (chosen: "paid" | "free", startedAt: number) => {
+    checkAbort.current?.abort();
+    const controller = new AbortController();
+    checkAbort.current = controller;
+    const credit = chosen === "paid" ? "paid" : "stardust";
+    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0 };
+    const apply = (check: DeliveryCheck): boolean => {
+      if (check.status === "delivered") {
+        mergeServerReadings([check.reading]);
+        void refreshAccount();
+        router.push(`/chapter/${check.reading.id}`);
+        return true;
+      }
+      if (check.status === "kept") {
+        setCreditView(creditKept(credit));
+        void refreshAccount();
+        return true;
+      }
+      return false;
+    };
+    setCreditView(CREDIT_CHECKING);
+    if (apply(await checkDelivery(flow, { signal: controller.signal }))) return;
+    if (controller.signal.aborted) return;
+    setCreditView(creditUnknown(credit));
+    apply(await checkDelivery(flow, { delays: LATER_CHECK_DELAYS, signal: controller.signal }));
+  };
+
+  const unlock = async (chosen: UnlockMethod) => {
     if (!draw || !input || !summary) return;
+    setMethod(chosen);
+    setCreditView(null);
+    checkAbort.current?.abort();
     window.scrollTo(0, 0);
     const plan = progressPlan("tarot-reading", { positions });
-    const result = await unlockGen.run("/api/tarot/reading", { drawToken: draw.drawToken, input: withHistory(input) }, plan, isTarotReadingResponse);
+    const body = { drawToken: draw.drawToken, input: withHistory(input), ...(chosen === "opening" ? {} : { unlock: { method: chosen } }) };
+    const startedAt = Date.now();
+    const result = await unlockGen.run("/api/tarot/reading", body, plan, isTarotReadingResponse);
     if (!result) return;
     if (!result.ok) {
       if (result.error.code === "BETA_LIMIT") markDayUsedUp();
+      if (result.error.code === "LOGIN_REQUIRED") router.push(loginHref(RETURN_TO));
+      if (result.error.code === "NO_CREDIT" || result.error.code === "PAYMENT_REQUIRED") void refreshAccount();
+      if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(result.error.code)) void settle(chosen, startedAt);
       return;
     }
-    countFullReading();
+    if (chosen === "opening") countFullReading();
+    else void refreshAccount();
     const keywords = new Map(teaser?.cards.map((card) => [card.position, card.keyword]));
     // Kept on this device first; only then is the quota cookie set.
     const { chapter } = saveChapter({
@@ -113,11 +181,25 @@ export function FreeResult({ instant }: { instant: boolean }) {
       }),
       reading: result.data.reading,
       chapterToken: result.data.chapterToken,
+      ...(result.data.readingId ? { serverId: result.data.readingId } : {}),
     });
     setFlow((prev) => (prev.draw ? { ...prev, draw: { ...prev.draw, chapterId: chapter.id } } : prev));
     if (result.commit) void commitQuota(result.commit);
     router.push(`/chapter/${chapter.id}`);
   };
+
+  // After checkout (?unlock=paid) or a 별조각 login (?unlock=free): open once, as soon as the
+  // teaser and the account are known and the offer matches. Without a draw (the flow was lost on
+  // another browser) nothing runs, and the purchase waits in 내 정보.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!autoUnlock || autoStarted.current || !teaser || account === undefined || openedId) return;
+    if (autoUnlock === "paid" && offer.mode !== "open-paid") return;
+    if (autoUnlock === "free" && offer.mode !== "stardust") return;
+    autoStarted.current = true;
+    router.replace(withFlags(RETURN_TO, { instant }));
+    void unlock(autoUnlock);
+  });
 
   const teaserState = teaserGen.state;
   const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
@@ -169,9 +251,14 @@ export function FreeResult({ instant }: { instant: boolean }) {
               <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars.tarot)}자`} />
               <UnlockSheet
                 kind="tarot"
+                offer={offer}
                 remaining={remaining}
-                onUnlock={unlock}
-                error={unlockError}
+                onUnlock={(chosen) => void unlock(chosen)}
+                loginHref={loginHref(RETURN_TO)}
+                payHref={checkoutHref("tarot", RETURN_TO)}
+                owner={account?.owner}
+                refundHref={method === "paid" && creditView?.action === "retry" ? "/me#orders" : undefined}
+                error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
                 redrawHref={withFlags("/tarot/draw", { instant })}
                 editHref="/tarot/new"
                 openedHref={openedId ? `/chapter/${openedId}` : undefined}

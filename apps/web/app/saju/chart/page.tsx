@@ -6,12 +6,16 @@ import { SajuChartView } from "./SajuChartView";
 // A personal chart stays out of search (spec section 10).
 export const metadata: Metadata = { title: "나의 명식", robots: { index: false, follow: false } };
 
-export default function SajuChartPage() {
+export default async function SajuChartPage({ searchParams }: PageProps<"/saju/chart">) {
+  const query = await searchParams;
   return (
     <div className="page-shell">
       <NightSky fixed moon={false} seed={11} />
       <main className="page-col page-wide">
-        <SajuChartView />
+        <SajuChartView
+          autoUnlock={query.unlock === "paid" || query.unlock === "free" ? query.unlock : null}
+          loginFlag={typeof query.login === "string" ? query.login : null}
+        />
       </main>
       <Footer />
     </div>

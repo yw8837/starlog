@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { AiNote } from "@/components/reading/AiNote";
@@ -16,18 +16,23 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { Button } from "@/components/ui/Button";
+import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
+import { standardProduct } from "@/lib/pay/catalog";
+import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
+import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { commitQuota } from "@/lib/reading/api";
-import { describeApiError } from "@/lib/reading/errors";
+import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuContext, SajuReadingResponse, SajuTeaserData } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { sajuContextBody, useSajuContext } from "@/lib/sajuFlow";
-import type { SajuForm } from "@/lib/sajuForm";
+import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storage/betaUsage";
-import { historyFor, listChapters, saveChapter, useChapters } from "@/lib/storage/chapters";
+import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
+import { LATER_CHECK_DELAYS, checkDelivery, type DeliveryCheck } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
 import { NEW_SAJU_HREF } from "@/lib/freshStart";
 import { isSajuReadingResponse, isSajuTeaser } from "@/lib/reading/validate";
@@ -40,12 +45,19 @@ function sajuBody(birth: SajuForm, context: SajuContext) {
 
 const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
+const RETURN_TO = "/saju/chart";
+/** Errors after which the server may still have saved the reading (M4). */
+const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
+
 /**
  * Step 2/2: the chart computed from the saved input (here, in the browser), then the free
  * reading written for it and the unlock. Opening writes the full reading, saves it on this device
  * and goes to it. With nothing saved, an example chart asks for the user's own birth data.
+ *
+ * The sheet offers what this device may use (lib/pay/offer.ts): the 오픈 기념 reading, a login, a
+ * purchase, 별조각 or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
  */
-export function SajuChartView() {
+export function SajuChartView({ autoUnlock = null, loginFlag = null }: { autoUnlock?: UnlockMethod | null; loginFlag?: string | null } = {}) {
   const router = useRouter();
   const { form, ready, saved, result } = useSajuChart();
   const context = useSajuContext();
@@ -80,7 +92,16 @@ export function SajuChartView() {
         ?.filter((c) => c.kind === "saju" && sameJson(c.birth, form) && sameJson(sajuContextBody(c.context ?? {}), sajuContextBody(context)))
         .pop()
     : undefined;
-  const unlockError = unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error) : null;
+  const account = useAccount();
+  const product = standardProduct("saju");
+  const offer = unlockOffer(account, product, SITE.price.signupGiftFree);
+  const [method, setMethod] = useState<UnlockMethod>("opening");
+  const [creditView, setCreditView] = useState<ErrorView | null>(null);
+  const checkAbort = useRef<AbortController | null>(null);
+  useEffect(() => () => checkAbort.current?.abort(), []);
+  const errorContext = method === "paid" ? "paid" : method === "free" ? "stardust" : "reading";
+  const unlockError = creditView ?? (unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error, errorContext) : null);
+  const loginNote = loginMessage(loginFlag);
 
   // After a failed unlock, bring the reason into view and focus it.
   useEffect(() => {
@@ -90,17 +111,65 @@ export function SajuChartView() {
     reason?.focus({ preventScroll: true });
   }, [unlockError]);
 
-  const unlock = async () => {
+  /** M4: after a cut-off paid or 별조각 opening, find out what happened before saying anything. */
+  const settle = async (chosen: "paid" | "free", startedAt: number, birth: SajuForm) => {
+    checkAbort.current?.abort();
+    const controller = new AbortController();
+    checkAbort.current = controller;
+    const credit = chosen === "paid" ? "paid" : "stardust";
+    // This flow's reading: the same birth data (compared field by field, whatever the key order).
+    const sent = sanitizeSajuForm(birth);
+    const sameFlow = (chapter: unknown) => {
+      const c = chapter as { kind?: string; birth?: unknown };
+      return c.kind === "saju" && sent !== null && sameJson(sanitizeSajuForm(c.birth), sent);
+    };
+    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0 };
+    const apply = (check: DeliveryCheck): boolean => {
+      if (check.status === "delivered") {
+        mergeServerReadings([check.reading]);
+        void refreshAccount();
+        router.push(`/chapter/${check.reading.id}`);
+        return true;
+      }
+      if (check.status === "kept") {
+        setCreditView(creditKept(credit));
+        void refreshAccount();
+        return true;
+      }
+      return false;
+    };
+    setCreditView(CREDIT_CHECKING);
+    if (apply(await checkDelivery(flow, { signal: controller.signal }))) return;
+    if (controller.signal.aborted) return;
+    setCreditView(creditUnknown(credit));
+    apply(await checkDelivery(flow, { delays: LATER_CHECK_DELAYS, signal: controller.signal }));
+  };
+
+  const unlock = async (chosen: UnlockMethod) => {
     if (!own || !teaser) return;
+    setMethod(chosen);
+    setCreditView(null);
+    checkAbort.current?.abort();
     window.scrollTo(0, 0);
     const plan = progressPlan("saju-reading", { sections: SAJU_PROLOGUE_SECTIONS });
-    const res = await unlockGen.run("/api/saju/reading", sajuBody(form, context), plan, isSajuReadingResponse);
+    // A reading opened with credit (or the owner pass, when logged in) is saved to the account with
+    // the teaser's title and summary.
+    const body = {
+      ...sajuBody(form, context),
+      ...(chosen === "opening" ? {} : { unlock: { method: chosen }, display: { title: teaser.title, summary: teaser.summary } }),
+    };
+    const startedAt = Date.now();
+    const res = await unlockGen.run("/api/saju/reading", body, plan, isSajuReadingResponse);
     if (!res) return;
     if (!res.ok) {
       if (res.error.code === "BETA_LIMIT") markDayUsedUp();
+      if (res.error.code === "LOGIN_REQUIRED") router.push(loginHref(RETURN_TO));
+      if (res.error.code === "NO_CREDIT" || res.error.code === "PAYMENT_REQUIRED") void refreshAccount();
+      if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(res.error.code)) void settle(chosen, startedAt, form);
       return;
     }
-    countFullReading();
+    if (chosen === "opening") countFullReading();
+    else void refreshAccount();
     const contextBody = sajuContextBody(context);
     // Kept on this device first; only then is the quota cookie set.
     const { chapter } = saveChapter({
@@ -111,10 +180,24 @@ export function SajuChartView() {
       ...(Object.keys(contextBody).length > 0 ? { context: contextBody } : {}),
       reading: res.data.reading,
       chapterToken: res.data.chapterToken,
+      ...(res.data.readingId ? { serverId: res.data.readingId } : {}),
     });
     if (res.commit) void commitQuota(res.commit);
     router.push(`/chapter/${chapter.id}`);
   };
+
+  // After checkout (?unlock=paid) or a 별조각 login (?unlock=free): open once, as soon as the
+  // teaser and the account are known and the offer matches. Without the saved birth data (another
+  // browser) nothing runs, and the purchase waits in 내 정보.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!autoUnlock || autoStarted.current || !own || !teaser || account === undefined || opened) return;
+    if (autoUnlock === "paid" && offer.mode !== "open-paid") return;
+    if (autoUnlock === "free" && offer.mode !== "stardust") return;
+    autoStarted.current = true;
+    router.replace(RETURN_TO);
+    void unlock(autoUnlock);
+  });
 
   const teaserState = teaserGen.state;
   const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
@@ -171,7 +254,19 @@ export function SajuChartView() {
           </footer>
         </Paper>
         <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars.saju)}자`} />
-        <UnlockSheet kind="saju" remaining={remaining} onUnlock={unlock} error={unlockError} editHref="/saju/new" openedHref={opened ? `/chapter/${opened.id}` : undefined} />
+        <UnlockSheet
+          kind="saju"
+          offer={offer}
+          remaining={remaining}
+          onUnlock={(chosen) => void unlock(chosen)}
+          loginHref={loginHref(RETURN_TO)}
+          payHref={checkoutHref("saju", RETURN_TO)}
+          owner={account?.owner}
+          refundHref={method === "paid" && creditView?.action === "retry" ? "/me#orders" : undefined}
+          error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
+          editHref="/saju/new"
+          openedHref={opened ? `/chapter/${opened.id}` : undefined}
+        />
         <AiNote />
       </>
     );

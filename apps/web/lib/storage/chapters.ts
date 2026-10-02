@@ -41,6 +41,8 @@ interface ChapterBase {
   /** Follow-up questions still allowed (the server's count after the last answer). */
   followUpsLeft: number;
   checkin?: Checkin;
+  /** The account copy's id (Tasks 10–11): follow-ups update it there too. */
+  serverId?: string;
 }
 
 export interface TarotChapter extends ChapterBase {
@@ -104,6 +106,7 @@ export function parseChapter(value: unknown): StoredChapter | null {
   };
   const checkin = parseCheckin(value.checkin);
   if (checkin) base.checkin = checkin;
+  if (isString(value.serverId) && /^[a-z0-9]{20}$/.test(value.serverId)) base.serverId = value.serverId;
   const reading = value.reading;
 
   if (value.kind === "tarot") {
@@ -219,6 +222,59 @@ export const hasChapterEntry = (id: string) => rawEntries().some((entry) => idOf
 
 export function deleteChapter(id: string) {
   store.save({ v: 1, chapters: rawEntries().filter((entry) => idOf(entry) !== id) });
+}
+
+type AccountReading = { id: string; createdAt: number; chapter: unknown };
+
+const fromAccount = (remote: AccountReading, id: string) =>
+  isRecord(remote.chapter) ? parseChapter({ ...remote.chapter, id, serverId: remote.id, createdAt: remote.createdAt }) : null;
+
+/**
+ * Brings readings saved in the account onto this device (a reading opened elsewhere, a delivery
+ * this page lost, follow-ups answered on another device). A new one keeps its account id as its local
+ * id. A known one only takes newer follow-up turns. Returns how many chapters were added.
+ */
+export function mergeServerReadings(readings: readonly AccountReading[]): number {
+  const entries = rawEntries();
+  const byServerId = new Map(readings.map((remote) => [remote.id, remote]));
+  let changed = false;
+  const updated = entries.map((entry) => {
+    const chapter = parseChapter(entry);
+    const remote = chapter?.serverId ? byServerId.get(chapter.serverId) : undefined;
+    const parsed = chapter && remote ? fromAccount(remote, chapter.id) : null;
+    if (!chapter || !parsed || parsed.turns.length <= chapter.turns.length) return entry;
+    changed = true;
+    return { ...chapter, turns: parsed.turns, chapterToken: parsed.chapterToken, followUpsLeft: parsed.followUpsLeft };
+  });
+  const known = new Set<string>();
+  for (const entry of entries) {
+    const id = idOf(entry);
+    if (id) known.add(id);
+    const serverId = isRecord(entry) && isString(entry.serverId) ? entry.serverId : null;
+    if (serverId) known.add(serverId);
+  }
+  const fresh: StoredChapter[] = [];
+  for (const remote of readings) {
+    if (known.has(remote.id)) continue;
+    const parsed = fromAccount(remote, remote.id);
+    if (!parsed) continue;
+    fresh.push(parsed);
+    known.add(remote.id);
+  }
+  if (changed || fresh.length) store.save({ v: 1, chapters: [...updated, ...fresh] });
+  return fresh.length;
+}
+
+/** After the account's copies were deleted: this device's chapters stand alone again. */
+export function forgetServerIds() {
+  store.save({
+    v: 1,
+    chapters: rawEntries().map((entry) => {
+      if (!isRecord(entry) || !("serverId" in entry)) return entry;
+      const { serverId: _serverId, ...rest } = entry;
+      return rest;
+    }),
+  });
 }
 
 export function clearChapters() {

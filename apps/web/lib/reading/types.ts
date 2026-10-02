@@ -48,6 +48,8 @@ export interface TarotReadingData {
 export interface TarotReadingResponse {
   reading: TarotReadingData;
   chapterToken: string;
+  /** The account copy's id, when the reading was saved to the account. */
+  readingId?: string;
 }
 
 export interface SajuTeaserData {
@@ -66,6 +68,8 @@ export interface SajuReadingData {
 export interface SajuReadingResponse {
   reading: SajuReadingData;
   chapterToken: string;
+  /** The account copy's id, when the reading was saved to the account. */
+  readingId?: string;
 }
 
 export interface DailyData {

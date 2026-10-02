@@ -49,7 +49,16 @@ function askFollowUp(id: string, question: string): Promise<AskResult> {
     if (!chapter) return { error: { title: "이 기기에서 기록을 찾지 못했어요", action: null } };
     // Only an answer with the right shape is written into the reading (a malformed one would
     // overwrite the chapter token and make the whole reading unreadable).
-    const result = await postGeneration<FollowUpData>("/api/followup", { chapterToken: chapter.chapterToken, reading: chapter.reading, question }, { accept: isFollowUpData });
+    const result = await postGeneration<FollowUpData>(
+      "/api/followup",
+      {
+        chapterToken: chapter.chapterToken,
+        reading: chapter.reading,
+        question,
+        ...(chapter.serverId ? { readingId: chapter.serverId } : {}),
+      },
+      { accept: isFollowUpData },
+    );
     if (result.ok) {
       const { answer, chapterToken, remaining } = result.data;
       updateChapter(id, (c) => ({ ...c, chapterToken, turns: [...c.turns, { question, answer }], followUpsLeft: remaining }));
