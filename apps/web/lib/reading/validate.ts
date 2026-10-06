@@ -1,4 +1,5 @@
 import { CARDS } from "@starlog/core";
+import { isSajuTopic } from "@/lib/sajuTopics";
 import type {
   DailyData,
   DailyDeal,
@@ -38,7 +39,8 @@ export function isTarotTeaser(value: unknown): value is TarotTeaserData {
 }
 
 export function isSajuTeaser(value: unknown): value is SajuTeaserData {
-  return isRecord(value) && isString(value.title) && isString(value.summary) && isStrings(value.lockedToc);
+  if (!isRecord(value) || !isString(value.title) || !isString(value.summary) || !isStrings(value.lockedToc)) return false;
+  return optional(value.topic, isSajuTopic) && optional(value.freshUntil, isString);
 }
 
 const isReadingCard = (c: unknown) => isRecord(c) && isString(c.position) && isCardId(c.cardId) && isString(c.heading) && isString(c.body);

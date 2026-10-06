@@ -4,9 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   SAJU_CONTEXT_KEY,
   SAJU_PROFILE_KEY,
+  chapterRequestFields,
   clearSajuProfile,
   freshSajuContextOnEntry,
   sajuContextBody,
+  sajuStatusBody,
+  sajuTeaserKey,
   sanitizeSajuContext,
   saveSajuContext,
   saveSajuProfile,
@@ -102,5 +105,32 @@ describe("freshSajuContextOnEntry (a new saju question starts clean)", () => {
     vi.setSystemTime(new Date("2026-10-01T10:31:00+09:00"));
     freshSajuContextOnEntry(false);
     expect(localStorage.getItem(SAJU_CONTEXT_KEY)).toBeNull();
+  });
+});
+
+describe("request fields and teaser keys (saju-topics, owner cut §0)", () => {
+  const status = { loveStatus: "dating", workStatus: "employee" } as const;
+
+  it("sends 전체 흐름's status chips as before and a 운 only its id", () => {
+    expect(sajuContextBody(status)).toEqual({ loveStatus: "dating", workStatus: "employee" });
+    expect(sajuContextBody(status, "overall")).toEqual({ loveStatus: "dating", workStatus: "employee" });
+    expect(sajuContextBody(status, "money")).toEqual({ topic: "money" });
+    expect(sajuContextBody({}, "overall")).toEqual({});
+    expect(sajuStatusBody({ ...status, concern: "이사할까" } as Parameters<typeof sajuStatusBody>[0])).toEqual(status);
+  });
+
+  it("describes a saved chapter in the same shape (an older chapter is 전체 흐름)", () => {
+    expect(chapterRequestFields({})).toEqual({});
+    expect(chapterRequestFields({ context: { loveStatus: "married" } })).toEqual({ loveStatus: "married" });
+    expect(chapterRequestFields({ topic: "money", context: { loveStatus: "married" } })).toEqual({ topic: "money" });
+  });
+
+  it("keys a teaser by birth data, 운 and status chips, whatever the key order", () => {
+    const shuffled = Object.fromEntries(Object.entries(KNOWN).reverse()) as typeof KNOWN;
+    expect(sajuTeaserKey(shuffled, { topic: "money" })).toBe(sajuTeaserKey(KNOWN, { topic: "money" }));
+    expect(sajuTeaserKey(KNOWN, { topic: "money" })).not.toBe(sajuTeaserKey(KNOWN, { topic: "love" }));
+    expect(sajuTeaserKey(KNOWN, {})).toBe(sajuTeaserKey(KNOWN, { topic: undefined }));
+    expect(sajuTeaserKey(KNOWN, {})).not.toBe(sajuTeaserKey(KNOWN, { loveStatus: "dating" }));
+    expect(sajuTeaserKey(KNOWN, {})).not.toBe(sajuTeaserKey({ ...KNOWN, day: 2 }, {}));
   });
 });

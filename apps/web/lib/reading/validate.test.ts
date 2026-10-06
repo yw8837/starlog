@@ -41,6 +41,12 @@ describe("shape checks for what the reading API hands back (QA Q-02, Q-03)", () 
     expect(isDailyDeal({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }] })).toBe(true);
   });
 
+  it("takes a topic teaser's topic and freshUntil, and refuses an unknown topic", () => {
+    expect(isSajuTeaser({ title: "t", summary: "s", lockedToc: [], topic: "money", freshUntil: "2026-11-01T03:00:00.000Z" })).toBe(true);
+    expect(isSajuTeaser({ title: "t", summary: "s", lockedToc: [], topic: "health" })).toBe(false);
+    expect(isSajuTeaser({ title: "t", summary: "s", lockedToc: [], freshUntil: 7 })).toBe(false);
+  });
+
   it("refuses an empty done and every answer missing a part the screen needs", () => {
     for (const check of [isTarotReadingResponse, isTarotTeaser, isSajuTeaser, isSajuReadingResponse, isFollowUpData, isDailyData, isDailyDeal]) {
       expect(check({}), check.name).toBe(false);

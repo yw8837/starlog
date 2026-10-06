@@ -56,6 +56,10 @@ export interface SajuTeaserData {
   title: string;
   summary: string;
   lockedToc: string[];
+  /** 주제별 사주: the teaser's topic (absent: 전체 흐름, or an older server). */
+  topic?: SajuTopic;
+  /** Until when a device may show it again without asking (ISO; spec §9.3). */
+  freshUntil?: string;
 }
 
 export interface SajuReadingData {
@@ -153,4 +157,12 @@ export type SajuSituationId =
 export interface SajuContext {
   loveStatus?: LoveStatus;
   workStatus?: WorkStatus;
+}
+
+/**
+ * The fields /api/saju/* take beside `birth` (saju-topics spec §7.3, owner cut §0): 전체 흐름 the status
+ * chips as before, a 운 only its id. The two never mix.
+ */
+export interface SajuRequestFields extends SajuContext {
+  topic?: SajuTopicId;
 }

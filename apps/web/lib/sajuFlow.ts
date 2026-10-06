@@ -1,4 +1,5 @@
-import type { LoveStatus, SajuContext, WorkStatus } from "./reading/types";
+import type { LoveStatus, SajuContext, SajuRequestFields, SajuTopic, SajuTopicId, WorkStatus } from "./reading/types";
+import { clearSajuTeasers } from "./reading/teaserCache";
 import { isStale } from "./freshStart";
 import { useFlowVisit } from "./useFlowVisit";
 import { createLocalStore } from "./sessionStore";
@@ -77,10 +78,11 @@ export function useFreshSajuContextOnEntry() {
   useFlowVisit("saju", (inFlow) => freshSajuContextOnEntry(!inFlow));
 }
 
-/** Erases the birth profile and the status chips from this device. */
+/** Erases the birth profile, the status chips and the saju teasers kept for them from this device. */
 export function clearSajuProfile() {
   profileStore.clear();
   contextStore.clear();
+  clearSajuTeasers();
 }
 
 /**
@@ -97,10 +99,32 @@ export function useSajuContext(): SajuContext | undefined {
   return value === undefined ? undefined : (value ?? {});
 }
 
-/** The body fields /api/saju/* take beside `birth`; empty ones are left out. */
-export function sajuContextBody(context: SajuContext): SajuContext {
+/** The status chips as sent; empty ones are left out, and nothing else (never a concern). */
+export function sajuStatusBody(context: SajuContext): SajuContext {
   return {
     ...(context.loveStatus ? { loveStatus: context.loveStatus } : {}),
     ...(context.workStatus ? { workStatus: context.workStatus } : {}),
   };
+}
+
+/**
+ * The body fields /api/saju/* take beside `birth` (saju-topics spec §7.3, owner cut §0): 전체 흐름 sends
+ * the status chips as before; a 운 sends only its id.
+ */
+export function sajuContextBody(context: SajuContext, topic: SajuTopic = "overall"): SajuRequestFields {
+  return topic === "overall" ? sajuStatusBody(context) : { topic };
+}
+
+/** What a saved chapter was written for, in the request's shape (a chapter without a topic is 전체 흐름). */
+export function chapterRequestFields(chapter: { topic?: SajuTopicId; context?: SajuContext }): SajuRequestFields {
+  return chapter.topic ? { topic: chapter.topic } : sajuStatusBody(chapter.context ?? {});
+}
+
+/** One key per birth data and request fields, whatever the key order (the teaser cache, a reading already opened). */
+export function sajuTeaserKey(birth: SajuForm, fields: SajuRequestFields): string {
+  const b = sanitizeSajuForm(birth) ?? birth;
+  return JSON.stringify([
+    b.calendar, b.year, b.month, b.day, b.isLeapMonth, b.timeKnown, b.hour, b.minute, b.gender, b.placeId,
+    fields.topic ?? "overall", fields.loveStatus ?? null, fields.workStatus ?? null,
+  ]);
 }
