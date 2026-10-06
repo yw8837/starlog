@@ -1,4 +1,5 @@
 import "server-only";
+import { BRANCHES, STEMS } from "@starlog/core";
 import type { SajuTopicId } from "@/lib/reading/types";
 import { TOPIC_OBSERVATION_HEADING, TOPIC_SECTIONS, topicName } from "@/lib/sajuTopics";
 import { historyBlock } from "@/lib/ai/history";
@@ -24,7 +25,8 @@ const OVERRIDE = `# 주제별 사주에서 달라지는 것
 - 고른 주제 밖의 상황(다른 주제의 상황 칩)은 꺼내지 않아요.
 
 ## 주제별 사주에서 더하는 금지
-- 시기 지정: "3일 뒤", "2주 안에", "D-30", 날짜, 요일, 시각을 쓰지 않아요. 앞으로의 일은 "앞으로 몇 주 동안"처럼만 말해요.
+- 시기 지정: 숫자로 재는 기간("3일 뒤", "2주 안에", "3개월 안에", "1년 안에", "2년 후"), "D-30", 날짜, 요일, 시각을 쓰지 않아요. 위 changeSoon 규칙의 "1년 안에"는 그 항목을 풀어 쓴 말이라 본문에 옮기지 않아요. 앞으로의 일은 숫자 없이 "앞으로 몇 주 동안", "앞으로 몇 달 동안", "올해 남은 기간", "다가오는 해", "이번 대운 동안"처럼 말해요.
+- 간지 글자: 한자 간지는 이 명식·대운·세운에 있는 글자만 써요. 관계의 note에만 나오는 글자는 명식에 없는 글자예요. 삼형·삼합은 "寅巳申 삼형"처럼 세 글자로 부르지 말고 "사화(巳火)와 인목(寅木) 사이의 형(刑)"처럼 명식에 있는 두 글자로만 말해요. <facts>에 없는 해의 간지를 계산해서 쓰지 않아요.
 - 달·계절 시기: 달 이름(1~12월), 분기, 상반기·하반기, "내년 봄"·"올해 가을쯤" 같은 계절 시기를 쓰지 않아요. 해가 바뀌는 때는 "입춘 무렵"으로만 말해요. <facts>에 있는 년·월(대운이 바뀌는 때 같은 것)은 그대로 쓸 수 있어요.
 - 성별과 배우자 별: 재성을 아내, 관성을 남편으로 읽지 않고 "여자에게 관성은" 같은 성별 구분도 하지 않아요. 성별은 대운 방향에만 썼어요.
 - 판정과 예언: 만남·이별·재회·연락을 약속하거나 부정하지 않아요("인연이 나타나요", "헤어지게 돼요", "다시 이어질 거예요", "연락이 와요"). 재회운이 있다·없다, 재물운이 강하다·약하다, 돈복, 부자가 될 사주, 돈이 들어오는 해·달, 합격·불합격, 승진운, 점수를 말하지 않아요.
@@ -37,9 +39,10 @@ const OVERRIDE = `# 주제별 사주에서 달라지는 것
 - 위의 "luck.changeSoon이 있으면 지금의 10년 절에서 먼저" 규칙은 4절에 적용해요. luckEdge가 있으면 4절에서 그 문장처럼 바뀌는 때가 앞뒤로 달라질 수 있다고 밝혀요. 대운을 계산하지 않았으면 4절에서 그 사실과 까닭을 밝혀요.
 - 위의 "limits의 문장은 계산 기준 절에" 규칙은 6절에 적용해요.
 - 5절은 올해 세운(annual)과 다가오는 해 세운(nextAnnual) 둘만, "올해 남은 기간"과 "다가오는 해" 두 덩어리로 말하고, 두 세운의 간지를 모두 불러요. 달마다의 흐름은 다루지 않아요.
-- 묶음(groups)의 개수가 0이면 그 묶음이 겉에 없거나 지장간에 숨어 있다고 밝히고, 태어난 시를 모르면 "여섯 글자 기준"이라고 범위를 밝혀요. 묶음 이름(비겁·식상·재성·관성·인성)을 쓰고, 십성 이름은 <facts>에 나온 것만 써요.
+- 묶음(groups)의 개수가 0이면 그 개수를 다루는 절 안에서 그 묶음이 겉에 없거나 지장간에 숨어 있다고 밝히고, 태어난 시를 모르면 같은 절 안에서 "시주 없이 여섯 글자 기준"이라고 범위를 밝혀요. 묶음 이름(비겁·식상·재성·관성·인성)을 쓰고, 십성 이름은 <facts>에 나온 것만 써요.
 - dayWindow가 있으면 2절에서 그 시각 범위(예: 00:00~00:32)를 한 번 옮겨 일지가 달라질 수 있다고 밝혀요.
-- focus는 절마다 먼저 볼 사실이에요(s2~s5가 2~5절). 그 절의 근거는 focus에서 고르고, 다른 사실은 보탤 때만 써요.`;
+- focus는 절마다 먼저 볼 사실이에요(s2~s5가 2~5절). 그 절의 근거는 focus에서 고르고, 다른 사실은 보탤 때만 써요.
+- <chart_rules>가 있으면 이 명식에 맞춰 절마다 꼭 밝힐 것과 쓰지 않을 글자를 짚은 목록이에요. 모두 지켜요.`;
 
 const FORMATS = `# 작업별 형식 (주제별 사주)
 
@@ -51,7 +54,7 @@ const FORMATS = `# 작업별 형식 (주제별 사주)
 - sections: 정확히 6개, <headings>의 순서와 문구 그대로. 1절 300~400자, 2~5절 각 500~650자, 6절 200~350자.
   1. 나의 기본 결: 일간과 물상, 태어난 계절, 오행(많은·없는·숨은 기운), 겉에 가장 많은 묶음. 다음 절의 주제로 이어지게 한 문단으로.
   2~5. <topic>의 안내와 focus의 s2~s5 사실로. 문단마다 명식 근거 → 그 주제의 일상 장면 하나 → 작은 실험 하나.
-  6. 계산 기준: calculation과 limits의 문장을 모두, 태어난 시각을 알게 되면 다시 계산할 수 있다는 안내까지.
+  6. 계산 기준: calculation과 limits의 문장을 모두, 태어난 시각을 알게 되면 다시 계산할 수 있다는 안내까지. 한 문장씩 옮겨 늘어놓지 말고 두세 가지씩 이어 써요. 봤어요·셌어요·않았어요는 끝맺음이 같은 '어요'라 네 문장 연달아 두지 않고 ~이에요·~죠로도 맺어요.
 - observation: 앞으로 몇 주 안에 사용자가 직접 알아챌 수 있는 그 주제의 작은 신호 하나(60~200자). 예언이 아니라 "~를 눈여겨보세요"처럼 관찰로 써요. heading은 <headings>의 observation 문구 그대로예요.
 - followUps: 그 주제로 이어서 물어볼 만한 질문 2개(각 30자 이하).
 
@@ -118,12 +121,33 @@ export function topicHeadingsBlock(topic: SajuTopicId): string {
 
 const topicTag = (topic: SajuTopicId) => `<topic>${topicName(topic)}</topic>`;
 
+/**
+ * What this chart's reading must say, and where, made from its facts (first attempts broke these in the 2026-10-06 real
+ * check): each group the validator wants named as missing in 2절·3절 (anchors.zeroS2/zeroS3), with the six-glyph basis
+ * when the hour is unknown, and the glyphs <facts> shows only in a relation's note (a 삼형's third glyph), which the
+ * allow-list rejects. Empty when there is nothing to say.
+ */
+function topicChartRulesBlock(facts: SajuTopicFactSet): string {
+  const headings = TOPIC_SECTIONS[facts.topic];
+  const said = facts.input.timeKnown ? "밝혀요" : '밝히고, 개수는 "시주 없이 여섯 글자 기준"이라고 밝혀요';
+  const lines = ([[1, facts.allowed.anchors.zeroS2], [2, facts.allowed.anchors.zeroS3]] as const)
+    .filter(([, names]) => names.length > 0)
+    .map(([i, names]) => `${i + 1}절 '${headings[i]}': ${names.join("·")}은 겉 0개예요. 이 절 안에서 ${names.join("·")}이 겉에 없거나 지장간에 숨어 있다고 ${said}.`);
+  const allowed = new Set(facts.allowed.glyphs);
+  const shown = JSON.stringify(visibleTopicFacts(facts));
+  const stray = [...STEMS, ...BRANCHES].filter((glyph) => shown.includes(glyph) && !allowed.has(glyph));
+  if (stray.length) lines.push(`쓰지 않는 글자: ${stray.join("·")}. 관계의 note에만 나오고 이 명식·대운·세운에는 없는 글자예요.`);
+  return lines.length ? `<chart_rules>\n${lines.map((line) => `- ${line}`).join("\n")}\n</chart_rules>` : "";
+}
+
 export function sajuTopicTeaserPrompt(facts: SajuTopicFactSet): string {
   return ["<task>teaser</task>", topicTag(facts.topic), topicHeadingsBlock(facts.topic), topicFactsBlock(facts), topicUserContextBlock(facts), historyBlock(facts.history ?? [])].join("\n");
 }
 
 export function sajuTopicReadingPrompt(facts: SajuTopicFactSet): string {
-  return ["<task>reading</task>", topicTag(facts.topic), topicHeadingsBlock(facts.topic), topicFactsBlock(facts), topicUserContextBlock(facts), historyBlock(facts.history ?? [])].join("\n");
+  return [
+    "<task>reading</task>", topicTag(facts.topic), topicHeadingsBlock(facts.topic), topicFactsBlock(facts), topicUserContextBlock(facts), topicChartRulesBlock(facts), historyBlock(facts.history ?? []),
+  ].filter(Boolean).join("\n");
 }
 
 export function sajuTopicFollowUpPrompt(facts: SajuTopicFactSet, reading: unknown, turns: FollowUpTurn[], question: string): string {
