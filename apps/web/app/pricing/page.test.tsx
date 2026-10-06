@@ -66,6 +66,18 @@ describe("/pricing", () => {
     expect(container.textContent).not.toMatch(/켈틱|셀틱|Celtic/i);
   });
 
+  it("shows each reading on sale with a picture, and says when it is provided and how it is refunded", () => {
+    const { container } = render(<PricingPage />);
+    const cards = [...container.querySelectorAll("#readings section")];
+    expect(cards).toHaveLength(2);
+    for (const card of cards) {
+      expect(card.querySelector('[role="img"]')?.getAttribute("aria-label")).toBeTruthy();
+      expect(card.textContent).toContain("서비스 제공 기간: 결제 즉시 · 결제하면 바로 풀이가 열리는 디지털 콘텐츠예요.");
+      expect(card.textContent).toContain("열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요.");
+      expect(card.querySelector('a[href="/refund"]')?.textContent).toBe("환불 정책");
+    }
+  });
+
   it("says readings are paid one by one and names Toss Payments", () => {
     const { container } = render(<PricingPage />);
     expect(container.textContent).toContain("풀이는 건별로 결제하고, 결제하면 바로 열려요");

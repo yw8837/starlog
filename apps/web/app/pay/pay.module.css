@@ -103,6 +103,23 @@
   gap: 10px;
 }
 
+/* Right above the pay button: when the reading is provided and how a refund works. */
+.terms {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.terms a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--gold);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
 /* An answer card (failed, paid elsewhere, still checking), like the unlock sheet. */
 .panel {
   display: grid;

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Cat } from "@/components/characters/Cat";
+import { Rabbit } from "@/components/characters/Rabbit";
 import { LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import s from "@/components/legal/legal.module.css";
 import { PaymentsNote } from "@/components/legal/PaymentsNote";
@@ -20,19 +22,25 @@ export const metadata: Metadata = pageMetadata({
 
 const giftReadings = Math.floor(price.signupGiftFree / price.unitsPerReading);
 
-/** The standard readings: what one opening includes, lengths from SITE.reading.approxChars. */
+/**
+ * The standard readings: what one opening includes, lengths from SITE.reading.approxChars. The picture
+ * is the reader of each (the home entries' characters), so every product shows a name, a picture, a
+ * description and a price.
+ */
 const PRODUCTS = [
   {
     name: standardProduct("tarot").name,
     sub: "카드 3장으로 보는 지금",
     krw: standardProduct("tarot").krw,
     includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.tarot)}자`, "카드별 풀이와 세 카드의 연결, 시기, 상황별 갈래, 오늘 해 볼 일"],
+    picture: <Cat outfit="tarot" size={72} reactOnTap={false} />,
   },
   {
     name: standardProduct("saju").name,
     sub: "타고난 결로 보는 나",
     krw: standardProduct("saju").krw,
     includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.saju)}자`, sajuPricingLine(features.sajuTopics)],
+    picture: <Rabbit outfit="hanbok" size={72} reactOnTap={false} />,
   },
 ] as const;
 
@@ -58,11 +66,14 @@ export default function PricingPage() {
         <div className={`${s.cards} ${s.cardsTwo}`}>
           {PRODUCTS.map((product, i) => (
             <section key={product.name} className={s.card} aria-labelledby={`product-${i}`}>
-              <div>
-                <h3 id={`product-${i}`} className={s.cardTitle}>
-                  {product.name}
-                </h3>
-                <p className={s.cardSub}>{product.sub}</p>
+              <div className={s.cardHead}>
+                {product.picture}
+                <div>
+                  <h3 id={`product-${i}`} className={s.cardTitle}>
+                    {product.name}
+                  </h3>
+                  <p className={s.cardSub}>{product.sub}</p>
+                </div>
               </div>
               <p className={s.price}>
                 {won(product.krw)}
@@ -76,6 +87,11 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
+              <p className={s.muted}>서비스 제공 기간: 결제 즉시 · 결제하면 바로 풀이가 열리는 디지털 콘텐츠예요.</p>
+              <p className={s.muted}>
+                {`열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. `}
+                <Link href="/refund">환불 정책</Link>
+              </p>
             </section>
           ))}
         </div>

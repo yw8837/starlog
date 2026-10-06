@@ -176,6 +176,13 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
             </p>
           ) : null}
           <div className={s.actions}>
+            <div className={s.terms}>
+              <p>서비스 제공 기간: 결제 즉시 · 결제하면 바로 풀이가 열리는 디지털 콘텐츠예요.</p>
+              <p>
+                {`열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. `}
+                <Link href="/refund">환불 정책</Link>
+              </p>
+            </div>
             <Button block onClick={() => void pay()} disabled={!agreed || !ready || busy}>
               {`${won(info.amount)} 결제하기`}
             </Button>

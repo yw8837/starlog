@@ -191,6 +191,13 @@ ol.list {
   }
 }
 
+/* A product's picture beside its name and one-line description. */
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .cardTitle {
   font-size: 18px;
   line-height: 1.4;

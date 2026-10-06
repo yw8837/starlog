@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CheckoutView } from "./CheckoutView";
 
@@ -42,6 +42,14 @@ describe("CheckoutView", () => {
       expect(navigate).toHaveBeenCalledWith(`http://localhost/pay/success?paymentType=NORMAL&orderId=${ORDER}&paymentKey=mock_${ORDER}&amount=2900`),
     );
     expect(JSON.parse(String(calls.find((c) => c.url === "/api/pay/orders")!.init!.body))).toEqual({ productId: "tarot", returnTo: "/tarot/result", ack: true });
+  });
+
+  it("says right by the pay button that the reading opens on payment, and how a refund works", async () => {
+    render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
+    const actions = (await screen.findByRole("button", { name: "2,900원 결제하기" })).closest("div")!;
+    expect(actions.textContent).toContain("서비스 제공 기간: 결제 즉시 · 결제하면 바로 풀이가 열리는 디지털 콘텐츠예요.");
+    expect(actions.textContent).toContain("열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요.");
+    expect(within(actions).getByRole("link", { name: "환불 정책" }).getAttribute("href")).toBe("/refund");
   });
 
   it("sends a guest to login and back to this page", async () => {
