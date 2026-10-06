@@ -44,7 +44,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
       id: "start",
       label: "시작하기",
       entries: [
-        // The four trust answers (owner copy, 2026-10-06). 78장, 1만 4천여 개 and 1분 are facts of the deck
+        // The four trust answers (owner copy, 2026-10-06). 78장, 1만 4천여 건 (14,539 birth inputs, 9,743 distinct dates) and 1분 are facts of the deck
         // (content/kb/README.md) and of docs/research/saju-calendar-crosscheck-2026-10.md, not SITE settings.
         {
           id: "how-made",
@@ -70,7 +70,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "saju-calc",
           q: "사주 계산은 믿을 수 있나요?",
           a: [
-            "해와 달이 바뀌는 기준은 달력의 1일이 아니라 절기라서, 절기가 바뀌는 시각까지 계산해요. 생년월일 1만 4천여 개를 다른 만세력 계산과 대조했고, 절기 시각은 독립적인 천문 계산과 따로 비교해 1분 안으로 맞는 것을 확인했어요. 절기가 바뀌는 시각 바로 앞뒤에 태어났다면 그 사실도 알려 드려요.",
+            "해와 달이 바뀌는 기준은 달력의 1일이 아니라 절기라서, 절기가 바뀌는 시각까지 계산해요. 출생 정보 1만 4천여 건을 다른 만세력 계산과 대조했고, 절기 시각은 독립적인 천문 계산과 따로 비교해 1분 안으로 맞는 것을 확인했어요. 절기가 바뀌는 시각 바로 앞뒤에 태어났다면 그 사실도 알려 드려요.",
           ],
         },
         {
