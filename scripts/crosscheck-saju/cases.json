@@ -1,0 +1,1786 @@
+[
+ {
+  "id": "RA01",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2018,
+  "month": 10,
+  "day": 13,
+  "time": {
+   "hour": 2,
+   "minute": 46
+  },
+  "gender": "female",
+  "place": {
+   "name": "광주",
+   "longitude": 126.851
+  },
+  "note": ""
+ },
+ {
+  "id": "RA02",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1971,
+  "month": 11,
+  "day": 4,
+  "time": {
+   "hour": 17,
+   "minute": 52
+  },
+  "gender": "female",
+  "place": {
+   "name": "포항",
+   "longitude": 129.343
+  },
+  "note": ""
+ },
+ {
+  "id": "RA03",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1949,
+  "month": 5,
+  "day": 1,
+  "time": {
+   "hour": 0,
+   "minute": 23
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA04",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1976,
+  "month": 3,
+  "day": 5,
+  "time": {
+   "hour": 15,
+   "minute": 45
+  },
+  "gender": "female",
+  "place": {
+   "name": "대전",
+   "longitude": 127.385
+  },
+  "note": ""
+ },
+ {
+  "id": "RA05",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1931,
+  "month": 1,
+  "day": 1,
+  "time": {
+   "hour": 2,
+   "minute": 55
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA06",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1968,
+  "month": 1,
+  "day": 24,
+  "time": {
+   "hour": 4,
+   "minute": 22
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA07",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1940,
+  "month": 10,
+  "day": 3,
+  "time": {
+   "hour": 0,
+   "minute": 59
+  },
+  "gender": "male",
+  "place": {
+   "name": "포항",
+   "longitude": 129.343
+  },
+  "note": ""
+ },
+ {
+  "id": "RA08",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1941,
+  "month": 4,
+  "day": 20,
+  "time": {
+   "hour": 6,
+   "minute": 14
+  },
+  "gender": "male",
+  "place": {
+   "name": "부산",
+   "longitude": 129.075
+  },
+  "note": ""
+ },
+ {
+  "id": "RA09",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2016,
+  "month": 12,
+  "day": 1,
+  "time": {
+   "hour": 7,
+   "minute": 46
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA10",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1970,
+  "month": 9,
+  "day": 16,
+  "time": {
+   "hour": 1,
+   "minute": 18
+  },
+  "gender": "female",
+  "place": {
+   "name": "제주",
+   "longitude": 126.531
+  },
+  "note": ""
+ },
+ {
+  "id": "RA11",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1973,
+  "month": 11,
+  "day": 7,
+  "time": {
+   "hour": 22,
+   "minute": 21
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA12",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1952,
+  "month": 2,
+  "day": 3,
+  "time": {
+   "hour": 1,
+   "minute": 22
+  },
+  "gender": "female",
+  "place": {
+   "name": "제주",
+   "longitude": 126.531
+  },
+  "note": ""
+ },
+ {
+  "id": "RA13",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1937,
+  "month": 4,
+  "day": 5,
+  "time": {
+   "hour": 14,
+   "minute": 34
+  },
+  "gender": "male",
+  "place": {
+   "name": "전주",
+   "longitude": 127.148
+  },
+  "note": ""
+ },
+ {
+  "id": "RA14",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1951,
+  "month": 1,
+  "day": 5,
+  "time": {
+   "hour": 18,
+   "minute": 6
+  },
+  "gender": "female",
+  "place": {
+   "name": "대전",
+   "longitude": 127.385
+  },
+  "note": ""
+ },
+ {
+  "id": "RA15",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1985,
+  "month": 5,
+  "day": 11,
+  "time": {
+   "hour": 10,
+   "minute": 0
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA16",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1957,
+  "month": 8,
+  "day": 28,
+  "time": {
+   "hour": 18,
+   "minute": 53
+  },
+  "gender": "female",
+  "place": {
+   "name": "대구",
+   "longitude": 128.601
+  },
+  "note": ""
+ },
+ {
+  "id": "RA17",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2013,
+  "month": 3,
+  "day": 18,
+  "time": {
+   "hour": 1,
+   "minute": 8
+  },
+  "gender": "female",
+  "place": {
+   "name": "제주",
+   "longitude": 126.531
+  },
+  "note": ""
+ },
+ {
+  "id": "RA18",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2016,
+  "month": 9,
+  "day": 16,
+  "time": {
+   "hour": 10,
+   "minute": 16
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA19",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1943,
+  "month": 1,
+  "day": 9,
+  "time": {
+   "hour": 2,
+   "minute": 14
+  },
+  "gender": "female",
+  "place": {
+   "name": "전주",
+   "longitude": 127.148
+  },
+  "note": ""
+ },
+ {
+  "id": "RA20",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2013,
+  "month": 9,
+  "day": 2,
+  "time": {
+   "hour": 6,
+   "minute": 2
+  },
+  "gender": "male",
+  "place": {
+   "name": "인천",
+   "longitude": 126.705
+  },
+  "note": ""
+ },
+ {
+  "id": "RA21",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1948,
+  "month": 11,
+  "day": 19,
+  "time": {
+   "hour": 21,
+   "minute": 12
+  },
+  "gender": "female",
+  "place": {
+   "name": "전주",
+   "longitude": 127.148
+  },
+  "note": ""
+ },
+ {
+  "id": "RA22",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2004,
+  "month": 5,
+  "day": 23,
+  "time": {
+   "hour": 6,
+   "minute": 12
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA23",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1931,
+  "month": 6,
+  "day": 11,
+  "time": {
+   "hour": 15,
+   "minute": 38
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA24",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2014,
+  "month": 9,
+  "day": 13,
+  "time": {
+   "hour": 21,
+   "minute": 8
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA25",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1960,
+  "month": 6,
+  "day": 19,
+  "time": {
+   "hour": 11,
+   "minute": 2
+  },
+  "gender": "female",
+  "place": {
+   "name": "인천",
+   "longitude": 126.705
+  },
+  "note": ""
+ },
+ {
+  "id": "RA26",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2004,
+  "month": 2,
+  "day": 20,
+  "time": {
+   "hour": 16,
+   "minute": 37
+  },
+  "gender": "male",
+  "place": {
+   "name": "강릉",
+   "longitude": 128.876
+  },
+  "note": ""
+ },
+ {
+  "id": "RA27",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1994,
+  "month": 5,
+  "day": 25,
+  "time": {
+   "hour": 1,
+   "minute": 51
+  },
+  "gender": "male",
+  "place": {
+   "name": "광주",
+   "longitude": 126.851
+  },
+  "note": ""
+ },
+ {
+  "id": "RA28",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1941,
+  "month": 7,
+  "day": 8,
+  "time": {
+   "hour": 7,
+   "minute": 11
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA29",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2002,
+  "month": 8,
+  "day": 17,
+  "time": {
+   "hour": 9,
+   "minute": 43
+  },
+  "gender": "male",
+  "place": {
+   "name": "제주",
+   "longitude": 126.531
+  },
+  "note": ""
+ },
+ {
+  "id": "RA30",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1950,
+  "month": 6,
+  "day": 13,
+  "time": {
+   "hour": 15,
+   "minute": 7
+  },
+  "gender": "female",
+  "place": {
+   "name": "제주",
+   "longitude": 126.531
+  },
+  "note": ""
+ },
+ {
+  "id": "RA31",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2018,
+  "month": 9,
+  "day": 27,
+  "time": {
+   "hour": 0,
+   "minute": 13
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA32",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2006,
+  "month": 9,
+  "day": 7,
+  "time": {
+   "hour": 12,
+   "minute": 9
+  },
+  "gender": "female",
+  "place": {
+   "name": "부산",
+   "longitude": 129.075
+  },
+  "note": ""
+ },
+ {
+  "id": "RA33",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1985,
+  "month": 4,
+  "day": 24,
+  "time": {
+   "hour": 0,
+   "minute": 24
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA34",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2007,
+  "month": 5,
+  "day": 10,
+  "time": {
+   "hour": 1,
+   "minute": 3
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA35",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2020,
+  "month": 8,
+  "day": 17,
+  "time": {
+   "hour": 17,
+   "minute": 57
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA36",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2025,
+  "month": 4,
+  "day": 15,
+  "time": {
+   "hour": 4,
+   "minute": 50
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA37",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1962,
+  "month": 3,
+  "day": 27,
+  "time": {
+   "hour": 14,
+   "minute": 43
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA38",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2016,
+  "month": 12,
+  "day": 10,
+  "time": {
+   "hour": 7,
+   "minute": 15
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA39",
+  "group": "random",
+  "calendar": "solar",
+  "year": 1991,
+  "month": 10,
+  "day": 17,
+  "time": {
+   "hour": 5,
+   "minute": 33
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "RA40",
+  "group": "random",
+  "calendar": "solar",
+  "year": 2025,
+  "month": 8,
+  "day": 19,
+  "time": {
+   "hour": 14,
+   "minute": 34
+  },
+  "gender": "female",
+  "place": {
+   "name": "제주",
+   "longitude": 126.531
+  },
+  "note": ""
+ },
+ {
+  "id": "JE01",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 2019,
+  "month": 2,
+  "day": 4,
+  "time": {
+   "hour": 12,
+   "minute": 14
+  },
+  "gender": "female",
+  "place": {
+   "name": "광주",
+   "longitude": 126.851
+  },
+  "note": "입춘 2019-02-04 12:14:21 (civil, lunar_python) +0 min"
+ },
+ {
+  "id": "JE02",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1994,
+  "month": 2,
+  "day": 4,
+  "time": {
+   "hour": 10,
+   "minute": 29
+  },
+  "gender": "female",
+  "place": {
+   "name": "인천",
+   "longitude": 126.705
+  },
+  "note": "입춘 1994-02-04 10:30:56 (civil, lunar_python) -1 min"
+ },
+ {
+  "id": "JE03",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1989,
+  "month": 2,
+  "day": 4,
+  "time": {
+   "hour": 5,
+   "minute": 28
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입춘 1989-02-04 05:27:09 (civil, lunar_python) +1 min"
+ },
+ {
+  "id": "JE04",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1990,
+  "month": 2,
+  "day": 4,
+  "time": {
+   "hour": 11,
+   "minute": 43
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입춘 1990-02-04 11:14:00 (civil, lunar_python) +29 min"
+ },
+ {
+  "id": "JE05",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1984,
+  "month": 2,
+  "day": 5,
+  "time": {
+   "hour": 0,
+   "minute": 12
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입춘 1984-02-05 00:18:44 (civil, lunar_python) -6 min"
+ },
+ {
+  "id": "JE06",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1944,
+  "month": 2,
+  "day": 5,
+  "time": {
+   "hour": 7,
+   "minute": 34
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입춘 1944-02-05 07:22:55 (civil, lunar_python) +12 min"
+ },
+ {
+  "id": "JE07",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 2020,
+  "month": 5,
+  "day": 5,
+  "time": {
+   "hour": 9,
+   "minute": 51
+  },
+  "gender": "male",
+  "place": {
+   "name": "대전",
+   "longitude": 127.385
+  },
+  "note": "입하 2020-05-05 09:51:23 (civil, lunar_python) +0 min"
+ },
+ {
+  "id": "JE08",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1998,
+  "month": 6,
+  "day": 6,
+  "time": {
+   "hour": 6,
+   "minute": 13
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "망종 1998-06-06 06:13:22 (civil, lunar_python) +0 min"
+ },
+ {
+  "id": "JE09",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 2018,
+  "month": 9,
+  "day": 8,
+  "time": {
+   "hour": 1,
+   "minute": 29
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "백로 2018-09-08 01:29:42 (civil, lunar_python) +0 min"
+ },
+ {
+  "id": "JE10",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1955,
+  "month": 3,
+  "day": 6,
+  "time": {
+   "hour": 17,
+   "minute": 4
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "경칩 1955-03-06 17:00:57 (civil, lunar_python) +4 min"
+ },
+ {
+  "id": "JE11",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1986,
+  "month": 6,
+  "day": 6,
+  "time": {
+   "hour": 9,
+   "minute": 2
+  },
+  "gender": "male",
+  "place": {
+   "name": "대구",
+   "longitude": 128.601
+  },
+  "note": "망종 1986-06-06 08:44:23 (civil, lunar_python) +18 min"
+ },
+ {
+  "id": "JE12",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1930,
+  "month": 10,
+  "day": 9,
+  "time": {
+   "hour": 9,
+   "minute": 7
+  },
+  "gender": "female",
+  "place": {
+   "name": "인천",
+   "longitude": 126.705
+  },
+  "note": "한로 1930-10-09 09:37:28 (civil, lunar_python) -30 min"
+ },
+ {
+  "id": "JE13",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1944,
+  "month": 8,
+  "day": 8,
+  "time": {
+   "hour": 1,
+   "minute": 12
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입추 1944-08-08 01:18:51 (civil, lunar_python) -6 min"
+ },
+ {
+  "id": "JE14",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1961,
+  "month": 6,
+  "day": 6,
+  "time": {
+   "hour": 7,
+   "minute": 0
+  },
+  "gender": "female",
+  "place": {
+   "name": "제주",
+   "longitude": 126.531
+  },
+  "note": "망종 1961-06-06 07:16:00 (civil, lunar_python) -16 min"
+ },
+ {
+  "id": "JE15",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1967,
+  "month": 3,
+  "day": 6,
+  "time": {
+   "hour": 15,
+   "minute": 44
+  },
+  "gender": "male",
+  "place": {
+   "name": "울산",
+   "longitude": 129.311
+  },
+  "note": "경칩 1967-03-06 15:41:53 (civil, lunar_python) +3 min"
+ },
+ {
+  "id": "JE16",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 2010,
+  "month": 8,
+  "day": 7,
+  "time": {
+   "hour": 23,
+   "minute": 42
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입추 2010-08-07 23:49:07 (civil, lunar_python) -7 min"
+ },
+ {
+  "id": "JE17",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1948,
+  "month": 6,
+  "day": 6,
+  "time": {
+   "hour": 5,
+   "minute": 24
+  },
+  "gender": "male",
+  "place": {
+   "name": "인천",
+   "longitude": 126.705
+  },
+  "note": "망종 1948-06-06 05:20:19 (civil, lunar_python) +4 min"
+ },
+ {
+  "id": "JE18",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1985,
+  "month": 8,
+  "day": 7,
+  "time": {
+   "hour": 22,
+   "minute": 48
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입추 1985-08-07 23:04:16 (civil, lunar_python) -16 min"
+ },
+ {
+  "id": "JE19",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 1933,
+  "month": 1,
+  "day": 6,
+  "time": {
+   "hour": 3,
+   "minute": 6
+  },
+  "gender": "female",
+  "place": {
+   "name": "전주",
+   "longitude": 127.148
+  },
+  "note": "소한 1933-01-06 03:23:20 (civil, lunar_python) -17 min"
+ },
+ {
+  "id": "JE20",
+  "group": "jeol",
+  "calendar": "solar",
+  "year": 2021,
+  "month": 10,
+  "day": 8,
+  "time": {
+   "hour": 10,
+   "minute": 23
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "한로 2021-10-08 10:39:03 (civil, lunar_python) -16 min"
+ },
+ {
+  "id": "JA01",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 1969,
+  "month": 11,
+  "day": 3,
+  "time": {
+   "hour": 23,
+   "minute": 10
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "JA02",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 1971,
+  "month": 3,
+  "day": 4,
+  "time": {
+   "hour": 23,
+   "minute": 32
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "JA03",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 1951,
+  "month": 11,
+  "day": 23,
+  "time": {
+   "hour": 23,
+   "minute": 33
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "JA04",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 1935,
+  "month": 7,
+  "day": 31,
+  "time": {
+   "hour": 23,
+   "minute": 50
+  },
+  "gender": "male",
+  "place": {
+   "name": "부산",
+   "longitude": 129.075
+  },
+  "note": ""
+ },
+ {
+  "id": "JA05",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 2024,
+  "month": 8,
+  "day": 29,
+  "time": {
+   "hour": 0,
+   "minute": 0
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "JA06",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 2014,
+  "month": 8,
+  "day": 29,
+  "time": {
+   "hour": 0,
+   "minute": 20
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "JA07",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 2013,
+  "month": 12,
+  "day": 5,
+  "time": {
+   "hour": 0,
+   "minute": 32
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "JA08",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 2019,
+  "month": 5,
+  "day": 25,
+  "time": {
+   "hour": 0,
+   "minute": 33
+  },
+  "gender": "female",
+  "place": {
+   "name": "광주",
+   "longitude": 126.851
+  },
+  "note": ""
+ },
+ {
+  "id": "JA09",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 2018,
+  "month": 10,
+  "day": 22,
+  "time": {
+   "hour": 1,
+   "minute": 0
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "JA10",
+  "group": "jasi",
+  "calendar": "solar",
+  "year": 1961,
+  "month": 9,
+  "day": 10,
+  "time": {
+   "hour": 1,
+   "minute": 30
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "DS01",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1949,
+  "month": 7,
+  "day": 2,
+  "time": {
+   "hour": 19,
+   "minute": 33
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "DS02",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1957,
+  "month": 9,
+  "day": 5,
+  "time": {
+   "hour": 3,
+   "minute": 43
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "DS03",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1988,
+  "month": 8,
+  "day": 28,
+  "time": {
+   "hour": 2,
+   "minute": 43
+  },
+  "gender": "female",
+  "place": {
+   "name": "광주",
+   "longitude": 126.851
+  },
+  "note": ""
+ },
+ {
+  "id": "DS04",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1956,
+  "month": 8,
+  "day": 19,
+  "time": {
+   "hour": 21,
+   "minute": 27
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "DS05",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1958,
+  "month": 9,
+  "day": 20,
+  "time": {
+   "hour": 23,
+   "minute": 34
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "DS06",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1950,
+  "month": 4,
+  "day": 17,
+  "time": {
+   "hour": 9,
+   "minute": 43
+  },
+  "gender": "female",
+  "place": {
+   "name": "강릉",
+   "longitude": 128.876
+  },
+  "note": ""
+ },
+ {
+  "id": "DS07",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1988,
+  "month": 9,
+  "day": 4,
+  "time": {
+   "hour": 11,
+   "minute": 0
+  },
+  "gender": "female",
+  "place": {
+   "name": "인천",
+   "longitude": 126.705
+  },
+  "note": ""
+ },
+ {
+  "id": "DS08",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1959,
+  "month": 5,
+  "day": 30,
+  "time": {
+   "hour": 2,
+   "minute": 44
+  },
+  "gender": "female",
+  "place": {
+   "name": "제주",
+   "longitude": 126.531
+  },
+  "note": ""
+ },
+ {
+  "id": "DS09",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1955,
+  "month": 9,
+  "day": 8,
+  "time": {
+   "hour": 23,
+   "minute": 40
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "DST ended at 24:00: 23:00-23:59 happened twice (earlier = DST)"
+ },
+ {
+  "id": "DS10",
+  "group": "dst",
+  "calendar": "solar",
+  "year": 1949,
+  "month": 7,
+  "day": 15,
+  "time": {
+   "hour": 0,
+   "minute": 45
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "DST, just after civil midnight"
+ },
+ {
+  "id": "LU01",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 1941,
+  "month": 6,
+  "day": 22,
+  "time": {
+   "hour": 18,
+   "minute": 32
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "leap month",
+  "isLeapMonth": true,
+  "solarHint": "1941-08-14"
+ },
+ {
+  "id": "LU02",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 1971,
+  "month": 5,
+  "day": 8,
+  "time": {
+   "hour": 19,
+   "minute": 33
+  },
+  "gender": "female",
+  "place": {
+   "name": "울산",
+   "longitude": 129.311
+  },
+  "note": "leap month",
+  "isLeapMonth": true,
+  "solarHint": "1971-06-30"
+ },
+ {
+  "id": "LU03",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 2004,
+  "month": 2,
+  "day": 11,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "부산",
+   "longitude": 129.075
+  },
+  "note": "leap month",
+  "isLeapMonth": true,
+  "solarHint": "2004-03-31"
+ },
+ {
+  "id": "LU04",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 1987,
+  "month": 6,
+  "day": 22,
+  "time": {
+   "hour": 15,
+   "minute": 39
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "leap month",
+  "isLeapMonth": true,
+  "solarHint": "1987-08-16"
+ },
+ {
+  "id": "LU05",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 1990,
+  "month": 5,
+  "day": 13,
+  "time": {
+   "hour": 21,
+   "minute": 27
+  },
+  "gender": "male",
+  "place": {
+   "name": "전주",
+   "longitude": 127.148
+  },
+  "note": "leap month",
+  "isLeapMonth": true,
+  "solarHint": "1990-07-05"
+ },
+ {
+  "id": "LU06",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 2009,
+  "month": 5,
+  "day": 27,
+  "time": {
+   "hour": 19,
+   "minute": 33
+  },
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "leap month",
+  "isLeapMonth": true,
+  "solarHint": "2009-07-19"
+ },
+ {
+  "id": "LU07",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 1997,
+  "month": 1,
+  "day": 1,
+  "time": {
+   "hour": 15,
+   "minute": 33
+  },
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "KR 1997-02-08 vs CN 1997-02-07",
+  "isLeapMonth": false,
+  "solarHint": "1997-02-08"
+ },
+ {
+  "id": "LU08",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 2017,
+  "month": 6,
+  "day": 15,
+  "time": {
+   "hour": 15,
+   "minute": 33
+  },
+  "gender": "female",
+  "place": {
+   "name": "대전",
+   "longitude": 127.385
+  },
+  "note": "KR 2017-08-06 vs CN 2017-07-08 (CN has 闰六月)",
+  "isLeapMonth": false,
+  "solarHint": "2017-08-06"
+ },
+ {
+  "id": "LU09",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 2007,
+  "month": 12,
+  "day": 10,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "대구",
+   "longitude": 128.601
+  },
+  "note": "",
+  "isLeapMonth": false,
+  "solarHint": "2008-01-17"
+ },
+ {
+  "id": "LU10",
+  "group": "lunar",
+  "calendar": "lunar",
+  "year": 1949,
+  "month": 11,
+  "day": 26,
+  "time": {
+   "hour": 9,
+   "minute": 10
+  },
+  "gender": "female",
+  "place": {
+   "name": "강릉",
+   "longitude": 128.876
+  },
+  "note": "",
+  "isLeapMonth": false,
+  "solarHint": "1950-01-14"
+ },
+ {
+  "id": "UN01",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1972,
+  "month": 2,
+  "day": 5,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입춘 day"
+ },
+ {
+  "id": "UN02",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1934,
+  "month": 2,
+  "day": 4,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입춘 day"
+ },
+ {
+  "id": "UN03",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1933,
+  "month": 6,
+  "day": 6,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "망종 day"
+ },
+ {
+  "id": "UN04",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1971,
+  "month": 8,
+  "day": 8,
+  "time": null,
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "입추 day"
+ },
+ {
+  "id": "UN05",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1960,
+  "month": 8,
+  "day": 15,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "DST date"
+ },
+ {
+  "id": "UN06",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1987,
+  "month": 7,
+  "day": 13,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "DST date"
+ },
+ {
+  "id": "UN07",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1960,
+  "month": 4,
+  "day": 16,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": "UTC+8:30 era"
+ },
+ {
+  "id": "UN08",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1966,
+  "month": 11,
+  "day": 24,
+  "time": null,
+  "gender": "male",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "UN09",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1975,
+  "month": 4,
+  "day": 25,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ },
+ {
+  "id": "UN10",
+  "group": "unknown",
+  "calendar": "solar",
+  "year": 1952,
+  "month": 5,
+  "day": 9,
+  "time": null,
+  "gender": "female",
+  "place": {
+   "name": "서울",
+   "longitude": 126.978
+  },
+  "note": ""
+ }
+]

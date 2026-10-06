@@ -1,0 +1,366 @@
+{
+ "versions": {
+  "engine": "manseryeok@2.0.0",
+  "lunar_python": "1.4.8",
+  "sxtwl": "2.0.7",
+  "tzdata": "2026.5",
+  "korean_lunar_calendar": "0.4.0",
+  "IANA": "2026e"
+ },
+ "terms": {
+  "rows": [
+   [
+    "manseryeok@2.0.0 (우리 엔진)",
+    "1929–1959",
+    744,
+    32.682,
+    1.0195712365591398,
+    7,
+    0
+   ],
+   [
+    "manseryeok@2.0.0 (우리 엔진)",
+    "1960–2026",
+    1608,
+    32.112,
+    0.843092039800995,
+    20,
+    0
+   ],
+   [
+    "lunar_python 1.4.8",
+    "1929–1959",
+    744,
+    2.793,
+    0.2682271505376344,
+    0,
+    0
+   ],
+   [
+    "lunar_python 1.4.8",
+    "1960–2026",
+    1608,
+    2.767,
+    0.21062935323383083,
+    0,
+    0
+   ],
+   [
+    "sxtwl 2.0.7",
+    "1929–1959",
+    744,
+    2.391054,
+    0.27262771505376343,
+    0,
+    0
+   ],
+   [
+    "sxtwl 2.0.7",
+    "1960–2026",
+    1608,
+    18.859777,
+    -1.46263232960199,
+    0,
+    0
+   ]
+  ],
+  "manseryeokVsLunarPythonMinute": 0,
+  "manseryeokVsAstropyMinute": 33,
+  "jeolCount": 1152,
+  "jeolFirstMinuteSplitOurs": 574,
+  "jeolFirstMinuteSplitLunarPython": 13
+ },
+ "known": {
+  "counts": {
+   "D:match": 85,
+   "DU:match": 85,
+   "ES:match": 85,
+   "FX:match": 85,
+   "R:match": 85,
+   "D:mismatch": 3,
+   "DU:mismatch": 3,
+   "ES:mismatch": 3,
+   "FX:mismatch": 3,
+   "R:mismatch": 3
+  },
+  "mismatches": [
+   {
+    "id": "JE01",
+    "profiles": [
+     "D",
+     "DU",
+     "ES",
+     "FX",
+     "R"
+    ],
+    "ours": [
+     "己亥",
+     "丙寅",
+     "壬申",
+     "丙午"
+    ],
+    "ref": [
+     "戊戌",
+     "乙丑",
+     "壬申",
+     "丙午"
+    ],
+    "diff": [
+     "연",
+     "월"
+    ],
+    "lp": -21.0,
+    "astro": -19.576,
+    "class": "b-rounding"
+   },
+   {
+    "id": "JE07",
+    "profiles": [
+     "D",
+     "DU",
+     "ES",
+     "FX",
+     "R"
+    ],
+    "ours": [
+     "庚子",
+     "辛巳",
+     "戊申",
+     "丁巳"
+    ],
+    "ref": [
+     "庚子",
+     "庚辰",
+     "戊申",
+     "丁巳"
+    ],
+    "diff": [
+     "월"
+    ],
+    "lp": -23.0,
+    "astro": -22.938,
+    "class": "b-rounding"
+   },
+   {
+    "id": "JE08",
+    "profiles": [
+     "D",
+     "DU",
+     "ES",
+     "FX",
+     "R"
+    ],
+    "ours": [
+     "戊寅",
+     "戊午",
+     "甲申",
+     "丁卯"
+    ],
+    "ref": [
+     "戊寅",
+     "丁巳",
+     "甲申",
+     "丁卯"
+    ],
+    "diff": [
+     "월"
+    ],
+    "lp": -22.0,
+    "astro": -22.294,
+    "class": "b-rounding"
+   }
+  ],
+  "other": {
+   "start:b-day-rounding": [
+    "RA17",
+    "JE03",
+    "JE20",
+    "LU02"
+   ],
+   "luck:b-derived": [
+    "JE01",
+    "JE07",
+    "JE08"
+   ],
+   "start:b-derived": [
+    "JE01",
+    "JE07",
+    "JE08"
+   ],
+   "instant": [],
+   "clock": [],
+   "luck:unclassified": [],
+   "start:unclassified": []
+  },
+  "ambiguityMismatches": []
+ },
+ "unknown": {
+  "mismatches": []
+ },
+ "lunar": {
+  "mismatches": [],
+  "labelMismatches": []
+ },
+ "luck": {
+  "n": 88,
+  "floor": 32,
+  "ceil": 37,
+  "lp_sect1_years": 50,
+  "lp_dir_first": 0
+ },
+ "conventions": {
+  "DU": {
+   "n": 10,
+   "by": {
+    "일": 10
+   },
+   "ids": [
+    "RA31",
+    "RA33",
+    "JE05",
+    "JE16",
+    "JA03",
+    "JA04",
+    "JA05",
+    "JA06",
+    "JA07",
+    "DS10"
+   ]
+  },
+  "ES": {
+   "n": 28,
+   "by": {
+    "시": 22,
+    "일": 6
+   },
+   "ids": [
+    "RA03",
+    "RA10",
+    "RA12",
+    "RA17",
+    "RA21",
+    "RA24",
+    "RA28",
+    "RA31",
+    "RA33",
+    "RA34",
+    "RA38",
+    "JE03",
+    "JE05",
+    "JE09",
+    "JE11",
+    "JE12",
+    "JE13",
+    "JE14",
+    "JE19",
+    "JA01",
+    "JA02",
+    "JA05",
+    "JA06",
+    "JA07",
+    "JA09",
+    "JA10",
+    "LU05",
+    "LU10"
+   ]
+  },
+  "FX": {
+   "n": 4,
+   "by": {
+    "시": 3,
+    "일": 1
+   },
+   "ids": [
+    "JE14",
+    "JA02",
+    "JA07",
+    "JA10"
+   ]
+  },
+  "R": {
+   "n": 41,
+   "by": {
+    "일": 8,
+    "시": 33,
+    "월": 1
+   },
+   "ids": [
+    "RA03",
+    "RA10",
+    "RA12",
+    "RA17",
+    "RA21",
+    "RA24",
+    "RA25",
+    "RA28",
+    "RA30",
+    "RA31",
+    "RA33",
+    "RA34",
+    "RA38",
+    "JE03",
+    "JE05",
+    "JE09",
+    "JE10",
+    "JE11",
+    "JE12",
+    "JE13",
+    "JE14",
+    "JE17",
+    "JE19",
+    "JA01",
+    "JA02",
+    "JA05",
+    "JA06",
+    "JA07",
+    "JA09",
+    "JA10",
+    "DS01",
+    "DS02",
+    "DS04",
+    "DS05",
+    "DS06",
+    "DS07",
+    "DS09",
+    "DS10",
+    "LU04",
+    "LU05",
+    "LU10"
+   ]
+  }
+ },
+ "fuzz": {
+  "FR": {
+   "checked": 50000,
+   "overlap": 0,
+   "start-b-day-rounding": 2105,
+   "luck-b-age-tie": 5
+  },
+  "FB": {
+   "checked": 11520,
+   "overlap": 0,
+   "pillars-b-rounding": 2786,
+   "luck-b-derived": 2786,
+   "start-b-derived": 2644,
+   "start-b-day-rounding": 263
+  },
+  "FT": {
+   "checked": 8420,
+   "overlap": 300,
+   "error-match": 1200,
+   "start-b-day-rounding": 363,
+   "luck-b-age-tie": 14
+  },
+  "FU": {
+   "unknown-ok": 311
+  },
+  "unclassified": []
+ },
+ "lunarSweep": {
+  "solarDays": 35064,
+  "solarToLunarMismatches": [],
+  "validLunarDates": 35082,
+  "lunarToSolarMismatches": []
+ },
+ "unclassified": []
+}

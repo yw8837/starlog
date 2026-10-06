@@ -1,0 +1,11 @@
+# Python 3.11 (sxtwl 2.0.7 ships Windows wheels up to cp311). Install into scripts/crosscheck-saju/.venv only.
+lunar_python==1.4.8
+sxtwl==2.0.7
+tzdata==2026.5
+korean_lunar_calendar==0.4.0
+astropy==8.0.1
+astropy-iers-data==0.2026.10.5.1.0.7
+numpy==2.4.6
+pyerfa==2.0.1.5
+PyYAML==6.0.3
+packaging==26.3
