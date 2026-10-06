@@ -18,6 +18,7 @@ D1 queries: `npx wrangler d1 execute starlog --remote --command "<SQL>"`.
   - `STARLOG_ACCOUNT_SECRET`: 32+ random chars. NEVER rotate it: D1 pins it on first use (`meta.account_secret_check`) and every account route answers 503 if it changes. Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`.
   - `STARLOG_CRON_SECRET`: 32+ random chars, same command. The Cron Trigger's bearer token.
   - `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`.
+  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: Google login under Kakao's. Console setup, the consent screen's Testing → In production step before launch, and checks: docs/runbook-google-login.md.
   - `NEXT_PUBLIC_TOSS_CLIENT_KEY` and `TOSS_SECRET_KEY`: both test_ keys first. A mixed test/live pair is refused (503).
   - `STARLOG_PAYMENTS`: `off` (dark), `owner`, `on`, `paused` (rollback).
   - `REVIEW_LOGIN_ID`, `REVIEW_LOGIN_PASSWORD`: only for the card-company review (section 4). Unset = off (404).
@@ -119,7 +120,7 @@ For the first 24 h, run the checks in section 7 every two hours.
 - Rotate STARLOG_ACCOUNT_SECRET: D1 refuses the new one (503 on every account route); accounts and saved readings would become unreachable.
 - Rotate STARLOG_SIGNING_SECRET without warning: everyone is logged out and tokens die.
 - Mix test and live Toss keys (refused anyway).
-- Set STARLOG_PAY=mock or STARLOG_KAKAO=mock in production (refused).
+- Set STARLOG_PAY=mock, STARLOG_KAKAO=mock or STARLOG_GOOGLE=mock in production (refused).
 - Delete the Cron Trigger: stale payments, refunds, erasures and purges depend on it.
 
 ## Follow-ups (not in P4)
