@@ -35,7 +35,7 @@ export async function GET(request: Request): Promise<Response> {
   if (!ctx.session) return json({ payments, login, owner, user: null }, { cookies: [serializeCookie(clearSession())] });
   const wallet = await walletSummary(ctx.db, ctx.session.user.id, now);
   // The review account buys like the owner pass (lib/account/review.ts); `owner` stays the device's pass.
-  const review = isReviewer(ctx.session.user);
+  const review = await isReviewer(ctx.session.user, ctx.accountSecret);
   return json({
     payments: salesOpen(mode, owner || review),
     login: loginOpen(mode, owner || review),

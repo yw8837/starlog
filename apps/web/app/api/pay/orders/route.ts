@@ -21,7 +21,7 @@ export async function POST(request: Request): Promise<Response> {
   const session = requireSession(ctx);
   if (session instanceof Response) return session;
   // The review account buys like the owner pass (lib/account/review.ts), premium excepted.
-  if (!salesOpen(paymentsMode(), ctx.owner || isReviewer(session.user))) return errorResponse("NOT_AVAILABLE");
+  if (!salesOpen(paymentsMode(), ctx.owner || (await isReviewer(session.user, ctx.accountSecret)))) return errorResponse("NOT_AVAILABLE");
   if (!tossClient()) return errorResponse("PAY_UNAVAILABLE");
   const body = OrderBody.safeParse(await readJson(request, 2_000));
   if (!body.success) return errorResponse("BAD_REQUEST");

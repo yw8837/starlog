@@ -19,7 +19,7 @@ export async function GET(request: Request): Promise<Response> {
   const session = requireSession(ctx);
   if (session instanceof Response) return session;
   // The review account buys like the owner pass (lib/account/review.ts), premium excepted.
-  if (!salesOpen(paymentsMode(), ctx.owner || isReviewer(session.user))) return errorResponse("NOT_AVAILABLE");
+  if (!salesOpen(paymentsMode(), ctx.owner || (await isReviewer(session.user, ctx.accountSecret)))) return errorResponse("NOT_AVAILABLE");
   if (!tossClient()) return errorResponse("PAY_UNAVAILABLE");
   const product = productById(new URL(request.url).searchParams.get("product") ?? "");
   if (!product || !sellable(product, ctx.now)) return errorResponse("NOT_AVAILABLE");

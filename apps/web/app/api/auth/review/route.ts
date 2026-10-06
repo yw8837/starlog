@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { REVIEW_USER_KEY, reviewLogin } from "@/lib/account/review";
+import { reviewLogin, reviewUserKey } from "@/lib/account/review";
 import { openAccountRoute } from "@/lib/account/request";
 import { createSession, revokeSession } from "@/lib/account/session";
 import { loginKakaoUser } from "@/lib/account/users";
@@ -26,7 +26,9 @@ const FAILURE_WINDOW_SECONDS = 15 * 60;
 export async function POST(request: Request): Promise<Response> {
   const login = reviewLogin();
   if (!login) return new Response("Not found", { status: 404 });
-  const ctx = await openAccountRoute(request, { limiter: "AUTH_LIMITER", write: true });
+  // The owner code's limiter (5 a minute per network): KV has no atomic increment, so a parallel burst
+  // would read one count; this caps bursts, the count below caps the steady pace.
+  const ctx = await openAccountRoute(request, { limiter: "OWNER_LOGIN_LIMITER", write: true });
   if (ctx instanceof Response) return ctx;
   const failuresKey = `review-fail:${await keyedHash(`client:${clientKey(request)}`, ctx.secret)}`;
   const failures = Number(await dailyStore().get(failuresKey).catch(() => 0)) || 0;
@@ -42,7 +44,7 @@ export async function POST(request: Request): Promise<Response> {
     console.warn(JSON.stringify({ evt: "auth.review_failed" }));
     return errorResponse("BAD_TOKEN", { message: "아이디 또는 비밀번호가 맞지 않아요." });
   }
-  const account = await loginKakaoUser(ctx.db, { key: REVIEW_USER_KEY, nickname: "심사용 계정", ageConfirmed: false, now: ctx.now });
+  const account = await loginKakaoUser(ctx.db, { key: await reviewUserKey(login, ctx.accountSecret), nickname: "심사용 계정", ageConfirmed: false, now: ctx.now });
   if (!account) {
     // Deleted moments ago and not erased yet: the maintenance cron finishes it within minutes.
     console.warn(JSON.stringify({ evt: "auth.account_still_erasing" }));

@@ -68,9 +68,12 @@ describe("review login", () => {
       owner: false,
       user: { nickname: "심사용 계정", stardust: 0, stardustExpiresAt: null, unused: [], opening: [], review: true },
     });
-    // A second browser gets a session on the same account.
+    // A second browser gets a session on the same account, kept under a keyed hash of the credentials.
     expect((await signIn(browser("198.51.100.20"))).status).toBe(200);
     expect(await db.prepare("SELECT COUNT(*) AS n FROM users").first()).toEqual({ n: 1 });
+    const { kakao_key: key } = (await db.prepare("SELECT kakao_key FROM users").first<{ kakao_key: string }>())!;
+    expect(key).toMatch(/^review:[A-Za-z0-9_-]{43}$/);
+    expect(key).not.toContain(ID);
     expect((await db.prepare("SELECT expires_at FROM sessions").all()).results).toEqual([{ expires_at: T0 + SESSION_TTL_MS }, { expires_at: T0 + SESSION_TTL_MS }]);
     expect(await db.prepare("SELECT (SELECT COUNT(*) FROM gift_claims) AS claims, (SELECT COUNT(*) FROM credit_lots) AS lots").first()).toEqual({ claims: 0, lots: 0 });
   });
@@ -93,6 +96,7 @@ describe("review login", () => {
     useTestDb();
     const b = browser("198.51.100.30");
     for (let i = 0; i < 5; i++) expect((await signIn(b, { id: ID, password: `wrong-${i}` })).status).toBe(400);
+    vi.setSystemTime(T0 + 61_000); // past the per-minute limiter: the 15-minute count alone shuts it now
     const shut = await signIn(b);
     expect(shut.status).toBe(429);
     expect(await shut.json()).toMatchObject({ code: "RATE_LIMIT", message: "로그인 시도가 많았어요. 15분 뒤에 다시 시도해 주세요." });
@@ -100,6 +104,13 @@ describe("review login", () => {
     expect((await signIn(browser("198.51.100.31"))).status).toBe(200);
     vi.setSystemTime(T0 + 15 * 60_000 + 1);
     expect((await signIn(b)).status).toBe(200);
+  });
+
+  it("holds a burst of parallel guesses to 5 a minute, which the 15-minute count (no atomic increment in KV) cannot", async () => {
+    useTestDb();
+    const b = browser("198.51.100.32");
+    const answers = await Promise.all(Array.from({ length: 8 }, (_, i) => signIn(b, { id: ID, password: `burst-${i}` })));
+    expect(answers.map((answer) => answer.status).sort()).toEqual([400, 400, 400, 400, 400, 429, 429, 429]);
   });
 
   it("takes the login only from our own pages", async () => {
@@ -141,6 +152,21 @@ describe("a production deploy on test keys (security M1)", () => {
     expect(unlockOffer(parseAccount(state), standardProduct("tarot"), 10)).toEqual({ mode: "pay", priceKrw: 2900 });
     expect(await (await reviewer.send(checkout, "/api/pay/checkout?product=tarot")).json()).toMatchObject({ productId: "tarot", amount: 2900, provider: "toss", clientKey: "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm" });
     expect((await order(reviewer)).status).toBe(200);
+  });
+
+  it("makes new credentials a new review account: sessions on the old one lose the sales right at once", async () => {
+    productionOnTestKeys();
+    const db = useTestDb();
+    const before = browser("198.51.100.43");
+    expect((await signIn(before)).status).toBe(200);
+    const renewed = "a-new-password-for-the-second-round";
+    vi.stubEnv("REVIEW_LOGIN_PASSWORD", renewed);
+    expect(await me(before)).toMatchObject({ payments: false, user: { nickname: "심사용 계정" } });
+    expect((await before.send(checkout, "/api/pay/checkout?product=tarot")).status).toBe(409);
+    const after = browser("198.51.100.44");
+    expect((await signIn(after, { id: ID, password: renewed })).status).toBe(200);
+    expect(await me(after)).toMatchObject({ payments: true, user: { review: true } });
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM users").first()).toEqual({ n: 2 });
   });
 
   it("gives the review account no more than sales: premium stays the owner's, and turning the login off closes sales to it", async () => {

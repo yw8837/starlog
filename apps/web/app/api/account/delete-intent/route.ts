@@ -16,7 +16,7 @@ export async function POST(request: Request): Promise<Response> {
   if (ctx instanceof Response) return ctx;
   const session = requireSession(ctx);
   if (session instanceof Response) return session;
-  if (isReviewer(session.user)) {
+  if (await isReviewer(session.user, ctx.accountSecret)) {
     const outcome = await deleteAccount(ctx.db, tossClient(), { userId: session.user.id, now: ctx.now });
     if (!outcome.ok) return json({ url: `/me?delete=${outcome.code === "PENDING" ? "pending" : outcome.code === "IN_USE" ? "in-use" : "refund-failed"}` });
     return json({ url: "/me?account=deleted" }, { cookies: [serializeCookie(clearSession())] });
