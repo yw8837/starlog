@@ -8,8 +8,11 @@ import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
 import { SAJU_ARTICLES } from "./saju";
 import { SPREAD_ARTICLES } from "./spreads";
 import { MAJOR_ARCANA_ARTICLES } from "./tarot";
+import { TAROT_BASICS_ARTICLES } from "./tarot-basics";
 
-const LIBRARY: readonly GuideArticle[] = [...SPREAD_ARTICLES, ...MAJOR_ARCANA_ARTICLES, ...SAJU_ARTICLES];
+const LIBRARY: readonly GuideArticle[] = [
+  ...SPREAD_ARTICLES, ...TAROT_BASICS_ARTICLES, ...MAJOR_ARCANA_ARTICLES, ...SAJU_ARTICLES,
+];
 
 const bodyText = (article: GuideArticle) => article.sections.map((section) => section.body).join("\n");
 const allText = (article: GuideArticle) =>
@@ -37,8 +40,8 @@ const CELTIC_SLUG = "celtic-cross-spread";
 const OPENING_DATE = /오픈 예정|출시 예정|출시일|(\d+월|\d{4}년)[^.]{0,12}(오픈|출시|열려요|열릴|열어요|선보)/;
 
 describe("guide library", () => {
-  it("adds at least 28 articles on top of the six, every major arcana card has exactly one article", () => {
-    expect(LIBRARY.length).toBeGreaterThanOrEqual(28);
+  it("adds at least 42 articles on top of the six, every major arcana card has exactly one article", () => {
+    expect(LIBRARY.length).toBeGreaterThanOrEqual(42);
     expect(GUIDE_ARTICLES.length).toBe(6 + LIBRARY.length);
     const majors = CARDS.filter((card) => card.arcana === "major").map((card) => card.id);
     const cardIds = GUIDE_ARTICLES.flatMap((article) => (article.cardId ? [article.cardId] : []));

@@ -1,6 +1,7 @@
 import type { GuideArticle } from "../guide";
 import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
 import { MAJOR_ARCANA_ARTICLES } from "./tarot";
+import { TAROT_BASICS_ARTICLES } from "./tarot-basics";
 import { SAJU_ARTICLES } from "./saju";
 import { SPREAD_ARTICLES } from "./spreads";
 
@@ -33,7 +34,10 @@ function withAnswers(article: GuideArticle): GuideArticle {
   };
 }
 
-/** Base articles first (their order is the tab and home order), then spreads, cards 0–21 and saju. */
+/**
+ * Base articles first (their order is the tab and home order), then spreads, the tarot basics (two
+ * arcana, four suits, the 22 in order), cards 0–21 and saju.
+ */
 export function withGuideLibrary(base: readonly GuideArticle[]): GuideArticle[] {
   return [
     ...base.map((article) => {
@@ -41,6 +45,7 @@ export function withGuideLibrary(base: readonly GuideArticle[]): GuideArticle[] 
       return related ? { ...article, related } : article;
     }),
     ...SPREAD_ARTICLES,
+    ...TAROT_BASICS_ARTICLES,
     ...MAJOR_ARCANA_ARTICLES,
     ...SAJU_ARTICLES,
   ].map(withAnswers);
