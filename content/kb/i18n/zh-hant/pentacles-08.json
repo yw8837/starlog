@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-08",
+  "locale": "zh-hant",
+  "sourceHash": "4dbb4a266d99fb14",
+  "name": "錢幣八",
+  "aliases": [
+    "星幣八",
+    "金幣八"
+  ],
+  "keywords": [
+    "持之以恆的練習",
+    "踏實的工作",
+    "習得技藝",
+    "一個一個累積"
+  ],
+  "facts": {
+    "craftsman": "工匠坐在長凳上，用槌子和鑿子雕刻錢幣",
+    "post-pentacles": "右邊的木柱上，完成的錢幣依序掛著",
+    "more-pentacles": "柱子下方和腳邊的地面上也各放著一枚錢幣(一共八枚)",
+    "focused": "低著頭，只專注在工作上",
+    "distant-town": "左邊遠處可以看到城鎮和高塔",
+    "clothes": "穿著藍色衣服、黑色圍裙和紅色褲子"
+  },
+  "glosses": {
+    "post-pentacles": "一個一個累積起來的成果",
+    "distant-town": "與世界稍微保持距離、鍛鍊實力的時間"
+  },
+  "reversedGloss": {
+    "waning": "厭倦了重複，專注與用心下降",
+    "excess": "因為完美主義而不停修改同一件東西"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "在城市正中央的工坊工作",
+      "regex": "城市(?:的)?正中央|市中心|城市中心|城中心"
+    },
+    {
+      "wrong": "把錢幣砸碎",
+      "regex": "砸(?:碎|爛|壞)|打碎|弄壞|毀掉"
+    }
+  ]
+}

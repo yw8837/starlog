@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-14",
+  "locale": "en",
+  "sourceHash": "fcaa7564bef7711a",
+  "name": "King of Swords",
+  "aliases": [],
+  "keywords": [
+    "fair judgment",
+    "logic and authority",
+    "a clear decision",
+    "principle"
+  ],
+  "facts": {
+    "frontal-king": "The king sits on the throne facing front.",
+    "sword-right": "In his right hand he holds a sword upright, tilted slightly.",
+    "throne-butterflies": "Butterflies and a crescent moon pattern are carved on the back of the throne.",
+    "robes": "He wears an orange cloak and a gray outer garment over blue clothes, and a crown.",
+    "trees-birds": "Trees and clouds stand on both sides, and two birds fly in the sky on the right.",
+    "blue-sky": "The background is a blue sky."
+  },
+  "glosses": {
+    "sword-right": "A judgment that cuts according to principle.",
+    "throne-butterflies": "A judgment built on thoughts that keep changing."
+  },
+  "reversedGloss": {
+    "excess": "Logic and authority go too far, pressing down coldly.",
+    "blocked": "The judgment is clouded, and he cannot make a decision."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is holding scales.",
+      "regex": "\\b(?:holds?|holding|carries|carrying|balances?|balancing)\\s+(?:a |the |his |an )?(?:pair of )?(?:scales|balance)\\b|\\bscales (?:in|on) (?:his|one)\\b"
+    },
+    {
+      "wrong": "He sits in profile.",
+      "regex": "\\bin profile\\b|\\bsideways\\b|\\bside view\\b|\\bprofile view\\b"
+    }
+  ]
+}

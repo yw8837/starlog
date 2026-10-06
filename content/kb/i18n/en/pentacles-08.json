@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-08",
+  "locale": "en",
+  "sourceHash": "4dbb4a266d99fb14",
+  "name": "Eight of Pentacles",
+  "aliases": [
+    "Eight of Coins",
+    "Eight of Disks"
+  ],
+  "keywords": [
+    "steady practice",
+    "diligent work",
+    "mastering a skill",
+    "building one by one"
+  ],
+  "facts": {
+    "craftsman": "A craftsman sits on a long bench, carving a pentacle with a hammer and chisel.",
+    "post-pentacles": "On the wooden post at the right, finished pentacles hang one after another.",
+    "more-pentacles": "Pentacles also lie one each on the ground below the post and at his feet (eight in all).",
+    "focused": "His head is bowed, and he is absorbed in the work alone.",
+    "distant-town": "A town and a tower can be seen far off on the left.",
+    "clothes": "He wears blue clothes with a black apron and red trousers."
+  },
+  "glosses": {
+    "post-pentacles": "Results built up one by one.",
+    "distant-town": "A time of building skill a little apart from the world."
+  },
+  "reversedGloss": {
+    "waning": "Tired of repetition, the focus and care drop.",
+    "excess": "Perfectionism keeps fixing the same thing."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He works in a workshop in the middle of the city.",
+      "regex": "\\b(?:middle|heart|center|centre) of (?:the |a )?(?:city|town)\\b|\\bin (?:the )?(?:city|town) (?:center|centre|square)\\b|\\bcity workshop\\b"
+    },
+    {
+      "wrong": "He smashes the pentacle.",
+      "regex": "\\b(?:smash\\w*|break(?:s|ing)?|broke|shatter\\w*|crush\\w*|destroy\\w*)\\b[^.\\n]{0,12}\\bpentacles?\\b"
+    }
+  ]
+}

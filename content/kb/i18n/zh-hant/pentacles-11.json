@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-11",
+  "locale": "zh-hant",
+  "sourceHash": "be0737cf5bf7efef",
+  "name": "錢幣侍從",
+  "aliases": [
+    "星幣侍從",
+    "金幣侍從"
+  ],
+  "keywords": [
+    "學習的開始",
+    "認真的好奇心",
+    "務實的計畫",
+    "小小的機會"
+  ],
+  "facts": {
+    "holding-pentacle": "年輕人雙手把一枚錢幣舉起，靜靜地看著它",
+    "red-hood": "戴著垂著長布的紅色兜帽帽子，穿著綠色衣服",
+    "meadow": "站在開滿花的草原上",
+    "plowed-field": "右邊遠處可以看到耕好的田",
+    "trees-mountain": "左邊有樹林，右邊有山，天空是黃色的"
+  },
+  "glosses": {
+    "plowed-field": "往後要耕耘的土地，在現實中培育的計畫",
+    "meadow": "剛萌芽的可能性"
+  },
+  "reversedGloss": {
+    "blocked": "有計畫，但執行延後了",
+    "waning": "想學習的意願與專注下降"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "把錢幣丟出去",
+      "regex": "(?:丟|拋|扔)(?:出|向)?錢幣|錢幣(?:丟|拋|扔)(?:出|向|掉)"
+    },
+    {
+      "wrong": "騎著馬",
+      "regex": "騎著馬|騎馬|騎在馬"
+    }
+  ]
+}

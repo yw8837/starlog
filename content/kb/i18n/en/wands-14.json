@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-14",
+  "locale": "en",
+  "sourceHash": "0bbba9f30881413c",
+  "name": "King of Wands",
+  "aliases": [
+    "King of Rods",
+    "King of Staves"
+  ],
+  "keywords": [
+    "leading with a vision",
+    "decisiveness",
+    "bold responsibility",
+    "looking ahead"
+  ],
+  "facts": {
+    "profile-throne": "The king sits on the throne in profile, looking to the left.",
+    "flowering-wand": "In his right hand he holds a leafy wand upright.",
+    "flame-crown": "He wears a gold crown with flame-shaped points rising from it.",
+    "throne-lions": "Black lions and salamander patterns are carved on the back of the throne.",
+    "lizard": "At the right by his feet is one small black salamander.",
+    "robes": "Over an orange garment he wears a cloak with a green collar and a salamander pattern."
+  },
+  "glosses": {
+    "lizard": "The salamander, said to live even in fire; the strength to handle passion to the end.",
+    "profile-throne": "A gaze that looks to the future more than to the present.",
+    "flowering-wand": "A leader holding a plan that is still growing."
+  },
+  "reversedGloss": {
+    "excess": "Decisiveness turns into arbitrariness and haste.",
+    "waning": "The strength to lead and the conviction weaken, and the burden grows."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He sits facing front.",
+      "regex": "\\b(?:faces?|facing|looks?|looking|stares?|staring|gazes?|gazing)\\b[^.\\n]{0,12}\\b(?:at us|at the viewer|toward us|toward the viewer|straight at)\\b|\\bfacing (?:front|us|the viewer)\\b|\\bfaces forward\\b|\\bsits? facing front\\b"
+    },
+    {
+      "wrong": "A lion lies at his feet.",
+      "regex": "\\blions?\\b[^.\\n]{0,15}\\b(?:lies|lying|crouch\\w*|sits?|sitting|rests?|resting)\\b[^.\\n]{0,12}\\b(?:feet|foot)\\b|\\b(?:feet|foot)\\b[^.\\n]{0,15}\\blion\\b"
+    }
+  ]
+}

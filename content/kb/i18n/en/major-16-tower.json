@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-16-tower",
+  "locale": "en",
+  "sourceHash": "3d6834294451c270",
+  "name": "The Tower",
+  "aliases": [],
+  "keywords": [
+    "sudden shaking",
+    "an illusion that breaks",
+    "a forced reset",
+    "truth coming out"
+  ],
+  "facts": {
+    "lightning": "A yellow bolt of lightning strikes down from the upper right and hits the top of the tower.",
+    "crown-off": "The gold crown on top of the tower is knocked off and flies away.",
+    "flames-windows": "Flames burst from the top of the tower and from its windows.",
+    "falling-figures": "Two people are falling headfirst (the one on the left in a red cloak, the one on the right wearing a crown).",
+    "yellow-drops": "Yellow, spark-like shapes scatter across the black sky on both sides.",
+    "rocky-peak": "The gray tower stands on top of a pointed rocky peak.",
+    "dark-sky": "The background is a black sky and gray clouds."
+  },
+  "glosses": {
+    "lightning": "The moment an unexpected shock breaks a structure that had set hard.",
+    "falling-figures": "The experience of being pushed out of a familiar place."
+  },
+  "reversedGloss": {
+    "internalized": "It looks fine outside, but it is already collapsing inside.",
+    "blocked": "Holding out and avoiding a change that is needed.",
+    "waning": "The big shock has passed, and the aftershocks and the cleanup remain."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The tower has collapsed entirely into ruins.",
+      "regex": "\\b(?:tower|it) (?:has |had )?(?:completely |totally |entirely )?(?:collapsed|crumbled|crumbling|fell|fallen|destroyed|demolished|toppled)\\b|\\bruins?\\b|\\bin rubble\\b|\\brubble\\b"
+    },
+    {
+      "wrong": "Rain is pouring down.",
+      "regex": "\\brain\\b[^.\\n]{0,10}\\b(?:falls?|falling|pours?|pouring|comes? down)\\b|\\b(?:pouring|driving) rain\\b|\\braindrops?\\b|\\bdownpour\\b|\\bit(?:'s| is) raining\\b"
+    }
+  ]
+}

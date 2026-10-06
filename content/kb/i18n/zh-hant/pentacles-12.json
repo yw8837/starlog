@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-12",
+  "locale": "zh-hant",
+  "sourceHash": "0045e0e7ebdc2737",
+  "name": "錢幣騎士",
+  "aliases": [
+    "星幣騎士",
+    "金幣騎士"
+  ],
+  "keywords": [
+    "穩紮穩打",
+    "謹慎的責任",
+    "慢卻確實",
+    "踏實的執行"
+  ],
+  "facts": {
+    "still-horse": "騎士坐在四蹄站定不動的黑馬上",
+    "pentacle-hand": "一隻手掌心托著一枚錢幣",
+    "oak-sprigs": "頭盔和馬頭上都有綠葉裝飾",
+    "plowed-field": "後方展開耕好的田壟",
+    "yellow-sky": "天空是黃色的，右邊遠處可以看到樹",
+    "armor": "盔甲外穿著有紅色條紋的外衣"
+  },
+  "glosses": {
+    "plowed-field": "一直耕耘著的土地，花時間做好的準備",
+    "pentacle-hand": "把責任握在手中、不急不躁的態度"
+  },
+  "reversedGloss": {
+    "excess": "謹慎過頭，停在原地",
+    "waning": "穩紮穩打的力量被無聊折斷"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "馬匹奮力奔馳",
+      "regex": "奔馳|飛奔|疾馳|狂奔|奮力奔跑|全速"
+    },
+    {
+      "wrong": "騎著白馬",
+      "regex": "白馬|白色的馬"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-01",
+  "locale": "en",
+  "sourceHash": "2f597cfeda1d1879",
+  "name": "Ace of Pentacles",
+  "aliases": [
+    "Ace of Coins",
+    "Ace of Disks"
+  ],
+  "keywords": [
+    "a practical opportunity",
+    "a solid start",
+    "fruit you can hold",
+    "a seed of stability"
+  ],
+  "facts": {
+    "hand-pentacle": "A hand coming out of a cloud on the left holds a large gold pentacle on its palm.",
+    "glow": "Pale rays of light spread around the hand.",
+    "garden-lilies": "White lilies bloom in the garden below.",
+    "hedge-arch": "An arched gateway is cut into the hedge, and a path continues beyond it.",
+    "mountains": "Blue mountains can be seen beyond the arch.",
+    "lawn-path": "A yellow path runs through the green lawn."
+  },
+  "glosses": {
+    "hedge-arch": "A door leading out of the garden; the path that carries an opportunity into reality.",
+    "garden-lilies": "A foundation that grows in proportion to the care given."
+  },
+  "reversedGloss": {
+    "blocked": "An opportunity is there, but preparation or conditions block it, and the start is late.",
+    "excess": "Too tied to money and conditions."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A hand comes out of a cloud on the right.",
+      "regex": "\\bcloud\\b[^.\\n]{0,15}\\bright\\b|\\bright\\b[^.\\n]{0,15}\\bcloud\\b"
+    },
+    {
+      "wrong": "Gold coins pour out.",
+      "regex": "\\bpour\\w*\\b[^.\\n]{0,12}\\b(?:coins?|gold)\\b|\\b(?:coins?|gold)\\b[^.\\n]{0,12}\\b(?:pour\\w*|spill\\w*|cascad\\w*|shower\\w*)\\b|\\bpiles? of coins\\b|\\bheaps? of (?:coins|gold)\\b"
+    }
+  ]
+}

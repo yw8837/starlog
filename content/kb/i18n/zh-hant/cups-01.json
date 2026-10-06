@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-01",
+  "locale": "zh-hant",
+  "sourceHash": "8e8df615e458df7f",
+  "name": "聖杯王牌",
+  "aliases": [],
+  "keywords": [
+    "滿溢的心",
+    "感情的新開始",
+    "接納",
+    "安慰與填滿"
+  ],
+  "facts": {
+    "hand-cup": "右邊雲中伸出的一隻手，掌心上托著一只金色聖杯",
+    "five-streams": "五道水流從杯中滿溢出來，落入下方的池塘",
+    "dove-wafer": "一隻白鴿叼著畫有十字的圓形聖餅，降落在杯子上方",
+    "drops": "杯子周圍散落著水滴",
+    "lily-pond": "下方池塘裡漂著睡蓮葉和紅色的花",
+    "letter": "杯身上刻著一個像字母的標記",
+    "hand-glow": "手的周圍擴散著淡淡的光芒"
+  },
+  "glosses": {
+    "five-streams": "裝滿了還是溢出來的感情",
+    "lily-pond": "感情所及之處綻放的事物"
+  },
+  "reversedGloss": {
+    "blocked": "心無法流動，被堵住了",
+    "internalized": "感情沒有表現在外，只在內心滿溢",
+    "excess": "感情滿溢，難以承受"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "水流有四道",
+      "regex": "四道水流|水流(?:有)?四道|四股水|四條水流"
+    },
+    {
+      "wrong": "杯子是空的",
+      "regex": "杯子(?:是)?空|空杯|空的杯子"
+    },
+    {
+      "wrong": "手從左邊的雲裡伸出來",
+      "regex": "左邊的雲|左側的雲"
+    }
+  ]
+}

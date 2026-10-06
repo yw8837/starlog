@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-03",
+  "locale": "en",
+  "sourceHash": "b244613bfff9299b",
+  "name": "Three of Cups",
+  "aliases": [
+    "Three of Chalices"
+  ],
+  "keywords": [
+    "rejoicing together",
+    "friendship and celebration",
+    "the fun of a gathering",
+    "shared abundance"
+  ],
+  "facts": {
+    "three-toast": "Three women gather in a circle and raise their cups high over their heads in a toast.",
+    "middle-back": "The woman in the middle wears orange and has her back turned.",
+    "wreaths": "The women have flower and leaf ornaments on their heads.",
+    "harvest": "At their feet lie harvest goods such as pumpkins, grapes and other fruit.",
+    "grapes-hand": "The woman on the right holds a bunch of grapes in her other hand.",
+    "blue-sky": "The background is a blue sky."
+  },
+  "glosses": {
+    "harvest": "Sharing the fruit gathered together.",
+    "middle-back": "The middle one shows her back, giving a composition where the three face each other in a circle."
+  },
+  "reversedGloss": {
+    "excess": "Playing and enjoying go too far, and the body and the tasks fall behind.",
+    "waning": "The cheer of the gathering cools and distance appears.",
+    "blocked": "The occasion to celebrate together is put off, or there is a feeling of not being invited."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Four people are dancing.",
+      "regex": "\\b(?:four|4) (?:women|people|girls|figures|dancers|friends)\\b|\\bfour of them\\b"
+    },
+    {
+      "wrong": "They have drunk too much and collapsed.",
+      "regex": "\\b(?:drunk|drunken|intoxicated|tipsy|inebriated|passed out|sprawled)\\b|\\b(?:collapsed|fallen) (?:on|onto|to) the (?:ground|floor)\\b"
+    }
+  ]
+}

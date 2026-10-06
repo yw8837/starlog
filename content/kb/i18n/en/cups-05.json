@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-05",
+  "locale": "en",
+  "sourceHash": "b6d890b9d264f829",
+  "name": "Five of Cups",
+  "aliases": [
+    "Five of Chalices"
+  ],
+  "keywords": [
+    "the ache of loss",
+    "lingering over what spilled",
+    "seeing what remains",
+    "mourning"
+  ],
+  "facts": {
+    "black-cloak": "A person in a black cloak stands with head bowed.",
+    "spilled-three": "In front, three cups lie tipped over, with red and green liquid spilled from them.",
+    "standing-two": "Behind, two cups that have not fallen stand upright.",
+    "river-bridge": "A river flows behind, and on the right there is a stone bridge crossing it.",
+    "keep": "Across the river on the left, a small fortress can be seen.",
+    "grey-sky": "The sky is gray."
+  },
+  "glosses": {
+    "black-cloak": "A time of mourning a loss.",
+    "river-bridge": "There is a bridge to cross and a place to go back to."
+  },
+  "reversedGloss": {
+    "waning": "The sadness settles, and what remains starts to show.",
+    "internalized": "Sadness cannot be shown and is swallowed inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "All the cups have fallen over.",
+      "regex": "\\ball (?:the |of the |five |5 )?(?:cups|chalices)\\b[^.\\n]{0,20}\\b(?:fall|fallen|spill|spilled|tipped|knocked|toppled|overturned|lie|lying)\\b|\\b(?:all|every) (?:the )?cups? (?:are |is |have )?(?:fallen|spilled|tipped|overturned|empty)\\b|\\bfive cups\\b[^.\\n]{0,20}\\b(?:fallen|spilled|tipped|overturned)\\b"
+    },
+    {
+      "wrong": "Blood has spilled.",
+      "regex": "\\bbloody\\b|\\bblood-red\\b|\\b(?:spilled|spilt|spilling|shed|shedding|pool of) blood\\b|\\bblood (?:has |had |is |was )?(?:spill\\w*|flow\\w*|pour\\w*)\\b"
+    }
+  ]
+}

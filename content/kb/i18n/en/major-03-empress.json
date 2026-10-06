@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-03-empress",
+  "locale": "en",
+  "sourceHash": "6cedef9af9806377",
+  "name": "The Empress",
+  "aliases": [],
+  "keywords": [
+    "care",
+    "abundance",
+    "comfort",
+    "ripening fruit"
+  ],
+  "facts": {
+    "cushion-seat": "She sits comfortably, leaning back on a seat spread with red cushions and cloth.",
+    "star-crown": "On her head is a crown set with white stars, with a green leaf wreath beneath it.",
+    "scepter": "In her right hand she holds a scepter with a round ball at its tip.",
+    "pomegranate-gown": "Her white dress is covered with a red pomegranate pattern.",
+    "venus-shield": "At the lower left is a heart-shaped shield marked with the Venus sign (♀).",
+    "wheat-field": "In front of her spreads a field of wheat, ripe and yellow.",
+    "forest-stream": "Behind her is a dense forest, and a stream of water flows down on the right."
+  },
+  "glosses": {
+    "wheat-field": "Fruit that ripens in proportion to the care given.",
+    "cushion-seat": "Something that grows in comfort rather than through effort.",
+    "venus-shield": "The strength of the side that protects love and beauty."
+  },
+  "reversedGloss": {
+    "excess": "Caring goes too far and smothers the other person, or empties out her own self.",
+    "waning": "Ease and enjoyment are drying up.",
+    "blocked": "Something she was nurturing seems to have stalled and feels slow."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She is a pregnant woman with a swollen belly.",
+      "regex": "\\bpregnan|\\bswollen (?:belly|stomach)\\b|\\bbaby bump\\b|\\bwith child\\b"
+    },
+    {
+      "wrong": "The shield is on the right.",
+      "regex": "\\bshield\\b[^.\\n]{0,20}\\bright\\b|\\bright\\b[^.\\n]{0,20}\\bshield\\b"
+    }
+  ]
+}

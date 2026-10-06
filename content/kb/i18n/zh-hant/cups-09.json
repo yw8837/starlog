@@ -1,0 +1,39 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-09",
+  "locale": "zh-hant",
+  "sourceHash": "a8c5976704cb9c52",
+  "name": "聖杯九",
+  "aliases": [],
+  "keywords": [
+    "滿足",
+    "實現所盼",
+    "從容寬裕",
+    "自己享受"
+  ],
+  "facts": {
+    "seated-man": "戴著紅帽的男子坐在木椅上，雙臂交抱，滿足地笑著",
+    "nine-cups-arc": "後方鋪著藍布的長桌上，九只杯子排成半圓形",
+    "striped-robe": "穿著白底黑條紋的衣服",
+    "feet-apart": "雙腳張開，舒服地坐著",
+    "yellow-bg": "背景全是黃色"
+  },
+  "glosses": {
+    "seated-man": "因為是雙臂交抱的姿勢，也可以讀成獨自享受的滿足",
+    "nine-cups-arc": "在身後累積起來的豐盛"
+  },
+  "reversedGloss": {
+    "excess": "超過滿足，變成暴飲暴食、過度消費那樣的過頭",
+    "internalized": "表面上沒問題，內心卻空虛"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "喝醉了酒",
+      "regex": "喝醉|醉了|醉醺醺|酒醉"
+    },
+    {
+      "wrong": "有十只杯子",
+      "regex": "十(?:只|個|隻)杯子"
+    }
+  ]
+}

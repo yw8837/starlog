@@ -17,6 +17,7 @@
     "e2e": "pnpm --filter @starlog/web e2e",
     "e2e:screens": "pnpm --filter @starlog/web e2e:screens",
     "kb:runtime": "node scripts/build-kb-runtime.mjs",
+    "kb:i18n": "node scripts/build-kb-i18n.mjs",
     "ai:smoke": "vitest run -c vitest.smoke.config.ts scripts/ai-smoke.test.ts",
     "ai:check:saju-topics": "vitest run -c vitest.smoke.config.ts scripts/saju-topics-real.test.ts",
     "i18n:status": "vitest run -c vitest.i18n.config.ts scripts/i18n/status.test.ts",

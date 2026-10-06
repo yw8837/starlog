@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-06",
+  "locale": "en",
+  "sourceHash": "416f2abe4590738a",
+  "name": "Six of Wands",
+  "aliases": [
+    "Six of Rods",
+    "Six of Staves"
+  ],
+  "keywords": [
+    "recognized achievement",
+    "good news",
+    "confidence",
+    "a procession going together"
+  ],
+  "facts": {
+    "rider-wreath": "A man with a laurel wreath on his head rides a white horse toward the right.",
+    "wand-wreath": "A laurel wreath tied with a red ribbon hangs on the tip of the wand in his hand.",
+    "crowd": "At the lower left, people on foot keep pace beside him, holding wands upright (six wands in all).",
+    "caparison": "The horse wears a patterned green cloth and a red bridle.",
+    "cloak": "The man wears a reddish-purple cloak.",
+    "blue-sky": "The background is a blue sky."
+  },
+  "glosses": {
+    "wand-wreath": "A visible achievement and recognition.",
+    "rider-wreath": "Confidence earned by one's own effort."
+  },
+  "reversedGloss": {
+    "blocked": "There is a result, but recognition and news are late.",
+    "excess": "Confidence turns into conceit.",
+    "internalized": "A time when acknowledging yourself comes before applause from outside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The people are pointing their wands at him.",
+      "regex": "\\b(?:point(?:s|ing)?|aim(?:s|ing)?|thrust(?:s|ing)?|level(?:s|ing)?) (?:their )?(?:wands|staves|staffs)\\b[^.\\n]{0,12}\\b(?:at|toward|towards)\\b|\\b(?:attack(?:s|ing)?|threaten(?:s|ing)?) (?:him|the rider)\\b|\\bwands? (?:are )?(?:pointed|aimed) at (?:him|the rider)\\b"
+    },
+    {
+      "wrong": "He walks back alone.",
+      "regex": "\\b(?:he|the rider|the man) (?:walks?|returns?|comes? back|is walking)\\b[^.\\n]{0,12}\\balone\\b|\\b(?:dismounts?|dismounted|gets? off|got off) (?:his |the )?horse\\b|\\bwalks? back alone\\b"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-12-hanged-man",
+  "locale": "en",
+  "sourceHash": "6e661e87e460f067",
+  "name": "The Hanged Man",
+  "aliases": [],
+  "keywords": [
+    "pausing and seeing differently",
+    "waiting willingly",
+    "a change of view",
+    "letting go"
+  ],
+  "facts": {
+    "upside-down": "He hangs upside down, with one foot tied to a T-shaped post made of a living tree.",
+    "crossed-leg": "The other leg is bent and crossed behind the straight leg, making a shape like the number 4.",
+    "halo": "A yellow halo glows around his head.",
+    "calm-face": "His face is calm rather than pained.",
+    "arms-behind": "His two arms are behind his back, out of sight.",
+    "leaves": "Green leaves grow from both ends of the crossbeam and from the post.",
+    "clothes": "He wears a blue top, red trousers and yellow shoes, and the background is a pale beige."
+  },
+  "glosses": {
+    "upside-down": "What looks different when seen upside down; the new view a pause gives."
+  },
+  "reversedGloss": {
+    "excess": "Waiting and sacrifice go too far and wear him out.",
+    "waning": "The time of hanging is ending, and the time to move is near.",
+    "blocked": "He should stop, but is too hasty to stop."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is hanged by the neck.",
+      "regex": "\\b(?:hanged|hanging|hung|strung up) (?:by|from) (?:the |his )?(?:neck|noose)\\b|\\bnoose\\b|\\bgallows\\b"
+    },
+    {
+      "wrong": "His face is twisted in pain.",
+      "regex": "\\b(?:face|expression|look)\\b[^.\\n]{0,20}\\b(?:agony|anguish|distress|torment|grimac|twisted|contorted|strain)\\w*|\\b(?:agoni[sz]ed|anguished|tortured|grimacing|contorted) (?:face|expression|look)\\b|\\bface (?:is |looks )?(?:pained|in pain)\\b"
+    },
+    {
+      "wrong": "His hands are tied with rope.",
+      "regex": "\\bhands? (?:are |is )?(?:tied|bound|roped)\\b|\\b(?:tied|bound) (?:his |the )?(?:hands|wrists)\\b|\\bhands tied\\b"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-10-wheel-of-fortune",
+  "locale": "zh-hant",
+  "sourceHash": "7bcbd20612cbba49",
+  "name": "命運之輪",
+  "aliases": [],
+  "keywords": [
+    "流向的轉折",
+    "機會的時刻",
+    "循環",
+    "時機"
+  ],
+  "facts": {
+    "orange-wheel": "中央橘色的大輪子上，交替刻著 T、A、R、O 字母和希伯來字母",
+    "inner-symbols": "輪子內圈有煉金術符號和八根輪輻",
+    "sphinx-sword": "輪子頂端坐著一隻藍色人面獅身像，豎著一把劍",
+    "snake-left": "輪子左側有一條黃蛇向下爬",
+    "jackal-right": "輪子右下方，一個長著紅色獸頭的人物托著輪子往上爬",
+    "four-creatures": "四個角落的雲上有帶翅膀的人、老鷹、公牛和獅子，每個都翻開一本書",
+    "cloud-sky": "灰色的雲和藍天佈滿背景"
+  },
+  "glosses": {
+    "orange-wheel": "不停轉動的局勢流向",
+    "snake-left": "往下的和往上的，在同一個輪子上",
+    "four-creatures": "即使流向改變，仍固定在四個角落學習的事物"
+  },
+  "reversedGloss": {
+    "blocked": "流向像是暫時卡住而停了下來",
+    "waning": "好的流向轉了一圈，正在往下走的階段"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "女神正在轉動輪子",
+      "regex": "女神|命運女神|轉動(?:著)?輪子|轉著輪子"
+    },
+    {
+      "wrong": "人們攀附在輪子上起起落落",
+      "regex": "攀附(?:在)?輪子|抓著輪子|掛在輪子|吊在輪子"
+    }
+  ]
+}

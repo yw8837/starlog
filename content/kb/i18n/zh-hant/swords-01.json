@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-01",
+  "locale": "zh-hant",
+  "sourceHash": "19e1516a321f4b95",
+  "name": "寶劍王牌",
+  "aliases": [],
+  "keywords": [
+    "清楚的真相",
+    "決斷之劍",
+    "思考的突破",
+    "新的標準"
+  ],
+  "facts": {
+    "hand-sword": "左邊雲中伸出一隻手，筆直地握著一把劍",
+    "crown-tip": "朝上的劍尖上掛著一頂金冠",
+    "branches": "從冠上向左垂下橄欖枝，向右垂下棕櫚葉",
+    "drops": "劍的兩側落下六顆黃色水滴",
+    "mountains": "下方可以看到險峻的灰色山脈",
+    "glow": "手的周圍擴散著淡淡的光芒"
+  },
+  "glosses": {
+    "hand-sword": "劈開模糊不清之處的明確思考",
+    "branches": "同時帶著和平(橄欖)與勝利(棕櫚)的決斷"
+  },
+  "reversedGloss": {
+    "blocked": "思緒沒有整理好，決斷被延後",
+    "excess": "鋒利過頭，變成帶攻擊性的話"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "手從右邊的雲裡伸出來",
+      "regex": "右邊的雲|右側的雲"
+    },
+    {
+      "wrong": "劍上沾著血",
+      "regex": "血"
+    },
+    {
+      "wrong": "劍尖朝下",
+      "regex": "劍尖(?:朝|向)下"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-06",
+  "locale": "en",
+  "sourceHash": "133d7305f1dfc748",
+  "name": "Six of Swords",
+  "aliases": [],
+  "keywords": [
+    "leaving and crossing over",
+    "getting out of a hard place",
+    "a quiet move",
+    "a voyage toward recovery"
+  ],
+  "facts": {
+    "ferryman": "A ferryman with his back turned pushes a flat boat across the water with a long pole.",
+    "passengers": "In the boat, a hooded figure sits with head bowed, and a child is beside the figure.",
+    "six-swords": "Six swords stand upright at the front of the boat.",
+    "far-shore": "Trees can be seen on the shore opposite.",
+    "water-contrast": "The water to the left of the boat is calm, and waves rise at the lower right.",
+    "pale-sky": "The sky is a pale gray."
+  },
+  "glosses": {
+    "passengers": "A person leaving quietly, carrying sorrow.",
+    "water-contrast": "A move from rough water toward the calm side."
+  },
+  "reversedGloss": {
+    "blocked": "Trying to move on, but circumstances tie the feet.",
+    "internalized": "The body has left, but the heart still stays in the old place."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The boat is tossed by a storm.",
+      "regex": "\\bstorm\\w*|\\bchoppy\\b|\\bhigh waves\\b|\\bcrashing waves\\b|\\btempest\\b|\\bfierce waves\\b|\\bwild waves\\b"
+    },
+    {
+      "wrong": "The people are rowing.",
+      "regex": "\\brow(?:s|ing|ed) (?:the |a )?(?:boat|ship|them|across)\\b|\\b(?:are|is) rowing\\b|\\boars?\\b|\\bpaddl(?:es|ing|ed)\\b"
+    }
+  ]
+}

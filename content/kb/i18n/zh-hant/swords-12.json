@@ -1,0 +1,39 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-12",
+  "locale": "zh-hant",
+  "sourceHash": "8ac8b3161f9604fe",
+  "name": "寶劍騎士",
+  "aliases": [],
+  "keywords": [
+    "勇往直前的衝刺",
+    "快速的判斷",
+    "直話直說",
+    "急躁"
+  ],
+  "facts": {
+    "charging": "騎士高舉長劍，策著白馬全速朝左邊衝刺",
+    "red-cape": "紅色斗篷和頭盔上的紅色裝飾在風中飄揚",
+    "harness": "馬的胸帶上有蝴蝶和鳥的圖案",
+    "bent-trees": "後方的樹被風吹得彎曲",
+    "torn-clouds": "天空中像被撕裂一般的雲快速流動"
+  },
+  "glosses": {
+    "bent-trees": "席捲周圍的速度與風",
+    "torn-clouds": "快速四散的念頭"
+  },
+  "reversedGloss": {
+    "excess": "速度與攻擊性過頭，招來衝突",
+    "blocked": "該奔跑的時候力氣洩了，停了下來"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "馬慢慢地走著",
+      "regex": "慢慢(?:地)?走|緩步|漫步"
+    },
+    {
+      "wrong": "把劍收進劍鞘",
+      "regex": "劍鞘|入鞘|收劍"
+    }
+  ]
+}

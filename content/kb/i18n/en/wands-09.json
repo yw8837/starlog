@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-09",
+  "locale": "en",
+  "sourceHash": "6b97ad29aa565ded",
+  "name": "Nine of Wands",
+  "aliases": [
+    "Nine of Rods",
+    "Nine of Staves"
+  ],
+  "keywords": [
+    "a last stand",
+    "tired vigilance",
+    "resilience",
+    "almost there"
+  ],
+  "facts": {
+    "bandage": "A man with a white bandage around his head stands holding one wand in both hands.",
+    "wary-look": "He turns his head and looks to the side as if on guard.",
+    "eight-fence": "Behind him, eight wands stand in a row like a fence.",
+    "clothes": "He wears reddish-brown clothes and pale greenish boots.",
+    "landscape": "Behind are green hills and a blue sky, and the ground under his feet is a pale gray."
+  },
+  "glosses": {
+    "bandage": "A wound already taken once, yet still standing.",
+    "eight-fence": "The defenses and experience built up so far."
+  },
+  "reversedGloss": {
+    "waning": "The strength to hold on has run out, and rest is needed.",
+    "excess": "Wariness goes too far, and he blocks everything."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A wounded man bleeding.",
+      "regex": "\\bbleed(?:s|ing)?\\b|\\bbloody\\b|\\bblood-stained\\b|\\bbloodied\\b|\\b(?:spill(?:s|ed|ing)?|shed(?:s|ding)?) blood\\b"
+    },
+    {
+      "wrong": "All nine wands stand behind him.",
+      "regex": "\\b(?:nine|9) (?:wands|staves|staffs)\\b[^.\\n]{0,20}\\b(?:behind|fence|row)\\b|\\ball (?:nine|9) wands\\b|\\bnine wands (?:stand|are|form|line)\\b"
+    }
+  ]
+}

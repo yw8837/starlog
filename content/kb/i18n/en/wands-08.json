@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-08",
+  "locale": "en",
+  "sourceHash": "9916b1e5faccc2e7",
+  "name": "Eight of Wands",
+  "aliases": [
+    "Eight of Rods",
+    "Eight of Staves"
+  ],
+  "keywords": [
+    "moving fast",
+    "news coming and going",
+    "an unblocked flow",
+    "just before arrival"
+  ],
+  "facts": {
+    "eight-flying": "Eight wands fly side by side at a slant.",
+    "downward": "The wands slope from the upper left toward the lower right, coming down toward the ground.",
+    "no-figures": "There is not a single person.",
+    "leaves": "Small green leaves sprout on each wand.",
+    "landscape": "Below can be seen a river, green hills and a small house on a hill.",
+    "blue-sky": "The background is a wide blue sky."
+  },
+  "glosses": {
+    "eight-flying": "A flow that moves quickly in one direction without being blocked.",
+    "no-figures": "The matter and the news move before any person does."
+  },
+  "reversedGloss": {
+    "blocked": "What was flying gets caught, and news and progress slow down.",
+    "excess": "Rushing goes too far, and things cross and scatter."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Arrows are flying.",
+      "regex": "\\barrows?\\b"
+    },
+    {
+      "wrong": "The wands shoot up into the sky.",
+      "regex": "\\b(?:shoot(?:s|ing)?|soar(?:s|ing)?|rise[sn]?|rising|fly(?:ing)?|flies) (?:up|upward|upwards) (?:into|to|toward) the (?:sky|heavens)\\b|\\bshoot(?:s|ing)? (?:up|upward)\\b|\\bsoar(?:s|ing)? (?:up|upward)\\b"
+    }
+  ]
+}

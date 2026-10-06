@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-14",
+  "locale": "zh-hant",
+  "sourceHash": "fcaa7564bef7711a",
+  "name": "寶劍國王",
+  "aliases": [],
+  "keywords": [
+    "公正的判斷",
+    "邏輯與權威",
+    "明確的決定",
+    "原則"
+  ],
+  "facts": {
+    "frontal-king": "國王正面朝前坐在王座上",
+    "sword-right": "右手把劍稍微傾斜地豎著握住",
+    "throne-butterflies": "王座椅背上刻著蝴蝶和新月圖案",
+    "robes": "藍色衣服外披著橘色斗篷和灰色外衣，戴著冠",
+    "trees-birds": "兩側有樹和雲，右邊的天空有兩隻鳥在飛",
+    "blue-sky": "背景是藍天"
+  },
+  "glosses": {
+    "sword-right": "依照原則劈分的判斷",
+    "throne-butterflies": "建立在不斷變化的想法之上的判斷"
+  },
+  "reversedGloss": {
+    "excess": "邏輯與權威過頭，冰冷地壓制",
+    "blocked": "判斷變得模糊，無法下決定"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "手裡拿著天秤",
+      "regex": "(?:拿|持|握|舉)著天秤|手持天秤|手裡拿著天秤"
+    },
+    {
+      "wrong": "側身坐著",
+      "regex": "側身坐|側臉|側面"
+    }
+  ]
+}

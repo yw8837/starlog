@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-11-justice",
+  "locale": "zh-hant",
+  "sourceHash": "747f3e30a3359dbf",
+  "name": "正義",
+  "aliases": [],
+  "keywords": [
+    "公正的判斷",
+    "因果",
+    "責任",
+    "如實看待"
+  ],
+  "facts": {
+    "sword-upright": "右手筆直豎著一把雙刃劍",
+    "scales": "左手提著天秤，向下垂著",
+    "pillars-veil": "坐在兩根灰色石柱之間，背後掛著紫色帷幕",
+    "crown": "戴著中間鑲有一顆方形寶石的金冠",
+    "robes": "紅色衣服外披綠色斗篷，胸前有一個方形飾物",
+    "foot": "衣襬下露出一隻白色鞋子的一小部分",
+    "gaze-front": "直直地看向正前方"
+  },
+  "glosses": {
+    "sword-upright": "明確分辨並做出決定的判斷",
+    "scales": "以同樣的重量衡量兩邊的公平",
+    "foot": "雖然坐著，腳已準備好行動；判斷之後的行動"
+  },
+  "reversedGloss": {
+    "blocked": "結論或程序停住，決定被延後",
+    "excess": "過度嚴格地計較與裁量",
+    "internalized": "與其評斷別人，更該回頭看自己那一份的責任"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "蒙著眼睛",
+      "regex": "蒙(?:著|上)?(?:雙)?眼|矇(?:著|上)?眼|眼罩|遮(?:住|著)眼"
+    },
+    {
+      "wrong": "天秤向一邊傾斜",
+      "regex": "天秤[^。\\n]{0,6}(?:傾|歪|斜|偏)"
+    },
+    {
+      "wrong": "劍尖朝下",
+      "regex": "劍尖(?:朝|向)下|劍(?:朝|向)下"
+    }
+  ]
+}

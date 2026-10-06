@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-18-moon",
+  "locale": "en",
+  "sourceHash": "8d877a0904104cb7",
+  "name": "The Moon",
+  "aliases": [],
+  "keywords": [
+    "uncertainty",
+    "anxiety and imagination",
+    "a hazy path",
+    "between intuition and illusion"
+  ],
+  "facts": {
+    "moon-face": "A round yellow moon, like a sun, holds a crescent-shaped side profile of a face with its eyes closed.",
+    "drops": "Yellow, water-drop-like shapes fall below the moon.",
+    "two-towers": "A gray tower with a small window stands on each side.",
+    "dog-wolf": "A dog on the left and a wolf on the right lift their heads and howl at the moon.",
+    "crayfish": "A crayfish crawls out of the pool of water below.",
+    "path": "A path starting at the water's edge winds through the field between the two towers, all the way to the far mountains.",
+    "blue-sky": "The sky is a pale blue."
+  },
+  "glosses": {
+    "crayfish": "A vague anxiety rising from the depths.",
+    "moon-face": "Borrowed light, so everything looks hazy."
+  },
+  "reversedGloss": {
+    "waning": "Anxiety and confusion lift, and outlines begin to show.",
+    "internalized": "An unspoken fear circles around inside.",
+    "excess": "Imagination grows, and anxiety covers reality."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Two wolves are howling.",
+      "regex": "\\btwo wolves\\b|\\btwo dogs\\b|\\bpair of wolves\\b|\\bwolves howl"
+    },
+    {
+      "wrong": "A scorpion crawls out of the water.",
+      "regex": "\\bscorpions?\\b"
+    },
+    {
+      "wrong": "A scene of a pitch-dark night.",
+      "regex": "\\bpitch[- ](?:dark|black)\\b|\\bblack night\\b|\\bmoonless\\b"
+    }
+  ]
+}

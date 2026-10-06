@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-12",
+  "locale": "en",
+  "sourceHash": "0045e0e7ebdc2737",
+  "name": "Knight of Pentacles",
+  "aliases": [
+    "Knight of Coins",
+    "Knight of Disks"
+  ],
+  "keywords": [
+    "steadiness",
+    "careful responsibility",
+    "slow but sure",
+    "faithful execution"
+  ],
+  "facts": {
+    "still-horse": "The knight sits on a black horse standing still on all four legs.",
+    "pentacle-hand": "He holds a pentacle on the palm of one hand.",
+    "oak-sprigs": "Green leaf ornaments are fixed to the helmet and to the horse's head.",
+    "plowed-field": "Behind, plowed furrows of a field spread out.",
+    "yellow-sky": "The sky is yellow, and trees can be seen far off on the right.",
+    "armor": "Over the armor he wears a surcoat with red stripes."
+  },
+  "glosses": {
+    "plowed-field": "Land plowed steadily; preparation that took time.",
+    "pentacle-hand": "An attitude of holding responsibility in hand and not hurrying."
+  },
+  "reversedGloss": {
+    "excess": "Caution goes too far, and he stops in place.",
+    "waning": "The steady strength is broken by boredom."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The horse gallops vigorously.",
+      "regex": "\\bgallop\\w*|\\b(?:horse|steed|mount)\\b[^.\\n]{0,15}\\b(?:runs?|running|ran|races|racing|charg\\w+|dash\\w*|bolts?|rushes?|rushing|canters?|trots?)\\b|\\bfull speed\\b|\\bat speed\\b"
+    },
+    {
+      "wrong": "He rides a white horse.",
+      "regex": "\\bwhite (?:horse|steed|mount|stallion)\\b|\\b(?:horse|steed) (?:is )?white\\b"
+    }
+  ]
+}

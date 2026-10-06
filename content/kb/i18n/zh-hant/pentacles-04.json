@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-04",
+  "locale": "zh-hant",
+  "sourceHash": "83718209cedd15c1",
+  "name": "錢幣四",
+  "aliases": [
+    "星幣四",
+    "金幣四"
+  ],
+  "keywords": [
+    "緊抓不放",
+    "想要守護的心",
+    "穩定與掌控",
+    "緊閉的手"
+  ],
+  "facts": {
+    "clasping": "戴著冠的人用雙臂把一枚錢幣緊緊抱在胸前",
+    "crown-pentacle": "冠上放著一枚錢幣",
+    "feet-pentacles": "雙腳踩著兩枚錢幣",
+    "seated": "正面朝前坐在石座前",
+    "city": "後方可以看到有城牆和高塔的城市",
+    "grey-bg": "背景偏灰色"
+  },
+  "glosses": {
+    "feet-pentacles": "連腳下都緊抓著，動彈不得",
+    "city": "背對外面世界守護著的安全"
+  },
+  "reversedGloss": {
+    "excess": "因為不安而抓得更緊，變得吝嗇",
+    "waning": "緊握的手鬆開，開始分享、讓它流動"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "把錢幣分給別人",
+      "regex": "分給|分送|分發|施捨"
+    },
+    {
+      "wrong": "五枚錢幣",
+      "regex": "五枚錢幣|五個錢幣"
+    }
+  ]
+}

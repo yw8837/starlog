@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-06",
+  "locale": "zh-hant",
+  "sourceHash": "416f2abe4590738a",
+  "name": "權杖六",
+  "aliases": [
+    "權仗六"
+  ],
+  "keywords": [
+    "受到肯定的成果",
+    "好消息",
+    "自信",
+    "一起前進的隊伍"
+  ],
+  "facts": {
+    "rider-wreath": "頭戴桂冠的男子騎著白馬向右前進",
+    "wand-wreath": "他手中權杖的頂端，掛著用紅色緞帶綁住的桂冠花環",
+    "crowd": "左下方步行的人們立著權杖，在一旁跟隨(權杖共有六根)",
+    "caparison": "馬披著有花紋的綠色馬衣，戴著紅色籠頭",
+    "cloak": "男子披著紅紫色斗篷",
+    "blue-sky": "背景是藍天"
+  },
+  "glosses": {
+    "wand-wreath": "看得見的成就與肯定",
+    "rider-wreath": "靠自己的努力得到的自信"
+  },
+  "reversedGloss": {
+    "blocked": "有成果，但肯定與消息來得晚",
+    "excess": "自信變成自滿",
+    "internalized": "比起外面的掌聲，先肯定自己的時候"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "人們把權杖對準他",
+      "regex": "權杖(?:對準|指向|刺向)|對準他|攻擊"
+    },
+    {
+      "wrong": "獨自步行回來",
+      "regex": "獨自(?:步行|走)|一個人走|下馬"
+    }
+  ]
+}

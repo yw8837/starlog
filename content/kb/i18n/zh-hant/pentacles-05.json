@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-05",
+  "locale": "zh-hant",
+  "sourceHash": "c8da17b09eb80ddb",
+  "name": "錢幣五",
+  "aliases": [
+    "星幣五",
+    "金幣五"
+  ],
+  "keywords": [
+    "匱乏與疏離",
+    "艱困的時期",
+    "身邊的幫助",
+    "寒冷的路"
+  ],
+  "facts": {
+    "two-in-snow": "暴風雪中，兩個人縮著身子抵禦寒冷，一路走著",
+    "crutches": "其中一人拄著拐杖，頭上纏著繃帶，脖子上掛著鈴鐺",
+    "shawl-barefoot": "另一人披著披肩、低著頭，光著腳走路",
+    "lit-window": "後方牆上有一扇亮著燈的彩繪玻璃窗，上面畫著五枚錢幣",
+    "passing-by": "兩人從窗前走過",
+    "snow": "黑色背景上雪花紛飛，地面被雪覆蓋"
+  },
+  "glosses": {
+    "lit-window": "近在身邊卻沒有看見的幫助與溫暖",
+    "crutches": "即使受了傷也一起走的同伴"
+  },
+  "reversedGloss": {
+    "waning": "寒冷的時期過去，復原與幫助開始浮現",
+    "internalized": "隱藏困難，獨自消化",
+    "excess": "匱乏感變大，覺得什麼都不夠"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "走進教堂裡",
+      "regex": "走進(?:了)?教堂|進入(?:了)?教堂|進到教堂|走進(?:了)?(?:建築|屋)"
+    },
+    {
+      "wrong": "有三個人在走",
+      "regex": "三個人|三名|三位|三人"
+    }
+  ]
+}

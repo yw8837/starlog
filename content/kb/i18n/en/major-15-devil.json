@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-15-devil",
+  "locale": "en",
+  "sourceHash": "b606776d68149bdd",
+  "name": "The Devil",
+  "aliases": [],
+  "keywords": [
+    "a bond that is hard to cut",
+    "attachment and habit",
+    "looking at desire",
+    "loose chains"
+  ],
+  "facts": {
+    "horned-figure": "A figure with goat horns and bat wings crouches on a black pedestal.",
+    "pentagram": "Between the two horns, on the forehead, is an inverted pentagram.",
+    "raised-hand": "The right hand is raised with the palm open to show.",
+    "torch-down": "In the left hand, a lit torch is held pointing downward.",
+    "chained-pair": "A naked man and woman with small horns stand with chains linking their necks to a ring on the pedestal.",
+    "loose-chains": "The chain loops around their necks hang loose.",
+    "tails": "The woman's tail ends in a bunch of grapes, and the man's tail ends in a flame.",
+    "black-ground": "The whole background is black."
+  },
+  "glosses": {
+    "loose-chains": "A bond you could take off yourself but do not."
+  },
+  "reversedGloss": {
+    "waning": "The bond loosens, and a gap to slip out through appears.",
+    "excess": "Attachment or dependence grows deeper.",
+    "internalized": "Looks free on the outside, but is being pulled around inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "They are tightly chained and cannot get away.",
+      "regex": "\\b(?:tightly|firmly|securely) (?:chained|bound|tied|shackled)\\b|\\bchains? (?:are |is )?(?:tight|taut|locked|fastened tightly)\\b|\\bwelded\\b"
+    },
+    {
+      "wrong": "He holds a trident.",
+      "regex": "\\btridents?\\b|\\bpitchfork\\b"
+    },
+    {
+      "wrong": "The two of them are writhing in agony.",
+      "regex": "\\bwrith\\w*|\\bagon(?:y|ies|ised|ized)\\b|\\bscream\\w*|\\bwail\\w*|\\banguish\\w*"
+    }
+  ]
+}

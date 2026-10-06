@@ -1616,6 +1616,474 @@
       "reviewer": null,
       "date": null
     },
+    "kb:cups-01": {
+      "koHash": "8e8df615e458df7f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-02": {
+      "koHash": "24e948b8ce22e629",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-03": {
+      "koHash": "b244613bfff9299b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-04": {
+      "koHash": "15210054efa0833a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-05": {
+      "koHash": "b6d890b9d264f829",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-06": {
+      "koHash": "f4aeb68a11719bf6",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-07": {
+      "koHash": "bf635afb62f33edb",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-08": {
+      "koHash": "8c1982d226df4eb9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-09": {
+      "koHash": "a8c5976704cb9c52",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-10": {
+      "koHash": "60dc5da844b7bcd1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-11": {
+      "koHash": "eca38ef927647043",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-12": {
+      "koHash": "d48d75d1de55ae51",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-13": {
+      "koHash": "8cba5bd6fe663e74",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:cups-14": {
+      "koHash": "c653a4d03b1aa8b9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-00-fool": {
+      "koHash": "e36f8a4d87a2d69a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-01-magician": {
+      "koHash": "afae26af926560a3",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-02-high-priestess": {
+      "koHash": "c4dc539d2e29bb3e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-03-empress": {
+      "koHash": "6cedef9af9806377",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-04-emperor": {
+      "koHash": "2498096fb31b2c40",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-05-hierophant": {
+      "koHash": "7b1a4fa1cbf015f2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-06-lovers": {
+      "koHash": "c901597f10faedd9",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-07-chariot": {
+      "koHash": "df135476583aabec",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-08-strength": {
+      "koHash": "dc2641f74e1ebd21",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-09-hermit": {
+      "koHash": "0f3ccbf5369a30d7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-10-wheel-of-fortune": {
+      "koHash": "7bcbd20612cbba49",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-11-justice": {
+      "koHash": "747f3e30a3359dbf",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-12-hanged-man": {
+      "koHash": "6e661e87e460f067",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-13-death": {
+      "koHash": "2a4e394ef6b1feb8",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-14-temperance": {
+      "koHash": "c90617633d2afa24",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-15-devil": {
+      "koHash": "b606776d68149bdd",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-16-tower": {
+      "koHash": "3d6834294451c270",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-17-star": {
+      "koHash": "c40edf8fbf038d0e",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-18-moon": {
+      "koHash": "8d877a0904104cb7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-19-sun": {
+      "koHash": "ea1f33760229db46",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-20-judgement": {
+      "koHash": "bec2eff874658578",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:major-21-world": {
+      "koHash": "fd97317b0a433bd4",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-01": {
+      "koHash": "2f597cfeda1d1879",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-02": {
+      "koHash": "6e01248ae9779335",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-03": {
+      "koHash": "8a3929045e98ee70",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-04": {
+      "koHash": "83718209cedd15c1",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-05": {
+      "koHash": "c8da17b09eb80ddb",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-06": {
+      "koHash": "ee4973bbd8b7eb0a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-07": {
+      "koHash": "1f1d379da914a7db",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-08": {
+      "koHash": "4dbb4a266d99fb14",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-09": {
+      "koHash": "7778f0b74cf8a399",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-10": {
+      "koHash": "f398c051afc66e8c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-11": {
+      "koHash": "be0737cf5bf7efef",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-12": {
+      "koHash": "0045e0e7ebdc2737",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-13": {
+      "koHash": "c5849dbea1f2bba5",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:pentacles-14": {
+      "koHash": "ccae07475baaa3c5",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-01": {
+      "koHash": "19e1516a321f4b95",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-02": {
+      "koHash": "2867d4732d83c4cf",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-03": {
+      "koHash": "ba1e2fe26ad791d2",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-04": {
+      "koHash": "ad8abc582b21a31f",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-05": {
+      "koHash": "7e6701ddb6d20c19",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-06": {
+      "koHash": "133d7305f1dfc748",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-07": {
+      "koHash": "20bc6c6efd3e9a7c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-08": {
+      "koHash": "44ce227ee98d9dad",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-09": {
+      "koHash": "9de551bca6180237",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-10": {
+      "koHash": "c8084500df61c41c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-11": {
+      "koHash": "c9d200ef20042d2c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-12": {
+      "koHash": "8ac8b3161f9604fe",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-13": {
+      "koHash": "d5ec411c408fe8c6",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:swords-14": {
+      "koHash": "fcaa7564bef7711a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-01": {
+      "koHash": "46062f11cb5a286c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-02": {
+      "koHash": "0d72483e8c4d7e3a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-03": {
+      "koHash": "31aecd961583850b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-04": {
+      "koHash": "7584758511e573ae",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-05": {
+      "koHash": "7408bad06c303c4b",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-06": {
+      "koHash": "416f2abe4590738a",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-07": {
+      "koHash": "efc372397a540b44",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-08": {
+      "koHash": "9916b1e5faccc2e7",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-09": {
+      "koHash": "6b97ad29aa565ded",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-10": {
+      "koHash": "89dc18e7cef84443",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-11": {
+      "koHash": "e133c4a21235e755",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-12": {
+      "koHash": "20fbd6e343ed6926",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-13": {
+      "koHash": "47dea4116b319c69",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
+    "kb:wands-14": {
+      "koHash": "0bbba9f30881413c",
+      "status": "draft",
+      "reviewer": null,
+      "date": null
+    },
     "messages:common:currency.balance": {
       "koHash": "d603bcf5964b75a9",
       "status": "draft",

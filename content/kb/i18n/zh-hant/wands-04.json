@@ -1,0 +1,39 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-04",
+  "locale": "zh-hant",
+  "sourceHash": "7584758511e573ae",
+  "name": "權杖四",
+  "aliases": [
+    "權仗四"
+  ],
+  "keywords": [
+    "慶祝與歡迎",
+    "穩定的基礎",
+    "一起歡喜",
+    "喘口氣"
+  ],
+  "facts": {
+    "four-wands-garland": "前方立著的四根權杖上，掛著用花和水果編成的花環",
+    "ribbons": "外側兩根權杖的頂端綁著紅色緞帶",
+    "two-women": "兩名女子把花束高舉過頭",
+    "castle": "後方可以看到有橘色屋頂高塔的灰色城堡",
+    "bridge": "右邊有一座橫跨護城河的橋",
+    "small-crowd": "左後方聚集著幾個人",
+    "yellow-sky": "天空是明亮的黃色"
+  },
+  "glosses": {
+    "four-wands-garland": "掛在已經立好的基礎上的慶祝",
+    "two-women": "一起歡喜、迎接的氣氛"
+  },
+  "reversedGloss": {
+    "waning": "有慶祝的氣息，但來得小而簡單",
+    "blocked": "因為行程或情況，慶祝與休息被延後"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "是婚禮場面",
+      "regex": "婚禮|新郎|新娘"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-12",
+  "locale": "en",
+  "sourceHash": "d48d75d1de55ae51",
+  "name": "Knight of Cups",
+  "aliases": [
+    "Knight of Chalices"
+  ],
+  "keywords": [
+    "an offer coming near",
+    "a romantic attitude",
+    "approaching slowly",
+    "offering the heart"
+  ],
+  "facts": {
+    "cup-forward": "The knight rides a white horse toward the right, holding the cup out in front.",
+    "slow-horse": "The horse walks slowly, one step at a time, with its head lowered.",
+    "winged-helmet": "Small wings are attached to the helmet and to the heels.",
+    "fish-tunic": "The tunic over the armor has a red fish pattern.",
+    "river": "A stream flows in front, with a rocky hill on the right and trees far off.",
+    "blue-sky": "The background is a blue sky."
+  },
+  "glosses": {
+    "slow-horse": "A pace that comes in no hurry to offer the heart."
+  },
+  "reversedGloss": {
+    "excess": "Romance and mood go too far, and words run ahead of action.",
+    "blocked": "There is a heart to offer, but he cannot get close."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The horse gallops at full speed.",
+      "regex": "\\bgallop\\w*|\\bfull speed\\b|\\bat speed\\b|\\bcharging (?:ahead|forward|into)\\b|\\bsprint\\w*"
+    },
+    {
+      "wrong": "A knight holding a sword.",
+      "regex": "\\b(?:holds?|holding|carries|carrying|wields?|wielding|draws?|drawn|unsheath\\w*|brandish\\w*)\\s+(?:a |an |his |the |one )(?:\\w+ )?(?:sword|lance|spear)\\b|\\bsword (?:in|raised|drawn)\\b"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-09",
+  "locale": "zh-hant",
+  "sourceHash": "9de551bca6180237",
+  "name": "寶劍九",
+  "aliases": [],
+  "keywords": [
+    "夜晚的擔憂",
+    "不安與自責",
+    "睡不著的念頭",
+    "獨自變大的恐懼"
+  ],
+  "facts": {
+    "hands-face": "從床上坐起身的人，用雙手摀著臉",
+    "nine-swords": "黑色牆上橫向並排掛著九把劍",
+    "not-pierced": "劍沒有碰到身體，只是掛在牆上",
+    "quilt": "被子上交替畫著紅玫瑰和星座符號",
+    "carving": "床的側板上刻著一個人把另一個人打倒的場面",
+    "black-bg": "背景像墨一樣漆黑"
+  },
+  "glosses": {
+    "not-pierced": "恐懼並沒有真正碰到身上，而是在腦海裡高高掛著",
+    "quilt": "蓋住夜晚的被子上仍然留著的玫瑰"
+  },
+  "reversedGloss": {
+    "waning": "像夜晚過去一樣，不安一點一點淡去",
+    "internalized": "擔憂不能對任何人說，獨自消化",
+    "excess": "不安變大，連日常都被動搖"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "劍正刺著這個人",
+      "regex": "劍[^。\\n]{0,6}(?:刺|穿|插進)|刺進"
+    },
+    {
+      "wrong": "正在流血",
+      "regex": "流(?:著|了)?血|血跡|鮮血"
+    }
+  ]
+}

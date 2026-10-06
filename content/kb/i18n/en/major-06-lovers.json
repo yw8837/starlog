@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-06-lovers",
+  "locale": "en",
+  "sourceHash": "c901597f10faedd9",
+  "name": "The Lovers",
+  "aliases": [],
+  "keywords": [
+    "a choice the heart leans toward",
+    "attraction",
+    "aligning values",
+    "facing each other"
+  ],
+  "facts": {
+    "big-sun": "At the very top, a large yellow sun sends out rays.",
+    "angel-cloud": "Under the sun, an angel with red wings and flame-like hair stands on a cloud with both arms spread.",
+    "two-figures": "A naked woman stands on the left and a naked man on the right, apart from each other.",
+    "gazes": "The woman looks up at the angel above, and the man looks toward the woman.",
+    "fruit-tree-serpent": "The tree behind the woman bears red fruit, and a green snake winds around its trunk.",
+    "flame-tree": "The tree behind the man bears fruit shaped like flames.",
+    "mountain": "Between the two, in the distance, a single pointed mountain rises."
+  },
+  "glosses": {
+    "gazes": "They look in different places, which shows what each uses as the standard for choosing.",
+    "angel-cloud": "A larger standard above the two that lights up the choice.",
+    "fruit-tree-serpent": "Attraction comes with both temptation and the responsibility of choosing."
+  },
+  "reversedGloss": {
+    "blocked": "They look in different directions, so the choice is put off.",
+    "internalized": "A promise to oneself needs to be settled before the relationship.",
+    "excess": "The pull is so strong that judgment becomes clouded."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The two are holding hands.",
+      "regex": "\\b(?:the )?(?:two|they|couple|pair|woman and (?:the )?man|man and (?:the )?woman)\\b[^.\\n]{0,20}\\b(?:hold(?:s|ing)? hands|hug(?:s|ging)?|embrac\\w+|kiss\\w*)\\b|\\bhand in hand\\b|\\bclasp(?:s|ed|ing)? hands\\b"
+    },
+    {
+      "wrong": "Cupid is aiming an arrow.",
+      "regex": "\\bcupid\\b|\\barrows?\\b|\\bbow and arrow\\b"
+    },
+    {
+      "wrong": "A man is torn between two women.",
+      "regex": "\\bbetween two women\\b|\\bhesitat\\w+ between (?:two )?women\\b"
+    }
+  ]
+}

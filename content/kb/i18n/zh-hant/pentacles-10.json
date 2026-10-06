@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-10",
+  "locale": "zh-hant",
+  "sourceHash": "f398c051afc66e8c",
+  "name": "錢幣十",
+  "aliases": [
+    "星幣十",
+    "金幣十"
+  ],
+  "keywords": [
+    "長久的穩定",
+    "家庭與傳承",
+    "世代相傳的根基",
+    "踏實的歸屬"
+  ],
+  "facts": {
+    "elder-dogs": "前方有一位白髮老人，穿著滿是花紋的衣服坐著，撫摸著一隻白狗",
+    "two-dogs": "兩隻白狗走近老人",
+    "couple-arch": "巨大的拱門下站著一個男人(背對著我們)和一個女人",
+    "child": "孩子在女人衣襬旁，朝狗伸出手",
+    "ten-pentacles": "十枚錢幣以固定的形狀疊放在整個畫面上",
+    "arch-shields": "左邊的柱子上有畫著城堡和天秤的紋章盾牌",
+    "town-tower": "拱門外可以看到高塔和房屋"
+  },
+  "glosses": {
+    "elder-dogs": "與上一代相連的照顧與忠誠",
+    "ten-pentacles": "排成生命之樹形狀的錢幣，看似分散卻相連的根基"
+  },
+  "reversedGloss": {
+    "blocked": "因為家庭或財產問題，穩定受阻",
+    "internalized": "表面穩定，內心卻覺得窒悶"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "老人把狗趕走",
+      "regex": "趕走|驅趕|趕跑|轟走"
+    },
+    {
+      "wrong": "九枚錢幣",
+      "regex": "九枚錢幣|九個錢幣"
+    }
+  ]
+}

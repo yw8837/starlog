@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-07-chariot",
+  "locale": "en",
+  "sourceHash": "df135476583aabec",
+  "name": "The Chariot",
+  "aliases": [],
+  "keywords": [
+    "pushing ahead by will",
+    "setting direction",
+    "moving forward",
+    "self-control"
+  ],
+  "facts": {
+    "canopy": "He stands on a stone chariot under a blue canopy studded with stars.",
+    "wand-no-reins": "In his right hand he holds a long wand with a pointed tip, and there are no reins anywhere.",
+    "star-crown": "On his head is a crown with a gold star ornament.",
+    "armor-moons": "He wears armor with a square plate on the chest and a crescent moon ornament on each shoulder.",
+    "sphinxes": "In front of him sit a black sphinx (left) and a white sphinx (right).",
+    "winged-disc": "On the front of the chariot are a winged disc and a shield with red markings.",
+    "city-river": "Behind him are a walled city with red roofs and a river."
+  },
+  "glosses": {
+    "wand-no-reins": "He sets the direction by will, without reins.",
+    "sphinxes": "Two different forces (black and white) have to be gathered in one direction.",
+    "city-river": "A departure that leaves the familiar castle behind."
+  },
+  "reversedGloss": {
+    "blocked": "Two forces pull different ways, and he cannot move ahead.",
+    "excess": "Speed and the urge to win go too far, and he misses what is around him."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Two horses pull the chariot.",
+      "regex": "\\b(?:two|2|pair of|a pair of|twin) (?:white |black )?(?:horses|steeds|stallions)\\b|\\bhorses?\\b[^.\\n]{0,12}\\b(?:pull\\w*|draw\\w*|drag\\w*|haul\\w*)\\b|\\b(?:pulled|drawn) by (?:two |a pair of )?(?:horses|steeds)\\b"
+    },
+    {
+      "wrong": "He is gripping the reins and driving.",
+      "regex": "\\b(?:grips?|gripping|holds?|holding|grasps?|grasping|clutch\\w*|pulls?|pulling)\\b[^.\\n]{0,12}\\breins?\\b|\\bdriving the (?:horses|chariot)\\b"
+    },
+    {
+      "wrong": "He has drawn his sword.",
+      "regex": "\\b(?:draws?|drawn|drew|unsheath\\w*|brandish\\w*|wields?|wielding|holds?|holding|raises?|raised)\\s+(?:a |an |his |the |one )(?:\\w+ )?sword\\b|\\bsword (?:in|raised|drawn)\\b"
+    }
+  ]
+}

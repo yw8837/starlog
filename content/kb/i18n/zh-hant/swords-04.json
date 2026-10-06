@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-04",
+  "locale": "zh-hant",
+  "sourceHash": "ad8abc582b21a31f",
+  "name": "寶劍四",
+  "aliases": [],
+  "keywords": [
+    "休息與復原",
+    "暫時停下",
+    "安靜的重整",
+    "獨處的時間"
+  ],
+  "facts": {
+    "effigy": "騎士的雕像躺在墓上，雙手合在胸前，呈祈禱的姿勢",
+    "three-swords-wall": "上方的牆上掛著三把劍，劍尖朝下",
+    "fourth-sword": "墓的側面橫刻著第四把劍",
+    "stained-glass": "左上方的彩繪玻璃窗上，畫著一個跪著的人和祝福他的人物",
+    "eyes-closed": "躺著的騎士閉著眼睛",
+    "quiet-room": "沒有人走動的安靜室內"
+  },
+  "glosses": {
+    "three-swords-wall": "暫時掛在牆上的戰鬥，放下的緊繃",
+    "stained-glass": "窗上映出受到安慰與照顧的場面"
+  },
+  "reversedGloss": {
+    "blocked": "該休息卻休息不了，硬撐著",
+    "waning": "復原結束，再次行動的時候接近了",
+    "excess": "休息拖長，與世界漸行漸遠"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "躺著一具被劍刺穿的屍體",
+      "regex": "屍體|屍首|遺體|被劍刺"
+    },
+    {
+      "wrong": "四把劍全都掛在牆上",
+      "regex": "四把劍(?:全|都)|四把劍[^。\\n]{0,4}牆"
+    }
+  ]
+}

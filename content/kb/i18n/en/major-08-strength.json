@@ -1,0 +1,48 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-08-strength",
+  "locale": "en",
+  "sourceHash": "dc2641f74e1ebd21",
+  "name": "Strength",
+  "aliases": [
+    "Fortitude"
+  ],
+  "keywords": [
+    "gentle strength",
+    "calming emotions",
+    "patience",
+    "kind firmness"
+  ],
+  "facts": {
+    "hands-jaws": "The woman holds the lion's mouth with both hands, one above and one below the jaws.",
+    "bowed-head": "She bows her head and looks down at the lion, and her expression is calm.",
+    "lemniscate": "Above her head floats a sideways figure eight (∞).",
+    "flower-chain": "A vine of flowers around her waist runs on to the lion's mane.",
+    "lion-tongue": "The red lion lifts its head toward her and leaves it in her hands, with its tongue showing out of its mouth.",
+    "white-dress": "She wears a white dress and a wreath of flowers on her head.",
+    "landscape": "Under a yellow sky is a green field, and one blue mountain can be seen at the back left."
+  },
+  "glosses": {
+    "hands-jaws": "Strength that handles gently rather than pressing down by force.",
+    "lemniscate": "Patience that does not break."
+  },
+  "reversedGloss": {
+    "waning": "The strength and confidence that carried her through drop, and she doubts herself.",
+    "internalized": "Instead of working with her feelings, she pushes them down inside.",
+    "excess": "The effort to endure and rule herself goes too far, and she drives herself hard."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She is forcing the lion's mouth open.",
+      "regex": "\\bforc(?:es|ing|e)\\b[^.\\n]{0,15}\\b(?:mouth|jaws?)\\b|\\b(?:pries|prying|tears?|tearing|rips?|ripping)\\b[^.\\n]{0,15}\\b(?:mouth|jaws?)\\b"
+    },
+    {
+      "wrong": "She is fighting and subduing the lion.",
+      "regex": "\\b(?:fights?|fighting|fought|wrestl\\w+|battl\\w+|subdu\\w+|overpower\\w+|struggl\\w+ with|slay\\w*)\\b[^.\\n]{0,25}\\blion\\b|\\blion\\b[^.\\n]{0,15}\\b(?:fights?|fighting|wrestl\\w+|battl\\w+|subdued|overpowered)\\b"
+    },
+    {
+      "wrong": "Strength is card number 11.",
+      "regex": "\\bstrength\\b[^.\\n]{0,20}\\b(?:11|eleven|xi)\\b|\\bnumber (?:11|eleven)\\b"
+    }
+  ]
+}

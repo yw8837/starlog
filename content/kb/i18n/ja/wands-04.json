@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-04",
+  "locale": "ja",
+  "sourceHash": "7584758511e573ae",
+  "name": "ワンドの4",
+  "aliases": [
+    "棒の4",
+    "杖の4"
+  ],
+  "keywords": [
+    "祝福と歓迎",
+    "安定した土台",
+    "共に喜ぶ",
+    "ひと息"
+  ],
+  "facts": {
+    "four-wands-garland": "手前に立てた四本の杖の上に、花と果物で編んだ花輪がかかっている",
+    "ribbons": "外側の二本の杖の先に、赤いリボンが結ばれている",
+    "two-women": "二人の女性が、花束を頭の上にかかげている",
+    "castle": "後ろに、橙色の屋根の塔がある灰色の城が見える",
+    "bridge": "右に、堀にかかる橋がある",
+    "small-crowd": "左奥に、数人が集まっている",
+    "yellow-sky": "空は明るい黄色だ"
+  },
+  "glosses": {
+    "four-wands-garland": "立てておいた土台の上にかける祝福",
+    "two-women": "共に喜び、迎える雰囲気"
+  },
+  "reversedGloss": {
+    "waning": "祝いの気配はあるが、小さくささやかに訪れる",
+    "blocked": "日程や事情で、お祝いや休息が先送りになる"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "結婚式の場面だ",
+      "regex": "結婚式|新郎|新婦|花婿|花嫁"
+    }
+  ]
+}

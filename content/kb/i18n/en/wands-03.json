@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-03",
+  "locale": "en",
+  "sourceHash": "31aecd961583850b",
+  "name": "Three of Wands",
+  "aliases": [
+    "Three of Rods",
+    "Three of Staves"
+  ],
+  "keywords": [
+    "looking far ahead",
+    "waiting for results",
+    "expansion",
+    "the ships sent out first"
+  ],
+  "facts": {
+    "back-view": "A man with his back turned stands on a cliff, looking down at the sea.",
+    "three-wands": "Three wands are planted in the ground, and the man holds the right-hand one in one hand.",
+    "ships": "Three small ships float on the yellowish sea.",
+    "robes": "Over a red garment he wears a green cloak on one shoulder, with a checkered band around him.",
+    "headband": "A white band is tied around his head.",
+    "yellow-sky": "The sky and the sea are all yellow, and mountains show far off."
+  },
+  "glosses": {
+    "back-view": "A gaze that looks farther ahead while waiting for what has already been sent out.",
+    "three-wands": "Looking to what comes next, with a footing already set."
+  },
+  "reversedGloss": {
+    "blocked": "What was sent out does not come back, and the wait grows long.",
+    "waning": "The widening view and expectation shrink."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He sets off on a ship.",
+      "regex": "\\b(?:boards?|boarding|embarks?)\\b|\\bsails? (?:away|off)\\b|\\bsailing (?:away|off)\\b|\\b(?:gets|climbs|steps) (?:on|onto|into) (?:a|the) (?:ship|boat)\\b|\\bsets? (?:off|sail) (?:on|in) (?:a|the) (?:ship|boat)\\b|\\bon board\\b|\\baboard\\b"
+    },
+    {
+      "wrong": "The man stands facing front.",
+      "regex": "\\b(?:faces?|facing|looks?|looking|stares?|staring|gazes?|gazing)\\b[^.\\n]{0,12}\\b(?:at us|at the viewer|toward us|toward the viewer|straight at)\\b|\\bfacing (?:front|us|the viewer)\\b|\\bfaces forward\\b"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-05",
+  "locale": "zh-hant",
+  "sourceHash": "7e6701ddb6d20c19",
+  "name": "寶劍五",
+  "aliases": [],
+  "keywords": [
+    "贏了仍殘留的苦澀",
+    "衝突的餘韻",
+    "自尊心之爭",
+    "該退讓的時候"
+  ],
+  "facts": {
+    "smirking-man": "紅髮男子帶著淡淡的笑意，回頭看著離開的人們",
+    "swords-held": "他肩上扛著兩把劍，一隻手還握著一把劍",
+    "swords-ground": "地上掉著兩把劍",
+    "walking-away": "兩個人背過身朝水邊走去，另一人似乎用手遮著臉",
+    "jagged-clouds": "天空中像被撕裂一般的雲斜斜流動",
+    "sea": "後方可以看到大海"
+  },
+  "glosses": {
+    "walking-away": "輸的一方離開，關係留下的傷",
+    "jagged-clouds": "爭吵過後凌亂的空氣"
+  },
+  "reversedGloss": {
+    "waning": "爭吵平息，出現退讓或和好的空隙",
+    "internalized": "表面上結束了，心裡卻留著芥蒂"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "有人流著血倒下",
+      "regex": "流(?:著|了)?血|血跡|倒下|屍體"
+    },
+    {
+      "wrong": "五把劍全都握在手裡",
+      "regex": "五把劍(?:全|都)|握著五把劍"
+    }
+  ]
+}

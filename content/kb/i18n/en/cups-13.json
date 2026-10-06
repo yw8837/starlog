@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-13",
+  "locale": "en",
+  "sourceHash": "8cba5bd6fe663e74",
+  "name": "Queen of Cups",
+  "aliases": [
+    "Queen of Chalices"
+  ],
+  "keywords": [
+    "deep empathy",
+    "intuition",
+    "emotional care",
+    "a quiet heart"
+  ],
+  "facts": {
+    "covered-cup": "The queen holds an ornate covered cup in both hands and gazes at it quietly.",
+    "cup-handles": "The handles on either side of the cup are shaped like winged figures.",
+    "shore-throne": "She sits on a throne set at the water's edge, with her feet touching the water and pebbles.",
+    "merchild-throne": "Figures like baby water spirits are carved above and beside the throne.",
+    "white-gown": "She wears white with a wave-like cloak and a gold crown.",
+    "cliff-sky": "Cliffs and a blue sky can be seen behind."
+  },
+  "glosses": {
+    "covered-cup": "A closed cup; deep feeling not easily shown.",
+    "shore-throne": "A seat between the sea of feeling and the land of reality."
+  },
+  "reversedGloss": {
+    "excess": "Empathy goes too far, and she is swept up in other people's feelings.",
+    "internalized": "What she feels cannot be brought out and sinks inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She drinks from the cup.",
+      "regex": "\\b(?:drinks?|drinking|sips?|sipping)\\b[^.\\n]{0,15}\\b(?:cup|from it|water)\\b|\\bdrinks? from\\b"
+    },
+    {
+      "wrong": "She is riding a boat.",
+      "regex": "\\b(?:riding|rides|rode) (?:in |on )?(?:a |the )?(?:boat|ship)\\b|\\b(?:in|on|aboard) (?:a|the) (?:boat|ship)\\b"
+    }
+  ]
+}

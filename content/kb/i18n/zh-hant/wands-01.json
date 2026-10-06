@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-01",
+  "locale": "zh-hant",
+  "sourceHash": "46062f11cb5a286c",
+  "name": "權杖王牌",
+  "aliases": [
+    "權仗王牌"
+  ],
+  "keywords": [
+    "剛冒出的嫩芽",
+    "新開始的火種",
+    "幹勁",
+    "可能性"
+  ],
+  "facts": {
+    "hand-cloud": "右邊灰色雲中伸出一隻手，筆直地握著一根權杖",
+    "hand-glow": "手的周圍擴散著淡淡的光芒",
+    "sprouting-wand": "權杖頂端和旁邊的枝條上冒出綠葉",
+    "falling-leaves": "八片葉子在權杖周圍飄落",
+    "castle-hill": "左邊山丘上有一座小小的城堡",
+    "river-trees": "下方有河流經過，右邊有幾棵樹，遠處有山"
+  },
+  "glosses": {
+    "sprouting-wand": "剛冒出來的可能性，仍在成長中",
+    "falling-leaves": "可以讀成火種尚未穩固的徵兆",
+    "castle-hill": "目標或結果還在遠方",
+    "hand-cloud": "遞過來的機會，要不要接住由自己決定"
+  },
+  "reversedGloss": {
+    "blocked": "想開始，火卻點不太著",
+    "excess": "幹勁跑在前面，同時開了好幾件事而分散",
+    "internalized": "點子還只在心裡成長"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "燃燒的權杖",
+      "regex": "燃燒的(?:權杖|杖)|(?:權杖|杖)[^。\\n]{0,4}(?:著了火|著火|起了火|起火|燒起來|冒火|冒出火焰|噴出火焰)"
+    },
+    {
+      "wrong": "手從左邊的雲裡伸出來",
+      "regex": "左邊的雲|左側的雲"
+    }
+  ]
+}

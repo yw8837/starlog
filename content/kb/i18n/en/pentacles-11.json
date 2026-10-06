@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-11",
+  "locale": "en",
+  "sourceHash": "be0737cf5bf7efef",
+  "name": "Page of Pentacles",
+  "aliases": [
+    "Page of Coins",
+    "Page of Disks",
+    "Knave of Pentacles"
+  ],
+  "keywords": [
+    "the start of learning",
+    "diligent curiosity",
+    "a practical plan",
+    "a small opportunity"
+  ],
+  "facts": {
+    "holding-pentacle": "A young person lifts a pentacle in both hands and gazes at it quietly.",
+    "red-hood": "The young person wears a red hooded cap with a long cloth hanging from it, and green clothes.",
+    "meadow": "The young person stands in a meadow of blooming flowers.",
+    "plowed-field": "A plowed field can be seen far off on the right.",
+    "trees-mountain": "There is a grove of trees on the left and a mountain on the right, and the sky is yellow."
+  },
+  "glosses": {
+    "plowed-field": "Land to cultivate ahead; a plan to grow in reality.",
+    "meadow": "A possibility just beginning to sprout."
+  },
+  "reversedGloss": {
+    "blocked": "There is a plan, but carrying it out is late.",
+    "waning": "The wish to learn and the focus drop."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is throwing the pentacle.",
+      "regex": "\\b(?:throws?|throwing|tosses?|tossing|hurls?|hurling|flings?|flinging)\\b[^.\\n]{0,12}\\bpentacles?\\b|\\bpentacles?\\b[^.\\n]{0,12}\\b(?:thrown|tossed|hurled)\\b"
+    },
+    {
+      "wrong": "He is riding a horse.",
+      "regex": "\\b(?:rid(?:es|ing)|ridden|mounted)\\b[^.\\n]{0,15}\\b(?:horse|steed|mount)\\b|\\bon horseback\\b|\\bhorseback\\b"
+    }
+  ]
+}

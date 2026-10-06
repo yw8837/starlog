@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-11",
+  "locale": "en",
+  "sourceHash": "e133c4a21235e755",
+  "name": "Page of Wands",
+  "aliases": [
+    "Page of Rods",
+    "Page of Staves",
+    "Knave of Wands"
+  ],
+  "keywords": [
+    "exciting news",
+    "curiosity and exploring",
+    "the eagerness to learn",
+    "a first attempt"
+  ],
+  "facts": {
+    "looks-up": "A young person looks up at the tip of a wand held upright in both hands.",
+    "feather-hat": "The young person wears a hat with a red feather stuck in it.",
+    "salamander-tunic": "The yellow tunic has black salamander patterns drawn on it.",
+    "boots": "The yellow boots have flame-shaped ornaments.",
+    "pyramids": "Three pyramid-shaped hills can be seen on the sandy-colored ground behind.",
+    "blue-sky": "The background is a blue sky."
+  },
+  "glosses": {
+    "looks-up": "Looking at new possibilities with curious eyes.",
+    "salamander-tunic": "The salamander, said to live even in fire; a passion that does not cool.",
+    "pyramids": "Interest in a faraway place not yet visited."
+  },
+  "reversedGloss": {
+    "excess": "Excitement runs ahead, with much talk and scattered action.",
+    "blocked": "Wanting to try, but lacking the confidence to make a first attempt."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is riding a horse.",
+      "regex": "\\b(?:rid(?:es|ing)|ridden|mounted)\\b[^.\\n]{0,15}\\b(?:horse|steed|mount)\\b|\\bon horseback\\b|\\bhorseback\\b"
+    },
+    {
+      "wrong": "The wand is on fire.",
+      "regex": "\\bburning wand\\b|\\bflaming wand\\b|\\bwand\\b[^.\\n]{0,12}\\b(?:is |are )?(?:on fire|aflame|ablaze)\\b|\\bwand (?:is )?(?:burning|lit|alight)\\b"
+    }
+  ]
+}

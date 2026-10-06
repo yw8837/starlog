@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-03",
+  "locale": "en",
+  "sourceHash": "8a3929045e98ee70",
+  "name": "Three of Pentacles",
+  "aliases": [
+    "Three of Coins",
+    "Three of Disks"
+  ],
+  "keywords": [
+    "cooperation",
+    "skill and mastery",
+    "work that is recognized",
+    "building together"
+  ],
+  "facts": {
+    "mason-bench": "A stonemason stands on a long bench, smoothing the wall of a stone-built interior.",
+    "two-figures": "On the right, a hooded monk and a person in a patterned cloak stand talking with the mason.",
+    "plan-paper": "The person in the middle holds a paper like a plan.",
+    "carved-pentacles": "Three pentacles are carved in the arch overhead.",
+    "stone-arch": "The background is a stone-built arched interior."
+  },
+  "glosses": {
+    "two-figures": "A result made together by skill, plan and the client.",
+    "carved-pentacles": "Something built up together that lasts."
+  },
+  "reversedGloss": {
+    "blocked": "Roles and communication cross, and the collaboration stalls.",
+    "waning": "Drive and quality drop, and the result turns ordinary."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He works alone.",
+      "regex": "\\b(?:works?|working|labou?rs?|labou?ring) (?:all )?alone\\b|\\balone (?:at|in) (?:his )?work\\b|\\bsolo\\b|\\bby himself\\b"
+    },
+    {
+      "wrong": "He holds a pentacle in his hand.",
+      "regex": "\\b(?:holds?|holding|carries|carrying|clutch\\w*|grips?|gripping)\\b[^.\\n]{0,12}\\bpentacles?\\b"
+    }
+  ]
+}

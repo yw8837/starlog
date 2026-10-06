@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-13",
+  "locale": "zh-hant",
+  "sourceHash": "47dea4116b319c69",
+  "name": "權杖皇后",
+  "aliases": [
+    "權仗皇后"
+  ],
+  "keywords": [
+    "溫暖的自信",
+    "大方的魅力",
+    "明亮的領導",
+    "照亮周圍"
+  ],
+  "facts": {
+    "lion-throne": "正面朝前坐在刻著獅子頭的王座上",
+    "wand-sunflower": "右手拿著權杖，左手拿著一朵向日葵",
+    "black-cat": "腳前方坐著一隻黑貓，面向正前方",
+    "banner": "王座後方的帷幕上畫著兩頭紅色獅子和向日葵",
+    "yellow-dress": "穿著黃色洋裝，披著白色斗篷，戴著葉子裝飾的冠",
+    "landscape": "左後方可以看到金字塔形的山丘和藍天"
+  },
+  "glosses": {
+    "black-cat": "藏在明亮之中的直覺與獨立的一面",
+    "wand-sunflower": "把活力與溫暖一起握在手中的自信",
+    "lion-throne": "由大方與勇氣支撐的位置"
+  },
+  "reversedGloss": {
+    "waning": "活力與自信下降，縮了起來",
+    "excess": "存在感過頭，流於嫉妒或炫耀",
+    "internalized": "無法表現出來的熱情，在內心變成敏感"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "坐著一隻白貓",
+      "regex": "白貓|白色的貓|白色貓"
+    },
+    {
+      "wrong": "坐在向日葵田前",
+      "regex": "向日葵田|向日葵花田"
+    }
+  ]
+}

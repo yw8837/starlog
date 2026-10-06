@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-03",
+  "locale": "en",
+  "sourceHash": "ba1e2fe26ad791d2",
+  "name": "Three of Swords",
+  "aliases": [],
+  "keywords": [
+    "heartache",
+    "sorrow",
+    "acknowledging the wound",
+    "after the rain"
+  ],
+  "facts": {
+    "pierced-heart": "Three swords pierce a single red heart from above.",
+    "blades-through": "The tips of the blades come out below the heart.",
+    "clouds-rain": "Gray clouds fill the sky behind, and rain falls at a slant.",
+    "no-figures": "No person is drawn.",
+    "grey-bg": "The whole background is gray."
+  },
+  "glosses": {
+    "clouds-rain": "Tears that come after pain; a passing rain.",
+    "no-figures": "A picture that focuses on the heart itself rather than the event."
+  },
+  "reversedGloss": {
+    "waning": "The pain thins little by little, as rain stops.",
+    "internalized": "Sadness cannot be shown and is swallowed inside.",
+    "excess": "Going over the wound again and again makes the pain bigger."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Blood flows from the heart.",
+      "regex": "\\bbleed(?:s|ing)?\\b|\\bbloody\\b|\\bblood (?:flows?|flowing|drips?|dripping|pours?|streams?|runs?)\\b|\\bdrip(?:s|ping)? blood\\b"
+    },
+    {
+      "wrong": "Four swords are stuck in it.",
+      "regex": "\\b(?:four|4) swords\\b"
+    },
+    {
+      "wrong": "The heart is split in two.",
+      "regex": "\\b(?:split|broken|cracked|torn|cleaved|divided)\\b[^.\\n]{0,10}\\b(?:in two|in half|into two|into halves|apart)\\b|\\btwo halves\\b|\\bin two\\b|\\bin half\\b"
+    }
+  ]
+}

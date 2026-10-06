@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-10",
+  "locale": "en",
+  "sourceHash": "f398c051afc66e8c",
+  "name": "Ten of Pentacles",
+  "aliases": [
+    "Ten of Coins",
+    "Ten of Disks"
+  ],
+  "keywords": [
+    "lasting stability",
+    "family and inheritance",
+    "a base passed down the generations",
+    "a solid sense of belonging"
+  ],
+  "facts": {
+    "elder-dogs": "In front, a white-haired old man in a richly patterned robe sits stroking a white dog.",
+    "two-dogs": "Two white dogs have come up to the old man.",
+    "couple-arch": "Under a large arch stand a man (seen from behind) and a woman.",
+    "child": "A child by the hem of the woman's dress reaches a hand toward a dog.",
+    "ten-pentacles": "Ten pentacles are laid over the scene in a regular shape.",
+    "arch-shields": "On the left pillar is a heraldic shield with a castle and scales painted on it.",
+    "town-tower": "A tower and houses can be seen beyond the arch."
+  },
+  "glosses": {
+    "elder-dogs": "Care and loyalty that connect to the generation before.",
+    "ten-pentacles": "Pentacles laid out in the shape of the tree of life; a base that seems scattered yet is connected."
+  },
+  "reversedGloss": {
+    "blocked": "Stability is blocked by family or property matters.",
+    "internalized": "Stable outside, but stifled inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The old man drives the dogs away.",
+      "regex": "\\b(?:drives?|driving|chas(?:es|ing)|shoos?|shooing|kicks?|kicking|scares?|scaring) (?:away|off|out)?\\b[^.\\n]{0,12}\\bdogs?\\b|\\bchases? the dogs?\\b|\\bdogs? (?:run|ran|flee|fleeing) away\\b"
+    },
+    {
+      "wrong": "Nine pentacles.",
+      "regex": "\\b(?:nine|9) pentacles\\b"
+    }
+  ]
+}

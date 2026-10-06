@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-01",
+  "locale": "en",
+  "sourceHash": "46062f11cb5a286c",
+  "name": "Ace of Wands",
+  "aliases": [
+    "Ace of Rods",
+    "Ace of Staves"
+  ],
+  "keywords": [
+    "a freshly sprouted shoot",
+    "the spark of a new start",
+    "drive",
+    "possibility"
+  ],
+  "facts": {
+    "hand-cloud": "A hand coming out of a gray cloud on the right holds a wand straight upright.",
+    "hand-glow": "Pale rays of light spread around the hand.",
+    "sprouting-wand": "Green leaves sprout from the tip and the side branches of the wand.",
+    "falling-leaves": "Eight leaves fall around the wand.",
+    "castle-hill": "A small castle can be seen on the hill at the left.",
+    "river-trees": "A river flows below, a few trees stand on the right, and mountains lie far off."
+  },
+  "glosses": {
+    "sprouting-wand": "A possibility that has just sprouted and is still growing.",
+    "falling-leaves": "Can be read as a sign that the spark has not yet taken hold.",
+    "castle-hill": "The goal or result is still far away.",
+    "hand-cloud": "An opportunity handed over; whether to take it is up to you."
+  },
+  "reversedGloss": {
+    "blocked": "Wanting to start, but the fire does not catch easily.",
+    "excess": "Drive runs ahead, and several things are started and scattered.",
+    "internalized": "The idea is still growing only inside the mind."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A burning wand.",
+      "regex": "\\bburning (?:wand|staff)\\b|\\bwand\\b[^.\\n]{0,12}\\b(?:is |are )?(?:on fire|aflame|ablaze)\\b|\\bwand (?:is )?(?:burning|lit|alight)\\b|\\bflames? (?:shoots?|burst|bursts|leaps?|rises?) (?:out )?(?:of|from) (?:the )?wand\\b"
+    },
+    {
+      "wrong": "A hand comes out of the cloud on the left.",
+      "regex": "\\bcloud\\b[^.\\n]{0,15}\\bleft\\b|\\bleft\\b[^.\\n]{0,15}\\bcloud\\b"
+    }
+  ]
+}

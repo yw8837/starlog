@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-07",
+  "locale": "zh-hant",
+  "sourceHash": "1f1d379da914a7db",
+  "name": "錢幣七",
+  "aliases": [
+    "星幣七",
+    "金幣七"
+  ],
+  "keywords": [
+    "等待與觀察",
+    "中途檢視",
+    "耐心",
+    "衡量收成的時機"
+  ],
+  "facts": {
+    "leaning-hoe": "年輕人雙手和下巴靠在鋤頭柄上，倚著站著",
+    "bush-pentacles": "左邊茂密的藤蔓叢上結著六枚錢幣",
+    "foot-pentacle": "腳邊另外放著一枚錢幣",
+    "gaze": "他怔怔地望著藤叢上的錢幣",
+    "clothes": "穿著橘色上衣、藍色袖子和褲子，以及棕色靴子",
+    "grey-bg": "背景是淺灰色"
+  },
+  "glosses": {
+    "leaning-hoe": "停下手邊的工作，回顧至今的休息",
+    "foot-pentacle": "單獨分開的一個，重新開始的份"
+  },
+  "reversedGloss": {
+    "blocked": "成果緩慢，等待像是被卡住",
+    "excess": "急躁過了頭，想收割還沒成熟的東西"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "正在摘果實",
+      "regex": "摘(?:著|下)?(?:果實|果子|錢幣)|採果|採收"
+    },
+    {
+      "wrong": "七枚錢幣全都掛在藤叢上",
+      "regex": "七枚錢幣(?:全|都)|七個錢幣(?:全|都)|全部七枚"
+    }
+  ]
+}

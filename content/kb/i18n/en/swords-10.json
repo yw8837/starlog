@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-10",
+  "locale": "en",
+  "sourceHash": "c8084500df61c41c",
+  "name": "Ten of Swords",
+  "aliases": [],
+  "keywords": [
+    "hitting bottom",
+    "the end of a phase",
+    "nowhere lower to go",
+    "just before dawn"
+  ],
+  "facts": {
+    "prone-figure": "A person lies face down with ten swords stuck in the back.",
+    "red-cloth": "A red cloth (a cloak) spreads out under the body.",
+    "hand-gesture": "The one hand showing has two fingers extended.",
+    "dark-sky": "The sky above is pitch black.",
+    "yellow-horizon": "A band of yellow light hangs at the horizon.",
+    "calm-water": "Calm water and distant mountains can be seen behind."
+  },
+  "glosses": {
+    "yellow-horizon": "The dawn light on the horizon at the darkest hour.",
+    "calm-water": "The stillness after it is over."
+  },
+  "reversedGloss": {
+    "waning": "The darkest time has passed, and he rises slowly.",
+    "blocked": "Unable to accept that it is over, he cannot stand up.",
+    "excess": "Going over the pain again and again deepens the wound."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He lies in a sea of blood.",
+      "regex": "\\bsea of blood\\b|\\bpool of blood\\b|\\bblood\\b[^.\\n]{0,15}\\b(?:pool\\w*|puddle\\w*|flows?|flowing|soak\\w*|spill\\w*)\\b|\\bbloodbath\\b|\\bblood-soaked\\b"
+    },
+    {
+      "wrong": "Nine swords are stuck in him.",
+      "regex": "\\b(?:nine|9) swords\\b"
+    }
+  ]
+}

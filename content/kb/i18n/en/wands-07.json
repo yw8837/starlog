@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-07",
+  "locale": "en",
+  "sourceHash": "efc372397a540b44",
+  "name": "Seven of Wands",
+  "aliases": [
+    "Seven of Rods",
+    "Seven of Staves"
+  ],
+  "keywords": [
+    "holding your ground",
+    "the courage to stand firm",
+    "conviction",
+    "facing many"
+  ],
+  "facts": {
+    "high-ground": "A young man standing high on a green hill holds a wand slanted across with both hands to block the way.",
+    "six-below": "Six wands rise toward him from below.",
+    "tense-face": "His face is tense.",
+    "mismatched-shoes": "He wears a low shoe on one foot and a boot on the other, so the shoes do not match.",
+    "green-tunic": "He wears a green tunic.",
+    "blue-sky": "The background is a blue sky."
+  },
+  "glosses": {
+    "mismatched-shoes": "A fight that came up suddenly; holding on even when not perfectly ready.",
+    "six-below": "Pressure and opposing opinions coming from several directions."
+  },
+  "reversedGloss": {
+    "waning": "The strength to hold on drains, and he wants to back away.",
+    "excess": "Hearing every word as an attack, and defending too much."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Several people climb the hill and attack.",
+      "regex": "\\b(?:people|men|figures|enemies|attackers|crowd|they)\\b[^.\\n]{0,15}\\b(?:attack\\w*|climb\\w*|charg\\w+|storm\\w*)\\b|\\bclimb(?:s|ing)? (?:up )?the hill\\b"
+    },
+    {
+      "wrong": "He blocks with a sword and shield.",
+      "regex": "\\b(?:blocks?|blocking|defends?|defending|parr(?:y|ies|ying))\\b[^.\\n]{0,15}\\b(?:with|using) (?:a |his )?(?:sword|shield)\\b|\\bsword and shield\\b|\\bshield and sword\\b|\\b(?:holds?|holding|raises?|raising) (?:a |his |the )?(?:sword|shield)\\b"
+    }
+  ]
+}

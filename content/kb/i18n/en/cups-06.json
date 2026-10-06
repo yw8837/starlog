@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-06",
+  "locale": "en",
+  "sourceHash": "f4aeb68a11719bf6",
+  "name": "Six of Cups",
+  "aliases": [
+    "Six of Chalices"
+  ],
+  "keywords": [
+    "memories and longing",
+    "innocent kindness",
+    "an old connection",
+    "a small gift"
+  ],
+  "facts": {
+    "offering": "A bigger child in a red hood bends down and hands a cup holding white flowers to a smaller child.",
+    "little-girl": "The smaller child wears an orange headscarf and a white glove on one hand.",
+    "six-flower-cups": "There are six cups holding white star-shaped flowers (four in the front row, one on the stone pedestal, and one being handed over).",
+    "pedestal-x": "On the stone pedestal at the left, a shield with an X mark is carved.",
+    "old-town": "Behind, a village courtyard spreads out with an old tower and houses.",
+    "walking-guard": "At the back left, a person with a spear is walking away."
+  },
+  "glosses": {
+    "offering": "A small kindness with no conditions; a heart that was pure.",
+    "walking-guard": "A scene where the adult world has stepped back."
+  },
+  "reversedGloss": {
+    "excess": "Staying too long in memories and missing the present.",
+    "waning": "The ties of the past loosen, and the present returns."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Lovers are exchanging flowers.",
+      "regex": "\\b(?:lovers?|sweethearts?|couple)\\b[^.\\n]{0,25}\\b(?:exchang\\w+|giv\\w+|hand\\w*|swap\\w*|shar\\w+)\\b[^.\\n]{0,12}\\bflowers?\\b|\\btwo adults\\b|\\bboth adults\\b"
+    },
+    {
+      "wrong": "The cups hold water.",
+      "regex": "\\b(?:cups?|chalices?)\\b[^.\\n]{0,15}\\b(?:filled with|full of|holding|holds?|contain\\w*)\\b[^.\\n]{0,6}\\bwater\\b|\\bwater (?:in|inside) the cups?\\b"
+    }
+  ]
+}

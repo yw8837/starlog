@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-13",
+  "locale": "en",
+  "sourceHash": "c5849dbea1f2bba5",
+  "name": "Queen of Pentacles",
+  "aliases": [
+    "Queen of Coins",
+    "Queen of Disks"
+  ],
+  "keywords": [
+    "practical care",
+    "abundant stability",
+    "practical warmth",
+    "household wisdom"
+  ],
+  "facts": {
+    "lap-pentacle": "The queen holds a large pentacle in both hands on her lap and looks down at it.",
+    "rose-canopy": "A vine with red roses in bloom hangs over her head.",
+    "carved-throne": "Horned goat heads are on the arms of the throne, and baby faces and fruit are also carved on it.",
+    "rabbit": "In the grass at the lower right is a rabbit.",
+    "landscape": "Mountains, a river and fields spread out behind, and the sky is yellow.",
+    "robes": "She wears a red garment with a green cloak and a crown."
+  },
+  "glosses": {
+    "rabbit": "Abundance and vitality close to everyday life.",
+    "rose-canopy": "Plenty, surrounded by a garden you have tended."
+  },
+  "reversedGloss": {
+    "waning": "The strength to care drops, and she has no room to look after herself.",
+    "excess": "Material caretaking goes too far and becomes interference."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "There are lion heads on the throne.",
+      "regex": "\\blions?(?:'s)?[ -]?(?:heads?|carvings?|ornaments?|faces?)\\b|\\b(?:heads?|carvings?) of (?:a )?lions?\\b"
+    },
+    {
+      "wrong": "She holds the pentacle high up.",
+      "regex": "\\b(?:holds?|holding|lifts?|lifting|raises?|raising)\\b[^.\\n]{0,12}\\b(?:pentacle|it|coin)\\b[^.\\n]{0,12}\\b(?:high|overhead|above her head|in the air|up high)\\b|\\bhigh above\\b[^.\\n]{0,12}\\bpentacle\\b|\\bpentacle (?:held )?(?:high|overhead)\\b"
+    }
+  ]
+}

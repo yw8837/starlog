@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-05",
+  "locale": "en",
+  "sourceHash": "c8da17b09eb80ddb",
+  "name": "Five of Pentacles",
+  "aliases": [
+    "Five of Coins",
+    "Five of Disks"
+  ],
+  "keywords": [
+    "want and isolation",
+    "a hard season",
+    "help close by",
+    "a cold road"
+  ],
+  "facts": {
+    "two-in-snow": "Two people walk through a snowstorm, hunched against the cold.",
+    "crutches": "One walks on crutches with a bandage on the head and a bell hanging from the neck.",
+    "shawl-barefoot": "The other, wrapped in a shawl with head bowed, walks barefoot.",
+    "lit-window": "On the wall behind is a lit stained-glass window with five pentacles painted on it.",
+    "passing-by": "The two walk past the front of the window.",
+    "snow": "Snowflakes swirl against a black background, and the ground is covered with snow."
+  },
+  "glosses": {
+    "lit-window": "Help and warmth that are close, yet unseen.",
+    "crutches": "A companion who walks together even when hurt."
+  },
+  "reversedGloss": {
+    "waning": "The cold season passes, and recovery and help begin to show.",
+    "internalized": "Hiding the hardship and swallowing it alone.",
+    "excess": "The sense of lack grows, and everything feels short."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "They are going into the church.",
+      "regex": "\\b(?:enter\\w*|go(?:es|ing)? (?:in|into|inside)|walk\\w* (?:in|into|inside)|head\\w* (?:in|into|inside)) (?:the )?(?:church|building)\\b|\\binto the (?:church|building)\\b"
+    },
+    {
+      "wrong": "Three people are walking.",
+      "regex": "\\b(?:three|3) (?:people|figures|persons|beggars|travelers|travellers)\\b"
+    }
+  ]
+}

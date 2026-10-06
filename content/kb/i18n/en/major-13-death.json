@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-13-death",
+  "locale": "en",
+  "sourceHash": "2a4e394ef6b1feb8",
+  "name": "Death",
+  "aliases": [],
+  "keywords": [
+    "the end of a phase",
+    "sorting out",
+    "accepting change",
+    "clearing out"
+  ],
+  "facts": {
+    "skeleton-rider": "A skeleton in black armor rides a white horse toward the right.",
+    "rose-banner": "The black banner the skeleton holds bears a white rose.",
+    "no-weapon": "The rider holds no scythe and no weapon.",
+    "fallen-king": "At the lower left, a king lies fallen, with his crown on the ground.",
+    "bishop-child-maiden": "On the right, a bishop stands with his hands joined, and a child and a young woman kneel before him.",
+    "sun-towers": "In the distance on the right, a sun sits on the horizon between two towers.",
+    "river-boat": "A small boat floats on the river behind.",
+    "horse-harness": "A row of skull and bone patterns runs along the horse's chest strap."
+  },
+  "glosses": {
+    "bishop-child-maiden": "A change that comes to everyone, whatever their rank or age.",
+    "no-weapon": "Change comes not as an attack but as a passing through."
+  },
+  "reversedGloss": {
+    "blocked": "Holding on to what should end, and unable to cross over.",
+    "waning": "The ending is moving slowly, little by little.",
+    "internalized": "The outside stays the same, but the sorting out happens inside first."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A skeleton holding a scythe.",
+      "regex": "\\b(?:holds?|holding|carries|carrying|wields?|wielding|swings?|swinging|raises?|raising|brandish\\w*)\\s+(?:a |an |his |the |one )(?:\\w+ )?(?:scythe|sickle)\\b|\\b(?:scythe|sickle) (?:in|over) (?:his|one)\\b|\\bgrim reaper\\b|\\bwith a (?:\\w+ )?(?:scythe|sickle)\\b"
+    },
+    {
+      "wrong": "The sun is setting (a symbol of the end).",
+      "regex": "\\bsun\\b[^.\\n]{0,15}\\b(?:set(?:s|ting)?|sinks?|sinking|rises?|rising)\\b|\\b(?:setting|rising) sun\\b|\\bsunset\\b|\\bsunrise\\b"
+    },
+    {
+      "wrong": "Corpses are strewn about.",
+      "regex": "\\bcorpses?\\b|\\bdead bod(?:y|ies)\\b|\\bbod(?:y|ies) (?:lie|lying|strewn)\\b|\\bcadavers?\\b"
+    }
+  ]
+}

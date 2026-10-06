@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-11-justice",
+  "locale": "en",
+  "sourceHash": "747f3e30a3359dbf",
+  "name": "Justice",
+  "aliases": [],
+  "keywords": [
+    "fair judgment",
+    "cause and effect",
+    "responsibility",
+    "seeing it as it is"
+  ],
+  "facts": {
+    "sword-upright": "In her right hand she holds a double-edged sword straight upright.",
+    "scales": "In her left hand she holds a pair of scales, hanging down.",
+    "pillars-veil": "She sits between two gray stone pillars, with a purple curtain hanging behind her.",
+    "crown": "She wears a gold crown with a square jewel set in the middle.",
+    "robes": "She wears a green cloak over a red garment, with a square ornament on her chest.",
+    "foot": "One white shoe peeks out a little from under the hem of her garment.",
+    "gaze-front": "She looks straight ahead."
+  },
+  "glosses": {
+    "sword-upright": "A judgment that cuts clearly and decides.",
+    "scales": "The fairness of weighing both sides by the same measure.",
+    "foot": "A foot ready to move even while seated; action after judgment."
+  },
+  "reversedGloss": {
+    "blocked": "A conclusion or procedure stalls, and the decision is put off.",
+    "excess": "Scrutinizing too strictly and measuring everything to a rule.",
+    "internalized": "A time to look back at one's own share of responsibility rather than judge others."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She is blindfolded.",
+      "regex": "\\bblindfold|\\beyes? (?:are |is )?(?:covered|bound)\\b|\\bcovers? her eyes\\b"
+    },
+    {
+      "wrong": "The scales are tilted to one side.",
+      "regex": "\\bscales?\\b[^.\\n]{0,12}\\b(?:are |is |hang |hangs )?(?:tilted|tipped|leaning|lopsided|unbalanced|uneven)\\b"
+    },
+    {
+      "wrong": "The sword points downward.",
+      "regex": "\\bsword\\b[^.\\n]{0,20}\\b(?:points?|pointing|pointed|aimed|angled)\\b[^.\\n]{0,10}\\b(?:down|downward|downwards|floor|ground)\\b|\\bsword (?:tip|point) (?:down|downward)"
+    }
+  ]
+}

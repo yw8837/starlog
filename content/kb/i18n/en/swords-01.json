@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-01",
+  "locale": "en",
+  "sourceHash": "19e1516a321f4b95",
+  "name": "Ace of Swords",
+  "aliases": [],
+  "keywords": [
+    "a clear truth",
+    "the sword of decision",
+    "a breakthrough in thinking",
+    "a new standard"
+  ],
+  "facts": {
+    "hand-sword": "A hand coming out of a cloud on the left holds a sword straight upright.",
+    "crown-tip": "A gold crown hangs on the upward-pointing tip of the sword.",
+    "branches": "From the crown, an olive branch hangs to the left and palm leaves to the right.",
+    "drops": "Six yellow drops fall on both sides of the sword.",
+    "mountains": "Rugged gray mountains can be seen below.",
+    "glow": "Pale rays of light spread around the hand."
+  },
+  "glosses": {
+    "hand-sword": "A clear thought that cuts through what is hazy.",
+    "branches": "A decision that carries both peace (olive) and victory (palm)."
+  },
+  "reversedGloss": {
+    "blocked": "The thoughts are not sorted out, so the decision is put off.",
+    "excess": "Sharpness goes too far and becomes aggressive words."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A hand comes out of a cloud on the right.",
+      "regex": "\\bcloud\\b[^.\\n]{0,15}\\bright\\b|\\bright\\b[^.\\n]{0,15}\\bcloud\\b"
+    },
+    {
+      "wrong": "There is blood on the sword.",
+      "regex": "\\bbloody\\b|\\bblood-stained\\b|\\bbloodied\\b|\\bblood (?:on|drips|dripping|stains?|covers?|covering)\\b|\\b(?:stained|covered|dripping|smeared) (?:with|in) blood\\b"
+    },
+    {
+      "wrong": "The tip of the sword points downward.",
+      "regex": "\\b(?:tip|point|blade)\\b[^.\\n]{0,15}\\b(?:down|downward|downwards)\\b|\\bpoints? (?:down|downward|downwards)\\b"
+    }
+  ]
+}

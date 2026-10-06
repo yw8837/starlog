@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-04",
+  "locale": "en",
+  "sourceHash": "ad8abc582b21a31f",
+  "name": "Four of Swords",
+  "aliases": [],
+  "keywords": [
+    "rest and recovery",
+    "a brief pause",
+    "quiet regrouping",
+    "time alone"
+  ],
+  "facts": {
+    "effigy": "A stone figure of a knight lies on a tomb with both hands joined on the chest in a prayer pose.",
+    "three-swords-wall": "On the wall above, three swords hang with their tips pointing down.",
+    "fourth-sword": "A fourth sword is carved horizontally on the side of the tomb.",
+    "stained-glass": "In the stained-glass window at the upper left, a kneeling person and a figure blessing him are drawn.",
+    "eyes-closed": "The eyes of the lying knight are closed.",
+    "quiet-room": "It is a quiet interior with no one moving."
+  },
+  "glosses": {
+    "three-swords-wall": "A fight hung on the wall for a while; tension set down.",
+    "stained-glass": "A scene of receiving comfort and care shows in the window."
+  },
+  "reversedGloss": {
+    "blocked": "He needs to rest but holds on without resting.",
+    "waning": "The recovery is over, and the time to move again nears.",
+    "excess": "The rest grows long, and he drifts away from the world."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A corpse pierced by swords lies there.",
+      "regex": "\\b(?:corpse|dead (?:body|man|knight)|cadaver)\\b|\\bpierced by (?:a |the )?(?:swords?|blades?)\\b|\\bimpaled\\b"
+    },
+    {
+      "wrong": "All four swords hang on the wall.",
+      "regex": "\\b(?:all )?(?:four|4) swords\\b[^.\\n]{0,15}\\b(?:wall|hang|hanging|hung)\\b|\\ball four swords\\b"
+    }
+  ]
+}

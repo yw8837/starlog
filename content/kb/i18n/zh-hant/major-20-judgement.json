@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-20-judgement",
+  "locale": "zh-hant",
+  "sourceHash": "bec2eff874658578",
+  "name": "審判",
+  "aliases": [],
+  "keywords": [
+    "回應召喚",
+    "再次站起",
+    "回顧與整理",
+    "新的決心"
+  ],
+  "facts": {
+    "angel-trumpet": "雲中的天使吹著金色號角，號角上掛著畫有紅色十字的白旗",
+    "red-wings": "天使有帶紅色調的翅膀和金色捲髮",
+    "rising-figures": "下方的人們從打開的棺木中起身，有的張開雙臂，有的抬頭向上看",
+    "family-front": "前方有男人(左)、背對我們的孩子(中間)和女人(右)",
+    "more-behind": "後方的棺木裡也有三個人起身，一共六人",
+    "water-mountains": "棺木漂浮在水上，後方可以看到積雪的山",
+    "grey-bodies": "人們的身體被塗成灰色調"
+  },
+  "glosses": {
+    "rising-figures": "脫掉過去、再次站起來的瞬間",
+    "family-front": "不是獨自一人，而是一起醒來的場面"
+  },
+  "reversedGloss": {
+    "blocked": "明知有該回應的召喚，卻一再拖延",
+    "internalized": "在顯現於外之前，決心先在內心生長",
+    "excess": "反覆回想過去，審判自己"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "天使拿著天秤審判",
+      "regex": "(?:拿|持|握|舉)著天秤|手持天秤|天秤審判"
+    },
+    {
+      "wrong": "骷髏從墳墓裡站起來",
+      "regex": "骷髏|白骨|骨骸"
+    },
+    {
+      "wrong": "只有三個人站起來",
+      "regex": "只有三個人|只有三人|僅有三個人|僅三人"
+    }
+  ]
+}

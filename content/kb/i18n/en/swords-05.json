@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-05",
+  "locale": "en",
+  "sourceHash": "7e6701ddb6d20c19",
+  "name": "Five of Swords",
+  "aliases": [],
+  "keywords": [
+    "a bitterness that stays even in winning",
+    "the aftertaste of conflict",
+    "a pride fight",
+    "a time to step back"
+  ],
+  "facts": {
+    "smirking-man": "A red-haired man looks back with a faint smile at the people leaving.",
+    "swords-held": "He carries two swords over his shoulder and holds one more sword in one hand.",
+    "swords-ground": "Two swords lie on the ground.",
+    "walking-away": "Two people walk toward the water with their backs turned, and another seems to cover his face with his hands.",
+    "jagged-clouds": "Clouds that look torn drift slanting across the sky.",
+    "sea": "The sea can be seen behind."
+  },
+  "glosses": {
+    "walking-away": "The side that lost goes away; the wound the relationship leaves.",
+    "jagged-clouds": "The unsettled air after a quarrel."
+  },
+  "reversedGloss": {
+    "waning": "The quarrel settles, and a chance to step back or reconcile appears.",
+    "internalized": "On the outside it is over, but resentment stays inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Someone has fallen, bleeding.",
+      "regex": "\\bbleed(?:s|ing)?\\b|\\bbloody\\b|\\bcorpses?\\b|\\b(?:someone|a person|a man|one of them) (?:has |have )?(?:fallen|collapsed) (?:to|on) the (?:ground|floor)\\b|\\blies? (?:wounded|dead)\\b|\\bfallen,? bleeding\\b"
+    },
+    {
+      "wrong": "He holds all five swords.",
+      "regex": "\\ball (?:five|5) swords\\b|\\bholds? (?:all )?(?:five|5) swords\\b|\\bfive swords in (?:his|one) hands?\\b"
+    }
+  ]
+}

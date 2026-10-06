@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-07",
+  "locale": "en",
+  "sourceHash": "bf635afb62f33edb",
+  "name": "Seven of Cups",
+  "aliases": [
+    "Seven of Chalices"
+  ],
+  "keywords": [
+    "many possibilities",
+    "illusion and imagination",
+    "confusion in choosing",
+    "sweet temptation"
+  ],
+  "facts": {
+    "silhouette": "A figure like a black shadow, seen from behind, looks at cups floating on clouds.",
+    "seven-cups": "Seven cups float on the clouds, each holding something different.",
+    "top-row": "The top-row cups hold a human head, a figure in a cloth wrapped in light, and a snake.",
+    "bottom-row": "The bottom-row cups hold a castle, jewels, a laurel wreath and a dragon.",
+    "skull-cup": "A skull shape is drawn on the body of the cup that holds the laurel wreath.",
+    "clouds-sky": "The background is gray clouds and a blue sky."
+  },
+  "glosses": {
+    "silhouette": "A self surrounded by possibilities, with an identity that is still blurred.",
+    "skull-cup": "The price hidden behind glory."
+  },
+  "reversedGloss": {
+    "waning": "The fog lifts, and only the realistic options remain.",
+    "excess": "Imagination swells further and drifts away from reality."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Eight (or six) cups are floating.",
+      "regex": "\\b(?:eight|six|8|6) (?:cups|chalices)\\b|\\b(?:eight|six|8|6)\\b[^.\\n]{0,12}\\b(?:cups|chalices)\\b"
+    },
+    {
+      "wrong": "He holds one cup in his hand.",
+      "regex": "\\b(?:holds?|holding|grips?|gripping|grabs?|clutch\\w*|takes?|taking|reaches? for) (?:a|one|the) cup\\b|\\bone cup in (?:his|one) hand\\b"
+    }
+  ]
+}

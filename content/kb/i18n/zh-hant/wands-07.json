@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-07",
+  "locale": "zh-hant",
+  "sourceHash": "efc372397a540b44",
+  "name": "權杖七",
+  "aliases": [
+    "權仗七"
+  ],
+  "keywords": [
+    "守住自己的位置",
+    "撐住的勇氣",
+    "信念",
+    "面對眾人"
+  ],
+  "facts": {
+    "high-ground": "站在綠色山丘高處的年輕人，雙手斜舉著權杖擋在前面",
+    "six-below": "下方有六根權杖朝他豎起",
+    "tense-face": "臉上神情緊繃",
+    "mismatched-shoes": "一隻腳穿矮鞋，另一隻腳穿靴子，鞋子不成對",
+    "green-tunic": "穿著綠色衣服",
+    "blue-sky": "背景是藍天"
+  },
+  "glosses": {
+    "mismatched-shoes": "突然開打的戰鬥，即使準備不完美也撐住",
+    "six-below": "來自多個方向的壓力與反對意見"
+  },
+  "reversedGloss": {
+    "waning": "撐住的力氣流失，想要退下",
+    "excess": "把所有話都聽成攻擊，防備過度"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "許多人爬上山丘攻擊",
+      "regex": "(?:人們?|眾人|敵人|許多人)[^。\\n]{0,6}(?:攻擊|襲擊|爬上|衝上)|爬上山丘|衝上來"
+    },
+    {
+      "wrong": "用劍和盾牌擋住",
+      "regex": "劍和盾牌|盾牌和劍|用劍(?:和盾牌)?(?:擋|防)|用盾牌(?:擋|防)"
+    }
+  ]
+}

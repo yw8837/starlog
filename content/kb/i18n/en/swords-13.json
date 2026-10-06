@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-13",
+  "locale": "en",
+  "sourceHash": "d5ec411c408fe8c6",
+  "name": "Queen of Swords",
+  "aliases": [],
+  "keywords": [
+    "clear boundaries",
+    "honest judgment",
+    "wisdom from experience",
+    "independence"
+  ],
+  "facts": {
+    "profile-throne": "The queen sits on the throne in profile, looking to the right.",
+    "upright-sword": "In her right hand she holds a sword straight upright.",
+    "extended-hand": "Her left hand is raised forward with the palm held out, and a cord ornament hangs at the wrist.",
+    "butterfly-crown": "She wears a crown with butterfly ornaments, and a winged baby's face and butterflies are carved on the throne.",
+    "cloud-cape": "She wears a cloak with a cloud pattern.",
+    "clouds-bird": "Clouds spread below, and a bird flies high in the sky."
+  },
+  "glosses": {
+    "extended-hand": "A hand held out even after judging; room for conversation.",
+    "clouds-bird": "A clarity that flies high above what is cloudy."
+  },
+  "reversedGloss": {
+    "excess": "Coolness and criticism go too far and feel cold.",
+    "internalized": "Sadness is not shown and hardens inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She is blindfolded.",
+      "regex": "\\bblindfold|\\beyes? (?:are |is )?(?:covered|bound)\\b|\\bcovers? her eyes\\b"
+    },
+    {
+      "wrong": "She lays the sword across her knees.",
+      "regex": "\\bsword\\b[^.\\n]{0,20}\\b(?:across|on) (?:her )?(?:knees|lap)\\b|\\b(?:lays?|laid|rests?|resting|places?|placed) (?:the |her )?sword\\b"
+    }
+  ]
+}

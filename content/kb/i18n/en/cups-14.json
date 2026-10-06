@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-14",
+  "locale": "en",
+  "sourceHash": "c653a4d03b1aa8b9",
+  "name": "King of Cups",
+  "aliases": [
+    "King of Chalices"
+  ],
+  "keywords": [
+    "emotional balance",
+    "generous responsibility",
+    "composure",
+    "a center in the shaking"
+  ],
+  "facts": {
+    "sea-throne": "The king sits facing front on a stone throne set on the sea.",
+    "cup-scepter": "In his right hand he holds a large cup, and in his left a short scepter.",
+    "fish-amulet": "A fish-shaped ornament hangs from his neck.",
+    "dolphin-ship": "A fish leaps up from the sea on the left, and a ship floats on the right.",
+    "robes": "He wears a green cloak over blue clothes and a crown.",
+    "grey-bg": "The background is grayish."
+  },
+  "glosses": {
+    "sea-throne": "Keeping his center even above the heaving feelings.",
+    "cup-scepter": "A hand that holds feeling and responsibility together."
+  },
+  "reversedGloss": {
+    "internalized": "Pressing feelings down and staying calm only on the outside.",
+    "excess": "Feelings shake judgment, and he becomes moody."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The king is riding in a ship.",
+      "regex": "\\b(?:rid(?:es|ing)|sail(?:s|ing)|aboard|on board)\\b[^.\\n]{0,12}\\b(?:ship|boat)\\b|\\b(?:inside|in|on) (?:the|a) (?:ship|boat)\\b"
+    },
+    {
+      "wrong": "The king is submerged in the water.",
+      "regex": "\\b(?:is|are|sits?|sitting|stands?|standing)\\b[^.\\n]{0,10}\\b(?:submerged|underwater|waist-deep|neck-deep|chest-deep)\\b|\\bsubmerged in (?:the )?(?:water|sea)\\b"
+    }
+  ]
+}

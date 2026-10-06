@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-12",
+  "locale": "ja",
+  "sourceHash": "8ac8b3161f9604fe",
+  "name": "ソードのナイト",
+  "aliases": [
+    "剣のナイト"
+  ],
+  "keywords": [
+    "一気に突き進む",
+    "素早い判断",
+    "率直さ",
+    "せっかち"
+  ],
+  "facts": {
+    "charging": "騎士が剣を高くかかげ、白い馬を全速力で走らせて、左へ突進している",
+    "red-cape": "赤いマントと兜の赤い飾りが、風になびいている",
+    "harness": "馬の胸のベルトに、蝶と鳥の模様がある",
+    "bent-trees": "後ろの木々が風になびいている",
+    "torn-clouds": "空に、引き裂かれたような雲が速く流れている"
+  },
+  "glosses": {
+    "bent-trees": "まわりを吹き払う速さと風",
+    "torn-clouds": "素早く散っていく考え"
+  },
+  "reversedGloss": {
+    "excess": "速さと攻撃性が行き過ぎて、衝突を呼ぶ",
+    "blocked": "走るべきときに力が抜けて、止まってしまう"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "馬がゆっくり歩いている",
+      "regex": "ゆっくり(?:と)?歩|のんびり歩"
+    },
+    {
+      "wrong": "剣を鞘に収めた",
+      "regex": "鞘"
+    }
+  ]
+}

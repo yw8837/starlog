@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-06",
+  "locale": "zh-hant",
+  "sourceHash": "133d7305f1dfc748",
+  "name": "寶劍六",
+  "aliases": [],
+  "keywords": [
+    "離開並渡過",
+    "脫離艱難之地",
+    "安靜的移動",
+    "駛向復原的航行"
+  ],
+  "facts": {
+    "ferryman": "船夫背對著我們，用長篙撐著一艘平底船渡水",
+    "passengers": "船裡有一個戴兜帽的人低著頭坐著，旁邊有一個孩子",
+    "six-swords": "船的前方立著六把劍",
+    "far-shore": "對岸的水邊可以看到樹木",
+    "water-contrast": "船左側的水很平靜，右下方起了波浪",
+    "pale-sky": "天空是淡灰色"
+  },
+  "glosses": {
+    "passengers": "帶著悲傷安靜離開的人",
+    "water-contrast": "從洶湧的水移向平靜那一側的移動"
+  },
+  "reversedGloss": {
+    "blocked": "想要轉移，情況卻綁住了腳",
+    "internalized": "身體已經離開，心卻還停留在原來的地方"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "船在暴風雨中搖晃",
+      "regex": "暴風|風暴|驚濤|巨浪|狂浪"
+    },
+    {
+      "wrong": "人們在划槳",
+      "regex": "划槳|划船|搖槳|划著"
+    }
+  ]
+}

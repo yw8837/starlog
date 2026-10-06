@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-08",
+  "locale": "en",
+  "sourceHash": "44ce227ee98d9dad",
+  "name": "Eight of Swords",
+  "aliases": [],
+  "keywords": [
+    "a trapped feeling",
+    "thoughts she tied herself",
+    "powerlessness",
+    "a gap to slip out through"
+  ],
+  "facts": {
+    "bound-blindfold": "A woman in red stands with her eyes covered and her upper body and arms bound with cloth.",
+    "eight-swords": "Eight swords are stuck in the ground around the woman (three on the left, five on the right).",
+    "open-front": "The swords are on both sides and behind, and the space in front of the woman is not blocked.",
+    "legs-free": "The cloth is wrapped only around the upper body, and the legs are free.",
+    "castle": "A castle can be seen on a hill at the back right.",
+    "puddles": "Pools of water have gathered on the ground under her feet."
+  },
+  "glosses": {
+    "legs-free": "More freedom to move remains than she thinks.",
+    "open-front": "There is a gap to slip out through, but she cannot see it."
+  },
+  "reversedGloss": {
+    "waning": "The thoughts that bound her loosen, and an exit shows.",
+    "excess": "Fear grows, and she cannot move even more."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She is completely surrounded by swords and trapped.",
+      "regex": "\\bcompletely (?:surrounded|trapped|enclosed|encircled|boxed in)\\b|\\bsurrounded (?:on all sides|completely)\\b|\\bno (?:way|exit|escape) (?:out|at all)\\b|\\bswords (?:on|from) (?:all|every) sides?\\b|\\benclosed by (?:the )?swords\\b"
+    },
+    {
+      "wrong": "Even her feet are tightly bound.",
+      "regex": "\\b(?:feet|legs|ankles)\\b[^.\\n]{0,18}\\b(?:bound|tied|bind|bindings?|wrapped|shackled|chained)\\b|\\b(?:bound|tied|wrapped) (?:\\w+ )?(?:feet|legs|ankles)\\b"
+    }
+  ]
+}

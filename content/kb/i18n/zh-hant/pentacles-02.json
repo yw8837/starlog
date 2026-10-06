@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-02",
+  "locale": "zh-hant",
+  "sourceHash": "6e01248ae9779335",
+  "name": "錢幣二",
+  "aliases": [
+    "星幣二",
+    "金幣二"
+  ],
+  "keywords": [
+    "保持平衡",
+    "同時處理多件事",
+    "靈活應對",
+    "起起伏伏"
+  ],
+  "facts": {
+    "juggling": "戴著高紅帽的年輕人兩手各拿一枚錢幣，像跳舞一樣保持平衡",
+    "infinity-band": "兩枚錢幣被一條橫躺8字形的綠色帶子連著",
+    "one-foot": "抬起一隻腳，是舞蹈般的步伐",
+    "ships-waves": "後方的海上掀起高高的浪，兩艘船乘著波浪",
+    "blue-sky": "背景是藍天"
+  },
+  "glosses": {
+    "ships-waves": "在起伏的局勢中仍然浮著的船",
+    "juggling": "像玩耍一樣輕巧地保持平衡的技巧"
+  },
+  "reversedGloss": {
+    "excess": "手上的事情多到溢出，平衡崩潰",
+    "internalized": "表面上假裝很開心，內心卻手忙腳亂"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "正在耍弄三枚錢幣",
+      "regex": "三枚錢幣|三個錢幣|耍弄三|三個圓盤"
+    },
+    {
+      "wrong": "平靜的大海",
+      "regex": "平靜的(?:大)?海|風平浪靜|海面平靜"
+    }
+  ]
+}

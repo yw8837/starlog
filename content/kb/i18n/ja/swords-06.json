@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-06",
+  "locale": "ja",
+  "sourceHash": "133d7305f1dfc748",
+  "name": "ソードの6",
+  "aliases": [
+    "剣の6"
+  ],
+  "keywords": [
+    "離れて渡る",
+    "つらい場所から抜け出す",
+    "静かな移動",
+    "回復へ向かう航海"
+  ],
+  "facts": {
+    "ferryman": "船頭が背を向けたまま、長い竿で平たい舟を押して水を渡っている",
+    "passengers": "舟の中に、頭巾をかぶった人がうつむいて座り、そばに子どもがいる",
+    "six-swords": "舟の前のほうに、剣が六本立てられている",
+    "far-shore": "向こう岸に木々が見える",
+    "water-contrast": "舟の左の水は穏やかで、右下には波が立っている",
+    "pale-sky": "空は淡い灰色だ"
+  },
+  "glosses": {
+    "passengers": "悲しみを抱えて、静かに去っていく人",
+    "water-contrast": "荒れた水から穏やかなほうへ移っていく動き"
+  },
+  "reversedGloss": {
+    "blocked": "移ろうとしているのに、事情が足を縛る",
+    "internalized": "体は離れたが、心はまだ前の場所にとどまっている"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "舟が嵐に揺れている",
+      "regex": "嵐|暴風|荒波|激しい波"
+    },
+    {
+      "wrong": "人々が櫂をこいでいる",
+      "regex": "櫂|オール|漕い|漕ぎ"
+    }
+  ]
+}

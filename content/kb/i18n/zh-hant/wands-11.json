@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-11",
+  "locale": "zh-hant",
+  "sourceHash": "e133c4a21235e755",
+  "name": "權杖侍從",
+  "aliases": [
+    "權仗侍從"
+  ],
+  "keywords": [
+    "令人雀躍的消息",
+    "好奇與探索",
+    "學習的熱情",
+    "第一次嘗試"
+  ],
+  "facts": {
+    "looks-up": "年輕人雙手豎著一根權杖，抬頭望著杖的頂端",
+    "feather-hat": "戴著插有紅色羽毛的帽子",
+    "salamander-tunic": "黃色上衣上畫著黑色火蜥蜴的圖案",
+    "boots": "穿著有火焰形裝飾的黃色靴子",
+    "pyramids": "後方沙色的地面上可以看到三座金字塔形的山丘",
+    "blue-sky": "背景是藍天"
+  },
+  "glosses": {
+    "looks-up": "用好奇的眼神望著新的可能",
+    "salamander-tunic": "據說在火裡也能活的火蜥蜴，不會冷卻的熱情",
+    "pyramids": "對還沒去過的遠方的興趣"
+  },
+  "reversedGloss": {
+    "excess": "興奮的心情跑在前面，話很多，行動卻很分散",
+    "blocked": "想試試看卻沒有自信，邁不出第一次嘗試"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "騎著馬",
+      "regex": "騎著馬|騎馬|騎在馬"
+    },
+    {
+      "wrong": "權杖著了火",
+      "regex": "權杖[^。\\n]{0,4}(?:著了火|著火|起了火|起火|燒起來|冒火)|燃燒的權杖|燃燒著的權杖"
+    }
+  ]
+}

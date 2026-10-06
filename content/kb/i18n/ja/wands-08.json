@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-08",
+  "locale": "ja",
+  "sourceHash": "9916b1e5faccc2e7",
+  "name": "ワンドの8",
+  "aliases": [
+    "棒の8",
+    "杖の8"
+  ],
+  "keywords": [
+    "素早い進行",
+    "知らせの行き来",
+    "滞りない流れ",
+    "到着の直前"
+  ],
+  "facts": {
+    "eight-flying": "杖が八本、並んで斜めに飛んでいる",
+    "downward": "杖は左上から右下へ傾き、地面のほうへ降りてきている",
+    "no-figures": "人は一人もいない",
+    "leaves": "どの杖にも、小さな緑の葉が芽吹いている",
+    "landscape": "下に川と緑の丘、丘の上の小さな家が一軒見える",
+    "blue-sky": "背景は広い青空だ"
+  },
+  "glosses": {
+    "eight-flying": "滞りなく、一つの方向へ素早く動く流れ",
+    "no-figures": "人より先に、物事と知らせが動く"
+  },
+  "reversedGloss": {
+    "blocked": "飛んでいたものが引っかかり、知らせや進行が遅れる",
+    "excess": "急ぎすぎて、行き違い、散らばる"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "矢が飛んでいる",
+      "regex": "矢"
+    },
+    {
+      "wrong": "杖が空へ舞い上がっている",
+      "regex": "空へ(?:舞い上|飛び上|昇)|上へ(?:舞い上|飛び上|昇)"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-14",
+  "locale": "zh-hant",
+  "sourceHash": "ccae07475baaa3c5",
+  "name": "錢幣國王",
+  "aliases": [
+    "星幣國王",
+    "金幣國王"
+  ],
+  "keywords": [
+    "物質上的穩定",
+    "可靠的責任",
+    "管理與經營",
+    "豐厚的成就"
+  ],
+  "facts": {
+    "bull-throne": "國王坐在有公牛頭裝飾的王座上",
+    "grape-robe": "穿著滿是葡萄串和藤蔓圖案的黑色衣服",
+    "scepter-pentacle": "右手握著頂端有圓球的權杖，左手把一枚錢幣托在膝上",
+    "flower-crown": "戴著用花和葉子裝飾的冠",
+    "castle": "右後方可以看到城堡和城牆",
+    "vines": "周圍葡萄藤和花朵茂盛，天空是黃色的",
+    "foot-carving": "穿著盔甲的一隻腳踩在腳邊的獸頭雕刻上"
+  },
+  "glosses": {
+    "grape-robe": "披著成熟果實的豐盛",
+    "castle": "累積起來的基礎與領地"
+  },
+  "reversedGloss": {
+    "excess": "太被物質與成果綁住",
+    "waning": "累積起來的基礎動搖，覺得責任沉重"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "坐在金幣堆上",
+      "regex": "金幣堆|錢幣堆|坐在(?:金幣|錢幣)"
+    },
+    {
+      "wrong": "有獅子裝飾的王座",
+      "regex": "獅子"
+    }
+  ]
+}

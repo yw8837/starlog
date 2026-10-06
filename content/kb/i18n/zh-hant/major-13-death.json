@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-13-death",
+  "locale": "zh-hant",
+  "sourceHash": "2a4e394ef6b1feb8",
+  "name": "死神",
+  "aliases": [],
+  "keywords": [
+    "一個階段的結束",
+    "整理",
+    "接受改變",
+    "清空"
+  ],
+  "facts": {
+    "skeleton-rider": "穿著黑色盔甲的骷髏騎著白馬，向右前進",
+    "rose-banner": "骷髏手持的黑色旗幟上，畫著白玫瑰圖案",
+    "no-weapon": "騎士沒有拿鐮刀或任何武器",
+    "fallen-king": "左下方有一位國王倒在地上，王冠掉落在地",
+    "bishop-child-maiden": "右側有一位主教雙手合十站著，他面前跪著一個孩子和一名少女",
+    "sun-towers": "遠處右邊兩座塔之間的地平線上，掛著一輪太陽",
+    "river-boat": "後方的河面上漂著一艘小船",
+    "horse-harness": "馬的胸帶上排列著骷髏和骨頭的圖案"
+  },
+  "glosses": {
+    "bishop-child-maiden": "不論地位和年齡，每個人都會遇到的變化",
+    "no-weapon": "變化不是以攻擊的方式，而是以經過的方式到來"
+  },
+  "reversedGloss": {
+    "blocked": "抓著該結束的事物不放，無法跨過去",
+    "waning": "結束正在緩慢地、一點一點地進行",
+    "internalized": "外表不變，心裡卻先開始整理"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "手拿鐮刀的骷髏",
+      "regex": "手(?:拿|持|握)(?:著)?(?:一把)?(?:大)?鐮刀|(?:拿|持|握|揮)著(?:一把)?(?:大)?鐮刀|大鐮刀"
+    },
+    {
+      "wrong": "太陽正在下沉(象徵結束)",
+      "regex": "太陽(?:正在|正)?(?:下沉|西沉|落下|升起|東升)|夕陽|日落|日出|落日"
+    },
+    {
+      "wrong": "屍體散落一地",
+      "regex": "屍體|屍首|遺體"
+    }
+  ]
+}

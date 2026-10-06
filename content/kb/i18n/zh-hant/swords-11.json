@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-11",
+  "locale": "zh-hant",
+  "sourceHash": "c9d200ef20042d2c",
+  "name": "寶劍侍從",
+  "aliases": [],
+  "keywords": [
+    "敏銳的觀察",
+    "帶著戒心的好奇",
+    "新的資訊",
+    "練習思考"
+  ],
+  "facts": {
+    "raised-sword": "年輕侍從雙手斜舉著一把劍站著",
+    "looking-back": "轉過頭，從肩膀後方向後看",
+    "rough-hill": "站在坑坑窪窪的山丘上，周圍有團團積雲",
+    "birds": "左上方的天空有一群鳥在飛",
+    "wind-trees": "左下方的樹被風吹得彎曲",
+    "clothes": "穿著粉紅色上衣、黃色袖子和紅色靴子，頭髮被風吹起"
+  },
+  "glosses": {
+    "birds": "四散的念頭，快速往來的資訊",
+    "raised-sword": "試著運用還在學習中的話語與想法"
+  },
+  "reversedGloss": {
+    "excess": "戒心與言語過了頭，變得尖銳而急躁",
+    "blocked": "有需要查看的事，卻沒有準備就停在原地"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "騎著馬",
+      "regex": "騎著馬|騎馬|騎在馬"
+    },
+    {
+      "wrong": "把劍插在地上拄著休息",
+      "regex": "劍插在地|把劍插|拄著劍|劍拄在地"
+    }
+  ]
+}

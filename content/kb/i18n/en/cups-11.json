@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-11",
+  "locale": "en",
+  "sourceHash": "eca38ef927647043",
+  "name": "Page of Cups",
+  "aliases": [
+    "Page of Chalices",
+    "Knave of Cups"
+  ],
+  "keywords": [
+    "emotional news",
+    "imagination",
+    "innocent curiosity",
+    "a message from the heart"
+  ],
+  "facts": {
+    "fish-cup": "A young page holds a cup in one hand, and a fish pokes its head out of it.",
+    "looking-fish": "The page looks at the fish with a faint smile.",
+    "hand-hip": "The other hand is on the hip.",
+    "blue-hat": "The page wears a blue hat with a long cloth hanging from it, and a blue top with a lotus pattern.",
+    "sea-behind": "A rolling sea can be seen behind.",
+    "grey-bg": "The sky area is a pale gray."
+  },
+  "glosses": {
+    "looking-fish": "Taking an unexpected feeling or idea in with curiosity.",
+    "sea-behind": "The wide sea of feeling spread out behind."
+  },
+  "reversedGloss": {
+    "internalized": "The heart is there, but it cannot be expressed and is hidden.",
+    "excess": "Feeling and imagination go too far and drift from reality."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Water overflows from the cup.",
+      "regex": "\\bwater\\b[^.\\n]{0,15}\\b(?:overflow\\w*|spill\\w*|pour\\w*)\\b|\\b(?:overflow\\w*|spill\\w*)\\b[^.\\n]{0,12}\\b(?:cup|water)\\b|\\bcup\\b[^.\\n]{0,12}\\b(?:overflow\\w*|spill\\w*)\\b"
+    },
+    {
+      "wrong": "He has caught the fish with a fishing rod.",
+      "regex": "\\bfishing\\b|\\bcaught (?:the|a) fish\\b|\\breeled\\b|\\bfishing (?:rod|line|pole)\\b"
+    }
+  ]
+}

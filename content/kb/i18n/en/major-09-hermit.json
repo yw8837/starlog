@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-09-hermit",
+  "locale": "en",
+  "sourceHash": "0f3ccbf5369a30d7",
+  "name": "The Hermit",
+  "aliases": [],
+  "keywords": [
+    "choosing alone in quiet",
+    "setting your own standard",
+    "stepping back",
+    "a light you lit yourself"
+  ],
+  "facts": {
+    "lantern-raised": "He raises a lantern in his right hand to head height.",
+    "star-in-lantern": "Inside the lantern, star-shaped lines show between the bars.",
+    "gaze-down": "His head is bowed, and his gaze goes downward.",
+    "staff-left": "In his left hand he leans on a yellow staff.",
+    "grey-hood": "He wears a gray cloak with a hood, and his beard is white.",
+    "white-peak": "He stands alone on a white peak (it looks like a snow-covered summit).",
+    "pale-sky": "The background is a pale blue sky."
+  },
+  "glosses": {
+    "lantern-raised": "Checking the spot where he stands by a light he lit himself.",
+    "star-in-lantern": "The source of light is within, not outside.",
+    "staff-left": "Even standing alone, he has something to lean on."
+  },
+  "reversedGloss": {
+    "excess": "Being alone goes too far, and he closes off.",
+    "waning": "The time he spent withdrawn is coming to an end.",
+    "blocked": "The thinking is done, but he cannot come out."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He holds the lantern low to light the ground at his feet.",
+      "regex": "\\blantern\\b[^.\\n]{0,15}\\blow\\b|\\b(?:light|lights|lighting|illuminat\\w+)\\b[^.\\n]{0,12}\\b(?:his|the) feet\\b"
+    },
+    {
+      "wrong": "The scene is in the night sky or under moonlight.",
+      "regex": "\\bmoonlit\\b|\\bunder (?:a |the )?moon(?:light)?\\b|\\bnight sky\\b[^.\\n]{0,20}\\b(?:moon|stars?)\\b|\\bnighttime scene\\b"
+    },
+    {
+      "wrong": "A candle is burning inside the lantern.",
+      "regex": "\\b(?:candles?|flames?)\\b[^.\\n]{0,12}\\b(?:inside|in|within) (?:the )?lantern\\b|\\blantern\\b[^.\\n]{0,15}\\b(?:candles?|flames?|fire)\\b"
+    }
+  ]
+}

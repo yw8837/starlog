@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-01",
+  "locale": "zh-hant",
+  "sourceHash": "2f597cfeda1d1879",
+  "name": "錢幣王牌",
+  "aliases": [
+    "星幣王牌",
+    "金幣王牌"
+  ],
+  "keywords": [
+    "務實的機會",
+    "紮實的開始",
+    "抓得住的成果",
+    "穩定的種子"
+  ],
+  "facts": {
+    "hand-pentacle": "左邊雲中伸出一隻手，掌心上托著一枚大大的金色錢幣",
+    "glow": "手的周圍擴散著淡淡的光芒",
+    "garden-lilies": "下方的花園裡開著白百合",
+    "hedge-arch": "樹籬上開著一道拱形的門，門外有小路延伸",
+    "mountains": "拱門外可以看到藍色的山",
+    "lawn-path": "綠色草坪間有一條黃色的小路"
+  },
+  "glosses": {
+    "hedge-arch": "通往花園之外的門，把機會帶入現實的路",
+    "garden-lilies": "付出多少照顧就長出多少的根基"
+  },
+  "reversedGloss": {
+    "blocked": "機會就在眼前，準備或條件卻擋住，開始得比較晚",
+    "excess": "太被金錢與條件綁住"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "手從右邊的雲裡伸出來",
+      "regex": "右邊的雲|右側的雲"
+    },
+    {
+      "wrong": "金幣傾瀉而出",
+      "regex": "金幣(?:傾瀉|湧出|灑落|滿地)|傾瀉而出|一堆金幣|金幣堆"
+    }
+  ]
+}

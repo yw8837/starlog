@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-11",
+  "locale": "ja",
+  "sourceHash": "be0737cf5bf7efef",
+  "name": "ペンタクルのペイジ",
+  "aliases": [
+    "金貨のペイジ",
+    "コインのペイジ"
+  ],
+  "keywords": [
+    "学びの始まり",
+    "誠実な好奇心",
+    "現実的な計画",
+    "小さなチャンス"
+  ],
+  "facts": {
+    "holding-pentacle": "若者が両手でペンタクルを持ち上げ、じっと見つめている",
+    "red-hood": "長い布が垂れた赤いずきん帽をかぶり、緑の服を着ている",
+    "meadow": "花が咲く草原に立っている",
+    "plowed-field": "右の遠くに、耕された畑が見える",
+    "trees-mountain": "左に木立、右に山があり、空は黄色い"
+  },
+  "glosses": {
+    "plowed-field": "これから育てる土地、現実で育てる計画",
+    "meadow": "芽吹いたばかりの可能性"
+  },
+  "reversedGloss": {
+    "blocked": "計画はあるのに、実行が遅れる",
+    "waning": "学ぶ意欲と集中が落ちる"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "ペンタクルを投げている",
+      "regex": "ペンタクルを(?:投げ|放り)|投げて"
+    },
+    {
+      "wrong": "馬に乗っている",
+      "regex": "馬に乗|騎乗|馬上"
+    }
+  ]
+}

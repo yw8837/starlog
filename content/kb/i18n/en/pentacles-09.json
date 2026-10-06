@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-09",
+  "locale": "en",
+  "sourceHash": "7778f0b74cf8a399",
+  "name": "Nine of Pentacles",
+  "aliases": [
+    "Nine of Coins",
+    "Nine of Disks"
+  ],
+  "keywords": [
+    "independence and ease",
+    "abundance she made herself",
+    "dignity in being alone",
+    "enjoying it"
+  ],
+  "facts": {
+    "woman-vineyard": "A woman in a flowered dress stands in the middle of a vineyard.",
+    "hooded-falcon": "A hooded bird (a falcon) perches on her gloved hand.",
+    "nine-pentacles": "Nine pentacles hang among the vines around her (six on the left, three on the right).",
+    "hand-on-pentacle": "Her other hand rests near a pentacle and a bunch of grapes.",
+    "manor": "At the back right, a manor and trees can be seen, and the sky is yellow.",
+    "snail": "A small snail is on the path at her feet."
+  },
+  "glosses": {
+    "hooded-falcon": "A tamed instinct; a restrained freedom.",
+    "snail": "A pace that arrives even if slow."
+  },
+  "reversedGloss": {
+    "internalized": "Well off outside, but lonely or anxious inside.",
+    "excess": "Enjoyment goes too far and turns into waste or showing off.",
+    "blocked": "The footing needed for independence is still shaky."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A man stands in the vineyard.",
+      "regex": "\\b(?:a|the) man\\b[^.\\n]{0,15}\\b(?:vineyard|vines?|garden)\\b|\\bman (?:stands|standing)\\b"
+    },
+    {
+      "wrong": "The bird flies up.",
+      "regex": "\\b(?:bird|falcon|hawk)\\b[^.\\n]{0,12}\\b(?:flies|flying|takes? (?:off|flight)|soars?|soaring|launch\\w*|swoops?|flaps?)\\b|\\b(?:takes? (?:off|flight)|mid-flight|taking off)\\b"
+    }
+  ]
+}

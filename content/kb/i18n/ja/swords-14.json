@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-14",
+  "locale": "ja",
+  "sourceHash": "fcaa7564bef7711a",
+  "name": "ソードのキング",
+  "aliases": [
+    "剣のキング"
+  ],
+  "keywords": [
+    "公正な判断",
+    "論理と権威",
+    "明確な決定",
+    "原則"
+  ],
+  "facts": {
+    "frontal-king": "王が正面を向いて玉座に座っている",
+    "sword-right": "右手に剣を、少し傾けて立てて持っている",
+    "throne-butterflies": "玉座の背もたれに、蝶と三日月の模様が刻まれている",
+    "robes": "青い服の上に橙色のマントと灰色の上着をはおり、冠をかぶっている",
+    "trees-birds": "両側に木と雲があり、右の空に鳥が二羽飛んでいる",
+    "blue-sky": "背景は青い空だ"
+  },
+  "glosses": {
+    "sword-right": "原則に従って分ける判断",
+    "throne-butterflies": "移り変わる考えの上に築いた判断"
+  },
+  "reversedGloss": {
+    "excess": "論理と権威が行き過ぎて、冷たく押さえつける",
+    "blocked": "判断が曇り、決定を下せない"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "天秤を持っている",
+      "regex": "天秤を(?:持|手に|かざ|掲げ)|天秤を持った"
+    },
+    {
+      "wrong": "横顔で座っている",
+      "regex": "横顔"
+    }
+  ]
+}

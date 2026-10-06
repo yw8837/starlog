@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-04",
+  "locale": "en",
+  "sourceHash": "15210054efa0833a",
+  "name": "Four of Cups",
+  "aliases": [
+    "Four of Chalices"
+  ],
+  "keywords": [
+    "indifference",
+    "boredom",
+    "turning inward",
+    "missed offers"
+  ],
+  "facts": {
+    "seated-tree": "A young man sits on the grass under a tree with arms folded and legs crossed.",
+    "three-cups": "Three cups stand side by side on the grass in front, and he looks down at them.",
+    "offered-cup": "A hand coming out of a cloud on the left holds out a fourth cup.",
+    "face": "His expression is indifferent, and he is not looking at the cup held out to him.",
+    "hill": "Green hills and a blue sky are seen, with low mountains far off."
+  },
+  "glosses": {
+    "seated-tree": "A folded-arms posture; closing the heart and turning inward.",
+    "three-cups": "Boredom with what he already has."
+  },
+  "reversedGloss": {
+    "waning": "Boredom lifts, and the new offer comes into view.",
+    "excess": "Indifference deepens, and he pushes everything away."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He takes the cup that is held out.",
+      "regex": "\\b(?:takes?|taking|accepts?|accepting|reaches? (?:out )?for|grabs?|grasps?) (?:the|that|this) (?:\\w+ )?cup\\b"
+    },
+    {
+      "wrong": "He meditates with his eyes closed.",
+      "regex": "\\beyes (?:are )?(?:closed|shut)\\b|\\bcloses? his eyes\\b"
+    }
+  ]
+}

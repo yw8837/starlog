@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-12",
+  "locale": "en",
+  "sourceHash": "20fbd6e343ed6926",
+  "name": "Knight of Wands",
+  "aliases": [
+    "Knight of Rods",
+    "Knight of Staves"
+  ],
+  "keywords": [
+    "unstoppable drive",
+    "adventure",
+    "impulsive passion",
+    "moving fast"
+  ],
+  "facts": {
+    "rearing-horse": "The knight holds a wand upright on a horse with its forelegs raised high.",
+    "flame-plume": "An orange feather like a flame sits on the helmet, and flame-shaped ornaments flutter all over the armor.",
+    "salamander-tunic": "The yellow surcoat has black salamander patterns.",
+    "pyramids": "At the far lower left, a pyramid-shaped hill can be seen.",
+    "facing-left": "The horse leaps up facing left.",
+    "desert": "The background is a yellowish desert-like ground and a blue sky."
+  },
+  "glosses": {
+    "flame-plume": "Blazing passion and spontaneity.",
+    "pyramids": "A trip and movement to a faraway place."
+  },
+  "reversedGloss": {
+    "excess": "Impulse goes too far, and he runs without looking before or behind.",
+    "blocked": "Wanting to move, but tied down and restless."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The horse is standing quietly.",
+      "regex": "\\b(?:horse|steed|mount)\\b[^.\\n]{0,15}\\b(?:stands?|standing|stood|rests?|resting|waits?|waiting)\\b[^.\\n]{0,12}\\b(?:quietly|calmly|still|peacefully)\\b|\\b(?:horse|steed) (?:is )?(?:calm|quiet|still|motionless)\\b|\\bcalm (?:horse|steed)\\b"
+    },
+    {
+      "wrong": "The knight holds a lance.",
+      "regex": "\\b(?:holds?|holding|carries|carrying|wields?|wielding|draws?|drawn|unsheath\\w*|brandish\\w*)\\s+(?:a |an |his |the |one )(?:\\w+ )?(?:sword|lance|spear)\\b|\\bsword (?:in|raised|drawn)\\b"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-02-high-priestess",
+  "locale": "en",
+  "sourceHash": "c4dc539d2e29bb3e",
+  "name": "The High Priestess",
+  "aliases": [
+    "The Popess"
+  ],
+  "keywords": [
+    "quiet observation",
+    "intuition",
+    "knowing without saying",
+    "waiting"
+  ],
+  "facts": {
+    "pillars-bj": "She sits between a black pillar (B) on the left and a white pillar (J) on the right.",
+    "veil": "The curtain behind her is covered with a pattern of red pomegranates and green palm leaves.",
+    "tora-scroll": "A scroll on her lap shows the letters \"TORA\", partly hidden by the fold of her robe.",
+    "horned-crown": "On her head is a crown that curves out like a horn on each side, with a round disc in the middle.",
+    "white-cross": "A white cross sits on her chest.",
+    "crescent-feet": "A yellow crescent moon lies at her feet.",
+    "blue-robe": "She wears a blue cloak over a white garment, and the hem flows down to the floor like waves."
+  },
+  "glosses": {
+    "pillars-bj": "She watches from between the two instead of choosing one.",
+    "veil": "Something not yet revealed lies behind the curtain."
+  },
+  "reversedGloss": {
+    "internalized": "She keeps what she feels inside and cannot bring it out.",
+    "excess": "Holding back words goes so far that it feels like a wall.",
+    "blocked": "Busyness and noise cover her intuition, so it is hard to hear."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She is opening a book and reading.",
+      "regex": "\\b(?:open(?:s|ing)?|read(?:s|ing)?|holds?|holding)\\b[^.\\n]{0,15}\\b(?:a|the|her) books?\\b|\\bbook (?:in|on) her\\b"
+    },
+    {
+      "wrong": "The white pillar is on the left and the black pillar is on the right.",
+      "regex": "\\bwhite (?:pillar|column)\\b\\W+(?:\\w+\\W+){0,3}(?:on |at )?the left\\b|\\bblack (?:pillar|column)\\b\\W+(?:\\w+\\W+){0,3}(?:on |at )?the right\\b"
+    },
+    {
+      "wrong": "A full moon hangs in the night sky.",
+      "regex": "\\bfull moon\\b|\\bmoonlit\\b|\\bunder (?:a |the )?(?:full )?moon(?:light)?\\b|\\bnight sky\\b[^.\\n]{0,15}\\bmoon\\b"
+    }
+  ]
+}

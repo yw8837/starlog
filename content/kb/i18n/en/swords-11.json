@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-11",
+  "locale": "en",
+  "sourceHash": "c9d200ef20042d2c",
+  "name": "Page of Swords",
+  "aliases": [
+    "Knave of Swords"
+  ],
+  "keywords": [
+    "sharp observation",
+    "wary curiosity",
+    "new information",
+    "practicing thought"
+  ],
+  "facts": {
+    "raised-sword": "A young page stands holding a sword raised at a slant with both hands.",
+    "looking-back": "The page turns the head and looks over the shoulder.",
+    "rough-hill": "The page stands on a bumpy hill, with puffy clouds rising around.",
+    "birds": "A flock of birds flies in the sky at the upper left.",
+    "wind-trees": "Trees at the lower left are bent by the wind.",
+    "clothes": "The page wears a pinkish top with yellow sleeves and red boots, and the hair is blown by the wind."
+  },
+  "glosses": {
+    "birds": "Scattering thoughts; information moving quickly back and forth.",
+    "raised-sword": "Testing words and thoughts still being learned."
+  },
+  "reversedGloss": {
+    "excess": "Wariness and talk go too far, becoming sharp and hasty.",
+    "blocked": "There is something to look into, but the page stands still without preparing."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is riding a horse.",
+      "regex": "\\b(?:rid(?:es|ing)|ridden|mounted)\\b[^.\\n]{0,15}\\b(?:horse|steed|mount)\\b|\\bon horseback\\b|\\bhorseback\\b"
+    },
+    {
+      "wrong": "He rests with the sword planted in the ground.",
+      "regex": "\\b(?:plant\\w*|stuck|sticks?|sticking|driv\\w+|leans? on|leaning on|rests? on)\\b[^.\\n]{0,15}\\b(?:sword)\\b|\\bsword\\b[^.\\n]{0,15}\\b(?:in|into|on) the (?:ground|earth)\\b"
+    }
+  ]
+}

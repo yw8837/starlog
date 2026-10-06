@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-08-strength",
+  "locale": "zh-hant",
+  "sourceHash": "dc2641f74e1ebd21",
+  "name": "力量",
+  "aliases": [],
+  "keywords": [
+    "柔和的力量",
+    "調節情緒",
+    "耐心",
+    "溫柔的堅定"
+  ],
+  "facts": {
+    "hands-jaws": "女人用雙手從上下包住獅子的嘴",
+    "bowed-head": "女人低著頭看著獅子，表情平靜",
+    "lemniscate": "女人頭頂上方飄著一個橫躺的8字形(∞)",
+    "flower-chain": "繫在腰間的花藤一直延伸到獅子的鬃毛那邊",
+    "lion-tongue": "紅色獅子把頭抬向女人、交給了她，舌頭露在嘴外",
+    "white-dress": "女人穿著白衣，頭上戴著花環",
+    "landscape": "黃色天空下是一片綠色原野，左後方可以看到一座藍色的山"
+  },
+  "glosses": {
+    "hands-jaws": "不是用力壓制，而是溫柔對待的力量",
+    "lemniscate": "不間斷的耐心"
+  },
+  "reversedGloss": {
+    "waning": "一路撐著的力量與自信下降，開始懷疑自己",
+    "internalized": "不去處理情緒，而是壓在心裡",
+    "excess": "忍耐與克制的力量過頭，把自己逼得太緊"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "硬把獅子的嘴撐開",
+      "regex": "硬(?:把|將)?[^。\\n]{0,6}(?:撐開|扳開|掰開)|撕開"
+    },
+    {
+      "wrong": "和獅子搏鬥並制伏牠",
+      "regex": "搏鬥|打鬥|格鬥|制伏|制服|壓制住|打敗"
+    },
+    {
+      "wrong": "力量牌是第11號",
+      "regex": "力量[^。\\n]{0,6}(?:11|十一)號?|第(?:11|十一)號"
+    }
+  ]
+}

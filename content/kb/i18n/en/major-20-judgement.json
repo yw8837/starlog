@@ -1,0 +1,48 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-20-judgement",
+  "locale": "en",
+  "sourceHash": "bec2eff874658578",
+  "name": "Judgement",
+  "aliases": [
+    "Judgment"
+  ],
+  "keywords": [
+    "answering a call",
+    "rising again",
+    "looking back and sorting out",
+    "a new resolve"
+  ],
+  "facts": {
+    "angel-trumpet": "An angel in the clouds blows a gold trumpet with a white banner marked with a red cross.",
+    "red-wings": "The angel has reddish wings and golden curly hair.",
+    "rising-figures": "Below, people rise from open coffins, some spreading both arms and some looking up.",
+    "family-front": "In front are a man (left), a child with their back turned (center), and a woman (right).",
+    "more-behind": "Three more rise from the coffins behind, making six in all.",
+    "water-mountains": "The coffins float on water, and snow-capped mountains can be seen behind.",
+    "grey-bodies": "The people's bodies are painted a grayish color."
+  },
+  "glosses": {
+    "rising-figures": "The moment of shedding the past and standing up again.",
+    "family-front": "Not alone, but waking up together."
+  },
+  "reversedGloss": {
+    "blocked": "Knowing the call that must be answered, but putting it off.",
+    "internalized": "A resolve is growing inside before it shows outside.",
+    "excess": "Going over the past again and again and passing judgment on oneself."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The angel holds scales and passes judgment.",
+      "regex": "\\b(?:holds?|holding|carries|carrying|weighs?|weighing)\\b[^.\\n]{0,12}\\bscales?\\b|\\bangel\\b[^.\\n]{0,15}\\bscales?\\b|\\bscales? (?:in|on) (?:his|her|the angel's) hands?\\b"
+    },
+    {
+      "wrong": "Skeletons rise from the graves.",
+      "regex": "\\bskeletons?\\b|\\bskulls?\\b|\\bbones\\b"
+    },
+    {
+      "wrong": "Only three people rise.",
+      "regex": "\\bonly (?:three|3) (?:people|figures|persons)\\b|\\bthree (?:people|figures) (?:rise|rising|are rising|stand)\\b"
+    }
+  ]
+}

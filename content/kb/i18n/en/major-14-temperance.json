@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-14-temperance",
+  "locale": "en",
+  "sourceHash": "c90617633d2afa24",
+  "name": "Temperance",
+  "aliases": [],
+  "keywords": [
+    "mixing in the right measure",
+    "balance and tuning",
+    "fitting together slowly",
+    "the middle ground"
+  ],
+  "facts": {
+    "pouring-cups": "The angel pours water from one gold cup to the other, and the stream slants from the upper right cup down to the lower left cup.",
+    "foot-water-land": "The right foot is in the water, and the left foot rests on a rock at the water's edge.",
+    "red-wings": "Large wings with a reddish tint are spread, and the angel wears white.",
+    "triangle-square": "On the chest is a mark of a yellow triangle inside a square.",
+    "forehead-disc": "A round sun mark is on the forehead, and rays spread around the head.",
+    "irises": "In the grass on the right, yellow irises are in bloom.",
+    "path-light": "On the left, a path leads from the water's edge toward the mountains, and a light like a sun floats above the mountain."
+  },
+  "glosses": {
+    "pouring-cups": "The work of mixing two things in the right measure to make a new balance.",
+    "path-light": "A goal you reach by going slowly."
+  },
+  "reversedGloss": {
+    "excess": "Leaning too far to one side so that the proportions break (overwork, overinvolvement and so on).",
+    "blocked": "Tuning stalls between two positions that will not mix."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Both feet are in the water.",
+      "regex": "\\bboth (?:of (?:its|the angel's) |the |his |her )?feet\\b[^.\\n]{0,15}\\b(?:in|into) the (?:water|pool|stream)\\b|\\bfeet (?:are )?(?:both )?(?:in|in the) (?:the )?water\\b"
+    },
+    {
+      "wrong": "An angel with white wings.",
+      "regex": "\\bwhite[- ]winged\\b|\\bwhite wings?\\b|\\bwings? (?:are |that are )?white\\b"
+    },
+    {
+      "wrong": "A female angel pours water.",
+      "regex": "\\b(?:female|woman|girl|lady) angel\\b|\\bangel\\b[^.\\n]{0,12}\\bher (?:cups?|wings?|foot|feet)\\b"
+    }
+  ]
+}

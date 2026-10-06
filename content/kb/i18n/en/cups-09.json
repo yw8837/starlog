@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-09",
+  "locale": "en",
+  "sourceHash": "a8c5976704cb9c52",
+  "name": "Nine of Cups",
+  "aliases": [
+    "Nine of Chalices"
+  ],
+  "keywords": [
+    "contentment",
+    "getting what you hoped for",
+    "a comfortable ease",
+    "enjoying yourself"
+  ],
+  "facts": {
+    "seated-man": "A man in a red hat sits on a wooden chair with arms folded, smiling contentedly.",
+    "nine-cups-arc": "Behind him, on a long table covered with blue cloth, nine cups stand in a semicircle.",
+    "striped-robe": "He wears a garment of black stripes on white.",
+    "feet-apart": "He sits comfortably with his feet apart.",
+    "yellow-bg": "The whole background is yellow."
+  },
+  "glosses": {
+    "seated-man": "With arms folded, it can also be read as contentment enjoyed alone.",
+    "nine-cups-arc": "An abundance stored up behind him."
+  },
+  "reversedGloss": {
+    "excess": "Past contentment, into excess such as overeating and overspending.",
+    "internalized": "Fine on the outside, but empty inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is drunk.",
+      "regex": "\\b(?:drunk|drunken|intoxicated|tipsy|inebriated|wine-?drunk|boozy)\\b"
+    },
+    {
+      "wrong": "There are ten cups.",
+      "regex": "\\b(?:ten|10) (?:cups|chalices)\\b"
+    }
+  ]
+}

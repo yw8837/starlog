@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-05",
+  "locale": "zh-hant",
+  "sourceHash": "b6d890b9d264f829",
+  "name": "聖杯五",
+  "aliases": [],
+  "keywords": [
+    "失去的惋惜",
+    "停留在灑出的東西上",
+    "看見剩下的",
+    "哀悼"
+  ],
+  "facts": {
+    "black-cloak": "披著黑色斗篷的人低著頭站著",
+    "spilled-three": "前方倒下的三只杯子裡，灑出了偏紅和偏綠的液體",
+    "standing-two": "後方有兩只沒有倒下的杯子立著",
+    "river-bridge": "後方有河流流過，右邊有一座跨過河的石橋",
+    "keep": "河對岸的左邊可以看到一座小城堡",
+    "grey-sky": "天空是灰色的"
+  },
+  "glosses": {
+    "black-cloak": "哀悼失去的時間",
+    "river-bridge": "有可以過去的橋，也有可以回去的地方"
+  },
+  "reversedGloss": {
+    "waning": "悲傷沉澱下來，剩下的東西開始看得見",
+    "internalized": "悲傷無法表現出來，在心裡消化"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "杯子全都倒了",
+      "regex": "杯子(?:全部|全都|都)倒|(?:全部|全都)的杯子(?:都)?倒|五只杯子(?:全|都)倒"
+    },
+    {
+      "wrong": "血灑了出來",
+      "regex": "血(?:灑|流|跡)|流血|鮮血"
+    }
+  ]
+}

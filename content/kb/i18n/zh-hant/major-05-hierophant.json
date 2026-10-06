@@ -1,0 +1,48 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-05-hierophant",
+  "locale": "zh-hant",
+  "sourceHash": "7b1a4fa1cbf015f2",
+  "name": "教皇",
+  "aliases": [
+    "教宗"
+  ],
+  "keywords": [
+    "學習與傳統",
+    "值得信賴的建議",
+    "正式的約定",
+    "一起遵守的規則",
+    "信念與靈性傳統"
+  ],
+  "facts": {
+    "triple-crown": "頭戴金色三重冠，紅色禮服上垂著畫有小十字的白色帶子",
+    "blessing-hand": "舉起右手，豎起兩根手指，做出祝福的手勢",
+    "triple-cross": "左手握著有三道橫木的金色十字杖",
+    "grey-pillars": "坐在兩根灰色石柱之間的高位上",
+    "two-ministers": "前方有兩個頭頂剃光的人背對著我們跪著(一人衣服上是紅玫瑰，另一人衣服上是白色花紋)",
+    "crossed-keys": "腳邊的紅色地毯上，兩把金鑰匙交叉擺放"
+  },
+  "glosses": {
+    "crossed-keys": "學習與傳統所打開的門",
+    "two-ministers": "不是獨自一人，而是在學習與傳承的關係之中"
+  },
+  "reversedGloss": {
+    "excess": "太迎合習俗與規則而覺得窒悶",
+    "blocked": "能請教建議的地方被堵住，或正式程序停了下來",
+    "internalized": "想用自己的標準取代別人標準的內在動向"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "拿著書在教導",
+      "regex": "(?:拿|捧|翻開|攤開)著?(?:一本)?書"
+    },
+    {
+      "wrong": "在眾多信徒面前講道",
+      "regex": "眾多信徒|許多信徒|大批信徒|眾多人|講道|佈道|傳道"
+    },
+    {
+      "wrong": "坐在黑柱和白柱之間",
+      "regex": "黑柱|白柱|黑色柱子|白色柱子"
+    }
+  ]
+}

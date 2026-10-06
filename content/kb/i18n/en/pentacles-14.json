@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-14",
+  "locale": "en",
+  "sourceHash": "ccae07475baaa3c5",
+  "name": "King of Pentacles",
+  "aliases": [
+    "King of Coins",
+    "King of Disks"
+  ],
+  "keywords": [
+    "material stability",
+    "solid responsibility",
+    "management and running things",
+    "ample achievement"
+  ],
+  "facts": {
+    "bull-throne": "The king sits on a throne with bull's-head ornaments.",
+    "grape-robe": "He wears a black robe covered with a pattern of grape bunches and vines.",
+    "scepter-pentacle": "He holds a scepter with a round ball in his right hand, and rests a pentacle on his knee with his left.",
+    "flower-crown": "He wears a crown decorated with flowers and leaves.",
+    "castle": "At the back right, a castle and its walls can be seen.",
+    "vines": "Grapevines and flowers grow thick around him, and the sky is yellow.",
+    "foot-carving": "One armored foot rests on a carved animal head at his feet."
+  },
+  "glosses": {
+    "grape-robe": "Abundance wrapped in ripened fruit.",
+    "castle": "The base and the territory built up."
+  },
+  "reversedGloss": {
+    "excess": "Too tied to material things and results.",
+    "waning": "The base built up begins to shake, and the responsibility feels heavy."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He sits on a pile of gold coins.",
+      "regex": "\\b(?:pile|heap|mound|stack)s? of (?:gold )?(?:coins|gold)\\b|\\bsits? on (?:a )?(?:pile|heap|mound)\\b|\\bon top of (?:the )?(?:gold|coins)\\b"
+    },
+    {
+      "wrong": "A throne with lion ornaments.",
+      "regex": "\\blions?(?:'s)?[ -]?(?:heads?|carvings?|ornaments?|faces?)\\b|\\b(?:heads?|carvings?) of (?:a )?lions?\\b|\\blion throne\\b"
+    }
+  ]
+}

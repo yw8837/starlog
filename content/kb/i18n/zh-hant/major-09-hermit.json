@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-09-hermit",
+  "locale": "zh-hant",
+  "sourceHash": "0f3ccbf5369a30d7",
+  "name": "隱者",
+  "aliases": [],
+  "keywords": [
+    "獨自整理心緒",
+    "立下自己的標準",
+    "退後一步",
+    "自己點亮的光"
+  ],
+  "facts": {
+    "lantern-raised": "右手舉到頭的高度，提起一盞燈籠",
+    "star-in-lantern": "燈籠裡，從柵欄縫隙透出星形的線條",
+    "gaze-down": "低著頭，視線朝下",
+    "staff-left": "左手拄著一根黃色手杖",
+    "grey-hood": "穿著附兜帽的灰色斗篷，鬍鬚是白的",
+    "white-peak": "獨自站在白色山峰上(看起來像積雪的山頂)",
+    "pale-sky": "背景是淡藍色的天空"
+  },
+  "glosses": {
+    "lantern-raised": "用自己點亮的光，確認現在所站的位置",
+    "star-in-lantern": "光的來源不在外面，而在內部",
+    "staff-left": "即使獨自站著，也有可以倚靠的支撐"
+  },
+  "reversedGloss": {
+    "excess": "獨處過頭，變得封閉",
+    "waning": "退隱的時間接近尾聲",
+    "blocked": "想法已經想完了，卻無法走出來"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "把燈籠低低提著照亮腳下",
+      "regex": "燈籠(?:低低|垂|放低)|照亮腳下|照著腳下"
+    },
+    {
+      "wrong": "夜空或月光下的場景",
+      "regex": "夜空|月光下|月光灑|月夜|夜晚的場景"
+    },
+    {
+      "wrong": "燈籠裡有蠟燭在燃燒",
+      "regex": "燈籠(?:裡|中|內)[^。\\n]{0,4}(?:蠟燭|燭火|火焰|火光|火苗)|(?:蠟燭|燭火)[^。\\n]{0,6}燈籠"
+    }
+  ]
+}

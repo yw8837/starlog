@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-21-world",
+  "locale": "zh-hant",
+  "sourceHash": "fd97317b0a433bd4",
+  "name": "世界",
+  "aliases": [],
+  "keywords": [
+    "一個週期的完成",
+    "整合",
+    "收尾與下一道門",
+    "找到自己的位置"
+  ],
+  "facts": {
+    "wreath": "有一個上下用紅色緞帶綁住的大橢圓形綠色花環",
+    "dancer": "花環裡，一個只用紫色布料纏著身體的女人，像漂浮般站著",
+    "two-wands": "兩隻手各拿著一根白色短杖",
+    "crossed-legs": "一條腿彎曲，交疊在另一條腿的後面",
+    "four-heads": "四個角落的雲中，可以看到人、老鷹、公牛和獅子的頭",
+    "blue-sky": "背景是藍天"
+  },
+  "glosses": {
+    "wreath": "完整走完一圈的圓",
+    "crossed-legs": "與倒吊者的腿形相似的姿勢，停頓化為舞蹈",
+    "four-heads": "四元素全部到齊的完成"
+  },
+  "reversedGloss": {
+    "blocked": "還剩最後一個階段，收尾被延後",
+    "waning": "完成的流動已經過去，只剩整理與下一步的準備"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "手裡拿著地球儀",
+      "regex": "地球儀|(?:拿|抱)著地球"
+    },
+    {
+      "wrong": "蛇纏繞著身體",
+      "regex": "蛇"
+    },
+    {
+      "wrong": "四個角落的動物拿著書",
+      "regex": "(?:拿|翻開|捧)著?書|書本"
+    }
+  ]
+}

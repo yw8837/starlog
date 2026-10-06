@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-01-magician",
+  "locale": "en",
+  "sourceHash": "afae26af926560a3",
+  "name": "The Magician",
+  "aliases": [],
+  "keywords": [
+    "starting with what you have",
+    "will and action",
+    "expression",
+    "focus"
+  ],
+  "facts": {
+    "wand-raised": "In his right hand he holds a white wand raised high above his head.",
+    "finger-down": "The index finger of his left hand points at the ground.",
+    "lemniscate": "Above his head floats a sideways figure eight (∞).",
+    "table-tools": "On the table in front of him lie a cup, a pentacle (a disc engraved with a star), and a sword, and a wand is there with them as well.",
+    "robes": "He wears a red cloak over a white robe, with a blue band around his waist.",
+    "roses-lilies": "Red roses and white lilies bloom along the bottom, and a rose vine also hangs down from the top edge.",
+    "yellow-ground": "The background is a bright yellow."
+  },
+  "glosses": {
+    "table-tools": "The tools he needs are already within reach.",
+    "lemniscate": "Will and focus that continue without breaking."
+  },
+  "reversedGloss": {
+    "blocked": "He can do something, but he cannot make himself press start.",
+    "excess": "Skill with words and showmanship run ahead of the actual preparation."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "There is a crystal ball on the table.",
+      "regex": "\\bcrystal (?:ball|sphere)\\b|\\bscrying (?:ball|orb)\\b"
+    },
+    {
+      "wrong": "Both hands are raised toward the sky.",
+      "regex": "\\bboth (?:of his )?(?:hands|arms)\\b[^.\\n]{0,25}\\b(?:raised|up|skyward|sky|heaven)\\b|\\b(?:raises|lifts|holds up) both (?:hands|arms)\\b"
+    },
+    {
+      "wrong": "Flames shoot out of the wand.",
+      "regex": "\\bwand\\b[^.\\n]{0,12}\\b(?:is |are )?(?:on fire|aflame|ablaze|burning)\\b|\\b(?:flames?|fire|sparks?) (?:shoots?|bursts?|streams?|pours?) (?:out )?(?:of|from) (?:the |his )?wand\\b|\\bwand (?:shoots?|emits?|spews?|sprays?) (?:out )?(?:flames?|fire|sparks?|beams?)\\b"
+    }
+  ]
+}

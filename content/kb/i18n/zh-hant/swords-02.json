@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-02",
+  "locale": "zh-hant",
+  "sourceHash": "2867d4732d83c4cf",
+  "name": "寶劍二",
+  "aliases": [],
+  "keywords": [
+    "決定擱置",
+    "蒙眼的平衡",
+    "緊繃的僵局",
+    "關上心門"
+  ],
+  "facts": {
+    "blindfold": "穿著白衣的女子蒙著眼睛，坐在石椅上",
+    "crossed-arms": "兩隻手臂在胸前交叉，把兩把劍舉在肩膀上方",
+    "back-to-sea": "背後是遼闊的大海，水面上有岩石聳立",
+    "crescent": "右上方的天空有一彎新月",
+    "grey-ground": "腳下是灰色的地面"
+  },
+  "glosses": {
+    "blindfold": "把不想看的遮起來，把決定往後拖",
+    "crossed-arms": "關上心門，只抓著平衡的姿勢",
+    "crescent": "還沒有圓滿的月亮，尚未顯露的資訊"
+  },
+  "reversedGloss": {
+    "blocked": "資訊太多而混亂，決定一直被堵住",
+    "waning": "撐著的僵局鬆開，該做決定的時候到了",
+    "excess": "撐得太久，壓力越來越大"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "睜著眼睛看向前方",
+      "regex": "睜著眼|睜開眼|睜眼"
+    },
+    {
+      "wrong": "把劍插在地上",
+      "regex": "插在地上|插進地|劍插在"
+    },
+    {
+      "wrong": "天上掛著滿月",
+      "regex": "滿月"
+    }
+  ]
+}

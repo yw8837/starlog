@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-03",
+  "locale": "zh-hant",
+  "sourceHash": "b244613bfff9299b",
+  "name": "聖杯三",
+  "aliases": [],
+  "keywords": [
+    "一起歡喜",
+    "友情與慶祝",
+    "聚會的歡樂",
+    "分享的豐盛"
+  ],
+  "facts": {
+    "three-toast": "三名女子圍成一圈，把杯子高舉過頭乾杯",
+    "middle-back": "中間的女子穿著橘色衣服，背對著我們",
+    "wreaths": "女子們頭上有花和葉子的裝飾",
+    "harvest": "腳邊放著南瓜、葡萄、水果等收穫物",
+    "grapes-hand": "右邊的女子另一隻手拿著一串葡萄",
+    "blue-sky": "背景是藍天"
+  },
+  "glosses": {
+    "harvest": "分享一起收穫的成果",
+    "middle-back": "中間背對著我們，三人圍成圓圈面對面的構圖"
+  },
+  "reversedGloss": {
+    "excess": "玩樂過了頭，身體和該做的事都被擠到後面",
+    "waning": "聚會的興致冷卻，產生距離",
+    "blocked": "一起慶祝的場合被延後，或覺得沒有被邀請"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "四個人在跳舞",
+      "regex": "四個人|四名女子|四位女子|四人"
+    },
+    {
+      "wrong": "喝醉倒在地上",
+      "regex": "喝醉|酒醉|醉倒|倒在地上"
+    }
+  ]
+}

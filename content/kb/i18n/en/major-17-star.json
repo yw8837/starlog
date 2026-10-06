@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-17-star",
+  "locale": "en",
+  "sourceHash": "c40edf8fbf038d0e",
+  "name": "The Star",
+  "aliases": [],
+  "keywords": [
+    "a pond refilled",
+    "quiet recovery",
+    "hope",
+    "pouring out in two places"
+  ],
+  "facts": {
+    "big-star": "In the center floats one large yellow eight-pointed star, with seven smaller white eight-pointed stars around it.",
+    "knee-foot": "A naked woman kneels with her left knee on the ground and her right foot on the water.",
+    "two-jugs": "She pours water from two jugs: the jug in her right hand into the pond, the jug in her left hand onto the ground.",
+    "streams": "The water poured on the ground splits into several streams.",
+    "ripples": "In the pond, round ripples spread out from the spot where the water is poured.",
+    "bird-tree": "A bird perches in a tree on the hill on the right.",
+    "far-mountain": "A mountain can be seen far off on the left, and small wildflowers dot the green meadow."
+  },
+  "glosses": {
+    "two-jugs": "Not pouring everything in one place, but filling both heart and daily life a little at a time.",
+    "big-star": "A light that is not showy and stays lit for a long time.",
+    "knee-foot": "A posture that leans on the ground while still resting a foot on the water (feelings)."
+  },
+  "reversedGloss": {
+    "waning": "Hope and energy fade, and it is hard to believe in herself.",
+    "blocked": "The flow of recovery is blocked for a while and feels slow.",
+    "excess": "Pouring everything out for others, her own pond dries up."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "One foot on the ground, one foot in the water.",
+      "regex": "\\bone foot\\b[^.\\n]{0,12}\\b(?:on|in|at) the (?:ground|land|earth|shore|bank)\\b|\\bleft foot\\b[^.\\n]{0,12}\\b(?:on|in) the (?:ground|land|earth)\\b"
+    },
+    {
+      "wrong": "Stars shine in the pitch-dark night sky.",
+      "regex": "\\bpitch[- ](?:dark|black)\\b|\\bmoonless\\b|\\bstars?\\b[^.\\n]{0,15}\\bnight sky\\b|\\bnight sky\\b[^.\\n]{0,15}\\bstars?\\b"
+    },
+    {
+      "wrong": "There are six (or eight) small stars.",
+      "regex": "\\b(?:six|eight|6|8) small(?:er)? stars\\b|\\bsmall(?:er)? stars\\b[^.\\n]{0,12}\\b(?:six|eight|6|8)\\b|\\b(?:six|eight)\\b[^.\\n]{0,15}\\bsmall(?:er)? stars\\b"
+    }
+  ]
+}

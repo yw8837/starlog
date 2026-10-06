@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-02",
+  "locale": "en",
+  "sourceHash": "24e948b8ce22e629",
+  "name": "Two of Cups",
+  "aliases": [
+    "Two of Chalices"
+  ],
+  "keywords": [
+    "giving and receiving hearts",
+    "mutual attraction",
+    "reconciliation and promise",
+    "an equal relationship"
+  ],
+  "facts": {
+    "pledging": "A young woman (left) and a young man (right) stand facing each other, holding out their cup-bearing hands to each other.",
+    "caduceus-lion": "Above the two float a staff wound with two snakes and the head of a red lion with wings.",
+    "wreaths": "The woman wears a wreath of green leaves, and the man a wreath of red flowers.",
+    "clothes": "The woman wears white with a blue cloak, and the man a short patterned tunic.",
+    "house-hill": "On a green hill behind them is a house with a red roof.",
+    "blue-sky": "The background is a pale blue sky."
+  },
+  "glosses": {
+    "caduceus-lion": "A force that watches over the union of the two; attraction and healing.",
+    "wreaths": "An equal place, each wearing a wreath of their own."
+  },
+  "reversedGloss": {
+    "blocked": "The feeling is there, but the flow of giving and receiving is blocked.",
+    "waning": "Attraction and rapport are cooling.",
+    "internalized": "A time when reconciliation with yourself is needed before the relationship."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The two are embracing or kissing.",
+      "regex": "\\b(?:the )?(?:two|they|couple|pair|woman and (?:the )?man|man and (?:the )?woman)\\b[^.\\n]{0,20}\\b(?:embrac\\w+|hug(?:s|ging)?|kiss\\w*)\\b"
+    },
+    {
+      "wrong": "An angel blesses the two.",
+      "regex": "\\bangels?\\b[^.\\n]{0,25}\\b(?:bless\\w*|hover\\w*|watch\\w*|float\\w*)\\b|\\b(?:bless\\w*|blessed) (?:by )?(?:an |the )?angel\\b"
+    }
+  ]
+}

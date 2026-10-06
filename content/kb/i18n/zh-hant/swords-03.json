@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-03",
+  "locale": "zh-hant",
+  "sourceHash": "ba1e2fe26ad791d2",
+  "name": "寶劍三",
+  "aliases": [],
+  "keywords": [
+    "心痛",
+    "悲傷",
+    "承認傷口",
+    "雨後"
+  ],
+  "facts": {
+    "pierced-heart": "三把劍從上方刺穿一顆紅色的心",
+    "blades-through": "劍刃的尖端從心的下方穿出",
+    "clouds-rain": "後方佈滿灰色的雲，雨斜斜地落下",
+    "no-figures": "畫面裡沒有人",
+    "grey-bg": "背景全是灰色"
+  },
+  "glosses": {
+    "clouds-rain": "痛苦之後的眼淚，過境的雨",
+    "no-figures": "比起事件，更把焦點放在心本身的畫面"
+  },
+  "reversedGloss": {
+    "waning": "像雨停了一樣，痛苦一點一點淡去",
+    "internalized": "悲傷無法表現出來，在心裡消化",
+    "excess": "一再回想傷口，痛苦變大"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "心上流著血",
+      "regex": "流(?:著|了)?血|血(?:流|跡)|鮮血|滴血"
+    },
+    {
+      "wrong": "插著四把劍",
+      "regex": "四把劍|四柄劍"
+    },
+    {
+      "wrong": "心被劈成兩半",
+      "regex": "兩半|裂成兩|劈開|碎成"
+    }
+  ]
+}

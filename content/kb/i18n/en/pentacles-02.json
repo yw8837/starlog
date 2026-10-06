@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-02",
+  "locale": "en",
+  "sourceHash": "6e01248ae9779335",
+  "name": "Two of Pentacles",
+  "aliases": [
+    "Two of Coins",
+    "Two of Disks"
+  ],
+  "keywords": [
+    "keeping balance",
+    "juggling many things",
+    "flexible handling",
+    "ups and downs"
+  ],
+  "facts": {
+    "juggling": "A young man in a tall red hat holds a pentacle in each hand and keeps his balance as if dancing.",
+    "infinity-band": "The two pentacles are joined by a green band in the shape of a sideways figure eight.",
+    "one-foot": "One foot is lifted in a dancing step.",
+    "ships-waves": "In the sea behind, high waves rise, and two ships ride the waves.",
+    "blue-sky": "The background is a blue sky."
+  },
+  "glosses": {
+    "ships-waves": "Ships that stay afloat even in a situation that rises and falls.",
+    "juggling": "The skill of keeping a light balance as if at play."
+  },
+  "reversedGloss": {
+    "excess": "The tasks taken on overflow, and the balance collapses.",
+    "internalized": "Pretending to enjoy it outside, but flustered inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is juggling three pentacles.",
+      "regex": "\\b(?:three|3) (?:pentacles|coins|discs)\\b|\\bjuggl\\w+ (?:three|3)\\b"
+    },
+    {
+      "wrong": "A calm sea.",
+      "regex": "\\bcalm (?:sea|ocean|water|waters)\\b|\\b(?:sea|ocean|water) (?:is |lies |stays )?(?:calm|still|flat|smooth)\\b|\\bglassy\\b"
+    }
+  ]
+}

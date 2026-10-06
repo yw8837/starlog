@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-02",
+  "locale": "en",
+  "sourceHash": "2867d4732d83c4cf",
+  "name": "Two of Swords",
+  "aliases": [],
+  "keywords": [
+    "a decision on hold",
+    "a balance with eyes covered",
+    "a tense stalemate",
+    "closing off the heart"
+  ],
+  "facts": {
+    "blindfold": "A woman in white sits on a stone seat with her eyes covered.",
+    "crossed-arms": "Her arms are crossed in front of her chest, holding two swords up over her shoulders.",
+    "back-to-sea": "Behind her spreads a sea, with rocks rising out of the water.",
+    "crescent": "A crescent moon floats in the sky at the upper right.",
+    "grey-ground": "The ground under her feet is gray."
+  },
+  "glosses": {
+    "blindfold": "Covering what she does not want to see and putting off the decision.",
+    "crossed-arms": "A posture that closes the heart and holds on only to the balance.",
+    "crescent": "A moon not yet full; information not yet revealed."
+  },
+  "reversedGloss": {
+    "blocked": "Too much information causes confusion, and the decision stays blocked.",
+    "waning": "The stalemate she held through loosens, and the time to decide arrives.",
+    "excess": "Holding out too long makes the pressure grow."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She looks ahead with her eyes open.",
+      "regex": "\\beyes (?:are |is )?(?:open|wide open|uncovered)\\b|\\bopen (?:her )?eyes\\b"
+    },
+    {
+      "wrong": "She has stuck the swords into the ground.",
+      "regex": "\\b(?:plant\\w*|stuck|sticks?|sticking|driv\\w+|thrust\\w*|jammed)\\b[^.\\n]{0,15}\\b(?:ground|earth|floor|sand)\\b|\\bswords? (?:in|into) the (?:ground|earth|sand)\\b"
+    },
+    {
+      "wrong": "A full moon hangs in the sky.",
+      "regex": "\\bfull moon\\b"
+    }
+  ]
+}

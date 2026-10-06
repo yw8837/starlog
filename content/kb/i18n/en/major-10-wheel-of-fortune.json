@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-10-wheel-of-fortune",
+  "locale": "en",
+  "sourceHash": "7bcbd20612cbba49",
+  "name": "Wheel of Fortune",
+  "aliases": [
+    "The Wheel of Fortune"
+  ],
+  "keywords": [
+    "a turn in the flow",
+    "a moment of opportunity",
+    "cycles",
+    "timing"
+  ],
+  "facts": {
+    "orange-wheel": "The large orange wheel in the center is engraved with the letters T, A, R, O alternating with Hebrew letters.",
+    "inner-symbols": "Inside the wheel's inner circle are alchemical symbols and eight spokes.",
+    "sphinx-sword": "At the top of the wheel sits a blue sphinx holding a sword upright.",
+    "snake-left": "On the left side of the wheel, a yellow snake goes downward.",
+    "jackal-right": "At the lower right of the wheel, a figure with a red animal head rises while supporting the wheel.",
+    "four-creatures": "On clouds in the four corners are a winged man, an eagle, a bull, and a lion, each holding an open book.",
+    "cloud-sky": "Gray clouds and blue sky fill the background."
+  },
+  "glosses": {
+    "orange-wheel": "The flow of a situation that turns without stopping.",
+    "snake-left": "What goes down and what comes up are on the same wheel.",
+    "four-creatures": "Things that stay fixed in the four corners and keep learning even when the flow changes."
+  },
+  "reversedGloss": {
+    "blocked": "The flow seems to have caught for a moment and stopped.",
+    "waning": "A stretch where a good flow has come around once and is now on its way down."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A goddess is turning the wheel.",
+      "regex": "\\bgoddess\\b|\\bfortuna\\b|\\b(?:turns?|turning|spins?|spinning) the wheel\\b"
+    },
+    {
+      "wrong": "People are clinging to the wheel and going up and down.",
+      "regex": "\\bcling(?:s|ing)? to the wheel\\b|\\bhang(?:s|ing)? (?:on|from) (?:to )?the wheel\\b|\\bpeople (?:are )?(?:on|riding)\\b[^.\\n]{0,10}\\bwheel\\b"
+    }
+  ]
+}

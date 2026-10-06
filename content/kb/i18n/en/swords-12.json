@@ -1,0 +1,39 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-12",
+  "locale": "en",
+  "sourceHash": "8ac8b3161f9604fe",
+  "name": "Knight of Swords",
+  "aliases": [],
+  "keywords": [
+    "a headlong charge",
+    "quick judgment",
+    "plain speaking",
+    "haste"
+  ],
+  "facts": {
+    "charging": "The knight, sword raised high, drives a white horse at full speed and charges toward the left.",
+    "red-cape": "The red cloak and the red ornament on the helmet stream in the wind.",
+    "harness": "The horse's chest strap has a butterfly and bird pattern.",
+    "bent-trees": "The trees behind are bent by the wind.",
+    "torn-clouds": "Clouds that look torn drift quickly across the sky."
+  },
+  "glosses": {
+    "bent-trees": "Speed and wind that sweep over everything around.",
+    "torn-clouds": "Thoughts that scatter quickly."
+  },
+  "reversedGloss": {
+    "excess": "Speed and aggression go too far and invite a collision.",
+    "blocked": "Just when it is time to run, the strength drains and he stops."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The horse walks slowly.",
+      "regex": "\\bwalks? slowly\\b|\\bslow(?:ly)? (?:walk|pace|trot)\\b|\\b(?:strolls?|ambl\\w+|plods?)\\b|\\bwalking (?:slowly|calmly)\\b"
+    },
+    {
+      "wrong": "He has put his sword back in its sheath.",
+      "regex": "\\b(?:sheath\\w*|scabbard)\\b"
+    }
+  ]
+}

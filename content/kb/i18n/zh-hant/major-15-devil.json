@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-15-devil",
+  "locale": "zh-hant",
+  "sourceHash": "b606776d68149bdd",
+  "name": "惡魔",
+  "aliases": [],
+  "keywords": [
+    "難以切斷的束縛",
+    "執著與習慣",
+    "看見慾望",
+    "鬆開的鎖鏈"
+  ],
+  "facts": {
+    "horned-figure": "長著山羊角和蝙蝠翅膀的形象蹲坐在黑色底座上",
+    "pentagram": "兩隻角之間的額頭上方，有一顆倒立的五角星",
+    "raised-hand": "舉起右手，攤開手掌給人看",
+    "torch-down": "左手拿著點燃的火炬，朝下舉著",
+    "chained-pair": "長著小角的赤裸男女站著，脖子用鎖鏈連在底座的環上",
+    "loose-chains": "兩人脖子上的鎖鏈環鬆鬆地垂著",
+    "tails": "女人的尾巴末端是一串葡萄，男人的尾巴末端是火焰",
+    "black-ground": "背景全是黑色"
+  },
+  "glosses": {
+    "loose-chains": "自己可以解開卻沒有解開的束縛"
+  },
+  "reversedGloss": {
+    "waning": "束縛逐漸鬆開，看得到可以脫身的空隙",
+    "excess": "執著或依賴越陷越深",
+    "internalized": "表面上看起來自由，內心卻被牽著走"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "被鎖鏈牢牢綁住，無法掙脫",
+      "regex": "牢牢(?:地)?(?:綁|鎖)|無法掙脫|掙脫不了|逃不掉|逃不了"
+    },
+    {
+      "wrong": "手裡拿著三叉戟",
+      "regex": "三叉戟|三叉槍|乾草叉"
+    },
+    {
+      "wrong": "兩人痛苦地掙扎",
+      "regex": "掙扎|痛苦(?:地|的)?(?:掙|哀|叫)|哀號|慘叫"
+    }
+  ]
+}

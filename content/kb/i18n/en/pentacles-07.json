@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-07",
+  "locale": "en",
+  "sourceHash": "1f1d379da914a7db",
+  "name": "Seven of Pentacles",
+  "aliases": [
+    "Seven of Coins",
+    "Seven of Disks"
+  ],
+  "keywords": [
+    "waiting and watching",
+    "a mid-point check",
+    "patience",
+    "gauging when to harvest"
+  ],
+  "facts": {
+    "leaning-hoe": "A young man leans on the handle of a hoe, resting both hands and his chin on it.",
+    "bush-pentacles": "Six pentacles hang on the lush vine bush at the left.",
+    "foot-pentacle": "One pentacle sits apart at his feet.",
+    "gaze": "He gazes absently at the pentacles in the bush.",
+    "clothes": "He wears an orange top, blue sleeves and trousers, and brown boots.",
+    "grey-bg": "The background is a pale gray."
+  },
+  "glosses": {
+    "leaning-hoe": "A rest that stops the work and looks back on what has been done so far.",
+    "foot-pentacle": "The one set apart; a share for a new start."
+  },
+  "reversedGloss": {
+    "blocked": "The results are slow, and the wait feels stuck.",
+    "excess": "Impatience goes too far, trying to harvest what is not yet ripe."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is picking the fruit.",
+      "regex": "\\b(?:pick(?:s|ing)?|pluck(?:s|ing)?|harvest(?:s|ing)?|gather(?:s|ing)?|reach(?:es|ing)? (?:for|out))\\b[^.\\n]{0,12}\\b(?:fruit|pentacles?|coins?|vine)\\b"
+    },
+    {
+      "wrong": "All seven pentacles are on the bush.",
+      "regex": "\\b(?:all )?(?:seven|7) pentacles\\b[^.\\n]{0,15}\\b(?:bush|vine)\\b|\\ball (?:seven|7) pentacles\\b"
+    }
+  ]
+}

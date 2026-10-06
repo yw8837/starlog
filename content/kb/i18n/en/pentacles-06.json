@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-06",
+  "locale": "en",
+  "sourceHash": "ee4973bbd8b7eb0a",
+  "name": "Six of Pentacles",
+  "aliases": [
+    "Six of Coins",
+    "Six of Disks"
+  ],
+  "keywords": [
+    "giving and receiving",
+    "sharing and help",
+    "balanced generosity",
+    "the receiving side and the giving side"
+  ],
+  "facts": {
+    "merchant-scale": "A merchant in a red cloak holds a pair of scales in one hand.",
+    "dropping-coins": "With the other hand he drops coins into the open hand of a kneeling person.",
+    "two-kneeling": "Two people kneel before the merchant; one receives, and one holds out a hand and waits.",
+    "six-pentacles": "Six pentacles float in the air above.",
+    "town": "A town can be seen far off on the right."
+  },
+  "glosses": {
+    "merchant-scale": "A standard for measuring how much to give; the balance of give and take.",
+    "two-kneeling": "One who receives and one who waits; the order and the standard of sharing."
+  },
+  "reversedGloss": {
+    "blocked": "Help does not reach where it is needed, or cannot be asked for.",
+    "excess": "The giving side and the receiving side harden, and the relationship tilts."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The scales tilt heavily to one side.",
+      "regex": "\\bscales?\\b[^.\\n]{0,20}\\b(?:tilt\\w*|tipp?\\w*|lean\\w*|unbalanced|lopsided|heavy on one side)\\b"
+    },
+    {
+      "wrong": "The merchant is taking their money.",
+      "regex": "\\b(?:snatch(?:es|ing)?|steal(?:s|ing)?|stole|rob(?:s|bing)?|seiz(?:es|ing)|grab(?:s|bing)?)\\b[^.\\n]{0,15}\\b(?:money|coins?|pentacles?|purse)\\b|\\btakes? (?:their|the) (?:money|coins?)\\b|\\btaking (?:their|the) (?:money|coins?)\\b"
+    }
+  ]
+}

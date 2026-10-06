@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-14",
+  "locale": "zh-hant",
+  "sourceHash": "c653a4d03b1aa8b9",
+  "name": "聖杯國王",
+  "aliases": [],
+  "keywords": [
+    "情感的平衡",
+    "寬厚的責任",
+    "沉著",
+    "動盪中的中心"
+  ],
+  "facts": {
+    "sea-throne": "國王正面朝前坐在設於海上的石頭王座上",
+    "cup-scepter": "右手拿著一只大杯子，左手拿著一根短權杖",
+    "fish-amulet": "脖子上掛著魚形的飾品",
+    "dolphin-ship": "左邊海面有一條魚躍起，右邊漂著一艘船",
+    "robes": "藍色衣服外披著綠色斗篷，戴著王冠",
+    "grey-bg": "背景偏灰色"
+  },
+  "glosses": {
+    "sea-throne": "在起伏的情感之上仍保持中心",
+    "cup-scepter": "同時握著情感與責任的手"
+  },
+  "reversedGloss": {
+    "internalized": "壓抑情緒，只有表面沉著",
+    "excess": "情緒動搖判斷，變得反覆無常"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "國王坐在船上",
+      "regex": "坐在船|乘船|船上"
+    },
+    {
+      "wrong": "國王沉在水裡",
+      "regex": "沉(?:在|入)水|沉入|淹沒|溺水"
+    }
+  ]
+}

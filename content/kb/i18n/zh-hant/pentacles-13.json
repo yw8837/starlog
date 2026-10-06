@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-13",
+  "locale": "zh-hant",
+  "sourceHash": "c5849dbea1f2bba5",
+  "name": "錢幣皇后",
+  "aliases": [
+    "星幣皇后",
+    "金幣皇后"
+  ],
+  "keywords": [
+    "務實的照顧",
+    "豐盛的穩定",
+    "實用的溫暖",
+    "持家的智慧"
+  ],
+  "facts": {
+    "lap-pentacle": "王后雙手托著膝上的一枚大錢幣，低頭看著",
+    "rose-canopy": "頭上垂著開滿紅玫瑰的藤蔓",
+    "carved-throne": "王座扶手上有長角的山羊頭，也刻著嬰兒臉和水果",
+    "rabbit": "右下方的草地上有一隻兔子",
+    "landscape": "後方展開山、河和原野，天空是黃色的",
+    "robes": "穿著紅色衣服，披著綠色斗篷，戴著冠"
+  },
+  "glosses": {
+    "rabbit": "貼近日常生活的豐盛與生命力",
+    "rose-canopy": "被精心照料的花園環繞的寬裕"
+  },
+  "reversedGloss": {
+    "waning": "照顧的力氣下降，沒有餘裕照顧自己",
+    "excess": "在物質上的照顧過了頭，變成干涉"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "王座上有獅子頭",
+      "regex": "獅子"
+    },
+    {
+      "wrong": "把錢幣高高舉起",
+      "regex": "高(?:高)?舉起(?:錢幣)?|錢幣(?:高舉|舉過頭)|高舉錢幣"
+    }
+  ]
+}

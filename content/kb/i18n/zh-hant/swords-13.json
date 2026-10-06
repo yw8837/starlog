@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-13",
+  "locale": "zh-hant",
+  "sourceHash": "d5ec411c408fe8c6",
+  "name": "寶劍皇后",
+  "aliases": [],
+  "keywords": [
+    "清楚的界線",
+    "坦率的判斷",
+    "來自經驗的智慧",
+    "獨立"
+  ],
+  "facts": {
+    "profile-throne": "王后側身坐在王座上，望向右邊",
+    "upright-sword": "右手筆直豎著一把劍",
+    "extended-hand": "左手向前舉起，攤開手掌，手腕上有繩飾",
+    "butterfly-crown": "戴著有蝴蝶裝飾的冠，王座上刻著帶翅膀的嬰兒臉和蝴蝶",
+    "cloud-cape": "披著雲朵圖案的斗篷",
+    "clouds-bird": "下方鋪著雲，高空中有一隻鳥飛過"
+  },
+  "glosses": {
+    "extended-hand": "做出判斷之後仍然伸出的手，留有對話的餘地",
+    "clouds-bird": "在混濁之上高高飛翔的清明"
+  },
+  "reversedGloss": {
+    "excess": "冷靜與批評過頭，讓人覺得冰冷",
+    "internalized": "悲傷不表現出來，在內心凝固"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "蒙著眼睛",
+      "regex": "蒙(?:著|上)?(?:雙)?眼|矇(?:著|上)?眼|眼罩|遮(?:住|著)眼"
+    },
+    {
+      "wrong": "把劍橫放在膝上",
+      "regex": "劍(?:橫放|放)在膝|膝上的劍|橫放著劍"
+    }
+  ]
+}

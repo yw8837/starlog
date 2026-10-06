@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-03",
+  "locale": "zh-hant",
+  "sourceHash": "8a3929045e98ee70",
+  "name": "錢幣三",
+  "aliases": [
+    "星幣三",
+    "金幣三"
+  ],
+  "keywords": [
+    "合作",
+    "技術與熟練",
+    "受到肯定的作品",
+    "一起打造"
+  ],
+  "facts": {
+    "mason-bench": "石匠站在長凳上，修整著石造室內的牆面",
+    "two-figures": "右邊站著一位戴兜帽的修士和一位披著花紋斗篷的人，正與石匠交談",
+    "plan-paper": "中間的人拿著一張像設計圖的紙",
+    "carved-pentacles": "頭頂的拱門上刻著三枚錢幣",
+    "stone-arch": "背景是石造的拱形室內"
+  },
+  "glosses": {
+    "two-figures": "技術、計畫與委託人共同做出的成果",
+    "carved-pentacles": "一起蓋起來、能長久留存的東西"
+  },
+  "reversedGloss": {
+    "blocked": "角色與溝通錯位，合作受阻",
+    "waning": "幹勁與品質下降，成果變得平庸"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "一個人在工作",
+      "regex": "一個人(?:在)?(?:工作|做)|獨自(?:工作|作業)"
+    },
+    {
+      "wrong": "手裡拿著錢幣",
+      "regex": "(?:手裡|手中)(?:拿|握|抓)著?(?:一枚|一個)?錢幣|拿著錢幣"
+    }
+  ]
+}

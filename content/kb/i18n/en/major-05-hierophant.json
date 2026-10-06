@@ -1,0 +1,48 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-05-hierophant",
+  "locale": "en",
+  "sourceHash": "7b1a4fa1cbf015f2",
+  "name": "The Hierophant",
+  "aliases": [
+    "The Pope"
+  ],
+  "keywords": [
+    "learning and tradition",
+    "trustworthy advice",
+    "formal commitment",
+    "rules kept together",
+    "faith and spiritual tradition"
+  ],
+  "facts": {
+    "triple-crown": "On his head is a gold triple crown, and a white band marked with small crosses hangs over his red robe.",
+    "blessing-hand": "He raises his right hand with two fingers up in a gesture of blessing.",
+    "triple-cross": "In his left hand he holds a gold cross staff with three crossbars.",
+    "grey-pillars": "He sits in a high seat between two gray stone pillars.",
+    "two-ministers": "In front of him, two people with shaved crowns kneel with their backs turned (one has red roses on his robe, the other a white flower pattern).",
+    "crossed-keys": "On the red rug at his feet, two gold keys lie crossed."
+  },
+  "glosses": {
+    "crossed-keys": "A door opened by learning and tradition.",
+    "two-ministers": "Not alone, but within a relationship of learning and passing on."
+  },
+  "reversedGloss": {
+    "excess": "Fitting too closely to custom and rules feels suffocating.",
+    "blocked": "The place to ask for advice is closed off, or a formal procedure has stopped.",
+    "internalized": "An inward movement to set one's own standard in place of other people's."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is teaching while holding a book.",
+      "regex": "\\b(?:holds?|holding|opens?|opening|reads?|reading|carries|carrying)\\b[^.\\n]{0,12}\\b(?:a|the) books?\\b|\\bbook (?:in|on) (?:his|one)\\b"
+    },
+    {
+      "wrong": "He is preaching in front of a large congregation.",
+      "regex": "\\b(?:large|big|huge|vast)\\s+(?:crowd|congregation|audience)\\b|\\bcongregation\\b|\\b(?:many|dozens of|hundreds of) (?:worshippers|followers|believers|devotees)\\b|\\bpreach(?:es|ing|ed)? to\\b|\\bsermon\\b"
+    },
+    {
+      "wrong": "He is seated between a black pillar and a white pillar.",
+      "regex": "\\b(?:black|dark|white) (?:pillar|column)s?\\b"
+    }
+  ]
+}

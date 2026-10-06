@@ -1,0 +1,39 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-12",
+  "locale": "zh-hant",
+  "sourceHash": "d48d75d1de55ae51",
+  "name": "聖杯騎士",
+  "aliases": [],
+  "keywords": [
+    "靠近的提議",
+    "浪漫的態度",
+    "慢慢靠近",
+    "遞出心意"
+  ],
+  "facts": {
+    "cup-forward": "騎士把杯子向前遞出，騎著白馬朝右前進",
+    "slow-horse": "馬低著頭，一步一步慢慢走",
+    "winged-helmet": "頭盔和腳後跟上都有小小的翅膀",
+    "fish-tunic": "盔甲外的外衣上有紅色魚的圖案",
+    "river": "前方有小溪流過，右邊有岩石山丘，遠處可以看到樹木",
+    "blue-sky": "背景是藍天"
+  },
+  "glosses": {
+    "slow-horse": "不急著、前來遞出心意的步伐"
+  },
+  "reversedGloss": {
+    "excess": "浪漫與心情過頭，話跑在行動前面",
+    "blocked": "有想遞出的心意，卻無法靠近"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "馬匹奮力奔馳",
+      "regex": "奔馳|飛奔|疾馳|狂奔|奮力奔跑|全速"
+    },
+    {
+      "wrong": "手持劍的騎士",
+      "regex": "持劍|拿著劍|握著劍|拿劍|手持長槍|拿著長槍"
+    }
+  ]
+}

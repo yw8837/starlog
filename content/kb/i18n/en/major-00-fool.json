@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-00-fool",
+  "locale": "en",
+  "sourceHash": "e36f8a4d87a2d69a",
+  "name": "The Fool",
+  "aliases": [],
+  "keywords": [
+    "light first step",
+    "curiosity",
+    "new start",
+    "open possibilities"
+  ],
+  "facts": {
+    "cliff-edge": "He stands at the edge of a rocky cliff, and the drop begins right in front of his feet.",
+    "gaze-up": "His head is tilted back, and he looks up at the sky instead of down at his feet.",
+    "staff-bundle": "A black staff held in his right hand rests over his shoulder, with a small bundle hanging from its end.",
+    "white-rose": "In his left hand he lightly holds a single white rose.",
+    "white-dog": "At the lower right, a small white dog leaps up with a front paw raised.",
+    "sun-corner": "In the upper right corner of the yellow sky, a white sun sends out rays.",
+    "tunic": "He wears a tunic with round flowers on a black ground, yellow boots, and a red feather in his hair.",
+    "snow-peaks": "Behind him, white snow-covered mountain peaks can be seen."
+  },
+  "glosses": {
+    "cliff-edge": "A first step taken before the outcome is fully known.",
+    "white-dog": "Read as an instinct that is excited along with him, or as a warning to look once more."
+  },
+  "reversedGloss": {
+    "excess": "Excitement runs ahead, and he leaps in without checking the ground under his feet.",
+    "blocked": "He wants to step forward, but fear or circumstances hold him back from the first step.",
+    "internalized": "Outwardly he stands still, but inwardly he is already getting ready to leave."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is falling off the cliff.",
+      "regex": "(?:fall(?:s|ing)?|fell|plunge[sd]?|plunging|tumbl(?:es|ed|ing)) (?:off|from|over|down)\\b[^.\\n]{0,12}(?:cliff|edge)|\\b(?:falls?|falling|plunges?) to (?:his|the) (?:death|ground|rocks)"
+    },
+    {
+      "wrong": "The dog is biting his leg and holding him back.",
+      "regex": "\\bdog\\b[^.\\n]{0,30}\\b(?:bit(?:es|ing)?|bite|grabs?|grabbing|tugs?|tugging)\\b[^.\\n]{0,20}\\b(?:leg|ankle|foot|trousers|pants)\\b"
+    },
+    {
+      "wrong": "He walks with his eyes closed.",
+      "regex": "\\beyes (?:are )?(?:closed|shut)\\b|\\bcloses? his eyes\\b|\\bwith (?:his )?eyes (?:closed|shut)\\b"
+    }
+  ]
+}

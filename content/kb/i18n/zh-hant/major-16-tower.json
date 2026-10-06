@@ -1,0 +1,44 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-16-tower",
+  "locale": "zh-hant",
+  "sourceHash": "3d6834294451c270",
+  "name": "高塔",
+  "aliases": [
+    "塔"
+  ],
+  "keywords": [
+    "突如其來的動搖",
+    "破碎的錯覺",
+    "被迫重整",
+    "浮現的真相"
+  ],
+  "facts": {
+    "lightning": "黃色閃電從右上方劈下，擊中塔頂",
+    "crown-off": "塔頂的金冠被震落飛走",
+    "flames-windows": "塔頂和窗戶都竄出火焰",
+    "falling-figures": "兩個人頭下腳上地墜落(左邊披紅斗篷，右邊戴著王冠)",
+    "yellow-drops": "兩側的黑色天空中飄散著黃色火星般的形狀",
+    "rocky-peak": "灰色高塔矗立在尖尖的岩山頂端",
+    "dark-sky": "背景是黑色的天空和灰色的雲"
+  },
+  "glosses": {
+    "lightning": "意料之外的衝擊打破原本僵固的結構的瞬間",
+    "falling-figures": "被從熟悉的位置推出來的經驗"
+  },
+  "reversedGloss": {
+    "internalized": "表面完好，內部卻已先行崩塌",
+    "blocked": "迴避必要的改變，硬撐著",
+    "waning": "大衝擊已過，只剩餘震與收拾善後"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "高塔整座倒塌成了廢墟",
+      "regex": "塔(?:整座|完全|全部)?(?:倒塌|崩塌|坍塌|垮)|廢墟|瓦礫"
+    },
+    {
+      "wrong": "大雨傾盆而下",
+      "regex": "大雨傾盆|傾盆大雨|雨水(?:落|傾)|雨滴(?:落|打)|正在下雨|下著雨|下起雨"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-10",
+  "locale": "zh-hant",
+  "sourceHash": "60dc5da844b7bcd1",
+  "name": "聖杯十",
+  "aliases": [],
+  "keywords": [
+    "一起的幸福",
+    "像家人般的穩定",
+    "心靈的平靜",
+    "彩虹"
+  ],
+  "facts": {
+    "rainbow-cups": "天空懸著一道彩虹，彩虹上排著十只杯子",
+    "couple": "一男一女背對著我們，彼此摟著腰，把外側的手臂舉向彩虹",
+    "children": "右邊有兩個孩子手牽著手跳舞",
+    "home": "遠處樹木之間可以看到一間紅屋頂的房子",
+    "river-hills": "河流流淌，綠色山丘綿延展開",
+    "blue-sky": "天空是淡藍色"
+  },
+  "glosses": {
+    "rainbow-cups": "一起望著同一件事的心靈圓滿",
+    "home": "有地方可以回去的穩定"
+  },
+  "reversedGloss": {
+    "blocked": "期望的關係樣貌與現實不一致",
+    "internalized": "表面平和，內心卻累積著不滿"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "孩子們也仰望著彩虹",
+      "regex": "孩子們?[^。\\n]{0,6}(?:仰望|望著|看著)彩虹"
+    },
+    {
+      "wrong": "一家人圍著餐桌坐著",
+      "regex": "餐桌|飯桌|圍著桌"
+    }
+  ]
+}

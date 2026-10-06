@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-14-temperance",
+  "locale": "zh-hant",
+  "sourceHash": "c90617633d2afa24",
+  "name": "節制",
+  "aliases": [],
+  "keywords": [
+    "適度地混合",
+    "平衡與調和",
+    "慢慢調整",
+    "中間點"
+  ],
+  "facts": {
+    "pouring-cups": "在兩只金色杯子之間倒水，水流從右上方的杯子斜斜流到左下方的杯子",
+    "foot-water-land": "右腳浸在水裡，左腳踏在水邊的岩石上",
+    "red-wings": "展開帶紅色調的大翅膀，穿著白色衣服",
+    "triangle-square": "胸前有一個方形裡面含黃色三角形的標記",
+    "forehead-disc": "額頭上有圓形太陽標記，頭部周圍光芒四散",
+    "irises": "右邊的草叢裡開著黃色鳶尾花",
+    "path-light": "左邊水邊有一條路通往山，山上浮著像太陽一樣的光"
+  },
+  "glosses": {
+    "pouring-cups": "把兩種東西適度混合，創造出新的平衡",
+    "path-light": "慢慢走就能到達的目標"
+  },
+  "reversedGloss": {
+    "excess": "偏向一邊過了頭，比例失衡(過勞、過度投入等)",
+    "blocked": "在無法融合的兩種立場之間，協調停住了"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "雙腳都浸在水裡",
+      "regex": "雙腳(?:都|皆)?(?:浸|泡|踩|站)(?:在)?水|兩隻腳(?:都)?(?:浸|泡|踩)"
+    },
+    {
+      "wrong": "白色翅膀的天使",
+      "regex": "白色(?:的)?翅膀|白翅"
+    },
+    {
+      "wrong": "女性天使在倒水",
+      "regex": "女性天使|女天使"
+    }
+  ]
+}

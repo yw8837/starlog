@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-10",
+  "locale": "zh-hant",
+  "sourceHash": "89dc18e7cef84443",
+  "name": "權杖十",
+  "aliases": [
+    "權仗十"
+  ],
+  "keywords": [
+    "沉重的負擔",
+    "過多的責任",
+    "最後一段",
+    "獨自扛下一切"
+  ],
+  "facts": {
+    "ten-bundle": "一名男子把十根權杖抱成一大捆，彎著身子走路",
+    "face-hidden": "臉埋在權杖捆裡，看不見",
+    "toward-house": "右邊遠處，樹木之間可以看到一間紅屋頂的房子，他正朝那邊走去",
+    "bent-back": "彎著腰、被重量壓著的步伐",
+    "clothes": "穿著橘色調的衣服",
+    "ground-sky": "背景是黃色的地面和藍天"
+  },
+  "glosses": {
+    "face-hidden": "被重擔擋住，看不太清楚前方",
+    "toward-house": "目的地近在眼前，但負擔實在太重"
+  },
+  "reversedGloss": {
+    "waning": "開始把負擔一件一件放下、分擔出去",
+    "excess": "負擔超出極限，快要垮掉"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "把權杖背在背上",
+      "regex": "背在背上|扛在肩上|背著權杖|扛著權杖"
+    },
+    {
+      "wrong": "已經到了家",
+      "regex": "到了家|抵達(?:了)?家|已經到家"
+    }
+  ]
+}

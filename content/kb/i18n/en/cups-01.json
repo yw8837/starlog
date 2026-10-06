@@ -1,0 +1,48 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-01",
+  "locale": "en",
+  "sourceHash": "8e8df615e458df7f",
+  "name": "Ace of Cups",
+  "aliases": [
+    "Ace of Chalices"
+  ],
+  "keywords": [
+    "an overflowing heart",
+    "a new start in feeling",
+    "acceptance",
+    "comfort and filling up"
+  ],
+  "facts": {
+    "hand-cup": "A hand coming out of a cloud on the right holds up a gold cup on its palm.",
+    "five-streams": "Five streams of water overflow from the cup and fall into the pond below.",
+    "dove-wafer": "A white dove carrying a round wafer marked with a cross in its beak descends over the cup.",
+    "drops": "Drops of water scatter and fall around the cup.",
+    "lily-pond": "Water lily leaves and red flowers float on the pond below.",
+    "letter": "A single letter-like mark is engraved on the body of the cup.",
+    "hand-glow": "Pale rays of light spread around the hand."
+  },
+  "glosses": {
+    "five-streams": "Feeling that fills the cup and still overflows.",
+    "lily-pond": "What blooms where feeling reaches."
+  },
+  "reversedGloss": {
+    "blocked": "The heart cannot flow and is blocked.",
+    "internalized": "Feeling is not expressed outwardly and only fills up inside.",
+    "excess": "Feeling overflows and is hard to bear."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Four streams of water.",
+      "regex": "\\b(?:four|4) (?:streams|jets|rivulets|spouts|trickles|channels)\\b|\\b(?:four|4)[- ]stream"
+    },
+    {
+      "wrong": "The cup is empty.",
+      "regex": "\\bempty (?:cup|chalice|goblet)\\b|\\bcup (?:is |sits |stands )?empty\\b"
+    },
+    {
+      "wrong": "A hand comes out of a cloud on the left.",
+      "regex": "\\bcloud\\b[^.\\n]{0,15}\\bleft\\b|\\bleft\\b[^.\\n]{0,15}\\bcloud\\b"
+    }
+  ]
+}

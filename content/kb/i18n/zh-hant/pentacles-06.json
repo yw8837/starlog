@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-06",
+  "locale": "zh-hant",
+  "sourceHash": "ee4973bbd8b7eb0a",
+  "name": "錢幣六",
+  "aliases": [
+    "星幣六",
+    "金幣六"
+  ],
+  "keywords": [
+    "給予與接受",
+    "分享與幫助",
+    "平衡的施予",
+    "接受的一方與給予的一方"
+  ],
+  "facts": {
+    "merchant-scale": "披著紅斗篷的商人一隻手拿著天秤",
+    "dropping-coins": "他用另一隻手把硬幣投進跪著的人攤開的手裡",
+    "two-kneeling": "兩個人跪在商人面前，一人接受，一人伸出手等待",
+    "six-pentacles": "上方空中漂浮著六枚錢幣",
+    "town": "右邊遠處可以看到城鎮"
+  },
+  "glosses": {
+    "merchant-scale": "衡量要給多少的標準，給予與接受的平衡",
+    "two-kneeling": "接受的人與等待的人，分享的順序與標準"
+  },
+  "reversedGloss": {
+    "blocked": "幫助送不到需要的地方，或是無法開口請求",
+    "excess": "給予的一方與接受的一方固化，關係傾斜"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "天秤大幅傾向一邊",
+      "regex": "天秤[^。\\n]{0,8}(?:傾|歪|斜|偏)"
+    },
+    {
+      "wrong": "商人在搶奪錢財",
+      "regex": "搶奪|搶走|奪走|偷走"
+    }
+  ]
+}

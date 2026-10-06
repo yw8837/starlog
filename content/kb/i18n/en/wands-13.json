@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-13",
+  "locale": "en",
+  "sourceHash": "47dea4116b319c69",
+  "name": "Queen of Wands",
+  "aliases": [
+    "Queen of Rods",
+    "Queen of Staves"
+  ],
+  "keywords": [
+    "warm confidence",
+    "proud charm",
+    "bright leadership",
+    "lighting up those around her"
+  ],
+  "facts": {
+    "lion-throne": "She sits facing front on a throne carved with lions' heads.",
+    "wand-sunflower": "She holds a wand in her right hand and a single sunflower in her left.",
+    "black-cat": "A black cat sits in front of her feet, facing front.",
+    "banner": "On the curtain behind the throne are two red lions and sunflowers.",
+    "yellow-dress": "She wears a yellow dress with a white cloak and a crown of leaves.",
+    "landscape": "At the back left, pyramid-shaped hills and a blue sky can be seen."
+  },
+  "glosses": {
+    "black-cat": "Intuition and an independent side hidden within the brightness.",
+    "wand-sunflower": "Confidence that holds liveliness and warmth together.",
+    "lion-throne": "A seat held up by pride and courage."
+  },
+  "reversedGloss": {
+    "waning": "Liveliness and confidence drop, and she shrinks back.",
+    "excess": "Presence goes too far and turns into jealousy or showing off.",
+    "internalized": "Passion that cannot be shown turns into sensitivity inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "A white cat is sitting there.",
+      "regex": "\\bwhite (?:cat|kitten)\\b|\\bcat\\b[^.\\n]{0,10}\\bwhite\\b"
+    },
+    {
+      "wrong": "She sits in front of a field of sunflowers.",
+      "regex": "\\b(?:field|fields|meadow|sea|rows?) of sunflowers\\b|\\bsunflower (?:field|fields|meadow)\\b"
+    }
+  ]
+}

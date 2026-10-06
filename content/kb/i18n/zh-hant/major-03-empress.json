@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-03-empress",
+  "locale": "zh-hant",
+  "sourceHash": "6cedef9af9806377",
+  "name": "皇后",
+  "aliases": [],
+  "keywords": [
+    "照顧",
+    "豐盛",
+    "舒適",
+    "逐漸成熟的成果"
+  ],
+  "facts": {
+    "cushion-seat": "舒服地靠坐在鋪著紅色靠墊和布料的座位上",
+    "star-crown": "頭戴綴有白色星星的冠，冠下有一圈綠葉花環",
+    "scepter": "右手拿著頂端有圓球的權杖",
+    "pomegranate-gown": "白色洋裝上滿是紅色石榴圖案",
+    "venus-shield": "左下方有一面畫著金星符號(♀)的心形盾牌",
+    "wheat-field": "前方展開一片熟成金黃的麥田",
+    "forest-stream": "後面是茂密的森林，右側有一道水流傾瀉而下"
+  },
+  "glosses": {
+    "wheat-field": "付出多少照顧，就成熟多少的成果",
+    "cushion-seat": "不靠拼命用力，而是在舒適中成長的事物",
+    "venus-shield": "守護愛與美的那一方的力量"
+  },
+  "reversedGloss": {
+    "excess": "照顧過度，讓對方喘不過氣，或把自己掏空",
+    "waning": "從容與樂趣逐漸乾涸的狀態",
+    "blocked": "原本在培育的事情像是停住了，進展得很慢"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "是個挺著大肚子的孕婦",
+      "regex": "懷孕|孕婦|大肚子|挺著肚子"
+    },
+    {
+      "wrong": "盾牌在右邊",
+      "regex": "盾牌[^。\\n]{0,4}右|右[^。\\n]{0,4}盾牌"
+    }
+  ]
+}

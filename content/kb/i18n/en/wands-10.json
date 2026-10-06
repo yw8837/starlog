@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-10",
+  "locale": "en",
+  "sourceHash": "89dc18e7cef84443",
+  "name": "Ten of Wands",
+  "aliases": [
+    "Ten of Rods",
+    "Ten of Staves"
+  ],
+  "keywords": [
+    "a heavy load",
+    "too much responsibility",
+    "the last stretch",
+    "carrying it all alone"
+  ],
+  "facts": {
+    "ten-bundle": "A man walks bent over, hugging ten wands in one armful.",
+    "face-hidden": "His face is buried in the bundle of wands and cannot be seen.",
+    "toward-house": "Far off on the right, a house with a red roof shows among the trees, and he heads toward it.",
+    "bent-back": "He walks with his back bent, pressed down by the weight.",
+    "clothes": "He wears orange-toned clothes.",
+    "ground-sky": "The background is yellow ground and blue sky."
+  },
+  "glosses": {
+    "face-hidden": "The load hides his view, so he cannot see ahead well.",
+    "toward-house": "The destination is near, but the load is too heavy."
+  },
+  "reversedGloss": {
+    "waning": "Starting to put the load down one piece at a time and share it.",
+    "excess": "The load has passed the limit and is about to collapse."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He carries the wands on his back.",
+      "regex": "\\bwands?\\b[^.\\n]{0,25}\\b(?:on|across|over) (?:his|the) (?:back|shoulders?)\\b"
+    },
+    {
+      "wrong": "He has arrived at the house.",
+      "regex": "\\b(?:has |had )?(?:arrived|reached|got) (?:at |to )?(?:the |his )?(?:house|home|door)\\b|\\bat the door of (?:the|his) (?:house|home)\\b"
+    }
+  ]
+}

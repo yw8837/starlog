@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-04-emperor",
+  "locale": "en",
+  "sourceHash": "2498096fb31b2c40",
+  "name": "The Emperor",
+  "aliases": [],
+  "keywords": [
+    "setting standards",
+    "responsibility",
+    "a stable frame",
+    "promise"
+  ],
+  "facts": {
+    "stone-throne": "He sits facing front on a gray stone throne, with ram's heads carved on the armrests and the top of the backrest.",
+    "ankh-scepter": "In his right hand he holds a yellow scepter with a loop at the top (an ankh shape).",
+    "orb": "In his left hand he holds a golden orb.",
+    "beard-crown": "He has a long white beard and wears a gold crown.",
+    "armor": "Below the red cloak, his armored legs and iron boots show.",
+    "bare-mountains": "Behind him rise orange rocky mountains without a blade of grass, and the sky is orange too."
+  },
+  "glosses": {
+    "stone-throne": "A structure and a responsibility that do not shake easily.",
+    "bare-mountains": "An order built even in a harsh environment.",
+    "armor": "Tension that stays on even while seated on the throne; a readiness to protect."
+  },
+  "reversedGloss": {
+    "excess": "Rules and control go too far, and it feels suffocating.",
+    "waning": "The standards and authority he set lose their force and fall into disarray."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is holding a sword.",
+      "regex": "\\b(?:holds?|holding|grips?|gripping|wields?|wielding|carries|carrying|draws?|drawing)\\s+(?:a |an |his |the |one )(?:\\w+ )?sword\\b|\\bsword (?:in|on|raised)\\b"
+    },
+    {
+      "wrong": "The setting is a rich scene of green meadows and a river.",
+      "regex": "\\bmeadows?\\b|\\bgreen (?:fields?|grass|hills?|pastures?)\\b|\\bgrasslands?\\b|\\bpastures?\\b|\\b(?:a|the) river\\b|\\bflowing (?:river|water|stream)\\b"
+    },
+    {
+      "wrong": "Lion heads are carved on the throne.",
+      "regex": "\\blions?(?:'s)?[ -]?(?:heads?|carvings?|ornaments?|faces?)\\b|\\b(?:heads?|carvings?) of (?:a )?lions?\\b"
+    }
+  ]
+}

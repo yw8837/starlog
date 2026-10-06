@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-05",
+  "locale": "zh-hant",
+  "sourceHash": "7408bad06c303c4b",
+  "name": "權杖五",
+  "aliases": [
+    "權仗五"
+  ],
+  "keywords": [
+    "意見碰撞",
+    "競爭",
+    "較勁",
+    "像練習般的爭執"
+  ],
+  "facts": {
+    "five-youths": "五名年輕人各自拿著權杖，交錯地揮舞",
+    "mixed-clothes": "五個人衣服的顏色和花紋都不一樣",
+    "no-injury": "沒有人受傷或跌倒",
+    "crossed-wands": "權杖在正中間來回交錯",
+    "blue-sky": "在藍天下、坑坑窪窪的地面上進行"
+  },
+  "glosses": {
+    "mixed-clothes": "各自不同的立場與聲音",
+    "crossed-wands": "沒有人抓到同一個方向，彼此交錯的力量"
+  },
+  "reversedGloss": {
+    "internalized": "表面安靜，內心卻持續著神經戰",
+    "waning": "消耗性的爭吵平息，看得到共識點",
+    "excess": "小小的摩擦演變成情緒之爭"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "流著血在打鬥",
+      "regex": "流(?:著|了)?血|血淋淋|血跡|負傷|受了傷|受重傷|(?<![沒無])有人受傷"
+    },
+    {
+      "wrong": "用劍在打鬥",
+      "regex": "用劍|揮劍|拔劍|劍術|打鬥用的劍"
+    }
+  ]
+}

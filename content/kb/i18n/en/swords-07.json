@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-07",
+  "locale": "en",
+  "sourceHash": "20bc6c6efd3e9a7c",
+  "name": "Seven of Swords",
+  "aliases": [],
+  "keywords": [
+    "a strategy of one's own",
+    "tricks and shortcuts",
+    "taking quietly",
+    "slipping away"
+  ],
+  "facts": {
+    "sneaking": "A man in a red hat tiptoes along on the sly, hugging five swords to his chest.",
+    "looking-back": "He turns his head to look behind him with a faint smile.",
+    "two-left": "Two swords remain stuck in the ground behind him.",
+    "camp": "On the right is an encampment of colorful tents.",
+    "distant-figures": "At the far left, a few people and something like smoke can be seen.",
+    "yellow-bg": "The background is yellow."
+  },
+  "glosses": {
+    "two-left": "What could not all be taken; a trace left behind.",
+    "looking-back": "A heart checking whether it will be caught."
+  },
+  "reversedGloss": {
+    "waning": "Putting down the plan that was hidden and bringing it into the open.",
+    "internalized": "Seems fine outside, but feels pricked inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is carrying all seven swords away.",
+      "regex": "\\ball (?:seven|7) swords\\b|\\bcarr(?:ies|ying) (?:off )?(?:all )?(?:seven|7) swords\\b|\\bseven swords\\b[^.\\n]{0,15}\\b(?:all|every)\\b"
+    },
+    {
+      "wrong": "He is bleeding from a cut by the blades.",
+      "regex": "\\bbleed(?:s|ing)?\\b|\\bbloody\\b|\\bcut (?:by|on|with) (?:the |a )?(?:blades?|swords?)\\b|\\bgash(?:es|ed)?\\b|\\bblood (?:on|drips|flows)\\b"
+    }
+  ]
+}

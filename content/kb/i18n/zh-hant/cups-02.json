@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-02",
+  "locale": "zh-hant",
+  "sourceHash": "24e948b8ce22e629",
+  "name": "聖杯二",
+  "aliases": [],
+  "keywords": [
+    "心意的交流",
+    "互相吸引",
+    "和解與承諾",
+    "平等的關係"
+  ],
+  "facts": {
+    "pledging": "年輕女子(左)與年輕男子(右)面對面站著，各自把拿著杯子的手伸向對方",
+    "caduceus-lion": "兩人上方漂浮著纏著兩條蛇的杖，和一個長著翅膀的紅色獅子頭",
+    "wreaths": "女子戴著綠葉冠，男子戴著紅花冠",
+    "clothes": "女子穿著白衣配藍色斗篷，男子穿著有花紋的短衣",
+    "house-hill": "後方綠色山丘上有一間紅屋頂的房子",
+    "blue-sky": "背景是淡藍色的天空"
+  },
+  "glosses": {
+    "caduceus-lion": "守護兩人結合的力量，吸引與療癒",
+    "wreaths": "兩人都戴著各自的冠，處於平等的位置"
+  },
+  "reversedGloss": {
+    "blocked": "心意有了，卻堵住了互相給予與接受的流動",
+    "waning": "吸引與交流逐漸冷卻",
+    "internalized": "比起關係，更需要先與自己和解的時候"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "兩人擁抱或親吻",
+      "regex": "擁抱|親吻|接吻"
+    },
+    {
+      "wrong": "天使正在祝福兩人",
+      "regex": "天使"
+    }
+  ]
+}

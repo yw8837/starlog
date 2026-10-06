@@ -1,0 +1,46 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-19-sun",
+  "locale": "en",
+  "sourceHash": "ea1f33760229db46",
+  "name": "The Sun",
+  "aliases": [],
+  "keywords": [
+    "bright and clear",
+    "honest joy",
+    "showing yourself",
+    "vitality"
+  ],
+  "facts": {
+    "sun-face": "At the top, a large sun with a human face sends out straight rays and wavy rays by turns.",
+    "child-horse": "A naked child rides a white horse with no saddle, arms spread wide.",
+    "red-banner": "A large orange-red banner flutters beside the child.",
+    "wreath-feather": "The child wears a flower wreath and a red feather on the head.",
+    "sunflowers": "Four sunflowers bloom above a gray stone wall.",
+    "wall": "A gray stone wall runs across behind the horse.",
+    "blue-sky": "The sky around the sun is a pale blue."
+  },
+  "glosses": {
+    "sun-face": "A light that shines clearly with nothing to hide.",
+    "red-banner": "Joy that is shown openly."
+  },
+  "reversedGloss": {
+    "waning": "As if the sun were covered by clouds, joy and confidence weaken.",
+    "excess": "Too much optimism, or pretending to be fine.",
+    "blocked": "Something good happens, but it cannot be fully enjoyed."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Two children are holding hands.",
+      "regex": "\\btwo (?:children|kids|boys|girls|babies)\\b|\\btwins?\\b"
+    },
+    {
+      "wrong": "He rides a horse wearing a saddle.",
+      "regex": "\\b(?:with|on|in|wearing|has|had) (?:a|the) (?:\\w+ )?saddle\\b|\\bsaddled\\b|\\bin the saddle\\b"
+    },
+    {
+      "wrong": "A wide field of sunflowers.",
+      "regex": "\\bfields? of sunflowers\\b|\\bsunflower (?:field|fields|meadow)\\b|\\bsea of sunflowers\\b|\\bendless sunflowers\\b"
+    }
+  ]
+}

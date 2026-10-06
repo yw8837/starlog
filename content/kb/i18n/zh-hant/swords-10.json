@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-10",
+  "locale": "zh-hant",
+  "sourceHash": "c8084500df61c41c",
+  "name": "寶劍十",
+  "aliases": [],
+  "keywords": [
+    "跌到谷底",
+    "一個階段的結束",
+    "沒有更低的地方",
+    "黎明之前"
+  ],
+  "facts": {
+    "prone-figure": "一個人趴著，背上插著十把劍",
+    "red-cloth": "身體下方鋪展著一塊紅布(斗篷)",
+    "hand-gesture": "露出來的一隻手，伸出兩根手指",
+    "dark-sky": "上方的天空像墨一樣漆黑",
+    "yellow-horizon": "地平線上掛著一道黃色的光帶",
+    "calm-water": "後方可以看到平靜的水面和遠山"
+  },
+  "glosses": {
+    "yellow-horizon": "最黑暗的時候，地平線上透出的黎明之光",
+    "calm-water": "結束之後的寧靜"
+  },
+  "reversedGloss": {
+    "waning": "最黑暗的時候已過，慢慢站起來",
+    "blocked": "無法承認已經結束，站不起來",
+    "excess": "一再回想痛苦，傷口變深"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "倒在血泊中",
+      "regex": "血泊|血海|血流成河"
+    },
+    {
+      "wrong": "插著九把劍",
+      "regex": "九把劍|九柄劍"
+    }
+  ]
+}

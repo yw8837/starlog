@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-09",
+  "locale": "zh-hant",
+  "sourceHash": "6b97ad29aa565ded",
+  "name": "權杖九",
+  "aliases": [
+    "權仗九"
+  ],
+  "keywords": [
+    "最後的堅持",
+    "疲憊的戒備",
+    "復原力",
+    "就快到了"
+  ],
+  "facts": {
+    "bandage": "頭上纏著白色繃帶的男子，雙手握著一根權杖站著",
+    "wary-look": "他把頭轉向一側，像在戒備地看著旁邊",
+    "eight-fence": "後方有八根權杖像柵欄一樣排成一列",
+    "clothes": "穿著紅褐色衣服和淺綠色靴子",
+    "landscape": "後面是綠色山丘和藍天，腳下是淺灰色的地面"
+  },
+  "glosses": {
+    "bandage": "已經受過一次傷的經驗，但仍然站著",
+    "eight-fence": "至今累積的防禦與經驗"
+  },
+  "reversedGloss": {
+    "waning": "撐住的力氣用盡，需要休息",
+    "excess": "戒備過度，把一切都擋在外面"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "流著血的傷者",
+      "regex": "流(?:著|了)?血|血淋淋|血跡"
+    },
+    {
+      "wrong": "九根權杖全都立在後面",
+      "regex": "九根權杖|九支權杖"
+    }
+  ]
+}

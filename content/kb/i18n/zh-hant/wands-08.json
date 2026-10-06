@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-08",
+  "locale": "zh-hant",
+  "sourceHash": "9916b1e5faccc2e7",
+  "name": "權杖八",
+  "aliases": [
+    "權仗八"
+  ],
+  "keywords": [
+    "快速進展",
+    "消息往來",
+    "毫無阻礙的流動",
+    "即將抵達"
+  ],
+  "facts": {
+    "eight-flying": "八根權杖並排斜斜地飛過",
+    "downward": "權杖由左上往右下傾斜，朝著地面落下",
+    "no-figures": "一個人也沒有",
+    "leaves": "每根權杖上都冒出小小的綠葉",
+    "landscape": "下方可以看到河流、綠色山丘和丘上一間小房子",
+    "blue-sky": "背景是遼闊的藍天"
+  },
+  "glosses": {
+    "eight-flying": "不受阻礙、朝同一個方向快速移動的流動",
+    "no-figures": "事情和消息比人先一步行動"
+  },
+  "reversedGloss": {
+    "blocked": "飛行中的東西被卡住，消息和進展變慢",
+    "excess": "太趕而錯過、四散"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "有箭在飛",
+      "regex": "箭"
+    },
+    {
+      "wrong": "權杖往天空升起",
+      "regex": "(?:往|向|朝)天空(?:升|飛|衝|射)|升向天空|飛向天空|往上(?:飛|升|衝)|衝向天空"
+    }
+  ]
+}

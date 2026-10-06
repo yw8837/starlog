@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-12",
+  "locale": "zh-hant",
+  "sourceHash": "20fbd6e343ed6926",
+  "name": "權杖騎士",
+  "aliases": [
+    "權仗騎士"
+  ],
+  "keywords": [
+    "勇往直前的推進",
+    "冒險",
+    "衝動的熱情",
+    "快速移動"
+  ],
+  "facts": {
+    "rearing-horse": "在前腿高高抬起的馬上，騎士豎著一根權杖",
+    "flame-plume": "頭盔上有火焰般的橘色羽毛，盔甲各處飄動著火焰形的裝飾",
+    "salamander-tunic": "黃色外衣上有黑色火蜥蜴圖案",
+    "pyramids": "左下方遠處可以看到金字塔形的山丘",
+    "facing-left": "馬朝左邊躍起",
+    "desert": "背景是偏黃的沙漠般的地面和藍天"
+  },
+  "glosses": {
+    "flame-plume": "燃燒的熱情與即興",
+    "pyramids": "前往遠方的旅行與移動"
+  },
+  "reversedGloss": {
+    "excess": "衝動過頭，不顧前後地狂奔",
+    "blocked": "想動卻被綁住了腳，焦躁不安"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "馬安靜地站著",
+      "regex": "馬(?:安靜|靜靜|乖乖|平靜)(?:地)?(?:站|待)|安靜的馬"
+    },
+    {
+      "wrong": "手持長槍的騎士",
+      "regex": "長槍|持槍|拿著槍|手持槍"
+    }
+  ]
+}

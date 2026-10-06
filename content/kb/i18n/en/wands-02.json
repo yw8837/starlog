@@ -1,0 +1,47 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-02",
+  "locale": "en",
+  "sourceHash": "0d72483e8c4d7e3a",
+  "name": "Two of Wands",
+  "aliases": [
+    "Two of Rods",
+    "Two of Staves"
+  ],
+  "keywords": [
+    "choosing the next direction",
+    "looking out wide",
+    "a plan",
+    "what you have and what you want"
+  ],
+  "facts": {
+    "rooftop": "He stands on a stone parapet atop a castle wall, looking down at the waterside and the land.",
+    "globe": "In one hand he holds a small globe and looks into it.",
+    "wand-held": "In the other hand he grips one wand, and another wand on the right is fixed to a ring in the wall.",
+    "rose-lily": "On a stone slab at the lower left is a design of a red rose and a white lily crossed.",
+    "cap-cloak": "A man in a red cap and a purple cloak stands in profile.",
+    "landscape": "Below spread the waterside, green land, distant mountains and a single house with a red roof."
+  },
+  "glosses": {
+    "globe": "Holding the world in his hand and gauging the next destination.",
+    "wand-held": "One held and one left standing: a fork between leaving and staying."
+  },
+  "reversedGloss": {
+    "blocked": "Ready to leave, but familiarity holds back the feet.",
+    "internalized": "Unchanged on the outside, but drawing the next direction inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "Two people are standing on the castle.",
+      "regex": "\\btwo (?:people|men|figures|persons)\\b[^.\\n]{0,15}\\b(?:stand|standing|stands|castle|battlement|wall)\\b"
+    },
+    {
+      "wrong": "He is holding a crystal ball.",
+      "regex": "\\bcrystal (?:ball|sphere)\\b"
+    },
+    {
+      "wrong": "He holds a wand in each hand.",
+      "regex": "\\b(?:a|one|each) wand (?:in|on) (?:each|both)\\b|\\bwands? in (?:each|both) hands?\\b|\\bboth (?:hands|of his hands)\\b[^.\\n]{0,15}\\bwands?\\b|\\bwand in each hand\\b"
+    }
+  ]
+}

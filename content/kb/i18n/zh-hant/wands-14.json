@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-14",
+  "locale": "zh-hant",
+  "sourceHash": "0bbba9f30881413c",
+  "name": "權杖國王",
+  "aliases": [
+    "權仗國王"
+  ],
+  "keywords": [
+    "帶領願景",
+    "決斷力",
+    "大膽的責任",
+    "看向前方"
+  ],
+  "facts": {
+    "profile-throne": "國王側身坐在王座上，望向左邊",
+    "flowering-wand": "右手豎著握一根長出葉子的權杖",
+    "flame-crown": "戴著頂端翹起火焰形尖角的金冠",
+    "throne-lions": "王座椅背上刻著黑色獅子和火蜥蜴圖案",
+    "lizard": "腳邊右側有一隻黑色小火蜥蜴",
+    "robes": "橘色衣服外披著綠色領子、有火蜥蜴圖案的斗篷"
+  },
+  "glosses": {
+    "lizard": "據說在火裡也能活的火蜥蜴，把熱情掌控到底的力量",
+    "profile-throne": "看向比現在更遠的未來的視線",
+    "flowering-wand": "手握仍在成長的計畫的領導者"
+  },
+  "reversedGloss": {
+    "excess": "決斷流於獨斷與急躁",
+    "waning": "領導的力量與確信減弱，負擔變大"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "正面朝前坐著",
+      "regex": "正面(?:朝|向)前|面向(?:正前方|我們)|看向我們"
+    },
+    {
+      "wrong": "腳邊趴著一頭獅子",
+      "regex": "腳邊[^。\\n]{0,4}獅子|獅子(?:趴|蹲|臥)"
+    }
+  ]
+}

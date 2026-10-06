@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "pentacles-04",
+  "locale": "en",
+  "sourceHash": "83718209cedd15c1",
+  "name": "Four of Pentacles",
+  "aliases": [
+    "Four of Coins",
+    "Four of Disks"
+  ],
+  "keywords": [
+    "clutching",
+    "the urge to protect",
+    "stability and control",
+    "a closed hand"
+  ],
+  "facts": {
+    "clasping": "A person wearing a crown hugs one pentacle tightly to the chest with both arms.",
+    "crown-pentacle": "One pentacle sits on top of the crown.",
+    "feet-pentacles": "Both feet rest on two pentacles.",
+    "seated": "The person sits facing front before a stone base.",
+    "city": "A city with walls and towers can be seen behind.",
+    "grey-bg": "The background is grayish."
+  },
+  "glosses": {
+    "feet-pentacles": "Gripping even beneath the feet, so unable to move.",
+    "city": "Safety guarded with the back turned to the outside world."
+  },
+  "reversedGloss": {
+    "excess": "Anxious, so gripping tighter and growing stingy.",
+    "waning": "The clutching hand loosens, sharing and letting things flow."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He is handing out pentacles.",
+      "regex": "\\b(?:hands?|handing|gives?|giving|shares?|sharing|offers?|offering) (?:out|away) (?:the |his |a )?(?:pentacles?|coins?)\\b|\\bhands? (?:over )?(?:a |the |his )?pentacle\\b|\\bgives? (?:a |the |his )?pentacle\\b"
+    },
+    {
+      "wrong": "Five pentacles.",
+      "regex": "\\b(?:five|5) pentacles\\b"
+    }
+  ]
+}

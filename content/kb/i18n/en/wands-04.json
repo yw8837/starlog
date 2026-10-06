@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-04",
+  "locale": "en",
+  "sourceHash": "7584758511e573ae",
+  "name": "Four of Wands",
+  "aliases": [
+    "Four of Rods",
+    "Four of Staves"
+  ],
+  "keywords": [
+    "celebration and welcome",
+    "a stable base",
+    "rejoicing together",
+    "a pause"
+  ],
+  "facts": {
+    "four-wands-garland": "A garland woven of flowers and fruit hangs across four wands set up in front.",
+    "ribbons": "Red ribbons are tied to the tips of the two outer wands.",
+    "two-women": "Two women hold bouquets of flowers up over their heads.",
+    "castle": "Behind them is a gray castle with a tower under an orange roof.",
+    "bridge": "On the right is a bridge over a moat.",
+    "small-crowd": "A few people have gathered at the back left.",
+    "yellow-sky": "The sky is a bright yellow."
+  },
+  "glosses": {
+    "four-wands-garland": "A celebration hung on a base that has been set up.",
+    "two-women": "A mood of rejoicing and welcome together."
+  },
+  "reversedGloss": {
+    "waning": "The air of celebration is there, but it comes small and modest.",
+    "blocked": "Schedules or circumstances put off the celebration and the rest."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "It is a wedding scene.",
+      "regex": "\\bwedding\\b|\\bbride\\b|\\bgroom\\b|\\bnewlyweds?\\b|\\bmarriage ceremony\\b"
+    }
+  ]
+}

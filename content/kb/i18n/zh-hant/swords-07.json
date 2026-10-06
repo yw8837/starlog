@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-07",
+  "locale": "zh-hant",
+  "sourceHash": "20bc6c6efd3e9a7c",
+  "name": "寶劍七",
+  "aliases": [],
+  "keywords": [
+    "一個人的策略",
+    "取巧與走捷徑",
+    "悄悄拿走",
+    "脫身"
+  ],
+  "facts": {
+    "sneaking": "戴著紅帽的男子把五把劍抱在懷裡，踮著腳尖悄悄走過",
+    "looking-back": "回頭向後看，帶著淡淡的笑",
+    "two-left": "後方的地上還留著兩把劍插在那裡",
+    "camp": "右邊有一座色彩繽紛的帳篷聚集的營地",
+    "distant-figures": "左邊遠處可以看到幾個人和像煙一樣的東西",
+    "yellow-bg": "背景是黃色"
+  },
+  "glosses": {
+    "two-left": "沒能全部帶走的東西，留下的痕跡",
+    "looking-back": "擔心被發現的心"
+  },
+  "reversedGloss": {
+    "waning": "放下一直隱藏的計畫，把它攤開",
+    "internalized": "表面上沒事，心裡卻被刺了一下"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "把七把劍全都拿走",
+      "regex": "七把劍|七柄劍"
+    },
+    {
+      "wrong": "被劍刃割傷流血",
+      "regex": "流(?:著|了)?血|割傷|血跡"
+    }
+  ]
+}

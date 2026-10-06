@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "wands-05",
+  "locale": "en",
+  "sourceHash": "7408bad06c303c4b",
+  "name": "Five of Wands",
+  "aliases": [
+    "Five of Rods",
+    "Five of Staves"
+  ],
+  "keywords": [
+    "clashing opinions",
+    "competition",
+    "a test of strength",
+    "a quarrel like practice"
+  ],
+  "facts": {
+    "five-youths": "Five young men each hold a wand and swing them across one another.",
+    "mixed-clothes": "The colors and patterns of the five people's clothes are all different.",
+    "no-injury": "No one is hurt or fallen.",
+    "crossed-wands": "The wands cross this way and that in the middle.",
+    "blue-sky": "It takes place on bumpy ground under a blue sky."
+  },
+  "glosses": {
+    "mixed-clothes": "Each with a different position and voice.",
+    "crossed-wands": "Forces that cross because no one has settled on one direction."
+  },
+  "reversedGloss": {
+    "internalized": "Quiet on the outside, but a war of nerves goes on inside.",
+    "waning": "The draining quarrel settles, and a point of agreement shows.",
+    "excess": "Petty friction grows into an emotional fight."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "They are fighting and bleeding.",
+      "regex": "\\b(?:bleed(?:s|ing)?|bloody|blood-stained|bloodied|wounded|injured)\\b|\\b(?:spill(?:s|ed|ing)?|shed(?:s|ding)?|drawing|draws?) (?:their )?blood\\b"
+    },
+    {
+      "wrong": "They are sword-fighting.",
+      "regex": "\\bsword[- ]?(?:fight|fighting|play)\\b|\\b(?:fight(?:s|ing)?|battl\\w+|clash\\w*|duel\\w*|cross\\w*) with swords\\b|\\bswords? (?:clash|clashing|crossed|drawn)\\b|\\bduel(?:s|ing|ed)?\\b"
+    }
+  ]
+}

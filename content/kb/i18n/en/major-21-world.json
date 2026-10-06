@@ -1,0 +1,45 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "major-21-world",
+  "locale": "en",
+  "sourceHash": "fd97317b0a433bd4",
+  "name": "The World",
+  "aliases": [],
+  "keywords": [
+    "a cycle completed",
+    "integration",
+    "closing and the next door",
+    "finding your place"
+  ],
+  "facts": {
+    "wreath": "A large oval green wreath, tied at the top and bottom with red ribbons, surrounds the scene.",
+    "dancer": "Inside the wreath, a woman stands as if floating, with only a purple cloth wrapped around her body.",
+    "two-wands": "She holds a white wand in each hand.",
+    "crossed-legs": "One leg is bent and crossed behind the other.",
+    "four-heads": "In the clouds at the four corners, the heads of a man, an eagle, a bull and a lion can be seen.",
+    "blue-sky": "The background is blue sky."
+  },
+  "glosses": {
+    "wreath": "A circle that has come all the way around.",
+    "crossed-legs": "A posture like the legs of the hanged figure; a pause turned into a dance.",
+    "four-heads": "Completion in which all four elements are gathered."
+  },
+  "reversedGloss": {
+    "blocked": "One last step remains, so the closing is put off.",
+    "waning": "The flow of completion has passed, and sorting out and preparing for the next remain."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "She is holding a globe.",
+      "regex": "\\b(?:holds?|holding|carries|carrying|clutch\\w*|cradl\\w*)\\b[^.\\n]{0,12}\\b(?:a |the )?(?:globe|orb|sphere|world)\\b|\\bglobe\\b"
+    },
+    {
+      "wrong": "A snake coils around her body.",
+      "regex": "\\b(?:snakes?|serpents?)\\b"
+    },
+    {
+      "wrong": "The creatures in the four corners are holding books.",
+      "regex": "\\b(?:holds?|holding|carry|carrying|open|opening|reads?|reading)\\b[^.\\n]{0,12}\\bbooks?\\b|\\bbooks?\\b[^.\\n]{0,12}\\b(?:held|open)\\b"
+    }
+  ]
+}

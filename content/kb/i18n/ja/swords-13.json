@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-13",
+  "locale": "ja",
+  "sourceHash": "d5ec411c408fe8c6",
+  "name": "ソードのクイーン",
+  "aliases": [
+    "剣のクイーン"
+  ],
+  "keywords": [
+    "明確な境界",
+    "率直な判断",
+    "経験から生まれた知恵",
+    "自立"
+  ],
+  "facts": {
+    "profile-throne": "女王が横顔で玉座に座り、右を見ている",
+    "upright-sword": "右手に剣をまっすぐ立てて持っている",
+    "extended-hand": "左手を前に上げて手のひらを差し出し、手首にひもの飾りがついている",
+    "butterfly-crown": "蝶の飾りがついた冠をかぶり、玉座に翼のある赤ちゃんの顔と蝶が刻まれている",
+    "cloud-cape": "雲模様のマントをはおっている",
+    "clouds-bird": "下に雲が広がり、空高く鳥が一羽飛んでいる"
+  },
+  "glosses": {
+    "extended-hand": "判断したあとにも差し出す手、対話の余地",
+    "clouds-bird": "曇ったものの上を高く飛ぶ明晰さ"
+  },
+  "reversedGloss": {
+    "excess": "冷静さと批判が行き過ぎて、冷たく感じられる",
+    "internalized": "悲しみを表に出さず、内側で固まる"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "目を覆っている",
+      "regex": "目を(?:覆|隠)|目隠し"
+    },
+    {
+      "wrong": "剣をひざの上に横たえている",
+      "regex": "剣を(?:ひざ|膝)|剣を横たえ"
+    }
+  ]
+}

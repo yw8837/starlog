@@ -1,0 +1,43 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-08",
+  "locale": "en",
+  "sourceHash": "8c1982d226df4eb9",
+  "name": "Eight of Cups",
+  "aliases": [
+    "Eight of Chalices"
+  ],
+  "keywords": [
+    "the resolve to leave",
+    "looking for something deeper",
+    "going with lingering regret",
+    "turning away"
+  ],
+  "facts": {
+    "walking-away": "A person in a red cloak walks toward the rocky mountains with a staff, back turned.",
+    "stacked-cups": "Eight cups are stacked in front (five below, three above).",
+    "gap": "There is one empty space between the cups in the upper row.",
+    "moon-face": "In the sky at the upper left floats a moon with a closed-eyed face (a round moon overlapped by a crescent).",
+    "water-rocks": "Water flows between the figure and the cups, and a rocky hill continues beyond.",
+    "grey-sky": "The sky is a pale grayish blue."
+  },
+  "glosses": {
+    "gap": "Much is owned, but something is missing.",
+    "moon-face": "A moon with closed eyes; a departure that follows a reason within rather than outside."
+  },
+  "reversedGloss": {
+    "blocked": "Willing to leave, but unable to lift a foot.",
+    "excess": "Trying to leave as if running away, without sorting anything out.",
+    "internalized": "The body stays, but the heart has already left."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "He leaves carrying one cup.",
+      "regex": "\\b(?:carr(?:ies|ying)|takes?|taking|holds?|holding|grabs?|packs?|brings?|bringing)\\b[^.\\n]{0,12}\\b(?:one|a|the) cup\\b|\\bwith (?:one|a) cup\\b"
+    },
+    {
+      "wrong": "The sun is in the sky.",
+      "regex": "\\bsun\\b[^.\\n]{0,15}\\b(?:in the sky|shin\\w+|rises?|rising|sets?|setting|above)\\b|\\b(?:sunrise|sunset|sunlit|sunshine)\\b|\\bshining sun\\b"
+    }
+  ]
+}

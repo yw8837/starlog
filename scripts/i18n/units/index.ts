@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/i18n/locales";
 import { corePresent, coreUnits } from "./core";
+import { kbPresent, kbUnits } from "./kb";
 import { messagePresent, messageUnits } from "./messages";
 
 /** One translatable piece with its Korean source. Phase B kinds only gate a locale once their feature ships there. */
@@ -20,6 +21,7 @@ interface Source {
 const SOURCES: Partial<Record<UnitKind, Source>> = {
   messages: { units: messageUnits, present: messagePresent },
   core: { units: coreUnits, present: corePresent },
+  kb: { units: kbUnits, present: kbPresent },
 };
 
 export const allUnits = (): Unit[] => Object.values(SOURCES).flatMap((source) => source!.units());

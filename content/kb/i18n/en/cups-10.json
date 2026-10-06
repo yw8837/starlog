@@ -1,0 +1,42 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-10",
+  "locale": "en",
+  "sourceHash": "60dc5da844b7bcd1",
+  "name": "Ten of Cups",
+  "aliases": [
+    "Ten of Chalices"
+  ],
+  "keywords": [
+    "happiness together",
+    "family-like stability",
+    "peace of mind",
+    "a rainbow"
+  ],
+  "facts": {
+    "rainbow-cups": "A rainbow hangs in the sky, and ten cups line up on it.",
+    "couple": "A man and a woman, seen from behind, hold each other around the waist and raise their outer arms toward the rainbow.",
+    "children": "On the right, two children dance, holding hands.",
+    "home": "Far off among the trees, a house with a red roof can be seen.",
+    "river-hills": "A river flows, and green hills spread out.",
+    "blue-sky": "The sky is a pale blue."
+  },
+  "glosses": {
+    "rainbow-cups": "The fullness of a heart looking together at the same thing.",
+    "home": "The stability of having a place to return to."
+  },
+  "reversedGloss": {
+    "blocked": "The picture of the relationship you hope for and reality do not line up.",
+    "internalized": "Peaceful outside, but dissatisfaction piling up inside."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The children also look up at the rainbow.",
+      "regex": "\\bchildren\\b[^.\\n]{0,15}\\b(?:look(?:s|ing)? up|gaze|gazing|stare|staring|watch\\w*)\\b[^.\\n]{0,12}\\brainbow\\b|\\bkids\\b[^.\\n]{0,15}\\b(?:look(?:s|ing)? up|gaze|gazing)\\b"
+    },
+    {
+      "wrong": "A family sits around a dining table.",
+      "regex": "\\b(?:dining|dinner|kitchen) table\\b|\\baround (?:a|the) table\\b"
+    }
+  ]
+}

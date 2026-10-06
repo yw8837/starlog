@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-13",
+  "locale": "zh-hant",
+  "sourceHash": "8cba5bd6fe663e74",
+  "name": "聖杯皇后",
+  "aliases": [],
+  "keywords": [
+    "深刻的同理",
+    "直覺",
+    "情感上的照顧",
+    "沉靜的心"
+  ],
+  "facts": {
+    "covered-cup": "王后雙手捧著一只有蓋的華麗杯子，靜靜地看著",
+    "cup-handles": "杯子兩側的把手是帶翅膀的形象",
+    "shore-throne": "坐在設在水邊的王座上，腳邊碰到水和小石子",
+    "merchild-throne": "王座上方和旁邊刻著像嬰兒水精靈般的形象",
+    "white-gown": "穿著白衣，披著像波浪的斗篷，戴著金冠",
+    "cliff-sky": "後方可以看到懸崖和藍天"
+  },
+  "glosses": {
+    "covered-cup": "蓋起來的杯子，不輕易顯露的深層情感",
+    "shore-throne": "站在情感之海與現實之地之間的位置"
+  },
+  "reversedGloss": {
+    "excess": "同理過度，被別人的情緒捲走",
+    "internalized": "感受到的東西無法表達出來，沉在心底"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "正在喝杯子裡的水",
+      "regex": "喝(?:著|了)?杯(?:子)?裡的|啜飲杯|正在喝(?:杯|水)|飲下杯中"
+    },
+    {
+      "wrong": "坐在船上",
+      "regex": "坐在船|船上|乘船|划船"
+    }
+  ]
+}

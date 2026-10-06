@@ -1,0 +1,41 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "swords-09",
+  "locale": "en",
+  "sourceHash": "9de551bca6180237",
+  "name": "Nine of Swords",
+  "aliases": [],
+  "keywords": [
+    "worry at night",
+    "anxiety and self-blame",
+    "thoughts that keep you awake",
+    "fear that grows alone"
+  ],
+  "facts": {
+    "hands-face": "A person who has sat up in bed covers the face with both hands.",
+    "nine-swords": "Nine swords hang side by side, horizontally, on a black wall.",
+    "not-pierced": "The swords do not touch the body and only hang on the wall.",
+    "quilt": "The quilt is painted with red roses and constellation signs in turn.",
+    "carving": "A scene of one person striking down another is carved on the side panel of the bed.",
+    "black-bg": "The background is pitch black."
+  },
+  "glosses": {
+    "not-pierced": "The fear does not actually touch; it hangs large inside the head.",
+    "quilt": "Roses that remain even on the quilt covering the night."
+  },
+  "reversedGloss": {
+    "waning": "Anxiety thins little by little, as the night passes.",
+    "internalized": "The worry cannot be told to anyone and is swallowed alone.",
+    "excess": "Anxiety grows and shakes even daily life."
+  },
+  "misdescriptions": [
+    {
+      "wrong": "The swords are stabbing the person.",
+      "regex": "\\b(?:swords?|blades?)\\b[^.\\n]{0,15}\\b(?:stab\\w*|pierc\\w*|impal\\w*|skewer\\w*|plunge\\w*|cut(?:s|ting)?|slic\\w+)\\b"
+    },
+    {
+      "wrong": "He is bleeding.",
+      "regex": "\\bbleed(?:s|ing)?\\b|\\bbloody\\b|\\bblood (?:on|drips|flows|pours)\\b"
+    }
+  ]
+}

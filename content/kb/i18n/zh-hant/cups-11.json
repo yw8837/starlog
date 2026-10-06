@@ -1,0 +1,40 @@
+{
+  "schema": "starlog-tarot-kb-i18n/1",
+  "id": "cups-11",
+  "locale": "zh-hant",
+  "sourceHash": "eca38ef927647043",
+  "name": "聖杯侍從",
+  "aliases": [],
+  "keywords": [
+    "感性的消息",
+    "想像力",
+    "純真的好奇心",
+    "心裡的訊息"
+  ],
+  "facts": {
+    "fish-cup": "年輕的侍從一隻手拿著杯子，一條魚從杯裡探出頭來",
+    "looking-fish": "侍從帶著淡淡的微笑看著魚",
+    "hand-hip": "另一隻手叉在腰上",
+    "blue-hat": "戴著垂著長布的藍帽子，穿著有蓮花圖案的藍色上衣",
+    "sea-behind": "後方可以看到波濤起伏的大海",
+    "grey-bg": "天空的部分是淡灰色"
+  },
+  "glosses": {
+    "looking-fish": "以好奇心接納意料之外的情感或點子",
+    "sea-behind": "在身後展開的廣闊情感之海"
+  },
+  "reversedGloss": {
+    "internalized": "心意是有的，卻無法表達而隱藏起來",
+    "excess": "情感與想像過度，與現實脫節"
+  },
+  "misdescriptions": [
+    {
+      "wrong": "水從杯子裡溢出來",
+      "regex": "水(?:從杯)?(?:裡)?(?:溢|灑|湧)|溢出"
+    },
+    {
+      "wrong": "用釣竿把魚釣上來",
+      "regex": "釣竿|釣魚|釣上|釣起"
+    }
+  ]
+}
