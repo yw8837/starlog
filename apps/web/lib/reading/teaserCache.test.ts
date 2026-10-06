@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearSajuProfile } from "@/lib/sajuFlow";
 import { SAJU_TEASERS_KEY, SAJU_TEASER_SLOTS, clearTeasers, pruneSajuTeasers, readTeaser, saveTeaser } from "./teaserCache";
 
@@ -9,6 +9,7 @@ const any = (value: unknown): value is { title: string } => typeof value === "ob
 const teaser = (title: string, freshUntil?: string) => ({ title, summary: "s", lockedToc: [], ...(freshUntil ? { freshUntil } : {}) });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   localStorage.clear();
   sessionStorage.clear();
 });
@@ -43,13 +44,15 @@ describe("saju teasers on this device (saju-topics spec §9.3)", () => {
 
   it("drops the ones past their time when asked (their keys hold birth data), writing nothing when none is", () => {
     const stored = () => localStorage.getItem(SAJU_TEASERS_KEY);
+    const write = vi.spyOn(Storage.prototype, "setItem");
     pruneSajuTeasers(NOW);
     expect(stored()).toBeNull();
     saveTeaser("saju", "soon", teaser("곧", new Date(NOW + 2 * DAY).toISOString()), NOW);
     saveTeaser("saju", "later", teaser("나중", new Date(NOW + 20 * DAY).toISOString()), NOW);
-    const both = stored();
+    write.mockClear();
     pruneSajuTeasers(NOW + DAY);
-    expect(stored()).toBe(both);
+    expect(write).not.toHaveBeenCalled();
+    expect(JSON.parse(stored()!)).toHaveLength(2);
     pruneSajuTeasers(NOW + 3 * DAY);
     expect((JSON.parse(stored()!) as Array<{ key: string }>).map((e) => e.key)).toEqual(["later"]);
     pruneSajuTeasers(NOW + 21 * DAY);

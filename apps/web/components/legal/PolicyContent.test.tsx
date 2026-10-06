@@ -26,7 +26,9 @@ describe("policies match what the service does", () => {
     for (const cookie of ["sl_q", "sl_daily", "sl_owner"]) expect(text).toContain(cookie);
     expect(text).toContain("로컬 저장소");
     expect(text).toContain("세션 저장소");
-    expect(text).toContain("사주 맛보기는 이 기기의 로컬 저장소에 최대 30일 남습니다");
+    // What the app does: it drops the ones past 30 days when it opens (RouteTracker), it does not promise they are gone sooner.
+    expect(text).toContain("사주 맛보기는 이 기기의 로컬 저장소에 저장되고, 30일이 지난 것은 다음에 스타로그를 열 때 지워집니다");
+    expect(text).not.toContain("로컬 저장소에 최대 30일");
     expect(text).toContain("36시간");
     expect(text).toContain("IP 주소 원문은 저장하지 않습니다");
     expect(text).toContain("카카오톡으로 보내기를 누를 때만");

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { resetAccountForTests } from "@/lib/account/client";
-import { SAJU_TEASERS_KEY, saveTeaser } from "@/lib/reading/teaserCache";
+import { saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuTopicId } from "@/lib/reading/types";
 import { clearSajuProfile, sajuTeaserKey, saveSajuProfile } from "@/lib/sajuFlow";
 import { DEFAULT_SAJU_FORM, sanitizeSajuForm } from "@/lib/sajuForm";
@@ -409,16 +409,5 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     );
     expect(await screen.findByText("고요한 물")).toBeTruthy();
     expect(screen.queryByRole("group", { name: OTHER_TOPICS_LABEL })).toBeNull();
-  });
-
-  it("drops the saju teasers past their time when the page opens (their keys hold birth data), and keeps the others", async () => {
-    seed();
-    saveTeaser("saju", "a-key-past-its-time", { title: "x", summary: "y", lockedToc: [] }, Date.now() - 40 * 86_400_000);
-    expect(localStorage.getItem(SAJU_TEASERS_KEY)).toContain("a-key-past-its-time");
-    stub({ me: [OPENING_ME] });
-    render(<SajuChartView />);
-    expect(await screen.findByText("첫 장")).toBeTruthy();
-    await waitFor(() => expect(localStorage.getItem(SAJU_TEASERS_KEY)).not.toContain("a-key-past-its-time"));
-    expect(localStorage.getItem(SAJU_TEASERS_KEY)).toContain("고요한 물");
   });
 });

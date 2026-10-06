@@ -26,7 +26,7 @@ import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { commitQuota } from "@/lib/reading/api";
 import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { progressPlan } from "@/lib/reading/progress";
-import { pruneSajuTeasers, readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
+import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuReadingResponse, SajuRequestFields, SajuTeaserData, SajuTopic, SajuTopicId } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { chapterRequestFields, sajuContextBody, sajuStatusBody, sajuTeaserKey, useSajuContext } from "@/lib/sajuFlow";
@@ -93,11 +93,6 @@ export function SajuChartView({
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: SajuTeaserData } | null>(null);
   const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("saju", teaserKey, isSajuTeaser)) : null;
-
-  // Teasers past their time leave this device when the page opens (their keys hold birth data), not only at the next save.
-  useEffect(() => {
-    pruneSajuTeasers();
-  }, []);
 
   // The free reading, written once per birth data and 운 (kept on this device, spec §9.3). Switching
   // the 운 re-runs this; the previous request is cancelled first (the effect's cleanup).

@@ -6,7 +6,7 @@ import { createLocalStore, createSessionStore, type SessionStore } from "@/lib/s
  * - saju (saju-topics spec §9.3): up to 15 on this device (localStorage), one per birth data, topic and
  *   that topic's chips (lib/sajuFlow.ts sajuTeaserKey), each until the server's `freshUntil` (30 days,
  *   the next 입춘 or the end of the 대운) and never past 30 days. A topic seen here switches back for free.
- *   One past its time is ignored on read, dropped at the next save and when the chart page opens.
+ *   One past its time is ignored on read, dropped at the next save and whenever the app opens (RouteTracker).
  */
 
 type Slot = "tarot" | "saju";
@@ -60,9 +60,9 @@ export function saveTeaser(slot: Slot, key: string, value: unknown, now = Date.n
 }
 
 /**
- * Drops the saju teasers past their time. Their keys hold the birth data, and "up to 30 days" is what
- * the privacy policy says, so the chart page calls this when it opens rather than waiting for the next
- * save. Writes only when something goes.
+ * Drops the saju teasers past their time. Their keys hold the birth data, and the privacy policy says
+ * those past 30 days are gone the next time the app is opened, so components/layout/RouteTracker.tsx
+ * calls this on every page load rather than waiting for the next save. Writes only when something goes.
  */
 export function pruneSajuTeasers(now = Date.now()) {
   const all = sajuStore.read() ?? [];
