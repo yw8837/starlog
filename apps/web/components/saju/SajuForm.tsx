@@ -72,6 +72,7 @@ export function SajuForm() {
       key={`${profile ? "saved" : "fresh"}-${savedContext ? "context" : "none"}`}
       initial={profile ? draftOf(profile) : EMPTY_SAJU_DRAFT}
       initialContext={context ?? {}}
+      ready={profile !== undefined}
     />
   );
 }
@@ -85,7 +86,12 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
   );
 }
 
-function SajuFormFields({ initial, initialContext }: { initial: SajuDraft; initialContext: SajuContext }) {
+/**
+ * `ready`: the saved values have been read (after hydration). Until then the selects take no pick: the
+ * render that reads them puts the draft's values back on every select, so an earlier pick was lost and a
+ * year read back as "" became year 0.
+ */
+function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft; initialContext: SajuContext; ready: boolean }) {
   const router = useRouter();
   const [draft, setDraft] = useState<SajuDraft>(initial);
   const [context, setContext] = useState<SajuContext>(initialContext);
@@ -155,6 +161,7 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuDraft; initi
                 ref={yearRef}
                 aria-label="태어난 연도"
                 className={s.select}
+                disabled={!ready}
                 value={draft.year ?? ""}
                 onChange={(e) => change(withDraftDate(draft, { year: Number(e.target.value) }))}
                 aria-invalid={Boolean(errors.date)}
@@ -177,6 +184,7 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuDraft; initi
               <select
                 aria-label="태어난 월"
                 className={s.select}
+                disabled={!ready}
                 value={draft.month ?? ""}
                 onChange={(e) => change(withDraftDate(draft, { month: Number(e.target.value) }))}
                 aria-invalid={Boolean(errors.date)}
@@ -199,6 +207,7 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuDraft; initi
               <select
                 aria-label="태어난 일"
                 className={s.select}
+                disabled={!ready}
                 value={draft.day ?? ""}
                 onChange={(e) => change(withDraftDate(draft, { day: Number(e.target.value) }))}
                 aria-invalid={Boolean(errors.date)}
@@ -315,6 +324,7 @@ function SajuFormFields({ initial, initialContext }: { initial: SajuDraft; initi
             id="birth-place"
             ref={placeRef}
             className={s.select}
+            disabled={!ready}
             value={draft.placeId}
             onChange={(e) => change({ ...draft, placeId: e.target.value })}
             aria-invalid={Boolean(errors.place)}

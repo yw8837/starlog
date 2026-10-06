@@ -98,6 +98,11 @@
   border-color: #ff9aa8;
 }
 
+/* Disabled only until hydration (SajuForm `ready`): the browser's dimming would flash as it ends. */
+.select:disabled {
+  opacity: 1;
+}
+
 .select option {
   background: #1d1850;
   color: var(--ink);

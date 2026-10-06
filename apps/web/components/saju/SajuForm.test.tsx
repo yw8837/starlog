@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act } from "react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { clearSajuProfile, saveSajuProfile } from "@/lib/sajuFlow";
@@ -81,5 +84,28 @@ describe("W-07: a first visit starts with the date and the gender empty", () => 
     expect((screen.getByLabelText("태어난 연도") as HTMLSelectElement).value).toBe("1993");
     expect(screen.getByRole("button", { name: "남성" }).getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByText("→ 1993년 8월 17일 (양력)")).toBeTruthy();
+  });
+});
+
+describe("the selects before hydration", () => {
+  // The first render after hydration (the saved profile and chips read) puts the draft's values back on
+  // every select, so a pick made before it was lost, and a year read back as "" became year 0 (e2e on next dev).
+  it("take no pick until the form is hydrated, then take one", async () => {
+    const container = document.body.appendChild(document.createElement("div"));
+    container.innerHTML = renderToString(<SajuForm />);
+    const selects = () => ["태어난 연도", "태어난 월", "태어난 일", "태어난 곳"].map((label) => (screen.getByLabelText(label) as HTMLSelectElement).disabled);
+    expect(selects()).toEqual([true, true, true, true]);
+
+    const recovered: unknown[] = [];
+    let root: Root | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, <SajuForm />, { onRecoverableError: (error) => recovered.push(error) });
+    });
+    expect(recovered).toEqual([]);
+    expect(selects()).toEqual([false, false, false, false]);
+    pickDate(1992, 8, 3);
+    expect(screen.getByText("→ 1992년 8월 3일 (양력)")).toBeTruthy();
+    act(() => root?.unmount());
+    container.remove();
   });
 });
