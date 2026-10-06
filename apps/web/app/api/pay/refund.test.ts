@@ -203,6 +203,22 @@ describe("the 7-day refund window", () => {
     expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
   });
 
+  it("refuses an order with no purchase record (lot) as NOT_REFUNDABLE before anything else is looked at", async () => {
+    const db = useTestDb();
+    vi.setSystemTime(PAID);
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    // Nothing to refund or to date the window by; a payment under other keys would otherwise be looked up.
+    await db.prepare("DELETE FROM credit_lots WHERE order_id = ?").bind(orderId).run();
+    await db.prepare("UPDATE payments SET mode = 'test' WHERE order_id = ?").bind(orderId).run();
+    vi.setSystemTime(LAST + 1);
+    const res = await refundOf(b, orderId);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ code: "NOT_REFUNDABLE", message: "이미 연 풀이이거나 환불할 수 없는 결제예요." });
+    expect(console.warn).not.toHaveBeenCalledWith(expect.stringContaining("pay.other_keys"));
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
+  });
+
   it("does not limit the operator's refunds: a Toss dashboard cancel after the window still refunds it", async () => {
     const db = useTestDb();
     vi.setSystemTime(PAID);
