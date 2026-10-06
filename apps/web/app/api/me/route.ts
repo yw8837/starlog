@@ -1,4 +1,5 @@
 import { openAccount } from "@/lib/account/request";
+import { isReviewer } from "@/lib/account/review";
 import { clearSession, sessionCookieName } from "@/lib/account/session";
 import { clientKey, errorResponse, json, parseCookies, serializeCookie } from "@/lib/api/http";
 import { walletSummary } from "@/lib/pay/ledger";
@@ -10,12 +11,12 @@ import { signingSecret } from "@/lib/security/sign";
 
 /**
  * GET → { payments, login, owner, user }:
- * - `payments`: whether sales are open for this device;
+ * - `payments`: whether sales are open for this device (or for the review account logged in on it);
  * - `login`: whether this device may log in (also while sales are paused, for existing accounts);
  * - `owner`: whether it holds the owner pass;
  * - `user`: the logged-in user's nickname, 별조각 (with the soonest expiry), unopened purchases (each
  *   with `refundUntil`, the last moment 환불받기 works) and `opening`, the readings being opened right
- *   now (a paid one is never also in `unused`).
+ *   now (a paid one is never also in `unused`); `review: true` only on the review account.
  * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
  * network (ME_LIMITER, generous: every page with an account line asks it).
  */
@@ -33,9 +34,11 @@ export async function GET(request: Request): Promise<Response> {
   if (ctx instanceof Response) return json({ payments: false, login: false, owner, user: null });
   if (!ctx.session) return json({ payments, login, owner, user: null }, { cookies: [serializeCookie(clearSession())] });
   const wallet = await walletSummary(ctx.db, ctx.session.user.id, now);
+  // The review account buys like the owner pass (lib/account/review.ts); `owner` stays the device's pass.
+  const review = isReviewer(ctx.session.user);
   return json({
-    payments,
-    login,
+    payments: salesOpen(mode, owner || review),
+    login: loginOpen(mode, owner || review),
     owner,
     user: {
       nickname: ctx.session.user.nickname ?? "별손님",
@@ -43,6 +46,7 @@ export async function GET(request: Request): Promise<Response> {
       stardustExpiresAt: wallet.stardustExpiresAt === null ? null : new Date(wallet.stardustExpiresAt).toISOString(),
       unused: wallet.unused.map(({ orderId, productId, paidAt }) => ({ orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() })),
       opening: wallet.opening,
+      ...(review ? { review: true } : {}),
     },
   });
 }

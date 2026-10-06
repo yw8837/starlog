@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { openAccountRoute, requireSession } from "@/lib/account/request";
 import { safeReturnTo } from "@/lib/account/returnTo";
+import { isReviewer } from "@/lib/account/review";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import { productById, sellable } from "@/lib/pay/catalog";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
@@ -19,7 +20,8 @@ export async function POST(request: Request): Promise<Response> {
   if (ctx instanceof Response) return ctx;
   const session = requireSession(ctx);
   if (session instanceof Response) return session;
-  if (!salesOpen(paymentsMode(), ctx.owner)) return errorResponse("NOT_AVAILABLE");
+  // The review account buys like the owner pass (lib/account/review.ts), premium excepted.
+  if (!salesOpen(paymentsMode(), ctx.owner || isReviewer(session.user))) return errorResponse("NOT_AVAILABLE");
   if (!tossClient()) return errorResponse("PAY_UNAVAILABLE");
   const body = OrderBody.safeParse(await readJson(request, 2_000));
   if (!body.success) return errorResponse("BAD_REQUEST");

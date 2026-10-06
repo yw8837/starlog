@@ -18,6 +18,8 @@ export interface AccountUser {
   unused: Array<{ orderId: string; productId: string; refundUntil?: string }>;
   /** readings being opened right now with a purchase (its order) or 별조각; [] when /api/me leaves it out */
   opening: Array<{ productId: string; currency: "paid" | "stardust"; orderId: string | null }>;
+  /** the card-company review account (ID and password, no Kakao); absent for everyone else */
+  review?: true;
 }
 
 export interface AccountState {
@@ -47,6 +49,7 @@ function parseUser(v: unknown): AccountUser | null | undefined {
     stardustExpiresAt: v.stardustExpiresAt,
     unused: unused.map(({ orderId, productId, refundUntil }) => (typeof refundUntil === "string" ? { orderId, productId, refundUntil } : { orderId, productId })),
     opening,
+    ...(v.review === true ? { review: true as const } : {}),
   };
 }
 

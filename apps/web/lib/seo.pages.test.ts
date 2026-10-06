@@ -12,6 +12,7 @@ import { metadata as guideSajuMeta } from "@/app/guide/saju/page";
 import { metadata as guideTarotMeta } from "@/app/guide/tarot/page";
 import { metadata as helpMeta } from "@/app/help/page";
 import { metadata as howMeta } from "@/app/how/page";
+import { metadata as reviewLoginMeta } from "@/app/login/review/page";
 import { metadata as luckyMeta } from "@/app/lucky/page";
 import { metadata as meMeta } from "@/app/me/page";
 import { metadata as nowMeta } from "@/app/now/page";
@@ -80,6 +81,7 @@ const NOINDEX: Array<[path: string, meta: Metadata]> = [
   ["/b/ABC234", await bInviteMeta(params({ code: "ABC234" }))],
   ["/bonds", bondsMeta],
   ["/owner", ownerMeta],
+  ["/login/review", reviewLoginMeta],
 ];
 
 /** The <title> the browser shows: the page title through the layout template, or the home default. */

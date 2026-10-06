@@ -28,6 +28,14 @@ describe("account client", () => {
     expect(read([{ productId: "tarot", currency: "paid" }])).toEqual([{ productId: "tarot", currency: "paid", orderId: null }]);
   });
 
+  it("marks the review account, and nobody else", () => {
+    const user = { nickname: "심사용 계정", stardust: 0, stardustExpiresAt: null, unused: [], opening: [] };
+    const read = (extra: Record<string, unknown>) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, ...extra } })?.user;
+    expect(read({ review: true })).toEqual({ ...user, review: true });
+    expect(read({ review: "yes" })).toEqual(user);
+    expect(read({})).toEqual(user);
+  });
+
   it("keeps each unopened purchase's refund deadline, and leaves an odd one out", () => {
     const user = { nickname: "별", stardust: 0, stardustExpiresAt: null, opening: [] };
     const read = (unused: unknown) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, unused } })?.user?.unused;

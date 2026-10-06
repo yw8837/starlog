@@ -1,0 +1,21 @@
+/* The two fields; the rest of the screen is /login's (LoginPanel.module.css). Same fields as /owner. */
+.label {
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--glass);
+  color: var(--ink);
+  font-size: var(--fs-body);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
