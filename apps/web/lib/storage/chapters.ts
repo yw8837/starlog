@@ -1,9 +1,10 @@
 import type { Orientation } from "@starlog/core";
 import { SITE } from "@/lib/config";
 import { kstDate, kstDaysBetween } from "@/lib/kst";
-import { CHECKIN_ANSWERS, type CheckinAnswer, type HistoryItem, type SajuContext, type SajuReadingData, type TarotReadingData } from "@/lib/reading/types";
+import { CHECKIN_ANSWERS, type CheckinAnswer, type HistoryItem, type SajuContext, type SajuReadingData, type SajuTopic, type SajuTopicId, type TarotReadingData } from "@/lib/reading/types";
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
+import { isSajuTopicId, topicLabel } from "@/lib/sajuTopics";
 import { createLocalStore } from "@/lib/sessionStore";
 
 /**
@@ -60,6 +61,8 @@ export interface SajuChapter extends ChapterBase {
   /** The free teaser's title and summary. */
   title: string;
   summary: string;
+  /** 주제별 사주: the 운 it was opened for (absent: 전체 흐름, or an older version). */
+  topic?: SajuTopicId;
   /** The status chips and concern it was written with (so the same input is not opened twice). */
   context?: SajuContext;
   reading: SajuReadingData;
@@ -130,10 +133,13 @@ export function parseChapter(value: unknown): StoredChapter | null {
     const birth = sanitizeSajuForm(value.birth);
     if (!birth || !Array.isArray(reading.sections) || !reading.sections.every(isSection)) return null;
     const context = sanitizeSajuContext(value.context);
+    // An unknown topic (a newer version's) reads as 전체 흐름; the record itself stays (spec §7.2).
+    const topic = isSajuTopicId(value.topic) ? value.topic : undefined;
     return {
       ...base,
       kind: "saju",
       birth,
+      ...(topic ? { topic } : {}),
       ...(context ? { context } : {}),
       title: isString(value.title) ? value.title : "",
       summary: isString(value.summary) ? value.summary : "",
@@ -342,15 +348,27 @@ const clip = (text: string, max: number) => {
   return flat.length <= max ? flat : `${flat.slice(0, max - 1)}…`;
 };
 
-/** What a record says in one line: the question and the short answer. */
+/** What a record says in one line: the question and the short answer ("사주 재물운 · <맛보기 제목>" for a topic). */
 export function recordLine(chapter: StoredChapter): { question: string; verdict: string } {
   if (chapter.kind === "tarot") return { question: chapter.question, verdict: chapter.reading.verdict };
-  return { question: chapter.title ? `사주 · ${chapter.title}` : "사주", verdict: chapter.summary };
+  const label = chapter.topic ? `사주 ${topicLabel(chapter.topic)}` : "사주";
+  return { question: chapter.title ? `${label} · ${chapter.title}` : label, verdict: chapter.summary };
 }
 
-/** Up to 3 recent readings as the `history` field (server caps: question 60, verdict 80, observation 120). */
-export function historyFor(chapters: readonly StoredChapter[]): HistoryItem[] {
+/**
+ * Up to 3 recent readings as the `history` field (server caps: question 60, verdict 80, observation 120).
+ * A saju request passes its topic (spec §7.8): a topic gets only its own topic's saju records, 전체 흐름
+ * gets tarot and the saju records without a topic; a tarot request passes nothing and gets every record.
+ */
+export function historyFor(chapters: readonly StoredChapter[], opts: { topic?: SajuTopic } = {}): HistoryItem[] {
+  const { topic } = opts;
+  const fits = (chapter: StoredChapter) => {
+    if (topic === undefined) return true;
+    if (topic === "overall") return chapter.kind === "tarot" || !chapter.topic;
+    return chapter.kind === "saju" && chapter.topic === topic;
+  };
   return newestFirst(chapters)
+    .filter(fits)
     .slice(0, HISTORY_MAX)
     .map((chapter) => {
       const line = recordLine(chapter);
@@ -362,6 +380,7 @@ export function historyFor(chapters: readonly StoredChapter[]): HistoryItem[] {
         verdict: clip(line.verdict, CAP.verdict),
         ...(observation ? { observation: clip(observation, CAP.observation) } : {}),
         ...(chapter.checkin ? { checkin: chapter.checkin.answer } : {}),
+        ...(chapter.kind === "saju" && chapter.topic ? { topic: chapter.topic } : {}),
       };
     })
     .filter((item) => item.question && item.verdict);

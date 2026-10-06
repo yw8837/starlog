@@ -20,6 +20,7 @@ import {
   newestFirst,
   observationOf,
   parseChapter,
+  recordLine,
   saveChapter,
   updateChapter,
   useChapters,
@@ -256,5 +257,38 @@ describe("never writing a broken reading (QA Q-02, Q-03)", () => {
     expect(readDaily(NOW)).toBeNull();
     localStorage.setItem(DAILY_KEY, JSON.stringify({ day: today, reading: { card: { ...card, cardId: "major-19-sun" }, summary: "s", body: "b", tip: "t", areas: {}, lucky: {} } }));
     expect(readDaily(NOW)).toBeNull();
+  });
+});
+
+describe("topics in saved chapters (saju-topics spec §7.2, §7.8)", () => {
+  const MONEY = { ...SAJU, title: "흙 속의 쇠", topic: "money" } as NewChapter;
+  const LOVE = { ...SAJU, title: "봄의 촛불", topic: "love" } as NewChapter;
+  const CAREER = { ...SAJU, title: "곧은 나무", topic: "career" } as NewChapter;
+  const stored = (chapter: object, id: string) => ({ ...chapter, id, createdAt: NOW, turns: [], followUpsLeft: 3 });
+
+  it("keeps a topic; an unknown topic reads as 전체 흐름 and the record stays; a stored chip is not kept", () => {
+    expect(parseChapter(stored(MONEY, "abcdef12"))).toMatchObject({ kind: "saju", topic: "money" });
+    const odd = parseChapter(stored({ ...MONEY, topic: "health" }, "abcdef13"))!;
+    expect(odd.kind).toBe("saju");
+    expect(odd).not.toHaveProperty("topic");
+    expect(parseChapter(stored({ ...MONEY, situation: "leaking" }, "abcdef14"))).not.toHaveProperty("situation");
+  });
+
+  it("names the 운 in a record line with the screen's label", () => {
+    expect(recordLine(saveChapter(MONEY, NOW).chapter)).toEqual({ question: "사주 재물운 · 흙 속의 쇠", verdict: "한겨울에 태어난 병화 일간이에요." });
+    expect(recordLine(saveChapter(CAREER, NOW).chapter).question).toBe("사주 직장운 · 곧은 나무");
+    expect(recordLine(saveChapter(SAJU, NOW).chapter).question).toBe("사주 · 한겨울에 뜬 해");
+  });
+
+  it("sends a topic only its own saju records, 전체 흐름 tarot and saju without a topic, tarot everything", () => {
+    saveChapter(TAROT, NOW - 4 * DAY);
+    saveChapter(SAJU, NOW - 3 * DAY);
+    saveChapter(LOVE, NOW - 2 * DAY);
+    saveChapter(MONEY, NOW - DAY);
+    const all = listChapters();
+    expect(historyFor(all, { topic: "money" }).map((h) => [h.kind, h.question, h.topic])).toEqual([["saju", "사주 재물운 · 흙 속의 쇠", "money"]]);
+    expect(historyFor(all, { topic: "overall" }).map((h) => h.question)).toEqual(["사주 · 한겨울에 뜬 해", "이번 주, 나의 재물 흐름은 어떨까"]);
+    expect(historyFor(all)).toHaveLength(3);
+    expect(historyFor(all)[0]).toMatchObject({ kind: "saju", topic: "money" });
   });
 });

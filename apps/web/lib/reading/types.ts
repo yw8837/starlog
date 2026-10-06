@@ -109,6 +109,8 @@ export interface HistoryItem {
   verdict: string;
   observation?: string;
   checkin?: CheckinAnswer;
+  /** 주제별 사주: a saju record's topic (the server keeps topic contexts apart, spec §7.8). */
+  topic?: SajuTopicId;
 }
 
 /** `input` of /api/tarot/teaser and /api/tarot/reading. */
