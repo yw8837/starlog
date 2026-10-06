@@ -25,7 +25,7 @@ D1 queries: `npx wrangler d1 execute starlog --remote --command "<SQL>"`.
 ## 2. Deploy dark
 
 1. `pnpm db:migrate:remote` → 0002_accounts_payments.sql applied, no error.
-2. From the repo root: `pnpm deploy` (cf:build then OpenNext deploy; `wrangler.jsonc` `main` is `worker.mjs`, which wraps `.open-next/worker.js` and adds the cron). If OpenNext's deploy refuses the custom `main`, run `pnpm cf:build` and then `npx wrangler deploy` from apps/web.
+2. From the repo root: `pnpm deploy` (cf:build, `check:worker-env`, then OpenNext deploy; `wrangler.jsonc` `main` is `worker.mjs`, which wraps `.open-next/worker.js` and adds the cron). If OpenNext's deploy refuses the custom `main`, run `pnpm cf:build` and `pnpm check:worker-env`, then `npx wrangler deploy` from apps/web.
 3. `curl -s https://starlog.yeolmaeapps.kr/api/me` → `{"payments":false,"login":false,"owner":false,"user":null}`; `/login` is 404. The site is unchanged.
 4. Cron: the Cloudflare dashboard (Workers > starlog > Triggers) lists `*/10 * * * *`. `npx wrangler tail` shows `cron.maintenance` every 10 minutes; none is `cron.no_secret` or `cron.maintenance_failed`.
 

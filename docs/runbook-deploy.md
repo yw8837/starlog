@@ -1,6 +1,6 @@
 # Deploy runbook
 
-Production runs on Cloudflare Workers through OpenNext (`apps/web/wrangler.jsonc`). Build with `pnpm cf:build`, deploy with `pnpm --filter @starlog/web cf:deploy`.
+Production runs on Cloudflare Workers through OpenNext (`apps/web/wrangler.jsonc`). Build with `pnpm cf:build`, check with `pnpm check:worker-env` (it fails when the build carries a secret from a local `.env` file, which the Worker would fall back on; build in a clean checkout), deploy with `pnpm --filter @starlog/web cf:deploy`. `pnpm deploy` runs all three.
 
 ## D1 database and migrations
 
