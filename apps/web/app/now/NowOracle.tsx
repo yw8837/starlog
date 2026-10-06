@@ -7,7 +7,6 @@ import { CardFan } from "@/components/tarot/CardFan";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
-import { SITE, won } from "@/lib/config";
 import { drawNow, type NowDraw } from "@/lib/decision";
 import { guideHref } from "@/lib/hosts";
 import s from "./NowOracle.module.css";
@@ -348,9 +347,7 @@ export function NowOracle({ instant = false }: NowOracleProps) {
           {turned ? (
             <div className={s.after}>
               <div className={s.actions}>
-                <p className={s.more}>
-                  더 자세히 보고 싶다면 <span aria-hidden="true">→</span> {FULL_READING} ({won(SITE.price.tarotStandardKrw)})
-                </p>
+                <p className={s.more}>더 자세히 보고 싶다면</p>
                 <Button href={NEW_TAROT_HREF} block trailing="→">
                   {`${FULL_READING} 보기`}
                 </Button>

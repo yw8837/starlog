@@ -85,7 +85,11 @@ describe("지금의 한 장", () => {
 
     const upsell = screen.getByRole("link", { name: /타로 전체 풀이 보기/ });
     expect(upsell.getAttribute("href")).toBe(NEW_TAROT_HREF);
-    expect(screen.getByText(new RegExp(`타로 전체 풀이 \\(${won(SITE.price.tarotStandardKrw)}\\)`))).toBeTruthy();
+    // The line only leads into the button: the name is not said twice and there is no price here (it
+    // shows later, in the unlock sheet and at checkout).
+    expect(screen.getByText("더 자세히 보고 싶다면")).toBeTruthy();
+    expect(screen.getAllByText(/타로 전체 풀이/)).toHaveLength(1);
+    expect(screen.queryByText(new RegExp(won(SITE.price.tarotStandardKrw)))).toBeNull();
     expect(screen.queryByText(/기본 타로 3장/)).toBeNull();
     expect(screen.getByRole("button", { name: "한 번 더 뽑기" })).toBeTruthy();
     // The fan, the question field and the how-to are gone while the answer is shown.
