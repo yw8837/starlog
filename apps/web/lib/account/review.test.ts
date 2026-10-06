@@ -38,4 +38,10 @@ describe("review login credentials", () => {
     vi.stubEnv("REVIEW_LOGIN_PASSWORD", PASSWORD);
     expect(reviewLogin()).toEqual({ id: ID, password: PASSWORD });
   });
+
+  it("keep review login off while the password is shorter than 20 characters (after trimming)", () => {
+    expect(reviewLogin({ REVIEW_LOGIN_ID: ID, REVIEW_LOGIN_PASSWORD: "nineteen-characters" })).toBeNull();
+    expect(reviewLogin({ REVIEW_LOGIN_ID: ID, REVIEW_LOGIN_PASSWORD: "  nineteen-characters  " })).toBeNull();
+    expect(reviewLogin({ REVIEW_LOGIN_ID: ID, REVIEW_LOGIN_PASSWORD: "twenty-characters-ok" })).toEqual({ id: ID, password: "twenty-characters-ok" });
+  });
 });

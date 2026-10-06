@@ -8,11 +8,13 @@ const { default: ReviewLoginPage, metadata } = await import("./page");
 afterEach(() => vi.unstubAllEnvs());
 
 describe("/login/review", () => {
-  it("is not found unless REVIEW_LOGIN_ID and REVIEW_LOGIN_PASSWORD are both set", async () => {
+  it("is not found unless REVIEW_LOGIN_ID and a REVIEW_LOGIN_PASSWORD of 20+ characters are both set", async () => {
     vi.stubEnv("REVIEW_LOGIN_ID", "card-review");
     vi.stubEnv("REVIEW_LOGIN_PASSWORD", "");
     await expect(ReviewLoginPage()).rejects.toMatchObject({ digest: expect.stringContaining("404") });
-    vi.stubEnv("REVIEW_LOGIN_PASSWORD", "secret words");
+    vi.stubEnv("REVIEW_LOGIN_PASSWORD", "nineteen-characters");
+    await expect(ReviewLoginPage()).rejects.toMatchObject({ digest: expect.stringContaining("404") });
+    vi.stubEnv("REVIEW_LOGIN_PASSWORD", "twenty-characters-ok");
     await expect(ReviewLoginPage()).resolves.toBeTruthy();
   });
 

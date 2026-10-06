@@ -55,6 +55,14 @@ describe("review login", () => {
     expect((await signIn(browser())).status).toBe(404);
   });
 
+  it("answers 404 while the password is shorter than 20 characters", async () => {
+    useTestDb();
+    vi.stubEnv("REVIEW_LOGIN_PASSWORD", "nineteen-characters");
+    expect((await signIn(browser(), { id: ID, password: "nineteen-characters" })).status).toBe(404);
+    vi.stubEnv("REVIEW_LOGIN_PASSWORD", " twenty-characters-ok ");
+    expect((await signIn(browser(), { id: ID, password: "twenty-characters-ok" })).status).toBe(200);
+  });
+
   it("logs in to one fixed account with the session a Kakao login gets, and no signup gift", async () => {
     const db = useTestDb();
     const b = browser();
@@ -104,6 +112,18 @@ describe("review login", () => {
     expect((await signIn(browser("198.51.100.31"))).status).toBe(200);
     vi.setSystemTime(T0 + 15 * 60_000 + 1);
     expect((await signIn(b)).status).toBe(200);
+  });
+
+  it("closes for everyone after 50 failures across all networks, until an hour after the last, and logs that without values", async () => {
+    useTestDb();
+    for (let i = 0; i < 50; i++) expect((await signIn(browser(`198.51.100.${100 + i}`), { id: ID, password: `wrong-${i}` })).status).toBe(400);
+    const closed = await signIn(browser("198.51.100.199"));
+    expect(closed.status).toBe(429);
+    expect(await closed.json()).toMatchObject({ code: "RATE_LIMIT", message: "로그인 시도가 많았어요. 1시간 뒤에 다시 시도해 주세요." });
+    const locked = vi.mocked(console.warn).mock.calls.filter(([line]) => String(line).includes("auth.review_locked"));
+    expect(locked).toEqual([[JSON.stringify({ evt: "auth.review_locked" })]]);
+    vi.setSystemTime(T0 + 60 * 60_000 + 1);
+    expect((await signIn(browser("198.51.100.199"))).status).toBe(200);
   });
 
   it("holds a burst of parallel guesses to 5 a minute, which the 15-minute count (no atomic increment in KV) cannot", async () => {

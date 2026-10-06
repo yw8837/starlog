@@ -18,19 +18,22 @@ import type { UserRow } from "./users";
  */
 
 const KEY_PREFIX = "review:";
+/** A shorter password keeps review login off (the runbook's command makes 22 characters). */
+const MIN_PASSWORD_LENGTH = 20;
 
 type ReviewEnv = CloudflareEnv | NodeJS.ProcessEnv;
 
 /**
- * The configured ID and password (trimmed), or null when review login is off. On Workers only the
- * Worker's own secrets count (cloudflareEnv): OpenNext also fills process.env from .env values a build
- * baked in (next-env.mjs), and deleting a secret must close it whatever a build held. Outside Workers
- * (tests, plain `next dev`) it reads process.env.
+ * The configured ID and password (trimmed), or null when review login is off (either is missing, or
+ * the password is shorter than MIN_PASSWORD_LENGTH). On Workers only the Worker's own secrets count
+ * (cloudflareEnv): OpenNext also fills process.env from .env values a build baked in (next-env.mjs),
+ * and deleting a secret must close it whatever a build held. Outside Workers (tests, plain
+ * `next dev`) it reads process.env.
  */
 export function reviewLogin(env: ReviewEnv = cloudflareEnv() ?? process.env): { id: string; password: string } | null {
   const id = env.REVIEW_LOGIN_ID?.trim();
   const password = env.REVIEW_LOGIN_PASSWORD?.trim();
-  return id && password ? { id, password } : null;
+  return id && password && password.length >= MIN_PASSWORD_LENGTH ? { id, password } : null;
 }
 
 /** users.kakao_key of the review account for these credentials (keyed by STARLOG_ACCOUNT_SECRET). */
