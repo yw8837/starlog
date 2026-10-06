@@ -15,8 +15,8 @@ Project "Starlog" (`starlog-510812`), Google Auth Platform:
   No JavaScript origins are needed: the browser never runs Google's script, the server does the whole exchange.
 - **Data access (scopes):** `openid` only. Do not add `email` or `profile`: the privacy policy says Google gives us the account id and nothing else.
 - **Branding:** app name 스타로그, home page `https://starlog.yeolmaeapps.kr`, privacy policy `https://starlog.yeolmaeapps.kr/privacy`, terms `https://starlog.yeolmaeapps.kr/terms`, authorized domain `yeolmaeapps.kr`.
-- **Audience:** External, now in **Testing**. While it is Testing, only the test users listed there (100 at most) can sign in; anyone else is stopped on Google's own "access blocked" page. Add the owner's Google account as a test user for the owner check (section 3).
-- **Before the public launch (`STARLOG_PAYMENTS=on`): Audience → Publish app → In production.** With only `openid` no scope verification is needed; if the console asks to verify the branding (name, logo, domain), do what Verification Center says.
+- **Audience:** External, now in **Testing**. Testing limits sign-in to the listed test users (100 at most), but Google's help (Google Auth Platform, "Manage App Audience") makes one exception: an app that asks only for basic identity scopes (`openid`, email, profile) needs no test-user listing, shows no warning, and its sign-ins do not expire after 7 days. This app asks only for `openid`, so the exception should apply: check it once with a Google account that is not a test user (section 3). Add the owner's account as a test user anyway, so the owner check works either way.
+- **Before the public launch (`STARLOG_PAYMENTS=on`): Audience → Publish app → In production**, whatever that check shows, so the app's status matches its use. With only `openid` no scope verification is needed; if the console asks to verify the branding (name, logo, domain), do what Verification Center says.
 
 ## 2. Secrets
 
@@ -36,6 +36,7 @@ On the owner-pass browser, with the owner's Google account listed as a test user
 
 - [ ] /login shows `카카오로 계속하기`, then `Google로 계속하기` under it (white button, color G)
 - [ ] Google login → back with `login=ok`; 내 정보 shows 별손님, `Google로 로그인했어요` and 별조각 10개
+- [ ] while the app is still Testing, a Google account that is not a test user (owner pass on that browser too): note whether Google lets it in (section 1), then 회원 탈퇴 that account
 - [ ] `SELECT COUNT(*) AS n FROM users WHERE kakao_key LIKE 'google:%'` counts it
 - [ ] log out, log in again with Google: the same account, still one gift (`SELECT COUNT(*) AS n FROM gift_claims WHERE kakao_key LIKE 'google:%'`)
 - [ ] in KakaoTalk's in-app browser (enter the owner code there too, or it answers 지금은 새로 가입할 수 없어요 first), tick 만 14세 and press Google: /login says `Google 로그인은 카카오톡 밖의 브라우저에서 해 주세요.`
