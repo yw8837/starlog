@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { SITE } from "@/lib/config";
-import { guideIndexPath } from "@/lib/guide";
+import { guideIndexPath } from "@/lib/guideMeta";
 import { linkHref, type SiteHost } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
 import styles from "./TabBar.module.css";

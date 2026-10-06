@@ -1,5 +1,5 @@
 import { SITE } from "./config";
-import { guideIndexPath } from "./guide";
+import { guideIndexPath } from "./guideMeta";
 
 /**
  * The public pages that explain the service (reference study: docs/research/site-ia-references-2026-10-01.md).
