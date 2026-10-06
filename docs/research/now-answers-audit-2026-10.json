@@ -1,0 +1,4296 @@
+{
+  "schema": "starlog-now-answers-audit/1",
+  "generatedAt": "2026-10-06",
+  "purpose": "지금의 한 장 미리 쓴 답 문장 감사. 플래그 줄과 제안문을 기계가 읽을 수 있게 모았다. 데이터는 수정하지 않았다.",
+  "note": "entries[].pointer는 content/kb/decision.ko.json 기준 JSON Pointer(RFC 6901). apps/web/lib/decision.generated.json은 파생 파일이라 체커로 다시 만든다.",
+  "source": {
+    "file": "content/kb/decision.ko.json",
+    "schema": "starlog-decision/1",
+    "gitHead": "b5b0e9a73b1a634fcd2693cfdf5dd2fd1cff31d7",
+    "fileLastCommit": "41bcb4f 2026-10-01 content(now): oracle lines in 해요체; the checker rejects 반말 endings",
+    "sha256": "5c776d4cc6243dcf9df64f73c511cac652062e504e6d0cf5ef2b2bfdaca1ac1d",
+    "runtimeCopy": "apps/web/lib/decision.generated.json (node scripts/check-decision-db.mjs 가 만든다)",
+    "kbCommitChecked": "118fad0"
+  },
+  "scope": {
+    "answers": 468,
+    "answersNote": "78장 x 정·역 x 3줄. 화면에서는 3줄 중 하나가 무작위로 나온다(apps/web/lib/decision.ts drawNow).",
+    "why": 156,
+    "whyNote": "보조 점검. 문제가 분명한 줄만 플래그했다.",
+    "tipExcluded": true,
+    "tipNote": "오늘 해 볼 일 블록은 634857e에서 화면과 drawNow에서 빠졌다. 데이터의 tip 156줄은 점검하지 않았다(오늘이 들어간 tip 55줄).",
+    "leanSides": 156
+  },
+  "howToApply": [
+    "entries의 pointer 위치 문자열을 proposed로 바꾼다. swords-02/reversed는 lean, leanNote, why, answers 3줄을 한 묶음으로 바꾼다(leanChecks[0]의 applyWith).",
+    "node scripts/check-decision-db.mjs 를 돌려 오류가 없는지 보고 apps/web/lib/decision.generated.json 을 다시 만든다.",
+    "pnpm vitest run apps/web/lib/decision.test.ts apps/web/app/now/NowOracle.test.tsx 와 pnpm e2e(now.spec.ts)로 확인한다.",
+    "다른 추적 파일이 현재 문장을 인용하는지 확인했고 0건이었다. 번역(P6 Phase B) 전에 고치는 편이 낫다."
+  ],
+  "severity": {
+    "High": "읽는 사람이 바로 이상하다고 느끼는 줄. 동어반복·그림 설명뿐·비문·겁주기·오늘 운세 틀·KB와 반대 뜻",
+    "Medium": "뜻은 짐작되지만 그림을 알아야 하거나 위로 공식·상투구·앞일 단정으로 약한 줄",
+    "Low": "다듬으면 나아지는 줄. 문어체 잔재, 중복, 선택적 보강"
+  },
+  "issueCodes": {
+    "APHORISM": {
+      "label": "격언 흉내",
+      "meaning": "속담·경구 모양이지만 뜻이 안 닿거나 고민에 걸리지 않는다",
+      "family": "뜻이 안 닿는 말"
+    },
+    "TAUTOLOGY": {
+      "label": "같은 말 반복",
+      "meaning": "A도 A예요, A는 A예요 꼴이라 말한 게 없다",
+      "family": "뜻이 안 닿는 말"
+    },
+    "REFRAME": {
+      "label": "위로 공식",
+      "meaning": "A하는 것도 B예요 꼴로 다독이기만 하고 방향이 없다",
+      "family": "뜻이 안 닿는 말"
+    },
+    "VAGUE": {
+      "label": "막연",
+      "meaning": "어느 카드·어느 고민에나 붙는 말",
+      "family": "뜻이 안 닿는 말"
+    },
+    "IMAGE_ONLY": {
+      "label": "그림 설명뿐",
+      "meaning": "카드 그림 속 사물·장면만 말하고 고민에 대한 조언이 없다",
+      "family": "그림 의존"
+    },
+    "IMAGE_METAPHOR": {
+      "label": "그림 비유 의존",
+      "meaning": "조언은 있지만 그림 속 사물에 얹혀 있어 그림을 모르면 안 읽힌다",
+      "family": "그림 의존"
+    },
+    "AWKWARD": {
+      "label": "어색한 한국어",
+      "meaning": "비문, 낯선 조합, KB 용어가 그대로 샌 표현",
+      "family": "어색한 문장"
+    },
+    "STIFF": {
+      "label": "딱딱한 어미·상투구",
+      "meaning": "문어체, 광고·자기계발 상투구, 평가 말투",
+      "family": "어색한 문장"
+    },
+    "UNCLEAR": {
+      "label": "주어·목적어 불명",
+      "meaning": "무엇을 하라는 건지 빠졌거나 덜 끝난 문장",
+      "family": "어색한 문장"
+    },
+    "DAILY": {
+      "label": "오늘 운세 틀",
+      "meaning": "오늘의 운세처럼 읽히는 시간 틀(지금의 한 장은 오늘이 아니라 지금의 고민에 답해야 한다)",
+      "family": "규칙(운세 틀·단정·겁·돈)"
+    },
+    "PROMISE": {
+      "label": "앞일·상황 단정",
+      "meaning": "나아진다, 돌아온다, 이미 ~하는 중이다처럼 모르는 일을 단정",
+      "family": "규칙(운세 틀·단정·겁·돈)"
+    },
+    "FEAR": {
+      "label": "겁주는 표현",
+      "meaning": "감시, 불길, 뱀, 다그침 같은 위협 느낌",
+      "family": "규칙(운세 틀·단정·겁·돈)"
+    },
+    "MONEY_HEALTH": {
+      "label": "돈·건강 언급",
+      "meaning": "돈·건강은 전문가 안내 대상이라 조언 문장에 직접 안 쓴다",
+      "family": "규칙(운세 틀·단정·겁·돈)"
+    },
+    "LEAN_MISMATCH": {
+      "label": "줄 방향이 lean과 어긋남",
+      "meaning": "줄이 가리키는 쪽(go/wait/rethink)이 그 면의 lean과 다르다",
+      "family": "KB·lean 정합"
+    },
+    "MEANING": {
+      "label": "카드·방향 의미와 어긋남",
+      "meaning": "KB 최신 풀이(core·reversedModes)와 반대 뜻",
+      "family": "KB·lean 정합"
+    },
+    "COVERAGE": {
+      "label": "KB 변경분 미반영",
+      "meaning": "118fad0에서 늘어난 뜻을 어느 줄도 담지 않는다",
+      "family": "KB·lean 정합"
+    },
+    "DUP": {
+      "label": "중복·같은 틀 반복",
+      "meaning": "같은 면 안이나 다른 카드와 사실상 같은 말·같은 틀",
+      "family": "KB·lean 정합"
+    }
+  },
+  "counts": {
+    "answersTotal": 468,
+    "answersFlagged": 175,
+    "answersFlaggedShare": 0.374,
+    "bySeverity": {
+      "High": 57,
+      "Medium": 92,
+      "Low": 26
+    },
+    "byIssue": {
+      "IMAGE_ONLY": 41,
+      "IMAGE_METAPHOR": 38,
+      "APHORISM": 38,
+      "PROMISE": 24,
+      "VAGUE": 21,
+      "REFRAME": 15,
+      "TAUTOLOGY": 15,
+      "UNCLEAR": 11,
+      "STIFF": 11,
+      "AWKWARD": 10,
+      "COVERAGE": 5,
+      "DUP": 5,
+      "MEANING": 5,
+      "LEAN_MISMATCH": 4,
+      "DAILY": 4,
+      "FEAR": 4,
+      "MONEY_HEALTH": 1
+    },
+    "byPrimaryIssue": {
+      "IMAGE_ONLY": 37,
+      "IMAGE_METAPHOR": 32,
+      "APHORISM": 24,
+      "PROMISE": 19,
+      "REFRAME": 14,
+      "TAUTOLOGY": 12,
+      "UNCLEAR": 10,
+      "STIFF": 7,
+      "AWKWARD": 7,
+      "DAILY": 3,
+      "VAGUE": 3,
+      "LEAN_MISMATCH": 2,
+      "COVERAGE": 1,
+      "MEANING": 1,
+      "FEAR": 1,
+      "DUP": 1,
+      "MONEY_HEALTH": 1
+    },
+    "byFamilyPrimary": {
+      "그림 의존": 69,
+      "뜻이 안 닿는 말": 53,
+      "어색한 문장": 24,
+      "규칙(운세 틀·단정·겁·돈)": 24,
+      "KB·lean 정합": 5
+    },
+    "byFamilyAny": {
+      "그림 의존": 79,
+      "뜻이 안 닿는 말": 70,
+      "어색한 문장": 32,
+      "규칙(운세 틀·단정·겁·돈)": 33,
+      "KB·lean 정합": 17
+    },
+    "bySide": {
+      "upright": 90,
+      "reversed": 85
+    },
+    "byVariant": {
+      "a0": 25,
+      "a1": 44,
+      "a2": 106
+    },
+    "byVariantRate": {
+      "a0": 0.16,
+      "a1": 0.282,
+      "a2": 0.679
+    },
+    "bySuit": {
+      "major": 55,
+      "wands": 28,
+      "cups": 33,
+      "swords": 29,
+      "pentacles": 30
+    },
+    "cardsWithFlag": 75,
+    "cardsWithoutFlag": [
+      "wands-12",
+      "swords-12",
+      "pentacles-12"
+    ],
+    "sidesWithFlag": 132,
+    "whyFlagged": 7,
+    "leanChanges": 1,
+    "leanReviews": 4,
+    "drawSharesShowingFlaggedLine": 0.374,
+    "drawSharesShowingHighLine": 0.122
+  },
+  "validation": {
+    "method": "scripts/check-decision-db.mjs 의 복사본을 제안문을 반영한 임시 복사본 DB로 돌렸다. 저장소 파일은 건드리지 않았다.",
+    "errors": 0,
+    "warnings": 0,
+    "output": [
+      "check-decision-db: 156 entries (78 cards), 468 answers",
+      "  lean: go 68, wait 42, rethink 46 (156 checked against the yes/no consensus)",
+      "  top endings: ~도/면 돼요·괜찮아요·좋아요 31, 끝말 말아요 25, ~봐요 24, 끝말 가요 24, 끝말 정해요 13, ~부터·먼저 11, 있어요·없어요 11, 끝말 해요 11",
+      "  반말 lines: 0/468",
+      "  top last words: 말아요 25, 가요 24, 봐요 20, 돼요 20, 정해요 13, 괜찮아요 11, 해요 11, 마세요 8",
+      "check-decision-db: ok (0 warnings)"
+    ],
+    "leanBefore": {
+      "go": 69,
+      "wait": 41,
+      "rethink": 46
+    },
+    "leanAfter": {
+      "go": 68,
+      "wait": 42,
+      "rethink": 46
+    },
+    "moodBefore": {
+      "권유": 281,
+      "조각": 62,
+      "서술": 71,
+      "금지": 25,
+      "허락": 27,
+      "되묻기": 2
+    },
+    "moodAfter": {
+      "권유": 315,
+      "조각": 50,
+      "서술": 37,
+      "금지": 33,
+      "허락": 32,
+      "되묻기": 1
+    },
+    "topEndingsBefore": [
+      [
+        "~이에요·예요",
+        30
+      ],
+      [
+        "~봐요",
+        27
+      ],
+      [
+        "~도/면 돼요·괜찮아요·좋아요",
+        26
+      ],
+      [
+        "있어요·없어요",
+        23
+      ],
+      [
+        "끝말 가요",
+        19
+      ],
+      [
+        "끝말 말아요",
+        16
+      ],
+      [
+        "~부터·먼저",
+        11
+      ],
+      [
+        "끝말 해요",
+        11
+      ]
+    ],
+    "topEndingsAfter": [
+      [
+        "~도/면 돼요·괜찮아요·좋아요",
+        31
+      ],
+      [
+        "끝말 말아요",
+        25
+      ],
+      [
+        "~봐요",
+        24
+      ],
+      [
+        "끝말 가요",
+        24
+      ],
+      [
+        "끝말 정해요",
+        13
+      ],
+      [
+        "~부터·먼저",
+        11
+      ],
+      [
+        "있어요·없어요",
+        11
+      ],
+      [
+        "끝말 해요",
+        11
+      ]
+    ]
+  },
+  "rulesScan": [
+    {
+      "rule": "결과 약속(재회·결혼·합격·이직·승진 등)",
+      "hits": 0,
+      "lines": [],
+      "flagged": 0
+    },
+    {
+      "rule": "겁주는 표현(감시·불길·뱀·위협)",
+      "hits": 4,
+      "lines": [
+        "major-06-lovers/reversed/2: 나무 뒤 뱀도 한번 봐요",
+        "major-16-tower/reversed/2: 창문 안 불씨부터 꺼요",
+        "wands-01/upright/0: 불씨가 손에 있어요",
+        "swords-07/upright/2: 남은 두 자루가 보고 있어요"
+      ],
+      "flagged": 3
+    },
+    {
+      "rule": "건강(병·치료·증상)",
+      "hits": 0,
+      "lines": [],
+      "flagged": 0
+    },
+    {
+      "rule": "돈·투자",
+      "hits": 1,
+      "lines": [
+        "pentacles-10/reversed/1: 돈 이야기는 사실부터"
+      ],
+      "flagged": 1
+    },
+    {
+      "rule": "AI·모델 이름",
+      "hits": 0,
+      "lines": [],
+      "flagged": 0
+    },
+    {
+      "rule": "오늘·이번·내일",
+      "hits": 4,
+      "lines": [
+        "major-03-empress/upright/2: 오늘은 풍요 쪽이에요",
+        "major-08-strength/reversed/1: 오늘은 힘을 아껴 두세요",
+        "major-20-judgement/upright/0: 이번 부름엔 답해요",
+        "cups-06/upright/2: 옛 마음이 오늘을 데워요"
+      ],
+      "flagged": 4
+    },
+    {
+      "rule": "하루·하룻밤·밤·아침(시간을 낀 조언)",
+      "hits": 8,
+      "lines": [
+        "major-00-fool/reversed/1: 들뜬 마음은 하루 재워요",
+        "major-17-star/reversed/2: 흐린 밤에도 별은 떠 있어요",
+        "wands-12/reversed/1: 충동은 하룻밤 넘겨요",
+        "cups-08/upright/1: 달 뜬 밤에 길을 나서요",
+        "swords-09/upright/0: 밤의 걱정은 아침에 다시",
+        "swords-09/reversed/2: 밤은 지나가고 있어요",
+        "swords-10/reversed/2: 새벽은 조용히 와요",
+        "pentacles-07/upright/2: 덩굴은 하룻밤에 안 커요"
+      ],
+      "flagged": 4
+    },
+    {
+      "rule": "상대 마음 단정",
+      "hits": 0,
+      "lines": [],
+      "flagged": 0
+    }
+  ],
+  "leanChecks": [
+    {
+      "id": "swords-02/reversed/lean",
+      "pointer": "/cards/swords-02/reversed/lean",
+      "card": "swords-02",
+      "cardKo": "검 2",
+      "side": "reversed",
+      "status": "change",
+      "currentLean": "go",
+      "proposedLean": "wait",
+      "consensus": "lean-maybe .50",
+      "leanNoteCurrent": "역방향 합의는 약함(lean-maybe). reversedModes waning, 교착이 풀려 정할 수 있게 된 상태라 go.",
+      "leanNoteProposed": "합의는 lean-maybe(maybe 5, no 3, yes 2)로 약함. reversedModes blocked(118fad0 M-08): 현대 풀이 6곳 중 5곳이 결정 못 함이 이어짐, 3곳이 정보 과다라 더 모으기보다 거리를 두라는 wait.",
+      "leanNotePointer": "/cards/swords-02/reversed/leanNote",
+      "reason": "118fad0이 기본 모드를 waning에서 blocked로 바꿨는데 이 면은 옛 waning 근거(교착이 풀려 정해도 됨)로 go에 머물러 있다. 현대 풀이는 결정 못 함이 이어짐(5/6)과 정보 과다(3/6)가 중심이고 yes/no 합의도 lean-maybe(maybe 5)라 wait가 맞다. 줄 3개, why, leanNote를 함께 바꿔야 한다. 정방향도 wait라 두 면이 같은 lean이 되지만 뜻은 다르다(정: 눈 가리고 미룸, 역: 정보가 넘쳐 못 정함).",
+      "applyWith": [
+        "swords-02/reversed/answers/0",
+        "swords-02/reversed/answers/1",
+        "swords-02/reversed/answers/2",
+        "swords-02/reversed/why"
+      ]
+    },
+    {
+      "id": "wands-05/upright/lean",
+      "pointer": "/cards/wands-05/upright/lean",
+      "card": "wands-05",
+      "cardKo": "완드 5",
+      "side": "upright",
+      "status": "review",
+      "severity": "Medium",
+      "currentLean": "go",
+      "proposedLean": null,
+      "consensus": "no .80 (yes 1 / no 16 / maybe 3)",
+      "reason": "go는 합의 no(16/20)와 정면으로 다르다. 기존 leanNote가 다친 사람 없는 연습 같은 경쟁이라는 근거를 대 체커는 통과하지만, 카드 core 첫 줄이 의견 충돌·힘겨루기라서 고민 상담에서 부딪쳐 봐도 괜찮아요가 싸움을 부추기는 말로 읽힐 수 있다. 오너 결정: (A) go 유지 + 줄을 의견을 편하게 내라는 쪽으로 누그러뜨림(이 감사의 제안), (B) wait로 바꾸고 세 줄을 다시 씀."
+    },
+    {
+      "id": "swords-03/reversed/lean",
+      "pointer": "/cards/swords-03/reversed/lean",
+      "card": "swords-03",
+      "cardKo": "검 3",
+      "side": "reversed",
+      "status": "review",
+      "severity": "Low",
+      "currentLean": "go",
+      "proposedLean": null,
+      "consensus": "lean-maybe .50 (yes 2 / no 3 / maybe 5)",
+      "reason": "합의가 maybe라 wait가 더 안전하다. go를 유지하려면 줄이 다시 연락해 보라는 뜻으로 읽히지 않게 흘려보내기와 용서할 여지 쪽으로만 써야 한다(제안한 세 줄은 그렇게 맞췄다)."
+    },
+    {
+      "id": "swords-04/reversed/lean",
+      "pointer": "/cards/swords-04/reversed/lean",
+      "card": "swords-04",
+      "cardKo": "검 4",
+      "side": "reversed",
+      "status": "review",
+      "severity": "Low",
+      "currentLean": "rethink",
+      "proposedLean": null,
+      "consensus": "lean-no .50 (yes 3 / no 5 / maybe 2)",
+      "reason": "세 줄이 모두 진짜로 쉬어요 쪽이라 wait 느낌이다. rethink 신호는 a2 수정안(쉬는 방식부터 다시 짜요) 하나로 맞췄다. 줄을 그대로 둘 거면 lean을 wait로 바꾸는 쪽이 일관된다."
+    },
+    {
+      "id": "wands-09/upright/lean",
+      "pointer": "/cards/wands-09/upright/lean",
+      "card": "wands-09",
+      "cardKo": "완드 9",
+      "side": "upright",
+      "status": "info",
+      "severity": "Low",
+      "currentLean": "go",
+      "proposedLean": null,
+      "consensus": "lean-maybe .50 (yes 6 / no 4 / maybe 10)",
+      "reason": "leanNote 있음. 조금만 더 버텨요는 지친 사람에게 더 버티라는 말이 될 수 있어 역방향(쉬어요)과 짝으로만 읽혀야 한다. 줄은 그대로 두고 주의만 남긴다."
+    }
+  ],
+  "kbCommit118fad0": [
+    {
+      "card": "major-03-empress",
+      "cardKo": "여황제",
+      "kbChange": "역방향 core에 창작이 막혀 결실이 더딤, 남에게 기대는 마음 추가 (M-01)",
+      "lean": "정 go / 역 wait",
+      "verdict": "lean 일치. 역방향 세 줄이 과한 챙김만 말하고 새로 늘어난 뜻은 담지 않는다",
+      "touchedLines": "정 a1, 정 a2, 역 a2, 역 why"
+    },
+    {
+      "card": "major-05-hierophant",
+      "cardKo": "교황",
+      "kbChange": "keywordsKo, core.upright에 신념과 영적 전통 추가 (M-02)",
+      "lean": "정 go / 역 rethink (leanNote 있음)",
+      "verdict": "일치. 신념 층은 결정 문장에 쓰지 않는 게 맞다. 정 a2는 열쇠예요 상투구",
+      "touchedLines": "정 a0, 정 a2"
+    },
+    {
+      "card": "major-08-strength",
+      "cardKo": "힘",
+      "kbChange": "역방향 core·oneLine·gloss·asFeelings를 자기 의심과 흔들리는 자신감으로 (M-03)",
+      "lean": "정 go / 역 wait",
+      "verdict": "lean 일치(합의 tie). 역방향 줄 중 a2만 자신감을 건드리고 a1은 오늘 틀",
+      "touchedLines": "정 a2, 역 a1, 역 a2"
+    },
+    {
+      "card": "major-10-wheel-of-fortune",
+      "cardKo": "운명의 수레바퀴",
+      "kbChange": "core.upright[0]을 운의 흐름이 바뀌는 때로 (M-04)",
+      "lean": "정 go / 역 wait",
+      "verdict": "일치. 정 a0 지금이 그때예요가 점쟁이 말투, 역 a1과 why가 다시 돈다는 예고",
+      "touchedLines": "정 a0, 역 a1, 역 why"
+    },
+    {
+      "card": "major-11-justice",
+      "cardKo": "정의",
+      "kbChange": "역방향 core에 사실이 가려지거나 왜곡됨 추가 (M-05)",
+      "lean": "정 go / 역 rethink",
+      "verdict": "일치. 역 a0·a1이 새 뜻을 이미 담는다. 역 a2는 비문(빠진 추가)",
+      "touchedLines": "정 a2, 역 a2"
+    },
+    {
+      "card": "major-13-death",
+      "cardKo": "죽음",
+      "kbChange": "oneLine.upright를 끝을 뜻하지만 부정적으로만 읽지 않음으로",
+      "lean": "정 rethink / 역 wait",
+      "verdict": "일치(합의 no .71). 정 줄이 끝내라는 쪽이라 rethink를 다른 길 쪽으로 읽는 해석",
+      "touchedLines": "정 a1, 역 a2"
+    },
+    {
+      "card": "major-17-star",
+      "cardKo": "별",
+      "kbChange": "역방향 core에 나와 세상 사이의 단절감 추가 (M-06)",
+      "lean": "정 go / 역 wait",
+      "verdict": "일치. 새 뜻은 역 a2로 충분히 담긴다. 역 a1은 희망이 돌아온다는 예고",
+      "touchedLines": "정 a1, 정 a2, 역 a0, 역 a1, 역 a2"
+    },
+    {
+      "card": "swords-02",
+      "cardKo": "검 2",
+      "kbChange": "역방향 기본 모드 waning을 blocked로 (M-08), gloss·core·oneLine 수정",
+      "lean": "정 wait / 역 go",
+      "verdict": "불일치. 역 lean이 옛 waning 근거로 go. leanNote도 옛 모드를 말한다",
+      "touchedLines": "정 a1, 역 a0, 역 a1, 역 a2, 역 why"
+    },
+    {
+      "card": "swords-03",
+      "cardKo": "검 3",
+      "kbChange": "역방향 core에 자신과 상대를 용서할 여지 추가 (M-09)",
+      "lean": "정 wait / 역 go (leanNote 있음)",
+      "verdict": "lean은 약한 일치(합의 maybe). 역 a1이 나아진다는 단정이고 용서할 여지는 어느 줄에도 없다",
+      "touchedLines": "정 a2, 역 a1, 역 a2, 역 why"
+    },
+    {
+      "card": "swords-04",
+      "cardKo": "검 4",
+      "kbChange": "oneLine.upright에서 상품 문구를 빼고 무덤 위 기사상을 쉼과 회복으로 읽음",
+      "lean": "정 wait / 역 rethink",
+      "verdict": "정은 일치. 역 줄이 모두 쉬어요 쪽이라 rethink 신호가 약하다",
+      "touchedLines": "역 a2"
+    },
+    {
+      "card": "swords-11",
+      "cardKo": "검 시종",
+      "kbChange": "역방향 core에 산만하고 계획 없는 시도 추가 (M-10)",
+      "lean": "정 wait / 역 rethink",
+      "verdict": "일치. 역 세 줄이 말·소문만 다루고 계획 없는 시도는 없다",
+      "touchedLines": "정 a1, 정 a2, 역 a2"
+    },
+    {
+      "card": "swords-14",
+      "cardKo": "검 왕",
+      "kbChange": "역방향 core 말로 누름을 말로 조종하거나 누름으로 (M-11)",
+      "lean": "정 go / 역 rethink",
+      "verdict": "일치. 역 a1 말로 누르지 말아요가 새 뜻을 담는다",
+      "touchedLines": "정 a2"
+    },
+    {
+      "card": "wands-09",
+      "cardKo": "완드 9",
+      "kbChange": "역방향 core에 그만두고 싶은 마음 추가 (M-07)",
+      "lean": "정 go (leanNote) / 역 wait",
+      "verdict": "일치. 역 세 줄이 쉼만 말하고 그만두고 싶은 마음은 다루지 않는다",
+      "touchedLines": "정 a2, 역 a2"
+    }
+  ],
+  "entries": [
+    {
+      "id": "major-00-fool/upright/answers/2",
+      "path": "cards.major-00-fool.upright.answers[2]",
+      "pointer": "/cards/major-00-fool/upright/answers/2",
+      "field": "answers",
+      "card": "major-00-fool",
+      "cardKo": "바보",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "흰 개 비유는 그림을 봐야 이해된다. 조언은 신나게 출발뿐",
+      "current": "흰 개처럼 신나게 출발",
+      "proposed": "신나는 마음 그대로 출발해요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes .92)"
+    },
+    {
+      "id": "major-01-magician/upright/answers/0",
+      "path": "cards.major-01-magician.upright.answers[0]",
+      "pointer": "/cards/major-01-magician/upright/answers/0",
+      "field": "answers",
+      "card": "major-01-magician",
+      "cardKo": "마법사",
+      "side": "upright",
+      "variant": 0,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "탁자는 그림 속 탁자라 처음 보면 무슨 말인지 모른다",
+      "current": "탁자 위에 다 있어요",
+      "proposed": "필요한 건 이미 손에 있어요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "major-01-magician/reversed/answers/2",
+      "path": "cards.major-01-magician.reversed.answers[2]",
+      "pointer": "/cards/major-01-magician/reversed/answers/2",
+      "field": "answers",
+      "card": "major-01-magician",
+      "cardKo": "마법사",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Low",
+      "issues": [
+        "APHORISM"
+      ],
+      "note": "“마법은 없다”는 격언풍. 일상어로 바꿔도 뜻이 같다",
+      "current": "말로만 하는 마법은 없어요",
+      "proposed": "말만으로는 아무것도 안 바뀌어요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "major-02-high-priestess/upright/answers/1",
+      "path": "cards.major-02-high-priestess.upright.answers[1]",
+      "pointer": "/cards/major-02-high-priestess/upright/answers/1",
+      "field": "answers",
+      "card": "major-02-high-priestess",
+      "cardKo": "여사제",
+      "side": "upright",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "두루마리가 반만 펴졌다는 그림 설명뿐, 하라는 말이 없다",
+      "current": "두루마리는 반만 펴졌어요",
+      "proposed": "아직 전부 드러난 건 아니에요",
+      "proposedLength": 16,
+      "leanCheck": "wait 일치 (maybe .79)"
+    },
+    {
+      "id": "major-02-high-priestess/reversed/answers/2",
+      "path": "cards.major-02-high-priestess.reversed.answers[2]",
+      "pointer": "/cards/major-02-high-priestess/reversed/answers/2",
+      "field": "answers",
+      "card": "major-02-high-priestess",
+      "cardKo": "여사제",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "UNCLEAR"
+      ],
+      "note": "무엇을 꺼내라는 건지 목적어가 없다",
+      "current": "한 사람에게는 꺼내요",
+      "proposed": "믿는 한 사람에겐 털어놔요",
+      "proposedLength": 14,
+      "leanCheck": "rethink 일치 (lean-maybe .60)"
+    },
+    {
+      "id": "major-03-empress/upright/answers/1",
+      "path": "cards.major-03-empress.upright.answers[1]",
+      "pointer": "/cards/major-03-empress/upright/answers/1",
+      "field": "answers",
+      "card": "major-03-empress",
+      "cardKo": "여황제",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "LEAN_MISMATCH",
+        "AWKWARD"
+      ],
+      "note": "go 면인데 서두르지 말라는 wait 신호. 뭘 익히라는 건지도 불분명",
+      "current": "서두르지 말고 천천히 익혀요",
+      "proposed": "가꿔 온 만큼 믿고 가요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "major-03-empress/upright/answers/2",
+      "path": "cards.major-03-empress.upright.answers[2]",
+      "pointer": "/cards/major-03-empress/upright/answers/2",
+      "field": "answers",
+      "card": "major-03-empress",
+      "cardKo": "여황제",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "DAILY",
+        "VAGUE",
+        "STIFF"
+      ],
+      "note": "“오늘은 ~ 쪽이에요”는 오늘의 운세 말투. 풍요 쪽이 뭔지도 흐리다",
+      "current": "오늘은 풍요 쪽이에요",
+      "proposed": "넉넉한 마음으로 먼저 챙겨요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "major-03-empress/reversed/answers/2",
+      "path": "cards.major-03-empress.reversed.answers[2]",
+      "pointer": "/cards/major-03-empress/reversed/answers/2",
+      "field": "answers",
+      "card": "major-03-empress",
+      "cardKo": "여황제",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Low",
+      "issues": [
+        "COVERAGE",
+        "DUP"
+      ],
+      "note": "a0과 같은 말(쉼). 118fad0에서 늘어난 결실이 더딤을 담은 줄이 없다",
+      "current": "돌봄에도 숨 쉴 틈을 줘요",
+      "proposed": "결실이 더뎌도 조급해하지 말아요",
+      "proposedLength": 17,
+      "leanCheck": "wait 일치 (lean-no .50)"
+    },
+    {
+      "id": "major-04-emperor/upright/answers/2",
+      "path": "cards.major-04-emperor.upright.answers[2]",
+      "pointer": "/cards/major-04-emperor/upright/answers/2",
+      "field": "answers",
+      "card": "major-04-emperor",
+      "cardKo": "황제",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "APHORISM",
+        "VAGUE"
+      ],
+      "note": "“~할수록 단단해져요”는 어느 고민에나 붙는 격언풍",
+      "current": "약속은 지킬수록 단단해져요",
+      "proposed": "한 번 정한 건 끝까지 가요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes .92)"
+    },
+    {
+      "id": "major-04-emperor/reversed/answers/0",
+      "path": "cards.major-04-emperor.reversed.answers[0]",
+      "pointer": "/cards/major-04-emperor/reversed/answers/0",
+      "field": "answers",
+      "card": "major-04-emperor",
+      "cardKo": "황제",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "AWKWARD"
+      ],
+      "note": "“홀”(왕의 지팡이)은 낯선 말. 서술어 없이 끝난다",
+      "current": "쥔 홀을 조금 느슨하게",
+      "proposed": "규칙을 조금 느슨하게",
+      "proposedLength": 11,
+      "leanCheck": "rethink 일치 (no .78)"
+    },
+    {
+      "id": "major-04-emperor/reversed/answers/2",
+      "path": "cards.major-04-emperor.reversed.answers[2]",
+      "pointer": "/cards/major-04-emperor/reversed/answers/2",
+      "field": "answers",
+      "card": "major-04-emperor",
+      "cardKo": "황제",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY",
+        "APHORISM"
+      ],
+      "note": "그림 속 바위산 이야기. 뜻이 안 닿고 분위기만 무겁다",
+      "current": "바위산엔 풀이 안 자라요",
+      "proposed": "꽉 쥐면 새것이 들어올 틈이 없어요",
+      "proposedLength": 19,
+      "leanCheck": "rethink 일치 (no .78)"
+    },
+    {
+      "id": "major-05-hierophant/upright/answers/0",
+      "path": "cards.major-05-hierophant.upright.answers[0]",
+      "pointer": "/cards/major-05-hierophant/upright/answers/0",
+      "field": "answers",
+      "card": "major-05-hierophant",
+      "cardKo": "교황",
+      "side": "upright",
+      "variant": 0,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "STIFF"
+      ],
+      "note": "“걸어 본 이”는 문어체",
+      "current": "먼저 걸어 본 이에게 물어요",
+      "proposed": "먼저 해 본 사람에게 물어요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (lean-yes .58)"
+    },
+    {
+      "id": "major-05-hierophant/upright/answers/2",
+      "path": "cards.major-05-hierophant.upright.answers[2]",
+      "pointer": "/cards/major-05-hierophant/upright/answers/2",
+      "field": "answers",
+      "card": "major-05-hierophant",
+      "cardKo": "교황",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "STIFF",
+        "VAGUE"
+      ],
+      "note": "“~가 열쇠예요”는 광고·자기계발 상투구",
+      "current": "좋은 조언이 열쇠예요",
+      "proposed": "검증된 방법이 덜 헤매요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (lean-yes .58)"
+    },
+    {
+      "id": "major-06-lovers/upright/answers/1",
+      "path": "cards.major-06-lovers.upright.answers[1]",
+      "pointer": "/cards/major-06-lovers/upright/answers/1",
+      "field": "answers",
+      "card": "major-06-lovers",
+      "cardKo": "연인",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "STIFF"
+      ],
+      "note": "“아끼는 가치”는 번역투(가치=소중한 것)",
+      "current": "아끼는 가치부터 떠올려요",
+      "proposed": "소중한 게 뭔지부터 떠올려요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes .88)"
+    },
+    {
+      "id": "major-06-lovers/upright/answers/2",
+      "path": "cards.major-06-lovers.upright.answers[2]",
+      "pointer": "/cards/major-06-lovers/upright/answers/2",
+      "field": "answers",
+      "card": "major-06-lovers",
+      "cardKo": "연인",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "APHORISM"
+      ],
+      "note": "“해 아래선 숨길 게 없어요”는 그림(태양·천사) 이야기. 고민과 이어지지 않는다",
+      "current": "해 아래선 숨길 게 없어요",
+      "proposed": "숨김없이 솔직하게",
+      "proposedLength": 9,
+      "leanCheck": "go 일치 (yes .88)"
+    },
+    {
+      "id": "major-06-lovers/reversed/answers/2",
+      "path": "cards.major-06-lovers.reversed.answers[2]",
+      "pointer": "/cards/major-06-lovers/reversed/answers/2",
+      "field": "answers",
+      "card": "major-06-lovers",
+      "cardKo": "연인",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY",
+        "FEAR"
+      ],
+      "note": "나무 뒤 뱀은 그림 속 사물. 겁을 주는 느낌도 있다",
+      "current": "나무 뒤 뱀도 한번 봐요",
+      "proposed": "왜 끌리는지 따져요",
+      "proposedLength": 10,
+      "leanCheck": "rethink 일치 (no .90)"
+    },
+    {
+      "id": "major-07-chariot/upright/answers/1",
+      "path": "cards.major-07-chariot.upright.answers[1]",
+      "pointer": "/cards/major-07-chariot/upright/answers/1",
+      "field": "answers",
+      "card": "major-07-chariot",
+      "cardKo": "전차",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "MEANING"
+      ],
+      "note": "“고삐 없이도”는 그림 속 사실. 카드의 통제된 추진력 뜻과도 엇갈린다",
+      "current": "고삐 없이도 갈 수 있어요",
+      "proposed": "흔들려도 목표는 그대로",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "major-07-chariot/reversed/answers/1",
+      "path": "cards.major-07-chariot.reversed.answers[1]",
+      "pointer": "/cards/major-07-chariot/reversed/answers/1",
+      "field": "answers",
+      "card": "major-07-chariot",
+      "cardKo": "전차",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "두 스핑크스는 그림 속 인물이라 모르는 사람은 뜻을 모른다",
+      "current": "두 스핑크스를 달래 봐요",
+      "proposed": "내 안의 엇갈림부터 맞춰요",
+      "proposedLength": 14,
+      "leanCheck": "wait 합의와 다름, leanNote 있음 (no .90)"
+    },
+    {
+      "id": "major-07-chariot/reversed/answers/2",
+      "path": "cards.major-07-chariot.reversed.answers[2]",
+      "pointer": "/cards/major-07-chariot/reversed/answers/2",
+      "field": "answers",
+      "card": "major-07-chariot",
+      "cardKo": "전차",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME"
+      ],
+      "note": "“~는 것도 운전이에요”는 위로 공식",
+      "current": "잠깐 서는 것도 운전이에요",
+      "proposed": "멈춰서 숨 한 번 고르고 가요",
+      "proposedLength": 16,
+      "leanCheck": "wait 합의와 다름, leanNote 있음 (no .90)"
+    },
+    {
+      "id": "major-08-strength/upright/answers/2",
+      "path": "cards.major-08-strength.upright.answers[2]",
+      "pointer": "/cards/major-08-strength/upright/answers/2",
+      "field": "answers",
+      "card": "major-08-strength",
+      "cardKo": "힘",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "APHORISM"
+      ],
+      "note": "사자 비유는 그림을 봐야 이해된다",
+      "current": "사자도 다정한 손엔 기대요",
+      "proposed": "다정하되 물러서지는 않게",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "major-08-strength/reversed/answers/1",
+      "path": "cards.major-08-strength.reversed.answers[1]",
+      "pointer": "/cards/major-08-strength/reversed/answers/1",
+      "field": "answers",
+      "card": "major-08-strength",
+      "cardKo": "힘",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "DAILY",
+        "COVERAGE"
+      ],
+      "note": "“오늘은 ~ 두세요”는 일일 운세 틀. 118fad0의 자기 의심도 담지 않는다",
+      "current": "오늘은 힘을 아껴 두세요",
+      "proposed": "자신이 흔들릴 땐 속도를 낮춰요",
+      "proposedLength": 17,
+      "leanCheck": "wait 일치 (tie:maybe/no .50)"
+    },
+    {
+      "id": "major-08-strength/reversed/answers/2",
+      "path": "cards.major-08-strength.reversed.answers[2]",
+      "pointer": "/cards/major-08-strength/reversed/answers/2",
+      "field": "answers",
+      "card": "major-08-strength",
+      "cardKo": "힘",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME",
+        "VAGUE"
+      ],
+      "note": "“약해진 날도 나예요”는 위로뿐 방향이 없다",
+      "current": "약해진 날도 나예요",
+      "proposed": "한계에 닿기 전에 쉬는 게 나아요",
+      "proposedLength": 18,
+      "leanCheck": "wait 일치 (tie:maybe/no .50)"
+    },
+    {
+      "id": "major-09-hermit/upright/answers/1",
+      "path": "cards.major-09-hermit.upright.answers[1]",
+      "pointer": "/cards/major-09-hermit/upright/answers/1",
+      "field": "answers",
+      "card": "major-09-hermit",
+      "cardKo": "은둔자",
+      "side": "upright",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "DUP"
+      ],
+      "note": "등불 비유가 필요하고 a2 “멀리 말고 가까이 봐요”와 같은 말을 되풀이한다",
+      "current": "등불로 발밑부터 비춰요",
+      "proposed": "답은 조용한 시간 뒤에",
+      "proposedLength": 12,
+      "leanCheck": "wait 일치 (lean-maybe .67)"
+    },
+    {
+      "id": "major-09-hermit/reversed/answers/2",
+      "path": "cards.major-09-hermit.reversed.answers[2]",
+      "pointer": "/cards/major-09-hermit/reversed/answers/2",
+      "field": "answers",
+      "card": "major-09-hermit",
+      "cardKo": "은둔자",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "APHORISM"
+      ],
+      "note": "“나눌수록 밝아져요”는 격언풍. 등불은 나눠도 밝아지지 않아 사실과도 어긋난다",
+      "current": "등불은 나눌수록 밝아져요",
+      "proposed": "연락 닿는 사람에게 먼저 말 걸어요",
+      "proposedLength": 19,
+      "leanCheck": "go 합의와 다름, leanNote 있음 (no .80)"
+    },
+    {
+      "id": "major-10-wheel-of-fortune/upright/answers/0",
+      "path": "cards.major-10-wheel-of-fortune.upright.answers[0]",
+      "pointer": "/cards/major-10-wheel-of-fortune/upright/answers/0",
+      "field": "answers",
+      "card": "major-10-wheel-of-fortune",
+      "cardKo": "운명의 수레바퀴",
+      "side": "upright",
+      "variant": 0,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "VAGUE",
+        "STIFF"
+      ],
+      "note": "“지금이 그때예요”는 점쟁이 말투. 무슨 때인지도 없다",
+      "current": "지금이 그때예요",
+      "proposed": "기회가 보이면 잡을 만해요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (yes .75)"
+    },
+    {
+      "id": "major-10-wheel-of-fortune/reversed/answers/1",
+      "path": "cards.major-10-wheel-of-fortune.reversed.answers[1]",
+      "pointer": "/cards/major-10-wheel-of-fortune/reversed/answers/1",
+      "field": "answers",
+      "card": "major-10-wheel-of-fortune",
+      "cardKo": "운명의 수레바퀴",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "APHORISM"
+      ],
+      "note": "“바퀴는 다시 돌아요”는 운이 다시 돈다는 예고처럼 들린다",
+      "current": "바퀴는 다시 돌아요",
+      "proposed": "지금은 흐름을 지켜보며 준비해요",
+      "proposedLength": 17,
+      "leanCheck": "wait 일치 (lean-no .60)"
+    },
+    {
+      "id": "major-11-justice/upright/answers/2",
+      "path": "cards.major-11-justice.upright.answers[2]",
+      "pointer": "/cards/major-11-justice/upright/answers/2",
+      "field": "answers",
+      "card": "major-11-justice",
+      "cardKo": "정의",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "TAUTOLOGY",
+        "VAGUE"
+      ],
+      "note": "“보면 보여요”는 같은 말 반복이라 뜻이 없다",
+      "current": "정면으로 보면 보여요",
+      "proposed": "치우치지 않게 따져서 정해요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (tie:maybe/yes .50)"
+    },
+    {
+      "id": "major-11-justice/reversed/answers/2",
+      "path": "cards.major-11-justice.reversed.answers[2]",
+      "pointer": "/cards/major-11-justice/reversed/answers/2",
+      "field": "answers",
+      "card": "major-11-justice",
+      "cardKo": "정의",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "AWKWARD"
+      ],
+      "note": "“빠진 추가”는 비문(추가는 빠질 수 있는 명사가 아니다)",
+      "current": "빠진 추가 없는지 봐요",
+      "proposed": "빠진 사실이 없는지 확인해요",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (no .91)"
+    },
+    {
+      "id": "major-12-hanged-man/upright/answers/1",
+      "path": "cards.major-12-hanged-man.upright.answers[1]",
+      "pointer": "/cards/major-12-hanged-man/upright/answers/1",
+      "field": "answers",
+      "card": "major-12-hanged-man",
+      "cardKo": "매달린 사람",
+      "side": "upright",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME"
+      ],
+      "note": "“멈춤도 쓸모 있어요”는 위로 공식",
+      "current": "잠시 멈춤도 쓸모 있어요",
+      "proposed": "움직이기 전에 잠시 멈춰요",
+      "proposedLength": 14,
+      "leanCheck": "wait 일치 (lean-maybe .57)"
+    },
+    {
+      "id": "major-12-hanged-man/upright/answers/2",
+      "path": "cards.major-12-hanged-man.upright.answers[2]",
+      "pointer": "/cards/major-12-hanged-man/upright/answers/2",
+      "field": "answers",
+      "card": "major-12-hanged-man",
+      "cardKo": "매달린 사람",
+      "side": "upright",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME",
+        "APHORISM"
+      ],
+      "note": "“기다림도 한 걸음이에요”는 위로 공식",
+      "current": "기다림도 한 걸음이에요",
+      "proposed": "서둘러 결론 내지 말아요",
+      "proposedLength": 13,
+      "leanCheck": "wait 일치 (lean-maybe .57)"
+    },
+    {
+      "id": "major-12-hanged-man/reversed/answers/2",
+      "path": "cards.major-12-hanged-man.reversed.answers[2]",
+      "pointer": "/cards/major-12-hanged-man/reversed/answers/2",
+      "field": "answers",
+      "card": "major-12-hanged-man",
+      "cardKo": "매달린 사람",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "묶인 발은 그림 속 모습이라 뜻이 바로 안 온다",
+      "current": "묶인 발부터 풀어요",
+      "proposed": "나를 묶어 둔 게 뭔지 짚어요",
+      "proposedLength": 16,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "major-13-death/upright/answers/1",
+      "path": "cards.major-13-death.upright.answers[1]",
+      "pointer": "/cards/major-13-death/upright/answers/1",
+      "field": "answers",
+      "card": "major-13-death",
+      "cardKo": "죽음",
+      "side": "upright",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "APHORISM"
+      ],
+      "note": "“비워야 새로 들어와요”는 격언풍. 새것이 온다는 약속처럼 들린다",
+      "current": "비워야 새로 들어와요",
+      "proposed": "붙잡고 있던 걸 하나 놓아요",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (no .71)"
+    },
+    {
+      "id": "major-13-death/reversed/answers/2",
+      "path": "cards.major-13-death.reversed.answers[2]",
+      "pointer": "/cards/major-13-death/reversed/answers/2",
+      "field": "answers",
+      "card": "major-13-death",
+      "cardKo": "죽음",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "흰 말은 그림 속 사물이라 뜻을 알 수 없다",
+      "current": "흰 말은 벌써 걷는 중",
+      "proposed": "정리는 천천히, 하나씩",
+      "proposedLength": 12,
+      "leanCheck": "wait 일치 (lean-no .50)"
+    },
+    {
+      "id": "major-14-temperance/upright/answers/0",
+      "path": "cards.major-14-temperance.upright.answers[0]",
+      "pointer": "/cards/major-14-temperance/upright/answers/0",
+      "field": "answers",
+      "card": "major-14-temperance",
+      "cardKo": "절제",
+      "side": "upright",
+      "variant": 0,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "뭘 섞는다는 건지 알 수 없다",
+      "current": "천천히 섞어 가요",
+      "proposed": "천천히 균형을 맞춰요",
+      "proposedLength": 11,
+      "leanCheck": "go 일치 (yes .83)"
+    },
+    {
+      "id": "major-14-temperance/upright/answers/1",
+      "path": "cards.major-14-temperance.upright.answers[1]",
+      "pointer": "/cards/major-14-temperance/upright/answers/1",
+      "field": "answers",
+      "card": "major-14-temperance",
+      "cardKo": "절제",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "VAGUE",
+        "TAUTOLOGY"
+      ],
+      "note": "“알맞은 만큼이 딱 좋아요”는 어디에나 붙는 말",
+      "current": "알맞은 만큼이 딱 좋아요",
+      "proposed": "무리하지 말고 알맞게 시작해요",
+      "proposedLength": 16,
+      "leanCheck": "go 일치 (yes .83)"
+    },
+    {
+      "id": "major-14-temperance/upright/answers/2",
+      "path": "cards.major-14-temperance.upright.answers[2]",
+      "pointer": "/cards/major-14-temperance/upright/answers/2",
+      "field": "answers",
+      "card": "major-14-temperance",
+      "cardKo": "절제",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "“한 발은 물에, 한 발은 뭍에”는 그림 속 두 발 설명뿐",
+      "current": "한 발은 물에, 한 발은 뭍에",
+      "proposed": "두 가지 다 놓치지 않게",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes .83)"
+    },
+    {
+      "id": "major-14-temperance/reversed/answers/2",
+      "path": "cards.major-14-temperance.reversed.answers[2]",
+      "pointer": "/cards/major-14-temperance/reversed/answers/2",
+      "field": "answers",
+      "card": "major-14-temperance",
+      "cardKo": "절제",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "TAUTOLOGY"
+      ],
+      "note": "“물도 과하면 넘쳐요”는 당연한 말",
+      "current": "물도 과하면 넘쳐요",
+      "proposed": "무리하는 게 없는지 되짚어요",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "major-15-devil/reversed/answers/2",
+      "path": "cards.major-15-devil.reversed.answers[2]",
+      "pointer": "/cards/major-15-devil/reversed/answers/2",
+      "field": "answers",
+      "card": "major-15-devil",
+      "cardKo": "악마",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "횃불은 그림 속 사물이라 고민과 이어지지 않는다",
+      "current": "횃불은 아래로, 고개는 위로",
+      "proposed": "작은 것부터 하나씩",
+      "proposedLength": 10,
+      "leanCheck": "go 일치 (yes .80)"
+    },
+    {
+      "id": "major-16-tower/upright/answers/2",
+      "path": "cards.major-16-tower.upright.answers[2]",
+      "pointer": "/cards/major-16-tower/upright/answers/2",
+      "field": "answers",
+      "card": "major-16-tower",
+      "cardKo": "탑",
+      "side": "upright",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "금관은 그림 속 사물. 시적이지만 고민에 답이 안 된다",
+      "current": "금관이 날아가도 나는 남아요",
+      "proposed": "흔들려도 나는 그대로예요",
+      "proposedLength": 13,
+      "leanCheck": "rethink 일치 (no 1.00)"
+    },
+    {
+      "id": "major-16-tower/reversed/answers/2",
+      "path": "cards.major-16-tower.reversed.answers[2]",
+      "pointer": "/cards/major-16-tower/reversed/answers/2",
+      "field": "answers",
+      "card": "major-16-tower",
+      "cardKo": "탑",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY",
+        "FEAR"
+      ],
+      "note": "창문의 불길은 그림 속 모습. 불로 겁을 주는 느낌이 있다",
+      "current": "창문 안 불씨부터 꺼요",
+      "proposed": "작은 문제 하나만 고쳐요",
+      "proposedLength": 13,
+      "leanCheck": "wait 일치 (lean-maybe .50)"
+    },
+    {
+      "id": "major-17-star/upright/answers/1",
+      "path": "cards.major-17-star.upright.answers[1]",
+      "pointer": "/cards/major-17-star/upright/answers/1",
+      "field": "answers",
+      "card": "major-17-star",
+      "cardKo": "별",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“채워지는 중”은 상황을 단정한다",
+      "current": "조금씩 채워지는 중",
+      "proposed": "한 번에 말고 조금씩 채워요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "major-17-star/upright/answers/2",
+      "path": "cards.major-17-star.upright.answers[2]",
+      "pointer": "/cards/major-17-star/upright/answers/2",
+      "field": "answers",
+      "card": "major-17-star",
+      "cardKo": "별",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "TAUTOLOGY",
+        "APHORISM"
+      ],
+      "note": "“붓는 만큼 흘러요”는 같은 말 반복이라 뜻이 없다",
+      "current": "물은 붓는 만큼 흘러요",
+      "proposed": "조용히 이어 가는 쪽이 맞아요",
+      "proposedLength": 16,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "major-17-star/reversed/answers/0",
+      "path": "cards.major-17-star.reversed.answers[0]",
+      "pointer": "/cards/major-17-star/reversed/answers/0",
+      "field": "answers",
+      "card": "major-17-star",
+      "cardKo": "별",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "내 항아리는 그림 속 물그릇",
+      "current": "내 항아리부터 채워요",
+      "proposed": "남 챙기기 전에 나부터",
+      "proposedLength": 12,
+      "leanCheck": "wait 일치 (lean-no .60)"
+    },
+    {
+      "id": "major-17-star/reversed/answers/1",
+      "path": "cards.major-17-star.reversed.answers[1]",
+      "pointer": "/cards/major-17-star/reversed/answers/1",
+      "field": "answers",
+      "card": "major-17-star",
+      "cardKo": "별",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“희망은 천천히 돌아와요”는 앞일 예고",
+      "current": "희망은 천천히 돌아와요",
+      "proposed": "희망이 흐려도 급하게 굴지 말아요",
+      "proposedLength": 18,
+      "leanCheck": "wait 일치 (lean-no .60)"
+    },
+    {
+      "id": "major-17-star/reversed/answers/2",
+      "path": "cards.major-17-star.reversed.answers[2]",
+      "pointer": "/cards/major-17-star/reversed/answers/2",
+      "field": "answers",
+      "card": "major-17-star",
+      "cardKo": "별",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "APHORISM",
+        "VAGUE"
+      ],
+      "note": "“별은 떠 있어요”는 위로뿐 방향이 없다",
+      "current": "흐린 밤에도 별은 떠 있어요",
+      "proposed": "스스로 믿기 어려우면 쉬어 가요",
+      "proposedLength": 17,
+      "leanCheck": "wait 일치 (lean-no .60)"
+    },
+    {
+      "id": "major-18-moon/upright/answers/2",
+      "path": "cards.major-18-moon.upright.answers[2]",
+      "pointer": "/cards/major-18-moon/upright/answers/2",
+      "field": "answers",
+      "card": "major-18-moon",
+      "cardKo": "달",
+      "side": "upright",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "가재는 그림 속 동물",
+      "current": "가재도 천천히 기어 나와요",
+      "proposed": "상상이 커질 땐 한 발 물러서요",
+      "proposedLength": 17,
+      "leanCheck": "wait 일치 (lean-no .58)"
+    },
+    {
+      "id": "major-18-moon/reversed/answers/0",
+      "path": "cards.major-18-moon.reversed.answers[0]",
+      "pointer": "/cards/major-18-moon/reversed/answers/0",
+      "field": "answers",
+      "card": "major-18-moon",
+      "cardKo": "달",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“윤곽이 보이기 시작해요”는 앞일 단정",
+      "current": "윤곽이 보이기 시작해요",
+      "proposed": "윤곽이 보이면 한 걸음 내디뎌요",
+      "proposedLength": 17,
+      "leanCheck": "go 일치 (lean-yes .50)"
+    },
+    {
+      "id": "major-18-moon/reversed/answers/2",
+      "path": "cards.major-18-moon.reversed.answers[2]",
+      "pointer": "/cards/major-18-moon/reversed/answers/2",
+      "field": "answers",
+      "card": "major-18-moon",
+      "cardKo": "달",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "짖는 소리는 그림 속 개·늑대 이야기",
+      "current": "짖는 소리보다 길을 봐요",
+      "proposed": "시끄러운 말은 흘려듣고 길을 봐요",
+      "proposedLength": 18,
+      "leanCheck": "go 일치 (lean-yes .50)"
+    },
+    {
+      "id": "major-19-sun/reversed/answers/2",
+      "path": "cards.major-19-sun.reversed.answers[2]",
+      "pointer": "/cards/major-19-sun/reversed/answers/2",
+      "field": "answers",
+      "card": "major-19-sun",
+      "cardKo": "태양",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "VAGUE"
+      ],
+      "note": "“해는 그 자리에 있어요”는 위로뿐 방향이 없다",
+      "current": "해는 그 자리에 있어요",
+      "proposed": "기쁨은 억지로 끌어내지 말아요",
+      "proposedLength": 16,
+      "leanCheck": "wait 일치 (yes .70)"
+    },
+    {
+      "id": "major-20-judgement/upright/answers/0",
+      "path": "cards.major-20-judgement.upright.answers[0]",
+      "pointer": "/cards/major-20-judgement/upright/answers/0",
+      "field": "answers",
+      "card": "major-20-judgement",
+      "cardKo": "심판",
+      "side": "upright",
+      "variant": 0,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "STIFF",
+        "VAGUE"
+      ],
+      "note": "“이번 부름엔 답해요”의 부름은 뜻이 안 닿는다",
+      "current": "이번 부름엔 답해요",
+      "proposed": "미뤄 둔 마음에 이제 답해요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes .87)"
+    },
+    {
+      "id": "major-20-judgement/upright/answers/1",
+      "path": "cards.major-20-judgement.upright.answers[1]",
+      "pointer": "/cards/major-20-judgement/upright/answers/1",
+      "field": "answers",
+      "card": "major-20-judgement",
+      "cardKo": "심판",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "나팔은 그림 속 사물",
+      "current": "나팔이 울리면 일어나요",
+      "proposed": "다시 일어설 마음이 들면 일어나요",
+      "proposedLength": 18,
+      "leanCheck": "go 일치 (yes .87)"
+    },
+    {
+      "id": "major-20-judgement/reversed/answers/0",
+      "path": "cards.major-20-judgement.reversed.answers[0]",
+      "pointer": "/cards/major-20-judgement/reversed/answers/0",
+      "field": "answers",
+      "card": "major-20-judgement",
+      "cardKo": "심판",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "UNCLEAR"
+      ],
+      "note": "“들리는 걸”이 무엇인지 목적어가 없다",
+      "current": "들리는 걸 모른 척 마세요",
+      "proposed": "마음의 목소리를 외면하지 말아요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (lean-no .64)"
+    },
+    {
+      "id": "major-20-judgement/reversed/answers/2",
+      "path": "cards.major-20-judgement.reversed.answers[2]",
+      "pointer": "/cards/major-20-judgement/reversed/answers/2",
+      "field": "answers",
+      "card": "major-20-judgement",
+      "cardKo": "심판",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY",
+        "FEAR"
+      ],
+      "note": "나팔은 그림 속 사물. 다그치는 말투(~잖아요)도 부담된다",
+      "current": "나팔은 벌써 울렸잖아요",
+      "proposed": "지난 일 곱씹기보다 지금 정해요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (lean-no .64)"
+    },
+    {
+      "id": "major-21-world/upright/answers/1",
+      "path": "cards.major-21-world.upright.answers[1]",
+      "pointer": "/cards/major-21-world/upright/answers/1",
+      "field": "answers",
+      "card": "major-21-world",
+      "cardKo": "세계",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“다음 문 앞에 섰어요”는 상황을 단정하는 말",
+      "current": "다음 문 앞에 섰어요",
+      "proposed": "다음 단계로 넘어가요",
+      "proposedLength": 11,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "major-21-world/reversed/answers/1",
+      "path": "cards.major-21-world.reversed.answers[1]",
+      "pointer": "/cards/major-21-world/reversed/answers/1",
+      "field": "answers",
+      "card": "major-21-world",
+      "cardKo": "세계",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "리본은 그림 속 사물이라 뜻을 모른다",
+      "current": "리본부터 묶어요",
+      "proposed": "빠진 마무리 하나부터 해요",
+      "proposedLength": 14,
+      "leanCheck": "wait 일치 (lean-maybe .50)"
+    },
+    {
+      "id": "wands-01/upright/answers/2",
+      "path": "cards.wands-01.upright.answers[2]",
+      "pointer": "/cards/wands-01/upright/answers/2",
+      "field": "answers",
+      "card": "wands-01",
+      "cardKo": "완드 에이스",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "TAUTOLOGY"
+      ],
+      "note": "“작은 불도 불이에요”는 같은 말 반복",
+      "current": "작은 불도 불이에요",
+      "proposed": "시작은 작게",
+      "proposedLength": 6,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "wands-01/reversed/answers/1",
+      "path": "cards.wands-01.reversed.answers[1]",
+      "pointer": "/cards/wands-01/reversed/answers/1",
+      "field": "answers",
+      "card": "wands-01",
+      "cardKo": "완드 에이스",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“성냥은 한 번만 그어요”는 뜻을 짐작하기 어렵다",
+      "current": "성냥은 한 번만 그어요",
+      "proposed": "하나만 정해서 천천히 시작해요",
+      "proposedLength": 16,
+      "leanCheck": "wait 일치 (no .80)"
+    },
+    {
+      "id": "wands-02/upright/answers/0",
+      "path": "cards.wands-02.upright.answers[0]",
+      "pointer": "/cards/wands-02/upright/answers/0",
+      "field": "answers",
+      "card": "wands-02",
+      "cardKo": "완드 2",
+      "side": "upright",
+      "variant": 0,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "DUP"
+      ],
+      "note": "지구본은 그림 속 사물. a1·a2와 같은 말이 반복된다",
+      "current": "지구본을 먼저 돌려요",
+      "proposed": "일단 계획부터 차분히 짜요",
+      "proposedLength": 14,
+      "leanCheck": "wait 일치 (lean-yes .60)"
+    },
+    {
+      "id": "wands-03/upright/answers/2",
+      "path": "cards.wands-03.upright.answers[2]",
+      "pointer": "/cards/wands-03/upright/answers/2",
+      "field": "answers",
+      "card": "wands-03",
+      "cardKo": "완드 3",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "VAGUE"
+      ],
+      "note": "“수평선은 넓을수록 좋죠”는 막연한 격언풍",
+      "current": "수평선은 넓을수록 좋죠",
+      "proposed": "멀리 보고 한 걸음 더",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "wands-04/upright/answers/2",
+      "path": "cards.wands-04.upright.answers[2]",
+      "pointer": "/cards/wands-04/upright/answers/2",
+      "field": "answers",
+      "card": "wands-04",
+      "cardKo": "완드 4",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "꽃다발은 그림 속 사물",
+      "current": "꽃다발은 높이 들어요",
+      "proposed": "이룬 건 마음껏 축하해요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "wands-04/reversed/answers/0",
+      "path": "cards.wands-04.reversed.answers[0]",
+      "pointer": "/cards/wands-04/reversed/answers/0",
+      "field": "answers",
+      "card": "wands-04",
+      "cardKo": "완드 4",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "TAUTOLOGY"
+      ],
+      "note": "“작은 축하도 축하예요”는 같은 말 반복",
+      "current": "작은 축하도 축하예요",
+      "proposed": "작은 축하라도 챙겨요",
+      "proposedLength": 11,
+      "leanCheck": "wait 일치 (split .40)"
+    },
+    {
+      "id": "wands-05/upright/answers/2",
+      "path": "cards.wands-05.upright.answers[2]",
+      "pointer": "/cards/wands-05/upright/answers/2",
+      "field": "answers",
+      "card": "wands-05",
+      "cardKo": "완드 5",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME",
+        "MEANING"
+      ],
+      "note": "“다툼도 연습이에요”는 위로 공식이고 싸움을 가볍게 만든다",
+      "current": "다툼도 연습이에요",
+      "proposed": "다른 의견도 편하게 꺼내요",
+      "proposedLength": 14,
+      "leanCheck": "go 검토 항목(6.4) (no .80)"
+    },
+    {
+      "id": "wands-05/reversed/answers/0",
+      "path": "cards.wands-05.reversed.answers[0]",
+      "pointer": "/cards/wands-05/reversed/answers/0",
+      "field": "answers",
+      "card": "wands-05",
+      "cardKo": "완드 5",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "AWKWARD"
+      ],
+      "note": "속 신경전은 낯선 조합",
+      "current": "속 신경전은 꺼내 놓아요",
+      "proposed": "속으로 쌓인 불편은 꺼내 놓아요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (lean-maybe .60)"
+    },
+    {
+      "id": "wands-06/upright/answers/2",
+      "path": "cards.wands-06.upright.answers[2]",
+      "pointer": "/cards/wands-06/upright/answers/2",
+      "field": "answers",
+      "card": "wands-06",
+      "cardKo": "완드 6",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "APHORISM",
+        "TAUTOLOGY"
+      ],
+      "note": "“받을 때 받아요”는 같은 말 반복이고 고민에 뭘 하라는지 없다(오너가 짚은 문장)",
+      "current": "박수는 받을 때 받아요",
+      "proposed": "해낸 만큼은 인정받아도 돼요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "wands-06/reversed/answers/2",
+      "path": "cards.wands-06.reversed.answers[2]",
+      "pointer": "/cards/wands-06/reversed/answers/2",
+      "field": "answers",
+      "card": "wands-06",
+      "cardKo": "완드 6",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY",
+        "PROMISE"
+      ],
+      "note": "행렬은 그림 속 행렬 이야기. 인정이 온다는 예고처럼 들린다",
+      "current": "행렬은 천천히 와요",
+      "proposed": "반응은 조금 더 기다려요",
+      "proposedLength": 13,
+      "leanCheck": "wait 일치 (no .70)"
+    },
+    {
+      "id": "wands-07/upright/answers/1",
+      "path": "cards.wands-07.upright.answers[1]",
+      "pointer": "/cards/wands-07/upright/answers/1",
+      "field": "answers",
+      "card": "wands-07",
+      "cardKo": "완드 7",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_ONLY",
+        "VAGUE"
+      ],
+      "note": "“높은 곳이 유리해요”는 그림 속 언덕 이야기",
+      "current": "높은 곳이 유리해요",
+      "proposed": "내 입장을 분명히 말해요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (split .45)"
+    },
+    {
+      "id": "wands-07/upright/answers/2",
+      "path": "cards.wands-07.upright.answers[2]",
+      "pointer": "/cards/wands-07/upright/answers/2",
+      "field": "answers",
+      "card": "wands-07",
+      "cardKo": "완드 7",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "짝짝이 신발은 그림 속 디테일",
+      "current": "짝짝이 신발로도 버텨요",
+      "proposed": "부족해 보여도 입장은 굽히지 않아요",
+      "proposedLength": 19,
+      "leanCheck": "go 일치 (split .45)"
+    },
+    {
+      "id": "wands-07/reversed/answers/1",
+      "path": "cards.wands-07.reversed.answers[1]",
+      "pointer": "/cards/wands-07/reversed/answers/1",
+      "field": "answers",
+      "card": "wands-07",
+      "cardKo": "완드 7",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Low",
+      "issues": [
+        "AWKWARD"
+      ],
+      "note": "“필욘”은 줄임말이라 글에서 어색하다",
+      "current": "모든 싸움에 나설 필욘 없어요",
+      "proposed": "모든 싸움에 나설 필요는 없어요",
+      "proposedLength": 17,
+      "leanCheck": "wait 일치 (no .80)"
+    },
+    {
+      "id": "wands-07/reversed/answers/2",
+      "path": "cards.wands-07.reversed.answers[2]",
+      "pointer": "/cards/wands-07/reversed/answers/2",
+      "field": "answers",
+      "card": "wands-07",
+      "cardKo": "완드 7",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“언덕은 그대로”는 그림 속 언덕",
+      "current": "한 발 내려와도 언덕은 그대로",
+      "proposed": "한 발 물러나도 지는 게 아니에요",
+      "proposedLength": 18,
+      "leanCheck": "wait 일치 (no .80)"
+    },
+    {
+      "id": "wands-08/upright/answers/0",
+      "path": "cards.wands-08.upright.answers[0]",
+      "pointer": "/cards/wands-08/upright/answers/0",
+      "field": "answers",
+      "card": "wands-08",
+      "cardKo": "완드 8",
+      "side": "upright",
+      "variant": 0,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "STIFF"
+      ],
+      "note": "“소식을 띄워요”는 문어체",
+      "current": "소식을 띄워요",
+      "proposed": "먼저 소식을 전해요",
+      "proposedLength": 10,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "wands-08/upright/answers/2",
+      "path": "cards.wands-08.upright.answers[2]",
+      "pointer": "/cards/wands-08/upright/answers/2",
+      "field": "answers",
+      "card": "wands-08",
+      "cardKo": "완드 8",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "“여덟 개가 한 방향”은 그림 속 지팡이 설명뿐",
+      "current": "여덟 개가 한 방향이네요",
+      "proposed": "미루지 말고 바로 움직여요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "wands-08/reversed/answers/2",
+      "path": "cards.wands-08.reversed.answers[2]",
+      "pointer": "/cards/wands-08/reversed/answers/2",
+      "field": "answers",
+      "card": "wands-08",
+      "cardKo": "완드 8",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "TAUTOLOGY",
+        "PROMISE"
+      ],
+      "note": "“늦게 닿는 소식도 있죠”는 당연한 말. 소식이 온다는 느낌도 준다",
+      "current": "늦게 닿는 소식도 있죠",
+      "proposed": "다른 일을 하며 시간을 보내요",
+      "proposedLength": 16,
+      "leanCheck": "wait 일치 (no .70)"
+    },
+    {
+      "id": "wands-09/upright/answers/2",
+      "path": "cards.wands-09.upright.answers[2]",
+      "pointer": "/cards/wands-09/upright/answers/2",
+      "field": "answers",
+      "card": "wands-09",
+      "cardKo": "완드 9",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "붕대는 그림 속 사물",
+      "current": "붕대는 버틴 흔적이에요",
+      "proposed": "상처가 있어도 마지막까지 가요",
+      "proposedLength": 16,
+      "leanCheck": "go 일치 (lean-maybe .50)"
+    },
+    {
+      "id": "wands-09/reversed/answers/2",
+      "path": "cards.wands-09.reversed.answers[2]",
+      "pointer": "/cards/wands-09/reversed/answers/2",
+      "field": "answers",
+      "card": "wands-09",
+      "cardKo": "완드 9",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME",
+        "COVERAGE"
+      ],
+      "note": "“쉬는 것도 지키는 일”은 위로 공식. 118fad0에서 늘어난 그만두고 싶은 마음도 담지 않는다",
+      "current": "쉬는 것도 지키는 일",
+      "proposed": "그만두고 싶다면 푹 쉰 뒤에 정해요",
+      "proposedLength": 19,
+      "leanCheck": "wait 일치 (no .80)"
+    },
+    {
+      "id": "wands-10/upright/answers/2",
+      "path": "cards.wands-10.upright.answers[2]",
+      "pointer": "/cards/wands-10/upright/answers/2",
+      "field": "answers",
+      "card": "wands-10",
+      "cardKo": "완드 10",
+      "side": "upright",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "“집은 가까워도 짐은 무겁죠”는 감상뿐, 하라는 말이 없다",
+      "current": "집은 가까워도 짐은 무겁죠",
+      "proposed": "마지막 고비일수록 짐부터 덜어요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (no .75)"
+    },
+    {
+      "id": "wands-10/reversed/answers/0",
+      "path": "cards.wands-10.reversed.answers[0]",
+      "pointer": "/cards/wands-10/reversed/answers/0",
+      "field": "answers",
+      "card": "wands-10",
+      "cardKo": "완드 10",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“~하는 중이에요”는 이미 하고 있다고 단정한다",
+      "current": "하나씩 내려놓는 중이에요",
+      "proposed": "하나만 내려놓아도 달라요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (tie:maybe/no .40)"
+    },
+    {
+      "id": "wands-11/upright/answers/2",
+      "path": "cards.wands-11.upright.answers[2]",
+      "pointer": "/cards/wands-11/upright/answers/2",
+      "field": "answers",
+      "card": "wands-11",
+      "cardKo": "완드 시종",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "“지팡이 끝에 뭐가 있을까?”는 그림 호기심뿐, 답이 아니다",
+      "current": "지팡이 끝에 뭐가 있을까?",
+      "proposed": "처음엔 서툰 게 당연해요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "wands-11/reversed/answers/1",
+      "path": "cards.wands-11.reversed.answers[1]",
+      "pointer": "/cards/wands-11/reversed/answers/1",
+      "field": "answers",
+      "card": "wands-11",
+      "cardKo": "완드 시종",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "AWKWARD"
+      ],
+      "note": "들뜬 소문은 어색한 조합",
+      "current": "들뜬 소문은 잠시 접어요",
+      "proposed": "들떠서 퍼뜨리진 말아요",
+      "proposedLength": 12,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "wands-11/reversed/answers/2",
+      "path": "cards.wands-11.reversed.answers[2]",
+      "pointer": "/cards/wands-11/reversed/answers/2",
+      "field": "answers",
+      "card": "wands-11",
+      "cardKo": "완드 시종",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "불꽃 장화는 그림 속 사물",
+      "current": "불꽃 장화는 방향부터",
+      "proposed": "열정은 방향을 정한 뒤에",
+      "proposedLength": 13,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "wands-13/upright/answers/2",
+      "path": "cards.wands-13.upright.answers[2]",
+      "pointer": "/cards/wands-13/upright/answers/2",
+      "field": "answers",
+      "card": "wands-13",
+      "cardKo": "완드 여왕",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "검은 고양이는 그림 속 사물. 미신 느낌도 있다",
+      "current": "검은 고양이도 내 편이에요",
+      "proposed": "내 방식 그대로 괜찮아요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "wands-13/reversed/answers/0",
+      "path": "cards.wands-13.reversed.answers[0]",
+      "pointer": "/cards/wands-13/reversed/answers/0",
+      "field": "answers",
+      "card": "wands-13",
+      "cardKo": "완드 여왕",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "UNCLEAR"
+      ],
+      "note": "서술어 없이 끝나 문장이 덜 끝난 느낌",
+      "current": "기운이 돌아올 때까지",
+      "proposed": "기운이 돌아올 때까지 쉬어요",
+      "proposedLength": 15,
+      "leanCheck": "wait 일치 (no .70)"
+    },
+    {
+      "id": "wands-13/reversed/answers/2",
+      "path": "cards.wands-13.reversed.answers[2]",
+      "pointer": "/cards/wands-13/reversed/answers/2",
+      "field": "answers",
+      "card": "wands-13",
+      "cardKo": "완드 여왕",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "TAUTOLOGY",
+        "REFRAME"
+      ],
+      "note": "“여왕은 여왕”은 같은 말 반복",
+      "current": "움츠린 날도 여왕은 여왕",
+      "proposed": "예민해질 땐 한 박자 늦춰요",
+      "proposedLength": 15,
+      "leanCheck": "wait 일치 (no .70)"
+    },
+    {
+      "id": "wands-14/upright/answers/2",
+      "path": "cards.wands-14.upright.answers[2]",
+      "pointer": "/cards/wands-14/upright/answers/2",
+      "field": "answers",
+      "card": "wands-14",
+      "cardKo": "완드 왕",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME"
+      ],
+      "note": "“~것도 재능이에요”는 위로 공식",
+      "current": "앞장서는 것도 재능이에요",
+      "proposed": "앞장서고 싶으면 나서요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "cups-01/upright/answers/2",
+      "path": "cards.cups-01.upright.answers[2]",
+      "pointer": "/cards/cups-01/upright/answers/2",
+      "field": "answers",
+      "card": "cups-01",
+      "cardKo": "컵 에이스",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "비둘기는 그림 속 새",
+      "current": "비둘기가 내려오는 중",
+      "proposed": "마음 가는 대로 표현해요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "cups-01/reversed/answers/2",
+      "path": "cards.cups-01.reversed.answers[2]",
+      "pointer": "/cards/cups-01/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-01",
+      "cardKo": "컵 에이스",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "PROMISE"
+      ],
+      "note": "“컵이 차면 넘친다”는 같은 말 반복이고 앞일을 단정한다",
+      "current": "컵이 차면 저절로 넘쳐요",
+      "proposed": "마음 여는 건 천천히",
+      "proposedLength": 11,
+      "leanCheck": "wait 일치 (no .70)"
+    },
+    {
+      "id": "cups-02/upright/answers/2",
+      "path": "cards.cups-02.upright.answers[2]",
+      "pointer": "/cards/cups-02/upright/answers/2",
+      "field": "answers",
+      "card": "cups-02",
+      "cardKo": "컵 2",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "잔을 내밀 차례는 그림 속 잔 비유",
+      "current": "잔을 내밀 차례예요",
+      "proposed": "먼저 손을 내밀어요",
+      "proposedLength": 10,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "cups-03/upright/answers/2",
+      "path": "cards.cups-03.upright.answers[2]",
+      "pointer": "/cards/cups-03/upright/answers/2",
+      "field": "answers",
+      "card": "cups-03",
+      "cardKo": "컵 3",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "APHORISM"
+      ],
+      "note": "“건배는 높이, 마음은 가볍게”는 대구형 구호",
+      "current": "건배는 높이, 마음은 가볍게",
+      "proposed": "기쁜 일은 먼저 알려요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "cups-03/reversed/answers/0",
+      "path": "cards.cups-03.reversed.answers[0]",
+      "pointer": "/cards/cups-03/reversed/answers/0",
+      "field": "answers",
+      "card": "cups-03",
+      "cardKo": "컵 3",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Low",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "건배는 그림 속 장면. 충분에서 끊겨 덜 끝난 느낌도 있다",
+      "current": "건배는 한 번이면 충분",
+      "proposed": "모임은 한 번이면 충분해요",
+      "proposedLength": 14,
+      "leanCheck": "rethink 일치 (lean-no .60)"
+    },
+    {
+      "id": "cups-04/upright/answers/1",
+      "path": "cards.cups-04.upright.answers[1]",
+      "pointer": "/cards/cups-04/upright/answers/1",
+      "field": "answers",
+      "card": "cups-04",
+      "cardKo": "컵 4",
+      "side": "upright",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "익숙한 컵은 그림 속 컵",
+      "current": "익숙한 컵만 보진 말아요",
+      "proposed": "익숙한 것만 보진 말아요",
+      "proposedLength": 13,
+      "leanCheck": "rethink 일치 (lean-no .65)"
+    },
+    {
+      "id": "cups-04/reversed/answers/1",
+      "path": "cards.cups-04.reversed.answers[1]",
+      "pointer": "/cards/cups-04/reversed/answers/1",
+      "field": "answers",
+      "card": "cups-04",
+      "cardKo": "컵 4",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "네 번째 컵은 그림 속 사물",
+      "current": "네 번째 컵을 받아요",
+      "proposed": "내밀어진 기회는 받아요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (lean-yes .60)"
+    },
+    {
+      "id": "cups-04/reversed/answers/2",
+      "path": "cards.cups-04.reversed.answers[2]",
+      "pointer": "/cards/cups-04/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-04",
+      "cardKo": "컵 4",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“지나가는 중”은 앞일을 단정한다",
+      "current": "권태는 지나가는 중",
+      "proposed": "시큰둥함이 풀렸다면 가 봐요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (lean-yes .60)"
+    },
+    {
+      "id": "cups-05/upright/answers/0",
+      "path": "cards.cups-05.upright.answers[0]",
+      "pointer": "/cards/cups-05/upright/answers/0",
+      "field": "answers",
+      "card": "cups-05",
+      "cardKo": "컵 5",
+      "side": "upright",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "남은 두 컵은 그림 속 컵",
+      "current": "남은 두 컵도 있어요",
+      "proposed": "남은 것부터 하나 세어요",
+      "proposedLength": 13,
+      "leanCheck": "rethink 일치 (no .95)"
+    },
+    {
+      "id": "cups-05/reversed/answers/2",
+      "path": "cards.cups-05.reversed.answers[2]",
+      "pointer": "/cards/cups-05/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-05",
+      "cardKo": "컵 5",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "강물은 그림 속 배경. 시적인 비유",
+      "current": "아쉬움은 강물에 두고 가요",
+      "proposed": "아쉬움은 접어 두고 걸어가요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (lean-yes .50)"
+    },
+    {
+      "id": "cups-06/upright/answers/2",
+      "path": "cards.cups-06.upright.answers[2]",
+      "pointer": "/cards/cups-06/upright/answers/2",
+      "field": "answers",
+      "card": "cups-06",
+      "cardKo": "컵 6",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "DAILY",
+        "AWKWARD",
+        "APHORISM"
+      ],
+      "note": "“옛 마음이 오늘을 데워요”는 일일 운세 느낌에 시적인 말",
+      "current": "옛 마음이 오늘을 데워요",
+      "proposed": "먼저 안부를 건네요",
+      "proposedLength": 10,
+      "leanCheck": "go 일치 (yes .80)"
+    },
+    {
+      "id": "cups-06/reversed/answers/1",
+      "path": "cards.cups-06.reversed.answers[1]",
+      "pointer": "/cards/cups-06/reversed/answers/1",
+      "field": "answers",
+      "card": "cups-06",
+      "cardKo": "컵 6",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "Low",
+      "issues": [
+        "TAUTOLOGY"
+      ],
+      "note": "“그때는 그때예요”는 같은 말 반복 꼴이고 숙어 앞부분만 남았다",
+      "current": "그때는 그때예요",
+      "proposed": "그때와 지금은 달라요",
+      "proposedLength": 11,
+      "leanCheck": "rethink 일치 (lean-maybe .60)"
+    },
+    {
+      "id": "cups-06/reversed/answers/2",
+      "path": "cards.cups-06.reversed.answers[2]",
+      "pointer": "/cards/cups-06/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-06",
+      "cardKo": "컵 6",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "APHORISM"
+      ],
+      "note": "“꽃처럼”은 그림 속 꽃 비유",
+      "current": "추억은 꽃처럼 두고 봐요",
+      "proposed": "추억은 곱게 간직하고 지금을 봐요",
+      "proposedLength": 18,
+      "leanCheck": "rethink 일치 (lean-maybe .60)"
+    },
+    {
+      "id": "cups-07/upright/answers/1",
+      "path": "cards.cups-07.upright.answers[1]",
+      "pointer": "/cards/cups-07/upright/answers/1",
+      "field": "answers",
+      "card": "cups-07",
+      "cardKo": "컵 7",
+      "side": "upright",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "Low",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "컵은 그림 속 컵",
+      "current": "반짝이는 컵부터 의심해요",
+      "proposed": "반짝이는 것부터 의심해요",
+      "proposedLength": 13,
+      "leanCheck": "rethink 일치 (lean-maybe .65)"
+    },
+    {
+      "id": "cups-07/upright/answers/2",
+      "path": "cards.cups-07.upright.answers[2]",
+      "pointer": "/cards/cups-07/upright/answers/2",
+      "field": "answers",
+      "card": "cups-07",
+      "cardKo": "컵 7",
+      "side": "upright",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "APHORISM",
+        "TAUTOLOGY"
+      ],
+      "note": "“구름 위 성은 구름이에요”는 뜻이 안 닿는다",
+      "current": "구름 위 성은 구름이에요",
+      "proposed": "꿈같은 건 현실로 확인해요",
+      "proposedLength": 14,
+      "leanCheck": "rethink 일치 (lean-maybe .65)"
+    },
+    {
+      "id": "cups-07/reversed/answers/1",
+      "path": "cards.cups-07.reversed.answers[1]",
+      "pointer": "/cards/cups-07/reversed/answers/1",
+      "field": "answers",
+      "card": "cups-07",
+      "cardKo": "컵 7",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "UNCLEAR"
+      ],
+      "note": "남은 선택지가 어떤 건지 불분명",
+      "current": "남은 선택지를 믿어요",
+      "proposed": "고른 하나에 마음을 모아요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (lean-yes .50)"
+    },
+    {
+      "id": "cups-07/reversed/answers/2",
+      "path": "cards.cups-07.reversed.answers[2]",
+      "pointer": "/cards/cups-07/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-07",
+      "cardKo": "컵 7",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "APHORISM"
+      ],
+      "note": "“길은 보여요”는 앞일 단정에 시적인 말",
+      "current": "꿈은 깼고 길은 보여요",
+      "proposed": "환상에서 깼다면 바로 시작해요",
+      "proposedLength": 16,
+      "leanCheck": "go 일치 (lean-yes .50)"
+    },
+    {
+      "id": "cups-08/upright/answers/1",
+      "path": "cards.cups-08.upright.answers[1]",
+      "pointer": "/cards/cups-08/upright/answers/1",
+      "field": "answers",
+      "card": "cups-08",
+      "cardKo": "컵 8",
+      "side": "upright",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY",
+        "DAILY"
+      ],
+      "note": "달 뜬 밤은 그림 속 장면. 밤에 떠나라는 말로 읽힌다",
+      "current": "달 뜬 밤에 길을 나서요",
+      "proposed": "더 의미 있는 쪽을 찾아 나서요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (lean-no .65)"
+    },
+    {
+      "id": "cups-09/upright/answers/2",
+      "path": "cards.cups-09.upright.answers[2]",
+      "pointer": "/cards/cups-09/upright/answers/2",
+      "field": "answers",
+      "card": "cups-09",
+      "cardKo": "컵 9",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "TAUTOLOGY"
+      ],
+      "note": "“흐뭇한 건 흐뭇한 거예요”는 같은 말 반복",
+      "current": "흐뭇한 건 흐뭇한 거예요",
+      "proposed": "이만하면 만족해도 돼요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "cups-09/reversed/answers/2",
+      "path": "cards.cups-09.reversed.answers[2]",
+      "pointer": "/cards/cups-09/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-09",
+      "cardKo": "컵 9",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "아홉은 그림 속 컵 개수",
+      "current": "아홉이면 충분하죠",
+      "proposed": "이미 가진 것도 많아요",
+      "proposedLength": 12,
+      "leanCheck": "rethink 일치 (lean-no .50)"
+    },
+    {
+      "id": "cups-10/upright/answers/1",
+      "path": "cards.cups-10.upright.answers[1]",
+      "pointer": "/cards/cups-10/upright/answers/1",
+      "field": "answers",
+      "card": "cups-10",
+      "cardKo": "컵 10",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM"
+      ],
+      "note": "“무지개는 같이 봐야 예뻐요”는 카드 문구 같은 격언풍",
+      "current": "무지개는 같이 봐야 예뻐요",
+      "proposed": "소중한 사람과 같이 정해요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "cups-10/reversed/answers/1",
+      "path": "cards.cups-10.reversed.answers[1]",
+      "pointer": "/cards/cups-10/reversed/answers/1",
+      "field": "answers",
+      "card": "cups-10",
+      "cardKo": "컵 10",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "AWKWARD"
+      ],
+      "note": "겉 평화는 어색한 조합",
+      "current": "겉 평화보다 속 이야기",
+      "proposed": "화목해 보여도 속 얘기는 나눠요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "cups-10/reversed/answers/2",
+      "path": "cards.cups-10.reversed.answers[2]",
+      "pointer": "/cards/cups-10/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-10",
+      "cardKo": "컵 10",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "REFRAME",
+        "VAGUE"
+      ],
+      "note": "“무지개 없는 날도 집이에요”는 뜻이 없다",
+      "current": "무지개 없는 날도 집이에요",
+      "proposed": "기대가 다르면 먼저 말해 둬요",
+      "proposedLength": 16,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "cups-11/upright/answers/2",
+      "path": "cards.cups-11.upright.answers[2]",
+      "pointer": "/cards/cups-11/upright/answers/2",
+      "field": "answers",
+      "card": "cups-11",
+      "cardKo": "컵 시종",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "컵 속 물고기는 그림 속 사물",
+      "current": "컵 속 물고기처럼 불쑥",
+      "proposed": "번뜩인 아이디어를 가볍게 시도해요",
+      "proposedLength": 18,
+      "leanCheck": "go 일치 (yes .90)"
+    },
+    {
+      "id": "cups-11/reversed/answers/0",
+      "path": "cards.cups-11.reversed.answers[0]",
+      "pointer": "/cards/cups-11/reversed/answers/0",
+      "field": "answers",
+      "card": "cups-11",
+      "cardKo": "컵 시종",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "AWKWARD"
+      ],
+      "note": "“익혀요”는 마음에 쓰기엔 어색한 표현",
+      "current": "마음을 조금 더 익혀요",
+      "proposed": "마음이 정리되면 그때 말해요",
+      "proposedLength": 15,
+      "leanCheck": "wait 일치 (lean-no .60)"
+    },
+    {
+      "id": "cups-11/reversed/answers/1",
+      "path": "cards.cups-11.reversed.answers[1]",
+      "pointer": "/cards/cups-11/reversed/answers/1",
+      "field": "answers",
+      "card": "cups-11",
+      "cardKo": "컵 시종",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Low",
+      "issues": [
+        "LEAN_MISMATCH"
+      ],
+      "note": "wait 면인데 서툴러도 괜찮다는 표현하라는 쪽",
+      "current": "표현은 서툴러도 괜찮아요",
+      "proposed": "서툰 표현이면 한 번 더 다듬어요",
+      "proposedLength": 18,
+      "leanCheck": "wait 일치 (lean-no .60)"
+    },
+    {
+      "id": "cups-12/upright/answers/2",
+      "path": "cards.cups-12.upright.answers[2]",
+      "pointer": "/cards/cups-12/upright/answers/2",
+      "field": "answers",
+      "card": "cups-12",
+      "cardKo": "컵 기사",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "STIFF"
+      ],
+      "note": "“~쪽이 멋져요”는 평가 말투",
+      "current": "서두르지 않는 쪽이 멋져요",
+      "proposed": "급하게 굴지 말고 마음을 전해요",
+      "proposedLength": 17,
+      "leanCheck": "go 일치 (yes .80)"
+    },
+    {
+      "id": "cups-13/upright/answers/1",
+      "path": "cards.cups-13.upright.answers[1]",
+      "pointer": "/cards/cups-13/upright/answers/1",
+      "field": "answers",
+      "card": "cups-13",
+      "cardKo": "컵 여왕",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "뚜껑은 그림 속 컵 뚜껑",
+      "current": "뚜껑은 천천히 열어요",
+      "proposed": "마음은 한 겹씩 열어요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "cups-13/upright/answers/2",
+      "path": "cards.cups-13.upright.answers[2]",
+      "pointer": "/cards/cups-13/upright/answers/2",
+      "field": "answers",
+      "card": "cups-13",
+      "cardKo": "컵 여왕",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME"
+      ],
+      "note": "“~것도 힘이에요”는 위로 공식",
+      "current": "깊이 느끼는 것도 힘이에요",
+      "proposed": "섬세한 마음을 믿고 가요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "cups-13/reversed/answers/2",
+      "path": "cards.cups-13.reversed.answers[2]",
+      "pointer": "/cards/cups-13/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-13",
+      "cardKo": "컵 여왕",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Low",
+      "issues": [
+        "STIFF",
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“발만 담그고 빠지지 않기”는 ~기 구호체이고 발은 그림 속 모습",
+      "current": "발만 담그고 빠지지 않기",
+      "proposed": "공감은 하되 휩쓸리진 말아요",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (tie:maybe/no .50)"
+    },
+    {
+      "id": "cups-14/upright/answers/1",
+      "path": "cards.cups-14.upright.answers[1]",
+      "pointer": "/cards/cups-14/upright/answers/1",
+      "field": "answers",
+      "card": "cups-14",
+      "cardKo": "컵 왕",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "UNCLEAR"
+      ],
+      "note": "“중심은 여기”가 어디인지 불분명",
+      "current": "출렁여도 중심은 여기",
+      "proposed": "출렁여도 중심은 잡아요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "cups-14/upright/answers/2",
+      "path": "cards.cups-14.upright.answers[2]",
+      "pointer": "/cards/cups-14/upright/answers/2",
+      "field": "answers",
+      "card": "cups-14",
+      "cardKo": "컵 왕",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "UNCLEAR"
+      ],
+      "note": "무엇을 받아 주라는 건지 없다",
+      "current": "넓게 받아 줘요",
+      "proposed": "너그럽게 받아 주는 쪽으로 가요",
+      "proposedLength": 17,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "cups-14/reversed/answers/2",
+      "path": "cards.cups-14.reversed.answers[2]",
+      "pointer": "/cards/cups-14/reversed/answers/2",
+      "field": "answers",
+      "card": "cups-14",
+      "cardKo": "컵 왕",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "물고기는 그림 속 동물",
+      "current": "물고기도 가끔 튀어 올라요",
+      "proposed": "눌러 둔 감정을 살펴요",
+      "proposedLength": 12,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "swords-01/upright/answers/1",
+      "path": "cards.swords-01.upright.answers[1]",
+      "pointer": "/cards/swords-01/upright/answers/1",
+      "field": "answers",
+      "card": "swords-01",
+      "cardKo": "검 에이스",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "칼끝의 관은 그림 속 사물",
+      "current": "칼끝에 관이 걸렸네요",
+      "proposed": "생각을 분명히 말로 옮겨요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "swords-01/reversed/answers/2",
+      "path": "cards.swords-01.reversed.answers[2]",
+      "pointer": "/cards/swords-01/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-01",
+      "cardKo": "검 에이스",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "APHORISM",
+        "VAGUE"
+      ],
+      "note": "“흐린 날엔 칼도 무뎌요”는 뜻이 안 닿는다",
+      "current": "흐린 날엔 칼도 무뎌요",
+      "proposed": "생각이 흐릴 땐 결정을 미뤄요",
+      "proposedLength": 16,
+      "leanCheck": "wait 합의와 다름, leanNote 있음 (no .90)"
+    },
+    {
+      "id": "swords-02/upright/answers/1",
+      "path": "cards.swords-02.upright.answers[1]",
+      "pointer": "/cards/swords-02/upright/answers/1",
+      "field": "answers",
+      "card": "swords-02",
+      "cardKo": "검 2",
+      "side": "upright",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Low",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“눈을 뜰 때까지”는 그림 속 눈가리개 비유라 처음 보면 문자 그대로 읽힌다",
+      "current": "눈을 뜰 때까지 기다려요",
+      "proposed": "정보가 더 모일 때까지 기다려요",
+      "proposedLength": 17,
+      "leanCheck": "wait 일치 (lean-maybe .60)"
+    },
+    {
+      "id": "swords-02/reversed/answers/0",
+      "path": "cards.swords-02.reversed.answers[0]",
+      "pointer": "/cards/swords-02/reversed/answers/0",
+      "field": "answers",
+      "card": "swords-02",
+      "cardKo": "검 2",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "MEANING",
+        "LEAN_MISMATCH"
+      ],
+      "note": "118fad0에서 기본 모드가 blocked(정보 과다, 결정 못 함)로 바뀌어 “이제 정해도 돼요”와 정반대",
+      "current": "이제 정해도 돼요",
+      "proposed": "알아본 건 충분하니 잠시 덮어 둬요",
+      "proposedLength": 19,
+      "leanCheck": "go → wait 변경 제안 (lean-maybe .50)"
+    },
+    {
+      "id": "swords-02/reversed/answers/1",
+      "path": "cards.swords-02.reversed.answers[1]",
+      "pointer": "/cards/swords-02/reversed/answers/1",
+      "field": "answers",
+      "card": "swords-02",
+      "cardKo": "검 2",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "AWKWARD",
+        "MEANING"
+      ],
+      "note": "가리개는 어색한 말(눈가리개). 새 의미와도 어긋난다",
+      "current": "가리개를 풀어요",
+      "proposed": "고를 기준 하나만 정해요",
+      "proposedLength": 13,
+      "leanCheck": "go → wait 변경 제안 (lean-maybe .50)"
+    },
+    {
+      "id": "swords-02/reversed/answers/2",
+      "path": "cards.swords-02.reversed.answers[2]",
+      "pointer": "/cards/swords-02/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-02",
+      "cardKo": "검 2",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "PROMISE",
+        "MEANING"
+      ],
+      "note": "“길이 보여요”는 앞일 단정. 새 의미와도 어긋난다",
+      "current": "눈을 뜨면 길이 보여요",
+      "proposed": "머리가 복잡할 땐 한 걸음 물러나요",
+      "proposedLength": 19,
+      "leanCheck": "go → wait 변경 제안 (lean-maybe .50)"
+    },
+    {
+      "id": "swords-03/upright/answers/2",
+      "path": "cards.swords-03.upright.answers[2]",
+      "pointer": "/cards/swords-03/upright/answers/2",
+      "field": "answers",
+      "card": "swords-03",
+      "cardKo": "검 3",
+      "side": "upright",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“비 오는 날은 우산부터”는 격언풍",
+      "current": "비 오는 날은 우산부터",
+      "proposed": "지금은 나부터",
+      "proposedLength": 7,
+      "leanCheck": "wait 합의와 다름, leanNote 있음 (no .95)"
+    },
+    {
+      "id": "swords-03/reversed/answers/1",
+      "path": "cards.swords-03.reversed.answers[1]",
+      "pointer": "/cards/swords-03/reversed/answers/1",
+      "field": "answers",
+      "card": "swords-03",
+      "cardKo": "검 3",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“비는 그치는 중이에요”는 나아진다는 단정",
+      "current": "비는 그치는 중이에요",
+      "proposed": "원망은 내려놓고 한 걸음 나가요",
+      "proposedLength": 17,
+      "leanCheck": "go 검토 항목(6.4) (lean-maybe .50)"
+    },
+    {
+      "id": "swords-03/reversed/answers/2",
+      "path": "cards.swords-03.reversed.answers[2]",
+      "pointer": "/cards/swords-03/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-03",
+      "cardKo": "검 3",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "COVERAGE"
+      ],
+      "note": "“볕에 말려요”는 시적인 비유. 118fad0의 용서할 여지도 담지 않는다",
+      "current": "젖은 마음도 볕에 말려요",
+      "proposed": "용서할 여지도 조금 남겨 둬요",
+      "proposedLength": 16,
+      "leanCheck": "go 검토 항목(6.4) (lean-maybe .50)"
+    },
+    {
+      "id": "swords-04/reversed/answers/2",
+      "path": "cards.swords-04.reversed.answers[2]",
+      "pointer": "/cards/swords-04/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-04",
+      "cardKo": "검 4",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "LEAN_MISMATCH"
+      ],
+      "note": "“잠깐 멈추면 더 멀리 가요”는 흔한 격언. rethink 쪽 신호도 없다",
+      "current": "잠깐 멈추면 더 멀리 가요",
+      "proposed": "쉬는 방식부터 다시 짜요",
+      "proposedLength": 13,
+      "leanCheck": "rethink 검토 항목(6.4) (lean-no .50)"
+    },
+    {
+      "id": "swords-05/reversed/answers/2",
+      "path": "cards.swords-05.reversed.answers[2]",
+      "pointer": "/cards/swords-05/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-05",
+      "cardKo": "검 5",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "떨어진 칼은 그림 속 사물",
+      "current": "떨어진 칼은 두고 가요",
+      "proposed": "지난 다툼은 두고 가요",
+      "proposedLength": 12,
+      "leanCheck": "go 합의와 다름, leanNote 있음 (lean-no .60)"
+    },
+    {
+      "id": "swords-06/upright/answers/1",
+      "path": "cards.swords-06.upright.answers[1]",
+      "pointer": "/cards/swords-06/upright/answers/1",
+      "field": "answers",
+      "card": "swords-06",
+      "cardKo": "검 6",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME"
+      ],
+      "note": "“~것도 용기”는 위로 공식",
+      "current": "조용히 떠나는 것도 용기",
+      "proposed": "조용히 떠나도 괜찮아요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes .80)"
+    },
+    {
+      "id": "swords-06/upright/answers/2",
+      "path": "cards.swords-06.upright.answers[2]",
+      "pointer": "/cards/swords-06/upright/answers/2",
+      "field": "answers",
+      "card": "swords-06",
+      "cardKo": "검 6",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“물결은 뒤에 두고”는 시적인 조각",
+      "current": "물결은 뒤에 두고",
+      "proposed": "힘들었던 건 뒤에 남겨요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes .80)"
+    },
+    {
+      "id": "swords-06/reversed/answers/2",
+      "path": "cards.swords-06.reversed.answers[2]",
+      "pointer": "/cards/swords-06/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-06",
+      "cardKo": "검 6",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME",
+        "APHORISM"
+      ],
+      "note": "“짐 정리가 곧 출발이에요”는 말장난에 가깝다",
+      "current": "짐 정리가 곧 출발이에요",
+      "proposed": "두고 갈 짐을 먼저 가려요",
+      "proposedLength": 14,
+      "leanCheck": "wait 일치 (no .80)"
+    },
+    {
+      "id": "swords-07/upright/answers/0",
+      "path": "cards.swords-07.upright.answers[0]",
+      "pointer": "/cards/swords-07/upright/answers/0",
+      "field": "answers",
+      "card": "swords-07",
+      "cardKo": "검 7",
+      "side": "upright",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "STIFF"
+      ],
+      "note": "“오래 못 가요”는 단정에 훈계 말투",
+      "current": "혼자 하는 꾀는 오래 못 가요",
+      "proposed": "편법이면 한 번 더 생각해요",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (no .95)"
+    },
+    {
+      "id": "swords-07/upright/answers/2",
+      "path": "cards.swords-07.upright.answers[2]",
+      "pointer": "/cards/swords-07/upright/answers/2",
+      "field": "answers",
+      "card": "swords-07",
+      "cardKo": "검 7",
+      "side": "upright",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "FEAR",
+        "IMAGE_ONLY"
+      ],
+      "note": "“남은 두 자루가 보고 있어요”는 감시당하는 느낌을 주는 겁주는 말",
+      "current": "남은 두 자루가 보고 있어요",
+      "proposed": "같이 풀 방법이 없는지 따져요",
+      "proposedLength": 16,
+      "leanCheck": "rethink 일치 (no .95)"
+    },
+    {
+      "id": "swords-07/reversed/answers/1",
+      "path": "cards.swords-07.reversed.answers[1]",
+      "pointer": "/cards/swords-07/reversed/answers/1",
+      "field": "answers",
+      "card": "swords-07",
+      "cardKo": "검 7",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "까치발은 그림 속 자세",
+      "current": "까치발은 이제 그만",
+      "proposed": "눈치 보며 숨기는 건 그만",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (lean-maybe .50)"
+    },
+    {
+      "id": "swords-08/reversed/answers/2",
+      "path": "cards.swords-08.reversed.answers[2]",
+      "pointer": "/cards/swords-08/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-08",
+      "cardKo": "검 8",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "VAGUE"
+      ],
+      "note": "“늘 앞에 있었어요”는 지난 일 단정",
+      "current": "출구는 늘 앞에 있었어요",
+      "proposed": "한 번에 하나씩 빠져나와요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (lean-yes .60)"
+    },
+    {
+      "id": "swords-09/upright/answers/2",
+      "path": "cards.swords-09.upright.answers[2]",
+      "pointer": "/cards/swords-09/upright/answers/2",
+      "field": "answers",
+      "card": "swords-09",
+      "cardKo": "검 9",
+      "side": "upright",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "벽에 걸린 칼은 그림 속 사물",
+      "current": "칼은 벽에만 걸려 있어요",
+      "proposed": "걱정은 하나씩 따로 따져요",
+      "proposedLength": 14,
+      "leanCheck": "wait 합의와 다름, leanNote 있음 (no 1.00)"
+    },
+    {
+      "id": "swords-09/reversed/answers/2",
+      "path": "cards.swords-09.reversed.answers[2]",
+      "pointer": "/cards/swords-09/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-09",
+      "cardKo": "검 9",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“밤은 지나가고 있어요”는 나아진다는 단정",
+      "current": "밤은 지나가고 있어요",
+      "proposed": "혼자 버티는 건 이제 그만",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (tie:maybe/no .40)"
+    },
+    {
+      "id": "swords-10/upright/answers/0",
+      "path": "cards.swords-10.upright.answers[0]",
+      "pointer": "/cards/swords-10/upright/answers/0",
+      "field": "answers",
+      "card": "swords-10",
+      "cardKo": "검 10",
+      "side": "upright",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM"
+      ],
+      "note": "“바닥은 딛고 서는 곳이에요”는 격언풍",
+      "current": "바닥은 딛고 서는 곳이에요",
+      "proposed": "바닥이라면 더 버티지 않아도 돼요",
+      "proposedLength": 18,
+      "leanCheck": "rethink 일치 (no 1.00)"
+    },
+    {
+      "id": "swords-10/upright/answers/2",
+      "path": "cards.swords-10.upright.answers[2]",
+      "pointer": "/cards/swords-10/upright/answers/2",
+      "field": "answers",
+      "card": "swords-10",
+      "cardKo": "검 10",
+      "side": "upright",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY",
+        "PROMISE"
+      ],
+      "note": "지평선의 빛은 그림 속 모습. 나아진다는 암시도 준다",
+      "current": "지평선에 빛이 걸렸어요",
+      "proposed": "다음 길은 천천히 찾아요",
+      "proposedLength": 13,
+      "leanCheck": "rethink 일치 (no 1.00)"
+    },
+    {
+      "id": "swords-10/reversed/answers/2",
+      "path": "cards.swords-10.reversed.answers[2]",
+      "pointer": "/cards/swords-10/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-10",
+      "cardKo": "검 10",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "PROMISE",
+        "APHORISM"
+      ],
+      "note": "“새벽은 조용히 와요”는 좋아진다는 예고",
+      "current": "새벽은 조용히 와요",
+      "proposed": "한 가지씩만 천천히 해요",
+      "proposedLength": 13,
+      "leanCheck": "wait 일치 (split .40)"
+    },
+    {
+      "id": "swords-11/upright/answers/1",
+      "path": "cards.swords-11.upright.answers[1]",
+      "pointer": "/cards/swords-11/upright/answers/1",
+      "field": "answers",
+      "card": "swords-11",
+      "cardKo": "검 시종",
+      "side": "upright",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "어깨 너머는 그림 속 시선",
+      "current": "어깨 너머도 살펴요",
+      "proposed": "주변 상황도 같이 살펴요",
+      "proposedLength": 13,
+      "leanCheck": "wait 일치 (lean-maybe .65)"
+    },
+    {
+      "id": "swords-11/upright/answers/2",
+      "path": "cards.swords-11.upright.answers[2]",
+      "pointer": "/cards/swords-11/upright/answers/2",
+      "field": "answers",
+      "card": "swords-11",
+      "cardKo": "검 시종",
+      "side": "upright",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "VAGUE"
+      ],
+      "note": "“모을수록 선명해져요”는 막연한 약속",
+      "current": "모을수록 선명해져요",
+      "proposed": "정하기 전에 한 가지만 더 확인해요",
+      "proposedLength": 19,
+      "leanCheck": "wait 일치 (lean-maybe .65)"
+    },
+    {
+      "id": "swords-11/reversed/answers/2",
+      "path": "cards.swords-11.reversed.answers[2]",
+      "pointer": "/cards/swords-11/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-11",
+      "cardKo": "검 시종",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "APHORISM",
+        "COVERAGE"
+      ],
+      "note": "“바람 부는 날엔 말도 날려요”는 뜻이 불분명. 118fad0의 계획 없는 시도도 담지 않는다",
+      "current": "바람 부는 날엔 말도 날려요",
+      "proposed": "벌이기 전에 계획 한 줄부터",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "swords-13/upright/answers/2",
+      "path": "cards.swords-13.upright.answers[2]",
+      "pointer": "/cards/swords-13/upright/answers/2",
+      "field": "answers",
+      "card": "swords-13",
+      "cardKo": "검 여왕",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "STIFF"
+      ],
+      "note": "“~는 법”은 격언풍",
+      "current": "겪은 만큼 보이는 법",
+      "proposed": "내가 겪은 만큼 기준은 믿을 만해요",
+      "proposedLength": 19,
+      "leanCheck": "go 일치 (lean-yes .55)"
+    },
+    {
+      "id": "swords-13/reversed/answers/2",
+      "path": "cards.swords-13.reversed.answers[2]",
+      "pointer": "/cards/swords-13/reversed/answers/2",
+      "field": "answers",
+      "card": "swords-13",
+      "cardKo": "검 여왕",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "UNCLEAR",
+        "IMAGE_ONLY"
+      ],
+      "note": "“내민 손도 같이 써요”는 무슨 뜻인지 불분명",
+      "current": "내민 손도 같이 써요",
+      "proposed": "상처받은 마음을 달래요",
+      "proposedLength": 12,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "swords-14/upright/answers/2",
+      "path": "cards.swords-14.upright.answers[2]",
+      "pointer": "/cards/swords-14/upright/answers/2",
+      "field": "answers",
+      "card": "swords-14",
+      "cardKo": "검 왕",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME"
+      ],
+      "note": "“냉정한 게 다정할 때도 있어요”는 반전식 위로 공식",
+      "current": "냉정한 게 다정할 때도 있어요",
+      "proposed": "냉정하게 따져도 괜찮아요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes .75)"
+    },
+    {
+      "id": "pentacles-01/upright/answers/2",
+      "path": "cards.pentacles-01.upright.answers[2]",
+      "pointer": "/cards/pentacles-01/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-01",
+      "cardKo": "펜타클 에이스",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "아치는 그림 속 사물",
+      "current": "아치 너머로 길이 나 있어요",
+      "proposed": "현실적인 일 하나를 골라요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "pentacles-01/reversed/answers/2",
+      "path": "cards.pentacles-01.reversed.answers[2]",
+      "pointer": "/cards/pentacles-01/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-01",
+      "cardKo": "펜타클 에이스",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "High",
+      "issues": [
+        "TAUTOLOGY"
+      ],
+      "note": "“늦은 시작도 시작이에요”는 같은 말 반복",
+      "current": "늦은 시작도 시작이에요",
+      "proposed": "늦었다고 서두르지 말아요",
+      "proposedLength": 13,
+      "leanCheck": "wait 일치 (no .70)"
+    },
+    {
+      "id": "pentacles-02/upright/answers/1",
+      "path": "cards.pentacles-02.upright.answers[1]",
+      "pointer": "/cards/pentacles-02/upright/answers/1",
+      "field": "answers",
+      "card": "pentacles-02",
+      "cardKo": "펜타클 2",
+      "side": "upright",
+      "variant": 1,
+      "lean": "wait",
+      "severity": "Low",
+      "issues": [
+        "VAGUE",
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“춤추듯 가볍게”는 뭘 가볍게 하라는 건지 불분명",
+      "current": "춤추듯 가볍게",
+      "proposed": "무겁게 말고 가볍게",
+      "proposedLength": 10,
+      "leanCheck": "wait 일치 (maybe .80)"
+    },
+    {
+      "id": "pentacles-02/upright/answers/2",
+      "path": "cards.pentacles-02.upright.answers[2]",
+      "pointer": "/cards/pentacles-02/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-02",
+      "cardKo": "펜타클 2",
+      "side": "upright",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "PROMISE"
+      ],
+      "note": "“배는 떠요”는 안심 격언",
+      "current": "파도가 높아도 배는 떠요",
+      "proposed": "흔들려도 균형은 잡을 수 있어요",
+      "proposedLength": 17,
+      "leanCheck": "wait 일치 (maybe .80)"
+    },
+    {
+      "id": "pentacles-03/reversed/answers/2",
+      "path": "cards.pentacles-03.reversed.answers[2]",
+      "pointer": "/cards/pentacles-03/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-03",
+      "cardKo": "펜타클 3",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM"
+      ],
+      "note": "“말이 맞아야 돌이 맞아요”는 운율만 맞춘 말",
+      "current": "말이 맞아야 돌이 맞아요",
+      "proposed": "먼저 서로 생각부터 맞춰요",
+      "proposedLength": 14,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "pentacles-04/upright/answers/0",
+      "path": "cards.pentacles-04.upright.answers[0]",
+      "pointer": "/cards/pentacles-04/upright/answers/0",
+      "field": "answers",
+      "card": "pentacles-04",
+      "cardKo": "펜타클 4",
+      "side": "upright",
+      "variant": 0,
+      "lean": "wait",
+      "severity": "Low",
+      "issues": [
+        "TAUTOLOGY",
+        "VAGUE"
+      ],
+      "note": "“지킬 건 지켜요”는 같은 말 되풀이 꼴이라 뭘 지키라는지 흐리다",
+      "current": "지킬 건 지켜요",
+      "proposed": "정말 소중한 것만 지켜요",
+      "proposedLength": 13,
+      "leanCheck": "wait 일치 (lean-maybe .50)"
+    },
+    {
+      "id": "pentacles-04/reversed/answers/2",
+      "path": "cards.pentacles-04.reversed.answers[2]",
+      "pointer": "/cards/pentacles-04/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-04",
+      "cardKo": "펜타클 4",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "머리 위 동전은 그림 속 사물",
+      "current": "머리 위 동전은 내려놔요",
+      "proposed": "잃을까 봐 쥐고만 있진 말아요",
+      "proposedLength": 16,
+      "leanCheck": "rethink 일치 (lean-no .50)"
+    },
+    {
+      "id": "pentacles-05/upright/answers/0",
+      "path": "cards.pentacles-05.upright.answers[0]",
+      "pointer": "/cards/pentacles-05/upright/answers/0",
+      "field": "answers",
+      "card": "pentacles-05",
+      "cardKo": "펜타클 5",
+      "side": "upright",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "불 켜진 창은 그림 속 사물",
+      "current": "불 켜진 창을 봐요",
+      "proposed": "혼자 버티지 말고 도움을 찾아요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (no 1.00)"
+    },
+    {
+      "id": "pentacles-05/upright/answers/1",
+      "path": "cards.pentacles-05.upright.answers[1]",
+      "pointer": "/cards/pentacles-05/upright/answers/1",
+      "field": "answers",
+      "card": "pentacles-05",
+      "cardKo": "펜타클 5",
+      "side": "upright",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "Low",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“도움은 가까이 있어요”는 모르는 상황을 단정한다",
+      "current": "도움은 가까이 있어요",
+      "proposed": "가까이에 도움이 있는지 둘러봐요",
+      "proposedLength": 17,
+      "leanCheck": "rethink 일치 (no 1.00)"
+    },
+    {
+      "id": "pentacles-05/upright/answers/2",
+      "path": "cards.pentacles-05.upright.answers[2]",
+      "pointer": "/cards/pentacles-05/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-05",
+      "cardKo": "펜타클 5",
+      "side": "upright",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "VAGUE"
+      ],
+      "note": "“혼자는 아니에요”는 상황 단정",
+      "current": "추운 길도 혼자는 아니에요",
+      "proposed": "힘들다고 먼저 말해요",
+      "proposedLength": 11,
+      "leanCheck": "rethink 일치 (no 1.00)"
+    },
+    {
+      "id": "pentacles-05/reversed/answers/1",
+      "path": "cards.pentacles-05.reversed.answers[1]",
+      "pointer": "/cards/pentacles-05/reversed/answers/1",
+      "field": "answers",
+      "card": "pentacles-05",
+      "cardKo": "펜타클 5",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "IMAGE_ONLY"
+      ],
+      "note": "“눈발이 잦아드는 중”은 그림 속 눈이고 나아진다는 단정",
+      "current": "눈발이 잦아드는 중",
+      "proposed": "혼자 안고 있던 걸 나눠요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (lean-maybe .50)"
+    },
+    {
+      "id": "pentacles-05/reversed/answers/2",
+      "path": "cards.pentacles-05.reversed.answers[2]",
+      "pointer": "/cards/pentacles-05/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-05",
+      "cardKo": "펜타클 5",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME"
+      ],
+      "note": "“~것도 용기예요”는 위로 공식",
+      "current": "받는 것도 용기예요",
+      "proposed": "내민 손이 있다면 잡아요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (lean-maybe .50)"
+    },
+    {
+      "id": "pentacles-06/upright/answers/1",
+      "path": "cards.pentacles-06.upright.answers[1]",
+      "pointer": "/cards/pentacles-06/upright/answers/1",
+      "field": "answers",
+      "card": "pentacles-06",
+      "cardKo": "펜타클 6",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "UNCLEAR"
+      ],
+      "note": "무엇을 청하는지 목적어가 없다",
+      "current": "필요하면 청해요",
+      "proposed": "필요하면 도움을 청해요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "pentacles-06/upright/answers/2",
+      "path": "cards.pentacles-06.upright.answers[2]",
+      "pointer": "/cards/pentacles-06/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-06",
+      "cardKo": "펜타클 6",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "APHORISM",
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“저울이 있어야 오래 줘요”는 뜻이 안 닿는다",
+      "current": "저울이 있어야 오래 줘요",
+      "proposed": "나눌 기준을 정해 두면 편해요",
+      "proposedLength": 16,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "pentacles-06/reversed/answers/0",
+      "path": "cards.pentacles-06.reversed.answers[0]",
+      "pointer": "/cards/pentacles-06/reversed/answers/0",
+      "field": "answers",
+      "card": "pentacles-06",
+      "cardKo": "펜타클 6",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "기울어진 저울은 그림 속 사물",
+      "current": "기울어진 저울을 봐요",
+      "proposed": "주고받는 게 기울었는지 살펴요",
+      "proposedLength": 16,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "pentacles-06/reversed/answers/2",
+      "path": "cards.pentacles-06.reversed.answers[2]",
+      "pointer": "/cards/pentacles-06/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-06",
+      "cardKo": "펜타클 6",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "UNCLEAR",
+        "IMAGE_ONLY"
+      ],
+      "note": "“내민 손이 보이게 해요”는 무슨 뜻인지 불분명",
+      "current": "내민 손이 보이게 해요",
+      "proposed": "필요한 건 분명히 말해요",
+      "proposedLength": 13,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "pentacles-07/reversed/answers/2",
+      "path": "cards.pentacles-07.reversed.answers[2]",
+      "pointer": "/cards/pentacles-07/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-07",
+      "cardKo": "펜타클 7",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "High",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "발치의 펜타클은 그림 속 사물",
+      "current": "발치의 하나부터 거둬요",
+      "proposed": "익은 것만 먼저 거둬요",
+      "proposedLength": 12,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "pentacles-08/upright/answers/2",
+      "path": "cards.pentacles-08.upright.answers[2]",
+      "pointer": "/cards/pentacles-08/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-08",
+      "cardKo": "펜타클 8",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "UNCLEAR"
+      ],
+      "note": "“손이 기억할 때까지”는 서술어가 없어 덜 끝난 문장",
+      "current": "손이 기억할 때까지",
+      "proposed": "손이 기억할 때까지 반복해요",
+      "proposedLength": 15,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "pentacles-08/reversed/answers/2",
+      "path": "cards.pentacles-08.reversed.answers[2]",
+      "pointer": "/cards/pentacles-08/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-08",
+      "cardKo": "펜타클 8",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR",
+        "UNCLEAR"
+      ],
+      "note": "같은 새김은 그림 속 작업",
+      "current": "같은 새김도 방법은 여럿",
+      "proposed": "같은 일도 방법은 여럿이에요",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "pentacles-09/upright/answers/2",
+      "path": "cards.pentacles-09.upright.answers[2]",
+      "pointer": "/cards/pentacles-09/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-09",
+      "cardKo": "펜타클 9",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_ONLY"
+      ],
+      "note": "“달팽이”는 그림 속 사물",
+      "current": "달팽이 걸음이어도 내 길",
+      "proposed": "내 속도로 내 길을 가요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes .95)"
+    },
+    {
+      "id": "pentacles-09/reversed/answers/0",
+      "path": "cards.pentacles-09.reversed.answers[0]",
+      "pointer": "/cards/pentacles-09/reversed/answers/0",
+      "field": "answers",
+      "card": "pentacles-09",
+      "cardKo": "펜타클 9",
+      "side": "reversed",
+      "variant": 0,
+      "lean": "rethink",
+      "severity": "Low",
+      "issues": [
+        "DUP"
+      ],
+      "note": "“겉보다 속을 챙겨요”는 교황 역방향 a2와 같은 틀",
+      "current": "겉보다 속을 챙겨요",
+      "proposed": "번듯함보다 내 마음이 먼저",
+      "proposedLength": 14,
+      "leanCheck": "rethink 일치 (lean-no .50)"
+    },
+    {
+      "id": "pentacles-10/upright/answers/2",
+      "path": "cards.pentacles-10.upright.answers[2]",
+      "pointer": "/cards/pentacles-10/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-10",
+      "cardKo": "펜타클 10",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "VAGUE"
+      ],
+      "note": "“뿌리 깊은 쪽이 편해요”는 막연한 격언풍",
+      "current": "뿌리 깊은 쪽이 편해요",
+      "proposed": "길게 보고 정해요",
+      "proposedLength": 9,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "pentacles-10/reversed/answers/1",
+      "path": "cards.pentacles-10.reversed.answers[1]",
+      "pointer": "/cards/pentacles-10/reversed/answers/1",
+      "field": "answers",
+      "card": "pentacles-10",
+      "cardKo": "펜타클 10",
+      "side": "reversed",
+      "variant": 1,
+      "lean": "rethink",
+      "severity": "Low",
+      "issues": [
+        "MONEY_HEALTH"
+      ],
+      "note": "돈 이야기를 직접 말한다(돈·건강은 전문가 안내 대상)",
+      "current": "돈 이야기는 사실부터",
+      "proposed": "얽힌 이야기는 사실부터 짚어요",
+      "proposedLength": 16,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "pentacles-10/reversed/answers/2",
+      "path": "cards.pentacles-10.reversed.answers[2]",
+      "pointer": "/cards/pentacles-10/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-10",
+      "cardKo": "펜타클 10",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE",
+        "APHORISM"
+      ],
+      "note": "“새 방식도 집이 될 수 있어요”는 막연한 약속",
+      "current": "새 방식도 집이 될 수 있어요",
+      "proposed": "내 방식으로 꾸려도 괜찮아요",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (no .70)"
+    },
+    {
+      "id": "pentacles-11/upright/answers/2",
+      "path": "cards.pentacles-11.upright.answers[2]",
+      "pointer": "/cards/pentacles-11/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-11",
+      "cardKo": "펜타클 시종",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "TAUTOLOGY"
+      ],
+      "note": "“들여다볼수록 보여요”는 같은 말 반복",
+      "current": "들여다볼수록 보여요",
+      "proposed": "작은 계획 하나로 시작해요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "pentacles-13/upright/answers/1",
+      "path": "cards.pentacles-13.upright.answers[1]",
+      "pointer": "/cards/pentacles-13/upright/answers/1",
+      "field": "answers",
+      "card": "pentacles-13",
+      "cardKo": "펜타클 여왕",
+      "side": "upright",
+      "variant": 1,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "VAGUE"
+      ],
+      "note": "“따뜻함은 밥상에서부터”는 카드 문구 같은 말",
+      "current": "따뜻함은 밥상에서부터",
+      "proposed": "있는 걸로 알뜰하게 꾸려요",
+      "proposedLength": 14,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "pentacles-13/upright/answers/2",
+      "path": "cards.pentacles-13.upright.answers[2]",
+      "pointer": "/cards/pentacles-13/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-13",
+      "cardKo": "펜타클 여왕",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "REFRAME"
+      ],
+      "note": "“~솜씨도 실력이에요”는 위로 공식",
+      "current": "살림 솜씨도 실력이에요",
+      "proposed": "내가 가진 걸 믿고 가요",
+      "proposedLength": 13,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "pentacles-13/reversed/answers/2",
+      "path": "cards.pentacles-13.reversed.answers[2]",
+      "pointer": "/cards/pentacles-13/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-13",
+      "cardKo": "펜타클 여왕",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "wait",
+      "severity": "Low",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "가지치기 비유는 그림 속 덩굴",
+      "current": "장미 덩굴도 가지치기를 해요",
+      "proposed": "일부터 조금 덜어 내요",
+      "proposedLength": 12,
+      "leanCheck": "wait 일치 (lean-no .67)"
+    },
+    {
+      "id": "pentacles-14/upright/answers/2",
+      "path": "cards.pentacles-14.upright.answers[2]",
+      "pointer": "/cards/pentacles-14/upright/answers/2",
+      "field": "answers",
+      "card": "pentacles-14",
+      "cardKo": "펜타클 왕",
+      "side": "upright",
+      "variant": 2,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "APHORISM",
+        "DUP"
+      ],
+      "note": "“포도는 익은 만큼 거둬요”는 여황제 a0과 같은 수확 비유",
+      "current": "포도는 익은 만큼 거둬요",
+      "proposed": "일군 만큼 누려도 돼요",
+      "proposedLength": 12,
+      "leanCheck": "go 일치 (yes 1.00)"
+    },
+    {
+      "id": "pentacles-14/reversed/answers/2",
+      "path": "cards.pentacles-14.reversed.answers[2]",
+      "pointer": "/cards/pentacles-14/reversed/answers/2",
+      "field": "answers",
+      "card": "pentacles-14",
+      "cardKo": "펜타클 왕",
+      "side": "reversed",
+      "variant": 2,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "IMAGE_METAPHOR"
+      ],
+      "note": "“왕좌도 가끔 비워요”는 그림 속 왕좌",
+      "current": "왕좌도 가끔 비워요",
+      "proposed": "자리를 비우고 여유도 가져요",
+      "proposedLength": 15,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "major-01-magician/reversed/why",
+      "path": "cards.major-01-magician.reversed.why",
+      "pointer": "/cards/major-01-magician/reversed/why",
+      "field": "why",
+      "card": "major-01-magician",
+      "cardKo": "마법사",
+      "side": "reversed",
+      "variant": null,
+      "lean": "rethink",
+      "severity": "Medium",
+      "issues": [
+        "AWKWARD"
+      ],
+      "note": "“도구가 움직이니”는 어색하다(도구는 스스로 움직이지 않는다). “한뜻이 되어야”도 낯설다",
+      "current": "막대를 높이 든 손과 땅을 가리키는 손이 한뜻이 되어야 탁자 위 도구가 움직이니, 할 일 하나로 좁혀 봐요.",
+      "proposed": "막대를 높이 든 손과 땅을 가리키는 손이 따로 놀면 탁자 위 도구도 쓸모없으니, 할 일 하나로 좁혀 봐요.",
+      "proposedLength": 59,
+      "leanCheck": "rethink 일치 (no .80)"
+    },
+    {
+      "id": "major-03-empress/reversed/why",
+      "path": "cards.major-03-empress.reversed.why",
+      "pointer": "/cards/major-03-empress/reversed/why",
+      "field": "why",
+      "card": "major-03-empress",
+      "cardKo": "여황제",
+      "side": "reversed",
+      "variant": null,
+      "lean": "wait",
+      "severity": "Low",
+      "issues": [
+        "STIFF"
+      ],
+      "note": "“확보해요”는 딱딱한 말",
+      "current": "석류 무늬 드레스의 여황제도 편히 기대야 다시 돌볼 힘이 나니, 남을 챙기기 전에 내 쉼부터 확보해요.",
+      "proposed": "석류 무늬 드레스의 여황제도 편히 기대야 다시 돌볼 힘이 나니, 남을 챙기기 전에 내 쉼부터 찾아요.",
+      "proposedLength": 56,
+      "leanCheck": "wait 일치 (lean-no .50)"
+    },
+    {
+      "id": "major-10-wheel-of-fortune/reversed/why",
+      "path": "cards.major-10-wheel-of-fortune.reversed.why",
+      "pointer": "/cards/major-10-wheel-of-fortune/reversed/why",
+      "field": "why",
+      "card": "major-10-wheel-of-fortune",
+      "cardKo": "운명의 수레바퀴",
+      "side": "reversed",
+      "variant": null,
+      "lean": "wait",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“다시 도니”는 흐름이 다시 돈다는 예고(a1 “바퀴는 다시 돌아요”와 같은 문제)",
+      "current": "오르는 짐승과 내려가는 뱀이 한 바퀴에 함께 있듯, 걸린 흐름도 다시 도니 억지로 붙잡지 않아도 돼요.",
+      "proposed": "오르는 짐승과 내려가는 뱀이 한 바퀴에 함께 있듯, 흐름에는 오름도 내림도 있으니 억지로 붙잡지 않아도 돼요.",
+      "proposedLength": 61,
+      "leanCheck": "wait 일치 (lean-no .60)"
+    },
+    {
+      "id": "swords-02/reversed/why",
+      "path": "cards.swords-02.reversed.why",
+      "pointer": "/cards/swords-02/reversed/why",
+      "field": "why",
+      "card": "swords-02",
+      "cardKo": "검 2",
+      "side": "reversed",
+      "variant": null,
+      "lean": "go",
+      "severity": "High",
+      "issues": [
+        "MEANING",
+        "LEAN_MISMATCH"
+      ],
+      "note": "“이제 가리개를 풀고 한쪽을 골라도 괜찮아요”는 118fad0 이전(waning) 풀이. blocked(정보 과다)와 정반대",
+      "current": "눈을 가리고 두 칼을 엇갈려 든 채 버티는 자세는 오래 못 가니, 이제 가리개를 풀고 한쪽을 골라도 괜찮아요.",
+      "proposed": "눈을 가리고 두 칼을 엇갈려 든 채 오래 서성이니, 더 모으기보다 기준 하나부터 정하고 천천히 골라요.",
+      "proposedLength": 57,
+      "leanCheck": "go → wait 변경 제안 (lean-maybe .50)"
+    },
+    {
+      "id": "swords-03/reversed/why",
+      "path": "cards.swords-03.reversed.why",
+      "pointer": "/cards/swords-03/reversed/why",
+      "field": "why",
+      "card": "swords-03",
+      "cardKo": "검 3",
+      "side": "reversed",
+      "variant": null,
+      "lean": "go",
+      "severity": "Medium",
+      "issues": [
+        "PROMISE"
+      ],
+      "note": "“언젠가 그치니”는 나아진다는 예고(cautions NO_EVENT와 결이 어긋난다)",
+      "current": "하트를 꿰뚫은 칼 뒤로 내리던 비도 언젠가 그치니, 아팠던 일을 조금씩 흘려보내 봐요.",
+      "proposed": "하트를 꿰뚫은 칼 뒤로 비가 내리는 그림이라도, 아픔은 조금씩 흘려보낼 수 있으니 천천히 놓아 봐요.",
+      "proposedLength": 56,
+      "leanCheck": "go 검토 항목(6.4) (lean-maybe .50)"
+    },
+    {
+      "id": "pentacles-11/reversed/why",
+      "path": "cards.pentacles-11.reversed.why",
+      "pointer": "/cards/pentacles-11/reversed/why",
+      "field": "why",
+      "card": "pentacles-11",
+      "cardKo": "펜타클 시종",
+      "side": "reversed",
+      "variant": null,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "DAILY"
+      ],
+      "note": "“계획 하나를 오늘 직접”의 오늘은 일일 운세 틀(오늘 해 볼 일 블록을 걷어내면 더 눈에 띈다)",
+      "current": "들어 올린 펜타클을 바라보기만 해서는 멀리 갈아 둔 밭까지 갈 수 없으니, 계획 하나를 오늘 직접 해 봐요.",
+      "proposed": "들어 올린 펜타클을 바라보기만 해서는 멀리 갈아 둔 밭까지 갈 수 없으니, 계획 하나를 직접 해 봐요.",
+      "proposedLength": 57,
+      "leanCheck": "go 합의와 다름, leanNote 있음 (lean-no .60)"
+    },
+    {
+      "id": "swords-08/reversed/why",
+      "path": "cards.swords-08.reversed.why",
+      "pointer": "/cards/swords-08/reversed/why",
+      "field": "why",
+      "card": "swords-08",
+      "cardKo": "검 8",
+      "side": "reversed",
+      "variant": null,
+      "lean": "go",
+      "severity": "Low",
+      "issues": [
+        "AWKWARD"
+      ],
+      "note": "“다리는 자유롭듯 움직일 수 있는”에서 듯이 뒤 내용과 안 이어진다",
+      "current": "천이 윗몸에만 감긴 여인의 다리는 자유롭듯 움직일 수 있는 부분이 있으니, 작은 것부터 빠져나와 봐요.",
+      "proposed": "천이 윗몸에만 감긴 여인의 다리는 자유로우니, 움직일 수 있는 부분부터 작게 빠져나와 봐요.",
+      "proposedLength": 51,
+      "leanCheck": "go 일치 (lean-yes .60)"
+    }
+  ]
+}
