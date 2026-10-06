@@ -6,8 +6,9 @@ import { safeReturnTo } from "./returnTo";
 /**
  * The OAuth `state`: a random value in a signed, 10-minute, httpOnly SameSite=Lax cookie. The
  * callback must bring the same value back (constant-time compare). This is the CSRF guard of the
- * Kakao flow. The cookie also carries where to return, why we went (login, or the account deletion
- * re-check) and whether the 만 14세 box was ticked.
+ * Kakao and Google flows. The cookie also carries where to return, why we went (login, or the account
+ * deletion re-check) and whether the 만 14세 box was ticked; for Google, the OpenID nonce and the PKCE
+ * verifier too (only this browser and the server ever see the verifier: Google gets its S256 hash).
  */
 
 /** `__Host-sl_oauth` in production, `sl_oauth` on localhost (http.ts hostCookieName). */
@@ -22,6 +23,10 @@ export interface OAuthIntent {
   age: boolean;
   /** delete: the session that asked (Task 12) */
   sid?: string;
+  /** Google: the nonce its ID token must carry back */
+  nonce?: string;
+  /** Google: the PKCE code verifier the token request sends */
+  verifier?: string;
 }
 
 interface OAuthPayload extends SignedPayload, OAuthIntent {
@@ -46,6 +51,8 @@ export async function openOAuthState(cookie: string | undefined, state: string |
     purpose: payload.purpose === "delete" ? "delete" : "login",
     age: payload.age === true,
     ...(typeof payload.sid === "string" ? { sid: payload.sid } : {}),
+    ...(typeof payload.nonce === "string" ? { nonce: payload.nonce } : {}),
+    ...(typeof payload.verifier === "string" ? { verifier: payload.verifier } : {}),
   };
 }
 

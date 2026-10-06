@@ -25,9 +25,11 @@ declare global {
     WEBHOOK_LIMITER?: RateLimitBinding;
     ME_LIMITER?: RateLimitBinding;
     DAILY_KV?: KvBinding;
-    /** Worker secrets read from here, never process.env (lib/account/review.ts) */
+    /** Worker secrets read from here, never process.env (lib/account/review.ts, lib/account/google.ts) */
     REVIEW_LOGIN_ID?: string;
     REVIEW_LOGIN_PASSWORD?: string;
+    GOOGLE_CLIENT_ID?: string;
+    GOOGLE_CLIENT_SECRET?: string;
   }
 }
 

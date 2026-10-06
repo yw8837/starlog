@@ -1,3 +1,4 @@
+import { isGoogleAccount } from "@/lib/account/google";
 import { openAccount } from "@/lib/account/request";
 import { isReviewer } from "@/lib/account/review";
 import { clearSession, sessionCookieName } from "@/lib/account/session";
@@ -16,7 +17,8 @@ import { signingSecret } from "@/lib/security/sign";
  * - `owner`: whether it holds the owner pass;
  * - `user`: the logged-in user's nickname, 별조각 (with the soonest expiry), unopened purchases (each
  *   with `refundUntil`, the last moment 환불받기 works) and `opening`, the readings being opened right
- *   now (a paid one is never also in `unused`); `review: true` only on the review account.
+ *   now (a paid one is never also in `unused`); `review: true` only on the review account, `google: true`
+ *   only on a Google account.
  * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
  * network (ME_LIMITER, generous: every page with an account line asks it).
  */
@@ -47,6 +49,7 @@ export async function GET(request: Request): Promise<Response> {
       unused: wallet.unused.map(({ orderId, productId, paidAt }) => ({ orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() })),
       opening: wallet.opening,
       ...(review ? { review: true } : {}),
+      ...(isGoogleAccount(ctx.session.user) ? { google: true } : {}),
     },
   });
 }

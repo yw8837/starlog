@@ -6,6 +6,8 @@ const LOGIN_MESSAGES: Record<string, string> = {
   closed: "지금은 새로 가입할 수 없어요",
   unavailable: "지금은 로그인할 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
   busy: "요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.",
+  // Google refuses to sign in inside in-app browsers (api/auth/google/start).
+  "in-app": "Google 로그인은 카카오톡 밖의 브라우저에서 해 주세요.",
 };
 
 /** What to say for the ?login= flag a login brought back (nothing for ok). */
