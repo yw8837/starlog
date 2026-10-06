@@ -23,6 +23,26 @@ import { isDailyData, isDailyDeal } from "@/lib/reading/validate";
 const DAILY_PLAN = progressPlan("daily");
 const DEAL = [0, 1, 2] as const;
 
+/** Every way the three face-down slots can be laid out; 다시 섞기 moves to one of the others. */
+const ARRANGEMENTS: ReadonlyArray<readonly number[]> = [
+  [0, 1, 2],
+  [0, 2, 1],
+  [1, 0, 2],
+  [1, 2, 0],
+  [2, 0, 1],
+  [2, 1, 0],
+];
+
+/**
+ * A new layout of the three face-down cards, never the one already on the table: which slot of the
+ * server's deal each card on screen stands for. The cards stay unseen and the deal (fixed for the
+ * device and KST day) is the same three, so this only changes what a tap sends once the pick is made.
+ */
+export function rearranged(order: readonly number[]): readonly number[] {
+  const others = ARRANGEMENTS.filter((layout) => layout.some((slot, at) => slot !== order[at]));
+  return others[Math.floor(Math.random() * others.length)]!;
+}
+
 /** A swatch for the lucky colour's name (free text from the reading); gold when it is not one of these. */
 const SWATCHES: ReadonlyArray<[RegExp, string]> = [
   [/빨|레드|붉/, "#e5484d"],
@@ -54,6 +74,16 @@ function cardName(cardId: string, orientation: Orientation): string {
   }
 }
 
+const ShuffleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+    <path d="M3 7h3.5c2 0 3.2 1 4.3 2.6l2.4 3.8C14.3 15 15.5 16 17.5 16H21" />
+    <path d="M3 16h3.5c1.3 0 2.3-.5 3.1-1.3" />
+    <path d="M13.4 8.3C14.2 7.5 15.2 7 16.5 7H21" />
+    <path d="m18 4 3 3-3 3" />
+    <path d="m18 13 3 3-3 3" />
+  </svg>
+);
+
 type Limited = { card: { cardId: string; orientation: Orientation }; view: ErrorView };
 
 type Phase =
@@ -69,7 +99,8 @@ type Phase =
  * (the line large first, then the card and keyword, the reading, 애정·금전·일, lucky colour and
  * number, a tip). The server deals the three cards per device and KST day and only ever returns the
  * picked one, so a revisit that day shows that card and its fortune, fixed (also kept on this
- * device, so it survives the server's limits).
+ * device, so it survives the server's limits). Until the pick, 다시 섞기 plays the shuffle again and
+ * lays the three face-down cards out afresh, in the browser only: nothing is asked or shown.
  */
 export function TodayView() {
   const saved = useDaily();
@@ -80,7 +111,12 @@ export function TodayView() {
   const [checkError, setCheckError] = useState<ErrorView | null>(null);
   const [limited, setLimited] = useState<Limited | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // Which slot of the server's deal each face-down card on screen stands for (the first layout is as dealt).
+  const [order, setOrder] = useState<readonly number[]>(DEAL);
+  // Shuffles asked for in this visit; focus follows them to 바로 펼치기 and back to 다시 섞기.
+  const [reshuffles, setReshuffles] = useState(0);
   const lineRef = useRef<HTMLHeadingElement>(null);
+  const reshuffleRef = useRef<HTMLDivElement>(null);
 
   const reading = saved ?? null;
 
@@ -114,6 +150,13 @@ export function TodayView() {
     if (reading && justPicked) lineRef.current?.focus();
   }, [reading, justPicked]);
 
+  // After 다시 섞기 the button is gone while the cards shuffle; bring focus back once they are out.
+  // Only when focus was lost with the button itself, never pulled away from anywhere else.
+  useEffect(() => {
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (phase === "pick" && reshuffles > 0 && lost) reshuffleRef.current?.querySelector("button")?.focus();
+  }, [phase, reshuffles]);
+
   const pick = async (index: number) => {
     if (phase !== "pick" && phase !== "reading") return;
     setPicked(index);
@@ -128,6 +171,15 @@ export function TodayView() {
     } else if (result.error.code === "BETA_LIMIT" && result.error.card) {
       setLimited({ card: result.error.card, view: describeApiError(result.error, "daily") });
     }
+  };
+
+  // Before the pick only (the button is shown in no other phase): the cards are laid out afresh and
+  // the shuffle plays again. Nothing is asked of the server and nothing is turned over.
+  const reshuffle = () => {
+    if (phase !== "pick") return;
+    setOrder(rearranged(order));
+    setReshuffles((n) => n + 1);
+    setPhase("shuffle");
   };
 
   const state = daily.state;
@@ -175,11 +227,11 @@ export function TodayView() {
           <div className={s.stagePlaceholder} aria-hidden="true" />
         ) : phase === "shuffle" ? (
           <div className={s.shuffle}>
-            <ShuffleStage onDone={() => setPhase("pick")} />
+            <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffles > 0} />
           </div>
         ) : (
           <ol className={s.deal} aria-label="세 장의 카드">
-            {DEAL.map((index) => {
+            {order.map((index, slot) => {
               // After the pick only the chosen card stays: the other two are never shown.
               if (waiting && picked !== index) return null;
               return (
@@ -189,7 +241,7 @@ export function TodayView() {
                     size="md"
                     highlight={picked === index}
                     onFlip={waiting ? undefined : () => void pick(index)}
-                    label={`${index + 1}번째 카드 고르기`}
+                    label={`${slot + 1}번째 카드 고르기`}
                     className={s.dealCard}
                   />
                 </li>
@@ -209,7 +261,17 @@ export function TodayView() {
             </div>
           )
         ) : (
-          <p className={s.note}>하루 한 번 · 고른 카드는 오늘 하루 그대로예요</p>
+          <>
+            {/* Before the pick only; after the cards in the tab order. */}
+            {phase === "pick" ? (
+              <div ref={reshuffleRef}>
+                <Button variant="secondary" size="md" onClick={reshuffle} trailing={<ShuffleIcon />}>
+                  다시 섞기
+                </Button>
+              </div>
+            ) : null}
+            <p className={s.note}>하루 한 번 · 고른 카드는 오늘 하루 그대로예요</p>
+          </>
         )}
       </section>
     );
