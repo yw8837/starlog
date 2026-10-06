@@ -239,6 +239,19 @@ const SCREENS: Screen[] = [
     },
     prepare: waitForSheet,
   },
+  {
+    name: "saju-chart-topic",
+    path: "/saju/chart",
+    setup: async (page) => {
+      await ownAddress(page);
+      await setStorage(page, "localStorage", "starlog.saju-profile", BIRTH);
+    },
+    prepare: async (page) => {
+      await waitForSheet(page);
+      await page.getByRole("group", { name: "다른 운도 볼 수 있어요" }).getByRole("button", { name: "재물운" }).click();
+      await expect(page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" })).toBeVisible({ timeout: 30_000 });
+    },
+  },
   { name: "saju-reading", path: "/chapter/screendd04", setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screendd04")]) },
   { name: "today", path: "/today", setup: (page) => ownAddress(page) },
   {

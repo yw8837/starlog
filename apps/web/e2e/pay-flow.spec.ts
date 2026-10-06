@@ -114,3 +114,98 @@ test("a browser without the owner pass keeps today's sheet in owner mode", async
   await expect(sheet).toContainText(/오픈 기념으로 하루 .+ 무료예요/);
   await expect(sheet.getByRole("link")).toHaveCount(0);
 });
+
+/** 재물운 on /saju/chart for 1992-08-03 (남성), from the form; the topics are on in dev. */
+async function toSajuTopic(page: Page) {
+  await page.goto("/saju/new");
+  await page.getByLabel("태어난 연도").selectOption("1992");
+  await page.getByLabel("태어난 월").selectOption("8");
+  await page.getByLabel("태어난 일").selectOption("3");
+  await page.getByRole("button", { name: "남성", exact: true }).click();
+  await page.getByText("출생 정보를 풀이에 쓰는 데 동의해요").click();
+  await page.getByRole("button", { name: "명식 보기" }).click();
+  await expect(page).toHaveURL(/\/saju\/chart$/, { timeout: NAV });
+  await page.getByRole("group", { name: "다른 운도 볼 수 있어요" }).getByRole("button", { name: "재물운" }).click();
+  await expect(page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
+}
+
+test("owner mode, 주제별 사주: 별조각 opens 재물운 (the 운 survives the login), then 직장운 is paid and opens as 직장운", async ({ page }, info) => {
+  test.setTimeout(600_000);
+  await ownAddress(page, info);
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE } })).ok()).toBe(true);
+  await toSajuTopic(page);
+  await page.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).click();
+  await expect(page).toHaveURL(/\/login\?next=%2Fsaju%2Fchart%3Ftopic%3Dmoney$/, { timeout: NAV });
+  await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
+  await page.getByRole("button", { name: "카카오로 계속하기" }).click();
+  await expect(page).toHaveURL(/\/saju\/chart\?topic=money&login=ok$/, { timeout: NAV });
+
+  // The gift opens the 운 that came back with the address; the sheet names it and says what one payment opens.
+  const money = page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" });
+  await expect(money).toContainText("재물운 전체 풀이 · 2,900원");
+  await expect(money).toContainText("결제 한 번에 고른 풀이 하나를 열어요");
+  await money.getByRole("button", { name: "별조각 10개로 보기" }).click();
+  await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
+  await expect(page.getByText(/^사주 재물운 · /)).toBeVisible();
+
+  // Another 운 is a new purchase: checkout says so, and the paid reading opens as that 운 (back with ?topic=career&unlock=paid).
+  await page.goto("/saju/chart");
+  await page.getByRole("group", { name: "다른 운도 볼 수 있어요" }).getByRole("button", { name: "직장운" }).click();
+  const career = page.getByRole("region", { name: "직장운 전체 풀이에 담긴 것" });
+  await expect(career).toBeVisible({ timeout: GENERATION });
+  await career.getByRole("link", { name: "2,900원 결제하고 보기" }).click();
+  await expect(page).toHaveURL(/\/pay\/checkout\?/, { timeout: NAV });
+  await expect(page.getByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeVisible();
+  await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
+  await page.getByRole("button", { name: "2,900원 결제하기" }).click();
+  await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
+  await expect(page.getByText(/^사주 직장운 · /)).toBeVisible();
+
+  const saved = await (await page.request.get("/api/readings?limit=5")).json();
+  expect(saved.readings.map((r: { chapter: { topic?: string } }) => r.chapter.topic).sort()).toEqual(["career", "money"]);
+});
+
+test("owner mode, 주제별 사주: a 재물운 checkout comes back as ?topic=money&unlock=paid, only ?unlock= leaves the address, and a reload on it shows 재물운", async ({ page }, info) => {
+  test.setTimeout(600_000);
+  await ownAddress(page, info);
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE } })).ok()).toBe(true);
+  await toSajuTopic(page);
+  await page.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).click();
+  await expect(page).toHaveURL(/\/login\?next=%2Fsaju%2Fchart%3Ftopic%3Dmoney$/, { timeout: NAV });
+  await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
+  await page.getByRole("button", { name: "카카오로 계속하기" }).click();
+  await expect(page).toHaveURL(/\/saju\/chart\?topic=money&login=ok$/, { timeout: NAV });
+
+  // The opening that starts by itself on the way back is held: the first reading request never leaves the
+  // browser, so the purchase stays unopened while the address is read and the page is reloaded.
+  const held: string[] = [];
+  await page.route("**/api/saju/reading", (route) => {
+    if (held.length > 0) return route.continue();
+    held.push(route.request().postData() ?? "");
+    return new Promise<void>(() => {});
+  });
+  const money = page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" });
+  await money.getByRole("link", { name: "2,900원 결제하고 보기" }).click();
+  await expect(page).toHaveURL(/\/pay\/checkout\?/, { timeout: NAV });
+  await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
+  await page.getByRole("button", { name: "2,900원 결제하기" }).click();
+
+  // Back as ?topic=money&unlock=paid, the purchase starts opening 재물운; the address keeps the 운 and drops only ?unlock=.
+  await expect.poll(() => held.length, { timeout: GENERATION }).toBe(1);
+  expect(JSON.parse(held[0]!)).toMatchObject({ topic: "money", unlock: { method: "paid" } });
+  await expect(page).toHaveURL(/\/saju\/chart\?topic=money$/, { timeout: NAV });
+
+  // A reload on that address comes back to 재물운, with the paid reading waiting.
+  await page.reload();
+  await expect(page.getByText("재물운 · 맛보기", { exact: true })).toBeVisible({ timeout: GENERATION });
+  await expect(page.getByRole("group", { name: "다른 운도 볼 수 있어요" }).getByRole("button", { name: "재물운" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page).toHaveURL(/\/saju\/chart\?topic=money$/);
+  await expect(money.getByRole("button", { name: "결제한 풀이 열기" })).toBeVisible();
+
+  // Opening it from there opens 재물운 (the held try spent nothing).
+  await money.getByRole("button", { name: "결제한 풀이 열기" }).click();
+  await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
+  await expect(page.getByText(/^사주 재물운 · /)).toBeVisible();
+  const saved = await (await page.request.get("/api/readings?limit=5")).json();
+  expect(saved.readings.map((r: { chapter: { topic?: string } }) => r.chapter.topic)).toEqual(["money"]);
+});
