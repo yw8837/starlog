@@ -1,8 +1,10 @@
 import type { GuideArticle } from "../guide";
 import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
+import { DAY_MASTER_ARTICLES } from "./day-masters";
 import { MAJOR_ARCANA_ARTICLES } from "./tarot";
 import { TAROT_BASICS_ARTICLES } from "./tarot-basics";
 import { SAJU_ARTICLES } from "./saju";
+import { SAJU_CONCEPT_ARTICLES } from "./saju-concepts";
 import { SPREAD_ARTICLES } from "./spreads";
 
 /**
@@ -36,7 +38,7 @@ function withAnswers(article: GuideArticle): GuideArticle {
 
 /**
  * Base articles first (their order is the tab and home order), then spreads, the tarot basics (two
- * arcana, four suits, the 22 in order), cards 0–21 and saju.
+ * arcana, four suits, the 22 in order), cards 0–21, saju, the saju concepts and the ten day masters.
  */
 export function withGuideLibrary(base: readonly GuideArticle[]): GuideArticle[] {
   return [
@@ -48,5 +50,7 @@ export function withGuideLibrary(base: readonly GuideArticle[]): GuideArticle[] 
     ...TAROT_BASICS_ARTICLES,
     ...MAJOR_ARCANA_ARTICLES,
     ...SAJU_ARTICLES,
+    ...SAJU_CONCEPT_ARTICLES,
+    ...DAY_MASTER_ARTICLES,
   ].map(withAnswers);
 }

@@ -15,6 +15,27 @@ const SAJU_GLYPH: Record<string, { char: string; el: string }> = {
   manseryeok: { char: "曆", el: "earth" },
   "saju-compatibility": { char: "合", el: "fire" },
   "new-year-fortune": { char: "年", el: "wood" },
+  "four-pillars": { char: "柱", el: "earth" },
+  "ipchun-jeolgi": { char: "春", el: "wood" },
+  "jasi-birth": { char: "夜", el: "water" },
+  "saju-birth-info": { char: "生", el: "metal" },
+  "branch-relations": { char: "沖", el: "fire" },
+  "twelve-stages": { char: "旺", el: "earth" },
+  yongsin: { char: "用", el: "water" },
+  "wolun-iljin": { char: "月", el: "metal" },
+  "bond-score": { char: "緣", el: "fire" },
+  "saju-glossary": { char: "字", el: "wood" },
+  // The ten day masters: each stem in its own element.
+  "day-master-gapmok": { char: "甲", el: "wood" },
+  "day-master-eulmok": { char: "乙", el: "wood" },
+  "day-master-byeonghwa": { char: "丙", el: "fire" },
+  "day-master-jeonghwa": { char: "丁", el: "fire" },
+  "day-master-muto": { char: "戊", el: "earth" },
+  "day-master-gito": { char: "己", el: "earth" },
+  "day-master-gyeonggeum": { char: "庚", el: "metal" },
+  "day-master-singeum": { char: "辛", el: "metal" },
+  "day-master-imsu": { char: "壬", el: "water" },
+  "day-master-gyesu": { char: "癸", el: "water" },
 };
 
 /**
