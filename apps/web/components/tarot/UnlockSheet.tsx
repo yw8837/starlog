@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { SITE, won } from "@/lib/config";
 import { times } from "@/lib/helpGuide";
+import { REFUND_DAYS } from "@/lib/pay/catalog";
 import type { UnlockOffer } from "@/lib/pay/offer";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import type { ErrorView } from "@/lib/reading/errors";
@@ -129,7 +130,7 @@ export function UnlockSheet({
           결제한 풀이 열기
         </Button>
       );
-      caption = "결제한 풀이는 열기 전까지 언제든 환불할 수 있어요";
+      caption = `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
       break;
     case "stardust":
       offerPrimary = (

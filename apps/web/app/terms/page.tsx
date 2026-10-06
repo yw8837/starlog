@@ -4,7 +4,7 @@ import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/Legal
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
-import { GIFT_DAYS } from "@/lib/pay/catalog";
+import { GIFT_DAYS, REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
 const { free } = SITE.currency;
@@ -114,7 +114,7 @@ export default function TermsPage() {
           <li>결제는 토스페이먼츠를 통해 카드와 간편결제로 할 수 있습니다. 결제하려면 회원으로 로그인해야 합니다.</li>
           <li>운영자는 결제 전에 가격, 포함 내용, 청약철회가 제한되는 경우를 알리고 이용자의 확인을 받습니다.</li>
           <li>
-            {"결제한 풀이는 완성되어 계정에 저장된 때 제공된 것으로 봅니다. 청약철회와 환불은 "}
+            {`결제한 풀이는 완성되어 계정에 저장된 때 제공된 것으로 봅니다. 열기 전의 결제 풀이는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있으며, 그 밖의 청약철회와 환불은 `}
             <Link href="/refund">환불 정책</Link>
             {"을 따릅니다."}
           </li>

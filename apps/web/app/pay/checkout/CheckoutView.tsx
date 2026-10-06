@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref } from "@/lib/account/client";
 import { SITE, sajuTopicsMode, won } from "@/lib/config";
+import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { isPaymentWindowClosed, loadTossSdk, type TossWidgets } from "@/lib/pay/tossSdk";
 import { PREMIUM, isPremiumId } from "@/lib/premium/products";
 import { getJson, postJson } from "@/lib/reading/api";
@@ -153,7 +154,7 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
             </h2>
             <p>결제한 풀이는 완성되어 열리는 순간부터 청약철회가 제한돼요(전자상거래법 제17조 제2항 제5호). 무료로 본 첫 풀이가 맛보기예요.</p>
             <p>
-              {"결제는 풀이가 완성되어 저장될 때만 쓰여요. 열기 전에는 내 정보에서 전액 환불받을 수 있어요. "}
+              {`결제는 풀이가 완성되어 저장될 때만 쓰여요. 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 내 정보에서 전액 환불받을 수 있어요. `}
               <Link href="/refund">환불 정책</Link>
             </p>
             <p>만 19세 미만이 법정대리인의 동의 없이 결제하면 본인이나 법정대리인이 결제를 취소할 수 있어요.</p>

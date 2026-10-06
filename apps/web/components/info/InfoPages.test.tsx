@@ -198,6 +198,13 @@ describe("/faq", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("gives the 7-day refund rule for unopened readings, and keeps failures on our side refundable at any time", () => {
+    const refund = faqGroups().flatMap((group) => group.entries).find((entry) => entry.id === "refund")?.a.join(" ") ?? "";
+    expect(refund).toContain("유료 풀이는 열기 전이면 결제일로부터 7일 안에 전액 환불받을 수 있어요");
+    expect(refund).toContain("기간과 상관없이");
+    expect(refund).not.toContain("전액 취소할 수 있어요");
+  });
+
   it("names 별자리 인연 in the birth-date answer only while it is open", () => {
     const entries = (bonds: boolean) => faqGroups({ site: { ...SITE, features: { ...SITE.features, bonds } } }).flatMap((group) => group.entries);
     const birthDate = (bonds: boolean) => entries(bonds).find((entry) => entry.q === TRUST[1].q)?.a.join(" ");

@@ -36,6 +36,7 @@ describe("UnlockSheet offers", () => {
     fireEvent.click(screen.getByRole("button", { name: "결제한 풀이 열기" }));
     fireEvent.click(screen.getByRole("button", { name: "운영자로 무료 열기" }));
     expect(onUnlock.mock.calls).toEqual([["paid"], ["owner"]]);
+    expect(screen.getByText("결제한 풀이는 열기 전이면 결제일로부터 7일 안에 환불할 수 있어요")).toBeTruthy();
   });
 
   it("offers the refund next to the retry after a failed paid reading", () => {

@@ -34,7 +34,7 @@ describe("policy pages", () => {
     const text = container.textContent ?? "";
     expect(text).toContain("제17조 제2항 제5호");
     expect(text).toContain("결제하기 전에");
-    expect(text).toContain("기한 없이 전액 환불");
+    expect(text).toContain("결제일로부터 7일 안에 전액 환불");
     expect(text).toContain("영업일 기준 3~7일");
     expect(text).toContain("콘텐츠이용자보호지침");
     expect(text).toContain("본인 명의 계좌로 환불");

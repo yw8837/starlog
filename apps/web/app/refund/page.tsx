@@ -4,7 +4,7 @@ import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
-import { GIFT_DAYS } from "@/lib/pay/catalog";
+import { GIFT_DAYS, REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
 const { free } = SITE.currency;
@@ -44,7 +44,10 @@ export default function RefundPage() {
       </LegalSection>
 
       <LegalSection id="before-open" title="풀이를 열기 전">
-        <p>결제한 풀이를 열기 전에는 기한 없이 전액 환불받을 수 있어요. 내 정보 &gt; 결제한 풀이에서 ‘환불받기’를 누르면 바로 처리돼요.</p>
+        <p>
+          {`결제한 풀이를 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. ${REFUND_DAYS}일째 되는 날 밤 12시(한국 시간)까지예요(10월 6일에 결제했다면 10월 ${6 + REFUND_DAYS}일까지). 내 정보 > 결제한 풀이에서 ‘환불받기’를 누르면 바로 처리돼요.`}
+        </p>
+        <p>{`${REFUND_DAYS}일이 지난 뒤에도 풀이는 그대로 열 수 있어요.`}</p>
         <p>카드사가 결제를 취소해 주는 기간이 지났다면, 알려 주신 본인 명의 계좌로 환불해 드려요.</p>
       </LegalSection>
 
@@ -52,7 +55,7 @@ export default function RefundPage() {
         <ul className={s.list}>
           <li>{`풀이가 끝까지 완성되지 않았다면(생성 오류, 자동 품질 검사 탈락, 시간 초과) 결제한 풀이나 쓰려던 ${free}은 쓰이지 않아요. 같은 풀이를 다시 열 때 한 번 더 결제하지 않아요.`}</li>
           <li>연결이 끊겼는데 풀이는 완성됐다면, 그 풀이는 내 기록과 계정에 남아 있어요. 내 정보에서 결제한 풀이와 기록을 확인할 수 있어요.</li>
-          <li>결제한 풀이라면 다시 여는 대신 바로 전액 환불받을 수도 있어요.</li>
+          <li>{`결제한 풀이라면 다시 여는 대신 전액 환불받을 수도 있어요. 생성 실패나 장애, 결제 오류처럼 ${SITE.nameKo} 쪽 문제라면 결제일로부터 ${REFUND_DAYS}일이 지났어도 환불해 드려요. 이때는 아래 문의처로 알려 주세요.`}</li>
           <li>풀이가 결제 전에 안내한 내용과 다르게 제공됐다면, 확인한 뒤 같은 기준으로 처리해요.</li>
         </ul>
       </LegalSection>
@@ -72,7 +75,7 @@ export default function RefundPage() {
 
       <LegalSection id="how" title="환불 신청 방법과 처리 기간">
         <ul className={s.list}>
-          <li>열지 않은 결제는 내 정보 &gt; 결제한 풀이의 ‘환불받기’로 바로 환불돼요.</li>
+          <li>{`열지 않은 결제는 결제일로부터 ${REFUND_DAYS}일 안에 내 정보 > 결제한 풀이의 ‘환불받기’로 바로 환불돼요.`}</li>
           <li>그 밖의 환불은 아래 문의처로 결제일, 결제 금액, 로그인한 계정의 닉네임, 환불 사유를 알려 주세요. 확인한 날부터 영업일 기준 3~7일 이내에 결제한 수단으로 환불해 드려요.</li>
           <li>카드사나 결제사 사정에 따라 실제로 반영되기까지 며칠 더 걸릴 수 있어요.</li>
         </ul>

@@ -20,15 +20,22 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("2,900원");
     expect(page).toContain("이 기기에 계속 보관");
     expect(page).toContain("받은 날부터 90일째 되는 날까지 쓸 수 있어요");
+    expect(page).toContain("열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요");
+    expect(page).not.toContain("언제든 전액 환불");
     expect(page).not.toMatch(/충전|심층 풀이|프롤로그/);
     expect(page).not.toMatch(/켈틱|셀틱|celtic/i);
   });
 
-  it("/refund: 제공 means saved to the account; unopened is refundable any time, with a fallback", () => {
+  it("/refund: 제공 means saved to the account; unopened is refundable for 7 KST days after the payment, failures on our side whenever, with a fallback", () => {
     const page = text(<RefundPage />);
     expect(page).toContain("제17조 제2항 제5호");
     expect(page).toContain("완성되어 계정에 저장되면");
-    expect(page).toContain("기한 없이 전액 환불");
+    expect(page).toContain("결제일로부터 7일 안에 전액 환불");
+    expect(page).toContain("7일째 되는 날 밤 12시(한국 시간)까지");
+    expect(page).toContain("10월 6일에 결제했다면 10월 13일까지");
+    expect(page).toContain("7일이 지난 뒤에도 풀이는 그대로 열 수 있어요");
+    expect(page).toContain("결제일로부터 7일이 지났어도 환불해 드려요");
+    expect(page).not.toContain("기한 없이");
     expect(page).toContain("계좌로 환불");
     expect(page).toContain("내 정보 > 결제한 풀이");
     expect(page).not.toContain("결제 내역의 ‘환불받기’");
@@ -45,6 +52,7 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("제7조의2 (별조각)");
     expect(page).toContain("민법 제5조");
     expect(page).toContain("열지 않은 결제 풀이는 전액 환불");
+    expect(page).toContain("열기 전의 결제 풀이는 결제일로부터 7일 안에 전액 환불받을 수 있으며");
     expect(page).toContain("가입 선물");
     expect(page).not.toContain("충전");
     expect(page).not.toMatch(MODEL_NAMES);
