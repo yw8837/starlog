@@ -104,9 +104,9 @@ describe("오늘의 한 장 다시 섞기", () => {
   });
 
   it.each([
-    ["with motion, two riffles", false, 2400],
+    ["with motion, one riffle like 지금의 한 장", false, 1200],
     ["under reduced motion, a short pulse", true, 800],
-  ])("replays the same shuffle as the first one (%s) before the cards are back", async (_name, reduced, ms) => {
+  ])("replays a quick shuffle (%s) before the cards are back", async (_name, reduced, ms) => {
     motion(reduced);
     server();
     await toThreeCards();

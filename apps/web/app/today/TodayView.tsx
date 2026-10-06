@@ -22,6 +22,8 @@ import { isDailyData, isDailyDeal } from "@/lib/reading/validate";
 
 const DAILY_PLAN = progressPlan("daily");
 const DEAL = [0, 1, 2] as const;
+/** 다시 섞기 plays one riffle (1.2s) like 지금의 한 장, so asking again stays quick; the first shuffle keeps its two. */
+const RESHUFFLE_RIFFLES = 1;
 
 /** Every way the three face-down slots can be laid out; 다시 섞기 moves to one of the others. */
 const ARRANGEMENTS: ReadonlyArray<readonly number[]> = [
@@ -99,8 +101,8 @@ type Phase =
  * (the line large first, then the card and keyword, the reading, 애정·금전·일, lucky colour and
  * number, a tip). The server deals the three cards per device and KST day and only ever returns the
  * picked one, so a revisit that day shows that card and its fortune, fixed (also kept on this
- * device, so it survives the server's limits). Until the pick, 다시 섞기 plays the shuffle again and
- * lays the three face-down cards out afresh, in the browser only: nothing is asked or shown.
+ * device, so it survives the server's limits). Until the pick, 다시 섞기 plays a quick shuffle again
+ * and lays the three face-down cards out afresh, in the browser only: nothing is asked or shown.
  */
 export function TodayView() {
   const saved = useDaily();
@@ -227,7 +229,7 @@ export function TodayView() {
           <div className={s.stagePlaceholder} aria-hidden="true" />
         ) : phase === "shuffle" ? (
           <div className={s.shuffle}>
-            <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffles > 0} />
+            <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffles > 0} riffles={reshuffles > 0 ? RESHUFFLE_RIFFLES : undefined} />
           </div>
         ) : (
           <ol className={s.deal} aria-label="세 장의 카드">
