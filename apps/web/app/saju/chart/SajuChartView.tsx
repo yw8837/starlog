@@ -26,7 +26,7 @@ import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { commitQuota } from "@/lib/reading/api";
 import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { progressPlan } from "@/lib/reading/progress";
-import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
+import { pruneSajuTeasers, readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuReadingResponse, SajuRequestFields, SajuTeaserData, SajuTopic, SajuTopicId } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { chapterRequestFields, sajuContextBody, sajuStatusBody, sajuTeaserKey, useSajuContext } from "@/lib/sajuFlow";
@@ -94,6 +94,11 @@ export function SajuChartView({
   const [fresh, setFresh] = useState<{ key: string; data: SajuTeaserData } | null>(null);
   const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("saju", teaserKey, isSajuTeaser)) : null;
 
+  // Teasers past their time leave this device when the page opens (their keys hold birth data), not only at the next save.
+  useEffect(() => {
+    pruneSajuTeasers();
+  }, []);
+
   // The free reading, written once per birth data and 운 (kept on this device, spec §9.3). Switching
   // the 운 re-runs this; the previous request is cancelled first (the effect's cleanup).
   const { run: runTeaser, cancel: cancelTeaser, reset: resetTeaser } = teaserGen;
@@ -124,6 +129,9 @@ export function SajuChartView({
   // the rounds ran out. Either way the sheet offers nothing to buy or open (no second payment).
   const [check, setCheck] = useState<"running" | "stalled" | null>(null);
   const firstTry = useRef<number | null>(null);
+  // The 운 of the paid or 별조각 opening started here, for 다시 확인하기 whichever 운 is on screen by then;
+  // null on a fresh mount (a reload), when nothing remembers it.
+  const openingTopic = useRef<SajuTopic | null>(null);
   const checkAbort = useRef<AbortController | null>(null);
   useEffect(() => () => checkAbort.current?.abort(), []);
   const errorContext = method === "paid" ? "paid" : method === "free" ? "stardust" : "reading";
@@ -148,18 +156,20 @@ export function SajuChartView({
    * - "refused": NO_CREDIT though the credit looked held (an opening still running took it, or one
    *   already delivered spent it); an account that is sure nothing is left then says so;
    * - "recheck": 다시 확인하기 on a reading being opened.
-   * The account's reading of this opening has the same birth data and the same 운 (spec §9.2).
+   * The account's reading of this opening has the same birth data and the same 운 (spec §9.2). After a
+   * reload nothing remembers the 운 (`openedTopic` null): an account opens one saju reading at a time
+   * and `startedAt` bounds the window, so the reading of that birth data in it is this opening's.
    */
-  const settle = async (chosen: "paid" | "free", startedAt: number, held: HeldCredit, birth: SajuForm, openedTopic: SajuTopic, after: "cut" | "refused" | "recheck") => {
+  const settle = async (chosen: "paid" | "free", startedAt: number, held: HeldCredit, birth: SajuForm, openedTopic: SajuTopic | null, after: "cut" | "refused" | "recheck") => {
     checkAbort.current?.abort();
     const controller = new AbortController();
     checkAbort.current = controller;
     const credit = chosen === "paid" ? "paid" : "stardust";
-    // This flow's reading: the same birth data (compared field by field, whatever the key order) and 운.
+    // This flow's reading: the same birth data (compared field by field, whatever the key order) and, when known, 운.
     const sent = sanitizeSajuForm(birth);
     const sameFlow = (chapter: unknown) => {
       const c = chapter as { kind?: string; birth?: unknown; topic?: unknown };
-      return c.kind === "saju" && sent !== null && sameJson(sanitizeSajuForm(c.birth), sent) && (c.topic ?? "overall") === openedTopic;
+      return c.kind === "saju" && sent !== null && sameJson(sanitizeSajuForm(c.birth), sent) && (openedTopic === null || (c.topic ?? "overall") === openedTopic);
     };
     const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0, held };
     const stopWhenNone = after !== "cut";
@@ -205,7 +215,10 @@ export function SajuChartView({
       ...(chosen === "opening" ? {} : { unlock: { method: chosen }, display: { title: teaser.title, summary: teaser.summary } }),
     };
     const startedAt = Date.now();
-    if (chosen === "paid" || chosen === "free") firstTry.current ??= startedAt;
+    if (chosen === "paid" || chosen === "free") {
+      firstTry.current ??= startedAt;
+      openingTopic.current = topic;
+    }
     // What the account held as it started: "kept" later means all of it is back.
     const held = heldCredit(account?.user, product.id, product.units ?? 0);
     const res = await unlockGen.run("/api/saju/reading", body, plan, isSajuReadingResponse);
@@ -246,7 +259,8 @@ export function SajuChartView({
     if (autoUnlock === "paid" && offer.mode !== "open-paid") return;
     if (autoUnlock === "free" && offer.mode !== "stardust") return;
     autoStarted.current = true;
-    router.replace(RETURN_TO);
+    // Only ?unlock= leaves the address: the 운 stays, so a reload during the opening comes back to it.
+    router.replace(returnFor(topic));
     void unlock(autoUnlock);
   });
 
@@ -255,7 +269,7 @@ export function SajuChartView({
     const busy = account?.user?.opening.find((item) => item.productId === product.id);
     const chosen = busy ? (busy.currency === "stardust" ? "free" : "paid") : method === "free" ? "free" : "paid";
     setMethod(chosen); // the lines and the refund link that follow are about this credit
-    void settle(chosen, since(Date.now()), heldCredit(account?.user, product.id, product.units ?? 0), form, topic, check === "stalled" ? "cut" : "recheck");
+    void settle(chosen, since(Date.now()), heldCredit(account?.user, product.id, product.units ?? 0), form, openingTopic.current, check === "stalled" ? "cut" : "recheck");
   };
 
   const teaserState = teaserGen.state;

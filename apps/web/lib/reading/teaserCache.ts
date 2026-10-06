@@ -6,6 +6,7 @@ import { createLocalStore, createSessionStore, type SessionStore } from "@/lib/s
  * - saju (saju-topics spec §9.3): up to 15 on this device (localStorage), one per birth data, topic and
  *   that topic's chips (lib/sajuFlow.ts sajuTeaserKey), each until the server's `freshUntil` (30 days,
  *   the next 입춘 or the end of the 대운) and never past 30 days. A topic seen here switches back for free.
+ *   One past its time is ignored on read, dropped at the next save and when the chart page opens.
  */
 
 type Slot = "tarot" | "saju";
@@ -56,6 +57,19 @@ export function saveTeaser(slot: Slot, key: string, value: unknown, now = Date.n
   const freshUntil = Math.min(Number.isFinite(stated) ? stated : Number.POSITIVE_INFINITY, now + MAX_KEEP_MS);
   const kept = (sajuStore.read() ?? []).filter((e) => e.key !== key && e.freshUntil > now);
   sajuStore.save([...kept, { key, value, savedAt: now, freshUntil }].slice(-SAJU_TEASER_SLOTS));
+}
+
+/**
+ * Drops the saju teasers past their time. Their keys hold the birth data, and "up to 30 days" is what
+ * the privacy policy says, so the chart page calls this when it opens rather than waiting for the next
+ * save. Writes only when something goes.
+ */
+export function pruneSajuTeasers(now = Date.now()) {
+  const all = sajuStore.read() ?? [];
+  const live = all.filter((e) => e.freshUntil > now);
+  if (live.length === all.length) return;
+  if (live.length === 0) sajuStore.clear();
+  else sajuStore.save(live);
 }
 
 /** Forgets the saju teasers on this device (사주 정보 지우기, 기록 모두 지우기). */
