@@ -17,7 +17,8 @@ describe("지금의 한 장 DB lookup", () => {
         for (const answer of entry.answers) expect(answer.length).toBeGreaterThan(0);
         for (const answer of entry.answers) expect(answer.length).toBeLessThanOrEqual(20);
         expect(entry.why.length).toBeLessThanOrEqual(70);
-        expect(entry.tip.length).toBeLessThanOrEqual(40);
+        // The page reads lean, answers and why only: the source KB keeps each tip, the runtime copy drops it.
+        expect(entry).not.toHaveProperty("tip");
       }
     }
     expect(Object.keys(runtime)).toHaveLength(CARDS.length);
@@ -37,7 +38,7 @@ describe("지금의 한 장 DB lookup", () => {
     const expected = Object.fromEntries(
       Object.entries(source.cards).map(([id, sides]) => [
         id,
-        Object.fromEntries(SIDES.map((side) => [side, { lean: sides[side].lean, answers: sides[side].answers, why: sides[side].why, tip: sides[side].tip }])),
+        Object.fromEntries(SIDES.map((side) => [side, { lean: sides[side].lean, answers: sides[side].answers, why: sides[side].why }])),
       ]),
     );
     expect(runtime).toEqual(expected);

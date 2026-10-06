@@ -2,8 +2,9 @@
 import { DEFAULT_REVERSAL_RATE, createDeck, getCard } from "@starlog/core";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import source from "@content/kb/decision.ko.json";
 import { SITE, won } from "@/lib/config";
-import { decisionFor, drawNow } from "@/lib/decision";
+import { drawNow } from "@/lib/decision";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { HOWTO_SEEN_KEY, NowOracle } from "./NowOracle";
 
@@ -79,7 +80,9 @@ describe("지금의 한 장", () => {
     expect(screen.getByText(expected.why)).toBeTruthy();
     // 오늘 해 볼 일 belongs to 오늘의 한 장: here the answer is the card's reading only, no daily tip under it.
     expect(screen.queryByText("오늘 해 볼 일")).toBeNull();
-    expect(screen.queryByText(decisionFor(expected.cardId, expected.orientation).tip)).toBeNull();
+    // The source KB still carries this entry's tip (the runtime copy no longer does); it is not shown.
+    const { tip } = (source.cards as Record<string, Record<string, { tip: string }>>)[expected.cardId]![expected.orientation]!;
+    expect(screen.queryByText(tip)).toBeNull();
     expect(screen.getByText("오늘 먼저 연락해도 될까?")).toBeTruthy();
     expect(screen.getByRole("region", { name: "지금의 한 장 결과" }).dataset.lean).toBe(expected.lean);
 

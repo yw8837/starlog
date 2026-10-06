@@ -1,6 +1,7 @@
 import type { DeckState, Orientation } from "@starlog/core";
 // Written by scripts/check-decision-db.mjs from content/kb/decision.ko.json: only the fields the
-// /now page shows (56 KB raw, 17 KB gzip), bundled so the page draws in the browser with no server.
+// /now page shows (45 KB raw, 14 KB gzip), bundled so the page draws in the browser with no server.
+// The source's per-side tip is left out: no page reads it.
 import data from "./decision.generated.json";
 
 /** go: 끌리는 쪽으로 가도 돼요 · wait: 조금 더 지켜봐요 · rethink: 다른 길도 살펴봐요 */
@@ -12,8 +13,6 @@ export interface DecisionEntry {
   answers: readonly string[];
   /** Why this card says so, tied to what is drawn on it. */
   why: string;
-  /** One small thing to do today. */
-  tip: string;
 }
 
 /** One draw of 지금의 한 장: the card, its side and the line picked for this draw. */
@@ -25,7 +24,7 @@ export interface NowDraw {
   why: string;
 }
 
-type RawEntry = { lean: string; answers: string[]; why: string; tip: string };
+type RawEntry = { lean: string; answers: string[]; why: string };
 const DB: Record<string, Partial<Record<Orientation, RawEntry>>> = data;
 
 const toLean = (value: string): Lean => (value === "go" || value === "wait" || value === "rethink" ? value : "wait");

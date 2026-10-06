@@ -1,5 +1,6 @@
 // Checks content/kb/decision.ko.json (지금의 한 장 answers) and writes the slim runtime copy the
-// /now page bundles: apps/web/lib/decision.generated.json (answers, why, tip, lean per card side).
+// /now page bundles: apps/web/lib/decision.generated.json (lean, answers, why per card side). The source
+// keeps each side's tip and the checker still checks it, but no page reads it (634857e), so it is not shipped.
 // usage: node scripts/check-decision-db.mjs            check, then write the runtime copy when clean
 //        node scripts/check-decision-db.mjs --partial  check only the cards written so far (drafting)
 //        node scripts/check-decision-db.mjs --strict   variety warnings fail too
@@ -265,8 +266,8 @@ if (!partial) {
     index.ids.map((id) => [
       id,
       Object.fromEntries(SIDES.map((side) => {
-        const { lean, answers, why, tip } = cards[id][side];
-        return [side, { lean, answers, why, tip }];
+        const { lean, answers, why } = cards[id][side];
+        return [side, { lean, answers, why }];
       })),
     ]),
   );
