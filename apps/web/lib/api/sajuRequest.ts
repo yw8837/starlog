@@ -1,8 +1,11 @@
 import "server-only";
-import { historyUserTexts, withoutCrisisItems, type HistoryItem } from "@/lib/ai/history";
+import { historyForTopic, historyUserTexts, withoutCrisisItems, type HistoryItem } from "@/lib/ai/history";
 import { buildFactSet, type SajuFactSet, type SajuProfile } from "@/lib/ai/prompts/saju";
+import { buildTopicFactSet, type SajuTopicFactSet } from "@/lib/ai/prompts/sajuTopics";
+import { sajuTopicsMode } from "@/lib/config";
+import type { SajuTopicId } from "@/lib/reading/types";
 import { checkSajuForm, todayInKorea } from "@/lib/sajuForm";
-import { crisisResponse, errorResponse, isCrisisText, readJson } from "./http";
+import { crisisResponse, errorResponse, isCrisisText, readJson, type Gate } from "./http";
 import { LOVE_STATUS, SajuBody, WORK_STATUS, type BirthInput, type SajuBodyData } from "./inputs";
 
 /** The optional status chips as Korean labels, or undefined when none was given. The saju side takes no free text. */
@@ -27,19 +30,55 @@ export function factsFromBirth(birth: BirthInput, now: number, profile?: SajuPro
   return buildFactSet(checked.chart, now, profile, history);
 }
 
+/**
+ * The same for a topic: the topic FactSet from the server's own chart (spec §7.4). The engine's optional
+ * situation chip is never passed (owner cut §0).
+ */
+export function topicFactsFromBirth(birth: BirthInput, now: number, topic: SajuTopicId, history?: readonly HistoryItem[]): SajuTopicFactSet | Response {
+  const checked = checkSajuForm(birth, todayInKorea(new Date(now)));
+  if ("error" in checked) return errorResponse("BAD_REQUEST", { field: checked.error.field, message: checked.error.message });
+  return buildTopicFactSet(checked.chart, now, topic, undefined, history);
+}
+
+/**
+ * Whether this request may get a topic (전체 흐름 never needs it): the flag (spec §13: `on` for
+ * everyone, `owner` for the owner pass) on Korean screens only (another language sends
+ * `x-starlog-locale`; no client does yet).
+ */
+export function topicsOpenFor(request: Request, gate: Pick<Gate, "owner">): boolean {
+  const locale = request.headers.get("x-starlog-locale")?.trim().toLowerCase();
+  if (locale && locale !== "ko") return false;
+  const mode = sajuTopicsMode();
+  return mode === "on" || (mode === "owner" && gate.owner);
+}
+
 /** Largest accepted body; a schema-maximum body (statuses and 3 full history items) is about 2.9 KB. */
 export const SAJU_BODY_MAX_BYTES = 8_000;
 
-/** Body → crisis check → FactSet, shared by the saju teaser and reading. */
-export async function sajuRequest(request: Request, now: number): Promise<{ body: SajuBodyData; profile?: SajuProfile; facts: SajuFactSet } | Response> {
+export type SajuRequest =
+  | { topic: "overall"; body: SajuBodyData; profile?: SajuProfile; facts: SajuFactSet }
+  | { topic: SajuTopicId; body: SajuBodyData; facts: SajuTopicFactSet };
+
+/**
+ * Body → topic gate (flag, language) → crisis check → the earlier readings that belong with this one →
+ * FactSet; shared by the saju teaser and reading (saju-topics spec §7.1, §7.3).
+ */
+export async function sajuRequest(request: Request, gate: Pick<Gate, "now" | "owner">): Promise<SajuRequest | Response> {
   const parsed = SajuBody.safeParse(await readJson(request, SAJU_BODY_MAX_BYTES));
   if (!parsed.success) return errorResponse("BAD_REQUEST");
-  const profile = profileOf(parsed.data);
+  const body = parsed.data;
+  if (body.topic !== "overall" && !topicsOpenFor(request, gate)) return errorResponse("BAD_REQUEST", { field: "topic" });
+  const profile = body.topic === "overall" ? profileOf(body) : undefined;
   // What the user wrote (earlier questions) and the status labels.
-  const crisis = crisisResponse(profile?.loveStatus, profile?.workStatus, ...historyUserTexts(parsed.data.history));
+  const crisis = crisisResponse(profile?.loveStatus, profile?.workStatus, ...historyUserTexts(body.history));
   if (crisis) return crisis;
-  const history = withoutCrisisItems(parsed.data.history, isCrisisText);
-  const facts = factsFromBirth(parsed.data.birth, now, profile, history);
+  const history = historyForTopic(withoutCrisisItems(body.history, isCrisisText), body.topic);
+  if (body.topic === "overall") {
+    const facts = factsFromBirth(body.birth, gate.now, profile, history);
+    if (facts instanceof Response) return facts;
+    return { topic: "overall", body: { ...body, history }, profile, facts };
+  }
+  const facts = topicFactsFromBirth(body.birth, gate.now, body.topic, history);
   if (facts instanceof Response) return facts;
-  return { body: { ...parsed.data, history }, profile, facts };
+  return { topic: body.topic, body: { ...body, history }, facts };
 }

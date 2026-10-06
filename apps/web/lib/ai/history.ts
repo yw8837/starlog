@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { SajuTopic } from "@/lib/reading/types";
 
 /**
  * Up to three earlier readings the device kept (date, kind, question, verdict, the observation and
@@ -17,11 +18,23 @@ export const HistoryItemSchema = z.object({
   verdict: text(80),
   observation: text(120).optional(),
   checkin: z.enum(CHECKINS).optional(),
+  /** 주제별 사주: a saju record's topic (saju-topics spec §7.8) */
+  topic: z.enum(["love", "reunion", "money", "career"]).optional(),
 });
 
 export const HistorySchema = z.array(HistoryItemSchema).max(3);
 
 export type HistoryItem = z.infer<typeof HistoryItemSchema>;
+
+/**
+ * The earlier readings that belong with a saju request (spec §7.8): a topic gets only its own topic's
+ * saju records; 전체 흐름 gets tarot and the saju records without a topic. The device already sends
+ * only these; the server drops anything else once more, so one topic's context never reaches another.
+ */
+export function historyForTopic(items: readonly HistoryItem[], topic: SajuTopic): HistoryItem[] {
+  if (topic === "overall") return items.filter((item) => item.kind === "tarot" || !item.topic);
+  return items.filter((item) => item.kind === "saju" && item.topic === topic);
+}
 
 const clean = (value: string) => value.replace(/[<>]/g, "").replace(/\s+/g, " ").trim();
 

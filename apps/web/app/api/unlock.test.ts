@@ -236,6 +236,30 @@ describe("opening a full reading with credit", () => {
     expect(readings[0]?.chapter).toMatchObject({ kind: "saju", title: "타고난 결", summary: "요약 한 줄" });
   });
 
+  it("saves a paid 재물운 reading with its topic to the account (product saju, no new product)", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    await buy(b, "saju");
+    const res = await b.send(sajuReading, "/api/saju/reading", {
+      body: { birth: DEFAULT_SAJU_FORM, topic: "money", unlock: { method: "paid" }, display: { title: "흙 속의 쇠", summary: "요약 한 줄" } },
+    });
+    expect(res.status).toBe(200);
+    const { readings } = await listReadings(db, accountSecret()!, await userId(db));
+    expect(readings[0]?.chapter).toMatchObject({ kind: "saju", topic: "money", title: "흙 속의 쇠" });
+    expect(readings[0]?.chapter).not.toHaveProperty("context");
+    expect(readings[0]?.chapter).not.toHaveProperty("situation");
+  });
+
+  it("opens topics with 별조각 and with the owner pass, saving each topic", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    expect((await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, topic: "career", unlock: { method: "free" } } })).status).toBe(200);
+    expect((await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
+    expect((await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, topic: "love", unlock: { method: "owner" } } })).status).toBe(200);
+    const { readings } = await listReadings(db, accountSecret()!, await userId(db));
+    expect(readings.map((r) => r.chapter.topic).sort()).toEqual(["career", "love"]);
+  });
+
   it("opens a paid saju reading whose teaser text runs long, keeping the text cut to fit", async () => {
     const db = useTestDb();
     const { b } = await loggedIn();

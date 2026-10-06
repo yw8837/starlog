@@ -73,22 +73,34 @@ export const WORK_STATUS = {
   student: "학생", employee: "직장인", "self-employed": "자영업·프리랜서", "between-jobs": "구직·쉬는 중", unsure: "잘 모르겠어요",
 } as const;
 
-export const SajuBody = z.object({
-  birth: BirthBody,
-  loveStatus: z.enum(Object.keys(LOVE_STATUS) as [keyof typeof LOVE_STATUS, ...Array<keyof typeof LOVE_STATUS>]).optional(),
-  workStatus: z.enum(Object.keys(WORK_STATUS) as [keyof typeof WORK_STATUS, ...Array<keyof typeof WORK_STATUS>]).optional(),
-  // No free text on the saju side (saju-topics spec §7.3): an older client's `concern` is an unknown key, dropped here.
-  /** up to three earlier readings from this device (lib/ai/history.ts) */
-  history: HistorySchema.optional(),
-  unlock: UnlockBody.optional(),
-  /**
-   * the free teaser's title and summary, kept with a reading saved to the account. The teaser's
-   * summary may run to 500 non-space characters (validateSajuTeaser: 250–400 with a 25% band), so
-   * with spaces it is capped well above that (1000). Text past a cap is cut, and a display that is
-   * not one is dropped: it only labels the saved reading, so it never stops a paid opening.
-   */
-  display: z.object({ title: clipped(80), summary: clipped(1000) }).optional().catch(undefined),
-});
+const SAJU_TOPIC_VALUES = ["overall", "love", "reunion", "money", "career"] as const;
+
+export const SajuBody = z
+  .object({
+    birth: BirthBody,
+    /** 주제별 사주 (saju-topics spec §7.3): the 운 on the chart page; an older client sends none and gets 전체 흐름 */
+    topic: z.enum(SAJU_TOPIC_VALUES).default("overall"),
+    loveStatus: z.enum(Object.keys(LOVE_STATUS) as [keyof typeof LOVE_STATUS, ...Array<keyof typeof LOVE_STATUS>]).optional(),
+    workStatus: z.enum(Object.keys(WORK_STATUS) as [keyof typeof WORK_STATUS, ...Array<keyof typeof WORK_STATUS>]).optional(),
+    // No free text on the saju side (saju-topics spec §7.3): an older client's `concern` is an unknown key, dropped
+    // here. So is a `situation`: no chip is exposed in the API (owner cut §0).
+    /** up to three earlier readings from this device (lib/ai/history.ts) */
+    history: HistorySchema.optional(),
+    unlock: UnlockBody.optional(),
+    /**
+     * the free teaser's title and summary, kept with a reading saved to the account. The teaser's
+     * summary may run to 500 non-space characters (validateSajuTeaser: 250–400 with a 25% band), so
+     * with spaces it is capped well above that (1000). Text past a cap is cut, and a display that is
+     * not one is dropped: it only labels the saved reading, so it never stops a paid opening.
+     */
+    display: z.object({ title: clipped(80), summary: clipped(1000) }).optional().catch(undefined),
+  })
+  // 전체 흐름 takes the status chips, a topic takes none (spec §7.3); anything else is a 400.
+  .superRefine((body, ctx) => {
+    if (body.topic !== "overall" && (body.loveStatus || body.workStatus)) {
+      ctx.addIssue({ code: "custom", path: ["loveStatus"], message: "a topic takes no status chips" });
+    }
+  });
 
 export const FollowUpBody = z.object({
   chapterToken: z.string().min(1).max(32_768),

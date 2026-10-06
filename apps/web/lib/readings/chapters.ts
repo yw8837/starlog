@@ -30,7 +30,13 @@ export function tarotChapter(
 }
 
 export function sajuChapter(
-  input: { birth: unknown; context: { loveStatus?: string; workStatus?: string }; display?: { title: string; summary: string } },
+  input: {
+    birth: unknown;
+    context: { loveStatus?: string; workStatus?: string };
+    /** 주제별 사주: the topic (saju-topics spec §9.4); absent for 전체 흐름 */
+    topic?: string;
+    display?: { title: string; summary: string };
+  },
   body: Body,
   now: number,
 ): ServerChapter {
@@ -41,6 +47,7 @@ export function sajuChapter(
   return {
     kind: "saju",
     birth: input.birth,
+    ...(input.topic ? { topic: input.topic } : {}),
     title: input.display?.title ?? "",
     summary: input.display?.summary ?? "",
     ...(Object.keys(context).length > 0 ? { context } : {}),

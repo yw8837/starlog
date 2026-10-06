@@ -3,6 +3,7 @@ import type { Orientation, TemplateId } from "@starlog/core";
 import type { SajuProfile } from "@/lib/ai/prompts/saju";
 import type { BirthInput, TarotInputData } from "@/lib/api/inputs";
 import type { FollowUpTurn } from "@/lib/ai/prompts/tarot";
+import type { SajuTopicId } from "@/lib/reading/types";
 import { canonicalJson, sha256, signToken, verifyToken, type SignedPayload } from "./sign";
 
 /**
@@ -17,7 +18,8 @@ export const CHAPTER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type ChapterContext =
   | { kind: "tarot"; templateId: TemplateId; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]> }
-  | { kind: "saju"; birth: BirthInput; profile?: SajuProfile };
+  /** 주제별 사주 chapters carry their topic (signed; `v` stays 1; a token without it is 전체 흐름). */
+  | { kind: "saju"; birth: BirthInput; profile?: SajuProfile; topic?: SajuTopicId };
 
 interface ChapterPayload extends SignedPayload {
   k: "chapter";
