@@ -1,0 +1,30 @@
+{
+  "name": "스타로그 카드",
+  "frame": "A",
+  "frameNote": "A = 번호 + 이름, B = A + 한국어 키워드 한 줄. 소유자가 고르면 이 값만 바꿔 다시 빌드한다 (svg/, render/가 이 값을 따른다).",
+  "keywordSource": "content/kb/cards/{id}.json 의 keywordsKo 중 하나를 그대로 사용",
+  "cards": [
+    { "id": "major-00-fool", "numeral": "0", "ko": "바보", "en": "The Fool", "keyword": "새 출발" },
+    { "id": "major-01-magician", "numeral": "I", "ko": "마법사", "en": "The Magician", "keyword": "의지와 실행" },
+    { "id": "major-02-high-priestess", "numeral": "II", "ko": "여사제", "en": "The High Priestess", "keyword": "조용한 관찰" },
+    { "id": "major-03-empress", "numeral": "III", "ko": "여황제", "en": "The Empress", "keyword": "돌봄" },
+    { "id": "major-04-emperor", "numeral": "IV", "ko": "황제", "en": "The Emperor", "keyword": "기준 세우기" },
+    { "id": "major-05-hierophant", "numeral": "V", "ko": "교황", "en": "The Hierophant", "keyword": "배움과 전통" },
+    { "id": "major-06-lovers", "numeral": "VI", "ko": "연인", "en": "The Lovers", "keyword": "마주 봄" },
+    { "id": "major-07-chariot", "numeral": "VII", "ko": "전차", "en": "The Chariot", "keyword": "방향 잡기" },
+    { "id": "major-08-strength", "numeral": "VIII", "ko": "힘", "en": "Strength", "keyword": "부드러운 힘" },
+    { "id": "major-09-hermit", "numeral": "IX", "ko": "은둔자", "en": "The Hermit", "keyword": "한발 물러서기" },
+    { "id": "major-10-wheel-of-fortune", "numeral": "X", "ko": "운명의 수레바퀴", "en": "Wheel of Fortune", "keyword": "흐름의 전환" },
+    { "id": "major-11-justice", "numeral": "XI", "ko": "정의", "en": "Justice", "keyword": "공정한 판단" },
+    { "id": "major-12-hanged-man", "numeral": "XII", "ko": "매달린 사람", "en": "The Hanged Man", "keyword": "관점 전환" },
+    { "id": "major-13-death", "numeral": "XIII", "ko": "죽음", "en": "Death", "keyword": "변화 받아들이기" },
+    { "id": "major-14-temperance", "numeral": "XIV", "ko": "절제", "en": "Temperance", "keyword": "균형과 조율" },
+    { "id": "major-15-devil", "numeral": "XV", "ko": "악마", "en": "The Devil", "keyword": "집착과 습관" },
+    { "id": "major-16-tower", "numeral": "XVI", "ko": "탑", "en": "The Tower", "keyword": "갑작스러운 흔들림" },
+    { "id": "major-17-star", "numeral": "XVII", "ko": "별", "en": "The Star", "keyword": "조용한 회복" },
+    { "id": "major-18-moon", "numeral": "XVIII", "ko": "달", "en": "The Moon", "keyword": "불확실함" },
+    { "id": "major-19-sun", "numeral": "XIX", "ko": "태양", "en": "The Sun", "keyword": "밝고 분명함" },
+    { "id": "major-20-judgement", "numeral": "XX", "ko": "심판", "en": "Judgement", "keyword": "새 결심" },
+    { "id": "major-21-world", "numeral": "XXI", "ko": "세계", "en": "The World", "keyword": "한 주기의 완성" }
+  ]
+}

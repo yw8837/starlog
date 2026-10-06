@@ -1,0 +1,235 @@
+{
+ "limits": {
+  "1": {
+   "long": 14,
+   "short": 7,
+   "dL": 12,
+   "lineLong": 28,
+   "lineShort": 4
+  },
+  "2": {
+   "long": 9,
+   "short": 5,
+   "dL": 8,
+   "lineLong": 18,
+   "lineShort": 3
+  }
+ },
+ "blur": 0.8,
+ "width": 90,
+ "results": {
+  "major-00-fool": {
+   "symbols": [
+    {
+     "symbol": "actor",
+     "rank": 1,
+     "groups": 4,
+     "bbox90": "61x91",
+     "area90": 1558,
+     "dL": 22.2,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "sun",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "36x36",
+     "area90": 467,
+     "dL": 12.2,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "cliff-edge",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "68x38",
+     "area90": 2033,
+     "dL": 50.7,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "lifted-foot",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "19x25",
+     "area90": 155,
+     "dL": 12.6,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "bundle-staff",
+     "rank": 1,
+     "groups": 2,
+     "bbox90": "50x49",
+     "area90": 220,
+     "dL": 24,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "companion",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "25x42",
+     "area90": 395,
+     "dL": 21.5,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "white-rose",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "11x16",
+     "area90": 98,
+     "dL": 16.7,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "peaks",
+     "rank": 3,
+     "groups": 1,
+     "bbox90": "84x29",
+     "area90": 624,
+     "dL": 17.2,
+     "verdict": "info"
+    }
+   ],
+   "readFirst": 7
+  },
+  "major-01-magician": {
+   "symbols": [
+    {
+     "symbol": "actor",
+     "rank": 1,
+     "groups": 2,
+     "bbox90": "39x103",
+     "area90": 1897,
+     "dL": 32.1,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "wand-up",
+     "rank": 1,
+     "groups": 3,
+     "bbox90": "20x62",
+     "area90": 441,
+     "dL": 28.6,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "infinity",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "27x14",
+     "area90": 218,
+     "dL": 23.9,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "point-down",
+     "rank": 1,
+     "groups": 2,
+     "bbox90": "26x50",
+     "area90": 330,
+     "dL": 26.9,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "four-tools",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "37x28",
+     "area90": 552,
+     "dL": 27.4,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "flowers",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "85x13",
+     "area90": 705,
+     "dL": 35,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "roses-overhead",
+     "rank": 3,
+     "groups": 1,
+     "bbox90": "78x29",
+     "area90": 224,
+     "dL": 9.8,
+     "verdict": "info"
+    }
+   ],
+   "readFirst": 6
+  },
+  "major-17-star": {
+   "symbols": [
+    {
+     "symbol": "actor",
+     "rank": 1,
+     "groups": 2,
+     "bbox90": "54x61",
+     "area90": 1173,
+     "dL": 33.2,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "big-star",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "30x29",
+     "area90": 310,
+     "dL": 46.3,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "small-stars",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "74x46",
+     "area90": 295,
+     "dL": 30.3,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "two-jugs",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "61x28",
+     "area90": 258,
+     "dL": 14.7,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "pond",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "47x26",
+     "area90": 876,
+     "dL": 16.3,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "streams",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "31x19",
+     "area90": 110,
+     "dL": 10.5,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "tree-bird",
+     "rank": 3,
+     "groups": 1,
+     "bbox90": "23x26",
+     "area90": 343,
+     "dL": 22.4,
+     "verdict": "info"
+    }
+   ],
+   "readFirst": 6
+  }
+ }
+}

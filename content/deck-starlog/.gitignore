@@ -1,0 +1,5 @@
+tools/.build/
+print/*.png
+!print/back_70x120mm_bleed3mm_300dpi.png
+print/guides/
+*.tmp
