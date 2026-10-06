@@ -7,6 +7,7 @@ import { SajuBody } from "@/lib/api/inputs";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { SAJU_TOPICS, TOPIC_SECTIONS, topicLockedToc } from "@/lib/sajuTopics";
 import { POST as owner } from "./owner/route";
+import { POST as followup } from "./followup/route";
 import { POST as sajuReading } from "./saju/reading/route";
 import { POST as sajuTeaser } from "./saju/teaser/route";
 
@@ -171,5 +172,21 @@ describe("/api/saju/reading with a topic", () => {
     const payload = payloadOf(res.data.chapterToken);
     expect(payload.ctx).toMatchObject({ kind: "saju", profile: { loveStatus: "연애 중" } });
     expect(payload.ctx).not.toHaveProperty("topic");
+  });
+});
+
+describe("follow-ups on a topic chapter (spec §7.7)", () => {
+  it("answers with the topic prompt, and still does after the flag is turned off", async () => {
+    const d = fresh();
+    const r = await d.call(sajuReading, { birth: C3, topic: "career" });
+    expect(r.status).toBe(200);
+    vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "off");
+    const spy = vi.spyOn(mockProvider, "generate");
+    const f = await d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question: "옮긴다면 무엇을 기준으로 볼까요?" });
+    expect(f.status).toBe(200);
+    expect(f.data.remaining).toBe(2);
+    expect(spy.mock.calls[0]![0]).toMatchObject({ name: "followup", system: SAJU_TOPIC_SYSTEM });
+    expect(spy.mock.calls[0]![0].user).toContain("<topic>직업운</topic>");
+    expect(spy.mock.calls[0]![0].user).toContain("요즘 상황: (고르지 않음)");
   });
 });

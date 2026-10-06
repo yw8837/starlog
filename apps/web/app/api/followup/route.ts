@@ -1,13 +1,14 @@
 import { TEMPLATES, type DrawnCard } from "@starlog/core";
-import { generateSajuFollowUp, generateTarotFollowUp } from "@/lib/ai/generate";
+import { generateSajuFollowUp, generateSajuTopicFollowUp, generateTarotFollowUp } from "@/lib/ai/generate";
 import { buildTarotContext } from "@/lib/ai/prompts/tarot";
 import { StoredSajuReadingSchema, StoredTarotReadingSchema, type FollowUpAnswer } from "@/lib/ai/schemas";
 import { checkQuota, crisisResponse, errorResponse, openGate, readJson, spendCookies } from "@/lib/api/http";
 import { FollowUpBody } from "@/lib/api/inputs";
-import { factsFromBirth, withoutConcern } from "@/lib/api/sajuRequest";
+import { factsFromBirth, topicFactsFromBirth, withoutConcern } from "@/lib/api/sajuRequest";
 import { chapterTurns, recordChapterTurns } from "@/lib/api/spend";
 import { respondGeneration } from "@/lib/api/stream";
 import { saveFollowUpTurn } from "@/lib/readings/turns";
+import { isSajuTopicId } from "@/lib/sajuTopics";
 import { issueChapter, openChapter } from "@/lib/security/chapterToken";
 import { quotaLimits } from "@/lib/security/quota";
 
@@ -50,10 +51,19 @@ export async function POST(request: Request): Promise<Response> {
   } else {
     const reading = StoredSajuReadingSchema.safeParse(body.data.reading);
     if (!reading.success) return errorResponse("BAD_TOKEN");
-    // An older chapter's token may still carry the one-line concern: it never reaches a prompt again.
-    const facts = factsFromBirth(chapter.ctx.birth, gate.now, withoutConcern(chapter.ctx.profile));
-    if (facts instanceof Response) return errorResponse("BAD_TOKEN");
-    generate = async (hooks) => (await generateSajuFollowUp(gate.provider, facts, reading.data, chapter.turns, question, hooks)).data;
+    const ctx = chapter.ctx;
+    if (isSajuTopicId(ctx.topic)) {
+      // A topic chapter keeps its topic's facts, prompt and checks, even after the flag is turned off
+      // (saju-topics spec §7.7): the reading was already opened.
+      const facts = topicFactsFromBirth(ctx.birth, gate.now, ctx.topic);
+      if (facts instanceof Response) return errorResponse("BAD_TOKEN");
+      generate = async (hooks) => (await generateSajuTopicFollowUp(gate.provider, facts, reading.data, chapter.turns, question, hooks)).data;
+    } else {
+      // An older chapter's token may still carry the one-line concern: it never reaches a prompt again.
+      const facts = factsFromBirth(ctx.birth, gate.now, withoutConcern(ctx.profile));
+      if (facts instanceof Response) return errorResponse("BAD_TOKEN");
+      generate = async (hooks) => (await generateSajuFollowUp(gate.provider, facts, reading.data, chapter.turns, question, hooks)).data;
+    }
   }
 
   return respondGeneration(request, async (hooks) => {
