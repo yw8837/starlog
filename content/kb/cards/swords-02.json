@@ -114,6 +114,7 @@
       "마음 닫고 버팀"
     ],
     "reversed": [
+      "정보가 넘쳐 여전히 못 정함",
       "가리개를 벗음",
       "결정이 터져 나옴",
       "버티기 한계",
@@ -121,21 +122,21 @@
     ],
     "oneLine": {
       "upright": "두 갈래 사이에서 눈을 가리고 팔짱 낀 채 결정을 미루며 균형만 버티는 때",
-      "reversed": "가리개를 벗고 결정하게 되거나, 버티던 균형이 무너지는 상태"
+      "reversed": "정보가 넘쳐 여전히 결정을 못 하거나, 가리개를 벗고 더는 미룰 수 없게 된 상태"
     },
     "shadow": "평화를 핑계로 봐야 할 것을 보지 않는 것"
   },
   "reversedModes": {
-    "default": "waning",
+    "default": "blocked",
     "allowed": [
+      "blocked",
       "waning",
-      "excess",
-      "blocked"
+      "excess"
     ],
     "gloss": {
+      "blocked": "정보가 넘쳐 혼란스러워 결정이 계속 막힘",
       "waning": "버티던 교착이 풀려 결정할 때가 옴",
-      "excess": "지나치게 오래 버텨 압박이 커짐",
-      "blocked": "정보가 부족해 결정이 계속 막힘"
+      "excess": "지나치게 오래 버텨 압박이 커짐"
     }
   },
   "asFeelings": {
@@ -284,6 +285,12 @@
   "review": {
     "status": "draft",
     "reviewer": null,
-    "history": []
+    "history": [
+      {
+        "at": "2026-10-06",
+        "by": "ai-review",
+        "note": "AI modern cross-check fix 2026-10-06: M-08"
+      }
+    ]
   }
 }

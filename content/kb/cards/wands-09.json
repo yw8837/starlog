@@ -106,7 +106,8 @@
       "버티다 지침",
       "지나친 경계",
       "마음을 닫음",
-      "쉬어야 할 때"
+      "쉬어야 할 때",
+      "그만두고 싶은 마음"
     ],
     "oneLine": {
       "upright": "한 번 다쳤어도 지금까지 쌓은 것을 지키며 마지막 구간을 버티는 때",
@@ -267,6 +268,12 @@
   "review": {
     "status": "draft",
     "reviewer": null,
-    "history": []
+    "history": [
+      {
+        "at": "2026-10-06",
+        "by": "ai-review",
+        "note": "AI modern cross-check fix 2026-10-06: M-07"
+      }
+    ]
   }
 }

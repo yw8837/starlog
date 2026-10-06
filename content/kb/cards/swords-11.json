@@ -111,6 +111,7 @@
     "reversed": [
       "캐기와 뒷말",
       "성급한 말",
+      "산만하고 계획 없는 시도",
       "지나친 경계",
       "허점이 드러남"
     ],
@@ -273,6 +274,12 @@
   "review": {
     "status": "draft",
     "reviewer": null,
-    "history": []
+    "history": [
+      {
+        "at": "2026-10-06",
+        "by": "ai-review",
+        "note": "AI modern cross-check fix 2026-10-06: M-10"
+      }
+    ]
   }
 }

@@ -118,7 +118,8 @@
       "한쪽으로 기운 판단",
       "책임 회피",
       "불공평함",
-      "결정 미루기"
+      "결정 미루기",
+      "사실이 가려지거나 왜곡됨"
     ],
     "oneLine": {
       "upright": "감정보다 사실을 같은 무게로 달아 보고 분명하게 정하는 때",
@@ -280,6 +281,12 @@
   "review": {
     "status": "draft",
     "reviewer": null,
-    "history": []
+    "history": [
+      {
+        "at": "2026-10-06",
+        "by": "ai-review",
+        "note": "AI modern cross-check fix 2026-10-06: M-05"
+      }
+    ]
   }
 }

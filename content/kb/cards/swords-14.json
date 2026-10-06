@@ -112,7 +112,7 @@
       "냉정한 통제",
       "권위의 남용",
       "머리만 앞섬",
-      "말로 누름"
+      "말로 조종하거나 누름"
     ],
     "oneLine": {
       "upright": "감정보다 원칙과 논리로 명확하게 판단하고 책임지는 때",
@@ -281,6 +281,12 @@
   "review": {
     "status": "draft",
     "reviewer": null,
-    "history": []
+    "history": [
+      {
+        "at": "2026-10-06",
+        "by": "ai-review",
+        "note": "AI modern cross-check fix 2026-10-06: M-11"
+      }
+    ]
   }
 }

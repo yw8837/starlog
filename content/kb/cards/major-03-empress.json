@@ -117,7 +117,8 @@
       "남 돌보다 나를 비움",
       "과한 챙김",
       "늘어진 편안함",
-      "결실이 더딤"
+      "창작이 막혀 결실이 더딤",
+      "남에게 기대는 마음"
     ],
     "oneLine": {
       "upright": "돌보고 가꾼 것이 천천히 익어 가는 풍요로운 때",
@@ -286,6 +287,12 @@
   "review": {
     "status": "draft",
     "reviewer": null,
-    "history": []
+    "history": [
+      {
+        "at": "2026-10-06",
+        "by": "ai-review",
+        "note": "AI modern cross-check fix 2026-10-06: M-01"
+      }
+    ]
   }
 }

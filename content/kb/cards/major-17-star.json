@@ -123,7 +123,8 @@
       "희망이 흐려짐",
       "스스로를 못 믿음",
       "회복이 더딤",
-      "너무 많이 퍼 줌"
+      "너무 많이 퍼 줌",
+      "나와 세상 사이의 단절감"
     ],
     "oneLine": {
       "upright": "요란하지 않게 조금씩 다시 채워지는 회복과 희망의 때",
@@ -296,6 +297,12 @@
   "review": {
     "status": "draft",
     "reviewer": null,
-    "history": []
+    "history": [
+      {
+        "at": "2026-10-06",
+        "by": "ai-review",
+        "note": "AI modern cross-check fix 2026-10-06: M-06"
+      }
+    ]
   }
 }

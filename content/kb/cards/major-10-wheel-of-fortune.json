@@ -113,7 +113,7 @@
   },
   "core": {
     "upright": [
-      "흐름이 바뀌는 때",
+      "운의 흐름이 바뀌는 때",
       "기회의 순간",
       "순환 받아들이기",
       "타이밍 타기"
@@ -284,6 +284,12 @@
   "review": {
     "status": "draft",
     "reviewer": null,
-    "history": []
+    "history": [
+      {
+        "at": "2026-10-06",
+        "by": "ai-review",
+        "note": "AI modern cross-check fix 2026-10-06: M-04"
+      }
+    ]
   }
 }
