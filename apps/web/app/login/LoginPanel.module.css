@@ -102,8 +102,9 @@
   color: #191600;
 }
 
+/* Google's sign-in button, light theme: fill #FFFFFF, 1px stroke #747775 inside, text #1F1F1F. */
 .google {
-  border: 1px solid #dadce0;
+  border: 1px solid #747775;
   background: #ffffff;
   color: #1f1f1f;
 }

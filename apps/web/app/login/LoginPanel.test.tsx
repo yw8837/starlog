@@ -9,9 +9,10 @@ afterEach(() => {
 });
 
 const START = "/api/auth/kakao/start?returnTo=%2Ftarot%2Fresult&age=signed-token";
+const GOOGLE_START = "/api/auth/google/start?returnTo=%2Ftarot%2Fresult&age=signed-token";
 
 describe("LoginPanel", () => {
-  it("offers Kakao only, and goes there only after the 만 14세 check, with the token the server signs for it", async () => {
+  it("goes to Kakao only after the 만 14세 check, with the token the server signs for it", async () => {
     const calls: Array<{ url: string; init?: RequestInit }> = [];
     vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
       calls.push({ url, init });
@@ -19,7 +20,6 @@ describe("LoginPanel", () => {
     });
     const navigate = vi.fn();
     render(<LoginPanel next="/tarot/result" status={null} navigate={navigate} />);
-    expect(screen.queryByText(/Google/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "카카오로 계속하기" }));
     expect(calls).toEqual([]);
     expect(navigate).not.toHaveBeenCalled();
@@ -31,6 +31,29 @@ describe("LoginPanel", () => {
     expect(calls[0]!.url).toBe("/api/auth/age");
     expect(calls[0]!.init?.method).toBe("POST");
     expect(JSON.parse(String(calls[0]!.init?.body))).toEqual({ ageConfirmed: true, returnTo: "/tarot/result" });
+  });
+
+  it("offers Google under Kakao (white, the G mark), and goes there the same way: after the 만 14세 check, through the server", async () => {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      return Response.json({ url: GOOGLE_START });
+    });
+    const navigate = vi.fn();
+    render(<LoginPanel next="/tarot/result" status={null} navigate={navigate} />);
+    const kakao = screen.getByRole("button", { name: "카카오로 계속하기" });
+    const google = screen.getByRole("button", { name: "Google로 계속하기" });
+    expect(kakao.compareDocumentPosition(google) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(google.querySelector("svg[aria-hidden='true']")?.querySelectorAll("path[fill]")).toHaveLength(4);
+    fireEvent.click(google);
+    expect(calls).toEqual([]);
+    expect(screen.getByRole("alert").textContent).toBe("만 14세 이상인지 먼저 확인해 주세요");
+    fireEvent.click(screen.getByRole("checkbox", { name: "만 14세 이상이에요" }));
+    fireEvent.click(google);
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith(GOOGLE_START));
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.url).toBe("/api/auth/age");
+    expect(JSON.parse(String(calls[0]!.init?.body))).toEqual({ ageConfirmed: true, returnTo: "/tarot/result", provider: "google" });
   });
 
   it("stays on the page and says so when the check cannot be sent", async () => {
@@ -46,6 +69,9 @@ describe("LoginPanel", () => {
   it("says what happened on the way back", () => {
     render(<LoginPanel next="/" status="cancel" navigate={() => {}} />);
     expect(screen.getByRole("status").textContent).toBe("로그인을 취소했어요");
+    cleanup();
+    render(<LoginPanel next="/" status="in-app" navigate={() => {}} />);
+    expect(screen.getByRole("status").textContent).toBe("Google 로그인은 카카오톡 밖의 브라우저에서 해 주세요.");
   });
 
   it("explains the gift", () => {

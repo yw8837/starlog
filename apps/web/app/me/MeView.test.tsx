@@ -46,6 +46,14 @@ describe("MeView menu", () => {
   });
 });
 
+describe("MeView logged out while sales are open", () => {
+  it("offers the login page, naming no one provider (Kakao and Google are both there)", async () => {
+    render(<MeView status={null} />);
+    expect((await screen.findByRole("link", { name: "로그인하기" })).getAttribute("href")).toBe("/login?next=%2Fme");
+    expect(screen.queryByText("카카오로 로그인")).toBeNull();
+  });
+});
+
 describe("MeView after the account was deleted", () => {
   it("takes the account's readings off this device and says so; readings opened here stay", async () => {
     render(<MeView status="탈퇴했어요. 그동안 고마웠어요." accountDeleted />);

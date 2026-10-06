@@ -120,7 +120,7 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
       {loginTo ? (
         <div role="status" className={s.panel}>
           <p className={s.title}>결제했어요</p>
-          <p>이 브라우저에서는 로그인되어 있지 않아요. 결제한 카카오 계정으로 로그인하면 바로 열려요.</p>
+          <p>이 브라우저에서는 로그인되어 있지 않아요. 결제한 계정으로 로그인하면 바로 열려요.</p>
           <Button href={loginTo} block>
             로그인하고 풀이 열기
           </Button>

@@ -43,9 +43,10 @@ function Soon({ children }: { children: string }) {
 }
 
 /**
- * 내 정보: the account when logged in (AccountPanel), a Kakao login while sales are open on this
- * device, otherwise the 오픈 기념 free count; the saju profile kept on this device (with 고치기), the
- * menu, and erasing everything this device keeps. A logged-in tab pulls the account's readings.
+ * 내 정보: the account when logged in (AccountPanel), the way to /login (Kakao or Google) while sales
+ * are open on this device, otherwise the 오픈 기념 free count; the saju profile kept on this device
+ * (with 고치기), the menu, and erasing everything this device keeps. A logged-in tab pulls the
+ * account's readings.
  */
 export function MeView({ status, accountDeleted = false }: MeViewProps) {
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -89,7 +90,7 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
               로그인하면 결제한 풀이를 다른 기기에서도 볼 수 있어요
             </h2>
             <Button href={loginHref("/me")} block>
-              카카오로 로그인
+              로그인하기
             </Button>
           </section>
         ) : (

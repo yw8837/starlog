@@ -20,6 +20,8 @@ export interface AccountUser {
   opening: Array<{ productId: string; currency: "paid" | "stardust"; orderId: string | null }>;
   /** the card-company review account (ID and password, no Kakao); absent for everyone else */
   review?: true;
+  /** an account that logs in with Google (not Kakao); absent for everyone else */
+  google?: true;
 }
 
 export interface AccountState {
@@ -50,6 +52,7 @@ function parseUser(v: unknown): AccountUser | null | undefined {
     unused: unused.map(({ orderId, productId, refundUntil }) => (typeof refundUntil === "string" ? { orderId, productId, refundUntil } : { orderId, productId })),
     opening,
     ...(v.review === true ? { review: true as const } : {}),
+    ...(v.google === true ? { google: true as const } : {}),
   };
 }
 

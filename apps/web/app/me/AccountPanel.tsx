@@ -52,7 +52,8 @@ type AccountPanelProps = {
  * 내 정보 for a logged-in user (spec section 9):
  * - nickname, 별조각 with their last day, unopened purchases (열기, 환불받기), 결제 내역 with receipts;
  * - deleting the account's copies of readings;
- * - 로그아웃, and 회원 탈퇴 (through the Kakao re-check; the review account has no Kakao login and skips it).
+ * - 로그아웃, and 회원 탈퇴 (through the Kakao re-check, or Google's for a Google account; the review
+ *   account has neither and skips it).
  */
 export function AccountPanel({ account, navigate = (url) => window.location.assign(url), onNotice }: AccountPanelProps) {
   const { user } = account;
@@ -108,7 +109,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
       <h2 id="account-title" className={s.name}>
         {user.nickname}
       </h2>
-      <p className={s.muted}>{user.review ? "심사용 계정으로 로그인했어요" : "카카오로 로그인했어요"}</p>
+      <p className={s.muted}>{user.review ? "심사용 계정으로 로그인했어요" : user.google ? "Google로 로그인했어요" : "카카오로 로그인했어요"}</p>
 
       <p className={s.balance}>
         <span className={s.balanceLabel}>{free}</span>
@@ -231,7 +232,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
             <li>이 기기의 기록은 아래 ‘이 기기에 저장된 기록 모두 지우기’로 따로 지울 수 있어요</li>
           </ul>
           <button type="button" className={s.danger} onClick={() => void startDelete()}>
-            {user.review ? "탈퇴하기" : "카카오로 확인하고 탈퇴하기"}
+            {user.review ? "탈퇴하기" : user.google ? "Google로 확인하고 탈퇴하기" : "카카오로 확인하고 탈퇴하기"}
           </button>
           <Button variant="secondary" block onClick={() => setSheet(null)}>
             취소

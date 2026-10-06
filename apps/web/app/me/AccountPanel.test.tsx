@@ -191,6 +191,19 @@ describe("AccountPanel", () => {
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/me?account=deleted"));
   });
 
+  it("for a Google account: says how it logged in, and deletes through the Google re-check", async () => {
+    const base = vi.mocked(fetch).getMockImplementation()!;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => (url === "/api/account/delete-intent" ? Response.json({ url: "/api/auth/google/start?purpose=delete&intent=x" }) : base(url, init))));
+    const navigate = vi.fn();
+    render(<AccountPanel account={{ ...account, user: { ...account.user, nickname: "별손님", google: true } }} navigate={navigate} />);
+    expect(screen.getByText("Google로 로그인했어요")).toBeTruthy();
+    expect(screen.queryByText("카카오로 로그인했어요")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
+    expect(screen.queryByRole("button", { name: "카카오로 확인하고 탈퇴하기" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Google로 확인하고 탈퇴하기" }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/api/auth/google/start?purpose=delete&intent=x"));
+  });
+
   it("starts the deletion only through the Kakao re-check, and says what it does", async () => {
     const navigate = vi.fn();
     render(<AccountPanel account={account} navigate={navigate} />);

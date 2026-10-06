@@ -55,6 +55,8 @@ describe("PaySuccess", () => {
     const navigate = vi.fn();
     render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={navigate} />);
     expect(await screen.findByText("결제했어요")).toBeTruthy();
+    // Kakao or Google: the account that paid.
+    expect(screen.getByText("이 브라우저에서는 로그인되어 있지 않아요. 결제한 계정으로 로그인하면 바로 열려요.")).toBeTruthy();
     expect(screen.getByRole("link", { name: "로그인하고 풀이 열기" }).getAttribute("href")).toBe("/login?next=%2Ftarot%2Fresult%3Funlock%3Dpaid");
     expect(navigate).not.toHaveBeenCalled();
   });

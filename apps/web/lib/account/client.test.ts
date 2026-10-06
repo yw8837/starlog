@@ -36,6 +36,14 @@ describe("account client", () => {
     expect(read({})).toEqual(user);
   });
 
+  it("marks a Google account, and nobody else", () => {
+    const user = { nickname: "별손님", stardust: 10, stardustExpiresAt: null, unused: [], opening: [] };
+    const read = (extra: Record<string, unknown>) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, ...extra } })?.user;
+    expect(read({ google: true })).toEqual({ ...user, google: true });
+    expect(read({ google: "yes" })).toEqual(user);
+    expect(read({})).toEqual(user);
+  });
+
   it("keeps each unopened purchase's refund deadline, and leaves an odd one out", () => {
     const user = { nickname: "별", stardust: 0, stardustExpiresAt: null, opening: [] };
     const read = (unused: unknown) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, unused } })?.user?.unused;
@@ -70,5 +78,6 @@ describe("account client", () => {
     expect(loginMessage("closed")).toBe("지금은 새로 가입할 수 없어요");
     expect(loginMessage("unavailable")).toBe("지금은 로그인할 수 없어요. 잠시 뒤에 다시 시도해 주세요.");
     expect(loginMessage("busy")).toBe("요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.");
+    expect(loginMessage("in-app")).toBe("Google 로그인은 카카오톡 밖의 브라우저에서 해 주세요.");
   });
 });
