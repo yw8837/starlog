@@ -189,6 +189,20 @@ describe("the 7-day refund window", () => {
     expect((await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: LAST + 1, payMode: "mock" })).ok).toBe(true);
   });
 
+  it("checks the window whatever state the purchase is in, so an opening released in between cannot slip a late refund through", async () => {
+    const db = useTestDb();
+    vi.setSystemTime(PAID);
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    vi.setSystemTime(LAST + 1);
+    const opening = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: LAST + 1, payMode: "mock" });
+    if (!opening.ok) throw new Error("not reserved");
+    expect(await (await refundOf(b, orderId)).json()).toMatchObject({ code: "REFUND_WINDOW_CLOSED" });
+    expect(await releaseUnlock(db, { unlockId: opening.unlockId, now: LAST + 2 })).toBe(true);
+    expect(await (await refundOf(b, orderId)).json()).toMatchObject({ code: "REFUND_WINDOW_CLOSED" });
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
+  });
+
   it("does not limit the operator's refunds: a Toss dashboard cancel after the window still refunds it", async () => {
     const db = useTestDb();
     vi.setSystemTime(PAID);

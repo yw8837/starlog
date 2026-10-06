@@ -23,11 +23,10 @@ export async function POST(request: Request): Promise<Response> {
   if (!body.success) return errorResponse("BAD_REQUEST");
   const order = await orderForUser(ctx.db, body.data.orderId, session.user.id);
   if (!order) return errorResponse("NOT_REFUNDABLE");
-  const unopened = await ctx.db
-    .prepare("SELECT created_at FROM credit_lots WHERE order_id = ? AND status = 'active' AND units_left = units_total")
-    .bind(order.id)
-    .first<{ created_at: number }>();
-  if (unopened && ctx.now > refundDeadline(unopened.created_at)) return errorResponse("REFUND_WINDOW_CLOSED");
+  // By the order alone, whatever its lot's state now: an opening released between this read and the
+  // refund lock must not let a late refund through.
+  const paid = await ctx.db.prepare("SELECT created_at FROM credit_lots WHERE order_id = ?").bind(order.id).first<{ created_at: number }>();
+  if (paid && ctx.now > refundDeadline(paid.created_at)) return errorResponse("REFUND_WINDOW_CLOSED");
   const outcome = await refundUnusedOrder(ctx.db, toss, { order, reason: "구매자 요청: 열지 않은 풀이 환불", now: ctx.now });
   if (!outcome.ok) return errorResponse(outcome.code, outcome.message ? { message: outcome.message } : {});
   return json({ ok: true, status: "refunded" });
