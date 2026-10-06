@@ -6,11 +6,12 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref } from "@/lib/account/client";
-import { SITE, won } from "@/lib/config";
+import { SITE, sajuTopicsMode, won } from "@/lib/config";
 import { isPaymentWindowClosed, loadTossSdk, type TossWidgets } from "@/lib/pay/tossSdk";
 import { PREMIUM, isPremiumId } from "@/lib/premium/products";
 import { getJson, postJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
+import { UNLOCK_SCOPE_LINE } from "@/lib/sajuTopics";
 import s from "../pay.module.css";
 
 interface CheckoutInfo {
@@ -34,7 +35,13 @@ const scopeLines = (productId: string): string[] => {
   if (isPremiumId(productId)) return [...PREMIUM[productId].scope];
   if (productId !== "tarot" && productId !== "saju") return [];
   const chars = new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars[productId]);
-  return [`풀이 전체 · 약 ${chars}자`, `이어서 물어보기 ${SITE.reading.followUps}번`, "이 기기에 계속 보관"];
+  return [
+    `풀이 전체 · 약 ${chars}자`,
+    `이어서 물어보기 ${SITE.reading.followUps}번`,
+    "이 기기에 계속 보관",
+    // 주제별 사주: one payment opens the one reading chosen when it is opened (saju-topics spec §9.2).
+    ...(productId === "saju" && sajuTopicsMode() === "on" ? [UNLOCK_SCOPE_LINE] : []),
+  ];
 };
 
 type CheckoutViewProps = {

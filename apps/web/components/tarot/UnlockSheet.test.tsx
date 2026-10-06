@@ -91,4 +91,18 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByText(/^오픈 기념으로 하루 .+ 무료예요$/)).toBeTruthy();
     expect(container.textContent).not.toMatch(/베타/);
   });
+
+  it("names the 운 and says what one payment opens (주제별 사주)", () => {
+    render(<UnlockSheet {...base} kind="saju" offer={{ mode: "pay", priceKrw: 2900 }} topicLabel="재물운" scopeLine="결제 한 번에 고른 풀이 하나를 열어요" onUnlock={() => {}} />);
+    expect(screen.getByRole("heading", { name: "재물운 전체 풀이에 담긴 것" })).toBeTruthy();
+    expect(screen.getByText("재물운 전체 풀이 · 2,900원")).toBeTruthy();
+    expect(screen.getByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeTruthy();
+  });
+
+  it("keeps today's sheet without a 운", () => {
+    render(<UnlockSheet {...base} kind="saju" offer={{ mode: "pay", priceKrw: 2900 }} onUnlock={() => {}} />);
+    expect(screen.getByRole("heading", { name: "전체 풀이에 담긴 것" })).toBeTruthy();
+    expect(screen.getByText("전체 풀이 · 2,900원")).toBeTruthy();
+    expect(screen.queryByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeNull();
+  });
 });

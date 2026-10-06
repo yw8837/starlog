@@ -94,4 +94,16 @@ describe("CheckoutView", () => {
     await payWithToss();
     expect((await screen.findByRole("alert")).textContent).toBe("결제창을 열지 못했어요");
   });
+
+  it("says one saju payment opens one chosen reading while the topics are on", async () => {
+    stubFetch(Response.json({ productId: "saju", name: "사주 전체 풀이", amount: 2900, customerKey: "c_x", provider: "mock", clientKey: null }));
+    render(<CheckoutView productId="saju" returnTo="/saju/chart" navigate={vi.fn()} />);
+    expect(await screen.findByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeTruthy();
+  });
+
+  it("keeps the tarot lines as they are", async () => {
+    render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
+    expect(await screen.findByText("이 기기에 계속 보관")).toBeTruthy();
+    expect(screen.queryByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeNull();
+  });
 });

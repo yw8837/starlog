@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { resetAccountForTests } from "@/lib/account/client";
 import { saveTeaser } from "@/lib/reading/teaserCache";
-import { clearSajuProfile, saveSajuProfile } from "@/lib/sajuFlow";
+import type { SajuTopicId } from "@/lib/reading/types";
+import { clearSajuProfile, sajuTeaserKey, saveSajuProfile } from "@/lib/sajuFlow";
 import { DEFAULT_SAJU_FORM, sanitizeSajuForm } from "@/lib/sajuForm";
-import { clearChapters } from "@/lib/storage/chapters";
+import { OTHER_TOPICS_LABEL, TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE, topicLockedToc } from "@/lib/sajuTopics";
+import { clearChapters, listChapters, saveChapter, type NewChapter } from "@/lib/storage/chapters";
 import { SajuChartView } from "./SajuChartView";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -15,10 +18,10 @@ const ID = "abcdefghij0123456789";
 const ORDER = "Ab3_dEf-Gh5iJk7Lm9No1Pq2";
 const BIRTH = sanitizeSajuForm({ ...DEFAULT_SAJU_FORM, year: 1994, month: 5, day: 17 })!;
 
-/** Saved birth data and its free reading, as the chart page left them. */
+/** Saved birth data and its 사주팔자 teaser, as the chart page left them. */
 function seed() {
   saveSajuProfile(BIRTH);
-  saveTeaser("saju", JSON.stringify({ birth: BIRTH }), { title: "고요한 물", summary: "첫 장 요약", lockedToc: ["성향", "올해"] });
+  saveTeaser("saju", sajuTeaserKey(BIRTH, {}), { title: "고요한 물", summary: "첫 장 요약", lockedToc: ["성향", "올해"] });
 }
 
 const user = (over: Record<string, unknown> = {}) => ({ nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [], opening: [], ...over });
@@ -29,12 +32,20 @@ const savedReading = () => ({
   chapter: { kind: "saju", birth: BIRTH, title: "고요한 물", summary: "첫 장 요약", reading: { sections: [{ heading: "성향", body: "본문" }] }, chapterToken: "t0", createdAt: 1, turns: [], followUpsLeft: 3 },
 });
 
-type Routes = { me: Array<() => Response>; reading?: () => Response | Promise<Response>; readings?: () => Response };
+type Body = Record<string, unknown>;
+type Routes = {
+  me: Array<() => Response>;
+  reading?: (body: Body) => Response | Promise<Response>;
+  readings?: () => Response;
+  teaser?: (body: Body) => Response | Promise<Response>;
+};
 
 function stub(routes: Routes) {
-  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+  vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+    const body = typeof init?.body === "string" ? (JSON.parse(init.body) as Body) : {};
     if (url === "/api/me") return (routes.me.length > 1 ? routes.me.shift()! : routes.me[0]!)();
-    if (url === "/api/saju/reading") return routes.reading ? routes.reading() : Promise.reject(new TypeError("offline"));
+    if (url === "/api/saju/reading") return routes.reading ? routes.reading(body) : Promise.reject(new TypeError("offline"));
+    if (url === "/api/saju/teaser") return routes.teaser ? routes.teaser(body) : Promise.reject(new TypeError("offline"));
     if (url.startsWith("/api/readings")) return routes.readings ? routes.readings() : Response.json({ readings: [], next: null });
     return Response.json({});
   }));
@@ -48,6 +59,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   resetAccountForTests();
   sessionStorage.clear();
   clearSajuProfile();
@@ -112,5 +124,198 @@ describe("SajuChartView after a paid opening was cut off", () => {
     expect(screen.getByRole("button", { name: "다시 확인하기" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "결제한 풀이 열기" })).toBeNull();
     expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
+  });
+});
+
+const OPENING_ME = () => Response.json({ payments: false, login: false, owner: false, user: null });
+const teaserFor = (topic: SajuTopicId, title: string) => ({
+  title, summary: `${title} 요약`, lockedToc: topicLockedToc(topic), topic, freshUntil: new Date(Date.now() + 86_400_000).toISOString(),
+});
+const sectionsOf = (topic: SajuTopicId) => TOPIC_SECTIONS[topic].map((heading) => ({ heading, body: "본문" }));
+const readingOf = (topic: SajuTopicId) => ({
+  reading: { sections: sectionsOf(topic), observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "신호" }, followUps: [] },
+  chapterToken: "t1",
+});
+const seedTopic = (topic: SajuTopicId, title: string) => saveTeaser("saju", sajuTeaserKey(BIRTH, { topic }), teaserFor(topic, title));
+const row = () => screen.getByRole("group", { name: OTHER_TOPICS_LABEL });
+const tap = (name: string) => fireEvent.click(within(row()).getByRole("button", { name }));
+const PAY_LINK = /결제하고 보기/;
+
+describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topics owner cut §0)", () => {
+  it("shows the 사주팔자 first exactly as today, with the four buttons right under it", async () => {
+    seed();
+    stub({ me: [OPENING_ME] });
+    render(<SajuChartView />);
+    expect(await screen.findByText("첫 장")).toBeTruthy();
+    expect(screen.getByText("고요한 물")).toBeTruthy();
+    expect(within(row()).getAllByRole("button").map((b) => b.textContent)).toEqual(["연애운", "재회운", "재물운", "직장운"]);
+    expect(screen.getByText("고요한 물").compareDocumentPosition(row()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(row().compareDocumentPosition(screen.getByRole("region", { name: "전체 풀이에 담긴 것" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "사주팔자로 돌아가기" })).toBeNull();
+  });
+
+  it("shows a 운's teaser in place with its own list and sheet, and the way back returns to 첫 장", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    stub({ me: [() => Response.json(meBody())] });
+    render(<SajuChartView />);
+    await screen.findByText("첫 장");
+    tap("재물운");
+    expect(await screen.findByText("재물운 · 맛보기")).toBeTruthy();
+    expect(screen.getByText("흙 속의 쇠")).toBeTruthy();
+    expect(screen.getByText("소제목 7개 · 약 3,000자")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "재물운 전체 풀이에 담긴 것" })).toBeTruthy();
+    // The price and the pay link wait for the account (/api/me).
+    expect(await screen.findByText("재물운 전체 풀이 · 2,900원")).toBeTruthy();
+    expect(screen.getByText(UNLOCK_SCOPE_LINE)).toBeTruthy();
+    expect(screen.getByRole("link", { name: PAY_LINK }).getAttribute("href")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart%3Ftopic%3Dmoney");
+    fireEvent.click(screen.getByRole("button", { name: "사주팔자로 돌아가기" }));
+    expect(await screen.findByText("첫 장")).toBeTruthy();
+    expect(screen.getByText("고요한 물")).toBeTruthy();
+    expect(screen.queryByText(UNLOCK_SCOPE_LINE)).toBeNull();
+    expect(screen.getByRole("link", { name: PAY_LINK }).getAttribute("href")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart");
+  });
+
+  it("a 운 already kept on this device sends nothing; a new one sends one request with only its id", async () => {
+    seed();
+    seedTopic("career", "곧은 나무");
+    const sent: Body[] = [];
+    stub({ me: [OPENING_ME], teaser: (body) => (sent.push(body), Response.json(teaserFor("love", "봄의 촛불"))) });
+    render(<SajuChartView />);
+    await screen.findByText("첫 장");
+    tap("직장운");
+    expect(await screen.findByText("직장운 · 맛보기")).toBeTruthy();
+    expect(sent).toHaveLength(0);
+    tap("연애운");
+    expect(await screen.findByText("봄의 촛불")).toBeTruthy();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ topic: "love" });
+    expect(sent[0]).not.toHaveProperty("situation");
+    expect(sent[0]).not.toHaveProperty("loveStatus");
+    tap("직장운");
+    expect(await screen.findByText("곧은 나무")).toBeTruthy();
+    expect(sent).toHaveLength(1);
+  });
+
+  it("says the day's teasers are used up in place, and a 운 already seen still shows", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    stub({ me: [OPENING_ME], teaser: () => Response.json({ code: "BETA_LIMIT", message: "x" }, { status: 429 }) });
+    render(<SajuChartView />);
+    await screen.findByText("첫 장");
+    tap("재회운");
+    expect(await screen.findByText(TEASER_LIMIT_NOTICE, { selector: "#teaser-limit" })).toBeTruthy();
+    expect(within(row()).getByRole("button", { name: "재회운" }).getAttribute("aria-pressed")).toBe("true");
+    tap("재물운");
+    expect(await screen.findByText("흙 속의 쇠")).toBeTruthy();
+  });
+
+  it("opens the 운 on screen: the body carries the topic and the saved record keeps it", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    let opened: Body | null = null;
+    stub({
+      me: [OPENING_ME],
+      reading: (body) => {
+        opened = body;
+        return Response.json(readingOf("money"));
+      },
+    });
+    render(<SajuChartView />);
+    await screen.findByText("첫 장");
+    tap("재물운");
+    fireEvent.click(await screen.findByRole("button", { name: /전체 풀이 보기/ }));
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
+    expect(opened).toMatchObject({ topic: "money" });
+    expect(opened).not.toHaveProperty("loveStatus");
+    expect(listChapters().at(-1)).toMatchObject({ kind: "saju", topic: "money", title: "흙 속의 쇠" });
+  });
+
+  it("links the reading opened on this device for the same 운 only", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    seedTopic("love", "봄의 촛불");
+    saveChapter({ kind: "saju", birth: BIRTH, title: "흙 속의 쇠", summary: "요약", topic: "money", reading: { sections: sectionsOf("money") }, chapterToken: "t" } as NewChapter);
+    stub({ me: [OPENING_ME] });
+    render(<SajuChartView />);
+    await screen.findByText("첫 장");
+    expect(screen.queryByRole("link", { name: /열어 둔 풀이 보기/ })).toBeNull();
+    tap("재물운");
+    expect(await screen.findByRole("link", { name: /열어 둔 풀이 보기/ })).toBeTruthy();
+    tap("연애운");
+    await screen.findByText("봄의 촛불");
+    expect(screen.queryByRole("link", { name: /열어 둔 풀이 보기/ })).toBeNull();
+  });
+
+  it("starts on a 운 when the address says so (back from checkout or login), and keeps it in the return links", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    stub({ me: [() => Response.json(meBody())] });
+    render(<SajuChartView initialTopic="money" />);
+    expect(await screen.findByText("재물운 · 맛보기")).toBeTruthy();
+    expect(await screen.findByRole("link", { name: PAY_LINK })).toBeTruthy();
+    expect(screen.getByRole("link", { name: PAY_LINK }).getAttribute("href")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart%3Ftopic%3Dmoney");
+  });
+
+  it("after checkout (?unlock=paid&topic=money) opens the 운 that was paid for", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    let opened: Body | null = null;
+    stub({
+      me: [() => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "saju" }] }))],
+      reading: (body) => {
+        opened = body;
+        return Response.json(readingOf("money"));
+      },
+    });
+    render(<SajuChartView autoUnlock="paid" initialTopic="money" />);
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
+    expect(opened).toMatchObject({ topic: "money", unlock: { method: "paid" } });
+    expect(listChapters().at(-1)).toMatchObject({ kind: "saju", topic: "money" });
+  });
+
+  it("with the topics off shows today's page: no row, 첫 장, even with ?topic=", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "off");
+    seed();
+    stub({ me: [OPENING_ME] });
+    render(<SajuChartView initialTopic="money" />);
+    expect(await screen.findByText("첫 장")).toBeTruthy();
+    expect(screen.getByText("고요한 물")).toBeTruthy();
+    expect(screen.queryByRole("group", { name: OTHER_TOPICS_LABEL })).toBeNull();
+  });
+
+  it("in owner mode asks for no teaser until the account is known, then shows the row only with the owner pass", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "owner");
+    seed();
+    const sent: Body[] = [];
+    stub({
+      me: [() => Response.json({ payments: false, login: false, owner: true, user: null })],
+      teaser: (body) => (sent.push(body), Response.json(teaserFor("money", "다른 제목"))),
+    });
+    render(<SajuChartView />);
+    expect(await screen.findByText("고요한 물")).toBeTruthy();
+    expect(row()).toBeTruthy();
+    expect(sent).toHaveLength(0);
+  });
+
+  it("in owner mode without the owner pass keeps today's page", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "owner");
+    seed();
+    stub({ me: [OPENING_ME] });
+    render(<SajuChartView />);
+    expect(await screen.findByText("고요한 물")).toBeTruthy();
+    expect(screen.queryByRole("group", { name: OTHER_TOPICS_LABEL })).toBeNull();
+  });
+
+  it("shows no row on a non-Korean screen", async () => {
+    seed();
+    stub({ me: [OPENING_ME] });
+    render(
+      <LocaleProvider locale="en" messages={{}}>
+        <SajuChartView />
+      </LocaleProvider>,
+    );
+    expect(await screen.findByText("고요한 물")).toBeTruthy();
+    expect(screen.queryByRole("group", { name: OTHER_TOPICS_LABEL })).toBeNull();
   });
 });

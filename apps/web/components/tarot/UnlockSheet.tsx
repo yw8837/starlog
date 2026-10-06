@@ -17,6 +17,10 @@ export interface Wallet {
 
 type UnlockSheetProps = {
   kind: "tarot" | "saju";
+  /** 주제별 사주: the 운's screen label in the title and the price line ("재물운 전체 풀이 · 2,900원"). */
+  topicLabel?: string;
+  /** 주제별 사주: what one payment opens, under the price ("결제 한 번에 고른 풀이 하나를 열어요"). */
+  scopeLine?: string;
   /** What this device may do now (lib/pay/offer.ts). Default: the 오픈 기념 daily free reading. */
   offer?: UnlockOffer;
   /** Full readings left today on this device (오픈 기념 only); undefined until read. */
@@ -60,6 +64,8 @@ const CheckIcon = () => (
  */
 export function UnlockSheet({
   kind,
+  topicLabel,
+  scopeLine,
   offer = { mode: "opening", login: false },
   remaining,
   onUnlock,
@@ -189,9 +195,10 @@ export function UnlockSheet({
     <section className={s.sheet} aria-labelledby="unlock-title">
       <span className={s.handle} aria-hidden="true" />
       <h2 id="unlock-title" className={s.title}>
-        전체 풀이에 담긴 것
+        {topicLabel ? `${topicLabel} 전체 풀이에 담긴 것` : "전체 풀이에 담긴 것"}
       </h2>
-      {priced ? <p className={s.price}>{`전체 풀이 · ${won(offer.priceKrw)}`}</p> : null}
+      {priced ? <p className={s.price}>{`${topicLabel ? `${topicLabel} ` : ""}전체 풀이 · ${won(offer.priceKrw)}`}</p> : null}
+      {scopeLine && (priced || offer.mode === "open-paid") ? <p className={s.scope}>{scopeLine}</p> : null}
       <ul className={s.includes}>
         <li>
           <CheckIcon />

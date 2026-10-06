@@ -1,0 +1,44 @@
+/* 다른 운도 볼 수 있어요: the four 운 under the 사주팔자 teaser. One line on a wide screen, two on a phone. */
+.row {
+  display: grid;
+  gap: 10px;
+}
+
+.title {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-sub);
+  font: inherit;
+  font-size: var(--fs-sub);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.back:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.help {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}

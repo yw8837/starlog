@@ -31,6 +31,14 @@
   text-align: center;
 }
 
+/* "결제 한 번에 고른 풀이 하나를 열어요" under the price (주제별 사주). */
+.scope {
+  margin-top: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: center;
+}
+
 /* What opening gives, before the button: three short lines. */
 .includes {
   display: grid;

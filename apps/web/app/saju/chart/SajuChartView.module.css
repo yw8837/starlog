@@ -87,3 +87,13 @@
   color: var(--ink-sub);
   line-height: 1.7;
 }
+
+/* The day's teasers are used up for a 운 not seen yet (주제별 사주): said in place, under the row. */
+.limitNotice {
+  padding: 16px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  color: var(--ink);
+  line-height: 1.7;
+}

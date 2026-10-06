@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
 import { NightSky } from "@/components/sky/NightSky";
+import { isSajuTopicId } from "@/lib/sajuTopics";
 import { SajuChartView } from "./SajuChartView";
 
 // A personal chart stays out of search (spec section 10).
@@ -15,6 +16,7 @@ export default async function SajuChartPage({ searchParams }: PageProps<"/saju/c
         <SajuChartView
           autoUnlock={query.unlock === "paid" || query.unlock === "free" ? query.unlock : null}
           loginFlag={typeof query.login === "string" ? query.login : null}
+          initialTopic={isSajuTopicId(query.topic) ? query.topic : null}
         />
       </main>
       <Footer />
