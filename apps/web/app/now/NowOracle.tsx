@@ -36,7 +36,7 @@ export const HOWTO_SEEN_KEY = "starlog.now.howto";
 const HOWTO_STEPS = [
   { icon: "write", text: "고민을 한 줄 적어요 (마음속으로 떠올리기만 해도 돼요)" },
   { icon: "card", text: "펼쳐진 카드 중 끌리는 한 장을 골라요" },
-  { icon: "spark", text: "카드가 고민에 건네는 한 문장, 그렇게 읽은 이유, 오늘 해 볼 일이 나와요" },
+  { icon: "spark", text: "카드가 고민에 건네는 한 문장과 그렇게 읽은 이유가 나와요" },
 ] as const;
 
 function howtoSeen(): boolean {
@@ -347,11 +347,6 @@ export function NowOracle({ instant = false }: NowOracleProps) {
 
           {turned ? (
             <div className={s.after}>
-              <p className={s.tip}>
-                <span className={s.tipLabel}>오늘 해 볼 일</span>
-                {draw.tip}
-              </p>
-
               <div className={s.actions}>
                 <p className={s.more}>
                   더 자세히 보고 싶다면 <span aria-hidden="true">→</span> {FULL_READING} ({won(SITE.price.tarotStandardKrw)})

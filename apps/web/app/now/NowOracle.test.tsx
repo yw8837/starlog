@@ -3,7 +3,7 @@ import { DEFAULT_REVERSAL_RATE, createDeck, getCard } from "@starlog/core";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SITE, won } from "@/lib/config";
-import { drawNow } from "@/lib/decision";
+import { decisionFor, drawNow } from "@/lib/decision";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { HOWTO_SEEN_KEY, NowOracle } from "./NowOracle";
 
@@ -64,7 +64,7 @@ describe("지금의 한 장", () => {
     expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
   });
 
-  it("turns the picked card over to its line, why and tip, with the upsell as the one primary", () => {
+  it("turns the picked card over to its line and why, with the upsell as the one primary", () => {
     render(<NowOracle instant />);
     fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "오늘 먼저 연락해도 될까?" } });
     const expected = pickSlot(6, "now-seed-first");
@@ -77,7 +77,9 @@ describe("지금의 한 장", () => {
     const reversed = expected.orientation === "reversed";
     expect(screen.getByRole("img", { name: `${card.names.ko}${reversed ? " 역방향" : ""}` })).toBeTruthy();
     expect(screen.getByText(expected.why)).toBeTruthy();
-    expect(screen.getByText(expected.tip)).toBeTruthy();
+    // 오늘 해 볼 일 belongs to 오늘의 한 장: here the answer is the card's reading only, no daily tip under it.
+    expect(screen.queryByText("오늘 해 볼 일")).toBeNull();
+    expect(screen.queryByText(decisionFor(expected.cardId, expected.orientation).tip)).toBeNull();
     expect(screen.getByText("오늘 먼저 연락해도 될까?")).toBeTruthy();
     expect(screen.getByRole("region", { name: "지금의 한 장 결과" }).dataset.lean).toBe(expected.lean);
 
@@ -159,7 +161,7 @@ describe("지금의 한 장 how-to", () => {
     expect(howtoSteps().map((step) => step.textContent)).toEqual([
       "고민을 한 줄 적어요 (마음속으로 떠올리기만 해도 돼요)",
       "펼쳐진 카드 중 끌리는 한 장을 골라요",
-      "카드가 고민에 건네는 한 문장, 그렇게 읽은 이유, 오늘 해 볼 일이 나와요",
+      "카드가 고민에 건네는 한 문장과 그렇게 읽은 이유가 나와요",
     ]);
 
     fireEvent.click(screen.getByRole("button", { name: "알겠어요" }));

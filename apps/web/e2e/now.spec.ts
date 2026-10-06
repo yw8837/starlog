@@ -76,7 +76,8 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   expect(ALL_ANSWERS.has(text), `"${text}" is a line from decision.ko.json`).toBe(true);
   await expect(answer).toBeFocused();
   await expect(page.getByText("오늘 먼저 연락해도 될까?")).toBeVisible();
-  await expect(page.getByText("오늘 해 볼 일")).toBeVisible();
+  // 오늘 해 볼 일 belongs to 오늘의 한 장; the answer here is the card's reading only.
+  await expect(page.getByText("오늘 해 볼 일")).toHaveCount(0);
 
   const upsell = page.getByRole("link", { name: /타로 전체 풀이 보기/ });
   await expect(upsell).toBeVisible();

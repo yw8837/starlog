@@ -23,7 +23,6 @@ export interface NowDraw {
   lean: Lean;
   answer: string;
   why: string;
-  tip: string;
 }
 
 type RawEntry = { lean: string; answers: string[]; why: string; tip: string };
@@ -48,7 +47,7 @@ export function drawNow(deck: DeckState, index: number, random: number): NowDraw
   if (!Number.isInteger(index) || cardId === undefined || orientation === undefined) {
     throw new RangeError(`Card index ${index} is outside the deck`);
   }
-  const { lean, answers, why, tip } = decisionFor(cardId, orientation);
+  const { lean, answers, why } = decisionFor(cardId, orientation);
   const pick = Math.min(answers.length - 1, Math.max(0, Math.floor(random * answers.length)));
-  return { cardId, orientation, lean, answer: answers[pick] ?? answers[0] ?? "", why, tip };
+  return { cardId, orientation, lean, answer: answers[pick] ?? answers[0] ?? "", why };
 }

@@ -55,8 +55,9 @@ describe("drawNow", () => {
       const entry = decisionFor(draw.cardId, draw.orientation);
       expect(entry.answers).toContain(draw.answer);
       expect(draw.why).toBe(entry.why);
-      expect(draw.tip).toBe(entry.tip);
       expect(draw.lean).toBe(entry.lean);
+      // A draw is the card's reading only; the entry's tip is not part of it.
+      expect(draw).not.toHaveProperty("tip");
     }
   });
 
