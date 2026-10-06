@@ -163,6 +163,328 @@
    ],
    "readFirst": 6
   },
+  "major-02-high-priestess": {
+   "symbols": [
+    {
+     "symbol": "actor",
+     "rank": 1,
+     "groups": 2,
+     "bbox90": "56x95",
+     "area90": 2526,
+     "dL": 36.2,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "pillars",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "90x113",
+     "area90": 3646,
+     "dL": 39.9,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "crescent-feet",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "28x13",
+     "area90": 180,
+     "dL": 14.8,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "scroll",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "31x12",
+     "area90": 274,
+     "dL": 22.8,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "moon-crown",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "20x12",
+     "area90": 136,
+     "dL": 25.1,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "pomegranate-veil",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "54x102",
+     "area90": 3237,
+     "dL": 43.3,
+     "verdict": "PASS"
+    }
+   ],
+   "readFirst": 6
+  },
+  "major-03-empress": {
+   "symbols": [
+    {
+     "symbol": "actor",
+     "rank": 1,
+     "groups": 2,
+     "bbox90": "42x66",
+     "area90": 888,
+     "dL": 18.8,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "star-crown",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "29x16",
+     "area90": 201,
+     "dL": 21,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "scepter-orb",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "14x30",
+     "area90": 146,
+     "dL": 13.4,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "heart-shield",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "21x20",
+     "area90": 263,
+     "dL": 16.3,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "wheat",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "90x37",
+     "area90": 2509,
+     "dL": 20.1,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "cushion",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "39x48",
+     "area90": 1116,
+     "dL": 23.1,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "forest-stream",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "33x67",
+     "area90": 1381,
+     "dL": 26.1,
+     "verdict": "PASS"
+    }
+   ],
+   "readFirst": 7
+  },
+  "major-04-emperor": {
+   "symbols": [
+    {
+     "symbol": "actor",
+     "rank": 1,
+     "groups": 5,
+     "bbox90": "46x107",
+     "area90": 1658,
+     "dL": 18.9,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "throne-rams",
+     "rank": 1,
+     "groups": 2,
+     "bbox90": "64x79",
+     "area90": 413,
+     "dL": 14.3,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "ankh-scepter",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "18x54",
+     "area90": 337,
+     "dL": 15.7,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "orb",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "18x18",
+     "area90": 199,
+     "dL": 16,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "crown",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "15x7",
+     "area90": 77,
+     "dL": 29.1,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "mountains",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "90x64",
+     "area90": 1201,
+     "dL": 8.7,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "red-robe",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "38x23",
+     "area90": 745,
+     "dL": 19.7,
+     "verdict": "PASS"
+    }
+   ],
+   "readFirst": 7
+  },
+  "major-05-hierophant": {
+   "symbols": [
+    {
+     "symbol": "actor",
+     "rank": 1,
+     "groups": 3,
+     "bbox90": "51x88",
+     "area90": 967,
+     "dL": 27,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "triple-crown",
+     "rank": 1,
+     "groups": 2,
+     "bbox90": "26x44",
+     "area90": 324,
+     "dL": 22.9,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "blessing-hand",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "9x16",
+     "area90": 124,
+     "dL": 24.5,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "triple-cross",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "15x89",
+     "area90": 393,
+     "dL": 20.1,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "crossed-keys",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "24x18",
+     "area90": 286,
+     "dL": 27.8,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "acolytes",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "76x29",
+     "area90": 786,
+     "dL": 21.3,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "pillars",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "90x122",
+     "area90": 4198,
+     "dL": 14.8,
+     "verdict": "PASS"
+    }
+   ],
+   "readFirst": 7
+  },
+  "major-06-lovers": {
+   "symbols": [
+    {
+     "symbol": "actor",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "78x60",
+     "area90": 1417,
+     "dL": 21.1,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "angel",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "86x41",
+     "area90": 1590,
+     "dL": 20,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "sun",
+     "rank": 1,
+     "groups": 1,
+     "bbox90": "70x65",
+     "area90": 1384,
+     "dL": 17.2,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "mountain",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "35x32",
+     "area90": 658,
+     "dL": 11.6,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "fruit-tree-serpent",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "26x61",
+     "area90": 479,
+     "dL": 14.6,
+     "verdict": "PASS"
+    },
+    {
+     "symbol": "flame-tree",
+     "rank": 2,
+     "groups": 1,
+     "bbox90": "12x73",
+     "area90": 384,
+     "dL": 22.5,
+     "verdict": "PASS"
+    }
+   ],
+   "readFirst": 6
+  },
   "major-17-star": {
    "symbols": [
     {

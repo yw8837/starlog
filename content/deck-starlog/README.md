@@ -25,6 +25,7 @@ node render.mjs [id]                       # 단계 PNG, 덱 마스터, 웹용 �
 node back.mjs                              # 뒷면 svg
 node export-print.mjs [--dpi 600] [--guides] [id]   # 인쇄용 PNG
 node review.mjs                            # review/prototype-v2.png (selftest.mjs를 먼저)
+node review-batch.mjs batch-01             # review/batch-01.png: 수정 확인, 카드별 3단계, 90px 줄, 뒷면 (selftest.mjs 전체를 먼저)
 node review-back.mjs                       # review/card-back.png
 node check.mjs                             # svg·렌더·인쇄 파일 검사
 python3 make-glyphs.py                     # deck.json의 글자를 윤곽으로 (Noto Serif KR 필요)

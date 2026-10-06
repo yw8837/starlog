@@ -28,6 +28,9 @@ PALETTE = {
     "water": "#3F66CC", "waterLight": "#9FC0F5",
     "fool sky": "#F0C552", "fool sun": "#D9801C", "fool peak": "#A28FE4", "magician ground": "#5B4FB8", "magician halo": "#7566D0",
     "star sky": "#1F1C66", "star sky low": "#2B3490", "star hill": "#2E8A7E", "star jug": "#E08A52",
+    "priestess cloak": "#6F9BE8", "empress sky": "#F2D170", "empress cushion": "#E0764A", "empress wheat": "#E8B33A",
+    "emperor sky": "#E8894F", "emperor mountain": "#E9B03C", "emperor steel": "#B9C8E8",
+    "hierophant wall": "#6A63AC", "hierophant pillar": "#8F88C8", "lovers sky": "#7FA3EA", "lovers sun": "#F6D060", "lovers mountain": "#8774D8",
 }
 
 
