@@ -15,6 +15,8 @@ import { POST as refund } from "../../pay/refund/route";
 import { POST as maintenance } from "./route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
+/** A purchase on 10-01 KST can be refunded on request through the end of 10-08 KST. */
+const UNTIL = "2026-10-08T14:59:59.999Z";
 const MIN = 60_000;
 const CRON = "cron-secret-for-tests-0123456789abcdef";
 
@@ -90,7 +92,7 @@ describe("maintenance", () => {
     vi.setSystemTime(T0 + 31_000);
     expect(await report()).toMatchObject({ confirming: 1 });
     expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "paid" });
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
   });
 
   it("puts back a refund Toss never did, and retries a deleted account's payment until it is cancelled", async () => {
@@ -110,7 +112,7 @@ describe("maintenance", () => {
     vi.setSystemTime(T0 + 10 * MIN + 1);
     expect(await report()).toMatchObject({ refunding: 2 });
     expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(refunded).first()).toEqual({ status: "paid", cancel_attempt: 2 });
-    expect((await me(alice)).user?.unused).toEqual([{ orderId: refunded, productId: "tarot" }]);
+    expect((await me(alice)).user?.unused).toEqual([{ orderId: refunded, productId: "tarot", refundUntil: UNTIL }]);
     expect(await db.prepare("SELECT status, cancel_attempt FROM orders WHERE id = ?").bind(orphan).first()).toEqual({ status: "refunded", cancel_attempt: 2 });
     expect((await mockToss.getPaymentByOrder(orphan)).status).toBe("CANCELED");
   });

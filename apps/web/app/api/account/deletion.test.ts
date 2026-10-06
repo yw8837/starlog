@@ -17,6 +17,8 @@ import { POST as refund } from "../pay/refund/route";
 import { POST as deleteIntent } from "./delete-intent/route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
+/** A purchase on 10-01 KST can be refunded on request through the end of 10-08 KST. */
+const UNTIL = "2026-10-08T14:59:59.999Z";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -107,8 +109,17 @@ describe("account deletion", () => {
     const orderId = await buy(b);
     mockToss.failNext("cancel", new TossError(403, "NOT_CANCELABLE_PAYMENT", "취소 할 수 없는 결제 입니다."));
     expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=refund-failed");
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
+  });
+
+  it("still refunds an unopened purchase after the 7-day window for a buyer's 환불받기", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    const orderId = await buy(b);
+    vi.setSystemTime(Date.parse(UNTIL) + 1);
+    expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
+    expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunded" });
   });
 
   it("completes with payments made under other Toss keys: their readings leave use, the operator settles them", async () => {

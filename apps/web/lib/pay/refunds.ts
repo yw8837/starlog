@@ -1,6 +1,7 @@
 import "server-only";
 import type { D1Binding } from "@/lib/db/d1";
-import { forfeitStatements, lockPaidLotForRefund, refundedLotStatements, refundingLot, revertRefund, revokeLotStatement, type Lot } from "./ledger";
+import { REFUND_DAYS } from "./catalog";
+import { forfeitStatements, giftExpiry, lockPaidLotForRefund, refundedLotStatements, refundingLot, revertRefund, revokeLotStatement, type Lot } from "./ledger";
 import { markPaid, orderById, type OrderRow } from "./orders";
 import { isPendingTossError, type TossClient, type TossError, type TossPayment } from "./tossTypes";
 
@@ -16,6 +17,12 @@ export type RefundOutcome = { ok: true } | { ok: false; code: "NOT_REFUNDABLE" |
 export const REFUND_RECONCILE_AFTER_MS = 10 * 60_000;
 /** A deleted account's payment is cancelled at most this many times automatically; then the runbook takes over. */
 export const ORPHAN_MAX_ATTEMPTS = 5;
+
+/**
+ * The last moment a buyer's 환불받기 works for a payment recorded at `paidAt` (its paid lot's
+ * created_at): the end of the KST day REFUND_DAYS days later (paid 10-06 → 10-13 23:59:59.999 KST).
+ */
+export const refundDeadline = (paidAt: number) => giftExpiry(paidAt, REFUND_DAYS);
 
 /** Toss replays an Idempotency-Key's first answer for 15 days: each attempt has its own key. */
 export const cancelKey = (order: Pick<OrderRow, "id" | "cancel_attempt">) => `cancel-${order.id}-${order.cancel_attempt}`;

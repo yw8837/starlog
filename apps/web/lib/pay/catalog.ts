@@ -27,6 +27,13 @@ export interface Product {
 /** 별조각 from the signup gift last this many KST days after the day they arrive (spec 14, default 1). */
 export const GIFT_DAYS = 90;
 
+/**
+ * A paid reading never opened can be refunded on the buyer's request (환불받기) through the end of
+ * the KST day this many days after the payment (paid 10-06 → through 10-13). Company-side failures
+ * and account deletion are not limited by it.
+ */
+export const REFUND_DAYS = 7;
+
 const STANDARD: Product[] = [
   { id: "tarot", name: "타로 전체 풀이", orderName: `${SITE.nameKo} 타로 전체 풀이`, krw: SITE.price.tarotStandardKrw, units: SITE.price.unitsPerReading, deliverable: true },
   { id: "saju", name: "사주 전체 풀이", orderName: `${SITE.nameKo} 사주 전체 풀이`, krw: SITE.price.sajuStandardKrw, units: SITE.price.unitsPerReading, deliverable: true },

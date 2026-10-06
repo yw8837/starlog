@@ -91,7 +91,7 @@ export interface MeBody {
     nickname: string;
     stardust: number;
     stardustExpiresAt: string | null;
-    unused: Array<{ orderId: string; productId: string }>;
+    unused: Array<{ orderId: string; productId: string; refundUntil: string }>;
     opening: Array<{ productId: string; currency: "paid" | "stardust"; orderId: string | null }>;
   };
 }

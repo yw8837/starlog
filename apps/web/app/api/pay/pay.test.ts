@@ -9,6 +9,8 @@ import { POST as confirm } from "./confirm/route";
 import { GET as ordersGet, POST as ordersPost } from "./orders/route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
+/** A purchase on 10-01 KST can be refunded on request through the end of 10-08 KST. */
+const UNTIL = "2026-10-08T14:59:59.999Z";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -105,7 +107,7 @@ describe("confirm", () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
     const again = await confirmAs(b, orderId, "mock_again");
     expect(again.status).toBe(200);
     expect(await again.json()).toMatchObject({ status: "paid", signedIn: true });
@@ -123,7 +125,7 @@ describe("confirm", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ status: "paid", orderId, productId: "tarot", returnTo: "/tarot/result", signedIn: false });
     expect(await statusOf(elsewhere, orderId)).toEqual({ orderId, productId: "tarot", status: "paid", returnTo: "/tarot/result", signedIn: false });
-    expect((await me(alice)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(alice)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
     expect((await elsewhere.send(confirm, "/api/pay/confirm", { body: { paymentKey: "x", orderId, amount: 2900 } })).status).toBe(403);
   });
 
@@ -174,7 +176,7 @@ describe("confirm", () => {
     expect(await statusOf(b, orderId)).toMatchObject({ status: "confirming" });
     vi.setSystemTime(T0 + 31_000);
     expect(await statusOf(b, orderId)).toEqual({ orderId, productId: "tarot", status: "paid", returnTo: "/tarot/result", signedIn: true });
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
   });
 
   it("sends a lost confirm once more, under the same key, while Toss holds the payment authenticated", async () => {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { logout, refreshAccount, type AccountState, type AccountUser } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
-import { productById } from "@/lib/pay/catalog";
+import { REFUND_DAYS, productById } from "@/lib/pay/catalog";
 import { postJson, type ApiError } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
 import { deleteAccountReadings, forgetAccountOnDevice } from "@/lib/storage/sync";
@@ -17,6 +17,8 @@ const lastDay = (iso: string) => {
   return `${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일`;
 };
 const openHref = (productId: string) => (productId === "saju" ? "/saju/new" : "/tarot/new");
+/** Instead of 환불받기 once a purchase's refund window is over (the server's REFUND_WINDOW_CLOSED says the same). */
+const WINDOW_CLOSED = `환불 가능 기간(결제일로부터 ${REFUND_DAYS}일)이 지났어요. 문제가 있으면 문의해 주세요.`;
 
 /** A failed 환불받기 in refund words (the payment lines would say "결제를 확인하고 있어요"). */
 function refundNotice(error: ApiError): string {
@@ -28,6 +30,8 @@ function refundNotice(error: ApiError): string {
       return error.message?.startsWith("환불하지 못했어요") ? error.message : `환불하지 못했어요. ${error.message ?? "문의해 주세요."}`;
     case "NOT_REFUNDABLE":
       return error.message ?? "환불할 수 없는 결제예요. 이미 연 풀이이거나 환불을 처리하고 있어요.";
+    case "REFUND_WINDOW_CLOSED":
+      return error.message ?? WINDOW_CLOSED;
     case "NETWORK":
     case "UPSTREAM":
       return "환불됐는지 아직 확인하지 못했어요. 결제 내역에서 확인해 주세요.";
@@ -119,24 +123,31 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
         </h3>
         {user.unused.length > 0 ? (
           <ul className={s.unused}>
-            {user.unused.map((item) => (
-              <li key={item.orderId} className={s.unusedItem}>
-                <span>{`${productById(item.productId)?.name ?? "풀이"} · 열지 않음`}</span>
-                <Button href={openHref(item.productId)} variant="secondary" size="md">
-                  열기
-                </Button>
-                <button
-                  type="button"
-                  className={s.link}
-                  onClick={() => {
-                    setRefundId(item.orderId);
-                    setSheet("refund");
-                  }}
-                >
-                  환불받기
-                </button>
-              </li>
-            ))}
+            {user.unused.map((item) => {
+              // Past its window the purchase can still be opened; 환불받기 gives way to a plain line.
+              const refundable = !item.refundUntil || Date.now() <= Date.parse(item.refundUntil);
+              return (
+                <li key={item.orderId} className={s.unusedItem}>
+                  <span>{`${productById(item.productId)?.name ?? "풀이"} · 열지 않음`}</span>
+                  <Button href={openHref(item.productId)} variant="secondary" size="md">
+                    열기
+                  </Button>
+                  {refundable ? (
+                    <button
+                      type="button"
+                      className={s.link}
+                      onClick={() => {
+                        setRefundId(item.orderId);
+                        setSheet("refund");
+                      }}
+                    >
+                      환불받기
+                    </button>
+                  ) : null}
+                  {item.refundUntil ? <p className={s.refundLine}>{refundable ? `${lastDay(item.refundUntil)}까지 환불할 수 있어요` : WINDOW_CLOSED}</p> : null}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className={s.muted}>열지 않은 결제가 없어요</p>

@@ -127,7 +127,7 @@ export function ledgerContract(make: Make) {
   it("spends a paid lot only on its own product", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_tarot_1", "tarot");
-    expect((await walletSummary(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot" }]);
+    expect((await walletSummary(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot", paidAt: NOW }]);
     expect(await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "paid", units: 10, now: NOW, payMode: "live" })).toEqual({ ok: false });
     expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW, payMode: "live" })).ok).toBe(true);
     expect((await walletSummary(db, "u_1", NOW)).unused).toEqual([]);
@@ -146,7 +146,7 @@ export function ledgerContract(make: Make) {
       { productId: "tarot", currency: "paid", orderId: opened },
       { productId: "tarot", currency: "stardust", orderId: null },
     ]);
-    expect(wallet.unused).toEqual([{ orderId: other, productId: "tarot" }]);
+    expect(wallet.unused).toEqual([{ orderId: other, productId: "tarot", paidAt: NOW }]);
     expect(await deliverUnlock(db, { unlockId: paid.unlockId, readingId: "r1", now: NOW + 3 })).toBe("delivered");
     expect(await releaseUnlock(db, { unlockId: free.unlockId, now: NOW + 4 })).toBe(true);
     expect(await walletSummary(db, "u_1", NOW + 5)).toMatchObject({ opening: [], unused: [{ orderId: other, productId: "tarot" }], stardust: 10 });

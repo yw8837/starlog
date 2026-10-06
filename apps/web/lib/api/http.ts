@@ -2,6 +2,7 @@ import "server-only";
 import { aiConfigProblems } from "@/lib/ai/config";
 import { cleanUserText } from "@/lib/ai/prompts/tarot";
 import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/provider";
+import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import {
   QUOTA_COOKIE, QUOTA_COOKIE_MAX_AGE, hasQuota, ipLimits, nextKstMidnight, quotaLimits, readQuota, spendQuota, type QuotaKind, type QuotaState,
@@ -18,7 +19,7 @@ import { budgetState, clientCount, type SpendKind } from "./spend";
 export type ErrorCode =
   | "BAD_REQUEST" | "BAD_TOKEN" | "BETA_LIMIT" | "RATE_LIMIT" | "AI_UNAVAILABLE" | "REFUSED" | "QUALITY" | "UPSTREAM"
   | "LOGIN_REQUIRED" | "PAYMENT_REQUIRED" | "NO_CREDIT" | "PAY_FAILED" | "FORBIDDEN"
-  | "NOT_AVAILABLE" | "PAY_PENDING" | "NOT_REFUNDABLE" | "PAY_UNAVAILABLE";
+  | "NOT_AVAILABLE" | "PAY_PENDING" | "NOT_REFUNDABLE" | "REFUND_WINDOW_CLOSED" | "PAY_UNAVAILABLE";
 
 const STATUS: Record<ErrorCode, number> = {
   BAD_REQUEST: 400,
@@ -37,6 +38,7 @@ const STATUS: Record<ErrorCode, number> = {
   NOT_AVAILABLE: 409,
   PAY_PENDING: 409,
   NOT_REFUNDABLE: 409,
+  REFUND_WINDOW_CLOSED: 409,
   PAY_UNAVAILABLE: 503,
 };
 
@@ -59,6 +61,7 @@ const MESSAGE: Record<ErrorCode, string> = {
   NOT_AVAILABLE: "지금은 열 수 없는 상품이에요.",
   PAY_PENDING: "결제를 확인하고 있어요. 잠시 뒤에 다시 확인해 주세요.",
   NOT_REFUNDABLE: "이미 연 풀이이거나 환불할 수 없는 결제예요.",
+  REFUND_WINDOW_CLOSED: `환불 가능 기간(결제일로부터 ${REFUND_DAYS}일)이 지났어요. 문제가 있으면 문의해 주세요.`,
   PAY_UNAVAILABLE: "지금은 로그인과 결제를 쓸 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
 };
 

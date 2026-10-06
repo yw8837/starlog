@@ -452,8 +452,11 @@ export interface WalletSummary {
   stardust: number;
   /** when the soonest of them expires (ms); null when there are none */
   stardustExpiresAt: number | null;
-  /** paid readings bought and not opened yet (a reading being opened is in `opening` instead) */
-  unused: Array<{ orderId: string; productId: string }>;
+  /**
+   * paid readings bought and not opened yet (a reading being opened is in `opening` instead);
+   * `paidAt`: when the payment was recorded (its lot's created_at), where the refund window starts
+   */
+  unused: Array<{ orderId: string; productId: string; paidAt: number }>;
   /** readings being opened, oldest first */
   opening: Opening[];
 }
@@ -472,12 +475,12 @@ export async function walletSummary(db: D1Binding, userId: string, now: number):
     .all<{ product_id: string; currency: Currency; order_id: string | null }>();
   const { results } = await db
     .prepare(
-      `SELECT currency, order_id, product_id, units_left, expires_at FROM credit_lots
+      `SELECT currency, order_id, product_id, units_left, expires_at, created_at FROM credit_lots
        WHERE user_id = ? AND status = 'active' AND units_left > 0 AND (expires_at IS NULL OR expires_at > ?)
        ORDER BY created_at`,
     )
     .bind(userId, now)
-    .all<Pick<Lot, "currency" | "order_id" | "product_id" | "units_left" | "expires_at">>();
+    .all<Pick<Lot, "currency" | "order_id" | "product_id" | "units_left" | "expires_at" | "created_at">>();
   const free = results.filter((lot) => lot.currency === "free");
   const expiries = free.map((lot) => lot.expires_at).filter((at): at is number => at !== null);
   return {
@@ -485,7 +488,7 @@ export async function walletSummary(db: D1Binding, userId: string, now: number):
     stardustExpiresAt: expiries.length ? Math.min(...expiries) : null,
     unused: results
       .filter((lot) => lot.currency === "paid" && lot.order_id !== null && lot.product_id !== null)
-      .map((lot) => ({ orderId: lot.order_id!, productId: lot.product_id! })),
+      .map((lot) => ({ orderId: lot.order_id!, productId: lot.product_id!, paidAt: lot.created_at })),
     opening: reservations.results.map((row) => ({
       productId: row.product_id,
       currency: row.currency === "paid" ? "paid" : "stardust",

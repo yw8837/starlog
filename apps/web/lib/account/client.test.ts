@@ -28,6 +28,15 @@ describe("account client", () => {
     expect(read([{ productId: "tarot", currency: "paid" }])).toEqual([{ productId: "tarot", currency: "paid", orderId: null }]);
   });
 
+  it("keeps each unopened purchase's refund deadline, and leaves an odd one out", () => {
+    const user = { nickname: "별", stardust: 0, stardustExpiresAt: null, opening: [] };
+    const read = (unused: unknown) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, unused } })?.user?.unused;
+    expect(read([{ orderId: "o1", productId: "tarot", refundUntil: "2026-10-13T14:59:59.999Z" }, { orderId: "o2", productId: "saju", refundUntil: 7 }])).toEqual([
+      { orderId: "o1", productId: "tarot", refundUntil: "2026-10-13T14:59:59.999Z" },
+      { orderId: "o2", productId: "saju" },
+    ]);
+  });
+
   it("asks /api/me once for many callers, and treats a failure as unknown", async () => {
     let calls = 0;
     const ok = (async () => {

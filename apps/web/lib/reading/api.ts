@@ -35,6 +35,7 @@ export type ApiErrorCode =
   | "NOT_AVAILABLE"
   | "PAY_PENDING"
   | "NOT_REFUNDABLE"
+  | "REFUND_WINDOW_CLOSED"
   | "PAY_UNAVAILABLE";
 
 const CODES: readonly ApiErrorCode[] = [
@@ -54,6 +55,7 @@ const CODES: readonly ApiErrorCode[] = [
   "NOT_AVAILABLE",
   "PAY_PENDING",
   "NOT_REFUNDABLE",
+  "REFUND_WINDOW_CLOSED",
   "PAY_UNAVAILABLE",
 ];
 

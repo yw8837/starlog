@@ -61,6 +61,13 @@
   flex: 1 1 160px;
 }
 
+/* Until when 환불받기 works, or the line that replaces it: a row of its own under the purchase. */
+.refundLine {
+  flex-basis: 100%;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
 /* Quiet text buttons and links. */
 .link {
   display: inline-flex;

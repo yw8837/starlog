@@ -12,6 +12,8 @@ import { POST as webhook } from "./webhook/route";
 
 const T0 = Date.parse("2026-10-01T03:00:00Z");
 const MIN = 60_000;
+/** A purchase at T0 (10-01 KST) can be refunded on request through the end of 10-08 KST. */
+const UNTIL = "2026-10-08T14:59:59.999Z";
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -86,7 +88,7 @@ describe("refunds", () => {
     expect(res.status).toBe(402);
     expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "취소 할 수 없는 결제 입니다." });
     expect(lookUp).toHaveBeenCalled();
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
     expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 2 });
     // The first key would replay the refusal for 15 days; the next refund sends cancel-<id>-2.
     expect((await refundOf(b, orderId)).status).toBe(200);
@@ -107,7 +109,7 @@ describe("refunds", () => {
     vi.setSystemTime(T0 + 10 * MIN + 1);
     expect(await statusOf(b, orderId)).toBe("paid");
     expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 2 });
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
   });
 
   it("applies a cancel whose answer was lost once Toss shows it cancelled", async () => {
@@ -156,6 +158,50 @@ describe("refunds", () => {
   });
 });
 
+describe("the 7-day refund window", () => {
+  // Paid late on 10-06 (KST): a buyer's 환불받기 works through the very end of 10-13 (KST), not 7×24 h.
+  const PAID = Date.parse("2026-10-06T23:50:00+09:00");
+  const LAST = Date.parse("2026-10-13T23:59:59.999+09:00");
+
+  it("shows the deadline and refunds on request through the end of the 7th KST day after the payment", async () => {
+    useTestDb();
+    vi.setSystemTime(PAID);
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: new Date(LAST).toISOString() }]);
+    vi.setSystemTime(LAST);
+    expect((await refundOf(b, orderId)).status).toBe(200);
+  });
+
+  it("refuses a buyer's refund once that day is over (REFUND_WINDOW_CLOSED), never asks Toss, and the reading can still be opened", async () => {
+    const db = useTestDb();
+    vi.setSystemTime(PAID);
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    vi.setSystemTime(LAST + 1);
+    const cancel = vi.spyOn(mockToss, "cancel");
+    const res = await refundOf(b, orderId);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ code: "REFUND_WINDOW_CLOSED", message: "환불 가능 기간(결제일로부터 7일)이 지났어요. 문제가 있으면 문의해 주세요." });
+    expect(cancel).not.toHaveBeenCalled();
+    expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: new Date(LAST).toISOString() }]);
+    expect((await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: LAST + 1, payMode: "mock" })).ok).toBe(true);
+  });
+
+  it("does not limit the operator's refunds: a Toss dashboard cancel after the window still refunds it", async () => {
+    const db = useTestDb();
+    vi.setSystemTime(PAID);
+    const b = await loggedIn();
+    const orderId = await buy(b);
+    vi.setSystemTime(LAST + 30 * 24 * 60 * MIN);
+    const paymentKey = await paymentKeyOf(db, orderId);
+    await mockToss.cancel(paymentKey, { reason: "생성 오류 환불", idempotencyKey: "admin" });
+    expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "CANCELED" } })).status).toBe(200);
+    expect(await db.prepare("SELECT o.status AS o, l.status AS l FROM orders o JOIN credit_lots l ON l.order_id = o.id").first()).toEqual({ o: "refunded", l: "refunded" });
+  });
+});
+
 describe("payments for deleted accounts", () => {
   it("sends the cancel only from the confirm that found the payment orphaned, never from a repeat", async () => {
     const db = useTestDb();
@@ -185,7 +231,7 @@ describe("webhook", () => {
     const res = await hook({ eventType: "PAYMENT_STATUS_CHANGED", createdAt: "2026-10-01T12:00:00.000000", data: { paymentKey: "mock_webhook", orderId, status: "DONE" } });
     expect(res.status).toBe(200);
     expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "paid" });
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
   });
 
   it("applies a dashboard cancellation of an unopened reading", async () => {
@@ -260,7 +306,7 @@ describe("webhook", () => {
     expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "PARTIAL_CANCELED" } })).status).toBe(200);
     expect(await db.prepare("SELECT status, canceled_amount FROM payments WHERE order_id = ?").bind(orderId).first()).toEqual({ status: "PARTIAL_CANCELED", canceled_amount: 2000 });
     expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
-    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot" }]);
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("pay.partial_cancel"));
   });
 

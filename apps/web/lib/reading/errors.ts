@@ -123,5 +123,7 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       return { title: "결제를 확인하고 있어요", body: "잠시 뒤에 다시 확인해 주세요.", action: "retry" };
     case "NOT_REFUNDABLE":
       return { title: "환불할 수 없는 결제예요", body: "이미 연 풀이이거나 환불을 처리하고 있어요.", action: null };
+    case "REFUND_WINDOW_CLOSED":
+      return { title: "환불 가능 기간이 지났어요", body: "문제가 있으면 문의해 주세요.", action: null };
   }
 }

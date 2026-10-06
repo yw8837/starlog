@@ -107,11 +107,28 @@ describe("AccountPanel", () => {
     expect(requests.filter((r) => r.url === "/api/pay/refund")).toHaveLength(1);
   });
 
+  it("says until when an unopened purchase can be refunded, and after that a plain line instead of 환불받기", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const until = { ...account, user: { ...account.user, unused: [{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", productId: "tarot", refundUntil: "2026-10-13T14:59:59.999Z" }] } };
+    vi.setSystemTime(Date.parse("2026-10-13T23:59:59+09:00"));
+    render(<AccountPanel account={until} />);
+    expect(screen.getByText("10월 13일까지 환불할 수 있어요")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "환불받기" })).toBeTruthy();
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-10-14T00:00:00+09:00"));
+    render(<AccountPanel account={until} />);
+    expect(screen.queryByRole("button", { name: "환불받기" })).toBeNull();
+    expect(screen.getByText("환불 가능 기간(결제일로부터 7일)이 지났어요. 문제가 있으면 문의해 주세요.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "열기" })).toBeTruthy();
+    vi.useRealTimers();
+  });
+
   it("says what went wrong with a refund in refund words, never payment ones", async () => {
     for (const [body, status, line] of [
       [{ code: "PAY_PENDING" }, 409, "환불을 처리하고 있어요. 결제 내역에서 확인할 수 있어요."],
       [{ code: "PAY_FAILED", message: "환불하지 못했어요. 문의해 주세요." }, 402, "환불하지 못했어요. 문의해 주세요."],
       [{ code: "PAY_FAILED", message: "취소 가능 기간이 지났어요." }, 402, "환불하지 못했어요. 취소 가능 기간이 지났어요."],
+      [{ code: "REFUND_WINDOW_CLOSED", message: "환불 가능 기간(결제일로부터 7일)이 지났어요. 문제가 있으면 문의해 주세요." }, 409, "환불 가능 기간(결제일로부터 7일)이 지났어요. 문제가 있으면 문의해 주세요."],
     ] as const) {
       const base = vi.mocked(fetch).getMockImplementation()!;
       vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => (url === "/api/pay/refund" ? Response.json(body, { status }) : base(url, init))));

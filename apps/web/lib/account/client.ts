@@ -11,8 +11,11 @@ export interface AccountUser {
   stardust: number;
   /** ISO time the soonest 별조각 expire; null when there are none */
   stardustExpiresAt: string | null;
-  /** paid readings bought and not opened yet (one being opened is in `opening` instead) */
-  unused: Array<{ orderId: string; productId: string }>;
+  /**
+   * paid readings bought and not opened yet (one being opened is in `opening` instead);
+   * `refundUntil`: ISO time of the last moment 환불받기 works (the end of the 7th KST day after the payment)
+   */
+  unused: Array<{ orderId: string; productId: string; refundUntil?: string }>;
   /** readings being opened right now with a purchase (its order) or 별조각; [] when /api/me leaves it out */
   opening: Array<{ productId: string; currency: "paid" | "stardust"; orderId: string | null }>;
 }
@@ -32,13 +35,19 @@ function parseUser(v: unknown): AccountUser | null | undefined {
   if (v === null) return null;
   if (!isRecord(v) || typeof v.nickname !== "string" || typeof v.stardust !== "number" || !Array.isArray(v.unused)) return undefined;
   if (v.stardustExpiresAt !== null && typeof v.stardustExpiresAt !== "string") return undefined;
-  const unused = v.unused.filter((u): u is { orderId: string; productId: string } => isRecord(u) && typeof u.orderId === "string" && typeof u.productId === "string");
+  const unused = v.unused.filter((u): u is { orderId: string; productId: string; refundUntil?: unknown } => isRecord(u) && typeof u.orderId === "string" && typeof u.productId === "string");
   const opening = (Array.isArray(v.opening) ? v.opening : []).flatMap((o): AccountUser["opening"] =>
     isRecord(o) && typeof o.productId === "string" && (o.currency === "paid" || o.currency === "stardust")
       ? [{ productId: o.productId, currency: o.currency, orderId: typeof o.orderId === "string" ? o.orderId : null }]
       : [],
   );
-  return { nickname: v.nickname, stardust: v.stardust, stardustExpiresAt: v.stardustExpiresAt, unused: unused.map(({ orderId, productId }) => ({ orderId, productId })), opening };
+  return {
+    nickname: v.nickname,
+    stardust: v.stardust,
+    stardustExpiresAt: v.stardustExpiresAt,
+    unused: unused.map(({ orderId, productId, refundUntil }) => (typeof refundUntil === "string" ? { orderId, productId, refundUntil } : { orderId, productId })),
+    opening,
+  };
 }
 
 export function parseAccount(value: unknown): AccountState | null {
