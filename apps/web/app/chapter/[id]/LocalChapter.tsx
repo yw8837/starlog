@@ -19,6 +19,7 @@ import {
   getChapter,
   hasChapterEntry,
   observationOf,
+  sajuChapterEyebrow,
   updateChapter,
   useChapters,
   type StoredChapter,
@@ -171,7 +172,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <SajuChapterView eyebrow={`사주 기록 · ${date}`} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} />
+        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} />
       </>
     );
   }

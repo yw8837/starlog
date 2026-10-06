@@ -10,6 +10,7 @@ import {
   answerCheckin,
   chaptersPersisted,
   checkinDue,
+  checkinSource,
   clearChapters,
   deleteChapter,
   dueCheckin,
@@ -21,10 +22,13 @@ import {
   observationOf,
   parseChapter,
   recordLine,
+  sajuChapterEyebrow,
+  sajuRecordTitle,
   saveChapter,
   updateChapter,
   useChapters,
   type NewChapter,
+  type SajuChapter,
 } from "./chapters";
 import { DAILY_KEY, readDaily, saveDaily, useDaily } from "./daily";
 
@@ -290,5 +294,33 @@ describe("topics in saved chapters (saju-topics spec §7.2, §7.8)", () => {
     expect(historyFor(all, { topic: "overall" }).map((h) => h.question)).toEqual(["사주 · 한겨울에 뜬 해", "이번 주, 나의 재물 흐름은 어떨까"]);
     expect(historyFor(all)).toHaveLength(3);
     expect(historyFor(all)[0]).toMatchObject({ kind: "saju", topic: "money" });
+  });
+});
+
+describe("the 운 on records (saju-topics spec §5.3)", () => {
+  // NOW is 2026-10-01 12:00 KST; DEFAULT_SAJU_FORM is 1990-01-01.
+  const MONEY = { ...SAJU, topic: "money" } as NewChapter;
+  const CAREER = { ...SAJU, topic: "career" } as NewChapter;
+
+  it("titles a saju record '<운> · <생일>'; without a topic it is 사주팔자, or its teaser title while the topics are closed", () => {
+    const money = saveChapter(MONEY, NOW).chapter as SajuChapter;
+    const career = saveChapter(CAREER, NOW).chapter as SajuChapter;
+    const old = saveChapter(SAJU, NOW).chapter as SajuChapter;
+    expect(sajuRecordTitle(money, true)).toBe("재물운 · 1990년 1월 1일");
+    expect(sajuRecordTitle(money, false)).toBe("재물운 · 1990년 1월 1일");
+    expect(sajuRecordTitle(career, true)).toBe("직장운 · 1990년 1월 1일");
+    expect(sajuRecordTitle(old, true)).toBe("사주팔자 · 1990년 1월 1일");
+    expect(sajuRecordTitle(old, false)).toBe("한겨울에 뜬 해");
+    expect(sajuRecordTitle({ ...old, title: "" }, false)).toBe("나의 사주");
+  });
+
+  it("names the 운 in the chapter eyebrow and the home 돌아보기's source", () => {
+    const career = saveChapter(CAREER, NOW).chapter as SajuChapter;
+    const old = saveChapter(SAJU, NOW).chapter as SajuChapter;
+    expect(sajuChapterEyebrow(career)).toBe("사주 직장운 · 10월 1일");
+    expect(sajuChapterEyebrow(old)).toBe("사주 기록 · 10월 1일");
+    expect(checkinSource(career)).toBe("10월 1일 사주 · 직장운");
+    expect(checkinSource(old)).toBe("10월 1일 사주");
+    expect(checkinSource(saveChapter(TAROT, NOW).chapter)).toBe("10월 1일 타로");
   });
 });

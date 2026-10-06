@@ -4,13 +4,15 @@ import { branchElement, stemElement } from "@starlog/core";
 import Link from "next/link";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
+import { useLocale } from "@/components/i18n/LocaleProvider";
 import { ELEMENT_KEY } from "@/components/saju/elements";
 import { chartFor } from "@/components/saju/useSajuChart";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { useAccount } from "@/lib/account/client";
 import { kstMonthDay } from "@/lib/kst";
-import { checkinDue, newestFirst, recordLine, useChapters, type SajuChapter, type StoredChapter } from "@/lib/storage/chapters";
+import { sajuTopicsVisible } from "@/lib/sajuTopics";
+import { checkinDue, newestFirst, recordLine, sajuRecordTitle, useChapters, type SajuChapter, type StoredChapter } from "@/lib/storage/chapters";
 import { useAccountSync } from "@/lib/storage/sync";
 import s from "./StoryView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
@@ -43,9 +45,9 @@ function DayPillar({ chapter }: { chapter: SajuChapter }) {
   );
 }
 
-function Record({ chapter, now }: { chapter: StoredChapter; now: number }) {
+function Record({ chapter, now, topicsOpen }: { chapter: StoredChapter; now: number; topicsOpen: boolean }) {
   const { question, verdict } = recordLine(chapter);
-  const title = chapter.kind === "saju" ? chapter.title || "나의 사주" : question;
+  const title = chapter.kind === "saju" ? sajuRecordTitle(chapter, topicsOpen) : question;
   return (
     <li>
       <Link href={`/chapter/${chapter.id}`} className={s.record}>
@@ -78,8 +80,10 @@ function Record({ chapter, now }: { chapter: StoredChapter; now: number }) {
 
 /** 내 기록: every reading opened on this device, newest first; each opens the saved reading. */
 export function StoryView() {
+  const account = useAccount();
   // Readings opened on another device while logged in come onto this one (once per tab).
-  useAccountSync(useAccount());
+  useAccountSync(account);
+  const topicsOpen = sajuTopicsVisible({ owner: account?.owner === true, locale: useLocale() });
   const chapters = useChapters();
   if (chapters === undefined) {
     return (
@@ -102,7 +106,7 @@ export function StoryView() {
         </header>
         <ol className={s.records} aria-label="기록 목록">
           {newestFirst(chapters).map((chapter) => (
-            <Record key={chapter.id} chapter={chapter} now={now} />
+            <Record key={chapter.id} chapter={chapter} now={now} topicsOpen={topicsOpen} />
           ))}
         </ol>
       </div>

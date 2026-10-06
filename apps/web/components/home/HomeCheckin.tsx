@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { Checkin } from "@/components/reading/Checkin";
-import { kstMonthDay } from "@/lib/kst";
-import { answerCheckin, dueCheckin, observationOf, useChapters, type StoredChapter } from "@/lib/storage/chapters";
+import { answerCheckin, checkinSource, dueCheckin, observationOf, useChapters, type StoredChapter } from "@/lib/storage/chapters";
 
 /**
  * 돌아보기 on the home: the newest reading whose observation is due (3+ days old, not yet
@@ -20,7 +19,7 @@ export function HomeCheckin({ className }: { className?: string }) {
     <div className={className}>
       <Checkin
         observation={observation}
-        source={`${kstMonthDay(due.createdAt)} ${due.kind === "tarot" ? "타로" : "사주"}`}
+        source={checkinSource(due)}
         href={`/chapter/${due.id}`}
         onAnswer={(answer) => {
           setHeld(due);

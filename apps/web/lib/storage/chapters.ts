@@ -1,9 +1,9 @@
 import type { Orientation } from "@starlog/core";
 import { SITE } from "@/lib/config";
-import { kstDate, kstDaysBetween } from "@/lib/kst";
+import { kstDate, kstDaysBetween, kstMonthDay } from "@/lib/kst";
 import { CHECKIN_ANSWERS, type CheckinAnswer, type HistoryItem, type SajuContext, type SajuReadingData, type SajuTopic, type SajuTopicId, type TarotReadingData } from "@/lib/reading/types";
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
-import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
+import { formatBirthDate, sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { isSajuTopicId, topicLabel } from "@/lib/sajuTopics";
 import { createLocalStore } from "@/lib/sessionStore";
 
@@ -353,6 +353,29 @@ export function recordLine(chapter: StoredChapter): { question: string; verdict:
   if (chapter.kind === "tarot") return { question: chapter.question, verdict: chapter.reading.verdict };
   const label = chapter.topic ? `사주 ${topicLabel(chapter.topic)}` : "사주";
   return { question: chapter.title ? `${label} · ${chapter.title}` : label, verdict: chapter.summary };
+}
+
+/**
+ * 내 기록's title for a saju record (saju-topics spec §5.3): "<운> · <생일>" ("재물운 · 1992년 8월 3일";
+ * a record without a topic is "사주팔자 · …"). While the topics are closed, a record without a topic
+ * keeps its teaser title as before.
+ */
+export function sajuRecordTitle(chapter: SajuChapter, topicsOpen: boolean): string {
+  if (!chapter.topic && !topicsOpen) return chapter.title || "나의 사주";
+  return `${topicLabel(chapter.topic ?? "overall")} · ${formatBirthDate(chapter.birth)}`;
+}
+
+/** The chapter screen's eyebrow: "사주 재물운 · 10월 2일"; 전체 흐름 and older records "사주 기록 · 10월 2일". */
+export function sajuChapterEyebrow(chapter: SajuChapter): string {
+  const date = kstMonthDay(chapter.createdAt);
+  return chapter.topic ? `사주 ${topicLabel(chapter.topic)} · ${date}` : `사주 기록 · ${date}`;
+}
+
+/** Where a 돌아보기 comes from, on the home: "10월 2일 사주 · 재물운" ("10월 2일 타로", "10월 2일 사주"). */
+export function checkinSource(chapter: StoredChapter): string {
+  const date = kstMonthDay(chapter.createdAt);
+  if (chapter.kind === "tarot") return `${date} 타로`;
+  return chapter.topic ? `${date} 사주 · ${topicLabel(chapter.topic)}` : `${date} 사주`;
 }
 
 /**

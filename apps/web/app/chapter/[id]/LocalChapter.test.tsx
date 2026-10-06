@@ -57,3 +57,26 @@ describe("LocalChapter with a partial saved reading (QA Q-02)", () => {
     expect(screen.getByRole("button", { name: "이 기록 지우기" })).toBeTruthy();
   });
 });
+
+describe("LocalChapter for a topic reading (saju-topics spec §5.3)", () => {
+  it("names the topic in the eyebrow and keeps the teaser title", () => {
+    seed([
+      {
+        id: "abcdef21",
+        createdAt: Date.parse("2026-10-02T03:00:00.000Z"),
+        chapterToken: "x",
+        turns: [],
+        followUpsLeft: 3,
+        kind: "saju",
+        birth: { calendar: "solar", year: 1992, month: 8, day: 3, isLeapMonth: false, timeKnown: false, hour: null, minute: null, gender: "male", placeId: "seoul" },
+        title: "흙 속의 쇠",
+        summary: "요약",
+        topic: "money",
+        reading: { sections: [{ heading: "나의 기본 결 · 한눈에 보기", body: "본문" }] },
+      },
+    ]);
+    render(<LocalChapter id="abcdef21" />);
+    expect(screen.getByText("사주 재물운 · 10월 2일")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "흙 속의 쇠" })).toBeTruthy();
+  });
+});
