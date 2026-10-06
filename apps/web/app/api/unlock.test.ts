@@ -276,3 +276,51 @@ describe("opening a full reading with credit", () => {
     expect(odd.status).toBe(200);
   });
 });
+
+describe("a paid opening on a production deploy's test keys (security M2)", () => {
+  /**
+   * A member holding one unopened reading paid on the test keys, on a production deploy that runs them:
+   * bought through the mock and recorded as a test-key payment, then the deploy switched over (same
+   * secrets, so the session holds). A test payment charges nobody: this opening has earned nothing.
+   */
+  async function heldOnTestKeys() {
+    vi.stubEnv("STARLOG_SIGNING_SECRET", "signing-secret-for-unlock-tests-0123456789");
+    vi.stubEnv("STARLOG_ACCOUNT_SECRET", "account-secret-for-unlock-tests-0123456789");
+    const db = useTestDb();
+    const { b, ip } = await loggedIn();
+    const orderId = await buy(b);
+    await db.prepare("UPDATE payments SET mode = 'test' WHERE order_id = ?").bind(orderId).run();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("STARLOG_PAY", "");
+    vi.stubEnv("NEXT_PUBLIC_TOSS_CLIENT_KEY", "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm");
+    vi.stubEnv("TOSS_SECRET_KEY", "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6");
+    b.jar.set("__Host-sl_sid", b.jar.get("sl_sid")!);
+    return { db, b, ip };
+  }
+
+  it("stops at the day's budget like a free full reading, before the purchase is reserved", async () => {
+    const { db, b } = await heldOnTestKeys();
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
+    const res = await open(b, "paid");
+    expect(res.status).toBe(503);
+    expect(await res.json()).toMatchObject({ reason: "budget" });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
+  });
+
+  it("stops at the network's daily cap of full readings", async () => {
+    const { b } = await heldOnTestKeys();
+    vi.stubEnv("BETA_IP_FULL_PER_DAY", "0");
+    const res = await open(b, "paid");
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ code: "BETA_LIMIT", scope: "network" });
+  });
+
+  it("counts like a free full reading: on the network's day count and the free budget, never the paid book", async () => {
+    const { b, ip } = await heldOnTestKeys();
+    billing();
+    expect((await open(b, "paid")).status).toBe(200);
+    expect(await freeBook()).toBe(2800);
+    expect(await paidBook()).toBe(0);
+    expect(await clientCount(await keyedHash(`client:${ip}`, signingSecret()!), "full", Date.now())).toBe(1);
+  });
+});

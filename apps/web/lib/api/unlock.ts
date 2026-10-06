@@ -19,7 +19,8 @@ import type { GenerationOutcome, Settlement } from "./stream";
  *   network counter). 402 PAYMENT_REQUIRED once payments are on for everyone; never for the owner.
  * - `free` (별조각): login, the free budget and network cap (it costs us what a free reading costs),
  *   then the reservation. Spending is never gated by STARLOG_PAYMENTS.
- * - `paid`: login, then the reservation. Its model cost goes to the paid book.
+ * - `paid`: login, then the reservation. Its model cost goes to the paid book. On a production deploy
+ *   running test keys it earned nothing, so it is held and counted like `free` (security M2).
  * - `owner`: the owner pass and the owner's server limits, no ledger; saved when logged in.
  */
 
@@ -28,7 +29,7 @@ export interface UnlockPlan {
   productId: StandardProductId;
   /** the device's cookie quota: the 오픈 기념 reading spends it after a validated generation */
   quota: QuotaState | null;
-  /** RespondOptions.spend: the network day counter, charged before the start (none for a paid opening) */
+  /** RespondOptions.spend: the network day counter, charged before the start (none for a paid opening on real keys) */
   spend: SpendKind | undefined;
   /** RespondOptions.paidCost: a paid opening's model cost goes to the paid book */
   paidCost: boolean;
@@ -58,7 +59,10 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
   if (!user) return errorResponse("LOGIN_REQUIRED");
   // A review account whose credentials are gone or replaced opens nothing (security M1).
   if (isReviewAccount(user) && !(await isReviewer(user, ctx.accountSecret))) return errorResponse("NOT_AVAILABLE");
-  if (method === "free") {
+  // A paid opening on a production deploy's test keys earned nothing (a test payment charges nobody):
+  // it is held and counted like a free one (security M2).
+  const unbacked = method === "paid" && process.env.NODE_ENV === "production" && payKeyMode() === "test";
+  if (method === "free" || unbacked) {
     // 별조각 readings cost us what free readings cost: the free budget and the network cap apply (minor 4).
     const limited = await checkServerLimits(gate, "full");
     if (limited) return limited;
@@ -78,8 +82,8 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     method,
     productId: kind,
     quota: null,
-    spend: method === "free" ? "full" : undefined,
-    paidCost: method === "paid",
+    spend: method === "free" || unbacked ? "full" : undefined,
+    paidCost: method === "paid" && !unbacked,
     save: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: method, unlockId: reserved.unlockId },
   };
 }

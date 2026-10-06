@@ -239,6 +239,24 @@ describe("the review account's purchases and deletion", () => {
     expect(await db.prepare("SELECT COUNT(*) AS n FROM users WHERE deleted_at IS NULL").first()).toEqual({ n: 1 });
   });
 
+  it("holds at most 3 unopened purchases at a time (security M2); other accounts are not held to it", async () => {
+    useTestDb();
+    const b = browser("198.51.100.54");
+    expect((await signIn(b)).status).toBe(200);
+    const first = await buy(b);
+    await buy(b);
+    await buy(b);
+    const fourth = await b.send(ordersPost, "/api/pay/orders", { body: { productId: "tarot", returnTo: "/tarot/result", ack: true }, origin: true });
+    expect(fourth.status).toBe(409);
+    expect(await fourth.json()).toMatchObject({ code: "NOT_AVAILABLE" });
+    // One refunded makes room again.
+    expect((await b.send(refund, "/api/pay/refund", { body: { orderId: first }, origin: true })).status).toBe(200);
+    await buy(b);
+    const member = browser("198.51.100.55");
+    await loginAs(member, "alice");
+    for (let i = 0; i < 4; i++) await buy(member);
+  });
+
   it("opens nothing more, paid or 별조각, once its credentials are replaced or gone (security M1)", async () => {
     vi.stubEnv("STARLOG_AI", "mock");
     vi.stubEnv("ANTHROPIC_API_KEY", "");

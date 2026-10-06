@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { openAccountRoute, requireSession } from "@/lib/account/request";
 import { safeReturnTo } from "@/lib/account/returnTo";
-import { isReviewer } from "@/lib/account/review";
+import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import { productById, sellable } from "@/lib/pay/catalog";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
@@ -14,6 +14,9 @@ import { isPremiumId } from "@/lib/premium/products";
 /** `ack: true` = the buyer ticked the 청약철회 notice on the checkout page (its time is kept on the order). */
 const OrderBody = z.object({ productId: z.string().max(40), returnTo: z.string().max(200).optional(), ack: z.literal(true) });
 
+/** Unopened paid readings a review account may hold before it must open or refund one (security M2). */
+const REVIEW_MAX_UNOPENED = 3;
+
 /** POST {productId, returnTo?, ack: true} → a new order at the catalog price, plus Toss's success and fail URLs. */
 export async function POST(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "PAY_LIMITER", write: true });
@@ -22,6 +25,13 @@ export async function POST(request: Request): Promise<Response> {
   if (session instanceof Response) return session;
   // The review account buys like the owner pass (lib/account/review.ts), premium excepted.
   if (!salesOpen(paymentsMode(), ctx.owner || (await isReviewer(session.user, ctx.accountSecret)))) return errorResponse("NOT_AVAILABLE");
+  if (isReviewAccount(session.user)) {
+    const held = await ctx.db
+      .prepare("SELECT COUNT(*) AS n FROM credit_lots WHERE user_id = ? AND currency = 'paid' AND status = 'active' AND units_left > 0")
+      .bind(session.user.id)
+      .first<{ n: number }>();
+    if ((held?.n ?? 0) >= REVIEW_MAX_UNOPENED) return errorResponse("NOT_AVAILABLE");
+  }
   if (!tossClient()) return errorResponse("PAY_UNAVAILABLE");
   const body = OrderBody.safeParse(await readJson(request, 2_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
