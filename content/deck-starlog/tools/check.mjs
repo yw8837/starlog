@@ -1,6 +1,6 @@
 // Sanity checks: every svg (masters and stages) parses and is self-contained, renders and print files have the
 // expected pixel sizes, the card back is identical after a 180 degree turn.     node check.mjs
-import { readdir, stat } from "node:fs/promises";
+import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { launch, sharp } from "./lib/browser.mjs";
@@ -50,6 +50,22 @@ for (const file of svgs) {
   say(ok, `${path.relative(ROOT, file).padEnd(52)} ${((await stat(file)).size / 1024).toFixed(0).padStart(4)} KB dupIds=${r.dup} missingRefs=${r.missing} text/script=${r.text} font=${r.fontFamily} external=${r.external}`);
 }
 await browser.close();
+
+// ---- deck.json: keywords come from the KB, masters follow the active frame variant
+const deck = JSON.parse(await readFile(path.join(ROOT, "deck.json"), "utf8"));
+let kwBad = 0;
+for (const c of deck.cards) {
+  const kb = JSON.parse(await readFile(path.join(ROOT, "..", "kb", "cards", `${c.id}.json`), "utf8"));
+  if (!kb.keywordsKo.includes(c.keyword)) {
+    kwBad++;
+    say(false, `keyword "${c.keyword}" of ${c.id} is not in KB keywordsKo ${JSON.stringify(kb.keywordsKo)}`);
+  }
+}
+say(kwBad === 0, `deck.json keywords: ${deck.cards.length} cards, all found in KB keywordsKo`);
+for (const f of svgs.filter((x) => path.dirname(x) === path.join(ROOT, "svg") && !x.endsWith("back.svg"))) {
+  const m = /data-variant="(\w)"/.exec(await readFile(f, "utf8"));
+  say(m?.[1] === deck.frame, `${path.basename(f)} frame variant ${m?.[1]} (deck.json: ${deck.frame})`);
+}
 
 // ---- renders and print files
 const dims = async (file) => {

@@ -1,6 +1,6 @@
 {
   "name": "스타로그 카드",
-  "frame": "A",
+  "frame": "B",
   "frameNote": "A = 번호 + 이름, B = A + 한국어 키워드 한 줄. 소유자가 고르면 이 값만 바꿔 다시 빌드한다 (svg/, render/가 이 값을 따른다).",
   "keywordSource": "content/kb/cards/{id}.json 의 keywordsKo 중 하나를 그대로 사용",
   "cards": [

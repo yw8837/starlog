@@ -32,7 +32,7 @@ const J = {
   rose: [492, 372],
   sun: [466, 206],
 };
-const COL = { sky: "#F0C552", sun: "#FFF8E1", amber: "#D9801C", peak: "#A28FE4", peakShade: "#8774D8", mist: "#E6DDFA", far: "#C9BBF3", rock: "#2E2A78", rockTop: "#5A53C0", rockSide: "#1C1850", staff: "#5E3A2E" };
+const COL = { sky: "#F0C552", sun: "#FFF8E1", amber: "#D9801C", peak: "#A28FE4", peakShade: "#8774D8", mist: "#E6DDFA", far: "#C9BBF3", rock: "#2E2A78", rockTop: "#7A72D0", rockLit: "#5A53C0", rockMid: "#46409E", rockSide: "#1C1850", mist2: "#D9CEF8", grass: "#43AA90", staff: "#5E3A2E" };
 
 function sky(k) {
   const { bg } = k;
@@ -64,19 +64,33 @@ function peaks(k) {
 }
 
 function voidAndCliff(k) {
-  const g = J.ground;
   const lip = J.lip;
-  const mist = `<path d="M${lip - 30} 770H680V1200H${lip - 30}Z" fill="${COL.mist}"/><path d="M${lip + 30} 846L${lip + 90} 800L${lip + 150} 846ZM${lip + 118} 870L${lip + 190} 812L${lip + 262} 870Z" fill="${COL.far}"/>`;
-  const rock = `
-    <path d="M-80 ${g}H${lip - 22}Q${lip} ${g} ${lip} ${g + 22}V1200H-80Z" fill="${COL.rock}"/>
-    <path d="M${lip - 22} ${g}Q${lip} ${g} ${lip} ${g + 22}V1200H${lip - 26}V${g + 6}Z" fill="${COL.rockSide}" opacity=".9"/>
-    <path d="M-80 ${g}H${lip - 22}Q${lip} ${g} ${lip} ${g + 22}V${g + 30}Q${lip - 6} ${g + 14} ${lip - 26} ${g + 14}H-80Z" fill="${COL.rockTop}"/>
-    <path d="M40 ${g + 74}H250M120 ${g + 118}H330" stroke="${COL.rockSide}" stroke-width="4" stroke-linecap="round" opacity=".7"/>`;
-  // a few stones fall from the lip: the edge, read at a glance
-  const stones = [[lip + 26, g + 56, 11], [lip + 44, g + 112, 8], [lip + 20, g + 160, 6]]
-    .map(([x, y, rr]) => `<path d="M${x} ${y - rr * 3.6}V${y - rr * 1.6}" stroke="${COL.far}" stroke-width="4" stroke-linecap="round"/><circle cx="${x}" cy="${y}" r="${rr}" fill="${COL.rock}"/>`)
+  const poly = (pts) => "M" + pts.map((p) => p.join(" ")).join("L") + "Z";
+  // the drop: pale mist, a deeper band and far peaks, all flat
+  const mist = `<path d="M${lip - 40} 770H680V1200H${lip - 40}Z" fill="${COL.mist}"/>
+    <path d="M${lip + 10} 912H680V1200H${lip + 10}Z" fill="${COL.mist2}"/>
+    <path d="M${lip + 40} 850L${lip + 100} 800L${lip + 160} 850ZM${lip + 126} 880L${lip + 196} 816L${lip + 266} 880Z" fill="${COL.far}"/>`;
+  // a craggy wall: broken top lip that overhangs a notch, ledges and lit facets, no straight sides
+  const wall = [[-80, 792], [150, 790], [260, 784], [330, 782], [366, 770], [412, 784], [446, 812], [404, 834], [430, 868], [384, 900], [444, 936], [396, 972], [428, 1016], [380, 1070], [404, 1200], [-80, 1200]];
+  const facets = [
+    [[[366, 770], [412, 784], [446, 812], [404, 834], [356, 812], [344, 786]], COL.rockTop],
+    [[[404, 834], [430, 868], [384, 900], [340, 880], [350, 846]], COL.rockSide],
+    [[[384, 900], [444, 936], [396, 972], [338, 952], [348, 914]], COL.rockLit],
+    [[[396, 972], [428, 1016], [380, 1070], [334, 1036], [344, 992]], COL.rockMid],
+  ].map(([f, c]) => `<path d="${poly(f)}" fill="${c}"/>`).join("");
+  const top = `<path d="${poly([[-80, 792], [150, 790], [260, 784], [330, 782], [366, 770], [412, 784], [446, 812], [420, 810], [372, 794], [330, 800], [260, 800], [150, 806], [-80, 810]])}" fill="${COL.rockTop}"/>`;
+  const tufts = [[96, 792], [300, 788], [360, 776]].map(([x, y]) => `<path d="M${x - 12} ${y}L${x - 5} ${y - 24}L${x} ${y}L${x + 7} ${y - 30}L${x + 13} ${y}Z" fill="${COL.grass}"/>`).join("");
+  const cracks = `<path d="M316 806L332 852L310 890L326 934" stroke="${COL.rockSide}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <path d="M196 814L210 866L188 908M84 828L100 874L82 918" stroke="${COL.rockSide}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".8"/>
+    <path d="M20 880L120 872L210 884M120 940L230 930L320 944" stroke="${COL.rockSide}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".6"/>`;
+  // loose rocks tumble off the lip: the edge, read at a glance
+  const stones = [[484, 862, 17], [506, 922, 12], [478, 978, 9]]
+    .map(([x, y, r], i) => {
+      const pts = [[-r, -r * 0.4], [-r * 0.3, -r], [r * 0.9, -r * 0.6], [r, r * 0.5], [-r * 0.2, r]].map(([a, b]) => [Math.round(x + a), Math.round(y + b)]);
+      return `<path d="M${x + 1} ${y - r * 3.4}V${y - r * 1.5}" stroke="${COL.far}" stroke-width="5" stroke-linecap="round"/><path d="${poly(pts)}" fill="${i % 2 ? COL.rockMid : COL.rock}"/>`;
+    })
     .join("");
-  return mist + k.sym("cliff-edge", 1, rock + stones);
+  return mist + k.sym("cliff-edge", 1, `<path d="${poly(wall)}" fill="${COL.rock}"/>${facets}${top}${cracks}${tufts}${stones}`);
 }
 
 function staffAndBundle(k) {
