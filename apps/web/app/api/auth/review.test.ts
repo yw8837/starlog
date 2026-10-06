@@ -55,6 +55,16 @@ describe("review login", () => {
     expect((await signIn(browser())).status).toBe(404);
   });
 
+  it("answers 404 unless sales are open to someone: STARLOG_PAYMENTS owner or on, never off (or unset) or paused", async () => {
+    useTestDb();
+    for (const mode of ["off", "", "paused"]) {
+      vi.stubEnv("STARLOG_PAYMENTS", mode);
+      expect((await signIn(browser())).status).toBe(404);
+    }
+    vi.stubEnv("STARLOG_PAYMENTS", "owner");
+    expect((await signIn(browser())).status).toBe(200);
+  });
+
   it("answers 404 while the password is shorter than 20 characters", async () => {
     useTestDb();
     vi.stubEnv("REVIEW_LOGIN_PASSWORD", "nineteen-characters");

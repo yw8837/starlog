@@ -5,6 +5,7 @@ import { createSession, revokeSession } from "@/lib/account/session";
 import { loginKakaoUser } from "@/lib/account/users";
 import { dailyStore } from "@/lib/api/dailyStore";
 import { clientKey, errorResponse, json, readJson, serializeCookie } from "@/lib/api/http";
+import { paymentsMode } from "@/lib/pay/mode";
 import { keyedHash, safeEqual } from "@/lib/security/sign";
 
 const ReviewBody = z.object({ id: z.string().max(200), password: z.string().max(200) });
@@ -20,7 +21,7 @@ const ALL_FAILURES_KEY = "review-fail:all";
 /**
  * POST {id, password} from /login/review (our own pages only) → a session on the review account
  * (lib/account/review.ts): the very session a Kakao login gets (createSession). 404 while review
- * login is off.
+ * login is off, and unless sales are open to someone (STARLOG_PAYMENTS owner or on).
  * - Both values are always compared, in constant time (safeEqual), and one answer covers a wrong ID
  *   and a wrong password.
  * - A network with MAX_FAILURES failed logins waits 15 minutes after its last one, right password or
@@ -31,7 +32,8 @@ const ALL_FAILURES_KEY = "review-fail:all";
  */
 export async function POST(request: Request): Promise<Response> {
   const login = reviewLogin();
-  if (!login) return new Response("Not found", { status: 404 });
+  const mode = paymentsMode();
+  if (!login || (mode !== "owner" && mode !== "on")) return new Response("Not found", { status: 404 });
   // The owner code's limiter (5 a minute per network): KV has no atomic increment, so a parallel burst
   // would read one count; this caps bursts, the count below caps the steady pace.
   const ctx = await openAccountRoute(request, { limiter: "OWNER_LOGIN_LIMITER", write: true });
