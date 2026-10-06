@@ -20,6 +20,7 @@ D1 queries: `npx wrangler d1 execute starlog --remote --command "<SQL>"`.
   - `KAKAO_REST_API_KEY`, `KAKAO_CLIENT_SECRET`.
   - `NEXT_PUBLIC_TOSS_CLIENT_KEY` and `TOSS_SECRET_KEY`: both test_ keys first. A mixed test/live pair is refused (503).
   - `STARLOG_PAYMENTS`: `off` (dark), `owner`, `on`, `paused` (rollback).
+  - `REVIEW_LOGIN_ID`, `REVIEW_LOGIN_PASSWORD`: only for the card-company review (section 4). Unset = off (404).
 
 ## 2. Deploy dark
 
@@ -48,7 +49,13 @@ D1 queries: `npx wrangler d1 execute starlog --remote --command "<SQL>"`.
 
 ## 4. Toss review
 
-Apply for the live contract. The site already shows /pricing (products, prices), /refund, /terms, /privacy, the business footer, and the checkout with the 청약철회 and minor notices. Follow the Toss sales contact's checklist.
+Apply for the live contract. The site already shows /pricing (products with picture, description, price and 서비스 제공 기간), /refund (unopened: refundable for 7 days from the payment date), /terms, /privacy, the business footer, and the checkout with the 청약철회 and minor notices. Follow the Toss sales contact's checklist.
+
+Reviewer login (Toss refuses Kakao/Google test accounts):
+1. `npx wrangler secret put REVIEW_LOGIN_ID` and `npx wrangler secret put REVIEW_LOGIN_PASSWORD` (a long random password: `node -e "console.log(require('crypto').randomBytes(16).toString('base64url'))"`). Both set turns https://starlog.yeolmaeapps.kr/login/review on; it is linked nowhere and noindex.
+2. Give Toss that URL with the ID and password. The account is one fixed account (닉네임 심사용 계정, no 별조각). It may pay on the test keys like the owner pass, so a reviewer reaches the Toss window from a result page's `2,900원 결제하고 보기`; premium stays closed to it.
+3. Five wrong tries from one network shut that network out for 15 minutes.
+4. After the review: `npx wrangler secret delete REVIEW_LOGIN_PASSWORD` (and the ID). The page and API answer 404 again, and a session still open loses the sales right away. Its purchases stay like any account's (refund or 회원 탈퇴 from 내 정보; deleting it needs no Kakao re-check).
 
 ## 5. Live keys
 
