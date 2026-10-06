@@ -60,7 +60,7 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
   "the-hanged-man":
     "매달린 사람은 메이저 아르카나 12번 카드로, 정방향에서는 억지로 움직이기보다 잠시 멈춰 거꾸로 보며 새 관점을 얻는 쪽으로 읽어요. 역방향이면 기다림과 희생이 지나쳐 나를 소모하는 상태, 예를 들어 나만 참고 기다리는 관계나 진척 없는 일에 계속 시간을 쏟는 상황으로 먼저 읽죠.",
   death:
-    "죽음은 메이저 아르카나 13번 카드로, 이름과 달리 실제 죽음과는 관계가 없어요. 정방향에서는 한 국면을 닫고 다음으로 넘어가기 위해 정리하는 카드로 읽죠. 역방향이면 끝내야 할 것을 붙잡고 있어 넘어가지 못하는 막힘으로 먼저 읽어요.",
+    "죽음은 메이저 아르카나 13번 카드로, 끝을 뜻하지만 부정적으로만 쓰이지는 않아요. 정방향에서는 한 국면을 닫고 다음으로 넘어가기 위해 정리하는 카드로 읽죠. 역방향이면 끝내야 할 것을 붙잡고 있어 넘어가지 못하는 막힘으로 먼저 읽어요.",
   temperance:
     "절제는 메이저 아르카나 14번 카드로, 정방향에서는 극단 대신 알맞은 비율을 찾아 천천히 섞고 맞춰 가는 쪽으로 읽어요. 두 컵 사이로 물을 옮기는 모습은 서로 다른 두 가지를 알맞게 섞어 새 균형을 만드는 일로 풀죠. 역방향이면 과로나 과몰입처럼 한쪽으로 지나쳐 비율이 깨진 상태로 먼저 읽어요.",
   "the-devil":
@@ -156,8 +156,10 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     ...[
       "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "minor-arcana-suits", "court-cards",
       "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
-      "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
+      "wheel-of-fortune", "justice", "the-hanged-man", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
       "heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune",
     ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-02" }] as const),
+    // death: "unrelated to real death" became "an ending, but not read only negatively".
+    ["death", { published: "2026-10-01", updated: "2026-10-06" }] as const,
   ],
 );
