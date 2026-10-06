@@ -53,9 +53,10 @@ Apply for the live contract. The site already shows /pricing (products with pict
 
 Reviewer login (Toss refuses Kakao/Google test accounts):
 1. `npx wrangler secret put REVIEW_LOGIN_ID` and `npx wrangler secret put REVIEW_LOGIN_PASSWORD` (a long random password: `node -e "console.log(require('crypto').randomBytes(16).toString('base64url'))"`). Both set turns https://starlog.yeolmaeapps.kr/login/review on; it is linked nowhere and noindex.
-2. Give Toss that URL with the ID and password. The account is one fixed account (닉네임 심사용 계정, no 별조각). It may pay on the test keys like the owner pass, so a reviewer reaches the Toss window from a result page's `2,900원 결제하고 보기`; premium stays closed to it.
-3. Five wrong tries from one network shut that network out for 15 minutes.
-4. After the review: `npx wrangler secret delete REVIEW_LOGIN_PASSWORD` (and the ID). The page and API answer 404 again, and a session still open loses the sales right away. Its purchases stay like any account's (refund or 회원 탈퇴 from 내 정보; deleting it needs no Kakao re-check).
+2. Give Toss that URL with the ID and password, and ask the reviewers to use sample birth data: the account is shared, so everyone with the login sees its saved readings. It is one account per ID and password (닉네임 심사용 계정, no 별조각). It may pay on the test keys like the owner pass, so a reviewer reaches the Toss window from a result page's `2,900원 결제하고 보기`; premium stays closed to it.
+3. Five wrong tries from one network shut that network out for 15 minutes; any network gets at most 5 tries a minute.
+4. After the review, first log in at /login/review and 회원 탈퇴 from 내 정보 (it refunds the unopened test purchases and erases the account and its readings; no Kakao re-check). Then `npx wrangler secret delete REVIEW_LOGIN_PASSWORD` and `npx wrangler secret delete REVIEW_LOGIN_ID`: the page and API answer 404 again, and a session still open loses the sales right away. Once the secrets are gone, the account can no longer be deleted from the site.
+5. If the login leaks: delete either secret (sales stop for every review session at once), or set a new password (a new review account; sessions on the old one lose the sales right). Paid openings are not counted against BETA_DAILY_BUDGET_KRW, so until then a leaked login can spend AI credit with test cards; the prepaid credit is the backstop.
 
 ## 5. Live keys
 
