@@ -33,16 +33,19 @@ async function toChart(page: Page) {
 }
 
 /**
- * The teaser requests this page sends from now on. One the page cancelled itself never reached a model and
- * is left out: `next dev` runs React's Strict Mode, which replays the chart page's effect once, and the first
- * request of the replay is aborted at once (a production build sends one).
+ * The teaser requests this page sends from now on, counted when the server answers them. One the page cancelled
+ * itself never got an answer and is left out: `next dev` runs React's Strict Mode, which replays the chart page's
+ * effect once, and the first request of the replay is aborted at once (a production build sends one). Not
+ * `request.failure()`: on the preview build Chromium reports an answer read to its end through the stream reader
+ * (lib/reading/api.ts) as net::ERR_ABORTED, so that filter dropped the one request that was answered.
  */
 function teaserRequests(page: Page): () => Request[] {
   const sent: Request[] = [];
-  page.on("request", (request) => {
+  page.on("response", (response) => {
+    const request = response.request();
     if (request.method() === "POST" && request.url().endsWith("/api/saju/teaser")) sent.push(request);
   });
-  return () => sent.filter((request) => request.failure() === null);
+  return () => [...sent];
 }
 
 test("주제별 사주: the input screen has no topic or situation chips", async ({ page }, info) => {
