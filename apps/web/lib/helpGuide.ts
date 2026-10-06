@@ -60,6 +60,20 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   const { followUps, approxChars } = site.reading;
   const { fullPerDay, teaserPerDay } = site.beta;
   const { tarotStandardKrw, sajuStandardKrw } = site.price;
+  // 주제별 사주 (saju-topics spec §5.4, owner cut §0): the 운 help from the `on` build only.
+  const topics = site.features.sajuTopics === "on";
+  const topicItem: HelpItem = {
+    id: "saju-topics",
+    icon: "compass",
+    title: "다른 운 보기",
+    sub: "연애운, 재회운, 재물운, 직장운",
+    steps: [
+      "명식 화면의 첫 장 아래 ‘다른 운도 볼 수 있어요’에서 연애운, 재회운, 재물운, 직장운 가운데 하나를 눌러요.",
+      "그 운의 맛보기가 같은 자리에 바로 나와요. ‘사주팔자로 돌아가기’를 누르면 첫 장으로 돌아와요.",
+      "전체 풀이는 지금 보고 있는 풀이 하나가 열려요. 다른 운은 따로 열어요.",
+    ],
+    tip: `새로 여는 맛보기는 하루 ${times(teaserPerDay)}까지예요. 이 기기에서 이미 본 맛보기는 다시 봐도 횟수를 쓰지 않아요.`,
+  };
   const prices =
     tarotStandardKrw === sajuStandardKrw
       ? `타로 전체 풀이와 사주 프롤로그 모두 한 번에 ${won(tarotStandardKrw)}이에요.`
@@ -196,6 +210,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           ],
           tip: "성별은 대운이 흐르는 방향을 계산하는 데만 써요.",
         },
+        ...(topics ? [topicItem] : []),
         {
           id: "unknown-time",
           icon: "clock",
@@ -212,13 +227,21 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           body: "요즘 상황도 알려 주기에서 연애 상태와 일 상태를 하나씩 고를 수 있어요.",
           tip: "고르지 않아도 풀이는 열려요. 고른 상태는 다음에도 쓰도록 이 기기에 저장돼요.",
         },
-        {
-          id: "saju-open",
-          icon: "open",
-          title: "첫 장과 전체 풀이",
-          sub: "명식과 요약은 먼저 무료로",
-          body: `명식(네 기둥, 오행, 일간)과 첫 장 요약을 먼저 무료로 봐요. 전체 풀이는 약 ${num(approxChars.saju)}자이고, 열면 이어서 물어보기 ${followUps}번이 함께 열려요.`,
-        },
+        topics
+          ? {
+              id: "saju-open",
+              icon: "open",
+              title: "맛보기와 전체 풀이",
+              sub: "명식과 맛보기는 먼저 무료로",
+              body: `명식(네 기둥, 오행, 일간)과 첫 장 요약, 그리고 보고 싶은 운의 맛보기를 먼저 무료로 봐요. 전체 풀이는 약 ${num(approxChars.saju)}자예요. 결제 한 번에 지금 보는 풀이 하나가 열리고, 이어서 물어보기 ${followUps}번이 함께 열려요.`,
+            }
+          : {
+              id: "saju-open",
+              icon: "open",
+              title: "첫 장과 전체 풀이",
+              sub: "명식과 요약은 먼저 무료로",
+              body: `명식(네 기둥, 오행, 일간)과 첫 장 요약을 먼저 무료로 봐요. 전체 풀이는 약 ${num(approxChars.saju)}자이고, 열면 이어서 물어보기 ${followUps}번이 함께 열려요.`,
+            },
       ],
     },
     {

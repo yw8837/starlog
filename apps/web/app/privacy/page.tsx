@@ -5,11 +5,14 @@ import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
+import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
 const { business, nameKo } = SITE;
 /** 별자리 인연 (and 이번 주 행운 번호) are disclosed while the feature is live. */
 const BONDS = SITE.features.bonds;
+/** 주제별 사주: the chosen 운 is named from the `on` build (saju-topics spec §5.4). */
+const TOPICS = SITE.features.sajuTopics;
 /** Section numbers: 별자리 인연 is section 4 while it is live, and the later sections move down one. */
 const num = (base: number) => (BONDS && base >= 4 ? base + 1 : base);
 
@@ -33,7 +36,7 @@ const PROCESSORS: readonly Processor[] = [
       ["맡기는 일", `AI 풀이 생성(타로·사주 풀이, 후속 질문의 답, 오늘의 한 장${BONDS ? ", 별자리 인연의 오늘의 인연 카드 한두 줄" : ""})`],
       [
         "이전 항목",
-        `타로: 질문, 고른 주제와 상황, 직접 쓰기 칸에 적은 내용, 메모 · 사주: 출생 정보로 계산한 명식과 계산 기준(태어난 해, 양력·음력 구분, 보정한 시각, 대운 시기), 요즘 상황(고른 칩) · 공통: 후속 질문과 앞선 풀이, 이 기기에 남은 지난 풀이 요약(최대 3개)${BONDS ? " · 오늘의 인연 카드: 뽑힌 카드의 이름과 방향만(닉네임, 한 줄, 인연 점수, 생년월일은 보내지 않습니다)" : ""}`,
+        `타로: 질문, 고른 주제와 상황, 직접 쓰기 칸에 적은 내용, 메모 · 사주: 출생 정보로 계산한 명식과 계산 기준(태어난 해, 양력·음력 구분, 보정한 시각, 대운 시기), ${sajuPrivacySent(TOPICS)} · 공통: 후속 질문과 앞선 풀이, 이 기기에 남은 지난 풀이 요약(최대 3개)${BONDS ? " · 오늘의 인연 카드: 뽑힌 카드의 이름과 방향만(닉네임, 한 줄, 인연 점수, 생년월일은 보내지 않습니다)" : ""}`,
       ],
       ["이전 시기와 방법", "풀이를 요청할 때마다 암호화된 연결(TLS)로 API에 전송"],
       [
@@ -123,7 +126,7 @@ export default function PrivacyPage() {
         <h3 className={s.sub}>사주 풀이를 볼 때</h3>
         <ul className={s.list}>
           <li>{BIRTH}</li>
-          <li>요즘 상황(연애·일 상태, 고른 경우)</li>
+          <li>{sajuPrivacyItem(TOPICS)}</li>
           <li>태어난 시는 모르면 입력하지 않아도 되고, 성별은 대운의 방향을 계산하는 데만 씁니다.</li>
         </ul>
         <h3 className={s.sub}>후속 질문과 지난 풀이</h3>

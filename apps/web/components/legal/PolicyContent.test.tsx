@@ -39,6 +39,12 @@ describe("policies match what the service does", () => {
     expect(text).not.toContain("탭이나 창을 닫으면 지워지는 세션 저장소를 씁니다");
   });
 
+  it("privacy: names the chosen 운 among what saju sends while the topics are on (saju-topics owner cut §0)", () => {
+    const text = textOf(PrivacyPage);
+    expect(text).toContain("고른 운과 요즘 상황(고른 칩)");
+    expect(text).toContain("고른 운(연애운·재회운·재물운·직장운)과 요즘 상황(연애·일 상태, 고른 경우)");
+  });
+
   it("terms: says the content is AI-generated, under the AI Basic Act, and lists only live services", () => {
     const text = textOf(TermsPage);
     expect(text).toContain("제4조의2");

@@ -77,4 +77,10 @@ describe("/pricing", () => {
     expect(container.querySelectorAll("h1")).toHaveLength(1);
     expect(metadata.description).toContain("3,100원");
   });
+
+  it("says one payment opens one chosen reading and that the four 운's teasers are free (saju-topics owner cut §0)", () => {
+    const { container } = render(<PricingPage />);
+    expect(container.textContent).toContain("사주팔자·연애운·재회운·재물운·직장운 가운데 고른 풀이 하나");
+    expect(container.textContent).toContain("연애운, 재회운, 재물운, 직장운의 맛보기도 무료이고, 새로 여는 맛보기는 하루 4번까지");
+  });
 });

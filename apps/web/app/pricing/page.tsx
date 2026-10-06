@@ -6,9 +6,10 @@ import { PaymentsNote } from "@/components/legal/PaymentsNote";
 import { SITE, won } from "@/lib/config";
 import { times } from "@/lib/helpGuide";
 import { GIFT_DAYS, standardProduct } from "@/lib/pay/catalog";
+import { sajuFreeLine, sajuPricingLine } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
-const { price, currency, reading, nameKo, beta } = SITE;
+const { price, currency, reading, nameKo, beta, features } = SITE;
 const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 export const metadata: Metadata = pageMetadata({
@@ -31,7 +32,7 @@ const PRODUCTS = [
     name: standardProduct("saju").name,
     sub: "타고난 결로 보는 나",
     krw: standardProduct("saju").krw,
-    includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.saju)}자`, "명식을 주제별로 읽은 풀이, 오행과 십신, 지금의 10년(대운)"],
+    includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.saju)}자`, sajuPricingLine(features.sajuTopics)],
   },
 ] as const;
 
@@ -110,7 +111,7 @@ export default function PricingPage() {
             <li>{`오픈 기념으로 타로와 사주 전체 풀이를 합쳐 하루 ${times(beta.fullPerDay)} 무료로 열 수 있어요. 한국 시간 0시에 다시 채워져요.`}</li>
           </PaymentsNote>
           <li>{`타로는 뽑은 카드 3장과 첫 풀이, 이어지는 풀이의 소제목을 먼저 무료로 볼 수 있어요. 첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 볼 수 있어요.`}</li>
-          <li>사주는 명식(네 기둥, 오행 분포, 일간)과 첫 장 요약을 무료로 볼 수 있어요.</li>
+          <li>{sajuFreeLine(features.sajuTopics, beta.teaserPerDay)}</li>
           <li>지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요.</li>
           <li>
             {`처음 가입하면 ${currency.free} ${price.signupGiftFree}개를 드려요. 전체 풀이를 ${times(giftReadings)} 무료로 열 수 있어요. 받은 날부터 ${GIFT_DAYS}일째 되는 날까지 쓸 수 있어요.`}
