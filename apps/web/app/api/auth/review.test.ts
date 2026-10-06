@@ -14,6 +14,8 @@ import { POST as deleteIntent } from "../account/delete-intent/route";
 import { GET as checkout } from "../pay/checkout/route";
 import { POST as ordersPost } from "../pay/orders/route";
 import { POST as refund } from "../pay/refund/route";
+import { POST as draw } from "../tarot/draw/route";
+import { POST as reading } from "../tarot/reading/route";
 import { POST as review } from "./review/route";
 
 const T0 = Date.parse("2026-10-06T03:00:00Z");
@@ -44,6 +46,14 @@ afterEach(() => {
 });
 
 const signIn = (b: Browser, body: unknown = { id: ID, password: PASSWORD }) => b.send(review, "/api/auth/review", { body, origin: true });
+
+/** Draws three cards and opens their full reading with `method` (STARLOG_AI=mock). */
+async function openReading(b: Browser, method: "paid" | "free" = "paid"): Promise<Response> {
+  const drawn = await b.send(draw, "/api/tarot/draw", { body: { templateId: "self-flow", picks: [3, 30, 60] } });
+  const { drawToken } = (await drawn.json()) as { drawToken: string };
+  const input = { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "" };
+  return b.send(reading, "/api/tarot/reading", { body: { drawToken, input, unlock: { method } } });
+}
 
 describe("review login", () => {
   it("answers 404 unless REVIEW_LOGIN_ID and REVIEW_LOGIN_PASSWORD are both set", async () => {
@@ -227,6 +237,41 @@ describe("the review account's purchases and deletion", () => {
     expect(await db.prepare("SELECT kakao_key, nickname, deleted_at, erased_at FROM users").first()).toEqual({ kakao_key: null, nickname: null, deleted_at: T0, erased_at: T0 });
     expect((await signIn(b)).status).toBe(200);
     expect(await db.prepare("SELECT COUNT(*) AS n FROM users WHERE deleted_at IS NULL").first()).toEqual({ n: 1 });
+  });
+
+  it("opens nothing more, paid or 별조각, once its credentials are replaced or gone (security M1)", async () => {
+    vi.stubEnv("STARLOG_AI", "mock");
+    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    const db = useTestDb();
+    const b = browser("198.51.100.52");
+    expect((await signIn(b)).status).toBe(200);
+    await buy(b);
+    await buy(b);
+    expect((await openReading(b)).status).toBe(200);
+    vi.stubEnv("REVIEW_LOGIN_PASSWORD", "a-new-password-for-the-second-round");
+    expect(await (await openReading(b)).json()).toMatchObject({ code: "NOT_AVAILABLE" });
+    vi.stubEnv("REVIEW_LOGIN_PASSWORD", "");
+    for (const method of ["paid", "free"] as const) {
+      const res = await openReading(b, method);
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ code: "NOT_AVAILABLE" });
+    }
+    // Only the opening made while the login was on; the other purchase is still there to refund.
+    expect((await db.prepare("SELECT status FROM unlocks").all()).results).toEqual([{ status: "delivered" }]);
+    expect((await me(b)).user?.unused).toHaveLength(1);
+  });
+
+  it("can still be deleted with no Kakao re-check once its credentials are gone (security M1)", async () => {
+    const db = useTestDb();
+    const b = browser("198.51.100.53");
+    expect((await signIn(b)).status).toBe(200);
+    const unopened = await buy(b);
+    vi.stubEnv("REVIEW_LOGIN_PASSWORD", "");
+    const res = await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true });
+    expect(await res.json()).toEqual({ url: "/me?account=deleted" });
+    expect(b.jar.has("sl_sid")).toBe(false);
+    expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(unopened).first()).toEqual({ status: "refunded" });
+    expect(await db.prepare("SELECT kakao_key, deleted_at FROM users").first()).toEqual({ kakao_key: null, deleted_at: T0 });
   });
 
   it("keeps the Kakao re-check for every other account", async () => {

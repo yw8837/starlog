@@ -1,5 +1,6 @@
 import "server-only";
 import { openAccount } from "@/lib/account/request";
+import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import type { D1Binding } from "@/lib/db/d1";
 import { standardProduct, unitsFor, type StandardProductId } from "@/lib/pay/catalog";
 import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
@@ -55,6 +56,8 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
   if (ctx instanceof Response) return ctx;
   const user = ctx.session?.user;
   if (!user) return errorResponse("LOGIN_REQUIRED");
+  // A review account whose credentials are gone or replaced opens nothing (security M1).
+  if (isReviewAccount(user) && !(await isReviewer(user, ctx.accountSecret))) return errorResponse("NOT_AVAILABLE");
   if (method === "free") {
     // 별조각 readings cost us what free readings cost: the free budget and the network cap apply (minor 4).
     const limited = await checkServerLimits(gate, "full");

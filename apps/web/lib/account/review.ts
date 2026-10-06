@@ -14,7 +14,8 @@ import type { UserRow } from "./users";
  *   owner passes.
  * - It sells like the owner pass (lib/pay/mode.ts salesOpen), so it can pay on a production deploy
  *   on test keys; it gets no signup gift and nothing else of the owner's.
- * - Removing either secret closes it at once, existing sessions included (isReviewer).
+ * - Removing either secret closes it at once, existing sessions included (isReviewer): they lose the
+ *   sales and every opening (lib/api/unlock.ts), and can still delete the account (delete-intent).
  */
 
 const KEY_PREFIX = "review:";
@@ -39,6 +40,11 @@ export function reviewLogin(env: ReviewEnv = cloudflareEnv() ?? process.env): { 
 /** users.kakao_key of the review account for these credentials (keyed by STARLOG_ACCOUNT_SECRET). */
 export async function reviewUserKey(login: { id: string; password: string }, accountSecret: string): Promise<string> {
   return KEY_PREFIX + (await keyedHash(`${login.id}\u0000${login.password}`, accountSecret, "starlog/review-account/v1"));
+}
+
+/** A review account, of the credentials set now or of earlier ones (review login on or not). */
+export function isReviewAccount(user: Pick<UserRow, "kakao_key"> | null | undefined): boolean {
+  return Boolean(user?.kakao_key?.startsWith(KEY_PREFIX));
 }
 
 /** This account is the review account of the credentials set now (so review login is on). */
