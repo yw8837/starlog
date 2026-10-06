@@ -34,8 +34,8 @@ function configPrices(): Set<string> {
   return amounts;
 }
 
-/** Street-address shapes: "…로 12", "…길 3", "…시 …구". */
-const ADDRESS = /주소|[가-힣]+(?:로|길)\s?\d+|[가-힣]+(?:시|도)\s[가-힣]+(?:구|군|시)\b/;
+/** Street-address shapes: "…로 12", "…길 3", "…시 …구". The particle in "바탕으로 78장" is not a road name. */
+const ADDRESS = /주소|[가-힣]+(?:(?<!으)로|길)\s?\d+|[가-힣]+(?:시|도)\s[가-힣]+(?:구|군|시)\b/;
 
 /** The page text without the configured business address and its label (footer notice, business facts). */
 function withoutNotice(text: string): string {
@@ -80,9 +80,16 @@ describe("service pages", () => {
 
     it(`${id}: no product meta copy or not-yet-open features`, () => {
       const { text } = textOf(Page);
-      expect(text).not.toMatch(/예시예요|같은 품질|곧 열려요|준비 중|별자리 인연|켈틱/);
+      expect(text).not.toMatch(/예시예요|같은 품질|곧 열려요|준비 중|켈틱/);
+      // 별자리 인연 may be named only while it is open: SITE.features.bonds, the flag the FAQ copy and the policies follow.
+      if (!SITE.features.bonds) expect(text).not.toContain("별자리 인연");
     });
   }
+
+  it("the address check catches road addresses, not the particle 으로 before a number", () => {
+    for (const address of ["동삼서로 51-7", "테헤란로 152", "충무로 3", "사업장 주소"]) expect(address).toMatch(ADDRESS);
+    expect("요즘 해석을 바탕으로 78장을 한 장씩 정리해요").not.toMatch(ADDRESS);
+  });
 
   it("reads like a person wrote it (under the readings' AI-tell threshold)", () => {
     const lines = (parts: Array<string | undefined>) => parts.filter(Boolean).join("\n");
@@ -102,6 +109,26 @@ describe("service pages", () => {
     for (const info of Object.values(INFO_PAGES)) expect(xml).toContain(`<loc>${SITE.url}${info.path}</loc>`);
   });
 });
+
+/** The four answers that build trust, word for word as the owner approved them, in the order /faq opens with. */
+const TRUST = [
+  {
+    q: "풀이는 어떻게 만들어지나요?",
+    a: "타로는 원본 카드와 공식 해설서, 요즘 해석을 바탕으로 78장을 한 장씩 정리한 카드 데이터로 읽어요. 사주는 만세력으로 명식을 계산해요. 풀이 문장은 AI가 이 근거 안에서만 내 질문과 상황에 맞춰 쓰고, 내보내기 전에 정해 둔 규칙으로 한 번 더 검사해요.",
+  },
+  {
+    q: "내 생년월일은 어디에 저장되나요?",
+    a: "생년월일은 이 기기(브라우저)에만 저장되고, 내 정보에서 언제든 지울 수 있어요. 별자리 인연에 넣은 친구의 생년월일은 점수를 계산할 때만 쓰고 저장하지 않아요. 비밀번호는 받지 않아요.",
+  },
+  {
+    q: "사주 계산은 믿을 수 있나요?",
+    a: "해와 달이 바뀌는 기준은 달력의 1일이 아니라 절기라서, 절기가 바뀌는 시각까지 계산해요. 생년월일 1만 4천여 개를 다른 만세력 계산과 대조했고, 절기 시각은 독립적인 천문 계산과 따로 비교해 1분 안으로 맞는 것을 확인했어요. 절기가 바뀌는 시각 바로 앞뒤에 태어났다면 그 사실도 알려 드려요.",
+  },
+  {
+    q: "결과를 장담하나요?",
+    a: '아니요. "다시 만나요", "합격해요" 같은 장담이나 "그 사람도 같은 마음이에요" 같은 남의 마음 단정, 건강·투자 판단은 하지 않아요. 대신 지금의 흐름과 내가 해 볼 수 있는 것을 이야기해요.',
+  },
+] as const;
 
 describe("/faq", () => {
   afterEach(() => {
@@ -127,7 +154,7 @@ describe("/faq", () => {
 
     const cards = [...container.querySelectorAll("details")];
     expect(cards.length).toBeGreaterThanOrEqual(10);
-    expect(cards.length).toBeLessThanOrEqual(14);
+    expect(cards.length).toBeLessThanOrEqual(18);
     expect(data.mainEntity).toHaveLength(cards.length);
 
     data.mainEntity.forEach((question, i) => {
@@ -153,6 +180,30 @@ describe("/faq", () => {
     for (const topic of ["무료", "열기 전에", "AI 챗봇", "매번", "저장", "태어난 시간", "환불", "기록", "미성년자", "광고"]) {
       expect(questions.some((q) => q.includes(topic))).toBe(true);
     }
+  });
+
+  it("opens with the four trust questions, in this order, on the page and in the JSON-LD", () => {
+    const questions = TRUST.map((entry) => entry.q);
+    const { container } = render(<FaqPage />);
+    [...container.querySelectorAll("details")].slice(0, questions.length).forEach((card, i) => {
+      expect(card.querySelector("summary")?.textContent).toContain(questions[i]);
+    });
+    expect(readJsonLd(container).mainEntity.slice(0, questions.length).map((question) => question.name)).toEqual(questions);
+  });
+
+  it("answers them word for word, and gives every entry an id of its own", () => {
+    const entries = faqGroups().flatMap((group) => group.entries);
+    for (const { q, a } of TRUST) expect(entries.find((entry) => entry.q === q)?.a.join(" "), q).toBe(a);
+    const ids = entries.map((entry) => entry.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("names 별자리 인연 in the birth-date answer only while it is open", () => {
+    const entries = (bonds: boolean) => faqGroups({ site: { ...SITE, features: { ...SITE.features, bonds } } }).flatMap((group) => group.entries);
+    const birthDate = (bonds: boolean) => entries(bonds).find((entry) => entry.q === TRUST[1].q)?.a.join(" ");
+    expect(birthDate(true)).toBe(TRUST[1].a);
+    expect(birthDate(false)).toBe("생년월일은 이 기기(브라우저)에만 저장되고, 내 정보에서 언제든 지울 수 있어요. 비밀번호는 받지 않아요.");
+    expect(entries(false).flatMap((entry) => [entry.q, ...entry.a]).join(" ")).not.toContain("별자리 인연");
   });
 
   it("says ads appear on guide articles only, and that there are none while AdSense is off", () => {

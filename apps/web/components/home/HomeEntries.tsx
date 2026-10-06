@@ -189,8 +189,8 @@ export function HomeGuide() {
   );
 }
 
-/** The four questions a first visitor asks before trying: free, what shows first, no birth time, ChatGPT. */
-export const HOME_FAQ_IDS = ["free", "preview", "birth-time", "chatgpt"] as const;
+/** The four questions that build trust before a first try: how a reading is made, where the birth date goes, the price, the chatbot comparison. */
+export const HOME_FAQ_IDS = ["how-made", "birth-saved", "free", "chatgpt"] as const;
 
 export function homeFaqEntries(): FaqEntry[] {
   const entries = faqGroups().flatMap((group) => group.entries);
