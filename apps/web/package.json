@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3100",
-    "build": "next build",
+    "build": "next build && node ../../scripts/dedupe-server-chunks.mjs",
     "start": "next start --port 3100",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare preview",
