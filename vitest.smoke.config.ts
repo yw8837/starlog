@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { loadEnv } from "vite";
 import { defineConfig } from "vitest/config";
 
-// `pnpm ai:smoke`: real Claude calls (costs money, needs ANTHROPIC_API_KEY). Never part of `pnpm test`.
+// `pnpm ai:smoke` and `pnpm ai:check:saju-topics`: real Claude calls when asked (cost money, need ANTHROPIC_API_KEY). Never part of `pnpm test`.
 const fromRoot = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 const resolveModule = createRequire(import.meta.url).resolve;
 
@@ -17,7 +17,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["scripts/ai-smoke.test.ts"],
+    include: ["scripts/ai-smoke.test.ts", "scripts/saju-topics-real.test.ts"],
     environment: "node",
     // apps/web/.env.local (gitignored) may hold the key; the shell environment wins.
     env: { ...loadEnv("", fromRoot("./apps/web"), ""), ...process.env } as Record<string, string>,
