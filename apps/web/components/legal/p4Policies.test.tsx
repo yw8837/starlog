@@ -45,9 +45,11 @@ describe("policies for the paid launch", () => {
     expect(page).not.toContain("충전");
   });
 
-  it("/terms: Kakao members, item-by-item payment, 별조각 rules, minors, deletion, no model name", () => {
+  it("/terms: Kakao or Google members, item-by-item payment, 별조각 rules, minors, deletion, no model name", () => {
     const page = text(<TermsPage />);
-    expect(page).toContain("카카오 계정으로 로그인");
+    expect(page).toContain("“회원”이란 카카오 계정이나 Google 계정으로 로그인해");
+    expect(page).toContain("회원 가입은 카카오 계정이나 Google 계정으로 로그인해서 하며");
+    expect(page).toContain("가입 선물은 카카오 계정이나 Google 계정 하나에 한 번만 드립니다");
     expect(page).toContain("건별로 결제");
     expect(page).toContain("제7조의2 (별조각)");
     expect(page).toContain("민법 제5조");
@@ -74,6 +76,16 @@ describe("policies for the paid launch", () => {
     expect(page).not.toContain("지금은 로그인이 없어");
     expect(page).not.toContain("풀이 입력을 서버에 저장하지 않고");
     expect(page).not.toMatch(MODEL_NAMES);
+  });
+
+  it("/privacy: Google login keeps only a keyed value of the Google account id, and receives no name, email or picture", () => {
+    const page = text(<PrivacyPage />);
+    expect(page).toContain("회원(카카오·Google 로그인)");
+    expect(page).toContain("Google 계정 식별값(Google로 로그인한 경우): 되돌릴 수 없는 값(HMAC)으로 바꿔서만 저장하며");
+    expect(page).toContain("이름, 이메일, 프로필 사진은 받지 않습니다");
+    expect(page).toContain("수집 출처: 카카오(카카오 로그인 시 회원번호와 닉네임), Google(Google 로그인 시 계정 식별값)");
+    expect(page).toContain("카카오 회원번호나 Google 계정 식별값을 되돌릴 수 없게 바꾼 값과 지급 시각");
+    expect(page).toContain("카카오·Google 로그인이 이 브라우저에서 시작됐는지 확인하는 값입니다");
   });
 
   it("/privacy: what was deleted stays in the database's recovery copies (D1 Time Travel) for up to 30 days", () => {
