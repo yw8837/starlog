@@ -204,7 +204,8 @@
   list-style: none;
 }
 
-@media (min-width: 720px) {
+/* Two columns only in the desktop layout; below 1024px the app keeps its 480px column. */
+@media (min-width: 1024px) {
   .list {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
