@@ -4,10 +4,10 @@ import type { TopicAngle } from "@/lib/kb";
 import type { ChartView, MatchPartA } from "../premiumSchemas";
 import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
 import {
-  ELEMENT_HANJA, ELEMENT_WORD, ORDER, PLACE_LABEL, PRODUCES, branchRelations, buildFactSet, elementOf, stemRelations, tenGod, visibleFacts,
-  yearGanzhi, type Placed, type Relation, type SajuFactSet, type SajuProfile,
+  ELEMENT_HANJA, ELEMENT_WORD, ORDER, PLACE_LABEL, PRODUCES, SAME_GLYPH, SAME_PILLAR, branchRelations, buildFactSet, elementOf, pillarRelations,
+  stemRelations, tenGod, visibleFacts, yearGanzhi, type Placed, type PlacedPillar, type Relation, type SajuFactSet, type SajuProfile,
 } from "./saju";
-import { ROMANCE_WORDS, TAROT_PREAMBLE, cardContexts, cardLabel, cardsBlock, cleanUserText, type TarotContext } from "./tarot";
+import { ROMANCE_WORDS, TAROT_PREAMBLE, cardContexts, cardLabel, cardsBlock, cleanUserText, spreadFacts, type TarotContext } from "./tarot";
 
 /**
  * 우리 사이 궁합 (P5 spec §5.2): two FactSets computed by the engine, and the facts that lie between
@@ -71,15 +71,15 @@ export interface MatchFacts {
   allowed: SajuFactSet["allowed"];
 }
 
-function placed(chart: SajuChart, owner: string): { stems: Placed[]; branches: Placed[] } {
-  const keys = KEYS.filter((k) => chart.pillars[k]);
-  return {
-    stems: keys.map((k) => ({ glyph: chart.pillars[k]!.stem, at: `${owner} ${PLACE_LABEL[k]}간` })),
-    branches: keys.map((k) => ({ glyph: chart.pillars[k]!.branch, at: `${owner} ${PLACE_LABEL[k]}지` })),
-  };
+function placed(chart: SajuChart, owner: string): PlacedPillar[] {
+  return KEYS.filter((k) => chart.pillars[k]).map((k) => ({
+    at: `${owner} ${PLACE_LABEL[k]}주`,
+    stem: { glyph: chart.pillars[k]!.stem, at: `${owner} ${PLACE_LABEL[k]}간` },
+    branch: { glyph: chart.pillars[k]!.branch, at: `${owner} ${PLACE_LABEL[k]}지` },
+  }));
 }
 
-const glyphsOf = (chart: SajuChart) => KEYS.flatMap((k) => (chart.pillars[k] ? [chart.pillars[k]!.stem, ...chart.pillars[k]!.hidden] : []));
+const glyphsOf = (chart: SajuChart) => KEYS.flatMap((k) => (chart.pillars[k] ? [chart.pillars[k]!.stem, ...chart.pillars[k]!.hidden.map((h) => h.stem)] : []));
 const element = (e: SajuElement, n?: number) => `${ELEMENT_WORD[e]}(${ELEMENT_HANJA[e]})${n === undefined ? "" : ` ${n}`}`;
 
 /** How the two day masters' elements meet, written with the element hanja (生 helps, 剋 trims). */
@@ -106,14 +106,18 @@ function luckChanges(f: SajuFactSet, who: string, now: number): Array<{ year: nu
     .map((c) => ({ year: Number(c.from!.slice(0, 4)), line: `${who}: ${c.from} 무렵 ${c.ko}(${c.gz}) 대운으로 바뀌어요` }));
 }
 
-/** This year and the next two: the 세운 that meets both day branches (함께 움직임이 커지는 해). */
+/**
+ * This year and the next two: the 세운 that meets both day branches (함께 움직임이 커지는 해). Meeting is a relation
+ * (합·충·형·파·해); 같은 글자 only repeats a glyph, so it does not count.
+ */
 function sharedYears(myDay: string, theirDay: string, now: number): Array<{ year: number; gz: string; line: string }> {
   const out: Array<{ year: number; gz: string; line: string }> = [];
+  const meets = (a: Placed, b: Placed) => branchRelations(a, b).filter((r) => r.type !== SAME_GLYPH && r.type !== SAME_PILLAR);
   for (let year = kstYear(now); year <= kstYear(now) + 2; year++) {
     const gz = yearGanzhi(year);
     const at: Placed = { glyph: gz.charAt(1), at: `${year}년 세운 지지` };
-    const mine = branchRelations(at, { glyph: myDay, at: "나의 일지" });
-    const theirs = branchRelations(at, { glyph: theirDay, at: "그 사람의 일지" });
+    const mine = meets(at, { glyph: myDay, at: "나의 일지" });
+    const theirs = meets(at, { glyph: theirDay, at: "그 사람의 일지" });
     if (mine.length && theirs.length) {
       out.push({ year, gz, line: `${year}년 ${ganzhiKo(gz)}(${gz}): 나의 일지와 ${mine.map((r) => r.type).join("·")}, 그 사람의 일지와 ${theirs.map((r) => r.type).join("·")}` });
     }
@@ -127,16 +131,16 @@ export function buildMatchFacts(
   input: { relation: MatchRelation; label?: string; concern?: string; meProfile?: SajuProfile },
   now: number,
 ): MatchFacts {
-  const a = buildFactSet(meChart, now, input.meProfile);
-  const b = buildFactSet(partnerChart, now);
+  // 궁합 reads the two charts and their 10 years, not this month's 월건
+  const a = buildFactSet(meChart, now, input.meProfile, undefined, { monthly: false });
+  const b = buildFactSet(partnerChart, now, undefined, undefined, { monthly: false });
   const myDay = meChart.pillars.day;
   const theirDay = partnerChart.pillars.day;
   const mine = placed(meChart, "나의");
   const theirs = placed(partnerChart, "그 사람의");
 
-  const pillars: Relation[] = [];
-  for (const x of mine.branches) for (const y of theirs.branches) pillars.push(...branchRelations(x, y));
-  for (const x of mine.stems) for (const y of theirs.stems) pillars.push(...stemRelations(x, y));
+  // every cross pair, with one 같은 간지 line in place of the two 같은 글자 of a pillar both hold (as for 대운·세운)
+  const pillars: Relation[] = mine.flatMap((p) => pillarRelations(p, theirs));
 
   const ce = a.elements.counts;
   const pe = b.elements.counts;
@@ -185,7 +189,7 @@ export function buildMatchFacts(
   const glyphs = new Set([...a.allowed.glyphs, ...b.allowed.glyphs]);
   for (const y of years) {
     for (const g of y.gz) glyphs.add(g);
-    HIDDEN_STEMS[y.gz.charAt(1) as Branch].forEach((g) => glyphs.add(g));
+    HIDDEN_STEMS[y.gz.charAt(1) as Branch].forEach((h) => glyphs.add(h.stem));
   }
   const tenGods = new Set([...a.allowed.tenGods, ...b.allowed.tenGods]);
   for (const g of glyphsOf(partnerChart)) tenGods.add(tenGod(myDay.stem, g));
@@ -362,7 +366,7 @@ export function matchSajuShared(m: MatchFacts): string {
   ].join("\n");
 }
 
-/** The five cards and their positions: part B's shared block. */
+/** The five cards, their positions and the spread facts: part B's shared block. */
 export function matchCardsShared(m: MatchFacts, ctx: TarotContext): string {
   const lines = [
     `관계: ${RELATION_KO[m.relation]}`,
@@ -371,7 +375,7 @@ export function matchCardsShared(m: MatchFacts, ctx: TarotContext): string {
     ...ctx.cards.map((c) => `자리 ${c.slot + 1} "${c.position}": ${c.lens}`),
   ];
   if (ctx.bannedWords.length) lines.push(`쓰지 않을 단어(이 관계와 무관한 연애 어휘): ${ctx.bannedWords.join(", ")}`);
-  return [`<template>\n${lines.join("\n")}\n</template>`, `<relation>\n${RELATION_KO[m.relation]}\n</relation>`, matchUserContext(m), cardsBlock(ctx)].join("\n");
+  return [`<template>\n${lines.join("\n")}\n</template>`, `<relation>\n${RELATION_KO[m.relation]}\n</relation>`, matchUserContext(m), cardsBlock(ctx), spreadFacts(ctx)].join("\n");
 }
 
 export const matchTeaserPrompt = () => "<task>match-teaser</task>";

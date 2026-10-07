@@ -9,6 +9,8 @@ import { NEWYEAR_SYSTEM } from "./prompts/newyear";
 import { SAJU_PREAMBLE, SAJU_SYSTEM } from "./prompts/saju";
 import { buildTopicFactSet } from "./prompts/sajuTopics";
 import { SAJU_TOPIC_SYSTEM, sajuTopicFollowUpPrompt, sajuTopicReadingPrompt, sajuTopicTeaserPrompt, topicFactsBlock } from "./prompts/sajuTopicPrompts";
+import { mockSajuTopicReading } from "./mockSajuTopics";
+import type { SajuReading } from "./schemas";
 import { MODEL_BLIND_RULE, aiTells } from "./style";
 import { allowedFactViolations } from "./validate";
 import { topicHardViolations, validateSajuTopicReading } from "./validateSajuTopics";
@@ -24,10 +26,12 @@ const TOPICS: SajuTopicId[] = ["love", "reunion", "money", "career"];
 const situations = golden.situations as Record<SajuTopicId, Record<string, SajuSituationId>>;
 
 describe("주제별 사주 prompts (spec §7.5)", () => {
-  it("leaves the standard and 신년운세 prompts byte for byte", () => {
-    expect(hash(SAJU_PREAMBLE)).toBe("83bf9731147da635f53c4743b72d607c53c127a7748bba24bcc4c56050892f6b");
-    expect(hash(SAJU_SYSTEM)).toBe("b5bc0441ff23dbfdd5496caa02a1d887534734d160aa8d1a04f25a03584418fe");
-    expect(hash(NEWYEAR_SYSTEM)).toBe("74ce3549ff870560a081930b741db01e8884a461aa2d82c7f62af81e59bd9221");
+  it("pins the standard and 신년운세 prompts by hash (each change is on purpose and noted here)", () => {
+    // changed on purpose 2026-10-07: the observation format names this and next month's 월건 (gap review R1), and the
+    // preamble says 같은 글자·같은 간지 keep those words (no 복음·반음·병림); that one line is all three hashes moved by
+    expect(hash(SAJU_PREAMBLE)).toBe("eec571e064c5235669420cbeed21a37f640cfe6486432d1af6e31e7a2379abe6");
+    expect(hash(SAJU_SYSTEM)).toBe("91a60fd88e1996f5273fc52c7cd829ae911217b482750fd8c8d1d4b95cde40aa");
+    expect(hash(NEWYEAR_SYSTEM)).toBe("33840c625621d9d3588057caa7018231f0a6ffdfbca62e79cce05ea61de29986");
   });
 
   it("builds the topic system prompt on the unchanged preamble, blind to model names, without 베타", () => {
@@ -144,6 +148,27 @@ describe("the validator's rules that first attempts broke in the 2026-10-06 real
       expect(listed(rules, "쓰지 않는 글자: ", "·")).toEqual(listed(out.find((v) => v.startsWith("명식에 없는 간지 글자")), "나왔어요: ", ", "));
     },
   );
+
+  it("lets only the observation lean on this and next month's 월건, by 간지 and 절기 (no dates, no month names), and lets a complete 삼합·방합 keep its three glyphs", () => {
+    expect(TOPIC_RULES).toMatch(/- observation:[^\n]*월건\(monthly\)[^\n]*절기 이름/);
+    expect(TOPIC_RULES).toContain("세 글자가 모두 members에 있는 삼합·방합");
+    expect(topicFactsBlock(money)).toContain('"monthly"');
+    // the facts name the 절 only: its date is exactly what the topic timing check rejects
+    expect(topicFactsBlock(money)).toContain('"term":{"name":"한로"}');
+    expect(topicFactsBlock(money)).not.toMatch(/"kst"|10월 8일|9월 7일/);
+    expect(hardFindings("이번 달 10월 8일 한로부터 흐름이 바뀌어요.").join("\n")).toContain("시기를 지정한 문장");
+    expect(hardFindings("한로부터 드는 이번 달 월건의 결을 눈여겨보세요.")).toEqual([]);
+  });
+
+  it("flags this and next month's 월건 (丁酉, 戊戌) in a section, never in the observation", () => {
+    const said = (r: SajuReading) => validateSajuTopicReading(r, money).filter((v) => v.includes("월건"));
+    const clean = mockSajuTopicReading(money);
+    const inSection = (extra: string): SajuReading => ({ ...clean, sections: clean.sections.map((s, i) => (i === 4 ? { ...s, body: `${s.body} ${extra}` } : s)) });
+    expect(said(clean)).toEqual([]);
+    expect(said(inSection("이번 달 월건의 결도 함께 보세요.")).join(" ")).toContain(`'${TOPIC_SECTIONS.money[4]}' 절`);
+    expect(said(inSection("다음 달 戊戌의 결도 함께 보세요."))).toHaveLength(1);
+    expect(said({ ...clean, observation: { ...clean.observation, body: `${clean.observation.body} 이번 달 월건 정유(丁酉)의 결도 보세요.` } })).toEqual([]);
+  });
 
   it("tells the 계산 기준 절 that 봤어요·셌어요·않았어요 are one ending, as the E2 check counts them; mixing in ~이에요·~죠 clears it", () => {
     expect(TOPIC_RULES).toContain("봤어요·셌어요·않았어요");

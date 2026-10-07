@@ -479,6 +479,8 @@ const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
   [/소송|재판/, "소송", true],
   [/수명|죽음|사망|요절/, "수명·죽음", true],
   [/삼재|원진|백호|도화|역마|공망|귀인|신살/, "신살·공포 개념", true],
+  // 같은 글자·같은 간지 between layers keep those words; these names are never needed, not even to decline them
+  [/복음|伏吟|반음|反吟|병림|並臨/, "복음·반음·병림 같은 이름", false],
   [/액땜|부적|굿을/, "주술 권유", false],
   [/(좋은|나쁜|최고의|최악의)\s?(해|달|날|시기|운)|(조심|주의)해야 할 (해|달|시기)/, "시기 등급", false],
 ];
@@ -547,6 +549,21 @@ function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], use
 
 export const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;
 
+/**
+ * This and next month's 월건 (`monthly`) belongs to the observation alone (both reading formats say so): a section that says
+ * 월건, or names a 월건's 간지 the facts give nowhere else, is flagged.
+ */
+export function monthlyViolations(
+  headings: readonly string[], bodies: string[], facts: { monthly?: { current: { gz: string }; next: { gz: string } } }, out: string[],
+): void {
+  const m = facts.monthly;
+  if (!m) return;
+  const elsewhere = JSON.stringify({ ...facts, monthly: undefined });
+  const marks = ["월건", ...[m.current.gz, m.next.gz].filter((gz) => !elsewhere.includes(gz))];
+  const i = bodies.findIndex((body) => marks.some((mark) => body.includes(mark)));
+  if (i >= 0) out.push(`'${headings[i] ?? `${i + 1}번째 절`}' 절에 이번 달·다음 달 월건이 나왔어요. 월건은 observation에서만 써 주세요.`);
+}
+
 /** Love statuses (lib/api/inputs.ts LOVE_STATUS labels) for which the reading covers 결혼. */
 const MARRIAGE_STATUSES = new Set(["연애 중", "결혼 준비 중", "기혼"]);
 export const marriageContext = (facts: SajuFactSet) => MARRIAGE_STATUSES.has(facts.profile?.loveStatus ?? "");
@@ -591,6 +608,7 @@ export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[
   const basis = r.sections.at(-1)?.body ?? "";
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(basis)) out.push("계산 기준 절에 태어난 시를 몰라 시주 없이 읽었다는 한계를 넣어 주세요.");
   observationViolations(r.observation.body, out);
+  monthlyViolations(SAJU_PROLOGUE_SECTIONS, r.sections.map((s) => s.body), facts, out);
   if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
   const bodies = [...r.sections.map((s) => s.body), r.observation.body];
   sajuFactViolations(maskGanzhiReadings([...bodies, ...r.followUps].join("\n")), facts, out, profileText(facts));

@@ -22,6 +22,12 @@ describe("criteriaGroups", () => {
     expect(groups.changes).toEqual([]);
   });
 
+  it("time known in the 23:00 hour of the corrected clock: the other calendars' 일주 joins the changes", () => {
+    const chart = computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: 1990, month: 1, day: 1, timeKnown: true, hour: 23, minute: 50 }));
+    expect(chart.correctedLocalTime).toBe("23:17");
+    expect(criteriaGroups(chart).changes).toEqual(["보정 시각(23:17)이 밤 11시대예요. 밤 11시대를 다음 날로 보는 만세력에서는 일주가 다음 날 일진인 丁卯(정묘)가 돼요."]);
+  });
+
   it("time known on a DST day: both the DST and the longitude notes", () => {
     const chart = computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: 1987, month: 7, day: 1, timeKnown: true, hour: 14, minute: 0, placeId: "busan" }));
     expect(criteriaGroups(chart).applied).toEqual(chart.notes);

@@ -11,12 +11,35 @@ export const BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未",
 export const BRANCHES_KO = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"] as const;
 export const BRANCH_ELEMENTS: readonly SajuElement[] = ["수", "토", "목", "목", "토", "화", "화", "토", "금", "금", "토", "수"];
 
-/** 지장간, 본기(정기) first, then 중기, 여기 (same table and order as lunar-javascript 1.7.7). */
-export const HIDDEN_STEMS: Readonly<Record<(typeof BRANCHES)[number], readonly string[]>> = {
-  子: ["癸"], 丑: ["己", "癸", "辛"], 寅: ["甲", "丙", "戊"], 卯: ["乙"],
-  辰: ["戊", "乙", "癸"], 巳: ["丙", "庚", "戊"], 午: ["丁", "己"], 未: ["己", "丁", "乙"],
-  申: ["庚", "壬", "戊"], 酉: ["辛"], 戌: ["戊", "辛", "丁"], 亥: ["壬", "甲"],
+/** A 지장간's role. The 정기 of the 월률분야 table is called 본기 here, as in the facts and the guides. */
+export type HiddenRole = "여기" | "중기" | "본기";
+export interface HiddenStem {
+  stem: string;
+  role: HiddenRole;
+}
+
+/**
+ * 지장간, the Korean 월률분야 table (orrery; ssaju's role names): 여기, 중기 where there is one, then 정기 (본기).
+ * Every entry carries its role, so 子·卯·酉 (여기 and 본기, no 중기) need no position to be read.
+ */
+export const HIDDEN_STEMS: Readonly<Record<(typeof BRANCHES)[number], readonly HiddenStem[]>> = {
+  子: [{ stem: "壬", role: "여기" }, { stem: "癸", role: "본기" }],
+  丑: [{ stem: "癸", role: "여기" }, { stem: "辛", role: "중기" }, { stem: "己", role: "본기" }],
+  寅: [{ stem: "戊", role: "여기" }, { stem: "丙", role: "중기" }, { stem: "甲", role: "본기" }],
+  卯: [{ stem: "甲", role: "여기" }, { stem: "乙", role: "본기" }],
+  辰: [{ stem: "乙", role: "여기" }, { stem: "癸", role: "중기" }, { stem: "戊", role: "본기" }],
+  巳: [{ stem: "戊", role: "여기" }, { stem: "庚", role: "중기" }, { stem: "丙", role: "본기" }],
+  午: [{ stem: "丙", role: "여기" }, { stem: "己", role: "중기" }, { stem: "丁", role: "본기" }],
+  未: [{ stem: "丁", role: "여기" }, { stem: "乙", role: "중기" }, { stem: "己", role: "본기" }],
+  申: [{ stem: "戊", role: "여기" }, { stem: "壬", role: "중기" }, { stem: "庚", role: "본기" }],
+  酉: [{ stem: "庚", role: "여기" }, { stem: "辛", role: "본기" }],
+  戌: [{ stem: "辛", role: "여기" }, { stem: "丁", role: "중기" }, { stem: "戊", role: "본기" }],
+  亥: [{ stem: "戊", role: "여기" }, { stem: "甲", role: "중기" }, { stem: "壬", role: "본기" }],
 };
+
+/** A branch's 본기 (정기): the stem its ten god is read by. */
+export const mainHiddenStem = (branch: string): string =>
+  HIDDEN_STEMS[BRANCHES[indexOrThrow(BRANCHES, branch, "branch")]!].find((h) => h.role === "본기")!.stem;
 
 function indexOrThrow(list: readonly string[], value: string, what: string): number {
   const i = list.indexOf(value);

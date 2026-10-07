@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  BRANCHES, BRANCH_ELEMENTS, HIDDEN_STEMS, STEMS, STEM_ELEMENTS, computeChart, ganzhiKo,
+  BRANCHES, BRANCH_ELEMENTS, HIDDEN_STEMS, STEMS, STEM_ELEMENTS, computeChart, ganzhiKo, mainHiddenStem,
   type SajuChart, type SajuElement,
 } from "@starlog/core";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
@@ -40,7 +40,6 @@ export const SEASON: Record<Branch, string> = {
 
 const PILLAR_LABEL = { year: "태어난 해(년주)", month: "태어난 달(월주)", day: "태어난 날(일주)", hour: "태어난 시(시주)" } as const;
 export const PLACE_LABEL = { year: "년", month: "월", day: "일", hour: "시" } as const;
-export const HIDDEN_ROLE = ["본기", "중기", "여기"] as const;
 
 const stemIndex = (stem: string) => STEMS.indexOf(stem as (typeof STEMS)[number]);
 const branchIndex = (branch: string) => BRANCHES.indexOf(branch as Branch);
@@ -86,8 +85,24 @@ const TRINES = [
   { members: ["寅", "午", "戌"], element: "화" as SajuElement, center: "午" },
   { members: ["巳", "酉", "丑"], element: "금" as SajuElement, center: "酉" },
 ];
+/** 방합: the three branches of one season. */
+const SEASONS = [
+  { members: ["寅", "卯", "辰"], element: "목" as SajuElement },
+  { members: ["巳", "午", "未"], element: "화" as SajuElement },
+  { members: ["申", "酉", "戌"], element: "금" as SajuElement },
+  { members: ["亥", "子", "丑"], element: "수" as SajuElement },
+];
+/** Named only when all three branches stand (existence; 化 is never judged). */
+const TRIOS = [
+  ...TRINES.map((t) => ({ glyphs: t.members, type: `삼합(三合, ${ELEMENT_WORD[t.element]} 기운)` })),
+  ...SEASONS.map((s) => ({ glyphs: s.members, type: `방합(方合, ${ELEMENT_WORD[s.element]} 기운)` })),
+];
 const STEM_COMBINE = pairs([["甲", "己"], ["乙", "庚"], ["丙", "辛"], ["丁", "壬"], ["戊", "癸"]]);
 const STEM_CLASH = pairs([["甲", "庚"], ["乙", "辛"], ["丙", "壬"], ["丁", "癸"]]);
+
+/** One glyph in two layers (원국, 대운, 세운, 월건) or two charts; a whole pillar is 같은 간지. Neutral words, not 自刑·伏吟. */
+export const SAME_GLYPH = "같은 글자";
+export const SAME_PILLAR = "같은 간지";
 
 const hasPair = (list: Set<string>[], a: string, b: string) => a !== b && list.some((set) => set.has(a) && set.has(b));
 
@@ -103,7 +118,10 @@ export interface Placed {
   at: string;
 }
 
-export function branchRelations(a: Placed, b: Placed): Relation[] {
+const SAME_NOTE = "같은 글자가 겹친다는 사실만 봄";
+
+/** `sameChart`: both glyphs stand in one chart, the only place 자형 is read; elsewhere an identical glyph is 같은 글자. */
+export function branchRelations(a: Placed, b: Placed, sameChart = false): Relation[] {
   const members = [`${a.glyph}(${a.at})`, `${b.glyph}(${b.at})`];
   const out: Relation[] = [];
   if (hasPair(SIX_COMBINE, a.glyph, b.glyph)) out.push({ type: "육합(六合)", members, note: "실제로 묶이는지(化)는 판단하지 않음" });
@@ -113,29 +131,183 @@ export function branchRelations(a: Placed, b: Placed): Relation[] {
   const trio = PUNISH_TRIOS.find((t) => a.glyph !== b.glyph && t.includes(a.glyph) && t.includes(b.glyph));
   if (trio) out.push({ type: "형(刑)", members, note: `${trio.join("")} 삼형 가운데 두 글자라 유파에 따라 형으로 봄` });
   if (hasPair(pairs([["子", "卯"]]), a.glyph, b.glyph)) out.push({ type: "형(刑)", members, note: "子卯 상형" });
-  if (a.glyph === b.glyph && ["辰", "午", "酉", "亥"].includes(a.glyph)) out.push({ type: "자형(自刑)", members });
+  if (a.glyph === b.glyph) {
+    if (!sameChart) out.push({ type: SAME_GLYPH, members, note: SAME_NOTE });
+    else if (["辰", "午", "酉", "亥"].includes(a.glyph)) out.push({ type: "자형(自刑)", members });
+  }
   const trine = TRINES.find((t) => a.glyph !== b.glyph && t.members.includes(a.glyph) && t.members.includes(b.glyph) && [a.glyph, b.glyph].includes(t.center));
   if (trine) out.push({ type: `반합(半合, ${ELEMENT_WORD[trine.element]} 기운)`, members, note: "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음" });
   return out;
 }
 
-export function stemRelations(a: Placed, b: Placed): Relation[] {
+export function stemRelations(a: Placed, b: Placed, sameChart = false): Relation[] {
   const members = [`${a.glyph}(${a.at})`, `${b.glyph}(${b.at})`];
   const out: Relation[] = [];
   if (hasPair(STEM_COMBINE, a.glyph, b.glyph)) out.push({ type: "천간합(天干合)", members, note: "실제로 묶이는지는 판단하지 않음" });
   if (hasPair(STEM_CLASH, a.glyph, b.glyph)) out.push({ type: "천간충(天干沖)", members });
+  if (!sameChart && a.glyph === b.glyph) out.push({ type: SAME_GLYPH, members, note: SAME_NOTE });
   return out;
+}
+
+/** A 삼합·방합 and every placed glyph it covers ("巳(시지)"), while its members name a glyph once with all its places ("巳(년지·시지)"). */
+interface Trio {
+  relation: Relation;
+  covers: string[];
+}
+
+/**
+ * The 삼합·방합 that `natal` completes together with every one of `layers` (without any one layer it would
+ * not); with no layers, the ones the natal chart completes alone.
+ */
+function trios(natal: Placed[], layers: Placed[] = []): Trio[] {
+  const all = [...natal, ...layers];
+  const complete = (placed: Placed[], glyphs: readonly string[]) => glyphs.every((g) => placed.some((p) => p.glyph === g));
+  return TRIOS
+    .filter((t) => complete(all, t.glyphs) && layers.every((layer) => !complete(all.filter((p) => p !== layer), t.glyphs)))
+    .map((t) => {
+      const placed = all.filter((p) => t.glyphs.includes(p.glyph));
+      const glyphs = [...new Set(placed.map((p) => p.glyph))];
+      return {
+        relation: {
+          type: t.type,
+          members: glyphs.map((g) => `${g}(${placed.filter((p) => p.glyph === g).map((p) => p.at).join("·")})`),
+          note: `${layers.length ? "원국과 운의 글자가 함께 세 글자를 채움" : "세 글자가 모두 있음"}. 실제로 묶이는지(化)는 판단하지 않음`,
+        },
+        covers: placed.map((p) => `${p.glyph}(${p.at})`),
+      };
+    });
+}
+
+/** The trios in place of the 반합 pairs they cover (반합 is two of the three; with the third there it is the 삼합). */
+function withTrios(relations: Relation[], found: Trio[]): Relation[] {
+  const covered = (r: Relation) => r.type.startsWith("반합") && found.some((t) => r.members.every((m) => t.covers.includes(m)));
+  return [...relations.filter((r) => !covered(r)), ...found.map((t) => t.relation)];
 }
 
 function relationsWithin(stems: Placed[], branches: Placed[]): Relation[] {
   const out: Relation[] = [];
-  for (let i = 0; i < branches.length; i++) for (let j = i + 1; j < branches.length; j++) out.push(...branchRelations(branches[i]!, branches[j]!));
-  for (let i = 0; i < stems.length; i++) for (let j = i + 1; j < stems.length; j++) out.push(...stemRelations(stems[i]!, stems[j]!));
-  return out;
+  for (let i = 0; i < branches.length; i++) for (let j = i + 1; j < branches.length; j++) out.push(...branchRelations(branches[i]!, branches[j]!, true));
+  for (let i = 0; i < stems.length; i++) for (let j = i + 1; j < stems.length; j++) out.push(...stemRelations(stems[i]!, stems[j]!, true));
+  return withTrios(out, trios(branches));
 }
 
 export function relationsTo(stem: Placed, branch: Placed, stems: Placed[], branches: Placed[]): Relation[] {
   return [...branches.flatMap((b) => branchRelations(branch, b)), ...stems.flatMap((s) => stemRelations(stem, s))];
+}
+
+/** A pillar as placed glyphs: { at: "월주", stem: { …, at: "월간" }, branch: { …, at: "월지" } }. */
+export interface PlacedPillar {
+  at: string;
+  stem: Placed;
+  branch: Placed;
+}
+
+export function natalPillars(chart: SajuChart): PlacedPillar[] {
+  return (["year", "month", "day", "hour"] as const).flatMap((k) => {
+    const p = chart.pillars[k];
+    return p ? [{ at: `${PLACE_LABEL[k]}주`, stem: { glyph: p.stem, at: `${PLACE_LABEL[k]}간` }, branch: { glyph: p.branch, at: `${PLACE_LABEL[k]}지` } }] : [];
+  });
+}
+
+const gzOf = (p: PlacedPillar) => p.stem.glyph + p.branch.glyph;
+const placedLabel = (p: Placed) => `${p.glyph}(${p.at})`;
+
+/** A layer's pillar (대운, 세운, 월건) against other pillars: the glyph relations, with one 같은 간지 line in place of the two 같은 글자 it covers. */
+export function pillarRelations(layer: PlacedPillar, others: PlacedPillar[]): Relation[] {
+  const same = others.filter((o) => gzOf(o) === gzOf(layer));
+  const covered = new Set(same.flatMap((o) => [`${placedLabel(layer.stem)}|${placedLabel(o.stem)}`, `${placedLabel(layer.branch)}|${placedLabel(o.branch)}`]));
+  const glyphs = relationsTo(layer.stem, layer.branch, others.map((o) => o.stem), others.map((o) => o.branch))
+    .filter((r) => !(r.type === SAME_GLYPH && covered.has(r.members.join("|"))));
+  return [...same.map((o) => ({ type: SAME_PILLAR, members: [`${gzOf(layer)}(${layer.at})`, `${gzOf(o)}(${o.at})`], note: "같은 간지가 겹친다는 사실만 봄" })), ...glyphs];
+}
+
+/** What a 대운 or 세운 meets in the natal chart, the 삼합·방합 it completes there included. */
+export function layerToNatal(layer: PlacedPillar, natal: PlacedPillar[]): Relation[] {
+  return withTrios(pillarRelations(layer, natal), trios(natal.map((p) => p.branch), [layer.branch]));
+}
+
+/** A 세운 against the 대운 in force, and the 삼합·방합 only the two together complete with the natal chart. */
+export function annualToLuck(annual: PlacedPillar, luck: PlacedPillar, natal: PlacedPillar[]): Relation[] {
+  return withTrios(pillarRelations(annual, [luck]), trios(natal.map((p) => p.branch), [luck.branch, annual.branch]));
+}
+
+// ---- 월건 ----
+
+/** A 월건 and how it meets the chart: this and next month for the standard and topic facts, twelve for 신년운세. */
+export interface MonthPillar {
+  gz: string;
+  ko: string;
+  display: string;
+  /** the 세운 in force then (it turns at 입춘) */
+  yearGz: string;
+  stemTenGod: string;
+  branchMainTenGod: string;
+  relationsToNatal: Relation[];
+  /** with that 세운, stems and branches */
+  relationToYear: Relation[];
+  /** the 절 that opens it, KST "2월 4일 10:46" */
+  term: { name: string; kst: string } | null;
+}
+
+const KST_MS = 9 * 3_600_000;
+
+function kstMinute(iso: string): string {
+  const d = new Date(Date.parse(iso) + KST_MS);
+  return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}
+
+/** The pillars in force at an instant, read on the KST clock in Seoul (월건 and 세운 turn at an instant, so the place does not matter). */
+function probeAt(ms: number): SajuChart {
+  const kst = new Date(ms + KST_MS);
+  return computeChart({
+    calendar: "solar", year: kst.getUTCFullYear(), month: kst.getUTCMonth() + 1, day: kst.getUTCDate(),
+    time: { hour: kst.getUTCHours(), minute: kst.getUTCMinutes() }, gender: "female", place: { name: "서울", longitude: 126.978 },
+  });
+}
+
+/**
+ * The 월건 a probe shows, placed as `label` ("3월 월건", "이번 달 월건"), against the natal chart and the 세운 of that time.
+ * That 세운 is named by its 간지 ("丁未 세운"): next month's may already be the next year's.
+ */
+function monthOf(probe: SajuChart, label: string, dayStem: string, natal: PlacedPillar[]): MonthPillar {
+  const gz = probe.pillars.month.stem + probe.pillars.month.branch;
+  const yearGz = probe.pillars.year.stem + probe.pillars.year.branch;
+  const month: PlacedPillar = { at: label, stem: { glyph: gz.charAt(0), at: `${label} 천간` }, branch: { glyph: gz.charAt(1), at: `${label} 지지` } };
+  const yearAt = `${yearGz} 세운`;
+  const year: PlacedPillar = { at: yearAt, stem: { glyph: yearGz.charAt(0), at: `${yearAt} 천간` }, branch: { glyph: yearGz.charAt(1), at: `${yearAt} 지지` } };
+  return {
+    gz,
+    ko: ganzhiKo(gz),
+    display: `${ganzhiKo(gz)}(${gz})`,
+    yearGz,
+    stemTenGod: tenGod(dayStem, gz.charAt(0)),
+    branchMainTenGod: tenGod(dayStem, mainHiddenStem(gz.charAt(1))),
+    relationsToNatal: pillarRelations(month, natal),
+    relationToYear: pillarRelations(month, [year]),
+    term: probe.monthStartTerm ? { name: probe.monthStartTerm.name, kst: kstMinute(probe.monthStartTerm.instantUTC) } : null,
+  };
+}
+
+/** The 월건 in force at `ms`. */
+export function monthPillarAt(ms: number, label: string, dayStem: string, natal: PlacedPillar[]): MonthPillar {
+  return monthOf(probeAt(ms), label, dayStem, natal);
+}
+
+/**
+ * The 월건 in force now and the next one, with the instants their 절 open. The next is read 45 days after this
+ * one opened: 절 lie 29.4–31.5 days apart, so that day falls after the next 절 and before the one after.
+ */
+function monthsAhead(now: number, dayStem: string, natal: PlacedPillar[]): { current: MonthPillar; next: MonthPillar; opens: number[] } | null {
+  const probe = probeAt(now);
+  if (!probe.monthStartTerm) return null;
+  const opened = Date.parse(probe.monthStartTerm.instantUTC);
+  const nextProbe = probeAt(opened + 45 * 86_400_000);
+  if (!nextProbe.monthStartTerm) return null;
+  return {
+    current: monthOf(probe, "이번 달 월건", dayStem, natal),
+    next: monthOf(nextProbe, "다음 달 월건", dayStem, natal),
+    opens: [opened, Date.parse(nextProbe.monthStartTerm.instantUTC)],
+  };
 }
 
 // ---- FactSet ----
@@ -186,6 +358,8 @@ export interface SajuFactSet {
     changeSoon: string | null;
   };
   annual: { year: number; gz: string; ko: string; stemTenGod: string; branchMainTenGod: string; relationsToNatal: Relation[]; luckRelation: Relation[] };
+  /** this month's 월건 and the next (standard and topic readings; 궁합 and 신년운세 build without it) */
+  monthly?: { current: MonthPillar; next: MonthPillar };
   calculation: string[];
   limits: string[];
   /** what the validator allows the text to name (not sent to the model) */
@@ -234,19 +408,16 @@ function pillarFact(key: "year" | "month" | "day" | "hour", chart: SajuChart): P
     gz: p.stem + p.branch,
     ko: p.ko,
     stem: { glyph: p.stem, display: glyphDisplay(p.stem), tenGod: key === "day" ? "일간" : tenGod(day, p.stem) },
-    branch: { glyph: p.branch, display: glyphDisplay(p.branch), mainTenGod: tenGod(day, p.hidden[0]!), twelveStage: twelveStage(day, p.branch) },
-    hidden: p.hidden.map((glyph, i) => ({ glyph, display: glyphDisplay(glyph), role: HIDDEN_ROLE[i] ?? "여기", tenGod: tenGod(day, glyph) })),
+    branch: { glyph: p.branch, display: glyphDisplay(p.branch), mainTenGod: tenGod(day, mainHiddenStem(p.branch)), twelveStage: twelveStage(day, p.branch) },
+    hidden: p.hidden.map((h) => ({ glyph: h.stem, display: glyphDisplay(h.stem), role: h.role, tenGod: tenGod(day, h.stem) })),
   };
 }
 
-/** The 세운 pillar in effect today (the year pillar turns at 입춘, so read it from the engine). */
+/** The 세운 in force at `now` (the year pillar turns at 입춘, so read it from the engine at the moment the 월건 is read). */
 function annualPillar(now: number): { year: number; gz: string } {
-  const kst = new Date(now + 9 * 3_600_000);
-  const today = computeChart({
-    calendar: "solar", year: kst.getUTCFullYear(), month: kst.getUTCMonth() + 1, day: kst.getUTCDate(),
-    time: { hour: 12, minute: 0 }, gender: "female", place: { name: "서울", longitude: 126.978 },
-  });
-  const gz = today.pillars.year.stem + today.pillars.year.branch;
+  const kst = new Date(now + KST_MS);
+  const probe = probeAt(now);
+  const gz = probe.pillars.year.stem + probe.pillars.year.branch;
   // Before 입춘 the 세운 is still last year's.
   const year = gz === yearGanzhi(kst.getUTCFullYear()) ? kst.getUTCFullYear() : kst.getUTCFullYear() - 1;
   return { year, gz };
@@ -256,19 +427,23 @@ export function yearGanzhi(year: number): string {
   return STEMS[(((year - 4) % 10) + 10) % 10]! + BRANCHES[(((year - 4) % 12) + 12) % 12]!;
 }
 
-export function buildFactSet(chart: SajuChart, now: number, profile?: SajuProfile, history?: readonly HistoryItem[]): SajuFactSet {
+/** `monthly: false` leaves out this and next month's 월건 (궁합 and 신년운세 read other periods). */
+export function buildFactSet(
+  chart: SajuChart, now: number, profile?: SajuProfile, history?: readonly HistoryItem[], options: { monthly?: boolean } = {},
+): SajuFactSet {
   const dayStem = chart.pillars.day.stem;
   const keys = (["year", "month", "day", "hour"] as const).filter((k) => chart.pillars[k]);
   const pillars = keys.map((k) => pillarFact(k, chart)!);
-  const stems: Placed[] = keys.map((k) => ({ glyph: chart.pillars[k]!.stem, at: `${PLACE_LABEL[k]}간` }));
-  const branches: Placed[] = keys.map((k) => ({ glyph: chart.pillars[k]!.branch, at: `${PLACE_LABEL[k]}지` }));
+  const natal = natalPillars(chart);
+  const stems: Placed[] = natal.map((p) => p.stem);
+  const branches: Placed[] = natal.map((p) => p.branch);
 
   const counts = chart.elements;
   const max = Math.max(...ORDER.map((e) => counts[e]));
   const visible = new Set(ORDER.filter((e) => counts[e] > 0));
-  const hiddenOnly = keys.flatMap((k) => chart.pillars[k]!.hidden.slice(1).map((glyph, i) => ({ glyph, k, role: HIDDEN_ROLE[i + 1]! })))
-    .filter((h) => !visible.has(elementOf(h.glyph)))
-    .map((h) => `${glyphDisplay(h.glyph)}: ${PLACE_LABEL[h.k]}지 ${chart.pillars[h.k]!.branch} 속 ${h.role}`);
+  const hiddenOnly = keys.flatMap((k) => chart.pillars[k]!.hidden.filter((h) => h.role !== "본기").map((h) => ({ ...h, k })))
+    .filter((h) => !visible.has(elementOf(h.stem)))
+    .map((h) => `${glyphDisplay(h.stem)}: ${PLACE_LABEL[h.k]}지 ${chart.pillars[h.k]!.branch} 속 ${h.role}`);
 
   const monthCertain = !chart.ambiguous.some((a) => a.pillar === "month");
   const monthBranch = chart.pillars.month.branch as Branch;
@@ -284,7 +459,7 @@ export function buildFactSet(chart: SajuChart, now: number, profile?: SajuProfil
       return {
         gz: p.ganzhi, ko: p.ko, from: from ? ym(from) : null, to: to ? ym(to) : null,
         stemTenGod: tenGod(dayStem, p.ganzhi.charAt(0)),
-        branchMainTenGod: tenGod(dayStem, HIDDEN_STEMS[p.ganzhi.charAt(1) as Branch][0]!),
+        branchMainTenGod: tenGod(dayStem, mainHiddenStem(p.ganzhi.charAt(1))),
       };
     });
     const nowYm = ym(new Date(now + 9 * 3_600_000));
@@ -299,9 +474,9 @@ export function buildFactSet(chart: SajuChart, now: number, profile?: SajuProfil
       const b: Placed = { glyph: cycle.gz.charAt(1), at: "대운 지지" };
       current = {
         ...cycle,
-        hidden: HIDDEN_STEMS[b.glyph as Branch].map((g, i) => `${glyphDisplay(g)} ${HIDDEN_ROLE[i]} ${tenGod(dayStem, g)}`),
+        hidden: HIDDEN_STEMS[b.glyph as Branch].map((h) => `${glyphDisplay(h.stem)} ${h.role} ${tenGod(dayStem, h.stem)}`),
         halves: `천간·지지를 5년씩 나눠 보는 관점에서는 ${cycle.from}~${half}가 ${glyphDisplay(s.glyph)}의 구간, ${half}~${cycle.to}가 ${glyphDisplay(b.glyph)}의 구간(관점일 뿐)`,
-        relationsToNatal: relationsTo(s, b, stems, branches),
+        relationsToNatal: layerToNatal({ at: "대운", stem: s, branch: b }, natal),
       };
     }
     // Only the neighbouring cycles go to the model (and the allow-list), so the glyph check stays meaningful.
@@ -326,7 +501,13 @@ export function buildFactSet(chart: SajuChart, now: number, profile?: SajuProfil
   const annual = annualPillar(now);
   const as: Placed = { glyph: annual.gz.charAt(0), at: "세운 천간" };
   const ab: Placed = { glyph: annual.gz.charAt(1), at: "세운 지지" };
-  const luckPlaced = luck?.current ? [{ glyph: luck.current.gz.charAt(1), at: "대운 지지" }] : [];
+  const annualPlaced: PlacedPillar = { at: "세운", stem: as, branch: ab };
+  const luckPlaced: PlacedPillar | null = luck?.current
+    ? { at: "대운", stem: { glyph: luck.current.gz.charAt(0), at: "대운 천간" }, branch: { glyph: luck.current.gz.charAt(1), at: "대운 지지" } }
+    : null;
+
+  // 월건 (this month and the next)
+  const months = options.monthly === false ? null : monthsAhead(now, dayStem, natal);
 
   const limits: string[] = [];
   if (!chart.pillars.hour) limits.push("태어난 시를 몰라 시주 없이 여섯 글자로 읽었어요. 자녀·말년처럼 시주가 맡는 해석과 정밀한 시기는 다루지 않아요.");
@@ -338,13 +519,18 @@ export function buildFactSet(chart: SajuChart, now: number, profile?: SajuProfil
   const addGz = (gz: string) => {
     for (const g of gz) glyphs.add(g);
     const branch = gz.charAt(1) as Branch;
-    if (HIDDEN_STEMS[branch]) HIDDEN_STEMS[branch].forEach((g) => glyphs.add(g));
+    if (HIDDEN_STEMS[branch]) HIDDEN_STEMS[branch].forEach((h) => glyphs.add(h.stem));
   };
   pillars.forEach((p) => addGz(p.gz));
   luck?.cycles.forEach((c) => addGz(c.gz));
   addGz(annual.gz);
-  for (const w of chart.warnings) if (w.window) addGz(w.window.dayPillar);
+  for (const w of chart.warnings) {
+    if (w.window) addGz(w.window.dayPillar);
+    if (w.dayPillar) addGz(w.dayPillar);
+  }
   for (const a of chart.ambiguous) a.candidates.forEach(addGz);
+  const monthList = months ? [months.current, months.next] : [];
+  for (const m of monthList) [m.gz, m.yearGz].forEach(addGz);
 
   const tenGods = new Set<string>();
   pillars.forEach((p) => {
@@ -354,15 +540,20 @@ export function buildFactSet(chart: SajuChart, now: number, profile?: SajuProfil
   });
   luck?.cycles.forEach((c) => {
     tenGods.add(c.stemTenGod);
-    HIDDEN_STEMS[c.gz.charAt(1) as Branch].forEach((g) => tenGods.add(tenGod(dayStem, g)));
+    HIDDEN_STEMS[c.gz.charAt(1) as Branch].forEach((h) => tenGods.add(tenGod(dayStem, h.stem)));
   });
   tenGods.add(tenGod(dayStem, annual.gz.charAt(0)));
-  HIDDEN_STEMS[annual.gz.charAt(1) as Branch].forEach((g) => tenGods.add(tenGod(dayStem, g)));
+  HIDDEN_STEMS[annual.gz.charAt(1) as Branch].forEach((h) => tenGods.add(tenGod(dayStem, h.stem)));
+  for (const m of monthList) {
+    tenGods.add(m.stemTenGod);
+    HIDDEN_STEMS[m.gz.charAt(1) as Branch].forEach((h) => tenGods.add(tenGod(dayStem, h.stem)));
+  }
 
   const years = new Set<number>([Number(chart.solarDate.slice(0, 4)), annual.year, new Date(now + 9 * 3_600_000).getUTCFullYear()]);
   luck?.cycles.forEach((c) => [c.from, c.to].forEach((v) => v && years.add(Number(v.slice(0, 4)))));
   if (luck?.current) years.add(Number(luck.current.from!.slice(0, 4)) + 5);
   if (starts) [starts.earliest, starts.latest].forEach((d) => years.add(d.getUTCFullYear()));
+  months?.opens.forEach((ms) => years.add(new Date(ms + KST_MS).getUTCFullYear()));
 
   return {
     schemaVersion: "saju-facts/1",
@@ -396,13 +587,16 @@ export function buildFactSet(chart: SajuChart, now: number, profile?: SajuProfil
       gz: annual.gz,
       ko: ganzhiKo(annual.gz),
       stemTenGod: tenGod(dayStem, as.glyph),
-      branchMainTenGod: tenGod(dayStem, HIDDEN_STEMS[ab.glyph as Branch][0]!),
-      relationsToNatal: relationsTo(as, ab, stems, branches),
-      luckRelation: luckPlaced.flatMap((b) => branchRelations(ab, b)),
+      branchMainTenGod: tenGod(dayStem, mainHiddenStem(ab.glyph)),
+      relationsToNatal: layerToNatal(annualPlaced, natal),
+      luckRelation: luckPlaced ? annualToLuck(annualPlaced, luckPlaced, natal) : [],
     },
+    ...(months ? { monthly: { current: months.current, next: months.next } } : {}),
     calculation: [
       "연주·월주는 절입 시각 기준, 일주·시주는 출생지 경도로 보정한 시각 기준(23시대는 당일 일주)",
       "오행 개수는 지장간을 뺀 대표 글자 기준, 십성은 지지 본기 기준",
+      "12운성은 일간 기준(양간은 순서대로, 음간은 거꾸로 세고 무토·기토는 병화·정화를 따름, 음간과 무토·기토를 세는 법은 유파마다 다름)",
+      "지장간은 월률분야 표(여기·중기·정기)를 따르고 정기를 본기라고 부름",
       ...chart.notes,
     ],
     limits,
@@ -432,6 +626,7 @@ export const SAJU_PREAMBLE = `너는 스타로그의 사주(명리) 해설가예
 - 글자를 처음 쓸 때는 <facts>의 display 표기(예: 병화(丙火))를 그대로 옮겨요. 한자는 처음 나올 때만 병기해요.
 - <facts>에 없는 십성·12운성 이름은 설명을 위해서라도 쓰지 않아요.
 - 신강·신약, 용신, 격국, 신살(도화, 역마, 공망, 귀인 등), 삼재·원진·백호 같은 라벨은 쓰지 않아요. 강약을 말해야 하면 "라벨을 붙이지 않았어요"라고만 밝혀요.
+- 같은 글자·같은 간지는 그 말 그대로 써요. 복음·반음·병림 같은 이름을 붙이지 않아요.
 - limits의 문장은 계산 기준 절에 모두 담아요. 시주가 없으면 시주에 기대는 해석(자녀, 말년, 정밀한 시기)을 하지 않아요.
 - 성별은 대운 방향을 정하는 데만 썼어요. 성별이나 나이로 성향을 말하지 않아요.
 
@@ -477,7 +672,7 @@ const SAJU_FORMATS = `## teaser (무료 요약)
   5. 일하는 결과 쉬는 결: 앞의 십성과 일지 이야기를 일하는 장면 하나, 쉬는 장면 하나로 확인하는 반증 가능한 문장과 그 사람 상황에 맞는 작은 실험.
   6. 지금의 10년: 지금 대운의 간지·기간·십성, 천간·지지 반기 관점(관점이라고 밝혀요), 원국과의 관계, 올해 세운(연도·간지·십성)과 원국·대운의 접점을 국면의 말로. 대운이 없으면 첫 대운 전이라는 사실과 첫 대운의 성격만.
   7. 계산 기준: calculation과 limits의 내용을 모두, 태어난 시각을 알게 되면 다시 계산할 수 있다는 안내까지.
-- observation: 앞으로 며칠에서 몇 주 안에 사용자가 직접 알아챌 수 있는 작고 확인 가능한 신호 하나(60~200자). 지금 대운이나 올해 세운, 두드러진 십성에 기대고, 무엇을 눈여겨보면 이 풀이가 맞는지 알 수 있는지 말해요. "~가 생겨요" 같은 예언이 아니라 "~를 눈여겨보세요"처럼 관찰로 써요. heading은 <headings>의 observation 문구 그대로예요.
+- observation: 앞으로 며칠에서 몇 주 안에 사용자가 직접 알아챌 수 있는 작고 확인 가능한 신호 하나(60~200자). 지금 대운이나 올해 세운, 이번 달·다음 달 월건(monthly), 두드러진 십성에 기대고, 무엇을 눈여겨보면 이 풀이가 맞는지 알 수 있는지 말해요. 월건은 이 관찰에서만 쓰고 간지·십성, 시작하는 절기, 원국·세운과의 관계까지만 말하며, 그 달에 생길 일을 지어내지 않아요. "~가 생겨요" 같은 예언이 아니라 "~를 눈여겨보세요"처럼 관찰로 써요. heading은 <headings>의 observation 문구 그대로예요.
 - followUps: 사용자가 이어서 물어볼 만한 질문 2개(각 30자 이하).
 
 ## followup (후속 질문)

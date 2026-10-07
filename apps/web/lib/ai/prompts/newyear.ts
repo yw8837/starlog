@@ -1,10 +1,10 @@
 import "server-only";
-import { BRANCHES, HIDDEN_STEMS, computeChart, ganzhiKo, type SajuChart, type SajuElement } from "@starlog/core";
+import { BRANCHES, HIDDEN_STEMS, ganzhiKo, mainHiddenStem, type SajuChart, type SajuElement } from "@starlog/core";
 import type { NewYearPartA, NewYearPartB } from "../premiumSchemas";
 import { MODEL_BLIND_RULE } from "../style";
 import {
-  ELEMENT_HANJA, ELEMENT_WORD, ORDER, PLACE_LABEL, SAJU_PREAMBLE, branchRelations, buildFactSet, factsBlock, relationsTo, tenGod,
-  userContextBlock, type Placed, type Relation, type SajuFactSet, type SajuProfile,
+  ELEMENT_HANJA, ELEMENT_WORD, ORDER, SAME_GLYPH, SAME_PILLAR, SAJU_PREAMBLE, buildFactSet, factsBlock, layerToNatal, monthPillarAt, natalPillars, tenGod,
+  userContextBlock, type MonthPillar, type Relation, type SajuFactSet, type SajuProfile,
 } from "./saju";
 
 /**
@@ -17,26 +17,14 @@ import {
 export const NEWYEAR_YEAR = 2027;
 export const NEWYEAR_REFERENCE_MS = Date.parse("2027-07-01T00:00:00+09:00");
 
-/** The month probes only need the 월건 and the year pillar, so the place is Seoul (the 절 is an instant). */
-const SEOUL = { name: "서울", longitude: 126.978 };
-
 type Branch = (typeof BRANCHES)[number];
-const KEYS = ["year", "month", "day", "hour"] as const;
-const pad = (n: number) => String(n).padStart(2, "0");
 
-export interface MonthFact {
+/**
+ * A month of 2027 (the 15th, 12:00 KST). `yearGz` is the 세운 in force then (丙午 in January, 丁未 after
+ * 입춘); `term.kst` ("2월 4일 10:46") is for headings only, never body text.
+ */
+export interface MonthFact extends MonthPillar {
   month: number;
-  gz: string;
-  ko: string;
-  display: string;
-  /** the 세운 in force on the 15th (丙午 in January, 丁未 after 입춘) */
-  yearGz: string;
-  stemTenGod: string;
-  branchMainTenGod: string;
-  relationsToNatal: Relation[];
-  relationToYear: Relation[];
-  /** the 절 that opens this 월건, KST "2월 4일 10:46" (headings only, never body text) */
-  term: { name: string; kst: string } | null;
 }
 
 export interface YearFacts {
@@ -63,51 +51,24 @@ const HABIT: Record<SajuElement, string> = {
   수: "물 한 컵으로 하루를 시작하기",
 };
 
-function kstMinute(iso: string): string {
-  const d = new Date(Date.parse(iso) + 9 * 3_600_000);
-  return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-}
-
-function natalPlaces(chart: SajuChart): { stems: Placed[]; branches: Placed[] } {
-  const keys = KEYS.filter((k) => chart.pillars[k]);
-  return {
-    stems: keys.map((k) => ({ glyph: chart.pillars[k]!.stem, at: `${PLACE_LABEL[k]}간` })),
-    branches: keys.map((k) => ({ glyph: chart.pillars[k]!.branch, at: `${PLACE_LABEL[k]}지` })),
-  };
-}
-
-const mainHidden = (gz: string) => HIDDEN_STEMS[gz.charAt(1) as Branch][0]!;
-
 export function buildNewYearFacts(chart: SajuChart, profile?: SajuProfile): NewYearFacts {
-  const facts = buildFactSet(chart, NEWYEAR_REFERENCE_MS, profile);
+  // the twelve 월건 below take the place of the standard reading's this and next month
+  const facts = buildFactSet(chart, NEWYEAR_REFERENCE_MS, profile, undefined, { monthly: false });
   const day = chart.pillars.day.stem;
-  const { stems, branches } = natalPlaces(chart);
+  const natal = natalPillars(chart);
 
-  const months: MonthFact[] = Array.from({ length: 12 }, (_, i) => {
-    const probe = computeChart({ calendar: "solar", year: NEWYEAR_YEAR, month: i + 1, day: 15, time: { hour: 12, minute: 0 }, gender: "female", place: SEOUL });
-    const gz = probe.pillars.month.stem + probe.pillars.month.branch;
-    const yearGz = probe.pillars.year.stem + probe.pillars.year.branch;
-    return {
-      month: i + 1,
-      gz,
-      ko: ganzhiKo(gz),
-      display: `${ganzhiKo(gz)}(${gz})`,
-      yearGz,
-      stemTenGod: tenGod(day, gz.charAt(0)),
-      branchMainTenGod: tenGod(day, mainHidden(gz)),
-      relationsToNatal: relationsTo({ glyph: gz.charAt(0), at: `${i + 1}월 월건 천간` }, { glyph: gz.charAt(1), at: `${i + 1}월 월건 지지` }, stems, branches),
-      relationToYear: branchRelations({ glyph: gz.charAt(1), at: `${i + 1}월 월건 지지` }, { glyph: yearGz.charAt(1), at: "세운 지지" }),
-      term: probe.monthStartTerm ? { name: probe.monthStartTerm.name, kst: kstMinute(probe.monthStartTerm.instantUTC) } : null,
-    };
-  });
+  const months: MonthFact[] = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    ...monthPillarAt(Date.UTC(NEWYEAR_YEAR, i, 15, 3), `${i + 1}월 월건`, day, natal), // the 15th, 12:00 KST
+  }));
 
   const jan = months[0]!.yearGz;
   const january = {
     gz: jan,
     ko: ganzhiKo(jan),
     stemTenGod: tenGod(day, jan.charAt(0)),
-    branchMainTenGod: tenGod(day, mainHidden(jan)),
-    relationsToNatal: relationsTo({ glyph: jan.charAt(0), at: "1월 세운 천간" }, { glyph: jan.charAt(1), at: "1월 세운 지지" }, stems, branches),
+    branchMainTenGod: tenGod(day, mainHiddenStem(jan.charAt(1))),
+    relationsToNatal: layerToNatal({ at: "1월 세운", stem: { glyph: jan.charAt(0), at: "1월 세운 천간" }, branch: { glyph: jan.charAt(1), at: "1월 세운 지지" } }, natal),
   };
 
   const change = (facts.luck?.cycles ?? []).find((c) => c.from !== null && c.from >= "2027-01" && c.from <= "2027-12");
@@ -118,9 +79,9 @@ export function buildNewYearFacts(chart: SajuChart, profile?: SajuProfile): NewY
   for (const gz of [jan, ...months.map((m) => m.gz)]) {
     for (const g of gz) glyphs.add(g);
     tenGods.add(tenGod(day, gz.charAt(0)));
-    for (const g of HIDDEN_STEMS[gz.charAt(1) as Branch]) {
-      glyphs.add(g);
-      tenGods.add(tenGod(day, g));
+    for (const h of HIDDEN_STEMS[gz.charAt(1) as Branch]) {
+      glyphs.add(h.stem);
+      tenGods.add(tenGod(day, h.stem));
     }
   }
 
@@ -213,9 +174,11 @@ export function newyearLockedToc(n: NewYearFacts): string[] {
 
 export function newyearPreviewFacts(n: NewYearFacts): string[] {
   const a = n.facts.annual;
+  // each relation once; 같은 글자·같은 간지 only repeat a glyph, they do not bind or clash
+  const types = [...new Set(a.relationsToNatal.map((r) => r.type))].filter((t) => t !== SAME_GLYPH && t !== SAME_PILLAR);
   return [
     `2027년 세운 · ${a.ko}(${a.gz}) · 천간 ${a.stemTenGod} · 지지 ${a.branchMainTenGod}`,
-    a.relationsToNatal.length ? `내 명식과 · ${a.relationsToNatal.map((r) => r.type).join(", ")}` : "내 명식과 · 따로 묶이거나 부딪히는 글자는 없어요",
+    types.length ? `내 명식과 · ${types.join(", ")}` : "내 명식과 · 따로 묶이거나 부딪히는 글자는 없어요",
     n.year.luckChange ? `대운 · ${n.year.luckChange}` : "대운 · 2027년 안에는 바뀌지 않아요",
   ];
 }

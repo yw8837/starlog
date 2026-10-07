@@ -4,7 +4,7 @@ import {
   BRANCHES, BRANCHES_KO, HIDDEN_STEMS, STEMS, STEMS_KO, branchElement, branchIndexOfKo, ganzhiKo, shiftGanzhi, stemElement,
   stemIndexOfKo,
 } from "./labels";
-import type { SajuElement } from "./labels";
+import type { HiddenStem, SajuElement } from "./labels";
 import {
   DEFAULT_POLICY, MAX_SUPPORTED_DATE, MIN_SUPPORTED_DATE, STANDARD_TIME_START, SUPPORTED_TIME_ZONE, SUPPORTED_TIME_ZONES, ZONE_LONGITUDE_RANGE,
   SajuError, correctedClockMs, koreaCivilOffsetAt, koreaWallClockInstants, sajuAbroadEnabled, validatePolicy,
@@ -35,8 +35,8 @@ export interface Pillar {
   stemGod: string;
   /** ten god of the branch's 본기 */
   branchGod: string;
-  /** 지장간, 본기 first */
-  hidden: string[];
+  /** 지장간 (월률분야): 여기, 중기 where there is one, then 본기, each with its role */
+  hidden: HiddenStem[];
 }
 
 export type SajuWarningCode =
@@ -44,13 +44,17 @@ export type SajuWarningCode =
   /** time unknown: a year/month pillar changes during the civil day (details in `ambiguous`) */
   | "PILLAR_AMBIGUOUS"
   /** time unknown: births inside `window` would get the day pillar `window.dayPillar` instead */
-  | "DAY_PILLAR_WINDOW";
+  | "DAY_PILLAR_WINDOW"
+  /** time known, corrected clock 23:00–24:00 under SPLIT_NEXT_DAY_STEM: calendars that change the day at 23:00 show `dayPillar` */
+  | "JASI_DAY_PILLAR";
 export interface SajuWarning {
   code: SajuWarningCode;
   /** Korean UI copy */
   message: string;
   /** DAY_PILLAR_WINDOW only: civil-clock minutes ("HH:mm", inclusive) and the day pillar they would get */
   window?: { from: string; to: string; dayPillar: string };
+  /** JASI_DAY_PILLAR only: the next day's pillar */
+  dayPillar?: string;
 }
 
 /** Time unknown (P6): a pillar that changes during the civil day. `switchesAtKST` is the civil clock ("HH:mm"). */
@@ -310,6 +314,15 @@ function readKnownTime(date: CivilDate, time: NonNullable<SajuInput["time"]>, ge
       });
     }
   }
+  // P4: the 23:00 hour keeps this day's pillar here; calendars that change the day at 23:00 show the next day's
+  if (policy.jasi === "SPLIT_NEXT_DAY_STEM" && timeOfDay >= 23 * HOUR_MS) {
+    const next = shiftGanzhi(hanja(detail.day), 1);
+    warnings.push({
+      code: "JASI_DAY_PILLAR",
+      message: `보정 시각(${hhmm(clockMs)})이 밤 11시대예요. 밤 11시대를 다음 날로 보는 만세력에서는 일주가 다음 날 일진인 ${withKo(next)}${josa(next, "이", "가")} 돼요.`,
+      dayPillar: next,
+    });
+  }
 
   const luck = detail.luckPillars!;
   return {
@@ -530,7 +543,7 @@ function toPillar(p: EnginePillar, gods: { stem: string; branch: string }): Pill
   const branch = BRANCHES[bi]!;
   return {
     stem: STEMS[si]!, branch, ko: STEMS_KO[si]! + BRANCHES_KO[bi]!,
-    stemGod: gods.stem, branchGod: gods.branch, hidden: [...HIDDEN_STEMS[branch]],
+    stemGod: gods.stem, branchGod: gods.branch, hidden: HIDDEN_STEMS[branch].map(h => ({ ...h })),
   };
 }
 

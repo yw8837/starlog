@@ -1,12 +1,12 @@
 import "server-only";
-import { BRANCHES, HIDDEN_STEMS, computeChart, ganzhiKo, type SajuChart } from "@starlog/core";
+import { BRANCHES, HIDDEN_STEMS, computeChart, ganzhiKo, mainHiddenStem, type SajuChart } from "@starlog/core";
 import { hasFinalConsonant } from "@/lib/korean";
 import type { SajuSituationId, SajuTopicId } from "@/lib/reading/types";
 import { situationOf } from "@/lib/sajuTopics";
 import type { HistoryItem } from "@/lib/ai/history";
 import {
-  HIDDEN_ROLE, PLACE_LABEL, branchRelations, buildFactSet, glyphDisplay, luckStarts, relationsTo, tenGod, yearGanzhi,
-  type Placed, type Relation, type SajuFactSet,
+  PLACE_LABEL, annualToLuck, buildFactSet, glyphDisplay, layerToNatal, luckStarts, natalPillars, relationsTo, tenGod, yearGanzhi,
+  type MonthPillar, type Placed, type PlacedPillar, type Relation, type SajuFactSet,
 } from "@/lib/ai/prompts/saju";
 
 /**
@@ -86,9 +86,13 @@ export interface TopicAnchors {
   nextLuck: string[] | null;
 }
 
-export interface SajuTopicFactSet extends Omit<SajuFactSet, "schemaVersion" | "allowed" | "profile"> {
+/** A 월건 as topic facts carry it: the 절 by name only, since its date is what the timing checks reject. */
+export type TopicMonth = Omit<MonthPillar, "term"> & { term: { name: string } | null };
+
+export interface SajuTopicFactSet extends Omit<SajuFactSet, "schemaVersion" | "allowed" | "profile" | "monthly"> {
   schemaVersion: "saju-topic-facts/1";
   topic: SajuTopicId;
+  monthly?: { current: TopicMonth; next: TopicMonth };
   groups: { basis: string; items: GroupFact[] };
   nextAnnual: NextAnnual;
   /** set when the 대운 changes about now and the unknown birth time moves that change by months */
@@ -158,8 +162,7 @@ export function buildTopicFactSet(
   const day = chart.pillars.day.stem;
   const keys = KEYS.filter((k) => chart.pillars[k]);
   const timeKnown = chart.pillars.hour !== null;
-  const stems: Placed[] = keys.map((k) => ({ glyph: chart.pillars[k]!.stem, at: `${PLACE_LABEL[k]}간` }));
-  const branches: Placed[] = keys.map((k) => ({ glyph: chart.pillars[k]!.branch, at: `${PLACE_LABEL[k]}지` }));
+  const natal = natalPillars(chart);
 
   // ---- the five groups ----
   const items = GROUP_NAMES.map((name): GroupFact => {
@@ -174,15 +177,15 @@ export function buildTopicFactSet(
         visible.push(`${PLACE_LABEL[k]}간 ${p.stem} ${stemGod}`);
         onStem = true;
       }
-      const mainGod = tenGod(day, p.hidden[0]!);
+      const mainGod = tenGod(day, mainHiddenStem(p.branch));
       if (groupOf(mainGod) === name) {
         visible.push(`${PLACE_LABEL[k]}지 ${p.branch} ${mainGod}`);
         rooted = true;
       }
-      p.hidden.slice(1).forEach((glyph, i) => {
-        const god = tenGod(day, glyph);
+      p.hidden.filter((h) => h.role !== "본기").forEach((h) => {
+        const god = tenGod(day, h.stem);
         if (groupOf(god) !== name) return;
-        hidden.push(`${PLACE_LABEL[k]}지 ${p.branch} 속 ${HIDDEN_ROLE[i + 1]} ${glyph} ${god}`);
+        hidden.push(`${PLACE_LABEL[k]}지 ${p.branch} 속 ${h.role} ${h.stem} ${god}`);
         rooted = true;
       });
     }
@@ -198,16 +201,20 @@ export function buildTopicFactSet(
   const gz = yearGanzhi(year);
   const ns: Placed = { glyph: gz.charAt(0), at: "다가오는 해 세운 천간" };
   const nb: Placed = { glyph: gz.charAt(1), at: "다가오는 해 세운 지지" };
+  const nextPlaced: PlacedPillar = { at: "다가오는 해 세운", stem: ns, branch: nb };
   const ipchun = `${year}-02`;
   const luckThen = base.luck?.cycles.find((c) => c.from !== null && c.to !== null && c.from <= ipchun && ipchun < c.to) ?? null;
+  const luckThenPlaced: PlacedPillar | null = luckThen
+    ? { at: "대운", stem: { glyph: luckThen.gz.charAt(0), at: "대운 천간" }, branch: { glyph: luckThen.gz.charAt(1), at: "대운 지지" } }
+    : null;
   const nextAnnual: NextAnnual = {
     year,
     gz,
     ko: ganzhiKo(gz),
     stemTenGod: tenGod(day, ns.glyph),
-    branchMainTenGod: tenGod(day, HIDDEN_STEMS[nb.glyph as Branch][0]!),
-    relationsToNatal: relationsTo(ns, nb, stems, branches),
-    luck: luckThen ? { gz: luckThen.gz, ko: luckThen.ko, relations: branchRelations(nb, { glyph: luckThen.gz.charAt(1), at: "대운 지지" }) } : null,
+    branchMainTenGod: tenGod(day, mainHiddenStem(nb.glyph)),
+    relationsToNatal: layerToNatal(nextPlaced, natal),
+    luck: luckThen && luckThenPlaced ? { gz: luckThen.gz, ko: luckThen.ko, relations: annualToLuck(nextPlaced, luckThenPlaced, natal) } : null,
     starts: "입춘 무렵",
   };
 
@@ -250,7 +257,8 @@ export function buildTopicFactSet(
   const dayPillar = pillarOf("일")!;
   const monthPillar = pillarOf("월")!;
   const dayBranchLine = `일지 ${dayPillar.branch.display}: 본기 ${dayPillar.branch.mainTenGod}, 지장간 ${dayPillar.hidden.map((h) => `${h.glyph} ${h.role} ${h.tenGod}`).join(", ")}, 12운성 ${dayPillar.branch.twelveStage}`;
-  const touchesDay = (r: Relation) => r.members.some((m) => m.endsWith("(일지)") || m.endsWith("(일간)"));
+  // a 삼합·방합 names a twice-standing glyph once with both places: "子(년지·일지)"
+  const touchesDay = (r: Relation) => r.members.some((m) => /[(·]일[지간][·)]/.test(m));
   const dayRelations = base.relations.filter(touchesDay).map(relationLine);
   const current = base.luck?.current ?? null;
   const luckLine = current
@@ -335,10 +343,10 @@ export function buildTopicFactSet(
   // ---- what the validator allows and expects ----
   const glyphs = new Set(base.allowed.glyphs);
   for (const g of gz) glyphs.add(g);
-  HIDDEN_STEMS[nb.glyph as Branch].forEach((g) => glyphs.add(g));
+  HIDDEN_STEMS[nb.glyph as Branch].forEach((h) => glyphs.add(h.stem));
   const tenGods = new Set(base.allowed.tenGods);
   tenGods.add(nextAnnual.stemTenGod);
-  HIDDEN_STEMS[nb.glyph as Branch].forEach((g) => tenGods.add(tenGod(day, g)));
+  HIDDEN_STEMS[nb.glyph as Branch].forEach((h) => tenGods.add(tenGod(day, h.stem)));
   const years = [...new Set([...base.allowed.years, year])].sort((a, b) => a - b);
   const yearMonths = new Set<string>();
   for (const c of cycles) [c.from, c.to].forEach((v) => v && yearMonths.add(v));
@@ -376,11 +384,13 @@ export function buildTopicFactSet(
   };
 
   const chip = situation ? situationOf(topic, situation) : undefined;
-  const { allowed: _baseAllowed, profile: _profile, schemaVersion: _version, ...rest } = base;
+  const { allowed: _baseAllowed, profile: _profile, schemaVersion: _version, monthly, ...rest } = base;
+  const byTermName = (m: MonthPillar): TopicMonth => ({ ...m, term: m.term ? { name: m.term.name } : null });
   return {
     ...rest,
     schemaVersion: "saju-topic-facts/1",
     topic,
+    ...(monthly ? { monthly: { current: byTermName(monthly.current), next: byTermName(monthly.next) } } : {}),
     limits: [...base.limits, TOPIC_LIMIT[topic]],
     groups: { basis, items },
     nextAnnual,

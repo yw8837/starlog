@@ -33,6 +33,24 @@ describe("deep tarot prompts", () => {
     expect(shared).toContain("<spread_facts>");
   });
 
+  it("gives part B the element relations of the crossing, the two axes and the staff (gap review C1, B6)", () => {
+    const ids = ["wands-03", "cups-05", "swords-02", "pentacles-04", "wands-07", "major-17-star", "major-09-hermit", "cups-11", "swords-12", "pentacles-13"];
+    const fixed = buildDeepContext(
+      ids.map((cardId, slot) => ({ cardId, position: TEMPLATES["deep-tarot"].positions[slot]!, orientation: "upright" as const, slot })),
+      { topicId: "money", whoId: "me", whenId: "month", question: "", conditions: [] },
+    );
+    const shared = deepShared(fixed);
+    expect(shared).toContain("교차 원소 관계: 지금의 나(완드 3) × 가로막는 것(컵 5) 서로 부딪히는 짝");
+    expect(shared).toContain("세로축 원소 관계: 바탕(검 2) × 지금의 나(완드 3) 서로 돕는 짝, 지금의 나(완드 3) × 바라는 것(완드 7) 같은 원소라 서로 돕는 짝");
+    expect(shared).toContain("가로축 원소 관계: 지나온 것(펜타클 4) × 지금의 나(완드 3) 무난한 짝, 지금의 나(완드 3) × 다가올 것(별) 서로 돕는 짝");
+    expect(shared).toContain(
+      "지팡이 원소 관계: 나의 태도(은둔자) × 주변(컵 시종) 서로 돕는 짝, 주변(컵 시종) × 바람과 걱정(검 기사) 무난한 짝, 바람과 걱정(검 기사) × 결과의 방향(펜타클 여왕) 서로 부딪히는 짝",
+    );
+    const facts = shared.slice(shared.indexOf("<spread_facts>"));
+    expect(facts).not.toContain("가운데 카드"); // the three-card line belongs to three-card spreads
+    expect(facts).toContain("번호·계급: 완드 3, 컵 5, 검 2, 펜타클 4, 완드 7, 17, 9, 컵 시종, 검 기사, 펜타클 여왕"); // courts by rank, never 11–14
+  });
+
   it("gives the free preview only the first card's KB", () => {
     const teaser = deepTeaserPrompt(ctx);
     expect(teaser).toContain(`cardId ${ctx.cards[0]!.cardId}`);

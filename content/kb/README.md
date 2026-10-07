@@ -33,7 +33,7 @@ content/kb/
 | `rank` | string｜null | `"ace"`, `"2"`…`"10"`, `"page"`, `"knight"`, `"queen"`, `"king"`. 메이저는 null |
 | `number` | number | 메이저 0–21(인쇄 번호), 마이너 1–14. 내부 인덱스와 섞지 않음 |
 | `roman` | string | 메이저만. 인쇄 번호(`"IX"`) |
-| `element` | string | cards.ts의 원소(골든 던 대응) |
+| `element` | string | cards.ts의 원소. 마이너와 메이저 16장은 골든 던 대응이고, 마법사·여사제·여황제·운명의 수레바퀴·탑·태양 6장은 골든 던이 원소 없이 행성(수성·달·금성·목성·화성·태양)만 주므로 관례로 붙인 원소다(세계는 토성과 흙을 함께 받는다) |
 | `attributions` | `{system, astrology, use}` | 골든 던 점성 대응. `use: "study-only"` — 선택형 공부 층, 기본 출력 금지 |
 | `keywordsKo` | string[3–6] | 짧은 키워드. 무료 카드 키워드·목차 재료 |
 | `imagery` | object | 아래 표 |

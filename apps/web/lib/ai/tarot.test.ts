@@ -7,7 +7,9 @@ import { kbCard } from "@/lib/kb";
 import { FALLBACK_BETA, MODEL, buildRequest } from "./anthropic";
 import { generateTarotReading, generateTarotTeaser } from "./generate";
 import { mockDaily, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
-import { CUSTOM_TEMPLATE, TAROT_SYSTEM, buildTarotContext, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt, type TarotInput } from "./prompts/tarot";
+import {
+  CUSTOM_TEMPLATE, TAROT_SYSTEM, buildTarotContext, cardBrief, spreadFacts, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt, type TarotInput,
+} from "./prompts/tarot";
 import { GenerationError, generateValidated, selectProvider, type ReadingProvider } from "./provider";
 import {
   DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, SajuTeaserSchema, StoredSajuReadingSchema, StoredTarotReadingSchema,
@@ -99,6 +101,28 @@ describe("tarot context and prompts", () => {
   it("bans relationship words for a money topic but not for a relationship topic", () => {
     expect(buildTarotContext("self-flow", draw("self-flow", "a"), MONEY_INPUT).bannedWords).toEqual(expect.arrayContaining(["연락", "재회", "고백"]));
     expect(buildTarotContext("relationship-contact", GOLD_DRAW, GOLD_INPUT).bannedWords).toEqual([]);
+  });
+});
+
+describe("spread facts: numbers and ranks (gap review C3, B5)", () => {
+  const drawOf = (templateId: TemplateId, ids: string[]): DrawnCard[] =>
+    ids.map((cardId, slot) => ({ cardId, position: TEMPLATES[templateId].positions[slot]!, orientation: "upright", slot }));
+
+  it("never pairs a major with a court's internal 11–14: minors pair by rank, and courts go by rank name", () => {
+    const ctx = buildTarotContext("relationship-contact", drawOf("relationship-contact", ["major-12-hanged-man", "wands-12", "cups-12"]), GOLD_INPUT);
+    const facts = spreadFacts(ctx);
+    expect(facts).toContain("번호·계급: 12, 완드 기사, 컵 기사");
+    expect(facts).toContain("같은 계급 기사: 완드 기사, 컵 기사");
+    expect(facts).not.toMatch(/같은 번호|\(1[1-4]\)/);
+    expect([cardBrief(ctx.cards[0]!, ctx).number, cardBrief(ctx.cards[1]!, ctx).number]).toEqual(["XII (12)", "기사"]);
+  });
+
+  it("names repeated number cards by their number and an ace by its rank; the three-card element line stays", () => {
+    const ctx = buildTarotContext("self-flow", drawOf("self-flow", ["wands-03", "swords-03", "cups-01"]), MONEY_INPUT);
+    const facts = spreadFacts(ctx);
+    expect(facts).toContain("같은 숫자 3: 완드 3, 검 3");
+    expect(facts).toContain("가운데 카드(검 3) 기준 원소 관계: 첫째 카드와 서로 돕는 짝, 셋째 카드와 무난한 짝");
+    expect(cardBrief(ctx.cards[2]!, ctx).number).toBe("에이스");
   });
 });
 

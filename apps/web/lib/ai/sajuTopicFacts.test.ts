@@ -2,7 +2,7 @@ import { computeChart } from "@starlog/core";
 import golden from "@content/eval/saju-topics/golden.json";
 import { describe, expect, it } from "vitest";
 import type { SajuSituationId, SajuTopicId } from "@/lib/reading/types";
-import { toSajuInput, type SajuForm } from "@/lib/sajuForm";
+import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { buildTopicFactSet, nextIpchun, teaserFreshUntil } from "./prompts/sajuTopics";
 
 const NOW = Date.parse(golden.evalNow); // 2026-10-02 12:00 KST
@@ -62,8 +62,32 @@ describe("topic facts for the golden charts (spec §6.3, §12.1)", () => {
     expect(groupsOf("C5", "money").식상!.count).toBe(3);
     expect(groupsOf("C5", "money").재성).toMatchObject({ count: 0, hidden: ["월지 申 속 중기 壬 정재"] });
     expect(groupsOf("C7", "money").비겁!.count).toBe(5);
-    expect(groupsOf("C8", "love").인성).toMatchObject({ count: 0, hidden: ["시지 辰 속 여기 癸 편인"] });
+    expect(groupsOf("C8", "love").인성).toMatchObject({ count: 0, hidden: ["시지 辰 속 중기 癸 편인"] }); // 辰: 중기 癸 (Korean convention, gap review B1)
     expect([groupsOf("C3", "money").비겁!.count, groupsOf("C3", "money").재성!.count]).toEqual([3, 1]);
+  });
+
+  it("carries this and next month's 월건 (R1); reads the coming 세운 against its 대운 by stems too (R2) and names the 방합 it completes (R3)", () => {
+    const f = buildTopicFactSet(chartOf("C8"), NOW, "love"); // 대운 at the next 입춘: 癸卯
+    expect([f.monthly?.current.gz, f.monthly?.next.gz, f.monthly?.next.term?.name]).toEqual(["丁酉", "戊戌", "한로"]);
+    expect(f.allowed.glyphs).toEqual(expect.arrayContaining(["酉", "戌"]));
+    expect(f.nextAnnual.luck?.relations.map((r) => `${r.type} ${r.members.join("-")}`)).toEqual([
+      "반합(半合, 나무 기운) 未(다가오는 해 세운 지지)-卯(대운 지지)", "천간충(天干沖) 丁(다가오는 해 세운 천간)-癸(대운 천간)",
+    ]);
+    const c7 = buildTopicFactSet(chartOf("C7"), NOW, "money"); // 丁巳 丙午 丁酉 乙巳 + 2027 未
+    expect(c7.nextAnnual.relationsToNatal.map((r) => `${r.type} ${r.members.join("-")}`))
+      .toContain("방합(方合, 불 기운) 巳(년지·시지)-午(월지)-未(다가오는 해 세운 지지)");
+  });
+
+  it("keeps a 삼합 that holds the 일지 among the 일지's relations when its glyph stands twice (子 申 子 辰)", () => {
+    const f = buildTopicFactSet(computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: 1960, month: 8, day: 16, timeKnown: true, hour: 8, minute: 30 })), NOW, "love");
+    expect(f.focus.s2).toContain("子(년지·일지)와 申(월지)와 辰(시지) 사이에 삼합(三合, 물 기운) 관계가 있어요");
+  });
+
+  it("reads absence by the 월률분야 table: 甲 with 亥 finds 재성 in 亥's 여기 戊 (庚子 丁亥 甲子)", () => {
+    const f = buildTopicFactSet(computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: 1960, month: 12, day: 2 })), NOW, "money");
+    expect(f.groups.items.find((g) => g.name === "재성")).toMatchObject({ count: 0, hidden: ["월지 亥 속 여기 戊 편재"], rooted: true });
+    expect(f.focus.s2).toContain("재성은 겉에 없고 지장간에 숨어 있어요: 월지 亥 속 여기 戊 편재");
+    expect(f.focus.s2).not.toContain("재성은 지장간에도 없어요");
   });
 
   it("says until when a teaser stays current: 30 days, the next 입춘 or the end of the 대운", () => {

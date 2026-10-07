@@ -169,7 +169,7 @@ export function validateMatchPartA(a: MatchPartA, m: MatchFacts): string[] {
   const mine = m.me.dayMaster.display.slice(0, 2);
   const theirs = m.partner.dayMaster.display.slice(0, 2);
   if (!a.dayMasters.body.includes(mine) || !a.dayMasters.body.includes(theirs)) out.push(`${MATCH_HEADINGS.dayMasters} 절에서 두 일간(${mine}, ${theirs})을 모두 불러 주세요.`);
-  if (m.pair.pillars.length && !/합|충|형|파|해\(/.test(a.pillars.body)) out.push(`${MATCH_HEADINGS.pillars} 절에 계산된 관계(합·충·형·파·해)가 보이지 않아요.`);
+  if (m.pair.pillars.length && !/합|충|형|파|해\(|같은 글자|같은 간지/.test(a.pillars.body)) out.push(`${MATCH_HEADINGS.pillars} 절에 계산된 관계(합·충·형·파·해, 같은 글자·같은 간지)가 보이지 않아요.`);
   for (const ko of m.pair.luck.currentKo) if (!a.luck.body.includes(ko)) out.push(`${MATCH_HEADINGS.luck} 절에 지금 대운(${ko})이 보이지 않아요.`);
   voiceViolations(text, out);
   if (m.concern && !mentions(text, m.concern, 0.3)) out.push(`${SOFT_PREFIX}사용자의 한 줄 고민이 사주 풀이에 보이지 않아요. 그 고민에 닿는 장면을 하나 골라 주세요.`);

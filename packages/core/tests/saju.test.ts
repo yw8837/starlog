@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import manseryeokPkg from "manseryeok/package.json";
 import { getSolarTerm } from "manseryeok";
-import { computeChart, DEFAULT_POLICY, SEOUL, SajuError, koreaCivilOffsetAt } from "../src";
+import { BRANCHES, computeChart, DEFAULT_POLICY, HIDDEN_STEMS, SEOUL, SajuError, koreaCivilOffsetAt, mainHiddenStem } from "../src";
 import type { SajuChart, SajuInput, SajuPolicy, SajuErrorCode } from "../src";
 
 const base = { calendar: "solar" as const, gender: "female" as const, place: { name: "서울", longitude: 126.98 } };
@@ -36,6 +36,26 @@ describe("computeChart (brief)", () => {
     expect(c.solarDate).toBe("1990-01-01");
   });
   it("exposes the policy version used", () => { expect(computeChart({ ...base, year: 2000, month: 1, day: 1, time: null }).policy.version).toBe(DEFAULT_POLICY.version); });
+});
+
+// docs/research/analysis-gap-review-2026-10.md §3 B1, N12: the Korean 월률분야 table (orrery; ssaju's role names).
+describe("지장간 table: 월률분야, every entry with its role", () => {
+  const entries = (b: (typeof BRANCHES)[number]) => HIDDEN_STEMS[b].map(h => `${h.role} ${h.stem}`).join(", ");
+  it("pins all twelve branches: 여기, 중기 where there is one, 정기 (called 본기)", () => {
+    expect(Object.fromEntries(BRANCHES.map(b => [b, entries(b)]))).toEqual({
+      子: "여기 壬, 본기 癸", 丑: "여기 癸, 중기 辛, 본기 己", 寅: "여기 戊, 중기 丙, 본기 甲", 卯: "여기 甲, 본기 乙",
+      辰: "여기 乙, 중기 癸, 본기 戊", 巳: "여기 戊, 중기 庚, 본기 丙", 午: "여기 丙, 중기 己, 본기 丁", 未: "여기 丁, 중기 乙, 본기 己",
+      申: "여기 戊, 중기 壬, 본기 庚", 酉: "여기 庚, 본기 辛", 戌: "여기 辛, 중기 丁, 본기 戊", 亥: "여기 戊, 중기 甲, 본기 壬",
+    });
+  });
+  it("reads a branch's ten god by its 본기", () => {
+    expect(BRANCHES.map(mainHiddenStem).join("")).toBe("癸己甲乙戊丙丁己庚辛戊壬");
+    expect(computeChart({ ...base, year: 1990, month: 1, day: 1, time: null }).pillars.month.branchGod).toBe("정관"); // 子: 본기 癸
+  });
+  it("hands the chart's pillars the same entries", () => {
+    expect(computeChart({ ...base, year: 1990, month: 1, day: 5, time: { hour: 23, minute: 40 } }).pillars.month.hidden) // 丁丑
+      .toEqual([{ stem: "癸", role: "여기" }, { stem: "辛", role: "중기" }, { stem: "己", role: "본기" }]);
+  });
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -317,6 +337,31 @@ describe("provenance, corrections and warnings (P3, P10, P12, P13)", () => {
     expect(c.warnings[0]!.message).not.toContain("일주");
     expect(computeChart(solarAt("2000-05-15", "23:31"), PROFILES.DU).warnings[0]!.message)
       .toBe("보정 시각이 시진 경계(23:00) 앞뒤 2분 안이라 출생 기록 오차에 따라 시주가 달라질 수 있어요. 23시에 날이 바뀌는 관법이라 일주도 바뀔 수 있어요.");
+  });
+  it("time known, corrected clock in the 23:00 hour: names the 일주 a calendar that changes the day at 23:00 shows (G12 D: 23:37 → 丁未)", () => {
+    const c = computeChart(solarAt("2026-09-30", "00:10"));
+    expect([c.correctedLocalTime, four(c).split(" ")[2]]).toEqual(["23:37", "丙午"]);
+    expect(c.warnings).toEqual([{
+      code: "JASI_DAY_PILLAR",
+      message: "보정 시각(23:37)이 밤 11시대예요. 밤 11시대를 다음 날로 보는 만세력에서는 일주가 다음 날 일진인 丁未(정미)가 돼요.",
+      dayPillar: "丁未",
+    }]);
+    // that calendar is profile DU: it already shows 丁未, so it gets no such line
+    const du = computeChart(solarAt("2026-09-30", "00:10"), PROFILES.DU);
+    expect([four(du).split(" ")[2], du.warnings]).toEqual(["丁未", []]);
+    expect(computeChart(solarAt("1990-01-05", "23:40")).warnings.map(w => [w.code, w.dayPillar])).toEqual([["JASI_DAY_PILLAR", "辛未"]]); // G04 D 23:07
+    // 22:58 (G19 D) and an unknown time are not in the 23:00 hour
+    expect(computeChart(solarAt("2000-05-15", "23:31")).warnings.map(w => w.code)).toEqual(["HOUR_BOUNDARY"]);
+    expect(computeChart(solarAt("2026-09-30", null)).warnings.map(w => w.code)).toEqual(["DAY_PILLAR_WINDOW"]);
+  });
+  it("JASI_DAY_PILLAR at the edges of the 23:00 hour: a DST birth that lands in it, and the first and last second around 23:00", () => {
+    // 1988-07-01 00:50 under DST = 06-30 23:50 standard → 23:17 corrected: 06-30's 丙辰 here, 07-01's 丁巳 elsewhere
+    const dst = computeChart(solarAt("1988-07-01", "00:50"));
+    expect([dst.correctedLocalTime, four(dst).split(" ")[2]]).toEqual(["23:17", "丙辰"]);
+    expect(dst.warnings.map(w => [w.code, w.dayPillar])).toEqual([["JASI_DAY_PILLAR", "丁巳"]]);
+    // Seoul (126.978°E): 23:33 → 23:00:55 is in the hour, 23:32 → 22:59:55 is not (both are near the 시진 boundary)
+    expect(computeChart(solarAt("2024-03-10", "23:33")).warnings.map(w => w.code)).toEqual(["HOUR_BOUNDARY", "JASI_DAY_PILLAR"]);
+    expect(computeChart(solarAt("2024-03-10", "23:32")).warnings.map(w => w.code)).toEqual(["HOUR_BOUNDARY"]);
   });
   it("before 1908-04-01 reads the input as birthplace local mean time and warns", () => {
     const c = computeChart(solarAt("1900-01-01", "12:00"));

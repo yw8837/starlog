@@ -20,7 +20,10 @@ const ROMAN = [
   "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX", "XXI",
 ] as const;
 
-// [slug, ko, ja, en, element] indexed by major number 0-21
+// [slug, ko, ja, en, element] indexed by major number 0-21. The element follows the Golden Dawn (a sign's
+// element, or the element itself for 0, XII, XX; XXI gets Saturn and earth), except for I Magician, II High
+// Priestess, III Empress, X Wheel of Fortune, XVI Tower and XIX Sun: the Golden Dawn gives those six only a
+// planet, so their element here is a convention.
 const MAJORS: readonly (readonly [string, string, string, string, CardElement])[] = [
   ["fool", "바보", "愚者", "The Fool", "air"],
   ["magician", "마법사", "魔術師", "The Magician", "air"],

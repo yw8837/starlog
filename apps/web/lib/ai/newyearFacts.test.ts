@@ -1,7 +1,7 @@
 import { computeChart } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
-import { buildNewYearFacts, monthHeading } from "./prompts/newyear";
+import { buildNewYearFacts, monthHeading, newyearPreviewFacts } from "./prompts/newyear";
 
 const chart = (extra: Partial<typeof DEFAULT_SAJU_FORM> = {}) => computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, ...extra }));
 
@@ -26,6 +26,22 @@ describe("2027 facts", () => {
     expect(monthHeading(n.year.months[0]!, n.year.january)).toBe("1월 · 신축월 (아직 병오년, 입춘 전)");
     expect(monthHeading(n.year.months[1]!, n.year.january)).toBe("2월 · 임인월 (4일 입춘부터 정미년)");
     expect(monthHeading(n.year.months[11]!, n.year.january)).toBe("12월 · 임자월 (7일 대설부터)");
+  });
+
+  it("reads each 월건 against its 세운 by stems too (R2), calls a 월건 equal to the 세운 같은 간지 (R4), and leaves out the standard reading's monthly", () => {
+    const rel = (i: number) => n.year.months[i]!.relationToYear.map((r) => `${r.type} ${r.members.join("-")}`);
+    expect(rel(0)).toEqual(["해(害) 丑(1월 월건 지지)-午(丙午 세운 지지)", "천간합(天干合) 辛(1월 월건 천간)-丙(丙午 세운 천간)"]); // 辛丑 in 丙午
+    expect(rel(1)).toEqual(["천간합(天干合) 壬(2월 월건 천간)-丁(丁未 세운 천간)"]); // 壬寅 in 丁未
+    expect(rel(2)).toEqual(["반합(半合, 나무 기운) 卯(3월 월건 지지)-未(丁未 세운 지지)", "천간충(天干沖) 癸(3월 월건 천간)-丁(丁未 세운 천간)"]);
+    expect(rel(6)).toEqual(["같은 간지 丁未(7월 월건)-丁未(丁未 세운)"]);
+    expect(n.facts.monthly).toBeUndefined();
+  });
+
+  it("previews the 2027 세운's relations once each, without 같은 글자·같은 간지", () => {
+    const line = (year: number, month: number, day: number) => newyearPreviewFacts(buildNewYearFacts(chart({ year, month, day })))[1];
+    expect(line(1968, 1, 8)).toBe("내 명식과 · 충(沖), 형(刑), 천간충(天干沖)"); // 丁未 癸丑 丁丑: 같은 간지, two 丑, two 丁
+    expect(line(1963, 5, 24)).toBe("내 명식과 · 반합(半合, 나무 기운), 천간충(天干沖)"); // 癸卯 丁巳 丁卯: two 卯, two 丁
+    expect(line(1964, 2, 28)).toBe("내 명식과 · 따로 묶이거나 부딪히는 글자는 없어요"); // 甲辰 丙寅 丁未: 같은 간지 only
   });
 
   it("gives every month its ten gods relative to the day master", () => {

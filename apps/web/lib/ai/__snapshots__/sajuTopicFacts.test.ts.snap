@@ -13,6 +13,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "식신",
         "상관",
         "子",
+        "壬",
         "己",
         "戊",
       ],
@@ -43,10 +44,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "己",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "庚",
+      "丙",
       "子",
+      "壬",
       "癸",
       "寅",
       "甲",
@@ -57,6 +59,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "午",
       "丁",
       "丑",
+      "酉",
+      "戌",
       "未",
     ],
     "stages": [
@@ -67,9 +71,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "상관",
       "비견",
-      "편재",
       "식신",
+      "편재",
       "정관",
+      "편관",
       "편인",
       "정인",
       "정재",
@@ -98,13 +103,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "관성: 겉 1개(월지 子 정관), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "관성: 겉 1개(월지 子 정관), 지장간 월지 子 속 여기 壬 편관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상: 겉 1개(년간 己 상관), 지장간 년지 巳 속 여기 戊 식신, 일지 寅 속 여기 戊 식신, 천간에 드러남, 지지에 뿌리 있음",
       "관성과 식상이 겉에 함께 있어요",
       "인성: 겉 1개(일지 寅 편인), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
     ],
     "s3": [
-      "월주 병자(丙子): 천간 丙 비견, 지지 子 본기 정관, 지장간 癸 본기 정관, 12운성 태",
+      "월주 병자(丙子): 천간 丙 비견, 지지 子 본기 정관, 지장간 壬 여기 편관, 癸 본기 정관, 12운성 태",
       "겉에 가장 많은 묶음: 비겁 2개",
     ],
     "s4": [
@@ -160,7 +165,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "월지 子 속 여기 壬 편관",
+        ],
         "name": "관성",
         "onStem": false,
         "rooted": true,
@@ -245,10 +252,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "己",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "庚",
+      "丙",
       "子",
+      "壬",
       "癸",
       "寅",
       "甲",
@@ -259,6 +267,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "午",
       "丁",
       "丑",
+      "酉",
+      "戌",
       "未",
     ],
     "stages": [
@@ -269,9 +279,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "상관",
       "비견",
-      "편재",
       "식신",
+      "편재",
       "정관",
+      "편관",
       "편인",
       "정인",
       "정재",
@@ -304,7 +315,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   },
   "focus": {
     "s2": [
-      "일지 인목(寅木): 본기 편인, 지장간 甲 본기 편인, 丙 중기 비견, 戊 여기 식신, 12운성 장생",
+      "일지 인목(寅木): 본기 편인, 지장간 戊 여기 식신, 丙 중기 비견, 甲 본기 편인, 12운성 장생",
       "巳(년지)와 寅(일지) 사이에 해(害) 관계가 있어요",
       "巳(년지)와 寅(일지) 사이에 형(刑) 관계가 있어요",
       "일간 병화(丙火): 하늘의 해",
@@ -364,7 +375,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "월지 子 속 여기 壬 편관",
+        ],
         "name": "관성",
         "onStem": false,
         "rooted": true,
@@ -459,10 +472,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "己",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "庚",
+      "丙",
       "子",
+      "壬",
       "癸",
       "寅",
       "甲",
@@ -473,6 +487,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "午",
       "丁",
       "丑",
+      "酉",
+      "戌",
       "未",
     ],
     "stages": [
@@ -483,9 +499,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "상관",
       "비견",
-      "편재",
       "식신",
+      "편재",
       "정관",
+      "편관",
       "편인",
       "정인",
       "정재",
@@ -574,7 +591,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "월지 子 속 여기 壬 편관",
+        ],
         "name": "관성",
         "onStem": false,
         "rooted": true,
@@ -657,10 +676,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "己",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "庚",
+      "丙",
       "子",
+      "壬",
       "癸",
       "寅",
       "甲",
@@ -671,6 +691,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "午",
       "丁",
       "丑",
+      "酉",
+      "戌",
       "未",
     ],
     "stages": [
@@ -681,9 +703,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "상관",
       "비견",
-      "편재",
       "식신",
+      "편재",
       "정관",
+      "편관",
       "편인",
       "정인",
       "정재",
@@ -716,7 +739,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   },
   "focus": {
     "s2": [
-      "일지 인목(寅木): 본기 편인, 지장간 甲 본기 편인, 丙 중기 비견, 戊 여기 식신, 12운성 장생",
+      "일지 인목(寅木): 본기 편인, 지장간 戊 여기 식신, 丙 중기 비견, 甲 본기 편인, 12운성 장생",
       "인성: 겉 1개(일지 寅 편인), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상: 겉 1개(년간 己 상관), 지장간 년지 巳 속 여기 戊 식신, 일지 寅 속 여기 戊 식신, 천간에 드러남, 지지에 뿌리 있음",
       "00:00~00:32 사이에 태어났다면 일주가 전날 일진인 乙丑(을축)이 돼요.",
@@ -733,6 +756,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "올해 세운 2026 병오(丙午): 천간 비견(비겁), 지지 본기 겁재(비겁)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 겁재(비겁), 지지 본기 상관(식상)",
       "午(세운 지지)와 寅(일지) 사이에 반합(半合, 불 기운) 관계가 있어요",
+      "丙(세운 천간)와 丙(일간) 사이에 같은 글자 관계가 있어요",
     ],
   },
   "groups": {
@@ -776,7 +800,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "월지 子 속 여기 壬 편관",
+        ],
         "name": "관성",
         "onStem": false,
         "rooted": true,
@@ -867,20 +893,20 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "甲",
       "戌",
-      "戊",
       "辛",
       "丁",
+      "戊",
       "未",
-      "己",
       "乙",
+      "己",
       "丙",
       "午",
       "癸",
       "酉",
+      "庚",
       "亥",
       "壬",
       "巳",
-      "庚",
     ],
     "stages": [
       "묘",
@@ -894,9 +920,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "겁재",
       "상관",
       "정인",
-      "정관",
-      "편관",
       "비견",
+      "정관",
+      "편재",
+      "편관",
     ],
     "yearMonths": [
       "2000-12",
@@ -925,10 +952,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "관성: 겉 0개, 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 없음",
       "식상: 겉 2개(년지 戌 식신, 월지 未 상관), 지장간 일지 午 속 중기 己 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상은 겉에 있고 관성은 겉에 없어요",
-      "인성: 겉 1개(년간 甲 편인), 지장간 월지 未 속 여기 乙 정인, 천간에 드러남, 지지에 뿌리 있음",
+      "인성: 겉 1개(년간 甲 편인), 지장간 월지 未 속 중기 乙 정인, 천간에 드러남, 지지에 뿌리 있음",
     ],
     "s3": [
-      "월주 신미(辛未): 천간 辛 정재, 지지 未 본기 상관, 지장간 己 본기 상관, 丁 중기 겁재, 乙 여기 정인, 12운성 쇠",
+      "월주 신미(辛未): 천간 辛 정재, 지지 未 본기 상관, 지장간 丁 여기 겁재, 乙 중기 정인, 己 본기 상관, 12운성 쇠",
       "겉에 가장 많은 묶음: 식상 2개",
     ],
     "s4": [
@@ -941,7 +968,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "올해 세운 2026 병오(丙午): 천간 비견(비겁), 지지 본기 겁재(비겁)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 겁재(비겁), 지지 본기 상관(식상)",
       "午(세운 지지)와 未(월지) 사이에 육합(六合) 관계가 있어요",
-      "午(세운 지지)와 午(일지) 사이에 자형(自刑) 관계가 있어요",
+      "午(세운 지지)와 午(일지) 사이에 같은 글자 관계가 있어요",
+      "未(다가오는 해 세운 지지)와 未(월지) 사이에 같은 글자 관계가 있어요",
       "未(다가오는 해 세운 지지)와 午(일지) 사이에 육합(六合) 관계가 있어요",
     ],
   },
@@ -951,8 +979,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 戌 속 여기 丁 겁재",
-          "월지 未 속 중기 丁 겁재",
+          "년지 戌 속 중기 丁 겁재",
+          "월지 未 속 여기 丁 겁재",
+          "일지 午 속 여기 丙 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -977,7 +1006,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 戌 속 중기 辛 정재",
+          "년지 戌 속 여기 辛 정재",
         ],
         "name": "재성",
         "onStem": true,
@@ -997,7 +1026,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 정인",
+          "월지 未 속 중기 乙 정인",
         ],
         "name": "인성",
         "onStem": true,
@@ -1049,6 +1078,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "丑戌未 삼형 가운데 두 글자라 유파에 따라 형으로 봄",
         "type": "형(刑)",
+      },
+      {
+        "members": [
+          "未(다가오는 해 세운 지지)",
+          "未(월지)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
       {
         "members": [
@@ -1105,20 +1142,20 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "甲",
       "戌",
-      "戊",
       "辛",
       "丁",
+      "戊",
       "未",
-      "己",
       "乙",
+      "己",
       "丙",
       "午",
       "癸",
       "酉",
+      "庚",
       "亥",
       "壬",
       "巳",
-      "庚",
     ],
     "stages": [
       "묘",
@@ -1132,9 +1169,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "겁재",
       "상관",
       "정인",
-      "정관",
-      "편관",
       "비견",
+      "정관",
+      "편재",
+      "편관",
     ],
     "yearMonths": [
       "2000-12",
@@ -1164,7 +1202,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   },
   "focus": {
     "s2": [
-      "일지 오화(午火): 본기 겁재, 지장간 丁 본기 겁재, 己 중기 상관, 12운성 제왕",
+      "일지 오화(午火): 본기 겁재, 지장간 丙 여기 비견, 己 중기 상관, 丁 본기 겁재, 12운성 제왕",
       "戌(년지)와 午(일지) 사이에 반합(半合, 불 기운) 관계가 있어요",
       "未(월지)와 午(일지) 사이에 육합(六合) 관계가 있어요",
       "辛(월간)와 丙(일간) 사이에 천간합(天干合) 관계가 있어요",
@@ -1182,7 +1220,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 비견(비겁), 지지 본기 겁재(비겁)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 겁재(비겁), 지지 본기 상관(식상)",
-      "午(세운 지지)와 午(일지) 사이에 자형(自刑) 관계가 있어요",
+      "午(세운 지지)와 午(일지) 사이에 같은 글자 관계가 있어요",
       "未(다가오는 해 세운 지지)와 午(일지) 사이에 육합(六合) 관계가 있어요",
     ],
   },
@@ -1192,8 +1230,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 戌 속 여기 丁 겁재",
-          "월지 未 속 중기 丁 겁재",
+          "년지 戌 속 중기 丁 겁재",
+          "월지 未 속 여기 丁 겁재",
+          "일지 午 속 여기 丙 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -1218,7 +1257,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 戌 속 중기 辛 정재",
+          "년지 戌 속 여기 辛 정재",
         ],
         "name": "재성",
         "onStem": true,
@@ -1238,7 +1277,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 정인",
+          "월지 未 속 중기 乙 정인",
         ],
         "name": "인성",
         "onStem": true,
@@ -1290,6 +1329,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "丑戌未 삼형 가운데 두 글자라 유파에 따라 형으로 봄",
         "type": "형(刑)",
+      },
+      {
+        "members": [
+          "未(다가오는 해 세운 지지)",
+          "未(월지)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
       {
         "members": [
@@ -1333,6 +1380,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "정인",
         "午",
         "丁",
+        "丙",
         "甲",
         "乙",
       ],
@@ -1356,20 +1404,20 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "甲",
       "戌",
-      "戊",
       "辛",
       "丁",
+      "戊",
       "未",
-      "己",
       "乙",
+      "己",
       "丙",
       "午",
       "癸",
       "酉",
+      "庚",
       "亥",
       "壬",
       "巳",
-      "庚",
     ],
     "stages": [
       "묘",
@@ -1383,9 +1431,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "겁재",
       "상관",
       "정인",
-      "정관",
-      "편관",
       "비견",
+      "정관",
+      "편재",
+      "편관",
     ],
     "yearMonths": [
       "2000-12",
@@ -1411,13 +1460,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "재성: 겉 1개(월간 辛 정재), 지장간 년지 戌 속 중기 辛 정재, 천간에 드러남, 지지에 뿌리 있음",
+      "재성: 겉 1개(월간 辛 정재), 지장간 년지 戌 속 여기 辛 정재, 천간에 드러남, 지지에 뿌리 있음",
       "식상: 겉 2개(년지 戌 식신, 월지 未 상관), 지장간 일지 午 속 중기 己 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상과 재성이 겉에 함께 있어요",
     ],
     "s3": [
-      "비겁: 겉 1개(일지 午 겁재), 지장간 년지 戌 속 여기 丁 겁재, 월지 未 속 중기 丁 겁재, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "인성: 겉 1개(년간 甲 편인), 지장간 월지 未 속 여기 乙 정인, 천간에 드러남, 지지에 뿌리 있음",
+      "비겁: 겉 1개(일지 午 겁재), 지장간 년지 戌 속 중기 丁 겁재, 월지 未 속 여기 丁 겁재, 일지 午 속 여기 丙 비견, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "인성: 겉 1개(년간 甲 편인), 지장간 월지 未 속 중기 乙 정인, 천간에 드러남, 지지에 뿌리 있음",
       "개수만 보면 비겁 1개, 재성 1개",
     ],
     "s4": [
@@ -1435,8 +1484,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 戌 속 여기 丁 겁재",
-          "월지 未 속 중기 丁 겁재",
+          "년지 戌 속 중기 丁 겁재",
+          "월지 未 속 여기 丁 겁재",
+          "일지 午 속 여기 丙 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -1461,7 +1511,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 戌 속 중기 辛 정재",
+          "년지 戌 속 여기 辛 정재",
         ],
         "name": "재성",
         "onStem": true,
@@ -1481,7 +1531,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 정인",
+          "월지 未 속 중기 乙 정인",
         ],
         "name": "인성",
         "onStem": true,
@@ -1533,6 +1583,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "丑戌未 삼형 가운데 두 글자라 유파에 따라 형으로 봄",
         "type": "형(刑)",
+      },
+      {
+        "members": [
+          "未(다가오는 해 세운 지지)",
+          "未(월지)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
       {
         "members": [
@@ -1589,20 +1647,20 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "甲",
       "戌",
-      "戊",
       "辛",
       "丁",
+      "戊",
       "未",
-      "己",
       "乙",
+      "己",
       "丙",
       "午",
       "癸",
       "酉",
+      "庚",
       "亥",
       "壬",
       "巳",
-      "庚",
     ],
     "stages": [
       "묘",
@@ -1616,9 +1674,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "겁재",
       "상관",
       "정인",
-      "정관",
-      "편관",
       "비견",
+      "정관",
+      "편재",
+      "편관",
     ],
     "yearMonths": [
       "2000-12",
@@ -1648,8 +1707,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   },
   "focus": {
     "s2": [
-      "일지 오화(午火): 본기 겁재, 지장간 丁 본기 겁재, 己 중기 상관, 12운성 제왕",
-      "인성: 겉 1개(년간 甲 편인), 지장간 월지 未 속 여기 乙 정인, 천간에 드러남, 지지에 뿌리 있음",
+      "일지 오화(午火): 본기 겁재, 지장간 丙 여기 비견, 己 중기 상관, 丁 본기 겁재, 12운성 제왕",
+      "인성: 겉 1개(년간 甲 편인), 지장간 월지 未 속 중기 乙 정인, 천간에 드러남, 지지에 뿌리 있음",
       "식상: 겉 2개(년지 戌 식신, 월지 未 상관), 지장간 일지 午 속 중기 己 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "00:00~00:32 사이에 태어났다면 일주가 전날 일진인 乙巳(을사)가 돼요.",
     ],
@@ -1666,7 +1725,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 비견(비겁), 지지 본기 겁재(비겁)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 겁재(비겁), 지지 본기 상관(식상)",
-      "午(세운 지지)와 午(일지) 사이에 자형(自刑) 관계가 있어요",
+      "午(세운 지지)와 午(일지) 사이에 같은 글자 관계가 있어요",
+      "丙(세운 천간)와 丙(일간) 사이에 같은 글자 관계가 있어요",
       "未(다가오는 해 세운 지지)와 午(일지) 사이에 육합(六合) 관계가 있어요",
     ],
   },
@@ -1676,8 +1736,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 戌 속 여기 丁 겁재",
-          "월지 未 속 중기 丁 겁재",
+          "년지 戌 속 중기 丁 겁재",
+          "월지 未 속 여기 丁 겁재",
+          "일지 午 속 여기 丙 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -1702,7 +1763,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 戌 속 중기 辛 정재",
+          "년지 戌 속 여기 辛 정재",
         ],
         "name": "재성",
         "onStem": true,
@@ -1722,7 +1783,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 정인",
+          "월지 未 속 중기 乙 정인",
         ],
         "name": "인성",
         "onStem": true,
@@ -1774,6 +1835,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "丑戌未 삼형 가운데 두 글자라 유파에 따라 형으로 봄",
         "type": "형(刑)",
+      },
+      {
+        "members": [
+          "未(다가오는 해 세운 지지)",
+          "未(월지)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
       {
         "members": [
@@ -1834,19 +1903,21 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "卯",
-      "酉",
-      "辛",
       "甲",
+      "酉",
+      "庚",
+      "辛",
       "子",
+      "壬",
       "癸",
       "己",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "丙",
       "辰",
       "午",
       "丁",
+      "戌",
       "未",
     ],
     "stages": [
@@ -1857,11 +1928,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "겁재",
+      "비견",
       "정관",
+      "편관",
       "정인",
+      "편인",
       "정재",
       "식신",
-      "편관",
       "편재",
       "상관",
     ],
@@ -1887,13 +1960,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "관성: 겉 1개(월지 酉 정관), 지장간 시지 巳 속 중기 庚 편관, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "관성: 겉 1개(월지 酉 정관), 지장간 월지 酉 속 여기 庚 편관, 시지 巳 속 중기 庚 편관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상: 겉 1개(시지 巳 식신), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "관성과 식상이 겉에 함께 있어요",
-      "인성: 겉 1개(일지 子 정인), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "인성: 겉 1개(일지 子 정인), 지장간 일지 子 속 여기 壬 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
     ],
     "s3": [
-      "월주 을유(乙酉): 천간 乙 겁재, 지지 酉 본기 정관, 지장간 辛 본기 정관, 12운성 태",
+      "월주 을유(乙酉): 천간 乙 겁재, 지지 酉 본기 정관, 지장간 庚 여기 편관, 辛 본기 정관, 12운성 태",
       "겉에 가장 많은 묶음: 비겁 3개",
     ],
     "s4": [
@@ -1913,7 +1986,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "items": [
       {
         "count": 3,
-        "hidden": [],
+        "hidden": [
+          "년지 卯 속 여기 甲 비견",
+        ],
         "name": "비겁",
         "onStem": true,
         "rooted": true,
@@ -1948,6 +2023,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
+          "월지 酉 속 여기 庚 편관",
           "시지 巳 속 중기 庚 편관",
         ],
         "name": "관성",
@@ -1959,7 +2035,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "일지 子 속 여기 壬 편인",
+        ],
         "name": "인성",
         "onStem": false,
         "rooted": true,
@@ -2040,19 +2118,21 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "卯",
-      "酉",
-      "辛",
       "甲",
+      "酉",
+      "庚",
+      "辛",
       "子",
+      "壬",
       "癸",
       "己",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "丙",
       "辰",
       "午",
       "丁",
+      "戌",
       "未",
     ],
     "stages": [
@@ -2063,11 +2143,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "겁재",
+      "비견",
       "정관",
+      "편관",
       "정인",
+      "편인",
       "정재",
       "식신",
-      "편관",
       "편재",
       "상관",
     ],
@@ -2093,7 +2175,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 자수(子水): 본기 정인, 지장간 癸 본기 정인, 12운성 목욕",
+      "일지 자수(子水): 본기 정인, 지장간 壬 여기 편인, 癸 본기 정인, 12운성 목욕",
       "卯(년지)와 子(일지) 사이에 형(刑) 관계가 있어요",
       "酉(월지)와 子(일지) 사이에 파(破) 관계가 있어요",
       "甲(일간)와 己(시간) 사이에 천간합(天干合) 관계가 있어요",
@@ -2119,7 +2201,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "items": [
       {
         "count": 3,
-        "hidden": [],
+        "hidden": [
+          "년지 卯 속 여기 甲 비견",
+        ],
         "name": "비겁",
         "onStem": true,
         "rooted": true,
@@ -2154,6 +2238,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
+          "월지 酉 속 여기 庚 편관",
           "시지 巳 속 중기 庚 편관",
         ],
         "name": "관성",
@@ -2165,7 +2250,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "일지 子 속 여기 壬 편인",
+        ],
         "name": "인성",
         "onStem": false,
         "rooted": true,
@@ -2234,7 +2321,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "정인",
         "乙",
         "卯",
+        "甲",
         "子",
+        "壬",
       ],
       "s4": [
         "庚辰",
@@ -2256,19 +2345,21 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "卯",
-      "酉",
-      "辛",
       "甲",
+      "酉",
+      "庚",
+      "辛",
       "子",
+      "壬",
       "癸",
       "己",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "丙",
       "辰",
       "午",
       "丁",
+      "戌",
       "未",
     ],
     "stages": [
@@ -2279,11 +2370,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "겁재",
+      "비견",
       "정관",
+      "편관",
       "정인",
+      "편인",
       "정재",
       "식신",
-      "편관",
       "편재",
       "상관",
     ],
@@ -2314,8 +2407,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "식상과 재성이 겉에 함께 있어요",
     ],
     "s3": [
-      "비겁: 겉 3개(년간 乙 겁재, 년지 卯 겁재, 월간 乙 겁재), 지장간 없음, 천간에 드러남, 지지에 뿌리 있음",
-      "인성: 겉 1개(일지 子 정인), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "비겁: 겉 3개(년간 乙 겁재, 년지 卯 겁재, 월간 乙 겁재), 지장간 년지 卯 속 여기 甲 비견, 천간에 드러남, 지지에 뿌리 있음",
+      "인성: 겉 1개(일지 子 정인), 지장간 일지 子 속 여기 壬 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "개수만 보면 비겁 3개, 재성 1개",
     ],
     "s4": [
@@ -2331,7 +2424,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "items": [
       {
         "count": 3,
-        "hidden": [],
+        "hidden": [
+          "년지 卯 속 여기 甲 비견",
+        ],
         "name": "비겁",
         "onStem": true,
         "rooted": true,
@@ -2366,6 +2461,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
+          "월지 酉 속 여기 庚 편관",
           "시지 巳 속 중기 庚 편관",
         ],
         "name": "관성",
@@ -2377,7 +2473,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "일지 子 속 여기 壬 편인",
+        ],
         "name": "인성",
         "onStem": false,
         "rooted": true,
@@ -2460,19 +2558,21 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "卯",
-      "酉",
-      "辛",
       "甲",
+      "酉",
+      "庚",
+      "辛",
       "子",
+      "壬",
       "癸",
       "己",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "丙",
       "辰",
       "午",
       "丁",
+      "戌",
       "未",
     ],
     "stages": [
@@ -2483,11 +2583,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "겁재",
+      "비견",
       "정관",
+      "편관",
       "정인",
+      "편인",
       "정재",
       "식신",
-      "편관",
       "편재",
       "상관",
     ],
@@ -2513,8 +2615,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 자수(子水): 본기 정인, 지장간 癸 본기 정인, 12운성 목욕",
-      "인성: 겉 1개(일지 子 정인), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "일지 자수(子水): 본기 정인, 지장간 壬 여기 편인, 癸 본기 정인, 12운성 목욕",
+      "인성: 겉 1개(일지 子 정인), 지장간 일지 子 속 여기 壬 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상: 겉 1개(시지 巳 식신), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
     ],
     "s3": [
@@ -2540,7 +2642,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "items": [
       {
         "count": 3,
-        "hidden": [],
+        "hidden": [
+          "년지 卯 속 여기 甲 비견",
+        ],
         "name": "비겁",
         "onStem": true,
         "rooted": true,
@@ -2575,6 +2679,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
+          "월지 酉 속 여기 庚 편관",
           "시지 巳 속 중기 庚 편관",
         ],
         "name": "관성",
@@ -2586,7 +2691,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "일지 子 속 여기 壬 편인",
+        ],
         "name": "인성",
         "onStem": false,
         "rooted": true,
@@ -2677,19 +2784,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "庚",
       "申",
-      "壬",
       "戊",
+      "壬",
       "癸",
       "未",
-      "己",
       "丁",
       "乙",
+      "己",
       "寅",
-      "甲",
       "丙",
+      "甲",
       "辰",
       "卯",
       "午",
+      "酉",
+      "辛",
+      "戌",
     ],
     "stages": [
       "장생",
@@ -2699,14 +2809,15 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "편인",
-      "비견",
       "편관",
+      "비견",
       "겁재",
       "정관",
       "정재",
       "상관",
       "식신",
       "편재",
+      "정인",
     ],
     "yearMonths": [
       "1987-08",
@@ -2731,12 +2842,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "focus": {
     "s2": [
       "관성: 겉 2개(월지 未 정관, 시지 未 정관), 지장간 년지 申 속 여기 戊 편관, 일지 寅 속 여기 戊 편관, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "식상: 겉 1개(일지 寅 식신), 지장간 월지 未 속 여기 乙 상관, 시지 未 속 여기 乙 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "식상: 겉 1개(일지 寅 식신), 지장간 월지 未 속 중기 乙 상관, 시지 未 속 중기 乙 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "관성과 식상이 겉에 함께 있어요",
       "인성: 겉 2개(년간 庚 편인, 년지 申 편인), 지장간 없음, 천간에 드러남, 지지에 뿌리 있음",
     ],
     "s3": [
-      "월주 계미(癸未): 천간 癸 겁재, 지지 未 본기 정관, 지장간 己 본기 정관, 丁 중기 정재, 乙 여기 상관, 12운성 양",
+      "월주 계미(癸未): 천간 癸 겁재, 지지 未 본기 정관, 지장간 丁 여기 정재, 乙 중기 상관, 己 본기 정관, 12운성 양",
       "겉에 가장 많은 묶음: 관성·인성 2개",
     ],
     "s4": [
@@ -2749,6 +2860,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 정재(재성), 지지 본기 정관(관성)",
       "午(세운 지지)와 未(월지) 사이에 육합(六合) 관계가 있어요",
       "午(세운 지지)와 寅(일지) 사이에 반합(半合, 불 기운) 관계가 있어요",
+      "未(다가오는 해 세운 지지)와 未(월지) 사이에 같은 글자 관계가 있어요",
     ],
   },
   "groups": {
@@ -2769,8 +2881,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 상관",
-          "시지 未 속 여기 乙 상관",
+          "월지 未 속 중기 乙 상관",
+          "시지 未 속 중기 乙 상관",
         ],
         "name": "식상",
         "onStem": false,
@@ -2782,9 +2894,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 중기 丁 정재",
+          "월지 未 속 여기 丁 정재",
           "일지 寅 속 중기 丙 편재",
-          "시지 未 속 중기 丁 정재",
+          "시지 未 속 여기 丁 정재",
         ],
         "name": "재성",
         "onStem": true,
@@ -2840,6 +2952,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       ],
     },
     "relationsToNatal": [
+      {
+        "members": [
+          "丁未(다가오는 해 세운)",
+          "丁未(시주)",
+        ],
+        "note": "같은 간지가 겹친다는 사실만 봄",
+        "type": "같은 간지",
+      },
+      {
+        "members": [
+          "未(다가오는 해 세운 지지)",
+          "未(월지)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
       {
         "members": [
           "丁(다가오는 해 세운 천간)",
@@ -2903,19 +3031,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "庚",
       "申",
-      "壬",
       "戊",
+      "壬",
       "癸",
       "未",
-      "己",
       "丁",
       "乙",
+      "己",
       "寅",
-      "甲",
       "丙",
+      "甲",
       "辰",
       "卯",
       "午",
+      "酉",
+      "辛",
+      "戌",
     ],
     "stages": [
       "장생",
@@ -2925,14 +3056,15 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "편인",
-      "비견",
       "편관",
+      "비견",
       "겁재",
       "정관",
       "정재",
       "상관",
       "식신",
       "편재",
+      "정인",
     ],
     "yearMonths": [
       "1987-08",
@@ -2956,7 +3088,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 인목(寅木): 본기 식신, 지장간 甲 본기 식신, 丙 중기 편재, 戊 여기 편관, 12운성 병",
+      "일지 인목(寅木): 본기 식신, 지장간 戊 여기 편관, 丙 중기 편재, 甲 본기 식신, 12운성 병",
       "申(년지)와 寅(일지) 사이에 충(沖) 관계가 있어요",
       "申(년지)와 寅(일지) 사이에 형(刑) 관계가 있어요",
       "壬(일간)와 丁(시간) 사이에 천간합(天干合) 관계가 있어요",
@@ -2994,8 +3126,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 상관",
-          "시지 未 속 여기 乙 상관",
+          "월지 未 속 중기 乙 상관",
+          "시지 未 속 중기 乙 상관",
         ],
         "name": "식상",
         "onStem": false,
@@ -3007,9 +3139,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 중기 丁 정재",
+          "월지 未 속 여기 丁 정재",
           "일지 寅 속 중기 丙 편재",
-          "시지 未 속 중기 丁 정재",
+          "시지 未 속 여기 丁 정재",
         ],
         "name": "재성",
         "onStem": true,
@@ -3065,6 +3197,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       ],
     },
     "relationsToNatal": [
+      {
+        "members": [
+          "丁未(다가오는 해 세운)",
+          "丁未(시주)",
+        ],
+        "note": "같은 간지가 겹친다는 사실만 봄",
+        "type": "같은 간지",
+      },
+      {
+        "members": [
+          "未(다가오는 해 세운 지지)",
+          "未(월지)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
       {
         "members": [
           "丁(다가오는 해 세운 천간)",
@@ -3140,19 +3288,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "庚",
       "申",
-      "壬",
       "戊",
+      "壬",
       "癸",
       "未",
-      "己",
       "丁",
       "乙",
+      "己",
       "寅",
-      "甲",
       "丙",
+      "甲",
       "辰",
       "卯",
       "午",
+      "酉",
+      "辛",
+      "戌",
     ],
     "stages": [
       "장생",
@@ -3162,14 +3313,15 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "편인",
-      "비견",
       "편관",
+      "비견",
       "겁재",
       "정관",
       "정재",
       "상관",
       "식신",
       "편재",
+      "정인",
     ],
     "yearMonths": [
       "1987-08",
@@ -3193,8 +3345,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "재성: 겉 1개(시간 丁 정재), 지장간 월지 未 속 중기 丁 정재, 일지 寅 속 중기 丙 편재, 시지 未 속 중기 丁 정재, 천간에 드러남, 지지에 뿌리 있음",
-      "식상: 겉 1개(일지 寅 식신), 지장간 월지 未 속 여기 乙 상관, 시지 未 속 여기 乙 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "재성: 겉 1개(시간 丁 정재), 지장간 월지 未 속 여기 丁 정재, 일지 寅 속 중기 丙 편재, 시지 未 속 여기 丁 정재, 천간에 드러남, 지지에 뿌리 있음",
+      "식상: 겉 1개(일지 寅 식신), 지장간 월지 未 속 중기 乙 상관, 시지 未 속 중기 乙 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상과 재성이 겉에 함께 있어요",
     ],
     "s3": [
@@ -3209,6 +3361,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 편재(재성), 지지 본기 정재(재성)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 정재(재성), 지지 본기 정관(관성)",
+      "丁(다가오는 해 세운 천간)와 丁(시간) 사이에 같은 글자 관계가 있어요",
     ],
   },
   "groups": {
@@ -3229,8 +3382,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 상관",
-          "시지 未 속 여기 乙 상관",
+          "월지 未 속 중기 乙 상관",
+          "시지 未 속 중기 乙 상관",
         ],
         "name": "식상",
         "onStem": false,
@@ -3242,9 +3395,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 중기 丁 정재",
+          "월지 未 속 여기 丁 정재",
           "일지 寅 속 중기 丙 편재",
-          "시지 未 속 중기 丁 정재",
+          "시지 未 속 여기 丁 정재",
         ],
         "name": "재성",
         "onStem": true,
@@ -3300,6 +3453,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       ],
     },
     "relationsToNatal": [
+      {
+        "members": [
+          "丁未(다가오는 해 세운)",
+          "丁未(시주)",
+        ],
+        "note": "같은 간지가 겹친다는 사실만 봄",
+        "type": "같은 간지",
+      },
+      {
+        "members": [
+          "未(다가오는 해 세운 지지)",
+          "未(월지)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
       {
         "members": [
           "丁(다가오는 해 세운 천간)",
@@ -3366,19 +3535,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "庚",
       "申",
-      "壬",
       "戊",
+      "壬",
       "癸",
       "未",
-      "己",
       "丁",
       "乙",
+      "己",
       "寅",
-      "甲",
       "丙",
+      "甲",
       "辰",
       "卯",
       "午",
+      "酉",
+      "辛",
+      "戌",
     ],
     "stages": [
       "장생",
@@ -3388,14 +3560,15 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "편인",
-      "비견",
       "편관",
+      "비견",
       "겁재",
       "정관",
       "정재",
       "상관",
       "식신",
       "편재",
+      "정인",
     ],
     "yearMonths": [
       "1987-08",
@@ -3419,9 +3592,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 인목(寅木): 본기 식신, 지장간 甲 본기 식신, 丙 중기 편재, 戊 여기 편관, 12운성 병",
+      "일지 인목(寅木): 본기 식신, 지장간 戊 여기 편관, 丙 중기 편재, 甲 본기 식신, 12운성 병",
       "인성: 겉 2개(년간 庚 편인, 년지 申 편인), 지장간 없음, 천간에 드러남, 지지에 뿌리 있음",
-      "식상: 겉 1개(일지 寅 식신), 지장간 월지 未 속 여기 乙 상관, 시지 未 속 여기 乙 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "식상: 겉 1개(일지 寅 식신), 지장간 월지 未 속 중기 乙 상관, 시지 未 속 중기 乙 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
     ],
     "s3": [
       "申(년지)와 寅(일지) 사이에 충(沖) 관계가 있어요",
@@ -3459,8 +3632,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 상관",
-          "시지 未 속 여기 乙 상관",
+          "월지 未 속 중기 乙 상관",
+          "시지 未 속 중기 乙 상관",
         ],
         "name": "식상",
         "onStem": false,
@@ -3472,9 +3645,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 중기 丁 정재",
+          "월지 未 속 여기 丁 정재",
           "일지 寅 속 중기 丙 편재",
-          "시지 未 속 중기 丁 정재",
+          "시지 未 속 여기 丁 정재",
         ],
         "name": "재성",
         "onStem": true,
@@ -3530,6 +3703,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       ],
     },
     "relationsToNatal": [
+      {
+        "members": [
+          "丁未(다가오는 해 세운)",
+          "丁未(시주)",
+        ],
+        "note": "같은 간지가 겹친다는 사실만 봄",
+        "type": "같은 간지",
+      },
+      {
+        "members": [
+          "未(다가오는 해 세운 지지)",
+          "未(월지)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
       {
         "members": [
           "丁(다가오는 해 세운 천간)",
@@ -3598,21 +3787,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "戊",
       "午",
-      "丁",
+      "丙",
       "己",
+      "丁",
       "庚",
       "申",
       "壬",
       "酉",
       "辛",
       "巳",
-      "丙",
       "甲",
       "子",
       "癸",
       "乙",
       "丑",
       "寅",
+      "戌",
       "未",
     ],
     "stages": [
@@ -3624,11 +3814,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "겁재",
       "편인",
+      "정인",
       "비견",
       "상관",
       "정재",
       "식신",
-      "정인",
       "정관",
       "편재",
       "편관",
@@ -3656,12 +3846,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "focus": {
     "s2": [
       "관성: 겉 0개, 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 없음",
-      "식상: 겉 3개(월간 庚 상관, 월지 申 상관, 일지 酉 식신), 지장간 시지 巳 속 중기 庚 상관, 천간에 드러남, 지지에 뿌리 있음",
+      "식상: 겉 3개(월간 庚 상관, 월지 申 상관, 일지 酉 식신), 지장간 일지 酉 속 여기 庚 상관, 시지 巳 속 중기 庚 상관, 천간에 드러남, 지지에 뿌리 있음",
       "식상은 겉에 있고 관성은 겉에 없어요",
-      "인성: 겉 2개(년지 午 편인, 시지 巳 정인), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "인성: 겉 2개(년지 午 편인, 시지 巳 정인), 지장간 년지 午 속 여기 丙 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
     ],
     "s3": [
-      "월주 경신(庚申): 천간 庚 상관, 지지 申 본기 상관, 지장간 庚 본기 상관, 壬 중기 정재, 戊 여기 겁재, 12운성 목욕",
+      "월주 경신(庚申): 천간 庚 상관, 지지 申 본기 상관, 지장간 戊 여기 겁재, 壬 중기 정재, 庚 본기 상관, 12운성 목욕",
       "겉에 가장 많은 묶음: 식상 3개",
     ],
     "s4": [
@@ -3694,6 +3884,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 3,
         "hidden": [
+          "일지 酉 속 여기 庚 상관",
           "시지 巳 속 중기 庚 상관",
         ],
         "name": "식상",
@@ -3725,7 +3916,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 2,
-        "hidden": [],
+        "hidden": [
+          "년지 午 속 여기 丙 정인",
+        ],
         "name": "인성",
         "onStem": false,
         "rooted": true,
@@ -3771,6 +3964,15 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "실제로 묶이는지(化)는 판단하지 않음",
         "type": "육합(六合)",
+      },
+      {
+        "members": [
+          "午(년지)",
+          "巳(시지)",
+          "未(다가오는 해 세운 지지)",
+        ],
+        "note": "원국과 운의 글자가 함께 세 글자를 채움. 실제로 묶이는지(化)는 판단하지 않음",
+        "type": "방합(方合, 불 기운)",
       },
     ],
     "starts": "입춘 무렵",
@@ -3820,21 +4022,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "戊",
       "午",
-      "丁",
+      "丙",
       "己",
+      "丁",
       "庚",
       "申",
       "壬",
       "酉",
       "辛",
       "巳",
-      "丙",
       "甲",
       "子",
       "癸",
       "乙",
       "丑",
       "寅",
+      "戌",
       "未",
     ],
     "stages": [
@@ -3846,11 +4049,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "겁재",
       "편인",
+      "정인",
       "비견",
       "상관",
       "정재",
       "식신",
-      "정인",
       "정관",
       "편재",
       "편관",
@@ -3877,7 +4080,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 유금(酉金): 본기 식신, 지장간 辛 본기 식신, 12운성 장생",
+      "일지 유금(酉金): 본기 식신, 지장간 庚 여기 상관, 辛 본기 식신, 12운성 장생",
       "酉(일지)와 巳(시지) 사이에 반합(半合, 쇠 기운) 관계가 있어요",
       "일간 기토(己土): 논밭의 흙",
     ],
@@ -3915,6 +4118,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 3,
         "hidden": [
+          "일지 酉 속 여기 庚 상관",
           "시지 巳 속 중기 庚 상관",
         ],
         "name": "식상",
@@ -3946,7 +4150,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 2,
-        "hidden": [],
+        "hidden": [
+          "년지 午 속 여기 丙 정인",
+        ],
         "name": "인성",
         "onStem": false,
         "rooted": true,
@@ -3992,6 +4198,15 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "실제로 묶이는지(化)는 판단하지 않음",
         "type": "육합(六合)",
+      },
+      {
+        "members": [
+          "午(년지)",
+          "巳(시지)",
+          "未(다가오는 해 세운 지지)",
+        ],
+        "note": "원국과 운의 글자가 함께 세 글자를 채움. 실제로 묶이는지(化)는 판단하지 않음",
+        "type": "방합(方合, 불 기운)",
       },
     ],
     "starts": "입춘 무렵",
@@ -4029,6 +4244,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "己",
         "午",
         "巳",
+        "丙",
       ],
       "s4": [
         "乙丑",
@@ -4052,21 +4268,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "戊",
       "午",
-      "丁",
+      "丙",
       "己",
+      "丁",
       "庚",
       "申",
       "壬",
       "酉",
       "辛",
       "巳",
-      "丙",
       "甲",
       "子",
       "癸",
       "乙",
       "丑",
       "寅",
+      "戌",
       "未",
     ],
     "stages": [
@@ -4078,11 +4295,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "겁재",
       "편인",
+      "정인",
       "비견",
       "상관",
       "정재",
       "식신",
-      "정인",
       "정관",
       "편재",
       "편관",
@@ -4110,13 +4327,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "focus": {
     "s2": [
       "재성: 겉 0개, 지장간 월지 申 속 중기 壬 정재, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "식상: 겉 3개(월간 庚 상관, 월지 申 상관, 일지 酉 식신), 지장간 시지 巳 속 중기 庚 상관, 천간에 드러남, 지지에 뿌리 있음",
+      "식상: 겉 3개(월간 庚 상관, 월지 申 상관, 일지 酉 식신), 지장간 일지 酉 속 여기 庚 상관, 시지 巳 속 중기 庚 상관, 천간에 드러남, 지지에 뿌리 있음",
       "식상은 겉에 있고 재성은 겉에 없어요",
       "재성은 겉에 없고 지장간에 숨어 있어요: 월지 申 속 중기 壬 정재",
     ],
     "s3": [
       "비겁: 겉 2개(년간 戊 겁재, 시간 己 비견), 지장간 년지 午 속 중기 己 비견, 월지 申 속 여기 戊 겁재, 시지 巳 속 여기 戊 겁재, 천간에 드러남, 지지에 뿌리 있음",
-      "인성: 겉 2개(년지 午 편인, 시지 巳 정인), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "인성: 겉 2개(년지 午 편인, 시지 巳 정인), 지장간 년지 午 속 여기 丙 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "개수만 보면 비겁 2개, 재성 0개",
     ],
     "s4": [
@@ -4148,6 +4365,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 3,
         "hidden": [
+          "일지 酉 속 여기 庚 상관",
           "시지 巳 속 중기 庚 상관",
         ],
         "name": "식상",
@@ -4179,7 +4397,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 2,
-        "hidden": [],
+        "hidden": [
+          "년지 午 속 여기 丙 정인",
+        ],
         "name": "인성",
         "onStem": false,
         "rooted": true,
@@ -4225,6 +4445,15 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "실제로 묶이는지(化)는 판단하지 않음",
         "type": "육합(六合)",
+      },
+      {
+        "members": [
+          "午(년지)",
+          "巳(시지)",
+          "未(다가오는 해 세운 지지)",
+        ],
+        "note": "원국과 운의 글자가 함께 세 글자를 채움. 실제로 묶이는지(化)는 판단하지 않음",
+        "type": "방합(方合, 불 기운)",
       },
     ],
     "starts": "입춘 무렵",
@@ -4269,21 +4498,22 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "戊",
       "午",
-      "丁",
+      "丙",
       "己",
+      "丁",
       "庚",
       "申",
       "壬",
       "酉",
       "辛",
       "巳",
-      "丙",
       "甲",
       "子",
       "癸",
       "乙",
       "丑",
       "寅",
+      "戌",
       "未",
     ],
     "stages": [
@@ -4295,11 +4525,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "겁재",
       "편인",
+      "정인",
       "비견",
       "상관",
       "정재",
       "식신",
-      "정인",
       "정관",
       "편재",
       "편관",
@@ -4326,9 +4556,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 유금(酉金): 본기 식신, 지장간 辛 본기 식신, 12운성 장생",
-      "인성: 겉 2개(년지 午 편인, 시지 巳 정인), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "식상: 겉 3개(월간 庚 상관, 월지 申 상관, 일지 酉 식신), 지장간 시지 巳 속 중기 庚 상관, 천간에 드러남, 지지에 뿌리 있음",
+      "일지 유금(酉金): 본기 식신, 지장간 庚 여기 상관, 辛 본기 식신, 12운성 장생",
+      "인성: 겉 2개(년지 午 편인, 시지 巳 정인), 지장간 년지 午 속 여기 丙 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "식상: 겉 3개(월간 庚 상관, 월지 申 상관, 일지 酉 식신), 지장간 일지 酉 속 여기 庚 상관, 시지 巳 속 중기 庚 상관, 천간에 드러남, 지지에 뿌리 있음",
     ],
     "s3": [
       "酉(일지)와 巳(시지) 사이에 반합(半合, 쇠 기운) 관계가 있어요",
@@ -4364,6 +4594,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 3,
         "hidden": [
+          "일지 酉 속 여기 庚 상관",
           "시지 巳 속 중기 庚 상관",
         ],
         "name": "식상",
@@ -4395,7 +4626,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 2,
-        "hidden": [],
+        "hidden": [
+          "년지 午 속 여기 丙 정인",
+        ],
         "name": "인성",
         "onStem": false,
         "rooted": true,
@@ -4442,6 +4675,15 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "note": "실제로 묶이는지(化)는 판단하지 않음",
         "type": "육합(六合)",
       },
+      {
+        "members": [
+          "午(년지)",
+          "巳(시지)",
+          "未(다가오는 해 세운 지지)",
+        ],
+        "note": "원국과 운의 글자가 함께 세 글자를 채움. 실제로 묶이는지(化)는 판단하지 않음",
+        "type": "방합(方合, 불 기운)",
+      },
     ],
     "starts": "입춘 무렵",
     "stemTenGod": "편인",
@@ -4466,6 +4708,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "戊",
         "乙",
         "卯",
+        "甲",
       ],
       "s3": [
         "월주",
@@ -4494,14 +4737,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "卯",
+      "甲",
       "庚",
       "辰",
-      "戊",
       "癸",
+      "戊",
       "丁",
       "巳",
       "丙",
-      "甲",
       "申",
       "壬",
       "酉",
@@ -4519,12 +4762,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "식신",
+      "상관",
       "정인",
       "정관",
       "비견",
       "편재",
       "정재",
-      "상관",
       "겁재",
       "편인",
       "편관",
@@ -4553,12 +4796,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "focus": {
     "s2": [
       "관성: 겉 1개(월지 辰 정관), 지장간 시지 巳 속 여기 戊 정관, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "식상: 겉 3개(년간 乙 식신, 년지 卯 식신, 일지 卯 식신), 지장간 월지 辰 속 중기 乙 식신, 천간에 드러남, 지지에 뿌리 있음",
+      "식상: 겉 3개(년간 乙 식신, 년지 卯 식신, 일지 卯 식신), 지장간 년지 卯 속 여기 甲 상관, 월지 辰 속 여기 乙 식신, 일지 卯 속 여기 甲 상관, 천간에 드러남, 지지에 뿌리 있음",
       "관성과 식상이 겉에 함께 있어요",
       "인성: 겉 1개(월간 庚 정인), 지장간 시지 巳 속 중기 庚 정인, 천간에 드러남, 지지에 뿌리 있음",
     ],
     "s3": [
-      "월주 경진(庚辰): 천간 庚 정인, 지지 辰 본기 정관, 지장간 戊 본기 정관, 乙 중기 식신, 癸 여기 비견, 12운성 양",
+      "월주 경진(庚辰): 천간 庚 정인, 지지 辰 본기 정관, 지장간 乙 여기 식신, 癸 중기 비견, 戊 본기 정관, 12운성 양",
       "겉에 가장 많은 묶음: 식상 3개",
     ],
     "s4": [
@@ -4579,7 +4822,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "월지 辰 속 여기 癸 비견",
+          "월지 辰 속 중기 癸 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -4589,7 +4832,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 3,
         "hidden": [
-          "월지 辰 속 중기 乙 식신",
+          "년지 卯 속 여기 甲 상관",
+          "월지 辰 속 여기 乙 식신",
+          "일지 卯 속 여기 甲 상관",
         ],
         "name": "식상",
         "onStem": true,
@@ -4670,6 +4915,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
           "癸(일간)",
         ],
         "type": "천간충(天干沖)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(시간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
     ],
     "starts": "입춘 무렵",
@@ -4718,14 +4971,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "卯",
+      "甲",
       "庚",
       "辰",
-      "戊",
       "癸",
+      "戊",
       "丁",
       "巳",
       "丙",
-      "甲",
       "申",
       "壬",
       "酉",
@@ -4743,12 +4996,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "식신",
+      "상관",
       "정인",
       "정관",
       "비견",
       "편재",
       "정재",
-      "상관",
       "겁재",
       "편인",
       "편관",
@@ -4776,7 +5029,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 묘목(卯木): 본기 식신, 지장간 乙 본기 식신, 12운성 장생",
+      "일지 묘목(卯木): 본기 식신, 지장간 甲 여기 상관, 乙 본기 식신, 12운성 장생",
       "辰(월지)와 卯(일지) 사이에 해(害) 관계가 있어요",
       "癸(일간)와 丁(시간) 사이에 천간충(天干沖) 관계가 있어요",
       "일간 계수(癸水): 이슬과 빗물",
@@ -4802,7 +5055,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "월지 辰 속 여기 癸 비견",
+          "월지 辰 속 중기 癸 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -4812,7 +5065,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 3,
         "hidden": [
-          "월지 辰 속 중기 乙 식신",
+          "년지 卯 속 여기 甲 상관",
+          "월지 辰 속 여기 乙 식신",
+          "일지 卯 속 여기 甲 상관",
         ],
         "name": "식상",
         "onStem": true,
@@ -4894,6 +5149,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "type": "천간충(天干沖)",
       },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(시간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
     ],
     "starts": "입춘 무렵",
     "stemTenGod": "편재",
@@ -4918,6 +5181,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "巳",
         "乙",
         "卯",
+        "甲",
       ],
       "s3": [
         "비겁",
@@ -4951,14 +5215,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "卯",
+      "甲",
       "庚",
       "辰",
-      "戊",
       "癸",
+      "戊",
       "丁",
       "巳",
       "丙",
-      "甲",
       "申",
       "壬",
       "酉",
@@ -4976,12 +5240,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "식신",
+      "상관",
       "정인",
       "정관",
       "비견",
       "편재",
       "정재",
-      "상관",
       "겁재",
       "편인",
       "편관",
@@ -5010,11 +5274,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "focus": {
     "s2": [
       "재성: 겉 2개(시간 丁 편재, 시지 巳 정재), 지장간 없음, 천간에 드러남, 지지에 뿌리 있음",
-      "식상: 겉 3개(년간 乙 식신, 년지 卯 식신, 일지 卯 식신), 지장간 월지 辰 속 중기 乙 식신, 천간에 드러남, 지지에 뿌리 있음",
+      "식상: 겉 3개(년간 乙 식신, 년지 卯 식신, 일지 卯 식신), 지장간 년지 卯 속 여기 甲 상관, 월지 辰 속 여기 乙 식신, 일지 卯 속 여기 甲 상관, 천간에 드러남, 지지에 뿌리 있음",
       "식상과 재성이 겉에 함께 있어요",
     ],
     "s3": [
-      "비겁: 겉 0개, 지장간 월지 辰 속 여기 癸 비견, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "비겁: 겉 0개, 지장간 월지 辰 속 중기 癸 비견, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "인성: 겉 1개(월간 庚 정인), 지장간 시지 巳 속 중기 庚 정인, 천간에 드러남, 지지에 뿌리 있음",
       "개수만 보면 비겁 0개, 재성 2개",
     ],
@@ -5025,6 +5289,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 정재(재성), 지지 본기 편재(재성)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 편재(재성), 지지 본기 편관(관성)",
+      "丁(다가오는 해 세운 천간)와 丁(시간) 사이에 같은 글자 관계가 있어요",
     ],
   },
   "groups": {
@@ -5033,7 +5298,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "월지 辰 속 여기 癸 비견",
+          "월지 辰 속 중기 癸 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -5043,7 +5308,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 3,
         "hidden": [
-          "월지 辰 속 중기 乙 식신",
+          "년지 卯 속 여기 甲 상관",
+          "월지 辰 속 여기 乙 식신",
+          "일지 卯 속 여기 甲 상관",
         ],
         "name": "식상",
         "onStem": true,
@@ -5124,6 +5391,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
           "癸(일간)",
         ],
         "type": "천간충(天干沖)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(시간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
     ],
     "starts": "입춘 무렵",
@@ -5170,14 +5445,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "卯",
+      "甲",
       "庚",
       "辰",
-      "戊",
       "癸",
+      "戊",
       "丁",
       "巳",
       "丙",
-      "甲",
       "申",
       "壬",
       "酉",
@@ -5195,12 +5470,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     ],
     "tenGods": [
       "식신",
+      "상관",
       "정인",
       "정관",
       "비견",
       "편재",
       "정재",
-      "상관",
       "겁재",
       "편인",
       "편관",
@@ -5228,9 +5503,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 묘목(卯木): 본기 식신, 지장간 乙 본기 식신, 12운성 장생",
+      "일지 묘목(卯木): 본기 식신, 지장간 甲 여기 상관, 乙 본기 식신, 12운성 장생",
       "인성: 겉 1개(월간 庚 정인), 지장간 시지 巳 속 중기 庚 정인, 천간에 드러남, 지지에 뿌리 있음",
-      "식상: 겉 3개(년간 乙 식신, 년지 卯 식신, 일지 卯 식신), 지장간 월지 辰 속 중기 乙 식신, 천간에 드러남, 지지에 뿌리 있음",
+      "식상: 겉 3개(년간 乙 식신, 년지 卯 식신, 일지 卯 식신), 지장간 년지 卯 속 여기 甲 상관, 월지 辰 속 여기 乙 식신, 일지 卯 속 여기 甲 상관, 천간에 드러남, 지지에 뿌리 있음",
     ],
     "s3": [
       "辰(월지)와 卯(일지) 사이에 해(害) 관계가 있어요",
@@ -5255,7 +5530,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "월지 辰 속 여기 癸 비견",
+          "월지 辰 속 중기 癸 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -5265,7 +5540,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 3,
         "hidden": [
-          "월지 辰 속 중기 乙 식신",
+          "년지 卯 속 여기 甲 상관",
+          "월지 辰 속 여기 乙 식신",
+          "일지 卯 속 여기 甲 상관",
         ],
         "name": "식상",
         "onStem": true,
@@ -5346,6 +5623,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
           "癸(일간)",
         ],
         "type": "천간충(天干沖)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(시간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
     ],
     "starts": "입춘 무렵",
@@ -5400,9 +5685,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "丁",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "庚",
+      "丙",
       "午",
       "己",
       "酉",
@@ -5410,8 +5695,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "乙",
       "戌",
       "亥",
-      "壬",
       "甲",
+      "壬",
       "子",
       "癸",
       "未",
@@ -5425,13 +5710,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "비견",
       "겁재",
-      "정재",
       "상관",
+      "정재",
       "식신",
       "편재",
       "편인",
-      "정관",
       "정인",
+      "정관",
       "편관",
     ],
     "yearMonths": [
@@ -5462,7 +5747,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "인성: 겉 1개(시간 乙 편인), 지장간 없음, 천간에 드러남, 지지에 뿌리 없음",
     ],
     "s3": [
-      "월주 병오(丙午): 천간 丙 겁재, 지지 午 본기 비견, 지장간 丁 본기 비견, 己 중기 식신, 12운성 건록",
+      "월주 병오(丙午): 천간 丙 겁재, 지지 午 본기 비견, 지장간 丙 여기 겁재, 己 중기 식신, 丁 본기 비견, 12운성 건록",
       "겉에 가장 많은 묶음: 비겁 5개",
     ],
     "s4": [
@@ -5471,7 +5756,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 겁재(비겁), 지지 본기 비견(비겁)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 비견(비겁), 지지 본기 식신(식상)",
-      "午(세운 지지)와 午(월지) 사이에 자형(自刑) 관계가 있어요",
+      "午(세운 지지)와 午(월지) 사이에 같은 글자 관계가 있어요",
       "未(다가오는 해 세운 지지)와 午(월지) 사이에 육합(六合) 관계가 있어요",
     ],
   },
@@ -5480,7 +5765,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "items": [
       {
         "count": 5,
-        "hidden": [],
+        "hidden": [
+          "월지 午 속 여기 丙 겁재",
+        ],
         "name": "비겁",
         "onStem": true,
         "rooted": true,
@@ -5508,6 +5795,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "count": 1,
         "hidden": [
           "년지 巳 속 중기 庚 정재",
+          "일지 酉 속 여기 庚 정재",
           "시지 巳 속 중기 庚 정재",
         ],
         "name": "재성",
@@ -5555,6 +5843,31 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "실제로 묶이는지(化)는 판단하지 않음",
         "type": "육합(六合)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(년간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(일간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
+      {
+        "members": [
+          "巳(년지·시지)",
+          "午(월지)",
+          "未(다가오는 해 세운 지지)",
+        ],
+        "note": "원국과 운의 글자가 함께 세 글자를 채움. 실제로 묶이는지(化)는 판단하지 않음",
+        "type": "방합(方合, 불 기운)",
       },
     ],
     "starts": "입춘 무렵",
@@ -5604,9 +5917,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "丁",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "庚",
+      "丙",
       "午",
       "己",
       "酉",
@@ -5614,8 +5927,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "乙",
       "戌",
       "亥",
-      "壬",
       "甲",
+      "壬",
       "子",
       "癸",
       "未",
@@ -5629,13 +5942,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "비견",
       "겁재",
-      "정재",
       "상관",
+      "정재",
       "식신",
       "편재",
       "편인",
-      "정관",
       "정인",
+      "정관",
       "편관",
     ],
     "yearMonths": [
@@ -5660,7 +5973,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 유금(酉金): 본기 편재, 지장간 辛 본기 편재, 12운성 장생",
+      "일지 유금(酉金): 본기 편재, 지장간 庚 여기 정재, 辛 본기 편재, 12운성 장생",
       "巳(년지)와 酉(일지) 사이에 반합(半合, 쇠 기운) 관계가 있어요",
       "酉(일지)와 巳(시지) 사이에 반합(半合, 쇠 기운) 관계가 있어요",
       "일간 정화(丁火): 촛불과 등불",
@@ -5682,7 +5995,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "items": [
       {
         "count": 5,
-        "hidden": [],
+        "hidden": [
+          "월지 午 속 여기 丙 겁재",
+        ],
         "name": "비겁",
         "onStem": true,
         "rooted": true,
@@ -5710,6 +6025,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "count": 1,
         "hidden": [
           "년지 巳 속 중기 庚 정재",
+          "일지 酉 속 여기 庚 정재",
           "시지 巳 속 중기 庚 정재",
         ],
         "name": "재성",
@@ -5757,6 +6073,31 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "실제로 묶이는지(化)는 판단하지 않음",
         "type": "육합(六合)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(년간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(일간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
+      {
+        "members": [
+          "巳(년지·시지)",
+          "午(월지)",
+          "未(다가오는 해 세운 지지)",
+        ],
+        "note": "원국과 운의 글자가 함께 세 글자를 채움. 실제로 묶이는지(化)는 판단하지 않음",
+        "type": "방합(方合, 불 기운)",
       },
     ],
     "starts": "입춘 무렵",
@@ -5818,9 +6159,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "丁",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "庚",
+      "丙",
       "午",
       "己",
       "酉",
@@ -5828,8 +6169,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "乙",
       "戌",
       "亥",
-      "壬",
       "甲",
+      "壬",
       "子",
       "癸",
       "未",
@@ -5843,13 +6184,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "비견",
       "겁재",
-      "정재",
       "상관",
+      "정재",
       "식신",
       "편재",
       "편인",
-      "정관",
       "정인",
+      "정관",
       "편관",
     ],
     "yearMonths": [
@@ -5874,12 +6215,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "재성: 겉 1개(일지 酉 편재), 지장간 년지 巳 속 중기 庚 정재, 시지 巳 속 중기 庚 정재, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "재성: 겉 1개(일지 酉 편재), 지장간 년지 巳 속 중기 庚 정재, 일지 酉 속 여기 庚 정재, 시지 巳 속 중기 庚 정재, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상: 겉 0개, 지장간 년지 巳 속 여기 戊 상관, 월지 午 속 중기 己 식신, 시지 巳 속 여기 戊 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "재성은 겉에 있고 식상은 겉에 없어요",
     ],
     "s3": [
-      "비겁: 겉 5개(년간 丁 비견, 년지 巳 겁재, 월간 丙 겁재, 월지 午 비견, 시지 巳 겁재), 지장간 없음, 천간에 드러남, 지지에 뿌리 있음",
+      "비겁: 겉 5개(년간 丁 비견, 년지 巳 겁재, 월간 丙 겁재, 월지 午 비견, 시지 巳 겁재), 지장간 월지 午 속 여기 丙 겁재, 천간에 드러남, 지지에 뿌리 있음",
       "인성: 겉 1개(시간 乙 편인), 지장간 없음, 천간에 드러남, 지지에 뿌리 없음",
       "개수만 보면 비겁 5개, 재성 1개",
     ],
@@ -5896,7 +6237,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "items": [
       {
         "count": 5,
-        "hidden": [],
+        "hidden": [
+          "월지 午 속 여기 丙 겁재",
+        ],
         "name": "비겁",
         "onStem": true,
         "rooted": true,
@@ -5924,6 +6267,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "count": 1,
         "hidden": [
           "년지 巳 속 중기 庚 정재",
+          "일지 酉 속 여기 庚 정재",
           "시지 巳 속 중기 庚 정재",
         ],
         "name": "재성",
@@ -5971,6 +6315,31 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "실제로 묶이는지(化)는 판단하지 않음",
         "type": "육합(六合)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(년간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(일간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
+      {
+        "members": [
+          "巳(년지·시지)",
+          "午(월지)",
+          "未(다가오는 해 세운 지지)",
+        ],
+        "note": "원국과 운의 글자가 함께 세 글자를 채움. 실제로 묶이는지(化)는 판단하지 않음",
+        "type": "방합(方合, 불 기운)",
       },
     ],
     "starts": "입춘 무렵",
@@ -6017,9 +6386,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "丁",
       "巳",
-      "丙",
-      "庚",
       "戊",
+      "庚",
+      "丙",
       "午",
       "己",
       "酉",
@@ -6027,8 +6396,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "乙",
       "戌",
       "亥",
-      "壬",
       "甲",
+      "壬",
       "子",
       "癸",
       "未",
@@ -6042,13 +6411,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "비견",
       "겁재",
-      "정재",
       "상관",
+      "정재",
       "식신",
       "편재",
       "편인",
-      "정관",
       "정인",
+      "정관",
       "편관",
     ],
     "yearMonths": [
@@ -6073,7 +6442,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 유금(酉金): 본기 편재, 지장간 辛 본기 편재, 12운성 장생",
+      "일지 유금(酉金): 본기 편재, 지장간 庚 여기 정재, 辛 본기 편재, 12운성 장생",
       "인성: 겉 1개(시간 乙 편인), 지장간 없음, 천간에 드러남, 지지에 뿌리 없음",
       "식상: 겉 0개, 지장간 년지 巳 속 여기 戊 상관, 월지 午 속 중기 己 식신, 시지 巳 속 여기 戊 상관, 천간에 드러나지 않음, 지지에 뿌리 있음",
     ],
@@ -6088,6 +6457,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 겁재(비겁), 지지 본기 비견(비겁)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 비견(비겁), 지지 본기 식신(식상)",
+      "丁(다가오는 해 세운 천간)와 丁(일간) 사이에 같은 글자 관계가 있어요",
     ],
   },
   "groups": {
@@ -6095,7 +6465,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "items": [
       {
         "count": 5,
-        "hidden": [],
+        "hidden": [
+          "월지 午 속 여기 丙 겁재",
+        ],
         "name": "비겁",
         "onStem": true,
         "rooted": true,
@@ -6123,6 +6495,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "count": 1,
         "hidden": [
           "년지 巳 속 중기 庚 정재",
+          "일지 酉 속 여기 庚 정재",
           "시지 巳 속 중기 庚 정재",
         ],
         "name": "재성",
@@ -6170,6 +6543,31 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "실제로 묶이는지(化)는 판단하지 않음",
         "type": "육합(六合)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(년간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(일간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
+      },
+      {
+        "members": [
+          "巳(년지·시지)",
+          "午(월지)",
+          "未(다가오는 해 세운 지지)",
+        ],
+        "note": "원국과 운의 글자가 함께 세 글자를 채움. 실제로 묶이는지(化)는 판단하지 않음",
+        "type": "방합(方合, 불 기운)",
       },
     ],
     "starts": "입춘 무렵",
@@ -6222,20 +6620,21 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "丁",
       "卯",
+      "甲",
       "乙",
       "未",
       "己",
       "酉",
-      "辛",
       "庚",
+      "辛",
       "辰",
-      "戊",
       "癸",
-      "甲",
+      "戊",
       "壬",
       "寅",
       "丙",
       "午",
+      "戌",
     ],
     "stages": [
       "건록",
@@ -6246,12 +6645,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "식신",
       "비견",
+      "겁재",
       "편재",
       "편관",
       "정관",
       "정재",
       "편인",
-      "겁재",
       "정인",
       "상관",
     ],
@@ -6277,13 +6676,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "관성: 겉 2개(일지 酉 편관, 시간 庚 정관), 지장간 없음, 천간에 드러남, 지지에 뿌리 있음",
-      "식상: 겉 2개(년간 丁 식신, 월간 丁 식신), 지장간 월지 未 속 중기 丁 식신, 천간에 드러남, 지지에 뿌리 있음",
+      "관성: 겉 2개(일지 酉 편관, 시간 庚 정관), 지장간 일지 酉 속 여기 庚 정관, 천간에 드러남, 지지에 뿌리 있음",
+      "식상: 겉 2개(년간 丁 식신, 월간 丁 식신), 지장간 월지 未 속 여기 丁 식신, 천간에 드러남, 지지에 뿌리 있음",
       "관성과 식상이 겉에 함께 있어요",
-      "인성: 겉 0개, 지장간 시지 辰 속 여기 癸 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "인성: 겉 0개, 지장간 시지 辰 속 중기 癸 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
     ],
     "s3": [
-      "월주 정미(丁未): 천간 丁 식신, 지지 未 본기 편재, 지장간 己 본기 편재, 丁 중기 식신, 乙 여기 비견, 12운성 양",
+      "월주 정미(丁未): 천간 丁 식신, 지지 未 본기 편재, 지장간 丁 여기 식신, 乙 중기 비견, 己 본기 편재, 12운성 양",
       "겉에 가장 많은 묶음: 식상·재성·관성 2개",
     ],
     "s4": [
@@ -6295,6 +6694,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "올해 세운 2026 병오(丙午): 천간 상관(식상), 지지 본기 식신(식상)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 식신(식상), 지지 본기 편재(재성)",
       "午(세운 지지)와 未(월지) 사이에 육합(六合) 관계가 있어요",
+      "未(다가오는 해 세운 지지)와 未(월지) 사이에 같은 글자 관계가 있어요",
     ],
   },
   "groups": {
@@ -6303,8 +6703,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 비견",
-          "시지 辰 속 중기 乙 비견",
+          "년지 卯 속 여기 甲 겁재",
+          "월지 未 속 중기 乙 비견",
+          "시지 辰 속 여기 乙 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -6316,7 +6717,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 2,
         "hidden": [
-          "월지 未 속 중기 丁 식신",
+          "월지 未 속 여기 丁 식신",
         ],
         "name": "식상",
         "onStem": true,
@@ -6339,7 +6740,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 2,
-        "hidden": [],
+        "hidden": [
+          "일지 酉 속 여기 庚 정관",
+        ],
         "name": "관성",
         "onStem": true,
         "rooted": true,
@@ -6351,7 +6754,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "시지 辰 속 여기 癸 편인",
+          "시지 辰 속 중기 癸 편인",
         ],
         "name": "인성",
         "onStem": false,
@@ -6377,9 +6780,24 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
           "note": "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음",
           "type": "반합(半合, 나무 기운)",
         },
+        {
+          "members": [
+            "丁(다가오는 해 세운 천간)",
+            "癸(대운 천간)",
+          ],
+          "type": "천간충(天干沖)",
+        },
       ],
     },
     "relationsToNatal": [
+      {
+        "members": [
+          "丁未(다가오는 해 세운)",
+          "丁未(월주)",
+        ],
+        "note": "같은 간지가 겹친다는 사실만 봄",
+        "type": "같은 간지",
+      },
       {
         "members": [
           "未(다가오는 해 세운 지지)",
@@ -6387,6 +6805,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음",
         "type": "반합(半合, 나무 기운)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(년간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
     ],
     "starts": "입춘 무렵",
@@ -6435,20 +6861,21 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "丁",
       "卯",
+      "甲",
       "乙",
       "未",
       "己",
       "酉",
-      "辛",
       "庚",
+      "辛",
       "辰",
-      "戊",
       "癸",
-      "甲",
+      "戊",
       "壬",
       "寅",
       "丙",
       "午",
+      "戌",
     ],
     "stages": [
       "건록",
@@ -6459,12 +6886,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "식신",
       "비견",
+      "겁재",
       "편재",
       "편관",
       "정관",
       "정재",
       "편인",
-      "겁재",
       "정인",
       "상관",
     ],
@@ -6490,7 +6917,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 유금(酉金): 본기 편관, 지장간 辛 본기 편관, 12운성 절",
+      "일지 유금(酉金): 본기 편관, 지장간 庚 여기 정관, 辛 본기 편관, 12운성 절",
       "卯(년지)와 酉(일지) 사이에 충(沖) 관계가 있어요",
       "酉(일지)와 辰(시지) 사이에 육합(六合) 관계가 있어요",
       "乙(일간)와 庚(시간) 사이에 천간합(天干合) 관계가 있어요",
@@ -6515,8 +6942,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 비견",
-          "시지 辰 속 중기 乙 비견",
+          "년지 卯 속 여기 甲 겁재",
+          "월지 未 속 중기 乙 비견",
+          "시지 辰 속 여기 乙 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -6528,7 +6956,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 2,
         "hidden": [
-          "월지 未 속 중기 丁 식신",
+          "월지 未 속 여기 丁 식신",
         ],
         "name": "식상",
         "onStem": true,
@@ -6551,7 +6979,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 2,
-        "hidden": [],
+        "hidden": [
+          "일지 酉 속 여기 庚 정관",
+        ],
         "name": "관성",
         "onStem": true,
         "rooted": true,
@@ -6563,7 +6993,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "시지 辰 속 여기 癸 편인",
+          "시지 辰 속 중기 癸 편인",
         ],
         "name": "인성",
         "onStem": false,
@@ -6589,9 +7019,24 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
           "note": "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음",
           "type": "반합(半合, 나무 기운)",
         },
+        {
+          "members": [
+            "丁(다가오는 해 세운 천간)",
+            "癸(대운 천간)",
+          ],
+          "type": "천간충(天干沖)",
+        },
       ],
     },
     "relationsToNatal": [
+      {
+        "members": [
+          "丁未(다가오는 해 세운)",
+          "丁未(월주)",
+        ],
+        "note": "같은 간지가 겹친다는 사실만 봄",
+        "type": "같은 간지",
+      },
       {
         "members": [
           "未(다가오는 해 세운 지지)",
@@ -6599,6 +7044,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음",
         "type": "반합(半合, 나무 기운)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(년간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
     ],
     "starts": "입춘 무렵",
@@ -6632,6 +7085,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "편인",
         "정인",
         "卯",
+        "甲",
         "乙",
         "癸",
       ],
@@ -6657,20 +7111,21 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "丁",
       "卯",
+      "甲",
       "乙",
       "未",
       "己",
       "酉",
-      "辛",
       "庚",
+      "辛",
       "辰",
-      "戊",
       "癸",
-      "甲",
+      "戊",
       "壬",
       "寅",
       "丙",
       "午",
+      "戌",
     ],
     "stages": [
       "건록",
@@ -6681,12 +7136,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "식신",
       "비견",
+      "겁재",
       "편재",
       "편관",
       "정관",
       "정재",
       "편인",
-      "겁재",
       "정인",
       "상관",
     ],
@@ -6713,12 +7168,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "focus": {
     "s2": [
       "재성: 겉 2개(월지 未 편재, 시지 辰 정재), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "식상: 겉 2개(년간 丁 식신, 월간 丁 식신), 지장간 월지 未 속 중기 丁 식신, 천간에 드러남, 지지에 뿌리 있음",
+      "식상: 겉 2개(년간 丁 식신, 월간 丁 식신), 지장간 월지 未 속 여기 丁 식신, 천간에 드러남, 지지에 뿌리 있음",
       "식상과 재성이 겉에 함께 있어요",
     ],
     "s3": [
-      "비겁: 겉 1개(년지 卯 비견), 지장간 월지 未 속 여기 乙 비견, 시지 辰 속 중기 乙 비견, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "인성: 겉 0개, 지장간 시지 辰 속 여기 癸 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "비겁: 겉 1개(년지 卯 비견), 지장간 년지 卯 속 여기 甲 겁재, 월지 未 속 중기 乙 비견, 시지 辰 속 여기 乙 비견, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "인성: 겉 0개, 지장간 시지 辰 속 중기 癸 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "개수만 보면 비겁 1개, 재성 2개",
     ],
     "s4": [
@@ -6730,6 +7185,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "올해 세운 2026 병오(丙午): 천간 상관(식상), 지지 본기 식신(식상)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 식신(식상), 지지 본기 편재(재성)",
       "午(세운 지지)와 未(월지) 사이에 육합(六合) 관계가 있어요",
+      "未(다가오는 해 세운 지지)와 未(월지) 사이에 같은 글자 관계가 있어요",
     ],
   },
   "groups": {
@@ -6738,8 +7194,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 비견",
-          "시지 辰 속 중기 乙 비견",
+          "년지 卯 속 여기 甲 겁재",
+          "월지 未 속 중기 乙 비견",
+          "시지 辰 속 여기 乙 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -6751,7 +7208,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 2,
         "hidden": [
-          "월지 未 속 중기 丁 식신",
+          "월지 未 속 여기 丁 식신",
         ],
         "name": "식상",
         "onStem": true,
@@ -6774,7 +7231,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 2,
-        "hidden": [],
+        "hidden": [
+          "일지 酉 속 여기 庚 정관",
+        ],
         "name": "관성",
         "onStem": true,
         "rooted": true,
@@ -6786,7 +7245,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "시지 辰 속 여기 癸 편인",
+          "시지 辰 속 중기 癸 편인",
         ],
         "name": "인성",
         "onStem": false,
@@ -6812,9 +7271,24 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
           "note": "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음",
           "type": "반합(半合, 나무 기운)",
         },
+        {
+          "members": [
+            "丁(다가오는 해 세운 천간)",
+            "癸(대운 천간)",
+          ],
+          "type": "천간충(天干沖)",
+        },
       ],
     },
     "relationsToNatal": [
+      {
+        "members": [
+          "丁未(다가오는 해 세운)",
+          "丁未(월주)",
+        ],
+        "note": "같은 간지가 겹친다는 사실만 봄",
+        "type": "같은 간지",
+      },
       {
         "members": [
           "未(다가오는 해 세운 지지)",
@@ -6822,6 +7296,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음",
         "type": "반합(半合, 나무 기운)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(년간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
     ],
     "starts": "입춘 무렵",
@@ -6874,20 +7356,21 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "丁",
       "卯",
+      "甲",
       "乙",
       "未",
       "己",
       "酉",
-      "辛",
       "庚",
+      "辛",
       "辰",
-      "戊",
       "癸",
-      "甲",
+      "戊",
       "壬",
       "寅",
       "丙",
       "午",
+      "戌",
     ],
     "stages": [
       "건록",
@@ -6898,12 +7381,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "tenGods": [
       "식신",
       "비견",
+      "겁재",
       "편재",
       "편관",
       "정관",
       "정재",
       "편인",
-      "겁재",
       "정인",
       "상관",
     ],
@@ -6929,9 +7412,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "일지 유금(酉金): 본기 편관, 지장간 辛 본기 편관, 12운성 절",
-      "인성: 겉 0개, 지장간 시지 辰 속 여기 癸 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "식상: 겉 2개(년간 丁 식신, 월간 丁 식신), 지장간 월지 未 속 중기 丁 식신, 천간에 드러남, 지지에 뿌리 있음",
+      "일지 유금(酉金): 본기 편관, 지장간 庚 여기 정관, 辛 본기 편관, 12운성 절",
+      "인성: 겉 0개, 지장간 시지 辰 속 중기 癸 편인, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "식상: 겉 2개(년간 丁 식신, 월간 丁 식신), 지장간 월지 未 속 여기 丁 식신, 천간에 드러남, 지지에 뿌리 있음",
     ],
     "s3": [
       "卯(년지)와 酉(일지) 사이에 충(沖) 관계가 있어요",
@@ -6954,8 +7437,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "월지 未 속 여기 乙 비견",
-          "시지 辰 속 중기 乙 비견",
+          "년지 卯 속 여기 甲 겁재",
+          "월지 未 속 중기 乙 비견",
+          "시지 辰 속 여기 乙 비견",
         ],
         "name": "비겁",
         "onStem": false,
@@ -6967,7 +7451,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 2,
         "hidden": [
-          "월지 未 속 중기 丁 식신",
+          "월지 未 속 여기 丁 식신",
         ],
         "name": "식상",
         "onStem": true,
@@ -6990,7 +7474,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 2,
-        "hidden": [],
+        "hidden": [
+          "일지 酉 속 여기 庚 정관",
+        ],
         "name": "관성",
         "onStem": true,
         "rooted": true,
@@ -7002,7 +7488,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "시지 辰 속 여기 癸 편인",
+          "시지 辰 속 중기 癸 편인",
         ],
         "name": "인성",
         "onStem": false,
@@ -7028,9 +7514,24 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
           "note": "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음",
           "type": "반합(半合, 나무 기운)",
         },
+        {
+          "members": [
+            "丁(다가오는 해 세운 천간)",
+            "癸(대운 천간)",
+          ],
+          "type": "천간충(天干沖)",
+        },
       ],
     },
     "relationsToNatal": [
+      {
+        "members": [
+          "丁未(다가오는 해 세운)",
+          "丁未(월주)",
+        ],
+        "note": "같은 간지가 겹친다는 사실만 봄",
+        "type": "같은 간지",
+      },
       {
         "members": [
           "未(다가오는 해 세운 지지)",
@@ -7038,6 +7539,14 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         ],
         "note": "세 글자 가운데 두 글자. 실제로 묶이는지는 판단하지 않음",
         "type": "반합(半合, 나무 기운)",
+      },
+      {
+        "members": [
+          "丁(다가오는 해 세운 천간)",
+          "丁(년간)",
+        ],
+        "note": "같은 글자가 겹친다는 사실만 봄",
+        "type": "같은 글자",
       },
     ],
     "starts": "입춘 무렵",
@@ -7095,21 +7604,23 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "丑",
-      "己",
       "癸",
       "辛",
+      "己",
       "甲",
       "申",
-      "庚",
-      "壬",
       "戊",
+      "壬",
+      "庚",
       "午",
+      "丙",
       "丁",
       "辰",
       "卯",
       "寅",
-      "丙",
       "巳",
+      "酉",
+      "戌",
       "未",
     ],
     "stages": [
@@ -7124,8 +7635,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "정인",
       "식신",
       "편인",
-      "비견",
       "편관",
+      "비견",
       "정재",
       "편재",
     ],
@@ -7152,13 +7663,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "인성: 겉 1개(월지 申 편인), 지장간 년지 丑 속 여기 辛 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "인성: 겉 1개(월지 申 편인), 지장간 년지 丑 속 중기 辛 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "관성: 겉 1개(년지 丑 정관), 지장간 월지 申 속 여기 戊 편관, 일지 午 속 중기 己 정관, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상: 겉 2개(년간 乙 상관, 월간 甲 식신), 지장간 없음, 천간에 드러남, 지지에 뿌리 없음",
       "관성과 식상이 겉에 함께 있어요",
     ],
     "s3": [
-      "월주 갑신(甲申): 천간 甲 식신, 지지 申 본기 편인, 지장간 庚 본기 편인, 壬 중기 비견, 戊 여기 편관, 12운성 장생",
+      "월주 갑신(甲申): 천간 甲 식신, 지지 申 본기 편인, 지장간 戊 여기 편관, 壬 중기 비견, 庚 본기 편인, 12운성 장생",
       "겉에 가장 많은 묶음: 식상 2개",
     ],
     "s4": [
@@ -7169,7 +7680,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 편재(재성), 지지 본기 정재(재성)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 정재(재성), 지지 본기 정관(관성)",
-      "午(세운 지지)와 午(일지) 사이에 자형(自刑) 관계가 있어요",
+      "午(세운 지지)와 午(일지) 사이에 같은 글자 관계가 있어요",
       "未(다가오는 해 세운 지지)와 午(일지) 사이에 육합(六合) 관계가 있어요",
     ],
   },
@@ -7179,7 +7690,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "년지 丑 속 중기 癸 겁재",
+          "년지 丑 속 여기 癸 겁재",
           "월지 申 속 중기 壬 비견",
         ],
         "name": "비겁",
@@ -7200,7 +7711,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "일지 午 속 여기 丙 편재",
+        ],
         "name": "재성",
         "onStem": false,
         "rooted": true,
@@ -7224,7 +7737,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 丑 속 여기 辛 정인",
+          "년지 丑 속 중기 辛 정인",
         ],
         "name": "인성",
         "onStem": false,
@@ -7334,21 +7847,23 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "丑",
-      "己",
       "癸",
       "辛",
+      "己",
       "甲",
       "申",
-      "庚",
-      "壬",
       "戊",
+      "壬",
+      "庚",
       "午",
+      "丙",
       "丁",
       "辰",
       "卯",
       "寅",
-      "丙",
       "巳",
+      "酉",
+      "戌",
       "未",
     ],
     "stages": [
@@ -7363,8 +7878,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "정인",
       "식신",
       "편인",
-      "비견",
       "편관",
+      "비견",
       "정재",
       "편재",
     ],
@@ -7395,7 +7910,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   },
   "focus": {
     "s2": [
-      "일지 오화(午火): 본기 정재, 지장간 丁 본기 정재, 己 중기 정관, 12운성 태",
+      "일지 오화(午火): 본기 정재, 지장간 丙 여기 편재, 己 중기 정관, 丁 본기 정재, 12운성 태",
       "丑(년지)와 午(일지) 사이에 해(害) 관계가 있어요",
       "일간 임수(壬水): 큰 강과 바다",
       "00:00~00:32 사이에 태어났다면 일주가 전날 일진인 辛巳(신사)가 돼요.",
@@ -7412,7 +7927,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 편재(재성), 지지 본기 정재(재성)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 정재(재성), 지지 본기 정관(관성)",
-      "午(세운 지지)와 午(일지) 사이에 자형(自刑) 관계가 있어요",
+      "午(세운 지지)와 午(일지) 사이에 같은 글자 관계가 있어요",
       "未(다가오는 해 세운 지지)와 午(일지) 사이에 육합(六合) 관계가 있어요",
     ],
   },
@@ -7422,7 +7937,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "년지 丑 속 중기 癸 겁재",
+          "년지 丑 속 여기 癸 겁재",
           "월지 申 속 중기 壬 비견",
         ],
         "name": "비겁",
@@ -7443,7 +7958,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "일지 午 속 여기 丙 편재",
+        ],
         "name": "재성",
         "onStem": false,
         "rooted": true,
@@ -7467,7 +7984,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 丑 속 여기 辛 정인",
+          "년지 丑 속 중기 辛 정인",
         ],
         "name": "인성",
         "onStem": false,
@@ -7551,6 +8068,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
         "식신",
         "상관",
         "午",
+        "丙",
         "乙",
         "甲",
       ],
@@ -7588,21 +8106,23 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "丑",
-      "己",
       "癸",
       "辛",
+      "己",
       "甲",
       "申",
-      "庚",
-      "壬",
       "戊",
+      "壬",
+      "庚",
       "午",
+      "丙",
       "丁",
       "辰",
       "卯",
       "寅",
-      "丙",
       "巳",
+      "酉",
+      "戌",
       "未",
     ],
     "stages": [
@@ -7617,8 +8137,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "정인",
       "식신",
       "편인",
-      "비견",
       "편관",
+      "비견",
       "정재",
       "편재",
     ],
@@ -7645,13 +8165,13 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   "dayWindow": null,
   "focus": {
     "s2": [
-      "재성: 겉 1개(일지 午 정재), 지장간 없음, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "재성: 겉 1개(일지 午 정재), 지장간 일지 午 속 여기 丙 편재, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상: 겉 2개(년간 乙 상관, 월간 甲 식신), 지장간 없음, 천간에 드러남, 지지에 뿌리 없음",
       "식상과 재성이 겉에 함께 있어요",
     ],
     "s3": [
-      "비겁: 겉 0개, 지장간 년지 丑 속 중기 癸 겁재, 월지 申 속 중기 壬 비견, 천간에 드러나지 않음, 지지에 뿌리 있음",
-      "인성: 겉 1개(월지 申 편인), 지장간 년지 丑 속 여기 辛 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "비겁: 겉 0개, 지장간 년지 丑 속 여기 癸 겁재, 월지 申 속 중기 壬 비견, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "인성: 겉 1개(월지 申 편인), 지장간 년지 丑 속 중기 辛 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "개수만 보면 비겁 0개, 재성 1개",
     ],
     "s4": [
@@ -7662,7 +8182,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 편재(재성), 지지 본기 정재(재성)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 정재(재성), 지지 본기 정관(관성)",
-      "午(세운 지지)와 午(일지) 사이에 자형(自刑) 관계가 있어요",
+      "午(세운 지지)와 午(일지) 사이에 같은 글자 관계가 있어요",
       "未(다가오는 해 세운 지지)와 午(일지) 사이에 육합(六合) 관계가 있어요",
     ],
   },
@@ -7672,7 +8192,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "년지 丑 속 중기 癸 겁재",
+          "년지 丑 속 여기 癸 겁재",
           "월지 申 속 중기 壬 비견",
         ],
         "name": "비겁",
@@ -7693,7 +8213,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "일지 午 속 여기 丙 편재",
+        ],
         "name": "재성",
         "onStem": false,
         "rooted": true,
@@ -7717,7 +8239,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 丑 속 여기 辛 정인",
+          "년지 丑 속 중기 辛 정인",
         ],
         "name": "인성",
         "onStem": false,
@@ -7823,21 +8345,23 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "glyphs": [
       "乙",
       "丑",
-      "己",
       "癸",
       "辛",
+      "己",
       "甲",
       "申",
-      "庚",
-      "壬",
       "戊",
+      "壬",
+      "庚",
       "午",
+      "丙",
       "丁",
       "辰",
       "卯",
       "寅",
-      "丙",
       "巳",
+      "酉",
+      "戌",
       "未",
     ],
     "stages": [
@@ -7852,8 +8376,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "정인",
       "식신",
       "편인",
-      "비견",
       "편관",
+      "비견",
       "정재",
       "편재",
     ],
@@ -7884,8 +8408,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
   },
   "focus": {
     "s2": [
-      "일지 오화(午火): 본기 정재, 지장간 丁 본기 정재, 己 중기 정관, 12운성 태",
-      "인성: 겉 1개(월지 申 편인), 지장간 년지 丑 속 여기 辛 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
+      "일지 오화(午火): 본기 정재, 지장간 丙 여기 편재, 己 중기 정관, 丁 본기 정재, 12운성 태",
+      "인성: 겉 1개(월지 申 편인), 지장간 년지 丑 속 중기 辛 정인, 천간에 드러나지 않음, 지지에 뿌리 있음",
       "식상: 겉 2개(년간 乙 상관, 월간 甲 식신), 지장간 없음, 천간에 드러남, 지지에 뿌리 없음",
       "00:00~00:32 사이에 태어났다면 일주가 전날 일진인 辛巳(신사)가 돼요.",
     ],
@@ -7901,7 +8425,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
     "s5": [
       "올해 세운 2026 병오(丙午): 천간 편재(재성), 지지 본기 정재(재성)",
       "다가오는 해 세운 2027 정미(丁未), 입춘 무렵부터: 천간 정재(재성), 지지 본기 정관(관성)",
-      "午(세운 지지)와 午(일지) 사이에 자형(自刑) 관계가 있어요",
+      "午(세운 지지)와 午(일지) 사이에 같은 글자 관계가 있어요",
       "丙(세운 천간)와 壬(일간) 사이에 천간충(天干沖) 관계가 있어요",
       "未(다가오는 해 세운 지지)와 午(일지) 사이에 육합(六合) 관계가 있어요",
       "丁(다가오는 해 세운 천간)와 壬(일간) 사이에 천간합(天干合) 관계가 있어요",
@@ -7913,7 +8437,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 0,
         "hidden": [
-          "년지 丑 속 중기 癸 겁재",
+          "년지 丑 속 여기 癸 겁재",
           "월지 申 속 중기 壬 비견",
         ],
         "name": "비겁",
@@ -7934,7 +8458,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       },
       {
         "count": 1,
-        "hidden": [],
+        "hidden": [
+          "일지 午 속 여기 丙 편재",
+        ],
         "name": "재성",
         "onStem": false,
         "rooted": true,
@@ -7958,7 +8484,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       {
         "count": 1,
         "hidden": [
-          "년지 丑 속 여기 辛 정인",
+          "년지 丑 속 중기 辛 정인",
         ],
         "name": "인성",
         "onStem": false,

@@ -7,7 +7,7 @@ import type { FollowUpAnswer, SajuReading, SajuTeaserDraft } from "@/lib/ai/sche
 import { SOFT_PREFIX, aiTellViolations } from "@/lib/ai/style";
 import {
   HEDGE, OTHER, QUOTED, TIME_UNKNOWN_LINE, TOLERANCE, actionVarietyViolations, allowedFactViolations, charCount, lengthCheck, mentions,
-  modelNameViolations, moneyPushSentences, observationViolations, sentences, voiceViolations,
+  modelNameViolations, monthlyViolations, moneyPushSentences, observationViolations, sentences, voiceViolations,
 } from "@/lib/ai/validate";
 
 /**
@@ -284,6 +284,7 @@ export function validateSajuTopicReading(r: SajuReading, f: SajuTopicFactSet): s
   observationViolations(r.observation.body, out);
   if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
   const bodies = r.sections.map((s) => s.body);
+  monthlyViolations(headings, bodies, f, out);
   const all = [...bodies, r.observation.body, ...r.followUps].join("\n");
   const masked = maskGanzhiReadings(all);
   allowedFactViolations(masked, f.allowed, out, topicUserText(f), { marriage: marriageTopic(f) });

@@ -1,7 +1,9 @@
-import { computeChart } from "@starlog/core";
+import { TEMPLATES, computeChart } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
-import { buildMatchFacts, elementMeeting } from "./prompts/match";
+import { mockMatchPartA } from "./mockPremium";
+import { buildMatchFacts, elementMeeting, matchCardsContext, matchCardsShared } from "./prompts/match";
+import { validateMatchPartA } from "./validatePremium";
 
 const chart = (y: number, m: number, d: number, extra: Partial<typeof DEFAULT_SAJU_FORM> = {}) =>
   computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: y, month: m, day: d, ...extra }));
@@ -56,6 +58,48 @@ describe("match facts", () => {
     expect(f.allowed.years).toEqual(expect.arrayContaining([1990, 1992, 2026]));
     expect(f.label).toBe("민지");
     for (const line of f.pair.luck.sharedYears) expect(line).toMatch(/^20\d\d년 /);
+  });
+
+  it("calls the same 일지 in two charts 같은 글자, never 자형, and gives neither chart the standard reading's monthly (M3)", () => {
+    const f = buildMatchFacts(chart(1990, 1, 5), chart(1990, 1, 17, { gender: "male" }), { relation: "friend" }, NOW); // 庚午 × 壬午
+    expect(f.pair.dayBranches.map((r) => `${r.type} ${r.members.join("-")}`)).toEqual(["같은 글자 午(나의 일지)-午(그 사람의 일지)"]);
+    expect(JSON.stringify(f.pair)).not.toContain("자형");
+    expect([f.me.monthly, f.partner.monthly]).toEqual([undefined, undefined]);
+  });
+
+  it("lets the 기둥 절 name 같은 간지·같은 글자 when that is all two charts share", () => {
+    const f = buildMatchFacts(me, chart(1996, 10, 18, { gender: "male" }), { relation: "friend" }, NOW); // 丙子 戊戌 戊子: my 월주 is their 년주
+    expect(new Set(f.pair.pillars.map((r) => r.type))).toEqual(new Set(["같은 간지", "같은 글자"]));
+    expect(validateMatchPartA(mockMatchPartA(f), f).filter((v) => v.includes("계산된 관계"))).toEqual([]);
+  });
+
+  it("names a whole pillar both charts hold 같은 간지, in place of its two 같은 글자 (both 년주 庚午)", () => {
+    const f = buildMatchFacts(chart(1990, 3, 1), chart(1990, 5, 1, { gender: "male" }), { relation: "friend" }, NOW); // 庚午 戊寅 乙丑 × 庚午 庚辰 丙寅
+    const lines = f.pair.pillars.map((r) => `${r.type} ${r.members.join("-")}`);
+    expect(lines).toContain("같은 간지 庚午(나의 년주)-庚午(그 사람의 년주)");
+    expect(lines).not.toContain("같은 글자 庚(나의 년간)-庚(그 사람의 년간)");
+    expect(lines).not.toContain("같은 글자 午(나의 년지)-午(그 사람의 년지)");
+    expect(lines).toContain("같은 글자 庚(나의 년간)-庚(그 사람의 월간)");
+    // the 기둥 절 may name it in those words
+    expect(validateMatchPartA({ ...mockMatchPartA(f), pillars: { body: "두 사람의 년주는 같은 간지예요." } }, f).filter((v) => v.includes("계산된 관계"))).toEqual([]);
+  });
+
+  it("counts a year for both only when its 세운 meets each 일지 by a relation; 같은 글자 is no meeting (M2)", () => {
+    // 辛未 × 壬午: 2026 午 and 2027 未 each meet one 일지 by 육합 and the other by 같은 글자 alone
+    expect(buildMatchFacts(chart(1990, 1, 6), chart(1990, 1, 17, { gender: "male" }), { relation: "friend" }, NOW).pair.luck.sharedYears).toEqual([]);
+    // 丙子 × 辛未: 2026 午 clashes with 子 and combines with 未; 2027 未 harms 子 but is only 같은 글자 to 未
+    expect(buildMatchFacts(chart(1990, 1, 11), chart(1990, 1, 6), { relation: "friend" }, NOW).pair.luck.sharedYears)
+      .toEqual(["2026년 병오(丙午): 나의 일지와 충(沖), 그 사람의 일지와 육합(六合)"]);
+  });
+
+  it("gives the five cards the element relations of the two sides, the middle and the last two places (C1, B6)", () => {
+    const ids = ["wands-03", "cups-05", "swords-02", "pentacles-04", "major-19-sun"];
+    const ctx = matchCardsContext("lover", ids.map((cardId, slot) => ({ cardId, position: TEMPLATES.match.positions[slot]!, orientation: "upright" as const, slot })));
+    const shared = matchCardsShared(buildMatchFacts(me, chart(1992, 2, 26), { relation: "lover" }, NOW), ctx);
+    expect(shared).toContain("<spread_facts>");
+    expect(shared).toContain("나와 그 사람 쪽 원소 관계: 나의 마음(완드 3) × 그 사람 쪽 흐름(컵 5) 서로 부딪히는 짝");
+    expect(shared).toContain("두 사람 사이 기준 원소 관계: 두 사람 사이(검 2) × 나의 마음(완드 3) 서로 돕는 짝, 두 사람 사이(검 2) × 그 사람 쪽 흐름(컵 5) 무난한 짝");
+    expect(shared).toContain("엇갈리는 지점과 함께 가꿀 방향 원소 관계: 엇갈리는 지점(펜타클 4) × 함께 가꿀 방향(태양) 무난한 짝");
   });
 
   it("states element meetings both ways", () => {

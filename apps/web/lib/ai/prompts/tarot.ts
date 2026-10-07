@@ -116,6 +116,10 @@ export const POSITION_LENS: Record<string, string> = {
 
 const REVERSED_MODE_KO: Record<ReversedMode, string> = { blocked: "막힘", internalized: "안으로", excess: "과함", waning: "약해짐" };
 const ELEMENT_KO: Record<string, string> = { fire: "불", water: "물", air: "공기", earth: "흙" };
+const RANK_KO: Record<string, string> = { ace: "에이스", page: "시종", knight: "기사", queen: "여왕", king: "왕" };
+
+/** A minor card's rank as the model sees it: 에이스, 2–10, 시종, 기사, 여왕, 왕 (never the KB's internal 11–14). */
+const rankOf = (kb: KbCard) => RANK_KO[kb.rank ?? ""] ?? kb.rank ?? String(kb.number);
 
 /**
  * The catalog topic for a request. Topic ids repeat across `who` groups, so the template of the
@@ -388,7 +392,7 @@ export function cardBrief(card: TarotCardContext, ctx: TarotContext): Record<str
   const { kb, orientation } = card;
   const drawnIds = new Set(ctx.cards.map((c) => c.cardId));
   const keep = (text: string | null | undefined) => (text && onTopic(ctx, text) ? text : null);
-  const number = kb.arcana === "major" ? `${kb.roman ?? kb.number} (${kb.number})` : `${kb.number}`;
+  const number = kb.arcana === "major" ? `${kb.roman ?? kb.number} (${kb.number})` : rankOf(kb);
   return {
     name: kb.names.ko,
     en: kb.names.en,
@@ -428,12 +432,27 @@ const RELATION = (a: string, b: string): string => {
   return "무난한 짝";
 };
 
+/** Position pairs whose element relation a larger spread reads, by slot: the 10-card crossing, axes and staff, the 5-card 궁합. */
+const ELEMENT_PAIRS: Partial<Record<TemplateId, Array<[string, Array<[number, number]>]>>> = {
+  "deep-tarot": [
+    ["교차", [[0, 1]]],
+    ["세로축", [[2, 0], [0, 4]]],
+    ["가로축", [[3, 0], [0, 5]]],
+    ["지팡이", [[6, 7], [7, 8], [8, 9]]],
+  ],
+  match: [
+    ["나와 그 사람 쪽", [[0, 1]]],
+    ["두 사람 사이 기준", [[2, 0], [2, 1]]],
+    ["엇갈리는 지점과 함께 가꿀 방향", [[3, 4]]],
+  ],
+};
+
 export function spreadFacts(ctx: TarotContext): string {
   const cards = ctx.cards;
   const lines: string[] = [];
   const majors = cards.filter((c) => c.kb.arcana === "major").length;
   lines.push(`메이저 ${majors}장 / 전체 ${cards.length}장`);
-  lines.push(`번호: ${cards.map((c) => (c.kb.arcana === "major" ? c.kb.number : `${c.name}(${c.kb.number})`)).join(", ")}`);
+  lines.push(`번호·계급: ${cards.map((c) => (c.kb.arcana === "major" ? c.kb.number : c.name)).join(", ")}`);
   lines.push(`원소: ${cards.map((c) => `${ELEMENT_KO[c.kb.element] ?? c.kb.element}(${c.name})`).join(" · ")}`);
   const reversed = cards.filter((c) => c.orientation === "reversed");
   lines.push(`역방향: ${reversed.length}장${reversed.length ? ` (${reversed.map((c) => c.position).join(", ")})` : ""}`);
@@ -441,9 +460,18 @@ export function spreadFacts(ctx: TarotContext): string {
     const [left, center, right] = cards as [TarotCardContext, TarotCardContext, TarotCardContext];
     lines.push(`가운데 카드(${center.name}) 기준 원소 관계: 첫째 카드와 ${RELATION(center.kb.element, left.kb.element)}, 셋째 카드와 ${RELATION(center.kb.element, right.kb.element)}`);
   }
-  const numbers = new Map<number, string[]>();
-  for (const c of cards) numbers.set(c.kb.number, [...(numbers.get(c.kb.number) ?? []), c.name]);
-  for (const [n, names] of numbers) if (names.length > 1) lines.push(`같은 번호 ${n}: ${names.join(", ")}`);
+  const at = (c: TarotCardContext) => `${c.position}(${c.name})`;
+  for (const [label, slots] of ELEMENT_PAIRS[ctx.templateId] ?? []) {
+    const read = slots.flatMap(([i, j]) => {
+      const [a, b] = [cards[i], cards[j]];
+      return a && b ? [`${at(a)} × ${at(b)} ${RELATION(a.kb.element, b.kb.element)}`] : [];
+    });
+    if (read.length) lines.push(`${label} 원소 관계: ${read.join(", ")}`);
+  }
+  // A major is drawn once and pairs with no minor; minors pair by rank (에이스, 2–10, 시종, 기사, 여왕, 왕).
+  const ranks = new Map<string, string[]>();
+  for (const c of cards) if (c.kb.arcana === "minor") ranks.set(rankOf(c.kb), [...(ranks.get(rankOf(c.kb)) ?? []), c.name]);
+  for (const [rank, names] of ranks) if (names.length > 1) lines.push(`${/^\d+$/.test(rank) ? "같은 숫자" : "같은 계급"} ${rank}: ${names.join(", ")}`);
   const suits = new Map<string, number>();
   for (const c of cards) if (c.kb.suit) suits.set(c.kb.suit, (suits.get(c.kb.suit) ?? 0) + 1);
   for (const [suit, count] of suits) if (count > 1) lines.push(`같은 수트 ${suit} ${count}장`);

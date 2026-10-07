@@ -1,3 +1,3 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`주제별 사주 prompts (spec §7.5) > builds the topic system prompt on the unchanged preamble, blind to model names, without 베타 1`] = `"e59cd5521f76169b936bb2374022593c0a396fecf9c483525e89e10fec8b4831"`;
+exports[`주제별 사주 prompts (spec §7.5) > builds the topic system prompt on the unchanged preamble, blind to model names, without 베타 1`] = `"6f16cb02036964963ec19fab87d63ba13462aeee20d9b6dd0926a97d7e86f563"`;
