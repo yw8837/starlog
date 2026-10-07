@@ -87,6 +87,75 @@ describe("W-07: a first visit starts with the date and the gender empty", () => 
   });
 });
 
+describe("윤달: 평달 / 윤달 / 모름 for lunar dates", () => {
+  const leapGroup = () => screen.queryByRole("group", { name: "평달 또는 윤달" });
+  const pressed = (name: string) => screen.getByRole("button", { name, pressed: true });
+
+  it("offers the three for 음력 only, 평달 first, and echoes 모름", () => {
+    render(<SajuForm />);
+    expect(leapGroup()).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "음력" }));
+    expect([...leapGroup()!.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["평달", "윤달", "모름"]);
+    expect(pressed("평달")).toBeTruthy();
+    pickDate(1990, 1, 1);
+    fireEvent.click(screen.getByRole("button", { name: "모름" }));
+    expect(screen.getByText("→ 1990년 1월 1일 (음력 · 윤달 모름)")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "윤달" }));
+    expect(screen.getByText("→ 1990년 윤1월 1일 (음력)")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "양력" }));
+    expect(leapGroup()).toBeNull();
+  });
+
+  it("saves 모름 with the profile", () => {
+    render(<SajuForm />);
+    fireEvent.click(screen.getByRole("button", { name: "음력" }));
+    pickDate(2023, 2, 15);
+    fireEvent.click(screen.getByRole("button", { name: "모름" }));
+    fireEvent.click(screen.getByRole("button", { name: "여성" }));
+    consent();
+    submit();
+    expect(router.push).toHaveBeenCalledWith("/saju/chart");
+    expect(JSON.parse(localStorage.getItem("starlog.saju-profile")!)).toMatchObject({ calendar: "lunar", year: 2023, month: 2, day: 15, isLeapMonth: false, leapMonthUnknown: true });
+  });
+});
+
+describe("태어난 곳: every 시·군, grouped by 시·도", () => {
+  it("credits OpenStreetMap under the select (ODbL), linking its copyright page in a new tab so the form stays", () => {
+    render(<SajuForm />);
+    const link = screen.getByRole("link", { name: "© OpenStreetMap 기여자" });
+    expect(link.getAttribute("href")).toBe("https://www.openstreetmap.org/copyright");
+    expect([link.getAttribute("target"), link.getAttribute("rel")]).toEqual(["_blank", "noopener noreferrer"]);
+    expect(link.closest("p")?.textContent).toBe("출생지 좌표 © OpenStreetMap 기여자");
+    // right under the select
+    expect(screen.getByLabelText("태어난 곳").closest("span")?.nextElementSibling).toBe(link.closest("p"));
+  });
+
+  const place = () => screen.getByLabelText("태어난 곳") as HTMLSelectElement;
+
+  it("lists 161 places in 10 groups and saves the picked 시·군", () => {
+    render(<SajuForm />);
+    expect([...place().querySelectorAll("optgroup")].map((g) => g.label)).toEqual(["특별시·광역시", "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"]);
+    expect(place().querySelectorAll("option")).toHaveLength(161);
+    fireEvent.change(place(), { target: { value: "gyeongbuk-pohang" } });
+    expect(place().selectedOptions[0]?.textContent).toBe("경북 포항");
+    pickDate(1992, 8, 3);
+    fireEvent.click(screen.getByRole("button", { name: "남성" }));
+    consent();
+    submit();
+    expect(JSON.parse(localStorage.getItem("starlog.saju-profile")!)).toMatchObject({ placeId: "gyeongbuk-pohang" });
+  });
+
+  it("shows a profile saved with a 시·도 id as the city it stood for, and keeps the id until another pick", () => {
+    saveSajuProfile({ ...DEFAULT_SAJU_FORM, year: 1993, month: 8, day: 17, gender: "male", placeId: "gyeongbuk" });
+    render(<SajuForm />);
+    expect(place().value).toBe("gyeongbuk-andong");
+    expect(place().selectedOptions[0]?.textContent).toBe("경북 안동");
+    consent();
+    submit();
+    expect(JSON.parse(localStorage.getItem("starlog.saju-profile")!)).toMatchObject({ placeId: "gyeongbuk" });
+  });
+});
+
 describe("the selects before hydration", () => {
   // The first render after hydration (the saved profile and chips read) puts the draft's values back on
   // every select, so a pick made before it was lost, and a year read back as "" became year 0 (e2e on next dev).

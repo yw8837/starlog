@@ -1,7 +1,9 @@
 import { KOREA_LONGITUDE_RANGE, SajuError, computeChart, type SajuErrorCode } from "@starlog/core";
 import { describe, expect, it } from "vitest";
+import { BIRTH_PLACE_ROWS } from "./birthPlaces";
 import {
   BIRTH_PLACES,
+  BIRTH_PLACE_GROUPS,
   DEFAULT_SAJU_FORM,
   EMPTY_SAJU_DRAFT,
   SAJU_ERROR_MESSAGES,
@@ -14,46 +16,63 @@ import {
   draftConfirmation,
   draftDays,
   draftOf,
+  findPlace,
+  leapChoice,
   profileSummary,
   sanitizeSajuForm,
   showLeapMonthOption,
   toSajuInput,
   withDate,
   withDraftDate,
+  withLeapChoice,
   type SajuForm,
 } from "./sajuForm";
 
 const TODAY = { year: 2026, month: 9, day: 30 };
 
 describe("BIRTH_PLACES", () => {
-  it("lists the 17 시도 once each, 서울 first", () => {
-    expect(BIRTH_PLACES).toHaveLength(17);
-    expect(BIRTH_PLACES[0]).toEqual({ id: "seoul", label: "서울", longitude: 126.978 });
-    expect(new Set(BIRTH_PLACES.map((p) => p.id)).size).toBe(17);
-    expect(new Set(BIRTH_PLACES.map((p) => p.label)).size).toBe(17);
+  it("lists every 시·군, each 특별시·광역시 and 세종 once (161), grouped by 시·도, 서울 first", () => {
+    expect(BIRTH_PLACES).toHaveLength(161);
+    expect(BIRTH_PLACES[0]).toEqual({ id: "seoul", label: "서울", longitude: 126.978, group: "특별시·광역시" });
+    expect(new Set(BIRTH_PLACES.map((p) => p.id)).size).toBe(161);
+    expect(new Set(BIRTH_PLACES.map((p) => p.label)).size).toBe(161);
+    // 75 시 and 76 군 of the 도, 제주시·서귀포시, and the eight cities
+    expect(BIRTH_PLACE_GROUPS.map((g) => [g.label, g.places.length])).toEqual([
+      ["특별시·광역시", 8], ["경기", 31], ["강원", 18], ["충북", 11], ["충남", 15], ["전북", 14], ["전남", 22], ["경북", 22], ["경남", 18], ["제주", 2],
+    ]);
+    expect(BIRTH_PLACE_GROUPS.flatMap((g) => g.places)).toEqual(BIRTH_PLACES);
   });
 
-  it("uses the agreed reference longitudes", () => {
-    const byLabel = Object.fromEntries(BIRTH_PLACES.map((p) => [p.label, p.longitude]));
-    expect(byLabel).toEqual({
-      서울: 126.978,
-      부산: 129.075,
-      대구: 128.601,
-      인천: 126.705,
-      광주: 126.851,
-      대전: 127.385,
-      울산: 129.311,
-      세종: 127.289,
-      "경기(수원)": 127.029,
-      "강원(춘천)": 127.73,
-      "충북(청주)": 127.489,
-      "충남(홍성)": 126.661,
-      "전북(전주)": 127.148,
-      "전남(무안)": 126.462,
-      "경북(안동)": 128.729,
-      "경남(창원)": 128.681,
-      제주: 126.531,
-    });
+  it("labels each 시·군 with its 도 (경북 포항), the cities by name", () => {
+    expect(BIRTH_PLACE_GROUPS[0]!.places.map((p) => p.label)).toEqual(["서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종"]);
+    for (const place of BIRTH_PLACES.filter((p) => p.group !== "특별시·광역시")) expect(place.label.startsWith(`${place.group} `), place.label).toBe(true);
+    for (const label of ["경북 포항", "경기 수원", "강원 고성", "경남 고성", "경기 광주", "제주 제주시", "제주 서귀포"]) expect(BIRTH_PLACES.map((p) => p.label)).toContain(label);
+  });
+
+  it("takes each longitude from the sourced rows (the 청사's OpenStreetMap object, 0.001° steps)", () => {
+    expect(BIRTH_PLACES.map((p) => p.longitude)).toEqual(BIRTH_PLACE_ROWS.map((row) => row.longitude));
+    for (const row of BIRTH_PLACE_ROWS) {
+      expect(row.osm, row.label).toMatch(/^(node|way|relation)\/\d+$/);
+      expect(Math.round(row.longitude * 1000) / 1000, row.label).toBe(row.longitude);
+    }
+    expect(new Set(BIRTH_PLACE_ROWS.map((row) => row.osm)).size).toBe(161);
+  });
+
+  it("still reads the 17 시·도 ids from before, as the city each stood for, and never as another place", () => {
+    // [old id, the city it stood for, its longitude in the old list]
+    const OLD: [string, string, number][] = [
+      ["seoul", "서울", 126.978], ["busan", "부산", 129.075], ["daegu", "대구", 128.601], ["incheon", "인천", 126.705], ["gwangju", "광주", 126.851],
+      ["daejeon", "대전", 127.385], ["ulsan", "울산", 129.311], ["sejong", "세종", 127.289], ["gyeonggi", "경기 수원", 127.029], ["gangwon", "강원 춘천", 127.73],
+      ["chungbuk", "충북 청주", 127.489], ["chungnam", "충남 홍성", 126.661], ["jeonbuk", "전북 전주", 127.148], ["jeonnam", "전남 무안", 126.462],
+      ["gyeongbuk", "경북 안동", 128.729], ["gyeongnam", "경남 창원", 128.681], ["jeju", "제주 제주시", 126.531],
+    ];
+    for (const [id, label, longitude] of OLD) {
+      expect(findPlace(id)?.label, id).toBe(label);
+      // the old 전남 value was the 도청 in 무안; the 군청 is 0.02° east
+      expect(Math.abs(findPlace(id)!.longitude - longitude), id).toBeLessThan(0.03);
+    }
+    expect(findPlace("constructor")).toBeUndefined();
+    expect(findPlace("tokyo")).toBeUndefined();
   });
 
   it("keeps every place inside the range the engine accepts, so each one computes", () => {
@@ -135,8 +154,57 @@ describe("toSajuInput", () => {
     expect(solar.time).toBeNull();
   });
 
-  it("uses the picked place's name and longitude", () => {
-    expect(toSajuInput({ ...DEFAULT_SAJU_FORM, placeId: "gyeonggi" }).place).toEqual({ name: "경기(수원)", longitude: 127.029 });
+  it("uses the picked place's name and longitude, a 시·도 id from before as its city", () => {
+    expect(toSajuInput({ ...DEFAULT_SAJU_FORM, placeId: "gyeongbuk-pohang" }).place).toEqual({ name: "경북 포항", longitude: findPlace("gyeongbuk-pohang")!.longitude });
+    expect(toSajuInput({ ...DEFAULT_SAJU_FORM, placeId: "gyeonggi" }).place).toEqual({ name: "경기 수원", longitude: 127.029 });
+  });
+
+  it("passes 윤달 '모름' as \"unknown\" for lunar dates only", () => {
+    const lunar = { ...DEFAULT_SAJU_FORM, calendar: "lunar" as const, leapMonthUnknown: true };
+    expect(toSajuInput(lunar).isLeapMonth).toBe("unknown");
+    expect("isLeapMonth" in toSajuInput({ ...lunar, calendar: "solar" })).toBe(false);
+  });
+});
+
+describe("윤달: 평달 / 윤달 / 모름", () => {
+  const lunar: SajuForm = { ...DEFAULT_SAJU_FORM, calendar: "lunar" };
+
+  it("keeps 모름 only as leapMonthUnknown: true, never next to isLeapMonth", () => {
+    expect(withLeapChoice(lunar, "unknown")).toEqual({ ...lunar, isLeapMonth: false, leapMonthUnknown: true });
+    expect(withLeapChoice(withLeapChoice(lunar, "unknown"), "leap")).toEqual({ ...lunar, isLeapMonth: true });
+    expect(withLeapChoice(withLeapChoice(lunar, "unknown"), "regular")).toEqual(lunar);
+    expect(["regular", "leap", "unknown"].map((choice) => leapChoice(withLeapChoice(lunar, choice as "regular")))).toEqual(["regular", "leap", "unknown"]);
+  });
+
+  it("drops 모름 with 윤달 when the date turns solar", () => {
+    const unknown = withLeapChoice(lunar, "unknown");
+    expect(withDate(unknown, { calendar: "solar" })).toEqual({ ...DEFAULT_SAJU_FORM });
+    expect(withDate(unknown, { month: 2 })).toEqual({ ...unknown, month: 2 });
+    expect(withDraftDate({ ...EMPTY_SAJU_DRAFT, calendar: "lunar", leapMonthUnknown: true }, { calendar: "solar" })).toEqual(EMPTY_SAJU_DRAFT);
+  });
+
+  it("says 윤달 모름 in the echo, the 내 정보 summary and the chart's input line", () => {
+    const unknown = withLeapChoice(lunar, "unknown");
+    expect(confirmationLine(unknown)).toBe("→ 1990년 1월 1일 (음력 · 윤달 모름)");
+    expect(profileSummary(unknown)).toBe("1990년 1월 1일 · 음력 · 윤달 모름 · 시간 모름");
+    expect(chartInputLine(unknown)).toBe("1990년 1월 1일 (음력) · 윤달 모름 · 시간 모름 · 여성 · 서울");
+    expect(draftConfirmation({ ...EMPTY_SAJU_DRAFT, calendar: "lunar", leapMonthUnknown: true, year: 1992, month: 8, day: 3 })).toBe("→ 1992년 8월 3일 (음력 · 윤달 모름)");
+  });
+
+  it("reads 모름 back from storage for lunar dates only; older profiles read as before", () => {
+    const unknown = withLeapChoice(lunar, "unknown");
+    expect(sanitizeSajuForm(JSON.parse(JSON.stringify(unknown)))).toEqual(unknown);
+    expect(sanitizeSajuForm({ ...unknown, isLeapMonth: true })).toEqual(unknown);
+    expect(sanitizeSajuForm({ ...unknown, calendar: "solar" })).toEqual(DEFAULT_SAJU_FORM);
+    expect(sanitizeSajuForm({ ...lunar, isLeapMonth: true })).toEqual({ ...lunar, isLeapMonth: true });
+  });
+
+  it("computes 모름 as 평달 and names the 윤달 chart when that year has the leap month (2023 윤2월)", () => {
+    const result = checkSajuForm({ ...withLeapChoice(lunar, "unknown"), year: 2023, month: 2, day: 15, timeKnown: true, hour: 12, minute: 0 }, TODAY);
+    if (!("chart" in result)) throw new Error("expected a chart");
+    expect(result.chart.solarDate).toBe("2023-03-06");
+    expect(result.chart.warnings[0]?.code).toBe("LEAP_MONTH_UNKNOWN");
+    expect(result.chart.warnings[0]?.message).toContain("윤달이라면 양력 4월 5일생이고");
   });
 });
 
@@ -159,6 +227,10 @@ describe("SAJU_ERROR_MESSAGES / describeSajuError", () => {
 
   it("maps a SajuError by code, and anything else to a form-level message", () => {
     expect(describeSajuError(new SajuError("INVALID_LUNAR_DATE", "x"))).toBe(SAJU_ERROR_MESSAGES.INVALID_LUNAR_DATE);
+    // the 1948–51 hours where tzdata and KASI's table disagree show the engine's sentence, not the fixed one
+    const disputed = "1948년 6월 1일 00:30은 국제 시간대 자료(tzdata) 기준으로 시계를 앞당기며 건너뛴 시각이라 여기서는 계산하지 않아요.";
+    expect(describeSajuError(new SajuError("NONEXISTENT_CIVIL_TIME", disputed))).toEqual({ field: "time", message: disputed });
+    expect(describeSajuError(new SajuError("NONEXISTENT_CIVIL_TIME", "1987-05-10 02:30 skipped"))).toBe(SAJU_ERROR_MESSAGES.NONEXISTENT_CIVIL_TIME);
     expect(describeSajuError(new Error("boom")).field).toBe("form");
   });
 });
@@ -210,8 +282,9 @@ describe("confirmationLine / profileSummary", () => {
   it("lists every input the chart used", () => {
     expect(chartInputLine(DEFAULT_SAJU_FORM)).toBe("1990년 1월 1일 (양력) · 시간 모름 · 여성 · 서울");
     expect(chartInputLine({ ...DEFAULT_SAJU_FORM, gender: "male", placeId: "jeju", timeKnown: true, hour: 23, minute: 40 })).toBe(
-      "1990년 1월 1일 (양력) · 23시 40분 · 남성 · 제주",
+      "1990년 1월 1일 (양력) · 23시 40분 · 남성 · 제주 제주시",
     );
+    expect(chartInputLine({ ...DEFAULT_SAJU_FORM, placeId: "gyeongbuk-pohang" })).toBe("1990년 1월 1일 (양력) · 시간 모름 · 여성 · 경북 포항");
   });
 
   it("summarises the saved profile for 내 정보", () => {

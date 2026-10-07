@@ -124,7 +124,8 @@ export function chapterRequestFields(chapter: { topic?: SajuTopicId; context?: S
 export function sajuTeaserKey(birth: SajuForm, fields: SajuRequestFields): string {
   const b = sanitizeSajuForm(birth) ?? birth;
   return JSON.stringify([
-    b.calendar, b.year, b.month, b.day, b.isLeapMonth, b.timeKnown, b.hour, b.minute, b.gender, b.placeId,
+    // 윤달 '모름' takes the 윤달 slot, so every key made before it existed stays the same
+    b.calendar, b.year, b.month, b.day, b.leapMonthUnknown ? "unknown" : b.isLeapMonth, b.timeKnown, b.hour, b.minute, b.gender, b.placeId,
     fields.topic ?? "overall", fields.loveStatus ?? null, fields.workStatus ?? null,
   ]);
 }

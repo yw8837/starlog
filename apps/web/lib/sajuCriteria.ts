@@ -30,21 +30,24 @@ export function policyLines(policy: SajuPolicy, place: { name: string; longitude
 export interface CriteriaGroups {
   /** What this chart assumed ("이 명식에서는"). */
   applied: string[];
-  /** Where the chart could differ ("태어난 시각에 따라 달라지는 점"), one per warning. */
+  /** Where the chart could differ ("달라질 수 있는 점": the birth time, the DST tables, 윤달 모름), one per warning. */
   changes: string[];
   /** The policy in plain words ("계산 기준"). */
   rules: string[];
 }
 
 /**
- * With the time unknown, the engine's notes only restate the missing hour and the day-pillar
+ * With the time unknown, the engine's notes restate the missing hour and the day-pillar
  * windows; the windows already arrive as DAY_PILLAR_WINDOW warnings carrying the exact
- * alternative pillar, so the hour gets one line of its own and the notes are not repeated.
- * With the time known, the notes are the corrections actually applied (longitude, DST, 1908 LMT).
+ * alternative pillar, so the hour gets one line of its own and those notes are not repeated.
+ * The one note kept is the date's: 윤달 '모름' on a day only the 윤달 has (the engine's first note).
+ * With the time known, the notes are the corrections actually applied (윤달, longitude, DST, 1908 LMT).
  */
 export function criteriaGroups(chart: SajuChart): CriteriaGroups {
+  const { input } = chart;
+  const leapOnly = input.calendar === "lunar" && input.isLeapMonth === "unknown" && chart.lunarDate.includes("윤");
   return {
-    applied: chart.pillars.hour === null ? [TIME_UNKNOWN_LINE] : [...chart.notes],
+    applied: chart.pillars.hour === null ? [...(leapOnly ? chart.notes.slice(0, 1) : []), TIME_UNKNOWN_LINE] : [...chart.notes],
     changes: chart.warnings.map((warning) => warning.message),
     rules: policyLines(chart.policy, chart.input.place),
   };

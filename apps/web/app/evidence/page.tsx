@@ -100,7 +100,7 @@ export default function EvidencePage() {
             <li key={source.title} className={e.sourceRow}>
               <span className={e.kind}>{source.kind}</span>
               <span className={e.sourceText}>
-                <span className={e.sourceTitle}>{source.title}</span>
+                <span className={e.sourceTitle}>{source.href ? <a href={source.href}>{source.title}</a> : source.title}</span>
                 <span className={e.sourceNote}>{source.note}</span>
               </span>
             </li>

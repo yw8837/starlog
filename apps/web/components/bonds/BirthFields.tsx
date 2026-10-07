@@ -1,9 +1,10 @@
 "use client";
 
+import { computeChart } from "@starlog/core";
 import { useRef, type Ref } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Segmented } from "@/components/ui/Segmented";
-import { CALENDAR_LABEL, MIN_BIRTH_YEAR, daysInMonth, todayInKorea, type Calendar, type SajuForm } from "@/lib/sajuForm";
+import { CALENDAR_LABEL, MIN_BIRTH_YEAR, daysInMonth, toSajuInput, todayInKorea, type Calendar, type SajuForm } from "@/lib/sajuForm";
 import s from "./bonds.module.css";
 
 /** The date being entered; a part stays null until it is picked (no date is ever assumed). */
@@ -22,9 +23,23 @@ export const birthComplete = (value: BirthValue): value is BirthValue & { year: 
 
 export const BIRTH_MISSING = "생년월일을 끝까지 골라 주세요";
 
-/** The date part of this device's saved saju profile (the user's own local data), or null without one. */
+/**
+ * The date part of this device's saved saju profile (the user's own local data), or null without one. 윤달 '모름'
+ * becomes the month the engine computed: 윤달 only when that day exists only in the 윤달.
+ */
 export function savedBirth(profile: SajuForm | null | undefined): BirthValue | null {
-  return profile ? { calendar: profile.calendar, year: profile.year, month: profile.month, day: profile.day, isLeapMonth: profile.isLeapMonth } : null;
+  if (!profile) return null;
+  const isLeapMonth = profile.leapMonthUnknown ? computedAsLeap(profile) : profile.isLeapMonth;
+  return { calendar: profile.calendar, year: profile.year, month: profile.month, day: profile.day, isLeapMonth };
+}
+
+/** Whether the engine read a 모름 date as the 윤달 (the date alone decides, so the time is left out). */
+function computedAsLeap(profile: SajuForm): boolean {
+  try {
+    return computeChart({ ...toSajuInput(profile), time: null }).lunarDate.includes("윤");
+  } catch {
+    return false; // neither month has that day: the date is refused as before
+  }
 }
 
 const CALENDAR_OPTIONS = (["solar", "lunar"] as const).map((value) => ({ value, label: CALENDAR_LABEL[value] }));

@@ -43,7 +43,7 @@ export function ChartCriteria({ chart }: ChartCriteriaProps) {
 
       <div className={s.body}>
         <Group title="이 명식에서는" lines={applied} />
-        <Group title="태어난 시각에 따라 달라지는 점" lines={changes} />
+        <Group title="달라질 수 있는 점" lines={changes} />
         <section className={s.group}>
           <h3 className={s.groupTitle}>계산 기준</h3>
           <ul className={s.list}>

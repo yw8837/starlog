@@ -133,4 +133,11 @@ describe("request fields and teaser keys (saju-topics, owner cut §0)", () => {
     expect(sajuTeaserKey(KNOWN, {})).not.toBe(sajuTeaserKey(KNOWN, { loveStatus: "dating" }));
     expect(sajuTeaserKey(KNOWN, {})).not.toBe(sajuTeaserKey({ ...KNOWN, day: 2 }, {}));
   });
+
+  it("keeps every key made before 윤달 '모름', and gives 모름 a key of its own", () => {
+    expect(sajuTeaserKey(KNOWN, {})).toBe(JSON.stringify(["solar", 1990, 1, 1, false, true, 9, 30, "female", "busan", "overall", null, null]));
+    const lunar = { ...KNOWN, calendar: "lunar" as const };
+    const keys = [lunar, { ...lunar, isLeapMonth: true }, { ...lunar, leapMonthUnknown: true }].map((birth) => sajuTeaserKey(birth, {}));
+    expect(new Set(keys).size).toBe(3);
+  });
 });

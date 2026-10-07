@@ -3,7 +3,7 @@ import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { BirthBody } from "@/lib/api/inputs";
-import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { DEFAULT_SAJU_FORM, checkSajuForm, todayInKorea } from "@/lib/sajuForm";
 import { issueChapter } from "@/lib/security/chapterToken";
 import { dailyDeal } from "@/lib/security/drawToken";
 import { signingSecret } from "@/lib/security/sign";
@@ -384,12 +384,15 @@ describe("saju", () => {
     const d = device();
     const t = await d.call(sajuTeaser, { birth });
     expect(t.status).toBe(200);
-    expect(t.data.lockedToc).toHaveLength(8);
+    // the 한눈에 보기 card, seven sections, the observation
+    expect(t.data.lockedToc).toHaveLength(9);
+    expect(t.data.lockedToc[0]).toMatch(/^한눈에 보기 · /);
     expect(t.data.lockedToc.at(-1)).toBe("앞으로 몇 주 · 확인해 볼 신호");
     const r = await d.call(sajuReading, { birth });
     expect(r.status).toBe(200);
     expect(r.data.reading.sections).toHaveLength(7);
     expect(r.data.reading.observation.heading).toBe("앞으로 몇 주 · 확인해 볼 신호");
+    expect(Object.keys(r.data.reading.glance)).toEqual(["goesWell", "watchOut", "remedy", "thisYear", "thisYearAction"]);
     expect(r.data.reading).not.toHaveProperty("story");
     const f = await d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question: "올해는 무엇을 해 보면 좋을까요?" });
     expect(f.status).toBe(200);
@@ -416,6 +419,19 @@ describe("saju", () => {
     const res = await device().call(sajuTeaser, { birth: { ...birth, year: 2027 } });
     expect(res.status).toBe(400);
     expect(res.data).toMatchObject({ code: "BAD_REQUEST", field: "date" });
+  });
+
+  it("carries 윤달 모름 from the body to the chart: 1952 음5-30 is only in the 윤달, so it computes instead of being refused", async () => {
+    const lunar = { ...birth, calendar: "lunar", year: 1952, month: 5, day: 30, timeKnown: false, hour: null, minute: null };
+    const parsed = BirthBody.parse({ ...lunar, leapMonthUnknown: true });
+    expect(parsed).toMatchObject({ leapMonthUnknown: true, isLeapMonth: false });
+    const checked = checkSajuForm(parsed, todayInKorea(new Date(T0)));
+    expect("chart" in checked && [checked.chart.input.isLeapMonth, checked.chart.lunarDate]).toEqual(["unknown", "1952-윤05-30"]);
+    expect((await device("203.0.113.51").call(sajuTeaser, { birth: { ...lunar, leapMonthUnknown: true } })).status).toBe(200);
+    // without it the 평달 of that year has no 30th
+    const refused = await device("203.0.113.52").call(sajuTeaser, { birth: lunar });
+    expect(refused.status).toBe(400);
+    expect(refused.data).toMatchObject({ code: "BAD_REQUEST", field: "date" });
   });
 });
 

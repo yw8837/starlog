@@ -156,7 +156,7 @@ describe("/faq", () => {
 
     const cards = [...container.querySelectorAll("details")];
     expect(cards.length).toBeGreaterThanOrEqual(10);
-    expect(cards.length).toBeLessThanOrEqual(18);
+    expect(cards.length).toBeLessThanOrEqual(19); // 19 with "다른 앱과 사주(명식)가 다르게 나와요" (2026-10-07)
     expect(data.mainEntity).toHaveLength(cards.length);
 
     data.mainEntity.forEach((question, i) => {
@@ -191,6 +191,19 @@ describe("/faq", () => {
       expect(card.querySelector("summary")?.textContent).toContain(questions[i]);
     });
     expect(readJsonLd(container).mainEntity.slice(0, questions.length).map((question) => question.name)).toEqual(questions);
+  });
+
+  it("explains why another app's 명식 can differ, rule by rule, and links to the saju evidence", () => {
+    const entry = faqGroups().flatMap((group) => group.entries).find((e) => e.id === "saju-differs");
+    expect(entry?.q).toBe("다른 앱과 사주(명식)가 다르게 나와요");
+    const answer = entry?.a.join(" ") ?? "";
+    for (const part of ["서머타임", "1948~51년, 1955~60년, 1987~88년", "1시간을 빼고", "경도", "30분쯤", "밤 11시대", "분 단위", "보정 시각", "‘적용한 기준’"]) {
+      expect(answer, part).toContain(part);
+    }
+    // the hour comes off only inside each year's DST period, and the 32 minutes are 2 in the UTC+8:30 eras
+    expect(answer).toContain("해마다 몇 달씩 서머타임이 있었어요. 그 기간에 태어났다면 시계를 앞당긴 1시간을 빼고 계산해요.");
+    expect(answer).toContain("서울에서 태어났다면 32분쯤 당겨져요. 다만 표준시가 지금보다 30분 늦던 1908년 4월~1911년, 1954년 3월 21일~1961년 8월 9일에 태어났다면 서울도 2분쯤만 당겨져요.");
+    expect(entry?.link).toEqual({ href: `${INFO_PAGES.evidence.path}#saju`, label: "사주 계산의 근거" });
   });
 
   it("answers them word for word, and gives every entry an id of its own", () => {

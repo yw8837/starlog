@@ -7,7 +7,7 @@ import {
 import type { HiddenStem, SajuElement } from "./labels";
 import {
   DEFAULT_POLICY, MAX_SUPPORTED_DATE, MIN_SUPPORTED_DATE, STANDARD_TIME_START, SUPPORTED_TIME_ZONE, SUPPORTED_TIME_ZONES, ZONE_LONGITUDE_RANGE,
-  SajuError, correctedClockMs, koreaCivilOffsetAt, koreaWallClockInstants, sajuAbroadEnabled, validatePolicy,
+  SajuError, correctedClockMs, kasiDstDisagreementAt, kasiKeepsSkippedHourAt, koreaCivilOffsetAt, koreaWallClockInstants, sajuAbroadEnabled, validatePolicy,
 } from "./policy";
 import type { JasiRule, ResolvedCivilTime, SajuPolicy } from "./policy";
 import { zoneOffsetMsAt, zoneWallClockInstants } from "./zones";
@@ -18,8 +18,11 @@ export const SAJU_ENGINE = "manseryeok@2.0.0" as const;
 export interface SajuInput {
   calendar: "solar" | "lunar";
   year: number; month: number; day: number;
-  /** lunar only; the user states 평달/윤달 explicitly (P7) */
-  isLeapMonth?: boolean;
+  /**
+   * lunar only: 평달 (false) or 윤달 (true) as the user states it (P7), or "unknown" (모름): 평달 unless only
+   * the leap month has that day; when that year has the leap month, LEAP_MONTH_UNKNOWN names its pillars
+   */
+  isLeapMonth?: boolean | "unknown";
   /** civil wall clock at the birthplace; null = unknown (P6) */
   time: { hour: number; minute: number } | null;
   gender: "female" | "male";
@@ -46,15 +49,35 @@ export type SajuWarningCode =
   /** time unknown: births inside `window` would get the day pillar `window.dayPillar` instead */
   | "DAY_PILLAR_WINDOW"
   /** time known, corrected clock 23:00–24:00 under SPLIT_NEXT_DAY_STEM: calendars that change the day at 23:00 show `dayPillar` */
-  | "JASI_DAY_PILLAR";
+  | "JASI_DAY_PILLAR"
+  /** time known, corrected clock within the P13 window after 00:00 under SPLIT_NEXT_DAY_STEM: `pillars` is a few minutes earlier, the day before */
+  | "DAY_BOUNDARY"
+  /** time known, inside a span where KASI's 역서 DST table and tzdata disagree (policy KASI_DST_DISAGREEMENTS): `pillars` is KASI's reading */
+  | "DST_BOUNDARY"
+  /** lunar date with 윤달 '모름' and that leap month exists: computed as 평달, `pillars` is the 윤달 chart */
+  | "LEAP_MONTH_UNKNOWN";
+
+export type PillarKey = "year" | "month" | "day" | "hour";
+
 export interface SajuWarning {
   code: SajuWarningCode;
   /** Korean UI copy */
   message: string;
   /** DAY_PILLAR_WINDOW only: civil-clock minutes ("HH:mm", inclusive) and the day pillar they would get */
   window?: { from: string; to: string; dayPillar: string };
-  /** JASI_DAY_PILLAR only: the next day's pillar */
+  /**
+   * The day pillar the message names: the next day's for JASI_DAY_PILLAR (and for HOUR_BOUNDARY just before
+   * 23:00 under SPLIT_NEXT_DAY_STEM); the other reading's when its day differs (DST_BOUNDARY, HOUR_BOUNDARY,
+   * DAY_BOUNDARY, LEAP_MONTH_UNKNOWN)
+   */
   dayPillar?: string;
+  /**
+   * HOUR_BOUNDARY, DAY_BOUNDARY (and JASI_DAY_PILLAR within the window after 23:00 or before 00:00), DST_BOUNDARY,
+   * LEAP_MONTH_UNKNOWN: the other reading's pillars that differ from this chart, each as its candidates (two only
+   * when the time is unknown and a 절 falls on the other reading's day). Every ganzhi the message names is here or
+   * in `dayPillar`.
+   */
+  pillars?: Partial<Record<PillarKey, string[]>>;
 }
 
 /** Time unknown (P6): a pillar that changes during the civil day. `switchesAtKST` is the civil clock ("HH:mm"). */
@@ -92,7 +115,7 @@ export interface SajuChart {
   luck: SajuLuck;
   ambiguous: AmbiguousPillar[];
   warnings: SajuWarning[];
-  /** Korean 해요체 notes on what the calculation did */
+  /** Korean 해요체 notes on what the calculation did; with 윤달 '모름' on a day only the 윤달 has, the first one says so */
   notes: string[];
 }
 
@@ -105,6 +128,7 @@ const TIME_UNKNOWN_NOTE = "태어난 시를 몰라 시주를 비웠어요. 시�
 interface CivilDate { year: number; month: number; day: number }
 
 export function computeChart(input: SajuInput, requestedPolicy: SajuPolicy = DEFAULT_POLICY): SajuChart {
+  if (input.calendar === "lunar" && input.isLeapMonth === "unknown") return leapUnknownChart(input, requestedPolicy);
   const policy = validatePolicy(requestedPolicy); // a fresh copy, stored on the chart
   const { longitude, timeZone } = validatePlace(input.place);
   if (input.gender !== "female" && input.gender !== "male") throw invalidInput();
@@ -184,7 +208,7 @@ function toSolarDate(input: SajuInput): CivilDate {
   let date: CivilDate;
   if (input.calendar === "lunar") {
     if (year < LUNAR_MIN_YEAR || year > LUNAR_MAX_YEAR) throw outOfRange(); // the solar result is range-checked below
-    const leap = input.isLeapMonth ?? false;
+    const leap = input.isLeapMonth === true; // "unknown" never gets here (leapUnknownChart)
     try {
       date = lunarToSolar(year, month, day, leap);
     } catch (e) {
@@ -203,6 +227,43 @@ function toSolarDate(input: SajuInput): CivilDate {
 
 function outOfRange(): SajuError {
   return new SajuError("OUT_OF_RANGE", `${MIN_SUPPORTED_DATE.year}년부터 ${MAX_SUPPORTED_DATE.year}년까지 태어난 경우만 계산할 수 있어요.`);
+}
+
+/**
+ * 윤달 '모름' (P7): both readings are computed. The chart is the 평달 one (the 윤달 one when only the leap month
+ * has that day); when that year has the leap month and its chart differs, LEAP_MONTH_UNKNOWN comes first with
+ * the 윤달 chart's pillars. A year without that leap month is 평달 with no word about it. The input is kept as given.
+ * With the 평달 chart in hand the 윤달 is only an alternative, so any input error there (that day missing, a time
+ * its date skipped, past 2100) leaves nothing to name instead of failing the chart.
+ */
+function leapUnknownChart(input: SajuInput, policy: SajuPolicy): SajuChart {
+  const attempt = (isLeapMonth: boolean, giveUp: (e: SajuError) => boolean): SajuChart | null => {
+    try {
+      return computeChart({ ...input, isLeapMonth }, policy);
+    } catch (e) {
+      if (e instanceof SajuError && giveUp(e)) return null;
+      throw e;
+    }
+  };
+  const regular = attempt(false, e => e.code === "INVALID_LUNAR_DATE");
+  const leap = attempt(true, e => regular !== null || e.code === "INVALID_LUNAR_DATE");
+  const { year, month, day } = input;
+  if (!regular && !leap) throw new SajuError("INVALID_LUNAR_DATE", `음력 ${year}년 ${month}월 ${day}일은 평달에도 윤달에도 없는 날짜예요. 날짜를 다시 확인해 주세요.`);
+  if (!regular) return { ...leap!, input: { ...input }, notes: [`음력 ${year}년 ${month}월 ${day}일은 윤달에만 있는 날이라 윤달로 계산했어요.`, ...leap!.notes] };
+  const chart: SajuChart = { ...regular, input: { ...input } };
+  if (!leap) return chart;
+  const pillars = differingPillars(chartPillars(regular), chartPillars(leap));
+  if (Object.keys(pillars).length === 0) return chart;
+  const [leapYear, leapMonth, leapDay] = leap.solarDate.split("-").map(Number);
+  // the year only when it is not the lunar year the sentence names (2033 윤11-20 is 2034-01-10)
+  const leapDate = `${leapYear === year ? "" : `${leapYear}년 `}${leapMonth}월 ${leapDay}일`;
+  const warning: SajuWarning = {
+    code: "LEAP_MONTH_UNKNOWN",
+    message: `음력 ${year}년 ${month}월은 평달과 윤달이 둘 다 있어서 평달로 계산했어요. 윤달이라면 양력 ${leapDate}생이고, ${pillarPhrase(pillars)} 돼요.`,
+    pillars,
+    ...(pillars.day ? { dayPillar: pillars.day[0] } : {}),
+  };
+  return { ...chart, warnings: [warning, ...regular.warnings] };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -282,8 +343,17 @@ function readKnownTime(date: CivilDate, time: NonNullable<SajuInput["time"]>, ge
   const candidates = wallClockInstants(wallMs, frame);
   const civil = candidates[0];
   if (!civil) {
-    throw new SajuError("NONEXISTENT_CIVIL_TIME",
-      `${date.year}년 ${date.month}월 ${date.day}일 ${hhmm(wallMs)}은 시계를 앞당기며 건너뛴 시각이라 실제로는 없었어요. 출생 기록을 다시 확인해 주세요.`);
+    const at = `${date.year}년 ${date.month}월 ${date.day}일 ${hhmm(wallMs)}`;
+    // §6.2: an hour tzdata skips that KASI's table still has (it puts the jump elsewhere)
+    const kept = frame.timeZone === "Asia/Seoul" && policy.applyHistoricalDst && !frame.pre1908 ? kasiKeepsSkippedHourAt(wallMs) : undefined;
+    if (!kept) throw new SajuError("NONEXISTENT_CIVIL_TIME", `${at}은 시계를 앞당기며 건너뛴 시각이라 실제로는 없었어요. 출생 기록을 다시 확인해 주세요.`);
+    const kasiStart = kept.kasiDst ? kept.from : kept.to;
+    const startDay = kasiStart.slice(0, 10) === `${date.year}-${pad(date.month)}-${pad(date.day)}` ? "그날" : "전날";
+    const kasi = kept.kasiDst
+      ? `, 그 표대로 1시간을 빼는 만세력에서는 전날 ${hhmm(wallMs - HOUR_MS)}으로 계산해요.` // KASI's DST already runs: an hour earlier is the day before
+      : " 이 시각이 있었어요."; // KASI's DST starts later that day: the hour is still standard time
+    throw new SajuError("NONEXISTENT_CIVIL_TIME", `${at}은 국제 시간대 자료(tzdata) 기준으로 시계를 앞당기며 건너뛴 시각이라 여기서는 계산하지 않아요. `
+      + `한국천문연구원 역서 표로는 ${startDay} ${Number(kasiStart.slice(11, 13))}시에 서머타임이 시작돼서${kasi} 출생 기록을 다시 확인해 주세요.`);
   }
   if (candidates.length > 1) {
     const dst = civil.offsetMinutes !== civil.standardOffsetMinutes ? "(서머타임 기준)" : "";
@@ -292,6 +362,32 @@ function readKnownTime(date: CivilDate, time: NonNullable<SajuInput["time"]>, ge
 
   const clockMs = correctedClockMs(policy.clock, civil.instantMs, wallMs, civil, longitude);
   const detail = runEngine(civil.instantMs, clockMs, policy.jasi, gender);
+  const ours = detailPillars(detail);
+  /** Another reading of this birth (its instant and its clock): the pillars that differ from this chart. */
+  const otherReading = (instantMs: number, otherClockMs: number) => differingPillars(ours, detailPillars(runEngine(instantMs, otherClockMs, policy.jasi, gender)));
+
+  // P1 vs KASI's 역서: where its DST table and tzdata disagree by an hour, the pillars KASI's reading gives (research §6.2)
+  const disputed = frame.timeZone === "Asia/Seoul" && policy.applyHistoricalDst && !frame.pre1908 ? kasiDstDisagreementAt(wallMs) : undefined;
+  if (disputed && disputed.kasiDst !== (civil.offsetMinutes !== civil.standardOffsetMinutes)) {
+    const offsetMinutes = civil.standardOffsetMinutes + (disputed.kasiDst ? 60 : 0);
+    const kasi: ResolvedCivilTime = { instantMs: wallMs - offsetMinutes * MINUTE_MS, offsetMinutes, standardOffsetMinutes: civil.standardOffsetMinutes };
+    const pillars = otherReading(kasi.instantMs, correctedClockMs(policy.clock, kasi.instantMs, wallMs, kasi, longitude));
+    if (Object.keys(pillars).length > 0) {
+      const start = disputed.edge === "start";
+      // 1948–50 starts: KASI's clock jumped at 23:00, so this wall time never showed on its table; a calendar using
+      // the table just subtracts the hour
+      const reading = !disputed.kasiDst ? "아직 서머타임 전이라 1시간 늦은 순간이 되고, 그러면"
+        : start ? `그날 ${Number(disputed.from.slice(11, 13))}시에 서머타임이 시작돼서, 그 표대로 1시간을 빼는 만세력에서는`
+        : "아직 서머타임이라 1시간 이른 순간이 되고, 그러면";
+      warnings.push({
+        code: "DST_BOUNDARY",
+        message: `${disputed.year}년 서머타임 ${start ? "시작" : "종료"} 무렵은 자료마다 1시간 차이가 나요. 여기서는 국제 시간대 자료(tzdata)를 따랐어요. `
+          + `한국천문연구원 역서 표로는 ${reading} ${pillarPhrase(pillars)} 돼요.`,
+        pillars,
+        ...(pillars.day ? { dayPillar: pillars.day[0] } : {}),
+      });
+    }
+  }
 
   // P2: 절입 within the warning window
   const windowMs = policy.termBoundaryWarnSeconds * 1000;
@@ -303,24 +399,64 @@ function readKnownTime(date: CivilDate, time: NonNullable<SajuInput["time"]>, ge
       message: `절입 시각(${near.name} ${at.getUTCMonth() + 1}월 ${at.getUTCDate()}일 ${hhmm(at.getTime())}) 앞뒤 ${spanLabel(policy.termBoundaryWarnSeconds)} 안에 태어나 ${near.name === "입춘" ? "연주·월주" : "월주"}가 만세력·천문 자료마다 달라질 수 있어요.`,
     });
   }
-  // P13: 시진 boundary (odd hours) on the corrected clock
+  // P13: a 시진 boundary (odd hour) within the window on the corrected clock: the pillars a few minutes the
+  // other way give (the reading one minute before the boundary, or at it). The window counts whole minutes of
+  // the clock as shown (seconds truncated), the unit the notice says: 22:50:55 and 23:10:55 are both 10 minutes.
   const timeOfDay = ((clockMs % DAY_MS) + DAY_MS) % DAY_MS;
+  const dayStartMs = clockMs - timeOfDay;
+  const boundary = (boundaryMs: number): { after: boolean; gap: string; pillars: PillarSet } | null => {
+    const minutes = Math.abs(Math.floor(clockMs / MINUTE_MS) - boundaryMs / MINUTE_MS);
+    if (minutes > policy.hourBoundaryWarnMinutes) return null;
+    const after = clockMs >= boundaryMs;
+    const otherClockMs = after ? boundaryMs - MINUTE_MS : boundaryMs;
+    return { after, gap: minutes === 0 ? "1분 안쪽" : `${minutes}분`, pillars: otherReading(civil.instantMs + otherClockMs - clockMs, otherClockMs) };
+  };
+  let nearHour: { hour: number; after: boolean; gap: string; pillars: PillarSet } | null = null;
   for (let h = 1; h < 24; h += 2) {
-    if (Math.abs(timeOfDay - h * HOUR_MS) <= policy.hourBoundaryWarnMinutes * MINUTE_MS) {
-      const dayToo = h === 23 && policy.jasi === "DAY_CHANGES_AT_23" ? " 23시에 날이 바뀌는 관법이라 일주도 바뀔 수 있어요." : "";
-      warnings.push({
-        code: "HOUR_BOUNDARY",
-        message: `보정 시각이 시진 경계(${pad(h)}:00) 앞뒤 ${policy.hourBoundaryWarnMinutes}분 안이라 출생 기록 오차에 따라 시주가 달라질 수 있어요.${dayToo}`,
-      });
-    }
+    const found = boundary(dayStartMs + h * HOUR_MS);
+    if (found) nearHour = { hour: h, ...found };
   }
-  // P4: the 23:00 hour keeps this day's pillar here; calendars that change the day at 23:00 show the next day's
-  if (policy.jasi === "SPLIT_NEXT_DAY_STEM" && timeOfDay >= 23 * HOUR_MS) {
-    const next = shiftGanzhi(hanja(detail.day), 1);
+  // P5: under the split rule the 일주 changes at 00:00 on the corrected clock (the 子 hour's pillar is the same on both sides)
+  const split = policy.jasi === "SPLIT_NEXT_DAY_STEM";
+  const withPillars = (b: ReturnType<typeof boundary>) => (b && Object.keys(b.pillars).length > 0 ? b : null);
+  const afterMidnight = split ? withPillars(boundary(dayStartMs)) : null;
+  const beforeMidnight = split ? withPillars(boundary(dayStartMs + DAY_MS)) : null;
+  const next = shiftGanzhi(hanja(detail.day), 1);
+  const nextDay = `다음 날 일진인 ${withKo(next)}${josa(next, "이", "가")} 돼요.`;
+  // P4: the 23:00 hour keeps this day's pillar here; calendars that change the day at 23:00 show the next day's.
+  // The boundaries at either end of the hour (23:00, then 00:00) join this line, so each moment gets one notice.
+  const jasiHour = split && timeOfDay >= 23 * HOUR_MS;
+  const joined = jasiHour && nearHour?.hour === 23 ? nearHour : null;
+  if (jasiHour) {
     warnings.push({
       code: "JASI_DAY_PILLAR",
-      message: `보정 시각(${hhmm(clockMs)})이 밤 11시대예요. 밤 11시대를 다음 날로 보는 만세력에서는 일주가 다음 날 일진인 ${withKo(next)}${josa(next, "이", "가")} 돼요.`,
+      message: `보정 시각(${hhmm(clockMs)})이 밤 11시대예요. 밤 11시대를 다음 날로 보는 만세력에서는 일주가 ${nextDay}`
+        + (joined ? ` 시주가 바뀌는 시각(23:00)과도 ${joined.gap} 차이라, 실제로 몇 분 일찍 태어났다면 ${pillarPhrase(joined.pillars)} 돼요.` : "")
+        + (beforeMidnight ? ` 일주가 바뀌는 자정(00:00)과도 ${beforeMidnight.gap} 차이라, 실제로 몇 분 늦게 태어났다면 여기서도 ${pillarPhrase(beforeMidnight.pillars)} 돼요.` : ""),
       dayPillar: next,
+      ...(joined || beforeMidnight ? { pillars: { ...joined?.pillars, ...beforeMidnight?.pillars } } : {}),
+    });
+  }
+  if (nearHour && !joined && Object.keys(nearHour.pillars).length > 0) {
+    const { hour, after, gap, pillars } = nearHour;
+    const head = `보정 시각(${hhmm(clockMs)})이 시주가 바뀌는 시각(${pad(hour)}:00)과 ${gap} 차이예요. 실제로 몇 분 ${after ? "일찍" : "늦게"} 태어났다면 ${pillarPhrase(pillars)}`;
+    // just before 23:00 under the split rule a few minutes later is the 23:00 hour, which other calendars count as the next day
+    const intoJasiHour = !after && hour === 23 && policy.jasi === "SPLIT_NEXT_DAY_STEM";
+    warnings.push({
+      code: "HOUR_BOUNDARY",
+      message: intoJasiHour ? `${head} 되고, 밤 11시대를 다음 날로 보는 만세력에서는 일주도 ${nextDay}` : `${head} 돼요.`,
+      pillars,
+      ...(intoJasiHour ? { dayPillar: next } : pillars.day ? { dayPillar: pillars.day[0] } : {}),
+    });
+  }
+  // just after 00:00 a few minutes earlier is the day before: another 일주, so another 일간
+  if (afterMidnight) {
+    const { gap, pillars } = afterMidnight;
+    warnings.push({
+      code: "DAY_BOUNDARY",
+      message: `보정 시각(${hhmm(clockMs)})이 일주가 바뀌는 시각(00:00)과 ${gap} 차이예요. 실제로 몇 분 일찍 태어났다면 ${pillarPhrase(pillars)} 돼요.`,
+      pillars,
+      ...(pillars.day ? { dayPillar: pillars.day[0] } : {}),
     });
   }
 
@@ -548,6 +684,48 @@ function toPillar(p: EnginePillar, gods: { stem: string; branch: string }): Pill
 }
 
 const withKo = (ganzhi: string) => `${ganzhi}(${ganzhiKo(ganzhi)})`;
+
+/** Pillars as candidate lists: one each, two where the time is unknown and a 절 falls that day. */
+type PillarSet = Partial<Record<PillarKey, string[]>>;
+const PILLAR_ORDER: readonly PillarKey[] = ["year", "month", "day", "hour"];
+const PILLAR_KO: Readonly<Record<PillarKey, string>> = { year: "연주", month: "월주", day: "일주", hour: "시주" };
+
+function detailPillars(d: FourPillarsDetail): PillarSet {
+  return { year: [hanja(d.year)], month: [hanja(d.month)], day: [hanja(d.day)], hour: [hanja(d.hour)] };
+}
+
+/** A computed chart's pillars, with both candidates where `ambiguous` has them; no hour when the time is unknown. */
+function chartPillars(c: SajuChart): PillarSet {
+  const out: PillarSet = {};
+  for (const key of PILLAR_ORDER) {
+    const p = c.pillars[key];
+    if (!p) continue;
+    out[key] = [...(c.ambiguous.find(a => a.pillar === key)?.candidates ?? [p.stem + p.branch])];
+  }
+  return out;
+}
+
+/** The pillars of `other` that are not the same as `ours`. */
+function differingPillars(ours: PillarSet, other: PillarSet): PillarSet {
+  const out: PillarSet = {};
+  for (const key of PILLAR_ORDER) {
+    const candidates = other[key];
+    if (candidates && candidates.join() !== (ours[key] ?? []).join()) out[key] = candidates;
+  }
+  return out;
+}
+
+/** "월주가 丙辰(병진), 일주가 癸巳(계사)가": pillar order, candidates joined by 또는, the particle on the last one. */
+function pillarPhrase(pillars: PillarSet): string {
+  const keys = PILLAR_ORDER.filter(key => pillars[key]?.length);
+  return keys
+    .map((key, i) => {
+      const candidates = pillars[key]!;
+      const particle = i === keys.length - 1 ? josa(candidates.at(-1)!, "이", "가") : "";
+      return `${PILLAR_KO[key]}가 ${candidates.map(withKo).join(" 또는 ")}${particle}`;
+    })
+    .join(", ");
+}
 
 /** Korean particle by whether the ganzhi's hangul reading ends in a final consonant (받침). */
 function josa(ganzhi: string, afterConsonant: string, afterVowel: string): string {

@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { HistorySchema } from "@/lib/ai/history";
 import { UNLOCK_METHODS } from "@/lib/pay/unlockMethod";
-import { BIRTH_PLACES } from "@/lib/sajuForm";
+import { findPlace } from "@/lib/sajuForm";
 
 /** Request bodies. Every string is capped; unknown keys are dropped. */
 
@@ -56,11 +56,14 @@ export const BirthBody = z.object({
   month: z.number().int().min(1).max(12),
   day: z.number().int().min(1).max(31),
   isLeapMonth: z.boolean().default(false),
+  /** 윤달 '모름' (lunar dates); absent from older clients and from every other form, so their bodies parse as before */
+  leapMonthUnknown: z.boolean().optional(),
   timeKnown: z.boolean(),
   hour: z.number().int().min(0).max(23).nullable().default(null),
   minute: z.number().int().min(0).max(59).nullable().default(null),
   gender: z.enum(["female", "male"]),
-  placeId: z.string().refine((id) => BIRTH_PLACES.some((place) => place.id === id)),
+  /** a 시·군 id, or one of the 17 시·도 ids from before (lib/birthPlaces.ts LEGACY_PLACE_IDS) */
+  placeId: z.string().refine((id) => findPlace(id) !== undefined),
 });
 
 /** Trimmed, then cut to `max` characters (whole code points, so no emoji is split): never a reason to refuse. */

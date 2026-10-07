@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { BIRTH_PLACE_CREDIT_URL, BIRTH_PLACE_ROWS } from "./birthPlaces";
 import { MODERN_SOURCES, SAJU_SOURCE_LINE, cardQuote, cardSourceLine, evidenceHighlights, evidenceHref, evidenceItems, evidenceSources, modernSourceCount } from "./evidence";
 import { INFO_PAGES } from "./infoPages";
 
@@ -15,6 +16,10 @@ interface PktCard { loc: string; quoteKo: string }
 const facts = readJson<Fact[]>("content/evidence.json");
 const pkt = readJson<{ source: Source; cards: Record<string, PktCard> }>("content/kb/sources/pkt.json");
 const bookT = readJson<{ source: Source; cards: Record<string, unknown> }>("content/kb/sources/book-t.json");
+/** KASI's 24절기 minutes the core golden test checks the engine against (packages/core/tests/kasi-solar-terms.test.ts). */
+const kasiTerms = readJson<{ sourceUrl: string; terms: Record<string, [string, string][]>; notes: { knownPlusOneMinute: { kasi: string; manseryeok: string }[] } }>(
+  "packages/core/tests/fixtures/kasi-solar-terms-2021-2028.json",
+);
 const numbers = (text: string) => text.match(/\d[\d,.]*\d|\d/g) ?? [];
 
 describe("evidence items", () => {
@@ -108,6 +113,27 @@ describe("source lines", () => {
     expect(evidenceHref("saju")).toBe(`${INFO_PAGES.evidence.path}#saju`);
   });
 
+  it("state the KASI 절입 cross-check as the core fixture holds it: the count, the years, a minute at most, how many to the minute", () => {
+    const fact = facts.find((f) => f.id === "saju-kasi-solar-terms");
+    const years = Object.keys(kasiTerms.terms).map(Number);
+    const count = Object.values(kasiTerms.terms).reduce((n, list) => n + list.length, 0);
+    const exact = count - kasiTerms.notes.knownPlusOneMinute.length;
+    const [first, last] = [Math.min(...years), Math.max(...years)];
+    expect(fact).toMatchObject({ area: "saju", labelKo: "천문연 절입 시각 대조", valueKo: `${count}개` });
+    expect(fact?.detailKo).toContain(`한국천문연구원이 공개한 ${first}~${last}년`);
+    // "1분 이내" for all of them, so it does not read as under a minute next to the 32.7초 fact before it
+    expect(fact?.detailKo).toContain(`${count}개 모두 1분 이내로 맞았고, 그중 ${exact}개는 분까지 같아요.`);
+    // every number it says comes from the fixture: the years, the 24 terms a year, the count, the one minute, the exact ones
+    for (const n of numbers(fact?.detailKo ?? "")) expect([String(first), String(last), "24", String(count), "1", String(exact)], n).toContain(n);
+    // the fixture's only differences are the listed ones, each a single minute (the core test checks the engine)
+    const minute = (kst: string) => Date.parse(`${kst.replace(" ", "T")}:00Z`) / 60_000;
+    expect(kasiTerms.notes.knownPlusOneMinute.every((d) => minute(d.manseryeok) - minute(d.kasi) === 1)).toBe(true);
+    expect(kasiTerms.sourceUrl).toContain("astro.kasi.re.kr");
+    // it stands with the other 절입 facts, right after the largest difference
+    const ids = evidenceItems("saju").map((item) => item.id);
+    expect(ids.indexOf("saju-kasi-solar-terms")).toBe(ids.indexOf("saju-solar-term-max") + 1);
+  });
+
   it("draw the top numbers and the source list from the data, never typed twice", () => {
     const fact = (id: string) => facts.find((f) => f.id === id)!;
     const tiles = evidenceHighlights().map((t) => t.value);
@@ -120,5 +146,19 @@ describe("source lines", () => {
     expect(fact("saju-engine").detailKo).toContain("11종");
     expect(rows.map((r) => r.title).join(" ")).toContain("KASI");
     expect(fact("saju-jpl-horizons").valueKo).toBe("NASA JPL Horizons");
+  });
+
+  it("credit the birthplace longitudes to OpenStreetMap under ODbL 1.0, linked, with the count the list holds", () => {
+    const fact = facts.find((f) => f.id === "saju-birth-places");
+    const count = `${BIRTH_PLACE_ROWS.length}곳`;
+    expect(fact).toMatchObject({ area: "saju", valueKo: count });
+    for (const words of [count, "OpenStreetMap", "ODbL 1.0"]) expect(fact?.detailKo, words).toContain(words);
+    expect(evidenceSources().find((row) => row.kind === "지도 데이터")).toEqual({
+      kind: "지도 데이터", title: "OpenStreetMap 기여자 (ODbL 1.0)", note: `출생지 ${count}의 경도`, href: BIRTH_PLACE_CREDIT_URL,
+    });
+    expect(BIRTH_PLACE_CREDIT_URL).toBe("https://www.openstreetmap.org/copyright");
+    // it stands with the other clock facts, after the DST one
+    const ids = evidenceItems("saju").map((item) => item.id);
+    expect(ids.indexOf("saju-birth-places")).toBe(ids.indexOf("saju-daylight-saving") + 1);
   });
 });

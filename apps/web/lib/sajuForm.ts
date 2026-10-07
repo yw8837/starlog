@@ -7,6 +7,7 @@ import {
   type SajuErrorCode,
   type SajuInput,
 } from "@starlog/core";
+import { BIRTH_PLACE_ROWS, LEGACY_PLACE_IDS } from "./birthPlaces";
 
 /**
  * Saju input form: the values the user picks, how they map onto the engine input, and the
@@ -15,33 +16,30 @@ import {
 
 export interface BirthPlace {
   id: string;
-  /** Shown in the select and passed to the engine as the place name. */
+  /** Shown in the select and on the chart, and passed to the engine as the place name: "서울", "경북 포항". */
   label: string;
-  /** Degrees east; provinces use the longitude of the city in brackets. */
+  /** Degrees east of the 시·군 청사 (source and date in lib/birthPlaces.ts). */
   longitude: number;
+  /** The select's group: 특별시·광역시, or the 도. */
+  group: string;
 }
 
-export const BIRTH_PLACES: readonly BirthPlace[] = Object.freeze([
-  { id: "seoul", label: "서울", longitude: 126.978 },
-  { id: "busan", label: "부산", longitude: 129.075 },
-  { id: "daegu", label: "대구", longitude: 128.601 },
-  { id: "incheon", label: "인천", longitude: 126.705 },
-  { id: "gwangju", label: "광주", longitude: 126.851 },
-  { id: "daejeon", label: "대전", longitude: 127.385 },
-  { id: "ulsan", label: "울산", longitude: 129.311 },
-  { id: "sejong", label: "세종", longitude: 127.289 },
-  { id: "gyeonggi", label: "경기(수원)", longitude: 127.029 },
-  { id: "gangwon", label: "강원(춘천)", longitude: 127.73 },
-  { id: "chungbuk", label: "충북(청주)", longitude: 127.489 },
-  { id: "chungnam", label: "충남(홍성)", longitude: 126.661 },
-  { id: "jeonbuk", label: "전북(전주)", longitude: 127.148 },
-  { id: "jeonnam", label: "전남(무안)", longitude: 126.462 },
-  { id: "gyeongbuk", label: "경북(안동)", longitude: 128.729 },
-  { id: "gyeongnam", label: "경남(창원)", longitude: 128.681 },
-  { id: "jeju", label: "제주", longitude: 126.531 },
-]);
+/** Every 시·군, each 특별시·광역시 and 세종 as one (161), 서울 first. */
+export const BIRTH_PLACES: readonly BirthPlace[] = Object.freeze(BIRTH_PLACE_ROWS.map(({ id, label, longitude, group }) => ({ id, label, longitude, group })));
 
-export const findPlace = (id: string): BirthPlace | undefined => BIRTH_PLACES.find((place) => place.id === id);
+/** The select's groups (optgroups) in order, each with its places. */
+export const BIRTH_PLACE_GROUPS: readonly { label: string; places: readonly BirthPlace[] }[] = Object.freeze(
+  [...new Set(BIRTH_PLACES.map((place) => place.group))].map((label) => ({ label, places: BIRTH_PLACES.filter((place) => place.group === label) })),
+);
+
+/**
+ * The place for an id. The 17 ids from before the 시·군 list (`gyeonggi` …) still read, as the city each
+ * stood for (경기 → 수원), so stored forms and links keep working; the id itself is never rewritten.
+ */
+export function findPlace(id: string): BirthPlace | undefined {
+  const current = Object.hasOwn(LEGACY_PLACE_IDS, id) ? LEGACY_PLACE_IDS[id] : id;
+  return BIRTH_PLACES.find((place) => place.id === current);
+}
 
 export type Calendar = SajuInput["calendar"];
 export type Gender = SajuInput["gender"];
@@ -53,6 +51,8 @@ export interface SajuForm {
   day: number;
   /** Only meaningful for lunar dates. */
   isLeapMonth: boolean;
+  /** Lunar dates only: 평달인지 윤달인지 모름. Kept only as `true` (isLeapMonth is then false); absent otherwise. */
+  leapMonthUnknown?: boolean;
   timeKnown: boolean;
   /** Stay null until picked, so an untouched select never becomes a birth time. */
   hour: number | null;
@@ -111,17 +111,38 @@ export const GENDER_LABEL: Record<Gender, string> = { female: "여성", male: "�
 
 export const showLeapMonthOption = (form: Pick<SajuForm, "calendar">): boolean => form.calendar === "lunar";
 
+/** The lunar month as the user knows it: 평달, 윤달, or 모름 (the engine computes both and names the other). */
+export type LeapChoice = "regular" | "leap" | "unknown";
+export const LEAP_CHOICE_LABEL: Record<LeapChoice, string> = { regular: "평달", leap: "윤달", unknown: "모름" };
+
+type LeapFields = Pick<SajuForm, "calendar" | "isLeapMonth" | "leapMonthUnknown">;
+
+export const leapChoice = (form: Pick<SajuForm, "isLeapMonth" | "leapMonthUnknown">): LeapChoice =>
+  form.leapMonthUnknown ? "unknown" : form.isLeapMonth ? "leap" : "regular";
+
+/** 윤달 fields only on lunar dates; 모름 only as `leapMonthUnknown: true`, never with isLeapMonth. */
+function normalizeLeap<T extends LeapFields>(form: T): T {
+  const { leapMonthUnknown, ...rest } = form;
+  const lunar = form.calendar === "lunar";
+  const unknown = lunar && leapMonthUnknown === true;
+  return { ...rest, isLeapMonth: lunar && !unknown && form.isLeapMonth, ...(unknown ? { leapMonthUnknown: true } : {}) } as T;
+}
+
+/** The form with 평달, 윤달 or 모름 picked (lunar dates). */
+export const withLeapChoice = <T extends LeapFields>(form: T, choice: LeapChoice): T =>
+  normalizeLeap({ ...form, isLeapMonth: choice === "leap", leapMonthUnknown: choice === "unknown" });
+
 /** Days offered in the day select. Lunar months have 29 or 30 days; the engine rejects a 30th that does not exist. */
 export function daysInMonth(calendar: Calendar, year: number, month: number): number {
   if (calendar === "lunar") return 30;
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
-/** Applies a date change, keeping the day inside the month and dropping 윤달 for solar dates. */
+/** Applies a date change, keeping the day inside the month and dropping 윤달 (and 모름) for solar dates. */
 export function withDate(form: SajuForm, patch: Partial<Pick<SajuForm, "calendar" | "year" | "month" | "day">>): SajuForm {
   const next = { ...form, ...patch };
   const day = Math.min(next.day, daysInMonth(next.calendar, next.year, next.month));
-  return { ...next, day, isLeapMonth: next.calendar === "lunar" ? next.isLeapMonth : false };
+  return normalizeLeap({ ...next, day });
 }
 
 /** Days in the day select: 1–31 (음력 1–30) until the year and month are picked, then that month's. */
@@ -130,11 +151,11 @@ export function draftDays(draft: SajuDraft): number {
   return daysInMonth(draft.calendar, draft.year, draft.month);
 }
 
-/** withDate for a draft: a picked day stays inside the month once it is known; solar dates drop 윤달. */
+/** withDate for a draft: a picked day stays inside the month once it is known; solar dates drop 윤달 (and 모름). */
 export function withDraftDate(draft: SajuDraft, patch: Partial<Pick<SajuDraft, "calendar" | "year" | "month" | "day">>): SajuDraft {
   const next = { ...draft, ...patch };
   const day = next.day === null ? null : Math.min(next.day, draftDays(next));
-  return { ...next, day, isLeapMonth: next.calendar === "lunar" ? next.isLeapMonth : false };
+  return normalizeLeap({ ...next, day });
 }
 
 /** The complete form, or null while the date or the gender is still empty. */
@@ -151,7 +172,7 @@ export function toSajuInput(form: SajuForm): SajuInput {
     year: form.year,
     month: form.month,
     day: form.day,
-    ...(form.calendar === "lunar" ? { isLeapMonth: form.isLeapMonth } : {}),
+    ...(form.calendar === "lunar" ? { isLeapMonth: form.leapMonthUnknown ? ("unknown" as const) : form.isLeapMonth } : {}),
     time: form.timeKnown && form.hour !== null && form.minute !== null ? { hour: form.hour, minute: form.minute } : null,
     gender: form.gender,
     // An unknown id reaches the engine as NaN, which it rejects as invalid input.
@@ -187,6 +208,11 @@ export const SAJU_ERROR_MESSAGES: Readonly<Record<SajuErrorCode, FieldError>> = 
 const UNKNOWN_ERROR: FieldError = { field: "form", message: "명식을 계산하지 못했어요. 입력한 내용을 다시 확인해 주세요." };
 
 export function describeSajuError(error: unknown): FieldError {
+  // The four 1948–51 hours that tzdata skips but KASI's 역서 table keeps: the engine's own sentence says which
+  // source skipped them and how the other reads them, which the fixed message would contradict.
+  if (error instanceof SajuError && error.code === "NONEXISTENT_CIVIL_TIME" && error.message.includes("국제 시간대 자료")) {
+    return { field: "time", message: error.message };
+  }
   if (error instanceof SajuError) return SAJU_ERROR_MESSAGES[error.code] ?? UNKNOWN_ERROR;
   return UNKNOWN_ERROR;
 }
@@ -250,34 +276,37 @@ export function checkSajuDraft(draft: SajuDraft, today: CivilDay): { form: SajuF
 export const formatTime = (hour: number, minute: number) => `${hour}시 ${minute}분`;
 
 /** The date part of the form (the echo line, record titles). */
-export type BirthDate = Pick<SajuForm, "calendar" | "year" | "month" | "day" | "isLeapMonth">;
+export type BirthDate = Pick<SajuForm, "calendar" | "year" | "month" | "day" | "isLeapMonth" | "leapMonthUnknown">;
 
 export function formatBirthDate(form: BirthDate): string {
   const leap = form.calendar === "lunar" && form.isLeapMonth ? "윤" : "";
   return `${form.year}년 ${leap}${form.month}월 ${form.day}일`;
 }
 
-/** Live echo under the date fields, e.g. "→ 1990년 1월 1일 (양력)". */
-export const confirmationLine = (form: BirthDate) => `→ ${formatBirthDate(form)} (${CALENDAR_LABEL[form.calendar]})`;
+/** " · 윤달 모름" after the calendar of a lunar date whose 윤달 is unknown, else "". */
+const leapUnknownPart = (form: Pick<SajuForm, "calendar" | "leapMonthUnknown">) => (form.calendar === "lunar" && form.leapMonthUnknown ? " · 윤달 모름" : "");
+
+/** Live echo under the date fields, e.g. "→ 1990년 1월 1일 (양력)", "→ 1990년 1월 1일 (음력 · 윤달 모름)". */
+export const confirmationLine = (form: BirthDate) => `→ ${formatBirthDate(form)} (${CALENDAR_LABEL[form.calendar]}${leapUnknownPart(form)})`;
 
 /** The echo line once year, month and day are all picked (W-07); null before. */
 export function draftConfirmation(draft: SajuDraft): string | null {
-  const { calendar, year, month, day, isLeapMonth } = draft;
+  const { calendar, year, month, day, isLeapMonth, leapMonthUnknown } = draft;
   if (year === null || month === null || day === null) return null;
-  return confirmationLine({ calendar, year, month, day, isLeapMonth });
+  return confirmationLine({ calendar, year, month, day, isLeapMonth, leapMonthUnknown });
 }
 
 export function formatTimePart(form: SajuForm): string {
   return form.timeKnown && form.hour !== null && form.minute !== null ? formatTime(form.hour, form.minute) : "시간 모름";
 }
 
-/** "1990년 1월 1일 · 양력 · 시간 모름" */
-export const profileSummary = (form: SajuForm) => `${formatBirthDate(form)} · ${CALENDAR_LABEL[form.calendar]} · ${formatTimePart(form)}`;
+/** "1990년 1월 1일 · 양력 · 시간 모름", "1990년 1월 1일 · 음력 · 윤달 모름 · 9시 5분" */
+export const profileSummary = (form: SajuForm) => `${formatBirthDate(form)} · ${CALENDAR_LABEL[form.calendar]}${leapUnknownPart(form)} · ${formatTimePart(form)}`;
 
-/** Everything the chart was computed from: "1990년 1월 1일 (양력) · 시간 모름 · 여성 · 서울" */
+/** Everything the chart was computed from: "1990년 1월 1일 (양력) · 시간 모름 · 여성 · 서울", "… (음력) · 윤달 모름 · …" */
 export function chartInputLine(form: SajuForm): string {
   const place = findPlace(form.placeId)?.label ?? form.placeId;
-  return `${formatBirthDate(form)} (${CALENDAR_LABEL[form.calendar]}) · ${formatTimePart(form)} · ${GENDER_LABEL[form.gender]} · ${place}`;
+  return `${formatBirthDate(form)} (${CALENDAR_LABEL[form.calendar]})${leapUnknownPart(form)} · ${formatTimePart(form)} · ${GENDER_LABEL[form.gender]} · ${place}`;
 }
 
 // ---- storage shape ----
@@ -295,12 +324,14 @@ export function sanitizeSajuForm(value: unknown): SajuForm | null {
   if (typeof v.placeId !== "string" || !findPlace(v.placeId)) return null;
   const timeKnown = v.timeKnown === true;
   if (timeKnown && (!isInt(v.hour, 0, 23) || !isInt(v.minute, 0, 59))) return null;
+  const leapMonthUnknown = v.calendar === "lunar" && v.leapMonthUnknown === true;
   return {
     calendar: v.calendar,
     year: v.year,
     month: v.month,
     day: v.day,
-    isLeapMonth: v.calendar === "lunar" && v.isLeapMonth === true,
+    isLeapMonth: v.calendar === "lunar" && v.isLeapMonth === true && !leapMonthUnknown,
+    ...(leapMonthUnknown ? { leapMonthUnknown: true } : {}),
     timeKnown,
     hour: timeKnown ? (v.hour as number) : null,
     minute: timeKnown ? (v.minute as number) : null,

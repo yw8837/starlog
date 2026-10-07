@@ -71,6 +71,13 @@ describe("스타로그의 근거", () => {
     expect(screen.getByRole("link", { name: "Book T 스캔 보기" }).getAttribute("href")).toBe(bookT.source.urls[0]);
   });
 
+  it("credits the birthplace map data in the source list, linked to OpenStreetMap's copyright page (ODbL)", () => {
+    render(<EvidencePage />);
+    const link = screen.getByRole("link", { name: "OpenStreetMap 기여자 (ODbL 1.0)" });
+    expect(link.getAttribute("href")).toBe("https://www.openstreetmap.org/copyright");
+    expect(link.closest("li")?.textContent).toBe("지도 데이터OpenStreetMap 기여자 (ODbL 1.0)출생지 161곳의 경도");
+  });
+
   it("says how we write: quote the original, modern meanings in our own words, no school labels", () => {
     render(<EvidencePage />);
     const section = screen.getByRole("heading", { level: 2, name: "이렇게 써요" }).closest("section") as HTMLElement;

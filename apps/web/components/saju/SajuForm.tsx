@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Chip } from "@/components/ui/Chip";
 import { Segmented } from "@/components/ui/Segmented";
+import { BIRTH_PLACE_CREDIT_URL } from "@/lib/birthPlaces";
 import type { SajuContext } from "@/lib/reading/types";
 import {
   LOVE_STATUS_OPTIONS,
@@ -17,21 +18,26 @@ import {
   useSajuProfile,
 } from "@/lib/sajuFlow";
 import {
-  BIRTH_PLACES,
+  BIRTH_PLACE_GROUPS,
   CALENDAR_LABEL,
   EMPTY_SAJU_DRAFT,
   GENDER_LABEL,
+  LEAP_CHOICE_LABEL,
   MIN_BIRTH_YEAR,
   checkSajuDraft,
   draftConfirmation,
   draftDays,
   draftOf,
+  findPlace,
+  leapChoice,
   sanitizeSajuForm,
   showLeapMonthOption,
   todayInKorea,
   withDraftDate,
+  withLeapChoice,
   type Calendar,
   type Gender,
+  type LeapChoice,
   type SajuDraft,
   type SajuField,
 } from "@/lib/sajuForm";
@@ -41,6 +47,7 @@ type ErrorKey = SajuField | "consent";
 type Errors = Partial<Record<ErrorKey, string>>;
 
 const CALENDAR_OPTIONS = (["solar", "lunar"] as const).map((value) => ({ value, label: CALENDAR_LABEL[value] }));
+const LEAP_OPTIONS = (["regular", "leap", "unknown"] as const).map((value) => ({ value, label: LEAP_CHOICE_LABEL[value] }));
 const GENDER_OPTIONS = (["female", "male"] as const).map((value) => ({ value, label: GENDER_LABEL[value] }));
 const TIME_OPTIONS = [
   { value: "known", label: "알아요" },
@@ -119,6 +126,8 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
   const years = range(maxYear, MIN_BIRTH_YEAR);
   const days = range(1, draftDays(draft));
   const confirmation = draftConfirmation(draft);
+  // A 시·도 id saved before the 시·군 list shows as the city it stands for; the id is kept until another pick.
+  const placeValue = findPlace(draft.placeId)?.id ?? draft.placeId;
 
   // Any edit clears the field errors (they can depend on several fields); consent keeps its own.
   const change = (next: SajuDraft) => {
@@ -228,9 +237,18 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
         </div>
 
         {showLeapMonthOption(draft) ? (
-          <Checkbox checked={draft.isLeapMonth} onChange={(isLeapMonth) => change({ ...draft, isLeapMonth })}>
-            윤달이에요
-          </Checkbox>
+          <>
+            <Segmented<LeapChoice>
+              label="평달 또는 윤달"
+              describedBy="leap-help"
+              options={LEAP_OPTIONS}
+              value={leapChoice(draft)}
+              onChange={(choice) => change(withLeapChoice(draft, choice))}
+            />
+            <p id="leap-help" className={s.helper}>
+              모르면 평달로 보고, 윤달이면 달라지는 기둥을 함께 알려 드려요
+            </p>
+          </>
         ) : null}
 
         <p className={s.confirm} aria-live="polite">
@@ -325,18 +343,29 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
             ref={placeRef}
             className={s.select}
             disabled={!ready}
-            value={draft.placeId}
+            value={placeValue}
             onChange={(e) => change({ ...draft, placeId: e.target.value })}
             aria-invalid={Boolean(errors.place)}
             aria-describedby={describedBy("place")}
           >
-            {BIRTH_PLACES.map((place) => (
-              <option key={place.id} value={place.id}>
-                {place.label}
-              </option>
+            {BIRTH_PLACE_GROUPS.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.places.map((place) => (
+                  <option key={place.id} value={place.id}>
+                    {place.label}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </span>
+        {/* ODbL attribution for the longitudes (lib/birthPlaces.ts); a new tab keeps what is filled in */}
+        <p className={s.helper}>
+          출생지 좌표{" "}
+          <a href={BIRTH_PLACE_CREDIT_URL} target="_blank" rel="noopener noreferrer">
+            © OpenStreetMap 기여자
+          </a>
+        </p>
         <FieldError id="place-error" message={errors.place} />
       </div>
 

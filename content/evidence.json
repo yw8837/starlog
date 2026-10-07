@@ -56,6 +56,14 @@
     "doc": "docs/research/saju-calendar-crosscheck-2026-10.md#7. 절입 시각 정확도 (1929–2026, 24절기 × 98년 = 2,352개, 기준 astropy)"
   },
   {
+    "id": "saju-kasi-solar-terms",
+    "area": "saju",
+    "labelKo": "천문연 절입 시각 대조",
+    "valueKo": "192개",
+    "detailKo": "한국천문연구원이 공개한 2021~2028년 24절기 시각 192개와 맞춰 봤어요. 192개 모두 1분 이내로 맞았고, 그중 187개는 분까지 같아요.",
+    "doc": "docs/research/manseryeok-references-2026-10.md#6.1 manseryeok 절입표 vs KASI 공표값 (2021–2028, 192개)"
+  },
+  {
     "id": "saju-jpl-horizons",
     "area": "saju",
     "labelKo": "절입 순간 기준",
@@ -94,6 +102,14 @@
     "valueKo": "1948~51, 1955~60, 1987~88년",
     "detailKo": "서머타임이 있던 시기에 태어났다면 시계를 앞당긴 만큼을 빼고 실제 순간으로 계산해요. 시계를 앞당기며 건너뛴 시각은 받지 않고, 두 번 있었던 시각은 앞 시각으로 봐요.",
     "doc": "docs/research/saju-calendar-crosscheck-2026-10.md#1. 우리 엔진이 따르는 관례 (코드에서 확인)"
+  },
+  {
+    "id": "saju-birth-places",
+    "area": "saju",
+    "labelKo": "출생지 경도",
+    "valueKo": "161곳",
+    "detailKo": "출생지로 고를 수 있는 161곳의 경도는 OpenStreetMap 기여자들이 만든 지도 데이터(ODbL 1.0)에서 시청·군청 위치로 가져왔어요. 고른 곳의 경도로 일주와 시주를 정하는 시각을 보정해요.",
+    "doc": "docs/research/manseryeok-references-2026-10.md#7.1 출생지 161곳의 경도 (2026-10-07)"
   },
   {
     "id": "saju-engine",

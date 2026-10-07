@@ -1,9 +1,12 @@
 import { equationOfTimeMinutes } from "manseryeok";
 
-// saju-policy@1: the calendar/clock conventions the wrapper injects into manseryeok.
+// saju-policy@2: the calendar/clock conventions the wrapper injects into manseryeok.
 // Source: docs/research/saju-engine-eval.md §8 (P1–P13) and §9 (profiles R/D/DU/DL).
+// @2 (2026-10-08) keeps @1's pillar rules and changes what a chart says around them: P7 takes 윤달 '모름', P13 is
+// 10 whole minutes (was 2) and covers 00:00 under the split rule, and the KASI/tzdata DST spans get a notice.
+// Nothing stores the version (charts are recomputed from the birth form; cache keys and chapter tokens carry the form).
 
-export const SAJU_POLICY_VERSION = "saju-policy@1";
+export const SAJU_POLICY_VERSION = "saju-policy@2";
 
 /**
  * Clock used for the day and hour pillars (P3). Year and month pillars always use the birth instant (P2).
@@ -31,18 +34,24 @@ export interface SajuPolicy {
   applyHistoricalDst: boolean;
   /** P2: warn when the birth instant is this close to a 절 */
   termBoundaryWarnSeconds: number;
-  /** P13: warn when the corrected clock is this close to a 시진 boundary (odd hour) */
+  /**
+   * P13: warn when the corrected clock, in whole minutes as shown, is this close to a 시진 boundary (odd hour), or
+   * to 00:00 under SPLIT_NEXT_DAY_STEM, naming the pillars across it
+   */
   hourBoundaryWarnMinutes: number;
 }
 
-/** Profile D of the research: history + DST, Seoul-style LMT at the birthplace, no EoT, split 子 hour. */
+/**
+ * Profile D of the research: history + DST, Seoul-style LMT at the birthplace, no EoT, split 子 hour.
+ * P13 was 2 minutes (birth-record precision); the owner widened it to 10 on 2026-10-07 (tester review).
+ */
 export const DEFAULT_POLICY: Readonly<SajuPolicy> = Object.freeze({
   version: SAJU_POLICY_VERSION,
   clock: "LMT",
   jasi: "SPLIT_NEXT_DAY_STEM",
   applyHistoricalDst: true,
   termBoundaryWarnSeconds: 120,
-  hourBoundaryWarnMinutes: 2,
+  hourBoundaryWarnMinutes: 10,
 });
 
 const CLOCKS: readonly SajuClock[] = ["LMT", "LAT", "ERA_STANDARD", "FIXED_127_5", "WALL"];
@@ -171,6 +180,46 @@ export function koreaCivilOffsetAt(instantMs: number): CivilOffset | null {
 
 export interface ResolvedCivilTime extends CivilOffset {
   instantMs: number;
+}
+
+/**
+ * Where KASI's 역서 DST table (2023 역서 p.212) and tzdata disagree: the wall-clock span between the two
+ * transitions (docs/research/manseryeok-references-2026-10.md §6.2, read on the clock just before each change).
+ * `kasiDst`: KASI's table reads the span as DST while tzdata does not (false: the other way round). P1 keeps
+ * tzdata; the chart names the pillars KASI's reading gives (DST_BOUNDARY). 1987–88 agree.
+ */
+export const KASI_DST_DISAGREEMENTS: readonly { year: number; edge: "start" | "end"; from: string; to: string; kasiDst: boolean }[] = [
+  // KASI starts at 23:00 the evening before, tzdata at 24:00
+  { year: 1948, edge: "start", from: "1948-05-31T23:00", to: "1948-06-01T00:00", kasiDst: true },
+  { year: 1949, edge: "start", from: "1949-04-02T23:00", to: "1949-04-03T00:00", kasiDst: true },
+  { year: 1950, edge: "start", from: "1950-03-31T23:00", to: "1950-04-01T00:00", kasiDst: true },
+  // KASI 05-06 23:00, tzdata 05-05 24:00: 23 hours apart (00:00–00:59 is tzdata's skipped hour, refused by P8)
+  { year: 1951, edge: "start", from: "1951-05-06T00:00", to: "1951-05-06T23:00", kasiDst: false },
+  // KASI ends at 01:00 (DST clock), tzdata at 00:00
+  { year: 1955, edge: "end", from: "1955-09-09T00:00", to: "1955-09-09T01:00", kasiDst: true },
+  { year: 1956, edge: "end", from: "1956-09-30T00:00", to: "1956-09-30T01:00", kasiDst: true },
+  { year: 1957, edge: "end", from: "1957-09-22T00:00", to: "1957-09-22T01:00", kasiDst: true },
+  { year: 1958, edge: "end", from: "1958-09-21T00:00", to: "1958-09-21T01:00", kasiDst: true },
+  { year: 1959, edge: "end", from: "1959-09-20T00:00", to: "1959-09-20T01:00", kasiDst: true },
+  { year: 1960, edge: "end", from: "1960-09-18T00:00", to: "1960-09-18T01:00", kasiDst: true },
+];
+
+/** The KASI/tzdata disagreement a Korean wall-clock reading (fields as UTC ms) falls in, if any. */
+export function kasiDstDisagreementAt(wallMs: number): (typeof KASI_DST_DISAGREEMENTS)[number] | undefined {
+  return KASI_DST_DISAGREEMENTS.find(d => Date.parse(`${d.from}Z`) <= wallMs && wallMs < Date.parse(`${d.to}Z`));
+}
+
+/**
+ * The start whose tzdata-skipped hour holds this wall clock while KASI's table has that hour, because KASI puts the
+ * jump elsewhere (1948–50: an hour earlier, 1951: 23 hours later). tzdata's jump is the span's later end when KASI
+ * starts first, its earlier end otherwise.
+ */
+export function kasiKeepsSkippedHourAt(wallMs: number): (typeof KASI_DST_DISAGREEMENTS)[number] | undefined {
+  return KASI_DST_DISAGREEMENTS.find(d => {
+    if (d.edge !== "start") return false;
+    const jumpMs = Date.parse(`${d.kasiDst ? d.to : d.from}Z`);
+    return jumpMs <= wallMs && wallMs < jumpMs + 60 * MINUTE_MS;
+  });
 }
 
 /**

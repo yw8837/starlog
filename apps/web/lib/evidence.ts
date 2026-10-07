@@ -2,6 +2,7 @@ import "server-only";
 import evidence from "@content/evidence.json";
 import bookT from "@content/kb/sources/book-t.json";
 import pkt from "@content/kb/sources/pkt.json";
+import { BIRTH_PLACE_CREDIT_URL } from "./birthPlaces";
 import { INFO_PAGES } from "./infoPages";
 
 /**
@@ -71,7 +72,10 @@ const SOURCE_BOOKS: readonly EvidenceItem[] = [
 /** Reading order on the page; a fact missing here still shows, after these, in the file's order. */
 const ORDER: Record<EvidenceArea, readonly string[]> = {
   tarot: ["tarot-scan-basis", "pkt", "book-t", "tarot-modern-sources", "tarot-modern-agreement", "tarot-yes-no-sources"],
-  saju: ["saju-engine", "saju-kasi-lunar", "saju-jpl-horizons", "saju-iau-sofa", "saju-solar-term-max", "saju-birth-crosscheck", "saju-wide-sweep", "saju-standard-time", "saju-daylight-saving"],
+  saju: [
+    "saju-engine", "saju-kasi-lunar", "saju-jpl-horizons", "saju-iau-sofa", "saju-solar-term-max", "saju-kasi-solar-terms", "saju-birth-crosscheck",
+    "saju-wide-sweep", "saju-standard-time", "saju-daylight-saving", "saju-birth-places",
+  ],
 };
 
 /** Every fact of the area, word for word, with the source books among the tarot ones. */
@@ -128,8 +132,8 @@ export function evidenceHighlights(): { value: string; label: string }[] {
 /** The modern references of the cross-check, as tarot-modern-sources names them. */
 export const MODERN_SOURCES = ["Biddy Tarot", "Astrala", "Tarot with Gord", "Sibyl Tarot", "Learning the Tarot", "Mark McElroy", "Tarotoo"] as const;
 
-/** 주요 원전·자료: what each part of a reading rests on, one row per source. */
-export function evidenceSources(): { kind: string; title: string; note: string }[] {
+/** 주요 원전·자료: what each part of a reading rests on, one row per source; `href` links the title (a license page). */
+export function evidenceSources(): { kind: string; title: string; note: string; href?: string }[] {
   return [
     { kind: "원전", title: `A. E. Waite 『${PKT_TITLE}』 (${pkt.source.year})`, note: "카드 그림 설명과 정방향·역방향 뜻의 원전" },
     { kind: "원판", title: "라이더-웨이트-스미스 덱 (1909)", note: "78장 카드 그림의 기준" },
@@ -140,5 +144,7 @@ export function evidenceSources(): { kind: string; title: string; note: string }
     { kind: "천문 데이터", title: "NASA JPL Horizons (DE441)", note: "절기가 바뀌는 순간" },
     { kind: "천문 계산", title: "IAU SOFA (ERFA)", note: "절기 시각을 따로 구한 독립 계산" },
     { kind: "역사 자료", title: "한국 표준시·서머타임 변경 이력", note: "1908년 이후 표준시가 바뀐 때와 서머타임 시기를 출생 시각에 반영" },
+    // ODbL attribution for the birthplace longitudes (lib/birthPlaces.ts); the count is the saju-birth-places fact's
+    { kind: "지도 데이터", title: "OpenStreetMap 기여자 (ODbL 1.0)", note: `출생지 ${factValue("saju-birth-places")}의 경도`, href: BIRTH_PLACE_CREDIT_URL },
   ];
 }
