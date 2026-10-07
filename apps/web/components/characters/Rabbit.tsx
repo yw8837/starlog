@@ -1,6 +1,7 @@
 "use client";
 
 import { CharacterFrame } from "./CharacterFrame";
+import { PlushArt, plushSrc } from "./plush";
 import { RabbitHanbok } from "./RabbitHanbok";
 import { RabbitTarot } from "./RabbitTarot";
 import type { CharacterProps } from "./types";
@@ -12,15 +13,20 @@ const COPY = {
 } as const;
 
 /** White rabbit. Tarot: librarian staff (never a hat). Saju: 두루마기 leader. */
-export function Rabbit({ outfit, expression = "idle", size = 160, action = "none", reactOnTap = true, label }: CharacterProps) {
+export function Rabbit({ outfit, expression = "idle", size = 160, action = "none", reactOnTap = true, label, art = "vector" }: CharacterProps) {
   const copy = COPY[outfit];
+  const plush = art === "plush" ? plushSrc("rabbit", outfit) : null;
   return (
     <CharacterFrame size={size} reactOnTap={reactOnTap} label={label ?? copy.label} line={copy.line} expression={expression}>
-      {(shown) => (
-        <g className={action === "write" ? s.writing : undefined}>
-          {outfit === "tarot" ? <RabbitTarot expression={shown} writing={action === "write"} /> : <RabbitHanbok expression={shown} />}
-        </g>
-      )}
+      {(shown) =>
+        plush ? (
+          <PlushArt src={plush} size={size} />
+        ) : (
+          <g className={action === "write" ? s.writing : undefined}>
+            {outfit === "tarot" ? <RabbitTarot expression={shown} writing={action === "write"} /> : <RabbitHanbok expression={shown} />}
+          </g>
+        )
+      }
     </CharacterFrame>
   );
 }

@@ -19,4 +19,6 @@ export interface CharacterProps {
   reactOnTap?: boolean;
   /** Accessible name. */
   label?: string;
+  /** "plush" draws the raster cut-out (components/characters/plush.tsx) when the outfit has one. Default "vector". */
+  art?: "vector" | "plush";
 }

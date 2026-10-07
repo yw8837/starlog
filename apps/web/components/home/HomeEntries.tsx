@@ -43,7 +43,7 @@ export function TarotEntry() {
         </span>
       </Link>
       <span className={s.entryCharacter}>
-        <Cat outfit="tarot" size={120} />
+        <Cat outfit="tarot" size={120} art="plush" />
       </span>
     </div>
   );
@@ -64,7 +64,7 @@ export function SajuEntry() {
         </span>
       </Link>
       <span className={s.entryCharacter}>
-        <Rabbit outfit="hanbok" size={120} />
+        <Rabbit outfit="hanbok" size={120} art="plush" />
       </span>
     </div>
   );
