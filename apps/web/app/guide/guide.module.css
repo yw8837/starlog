@@ -63,7 +63,8 @@
   margin-left: 8px;
 }
 
-@media (min-width: 720px) {
+/* The app keeps its 480px column below 1024px, so the two-column hero waits for the desktop layout (a 768px tablet squeezed the title to 0px). */
+@media (min-width: 1024px) {
   .index {
     gap: 28px;
     padding-top: 40px;
