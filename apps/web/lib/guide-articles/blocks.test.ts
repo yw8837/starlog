@@ -25,6 +25,7 @@ function tableIn(slug: string, caption: string): Table {
 }
 
 interface KbCard {
+  keywordsKo: string[];
   core: { upright: string[]; reversed: string[]; oneLine: { upright: string; reversed: string } };
   imagery: { commonMisdescriptions: { wrong: string; regex: string }[] };
 }
@@ -191,6 +192,27 @@ describe("the converted articles' tables agree with the engine, the reading tabl
     for (const word of upright.split(", ")) expect(kb.core.upright, word).toContain(word);
     for (const word of reversed.split(", ")) expect(kb.core.reversed, word).toContain(word);
     expect(blocksOf(findArticle("upright-and-reversed") as GuideArticle).some((block) => block.kind === "figure" && block.src === "/cards/major-17-star.webp")).toBe(true);
+  });
+
+  it("card articles: the keyword table quotes the card's KB word for word, and a card row shows the card", () => {
+    const withoutTable: string[] = [];
+    for (const article of GUIDE_ARTICLES.filter((a) => a.cardId)) {
+      const cardId = article.cardId as string;
+      const table = blocksOf(article).find((block): block is Table => block.kind === "table" && block.caption === `${getCard(cardId).names.ko} 카드의 키워드`);
+      if (!table) {
+        withoutTable.push(article.slug);
+        continue;
+      }
+      const kb = kbCard(cardId);
+      expect(table.head, article.slug).toEqual(["구분", "정방향", "역방향"]);
+      expect(table.rows, article.slug).toEqual([
+        ["한 줄로", kb.core.oneLine.upright, kb.core.oneLine.reversed],
+        ["핵심 낱말", kb.keywordsKo.join(", "), kb.core.reversed.join(", ")],
+      ]);
+      expect(blocksOf(article).some((block) => block.kind === "cardRow" && block.cards.includes(cardId)), article.slug).toBe(true);
+    }
+    // 은둔자 stays the article without blocks that app/guide/guide.test.tsx renders.
+    expect(withoutTable).toEqual(["the-hermit"]);
   });
 
   it("celtic-cross-spread: the tables name the ten places as the diagram's legend does, in order", () => {

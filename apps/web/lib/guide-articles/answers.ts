@@ -206,23 +206,25 @@ export const GUIDE_HOWTO: Readonly<Record<string, GuideHowTo>> = {
  */
 export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: string }>> = Object.fromEntries(
   [
-    ...["saju-without-birth-time", "the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-02" }] as const),
+    // 은둔자 keeps its plain sections: app/guide/guide.test.tsx renders it as the article without blocks.
+    ["the-hermit", { published: "2026-09-30", updated: "2026-10-02" }] as const,
+    // 2026-10-07: the same words restructured into tables, diagrams, steps, callouts and card rows, with
+    // 한눈에 보기 added (death had changed on 10-06: "unrelated to real death" became "an ending, but not
+    // read only negatively").
+    ...["how-to-read-tarot", "upright-and-reversed", "saju-without-birth-time", "five-elements", "the-star"].map(
+      (slug) => [slug, { published: "2026-09-30", updated: "2026-10-07" }] as const,
+    ),
     ...[
-      "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "minor-arcana-suits", "court-cards",
+      "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "minor-arcana-suits", "court-cards",
       "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
-      "wheel-of-fortune", "justice", "the-hanged-man", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
-      "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune",
-    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-02" }] as const),
-    // death: "unrelated to real death" became "an ending, but not read only negatively".
-    ["death", { published: "2026-10-01", updated: "2026-10-06" }] as const,
-    // The same words restructured into tables, diagrams, steps and callouts, with 한눈에 보기 added.
-    ...["how-to-read-tarot", "upright-and-reversed", "five-elements"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-07" }] as const),
-    ...["celtic-cross-spread", "heavenly-stems", "earthly-branches"].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-07" }] as const),
+      "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
+      "heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune",
+    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-07" }] as const),
     ...[
       "major-and-minor-arcana", "wands-suit", "cups-suit", "swords-suit", "pentacles-suit", "major-arcana-overview",
       "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
       "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
       "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
-    ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-06" }] as const),
+    ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-07" }] as const),
   ],
 );
