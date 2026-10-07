@@ -17,7 +17,7 @@ export function HomeHero() {
   return (
     <div className={s.hero}>
       <h1 className={s.heroTitle}>
-        <span className={s.heroLine}>연애도 일도 사람 사이도</span> <span className={s.heroLine}>한 줄로 물어보세요</span>
+        <span className={s.heroLine}>연애도 일도 사람 사이도</span> <span className={s.heroLine}>고민 그대로 편하게 물어보세요</span>
       </h1>
       <p className={s.heroSub}>타로는 고양이가, 사주는 토끼 선생님이 내 상황에 맞춰 읽어 드려요.</p>
     </div>
@@ -43,7 +43,7 @@ export function TarotEntry() {
         </span>
       </Link>
       <span className={s.entryCharacter}>
-        <Cat outfit="tarot" size={120} art="plush" />
+        <Cat outfit="tarot" size={120} />
       </span>
     </div>
   );
@@ -64,7 +64,7 @@ export function SajuEntry() {
         </span>
       </Link>
       <span className={s.entryCharacter}>
-        <Rabbit outfit="hanbok" size={120} art="plush" />
+        <Rabbit outfit="hanbok" size={120} />
       </span>
     </div>
   );

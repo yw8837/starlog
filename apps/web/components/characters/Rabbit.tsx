@@ -13,9 +13,9 @@ const COPY = {
 } as const;
 
 /** White rabbit. Tarot: librarian staff (never a hat). Saju: 두루마기 leader. */
-export function Rabbit({ outfit, expression = "idle", size = 160, action = "none", reactOnTap = true, label, art = "vector" }: CharacterProps) {
+export function Rabbit({ outfit, expression = "idle", size = 160, action = "none", reactOnTap = true, label, art = "plush" }: CharacterProps) {
   const copy = COPY[outfit];
-  const plush = art === "plush" ? plushSrc("rabbit", outfit) : null;
+  const plush = art === "plush" ? plushSrc("rabbit", outfit, action === "write" ? "write" : "none") : null;
   return (
     <CharacterFrame size={size} reactOnTap={reactOnTap} label={label ?? copy.label} line={copy.line} expression={expression}>
       {(shown) =>

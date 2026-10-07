@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GuideArticlePage, { generateMetadata as articleMetadata } from "@/app/guide/[slug]/page";
 import GuideSajuPage, { metadata as sajuMetadata } from "@/app/guide/saju/page";
 import GuideTarotPage, { metadata as tarotMetadata } from "@/app/guide/tarot/page";
+import { GUIDE_HOST_LINES } from "@/app/guide/GuideHost";
 import { SITE } from "@/lib/config";
 import { GUIDE_CATEGORIES, articlesIn, findArticle } from "@/lib/guide";
 import nextConfig from "@/next.config";
@@ -18,8 +19,8 @@ afterEach(() => {
 });
 
 const TABS = [
-  { category: "tarot", Page: GuideTarotPage, metadata: tarotMetadata, title: "타로 가이드", hero: "타로 카드를 펼치기 전에 알아 두면 좋은 이야기", host: "별을 읽는 점성술사 고양이", line: "카드 읽는 법, 제가 차근차근 알려 줄게요" },
-  { category: "saju", Page: GuideSajuPage, metadata: sajuMetadata, title: "사주 가이드", hero: "사주 명식을 읽기 전에 알아 두면 좋은 이야기", host: "한복 입은 토끼 선생님", line: "명식 읽는 법은 제가 맡을게요" },
+  { category: "tarot", Page: GuideTarotPage, metadata: tarotMetadata, title: "타로 가이드", hero: "타로 카드를 펼치기 전에 알아 두면 좋은 이야기", host: "별을 읽는 점성술사 고양이" },
+  { category: "saju", Page: GuideSajuPage, metadata: sajuMetadata, title: "사주 가이드", hero: "사주 명식을 읽기 전에 알아 두면 좋은 이야기", host: "한복 입은 토끼 선생님" },
 ] as const;
 
 describe("guide tabs", () => {
@@ -37,9 +38,9 @@ describe("guide tabs", () => {
       ]);
       expect(links.map((a) => a.getAttribute("aria-current"))).toEqual(GUIDE_CATEGORIES.map((c) => (c === tab.category ? "page" : null)));
 
-      // The leader is tap-reactive (a button), and speaks the tab's line.
+      // The leader is tap-reactive (a button), and speaks one of the tab's lines.
       expect(screen.getByRole("button", { name: tab.host })).toBeTruthy();
-      expect(screen.getByText(tab.line)).toBeTruthy();
+      expect(GUIDE_HOST_LINES[tab.category].some((line) => screen.queryByText(line))).toBe(true);
 
       const items = within(screen.getByRole("main").querySelector("ul") as HTMLElement).getAllByRole("link");
       const articles = articlesIn(tab.category);

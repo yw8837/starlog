@@ -11,7 +11,7 @@ test("home: hero, then 타로 · 사주 above the fold, quick cards, 별자리 �
   const main = page.getByRole("main");
   const h1 = page.getByRole("heading", { level: 1 });
   await expect(h1).toHaveCount(1);
-  await expect(h1).toContainText("한 줄로 물어보세요");
+  await expect(h1).toContainText("고민 그대로 편하게 물어보세요");
 
   const tarot = main.getByRole("link", { name: /타로 보기/ });
   const saju = main.getByRole("link", { name: /사주 보기/ });
