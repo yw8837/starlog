@@ -3,6 +3,7 @@
 import { useMemo, type ReactNode } from "react";
 import { AiNote } from "@/components/reading/AiNote";
 import { ChartPanel } from "@/components/saju/ChartPanel";
+import { GlanceCard } from "@/components/saju/GlanceCard";
 import { InputLine } from "@/components/saju/InputLine";
 import { chartFor } from "@/components/saju/useSajuChart";
 import { Feedback } from "@/components/tarot/Feedback";
@@ -19,7 +20,7 @@ import { ChapterContents } from "./ChapterContents";
 import type { ChapterFollowUp } from "./ChapterView";
 import s from "./ChapterView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
-import { isSection } from "@/lib/reading/validate";
+import { isSajuGlance, isSection } from "@/lib/reading/validate";
 
 type SajuChapterViewProps = {
   /** e.g. "사주 기록 · 10월 1일" */
@@ -33,7 +34,7 @@ type SajuChapterViewProps = {
   checkin?: ReactNode;
 };
 
-/** "월령과 뿌리 · 태·장생·건록으로 본 한겨울의 해" → a short label and the heading proper. */
+/** "타고난 바탕 · 태어난 계절이 나에게 주는 힘" → a short label and the heading proper. */
 function splitHeading(heading: string): { label: string | null; title: string } {
   const at = heading.indexOf(" · ");
   return at < 0 ? { label: null, title: heading } : { label: heading.slice(0, at), title: heading.slice(at + 3) };
@@ -66,6 +67,8 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
         {checkin}
         <ChapterContents />
         <div id="chapter-reading" className={`${s.sections} ${s.anchor}`}>
+          {/* 한눈에 보기 first (owner 2026-10-07); a reading saved before it, or one whose card cannot be read, has none */}
+          {isSajuGlance(reading.glance) ? <GlanceCard glance={reading.glance} /> : null}
           {sections.map((section) => {
             const { label, title: heading } = splitHeading(section.heading);
             return (

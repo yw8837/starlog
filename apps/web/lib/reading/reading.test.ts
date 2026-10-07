@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { SajuReadingSchema } from "@/lib/ai/schemas";
+import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { commitQuota, parseApiError, parseStreamLine, postGeneration, postJson, readLines, type ApiError } from "./api";
 import { describeApiError, resetLine } from "./errors";
 import { RETRY_CAPTION, advanceProgress, progressPlan, startProgress } from "./progress";
@@ -205,11 +207,22 @@ describe("progress captions", () => {
   });
 
   it("uses the saju section names with the right particle", () => {
-    const plan = progressPlan("saju-reading", { sections: ["월령과 뿌리 · 태어난 계절", "지금의 10년 · 대운의 흐름", "오행 지도 · 많은 기운"] });
+    const plan = progressPlan("saju-reading", { sections: SAJU_PROLOGUE_SECTIONS });
     const captions = plan.stages.map((s) => s.caption);
-    expect(captions).toContain("월령과 뿌리를 적고 있어요");
-    expect(captions).toContain("지금의 10년을 적고 있어요");
-    expect(captions).toContain("오행 지도를 적고 있어요");
+    expect(captions).toContain("타고난 바탕을 적고 있어요");
+    expect(captions).toContain("많은 기운·적은 기운을 적고 있어요");
+    expect(captions).toContain("가까운 관계 속 나를 적고 있어요");
+    expect(captions).toContain("일할 때·쉴 때를 적고 있어요");
+    expect(captions).toContain("지금의 10년과 올해를 적고 있어요");
+  });
+
+  it("names the 한눈에 보기 card where the model writes it: after the observation, before the follow-ups", () => {
+    const stages = progressPlan("saju-reading", { sections: SAJU_PROLOGUE_SECTIONS }).stages;
+    const keys = stages.map((stage) => stage.key);
+    expect(keys.slice(-3)).toEqual(["observation", "glance", "followUps"]);
+    expect(stages.find((stage) => stage.key === "glance")?.caption).toBe("한눈에 보기를 정리하고 있어요");
+    // the stream's order is the schema's: the progress stages follow it
+    expect(Object.keys(SajuReadingSchema.shape)).toEqual(["sections", "observation", "glance", "followUps"]);
   });
 });
 

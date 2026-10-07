@@ -66,16 +66,25 @@ describe("topic facts for the golden charts (spec §6.3, §12.1)", () => {
     expect([groupsOf("C3", "money").비겁!.count, groupsOf("C3", "money").재성!.count]).toEqual([3, 1]);
   });
 
-  it("carries this and next month's 월건 (R1); reads the coming 세운 against its 대운 by stems too (R2) and names the 방합 it completes (R3)", () => {
+  it("carries two months' 월건 (R1); reads the coming 세운 against its 대운 by stems too (R2) and names the 방합 it completes (R3)", () => {
     const f = buildTopicFactSet(chartOf("C8"), NOW, "love"); // 대운 at the next 입춘: 癸卯
-    expect([f.monthly?.current.gz, f.monthly?.next.gz, f.monthly?.next.term?.name]).toEqual(["丁酉", "戊戌", "한로"]);
-    expect(f.allowed.glyphs).toEqual(expect.arrayContaining(["酉", "戌"]));
+    // evalNow is six days before 한로: 丁酉 ends within ten days, so the months are 戊戌 and 己亥
+    expect([f.monthly?.current.gz, f.monthly?.current.term?.name, f.monthly?.next.gz, f.monthly?.next.term?.name]).toEqual(["戊戌", "한로", "己亥", "입동"]);
+    expect(f.allowed.glyphs).toEqual(expect.arrayContaining(["戌", "亥"]));
+    const mid = buildTopicFactSet(chartOf("C8"), Date.parse("2026-09-20T03:00:00Z"), "love");
+    expect([mid.monthly?.current.gz, mid.monthly?.next.gz, mid.monthly?.next.term?.name]).toEqual(["丁酉", "戊戌", "한로"]);
     expect(f.nextAnnual.luck?.relations.map((r) => `${r.type} ${r.members.join("-")}`)).toEqual([
       "반합(半合, 나무 기운) 未(다가오는 해 세운 지지)-卯(대운 지지)", "천간충(天干沖) 丁(다가오는 해 세운 천간)-癸(대운 천간)",
     ]);
     const c7 = buildTopicFactSet(chartOf("C7"), NOW, "money"); // 丁巳 丙午 丁酉 乙巳 + 2027 未
     expect(c7.nextAnnual.relationsToNatal.map((r) => `${r.type} ${r.members.join("-")}`))
       .toContain("방합(方合, 불 기운) 巳(년지·시지)-午(월지)-未(다가오는 해 세운 지지)");
+  });
+
+  it("gives a topic reading written the day before 한로 (2026-10-07 KST) the coming two months, never the ending 丁酉", () => {
+    const f = buildTopicFactSet(chartOf("C1"), Date.parse("2026-10-07T12:00:00+09:00"), "money");
+    expect([f.monthly?.current.gz, f.monthly?.current.term, f.monthly?.next.gz, f.monthly?.next.term]).toEqual(["戊戌", { name: "한로" }, "己亥", { name: "입동" }]);
+    expect(JSON.stringify(f)).not.toMatch(/丁酉|백로/);
   });
 
   it("keeps a 삼합 that holds the 일지 among the 일지's relations when its glyph stands twice (子 申 子 辰)", () => {

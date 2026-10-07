@@ -59,7 +59,11 @@ describe("schemas", () => {
       lockedToc: tarotSample.free.lockedToc,
     }).success).toBe(true);
     expect(SajuTeaserSchema.safeParse(sajuSample.free).success).toBe(true);
-    expect(SajuReadingSchema.safeParse({ ...sajuSample.paid, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "앞으로 몇 주 동안 끝낸 일의 시간과 돈을 셀 때 힘이 빠지는지, 오히려 개운한지 눈여겨보세요. 개운하다면 巳 속의 경금(庚金)을 꺼내 쓰고 있다는 뜻으로 읽을 수 있어요." }, followUps: [] }).success).toBe(true);
+    const sajuNew = { ...sajuSample.paid, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "앞으로 몇 주 동안 끝낸 일의 시간과 돈을 셀 때 힘이 빠지는지, 오히려 개운한지 눈여겨보세요. 개운하다면 巳 속의 경금(庚金)을 꺼내 쓰고 있다는 뜻으로 읽을 수 있어요." }, followUps: [] };
+    const glance = { goesWell: "g", watchOut: "w", remedy: "r", thisYear: "y", thisYearAction: "a" };
+    expect(SajuReadingSchema.safeParse({ ...sajuNew, glance }).success).toBe(true);
+    expect(SajuReadingSchema.safeParse(sajuNew).success).toBe(false); // 한눈에 보기 is required of a new reading (owner 2026-10-07)
+    expect(StoredSajuReadingSchema.safeParse(sajuNew).success).toBe(true); // a reading saved before it still reads
   });
 });
 

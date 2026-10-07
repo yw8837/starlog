@@ -1,4 +1,5 @@
 import type { Orientation, TemplateId } from "@starlog/core";
+import type { SajuGlance } from "@/lib/ai/schemas";
 
 /**
  * The reading API's bodies as the browser reads them (route handlers under app/api). Fields the
@@ -62,9 +63,14 @@ export interface SajuTeaserData {
   freshUntil?: string;
 }
 
+/** 한눈에 보기 (owner 2026-10-07): one plain sentence per item; the labels are the screen's (lib/sajuPrologue.ts). Defined once, by its schema. */
+export type { SajuGlance };
+
 export interface SajuReadingData {
   sections: Section[];
   observation?: Section;
+  /** Shown on top of the reading; readings saved before 2026-10-07 have none. */
+  glance?: SajuGlance;
   story?: { title: string; body: string };
   followUps?: string[];
 }

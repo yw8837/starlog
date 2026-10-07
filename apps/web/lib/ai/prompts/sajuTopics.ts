@@ -6,7 +6,7 @@ import { situationOf } from "@/lib/sajuTopics";
 import type { HistoryItem } from "@/lib/ai/history";
 import {
   PLACE_LABEL, annualToLuck, buildFactSet, glyphDisplay, layerToNatal, luckStarts, natalPillars, relationsTo, tenGod, yearGanzhi,
-  type MonthPillar, type Placed, type PlacedPillar, type Relation, type SajuFactSet,
+  type LabelledMonth, type Placed, type PlacedPillar, type Relation, type SajuFactSet,
 } from "@/lib/ai/prompts/saju";
 
 /**
@@ -87,7 +87,7 @@ export interface TopicAnchors {
 }
 
 /** A 월건 as topic facts carry it: the 절 by name only, since its date is what the timing checks reject. */
-export type TopicMonth = Omit<MonthPillar, "term"> & { term: { name: string } | null };
+export type TopicMonth = Omit<LabelledMonth, "term"> & { term: { name: string } | null };
 
 export interface SajuTopicFactSet extends Omit<SajuFactSet, "schemaVersion" | "allowed" | "profile" | "monthly"> {
   schemaVersion: "saju-topic-facts/1";
@@ -385,7 +385,7 @@ export function buildTopicFactSet(
 
   const chip = situation ? situationOf(topic, situation) : undefined;
   const { allowed: _baseAllowed, profile: _profile, schemaVersion: _version, monthly, ...rest } = base;
-  const byTermName = (m: MonthPillar): TopicMonth => ({ ...m, term: m.term ? { name: m.term.name } : null });
+  const byTermName = (m: LabelledMonth): TopicMonth => ({ ...m, term: m.term ? { name: m.term.name } : null });
   return {
     ...rest,
     schemaVersion: "saju-topic-facts/1",
@@ -397,7 +397,7 @@ export function buildTopicFactSet(
     luckEdge,
     dayWindow,
     focus,
-    allowed: { glyphs: [...glyphs], tenGods: [...tenGods], stages: base.allowed.stages, years, yearMonths: [...yearMonths].sort(), anchors },
+    allowed: { glyphs: [...glyphs], limitGlyphs: base.allowed.limitGlyphs, tenGods: [...tenGods], stages: base.allowed.stages, years, yearMonths: [...yearMonths].sort(), anchors },
     ...(chip ? { situation: { id: chip.id, label: chip.label } } : {}),
     freshUntil: teaserFreshUntil(base, now),
   };

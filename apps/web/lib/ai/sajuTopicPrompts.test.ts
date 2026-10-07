@@ -12,7 +12,7 @@ import { SAJU_TOPIC_SYSTEM, sajuTopicFollowUpPrompt, sajuTopicReadingPrompt, saj
 import { mockSajuTopicReading } from "./mockSajuTopics";
 import type { SajuReading } from "./schemas";
 import { MODEL_BLIND_RULE, aiTells } from "./style";
-import { allowedFactViolations } from "./validate";
+import { allowLimitPillars, allowedFactViolations } from "./validate";
 import { topicHardViolations, validateSajuTopicReading } from "./validateSajuTopics";
 
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -28,9 +28,14 @@ const situations = golden.situations as Record<SajuTopicId, Record<string, SajuS
 describe("주제별 사주 prompts (spec §7.5)", () => {
   it("pins the standard and 신년운세 prompts by hash (each change is on purpose and noted here)", () => {
     // changed on purpose 2026-10-07: the observation format names this and next month's 월건 (gap review R1), and the
-    // preamble says 같은 글자·같은 간지 keep those words (no 복음·반음·병림); that one line is all three hashes moved by
+    // preamble says 같은 글자·같은 간지 keep those words (no 복음·반음·병림); that one line is all three hashes moved by.
+    // Then SAJU_SYSTEM alone (owner 2026-10-07): the plain-words block, the 한눈에 보기 card, plain section names, the
+    // two-month 월건 wording; the preamble and 신년운세 stay as they were.
+    // Then SAJU_SYSTEM alone again (review 2026-10-08): month labels and 절기·간지 month names, the preamble's section names
+    // mapped onto the plain headings, the limits' other pillars kept to 계산 기준, the card's time, make-up and 입춘 rules,
+    // four more glossed terms and the 많은 기운·적은 기운 label.
     expect(hash(SAJU_PREAMBLE)).toBe("eec571e064c5235669420cbeed21a37f640cfe6486432d1af6e31e7a2379abe6");
-    expect(hash(SAJU_SYSTEM)).toBe("91a60fd88e1996f5273fc52c7cd829ae911217b482750fd8c8d1d4b95cde40aa");
+    expect(hash(SAJU_SYSTEM)).toBe("2dfffdd9b8c4cedd2c4062c2939914252b47d4fdeede79a5e8b610d569e6ed51");
     expect(hash(NEWYEAR_SYSTEM)).toBe("33840c625621d9d3588057caa7018231f0a6ffdfbca62e79cce05ea61de29986");
   });
 
@@ -125,13 +130,28 @@ describe("the validator's rules that first attempts broke in the 2026-10-06 real
     expect(sajuTopicTeaserPrompt(money)).not.toContain("<chart_rules>");
   });
 
+  it("gives a 연애운·재회운 teaser, which carries the day-pillar window, the reading's limit-only line with the window's time (review 2026-10-08)", () => {
+    for (const topic of ["love", "reunion"] as const) {
+      const f = buildTopicFactSet(C1, NOW, topic); // C1: 00:00~00:32 gives 乙丑, whose 丑 is not the chart's
+      const lead = "limits에만 나오는 다른 기둥의 글자: 丑.";
+      expect(inside(sajuTopicReadingPrompt(f), "chart_rules")).toContain(lead);
+      const rules = inside(sajuTopicTeaserPrompt(f), "chart_rules");
+      expect(rules).toContain(lead);
+      expect(rules).toContain(f.dayWindow!.range);
+    }
+    // no window to carry: the money teaser, and an hour-known chart
+    expect(sajuTopicTeaserPrompt(money)).not.toContain("<chart_rules>");
+    expect(sajuTopicTeaserPrompt(buildTopicFactSet(chartOf("C3"), NOW, "love"))).not.toContain("<chart_rules>");
+  });
+
   it.each(golden.charts.flatMap((c) => TOPICS.map((topic) => [c.id, topic] as const)))(
     "%s %s: <chart_rules> says what the validator would flag: the groups to name as missing, the basis, the glyphs <facts> shows outside the chart",
     (id, topic) => {
       const f = buildTopicFactSet(chartOf(id), NOW, topic, situations[topic][id]);
       const rules = inside(sajuTopicReadingPrompt(f), "chart_rules");
       // The validator is the oracle: what it asks of a reading that says nothing in 2절·3절 …
-      const blank = { sections: TOPIC_SECTIONS[topic].map((heading) => ({ heading, body: "" })), observation: { heading: TOPIC_OBSERVATION_HEADING, body: "" }, followUps: [] };
+      const glance = { goesWell: "", watchOut: "", remedy: "", thisYear: "", thisYearAction: "" };
+      const blank = { sections: TOPIC_SECTIONS[topic].map((heading) => ({ heading, body: "" })), observation: { heading: TOPIC_OBSERVATION_HEADING, body: "" }, glance, followUps: [] };
       const asked = validateSajuTopicReading(blank, f);
       for (const heading of TOPIC_SECTIONS[topic].slice(1, 3)) {
         const lead = `'${heading}' 절에서 겉에 없는 `;
@@ -141,11 +161,17 @@ describe("the validator's rules that first attempts broke in the 2026-10-06 real
         for (const name of zero ? zero.slice(lead.length, zero.indexOf("을 없거나")).split("·") : []) expect(line).toContain(name);
         expect(line.includes("시주 없이 여섯 글자 기준")).toBe(asked.includes(`'${heading}' 절에서 개수는 시주 없이 여섯 글자 기준이라고 밝혀 주세요.`));
       }
-      // … and the glyphs it rejects when <facts> is copied as is.
-      const out: string[] = [];
-      allowedFactViolations(topicFactsBlock(f), f.allowed, out);
+      // … and the glyphs it rejects when <facts> is copied as is: anywhere (쓰지 않는 글자), or outside the 계산 기준 절,
+      // which copies the limits (the pillars only the limits name, review 2026-10-08).
       const listed = (text: string | undefined, lead: string, sep: string) => (text?.includes(lead) ? text.slice(text.indexOf(lead) + lead.length).split(". ")[0]!.split(sep).sort() : []);
-      expect(listed(rules, "쓰지 않는 글자: ", "·")).toEqual(listed(out.find((v) => v.startsWith("명식에 없는 간지 글자")), "나왔어요: ", ", "));
+      const rejected = (text: string) => {
+        const out: string[] = [];
+        allowedFactViolations(text, f.allowed, out);
+        return listed(out.find((v) => v.startsWith("명식에 없는 간지 글자")), "나왔어요: ", ", ");
+      };
+      const anywhere = rejected(allowLimitPillars(topicFactsBlock(f), f, true));
+      expect(listed(rules, "쓰지 않는 글자: ", "·")).toEqual(anywhere);
+      expect(listed(rules, "limits에만 나오는 다른 기둥의 글자: ", "·")).toEqual(rejected(topicFactsBlock(f)).filter((g) => !anywhere.includes(g)));
     },
   );
 
@@ -160,14 +186,27 @@ describe("the validator's rules that first attempts broke in the 2026-10-06 real
     expect(hardFindings("한로부터 드는 이번 달 월건의 결을 눈여겨보세요.")).toEqual([]);
   });
 
-  it("flags this and next month's 월건 (丁酉, 戊戌) in a section, never in the observation", () => {
-    const said = (r: SajuReading) => validateSajuTopicReading(r, money).filter((v) => v.includes("월건"));
+  it("flags the facts' two 월건 (戊戌, 己亥 at evalNow, six days before 한로) in a section or the card, never in the observation", () => {
+    const said = (r: SajuReading) => validateSajuTopicReading(r, money).filter((v) => v.includes("월건이 나왔어요"));
     const clean = mockSajuTopicReading(money);
     const inSection = (extra: string): SajuReading => ({ ...clean, sections: clean.sections.map((s, i) => (i === 4 ? { ...s, body: `${s.body} ${extra}` } : s)) });
     expect(said(clean)).toEqual([]);
     expect(said(inSection("이번 달 월건의 결도 함께 보세요.")).join(" ")).toContain(`'${TOPIC_SECTIONS.money[4]}' 절`);
     expect(said(inSection("다음 달 戊戌의 결도 함께 보세요."))).toHaveLength(1);
-    expect(said({ ...clean, observation: { ...clean.observation, body: `${clean.observation.body} 이번 달 월건 정유(丁酉)의 결도 보세요.` } })).toEqual([]);
+    expect(said({ ...clean, glance: { ...clean.glance, thisYearAction: "그다음 달 己亥의 결에 맞춰 지출을 줄여 보세요." } }).join(" ")).toContain("'한눈에 보기' 절");
+    expect(said({ ...clean, observation: { ...clean.observation, body: `${clean.observation.body} 한로부터 드는 무술(戊戌) 월건의 결도 보세요.` } })).toEqual([]);
+  });
+
+  it("calls each topic section in the guides by its current heading (review 2026-10-08: 재물운 4절 is 돈의 흐름)", () => {
+    const names: Record<SajuTopicId, string> = { love: "연애운", reunion: "재회운", money: "재물운", career: "직업운" };
+    for (const topic of TOPICS) {
+      const from = SAJU_TOPIC_SYSTEM.indexOf(`## ${names[topic]}\n`);
+      const to = SAJU_TOPIC_SYSTEM.indexOf("\n## ", from + 1);
+      const guide = SAJU_TOPIC_SYSTEM.slice(from, to < 0 ? undefined : to);
+      const named = [...guide.matchAll(/^- (\d)절 ([^:]+):/gm)].map((m) => [Number(m[1]), m[2]!] as const);
+      expect(named.map(([n]) => n), topic).toEqual([2, 3, 4, 5]);
+      for (const [n, name] of named) expect(TOPIC_SECTIONS[topic][n - 1], `${topic} ${n}절`).toContain(name);
+    }
   });
 
   it("tells the 계산 기준 절 that 봤어요·셌어요·않았어요 are one ending, as the E2 check counts them; mixing in ~이에요·~죠 clears it", () => {

@@ -3,7 +3,7 @@ import { BRANCHES, STEMS } from "@starlog/core";
 import type { SajuTopicId } from "@/lib/reading/types";
 import { TOPIC_OBSERVATION_HEADING, TOPIC_SECTIONS, topicName } from "@/lib/sajuTopics";
 import { historyBlock } from "@/lib/ai/history";
-import { SAJU_PREAMBLE } from "@/lib/ai/prompts/saju";
+import { SAJU_GLANCE_FORMAT, SAJU_PLAIN_RULES, SAJU_PREAMBLE } from "@/lib/ai/prompts/saju";
 import type { SajuTopicFactSet } from "@/lib/ai/prompts/sajuTopics";
 import { cleanUserText, type FollowUpTurn } from "@/lib/ai/prompts/tarot";
 
@@ -54,8 +54,11 @@ const FORMATS = `# 작업별 형식 (주제별 사주)
 - sections: 정확히 6개, <headings>의 순서와 문구 그대로. 1절 300~400자, 2~5절 각 500~650자, 6절 200~350자.
   1. 나의 기본 결: 일간과 물상, 태어난 계절, 오행(많은·없는·숨은 기운), 겉에 가장 많은 묶음. 다음 절의 주제로 이어지게 한 문단으로.
   2~5. <topic>의 안내와 focus의 s2~s5 사실로. 문단마다 명식 근거 → 그 주제의 일상 장면 하나 → 작은 실험 하나.
-  6. 계산 기준: calculation과 limits의 문장을 모두, 태어난 시각을 알게 되면 다시 계산할 수 있다는 안내까지. 한 문장씩 옮겨 늘어놓지 말고 두세 가지씩 이어 써요. 봤어요·셌어요·않았어요는 끝맺음이 같은 '어요'라 네 문장 연달아 두지 않고 ~이에요·~죠로도 맺어요.
-- observation: 앞으로 몇 주 안에 사용자가 직접 알아챌 수 있는 그 주제의 작은 신호 하나(60~200자). 이번 달·다음 달 월건(monthly)에 기댈 수 있어요. 월건은 이 관찰에서만 쓰고 간지와 시작하는 절기 이름으로만 불러요(날짜와 달 이름은 옮기지 않아요). 그 달에 생길 일을 지어내지 않아요. 예언이 아니라 "~를 눈여겨보세요"처럼 관찰로 써요. heading은 <headings>의 observation 문구 그대로예요.
+  6. 계산 기준: calculation과 limits의 문장을 모두, 태어난 시각을 알게 되면 다시 계산할 수 있다는 안내까지. 한 문장씩 옮겨 늘어놓지 말고 두세 가지씩 이어 써요. 봤어요·셌어요·않았어요는 끝맺음이 같은 '어요'라 네 문장 연달아 두지 않고 ~이에요·~죠로도 맺어요. limits에만 나오는 다른 기둥(경계 시각에 따라 바뀔 수 있는 시주·일주 같은 것)은 이 절에서만 말해요(dayWindow의 일지는 2절에서도).
+- observation: 앞으로 몇 주 안에 사용자가 직접 알아챌 수 있는 그 주제의 작은 신호 하나(60~200자). 앞으로 두 달의 월건(monthly)에 기댈 수 있어요. monthly의 두 월건은 label(이번 달·다음 달·그다음 달)이 어느 달인지 알려 주고, 이번 달이 열흘 안에 끝나면 다음 달과 그다음 달만 와요. 월건은 이 관찰에서만 쓰고 시작하는 절기 이름과 간지로만 불러요('9월에는' 같은 달 이름, '이번 달'·'다음 달', 날짜는 쓰지 않아요). 그 달에 생길 일을 지어내지 않아요. 예언이 아니라 "~를 눈여겨보세요"처럼 관찰로 써요. heading은 <headings>의 observation 문구 그대로예요.
+${SAJU_GLANCE_FORMAT}
+  - 주제별 사주의 glance는 고른 주제(<topic>)만 말해요. 재물운이면 goesWell은 돈이 들어오는 길이 잘 보이는 쪽, watchOut은 돈이 새기 쉬운 곳, remedy는 새는 곳을 막는 습관, thisYear는 올해 돈의 흐름이에요. 직업운이면 일에서 힘이 붙는 쪽, 일에서 무리하기 쉬운 쪽, 그것을 메우는 행동, 올해 일의 흐름. 연애운이면 관계에서 잘 풀리는 쪽, 관계에서 엇갈리기 쉬운 쪽, 행동, 올해 관계의 흐름. 재회운이면 마음을 추스르는 데 힘이 되는 쪽, 같은 생각을 되풀이하기 쉬운 쪽, 내 마음과 생활을 지키는 행동, 올해 마음의 흐름이에요.
+  - 위의 주제별 금지(시기, 판정과 예언, 지시, 다른 사람의 마음, 돈)는 카드에도 그대로예요. "돈이 들어와요", "돈이 모이는 해"처럼 약속하지 않고, 대운이 바뀌는 년·월도 카드에는 쓰지 않아요.
 - followUps: 그 주제로 이어서 물어볼 만한 질문 2개(각 30자 이하).
 
 ## followup (이어서 물어보기)
@@ -84,7 +87,7 @@ const GUIDES = `# 주제 안내
 ## 재물운
 - 2절 돈이 들어오는 길: 재성·식상의 자리·개수·지장간, 식상과 재성이 함께 있는지. 재성이 겉에 없으면 숨은 자리로.
 - 3절 돈을 지키는 힘: 비겁·인성의 자리·개수, 비겁 개수와 재성 개수(라벨 없이 숫자만).
-- 4절 재물의 흐름: 대운 천간·지지 십성과 묶음, 대운과 재성 자리의 관계.
+- 4절 돈의 흐름: 대운 천간·지지 십성과 묶음, 대운과 재성 자리의 관계.
 - 5절 쓰기와 모으기의 결: 두 세운의 십성·묶음, 재성 자리와의 관계.
 - 상황별 각도: 돈이 안 모이고 자꾸 새요는 새는 통로(비겁·식상 구조)와 지키는 습관. 돈 걱정이 언제 풀릴지 궁금해요는 날짜 없이 국면(대운·세운)과 조건으로. 월급 말고 수입을 늘리고 싶어요는 수입이 생기는 통로(식상에서 재성으로)와 작은 시도.
 - 쓰지 않는 문장 예: "재물운이 약해요", "돈복이 없어요", "부자가 될 사주예요", "내년에 돈이 들어와요", "300만 원을 모아요", "코인을 사 보세요".
@@ -97,8 +100,8 @@ const GUIDES = `# 주제 안내
 - 상황별 각도: 취업이 잘 안 풀려요는 일하는 방식(관성·식상)과 지원 장면. 이직·퇴사를 고민 중이에요는 선택지와 판단 기준, 움직임이 늘어나는 국면. 회사 사람 때문에 힘들어요는 사람과 조직(비겁·관성), 마찰 장면과 거리 두기. 시험·자격증 준비 중이에요는 배움(인성)과 기준(관성), 공부 리듬.
 - 쓰지 않는 문장 예: "합격해요", "승진운이 있어요", "이직하세요", "회사에 남으세요", "팀장은 당신을 싫어해요".`;
 
-/** The system prompt of every topic task (teaser, reading, follow-up). */
-export const SAJU_TOPIC_SYSTEM = `${SAJU_PREAMBLE}\n\n${OVERRIDE}\n\n${FORMATS}\n\n${GUIDES}`;
+/** The system prompt of every topic task (teaser, reading, follow-up); the plain-words block is the standard prompt's too. */
+export const SAJU_TOPIC_SYSTEM = `${SAJU_PREAMBLE}\n\n${OVERRIDE}\n\n${SAJU_PLAIN_RULES}\n\n${FORMATS}\n\n${GUIDES}`;
 
 /** The topic FactSet as the model sees it: no allow-lists, no chip, no history, no cache date. */
 export function visibleTopicFacts(facts: SajuTopicFactSet): Record<string, unknown> {
@@ -133,15 +136,36 @@ function topicChartRulesBlock(facts: SajuTopicFactSet): string {
   const lines = ([[1, facts.allowed.anchors.zeroS2], [2, facts.allowed.anchors.zeroS3]] as const)
     .filter(([, names]) => names.length > 0)
     .map(([i, names]) => `${i + 1}절 '${headings[i]}': ${names.join("·")}은 겉 0개예요. 이 절 안에서 ${names.join("·")}이 겉에 없거나 지장간에 숨어 있다고 ${said}.`);
-  const allowed = new Set(facts.allowed.glyphs);
+  const limitOnly = new Set(facts.allowed.limitGlyphs ?? []);
+  const allowed = new Set([...facts.allowed.glyphs, ...limitOnly]);
   const shown = JSON.stringify(visibleTopicFacts(facts));
   const stray = [...STEMS, ...BRANCHES].filter((glyph) => shown.includes(glyph) && !allowed.has(glyph));
   if (stray.length) lines.push(`쓰지 않는 글자: ${stray.join("·")}. 관계의 note에만 나오고 이 명식·대운·세운에는 없는 글자예요.`);
+  // the pillars a limit names besides the chart's own (review 2026-10-08): the 계산 기준 절 copies them, nothing else is theirs
+  const limited = [...STEMS, ...BRANCHES].filter((glyph) => limitOnly.has(glyph) && shown.includes(glyph));
+  if (limited.length) {
+    lines.push(`limits에만 나오는 다른 기둥의 글자: ${limited.join("·")}. 6절 '${headings[5]}'에서 limits를 옮길 때만 써요${facts.dayWindow ? "(2절에서 dayWindow를 옮길 때도)" : ""}.`);
+  }
   return lines.length ? `<chart_rules>\n${lines.map((line) => `- ${line}`).join("\n")}\n</chart_rules>` : "";
 }
 
+/**
+ * The teaser's one chart rule (review 2026-10-08): a 연애운·재회운 teaser carries the day-pillar window (focus.s2), whose day pillar
+ * is not the chart's. The reading's limit-only line, for the summary: a limit copied word for word, or the window beside its time.
+ */
+function topicTeaserRulesBlock(facts: SajuTopicFactSet): string {
+  if (!facts.dayWindow) return "";
+  const limitOnly = new Set(facts.allowed.limitGlyphs ?? []);
+  const shown = JSON.stringify(visibleTopicFacts(facts));
+  const limited = [...STEMS, ...BRANCHES].filter((glyph) => limitOnly.has(glyph) && shown.includes(glyph));
+  if (limited.length === 0) return "";
+  return `<chart_rules>\n- limits에만 나오는 다른 기둥의 글자: ${limited.join("·")}. summary에서 limits를 그대로 옮기거나 dayWindow를 그 시각(${facts.dayWindow.range})과 한 문장에 옮길 때만 써요.\n</chart_rules>`;
+}
+
 export function sajuTopicTeaserPrompt(facts: SajuTopicFactSet): string {
-  return ["<task>teaser</task>", topicTag(facts.topic), topicHeadingsBlock(facts.topic), topicFactsBlock(facts), topicUserContextBlock(facts), historyBlock(facts.history ?? [])].join("\n");
+  return [
+    "<task>teaser</task>", topicTag(facts.topic), topicHeadingsBlock(facts.topic), topicFactsBlock(facts), topicUserContextBlock(facts), topicTeaserRulesBlock(facts), historyBlock(facts.history ?? []),
+  ].filter(Boolean).join("\n");
 }
 
 export function sajuTopicReadingPrompt(facts: SajuTopicFactSet): string {

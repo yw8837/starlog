@@ -1,10 +1,12 @@
 import "server-only";
+import { BRANCHES, STEMS, ganzhiKo } from "@starlog/core";
 import { KB_CARDS, type KbCard } from "@/lib/kb";
-import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_GLANCE_ACTION_LABEL, SAJU_GLANCE_HEADING, SAJU_GLANCE_LABELS, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { maskGanzhiReadings } from "./ganzhi";
+import { bareFirstTerms, glossed, outsideBrackets } from "./plainWords";
 import type { SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, cardLabel, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
-import type { DailyDraft, FollowUpAnswer, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
+import type { DailyDraft, FollowUpAnswer, SajuGlance, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
 import { MODEL_NAMES, SOFT_PREFIX, aiTellViolations } from "./style";
 
 /**
@@ -120,6 +122,18 @@ const GUNGHAP_DECLINED = /궁합\s?풀이|보지\s?않|말하지\s?않|다루지
 export const HEDGE = /(없|아니|알 수|확인|모르|수도|지도 몰라|일 수|가능성|단정|읽은 것|처럼 보|혹시|라면)/;
 
 const ABSOLUTE_DATE = /\d{1,2}\s?월\s?\d{1,2}\s?일|[월화수목금토일]요일|\d{1,2}\s?시\s?(에|쯤|경|까지|부터)/;
+
+// ---- time windows (every 운's checks, and the 한눈에 보기 card of every saju reading) ----
+
+export const COUNTDOWN = /(?<!\d)\d{1,3}\s?(?:일|주일?|개월|달|년)\s?(?:뒤|후(?!반)|안에|이내|만에)|D\s?-\s?\d+|디데이|D데이/i;
+export const CLOCK_DATE = /\d{1,2}\s?월\s?\d{1,2}\s?일|[월화수목금토일]요일|\d{1,2}\s?시\s?(?:에|쯤|경|까지|부터)/;
+export const SEASON_TIMING = /(?:올해|내년|다음\s?해|다가오는\s?해|이번|오는|새해)\s?(?:봄|여름|가을|겨울)|(?:봄|여름|가을|겨울)\s?(?:쯤|무렵|부터|까지)|(?:봄|여름|가을|겨울)(?:이|가)\s?(?:오면|되면)/;
+/** A month by name, or a half or a quarter of the year (a 분기점, a turning point, is neither). */
+export const MONTH_NAME = /(?<!\d)(?:1[0-2]|[1-9])\s?월|상반기|하반기|분기(?!점)/;
+/** A window counted in Hangul words: "한 달 안에", "몇 주 뒤", "두 해 이내", "일주일 안에", "열흘 안에" (the card's and the observation's own checks). */
+export const HANGUL_WINDOW = /(?<![가-힣])(?:(?:한|두|세|몇)\s?(?:달|주일?|해)|하루|이틀|사흘|나흘|열흘|보름|며칠|일주일)\s?(?:안에|뒤|후(?!반)|이내|만에)/;
+/** A month by where it stands: "이번 달", "이달", "다음 달", "그다음 달" (the 월건 shift makes them wrong; a month goes by 절기 and 간지). */
+export const NAMED_MONTH = /(?:이번|다음|그다음)\s?달(?!력)|(?<![가-힣])이달(?!력)/;
 
 export function blocklistViolations(text: string, userText: string, out: string[]): void {
   for (const [pattern, label] of BLOCKLIST) {
@@ -547,21 +561,150 @@ function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], use
   allowedFactViolations(text, facts.allowed, out, userText, { marriage: marriageContext(facts) });
 }
 
+/**
+ * The pillars the limits name besides the chart's own (`allowed.limitGlyphs`: another hour or day pillar near a boundary)
+ * belong where the limits are copied (review 2026-10-08). `text` (masked by maskGanzhiReadings) with them blanked where it
+ * may name them: all of a part that copies the limits (`copiesLimits`: the 계산 기준 절, an answer to a `BASIS_QUESTION`), and elsewhere a limit sentence
+ * quoted word for word. The allow-list check then finds them anywhere else, as 乙卯 on the card or in 4절.
+ */
+export function allowLimitPillars(text: string, facts: { limits: readonly string[]; allowed: { limitGlyphs?: readonly string[] } }, copiesLimits = false): string {
+  const glyphs = facts.allowed.limitGlyphs ?? [];
+  if (glyphs.length === 0) return text;
+  const blank = (t: string) => t.replace(new RegExp(`[${glyphs.join("")}]`, "g"), "□");
+  if (copiesLimits) return blank(text);
+  return facts.limits.map(maskGanzhiReadings).reduce((t, limit) => (limit ? t.split(limit).join(blank(limit)) : t), text);
+}
+
+/**
+ * A follow-up question about the pillars' basis ("다른 앱은 일주가 계미던데요?"): its answer copies the limits in its own words, so it may
+ * name their other pillars (`copiesLimits`); any other answer names them only in a limit quoted word for word (review 2026-10-08).
+ * Not every follow-up: an answer about this year must not present 癸未 as the chart's own. "일주일" is a week, not 일주.
+ */
+export const BASIS_QUESTION = /일주(?!일)|시주|만세력|시각|기준|다른\s?앱|다르게/;
+
 export const TIME_UNKNOWN_LINE = /시를 몰라|시각을 몰라|시주 없이|시주를 비워|여섯 글자/;
 
 /**
  * This and next month's 월건 (`monthly`) belongs to the observation alone (both reading formats say so): a section that says
- * 월건, or names a 월건's 간지 the facts give nowhere else, is flagged.
+ * 월건, or names a 월건's 간지 the facts give nowhere else (in hanja, or in Hangul as a month: 무술월), is flagged.
  */
 export function monthlyViolations(
-  headings: readonly string[], bodies: string[], facts: { monthly?: { current: { gz: string }; next: { gz: string } } }, out: string[],
+  headings: readonly string[], bodies: string[], facts: { monthly?: { current: { gz: string; ko: string }; next: { gz: string; ko: string } } }, out: string[],
 ): void {
   const m = facts.monthly;
   if (!m) return;
   const elsewhere = JSON.stringify({ ...facts, monthly: undefined });
-  const marks = ["월건", ...[m.current.gz, m.next.gz].filter((gz) => !elsewhere.includes(gz))];
+  const marks = ["월건", ...[m.current, m.next].filter((month) => !elsewhere.includes(month.gz)).flatMap((month) => [month.gz, `${month.ko}월`])];
   const i = bodies.findIndex((body) => marks.some((mark) => body.includes(mark)));
   if (i >= 0) out.push(`'${headings[i] ?? `${i + 1}번째 절`}' 절에 이번 달·다음 달 월건이 나왔어요. 월건은 observation에서만 써 주세요.`);
+}
+
+// ---- 한눈에 보기 (owner 2026-10-07) ----
+
+/** The card's name where a finding points at it (the 월건 check names the part it found one in). */
+export const GLANCE_LABEL = SAJU_GLANCE_HEADING.split(" · ")[0]!;
+
+/** The card's five sentences in reading order: [key, the label it answers under, length target]. */
+const GLANCE_ITEMS = [
+  ["goesWell", SAJU_GLANCE_LABELS.goesWell, 20, 60],
+  ["watchOut", SAJU_GLANCE_LABELS.watchOut, 20, 60],
+  ["remedy", SAJU_GLANCE_LABELS.remedy, 20, 60],
+  ["thisYear", SAJU_GLANCE_LABELS.thisYear, 20, 60],
+  ["thisYearAction", SAJU_GLANCE_ACTION_LABEL, 10, 45],
+] as const;
+
+export const glanceTexts = (g: SajuGlance): string[] => GLANCE_ITEMS.map(([key]) => g[key]);
+
+/** Scores, stars, percentages and 길흉 grades: the card says which side goes well, never how good a person or a year is. */
+const GLANCE_GRADE = new RegExp([
+  // "최악의 경우부터 떠올리는" and "최고를 고집하는" are habits, not grades
+  "대길|소길|대흉|소흉|길흉|최고(?!(?:를|만)\\s?(?:고집|추구|바라|노리))|최악(?!의\\s?경우)|만점|별점|등급|점수|퍼센트|[★☆]",
+  "(?<![가-힣])길(?:한|하게|해요|합니다|운)",
+  "(?<![가-힣])흉(?:한|하게|해요|합니다|운|일|년|달|조)",
+  "\\d+\\s?점|\\d+(?:\\.\\d+)?\\s?%",
+  "(?<![가-힣])(?:운|운세)(?:이|가)\\s?(?:좋|나쁘|최고|최악)",
+].join("|"));
+/** School-dependent verdicts: never on the card, not even to decline them (the body says so where it must). */
+const GLANCE_SCHOOL = /신강|신약|용신|희신|기신|격국|종격|조후/;
+/** 검정 is also a test (자격 검정, 검정고시). */
+const COLOURS = "빨간|빨강|붉은|파란|파랑|푸른|노란|노랑|초록|녹색|연두|하얀|하양|흰|검은|(?<!(?:자격|능력|기능|실력|인증)\\s?)검정(?!고시|\\s?시험)|까만|보라|분홍|주황|회색|남색|금색|은색|갈색";
+/** Filling, mending, raising or saving a 기운 or the 오행. */
+const RAISE = "채우|채워|보충|보태|더하|더해|메우|메워|북돋|살리|살려";
+/** A make-up that is not an everyday act: a colour, a direction, a thing, a number, raising a missing 오행 (owner 2026-10-07). */
+const GLANCE_REMEDY = new RegExp([
+  `(?<![가-힣])(?:${COLOURS})`,
+  "(?<![가-힣])(?:동|서|남|북|동남|동북|서남|서북)\\s?(?:쪽|방향|방위)",
+  "방위|행운의|럭키",
+  "소품|화분|식물|액세서리|팔찌|향초|부적|숫자\\s?\\d",
+  `(?:부족한|모자란|없는|약한|적은)\\s?(?:[가-힣]+\\s)?(?:오행|기운)(?:을|를)?\\s?(?:${RAISE})`,
+  `(?<![가-힣])(?:나무|불|흙|쇠|물|목|화|토|금|수)\\s?(?:\\([^)]*\\)\\s?)?기운(?:을|를)?\\s?(?:${RAISE})`,
+  `오행(?:을|를)?\\s?(?:${RAISE}|맞추|맞춰)`,
+].join("|"));
+
+const SIXTY = Array.from({ length: 60 }, (_, i) => STEMS[i % 10]! + BRANCHES[i % 12]!);
+const GANZHI_OF_KO = new Map(SIXTY.map((gz) => [ganzhiKo(gz), gz]));
+/** A 간지 on the card: in hanja, or in Hangul where it reads as one (정미년, 병오(丙午), 경진 대운), never 갑자기 or 정해진. */
+const CARD_GANZHI = new RegExp(
+  `[甲乙丙丁戊己庚辛壬癸][子丑寅卯辰巳午未申酉戌亥]|(?<![가-힣])(${[...GANZHI_OF_KO.keys()].join("|")})(?=년|월(?!요)|\\(|\\s?(?:대운|세운|일주|월주|년주|시주|기둥))`,
+  "g",
+);
+
+/** The 간지 the card may name: the chart's pillars, its 대운 and the 세운 (a 운's coming one too); a 월건 is monthlyViolations' to find. */
+export function cardGanzhi(facts: {
+  pillars: ReadonlyArray<{ gz: string }>; luck: { cycles: ReadonlyArray<{ gz: string }> } | null; annual: { gz: string };
+  monthly?: { current: { gz: string }; next: { gz: string } }; nextAnnual?: { gz: string };
+}): string[] {
+  return [
+    ...facts.pillars.map((p) => p.gz), ...(facts.luck?.cycles ?? []).map((c) => c.gz), facts.annual.gz,
+    ...(facts.nextAnnual ? [facts.nextAnnual.gz] : []), ...(facts.monthly ? [facts.monthly.current.gz, facts.monthly.next.gz] : []),
+  ];
+}
+
+/**
+ * The card's own rules (owner 2026-10-07): one plain sentence per item, no grade, no school verdict, an everyday
+ * make-up, 명리 terms only in brackets, no 간지 but `opts.ganzhi`, this year's 세운 by its 간지 (not "올해" before 입춘),
+ * and no window or month by where it stands (이번·다음 달); unless a topic's checks read the card's time words
+ * themselves (`timing: false`), no month name, season, date or numbered window either. The reading validators also run
+ * their shared checks on it (the facts' glyphs, ten gods and years, the blocklists, 해요체, 월건).
+ */
+export function glanceViolations(
+  g: SajuGlance, annual: SajuFactSet["annual"], out: string[], opts: { timing: boolean; ganzhi: readonly string[] },
+): void {
+  for (const [key, label, min, max] of GLANCE_ITEMS) {
+    lengthCheck(`${GLANCE_LABEL} '${label}'`, g[key], min, max, out);
+    if (g[key].trim() && sentences(g[key]).length !== 1) out.push(`${GLANCE_LABEL}의 '${label}'은 한 문장으로 써 주세요.`);
+  }
+  const texts = glanceTexts(g);
+  const all = texts.join("\n");
+  const grade = GLANCE_GRADE.exec(all)?.[0];
+  if (grade) out.push(`${GLANCE_LABEL}에 길흉·점수 표현이 있어요("${grade}"). 대길·흉·최고·최악, 점수·별점·퍼센트·등급 없이 어느 쪽이 잘 풀리고 어디를 조심할지만 말해 주세요.`);
+  if (GLANCE_SCHOOL.test(all)) out.push(`${GLANCE_LABEL}에 용신·신강·신약·격국 같은 판단이 나왔어요. 카드에서는 이런 말을 아예 쓰지 말아 주세요.`);
+  // the make-up is what remedy and thisYearAction tell her to do; goesWell and watchOut may describe a tendency ("푸른 나무처럼")
+  const remedy = GLANCE_REMEDY.exec(`${g.remedy}\n${g.thisYearAction}`)?.[0];
+  if (remedy) out.push(`${GLANCE_LABEL}에 색·방향·물건이나 부족한 오행 채우기로 보완하는 말이 있어요("${remedy}"). 보완은 연락하기, 정리하기, 쉬는 칸 만들기처럼 일상 행동으로만 말해 주세요.`);
+  const bare = [...new Set(texts.flatMap((text) => bareFirstTerms(outsideBrackets(text))))];
+  if (bare.length) out.push(`${GLANCE_LABEL}에 명리 용어가 괄호 밖에 있어요: ${bare.join(", ")}. '${glossed("식신")}'처럼 쉬운 말을 먼저 쓰고 용어는 괄호 안에만 넣어 주세요.`);
+  const named = new Set(opts.ganzhi);
+  const stray = [...all.matchAll(CARD_GANZHI)].find((m) => !named.has(m[1] ? GANZHI_OF_KO.get(m[1])! : m[0]));
+  if (stray) out.push(`${GLANCE_LABEL}에 이 명식·대운·세운에 없는 간지가 나왔어요("${stray[0]}"). 한글로만 써도 마찬가지예요. <facts>에 있는 간지만 불러 주세요.`);
+  if (g.thisYear.trim() && ![annual.gz, annual.ko].some((name) => g.thisYear.includes(name))) {
+    out.push(`${GLANCE_LABEL}의 '${SAJU_GLANCE_LABELS.thisYear}'에 올해 세운의 간지(${annual.ko}(${annual.gz}))를 한 번 불러 주세요.`);
+  }
+  const thisYearSaid = annual.beforeIpchun ? new RegExp(`올해\\s?(?:${annual.ko}|${annual.gz})`).exec(all)?.[0] : undefined;
+  if (thisYearSaid) {
+    out.push(`${GLANCE_LABEL}에서 아직 입춘 전인 세운을 '${thisYearSaid}'라고 불렀어요. 입춘까지는 지난해의 세운이 이어지니 '입춘 전까지 이어지는 ${annual.ko}(${annual.gz})년'처럼 말해 주세요.`);
+  }
+  const windows = [HANGUL_WINDOW, NAMED_MONTH, ...(opts.timing ? [COUNTDOWN, CLOCK_DATE, MONTH_NAME, SEASON_TIMING] : [])];
+  const when = texts.map((text) => windows.map((re) => re.exec(text)?.[0]).find(Boolean)).find(Boolean);
+  if (when) out.push(`${GLANCE_LABEL}에 시기를 짚은 말이 있어요("${when}"). 달 이름·이번 달·다음 달, 계절, 날짜나 '한 달 안에'·'3개월 안에' 같은 기간 없이 '올해 남은 기간'처럼 말해 주세요.`);
+}
+
+/** Soft (owner 2026-10-07): a 명리 term's first appearance in reading order (the card, then the body) follows its plain words, in brackets. */
+export function plainWordViolations(texts: string[], out: string[]): void {
+  const bare = bareFirstTerms(texts.join("\n"));
+  if (bare.length) {
+    out.push(`${SOFT_PREFIX}명리 용어가 처음 나올 때 쉬운 말이 먼저 오지 않았어요: ${bare.slice(0, 6).join(", ")}. '${glossed("식신")}'처럼 쉬운 말을 먼저 쓰고 용어는 괄호에 넣어 주세요.`);
+  }
 }
 
 /** Love statuses (lib/api/inputs.ts LOVE_STATUS labels) for which the reading covers 결혼. */
@@ -587,7 +730,7 @@ export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): stri
   if (titleLength < 2 || titleLength > 16) out.push("title은 4~12자로 써 주세요.");
   lengthCheck("summary", d.summary, 250, 400, out);
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(d.summary)) out.push("태어난 시를 몰라 여섯 글자로 읽었다는 한계를 summary에 한 문장 넣어 주세요.");
-  sajuFactViolations(maskGanzhiReadings(`${d.title}\n${d.summary}`), facts, out, profileText(facts));
+  sajuFactViolations(allowLimitPillars(maskGanzhiReadings(`${d.title}\n${d.summary}`), facts), facts, out, profileText(facts));
   voiceViolations(d.summary, out);
   profileUseViolations(d.summary, facts, out);
   aiTellViolations([d.summary], out);
@@ -608,14 +751,24 @@ export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[
   const basis = r.sections.at(-1)?.body ?? "";
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(basis)) out.push("계산 기준 절에 태어난 시를 몰라 시주 없이 읽었다는 한계를 넣어 주세요.");
   observationViolations(r.observation.body, out);
-  monthlyViolations(SAJU_PROLOGUE_SECTIONS, r.sections.map((s) => s.body), facts, out);
+  // a month by 절기 and 간지 only: the months given may have shifted (review 2026-10-08)
+  const month = (MONTH_NAME.exec(r.observation.body) ?? NAMED_MONTH.exec(r.observation.body))?.[0];
+  if (month) out.push(`관찰에 '${month}'처럼 달을 가리키는 말이 있어요. 끝나 가는 달을 가리키지 않도록 달은 시작하는 절기와 간지로만 불러 주세요(예: 한로부터 드는 무술(戊戌)월).`);
+  // the card answers first, so its rules come with the body's: the facts, the blocklists, 해요체, 월건 (observation only)
+  const glance = glanceTexts(r.glance);
+  glanceViolations(r.glance, facts.annual, out, { timing: true, ganzhi: cardGanzhi(facts) });
+  monthlyViolations([GLANCE_LABEL, ...SAJU_PROLOGUE_SECTIONS], [glance.join("\n"), ...r.sections.map((s) => s.body)], facts, out);
   if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
   const bodies = [...r.sections.map((s) => s.body), r.observation.body];
-  sajuFactViolations(maskGanzhiReadings([...bodies, ...r.followUps].join("\n")), facts, out, profileText(facts));
-  voiceViolations([...bodies, ...r.followUps].join("\n"), out);
+  // the 계산 기준 절 (the last section) copies the limits, so it alone may name the other pillars they name
+  const basisAt = r.sections.length ? glance.length + r.sections.length - 1 : -1;
+  const checked = [...glance, ...bodies, ...r.followUps].map((text, i) => allowLimitPillars(maskGanzhiReadings(text), facts, i === basisAt));
+  sajuFactViolations(checked.join("\n"), facts, out, profileText(facts));
+  voiceViolations([...glance, ...bodies, ...r.followUps].join("\n"), out);
   profileUseViolations(bodies.join("\n"), facts, out);
   actionVarietyViolations(bodies, out);
   aiTellViolations(bodies, out);
+  plainWordViolations([...glance, ...bodies], out);
   return out;
 }
 
@@ -623,7 +776,7 @@ export function validateSajuFollowUp(a: FollowUpAnswer, facts: SajuFactSet, ques
   const out: string[] = [];
   modelNameViolations(a, out);
   lengthCheck("answer", a.answer, 150, 450, out);
-  sajuFactViolations(maskGanzhiReadings(a.answer), facts, out, `${question} ${profileText(facts)}`);
+  sajuFactViolations(allowLimitPillars(maskGanzhiReadings(a.answer), facts, BASIS_QUESTION.test(question)), facts, out, `${question} ${profileText(facts)}`);
   voiceViolations(a.answer, out);
   aiTellViolations([a.answer], out);
   return out;

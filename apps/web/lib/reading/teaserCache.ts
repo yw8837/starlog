@@ -21,9 +21,20 @@ const parseEntry = (value: unknown): Entry | null =>
 
 const tarotStore: SessionStore<Entry> = createSessionStore("starlog.teaser.tarot", parseEntry);
 
-export const SAJU_TEASERS_KEY = "starlog.teaser.saju.v1";
+/** v2 (2026-10-08): the locked lists kept under v1 lack the 한눈에 보기 card and the plain headings, so v1 is not read again. */
+export const SAJU_TEASERS_KEY = "starlog.teaser.saju.v2";
 /** The tab-only saju slot of earlier versions, erased with the rest. */
 const LEGACY_SAJU_KEY = "starlog.teaser.saju";
+/** The device-wide list before v2; its keys hold birth data, so it goes the next time the app opens. */
+const LEGACY_SAJU_LIST_KEY = "starlog.teaser.saju.v1";
+
+function dropLegacySajuList() {
+  try {
+    if (window.localStorage.getItem(LEGACY_SAJU_LIST_KEY) !== null) window.localStorage.removeItem(LEGACY_SAJU_LIST_KEY);
+  } catch {
+    // Blocked storage: nothing was kept there.
+  }
+}
 export const SAJU_TEASER_SLOTS = 15;
 const MAX_KEEP_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -65,6 +76,7 @@ export function saveTeaser(slot: Slot, key: string, value: unknown, now = Date.n
  * calls this on every page load rather than waiting for the next save. Writes only when something goes.
  */
 export function pruneSajuTeasers(now = Date.now()) {
+  dropLegacySajuList();
   const all = sajuStore.read() ?? [];
   const live = all.filter((e) => e.freshUntil > now);
   if (live.length === all.length) return;
@@ -75,6 +87,7 @@ export function pruneSajuTeasers(now = Date.now()) {
 /** Forgets the saju teasers on this device (사주 정보 지우기, 기록 모두 지우기). */
 export function clearSajuTeasers() {
   sajuStore.clear();
+  dropLegacySajuList();
   try {
     window.sessionStorage.removeItem(LEGACY_SAJU_KEY);
   } catch {

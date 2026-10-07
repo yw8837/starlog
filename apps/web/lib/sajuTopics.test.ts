@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SAJU_OBSERVATION_HEADING } from "@/lib/ai/prompts/saju";
 import { SITE, sajuTopicsMode } from "./config";
+import { SAJU_GLANCE_HEADING } from "./sajuPrologue";
 import {
   BACK_TO_OVERALL, OTHER_TOPICS_LABEL, SAJU_TOPICS, SAJU_TOPIC_IDS, SITUATIONS, TEASER_LIMIT_NOTICE, TOPIC_OBSERVATION_HEADING, TOPIC_SECTIONS,
   TOPIC_SECTION_LENGTH, TOPIC_SWITCH_HELP, TOPIC_TOTAL_LENGTH, UNLOCK_SCOPE_LINE, isSajuTopic, isSajuTopicId, otherTopicLabels, sajuTopicsVisible,
@@ -38,15 +39,22 @@ describe("the five topics", () => {
     expect(otherTopicLabels("money")).not.toContain("돈이 안 모이고 자꾸 새요");
   });
 
-  it("gives each topic six fixed headings (the common first and last) and a seven-item locked list", () => {
+  it("gives each topic six fixed headings (the common first and last) and an eight-item locked list that opens with 한눈에 보기", () => {
     for (const topic of SAJU_TOPIC_IDS) {
       expect(TOPIC_SECTIONS[topic]).toHaveLength(6);
-      expect(TOPIC_SECTIONS[topic][0]).toBe("나의 기본 결 · 한눈에 보기");
+      expect(TOPIC_SECTIONS[topic][0]).toBe("나의 기본 결 · 타고난 바탕");
       expect(TOPIC_SECTIONS[topic][5]).toBe("계산 기준 · 보지 않은 것과 달라질 수 있는 것");
-      expect(topicLockedToc(topic)).toEqual([...TOPIC_SECTIONS[topic], "앞으로 몇 주 · 확인해 볼 신호"]);
+      expect(topicLockedToc(topic)).toEqual([SAJU_GLANCE_HEADING, ...TOPIC_SECTIONS[topic], "앞으로 몇 주 · 확인해 볼 신호"]);
     }
     expect(TOPIC_SECTIONS.reunion[2]).toBe("다시 이어진다면 · 되풀이되기 쉬운 것");
     expect(TOPIC_SECTIONS.reunion[3]).toBe("지금의 10년 · 관계가 다시 움직이는 흐름");
+    // plain words in every heading (owner 2026-10-07): no 재성·식상·비겁·인성·관성·월주·십성·일지 in a label or subtitle
+    for (const heading of SAJU_TOPIC_IDS.flatMap((topic) => TOPIC_SECTIONS[topic])) {
+      for (const term of ["재성", "식상", "비겁", "인성", "관성", "월주", "십성", "일지", "대운", "세운"]) expect(heading, heading).not.toContain(term);
+    }
+    expect(TOPIC_SECTIONS.money.slice(1, 3)).toEqual(["돈이 들어오는 길 · 다루는 힘과 만들어 내는 힘", "돈을 지키는 힘 · 어울려 나누는 힘과 받쳐 주는 힘"]);
+    expect(TOPIC_SECTIONS.career.slice(1, 3)).toEqual(["일하는 방식 · 약속을 지키는 힘과 드러내는 힘", "잘 맞는 일의 결 · 태어난 달의 바탕과 자주 쓰는 힘"]);
+    expect(TOPIC_SECTIONS.love[1]).toBe("사랑할 때의 나 · 가장 가까운 자리와 마음");
     expect(TOPIC_OBSERVATION_HEADING).toBe(SAJU_OBSERVATION_HEADING);
     expect(TOPIC_SECTION_LENGTH).toHaveLength(6);
     expect(TOPIC_TOTAL_LENGTH).toEqual([2500, 3350]);

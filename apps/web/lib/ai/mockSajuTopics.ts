@@ -1,9 +1,14 @@
 import "server-only";
 import type { SajuSituationId, SajuTopicId } from "@/lib/reading/types";
 import { TOPIC_OBSERVATION_HEADING, TOPIC_SECTIONS, topicName } from "@/lib/sajuTopics";
-import { josa, ro } from "@/lib/ai/mock";
+import { josa, mockThisYear, ro } from "@/lib/ai/mock";
+import { glossOnce, glossText } from "@/lib/ai/plainWords";
 import type { GroupFact, GroupName, SajuTopicFactSet } from "@/lib/ai/prompts/sajuTopics";
-import type { FollowUpAnswer, SajuReading, SajuTeaserDraft } from "@/lib/ai/schemas";
+import type { FollowUpAnswer, SajuGlance, SajuReading, SajuTeaserDraft } from "@/lib/ai/schemas";
+
+/** Says a 명리 term: in plain words the first time within one reading (glossOnce), as itself in a teaser or an answer. */
+type Say = (term: string) => string;
+const asIs: Say = (term) => term;
 
 /**
  * Deterministic 주제별 사주 readings without a model (tests, key-less dev, e2e with STARLOG_AI=mock).
@@ -27,11 +32,24 @@ function filled(parts: string[], pool: readonly string[], min: number): string {
 const groupBy = (f: SajuTopicFactSet) => Object.fromEntries(f.groups.items.map((g) => [g.name, g])) as Record<GroupName, GroupFact>;
 const basisOf = (f: SajuTopicFactSet) => (f.input.timeKnown ? "겉 글자 기준" : "시주 없이 여섯 글자 기준");
 
+const PLACE_PLAIN: Readonly<Record<string, string>> = {
+  년간: "태어난 해 위 글자", 년지: "태어난 해 아래 글자", 월간: "태어난 달 위 글자", 월지: "태어난 달 아래 글자",
+  일지: "태어난 날 아래 글자", 시간: "태어난 시 위 글자", 시지: "태어난 시 아래 글자",
+};
+
+/** "년간 己 상관" in plain words: "태어난 해 위 글자 己 틀 밖으로 드러내는 표현력(상관)". */
+const placeLine = (line: string, say: Say) => {
+  const [place = "", ...rest] = line.split(" ");
+  const god = rest.pop()!;
+  return [PLACE_PLAIN[place] ?? place, ...rest, say(god)].join(" ");
+};
+
 /** One sentence per group: where it shows, or that it is hidden or missing (by the count's basis). */
-function groupSentence(g: GroupFact, basis: string): string {
-  if (g.count > 0) return `${josa(g.name, "은", "는")} 겉에 ${g.count}개, ${g.visible.join(", ")} 자리에 있어요.`;
-  if (g.hidden.length) return `${josa(g.name, "은", "는")} ${basis}으로는 겉에 없고, ${g.hidden.join(", ")} 자리에 숨어 있어요.`;
-  return `${josa(g.name, "은", "는")} ${basis}으로는 겉에도 지장간에도 없어요.`;
+function groupSentence(g: GroupFact, basis: string, say: Say = asIs): string {
+  const name = say(g.name);
+  if (g.count > 0) return `${josa(name, "은", "는")} 겉에 ${g.count}개, ${g.visible.map((line) => placeLine(line, say)).join(", ")} 자리에 있어요.`;
+  if (g.hidden.length) return `${josa(name, "은", "는")} ${basis}으로는 겉에 없고, ${g.hidden.map((line) => placeLine(line, say)).join(", ")} 자리에 숨어 있어요.`;
+  return glossText(`${josa(name, "은", "는")} ${basis}으로는 겉에도 지장간에도 없어요.`, say);
 }
 
 const relationSentence = (line: string) => `${line}.`;
@@ -74,7 +92,7 @@ const POOL_S2 = [
   "자리와 개수는 정해진 결론이 아니라, 어떤 장면에서 힘이 붙기 쉬운지를 보여 줘요.",
   "이번 주에 이 결이 보이는 장면이 있었는지 하루 끝에 한 번 떠올려 보세요.",
   "그 장면에서 마음이 편했다면 이 구조와 맞물리고, 유난히 버거웠다면 이 부분은 덜 맞는 풀이예요.",
-  "겉에 드러난 글자는 먼저 꺼내 쓰기 쉬운 힘이고, 지장간의 글자는 조건이 맞을 때 천천히 드러나는 힘이에요.",
+  "겉에 드러난 글자는 먼저 꺼내 쓰기 쉬운 힘이고, 글자 속에 숨은 기운은 조건이 맞을 때 천천히 드러나는 힘이에요.",
   "같은 결도 생활 리듬에 따라 다르게 나타나니, 한 번의 장면보다 여러 번 되풀이되는 모습을 보는 편이 좋아요.",
   "작은 실험으로는 이번 주에 한 가지 일을 평소와 다른 순서로 해 보는 것을 권해요.",
   "그 뒤에 힘이 났는지 빠졌는지를 견주면 이 자리가 내게 어떻게 닿는지 가늠할 수 있어요.",
@@ -96,21 +114,21 @@ const POOL_S3 = [
   "주변에서 나를 어떤 사람으로 기억하는지 떠올려 보는 것도 좋은 단서가 돼요.",
 ];
 const POOL_S4 = [
-  "대운은 10년 단위로 바뀌는 흐름이고, 원국에 어떤 성격의 기운이 실리는지를 보여 줘요.",
+  "대운은 10년 단위로 바뀌는 흐름이고, 타고난 명식에 어떤 성격의 기운이 실리는지를 보여 줘요.",
   "대운은 좋고 나쁨의 등급이 아니라 어떤 기운이 실리는 국면인지로 읽어요.",
-  "원국과 대운 사이의 관계는 사건이 아니라 움직임이 늘어나는 국면으로만 읽어요.",
+  "타고난 명식과 대운 사이의 관계는 사건이 아니라 움직임이 늘어나는 국면으로만 읽어요.",
   "같은 국면이라도 무엇에 힘을 쓰느냐에 따라 체감은 달라질 수 있어요.",
   "이 10년 동안 새로 시작한 일과 오래 이어 온 일을 나란히 놓고 보면 흐름이 눈에 보여요.",
   "지난 몇 해를 돌아보았을 때 이 결이 익숙하다면 이 풀이와 맞물리는 거예요.",
   "흐름은 방향을 보는 도구이지 특정한 일이 생긴다는 약속은 아니에요.",
   "이번 달에는 이 흐름에 맞춰 작은 일 하나를 직접 신청하거나 시작해 보세요.",
-  "명리에서는 대운의 천간과 지지를 함께 보고, 어느 쪽이 더 두드러지는지 견주어 읽어요.",
+  "명리에서는 대운의 위 글자와 아래 글자를 함께 보고, 어느 쪽이 더 두드러지는지 견주어 읽어요.",
   "흐름이 바뀌는 때에는 익숙한 방식이 조금 낯설게 느껴질 수 있어요.",
 ];
 const POOL_S5 = [
   "세운은 한 해 동안 실리는 기운으로, 대운보다 짧게 스쳐 가는 흐름이에요.",
   "올해 남은 기간과 다가오는 해를 두 덩어리로 나눠 보면 결이 더 잘 보여요.",
-  "세운과 원국의 관계도 사건이 아니라 움직임이 늘어나는 국면으로 읽어요.",
+  "세운과 타고난 명식의 관계도 사건이 아니라 움직임이 늘어나는 국면으로 읽어요.",
   "올해 남은 기간에는 지금 하고 있는 일을 정리하는 쪽에 힘을 써 보세요.",
   "다가오는 해에는 새로 실리는 기운에 맞춰 작은 일 하나를 시작해 볼 수 있어요.",
   "해가 바뀌는 입춘 무렵에 내 하루의 순서가 어떻게 달라지는지 살펴보세요.",
@@ -150,105 +168,140 @@ function keySentence(f: SajuTopicFactSet): string {
   return `태어난 날의 지지 ${josa(day.branch.display, "이", "가")} 일지이고, 십성으로는 ${josa(day.branch.mainTenGod, "이에요", "예요")}.`;
 }
 
-function section1(f: SajuTopicFactSet): string {
+function section1(f: SajuTopicFactSet, say: Say): string {
   const dm = f.dayMaster;
   const most = f.groups.items.reduce((a, b) => (b.count > a.count ? b : a));
   return filled([
-    `일간은 ${dm.display}, 명리에서는 ${dm.image}에 비유하는 글자예요.`,
+    `${josa(say("일간"), "은", "는")} ${dm.display}, 명리에서는 ${dm.image}에 비유하는 글자예요.`,
     f.season ? `${f.season.text}에 태어났어요.` : "",
     `가장 많은 기운은 ${f.elements.most.join(", ")}개예요.`,
     f.elements.missing.length ? `겉에 한 글자도 없는 기운도 있어요(${f.elements.missing.join("·")}).` : "다섯 기운이 모두 겉에 한 글자 이상 보여요.",
-    `${f.groups.basis}으로 세면 겉에 가장 많은 묶음은 ${josa(most.name, "이에요", "예요")}.`,
+    // "천간과 지지 본기 기준": the first of those terms in a reading with the hour
+    glossText(`${f.groups.basis}으로 세면 겉에 가장 많은 묶음은 ${josa(say(most.name), "이에요", "예요")}.`, say),
   ], POOL_S1, 310);
 }
 
-function section2(f: SajuTopicFactSet): string {
+function section2(f: SajuTopicFactSet, say: Say): string {
   const g = groupBy(f);
   const basis = basisOf(f);
   const day = f.pillars.find((p) => p.pillar.includes("(일주)"))!;
   const window = f.dayWindow ? [f.dayWindow.sentence, `그래서 ${f.dayWindow.range} 사이에 태어났다면 일지가 ${ro(f.dayWindow.dayBranch)} 달라질 수 있어요.`] : [];
-  const dayLines = [
-    `태어난 날의 지지 ${josa(day.branch.display, "이", "가")} 일지예요. 십성은 ${josa(day.branch.mainTenGod, "이고", "고")}, 12운성으로는 ${day.branch.twelveStage} 자리예요.`,
-    "명리에서는 일지를 나와 가장 가까운 관계의 자리로 읽어요.",
+  // what each line says is written where it stands (the chip first), so a term is glossed where it first appears
+  const dayLines = () => [
+    `태어난 날의 아래 글자 ${josa(day.branch.display, "이", "가")} ${josa(say("일지"), "이에요", "예요")}. 그 자리의 대표 글자는 ${josa(say(day.branch.mainTenGod), "이고", "고")}, 기운의 단계로는 ${say(day.branch.twelveStage)}에 있어요.`,
+    "명리에서는 이 자리에서 가까운 사람을 대하는 결을 읽어요.",
   ];
-  const lines: Record<SajuTopicId, string[]> = {
-    money: [groupSentence(g.재성, basis), groupSentence(g.식상, basis), g.식상.count > 0 && g.재성.count > 0 ? "식상과 재성이 겉에 함께 있어서, 표현한 것이 돈으로 이어지는 길이 보이는 편이에요." : "식상과 재성이 겉에 함께 있지는 않아서, 표현한 것이 돈으로 이어지는 길은 조건이 맞을 때 드러나는 편이에요."],
-    career: f.situation?.id === "exam"
-      ? [groupSentence(g.인성, basis), groupSentence(g.관성, basis), groupSentence(g.식상, basis)]
-      : [groupSentence(g.관성, basis), groupSentence(g.식상, basis), groupSentence(g.인성, basis)],
-    love: [...dayLines, `일간 ${josa(f.dayMaster.display, "은", "는")} ${f.dayMaster.image}에 비유하는 글자예요.`],
-    reunion: [...dayLines, groupSentence(g.인성, basis), groupSentence(g.식상, basis)],
+  const lines: Record<SajuTopicId, () => string[]> = {
+    money: () => [groupSentence(g.재성, basis, say), groupSentence(g.식상, basis, say), g.식상.count > 0 && g.재성.count > 0 ? "식상과 재성이 겉에 함께 있어서, 표현한 것이 돈으로 이어지는 길이 보이는 편이에요." : "식상과 재성이 겉에 함께 있지는 않아서, 표현한 것이 돈으로 이어지는 길은 조건이 맞을 때 드러나는 편이에요."],
+    career: () => (f.situation?.id === "exam" ? [g.인성, g.관성, g.식상] : [g.관성, g.식상, g.인성]).map((x) => groupSentence(x, basis, say)),
+    love: () => [...dayLines(), `일간 ${josa(f.dayMaster.display, "은", "는")} ${f.dayMaster.image}에 비유하는 글자예요.`],
+    reunion: () => [...dayLines(), groupSentence(g.인성, basis, say), groupSentence(g.식상, basis, say)],
   };
-  return filled([...chipSentences(f), ...lines[f.topic], ...window], POOL_S2, 520);
+  const chip = chipSentences(f).map((sentence) => glossText(sentence, say));
+  return filled([...chip, ...lines[f.topic](), ...window], POOL_S2, 520);
 }
 
-function section3(f: SajuTopicFactSet): string {
+function section3(f: SajuTopicFactSet, say: Say): string {
   const g = groupBy(f);
   const basis = basisOf(f);
   const month = f.pillars.find((p) => p.pillar.includes("(월주)"))!;
   const most = f.groups.items.reduce((a, b) => (b.count > a.count ? b : a));
-  const lines: Record<SajuTopicId, string[]> = {
-    money: [groupSentence(g.비겁, basis), groupSentence(g.인성, basis), `개수만 보면 비겁 ${g.비겁.count}개, 재성 ${g.재성.count}개예요.`],
-    career: [
-      `태어난 달의 기둥 ${month.ko}(${month.gz})의 천간은 ${josa(month.stem.tenGod, "이고", "고")}, 지지의 대표 글자는 ${ro(month.branch.mainTenGod)} 읽어요.`,
-      `월지의 12운성은 ${month.branch.twelveStage} 자리예요.`,
-      `${f.groups.basis}으로 세면 겉에 가장 많은 묶음은 ${josa(most.name, "이에요", "예요")}.`,
+  const lines: Record<SajuTopicId, () => string[]> = {
+    money: () => [groupSentence(g.비겁, basis, say), groupSentence(g.인성, basis, say), `개수만 보면 비겁 ${g.비겁.count}개, 재성 ${g.재성.count}개예요.`],
+    career: () => [
+      `태어난 달의 기둥 ${month.ko}(${month.gz})의 위 글자는 ${josa(say(month.stem.tenGod), "이고", "고")}, 아래 글자의 대표 글자는 ${ro(say(month.branch.mainTenGod))} 읽어요.`,
+      `태어난 달 자리의 기운은 ${say(month.branch.twelveStage)}에 있어요.`,
+      `${f.groups.basis}으로 세면 겉에 가장 많은 묶음은 ${josa(say(most.name), "이에요", "예요")}.`,
     ],
-    love: [
-      `다섯 묶음을 겉 글자로 세면 ${f.groups.items.map((x) => `${x.name} ${x.count}개`).join(", ")}예요.`,
-      ...f.groups.items.filter((x) => x.count === 0).map((x) => groupSentence(x, basis)),
-      "재성은 내가 가꾸고 다루는 것, 관성은 나를 다잡는 약속과 질서, 식상은 표현으로 읽어요.",
-      "인성은 돌봄을 받는 방식, 비겁은 대등한 관계를 맺는 방식으로 읽어요.",
+    love: () => [
+      `다섯 묶음을 겉 글자로 세면 ${f.groups.items.map((x) => `${say(x.name)} ${x.count}개`).join(", ")}예요.`,
+      ...f.groups.items.filter((x) => x.count === 0).map((x) => groupSentence(x, basis, say)),
+      "명리에서는 이 다섯 묶음을 관계를 맺는 방식의 다섯 축으로 읽어요.",
     ],
-    reunion: [
+    reunion: () => [
       ...f.focus.s3.filter((line) => line.includes("관계가 있어요")).map(relationSentence),
-      `${f.groups.basis}으로 세면 겉에 가장 많은 묶음은 ${josa(most.name, "이에요", "예요")}.`,
+      `${f.groups.basis}으로 세면 겉에 가장 많은 묶음은 ${josa(say(most.name), "이에요", "예요")}.`,
       "다시 이어진다면 이 관계가 먼저 움직이는 장면부터 살펴보는 편이 좋아요.",
     ],
   };
-  return filled(lines[f.topic], POOL_S3, 520);
+  return filled(lines[f.topic](), POOL_S3, 520);
 }
 
-function section4(f: SajuTopicFactSet): string {
+function section4(f: SajuTopicFactSet, say: Say): string {
   const current = f.luck?.current;
   const luck = current
     ? [
-      `지금은 ${current.from}부터 ${current.to}까지 이어지는 ${current.ko}(${current.gz}) 대운이에요.`,
-      `천간은 ${josa(current.stemTenGod, "이고", "고")}, 지지의 대표 글자는 ${ro(current.branchMainTenGod)} 읽어요.`,
+      `${josa(say("대운"), "은", "는")} 지금 ${current.from}부터 ${current.to}까지 이어지는 ${josa(`${current.ko}(${current.gz})`, "이에요", "예요")}.`,
+      `위 글자는 ${josa(say(current.stemTenGod), "이고", "고")}, 아래 글자의 대표 글자는 ${ro(say(current.branchMainTenGod))} 읽어요.`,
     ]
     : f.luck
-      ? [`아직 첫 대운이 시작되기 전이에요. ${f.luck.start}.`]
-      : ["태어난 시각을 몰라 연주나 월주가 하나로 정해지지 않아 대운은 계산하지 않았어요."];
+      ? [`아직 ${josa(say("대운"), "이", "가")} 시작되기 전이에요. ${f.luck.start}.`]
+      : [`태어난 시각을 몰라 연주나 월주가 하나로 정해지지 않아 ${josa(say("대운"), "은", "는")} 계산하지 않았어요.`];
   const notes = [f.luck?.changeSoon ? `${f.luck.changeSoon}.` : "", f.luckEdge ?? ""];
-  const watched = f.focus.s4.filter((line) => line.includes("관계가 있어요") || line.startsWith("원국 겉에 없는")).map(relationSentence);
+  const watched = f.focus.s4.filter((line) => line.includes("관계가 있어요") || line.startsWith("원국 겉에 없는")).map((line) => glossText(relationSentence(line), say));
   return filled([...luck, ...notes, ...watched], POOL_S4, 520);
 }
 
-function section5(f: SajuTopicFactSet): string {
+function section5(f: SajuTopicFactSet, say: Say): string {
   const a = f.annual;
   const n = f.nextAnnual;
   const watched = f.focus.s5.filter((line) => line.includes("관계가 있어요")).map(relationSentence);
   return filled([
-    `올해 남은 기간은 ${a.year}년 ${a.ko}(${a.gz}) 세운이에요. 천간은 ${josa(a.stemTenGod, "이고", "고")}, 지지의 대표 글자는 ${ro(a.branchMainTenGod)} 읽어요.`,
-    `다가오는 해는 입춘 무렵부터 ${n.year}년 ${n.ko}(${n.gz}) 세운이에요. 천간은 ${josa(n.stemTenGod, "이고", "고")}, 지지의 대표 글자는 ${ro(n.branchMainTenGod)} 읽어요.`,
+    `${ro(say("세운"))} 보면 올해 남은 기간은 ${a.year}년 ${josa(`${a.ko}(${a.gz})`, "이에요", "예요")}. 위 글자는 ${josa(say(a.stemTenGod), "이고", "고")}, 아래 글자의 대표 글자는 ${ro(say(a.branchMainTenGod))} 읽어요.`,
+    `다가오는 해는 입춘 무렵부터 ${n.year}년 ${josa(`${n.ko}(${n.gz})`, "이에요", "예요")}. 위 글자는 ${josa(say(n.stemTenGod), "이고", "고")}, 아래 글자의 대표 글자는 ${ro(say(n.branchMainTenGod))} 읽어요.`,
     ...watched,
   ], POOL_S5, 520);
 }
 
-function section6(f: SajuTopicFactSet): string {
+function section6(f: SajuTopicFactSet, say: Say): string {
   return [
     "계산 기준은 만세력마다 조금씩 다를 수 있어서, 이 풀이가 어떤 기준으로 읽었는지 밝혀 둘게요.",
-    ...f.calculation.slice(0, 2).map((line) => `${line.replace(/[.。]$/, "")}.`),
+    ...f.calculation.slice(0, 2).map((line) => glossText(`${line.replace(/[.。]$/, "")}.`, say)),
     ...f.limits,
     "태어난 시각을 알게 되면 내 정보에서 고칠 수 있고, 이 풀이도 그때 다시 계산할 수 있어요.",
   ].join(" ");
 }
 
+/** What the 한눈에 보기 of each 운 speaks about (owner 2026-10-07, e.g. 재물운: where money comes in, where it leaks). */
+const TOPIC_GLANCE: Readonly<Record<SajuTopicId, { when: string; slip: string; scene: string; action: string }>> = {
+  love: { when: "관계를 맺을 때", slip: "그 힘이 필요한 순간에 마음이 엇갈리기 쉬운 편이에요", scene: "관계를 맺는 일", action: "가까운 사람과 보내는 시간을 일정에 먼저 넣어 보세요." },
+  reunion: { when: "마음을 추스를 때", slip: "그 힘이 필요할 때 같은 생각을 되풀이하기 쉬운 편이에요", scene: "마음을 추스르는 일", action: "하루 리듬을 지키는 작은 습관 하나를 정해 두세요." },
+  money: { when: "돈을 다룰 때", slip: "그 힘이 필요한 자리에서 돈이 새기 쉬운 편이에요", scene: "쓰고 모으는 일", action: "고정으로 나가는 돈부터 한 번 점검해 보세요." },
+  career: { when: "일할 때", slip: "그 힘이 필요한 일에서 무리하기 쉬운 편이에요", scene: "일하는 방식을 다지는 일", action: "올해 남은 기간에 다질 일 하나를 골라 마무리해 보세요." },
+};
+
+/** One everyday act for the group a chart has least of. */
+const GROUP_REMEDY: Readonly<Record<GroupName, string>> = {
+  비겁: "혼자 정하기 전에 믿을 만한 사람 한 명에게 의견을 물어보세요.",
+  식상: "생각만 해 둔 것 하나를 짧은 말로 먼저 꺼내 보세요.",
+  재성: "이번 주에 쓴 돈과 시간을 한 번 훑어보고 새는 곳을 찾아보세요.",
+  관성: "하루에 꼭 지킬 기준 하나를 먼저 정해 두세요.",
+  인성: "막힐 때 도움을 청할 곳 한 군데를 미리 알아 두세요.",
+};
+
+/** 한눈에 보기 for a 운: the group the chart has most and least of on the surface, this year's 세운 and its ten god. */
+function topicGlance(f: SajuTopicFactSet, say: Say): SajuGlance {
+  const most = f.groups.items.reduce((a, b) => (b.count > a.count ? b : a));
+  const least = f.groups.items.filter((g) => g !== most).reduce((a, b) => (b.count < a.count ? b : a));
+  const t = TOPIC_GLANCE[f.topic];
+  return {
+    goesWell: `${josa(say(most.name), "이", "가")} 겉에 ${most.count}개로 가장 많아, 그 힘을 살려 ${t.when} 잘 풀리는 편이에요.`,
+    watchOut: `${josa(say(least.name), "은", "는")} ${least.count > 0 ? `겉에 ${least.count}개뿐이라` : "겉에 없어"}, ${t.slip}.`,
+    remedy: GROUP_REMEDY[least.name],
+    thisYear: mockThisYear(f, say, t.scene),
+    thisYearAction: t.action,
+  };
+}
+
 export function mockSajuTopicReading(f: SajuTopicFactSet): SajuReading {
-  const bodies = [section1(f), section2(f), section3(f), section4(f), section5(f), section6(f)];
+  // Plain words first (owner 2026-10-07): each term glossed where it first appears, the card on top first.
+  const say = glossOnce();
+  const glance = topicGlance(f, say);
+  const bodies = [section1(f, say), section2(f, say), section3(f, say), section4(f, say), section5(f, say), section6(f, say)];
   return {
     sections: TOPIC_SECTIONS[f.topic].map((heading, i) => ({ heading, body: bodies[i]! })),
     observation: { heading: TOPIC_OBSERVATION_HEADING, body: OBSERVATION[f.topic] },
+    glance,
     followUps: [...FOLLOW_UPS[f.topic]],
   };
 }

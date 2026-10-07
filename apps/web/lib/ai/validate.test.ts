@@ -52,7 +52,14 @@ describe("money advice vs money pushing (review important 2)", () => {
 
 describe("saju: forbidden topics may be named only while declining them (review important 2)", () => {
   const facts = buildFactSet(computeChart(toSajuInput(DEFAULT_SAJU_FORM)), Date.parse("2026-09-30T03:00:00Z"));
-  const gold: SajuReading = { ...sajuSample.paid, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "앞으로 몇 주 동안 끝낸 일의 시간과 돈을 셀 때 힘이 빠지는지, 오히려 개운한지 눈여겨보세요. 개운하다면 巳 속의 경금(庚金)을 꺼내 쓰고 있다는 뜻으로 읽을 수 있어요." }, followUps: ["지금 대운에서 해 볼 작은 실험은요?", "오행 지도를 일상에 어떻게 쓸까요?"] };
+  const glance = {
+    goesWell: "불(火) 기운이 셋으로 가장 많아, 앞에 나서서 드러내는 일에서 잘 풀리는 편이에요.",
+    watchOut: "쇠(金) 기운이 겉에 없어, 끝낸 일을 셈하고 정리하는 일은 뒤로 밀리기 쉬운 편이에요.",
+    remedy: "한 주를 마칠 때 끝낸 일과 쓴 돈을 한 번에 훑어보세요.",
+    thisYear: "올해 병오(丙午)년에는 나와 어깨를 나란히 하는 힘(비견)이 실려, 함께 나눌 일이 늘기 쉬운 해로 읽어요.",
+    thisYearAction: "함께할 사람과 맡을 몫부터 정해 보세요.",
+  };
+  const gold: SajuReading = { ...sajuSample.paid, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "앞으로 몇 주 동안 끝낸 일의 시간과 돈을 셀 때 힘이 빠지는지, 오히려 개운한지 눈여겨보세요. 개운하다면 巳 속의 경금(庚金)을 꺼내 쓰고 있다는 뜻으로 읽을 수 있어요." }, glance, followUps: ["지금 대운에서 해 볼 작은 실험은요?", "오행 지도를 일상에 어떻게 쓸까요?"] };
   const edit = (extra: string): SajuReading => ({ ...gold, sections: gold.sections.map((s, i) => (i === 5 ? { ...s, body: `${s.body} ${extra}` } : s)) });
 
   it.each([

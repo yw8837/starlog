@@ -3,10 +3,10 @@ import golden from "@content/eval/saju-topics/golden.json";
 import { describe, expect, it } from "vitest";
 import type { SajuTopicId } from "@/lib/reading/types";
 import { toSajuInput, type SajuForm } from "@/lib/sajuForm";
-import { mockSajuTopicFollowUp, mockSajuTopicReading } from "./mockSajuTopics";
+import { mockSajuTopicFollowUp, mockSajuTopicReading, mockSajuTopicTeaser } from "./mockSajuTopics";
 import { buildTopicFactSet } from "./prompts/sajuTopics";
 import { isSoftViolation } from "./style";
-import { topicHardViolations, validateSajuTopicFollowUp, validateSajuTopicReading } from "./validateSajuTopics";
+import { topicHardViolations, validateSajuTopicFollowUp, validateSajuTopicReading, validateSajuTopicTeaser } from "./validateSajuTopics";
 
 const NOW = Date.parse(golden.evalNow);
 const chartOf = (id: string) => computeChart(toSajuInput(golden.charts.find((c) => c.id === id)!.birth as SajuForm));
@@ -516,5 +516,25 @@ describe("§8.2 a hypothetical encounter is not a promise, a concession that goe
   ] as const)("%s catches %s", (topic, text, label) => {
     expect(hardOf(topic, text).join("\n")).toMatch(label);
     expect(readingHard(topic, text).join("\n")).toMatch(label);
+  });
+});
+
+describe("a 연애운·재회운 teaser that carries the day-pillar window (review 2026-10-08)", () => {
+  // C1, time unknown: "00:00~00:32 사이에 태어났다면 일주가 전날 일진인 乙丑(을축)이 돼요." (丑 is not the chart's)
+  const f = factsFor("love");
+  const glyphs = (extra: string) => {
+    const teaser = mockSajuTopicTeaser(f);
+    return validateSajuTopicTeaser({ ...teaser, summary: `${teaser.summary} ${extra}` }, f).filter((v) => v.startsWith("명식에 없는 간지 글자"));
+  };
+
+  it("passes the window's glyphs in its own words beside its time, as well as word for word", () => {
+    expect([f.dayWindow?.range, f.allowed.limitGlyphs]).toEqual(["00:00~00:32", ["丑"]]);
+    expect(glyphs(f.dayWindow!.sentence)).toEqual([]);
+    expect(glyphs("00:00~00:32 사이에 태어났다면 일주가 을축(乙丑)으로 바뀌어 일지도 축토(丑土)가 돼요.")).toEqual([]);
+  });
+
+  it("fails them without the window's time, and a 간지 the window does not name even beside it", () => {
+    expect(glyphs("일지는 축토(丑土)로 읽어요.").join(" ")).toContain("丑");
+    expect(glyphs("00:00~00:32 사이에 태어났다면 일주가 갑신(甲申)이 돼요.").join(" ")).toContain("申");
   });
 });

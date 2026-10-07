@@ -67,8 +67,9 @@ test("주제별 사주: each 운 shows its own teaser, list and sheet under the 
     await expect(page.getByText(`${topic} · 맛보기`, { exact: true })).toBeVisible({ timeout: GENERATION });
     await expect(row.getByRole("button", { name: topic })).toHaveAttribute("aria-pressed", "true");
     const toc = page.getByRole("region", { name: "이어지는 풀이" });
-    await expect(toc).toContainText("소제목 7개 · 약 3,000자");
-    await expect(toc).toContainText("나의 기본 결 · 한눈에 보기");
+    await expect(toc).toContainText("소제목 8개 · 약 3,000자");
+    await expect(toc).toContainText("한눈에 보기 · 잘 풀리는 쪽과 조심할 쪽, 올해 흐름");
+    await expect(toc).toContainText("나의 기본 결 · 타고난 바탕");
     await expect(page.getByRole("region", { name: `${topic} 전체 풀이에 담긴 것` })).toBeVisible();
   }
   await page.getByRole("button", { name: "사주팔자로 돌아가기" }).click();
@@ -107,6 +108,10 @@ test("주제별 사주: 재물운 sends only its topic, comes back from this dev
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: GENERATION });
   await expect(page.getByText(/^사주 재물운 · \d+월 \d+일$/)).toBeVisible();
   await expect(page.locator("#chapter-reading article")).toHaveCount(7);
+  // 한눈에 보기 first (owner 2026-10-07): its four plain labels, then the sections
+  const glance = page.locator("#chapter-reading > :first-child");
+  await expect(glance).toHaveAccessibleName("한눈에 보기");
+  for (const label of ["잘 풀리는 쪽", "조심할 쪽", "이렇게 보완", "올해 흐름"]) await expect(glance).toContainText(label);
   await expect(page.locator("#chapter-reading")).toContainText("나의 기본 결");
   // A heading shows as its label and its title on two lines, without the " · " between them.
   await expect(page.locator("#chapter-reading")).toContainText(/앞으로 몇 주\s*확인해 볼 신호/);

@@ -163,7 +163,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     tap("재물운");
     expect(await screen.findByText("재물운 · 맛보기")).toBeTruthy();
     expect(screen.getByText("흙 속의 쇠")).toBeTruthy();
-    expect(screen.getByText("소제목 7개 · 약 3,000자")).toBeTruthy();
+    expect(screen.getByText("소제목 8개 · 약 3,000자")).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "재물운 전체 풀이에 담긴 것" })).toBeTruthy();
     // The price and the pay link wait for the account (/api/me).
     expect(await screen.findByText("재물운 전체 풀이 · 2,900원")).toBeTruthy();

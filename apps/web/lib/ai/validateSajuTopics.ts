@@ -6,8 +6,9 @@ import type { SajuTopicFactSet } from "@/lib/ai/prompts/sajuTopics";
 import type { FollowUpAnswer, SajuReading, SajuTeaserDraft } from "@/lib/ai/schemas";
 import { SOFT_PREFIX, aiTellViolations } from "@/lib/ai/style";
 import {
-  HEDGE, OTHER, QUOTED, TIME_UNKNOWN_LINE, TOLERANCE, actionVarietyViolations, allowedFactViolations, charCount, lengthCheck, mentions,
-  modelNameViolations, monthlyViolations, moneyPushSentences, observationViolations, sentences, voiceViolations,
+  BASIS_QUESTION, CLOCK_DATE, COUNTDOWN, GLANCE_LABEL, HEDGE, MONTH_NAME, NAMED_MONTH, OTHER, QUOTED, SEASON_TIMING, TIME_UNKNOWN_LINE, TOLERANCE,
+  actionVarietyViolations, allowLimitPillars, allowedFactViolations, cardGanzhi, charCount, glanceTexts, glanceViolations, lengthCheck, mentions,
+  modelNameViolations, monthlyViolations, moneyPushSentences, observationViolations, plainWordViolations, sentences, voiceViolations,
 } from "@/lib/ai/validate";
 
 /**
@@ -83,9 +84,6 @@ function claimsOtherMind(sentence: string): boolean {
   return claimed && !HEDGE.test(sentence);
 }
 
-const COUNTDOWN = /(?<!\d)\d{1,3}\s?(?:일|주일?|개월|달|년)\s?(?:뒤|후(?!반)|안에|이내|만에)|D\s?-\s?\d+|디데이|D데이/i;
-const CLOCK_DATE = /\d{1,2}\s?월\s?\d{1,2}\s?일|[월화수목금토일]요일|\d{1,2}\s?시\s?(?:에|쯤|경|까지|부터)/;
-const SEASON_TIMING = /(?:올해|내년|다음\s?해|다가오는\s?해|이번|오는|새해)\s?(?:봄|여름|가을|겨울)|(?:봄|여름|가을|겨울)\s?(?:쯤|무렵|부터|까지)|(?:봄|여름|가을|겨울)(?:이|가)\s?(?:오면|되면)/;
 const GENDERED_STAR = /(?:재성|정재|편재|관성|정관|편관)[^.?!]{0,12}(?:아내|남편|부인|와이프|배우자|남자\s?친구|여자\s?친구)|(?:아내|남편)(?:의|를\s?뜻하는|를\s?나타내는)\s?(?:별|자리|글자|십성)|(?:남자|여자|남성|여성)(?:에게|에겐|의\s?경우|라면|한테)[^.?!]{0,15}(?:재성|관성|정재|편재|정관|편관)/;
 const PARTNER_CHART = new RegExp(`(?:${TOPIC_OTHER})(?:의|이|가)?\\s?(?:사주|명식|띠|생일|생년월일|일간|일주)(?!\\s?없이)`);
 const AMOUNT = /\d[\d,]*\s?(?:만|천|백|억)?\s?원|\d+\s?억|\d+(?:\.\d+)?\s?%|퍼센트/;
@@ -143,12 +141,12 @@ interface HardCheck {
 const hit = (re: RegExp) => (sentence: string) => re.exec(sentence)?.[0] ?? null;
 
 /** "2027년 8월" and "2027-08" the facts give (a 대운 change) pass; any other month or season timing is found. */
-function monthTiming(sentence: string, facts: SajuTopicFactSet): string | null {
+function monthTiming(sentence: string, facts: Pick<SajuTopicFactSet, "allowed">): string | null {
   const allowed = facts.allowed.yearMonths;
   const stripped = sentence
     .replace(/(\d{4})\s?년\s?(\d{1,2})\s?월/g, (all, y: string, m: string) => (allowed.includes(`${y}-${m.padStart(2, "0")}`) ? "□" : all))
     .replace(/\d{4}-\d{2}/g, (ym) => (allowed.includes(ym) ? "□" : ym));
-  return /(?<!\d)(?:1[0-2]|[1-9])\s?월/.exec(stripped)?.[0] ?? /상반기|하반기|분기/.exec(stripped)?.[0] ?? SEASON_TIMING.exec(stripped)?.[0] ?? null;
+  return MONTH_NAME.exec(stripped)?.[0] ?? SEASON_TIMING.exec(stripped)?.[0] ?? null;
 }
 
 export const HARD_CHECKS: readonly HardCheck[] = [
@@ -251,6 +249,19 @@ function situationViolations(s2: string, all: string, f: SajuTopicFactSet, out: 
   if (chip.id === "marriage" && !all.includes("결혼")) out.push(`${SOFT_PREFIX}결혼을 생각 중이라고 골랐는데 결혼 이야기가 보이지 않아요. 함께 사는 생활과 함께 내리는 결정을 이 명식이 다루는 방식으로 한두 문장 써 주세요.`);
 }
 
+/**
+ * A 연애운·재회운 teaser carries the day-pillar window (2절's fact), whose day pillar is not the chart's: its glyphs pass in a sentence
+ * that keeps the window's time ("00:00~00:32 사이에 태어났다면 일주가 을축(乙丑)으로 바뀌어요"), as the teaser's <chart_rules> says, and
+ * elsewhere only in a limit quoted word for word (review 2026-10-08). The time is the window's start, which "HH:mm 이후에" keeps too.
+ */
+function allowWindowPillar(text: string, f: SajuTopicFactSet): string {
+  const w = f.dayWindow;
+  if (!w) return text;
+  const own = { limits: [], allowed: { limitGlyphs: (f.allowed.limitGlyphs ?? []).filter((glyph) => w.sentence.includes(glyph)) } };
+  const time = w.range.split("~")[0]!;
+  return text.replace(/[^.?!\n]+[.?!]*/g, (sentence) => (sentence.includes(time) ? allowLimitPillars(sentence, own, true) : sentence));
+}
+
 export function validateSajuTopicTeaser(d: SajuTeaserDraft, f: SajuTopicFactSet): string[] {
   const out: string[] = [];
   modelNameViolations(d, out);
@@ -259,7 +270,7 @@ export function validateSajuTopicTeaser(d: SajuTeaserDraft, f: SajuTopicFactSet)
   lengthCheck("summary", d.summary, 250, 400, out);
   if (!f.input.timeKnown && !TIME_UNKNOWN_LINE.test(d.summary)) out.push("태어난 시를 몰라 여섯 글자로 읽었다는 한계를 summary에 한 문장 넣어 주세요.");
   const masked = maskGanzhiReadings(`${d.title}\n${d.summary}`);
-  allowedFactViolations(masked, f.allowed, out, topicUserText(f), { marriage: marriageTopic(f) });
+  allowedFactViolations(allowWindowPillar(allowLimitPillars(masked, f), f), f.allowed, out, topicUserText(f), { marriage: marriageTopic(f) });
   topicHardViolations({ whole: masked, timing: maskGanzhiReadings(d.summary) }, f, out);
   if (!has(d.summary, f.allowed.anchors.s2)) out.push(`summary에 이 주제의 핵심 사실(${f.allowed.anchors.s2.slice(0, 4).join("·")} 가운데 하나)을 넣어 주세요.`);
   voiceViolations(d.summary, out);
@@ -282,19 +293,36 @@ export function validateSajuTopicReading(r: SajuReading, f: SajuTopicFactSet): s
   const [lo, hi] = TOPIC_TOTAL_LENGTH;
   if (total < lo * (1 - TOLERANCE) || total > hi * (1 + TOLERANCE)) out.push(`풀이 분량이 공백 제외 ${total}자예요. ${lo.toLocaleString("ko-KR")}~${hi.toLocaleString("ko-KR")}자로 맞춰 주세요.`);
   observationViolations(r.observation.body, out);
+  // a month by 절기 and 간지 only, as in 전체 흐름: the '다음 달' label can name a 월건 that opens this calendar month (review 2026-10-08);
+  // N월 is the timing checks' to find
+  const namedMonth = NAMED_MONTH.exec(r.observation.body)?.[0];
+  if (namedMonth) out.push(`관찰에 '${namedMonth}'처럼 달을 가리키는 말이 있어요. 달은 시작하는 절기와 간지로만 불러 주세요(예: 한로부터 드는 무술(戊戌)월).`);
   if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
   const bodies = r.sections.map((s) => s.body);
-  monthlyViolations(headings, bodies, f, out);
-  const all = [...bodies, r.observation.body, ...r.followUps].join("\n");
+  // 한눈에 보기 (owner 2026-10-07): its own rules, then every check of the body; the time checks read it like 2~5절
+  const glance = glanceTexts(r.glance);
+  glanceViolations(r.glance, f.annual, out, { timing: false, ganzhi: cardGanzhi(f) });
+  // … but a 대운 change's 년·월 that a section may quote is not for the card (review 2026-10-08)
+  const noYearMonths = { allowed: { ...f.allowed, yearMonths: [] } };
+  const cardMonth = glance.map((text) => (monthTiming(text, f) ? null : monthTiming(text, noYearMonths))).find(Boolean);
+  if (cardMonth) out.push(`${GLANCE_LABEL}에 시기를 짚은 말이 있어요("${cardMonth}"). 카드에는 대운이 바뀌는 년·월도 쓰지 않고 '올해 남은 기간'처럼 말해 주세요.`);
+  monthlyViolations([GLANCE_LABEL, ...headings], [glance.join("\n"), ...bodies], f, out);
+  const parts = [...glance, ...bodies, r.observation.body, ...r.followUps];
+  const all = parts.join("\n");
   const masked = maskGanzhiReadings(all);
-  allowedFactViolations(masked, f.allowed, out, topicUserText(f), { marriage: marriageTopic(f) });
-  topicHardViolations({ whole: masked, timing: maskGanzhiReadings([...bodies.slice(1, 5), r.observation.body].join("\n")) }, f, out);
+  // the 계산 기준 절 copies the limits, and 2절 the day-pillar window's limit (연애운·재회운): they alone may name the other pillars
+  const basisAt = bodies.length ? glance.length + bodies.length - 1 : -1;
+  const copiesLimits = (i: number) => i === basisAt || (f.dayWindow !== null && bodies.length > 1 && i === glance.length + 1);
+  const checked = parts.map((text, i) => allowLimitPillars(maskGanzhiReadings(text), f, copiesLimits(i))).join("\n");
+  allowedFactViolations(checked, f.allowed, out, topicUserText(f), { marriage: marriageTopic(f) });
+  topicHardViolations({ whole: masked, timing: maskGanzhiReadings([...glance, ...bodies.slice(1, 5), r.observation.body].join("\n")) }, f, out);
   anchorViolations(bodies, f, out);
   basisViolations(bodies, f, out);
   voiceViolations(all, out);
   situationViolations(bodies[1] ?? "", all, f, out);
   actionVarietyViolations([...bodies, r.observation.body], out);
   aiTellViolations([...bodies, r.observation.body], out);
+  plainWordViolations([...glance, ...bodies, r.observation.body], out);
   return out;
 }
 
@@ -303,7 +331,7 @@ export function validateSajuTopicFollowUp(a: FollowUpAnswer, f: SajuTopicFactSet
   modelNameViolations(a, out);
   lengthCheck("answer", a.answer, 150, 450, out);
   const masked = maskGanzhiReadings(a.answer);
-  allowedFactViolations(masked, f.allowed, out, `${question} ${topicUserText(f)}`, { marriage: marriageTopic(f) });
+  allowedFactViolations(allowLimitPillars(masked, f, BASIS_QUESTION.test(question)), f.allowed, out, `${question} ${topicUserText(f)}`, { marriage: marriageTopic(f) });
   topicHardViolations({ whole: masked, timing: masked }, f, out, question);
   voiceViolations(a.answer, out);
   aiTellViolations([a.answer], out);

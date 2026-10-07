@@ -89,7 +89,7 @@ describe("/api/saju/teaser with a topic", () => {
   it("still writes 전체 흐름 for an older client, now with freshUntil and without a topic", async () => {
     const res = await fresh().call(sajuTeaser, { birth: C3 });
     expect(res.status).toBe(200);
-    expect(res.data.lockedToc).toHaveLength(8);
+    expect(res.data.lockedToc).toHaveLength(9); // 한눈에 보기, seven sections, the observation
     expect(res.data).not.toHaveProperty("topic");
     expect(res.data.freshUntil).toBe("2026-11-01T03:00:00.000Z");
   });

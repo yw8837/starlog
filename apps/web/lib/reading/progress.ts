@@ -33,7 +33,7 @@ export const RETRY_CAPTION = "조금 더 다듬고 있어요";
 
 const one = (key: string, caption: string): Stage => ({ key, index: 0, caption });
 
-/** "월령과 뿌리 · 태어난 계절…" → "월령과 뿌리를 적고 있어요" */
+/** "타고난 바탕 · 태어난 계절…" → "타고난 바탕을 적고 있어요" */
 const sectionCaption = (heading: string) => `${withParticle(heading.split(" · ")[0] ?? heading, "을/를")} 적고 있어요`;
 
 export function progressPlan(kind: GenerationKind, opts: { positions?: readonly string[]; sections?: readonly string[] } = {}): ProgressPlan {
@@ -66,6 +66,8 @@ export function progressPlan(kind: GenerationKind, opts: { positions?: readonly 
         stages: [
           ...(opts.sections ?? []).map((heading, index) => ({ key: "sections", index, caption: sectionCaption(heading) })),
           one("observation", "확인해 볼 신호를 고르고 있어요"),
+          // written after the body it sums up (SajuReadingSchema's order), shown on top of the reading
+          one("glance", "한눈에 보기를 정리하고 있어요"),
           one("followUps", "마무리하고 있어요"),
         ],
       };

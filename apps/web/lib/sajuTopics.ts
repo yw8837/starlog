@@ -1,6 +1,7 @@
 import { SITE, sajuTopicsMode, type SajuTopicsMode } from "@/lib/config";
 import type { Locale } from "@/lib/i18n/locales";
 import type { SajuSituationId, SajuTopic, SajuTopicId } from "@/lib/reading/types";
+import { SAJU_GLANCE_HEADING } from "@/lib/sajuPrologue";
 
 /**
  * 주제별 사주 (docs/superpowers/specs/2026-10-02-starlog-saju-topics-design.md §6.1, §6.2, §13, with §0's
@@ -87,18 +88,21 @@ export const otherTopicLabels = (topic: SajuTopicId): string[] =>
 /** The paid part after the sections (the same heading as 전체 흐름's, lib/ai/prompts/saju.ts). */
 export const TOPIC_OBSERVATION_HEADING = "앞으로 몇 주 · 확인해 볼 신호";
 
-/** Section headings per topic (spec §6.2): written over the model's, shown in the locked list and the waiting screen. */
+/**
+ * Section headings per topic (spec §6.2): written over the model's, shown in the locked list and the waiting screen.
+ * Plain words first (owner 2026-10-07): no 명리 term in a label or subtitle; the 한눈에 보기 card took that name from 1절.
+ */
 export const TOPIC_SECTIONS: Readonly<Record<SajuTopicId, readonly string[]>> = Object.freeze({
   love: [
-    "나의 기본 결 · 한눈에 보기",
-    "사랑할 때의 나 · 일지와 마음의 자리",
+    "나의 기본 결 · 타고난 바탕",
+    "사랑할 때의 나 · 가장 가까운 자리와 마음",
     "끌리는 사람과 맞는 사람 · 관계의 결",
     "지금의 10년 · 인연의 흐름",
     "올해와 다가오는 해 · 만남과 관계의 결",
     "계산 기준 · 보지 않은 것과 달라질 수 있는 것",
   ],
   reunion: [
-    "나의 기본 결 · 한눈에 보기",
+    "나의 기본 결 · 타고난 바탕",
     "이별을 겪는 나 · 마음이 머무는 자리",
     "다시 이어진다면 · 되풀이되기 쉬운 것",
     "지금의 10년 · 관계가 다시 움직이는 흐름",
@@ -106,25 +110,25 @@ export const TOPIC_SECTIONS: Readonly<Record<SajuTopicId, readonly string[]>> = 
     "계산 기준 · 보지 않은 것과 달라질 수 있는 것",
   ],
   money: [
-    "나의 기본 결 · 한눈에 보기",
-    "돈이 들어오는 길 · 재성과 식상",
-    "돈을 지키는 힘 · 비겁과 인성",
-    "지금의 10년 · 재물의 흐름",
+    "나의 기본 결 · 타고난 바탕",
+    "돈이 들어오는 길 · 다루는 힘과 만들어 내는 힘",
+    "돈을 지키는 힘 · 어울려 나누는 힘과 받쳐 주는 힘",
+    "지금의 10년 · 돈의 흐름",
     "올해와 다가오는 해 · 쓰기와 모으기의 결",
     "계산 기준 · 보지 않은 것과 달라질 수 있는 것",
   ],
   career: [
-    "나의 기본 결 · 한눈에 보기",
-    "일하는 방식 · 관성과 식상",
-    "잘 맞는 일의 결 · 월주와 십성",
+    "나의 기본 결 · 타고난 바탕",
+    "일하는 방식 · 약속을 지키는 힘과 드러내는 힘",
+    "잘 맞는 일의 결 · 태어난 달의 바탕과 자주 쓰는 힘",
     "지금의 10년 · 일의 흐름",
     "올해와 다가오는 해 · 움직일 때와 다질 때",
     "계산 기준 · 보지 않은 것과 달라질 수 있는 것",
   ],
 });
 
-/** The locked list on the chart page: six sections and the observation. */
-export const topicLockedToc = (topic: SajuTopicId): string[] => [...TOPIC_SECTIONS[topic], TOPIC_OBSERVATION_HEADING];
+/** The locked list on the chart page: the 한눈에 보기 card, six sections and the observation. */
+export const topicLockedToc = (topic: SajuTopicId): string[] => [SAJU_GLANCE_HEADING, ...TOPIC_SECTIONS[topic], TOPIC_OBSERVATION_HEADING];
 
 /** Length targets per section (non-space characters, spec §6.2), in section order. */
 export const TOPIC_SECTION_LENGTH: ReadonlyArray<readonly [number, number]> = Object.freeze([

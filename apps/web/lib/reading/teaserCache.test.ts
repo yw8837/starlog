@@ -59,6 +59,21 @@ describe("saju teasers on this device (saju-topics spec §9.3)", () => {
     expect(stored()).toBeNull();
   });
 
+  it("leaves behind the teasers kept before the 한눈에 보기 card, whose locked lists are the old ones (review 2026-10-08)", () => {
+    const OLD_KEY = "starlog.teaser.saju.v1";
+    const old = [{ key: "k", value: { title: "예전", summary: "s", lockedToc: ["타고난 바탕 · 옛 목록"] }, savedAt: NOW, freshUntil: NOW + 10 * DAY }];
+    localStorage.setItem(OLD_KEY, JSON.stringify(old));
+    expect(SAJU_TEASERS_KEY).not.toBe(OLD_KEY);
+    // a returning user is shown a new teaser, with the current list
+    expect(readTeaser("saju", "k", any, NOW)).toBeNull();
+    // their keys hold birth data: gone the next time the app opens, and with 기록 모두 지우기
+    pruneSajuTeasers(NOW);
+    expect(localStorage.getItem(OLD_KEY)).toBeNull();
+    localStorage.setItem(OLD_KEY, JSON.stringify(old));
+    clearTeasers();
+    expect(localStorage.getItem(OLD_KEY)).toBeNull();
+  });
+
   it("is erased with the saju profile and with 기록 모두 지우기", () => {
     saveTeaser("saju", "k", teaser("t"), NOW);
     clearSajuProfile();

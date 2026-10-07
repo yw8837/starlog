@@ -70,11 +70,13 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   await expect(page.getByText("→ 1990년 1월 1일 (양력)")).toBeVisible();
   await expect(page.getByText("10년 흐름(대운)의 방향을 정하는 데만 써요")).toBeVisible();
 
-  // 윤달 is offered for lunar dates only.
+  // 평달 / 윤달 / 모름 is offered for lunar dates only.
   await page.getByRole("button", { name: "음력", exact: true }).click();
-  await expect(page.getByLabel("윤달이에요")).toBeVisible();
+  await expect(page.getByRole("group", { name: "평달 또는 윤달" })).toBeVisible();
+  await page.getByRole("button", { name: "모름", exact: true }).click();
+  await expect(page.getByText("→ 1990년 1월 1일 (음력 · 윤달 모름)")).toBeVisible();
   await page.getByRole("button", { name: "양력", exact: true }).click();
-  await expect(page.getByLabel("윤달이에요")).toHaveCount(0);
+  await expect(page.getByRole("group", { name: "평달 또는 윤달" })).toHaveCount(0);
 
   // The optional status chips are folded until asked for.
   const more = page.getByRole("button", { name: /요즘 상황도 알려 주기/ });
@@ -145,6 +147,11 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
   await expect(page.getByText("사주 기록 ·", { exact: false })).toBeVisible();
   const sections = page.locator("#chapter-reading article");
   expect(await sections.count()).toBeGreaterThanOrEqual(7);
+  // 한눈에 보기 first (owner 2026-10-07), then the sections under plain labels
+  const glance = page.locator("#chapter-reading > :first-child");
+  await expect(glance).toHaveAccessibleName("한눈에 보기");
+  for (const label of ["잘 풀리는 쪽", "조심할 쪽", "이렇게 보완", "올해 흐름"]) await expect(glance).toContainText(label);
+  await expect(page.locator("#chapter-reading")).toContainText("타고난 바탕");
   await expect(page.getByText("풀이를 적고 있어요")).toHaveCount(0);
   await expect(page.getByText("기록 · 토끼 선생님")).toHaveCount(0);
   await expect(page.getByRole("complementary", { name: "명식" })).toContainText("壬");
@@ -164,7 +171,7 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
 test("saju: a lunar day that does not exist is explained next to the date", async ({ page }, info) => {
   await page.goto("/saju/new");
   await page.getByRole("button", { name: "음력", exact: true }).click();
-  await page.getByLabel("윤달이에요").check({ force: true });
+  await page.getByRole("button", { name: "윤달", exact: true }).click();
   await page.getByLabel("태어난 연도").selectOption("1990");
   await page.getByLabel("태어난 월").selectOption("1");
   await page.getByRole("button", { name: "여성", exact: true }).click();

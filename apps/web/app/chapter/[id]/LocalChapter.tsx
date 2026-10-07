@@ -28,7 +28,7 @@ import { ChapterView, type ChapterFollowUp } from "./ChapterView";
 import { SajuChapterView } from "./SajuChapterView";
 import s from "./ChapterView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
-import { isFollowUpData, isSajuReading, partialTarotReading } from "@/lib/reading/validate";
+import { isFollowUpData, isWholeSajuReading, partialTarotReading } from "@/lib/reading/validate";
 
 /** Chapter tokens expire 7 days after the reading (the server's rule): no follow-ups after that. */
 const FOLLOW_UP_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -112,7 +112,7 @@ function EraseRecord({ id }: { id: string }) {
 }
 
 /** True when every part of the saved reading can be shown (an older or edited one may lack some). */
-const isWhole = (chapter: StoredChapter) => (chapter.kind === "tarot" ? partialTarotReading(chapter.reading).complete : isSajuReading(chapter.reading));
+const isWhole = (chapter: StoredChapter) => (chapter.kind === "tarot" ? partialTarotReading(chapter.reading).complete : isWholeSajuReading(chapter.reading));
 
 /** A reading saved on this device, as its kind shows it. It never calls the API to be shown again. */
 function SavedReading({ chapter }: { chapter: StoredChapter }) {

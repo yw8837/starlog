@@ -4,11 +4,13 @@ import {
   isDailyData,
   isDailyDeal,
   isFollowUpData,
+  isSajuGlance,
   isSajuReadingResponse,
   isSajuTeaser,
   isTarotReading,
   isTarotReadingResponse,
   isTarotTeaser,
+  isWholeSajuReading,
   partialTarotReading,
 } from "./validate";
 
@@ -39,6 +41,29 @@ describe("shape checks for what the reading API hands back (QA Q-02, Q-03)", () 
     const daily = { card: { cardId: "major-19-sun", orientation: "upright", keyword: "k" }, summary: "s", body: "b", areas: { love: "", money: "", work: "" }, lucky: { color: "c", number: 3 }, tip: "t" };
     expect(isDailyData(daily)).toBe(true);
     expect(isDailyDeal({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }] })).toBe(true);
+  });
+
+  it("takes a saju reading with the 한눈에 보기 card, one saved before it (no card), and refuses a malformed card", () => {
+    const glance = { goesWell: "g", watchOut: "w", remedy: "r", thisYear: "y", thisYearAction: "a" };
+    const reading = { sections: [SECTION], observation: SECTION, glance, followUps: [] };
+    expect(isSajuReadingResponse({ reading, chapterToken: "t" })).toBe(true);
+    expect(isSajuReadingResponse({ reading: { sections: [SECTION], followUps: [] }, chapterToken: "t" })).toBe(true);
+    expect(isSajuReadingResponse({ reading: { ...reading, glance: { ...glance, thisYearAction: 3 } }, chapterToken: "t" })).toBe(false);
+    expect(isSajuReadingResponse({ reading: { ...reading, glance: "잘 풀려요" }, chapterToken: "t" })).toBe(false);
+    expect(isSajuGlance(glance)).toBe(true);
+    expect(isSajuGlance({ goesWell: "g" })).toBe(false);
+  });
+
+  it("reads a saved saju reading as whole when only its card cannot be read: the page leaves out the card alone (review 2026-10-08)", () => {
+    const glance = { goesWell: "g", watchOut: "w", remedy: "r", thisYear: "y", thisYearAction: "a" };
+    const reading = { sections: [SECTION], observation: SECTION, glance, followUps: [] };
+    expect(isWholeSajuReading(reading)).toBe(true);
+    expect(isWholeSajuReading({ ...reading, glance: { goesWell: 3 } })).toBe(true);
+    expect(isWholeSajuReading({ ...reading, glance: "잘 풀려요" })).toBe(true);
+    expect(isWholeSajuReading({ sections: [SECTION] })).toBe(true);
+    expect(isWholeSajuReading({ ...reading, observation: { heading: "h" } })).toBe(false);
+    expect(isWholeSajuReading({ ...reading, sections: [] })).toBe(false);
+    expect(isWholeSajuReading(null)).toBe(false);
   });
 
   it("takes a topic teaser's topic and freshUntil, and refuses an unknown topic", () => {

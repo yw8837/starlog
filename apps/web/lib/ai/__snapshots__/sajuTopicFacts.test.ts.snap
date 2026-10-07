@@ -58,10 +58,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辛",
       "午",
       "丁",
-      "丑",
-      "酉",
       "戌",
+      "亥",
       "未",
+    ],
+    "limitGlyphs": [
+      "丑",
     ],
     "stages": [
       "건록",
@@ -266,10 +268,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辛",
       "午",
       "丁",
-      "丑",
-      "酉",
       "戌",
+      "亥",
       "未",
+    ],
+    "limitGlyphs": [
+      "丑",
     ],
     "stages": [
       "건록",
@@ -486,10 +490,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辛",
       "午",
       "丁",
-      "丑",
-      "酉",
       "戌",
+      "亥",
       "未",
+    ],
+    "limitGlyphs": [
+      "丑",
     ],
     "stages": [
       "건록",
@@ -690,10 +696,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辛",
       "午",
       "丁",
-      "丑",
-      "酉",
       "戌",
+      "亥",
       "未",
+    ],
+    "limitGlyphs": [
+      "丑",
     ],
     "stages": [
       "건록",
@@ -906,6 +914,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "庚",
       "亥",
       "壬",
+    ],
+    "limitGlyphs": [
       "巳",
     ],
     "stages": [
@@ -1155,6 +1165,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "庚",
       "亥",
       "壬",
+    ],
+    "limitGlyphs": [
       "巳",
     ],
     "stages": [
@@ -1417,6 +1429,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "庚",
       "亥",
       "壬",
+    ],
+    "limitGlyphs": [
       "巳",
     ],
     "stages": [
@@ -1660,6 +1674,8 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "庚",
       "亥",
       "壬",
+    ],
+    "limitGlyphs": [
       "巳",
     ],
     "stages": [
@@ -1918,8 +1934,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "午",
       "丁",
       "戌",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "제왕",
       "태",
@@ -2133,8 +2151,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "午",
       "丁",
       "戌",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "제왕",
       "태",
@@ -2360,8 +2380,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "午",
       "丁",
       "戌",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "제왕",
       "태",
@@ -2573,8 +2595,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "午",
       "丁",
       "戌",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "제왕",
       "태",
@@ -2797,10 +2821,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辰",
       "卯",
       "午",
-      "酉",
-      "辛",
       "戌",
+      "辛",
+      "亥",
     ],
+    "limitGlyphs": [],
     "stages": [
       "장생",
       "양",
@@ -3044,10 +3069,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辰",
       "卯",
       "午",
-      "酉",
-      "辛",
       "戌",
+      "辛",
+      "亥",
     ],
+    "limitGlyphs": [],
     "stages": [
       "장생",
       "양",
@@ -3301,10 +3327,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辰",
       "卯",
       "午",
-      "酉",
-      "辛",
       "戌",
+      "辛",
+      "亥",
     ],
+    "limitGlyphs": [],
     "stages": [
       "장생",
       "양",
@@ -3548,10 +3575,11 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辰",
       "卯",
       "午",
-      "酉",
-      "辛",
       "戌",
+      "辛",
+      "亥",
     ],
+    "limitGlyphs": [],
     "stages": [
       "장생",
       "양",
@@ -3803,8 +3831,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "丑",
       "寅",
       "戌",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "건록",
       "목욕",
@@ -4038,8 +4068,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "丑",
       "寅",
       "戌",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "건록",
       "목욕",
@@ -4284,8 +4316,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "丑",
       "寅",
       "戌",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "건록",
       "목욕",
@@ -4514,8 +4548,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "丑",
       "寅",
       "戌",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "건록",
       "목욕",
@@ -4752,8 +4788,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "戌",
       "午",
       "己",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "장생",
       "양",
@@ -4986,8 +5024,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "戌",
       "午",
       "己",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "장생",
       "양",
@@ -5230,8 +5270,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "戌",
       "午",
       "己",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "장생",
       "양",
@@ -5460,8 +5502,10 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "戌",
       "午",
       "己",
+      "亥",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "장생",
       "양",
@@ -5701,6 +5745,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "癸",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "제왕",
       "건록",
@@ -5933,6 +5978,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "癸",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "제왕",
       "건록",
@@ -6175,6 +6221,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "癸",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "제왕",
       "건록",
@@ -6402,6 +6449,7 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "癸",
       "未",
     ],
+    "limitGlyphs": [],
     "stages": [
       "제왕",
       "건록",
@@ -6635,7 +6683,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "丙",
       "午",
       "戌",
+      "亥",
     ],
+    "limitGlyphs": [],
     "stages": [
       "건록",
       "양",
@@ -6876,7 +6926,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "丙",
       "午",
       "戌",
+      "亥",
     ],
+    "limitGlyphs": [],
     "stages": [
       "건록",
       "양",
@@ -7126,7 +7178,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "丙",
       "午",
       "戌",
+      "亥",
     ],
+    "limitGlyphs": [],
     "stages": [
       "건록",
       "양",
@@ -7371,7 +7425,9 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "丙",
       "午",
       "戌",
+      "亥",
     ],
+    "limitGlyphs": [],
     "stages": [
       "건록",
       "양",
@@ -7618,10 +7674,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辰",
       "卯",
       "寅",
-      "巳",
-      "酉",
       "戌",
+      "亥",
       "未",
+    ],
+    "limitGlyphs": [
+      "巳",
     ],
     "stages": [
       "쇠",
@@ -7861,10 +7919,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辰",
       "卯",
       "寅",
-      "巳",
-      "酉",
       "戌",
+      "亥",
       "未",
+    ],
+    "limitGlyphs": [
+      "巳",
     ],
     "stages": [
       "쇠",
@@ -8120,10 +8180,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辰",
       "卯",
       "寅",
-      "巳",
-      "酉",
       "戌",
+      "亥",
       "未",
+    ],
+    "limitGlyphs": [
+      "巳",
     ],
     "stages": [
       "쇠",
@@ -8359,10 +8421,12 @@ exports[`topic facts for the golden charts (spec §6.3, §12.1) > is determinist
       "辰",
       "卯",
       "寅",
-      "巳",
-      "酉",
       "戌",
+      "亥",
       "未",
+    ],
+    "limitGlyphs": [
+      "巳",
     ],
     "stages": [
       "쇠",

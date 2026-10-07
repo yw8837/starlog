@@ -5,7 +5,7 @@ import type { ChartView, MatchPartA } from "../premiumSchemas";
 import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
 import {
   ELEMENT_HANJA, ELEMENT_WORD, ORDER, PLACE_LABEL, PRODUCES, SAME_GLYPH, SAME_PILLAR, branchRelations, buildFactSet, elementOf, pillarRelations,
-  stemRelations, tenGod, visibleFacts, yearGanzhi, type Placed, type PlacedPillar, type Relation, type SajuFactSet, type SajuProfile,
+  stemRelations, tenGod, visibleFacts, warningDayGlyphs, yearGanzhi, type Placed, type PlacedPillar, type Relation, type SajuFactSet, type SajuProfile,
 } from "./saju";
 import { ROMANCE_WORDS, TAROT_PREAMBLE, cardContexts, cardLabel, cardsBlock, cleanUserText, spreadFacts, type TarotContext } from "./tarot";
 
@@ -186,7 +186,8 @@ export function buildMatchFacts(
     ],
   };
 
-  const glyphs = new Set([...a.allowed.glyphs, ...b.allowed.glyphs]);
+  // the warnings' day pillars as the list always held them (the 계산 기준 절 that keeps them to itself is the standard reading's)
+  const glyphs = new Set([...a.allowed.glyphs, ...b.allowed.glyphs, ...warningDayGlyphs(meChart), ...warningDayGlyphs(partnerChart)]);
   for (const y of years) {
     for (const g of y.gz) glyphs.add(g);
     HIDDEN_STEMS[y.gz.charAt(1) as Branch].forEach((h) => glyphs.add(h.stem));

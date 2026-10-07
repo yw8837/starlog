@@ -3,8 +3,9 @@ import {
   BRANCHES, BRANCH_ELEMENTS, HIDDEN_STEMS, STEMS, STEM_ELEMENTS, computeChart, ganzhiKo, mainHiddenStem,
   type SajuChart, type SajuElement,
 } from "@starlog/core";
-import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_GLANCE_HEADING, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { HISTORY_RULE, historyBlock, sanitizeHistory, type HistoryItem } from "../history";
+import { plainWordsBlock } from "../plainWords";
 import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
 import type { FollowUpTurn } from "./tarot";
 import { cleanUserText } from "./tarot";
@@ -293,20 +294,36 @@ export function monthPillarAt(ms: number, label: string, dayStem: string, natal:
   return monthOf(probeAt(ms), label, dayStem, natal);
 }
 
+/** A 월건 with this little of it left is not given to a reading (tester, 2026-10-07: "9월에는…" the day before 한로). */
+const MONTH_ENDING_MS = 10 * 86_400_000;
+
+/** Which month a reading's 월건 is: the model reads it from here, and names the month by its 절기 and 간지 only. */
+export type MonthLabel = "이번 달" | "다음 달" | "그다음 달";
+export type LabelledMonth = { label: MonthLabel } & MonthPillar;
+
 /**
- * The 월건 in force now and the next one, with the instants their 절 open. The next is read 45 days after this
- * one opened: 절 lie 29.4–31.5 days apart, so that day falls after the next 절 and before the one after.
+ * The two 월건 a reading may lean on, with the instants their 절 open: the one in force now and the next, or, when
+ * the one in force ends within ten days, the next two ("다음 달", "그다음 달"), so a reading never points at a month
+ * about to end. Each next one is read 45 days after the one before opened: 절 lie 29.4–31.5 days apart, so that day
+ * falls after the next 절 and before the one after.
  */
-function monthsAhead(now: number, dayStem: string, natal: PlacedPillar[]): { current: MonthPillar; next: MonthPillar; opens: number[] } | null {
+function monthsAhead(now: number, dayStem: string, natal: PlacedPillar[]): { current: LabelledMonth; next: LabelledMonth; opens: number[] } | null {
+  const labelled = (probe: SajuChart, label: MonthLabel): LabelledMonth => ({ label, ...monthOf(probe, `${label} 월건`, dayStem, natal) });
   const probe = probeAt(now);
   if (!probe.monthStartTerm) return null;
   const opened = Date.parse(probe.monthStartTerm.instantUTC);
   const nextProbe = probeAt(opened + 45 * 86_400_000);
   if (!nextProbe.monthStartTerm) return null;
+  const nextOpens = Date.parse(nextProbe.monthStartTerm.instantUTC);
+  if (nextOpens - now > MONTH_ENDING_MS) {
+    return { current: labelled(probe, "이번 달"), next: labelled(nextProbe, "다음 달"), opens: [opened, nextOpens] };
+  }
+  const afterProbe = probeAt(nextOpens + 45 * 86_400_000);
+  if (!afterProbe.monthStartTerm) return null;
   return {
-    current: monthOf(probe, "이번 달 월건", dayStem, natal),
-    next: monthOf(nextProbe, "다음 달 월건", dayStem, natal),
-    opens: [opened, Date.parse(nextProbe.monthStartTerm.instantUTC)],
+    current: labelled(nextProbe, "다음 달"),
+    next: labelled(afterProbe, "그다음 달"),
+    opens: [nextOpens, Date.parse(afterProbe.monthStartTerm.instantUTC)],
   };
 }
 
@@ -339,7 +356,8 @@ export interface SajuProfile {
 
 /** The paid prologue's extra part: one thing to notice in the coming weeks (TOC after the sections). */
 export const SAJU_OBSERVATION_HEADING = "앞으로 몇 주 · 확인해 볼 신호";
-export const SAJU_LOCKED_TOC: readonly string[] = Object.freeze([...SAJU_PROLOGUE_SECTIONS, SAJU_OBSERVATION_HEADING]);
+/** What the full reading holds, as the chart page lists it: the 한눈에 보기 card on top, the sections, the observation. */
+export const SAJU_LOCKED_TOC: readonly string[] = Object.freeze([SAJU_GLANCE_HEADING, ...SAJU_PROLOGUE_SECTIONS, SAJU_OBSERVATION_HEADING]);
 
 export interface SajuFactSet {
   schemaVersion: "saju-facts/1";
@@ -357,13 +375,24 @@ export interface SajuFactSet {
     /** set when the next cycle starts within 12 months: timely news for the reading */
     changeSoon: string | null;
   };
-  annual: { year: number; gz: string; ko: string; stemTenGod: string; branchMainTenGod: string; relationsToNatal: Relation[]; luckRelation: Relation[] };
-  /** this month's 월건 and the next (standard and topic readings; 궁합 and 신년운세 build without it) */
-  monthly?: { current: MonthPillar; next: MonthPillar };
+  annual: {
+    year: number; gz: string; ko: string; stemTenGod: string; branchMainTenGod: string; relationsToNatal: Relation[]; luckRelation: Relation[];
+    /** January or February before 입춘: this 세운 is still last year's and runs until 입춘 (no "올해 병오년" in 2027) */
+    beforeIpchun?: true;
+  };
+  /**
+   * this month's 월건 and the next, or the next two when this one ends within ten days (each placed and labelled as the
+   * month it is); standard and topic readings only (궁합 and 신년운세 build without it)
+   */
+  monthly?: { current: LabelledMonth; next: LabelledMonth };
   calculation: string[];
   limits: string[];
-  /** what the validator allows the text to name (not sent to the model) */
-  allowed: { glyphs: string[]; tenGods: string[]; stages: string[]; years: number[] };
+  /**
+   * what the validator allows the text to name (not sent to the model). `limitGlyphs`: the glyphs of the pillars the
+   * warnings name besides the chart's own (another hour or day pillar near a boundary), allowed only where the limits are
+   * copied (the 계산 기준 절) or quoted word for word; 신년운세 and 궁합 build their own lists without them.
+   */
+  allowed: { glyphs: string[]; limitGlyphs?: string[]; tenGods: string[]; stages: string[]; years: number[] };
   /** the user's own context (sent inside <user_context>, not <facts>) */
   profile?: SajuProfile;
   /** earlier readings from this device (sent inside <history>, not <facts>) */
@@ -425,6 +454,29 @@ function annualPillar(now: number): { year: number; gz: string } {
 
 export function yearGanzhi(year: number): string {
   return STEMS[(((year - 4) % 10) + 10) % 10]! + BRANCHES[(((year - 4) % 12) + 12) % 12]!;
+}
+
+/** The pillars the warnings name besides the chart's own, from their structured fields (never read out of the message). */
+function warningPillars(chart: SajuChart): string[] {
+  return chart.warnings
+    .flatMap((w) => [w.window?.dayPillar, w.dayPillar, ...Object.values(w.pillars ?? {}).flat()])
+    .filter((gz): gz is string => typeof gz === "string");
+}
+
+/**
+ * The day pillars the warnings name, hidden stems included, as the allow-list took them in before the limits had a set
+ * of their own: 궁합 has no 계산 기준 절 to keep them in, so its list still allows them anywhere (review 2026-10-08).
+ */
+export function warningDayGlyphs(chart: SajuChart): string[] {
+  const out = new Set<string>();
+  for (const w of chart.warnings) {
+    for (const gz of [w.window?.dayPillar, w.dayPillar]) {
+      if (!gz) continue;
+      for (const g of gz) out.add(g);
+      HIDDEN_STEMS[gz.charAt(1) as Branch]?.forEach((h) => out.add(h.stem));
+    }
+  }
+  return [...out];
 }
 
 /** `monthly: false` leaves out this and next month's 월건 (궁합 and 신년운세 read other periods). */
@@ -524,13 +576,12 @@ export function buildFactSet(
   pillars.forEach((p) => addGz(p.gz));
   luck?.cycles.forEach((c) => addGz(c.gz));
   addGz(annual.gz);
-  for (const w of chart.warnings) {
-    if (w.window) addGz(w.window.dayPillar);
-    if (w.dayPillar) addGz(w.dayPillar);
-  }
   for (const a of chart.ambiguous) a.candidates.forEach(addGz);
   const monthList = months ? [months.current, months.next] : [];
   for (const m of monthList) [m.gz, m.yearGz].forEach(addGz);
+  // A pillar a warning names (another hour or day pillar near a boundary) is not this chart's: the 계산 기준 절, which
+  // copies the limits, may name it, and nothing else may present it as the chart's own (review 2026-10-08).
+  const limitGlyphs = [...new Set(warningPillars(chart).join(""))].filter((g) => !glyphs.has(g));
 
   const tenGods = new Set<string>();
   pillars.forEach((p) => {
@@ -590,6 +641,7 @@ export function buildFactSet(
       branchMainTenGod: tenGod(dayStem, mainHiddenStem(ab.glyph)),
       relationsToNatal: layerToNatal(annualPlaced, natal),
       luckRelation: luckPlaced ? annualToLuck(annualPlaced, luckPlaced, natal) : [],
+      ...(annual.year < new Date(now + KST_MS).getUTCFullYear() ? { beforeIpchun: true as const } : {}),
     },
     ...(months ? { monthly: { current: months.current, next: months.next } } : {}),
     calculation: [
@@ -602,6 +654,7 @@ export function buildFactSet(
     limits,
     allowed: {
       glyphs: [...glyphs],
+      limitGlyphs,
       tenGods: [...tenGods],
       stages: pillars.map((p) => p.branch.twelveStage),
       years: [...years].sort(),
@@ -659,20 +712,45 @@ ${MODEL_BLIND_RULE}
 
 ${HISTORY_RULE}`;
 
+/**
+ * Plain words first, and the make-up as an everyday act (owner 2026-10-07). Shared by the standard and topic system
+ * prompts and kept out of SAJU_PREAMBLE, so 신년운세 (NEWYEAR_SYSTEM, built on the preamble) does not change.
+ */
+export const SAJU_PLAIN_RULES = `# 쉬운 말 (명리를 모르는 사람이 읽어요)
+- 명리 용어는 쉬운 말을 먼저 쓰고 용어는 괄호에 넣어요: "내 재주를 꺼내 쓰는 힘(식신)", "바깥에서 오는 압박과 책임(편관)", "기운이 가장 꽉 찬 단계(제왕)". 용어가 풀이에서 처음 나올 때 한 번 이렇게 풀고, 그다음부터는 용어만 써도 돼요.
+- "식신이 넷이고 편관이 일간과 맞서"처럼 용어만 이어 붙인 문장을 쓰지 않아요. 한 문장에서 처음 꺼내는 용어는 하나까지예요.
+- 쉬운 말은 아래 말이나 같은 뜻의 다른 쉬운 말로 써요. 아래에 있어도 <facts>에 없는 십성·12운성은 쓰지 않아요.
+${plainWordsBlock()}
+- 어느 쪽이 잘 풀리고 어느 쪽을 조심할지는 분명하게 말해요. 다만 좋다·나쁘다를 매기지 않고, 힘이 잘 붙는 쪽과 무리하거나 놓치기 쉬운 쪽으로 말해요.
+- 보완은 일상 행동으로만 말해요: 연락하기, 정리하기, 쉬는 칸 만들기, 신청하기, 알아보기 같은 것. 색·방향·물건·숫자로 보완하거나 "부족한 오행 채우기"를 권하지 않고, 용신·신강·신약·격국으로 판단하지 않아요.`;
+
+/** The 한눈에 보기 card's format (owner 2026-10-07), in the standard and the topic formats. */
+export const SAJU_GLANCE_FORMAT = `- glance: 한눈에 보기. 풀이 맨 위에 따로 보이는 카드예요. 본문을 다 쓴 뒤 그 본문의 근거로만 정리해서, 명리를 모르는 사람이 이것만 읽어도 어디가 잘 풀리고 어디를 조심하며 무엇을 하면 되는지 알게 해요. 칸 이름과 표시는 화면이 붙이니 칸마다 해요체 문장 하나만 써요.
+  - goesWell(잘 풀리는 쪽): 이 명식에서 힘이 잘 붙는 쪽 하나와 그 근거. 공백 빼고 20~60자.
+  - watchOut(조심할 쪽): 무리하거나 놓치기 쉬운 쪽 하나와 그 근거. 사건이나 불운이 아니라 습관과 경향으로. 20~60자.
+  - remedy(이렇게 보완): watchOut을 메우는 구체적인 일상 행동 하나("~해 보세요"). 20~60자.
+  - thisYear(올해 흐름): 올해 세운(annual)의 간지를 한 번 불러(예: 병오(丙午)년) 올해 어느 쪽에 힘이 실리는지 한 문장. 좋은 해·나쁜 해로 매기지 않아요. annual.beforeIpchun이 있으면 아직 입춘 전이라 그 세운은 지난해의 것이 입춘까지 이어지는 거예요. "올해 병오년"이라고 부르지 말고 "입춘 전까지 이어지는 병오(丙午)년"처럼 말해요. 20~60자.
+  - thisYearAction(올해 해 볼 일): 올해 남은 기간에 해 볼 일상 행동 하나. 10~45자.
+  - 카드에서는 명리 용어를 쉬운 말 뒤 괄호에만 써요(대운·세운·일간과 십성·묶음 이름도). 신강·신약·용신·격국은 카드에 쓰지 않아요.
+  - 점수·별점·퍼센트·등급, 대길·흉·최고·최악 같은 길흉 등급 말을 쓰지 않아요.
+  - remedy와 thisYearAction에는 물건(소품·화분·팔찌·향초 같은 것), 색, 방향, 숫자를 쓰지 않고, "쇠 기운을 북돋워"처럼 기운이나 오행을 채우고 메우고 살리는 말도 쓰지 않아요.
+  - 날짜, 달 이름(1~12월), "이번 달"·"다음 달", 계절 시기, "3개월 안에"·"한 달 안에" 같은 기간, monthly의 월건, 대운이 바뀌는 년·월은 쓰지 않아요. 간지·십성·연도는 본문처럼 <facts>에 있는 것만 써요. <facts>에 없는 간지는 "정미년"처럼 한글로만 써도 안 돼요.`;
+
 const SAJU_FORMATS = `## teaser (무료 요약)
 - title: 일간의 물상과 태어난 계절로 만든 짧은 제목(4~12자, 예: "한겨울에 뜬 해"). 계절 정보가 없으면 물상만으로.
 - summary: 250~400자. (1) 일간과 물상(관점 표시) (2) 태어난 달과 계절 (3) 가장 두드러진 오행 특징 하나(개수를 함께, 없는 오행이나 숨은 오행) (4) 눈에 띄는 십성 관계 하나를 일상어로, 반증할 수 있는 확인 문장과 함께 (5) <user_context>가 있으면 그 사람의 상태나 고민에 닿는 한 문장 (6) 올해나 이번 달에 해 볼 만한 작은 일 한 가지 (7) 태어난 시를 모르면 그 한계 한 문장. 신강·용신·대운의 사건은 쓰지 않아요.
 
 ## reading (프롤로그, 합계 2,500~3,500자)
 - sections: 정확히 7개, <headings>의 순서와 문구 그대로. 절마다 300~550자.
-  1. 월령과 뿌리: 월지·일지·년지(시지가 있으면 시지)의 12운성 단계, 태어난 달이 일간에 힘을 싣는 정도(월령), 뿌리가 있는 자리. 강약 라벨은 붙이지 않았다고 한 번 밝혀요.
-  2. 오행 지도: 개수(세는 기준을 밝혀요), 많은 기운, 없는 기운, 지장간에만 숨은 기운(자리와 세기).
-  3. 십성: 두드러진 십성 두 축과 그 긴장을 기둥 자리의 의미로.
-  4. 일지: 일지의 십성과 12운성, 나와 가까운 관계의 자리, 원국 안에 있는 관계(존재만).
-  5. 일하는 결과 쉬는 결: 앞의 십성과 일지 이야기를 일하는 장면 하나, 쉬는 장면 하나로 확인하는 반증 가능한 문장과 그 사람 상황에 맞는 작은 실험.
-  6. 지금의 10년: 지금 대운의 간지·기간·십성, 천간·지지 반기 관점(관점이라고 밝혀요), 원국과의 관계, 올해 세운(연도·간지·십성)과 원국·대운의 접점을 국면의 말로. 대운이 없으면 첫 대운 전이라는 사실과 첫 대운의 성격만.
-  7. 계산 기준: calculation과 limits의 내용을 모두, 태어난 시각을 알게 되면 다시 계산할 수 있다는 안내까지.
-- observation: 앞으로 며칠에서 몇 주 안에 사용자가 직접 알아챌 수 있는 작고 확인 가능한 신호 하나(60~200자). 지금 대운이나 올해 세운, 이번 달·다음 달 월건(monthly), 두드러진 십성에 기대고, 무엇을 눈여겨보면 이 풀이가 맞는지 알 수 있는지 말해요. 월건은 이 관찰에서만 쓰고 간지·십성, 시작하는 절기, 원국·세운과의 관계까지만 말하며, 그 달에 생길 일을 지어내지 않아요. "~가 생겨요" 같은 예언이 아니라 "~를 눈여겨보세요"처럼 관찰로 써요. heading은 <headings>의 observation 문구 그대로예요.
+  1. 타고난 바탕: 월지·일지·년지(시지가 있으면 시지)의 12운성 단계, 태어난 달이 일간에 힘을 싣는 정도(월령), 뿌리가 있는 자리. 강약 라벨은 붙이지 않았다고 한 번 밝혀요.
+  2. 많은 기운·적은 기운: 개수(세는 기준을 밝혀요), 많은 기운, 없는 기운, 지장간에만 숨은 기운(자리와 세기).
+  3. 나를 움직이는 힘(위 규칙의 "십성 절"이 이 절이에요): 두드러진 십성 두 축과 그 긴장을 기둥 자리의 의미로.
+  4. 가까운 관계 속 나(위 규칙의 "일지 절"이 이 절이에요): 일지의 십성과 12운성, 나와 가까운 관계의 자리, 원국 안에 있는 관계(존재만).
+  5. 일할 때·쉴 때: 앞의 십성과 일지 이야기를 일하는 장면 하나, 쉬는 장면 하나로 확인하는 반증 가능한 문장과 그 사람 상황에 맞는 작은 실험.
+  6. 지금의 10년과 올해(위 규칙의 "대운 절"과 "지금의 10년 절"이 이 절이에요): 지금 대운의 간지·기간·십성, 천간·지지 반기 관점(관점이라고 밝혀요), 원국과의 관계, 올해 세운(연도·간지·십성)과 원국·대운의 접점을 국면의 말로. 대운이 없으면 첫 대운 전이라는 사실과 첫 대운의 성격만.
+  7. 계산 기준: calculation과 limits의 내용을 모두, 태어난 시각을 알게 되면 다시 계산할 수 있다는 안내까지. limits에만 나오는 다른 기둥(경계 시각에 따라 바뀔 수 있는 시주·일주 같은 것)은 이 절에서만 말해요.
+- observation: 앞으로 며칠에서 몇 주 안에 사용자가 직접 알아챌 수 있는 작고 확인 가능한 신호 하나(60~200자). 지금 대운이나 올해 세운, 앞으로 두 달의 월건(monthly), 두드러진 십성에 기대고, 무엇을 눈여겨보면 이 풀이가 맞는지 알 수 있는지 말해요. monthly의 두 월건은 label(이번 달·다음 달·그다음 달)이 어느 달인지 알려 줘요. 이번 달이 열흘 안에 끝나면 다음 달과 그다음 달만 와요. 달은 시작하는 절기와 간지로만 불러요(예: 한로부터 드는 무술(戊戌)월). '9월에는'처럼 달 이름(1~12월)으로 부르거나 '이번 달'·'다음 달'이라고 부르지 않아요. 월건은 이 관찰에서만 쓰고 간지·십성, 시작하는 절기, 원국·세운과의 관계까지만 말하며, 그 달에 생길 일을 지어내지 않아요. "~가 생겨요" 같은 예언이 아니라 "~를 눈여겨보세요"처럼 관찰로 써요. heading은 <headings>의 observation 문구 그대로예요.
+${SAJU_GLANCE_FORMAT}
 - followUps: 사용자가 이어서 물어볼 만한 질문 2개(각 30자 이하).
 
 ## followup (후속 질문)
@@ -680,8 +758,8 @@ const SAJU_FORMATS = `## teaser (무료 요약)
 - kind: clarify, scenario, new_fact, pushback, new_question, out_of_scope 중 하나.
 - answer: 150~450자. 같은 명식과 같은 읽기를 이어서 써요. 새 간지나 십성을 만들지 않아요. 금지 주제(건강, 결혼·이별 시기, 투자, 소송, 수명)는 이 풀이의 근거로는 말하기 어렵다고 짧게 밝히고, 대신 명식으로 말할 수 있는 것을 줘요.`;
 
-/** The standard saju system prompt: the shared rules (SAJU_PREAMBLE) and the standard task formats. */
-export const SAJU_SYSTEM = `${SAJU_PREAMBLE}\n\n# 작업별 형식\n\n${SAJU_FORMATS}`;
+/** The standard saju system prompt: the shared rules (SAJU_PREAMBLE, SAJU_PLAIN_RULES) and the standard task formats. */
+export const SAJU_SYSTEM = `${SAJU_PREAMBLE}\n\n${SAJU_PLAIN_RULES}\n\n# 작업별 형식\n\n${SAJU_FORMATS}`;
 
 /** The FactSet as the model sees it: no allow-lists, no user context, no history. */
 export function visibleFacts(facts: SajuFactSet): Partial<SajuFactSet> {

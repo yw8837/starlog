@@ -15,8 +15,8 @@ import { generationSetting } from "./config";
 import { generateValidated, type GenerationHooks, type ReadingProvider, type Usage } from "./provider";
 import {
   DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema,
-  type DailyDraft, type FollowUpAnswer, type SajuReading, type SajuTeaser, type StoredSajuReading, type StoredTarotReading, type TarotReading,
-  type TarotTeaser,
+  type DailyDraft, type FollowUpAnswer, type SajuGlance, type SajuReading, type SajuTeaser, type StoredSajuReading, type StoredTarotReading,
+  type TarotReading, type TarotTeaser,
 } from "./schemas";
 import {
   validateDaily, validateSajuFollowUp, validateSajuReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading, validateTarotTeaser,
@@ -132,10 +132,16 @@ export async function generateSajuReading(provider: ReadingProvider, facts: Saju
       ...data,
       sections: data.sections.map((section, i) => ({ heading: SAJU_PROLOGUE_SECTIONS[i]!, body: section.body.trim() })),
       observation: { heading: SAJU_OBSERVATION_HEADING, body: data.observation.body.trim() },
+      glance: trimGlance(data.glance),
     },
     usage,
   };
 }
+
+/** The 한눈에 보기 sentences as written, without stray whitespace (the card's labels are code-owned on screen). */
+const trimGlance = (g: SajuGlance): SajuGlance => ({
+  goesWell: g.goesWell.trim(), watchOut: g.watchOut.trim(), remedy: g.remedy.trim(), thisYear: g.thisYear.trim(), thisYearAction: g.thisYearAction.trim(),
+});
 
 export async function generateSajuFollowUp(
   provider: ReadingProvider, facts: SajuFactSet, reading: StoredSajuReading, turns: FollowUpTurn[], question: string, hooks?: GenerationHooks,
@@ -189,6 +195,7 @@ export async function generateSajuTopicReading(provider: ReadingProvider, facts:
       ...data,
       sections: data.sections.map((section, i) => ({ heading: headings[i] ?? section.heading, body: section.body.trim() })),
       observation: { heading: TOPIC_OBSERVATION_HEADING, body: data.observation.body.trim() },
+      glance: trimGlance(data.glance),
     },
     usage,
   };

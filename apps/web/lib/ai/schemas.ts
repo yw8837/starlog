@@ -57,14 +57,39 @@ export const SajuTeaserDraftSchema = z.object({ title: z.string(), summary: z.st
 
 export const SajuTeaserSchema = SajuTeaserDraftSchema.extend({ lockedToc: z.array(z.string()) });
 
+/**
+ * 한눈에 보기 (owner 2026-10-07): one plain sentence per item, shown on top of the reading under code-owned labels
+ * (lib/sajuPrologue.ts SAJU_GLANCE_LABELS). Written after the observation, so the model sums up a body it has written.
+ */
+export const SajuGlanceSchema = z.object({
+  /** ✔ 잘 풀리는 쪽 */
+  goesWell: z.string(),
+  /** ⚠ 조심할 쪽 */
+  watchOut: z.string(),
+  /** → 이렇게 보완: one everyday action */
+  remedy: z.string(),
+  /** 올해 흐름: this year's 세운 in one sentence */
+  thisYear: z.string(),
+  /** → the one thing to do this year */
+  thisYearAction: z.string(),
+});
+
 export const SajuReadingSchema = z.object({
   sections: z.array(Section),
   observation: Section,
+  glance: SajuGlanceSchema,
   followUps: z.array(z.string()),
 });
 
-/** Older saved prologues carry `story` and no `observation` (see StoredTarotReadingSchema). */
-export const StoredSajuReadingSchema = SajuReadingSchema.extend({ observation: Section.optional(), story: Story.optional() });
+/**
+ * Older saved prologues carry `story` and no `observation`, and none before 2026-10-07 has a `glance` (see StoredTarotReadingSchema).
+ * A card that cannot be read is dropped, not the reading: the page leaves it out and the follow-ups go on (review 2026-10-08).
+ */
+export const StoredSajuReadingSchema = SajuReadingSchema.extend({
+  observation: Section.optional(),
+  glance: SajuGlanceSchema.optional().catch(undefined),
+  story: Story.optional(),
+});
 
 // ---- follow-up ----
 
@@ -79,6 +104,7 @@ export type StoredTarotReading = z.infer<typeof StoredTarotReadingSchema>;
 export type DailyDraft = z.infer<typeof DailyDraftSchema>;
 export type SajuTeaserDraft = z.infer<typeof SajuTeaserDraftSchema>;
 export type SajuTeaser = z.infer<typeof SajuTeaserSchema>;
+export type SajuGlance = z.infer<typeof SajuGlanceSchema>;
 export type SajuReading = z.infer<typeof SajuReadingSchema>;
 export type StoredSajuReading = z.infer<typeof StoredSajuReadingSchema>;
 export type FollowUpAnswer = z.infer<typeof FollowUpAnswerSchema>;

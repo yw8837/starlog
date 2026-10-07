@@ -4,6 +4,7 @@ import type {
   DailyData,
   DailyDeal,
   FollowUpData,
+  SajuGlance,
   SajuReadingData,
   SajuReadingResponse,
   SajuTeaserData,
@@ -56,10 +57,20 @@ export function isTarotReading(value: unknown): value is TarotReadingData {
   return optional(value.followUps, isStrings);
 }
 
+/** The 한눈에 보기 card: five sentences (a reading saved before it has no card at all, which is fine). */
+export const isSajuGlance = (value: unknown): value is SajuGlance =>
+  isRecord(value) && [value.goesWell, value.watchOut, value.remedy, value.thisYear, value.thisYearAction].every(isString);
+
 export function isSajuReading(value: unknown): value is SajuReadingData {
   if (!isRecord(value) || !Array.isArray(value.sections) || value.sections.length === 0 || !value.sections.every(isSection)) return false;
-  return optional(value.observation, isSection) && optional(value.followUps, isStrings);
+  return optional(value.observation, isSection) && optional(value.glance, isSajuGlance) && optional(value.followUps, isStrings);
 }
+
+/**
+ * A saju reading saved on this device that can be shown whole: the 한눈에 보기 card aside, which the page leaves out on its
+ * own when it cannot read it, so a card alone never makes a reading partial (review 2026-10-08).
+ */
+export const isWholeSajuReading = (value: unknown): boolean => isRecord(value) && isSajuReading({ ...value, glance: undefined });
 
 export const isTarotReadingResponse = (value: unknown): value is TarotReadingResponse =>
   isRecord(value) && isText(value.chapterToken) && isTarotReading(value.reading);

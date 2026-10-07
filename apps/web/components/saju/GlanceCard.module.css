@@ -1,0 +1,85 @@
+/* 한눈에 보기 sits on the sky above the paper sections, in the tarot reading's 한 줄 결론 style (ReadingArticle.module.css .verdict). */
+.glance {
+  min-width: 0;
+  padding: 18px 18px 20px;
+  border: 1px solid rgba(243, 220, 161, 0.5);
+  border-radius: 20px;
+  background:
+    radial-gradient(100% 120% at 0% 0%, rgba(243, 220, 161, 0.16), transparent 60%),
+    rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 34px rgba(243, 220, 161, 0.12);
+}
+
+.name {
+  color: var(--gold);
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.lead {
+  margin-top: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.list {
+  display: grid;
+  gap: 14px;
+  margin: 14px 0 0;
+}
+
+.item {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.mark {
+  flex: none;
+  width: 1.15em;
+  font-weight: 700;
+  text-align: center;
+}
+
+.good .mark {
+  color: var(--el-wood);
+}
+
+.care .mark {
+  color: var(--gold-deep);
+}
+
+.fix .mark,
+.then .mark {
+  color: var(--gold);
+}
+
+.text {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* This year's flow closes the card, under a hairline, with its one thing to do. */
+.year {
+  padding-top: 14px;
+  border-top: 1px solid rgba(243, 220, 161, 0.25);
+}
+
+.then {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
