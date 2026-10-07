@@ -157,7 +157,7 @@ describe("links from a guide page", () => {
       brand: "/",
       pills: ["/", "/guide/tarot", "/faq", "/story", "/me"],
       bar: ["/", "/story", "/guide/tarot", "/me"],
-      footer: ["/about", "/how", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"],
+      footer: ["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"],
     });
   });
 
@@ -168,7 +168,7 @@ describe("links from a guide page", () => {
       brand: `${APP}/`,
       pills: [`${APP}/`, "/guide/tarot", `${APP}/faq`, `${APP}/story`, `${APP}/me`],
       bar: [`${APP}/`, `${APP}/story`, "/guide/tarot", `${APP}/me`],
-      footer: [`${APP}/about`, `${APP}/how`, `${APP}/help`, `${APP}/faq`, "/guide/tarot", `${APP}/pricing`, `${APP}/terms`, `${APP}/privacy`, `${APP}/refund`],
+      footer: [`${APP}/about`, `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/guide/tarot", `${APP}/pricing`, `${APP}/terms`, `${APP}/privacy`, `${APP}/refund`],
     });
     // The tabs and the article cards are the guide's own pages: paths, so they stay on the root domain.
     const tabs = within(screen.getByRole("navigation", { name: "가이드 분류" })).getAllByRole("link");

@@ -3,32 +3,24 @@
     "id": "tarot-modern-sources",
     "area": "tarot",
     "labelKo": "현대 해석 대조",
-    "valueKo": "공개 레퍼런스 8곳",
-    "detailKo": "78장의 정방향과 역방향을 Biddy Tarot, Labyrinthos, Astrala, Tarot with Gord, Sibyl Tarot, Learning the Tarot, Mark McElroy, Tarotoo의 키워드와 하나씩 맞춰 봤어요. 역방향까지 다루는 곳은 6곳이고, 사람이 직접 쓴 곳만 세면 정방향 6곳, 역방향 4곳이에요.",
-    "doc": "docs/research/tarot-kb-modern-crosscheck-2026-10.md#1.1 소스와 접근"
+    "valueKo": "공개 레퍼런스 7곳",
+    "detailKo": "78장의 정방향과 역방향을 Biddy Tarot, Astrala, Tarot with Gord, Sibyl Tarot, Learning the Tarot, Mark McElroy, Tarotoo의 키워드와 하나씩 맞춰 봤어요.",
+    "doc": "docs/research/tarot-kb-modern-crosscheck-2026-10.md#2.6 LB를 뺀 재계산 (2026-10-07)"
   },
   {
     "id": "tarot-modern-agreement",
     "area": "tarot",
     "labelKo": "현대 합의와 반대로 읽은 주제",
     "valueKo": "0개",
-    "detailKo": "레퍼런스 절반 이상이 꼽은 주제 546개 중 409개(75%)를 직접 다루고 83개(15%)는 일부만 다뤄요. 빠진 주제는 54개(10%)예요. 2026년 10월에 한 1차 점검이고, 사람 검수는 아직이에요.",
-    "doc": "docs/research/tarot-kb-modern-crosscheck-2026-10.md#2.3 우리 core의 반영(합의 주제 546개)"
-  },
-  {
-    "id": "tarot-excluded-sites",
-    "area": "tarot",
-    "labelKo": "일부러 쓰지 않은 사이트",
-    "valueKo": "Tarot.com, Trusted Tarot, Astra Trainer, Yes No Tarot",
-    "detailKo": "이용약관이 자동 수집을 금지해서 수집하지 않았고, 내용도 쓰지 않았어요. The Tarot Guide는 robots.txt가 일부 수집 프로그램을 막고 있어서 그 파일만 읽고 그만뒀어요.",
-    "doc": "docs/research/tarot-kb-modern-crosscheck-2026-10.md#1.1 소스와 접근"
+    "detailKo": "레퍼런스 절반 이상이 꼽은 주제 450개와 하나씩 맞춰 봤어요. 그 해석과 반대로 읽은 주제는 하나도 없어요.",
+    "doc": "docs/research/tarot-kb-modern-crosscheck-2026-10.md#2.6 LB를 뺀 재계산 (2026-10-07)"
   },
   {
     "id": "tarot-scan-basis",
     "area": "tarot",
     "labelKo": "그림 설명의 기준",
     "valueKo": "1909년 원판 스캔 78장",
-    "detailKo": "카드 그림은 1909년 원판 스캔을 한 장씩 보고 실제로 그려진 것만 적었고, Waite의 1910년 원전 설명과 대조했어요. 아직 사람 검수 전인 초안이에요.",
+    "detailKo": "카드 그림은 1909년 원판 스캔을 한 장씩 보고 실제로 그려진 것만 적었고, Waite의 1910년 원전 설명과 대조했어요.",
     "doc": "content/kb/README.md#근거 자료"
   },
   {
@@ -36,7 +28,7 @@
     "area": "tarot",
     "labelKo": "예·아니오 분류 참고 자료",
     "valueKo": "공개 자료 24곳",
-    "detailKo": "카드마다 예, 아니오, 애매함으로 나눈 공개 자료 24곳을 모았어요. 역방향까지 나눈 곳은 10곳이에요. 서로 닮은 자료가 많아서 표 수를 독립된 확인으로 보지는 않아요.",
+    "detailKo": "카드마다 예, 아니오, 애매함으로 나눈 공개 자료 24곳을 모았어요. 역방향까지 나눈 곳은 10곳이에요.",
     "doc": "docs/research/tarot-yes-no-consensus.json#_meta"
   },
   {
@@ -44,7 +36,7 @@
     "area": "saju",
     "labelKo": "출생 기록 교차검증",
     "valueKo": "100건",
-    "detailKo": "출생 입력 100건(시간을 아는 88건, 모르는 12건)을 별도 기준과 비교했고, 계산 오류는 0건이었어요. 다르게 나온 3건은 일부러 넣은 경계 사례로, 절입 21~23초 전 출생을 분 단위 절기표가 절입 뒤로 본 경우예요. 엔진은 이 세 건에 모두 경계 경고를 붙였어요. 과거 표준시와 서머타임을 반영한 출생 순간 변환도 440번 비교해 모두 같았어요.",
+    "detailKo": "출생 입력 100건(시간을 아는 88건, 모르는 12건)을 별도 기준과 비교했고, 계산 오류는 0건이었어요. 과거 표준시와 서머타임을 반영한 출생 순간 변환도 440번 비교해 모두 같았어요.",
     "doc": "docs/research/saju-calendar-crosscheck-2026-10.md#0. 결론"
   },
   {
@@ -52,7 +44,7 @@
     "area": "saju",
     "labelKo": "범위를 넓힌 재검사",
     "valueKo": "14,539건",
-    "detailKo": "무작위 1만 건, 1930~2025년의 모든 절입 경계, 한국 시간대가 바뀐 26번의 전후 등 14,539건을 다섯 가지 설정으로 계산했어요. 4주 비교 약 7만 회에서 원인을 설명하지 못한 차이는 0건이었어요.",
+    "detailKo": "무작위 1만 건, 1930~2025년의 모든 절입 경계, 한국 시간대가 바뀐 26번의 전후 등 14,539건을 다섯 가지 설정으로 계산했어요. 4주를 약 7만 번 비교했고, 원인이 설명되지 않는 차이는 0건이었어요.",
     "doc": "docs/research/saju-calendar-crosscheck-2026-10.md#0. 결론"
   },
   {
@@ -60,7 +52,7 @@
     "area": "saju",
     "labelKo": "절입 시각 최대 차이",
     "valueKo": "32.7초",
-    "detailKo": "1929~2026년 24절기 2,352개를 독립 천문 계산과 비교했어요. 가장 크게 벌어진 차이가 32.7초였어요. 절기표를 분 단위로 반올림한 데다 표의 원천 값이 가진 최대 2.8초 오차가 더해진 차이예요.",
+    "detailKo": "1929~2026년 24절기 2,352개를 독립 천문 계산과 비교했어요. 가장 크게 벌어진 차이도 32.7초로, 1분이 안 돼요.",
     "doc": "docs/research/saju-calendar-crosscheck-2026-10.md#7. 절입 시각 정확도 (1929–2026, 24절기 × 98년 = 2,352개, 기준 astropy)"
   },
   {
@@ -68,7 +60,7 @@
     "area": "saju",
     "labelKo": "절입 순간 기준",
     "valueKo": "NASA JPL Horizons",
-    "detailKo": "절기가 바뀌는 순간을 NASA JPL Horizons(DE441)의 태양 위치로 초 단위까지 구해 절기 21건을 대조했어요. 한국천문연구원의 공식 절기 시각은 사이트 오류와 인증 키 문제로 직접 대조하지 못했어요.",
+    "detailKo": "절기가 바뀌는 순간을 NASA JPL Horizons(DE441)의 태양 위치로 초 단위까지 구해 절기 21건을 대조했어요.",
     "doc": "docs/research/saju-engine-eval.md#1. 검증 기준(“정답”을 어디서 가져왔나)"
   },
   {
@@ -102,5 +94,13 @@
     "valueKo": "1948~51, 1955~60, 1987~88년",
     "detailKo": "서머타임이 있던 시기에 태어났다면 시계를 앞당긴 만큼을 빼고 실제 순간으로 계산해요. 시계를 앞당기며 건너뛴 시각은 받지 않고, 두 번 있었던 시각은 앞 시각으로 봐요.",
     "doc": "docs/research/saju-calendar-crosscheck-2026-10.md#1. 우리 엔진이 따르는 관례 (코드에서 확인)"
+  },
+  {
+    "id": "saju-engine",
+    "area": "saju",
+    "labelKo": "만세력 엔진",
+    "valueKo": "manseryeok 2.0",
+    "detailKo": "공개된 만세력·사주 엔진 11종에 같은 출생 정보를 넣어 비교하고 골랐어요. 한국 음력과 한국 표준시 이력을 갖춘 엔진에, 서머타임·자시·절입 경계 규칙을 더해 명식을 세워요.",
+    "doc": "docs/research/saju-engine-eval.md#0. 결론 (TL;DR)"
   }
 ]

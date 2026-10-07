@@ -39,7 +39,7 @@ function Slash() {
 export default function AboutPage() {
   const { nameKo, business } = SITE;
   const email = contactChannels().find(([label]) => label === "이메일")?.[1];
-  const related = [INFO_PAGES.how, INFO_PAGES.help, INFO_PAGES.faq];
+  const related = [INFO_PAGES.how, INFO_PAGES.evidence, INFO_PAGES.help, INFO_PAGES.faq];
 
   return (
     <InfoPage

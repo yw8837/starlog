@@ -2,6 +2,7 @@ import { adsConfig } from "./ads";
 import { SITE } from "./config";
 import { times } from "./helpGuide";
 import { crisisLines } from "./crisis";
+import { INFO_PAGES } from "./infoPages";
 import { contactChannels } from "./legal";
 import { REFUND_DAYS } from "./pay/catalog";
 
@@ -53,6 +54,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           a: [
             "타로는 원본 카드와 공식 해설서, 요즘 해석을 바탕으로 78장을 한 장씩 정리한 카드 데이터로 읽어요. 사주는 만세력으로 명식을 계산해요. 풀이 문장은 AI가 이 근거 안에서만 내 질문과 상황에 맞춰 쓰고, 내보내기 전에 정해 둔 규칙으로 한 번 더 검사해요.",
           ],
+          link: { href: INFO_PAGES.evidence.path, label: INFO_PAGES.evidence.title },
         },
         {
           id: "birth-saved",
@@ -73,6 +75,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           a: [
             "해와 달이 바뀌는 기준은 달력의 1일이 아니라 절기라서, 절기가 바뀌는 시각까지 계산해요. 출생 정보 1만 4천여 건을 다른 만세력 계산과 대조했고, 절기 시각은 독립적인 천문 계산과 따로 비교해 1분 안으로 맞는 것을 확인했어요. 절기가 바뀌는 시각 바로 앞뒤에 태어났다면 그 사실도 알려 드려요.",
           ],
+          link: { href: `${INFO_PAGES.evidence.path}#saju`, label: "사주 계산의 근거" },
         },
         {
           id: "no-guarantee",

@@ -18,6 +18,7 @@ import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guide
 import { koreanDate } from "@/lib/legal";
 import { pageMetadata } from "@/lib/seo";
 import { GuideBlocks } from "../GuideBlocks";
+import { CardQuote, GuideSourceLine } from "../GuideEvidence";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
 import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
@@ -108,6 +109,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
               <figcaption className={s.caption}>{`${card.arcana === "major" ? `${card.roman} ` : ""}${card.names.ko} · 라이더-웨이트-스미스 덱(1909)`}</figcaption>
             </figure>
           ) : null}
+          {article.cardId ? <CardQuote cardId={article.cardId} /> : null}
 
           <Paper className={s.body}>
             {article.sections.map((section, i) => (
@@ -118,6 +120,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
               </section>
             ))}
           </Paper>
+          <GuideSourceLine article={article} />
 
           {ads?.guideSlot ? <AdSlot client={ads.client} slot={ads.guideSlot} /> : null}
 

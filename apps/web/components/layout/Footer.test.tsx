@@ -42,6 +42,7 @@ describe("Footer", () => {
     expect(links).toEqual([
       ["스타로그란?", "/about"],
       ["풀이 과정", "/how"],
+      ["근거 자료", "/evidence"],
       ["이용 가이드", "/help"],
       ["FAQ", "/faq"],
       ["가이드 글", "/guide/tarot"],
@@ -59,6 +60,7 @@ describe("Footer", () => {
     expect(links).toEqual([
       ["스타로그란?", "/about"],
       ["풀이 과정", "/how"],
+      ["근거 자료", "/evidence"],
       ["이용 가이드", "/help"],
       ["FAQ", "/faq"],
       ["가이드 글", `${SITE.guideUrl}/guide/tarot`],
@@ -76,6 +78,7 @@ describe("Footer", () => {
     expect(links).toEqual([
       ["스타로그란?", `${SITE.url}/about`],
       ["풀이 과정", `${SITE.url}/how`],
+      ["근거 자료", `${SITE.url}/evidence`],
       ["이용 가이드", `${SITE.url}/help`],
       ["FAQ", `${SITE.url}/faq`],
       ["가이드 글", "/guide/tarot"],
@@ -88,13 +91,13 @@ describe("Footer", () => {
 
   it("on a guide page with one origin, every link is a path as before", () => {
     render(<Footer host="guide" />);
-    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"]);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"]);
   });
 
   it("keeps every link in one labelled row", () => {
     render(<Footer />);
     const rows = screen.getAllByRole("navigation").map((nav) => [nav.getAttribute("aria-label"), within(nav).getAllByRole("link").length]);
-    expect(rows).toEqual([["사이트 안내", 9]]);
+    expect(rows).toEqual([["사이트 안내", 10]]);
   });
 
   it("spaces items with gaps, never a '·' that could start or end a wrapped line", () => {

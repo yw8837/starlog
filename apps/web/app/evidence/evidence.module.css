@@ -1,0 +1,142 @@
+/* 스타로그의 근거: one fact per glass card (the service pages' card), its value in gold. */
+
+.card {
+  display: grid;
+  gap: 4px;
+  padding: 16px 16px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.label {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.value {
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail {
+  margin-top: 4px;
+  font-size: var(--fs-body);
+  line-height: 1.75;
+}
+
+/* 한눈에 보기: four gold numbers, two per row on a phone. */
+.glance {
+  margin-top: 4px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 16px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+}
+
+.tileValue {
+  color: var(--gold);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tileLabel {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-sub);
+}
+
+/* 주요 원전·자료: one row per source, its kind as a small gold pill. */
+.sources {
+  display: grid;
+  gap: 12px;
+  padding: 18px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+}
+
+.sourcesTitle {
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.sourceList {
+  display: grid;
+  gap: 12px;
+}
+
+.sourceRow {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.kind {
+  justify-self: start;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.sourceText {
+  display: grid;
+  gap: 2px;
+}
+
+.sourceTitle {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.sourceNote {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-sub);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (min-width: 1024px) {
+  .tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .tileValue {
+    font-size: 32px;
+  }
+}

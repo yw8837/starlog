@@ -401,6 +401,48 @@
   font-size: var(--fs-sub);
 }
 
+/* 웨이트 원전에서는: Waite's sentence on the card's picture, under the card, in the 요약's gold hairline. */
+.quote {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid rgba(243, 220, 161, 0.3);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.quoteText {
+  margin: 0;
+  font-size: var(--fs-body);
+  line-height: 1.7;
+}
+
+.cite {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+/* The article's sources: one quiet line after the body; the whole line opens 스타로그의 근거. */
+.sources {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.sourcesLink {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(201, 193, 234, 0.45);
+  text-underline-offset: 3px;
+}
+
+.sourcesLink:hover {
+  color: var(--gold);
+  text-decoration-color: currentColor;
+}
+
 .body {
   display: grid;
   gap: 26px;

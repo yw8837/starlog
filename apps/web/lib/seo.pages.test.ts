@@ -6,6 +6,7 @@ import { metadata as bInviteIndexMeta } from "@/app/b/page";
 import { generateMetadata as bInviteMeta } from "@/app/b/[code]/page";
 import { metadata as bondsMeta } from "@/app/bonds/page";
 import { generateMetadata as chapterMeta } from "@/app/chapter/[id]/page";
+import { metadata as evidenceMeta } from "@/app/evidence/page";
 import { metadata as faqMeta } from "@/app/faq/page";
 import { generateMetadata as guideArticleMeta } from "@/app/guide/[slug]/page";
 import { metadata as guideSajuMeta } from "@/app/guide/saju/page";
@@ -57,6 +58,7 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/guide/saju", guideSajuMeta],
   ["/about", aboutMeta],
   ["/how", howMeta],
+  ["/evidence", evidenceMeta],
   ["/help", helpMeta],
   ["/faq", faqMeta],
   ["/pricing", pricingMeta],

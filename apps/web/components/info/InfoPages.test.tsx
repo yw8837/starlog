@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import type { ComponentType } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AboutPage, { metadata as aboutMeta } from "@/app/about/page";
+import EvidencePage, { metadata as evidenceMeta } from "@/app/evidence/page";
 import FaqPage, { metadata as faqMeta } from "@/app/faq/page";
 import HelpPage, { metadata as helpMeta } from "@/app/help/page";
 import HowPage, { metadata as howMeta } from "@/app/how/page";
@@ -17,6 +18,7 @@ import { sitemapXml } from "@/lib/seo";
 const PAGES: Record<InfoPageId, { Page: ComponentType; metadata: Metadata }> = {
   about: { Page: AboutPage, metadata: aboutMeta },
   how: { Page: HowPage, metadata: howMeta },
+  evidence: { Page: EvidencePage, metadata: evidenceMeta },
   help: { Page: HelpPage, metadata: helpMeta },
   faq: { Page: FaqPage, metadata: faqMeta },
 };

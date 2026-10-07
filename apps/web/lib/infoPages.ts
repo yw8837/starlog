@@ -19,6 +19,12 @@ export const INFO_PAGES = {
     description:
       "사주 명식은 만세력 계산으로 먼저 세우고, 타로는 원판 그림에 실제로 그려진 것을 근거로 삼아요. 그 위에서 AI가 내 질문에 맞춰 풀고, 보여 드리기 전에 한 번 더 살펴요.",
   },
+  evidence: {
+    path: "/evidence",
+    label: `${SITE.nameKo}의 근거`,
+    title: `${SITE.nameKo}의 근거`,
+    description: `${SITE.nameKo}의 타로와 사주가 무엇에 기대는지 출처와 숫자로 모았어요. 1909년 원판 그림과 웨이트 원전, 한국천문연구원 음력, NASA JPL 절입 시각 검증까지 적었어요.`,
+  },
   help: {
     path: "/help",
     label: "이용 가이드",
@@ -36,12 +42,14 @@ export const INFO_PAGES = {
 export type InfoPageId = keyof typeof INFO_PAGES;
 
 /**
- * Footer's first row, in order: what the service is, how it works, how to use it, then the guide
- * articles (straight to the first tab, as the tab bar does; `/guide` itself only redirects there).
+ * Footer's first row, in order: what the service is, how it works and what it rests on, how to use
+ * it, then the guide articles (straight to the first tab, as the tab bar does; `/guide` itself only
+ * redirects there).
  */
 export const SERVICE_LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: INFO_PAGES.about.path, label: INFO_PAGES.about.label },
   { href: INFO_PAGES.how.path, label: INFO_PAGES.how.label },
+  { href: INFO_PAGES.evidence.path, label: INFO_PAGES.evidence.label },
   { href: INFO_PAGES.help.path, label: INFO_PAGES.help.label },
   { href: INFO_PAGES.faq.path, label: INFO_PAGES.faq.label },
   { href: guideIndexPath("tarot"), label: "가이드 글" },

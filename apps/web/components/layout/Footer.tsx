@@ -9,7 +9,7 @@ import styles from "./Footer.module.css";
 type FooterLink = { href: string; label: string; emphasis?: boolean };
 
 /** Shorter footer labels, so the row holds one line beside the wordmark on desktop. */
-const SHORT_LABEL: Readonly<Record<string, string>> = { [INFO_PAGES.how.path]: "풀이 과정", [INFO_PAGES.faq.path]: "FAQ" };
+const SHORT_LABEL: Readonly<Record<string, string>> = { [INFO_PAGES.how.path]: "풀이 과정", [INFO_PAGES.evidence.path]: "근거 자료", [INFO_PAGES.faq.path]: "FAQ" };
 
 /** What the service is and how it works, then prices and policies: one wrapped row. */
 const LINKS: ReadonlyArray<FooterLink> = [...SERVICE_LINKS, ...LEGAL_LINKS].map((link) => ({ ...link, label: SHORT_LABEL[link.href] ?? link.label }));
