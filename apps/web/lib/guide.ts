@@ -114,7 +114,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
             src: "/cards/major-17-star.webp",
             alt: "별 카드 그림: 큰 별 하나와 작은 별 일곱 개 아래에서 여인이 두 항아리의 물을 붓고 있어요",
             width: 600,
-            height: 1027,
+            height: 1040,
             caption: "XVII 별 · 라이더-웨이트-스미스 덱(1909)",
           },
           {
