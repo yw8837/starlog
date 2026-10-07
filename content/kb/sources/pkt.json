@@ -1,0 +1,642 @@
+{
+  "source": {
+    "title": "The Pictorial Key to the Tarot: Being Fragments of a Secret Tradition under the Veil of Divination",
+    "author": "Arthur Edward Waite",
+    "year": 1910,
+    "edition": "London: William Rider & Son. The printing transcribed and scanned on Wikisource has the title-page lines \"First Published 1910\" and \"Reprinted 1922\"; page numbers are that printing's. Public domain.",
+    "urls": [
+      "https://en.wikisource.org/wiki/The_Pictorial_Key_to_the_Tarot",
+      "https://en.wikisource.org/w/index.php?title=The_Pictorial_Key_to_the_Tarot/Part_2&oldid=15274517",
+      "https://en.wikisource.org/w/index.php?title=The_Pictorial_Key_to_the_Tarot/Part_3&oldid=15274510",
+      "https://en.wikisource.org/wiki/Index:The_Pictorial_Key_to_the_Tarot.pdf",
+      "https://www.gutenberg.org/cache/epub/43548/pg43548-images.html"
+    ],
+    "note": "Verbatim from the Wikisource transcription. Every place where it differs from Project Gutenberg #43548 (L. W. de Laurence's 1918 reprint, used only as an independent cross-check) was checked against the page scan; three Wikisource slips were corrected to match the print. pictureEn: Part II §2 for trumps, Part III §2 for minors. meaningEn/reversedEn: Part III §3 for trumps, Part III §2 for minors; Part III §4 additional meanings are not included. quoteKo translates quoteEn, one sentence of pictureEn. Details: docs/research/kb-source-verification-2026-10.md"
+  },
+  "cards": {
+    "major-00-fool": {
+      "loc": "Part II §2 Zero \"The Fool\", pp. 152–155; Part III §3 \"Zero. The Fool\", pp. 286–287",
+      "pictureEn": "With light step, as if earth and its trammels had little power to restrain him, a young man in gorgeous vestments pauses at the brink of a precipice among the great heights of the world; he surveys the blue distance before him—its expanse of sky rather than the prospect below. His act of eager walking is still indicated, though he is stationary at the given moment; his dog is still bounding. The edge which opens on the depth has no terror; it is as if angels were waiting to uphold him, if it came about that he leaped from the height. His countenance is full of intelligence and expectant dream. He has a rose in one hand and in the other a costly wand, from which depends over his right shoulder a wallet curiously embroidered. He is a prince of the other world on his travels through this one—all amidst the morning glory, in the keen air. The sun, which shines behind him, knows whence he came, whither he is going, and how he will return by another path after many days. He is the spirit in search of experience. Many symbols of the Instituted Mysteries are summarized in this card, which reverses, under high warrants, all the confusions that have preceded it.\n\nIn his Manual of Cartomancy, Grand Orient has a curious suggestion of the office of Mystic Fool, as a part of his process in higher divination; but it might call for more than ordinary gifts to put it into operation. We shall see how the card fares according to the common arts of fortune-telling, and it will be an example, to those who can discern, of the fact, otherwise so evident, that the Trumps Major had no place originally in the arts of psychic gambling, when cards are used as the counters and pretexts. Of the circumstances under which this art arose we know, however, very little. The conventional explanations say that the Fool signifies the flesh, the sensitive life, and by a peculiar satire its subsidiary name was at one time the alchemist, as depicting folly at the most insensate stage.",
+      "meaningEn": "Folly, mania, extravagance, intoxication, delirium, frenzy, bewrayment.",
+      "reversedEn": "Negligence, absence, distribution, carelessness, apathy, nullity, vanity.",
+      "quoteEn": "He is the spirit in search of experience.",
+      "quoteKo": "그는 경험을 찾아 나선 영혼이다."
+    },
+    "major-01-magician": {
+      "loc": "Part II §2 I \"The Magician\", pp. 72–75; Part III §3 \"1. The Magician\", p. 283",
+      "pictureEn": "A youthful figure in the robe of a magician, having the countenance of divine Apollo, with smile of confidence and shining eyes. Above his head is the mysterious sign of the Holy Spirit, the sign of life, like an endless cord, forming the figure 8 in a horizontal position ∞. About his waist is a serpent-cincture, the serpent appearing to devour its own tail. This is familiar to most as a conventional symbol of eternity, but here it indicates more especially the eternity of attainment in the spirit. In the Magician's right hand is a wand raised towards heaven, while the left hand is pointing to the earth. This dual sign is known in very high grades of the Instituted Mysteries; it shews the descent of grace, virtue and light, drawn from things above and derived to things below. The suggestion throughout is therefore the possession and communication of the Powers and Gifts of the Spirit. On the table in front of the Magician are the symbols of the four Tarot suits, signifying the elements of natural life, which lie like counters before the adept, and he adapts them as he wills. Beneath are roses and lilies, the flos campi and lilium convallium, changed into garden flowers, to shew the culture of aspiration. This card signifies the divine motive in man, reflecting God, the will in the liberation of its union with that which is above. It is also the unity of individual being on all planes, and in a very high sense it is thought, in the fixation thereof. With further reference to what I have called the sign of life and its connexion with the number 8, it may be remembered that Christian Gnosticism speaks of rebirth in Christ as a change \"unto the Ogdoad.\" The mystic number is termed Jerusalem above, the Land flowing with Milk and Honey, the Holy Spirit and the Land of the Lord. According to Martinism, 8 is the number of Christ.",
+      "meaningEn": "Skill, diplomacy, address, subtlety; sickness, pain, loss, disaster, snares of enemies; self-confidence, will; the Querent, if male.",
+      "reversedEn": "Physician, Magus, mental disease, disgrace, disquiet.",
+      "quoteEn": "In the Magician's right hand is a wand raised towards heaven, while the left hand is pointing to the earth.",
+      "quoteKo": "마법사의 오른손에는 하늘을 향해 치켜든 지팡이가 있고, 왼손은 땅을 가리킨다."
+    },
+    "major-02-high-priestess": {
+      "loc": "Part II §2 II \"The High Priestess\", pp. 76–79; Part III §3 \"2. The High Priestess\", p. 283",
+      "pictureEn": "She has the lunar crescent at her feet, a horned diadem on her head, with a globe in the middle place, and a large solar cross on her breast. The scroll in her hands is inscribed with the word Tora, signifying the Greater Law, the Secret Law and the second sense of the Word. It is partly covered by her mantle, to shew that some things are implied and some spoken. She is seated between the white and black pillars—J. and B.—of the mystic Temple and the veil of the Temple is behind her: it is embroidered with palms and pomegranates. The vestments are flowing and gauzy, and the mantle suggests light—a shimmering radiance. She has been called Occult Science on the threshold of the Sanctuary of Isis, but she is really the Secret Church, the House which is of God and man. She represents also the Second Marriage of the Prince who is no longer of this world; she is the spiritual Bride and Mother, the daughter of the stars and the Higher Garden of Eden. She is, in fine, the Queen of the borrowed light, but this is the light of all. She is the Moon nourished by the milk of the Supernal Mother.\n\nIn a manner, she is also the Supernal Mother herself—that is to say, she is the bright reflection. It is in this sense of reflection that her truest and highest name in bolism is Shekinah—the co-habiting glory. According to Kabalism, there is a Shekinah both above and below. In the superior world it is called Binah, the Supernal Understanding which reflects to the emanations that are beneath. In the lower world it is Malkuth—that world being, for this purpose, understood as a blessed Kingdom—that with which it is made blessed being the Indwelling Glory. Mystically speaking, the Shekinah is the Spiritual Bride of the just man, and when he reads the Law she gives the Divine meaning. There are some respects in which this card is the highest and holiest of the Greater Arcana.",
+      "meaningEn": "Secrets, mystery, the future as yet unrevealed; the woman who interests the Querent, if male; the Querent herself, if female; silence, tenacity; mystery, wisdom, science.",
+      "reversedEn": "Passion, moral or physical ardour, conceit, surface knowledge.",
+      "quoteEn": "The scroll in her hands is inscribed with the word Tora, signifying the Greater Law, the Secret Law and the second sense of the Word.",
+      "quoteKo": "그녀 손의 두루마리에는 토라라는 낱말이 적혀 있다. 더 큰 율법과 비밀의 율법, 말씀의 두 번째 뜻을 가리킨다."
+    },
+    "major-03-empress": {
+      "loc": "Part II §2 III \"The Empress\", pp. 80–83; Part III §3 \"3. The Empress\", p. 283",
+      "pictureEn": "A stately figure, seated, having rich vestments and royal aspect, as of a daughter of heaven and earth. Her diadem is of twelve stars, gathered in a cluster. The symbol of Venus is on the shield which rests near her. A field of corn is ripening in front of her, and beyond there is a fall of water. The sceptre which she bears is surmounted by the globe of this world. She is the inferior Garden of Eden, the Earthly Paradise, all that is symbolized by the visible house of man. She is not Regina coeli, but she is still refugium peccatorum, the fruitful mother of thousands. There are also certain aspects in which she has been correctly described as desire and the wings thereof, as the woman clothed with the sun, as Gloria Mundi and the veil of the Sanctum Sanctorum; but she is not, I may add, the soul that has attained wings, unless all the symbolism is counted up another and unusual way. She is above all things universal fecundity and the outer sense of the Word. This is obvious, because there is no direct message which has been given to man like that which is borne by woman; but she does not herself carry its interpretation.\n\nIn another order of ideas, the card of the Empress signifies the door or gate by which an entrance is obtained into this life, as into the Garden of Venus; and then the way which leads out therefrom, into that which is beyond, is the secret known to the High Priestess: it is communicated by her to the elect. Most old attributions of this card are completely wrong on the symbolism—as, for example, its identification with the Word, Divine Nature, the Triad, and so forth.",
+      "meaningEn": "Fruitfulness, action, initiative, length of days; the unknown, clandestine; also difficulty, doubt, ignorance.",
+      "reversedEn": "Light, truth, the unravelling of involved matters, public rejoicings; according to another reading, vacillation.",
+      "quoteEn": "A field of corn is ripening in front of her, and beyond there is a fall of water.",
+      "quoteKo": "그녀 앞에서는 곡식 밭이 익어 가고, 그 너머에는 폭포가 떨어진다."
+    },
+    "major-04-emperor": {
+      "loc": "Part II §2 IV \"The Emperor\", pp. 84–87; Part III §3 \"4. The Emperor\", pp. 283–284",
+      "pictureEn": "He has a form of the Crux ansata for his sceptre and a globe in his left hand. He is a crowned monarch—commanding, stately, seated on a throne, the arms of which are fronted by rams' heads. He is executive and realization, the power of this world, here clothed with the highest of its natural attributes. He is occasionally represented as seated on a cubic stone, which, however, confuses some of the issues. He is the virile power, to which the Empress responds, and in this sense is he who seeks to remove the Veil of Isis; yet she remains virgo intacta.\n\nIt should be understood that this card and that of the Empress do not precisely represent the condition of married life, though this state is implied. On the surface, as I have indicated, they stand for mundane royalty, uplifted on the seats of the mighty; but above this there is the suggestion of another presence. They signify also—and the male figure especially—the higher kingship, occupying the intellectual throne. Hereof is the lordship of thought rather than of the animal world. Both personalities, after their own manner, are \"full of strange experience,\" but theirs is not consciously the wisdom which draws from a higher world. The Emperor has been described as (a) will in its embodied form, but this is only one of its applications, and (b) as an expression of virtualities contained in the Absolute Being—but this is fantasy.",
+      "meaningEn": "Stability, power, protection, realization; a great person; aid, reason, conviction; also authority and will.",
+      "reversedEn": "Benevolence, compassion, credit; also confusion to enemies, obstruction, immaturity.",
+      "quoteEn": "He is a crowned monarch—commanding, stately, seated on a throne, the arms of which are fronted by rams' heads.",
+      "quoteKo": "그는 왕관을 쓴 군주로, 위엄 있고 당당하게 팔걸이 앞이 숫양 머리로 된 옥좌에 앉아 있다."
+    },
+    "major-05-hierophant": {
+      "loc": "Part II §2 V \"The Hierophant\", pp. 88–91; Part III §3 \"5. The Hierophant\", p. 284",
+      "pictureEn": "He wears the triple crown and is seated between two pillars, but they are not those of the Temple which is guarded by the High Priestess. In his left hand he holds a sceptre terminating in the triple cross, and with his right hand he gives the well-known ecclesiastical sign which is called that of esotericism, distinguishing between the manifest and concealed part of doctrine. It is noticeable in this connexion that the High Priestess makes no sign. At his feet are the crossed keys, and two priestly ministers in albs kneel before him. He has been usually called the Pope, which is a particular application of the more general office that he symbolizes. He is the ruling power of external religion, as the High Priestess is the prevailing genius of the esoteric, withdrawn power. The proper meanings of this card have suffered woeful admixture from nearly all hands. Grand Orient says truly that the Hierophant is the power of the keys, exoteric orthodox doctrine, and the outer side of the life which leads to the doctrine; but he is certainly not the prince of occult doctrine, as another commentator has suggested.\n\nHe is rather the summa totius theologiæ, when it has passed into the utmost rigidity of expression; but he symbolizes also all things that are righteous and sacred on the manifest side. As such, he is the channel of grace belonging to the world of institution as distinct from that of Nature, and he is the leader of salvation for the human race at large. He is the order and the head of the recognized hierarchy, which is the reflection of another and greater hierarchic order; but it may so happen that the pontiff forgets the significance of this his symbolic state and acts as if he contained within his proper measures all that his sign signifies or his symbol seeks to shew forth. He is not, as it has been thought, philosophy—except on the theological side; he is not inspiration; and he is not religion, although he is a mode of its expression.",
+      "meaningEn": "Marriage, alliance, captivity, servitude; by another account, mercy and goodness; inspiration; the man to whom the Querent has recourse.",
+      "reversedEn": "Society, good understanding, concord, over-kindness, weakness.",
+      "quoteEn": "At his feet are the crossed keys, and two priestly ministers in albs kneel before him.",
+      "quoteKo": "그의 발치에는 엇갈린 열쇠가 있고, 장백의를 입은 두 성직자가 그 앞에 무릎 꿇고 있다."
+    },
+    "major-06-lovers": {
+      "loc": "Part II §2 VI \"The Lovers\", pp. 92–95; Part III §3 \"6. The Lovers\", p. 284",
+      "pictureEn": "The sun shines in the zenith, and beneath is a great winged figure with arms extended, pouring down influences. In the foreground are two human figures, male and female, unveiled before each other, as if Adam and Eve when they first occupied the paradise of the earthly body. Behind the man is the Tree of Life, bearing twelve fruits, and the Tree of the Knowledge of Good and Evil is behind the woman; the serpent is twining round it. The figures suggest youth, virginity, innocence and love before it is contaminated by gross material desire. This is in all simplicity the card of human love, here exhibited as part of the way, the truth and the life. It replaces, by recourse to first principles, the old card of marriage, which I have described previously, and the later follies which depicted man between vice and virtue. In a very high sense, the card is a mystery of the Covenant and Sabbath.\n\nThe suggestion in respect of the woman is that she signifies that attraction towards the sensitive life which carries within it the idea of the Fall of Man, but she is rather the working of a Secret Law of Providence than a willing and conscious temptress. It is through her imputed lapse that man shall arise ultimately, and only by her can he complete himself. The card is therefore in its way another intimation concerning the great mystery of womanhood. The old meanings fall to pieces of necessity with the old pictures, but even as interpretations of the latter, some of them were of the order of commonplace and others were false in symbolism.",
+      "meaningEn": "Attraction, love, beauty, trials overcome.",
+      "reversedEn": "Failure, foolish designs. Another account speaks of marriage frustrated and contrarieties of all kinds.",
+      "quoteEn": "The sun shines in the zenith, and beneath is a great winged figure with arms extended, pouring down influences.",
+      "quoteKo": "하늘 한가운데 해가 빛나고, 그 아래 날개 달린 커다란 형상이 팔을 벌려 기운을 쏟아붓는다."
+    },
+    "major-07-chariot": {
+      "loc": "Part II §2 VII \"The Chariot\", pp. 96–99; Part III §3 \"7. The Chariot\", p. 284",
+      "pictureEn": "An erect and princely figure carrying a drawn sword and corresponding, broadly speaking, to the traditional description which I have given in the first part. On the shoulders of the victorious hero are supposed to be the Urim and Thummim. He has led captivity captive; he is conquest on all planes—in the mind, in science, in progress, in certain trials of initiation. He has thus replied to the sphinx, and it is on this account that I have accepted the variation of Éliphas Lévi; two sphinxes thus draw his chariot. He is above all things triumph in the mind.\n\nIt is to be understood for this reason (a) that the question of the sphinx is concerned with a Mystery of Nature and not of the world of Grace, to which the charioteer could offer no answer; (b) that the planes of his conquest are manifest or external and not within himself; (c) that the liberation which he effects may leave himself in the bondage of the logical understanding; (d) that the tests of initiation through which he has passed in triumph are to be understood physically or rationally; and (e) that if he came to the pillars of that Temple between which the High Priestess is seated, he could not open the scroll called Tora, nor if she questioned him could he answer. He is not hereditary royalty and he is not priesthood.",
+      "meaningEn": "Succour, providence; also war, triumph, presumption, vengeance, trouble.",
+      "reversedEn": "Riot, quarrel, dispute, litigation, defeat.",
+      "quoteEn": "He is above all things triumph in the mind.",
+      "quoteKo": "그는 무엇보다도 마음속의 승리다."
+    },
+    "major-08-strength": {
+      "loc": "Part II §2 VIII \"Strength, or Fortitude\", pp. 100–103; Part III §3 \"8. Fortitude\", p. 284",
+      "pictureEn": "A woman, over whose head there broods the same symbol of life which we have seen in the card of the Hierophant, is closing the jaws of a lion. The only point in which this design differs from the conventional presentations is that her beneficent fortitude has already subdued the lion, which is being led by a chain of flowers. For reasons which satisfy myself, this card has been interchanged with that of Justice, which is usually numbered eight. As the variation carries nothing with it which will signify to the reader, there is no cause for explanation. Fortitude, in one of its most exalted aspects, is connected with the Divine Mystery of Union; the virtue, of course, operates in all planes, and hence draws on all in its symbolism. It connects also with innocentia inviolata, and with the strength which resides in contemplation.\n\nThese higher meanings are, however, matters of inference, and I do not suggest that they are transparent on the surface of the card. They are intimated in a concealed manner by the chain of flowers, which signifies, among many other things, the sweet yoke and the light burden of Divine Law, when it has been taken into the heart of hearts. The card has nothing to do with self-confidence in the ordinary sense, though this has been suggested—but it concerns the confidence of those whose strength is God, who have found their refuge in Him. There is one aspect in which the lion signifies the passions, and she who is called Strength is the higher nature in its liberation. It has walked upon the asp and the basilisk and has trodden down the lion and the dragon.",
+      "meaningEn": "Power, energy, action, courage, magnanimity; also complete success and honours.",
+      "reversedEn": "Despotism, abuse of power, weakness, discord, sometimes even disgrace.",
+      "quoteEn": "The only point in which this design differs from the conventional presentations is that her beneficent fortitude has already subdued the lion, which is being led by a chain of flowers.",
+      "quoteKo": "이 도안이 흔한 그림과 다른 점은 하나뿐이다. 그녀의 자비로운 꿋꿋함이 이미 사자를 길들여, 사자는 꽃 사슬에 이끌려 간다."
+    },
+    "major-09-hermit": {
+      "loc": "Part II §2 IX \"The Hermit\", pp. 104–107; Part III §3 \"9. The Hermit\", p. 284",
+      "pictureEn": "The variation from the conventional models in this card is only that the lamp is not enveloped partially in the mantle of its bearer, who blends the idea of the Ancient of Days with the Light of the World. It is a star which shines in the lantern. I have said that this is a card of attainment, and to extend this conception the figure is seen holding up his beacon on an eminence. Therefore the Hermit is not, as Court de Gebelin explained, a wise man in search of truth and justice; nor is he, as a later explanation proposes, an especial example of experience. His beacon intimates that \"where I am, you also may be.\"\n\nIt is further a card which is understood quite incorrectly when it is connected with the idea of occult isolation, as the protection of personal magnetism against admixture. This is one of the frivolous renderings which we owe to Éliphas Lévi. It has been adopted by the French Order of Martinism and some of us have heard a great deal of the Silent and Unknown Philosophy enveloped by his mantle from the knowledge of the profane. In true Martinism, the significance of the term Philosophe inconnu was of another order. It did not refer to the intended concealment of the Instituted Mysteries, much less of their substitutes, but—like the card itself—to the truth that the Divine Mysteries secure their own protection from those who are unprepared.",
+      "meaningEn": "Prudence, circumspection; also and especially treason, dissimulation, roguery, corruption.",
+      "reversedEn": "Concealment, disguise, policy, fear, unreasoned caution.",
+      "quoteEn": "His beacon intimates that \"where I am, you also may be.\"",
+      "quoteKo": "그의 등불은 ‘내가 있는 곳에 너도 있을 수 있다’고 넌지시 알린다."
+    },
+    "major-10-wheel-of-fortune": {
+      "loc": "Part II §2 X \"Wheel of Fortune\", pp. 108–111; Part III §3 \"10. Wheel of Fortune\", pp. 284–285",
+      "pictureEn": "In this symbol I have again followed the reconstruction of Éliphas Lévi, who has furnished several variants. It is legitimate—as I have intimated—to use Egyptian symbolism when this serves our purpose, provided that no theory of origin is implied therein. I have, however, presented Typhon in his serpent form. The symbolism is, of course, not exclusively Egyptian, as the four Living Creatures of Ezekiel occupy the angles of the card, and the wheel itself follows other indications of Lévi in respect of Ezekiel's vision, as illustrative of the particular Tarot Key. With the French occultist, and in the design itself, the symbolic picture stands for the perpetual motion of a fluidic universe and for the flux of human life. The Sphinx is the equilibrium therein. The transliteration of Taro as Rota is inscribed on the wheel, counterchanged with the letters of the Divine Name—to shew that Providence is implied through all. But this is the Divine intention within, and the similar intention without is exemplified by the four Living Creatures. Sometimes the sphinx is represented couchant on a pedestal above, which defrauds the symbolism by stultifying the essential idea of stability amidst movement.\n\nBehind the general notion expressed in the symbol there lies the denial of chance and the fatality which is implied therein. It may be added that, from the days of Lévi onward, the occult explanations of this card are—even for occultism itself—of a singularly fatuous kind. It has been said to mean principle, fecundity, virile honour, ruling authority, etc. The findings of common fortune-telling are better than this on their own plane.",
+      "meaningEn": "Destiny, fortune, success, elevation, luck, felicity.",
+      "reversedEn": "Increase, abundance, superfluity.",
+      "quoteEn": "With the French occultist, and in the design itself, the symbolic picture stands for the perpetual motion of a fluidic universe and for the flux of human life.",
+      "quoteKo": "그 프랑스 오컬티스트의 설명에서도, 도안 자체에서도 이 상징 그림은 흐르는 우주의 영구 운동과 인간 삶의 흐름을 나타낸다."
+    },
+    "major-11-justice": {
+      "loc": "Part II §2 XI \"Justice\", pp. 112–115; Part III §3 \"11. Justice\", p. 285",
+      "pictureEn": "As this card follows the traditional symbolism and carries above all its obvious meanings, there is little to say regarding it outside the few considerations collected in the first part, to which the reader is referred.\n\nIt will be seen, however, that the figure is seated between pillars, like the High Priestess, and on this account it seems desirable to indicate that the moral principle which deals unto every man according to his works—while, of course, it is in strict analogy with higher things—differs in its essence from the spiritual justice which is involved in the idea of election. The latter belongs to a mysterious order of Providence, in virtue of which it is possible for certain men to conceive the idea of dedication to the highest things. The operation of this is like the breathing of the Spirit where it wills, and we have no canon of criticism or ground of explanation concerning it. It is analogous to the possession of the fairy gifts and the high gifts and the gracious gifts of the poet: we have them or have not, and their presence is as much a mystery as their absence. The law of Justice is not however involved by either alternative. In conclusion, the pillars of Justice open into one world and the pillars of the High Priestess into another.",
+      "meaningEn": "Equity, rightness, probity, executive; triumph of the deserving side in law.",
+      "reversedEn": "Law in all its departments, legal complications, bigotry, bias, excessive severity.",
+      "quoteEn": "In conclusion, the pillars of Justice open into one world and the pillars of the High Priestess into another.",
+      "quoteKo": "결국 정의의 기둥은 한 세계로, 여사제의 기둥은 또 다른 세계로 열린다."
+    },
+    "major-12-hanged-man": {
+      "loc": "Part II §2 XII \"The Hanged Man\", pp. 116–119; Part III §3 \"12. The Hanged Man\", p. 285",
+      "pictureEn": "The gallows from which he is suspended forms a Tau cross, while the figure—from the position of the legs—forms a fylfot cross. There is a nimbus about the head of the seeming martyr. It should be noted (1) that the tree of sacrifice is living wood, with leaves thereon; (2) that the face expresses deep entrancement, not suffering; (3) that the figure, as a whole, suggests life in suspension, but life and not death. It is a card of profound significance, but all the significance is veiled. One of his editors suggests that Éliphas Lévi did not know the meaning, which is unquestionable—nor did the editor himself. It has been called falsely a card of martyrdom, a card of prudence, a card of the Great Work, a card of duty; but we may exhaust all published interpretations and find only vanity. I will say very simply on my own part that it expresses the relation, in one of its aspects, between the Divine and the Universe.\n\nHe who can understand that the story of his higher nature is imbedded in this symbolism will receive intimations concerning a great awakening that is possible, and will know that after the sacred Mystery of Death there is a glorious Mystery of Resurrection.",
+      "meaningEn": "Wisdom, circumspection, discernment, trials, sacrifice, intuition, divination, prophecy.",
+      "reversedEn": "Selfishness, the crowd, body politic.",
+      "quoteEn": "There is a nimbus about the head of the seeming martyr.",
+      "quoteKo": "순교자처럼 보이는 이의 머리 둘레에 후광이 있다."
+    },
+    "major-13-death": {
+      "loc": "Part II §2 XIII \"Death\", pp. 120–123; Part III §3 \"13. Death\", p. 285",
+      "pictureEn": "The veil or mask of life is perpetuated in change, transformation and passage from lower to higher, and this is more fitly represented in the rectified Tarot by one of the apocalyptic visions than by the crude notion of the reaping skeleton. Behind it lies the whole world of ascent in the spirit. The mysterious horseman moves slowly, bearing a black banner emblazoned with the Mystic Rose, which signifies life. Between two pillars on the verge of the horizon there shines the sun of immortality. The horseman carries no visible weapon, but king and child and maiden fall before him, while a prelate with clasped hands awaits his end.\n\nThere should be no need to point out that the suggestion of death which I have made in connection with the previous card is, of course, to be understood mystically, but this is not the case in the present instance. The natural transit of man to the next stage of his being either is or may be one form of his progress, but the exotic and almost unknown entrance, while still in this life, into the state of mystical death is a change in the form of consciousness and the passage into a state to which ordinary death is neither the path nor gate. The existing occult explanations of the 13th card are, on the whole, better than usual, rebirth, creation, destination, renewal, and the rest.",
+      "meaningEn": "End, mortality, destruction, corruption; also, for a man, the loss of a benefactor; for a woman, many contrarieties; for a maid, failure of marriage projects.",
+      "reversedEn": "Inertia, sleep, lethargy, petrifaction, somnambulism; hope destroyed.",
+      "quoteEn": "The mysterious horseman moves slowly, bearing a black banner emblazoned with the Mystic Rose, which signifies life.",
+      "quoteKo": "신비로운 기수가 생명을 뜻하는 신비의 장미를 새긴 검은 깃발을 들고 천천히 나아간다."
+    },
+    "major-14-temperance": {
+      "loc": "Part II §2 XIV \"Temperance\", pp. 124–127; Part III §3 \"14. Temperance\", p. 285",
+      "pictureEn": "A winged angel, with the sign of the sun upon his forehead and on his breast the square and triangle of the septenary. I speak of him in the masculine sense, but the figure is neither male nor female. It is held to be pouring the essences of life from chalice to chalice. It has one foot upon the earth and one upon waters, thus illustrating the nature of the essences. A direct path goes up to certain heights on the verge of the horizon, and above there is a great light, through which a crown is seen vaguely. Hereof is some part of the Secret of Eternal Life, as it is possible to man in his incarnation. All the conventional emblems are renounced herein.\n\nSo also are the conventional meanings, which refer to changes in the seasons, perpetual movement of life and even the combination of ideas. It is, moreover, untrue to say that the figure symbolizes the genius of the sun, though it is the analogy of solar light, realized in the third part of our human triplicity. It is called Temperance fantastically, because, when the rule of it obtains in our consciousness, it tempers, combines and harmonises the psychic and material natures. Under that rule we know in our rational part something of whence we came and whither we are going.",
+      "meaningEn": "Economy, moderation, frugality, management, accommodation.",
+      "reversedEn": "Things connected with churches, religions, sects, the priesthood, sometimes even the priest who will marry the Querent; also disunion, unfortunate combinations, competing interests.",
+      "quoteEn": "It is held to be pouring the essences of life from chalice to chalice.",
+      "quoteKo": "생명의 정수를 이 잔에서 저 잔으로 옮겨 붓는 것으로 여겨진다."
+    },
+    "major-15-devil": {
+      "loc": "Part II §2 XV \"The Devil\", pp. 128–131; Part III §3 \"15. The Devil\", pp. 285–286",
+      "pictureEn": "The design is an accommodation, mean or harmony, between several motives mentioned in the first part. The Horned Goat of Mendes, with wings like those of a bat, is standing on an altar. At the pit of the stomach there is the sign of Mercury. The right hand is upraised and extended, being the reverse of that benediction which is given by the Hierophant in the fifth card. In the left hand there is a great flaming torch, inverted towards the earth. A reversed pentagram is on the forehead. There is a ring in front of the altar, from which two chains are carried to the necks of two figures, male and female. These are analogous with those of the fifth card, as if Adam and Eve after the Fall. Hereof is the chain and fatality of the material life.\n\nThe figures are tailed, to signify the animal nature, but there is human intelligence in the faces, and he who is exalted above them is not to be their master for ever. Even now, he is also a bondsman, sustained by the evil that is in him and blind to the liberty of service. With more than his usual derision for the arts which he pretended to respect and interpret as a master therein, Éliphas Lévi affirms that the Baphometic figure is occult science and magic. Another commentator says that in the Divine world it signifies predestination, but there is no correspondence in that world with the things which below are of the brute. What it does signify is the Dweller on the Threshold without the Mystical Garden when those are driven forth therefrom who have eaten the forbidden fruit.",
+      "meaningEn": "Ravage, violence, vehemence, extraordinary efforts, force, fatality; that which is predestined but is not for this reason evil.",
+      "reversedEn": "Evil fatality, weakness, pettiness, blindness.",
+      "quoteEn": "There is a ring in front of the altar, from which two chains are carried to the necks of two figures, male and female.",
+      "quoteKo": "제단 앞에 고리가 하나 있고, 거기서 사슬 두 줄이 남녀 두 인물의 목으로 이어진다."
+    },
+    "major-16-tower": {
+      "loc": "Part II §2 XVI \"The Tower\", pp. 132–135; Part III §3 \"16. The Tower\", p. 286",
+      "pictureEn": "Occult explanations attached to this card are meagre and mostly disconcerting. It is idle to indicate that it depicts ruin in all its aspects, because it bears this evidence on the surface. It is said further that it contains the first allusion to a material building, but I do not conceive that the Tower is more or less material than the pillars which we have met with in three previous cases. I see nothing to warrant Papus in supposing that it is literally the fall of Adam, but there is more in favour of his alternative—that it signifies the materialization of the spiritual word. The bibliographer Christian imagines that it is the downfall of the mind, seeking to penetrate the mystery of God. I agree rather with Grand Orient that it is the ruin of the House of Life, when evil has prevailed therein, and above all that it is the rending of a House of Doctrine. I understand that the reference is, however, to a House of Falsehood. It illustrates also in the most comprehensive way the old truth that \"except the Lord build the house, they labour in vain that build it.\"\n\nThere is a sense in which the catastrophe is a reflection from the previous card, but not on the side of the symbolism which I have tried to indicate therein. It is more correctly a question of analogy; one is concerned with the fall into the material and animal state, while the other signifies destruction on the intellectual side. The Tower has been spoken of as the chastisement of pride and the intellect overwhelmed in the attempt to penetrate the Mystery of God; but in neither case do these explanations account for the two persons who are the living sufferers. The one is the literal word made void and the other its false interpretation. In yet a deeper sense, it may signify also the end of a dispensation, but there is no possibility here for the consideration of this involved question.",
+      "meaningEn": "Misery, distress, indigence, adversity, calamity, disgrace, deception, ruin. It is a card in particular of unforeseen catastrophe.",
+      "reversedEn": "According to one account, the same in a lesser degree; also oppression, imprisonment, tyranny.",
+      "quoteEn": "I understand that the reference is, however, to a House of Falsehood.",
+      "quoteKo": "다만 나는 이것이 거짓의 집을 가리킨다고 이해한다."
+    },
+    "major-17-star": {
+      "loc": "Part II §2 XVII \"The Star\", pp. 136–139; Part III §3 \"17. The Star\", p. 286",
+      "pictureEn": "A great, radiant, star of eight rays, surrounded by seven lesser stars—also of eight rays. The female figure in the foreground is entirely naked. Her left knee is on the land and her right foot upon the water. She pours Water of Life from two great ewers, irrigating sea and land. Behind her is rising ground and on the right a shrub or tree, whereon a bird alights. The figure expresses eternal youth and beauty. The star is l'étoile flamboyante, which appears in Masonic symbolism, but has been confused therein. That which the figure communicates to the living scene is the substance of the heavens and the elements. It has been said truly that the mottoes of this card are \"Waters of Life freely\" and \"Gifts of the Spirit.\"\n\nThe summary of several tawdry explanations says that it is a card of hope. On other planes it has been certified as immortality and interior light. For the majority of prepared minds, the figure will appear as the type of Truth unveiled, glorious in undying beauty, pouring on the waters of the soul some part and measure of her priceless possession. But she is in reality the Great Mother in the Kabalistic Sephira Binah, which is supernal Understanding, who communicates to the Sephiroth that are below in the measure that they can receive her influx.",
+      "meaningEn": "Loss, theft, privation, abandonment; another reading says—hope and bright prospects,",
+      "reversedEn": "Arrogance, haughtiness, impotence.",
+      "quoteEn": "She pours Water of Life from two great ewers, irrigating sea and land.",
+      "quoteKo": "그녀는 커다란 물병 두 개로 생명의 물을 부어 바다와 땅을 적신다."
+    },
+    "major-18-moon": {
+      "loc": "Part II §2 XVIII \"The Moon\", pp. 140–143; Part III §3 \"18. The Moon\", p. 286",
+      "pictureEn": "The distinction between this card and some of the conventional types is that the moon is increasing on what is called the side of mercy, to the right of the observer. It has sixteen chief and sixteen secondary rays. The card represents life of the imagination apart from life of the spirit. The path between the towers is the issue into the unknown. The dog and wolf are the fears of the natural mind in the presence of that place of exit, when there is only reflected light to guide it.\n\nThe last reference is a key to another form of symbolism. The intellectual light is a reflection and beyond it is the unknown mystery which it cannot shew forth. It illuminates our animal nature, types of which are represented below—the dog, the wolf and that which comes up out of the deeps, the nameless and hideous tendency which is lower than the savage beast. It strives to attain manifestation, symbolized by crawling from the abyss of water to the land, but as a rule it sinks back whence it came. The face of the mind directs a calm gaze upon the unrest below; the dew of thought falls; the message is: Peace, be still; and it may be that there shall come a calm upon the animal nature, while the abyss beneath shall cease from giving up a form.",
+      "meaningEn": "Hidden enemies, danger, calumny, darkness, terror, deception, occult forces, error.",
+      "reversedEn": "Instability, inconstancy, silence, lesser degrees of deception and error.",
+      "quoteEn": "The dog and wolf are the fears of the natural mind in the presence of that place of exit, when there is only reflected light to guide it.",
+      "quoteKo": "개와 늑대는 비친 빛밖에 길잡이가 없을 때, 그 출구 앞에서 자연적인 마음이 느끼는 두려움이다."
+    },
+    "major-19-sun": {
+      "loc": "Part II §2 XIX \"The Sun\", pp. 144–147; Part III §3 \"19. The Sun\", p. 286",
+      "pictureEn": "The naked child mounted on a white horse and displaying a red standard has been mentioned already as the better symbolism connected with this card. It is the destiny of the Supernatural East and the great and holy light which goes before the endless procession of humanity, coming out from the walled garden of the sensitive life and passing on the journey home. The card signifies, therefore, the transit from the manifest light of this world, represented by the glorious sun of earth, to the light of the world to come, which goes before aspiration and is typified by the heart of a child.\n\nBut the last allusion is again the key to a different form or aspect of the symbolism. The sun is that of consciousness in the spirit—the direct as the antithesis of the reflected light. The characteristic type of humanity has become a little child therein—a child in the sense of simplicity and innocence in the sense of wisdom. In that simplicity, he bears the seal of Nature and of Art; in that innocence, he signifies the restored world. When the self-knowing spirit has dawned in the consciousness above the natural mind, that mind in its renewal leads forth the animal nature in a state of perfect conformity.",
+      "meaningEn": "Material happiness, fortunate marriage, contentment.",
+      "reversedEn": "The same in a lesser sense.",
+      "quoteEn": "The naked child mounted on a white horse and displaying a red standard has been mentioned already as the better symbolism connected with this card.",
+      "quoteKo": "흰 말에 올라 붉은 깃발을 펼친 벌거벗은 아이가 이 카드와 관련된 더 나은 상징이라는 점은 이미 말했다."
+    },
+    "major-20-judgement": {
+      "loc": "Part II §2 XX \"The Last Judgment\", pp. 148–151; Part III §3 \"20. The Last Judgment\", p. 286",
+      "pictureEn": "I have said that this symbol is essentially invariable in all Tarot sets, or at least the variations do not alter its character. The great angel is here encompassed by clouds, but he blows his bannered trumpet, and the cross as usual is displayed on the banner. The dead are rising from their tombs—a woman on the right, a man on the left hand, and between them their child, whose back is turned. But in this card there are more than three who are restored, and it has been thought worth while to make this variation as illustrating the insufficiency of current explanations. It should be noted that all the figures are as one in the wonder, adoration and ecstacy expressed by their attitudes. It is the card which registers the accomplishment of the great work of transformation in answer to the summons of the Supernal—which summons is heard and answered from within.\n\nHerein is the intimation of a significance which cannot well be carried further in the present place. What is that within us which does sound a trumpet and all that is lower in our nature rises in response—almost in a moment, almost in the twinkling of an eye? Let the card continue to depict, for those who can see no further, the Last Judgment and the resurrection in the natural body; but let those who have inward eyes look and discover therewith. They will understand that it has been called truly in the past a card of eternal life, and for this reason it may be compared with that which passes under the name of Temperance.",
+      "meaningEn": "Change of position, renewal, outcome. Another account specifies total loss though lawsuit.",
+      "reversedEn": "Weakness, pusillanimity, simplicity; also deliberation, decision, sentence.",
+      "quoteEn": "The dead are rising from their tombs—a woman on the right, a man on the left hand, and between them their child, whose back is turned.",
+      "quoteKo": "죽은 이들이 무덤에서 일어난다. 오른쪽에 여자, 왼쪽에 남자, 그 사이에 등을 돌린 둘의 아이가 있다."
+    },
+    "major-21-world": {
+      "loc": "Part II §2 XXI \"The World\", pp. 156–159; Part III §3 \"21. The World\", p. 287",
+      "pictureEn": "As this final message of the Major Trumps is unchanged—and indeed unchangeable—in respect of its design, it has been partly described already regarding its deeper sense. It represents also the perfection and end of the Cosmos, the secret which is within it, the rapture of the universe when it understands itself in God. It is further the state of the soul in the consciousness of Divine Vision, reflected from the self-knowing spirit. But these meanings are without prejudice to that which I have said concerning it on the material side.\n\nIt has more than one message on the macrocosmic side and is, for example, the state of the restored world when the law of manifestation shall have been carried to the highest degree of natural perfection. But it is perhaps more especially a story of the past, referring to that day when all was declared to be good, when the morning stars sang together and all the Sons of God shouted for joy. One of the worst explanations concerning it is that the figure symbolizes the Magus when he has reached the highest degree of initiation; another account says that it represents the absolute, which is ridiculous. The figure has been said to stand for Truth, which is, however, more properly allocated to the seventeenth card. Lastly, it has been called the Crown of the Magi.",
+      "meaningEn": "Assured success, recompense, voyage, route, emigration, flight, change of place.",
+      "reversedEn": "Inertia, fixity, stagnation, permanence.",
+      "quoteEn": "It represents also the perfection and end of the Cosmos, the secret which is within it, the rapture of the universe when it understands itself in God.",
+      "quoteKo": "이 카드는 또한 코스모스의 완성과 끝, 그 안의 비밀, 신 안에서 스스로를 깨닫는 우주의 황홀을 나타낸다."
+    },
+    "wands-01": {
+      "loc": "Part III §2 Wands, Ace, p. 196",
+      "pictureEn": "A hand issuing from a cloud grasps a stout wand or club.",
+      "meaningEn": "Creation, invention, enterprise, the powers which result in these; principle, beginning, source; birth, family, origin, and in a sense the virility which is behind them; the starting point of enterprises; according to another account, money, fortune, inheritance.",
+      "reversedEn": "Fall, decadence, ruin, perdition, to perish; also a certain clouded joy.",
+      "quoteEn": "A hand issuing from a cloud grasps a stout wand or club.",
+      "quoteKo": "구름에서 나온 손이 굵은 지팡이, 곧 곤봉을 움켜쥐고 있다."
+    },
+    "wands-02": {
+      "loc": "Part III §2 Wands, Two, p. 194",
+      "pictureEn": "A tall man looks from a battlemented roof over sea and shore; he holds a globe in his right hand, while a staff in his left rests on the battlement; another is fixed in a ring. The Rose and Cross and Lily should be noticed on the left side.",
+      "meaningEn": "Between the alternative readings there is no marriage possible; on the one hand, riches, fortune, magnificence; on the other, physical suffering, disease, chagrin, sadness, mortification. The design gives one suggestion; here is a lord overlooking his dominion and alternately contemplating a globe; it looks like the malady, the mortification, the sadness of Alexander amidst the grandeur of this world's wealth.",
+      "reversedEn": "Surprise, wonder, enchantment, emotion, trouble, fear.",
+      "quoteEn": "A tall man looks from a battlemented roof over sea and shore",
+      "quoteKo": "키 큰 남자가 성가퀴를 두른 지붕 위에서 바다와 해안을 내다본다."
+    },
+    "wands-03": {
+      "loc": "Part III §2 Wands, Three, p. 192",
+      "pictureEn": "A calm, stately personage, with his back turned, looking from a cliff's edge at ships passing over the sea. Three staves are planted in the ground, and he leans slightly on one of them.",
+      "meaningEn": "He symbolizes established strength, enterprise, effort, trade, commerce, discovery; those are his ships, bearing his merchandise, which are sailing over the sea. The card also signifies able co-operation in business, as if the successful merchant prince were looking from his side towards yours with a view to help you.",
+      "reversedEn": "The end of troubles, suspension or cessation of adversity, toil and disappointment.",
+      "quoteEn": "A calm, stately personage, with his back turned, looking from a cliff's edge at ships passing over the sea.",
+      "quoteKo": "차분하고 당당한 인물이 등을 돌린 채, 벼랑 끝에서 바다를 지나는 배들을 바라본다."
+    },
+    "wands-04": {
+      "loc": "Part III §2 Wands, Four, p. 190",
+      "pictureEn": "From the four great staves planted in the foreground there is a great garland suspended; two female figures uplift nose-gays; at their side is a bridge over a moat, leading to an old manorial house.",
+      "meaningEn": "They are for once almost on the surface—country life, haven of refuge, a species of domestic harvest-home, repose, concord, harmony, prosperity, peace, and the perfected work of these.",
+      "reversedEn": "The meaning remains unaltered; it is prosperity, increase, felicity, beauty, embellishment.",
+      "quoteEn": "From the four great staves planted in the foreground there is a great garland suspended",
+      "quoteKo": "앞쪽에 세운 커다란 지팡이 네 개에 큰 화환이 걸려 있다."
+    },
+    "wands-05": {
+      "loc": "Part III §2 Wands, Five, p. 188",
+      "pictureEn": "A posse of youths, who are brandishing staves, as if in sport or strife. It is mimic warfare, and hereto correspond the",
+      "meaningEn": "Imitation, as, for example, sham fight, but also the strenuous competition and struggle of the search after riches and fortune. In this sense it connects with the battle of life. Hence some attributions say that it is a card of gold, gain, opulence.",
+      "reversedEn": "Litigation, disputes, trickery, contradiction.",
+      "quoteEn": "A posse of youths, who are brandishing staves, as if in sport or strife.",
+      "quoteKo": "한 무리의 젊은이들이 장난인 듯 싸움인 듯 지팡이를 휘두르고 있다."
+    },
+    "wands-06": {
+      "loc": "Part III §2 Wands, Six, p. 186",
+      "pictureEn": "A laurelled horseman bears one staff adorned with a laurel crown; footmen with staves are at his side.",
+      "meaningEn": "The card has been so designed that it can cover several significations; on the surface, it is a victor triumphing, but it is also great news, such as might be carried in state by the King's courier; it is expectation crowned with its own desire, the crown of hope, and so forth.",
+      "reversedEn": "Apprehension, fear, as of a victorious enemy at the gate; treachery, disloyalty, as of gates being opened to the enemy; also indefinite delay.",
+      "quoteEn": "A laurelled horseman bears one staff adorned with a laurel crown; footmen with staves are at his side.",
+      "quoteKo": "월계관을 쓴 기수가 월계관으로 꾸민 지팡이 하나를 들고 있고, 지팡이를 든 보병들이 곁에 있다."
+    },
+    "wands-07": {
+      "loc": "Part III §2 Wands, Seven, p. 184",
+      "pictureEn": "A young man on a craggy eminence brandishing a staff; six other staves are raised towards him from below.",
+      "meaningEn": "It is a card of valour, for, on the surface, six are attacking one, who has, however, the vantage position. On the intellectual plane, it signifies discussion, wordy strife; in business—negotiations, war of trade, barter, competition. It is further a card of success, for the combatant is on the top and his enemies may be unable to reach him.",
+      "reversedEn": "Perplexity, embarrassments, anxiety. It is also a caution against indecision.",
+      "quoteEn": "A young man on a craggy eminence brandishing a staff; six other staves are raised towards him from below.",
+      "quoteKo": "험한 언덕 위의 젊은이가 지팡이를 휘두르고, 다른 지팡이 여섯 개가 아래에서 그를 향해 들려 있다."
+    },
+    "wands-08": {
+      "loc": "Part III §2 Wands, Eight, p. 182",
+      "pictureEn": "The card represents motion through the immovable—a flight of wands through an open country; but they draw to the term of their course. That which they signify is at hand; it may be even on the threshold.",
+      "meaningEn": "Activity in undertakings, the path of such activity, swiftness, as that of an express messenger; great haste, great hope, speed towards an end which promises assured felicity; generally, that which is on the move; also the arrows of love.",
+      "reversedEn": "Arrows of jealousy, internal dispute, stingings of conscience, quarrels; and domestic disputes for persons who are married.",
+      "quoteEn": "That which they signify is at hand; it may be even on the threshold.",
+      "quoteKo": "그것들이 뜻하는 일은 가까이 와 있다. 어쩌면 벌써 문턱에 와 있을지도 모른다."
+    },
+    "wands-09": {
+      "loc": "Part III §2 Wands, Nine, p. 180",
+      "pictureEn": "The figure leans upon his staff and has an expectant look, as if awaiting an enemy. Behind are eight other staves—erect, in orderly disposition, like a palisade.",
+      "meaningEn": "The card signifies strength in opposition. If attacked, the person will meet an onslaught boldly; and his build shews that he may prove a formidable antagonist. With this main significance there are all its possible adjuncts—delay, suspension, adjournment.",
+      "reversedEn": "Obstacles, adversity, calamity.",
+      "quoteEn": "The figure leans upon his staff and has an expectant look, as if awaiting an enemy.",
+      "quoteKo": "인물은 지팡이에 기댄 채, 적이 오기를 기다리는 듯한 눈빛을 하고 있다."
+    },
+    "wands-10": {
+      "loc": "Part III §2 Wands, Ten, p. 178",
+      "pictureEn": "A man oppressed by the weight of the ten staves which he is carrying.",
+      "meaningEn": "A card of many significances, and some of the readings cannot be harmonized. I set aside that which connects it with honour and good faith. The chief meaning is oppression simply, but it is also fortune, gain, any kind of success, and then it is the oppression of these things. It is also a card of false-seeming, disguise, perfidy. The place which the figure is approaching may suffer from the rods that he carries. Success is stultified if the Nine of Swords follows, and if it is a question of a lawsuit, there will be certain loss.",
+      "reversedEn": "Contrarieties, difficulties, intrigues, and their analogies.",
+      "quoteEn": "A man oppressed by the weight of the ten staves which he is carrying.",
+      "quoteKo": "한 남자가 자기가 나르는 지팡이 열 개의 무게에 짓눌려 있다."
+    },
+    "wands-11": {
+      "loc": "Part III §2 Wands, Page, p. 176",
+      "pictureEn": "In a scene similar to the former, a young man stands in the act of proclamation. He is unknown but faithful, and his tidings are strange.",
+      "meaningEn": "Dark young man, faithful, a lover, an envoy, a postman. Beside a man, he will bear favourable testimony concerning him. A dangerous rival, if followed by the Page of Cups. Has the chief qualities of his suit. He may signify family intelligence.",
+      "reversedEn": "Anecdotes, announcements, evil news. Also indecision and the instability which accompanies it.",
+      "quoteEn": "In a scene similar to the former, a young man stands in the act of proclamation.",
+      "quoteKo": "앞 카드와 비슷한 풍경 속에서, 한 젊은이가 무언가를 선포하는 자세로 서 있다."
+    },
+    "wands-12": {
+      "loc": "Part III §2 Wands, Knight, p. 174",
+      "pictureEn": "He is shewn as if upon a journey, armed with a short wand, and although mailed is not on a warlike errand. He is passing mounds or pyramids. The motion of the horse is a key to the character of its rider, and suggests the precipitate mood, or things connected therewith.",
+      "meaningEn": "Departure, absence, flight, emigration. A dark young man, friendly. Change of residence.",
+      "reversedEn": "Rupture, division, interruption, discord.",
+      "quoteEn": "He is shewn as if upon a journey, armed with a short wand, and although mailed is not on a warlike errand.",
+      "quoteKo": "그는 짧은 지팡이를 들고 길을 떠나는 듯 그려졌는데, 갑옷을 입었지만 싸우러 가는 길은 아니다."
+    },
+    "wands-13": {
+      "loc": "Part III §2 Wands, Queen, p. 172",
+      "pictureEn": "The Wands throughout this suit are always in leaf, as it is a suit of life and animation. Emotionally and otherwise, the Queen's personality corresponds to that of the King, but is more magnetic.",
+      "meaningEn": "A dark woman, countrywoman, friendly, chaste, loving, honourable. If the card beside her signifies a man, she is well disposed towards him; if a woman, she is interested in the Querent. Also, love of money, or a certain success in business.",
+      "reversedEn": "Good, economical, obliging, serviceable. Signifies also—but in certain positions and in the neighbourhood of other cards tending in such directions—opposition, jealousy, even deceit and infidelity.",
+      "quoteEn": "The Wands throughout this suit are always in leaf, as it is a suit of life and animation.",
+      "quoteKo": "이 수트의 지팡이에는 언제나 잎이 돋아 있다. 생명과 활기의 수트이기 때문이다."
+    },
+    "wands-14": {
+      "loc": "Part III §2 Wands, King, p. 170",
+      "pictureEn": "The physical and emotional nature to which this card is attributed is dark, ardent, lithe, animated, impassioned, noble. The King uplifts a flowering wand, and wears, like his three correspondences in the remaining suits, what is called a cap of maintenance beneath his crown. He connects with the symbol of the lion, which is emblazoned on the back of his throne.",
+      "meaningEn": "Dark man, friendly, countryman, generally married, honest and conscientious. The card always signifies honesty, and may mean news concerning an unexpected heritage to fall in before very long.",
+      "reversedEn": "Good, but severe; austere, yet tolerant.",
+      "quoteEn": "The King uplifts a flowering wand, and wears, like his three correspondences in the remaining suits, what is called a cap of maintenance beneath his crown.",
+      "quoteKo": "왕은 꽃 핀 지팡이를 들어 올리고, 다른 세 수트의 왕들처럼 왕관 아래 이른바 권위의 모자를 쓰고 있다."
+    },
+    "cups-01": {
+      "loc": "Part III §2 Cups, Ace, p. 224",
+      "pictureEn": "The waters are beneath, and thereon are water-lilies; the hand issues from the cloud, holding in its palm the cup, from which four streams are pouring; a dove, bearing in its bill a cross-marked Host, descends to place the Wafer in the Cup; the dew of water is falling on all sides. It is an intimation of that which may lie behind the Lesser Arcana",
+      "meaningEn": "House of the true heart, joy, content, abode, nourishment, abundance, fertility; Holy Table, felicity hereof.",
+      "reversedEn": "House of the false heart, mutation, instability, revolution.",
+      "quoteEn": "a dove, bearing in its bill a cross-marked Host, descends to place the Wafer in the Cup",
+      "quoteKo": "십자가 새겨진 성체를 부리에 문 비둘기가 그것을 컵에 넣으려고 내려온다."
+    },
+    "cups-02": {
+      "loc": "Part III §2 Cups, Two, p. 222",
+      "pictureEn": "A youth and maiden are pledging one another, and above their cups rises the Caduceus of Hermes, between the great wings of which there appears a lion's head. It is a variant of a sign which is found in a few old examples of this card. Some curious emblematical meanings are attached to it, but they do not concern us in this place.",
+      "meaningEn": "Love, passion, friendship, affinity, union, concord, sympathy, the interrelation of the sexes, and—as a suggestion apart from all offices of divination—that desire which is not in Nature, but by which Nature is sanctified.",
+      "reversedEn": null,
+      "quoteEn": "A youth and maiden are pledging one another, and above their cups rises the Caduceus of Hermes, between the great wings of which there appears a lion's head.",
+      "quoteKo": "젊은 남녀가 서로 축배를 들고, 두 컵 위로 헤르메스의 카두케우스가 솟았으며, 그 큰 날개 사이로 사자 머리가 보인다."
+    },
+    "cups-03": {
+      "loc": "Part III §2 Cups, Three, p. 220",
+      "pictureEn": "Maidens in a garden-ground with cups uplifted, as if pledging one another.",
+      "meaningEn": "The conclusion of any matter in plenty, perfection and merriment; happy issue, victory, fulfilment, solace, healing.",
+      "reversedEn": "Expedition, dispatch, achievement, end. It signifies also the side of excess in physical enjoyment, and the pleasures of the senses.",
+      "quoteEn": "Maidens in a garden-ground with cups uplifted, as if pledging one another.",
+      "quoteKo": "정원에서 처녀들이 서로 건배하듯 컵을 들어 올리고 있다."
+    },
+    "cups-04": {
+      "loc": "Part III §2 Cups, Four, p. 218",
+      "pictureEn": "A young man is seated under a tree and contemplates three cups set on the grass before him; an arm issuing from a cloud offers him another cup. His expression notwithstanding is one of discontent with his environment.",
+      "meaningEn": "Weariness, disgust, aversion, imaginary vexations, as if the wine of this world had caused satiety only; another wine, as if a fairy gift, is now offered the wastrel, but he sees no consolation therein. This is also a card of blended pleasure.",
+      "reversedEn": "Novelty, presage, new instruction, new relations.",
+      "quoteEn": "A young man is seated under a tree and contemplates three cups set on the grass before him; an arm issuing from a cloud offers him another cup.",
+      "quoteKo": "젊은이가 나무 아래 앉아 앞 풀밭의 컵 세 개를 바라보고, 구름에서 나온 팔이 컵 하나를 더 건넨다."
+    },
+    "cups-05": {
+      "loc": "Part III §2 Cups, Five, p. 216",
+      "pictureEn": "A dark, cloaked figure, looking sideways at three prone cups; two others stand upright behind him; a bridge is in the background, leading to a small keep or holding.",
+      "meaningEn": "It is a card of loss, but something remains over; three have been taken, but two are left; it is a card of inheritance, patrimony, transmission, but not corresponding to expectations; with some interpreters it is a card of marriage, but not without bitterness or frustration.",
+      "reversedEn": "News, alliances, affinity, consanguinity, ancestry, return, false projects.",
+      "quoteEn": "A dark, cloaked figure, looking sideways at three prone cups; two others stand upright behind him; a bridge is in the background, leading to a small keep or holding.",
+      "quoteKo": "망토 두른 어두운 형체가 쓰러진 컵 셋을 비스듬히 보고, 뒤에 두 컵이 서 있으며, 뒤편 다리는 작은 성채나 영지로 이어진다."
+    },
+    "cups-06": {
+      "loc": "Part III §2 Cups, Six, p. 214",
+      "pictureEn": "Children in an old garden, their cups filled with flowers.",
+      "meaningEn": "A card of the past and of memories, looking back, as—for example—on childhood; happiness, enjoyment, but coming rather from the past; things that have vanished. Another reading reverses this, giving new relations, new knowledge, new environment, and then the children are disporting in an unfamiliar precinct.",
+      "reversedEn": "The future, renewal, that which will come to pass presently.",
+      "quoteEn": "Children in an old garden, their cups filled with flowers.",
+      "quoteKo": "오래된 정원의 아이들, 그들의 컵에는 꽃이 가득하다."
+    },
+    "cups-07": {
+      "loc": "Part III §2 Cups, Seven, p. 212",
+      "pictureEn": "Strange chalices of vision, but the images are more especially those of the fantastic spirit.",
+      "meaningEn": "Fairy favours, images of reflection, sentiment, imagination, things seen in the glass of contemplation; some attainment in these degrees, but nothing permanent or substantial is suggested.",
+      "reversedEn": "Desire, will, determination, project.",
+      "quoteEn": "Strange chalices of vision, but the images are more especially those of the fantastic spirit.",
+      "quoteKo": "환상 속의 기이한 잔들이지만, 그 형상들은 특히 공상하는 정신의 것이다."
+    },
+    "cups-08": {
+      "loc": "Part III §2 Cups, Eight, p. 210",
+      "pictureEn": "A man of dejected aspect is deserting the cups of his felicity, enterprise, undertaking or previous concern.",
+      "meaningEn": "The card speaks for itself on the surface, but other readings are entirely antithetical—giving joy, mildness, timidity, honour, modesty. In practice, it is usually found that the card shews the decline of a matter, or that a matter which has been thought to be important is really of slight consequence—either for good or evil.",
+      "reversedEn": "Great joy, happiness, feasting.",
+      "quoteEn": "A man of dejected aspect is deserting the cups of his felicity, enterprise, undertaking or previous concern.",
+      "quoteKo": "낙심한 모습의 남자가 자신의 행복, 사업, 일, 혹은 예전 관심사였던 컵들을 버리고 떠난다."
+    },
+    "cups-09": {
+      "loc": "Part III §2 Cups, Nine, p. 208",
+      "pictureEn": "A goodly personage has feasted to his heart's content, and abundant refreshment of wine is on the arched counter behind him, seeming to indicate that the future is also assured. The picture offers the material side only, but there are other aspects.",
+      "meaningEn": "Concord, contentment, physical bien-être; also victory, success, advantage; satisfaction for the Querent or person for whom the consultation is made.",
+      "reversedEn": "Truth, loyalty, liberty; but the readings vary and include mistakes, imperfections, etc.",
+      "quoteEn": "A goodly personage has feasted to his heart's content, and abundant refreshment of wine is on the arched counter behind him, seeming to indicate that the future is also assured.",
+      "quoteKo": "풍채 좋은 인물이 마음껏 잔치를 즐겼고, 뒤쪽 아치형 진열대에 포도주가 넉넉해 앞날도 든든해 보인다."
+    },
+    "cups-10": {
+      "loc": "Part III §2 Cups, Ten, p. 206",
+      "pictureEn": "Appearance of Cups in a rainbow; it is contemplated in wonder and ecstacy by a man and woman below, evidently husband and wife. His right arm is about her; his left is raised upward; she raises her right arm. The two children dancing near them have not observed the prodigy but are happy after their own manner. There is a home-scene beyond.",
+      "meaningEn": "Contentment, repose of the entire heart; the perfection of that state; also perfection of human love and friendship; if with several picture-cards, a person who is taking charge of the Querent's interests; also the town, village or country inhabited by the Querent.",
+      "reversedEn": "Repose of the false heart, indignation, violence.",
+      "quoteEn": "Appearance of Cups in a rainbow; it is contemplated in wonder and ecstacy by a man and woman below, evidently husband and wife.",
+      "quoteKo": "무지개 속에 컵들이 나타나 있고, 그 아래 부부로 보이는 남녀가 경이와 황홀 속에 그것을 바라본다."
+    },
+    "cups-11": {
+      "loc": "Part III §2 Cups, Page, p. 204",
+      "pictureEn": "A fair, pleasing, somewhat effeminate page, of studious and intent aspect, contemplates a fish rising from a cup to look at him. It is the pictures of the mind taking form.",
+      "meaningEn": "Fair young man, one impelled to render service and with whom the Querent will be connected; a studious youth; news, message; application, reflection, meditation; also these things directed to business.",
+      "reversedEn": "Taste, inclination, attachment, seduction, deception, artifice.",
+      "quoteEn": "It is the pictures of the mind taking form.",
+      "quoteKo": "마음속 그림들이 형태를 갖추는 모습이다."
+    },
+    "cups-12": {
+      "loc": "Part III §2 Cups, Knight, p. 202",
+      "pictureEn": "Graceful, but not warlike; riding quietly, wearing a winged helmet, referring to those higher graces of the imagination which sometimes characterize this card. He too is a dreamer, but the images of the side of sense haunt him in his vision.",
+      "meaningEn": "Arrival, approach—sometimes that of a messenger; advances, proposition, demeanour, invitation, incitement.",
+      "reversedEn": "Trickery, artifice, subtlety, swindling, duplicity, fraud.",
+      "quoteEn": "He too is a dreamer, but the images of the side of sense haunt him in his vision.",
+      "quoteKo": "그 역시 몽상가지만, 감각 쪽의 형상들이 그의 환상 속을 맴돈다."
+    },
+    "cups-13": {
+      "loc": "Part III §2 Cups, Queen, p. 200",
+      "pictureEn": "Beautiful, fair, dreamy—as one who sees visions in a cup. This is, however, only one of her aspects; she sees, but she also acts, and her activity feeds her dream.",
+      "meaningEn": "Good, fair woman; honest, devoted woman, who will do service to the Querent; loving intelligence, and hence the gift of vision; success, happiness, pleasure; also wisdom, virtue; a perfect spouse and a good mother.",
+      "reversedEn": "The accounts vary; good woman; otherwise, distinguished woman but one not to be trusted; perverse woman; vice, dishonour, depravity.",
+      "quoteEn": "Beautiful, fair, dreamy—as one who sees visions in a cup.",
+      "quoteKo": "아름답고 곱고 꿈꾸는 듯하다. 컵 속에서 환상을 보는 사람처럼."
+    },
+    "cups-14": {
+      "loc": "Part III §2 Cups, King, p. 198",
+      "pictureEn": "He holds a short sceptre in his left hand and a great cup in his right; his throne is set upon the sea; on one side a ship is riding and on the other a dolphin is leaping. The implicit is that the Sign of the Cup naturally refers to water, which appears in all the court cards.",
+      "meaningEn": "Fair man, man of business, law, or divinity; responsible, disposed to oblige the Querent; also equity, art and science, including those who profess science, law and art; creative intelligence.",
+      "reversedEn": "Dishonest, double-dealing man; roguery, exaction, injustice, vice, scandal, pillage, considerable loss.",
+      "quoteEn": "He holds a short sceptre in his left hand and a great cup in his right; his throne is set upon the sea; on one side a ship is riding and on the other a dolphin is leaping.",
+      "quoteKo": "왼손엔 짧은 홀을, 오른손엔 큰 컵을 들었고 옥좌는 바다 위에 있다. 한쪽엔 배가, 다른 쪽엔 뛰어오르는 돌고래가 있다."
+    },
+    "swords-01": {
+      "loc": "Part III §2 Swords, Ace, p. 252",
+      "pictureEn": "A hand issues from a cloud, grasping a sword, the point of which is encircled by a crown.",
+      "meaningEn": "Triumph, the excessive degree in everything, conquest, triumph of force. It is a card of great force, in love as well as in hatred. The crown may carry a much higher significance than comes usually within the sphere of fortune-telling.",
+      "reversedEn": "The same, but the results are disastrous; another account says—conception, childbirth, augmentation, multiplicity.",
+      "quoteEn": "A hand issues from a cloud, grasping a sword, the point of which is encircled by a crown.",
+      "quoteKo": "구름에서 손이 나와 검을 쥐고 있고, 칼끝은 왕관에 둘러싸여 있다."
+    },
+    "swords-02": {
+      "loc": "Part III §2 Swords, Two, p. 250",
+      "pictureEn": "A hoodwinked female figure balances two swords upon her shoulders.",
+      "meaningEn": "Conformity and the equipoise which it suggests, courage, friendship, concord in a state of arms; another reading gives tenderness, affection, intimacy. The suggestion of harmony and other favourable readings must be considered in a qualified manner, as Swords generally are not symbolical of beneficent forces in human affairs.",
+      "reversedEn": "Imposture, falsehood, duplicity, disloyalty.",
+      "quoteEn": "A hoodwinked female figure balances two swords upon her shoulders.",
+      "quoteKo": "눈을 가린 여인이 두 어깨 위로 검 두 자루의 균형을 잡고 있다."
+    },
+    "swords-03": {
+      "loc": "Part III §2 Swords, Three, p. 248",
+      "pictureEn": "Three swords piercing a heart; cloud and rain behind.",
+      "meaningEn": "Removal, absence, delay, division, rupture, dispersion, and all that the design signifies naturally, being too simple and obvious to call for specific enumeration.",
+      "reversedEn": "Mental alienation, error, loss, distraction, disorder, confusion.",
+      "quoteEn": "Three swords piercing a heart; cloud and rain behind.",
+      "quoteKo": "검 세 자루가 심장을 꿰뚫고, 뒤로는 구름과 비가 있다."
+    },
+    "swords-04": {
+      "loc": "Part III §2 Swords, Four, p. 246",
+      "pictureEn": "The effigy of a knight in the attitude of prayer, at full length upon his tomb.",
+      "meaningEn": "Vigilance, retreat, solitude, hermit's repose, exile, tomb and coffin. It is these last that have suggested the design.",
+      "reversedEn": "Wise administration, circumspection, economy, avarice, precaution, testament.",
+      "quoteEn": "The effigy of a knight in the attitude of prayer, at full length upon his tomb.",
+      "quoteKo": "기도하는 자세의 기사 조각상이 자기 무덤 위에 길게 누워 있다."
+    },
+    "swords-05": {
+      "loc": "Part III §2 Swords, Five, p. 244",
+      "pictureEn": "A disdainful man looks after two retreating and dejected figures. Their swords lie upon the ground. He carries two others on his left shoulder, and a third sword is in his right hand, point to earth. He is the master in possession of the field.",
+      "meaningEn": "Degradation, destruction, revocation, infamy, dishonour, loss, with the variants and analogues of these.",
+      "reversedEn": "The same; burial and obsequies.",
+      "quoteEn": "A disdainful man looks after two retreating and dejected figures.",
+      "quoteKo": "업신여기는 얼굴의 남자가 낙심해 물러가는 두 사람을 지켜본다."
+    },
+    "swords-06": {
+      "loc": "Part III §2 Swords, Six, p. 242",
+      "pictureEn": "A ferryman carrying passengers in his punt to the further shore. The course is smooth, and seeing that the freight is light, it may be noted that the work is not beyond his strength.",
+      "meaningEn": "Journey by water, route, way, envoy, commissionary, expedient.",
+      "reversedEn": "Declaration, confession, publicity; one account says that it is a proposal of love.",
+      "quoteEn": "A ferryman carrying passengers in his punt to the further shore.",
+      "quoteKo": "뱃사공이 거룻배에 승객을 태우고 건너편 기슭으로 간다."
+    },
+    "swords-07": {
+      "loc": "Part III §2 Swords, Seven, p. 240",
+      "pictureEn": "A man in the act of carrying away five swords rapidly; the two others of the card remain stuck in the ground. A camp is close at hand.",
+      "meaningEn": "Design, attempt, wish, hope, confidence; also quarrelling, a plan that may fail, annoyance. The design is uncertain in its import, because the significations are widely at variance with each other.",
+      "reversedEn": "Good advice, counsel, instruction, slander, babbling.",
+      "quoteEn": "A man in the act of carrying away five swords rapidly; the two others of the card remain stuck in the ground.",
+      "quoteKo": "한 남자가 검 다섯 자루를 급히 들고 가고, 나머지 두 자루는 땅에 꽂힌 채 남아 있다."
+    },
+    "swords-08": {
+      "loc": "Part III §2 Swords, Eight, p. 238",
+      "pictureEn": "A woman, bound and hoodwinked, with the swords of the card about her. Yet it is rather a card of temporary durance than of irretrievable bondage.",
+      "meaningEn": "Bad news, violent chagrin, crisis, censure, power in trammels, conflict, calumny; also sickness.",
+      "reversedEn": "Disquiet, difficulty, opposition, accident, treachery; what is unforeseen; fatality.",
+      "quoteEn": "Yet it is rather a card of temporary durance than of irretrievable bondage.",
+      "quoteKo": "그래도 이것은 돌이킬 수 없는 속박보다는 잠시 갇혀 있는 상태의 카드다."
+    },
+    "swords-09": {
+      "loc": "Part III §2 Swords, Nine, p. 236",
+      "pictureEn": "One seated on her couch in lamentation, with the swords over her. She is as one who knows no sorrow which is like unto hers. It is a card of utter desolation.",
+      "meaningEn": "Death, failure, miscarriage, delay, deception, disappointment, despair.",
+      "reversedEn": "Imprisonment, suspicion, doubt, reasonable fear, shame.",
+      "quoteEn": "One seated on her couch in lamentation, with the swords over her.",
+      "quoteKo": "한 여인이 침상에 앉아 슬퍼하고, 그 위로 검들이 걸려 있다."
+    },
+    "swords-10": {
+      "loc": "Part III §2 Swords, Ten, p. 234",
+      "pictureEn": "A prostrate figure, pierced by all the swords belonging to the card.",
+      "meaningEn": "Whatsoever is intimated by the design; also pain, affliction, tears, sadness, desolation. It is not especially a card of violent death.",
+      "reversedEn": "Advantage, profit, success, favour, but none of these are permanent; also power and authority.",
+      "quoteEn": "A prostrate figure, pierced by all the swords belonging to the card.",
+      "quoteKo": "엎드린 인물이 이 카드의 검 전부에 꿰뚫려 있다."
+    },
+    "swords-11": {
+      "loc": "Part III §2 Swords, Page, p. 232",
+      "pictureEn": "A lithe, active figure holds a sword upright in both hands, while in the act of swift walking. He is passing over rugged land, and about his way the clouds are collocated wildly. He is alert and lithe, looking this way and that, as if an expected enemy might appear at any moment.",
+      "meaningEn": "Authority, overseeing, secret service, vigilance, spying, examination, and the qualities thereto belonging.",
+      "reversedEn": "More evil side of these qualities; what is unforeseen, unprepared state; sickness is also intimated.",
+      "quoteEn": "A lithe, active figure holds a sword upright in both hands, while in the act of swift walking.",
+      "quoteKo": "날렵하고 기민한 인물이 빠르게 걸으면서 두 손으로 검을 곧추세워 들고 있다."
+    },
+    "swords-12": {
+      "loc": "Part III §2 Swords, Knight, p. 230",
+      "pictureEn": "He is riding in full course, as if scattering his enemies. In the design he is really a prototypical hero of romantic chivalry. He might almost be Galahad, whose sword is swift and sure because he is clean of heart.",
+      "meaningEn": "Skill, bravery, capacity, defence, address, enmity, wrath, war, destruction, opposition, resistance, ruin. There is therefore a sense in which the card signifies death, but it carries this meaning only in its proximity to other cards of fatality.",
+      "reversedEn": "Imprudence, incapacity, extravagance.",
+      "quoteEn": "He is riding in full course, as if scattering his enemies.",
+      "quoteKo": "그는 적을 흩어 놓으려는 듯 전속력으로 말을 달린다."
+    },
+    "swords-13": {
+      "loc": "Part III §2 Swords, Queen, p. 228",
+      "pictureEn": "Her right hand raises the weapon vertically and the hilt rests on an arm of her royal chair; the left hand is extended, the arm raised; her countenance is severe but chastened; it suggests familiarity with sorrow. It does not represent mercy, and, her sword notwithstanding, she is scarcely a symbol of power.",
+      "meaningEn": "Widowhood, female sadness and embarrassment, absence, sterility, mourning, privation, separation.",
+      "reversedEn": "Malice, bigotry, artifice, prudery, bale, deceit.",
+      "quoteEn": "her countenance is severe but chastened; it suggests familiarity with sorrow.",
+      "quoteKo": "그녀의 얼굴은 엄하지만 누그러져 있고, 슬픔에 익숙한 기색이 비친다."
+    },
+    "swords-14": {
+      "loc": "Part III §2 Swords, King, p. 226",
+      "pictureEn": "He sits in judgment, holding the unsheathed sign of his suit. He recalls, of course, the conventional Symbol of Justice in the Trumps Major, and he may represent this virtue, but he is rather the power of life and death, in virtue of his office.",
+      "meaningEn": "Whatsoever arises out of the idea of judgment and all its connexions—power, command, authority, militant intelligence, law, offices of the crown, and so forth.",
+      "reversedEn": "Cruelty, perversity, barbarity, perfidy, evil intention.",
+      "quoteEn": "He sits in judgment, holding the unsheathed sign of his suit.",
+      "quoteKo": "그는 칼집에서 뽑은 자기 수트의 표징을 들고 심판의 자리에 앉아 있다."
+    },
+    "pentacles-01": {
+      "loc": "Part III §2 Pentacles, Ace, p. 280",
+      "pictureEn": "A hand—issuing, as usual, from a cloud—holds up a pentacle.",
+      "meaningEn": "Perfect contentment, felicity, ecstasy; also speedy intelligence; gold.",
+      "reversedEn": "The evil side of wealth, bad intelligence; also great riches. In any case it shews prosperity, comfortable material conditions, but whether these are of advantage to the possessor will depend on whether the card is reversed or not.",
+      "quoteEn": "A hand—issuing, as usual, from a cloud—holds up a pentacle.",
+      "quoteKo": "여느 때처럼 구름에서 나온 손이 펜타클 하나를 들어 올린다."
+    },
+    "pentacles-02": {
+      "loc": "Part III §2 Pentacles, Two, p. 278",
+      "pictureEn": "A young man, in the act of dancing, has a pentacle in either hand, and they are joined by that endless cord which is like the number 8 reversed.",
+      "meaningEn": "On the one hand it is represented as a card of gaiety, recreation and its connexions, which is the subject of the design; but it is read also as news and messages in writing, as obstacles, agitation, trouble, embroilment.",
+      "reversedEn": "Enforced gaiety, simulated enjoyment, literal sense, handwriting, composition, letters of exchange.",
+      "quoteEn": "A young man, in the act of dancing, has a pentacle in either hand, and they are joined by that endless cord which is like the number 8 reversed.",
+      "quoteKo": "춤추는 젊은이가 두 손에 펜타클을 하나씩 들었고, 둘은 뒤집힌 숫자 8 같은 끝없는 끈으로 이어져 있다."
+    },
+    "pentacles-03": {
+      "loc": "Part III §2 Pentacles, Three, p. 276",
+      "pictureEn": "A sculptor at his work in a monastery. Compare the design which illustrates the Eight of Pentacles. The apprentice or amateur therein has received his reward and is now at work in earnest.",
+      "meaningEn": "Métier, trade, skilled labour; usually, however, regarded as a card of nobility, aristocracy, renown, glory.",
+      "reversedEn": "Mediocrity, in work and otherwise, puerility, pettiness, weakness.",
+      "quoteEn": "A sculptor at his work in a monastery.",
+      "quoteKo": "수도원에서 작업 중인 조각가."
+    },
+    "pentacles-04": {
+      "loc": "Part III §2 Pentacles, Four, p. 274",
+      "pictureEn": "A crowned figure, having a pentacle over his crown, clasps another with hands and arms; two pentacles are under his feet. He holds to that which he has.",
+      "meaningEn": "The surety of possessions, cleaving to that which one has, gift, legacy, inheritance.",
+      "reversedEn": "Suspense, delay, opposition.",
+      "quoteEn": "He holds to that which he has.",
+      "quoteKo": "그는 가진 것을 꼭 붙든다."
+    },
+    "pentacles-05": {
+      "loc": "Part III §2 Pentacles, Five, p. 272",
+      "pictureEn": "Two mendicants in a snow-storm pass a lighted casement.",
+      "meaningEn": "The card foretells material trouble above all, whether in the form illustrated—that is, destitution—or otherwise. For some cartomancists, it is a card of love and lovers—wife, husband, friend, mistress; also concordance, affinities. These alternatives cannot be harmonized.",
+      "reversedEn": "Disorder, chaos, ruin, discord, profligacy.",
+      "quoteEn": "Two mendicants in a snow-storm pass a lighted casement.",
+      "quoteKo": "눈보라 속에서 두 걸인이 불 켜진 창 곁을 지나간다."
+    },
+    "pentacles-06": {
+      "loc": "Part III §2 Pentacles, Six, p. 270",
+      "pictureEn": "A person in the guise of a merchant weighs money in a pair of scales and distributes it to the needy and distressed. It is a testimony to his own success in life, as well as to his goodness of heart.",
+      "meaningEn": "Presents, gifts, gratification; another account says attention, vigilance; now is the accepted time, present prosperity, etc.",
+      "reversedEn": "Desire, cupidity, envy, jealousy, illusion.",
+      "quoteEn": "A person in the guise of a merchant weighs money in a pair of scales and distributes it to the needy and distressed.",
+      "quoteKo": "상인 차림의 사람이 저울로 돈을 달아 가난하고 괴로운 이들에게 나누어 준다."
+    },
+    "pentacles-07": {
+      "loc": "Part III §2 Pentacles, Seven, p. 268",
+      "pictureEn": "A young man, leaning on his staff, looks intently at seven pentacles attached to a clump of greenery on his right; one would say that these were his treasures and that his heart was there.",
+      "meaningEn": "These are exceedingly contradictory; in the main, it is a card of money, business, barter; but one reading gives altercation, quarrel—and another innocence, ingenuity, purgation.",
+      "reversedEn": "Cause for anxiety regarding money which it may be proposed to lend.",
+      "quoteEn": "one would say that these were his treasures and that his heart was there.",
+      "quoteKo": "그것들이 그의 보물이고, 그의 마음이 거기 있다고 해도 좋을 정도다."
+    },
+    "pentacles-08": {
+      "loc": "Part III §2 Pentacles, Eight, p. 266",
+      "pictureEn": "An artist in stone at his work, which he exhibits in the form of trophies.",
+      "meaningEn": "Work, employment, commission, craftsmanship, skill in craft and business, perhaps in the preparatory stage.",
+      "reversedEn": "Voided ambition, vanity, cupidity, exaction, usury. It may also signify the possession of skill, in the sense of the ingenious mind turned to cunning and intrigue.",
+      "quoteEn": "An artist in stone at his work, which he exhibits in the form of trophies.",
+      "quoteKo": "돌을 다루는 장인이 일하는 중이며, 만든 작품을 전리품처럼 내걸어 보인다."
+    },
+    "pentacles-09": {
+      "loc": "Part III §2 Pentacles, Nine, p. 264",
+      "pictureEn": "A woman, with a bird upon her wrist, stands amidst a great abundance of grapevines in the garden of a manorial house. It is a wide domain, suggesting plenty in all things. Possibly it is her own possession and testifies to material well-being.",
+      "meaningEn": "Prudence, safety, success, accomplishment, certitude, discernment.",
+      "reversedEn": "Roguery, deception, voided project, bad faith.",
+      "quoteEn": "A woman, with a bird upon her wrist, stands amidst a great abundance of grapevines in the garden of a manorial house.",
+      "quoteKo": "손목에 새를 얹은 여인이 장원 저택의 정원에서 무성한 포도덩굴 사이에 서 있다."
+    },
+    "pentacles-10": {
+      "loc": "Part III §2 Pentacles, Ten, p. 262",
+      "pictureEn": "A man and woman beneath an archway which gives entrance to a house and domain. They are accompanied by a child, who looks curiously at two dogs accosting an ancient personage seated in the foreground. The child's hand is on one of them.",
+      "meaningEn": "Gain, riches; family matters, archives, extraction, the abode of a family.",
+      "reversedEn": "Chance, fatality, loss, robbery, games of hazard; sometimes gift, dowry, pension.",
+      "quoteEn": "They are accompanied by a child, who looks curiously at two dogs accosting an ancient personage seated in the foreground.",
+      "quoteKo": "곁에 있는 아이는 앞쪽에 앉은 노인에게 다가가는 개 두 마리를 신기한 듯 바라본다."
+    },
+    "pentacles-11": {
+      "loc": "Part III §2 Pentacles, Page, p. 260",
+      "pictureEn": "A youthful figure, looking intently at the pentacle which hovers over his raised hands. He moves slowly, insensible of that which is about him.",
+      "meaningEn": "Application, study, scholarship, reflection; another reading says news, messages and the bringer thereof; also rule, management.",
+      "reversedEn": "Prodigality, dissipation, liberality. luxury; unfavourable news.",
+      "quoteEn": "A youthful figure, looking intently at the pentacle which hovers over his raised hands.",
+      "quoteKo": "젊은이가 들어 올린 두 손 위에 떠 있는 펜타클을 골똘히 바라본다."
+    },
+    "pentacles-12": {
+      "loc": "Part III §2 Pentacles, Knight, p. 258",
+      "pictureEn": "He rides a slow, enduring, heavy horse, to which his own aspect corresponds. He exhibits his symbol, but does not look therein.",
+      "meaningEn": "Utility, serviceableness, interest, responsibility, rectitude—all on the normal and external plane.",
+      "reversedEn": "inertia, idleness, repose of that kind, stagnation; also placidity, discouragement, carelessness.",
+      "quoteEn": "He rides a slow, enduring, heavy horse, to which his own aspect corresponds.",
+      "quoteKo": "그는 느리고 끈기 있는 무거운 말을 타고 있고, 그 자신의 모습도 그 말을 닮았다."
+    },
+    "pentacles-13": {
+      "loc": "Part III §2 Pentacles, Queen, p. 256",
+      "pictureEn": "The face suggests that of a dark woman, whose qualities might be summed up in the idea of greatness of soul; she has also the serious cast of intelligence; she contemplates her symbol and may see worlds therein.",
+      "meaningEn": "Opulence, generosity, magnificence, security, liberty.",
+      "reversedEn": "Evil, suspicion, suspense, fear, mistrust.",
+      "quoteEn": "she contemplates her symbol and may see worlds therein.",
+      "quoteKo": "그녀는 자기 상징을 바라보며, 그 안에서 여러 세계를 볼지도 모른다."
+    },
+    "pentacles-14": {
+      "loc": "Part III §2 Pentacles, King, p. 254",
+      "pictureEn": "The figure calls for no special description; the face is rather dark, suggesting also courage, but somewhat lethargic in tendency. The bull's head should be noted as a recurrent symbol on the throne. The sign of this suit is represented throughout as engraved or blazoned with the pentagram, typifying the correspondence of the four elements in human nature and that by which they may be governed. In many old Tarot packs this suit stood for current coin, money, deniers. I have not invented the substitution of pentacles and I have no special cause to sustain in respect of the alternative. But the consensus of divinatory meanings is on the side of some change, because the cards do not happen to deal especially with questions of money.",
+      "meaningEn": "Valour, realizing intelligence, business and normal intellectual aptitude, sometimes mathematical gifts and attainments of this kind; success in these paths.",
+      "reversedEn": "Vice, weakness, ugliness, perversity, corruption, peril.",
+      "quoteEn": "The bull's head should be noted as a recurrent symbol on the throne.",
+      "quoteKo": "옥좌에 되풀이해 새겨진 상징인 황소 머리를 눈여겨봐야 한다."
+    }
+  }
+}

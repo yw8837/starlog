@@ -1,0 +1,694 @@
+{
+  "source": {
+    "title": "A Description of the Cards of the Tarot with their Attributions; including a Method of Divination by their use",
+    "work": "Book T, the Golden Dawn tarot document, as printed in The Equinox, Vol. I, No. 8",
+    "year": 1912,
+    "edition": "The Equinox, Vol. I, No. 8 (London, 1912), pp. 143–210; scan of the printed pages. Public domain.",
+    "urls": [
+      "https://aleistercrowleytimeline.com/Publications/Crowley/Books/Equinox-1-8/Equinox-1-8-Tarot.pdf"
+    ],
+    "note": "Read from the page images, not from OCR. Astrological glyphs are written out as words; `printed` keeps them as set. Hebrew letter names are the usual transliterations of the printed letters. The Equinox renames Book T's court figures: its Knight is Book T's King on horseback and its King is Book T's Prince in a chariot (footnote p. 159), and its Knave is the Princess (\"The Four Princesses are the Knaves of the Tarot Pack\", p. 157); ids follow the RWS names used in content/kb (11 Page, 12 Knight, 13 Queen, 14 King). This is the 1912 printing, not the Golden Dawn manuscript. Details: docs/research/kb-source-verification-2026-10.md"
+  },
+  "cards": {
+    "major-00-fool": {
+      "nameInSource": "The Foolish Man",
+      "numberInSource": "0",
+      "title": "The Spirit of Αἰθήρ",
+      "letter": {
+        "name": "Aleph",
+        "hebrew": "א"
+      },
+      "attribution": "Air",
+      "printed": "🜁",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 57"
+    },
+    "major-01-magician": {
+      "nameInSource": "The Magician",
+      "numberInSource": "1",
+      "title": "The Magus of Power",
+      "letter": {
+        "name": "Beth",
+        "hebrew": "ב"
+      },
+      "attribution": "Mercury",
+      "printed": "☿",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 58"
+    },
+    "major-02-high-priestess": {
+      "nameInSource": "The High Priestess",
+      "numberInSource": "2",
+      "title": "The Priestess of the Silver Star",
+      "letter": {
+        "name": "Gimel",
+        "hebrew": "ג"
+      },
+      "attribution": "Moon",
+      "printed": "☽",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 59"
+    },
+    "major-03-empress": {
+      "nameInSource": "The Empress",
+      "numberInSource": "3",
+      "title": "The Daughter of the Mighty Ones",
+      "letter": {
+        "name": "Daleth",
+        "hebrew": "ד"
+      },
+      "attribution": "Venus",
+      "printed": "♀",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 60"
+    },
+    "major-04-emperor": {
+      "nameInSource": "The Emperor",
+      "numberInSource": "4",
+      "title": "Sun of the Morning, chief among the Mighty",
+      "letter": {
+        "name": "He",
+        "hebrew": "ה"
+      },
+      "attribution": "Aries",
+      "printed": "♈",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 61"
+    },
+    "major-05-hierophant": {
+      "nameInSource": "The Hierophant",
+      "numberInSource": "5",
+      "title": "The Magus of the Eternal",
+      "letter": {
+        "name": "Vau",
+        "hebrew": "ו"
+      },
+      "attribution": "Taurus",
+      "printed": "♉",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 62"
+    },
+    "major-06-lovers": {
+      "nameInSource": "The Lovers",
+      "numberInSource": "6",
+      "title": "The Children of the Voice; the Oracles of the Mighty Gods",
+      "letter": {
+        "name": "Zain",
+        "hebrew": "ז"
+      },
+      "attribution": "Gemini",
+      "printed": "♊",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 63"
+    },
+    "major-07-chariot": {
+      "nameInSource": "The Chariot",
+      "numberInSource": "7",
+      "title": "The Child of the Powers of the Waters; the Lord of the Triumph of Light",
+      "letter": {
+        "name": "Cheth",
+        "hebrew": "ח"
+      },
+      "attribution": "Cancer",
+      "printed": "♋",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 64"
+    },
+    "major-08-strength": {
+      "nameInSource": "Fortitude",
+      "numberInSource": "11",
+      "title": "The Daughter of the Flaming Sword",
+      "letter": {
+        "name": "Teth",
+        "hebrew": "ט"
+      },
+      "attribution": "Leo",
+      "printed": "♌",
+      "loc": "Equinox I(8) p. 150, \"The Twenty-two Keys of the Book\", no. 65"
+    },
+    "major-09-hermit": {
+      "nameInSource": "The Hermit",
+      "numberInSource": "9",
+      "title": "The Magus of the Voice of Power, the Prophet of the Eternal",
+      "letter": {
+        "name": "Yod",
+        "hebrew": "י"
+      },
+      "attribution": "Virgo",
+      "printed": "♍",
+      "loc": "Equinox I(8) p. 151, \"The Twenty-two Keys of the Book\", no. 66"
+    },
+    "major-10-wheel-of-fortune": {
+      "nameInSource": "The Wheel of Fate",
+      "numberInSource": "10",
+      "title": "The Lord of the Forces of Life",
+      "letter": {
+        "name": "Kaph",
+        "hebrew": "כ"
+      },
+      "attribution": "Jupiter",
+      "printed": "♃",
+      "loc": "Equinox I(8) p. 151, \"The Twenty-two Keys of the Book\", no. 67"
+    },
+    "major-11-justice": {
+      "nameInSource": "Justice",
+      "numberInSource": "8",
+      "title": "The Daughter of the Lords of Truth: the Ruler of the Balance",
+      "letter": {
+        "name": "Lamed",
+        "hebrew": "ל"
+      },
+      "attribution": "Libra",
+      "printed": "♎",
+      "loc": "Equinox I(8) p. 151, \"The Twenty-two Keys of the Book\", no. 68"
+    },
+    "major-12-hanged-man": {
+      "nameInSource": "The Hanged Man",
+      "numberInSource": "12",
+      "title": "The Spirit of the Mighty Waters",
+      "letter": {
+        "name": "Mem",
+        "hebrew": "מ"
+      },
+      "attribution": "Water",
+      "printed": "▽",
+      "loc": "Equinox I(8) p. 151, \"The Twenty-two Keys of the Book\", no. 69"
+    },
+    "major-13-death": {
+      "nameInSource": "Death",
+      "numberInSource": "13",
+      "title": "The Child of the Great Transformers: the Lord of the Gates of Death",
+      "letter": {
+        "name": "Nun",
+        "hebrew": "נ"
+      },
+      "attribution": "Scorpio",
+      "printed": "♍ (Virgo form)",
+      "loc": "Equinox I(8) p. 151, \"The Twenty-two Keys of the Book\", no. 70",
+      "note": "The table prints this sign with the same glyph as the Hermit's Virgo. It is read as Scorpio: in the table's letter order Nun stands between Lamed (Libra) and Samekh (Sagittarius), and the decan tables (pp. 173–175) print Scorpio with its own glyph."
+    },
+    "major-14-temperance": {
+      "nameInSource": "Temperance",
+      "numberInSource": "14",
+      "title": "The Daughter of the Reconcilers: the Bringer-Forth of life",
+      "letter": {
+        "name": "Samekh",
+        "hebrew": "ס"
+      },
+      "attribution": "Sagittarius",
+      "printed": "♐",
+      "loc": "Equinox I(8) p. 151, \"The Twenty-two Keys of the Book\", no. 71"
+    },
+    "major-15-devil": {
+      "nameInSource": "The Devil",
+      "numberInSource": "15",
+      "title": "The Lord of the Gates of Matter: the Child of the Forces of Time",
+      "letter": {
+        "name": "Ayin",
+        "hebrew": "ע"
+      },
+      "attribution": "Capricorn",
+      "printed": "♑",
+      "loc": "Equinox I(8) p. 151, \"The Twenty-two Keys of the Book\", no. 72"
+    },
+    "major-16-tower": {
+      "nameInSource": "The Blasted Tower",
+      "numberInSource": "16",
+      "title": "The Lord of the Hosts of the Mighty",
+      "letter": {
+        "name": "Pe",
+        "hebrew": "פ"
+      },
+      "attribution": "Mars",
+      "printed": "♂",
+      "loc": "Equinox I(8) p. 152, \"The Twenty-two Keys of the Book\", no. 73"
+    },
+    "major-17-star": {
+      "nameInSource": "The Star",
+      "numberInSource": "17",
+      "title": "The Daughter of the Firmament, the dweller between the Waters",
+      "letter": {
+        "name": "Tzaddi",
+        "hebrew": "צ"
+      },
+      "attribution": "Aquarius",
+      "printed": "♒",
+      "loc": "Equinox I(8) p. 152, \"The Twenty-two Keys of the Book\", no. 74"
+    },
+    "major-18-moon": {
+      "nameInSource": "The Moon",
+      "numberInSource": "18",
+      "title": "The Ruler of Flux and Reflux: the Child of the Sons of the Mighty",
+      "letter": {
+        "name": "Qoph",
+        "hebrew": "ק"
+      },
+      "attribution": "Pisces",
+      "printed": "♓",
+      "loc": "Equinox I(8) p. 152, \"The Twenty-two Keys of the Book\", no. 75"
+    },
+    "major-19-sun": {
+      "nameInSource": "The Sun",
+      "numberInSource": "19",
+      "title": "The Lord of the Fire of the World",
+      "letter": {
+        "name": "Resh",
+        "hebrew": "ר"
+      },
+      "attribution": "Sun",
+      "printed": "☉",
+      "loc": "Equinox I(8) p. 152, \"The Twenty-two Keys of the Book\", no. 76"
+    },
+    "major-20-judgement": {
+      "nameInSource": "The Judgment",
+      "numberInSource": "20",
+      "title": "The Spirit of the Primal Fire",
+      "letter": {
+        "name": "Shin",
+        "hebrew": "ש"
+      },
+      "attribution": "Spirit and Fire",
+      "printed": "⊛ and △",
+      "loc": "Equinox I(8) p. 152, \"The Twenty-two Keys of the Book\", no. 77",
+      "note": "Book T gives two attributions for Shin: Spirit (eight-spoked wheel) and Fire."
+    },
+    "major-21-world": {
+      "nameInSource": "The Universe",
+      "numberInSource": "21",
+      "title": "The Great One of the Night of Time",
+      "letter": {
+        "name": "Tau",
+        "hebrew": "ת"
+      },
+      "attribution": "Earth and Saturn",
+      "printed": "🜃 and ♄",
+      "loc": "Equinox I(8) p. 152, \"The Twenty-two Keys of the Book\", no. 78",
+      "note": "Book T gives two attributions for Tau: Earth and Saturn."
+    },
+    "wands-01": {
+      "nameInSource": "Ace of Wands",
+      "title": "Root of the Powers of Fire",
+      "attribution": "Fire",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 1; p. 153, \"Of the Aces\"",
+      "note": "Book T gives the Aces no sign: \"The Four Aces are said to be placed on the North Pole of the Universe\" (p. 153)."
+    },
+    "wands-02": {
+      "nameInSource": "2 of Wands",
+      "title": "Lord of Dominion",
+      "attribution": "Mars in Aries",
+      "printed": "♂ in ♈",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 45; p. 174, decans of Mars"
+    },
+    "wands-03": {
+      "nameInSource": "3 of Wands",
+      "title": "Lord of Established Strength",
+      "attribution": "Sun in Aries",
+      "printed": "☉ in ♈",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 46; p. 175, decans of Sun"
+    },
+    "wands-04": {
+      "nameInSource": "4 of Wands",
+      "title": "Lord of Perfected Work",
+      "attribution": "Venus in Aries",
+      "printed": "♀ in ♈",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 47; p. 175, decans of Venus"
+    },
+    "wands-05": {
+      "nameInSource": "5 of Wands",
+      "title": "Lord of Strife",
+      "attribution": "Saturn in Leo",
+      "printed": "♄ in ♌",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 21; p. 174, decans of Saturn"
+    },
+    "wands-06": {
+      "nameInSource": "6 of Wands",
+      "title": "Lord of Victory",
+      "attribution": "Jupiter in Leo",
+      "printed": "♃ in ♌",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 22; p. 174, decans of Jupiter"
+    },
+    "wands-07": {
+      "nameInSource": "7 of Wands",
+      "title": "Lord of Valour",
+      "attribution": "Mars in Leo",
+      "printed": "♂ in ♌",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 23; p. 174, decans of Mars"
+    },
+    "wands-08": {
+      "nameInSource": "8 of Wands",
+      "title": "Lord of Swiftness",
+      "attribution": "Mercury in Sagittarius",
+      "printed": "☿ in ♐",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 33; p. 175, decans of Mercury"
+    },
+    "wands-09": {
+      "nameInSource": "9 of Wands",
+      "title": "Lord of Great Strength",
+      "attribution": "Moon in Sagittarius",
+      "printed": "☽ in ♐",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 34; p. 175, decans of Moon"
+    },
+    "wands-10": {
+      "nameInSource": "10 of Wands",
+      "title": "Lord of Oppression",
+      "attribution": "Saturn in Sagittarius",
+      "printed": "♄ in ♐",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 35; p. 174, decans of Saturn"
+    },
+    "wands-11": {
+      "nameInSource": "Knave of Wands",
+      "bookTRole": "Princess",
+      "title": "The Princess of the Shining Flame: the Rose of the Palace of Fire",
+      "attribution": "Earth of Fire",
+      "printed": "🜃 of △",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 8; p. 162, Knave of Wands"
+    },
+    "wands-12": {
+      "nameInSource": "Knight of Wands",
+      "bookTRole": "King (mounted figure)",
+      "title": "The Lord of the Flame and Lightning: the King of the Spirits of Fire",
+      "attribution": "Fire of Fire",
+      "printed": "△ of △",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 5; p. 159, Knight of Wands"
+    },
+    "wands-13": {
+      "nameInSource": "Queen of Wands",
+      "bookTRole": "Queen",
+      "title": "The Queen of the Thrones of Flame",
+      "attribution": "Water of Fire",
+      "printed": "▽ of △",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 6; p. 160, Queen of Wands"
+    },
+    "wands-14": {
+      "nameInSource": "King of Wands",
+      "bookTRole": "Prince (figure in a chariot)",
+      "title": "The Prince of the Chariot of Fire",
+      "attribution": "Air of Fire",
+      "printed": "🜁 of △",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 7; p. 161, King of Wands"
+    },
+    "cups-01": {
+      "nameInSource": "Ace of Cups",
+      "title": "Root of the Powers of Water",
+      "attribution": "Water",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 2; p. 153, \"Of the Aces\"",
+      "note": "Book T gives the Aces no sign: \"The Four Aces are said to be placed on the North Pole of the Universe\" (p. 153)."
+    },
+    "cups-02": {
+      "nameInSource": "2 of Cups",
+      "title": "Lord of Love",
+      "attribution": "Venus in Cancer",
+      "printed": "♀ in ♋",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 54; p. 175, decans of Venus"
+    },
+    "cups-03": {
+      "nameInSource": "3 of Cups",
+      "title": "Lord of Abundance",
+      "attribution": "Mercury in Cancer",
+      "printed": "☿ in ♋",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 55; p. 175, decans of Mercury"
+    },
+    "cups-04": {
+      "nameInSource": "4 of Cups",
+      "title": "Lord of Blended Pleasure",
+      "attribution": "Moon in Cancer",
+      "printed": "☽ in ♋",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 56; p. 175, decans of Moon"
+    },
+    "cups-05": {
+      "nameInSource": "5 of Cups",
+      "title": "Lord of Loss in Pleasure",
+      "attribution": "Mars in Scorpio",
+      "printed": "♂ in ♍ (Virgo form)",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 30; p. 174, decans of Mars",
+      "note": "The titles table prints Scorpio here with the same glyph it uses for Virgo; the decans listed under each planet (pp. 174–175) print it as Scorpio."
+    },
+    "cups-06": {
+      "nameInSource": "6 of Cups",
+      "title": "Lord of Pleasure",
+      "attribution": "Sun in Scorpio",
+      "printed": "☉ in ♍ (Virgo form)",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 31; p. 174, decans of Sun",
+      "note": "The titles table prints Scorpio here with the same glyph it uses for Virgo; the decans listed under each planet (pp. 174–175) print it as Scorpio."
+    },
+    "cups-07": {
+      "nameInSource": "7 of Cups",
+      "title": "Lord of Illusionary Success",
+      "attribution": "Venus in Scorpio",
+      "printed": "♀ in ♍ (Virgo form)",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 32; p. 175, decans of Venus",
+      "note": "The titles table prints Scorpio here with the same glyph it uses for Virgo; the decans listed under each planet (pp. 174–175) print it as Scorpio."
+    },
+    "cups-08": {
+      "nameInSource": "8 of Cups",
+      "title": "Lord of Abandoned Success",
+      "attribution": "Saturn in Pisces",
+      "printed": "♄ in ♓",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 42; p. 174, decans of Saturn",
+      "note": "The decans of Saturn (p. 174) list this card as \"Abundant Success\"; the titles table (p. 149) and the card's own heading (p. 192) read \"Abandoned Success\"."
+    },
+    "cups-09": {
+      "nameInSource": "9 of Cups",
+      "title": "Lord of Material Happiness",
+      "attribution": "Jupiter in Pisces",
+      "printed": "♃ in ♓",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 43; p. 174, decans of Jupiter"
+    },
+    "cups-10": {
+      "nameInSource": "10 of Cups",
+      "title": "Lord of Perfected Success",
+      "attribution": "Mars in Pisces",
+      "printed": "♂ in ♓",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 44; p. 174, decans of Mars"
+    },
+    "cups-11": {
+      "nameInSource": "Knave of Cups",
+      "bookTRole": "Princess",
+      "title": "The Princess of the Waters: the Lotus of the Palace of the Floods",
+      "attribution": "Earth of Water",
+      "printed": "🜃 of ▽",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 12; p. 165, Knave of Cups"
+    },
+    "cups-12": {
+      "nameInSource": "Knight of Cups",
+      "bookTRole": "King (mounted figure)",
+      "title": "The Lord of the Waves and the Waters: the King of the Hosts of the Sea",
+      "attribution": "Fire of Water",
+      "printed": "△ of ▽",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 9; p. 163, Knight of Cups"
+    },
+    "cups-13": {
+      "nameInSource": "Queen of Cups",
+      "bookTRole": "Queen",
+      "title": "The Queen of the Thrones of the Waters",
+      "attribution": "Water of Water",
+      "printed": "▽ of ▽",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 10; p. 164, Queen of Cups"
+    },
+    "cups-14": {
+      "nameInSource": "King of Cups",
+      "bookTRole": "Prince (figure in a chariot)",
+      "title": "The Prince of the Chariot of the Waters",
+      "attribution": "Air of Water",
+      "printed": "🜁 of ▽",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 11; p. 164, King of Cups"
+    },
+    "swords-01": {
+      "nameInSource": "Ace of Swords",
+      "title": "Root of the Powers of Air",
+      "attribution": "Air",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 3; p. 153, \"Of the Aces\"",
+      "note": "Book T gives the Aces no sign: \"The Four Aces are said to be placed on the North Pole of the Universe\" (p. 153)."
+    },
+    "swords-02": {
+      "nameInSource": "2 of Swords",
+      "title": "Lord of Peace restored",
+      "attribution": "Moon in Libra",
+      "printed": "☽ in ♎",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 27; p. 175, decans of Moon"
+    },
+    "swords-03": {
+      "nameInSource": "3 of Swords",
+      "title": "Lord of Sorrow",
+      "attribution": "Saturn in Libra",
+      "printed": "♄ in ♎",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 28; p. 174, decans of Saturn"
+    },
+    "swords-04": {
+      "nameInSource": "4 of Swords",
+      "title": "Lord of Rest from Strife",
+      "attribution": "Jupiter in Libra",
+      "printed": "♃ in ♎",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 29; p. 174, decans of Jupiter"
+    },
+    "swords-05": {
+      "nameInSource": "5 of Swords",
+      "title": "Lord of Defeat",
+      "attribution": "Venus in Aquarius",
+      "printed": "♀ in ♒",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 39; p. 175, decans of Venus"
+    },
+    "swords-06": {
+      "nameInSource": "6 of Swords",
+      "title": "Lord of Earned Success",
+      "attribution": "Mercury in Aquarius",
+      "printed": "☿ in ♒",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 40; p. 175, decans of Mercury"
+    },
+    "swords-07": {
+      "nameInSource": "7 of Swords",
+      "title": "Lord of Unstable Effort",
+      "attribution": "Moon in Aquarius",
+      "printed": "☽ in ♒",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 41; p. 175, decans of Moon"
+    },
+    "swords-08": {
+      "nameInSource": "8 of Swords",
+      "title": "Lord of Shortened Force",
+      "attribution": "Jupiter in Gemini",
+      "printed": "♃ in ♊",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 51; p. 174, decans of Jupiter"
+    },
+    "swords-09": {
+      "nameInSource": "9 of Swords",
+      "title": "Lord of Despair and Cruelty",
+      "attribution": "Mars in Gemini",
+      "printed": "♂ in ♊",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 52; p. 174, decans of Mars"
+    },
+    "swords-10": {
+      "nameInSource": "10 of Swords",
+      "title": "Lord of Ruin",
+      "attribution": "Sun in Gemini",
+      "printed": "☉ in ♊",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 53; p. 175, decans of Sun"
+    },
+    "swords-11": {
+      "nameInSource": "Knave of Swords",
+      "bookTRole": "Princess",
+      "title": "The Princess of the Rushing Winds: the Lotus of the Palace of Air",
+      "attribution": "Earth of Air",
+      "printed": "🜃 of 🜁",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 16; p. 168, Knave of Swords",
+      "note": "Its section ends \"Throne of the Ace of Wands\" (p. 168), evidently a misprint for Swords; the attribution above is unaffected."
+    },
+    "swords-12": {
+      "nameInSource": "Knight of Swords",
+      "bookTRole": "King (mounted figure)",
+      "title": "The Lord of the Wind and the Breezes: the King of the Spirits of Air",
+      "attribution": "Fire of Air",
+      "printed": "△ of 🜁",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 13; p. 166, Knight of Swords"
+    },
+    "swords-13": {
+      "nameInSource": "Queen of Swords",
+      "bookTRole": "Queen",
+      "title": "The Queen of the Thrones of Air",
+      "attribution": "Water of Air",
+      "printed": "▽ of 🜁",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 14; p. 167, Queen of Swords"
+    },
+    "swords-14": {
+      "nameInSource": "King of Swords",
+      "bookTRole": "Prince (figure in a chariot)",
+      "title": "The Prince of the Chariot of the Winds",
+      "attribution": "Air of Air",
+      "printed": "🜁 of 🜁",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 15; p. 168, King of Swords"
+    },
+    "pentacles-01": {
+      "nameInSource": "Ace of Pentacles",
+      "title": "Root of the Powers of Earth",
+      "attribution": "Earth",
+      "loc": "Equinox I(8) p. 147, \"The Titles of the Symbols\", no. 4; p. 153, \"Of the Aces\"",
+      "note": "Book T gives the Aces no sign: \"The Four Aces are said to be placed on the North Pole of the Universe\" (p. 153)."
+    },
+    "pentacles-02": {
+      "nameInSource": "2 of Pentacles",
+      "title": "Lord of Harmonious Change",
+      "attribution": "Jupiter in Capricorn",
+      "printed": "♃ in ♑",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 36; p. 174, decans of Jupiter"
+    },
+    "pentacles-03": {
+      "nameInSource": "3 of Pentacles",
+      "title": "Lord of Material Works",
+      "attribution": "Mars in Capricorn",
+      "printed": "♂ in ♑",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 37; p. 174, decans of Mars"
+    },
+    "pentacles-04": {
+      "nameInSource": "4 of Pentacles",
+      "title": "Lord of Earthly Power",
+      "attribution": "Sun in Capricorn",
+      "printed": "☉ in ♑",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 38; p. 175, decans of Sun"
+    },
+    "pentacles-05": {
+      "nameInSource": "5 of Pentacles",
+      "title": "Lord of Material Trouble",
+      "attribution": "Mercury in Taurus",
+      "printed": "☿ in ♉",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 48; p. 175, decans of Mercury"
+    },
+    "pentacles-06": {
+      "nameInSource": "6 of Pentacles",
+      "title": "Lord of Material Success",
+      "attribution": "Moon in Taurus",
+      "printed": "☽ in ♉",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 49; p. 175, decans of Moon"
+    },
+    "pentacles-07": {
+      "nameInSource": "7 of Pentacles",
+      "title": "Lord of Success unfulfilled",
+      "attribution": "Saturn in Taurus",
+      "printed": "♄ in ♉",
+      "loc": "Equinox I(8) p. 149, \"The Titles of the Symbols\", no. 50; p. 174, decans of Saturn"
+    },
+    "pentacles-08": {
+      "nameInSource": "8 of Pentacles",
+      "title": "Lord of Prudence",
+      "attribution": "Sun in Virgo",
+      "printed": "☉ in ♍",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 24; p. 174, decans of Sun"
+    },
+    "pentacles-09": {
+      "nameInSource": "9 of Pentacles",
+      "title": "Lord of Material Gain",
+      "attribution": "Venus in Virgo",
+      "printed": "♀ in ♍",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 25; p. 175, decans of Venus"
+    },
+    "pentacles-10": {
+      "nameInSource": "10 of Pentacles",
+      "title": "Lord of Wealth",
+      "attribution": "Mercury in Virgo",
+      "printed": "☿ in ♍",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 26; p. 175, decans of Mercury"
+    },
+    "pentacles-11": {
+      "nameInSource": "Knave of Pentacles",
+      "bookTRole": "Princess",
+      "title": "The Princess of the Echoing Hills: the Rose of the Palace of Earth",
+      "attribution": "Earth of Earth",
+      "printed": "🜃 of 🜃",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 20; p. 171, Knave of Pentacles"
+    },
+    "pentacles-12": {
+      "nameInSource": "Knight of Pentacles",
+      "bookTRole": "King (mounted figure)",
+      "title": "The Lord of the Wide and Fertile Land: the King of the Spirits of Earth",
+      "attribution": "Fire of Earth",
+      "printed": "△ of 🜃",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 17; p. 169, Knight of Pentacles"
+    },
+    "pentacles-13": {
+      "nameInSource": "Queen of Pentacles",
+      "bookTRole": "Queen",
+      "title": "The Queen of the Thrones of Earth",
+      "attribution": "Water of Earth",
+      "printed": "▽ of 🜃",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 18; p. 170, Queen of Pentacles"
+    },
+    "pentacles-14": {
+      "nameInSource": "King of Pentacles",
+      "bookTRole": "Prince (figure in a chariot)",
+      "title": "The Prince of the Chariot of Earth",
+      "attribution": "Air of Earth",
+      "printed": "🜁 of 🜃",
+      "loc": "Equinox I(8) p. 148, \"The Titles of the Symbols\", no. 19; p. 171, King of Pentacles"
+    }
+  }
+}
