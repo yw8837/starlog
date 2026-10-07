@@ -14,7 +14,7 @@
     "deploy": "pnpm cf:build && node scripts/check-worker-env.mjs && pnpm --filter @starlog/web cf:deploy",
     "test": "vitest run",
     "typecheck": "tsc -p packages/core/tsconfig.json --noEmit && pnpm --filter @starlog/web typecheck",
-    "cards:build": "node scripts/build-cards.mjs",
+    "cards:build": "python scripts/build-cards.py",
     "e2e": "pnpm --filter @starlog/web e2e",
     "e2e:screens": "pnpm --filter @starlog/web e2e:screens",
     "kb:runtime": "node scripts/build-kb-runtime.mjs",
