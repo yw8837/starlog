@@ -17,7 +17,7 @@ describe("plush character art", () => {
 
   it("uses the 300 px file at small sizes", () => {
     const { container } = render(<Rabbit outfit="hanbok" size={72} art="plush" reactOnTap={false} />);
-    expect(hrefs(container)).toEqual(["/characters/rabbit-hanbok.v1-300.webp"]);
+    expect(hrefs(container)).toEqual(["/characters/rabbit-hanbok.v2-300.webp"]);
   });
 
   it("falls back to the vector drawing when the outfit has no plush art, and by default", () => {

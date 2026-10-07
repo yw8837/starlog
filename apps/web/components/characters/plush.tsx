@@ -7,7 +7,7 @@ import type { Outfit } from "./types";
  */
 const PLUSH: Record<"cat" | "rabbit", Partial<Record<Outfit, string>>> = {
   cat: { tarot: "/characters/cat-tarot.v1" },
-  rabbit: { hanbok: "/characters/rabbit-hanbok.v1" },
+  rabbit: { hanbok: "/characters/rabbit-hanbok.v2" },
 };
 
 /** The plush image base path for a character and outfit, or null when that outfit has no plush art yet. */
