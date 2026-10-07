@@ -1,6 +1,6 @@
 import { getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideIndexPath } from "./guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideIndexPath, guideSectionText, type GuideBlock } from "./guide";
 
 describe("GUIDE_ARTICLES", () => {
   it("starts with the six original articles, in order, with the agreed titles (the library follows)", () => {
@@ -54,6 +54,45 @@ describe("GUIDE_ARTICLES", () => {
   it("makes no promises about outcomes", () => {
     const text = JSON.stringify(GUIDE_ARTICLES);
     for (const word of ["보장", "확률", "반드시 이뤄", "무조건", "합격", "재회"]) expect(text).not.toContain(word);
+  });
+});
+
+describe("guideSectionText (llms-full, FAQ answers, length and style checks)", () => {
+  const withBlocks = (...blocks: GuideBlock[]) => guideSectionText({ heading: "제목", body: "첫 문단이에요.", blocks });
+
+  it("is the body alone when the section has no blocks", () => {
+    expect(guideSectionText({ heading: "제목", body: "첫 문단이에요." })).toBe("첫 문단이에요.");
+    expect(withBlocks()).toBe("첫 문단이에요.");
+  });
+
+  it("puts every paragraph, item, step and callout on its own line after the body, with no list marks", () => {
+    expect(
+      withBlocks(
+        { kind: "p", text: "둘째 문단이에요." },
+        { kind: "list", items: ["하나", "둘"] },
+        { kind: "list", ordered: true, items: ["먼저", "다음"] },
+        { kind: "steps", items: [{ title: "자리", text: "자리를 봐요." }, { title: "그림", text: "그림을 봐요." }] },
+        { kind: "callout", tone: "caution", title: "중요한 결정", text: "전문가와 상의해 주세요." },
+      ),
+    ).toBe(["첫 문단이에요.", "둘째 문단이에요.", "하나", "둘", "먼저", "다음", "자리: 자리를 봐요.", "그림: 그림을 봐요.", "중요한 결정: 전문가와 상의해 주세요."].join("\n"));
+  });
+
+  it("flattens a table after its caption, one row per line as head: cell pairs", () => {
+    const table: GuideBlock = { kind: "table", caption: "오행과 계절", head: ["오행", "계절"], rows: [["목(木)", "봄"], ["화(火)", "여름"]] };
+    expect(withBlocks(table)).toBe(["첫 문단이에요.", "오행과 계절", "오행: 목(木), 계절: 봄", "오행: 화(火), 계절: 여름"].join("\n"));
+  });
+
+  it("names a card row's cards, and keeps the captions of figures, card rows and diagrams (never an image's alt)", () => {
+    expect(
+      withBlocks(
+        { kind: "cardRow", cards: ["major-00-fool", "major-17-star"], caption: "두 장" },
+        { kind: "cardRow", cards: ["major-01-magician", "cups-01"] },
+        { kind: "figure", src: "/cards/major-17-star.webp", alt: "별 카드 그림", width: 600, height: 1027, caption: "XVII 별" },
+        { kind: "figure", src: "/cards/major-17-star.webp", alt: "별 카드 그림", width: 600, height: 1027 },
+        { kind: "diagram", name: "five-elements", caption: "오행의 상생과 상극" },
+        { kind: "diagram", name: "daewoon" },
+      ),
+    ).toBe(["첫 문단이에요.", "두 장", "바보 · 별", "마법사 · 컵 에이스", "XVII 별", "오행의 상생과 상극"].join("\n"));
   });
 });
 

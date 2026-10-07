@@ -93,6 +93,39 @@ describe("guide article", () => {
   });
 });
 
+describe("guide article body", () => {
+  const renderSlug = async (slug: string) => render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
+  /** The tags under each section's box, keyed by its heading. */
+  const sectionTags = (heading: string) => [...(screen.getByRole("heading", { level: 2, name: heading }).parentElement?.children ?? [])].map((el) => el.tagName);
+
+  it("renders a section without blocks exactly as before: its heading, then its body as one paragraph", async () => {
+    const article = findArticle("the-hermit");
+    if (!article) throw new Error("the-hermit");
+    expect(article.sections.some((section) => section.blocks) || article.keyPoints).toBeFalsy();
+    await renderSlug(article.slug);
+    for (const section of article.sections) {
+      expect(sectionTags(section.heading)).toEqual(["H2", "P"]);
+      expect(screen.getByRole("heading", { level: 2, name: section.heading }).nextElementSibling?.textContent).toBe(section.body);
+    }
+    expect(screen.queryByText("한눈에 보기")).toBeNull();
+  });
+
+  it("shows 한눈에 보기 under the 요약, and a section's blocks after its body paragraph", async () => {
+    const article = findArticle("five-elements");
+    if (!article?.keyPoints) throw new Error("five-elements has no keyPoints");
+    await renderSlug(article.slug);
+    const points = screen.getByRole("list", { name: "한눈에 보기" });
+    expect(within(points).getAllByRole("listitem").map((li) => li.textContent)).toEqual(article.keyPoints);
+    const summary = screen.getByText(article.summary ?? "");
+    expect(summary.compareDocumentPosition(points) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sectionTags("살리고 누르는 관계")).toEqual(["H2", "P", "FIGURE", "UL"]);
+    expect(screen.getByRole("heading", { level: 2, name: "살리고 누르는 관계" }).nextElementSibling?.textContent).toBe(
+      article.sections.find((section) => section.heading === "살리고 누르는 관계")?.body,
+    );
+    expect(screen.getByRole("table", { name: "오행과 글자, 계절, 색" })).toBeTruthy();
+  });
+});
+
 describe("guide article metadata", () => {
   it("names the article's address on the root domain as its canonical and og:url", async () => {
     for (const slug of ["the-hermit", "five-elements", "how-to-read-tarot"]) {

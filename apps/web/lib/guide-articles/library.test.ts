@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { aiTells } from "../ai/style";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES, findArticle, type GuideArticle } from "../guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES, findArticle, guideSectionText, type GuideArticle } from "../guide";
 import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
 import { DAY_MASTER_ARTICLES } from "./day-masters";
 import { SAJU_ARTICLES } from "./saju";
@@ -16,10 +16,11 @@ const LIBRARY: readonly GuideArticle[] = [
   ...SPREAD_ARTICLES, ...TAROT_BASICS_ARTICLES, ...MAJOR_ARCANA_ARTICLES, ...SAJU_ARTICLES, ...SAJU_CONCEPT_ARTICLES, ...DAY_MASTER_ARTICLES,
 ];
 
-const bodyText = (article: GuideArticle) => article.sections.map((section) => section.body).join("\n");
+// A section's text is its body and its blocks' text (tables, lists, steps, callouts, captions).
+const bodyText = (article: GuideArticle) => article.sections.map(guideSectionText).join("\n");
 const allText = (article: GuideArticle) =>
-  [article.title, article.description, article.summary ?? "", ...article.sections.flatMap((section) => [section.heading, section.body])].join("\n");
-const bodyLength = (article: GuideArticle) => article.sections.reduce((sum, section) => sum + section.body.length, 0);
+  [article.title, article.description, article.summary ?? "", ...(article.keyPoints ?? []), ...article.sections.flatMap((section) => [section.heading, guideSectionText(section)])].join("\n");
+const bodyLength = (article: GuideArticle) => article.sections.reduce((sum, section) => sum + guideSectionText(section).length, 0);
 
 interface KbCard {
   id: string;

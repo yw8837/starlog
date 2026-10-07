@@ -1,0 +1,447 @@
+/*
+ * Rich blocks of a guide section, on the cream paper (Paper sets the ink colour and the navy focus
+ * ring). Text stays 13px or more; tables scroll sideways inside their own box, never the page.
+ */
+
+.block {
+  --rule: rgba(43, 33, 64, 0.16);
+  --tint: rgba(43, 33, 64, 0.05);
+  --sub: rgba(43, 33, 64, 0.72);
+  margin-top: 18px;
+}
+
+.p {
+  margin-top: 12px;
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+}
+
+.list {
+  margin-bottom: 0;
+  padding-left: 1.3em;
+  font-size: var(--fs-prose);
+  line-height: 1.7;
+}
+
+.list li + li {
+  margin-top: 10px;
+}
+
+.list li::marker {
+  color: var(--sub);
+}
+
+/* ---- table ---- */
+
+/* Scroll shadows: the paper-coloured covers move with the content, the shadows stay at the edges. */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background:
+    linear-gradient(to right, var(--paper) 30%, rgba(247, 239, 224, 0)) left / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--paper) 30%, rgba(247, 239, 224, 0)) right / 28px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(43, 33, 64, 0.2), transparent) left / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(43, 33, 64, 0.2), transparent) right / 12px 100% no-repeat scroll;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-body);
+  line-height: 1.55;
+}
+
+.tableCaption {
+  padding: 11px 14px 9px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.table th,
+.table td {
+  padding: 9px 12px;
+  border-top: 1px solid var(--rule);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* Column and row headers never wrap (keep them short); neither do cells of a short column. */
+.table th,
+.nowrap {
+  white-space: nowrap;
+}
+
+.table thead th {
+  background: var(--tint);
+  color: var(--sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.table tbody th {
+  font-weight: 700;
+}
+
+/* Phones: a five-column table of short cells fits the paper at 360px. */
+@media (max-width: 480px) {
+  .table {
+    font-size: 14px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 8px;
+  }
+
+  .table th:first-child {
+    padding-left: 12px;
+  }
+}
+
+@media (max-width: 374px) {
+  .table th,
+  .table td {
+    padding-inline: 6px;
+  }
+
+  .table th:first-child {
+    padding-left: 10px;
+  }
+}
+
+/* ---- figure, card row, captions ---- */
+
+.figure,
+.cardRow,
+.diagram {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin-inline: 0;
+  margin-bottom: 0;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(43, 33, 64, 0.2);
+}
+
+/* A tall picture (a card scan) at card size, not the paper's full width. */
+.imagePortrait {
+  width: min(100%, 200px);
+}
+
+.caption {
+  color: var(--sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  text-align: center;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardItem {
+  display: grid;
+  flex: 0 1 88px;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.card {
+  --card-w: 100%;
+}
+
+.cardName {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* ---- callout ---- */
+
+.callout {
+  padding: 13px 16px 14px;
+  border-left: 4px solid var(--tone-line);
+  border-radius: 4px 14px 14px 4px;
+  background: var(--tone-bg);
+}
+
+.callout[data-tone="tip"] {
+  --tone-line: #3d8a6a;
+  --tone-bg: rgba(127, 200, 169, 0.2);
+  --tone-ink: #2b654c;
+}
+
+.callout[data-tone="note"] {
+  --tone-line: var(--navy);
+  --tone-bg: rgba(46, 42, 120, 0.07);
+  --tone-ink: var(--navy);
+}
+
+.callout[data-tone="caution"] {
+  --tone-line: #b4533f;
+  --tone-bg: rgba(240, 138, 126, 0.17);
+  --tone-ink: #8a3726;
+}
+
+.calloutTitle {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.calloutTone {
+  margin-right: 8px;
+  color: var(--tone-ink);
+  font-size: var(--fs-sub);
+}
+
+.calloutText {
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* ---- steps ---- */
+
+.steps {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 12px;
+}
+
+.stepNumber {
+  display: grid;
+  grid-row: span 2;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--paper-ink);
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.stepTitle {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.7;
+}
+
+.stepText {
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+/* ---- diagrams ---- */
+
+.diagramSvg {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch {
+  flex: none;
+  width: 28px;
+  height: 10px;
+  overflow: visible;
+}
+
+/* 1-5 down the left column, 6-10 down the right. */
+.legendNumbered {
+  display: grid;
+  grid-template-rows: repeat(5, auto);
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  width: 100%;
+  max-width: 340px;
+}
+
+.legendNumber {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--paper-ink);
+  border-radius: 50%;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+/* The three positions, each under its card (the SVG and this row share one width). */
+.spreadLabels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  max-width: 340px;
+  margin: -2px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.spreadLabels li {
+  padding-inline: 4px;
+}
+
+/* SVG parts (sizes in the drawing's own units). */
+.node {
+  fill: var(--el);
+  stroke: rgba(43, 33, 64, 0.45);
+  stroke-width: 1.5;
+}
+
+.nodeKo,
+.nodeHanja,
+.slotNumber,
+.bandName,
+.mark {
+  fill: var(--paper-ink);
+  text-anchor: middle;
+}
+
+.nodeKo {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.nodeHanja {
+  font-size: 13px;
+}
+
+.sheng {
+  fill: none;
+  stroke: var(--paper-ink);
+  stroke-width: 2;
+}
+
+.ke {
+  fill: none;
+  stroke: #b4533f;
+  stroke-width: 1.6;
+  stroke-dasharray: 5 4;
+}
+
+.arrowSheng {
+  fill: var(--paper-ink);
+}
+
+.arrowKe {
+  fill: #b4533f;
+}
+
+.slot {
+  fill: rgba(43, 33, 64, 0.06);
+  stroke: var(--paper-ink);
+  stroke-width: 1.5;
+}
+
+/* The 2nd Celtic Cross card lies across the 1st. */
+.slotAcross {
+  fill: #efdcaa;
+}
+
+.slotNumber {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.slotNumberMid {
+  font-size: 18px;
+}
+
+.slotNumberSmall {
+  font-size: 13px;
+}
+
+.flow {
+  stroke: var(--paper-ink);
+  stroke-width: 1.6;
+}
+
+.before {
+  stroke: rgba(43, 33, 64, 0.5);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 3;
+}
+
+.birth {
+  fill: var(--paper-ink);
+}
+
+.band {
+  fill: rgba(43, 33, 64, 0.05);
+  stroke: var(--paper-ink);
+  stroke-width: 1.2;
+}
+
+.bandFirst {
+  fill: rgba(127, 200, 169, 0.35);
+}
+
+.bandName {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tick {
+  stroke: var(--paper-ink);
+  stroke-width: 1;
+}
+
+.mark {
+  font-size: 12px;
+}
+
+.markStart {
+  text-anchor: start;
+}

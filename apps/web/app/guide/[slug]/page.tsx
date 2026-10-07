@@ -17,6 +17,7 @@ import { appHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
 import { koreanDate } from "@/lib/legal";
 import { pageMetadata } from "@/lib/seo";
+import { GuideBlocks } from "../GuideBlocks";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
 import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
@@ -82,6 +83,18 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
             ) : (
               <p className={s.lead}>{article.description}</p>
             )}
+            {article.keyPoints ? (
+              <div className={s.keyPoints}>
+                <p id="key-points" className={s.answerLabel}>
+                  한눈에 보기
+                </p>
+                <ul className={s.keyList} aria-labelledby="key-points">
+                  {article.keyPoints.map((point) => (
+                    <li key={point}>{point}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
             {article.updated ? (
               <p className={s.dates}>
                 <time dateTime={article.updated}>{koreanDate(article.updated)}</time> 업데이트
@@ -97,10 +110,11 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
           ) : null}
 
           <Paper className={s.body}>
-            {article.sections.map((section) => (
+            {article.sections.map((section, i) => (
               <section key={section.heading} className={s.section}>
                 <h2 className={s.sectionTitle}>{section.heading}</h2>
                 <p className={s.prose}>{section.body}</p>
+                {section.blocks ? <GuideBlocks blocks={section.blocks} id={`s${i + 1}`} /> : null}
               </section>
             ))}
           </Paper>

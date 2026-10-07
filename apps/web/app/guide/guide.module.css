@@ -357,6 +357,28 @@
   line-height: 1.7;
 }
 
+/* 한눈에 보기: the article's three points under the 요약, in a quieter box. */
+.keyPoints {
+  margin-top: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.keyList {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding-left: 1.2em;
+  font-size: var(--fs-body);
+  line-height: 1.65;
+}
+
+.keyList li::marker {
+  color: var(--gold);
+}
+
 .dates {
   margin-top: 10px;
   color: var(--ink-sub);
@@ -383,6 +405,11 @@
   display: grid;
   gap: 26px;
   padding: 28px 24px 30px;
+}
+
+/* A grid item may be narrower than a wide table inside it: the table then scrolls in its own box. */
+.section {
+  min-width: 0;
 }
 
 .sectionTitle {

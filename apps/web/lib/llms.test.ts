@@ -7,7 +7,7 @@ import { GET as rssRoute } from "@/app/rss.xml/route";
 import { buildPayloads, findKey, groupBySite, MAX_URLS, parseSitemap, plan, SITES } from "../../../scripts/indexnow.mjs";
 import { MODEL_NAMES } from "./ai/style";
 import { SITE, won } from "./config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES } from "./guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES, guideSectionText } from "./guide";
 import { FEED_URL } from "./hosts";
 import { serviceFacts } from "./llms";
 
@@ -45,13 +45,16 @@ describe("llms.txt", () => {
     expect(facts).toContain("만세력");
   });
 
-  it("llms-full.txt carries every article in full, its 요약 first, and the FAQ", () => {
+  it("llms-full.txt carries every article in full (blocks included), its 요약 and 한눈에 보기 first, and the FAQ", () => {
     for (const article of GUIDE_ARTICLES) {
       expect(llmsFull).toContain(`### ${article.title}`);
       expect(llmsFull).toContain(`주소: ${SITE.guideUrl}/guide/${article.slug}`);
       expect(llmsFull).toContain(`요약: ${article.summary}`);
-      for (const section of article.sections) expect(llmsFull).toContain(section.body);
+      if (article.keyPoints) expect(llmsFull).toContain(["한눈에 보기:", ...article.keyPoints.map((point) => `- ${point}`)].join("\n"));
+      for (const section of article.sections) expect(llmsFull).toContain(`#### ${section.heading}\n\n${guideSectionText(section)}\n`);
     }
+    // The converted articles' tables, steps and callouts are there too, not only their first paragraphs.
+    expect(GUIDE_ARTICLES.filter((article) => article.sections.some((section) => section.blocks?.length)).length).toBeGreaterThanOrEqual(5);
     expect(llmsFull).toContain("## 자주 묻는 질문");
   });
 

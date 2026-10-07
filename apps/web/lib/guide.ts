@@ -4,12 +4,13 @@
  * saju-policy@1 (no hour pillar when the time is unknown, LMT day boundary, visible-glyph 오행 count).
  */
 
+import { getCard } from "@starlog/core";
 import { withGuideLibrary } from "./guide-articles";
-import type { GuideArticle, GuideCategory } from "./guideMeta";
+import type { GuideArticle, GuideBlock, GuideCategory, GuideSection } from "./guideMeta";
 
 // Server side only: the article data below. Client components import ./guideMeta (guide.client.test.ts).
 export { GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, guideIndexPath } from "./guideMeta";
-export type { GuideArticle, GuideCategory, GuideHowTo, GuideSection } from "./guideMeta";
+export type { GuideArticle, GuideBlock, GuideCalloutTone, GuideCategory, GuideHowTo, GuideSection, GuideThreeCardSpread } from "./guideMeta";
 
 const BASE_ARTICLES: readonly GuideArticle[] = [
   {
@@ -17,18 +18,51 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
     title: "타로 카드 읽는 법",
     category: "tarot",
     description: "타로 78장의 구성과 라이더-웨이트-스미스 덱, 자리·그림·내 상황 순서로 카드를 읽는 방법을 정리했어요.",
+    keyPoints: [
+      "타로는 메이저 22장과 마이너 56장, 모두 78장이에요.",
+      "자리를 먼저 보고, 그림을 살핀 뒤, 내 상황에 대 봐요.",
+      "질문은 '어떻게 하면 좋을까'처럼 열어 두면 좋아요.",
+    ],
     sections: [
       {
         heading: "타로 카드는 모두 몇 장인가요",
-        body: "타로는 78장으로 이뤄져 있어요. 인생의 큰 장면을 담은 메이저 아르카나 22장과, 일상의 장면을 담은 마이너 아르카나 56장이에요. 마이너 아르카나는 완드·컵·소드·펜타클 네 벌로 나뉘고, 벌마다 에이스부터 10까지의 숫자 카드 열 장과 시종·기사·여왕·왕 인물 카드 네 장이 있어요.",
+        body: "타로는 78장으로 이뤄져 있어요. 인생의 큰 장면을 담은 메이저 아르카나 22장과, 일상의 장면을 담은 마이너 아르카나 56장이에요.",
+        blocks: [
+          {
+            kind: "p",
+            text: "마이너 아르카나는 완드·컵·소드·펜타클 네 벌로 나뉘고, 벌마다 에이스부터 10까지의 숫자 카드 열 장과 시종·기사·여왕·왕 인물 카드 네 장이 있어요.",
+          },
+          {
+            kind: "table",
+            caption: "마이너 아르카나의 네 벌",
+            head: ["벌", "원소", "주로 읽는 영역"],
+            rows: [
+              ["완드", "불", "의욕과 움직임"],
+              ["컵", "물", "감정과 관계"],
+              ["소드(검)", "공기", "생각과 말"],
+              ["펜타클", "흙", "돈과 생활"],
+            ],
+          },
+        ],
       },
       {
         heading: "스타로그의 카드",
         body: "스타로그는 1909년에 나온 라이더-웨이트-스미스 덱의 원판 그림을 써요. 아서 에드워드 웨이트가 구성하고 파멜라 콜먼 스미스가 그렸어요. 대부분의 숫자 카드까지 사람과 풍경이 있는 장면으로 그려져 있어서, 그림을 보며 읽기 좋은 덱으로 오래 쓰여 왔어요.",
+        blocks: [{ kind: "cardRow", cards: ["major-00-fool", "major-01-magician", "major-02-high-priestess"], caption: "메이저 아르카나 0번부터 2번까지, 1909년 원판 그림" }],
       },
       {
         heading: "자리, 그림, 내 상황 순서로",
-        body: "같은 카드라도 '지금의 분위기' 자리에 나왔는지 '앞으로의 흐름' 자리에 나왔는지에 따라 읽는 방향이 달라져요. 그래서 먼저 자리를 확인하고, 그다음 그림 속 인물이 무엇을 들고 어디를 보는지, 어떤 풍경에 서 있는지 살펴요. 마지막으로 그 장면을 내 상황에 대 보고, 맞물리는 부분과 덜 맞는 부분을 나눠 보세요.",
+        body: "같은 카드라도 '지금의 분위기' 자리에 나왔는지 '앞으로의 흐름' 자리에 나왔는지에 따라 읽는 방향이 달라져요.",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              { title: "자리 확인하기", text: "먼저 카드가 놓인 자리를 확인해요." },
+              { title: "그림 살피기", text: "그다음 그림 속 인물이 무엇을 들고 어디를 보는지, 어떤 풍경에 서 있는지 살펴요." },
+              { title: "내 상황에 대 보기", text: "마지막으로 그 장면을 내 상황에 대 보고, 맞물리는 부분과 덜 맞는 부분을 나눠 보세요." },
+            ],
+          },
+        ],
       },
       {
         heading: "질문을 여는 법",
@@ -36,7 +70,8 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "타로는 무엇을 하는 도구인가요",
-        body: "타로는 앞일을 정해 주는 도구라기보다, 지금 상황을 다른 각도에서 보게 돕는 도구에 가까워요. 건강이나 돈, 법률처럼 중요한 결정은 전문가와 꼭 상의해 주세요.",
+        body: "타로는 앞일을 정해 주는 도구라기보다, 지금 상황을 다른 각도에서 보게 돕는 도구에 가까워요.",
+        blocks: [{ kind: "callout", tone: "caution", title: "중요한 결정은 전문가와", text: "건강이나 돈, 법률처럼 중요한 결정은 전문가와 꼭 상의해 주세요." }],
       },
     ],
   },
@@ -45,6 +80,11 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
     title: "정방향과 역방향은 뭐가 달라요?",
     category: "tarot",
     description: "카드가 거꾸로 나오는 역방향은 어떻게 읽을까요? 여러 읽기 방식과 스타로그가 역방향을 보여 주는 방법을 알려 드려요.",
+    keyPoints: [
+      "그림이 똑바로 보이면 정방향, 뒤집혀 보이면 역방향이에요.",
+      "역방향을 읽는 방식은 하나로 정해져 있지 않아요.",
+      "역방향이 나왔다고 나쁜 일이 생긴다는 뜻은 아니에요.",
+    ],
     sections: [
       {
         heading: "역방향은 어떻게 생기나요",
@@ -52,11 +92,42 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "역방향을 읽는 여러 방식",
-        body: "역방향을 읽는 방식은 하나로 정해져 있지 않아요. 정방향 뜻의 반대로 읽기도 하고, 같은 기운이 약하거나 늦게 나타난다고 보기도 해요. 밖으로 드러나기보다 마음속에서 일어나는 일로 읽기도 하고, 역방향을 아예 쓰지 않는 사람도 있어요.",
+        body: "역방향을 읽는 방식은 하나로 정해져 있지 않아요.",
+        blocks: [
+          {
+            kind: "list",
+            items: [
+              "정방향 뜻의 반대로 읽기",
+              "같은 기운이 약하거나 늦게 나타난다고 보기",
+              "밖으로 드러나기보다 마음속에서 일어나는 일로 읽기",
+              "역방향을 아예 쓰지 않기",
+            ],
+          },
+        ],
       },
       {
         heading: "역방향은 나쁜 카드인가요",
-        body: "역방향이 나왔다고 나쁜 일이 생긴다는 뜻은 아니에요. 예를 들어 별 카드의 정방향을 회복과 희망으로 읽는다면, 역방향은 그 희망이 잠시 흐려졌거나 나를 돌볼 여유가 줄어든 상태로 읽을 수 있어요. 같은 주제를 다른 쪽에서 비춰 보는 셈이에요.",
+        body: "역방향이 나왔다고 나쁜 일이 생긴다는 뜻은 아니에요. 예를 들어 별 카드의 정방향을 회복과 희망으로 읽는다면, 역방향은 그 희망이 잠시 흐려졌거나 나를 돌볼 여유가 줄어든 상태로 읽을 수 있어요.",
+        blocks: [
+          {
+            kind: "figure",
+            src: "/cards/major-17-star.webp",
+            alt: "별 카드 그림: 큰 별 하나와 작은 별 일곱 개 아래에서 여인이 두 항아리의 물을 붓고 있어요",
+            width: 600,
+            height: 1027,
+            caption: "XVII 별 · 라이더-웨이트-스미스 덱(1909)",
+          },
+          {
+            kind: "table",
+            caption: "별 카드를 정방향과 역방향으로 읽으면",
+            head: ["구분", "정방향", "역방향"],
+            rows: [
+              ["한 줄로", "요란하지 않게 조금씩 다시 채워지는 회복과 희망의 때", "희망을 믿기 어려워졌거나, 나를 채우기보다 퍼 주기만 해서 회복이 더딘 상태"],
+              ["핵심 낱말", "다시 채워지는 흐름, 조용한 희망", "희망이 흐려짐, 회복이 더딤"],
+            ],
+          },
+          { kind: "callout", tone: "tip", title: "같은 주제, 다른 쪽", text: "역방향은 같은 주제를 다른 쪽에서 비춰 보는 셈이에요." },
+        ],
       },
       {
         heading: "스타로그에서는",
@@ -97,14 +168,44 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
     title: "오행이 뭐예요?",
     category: "saju",
     description: "목·화·토·금·수 다섯 기운이 서로 살리고 누르는 관계와, 스타로그가 명식에서 오행 개수를 세는 방법을 알려 드려요.",
+    keyPoints: [
+      "오행은 목·화·토·금·수 다섯 가지 기운이에요.",
+      "서로 살리는 상생과 서로 누르는 상극으로 이어져요.",
+      "많거나 없다고 해서 좋고 나쁨이 정해지지는 않아요.",
+    ],
     sections: [
       {
         heading: "다섯 가지 기운",
-        body: "오행은 목(木)·화(火)·토(土)·금(金)·수(水) 다섯 가지 기운이에요. 사주의 천간 열 글자와 지지 열두 글자는 모두 이 다섯 가운데 하나에 속해요. 예를 들어 천간 병(丙)은 불인 화, 지지 인(寅)은 나무인 목이에요.",
+        body: "오행은 목(木)·화(火)·토(土)·금(金)·수(水) 다섯 가지 기운이에요. 사주의 천간 열 글자와 지지 열두 글자는 모두 이 다섯 가운데 하나에 속해요.",
+        blocks: [
+          {
+            kind: "table",
+            caption: "오행과 글자, 계절, 색",
+            head: ["오행", "천간", "지지", "계절", "전통 색"],
+            rows: [
+              ["목", "갑·을", "인·묘", "봄", "푸른색"],
+              ["화", "병·정", "사·오", "여름", "붉은색"],
+              ["토", "무·기", "진·술·축·미", "환절기", "누런색"],
+              ["금", "경·신", "신·유", "가을", "흰색"],
+              ["수", "임·계", "해·자", "겨울", "검은색"],
+            ],
+          },
+          { kind: "p", text: "예를 들어 천간 병(丙)은 불인 화, 지지 인(寅)은 나무인 목이에요." },
+        ],
       },
       {
         heading: "살리고 누르는 관계",
-        body: "오행은 서로 살리기도 하고 누르기도 해요. 나무는 불을, 불은 흙을, 흙은 쇠를, 쇠는 물을, 물은 다시 나무를 살려요. 반대로 나무는 흙을, 흙은 물을, 물은 불을, 불은 쇠를, 쇠는 나무를 눌러요. 앞의 관계를 상생, 뒤의 관계를 상극이라고 해요.",
+        body: "오행은 서로 살리기도 하고 누르기도 해요.",
+        blocks: [
+          { kind: "diagram", name: "five-elements" },
+          {
+            kind: "list",
+            items: [
+              "상생: 나무는 불을, 불은 흙을, 흙은 쇠를, 쇠는 물을, 물은 다시 나무를 살려요.",
+              "상극: 나무는 흙을, 흙은 물을, 물은 불을, 불은 쇠를, 쇠는 나무를 눌러요.",
+            ],
+          },
+        ],
       },
       {
         heading: "스타로그가 세는 방법",
@@ -112,7 +213,8 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "오행이 많거나 없으면 나쁜가요",
-        body: "어떤 오행이 많거나 하나도 없다고 해서 좋고 나쁨이 정해지지는 않아요. 명리에서는 글자가 놓인 자리와 태어난 계절, 글자끼리의 관계를 함께 봐요. 겉으로 보이는 개수가 0이어도 지장간에 숨어 있을 수 있어요.",
+        body: "어떤 오행이 많거나 하나도 없다고 해서 좋고 나쁨이 정해지지는 않아요. 명리에서는 글자가 놓인 자리와 태어난 계절, 글자끼리의 관계를 함께 봐요.",
+        blocks: [{ kind: "callout", tone: "tip", title: "개수가 0이어도", text: "겉으로 보이는 개수가 0이어도 지장간에 숨어 있을 수 있어요." }],
       },
       {
         heading: "화면의 색",
@@ -179,3 +281,30 @@ export const findArticle = (slug: string): GuideArticle | undefined => GUIDE_ART
 
 /** One tab's list: the category's articles in their GUIDE_ARTICLES order. */
 export const articlesIn = (category: GuideCategory): GuideArticle[] => GUIDE_ARTICLES.filter((article) => article.category === category);
+
+/**
+ * A block's text as plain lines, with no list marks: each item, step or table row on its own line
+ * (a row as "head: cell" pairs), card names for a card row, and captions (never an image's alt).
+ */
+function blockLines(block: GuideBlock): string[] {
+  switch (block.kind) {
+    case "p":
+      return [block.text];
+    case "list":
+      return [...block.items];
+    case "steps":
+      return block.items.map((step) => `${step.title}: ${step.text}`);
+    case "callout":
+      return [`${block.title}: ${block.text}`];
+    case "table":
+      return [block.caption, ...block.rows.map((row) => row.map((cell, i) => `${block.head[i]}: ${cell}`).join(", "))];
+    case "cardRow":
+      return [...(block.caption ? [block.caption] : []), block.cards.map((id) => getCard(id).names.ko).join(" · ")];
+    case "figure":
+    case "diagram":
+      return block.caption ? [block.caption] : [];
+  }
+}
+
+/** A section as plain text: its body, then its blocks' lines (llms-full, FAQ answers, length and style checks). */
+export const guideSectionText = (section: GuideSection): string => [section.body, ...(section.blocks ?? []).flatMap(blockLines)].join("\n");

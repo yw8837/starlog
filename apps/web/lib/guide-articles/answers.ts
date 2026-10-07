@@ -157,7 +157,8 @@ export const GUIDE_HOWTO: Readonly<Record<string, GuideHowTo>> = {
     name: "타로 카드 읽는 순서",
     steps: [
       { name: "질문을 열어 두기", text: "질문은 '될까, 안 될까'보다 '어떻게 하면 좋을까'처럼 열어 두면 읽을 거리가 많아져요." },
-      { name: "자리와 그림 보기", text: "그래서 먼저 자리를 확인하고, 그다음 그림 속 인물이 무엇을 들고 어디를 보는지, 어떤 풍경에 서 있는지 살펴요." },
+      { name: "자리 확인하기", text: "먼저 카드가 놓인 자리를 확인해요." },
+      { name: "그림 살피기", text: "그다음 그림 속 인물이 무엇을 들고 어디를 보는지, 어떤 풍경에 서 있는지 살펴요." },
       { name: "내 상황에 대 보기", text: "마지막으로 그 장면을 내 상황에 대 보고, 맞물리는 부분과 덜 맞는 부분을 나눠 보세요." },
     ],
   },
@@ -205,17 +206,18 @@ export const GUIDE_HOWTO: Readonly<Record<string, GuideHowTo>> = {
  */
 export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: string }>> = Object.fromEntries(
   [
-    ...["how-to-read-tarot", "upright-and-reversed", "saju-without-birth-time", "five-elements", "the-hermit", "the-star"].map(
-      (slug) => [slug, { published: "2026-09-30", updated: "2026-10-02" }] as const,
-    ),
+    ...["saju-without-birth-time", "the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-02" }] as const),
     ...[
-      "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "minor-arcana-suits", "court-cards",
+      "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "minor-arcana-suits", "court-cards",
       "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
       "wheel-of-fortune", "justice", "the-hanged-man", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
-      "heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune",
+      "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune",
     ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-02" }] as const),
     // death: "unrelated to real death" became "an ending, but not read only negatively".
     ["death", { published: "2026-10-01", updated: "2026-10-06" }] as const,
+    // The same words restructured into tables, diagrams, steps and callouts, with 한눈에 보기 added.
+    ...["how-to-read-tarot", "upright-and-reversed", "five-elements"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-07" }] as const),
+    ...["celtic-cross-spread", "heavenly-stems", "earthly-branches"].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-07" }] as const),
     ...[
       "major-and-minor-arcana", "wands-suit", "cups-suit", "swords-suit", "pentacles-suit", "major-arcana-overview",
       "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",

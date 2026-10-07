@@ -1,6 +1,6 @@
 import { CONSTELLATIONS, cardImage } from "@starlog/core";
 import { SITE } from "./config";
-import { GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, type GuideArticle, type GuideCategory } from "./guide";
+import { GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, type GuideArticle, type GuideCategory } from "./guide";
 import { absoluteUrl } from "./hosts";
 
 /**
@@ -127,11 +127,11 @@ const asQuestion = (text: string) => (text.trim().endsWith("?") ? text.trim() : 
 
 /**
  * Question-and-answer pairs the page shows: the title when it asks a question (answered by the 요약),
- * then every section whose heading is a question (answered by its body).
+ * then every section whose heading is a question (answered by its text: the body, then its blocks).
  */
 export function guideQuestions(article: GuideArticle): Array<{ q: string; a: string }> {
   const fromTitle = isQuestion(article.title) && article.summary ? [{ q: asQuestion(article.title), a: article.summary }] : [];
-  const fromSections = article.sections.filter((section) => isQuestion(section.heading)).map((section) => ({ q: asQuestion(section.heading), a: section.body }));
+  const fromSections = article.sections.filter((section) => isQuestion(section.heading)).map((section) => ({ q: asQuestion(section.heading), a: guideSectionText(section) }));
   return [...fromTitle, ...fromSections];
 }
 

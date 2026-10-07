@@ -8,7 +8,7 @@ import GuideSajuPage from "@/app/guide/saju/page";
 import GuideTarotPage from "@/app/guide/tarot/page";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { SITE } from "./config";
-import { GUIDE_ARTICLES, articlesIn, findArticle } from "./guide";
+import { GUIDE_ARTICLES, articlesIn, findArticle, guideSectionText } from "./guide";
 import { guideQuestions, jsonLdScript, rankingItemListJsonLd } from "./jsonld";
 
 afterEach(cleanup);
@@ -159,10 +159,22 @@ describe("JSON-LD", () => {
     const questions = guideQuestions(article);
     expect(byType(nodes, "FAQPage")).toHaveLength(questions.length >= 2 ? 1 : 0);
     expect(byType(nodes, "HowTo")).toHaveLength(article.howTo ? 1 : 0);
-    // The answer every Q&A node quotes is on the page as written (in the article, not only in the scripts).
+    // The answer every Q&A node quotes is on the page as written (in the article, not only in the scripts):
+    // every line of it, and for a line that joins a table row, a step or a card row, every part of it.
     const text = document.querySelector("article")?.textContent ?? "";
     expect(text).toContain(article.summary);
-    for (const { a } of questions) expect(text).toContain(a);
+    const onPage = (line: string) => text.includes(line) || line.split(/: |, | · /).every((part) => text.includes(part));
+    for (const { a } of questions) for (const line of a.split("\n")) expect(onPage(line), line).toBe(true);
+  });
+
+  it("answers a question section with its blocks too: the suits table of 타로 카드 읽는 법, not only its first paragraph", () => {
+    const article = findArticle("how-to-read-tarot");
+    const section = article?.sections.find((s) => s.heading === "타로 카드는 모두 몇 장인가요");
+    if (!article || !section?.blocks) throw new Error("how-to-read-tarot: the section with the suits table");
+    const answer = guideQuestions(article).find(({ q }) => q === "타로 카드는 모두 몇 장인가요?")?.a;
+    expect(answer).toBe(guideSectionText(section));
+    expect(answer?.startsWith(section.body)).toBe(true);
+    expect(answer).toContain("벌: 완드, 원소: 불, 주로 읽는 영역: 의욕과 움직임");
   });
 
   it("marks the how-to articles: 지금의 한 장 사용법 and 타로 카드 읽는 법", async () => {

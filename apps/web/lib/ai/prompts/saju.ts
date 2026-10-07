@@ -33,7 +33,7 @@ export const DAY_MASTER_IMAGE: Record<string, string> = {
   己: "논밭의 흙", 庚: "바위와 무쇠", 辛: "다듬은 보석", 壬: "큰 강과 바다", 癸: "이슬과 빗물",
 };
 
-const SEASON: Record<Branch, string> = {
+export const SEASON: Record<Branch, string> = {
   寅: "봄이 시작되는 달", 卯: "봄의 한가운데", 辰: "봄이 끝나 가는 달", 巳: "여름이 시작되는 달", 午: "여름의 한가운데", 未: "여름이 끝나 가는 달",
   申: "가을이 시작되는 달", 酉: "가을의 한가운데", 戌: "가을이 끝나 가는 달", 亥: "겨울이 시작되는 달", 子: "겨울의 한가운데", 丑: "겨울이 끝나 가는 달",
 };

@@ -1,6 +1,6 @@
 import { SITE, won } from "./config";
 import { faqGroups } from "./faq";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, type GuideArticle } from "./guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, type GuideArticle } from "./guide";
 import { times } from "./helpGuide";
 import { absoluteUrl } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
@@ -89,7 +89,7 @@ export function llmsTxt(site: Site = SITE): string {
   ].join("\n");
 }
 
-/** One guide article in full: the 요약 first, then every section. */
+/** One guide article in full: the 요약 and 한눈에 보기 first, then every section with its blocks' text. */
 function articleText(article: GuideArticle): string {
   return [
     `### ${article.title}`,
@@ -97,7 +97,8 @@ function articleText(article: GuideArticle): string {
     `주소: ${absoluteUrl(`/guide/${article.slug}`)}${article.updated ? ` (업데이트 ${article.updated})` : ""}`,
     "",
     ...(article.summary ? [`요약: ${article.summary}`, ""] : []),
-    ...article.sections.flatMap((section) => [`#### ${section.heading}`, "", section.body, ""]),
+    ...(article.keyPoints?.length ? ["한눈에 보기:", ...article.keyPoints.map((point) => `- ${point}`), ""] : []),
+    ...article.sections.flatMap((section) => [`#### ${section.heading}`, "", guideSectionText(section), ""]),
   ].join("\n");
 }
 
