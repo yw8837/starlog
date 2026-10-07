@@ -24,6 +24,18 @@ describe("JoinFlow", () => {
     expect(screen.getByText("용우님이 별자리를 공유하면 이 닉네임이 이미지에 보여요")).toBeTruthy();
   });
 
+  it("tells the friend, right above the consent checkbox and as its description, that the nickname may show on the owner's share image and the birth date is not stored", () => {
+    render(<JoinFlow state={OPEN} />);
+    const note = screen.getByText("내 닉네임이 용우님의 별자리 공유 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.");
+    const consent = screen.getByRole("checkbox");
+    expect(note.id).not.toBe("");
+    expect(consent.getAttribute("aria-describedby")?.split(" ")).toContain(note.id);
+    // above the checkbox, in the same group, with nothing between them
+    expect(note.nextElementSibling).toBe(consent.closest("label"));
+    // the friend's score is not on the share image, so the form never says it is
+    expect(document.body.textContent).not.toContain("인연 점수가 용우님의 별자리 공유 이미지");
+  });
+
   it("does not move on until the birth date is picked (no default date)", () => {
     render(<JoinFlow state={OPEN} />);
     fireEvent.change(screen.getByLabelText("닉네임"), { target: { value: "하늘" } });

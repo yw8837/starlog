@@ -51,7 +51,7 @@ export function llmsTxt(site: Site = SITE): string {
     ...(site.features.bonds
       ? [
           link("이번 주 행운 번호", "/lucky", "생년월일의 오행과 이번 주 카드로 고른 번호 6개예요."),
-          link("별자리 인연 랭킹", "/ranking", "열두 별자리의 이번 주 인연 점수 순위예요."),
+          link("별자리 인연 랭킹", "/ranking", "열두 별자리의 인연 점수 순위예요."),
         ]
       : []),
     link(INFO_PAGES.about.title, INFO_PAGES.about.path, "서비스 소개, 두 안내자, 하지 않는 것, 운영사."),

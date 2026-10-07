@@ -21,12 +21,12 @@ export function signDateParts(sign: ConstellationDef): [string, string] {
 export const signDates = (sign: ConstellationDef) => signDateParts(sign).join(" ~ ");
 
 type SignIndexProps = {
-  /** this week's top 3 per sign; null when they could not be read (cards without names) */
+  /** the all-time top 3 per sign; null when they could not be read (cards without names) */
   leaders: Partial<Record<SignId, LeaderView[]>> | null;
 };
 
 /**
- * 별자리 인연 랭킹: one card per sign. This week's 1위 gets the card's showpiece (the sign's figure fully
+ * 별자리 인연 랭킹: one card per sign. The 1위 gets the card's showpiece (the sign's figure fully
  * lit, the nickname and the 인연 total in large type); 2·3위 are listed beside it. A sign with no 1위 yet
  * shows its figure unlit with "첫 1위 자리". The device's own sun sign (remembered when 별자리 인연 was
  * started here) is marked after load.
@@ -54,9 +54,7 @@ export function SignIndex({ leaders }: SignIndexProps) {
               <ConstellationArt sign={c.id} lit={first ? c.slots : 0} size={96} decorative className={s.champArt} />
               {first ? (
                 <p className={s.champText}>
-                  <span className={s.crown}>
-                    <span className="sr-only">이번 주 </span>1위
-                  </span>
+                  <span className={s.crown}>1위</span>
                   <span className={s.champName}>{first.nickname}</span>
                   <span className={s.champTotal}>
                     <span className="sr-only">인연 </span>
@@ -80,7 +78,7 @@ export function SignIndex({ leaders }: SignIndexProps) {
                   </Link>
                 </>
               ) : rest.length ? (
-                <ol className={s.top} aria-label={`${c.ko} 이번 주 2·3위`}>
+                <ol className={s.top} aria-label={`${c.ko} 2·3위`}>
                   {rest.map((row) => (
                     <li key={row.rank} className={s.row}>
                       <span className={s.medal} data-rank={row.rank}>

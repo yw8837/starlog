@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { CONSTELLATIONS, getConstellation, type SignId } from "@starlog/core";
 import { CompletedCard } from "@/components/bonds/CompletedCard";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
@@ -17,28 +17,20 @@ import { StarList } from "../../bonds/StarList";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./RankingView.module.css";
 
-export type BoardTab = "week" | "all";
-
-const TABS: { id: BoardTab; label: string; note: string }[] = [
-  { id: "week", label: "이번 주", note: "월요일 0시(한국 시간)에 새로 시작해요" },
-  { id: "all", label: "명예의 전당", note: "지금까지 완성한 기록 전체예요" },
-];
-
 const PLACES = ["first", "second", "third"] as const;
 
 /**
- * One sign's ranking (spec §6). The board: tabs (이번 주 / 명예의 전당) over the same layout, a podium for
- * 1~3위, 내 순위 (always shown, even beyond the list) and 4~20위 as a compact list. Beside it (below on
- * phones): my constellation of this sign (complete, filling or another sign in progress) and the other signs.
+ * One sign's ranking (spec §6): a single all-time board that never restarts. A podium for 1~3위, 내 순위
+ * (always shown, even beyond the list) and 4~50위 as a compact list. Beside it (below on phones): my
+ * constellation of this sign (complete, filling or another sign in progress) and the other signs.
  *
- * Phones: header → tabs → podium → 내 순위 → 4~20위 → my constellation → signs.
+ * Phones: header → podium → 내 순위 → 4~50위 → my constellation → signs.
  * Desktop: header, my constellation and signs on the left; the board on the right with 내 순위 kept in view.
  */
 export function RankingView({ sign }: { sign: SignId }) {
   const def = getConstellation(sign);
   const [data, setData] = useState<Ranking | undefined>(undefined);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<BoardTab>("week");
 
   const load = useCallback(async () => {
     setError("");
@@ -72,7 +64,7 @@ export function RankingView({ sign }: { sign: SignId }) {
         <h2 id="board-title" className="sr-only">
           {def.ko} 순위
         </h2>
-        <Board sign={sign} tab={tab} onTab={setTab} data={data} error={error} reload={load} />
+        <Board sign={sign} data={data} error={error} reload={load} />
       </section>
 
       {data ? (
@@ -98,122 +90,78 @@ export function RankingView({ sign }: { sign: SignId }) {
 
 type BoardProps = {
   sign: SignId;
-  tab: BoardTab;
-  onTab: (tab: BoardTab) => void;
   data: Ranking | undefined;
   error: string;
   reload: () => void;
 };
 
-/** The tabs and, for the chosen one, podium → 내 순위 → 4~20위 (내 순위 moves under the list on desktop). */
-export function Board({ sign, tab, onTab, data, error, reload }: BoardProps) {
+/** The podium → 내 순위 → 4~50위 (내 순위 moves under the list on desktop). */
+export function Board({ sign, data, error, reload }: BoardProps) {
   const def = getConstellation(sign);
-  const id = useId();
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const current = TABS.find((t) => t.id === tab)!;
-
-  const onKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    const next = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: TABS.length - 1 }[event.key];
-    if (next === undefined) return;
-    event.preventDefault();
-    const target = (next + TABS.length) % TABS.length;
-    onTab(TABS[target]!.id);
-    tabRefs.current[target]?.focus();
-  };
-
-  const rows = data ? data[tab] : [];
+  const rows = data ? data.all : [];
   return (
-    <>
-      <div className={s.tabs} role="tablist" aria-label="랭킹 기간">
-        {TABS.map((t, i) => (
-          <button
-            key={t.id}
-            ref={(el) => {
-              tabRefs.current[i] = el;
-            }}
-            type="button"
-            role="tab"
-            id={`${id}-${t.id}`}
-            aria-selected={t.id === tab}
-            aria-controls={`${id}-panel`}
-            tabIndex={t.id === tab ? 0 : -1}
-            className={s.tab}
-            onClick={() => onTab(t.id)}
-            onKeyDown={(e) => onKey(e, i)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-      <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${tab}`} className={s.panel}>
-        <p className={s.tabNote}>{current.note}</p>
-        {data === undefined ? (
-          error ? (
-            <div className={s.state}>
-              <p className={b.error} role="alert">
-                {error}
-              </p>
-              <Button variant="secondary" onClick={reload}>
-                다시 불러오기
-              </Button>
-            </div>
-          ) : (
-            // The final shape while loading (no layout shift when the lists arrive).
-            <div className={s.skeleton} aria-busy="true" data-skeleton="">
-              <div className={s.skeletonPodium} />
-              <div className={s.skeletonList} />
-              <p className="sr-only" role="status">
-                랭킹을 불러오는 중이에요
-              </p>
-            </div>
-          )
+    <div className={s.panel}>
+      {data === undefined ? (
+        error ? (
+          <div className={s.state}>
+            <p className={b.error} role="alert">
+              {error}
+            </p>
+            <Button variant="secondary" onClick={reload}>
+              다시 불러오기
+            </Button>
+          </div>
         ) : (
-          <>
-            <Podium sign={sign} rows={rows.slice(0, 3)} />
-            {rows.length === 0 ? (
-              <div className={s.empty}>
-                <p>{tab === "week" ? `이번 주에 ${def.ko}를 완성한 사람이 아직 없어요. 첫 번째가 되어 보세요.` : `아직 ${def.ko}를 완성한 사람이 없어요.`}</p>
-                {tab === "week" && data.all.length ? (
-                  <button type="button" className={s.textButton} onClick={() => onTab("all")}>
-                    명예의 전당 보기
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-            <MyRank sign={sign} tab={tab} data={data} reload={reload} onShowAll={() => onTab("all")} />
-            {rows.length > 3 ? (
-              <ol className={s.list} start={4} aria-label={`4~${rows.length}위`}>
-                {rows.slice(3).map((row) => (
-                  <li key={`${row.rank}-${row.nickname}`} className={s.row} data-mine={row.mine ? "" : undefined}>
-                    <span className={s.rank}>
-                      {row.rank}
-                      <span className={s.unit}>위</span>
-                    </span>
-                    <span className={s.name}>
-                      {row.nickname}
-                      {row.mine ? <span className={s.me}>나</span> : null}
-                    </span>
-                    <span className={s.total}>
-                      <span className="sr-only">인연 </span>
-                      {row.total}
-                      <span className={s.unit}>점</span>
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            ) : null}
-          </>
-        )}
-      </div>
-    </>
+          // The final shape while loading (no layout shift when the list arrives).
+          <div className={s.skeleton} aria-busy="true" data-skeleton="">
+            <div className={s.skeletonPodium} />
+            <div className={s.skeletonList} />
+            <p className="sr-only" role="status">
+              랭킹을 불러오는 중이에요
+            </p>
+          </div>
+        )
+      ) : (
+        <>
+          <Podium sign={sign} rows={rows.slice(0, 3)} />
+          {rows.length === 0 && !data.mine ? (
+            <div className={s.empty}>
+              <p>아직 {def.ko}를 완성한 사람이 없어요. 첫 번째가 되어 보세요.</p>
+            </div>
+          ) : null}
+          <MyRank sign={sign} data={data} reload={reload} />
+          {rows.length > 3 ? (
+            <ol className={s.list} start={4} aria-label={`4~${rows.length}위`}>
+              {rows.slice(3).map((row) => (
+                <li key={`${row.rank}-${row.nickname}`} className={s.row} data-mine={row.mine ? "" : undefined}>
+                  <span className={s.rank}>
+                    {row.rank}
+                    <span className={s.unit}>위</span>
+                  </span>
+                  <span className={s.name}>
+                    {row.nickname}
+                    {row.mine ? <span className={s.me}>나</span> : null}
+                  </span>
+                  <span className={s.total}>
+                    <span className="sr-only">인연 </span>
+                    {row.total}
+                    <span className={s.unit}>점</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+        </>
+      )}
+    </div>
   );
 }
 
 /**
  * 1~3위 on soft gold, silver and bronze steps: 1위 in the middle on the tallest, 2위 on the left, 3위 on the
- * right, each step with its medal hung over the top edge, the name and 인연 total above it. The sign's
- * constellation floats behind the podium; a soft dark halo keeps the names readable over it. Read in rank
- * order (1, 2, 3); an empty place is only drawn.
+ * right, each step with its medal hung over the top edge, the name and 인연 total above it. An empty place
+ * keeps its medal too (dimmed, with 빈 자리 above it). The sign's constellation floats behind the podium; a
+ * soft dark halo keeps the names readable over it. Read in rank order (1, 2, 3); an empty place is only drawn.
  */
 function Podium({ sign, rows }: { sign: SignId; rows: RankingRowView[] }) {
   return (
@@ -244,7 +192,9 @@ function Podium({ sign, rows }: { sign: SignId; rows: RankingRowView[] }) {
                   </span>
                 ) : null}
               </div>
-              <div className={s.step}>{row ? <Medal place={(i + 1) as 1 | 2 | 3} /> : <span className={s.ghost} />}</div>
+              <div className={s.step}>
+                <Medal place={(i + 1) as 1 | 2 | 3} empty={!row} />
+              </div>
             </li>
           );
         })}
@@ -259,12 +209,27 @@ const METALS = {
   3: { stops: ["#f8d2ae", "#e2a46f", "#8a5a2b", "#c88a5a"], rim: "#6a4220", ink: "#3d2410" },
 } as const;
 
-/** A medal hung on its step: two ribbon straps from the top edge and a metal disc (gold, silver or bronze) with its place. */
-function Medal({ place }: { place: 1 | 2 | 3 }) {
+const MEDAL_NAMES = { 1: "1위 금메달", 2: "2위 은메달", 3: "3위 동메달" } as const;
+
+/**
+ * A medal hung on its step: a ribbon V (two straps from the top edge) and a round metal disc (gold, silver
+ * or bronze) with its place. On a held place the entry already reads "N위 name", so the medal is hidden from
+ * assistive tech; `empty` (nobody on this place yet) dims it and keeps its name (1위 금메달, …).
+ */
+function Medal({ place, empty = false }: { place: 1 | 2 | 3; empty?: boolean }) {
   const id = useId().replace(/:/g, "");
   const metal = METALS[place];
   return (
-    <svg className={s.medal} data-rank={place} viewBox="0 0 48 62" aria-hidden="true" focusable="false">
+    <svg
+      className={s.medal}
+      data-rank={place}
+      data-empty={empty ? "" : undefined}
+      viewBox="0 0 48 62"
+      role={empty ? "img" : undefined}
+      aria-label={empty ? MEDAL_NAMES[place] : undefined}
+      aria-hidden={empty ? undefined : true}
+      focusable="false"
+    >
       <defs>
         <linearGradient id={`${id}-m`} x1="0.15" y1="0" x2="0.85" y2="1">
           {metal.stops.map((c, i) => (
@@ -289,22 +254,22 @@ function Medal({ place }: { place: 1 | 2 | 3 }) {
   );
 }
 
-type MyRankProps = { sign: SignId; tab: BoardTab; data: Ranking; reload: () => void; onShowAll: () => void };
+type MyRankProps = { sign: SignId; data: Ranking; reload: () => void };
 
 /**
  * 내 순위, always shown: the rank and total of this device's completed constellation of the sign (also
- * beyond the list), why it is not on this week's board, that the name is kept off the rankings (with the
- * switch), or that a rank appears here once the sign is complete.
+ * beyond the list), that the name is kept off the rankings (with the switch), or that a rank appears here
+ * once the sign is complete.
  */
-export function MyRank({ sign, tab, data, reload, onShowAll }: MyRankProps) {
+export function MyRank({ sign, data, reload }: MyRankProps) {
   const def = getConstellation(sign);
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const mine = data.mine;
   const hidden = data.owner !== null && !data.owner.rankingPublic;
-  const rank = mine ? (tab === "week" ? mine.weekRank : mine.allRank) : null;
-  const leader = data[tab][0];
+  const rank = mine ? mine.allRank : null;
+  const leader = data.all[0];
 
   const start = async () => {
     setBusy(true);
@@ -342,27 +307,11 @@ export function MyRank({ sign, tab, data, reload, onShowAll }: MyRankProps) {
           </p>
           <p className={s.mySub}>
             {rank === 1
-              ? tab === "week"
-                ? "이번 주 1위예요"
-                : "명예의 전당 1위예요"
+              ? "1위예요"
               : leader && leader.total > mine.row.total
                 ? `1위와 ${leader.total - mine.row.total}점 차이예요`
                 : "1위와 같은 점수예요. 같은 점수는 먼저 완성한 순서예요."}
           </p>
-        </>
-      ) : mine && !hidden && tab === "week" ? (
-        <>
-          <p className={s.myHead}>
-            <span className={s.myLabel}>내 순위</span>
-            <strong className={s.myMain}>이번 주 순위에는 없어요</strong>
-          </p>
-          <p className={s.mySub}>
-            이번 주에 완성한 별자리만 이번 주 랭킹에 올라요.
-            {mine.allRank !== null ? ` 명예의 전당에서는 ${mine.allRank}위예요.` : ""}
-          </p>
-          <button type="button" className={s.textButton} onClick={onShowAll}>
-            명예의 전당 보기
-          </button>
         </>
       ) : hidden ? (
         <>
@@ -417,11 +366,12 @@ export function MyRank({ sign, tab, data, reload, onShowAll }: MyRankProps) {
 }
 
 /**
- * My constellation of this sign: complete (the share card and its stars), being filled (progress and
- * 초대하기), or another sign in progress (switch, confirmed once stars would be lost). Nothing when this
- * device fills nothing: 내 순위 offers 이 별자리 채우기 then.
+ * My constellation of this sign: complete (the share card and its stars; 내 순위 공유하기 while I hold a rank
+ * on the public ranking, else 공유하기), being filled (progress and 초대하기), or another sign in progress
+ * (switch, confirmed once stars would be lost). Nothing when this device fills nothing: 내 순위 offers
+ * 이 별자리 채우기 then.
  */
-function MyCard({ sign, data, reload }: { sign: SignId; data: Ranking; reload: () => void }) {
+export function MyCard({ sign, data, reload }: { sign: SignId; data: Ranking; reload: () => void }) {
   const def = getConstellation(sign);
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
@@ -435,9 +385,9 @@ function MyCard({ sign, data, reload }: { sign: SignId; data: Ranking; reload: (
         <CompletedCard
           row={{ ...mine.row, stars: mine.stars }}
           ownerNickname={data.owner.nickname}
-          weekRank={mine.weekRank}
           allRank={mine.allRank}
           filling={data.filling ? { sign: data.filling.sign, filled: data.filling.filled } : null}
+          shareLabel={mine.allRank !== null && data.owner.rankingPublic ? "내 순위 공유하기" : undefined}
           sharePrimary
           onRefilled={() => router.push("/bonds")}
         />

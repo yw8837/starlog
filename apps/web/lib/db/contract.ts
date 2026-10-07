@@ -188,7 +188,7 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect(await repo.bumpActions("o1", "2026-10-02")).toBe(1);
   });
 
-  it("gives every sign's top entries since a time in one call, with the ranking's order and visibility", async () => {
+  it("gives every sign's top entries (all time with `null`, or since a time) in one call, with the ranking's order and visibility", async () => {
     const repo = await make();
     for (const [id, name, pub] of [["a", "가", true], ["b", "나", true], ["c", "다", false], ["d", "라", true], ["e", "마", true]] as const) {
       await repo.upsertOwner(owner(id, name, pub));
@@ -208,6 +208,13 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
       ["leo", 1, "가", 380],
     ]);
     expect((await repo.topsBySign(0, 1)).map((t) => t.nickname)).toEqual(["마", "가"]);
+    // null: no start time at all, the same entries as the sign's all-time ranking
+    expect((await repo.topsBySign(null, 3)).map((t) => [t.sign, t.rank, t.nickname, t.total])).toEqual([
+      ["aries", 1, "마", 400],
+      ["aries", 2, "나", 350],
+      ["aries", 3, "가", 350],
+      ["leo", 1, "가", 380],
+    ]);
   });
 
   it("ranks complete, public constellations by total then earlier completion", async () => {

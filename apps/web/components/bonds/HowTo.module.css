@@ -1,0 +1,89 @@
+/* The three steps of 별자리 인연: the start screen's card and the dialog behind 사용법. */
+
+.card {
+  gap: 14px;
+}
+
+.steps {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(243, 220, 161, 0.35);
+  border-radius: 50%;
+  background: rgba(243, 220, 161, 0.1);
+  color: var(--gold);
+}
+
+.icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.4;
+}
+
+.num {
+  margin-right: 6px;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.body {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.inDialog {
+  margin-top: 16px;
+}
+
+/* 사용법: quiet, a text button under the title (44px tall for fingers). */
+.quiet {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--ink-sub);
+  font: inherit;
+  font-size: var(--fs-sub);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.quiet:hover {
+  color: var(--ink);
+}
+
+.quiet:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

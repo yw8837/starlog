@@ -85,7 +85,7 @@ describe("BondsHomeRow", () => {
     expect(screen.getByRole("navigation", { name: "별자리 인연 더 보기" })).toBeTruthy();
   });
 
-  it("tiles invite a device that has not started to make a constellation, whatever this week's best record is, and show the way to my numbers", async () => {
+  it("tiles invite a device that has not started to make a constellation, whatever the best record is, and show the way to my numbers", async () => {
     respond({ ok: true, owner: null, weekTop: { sign: "aries", total: 422 } });
     render(<BondsHomeRow enabled />);
     const ranking = await screen.findByRole("link", { name: /^별자리 인연 랭킹/ });
@@ -103,22 +103,22 @@ describe("BondsHomeRow", () => {
     expect((await screen.findByRole("link", { name: /^별자리 인연 랭킹/ })).textContent).toBe("별자리 인연 랭킹나의 인연들과 별자리를 만들어 봐요");
   });
 
-  it("the ranking tile shows my score and rank once a constellation is done: this week's, else all-time, else just the score", async () => {
+  it("the ranking tile shows my score and my all-time rank once a constellation is done, else just the score", async () => {
     const owner = (rankingPublic: boolean) => ({ nickname: "용우", rankingPublic, refillReadyAt: null });
     const completed = [{ id: "c1", sign: "aries", status: "complete", total: 412, startedAt: 1, completedAt: 5_000, stars: [star(0, 100), star(1, 100), star(2, 112), star(3, 100)] }];
     const body = { ok: true, invite: { code: "K7M4QX" }, filling: null, completed, top5: [], weekTop: { sign: "leo", total: 500 } };
     const tile = async () => screen.findByRole("link", { name: /^별자리 인연 랭킹/ });
 
-    respond({ ...body, owner: owner(true), ranks: { aries: { week: 3, all: 12 } } });
+    respond({ ...body, owner: owner(true), ranks: { aries: { all: 12 } } });
     render(<BondsHomeRow enabled />);
-    expect((await tile()).textContent).toBe("별자리 인연 랭킹내 양자리 412점 · 이번 주 3위");
+    expect((await tile()).textContent).toBe("별자리 인연 랭킹내 양자리 412점 · 12위");
     expect((await tile()).getAttribute("href")).toBe("/ranking");
     cleanup();
-    respond({ ...body, owner: owner(true), ranks: { aries: { week: null, all: 12 } } });
+    respond({ ...body, owner: owner(true), ranks: { aries: { all: null } } });
     render(<BondsHomeRow enabled />);
-    expect((await tile()).textContent).toBe("별자리 인연 랭킹내 양자리 412점 · 전체 12위");
+    expect((await tile()).textContent).toBe("별자리 인연 랭킹내 양자리 412점");
     cleanup();
-    respond({ ...body, owner: owner(false), ranks: { aries: { week: null, all: null } } });
+    respond({ ...body, owner: owner(false), ranks: { aries: { all: 12 } } });
     render(<BondsHomeRow enabled />);
     expect((await tile()).textContent).toBe("별자리 인연 랭킹내 양자리 412점");
   });
@@ -147,10 +147,10 @@ describe("BondsHomeRow", () => {
       filling: { row: { id: "c2", sign: "taurus", status: "filling", total: 60, startedAt: 6_000, completedAt: null }, stars: [star(0, 60)] },
       completed: [{ id: "c1", sign: "aries", status: "complete", total: 412, startedAt: 1, completedAt: 5_000, stars: [star(0, 100), star(1, 100), star(2, 112), star(3, 100)] }],
       top5: [],
-      ranks: { aries: { week: 1, all: 1 } },
+      ranks: { aries: { all: 1 } },
     });
     render(<BondsHomeRow enabled />);
-    expect((await tile()).textContent).toBe("별자리 인연 랭킹내 양자리 412점 · 이번 주 1위");
+    expect((await tile()).textContent).toBe("별자리 인연 랭킹내 양자리 412점 · 1위");
     expect(screen.getByText("황소자리 1/5 · 60점")).toBeTruthy();
   });
 

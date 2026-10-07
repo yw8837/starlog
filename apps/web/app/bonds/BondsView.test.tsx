@@ -1,9 +1,20 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { BondsView } from "./BondsView";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+
+// jsdom has no <dialog> methods; Modal calls showModal()/close().
+beforeAll(() => {
+  const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+  proto.showModal ??= function (this: HTMLElement) {
+    this.setAttribute("open", "");
+  };
+  proto.close ??= function (this: HTMLElement) {
+    this.removeAttribute("open");
+  };
+});
 
 afterEach(() => {
   cleanup();
@@ -25,5 +36,42 @@ describe("BondsView loading (Q-06)", () => {
     const { container } = render(<BondsView initialSign={null} />);
     expect(await screen.findByRole("button", { name: "별자리 인연 시작하기" })).toBeTruthy();
     expect(container.querySelector("[data-skeleton]")).toBeNull();
+  });
+});
+
+const OWNER_ME = {
+  ok: true,
+  owner: { nickname: "용우", rankingPublic: true, refillReadyAt: null },
+  invite: { code: "K7M4QX" },
+  filling: {
+    row: { id: "c1", sign: "aries", status: "filling", total: 87, startedAt: 1, completedAt: null },
+    stars: [{ id: "s0", slot: 0, nickname: "친구", message: null, cardId: "wands-01", orientation: "upright", score: 87, parts: [], createdAt: 1, line: "" }],
+  },
+  completed: [],
+  top5: [],
+  ranks: {},
+};
+
+describe("BondsView how-to (3 steps)", () => {
+  it("puts the 이렇게 해요 card on the start screen, above the form", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null }))));
+    render(<BondsView initialSign={null} />);
+    const card = await screen.findByRole("region", { name: "이렇게 해요" });
+    expect(within(card).getAllByRole("listitem").map((li) => li.querySelector("strong")!.textContent)).toEqual(["1별자리 고르기", "2친구에게 보내기", "3다 채우면 완성"]);
+    const start = await screen.findByRole("button", { name: "별자리 인연 시작하기" });
+    expect(card.compareDocumentPosition(start) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // the card is on the page, so there is no 사용법 button yet
+    expect(screen.queryByRole("button", { name: "사용법" })).toBeNull();
+  });
+
+  it("gives an owner a quiet 사용법 button instead, which opens the same three steps in the Modal", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(OWNER_ME))));
+    render(<BondsView initialSign={null} />);
+    const open = await screen.findByRole("button", { name: "사용법" });
+    expect(screen.queryByRole("region", { name: "이렇게 해요" })).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(open);
+    const dialog = screen.getByRole("dialog", { name: "이렇게 해요" });
+    expect(within(dialog).getAllByRole("listitem")).toHaveLength(3);
   });
 });

@@ -16,12 +16,14 @@ import b from "./bonds.module.css";
 type CompletedCardProps = {
   row: ConstellationView & { stars: StarView[] };
   ownerNickname: string;
-  weekRank: number | null;
+  /** the all-time rank in the sign's ranking; null when it is not ranked */
   allRank: number | null;
   /** the sign being filled now, if any: 새로 채우기 clears it too, and the confirm says so */
   filling: { sign: SignId; filled: number } | null;
   /** 공유하기 as the screen's gold primary (the ranking page) or a secondary (the owner page) */
   sharePrimary: boolean;
+  /** the share button's label when it is not the plain 공유하기 (the ranking page says 내 순위 공유하기) */
+  shareLabel?: string;
   /** the completion moment: stars light one by one and the cat and rabbit cheer */
   celebrate?: boolean;
   onRefilled: () => void;
@@ -31,7 +33,7 @@ type CompletedCardProps = {
  * A completed constellation: the figure with every friend's nickname, the 인연 total, the rank, and
  * exactly two actions (spec §7): 공유하기 and 새로 채우기 (confirmed; once an hour in the beta).
  */
-export function CompletedCard({ row, ownerNickname, weekRank, allRank, filling, sharePrimary, celebrate = false, onRefilled }: CompletedCardProps) {
+export function CompletedCard({ row, ownerNickname, allRank, filling, sharePrimary, shareLabel, celebrate = false, onRefilled }: CompletedCardProps) {
   const def = getConstellation(row.sign);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -69,11 +71,10 @@ export function CompletedCard({ row, ownerNickname, weekRank, allRank, filling, 
         {row.completedAt ? ` · ${monthDay(row.completedAt)} 완성` : ""}
       </p>
       <ul className={s.ranks}>
-        <li>{weekRank ? `이번 주 ${def.ko} ${weekRank}위` : "이번 주 랭킹에는 없어요"}</li>
-        <li>{allRank ? `명예의 전당 ${allRank}위` : "명예의 전당에는 없어요"}</li>
+        <li>{allRank ? `${def.ko} ${allRank}위` : "랭킹에는 없어요"}</li>
       </ul>
       <div className={`${b.actions} ${s.actions}`}>
-        <ShareConstellation constellationId={row.id} sign={row.sign} total={row.total} primary={sharePrimary} />
+        <ShareConstellation constellationId={row.id} sign={row.sign} total={row.total} primary={sharePrimary} label={shareLabel} />
         <Button variant="secondary" block onClick={() => setConfirming(true)}>
           새로 채우기
         </Button>

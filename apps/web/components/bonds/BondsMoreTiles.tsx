@@ -8,7 +8,7 @@ import { storedLuckyNumbers } from "@/lib/bonds/client";
 import s from "./BondsMoreTiles.module.css";
 
 type BondsMoreTilesProps = {
-  /** this week's best constellation; null before any completion; undefined when it could not be read */
+  /** the best constellation of all time; null before any completion; undefined when it could not be read */
   weekTop?: WeekTop | null;
   /** the ranking tile's second line when the caller has its own (the home row: about me); it replaces the `weekTop` line */
   rankLine?: string;
@@ -17,7 +17,7 @@ type BondsMoreTilesProps = {
 
 /**
  * The rest of 별자리 인연 as two equal tiles (stacked on the narrowest phones), on the home row and on
- * /bonds' 더 보기: 별자리 인연 랭킹 with this week's best record (the home row says where I stand instead,
+ * /bonds' 더 보기: 별자리 인연 랭킹 with the best record (the home row says where I stand instead,
  * through `rankLine`), and 이번 주 행운 번호 with this device's numbers once /lucky has shown them (else
  * the way in).
  */
@@ -28,10 +28,10 @@ export function BondsMoreTiles({ weekTop, rankLine, className }: BondsMoreTilesP
 
   const leader =
     weekTop === undefined
-      ? "별자리마다 이번 주 1~3위"
+      ? "별자리마다 1~3위"
       : weekTop === null
         ? "첫 1위에 도전해 보세요"
-        : `이번 주 ${getConstellation(weekTop.sign).ko} 1위 ${weekTop.total}점`;
+        : `${getConstellation(weekTop.sign).ko} 1위 ${weekTop.total}점`;
 
   return (
     <nav className={[s.tiles, className].filter(Boolean).join(" ")} aria-label="별자리 인연 더 보기">

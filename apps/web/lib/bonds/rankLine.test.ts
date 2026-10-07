@@ -28,32 +28,33 @@ const ARIES = [100, 100, 112, 100]; // 412점
 const INVITE = "나의 인연들과 별자리를 만들어 봐요";
 
 describe("home 별자리 인연 랭킹 tile line", () => {
-  it("shows my score and this week's rank once a constellation is done and the ranking is public", () => {
-    expect(homeRankLine(view({ completed: [done("aries", ARIES)], ranks: { aries: { week: 3, all: 12 } } }))).toBe("내 양자리 412점 · 이번 주 3위");
-    expect(homeRankLine(view({ completed: [done("aries", ARIES)], ranks: { aries: { week: 1, all: 1 } } }))).toBe("내 양자리 412점 · 이번 주 1위");
+  it("shows my score and my all-time rank once a constellation is done and the ranking is public", () => {
+    expect(homeRankLine(view({ completed: [done("aries", ARIES)], ranks: { aries: { all: 12 } } }))).toBe("내 양자리 412점 · 12위");
+    expect(homeRankLine(view({ completed: [done("aries", ARIES)], ranks: { aries: { all: 1 } } }))).toBe("내 양자리 412점 · 1위");
   });
 
-  it("falls back to the all-time rank when this week has none", () => {
-    expect(homeRankLine(view({ completed: [done("aries", ARIES)], ranks: { aries: { week: null, all: 12 } } }))).toBe("내 양자리 412점 · 전체 12위");
+  it("never mentions a week or a hall of fame", () => {
+    const line = homeRankLine(view({ completed: [done("aries", ARIES)], ranks: { aries: { all: 3 } } }));
+    expect(line).not.toMatch(/이번 주|전체|명예/);
   });
 
   it("shows only my score when the ranking is hidden or there is no rank", () => {
     const completed = [done("aries", ARIES)];
-    expect(homeRankLine(view({ completed, rankingPublic: false, ranks: { aries: { week: null, all: null } } }))).toBe("내 양자리 412점");
+    expect(homeRankLine(view({ completed, rankingPublic: false, ranks: { aries: { all: null } } }))).toBe("내 양자리 412점");
     // hidden wins even if a rank came along
-    expect(homeRankLine(view({ completed, rankingPublic: false, ranks: { aries: { week: 3, all: 12 } } }))).toBe("내 양자리 412점");
-    expect(homeRankLine(view({ completed, ranks: { aries: { week: null, all: null } } }))).toBe("내 양자리 412점");
+    expect(homeRankLine(view({ completed, rankingPublic: false, ranks: { aries: { all: 12 } } }))).toBe("내 양자리 412점");
+    expect(homeRankLine(view({ completed, ranks: { aries: { all: null } } }))).toBe("내 양자리 412점");
     expect(homeRankLine(view({ completed, ranks: {} }))).toBe("내 양자리 412점");
   });
 
   it("reads the latest completion, the one ranks are looked up for, whatever the order of the list", () => {
     const completed = [done("leo", [90, 90, 90, 90, 90, 90], 20), done("aries", ARIES, 30), done("taurus", [80, 80, 80, 80, 80], 10)];
-    expect(homeRankLine(view({ completed, ranks: { aries: { week: 2, all: 5 } } }))).toBe("내 양자리 412점 · 이번 주 2위");
+    expect(homeRankLine(view({ completed, ranks: { aries: { all: 5 } } }))).toBe("내 양자리 412점 · 5위");
   });
 
   it("adds the scores of the stars, not a stored total", () => {
     const completed = [{ ...done("leo", [90, 90, 90, 90, 90, 90]), total: 1 }];
-    expect(homeRankLine(view({ completed, ranks: { leo: { week: 4, all: 4 } } }))).toBe("내 사자자리 540점 · 이번 주 4위");
+    expect(homeRankLine(view({ completed, ranks: { leo: { all: 4 } } }))).toBe("내 사자자리 540점 · 4위");
   });
 
   it("shows the sign being filled with its score so far, and that finishing it puts the owner on the ranking", () => {
@@ -70,8 +71,8 @@ describe("home 별자리 인연 랭킹 tile line", () => {
   });
 
   it("puts a completed constellation before the one being filled (the next sign starts by itself)", () => {
-    const me = view({ completed: [done("aries", ARIES)], filling: filling("taurus", [60]), ranks: { aries: { week: 3, all: 12 } } });
-    expect(homeRankLine(me)).toBe("내 양자리 412점 · 이번 주 3위");
+    const me = view({ completed: [done("aries", ARIES)], filling: filling("taurus", [60]), ranks: { aries: { all: 12 } } });
+    expect(homeRankLine(me)).toBe("내 양자리 412점 · 12위");
   });
 
   it("invites a device that has not started, and an owner with nothing filling or completed", () => {

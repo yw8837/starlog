@@ -52,8 +52,8 @@ export interface BondsRepo {
   latestStarOf(ownerId: string, friendKey: string): Promise<{ star: StarRow; constellation: ConstellationRow } | null>;
   ranking(sign: SignId, since: number | null, limit: number): Promise<RankingEntry[]>; // public owners, complete, total desc, completedAt asc
   rankOf(constellationId: string, since: number | null): Promise<number | null>; // 1-based among public entries; null if not ranked
-  /** The first `perSign` of every sign's ranking since `since`, in one query (sign, then rank order). */
-  topsBySign(since: number, perSign: number): Promise<SignTop[]>;
+  /** The first `perSign` of every sign's ranking since `since` (null: all time), in one call (sign, then rank order; one batch on D1). */
+  topsBySign(since: number | null, perSign: number): Promise<SignTop[]>;
 }
 
 /** Ranking order: higher total first, then the earlier completion, then the id (a stable last resort). */

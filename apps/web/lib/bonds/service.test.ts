@@ -3,7 +3,7 @@ import { bondBasis, bondScore } from "@starlog/core";
 import { createMemoryBondsRepo } from "@/lib/db/memoryBondsRepo";
 import { CONSTELLATIONS } from "@starlog/core";
 import {
-  BondsError, chooseSign, inviteOf, invitePage, joinStar, nextSignAfter, ownerView, rankingView, refill, regenerateInvite, removeStar, resolveInvite, saveOwner,
+  BondsError, RANKING_LIMIT, chooseSign, inviteOf, invitePage, joinStar, nextSignAfter, ownerView, rankingView, refill, regenerateInvite, removeStar, resolveInvite, saveOwner,
   switchSign, todayBondCard,
 } from "./service";
 
@@ -181,19 +181,28 @@ describe("bonds service", () => {
     await expect(removeStar(repo, t0, "o2", r.star.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
-  it("shows this week's and all-time ranking with my card", async () => {
+  it("shows one all-time ranking with my card, and it never restarts (not on a KST Monday, not weeks later)", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
     for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
     const view = await rankingView(repo, t0 + 1, "aries", "o1");
-    expect(view.week[0]).toMatchObject({ rank: 1, nickname: "용우", mine: true });
+    expect(view.all[0]).toMatchObject({ rank: 1, nickname: "용우", mine: true });
     expect(view.mine?.allRank).toBe(1);
     expect(view.mine?.stars).toHaveLength(4);
-    // next week: gone from the weekly list, still in the hall of fame
-    const later = await rankingView(repo, t0 + 8 * 24 * HOUR, "aries", null);
-    expect(later.week).toEqual([]);
-    expect(later.all[0]).toMatchObject({ nickname: "용우", mine: false });
-    expect(later.mine).toBeNull();
+    // no weekly board is built any more
+    expect(view).not.toHaveProperty("week");
+    expect(view.mine).not.toHaveProperty("weekRank");
+    // t0 is Thursday 2026-10-01 (KST); one, three and ten weeks later the same record is still on the list
+    for (const weeks of [1, 3, 10]) {
+      const later = await rankingView(repo, t0 + weeks * 7 * 24 * HOUR, "aries", null);
+      expect(later.all[0]).toMatchObject({ rank: 1, nickname: "용우", mine: false });
+    }
+    // the owner's own rank holds across the Monday 00:00 KST turn too (Sunday 2026-10-04 23:59 → Monday 00:00)
+    const sunday = Date.parse("2026-10-04T23:59:00+09:00");
+    const monday = Date.parse("2026-10-05T00:00:00+09:00");
+    expect((await rankingView(repo, sunday, "aries", "o1")).mine?.allRank).toBe(1);
+    expect((await rankingView(repo, monday, "aries", "o1")).mine?.allRank).toBe(1);
+    expect((await ownerView(repo, monday, "o1")).ranks).toEqual({ aries: { all: 1 } });
   });
 
   it("leaves a private owner out of the ranking but still shows them their card", async () => {
@@ -203,7 +212,7 @@ describe("bonds service", () => {
     for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
     const view = await rankingView(repo, t0 + 1, "aries", "o1");
     expect(view.all).toEqual([]);
-    expect(view.mine).toMatchObject({ weekRank: null, allRank: null });
+    expect(view.mine).toMatchObject({ allRank: null });
   });
 
   it("gives the home row's light view the latest completion's ranks too, and still skips TOP 5", async () => {
@@ -212,8 +221,8 @@ describe("bonds service", () => {
     for (let i = 0; i < 4; i++) await join(repo, t0 + i, code, i);
     const rankOf = vi.spyOn(repo, "rankOf");
     const light = await ownerView(repo, t0 + 10, "o1", { light: true });
-    expect(light.ranks).toEqual({ aries: { week: 1, all: 1 } });
-    expect(rankOf).toHaveBeenCalledTimes(2); // this week's and all-time, both indexed
+    expect(light.ranks).toEqual({ aries: { all: 1 } });
+    expect(rankOf).toHaveBeenCalledTimes(1); // the all-time rank, indexed
     expect(light.top5).toEqual([]);
     const full = await ownerView(repo, t0 + 10, "o1");
     expect(full.ranks).toEqual(light.ranks);
@@ -230,8 +239,8 @@ describe("bonds service", () => {
     await repo.insertConstellation({ id: "done-leo", ownerId: "o1", sign: "leo", status: "complete", total: 300, startedAt: t0, completedAt: t0 + 1 });
     await repo.insertConstellation({ id: "done-virgo", ownerId: "o1", sign: "virgo", status: "complete", total: 280, startedAt: t0, completedAt: t0 + 2 });
     const light = await ownerView(repo, t0 + 3, "o1", { light: true });
-    expect(light.ranks).toEqual({ virgo: { week: 1, all: 1 } });
-    expect(rankOf).toHaveBeenCalledTimes(2);
+    expect(light.ranks).toEqual({ virgo: { all: 1 } });
+    expect(rankOf).toHaveBeenCalledTimes(1);
     expect((await ownerView(repo, t0 + 3, "o1")).ranks).toEqual(light.ranks);
   });
 
@@ -242,7 +251,7 @@ describe("bonds service", () => {
     for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
     const light = await ownerView(repo, t0 + 1, "o1", { light: true });
     expect(light.owner.rankingPublic).toBe(false);
-    expect(light.ranks).toEqual({ aries: { week: null, all: null } });
+    expect(light.ranks).toEqual({ aries: { all: null } });
   });
 
   it("caps join events per owner per KST day (removed stars still count)", async () => {
@@ -412,19 +421,27 @@ describe("bonds service", () => {
     await expect(invitePage(repo, "ZZZZZZ", { ownerId: null, friendKey: null })).rejects.toMatchObject({ code: "BAD_CODE" });
   });
 
-  it("lists the top 20 and still gives a viewer further down their own rank", async () => {
+  it("lists the top 50 and still gives a viewer further down their own rank", async () => {
     const { repo, t0 } = await setup();
-    for (let i = 0; i < 25; i++) {
+    expect(RANKING_LIMIT).toBe(50);
+    for (let i = 0; i < 55; i++) {
       await repo.upsertOwner({ id: `r${i}`, nickname: `주인${i}`, rankingPublic: true, basis: (await repo.getOwner("o1"))!.basis, lastRefillAt: null, createdAt: 1, joinsDay: null, joinsCount: 0 });
       await repo.insertConstellation({ id: `rc${i}`, ownerId: `r${i}`, sign: "aries", status: "complete", total: 400 - i, startedAt: t0, completedAt: t0 + i });
     }
     const top = await rankingView(repo, t0 + 100, "aries", null);
-    expect(top.week).toHaveLength(20);
-    expect(top.all.map((r) => r.rank)).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
-    const far = await rankingView(repo, t0 + 100, "aries", "r24");
-    expect(far.mine).toMatchObject({ weekRank: 25, allRank: 25, row: { total: 376 } });
-    expect(far.week.some((r) => r.mine)).toBe(false);
+    expect(top.all).toHaveLength(50);
+    expect(top.all.map((r) => r.rank)).toEqual(Array.from({ length: 50 }, (_, i) => i + 1));
+    // outside the list (51st and 55th): no row of their own, but their rank and total are looked up
+    const far = await rankingView(repo, t0 + 100, "aries", "r54");
+    expect(far.mine).toMatchObject({ allRank: 55, row: { total: 346 } });
+    expect(far.all.some((r) => r.mine)).toBe(false);
+    const edge = await rankingView(repo, t0 + 100, "aries", "r50");
+    expect(edge.mine).toMatchObject({ allRank: 51 });
+    expect(edge.all.some((r) => r.mine)).toBe(false);
+    // the 50th is the last row of the list, marked as mine
+    const last = await rankingView(repo, t0 + 100, "aries", "r49");
+    expect(last.all.at(-1)).toMatchObject({ rank: 50, nickname: "주인49", mine: true });
     const near = await rankingView(repo, t0 + 100, "aries", "r2");
-    expect(near.week.find((r) => r.mine)).toMatchObject({ rank: 3, nickname: "주인2" });
+    expect(near.all.find((r) => r.mine)).toMatchObject({ rank: 3, nickname: "주인2" });
   });
 });

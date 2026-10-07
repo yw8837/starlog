@@ -72,18 +72,24 @@ describe("bonds API", () => {
     expect(me.invite.code).toBe(code);
     expect(JSON.stringify(me)).not.toMatch(/friendKey|ownerId|basis/);
     const ranking = (await (await rankingGet(req("/api/bonds/ranking/aries", owner), { params: Promise.resolve({ sign: "aries" }) })).json()) as {
-      week: { nickname: string; mine: boolean }[];
+      all: { nickname: string; mine: boolean }[];
+      week: unknown;
+      mine: { allRank: number | null; weekRank: unknown };
     };
-    expect(ranking.week[0]).toMatchObject({ nickname: "용우", mine: true });
+    expect(ranking.all[0]).toMatchObject({ nickname: "용우", mine: true });
+    // one cumulative ranking; for one release `week` and `mine.weekRank` repeat it, so a page opened before
+    // the deploy (which reads data.week) keeps working
+    expect(ranking.week).toEqual(ranking.all);
+    expect(ranking.mine.weekRank).toBe(ranking.mine.allRank);
     expect(JSON.stringify(ranking)).not.toMatch(/constellationId/);
   });
 
-  it("answers `owner: null` for a device that has not started, with this week's best record for the 인연 랭킹 tile", async () => {
+  it("answers `owner: null` for a device that has not started, with the best record for the 인연 랭킹 tile (still under `weekTop`)", async () => {
     const res = await meGet(req("/api/bonds/me", new Map()));
     const body = (await res.json()) as { ok: true; owner: null; weekTop: { sign: string; total: number } | null };
     expect(body).toMatchObject({ ok: true, owner: null });
     expect(Object.keys(body).sort()).toEqual(["ok", "owner", "weekTop"]);
-    // the first test completed 양자리 this week
+    // the first test completed 양자리: all-time records count
     expect(body.weekTop).toMatchObject({ sign: expect.any(String), total: expect.any(Number) });
   });
 
@@ -141,7 +147,7 @@ describe("bonds API", () => {
     }
     const light = (await (await meGet(req("/api/bonds/me?view=home", owner))).json()) as { ranks: Record<string, unknown>; top5: unknown[]; completed: unknown[] };
     expect(Object.keys(light.ranks)).toEqual(["aries"]);
-    expect(light.ranks.aries).toEqual({ week: expect.any(Number), all: expect.any(Number) });
+    expect(light.ranks.aries).toEqual({ all: expect.any(Number) });
     expect(light.top5).toEqual([]);
     expect(light.completed).toHaveLength(1);
     const full = (await (await meGet(req("/api/bonds/me", owner))).json()) as { ranks: Record<string, unknown>; top5: unknown[] };
@@ -247,7 +253,7 @@ describe("bonds API", () => {
     try {
       const get = async (jar: Jar) =>
         (await (await rankingGet(req("/api/bonds/ranking/aries", jar), { params: Promise.resolve({ sign: "aries" }) })).json()) as {
-          week: { nickname: string; mine: boolean }[];
+          all: { nickname: string; mine: boolean }[];
         };
       const before = await get(new Map());
       expect(store.size).toBe(1);
@@ -256,10 +262,12 @@ describe("bonds API", () => {
         await joinPost(req("/api/bonds/join", new Map(), { code, nickname: `늦벗${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, `6.6.6.${i}`));
       }
       // a visitor within the minute still gets the cached lists
-      expect((await get(new Map())).week).toEqual(before.week);
+      expect((await get(new Map())).all).toEqual(before.all);
       // the owner who just completed is in them, and that refreshes the cache for everyone
-      expect((await get(owner)).week.find((r) => r.mine)).toMatchObject({ nickname: "늦별" });
-      expect((await get(new Map())).week.some((r) => r.nickname === "늦별")).toBe(true);
+      expect((await get(owner)).all.find((r) => r.mine)).toMatchObject({ nickname: "늦별" });
+      expect((await get(new Map())).all.some((r) => r.nickname === "늦별")).toBe(true);
+      // the cache key names the sign only, with no week id in it, so nothing restarts on a Monday
+      expect([...store.keys()].every((key) => !/\d{4}-\d{2}-\d{2}/.test(key))).toBe(true);
     } finally {
       vi.unstubAllGlobals();
     }

@@ -5,8 +5,9 @@ import { layoutLabels } from "@/components/bonds/art/labels";
 
 /**
  * The 별자리 인연 share image (spec §5), drawn for next/og (satori): the figure and star lines as SVG,
- * every friend's nickname as a pill at their star, the sign, the 인연 total, the owner's nickname, the
- * completion date and the site. Never a friend's score, message or birth date.
+ * every friend's nickname as a pill at their star, the sign, the owner's 인연 total and all-time rank
+ * (when ranked and public), the owner's nickname, the completion date and the site. Never a friend's
+ * score, message or birth date.
  */
 
 export const SHARE_SIZES = {
@@ -20,6 +21,8 @@ export interface BondsShareData {
   /** nickname per slot, in slot order */
   nicknames: string[];
   total: number;
+  /** the all-time rank among the sign's public records; null when the owner is kept off the rankings */
+  rank: number | null;
   ownerNickname: string;
   completedAt: number;
   host: string;
@@ -117,10 +120,13 @@ export function constellationSvg(sign: SignId, px: number, lit = Infinity): Reac
   );
 }
 
+/** The widest a pill may be, in art units: a longer name gets a smaller font, so 10-character names on every star still keep apart. */
+const PILL_MAX_WIDTH = 340;
+
 /** Nickname pills over an art box `px` wide whose top-left corner is (left, top); `stars` in framed units. */
 function pills(stars: readonly (readonly [number, number])[], nicknames: string[], px: number, left: number, top: number, fontPx: number): ReactElement[] {
   const unit = px / 1000;
-  const boxes = layoutLabels(stars, nicknames, fontPx / unit, 26);
+  const boxes = layoutLabels(stars, nicknames, fontPx / unit, 26, 1000, PILL_MAX_WIDTH);
   return boxes.flatMap((box, i) =>
     box
       ? [
@@ -174,10 +180,27 @@ export function bondsShareImage(data: BondsShareData, size: ShareSize): ReactEle
       <div style={{ position: "absolute", left: artLeft, top: artTop, display: "flex" }}>{constellationSvg(data.sign, art)}</div>
       {pills(framedStars(data.sign), data.nicknames, art, artLeft, artTop, fontPx)}
       <div style={{ position: "absolute", left: 0, top: artTop + art + (story ? 40 : 4), width, display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "flex-end", color: INK_SUB, fontSize: 40 }}>
-          <span style={{ marginBottom: story ? 22 : 18, lineHeight: 1.2 }}>인연</span>
-          <span style={{ marginLeft: 16, color: GOLD, fontFamily: "Serif", fontSize: story ? 124 : 104, fontWeight: 700, lineHeight: 1.1 }}>{String(data.total)}</span>
-          <span style={{ marginLeft: 6, marginBottom: story ? 22 : 18, lineHeight: 1.2 }}>점</span>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", color: INK_SUB, fontSize: 40 }}>
+            <span style={{ marginBottom: story ? 22 : 18, lineHeight: 1.2 }}>인연</span>
+            <span style={{ marginLeft: 16, color: GOLD, fontFamily: "Serif", fontSize: story ? 124 : 104, fontWeight: 700, lineHeight: 1.1 }}>{String(data.total)}</span>
+            <span style={{ marginLeft: 6, marginBottom: story ? 22 : 18, lineHeight: 1.2 }}>점</span>
+          </div>
+          {data.rank === null ? null : (
+            <div
+              style={{
+                display: "flex",
+                marginLeft: 36,
+                padding: story ? "8px 34px" : "6px 30px",
+                borderRadius: 9999,
+                border: "2px solid rgba(243,220,161,0.6)",
+                backgroundColor: "rgba(243,220,161,0.12)",
+                color: GOLD,
+                fontSize: story ? 46 : 40,
+                fontWeight: 700,
+              }}
+            >{`${def.ko} ${data.rank}위`}</div>
+          )}
         </div>
         <div style={{ display: "flex", marginTop: 8, fontSize: 34, color: INK }}>{`${data.ownerNickname}님의 ${def.ko} · ${koreanDate(data.completedAt)} 완성`}</div>
       </div>
@@ -193,6 +216,17 @@ export function bondsShareText(data: BondsShareData): { serif: string; sans: str
   const def = getConstellation(data.sign);
   return {
     serif: `${def.ko}${data.total}`,
-    sans: `별자리 인연 · ${def.en} 인연 점 ${data.nicknames.join("")} ${data.ownerNickname}님의 ${def.ko} ${koreanDate(data.completedAt)} 완성 ${data.host}`,
+    sans: `별자리 인연 · ${def.en} 인연 점 ${data.nicknames.join("")} ${data.rank === null ? "" : `${def.ko} ${data.rank}위`} ${data.ownerNickname}님의 ${def.ko} ${koreanDate(data.completedAt)} 완성 ${data.host}`,
   };
+}
+
+/**
+ * A short fingerprint of everything the image draws. The route puts it in the cache key, so a changed
+ * rank, total, member, name or date is a new key and never meets an older picture.
+ */
+export function bondsShareVersion(data: BondsShareData): string {
+  const text = JSON.stringify([data.sign, data.total, data.rank, data.ownerNickname, data.completedAt, data.nicknames, data.host]);
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193) >>> 0;
+  return `${data.rank ?? 0}-${data.total}-${hash.toString(36)}`;
 }

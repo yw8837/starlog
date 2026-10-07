@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const def = getConstellation(sign);
   return pageMetadata({
     title: `${def.ko} 랭킹`,
-    description: `${def.ko}를 완성한 사람들의 별자리 인연 랭킹이에요. 친구들이 별이 되어 채운 별자리의 인연 점수로 이번 주 순위와 명예의 전당을 봐요.`,
+    description: `${def.ko}를 완성한 사람들의 별자리 인연 랭킹이에요. 친구들이 별이 되어 채운 별자리의 인연 점수로 순위를 봐요. 순위는 초기화 없이 계속 쌓여요.`,
     path: `/ranking/${sign}`,
   });
 }

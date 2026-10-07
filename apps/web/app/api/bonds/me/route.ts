@@ -1,17 +1,18 @@
-import { loadLeaders, weekTop, type WeekTop } from "@/app/ranking/loadLeaders";
+import { bestRecord, loadLeaders, type WeekTop } from "@/app/ranking/loadLeaders";
 import { bondsRoute, ok } from "@/lib/bonds/api";
 import { readOwnerId } from "@/lib/bonds/identity";
 import { BondsError, ownerView } from "@/lib/bonds/service";
 
 /**
  * GET → this device's 별자리 인연: `{ owner: null }` before the first start, else the owner view (`?view=home`: ranks as usual, no TOP 5).
- * Both carry `weekTop`, this week's best constellation for the 인연 랭킹 tile (from the leaderboard's edge-cached
- * query, no query of its own; null before any completion, left out when it cannot be read).
+ * Both carry `weekTop` (the field keeps its name for clients that already read it), the best constellation of
+ * all time for the 인연 랭킹 tile (from the leaderboard's edge-cached query, no query of its own; null before
+ * any completion, left out when it cannot be read).
  */
 export async function GET(request: Request): Promise<Response> {
   return bondsRoute(request, "me", async ({ secret, now, cookies, repo }) => {
-    const leaders = await loadLeaders(now, () => repo);
-    const top: { weekTop?: WeekTop | null } = leaders ? { weekTop: weekTop(leaders) } : {};
+    const leaders = await loadLeaders(() => repo);
+    const top: { weekTop?: WeekTop | null } = leaders ? { weekTop: bestRecord(leaders) } : {};
     const ownerId = await readOwnerId(cookies, secret);
     if (!ownerId) return ok({ owner: null, ...top });
     try {

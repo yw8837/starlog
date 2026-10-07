@@ -1,6 +1,6 @@
 import "server-only";
 import {
-  CARDS, CONSTELLATIONS, DEFAULT_REVERSAL_RATE, SajuError, bondBasis, bondScore, createDeck, getConstellation, isSignId, kstWeekId, mirrorParts,
+  CARDS, CONSTELLATIONS, DEFAULT_REVERSAL_RATE, SajuError, bondBasis, bondScore, createDeck, getConstellation, isSignId, mirrorParts,
   seededRandom,
   type BondBasis, type BondBirth, type BondPart, type Orientation, type SignId,
 } from "@starlog/core";
@@ -41,8 +41,8 @@ export const DAILY_ACTION_LIMIT = 20;
 /** 코드 새로 만들기 per owner per hour */
 export const INVITES_PER_HOUR = 5;
 const HOUR_MS = 60 * 60 * 1000;
-/** Rows shown per ranking (podium 1-3, list 4-20); anyone further down sees their own rank in 내 순위. */
-export const RANKING_LIMIT = 20;
+/** Rows shown per ranking (podium 1-3, list 4-50); anyone further down sees their own rank in 내 순위. */
+export const RANKING_LIMIT = 50;
 const TOP_STARS = 5;
 /** The friend picks from a fan of 21 face-down cards spread through a 78-card deck (components/tarot/CardFan). */
 const FAN_SIZE = 21;
@@ -77,10 +77,6 @@ const constellationView = ({ ownerId: _owner, ...row }: ConstellationRow): Const
 const starView = ({ friendKey: _key, constellationId: _c, ...star }: StarRow): StarView => ({ ...star, line: bondCardLine(star.cardId, star.orientation) });
 
 // ---- helpers ----
-
-const kstStart = (date: string) => Date.parse(`${date}T00:00:00+09:00`);
-/** This week's ranking starts on the KST Monday at 00:00. */
-export const weekStart = (now: number) => kstStart(kstWeekId(now));
 
 async function requireOwner(repo: BondsRepo, ownerId: string): Promise<OwnerRow> {
   const owner = await repo.getOwner(ownerId);
@@ -418,12 +414,13 @@ export interface OwnerView {
   completed: Array<ConstellationView & { stars: StarView[] }>;
   /** best scores across every star the owner has now */
   top5: Array<StarView & { sign: SignId }>;
-  ranks: Partial<Record<SignId, { week: number | null; all: number | null }>>;
+  /** the all-time rank (the one ranking: it never restarts) */
+  ranks: Partial<Record<SignId, { all: number | null }>>;
 }
 
 /**
- * The owner page's data. Ranks are looked up for the latest completion only (the card the page shows;
- * two indexed queries, and none without a completion), in both modes: the home row's tile needs them
+ * The owner page's data. The rank is looked up for the latest completion only (the card the page shows;
+ * one indexed query, and none without a completion), in both modes: the home row's tile needs it
  * too. `light` (the home row) skips TOP 5.
  */
 export async function ownerView(repo: BondsRepo, now: number, ownerId: string, { light = false }: { light?: boolean } = {}): Promise<OwnerView> {
@@ -434,13 +431,9 @@ export async function ownerView(repo: BondsRepo, now: number, ownerId: string, {
     fillingRow ? repo.starsOf(fillingRow.id) : Promise.resolve([]),
     ...completedRows.map((c) => repo.starsOf(c.id)),
   ]);
-  const since = weekStart(now);
   const ranks: OwnerView["ranks"] = {};
   const latest = completedRows.reduce<ConstellationRow | null>((a, c) => (a === null || (c.completedAt ?? 0) > (a.completedAt ?? 0) ? c : a), null);
-  if (latest) {
-    const [week, all] = await Promise.all([repo.rankOf(latest.id, since), repo.rankOf(latest.id, null)]);
-    ranks[latest.sign] = { week, all };
-  }
+  if (latest) ranks[latest.sign] = { all: await repo.rankOf(latest.id, null) };
   const withSign = [
     ...(fillingRow ? fillingStars!.map((s) => ({ ...starView(s), sign: fillingRow.sign })) : []),
     ...completedRows.flatMap((c, i) => completedStars[i]!.map((s) => ({ ...starView(s), sign: c.sign }))),
@@ -469,10 +462,10 @@ export interface RankingRowView {
 }
 
 export interface RankingView {
-  week: RankingRowView[];
+  /** the sign's ranking, all time: the top RANKING_LIMIT */
   all: RankingRowView[];
   /** the viewer's completed constellation of this sign */
-  mine: { row: ConstellationView; stars: StarView[]; weekRank: number | null; allRank: number | null } | null;
+  mine: { row: ConstellationView; stars: StarView[]; allRank: number | null } | null;
   /** the sign the viewer is filling now (any sign) */
   filling: { sign: SignId; filled: number; total: number } | null;
   owner: { nickname: string; rankingPublic: boolean; refillReadyAt: number | null } | null;
@@ -480,42 +473,34 @@ export interface RankingView {
   invite: { code: string } | null;
 }
 
-/** The public part of a sign's ranking: this week's and all-time top RANKING_LIMIT (cacheable; ids stay server-side). */
+/** The public part of a sign's ranking: the all-time top RANKING_LIMIT (cacheable; ids stay server-side). */
 export interface RankingBoards {
-  week: RankingEntry[];
   all: RankingEntry[];
 }
 
-export async function rankingBoards(repo: BondsRepo, now: number, sign: SignId): Promise<RankingBoards> {
-  const [week, all] = await Promise.all([repo.ranking(sign, weekStart(now), RANKING_LIMIT), repo.ranking(sign, null, RANKING_LIMIT)]);
-  return { week, all };
+export async function rankingBoards(repo: BondsRepo, sign: SignId): Promise<RankingBoards> {
+  return { all: await repo.ranking(sign, null, RANKING_LIMIT) };
 }
 
 /**
- * One sign's ranking for this viewer: the top lists (from `boards` when given, e.g. the edge cache) and
- * the viewer's own record. Their rank is looked up even beyond the lists, and only when they have a
+ * One sign's ranking for this viewer: the top list (from `boards` when given, e.g. the edge cache) and
+ * the viewer's own record. Their rank is looked up even beyond the list, and only when they have a
  * completed constellation of the sign.
  */
 export async function rankingView(repo: BondsRepo, now: number, sign: SignId, ownerId: string | null, boards?: RankingBoards): Promise<RankingView> {
   if (!isSignId(sign)) throw new BondsError("NOT_FOUND");
-  const since = weekStart(now);
   const owner = ownerId ? await repo.getOwner(ownerId) : null;
   const done = owner ? (await repo.completedOf(owner.id)).find((c) => c.sign === sign) ?? null : null;
   const fillingRow = owner ? await repo.fillingOf(owner.id) : null;
-  const [{ week: weekRows, all: allRows }, doneStars, fillingStars, invite] = await Promise.all([
-    boards ?? rankingBoards(repo, now, sign),
+  const [{ all: allRows }, doneStars, fillingStars, invite] = await Promise.all([
+    boards ?? rankingBoards(repo, sign),
     done ? repo.starsOf(done.id) : Promise.resolve([]),
     fillingRow ? repo.starsOf(fillingRow.id) : Promise.resolve([]),
     owner ? repo.activeInvite(owner.id) : Promise.resolve(null),
   ]);
-  const rows = (list: typeof weekRows): RankingRowView[] =>
-    list.map((e, i) => ({ rank: i + 1, nickname: e.nickname, total: e.total, completedAt: e.completedAt, mine: e.constellationId === done?.id }));
   return {
-    week: rows(weekRows),
-    all: rows(allRows),
-    mine: done
-      ? { row: constellationView(done), stars: doneStars.map(starView), weekRank: await repo.rankOf(done.id, since), allRank: await repo.rankOf(done.id, null) }
-      : null,
+    all: allRows.map((e, i) => ({ rank: i + 1, nickname: e.nickname, total: e.total, completedAt: e.completedAt, mine: e.constellationId === done?.id })),
+    mine: done ? { row: constellationView(done), stars: doneStars.map(starView), allRank: await repo.rankOf(done.id, null) } : null,
     filling: fillingRow ? { sign: fillingRow.sign, filled: fillingStars.length, total: sum(fillingStars) } : null,
     owner: owner
       ? {
@@ -540,14 +525,18 @@ export async function todayBondCard(repo: BondsRepo, now: number, ownerId: strin
   return { cardId: card.id, orientation: rand() < DEFAULT_REVERSAL_RATE ? "reversed" : "upright", day };
 }
 
-/** A completed constellation for its share image (public: only nicknames, sign, total and date go on it). */
+/**
+ * A completed constellation for its share image (public): the friends' nicknames, the sign, the owner's
+ * nickname, total and all-time rank (null when the owner is kept off the rankings) and the date. Never a
+ * friend's score, message or key, and no birth date (none is stored).
+ */
 export async function shareCard(repo: BondsRepo, constellationId: string) {
   const row = await repo.getConstellation(constellationId);
   if (!row || row.status !== "complete" || row.completedAt === null) throw new BondsError("NOT_FOUND");
   const owner = await repo.getOwner(row.ownerId);
   if (!owner) throw new BondsError("NOT_FOUND");
-  const stars = await repo.starsOf(row.id);
-  return { sign: row.sign, total: row.total, completedAt: row.completedAt, ownerNickname: owner.nickname, nicknames: stars.map((s) => s.nickname) };
+  const [stars, rank] = await Promise.all([repo.starsOf(row.id), repo.rankOf(row.id, null)]);
+  return { sign: row.sign, total: row.total, rank, completedAt: row.completedAt, ownerNickname: owner.nickname, nicknames: stars.map((s) => s.nickname) };
 }
 
 export const LEADERS_PER_SIGN = 3;
@@ -558,10 +547,10 @@ export interface LeaderView {
   total: number;
 }
 
-/** This KST week's top 3 of every sign (one query): 별자리 인연 랭킹. Signs with no completion are left out. */
-export async function weeklyLeaders(repo: BondsRepo, now: number): Promise<Partial<Record<SignId, LeaderView[]>>> {
+/** The all-time top 3 of every sign (one batch of indexed reads): 별자리 인연 랭킹. Signs with no completion are left out. */
+export async function leadersBySign(repo: BondsRepo): Promise<Partial<Record<SignId, LeaderView[]>>> {
   const out: Partial<Record<SignId, LeaderView[]>> = {};
-  for (const top of await repo.topsBySign(weekStart(now), LEADERS_PER_SIGN)) {
+  for (const top of await repo.topsBySign(null, LEADERS_PER_SIGN)) {
     (out[top.sign] ??= []).push({ rank: top.rank, nickname: top.nickname, total: top.total });
   }
   return out;

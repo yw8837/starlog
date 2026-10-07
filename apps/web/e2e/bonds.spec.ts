@@ -47,6 +47,8 @@ async function friendJoin(baseURL: string, code: string, friend: (typeof FRIENDS
 async function startOwner(page: Page, nickname = "용우") {
   await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
   await page.goto("/bonds", { timeout: 120_000 });
+  // the start screen explains the three steps before it asks for anything
+  await expect(page.getByRole("region", { name: "이렇게 해요" }).getByRole("listitem")).toHaveCount(3);
   await page.getByRole("textbox", { name: "닉네임" }).fill(nickname);
   await page.getByLabel("태어난 연도").selectOption("1990");
   await page.getByLabel("태어난 월").selectOption("1");
@@ -119,6 +121,11 @@ test.describe("별자리 인연 · owner", () => {
     for (const [i, friend] of FRIENDS.entries()) await friendJoin(baseURL!, code, friend, i);
     await page.reload();
     await expect(page.getByText("별자리를 완성했어요")).toBeVisible();
+    // 사용법 (an owner's quiet button) opens the same three steps in a dialog
+    await page.getByRole("button", { name: "사용법" }).click();
+    await expect(page.getByRole("dialog", { name: "이렇게 해요" }).getByRole("listitem")).toHaveCount(3);
+    await page.getByRole("dialog", { name: "이렇게 해요" }).getByRole("button", { name: "닫기" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
     // the next sign started by itself, so the same link keeps working for friends
     await expect(page.getByRole("heading", { name: /다음은 황소자리예요/ })).toBeVisible();
     expect(await (await page.request.get(`/api/bonds/resolve?code=${code}`)).json()).toMatchObject({ sign: "taurus", filled: 0 });
@@ -135,18 +142,23 @@ test.describe("별자리 인연 · owner", () => {
       expect(image.headers()["content-type"]).toBe("image/png");
       expect((await image.body()).byteLength).toBeGreaterThan(10_000);
     }
+    // the rank on the picture can change: browsers ask again instead of keeping an old one
+    expect((await page.request.get(`/api/og/bonds/${me.completed[0]!.id}`)).headers()["cache-control"]).toContain("no-cache");
     expect((await page.request.get("/api/og/bonds/not-a-real-id")).status()).toBe(404);
 
     await page.getByRole("link", { name: /양자리 완성/ }).click();
     await expect(page).toHaveURL(/\/ranking\/aries$/, { timeout: 60_000 });
-    await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "내 순위 공유하기" })).toBeVisible();
     await expect(page.getByRole("button", { name: "새로 채우기" })).toBeVisible();
-    // Other runs may already rank on this week's board, so find this owner by 내 순위, then in place.
-    const board = page.getByRole("tabpanel", { name: "이번 주" });
+    // Other runs may already rank on this board, so find this owner by 내 순위, then in place (the list shows up to 50위).
+    const board = page.getByRole("region", { name: "양자리 순위" });
     const myRank = board.getByRole("region", { name: "내 순위" });
     await expect(myRank).toContainText(/내 순위\d+위/);
     const rank = Number((await myRank.textContent())!.match(/내 순위(\d+)위/)![1]);
-    if (rank <= 20) await expect(board.locator("li[data-mine]")).toContainText("용우");
+    if (rank <= 50) await expect(board.locator("li[data-mine]")).toContainText("용우");
+    // one all-time board: no tabs, no weekly wording
+    await expect(page.getByRole("tab")).toHaveCount(0);
+    await expect(board).not.toContainText(/이번 주|명예의 전당/);
     await shot(page, "ranking-mine");
 
     await page.getByRole("button", { name: "새로 채우기" }).click();

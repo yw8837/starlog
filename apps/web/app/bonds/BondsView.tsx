@@ -10,6 +10,7 @@ import { CompletedCard } from "@/components/bonds/CompletedCard";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
 import { Dogam } from "@/components/bonds/Dogam";
+import { HowToButton, HowToCard } from "@/components/bonds/HowTo";
 import { InviteShareButton } from "@/components/bonds/InviteShareButton";
 import { SignPicker } from "@/components/bonds/SignPicker";
 import { Button } from "@/components/ui/Button";
@@ -114,13 +115,16 @@ function BondsSkeleton() {
 
 function Intro() {
   return (
-    <header className={s.intro}>
-      <p className={b.eyebrow}>별자리 인연</p>
-      <h1 className={s.title}>친구가 별이 되어 내 별자리를 채워요</h1>
-      <p className={s.lead}>
-        별자리를 하나 고르고 초대코드를 보내요. 들어온 친구마다 사주로 본 인연 점수가 붙고, 다 채우면 도감에 들어가고 랭킹에 올라요.
-      </p>
-    </header>
+    <>
+      <header className={s.intro}>
+        <p className={b.eyebrow}>별자리 인연</p>
+        <h1 className={s.title}>친구가 별이 되어 내 별자리를 채워요</h1>
+        <p className={s.lead}>
+          별자리를 하나 고르고 초대코드를 보내요. 들어온 친구마다 사주로 본 인연 점수가 붙고, 다 채우면 도감에 들어가고 랭킹에 올라요.
+        </p>
+      </header>
+      <HowToCard />
+    </>
   );
 }
 
@@ -153,6 +157,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
       <header className={s.intro}>
         <p className={b.eyebrow}>별자리 인연</p>
         <h1 className={s.title}>{owner.nickname}님의 별자리</h1>
+        <HowToButton />
       </header>
 
       {filling ? (
@@ -161,7 +166,6 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
             <CompletedCard
               row={latest}
               ownerNickname={owner.nickname}
-              weekRank={ranks[latest.sign]?.week ?? null}
               allRank={ranks[latest.sign]?.all ?? null}
               filling={fillingInfo}
               sharePrimary={false}
@@ -184,7 +188,6 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
             <CompletedCard
               row={latest}
               ownerNickname={owner.nickname}
-              weekRank={ranks[latest.sign]?.week ?? null}
               allRank={ranks[latest.sign]?.all ?? null}
               filling={null}
               sharePrimary={false}

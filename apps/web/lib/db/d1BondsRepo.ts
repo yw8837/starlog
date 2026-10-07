@@ -38,6 +38,9 @@ const toStar = (r: StarRecord): StarRow => ({
 const RANKED = `FROM constellations c JOIN owners o ON o.id = c.owner_id
   WHERE c.sign = ?1 AND c.status = 'complete' AND o.ranking_public = 1 AND (?2 IS NULL OR c.completed_at >= ?2)`;
 
+/** The first `?3` of a sign's ranking, read along constellations_rank. */
+const TOP = `SELECT c.id, o.nickname, c.total, c.completed_at ${RANKED} ORDER BY c.total DESC, c.completed_at ASC, c.id ASC LIMIT ?3`;
+
 const PATCH_COLUMNS = { status: "status", total: "total", completedAt: "completed_at" } as const;
 
 /** Recount from the stars: `?1` constellation id, `?2` slots, `?3` now. Completes once full, never un-completes. */
@@ -184,26 +187,17 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
       return constellation ? { star: toStar(star), constellation: toConstellation(constellation) } : null;
     },
     async ranking(sign, since, limit) {
-      const rows = await all<RankingRecord>(
-        `SELECT c.id, o.nickname, c.total, c.completed_at ${RANKED} ORDER BY c.total DESC, c.completed_at ASC, c.id ASC LIMIT ?3`,
-        sign, since, limit,
-      );
+      const rows = await all<RankingRecord>(TOP, sign, since, limit);
       return rows.map((r): RankingEntry => ({ constellationId: r.id, nickname: r.nickname, total: r.total, completedAt: r.completed_at }));
     },
     async topsBySign(since, perSign) {
-      const rows = await all<{ sign: string; rank: number; nickname: string; total: number; completed_at: number }>(
-        `SELECT sign, rank, nickname, total, completed_at FROM (
-           SELECT c.sign, o.nickname, c.total, c.completed_at,
-             ROW_NUMBER() OVER (PARTITION BY c.sign ORDER BY c.total DESC, c.completed_at ASC, c.id ASC) AS rank
-           FROM constellations c JOIN owners o ON o.id = c.owner_id
-           WHERE c.status = 'complete' AND o.ranking_public = 1 AND c.completed_at >= ?1
-         ) WHERE rank <= ?2 ORDER BY sign ASC, rank ASC`,
-        since, perSign,
+      // one indexed, LIMITed read per sign, all sent in one batch (a window over every sign scanned them all)
+      const results = await db.batch(CONSTELLATIONS.map((c) => db.prepare(TOP).bind(c.id, since, perSign)));
+      return CONSTELLATIONS.flatMap((c, i) =>
+        ((results[i]?.results ?? []) as unknown as RankingRecord[]).map(
+          (r, j): SignTop => ({ sign: c.id, rank: j + 1, nickname: r.nickname, total: r.total, completedAt: r.completed_at }),
+        ),
       );
-      const order = new Map(CONSTELLATIONS.map((c, i) => [c.id as string, i]));
-      return rows
-        .map((r): SignTop => ({ sign: r.sign as SignId, rank: r.rank, nickname: r.nickname, total: r.total, completedAt: r.completed_at }))
-        .sort((a, b) => (order.get(a.sign) ?? 0) - (order.get(b.sign) ?? 0) || a.rank - b.rank);
     },
     async rankOf(constellationId, since) {
       const row = await one<ConstellationRecord & { ranking_public: number }>(

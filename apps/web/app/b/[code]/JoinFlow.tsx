@@ -261,7 +261,10 @@ function OpenInvite({ invite }: { invite: Open }) {
             helper="두 사람의 인연 점수를 계산하는 데만 쓰고 저장하지 않아요. 태어난 시간은 쓰지 않아요."
           />
           <div className={b.group}>
-            <Checkbox checked={consent} onChange={setConsent} invalid={Boolean(errors.consent)} required>
+            <p id="friend-consent-note" className={b.helper}>
+              내 닉네임이 {invite.ownerNickname}님의 별자리 공유 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.
+            </p>
+            <Checkbox checked={consent} onChange={setConsent} invalid={Boolean(errors.consent)} describedBy="friend-consent-note" required>
               만 14세 이상이고, 닉네임과 인연 점수가 {invite.ownerNickname}님의 별자리에 남는 데 동의해요
             </Checkbox>
             {errors.consent ? (

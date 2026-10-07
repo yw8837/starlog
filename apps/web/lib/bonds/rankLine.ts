@@ -10,8 +10,8 @@ const sum = (stars: ReadonlyArray<{ score: number }>) => stars.reduce((total, st
 
 /**
  * The second line of the home row's 별자리 인연 랭킹 tile, about this device's owner, first match wins:
- * a completed constellation (the latest, the one `ownerView` looks the ranks up for) gives my score and,
- * when the ranking is public, this week's rank, else the all-time one; a constellation filling with at least
+ * a completed constellation (the latest, the one `ownerView` looks the rank up for) gives my score and,
+ * when the ranking is public, its all-time rank; a constellation filling with at least
  * one star gives its score so far and, when the ranking is public, what finishing it brings; otherwise
  * (nothing yet, or a sign just chosen with no star) the way in. Pure.
  */
@@ -21,9 +21,7 @@ export function homeRankLine(me: HomeRankLineInput): string {
   if (latest) {
     const mine = `내 ${getConstellation(latest.sign).ko} ${sum(latest.stars)}점`;
     const rank = me.owner.rankingPublic ? me.ranks[latest.sign] : undefined;
-    if (rank?.week) return `${mine} · 이번 주 ${rank.week}위`;
-    if (rank?.all) return `${mine} · 전체 ${rank.all}위`;
-    return mine;
+    return rank?.all ? `${mine} · ${rank.all}위` : mine;
   }
   if (me.filling && me.filling.stars.length > 0) {
     const sofar = `지금 ${getConstellation(me.filling.row.sign).ko} ${sum(me.filling.stars)}점`;
