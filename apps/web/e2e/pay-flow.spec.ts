@@ -89,7 +89,7 @@ test("owner mode: log in for the gift, open with 별조각, pay for the next, se
   // 4. A saju purchase left unopened shows in 내 정보 and refunds in full.
   await page.goto("/pay/checkout?product=saju&returnTo=%2Fme");
   await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
-  await page.getByRole("button", { name: "2,900원 결제하기" }).click();
+  await page.getByRole("button", { name: "4,900원 결제하기" }).click();
   await expect(page).toHaveURL(/\/me(\?|$)/, { timeout: NAV });
   await expect(page.getByText("사주 전체 풀이 · 열지 않음")).toBeVisible({ timeout: NAV });
   await expect(page.getByRole("heading", { name: "결제 내역" })).toBeVisible();
@@ -142,7 +142,7 @@ test("owner mode, 주제별 사주: 별조각 opens 재물운 (the 운 survives 
 
   // The gift opens the 운 that came back with the address; the sheet names it and says what one payment opens.
   const money = page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" });
-  await expect(money).toContainText("재물운 전체 풀이 · 2,900원");
+  await expect(money).toContainText("재물운 전체 풀이 · 4,900원");
   await expect(money).toContainText("결제 한 번에 고른 풀이 하나를 열어요");
   await money.getByRole("button", { name: "별조각 10개로 보기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
@@ -153,11 +153,11 @@ test("owner mode, 주제별 사주: 별조각 opens 재물운 (the 운 survives 
   await page.getByRole("group", { name: "다른 운도 볼 수 있어요" }).getByRole("button", { name: "직장운" }).click();
   const career = page.getByRole("region", { name: "직장운 전체 풀이에 담긴 것" });
   await expect(career).toBeVisible({ timeout: GENERATION });
-  await career.getByRole("link", { name: "2,900원 결제하고 보기" }).click();
+  await career.getByRole("link", { name: "4,900원 결제하고 보기" }).click();
   await expect(page).toHaveURL(/\/pay\/checkout\?/, { timeout: NAV });
   await expect(page.getByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeVisible();
   await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
-  await page.getByRole("button", { name: "2,900원 결제하기" }).click();
+  await page.getByRole("button", { name: "4,900원 결제하기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
   await expect(page.getByText(/^사주 직장운 · /)).toBeVisible();
 
@@ -185,10 +185,10 @@ test("owner mode, 주제별 사주: a 재물운 checkout comes back as ?topic=mo
     return new Promise<void>(() => {});
   });
   const money = page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" });
-  await money.getByRole("link", { name: "2,900원 결제하고 보기" }).click();
+  await money.getByRole("link", { name: "4,900원 결제하고 보기" }).click();
   await expect(page).toHaveURL(/\/pay\/checkout\?/, { timeout: NAV });
   await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
-  await page.getByRole("button", { name: "2,900원 결제하기" }).click();
+  await page.getByRole("button", { name: "4,900원 결제하기" }).click();
 
   // Back as ?topic=money&unlock=paid, the purchase starts opening 재물운; the address keeps the 운 and drops only ?unlock=.
   await expect.poll(() => held.length, { timeout: GENERATION }).toBe(1);

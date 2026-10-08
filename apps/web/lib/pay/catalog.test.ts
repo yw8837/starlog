@@ -17,7 +17,7 @@ describe("catalog", () => {
     }
     expect(sellable(productById("match")!, Date.parse("2026-10-20T00:00:00+09:00"))).toBe(true);
     expect(sellable(productById("newyear-2027")!, Date.parse("2027-12-01T00:00:00+09:00"))).toBe(false);
-    expect([productById("tarot-deep")?.krw, productById("match")?.krw, productById("newyear-2027")?.krw]).toEqual([7900, 7900, 7900]);
+    expect([productById("tarot-deep")?.krw, productById("match")?.krw, productById("newyear-2027")?.krw]).toEqual([7900, 7900, 14900]);
   });
 
   it("opens 2027 신년운세 at 2026-11-15 00:00 KST", () => {

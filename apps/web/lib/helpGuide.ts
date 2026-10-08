@@ -76,8 +76,8 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   };
   const prices =
     tarotStandardKrw === sajuStandardKrw
-      ? `타로 전체 풀이와 사주 프롤로그 모두 한 번에 ${won(tarotStandardKrw)}이에요.`
-      : `타로 전체 풀이는 한 번에 ${won(tarotStandardKrw)}, 사주 프롤로그는 ${won(sajuStandardKrw)}이에요.`;
+      ? `타로 전체 풀이와 사주 전체 풀이 모두 한 번에 ${won(tarotStandardKrw)}이에요.`
+      : `타로 전체 풀이는 한 번에 ${won(tarotStandardKrw)}, 사주 전체 풀이는 ${won(sajuStandardKrw)}이에요.`;
 
   return [
     {

@@ -6,7 +6,7 @@ describe("premium products", () => {
   it("prices and names come from SITE", () => {
     for (const p of SITE.price.premium) expect(PREMIUM[p.id]).toMatchObject({ name: p.name, krw: p.krw, slug: p.slug });
     expect(PREMIUM_IDS).toEqual(["tarot-deep", "match", "newyear-2027"]);
-    expect([PREMIUM["tarot-deep"].krw, PREMIUM.match.krw, PREMIUM["newyear-2027"].krw]).toEqual([7900, 7900, 7900]);
+    expect([PREMIUM["tarot-deep"].krw, PREMIUM.match.krw, PREMIUM["newyear-2027"].krw]).toEqual([7900, 7900, 14900]);
   });
 
   it("maps slugs to products and paths", () => {
