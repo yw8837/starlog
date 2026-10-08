@@ -67,7 +67,7 @@ test("주제별 사주: each 운 shows its own teaser, list and sheet under the 
     await expect(page.getByText(`${topic} · 맛보기`, { exact: true })).toBeVisible({ timeout: GENERATION });
     await expect(row.getByRole("button", { name: topic })).toHaveAttribute("aria-pressed", "true");
     const toc = page.getByRole("region", { name: "이어지는 풀이" });
-    await expect(toc).toContainText("소제목 8개 · 약 3,000자");
+    await expect(toc).toContainText("소제목 8개 · 약 2,500~3,000자");
     await expect(toc).toContainText("한눈에 보기 · 잘 풀리는 쪽과 조심할 쪽, 올해 흐름");
     await expect(toc).toContainText("나의 기본 결 · 타고난 바탕");
     await expect(page.getByRole("region", { name: `${topic} 전체 풀이에 담긴 것` })).toBeVisible();

@@ -54,10 +54,11 @@ export const SITE = {
     /** Follow-up questions included with every opened reading. */
     followUps: 3,
     /**
-     * Approximate length of a full reading in characters, shown before it is opened. Measured on
-     * real outputs (smoke runs, 2026-09-30): tarot about 2,000, saju about 3,000.
+     * Approximate length of a full reading in characters (without spaces), shown before it is opened as one number or a
+     * range (approxCharsText). Tarot measured about 2,000 on real outputs (smoke runs, 2026-09-30). Saju is the owner's
+     * range: measured 2026-10-08 on the new reading voice, 2,545 for a whole chapter (the old voice wrote 3,220).
      */
-    approxChars: { tarot: 2000, saju: 3000 },
+    approxChars: { tarot: { min: 2000, max: 2000 }, saju: { min: 2500, max: 3000 } },
   },
   /** Public beta: every reading is free within a daily count (the server's BETA_FULL_PER_DAY). */
   beta: {

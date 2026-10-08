@@ -22,7 +22,7 @@ vi.mock("@/lib/config", async (importOriginal) => {
           },
         ],
       },
-      reading: { followUps: 5, approxChars: { tarot: 1234, saju: 5678 } },
+      reading: { followUps: 5, approxChars: { tarot: { min: 1234, max: 1234 }, saju: { min: 5678, max: 6789 } } },
       beta: { fullPerDay: 2, teaserPerDay: 4 },
       moonPacks: [{ units: 20, bonus: 5, krw: 9900 }],
     },
@@ -44,7 +44,7 @@ describe("/pricing", () => {
     expect(text).toContain("이어서 물어보기 5번");
     expect(text).toContain("이 기기에 계속 보관");
     expect(text).toContain("약 1,234자");
-    expect(text).toContain("약 5,678자");
+    expect(text).toContain("약 5,678~6,789자");
     expect(text).toContain("별조각 10개를 드려요. 전체 풀이를 두 번 무료로");
     expect(text).toContain("첫 풀이는 하루 4번까지");
     expect(text).toContain("전체 풀이 한 번에 5개가 쓰여요");

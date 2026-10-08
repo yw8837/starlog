@@ -108,7 +108,7 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   await expect(chart.getByRole("table").getByRole("columnheader")).toHaveText(["시주", "일주", "월주", "연주"]);
   await expect(chart).toContainText("丙寅");
   await expect(chart).toContainText("병화");
-  await expect(page.getByRole("region", { name: "이어지는 풀이" })).toContainText(/소제목 \d+개 · 약 3,000자/, { timeout: 30_000 });
+  await expect(page.getByRole("region", { name: "이어지는 풀이" })).toContainText(/소제목 \d+개 · 약 2,500~3,000자/, { timeout: 30_000 });
   // The sample's written prologue is never shown, even for the sample chart.
   expect(await page.locator("body").innerText()).not.toContain(SAJU.paid.sections[0]!.body.slice(0, 40));
   await shot(page, info, "03-saju-chart");
@@ -137,7 +137,7 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
   // The free reading from the API, then the scope, then one gold button.
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
   await expect(sheet).toBeVisible({ timeout: 30_000 });
-  await expect(sheet).toContainText("풀이 전체 · 약 3,000자");
+  await expect(sheet).toContainText("풀이 전체 · 약 2,500~3,000자");
   await expect(page.getByRole("region", { name: "이어지는 풀이" })).toContainText("계산 기준");
   expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
   await shot(page, info, "05-saju-chart-known-time");

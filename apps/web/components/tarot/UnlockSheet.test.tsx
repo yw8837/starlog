@@ -16,6 +16,11 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByText("전체 풀이 · 2,900원")).toBeTruthy();
   });
 
+  it("shows the saju length as the owner's range (2026-10-08)", () => {
+    render(<UnlockSheet {...base} kind="saju" offer={{ mode: "pay", priceKrw: 4900 }} onUnlock={() => {}} />);
+    expect(screen.getByText("풀이 전체 · 약 2,500~3,000자")).toBeTruthy();
+  });
+
   it("guest: log in first, with the gift explained", () => {
     render(<UnlockSheet {...base} offer={{ mode: "login", priceKrw: 2900, giftUnits: 10 }} onUnlock={() => {}} />);
     expect(screen.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).getAttribute("href")).toBe(base.loginHref);

@@ -1,4 +1,5 @@
 import { SITE, won } from "./config";
+import { approxCharsText } from "./pricing";
 
 /**
  * 이용 가이드 (/help): category chips over accordion cards (the 사주핑 user-guide pattern, see
@@ -163,7 +164,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           icon: "open",
           title: "첫 풀이와 전체 풀이",
           sub: "먼저 읽어 보고 열지 정해요",
-          body: `결과 화면에서 첫 풀이를 먼저 무료로 읽어요. 그 아래에 이어지는 풀이의 소제목과 분량(약 ${num(approxChars.tarot)}자)이 보여요.`,
+          body: `결과 화면에서 첫 풀이를 먼저 무료로 읽어요. 그 아래에 이어지는 풀이의 소제목과 분량(약 ${approxCharsText(approxChars.tarot)}자)이 보여요.`,
           steps: [
             "더 보고 싶으면 전체 풀이 보기를 눌러요.",
             `전체 풀이와 함께 이어서 물어보기 ${followUps}번이 열리고, 풀이는 이 기기에 보관돼요.`,
@@ -234,14 +235,14 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
               icon: "open",
               title: "맛보기와 전체 풀이",
               sub: "명식과 맛보기는 먼저 무료로",
-              body: `명식(네 기둥, 오행, 일간)과 첫 장 요약, 그리고 보고 싶은 운의 맛보기를 먼저 무료로 봐요. 전체 풀이는 약 ${num(approxChars.saju)}자예요. 결제 한 번에 지금 보는 풀이 하나가 열리고, 이어서 물어보기 ${followUps}번이 함께 열려요.`,
+              body: `명식(네 기둥, 오행, 일간)과 첫 장 요약, 그리고 보고 싶은 운의 맛보기를 먼저 무료로 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자예요. 결제 한 번에 지금 보는 풀이 하나가 열리고, 이어서 물어보기 ${followUps}번이 함께 열려요.`,
             }
           : {
               id: "saju-open",
               icon: "open",
               title: "첫 장과 전체 풀이",
               sub: "명식과 요약은 먼저 무료로",
-              body: `명식(네 기둥, 오행, 일간)과 첫 장 요약을 먼저 무료로 봐요. 전체 풀이는 약 ${num(approxChars.saju)}자이고, 열면 이어서 물어보기 ${followUps}번이 함께 열려요.`,
+              body: `명식(네 기둥, 오행, 일간)과 첫 장 요약을 먼저 무료로 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자이고, 열면 이어서 물어보기 ${followUps}번이 함께 열려요.`,
             },
       ],
     },

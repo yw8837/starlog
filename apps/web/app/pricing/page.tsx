@@ -8,11 +8,11 @@ import { PaymentsNote } from "@/components/legal/PaymentsNote";
 import { SITE, won } from "@/lib/config";
 import { times } from "@/lib/helpGuide";
 import { GIFT_DAYS, REFUND_DAYS, standardProduct } from "@/lib/pay/catalog";
+import { approxCharsText } from "@/lib/pricing";
 import { sajuFreeLine, sajuPricingLine } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
 const { price, currency, reading, nameKo, beta, features } = SITE;
-const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 export const metadata: Metadata = pageMetadata({
   title: "가격 안내",
@@ -32,14 +32,14 @@ const PRODUCTS = [
     name: standardProduct("tarot").name,
     sub: "카드 3장으로 보는 지금",
     krw: standardProduct("tarot").krw,
-    includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.tarot)}자`, "카드별 풀이와 세 카드의 연결, 시기, 상황별 갈래, 오늘 해 볼 일"],
+    includes: [`소제목으로 나눈 풀이 전체 · 약 ${approxCharsText(reading.approxChars.tarot)}자`, "카드별 풀이와 세 카드의 연결, 시기, 상황별 갈래, 오늘 해 볼 일"],
     picture: <Cat outfit="tarot" size={72} reactOnTap={false} />,
   },
   {
     name: standardProduct("saju").name,
     sub: "타고난 결로 보는 나",
     krw: standardProduct("saju").krw,
-    includes: [`소제목으로 나눈 풀이 전체 · 약 ${num(reading.approxChars.saju)}자`, sajuPricingLine(features.sajuTopics)],
+    includes: [`소제목으로 나눈 풀이 전체 · 약 ${approxCharsText(reading.approxChars.saju)}자`, sajuPricingLine(features.sajuTopics)],
     picture: <Rabbit outfit="hanbok" size={72} reactOnTap={false} />,
   },
 ] as const;

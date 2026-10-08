@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { SITE, won } from "@/lib/config";
+import { approxCharsText } from "@/lib/pricing";
 import { times } from "@/lib/helpGuide";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import type { UnlockOffer } from "@/lib/pay/offer";
@@ -81,7 +82,7 @@ export function UnlockSheet({
   checking = false,
   onCheck,
 }: UnlockSheetProps) {
-  const chars = new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars[kind]);
+  const chars = approxCharsText(SITE.reading.approxChars[kind]);
   const opening = offer.mode === "opening";
   const usedUp = opening && remaining === 0;
   // Two lines so the count never wraps mid-phrase on a phone; read as "전체 풀이 보기 · 오늘 N번 남았어요".

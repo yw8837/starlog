@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref } from "@/lib/account/client";
 import { SITE, sajuTopicsMode, won } from "@/lib/config";
+import { approxCharsText } from "@/lib/pricing";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { isPaymentWindowClosed, loadTossSdk, type TossWidgets } from "@/lib/pay/tossSdk";
 import { PREMIUM, isPremiumId } from "@/lib/premium/products";
@@ -35,7 +36,7 @@ interface OrderInfo {
 const scopeLines = (productId: string): string[] => {
   if (isPremiumId(productId)) return [...PREMIUM[productId].scope];
   if (productId !== "tarot" && productId !== "saju") return [];
-  const chars = new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars[productId]);
+  const chars = approxCharsText(SITE.reading.approxChars[productId]);
   return [
     `풀이 전체 · 약 ${chars}자`,
     `이어서 물어보기 ${SITE.reading.followUps}번`,

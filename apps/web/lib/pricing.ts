@@ -29,6 +29,12 @@ export function moonRefundKrw(pack: MoonPack, used: number): number {
   return Math.round((pack.krw * paidLeft) / pack.units);
 }
 
+/** A reading's length as shown before it is opened (SITE.reading.approxChars): "2,000", or a range, "2,500~3,000". */
+export function approxCharsText({ min, max }: { min: number; max: number }): string {
+  const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
+  return min === max ? num(min) : `${num(min)}~${num(max)}`;
+}
+
 /** "약 2,833원" when rounded, "2,250원" when exact. */
 export function perReadingLabel(pack: MoonPack, unitsPerReading: number = SITE.price.unitsPerReading) {
   const { krw, rounded } = perReadingKrw(pack, unitsPerReading);

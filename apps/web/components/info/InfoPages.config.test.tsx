@@ -10,7 +10,7 @@ vi.mock("@/lib/config", async (importOriginal) => {
     SITE: {
       ...actual.SITE,
       price: { ...actual.SITE.price, tarotStandardKrw: 3100, sajuStandardKrw: 4100 },
-      reading: { followUps: 5, approxChars: { tarot: 1234, saju: 5678 } },
+      reading: { followUps: 5, approxChars: { tarot: { min: 1234, max: 1234 }, saju: { min: 5678, max: 6789 } } },
       beta: { ...actual.SITE.beta, fullPerDay: 2, teaserPerDay: 4 },
     },
   };
@@ -32,7 +32,7 @@ describe("service pages take every number from SITE", () => {
     expect(text).toContain("첫 풀이는 하루 4번까지");
     expect(text).toContain("이어서 물어보기 5번");
     expect(text).toContain("약 1,234자");
-    expect(text).toContain("약 5,678자");
+    expect(text).toContain("약 5,678~6,789자");
     expect(text).not.toMatch(/2,900원|2,000자|3,000자|하루 한 번 무료로 열어요/);
   });
 
@@ -44,7 +44,7 @@ describe("service pages take every number from SITE", () => {
       expect(body).toContain("하루 두 번");
       expect(body).toContain("하루 4번까지");
       expect(body).toContain("약 1,234자");
-      expect(body).toContain("약 5,678자");
+      expect(body).toContain("약 5,678~6,789자");
       expect(body).not.toMatch(/2,000자|3,000자/);
     }
   });

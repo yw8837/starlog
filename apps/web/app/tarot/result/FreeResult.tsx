@@ -15,6 +15,7 @@ import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
+import { approxCharsText } from "@/lib/pricing";
 import { resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { standardProduct } from "@/lib/pay/catalog";
 import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
@@ -285,7 +286,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 </h2>
                 <p className={s.prose}>{teaser.firstCard.body}</p>
               </Paper>
-              <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars.tarot)}자`} />
+              <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${approxCharsText(SITE.reading.approxChars.tarot)}자`} />
               <UnlockSheet
                 kind="tarot"
                 offer={offer}

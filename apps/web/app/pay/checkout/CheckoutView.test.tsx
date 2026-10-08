@@ -108,11 +108,14 @@ describe("CheckoutView", () => {
     stubFetch(Response.json({ productId: "saju", name: "사주 전체 풀이", amount: 2900, customerKey: "c_x", provider: "mock", clientKey: null }));
     render(<CheckoutView productId="saju" returnTo="/saju/chart" navigate={vi.fn()} />);
     expect(await screen.findByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeTruthy();
+    // the owner's range for saju (2026-10-08)
+    expect(screen.getByText("풀이 전체 · 약 2,500~3,000자")).toBeTruthy();
   });
 
   it("keeps the tarot lines as they are", async () => {
     render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
     expect(await screen.findByText("이 기기에 계속 보관")).toBeTruthy();
+    expect(screen.getByText("풀이 전체 · 약 2,000자")).toBeTruthy();
     expect(screen.queryByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeNull();
   });
 });

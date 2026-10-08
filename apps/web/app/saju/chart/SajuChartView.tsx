@@ -20,6 +20,7 @@ import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { Button } from "@/components/ui/Button";
 import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, sajuTopicsMode } from "@/lib/config";
+import { approxCharsText } from "@/lib/pricing";
 import { standardProduct } from "@/lib/pay/catalog";
 import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
@@ -329,7 +330,7 @@ export function SajuChartView({
           </footer>
         </Paper>
         {topicRow}
-        <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${new Intl.NumberFormat("ko-KR").format(SITE.reading.approxChars.saju)}자`} />
+        <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${approxCharsText(SITE.reading.approxChars.saju)}자`} />
         <UnlockSheet
           kind="saju"
           topicLabel={topic !== "overall" ? topicLabel(topic) : undefined}

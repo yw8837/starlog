@@ -1,5 +1,6 @@
 import { adsConfig } from "./ads";
 import { SITE } from "./config";
+import { approxCharsText } from "./pricing";
 import { times } from "./helpGuide";
 import { crisisLines } from "./crisis";
 import { INFO_PAGES } from "./infoPages";
@@ -27,8 +28,6 @@ export interface FaqGroup {
   label: string;
   entries: FaqEntry[];
 }
-
-const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 
 type FaqOptions = { site?: typeof SITE; ads?: boolean };
 
@@ -130,8 +129,8 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "preview",
           q: "풀이를 열기 전에 무엇을 볼 수 있나요?",
           a: [
-            `타로는 뽑은 카드 세 장과 첫 풀이를 먼저 무료로 읽어요. 이어지는 풀이의 소제목과 분량(약 ${num(approxChars.tarot)}자)도 미리 보여 드려요.`,
-            `사주는 명식(네 기둥, 오행, 일간)과 첫 장 요약을 먼저 봐요. 전체 풀이는 약 ${num(approxChars.saju)}자예요. 무엇이 담기는지 보고 나서 열지 정하면 돼요.`,
+            `타로는 뽑은 카드 세 장과 첫 풀이를 먼저 무료로 읽어요. 이어지는 풀이의 소제목과 분량(약 ${approxCharsText(approxChars.tarot)}자)도 미리 보여 드려요.`,
+            `사주는 명식(네 기둥, 오행, 일간)과 첫 장 요약을 먼저 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자예요. 무엇이 담기는지 보고 나서 열지 정하면 돼요.`,
           ],
         },
         {
