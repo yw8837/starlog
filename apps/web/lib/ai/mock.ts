@@ -1,9 +1,9 @@
 import "server-only";
-import type { SajuElement } from "@starlog/core";
+import type { SajuElement, SinsalName } from "@starlog/core";
 import type { KbCard, TopicAngle } from "@/lib/kb";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { PLAIN_WORDS, glossOnce, glossText } from "./plainWords";
-import { ELEMENT_WORD, ORDER, SAJU_OBSERVATION_HEADING, ymKo, type SajuFactSet } from "./prompts/saju";
+import { ELEMENT_WORD, ORDER, SAJU_OBSERVATION_HEADING, SINSAL_BASIS_LINE, ymKo, type SajuFactSet } from "./prompts/saju";
 import { groupOf, type GroupName } from "./prompts/sajuTopics";
 import { UNSURE_OPTIONS, WHEN_KO, cardLabel, onTopic, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import { GenerationError, type GenerationHooks, type GenerationTask, type ReadingProvider } from "./provider";
@@ -358,6 +358,124 @@ const CLOSE: Record<GroupName, string> = {
 /** A relation in plain words (§4.2 rule 10): one, as the scene needs it. */
 const relationPlain = (type: string) => (/충/.test(type) ? "정면으로 맞서는" : /합/.test(type) ? "서로 묶이려는" : /형|파|해/.test(type) ? "엇갈리는" : "");
 
+/** What a 살·귀인 name leans toward (its core in bold), the second scene it shows in, and one everyday act (the mock's 이름표 풀이). */
+const NAME_PLAIN: Record<SinsalName, { lean: string; scene: string; act: string }> = {
+  천을귀인: {
+    lean: "막힐 때 혼자 버티기보다 먼저 묻는",
+    scene: "일이 꼬인 날에도 누군가에게 한마디 건넨 뒤에야 길이 보이곤 해요.",
+    act: "막힌 일이 생기면 **물어볼 사람 한 명**을 떠올려 먼저 말을 건네 보세요.",
+  },
+  문창귀인: {
+    lean: "생각을 말과 글로 꺼내 정리하는",
+    scene: "머릿속에만 두던 생각도 누군가에게 말로 풀어 보고 나서야 또렷해지곤 해요.",
+    act: "생각이 엉킬 때는 **떠오른 말을 소리 내어** 한 번 천천히 읽어 보세요.",
+  },
+  학당귀인: {
+    lean: "배운 것을 차곡차곡 쌓아 가는",
+    scene: "새로 배운 것이 있으면 한 번 듣고 끝내기보다 손에 익을 때까지 붙들곤 해요.",
+    act: "배우고 싶던 것이 떠오르면 미루지 말고 **첫 수업 하나**부터 알아보세요.",
+  },
+  도화: {
+    lean: "사람들 앞에서 표현이 살아나는",
+    scene: "여럿이 모인 자리에서 내 말에 사람들이 귀를 기울이는 순간이 종종 오곤 해요.",
+    act: "하고 싶은 말이 있는 자리라면 **짧은 소개 한마디**를 미리 준비해 보세요.",
+  },
+  역마: {
+    lean: "자리를 옮기며 생각이 풀리는",
+    scene: "한자리에 오래 앉아 있을 때보다 걷거나 자리를 바꾼 뒤에 답이 떠오르곤 해요.",
+    act: "생각이 막히면 **자리를 한 번 옮겨** 다른 곳에서 이어서 해 보세요.",
+  },
+  화개: {
+    lean: "혼자 깊이 파고들 때 힘이 나는",
+    scene: "좋아하는 일 하나에 빠지면 주변 소리가 들리지 않을 만큼 오래 붙들곤 해요.",
+    act: "몰입하고 싶은 날에는 **혼자 쓰는 시간 한 칸**을 달력에 미리 정해 두세요.",
+  },
+};
+
+const PLACE_PLAIN: Record<string, string> = { 연지: "태어난 해 자리", 월지: "태어난 달 자리", 일지: "태어난 날 자리", 시지: "태어난 시 자리" };
+/** Where a place shows first, in the mock's plain reading of the four places. */
+const PLACE_SHOWS: Record<string, string> = {
+  "태어난 해 자리": "어릴 때부터 익숙한 바탕과 닿은 자리라서 이 이름도 오래된 습관 속에서 먼저 보이기 쉬워요.",
+  "태어난 달 자리": "일하고 배우는 바깥 무대와 닿은 자리라서 이 이름도 일하는 장면에서 먼저 보이기 쉬워요.",
+  "태어난 날 자리": "나와 가장 가까운 자리라서 이 이름도 하루하루의 습관과 가까운 사이에서 먼저 보이기 쉬워요.",
+  "태어난 시 자리": "혼자 보내는 시간과 닿은 자리라서 이 이름도 혼자 있는 장면에서 먼저 보이기 쉬워요.",
+};
+/** "연지 辰 → 일지 寅" → the place it lands on in plain words, and its glyph. */
+const hitPlace = (hit: string) => {
+  const [place = "", glyph = ""] = (hit.split(" → ")[1] ?? "").split(" ");
+  return { place: PLACE_PLAIN[place] ?? place, glyph };
+};
+
+/**
+ * 이름표 풀이 (spec 2026-10-08 §3): the first name with its place, meaning, tendency, second scene and act, the others named
+ * with their glyphs, and what the names do not mean; with none, that the common names were looked for, and a strength.
+ */
+function mockNamesBody(f: SajuFactSet, strength: { word: string; count: number; ease: string }): string[] {
+  const opening = "누가 나를 한마디로 소개해 줄 때 그 말이 생각보다 내 모습과 닮아서 고개를 끄덕인 적 있지 않나요?";
+  const [first, ...others] = f.sinsal;
+  if (!first) {
+    return [
+      opening,
+      "사주에서 흔히 찾아보는 이름들을 하나씩 짚어 봤지만 이 사주에 따로 붙은 이름은 없어요.",
+      "도움을 청하는 쪽, 배움과 표현, 움직임과 몰입처럼 이름표가 가리키는 여러 쪽 가운데 이 사주에 따로 이름이 붙은 곳이 없다는 뜻이에요.",
+      `대신 ${strength.word} 기운이 ${strength.count}개로 가장 많아서 **${strength.ease}을 맡을 때** 다른 사람보다 손이 먼저 가기 쉬워요.`,
+      "남들이 미뤄 둔 그런 일을 어느새 내가 먼저 집어 들고, 끝까지 붙들어 마무리하곤 해요.",
+      "이름표가 붙지 않았다고 모자란 사주는 아니고, 이 사주는 오히려 이런 장면에서 자기 모습을 가장 잘 보여 줘요.",
+      "그 일을 맡게 되면 **가장 먼저 끝낼 한 가지**를 아침에 미리 정해 보세요.",
+    ];
+  }
+  const { place, glyph } = hitPlace(first.hits[0]!);
+  const glyphsOf = (hits: string[]) => [...new Set(hits.map((hit) => hitPlace(hit).glyph))].join("·");
+  const list = others.map((s) => `${s.name}(${glyphsOf(s.hits)})`).join(", ");
+  const plain = NAME_PLAIN[first.name as SinsalName];
+  return [
+    opening,
+    `사주로 보면 ${place}의 ${glyph}에 ${josa(first.name, "이라는", "라는")} 이름이 붙어요.`,
+    `${first.meaning}이라 **${plain.lean}** 경향이 있어요.`,
+    plain.scene,
+    `${place}는 ${PLACE_SHOWS[place] ?? "이 이름이 먼저 보이는 자리예요."}`,
+    others.length
+      ? `함께 붙은 이름은 ${josa(list, "이고", "고")}, 저마다 가리키는 쪽이 조금씩 달라요.`
+      : "그런 날이 쌓이면 이 이름이 가리키는 쪽이 하루하루의 습관에서 조금씩 더 또렷해져요.",
+    `${others.length ? "이 이름들은" : "이 이름은"} 앞으로 무슨 일이 생긴다는 예고가 아니라, 이 사주가 평소에 자주 기우는 쪽에 붙여 둔 이름표 같은 말이에요.`,
+    plain.act,
+  ];
+}
+
+/** The tendency a scarce element leaves (its core in bold) and the second scene it shows in (the mock's 기운 채우기). */
+const SCARCE_PLAIN: Record<string, { lean: string; scene: string }> = {
+  나무: { lean: "새로 시작하는 일을 미루기", scene: "해 보고 싶던 일도 준비만 길어지다가 첫발을 떼기까지 한참 걸리곤 해요." },
+  불: { lean: "드러내는 데 머뭇거리기", scene: "해 둔 일이 있어도 보여 줄 때를 재다가 그냥 넘어가고, 시작할 힘이 나기까지 한참 걸리곤 해요." },
+  흙: { lean: "하루 리듬이 흐트러지기", scene: "바쁜 날이 이어지면 밥때와 잠자리에 드는 시간이 들쭉날쭉해지고, 그 뒤로 며칠씩 어수선하곤 해요." },
+  쇠: { lean: "끝맺음을 뒤로 미루기", scene: "거의 다 끝낸 일도 마지막 한 걸음을 남겨 둔 채 다음 일로 넘어가곤 해요." },
+  물: { lean: "쉬어 갈 틈을 놓치기", scene: "할 일을 하나 끝내면 숨 돌릴 틈도 없이 다음 일을 바로 집어 들곤 해요." },
+};
+
+/** 기운 채우기 (spec 2026-10-08 §2, §3): why this element, its hidden glyph or its tie, then colour and environment, direction and habits. */
+function mockGaeunBody(f: SajuFactSet): string[] {
+  const [scarce, ...tied] = f.scarce;
+  if (!scarce) return [];
+  const word = scarce.element.replace(/\(.*$/, "");
+  const plain = SCARCE_PLAIN[word]!;
+  const colour = scarce.colour.split("·")[0]!;
+  return [
+    "하루를 마치고 돌아보면 유난히 한쪽 일만 붙들다가 다른 쪽은 손도 못 댄 날이 있지 않아요?",
+    `사주로 보면 ${f.elements.glyphCount === 8 ? "여덟" : "여섯"} 글자 가운데 ${word} 기운이 ${scarce.count}개라서 **${plain.lean}** 쉬워요.`,
+    plain.scene,
+    scarce.hidden
+      ? `그래도 겉에 없을 뿐 안쪽에는 숨은 ${word} 기운이 있어서, 곁에 조금만 두어도 손이 먼저 가기 쉬워요.`
+      : scarce.count === 0
+        ? "겉에도 안쪽에도 없는 기운이라 곁에 두는 것부터 가볍게 시작해 볼 만해요."
+        : "아주 없지는 않아도 다른 기운보다 덜 보이는 기운이라 일부러 곁에 둘 때 더 잘 느껴져요.",
+    ...(tied.length ? [`${tied.map((t) => t.element.replace(/\(.*$/, "")).join("·")} 기운도 같은 개수라 함께 떠올려도 좋아요.`] : []),
+    `책상 위에는 ${colour} 포인트 하나를 놓아 두고, ${scarce.environment[0]} 같은 작은 변화도 곁에 둬 보세요.`,
+    scarce.direction.endsWith("쪽")
+      ? `산책할 때는 ${scarce.direction}으로 난 길을 따라 한 바퀴 걸어 보고, 책상에 앉을 때도 그쪽을 보는 자리면 좋아요.`
+      : `책을 읽거나 쉴 때는 ${scarce.direction} 자리에 앉아 보고, 그 자리는 늘 비워 두는 편이 좋아요.`,
+    `미루고 싶은 날에는 **${scarce.habits[0]}**부터 가볍게 해 보고, 시간이 나면 ${scarce.habits[1]}도 곁들여 보세요.`,
+  ];
+}
+
 export function mockSajuReading(f: SajuFactSet): SajuReading {
   // The reading voice (owner 2026-10-08): each body section opens on a scene question, gives one plain reason, says the tendency
   // with its core in bold and ends on one everyday act, with one 명리 term at most, glossed where it first appears (the card first).
@@ -469,9 +587,12 @@ export function mockSajuReading(f: SajuFactSet): SajuReading {
       "해가 바뀌기 전에 **계속 가져갈 일 하나**를 정해 새 달력 맨 앞 장에 표시해 두세요.",
       "그렇게 골라 둔 하나가 다음 해의 첫 계획을 세울 때 든든한 출발점이 돼요.",
     ],
+    mockNamesBody(f, { word: ELEMENT_WORD[top], count: max, ease: ELEMENT_PLAIN[top].ease }),
+    mockGaeunBody(f),
     [
       "계산 기준은 만세력마다 조금씩 다를 수 있어서, 이 풀이가 어떤 기준으로 읽었는지 먼저 밝혀 둘게요.",
       ...f.calculation.map((line) => glossText(`${line.replace(/[.。]$/, "")}.`, say)),
+      SINSAL_BASIS_LINE,
       ...f.limits,
       // the disclaimers the body leaves out (§2.5): here, once
       "본문에서는 합·충 같은 관계를 사건으로 읽지 않았고, 실제로 묶이는지도 따지지 않았어요. 12운성의 단계도 좋고 나쁨이 아니라 기운의 세기를 가리키는 이름이에요.",

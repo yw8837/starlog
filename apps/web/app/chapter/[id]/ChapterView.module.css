@@ -45,6 +45,14 @@
   line-height: var(--lh-prose);
 }
 
+/* A code-owned line under a section (기운 채우기's note), in the label's ink. */
+.sectionNote {
+  margin-top: 12px;
+  color: #5d4d7a;
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
 .share {
   margin-top: 14px;
 }

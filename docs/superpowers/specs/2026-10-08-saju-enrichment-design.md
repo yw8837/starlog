@@ -43,7 +43,7 @@ A hit is the target branch appearing in another visible pillar's 지지. The bas
   - no 천을귀인, no 도화
 
   Add 4–6 more golden charts covering each rule, 시 모름, and a chart with no hits.
-- **계산 기준 line** (one sentence in section 계산 기준): "살·귀인은 귀인은 일간, 도화·역마·화개는 태어난 해와 날의 지지 기준으로 찾았고, 기준은 유파마다 달라요."
+- **계산 기준 line** (one sentence in section 계산 기준): "귀인은 일간을, 도화·역마·화개는 태어난 해와 날의 지지를 기준으로 찾았고, 이 기준은 유파마다 달라요."
 
 ## 2. 개운 (the scarcest element)
 - **Input:** the element counts of the 8 visible glyphs (the same counts the chart shows). Pick the minimum; 0 comes first. On a tie, both are candidates: the reading names the one that fits its other advice and may mention the other in one clause. A glyph present only in 지장간 softens the line ("숨은 불씨는 있어요").

@@ -384,13 +384,13 @@ describe("saju", () => {
     const d = device();
     const t = await d.call(sajuTeaser, { birth });
     expect(t.status).toBe(200);
-    // the 한눈에 보기 card, seven sections, the observation
-    expect(t.data.lockedToc).toHaveLength(9);
+    // the 한눈에 보기 card, nine sections (이름표 풀이 and 기운 채우기 since 2026-10-08), the observation
+    expect(t.data.lockedToc).toHaveLength(11);
     expect(t.data.lockedToc[0]).toMatch(/^한눈에 보기 · /);
     expect(t.data.lockedToc.at(-1)).toBe("앞으로 몇 주 · 확인해 볼 신호");
     const r = await d.call(sajuReading, { birth });
     expect(r.status).toBe(200);
-    expect(r.data.reading.sections).toHaveLength(7);
+    expect(r.data.reading.sections).toHaveLength(9);
     expect(r.data.reading.observation.heading).toBe("앞으로 몇 주 · 확인해 볼 신호");
     expect(Object.keys(r.data.reading.glance)).toEqual(["goesWell", "watchOut", "remedy", "thisYear", "thisYearAction"]);
     expect(r.data.reading).not.toHaveProperty("story");

@@ -1,3 +1,8 @@
+/** 7절 (owner 2026-10-08, saju enrichment spec §3): the 살·귀인 names this chart carries, the only section that names them. */
+export const SAJU_NAMES_HEADING = "이름표 풀이 · 이 명식에 붙는 이름들";
+/** 8절: the scarcest element kept close (개운), as everyday choices. */
+export const SAJU_GAEUN_HEADING = "기운 채우기 · 적은 기운을 곁에 두는 법";
+
 /**
  * The saju reading's section headings, worded so they hold for any chart (the gold sample's
  * headings with its specifics removed) and in plain words first (owner 2026-10-07: a reader who
@@ -11,6 +16,8 @@ export const SAJU_PROLOGUE_SECTIONS: readonly string[] = Object.freeze([
   "가까운 관계 속 나 · 가까운 사람 곁에서 드러나는 모습",
   "일할 때·쉴 때 · 두 장면으로 확인하기",
   "지금의 10년과 올해 · 10년마다 바뀌는 흐름 속 올해",
+  SAJU_NAMES_HEADING,
+  SAJU_GAEUN_HEADING,
   "계산 기준 · 보지 않은 것과 달라질 수 있는 것",
 ]);
 

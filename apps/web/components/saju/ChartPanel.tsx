@@ -1,18 +1,21 @@
 import { Button } from "@/components/ui/Button";
+import { gaeunLine, scarceElements } from "@/lib/sajuEnrichment";
 import { ChartCriteria } from "./ChartCriteria";
 import { ChartTable } from "./ChartTable";
 import { ElementBar } from "./ElementBar";
+import { NameChips } from "./NameChips";
 import type { ChartResult } from "./useSajuChart";
 import s from "./ChartPanel.module.css";
 
-/** Pillars, elements and the applied criteria for one computed chart (or why it could not be computed). */
+/** Pillars, the names they carry, elements with the 개운 line, and the applied criteria for one computed chart (or why it could not be computed). */
 export function ChartPanel({ result }: { result: ChartResult | null }) {
   let content;
   if (result && "chart" in result) {
     content = (
       <>
         <ChartTable chart={result.chart} title="네 기둥" />
-        <ElementBar elements={result.chart.elements} />
+        <NameChips chart={result.chart} />
+        <ElementBar elements={result.chart.elements} note={gaeunLine(scarceElements(result.chart))} />
         <ChartCriteria chart={result.chart} />
       </>
     );

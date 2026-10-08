@@ -45,7 +45,13 @@ describe("주제별 사주 prompts (spec §7.5)", () => {
     // (only the ones that apply, short), the confirmation formula is banned once, and "~로 읽어요" is settled in one sentence.
     expect(hash(SAJU_PREAMBLE)).toBe("90e3535f9cab2ce186fac45f2dcef97dd97339e26a122bc1cd104ae37800e5bd");
     // Then SAJU_SYSTEM alone (real-model check 2026-10-08): the basis slot writes a required anchor once as "태어난 달(월주)".
-    expect(hash(SAJU_SYSTEM)).toBe("d0bfd81a3a6af1eddb8b7e6dec9b06de69a57462cbe8b9af567f5a55c8e29da1");
+    // Then SAJU_SYSTEM alone (saju enrichment, owner 2026-10-08, docs/superpowers/specs/2026-10-08-saju-enrichment-design.md):
+    // the reading format grows to nine sections, 7절 이름표 풀이 (the facts' 살·귀인 names, there only) and 8절 기운 채우기
+    // (the scarce element's colour, direction, habit and environment as small choices), 계산 기준 moves to 9절 with its basis
+    // sentence, the total to 2,700~4,100자, and a follow-up names a 살·귀인 only when asked. The preamble keeps its 신살 ban
+    // byte for byte, so 신년운세 and the 운 do not move. Re-pinned the same day for the basis sentence's wording
+    // ("귀인은 일간을, 도화·역마·화개는 … 기준으로 찾았고, 이 기준은 유파마다 달라요.").
+    expect(hash(SAJU_SYSTEM)).toBe("027b1a51231f695e5432d7e9184f7ba9433d7bdf545a3e5972a3632bd5fa50c8");
     expect(hash(NEWYEAR_SYSTEM)).toBe("1307d57b62ae51e374b7be06b89445fb7c0ad161540b3384fae4447844710f13");
   });
 

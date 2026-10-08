@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { z } from "zod";
 import type { SajuSituationId, SajuTopicId } from "@/lib/reading/types";
 import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
-import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_GAEUN_HEADING, SAJU_NAMES_HEADING, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { TOPIC_SECTIONS, TOPIC_SECTION_LENGTH } from "@/lib/sajuTopics";
 import { mockDaily, mockSajuReading, mockTarotReading } from "./mock";
 import { mockSajuTopicReading } from "./mockSajuTopics";
@@ -30,6 +30,8 @@ const chartOf = (id: string) => computeChart(toSajuInput(golden.charts.find((c) 
 const TOPICS: SajuTopicId[] = ["love", "reunion", "money", "career"];
 const situations = golden.situations as Record<SajuTopicId, Record<string, SajuSituationId>>;
 const YEAR_MONTH = /(?<!\d)(?:19|20)\d{2}-(?:0[1-9]|1[0-2])(?!\d)/;
+/** 계산 기준, the last section (after 이름표 풀이 and 기운 채우기 since 2026-10-08). */
+const BASIS = SAJU_PROLOGUE_SECTIONS.length - 1;
 
 describe("the saju prompts (§4.1, §4.2)", () => {
   it("give the standard and topic prompts the voice block after the plain words; 신년운세 builds on the preamble without it", () => {
@@ -166,7 +168,8 @@ describe("the saju prompts (§4.1, §4.2)", () => {
 
   it("set the lengths: 4~8 sentences and 300~450자 a standard body section, 350~480자 a topic's 2~5절", () => {
     expect(SAJU_SYSTEM).toMatch(/1~6절은[^\n]*4~8문장[^\n]*300~450자/);
-    expect(SAJU_SYSTEM).toContain("합계 2,100~3,200자");
+    // 이름표 풀이 and 기운 채우기 added 600~900자 (saju enrichment 2026-10-08)
+    expect(SAJU_SYSTEM).toContain("합계 2,700~4,100자");
     expect(SAJU_TOPIC_SYSTEM).toContain("2~5절 각 350~480자");
     expect(SAJU_TOPIC_SYSTEM).toContain("합계 1,900~2,700자");
     expect(SAJU_TOPIC_SYSTEM).not.toContain("500~650자");
@@ -264,11 +267,11 @@ describe("the validators read the words; the voice checks read the marks", () =>
   it("ask for 300~450자 in a standard body section and 300~550자 in 계산 기준", () => {
     const short = (i: number) => validateSajuReading(inSection(clean, i, "짧아요.", true), facts).join("\n");
     expect(short(0)).toContain(`'${SAJU_PROLOGUE_SECTIONS[0]}' 절이 공백 제외 4자예요. 300~450자로 써 주세요.`);
-    expect(short(6)).toContain(`'${SAJU_PROLOGUE_SECTIONS[6]}' 절이 공백 제외 4자예요. 300~550자로 써 주세요.`);
+    expect(short(BASIS)).toContain(`'${SAJU_PROLOGUE_SECTIONS[BASIS]}' 절이 공백 제외 4자예요. 300~550자로 써 주세요.`);
   });
 
   it("leave the 계산 기준 절 out of the plain-word check: it may name its terms as they are", () => {
-    const basis = inSection(clean, 6, `${"편관과 지장간은 계산에만 썼어요."} ${clean.sections[6]!.body}`, true);
+    const basis = inSection(clean, BASIS, `${"편관과 지장간은 계산에만 썼어요."} ${clean.sections[BASIS]!.body}`, true);
     expect(validateSajuReading(basis, facts).join("\n")).not.toMatch(/쉬운 말이 먼저 오지 않았어요/);
   });
 });
@@ -277,13 +280,16 @@ describe("the mocks follow the voice", () => {
   it("전체 흐름: the default chart's mock opens each body section on a question, 4~8 sentences and 300~450자 with one bold phrase or two, rotates its forms, and no 2027-09", () => {
     const f = buildFactSet(computeChart(toSajuInput(DEFAULT_SAJU_FORM)), Date.parse("2026-10-07T12:00:00+09:00"));
     const r = mockSajuReading(f);
+    // 이름표 풀이 280~420자 and 기운 채우기 250~380자 (saju enrichment 2026-10-08)
+    const range: Record<string, readonly [number, number]> = { [SAJU_NAMES_HEADING]: [280, 420], [SAJU_GAEUN_HEADING]: [250, 380] };
     for (const section of r.sections.slice(0, -1)) {
+      const [min, max] = range[section.heading] ?? [300, 450];
       const sentences = section.body.split(/(?<=[.?!])\s+/);
       expect(sentences[0], section.heading).toMatch(/\?$/);
       expect(sentences.length, section.heading).toBeGreaterThanOrEqual(4);
       expect(sentences.length, section.heading).toBeLessThanOrEqual(8);
-      expect(charCount(section.body), section.heading).toBeGreaterThanOrEqual(300);
-      expect(charCount(section.body), section.heading).toBeLessThanOrEqual(450);
+      expect(charCount(section.body), section.heading).toBeGreaterThanOrEqual(min);
+      expect(charCount(section.body), section.heading).toBeLessThanOrEqual(max);
       expect(section.body.match(/\*\*[^*]+\*\*/g)?.length, section.heading).toBeGreaterThanOrEqual(1);
     }
     // §2.1: the same form twice at most in a reading, the second scene's and the advice's included

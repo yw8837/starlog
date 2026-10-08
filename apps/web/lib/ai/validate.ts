@@ -1,7 +1,7 @@
 import "server-only";
 import { BRANCHES, STEMS, ganzhiKo } from "@starlog/core";
 import { KB_CARDS, type KbCard } from "@/lib/kb";
-import { SAJU_GLANCE_ACTION_LABEL, SAJU_GLANCE_HEADING, SAJU_GLANCE_LABELS, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_GAEUN_HEADING, SAJU_GLANCE_ACTION_LABEL, SAJU_GLANCE_HEADING, SAJU_GLANCE_LABELS, SAJU_NAMES_HEADING, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { maskGanzhiReadings } from "./ganzhi";
 import { bareFirstTerms, glossed, outsideBrackets } from "./plainWords";
 import type { SajuFactSet } from "./prompts/saju";
@@ -488,6 +488,27 @@ export function validateTarotFollowUp(a: FollowUpAnswer, ctx: TarotContext, ques
 
 // ---- saju ----
 
+/** Held (공망, 홍염, 양인, 괴강) and hidden (백호, 원진, 삼재 …) 살 (spec 2026-10-08 §1): never, not even declined. 양인지 is a question. */
+const SINSAL_NEVER = /백호|원진|귀문관|삼재|겁살|(?<![가-힣])재살(?![림펴피핌])|(?<![가-힣])천살|망신살|육해살|탕화|(?<![가-힣])상문|조객|(?<![가-힣])고신|과숙|공망|홍염|(?<![가-힣])양인(?!지)|괴강/;
+/** A name read as an event or a cause: a 귀인 met, appearing or helping; "역마살이 있어서", "도화가 있으면" ("학당귀인이 있어요" is a fact). */
+const SINSAL_EVENT = new RegExp([
+  "귀인(?:을|이|과|의|에게|한테)?\\s?(?:만나|만날|만난|나타나|나타날|나타난|찾아오|찾아올|찾아와|도와|도움)",
+  "(?:[가-힣]{2,3}살|귀인|도화|역마|화개)(?:이|가)\\s?(?:붙어\\s?)?(?:있어(?!요)|있으니|있으면|있기\\s?때문|들어\\s?있어(?!요))",
+].join("|"));
+/**
+ * The six names a reading may show where its facts hold them (the 정통 이름표 풀이), and 신살 itself; anywhere else only in a
+ * sentence that declines them, as before the split. 고도화·제도화·도화지·도화선 are not 도화.
+ */
+const SINSAL_NAME = /천을귀인|문창귀인|학당귀인|(?<![가-힣])도화(?![지선])|(?<![가-힣])역마|(?<![가-힣])화개|귀인|신살/;
+
+/** The names `text` uses outside a declining sentence, but those in `allowed` (and the user's own words). */
+function sinsalNameHits(text: string, userText: string, allowed: readonly string[] = []): string[] {
+  const own = allowed.reduce((t, name) => t.replaceAll(name, "□"), text);
+  // a bare 귀인 goes with a 귀인 of the facts' own, never with 천을·문창·학당귀인 the facts do not hold
+  const left = allowed.some((name) => name.endsWith("귀인")) ? own.replace(/(?<!천을|문창|학당)귀인/g, "□") : own;
+  return [...new Set(sentences(left).filter((s) => !NEGATED.test(s)).flatMap((s) => matchesBeyondUser(SINSAL_NAME, s, userText)))];
+}
+
 /** [pattern, label, negatable]: a negatable topic may be named in a sentence that declines it. */
 const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
   [/반드시|무조건|확실히|틀림없|정해져 있|100\s*%|확률|퍼센트|점수/, "단정·수치 표현(반드시·무조건·확실히·확률·점수)", false],
@@ -499,7 +520,10 @@ const SAJU_BLOCKLIST: Array<[RegExp, string, boolean]> = [
   [/투자|로또|복권|부동산|주식|코인/, "투자", true],
   [/소송|재판/, "소송", true],
   [/수명|죽음|사망|요절/, "수명·죽음", true],
-  [/삼재|원진|백호|도화|역마|공망|귀인|신살/, "신살·공포 개념", true],
+  // 살·귀인 (spec 2026-10-08 §4): the held and hidden names and a name read as an event never, not even declined; the six
+  // names a reading may show are SINSAL_NAME's, below
+  [SINSAL_NEVER, "숨기거나 보류한 살 이름(백호·원진·삼재·공망 같은 것)", false],
+  [SINSAL_EVENT, "살·귀인을 사건이나 까닭으로 읽는 말(귀인을 만난다, ~살이 있어서)", false],
   // 같은 글자·같은 간지 between layers keep those words; these names are never needed, not even to decline them
   [/복음|伏吟|반음|反吟|병림|並臨/, "복음·반음·병림 같은 이름", false],
   [/액땜|부적|굿을/, "주술 권유", false],
@@ -528,11 +552,12 @@ const YEAR = /(?<!\d)(1[89]\d\d|20\d\d)(?!\d)/g;
  * - `cardText`: the text is card prose (a premium card part that also cites saju facts). It skips the
  *   saju blocklist and the 결혼 topic, which the tarot blocklist judges there ("좋은 시기" and the
  *   card 죽음 are fine in a card reading); the facts, verdict and label checks still apply.
+ * - `names: false`: the caller checks the 살·귀인 names part by part (the 정통 reading, whose 이름표 풀이 may name its own).
  */
 export function allowedFactViolations(
-  text: string, allowed: SajuFactSet["allowed"], out: string[], userText = "", opts: { marriage?: boolean; cardText?: boolean } = {},
+  text: string, allowed: SajuFactSet["allowed"], out: string[], userText = "", opts: { marriage?: boolean; cardText?: boolean; names?: boolean } = {},
 ): void {
-  const { marriage = false, cardText = false } = opts;
+  const { marriage = false, cardText = false, names = true } = opts;
   const glyphs = new Set(allowed.glyphs);
   const invented = [...new Set(text.match(STEM_OR_BRANCH) ?? [])].filter((g) => !glyphs.has(g));
   if (invented.length) out.push(`명식에 없는 간지 글자가 나왔어요: ${invented.join(", ")}. <facts>에 있는 글자만 써 주세요.`);
@@ -553,6 +578,8 @@ export function allowedFactViolations(
         : `쓰지 않는 표현이 있어요: ${label}. 부정문으로도 쓰지 마세요.`);
     }
   }
+  const named = !cardText && names ? sinsalNameHits(text, userText) : [];
+  if (named.length) out.push(`쓰지 않는 주제가 있어요: 살·귀인 이름(${named.join(", ")}). 이 풀이로는 말하기 어렵다고 짧게 밝히는 문장에서만 쓰세요.`);
   // 결혼 is the reading's subject when the user is dating, engaged or married; otherwise it is a
   // topic this reading only declines. Verdicts (it will / won't happen, when) are never allowed.
   if (!cardText && !marriage && sentences(text).some((s) => matchesBeyondUser(/결혼/, s, userText).length > 0 && !NEGATED.test(s))) {
@@ -564,8 +591,51 @@ export function allowedFactViolations(
   if (!hasHangul(text)) out.push("한국어로 써 주세요.");
 }
 
-function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], userText = ""): void {
-  allowedFactViolations(text, facts.allowed, out, userText, { marriage: marriageContext(facts) });
+function sajuFactViolations(text: string, facts: SajuFactSet, out: string[], userText = "", names = true): void {
+  allowedFactViolations(text, facts.allowed, out, userText, { marriage: marriageContext(facts), names });
+}
+
+/**
+ * The 정통 reading's 살·귀인 names, part by part (spec 2026-10-08 §4): the 이름표 풀이 names what facts.sinsal holds, the 계산
+ * 기준 절 the names its basis sentence gives, and every other part (the card, the other sections, the observation, the
+ * follow-ups) a name only in a sentence that declines it, as in every other reading.
+ */
+function sinsalPartViolations(parts: ReadonlyArray<readonly [label: string, text: string, place: "names" | "basis" | "other"]>, facts: SajuFactSet, userText: string, out: string[]): void {
+  const own = facts.sinsal.map((s) => s.name);
+  for (const [label, text, place] of parts) {
+    if (place === "basis") continue;
+    const hits = sinsalNameHits(text, userText, place === "names" ? own : []);
+    if (!hits.length) continue;
+    out.push(place === "names"
+      ? `'${label}'에 이 명식에 붙지 않은 이름(${hits.join(", ")})이 나왔어요. <facts>의 sinsal에 있는 이름만 불러 주세요.`
+      : `'${label}'에 살·귀인 이름(${hits.join(", ")})이 나왔어요. 이름은 '${SAJU_NAMES_HEADING}' 절에서 이 명식에 붙은 것만 불러 주세요.`);
+  }
+}
+
+// ---- 기운 채우기 (8절, spec 2026-10-08 §2, §4): a lifestyle suggestion for fun, chosen by counting the 오행 ----
+
+/** Each in a sentence that does not decline it ("이사 같은 큰 결정과는 상관없어요" is fine), as the saju blocklist's topics. */
+const GAEUN_BANNED: ReadonlyArray<readonly [RegExp, string]> = [
+  // a count of glyphs is not a number for luck ("숫자로 세면 0개")
+  [/행운|럭키|(?:좋은|맞는|길한)\s?숫자|숫자\s?\d|\d\s?이라는\s?숫자|번호/, "행운의 숫자를 쓰는 말"],
+  [
+    /효과|효능|필수|(?<![가-힣])운(?:이|을)?\s?(?:트이|트여|틔우|틔워|열리|열려|좋아지|좋아져|올라|들어오|들어와|불러|부르)|(?:돈|재물|금전)(?:이|을)?\s?(?:들어오|들어와|모이|모여|붙|불러|부르)|기운(?:이|을)?\s?(?:채워져|채워\s?줘|채워\s?줄|채워\s?준|보충되|보충돼|살아나|북돋|좋아지|좋아져)/,
+    "효과를 약속하는 말",
+  ],
+  [
+    /건강|면역|혈액|혈압|순환|심장|소화|숙면|불면|우울|증상|질환|치유|치료|디톡스|해독|다이어트|피로(?:가|를)?\s?(?:풀|회복|가시)|몸(?:이|에)\s?(?:좋|가벼|따뜻|건강|살아)/,
+    "몸이나 마음 건강과 잇는 말",
+  ],
+  [/이사|이주|이민|해외|유학|머리\s?방향|(?:머리|베개|침대|잠자리)[^.?!]{0,10}(?:동|서|남|북)(?:쪽|향)|정(?:동|서|남|북)향|(?:동|서|남|북)향\s?집/, "큰 방향 결정(이사·해외·머리 방향)을 권하는 말"],
+];
+
+function gaeunViolations(body: string, out: string[]): void {
+  for (const [pattern, what] of GAEUN_BANNED) {
+    const hit = sentences(body).filter((s) => !NEGATED.test(s)).map((s) => pattern.exec(s)?.[0]).find(Boolean);
+    if (hit) {
+      out.push(`'${SAJU_GAEUN_HEADING}' 절에 ${what}이 있어요("${hit}"). 오행 개수로 고른 재미로 보는 생활 제안으로만, '곁에 두면'·'가볍게 해 보면'처럼 써 주세요. 방향은 산책 길이나 책상에 앉는 쪽 같은 작은 선택으로만 써요.`);
+    }
+  }
 }
 
 /**
@@ -750,14 +820,18 @@ export function validateSajuReading(draft: SajuReading, facts: SajuFactSet): str
   modelNameViolations(r, out);
   if (r.sections.length !== SAJU_PROLOGUE_SECTIONS.length) out.push(`sections는 정확히 ${SAJU_PROLOGUE_SECTIONS.length}개여야 해요.`);
   const basisIndex = SAJU_PROLOGUE_SECTIONS.length - 1;
+  const namesIndex = SAJU_PROLOGUE_SECTIONS.indexOf(SAJU_NAMES_HEADING);
+  const gaeunIndex = SAJU_PROLOGUE_SECTIONS.indexOf(SAJU_GAEUN_HEADING);
+  // body sections 300~450자 in the reading voice (owner 2026-10-08), 이름표 풀이 280~420자 and 기운 채우기 250~380자 (2026-10-08 enrichment), the 계산 기준 절 as before
+  const target = (i: number) => (i === basisIndex ? "300~550" : i === namesIndex ? "280~420" : i === gaeunIndex ? "250~380" : "300~450");
   r.sections.forEach((section, i) => {
     const n = charCount(section.body);
     const heading = SAJU_PROLOGUE_SECTIONS[i] ?? `${i + 1}번째 절`;
-    // body sections 300~450자 in the reading voice (owner 2026-10-08), the 계산 기준 절 as before
-    if (n < 150 || n > 900) out.push(`'${heading}' 절이 공백 제외 ${n}자예요. ${i === basisIndex ? "300~550" : "300~450"}자로 써 주세요.`);
+    if (n < 150 || n > 900) out.push(`'${heading}' 절이 공백 제외 ${n}자예요. ${target(i)}자로 써 주세요.`);
   });
+  // the two sections added 600~900자 to the 2,100~3,200 the seven held
   const total = r.sections.reduce((sum, s) => sum + charCount(s.body), 0);
-  if (total < 2100 * (1 - TOLERANCE) || total > 3200 * (1 + TOLERANCE)) out.push(`프롤로그 분량이 공백 제외 ${total}자예요. 2,100~3,200자로 맞춰 주세요.`);
+  if (total < 2700 * (1 - TOLERANCE) || total > 4100 * (1 + TOLERANCE)) out.push(`프롤로그 분량이 공백 제외 ${total}자예요. 2,700~4,100자로 맞춰 주세요.`);
   const basis = r.sections.at(-1)?.body ?? "";
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(basis)) out.push("계산 기준 절에 태어난 시를 몰라 시주 없이 읽었다는 한계를 넣어 주세요.");
   observationViolations(r.observation.body, out);
@@ -773,7 +847,14 @@ export function validateSajuReading(draft: SajuReading, facts: SajuFactSet): str
   // the 계산 기준 절 (the last section) copies the limits, so it alone may name the other pillars they name
   const basisAt = r.sections.length ? glance.length + r.sections.length - 1 : -1;
   const checked = [...glance, ...bodies, ...r.followUps].map((text, i) => allowLimitPillars(maskGanzhiReadings(text), facts, i === basisAt));
-  sajuFactViolations(checked.join("\n"), facts, out, profileText(facts));
+  sajuFactViolations(checked.join("\n"), facts, out, profileText(facts), false);
+  sinsalPartViolations([
+    [GLANCE_LABEL, glance.join("\n"), "other"],
+    ...r.sections.map((s, i) => [SAJU_PROLOGUE_SECTIONS[i] ?? `${i + 1}번째 절`, s.body, i === namesIndex ? "names" : i === basisIndex ? "basis" : "other"] as const),
+    ["관찰", r.observation.body, "other"],
+    ["이어서 물어볼 질문", r.followUps.join("\n"), "other"],
+  ], facts, profileText(facts), out);
+  if (r.sections[gaeunIndex]) gaeunViolations(r.sections[gaeunIndex].body, out);
   voiceViolations([...glance, ...bodies, ...r.followUps].join("\n"), out);
   profileUseViolations(bodies.join("\n"), facts, out);
   actionVarietyViolations(bodies, out);

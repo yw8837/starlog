@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GAEUN_NOTE } from "@/lib/sajuEnrichment";
+import { SAJU_GAEUN_HEADING, SAJU_NAMES_HEADING } from "@/lib/sajuPrologue";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
 import { LocalChapter } from "./LocalChapter";
 
@@ -131,6 +133,22 @@ describe("LocalChapter for a saju reading with 한눈에 보기 (owner 2026-10-0
     seed([{ ...SAJU_CHAPTER, createdAt: Date.now(), reading: { sections: SECTIONS, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호" }, glance: GLANCE, followUps: [] } }]);
     render(<LocalChapter id="abcdef31" />);
     expect(screen.getByRole("heading", { name: "이 기록의 일부를 읽지 못했어요" })).toBeTruthy();
+  });
+
+  it("shows 이름표 풀이 and 기운 채우기 like the other sections, the fixed 개운 note under 기운 채우기 only (saju enrichment 2026-10-08)", () => {
+    const sections = [
+      { heading: SAJU_NAMES_HEADING, body: "사주로 보면 **배운 것을 쌓아 가는** 경향이 있어요." },
+      { heading: SAJU_GAEUN_HEADING, body: "미루고 싶은 날에는 **낮 햇볕 10분**부터 가볍게 해 보세요." },
+      { heading: "계산 기준 · 보지 않은 것과 달라질 수 있는 것", body: "계산 기준 본문" },
+    ];
+    seed([{ ...SAJU_CHAPTER, reading: { sections, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "신호" }, glance: GLANCE, followUps: [] } }]);
+    render(<LocalChapter id="abcdef31" />);
+    expect(screen.getByRole("heading", { name: /^이름표 풀이/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^기운 채우기/ })).toBeTruthy();
+    expect(screen.getByText("배운 것을 쌓아 가는").tagName).toBe("STRONG");
+    expect(screen.getByText("낮 햇볕 10분").tagName).toBe("STRONG");
+    expect(screen.getAllByText(GAEUN_NOTE)).toHaveLength(1);
+    expect(screen.getByText(GAEUN_NOTE).closest("article")?.textContent).toContain("낮 햇볕 10분");
   });
 });
 

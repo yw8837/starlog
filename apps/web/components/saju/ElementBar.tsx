@@ -4,10 +4,12 @@ import s from "./ElementBar.module.css";
 
 type ElementBarProps = {
   elements: Record<SajuElement, number>;
+  /** One line under the bars (the chart page's 개운 line). */
+  note?: string;
 };
 
 /** How many of the visible glyphs (6 or 8) fall in each element, one dot per glyph. */
-export function ElementBar({ elements }: ElementBarProps) {
+export function ElementBar({ elements, note }: ElementBarProps) {
   const total = ELEMENT_ORDER.reduce((sum, el) => sum + elements[el], 0);
 
   return (
@@ -42,6 +44,7 @@ export function ElementBar({ elements }: ElementBarProps) {
           );
         })}
       </ul>
+      {note ? <p className={s.note}>{note}</p> : null}
     </section>
   );
 }

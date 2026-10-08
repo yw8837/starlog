@@ -67,7 +67,7 @@ describe("FactSet for the sample chart (1990-01-01, female, 서울, time unknown
     expect(facts.allowed.limitGlyphs).toEqual(["丑"]);
   });
 
-  it("builds the prompt from the FactSet with the seven fixed headings and no birth date", () => {
+  it("builds the prompt from the FactSet with the nine fixed headings and no birth date", () => {
     const prompt = sajuReadingPrompt(facts);
     for (const heading of SAJU_PROLOGUE_SECTIONS) expect(prompt).toContain(heading);
     expect(prompt).toContain("庚辰");
@@ -282,8 +282,9 @@ describe("saju validator", () => {
   });
 
   it("catches a missing section and a missing time-unknown limit", () => {
-    expect(validateSajuReading({ ...gold, sections: gold.sections.slice(0, 6) }, facts).join(" ")).toMatch(/정확히 7개/);
-    const noLimit = { ...gold, sections: gold.sections.map((s, i) => (i === 6 ? { ...s, body: "계산 기준을 적어 둬요. ".repeat(20) } : s)) };
+    // nine since the 이름표 풀이 and 기운 채우기 sections (saju enrichment 2026-10-08); 계산 기준 is still the last
+    expect(validateSajuReading({ ...gold, sections: gold.sections.slice(0, 6) }, facts).join(" ")).toMatch(/정확히 9개/);
+    const noLimit = { ...gold, sections: gold.sections.map((s, i) => (i === gold.sections.length - 1 ? { ...s, body: "계산 기준을 적어 둬요. ".repeat(20) } : s)) };
     expect(validateSajuReading(noLimit, facts).join(" ")).toMatch(/시를 몰라/);
   });
 });
@@ -368,7 +369,7 @@ describe("the pillars the limits name besides the chart's own (review 2026-10-08
     const card = { ...clean, glance: { ...clean.glance, goesWell: "을묘(乙卯)의 나무 기운이 있어 새로 시작하는 일에서 잘 풀려요." } };
     expect(glyphFindings(validateSajuReading(card, f))).toHaveLength(1);
     expect(glyphFindings(validateSajuReading(inSection(3, "태어난 시의 기둥은 을묘(乙卯)로 읽어요."), f))).toHaveLength(1);
-    expect(glyphFindings(validateSajuReading(inSection(6, "실제로 몇 분 늦게 태어났다면 시주가 을묘(乙卯)가 될 수 있어요."), f))).toEqual([]);
+    expect(glyphFindings(validateSajuReading(inSection(SAJU_PROLOGUE_SECTIONS.length - 1, "실제로 몇 분 늦게 태어났다면 시주가 을묘(乙卯)가 될 수 있어요."), f))).toEqual([]);
   });
 
   it("passes a limit sentence quoted word for word in an answer, and nothing else of it", () => {

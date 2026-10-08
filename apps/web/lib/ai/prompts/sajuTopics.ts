@@ -89,7 +89,8 @@ export interface TopicAnchors {
 /** A 월건 as topic facts carry it: the 절 by name only, since its date is what the timing checks reject. */
 export type TopicMonth = Omit<LabelledMonth, "term"> & { term: { name: string } | null };
 
-export interface SajuTopicFactSet extends Omit<SajuFactSet, "schemaVersion" | "allowed" | "profile" | "monthly"> {
+/** A 운 reads no 살·귀인 names and no 개운 (saju enrichment spec 2026-10-08: 정통 only). */
+export interface SajuTopicFactSet extends Omit<SajuFactSet, "schemaVersion" | "allowed" | "profile" | "monthly" | "sinsal" | "scarce"> {
   schemaVersion: "saju-topic-facts/1";
   topic: SajuTopicId;
   monthly?: { current: TopicMonth; next: TopicMonth };
@@ -384,7 +385,7 @@ export function buildTopicFactSet(
   };
 
   const chip = situation ? situationOf(topic, situation) : undefined;
-  const { allowed: _baseAllowed, profile: _profile, schemaVersion: _version, monthly, ...rest } = base;
+  const { allowed: _baseAllowed, profile: _profile, schemaVersion: _version, monthly, sinsal: _sinsal, scarce: _scarce, ...rest } = base;
   const byTermName = (m: LabelledMonth): TopicMonth => ({ ...m, term: m.term ? { name: m.term.name } : null });
   return {
     ...rest,

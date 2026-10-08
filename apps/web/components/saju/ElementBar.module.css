@@ -76,3 +76,11 @@
 .row[data-empty] .name {
   color: var(--ink-sub);
 }
+
+/* The 개운 line under the bars. */
+.note {
+  margin-top: 12px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}

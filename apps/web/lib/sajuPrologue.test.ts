@@ -11,7 +11,7 @@ describe("SAJU_PROLOGUE_SECTIONS", () => {
   it("keeps one generic entry per paid section, in the sample's order and 'label · title' form, under plain labels", () => {
     expect(SAJU_PROLOGUE_SECTIONS).toHaveLength(sample.paid.sections.length);
     expect(SAJU_PROLOGUE_SECTIONS.map((h) => h.split(" · ")[0])).toEqual([
-      "타고난 바탕", "많은 기운·적은 기운", "나를 움직이는 힘", "가까운 관계 속 나", "일할 때·쉴 때", "지금의 10년과 올해", "계산 기준",
+      "타고난 바탕", "많은 기운·적은 기운", "나를 움직이는 힘", "가까운 관계 속 나", "일할 때·쉴 때", "지금의 10년과 올해", "이름표 풀이", "기운 채우기", "계산 기준",
     ]);
     for (const heading of SAJU_PROLOGUE_SECTIONS) expect(heading.split(" · ")).toHaveLength(2);
     for (const heading of SAJU_PROLOGUE_SECTIONS) for (const term of JARGON) expect(heading, heading).not.toContain(term);

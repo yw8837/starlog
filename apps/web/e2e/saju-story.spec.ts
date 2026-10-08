@@ -108,6 +108,15 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   await expect(chart.getByRole("table").getByRole("columnheader")).toHaveText(["시주", "일주", "월주", "연주"]);
   await expect(chart).toContainText("丙寅");
   await expect(chart).toContainText("병화");
+  // free, no AI (saju enrichment 2026-10-08): the names under 네 기둥 (丙 → 학당귀인 on the 일지 寅) and the 개운 line (쇠 0)
+  const names = chart.getByRole("region", { name: "이 명식에 붙는 이름" });
+  const chip = names.getByRole("button", { name: "학당귀인" });
+  await expect(chip).toHaveAttribute("aria-expanded", "false");
+  await chip.click();
+  await expect(chip).toHaveAttribute("aria-expanded", "true");
+  await expect(names).toContainText("배움이 자라기 쉬운 자리에 붙는 이름이에요.");
+  await expect(names).toContainText("일간 丙 기준 → 태어난 날 寅");
+  await expect(chart.getByRole("region", { name: "오행" })).toContainText("곁에 두면 좋은 것: 흰색 포인트 · 비우기·청소");
   await expect(page.getByRole("region", { name: "이어지는 풀이" })).toContainText(/소제목 \d+개 · 약 2,500~3,000자/, { timeout: 30_000 });
   // The sample's written prologue is never shown, even for the sample chart.
   expect(await page.locator("body").innerText()).not.toContain(SAJU.paid.sections[0]!.body.slice(0, 40));

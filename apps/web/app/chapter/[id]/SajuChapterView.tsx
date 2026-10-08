@@ -16,7 +16,9 @@ import { Button } from "@/components/ui/Button";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { SITE } from "@/lib/config";
 import type { SajuReadingData } from "@/lib/reading/types";
+import { GAEUN_NOTE } from "@/lib/sajuEnrichment";
 import type { SajuForm } from "@/lib/sajuForm";
+import { SAJU_GAEUN_HEADING } from "@/lib/sajuPrologue";
 import { ChapterContents } from "./ChapterContents";
 import type { ChapterFollowUp } from "./ChapterView";
 import s from "./ChapterView.module.css";
@@ -81,6 +83,8 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
                 <p className={s.prose}>
                   <BoldText text={section.body} />
                 </p>
+                {/* 기운 채우기 is a suggestion for fun: the code says so under it (saju enrichment 2026-10-08 §2) */}
+                {section.heading === SAJU_GAEUN_HEADING ? <p className={s.sectionNote}>{GAEUN_NOTE}</p> : null}
               </Paper>
             );
           })}
