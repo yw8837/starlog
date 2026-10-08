@@ -260,6 +260,13 @@ describe("search console verification", () => {
     });
     expect(siteVerification({ naver: "n-code" })).toEqual({ other: { "naver-site-verification": "n-code" } });
   });
+
+  it("takes one code per registered site, comma-separated (guide domain and app host)", () => {
+    expect(siteVerification({ naver: " n-apex , n-app ", bing: "b-code," })).toEqual({
+      other: { "naver-site-verification": ["n-apex", "n-app"], "msvalidate.01": "b-code" },
+    });
+    expect(siteVerification({ google: ",", naver: " " })).toBeUndefined();
+  });
 });
 
 describe("pageMetadata", () => {

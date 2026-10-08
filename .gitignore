@@ -25,3 +25,8 @@ content/eval/competitors/
 
 # tester birth data (personal data): local only, never committed
 scripts/capture/testers.json
+# testers' readings and browser sessions from capture2 (personal data): local only
+scripts/capture/state/
+scripts/capture/text2/
+# agent worktrees
+.claude/worktrees/

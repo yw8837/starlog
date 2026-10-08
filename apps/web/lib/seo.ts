@@ -79,11 +79,20 @@ const VERIFICATION_ENV: VerificationCodes = {
   bing: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION,
 };
 
+/**
+ * One code, or several separated by commas: the guide domain and the app host are separate sites in
+ * each console, each with its own code, and both hosts serve every tag (an extra one is harmless).
+ */
+function verificationCodes(value: string | undefined): string | string[] | undefined {
+  const list = (value ?? "").split(",").map((code) => code.trim()).filter(Boolean);
+  return list.length > 1 ? list : list[0];
+}
+
 /** <meta name="google-site-verification">, "naver-site-verification" and "msvalidate.01" (Bing). */
 export function siteVerification(codes: VerificationCodes = VERIFICATION_ENV): Metadata["verification"] {
-  const google = codes.google?.trim();
-  const naver = codes.naver?.trim();
-  const bing = codes.bing?.trim();
+  const google = verificationCodes(codes.google);
+  const naver = verificationCodes(codes.naver);
+  const bing = verificationCodes(codes.bing);
   const other = { ...(naver ? { "naver-site-verification": naver } : {}), ...(bing ? { "msvalidate.01": bing } : {}) };
   if (!google && Object.keys(other).length === 0) return undefined;
   return { ...(google ? { google } : {}), ...(Object.keys(other).length ? { other } : {}) };
