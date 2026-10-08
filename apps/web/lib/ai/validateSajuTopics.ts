@@ -211,14 +211,34 @@ const marriageTopic = (f: SajuTopicFactSet) => f.topic === "love" && f.situation
 
 const has = (text: string, keys: readonly string[]) => keys.some((key) => key !== "" && text.includes(key));
 
+/**
+ * The plain words the prompts teach for a pillar or a layer an anchor names (SAJU_PLAIN_RULES' "태어난 달 자리", "나와
+ * 가장 가까운 자리", the glossary's "10년마다 바뀌는 큰 흐름"): a section may cite its anchor by them (real-model check
+ * 2026-10-08, 직업운 3절: "태어난 달 자리에 …" for 월주). Each stands only for its own anchor: 태어난 달 is never 일지; 일지 and
+ * 일주 share the day's words. A birth date or clock time (태어난 날짜, 태어난 시각) names no pillar.
+ */
+const DAY_PILLAR = /태어난\s?날(?!짜)|가장\s?가까운\s?(?:관계의\s?)?자리/;
+const PLAIN_ANCHOR: Readonly<Record<string, RegExp>> = {
+  월주: /태어난\s?달/,
+  일지: DAY_PILLAR,
+  일주: DAY_PILLAR,
+  시주: /태어난\s?시(?![각간])/,
+  연주: /태어난\s?해/,
+  년주: /태어난\s?해/,
+  대운: /10년(?:마다\s?바뀌는)?\s?(?:큰\s?)?흐름/,
+  "첫 대운": /첫\s?(?:10년\s?)?(?:큰\s?)?흐름/,
+};
+/** `has`, or the plain words of one of `keys` (a 간지, a glyph or a group stays literal: plain words cannot name which). */
+const cites = (text: string, keys: readonly string[]) => has(text, keys) || keys.some((key) => PLAIN_ANCHOR[key]?.test(text) ?? false);
+
 /** §8.3: each topic section names its anchor; a group counted 0 is named as missing or hidden. */
 function anchorViolations(bodies: string[], f: SajuTopicFactSet, out: string[]): void {
   const a = f.allowed.anchors;
   const h = TOPIC_SECTIONS[f.topic];
   const [s2 = "", s3 = "", s4 = "", s5 = ""] = bodies.slice(1, 5);
-  if (!has(s2, a.s2)) out.push(`'${h[1]}' 절에 이 주제의 근거(${a.s2.slice(0, 4).join("·")} 가운데 하나)를 불러 주세요.`);
-  if (!has(s3, a.s3)) out.push(`'${h[2]}' 절에 이 주제의 근거(${a.s3.slice(0, 4).join("·")} 가운데 하나)를 불러 주세요.`);
-  if (!has(s4, a.s4)) out.push(`'${h[3]}' 절에 지금 대운(${a.s4.join(" 또는 ")})을 불러 주세요.`);
+  if (!cites(s2, a.s2)) out.push(`'${h[1]}' 절에 이 주제의 근거(${a.s2.slice(0, 4).join("·")} 가운데 하나)를 불러 주세요.`);
+  if (!cites(s3, a.s3)) out.push(`'${h[2]}' 절에 이 주제의 근거(${a.s3.slice(0, 4).join("·")} 가운데 하나)를 불러 주세요.`);
+  if (!cites(s4, a.s4)) out.push(`'${h[3]}' 절에 지금 대운(${a.s4.join(" 또는 ")})을 불러 주세요.`);
   if (!has(s5, a.s5[0]) || !has(s5, a.s5[1])) out.push(`'${h[4]}' 절에 올해 세운(${a.s5[0][1]})과 다가오는 해 세운(${a.s5[1][1]})을 모두 불러 주세요.`);
   for (const [text, names, heading] of [[s2, a.zeroS2, h[1]], [s3, a.zeroS3, h[2]]] as const) {
     const missing = names.filter((name) => !(text.includes(name) && /없|숨/.test(text)));
@@ -273,7 +293,7 @@ export function validateSajuTopicTeaser(d: SajuTeaserDraft, f: SajuTopicFactSet)
   const masked = maskGanzhiReadings(`${d.title}\n${d.summary}`);
   allowedFactViolations(allowWindowPillar(allowLimitPillars(masked, f), f), f.allowed, out, topicUserText(f), { marriage: marriageTopic(f) });
   topicHardViolations({ whole: masked, timing: maskGanzhiReadings(d.summary) }, f, out);
-  if (!has(d.summary, f.allowed.anchors.s2)) out.push(`summary에 이 주제의 핵심 사실(${f.allowed.anchors.s2.slice(0, 4).join("·")} 가운데 하나)을 넣어 주세요.`);
+  if (!cites(d.summary, f.allowed.anchors.s2)) out.push(`summary에 이 주제의 핵심 사실(${f.allowed.anchors.s2.slice(0, 4).join("·")} 가운데 하나)을 넣어 주세요.`);
   voiceViolations(d.summary, out);
   if (f.situation && !mentions(d.summary, f.situation.label, 0.3)) out.push(`${SOFT_PREFIX}고른 상황('${f.situation.label}')에 닿는 문장이 summary에 보이지 않아요.`);
   aiTellViolations([d.summary], out);

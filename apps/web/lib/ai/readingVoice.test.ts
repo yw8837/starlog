@@ -5,7 +5,7 @@ import type { z } from "zod";
 import type { SajuSituationId, SajuTopicId } from "@/lib/reading/types";
 import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
-import { TOPIC_SECTION_LENGTH } from "@/lib/sajuTopics";
+import { TOPIC_SECTIONS, TOPIC_SECTION_LENGTH } from "@/lib/sajuTopics";
 import { mockDaily, mockSajuReading, mockTarotReading } from "./mock";
 import { mockSajuTopicReading } from "./mockSajuTopics";
 import { DEEP_TAROT_SYSTEM } from "./prompts/deepTarot";
@@ -397,5 +397,42 @@ describe("bold stays where a reading shows it, and nowhere else (review 2026-10-
     expect(sajuTopicFollowUpPrompt(topic, mockSajuTopicReading(topic), [], "더 알려 주세요")).not.toContain("**");
     const t = mockTarotReading(tarotCtx);
     expect(tarotFollowUpPrompt(tarotCtx, { ...t, cards: t.cards.map((c) => ({ ...c, body: `**${c.body.slice(0, 5)}**${c.body.slice(5)}` })) }, [], "더 알려 주세요")).not.toContain("**");
+  });
+});
+
+describe("a 운's anchor cited in the plain words the prompts teach (real-model check 2026-10-08)", () => {
+  // 마짱, 1991-08-14 18:45 서울 여, 직업운: attempt 1 failed hard on its 3절 anchor (월주) for saying it in plain words
+  const MAJJANG = { calendar: "solar", year: 1991, month: 8, day: 14, isLeapMonth: false, timeKnown: true, hour: 18, minute: 45, gender: "female", placeId: "seoul" } as SajuForm;
+  const at = Date.parse("2026-10-08T16:40:00+09:00");
+  const chart = computeChart(toSajuInput(MAJJANG));
+  const REAL_3 = "손에 잡히는 결과나 숫자가 보이는 일을 맡으면 유난히 집중이 잘되는 편 아닌가요? 태어난 달 자리에 나와 나란히 선 불 기운과 넓게 굴리는 쇠 기운이 위아래로 함께 있고, 겉에 가장 많은 묶음이 돈과 살림처럼 내가 다루는 것(재성) 셋이라서 **성과가 눈에 보이는 일에 마음이 붙는** 경향이 있어요. 혼자보다 동료와 나란히 목표를 나눠 들고 실적이나 예산, 일정처럼 셀 수 있는 것을 굴릴 때 오히려 신이 나곤 해요. 태어난 달 아래 기운은 느슨하게 쉬어 가는 단계라서, 처음부터 전력으로 몰아붙이기보다 숨을 고르며 길게 끌고 가는 일과 더 잘 맞는 편이에요. 반면 기준 없이 '알아서 잘해 봐'만 주어진 일에서는 열기가 금방 흩어지기 쉬워요. 결과가 보이는 일을 고르는 건 장점이에요. 그래도 새 일을 맡을지 망설여질 때는 **그 일의 성과를 무엇으로 재는지**부터 맡기는 사람에게 물어보세요.";
+  const NONE = "새 일을 맡으면 끝까지 붙들고 가는 편 아닌가요? 그래서 **오래 가는 일에 끌리는** 편이에요. 한번 손에 익은 방식은 쉽게 놓지 않곤 해요. 다만 지칠 때는 **쉬는 칸 하나**를 먼저 정해 두세요.";
+  const inSection = (topic: SajuTopicId, i: number, body: string) => {
+    const f = buildTopicFactSet(chart, at, topic);
+    const r = mockSajuTopicReading(f);
+    return validateSajuTopicReading({ ...r, sections: r.sections.map((s, j) => (j === i ? { ...s, body } : s)) }, f).join("\n");
+  };
+  const asked = (topic: SajuTopicId, i: number) => new RegExp(`'${TOPIC_SECTIONS[topic][i]}' 절에 이 주제의 근거`);
+
+  it("직업운 3절 (월주): the real sentence's 태어난 달 passes; a 일지's words or no anchor at all still fail", () => {
+    expect(buildTopicFactSet(chart, at, "career").allowed.anchors.s3).toContain("월주");
+    expect(REAL_3).not.toMatch(/월주|丙申|병신|丙|申/);
+    expect(inSection("career", 2, REAL_3)).not.toMatch(asked("career", 2));
+    expect(inSection("career", 2, REAL_3.replaceAll("태어난 달", "나와 가장 가까운"))).toMatch(asked("career", 2));
+    expect(inSection("career", 2, NONE)).toMatch(asked("career", 2));
+  });
+
+  it("연애운 2절 (일지): 나와 가장 가까운 자리 or 태어난 날 passes; 태어난 달 or 태어난 날짜 does not", () => {
+    const close = "마음이 가는 사람이 생겨도 표현은 한 박자 늦게 나올 때가 있지 않아요? 사주로 보면 나와 가장 가까운 자리에 조용히 따져 보는 기운이 있어서 **가까워질수록 속도를 맞추려는** 편이에요. 좋아하는 마음보다 조심하는 마음이 먼저 앞서곤 해요. 다만 마음이 앞설 때는 **하고 싶은 말 한 줄**을 먼저 건네 보세요.";
+    expect(inSection("love", 1, close)).not.toMatch(asked("love", 1));
+    expect(inSection("love", 1, close.replace("나와 가장 가까운 자리에", "태어난 날 기둥에"))).not.toMatch(asked("love", 1));
+    expect(inSection("love", 1, close.replace("나와 가장 가까운 자리에", "태어난 달 자리에"))).toMatch(asked("love", 1));
+    expect(inSection("love", 1, close.replace("나와 가장 가까운 자리에", "태어난 날짜에"))).toMatch(asked("love", 1));
+    expect(inSection("love", 1, NONE)).toMatch(asked("love", 1));
+  });
+
+  it("asks the basis slot to write a required anchor once as 쉬운 말(용어)", () => {
+    expect(SAJU_VOICE_RULES).toMatch(/^2\. [^\n]*작업별 형식이 꼭 부르라는 근거가 있으면 그 근거를 "태어난 달\(월주\)"처럼 쉬운 말 뒤 괄호에 한 번 써요/m);
+    expect(SAJU_TOPIC_SYSTEM).toMatch(/2~5\. [^\n]*2절과 3절은 주제 안내가 정한 근거를 근거 칸에서 한 번 "쉬운 말\(용어\)"로 써요\(예: 태어난 달\(월주\), 나와 가장 가까운 자리\(일지\)\)/);
   });
 });

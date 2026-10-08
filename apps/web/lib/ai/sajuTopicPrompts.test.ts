@@ -44,7 +44,8 @@ describe("주제별 사주 prompts (spec §7.5)", () => {
     // checks block, one rule replaces the per-reading counts, the unchecked rhythm rules go, the disclaimers are placed once
     // (only the ones that apply, short), the confirmation formula is banned once, and "~로 읽어요" is settled in one sentence.
     expect(hash(SAJU_PREAMBLE)).toBe("90e3535f9cab2ce186fac45f2dcef97dd97339e26a122bc1cd104ae37800e5bd");
-    expect(hash(SAJU_SYSTEM)).toBe("333784e44762335ce3288b8c32fcb1b28da01cf29858b6083e1bdcd02d59fc7d");
+    // Then SAJU_SYSTEM alone (real-model check 2026-10-08): the basis slot writes a required anchor once as "태어난 달(월주)".
+    expect(hash(SAJU_SYSTEM)).toBe("d0bfd81a3a6af1eddb8b7e6dec9b06de69a57462cbe8b9af567f5a55c8e29da1");
     expect(hash(NEWYEAR_SYSTEM)).toBe("1307d57b62ae51e374b7be06b89445fb7c0ad161540b3384fae4447844710f13");
   });
 
@@ -53,7 +54,8 @@ describe("주제별 사주 prompts (spec §7.5)", () => {
     expect(SAJU_TOPIC_SYSTEM.split(MODEL_BLIND_RULE)).toHaveLength(2);
     for (const heading of ["## teaser", "## reading", "## followup", "## 연애운", "## 재회운", "## 재물운", "## 직업운"]) expect(SAJU_TOPIC_SYSTEM).toContain(heading);
     expect(SAJU_TOPIC_SYSTEM).not.toContain("베타");
-    // last moved on purpose (review 2026-10-08): 6절 200~400자, as the disclaimers moved into it
+    // last moved on purpose (2026-10-08): 6절 200~400자, as the disclaimers moved into it; then 2절·3절 write their anchor
+    // once as "쉬운 말(용어)" after a real-model draft cited 월주 only as 태어난 달
     expect(hash(SAJU_TOPIC_SYSTEM)).toMatchSnapshot();
   });
 
