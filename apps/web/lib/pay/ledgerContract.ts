@@ -4,8 +4,8 @@ import { isConstraintError } from "@/lib/db/sqlErrors";
 import {
   GIFT_DAYS,
   RESERVATION_MS,
-  allocate,
   deliverUnlock,
+  entitlements,
   giftExpiry,
   grantSignupGift,
   grantStatements,
@@ -18,7 +18,6 @@ import {
   revertRefund,
   revokeLotStatement,
   sweepStale,
-  walletSummary,
   type Lot,
 } from "./ledger";
 
@@ -41,7 +40,7 @@ async function paidOrder(db: D1Binding, orderId: string, productId = "tarot", mo
     .bind(orderId, productId)
     .run();
   await db.prepare("INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES (?, ?, 2900, 'DONE', ?, 0)").bind(`pk_${orderId}`, orderId, mode).run();
-  await db.batch(paidLotStatements(db, { userId: "u_1", orderId, productId, units: 10, now: NOW }));
+  await db.batch(paidLotStatements(db, { userId: "u_1", orderId, productId, now: NOW }));
 }
 
 const lotById = (db: D1Binding, id: string) => db.prepare("SELECT * FROM credit_lots WHERE id = ?").bind(id).first<Lot>();
@@ -66,15 +65,18 @@ async function expectLotsMatchLedger(db: D1Binding) {
 
 async function giftedUser(make: Make) {
   const db = await setup(make);
-  expect(await grantSignupGift(db, { userId: "u_1", kakaoKey: "k_1", units: 10, now: NOW })).toBe(true);
+  expect(await grantSignupGift(db, { userId: "u_1", kakaoKey: "k_1", now: NOW })).toBe(true);
   return db;
 }
 
 async function reserved(db: D1Binding, currency: "paid" | "free", now = NOW) {
-  const result = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency, units: 10, now, payMode: "live" });
+  const result = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency, now, payMode: "live" });
   if (!result.ok) throw new Error("not reserved");
   return result;
 }
+
+const giftOf = async (db: D1Binding, now = NOW) => (await entitlements(db, "u_1", now)).gift;
+const UNUSED = { status: "unused", expiresAt: giftExpiry(NOW) } as const;
 
 /**
  * Ledger behaviour, run on the node:sqlite test D1 (ledger.test.ts) and on local D1
@@ -87,38 +89,53 @@ export function ledgerContract(make: Make) {
     expect(giftExpiry(Date.parse("2026-10-01T15:30:00Z"))).toBe(Date.parse("2026-12-31T23:59:59.999+09:00")); // 00:30 KST, 10-02
   });
 
-  it("gives the signup gift once per Kakao account", async () => {
+  it("gives the signup gift once per Kakao account: one opening, earmarked for a standard tarot reading", async () => {
     const db = await giftedUser(make);
-    expect(await grantSignupGift(db, { userId: "u_1", kakaoKey: "k_1", units: 10, now: NOW })).toBe(false);
-    expect(await walletSummary(db, "u_1", NOW)).toEqual({ stardust: 10, stardustExpiresAt: giftExpiry(NOW), unused: [], opening: [] });
+    expect(await grantSignupGift(db, { userId: "u_1", kakaoKey: "k_1", now: NOW })).toBe(false);
+    expect(await entitlements(db, "u_1", NOW)).toEqual({ gift: UNUSED, unused: [], opening: [] });
+    expect(await db.prepare("SELECT currency, source, product_id, units_total, units_left FROM credit_lots").first()).toEqual({
+      currency: "free", source: "gift", product_id: "tarot", units_total: 1, units_left: 1,
+    });
     await expectLotsMatchLedger(db);
   });
 
-  it("allocates in the given order and refuses a shortfall", () => {
-    expect(allocate([{ id: "a", units_left: 5 }, { id: "b", units_left: 5 }], 10)).toEqual([["a", 5], ["b", 5]]);
-    expect(allocate([{ id: "a", units_left: 10 }, { id: "b", units_left: 5 }], 10)).toEqual([["a", 10]]);
-    expect(allocate([{ id: "a", units_left: 4 }], 10)).toBeNull();
+  it("never opens saju, a 운 or a premium reading with the gift, an old gift lot without a product included", async () => {
+    const db = await giftedUser(make);
+    // A gift lot from before 2026-10-08: 10 units, no product.
+    await db.batch(grantStatements(db, { id: "lot_old_gift", userId: "u_1", currency: "free", source: "gift", orderId: null, productId: null, units: 10, expiresAt: giftExpiry(NOW) }, NOW));
+    for (const productId of ["saju", "tarot-deep", "match", "newyear-2027"]) {
+      expect(await reserveUnlock(db, { userId: "u_1", productId, currency: "free", now: NOW, payMode: "live" }), productId).toEqual({ ok: false });
+      expect(await reserveUnlock(db, { userId: "u_1", productId, currency: "free", now: NOW, payMode: "live", earmarked: true }), productId).toEqual({ ok: false });
+    }
+    expect(await count(db, "SELECT COUNT(*) AS n FROM unlocks")).toBe(0);
+    expect(await count(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind <> 'grant'")).toBe(0);
+    // A standard tarot reading takes one whole lot, the one earmarked for it first.
+    expect((await reserved(db, "free")).allocations).toEqual([[expect.stringMatching(/^lot_/), 1]]);
+    expect((await reserved(db, "free", NOW + 1)).allocations).toEqual([["lot_old_gift", 10]]);
+    await expectLotsMatchLedger(db);
   });
 
-  it("reserves, then spends only on delivery", async () => {
+  it("reserves, then spends only on delivery; the gift reads as used from the reservation on", async () => {
     const db = await giftedUser(make);
     const unlock = await reserved(db, "free");
-    expect((await walletSummary(db, "u_1", NOW)).stardust).toBe(0);
+    expect(await giftOf(db)).toEqual({ status: "used" });
     expect(await deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "r1", now: NOW + 60_000 })).toBe("delivered");
     expect(await kinds(db, unlock.allocations[0]![0])).toEqual(["grant", "reserve", "spend"]);
     expect(await db.prepare("SELECT status, reading_id FROM unlocks WHERE id = ?").bind(unlock.unlockId).first()).toEqual({ status: "delivered", reading_id: "r1" });
     expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 70_000 })).toBe(false);
-    expect((await walletSummary(db, "u_1", NOW + 70_000)).stardust).toBe(0);
+    expect(await giftOf(db, NOW + 70_000)).toEqual({ status: "used" });
+    // Used stays used after its last day: nothing is left to expire.
+    expect(await giftOf(db, giftExpiry(NOW) + 1)).toEqual({ status: "used" });
+    expect(await count(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'expire'")).toBe(0);
     await expectLotsMatchLedger(db);
   });
 
-  it("releases a failed opening once, and a late delivery cannot spend it", async () => {
+  it("releases a failed opening once, giving the gift back, and a late delivery cannot spend it", async () => {
     const db = await giftedUser(make);
-    const unlock = await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "free", units: 10, now: NOW, payMode: "live" });
-    if (!unlock.ok) throw new Error("not reserved");
+    const unlock = await reserved(db, "free");
     expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 1 })).toBe(true);
     expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 2 })).toBe(false);
-    expect((await walletSummary(db, "u_1", NOW + 3)).stardust).toBe(10);
+    expect(await giftOf(db, NOW + 3)).toEqual(UNUSED);
     expect(await deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "late", now: NOW + 4 })).toBe("lost");
     expect(await kinds(db, unlock.allocations[0]![0])).toEqual(["grant", "reserve", "restore"]);
     await expectLotsMatchLedger(db);
@@ -127,10 +144,10 @@ export function ledgerContract(make: Make) {
   it("spends a paid lot only on its own product", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_tarot_1", "tarot");
-    expect((await walletSummary(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot", paidAt: NOW }]);
-    expect(await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "paid", units: 10, now: NOW, payMode: "live" })).toEqual({ ok: false });
-    expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW, payMode: "live" })).ok).toBe(true);
-    expect((await walletSummary(db, "u_1", NOW)).unused).toEqual([]);
+    expect((await entitlements(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot", paidAt: NOW }]);
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "paid", now: NOW, payMode: "live" })).toEqual({ ok: false });
+    expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW, payMode: "live" })).ok).toBe(true);
+    expect((await entitlements(db, "u_1", NOW)).unused).toEqual([]);
   });
 
   it("lists the readings being opened, a paid one with its order, and never also as unused", async () => {
@@ -141,59 +158,66 @@ export function ledgerContract(make: Make) {
     const free = await reserved(db, "free", NOW + 1);
     const opened = paid.allocations[0]![0] === "lot_order_a" ? "order_a" : "order_b";
     const other = opened === "order_a" ? "order_b" : "order_a";
-    const wallet = await walletSummary(db, "u_1", NOW + 2);
-    expect(wallet.opening).toEqual([
+    const held = await entitlements(db, "u_1", NOW + 2);
+    expect(held.opening).toEqual([
       { productId: "tarot", currency: "paid", orderId: opened },
-      { productId: "tarot", currency: "stardust", orderId: null },
+      { productId: "tarot", currency: "gift", orderId: null },
     ]);
-    expect(wallet.unused).toEqual([{ orderId: other, productId: "tarot", paidAt: NOW }]);
+    expect(held.unused).toEqual([{ orderId: other, productId: "tarot", paidAt: NOW }]);
     expect(await deliverUnlock(db, { unlockId: paid.unlockId, readingId: "r1", now: NOW + 3 })).toBe("delivered");
     expect(await releaseUnlock(db, { unlockId: free.unlockId, now: NOW + 4 })).toBe(true);
-    expect(await walletSummary(db, "u_1", NOW + 5)).toMatchObject({ opening: [], unused: [{ orderId: other, productId: "tarot" }], stardust: 10 });
+    expect(await entitlements(db, "u_1", NOW + 5)).toMatchObject({ opening: [], unused: [{ orderId: other, productId: "tarot" }], gift: UNUSED });
     await expectLotsMatchLedger(db);
   });
 
   it("spends a paid lot only from a payment made under this deploy's keys", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_test", "tarot", "test");
-    const paid = (payMode: "test" | "live" | null) => reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW, payMode });
+    const paid = (payMode: "test" | "live" | null) => reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW, payMode });
     expect(await paid("live")).toEqual({ ok: false });
     expect(await paid(null)).toEqual({ ok: false });
     expect((await paid("test")).ok).toBe(true);
   });
 
-  it("opens a paid reading with one whole purchase, never parts of two, whatever the units asked", async () => {
+  it("opens a paid reading with one whole purchase, never parts of two, a 10-unit lot from before 2026-10-08 included", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_a");
-    await paidOrder(db, "order_b");
-    // The units per reading changed after both were bought: still one purchase per opening.
-    const first = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 12, now: NOW, payMode: "live" });
-    const second = await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 5, now: NOW + 1, payMode: "live" });
-    if (!first.ok || !second.ok) throw new Error("not reserved");
-    expect([first.allocations.length, second.allocations.length]).toEqual([1, 1]);
-    expect([first.allocations[0]![1], second.allocations[0]![1]]).toEqual([10, 10]);
-    expect(new Set([first.allocations[0]![0], second.allocations[0]![0]])).toEqual(new Set(["lot_order_a", "lot_order_b"]));
-    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", units: 10, now: NOW + 2, payMode: "live" })).toEqual({ ok: false });
-    expect((await walletSummary(db, "u_1", NOW + 3)).unused).toEqual([]);
+    expect(await lotById(db, "lot_order_a")).toMatchObject({ units_total: 1, units_left: 1 });
+    // An order paid before every lot became one opening: its lot holds 10 units.
+    await db
+      .prepare(
+        `INSERT INTO orders (id, user_id, product_id, amount_krw, order_name, status, return_to, withdrawal_ack_at, created_at, updated_at)
+         VALUES ('order_b', 'u_1', 'tarot', 2900, '스타로그 타로 전체 풀이', 'paid', '/', 0, 0, 0)`,
+      )
+      .run();
+    await db.prepare("INSERT INTO payments (payment_key, order_id, total_amount, status, mode, updated_at) VALUES ('pk_order_b', 'order_b', 2900, 'DONE', 'live', 0)").run();
+    await db.batch(grantStatements(db, { id: "lot_order_b", userId: "u_1", currency: "paid", source: "order", orderId: "order_b", productId: "tarot", units: 10, expiresAt: null }, NOW));
+    const first = await reserved(db, "paid");
+    const second = await reserved(db, "paid", NOW + 1);
+    expect([first.allocations, second.allocations].map((a) => a.length)).toEqual([1, 1]);
+    expect(new Set([...first.allocations, ...second.allocations].map(([lot, units]) => `${lot}:${units}`))).toEqual(new Set(["lot_order_a:1", "lot_order_b:10"]));
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + 2, payMode: "live" })).toEqual({ ok: false });
+    expect((await entitlements(db, "u_1", NOW + 3)).unused).toEqual([]);
     expect(await releaseUnlock(db, { unlockId: second.unlockId, now: NOW + 4 })).toBe(true);
-    expect((await walletSummary(db, "u_1", NOW + 5)).unused).toHaveLength(1);
+    expect((await entitlements(db, "u_1", NOW + 5)).unused).toHaveLength(1);
     await expectLotsMatchLedger(db);
   });
 
-  it("takes 별조각 from the lot that expires first", async () => {
+  it("opens the gift from one whole lot, the one that expires first", async () => {
     const db = await setup(make);
-    const lot = (id: string, units: number, expiresAt: number) =>
-      grantStatements(db, { id, userId: "u_1", currency: "free", source: "admin", orderId: null, productId: null, units, expiresAt }, NOW);
-    await db.batch([...lot("lot_late", 5, NOW + 10 * 86_400_000), ...lot("lot_soon", 7, NOW + 86_400_000)]);
-    const unlock = await reserved(db, "free");
-    expect(unlock.allocations).toEqual([["lot_soon", 7], ["lot_late", 3]]);
+    const lot = (id: string, expiresAt: number) =>
+      grantStatements(db, { id, userId: "u_1", currency: "free", source: "admin", orderId: null, productId: "tarot", units: 1, expiresAt }, NOW);
+    await db.batch([...lot("lot_late", NOW + 10 * 86_400_000), ...lot("lot_soon", NOW + 86_400_000)]);
+    expect(await giftOf(db)).toEqual({ status: "unused", expiresAt: NOW + 86_400_000 });
+    expect((await reserved(db, "free")).allocations).toEqual([["lot_soon", 1]]);
     await expectLotsMatchLedger(db);
   });
 
-  it("refuses without enough credit and writes nothing", async () => {
+  it("refuses with nothing to open with and writes nothing", async () => {
     const db = await setup(make);
-    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW, payMode: "live" })).toEqual({ ok: false });
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", now: NOW, payMode: "live" })).toEqual({ ok: false });
     expect(await count(db, "SELECT COUNT(*) AS n FROM unlocks")).toBe(0);
+    expect(await entitlements(db, "u_1", NOW)).toEqual({ gift: null, unused: [], opening: [] });
   });
 
   it("rolls a stale reservation back whole when its lot changed underneath it", async () => {
@@ -209,17 +233,19 @@ export function ledgerContract(make: Make) {
   it("gives back a reservation nobody settled once it outlives RESERVATION_MS", async () => {
     const db = await giftedUser(make);
     const unlock = await reserved(db, "free");
-    expect((await walletSummary(db, "u_1", NOW + RESERVATION_MS - 1)).stardust).toBe(0);
-    expect((await walletSummary(db, "u_1", NOW + RESERVATION_MS + 1)).stardust).toBe(10);
+    expect(await giftOf(db, NOW + RESERVATION_MS - 1)).toEqual({ status: "used" });
+    expect(await giftOf(db, NOW + RESERVATION_MS + 1)).toEqual(UNUSED);
     expect(await db.prepare("SELECT status FROM unlocks WHERE id = ?").bind(unlock.unlockId).first()).toEqual({ status: "released" });
     await expectLotsMatchLedger(db);
   });
 
-  it("expires 별조각 after their last day, with a ledger row", async () => {
+  it("expires an unused gift after its last day, with a ledger row, and then shows none", async () => {
     const db = await giftedUser(make);
-    expect(await walletSummary(db, "u_1", giftExpiry(NOW) + 1)).toEqual({ stardust: 0, stardustExpiresAt: null, unused: [], opening: [] });
+    expect(await giftOf(db, giftExpiry(NOW) - 1)).toEqual(UNUSED);
+    expect(await entitlements(db, "u_1", giftExpiry(NOW) + 1)).toEqual({ gift: null, unused: [], opening: [] });
     expect(await count(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'expire'")).toBe(1);
     expect(await db.prepare("SELECT status, units_left FROM credit_lots").first()).toEqual({ status: "expired", units_left: 0 });
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", now: giftExpiry(NOW) + 2, payMode: "live" })).toEqual({ ok: false });
     await expectLotsMatchLedger(db);
   });
 
@@ -250,7 +276,7 @@ export function ledgerContract(make: Make) {
     expect(await lockPaidLotForRefund(db, "order_a", NOW)).not.toBeNull();
     expect(await revertRefund(db, "order_a", NOW + 1)).toBe(true);
     expect(await orderOf(db, "order_a")).toEqual({ status: "paid", cancel_attempt: 2 });
-    expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 10 });
+    expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 1 });
     expect(await revertRefund(db, "order_a", NOW + 2)).toBe(false);
     await expectLotsMatchLedger(db);
   });
@@ -263,18 +289,19 @@ export function ledgerContract(make: Make) {
     expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 1 })).toBe(true);
     expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "revoked", units_left: 0 });
     expect(await kinds(db, "lot_order_a")).toEqual(["grant", "reserve"]);
-    expect((await walletSummary(db, "u_1", NOW + 2)).unused).toEqual([]);
+    expect((await entitlements(db, "u_1", NOW + 2)).unused).toEqual([]);
     await expectLotsMatchLedger(db);
   });
 
   it("reserves and spends nothing for a deleted account", async () => {
     const db = await setup(make);
-    await db.batch(grantStatements(db, { id: "lot_admin", userId: "u_1", currency: "free", source: "admin", orderId: null, productId: null, units: 20, expiresAt: null }, NOW));
+    const lot = (id: string) => grantStatements(db, { id, userId: "u_1", currency: "free", source: "admin", orderId: null, productId: null, units: 1, expiresAt: null }, NOW);
+    await db.batch([...lot("lot_admin"), ...lot("lot_admin_2")]);
     const unlock = await reserved(db, "free");
     await db.prepare("UPDATE users SET deleted_at = ? WHERE id = 'u_1'").bind(NOW).run();
-    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", units: 10, now: NOW + 1, payMode: "live" })).toEqual({ ok: false });
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "free", now: NOW + 1, payMode: "live" })).toEqual({ ok: false });
     expect(await deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "r1", now: NOW + 2 })).toBe("lost");
-    expect(await kinds(db, "lot_admin")).toEqual(["grant", "reserve"]);
+    expect(await kinds(db, unlock.allocations[0]![0])).toEqual(["grant", "reserve"]);
     expect(await count(db, "SELECT COUNT(*) AS n FROM unlocks")).toBe(1);
     await expectLotsMatchLedger(db);
   });
@@ -290,7 +317,7 @@ export function ledgerContract(make: Make) {
     expect(await kinds(db, unlock.allocations[0]![0])).toEqual(["grant", "reserve"]);
   });
 
-  it("lets the scheduled sweep return any account's stale reservation and expire old 별조각", async () => {
+  it("lets the scheduled sweep return any account's stale reservation and expire an unused gift", async () => {
     const db = await giftedUser(make);
     await reserved(db, "free");
     expect(await sweepStale(db, NOW + RESERVATION_MS + 1)).toEqual({ released: 1, expired: 0 });

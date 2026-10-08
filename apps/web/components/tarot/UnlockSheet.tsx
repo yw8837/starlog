@@ -5,17 +5,12 @@ import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { SITE, won } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { times } from "@/lib/helpGuide";
+import { kstMonthDay } from "@/lib/kst";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import type { UnlockOffer } from "@/lib/pay/offer";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import type { ErrorView } from "@/lib/reading/errors";
 import s from "./UnlockSheet.module.css";
-
-/** 달빛/별조각 balances (payments are off in the beta; the home and 내 정보 keep the type). */
-export interface Wallet {
-  moonlight: number;
-  stardust: number;
-}
 
 type UnlockSheetProps = {
   kind: "tarot" | "saju";
@@ -30,7 +25,7 @@ type UnlockSheetProps = {
   onUnlock: (method: UnlockMethod) => void;
   /** The login page with the way back (offer "login", and the paused-sales link). */
   loginHref?: string;
-  /** The checkout for this reading (offers "pay" and "stardust"). */
+  /** The checkout for this reading (offers "pay" and "gift"). */
   payHref?: string;
   /** The owner pass: a quiet "운영자로 무료 열기" beside the paid offers. */
   owner?: boolean;
@@ -44,7 +39,7 @@ type UnlockSheetProps = {
   /** This draw was opened already: go to the saved reading instead of opening it again. */
   openedHref?: string;
   /**
-   * A cut-off paid or 별조각 opening is not settled yet (the error says so): nothing to buy or open
+   * A cut-off paid or gift opening is not settled yet (the error says so): nothing to buy or open
    * until it is, so a stale button can never charge twice.
    */
   checking?: boolean;
@@ -61,8 +56,9 @@ const CheckIcon = () => (
 /**
  * The unlock: what the full reading holds (length, follow-ups, kept on this device) before the one
  * gold button that opens it. Without an offer (or with "opening") it is the 오픈 기념 free count
- * (when used up, when it refills); the other offers log in, open a purchase, spend 별조각 or pay,
- * or say a reading of this kind is being opened. While a cut-off opening is checked, nothing opens.
+ * (when used up, when it refills); the other offers log in, open a purchase, use the signup gift
+ * (tarot only) or pay, or say a reading of this kind is being opened. While a cut-off opening is
+ * checked, nothing opens.
  */
 export function UnlockSheet({
   kind,
@@ -99,8 +95,7 @@ export function UnlockSheet({
       </span>
     );
   const redraw = error?.action === "redraw" && redrawHref;
-  const { free } = SITE.currency;
-  const priced = offer.mode === "login" || offer.mode === "pay" || offer.mode === "stardust";
+  const priced = offer.mode === "login" || offer.mode === "pay" || offer.mode === "gift";
 
   const busy = offer.mode === "in-progress";
   const checkAgain = onCheck ? (
@@ -123,7 +118,7 @@ export function UnlockSheet({
           로그인하고 전체 풀이 보기
         </Button>
       );
-      caption = `처음 가입하면 ${free} ${offer.giftUnits}개를 드려요 · 전체 풀이 한 번을 무료로 열 수 있어요`;
+      caption = offer.gift ? "처음 가입하면 타로 전체 풀이 1번을 무료로 드려요" : "로그인하면 바로 결제하고 열 수 있어요";
       break;
     case "open-paid":
       offerPrimary = (
@@ -133,10 +128,10 @@ export function UnlockSheet({
       );
       caption = `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
       break;
-    case "stardust":
+    case "gift":
       offerPrimary = (
         <Button block onClick={() => onUnlock("free")}>
-          {`${free} ${offer.units}개로 보기`}
+          가입 선물로 무료로 보기
         </Button>
       );
       offerSecondary = (
@@ -144,7 +139,7 @@ export function UnlockSheet({
           {`${won(offer.priceKrw)} 결제하고 보기`}
         </Button>
       );
-      caption = `${free} ${offer.balance}개 있어요`;
+      caption = offer.until ? `가입 선물은 ${kstMonthDay(Date.parse(offer.until))}까지 쓸 수 있어요` : "가입 선물로 한 번 무료로 볼 수 있어요";
       break;
     case "pay":
       offerPrimary = (

@@ -22,8 +22,8 @@ export async function fetchReadingsPage(
 
 /**
  * - delivered: the account has the reading;
- * - kept: the credit is back, unused, and nothing of this kind is being opened;
- * - none: nothing is being opened, the credit is not there and no reading came of it (only with `stopWhenNone`);
+ * - kept: the purchase or the gift is back, unused, and nothing of this kind is being opened;
+ * - none: nothing is being opened, nothing is held and no reading came of it (only with `stopWhenNone`);
  * - unknown: not known yet.
  */
 export type DeliveryCheck = { status: "delivered"; reading: SavedReadingJson } | { status: "kept" } | { status: "none" } | { status: "unknown" };
@@ -47,35 +47,33 @@ const sleep = (ms: number, signal?: AbortSignal) =>
     }, { once: true });
   });
 
-/** What the account held for an opening when it started: this product's purchases and the 별조각. */
+/** What the account held for an opening when it started: this product's purchases (there is only one gift). */
 export interface HeldCredit {
   orderIds: string[];
-  stardust: number;
 }
 
-/** The account's purchases of this product and its 별조각, counting a reservation of this product as held. */
-export function heldCredit(user: AccountUser | null | undefined, productId: string, units: number): HeldCredit {
+/** The account's purchases of this product, counting a reservation of this product as held. */
+export function heldCredit(user: AccountUser | null | undefined, productId: string): HeldCredit {
   const opening = (user?.opening ?? []).filter((item) => item.productId === productId);
   return {
     orderIds: [...(user?.unused ?? []).filter((item) => item.productId === productId).map((item) => item.orderId), ...opening.flatMap((item) => (item.orderId ? [item.orderId] : []))],
-    stardust: (user?.stardust ?? 0) + units * opening.filter((item) => item.currency === "stardust").length,
   };
 }
 
 /**
- * After a paid or 별조각 opening failed mid-way (or was refused while its credit looked held): was it
- * delivered (the account has the reading), was the credit kept, or is it not known yet? Kept means
- * nothing of this kind is being opened and everything `held` at the start is back: every purchase
- * unused again (another purchase of the same reading proves nothing), all the 별조각. One round per
- * delay; the first answer wins. Never "kept" on a guess. With `stopWhenNone`, a round where the
- * account is sure nothing is held or being opened and no reading came of it answers "none".
+ * After a paid or gift opening failed mid-way (or was refused while what opens it looked held): was it
+ * delivered (the account has the reading), was the purchase or the gift kept, or is it not known yet?
+ * Kept means nothing of this kind is being opened and what was `held` at the start is back: every
+ * purchase unused again (another purchase of the same reading proves nothing), or the gift unused.
+ * One round per delay; the first answer wins. Never "kept" on a guess. With `stopWhenNone`, a round
+ * where the account is sure nothing is held or being opened and no reading came of it answers "none".
  */
 export async function checkDelivery(
-  input: { startedAt: number; matches: (chapter: unknown) => boolean; method: "paid" | "free"; productId: string; units: number; held?: HeldCredit },
+  input: { startedAt: number; matches: (chapter: unknown) => boolean; method: "paid" | "free"; productId: string; held?: HeldCredit },
   options: { delays?: readonly number[]; fetchImpl?: typeof fetch; signal?: AbortSignal; stopWhenNone?: boolean } = {},
 ): Promise<DeliveryCheck> {
   const { delays = FIRST_CHECK_DELAYS, fetchImpl = fetch, signal, stopWhenNone = false } = options;
-  const currency = input.method === "paid" ? "paid" : "stardust";
+  const currency = input.method === "paid" ? "paid" : "gift";
   for (const delay of delays) {
     await sleep(delay, signal);
     if (signal?.aborted) break;
@@ -91,7 +89,7 @@ export async function checkDelivery(
     const unused = new Set(user.unused.filter((item) => item.productId === input.productId).map((item) => item.orderId));
     const held = input.held?.orderIds ?? [];
     if (input.method === "paid" && (held.length > 0 ? held.every((id) => unused.has(id)) : unused.size > 0)) return { status: "kept" };
-    if (input.method === "free" && user.stardust >= Math.max(input.units, input.held?.stardust ?? 0)) return { status: "kept" };
+    if (input.method === "free" && user.gift?.status === "unused") return { status: "kept" };
     if (stopWhenNone) return { status: "none" };
   }
   return { status: "unknown" };

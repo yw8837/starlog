@@ -2,7 +2,7 @@ import "server-only";
 import type { D1Binding } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
-import { productById, unitsFor, type Product } from "./catalog";
+import { productById, type Product } from "./catalog";
 import { paidLotStatements } from "./ledger";
 import { TossError, isPendingTossError, type TossClient, type TossPayment } from "./tossTypes";
 
@@ -84,8 +84,7 @@ const LIVE_ACCOUNT = "EXISTS (SELECT 1 FROM users u WHERE u.id = orders.user_id 
  * A second call (a repeated confirm, or the webhook first) breaks a UNIQUE key and changes nothing.
  */
 export async function markPaid(db: D1Binding, order: OrderRow, payment: TossPayment, mode: TossClient["mode"], now: number): Promise<MarkPaidResult> {
-  const product = productById(order.product_id);
-  if (!product) throw new Error(`unknown product ${order.product_id}`);
+  if (!productById(order.product_id)) throw new Error(`unknown product ${order.product_id}`);
   try {
     await db.batch([
       db
@@ -100,7 +99,7 @@ export async function markPaid(db: D1Binding, order: OrderRow, payment: TossPaym
       db
         .prepare("INSERT INTO payments (payment_key, order_id, method, total_amount, status, approved_at, receipt_url, mode, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(payment.paymentKey, order.id, payment.method, payment.totalAmount, payment.status, payment.approvedAt, payment.receiptUrl, mode, now),
-      ...paidLotStatements(db, { userId: order.user_id, orderId: order.id, productId: order.product_id, units: unitsFor(product), now }),
+      ...paidLotStatements(db, { userId: order.user_id, orderId: order.id, productId: order.product_id, now }),
     ]);
   } catch (error) {
     if (!isConstraintError(error)) throw error;

@@ -14,7 +14,7 @@ export default async function SajuChartPage({ searchParams }: PageProps<"/saju/c
       <NightSky fixed moon={false} seed={11} />
       <main className="page-col page-wide">
         <SajuChartView
-          autoUnlock={query.unlock === "paid" || query.unlock === "free" ? query.unlock : null}
+          autoUnlock={query.unlock === "paid" ? "paid" : null}
           loginFlag={typeof query.login === "string" ? query.login : null}
           initialTopic={isSajuTopicId(query.topic) ? query.topic : null}
         />

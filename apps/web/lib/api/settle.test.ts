@@ -98,7 +98,7 @@ describe("settlement inside the generation's keepAlive work", () => {
     expect(await clientCount("client-hash", "full", Date.now())).toBe(0);
   });
 
-  it("JSON: a 별조각 opening books the free total and is charged to the network before it starts", async () => {
+  it("JSON: a gift opening books the free total and is charged to the network before it starts", async () => {
     const calls: string[] = [];
     const res = await respondGeneration(post(), billed(), { gate: gate(), spend: "full", settle: settlement(calls) });
     expect(res.status).toBe(200);

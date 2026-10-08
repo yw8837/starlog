@@ -84,9 +84,6 @@ export function paidHeadings(paid: TarotPaid): string[] {
   ];
 }
 
-/** Signed-in fixture balance: enough 별조각 for one reading, 6 달빛 short of one. */
-export const WALLET_FIXTURE = { moonlight: 4, stardust: 12 };
-
 /**
  * Follow-up fixtures for an opened reading (P3 answers real questions): the suggested questions,
  * an answer written for each suggestion, and one answer for anything the user types.

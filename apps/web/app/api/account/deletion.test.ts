@@ -80,7 +80,7 @@ describe("account deletion", () => {
 
     // Joining again with the same Kakao account makes a new account, without a second gift.
     await loginAs(b, "alice");
-    expect((await me(b)).user?.stardust).toBe(0);
+    expect((await me(b)).user?.gift).toBeNull();
     expect(await one(db, "SELECT COUNT(*) AS n FROM users")).toEqual({ n: 2 });
     expect(await one(db, "SELECT account_deleted_at FROM gift_claims")).toEqual({ account_deleted_at: null });
   });
@@ -231,7 +231,7 @@ describe("account deletion", () => {
   it("waits while a reading is being opened", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
-    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "free", units: 10, now: T0, payMode: "mock" });
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "free", now: T0, payMode: "mock" });
     expect(reserved.ok).toBe(true);
     expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=in-use");
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });

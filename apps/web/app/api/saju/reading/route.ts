@@ -11,8 +11,8 @@ import { issueChapter, type ChapterContext } from "@/lib/security/chapterToken";
  * the full saju reading, 전체 흐름 or the 운 asked for (saju-topics spec §7.1). One payment opens one
  * reading of the topic asked for now (P4 product `saju`).
  * - 오픈 기념: one daily unlock after a validated generation.
- * - paid / 별조각: credit reserved, then saved and spent before the client sees it, released on
- *   failure (spec 5.4).
+ * - paid: the purchase reserved, then saved and spent before the client sees it, given back on
+ *   failure (spec 5.4). The signup gift opens tarot only: `free` is refused here (lib/api/unlock.ts).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {

@@ -8,16 +8,18 @@ import { useEffect, useSyncExternalStore } from "react";
 
 export interface AccountUser {
   nickname: string;
-  stardust: number;
-  /** ISO time the soonest 별조각 expire; null when there are none */
-  stardustExpiresAt: string | null;
+  /**
+   * The signup gift (one free standard tarot reading): unused until `until` (ISO, its last moment;
+   * null without one), used, or null when there is none (never given, or expired).
+   */
+  gift: { status: "unused"; until: string | null } | { status: "used" } | null;
   /**
    * paid readings bought and not opened yet (one being opened is in `opening` instead);
    * `refundUntil`: ISO time of the last moment 환불받기 works (the end of the 7th KST day after the payment)
    */
   unused: Array<{ orderId: string; productId: string; refundUntil?: string }>;
-  /** readings being opened right now with a purchase (its order) or 별조각; [] when /api/me leaves it out */
-  opening: Array<{ productId: string; currency: "paid" | "stardust"; orderId: string | null }>;
+  /** readings being opened right now with a purchase (its order) or the gift; [] when /api/me leaves it out */
+  opening: Array<{ productId: string; currency: "paid" | "gift"; orderId: string | null }>;
   /** the card-company review account (ID and password, no Kakao); absent for everyone else */
   review?: true;
   /** an account that logs in with Google (not Kakao); absent for everyone else */
@@ -35,20 +37,26 @@ export interface AccountState {
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
+/** The gift as /api/me sends it; anything else (missing, odd) is none, so nothing is offered on a guess. */
+function parseGift(v: unknown): AccountUser["gift"] {
+  if (!isRecord(v)) return null;
+  if (v.status === "used") return { status: "used" };
+  if (v.status === "unused" && (v.until === null || typeof v.until === "string")) return { status: "unused", until: v.until };
+  return null;
+}
+
 function parseUser(v: unknown): AccountUser | null | undefined {
   if (v === null) return null;
-  if (!isRecord(v) || typeof v.nickname !== "string" || typeof v.stardust !== "number" || !Array.isArray(v.unused)) return undefined;
-  if (v.stardustExpiresAt !== null && typeof v.stardustExpiresAt !== "string") return undefined;
+  if (!isRecord(v) || typeof v.nickname !== "string" || !Array.isArray(v.unused)) return undefined;
   const unused = v.unused.filter((u): u is { orderId: string; productId: string; refundUntil?: unknown } => isRecord(u) && typeof u.orderId === "string" && typeof u.productId === "string");
   const opening = (Array.isArray(v.opening) ? v.opening : []).flatMap((o): AccountUser["opening"] =>
-    isRecord(o) && typeof o.productId === "string" && (o.currency === "paid" || o.currency === "stardust")
+    isRecord(o) && typeof o.productId === "string" && (o.currency === "paid" || o.currency === "gift")
       ? [{ productId: o.productId, currency: o.currency, orderId: typeof o.orderId === "string" ? o.orderId : null }]
       : [],
   );
   return {
     nickname: v.nickname,
-    stardust: v.stardust,
-    stardustExpiresAt: v.stardustExpiresAt,
+    gift: parseGift(v.gift),
     unused: unused.map(({ orderId, productId, refundUntil }) => (typeof refundUntil === "string" ? { orderId, productId, refundUntil } : { orderId, productId })),
     opening,
     ...(v.review === true ? { review: true as const } : {}),

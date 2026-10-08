@@ -33,8 +33,9 @@ function seed(): string {
   return summary.question;
 }
 
-const user = (over: Record<string, unknown> = {}) => ({ nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [], opening: [], ...over });
+const user = (over: Record<string, unknown> = {}) => ({ nickname: "별", gift: null, unused: [], opening: [], ...over });
 const meBody = (over: Record<string, unknown> = {}) => ({ payments: true, login: true, owner: false, user: user(over) });
+const GIFT = { status: "unused", until: "2026-12-30T14:59:59.999Z" };
 
 /** The account's copy of this flow's reading, as GET /api/readings lists it. */
 const savedReading = (question: string) => ({
@@ -155,7 +156,7 @@ describe("FreeResult after a paid opening was cut off", () => {
     stub({ me: [() => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "tarot" }] })), () => Response.json(meBody())], reading: () => Response.json({ code: "NO_CREDIT" }, { status: 402 }) });
     render(<FreeResult instant />);
     fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
-    expect(await screen.findByText("쓸 수 있는 결제한 풀이나 별조각이 없어요", { selector: "#unlock-error" })).toBeTruthy();
+    expect(await screen.findByText("열 수 있는 결제한 풀이나 가입 선물이 없어요", { selector: "#unlock-error" })).toBeTruthy();
     expect(await screen.findByRole("link", { name: "2,900원 결제하고 보기" })).toBeTruthy();
     expect(router.push).not.toHaveBeenCalled();
   });
@@ -163,14 +164,51 @@ describe("FreeResult after a paid opening was cut off", () => {
   it("while the account is opening a tarot reading, says so, and checking again opens it once saved", async () => {
     const question = seed();
     stub({
-      me: [() => Response.json(meBody({ stardust: 10, opening: [{ productId: "tarot", currency: "paid", orderId: ORDER }] })), () => Response.json(meBody({ stardust: 10 }))],
+      me: [() => Response.json(meBody({ gift: GIFT, opening: [{ productId: "tarot", currency: "paid", orderId: ORDER }] })), () => Response.json(meBody({ gift: GIFT }))],
       readings: () => Response.json({ readings: [savedReading(question)], next: null }),
     });
     render(<FreeResult instant />);
     expect(await screen.findByText("열고 있는 풀이가 있어요")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /별조각 10개로 보기|결제한 풀이 열기/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /가입 선물로 무료로 보기|결제한 풀이 열기/ })).toBeNull();
     expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "다시 확인하기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+  });
+});
+
+describe("FreeResult and the signup gift", () => {
+  it("asks a guest to log in, naming the free first tarot reading", async () => {
+    seed();
+    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })] });
+    render(<FreeResult instant />);
+    expect(await screen.findByRole("link", { name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
+    expect(screen.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeTruthy();
+  });
+
+  it("offers the unused gift first and paying second; once used, only paying", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody({ gift: GIFT }))] });
+    render(<FreeResult instant />);
+    expect(await screen.findByRole("button", { name: "가입 선물로 무료로 보기" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "2,900원 결제하고 보기" })).toBeTruthy();
+    expect(screen.getByText("가입 선물은 12월 30일까지 쓸 수 있어요")).toBeTruthy();
+    cleanup();
+    resetAccountForTests();
+    stub({ me: [() => Response.json(meBody({ gift: { status: "used" } }))] });
+    render(<FreeResult instant />);
+    expect(await screen.findByRole("link", { name: "2,900원 결제하고 보기" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "가입 선물로 무료로 보기" })).toBeNull();
+  });
+
+  it("opens with the gift, and when the reading breaks off says the gift is still there once the account shows it", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody({ gift: GIFT }))] });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "가입 선물로 무료로 보기" }));
+    expect(await screen.findByText("가입 선물은 그대로예요. 한 번 더 시도해 주세요.")).toBeTruthy();
+    const sent = vi.mocked(fetch).mock.calls.find(([url]) => url === "/api/tarot/reading");
+    expect(JSON.parse(String((sent?.[1] as RequestInit | undefined)?.body))).toMatchObject({ unlock: { method: "free" } });
+    expect(screen.queryByRole("link", { name: "환불받기" })).toBeNull();
+    expect(router.push).not.toHaveBeenCalled();
   });
 });

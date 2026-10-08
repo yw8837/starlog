@@ -74,8 +74,9 @@ describe("LoginPanel", () => {
     expect(screen.getByRole("status").textContent).toBe("Google 로그인은 카카오톡 밖의 브라우저에서 해 주세요.");
   });
 
-  it("explains the gift", () => {
-    render(<LoginPanel next="/" status={null} navigate={() => {}} />);
-    expect(screen.getByText("처음 가입하면 별조각 10개를 드려요")).toBeTruthy();
+  it("explains the gift: one free full tarot reading", () => {
+    const { container } = render(<LoginPanel next="/" status={null} navigate={() => {}} />);
+    expect(screen.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/별조각|달빛|\d+개/);
   });
 });

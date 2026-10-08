@@ -23,7 +23,7 @@ const PAGES: Record<InfoPageId, { Page: ComponentType; metadata: Metadata }> = {
   faq: { Page: FaqPage, metadata: faqMeta },
 };
 
-/** Every won amount SITE defines (prices, packs); a page may show these and no other. */
+/** Every won amount SITE defines (prices); a page may show these and no other. */
 function configPrices(): Set<string> {
   const amounts = new Set<string>();
   const walk = (value: unknown, key = "") => {
@@ -32,7 +32,6 @@ function configPrices(): Set<string> {
     else if (value && typeof value === "object") for (const [k, v] of Object.entries(value)) walk(v, k);
   };
   walk(SITE.price, "price");
-  walk(SITE.moonPacks, "moonPacks");
   return amounts;
 }
 

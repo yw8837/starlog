@@ -54,25 +54,27 @@ async function toResult(page: Page) {
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
 }
 
-test("owner mode: log in for the gift, open with 별조각, pay for the next, see it in 내 정보 and refund an unopened one", async ({ page }, info) => {
+test("owner mode: log in for the gift, open a tarot reading with it, pay for the next, see it in 내 정보 and refund an unopened one", async ({ page }, info) => {
   test.setTimeout(600_000);
   await ownAddress(page, info);
   expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE } })).ok()).toBe(true);
 
-  // 1. A guest is asked to log in, with the gift explained.
+  // 1. A guest is asked to log in, with the free first tarot reading named on the sheet and the login page.
   await toResult(page);
-  await expect(page.getByText("처음 가입하면 별조각 10개를 드려요 · 전체 풀이 한 번을 무료로 열 수 있어요")).toBeVisible();
+  await expect(page.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeVisible();
   await page.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).click();
   await expect(page).toHaveURL(/\/login\?next=%2Ftarot%2Fresult$/, { timeout: NAV });
+  await expect(page.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeVisible();
   await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
   await page.getByRole("button", { name: "카카오로 계속하기" }).click();
   await expect(page).toHaveURL(/\/tarot\/result\?login=ok$/, { timeout: NAV });
 
-  // 2. The gift opens the reading; it is saved on this device and in the account.
-  await page.getByRole("button", { name: "별조각 10개로 보기" }).click();
+  // 2. The gift opens the reading; it is saved on this device and in the account, and the gift reads as used.
+  await expect(page.getByText(/^가입 선물은 \d+월 \d+일까지 쓸 수 있어요$/)).toBeVisible();
+  await page.getByRole("button", { name: "가입 선물로 무료로 보기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
   const me = await (await page.request.get("/api/me")).json();
-  expect(me.user.stardust).toBe(0);
+  expect(me.user.gift).toEqual({ status: "used" });
   const saved = await (await page.request.get("/api/readings?limit=5")).json();
   expect(saved.readings).toHaveLength(1);
 
@@ -129,22 +131,32 @@ async function toSajuTopic(page: Page) {
   await expect(page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
 }
 
-test("owner mode, 주제별 사주: 별조각 opens 재물운 (the 운 survives the login), then 직장운 is paid and opens as 직장운", async ({ page }, info) => {
+test("owner mode, 주제별 사주: the 운 survives the login, the gift never opens it, 재물운 and 직장운 are each paid and open as themselves", async ({ page }, info) => {
   test.setTimeout(600_000);
   await ownAddress(page, info);
   expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE } })).ok()).toBe(true);
   await toSajuTopic(page);
+  const money = page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" });
+  // A guest is asked to log in to pay: no free reading is promised for saju.
+  await expect(money).toContainText("로그인하면 바로 결제하고 열 수 있어요");
+  await expect(money).not.toContainText("선물");
   await page.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).click();
   await expect(page).toHaveURL(/\/login\?next=%2Fsaju%2Fchart%3Ftopic%3Dmoney$/, { timeout: NAV });
   await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
   await page.getByRole("button", { name: "카카오로 계속하기" }).click();
   await expect(page).toHaveURL(/\/saju\/chart\?topic=money&login=ok$/, { timeout: NAV });
 
-  // The gift opens the 운 that came back with the address; the sheet names it and says what one payment opens.
-  const money = page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" });
+  // The 운 came back with the address; the sheet names it, says what one payment opens, and offers only paying,
+  // though the fresh account holds an unused gift (tarot only).
   await expect(money).toContainText("재물운 전체 풀이 · 4,900원");
   await expect(money).toContainText("결제 한 번에 고른 풀이 하나를 열어요");
-  await money.getByRole("button", { name: "별조각 10개로 보기" }).click();
+  await expect(money.getByRole("button", { name: "가입 선물로 무료로 보기" })).toHaveCount(0);
+  await expect(money).not.toContainText("선물");
+  expect((await (await page.request.get("/api/me")).json()).user.gift).toMatchObject({ status: "unused" });
+  await money.getByRole("link", { name: "4,900원 결제하고 보기" }).click();
+  await expect(page).toHaveURL(/\/pay\/checkout\?/, { timeout: NAV });
+  await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
+  await page.getByRole("button", { name: "4,900원 결제하기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
   await expect(page.getByText(/^사주 재물운 · /)).toBeVisible();
 

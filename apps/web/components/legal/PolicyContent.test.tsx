@@ -55,7 +55,7 @@ describe("policies match what the service does", () => {
     expect(text).not.toContain("친구 초대와 친구가 남긴 카드");
     expect(text).not.toContain("예시 풀이");
     expect(text).toContain("준비 중으로 표시한 풀이는 판매를 시작하기 전에");
-    expect(text).toContain("결제한 풀이나 별조각을 쓰지 않습니다");
+    expect(text).toContain("결제한 풀이나 가입 선물을 쓰지 않습니다");
   });
 
   it("refund: the digital-content preview duty and the beta note", () => {

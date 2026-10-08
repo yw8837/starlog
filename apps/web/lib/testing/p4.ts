@@ -89,10 +89,9 @@ export interface MeBody {
   owner: boolean;
   user: null | {
     nickname: string;
-    stardust: number;
-    stardustExpiresAt: string | null;
+    gift: { status: "unused"; until: string | null } | { status: "used" } | null;
     unused: Array<{ orderId: string; productId: string; refundUntil: string }>;
-    opening: Array<{ productId: string; currency: "paid" | "stardust"; orderId: string | null }>;
+    opening: Array<{ productId: string; currency: "paid" | "gift"; orderId: string | null }>;
   };
 }
 

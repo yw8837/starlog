@@ -61,7 +61,7 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
           <Rabbit outfit="tarot" action="write" size={168} />
         </div>
         <h1 className={s.title}>로그인하고 전체 풀이 보기</h1>
-        <p className={s.gift}>{`처음 가입하면 ${SITE.currency.free} ${SITE.price.signupGiftFree}개를 드려요`}</p>
+        <p className={s.gift}>처음 가입하면 타로 전체 풀이 1번을 무료로 드려요</p>
       </div>
 
       <div className={s.form}>

@@ -65,12 +65,12 @@ describe("Kakao login", () => {
       payments: true,
       login: true,
       owner: false,
-      user: { nickname: "테스트 별손님", stardust: 10, stardustExpiresAt: new Date(giftExpiry(T0)).toISOString(), unused: [], opening: [] },
+      user: { nickname: "테스트 별손님", gift: { status: "unused", until: new Date(giftExpiry(T0)).toISOString() }, unused: [], opening: [] },
     });
     expect((await b.send(logout, "/api/auth/logout", { method: "POST", origin: true })).status).toBe(200);
     expect((await me(b)).user).toBeNull();
     await loginAs(b, "alice");
-    expect((await me(b)).user?.stardust).toBe(10);
+    expect((await me(b)).user?.gift?.status).toBe("unused");
     expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'").first()).toEqual({ n: 1 });
   });
 
@@ -81,7 +81,7 @@ describe("Kakao login", () => {
     await db.prepare("INSERT INTO users (id, kakao_key, nickname, customer_key, created_at, last_login_at) VALUES ('u_dave', ?, '데이브', 'c_dave_000000000000000000', 0, 0)").bind(key).run();
     const b = browser();
     await loginAs(b, "dave");
-    expect((await me(b)).user?.stardust).toBe(10);
+    expect((await me(b)).user?.gift?.status).toBe("unused");
     await loginAs(b, "dave");
     expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'").first()).toEqual({ n: 1 });
   });
@@ -93,7 +93,7 @@ describe("Kakao login", () => {
     expect((await alice.send(logout, "/api/auth/logout", { method: "POST", origin: true })).status).toBe(200);
     vi.stubEnv("STARLOG_PAYMENTS", "paused");
     expect((await loginAs(alice, "alice")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
-    expect(await me(alice)).toMatchObject({ payments: false, login: true, user: { stardust: 10 } });
+    expect(await me(alice)).toMatchObject({ payments: false, login: true, user: { gift: { status: "unused" } } });
     const bob = browser("198.51.100.21");
     expect((await loginAs(bob, "bob")).headers.get("location")).toBe("http://localhost/tarot/result?login=closed");
     expect(await db.prepare("SELECT COUNT(*) AS n FROM users").first()).toEqual({ n: 1 });
@@ -139,7 +139,7 @@ describe("Kakao login", () => {
     const owner = browser("198.51.100.1");
     expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
     expect((await loginAs(owner, "owner")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
-    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { stardust: 10 } });
+    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { gift: { status: "unused" } } });
     // A new owner code revokes the passes handed out under the old one.
     vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0002");
     expect(await me(owner)).toMatchObject({ payments: false, owner: false });

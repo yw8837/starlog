@@ -30,12 +30,10 @@ export const SITE = {
     email: "studioyeolmae.com@gmail.com",
     phone: "010-8282-8837",
   },
-  currency: { paid: "달빛", free: "별조각" },
+  /** One payment opens one reading. The signup gift (one free tarot reading) is in lib/pay/catalog.ts. */
   price: {
     tarotStandardKrw: 2900,
     sajuStandardKrw: 4900,
-    unitsPerReading: 10,
-    signupGiftFree: 10,
     /**
      * Premium readings (P5). Sales open with STARLOG_PREMIUM (lib/premium/flags.ts) and, for a dated
      * product, inside [opensAt, closesAt) (KST ISO, "" when undated). The 10-card spread is never
@@ -66,7 +64,7 @@ export const SITE = {
     teaserPerDay: 5,
   },
   features: {
-    /** 달빛/별조각 balances and packs. Off in the beta (no payments yet); the wallet UI stays hidden. */
+    /** Payments are open to everyone; while false, llms.txt says they are coming. Who may buy on a deploy: STARLOG_PAYMENTS (lib/pay/mode.ts). */
     payments: false,
     /**
      * 별자리 인연 (/bonds, /ranking, /b, /api/bonds and the home row). On in dev and tests; a production
@@ -76,19 +74,7 @@ export const SITE = {
     /** 주제별 사주 (NEXT_PUBLIC_SAJU_TOPICS): this build's mode; screens and the server call sajuTopicsMode(). */
     sajuTopics: sajuTopicsMode(),
   },
-  /**
-   * 달빛 top-up packs. Provisional: every pack must make one reading (unitsPerReading 달빛)
-   * cheaper than direct pay, per spec §5 (checked in fixtures.test.ts). Real prices are set
-   * after measuring generation cost and conversion.
-   */
-  moonPacks: [
-    { units: 30, bonus: 0, krw: 8500 },
-    { units: 60, bonus: 6, krw: 16900 },
-    { units: 100, bonus: 20, krw: 27000 },
-  ],
 } as const;
-
-export type MoonPack = (typeof SITE)["moonPacks"][number];
 
 /** "2,900원" */
 export const won = (krw: number) => `${new Intl.NumberFormat("ko-KR").format(krw)}원`;

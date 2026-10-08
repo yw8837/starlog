@@ -1,12 +1,10 @@
 import { TEMPLATES, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
-import { SITE } from "./config";
 import {
   INVITE_FIXTURE,
   INVITE_FIXTURE_TOKEN,
   TAROT_FOLLOW_UPS,
   TAROT_SAMPLE,
-  WALLET_FIXTURE,
   paidHeadings,
 } from "./fixtures";
 
@@ -42,12 +40,6 @@ describe("TAROT_SAMPLE", () => {
   it("does not repeat the free first-card paragraph inside the paid reading", () => {
     const paidText = JSON.stringify(TAROT_SAMPLE.paid);
     expect(paidText).not.toContain(TAROT_SAMPLE.free.firstCard.body);
-  });
-});
-
-describe("fixture extras", () => {
-  it("keeps a wallet that covers 별조각 but is short on 달빛 for one reading", () => {
-    expect(WALLET_FIXTURE).toEqual({ moonlight: 4, stardust: 12 });
   });
 });
 
@@ -93,29 +85,5 @@ describe("INVITE_FIXTURE", () => {
     expect(sentences.length).toBeGreaterThanOrEqual(2);
     expect(sentences.length).toBeLessThanOrEqual(3);
     for (const sentence of sentences) expect(sentence).toMatch(/요\.$/);
-  });
-});
-
-describe("SITE.moonPacks", () => {
-  it("offers 30 for 8,500원, 60 + 6 for 16,900원 and 100 + 20 for 27,000원", () => {
-    expect(SITE.moonPacks).toEqual([
-      { units: 30, bonus: 0, krw: 8500 },
-      { units: 60, bonus: 6, krw: 16900 },
-      { units: 100, bonus: 20, krw: 27000 },
-    ]);
-  });
-
-  it("makes a reading cheaper with 달빛 than paying for it directly, in every pack (spec §5)", () => {
-    const direct = Math.min(SITE.price.tarotStandardKrw, SITE.price.sajuStandardKrw);
-    for (const pack of SITE.moonPacks) {
-      expect((pack.krw / (pack.units + pack.bonus)) * SITE.price.unitsPerReading, `${pack.units}+${pack.bonus}`).toBeLessThan(direct);
-    }
-  });
-
-  it("lists bigger packs at higher prices", () => {
-    for (let i = 1; i < SITE.moonPacks.length; i++) {
-      expect(SITE.moonPacks[i]!.units).toBeGreaterThan(SITE.moonPacks[i - 1]!.units);
-      expect(SITE.moonPacks[i]!.krw).toBeGreaterThan(SITE.moonPacks[i - 1]!.krw);
-    }
   });
 });

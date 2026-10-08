@@ -12,7 +12,7 @@ const account = {
   payments: true,
   login: true,
   owner: false,
-  user: { nickname: "별빛", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", productId: "tarot" }], opening: [] },
+  user: { nickname: "별빛", gift: { status: "unused", until: "2026-12-30T14:59:59.999Z" }, unused: [{ orderId: "Ab3_dEf-Gh5iJk7Lm9No1Pq2", productId: "tarot" }], opening: [] },
 } satisfies AccountState;
 
 let requests: Array<{ url: string; method: string; body: unknown }> = [];
@@ -51,14 +51,33 @@ afterEach(() => {
 });
 
 describe("AccountPanel", () => {
-  it("shows the nickname, 별조각 with their last day, the unopened purchase and the receipt", async () => {
+  it("shows the nickname, the unused gift with its last day, the unopened purchase and the receipt", async () => {
     render(<AccountPanel account={account} />);
     expect(screen.getByRole("heading", { name: "별빛" })).toBeTruthy();
-    expect(screen.getByText("10개")).toBeTruthy();
-    expect(screen.getByText(/12월 30일까지/)).toBeTruthy();
+    const gift = document.getElementById("gift")!;
+    expect(gift.textContent).toBe("가입 선물타로 전체 풀이 무료 · 12월 30일까지");
     expect(screen.getByText("타로 전체 풀이 · 열지 않음")).toBeTruthy();
     expect((await screen.findByRole("link", { name: "영수증 보기" })).getAttribute("href")).toBe("https://dashboard.tosspayments.com/receipt/x");
     expect(screen.queryByText(/계정에 보관하기/)).toBeNull();
+  });
+
+  it("says a used gift was used, and shows nothing once it expired or was never given; never a count", () => {
+    render(<AccountPanel account={{ ...account, user: { ...account.user, gift: { status: "used" } } }} />);
+    expect(document.getElementById("gift")?.textContent).toBe("가입 선물사용했어요");
+    cleanup();
+    const { container } = render(<AccountPanel account={{ ...account, user: { ...account.user, gift: null } }} />);
+    expect(document.getElementById("gift")).toBeNull();
+    expect(container.textContent).not.toMatch(/가입 선물|\d+개/);
+  });
+
+  it("tells a member deleting the account that an unused gift goes with it", () => {
+    render(<AccountPanel account={account} />);
+    fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
+    expect(screen.getByText("쓰지 않은 가입 선물은 사라져요")).toBeTruthy();
+    cleanup();
+    render(<AccountPanel account={{ ...account, user: { ...account.user, gift: { status: "used" } } }} />);
+    fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
+    expect(screen.queryByText("쓰지 않은 가입 선물은 사라져요")).toBeNull();
   });
 
   it("keeps 환불받기 under 결제한 풀이 (#purchases, where the result pages' 환불받기 lands), with or without purchases", () => {

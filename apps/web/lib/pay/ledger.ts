@@ -2,23 +2,26 @@ import "server-only";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
-import { GIFT_DAYS } from "./catalog";
+import { GIFT_DAYS, GIFT_PRODUCT } from "./catalog";
 import type { PayKeyMode } from "./mode";
 
 export { GIFT_DAYS };
 
 /**
- * The one ledger for 달빛 (paid) and 별조각 (free), spec 5.4.
+ * The one ledger for what opens a full reading (spec 5.4): purchases and the signup gift.
  *
- * - Credit lives in lots: a paid lot per order, earmarked for its product, and a free lot per gift.
- * - Opening a reading reserves units from lots (an unlock). The reservation is then either spent,
+ * - Every lot is one opening: a paid lot per order, earmarked for its product, and a free lot for
+ *   the signup gift, which opens one standard tarot reading (GIFT_PRODUCT) and nothing else.
+ * - Opening a reading reserves one whole lot (an unlock). The reservation is then either spent,
  *   when the reading is delivered, or restored when it fails.
  * - Every movement is a ledger row with a UNIQUE idempotency key. Every multi-step change is one
- *   D1 batch, so a retry or a crash never moves credit twice.
+ *   D1 batch, so a retry or a crash never moves an opening twice.
  * - Nothing is reserved or spent for a deleted account (users.deleted_at).
- * - Lot invariant (tested): units_left = grant - reserve + restore - refund - expire.
+ * - Lot invariant (tested): units_left = grant - reserve + restore - refund - expire. A lot holds one
+ *   unit; one written before 2026-10-08 may hold 10 (the old count per reading), and still opens once.
  */
 
+/** credit_lots.currency: a purchase, or the signup gift. */
 export type Currency = "paid" | "free";
 export type LedgerKind = "grant" | "reserve" | "spend" | "restore" | "refund" | "expire";
 
@@ -38,8 +41,11 @@ export interface Lot {
 
 export type Allocation = [lotId: string, units: number];
 
-/** How long an unlock holds its units: the 240 s generation budget plus margin. Then a sweep returns them. */
+/** How long an unlock holds its lot: the 240 s generation budget plus margin. Then a sweep returns it. */
 export const RESERVATION_MS = 6 * 60 * 1000;
+
+/** What a new lot holds: one opening. */
+const ONE_OPENING = 1;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const KST_MS = 9 * 60 * 60 * 1000;
@@ -100,11 +106,11 @@ export function grantStatements(db: D1Binding, lot: NewLot, now: number): D1Stat
 }
 
 /**
- * The signup gift, once per Kakao account (gift_claims outlives the account by a year). The claim,
- * the lot and its ledger row are one batch: a failure leaves no claim behind, so the next login
- * tries again (minor 5). False when it was given before.
+ * The signup gift, one free standard tarot reading, once per Kakao or Google account (gift_claims
+ * outlives the account by a year). The claim, the lot and its ledger row are one batch: a failure
+ * leaves no claim behind, so the next login tries again (minor 5). False when it was given before.
  */
-export async function grantSignupGift(db: D1Binding, input: { userId: string; kakaoKey: string; units: number; now: number }): Promise<boolean> {
+export async function grantSignupGift(db: D1Binding, input: { userId: string; kakaoKey: string; now: number }): Promise<boolean> {
   const claimed = await db.prepare("SELECT 1 AS x FROM gift_claims WHERE kakao_key = ?").bind(input.kakaoKey).first();
   if (claimed) return false;
   const lot: NewLot = {
@@ -113,8 +119,8 @@ export async function grantSignupGift(db: D1Binding, input: { userId: string; ka
     currency: "free",
     source: "gift",
     orderId: null,
-    productId: null,
-    units: input.units,
+    productId: GIFT_PRODUCT,
+    units: ONE_OPENING,
     expiresAt: giftExpiry(input.now),
   };
   try {
@@ -130,11 +136,11 @@ export async function grantSignupGift(db: D1Binding, input: { userId: string; ka
 }
 
 /**
- * The paid lot an order grants, written only while the order is `paid` (markPaid sets it in the same
- * batch, and leaves a deleted account's order unpaid). Its id comes from the order id, so it can
- * exist only once.
+ * The paid lot an order grants (one opening of its product), written only while the order is `paid`
+ * (markPaid sets it in the same batch, and leaves a deleted account's order unpaid). Its id comes
+ * from the order id, so it can exist only once.
  */
-export function paidLotStatements(db: D1Binding, input: { userId: string; orderId: string; productId: string; units: number; now: number }): D1Statement[] {
+export function paidLotStatements(db: D1Binding, input: { userId: string; orderId: string; productId: string; now: number }): D1Statement[] {
   const id = `lot_${input.orderId}`;
   const PAID = "EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'paid')";
   return [
@@ -143,29 +149,14 @@ export function paidLotStatements(db: D1Binding, input: { userId: string; orderI
         `INSERT INTO credit_lots (id, user_id, currency, source, order_id, product_id, units_total, units_left, expires_at, created_at)
          SELECT ?, ?, 'paid', 'order', ?, ?, ?, ?, NULL, ? WHERE ${PAID}`,
       )
-      .bind(id, input.userId, input.orderId, input.productId, input.units, input.units, input.now, input.orderId),
+      .bind(id, input.userId, input.orderId, input.productId, ONE_OPENING, ONE_OPENING, input.now, input.orderId),
     db
       .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${PAID}`)
-      .bind(...values({ userId: input.userId, currency: "paid", kind: "grant", units: input.units, lotId: id, orderId: input.orderId, idem: `grant:${id}`, now: input.now }), input.orderId),
+      .bind(...values({ userId: input.userId, currency: "paid", kind: "grant", units: ONE_OPENING, lotId: id, orderId: input.orderId, idem: `grant:${id}`, now: input.now }), input.orderId),
   ];
 }
 
 // ---- reserve, deliver, release ----
-
-/** Units to take from each lot, in the given order, or null when they do not add up. */
-export function allocate(lots: ReadonlyArray<{ id: string; units_left: number }>, units: number): Allocation[] | null {
-  const out: Allocation[] = [];
-  let need = units;
-  for (const lot of lots) {
-    if (need === 0) break;
-    const take = Math.min(lot.units_left, need);
-    if (take > 0) {
-      out.push([lot.id, take]);
-      need -= take;
-    }
-  }
-  return need === 0 ? out : null;
-}
 
 export function reserveStatements(
   db: D1Binding,
@@ -198,22 +189,24 @@ export function reserveStatements(
 export type ReserveResult = { ok: true; unlockId: string; allocations: Allocation[] } | { ok: false };
 
 /**
- * Holds `units` of `currency` for opening `productId`: lots earmarked for the product first, then
- * the ones that expire soonest. A lot changed meanwhile (spent elsewhere, refunded, expired, account
- * deleted) fails the CHECK and rolls the reservation back; one retry from a fresh read, then no credit.
- * A lot bought with an order counts only when its payment was made under `payMode`, this deploy's
- * Toss keys (mode.ts payKeyMode): test payments never pay for live readings; null takes none.
- * A paid opening takes exactly one whole lot (one purchase), never parts of two, so `units` only
- * counts for 별조각: the units per reading may change after a purchase without splitting it.
- * `earmarked` (premium readings, P5) takes only lots bought for `productId` itself.
+ * Holds one whole lot of `currency` for opening `productId` (one purchase, or the signup gift, never
+ * parts of two): lots earmarked for the product first, then the ones that expire soonest. A lot
+ * changed meanwhile (spent elsewhere, refunded, expired, account deleted) fails the CHECK and rolls
+ * the reservation back; one retry from a fresh read, then nothing to open with.
+ * - The signup gift (`free`) opens a standard tarot reading only (GIFT_PRODUCT), whatever its lot
+ *   says: a gift lot from before 2026-10-08 names no product.
+ * - A lot bought with an order counts only when its payment was made under `payMode`, this deploy's
+ *   Toss keys (mode.ts payKeyMode): test payments never pay for live readings; null takes none.
+ * - `earmarked` (premium readings, P5) takes only lots bought for `productId` itself.
  */
 export async function reserveUnlock(
   db: D1Binding,
-  input: { userId: string; productId: string; currency: Currency; units: number; now: number; payMode: PayKeyMode | null; earmarked?: boolean },
+  input: { userId: string; productId: string; currency: Currency; now: number; payMode: PayKeyMode | null; earmarked?: boolean },
 ): Promise<ReserveResult> {
-  const { userId, productId, currency, units, now, payMode, earmarked = false } = input;
-  // Premium readings open only from lots bought for them: a future 달빛 pack (product_id NULL)
-  // must never open a 7,900원 product at one unit.
+  const { userId, productId, currency, now, payMode, earmarked = false } = input;
+  if (currency === "free" && productId !== GIFT_PRODUCT) return { ok: false };
+  // Premium readings open only from lots bought for them: a lot for any standard reading
+  // (product_id NULL) must never open a 7,900원 product.
   const scope = earmarked ? "product_id = ?" : "(product_id IS NULL OR product_id = ?)";
   await sweepUser(db, userId, now);
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -228,8 +221,8 @@ export async function reserveUnlock(
       .bind(userId, currency, now, productId, payMode)
       .all<{ id: string; units_left: number }>();
     const whole = results[0];
-    const allocations: Allocation[] | null = currency === "paid" ? (whole ? [[whole.id, whole.units_left]] : null) : allocate(results, units);
-    if (!allocations) return { ok: false };
+    if (!whole) return { ok: false };
+    const allocations: Allocation[] = [[whole.id, whole.units_left]];
     const unlockId = `ul_${randomId(12)}`;
     try {
       await db.batch(reserveStatements(db, { unlockId, userId, productId, currency, allocations, now }));
@@ -258,7 +251,7 @@ const allocationsOf = (row: UnlockRow) => JSON.parse(row.allocations) as Allocat
  * Spends a reservation once the reading is saved; `before` (the reading's INSERT) runs in the same
  * batch. "lost" means nothing was spent: the reservation had already been released (it outlived
  * RESERVATION_MS), or the account was deleted. After a release the reading is still saved and the
- * user keeps the units: a slow generation never costs twice.
+ * user keeps the lot: a slow generation never costs twice.
  */
 export async function deliverUnlock(
   db: D1Binding,
@@ -443,15 +436,19 @@ export function revokeLotStatement(db: D1Binding, orderId: string): D1Statement 
 /** A reading being opened right now: reserved, not yet delivered or released. A paid one names its order. */
 export interface Opening {
   productId: string;
-  currency: "paid" | "stardust";
+  currency: "paid" | "gift";
   orderId: string | null;
 }
 
-export interface WalletSummary {
-  /** 별조각 that can be spent now */
-  stardust: number;
-  /** when the soonest of them expires (ms); null when there are none */
-  stardustExpiresAt: number | null;
+/**
+ * The signup gift: `unused` while it can open a reading, until `expiresAt` (ms; null without a last
+ * day); `used` once spent or being spent; null when there is none (never given, expired, taken out).
+ */
+export type GiftState = { status: "unused"; expiresAt: number | null } | { status: "used" } | null;
+
+/** What a user holds to open readings with. */
+export interface Entitlements {
+  gift: GiftState;
   /**
    * paid readings bought and not opened yet (a reading being opened is in `opening` instead);
    * `paidAt`: when the payment was recorded (its lot's created_at), where the refund window starts
@@ -461,7 +458,7 @@ export interface WalletSummary {
   opening: Opening[];
 }
 
-export async function walletSummary(db: D1Binding, userId: string, now: number): Promise<WalletSummary> {
+export async function entitlements(db: D1Binding, userId: string, now: number): Promise<Entitlements> {
   await sweepUser(db, userId, now);
   // A paid reservation holds one whole lot (reserveUnlock), so its lot has nothing left for `unused`.
   const reservations = await db
@@ -473,25 +470,33 @@ export async function walletSummary(db: D1Binding, userId: string, now: number):
     )
     .bind(userId)
     .all<{ product_id: string; currency: Currency; order_id: string | null }>();
+  // Every lot that can still open something, and every gift lot (a spent one says the gift was used).
   const { results } = await db
     .prepare(
       `SELECT currency, order_id, product_id, units_left, expires_at, created_at FROM credit_lots
-       WHERE user_id = ? AND status = 'active' AND units_left > 0 AND (expires_at IS NULL OR expires_at > ?)
+       WHERE user_id = ? AND status = 'active' AND (currency = 'free' OR (units_left > 0 AND (expires_at IS NULL OR expires_at > ?)))
        ORDER BY created_at`,
     )
     .bind(userId, now)
     .all<Pick<Lot, "currency" | "order_id" | "product_id" | "units_left" | "expires_at" | "created_at">>();
-  const free = results.filter((lot) => lot.currency === "free");
-  const expiries = free.map((lot) => lot.expires_at).filter((at): at is number => at !== null);
+  const usable = (lot: (typeof results)[number]) => lot.units_left > 0 && (lot.expires_at === null || lot.expires_at > now);
+  const gifts = results.filter((lot) => lot.currency === "free");
+  const left = gifts.filter(usable);
+  const expiries = left.map((lot) => lot.expires_at).filter((at): at is number => at !== null);
+  const gift: GiftState =
+    left.length > 0
+      ? { status: "unused", expiresAt: expiries.length ? Math.min(...expiries) : null }
+      : gifts.some((lot) => lot.units_left === 0)
+        ? { status: "used" }
+        : null;
   return {
-    stardust: free.reduce((sum, lot) => sum + lot.units_left, 0),
-    stardustExpiresAt: expiries.length ? Math.min(...expiries) : null,
+    gift,
     unused: results
-      .filter((lot) => lot.currency === "paid" && lot.order_id !== null && lot.product_id !== null)
+      .filter((lot) => usable(lot) && lot.currency === "paid" && lot.order_id !== null && lot.product_id !== null)
       .map((lot) => ({ orderId: lot.order_id!, productId: lot.product_id!, paidAt: lot.created_at })),
     opening: reservations.results.map((row) => ({
       productId: row.product_id,
-      currency: row.currency === "paid" ? "paid" : "stardust",
+      currency: row.currency === "paid" ? "paid" : "gift",
       orderId: row.currency === "paid" ? (row.order_id ?? null) : null,
     })),
   };

@@ -15,13 +15,14 @@ const serverChapter = (question = "계정 질문", turns = 0) => ({
 const ID = "abcdefghij0123456789";
 const STARTED = Date.parse("2026-10-01T03:00:00Z");
 const me = (user: unknown) => Response.json({ payments: true, login: true, owner: false, user });
-const userWith = (over: Record<string, unknown> = {}) => ({ nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [], ...over });
+const userWith = (over: Record<string, unknown> = {}) => ({ nickname: "별", gift: null, unused: [], ...over });
+const GIFT = { status: "unused", until: "2026-12-30T14:59:59.999Z" };
 
 function stub(readings: unknown[], account: Response) {
   return vi.fn(async (url: string) => (url.startsWith("/api/readings") ? Response.json({ readings, next: null }) : account.clone())) as unknown as typeof fetch;
 }
 
-const flow = { startedAt: STARTED, matches: (chapter: unknown) => (chapter as { question?: string }).question === "이번 질문", productId: "tarot", units: 10 };
+const flow = { startedAt: STARTED, matches: (chapter: unknown) => (chapter as { question?: string }).question === "이번 질문", productId: "tarot" };
 
 describe("account readings on this device", () => {
   it("adds readings from the account once, and takes newer follow-ups", () => {
@@ -38,7 +39,7 @@ describe("account readings on this device", () => {
   });
 });
 
-describe("checking a cut-off paid or 별조각 reading", () => {
+describe("checking a cut-off paid or gift reading", () => {
   it("finds the reading the server saved after the request started", async () => {
     const saved = { id: ID, createdAt: STARTED + 30_000, chapter: serverChapter("이번 질문") };
     const result = await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: stub([saved], me(userWith())) });
@@ -52,36 +53,34 @@ describe("checking a cut-off paid or 별조각 reading", () => {
     expect(result).toEqual({ status: "unknown" });
   });
 
-  it("says kept only when the account shows the credit unused", async () => {
+  it("says kept only when the account shows the purchase or the gift unused", async () => {
     expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: stub([], me(userWith({ unused: [{ orderId: "o1", productId: "tarot" }] }))) })).toEqual({ status: "kept" });
-    expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0], fetchImpl: stub([], me(userWith({ stardust: 10 }))) })).toEqual({ status: "kept" });
-    expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0, 0], fetchImpl: stub([], me(userWith({ stardust: 0 }))) })).toEqual({ status: "unknown" });
+    expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0], fetchImpl: stub([], me(userWith({ gift: GIFT }))) })).toEqual({ status: "kept" });
+    expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0, 0], fetchImpl: stub([], me(userWith({ gift: { status: "used" } }))) })).toEqual({ status: "unknown" });
+    expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0, 0], fetchImpl: stub([], me(userWith())) })).toEqual({ status: "unknown" });
   });
 
-  it("says kept only when every purchase held at the start is unused again, or all the 별조각 are back", async () => {
-    const held = { orderIds: ["o1", "o2"], stardust: 0 };
+  it("says kept only when every purchase held at the start is unused again", async () => {
+    const held = { orderIds: ["o1", "o2"] };
     const onlyOther = me(userWith({ unused: [{ orderId: "o2", productId: "tarot" }] }));
     expect(await checkDelivery({ ...flow, method: "paid", held }, { delays: [0], fetchImpl: stub([], onlyOther) })).toEqual({ status: "unknown" });
     const both = me(userWith({ unused: [{ orderId: "o2", productId: "tarot" }, { orderId: "o1", productId: "tarot" }] }));
     expect(await checkDelivery({ ...flow, method: "paid", held }, { delays: [0], fetchImpl: stub([], both) })).toEqual({ status: "kept" });
-    const twenty = { orderIds: [], stardust: 20 };
-    expect(await checkDelivery({ ...flow, method: "free", held: twenty }, { delays: [0], fetchImpl: stub([], me(userWith({ stardust: 10 }))) })).toEqual({ status: "unknown" });
-    expect(await checkDelivery({ ...flow, method: "free", held: twenty }, { delays: [0], fetchImpl: stub([], me(userWith({ stardust: 20 }))) })).toEqual({ status: "kept" });
   });
 
-  it("counts what the account holds, a reservation of this kind included", () => {
+  it("counts the purchases the account holds, a reservation of this kind included", () => {
     const user = parseAccount({
       payments: true, login: true, owner: false,
-      user: userWith({ stardust: 5, unused: [{ orderId: "o2", productId: "tarot" }, { orderId: "o3", productId: "saju" }], opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }, { productId: "tarot", currency: "stardust", orderId: null }, { productId: "saju", currency: "stardust", orderId: null }] }),
+      user: userWith({ gift: GIFT, unused: [{ orderId: "o2", productId: "tarot" }, { orderId: "o3", productId: "saju" }], opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }, { productId: "tarot", currency: "gift", orderId: null }, { productId: "saju", currency: "paid", orderId: "o4" }] }),
     })!.user;
-    expect(heldCredit(user, "tarot", 10)).toEqual({ orderIds: ["o2", "o1"], stardust: 15 });
-    expect(heldCredit(null, "tarot", 10)).toEqual({ orderIds: [], stardust: 0 });
+    expect(heldCredit(user, "tarot")).toEqual({ orderIds: ["o2", "o1"] });
+    expect(heldCredit(null, "tarot")).toEqual({ orderIds: [] });
   });
 
   it("keeps checking while the account shows a reading of this kind being opened", async () => {
-    const busy = me(userWith({ unused: [{ orderId: "o2", productId: "tarot" }], stardust: 10, opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }] }));
+    const busy = me(userWith({ unused: [{ orderId: "o2", productId: "tarot" }], gift: GIFT, opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }] }));
     expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0], fetchImpl: stub([], busy), stopWhenNone: true })).toEqual({ status: "unknown" });
-    const spending = me(userWith({ stardust: 10, opening: [{ productId: "tarot", currency: "stardust", orderId: null }] }));
+    const spending = me(userWith({ gift: { status: "used" }, opening: [{ productId: "tarot", currency: "gift", orderId: null }] }));
     expect(await checkDelivery({ ...flow, method: "free" }, { delays: [0], fetchImpl: stub([], spending), stopWhenNone: true })).toEqual({ status: "unknown" });
   });
 

@@ -17,45 +17,6 @@
   letter-spacing: 0.02em;
 }
 
-.balance {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--glass-line);
-  border-radius: 22px;
-  background: var(--glass);
-  color: var(--ink);
-  font-size: var(--fs-body);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  text-decoration: none;
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
-
-.balance:hover {
-  border-color: var(--line-strong);
-}
-
-.balance:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.balanceItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.balanceDivider {
-  width: 1px;
-  height: 14px;
-  background: var(--glass-line);
-}
-
 @media (min-width: 1024px) {
   .topbar {
     justify-content: flex-end;

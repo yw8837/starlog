@@ -12,15 +12,13 @@ import { approxCharsText } from "@/lib/pricing";
 import { sajuFreeLine, sajuPricingLine } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
-const { price, currency, reading, nameKo, beta, features } = SITE;
+const { price, reading, beta, features } = SITE;
 
 export const metadata: Metadata = pageMetadata({
   title: "가격 안내",
-  description: `타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 무료로 볼 수 있는 부분과 ${currency.free}, 결제 수단을 안내해요.`,
+  description: `타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 무료로 볼 수 있는 부분과 가입 선물, 결제 수단을 안내해요.`,
   path: "/pricing",
 });
-
-const giftReadings = Math.floor(price.signupGiftFree / price.unitsPerReading);
 
 /**
  * The standard readings: what one opening includes, lengths from SITE.reading.approxChars. The picture
@@ -54,7 +52,7 @@ function Check() {
 
 export default function PricingPage() {
   return (
-    <LegalPage title="가격 안내" lead={`풀이 한 번의 가격과 무료로 볼 수 있는 부분, ${currency.free}을 한곳에 모았어요.`}>
+    <LegalPage title="가격 안내" lead="풀이 한 번의 가격과 무료로 볼 수 있는 부분, 가입 선물을 한곳에 모았어요.">
       <PaymentsNote>
         <LegalNote>
           <p className={s.noteTitle}>{`오픈 기념으로 하루 ${times(beta.fullPerDay)} 전체 풀이를 무료로 열어 드려요.`}</p>
@@ -96,7 +94,7 @@ export default function PricingPage() {
           ))}
         </div>
         <p>
-          {`결제하거나 ${currency.free}으로 열어도 풀이 내용과 이어서 물어보기, 보관 범위는 같아요. 로그인해서 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요.`}
+          결제하거나 가입 선물로 열어도 풀이 내용과 이어서 물어보기, 보관 범위는 같아요. 로그인해서 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요.
         </p>
       </LegalSection>
 
@@ -129,17 +127,15 @@ export default function PricingPage() {
           <li>{`타로는 뽑은 카드 3장과 첫 풀이, 이어지는 풀이의 소제목을 먼저 무료로 볼 수 있어요. 첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 볼 수 있어요.`}</li>
           <li>{sajuFreeLine(features.sajuTopics, beta.teaserPerDay)}</li>
           <li>지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요.</li>
-          <li>
-            {`처음 가입하면 ${currency.free} ${price.signupGiftFree}개를 드려요. 전체 풀이를 ${times(giftReadings)} 무료로 열 수 있어요. 받은 날부터 ${GIFT_DAYS}일째 되는 날까지 쓸 수 있어요.`}
-          </li>
         </ul>
       </LegalSection>
 
-      <LegalSection id="stardust" title={currency.free}>
+      <LegalSection id="gift" title="가입 선물">
         <ul className={s.list}>
-          <li>{`${currency.free}은 가입 선물처럼 ${nameKo}가 무료로 드리는 재화예요. 전체 풀이 한 번에 ${price.unitsPerReading}개가 쓰여요.`}</li>
-          <li>{`받은 날부터 ${GIFT_DAYS}일째 되는 날 밤 12시(한국 시간)까지 쓸 수 있고, 여러 번 받았다면 먼저 사라지는 것부터 쓰여요.`}</li>
-          <li>무료로 받은 재화라 환불 대상이 아니고, 현금으로 바꾸거나 다른 사람에게 넘길 수 없어요. 탈퇴하면 남은 별조각은 사라져요.</li>
+          <li>처음 가입하면 타로 전체 풀이 1번을 무료로 드려요. 한 사람에게 한 번만 드려요.</li>
+          <li>타로 전체 풀이에만 쓸 수 있고, 사주 전체 풀이와 주제별 사주 풀이, 준비 중인 풀이에는 쓸 수 없어요.</li>
+          <li>{`받은 날부터 ${GIFT_DAYS}일째 되는 날 밤 12시(한국 시간)까지 쓸 수 있어요.`}</li>
+          <li>무료로 드리는 혜택이라 환불하거나 현금으로 바꿀 수 없고, 다른 사람에게 넘길 수 없어요. 탈퇴하면 쓰지 않은 가입 선물은 사라져요.</li>
         </ul>
       </LegalSection>
 

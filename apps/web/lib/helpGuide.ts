@@ -324,7 +324,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           title: "가격과 무료 범위",
           sub: "풀이 한 번의 가격",
           body: prices,
-          tip: "무료로 볼 수 있는 부분과 충전 상품, 환불 기준은 가격 안내와 환불 정책에 먼저 적어 둬요.",
+          tip: "무료로 볼 수 있는 부분과 가입 선물, 환불 기준은 가격 안내와 환불 정책에 먼저 적어 둬요.",
           link: { href: "/pricing", label: "가격 안내 보기" },
         },
       ],

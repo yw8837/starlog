@@ -12,8 +12,6 @@ vi.mock("@/lib/config", async (importOriginal) => {
       price: {
         tarotStandardKrw: 3100,
         sajuStandardKrw: 4100,
-        unitsPerReading: 5,
-        signupGiftFree: 10,
         premium: [
           { id: "tarot-deep", slug: "deep-tarot", name: "심층 타로", sub: "카드 10장", krw: 6100, opens: "", opensAt: "", closesAt: "" },
           {
@@ -24,7 +22,6 @@ vi.mock("@/lib/config", async (importOriginal) => {
       },
       reading: { followUps: 5, approxChars: { tarot: { min: 1234, max: 1234 }, saju: { min: 5678, max: 6789 } } },
       beta: { fullPerDay: 2, teaserPerDay: 4 },
-      moonPacks: [{ units: 20, bonus: 5, krw: 9900 }],
     },
   };
 });
@@ -45,11 +42,22 @@ describe("/pricing", () => {
     expect(text).toContain("이 기기에 계속 보관");
     expect(text).toContain("약 1,234자");
     expect(text).toContain("약 5,678~6,789자");
-    expect(text).toContain("별조각 10개를 드려요. 전체 풀이를 두 번 무료로");
     expect(text).toContain("첫 풀이는 하루 4번까지");
-    expect(text).toContain("전체 풀이 한 번에 5개가 쓰여요");
     expect(text).not.toMatch(/2,900원|8,500원|16,900원|27,000원/);
     expect(text).not.toContain("충전");
+  });
+
+  it("explains the signup gift in its own short section: one free tarot reading, never saju, kept 90 days", () => {
+    const { container } = render(<PricingPage />);
+    const gift = container.querySelector("#gift");
+    expect(gift?.querySelector("h2")?.textContent).toBe("가입 선물");
+    const text = gift?.textContent ?? "";
+    expect(text).toContain("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요");
+    expect(text).toContain("사주 전체 풀이와 주제별 사주 풀이");
+    expect(text).toContain("받은 날부터 90일째 되는 날 밤 12시(한국 시간)까지");
+    expect(text).toContain("환불하거나 현금으로 바꿀 수 없고");
+    expect(container.querySelector("#stardust")).toBeNull();
+    expect(container.textContent).not.toMatch(/별조각|달빛|\d+개/);
   });
 
   it("lists the premium readings as 준비 중 with their SITE prices, never naming the 10-card spread", () => {

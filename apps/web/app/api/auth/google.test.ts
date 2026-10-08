@@ -115,7 +115,7 @@ describe("Google login", () => {
     expect(verifier).toMatch(/^[A-Za-z0-9_-]{43,128}$/);
     expect(createHash("sha256").update(verifier).digest("base64url")).toBe(google.searchParams.get("code_challenge"));
     expect(sent.form!.get("code")).toBe("google-code");
-    expect((await me(b)).user).toMatchObject({ nickname: "별손님", stardust: 10, google: true });
+    expect((await me(b)).user).toMatchObject({ nickname: "별손님", gift: { status: "unused" }, google: true });
   });
 
   it("refuses an ID token minted for another sign-in, and logs nobody in", async () => {
@@ -139,14 +139,14 @@ describe("Google login", () => {
       payments: true,
       login: true,
       owner: false,
-      user: { nickname: "별손님", stardust: 10, stardustExpiresAt: new Date(giftExpiry(T0)).toISOString(), unused: [], opening: [], google: true },
+      user: { nickname: "별손님", gift: { status: "unused", until: new Date(giftExpiry(T0)).toISOString() }, unused: [], opening: [], google: true },
     });
     const { kakao_key: key } = (await db.prepare("SELECT kakao_key FROM users").first<{ kakao_key: string }>())!;
     expect(key).toMatch(/^google:[A-Za-z0-9_-]{43}$/);
     expect(key).not.toContain("alice");
     expect((await b.send(logout, "/api/auth/logout", { method: "POST", origin: true })).status).toBe(200);
     await googleLoginAs(b, "alice");
-    expect((await me(b)).user?.stardust).toBe(10);
+    expect((await me(b)).user?.gift?.status).toBe("unused");
     expect(await one(db, "SELECT COUNT(*) AS n FROM users")).toEqual({ n: 1 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'")).toEqual({ n: 1 });
   });
@@ -181,7 +181,7 @@ describe("Google login", () => {
     const owner = browser("198.51.100.1");
     expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
     expect((await googleLoginAs(owner, "owner")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
-    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { stardust: 10, google: true } });
+    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { gift: { status: "unused" }, google: true } });
   });
 
   it("refuses a callback whose state belongs to another browser, or was issued for Kakao", async () => {
@@ -259,7 +259,7 @@ describe("deleting a Google account", () => {
     expect(await one(db, "SELECT account_deleted_at FROM gift_claims")).toEqual({ account_deleted_at: T0 });
     // Joining again with the same Google account makes a new account, without a second gift.
     await googleLoginAs(b, "alice");
-    expect((await me(b)).user?.stardust).toBe(0);
+    expect((await me(b)).user?.gift).toBeNull();
   });
 
   it("stops when another Google account answers, and a Google answer never deletes a Kakao account", async () => {

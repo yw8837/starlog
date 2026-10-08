@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "@/lib/config";
-import { GIFT_DAYS, NEWYEAR_OPENS_AT, PRODUCTS, productById, sellable, standardProduct, unitsFor } from "./catalog";
+import { GIFT_DAYS, GIFT_PRODUCT, NEWYEAR_OPENS_AT, PRODUCTS, productById, sellable, standardProduct } from "./catalog";
 
 const NOW = Date.parse("2026-10-01T12:00:00+09:00");
 
 describe("catalog", () => {
-  it("prices the standard readings from SITE and lets 별조각 open them", () => {
-    expect(standardProduct("tarot")).toMatchObject({ id: "tarot", name: "타로 전체 풀이", krw: SITE.price.tarotStandardKrw, units: SITE.price.unitsPerReading, deliverable: true });
-    expect(standardProduct("saju")).toMatchObject({ id: "saju", name: "사주 전체 풀이", krw: SITE.price.sajuStandardKrw, units: SITE.price.unitsPerReading, deliverable: true });
+  it("prices the standard readings from SITE", () => {
+    expect(standardProduct("tarot")).toMatchObject({ id: "tarot", name: "타로 전체 풀이", krw: SITE.price.tarotStandardKrw, deliverable: true });
+    expect(standardProduct("saju")).toMatchObject({ id: "saju", name: "사주 전체 풀이", krw: SITE.price.sajuStandardKrw, deliverable: true });
     expect(sellable(standardProduct("tarot"), NOW)).toBe(true);
   });
 
   it("sells every premium reading from SITE at its price within its window, one opening per purchase", () => {
     for (const premium of SITE.price.premium) {
-      expect(productById(premium.id)).toMatchObject({ name: premium.name, krw: premium.krw, units: null, deliverable: true });
+      expect(productById(premium.id)).toMatchObject({ name: premium.name, krw: premium.krw, deliverable: true });
     }
     expect(sellable(productById("match")!, Date.parse("2026-10-20T00:00:00+09:00"))).toBe(true);
     expect(sellable(productById("newyear-2027")!, Date.parse("2027-12-01T00:00:00+09:00"))).toBe(false);
@@ -42,12 +42,12 @@ describe("catalog", () => {
     expect(standardProduct("tarot").orderName).toBe(`${SITE.nameKo} 타로 전체 풀이`);
   });
 
-  it("puts a standard reading's 별조각 price in a paid lot, one opening for premium", () => {
-    expect(unitsFor(standardProduct("tarot"))).toBe(SITE.price.unitsPerReading);
-    expect(unitsFor(productById("match")!)).toBe(1);
+  it("makes the signup gift one standard tarot reading, kept for 90 KST days (owner 2026-10-08)", () => {
+    expect(GIFT_PRODUCT).toBe("tarot");
+    expect(GIFT_DAYS).toBe(90);
   });
 
-  it("keeps 별조각 for 90 KST days", () => {
-    expect(GIFT_DAYS).toBe(90);
+  it("holds no unit price: every purchase is one opening", () => {
+    for (const product of PRODUCTS) expect(product).not.toHaveProperty("units");
   });
 });

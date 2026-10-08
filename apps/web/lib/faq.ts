@@ -33,7 +33,6 @@ type FaqOptions = { site?: typeof SITE; ads?: boolean };
 
 export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOptions = {}): FaqGroup[] {
   const { nameKo } = site;
-  const { paid, free } = site.currency;
   const { fullPerDay, teaserPerDay } = site.beta;
   const { approxChars } = site.reading;
   const contacts = contactChannels(site.business);
@@ -202,7 +201,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           q: "환불은 어떻게 되나요?",
           a: [
             "오픈 기념 무료 풀이는 결제가 없어 환불할 일이 생기지 않아요. 풀이가 제대로 만들어지지 않으면 오늘 열 수 있는 횟수도 줄지 않아요.",
-            `유료 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 풀이가 만들어지지 않았거나 오류로 끝까지 나오지 않았다면 기간과 상관없이 쓴 ${paid}·${free}을 되돌리거나 결제 금액을 환불해 드려요. 충전한 ${paid}은 7일 안에 하나도 쓰지 않았다면 전액, 일부를 썼다면 남은 만큼 환불해요.`,
+            `유료 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 풀이가 만들어지지 않았거나 오류로 끝까지 나오지 않았다면 기간과 상관없이 결제한 풀이를 다시 열거나 결제 금액을 환불받을 수 있어요. 가입 선물로 열던 풀이라면 가입 선물을 그대로 돌려 드려요.`,
           ],
           link: { href: "/refund", label: "환불 정책" },
         },

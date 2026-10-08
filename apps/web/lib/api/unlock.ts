@@ -2,7 +2,7 @@ import "server-only";
 import { openAccount } from "@/lib/account/request";
 import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import type { D1Binding } from "@/lib/db/d1";
-import { standardProduct, unitsFor, type StandardProductId } from "@/lib/pay/catalog";
+import { GIFT_PRODUCT, type StandardProductId } from "@/lib/pay/catalog";
 import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
 import { openingOffer, payKeyMode, paymentsMode } from "@/lib/pay/mode";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
@@ -17,8 +17,9 @@ import type { GenerationOutcome, Settlement } from "./stream";
  * the plan's Task 10:
  * - `opening`: the 오픈 기념 daily free reading, exactly as before P4 (cookie quota, server limits,
  *   network counter). 402 PAYMENT_REQUIRED once payments are on for everyone; never for the owner.
- * - `free` (별조각): login, the free budget and network cap (it costs us what a free reading costs),
- *   then the reservation. Spending is never gated by STARLOG_PAYMENTS.
+ * - `free` (the signup gift): a standard tarot reading only (GIFT_PRODUCT; anything else is 402
+ *   NO_CREDIT before anything is held). Login, the free budget and network cap (it costs us what a
+ *   free reading costs), then the reservation. Using it is never gated by STARLOG_PAYMENTS.
  * - `paid`: login, then the reservation. Its model cost goes to the paid book. On a production deploy
  *   running test keys it earned nothing, so it is held and counted like `free` (security M2).
  * - `owner`: the owner pass and the owner's server limits, no ledger; saved when logged in.
@@ -53,6 +54,8 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     if (ctx instanceof Response || !user) return base;
     return { ...base, save: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: "owner", unlockId: null } };
   }
+  // The signup gift never opens saju (주제별 사주 included); the ledger refuses it as well.
+  if (method === "free" && kind !== GIFT_PRODUCT) return errorResponse("NO_CREDIT");
   const ctx = await openAccount(request, gate.now);
   if (ctx instanceof Response) return ctx;
   const user = ctx.session?.user;
@@ -63,7 +66,7 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
   // it is held and counted like a free one (security M2).
   const unbacked = method === "paid" && process.env.NODE_ENV === "production" && payKeyMode() === "test";
   if (method === "free" || unbacked) {
-    // 별조각 readings cost us what free readings cost: the free budget and the network cap apply (minor 4).
+    // Gift readings cost us what free readings cost: the free budget and the network cap apply (minor 4).
     const limited = await checkServerLimits(gate, "full");
     if (limited) return limited;
   }
@@ -71,8 +74,6 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     userId: user.id,
     productId: kind,
     currency: method === "paid" ? "paid" : "free",
-    // 별조각 by the reading's price in units; a paid opening takes one whole purchase (reserveUnlock).
-    units: unitsFor(standardProduct(kind)),
     now: gate.now,
     payMode: payKeyMode(),
   });

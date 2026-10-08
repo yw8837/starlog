@@ -4,7 +4,7 @@ import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import type { PremiumId } from "@/lib/premium/products";
 
 /**
- * Readings kept in the account (spec 5.7). A reading opened with 결제, 별조각 or the owner pass
+ * Readings kept in the account (spec 5.7). A reading opened with 결제, the signup gift or the owner pass
  * while logged in is saved automatically (device-only readings are not moved in P4).
  * - The payload is the chapter exactly as the device stores it (lib/storage/chapters.ts), sealed
  *   with AES-GCM under the row's key_version and bound to the row (`${userId}:${id}` as additional

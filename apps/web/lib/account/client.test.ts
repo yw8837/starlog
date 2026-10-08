@@ -9,7 +9,7 @@ describe("account client", () => {
       payments: true,
       login: true,
       owner: false,
-      user: { nickname: "별", stardust: 10, stardustExpiresAt: "2026-12-30T14:59:59.999Z", unused: [{ orderId: "o1", productId: "tarot" }], opening: [{ productId: "saju", currency: "paid", orderId: "o2" }] },
+      user: { nickname: "별", gift: { status: "unused", until: "2026-12-30T14:59:59.999Z" }, unused: [{ orderId: "o1", productId: "tarot" }], opening: [{ productId: "saju", currency: "paid", orderId: "o2" }] },
     };
     expect(parseAccount(body)).toEqual(body);
     expect(parseAccount({ payments: false, login: false, owner: false, user: null })).toEqual({ payments: false, login: false, owner: false, user: null });
@@ -17,19 +17,30 @@ describe("account client", () => {
     expect(parseAccount({ payments: true, login: true, owner: false, user: { nickname: 1 } })).toBeNull();
   });
 
+  it("reads the signup gift as unused (with its last moment), used or none, and anything odd as none", () => {
+    const user = { nickname: "별", unused: [], opening: [] };
+    const read = (gift: unknown) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, gift } })?.user?.gift;
+    expect(read({ status: "unused", until: "2026-12-30T14:59:59.999Z" })).toEqual({ status: "unused", until: "2026-12-30T14:59:59.999Z" });
+    expect(read({ status: "unused", until: null })).toEqual({ status: "unused", until: null });
+    expect(read({ status: "used" })).toEqual({ status: "used" });
+    expect(read(null)).toBeNull();
+    expect(read(undefined)).toBeNull();
+    for (const odd of [10, "unused", { status: "unused", until: 7 }, { status: "spent" }]) expect(read(odd)).toBeNull();
+  });
+
   it("reads the readings being opened, and takes a missing or odd list as none", () => {
-    const user = { nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [] };
+    const user = { nickname: "별", gift: null, unused: [] };
     const read = (opening: unknown) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, opening } })?.user?.opening;
     expect(parseAccount({ payments: true, login: true, owner: false, user })?.user?.opening).toEqual([]);
     expect(read("x")).toEqual([]);
-    expect(read([{ productId: "tarot", currency: "stardust", orderId: null }, { productId: "tarot", currency: "moon", orderId: null }, { productId: 1, currency: "paid", orderId: "o1" }, null])).toEqual([
-      { productId: "tarot", currency: "stardust", orderId: null },
+    expect(read([{ productId: "tarot", currency: "gift", orderId: null }, { productId: "tarot", currency: "moon", orderId: null }, { productId: 1, currency: "paid", orderId: "o1" }, null])).toEqual([
+      { productId: "tarot", currency: "gift", orderId: null },
     ]);
     expect(read([{ productId: "tarot", currency: "paid" }])).toEqual([{ productId: "tarot", currency: "paid", orderId: null }]);
   });
 
   it("marks the review account, and nobody else", () => {
-    const user = { nickname: "심사용 계정", stardust: 0, stardustExpiresAt: null, unused: [], opening: [] };
+    const user = { nickname: "심사용 계정", gift: null, unused: [], opening: [] };
     const read = (extra: Record<string, unknown>) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, ...extra } })?.user;
     expect(read({ review: true })).toEqual({ ...user, review: true });
     expect(read({ review: "yes" })).toEqual(user);
@@ -37,7 +48,7 @@ describe("account client", () => {
   });
 
   it("marks a Google account, and nobody else", () => {
-    const user = { nickname: "별손님", stardust: 10, stardustExpiresAt: null, unused: [], opening: [] };
+    const user = { nickname: "별손님", gift: { status: "used" }, unused: [], opening: [] };
     const read = (extra: Record<string, unknown>) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, ...extra } })?.user;
     expect(read({ google: true })).toEqual({ ...user, google: true });
     expect(read({ google: "yes" })).toEqual(user);
@@ -45,7 +56,7 @@ describe("account client", () => {
   });
 
   it("keeps each unopened purchase's refund deadline, and leaves an odd one out", () => {
-    const user = { nickname: "별", stardust: 0, stardustExpiresAt: null, opening: [] };
+    const user = { nickname: "별", gift: null, opening: [] };
     const read = (unused: unknown) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, unused } })?.user?.unused;
     expect(read([{ orderId: "o1", productId: "tarot", refundUntil: "2026-10-13T14:59:59.999Z" }, { orderId: "o2", productId: "saju", refundUntil: 7 }])).toEqual([
       { orderId: "o1", productId: "tarot", refundUntil: "2026-10-13T14:59:59.999Z" },

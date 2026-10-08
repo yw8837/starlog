@@ -49,7 +49,7 @@ function withHistory(input: TarotInput): TarotInput {
  * never the question or note.
  *
  * The sheet offers what this device may use (lib/pay/offer.ts): the 오픈 기념 reading, a login, a
- * purchase, 별조각 or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
+ * purchase, the signup gift or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
  */
 export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { instant: boolean; autoUnlock?: UnlockMethod | null; loginFlag?: string | null }) {
   const router = useRouter();
@@ -94,16 +94,16 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const openedId = draw?.chapterId && chapters?.some((chapter) => chapter.id === draw.chapterId) ? draw.chapterId : undefined;
   const account = useAccount();
   const product = standardProduct("tarot");
-  const offer = unlockOffer(account, product, SITE.price.signupGiftFree);
+  const offer = unlockOffer(account, product);
   const [method, setMethod] = useState<UnlockMethod>("opening");
   const [creditView, setCreditView] = useState<ErrorView | null>(null);
-  // A paid or 별조각 opening not settled yet: "running" while the account is asked, "stalled" once
+  // A paid or gift opening not settled yet: "running" while the account is asked, "stalled" once
   // the rounds ran out. Either way the sheet offers nothing to buy or open (no second payment).
   const [check, setCheck] = useState<"running" | "stalled" | null>(null);
   const firstTry = useRef<number | null>(null);
   const checkAbort = useRef<AbortController | null>(null);
   useEffect(() => () => checkAbort.current?.abort(), []);
-  const context = method === "paid" ? "paid" : method === "free" ? "stardust" : "reading";
+  const context = method === "paid" ? "paid" : method === "free" ? "gift" : "reading";
   const unlockError = creditView ?? (unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error, context) : null);
   const loginNote = loginMessage(loginFlag);
 
@@ -129,19 +129,19 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const since = (now: number) => Math.min(now - OPENING_WINDOW_MS, firstTry.current ?? now);
 
   /**
-   * M4: find out what happened to a paid or 별조각 opening before saying anything, with nothing to
+   * M4: find out what happened to a paid or gift opening before saying anything, with nothing to
    * buy or open meanwhile.
    * - "cut": the answer broke off; wait for delivered or kept (the rounds may run out: "stalled");
-   * - "refused": NO_CREDIT though the credit looked held (an opening still running took it, or one
-   *   already delivered spent it); an account that is sure nothing is left then says so;
+   * - "refused": NO_CREDIT though the purchase or the gift looked held (an opening still running took
+   *   it, or one already delivered spent it); an account that is sure nothing is left then says so;
    * - "recheck": 다시 확인하기 on a reading being opened.
    */
   const settle = async (chosen: "paid" | "free", startedAt: number, held: HeldCredit, after: "cut" | "refused" | "recheck") => {
     checkAbort.current?.abort();
     const controller = new AbortController();
     checkAbort.current = controller;
-    const credit = chosen === "paid" ? "paid" : "stardust";
-    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0, held };
+    const credit = chosen === "paid" ? "paid" : "gift";
+    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, held };
     const stopWhenNone = after !== "cut";
     const apply = (result: DeliveryCheck): boolean => {
       if (result.status === "unknown") return false;
@@ -184,7 +184,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     const startedAt = Date.now();
     if (chosen === "paid" || chosen === "free") firstTry.current ??= startedAt;
     // What the account held as it started: "kept" later means all of it is back.
-    const held = heldCredit(account?.user, product.id, product.units ?? 0);
+    const held = heldCredit(account?.user, product.id);
     const result = await unlockGen.run("/api/tarot/reading", body, plan, isTarotReadingResponse);
     if (!result) return;
     if (!result.ok) {
@@ -218,14 +218,14 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     router.push(`/chapter/${chapter.id}`);
   };
 
-  // After checkout (?unlock=paid) or a 별조각 login (?unlock=free): open once, as soon as the
+  // After checkout (?unlock=paid) or a gift login (?unlock=free): open once, as soon as the
   // teaser and the account are known and the offer matches. Without a draw (the flow was lost on
   // another browser) nothing runs, and the purchase waits in 내 정보.
   const autoStarted = useRef(false);
   useEffect(() => {
     if (!autoUnlock || autoStarted.current || !teaser || account === undefined || openedId) return;
     if (autoUnlock === "paid" && offer.mode !== "open-paid") return;
-    if (autoUnlock === "free" && offer.mode !== "stardust") return;
+    if (autoUnlock === "free" && offer.mode !== "gift") return;
     autoStarted.current = true;
     router.replace(withFlags(RETURN_TO, { instant }));
     void unlock(autoUnlock);
@@ -234,9 +234,9 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   /** 다시 확인하기: after the rounds ran out, or on a reading of this kind being opened (another tab, a reload). */
   const recheck = () => {
     const busy = account?.user?.opening.find((item) => item.productId === product.id);
-    const chosen = busy ? (busy.currency === "stardust" ? "free" : "paid") : method === "free" ? "free" : "paid";
-    setMethod(chosen); // the lines and the refund link that follow are about this credit
-    void settle(chosen, since(Date.now()), heldCredit(account?.user, product.id, product.units ?? 0), check === "stalled" ? "cut" : "recheck");
+    const chosen = busy ? (busy.currency === "gift" ? "free" : "paid") : method === "free" ? "free" : "paid";
+    setMethod(chosen); // the lines and the refund link that follow are about this purchase or the gift
+    void settle(chosen, since(Date.now()), heldCredit(account?.user, product.id), check === "stalled" ? "cut" : "recheck");
   };
 
   const teaserState = teaserGen.state;

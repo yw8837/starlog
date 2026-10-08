@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { logout, refreshAccount, type AccountState, type AccountUser } from "@/lib/account/client";
-import { SITE } from "@/lib/config";
 import { REFUND_DAYS, productById } from "@/lib/pay/catalog";
 import { postJson, type ApiError } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
@@ -50,14 +49,14 @@ type AccountPanelProps = {
 
 /**
  * 내 정보 for a logged-in user (spec section 9):
- * - nickname, 별조각 with their last day, unopened purchases (열기, 환불받기), 결제 내역 with receipts;
+ * - nickname, the signup gift (unused with its last day, or used; nothing once it expired), unopened
+ *   purchases (열기, 환불받기), 결제 내역 with receipts;
  * - deleting the account's copies of readings;
  * - 로그아웃, and 회원 탈퇴 (through the Kakao re-check, or Google's for a Google account; the review
  *   account has neither and skips it).
  */
 export function AccountPanel({ account, navigate = (url) => window.location.assign(url), onNotice }: AccountPanelProps) {
   const { user } = account;
-  const { free } = SITE.currency;
   const [ownNotice, setOwnNotice] = useState("");
   const setNotice = onNotice ?? setOwnNotice;
   const [sheet, setSheet] = useState<"refund" | "delete" | "readings" | null>(null);
@@ -111,11 +110,13 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
       </h2>
       <p className={s.muted}>{user.review ? "심사용 계정으로 로그인했어요" : user.google ? "Google로 로그인했어요" : "카카오로 로그인했어요"}</p>
 
-      <p className={s.balance}>
-        <span className={s.balanceLabel}>{free}</span>
-        <span>{`${user.stardust}개`}</span>
-        {user.stardust > 0 && user.stardustExpiresAt ? <span className={s.muted}>{` · ${lastDay(user.stardustExpiresAt)}까지`}</span> : null}
-      </p>
+      {user.gift ? (
+        <p id="gift" className={s.gift}>
+          <span className={s.giftLabel}>가입 선물</span>
+          <span>{user.gift.status === "used" ? "사용했어요" : "타로 전체 풀이 무료"}</span>
+          {user.gift.status === "unused" && user.gift.until ? <span className={s.muted}>{` · ${lastDay(user.gift.until)}까지`}</span> : null}
+        </p>
+      ) : null}
 
       {/* #purchases: where 환불받기 on a result page and the refund policy send the buyer. */}
       <section id="purchases" className={s.orders} aria-labelledby="purchases-title">
@@ -226,7 +227,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
           </h2>
           <ul className={s.list}>
             {user.unused.length > 0 ? <li>{`열지 않은 결제 ${user.unused.length}건은 전액 환불돼요`}</li> : null}
-            <li>{`남은 ${free}은 사라져요`}</li>
+            {user.gift?.status === "unused" ? <li>쓰지 않은 가입 선물은 사라져요</li> : null}
             <li>계정에 보관한 풀이가 지워져요</li>
             <li>결제 기록은 법에 따라 5년 동안 보관돼요</li>
             <li>이 기기의 기록은 아래 ‘이 기기에 저장된 기록 모두 지우기’로 따로 지울 수 있어요</li>

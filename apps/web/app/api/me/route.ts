@@ -3,7 +3,7 @@ import { openAccount } from "@/lib/account/request";
 import { isReviewer } from "@/lib/account/review";
 import { clearSession, sessionCookieName } from "@/lib/account/session";
 import { clientKey, errorResponse, json, parseCookies, serializeCookie } from "@/lib/api/http";
-import { walletSummary } from "@/lib/pay/ledger";
+import { entitlements } from "@/lib/pay/ledger";
 import { loginOpen, paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { refundDeadline } from "@/lib/pay/refunds";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
@@ -15,9 +15,10 @@ import { signingSecret } from "@/lib/security/sign";
  * - `payments`: whether sales are open for this device (or for the review account logged in on it);
  * - `login`: whether this device may log in (also while sales are paused, for existing accounts);
  * - `owner`: whether it holds the owner pass;
- * - `user`: the logged-in user's nickname, 별조각 (with the soonest expiry), unopened purchases (each
- *   with `refundUntil`, the last moment 환불받기 works) and `opening`, the readings being opened right
- *   now (a paid one is never also in `unused`); `review: true` only on the review account, `google: true`
+ * - `user`: the logged-in user's nickname, `gift` (the signup gift: `{ status: "unused", until }` with
+ *   its last moment, `{ status: "used" }`, or null when there is none), unopened purchases (each with
+ *   `refundUntil`, the last moment 환불받기 works) and `opening`, the readings being opened right now
+ *   (a paid one is never also in `unused`); `review: true` only on the review account, `google: true`
  *   only on a Google account.
  * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
  * network (ME_LIMITER, generous: every page with an account line asks it).
@@ -35,7 +36,8 @@ export async function GET(request: Request): Promise<Response> {
   const ctx = await openAccount(request, now);
   if (ctx instanceof Response) return json({ payments: false, login: false, owner, user: null });
   if (!ctx.session) return json({ payments, login, owner, user: null }, { cookies: [serializeCookie(clearSession())] });
-  const wallet = await walletSummary(ctx.db, ctx.session.user.id, now);
+  const held = await entitlements(ctx.db, ctx.session.user.id, now);
+  const { gift } = held;
   // The review account buys like the owner pass (lib/account/review.ts); `owner` stays the device's pass.
   const review = await isReviewer(ctx.session.user, ctx.accountSecret);
   return json({
@@ -44,10 +46,12 @@ export async function GET(request: Request): Promise<Response> {
     owner,
     user: {
       nickname: ctx.session.user.nickname ?? "별손님",
-      stardust: wallet.stardust,
-      stardustExpiresAt: wallet.stardustExpiresAt === null ? null : new Date(wallet.stardustExpiresAt).toISOString(),
-      unused: wallet.unused.map(({ orderId, productId, paidAt }) => ({ orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() })),
-      opening: wallet.opening,
+      gift:
+        gift?.status === "unused"
+          ? { status: "unused", until: gift.expiresAt === null ? null : new Date(gift.expiresAt).toISOString() }
+          : gift,
+      unused: held.unused.map(({ orderId, productId, paidAt }) => ({ orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() })),
+      opening: held.opening,
       ...(review ? { review: true } : {}),
       ...(isGoogleAccount(ctx.session.user) ? { google: true } : {}),
     },

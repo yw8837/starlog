@@ -247,11 +247,11 @@ describe("maintenance", () => {
     const db = useTestDb();
     const b = await loggedIn();
     const userId = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!.id;
-    expect((await reserveUnlock(db, { userId, productId: "tarot", currency: "free", units: 10, now: T0, payMode: "mock" })).ok).toBe(true);
+    expect((await reserveUnlock(db, { userId, productId: "tarot", currency: "free", now: T0, payMode: "mock" })).ok).toBe(true);
     vi.setSystemTime(T0 + RESERVATION_MS + 1);
     expect(await report()).toMatchObject({ released: 1 });
     expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "released" });
-    expect((await me(b)).user?.stardust).toBe(10);
+    expect((await me(b)).user?.gift?.status).toBe("unused");
   });
 
   it("finishes an erase that a deletion did not", async () => {

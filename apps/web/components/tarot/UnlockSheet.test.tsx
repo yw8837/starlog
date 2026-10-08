@@ -21,18 +21,26 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByText("풀이 전체 · 약 2,500~3,000자")).toBeTruthy();
   });
 
-  it("guest: log in first, with the gift explained", () => {
-    render(<UnlockSheet {...base} offer={{ mode: "login", priceKrw: 2900, giftUnits: 10 }} onUnlock={() => {}} />);
+  it("tarot guest: log in first, with the free first tarot reading named", () => {
+    render(<UnlockSheet {...base} offer={{ mode: "login", priceKrw: 2900, gift: true }} onUnlock={() => {}} />);
     expect(screen.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).getAttribute("href")).toBe(base.loginHref);
-    expect(screen.getByText("처음 가입하면 별조각 10개를 드려요 · 전체 풀이 한 번을 무료로 열 수 있어요")).toBeTruthy();
+    expect(screen.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeTruthy();
   });
 
-  it("별조각 first, paying second", () => {
+  it("saju guest: log in to pay, with no gift line", () => {
+    const { container } = render(<UnlockSheet {...base} kind="saju" offer={{ mode: "login", priceKrw: 4900, gift: false }} onUnlock={() => {}} />);
+    expect(screen.getByRole("link", { name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
+    expect(screen.getByText("로그인하면 바로 결제하고 열 수 있어요")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/선물|무료로 드려요/);
+  });
+
+  it("the signup gift first, paying second, with its last day", () => {
     const onUnlock = vi.fn();
-    render(<UnlockSheet {...base} offer={{ mode: "stardust", units: 10, balance: 10, priceKrw: 2900 }} onUnlock={onUnlock} />);
-    fireEvent.click(screen.getByRole("button", { name: "별조각 10개로 보기" }));
+    render(<UnlockSheet {...base} offer={{ mode: "gift", until: "2026-12-30T14:59:59.999Z", priceKrw: 2900 }} onUnlock={onUnlock} />);
+    fireEvent.click(screen.getByRole("button", { name: "가입 선물로 무료로 보기" }));
     expect(onUnlock).toHaveBeenCalledWith("free");
     expect(screen.getByRole("link", { name: "2,900원 결제하고 보기" }).getAttribute("href")).toBe(base.payHref);
+    expect(screen.getByText("가입 선물은 12월 30일까지 쓸 수 있어요")).toBeTruthy();
   });
 
   it("opens a purchase, and lets the owner open free on the side", () => {
@@ -54,7 +62,7 @@ describe("UnlockSheet offers", () => {
 
   it("while a cut-off opening is being checked, offers nothing to press, whatever the offer says", () => {
     const checking = { title: "풀이가 열렸는지 확인하고 있어요", body: "잠시만 기다려 주세요.", action: null };
-    for (const offer of [{ mode: "open-paid", orderId: "o1" }, { mode: "stardust", units: 10, balance: 10, priceKrw: 2900 }, { mode: "pay", priceKrw: 2900 }] as const) {
+    for (const offer of [{ mode: "open-paid", orderId: "o1" }, { mode: "gift", until: null, priceKrw: 2900 }, { mode: "pay", priceKrw: 2900 }] as const) {
       render(<UnlockSheet {...base} owner offer={offer} onUnlock={() => {}} error={checking} checking />);
       expect(screen.getByText("풀이가 열렸는지 확인하고 있어요")).toBeTruthy();
       expect(screen.queryAllByRole("button")).toEqual([]);

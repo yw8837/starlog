@@ -7,8 +7,6 @@ import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
 import { GIFT_DAYS, REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
-const { free } = SITE.currency;
-
 export const metadata: Metadata = pageMetadata({
   title: "환불 정책",
   description: `${SITE.nameKo} 풀이의 청약철회·환불 기준, 결제 전 무료로 보는 부분, 생성 실패 시 처리, 미성년자 결제 취소, 환불 신청 방법과 처리 기간을 안내해요.`,
@@ -53,15 +51,15 @@ export default function RefundPage() {
 
       <LegalSection id="failure" title="생성 실패와 오류">
         <ul className={s.list}>
-          <li>{`풀이가 끝까지 완성되지 않았다면(생성 오류, 자동 품질 검사 탈락, 시간 초과) 결제한 풀이나 쓰려던 ${free}은 쓰이지 않아요. 같은 풀이를 다시 열 때 한 번 더 결제하지 않아요.`}</li>
+          <li>풀이가 끝까지 완성되지 않았다면(생성 오류, 자동 품질 검사 탈락, 시간 초과) 결제한 풀이는 쓰이지 않아요. 같은 풀이를 다시 열 때 한 번 더 결제하지 않아요. 가입 선물로 열던 풀이라면 가입 선물도 그대로 돌려 드려요.</li>
           <li>연결이 끊겼는데 풀이는 완성됐다면, 그 풀이는 내 기록과 계정에 남아 있어요. 내 정보에서 결제한 풀이와 기록을 확인할 수 있어요.</li>
           <li>{`결제한 풀이라면 다시 여는 대신 전액 환불받을 수도 있어요. 생성 실패나 장애, 결제 오류처럼 ${SITE.nameKo} 쪽 문제라면 결제일로부터 ${REFUND_DAYS}일이 지났어도 환불해 드려요. 이때는 아래 문의처로 알려 주세요.`}</li>
           <li>풀이가 결제 전에 안내한 내용과 다르게 제공됐다면, 확인한 뒤 같은 기준으로 처리해요.</li>
         </ul>
       </LegalSection>
 
-      <LegalSection id="stardust" title={`${free} (무료 재화)`}>
-        <p>{`${free}은 가입 선물처럼 무료로 드린 재화라 환불 대상이 아니에요. 받은 날부터 ${GIFT_DAYS}일째 되는 날까지 쓸 수 있고, 현금으로 바꾸거나 다른 사람에게 넘길 수 없어요.`}</p>
+      <LegalSection id="gift" title="가입 선물">
+        <p>{`가입 선물(타로 전체 풀이 1번 무료)은 무료로 드리는 혜택이라 환불 대상이 아니에요. 받은 날부터 ${GIFT_DAYS}일째 되는 날까지 쓸 수 있고, 현금으로 바꾸거나 다른 사람에게 넘길 수 없어요.`}</p>
       </LegalSection>
 
       <LegalSection id="minor" title="미성년자 결제 취소">

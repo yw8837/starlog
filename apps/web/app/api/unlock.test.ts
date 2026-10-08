@@ -86,6 +86,7 @@ async function paidBook(): Promise<number> {
 const freeBook = async () => Math.round((await spentTodayKrw(Date.now())) ?? -1);
 const userId = async (db: D1Binding) => (await db.prepare("SELECT id FROM users ORDER BY created_at LIMIT 1").first<{ id: string }>())!.id;
 const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
+const giftOf = async (b: Browser) => (await me(b)).user?.gift?.status;
 
 describe("opening a full reading with credit", () => {
   it("ends the free 오픈 기념 reading once payments are on for everyone, before any generation", async () => {
@@ -106,16 +107,18 @@ describe("opening a full reading with credit", () => {
     expect(await res.json()).toMatchObject({ code: "NO_CREDIT" });
   });
 
-  it("opens with 별조각: saved and spent only then, no quota cookie, counted like a free reading", async () => {
+  it("opens a tarot reading with the signup gift: saved and spent only then, no quota cookie, counted like a free reading", async () => {
     const db = useTestDb();
     const { b, ip } = await loggedIn();
+    expect(await giftOf(b)).toBe("unused");
     billing();
     const res = await open(b, "free");
     expect(res.status).toBe(200);
     const body = (await res.json()) as { readingId: string; chapterToken: string };
     expect(body.readingId).toMatch(/^[a-z0-9]{20}$/);
     expect(res.headers.getSetCookie().some((c) => c.startsWith("sl_q="))).toBe(false);
-    expect((await me(b)).user?.stardust).toBe(0);
+    expect(await giftOf(b)).toBe("used");
+    expect(await one(db, "SELECT source FROM readings")).toEqual({ source: "free" });
     const { readings } = await listReadings(db, accountSecret()!, await userId(db));
     expect(readings).toHaveLength(1);
     expect(readings[0]).toMatchObject({ id: body.readingId, chapter: { kind: "tarot", question: MONEY_INPUT.question, chapterToken: body.chapterToken, followUpsLeft: 3 } });
@@ -125,7 +128,7 @@ describe("opening a full reading with credit", () => {
     expect(await clientCount(await keyedHash(`client:${ip}`, signingSecret()!), "full", Date.now())).toBe(1);
   });
 
-  it("stops 별조각 when the free budget is spent, before reserving; a paid reading still opens, on the paid book", async () => {
+  it("stops the gift when the free budget is spent, before reserving; a paid reading still opens, on the paid book", async () => {
     const db = useTestDb();
     const { b } = await loggedIn();
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
@@ -133,7 +136,7 @@ describe("opening a full reading with credit", () => {
     expect(free.status).toBe(503);
     expect(await free.json()).toMatchObject({ reason: "budget" });
     expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
-    expect((await me(b)).user?.stardust).toBe(10);
+    expect(await giftOf(b)).toBe("unused");
     await buy(b);
     billing();
     expect((await open(b, "paid")).status).toBe(200);
@@ -148,21 +151,52 @@ describe("opening a full reading with credit", () => {
     expect((await open(b, "paid")).status).toBe(200);
     expect((await me(b)).user?.unused).toEqual([]);
     expect((await open(b, "paid")).status).toBe(402);
-    expect((await me(b)).user?.stardust).toBe(10);
+    expect(await giftOf(b)).toBe("unused");
   });
 
-  it("gives the credit back when the generation fails", async () => {
+  it("gives the gift back when the generation fails", async () => {
     const db = useTestDb();
     const { b } = await loggedIn();
     vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(mockProvider, "generate").mockRejectedValue(new GenerationError("UPSTREAM"));
     expect((await open(b, "free")).status).toBe(502);
-    expect((await me(b)).user?.stardust).toBe(10);
+    expect(await giftOf(b)).toBe("unused");
     expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "released" });
     expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
+    vi.mocked(mockProvider.generate).mockRestore();
+    expect((await open(b, "free")).status).toBe(200);
+    expect(await giftOf(b)).toBe("used");
   });
 
-  it("gives the credit back when the client leaves mid-stream", async () => {
+  it("refuses the gift for saju and for a 운 before anything is held or written, and keeps it for tarot", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    const spy = vi.spyOn(mockProvider, "generate");
+    for (const topic of [undefined, "money", "career"]) {
+      const res = await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, ...(topic ? { topic } : {}), unlock: { method: "free" } } });
+      expect(res.status, topic).toBe(402);
+      expect(await res.json()).toMatchObject({ code: "NO_CREDIT" });
+    }
+    expect(spy).not.toHaveBeenCalled();
+    expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind <> 'grant'")).toEqual({ n: 0 });
+    expect(await giftOf(b)).toBe("unused");
+    expect((await open(b, "free")).status).toBe(200);
+  });
+
+  it("refuses the gift for a premium spread: the standard reading never takes its draw", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    const drawn = await b.send(draw, "/api/tarot/draw", { body: { templateId: "deep-tarot", picks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] } });
+    const { drawToken } = (await drawn.json()) as { drawToken: string };
+    const res = await b.send(reading, "/api/tarot/reading", { body: { drawToken, input: MONEY_INPUT, unlock: { method: "free" } } });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ code: "BAD_TOKEN" });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
+    expect(await giftOf(b)).toBe("unused");
+  });
+
+  it("gives the gift back when the client leaves mid-stream", async () => {
     useTestDb();
     const { b } = await loggedIn();
     vi.spyOn(mockProvider, "generate").mockImplementation(
@@ -174,7 +208,7 @@ describe("opening a full reading with credit", () => {
     controller.abort();
     await res.text().catch(() => "");
     vi.mocked(mockProvider.generate).mockRestore();
-    await vi.waitFor(async () => expect((await me(b)).user?.stardust).toBe(10));
+    await vi.waitFor(async () => expect(await giftOf(b)).toBe("unused"));
   });
 
   it("streams: the done event carries the saved reading's id", async () => {
@@ -201,7 +235,7 @@ describe("opening a full reading with credit", () => {
     expect(lines.at(-1)?.data?.readingId).toMatch(/^[a-z0-9]{20}$/);
     expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "delivered" });
     expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'spend'")).toEqual({ n: 1 });
-    expect((await me(b)).user?.stardust).toBe(0);
+    expect(await giftOf(b)).toBe("used");
   });
 
   it("lets the owner open free, saved to the account when logged in, with no ledger movement", async () => {
@@ -217,7 +251,7 @@ describe("opening a full reading with credit", () => {
     expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind <> 'grant'")).toEqual({ n: 0 });
   });
 
-  it("never traps credit: it can still be spent after payments are switched off", async () => {
+  it("never traps the gift: it can still be used after payments are switched off", async () => {
     useTestDb();
     const { b } = await loggedIn();
     vi.stubEnv("STARLOG_PAYMENTS", "off");
@@ -250,10 +284,11 @@ describe("opening a full reading with credit", () => {
     expect(readings[0]?.chapter).not.toHaveProperty("situation");
   });
 
-  it("opens topics with 별조각 and with the owner pass, saving each topic", async () => {
+  it("opens topics with a purchase and with the owner pass, saving each topic", async () => {
     const db = useTestDb();
     const { b } = await loggedIn();
-    expect((await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, topic: "career", unlock: { method: "free" } } })).status).toBe(200);
+    await buy(b, "saju");
+    expect((await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, topic: "career", unlock: { method: "paid" } } })).status).toBe(200);
     expect((await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
     expect((await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, topic: "love", unlock: { method: "owner" } } })).status).toBe(200);
     const { readings } = await listReadings(db, accountSecret()!, await userId(db));

@@ -24,8 +24,9 @@ function seed() {
   saveTeaser("saju", sajuTeaserKey(BIRTH, {}), { title: "고요한 물", summary: "첫 장 요약", lockedToc: ["성향", "올해"] });
 }
 
-const user = (over: Record<string, unknown> = {}) => ({ nickname: "별", stardust: 0, stardustExpiresAt: null, unused: [], opening: [], ...over });
+const user = (over: Record<string, unknown> = {}) => ({ nickname: "별", gift: null, unused: [], opening: [], ...over });
 const meBody = (over: Record<string, unknown> = {}) => ({ payments: true, login: true, owner: false, user: user(over) });
+const GIFT = { status: "unused", until: "2026-12-30T14:59:59.999Z" };
 const savedReading = (topic?: SajuTopicId) => ({
   id: ID,
   createdAt: Date.now(),
@@ -66,6 +67,28 @@ afterEach(() => {
   clearChapters();
   router.push.mockClear();
   router.replace.mockClear();
+});
+
+describe("SajuChartView and the signup gift (tarot only)", () => {
+  it("offers a member holding an unused gift only paying, with no gift line", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody({ gift: GIFT }))] });
+    render(<SajuChartView />);
+    const sheet = await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
+    expect(await within(sheet).findByRole("link", { name: "4,900원 결제하고 보기" })).toBeTruthy();
+    expect(within(sheet).queryAllByRole("button")).toEqual([]);
+    expect(sheet.textContent).not.toMatch(/선물|무료로 보기/);
+  });
+
+  it("asks a guest to log in to pay, without promising a free reading", async () => {
+    seed();
+    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })] });
+    render(<SajuChartView />);
+    const sheet = await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
+    expect(await within(sheet).findByRole("link", { name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
+    expect(sheet.textContent).toContain("로그인하면 바로 결제하고 열 수 있어요");
+    expect(sheet.textContent).not.toMatch(/선물|무료로 드려요/);
+  });
 });
 
 describe("SajuChartView after a paid opening was cut off", () => {

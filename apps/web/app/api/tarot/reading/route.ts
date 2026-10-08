@@ -10,8 +10,8 @@ import { issueChapter } from "@/lib/security/chapterToken";
  * POST {drawToken, input, unlock?} → {reading, chapterToken, readingId?}: the full reading for the
  * server-fixed cards.
  * - 오픈 기념 (no `unlock`): spends one daily unlock only after a validated generation.
- * - paid / 별조각: reserves credit first, then saves the reading to the account and spends the
- *   credit before the client sees it. Any failure releases the credit (spec 5.4).
+ * - paid / the signup gift: reserves the purchase or the gift first, then saves the reading to the
+ *   account and spends it before the client sees it. Any failure gives it back (spec 5.4).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {

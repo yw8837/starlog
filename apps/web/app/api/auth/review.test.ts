@@ -94,7 +94,7 @@ describe("review login", () => {
       payments: true,
       login: true,
       owner: false,
-      user: { nickname: "심사용 계정", stardust: 0, stardustExpiresAt: null, unused: [], opening: [], review: true },
+      user: { nickname: "심사용 계정", gift: null, unused: [], opening: [], review: true },
     });
     // A second browser gets a session on the same account, kept under a keyed hash of the credentials.
     expect((await signIn(browser("198.51.100.20"))).status).toBe(200);
@@ -187,9 +187,9 @@ describe("a production deploy on test keys (security M1)", () => {
     const reviewer = browser("198.51.100.41");
     expect((await signIn(reviewer)).status).toBe(200);
     const state = await me(reviewer);
-    expect(state).toMatchObject({ payments: true, owner: false, user: { stardust: 0, review: true } });
-    // The result page offers "2,900원 결제하고 보기": no 오픈 기념 reading and no 별조각 in its place.
-    expect(unlockOffer(parseAccount(state), standardProduct("tarot"), 10)).toEqual({ mode: "pay", priceKrw: 2900 });
+    expect(state).toMatchObject({ payments: true, owner: false, user: { gift: null, review: true } });
+    // The result page offers "2,900원 결제하고 보기": no 오픈 기념 reading and no signup gift in its place.
+    expect(unlockOffer(parseAccount(state), standardProduct("tarot"))).toEqual({ mode: "pay", priceKrw: 2900 });
     expect(await (await reviewer.send(checkout, "/api/pay/checkout?product=tarot")).json()).toMatchObject({ productId: "tarot", amount: 2900, provider: "toss", clientKey: "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm" });
     expect((await order(reviewer)).status).toBe(200);
   });
@@ -257,7 +257,7 @@ describe("the review account's purchases and deletion", () => {
     for (let i = 0; i < 4; i++) await buy(member);
   });
 
-  it("opens nothing more, paid or 별조각, once its credentials are replaced or gone (security M1)", async () => {
+  it("opens nothing more, paid or with the gift, once its credentials are replaced or gone (security M1)", async () => {
     vi.stubEnv("STARLOG_AI", "mock");
     vi.stubEnv("ANTHROPIC_API_KEY", "");
     const db = useTestDb();

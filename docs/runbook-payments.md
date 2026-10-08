@@ -35,9 +35,9 @@ D1 queries: `npx wrangler d1 execute starlog --remote --command "<SQL>"`.
 `npx wrangler secret put STARLOG_PAYMENTS` → `owner`. While a production deploy runs test keys, sales, sign-up and login stay owner-only even if STARLOG_PAYMENTS says `on` (a test payment charges nobody). On the owner-pass browser:
 
 - [ ] result page shows `로그인하고 전체 풀이 보기`; another browser still shows the 오픈 기념 sheet
-- [ ] Kakao login (real) → back with login=ok; 내 정보 shows the nickname and 별조각 10개 with its last day
+- [ ] Kakao login (real) → back with login=ok; 내 정보 shows the nickname and 가입 선물 · 타로 전체 풀이 무료 with its last day
 - [ ] the first account request wrote `meta.account_secret_check` (`SELECT key FROM meta`)
-- [ ] `별조각 10개로 보기` opens the reading; 별조각 0; the reading shows on another device after login
+- [ ] `가입 선물로 무료로 보기` opens the tarot reading; 내 정보 says 가입 선물 사용했어요; the reading shows on another device after login; a saju sheet offers only `4,900원 결제하고 보기`
 - [ ] test payment 2,900원 (test card) → reading opens by itself; 결제 내역 shows it with 영수증 보기
 - [ ] pay in the KakaoTalk in-app browser, finish in the card app, come back in another browser: the success page says 결제했어요 and 로그인하고 풀이 열기 opens it
 - [ ] buy another, leave it unopened → 환불받기 → Toss dashboard shows it cancelled; status 환불됨
@@ -54,7 +54,7 @@ Apply for the live contract. The site already shows /pricing (products with pict
 
 Reviewer login (Toss refuses Kakao/Google test accounts):
 1. `npx wrangler secret put REVIEW_LOGIN_ID` and `npx wrangler secret put REVIEW_LOGIN_PASSWORD` (a long random password, 20 characters at least or the login stays off; this makes 22: `node -e "console.log(require('crypto').randomBytes(16).toString('base64url'))"`). Both set turns https://starlog.yeolmaeapps.kr/login/review on while STARLOG_PAYMENTS is `owner` or `on` (404 when `off` or `paused`); it is linked nowhere and noindex.
-2. Give Toss that URL with the ID and password, and ask the reviewers to use sample birth data: the account is shared, so everyone with the login sees its saved readings. It is one account per ID and password (닉네임 심사용 계정, no 별조각). It may pay on the test keys like the owner pass, so a reviewer reaches the Toss window from a result page's `2,900원 결제하고 보기` (at most 3 unopened purchases at a time); premium stays closed to it.
+2. Give Toss that URL with the ID and password, and ask the reviewers to use sample birth data: the account is shared, so everyone with the login sees its saved readings. It is one account per ID and password (닉네임 심사용 계정, no signup gift). It may pay on the test keys like the owner pass, so a reviewer reaches the Toss window from a result page's `2,900원 결제하고 보기` (at most 3 unopened purchases at a time); premium stays closed to it.
 3. Five wrong tries from one network shut that network out for 15 minutes; any network gets at most 5 tries a minute. 50 wrong tries from all networks together close the login for everyone until an hour after the last one (`auth.review_locked` in the logs).
 4. After the review, first log in at /login/review and 회원 탈퇴 from 내 정보 (it refunds the unopened test purchases and erases the account and its readings; no Kakao re-check). Then `npx wrangler secret delete REVIEW_LOGIN_PASSWORD` and `npx wrangler secret delete REVIEW_LOGIN_ID`: the page and API answer 404 again, and a session still open loses the sales and every opening right away. Such a session can still 회원 탈퇴 (no Kakao re-check), but nobody can log in to the account again.
 5. If the login leaks: delete either secret (sales and openings stop for every review session at once), or set a new password (a new review account; sessions on the old one lose the sales and every opening). Until then a leaked login can buy with test cards, but on a production deploy running test keys a paid opening is held to BETA_DAILY_BUDGET_KRW and the network's daily cap and counted like a free full reading, and a review account holds at most 3 unopened purchases at a time. To end the review sessions and their active test purchases too, look first, then revoke both, then look again (both counts 0). It hits every review account, a new one included, so run it before handing out new credentials:
@@ -125,4 +125,4 @@ For the first 24 h, run the checks in section 7 every two hours.
 
 ## Follow-ups (not in P4)
 
-Kakao 연결 끊기 알림 callback (needs the admin key), 달빛 packs, premium generators (P5), cash receipts if 계좌이체 is ever enabled, moving the device's earlier readings into an account (cut from P4), the P3 인연 link (cut from P4), a second reading-key version if the account secret must ever change.
+Kakao 연결 끊기 알림 callback (needs the admin key), premium generators (P5), cash receipts if 계좌이체 is ever enabled, moving the device's earlier readings into an account (cut from P4), the P3 인연 link (cut from P4), a second reading-key version if the account secret must ever change.

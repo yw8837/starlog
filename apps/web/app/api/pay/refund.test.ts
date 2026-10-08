@@ -69,7 +69,7 @@ describe("refunds", () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: T0, payMode: "mock" });
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", now: T0, payMode: "mock" });
     if (!reserved.ok) throw new Error("not reserved");
     expect((await refundOf(b, orderId)).status).toBe(409);
     expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
@@ -186,7 +186,7 @@ describe("the 7-day refund window", () => {
     expect(cancel).not.toHaveBeenCalled();
     expect(await orderRow(db, orderId)).toEqual({ status: "paid", cancel_attempt: 1 });
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: new Date(LAST).toISOString() }]);
-    expect((await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: LAST + 1, payMode: "mock" })).ok).toBe(true);
+    expect((await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", now: LAST + 1, payMode: "mock" })).ok).toBe(true);
   });
 
   it("checks the window whatever state the purchase is in, so an opening released in between cannot slip a late refund through", async () => {
@@ -195,7 +195,7 @@ describe("the 7-day refund window", () => {
     const b = await loggedIn();
     const orderId = await buy(b);
     vi.setSystemTime(LAST + 1);
-    const opening = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: LAST + 1, payMode: "mock" });
+    const opening = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", now: LAST + 1, payMode: "mock" });
     if (!opening.ok) throw new Error("not reserved");
     expect(await (await refundOf(b, orderId)).json()).toMatchObject({ code: "REFUND_WINDOW_CLOSED" });
     expect(await releaseUnlock(db, { unlockId: opening.unlockId, now: LAST + 2 })).toBe(true);
@@ -279,7 +279,7 @@ describe("webhook", () => {
     const db = useTestDb();
     const b = await loggedIn();
     const orderId = await buy(b);
-    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", units: 10, now: T0, payMode: "mock" });
+    const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", now: T0, payMode: "mock" });
     if (!reserved.ok) throw new Error("not reserved");
     const paymentKey = await paymentKeyOf(db, orderId);
     await mockToss.cancel(paymentKey, { reason: "관리자 취소", idempotencyKey: "admin" });
@@ -322,7 +322,7 @@ describe("webhook", () => {
     });
     expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "CANCELED" } })).status).toBe(200);
     expect(await db.prepare("SELECT o.status AS o, l.status AS l FROM orders o JOIN credit_lots l ON l.order_id = o.id").first()).toEqual({ o: "refunded", l: "refunded" });
-    expect(await db.prepare("SELECT kind, units FROM ledger WHERE kind = 'refund' AND order_id = ?").bind(orderId).all()).toMatchObject({ results: [{ kind: "refund", units: 10 }] });
+    expect(await db.prepare("SELECT kind, units FROM ledger WHERE kind = 'refund' AND order_id = ?").bind(orderId).all()).toMatchObject({ results: [{ kind: "refund", units: 1 }] });
     expect((await me(b)).user).toMatchObject({ unused: [], opening: [] });
   });
 

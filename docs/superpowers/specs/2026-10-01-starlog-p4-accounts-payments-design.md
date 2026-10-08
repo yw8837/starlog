@@ -4,6 +4,8 @@
 
 구현 계획: `docs/superpowers/plans/2026-10-01-starlog-p4-accounts-payments.md`
 
+> **2026-10-08 소유자 결정으로 바뀜:** 별조각·달빛(재화, 충전, 잔액)은 없앴다. 풀이는 건별 결제만 하고, 가입 선물은 타로 전체 풀이 1회 무료다(사주·주제별 사주·프리미엄에는 못 씀, 받은 날부터 90일, 재지급 방지는 그대로). 로트는 하나가 열기 1회다. 이 문서의 별조각·달빛 서술은 그 전 설계이고, 지금 모델은 `apps/web/lib/pay/ledger.ts`와 `lib/pay/catalog.ts`(`GIFT_PRODUCT`)에 있다.
+
 상위 설계: `docs/superpowers/specs/2026-09-29-saju-tarot-story-app-design.md`(5절 결제와 재화, 11절 오류 처리). 이 문서와 충돌하면 이 문서가 우선한다. 운영 규칙은 `.superpowers/sdd/2026-09-30-starlog-p2b/`(global-constraints, streaming-protocol)를 따른다.
 
 ## 0. 개정 2에서 바뀐 것

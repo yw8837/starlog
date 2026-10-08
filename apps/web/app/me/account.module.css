@@ -23,7 +23,7 @@
   font-size: var(--fs-sub);
 }
 
-.balance {
+.gift {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -32,7 +32,7 @@
   font-weight: 700;
 }
 
-.balanceLabel {
+.giftLabel {
   color: var(--gold);
 }
 

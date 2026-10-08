@@ -1,6 +1,6 @@
 import "server-only";
 import type { D1Binding } from "@/lib/db/d1";
-import { forfeitStatements, sweepUser, walletSummary, type Lot } from "@/lib/pay/ledger";
+import { entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
@@ -61,9 +61,9 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
   if (await count(db, `SELECT COUNT(*) AS n FROM orders WHERE user_id = ? AND ${IN_FLIGHT}`, userId, mode)) return { ok: false, code: "PENDING" };
   if (await count(db, "SELECT COUNT(*) AS n FROM unlocks WHERE user_id = ? AND status = 'reserved'", userId)) return { ok: false, code: "IN_USE" };
 
-  const wallet = await walletSummary(db, userId, now);
+  const { unused } = await entitlements(db, userId, now);
   let refunded = 0;
-  for (const { orderId } of wallet.unused) {
+  for (const { orderId } of unused) {
     const order = await orderForUser(db, orderId, userId);
     if (order && toss && (await paidUnderOtherKeys(db, toss, order.id))) {
       // These keys cannot cancel it: the reading leaves use, the order stays for the operator (runbook 5).
@@ -102,7 +102,7 @@ const DELETED = "EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NOT 
 
 /**
  * Erases a deleted account's personal data in one batch, keeping what the law keeps:
- * - the remaining 별조각 are forfeited (their ledger rows stay);
+ * - an unused signup gift is forfeited (its ledger rows stay);
  * - saved readings and sessions are deleted;
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - orders that never reached Toss are closed;

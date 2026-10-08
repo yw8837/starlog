@@ -14,8 +14,6 @@ export interface Product {
   /** Toss orderName, 100 characters at most */
   orderName: string;
   krw: number;
-  /** 별조각 (or future 달빛) units one opening costs; only the standard readings take them */
-  units: number | null;
   /** a generator exists, so a purchase can be delivered (premium generators arrive in P5) */
   deliverable: boolean;
   /** first moment it may be sold (ms), for a product that opens later */
@@ -24,7 +22,10 @@ export interface Product {
   closesAt?: number;
 }
 
-/** 별조각 from the signup gift last this many KST days after the day they arrive (spec 14, default 1). */
+/** The signup gift opens one full reading of this product, and of no other (owner 2026-10-08). */
+export const GIFT_PRODUCT: StandardProductId = "tarot";
+
+/** The signup gift can be used through the end of the KST day this many days after it arrives (spec 14, default 1). */
 export const GIFT_DAYS = 90;
 
 /**
@@ -35,8 +36,8 @@ export const GIFT_DAYS = 90;
 export const REFUND_DAYS = 7;
 
 const STANDARD: Product[] = [
-  { id: "tarot", name: "타로 전체 풀이", orderName: `${SITE.nameKo} 타로 전체 풀이`, krw: SITE.price.tarotStandardKrw, units: SITE.price.unitsPerReading, deliverable: true },
-  { id: "saju", name: "사주 전체 풀이", orderName: `${SITE.nameKo} 사주 전체 풀이`, krw: SITE.price.sajuStandardKrw, units: SITE.price.unitsPerReading, deliverable: true },
+  { id: "tarot", name: "타로 전체 풀이", orderName: `${SITE.nameKo} 타로 전체 풀이`, krw: SITE.price.tarotStandardKrw, deliverable: true },
+  { id: "saju", name: "사주 전체 풀이", orderName: `${SITE.nameKo} 사주 전체 풀이`, krw: SITE.price.sajuStandardKrw, deliverable: true },
 ];
 
 const instant = (iso: string) => (iso ? Date.parse(iso) : undefined);
@@ -49,7 +50,6 @@ const PREMIUM: Product[] = SITE.price.premium.map((premium) => {
     name: premium.name,
     orderName: `${SITE.nameKo} ${premium.name}`,
     krw: premium.krw,
-    units: null,
     // P5: the generators exist; STARLOG_PREMIUM still decides who may order (lib/premium/flags.ts).
     deliverable: true,
     ...(opensAt !== undefined ? { opensAt } : {}),
@@ -73,9 +73,4 @@ export function standardProduct(kind: StandardProductId): Product {
 /** A new order may be created for it now. */
 export function sellable(product: Product, now: number): boolean {
   return product.deliverable && (product.opensAt === undefined || product.opensAt <= now) && (product.closesAt === undefined || now < product.closesAt);
-}
-
-/** Units a paid lot holds for one purchase: the standard 별조각 price, or 1 opening for premium. */
-export function unitsFor(product: Product): number {
-  return product.units ?? 1;
 }

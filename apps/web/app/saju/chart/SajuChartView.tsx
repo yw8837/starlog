@@ -63,14 +63,14 @@ const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID
  * it on this device and goes to it. With nothing saved, an example chart asks for the user's own birth data.
  *
  * The sheet offers what this device may use (lib/pay/offer.ts): the 오픈 기념 reading, a login, a
- * purchase, 별조각 or paying. `autoUnlock` (?unlock= after checkout or login) opens the 운 that came back
- * with it (`initialTopic`, from ?topic=) once.
+ * purchase or paying; never the signup gift, which opens tarot only. `autoUnlock` (?unlock=paid after
+ * checkout) opens the 운 that came back with it (`initialTopic`, from ?topic=) once.
  */
 export function SajuChartView({
   autoUnlock = null,
   loginFlag = null,
   initialTopic = null,
-}: { autoUnlock?: UnlockMethod | null; loginFlag?: string | null; initialTopic?: SajuTopicId | null } = {}) {
+}: { autoUnlock?: "paid" | null; loginFlag?: string | null; initialTopic?: SajuTopicId | null } = {}) {
   const router = useRouter();
   const { form, ready, saved, result } = useSajuChart();
   const context = useSajuContext();
@@ -118,19 +118,19 @@ export function SajuChartView({
 
   const opened = own && teaserKey ? chapters?.filter((c) => c.kind === "saju" && sajuTeaserKey(c.birth, chapterRequestFields(c)) === teaserKey).pop() : undefined;
   const product = standardProduct("saju");
-  const offer = unlockOffer(account, product, SITE.price.signupGiftFree);
+  const offer = unlockOffer(account, product);
   const [method, setMethod] = useState<UnlockMethod>("opening");
   const [creditView, setCreditView] = useState<ErrorView | null>(null);
-  // A paid or 별조각 opening not settled yet: "running" while the account is asked, "stalled" once
+  // A paid opening not settled yet: "running" while the account is asked, "stalled" once
   // the rounds ran out. Either way the sheet offers nothing to buy or open (no second payment).
   const [check, setCheck] = useState<"running" | "stalled" | null>(null);
   const firstTry = useRef<number | null>(null);
-  // The 운 of the paid or 별조각 opening started here, for 다시 확인하기 whichever 운 is on screen by then;
+  // The 운 of the paid opening started here, for 다시 확인하기 whichever 운 is on screen by then;
   // null on a fresh mount (a reload), when nothing remembers it.
   const openingTopic = useRef<SajuTopic | null>(null);
   const checkAbort = useRef<AbortController | null>(null);
   useEffect(() => () => checkAbort.current?.abort(), []);
-  const errorContext = method === "paid" ? "paid" : method === "free" ? "stardust" : "reading";
+  const errorContext = method === "paid" ? "paid" : method === "free" ? "gift" : "reading";
   const unlockError = creditView ?? (unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error, errorContext) : null);
   const loginNote = loginMessage(loginFlag);
 
@@ -146,10 +146,10 @@ export function SajuChartView({
   const since = (now: number) => Math.min(now - OPENING_WINDOW_MS, firstTry.current ?? now);
 
   /**
-   * M4: find out what happened to a paid or 별조각 opening before saying anything, with nothing to
-   * buy or open meanwhile.
+   * M4: find out what happened to a paid opening before saying anything, with nothing to buy or
+   * open meanwhile.
    * - "cut": the answer broke off; wait for delivered or kept (the rounds may run out: "stalled");
-   * - "refused": NO_CREDIT though the credit looked held (an opening still running took it, or one
+   * - "refused": NO_CREDIT though the purchase looked held (an opening still running took it, or one
    *   already delivered spent it); an account that is sure nothing is left then says so;
    * - "recheck": 다시 확인하기 on a reading being opened.
    * The account's reading of this opening has the same birth data and the same 운 (spec §9.2). After a
@@ -160,14 +160,14 @@ export function SajuChartView({
     checkAbort.current?.abort();
     const controller = new AbortController();
     checkAbort.current = controller;
-    const credit = chosen === "paid" ? "paid" : "stardust";
+    const credit = chosen === "paid" ? "paid" : "gift";
     // This flow's reading: the same birth data (compared field by field, whatever the key order) and, when known, 운.
     const sent = sanitizeSajuForm(birth);
     const sameFlow = (chapter: unknown) => {
       const c = chapter as { kind?: string; birth?: unknown; topic?: unknown };
       return c.kind === "saju" && sent !== null && sameJson(sanitizeSajuForm(c.birth), sent) && (openedTopic === null || (c.topic ?? "overall") === openedTopic);
     };
-    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, units: product.units ?? 0, held };
+    const flow = { startedAt, matches: sameFlow, method: chosen, productId: product.id, held };
     const stopWhenNone = after !== "cut";
     const apply = (result: DeliveryCheck): boolean => {
       if (result.status === "unknown") return false;
@@ -216,7 +216,7 @@ export function SajuChartView({
       openingTopic.current = topic;
     }
     // What the account held as it started: "kept" later means all of it is back.
-    const held = heldCredit(account?.user, product.id, product.units ?? 0);
+    const held = heldCredit(account?.user, product.id);
     const res = await unlockGen.run("/api/saju/reading", body, plan, isSajuReadingResponse);
     if (!res) return;
     if (!res.ok) {
@@ -246,14 +246,13 @@ export function SajuChartView({
     router.push(`/chapter/${chapter.id}`);
   };
 
-  // After checkout (?unlock=paid) or a 별조각 login (?unlock=free): open once, as soon as the
-  // teaser and the account are known and the offer matches; the 운 comes back in ?topic=. Without the
-  // saved birth data (another browser) nothing runs, and the purchase waits in 내 정보.
+  // After checkout (?unlock=paid): open once, as soon as the teaser and the account are known and
+  // the purchase is waiting; the 운 comes back in ?topic=. Without the saved birth data (another
+  // browser) nothing runs, and the purchase waits in 내 정보.
   const autoStarted = useRef(false);
   useEffect(() => {
     if (!autoUnlock || autoStarted.current || !own || !teaser || account === undefined || opened) return;
-    if (autoUnlock === "paid" && offer.mode !== "open-paid") return;
-    if (autoUnlock === "free" && offer.mode !== "stardust") return;
+    if (offer.mode !== "open-paid") return;
     autoStarted.current = true;
     // Only ?unlock= leaves the address: the 운 stays, so a reload during the opening comes back to it.
     router.replace(returnFor(topic));
@@ -263,9 +262,9 @@ export function SajuChartView({
   /** 다시 확인하기: after the rounds ran out, or on a reading of this kind being opened (another tab, a reload). */
   const recheck = () => {
     const busy = account?.user?.opening.find((item) => item.productId === product.id);
-    const chosen = busy ? (busy.currency === "stardust" ? "free" : "paid") : method === "free" ? "free" : "paid";
-    setMethod(chosen); // the lines and the refund link that follow are about this credit
-    void settle(chosen, since(Date.now()), heldCredit(account?.user, product.id, product.units ?? 0), form, openingTopic.current, check === "stalled" ? "cut" : "recheck");
+    const chosen = busy ? (busy.currency === "gift" ? "free" : "paid") : method === "free" ? "free" : "paid";
+    setMethod(chosen); // the lines and the refund link that follow are about this purchase
+    void settle(chosen, since(Date.now()), heldCredit(account?.user, product.id), form, openingTopic.current, check === "stalled" ? "cut" : "recheck");
   };
 
   const teaserState = teaserGen.state;

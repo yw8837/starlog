@@ -14,7 +14,7 @@ async function paidLot(db: D1Binding, userId: string, id: string, productId: str
 }
 
 const reserve = (db: D1Binding, productId: string, now: number) =>
-  reserveUnlock(db, { userId: "u_1", productId, currency: "paid", units: 1, now, payMode: "live", earmarked: true });
+  reserveUnlock(db, { userId: "u_1", productId, currency: "paid", now, payMode: "live", earmarked: true });
 
 export function premiumLedgerContract(open: () => Promise<D1Binding>) {
   it("opens a premium reading only from a lot earmarked for it", async () => {

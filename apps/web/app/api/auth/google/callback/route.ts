@@ -6,7 +6,6 @@ import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute, type AccountContext } from "@/lib/account/request";
 import { clearSession, createSession, revokeSession } from "@/lib/account/session";
 import { loginKakaoUser, userByKakaoKey } from "@/lib/account/users";
-import { SITE } from "@/lib/config";
 import { grantSignupGift } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { tossClient } from "@/lib/pay/toss";
@@ -66,7 +65,7 @@ async function finishLogin(ctx: AccountContext, key: string, age: boolean, back:
     return back("failed");
   }
   const { user, created } = account;
-  const gifted = open ? await grantSignupGift(ctx.db, { userId: user.id, kakaoKey: key, units: SITE.price.signupGiftFree, now: ctx.now }) : false;
+  const gifted = open ? await grantSignupGift(ctx.db, { userId: user.id, kakaoKey: key, now: ctx.now }) : false;
   if (ctx.session) await revokeSession(ctx.db, ctx.session.id, ctx.now);
   const session = await createSession(ctx.db, user.id, ctx.secret, ctx.now);
   console.info(JSON.stringify({ evt: "auth.login", provider: "google", created, gifted }));
