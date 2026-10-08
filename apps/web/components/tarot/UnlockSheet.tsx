@@ -18,7 +18,7 @@ export interface Wallet {
 
 type UnlockSheetProps = {
   kind: "tarot" | "saju";
-  /** 주제별 사주: the 운's screen label in the title and the price line ("재물운 전체 풀이 · 2,900원"). */
+  /** 주제별 사주: the 운's screen label in the title and the price line ("재물운 전체 풀이 · 4,900원"). */
   topicLabel?: string;
   /** 주제별 사주: what one payment opens, under the price ("결제 한 번에 고른 풀이 하나를 열어요"). */
   scopeLine?: string;

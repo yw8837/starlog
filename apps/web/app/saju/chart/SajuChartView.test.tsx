@@ -166,7 +166,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(screen.getByText("소제목 8개 · 약 3,000자")).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "재물운 전체 풀이에 담긴 것" })).toBeTruthy();
     // The price and the pay link wait for the account (/api/me).
-    expect(await screen.findByText("재물운 전체 풀이 · 2,900원")).toBeTruthy();
+    expect(await screen.findByText("재물운 전체 풀이 · 4,900원")).toBeTruthy();
     expect(screen.getByText(UNLOCK_SCOPE_LINE)).toBeTruthy();
     expect(screen.getByRole("link", { name: PAY_LINK }).getAttribute("href")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart%3Ftopic%3Dmoney");
     fireEvent.click(screen.getByRole("button", { name: "사주팔자로 돌아가기" }));

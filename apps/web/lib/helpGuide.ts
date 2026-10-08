@@ -59,7 +59,8 @@ export const times = (n: number) => (["한 번", "두 번", "세 번"][n - 1] ??
 export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   const { followUps, approxChars } = site.reading;
   const { fullPerDay, teaserPerDay } = site.beta;
-  const { tarotStandardKrw, sajuStandardKrw } = site.price;
+  // Widened to number: SITE is `as const`, and literal prices that differ fail the comparison below.
+  const { tarotStandardKrw, sajuStandardKrw }: { tarotStandardKrw: number; sajuStandardKrw: number } = site.price;
   // 주제별 사주 (saju-topics spec §5.4, owner cut §0): the 운 help from the `on` build only.
   const topics = site.features.sajuTopics === "on";
   const topicItem: HelpItem = {
