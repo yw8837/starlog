@@ -22,3 +22,6 @@ apps/web/next-env.d.ts
 
 # Third-party result captures for internal blind comparison only (never publish)
 content/eval/competitors/
+
+# tester birth data (personal data): local only, never committed
+scripts/capture/testers.json
