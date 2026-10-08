@@ -280,13 +280,18 @@ export async function deliverUnlock(
 /**
  * Returns a reservation's units to their lots (failed or abandoned generation). Idempotent; false
  * when it was not reserved. Units go back only into a lot that is still active: one that expired,
- * or was revoked because its payment was cancelled, keeps nothing (minor 1).
+ * or was revoked because its payment was cancelled, keeps nothing (minor 1). A gift whose last day
+ * ended while it was held (opened just before midnight, failed after) keeps the rest of the KST day
+ * it comes back on, so a failed reading never costs it.
  */
 export async function releaseUnlock(db: D1Binding, input: { unlockId: string; now: number }): Promise<boolean> {
   const unlock = await unlockRow(db, input.unlockId);
   if (!unlock || unlock.status !== "reserved") return false;
   const results = await db.batch([
     ...allocationsOf(unlock).flatMap(([lotId, units]) => [
+      db
+        .prepare(`UPDATE credit_lots SET expires_at = ? WHERE id = ? AND currency = 'free' AND status = 'active' AND expires_at <= ? AND ${RESERVED}`)
+        .bind(giftExpiry(input.now, 0), lotId, input.now, unlock.id),
       db.prepare(`UPDATE credit_lots SET units_left = units_left + ? WHERE id = ? AND status = 'active' AND ${RESERVED}`).bind(units, lotId, unlock.id),
       db
         .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${RESERVED} AND EXISTS (SELECT 1 FROM credit_lots WHERE id = ? AND status = 'active')`)

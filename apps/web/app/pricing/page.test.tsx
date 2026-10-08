@@ -52,7 +52,8 @@ describe("/pricing", () => {
     const gift = container.querySelector("#gift");
     expect(gift?.querySelector("h2")?.textContent).toBe("가입 선물");
     const text = gift?.textContent ?? "";
-    expect(text).toContain("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요");
+    expect(text).toContain("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요. 계정 하나에 한 번만 드려요.");
+    expect(text).not.toContain("한 사람에게");
     expect(text).toContain("사주 전체 풀이와 주제별 사주 풀이");
     expect(text).toContain("받은 날부터 90일째 되는 날 밤 12시(한국 시간)까지");
     expect(text).toContain("환불하거나 현금으로 바꿀 수 없고");

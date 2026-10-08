@@ -5,8 +5,6 @@
     "catAstrologer": { "ko": "고양이 점성술사", "en": "the cat astrologer", "ja": "猫の占星術師", "zh-hant": "貓咪占星師" },
     "rabbitLibrarian": { "ko": "흰 토끼 사서", "en": "the white rabbit librarian", "ja": "白うさぎの司書", "zh-hant": "白兔圖書館員" },
     "rabbitTeacher": { "ko": "한복 입은 토끼 선생님", "en": "the rabbit teacher in hanbok", "ja": "韓服姿のうさぎ先生", "zh-hant": "穿韓服的兔子老師" },
-    "moonlight": { "ko": "달빛", "en": "Moonlight", "ja": "月あかり", "zh-hant": "月光" },
-    "stardust": { "ko": "별조각", "en": "Stardust", "ja": "星のかけら", "zh-hant": "星屑" },
     "tarot": { "ko": "타로", "en": "tarot", "ja": "タロット", "zh-hant": "塔羅" },
     "saju": { "ko": "사주", "en": "Saju (Four Pillars)", "ja": "四柱推命", "zh-hant": "八字" },
     "nowCard": { "ko": "지금의 한 장", "en": "One Card for Now", "ja": "いまの一枚", "zh-hant": "此刻一牌" },

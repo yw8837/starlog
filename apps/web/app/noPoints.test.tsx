@@ -11,6 +11,7 @@ import PricingPage, { metadata as pricingMeta } from "@/app/pricing/page";
 import PrivacyPage, { metadata as privacyMeta } from "@/app/privacy/page";
 import RefundPage, { metadata as refundMeta } from "@/app/refund/page";
 import TermsPage, { metadata as termsMeta } from "@/app/terms/page";
+import glossary from "@content/i18n/glossary.json";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { resetAccountForTests } from "@/lib/account/client";
 import { errorPayload, type ErrorCode } from "@/lib/api/http";
@@ -28,6 +29,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: 
  * per-reading payments only). Guide article bodies are left out: the Moon card's 달빛 is a meaning.
  */
 const POINTS = /별조각|달빛|충전|포인트|크레딧|잔액/;
+/** The same words in the screens' other languages. */
+const POINTS_INTL = /stardust|moonlight|\bpoints?\b|\bcredits?\b|\bbalance\b|ポイント|残高|クレジット|點數|餘額|儲值/i;
 
 const textOf = (node: ReactElement) => render(node).container.textContent ?? "";
 const metaText = (meta: Metadata) => `${String(meta.title ?? "")} ${meta.description ?? ""}`;
@@ -166,6 +169,18 @@ describe("no points, credits or balances anywhere a user can read", () => {
 
   it("in the screens' message catalog, which keeps no currency names in any language", () => {
     expect(JSON.stringify(MESSAGES.ko)).not.toMatch(POINTS);
-    for (const locale of LOCALES) expect(MESSAGES[locale].common, locale).not.toHaveProperty("currency");
+    for (const locale of LOCALES) {
+      expect(MESSAGES[locale].common, locale).not.toHaveProperty("currency");
+      expect(JSON.stringify(MESSAGES[locale]), locale).not.toMatch(POINTS);
+      expect(JSON.stringify(MESSAGES[locale]), locale).not.toMatch(POINTS_INTL);
+    }
+  });
+
+  it("in the translators' glossary, so no language brings the old currency names back", () => {
+    const terms = JSON.stringify(glossary);
+    expect(terms).not.toMatch(POINTS);
+    expect(terms).not.toMatch(POINTS_INTL);
+    expect(glossary.terms).not.toHaveProperty("moonlight");
+    expect(glossary.terms).not.toHaveProperty("stardust");
   });
 });

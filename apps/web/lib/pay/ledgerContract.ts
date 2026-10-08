@@ -239,6 +239,31 @@ export function ledgerContract(make: Make) {
     await expectLotsMatchLedger(db);
   });
 
+  it("gives a gift whose reading failed after its last day ended the rest of that KST day, never losing it", async () => {
+    const last = giftExpiry(NOW);
+    const nextDayEnd = last + 86_400_000;
+    // Opened a minute before midnight on day 90; the generation fails five minutes after it.
+    const db = await giftedUser(make);
+    const unlock = await reserved(db, "free", last - 60_000);
+    const failedAt = last + 5 * 60_000;
+    expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: failedAt })).toBe(true);
+    expect(await giftOf(db, failedAt + 1)).toEqual({ status: "unused", expiresAt: nextDayEnd });
+    expect(await sweepStale(db, failedAt + 2)).toEqual({ released: 0, expired: 0 });
+    expect((await reserved(db, "free", failedAt + 3)).allocations).toHaveLength(1);
+    await expectLotsMatchLedger(db);
+  });
+
+  it("does the same when the sweep gives back a gift reservation nobody settled after midnight, for that day only", async () => {
+    const last = giftExpiry(NOW);
+    const nextDayEnd = last + 86_400_000;
+    const db = await giftedUser(make);
+    await reserved(db, "free", last - 60_000);
+    expect(await giftOf(db, last - 60_000 + RESERVATION_MS + 1)).toEqual({ status: "unused", expiresAt: nextDayEnd });
+    expect(await giftOf(db, nextDayEnd + 1)).toBeNull();
+    expect(await count(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'expire'")).toBe(1);
+    await expectLotsMatchLedger(db);
+  });
+
   it("expires an unused gift after its last day, with a ledger row, and then shows none", async () => {
     const db = await giftedUser(make);
     expect(await giftOf(db, giftExpiry(NOW) - 1)).toEqual(UNUSED);

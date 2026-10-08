@@ -52,7 +52,8 @@ describe("policies for the paid launch", () => {
     const page = text(<TermsPage />);
     expect(page).toContain("“회원”이란 카카오 계정이나 Google 계정으로 로그인해");
     expect(page).toContain("회원 가입은 카카오 계정이나 Google 계정으로 로그인해서 하며");
-    expect(page).toContain("카카오 계정이나 Google 계정 하나에 한 번만 드립니다");
+    expect(page).toContain("카카오 계정이나 Google 계정 하나에 한 번만 드리며");
+    expect(page).not.toContain("한 사람에게");
     expect(page).toContain("건별로 결제");
     expect(page).toContain("제7조의2 (가입 선물)");
     expect(page).toContain("민법 제5조");
@@ -64,13 +65,13 @@ describe("policies for the paid launch", () => {
     expect(page).not.toContain("Anthropic");
   });
 
-  it("/terms: the signup gift is one clause: once per member, standard tarot only, no cash value, not transferable or refundable, expires, changed only going forward with notice", () => {
+  it("/terms: the signup gift is one clause: once per Kakao or Google account (not again within a year of leaving), standard tarot only, no cash value, not transferable or refundable, expires, changed only going forward with notice", () => {
     const { container } = render(<TermsPage />);
     const clause = container.querySelector("#gift");
     expect(clause?.querySelector("h2")?.textContent).toBe("제7조의2 (가입 선물)");
     const items = [...(clause?.querySelectorAll("ol > li") ?? [])].map((li) => li.textContent);
     expect(items).toEqual([
-      "운영자는 처음 가입한 회원에게 가입 선물(무료 이용 혜택)로 타로 전체 풀이 1회를 무료로 드립니다. 가입 선물은 회원 한 사람에게 한 번, 카카오 계정이나 Google 계정 하나에 한 번만 드립니다.",
+      "운영자는 처음 가입한 회원에게 가입 선물(무료 이용 혜택)로 타로 전체 풀이 1회를 무료로 드립니다. 가입 선물은 카카오 계정이나 Google 계정 하나에 한 번만 드리며, 탈퇴 후 같은 계정으로 다시 가입해도 탈퇴일로부터 1년 동안은 다시 드리지 않습니다.",
       "가입 선물은 타로 전체 풀이에만 쓸 수 있으며, 사주 전체 풀이(주제별 사주 풀이를 포함합니다)와 그 밖의 유료 풀이에는 쓸 수 없습니다.",
       "가입 선물은 받은 날부터 90일째 되는 날의 자정(한국 시간)까지 쓸 수 있으며, 그때까지 쓰지 않으면 사라집니다. 탈퇴한 경우에도 쓰지 않은 가입 선물은 사라집니다.",
       "가입 선물은 운영자가 무료로 드리는 혜택으로 현금 가치가 없으며, 현금으로 바꾸거나 환불할 수 없고 다른 사람에게 넘길 수 없습니다.",
