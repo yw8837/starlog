@@ -198,11 +198,14 @@ async function tarot(browser, t, n) {
   try {
     await page.goto(`${BASE}/tarot/new`);
     await page.getByRole("button", { name: "나", exact: true }).click();
-    await page.getByRole("button", { name: q.topic }).click();
-    await page.getByRole("button", { name: q.when }).click();
+    // a chip, or the tester's own words when the form answer has no matching chip (e.g. two topics at once)
+    if (q.topicText) await page.getByRole("textbox", { name: "무엇을 볼지 직접 쓰기" }).fill(q.topicText);
+    else await page.getByRole("button", { name: q.topic }).click();
+    if (q.whenText) await page.getByRole("textbox", { name: "언제인지 직접 쓰기" }).fill(q.whenText);
+    else await page.getByRole("button", { name: q.when }).click();
     await page.getByRole("button", { name: "다음" }).click();
     await page.waitForURL(/\/tarot\/new\/situation$/);
-    for (const chip of q.chips) await page.getByRole("button", { name: chip, exact: true }).click();
+    for (const chip of q.chips ?? []) await page.getByRole("button", { name: chip, exact: true }).click();
     await page.getByLabel("한 줄 메모").fill(q.memo);
     await page.getByRole("button", { name: "카드 뽑기" }).click();
     await page.waitForURL(/\/tarot\/draw$/);
@@ -217,7 +220,7 @@ async function tarot(browser, t, n) {
     const len = await openChapter(page, "전체 풀이에 담긴 것");
     log(t.nick, "타로", len, "chars");
     writeFileSync(join(textDir, `${t.nick}-타로.txt`), await page.locator("main").innerText());
-    const k = 2 + t.topics.length; // after "1 정통 사주" and the topics, whichever ran in this process
+    const k = t.year ? 2 + (t.topics?.length ?? 0) : 1; // after "1 정통 사주" and the topics; a tarot-only tester starts at 1
     await captureChapter(page, join(outDir, t.nick, `${k} 타로`), "질문과 카드");
     await context.storageState({ path: join(stateDir, `${t.nick}-tarot.json`) });
   } finally {
