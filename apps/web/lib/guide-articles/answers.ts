@@ -10,15 +10,15 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
   "how-to-read-tarot":
     "타로 카드는 카드가 놓인 자리를 먼저 확인하고, 그림 속 인물과 풍경을 살핀 뒤, 그 장면을 내 상황에 대 보는 순서로 읽어요. 타로는 메이저 아르카나 22장과 마이너 아르카나 56장, 모두 78장이에요. 질문은 '될까, 안 될까'보다 '어떻게 하면 좋을까'처럼 열어 두면 읽을 거리가 많아지죠.",
   "upright-and-reversed":
-    "그림이 똑바로 보이면 정방향, 위아래가 뒤집혀 보이면 역방향이에요. 역방향은 정방향 뜻의 반대로 읽기도 하고, 같은 기운이 약하거나 늦게 나타나거나 마음속에서 일어나는 일로 읽기도 해요. 역방향이 나왔다고 나쁜 일이 생긴다는 뜻은 아니고, 같은 주제를 다른 쪽에서 비춰 보는 셈이죠.",
+    "그림이 똑바로 보이면 정방향, 위아래가 뒤집혀 보이면 역방향이에요. 스타로그는 역방향을 정방향의 단순한 반대로 읽지 않고, 그 카드의 힘이 막히거나 안으로 향하거나 지나치거나 약해진 상태 가운데 하나로 읽어요. 역방향이 나왔다고 나쁜 일이 생긴다는 뜻은 아니에요.",
   "saju-without-birth-time":
     "태어난 시를 모르면 시주를 비워 두고 해·달·날 세 기둥, 여섯 글자로 사주를 읽어요. 스타로그는 정오 같은 시각을 대신 넣지 않고, 자녀나 말년처럼 시주가 주로 맡는 해석은 다루지 않아요. 자정 무렵에 태어났다면 보정한 시각에 따라 일주가 전날로 바뀔 수 있어서, 명식 화면의 '적용한 기준'에 그 경우를 적어 둬요.",
   "five-elements":
     "오행은 목(木)·화(火)·토(土)·금(金)·수(水) 다섯 가지 기운이고, 사주의 천간 열 글자와 지지 열두 글자는 모두 이 가운데 하나에 속해요. 나무는 불을, 불은 흙을, 흙은 쇠를, 쇠는 물을, 물은 나무를 살리는 상생과 서로 누르는 상극의 관계로 읽죠. 어떤 오행이 많거나 없다고 해서 좋고 나쁨이 정해지지는 않아요.",
   "the-hermit":
-    "은둔자는 메이저 아르카나 9번 카드로, 눈 덮인 산꼭대기에서 등불을 든 노인이 홀로 서 있는 그림이에요. 흔히 혼자 생각을 정리하는 시간, 바깥보다 안에서 답을 찾는 일로 읽어요. 역방향이면 혼자 있는 시간이 고립처럼 길어졌거나, 돌아볼 틈 없이 바쁘게 지나가는 상태로 읽기도 하죠.",
+    "은둔자는 메이저 아르카나 9번 카드로, 하얀 봉우리 위에서 노인이 등불을 머리 높이로 들고 홀로 서 있는 그림이에요. 정방향은 멀리 있는 답보다 지금 선 자리를 확인하며 혼자 마음을 고르는 카드로 읽어요. 역방향이면 혼자 있는 시간이 길어져 마음이 닫혔거나, 이제 사람들 곁으로 돌아올 때가 된 상태로 읽죠.",
   "the-star":
-    "별은 메이저 아르카나 17번 카드로, 여덟 개의 별 아래에서 한 여인이 두 항아리의 물을 붓는 그림이에요. 흔히 회복과 희망, 다시 채워지는 마음으로 읽고, 16번 탑 다음에 오는 카드라 큰일이 지나간 뒤 숨을 고르는 장면으로도 봐요. 역방향이면 희망이 잠시 잘 보이지 않거나 나를 돌볼 여유가 줄어든 상태로 읽어요.",
+    "별은 메이저 아르카나 17번 카드로, 큰 별 하나와 작은 별 일곱 개 아래에서 여인이 두 항아리의 물을 연못과 땅에 붓는 그림이에요. 정방향은 요란하지 않게 조금씩 다시 채워지는 회복과 희망으로 읽고, 16번 탑 다음 번호라 흔들림 뒤에 다시 채워지는 단계로도 봐요. 역방향이면 희망이 흐려졌거나, 나를 채우기보다 퍼 주기만 해서 회복이 더딘 상태로 읽어요.",
 
   "celtic-cross-spread":
     "켈틱 크로스는 카드 열 장을 왼쪽 십자 여섯 자리와 오른쪽 기둥 네 자리로 놓고 한 질문을 여러 방향에서 읽는 스프레드예요. 1번 지금의 분위기와 2번 걸림돌을 한 쌍으로 먼저 읽고, 3·4번의 목표와 바탕, 5·1·6번의 시간 흐름, 7·8번의 나와 주변을 차례로 견줘요. 9번 바람과 두려움을 본 뒤 10번 결말을 읽되, 정해진 결과보다 지금 흐름이 이어질 때의 모습으로 받아들이죠.",
@@ -206,14 +206,15 @@ export const GUIDE_HOWTO: Readonly<Record<string, GuideHowTo>> = {
  */
 export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: string }>> = Object.fromEntries(
   [
-    // 은둔자 keeps its plain sections: app/guide/guide.test.tsx renders it as the article without blocks.
-    ["the-hermit", { published: "2026-09-30", updated: "2026-10-02" }] as const,
+    // 2026-10-08: the six first-wave articles rewritten at the length of the later ones, with question
+    // headings; 은둔자 and 별 follow the card template (KB keyword table, 연애·일·돈, 비슷한 카드) and are
+    // titled "타로 … 카드 뜻" like the other twenty cards.
+    ...["how-to-read-tarot", "upright-and-reversed", "saju-without-birth-time", "five-elements", "the-hermit", "the-star"].map(
+      (slug) => [slug, { published: "2026-09-30", updated: "2026-10-08" }] as const,
+    ),
     // 2026-10-07: the same words restructured into tables, diagrams, steps, callouts and card rows, with
     // 한눈에 보기 added (death had changed on 10-06: "unrelated to real death" became "an ending, but not
     // read only negatively").
-    ...["how-to-read-tarot", "upright-and-reversed", "saju-without-birth-time", "five-elements", "the-star"].map(
-      (slug) => [slug, { published: "2026-09-30", updated: "2026-10-07" }] as const,
-    ),
     ...[
       "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "minor-arcana-suits", "court-cards",
       "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",

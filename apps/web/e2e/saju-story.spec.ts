@@ -297,10 +297,10 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await expect(articles.first()).toBeVisible();
   expect(await articles.count()).toBeGreaterThanOrEqual(2);
   await guideTabs.getByRole("link", { name: "타로" }).click();
-  await page.getByRole("link", { name: /은둔자 카드 이야기/ }).click();
+  await page.getByRole("link", { name: /타로 은둔자 카드 뜻/ }).click();
   await expect(page).toHaveURL(/\/guide\/the-hermit$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("은둔자 카드 이야기");
-  await expect(page).toHaveTitle(/은둔자 카드 이야기/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("타로 은둔자 카드 뜻");
+  await expect(page).toHaveTitle(/타로 은둔자 카드 뜻/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /9번 은둔자/);
   await expect(page.getByRole("link", { name: "타로 가이드 목록으로" })).toHaveAttribute("href", "/guide/tarot");
   await shot(page, info, "19-guide-article");

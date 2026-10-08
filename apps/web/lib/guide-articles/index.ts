@@ -13,14 +13,17 @@ import { SPREAD_ARTICLES } from "./spreads";
  * RWS 1909 scans; saju articles follow saju-policy@1 and the chart engine in @starlog/core.
  */
 
-/** "같이 읽어 볼 글" for the six articles in lib/guide.ts. */
+/**
+ * "같이 읽어 볼 글" for the six articles in lib/guide.ts. 타로 카드 읽는 법 and 오행 are their clusters'
+ * hubs (docs/seo/audit-2026-10-08.md §6.3), and 정방향과 역방향 points at the card articles its table names.
+ */
 const BASE_RELATED: Readonly<Record<string, readonly string[]>> = {
-  "how-to-read-tarot": ["upright-and-reversed", "three-card-spread", "minor-arcana-suits", "one-card-yes-no"],
-  "upright-and-reversed": ["how-to-read-tarot", "the-star", "three-card-spread"],
-  "saju-without-birth-time": ["manseryeok", "daewoon", "day-master"],
-  "five-elements": ["heavenly-stems", "earthly-branches", "ten-gods"],
-  "the-hermit": ["the-high-priestess", "the-hanged-man", "the-star"],
-  "the-star": ["the-tower", "the-moon", "the-hermit"],
+  "how-to-read-tarot": ["three-card-spread", "celtic-cross-spread", "court-cards", "minor-arcana-suits", "upright-and-reversed"],
+  "upright-and-reversed": ["the-star", "death", "the-tower", "the-hermit", "the-moon"],
+  "saju-without-birth-time": ["saju-birth-info", "jasi-birth", "ipchun-jeolgi", "four-pillars", "daewoon"],
+  "five-elements": ["heavenly-stems", "earthly-branches", "ten-gods", "yongsin", "saju-glossary"],
+  "the-hermit": ["the-hanged-man", "the-high-priestess", "the-star", "upright-and-reversed"],
+  "the-star": ["the-tower", "temperance", "the-moon", "the-hermit", "upright-and-reversed"],
 };
 
 /** The 요약 lead, dates and HowTo steps kept in answers.ts, attached by slug. */

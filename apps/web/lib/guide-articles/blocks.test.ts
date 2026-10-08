@@ -211,8 +211,8 @@ describe("the converted articles' tables agree with the engine, the reading tabl
       ]);
       expect(blocksOf(article).some((block) => block.kind === "cardRow" && block.cards.includes(cardId)), article.slug).toBe(true);
     }
-    // 은둔자 stays the article without blocks that app/guide/guide.test.tsx renders.
-    expect(withoutTable).toEqual(["the-hermit"]);
+    // Every card article has it, 은둔자 and 별 in lib/guide.ts too (은둔자 had no blocks until 2026-10-08).
+    expect(withoutTable).toEqual([]);
   });
 
   it("celtic-cross-spread: the tables name the ten places as the diagram's legend does, in order", () => {

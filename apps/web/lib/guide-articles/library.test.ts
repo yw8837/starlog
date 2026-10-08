@@ -120,6 +120,16 @@ describe("card articles agree with the KB", () => {
     const text = allText(article);
     for (const mis of card.imagery.commonMisdescriptions) expect(text, mis.wrong).not.toMatch(new RegExp(mis.regex));
   });
+
+  // 은둔자 and 별 live in lib/guide.ts with their own question headings; their pictures follow the same KB rules.
+  const BASE_CARDS = GUIDE_ARTICLES.filter((article) => article.cardId && !MAJOR_ARCANA_ARTICLES.some((library) => library.slug === article.slug));
+  it("finds the two card articles of lib/guide.ts", () => expect(BASE_CARDS.map((article) => article.slug)).toEqual(["the-hermit", "the-star"]));
+  it.each(BASE_CARDS.map((article) => [article.slug, article] as const))("%s (lib/guide.ts)", (_slug, article) => {
+    const card = kbCard(article.cardId ?? "");
+    expect(article.title).toContain(card.names.ko);
+    const text = allText(article);
+    for (const mis of card.imagery.commonMisdescriptions) expect(text, mis.wrong).not.toMatch(new RegExp(mis.regex));
+  });
 });
 
 describe("upcoming products are introduced without a date", () => {
