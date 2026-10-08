@@ -66,7 +66,7 @@ curl -sI https://yeolmaeapps.kr/74d8adb0a0b4d02a28602f80b163bf31.txt   # IndexNo
 
 1. **Google Search Console**: 도메인 속성 `yeolmaeapps.kr`을 추가해요(DNS TXT 하나로 `starlog.`까지 모두 포함). `starlog.` 접두어 속성이 이미 있으면 그대로 두고, 사이트맵을 **두 호스트 모두** 제출해요: `https://yeolmaeapps.kr/sitemap.xml`(가이드), `https://starlog.yeolmaeapps.kr/sitemap.xml`(앱, 이제 가이드 주소가 빠졌어요). 옮긴 가이드 주소는 308이 신호를 넘겨 줘요. URL 검사로 `https://yeolmaeapps.kr/guide/tarot` 색인 요청을 해요.
 2. **네이버 서치어드바이저, Bing**: 사이트로 `https://yeolmaeapps.kr`을 추가하고, 그 사이트의 사이트맵과 RSS(`https://yeolmaeapps.kr/rss.xml`)를 제출해요. 앱 쪽 `https://starlog.yeolmaeapps.kr` 등록은 그대로 둬요. 소유확인 코드가 사이트마다 다르게 나오면 주의해요: 지금 코드는 엔진마다 코드를 하나만 받아서(`NEXT_PUBLIC_NAVER_SITE_VERIFICATION`, `NEXT_PUBLIC_BING_SITE_VERIFICATION`), 새 코드는 'HTML 파일 업로드' 방식으로 확인하거나, 코드를 여러 개 받도록 고쳐야 해요.
-3. **애드센스**: 사이트를 `yeolmaeapps.kr`로 추가해 심사받아요. 승인되면 `ADSENSE_CLIENT`(필요하면 `ADSENSE_SLOT_GUIDE`)를 넣고 위 명령으로 다시 배포해요. `https://yeolmaeapps.kr/ads.txt`가 열려야 해요. 자동 광고는 계속 꺼 두고, 광고 스크립트는 `/guide` 레이아웃에서만 불러와요.
+3. **애드센스**: 2026-10-08에 사이트 `yeolmaeapps.kr`로 신청했어요(게시자 ID `ca-pub-2460558039875296`, 공개 값). 소유권 확인 메타 태그와 `ads.txt`는 빌드할 때 들어가니, **배포 빌드마다** `ADSENSE_CLIENT=ca-pub-2460558039875296`을 넣어요(`NEXT_PUBLIC_SPLIT_HOSTS`처럼). 빠지면 확인 메타 태그, `https://yeolmaeapps.kr/ads.txt`, 개인정보처리방침의 광고 쿠키 고지, FAQ의 광고 답이 함께 사라져요. 승인 뒤 광고 단위를 만들면 `ADSENSE_SLOT_GUIDE`도 넣어요. 자동 광고는 계속 꺼 두고, 광고 스크립트는 `/guide` 레이아웃에서만 불러와요.
 4. **IndexNow**: `pnpm indexnow`가 이제 두 호스트의 사이트맵을 모두 읽어서 호스트별로 따로 보내요(키 파일은 두 호스트에서 서빙돼요). 한쪽만 보내려면 `INDEXNOW_SITE=https://yeolmaeapps.kr pnpm indexnow`, 고친 글만은 `pnpm indexnow https://yeolmaeapps.kr/guide/<글>`.
 5. 이 문서가 `indexing-runbook.md`의 가이드 관련 부분(사이트맵 목록, URL 검사 주소, RSS 주소)보다 우선해요.
 

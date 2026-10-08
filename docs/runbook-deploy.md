@@ -18,6 +18,16 @@ App data lives in Cloudflare D1: database `starlog` (id `78c6fb07-ee97-42d5-9633
 - The D1 repository passes the same contract suite as the in-memory one, run against a real local D1 with every migration applied: `npx vitest run apps/web/lib/db` (from the repo root). The workerd start takes about 15 s. Set `CI_NO_WORKERD=1` only where workerd cannot run.
 - Look at stored rows: `npx wrangler d1 execute starlog --remote --command "SELECT * FROM stars LIMIT 5"`. Rows must never hold a birth date: owners keep only the derived basis (`basis_json`), and stars keep nickname, message, card, score and parts.
 
+## AdSense (every production build)
+
+The guides on `https://yeolmaeapps.kr` carry the AdSense site-verification meta tag and `/ads.txt` only when the build sees the publisher id (applied 2026-10-08):
+
+```sh
+ADSENSE_CLIENT=ca-pub-2460558039875296 NEXT_PUBLIC_SPLIT_HOSTS=1 pnpm cf:build
+```
+
+Leaving it out drops the verification tag, `ads.txt`, the privacy policy's ad-cookie section and the FAQ's ad answer (all static pages). Details: `docs/seo/guide-domain.md`.
+
 ## Turning on 별자리 인연 (and 이번 주 행운 번호)
 
 `SITE.features.bonds` (`apps/web/lib/config.ts`) is on in dev and tests. A production build turns it on only when it is built with `NEXT_PUBLIC_FEATURE_BONDS=1`:
