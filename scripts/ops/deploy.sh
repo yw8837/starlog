@@ -32,7 +32,7 @@ unset ADSENSE_CLIENT; export ADSENSE_CLIENT="${ADSENSE:-ca-pub-2460558039875296}
 step "adsense: ${ADSENSE_CLIENT:-off}"
 # search-engine ownership codes (public, build time): NAVER=<content> GOOGLE=<content> BING=<content>
 [ -n "${NAVER:-}" ] && export NEXT_PUBLIC_NAVER_SITE_VERIFICATION="$NAVER"
-[ -n "${GOOGLE:-}" ] && export NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION="$GOOGLE"
+export NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION="${GOOGLE:-MqMj7Z-R0z8mE55r8l_PfFoFxb8lIkpUv4czOhVWuIA}"   # studioyeolmae.com@gmail.com, https://yeolmaeapps.kr/ (2026-10-08)
 [ -n "${BING:-}" ] && export NEXT_PUBLIC_BING_SITE_VERIFICATION="$BING"
 step "verification: naver=${NEXT_PUBLIC_NAVER_SITE_VERIFICATION:-none} google=${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-none} bing=${NEXT_PUBLIC_BING_SITE_VERIFICATION:-none}"
 export NEXT_PUBLIC_KAKAO_JS_KEY="$(grep -E '^NEXT_PUBLIC_KAKAO_JS_KEY=' /d/Money/apps/saju-tarot/apps/web/.env.local | cut -d= -f2- | tr -d '\r"')"
