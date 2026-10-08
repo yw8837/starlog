@@ -7,6 +7,8 @@ import { SITE } from "./config";
  * previews fetch. In-progress flow screens are crawlable but carry noindex (lib/seo.ts NOINDEX).
  * Both hosts (the app and the guide's root domain) get the same rules; `site`, the origin of the host
  * that served the file, only sets the Sitemap and llms.txt lines (app/robots.txt/route.ts).
+ * Training-only crawlers (GPTBot, ClaudeBot, Google-Extended and the like) are named nowhere here:
+ * Cloudflare's managed robots block and the edge keep them out, by the owner's decision of 2026-10-08.
  */
 
 /** Path prefixes no crawler may fetch. `/b` itself is a noindex page; `/b/<code>` are friend invites. */
@@ -18,32 +20,26 @@ export const ROBOTS_ALLOW = ["/", "/api/og/"] as const;
 /**
  * Crawlers named in the same group as `*`, so each one reads the same rules even if a future group
  * would single it out: web search (Google, Naver, Bing, Daum, Apple, DuckDuckGo, Yandex) and the AI
- * search, answer and training crawlers the owner wants citing the site.
+ * search and answer crawlers the owner wants citing the site. Never a training-only crawler: this
+ * group allows every public page, so a name here would let it in (see the top of this file).
  */
 export const NAMED_CRAWLERS = [
   "Googlebot",
   "Googlebot-Image",
-  "Google-Extended",
   "Yeti",
   "NaverBot",
   "Bingbot",
   "Daumoa",
   "Applebot",
-  "Applebot-Extended",
   "DuckDuckBot",
   "YandexBot",
-  "GPTBot",
   "OAI-SearchBot",
   "ChatGPT-User",
   "PerplexityBot",
   "Perplexity-User",
-  "ClaudeBot",
   "Claude-SearchBot",
   "Claude-User",
-  "Amazonbot",
-  "Meta-ExternalAgent",
   "MistralAI-User",
-  "CCBot",
 ] as const;
 
 /** Daum 웹마스터도구 ownership line, read at build time like the other verification codes. */

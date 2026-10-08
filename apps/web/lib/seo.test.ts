@@ -5,7 +5,6 @@ import { dynamic as sitemapDynamic, GET as sitemapRoute } from "@/app/sitemap.xm
 import { SITE } from "./config";
 import { GUIDE_ARTICLES } from "./guide";
 import { FEED_URL, absoluteUrl } from "./hosts";
-import { LEGAL_EFFECTIVE_DATE } from "./legal";
 import { NAMED_CRAWLERS, daumWebmasterLine, robotsTxt } from "./robots";
 import { pageMetadata, siteVerification, sitemapEntries, sitemapEntriesFor, sitemapXml } from "./seo";
 
@@ -54,15 +53,20 @@ describe("sitemap on the app host", () => {
     expect(urls).not.toContain(`${GUIDE}/guide/tarot`);
   });
 
-  it("dates the policies by their 시행일 and leaves lastmod off pages without a content date", () => {
-    for (const path of ["/refund", "/terms", "/privacy"]) expect(entry(path)?.lastModified).toBe(LEGAL_EFFECTIVE_DATE);
+  it("leaves lastmod off the policies (their only date is the 시행일, which is still ahead) and off pages without a content date", () => {
+    for (const path of ["/refund", "/terms", "/privacy"]) {
+      expect(entry(path), path).toBeDefined();
+      expect(entry(path)?.lastModified, path).toBeUndefined();
+    }
     for (const path of ["/", "/now", "/today", "/faq"]) expect(entry(path)?.lastModified).toBeUndefined();
   });
 
-  it("with 별자리 인연 on, lists /lucky, /ranking and the twelve sign rankings; with it off, none of them", () => {
+  it("with 별자리 인연 on, lists /lucky and /ranking but not the twelve sign rankings (their lists load in the browser, so they are noindex); with it off, none of them", () => {
     expect(SITE.features.bonds).toBe(true);
-    for (const path of ["/lucky", "/ranking", ...CONSTELLATIONS.map((sign) => `/ranking/${sign.id}`)]) expect(urls).toContain(`${SITE.url}${path}`);
+    for (const path of ["/lucky", "/ranking"]) expect(urls).toContain(`${SITE.url}${path}`);
     expect(CONSTELLATIONS).toHaveLength(12);
+    for (const sign of CONSTELLATIONS) expect(urls, sign.id).not.toContain(`${SITE.url}/ranking/${sign.id}`);
+    expect(urls.filter((url) => new URL(url).pathname.startsWith("/ranking/"))).toEqual([]);
     const off = sitemapEntries({ features: { bonds: false } }).map((e) => e.path);
     expect(off.some((path) => path === "/lucky" || path.startsWith("/ranking"))).toBe(false);
     const offApp = sitemapEntriesFor("app", { features: { bonds: false } }).map((e) => e.path);
@@ -134,6 +138,16 @@ describe("sitemap.xml route", () => {
     expect([...app, ...guide].sort()).toEqual(sitemapEntries().map((e) => e.path).sort());
   });
 
+  it("never lists a lastmod that is still ahead, on either host", () => {
+    const now = Date.now();
+    const dated = [...parseSitemap(appXml), ...parseSitemap(guideXml)].filter((listed) => listed.lastModified !== undefined);
+    expect(dated.length).toBeGreaterThanOrEqual(GUIDE_ARTICLES.length);
+    for (const { url, lastModified } of dated) {
+      // A date is the start of that day in Korea, where the dates are written.
+      expect(Date.parse(`${lastModified}T00:00:00+09:00`), `${url} ${lastModified}`).toBeLessThanOrEqual(now);
+    }
+  });
+
   it("depends on the request's host, so it is never prerendered, and says it can be revalidated", () => {
     expect(sitemapDynamic).toBe("force-dynamic");
     expect(appResponse.headers.get("Content-Type")).toBe("application/xml; charset=utf-8");
@@ -145,15 +159,44 @@ const robotsOf = async (origin: string) => (await robotsRoute(request(origin, "/
 const response = await robotsRoute(request(APP, "/robots.txt"));
 const text = await response.text();
 
+/** Crawlers that only gather training data: Cloudflare's managed robots block and the edge keep them out (owner, 2026-10-08), so no group of ours may let them in. */
+const TRAINING_ONLY = ["Google-Extended", "Applebot-Extended", "GPTBot", "ClaudeBot", "Amazonbot", "Meta-ExternalAgent", "CCBot"];
+
+/** The User-agent names (lower case) of every group that has an Allow rule; a group is its User-agent lines and the rules after them. */
+function allowedAgents(robots: string): string[] {
+  const agents: string[] = [];
+  let group: string[] = [];
+  let hasRules = false;
+  let hasAllow = false;
+  const close = () => {
+    if (hasAllow) agents.push(...group);
+    group = [];
+    hasRules = false;
+    hasAllow = false;
+  };
+  for (const line of robots.split("\n")) {
+    const agent = /^User-agent:\s*(\S+)/i.exec(line)?.[1];
+    if (agent !== undefined) {
+      if (hasRules) close();
+      group.push(agent.toLowerCase());
+    } else if (/^(Allow|Disallow):/i.test(line)) {
+      hasRules = true;
+      if (/^Allow:/i.test(line)) hasAllow = true;
+    }
+  }
+  close();
+  return agents;
+}
+
 describe("robots.txt", () => {
   const lines = text.split("\n");
   const values = (field: string) => lines.filter((line) => line.startsWith(`${field}: `)).map((line) => line.slice(field.length + 2));
 
-  it("is plain text with one group for every crawler, search and AI alike", () => {
+  it("is plain text with one group for every search and answer crawler", () => {
     expect(response.headers.get("Content-Type")).toBe("text/plain; charset=utf-8");
     const agents = values("User-agent");
     expect(agents[0]).toBe("*");
-    for (const bot of ["Googlebot", "Yeti", "Bingbot", "Daumoa", "Google-Extended", "GPTBot", "OAI-SearchBot", "ChatGPT-User", "PerplexityBot", "ClaudeBot"]) {
+    for (const bot of ["Googlebot", "Yeti", "NaverBot", "Bingbot", "Daumoa", "Applebot", "OAI-SearchBot", "ChatGPT-User", "PerplexityBot", "Perplexity-User", "Claude-SearchBot", "Claude-User", "MistralAI-User"]) {
       expect(agents, bot).toContain(bot);
     }
     expect(agents).toEqual(["*", ...NAMED_CRAWLERS]);
@@ -161,6 +204,15 @@ describe("robots.txt", () => {
     const lastAgent = lines.findLastIndex((line) => line.startsWith("User-agent: "));
     const firstRule = lines.findIndex((line) => /^(Allow|Disallow): /.test(line));
     expect(firstRule).toBeGreaterThan(lastAgent);
+  });
+
+  it("lets no training-only crawler into an allow group, on either host: Cloudflare's block and the edge keep them out", async () => {
+    for (const origin of [APP, GUIDE]) {
+      const allowed = allowedAgents(await robotsOf(origin));
+      expect(allowed, origin).toEqual(expect.arrayContaining(["googlebot", "oai-searchbot", "claude-searchbot"]));
+      for (const bot of TRAINING_ONLY) expect(allowed, `${origin} ${bot}`).not.toContain(bot.toLowerCase());
+    }
+    for (const bot of TRAINING_ONLY) expect(NAMED_CRAWLERS, bot).not.toContain(bot);
   });
 
   it("keeps the API and personal pages out, but lets link previews fetch /api/og/", () => {

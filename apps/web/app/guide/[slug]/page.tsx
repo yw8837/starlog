@@ -105,7 +105,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
 
           {card && article.cardId ? (
             <figure className={s.figure}>
-              <TarotCard cardId={article.cardId} faceUp size="lg" className={s.figureCard} label={`${card.names.ko} 카드 그림`} />
+              <TarotCard cardId={article.cardId} faceUp size="lg" className={s.figureCard} alt={`${card.names.ko} 타로 카드`} />
               <figcaption className={s.caption}>{`${card.arcana === "major" ? `${card.roman} ` : ""}${card.names.ko} · 라이더-웨이트-스미스 덱(1909)`}</figcaption>
             </figure>
           ) : null}

@@ -8,8 +8,27 @@ import GuideSajuPage, { metadata as sajuMetadata } from "@/app/guide/saju/page";
 import GuideTarotPage, { metadata as tarotMetadata } from "@/app/guide/tarot/page";
 import { GUIDE_HOST_LINES } from "@/app/guide/GuideHost";
 import { SITE } from "@/lib/config";
-import { GUIDE_CATEGORIES, articlesIn, findArticle } from "@/lib/guide";
+import { GUIDE_CATEGORIES, articlesIn, findArticle, type GuideArticle } from "@/lib/guide";
 import nextConfig from "@/next.config";
+
+// A plain article, as the first six once were (no 한눈에 보기, no blocks). Every real article has both since
+// 2026-10-08, so findArticle serves this one next to the library to keep the page's plain path covered.
+const PLAIN = vi.hoisted(
+  (): GuideArticle => ({
+    slug: "plain-article",
+    title: "블록 없는 글",
+    category: "tarot",
+    description: "블록 없이 문단만 있는 글이 그려지는 모양을 확인해요.",
+    sections: [
+      { heading: "첫 번째 절", body: "첫 번째 절의 문단이에요." },
+      { heading: "두 번째 절", body: "두 번째 절의 문단이에요." },
+    ],
+  }),
+);
+vi.mock("@/lib/guide", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/guide")>();
+  return { ...actual, findArticle: (slug: string) => (slug === PLAIN.slug ? PLAIN : actual.findArticle(slug)) };
+});
 
 // The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; these tests run on one origin unless a test says so.
 beforeEach(() => vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", ""));
@@ -99,15 +118,35 @@ describe("guide article body", () => {
   const sectionTags = (heading: string) => [...(screen.getByRole("heading", { level: 2, name: heading }).parentElement?.children ?? [])].map((el) => el.tagName);
 
   it("renders a section without blocks exactly as before: its heading, then its body as one paragraph", async () => {
-    const article = findArticle("the-hermit");
-    if (!article) throw new Error("the-hermit");
-    expect(article.sections.some((section) => section.blocks) || article.keyPoints).toBeFalsy();
-    await renderSlug(article.slug);
-    for (const section of article.sections) {
+    expect(PLAIN.sections.some((section) => section.blocks) || PLAIN.keyPoints).toBeFalsy();
+    await renderSlug(PLAIN.slug);
+    for (const section of PLAIN.sections) {
       expect(sectionTags(section.heading)).toEqual(["H2", "P"]);
       expect(screen.getByRole("heading", { level: 2, name: section.heading }).nextElementSibling?.textContent).toBe(section.body);
     }
     expect(screen.queryByText("한눈에 보기")).toBeNull();
+  });
+
+  it("keeps a real article's sections without blocks to their heading and one paragraph", async () => {
+    const article = findArticle("the-hermit");
+    const plain = article?.sections.filter((section) => !section.blocks) ?? [];
+    expect(plain.length).toBeGreaterThanOrEqual(2);
+    await renderSlug("the-hermit");
+    for (const section of plain) {
+      expect(sectionTags(section.heading)).toEqual(["H2", "P"]);
+      expect(screen.getByRole("heading", { level: 2, name: section.heading }).nextElementSibling?.textContent).toBe(section.body);
+    }
+  });
+
+  it.each([
+    ["the-fool", "바보 타로 카드"],
+    ["the-hermit", "은둔자 타로 카드"],
+    ["the-star", "별 타로 카드"],
+  ])("%s: the card picture has a real alt (%s) and is announced once", async (slug, alt) => {
+    await renderSlug(slug);
+    // the first figure is the card picture, ahead of the sections
+    const pictures = within(screen.getAllByRole("figure")[0]!).getAllByRole("img");
+    expect(pictures.map((picture) => [picture.tagName, picture.getAttribute("alt")])).toEqual([["IMG", alt]]);
   });
 
   it("shows 한눈에 보기 under the 요약, and a section's blocks after its body paragraph", async () => {

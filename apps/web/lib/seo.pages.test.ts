@@ -1,6 +1,6 @@
 import { CONSTELLATIONS } from "@starlog/core";
 import type { Metadata } from "next";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { metadata as aboutMeta } from "@/app/about/page";
 import { metadata as bInviteIndexMeta } from "@/app/b/page";
 import { generateMetadata as bInviteMeta } from "@/app/b/[code]/page";
@@ -13,6 +13,7 @@ import { metadata as guideSajuMeta } from "@/app/guide/saju/page";
 import { metadata as guideTarotMeta } from "@/app/guide/tarot/page";
 import { metadata as helpMeta } from "@/app/help/page";
 import { metadata as howMeta } from "@/app/how/page";
+import { metadata as layoutMeta } from "@/app/layout";
 import { metadata as reviewLoginMeta } from "@/app/login/review/page";
 import { metadata as luckyMeta } from "@/app/lucky/page";
 import { metadata as meMeta } from "@/app/me/page";
@@ -36,7 +37,10 @@ import { metadata as todayMeta } from "@/app/today/page";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES } from "./guide";
 import { isGuidePath } from "./hosts";
-import { HOME_TITLE, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
+import { HOME_TITLE, NOINDEX as NOINDEX_ROBOTS, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
+
+// The root layout loads its fonts through the Next compiler, which is not running here.
+vi.mock("next/font/google", () => ({ Gowun_Batang: () => ({ variable: "" }), Noto_Sans_KR: () => ({ variable: "" }) }));
 
 /**
  * The SEO audit: every indexable page has a unique title (60 characters or less with the site
@@ -47,6 +51,9 @@ import { HOME_TITLE, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
  */
 
 const params = <T extends Record<string, string>>(value: T) => ({ params: Promise.resolve(value) }) as never;
+
+/** The root layout's title template, which every page title that is a plain string goes through. */
+const TITLE_TEMPLATE = (layoutMeta.title as { template: string }).template;
 
 const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/", homeMeta],
@@ -68,7 +75,6 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/lucky", luckyMeta],
   ["/ranking", rankingMeta],
   ...(await Promise.all(GUIDE_ARTICLES.map(async (article) => [`/guide/${article.slug}`, await guideArticleMeta(params({ slug: article.slug }))] as [string, Metadata]))),
-  ...(await Promise.all(CONSTELLATIONS.map(async (sign) => [`/ranking/${sign.id}`, await rankingSignMeta(params({ sign: sign.id }))] as [string, Metadata]))),
 ];
 
 const NOINDEX: Array<[path: string, meta: Metadata]> = [
@@ -84,13 +90,15 @@ const NOINDEX: Array<[path: string, meta: Metadata]> = [
   ["/bonds", bondsMeta],
   ["/owner", ownerMeta],
   ["/login/review", reviewLoginMeta],
+  // Their lists load in the browser, so the server sends a "불러오는 중" shell: thin to a crawler.
+  ...(await Promise.all(CONSTELLATIONS.map(async (sign) => [`/ranking/${sign.id}`, await rankingSignMeta(params({ sign: sign.id }))] as [string, Metadata]))),
 ];
 
 /** The <title> the browser shows: the page title through the layout template, or the home default. */
 function fullTitle(meta: Metadata): string {
   const title = meta.title;
   if (title === undefined || title === null) return HOME_TITLE;
-  if (typeof title === "string") return `${title} · ${SITE.name}`;
+  if (typeof title === "string") return TITLE_TEMPLATE.replace("%s", title);
   if ("absolute" in title) return title.absolute;
   return String(title.default);
 }
@@ -121,6 +129,13 @@ describe("indexable pages", () => {
     expect(new Set(descriptions).size).toBe(descriptions.length);
   });
 
+  it("ends every page title with the Korean brand: the English name alone collides with a magazine in search", () => {
+    expect(TITLE_TEMPLATE).toBe(`%s · ${SITE.nameKo}`);
+    const suffixed = INDEXABLE.filter(([, meta]) => typeof meta.title === "string");
+    expect(suffixed.length).toBeGreaterThan(GUIDE_ARTICLES.length);
+    for (const [path, meta] of suffixed) expect(fullTitle(meta), path).toMatch(new RegExp(` · ${SITE.nameKo}$`));
+  });
+
   it("is exactly the set the sitemaps list", () => {
     expect([...SITEMAP_PATHS].sort()).toEqual(INDEXABLE.map(([path]) => path).sort());
   });
@@ -138,5 +153,18 @@ describe("personal and in-progress pages", () => {
   it.each(NOINDEX)("%s: noindex, never in the sitemap", (path, meta) => {
     expect(meta.robots).toMatchObject({ index: false });
     expect(SITEMAP_PATHS).not.toContain(path);
+  });
+});
+
+describe("sign rankings", () => {
+  it("are out of search only: a shared link keeps its title, description, canonical and preview image", async () => {
+    for (const sign of CONSTELLATIONS) {
+      const meta = await rankingSignMeta(params({ sign: sign.id }));
+      expect(meta.robots, sign.id).toEqual(NOINDEX_ROBOTS);
+      expect(meta.title, sign.id).toBe(`${sign.ko} 랭킹`);
+      expect(String(meta.description), sign.id).toContain(sign.ko);
+      expect(meta.alternates?.canonical, sign.id).toBe(`/ranking/${sign.id}`);
+      expect(meta.openGraph, sign.id).toMatchObject({ url: `/ranking/${sign.id}`, locale: "ko_KR", images: [{ url: "/opengraph-image", width: 1200, height: 630 }] });
+    }
   });
 });

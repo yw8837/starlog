@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { CONSTELLATIONS } from "@starlog/core";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath } from "./guide";
 import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
-import { LEGAL_EFFECTIVE_DATE } from "./legal";
 import { OG_ALT } from "./og";
 
 /**
@@ -95,7 +93,7 @@ export type ChangeFrequency = "always" | "hourly" | "daily" | "weekly" | "monthl
 
 export interface SitemapEntry {
   path: string;
-  /** YYYY-MM-DD, only where the content carries its own date (guide articles, the policies). */
+  /** YYYY-MM-DD, only where the content carries its own date (guide articles). Never a date still ahead. */
   lastModified?: string;
   changeFrequency?: ChangeFrequency;
   priority?: number;
@@ -107,9 +105,10 @@ const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
 /**
  * Public, indexable pages of both hosts: the entry points, the free daily cards, the guide tabs and
  * every article (on the root domain), the service pages (about, how, help, FAQ), pricing, the
- * policies, and with 별자리 인연 the weekly lucky numbers and the sign rankings. `/guide` itself is a
+ * policies, and with 별자리 인연 the weekly lucky numbers and the rankings' index. `/guide` itself is a
  * permanent redirect to the first tab (next.config.ts), so it is not listed. Personal and
- * in-progress screens never are (NOINDEX). sitemapEntriesFor splits them by host.
+ * in-progress screens never are (NOINDEX), nor are the twelve /ranking/<sign> pages: their lists load
+ * in the browser, so the server sends only a "불러오는 중" shell. sitemapEntriesFor splits them by host.
  */
 export function sitemapEntries(site: { features: { bonds: boolean } } = SITE): SitemapEntry[] {
   return [
@@ -131,13 +130,13 @@ export function sitemapEntries(site: { features: { bonds: boolean } } = SITE): S
     ),
     ...Object.values(INFO_PAGES).map((page): SitemapEntry => ({ path: page.path, changeFrequency: "monthly", priority: 0.6 })),
     { path: "/pricing", changeFrequency: "monthly", priority: 0.5 },
-    ...["/refund", "/terms", "/privacy"].map((path): SitemapEntry => ({ path, lastModified: LEGAL_EFFECTIVE_DATE, changeFrequency: "yearly", priority: 0.2 })),
-    // 이번 주 행운 번호 and the rankings ship with 별자리 인연 (SITE.features.bonds)
+    // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.
+    ...["/refund", "/terms", "/privacy"].map((path): SitemapEntry => ({ path, changeFrequency: "yearly", priority: 0.2 })),
+    // 이번 주 행운 번호 and the rankings' index ship with 별자리 인연 (SITE.features.bonds)
     ...(site.features.bonds
       ? [
           { path: "/lucky", changeFrequency: "weekly", priority: 0.5 } satisfies SitemapEntry,
           { path: "/ranking", changeFrequency: "daily", priority: 0.5 } satisfies SitemapEntry,
-          ...CONSTELLATIONS.map((sign): SitemapEntry => ({ path: `/ranking/${sign.id}`, changeFrequency: "daily", priority: 0.4 })),
         ]
       : []),
   ];

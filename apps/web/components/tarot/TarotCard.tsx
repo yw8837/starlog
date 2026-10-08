@@ -13,6 +13,12 @@ type TarotCardProps = {
   onFlip?: () => void;
   /** Accessible name. Without it the card is decorative (its parent names it). */
   label?: string;
+  /**
+   * The face's own alt text ("바보 타로 카드"), for a card that is page content. Only a face-up card
+   * shows it, so a face-down one gives nothing away. It replaces `label`: the image names itself, so
+   * the box is neither a second role="img" nor hidden.
+   */
+  alt?: string;
   /** Gold ring and glow, e.g. a picked card in the fan. */
   highlight?: boolean;
   className?: string;
@@ -31,9 +37,10 @@ const IMAGE_SIZES: Record<CardSize, string> = { sm: "120px", md: "140px", lg: "1
  * One tarot card in a fixed 600:1040 box (RWS scans vary 1.70-1.80, so the face is cropped
  * with object-fit). The flip is a real 3D turn; reversed faces are drawn upside down and tagged.
  */
-export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md", onFlip, label, highlight = false, className, imageSizes, loading }: TarotCardProps) {
+export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md", onFlip, label, alt, highlight = false, className, imageSizes, loading }: TarotCardProps) {
   const reversed = orientation === "reversed";
   const showFace = faceUp && Boolean(cardId);
+  const faceAlt = showFace ? alt : undefined;
   const classes = [s.card, s[size], highlight ? s.highlight : "", className ?? ""].filter(Boolean).join(" ");
 
   const inner = (
@@ -47,7 +54,7 @@ export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md"
             src={cardImage(cardId, "sm")}
             srcSet={`${cardImage(cardId, "sm")} 240w, ${cardImage(cardId, "lg")} 600w`}
             sizes={imageSizes ?? IMAGE_SIZES[size]}
-            alt=""
+            alt={faceAlt ?? ""}
             width={600}
             height={1040}
             draggable={false}
@@ -67,7 +74,7 @@ export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md"
           {inner}
         </button>
       ) : (
-        <div className={s.box} {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
+        <div className={s.box} {...(faceAlt ? {} : label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}>
           {inner}
         </div>
       )}

@@ -31,7 +31,7 @@ const VERIFICATION = siteVerification();
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: { default: HOME_TITLE, template: `%s · ${SITE.name}` },
+  title: { default: HOME_TITLE, template: `%s · ${SITE.nameKo}` },
   description: HOME_DESCRIPTION,
   applicationName: SITE.nameKo,
   publisher: SITE.business.name,
