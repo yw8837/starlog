@@ -34,16 +34,26 @@ describe("주제별 사주 prompts (spec §7.5)", () => {
     // Then SAJU_SYSTEM alone again (review 2026-10-08): month labels and 절기·간지 month names, the preamble's section names
     // mapped onto the plain headings, the limits' other pillars kept to 계산 기준, the card's time, make-up and 입춘 rules,
     // four more glossed terms and the 많은 기운·적은 기운 label.
-    expect(hash(SAJU_PREAMBLE)).toBe("eec571e064c5235669420cbeed21a37f640cfe6486432d1af6e31e7a2379abe6");
-    expect(hash(SAJU_SYSTEM)).toBe("2dfffdd9b8c4cedd2c4062c2939914252b47d4fdeede79a5e8b610d569e6ed51");
-    expect(hash(NEWYEAR_SYSTEM)).toBe("33840c625621d9d3588057caa7018231f0a6ffdfbca62e79cce05ea61de29986");
+    // Then all three (the reading voice, owner 2026-10-08, docs/research/reading-voice-2026-10.md §4.1): the preamble drops
+    // the lines that made the stock phrases ("명리에서는 ~로 읽어요" a section, the confirmation formula, the body's
+    // disclaimers, now in the section that copies the limits), so 신년운세 moves with it; SAJU_SYSTEM adds the voice block,
+    // bold, the human dates and 300~450자 sections.
+    // Then all three again (review 2026-10-08): the preamble says not to claim 化 (the facts' notes are neutral now),
+    // 신년운세's format asks for a 해석 marker and a scene question, and the teaser and follow-up formats say no bold.
+    // Then all three once more (before the one real-model check, 2026-10-08): the scene questions keep clear of what the hard
+    // checks block, one rule replaces the per-reading counts, the unchecked rhythm rules go, the disclaimers are placed once
+    // (only the ones that apply, short), the confirmation formula is banned once, and "~로 읽어요" is settled in one sentence.
+    expect(hash(SAJU_PREAMBLE)).toBe("90e3535f9cab2ce186fac45f2dcef97dd97339e26a122bc1cd104ae37800e5bd");
+    expect(hash(SAJU_SYSTEM)).toBe("333784e44762335ce3288b8c32fcb1b28da01cf29858b6083e1bdcd02d59fc7d");
+    expect(hash(NEWYEAR_SYSTEM)).toBe("1307d57b62ae51e374b7be06b89445fb7c0ad161540b3384fae4447844710f13");
   });
 
-  it("builds the topic system prompt on the unchanged preamble, blind to model names, without 베타", () => {
+  it("builds the topic system prompt on the shared preamble, blind to model names, without 베타", () => {
     expect(SAJU_TOPIC_SYSTEM.startsWith(`${SAJU_PREAMBLE}\n\n# 주제별 사주에서 달라지는 것`)).toBe(true);
     expect(SAJU_TOPIC_SYSTEM.split(MODEL_BLIND_RULE)).toHaveLength(2);
     for (const heading of ["## teaser", "## reading", "## followup", "## 연애운", "## 재회운", "## 재물운", "## 직업운"]) expect(SAJU_TOPIC_SYSTEM).toContain(heading);
     expect(SAJU_TOPIC_SYSTEM).not.toContain("베타");
+    // last moved on purpose (review 2026-10-08): 6절 200~400자, as the disclaimers moved into it
     expect(hash(SAJU_TOPIC_SYSTEM)).toMatchSnapshot();
   });
 

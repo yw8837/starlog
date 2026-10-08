@@ -301,11 +301,13 @@ describe("a saved reading whose card cannot be read (review 2026-10-08)", () => 
 });
 
 describe("the prompts ask for the card and the plain words, and leave 신년운세 alone", () => {
-  it("adds one shared block to the standard and topic prompts, after the unchanged preamble", () => {
+  it("adds one shared block to the standard and topic prompts, after the shared preamble", () => {
     for (const system of [SAJU_SYSTEM, SAJU_TOPIC_SYSTEM]) {
       expect(system.startsWith(SAJU_PREAMBLE)).toBe(true);
       expect(system).toContain("# 쉬운 말");
-      expect(system).toContain("내 재주를 꺼내 쓰는 힘(식신)");
+      // reading-voice-2026-10 §4.1: the rule says "쉬운 말(용어)" without one fixed gloss to copy (it was copied 8 times in 7 readings)
+      expect(system).toContain('용어는 처음 한 번만 "쉬운 말(용어)"로 쓰고');
+      expect(system).not.toContain("내 재주를 꺼내 쓰는 힘(식신)");
       expect(system).toContain("- 편관: 바깥에서 오는 압박과 책임");
       expect(system).toMatch(/- glance:/);
       for (const label of ["잘 풀리는 쪽", "조심할 쪽", "이렇게 보완", "올해 흐름"]) expect(system).toContain(label);

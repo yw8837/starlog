@@ -1,3 +1,5 @@
+import { BOLD, boldSegments, stripBold } from "@/lib/reading/bold";
+
 /**
  * "AI 티 없이" (owner request; .superpowers/sdd/2026-09-30-starlog-p2b/style-rules.md, from the
  * humanize-korean taxonomy and humanizer). Two parts: the 문체 규칙 block that every cached system
@@ -22,7 +24,7 @@ export const STYLE_RULES = `# 문체 규칙
 말투는 곁에서 카드를 같이 보는 사람이 말하듯 자연스러운 해요체로 써요.
 - 번역투를 쓰지 않아요: "~에 대해", "~를 통해", "~에 있어", "~와 관련해", "~을 가지고 있어요", "~되어져요", 문장마다 붙는 "~할 수 있어요".
 - 상투구를 쓰지 않아요: 결론적으로·요약하면·정리하자면·종합하면·이를 통해·따라서로 시작하는 문장, "~라고 할 수 있어요", "매우 중요해요", "주목할 만해요", "의미가 커요", "새로운 장이 열려요", "~할 때예요", "~에서 ~로 나아가요" 같은 변환 공식, 혁신적·획기적·압도적 같은 과장어.
-- 형식으로 꾸미지 않아요: 문자열 안에 글머리표, 번호, 굵은 글씨, 이모지, 줄표(—), 강조용 따옴표를 쓰지 않아요. 목록이 필요한 곳은 JSON 배열 항목이 이미 목록이에요. 따옴표는 사용자가 쓴 말이나 보낼 문장 예시를 옮길 때만 써요.
+- 형식으로 꾸미지 않아요: 문자열 안에 글머리표, 번호, 굵은 글씨, 이모지, 줄표(—), 강조용 따옴표를 쓰지 않아요. 굵은 글씨(**구**)는 작업별 형식이 허락한 칸에서만 그 형식이 정한 만큼 써요. 목록이 필요한 곳은 JSON 배열 항목이 이미 목록이에요. 따옴표는 사용자가 쓴 말이나 보낼 문장 예시를 옮길 때만 써요.
 - 대구 공식을 쓰지 않아요: "A일까요, B일까요?"를 되풀이하거나, 문단마다 "먼저… 반면… 결국…" 순서로 짜지 않아요.
 - 문장 길이를 섞어요. 같은 끝맺음을 세 번 넘게 잇지 않고 ~죠, ~거든요, ~네요, ~예요, 명사로 끝내기를 자연스럽게 섞어요. "~고 있어요"는 꼭 필요할 때만 써요.
 - 근거가 있는 말은 망설이지 않고 말해요. 해석임을 밝히는 "~로 읽어요"는 그대로 쓰되, "~인 것 같아요", "~로 보여요"는 정말 불확실한 한 곳에만 쓰고 "~일 수도 있을 것 같아요" 같은 겹완곡은 쓰지 않아요. "양쪽 모두", "신중하게", "균형"으로 얼버무리지 않고 조건으로 나눠 말해요(예: 답이 빨리 오면 ~, 늦으면 ~).
@@ -77,7 +79,8 @@ const TELLS: Array<AiTell & { test: (text: string) => boolean }> = [
   { id: "D4", label: "과장어", hint: "혁신적·획기적·압도적 같은 말을 빼세요", test: (t) => /혁신적|획기적|압도적|폭발적|파격적|전례 없/.test(t) },
   { id: "D6", label: "완결 공식", hint: "'~할 때예요·~시점이에요'로 맺지 말고 조건과 행동으로 말하세요", test: (t) => /(할|될|볼) 때(예요|입니다)[.!]|시점(이에요|입니다)/.test(t) },
   { id: "D7", label: "변환 공식", hint: "'~에서 ~로 나아가요' 공식 대신 구체적인 장면을 쓰세요", test: (t) => /에서 [가-힣]+(으)?로 나아가|을 넘어 [가-힣]+(으)?로/.test(t) },
-  { id: "C", label: "서식", hint: "글머리표·번호·굵은 글씨·이모지·줄표(—)를 문장 안에 쓰지 마세요", test: (t) => /^\s*[-*•]\s|^\s*\d+[.)]\s|\*\*|—/m.test(t) || /\p{Extended_Pictographic}/u.test(t) },
+  // `**` counts when it is left in the text scored: the validators take bold within a format's budget out first (allowBold)
+  { id: "C", label: "서식", hint: "글머리표·번호·이모지·줄표(—)를 문장 안에 쓰지 말고, 굵은 글씨는 형식이 허락한 곳에 정한 만큼만 쓰세요", test: (t) => /^\s*[-*•]\s|^\s*\d+[.)]\s|\*\*|—/m.test(t) || /\p{Extended_Pictographic}/u.test(t) },
   { id: "C8", label: "대구 질문", hint: "'A일까요, B일까요?'를 되풀이하지 마세요", test: (t) => count(t, /[가-힣]+(일까요|인가요),\s*[가-힣]+(일까요|인가요)\?/g) >= 2 },
   { id: "A", label: "번역투", hint: "'~에 대해·~를 통해·~와 관련해' 대신 바로 말하세요", test: (t) => count(t, /에 대(해|하여)|를 통(해|하여)|에 있어(서)?|와 관련(해|하여|된)|을 가지고 있|되어(져|지)/g) >= 3 },
   { id: "G", label: "겹완곡", hint: "'~일 수도 있을 것 같아요'를 한 번의 조건문으로 바꾸세요", test: (t) => /(일|할) 수도 있을 (것 같|듯)|로 보여질 수/.test(t) },
@@ -99,7 +102,15 @@ export const SOFT_PREFIX = "[문체] ";
 /** The soft marker for en, ja and zh-hant feedback (P6). */
 export const SOFT_PREFIX_INTL = "[style] ";
 
-export const isSoftViolation = (violation: string) => violation.startsWith(SOFT_PREFIX) || violation.startsWith(SOFT_PREFIX_INTL);
+/**
+ * The reading voice's findings (docs/research/reading-voice-2026-10.md §4.3): soft, and fed back with a regeneration
+ * that happens for another reason, but never one of their own. They are measured first; joining the ≥3 rule is the
+ * owner's later call.
+ */
+export const VOICE_PREFIX = "[목소리] ";
+
+export const isSoftViolation = (violation: string) =>
+  violation.startsWith(SOFT_PREFIX) || violation.startsWith(SOFT_PREFIX_INTL) || violation.startsWith(VOICE_PREFIX);
 
 export const AI_TELL_THRESHOLD = 3;
 
@@ -107,11 +118,38 @@ const AI_TELL_MESSAGE = `${SOFT_PREFIX}AI가 쓴 티가 나는 문장이 있어�
 
 /**
  * The ≥3 rule for soft findings: regenerate for style only when the AI-tell score fired (itself 3+
- * distinct tells) or when 3+ distinct soft checks fired together. One or two soft hits never do.
+ * distinct tells) or when 3+ distinct soft checks fired together. One or two soft hits never do, nor
+ * do voice findings, however many.
  */
 export function softWarrantsRegeneration(violations: readonly string[]): boolean {
-  const soft = violations.filter(isSoftViolation);
+  const soft = violations.filter((v) => isSoftViolation(v) && !v.startsWith(VOICE_PREFIX));
   return soft.some((v) => v.startsWith(AI_TELL_MESSAGE)) || soft.length >= AI_TELL_THRESHOLD;
+}
+
+// ---- bold (reading-voice-2026-10 §2.2) ----
+
+/** `**구**`: the one mark a task's format may allow (the saju body sections and card, the tarot reading's card sections), read as the screen reads it. */
+export { BOLD, stripBold };
+
+/** A bold phrase as §2.2 allows it: 4–20 characters without spaces, not a question, no hanja, not a bare number. */
+export function boldPhraseOk(phrase: string): boolean {
+  const n = phrase.replace(/\s/g, "").length;
+  return n >= 4 && n <= 20 && !/[?？]|[一-鿿]/.test(phrase) && !/^[\d\s.,%~-]+$/.test(phrase);
+}
+
+/** The bold phrases of a text, and whether its marks pair up as the screen reads them (BoldText falls back to plain text otherwise). */
+export function boldSpans(text: string): { phrases: string[]; paired: boolean } {
+  return { phrases: [...text.matchAll(BOLD)].map((m) => m[1]!), paired: boldSegments(text) !== null };
+}
+
+/**
+ * `text` as the AI-tell score reads it where a format allows up to `max` bold phrases: within that budget the marks are
+ * not formatting and go; beyond it (too many, a question, too long, marks that do not pair up) they stay, and TELLS C
+ * counts them.
+ */
+export function allowBold(text: string, max: number): string {
+  const { phrases, paired } = boldSpans(text);
+  return paired && phrases.length <= max && phrases.every(boldPhraseOk) ? stripBold(text) : text;
 }
 
 /** Adds one soft violation listing the hits when the texts show three or more distinct tells. */

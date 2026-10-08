@@ -188,7 +188,8 @@ describe("A2 reading-quality checks (blind judge 2026-09-30)", () => {
     const rctx = buildTarotContext("self-flow", drawn, MONEY_INPUT);
     const r = mockTarotReading(rctx);
     expect(hard(validateTarotReading(r, rctx))).toEqual([]);
-    const upright = r.cards.map((c, i) => (i === 0 ? { ...c, body: c.body.replace(/'지금의 나' 자리의 카드는 역방향으로 나왔어요\. /, "").replace(/역방향이라 '[^']*' 쪽으로 읽어요\. /, "") } : c));
+    // the mock says it in the sentence after the picture (reading-voice-2026-10 §2.7)
+    const upright = r.cards.map((c, i) => (i === 0 ? { ...c, body: c.body.replace(/역방향으로 나와서 '[^']*' 쪽으로 읽어요\. /, "") } : c));
     expect(validateTarotReading({ ...r, cards: upright }, rctx).join(" ")).toMatch(/역방향으로 읽지 않았어요/);
     const gloss = rctx.cards[0]!.kb.reversedModes.gloss[rctx.cards[0]!.reversedMode!]!;
     const byMode = r.cards.map((c, i) => (i === 0 ? { ...upright[0]!, body: `${upright[0]!.body} 지금은 ${gloss} 쪽으로 읽어요.` } : c));

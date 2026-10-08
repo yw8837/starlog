@@ -3,7 +3,7 @@ import type { z } from "zod";
 import { anthropicProvider } from "./anthropic";
 import type { Effort, ModelId } from "./config";
 import { mockProvider } from "./mock";
-import { isSoftViolation, softWarrantsRegeneration } from "./style";
+import { isSoftViolation, softWarrantsRegeneration, stripBold } from "./style";
 
 /**
  * Where readings come from. `anthropic` calls Claude; `mock` builds deterministic text from the
@@ -110,8 +110,35 @@ export interface Generated<T> {
   attempts: number;
 }
 
+type Path = ReadonlyArray<string | number>;
+const sajuBold = (p: Path) => (p[0] === "sections" && p[2] === "body") || p[0] === "glance";
+const TAROT_BOLD = new Set(["connection", "timing", "alternatives", "action"]);
+const tarotBold = (p: Path) => (p[0] === "cards" && p[2] === "body") || (TAROT_BOLD.has(String(p[0])) && p[1] === "body");
+/**
+ * The fields a task's screen shows with BoldText (reading-voice-2026-10 §2.2); every other task shows none. Never the
+ * observation: the 돌아보기 card shows it as plain text and history keeps its first 120 characters (review 2026-10-08).
+ */
+const BOLD_FIELDS: Partial<Record<TaskName, (path: Path) => boolean>> = { "saju-reading": sajuBold, "saju-topic-reading": sajuBold, "tarot-reading": tarotBold };
+
+/**
+ * A draft with its stray `**` taken out (review 2026-10-08): only the fields its screen shows bold keep the marks, so no
+ * check reads a sentence split by a mark, and no teaser, answer, message to send or daily card shows one. The reading
+ * validators read the kept marks themselves (the bold budget) and check the words without them.
+ */
+function withoutStrayBold<T>(task: TaskName, draft: T): T {
+  const keep = BOLD_FIELDS[task];
+  const walk = (value: unknown, path: Path): unknown => {
+    if (typeof value === "string") return keep?.(path) ? value : stripBold(value);
+    if (Array.isArray(value)) return value.map((item, i) => walk(item, [...path, i]));
+    if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, walk(item, [...path, key])]));
+    return value;
+  };
+  return walk(draft, []) as T;
+}
+
 /**
  * Generates, validates, and regenerates at most once, with the violations as feedback.
+ * - Every draft loses its stray bold marks first (withoutStrayBold): what is checked is what is returned.
  * - Regenerates only for a hard violation, or for soft findings under the ≥3 rule
  *   (softWarrantsRegeneration). A draft with fewer soft findings is returned as it is.
  * - A soft-only draft is paid for and usable, so it is kept. If the regeneration fails (hard
@@ -142,8 +169,9 @@ export async function generateValidated<T>(
     try {
       const result = await provider.generate(task, attempt, feedback, hooks);
       usage.push(...result.usage);
-      data = result.data;
-      violations = validate(result.data);
+      // once, before the checks read it, and as it is saved and returned
+      data = withoutStrayBold(task.name, result.data);
+      violations = validate(data);
     } catch (error) {
       if (!(error instanceof GenerationError) || error.code !== "QUALITY") {
         const failure = error instanceof GenerationError ? error : new GenerationError("UPSTREAM", [errorName(error)]);

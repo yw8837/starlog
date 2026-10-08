@@ -7,7 +7,8 @@ import { bareFirstTerms, glossed, outsideBrackets } from "./plainWords";
 import type { SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, cardLabel, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import type { DailyDraft, FollowUpAnswer, SajuGlance, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
-import { MODEL_NAMES, SOFT_PREFIX, aiTellViolations } from "./style";
+import { MODEL_NAMES, SOFT_PREFIX, aiTellViolations, allowBold } from "./style";
+import { sajuVoiceViolations, tarotVoiceViolations } from "./voice";
 
 /**
  * Post-generation checks. Each returns a list of violations in Korean (fed back to the model on the
@@ -18,8 +19,11 @@ import { MODEL_NAMES, SOFT_PREFIX, aiTellViolations } from "./style";
 
 // ---- text utilities ----
 
-/** Characters without whitespace (the unit of every length target). */
-export const charCount = (text: string) => text.replace(/\s/g, "").length;
+/** Characters without whitespace or bold marks (the unit of every length target). */
+export const charCount = (text: string) => text.replace(/\s|\*\*/g, "").length;
+
+/** A draft as every check but the voice's reads it: its words, without the bold marks (reading-voice-2026-10 §2.2). */
+const withoutBold = <T>(draft: T): T => JSON.parse(JSON.stringify(draft).replaceAll("**", "")) as T;
 
 export const TOLERANCE = 0.25;
 
@@ -325,7 +329,7 @@ export function cardSectionViolations(label: string, body: string, card: TarotCa
   if (card.orientation === "reversed") {
     const gloss = card.reversedMode ? card.kb.reversedModes.gloss[card.reversedMode] ?? "" : "";
     const readReversed = REVERSED_READ.test(body) || (gloss !== "" && mentions(body, gloss, 0.5));
-    if (!readReversed) out.push(`${label}은 역방향 카드인데 역방향으로 읽지 않았어요. 첫 문장에서 역방향이라고 밝히고 reversedMode의 뜻으로 읽어 주세요.`);
+    if (!readReversed) out.push(`${label}은 역방향 카드인데 역방향으로 읽지 않았어요. 그림 다음 문장에서 '역방향으로 나와서 ~'처럼 밝히고 reversedMode의 뜻으로 읽어 주세요.`);
   }
   if (card.orientation === "upright" && REVERSED_MARK.test(body)) out.push(`${label}은 정방향 카드인데 역방향처럼 썼어요.`);
 }
@@ -398,8 +402,9 @@ function paidBodyText(r: TarotReading): string[] {
   ];
 }
 
-export function validateTarotReading(r: TarotReading, ctx: TarotContext): string[] {
+export function validateTarotReading(draft: TarotReading, ctx: TarotContext): string[] {
   const out: string[] = [];
+  const r = withoutBold(draft);
   modelNameViolations(r, out);
   cardIdentityViolations(r.cards, ctx, out);
 
@@ -437,7 +442,9 @@ export function validateTarotReading(r: TarotReading, ctx: TarotContext): string
   inputRepeatViolations(paid, quotedInputs(ctx), out);
   actionVarietyViolations([r.action.body, r.timing.body, r.observation.body, r.messages.hint, ...r.scenarios.items.map((i) => i.body), ...(ctx.relational ? [] : r.messages.items)], out);
   inventedAmountViolations(paid, userTextOf(ctx), out);
-  aiTellViolations([paid], out);
+  // one bold phrase a card section is not formatting; any other bold is, and the voice check says where
+  aiTellViolations([paidBodyText({ ...draft, cards: draft.cards.map((c) => ({ ...c, body: allowBold(c.body, 1) })) }).join("\n")], out);
+  tarotVoiceViolations(draft, out);
   return out;
 }
 
@@ -553,7 +560,7 @@ export function allowedFactViolations(
   }
   if (MARRIAGE_VERDICT.test(text.replace(QUOTED, "''"))) out.push("결혼의 성사·불발이나 시기를 단정한 문장이 있어요. 결혼을 다루는 방식까지만 말해 주세요.");
   if (sentences(text).some((s) => GUNGHAP_CLAIM.test(s) && !GUNGHAP_DECLINED.test(s))) out.push("궁합을 단정한 문장이 있어요. 두 사람이 잘 맞는지는 말하지 마세요.");
-  if (sentences(text).some((s) => SCHOOL_LABELS.test(s) && !NEGATED.test(s))) out.push("신강·신약·용신·격국 같은 라벨을 단정했어요. 라벨은 쓰지 않았다고만 밝혀 주세요.");
+  if (sentences(text).some((s) => SCHOOL_LABELS.test(s) && !NEGATED.test(s))) out.push("신강·신약·용신·격국 같은 라벨을 단정했어요. 라벨을 쓰지 않았다는 말은 계산 기준 절에서 한 번만 해 주세요.");
   if (!hasHangul(text)) out.push("한국어로 써 주세요.");
 }
 
@@ -737,17 +744,20 @@ export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): stri
   return out;
 }
 
-export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[] {
+export function validateSajuReading(draft: SajuReading, facts: SajuFactSet): string[] {
   const out: string[] = [];
+  const r = withoutBold(draft);
   modelNameViolations(r, out);
   if (r.sections.length !== SAJU_PROLOGUE_SECTIONS.length) out.push(`sections는 정확히 ${SAJU_PROLOGUE_SECTIONS.length}개여야 해요.`);
+  const basisIndex = SAJU_PROLOGUE_SECTIONS.length - 1;
   r.sections.forEach((section, i) => {
     const n = charCount(section.body);
     const heading = SAJU_PROLOGUE_SECTIONS[i] ?? `${i + 1}번째 절`;
-    if (n < 150 || n > 900) out.push(`'${heading}' 절이 공백 제외 ${n}자예요. 300~550자로 써 주세요.`);
+    // body sections 300~450자 in the reading voice (owner 2026-10-08), the 계산 기준 절 as before
+    if (n < 150 || n > 900) out.push(`'${heading}' 절이 공백 제외 ${n}자예요. ${i === basisIndex ? "300~550" : "300~450"}자로 써 주세요.`);
   });
   const total = r.sections.reduce((sum, s) => sum + charCount(s.body), 0);
-  if (total < 2500 * (1 - TOLERANCE) || total > 3500 * (1 + TOLERANCE)) out.push(`프롤로그 분량이 공백 제외 ${total}자예요. 2,500~3,500자로 맞춰 주세요.`);
+  if (total < 2100 * (1 - TOLERANCE) || total > 3200 * (1 + TOLERANCE)) out.push(`프롤로그 분량이 공백 제외 ${total}자예요. 2,100~3,200자로 맞춰 주세요.`);
   const basis = r.sections.at(-1)?.body ?? "";
   if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(basis)) out.push("계산 기준 절에 태어난 시를 몰라 시주 없이 읽었다는 한계를 넣어 주세요.");
   observationViolations(r.observation.body, out);
@@ -767,8 +777,14 @@ export function validateSajuReading(r: SajuReading, facts: SajuFactSet): string[
   voiceViolations([...glance, ...bodies, ...r.followUps].join("\n"), out);
   profileUseViolations(bodies.join("\n"), facts, out);
   actionVarietyViolations(bodies, out);
-  aiTellViolations(bodies, out);
-  plainWordViolations([...glance, ...bodies], out);
+  // one or two bold phrases a body section are not formatting; the 계산 기준 절 and the observation have none
+  aiTellViolations([...draft.sections.map((s, i) => allowBold(s.body, i === basisIndex ? 0 : 2)), draft.observation.body], out);
+  // the 계산 기준 절 may name its terms as they are (reading-voice-2026-10 §4.4): the body says them in plain words
+  plainWordViolations([...glance, ...bodies.filter((_, i) => i !== r.sections.length - 1)], out);
+  sajuVoiceViolations({
+    headings: SAJU_PROLOGUE_SECTIONS.slice(0, basisIndex), bodies: draft.sections.slice(0, basisIndex).map((s) => s.body),
+    basis: draft.sections[basisIndex]?.body ?? "", observation: draft.observation.body, glance: draft.glance,
+  }, out);
   return out;
 }
 

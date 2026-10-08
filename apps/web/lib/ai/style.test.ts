@@ -5,7 +5,7 @@ import { SAJU_SYSTEM } from "./prompts/saju";
 import { TAROT_SYSTEM } from "./prompts/tarot";
 import { GenerationError, generateValidated, type ReadingProvider } from "./provider";
 import { TarotTeaserDraftSchema } from "./schemas";
-import { AI_TELL_THRESHOLD, STYLE_RULES, aiTellViolations, aiTells, isSoftViolation, softWarrantsRegeneration } from "./style";
+import { AI_TELL_THRESHOLD, STYLE_RULES, VOICE_PREFIX, aiTellViolations, aiTells, allowBold, isSoftViolation, softWarrantsRegeneration, stripBold } from "./style";
 
 /** Built from the style rules' "나쁜 예" lines plus the other tells they name. */
 const SLOPPY = [
@@ -158,6 +158,47 @@ describe("soft violations in generateValidated", () => {
     expect(softWarrantsRegeneration([QUOTE, MOVES, AMOUNT])).toBe(true);
     expect(softWarrantsRegeneration([soft])).toBe(true);
     expect(softWarrantsRegeneration(["길이가 짧아요"])).toBe(false);
+  });
+
+  // reading-voice-2026-10 §4.3: measured first, so a voice finding is soft but never a regeneration of its own
+  const VOICE = [1, 2, 3, 4, 5].map((n) => `${VOICE_PREFIX}목소리 ${n}`);
+  it("keeps voice findings soft and out of the ≥3 rule, however many", () => {
+    expect(VOICE.every(isSoftViolation)).toBe(true);
+    expect(softWarrantsRegeneration(VOICE)).toBe(false);
+    expect(softWarrantsRegeneration([...VOICE, QUOTE, MOVES])).toBe(false);
+    expect(softWarrantsRegeneration([...VOICE, QUOTE, MOVES, AMOUNT])).toBe(true);
+  });
+
+  it("returns a draft with only voice findings at once, and leaves them out of a QUALITY error", async () => {
+    const { provider, calls } = drafts();
+    const result = await generateValidated(provider, task, findings({ 1: VOICE }));
+    expect(calls).toEqual([1]);
+    expect(result.attempts).toBe(1);
+    const error = await generateValidated(drafts().provider, task, () => ["길이가 짧아요", ...VOICE]).catch((e: unknown) => e);
+    expect((error as GenerationError).detail).toEqual(["길이가 짧아요"]);
+  });
+});
+
+describe("bold (reading-voice-2026-10 §2.2)", () => {
+  it("is allowed by the style rules only where a task's format allows it; the other marks stay banned", () => {
+    expect(STYLE_RULES).toContain("굵은 글씨(**구**)는 작업별 형식이 허락한 칸에서만");
+    expect(STYLE_RULES).toMatch(/글머리표, 번호, 굵은 글씨, 이모지, 줄표\(—\)/);
+  });
+
+  it("is not formatting to the AI-tell score within a part's budget, and is beyond it", () => {
+    const two = "결정 앞에서 **오래 저울질하는** 편이에요. 다만 **딱 한 가지 기준**만 정해 보세요.";
+    expect(aiTells(two).map((h) => h.id)).toContain("C");
+    expect(aiTells(allowBold(two, 2)).map((h) => h.id)).not.toContain("C");
+    expect(allowBold(two, 2)).toBe(stripBold(two));
+    // over the budget, a question, too long or too short, or marks that do not pair up: left as they are, so C counts them
+    for (const [text, max] of [
+      [two, 1],
+      ["**왜 늦어질까요?** 하고 묻게 되죠.", 2],
+      ["**처음 맡은 일을 끝까지 붙들고 하나하나 확인하면서 다듬는** 편이에요.", 2],
+      ["**굵게** 써요.", 2],
+      ["**끝까지 마쳤는지에서 갈려요.", 2],
+    ] as const) expect(aiTells(allowBold(text, max)).map((h) => h.id), text).toContain("C");
+    expect(aiTells("**굵게 할 핵심 구**").map((h) => h.id)).toContain("C");
   });
 });
 

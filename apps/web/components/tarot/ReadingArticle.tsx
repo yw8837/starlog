@@ -1,3 +1,5 @@
+import { BoldText } from "@/components/reading/BoldText";
+import { stripBold } from "@/lib/reading/bold";
 import type { TarotReadingData } from "@/lib/reading/types";
 import { partialTarotReading } from "@/lib/reading/validate";
 import { CopyButton } from "./CopyButton";
@@ -14,7 +16,8 @@ type ReadingArticleProps = {
 /**
  * The opened reading: verdict callout, then every paid section in order. A saved reading may be
  * partial (an older version, edited storage): whatever part is missing or malformed is left out
- * instead of breaking the page (the chapter page says the reading is incomplete).
+ * instead of breaking the page (the chapter page says the reading is incomplete). The prose sections
+ * show bold; the verdict, branches, messages and avoid list never do, and a copied message is plain text.
  */
 export function ReadingArticle({ paid }: ReadingArticleProps) {
   const parts = partialTarotReading(paid);
@@ -25,7 +28,7 @@ export function ReadingArticle({ paid }: ReadingArticleProps) {
           <p id="verdict-label" className={s.verdictLabel}>
             한 줄 결론
           </p>
-          <p className={s.verdictText}>{parts.verdict}</p>
+          <p className={s.verdictText}>{stripBold(parts.verdict)}</p>
         </aside>
       ) : null}
 
@@ -33,14 +36,18 @@ export function ReadingArticle({ paid }: ReadingArticleProps) {
         <Paper key={card.cardId} as="article">
           <p className={s.eyebrow}>{card.position}</p>
           <h2 className={s.heading}>{card.heading}</h2>
-          <p className={s.prose}>{card.body}</p>
+          <p className={s.prose}>
+            <BoldText text={card.body} />
+          </p>
         </Paper>
       ))}
 
       {parts.sections.map((section) => (
         <Paper key={section.heading}>
           <h2 className={s.heading}>{section.heading}</h2>
-          <p className={s.prose}>{section.body}</p>
+          <p className={s.prose}>
+            <BoldText text={section.body} />
+          </p>
         </Paper>
       ))}
 
@@ -50,8 +57,8 @@ export function ReadingArticle({ paid }: ReadingArticleProps) {
           <ul className={s.scenarios}>
             {parts.scenarios.items.map((item) => (
               <li key={item.label} className={s.scenario}>
-                <h3 className={s.scenarioLabel}>{item.label}</h3>
-                <p>{item.body}</p>
+                <h3 className={s.scenarioLabel}>{stripBold(item.label)}</h3>
+                <p>{stripBold(item.body)}</p>
               </li>
             ))}
           </ul>
@@ -64,12 +71,12 @@ export function ReadingArticle({ paid }: ReadingArticleProps) {
           <ol className={s.messages}>
             {parts.messages.items.map((message, i) => (
               <li key={message} className={s.message}>
-                <p className={s.quote}>{message}</p>
-                <CopyButton text={message} label={`첫 문장 ${i + 1} 복사하기`} className={s.copy} />
+                <p className={s.quote}>{stripBold(message)}</p>
+                <CopyButton text={stripBold(message)} label={`첫 문장 ${i + 1} 복사하기`} className={s.copy} />
               </li>
             ))}
           </ol>
-          {parts.messages.hint ? <p className={s.hint}>{parts.messages.hint}</p> : null}
+          {parts.messages.hint ? <p className={s.hint}>{stripBold(parts.messages.hint)}</p> : null}
         </Paper>
       ) : null}
 
@@ -78,7 +85,7 @@ export function ReadingArticle({ paid }: ReadingArticleProps) {
           <h2 className={s.heading}>{parts.avoid.heading}</h2>
           <ul className={s.avoid}>
             {parts.avoid.items.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item}>{stripBold(item)}</li>
             ))}
           </ul>
         </Paper>
@@ -87,7 +94,9 @@ export function ReadingArticle({ paid }: ReadingArticleProps) {
       {parts.alternatives ? (
         <Paper>
           <h2 className={s.heading}>{parts.alternatives.heading}</h2>
-          <p className={s.prose}>{parts.alternatives.body}</p>
+          <p className={s.prose}>
+            <BoldText text={parts.alternatives.body} />
+          </p>
         </Paper>
       ) : null}
 
@@ -99,7 +108,9 @@ export function ReadingArticle({ paid }: ReadingArticleProps) {
             </svg>
             {parts.action.heading}
           </h2>
-          <p className={s.prose}>{parts.action.body}</p>
+          <p className={s.prose}>
+            <BoldText text={parts.action.body} />
+          </p>
         </Paper>
       ) : null}
     </div>

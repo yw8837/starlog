@@ -130,17 +130,21 @@ export const TOPIC_SECTIONS: Readonly<Record<SajuTopicId, readonly string[]>> = 
 /** The locked list on the chart page: the 한눈에 보기 card, six sections and the observation. */
 export const topicLockedToc = (topic: SajuTopicId): string[] => [SAJU_GLANCE_HEADING, ...TOPIC_SECTIONS[topic], TOPIC_OBSERVATION_HEADING];
 
-/** Length targets per section (non-space characters, spec §6.2), in section order. */
+/**
+ * Length targets per section (non-space characters, spec §6.2), in section order. 2~5절 at 350~480자 since the reading voice
+ * (docs/research/reading-voice-2026-10.md §5, owner 2026-10-08), as real readings already wrote them (374~463자). 6절 at
+ * 200~400자 since the body's disclaimers moved into it (review 2026-10-08): a 시 모름 + 경계 chart's limits alone run 409자.
+ */
 export const TOPIC_SECTION_LENGTH: ReadonlyArray<readonly [number, number]> = Object.freeze([
   [300, 400],
-  [500, 650],
-  [500, 650],
-  [500, 650],
-  [500, 650],
-  [200, 350],
+  [350, 480],
+  [350, 480],
+  [350, 480],
+  [350, 480],
+  [200, 400],
 ]);
-/** The whole reading (target 3,000, like 전체 흐름's SITE.reading.approxChars.saju). */
-export const TOPIC_TOTAL_LENGTH = [2500, 3350] as const;
+/** The whole reading: the sections' targets added up, about. */
+export const TOPIC_TOTAL_LENGTH = [1900, 2700] as const;
 
 // ---- who sees the topics (spec §13, §2) ----
 

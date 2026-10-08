@@ -1,3 +1,4 @@
+import { BoldText } from "@/components/reading/BoldText";
 import type { SajuGlance } from "@/lib/reading/types";
 import { SAJU_GLANCE_ACTION_LABEL, SAJU_GLANCE_HEADING, SAJU_GLANCE_LABELS } from "@/lib/sajuPrologue";
 import s from "./GlanceCard.module.css";
@@ -34,21 +35,27 @@ export function GlanceCard({ glance }: { glance: SajuGlance }) {
               </span>
               <span>{item.label}</span>
             </dt>
-            <dd className={s.text}>{item.text}</dd>
+            <dd className={s.text}>
+              <BoldText text={item.text} />
+            </dd>
           </div>
         ))}
         <div className={`${s.item} ${s.year}`}>
           <dt className={s.label}>
             <span>{SAJU_GLANCE_LABELS.thisYear}</span>
           </dt>
-          <dd className={s.text}>{glance.thisYear}</dd>
+          <dd className={s.text}>
+            <BoldText text={glance.thisYear} />
+          </dd>
           <dd className={`${s.text} ${s.then}`}>
             {/* the arrow is the label on screen; a screen reader hears it by name */}
             <span className="sr-only">{`${SAJU_GLANCE_ACTION_LABEL} `}</span>
             <span className={s.mark} aria-hidden="true">
               {MARK.then}
             </span>
-            <span>{glance.thisYearAction}</span>
+            <span>
+              <BoldText text={glance.thisYearAction} />
+            </span>
           </dd>
         </div>
       </dl>

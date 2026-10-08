@@ -175,7 +175,8 @@ describe("facts added before launch (docs/research/analysis-gap-review-2026-10.m
   it("N1·N2: a complete natal 삼합 in place of its 반합 pairs, and a complete 방합", () => {
     const fire = factsOf({ year: 1966, month: 11, day: 3 }); // 丙午 戊戌 丙寅
     expect(fire.relations.filter((r) => /합\(/.test(r.type)).map(lineOf)).toEqual(["삼합(三合, 불 기운) 午(년지)-戌(월지)-寅(일지)"]);
-    expect(fire.relations.find((r) => r.type.startsWith("삼합"))!.note).toContain("판단하지 않음");
+    // neutral, so no body copies a disclaimer from it (review 2026-10-08); the preamble says not to claim 化
+    expect(fire.relations.find((r) => r.type.startsWith("삼합"))!.note).toBe("세 글자가 모두 있음");
     const summer = factsOf({ year: 1965, month: 7, day: 15 }); // 乙巳 癸未 庚午
     expect(summer.relations.map(lineOf)).toEqual(["육합(六合) 未(월지)-午(일지)", "천간합(天干合) 乙(년간)-庚(일간)", "방합(方合, 불 기운) 巳(년지)-未(월지)-午(일지)"]);
   });

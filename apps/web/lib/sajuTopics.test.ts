@@ -57,7 +57,9 @@ describe("the five topics", () => {
     expect(TOPIC_SECTIONS.love[1]).toBe("사랑할 때의 나 · 가장 가까운 자리와 마음");
     expect(TOPIC_OBSERVATION_HEADING).toBe(SAJU_OBSERVATION_HEADING);
     expect(TOPIC_SECTION_LENGTH).toHaveLength(6);
-    expect(TOPIC_TOTAL_LENGTH).toEqual([2500, 3350]);
+    // reading-voice-2026-10 §5 (owner 2026-10-08): 2~5절 at 350~480자, as real readings already wrote them, and the total with them
+    expect(TOPIC_SECTION_LENGTH).toEqual([[300, 400], [350, 480], [350, 480], [350, 480], [350, 480], [200, 400]]);
+    expect(TOPIC_TOTAL_LENGTH).toEqual([1900, 2700]);
     expect(TOPIC_SWITCH_HELP).toBe(`새로 여는 맛보기는 하루 ${SITE.beta.teaserPerDay}번까지 볼 수 있어요. 이미 본 맛보기는 횟수를 쓰지 않아요.`);
   });
 

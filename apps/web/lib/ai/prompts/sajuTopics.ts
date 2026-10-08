@@ -5,7 +5,7 @@ import type { SajuSituationId, SajuTopicId } from "@/lib/reading/types";
 import { situationOf } from "@/lib/sajuTopics";
 import type { HistoryItem } from "@/lib/ai/history";
 import {
-  PLACE_LABEL, annualToLuck, buildFactSet, glyphDisplay, layerToNatal, luckStarts, natalPillars, relationsTo, tenGod, yearGanzhi,
+  PLACE_LABEL, annualToLuck, buildFactSet, glyphDisplay, layerToNatal, luckStarts, natalPillars, relationsTo, tenGod, yearGanzhi, ymKo,
   type LabelledMonth, type Placed, type PlacedPillar, type Relation, type SajuFactSet,
 } from "@/lib/ai/prompts/saju";
 
@@ -262,7 +262,7 @@ export function buildTopicFactSet(
   const dayRelations = base.relations.filter(touchesDay).map(relationLine);
   const current = base.luck?.current ?? null;
   const luckLine = current
-    ? `지금 대운 ${current.ko}(${current.gz}) ${current.from}~${current.to}: 천간 ${current.stemTenGod}(${groupOf(current.stemTenGod)}), 지지 본기 ${current.branchMainTenGod}(${groupOf(current.branchMainTenGod)})`
+    ? `지금 대운 ${current.ko}(${current.gz}) ${ymKo(current.from!)}~${ymKo(current.to!)}: 천간 ${current.stemTenGod}(${groupOf(current.stemTenGod)}), 지지 본기 ${current.branchMainTenGod}(${groupOf(current.branchMainTenGod)})`
     : base.luck
       ? `첫 대운이 시작되기 전이에요. ${base.luck.start}`
       : "태어난 시각을 몰라 연주나 월주가 하나로 정해지지 않아 대운은 계산하지 않았어요";

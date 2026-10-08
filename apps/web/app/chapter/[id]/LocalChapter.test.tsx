@@ -96,6 +96,19 @@ describe("LocalChapter for a saju reading with 한눈에 보기 (owner 2026-10-0
     expect(screen.queryByRole("heading", { name: "이 기록의 일부를 읽지 못했어요" })).toBeNull();
   });
 
+  it("shows a section's **구** in bold, escapes the rest, and drops marks that do not pair up (reading-voice-2026-10 §2.2)", () => {
+    const sections = [
+      { heading: "타고난 바탕 · 태어난 계절이 나에게 주는 힘", body: "쉬는 날에도 **손을 놓지 못하기** 쉬워요. <b>그대로</b>" },
+      { heading: "많은 기운·적은 기운 · 다섯 기운이 놓인 모양과 숨은 기운", body: "**짝이 맞지 않는 표시예요." },
+    ];
+    seed([{ ...SAJU_CHAPTER, reading: { sections, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "신호" }, glance: GLANCE, followUps: [] } }]);
+    render(<LocalChapter id="abcdef31" />);
+    expect(screen.getByText("손을 놓지 못하기").tagName).toBe("STRONG");
+    expect(screen.getByText("손을 놓지 못하기").parentElement?.textContent).toBe("쉬는 날에도 손을 놓지 못하기 쉬워요. <b>그대로</b>");
+    expect(screen.getByText("짝이 맞지 않는 표시예요.").tagName).toBe("P");
+    expect(document.getElementById("chapter-reading")!.textContent).not.toContain("**");
+  });
+
   it("opens a reading saved before the card as it was, without a card", () => {
     seed([{ ...SAJU_CHAPTER, reading: { sections: SECTIONS, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "신호" }, followUps: [] } }]);
     render(<LocalChapter id="abcdef31" />);

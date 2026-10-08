@@ -2,6 +2,7 @@
 
 import { useMemo, type ReactNode } from "react";
 import { AiNote } from "@/components/reading/AiNote";
+import { BoldText } from "@/components/reading/BoldText";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { GlanceCard } from "@/components/saju/GlanceCard";
 import { InputLine } from "@/components/saju/InputLine";
@@ -77,7 +78,9 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
                   {label ? <span className={s.sectionLabel}>{label}</span> : null}
                   <span>{heading}</span>
                 </h2>
-                <p className={s.prose}>{section.body}</p>
+                <p className={s.prose}>
+                  <BoldText text={section.body} />
+                </p>
               </Paper>
             );
           })}

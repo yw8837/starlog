@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { buildRequest } from "./anthropic";
 import { generationSetting, KIND_ENV } from "./config";
-import { SAJU_PLAIN_RULES, SAJU_PREAMBLE, SAJU_SYSTEM } from "./prompts/saju";
+import { SAJU_PLAIN_RULES, SAJU_PREAMBLE, SAJU_SYSTEM, SAJU_VOICE_RULES } from "./prompts/saju";
 import { POSITION_LENS, TAROT_PREAMBLE, TAROT_SYSTEM, buildTarotContext } from "./prompts/tarot";
 
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -19,8 +19,8 @@ describe("standard prompts stay byte for byte", () => {
 describe("premium plumbing", () => {
   it("composes the standard systems from their preambles", () => {
     expect(TAROT_SYSTEM.startsWith(`${TAROT_PREAMBLE}\n\n# 작업별 형식`)).toBe(true);
-    // 2026-10-07: the plain-words block sits between them (SAJU_PREAMBLE, which 신년운세 builds on, is unchanged)
-    expect(SAJU_SYSTEM.startsWith(`${SAJU_PREAMBLE}\n\n${SAJU_PLAIN_RULES}\n\n# 작업별 형식`)).toBe(true);
+    // 2026-10-07: the plain-words block sits between them; 2026-10-08: the reading voice after it (both standard and topic only)
+    expect(SAJU_SYSTEM.startsWith(`${SAJU_PREAMBLE}\n\n${SAJU_PLAIN_RULES}\n\n${SAJU_VOICE_RULES}\n\n# 작업별 형식`)).toBe(true);
     expect(TAROT_PREAMBLE).not.toContain("## teaser");
   });
 

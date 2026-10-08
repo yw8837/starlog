@@ -2,8 +2,8 @@ import "server-only";
 import type { SajuElement } from "@starlog/core";
 import type { KbCard, TopicAngle } from "@/lib/kb";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
-import { glossOnce, glossText } from "./plainWords";
-import { ELEMENT_HANJA, ELEMENT_WORD, ORDER, SAJU_OBSERVATION_HEADING, type SajuFactSet } from "./prompts/saju";
+import { PLAIN_WORDS, glossOnce, glossText } from "./plainWords";
+import { ELEMENT_WORD, ORDER, SAJU_OBSERVATION_HEADING, ymKo, type SajuFactSet } from "./prompts/saju";
 import { groupOf, type GroupName } from "./prompts/sajuTopics";
 import { UNSURE_OPTIONS, WHEN_KO, cardLabel, onTopic, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import { GenerationError, type GenerationHooks, type GenerationTask, type ReadingProvider } from "./provider";
@@ -71,16 +71,15 @@ const count = (text: string) => text.replace(/\s/g, "").length;
 export function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: number, withNote: boolean, extra: string[] = [], budget = SECTION_BUDGET): string {
   const facts = factsOf(card.kb);
   const fact = facts[factIndex % facts.length]!;
-  const required: string[] = [];
-  if (card.orientation === "reversed") required.push(`'${card.position}' 자리의 카드는 역방향으로 나왔어요.`);
-  required.push(factSentence(fact.ko));
-  if (card.reversedMode) required.push(`역방향이라 '${card.kb.reversedModes.gloss[card.reversedMode] ?? card.kb.core.oneLine.reversed}' 쪽으로 읽어요.`);
+  // the picture first, then 역방향 in the next sentence (reading-voice-2026-10 §2.7), never a lone "… 역방향으로 나왔어요."
+  const required: string[] = [factSentence(fact.ko)];
+  if (card.reversedMode) required.push(`역방향으로 나와서 '${card.kb.reversedModes.gloss[card.reversedMode] ?? card.kb.core.oneLine.reversed}' 쪽으로 읽어요.`);
   for (const chip of chipsFor(ctx, card.slot)) required.push(`'${chip}'${hasFinal(chip) ? "이라고" : "라고"} 골랐으니 이 그림을 그 상황에 비춰 보면 좋아요.`);
   if (withNote && ctx.note) required.push(`메모에 '${ctx.note}'라고 적었죠.`);
   const optional = [
     card.kb.positionHints[card.position]?.[card.orientation],
     angleText(card, ctx.angles[0] ?? "self"),
-    `이 자리에서는 ${card.kb.core[card.orientation].join(", ")} 같은 결을 떠올려 보면 좋아요.`,
+    `${card.kb.core[card.orientation].join(", ")} 같은 결을 떠올려 보면 좋아요.`,
     ...extra,
     // The card's other image facts come last: a card whose KB text is mostly off this topic (8 of
     // Wands' 연락·소식 on a health reading) still reaches the section length with what it shows.
@@ -130,7 +129,7 @@ function actionOf(card: TarotCardContext, ctx?: TarotContext, index = 0): string
 
 export function mockTarotTeaser(ctx: TarotContext): TarotTeaserDraft {
   const first = ctx.cards[0]!;
-  const extra = [`한 줄로 정리하면 ${first.kb.core.oneLine[first.orientation]}로 읽어요.`, `${first.kb.keywordsKo.join(", ")} 같은 말이 이 자리의 열쇠예요.`];
+  const extra = [`내 상황에 비춰 보면 ${first.kb.core.oneLine[first.orientation]}로 읽어요.`, `${first.kb.keywordsKo.join(", ")} 같은 말을 오늘 하루 곁에 두면 좋아요.`];
   const body = [cardBody(ctx, first, 0, true, extra, 300), `오늘은 ${actionOf(first, ctx)}`].join(" ");
   return {
     cards: ctx.cards.map((c) => ({ position: c.position, cardId: c.cardId, keyword: c.kb.keywordsKo[0] ?? c.name })),
@@ -150,7 +149,7 @@ export function mockTarotReading(ctx: TarotContext): TarotReading {
     position: card.position,
     cardId: card.cardId,
     heading: `${card.name} · ${card.kb.keywordsKo[0] ?? card.position}`,
-    body: cardBody(ctx, card, 1, card.slot === 0, [`한 줄로 정리하면 ${card.kb.core.oneLine[card.orientation]}로 읽어요.`]),
+    body: cardBody(ctx, card, 1, card.slot === 0, [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}로 읽어요.`]),
   }));
 
   const labels = ctx.relational ? ["답이 빨리 오면", "답이 늦게 오면", "답이 없으면"] : ["흐름이 좋아지면", "그대로 머물면", "잠시 막히면"];
@@ -173,7 +172,9 @@ export function mockTarotReading(ctx: TarotContext): TarotReading {
       heading: h.scenarios,
       items: labels.map((label, i) => {
         const line = firstSentence(angleText(scenarioCards[i]!, angle));
-        return { label, body: `${scenarioCards[i]!.name} 그림이 이 갈래의 기준이 돼요. ${onTopic(ctx, line) ? line : "서두르지 않고 지금 할 수 있는 한 가지부터 하는 흐름이에요."}` };
+        // a picture simile ("…처럼") in one branch at most (§2.5)
+        const usable = onTopic(ctx, line) && (i === 0 || !line.includes("처럼"));
+        return { label, body: `${scenarioCards[i]!.name} 그림이 이 갈래의 기준이 돼요. ${usable ? line : "서두르지 않고 지금 할 수 있는 한 가지부터 하는 흐름이에요."}` };
       }),
     },
     messages: {
@@ -207,13 +208,14 @@ export function mockDaily(ctx: TarotContext): DailyDraft {
     keyword,
     summary: summary.replace(/\s/g, "").length <= 30 ? summary : "오늘은 작은 한 걸음이면 충분해요.",
     body: [
-      orientation === "reversed" ? "오늘의 카드는 역방향으로 나왔어요." : "",
       factSentence(facts[0]!.ko),
+      // 역방향 in the sentence after the picture (reading-voice-2026-10 §2.7)
+      orientation === "reversed" ? "역방향으로 나와서 오늘은 이 그림의 뜻을 안쪽에서 한 번 더 살펴봐요." : "",
       facts[1] ? factSentence(facts[1].ko) : "",
       kb.positionHints["오늘의 한 장"]?.[orientation] ?? kb.core.oneLine[orientation],
       kb.topics.self[orientation],
       `오늘은 ${kb.keywordsKo.slice(0, 3).join(", ")} 같은 말을 마음 한쪽에 두고 하루를 보내 보세요.`,
-      `한 줄로 정리하면 ${kb.core.oneLine[orientation]}로 읽어요.`,
+      `오늘 하루에 비춰 보면 ${kb.core.oneLine[orientation]}로 읽어요.`,
       `작은 일부터 하나씩 해 보면, 저녁에는 오늘이 어떤 날이었는지 조금 더 또렷해질 거예요.`,
     ].filter(Boolean).join(" "),
     areas: {
@@ -266,10 +268,10 @@ function profileSentence(f: SajuFactSet): string {
   const states = [p.workStatus, p.loveStatus].filter((v) => v && v !== "잘 모르겠어요");
   const parts = [
     states.length ? `지금은 ${josa(states.join(", "), "이라고", "라고")} 알려 줬죠.` : "",
-    p.concern ? `'${p.concern}'라는 고민에는 이 명식의 두드러진 기운부터 차분히 비춰 볼게요.` : "",
+    p.concern ? `'${p.concern}'라는 고민도 이 흐름 안에서 함께 읽었어요.` : "",
     // dating, engaged or married: the reading covers 결혼 as a way of living together, never its timing
     p.loveStatus && ["연애 중", "결혼 준비 중", "기혼"].includes(p.loveStatus)
-      ? "결혼을 생각할 때도 이 명식은 함께 사는 생활의 크고 작은 결정을 둘이 나눠 정하는 쪽으로 읽어요."
+      ? "결혼을 생각할 때도 이 사주는 함께 사는 생활의 크고 작은 결정을 둘이 나눠 정하는 쪽으로 읽어요."
       : "",
   ];
   return parts.filter(Boolean).join(" ");
@@ -290,138 +292,189 @@ export function mockSajuTeaser(f: SajuFactSet): SajuTeaserDraft {
       `태어난 달의 지지는 ${month.branch.display}, 십성으로는 ${month.branch.mainTenGod} 자리예요.`,
       // Always there, so a chart with no missing element and no user context still reaches the length.
       `태어난 날의 지지 ${day.branch.display}의 십성은 ${josa(day.branch.mainTenGod, "이고", "고")}, 12운성으로는 ${day.branch.twelveStage} 자리예요.`,
-      "맡은 일을 내 방식으로 정리해 온 편이라면 이 구조와 맞물리고, 정해진 틀을 따르는 쪽이 늘 편했다면 이 부분은 덜 맞는 풀이예요.",
+      // the scene question confirms it (reading-voice-2026-10: no "이 구조와 맞물리고 … 덜 맞는 풀이예요")
+      "맡은 일을 누가 정해 주기 전에 내 방식으로 먼저 정리해 두는 편 아닌가요? 그렇다면 이 사주의 바탕이 그대로 드러난 거예요.",
       profileSentence(f),
       f.input.timeKnown ? "" : "태어난 시를 몰라 시주 없이 여섯 글자로 읽었어요.",
     ].filter(Boolean).join(" "),
   };
 }
 
-/** What each 오행 makes easy, how its absence shows, and one everyday act that makes up for it (the mock's plain reading of 오행). */
-const ELEMENT_PLAIN: Record<SajuElement, { ease: string; slip: string; remedy: string }> = {
-  목: { ease: "새로 시작하고 키워 가는 일", slip: "새로 시작하는 일은 자꾸 미루기 쉬운 편이에요", remedy: "미뤄 둔 새 일 하나를 골라 첫 단계만 시작해 보세요." },
-  화: { ease: "드러내고 알리는 일", slip: "해 둔 일을 드러내고 알리는 데는 머뭇거리기 쉬운 편이에요", remedy: "해 둔 일 하나를 가까운 사람에게 먼저 보여 주세요." },
-  토: { ease: "버티며 사이를 잇는 일", slip: "쉬지 않고 버티다 한꺼번에 지치기 쉬운 편이에요", remedy: "하루 일정에 아무것도 넣지 않는 빈칸을 먼저 만들어 두세요." },
-  금: { ease: "정리하고 마무리하는 일", slip: "정리하고 마무리하는 일은 뒤로 밀리기 쉬운 편이에요", remedy: "하루를 마칠 때 끝낸 일 하나를 골라 깔끔히 닫아 두세요." },
-  수: { ease: "생각하고 알아보는 일", slip: "멈춰서 따져 보는 시간 없이 서두르기 쉬운 편이에요", remedy: "큰 결정은 하룻밤 묵힌 뒤 한 번 더 알아보고 정해 보세요." },
+/**
+ * What each 오행 makes easy, the habit its absence shows (its core in bold), and one everyday act that makes up for it (the
+ * mock's plain reading of 오행).
+ */
+export const ELEMENT_PLAIN: Record<SajuElement, { ease: string; care: string; remedy: string }> = {
+  목: { ease: "새로 시작하고 키워 가는 일", care: "새로 시작하는 일을 **자꾸 뒤로 미루기**", remedy: "미뤄 둔 새 일 하나를 골라 첫 단계만 시작해 보세요." },
+  화: { ease: "드러내고 알리는 일", care: "해 둔 일을 **드러내 알리는 데 머뭇거리기**", remedy: "해 둔 일 하나를 가까운 사람에게 먼저 보여 주세요." },
+  토: { ease: "버티며 사이를 잇는 일", care: "쉬지 않고 버티다 **한꺼번에 지치기**", remedy: "하루 일정에 아무것도 넣지 않는 빈칸을 먼저 만들어 두세요." },
+  금: { ease: "정리하고 마무리하는 일", care: "정리하고 마무리하는 일을 **뒤로 미루기**", remedy: "하루를 마칠 때 끝낸 일 하나를 골라 깔끔히 닫아 두세요." },
+  수: { ease: "생각하고 알아보는 일", care: "따져 볼 시간 없이 **서둘러 정하기**", remedy: "큰 결정은 하룻밤 묵힌 뒤 한 번 더 알아보고 정해 보세요." },
 };
 
-/** Where this year's ten god puts weight, and one thing to do with it. */
-const YEAR_PLAIN: Record<GroupName, { scene: string; action: string }> = {
-  비겁: { scene: "사람과 어울리며 함께하는 일", action: "함께할 사람과 맡을 몫부터 나눠 정해 보세요." },
-  식상: { scene: "만들고 드러내는 일", action: "만들어 둔 것 하나를 밖에 내보여 보세요." },
-  재성: { scene: "돈과 시간을 다루는 일", action: "들고 나는 돈과 시간을 한 번 점검해 보세요." },
-  관성: { scene: "맡은 책임을 다지는 일", action: "맡은 일의 기준을 한 줄로 정해 두세요." },
-  인성: { scene: "배우고 준비하는 일", action: "배우고 싶던 것 하나를 골라 신청해 보세요." },
+/** What this year's ten god brings more of, the mind it brings, and one thing to do with it. */
+const YEAR_PLAIN: Record<GroupName, { scene: string; mind: string; action: string }> = {
+  비겁: { scene: "사람과 어울리며 함께하는 일", mind: "맡을 몫부터 나누고 싶어져요", action: "함께할 사람과 맡을 몫부터 나눠 정해 보세요." },
+  식상: { scene: "만들고 드러내는 일", mind: "해 둔 것을 밖에 내보이고 싶어져요", action: "만들어 둔 것 하나를 밖에 내보여 보세요." },
+  재성: { scene: "돈과 시간을 다루는 일", mind: "들고 나는 것을 챙기고 싶어져요", action: "들고 나는 돈과 시간을 한 번 점검해 보세요." },
+  관성: { scene: "맡은 책임을 다지는 일", mind: "기준을 분명히 세우고 싶어져요", action: "맡은 일의 기준을 한 줄로 정해 두세요." },
+  인성: { scene: "배우고 준비하는 일", mind: "새로 배울 거리를 찾고 싶어져요", action: "배우고 싶던 것 하나를 골라 신청해 보세요." },
 };
 
 /**
- * "올해 병오(丙午)년에는 나와 어깨를 나란히 하는 힘(비견)이 실려, …": this year's 세운 by its 간지, its ten god in plain words.
- * Before 입춘 that 세운 is still last year's: "입춘 전까지 이어지는 병오(丙午)년에는 …".
+ * "올해 병오(丙午)년은 [그해의 일]이 늘어나는 해라 [마음]" (§2.6): this year's 세운 by its 간지, no "힘이 실려요". Before 입춘
+ * that 세운 is still last year's: "입춘 전까지 이어지는 병오(丙午)년은 …".
  */
-export function mockThisYear(f: Pick<SajuFactSet, "annual">, say: (term: string) => string, scene: string): string {
-  const year = `${f.annual.beforeIpchun ? "입춘 전까지 이어지는" : "올해"} ${f.annual.ko}(${f.annual.gz})년에는`;
-  return `${year} ${josa(say(f.annual.stemTenGod), "이", "가")} 실려, ${scene}에 힘이 붙는 해로 읽어요.`;
+export function mockThisYear(f: Pick<SajuFactSet, "annual">, scene: string, mind: string): string {
+  return `${f.annual.beforeIpchun ? "입춘 전까지 이어지는" : "올해"} ${f.annual.ko}(${f.annual.gz})년은 ${scene}이 늘어나는 해라 ${mind}.`;
 }
 
-/** 한눈에 보기 from the facts: the most and the fewest 오행, this year's 세운 and its ten god. */
-function mockGlance(f: SajuFactSet, say: (term: string) => string): SajuGlance {
+/** 한눈에 보기 from the facts (§2.6): the most and the fewest 오행 with their core phrase in bold, this year's 세운. */
+function mockGlance(f: SajuFactSet): SajuGlance {
   const counts = f.elements.counts;
   const max = Math.max(...ORDER.map((e) => counts[e]));
   const min = Math.min(...ORDER.map((e) => counts[e]));
   const top = ORDER.find((e) => counts[e] === max)!;
   const low = ORDER.find((e) => counts[e] === min)!;
-  const name = (e: SajuElement) => `${ELEMENT_WORD[e]}(${ELEMENT_HANJA[e]}) 기운`;
   const year = YEAR_PLAIN[groupOf(f.annual.stemTenGod)];
   return {
-    goesWell: `${josa(name(top), "이", "가")} ${max}개로 가장 많아, ${ELEMENT_PLAIN[top].ease}에서 잘 풀리는 편이에요.`,
-    watchOut: `${josa(name(low), "이", "가")} ${min === 0 ? "겉에 없어" : `${min}개로 가장 적어`}, ${ELEMENT_PLAIN[low].slip}.`,
+    goesWell: `${ELEMENT_WORD[top]} 기운이 ${max}개로 가장 많아 **${ELEMENT_PLAIN[top].ease}을 맡을 때** 잘 풀려요.`,
+    watchOut: `${ELEMENT_WORD[low]} 기운이 ${min === 0 ? "겉에 없어" : `${min}개로 가장 적어`}, ${ELEMENT_PLAIN[low].care} 쉬워요.`,
     remedy: ELEMENT_PLAIN[low].remedy,
-    thisYear: mockThisYear(f, say, year.scene),
+    thisYear: mockThisYear(f, year.scene, year.mind),
     thisYearAction: year.action,
   };
 }
 
+/** The tendency near people a day branch's group gives (§2.1 (c), its core in bold). */
+const CLOSE: Record<GroupName, string> = {
+  비겁: "대등하게 나란히 서는 사이를 편하게 여기는",
+  식상: "마음을 말과 행동으로 먼저 보여 주는",
+  재성: "가까운 사람을 챙기고 살피는 데 마음을 쓰는",
+  관성: "가까운 사이에도 약속과 선을 지키려는",
+  인성: "기대고 기댈 수 있는 사이를 바라는",
+};
+
+/** A relation in plain words (§4.2 rule 10): one, as the scene needs it. */
+const relationPlain = (type: string) => (/충/.test(type) ? "정면으로 맞서는" : /합/.test(type) ? "서로 묶이려는" : /형|파|해/.test(type) ? "엇갈리는" : "");
+
 export function mockSajuReading(f: SajuFactSet): SajuReading {
-  // Plain words first (owner 2026-10-07): each 명리 term in plain words the first time, in reading order (the card first).
+  // The reading voice (owner 2026-10-08): each body section opens on a scene question, gives one plain reason, says the tendency
+  // with its core in bold and ends on one everyday act, with one 명리 term at most, glossed where it first appears (the card first).
   const say = glossOnce();
-  const glance = mockGlance(f, say);
+  const glance = mockGlance(f);
   const day = f.pillars.find((p) => p.pillar.includes("일주"))!;
   const month = f.pillars.find((p) => p.pillar.includes("월주"))!;
-  const others = f.pillars.filter((p) => p !== day);
-  const counts = ORDER.map((e) => `${ELEMENT_WORD[e]} ${f.elements.counts[e]}`).join(", ");
-  const relations = f.relations.length
-    ? `타고난 명식 안에는 ${f.relations.map((r) => `${r.members.join("와 ")} 사이의 ${r.type}`).join(", ")} 관계가 있어요. 이 풀이에서는 사건의 신호로 읽지 않고, 관계가 있다는 사실만 짚어 둬요.`
-    : "타고난 명식 안에서 서로 묶이거나 부딪히는 아래 글자 관계는 따로 보이지 않아요.";
+  const counts = f.elements.counts;
+  const max = Math.max(...ORDER.map((e) => counts[e]));
+  const top = ORDER.find((e) => counts[e] === max)!;
+  const low = ORDER.find((e) => counts[e] === Math.min(...ORDER.map((x) => counts[x])))!;
+  const missing = ORDER.filter((e) => counts[e] === 0).map((e) => ELEMENT_WORD[e]);
+  const dm = f.dayMaster;
+  const pull = month.stem.tenGod;
+  const close = day.branch.mainTenGod;
+  const dayRelation = f.relations.map((r) => (r.members.some((m) => m.includes("일지")) ? relationPlain(r.type) : "")).find(Boolean);
   const luck = f.luck;
   const current = luck?.current;
-  const direction = luck?.direction === "순행" ? "앞으로 흐르는 순행" : "거꾸로 흐르는 역행";
-  // texts that gloss are written where they stand in the reading (functions), so a term is glossed at its first appearance
-  const luckText = () => current
-    ? [
-      `이 명식의 ${josa(say("대운"), "은", "는")} ${direction}이에요. ${luck.start}.`,
-      `지금은 ${current.from}부터 ${current.to}까지 이어지는 ${current.ko}(${current.gz}) 대운이에요.`,
-      `위 글자는 ${say(current.stemTenGod)}, 아래 글자의 대표 글자는 ${josa(say(current.branchMainTenGod), "이에요", "예요")}. ${glossText(current.halves, say)}.`,
-      current.relationsToNatal.length ? `타고난 명식과는 ${current.relationsToNatal.map((r) => r.type).join(", ")} 관계가 있어요.` : "",
-    ].join(" ")
-    : luck
-      ? `이 명식의 ${josa(say("대운"), "은", "는")} ${direction}이고, ${luck.start}. 지금은 첫 대운이 시작되기 전의 시기로 읽어요.`
-      : `태어난 시각에 따라 월주가 달라질 수 있어 ${josa(say("대운"), "은", "는")} 계산하지 않았어요.`;
+  const next = luck?.changeSoon ? (current ? luck.cycles.find((c) => c.from === current.to) : luck.cycles[0]) : undefined;
   const annual = f.annual;
-  const annualText = () => `${annual.year}년 ${josa(say("세운"), "은", "는")} ${ro(`${annual.ko}(${annual.gz})`)}, 위 글자는 ${say(annual.stemTenGod)}, 아래 글자의 대표 글자는 ${josa(say(annual.branchMainTenGod), "이에요", "예요")}.${annual.relationsToNatal.length ? ` 타고난 명식과는 ${annual.relationsToNatal.map((r) => r.type).join(", ")} 관계가 생겨요.` : ""} 명리에서는 이런 접점을 움직임이 늘어나는 국면으로 읽어요.`;
-  const experiment = "이번 주에 힘이 난 순간이 언제였는지 하루 끝에 떠올려 보면, 이 풀이가 내 하루에 어떻게 닿는지 가늠할 수 있어요.";
+  const year = `${annual.beforeIpchun ? "입춘 전까지 이어지는" : "올해"} ${annual.year}년의 ${annual.ko}(${annual.gz})`;
 
+  // 4~8 sentences and 300~450자 a body section (§2.1), the second scene's and the advice's forms rotated (twice at most)
+  const same = pull === close;
+  const profile = profileSentence(f);
   const bodies = [
     [
-      profileSentence(f),
-      `${ro(say("12운성"))} 보면 ${say("일간")}의 기운이 자리마다 어느 단계에 있는지 알 수 있어요.`,
-      `${f.pillars.map((p) => `${p.pillar}의 아래 글자 ${josa(p.branch.display, "은", "는")} ${say(p.branch.twelveStage)}`).join(", ")}에 있어요.`,
-      f.season ? `태어난 달은 ${josa(f.season.text, "이라", "라")}, 그 계절이 나에게 힘을 얼마나 실어 주는지(월령)도 이 자리에서 봐요.` : "",
-      "이 단계들을 묶어 강하다·약하다 라벨을 붙이는 방법은 유파마다 결과가 달라 여기서는 붙이지 않았어요.",
-      "같은 글자라도 어느 자리에 놓였는지에 따라 쓰임이 달라진다고 보는 것이 명리의 기본 관점이에요.",
-      experiment,
+      "하루를 보내고 나면 기운이 차오르는 날과 금세 바닥나는 날이 유난히 뚜렷하게 갈리지 않나요?",
+      `사주로 보면 나를 뜻하는 글자는 ${dm.image}에 비유되고, ${f.season ? `${f.season.text}에 태어났어요` : "태어난 달은 태어난 시각에 따라 달라질 수 있어요"}.`,
+      `그래서 ${ELEMENT_PLAIN[dm.element as SajuElement].ease}처럼 마음이 먼저 가는 일을 붙잡은 날에는 기운이 차오르고 그런 일이라면 누가 시키기 전에 **먼저 손이 가는** 편이에요.`,
+      "할 일이 잔뜩 쌓여 있어도 마음 가는 일부터 먼저 집어 들고 나머지는 저녁까지 미뤄 두곤 해요.",
+      "반대로 마음이 안 가는 일만 이어진 날은 해가 지기도 전에 기운이 바닥나고 괜히 하루를 통째로 놓친 것 같은 기분이 들죠.",
+      "그 습관이 나쁜 건 아니에요.",
+      "다만 오후에 기운이 빠지기 시작하면 **오늘 끝낼 일 하나만** 남기고 나머지는 내일 목록으로 넘겨 보세요.",
+      "그렇게 하루 몫을 덜어 낸 날은 다음 날 아침이 한결 가볍게 시작되고 저녁까지 기운도 오래가요.",
     ],
     [
-      `겉에 드러난 대표 글자로만 세고 ${josa(say("지장간"), "은", "는")} 빼면 ${counts}이에요.`,
-      `가장 많은 기운은 ${joinList(f.elements.most)}개예요. 명리에서는 많은 기운을 먼저 꺼내 쓰기 쉬운 힘으로 읽어요.`,
-      f.elements.missing.length ? `겉에 한 글자도 없는 기운도 있어요(${f.elements.missing.join("·")}). 부족하다기보다 의식해서 꺼내 써야 하는 힘에 가까워요.` : "다섯 기운이 모두 겉에 한 글자 이상 보여요.",
-      f.elements.hiddenOnly.length ? glossText(`겉에는 없지만 ${say("지장간")}에 숨은 기운도 있어요: ${f.elements.hiddenOnly.join("; ")}.`, say) : "",
-      "많고 적음은 좋고 나쁨이 아니라, 어떤 힘을 먼저 꺼내 쓰기 쉬운지를 보여 주는 지도에 가까워요.",
-      "시작하는 일과 마무리하는 일 가운데 어느 쪽에서 힘이 더 드는지 한 줄씩 적어 보면 이 지도가 내게 맞는지 확인할 수 있어요.",
+      `${josa(ELEMENT_PLAIN[top].ease, "이라면", "라면")} 누가 시키지 않아도 손이 먼저 가고 한번 붙잡으면 시간 가는 줄 모르고 매달리지 않나요?`,
+      `사주에 ${ELEMENT_WORD[top]} 기운이 ${max}개로 가장 많아서 그 기운이 맡는 일 앞에서는 **누구보다 먼저 힘이 나는** 편이에요.`,
+      missing.length
+        ? `반대로 ${missing.join("·")} 기운은 겉에 한 글자도 없어서 ${ELEMENT_PLAIN[low].ease}처럼 그쪽 기운이 맡는 일은 일부러 마음먹어야 겨우 손에 잡혀요.`
+        : `다섯 기운이 모두 겉에 보이지만 ${ELEMENT_WORD[low]} 기운이 가장 적어서 ${ELEMENT_PLAIN[low].ease}처럼 그쪽 기운이 맡는 일은 일부러 마음먹어야 손에 잡혀요.`,
+      "마감이 코앞에 와서야 그쪽 일을 한꺼번에 몰아서 처리하고 끝나면 한동안 녹초가 되는 식이죠.",
+      "많은 쪽 일만 붙들어도 당장은 나쁘지 않아요.",
+      "다만 그 일이 한꺼번에 몰려 숨이 찰 때는 **덜 쓰는 쪽 일 하나**를 골라 일부러 먼저 끝내 보세요.",
+      "작은 일 하나라도 먼저 닫아 두면 많은 쪽 일로 돌아갈 때 마음이 훨씬 가벼워지고 손도 다시 빨라져요.",
+      "덜 쓰는 쪽 일은 크기를 작게 잘라 두면 마음먹기 전에 시작할 수 있을 만큼 가벼워져요.",
     ],
     [
-      `명리에서는 ${ro(say("십성"))} 내가 어떤 힘을 쓰기 쉬운지 읽어요.`,
-      ...others.map((p) => `${p.pillar}의 위 글자 ${josa(p.stem.display, "은", "는")} ${josa(say(p.stem.tenGod), "이고", "고")}, 아래 글자 ${p.branch.display}의 대표 글자는 ${josa(say(p.branch.mainTenGod), "이에요", "예요")}.`),
-      "같은 힘이 여러 번 나오면 그 역할이 익숙한 편으로 읽어요.",
-      "이 이름들은 성격을 정해 두는 이름표가 아니라, 어떤 자리에서 어떤 힘을 쓰기 쉬운지를 보는 틀이에요.",
-      "역할을 스스로 정해 움직일 때 속도가 붙었다면 이 구조와 맞물리고, 누가 정해 준 역할을 따를 때 가장 편했다면 이 부분은 덜 맞는 풀이예요.",
-      "다음에 역할을 나눌 일이 생기면 내가 먼저 맡고 싶은 일을 말로 먼저 꺼내 보세요.",
+      "중요한 결정을 앞두면 해 보고 싶은 마음과 조심하고 싶은 마음이 한꺼번에 올라와서 오래 붙들고 있게 될 때가 있지 않아요?",
+      same
+        ? `사주로 보면 바깥 무대를 뜻하는 태어난 달 자리와 나와 가장 가까운 자리에 같은 힘인 ${josa(say(pull), "이", "가")} 겹쳐 있어요.`
+        : `사주로 보면 바깥 무대를 뜻하는 태어난 달 자리에는 ${josa(say(pull), "이", "가")} 있고 나와 가장 가까운 자리에는 그와 다른 쪽을 바라보는 힘이 함께 있어요.`,
+      same
+        ? "같은 힘이 안팎에서 한쪽으로 당기는 사주라 **한번 정한 방향을 오래 붙드는** 경향이 있어요."
+        : "두 힘이 서로 다른 쪽을 당기는 사주라 **결정 앞에서 오래 저울질하는** 경향이 있어요.",
+      same
+        ? "한번 마음을 정하면 주변에서 다른 길을 권해도 처음 정한 쪽으로 끝까지 가 보곤 해요."
+        : "하고 싶은 일은 분명한데 첫발을 떼기까지 계획만 몇 번씩 고쳐 보다가 좋은 때를 흘려보내곤 해요.",
+      same
+        ? "그래서 주변에서는 믿음직하다는 말과 고집스럽다는 말을 같이 듣기도 하고요."
+        : "의견을 더 모을수록 마음이 정리되기보다 오히려 고를 이유만 늘어나는 날도 많고요.",
+      same ? "꾸준한 건 분명한 장점이에요." : "신중한 건 분명한 장점이에요.",
+      same
+        ? "그래도 방향을 정하기 전에는 **반대쪽 의견 하나**를 일부러 찾아 들어 보세요."
+        : "그래도 저울질이 길어질 때는 **딱 한 가지 기준**만 정하고 그 기준에 맞는 쪽을 골라 보세요.",
+      same
+        ? "반대쪽 이야기를 한 번 들어 두면 정한 길을 더 오래 덜 흔들리며 갈 수 있어요."
+        : "기준이 하나뿐이면 고르는 시간이 짧아지고 고른 뒤에도 '그때 다른 쪽을 고를걸' 하는 마음이 덜 남아요.",
     ],
     [
-      `태어난 날의 아래 글자 ${day.branch.display}의 대표 글자는 ${josa(say(day.branch.mainTenGod), "이고", "고")}, 기운의 단계로는 ${say(day.branch.twelveStage)}에 있어요.`,
-      "명리에서는 이 자리(일지)를 나 자신과 가까운 관계의 자리로 봐요.",
-      relations,
-      "가까운 사람과 보낸 시간 뒤에 힘이 났다면 이 자리와 맞물리고, 혼자 있을 때만 힘이 돌아왔다면 이 부분은 덜 맞는 풀이예요.",
-      "바쁜 주일수록 가까운 사람과 짧게라도 이야기 나눌 시간을 먼저 정해 보세요.",
-      "작은 약속 하나를 지켜 본 뒤의 느낌을 떠올려 보면 이 자리가 내게 어떻게 닿는지 알 수 있어요.",
+      "가까운 사람과 오래 붙어 있다 보면 고마운 마음과 별개로 혼자만의 시간이 문득 그리워질 때가 있지 않아요?",
+      `사주로 보면 나와 가장 가까운 자리에 ${josa(say(close), "이", "가")} 있어서 **${CLOSE[groupOf(close)]}** 편이에요.`,
+      dayRelation
+        ? `그 자리가 다른 자리와 ${dayRelation} 배치도 함께 있어서 가까운 사이일수록 마음이 이쪽저쪽으로 자주 오가요.`
+        : "그래서 가까운 사이에서도 내 몫과 상대 몫을 조용히 나눠 두고 그 선이 지켜질 때 마음이 놓여요.",
+      "가까운 사람이 먼저 손을 내밀면 반가우면서도 그 기대에 맞춰야 할 것 같아 부담이 함께 올라오기도 해요.",
+      "약속을 잡을 때도 상대 일정부터 맞춰 보다가 정작 내가 쉬고 싶은 날은 뒤로 밀리기 일쑤예요.",
+      "가까운 사람을 먼저 챙기는 마음은 그대로 둬도 괜찮아요.",
+      "다만 바쁜 주일수록 가까운 사람과 **짧게라도 마주 앉는 시간**을 먼저 잡아 보세요.",
+      "얼굴을 보고 나누는 짧은 이야기가 긴 메시지보다 마음을 더 빨리 풀어 줘요.",
     ],
     [
-      `태어난 달의 아래 글자 ${month.branch.display}의 ${josa(say(month.branch.mainTenGod), "과", "와")} 태어난 날 자리의 ${josa(say(day.branch.mainTenGod), "을", "를")} 두 장면으로 확인해 볼 수 있어요.`,
-      "첫째, 일하는 장면이에요. 서로 진도가 보이는 자리에서 오히려 속도가 붙었다면 이 구조와 맞물리고, 진도가 보이면 손이 느려졌다면 이 부분은 덜 맞아요.",
-      "둘째, 쉬는 장면이에요. 내가 고른 한두 곳을 내 순서대로 돌 때 제대로 쉬었다고 느꼈다면 이 구조와 맞물리고, 누가 짜 준 일정이 가장 편했다면 이 부분은 덜 맞아요.",
-      "이번 주에 두 장면 중 하나를 만나면 그날 저녁 힘이 났는지 빠졌는지 스스로에게 물어보세요. 두세 번 쌓이면 이 이야기가 내게 맞는지 판정할 수 있어요.",
+      `일할 때는 ${ELEMENT_PLAIN[top].ease}에서 유난히 속도가 나는데 막상 쉬는 날에도 비슷한 일을 하나쯤 꼭 벌여 두게 되죠?`,
+      // the user's own context where it is (owner 2026-10-02), in place of two general lines
+      profile,
+      "많은 기운이 일과 쉼 양쪽에 같이 드러나는 사주라 **쉬는 날에도 손을 놓지 못하기** 쉬워요.",
+      profile ? "" : "일하는 날에는 그 기운 덕분에 남보다 먼저 결과를 내놓고 다음 일까지 미리 챙겨 두는 편이고요.",
+      "주말 아침에도 할 일 목록부터 다시 펼쳐 보고 쉬는 시간마저 계획표의 한 칸으로 채워 넣는 식이죠.",
+      profile ? "" : "그러다 보면 한 주가 시작되기도 전에 이미 지친 채로 하루를 열고 정작 중요한 일 앞에서 기운이 모자라요.",
+      "부지런한 습관 덕분에 일이 밀리지 않고 주변에서 믿고 맡기는 건 분명한 강점이에요.",
+      "그래도 한 주에 하루쯤은 **아무 일정도 넣지 않은 칸**으로 통째로 비워 두세요.",
+      "반대로 쉬는 날에는 아무것도 손대지 않고 푹 쉬는 편이라면 이 대목은 가볍게 넘겨도 돼요.",
     ],
     [
-      luckText(),
-      annualText(),
-      "대운과 세운은 방향을 보는 도구이지 특정한 일이 생긴다는 약속은 아니에요.",
-      "같은 국면이라도 무엇에 힘을 쓰느냐에 따라 체감은 달라질 수 있어요.",
-      "남은 올해 동안 새로 시작한 일과 마무리한 일이 무엇이었는지 달력에서 확인해 보면, 이 국면이 내게 어떻게 닿는지 가늠할 수 있어요.",
+      "요즘 들어 해 오던 방식을 조금씩 바꿔 보고 싶다는 생각이 출근길이나 잠들기 전에 자주 들지 않나요?",
+      current
+        ? `사주로 보면 10년마다 바뀌는 큰 흐름(대운)에서 지금은 ${current.ko}(${current.gz}) 대운이 ${ymKo(current.to!)} 무렵까지 이어져요.`
+        : luck
+          ? "사주로 보면 10년마다 바뀌는 큰 흐름(대운) 가운데 첫 흐름이 아직 시작되기 전이에요."
+          : "태어난 시각에 따라 태어난 달이 달라질 수 있어 10년마다 바뀌는 큰 흐름(대운)은 계산하지 않았어요.",
+      current ? `그 흐름이 ${PLAIN_WORDS[current.stemTenGod]} 쪽이라서 **익숙한 방식을 손보고 싶어지기** 쉬워요.` : "",
+      // a change within the year comes first (luck.changeSoon), in place of the second scene
+      next?.from
+        ? `${ymKo(next.from)} 무렵에는 다음 흐름인 ${next.ko}(${next.gz}) 대운으로 넘어가요.`
+        : "예전 같으면 그냥 넘겼을 작은 불편도 이제는 직접 손을 대서 고쳐 보고 싶어지는 때가 잦아요.",
+      `${josa(year, "은", "는")} ${YEAR_PLAIN[groupOf(annual.stemTenGod)].scene}이 늘기 쉬운 해예요.`,
+      "새로 시작한 일과 끝맺어야 할 일이 비슷하게 늘어나서 한 해가 유난히 바쁘게 느껴질 수 있어요.",
+      "해가 바뀌기 전에 **계속 가져갈 일 하나**를 정해 새 달력 맨 앞 장에 표시해 두세요.",
+      "그렇게 골라 둔 하나가 다음 해의 첫 계획을 세울 때 든든한 출발점이 돼요.",
     ],
     [
       "계산 기준은 만세력마다 조금씩 다를 수 있어서, 이 풀이가 어떤 기준으로 읽었는지 먼저 밝혀 둘게요.",
       ...f.calculation.map((line) => glossText(`${line.replace(/[.。]$/, "")}.`, say)),
       ...f.limits,
+      // the disclaimers the body leaves out (§2.5): here, once
+      "본문에서는 합·충 같은 관계를 사건으로 읽지 않았고, 실제로 묶이는지도 따지지 않았어요. 12운성의 단계도 좋고 나쁨이 아니라 기운의 세기를 가리키는 이름이에요.",
       "태어난 시각을 알게 되면 내 정보에서 고칠 수 있고, 이 풀이도 그때 다시 계산할 수 있어요.",
     ],
   ];
@@ -430,7 +483,7 @@ export function mockSajuReading(f: SajuFactSet): SajuReading {
     sections: SAJU_PROLOGUE_SECTIONS.map((heading, i) => ({ heading, body: bodies[i]!.filter(Boolean).join(" ") })),
     observation: {
       heading: SAJU_OBSERVATION_HEADING,
-      body: `앞으로 몇 주 동안 ${joinList(f.elements.most)}개로 가장 많은 기운이 일하는 방식에서 먼저 드러나는지 눈여겨보세요. 새 일을 먼저 집어 드는 순간이 잦다면 이 풀이의 방향과 맞아요.`,
+      body: `앞으로 몇 주 동안 ${ELEMENT_PLAIN[top].ease}을 먼저 집어 드는 순간이 늘어나는지 눈여겨보세요. 그런 순간이 잦다면 가장 많은 ${ELEMENT_WORD[top]} 기운이 일상에서 먼저 쓰이고 있는 거예요.`,
     },
     glance,
     followUps: ["지금 대운에서 해 볼 작은 실험은요?", "많은 기운을 일상에 어떻게 쓸까요?"],

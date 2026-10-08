@@ -4,7 +4,8 @@ import { TOPIC_SECTIONS, TOPIC_SECTION_LENGTH, TOPIC_TOTAL_LENGTH, otherTopicLab
 import { maskGanzhiReadings } from "@/lib/ai/ganzhi";
 import type { SajuTopicFactSet } from "@/lib/ai/prompts/sajuTopics";
 import type { FollowUpAnswer, SajuReading, SajuTeaserDraft } from "@/lib/ai/schemas";
-import { SOFT_PREFIX, aiTellViolations } from "@/lib/ai/style";
+import { SOFT_PREFIX, aiTellViolations, allowBold } from "@/lib/ai/style";
+import { sajuVoiceViolations } from "@/lib/ai/voice";
 import {
   BASIS_QUESTION, CLOCK_DATE, COUNTDOWN, GLANCE_LABEL, HEDGE, MONTH_NAME, NAMED_MONTH, OTHER, QUOTED, SEASON_TIMING, TIME_UNKNOWN_LINE, TOLERANCE,
   actionVarietyViolations, allowLimitPillars, allowedFactViolations, cardGanzhi, charCount, glanceTexts, glanceViolations, lengthCheck, mentions,
@@ -279,13 +280,15 @@ export function validateSajuTopicTeaser(d: SajuTeaserDraft, f: SajuTopicFactSet)
   return out;
 }
 
-export function validateSajuTopicReading(r: SajuReading, f: SajuTopicFactSet): string[] {
+export function validateSajuTopicReading(draft: SajuReading, f: SajuTopicFactSet): string[] {
   const out: string[] = [];
+  // every check but the voice's reads the words, without the bold marks (reading-voice-2026-10 §2.2)
+  const r: SajuReading = JSON.parse(JSON.stringify(draft).replaceAll("**", ""));
   modelNameViolations(r, out);
   const headings = TOPIC_SECTIONS[f.topic];
   if (r.sections.length !== headings.length) out.push(`sections는 정확히 ${headings.length}개여야 해요.`);
   r.sections.forEach((section, i) => {
-    const [min, max] = TOPIC_SECTION_LENGTH[i] ?? [500, 650];
+    const [min, max] = TOPIC_SECTION_LENGTH[i] ?? [350, 480];
     const n = charCount(section.body);
     if (n < Math.floor(min * 0.6) || n > Math.ceil(max * 1.5)) out.push(`'${headings[i] ?? `${i + 1}번째 절`}' 절이 공백 제외 ${n}자예요. ${min}~${max}자로 써 주세요.`);
   });
@@ -321,8 +324,19 @@ export function validateSajuTopicReading(r: SajuReading, f: SajuTopicFactSet): s
   voiceViolations(all, out);
   situationViolations(bodies[1] ?? "", all, f, out);
   actionVarietyViolations([...bodies, r.observation.body], out);
-  aiTellViolations([...bodies, r.observation.body], out);
-  plainWordViolations([...glance, ...bodies, r.observation.body], out);
+  // one or two bold phrases a body section are not formatting; the 계산 기준 절 and the observation have none
+  const last = draft.sections.length - 1;
+  aiTellViolations([...draft.sections.map((s, i) => allowBold(s.body, i === last ? 0 : 2)), draft.observation.body], out);
+  // the 계산 기준 절 may name its terms as they are (reading-voice-2026-10 §4.4)
+  plainWordViolations([...glance, ...bodies.slice(0, -1), r.observation.body], out);
+  // 2절·3절 must name each group counted 0, and their own anchor besides when it is none of those groups (anchorViolations:
+  // 재회운 2절 names 일지 or its glyph too), so they may hold that many terms and brackets
+  const a = f.allowed.anchors;
+  const forced = (zero: readonly string[], anchors: readonly string[]) => (zero.length ? zero.length + (anchors.some((k) => zero.includes(k)) ? 0 : 1) : 1);
+  sajuVoiceViolations({
+    headings, bodies: draft.sections.slice(0, -1).map((s) => s.body), basis: draft.sections.at(-1)?.body ?? "", observation: draft.observation.body, glance: draft.glance,
+    budget: [1, forced(a.zeroS2, a.s2), forced(a.zeroS3, a.s3)],
+  }, out);
   return out;
 }
 
