@@ -33,10 +33,12 @@ type SajuChapterViewProps = {
   checkin?: ReactNode;
   /** 결과 공유: the reading's own share link. Without it 공유하기 sends the site. */
   share?: ShareActions;
+  /** 풀이 후기 for a reading saved in the account; otherwise the plain stars. */
+  rating?: ReactNode;
 };
 
 /** An opened saju reading in one scroll: the chart, the sections, follow-ups, rating, and a way on to tarot. */
-export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin, share }: SajuChapterViewProps) {
+export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin, share, rating }: SajuChapterViewProps) {
   const result = useMemo(() => chartFor(birth), [birth]);
 
   return (
@@ -65,7 +67,7 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
         <div id="chapter-follow-up" className={s.anchor}>
           <FollowUp {...followUp} reader="rabbit" />
         </div>
-        <Feedback />
+        {rating ?? <Feedback />}
         <AiNote />
 
         <section className={s.invite} aria-labelledby="next-title">

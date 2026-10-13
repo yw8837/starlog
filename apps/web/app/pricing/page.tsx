@@ -5,6 +5,7 @@ import { Rabbit } from "@/components/characters/Rabbit";
 import { LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import s from "@/components/legal/legal.module.css";
 import { PaymentsNote } from "@/components/legal/PaymentsNote";
+import { ReviewList } from "@/components/reviews/ReviewList";
 import { SITE, won } from "@/lib/config";
 import { times } from "@/lib/helpGuide";
 import { GIFT_DAYS, REFUND_DAYS, standardProduct } from "@/lib/pay/catalog";
@@ -97,6 +98,9 @@ export default function PricingPage() {
           결제하거나 가입 선물로 열어도 풀이 내용과 이어서 물어보기, 보관 범위는 같아요. 로그인해서 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요.
         </p>
       </LegalSection>
+
+      {/* 풀이 후기: shows itself once there is one (spec 2026-10-13 §7) */}
+      <ReviewList />
 
       <LegalSection id="premium" title="준비 중인 풀이">
         <div className={s.cards}>

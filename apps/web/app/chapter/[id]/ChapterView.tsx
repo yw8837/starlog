@@ -46,13 +46,15 @@ type ChapterViewProps = {
   share?: ShareActions;
   /** The design the reading was written for; omitted, the viewer's choice. */
   deck?: FrontDeck;
+  /** 풀이 후기 for a reading saved in the account; otherwise the plain stars. */
+  rating?: ReactNode;
 };
 
 /**
  * An opened tarot reading in one scroll: the question and cards, the full reading, follow-ups,
  * rating. Sharing makes the reading's own link (the cards and the reading, never the question or note).
  */
-export function ChapterView({ eyebrow, question, cards, reading, followUp, checkin, invite, share, deck }: ChapterViewProps) {
+export function ChapterView({ eyebrow, question, cards, reading, followUp, checkin, invite, share, deck, rating }: ChapterViewProps) {
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const shown = enlarged === null ? undefined : cards[enlarged];
@@ -85,7 +87,7 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, check
         <div id="chapter-follow-up" className={s.anchor}>
           <FollowUp {...followUp} />
         </div>
-        <Feedback />
+        {rating ?? <Feedback />}
         <AiNote />
 
         {invite ? (

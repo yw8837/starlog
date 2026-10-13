@@ -1,4 +1,5 @@
 import "server-only";
+import { eraseReviewStatements } from "@/lib/reviews/store";
 import type { D1Binding } from "@/lib/db/d1";
 import { entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
@@ -103,7 +104,7 @@ const DELETED = "EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NOT 
 /**
  * Erases a deleted account's personal data in one batch, keeping what the law keeps:
  * - an unused signup gift is forfeited (its ledger rows stay);
- * - saved readings and sessions are deleted;
+ * - saved readings and sessions are deleted, and the account's reviews with their 도움돼요 and reports;
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - orders that never reached Toss are closed;
  * - kakao_key and nickname are blanked and erased_at set.
@@ -117,6 +118,7 @@ export async function eraseDeletedAccount(db: D1Binding, userId: string, now: nu
     .all<Lot>();
   const results = await db.batch([
     ...freeLots.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
+    ...eraseReviewStatements(db, userId),
     db.prepare(`DELETE FROM readings WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM sessions WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db

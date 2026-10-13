@@ -7,6 +7,7 @@ import type { AskResult } from "@/components/tarot/FollowUp";
 import { faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
+import { ReviewPrompt } from "@/components/reviews/ReviewPrompt";
 import type { ShareActions } from "@/components/share/ShareResultButton";
 import { useDeckPrefs } from "@/lib/deck";
 import { createShareLink, stopShareLink } from "@/lib/share/client";
@@ -167,6 +168,8 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   // older reading: the one chosen here).
   const chosen = useDeckPrefs().front;
   const deck = chapter.deck ?? chosen;
+  // 풀이 후기: a reading saved in the account takes one; a device-only one keeps the plain stars.
+  const rating = chapter.serverId ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
   const share: ShareActions | undefined = whole
     ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter) }
     : undefined;
@@ -182,7 +185,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} share={share} />
+        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} share={share} rating={rating} />
       </>
     );
   }
@@ -198,6 +201,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         followUp={followUp}
         checkin={checkin}
         share={share}
+        rating={rating}
       />
     </>
   );
