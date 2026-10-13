@@ -1,0 +1,56 @@
+.sheet {
+  display: grid;
+  gap: 16px;
+}
+
+.title {
+  padding-right: 40px;
+  font-size: var(--fs-h1);
+}
+
+.lead {
+  color: #4a3d63;
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}
+
+.lead strong {
+  color: var(--paper-ink);
+}
+
+/* The address, so the sharer sees which link goes out. */
+.link {
+  overflow: hidden;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(93, 77, 122, 0.08);
+  color: #5d4d7a;
+  font-size: var(--fs-sub);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.note {
+  color: #5d4d7a;
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+.stop {
+  justify-self: start;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: #6b5d84;
+  font: inherit;
+  font-size: var(--fs-sub);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

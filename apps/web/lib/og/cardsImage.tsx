@@ -209,3 +209,65 @@ export function luckyShareImage(data: LuckyShareData): ReactElement {
 export function luckyShareText(data: LuckyShareData): { serif: string; sans: string } {
   return { serif: data.numbers.join(""), sans: `이번 주 행운 번호 ${data.week} ${LUCKY_NOTICE} ${data.host}` };
 }
+
+// ---- 결과 공유 (link preview, 1200×630) ----
+
+export interface ShareOgData {
+  /** "친구가 공유한 타로 풀이" */
+  label: string;
+  /** tarot: the card names; saju: "연애운 풀이" */
+  headline: string;
+  /** saju: the short conclusion; tarot: none (the cards say it) */
+  body?: string;
+  /**
+   * tarot: the cards drawn. `src` is the face as a JPEG (satori cannot decode WebP), inlined by the
+   * route; a face that could not be read is drawn as its name plate. Reversed ones are turned.
+   */
+  cards?: Array<{ cardId: string; src?: string; reversed: boolean }>;
+  host: string;
+}
+
+export function shareOgImage(data: ShareOgData): ReactElement {
+  const { width, height } = OG_CARD;
+  const cards = (data.cards ?? []).slice(0, 3);
+  const cardWidth = cards.length > 2 ? 150 : 180;
+  const textWidth = cards.length ? 560 : 1040;
+  return frame(width, height, [
+    <div key="text" style={{ position: "absolute", left: 80, top: 96, width: textWidth, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", color: GOLD, fontSize: 26, fontWeight: 700, letterSpacing: 8 }}>STARLOG</div>
+      <div style={{ display: "flex", marginTop: 8, fontFamily: "Serif", fontSize: 64, fontWeight: 700 }}>스타로그</div>
+      <div style={{ display: "flex", marginTop: 26, color: INK_SUB, fontSize: 32 }}>{data.label}</div>
+      <div style={{ display: "flex", marginTop: 18, fontFamily: "Serif", fontSize: cards.length ? 38 : 44, fontWeight: 700, lineHeight: 1.35 }}>{data.headline}</div>
+      {data.body ? (
+        <div style={{ display: "flex", marginTop: 18, color: INK, fontSize: 32, lineHeight: 1.5 }}>{data.body}</div>
+      ) : null}
+    </div>,
+    cards.length ? (
+      <div key="cards" style={{ position: "absolute", right: 70, top: 0, height, display: "flex", alignItems: "center", gap: 18 }}>
+        {cards.map((card, i) =>
+          card.src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={`${card.cardId}-${i}`}
+              src={card.src}
+              width={cardWidth}
+              height={Math.round(cardWidth * (416 / 240))}
+              style={{ borderRadius: 12, boxShadow: "0 18px 40px rgba(5,3,15,0.5)", transform: card.reversed ? "rotate(180deg)" : undefined }}
+            />
+          ) : (
+            <CardPlate key={`${card.cardId}-${i}`} cardId={card.cardId} orientation={card.reversed ? "reversed" : "upright"} width={cardWidth} />
+          ),
+        )}
+      </div>
+    ) : (
+      <div key="none" style={{ display: "flex" }} />
+    ),
+    <div key="host" style={{ position: "absolute", left: 80, bottom: 56, display: "flex", color: GOLD, fontSize: 26, letterSpacing: 2 }}>
+      {data.host}
+    </div>,
+  ]);
+}
+
+export function shareOgText(data: ShareOgData): { serif: string; sans: string } {
+  return { serif: `스타로그${data.headline}`, sans: `STARLOG ${data.label} ${data.body ?? ""} ${data.host}` };
+}

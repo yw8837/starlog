@@ -70,3 +70,16 @@ export async function openChapter(
   // Every token of one chapter shares the reading digest and the original expiry.
   return { id: `${p.exp}.${p.h}`, ctx: p.ctx, turns: p.turns, exp: p.exp };
 }
+
+/**
+ * The chapter behind a token for 결과 공유: like openChapter, but a token past its 7 days still counts.
+ * The expiry only ends the follow-ups; the signature and the reading digest still prove the reading
+ * is the one the server wrote, which is all a share needs.
+ */
+export async function openChapterForShare(
+  token: unknown, reading: unknown, secret: string,
+): Promise<{ id: string; ctx: ChapterContext } | null> {
+  // verifyToken only refuses an expiry at or before `now`; 0 lets every expiry pass.
+  const chapter = await openChapter(token, reading, secret, 0);
+  return chapter ? { id: chapter.id, ctx: chapter.ctx } : null;
+}

@@ -1,4 +1,5 @@
 import { getCard, type Orientation } from "@starlog/core";
+import type { FrontDeck } from "@/lib/deck";
 import { TarotCard, type CardSize } from "./TarotCard";
 import s from "./SpreadRow.module.css";
 
@@ -20,6 +21,8 @@ type SpreadRowProps = {
   /** Makes face-up cards buttons (e.g. to enlarge them). */
   onCardTap?: (index: number) => void;
   className?: string;
+  /** The faces' design; omitted, the viewer's own choice in 내 정보. A shared reading shows the one it was read with. */
+  deck?: FrontDeck;
 };
 
 export function cardLabel(card: SpreadCard): string {
@@ -42,7 +45,7 @@ export function faceUpCard(card: { position: string; cardId: string; orientation
 }
 
 /** Cards laid side by side, position name above and name/keyword below each. */
-export function SpreadRow({ cards, size = "md", onCardTap, className }: SpreadRowProps) {
+export function SpreadRow({ cards, size = "md", onCardTap, className, deck }: SpreadRowProps) {
   return (
     <ol className={[s.row, s[size], className ?? ""].filter(Boolean).join(" ")} style={{ gridTemplateColumns: `repeat(${cards.length}, minmax(0, 1fr))` }}>
       {cards.map((card, i) => {
@@ -55,6 +58,7 @@ export function SpreadRow({ cards, size = "md", onCardTap, className }: SpreadRo
             size={size}
             label={onCardTap && card.faceUp ? undefined : label}
             className={s.card}
+            deck={deck}
           />
         );
         return (

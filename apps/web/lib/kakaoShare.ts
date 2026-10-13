@@ -76,13 +76,22 @@ export function loadKakao(key: string): Promise<KakaoSdk> {
   return loading;
 }
 
-/** Shares the text with the site's link and OG image as a feed message. */
-export async function shareToKakao(text: string, key: string = kakaoKey()): Promise<void> {
+/** Where a Kakao message leads: the site by default, or a shared reading with its own preview image. */
+export interface KakaoTarget {
+  url: string;
+  imageUrl: string;
+  button: string;
+}
+
+const SITE_TARGET: KakaoTarget = { url: SITE.url, imageUrl: `${SITE.url}/opengraph-image`, button: `${SITE.nameKo} 열기` };
+
+/** Shares the text with a link and its image as a feed message (the site's, unless `target` says otherwise). */
+export async function shareToKakao(text: string, key: string = kakaoKey(), target: KakaoTarget = SITE_TARGET): Promise<void> {
   const sdk = await loadKakao(key);
-  const link = { mobileWebUrl: SITE.url, webUrl: SITE.url };
+  const link = { mobileWebUrl: target.url, webUrl: target.url };
   sdk.Share.sendDefault({
     objectType: "feed",
-    content: { title: text, imageUrl: `${SITE.url}/opengraph-image`, link },
-    buttons: [{ title: `${SITE.nameKo} 열기`, link }],
+    content: { title: text, imageUrl: target.imageUrl, link },
+    buttons: [{ title: target.button, link }],
   });
 }

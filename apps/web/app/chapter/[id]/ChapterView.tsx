@@ -6,6 +6,7 @@ import { Feedback } from "@/components/tarot/Feedback";
 import { FollowUp, type AskResult } from "@/components/tarot/FollowUp";
 import { ReadingArticle, type ReadingBody } from "@/components/tarot/ReadingArticle";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
+import { ShareResultButton, type ShareActions } from "@/components/share/ShareResultButton";
 import { SharePreview } from "@/components/tarot/SharePreview";
 import { SpreadRow, cardLabel, type SpreadCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
@@ -40,13 +41,15 @@ type ChapterViewProps = {
   checkin?: ReactNode;
   /** The demo's friend invite (a real reading has none until 별자리 인연). */
   invite?: { url: string; card: TarotSampleCard };
+  /** 결과 공유: a saved reading's own share link. Without it (the demo) 공유하기 sends the site. */
+  share?: ShareActions;
 };
 
 /**
  * An opened tarot reading in one scroll: the question and cards, the full reading, follow-ups,
- * rating. Sharing sends the site and the verdict's first words, never the question or note.
+ * rating. Sharing makes the reading's own link (the cards and the reading, never the question or note).
  */
-export function ChapterView({ eyebrow, question, cards, reading, followUp, checkin, invite }: ChapterViewProps) {
+export function ChapterView({ eyebrow, question, cards, reading, followUp, checkin, invite, share }: ChapterViewProps) {
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const shown = enlarged === null ? undefined : cards[enlarged];
@@ -60,9 +63,12 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, check
           <header className={s.head}>
             <p className={s.eyebrow}>{eyebrow}</p>
             <h1 className={s.title}>{question}</h1>
-            {/* The reading lives on this device only: the share carries the card names and the site. */}
             <div className={s.share}>
-              <ShareButton text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} />
+              {share ? (
+                <ShareResultButton kind="tarot" text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} {...share} />
+              ) : (
+                <ShareButton text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} />
+              )}
             </div>
           </header>
         }

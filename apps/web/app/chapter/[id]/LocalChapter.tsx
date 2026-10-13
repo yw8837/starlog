@@ -7,6 +7,9 @@ import type { AskResult } from "@/components/tarot/FollowUp";
 import { faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
+import type { ShareActions } from "@/components/share/ShareResultButton";
+import { useDeckPrefs } from "@/lib/deck";
+import { createShareLink, stopShareLink } from "@/lib/share/client";
 import { kstMonthDay } from "@/lib/kst";
 import { commitQuota, postGeneration } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
@@ -160,6 +163,11 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         : {}),
   };
   const date = kstMonthDay(chapter.createdAt);
+  // 결과 공유: a whole reading can get its own link, shown with the card design chosen here.
+  const deck = useDeckPrefs().front;
+  const share: ShareActions | undefined = whole
+    ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter) }
+    : undefined;
 
   // The browser would not keep it (storage full or blocked): say so rather than look saved.
   const unsaved = !chaptersPersisted() ? (
@@ -172,7 +180,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} />
+        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} share={share} />
       </>
     );
   }
@@ -186,6 +194,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         reading={chapter.reading}
         followUp={followUp}
         checkin={checkin}
+        share={share}
       />
     </>
   );

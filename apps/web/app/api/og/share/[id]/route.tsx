@@ -1,0 +1,21 @@
+import { ImageResponse } from "next/og";
+import { accountDb } from "@/lib/db";
+import { OG_CARD, shareOgImage, shareOgText } from "@/lib/og/cardsImage";
+import { ogFonts } from "@/lib/og/googleFont";
+import { shareOgData, withInlineFaces } from "@/lib/share/og";
+import { findShare } from "@/lib/share/store";
+
+/** GET → the 1200×630 link preview of a shared reading; 404 once it is no longer shared. */
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }): Promise<Response> {
+  const db = accountDb();
+  const share = db ? await findShare(db, (await params).id) : null;
+  if (!share) return new Response("Not found", { status: 404 });
+  const data = await withInlineFaces(shareOgData(share.payload, new URL(request.url).origin));
+  const text = shareOgText(data);
+  return new ImageResponse(shareOgImage(data), {
+    ...OG_CARD,
+    fonts: await ogFonts(text.serif, text.sans),
+    // A share only changes by being stopped; an hour of a stale preview after that shows card names only.
+    headers: { "Cache-Control": "public, max-age=3600" },
+  });
+}

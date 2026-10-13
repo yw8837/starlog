@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
-import { kakaoKey, shareToKakao } from "@/lib/kakaoShare";
+import { kakaoKey, shareToKakao, type KakaoTarget } from "@/lib/kakaoShare";
 import { useCopy } from "@/lib/useCopy";
 import s from "./ShareButton.module.css";
 
@@ -18,6 +18,8 @@ type ShareButtonProps = {
   onPaper?: boolean;
   /** Kakao JavaScript key; defaults to NEXT_PUBLIC_KAKAO_JS_KEY. Empty: no Kakao button. */
   kakao?: string;
+  /** The link to share instead of the service's home, with its Kakao message (a shared reading, /s/<id>). */
+  target?: KakaoTarget;
 };
 
 const ShareIcon = () => (
@@ -37,16 +39,17 @@ const TalkIcon = () => (
 /**
  * 공유하기: the system share sheet where there is one (phones), otherwise the link is copied and a
  * small toast says so. When the copy is refused too, the link is shown in a field to copy by hand.
- * Readings live on this device only, so the link is always the service's home
- * (SITE.url), never a page of a reading. With a Kakao key, 카카오톡으로 보내기 sits beside it (the
- * SDK loads on the first tap). Secondary style, never the screen's gold primary.
+ * The link is the service's home (SITE.url) unless `target` names another: a reading lives on its
+ * device, and only its own share link (made on purpose, ShareResultButton) shows it to others. With
+ * a Kakao key, 카카오톡으로 보내기 sits beside it (the SDK loads on the first tap). Secondary style,
+ * never the screen's gold primary.
  */
-export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao = kakaoKey() }: ShareButtonProps) {
+export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao = kakaoKey(), target }: ShareButtonProps) {
   const { state, copy } = useCopy();
   const [kakaoFailed, setKakaoFailed] = useState(false);
   // The link to copy by hand, once the clipboard refused it (stays until the next try).
   const [manual, setManual] = useState(false);
-  const url = SITE.url;
+  const url = target?.url ?? SITE.url;
 
   useEffect(() => {
     if (state === "failed") setManual(true);
@@ -70,7 +73,7 @@ export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao 
   const sendKakao = async () => {
     setKakaoFailed(false);
     try {
-      await shareToKakao(text, kakao);
+      await shareToKakao(text, kakao, target);
     } catch {
       setKakaoFailed(true);
     }
