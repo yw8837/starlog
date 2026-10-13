@@ -18,8 +18,9 @@
   .star { position: absolute; border-radius: 50%; background: #fff; }
   .stage { position: relative; width: 1200px; height: 630px; flex: none; transform-origin: center; }
   .text { position: absolute; left: 84px; top: 0; bottom: 0; width: 560px; display: flex; flex-direction: column; justify-content: center; }
-  .eyebrow { color: var(--gold); font-weight: 700; font-size: 24px; letter-spacing: 0.42em; }
-  .name { margin-top: 10px; font-family: "Gowun Batang", serif; font-weight: 700; font-size: 104px; line-height: 1.05; letter-spacing: -0.01em;
+  .wordmark { display: inline-flex; align-items: baseline; font-family: "Gowun Batang", serif; font-weight: 700; font-size: 58px; line-height: 1; color: var(--ink); letter-spacing: 0.01em; }
+  .wordmark svg { width: 0.84em; height: 0.84em; margin: 0 0.01em 0 0.02em; align-self: center; transform: translateY(0.07em); fill: var(--gold); filter: drop-shadow(0 0 10px rgba(243, 220, 161, 0.55)); }
+  .name { margin-top: 14px; font-family: "Gowun Batang", serif; font-weight: 700; font-size: 104px; line-height: 1.05; letter-spacing: -0.01em;
           text-shadow: 0 6px 30px rgba(10, 6, 40, 0.6); }
   .tagline { margin-top: 26px; font-size: 32px; line-height: 1.5; color: var(--ink); font-weight: 500; }
   .tagline b { color: var(--gold); font-weight: 700; }
@@ -45,7 +46,7 @@
 <div id="sky"></div>
 <div class="stage" id="stage">
   <div class="text">
-    <p class="eyebrow">STARLOG</p>
+    <p class="wordmark" aria-label="Starlog"><span>Starl</span><svg viewBox="0 0 24 24"><path d="M12 2.5l2.8 6.2 6.7.6-5.1 4.4 1.6 6.6L12 16.8 6 20.3l1.6-6.6-5.1-4.4 6.7-.6z"/></svg><span>g</span></p>
     <h1 class="name">스타로그</h1>
     <p class="tagline">타로와 사주로<br><b>내 고민</b>을 풀어 주는 곳</p>
     <div class="chips"><span class="chip">타로</span><span class="chip">사주</span><span class="chip">오늘의 한 장 무료</span></div>
