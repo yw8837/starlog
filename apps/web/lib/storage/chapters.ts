@@ -1,4 +1,5 @@
 import type { Orientation } from "@starlog/core";
+import { FRONT_DECKS, type FrontDeck } from "@/lib/deck";
 import { SITE } from "@/lib/config";
 import { kstDate, kstDaysBetween, kstMonthDay } from "@/lib/kst";
 import { CHECKIN_ANSWERS, type CheckinAnswer, type HistoryItem, type SajuContext, type SajuReadingData, type SajuTopic, type SajuTopicId, type TarotReadingData } from "@/lib/reading/types";
@@ -44,6 +45,11 @@ interface ChapterBase {
   checkin?: Checkin;
   /** The account copy's id (Tasks 10–11): follow-ups update it there too. */
   serverId?: string;
+  /**
+   * The card design the reading was written for (its picture is the one it quotes); the record and
+   * its share show the cards in it. Absent on readings opened before 2026-10-14: the viewer's choice.
+   */
+  deck?: FrontDeck;
 }
 
 export interface TarotChapter extends ChapterBase {
@@ -110,6 +116,8 @@ export function parseChapter(value: unknown): StoredChapter | null {
   const checkin = parseCheckin(value.checkin);
   if (checkin) base.checkin = checkin;
   if (isString(value.serverId) && /^[a-z0-9]{20}$/.test(value.serverId)) base.serverId = value.serverId;
+  const deck = FRONT_DECKS.find((option) => option === value.deck);
+  if (deck) base.deck = deck;
   const reading = value.reading;
 
   if (value.kind === "tarot") {

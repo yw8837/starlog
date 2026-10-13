@@ -141,6 +141,15 @@ describe("chapters store", () => {
     expect(parseChapter({ ...SAJU, id: "abcdef12", createdAt: NOW, birth: { year: 1 } })).toBeNull();
   });
 
+  it("keeps the card design a reading was written for, and drops one it does not know", () => {
+    const base = { ...TAROT, id: "abcdef12", createdAt: NOW, turns: [], followUpsLeft: 3 };
+    expect(parseChapter({ ...base, deck: "starlog" })?.deck).toBe("starlog");
+    expect(parseChapter({ ...base, deck: "rws1909" })?.deck).toBe("rws1909");
+    expect(parseChapter({ ...base, deck: "tarot-of-elsewhere" })).not.toHaveProperty("deck");
+    // Saved before 2026-10-14: no deck, so the record shows the viewer's choice.
+    expect(parseChapter(base)).not.toHaveProperty("deck");
+  });
+
   it("keeps a reading saved before the story block was dropped", () => {
     const old = { ...TAROT, id: "abcdef12", createdAt: NOW, reading: { ...READING, observation: undefined, story: { title: "t", body: "b" } } };
     expect(parseChapter(old)?.reading.story).toEqual({ title: "t", body: "b" });

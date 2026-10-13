@@ -69,6 +69,25 @@ describe("POST /api/share", () => {
   });
 });
 
+describe("the card design of a share", () => {
+  it("is the one the reading was written for (signed in its chapter), whatever the sharer's screen shows now", async () => {
+    const db = useTestDb();
+    const signed = { ...ctx, input: { ...(ctx as { input: object }).input, deck: "rws1909" } } as ChapterContext;
+    const chapterToken = await issueChapter(signed, reading, [], secret, Date.now());
+    const { id } = await json(await browser().send(POST, "/api/share", { body: { chapterToken, reading, deck: "starlog" }, origin: true }));
+    const share = await findShare(db, id as string);
+    expect(share?.payload.kind === "tarot" && share.payload.deck).toBe("rws1909");
+  });
+
+  it("falls back to the sharer's design for a reading opened before chapters carried one", async () => {
+    const db = useTestDb();
+    const chapterToken = await issueChapter(ctx, reading, [], secret, Date.now());
+    const { id } = await json(await browser().send(POST, "/api/share", { body: { chapterToken, reading, deck: "rws1909" }, origin: true }));
+    const share = await findShare(db, id as string);
+    expect(share?.payload.kind === "tarot" && share.payload.deck).toBe("rws1909");
+  });
+});
+
 describe("DELETE /api/share", () => {
   it("stops sharing: the link answers nothing afterwards, and sharing again makes a new one", async () => {
     const db = useTestDb();

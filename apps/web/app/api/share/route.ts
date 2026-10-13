@@ -44,7 +44,10 @@ async function open(request: Request) {
 export async function POST(request: Request): Promise<Response> {
   const opened = await open(request);
   if (opened instanceof Response) return opened;
-  const payload = buildSharePayload(opened.chapter.ctx, opened.body.reading, opened.body.deck);
+  // The design the reading was written for (signed in its chapter), else the sharer's (older readings).
+  const ctx = opened.chapter.ctx;
+  const deck = (ctx.kind === "tarot" ? ctx.input.deck : undefined) ?? opened.body.deck;
+  const payload = buildSharePayload(ctx, opened.body.reading, deck);
   const id = await saveShare(opened.db, opened.chapterKey, payload, Date.now());
   return json({ id, path: `/s/${id}` });
 }

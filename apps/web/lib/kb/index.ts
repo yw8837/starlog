@@ -1,5 +1,6 @@
 import "server-only";
 import type { Orientation, Who } from "@starlog/core";
+import type { FrontDeck } from "@/lib/deck";
 import data from "./cards.generated.json";
 
 /**
@@ -32,6 +33,8 @@ export interface KbCard {
     /** `regex` is a JS RegExp source; a match in a card section is an invented image detail */
     misdescriptions: Array<{ wrong: string; correct: string; regex: string }>;
     glosses: Array<{ factId: string; ko: string }>;
+    /** The Starlog deck's picture of the same card (absent until written): its facts and misdescriptions. */
+    decks?: { starlog?: { facts: KbFact[]; misdescriptions: Array<{ wrong: string; correct: string; regex: string }> } };
   };
   core: { upright: string[]; reversed: string[]; oneLine: { upright: string; reversed: string }; shadow: string };
   reversedModes: { default: ReversedMode; allowed: ReversedMode[]; gloss: Partial<Record<ReversedMode, string>> };
@@ -63,6 +66,18 @@ export function kbCard(id: string): KbCard {
   const card = BY_ID.get(id);
   if (!card) throw new Error(`No KB entry for card ${id}`);
   return card;
+}
+
+/**
+ * The card as the given deck draws it: for the Starlog deck, its own picture facts and misdescriptions,
+ * and only the glosses whose fact it shows. Everything else (meanings, hints, cautions) is the card's.
+ * A card whose Starlog picture is not written yet keeps the 1909 one.
+ */
+export function kbForDeck(card: KbCard, deck: FrontDeck): KbCard {
+  const own = deck === "starlog" ? card.imagery.decks?.starlog : undefined;
+  if (!own) return card;
+  const shown = new Set(own.facts.map((fact) => fact.id));
+  return { ...card, imagery: { facts: own.facts, misdescriptions: own.misdescriptions, glosses: card.imagery.glosses.filter((gloss) => shown.has(gloss.factId)) } };
 }
 
 /** Reading angles for a topic, main angle first (`_index.json` topicMap). Falls back to "self". */

@@ -17,6 +17,7 @@ import type { DailyData, DailyDeal } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { saveDaily, useDaily } from "@/lib/storage/daily";
 import s from "./TodayView.module.css";
+import { deckPrefs } from "@/lib/deck";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { isDailyData, isDailyDeal } from "@/lib/reading/validate";
 
@@ -164,7 +165,7 @@ export function TodayView() {
     setPicked(index);
     setPhase("reading");
     setLimited(null);
-    const result = await daily.run("/api/tarot/daily", { pick: index }, DAILY_PLAN, isDailyData);
+    const result = await daily.run("/api/tarot/daily", { pick: index, deck: deckPrefs().front }, DAILY_PLAN, isDailyData);
     if (!result) return;
     if (result.ok) {
       setJustPicked(true);

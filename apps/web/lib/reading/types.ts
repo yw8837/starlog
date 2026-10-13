@@ -1,4 +1,5 @@
 import type { Orientation, TemplateId } from "@starlog/core";
+import type { FrontDeck } from "@/lib/deck";
 import type { SajuGlance } from "@/lib/ai/schemas";
 
 /**
@@ -136,6 +137,8 @@ export interface TarotInput {
   whoText?: string;
   whenText?: string;
   history?: HistoryItem[];
+  /** The card design the reader sees; the reading quotes its picture. */
+  deck?: FrontDeck;
 }
 
 export interface TarotRequest {

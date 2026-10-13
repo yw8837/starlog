@@ -163,8 +163,10 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         : {}),
   };
   const date = kstMonthDay(chapter.createdAt);
-  // 결과 공유: a whole reading can get its own link, shown with the card design chosen here.
-  const deck = useDeckPrefs().front;
+  // 결과 공유: a whole reading can get its own link, shown in the design it was written for (an
+  // older reading: the one chosen here).
+  const chosen = useDeckPrefs().front;
+  const deck = chapter.deck ?? chosen;
   const share: ShareActions | undefined = whole
     ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter) }
     : undefined;
@@ -191,6 +193,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         eyebrow={`타로 기록 · ${date}`}
         question={chapter.question}
         cards={chapter.cards.map(faceUpCard)}
+        deck={chapter.deck}
         reading={chapter.reading}
         followUp={followUp}
         checkin={checkin}

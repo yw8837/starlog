@@ -38,6 +38,12 @@ export const TarotInputBody = z.object({
   whenText: customText,
   /** up to three earlier readings from this device (lib/ai/history.ts) */
   history: HistorySchema.optional(),
+  /**
+   * The card design the reader sees (내 정보 → 카드 디자인): the reading quotes that deck's picture. It
+   * rides in the chapter, so follow-ups and a share see the same one. Absent (older clients, earlier
+   * chapters): the 1909 scans, which those readings were written for.
+   */
+  deck: z.enum(["starlog", "rws1909"]).optional(),
 });
 
 /** How the full reading is opened (P4). Absent means the 오픈 기념 daily free reading. */

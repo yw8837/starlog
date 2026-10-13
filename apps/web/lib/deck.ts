@@ -36,6 +36,11 @@ export function useDeckPrefs(): DeckPrefs {
   return store.useValue() ?? DEFAULT_DECK_PREFS;
 }
 
+/** The same outside React (a request being built): the saved choice, or the defaults. */
+export function deckPrefs(): DeckPrefs {
+  return store.read() ?? DEFAULT_DECK_PREFS;
+}
+
 /** Saves a change to one half or both; every mounted card and setting updates at once. */
 export function setDeckPrefs(change: Partial<DeckPrefs>): void {
   store.save({ ...(store.read() ?? DEFAULT_DECK_PREFS), ...change });

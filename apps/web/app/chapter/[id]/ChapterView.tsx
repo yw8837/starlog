@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { SITE } from "@/lib/config";
+import type { FrontDeck } from "@/lib/deck";
 import type { TarotSampleCard } from "@/lib/fixtures";
 import { ChapterContents } from "./ChapterContents";
 import s from "./ChapterView.module.css";
@@ -43,13 +44,15 @@ type ChapterViewProps = {
   invite?: { url: string; card: TarotSampleCard };
   /** 결과 공유: a saved reading's own share link. Without it (the demo) 공유하기 sends the site. */
   share?: ShareActions;
+  /** The design the reading was written for; omitted, the viewer's choice. */
+  deck?: FrontDeck;
 };
 
 /**
  * An opened tarot reading in one scroll: the question and cards, the full reading, follow-ups,
  * rating. Sharing makes the reading's own link (the cards and the reading, never the question or note).
  */
-export function ChapterView({ eyebrow, question, cards, reading, followUp, checkin, invite, share }: ChapterViewProps) {
+export function ChapterView({ eyebrow, question, cards, reading, followUp, checkin, invite, share, deck }: ChapterViewProps) {
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const shown = enlarged === null ? undefined : cards[enlarged];
@@ -72,7 +75,7 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, check
             </div>
           </header>
         }
-        spread={<SpreadRow size="sm" cards={cards} onCardTap={setEnlarged} />}
+        spread={<SpreadRow size="sm" cards={cards} onCardTap={setEnlarged} deck={deck} />}
       >
         {checkin}
         <ChapterContents />
@@ -104,7 +107,7 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, check
             <h2 id="enlarged-title" className={s.enlargedTitle}>
               {`${shown.position} · ${shown.name ?? ""}`}
             </h2>
-            <TarotCard cardId={shown.cardId} orientation={shown.orientation} faceUp size="lg" label={cardLabel(shown)} className={s.enlargedCard} />
+            <TarotCard cardId={shown.cardId} orientation={shown.orientation} faceUp size="lg" label={cardLabel(shown)} className={s.enlargedCard} deck={deck} />
             <p className={s.enlargedMeta}>
               {shown.number ? <span className={s.enlargedNumber}>{shown.number}</span> : null}
               {shown.orientation === "reversed" ? "역방향" : "정방향"}

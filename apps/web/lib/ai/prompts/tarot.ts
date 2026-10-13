@@ -1,6 +1,7 @@
 import "server-only";
 import { PREMIUM_TEMPLATES, TOPICS_BY_WHO, composeQuestion, type DrawnCard, type Orientation, type TemplateId, type TopicDef, type When, type Who } from "@starlog/core";
-import { kbCard, positionHint, topicAngles, type KbCard, type ReversedMode, type TopicAngle } from "@/lib/kb";
+import type { FrontDeck } from "@/lib/deck";
+import { kbCard, kbForDeck, positionHint, topicAngles, type KbCard, type ReversedMode, type TopicAngle } from "@/lib/kb";
 import { HISTORY_RULE, historyBlock, sanitizeHistory, type HistoryItem } from "../history";
 import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
 
@@ -23,12 +24,16 @@ export interface TarotInput {
   topicText?: string;
   whoText?: string;
   whenText?: string;
+  /** the card design the reader sees; its picture is the one quoted (absent: the 1909 scans) */
+  deck?: FrontDeck;
 }
 
 /** Everything a tarot request brings besides the draw. */
 export interface TarotRequestExtras {
   /** earlier readings kept on the device (at most 3) */
   history?: readonly HistoryItem[];
+  /** the card design, for a request without an input (오늘의 한 장) */
+  deck?: FrontDeck;
 }
 
 export interface TarotCardContext {
@@ -136,10 +141,13 @@ export function resolveTopic(templateId: TemplateId, topicId: string, whoId?: Wh
   return null;
 }
 
-/** The KB slice of each drawn card, in the orientation drawn (shared by the standard and premium contexts). */
-export function cardContexts(drawn: DrawnCard[]): TarotCardContext[] {
+/**
+ * The KB slice of each drawn card, in the orientation drawn and as `deck` draws it (shared by the
+ * standard and premium contexts). The 1909 scans unless the reader sees the Starlog deck.
+ */
+export function cardContexts(drawn: DrawnCard[], deck: FrontDeck = "rws1909"): TarotCardContext[] {
   return drawn.map((card) => {
-    const kb = kbCard(card.cardId);
+    const kb = kbForDeck(kbCard(card.cardId), deck);
     return {
       slot: card.slot,
       position: card.position,
@@ -221,7 +229,7 @@ export function buildTarotContext(templateId: TemplateId, drawn: DrawnCard[], in
     bannedWords,
     custom,
     history: sanitizeHistory(extras.history),
-    cards: cardContexts(drawn),
+    cards: cardContexts(drawn, input?.deck ?? extras.deck),
   };
 }
 

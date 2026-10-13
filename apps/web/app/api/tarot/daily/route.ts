@@ -57,6 +57,8 @@ export async function POST(request: Request): Promise<Response> {
   const body = await readJson(request, 1_000);
   if (body === null || typeof body !== "object" || Array.isArray(body)) return errorResponse("BAD_REQUEST");
   const requested = (body as { pick?: unknown }).pick;
+  // The card design the reader sees: the fortune quotes its picture (absent: the 1909 scans).
+  const deck = (body as { deck?: unknown }).deck === "starlog" ? "starlog" : "rws1909";
   const validPick = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0 && (value as number) < DAILY_DEAL_SIZE;
   if (requested !== undefined && !validPick(requested)) return errorResponse("BAD_REQUEST", { field: "pick" });
 
@@ -86,7 +88,7 @@ export async function POST(request: Request): Promise<Response> {
     return limited;
   }
 
-  const ctx = buildTarotContext("daily", [{ ...card, position: "오늘의 한 장", slot: 0 }], null);
+  const ctx = buildTarotContext("daily", [{ ...card, position: "오늘의 한 장", slot: 0 }], null, { deck });
   return respondGeneration(request, async (hooks) => {
     const result = await getOrCreateDailyResult(state.did, day, async (): Promise<DailyResult> => {
       const { data } = await generateDaily(gate.provider, ctx, hooks);

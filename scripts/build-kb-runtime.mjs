@@ -32,6 +32,15 @@ function slim(card) {
       misdescriptions: imagery.commonMisdescriptions.map(({ wrong, correct, regex }) => ({ wrong, correct, regex })),
       // Waite-1911 glosses duplicate `core`; the modern/editorial ones carry the symbol readings prompts use.
       glosses: imagery.glosses.filter((g) => g.school !== "waite-1911").map(({ factId, ko }) => ({ factId, ko })),
+      // The Starlog deck's own picture (owner 2026-10-13): readings for it quote these instead.
+      decks: imagery.decks?.starlog
+        ? {
+            starlog: {
+              facts: imagery.decks.starlog.facts.map(({ id, ko, salience }) => ({ id, ko, salience })),
+              misdescriptions: imagery.decks.starlog.commonMisdescriptions.map(({ wrong, correct, regex }) => ({ wrong, correct, regex })),
+            },
+          }
+        : undefined,
     },
     core: { upright: core.upright, reversed: core.reversed, oneLine: core.oneLine, shadow: core.shadow },
     reversedModes: card.reversedModes,
@@ -49,7 +58,7 @@ function slim(card) {
 const cards = index.ids.map((id) => {
   const card = JSON.parse(readFileSync(join(kbDir, `${id}.json`), "utf8"));
   if (card.id !== id) throw new Error(`${id}.json has id ${card.id}`);
-  for (const m of card.imagery.commonMisdescriptions) new RegExp(m.regex); // fail the build on a bad regex
+  for (const m of [...card.imagery.commonMisdescriptions, ...(card.imagery.decks?.starlog?.commonMisdescriptions ?? [])]) new RegExp(m.regex); // fail the build on a bad regex
   return slim(card);
 });
 

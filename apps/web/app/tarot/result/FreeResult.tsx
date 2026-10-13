@@ -1,5 +1,6 @@
 "use client";
 
+import { deckPrefs } from "@/lib/deck";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AiNote } from "@/components/reading/AiNote";
@@ -36,10 +37,14 @@ const RETURN_TO = "/tarot/result";
 /** Errors after which the server may still have saved the reading (M4). */
 const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
 
-/** The reading input with up to 3 recent readings on this device (omitted when there are none). */
+/**
+ * The reading input with up to 3 recent readings on this device (omitted when there are none) and
+ * the card design shown here, whose picture the reading quotes.
+ */
 function withHistory(input: TarotInput): TarotInput {
   const history = historyFor(listChapters());
-  return history.length > 0 ? { ...input, history } : input;
+  const withDeck = { ...input, deck: deckPrefs().front };
+  return history.length > 0 ? { ...withDeck, history } : withDeck;
 }
 
 /**
@@ -211,6 +216,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
       }),
       reading: result.data.reading,
       chapterToken: result.data.chapterToken,
+      deck: body.input.deck,
       ...(result.data.readingId ? { serverId: result.data.readingId } : {}),
     });
     setFlow((prev) => (prev.draw ? { ...prev, draw: { ...prev.draw, chapterId: chapter.id } } : prev));
