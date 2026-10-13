@@ -70,7 +70,7 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   await settleAnimations(page);
   await pickFanCard(page, 10);
 
-  const answer = page.getByRole("heading", { level: 2 });
+  const answer = page.locator("h2:not(#now-guide)");
   await expect(answer).toBeVisible();
   const text = (await answer.textContent()) ?? "";
   expect(ALL_ANSWERS.has(text), `"${text}" is a line from decision.ko.json`).toBe(true);
@@ -102,7 +102,7 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   await page.getByRole("button", { name: "다시 섞기" }).click();
   await openFan(page);
   await pickFanCard(page, 4);
-  await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+  await expect(page.locator("h2:not(#now-guide)")).toBeVisible();
 
   // A later visit keeps the steps folded.
   await page.reload();
@@ -121,7 +121,7 @@ test("지금의 한 장 screens at 375, 360 and 1280 wide @screens", async ({ pa
     await openFan(page);
     await shot(page, `${tag}-01-pick`);
     await pickFanCard(page, 10);
-    await expect(page.getByRole("heading", { level: 2 })).toBeVisible();
+    await expect(page.locator("h2:not(#now-guide)")).toBeVisible();
     await settleAnimations(page);
     await page.evaluate(() => window.scrollTo(0, 0));
     await shot(page, `${tag}-02-result`);
