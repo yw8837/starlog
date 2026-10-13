@@ -60,7 +60,7 @@ export const DEEP_ADAPTER: Adapter<DeepTarotBodyData, ContextOf<"tarot-deep">> =
   crisisTexts: ({ input: i }) => [i.question, i.note, i.topicText, i.whoText, i.whenText, ...i.conditions.flatMap((c) => [c.label, c.value])],
   async context(b, gate) {
     const draw = await openDraw(b.drawToken, gate.secret, gate.now);
-    if (!draw || draw.templateId !== "deep-tarot") return errorResponse("BAD_TOKEN");
+    if (!draw || draw.templateId !== "deep-tarot") return errorResponse("BAD_TOKEN", { token: "draw" });
     const input = deepInput(b);
     // The one-card daily topic has its own page; the ten-card spread reads every other topic.
     if (input.topicId === "daily") return errorResponse("BAD_REQUEST");
@@ -92,7 +92,7 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
     const partner = chartOf(b.partner.birth, "partner", gate.now);
     if (partner instanceof Response) return partner;
     const draw = await openDraw(b.drawToken, gate.secret, gate.now);
-    if (!draw || draw.templateId !== "match") return errorResponse("BAD_TOKEN");
+    if (!draw || draw.templateId !== "match") return errorResponse("BAD_TOKEN", { token: "draw" });
     const facts = buildMatchFacts(me, partner, {
       relation: b.relation,
       label: cleanUserText(b.partner.label ?? ""),

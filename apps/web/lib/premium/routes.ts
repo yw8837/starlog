@@ -38,11 +38,13 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
 /**
  * POST /api/premium/<id>/reading: writes the next part (spec §6.1). A purchase (or the owner pass)
  * is required; the plan reserves or extends the credit before anything is generated, and charges
- * the network counter per part when the purchase earned nothing (unlock.ts, security M2). A
- * non-final part answers {status:"continue", resume, done, of}; the final part saves, spends and
- * answers {status:"done", reading, chapterToken, readingId}. Any failure releases the credit; the
- * client's last resume token still holds the parts written so far. STARLOG_PREMIUM gates ordering
- * only: a reading already paid for always opens.
+ * the network counter once per part (2 or 3 per reading) when the purchase earned nothing
+ * (unlock.ts, security M2). A non-final part answers {status:"continue", resume, done, of}; the
+ * final part saves, spends and answers {status:"done", reading, chapterToken, readingId}. Any
+ * failure releases the credit; the client's last resume token still holds the parts written so
+ * far. 400 BAD_TOKEN says `token: "draw"` (deal again) or `token: "resume"` (start over); 409
+ * NOT_AVAILABLE `reason: "opened"` carries the saved reading's id, `reason: "opening"` its
+ * `reservedUntil`. STARLOG_PREMIUM gates ordering only: a reading already paid for always opens.
  */
 export function premiumReadingRoute<B, C extends PremiumContext>(adapter: Adapter<B, C>) {
   return async function POST(request: Request): Promise<Response> {

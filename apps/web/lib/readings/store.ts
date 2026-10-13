@@ -44,18 +44,22 @@ export function newReadingId(): string {
 /**
  * The INSERT for a reading, for a live account only (a deleted one gets nothing). A second insert
  * for the same unlock does nothing (ON CONFLICT DO NOTHING), so a retried delivery never fails on
- * its own first save.
+ * its own first save. `whileReserved` (P5 premium): only while its unlock is still reserved, so in
+ * deliverUnlock's batch the reading is saved exactly when its spend is.
  */
 export async function insertReadingStatement(
   db: D1Binding,
   secret: string,
-  input: { id: string; userId: string; productId: string; source: ReadingSource; unlockId: string | null; chapter: ServerChapter; now: number },
+  input: {
+    id: string; userId: string; productId: string; source: ReadingSource; unlockId: string | null; chapter: ServerChapter; now: number; whileReserved?: boolean;
+  },
 ): Promise<D1Statement> {
+  const held = input.whileReserved ? " AND EXISTS (SELECT 1 FROM unlocks WHERE id = ? AND status = 'reserved')" : "";
   return db
     .prepare(
       `INSERT INTO readings (id, user_id, kind, product_id, source, unlock_id, payload, key_version, created_at, updated_at)
        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-       WHERE EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NULL)
+       WHERE EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NULL)${held}
        ON CONFLICT DO NOTHING`,
     )
     .bind(
@@ -70,6 +74,7 @@ export async function insertReadingStatement(
       input.now,
       input.now,
       input.userId,
+      ...(input.whileReserved ? [input.unlockId] : []),
     );
 }
 

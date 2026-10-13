@@ -14,6 +14,7 @@ import { listReadings } from "@/lib/readings/store";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 import { browser, buy, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
+import { sealResume } from "./resume";
 import { holdsUnused, planPremiumUnlock, premiumSettlement, type PremiumPlan } from "./unlock";
 
 const SECRET = "account-secret-for-tests-0123456789abcdef";
@@ -102,21 +103,39 @@ describe("premium settlement", () => {
     expect(await settle.recover()).toEqual({ readingId: saved!.id });
   });
 
-  it("still answers the saved reading's id when the sweep took the reservation back first, and the purchase stays unspent", async () => {
+  it("saves nothing and throws when the reservation was given back first (another request with the same token), so the purchase is never kept with a reading", async () => {
     const { db, plan } = await setup();
-    await releaseUnlock(db, { unlockId: plan.unlockId!, now: NOW + RESERVATION_MS + 1 });
-    const extra = await premiumSettlement(plan, chapterOf, NOW)!.deliver(DONE);
-    const { readings: [saved] } = await listReadings(db, SECRET, "u_1");
-    expect(extra).toEqual({ readingId: saved!.id });
+    await releaseUnlock(db, { unlockId: plan.unlockId!, now: NOW });
+    await expect(premiumSettlement(plan, chapterOf, NOW)!.deliver(DONE)).rejects.toThrow();
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
     expect(await one(db, "SELECT units_left FROM credit_lots WHERE id = 'lot_ny'")).toEqual({ units_left: 1 });
   });
 
-  it("answers no reading id when nothing could be saved (a deleted account), and spends nothing", async () => {
+  it("saves one copy when two requests with the same token both finish: the later one throws", async () => {
+    const { db, plan } = await setup();
+    expect(await premiumSettlement(plan, chapterOf, NOW)!.deliver(DONE)).toHaveProperty("readingId");
+    await expect(premiumSettlement(plan, chapterOf, NOW)!.deliver(DONE)).rejects.toThrow();
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 1 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'spend'")).toEqual({ n: 1 });
+  });
+
+  it("saves and spends nothing for a deleted account, and throws rather than hand the reading out", async () => {
     const { db, plan } = await setup();
     await db.prepare("UPDATE users SET deleted_at = 1 WHERE id = 'u_1'").run();
-    expect(await premiumSettlement(plan, chapterOf, NOW)!.deliver(DONE)).toEqual({});
+    await expect(premiumSettlement(plan, chapterOf, NOW)!.deliver(DONE)).rejects.toThrow();
     expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'spend'")).toEqual({ n: 0 });
+  });
+
+  it("keeps a written part when extending its reservation fails (a D1 error): the next request reserves again", async () => {
+    const { db, plan } = await setup();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const prepare = db.prepare.bind(db);
+    vi.spyOn(db, "prepare").mockImplementation((sql: string) => {
+      if (sql.startsWith("UPDATE unlocks SET reserved_until")) throw new Error("D1 unavailable");
+      return prepare(sql);
+    });
+    expect(await premiumSettlement(plan, chapterOf, NOW)!.deliver({ body: { status: "continue", resume: "t", done: 1, of: 3 }, cookies: [] })).toEqual({});
   });
 });
 
@@ -143,7 +162,8 @@ describe("planning a premium opening", () => {
   const requestOf = (b: Browser) =>
     new Request("http://localhost/api/premium/tarot-deep/reading", { method: "POST", headers: { cookie: [...b.jar].map(([name, value]) => `${name}=${value}`).join("; ") } });
   const gate = (owner: boolean): Gate => ({ secret: signingSecret()!, provider: mockProvider, owner, now: Date.now(), cookies: {}, client: "client-hash" });
-  const plan = (b: Browser, method: "paid" | "owner" = "paid", owner = false) => planPremiumUnlock(requestOf(b), gate(owner), "tarot-deep", method, { hash: "h" });
+  const plan = (b: Browser, method: "paid" | "owner" = "paid", owner = false, resume?: string) =>
+    planPremiumUnlock(requestOf(b), gate(owner), "tarot-deep", method, { resume, hash: "h" });
   const refusal = async (result: PremiumPlan | Response) => {
     if (!(result instanceof Response)) throw new Error("not refused");
     return { status: result.status, ...((await result.json()) as Record<string, unknown>) };
@@ -208,6 +228,18 @@ describe("planning a premium opening", () => {
     await adminLot(db, await userIdOf(db), "lot_deep", "tarot-deep");
     vi.stubEnv("REVIEW_LOGIN_PASSWORD", "");
     expect(await refusal(await plan(b))).toMatchObject({ status: 409, code: "NOT_AVAILABLE" });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
+  });
+
+  it("refuses a resume token whose parts this deploy cannot continue (all written, or of another shape) before holding anything", async () => {
+    const db = useTestDb();
+    const b = await member();
+    const userId = await userIdOf(db);
+    await buy(b, "tarot-deep");
+    for (const parts of [[{}, {}], [{ verdict: "다른 배포의 파트" }]]) {
+      const token = await sealResume({ product: "tarot-deep", subject: userId, inputHash: "h", unlockId: null, parts }, signingSecret()!, NOW);
+      expect(await refusal(await plan(b, "paid", false, token))).toMatchObject({ status: 400, code: "BAD_TOKEN", token: "resume" });
+    }
     expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
   });
 

@@ -17,6 +17,7 @@ import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
 import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
+import { POST as followup } from "../followup/route";
 import { POST as ownerPost } from "../owner/route";
 import { POST as draw } from "../tarot/draw/route";
 import { POST as matchReading } from "./match/reading/route";
@@ -79,6 +80,29 @@ async function paidBook(): Promise<number> {
 }
 const freeBook = async () => Math.round((await spentTodayKrw(Date.now())) ?? -1);
 
+/** The next generation waits until `release()`; later ones run as usual (or as queued on `generate`). */
+function heldGeneration() {
+  const real = mockProvider.generate.bind(mockProvider);
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  const generate = vi.spyOn(mockProvider, "generate").mockImplementationOnce(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+    await held;
+    return real(task, attempt, feedback, hooks);
+  });
+  return { generate, release };
+}
+
+/** Writes every part with the owner pass (or a purchase) and answers the finished reading and the last token sent. */
+async function finish(b: Browser, handler: typeof deepReading, body: Record<string, unknown>) {
+  let token: string | undefined;
+  let res = await json(await b.send(handler, "/r", { body }));
+  while (res.status === "continue") {
+    token = res.resume as string;
+    res = await json(await b.send(handler, "/r", { body: { ...body, resume: token } }));
+  }
+  return { done: res, token: token! };
+}
+
 /** The mock provider, reporting EXPENSIVE as billed, like the real one does. */
 function billing() {
   const real = mockProvider.generate.bind(mockProvider);
@@ -135,11 +159,13 @@ describe("premium previews", () => {
     const b = browser("192.0.2.46");
     const deep = await dealt(b, "deep-tarot");
     const pair = await dealt(b, "match");
-    const codeOf = async (handler: typeof deepTeaser, body: unknown) => (await json(await b.send(handler, "/t", { body }))).code;
-    expect(await codeOf(deepTeaser, { drawToken: pair, input: DEEP_INPUT })).toBe("BAD_TOKEN");
-    expect(await codeOf(matchTeaser, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: deep, ack: true })).toBe("BAD_TOKEN");
-    expect(await codeOf(deepTeaser, { drawToken: deep, input: { ...DEEP_INPUT, topicId: "daily" } })).toBe("BAD_REQUEST");
-    expect(await codeOf(deepTeaser, { drawToken: deep, input: { topicId: "custom", topicText: "이사", question: "", conditions: [] } })).toBe("BAD_REQUEST");
+    const answer = async (handler: typeof deepTeaser, body: unknown) => json(await b.send(handler, "/t", { body }));
+    // `token: "draw"`: deal the cards again (a resume token that fails says `token: "resume"`)
+    expect(await answer(deepTeaser, { drawToken: pair, input: DEEP_INPUT })).toMatchObject({ code: "BAD_TOKEN", token: "draw" });
+    expect(await answer(matchTeaser, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: deep, ack: true }))
+      .toMatchObject({ code: "BAD_TOKEN", token: "draw" });
+    expect((await answer(deepTeaser, { drawToken: deep, input: { ...DEEP_INPUT, topicId: "daily" } })).code).toBe("BAD_REQUEST");
+    expect((await answer(deepTeaser, { drawToken: deep, input: { topicId: "custom", topicText: "이사", question: "", conditions: [] } })).code).toBe("BAD_REQUEST");
   });
 
   it("keeps 2027 신년운세 closed before 2026-11-15 for everyone but the owner", async () => {
@@ -233,13 +259,93 @@ describe("paid premium readings", () => {
     const body = { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } };
     const first = await json(await b.send(deepReading, "/r", { body }));
     const other = { ...body, input: { ...DEEP_INPUT, note: "다른 메모" }, resume: first.resume };
-    expect(await json(await b.send(deepReading, "/r", { body: other }))).toMatchObject({ code: "BAD_TOKEN" });
-    expect(await json(await b.send(deepReading, "/r", { body: { ...body, resume: `${first.resume}x` } }))).toMatchObject({ code: "BAD_TOKEN" });
+    expect(await json(await b.send(deepReading, "/r", { body: other }))).toMatchObject({ code: "BAD_TOKEN", token: "resume" });
+    expect(await json(await b.send(deepReading, "/r", { body: { ...body, resume: `${first.resume}x` } }))).toMatchObject({ code: "BAD_TOKEN", token: "resume" });
     const c = await shopper();
     await buy(c, "tarot-deep");
     const stolen = await c.send(deepReading, "/r", { body: { ...body, resume: first.resume } });
     expect(stolen.status).toBe(400);
-    expect(await json(stolen)).toMatchObject({ code: "BAD_TOKEN" });
+    expect(await json(stolen)).toMatchObject({ code: "BAD_TOKEN", token: "resume" });
+  });
+
+  it("asks to wait (409, reservedUntil), not to pay again, when starting over while the last attempt still holds the purchase", async () => {
+    useTestDb();
+    const b = await shopper();
+    await buy(b, "tarot-deep");
+    const body = { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } };
+    expect(await json(await b.send(deepReading, "/r", { body }))).toMatchObject({ status: "continue", done: 1 });
+    const over = await b.send(deepReading, "/r", { body }); // the resume token is gone (a BAD_TOKEN, a closed tab)
+    expect(over.status).toBe(409);
+    expect(await json(over)).toMatchObject({ code: "NOT_AVAILABLE", reason: "opening", reservedUntil: T0 + RESERVATION_MS });
+    vi.setSystemTime(T0 + RESERVATION_MS + 1);
+    expect(await json(await b.send(deepReading, "/r", { body }))).toMatchObject({ status: "continue", done: 1 });
+  });
+
+  it("answers the saved reading (409 opened), never a second spend, when the last part's token comes back after delivery", async () => {
+    const db = useTestDb();
+    const b = await shopper();
+    await buy(b, "newyear-2027");
+    await buy(b, "newyear-2027"); // a second purchase that a retry must not spend
+    const body = { birth: DEFAULT_SAJU_FORM, unlock: { method: "paid" } };
+    const { done, token } = await finish(b, yearReading, body);
+    expect(done.readingId).toMatch(/^[a-z0-9]{20}$/);
+    const again = await b.send(yearReading, "/r", { body: { ...body, resume: token } });
+    expect(again.status).toBe(409);
+    expect(await json(again)).toMatchObject({ code: "NOT_AVAILABLE", reason: "opened", readingId: done.readingId });
+    expect((await me(b)).user?.unused).toHaveLength(1);
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 1 });
+  });
+
+  it("never saves a reading whose reservation a twin request with the same token gave back, and the token still opens it once", async () => {
+    const db = useTestDb();
+    const b = await shopper();
+    await buy(b, "tarot-deep");
+    const body = { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } };
+    const first = await json(await b.send(deepReading, "/r", { body }));
+    const last = { body: { ...body, resume: first.resume } };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { generate, release } = heldGeneration();
+    const slow = b.send(deepReading, "/r", last);
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(1));
+    generate.mockRejectedValueOnce(new GenerationError("UPSTREAM")); // the twin fails (or is cancelled) and gives the reservation back
+    expect((await b.send(deepReading, "/r", last)).status).toBe(502);
+    release();
+    const late = await slow;
+    expect(late.status).toBe(502);
+    expect(await json(late)).not.toHaveProperty("reading");
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT units_left FROM credit_lots WHERE product_id = 'tarot-deep'")).toEqual({ units_left: 1 });
+    expect(await json(await b.send(deepReading, "/r", last))).toMatchObject({ status: "done" });
+    expect(await one(db, "SELECT units_left FROM credit_lots WHERE product_id = 'tarot-deep'")).toEqual({ units_left: 0 });
+  });
+
+  it("keeps one copy when two requests with the same token both finish: the slower one answers an error, not the reading", async () => {
+    const db = useTestDb();
+    const b = await shopper();
+    await buy(b, "tarot-deep");
+    const body = { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } };
+    const first = await json(await b.send(deepReading, "/r", { body }));
+    const last = { body: { ...body, resume: first.resume } };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const { generate, release } = heldGeneration();
+    const slow = b.send(deepReading, "/r", last);
+    await vi.waitFor(() => expect(generate).toHaveBeenCalledTimes(1));
+    expect(await json(await b.send(deepReading, "/r", last))).toMatchObject({ status: "done" });
+    release();
+    const late = await slow;
+    expect(late.status).toBe(502);
+    expect(await json(late)).not.toHaveProperty("chapterToken");
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 1 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'spend'")).toEqual({ n: 1 });
+  });
+
+  it("never opens a deep reading with a purchase of another premium product", async () => {
+    useTestDb();
+    const b = await shopper();
+    await buy(b, "match");
+    const res = await b.send(deepReading, "/r", { body: { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } } });
+    expect(res.status).toBe(402);
+    expect(await json(res)).toMatchObject({ code: "NO_CREDIT" });
   });
 
   it("checks every user-written field for crisis words before anything is generated", async () => {
@@ -296,6 +402,36 @@ describe("paid premium readings", () => {
     expect(last.status).toBe("done");
     expect(await db.prepare("SELECT source FROM readings").first()).toEqual({ source: "owner" });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM unlocks").first()).toEqual({ n: 0 });
+  });
+
+  it("lets the owner open without login: the reading comes back unsaved, with no reading id", async () => {
+    const db = useTestDb();
+    const b = browser("192.0.2.49");
+    await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } });
+    const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "owner" } });
+    expect(done).toMatchObject({ status: "done" });
+    expect(done.reading.positions).toHaveLength(10);
+    expect(done).not.toHaveProperty("readingId");
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
+  });
+
+  it("answers BAD_TOKEN at /api/followup for every premium chapter until premium follow-ups exist, generating nothing", async () => {
+    useTestDb();
+    const b = browser("192.0.2.48");
+    await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } });
+    const finished = [
+      await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "owner" } }),
+      await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true, unlock: { method: "owner" } }),
+      await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } }),
+    ];
+    const spy = vi.spyOn(mockProvider, "generate");
+    for (const { done } of finished) {
+      const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "이번 주에 무엇부터 하면 좋을까요?" } });
+      expect(res.status).toBe(400);
+      expect(await json(res)).toMatchObject({ code: "BAD_TOKEN" });
+    }
+    expect(spy).not.toHaveBeenCalled();
   });
 });
 

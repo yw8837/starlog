@@ -10,15 +10,22 @@ import { payKeyMode } from "@/lib/pay/mode";
 import { insertReadingStatement, newReadingId, readingExists, type ServerChapter } from "@/lib/readings/store";
 import type { PremiumId } from "./products";
 import { openResume, type Resume } from "./resume";
+import { partsFit } from "./run";
 
 /**
  * How a premium reading is paid for (P5 spec §7), decided before each part is written, with P4's
  * rules for a full reading (lib/api/unlock.ts):
  * - `paid`: login + one whole lot earmarked for this product, paid with this deploy's Toss keys. A
  *   resumed reading extends its reservation; one that was released (a failed part) or expired
- *   reserves again. Its model cost goes to the paid book. On a production deploy running test keys
- *   the purchase earned nothing, so every part is held and counted like a free full reading (M2).
+ *   reserves again; one already delivered (a retry after a missed answer) answers 409
+ *   `reason: "opened"` with the saved reading's id and never spends again. While another opening
+ *   of this product holds the purchase (a lost resume token, another tab), 409 `reason: "opening"`
+ *   says until when instead of 402. Its model cost goes to the paid book. On a production deploy
+ *   running test keys the purchase earned nothing, so it is held to the free budget and counted like
+ *   a free full reading (M2), once per part: 2 or 3 network "full" counts per premium reading.
  * - `owner`: the owner pass and the owner's server limits, no ledger; saved when logged in.
+ * A resume token that does not open, or whose parts this deploy cannot continue, is 400 BAD_TOKEN
+ * `token: "resume"` before anything is held (the routes say `token: "draw"` for the cards).
  * The signup gift (`free`) and `beta` never open premium: the request schema refuses them, and the
  * ledger keeps the gift for GIFT_PRODUCT. STARLOG_PREMIUM never gates opening a reading already paid.
  */
@@ -38,6 +45,8 @@ export interface PremiumPlan {
 }
 
 const RESUME_GONE = "이어 쓰던 정보가 만료됐어요. 처음부터 다시 써요.";
+const OPENED = "이미 다 적어서 저장한 풀이예요. 내 풀이에서 열어 볼 수 있어요.";
+const OPENING = "조금 전에 시작한 풀이가 아직 이 결제로 열리는 중이에요. 몇 분 뒤에 다시 시도해 주세요.";
 
 export async function planPremiumUnlock(
   request: Request, gate: Gate, product: PremiumId, method: "paid" | "owner", token: { resume?: string; hash: string },
@@ -45,7 +54,8 @@ export async function planPremiumUnlock(
   const resumeFor = async (subject: string): Promise<Resume | null | Response> => {
     if (!token.resume) return null;
     const opened = await openResume(token.resume, { product, subject, inputHash: token.hash }, gate.secret, gate.now);
-    return opened ?? errorResponse("BAD_TOKEN", { message: RESUME_GONE });
+    // A token from a deploy with other parts (or all parts written) cannot continue here either.
+    return opened && partsFit(product, opened.parts) ? opened : errorResponse("BAD_TOKEN", { token: "resume", message: RESUME_GONE });
   };
 
   if (method === "owner") {
@@ -77,10 +87,27 @@ export async function planPremiumUnlock(
   }
 
   let unlockId: string | null = null;
-  if (resume?.unlockId && (await extendUnlock(ctx.db, { unlockId: resume.unlockId, userId: user.id, now: gate.now }))) unlockId = resume.unlockId;
+  if (resume?.unlockId) {
+    if (await extendUnlock(ctx.db, { unlockId: resume.unlockId, userId: user.id, now: gate.now })) unlockId = resume.unlockId;
+    else {
+      // Delivered already (a retry after a missed answer): the reading is saved, so never reserve and spend again.
+      const delivered = await ctx.db
+        .prepare("SELECT reading_id FROM unlocks WHERE id = ? AND user_id = ? AND status = 'delivered'")
+        .bind(resume.unlockId, user.id)
+        .first<{ reading_id: string | null }>();
+      if (delivered) return errorResponse("NOT_AVAILABLE", { reason: "opened", readingId: delivered.reading_id, message: OPENED });
+    }
+  }
   if (!unlockId) {
     const reserved = await reserveUnlock(ctx.db, { userId: user.id, productId: product, currency: "paid", now: gate.now, payMode: payKeyMode(), earmarked: true });
-    if (!reserved.ok) return errorResponse("NO_CREDIT");
+    if (!reserved.ok) {
+      // Another opening of this product still holds the purchase (a lost resume token, another tab): wait, never pay again.
+      const held = await ctx.db
+        .prepare("SELECT MAX(reserved_until) AS until FROM unlocks WHERE user_id = ? AND product_id = ? AND status = 'reserved' AND reserved_until >= ?")
+        .bind(user.id, product, gate.now)
+        .first<{ until: number | null }>();
+      return held?.until ? errorResponse("NOT_AVAILABLE", { reason: "opening", reservedUntil: held.until, message: OPENING }) : errorResponse("NO_CREDIT");
+    }
     unlockId = reserved.unlockId;
   }
   console.info(JSON.stringify({ evt: "premium.reserved", product, part: resume?.parts.length ?? 0, reused: unlockId === resume?.unlockId }));
@@ -98,10 +125,14 @@ export async function planPremiumUnlock(
 
 /**
  * Before the client sees a result (stream.ts Settlement):
- * - `{status: "continue"}`: nothing is saved; the reservation is extended for the next part.
- * - `{status: "done"}`: the chapter is saved and the reservation spent in one batch (P4 deliverUnlock).
- *   As in lib/api/unlock.ts settlementFor, the answer names the reading only when its row is there,
- *   and recover() finds a save whose D1 answer was lost.
+ * - `{status: "continue"}`: nothing is saved; the reservation is extended for the next part. A failed
+ *   extension (a D1 error) is logged and the part kept: the reservation lapses and the next part reserves again.
+ * - `{status: "done"}`: the chapter is saved and the reservation spent in one batch (P4 deliverUnlock),
+ *   the save only while the reservation is still held. Unlike a standard reading (lib/api/unlock.ts),
+ *   a reservation lost meanwhile saves nothing and throws: with one resume token in several requests,
+ *   a twin may have given it back (failed, cancelled) or spent it (finished first), and a copy saved
+ *   or shown then would be a reading whose purchase stays refundable, or a second copy. The client's
+ *   token then reopens it or answers 409 `reason: "opened"`. recover() finds a save whose D1 answer was lost.
  * - any failure: the reservation is released (the resume token keeps the parts written so far).
  */
 export function premiumSettlement(plan: PremiumPlan, chapterOf: (body: Record<string, unknown>) => ServerChapter, now: number): Settlement | undefined {
@@ -112,16 +143,21 @@ export function premiumSettlement(plan: PremiumPlan, chapterOf: (body: Record<st
     async deliver(outcome: GenerationOutcome) {
       const body = outcome.body as Record<string, unknown>;
       if (body.status === "continue") {
-        if (plan.unlockId) await extendUnlock(save.db, { unlockId: plan.unlockId, userId: save.userId, now: Date.now() });
+        if (plan.unlockId) {
+          await extendUnlock(save.db, { unlockId: plan.unlockId, userId: save.userId, now: Date.now() }).catch((error: unknown) => {
+            console.error(JSON.stringify({ evt: "premium.extend_failed", product: plan.product, error: error instanceof Error ? error.constructor.name : typeof error }));
+          });
+        }
         return {};
       }
       const insert = await insertReadingStatement(save.db, save.accountSecret, {
         id: readingId, userId: save.userId, productId: plan.product, source: save.source, unlockId: plan.unlockId, chapter: chapterOf(body), now,
+        whileReserved: plan.unlockId !== null,
       });
       if (plan.unlockId) {
         const result = await deliverUnlock(save.db, { unlockId: plan.unlockId, readingId, now: Date.now(), before: [insert] });
         console.info(JSON.stringify({ evt: result === "delivered" ? "unlock.delivered" : "unlock.reservation_lost", product: plan.product }));
-        if (result === "lost" && !(await readingExists(save.db, save.userId, readingId))) return {};
+        if (result === "lost") throw new Error("premium reservation lost");
       } else {
         const [saved] = await save.db.batch([insert]);
         if (saved?.meta?.changes !== 1) return {};
