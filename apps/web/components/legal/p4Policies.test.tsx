@@ -77,9 +77,9 @@ describe("policies for the paid launch", () => {
       "가입 선물은 운영자가 무료로 드리는 혜택으로 현금 가치가 없으며, 현금으로 바꾸거나 환불할 수 없고 다른 사람에게 넘길 수 없습니다.",
       "운영자는 가입 선물의 내용과 조건을 바꾸거나 제공을 끝낼 수 있습니다. 이 경우 바뀌는 내용과 시행일을 시행일 7일 전부터 서비스 안에 공지하며, 바뀐 내용은 시행일 이후에 드리는 가입 선물부터 적용합니다.",
     ]);
-    // Article numbers run 1, 2, 3, 4, 4의2, 5, 6, 7, 7의2, 8, (8의2,) 9, 10, 11, 12 with nothing skipped.
-    const articles = [...container.querySelectorAll("h2")].map((h) => h.textContent?.match(/^제(\d+)조(의2)?/)?.slice(1).join("") ?? "").filter(Boolean);
-    expect(articles.filter((a) => !a.endsWith("의2")).map(Number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    // Article numbers run 1, 2, 3, 4, 4의2, 5, 6, 7, 7의2, 8, (8의2,) 8의3, 9, 10, 11, 12 with nothing skipped.
+    const articles = [...container.querySelectorAll("h2")].map((h) => h.textContent?.match(/^제(\d+)조(의\d+)?/)?.slice(1).join("") ?? "").filter(Boolean);
+    expect(articles.filter((a) => !/의\d+$/.test(a)).map(Number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(container.querySelector("#definitions")?.textContent).toContain("“가입 선물”이란 운영자가 처음 가입한 회원에게 무료로 드리는 이용 혜택(타로 전체 풀이 1회)을 말하며");
   });
 

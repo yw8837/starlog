@@ -202,7 +202,8 @@ test("오늘의 한 장: shuffle, pick one of three; a reload shows only that ca
   await shot(page, info, "09-today-pick");
   const picked = page.waitForRequest((r) => r.url().endsWith("/api/tarot/daily") && r.method() === "POST");
   await cards.nth(1).click();
-  expect(JSON.parse((await picked).postData() ?? "{}")).toEqual({ pick: 1 });
+  // The card design shown goes with the pick (the fortune quotes its picture); the default is the Starlog deck.
+  expect(JSON.parse((await picked).postData() ?? "{}")).toEqual({ pick: 1, deck: "starlog" });
   const line = page.locator("#today-line");
   await expect(line).toBeVisible({ timeout: 30_000 });
   const summary = await line.innerText();
