@@ -50,6 +50,16 @@ describe("kbForDeck", () => {
 
   it("keeps the 1909 picture for the 1909 deck, and for a card whose Starlog picture is not written yet", () => {
     expect(kbForDeck(card, "rws1909")).toBe(card);
-    expect(kbForDeck(base, "starlog")).toBe(base);
+    const unwritten: KbCard = { ...base, imagery: { ...base.imagery, decks: undefined } };
+    expect(kbForDeck(unwritten, "starlog")).toBe(unwritten);
+  });
+
+  it("has the Starlog picture of all 78 cards, each with its central image", () => {
+    for (const each of KB_CARDS) {
+      const own = each.imagery.decks?.starlog;
+      expect(own, each.id).toBeDefined();
+      expect(own!.facts.length, each.id).toBeGreaterThanOrEqual(4);
+      expect(own!.facts.some((fact) => fact.salience === 1), each.id).toBe(true);
+    }
   });
 });

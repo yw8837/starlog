@@ -99,6 +99,66 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "clasping",
+            "ko": "고양이가 펜타클 하나를 두 앞발로 가슴에 꼭 끌어안고 있다",
+            "salience": 1
+          },
+          {
+            "id": "crown-pentacle",
+            "ko": "뾰족 모자 꼭대기에 펜타클 하나를 얹었다",
+            "salience": 1
+          },
+          {
+            "id": "feet-pentacles",
+            "ko": "두 뒷발로 펜타클 두 개를 밟고 있다",
+            "salience": 2
+          },
+          {
+            "id": "seated",
+            "ko": "돌 성벽 위에 정면을 보고 앉아 있다",
+            "salience": 2
+          },
+          {
+            "id": "city",
+            "ko": "뒤로 첨탑과 백합 문장 깃발이 있는 성벽 도시와 돌다리가 보인다",
+            "salience": 2
+          },
+          {
+            "id": "grey-bg",
+            "ko": "하늘은 잿빛 구름으로 덮였고 바닥에 마른 잎이 흩어져 있다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "펜타클을 나눠 준다",
+            "correct": "펜타클을 모두 붙잡고 있다(나눠 주는 장면은 펜타클 6)",
+            "regex": "나눠\\s*(주|준)"
+          },
+          {
+            "wrong": "펜타클 다섯 개",
+            "correct": "펜타클은 네 개다",
+            "regex": "다섯\\s*개"
+          },
+          {
+            "wrong": "관을 쓴 남자가 펜타클을 움켜쥔다",
+            "correct": "스타로그 카드에서 펜타클을 끌어안은 것은 관이 아니라 마법사 모자를 쓴 고양이다",
+            "regex": "남자|여자|여인|왕관|관\\s*위"
+          }
+        ],
+        "printedKeywordsKo": [
+          "안정",
+          "소유",
+          "집착"
+        ],
+        "differences": "관 대신 뾰족 모자 꼭대기에 펜타클을 얹었다. 뒤 도시에 백합 문장 깃발과 돌다리가 더해졌다."
+      }
     }
   },
   "core": {

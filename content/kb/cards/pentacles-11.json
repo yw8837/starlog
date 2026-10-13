@@ -94,6 +94,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "holding-pentacle",
+            "ko": "고양이가 두 앞발로 펜타클을 머리 옆까지 들어 올렸다",
+            "salience": 1
+          },
+          {
+            "id": "gaze-front",
+            "ko": "고양이는 펜타클이 아니라 앞쪽을 보며 웃고 있다",
+            "salience": 2
+          },
+          {
+            "id": "red-hood",
+            "ko": "고양이는 남색 뾰족 모자와 별무늬 망토를 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "meadow",
+            "ko": "흰 꽃과 노란 꽃이 핀 풀밭에 서 있다",
+            "salience": 2
+          },
+          {
+            "id": "plowed-field",
+            "ko": "오른쪽에 나무 울타리를 두른 갈아 놓은 밭이 보인다",
+            "salience": 2
+          },
+          {
+            "id": "trees-mountain",
+            "ko": "왼쪽에 큰 나무, 오른쪽 뒤에 산과 마을이 있고 하늘은 노랗다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "펜타클을 던진다",
+            "correct": "두 앞발로 받쳐 들고 있다",
+            "regex": "던지|던진"
+          },
+          {
+            "wrong": "말을 타고 있다",
+            "correct": "시종은 서 있다(말 탄 것은 기사)",
+            "regex": "말을\\s*타"
+          },
+          {
+            "wrong": "펜타클을 가만히 들여다본다",
+            "correct": "스타로그 카드의 고양이는 펜타클이 아니라 앞쪽을 본다",
+            "regex": "펜타클을\\s*(가만히\\s*)?(들여다|바라|응시)"
+          },
+          {
+            "wrong": "붉은 두건을 쓴 젊은이가 펜타클을 든다",
+            "correct": "스타로그 카드의 시종은 마법사 모자를 쓴 고양이다",
+            "regex": "젊은이|청년|소년|소녀|남자|여자|붉은\\s*두건"
+          }
+        ],
+        "printedKeywordsKo": [
+          "배움",
+          "계획",
+          "기회"
+        ],
+        "differences": "붉은 두건과 초록 옷 대신 뾰족 모자와 별무늬 망토를 썼고, 펜타클을 들여다보지 않고 앞쪽을 보며 웃는다."
+      }
     }
   },
   "core": {

@@ -94,6 +94,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "seated-man",
+            "ko": "고양이가 나무 안락의자에 느긋하게 기대앉아 흐뭇하게 웃는다",
+            "salience": 1
+          },
+          {
+            "id": "nine-cups-arc",
+            "ko": "뒤쪽 별무늬 남색 천을 덮은 탁자 위에 컵 아홉 개가 반원으로 늘어서 있다",
+            "salience": 1
+          },
+          {
+            "id": "paws-armrests",
+            "ko": "두 앞발을 의자 팔걸이 위에 편하게 올려놓았다",
+            "salience": 2
+          },
+          {
+            "id": "striped-robe",
+            "ko": "고양이는 남색 뾰족 모자와 별무늬 망토를 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "feet-apart",
+            "ko": "한쪽 뒷다리를 들어 올린 채 편하게 앉았다",
+            "salience": 3
+          },
+          {
+            "id": "yellow-bg",
+            "ko": "뒤쪽 배경은 노란 벽과 넝쿨 덮인 아치 기둥이다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "술에 취해 있다",
+            "correct": "흐뭇하게 앉아 있을 뿐 취한 모습은 아니다",
+            "regex": "취해"
+          },
+          {
+            "wrong": "컵이 열 개",
+            "correct": "컵은 아홉 개다",
+            "regex": "컵이?\\s*(열|10)\\s*개"
+          },
+          {
+            "wrong": "팔짱을 끼고 앉아 있다",
+            "correct": "스타로그 카드의 고양이는 팔짱을 끼지 않고 두 앞발을 팔걸이에 올렸다",
+            "regex": "팔짱"
+          },
+          {
+            "wrong": "붉은 모자를 쓴 남자가 앉아 있다",
+            "correct": "스타로그 카드에서 앉아 있는 것은 마법사 모자를 쓴 고양이다",
+            "regex": "남자|여자|여인|붉은\\s*모자"
+          }
+        ],
+        "printedKeywordsKo": [
+          "만족",
+          "소망",
+          "누림"
+        ],
+        "differences": "붉은 모자의 남자 대신 뾰족 모자를 쓴 고양이가 안락의자에 기대앉았고, 팔짱을 끼지 않고 두 앞발을 팔걸이에 올렸다. 탁자 천은 별무늬 남색이다."
+      }
     }
   },
   "core": {

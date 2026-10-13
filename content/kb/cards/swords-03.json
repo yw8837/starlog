@@ -99,6 +99,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "pierced-heart",
+            "ko": "붉은 하트 하나를 칼 세 자루가 위에서 꿰뚫고 있다",
+            "salience": 1
+          },
+          {
+            "id": "blades-through",
+            "ko": "칼날 끝이 하트 아래로 빠져나와 있다",
+            "salience": 2
+          },
+          {
+            "id": "heart-cracks",
+            "ko": "하트 겉면에 금이 여러 갈래 가 있고 빗방울이 맺혀 흘러내린다",
+            "salience": 2
+          },
+          {
+            "id": "clouds-rain",
+            "ko": "뒤로 짙은 회색 구름이 끼고 비가 비스듬히 내린다",
+            "salience": 1
+          },
+          {
+            "id": "no-figures",
+            "ko": "그림 속에 사람이나 동물은 하나도 없다",
+            "salience": 2
+          },
+          {
+            "id": "grey-bg",
+            "ko": "배경은 온통 잿빛 먹구름이다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "하트에서 피가 흐른다",
+            "correct": "하트에서 흘러내리는 것은 빗방울이고 피는 그려져 있지 않다",
+            "regex": "피가|피를|피투성"
+          },
+          {
+            "wrong": "칼 네 자루가 꽂혀 있다",
+            "correct": "칼은 세 자루다",
+            "regex": "칼\\s*(네|4)\\s*자루"
+          },
+          {
+            "wrong": "하트가 두 쪽으로 쪼개졌다",
+            "correct": "하트 겉면에 금이 갔을 뿐 두 쪽으로 쪼개지지는 않았다",
+            "regex": "두\\s*쪽으로|쪼개"
+          },
+          {
+            "wrong": "울고 있는 여인이 그려져 있다",
+            "correct": "스타로그 카드에도 인물은 없고 하트와 칼, 비만 있다",
+            "regex": "여인|여자|남자|소녀"
+          }
+        ],
+        "printedKeywordsKo": [
+          "슬픔",
+          "상처",
+          "인정"
+        ],
+        "differences": "하트 겉면에 금이 여러 갈래 가 있고 빗방울이 맺혀 흘러내린다(두 쪽으로 쪼개지지는 않음)."
+      }
     }
   },
   "core": {

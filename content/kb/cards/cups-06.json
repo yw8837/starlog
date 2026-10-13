@@ -99,6 +99,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "offering",
+            "ko": "뾰족 모자를 쓴 큰 고양이가 흰 꽃이 담긴 컵을 작은 고양이에게 건넨다",
+            "salience": 1
+          },
+          {
+            "id": "little-girl",
+            "ko": "작은 고양이는 주황 머릿수건을 쓰고 한 앞발에 흰 장갑을 꼈다",
+            "salience": 2
+          },
+          {
+            "id": "six-flower-cups",
+            "ko": "흰 백합이 담긴 컵이 여섯 개 있다(앞줄 넷, 돌 받침 위 하나, 건네는 하나)",
+            "salience": 1
+          },
+          {
+            "id": "pedestal-x",
+            "ko": "왼쪽 돌 받침에 X자 문양 방패가 새겨져 있다",
+            "salience": 3
+          },
+          {
+            "id": "old-town",
+            "ko": "뒤로 탑과 붉은 지붕 돌집들이 있는 마을이 펼쳐진다",
+            "salience": 2
+          },
+          {
+            "id": "walking-guard",
+            "ko": "왼쪽 뒤로 창을 든 회색 고양이가 등을 보이며 걸어간다",
+            "salience": 3
+          },
+          {
+            "id": "red-hood",
+            "ko": "큰 고양이는 별무늬 망토 위에 붉은 두건 망토를 걸쳤다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "연인이 꽃을 주고받는다",
+            "correct": "꽃을 건네는 둘은 큰 고양이와 작은 고양이로 그려져 있다",
+            "regex": "연인이|어른\\s*두"
+          },
+          {
+            "wrong": "컵에 물이 담겨 있다",
+            "correct": "컵에는 흰 백합이 담겨 있다",
+            "regex": "물이\\s*담"
+          },
+          {
+            "wrong": "두 아이가 꽃을 주고받는다",
+            "correct": "스타로그 카드에서 꽃을 주고받는 것은 큰 고양이와 작은 고양이다",
+            "regex": "소년|소녀|남자|여자|여인|두\\s*아이"
+          }
+        ],
+        "printedKeywordsKo": [
+          "추억",
+          "호의",
+          "순수함"
+        ],
+        "differences": "두 아이 대신 뾰족 모자를 쓴 큰 고양이와 주황 머릿수건을 쓴 작은 고양이가 있고, 컵에 담긴 꽃은 흰 백합이다. 뒤로 걸어가는 창 든 인물도 고양이다."
+      }
     }
   },
   "core": {

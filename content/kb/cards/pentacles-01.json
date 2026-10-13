@@ -99,6 +99,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "hand-pentacle",
+            "ko": "왼쪽 구름에서 나온 흰 털 앞발이 큰 금빛 펜타클을 받쳐 들었다",
+            "salience": 1
+          },
+          {
+            "id": "glow",
+            "ko": "펜타클 둘레로 환한 빛살이 사방으로 퍼진다",
+            "salience": 3
+          },
+          {
+            "id": "garden-lilies",
+            "ko": "아래쪽 정원에 흰 백합과 붉은 장미가 피어 있다",
+            "salience": 2
+          },
+          {
+            "id": "hedge-arch",
+            "ko": "장미와 흰 꽃이 덮인 아치 문이 울타리에 나 있고, 그 너머로 길이 이어진다",
+            "salience": 1
+          },
+          {
+            "id": "mountains",
+            "ko": "아치 너머로 푸른 산과 호숫가 마을이 보인다",
+            "salience": 2
+          },
+          {
+            "id": "lawn-path",
+            "ko": "초록 잔디 사이로 돌길이 아치까지 나 있다",
+            "salience": 3
+          },
+          {
+            "id": "cypress",
+            "ko": "오른쪽에 키 큰 측백나무들이 서 있다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "오른쪽 구름에서 손이 나온다",
+            "correct": "구름과 앞발은 왼쪽에 있다",
+            "regex": "오른쪽\\s*구름"
+          },
+          {
+            "wrong": "금화가 쏟아진다",
+            "correct": "앞발에 든 것은 큰 펜타클 하나다",
+            "regex": "쏟아|동전\\s*(더미|여러)"
+          },
+          {
+            "wrong": "사람 손이 펜타클을 받쳐 든다",
+            "correct": "스타로그 카드에서 펜타클을 든 것은 흰 털이 난 동물 앞발이다",
+            "regex": "사람\\s*손|여인|여자|남자"
+          }
+        ],
+        "printedKeywordsKo": [
+          "기회",
+          "기반",
+          "씨앗"
+        ],
+        "differences": "구름에서 나온 손이 흰 털 앞발이고, 울타리 아치가 장미와 흰 꽃으로 덮였다. 아치 너머에 호숫가 마을이 더해졌다."
+      }
     }
   },
   "core": {

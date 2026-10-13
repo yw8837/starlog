@@ -104,6 +104,81 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "cushion-seat",
+            "ko": "고양이가 붉은 쿠션을 깐 자리에 편하게 기대어 앉아 있다",
+            "salience": 1
+          },
+          {
+            "id": "star-crown",
+            "ko": "머리 둘레로 금빛 별 열두 개가 반원을 그리며 떠 있다",
+            "salience": 2
+          },
+          {
+            "id": "scepter",
+            "ko": "오른 앞발에 끝에 둥근 금빛 구슬이 달린 홀을 들었다",
+            "salience": 2
+          },
+          {
+            "id": "pomegranate-gown",
+            "ko": "흰 드레스에 붉은 석류 무늬가 가득하다",
+            "salience": 2
+          },
+          {
+            "id": "venus-shield",
+            "ko": "왼쪽 아래에 금성 기호(♀)가 새겨진 하트 모양 방패가 있다",
+            "salience": 2
+          },
+          {
+            "id": "wheat-field",
+            "ko": "앞쪽에 누렇게 익은 밀밭이 펼쳐져 있다",
+            "salience": 1
+          },
+          {
+            "id": "forest-stream",
+            "ko": "뒤로 측백나무 숲이 있고 오른쪽에 폭포가 흘러내린다",
+            "salience": 3
+          },
+          {
+            "id": "rabbit-beside",
+            "ko": "오른쪽에 별무늬 망토를 두른 흰 토끼가 고양이 곁에 붙어 앉아 있다",
+            "salience": 2
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "배가 부른 임신한 여인이다",
+            "correct": "그림으로 임신 여부는 알 수 없고, 헐렁한 드레스를 입고 앉아 있을 뿐이다",
+            "regex": "임신|배가\\s*부른"
+          },
+          {
+            "wrong": "방패가 오른쪽에 있다",
+            "correct": "금성 기호 방패는 왼쪽 아래에 있다",
+            "regex": "방패[^.]{0,8}오른쪽"
+          },
+          {
+            "wrong": "별 관을 쓰고 있다",
+            "correct": "스타로그 카드에서는 별 열두 개가 머리 둘레에 떠 있고, 머리에는 꽃 화관을 두른 마법사 모자를 썼다",
+            "regex": "별\\s*(관|왕관)"
+          },
+          {
+            "wrong": "여인이 쿠션에 기대어 앉아 있다",
+            "correct": "스타로그 카드의 여황제는 마법사 모자를 쓴 고양이다",
+            "regex": "여인|여자|여성|왕비|어머니"
+          }
+        ],
+        "printedKeywordsKo": [
+          "돌봄",
+          "성장",
+          "풍요"
+        ],
+        "differences": "1909에 없던 흰 토끼가 고양이 곁에 붙어 앉아 있다. 별 관 대신 금빛 별 열두 개가 머리 둘레에 떠 있고, 흰 꽃 화관을 두른 뾰족 모자를 썼다."
+      }
     }
   },
   "core": {

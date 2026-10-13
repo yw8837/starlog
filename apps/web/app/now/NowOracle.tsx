@@ -124,6 +124,8 @@ const Emblem = () => (
  * happens in the browser: a random deck per draw, no server, no quota.
  */
 export function NowOracle({ instant = false }: NowOracleProps) {
+  // The card design shown: the why points at its picture.
+  const { front } = useDeckPrefs();
   const [question, setQuestion] = useState("");
   // Shuffles asked for in this visit (한 번 더 뽑기 or 다시 섞기); focus follows them to 바로 펼치기.
   const [reshuffles, setReshuffles] = useState(0);
@@ -175,7 +177,7 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   const pick = (index: number) => {
     if (phase !== "pick" || !deck || picked.length > 0) return;
     setPicked([index]);
-    setDraw(drawNow(deck, index, Math.random()));
+    setDraw(drawNow(deck, index, Math.random(), front));
   };
 
   /** A new random deck, shuffled again (the gentle version under reduced motion). */

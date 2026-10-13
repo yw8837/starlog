@@ -99,6 +99,78 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "raised-sword",
+            "ko": "고양이가 두 앞발로 칼을 비스듬히 치켜들고 언덕 위에 서 있다",
+            "salience": 1
+          },
+          {
+            "id": "gaze-front",
+            "ko": "고양이는 고개를 돌리지 않고 앞쪽을 똑바로 보고 있다",
+            "salience": 2
+          },
+          {
+            "id": "rough-hill",
+            "ko": "흰 꽃이 핀 바위 언덕 위에 서 있고 주변에 뭉게구름이 피어 있다",
+            "salience": 2
+          },
+          {
+            "id": "birds",
+            "ko": "왼쪽 위 하늘에 흰 새 떼가 날고 있다",
+            "salience": 2
+          },
+          {
+            "id": "wind-trees",
+            "ko": "왼쪽 나무가 바람에 휘고 나뭇잎이 날린다",
+            "salience": 3
+          },
+          {
+            "id": "clothes",
+            "ko": "고양이는 남색 뾰족 모자와 바람에 날리는 별무늬 망토 차림이다",
+            "salience": 3
+          },
+          {
+            "id": "castle-falls",
+            "ko": "오른쪽 아래로 폭포와 강, 언덕 위 성이 보인다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [
+          "looking-back"
+        ],
+        "commonMisdescriptions": [
+          {
+            "wrong": "말을 타고 있다",
+            "correct": "시종은 서 있다(말 탄 것은 기사)",
+            "regex": "말을\\s*타"
+          },
+          {
+            "wrong": "칼을 땅에 짚고 쉰다",
+            "correct": "칼을 치켜들고 경계하는 자세다",
+            "regex": "칼을?\\s*(땅에|짚)"
+          },
+          {
+            "wrong": "어깨 너머로 뒤를 살핀다",
+            "correct": "스타로그 카드의 고양이는 뒤가 아니라 앞쪽을 본다",
+            "regex": "어깨\\s*너머|뒤를\\s*(살피|돌아)|돌아보"
+          },
+          {
+            "wrong": "젊은이가 칼을 들고 서 있다",
+            "correct": "스타로그 카드의 시종은 마법사 모자를 쓴 고양이다",
+            "regex": "젊은이|청년|소년|소녀|남자|여자"
+          }
+        ],
+        "printedKeywordsKo": [
+          "관찰",
+          "질문",
+          "경계"
+        ],
+        "differences": "고양이는 어깨 너머를 살피지 않고 앞쪽을 본다. 분홍 윗옷 대신 별무늬 망토를 둘렀고, 오른쪽 아래에 폭포와 성이 더해졌다."
+      }
     }
   },
   "core": {

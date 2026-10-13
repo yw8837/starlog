@@ -99,6 +99,78 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "looks-up",
+            "ko": "고양이가 두 앞발로 세운 지팡이의 끝을 올려다보고 있다",
+            "salience": 1
+          },
+          {
+            "id": "feather-hat",
+            "ko": "남색 뾰족 모자에 붉은 깃털이 꽂혀 있다",
+            "salience": 2
+          },
+          {
+            "id": "crystal-tip",
+            "ko": "지팡이 끝에 빛나는 호박색 수정이 달렸고 줄기에 잎이 돋아 있다",
+            "salience": 2
+          },
+          {
+            "id": "boots",
+            "ko": "불꽃 모양 장식이 달린 노란 장화를 신었다",
+            "salience": 3
+          },
+          {
+            "id": "star-cape",
+            "ko": "고양이는 별무늬 남색 망토를 바람에 날리고 있다",
+            "salience": 3
+          },
+          {
+            "id": "pyramids",
+            "ko": "오른쪽 뒤 모래빛 땅에 피라미드 세 개가 보인다",
+            "salience": 2
+          },
+          {
+            "id": "blue-sky",
+            "ko": "배경은 흰 구름이 뜬 푸른 하늘이다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [
+          "salamander-tunic"
+        ],
+        "commonMisdescriptions": [
+          {
+            "wrong": "말을 타고 있다",
+            "correct": "시종은 바위 위에 서 있다(말 탄 것은 기사)",
+            "regex": "말을\\s*타"
+          },
+          {
+            "wrong": "지팡이에 불이 붙어 있다",
+            "correct": "지팡이 끝에는 빛나는 수정과 잎이 있고 불은 없다",
+            "regex": "지팡이[^.]{0,6}(불이|불꽃)"
+          },
+          {
+            "wrong": "도롱뇽 무늬 옷을 입었다",
+            "correct": "스타로그 카드에는 도롱뇽 무늬가 없고 별무늬 망토를 둘렀다",
+            "regex": "도롱뇽"
+          },
+          {
+            "wrong": "젊은이가 지팡이를 올려다본다",
+            "correct": "스타로그 카드의 시종은 마법사 모자를 쓴 고양이다",
+            "regex": "젊은이|청년|소년|소녀|남자|여자"
+          }
+        ],
+        "printedKeywordsKo": [
+          "호기심",
+          "열정",
+          "탐색"
+        ],
+        "differences": "도롱뇽 무늬 노란 윗옷이 없고 별무늬 망토를 둘렀다. 지팡이 끝에 빛나는 수정이 달렸다."
+      }
     }
   },
   "core": {

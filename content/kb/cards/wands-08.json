@@ -98,6 +98,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "eight-flying",
+            "ko": "지팡이 여덟 개가 나란히 비스듬히 날아간다",
+            "salience": 1
+          },
+          {
+            "id": "downward",
+            "ko": "지팡이들은 왼쪽 위에서 오른쪽 아래로 기울어 땅 쪽으로 내려오고 있다",
+            "salience": 2
+          },
+          {
+            "id": "light-trails",
+            "ko": "지팡이 뒤쪽 끝에 빛줄기 꼬리가 길게 남아 있다",
+            "salience": 3
+          },
+          {
+            "id": "no-figures",
+            "ko": "그림 속에 사람이나 동물은 하나도 없다",
+            "salience": 2
+          },
+          {
+            "id": "leaves",
+            "ko": "지팡이마다 초록 잎이 돋아 있고 떨어진 잎들도 함께 날린다",
+            "salience": 3
+          },
+          {
+            "id": "landscape",
+            "ko": "아래로 강과 초록 언덕, 오른쪽 언덕 위 탑이 있는 붉은 지붕 집들이 보인다",
+            "salience": 2
+          },
+          {
+            "id": "blue-sky",
+            "ko": "배경은 흰 구름이 뜬 넓은 푸른 하늘이다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "화살이 날아간다",
+            "correct": "날아가는 것은 잎 돋은 지팡이다",
+            "regex": "화살"
+          },
+          {
+            "wrong": "지팡이가 하늘로 솟아오른다",
+            "correct": "지팡이는 땅 쪽으로 내려오는 방향이다",
+            "regex": "하늘로\\s*솟|위로\\s*(솟|날아오)"
+          },
+          {
+            "wrong": "남자가 지팡이를 던진다",
+            "correct": "스타로그 카드에도 인물은 없고 지팡이만 날아간다",
+            "regex": "남자|여자|여인|던지는\\s*(사람|고양이)"
+          }
+        ],
+        "printedKeywordsKo": [
+          "속도",
+          "소식",
+          "전개"
+        ],
+        "differences": "지팡이 뒤로 빛 꼬리가 있고 떨어진 잎들이 함께 날리며, 아래 풍경에 강가 마을과 탑이 그려졌다."
+      }
     }
   },
   "core": {

@@ -227,6 +227,28 @@ describe("mock provider", () => {
     }
   });
 
+  it("reads the Starlog deck's own picture when the reader sees it, and still passes every validator", () => {
+    for (const templateId of templates) {
+      for (let s = 0; s < 12; s++) {
+        const cards = draw(templateId, `starlog-${templateId}-${s}`);
+        const ctx = buildTarotContext(templateId, cards, { ...inputFor(templateId), deck: "starlog" });
+        for (const card of ctx.cards) {
+          const own = kbCard(card.cardId).imagery.decks?.starlog;
+          expect(own, card.cardId).toBeDefined();
+          expect(card.kb.imagery.facts).toEqual(own!.facts);
+          expect(card.kb.imagery.misdescriptions).toEqual(own!.misdescriptions);
+        }
+        const reading = mockTarotReading(ctx);
+        expect([templateId, s, validateTarotReading(reading, ctx)]).toEqual([templateId, s, []]);
+        expect([templateId, s, validateTarotTeaser(mockTarotTeaser(ctx), ctx)]).toEqual([templateId, s, []]);
+      }
+    }
+    // Without a deck (older clients, earlier chapters) the 1909 picture is the one quoted.
+    const cards = draw("relationship-contact", "starlog-default");
+    const ctx = buildTarotContext("relationship-contact", cards, inputFor("relationship-contact"));
+    expect(ctx.cards[0]!.kb.imagery.facts).toEqual(kbCard(cards[0]!.cardId).imagery.facts);
+  });
+
   it("writes the daily card from its own KB entry and passes the daily validator", () => {
     for (let s = 0; s < 40; s++) {
       const cards = pickCards(createDeck(`daily-${s}`, 0.5), TEMPLATES.daily, [0]);

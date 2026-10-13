@@ -94,6 +94,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "juggling",
+            "ko": "고양이가 두 앞발에 펜타클을 하나씩 들고 춤추듯 균형을 잡는다",
+            "salience": 1
+          },
+          {
+            "id": "infinity-band",
+            "ko": "두 펜타클이 옆으로 누운 8자 모양 초록 리본으로 이어져 있다",
+            "salience": 1
+          },
+          {
+            "id": "one-foot",
+            "ko": "한쪽 뒷발을 들어 춤추는 걸음이다",
+            "salience": 2
+          },
+          {
+            "id": "ships-waves",
+            "ko": "뒤쪽 바다에 높은 물결이 일고 돛단배 두 척이 파도를 탄다",
+            "salience": 2
+          },
+          {
+            "id": "pier",
+            "ko": "고양이는 밧줄 감긴 나무 말뚝이 선 돌 부두 위에 있다",
+            "salience": 3
+          },
+          {
+            "id": "hat-cape",
+            "ko": "고양이는 남색 뾰족 모자를 쓰고 별무늬 망토를 날린다",
+            "salience": 3
+          },
+          {
+            "id": "blue-sky",
+            "ko": "배경은 흰 구름이 뜬 푸른 하늘이다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "펜타클 세 개를 저글링한다",
+            "correct": "펜타클은 두 개다",
+            "regex": "펜타클\\s*(세|3)\\s*개"
+          },
+          {
+            "wrong": "잔잔한 바다",
+            "correct": "뒤쪽 바다는 물결이 높다",
+            "regex": "잔잔한\\s*바다"
+          },
+          {
+            "wrong": "붉은 모자를 쓴 젊은이가 춤춘다",
+            "correct": "스타로그 카드에서 춤추는 것은 마법사 모자를 쓴 고양이다",
+            "regex": "젊은이|청년|남자|여자|붉은\\s*모자"
+          }
+        ],
+        "printedKeywordsKo": [
+          "균형",
+          "유연함",
+          "조율"
+        ],
+        "differences": "높은 붉은 모자의 젊은이 대신 뾰족 모자를 쓴 고양이가 돌 부두 위에서 춤춘다."
+      }
     }
   },
   "core": {

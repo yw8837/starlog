@@ -99,6 +99,73 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "profile-throne",
+            "ko": "고양이가 왕좌에 비스듬히 앉아 왼쪽을 바라본다",
+            "salience": 1
+          },
+          {
+            "id": "flowering-wand",
+            "ko": "오른 앞발에 잎과 덩굴이 돋은 지팡이를 세워 쥐었다",
+            "salience": 1
+          },
+          {
+            "id": "throne-lions",
+            "ko": "왕좌 등받이에 검은 사자와 검은 도롱뇽 무늬가 새겨져 있다",
+            "salience": 2
+          },
+          {
+            "id": "lizard",
+            "ko": "발치 오른쪽에 금빛 무늬가 박힌 검은 도롱뇽 한 마리가 있다",
+            "salience": 2
+          },
+          {
+            "id": "robes",
+            "ko": "고양이는 남색 뾰족 모자와 별무늬 망토를 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "lion-banner",
+            "ko": "오른쪽 위 붉은 휘장에 금빛 사자가 그려져 있다",
+            "salience": 3
+          },
+          {
+            "id": "castle-river",
+            "ko": "왼쪽 뒤로 강과 절벽 위 성이 보이고 하늘 낮게 해가 떠 있다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [
+          "flame-crown"
+        ],
+        "commonMisdescriptions": [
+          {
+            "wrong": "정면을 보고 앉아 있다",
+            "correct": "몸을 비스듬히 틀어 왼쪽을 본다",
+            "regex": "정면을\\s*(보|바라)"
+          },
+          {
+            "wrong": "발치에 사자가 엎드려 있다",
+            "correct": "발치에 있는 것은 작은 도롱뇽이다(사자는 등받이·휘장 무늬)",
+            "regex": "발치[^.]{0,6}사자"
+          },
+          {
+            "wrong": "불꽃 모양 금관을 쓴 남자 왕",
+            "correct": "스타로그 카드의 왕은 관 대신 마법사 모자를 쓴 고양이다",
+            "regex": "남자|노인|여자|왕관|금관"
+          }
+        ],
+        "printedKeywordsKo": [
+          "비전",
+          "결단",
+          "리더십"
+        ],
+        "differences": "불꽃 모양 금관 대신 뾰족 모자를 썼고, 주황 옷과 도롱뇽 망토 대신 별무늬 망토를 둘렀다. 옆모습이라기보다 몸을 비스듬히 틀어 왼쪽을 보며, 오른쪽 위 붉은 사자 휘장과 왼쪽 뒤 강가 성이 더해졌다."
+      }
     }
   },
   "core": {

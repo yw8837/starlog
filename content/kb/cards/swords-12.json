@@ -94,6 +94,76 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "charging",
+            "ko": "고양이가 칼을 높이 치켜들고 흰 말을 전속력으로 몰아 왼쪽으로 돌진한다",
+            "salience": 1
+          },
+          {
+            "id": "red-cape",
+            "ko": "별무늬 남색 망토 뒤로 붉은 망토가 바람에 휘날린다",
+            "salience": 2
+          },
+          {
+            "id": "harness",
+            "ko": "말의 남색 가슴띠에 금빛 나비와 새 무늬가 있다",
+            "salience": 3
+          },
+          {
+            "id": "bent-trees",
+            "ko": "왼쪽 위 나무가 바람에 휘고 나뭇잎이 흩날린다",
+            "salience": 2
+          },
+          {
+            "id": "torn-clouds",
+            "ko": "하늘에 찢긴 듯한 구름이 빠르게 흐른다",
+            "salience": 2
+          },
+          {
+            "id": "flags-castle",
+            "ko": "왼쪽에 별 깃발들이 서 있고 오른쪽 멀리 성이 보인다",
+            "salience": 3
+          },
+          {
+            "id": "dust",
+            "ko": "말발굽 아래로 흙과 돌 조각이 튄다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "말이 천천히 걷는다",
+            "correct": "말은 전속력으로 달린다",
+            "regex": "천천히\\s*걷"
+          },
+          {
+            "wrong": "칼을 칼집에 넣었다",
+            "correct": "칼을 뽑아 높이 들었다",
+            "regex": "칼집에\\s*(넣|꽂)"
+          },
+          {
+            "wrong": "투구를 쓴 기사",
+            "correct": "스타로그 카드의 기사는 투구 대신 마법사 모자를 썼다",
+            "regex": "투구"
+          },
+          {
+            "wrong": "갑옷 입은 남자가 돌진한다",
+            "correct": "스타로그 카드의 기사는 마법사 모자를 쓴 고양이다",
+            "regex": "남자|청년|여자|여인"
+          }
+        ],
+        "printedKeywordsKo": [
+          "속도",
+          "결단",
+          "직진"
+        ],
+        "differences": "투구와 갑옷 대신 뾰족 모자와 별무늬 망토를 썼고, 붉은 망토는 그 뒤로 함께 휘날린다. 왼쪽 별 깃발과 오른쪽 성이 더해졌다."
+      }
     }
   },
   "core": {

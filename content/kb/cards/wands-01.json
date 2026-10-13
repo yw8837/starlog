@@ -104,6 +104,73 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "hand-cloud",
+            "ko": "오른쪽 흰 구름에서 나온 흰 털 앞발이 나무 지팡이를 곧게 세워 쥐었다",
+            "salience": 1
+          },
+          {
+            "id": "wand-glow",
+            "ko": "지팡이 뒤로 환한 빛살이 사방으로 퍼진다",
+            "salience": 3
+          },
+          {
+            "id": "sprouting-wand",
+            "ko": "지팡이 끝과 옆가지에 초록 잎이 돋아 있다",
+            "salience": 1
+          },
+          {
+            "id": "falling-leaves",
+            "ko": "잎 여덟 장이 지팡이 둘레로 떨어진다",
+            "salience": 2
+          },
+          {
+            "id": "castle-hill",
+            "ko": "왼쪽 언덕 위에 뾰족 지붕 성이 보인다",
+            "salience": 2
+          },
+          {
+            "id": "river-trees",
+            "ko": "아래쪽에 강과 돌다리가 있고 오른쪽에 측백나무들, 멀리 산이 있다",
+            "salience": 3
+          },
+          {
+            "id": "rock-lilies",
+            "ko": "맨 앞에 큰 바위가 있고 양쪽 아래에 흰 꽃이 피어 있다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [
+          "hand-glow"
+        ],
+        "commonMisdescriptions": [
+          {
+            "wrong": "불타는 지팡이",
+            "correct": "불꽃은 그려져 있지 않고 초록 잎이 돋아 있다",
+            "regex": "불타는\\s*지팡이|지팡이[^.]{0,6}불꽃|불길"
+          },
+          {
+            "wrong": "왼쪽 구름에서 손이 나온다",
+            "correct": "구름과 앞발은 오른쪽에 있다",
+            "regex": "왼쪽\\s*구름"
+          },
+          {
+            "wrong": "사람 손이 구름에서 나온다",
+            "correct": "스타로그 카드에서 구름에서 나온 것은 흰 털이 난 동물 앞발이다",
+            "regex": "사람\\s*손|여인|여자|남자"
+          }
+        ],
+        "printedKeywordsKo": [
+          "영감",
+          "열정",
+          "시작"
+        ],
+        "differences": "구름에서 나온 손이 사람 손이 아니라 흰 털 앞발이고, 손 둘레의 옅은 빛 대신 지팡이 뒤로 큰 빛살이 퍼진다."
+      }
     }
   },
   "core": {

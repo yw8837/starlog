@@ -99,6 +99,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "bound-blindfold",
+            "ko": "고양이가 흰 천으로 눈을 가리고 윗몸과 앞발이 천으로 감긴 채 서 있다",
+            "salience": 1
+          },
+          {
+            "id": "eight-swords",
+            "ko": "고양이 둘레 땅에 칼 여덟 자루가 꽂혀 있다(왼쪽 셋, 오른쪽 다섯)",
+            "salience": 1
+          },
+          {
+            "id": "open-front",
+            "ko": "칼은 양옆에 있고 고양이의 앞쪽은 막혀 있지 않다",
+            "salience": 2
+          },
+          {
+            "id": "legs-free",
+            "ko": "천은 윗몸에만 감겨 있고 뒷발은 자유롭다",
+            "salience": 2
+          },
+          {
+            "id": "castle",
+            "ko": "오른쪽 뒤 언덕 위에 성이 보인다",
+            "salience": 2
+          },
+          {
+            "id": "puddles",
+            "ko": "발밑 진흙 땅에 물웅덩이가 고여 있다",
+            "salience": 3
+          },
+          {
+            "id": "star-cape",
+            "ko": "고양이는 남색 뾰족 모자와 별무늬 망토 차림이다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "칼에 완전히 둘러싸여 갇혔다",
+            "correct": "칼은 양옆에 있고 앞쪽은 열려 있다",
+            "regex": "완전히\\s*(둘러싸|갇)"
+          },
+          {
+            "wrong": "발까지 꽁꽁 묶여 있다",
+            "correct": "천은 윗몸에만 감겨 있다",
+            "regex": "(뒷발|다리)[^.]{0,8}묶|발까지"
+          },
+          {
+            "wrong": "붉은 옷의 여인이 묶여 있다",
+            "correct": "스타로그 카드에서 묶여 있는 것은 마법사 모자를 쓴 고양이다",
+            "regex": "여인|여자|여성|남자|붉은\\s*옷"
+          }
+        ],
+        "printedKeywordsKo": [
+          "제약",
+          "두려움",
+          "여지"
+        ],
+        "differences": "붉은 옷의 여인 대신 별무늬 망토를 두른 고양이가 눈을 가리고 윗몸이 천으로 감겨 있다."
+      }
     }
   },
   "core": {

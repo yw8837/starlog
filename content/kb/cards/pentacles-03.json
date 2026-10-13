@@ -94,6 +94,66 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "mason-bench",
+            "ko": "고양이가 나무 비계 위에 올라서서 망치와 끌로 돌벽을 다듬고 있다",
+            "salience": 1
+          },
+          {
+            "id": "two-figures",
+            "ko": "오른쪽에 두건 쓴 회색 고양이와 백합 문장 망토를 두른 주황 고양이가 서서 위를 올려다본다",
+            "salience": 1
+          },
+          {
+            "id": "plan-paper",
+            "ko": "두건 쓴 고양이는 아치와 펜타클이 그려진 설계도를 펼쳐 들었다",
+            "salience": 2
+          },
+          {
+            "id": "carved-pentacles",
+            "ko": "위쪽 아치에 펜타클 세 개가 새겨져 있다",
+            "salience": 2
+          },
+          {
+            "id": "stone-arch",
+            "ko": "배경은 높은 아치와 기둥이 있는 돌 성당 안이다",
+            "salience": 3
+          },
+          {
+            "id": "stones-tools",
+            "ko": "아래 왼쪽에 다듬은 돌덩이와 망치가 놓여 있다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "혼자 일한다",
+            "correct": "석공 고양이와 두 고양이가 함께 있다",
+            "regex": "혼자\\s*(일|작업)"
+          },
+          {
+            "wrong": "펜타클을 손에 들고 있다",
+            "correct": "펜타클은 아치에 새겨져 있다",
+            "regex": "펜타클을\\s*(손에\\s*)?(들|쥐)"
+          },
+          {
+            "wrong": "석공과 수도사, 귀족이 이야기를 나눈다",
+            "correct": "스타로그 카드에서는 셋 모두 고양이다",
+            "regex": "수도사|남자|여자|여인|귀족"
+          }
+        ],
+        "printedKeywordsKo": [
+          "협업",
+          "기술",
+          "인정"
+        ],
+        "differences": "석공·수도사·망토 두른 사람이 모두 고양이이고, 석공은 긴 의자가 아니라 나무 비계 위에 서 있다. 설계도에 아치와 펜타클이 그려져 있다."
+      }
     }
   },
   "core": {

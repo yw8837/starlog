@@ -98,6 +98,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "high-ground",
+            "ko": "초록 언덕 꼭대기에 선 고양이가 두 앞발로 지팡이를 비스듬히 들어 막아선다",
+            "salience": 1
+          },
+          {
+            "id": "six-below",
+            "ko": "아래쪽에서 지팡이 여섯 개가 고양이를 향해 솟아 있다",
+            "salience": 1
+          },
+          {
+            "id": "tense-face",
+            "ko": "고양이는 눈썹을 찌푸린 단단한 얼굴이다",
+            "salience": 2
+          },
+          {
+            "id": "mismatched-shoes",
+            "ko": "한 발엔 갈색 단화, 다른 발엔 초승달 장식 검은 장화를 신어 신발이 짝짝이다",
+            "salience": 2
+          },
+          {
+            "id": "green-tunic",
+            "ko": "고양이는 남색 뾰족 모자와 별무늬 망토를 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "blue-sky",
+            "ko": "배경은 흰 구름이 뜬 푸른 하늘이다",
+            "salience": 3
+          },
+          {
+            "id": "castle-cliff",
+            "ko": "오른쪽 멀리 절벽 위에 성이 보인다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "여러 사람이 언덕을 올라와 공격한다",
+            "correct": "아래쪽에 누구도 보이지 않고 지팡이 끝만 솟아 있다",
+            "regex": "(사람들?|적들?)이[^.]{0,10}(공격|올라)"
+          },
+          {
+            "wrong": "칼과 방패로 막는다",
+            "correct": "나무 지팡이 하나로 막는다",
+            "regex": "칼로|방패"
+          },
+          {
+            "wrong": "젊은이가 언덕 위에서 막아선다",
+            "correct": "스타로그 카드에서 언덕 위에 선 것은 마법사 모자를 쓴 고양이다",
+            "regex": "젊은이|청년|남자|여자|소년"
+          }
+        ],
+        "printedKeywordsKo": [
+          "입장",
+          "경계",
+          "용기"
+        ],
+        "differences": "초록 옷의 젊은이 대신 별무늬 망토를 두른 고양이가 서 있고, 짝짝이 신발은 갈색 단화와 검은 장화다. 오른쪽 멀리 절벽 위 성이 더해졌다."
+      }
     }
   },
   "core": {

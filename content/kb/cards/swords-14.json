@@ -99,6 +99,66 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "frontal-king",
+            "ko": "고양이가 정면을 보고 돌 왕좌에 앉아 있다",
+            "salience": 1
+          },
+          {
+            "id": "sword-right",
+            "ko": "오른 앞발에 칼을 곧게 세워 들었다",
+            "salience": 1
+          },
+          {
+            "id": "throne-butterflies",
+            "ko": "왕좌 등받이에 초승달과 나비 두 마리, 팔걸이에 나비가 새겨져 있다",
+            "salience": 2
+          },
+          {
+            "id": "robes",
+            "ko": "고양이는 남색 뾰족 모자를 쓰고 별무늬 망토를 길게 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "trees-birds",
+            "ko": "왼쪽에 나무들이 있고 오른쪽 하늘에 흰 새 두 마리가 난다",
+            "salience": 3
+          },
+          {
+            "id": "blue-sky",
+            "ko": "푸른 하늘 아래 오른쪽으로 눈 덮인 산과 호숫가 마을이 보인다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "저울을 들고 있다",
+            "correct": "들고 있는 것은 칼 하나다(저울은 정의 카드)",
+            "regex": "저울"
+          },
+          {
+            "wrong": "옆모습으로 앉아 있다",
+            "correct": "정면을 보고 있다",
+            "regex": "옆모습"
+          },
+          {
+            "wrong": "관을 쓴 남자 왕",
+            "correct": "스타로그 카드의 왕은 관 대신 마법사 모자를 쓴 고양이다",
+            "regex": "남자|노인|여자|왕관|금관"
+          }
+        ],
+        "printedKeywordsKo": [
+          "원칙",
+          "논리",
+          "책임"
+        ],
+        "differences": "관과 주황 망토 대신 뾰족 모자와 별무늬 망토를 썼다. 칼은 기울지 않고 곧게 서 있으며, 오른쪽 뒤에 눈 덮인 산과 호숫가 마을이 더해졌다."
+      }
     }
   },
   "core": {

@@ -99,6 +99,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "still-horse",
+            "ko": "고양이가 네 다리로 멈춰 선 검은 말 위에 앉아 있다",
+            "salience": 1
+          },
+          {
+            "id": "pentacle-hand",
+            "ko": "두 앞발로 펜타클을 가슴 앞에 받쳐 들고 있다",
+            "salience": 1
+          },
+          {
+            "id": "oak-sprigs",
+            "ko": "말 머리와 목에 초록 잎 장식이 달려 있다",
+            "salience": 3
+          },
+          {
+            "id": "plowed-field",
+            "ko": "뒤로 갈아 놓은 밭고랑이 펼쳐져 있다",
+            "salience": 2
+          },
+          {
+            "id": "yellow-sky",
+            "ko": "하늘은 노랗고 오른쪽 멀리 해와 측백나무, 마을이 보인다",
+            "salience": 3
+          },
+          {
+            "id": "armor",
+            "ko": "고양이는 뾰족 모자와 별무늬 망토를 둘렀고 말도 별무늬 남색 덮개를 썼다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "말이 힘차게 달린다",
+            "correct": "말은 멈춰 서 있다",
+            "regex": "말이\\s*(힘차게\\s*)?(달린|달려\\s*(간|나))|질주"
+          },
+          {
+            "wrong": "흰 말을 타고 있다",
+            "correct": "말은 검은색이다",
+            "regex": "흰\\s*말"
+          },
+          {
+            "wrong": "투구를 쓴 기사",
+            "correct": "스타로그 카드의 기사는 투구 대신 마법사 모자를 썼다",
+            "regex": "투구"
+          },
+          {
+            "wrong": "갑옷 입은 남자가 말을 탄다",
+            "correct": "스타로그 카드의 기사는 마법사 모자를 쓴 고양이다",
+            "regex": "남자|청년|여자|여인"
+          }
+        ],
+        "printedKeywordsKo": [
+          "꾸준함",
+          "신중함",
+          "책임"
+        ],
+        "differences": "투구와 갑옷 대신 뾰족 모자와 별무늬 망토를 썼고, 펜타클을 한 손이 아니라 두 앞발로 받쳐 든다. 잎 장식은 말에만 있다."
+      }
     }
   },
   "core": {

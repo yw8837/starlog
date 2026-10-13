@@ -98,6 +98,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "ten-bundle",
+            "ko": "고양이가 밧줄로 묶인 지팡이 열 개를 두 앞발로 끌어안고 오른쪽으로 걷는다",
+            "salience": 1
+          },
+          {
+            "id": "face-hidden",
+            "ko": "고양이의 얼굴은 지팡이 다발 쪽에 가려 보이지 않는다",
+            "salience": 1
+          },
+          {
+            "id": "toward-house",
+            "ko": "오른쪽 멀리 흙길 끝에 붉은 지붕 집들이 보이고 그쪽으로 향한다",
+            "salience": 2
+          },
+          {
+            "id": "bent-back",
+            "ko": "몸을 앞으로 조금 기울인 채 무게를 견디며 걷는다",
+            "salience": 2
+          },
+          {
+            "id": "clothes",
+            "ko": "고양이는 남색 뾰족 모자와 별무늬 망토를 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "ground-sky",
+            "ko": "누런 흙길과 흰 구름이 뜬 푸른 하늘이 배경이다",
+            "salience": 3
+          },
+          {
+            "id": "tree-wall",
+            "ko": "왼쪽 위에 큰 나무가 가지를 드리우고 길가에 돌담이 있다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "지팡이를 등에 지고 있다",
+            "correct": "지팡이 다발을 두 앞발로 앞에 끌어안고 있다",
+            "regex": "등에\\s*지고|어깨에\\s*메"
+          },
+          {
+            "wrong": "집에 도착했다",
+            "correct": "아직 집을 향해 걷는 중이다",
+            "regex": "집에\\s*도착"
+          },
+          {
+            "wrong": "남자가 짐을 안고 간다",
+            "correct": "스타로그 카드에서 지팡이 다발을 안은 것은 마법사 모자를 쓴 고양이다",
+            "regex": "남자|여자|청년|노인|여인"
+          }
+        ],
+        "printedKeywordsKo": [
+          "부담",
+          "책임",
+          "분담"
+        ],
+        "differences": "주황 옷의 남자 대신 별무늬 망토를 두른 고양이가 밧줄로 묶은 지팡이 다발을 안고 가며, 허리를 깊이 굽히기보다 몸을 조금 기울였다."
+      }
     }
   },
   "core": {

@@ -99,6 +99,78 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "cup-forward",
+            "ko": "고양이가 금빛 컵을 앞으로 내민 채 흰 말을 타고 오른쪽으로 나아간다",
+            "salience": 1
+          },
+          {
+            "id": "slow-horse",
+            "ko": "말은 고개를 숙이고 개울물 속을 한 발씩 천천히 걷는다",
+            "salience": 1
+          },
+          {
+            "id": "winged-helmet",
+            "ko": "고양이 머리 옆과 장화 뒤꿈치에 작은 흰 날개가 달려 있다",
+            "salience": 2
+          },
+          {
+            "id": "horse-wings",
+            "ko": "말의 가슴띠와 다리에도 작은 흰 날개 장식이 달려 있다",
+            "salience": 3
+          },
+          {
+            "id": "river",
+            "ko": "앞쪽에 바위 사이로 개울이 흐르고, 오른쪽 언덕 위에 성이 보인다",
+            "salience": 2
+          },
+          {
+            "id": "star-tack",
+            "ko": "고양이와 말은 별과 초승달 무늬 남색 망토와 마구를 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "blue-sky",
+            "ko": "배경은 흰 구름이 뜬 푸른 하늘이고 왼쪽에 큰 나무가 있다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [
+          "fish-tunic"
+        ],
+        "commonMisdescriptions": [
+          {
+            "wrong": "말이 힘차게 달려간다",
+            "correct": "말은 천천히 걷는다",
+            "regex": "말이\\s*(힘차게\\s*)?(달려|질주)|질주"
+          },
+          {
+            "wrong": "칼을 든 기사",
+            "correct": "고양이가 든 것은 컵이다",
+            "regex": "칼을|검을"
+          },
+          {
+            "wrong": "투구를 쓴 기사",
+            "correct": "스타로그 카드의 기사는 투구 대신 마법사 모자를 썼다",
+            "regex": "투구|갑옷"
+          },
+          {
+            "wrong": "갑옷 입은 남자 기사가 컵을 내민다",
+            "correct": "스타로그 카드의 기사는 마법사 모자를 쓴 고양이다",
+            "regex": "남자|청년|여자|여인"
+          }
+        ],
+        "printedKeywordsKo": [
+          "제안",
+          "다정함",
+          "이상"
+        ],
+        "differences": "투구와 물고기 무늬 겉옷 대신 뾰족 모자와 별무늬 망토를 썼고, 날개는 머리 옆·장화·말의 마구에 달려 있다. 말이 개울물 속을 걷는다."
+      }
     }
   },
   "core": {

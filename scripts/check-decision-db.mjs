@@ -68,9 +68,9 @@ const BANNED = [
 const STOP = new Set(["있다", "있고", "있는", "있으며", "보인다", "보이고", "한다", "하고", "모양", "왼쪽", "오른쪽", "위쪽", "아래쪽", "앞쪽", "뒤쪽", "가운데", "배경", "하늘", "사람", "모두", "하나", "그리고", "쪽으로", "위에", "아래", "뒤로", "앞에", "옆에", "옅은", "작은", "커다란", "멀리", "곳곳", "저마다", "서로", "그려져", "새겨져", "놓여", "달려"]);
 const PARTICLE = /(으로|에서|에게|까지|부터|처럼|하고|이다|한다|된다|있다|이|가|은|는|을|를|에|의|로|와|과|도|만|엔|고|며|다)$/;
 
-function imageStems(card) {
+function imageStems(card, facts = card.imagery.facts) {
   const out = new Set();
-  for (const fact of card.imagery.facts) {
+  for (const fact of facts) {
     for (const word of fact.ko.split(/[^가-힣A-Za-z0-9]+/)) {
       const stem = word.replace(PARTICLE, "");
       if (stem.length >= 2 && !STOP.has(stem) && !STOP.has(word)) out.add(stem);
@@ -128,18 +128,22 @@ for (const id of Object.keys(cards)) if (!kb.has(id)) err(id, "not in the card c
 const expected = partial ? index.ids.filter((id) => id in cards) : index.ids;
 for (const id of index.ids) if (!partial && !(id in cards)) err(id, "missing");
 
-const seen = { answer: new Map(), why: new Map(), tip: new Map() };
+const seen = { answer: new Map(), why: new Map(), tip: new Map(), whyStarlog: new Map() };
 const allAnswers = [];
 const leanCount = Object.fromEntries(LEANS.map((lean) => [lean, 0]));
 let entries = 0;
 
-function checkText(where, field, text, card) {
+/** A figure word the Starlog deck never draws (its actors are a cat, a rabbit and other animals). */
+const HUMAN_WORDS = /여인|여자|남자|소년|소녀|왕비|노인|청년|여성|남성/;
+
+function checkText(where, field, text, card, misdescriptions = card.imagery.commonMisdescriptions) {
+  const max = MAX[field === "whyStarlog" ? "why" : field];
   if (typeof text !== "string" || text.trim() !== text || text.length === 0) return err(where, `${field} must be a trimmed, non-empty string`);
-  if (text.length > MAX[field]) err(where, `${field} is ${text.length} chars (max ${MAX[field]}): ${text}`);
+  if (text.length > max) err(where, `${field} is ${text.length} chars (max ${max}): ${text}`);
   if (/\n/.test(text)) err(where, `${field} has a line break`);
   for (const [pattern, label] of BANNED) if (pattern.test(text)) err(where, `${field} has a banned phrase (${label}): ${text}`);
   if (field !== "answer") {
-    for (const m of card.imagery.commonMisdescriptions) {
+    for (const m of misdescriptions) {
       if (new RegExp(m.regex).test(text)) err(where, `${field} repeats a known misdescription (${m.wrong}): ${text}`);
     }
   }
@@ -148,6 +152,9 @@ function checkText(where, field, text, card) {
 for (const id of expected) {
   const card = kb.get(id);
   const stems = imageStems(card);
+  // The Starlog deck's picture (owner 2026-10-13): whyStarlog points at it instead of the 1909 scan.
+  const starlog = card.imagery.decks?.starlog;
+  const starlogStems = starlog ? imageStems(card, starlog.facts) : [];
   for (const side of SIDES) {
     const where = `${id}/${side}`;
     const entry = cards[id]?.[side];
@@ -156,8 +163,8 @@ for (const id of expected) {
       continue;
     }
     entries++;
-    const keys = Object.keys(entry).sort().join(",");
-    if (!["answers,lean,tip,why", "answers,lean,leanNote,tip,why"].includes(keys)) err(where, `unexpected fields: ${keys}`);
+    const keys = Object.keys(entry).filter((key) => key !== "leanNote" && key !== "whyStarlog").sort().join(",");
+    if (keys !== "answers,lean,tip,why") err(where, `unexpected fields: ${Object.keys(entry).sort().join(",")}`);
     if (!LEANS.includes(entry.lean)) err(where, `lean must be one of ${LEANS.join("/")}, got ${entry.lean}`);
     else leanCount[entry.lean]++;
     if (entry.leanNote !== undefined) checkText(where, "leanNote", entry.leanNote, card);
@@ -190,6 +197,21 @@ for (const id of expected) {
     }
     if (typeof entry.why === "string" && !stems.some((stem) => entry.why.includes(stem))) {
       err(where, `why names nothing from the card's imagery facts: ${entry.why}`);
+    }
+    if (entry.whyStarlog === undefined) {
+      if (starlog) warn(where, "no whyStarlog: the Starlog deck shows the 1909 why");
+    } else {
+      const text = entry.whyStarlog;
+      checkText(where, "whyStarlog", text, card, starlog?.commonMisdescriptions ?? []);
+      if (typeof text === "string") {
+        if (!/요\.$/.test(text)) err(where, `whyStarlog must be one 해요체 sentence ending in "요.": ${text}`);
+        if (/[.!?]\s/.test(text)) err(where, `whyStarlog must be a single sentence: ${text}`);
+        if (HUMAN_WORDS.test(text)) err(where, `whyStarlog names a person; the Starlog card draws animals: ${text}`);
+        if (!starlogStems.some((stem) => text.includes(stem))) err(where, `whyStarlog names nothing from the card's Starlog facts: ${text}`);
+        const key = normalize(text);
+        if (seen.whyStarlog.has(key)) err(where, `whyStarlog repeats ${seen.whyStarlog.get(key)}`);
+        else seen.whyStarlog.set(key, where);
+      }
     }
   }
 }
@@ -266,8 +288,8 @@ if (!partial) {
     index.ids.map((id) => [
       id,
       Object.fromEntries(SIDES.map((side) => {
-        const { lean, answers, why } = cards[id][side];
-        return [side, { lean, answers, why }];
+        const { lean, answers, why, whyStarlog } = cards[id][side];
+        return [side, { lean, answers, why, ...(whyStarlog ? { whyStarlog } : {}) }];
       })),
     ]),
   );

@@ -99,6 +99,79 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "rearing-horse",
+            "ko": "앞다리를 높이 든 흰 말 위에서 고양이가 지팡이를 높이 치켜들었다",
+            "salience": 1
+          },
+          {
+            "id": "ribbon-wand",
+            "ko": "지팡이 끝에 빛나는 수정이 달렸고 붉은 리본이 바람에 휘날린다",
+            "salience": 2
+          },
+          {
+            "id": "cape-fly",
+            "ko": "고양이의 별무늬 남색 망토가 뒤로 크게 휘날린다",
+            "salience": 2
+          },
+          {
+            "id": "pyramids",
+            "ko": "왼쪽 멀리 피라미드 하나가 보인다",
+            "salience": 2
+          },
+          {
+            "id": "facing-left",
+            "ko": "말은 왼쪽을 향해 뛰어오른다",
+            "salience": 3
+          },
+          {
+            "id": "star-tack",
+            "ko": "말은 해 무늬 원반이 달린 별무늬 남색 마구를 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "desert",
+            "ko": "누런 사막과 바위, 노을빛 하늘이 배경이고 말발굽 아래로 흙먼지가 인다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [
+          "flame-plume",
+          "salamander-tunic"
+        ],
+        "commonMisdescriptions": [
+          {
+            "wrong": "말이 조용히 서 있다",
+            "correct": "말은 앞다리를 들고 뛰어오른다",
+            "regex": "(말이|말은)\\s*(조용히|가만히)"
+          },
+          {
+            "wrong": "창을 든 기사",
+            "correct": "고양이가 든 것은 잎 돋은 지팡이다",
+            "regex": "창을\\s*(든|들)"
+          },
+          {
+            "wrong": "투구에 불꽃 깃털이 달렸다",
+            "correct": "스타로그 카드의 기사는 투구 대신 마법사 모자를 썼고, 도롱뇽 무늬도 없다",
+            "regex": "투구|도롱뇽"
+          },
+          {
+            "wrong": "갑옷 입은 남자 기사",
+            "correct": "스타로그 카드의 기사는 마법사 모자를 쓴 고양이다",
+            "regex": "남자|청년|여자|여인"
+          }
+        ],
+        "printedKeywordsKo": [
+          "모험",
+          "추진",
+          "열정"
+        ],
+        "differences": "투구의 불꽃 깃털과 도롱뇽 무늬 겉옷이 없고, 뾰족 모자를 쓴 고양이가 별무늬 망토를 날리며 탄다. 지팡이 끝에 수정과 붉은 리본이 달렸다."
+      }
     }
   },
   "core": {

@@ -99,6 +99,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "woman-vineyard",
+            "ko": "고양이가 포도 덩굴이 우거진 정원 한가운데 서 있다",
+            "salience": 1
+          },
+          {
+            "id": "hooded-falcon",
+            "ko": "갈색 장갑을 낀 오른 앞발 위에 별 장식 두건을 쓴 매가 앉아 있다",
+            "salience": 1
+          },
+          {
+            "id": "nine-pentacles",
+            "ko": "주변 포도 덩굴 사이에 펜타클 아홉 개가 있다(왼쪽 여섯, 오른쪽 셋)",
+            "salience": 2
+          },
+          {
+            "id": "hand-on-pentacle",
+            "ko": "왼 앞발은 포도송이가 얹힌 돌기둥 위에 올렸다",
+            "salience": 2
+          },
+          {
+            "id": "manor",
+            "ko": "오른쪽 뒤로 저택과 측백나무들이 보이고 하늘은 노랗다",
+            "salience": 3
+          },
+          {
+            "id": "snail",
+            "ko": "왼쪽 아래 돌바닥 위에 작은 달팽이 한 마리가 있다",
+            "salience": 3
+          },
+          {
+            "id": "star-cape",
+            "ko": "고양이는 남색 뾰족 모자를 쓰고 별무늬 망토를 길게 둘렀다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "새가 날아오른다",
+            "correct": "매는 두건을 쓴 채 앞발 위에 앉아 있다",
+            "regex": "새가\\s*날|매가\\s*날"
+          },
+          {
+            "wrong": "꽃무늬 드레스를 입었다",
+            "correct": "스타로그 카드의 고양이는 꽃무늬 옷 대신 별무늬 망토를 둘렀다",
+            "regex": "꽃무늬|드레스"
+          },
+          {
+            "wrong": "여인이 포도밭에 서 있다",
+            "correct": "스타로그 카드의 인물은 마법사 모자를 쓴 고양이다",
+            "regex": "여인|여자|여성|남자|귀부인"
+          }
+        ],
+        "printedKeywordsKo": [
+          "자립",
+          "여유",
+          "성취"
+        ],
+        "differences": "꽃무늬 옷의 여인 대신 별무늬 망토를 두른 고양이가 서 있고, 다른 앞발은 펜타클이 아니라 포도송이가 얹힌 돌기둥 위에 있다."
+      }
     }
   },
   "core": {

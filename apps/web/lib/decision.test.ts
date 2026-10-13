@@ -83,3 +83,17 @@ describe("/now in search", () => {
     expect(SITEMAP_PATHS).toContain("/now");
   });
 });
+
+describe("the why for the card design shown", () => {
+  it("points at the Starlog picture when the person sees the Starlog deck, and at the 1909 scan otherwise", () => {
+    const db = runtime as Record<string, Record<Orientation, { why: string; whyStarlog?: string }>>;
+    for (const card of CARDS) {
+      for (const orientation of ["upright", "reversed"] as const) {
+        const entry = db[card.id]![orientation];
+        expect(decisionFor(card.id, orientation, "starlog").why).toBe(entry.whyStarlog ?? entry.why);
+        expect(decisionFor(card.id, orientation, "rws1909").why).toBe(entry.why);
+        expect(decisionFor(card.id, orientation).why).toBe(entry.why);
+      }
+    }
+  });
+});

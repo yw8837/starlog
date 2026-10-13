@@ -104,6 +104,76 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "blindfold",
+            "ko": "고양이가 흰 천으로 눈을 가린 채 돌 받침 위에 앉아 있다",
+            "salience": 1
+          },
+          {
+            "id": "crossed-arms",
+            "ko": "두 앞발을 가슴 앞에서 엇갈려 칼 두 자루를 어깨 너머로 치켜들고 있다",
+            "salience": 1
+          },
+          {
+            "id": "back-to-sea",
+            "ko": "뒤로 바다가 펼쳐지고 물 위로 바위들이 솟아 있다",
+            "salience": 2
+          },
+          {
+            "id": "crescent",
+            "ko": "오른쪽 위 하늘에 초승달이 떠 있다",
+            "salience": 2
+          },
+          {
+            "id": "grey-ground",
+            "ko": "발밑은 울퉁불퉁한 회색 바위 바닥이다",
+            "salience": 3
+          },
+          {
+            "id": "star-cape",
+            "ko": "고양이는 남색 뾰족 모자와 별무늬 망토를 둘렀다",
+            "salience": 3
+          },
+          {
+            "id": "night-sky",
+            "ko": "하늘은 별이 뜬 저녁 하늘이고 달빛이 바다에 비친다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "눈을 뜨고 앞을 본다",
+            "correct": "눈을 천으로 가렸다",
+            "regex": "눈을\\s*뜨"
+          },
+          {
+            "wrong": "칼을 땅에 꽂아 두었다",
+            "correct": "칼 두 자루는 앞발로 들어 올리고 있다",
+            "regex": "칼을?\\s*(땅에|바닥에)"
+          },
+          {
+            "wrong": "보름달이 떠 있다",
+            "correct": "하늘의 달은 초승달이다",
+            "regex": "보름달"
+          },
+          {
+            "wrong": "흰 옷의 여인이 눈을 가리고 앉아 있다",
+            "correct": "스타로그 카드에서 눈을 가린 것은 마법사 모자를 쓴 고양이다",
+            "regex": "여인|여자|여성|남자|흰\\s*옷"
+          }
+        ],
+        "printedKeywordsKo": [
+          "교착",
+          "망설임",
+          "선택"
+        ],
+        "differences": "흰 옷의 여인 대신 별무늬 망토를 두른 고양이가 눈을 가리고 앉아 있고, 하늘은 별이 뜬 저녁 하늘이다."
+      }
     }
   },
   "core": {

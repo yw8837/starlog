@@ -93,6 +93,71 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "five-youths",
+            "ko": "망토를 두른 고양이 넷과 흰 토끼 하나가 저마다 지팡이를 들고 엇갈리게 맞댄다",
+            "salience": 1
+          },
+          {
+            "id": "mixed-clothes",
+            "ko": "다섯의 털빛이 회색·크림색·주황색·흰색·짙은 갈색으로 모두 다르다",
+            "salience": 2
+          },
+          {
+            "id": "no-injury",
+            "ko": "다치거나 넘어진 동물은 하나도 없다",
+            "salience": 1
+          },
+          {
+            "id": "crossed-wands",
+            "ko": "지팡이 다섯 개가 한가운데서 이리저리 엇갈려 있다",
+            "salience": 2
+          },
+          {
+            "id": "serious-faces",
+            "ko": "다섯 모두 눈을 치켜뜬 진지한 표정이다",
+            "salience": 2
+          },
+          {
+            "id": "blue-sky",
+            "ko": "푸른 하늘 아래 바위가 많은 언덕에서 벌어진다",
+            "salience": 3
+          },
+          {
+            "id": "far-castle",
+            "ko": "오른쪽 멀리 언덕 위 성과 물가가 보인다",
+            "salience": 3
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "피를 흘리며 싸운다",
+            "correct": "다친 동물은 없고, 겨루는 몸짓에 가깝다",
+            "regex": "피를\\s*흘|피투성이|부상"
+          },
+          {
+            "wrong": "칼싸움을 한다",
+            "correct": "모두 나무 지팡이를 들었다",
+            "regex": "칼싸움|칼을"
+          },
+          {
+            "wrong": "다섯 젊은이가 싸운다",
+            "correct": "스타로그 카드에서 겨루는 것은 고양이 넷과 흰 토끼 하나다",
+            "regex": "젊은이|청년|소년|남자|여자"
+          }
+        ],
+        "printedKeywordsKo": [
+          "경쟁",
+          "마찰",
+          "연습"
+        ],
+        "differences": "다섯 젊은이 대신 고양이 넷과 흰 토끼 하나가 겨룬다. 옷은 모두 같은 별무늬 망토이고 대신 털빛이 서로 다르며, 뒤로 바위 언덕과 성이 보인다."
+      }
     }
   },
   "core": {

@@ -98,6 +98,66 @@
       "by": "ai-draft",
       "humanReviewed": false,
       "at": "2026-09-30"
+    },
+    "decks": {
+      "starlog": {
+        "facts": [
+          {
+            "id": "four-wands-garland",
+            "ko": "앞쪽에 세운 지팡이 네 개 위로 꽃과 포도, 붉은 사과로 엮은 화환이 걸려 있다",
+            "salience": 1
+          },
+          {
+            "id": "ribbons",
+            "ko": "바깥쪽 두 지팡이 끝에 붉은 리본이 묶여 있다",
+            "salience": 3
+          },
+          {
+            "id": "two-women",
+            "ko": "고양이는 꽃다발을 머리 위로 들어 올렸고, 흰 토끼도 꽃다발을 들고 웃는다",
+            "salience": 1
+          },
+          {
+            "id": "castle",
+            "ko": "뒤쪽에 주황 지붕 탑과 백합 문장 깃발이 있는 회색 성이 보인다",
+            "salience": 2
+          },
+          {
+            "id": "bridge",
+            "ko": "오른쪽 성 앞에 돌다리가 놓여 있다",
+            "salience": 3
+          },
+          {
+            "id": "small-crowd",
+            "ko": "왼쪽 뒤로 망토를 두른 고양이 여럿이 모여 있다",
+            "salience": 3
+          },
+          {
+            "id": "yellow-sky",
+            "ko": "하늘은 밝은 노란색이고 꽃잎이 흩날린다",
+            "salience": 2
+          }
+        ],
+        "absentIds": [],
+        "commonMisdescriptions": [
+          {
+            "wrong": "결혼식 장면이다",
+            "correct": "꽃다발을 든 축하 장면일 뿐 결혼식으로 특정되지 않는다",
+            "regex": "결혼식|신랑|신부"
+          },
+          {
+            "wrong": "두 여인이 꽃다발을 든다",
+            "correct": "스타로그 카드에서 꽃다발을 든 것은 고양이와 흰 토끼이고, 뒤의 무리도 고양이들이다",
+            "regex": "여인|여자|남자|소녀|사람\\s*몇"
+          }
+        ],
+        "printedKeywordsKo": [
+          "축하",
+          "기반",
+          "쉼"
+        ],
+        "differences": "꽃다발을 든 두 여인 대신 고양이와 흰 토끼가 있고, 왼쪽 뒤 무리도 망토를 두른 고양이들이다. 화환에 포도와 붉은 사과가 엮였다."
+      }
     }
   },
   "core": {
