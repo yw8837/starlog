@@ -12,4 +12,5 @@ export const OG_TEXT = {
   host: new URL(SITE.url).host,
 } as const;
 
-export const OG_ALT = `${SITE.name} · ${SITE.nameKo} — ${OG_TEXT.tagline}`;
+/** The site's link preview (app/opengraph-image.tsx): what the brand picture shows. */
+export const OG_ALT = `${SITE.name} · ${SITE.nameKo} — 타로와 사주로 내 고민을 풀어 주는 곳. 타로 카드를 든 고양이와 사주표를 든 토끼`;
