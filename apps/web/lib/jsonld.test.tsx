@@ -9,7 +9,7 @@ import GuideTarotPage from "@/app/guide/tarot/page";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, articlesIn, findArticle, guideSectionText } from "./guide";
-import { guideQuestions, jsonLdScript, rankingItemListJsonLd } from "./jsonld";
+import { guideArticleJsonLd, guideQuestions, jsonLdScript, rankingItemListJsonLd } from "./jsonld";
 
 afterEach(cleanup);
 
@@ -165,6 +165,12 @@ describe("JSON-LD", () => {
     expect(text).toContain(article.summary);
     const onPage = (line: string) => text.includes(line) || line.split(/: |, | · /).every((part) => text.includes(part));
     for (const { a } of questions) for (const line of a.split("\n")) expect(onPage(line), line).toBe(true);
+  });
+
+  it("keeps a card article's image on the 1909 scan the article describes, never the Starlog deck", () => {
+    const article = findArticle("the-fool");
+    if (!article) throw new Error("the-fool");
+    expect(guideArticleJsonLd(article).image).toEqual([`${SITE.url}/cards/major-00-fool.webp`, `${SITE.url}/opengraph-image`]);
   });
 
   it("answers a question section with its blocks too: the suits table of 타로 카드 읽는 법, not only its first paragraph", () => {

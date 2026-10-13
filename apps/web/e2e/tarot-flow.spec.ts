@@ -91,7 +91,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("다음 주 금요일 면접, 내 재물 흐름은 어떨까?");
   const spread = page.getByRole("complementary", { name: "뽑은 카드" });
-  for (const card of cards) await expect(spread.locator(`img[src*="/cards/${card.cardId}"]`)).toBeVisible();
+  for (const card of cards) await expect(spread.locator(`img[src*="/cards/starlog/${card.cardId}"]`)).toBeVisible();
 
   // The free teaser from the API, then the scope before opening.
   const toc = page.getByRole("region", { name: "이어지는 풀이" });
@@ -116,7 +116,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("다음 주 금요일 면접, 내 재물 흐름은 어떨까?");
   await expect(page.getByText("한 줄 결론")).toBeVisible();
   const verdict = await page.locator("#verdict-label + p").innerText();
-  for (const card of cards) await expect(page.locator(`img[src*="/cards/${card.cardId}"]`).first()).toBeVisible();
+  for (const card of cards) await expect(page.locator(`img[src*="/cards/starlog/${card.cardId}"]`).first()).toBeVisible();
   await expect(page.getByText("기록 · 토끼 사서")).toHaveCount(0);
   await shot(page, info, "03-reading");
 

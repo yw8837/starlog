@@ -46,6 +46,19 @@ describe("MeView menu", () => {
   });
 });
 
+describe("MeView card design", () => {
+  it("offers 카드 디자인 after the saju info and before the menu", async () => {
+    render(<MeView status={null} />);
+    const saju = await screen.findByRole("region", { name: "내 사주 정보" });
+    const design = screen.getByRole("region", { name: "카드 디자인" });
+    const menu = screen.getByRole("navigation", { name: "계정 메뉴" });
+    expect(saju.compareDocumentPosition(design) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(design.compareDocumentPosition(menu) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "앞면" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "뒷면" })).toBeTruthy();
+  });
+});
+
 describe("MeView logged out while sales are open", () => {
   it("offers the login page, naming no one provider (Kakao and Google are both there)", async () => {
     render(<MeView status={null} />);

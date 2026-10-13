@@ -2,11 +2,15 @@
 import { TEMPLATES } from "@starlog/core";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { DECK_KEY } from "@/lib/deck";
 import type { GuideBlock } from "@/lib/guideMeta";
 import { CELTIC_CROSS_POSITIONS } from "./GuideDiagram";
 import { GuideBlocks } from "./GuideBlocks";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 const show = (...blocks: GuideBlock[]) => render(<GuideBlocks blocks={blocks} id="s1" />).container;
 const texts = (nodes: Iterable<Element>) => [...nodes].map((node) => node.textContent);
@@ -78,6 +82,17 @@ describe("guide blocks", () => {
     expect([...root.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toContain("/cards/major-01-magician-sm.webp");
     expect([...root.querySelectorAll("img")].every((img) => img.getAttribute("loading") === "lazy")).toBe(true);
     expect(root.querySelector("figcaption")?.textContent).toBe("메이저 아르카나 0~2번");
+  });
+
+  it("cardRow: the pictures are the 1909 scans, whatever deck the visitor chose; only the backs follow the choice", () => {
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "navy-gold" }));
+    const root = show({ kind: "cardRow", cards: ["major-00-fool", "wands-01"] });
+    expect([...root.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toEqual([
+      "/cards/backs/navy-gold-sm.webp",
+      "/cards/major-00-fool-sm.webp",
+      "/cards/backs/navy-gold-sm.webp",
+      "/cards/wands-01-sm.webp",
+    ]);
   });
 
   it("diagram five-elements: an SVG picture with a title and description, the five elements with their Hanja, and a legend", () => {

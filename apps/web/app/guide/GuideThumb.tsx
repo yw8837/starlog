@@ -54,7 +54,7 @@ export function GuideThumb({ article, eager = false }: { article: GuideArticle; 
   }
   return (
     <span className={s.thumb} aria-hidden="true">
-      <TarotCard cardId={article.cardId} faceUp={Boolean(article.cardId)} size="sm" className={s.thumbCard} imageSizes="40px" loading={eager ? "eager" : "lazy"} />
+      <TarotCard cardId={article.cardId} faceUp={Boolean(article.cardId)} size="sm" className={s.thumbCard} imageSizes="40px" loading={eager ? "eager" : "lazy"} deck="rws1909" />
     </span>
   );
 }

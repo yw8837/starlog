@@ -27,8 +27,9 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: 
 /**
  * No points, credits, balances or top-ups anywhere a user can read (owner 2026-10-08; Toss reviews
  * per-reading payments only). Guide article bodies are left out: the Moon card's 달빛 is a meaning.
+ * So is 달빛 수호 문양, the name of one of the four card backs in 내 정보 → 카드 디자인.
  */
-const POINTS = /별조각|달빛|충전|포인트|크레딧|잔액/;
+const POINTS = /별조각|달빛(?! 수호 문양)|충전|포인트|크레딧|잔액/;
 /** The same words in the screens' other languages. */
 const POINTS_INTL = /stardust|moonlight|\bpoints?\b|\bcredits?\b|\bbalance\b|ポイント|残高|クレジット|點數|餘額|儲值/i;
 

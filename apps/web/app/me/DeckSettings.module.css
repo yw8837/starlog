@@ -1,0 +1,169 @@
+/* 내 정보 → 카드 디자인: the MeView glass box, two radio groups of picture tiles. Text >= 13px, tiles >= 44px. */
+.deck {
+  display: grid;
+  gap: 16px;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.title {
+  font-size: var(--fs-h2);
+  line-height: 1.4;
+}
+
+.hint {
+  margin-top: 2px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.group {
+  display: grid;
+  gap: 8px;
+}
+
+.groupTitle {
+  color: var(--gold);
+  font-family: var(--font-body), sans-serif;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+/* Two tiles to a row; the four backs go four across once the box is wide enough for their names. */
+.options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 400px) {
+  .options[data-count="4"] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
+
+.option {
+  position: relative;
+  display: block;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * The real radio, stripped of its own look and laid over the whole tile: a tap or a click lands on it, and
+ * the browser keeps the keys. It is the focus ring's owner too, drawn around the tile it covers.
+ */
+.input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.tile {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  height: 100%;
+  padding: 12px 6px 10px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: center;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+
+.input:hover + .tile {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.input:checked + .tile {
+  border-color: var(--gold);
+  background: rgba(243, 220, 161, 0.12);
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.picture {
+  position: relative;
+  width: min(100%, 64px);
+}
+
+.thumb {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 600 / 1040;
+  border-radius: 5px;
+  object-fit: cover;
+  box-shadow:
+    0 0 0 1px rgba(243, 220, 161, 0.55),
+    0 4px 10px rgba(5, 3, 15, 0.4);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.name {
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.badge {
+  padding: 0 9px;
+  border: 1px solid rgba(243, 220, 161, 0.5);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+/* The choice shown by more than colour: a ring on the picture's corner that fills with a check mark. */
+.mark {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--night-0);
+}
+
+.input:checked + .tile .mark {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+
+.input:checked + .tile .mark::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 4px;
+  height: 8px;
+  border: solid #2a1b4d;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}

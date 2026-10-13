@@ -18,6 +18,7 @@ import { clearChapters, useChapters } from "@/lib/storage/chapters";
 import { clearDaily } from "@/lib/storage/daily";
 import { forgetAccountOnDevice, useAccountSync } from "@/lib/storage/sync";
 import { AccountPanel } from "./AccountPanel";
+import { DeckSettings } from "./DeckSettings";
 import { InviteCodeRow } from "./InviteCodeRow";
 import s from "./MeView.module.css";
 import a from "./account.module.css";
@@ -45,8 +46,8 @@ function Soon({ children }: { children: string }) {
 /**
  * 내 정보: the account when logged in (AccountPanel), the way to /login (Kakao or Google) while sales
  * are open on this device, otherwise the 오픈 기념 free count; the saju profile kept on this device
- * (with 고치기), the menu, and erasing everything this device keeps. A logged-in tab pulls the
- * account's readings.
+ * (with 고치기), the card design, the menu, and erasing everything this device keeps. A logged-in
+ * tab pulls the account's readings.
  */
 export function MeView({ status, accountDeleted = false }: MeViewProps) {
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -135,6 +136,8 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
             {profile ? "고치기" : "입력하기"}
           </Link>
         </section>
+
+        <DeckSettings />
 
         <nav aria-label="계정 메뉴">
           <ul className={s.list}>

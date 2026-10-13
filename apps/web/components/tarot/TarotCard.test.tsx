@@ -1,20 +1,27 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
+import { DECK_KEY, setDeckPrefs } from "@/lib/deck";
 import { TarotCard } from "./TarotCard";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+});
 
 const FOOL = "major-00-fool";
 
 /** The card's two pictures and the box around them. */
 function parts(container: HTMLElement) {
   return {
-    back: container.querySelector('img[src="/cards/back.svg"]'),
-    face: container.querySelector("img[srcset]"),
+    back: container.querySelector('img[src*="/cards/backs/"]'),
+    face: container.querySelector(`img[src*="${FOOL}"]`),
     box: container.querySelector("[data-face]")?.firstElementChild ?? null,
   };
 }
+
+/** A picture's `src` (the small file) and `srcset` (the small and the large file, with their widths). */
+const sources = (img: Element | null) => [img?.getAttribute("src"), img?.getAttribute("srcset")];
 
 describe("TarotCard without an alt", () => {
   it("keeps both pictures decorative; a label makes the box the one image", () => {
@@ -68,5 +75,70 @@ describe("TarotCard with an alt", () => {
     expect(face?.getAttribute("alt")).toBe("");
     expect(box?.getAttribute("role")).toBe("img");
     expect(box?.getAttribute("aria-label")).toBe("바보 카드 그림");
+  });
+});
+
+describe("TarotCard art", () => {
+  it("draws the Starlog face and the 별자리 지도 back until the visitor chooses", () => {
+    const { container } = render(<TarotCard cardId={FOOL} faceUp />);
+    const { back, face } = parts(container);
+    expect(sources(face)).toEqual(["/cards/starlog/major-00-fool-sm.webp", "/cards/starlog/major-00-fool-sm.webp 240w, /cards/starlog/major-00-fool.webp 600w"]);
+    expect(sources(back)).toEqual(["/cards/backs/constellation-sm.webp", "/cards/backs/constellation-sm.webp 240w, /cards/backs/constellation.webp 600w"]);
+    // both fill the 600:1040 box exactly
+    for (const img of [face, back]) expect([img?.getAttribute("width"), img?.getAttribute("height")]).toEqual(["600", "1040"]);
+  });
+
+  it("follows the saved choice: the 1909 face and the chosen back", () => {
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "rws1909", back: "navy-gold" }));
+    const { container } = render(<TarotCard cardId={FOOL} faceUp />);
+    const { back, face } = parts(container);
+    expect(sources(face)).toEqual(["/cards/major-00-fool-sm.webp", "/cards/major-00-fool-sm.webp 240w, /cards/major-00-fool.webp 600w"]);
+    expect(sources(back)).toEqual(["/cards/backs/navy-gold-sm.webp", "/cards/backs/navy-gold-sm.webp 240w, /cards/backs/navy-gold.webp 600w"]);
+  });
+
+  it("lets `deck` pin the face to one deck, whatever was chosen; the back still follows the choice", () => {
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "moon-guardian" }));
+    const pinned1909 = render(<TarotCard cardId={FOOL} faceUp deck="rws1909" />).container;
+    expect(parts(pinned1909).face?.getAttribute("src")).toBe("/cards/major-00-fool-sm.webp");
+    expect(parts(pinned1909).back?.getAttribute("src")).toBe("/cards/backs/moon-guardian-sm.webp");
+    cleanup();
+
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "rws1909", back: "constellation" }));
+    const pinnedStarlog = render(<TarotCard cardId={FOOL} faceUp deck="starlog" />).container;
+    expect(parts(pinnedStarlog).face?.getAttribute("src")).toBe("/cards/starlog/major-00-fool-sm.webp");
+  });
+
+  it("changes every card on the page at once when the choice changes", () => {
+    const { container } = render(
+      <>
+        <TarotCard cardId={FOOL} faceUp />
+        <TarotCard cardId="wands-01" faceUp={false} />
+        <TarotCard cardId="cups-14" faceUp deck="rws1909" />
+      </>,
+    );
+    const srcs = () => [...container.querySelectorAll("img")].map((img) => img.getAttribute("src"));
+    expect(srcs()).toEqual([
+      "/cards/backs/constellation-sm.webp",
+      "/cards/starlog/major-00-fool-sm.webp",
+      "/cards/backs/constellation-sm.webp",
+      "/cards/starlog/wands-01-sm.webp",
+      "/cards/backs/constellation-sm.webp",
+      "/cards/cups-14-sm.webp",
+    ]);
+    act(() => setDeckPrefs({ front: "rws1909", back: "ribbon-garden" }));
+    expect(srcs()).toEqual([
+      "/cards/backs/ribbon-garden-sm.webp",
+      "/cards/major-00-fool-sm.webp",
+      "/cards/backs/ribbon-garden-sm.webp",
+      "/cards/wands-01-sm.webp",
+      "/cards/backs/ribbon-garden-sm.webp",
+      "/cards/cups-14-sm.webp",
+    ]);
+  });
+
+  it("gives a card whose face is not known yet the chosen back and no face at all", () => {
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "ribbon-garden" }));
+    const { container } = render(<TarotCard faceUp={false} />);
+    expect([...container.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toEqual(["/cards/backs/ribbon-garden-sm.webp"]);
   });
 });

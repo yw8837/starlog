@@ -1,4 +1,7 @@
-import { cardImage, type Orientation } from "@starlog/core";
+"use client";
+
+import type { Orientation } from "@starlog/core";
+import { backImage, faceImage, useDeckPrefs, type FrontDeck } from "@/lib/deck";
 import s from "./TarotCard.module.css";
 
 export type CardSize = "lg" | "md" | "sm";
@@ -26,18 +29,25 @@ type TarotCardProps = {
   imageSizes?: string;
   /** "lazy" for cards below the fold (long lists). */
   loading?: "lazy" | "eager";
+  /**
+   * Pins the face to one deck. Omit it to follow the visitor's choice (내 정보 → 카드 디자인); the guides pass
+   * "rws1909", because their text describes the 1909 pictures. The back always follows the choice.
+   */
+  deck?: FrontDeck;
 };
-
-const BACK = "/cards/back.svg";
 
 // Rendered width hint per size; the browser picks the 240w or 600w scan from it and the DPR.
 const IMAGE_SIZES: Record<CardSize, string> = { sm: "120px", md: "140px", lg: "180px" };
 
 /**
- * One tarot card in a fixed 600:1040 box (RWS scans vary 1.70-1.80, so the face is cropped
- * with object-fit). The flip is a real 3D turn; reversed faces are drawn upside down and tagged.
+ * One tarot card in a fixed 600:1040 box (the 1909 scans vary 1.70-1.80, so a face is cropped with
+ * object-fit; the Starlog faces are already padded to the box). The flip is a real 3D turn; reversed
+ * faces are drawn upside down and tagged.
  */
-export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md", onFlip, label, alt, highlight = false, className, imageSizes, loading }: TarotCardProps) {
+export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md", onFlip, label, alt, highlight = false, className, imageSizes, loading, deck }: TarotCardProps) {
+  const prefs = useDeckPrefs();
+  const front = deck ?? prefs.front;
+  const sizes = imageSizes ?? IMAGE_SIZES[size];
   const reversed = orientation === "reversed";
   const showFace = faceUp && Boolean(cardId);
   const faceAlt = showFace ? alt : undefined;
@@ -46,14 +56,23 @@ export function TarotCard({ cardId, orientation = "upright", faceUp, size = "md"
   const inner = (
     <span className={s.inner}>
       <span className={s.back}>
-        <img src={BACK} alt="" width={600} height={1020} draggable={false} loading={loading} />
+        <img
+          src={backImage(prefs.back, "sm")}
+          srcSet={`${backImage(prefs.back, "sm")} 240w, ${backImage(prefs.back, "lg")} 600w`}
+          sizes={sizes}
+          alt=""
+          width={600}
+          height={1040}
+          draggable={false}
+          loading={loading}
+        />
       </span>
       {cardId ? (
         <span className={s.front}>
           <img
-            src={cardImage(cardId, "sm")}
-            srcSet={`${cardImage(cardId, "sm")} 240w, ${cardImage(cardId, "lg")} 600w`}
-            sizes={imageSizes ?? IMAGE_SIZES[size]}
+            src={faceImage(cardId, "sm", front)}
+            srcSet={`${faceImage(cardId, "sm", front)} 240w, ${faceImage(cardId, "lg", front)} 600w`}
+            sizes={sizes}
             alt={faceAlt ?? ""}
             width={600}
             height={1040}

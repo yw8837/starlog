@@ -2,6 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/Button";
+import { backImage, useDeckPrefs } from "@/lib/deck";
 import { prefersReducedMotion } from "@/lib/motion";
 import { wideArcStyle } from "./CardFan";
 import fan from "./CardFan.module.css";
@@ -31,6 +32,7 @@ const SIDES = ["left", "right"] as const;
  */
 export function ShuffleStage({ onDone, focusSkip = false, riffles = RIFFLES }: ShuffleStageProps) {
   const [beat, setBeat] = useState(0);
+  const { back } = useDeckPrefs();
   const skipRef = useRef<HTMLDivElement>(null);
   const finish = useEffectEvent(() => onDone());
 
@@ -67,7 +69,7 @@ export function ShuffleStage({ onDone, focusSkip = false, riffles = RIFFLES }: S
                 const order = 2 * (HALF - 1 - n) + (side === "left" ? 0 : 1);
                 return (
                   <span key={n} className={s.card} style={{ "--n": n, "--order": order } as CSSProperties}>
-                    <img src="/cards/back.svg" alt="" width={600} height={1020} draggable={false} />
+                    <img src={backImage(back, "sm")} alt="" width={600} height={1040} draggable={false} />
                   </span>
                 );
               })}

@@ -1,0 +1,433 @@
+{
+  "generator": "scripts/build-starlog-deck.mjs",
+  "webp": {
+    "faces": {
+      "quality": 60,
+      "effort": 6,
+      "smartSubsample": true
+    },
+    "backs": {
+      "quality": 82,
+      "effort": 6,
+      "smartSubsample": true
+    }
+  },
+  "sizes": {
+    "lg": "600x1040",
+    "sm": "240x416"
+  },
+  "faces": {
+    "major-00-fool": {
+      "source": "한글/M00-바보.png",
+      "sha256": "4d95ef3e7df515c1052de5fd31f47c70525594d44616325ea2d109506d6c5918",
+      "padding": "#161a2f"
+    },
+    "major-01-magician": {
+      "source": "한글/M01-마법사.png",
+      "sha256": "498c8464e8c5b7215c9d801ceb0b64f1c91f53f22b7fb663ed0370717cc15930",
+      "padding": "#141a2e"
+    },
+    "major-02-high-priestess": {
+      "source": "한글/M02-여사제.png",
+      "sha256": "11539e9819bd1bf2937c5a2dafa4ada6fd433ee439e7375a195b2c6efe28691f",
+      "padding": "#13162b"
+    },
+    "major-03-empress": {
+      "source": "한글/M03-여황제.png",
+      "sha256": "a384f6c8cccd830e85cb9a654ff1f83bed951fa23287167dbeaabf0bb3db0aa3",
+      "padding": "#141a2d"
+    },
+    "major-04-emperor": {
+      "source": "한글/M04-황제.png",
+      "sha256": "6b101d12043c5a43f7a8501e3f31350aeb604b2df5b7592269bbd449a07c643f",
+      "padding": "#0e1328"
+    },
+    "major-05-hierophant": {
+      "source": "한글/M05-교황.png",
+      "sha256": "a0b1132e5c2a6136d3a5dc7e24110e19816d9acce9e191e01dfd55ecd05b1ee9",
+      "padding": "#15192e"
+    },
+    "major-06-lovers": {
+      "source": "한글/M06-연인.png",
+      "sha256": "9e5dc3f4d8e7dfb2b6062ba2bcd59aac1e72ae0e9cbe72b50ba6e6be7496ae3e",
+      "padding": "#13192f"
+    },
+    "major-07-chariot": {
+      "source": "한글/M07-전차.png",
+      "sha256": "3587515792e54b7854bd16458d1e19c3d4a9938e9944f36e5864271a1a978d53",
+      "padding": "#15192f"
+    },
+    "major-08-strength": {
+      "source": "한글/M08-힘.png",
+      "sha256": "cc89076ce8f09ecd9e6377a397a712299830ff1b6fd1702da73462c454e51c41",
+      "padding": "#161a30"
+    },
+    "major-09-hermit": {
+      "source": "한글/M09-은둔자.png",
+      "sha256": "59d0064190c1e426d6ce54ae3b2deb5b3b94b925946400f2c988cc67b08628e5",
+      "padding": "#15182d"
+    },
+    "major-10-wheel-of-fortune": {
+      "source": "한글/M10-운명의 수레바퀴.png",
+      "sha256": "df4cff9eaf7310daf6e2ecf07f7a6f8b6fd84c2f12deb8964d411c1bbbdce598",
+      "padding": "#12182c"
+    },
+    "major-11-justice": {
+      "source": "한글/M11-정의.png",
+      "sha256": "4be03f37fdddd72deefe8dd5085a264836def39ed44debe1e179d7dea932251b",
+      "padding": "#15192e"
+    },
+    "major-12-hanged-man": {
+      "source": "한글/M12-매달린 사람.png",
+      "sha256": "2fa0a8af30c15fd0afe9fbd1c3d3088629a8f5da8ac9dc0f121d55450dc86d34",
+      "padding": "#14182d"
+    },
+    "major-13-death": {
+      "source": "한글/M13-죽음.png",
+      "sha256": "a9d5d537d05565b4153b3e234f1442a2ef8bf12b7b68ae7c7dd38ff9f38990a5",
+      "padding": "#161a30"
+    },
+    "major-14-temperance": {
+      "source": "한글/M14-절제.png",
+      "sha256": "50645316528096bed9b2d2f9983b2f812b0b7df2028fc0478b52ce327c8f0259",
+      "padding": "#11172c"
+    },
+    "major-15-devil": {
+      "source": "한글/M15-악마.png",
+      "sha256": "f1711128bec97bbca34f164a83267ae32ff2cf255535b32eb07fc2b0176131eb",
+      "padding": "#131a31"
+    },
+    "major-16-tower": {
+      "source": "한글/M16-탑.png",
+      "sha256": "b242e8682e4b6a1d4d6c7ee1b8fd913b72953a7294f0f804b131faa0285a3a42",
+      "padding": "#15192e"
+    },
+    "major-17-star": {
+      "source": "한글/M17-별.png",
+      "sha256": "64db3db34c6025358d9a84af14cb98ddf6596f9dcfefd69e4b7203f45061f783",
+      "padding": "#0f1429"
+    },
+    "major-18-moon": {
+      "source": "한글/M18-달.png",
+      "sha256": "a6862f537a8f784c0ae032533d77dc6946eb6074e794e999b37902a44416d7c9",
+      "padding": "#14162b"
+    },
+    "major-19-sun": {
+      "source": "한글/M19-태양.png",
+      "sha256": "bffd435da4204f06aa74f33284e726c41691b0f1bceff44bedfc4f938e85a6a3",
+      "padding": "#14192e"
+    },
+    "major-20-judgement": {
+      "source": "한글/M20-심판.png",
+      "sha256": "2a3a07d1b2879501d83224e9d7a290bc875ee2794ec3492d2964f3f36594eb4e",
+      "padding": "#15192f"
+    },
+    "major-21-world": {
+      "source": "한글/M21-세계.png",
+      "sha256": "5daa61b5ab19089e45940b12aa5104d3f17bda48ae9aeec04f73141b214729a5",
+      "padding": "#14182e"
+    },
+    "wands-01": {
+      "source": "한글/W01-완드 에이스.png",
+      "sha256": "06f05a9a1ff573420ddaa28cc78aa1e11fa420feefc220aaff8383573d49faaf",
+      "padding": "#111528"
+    },
+    "wands-02": {
+      "source": "한글/W02-완드 2.png",
+      "sha256": "30bb26228fda1fca26fc424a547fa4cff09276d27d270f9740dfd48ee686d845",
+      "padding": "#15182d"
+    },
+    "wands-03": {
+      "source": "한글/W03-완드 3.png",
+      "sha256": "2596d10cd897d68f88c0914d1aea8d4cd0aa174895ab6bfe2f8705932e0f989a",
+      "padding": "#15192d"
+    },
+    "wands-04": {
+      "source": "한글/W04-완드 4.png",
+      "sha256": "b348df1cd3ff321ba98725399adaa6fcaa937c5bbdac77b2b75ff254d0a66895",
+      "padding": "#12172b"
+    },
+    "wands-05": {
+      "source": "한글/W05-완드 5.png",
+      "sha256": "29b2cf8829d78791924d23c6c7520f011e58c4d76f7dc85c6264459600d3221a",
+      "padding": "#101629"
+    },
+    "wands-06": {
+      "source": "한글/W06-완드 6.png",
+      "sha256": "a5225189a51c8837236b88296a73b67171bb9988a005cb0ab5dc560d18befd8e",
+      "padding": "#14182d"
+    },
+    "wands-07": {
+      "source": "한글/W07-완드 7.png",
+      "sha256": "c3e0c2278973a62524996dca7623ae59aa05ce27ca4c3f7a381e3b6203a16a8a",
+      "padding": "#0f1327"
+    },
+    "wands-08": {
+      "source": "한글/W08-완드 8.png",
+      "sha256": "d6b5ab60067d78825da09d69b1107a63027f8899fd900118c419bb1d435b8714",
+      "padding": "#13172c"
+    },
+    "wands-09": {
+      "source": "한글/W09-완드 9.png",
+      "sha256": "71fab9967dde6d3ad451cac98cc3549e4a199009452f6e274cd6b2b0f400f3f1",
+      "padding": "#15182c"
+    },
+    "wands-10": {
+      "source": "한글/W10-완드 10.png",
+      "sha256": "a1e1557a6ac3ce7bd173904be5257f1ffb7a197616e6a7674fe4d62f8c87da92",
+      "padding": "#15192f"
+    },
+    "wands-11": {
+      "source": "한글/W11-완드 시종.png",
+      "sha256": "ebb22d478dcf297035f31dd03fe5dba22d37abe73ab01b64e6e778551ad0a7c0",
+      "padding": "#13162a"
+    },
+    "wands-12": {
+      "source": "한글/W12-완드 기사.png",
+      "sha256": "a8a24372ca86e8fc4da1cf67ebd8b338a959ee14889344637578feaff054d456",
+      "padding": "#15192d"
+    },
+    "wands-13": {
+      "source": "한글/W13-완드 여왕.png",
+      "sha256": "81f5ec8780756a866be9edcf847f169270af93501e6a6a6ba65e3b618e1d9e1e",
+      "padding": "#15192f"
+    },
+    "wands-14": {
+      "source": "한글/W14-완드 왕.png",
+      "sha256": "2a50074ab95302f89f580db768c1290ad35dfb6bae16aca426f2c70ddbf922c0",
+      "padding": "#14192e"
+    },
+    "cups-01": {
+      "source": "한글/C01-컵 에이스.png",
+      "sha256": "c95fe78d779747609999aefd78a295668f7ea4d6373dfc93e5499952826f6f39",
+      "padding": "#12162b"
+    },
+    "cups-02": {
+      "source": "한글/C02-컵 2.png",
+      "sha256": "2fd61c2a3482adb29e0089aab19530c0307966102b311c7a635efdb28db901bb",
+      "padding": "#15192f"
+    },
+    "cups-03": {
+      "source": "한글/C03-컵 3.png",
+      "sha256": "46c5e11dd6b2942272cc84660b63398738e043331576d7d5921aabeb4da5d308",
+      "padding": "#15192d"
+    },
+    "cups-04": {
+      "source": "한글/C04-컵 4.png",
+      "sha256": "3f68e2d5357af1e783e9ce5c3da82e305b0b33659f6830a04d11dadd2dbb3ef5",
+      "padding": "#161a30"
+    },
+    "cups-05": {
+      "source": "한글/C05-컵 5.png",
+      "sha256": "d80522e82a646337eeee3c5fcc0b52d52b2813c8746b65fb85b4fd00c89805d7",
+      "padding": "#15192f"
+    },
+    "cups-06": {
+      "source": "한글/C06-컵 6.png",
+      "sha256": "eedd65f3cbdb4762937bda4ed8a5ae58e0f3979f78df66042094c0e139dcf658",
+      "padding": "#151930"
+    },
+    "cups-07": {
+      "source": "한글/C07-컵 7.png",
+      "sha256": "4903f9ac77642a5dba26c418a2aa651368f9f41ccad80be56181e870c4bf2444",
+      "padding": "#15192e"
+    },
+    "cups-08": {
+      "source": "한글/C08-컵 8.png",
+      "sha256": "752d95ac192fca4d58f85810032d8dbb9993eea577a17223630571a34cabfa5d",
+      "padding": "#15182e"
+    },
+    "cups-09": {
+      "source": "한글/C09-컵 9.png",
+      "sha256": "f922df4069612189f3539b20bd283be7e8efec11ecfae8ad197e7822b55f6c1b",
+      "padding": "#15182e"
+    },
+    "cups-10": {
+      "source": "한글/C10-컵 10.png",
+      "sha256": "9d7c7833ded9457632a816029efaa3178b1f71c141d0cd41c775ca7c0eed80a7",
+      "padding": "#14192f"
+    },
+    "cups-11": {
+      "source": "한글/C11-컵 시종.png",
+      "sha256": "ed379d756110626d956806ba57568e420486b84f0d52a248d32c60de14c8214c",
+      "padding": "#15192e"
+    },
+    "cups-12": {
+      "source": "한글/C12-컵 기사.png",
+      "sha256": "ecc054514da873c9fe4a6a3c2be974e4cffe665d1b3ede4833e91b5d70d89643",
+      "padding": "#15192e"
+    },
+    "cups-13": {
+      "source": "한글/C13-컵 여왕.png",
+      "sha256": "5d19b68bfa772407dcd6201afd44bce580cb68fb9c40be1b140cae1d9d801829",
+      "padding": "#151a2f"
+    },
+    "cups-14": {
+      "source": "한글/C14-컵 왕.png",
+      "sha256": "a6270c59f08c47d107504e8286de2eb60df977022e6ed7919570c2a1f14d3a9b",
+      "padding": "#161a2f"
+    },
+    "swords-01": {
+      "source": "한글/S01-검 에이스.png",
+      "sha256": "2a9c62e0f4adcd662a98731a777142bf566c4007d48b7a9c3646288edacbdd95",
+      "padding": "#161a2f"
+    },
+    "swords-02": {
+      "source": "한글/S02-검 2.png",
+      "sha256": "7997e870b20b036720b4cd9c585537c8bfffab17f5a901f8f2e065b986ad4e65",
+      "padding": "#15192e"
+    },
+    "swords-03": {
+      "source": "한글/S03-검 3.png",
+      "sha256": "e61260f4bab53195f033133047d696ee54061276bc98c1b8faa3f3f47009f612",
+      "padding": "#161a2f"
+    },
+    "swords-04": {
+      "source": "한글/S04-검 4.png",
+      "sha256": "526e8d9ac6d32c38c0af411fedae98be6810fc39a0de0be9e7335d1fab3eab27",
+      "padding": "#13172c"
+    },
+    "swords-05": {
+      "source": "한글/S05-검 5.png",
+      "sha256": "cfff7c7df5255536ebc63b7863abe34d3f73b36eea88caeebd2dfc1ed2808985",
+      "padding": "#13172b"
+    },
+    "swords-06": {
+      "source": "한글/S06-검 6.png",
+      "sha256": "eb83d43ebf910b78b8666a23091c00ca61043a6a27ad8d1b2c70e989c00c2382",
+      "padding": "#14182d"
+    },
+    "swords-07": {
+      "source": "한글/S07-검 7.png",
+      "sha256": "9dc7b183a7517c951d984d5afc6e409328c0e7b674124cd540428c456511c4f0",
+      "padding": "#13182d"
+    },
+    "swords-08": {
+      "source": "한글/S08-검 8.png",
+      "sha256": "ebd4daf17dfaec4bdb43679eed10f1836ad1792d34c6e1b8db6b4e6601dbc5a8",
+      "padding": "#15192d"
+    },
+    "swords-09": {
+      "source": "한글/S09-검 9.png",
+      "sha256": "8c48277cac45b9ead13c2973a3a8bd4158b59b9e5133fc83bf51981e17a8ede6",
+      "padding": "#15182d"
+    },
+    "swords-10": {
+      "source": "한글/S10-검 10.png",
+      "sha256": "1d277a7d53ea9e5356fd360958cc04d153abf1d59c2cb9a924f8d2233716b919",
+      "padding": "#14182d"
+    },
+    "swords-11": {
+      "source": "한글/S11-검 시종.png",
+      "sha256": "c79b8264d3aa2dd2f67ad7d89bae549b5d8d94a733674ea7c0a0c742cdd642e9",
+      "padding": "#15192f"
+    },
+    "swords-12": {
+      "source": "한글/S12-검 기사.png",
+      "sha256": "fd38542a400f45787e15dcac4a70f78b96943119ee312baee1dddad11c231dfd",
+      "padding": "#15192f"
+    },
+    "swords-13": {
+      "source": "한글/S13-검 여왕.png",
+      "sha256": "4406e85a088856c2f9920d02d7bfafd87af641a57467c21de357fd3bdb4240fb",
+      "padding": "#13182d"
+    },
+    "swords-14": {
+      "source": "한글/S14-검 왕.png",
+      "sha256": "32790fd81ad6fe3a52dde9f4761c55337eda349e86dfacc9bdffe6f899d4fa26",
+      "padding": "#161a30"
+    },
+    "pentacles-01": {
+      "source": "한글/P01-펜타클 에이스.png",
+      "sha256": "7dc60a71bbc373fbe3d1e856b682289f14dfcf428a82075fa51e796ec1044e34",
+      "padding": "#161a2f"
+    },
+    "pentacles-02": {
+      "source": "한글/P02-펜타클 2.png",
+      "sha256": "153253e040ccbc4063a17d92824f9f6d7c504c45b82b325b81ddfe23cbaa9ddf",
+      "padding": "#15182d"
+    },
+    "pentacles-03": {
+      "source": "한글/P03-펜타클 3.png",
+      "sha256": "d43999b0e484365154cb281e3c0506dae17748b20d890f5ce33bf1c4d9c3ff89",
+      "padding": "#15192f"
+    },
+    "pentacles-04": {
+      "source": "한글/P04-펜타클 4.png",
+      "sha256": "a31f18ab92e9221295d3d16d9467e2368f1311c35f4d5748c932a2da881623fc",
+      "padding": "#14182b"
+    },
+    "pentacles-05": {
+      "source": "한글/P05-펜타클 5.png",
+      "sha256": "a1e85be3526aeb5026b08b16f7d0dcc8ea134ff9fe43bdcd2f0be91c144013b2",
+      "padding": "#15192e"
+    },
+    "pentacles-06": {
+      "source": "한글/P06-펜타클 6.png",
+      "sha256": "bdb690ac3917741d0444efc40699404d32c3855c617d06d3d7c324d873d210c0",
+      "padding": "#14182d"
+    },
+    "pentacles-07": {
+      "source": "한글/P07-펜타클 7.png",
+      "sha256": "d3baf1d8e75a78e57dea12a79ae4319041bf947f4023c9bb128138e5fbe13ea9",
+      "padding": "#15192e"
+    },
+    "pentacles-08": {
+      "source": "한글/P08-펜타클 8.png",
+      "sha256": "ea053476db3a43501ee474bebcd282cbb1ac8d70d9170b1dc241500bc11e2c14",
+      "padding": "#14182c"
+    },
+    "pentacles-09": {
+      "source": "한글/P09-펜타클 9.png",
+      "sha256": "60181eb0d2784b17d083ee81d9ca8bfad0be025e270817342d38d0257b58719d",
+      "padding": "#14192f"
+    },
+    "pentacles-10": {
+      "source": "한글/P10-펜타클 10.png",
+      "sha256": "0ae4e99e97e059a5e9b5f334c56ca0c956f1393ef45cd5a8b473fc2626c09b59",
+      "padding": "#161a30"
+    },
+    "pentacles-11": {
+      "source": "한글/P11-펜타클 시종.png",
+      "sha256": "69c0b2de61ee52aa4d9e18d5422add67be17ae8ecf98ce3c5f89e50f3a247c85",
+      "padding": "#12162c"
+    },
+    "pentacles-12": {
+      "source": "한글/P12-펜타클 기사.png",
+      "sha256": "d5c02e79d30d045e9f42a3b5ccbcaec732b09035ae66af95ecc263698404a254",
+      "padding": "#14182d"
+    },
+    "pentacles-13": {
+      "source": "한글/P13-펜타클 여왕.png",
+      "sha256": "2f551102169769466b1f0b392e77ff4bad3b8e1d48d544fe594585c8abbfb22a",
+      "padding": "#14182d"
+    },
+    "pentacles-14": {
+      "source": "한글/P14-펜타클 왕.png",
+      "sha256": "29dfd21680bee4ff8b6b1b7024069322db7e41332866dbd3a01267e98287ab62",
+      "padding": "#15192f"
+    }
+  },
+  "backs": {
+    "navy-gold": {
+      "source": "뒷면/01-남색금선.png",
+      "sha256": "b0159213c81f0bfbbf20d9bdfadf695110e20f3bbcc9729f80e51b0041b5542f",
+      "padding": "#131b32"
+    },
+    "constellation": {
+      "source": "뒷면/02-별자리지도.png",
+      "sha256": "0298bc4137791708eb1d0bfa2f44f4624d169a230a02a1083f30eecf30c709d6",
+      "padding": "#081a28"
+    },
+    "ribbon-garden": {
+      "source": "뒷면/03-아이보리리본정원.png",
+      "sha256": "217da15f39c1f4313324a3ddf512b10b59decf09dcc747ef14c73b924a0729c2",
+      "padding": "#faf3e2"
+    },
+    "moon-guardian": {
+      "source": "뒷면/04-달빛수호문양.png",
+      "sha256": "ff2950e35989f4fe1e6cf86ac74a71fba0a84ad014bd54c1907b0a24bd2a9acb",
+      "padding": "#101b32"
+    }
+  }
+}

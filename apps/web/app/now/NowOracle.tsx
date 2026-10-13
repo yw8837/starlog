@@ -8,6 +8,7 @@ import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { drawNow, type NowDraw } from "@/lib/decision";
+import { backImage, useDeckPrefs } from "@/lib/deck";
 import { guideHref } from "@/lib/hosts";
 import s from "./NowOracle.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
@@ -60,9 +61,11 @@ function randomSeed(): string {
 
 const newDeck = () => createDeck(randomSeed(), DEFAULT_REVERSAL_RATE);
 
-const StepIcon = ({ kind }: { kind: (typeof HOWTO_STEPS)[number]["icon"] }) =>
-  kind === "card" ? (
-    <img className={s.stepCard} src="/cards/back.svg" alt="" width={600} height={1020} draggable={false} />
+const StepIcon = ({ kind }: { kind: (typeof HOWTO_STEPS)[number]["icon"] }) => {
+  // The small card is the back the visitor chose (내 정보 → 카드 디자인).
+  const { back } = useDeckPrefs();
+  return kind === "card" ? (
+    <img className={s.stepCard} src={backImage(back, "sm")} alt="" width={600} height={1040} draggable={false} />
   ) : (
     <svg className={s.stepIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
       {kind === "write" ? (
@@ -78,6 +81,7 @@ const StepIcon = ({ kind }: { kind: (typeof HOWTO_STEPS)[number]["icon"] }) =>
       )}
     </svg>
   );
+};
 
 const Chevron = () => (
   <svg className={s.chevron} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">

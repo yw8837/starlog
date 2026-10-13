@@ -320,6 +320,10 @@ describe("on https://yeolmaeapps.kr", () => {
       "/og/anything",
       "/cards/major-00-fool.webp",
       "/cards/major-00-fool-sm.webp",
+      "/cards/starlog/major-00-fool.webp",
+      "/cards/starlog/manifest.json",
+      "/cards/backs/constellation.webp",
+      "/cards/backs/constellation-sm.webp",
     ];
     for (const path of own) expectRedirect(APEX, path, null);
   });

@@ -8,6 +8,7 @@ import GuideSajuPage, { metadata as sajuMetadata } from "@/app/guide/saju/page";
 import GuideTarotPage, { metadata as tarotMetadata } from "@/app/guide/tarot/page";
 import { GUIDE_HOST_LINES } from "@/app/guide/GuideHost";
 import { SITE } from "@/lib/config";
+import { DECK_KEY } from "@/lib/deck";
 import { GUIDE_CATEGORIES, articlesIn, findArticle, type GuideArticle } from "@/lib/guide";
 import nextConfig from "@/next.config";
 
@@ -35,6 +36,7 @@ beforeEach(() => vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", ""));
 afterEach(() => {
   cleanup();
   vi.unstubAllEnvs();
+  localStorage.clear();
 });
 
 const TABS = [
@@ -162,6 +164,32 @@ describe("guide article body", () => {
       article.sections.find((section) => section.heading === "살리고 누르는 관계")?.body,
     );
     expect(screen.getByRole("table", { name: "오행과 글자, 계절, 색" })).toBeTruthy();
+  });
+});
+
+describe("guide card pictures", () => {
+  // What a visitor who chose the Starlog deck and the 남색 금선 back has saved.
+  const choose = () => localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "navy-gold" }));
+  /** Every card face on the page (the backs live under /cards/backs/ and follow the visitor's choice). */
+  const faceSrcs = (root: HTMLElement) =>
+    [...root.querySelectorAll<HTMLImageElement>('img[src^="/cards/"]')].map((img) => img.getAttribute("src") ?? "").filter((src) => !src.startsWith("/cards/backs/"));
+
+  it.each(TABS)("$category tab: the article thumbnails are the 1909 scans, whatever deck was chosen", ({ Page, category }) => {
+    choose();
+    const { container } = render(<Page />);
+    const faces = faceSrcs(container);
+    if (category === "tarot") expect(faces.length).toBeGreaterThan(5);
+    for (const src of faces) expect(src, src).toMatch(/^\/cards\/[a-z0-9-]+-sm\.webp$/);
+    expect(container.innerHTML).not.toContain("/cards/starlog/");
+  });
+
+  it("the card of a card article is the 1909 scan, small and large, whatever deck was chosen", async () => {
+    choose();
+    const { container } = render(await GuideArticlePage({ params: Promise.resolve({ slug: "the-fool" }) } as PageProps<"/guide/[slug]">));
+    const picture = within(screen.getAllByRole("figure")[0]!).getByRole("img", { name: "바보 타로 카드" });
+    expect(picture.getAttribute("src")).toBe("/cards/major-00-fool-sm.webp");
+    expect(picture.getAttribute("srcset")).toBe("/cards/major-00-fool-sm.webp 240w, /cards/major-00-fool.webp 600w");
+    expect(container.innerHTML).not.toContain("/cards/starlog/");
   });
 });
 
