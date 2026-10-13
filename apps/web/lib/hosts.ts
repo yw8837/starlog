@@ -17,10 +17,21 @@ export const hostOfPath = (path: string): SiteHost => (isGuidePath(path) ? "guid
 export const originOf = (host: SiteHost): string => (host === "guide" ? SITE.guideUrl : SITE.url);
 
 /**
- * An absolute URL on the host that really serves `path`. Never behind the build flag: canonicals,
- * Open Graph URLs, JSON-LD, sitemaps, feeds and llms.txt always name the one real home.
+ * The guide's home, the tarot tab: guideIndexPath("tarot"), which next.config's loader cannot reach
+ * (lib/hosts.test.ts pins the two together). The root domain serves it at its own "/" (owner decision
+ * 2026-10-13), so https://yeolmaeapps.kr/ is its one address and /guide/tarot redirects there.
  */
-export const absoluteUrl = (path: string): string => new URL(path, originOf(hostOfPath(path))).toString();
+export const GUIDE_HOME = "/guide/tarot";
+
+/** The path that serves `path` on its own host: the guide's home is the root domain's "/". */
+const servedPath = (path: string): string => (path === GUIDE_HOME ? "/" : path);
+
+/**
+ * An absolute URL on the host that really serves `path`. Never behind the build flag: canonicals,
+ * Open Graph URLs, JSON-LD, sitemaps, feeds and llms.txt always name the one real home, and the
+ * guide's home is https://yeolmaeapps.kr/.
+ */
+export const absoluteUrl = (path: string): string => new URL(servedPath(path), originOf(hostOfPath(path))).toString();
 
 /** The guide's feed lives next to its articles on the root domain (app/rss.xml/route.ts serves it on both hosts). */
 export const FEED_URL = new URL("/rss.xml", SITE.guideUrl).toString();
@@ -32,20 +43,20 @@ export const FEED_URL = new URL("/rss.xml", SITE.guideUrl).toString();
  */
 export const splitHosts = (flag: string | undefined = process.env.NEXT_PUBLIC_SPLIT_HOSTS): boolean => flag === "1";
 
-/** A link to a guide page from the app: absolute on the root domain when the hosts are split, else the path. */
-export const guideHref = (path: string): string => (splitHosts() ? new URL(path, SITE.guideUrl).toString() : path);
+/** A link to a guide page from the app: absolute on the root domain when the hosts are split (the guide's home is its "/"), else the path. */
+export const guideHref = (path: string): string => (splitHosts() ? new URL(servedPath(path), SITE.guideUrl).toString() : path);
 
 /** A link to an app route from a guide page: absolute on the app host when the hosts are split, else the path. */
 export const appHref = (path: string): string => (splitHosts() ? new URL(path, SITE.url).toString() : path);
 
 /**
- * href for a link in a component both hosts render (the tab bar, the footer): `from` is the host the
- * page is served on. A link to the same host stays a path; one to the other host goes through
- * guideHref or appHref.
+ * href for a link in a component both hosts render (the tab bar, the footer), or on a guide page:
+ * `from` is the host the page is served on. A link to the same host stays a path (on the split root
+ * domain the guide's home is "/"); one to the other host goes through guideHref or appHref.
  */
 export function linkHref(path: string, from: SiteHost = "app"): string {
   const target = hostOfPath(path);
-  if (target === from) return path;
+  if (target === from) return target === "guide" && splitHosts() ? servedPath(path) : path;
   return target === "guide" ? guideHref(path) : appHref(path);
 }
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SITE } from "./config";
-import { FEED_URL, absoluteUrl, appHref, guideHref, hostOfPath, isGuidePath, linkHref, originOf, siteOfRequest, splitHosts } from "./hosts";
+import { guideIndexPath } from "./guideMeta";
+import { FEED_URL, GUIDE_HOME, absoluteUrl, appHref, guideHref, hostOfPath, isGuidePath, linkHref, originOf, siteOfRequest, splitHosts } from "./hosts";
 
 /** The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; every other build, dev server and test leaves it off. */
 const FLAG = "NEXT_PUBLIC_SPLIT_HOSTS";
@@ -30,17 +31,25 @@ describe("the two hosts", () => {
 
 describe("absoluteUrl", () => {
   it("names the one real home of a page: guide pages on the root domain, the rest on the app host", () => {
-    expect(absoluteUrl("/guide/tarot")).toBe("https://yeolmaeapps.kr/guide/tarot");
     expect(absoluteUrl("/guide/the-fool")).toBe("https://yeolmaeapps.kr/guide/the-fool");
     expect(absoluteUrl("/tarot/new")).toBe("https://starlog.yeolmaeapps.kr/tarot/new");
     expect(absoluteUrl("/")).toBe("https://starlog.yeolmaeapps.kr/");
     expect(absoluteUrl("/#organization")).toBe("https://starlog.yeolmaeapps.kr/#organization");
   });
 
+  it("names the root domain's own / for the guide's home, the tarot tab, and its full path for every other tab", () => {
+    expect(GUIDE_HOME).toBe(guideIndexPath("tarot"));
+    expect(absoluteUrl("/guide/tarot")).toBe("https://yeolmaeapps.kr/");
+    expect(absoluteUrl("/guide/saju")).toBe("https://yeolmaeapps.kr/guide/saju");
+    expect(absoluteUrl("/guide")).toBe("https://yeolmaeapps.kr/guide");
+  });
+
   it("does not depend on the build flag: canonicals, JSON-LD, sitemaps and feeds always name the real home", () => {
     expect(absoluteUrl("/guide/saju")).toBe("https://yeolmaeapps.kr/guide/saju");
+    expect(absoluteUrl("/guide/tarot")).toBe("https://yeolmaeapps.kr/");
     vi.stubEnv(FLAG, "1");
     expect(absoluteUrl("/guide/saju")).toBe("https://yeolmaeapps.kr/guide/saju");
+    expect(absoluteUrl("/guide/tarot")).toBe("https://yeolmaeapps.kr/");
     expect(absoluteUrl("/faq")).toBe("https://starlog.yeolmaeapps.kr/faq");
   });
 
@@ -65,6 +74,7 @@ describe("splitHosts", () => {
 describe("guideHref and appHref", () => {
   it("stay relative with the flag off: next dev, the OpenNext preview and the e2e suite run on one origin", () => {
     expect(guideHref("/guide/saju")).toBe("/guide/saju");
+    expect(guideHref("/guide/tarot")).toBe("/guide/tarot");
     expect(guideHref("/guide/the-fool")).toBe("/guide/the-fool");
     expect(appHref("/tarot/new")).toBe("/tarot/new");
     expect(appHref("/tarot/new?new=1")).toBe("/tarot/new?new=1");
@@ -74,6 +84,7 @@ describe("guideHref and appHref", () => {
   it("are absolute on their own host with the flag on (the real deploy build)", () => {
     vi.stubEnv(FLAG, "1");
     expect(guideHref("/guide/saju")).toBe("https://yeolmaeapps.kr/guide/saju");
+    expect(guideHref("/guide/tarot")).toBe("https://yeolmaeapps.kr/");
     expect(guideHref("/guide/redrawing-same-question")).toBe("https://yeolmaeapps.kr/guide/redrawing-same-question");
     expect(appHref("/tarot/new")).toBe("https://starlog.yeolmaeapps.kr/tarot/new");
     expect(appHref("/saju/new?new=1")).toBe("https://starlog.yeolmaeapps.kr/saju/new?new=1");
@@ -88,17 +99,20 @@ describe("linkHref", () => {
     for (const from of ["app", "guide"] as const) for (const path of paths) expect(linkHref(path, from), `${from} ${path}`).toBe(path);
   });
 
-  it("with the flag on, makes only the links that cross hosts absolute", () => {
+  it("with the flag on, makes only the links that cross hosts absolute, and sends the guide's home to the root domain's /", () => {
     vi.stubEnv(FLAG, "1");
     // A page on the app host: its own links stay paths, a guide link goes to the root domain.
     expect(linkHref("/", "app")).toBe("/");
     expect(linkHref("/story", "app")).toBe("/story");
-    expect(linkHref("/guide/tarot", "app")).toBe("https://yeolmaeapps.kr/guide/tarot");
+    expect(linkHref("/guide/tarot", "app")).toBe("https://yeolmaeapps.kr/");
+    expect(linkHref("/guide/saju", "app")).toBe("https://yeolmaeapps.kr/guide/saju");
     // The default is the app host.
     expect(linkHref("/guide/the-fool")).toBe("https://yeolmaeapps.kr/guide/the-fool");
     expect(linkHref("/faq")).toBe("/faq");
-    // A guide page: its own links stay paths, an app link goes to the app host.
-    expect(linkHref("/guide/tarot", "guide")).toBe("/guide/tarot");
+    // A guide page: its own links stay paths (the guide's home is the root domain's "/"), an app link goes to the app host.
+    expect(linkHref("/guide/tarot", "guide")).toBe("/");
+    expect(linkHref("/guide/saju", "guide")).toBe("/guide/saju");
+    expect(linkHref("/guide/the-fool", "guide")).toBe("/guide/the-fool");
     expect(linkHref("/", "guide")).toBe("https://starlog.yeolmaeapps.kr/");
     expect(linkHref("/story", "guide")).toBe("https://starlog.yeolmaeapps.kr/story");
     expect(linkHref("/faq", "guide")).toBe("https://starlog.yeolmaeapps.kr/faq");

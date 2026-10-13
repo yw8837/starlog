@@ -26,10 +26,10 @@ describe("HomeGuide", () => {
     expect(hrefs()).toEqual(GUIDE_PATHS);
   });
 
-  it("sends every link to the root domain when the hosts are split: the guide is not served on the app host", () => {
+  it("sends every link to the root domain when the hosts are split: the guide is not served on the app host, and its home is the root domain's /", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<HomeGuide />);
-    expect(hrefs()).toEqual(GUIDE_PATHS.map((path) => `${SITE.guideUrl}${path}`));
+    expect(hrefs()).toEqual(GUIDE_PATHS.map((path) => (path === guideIndexPath("tarot") ? `${SITE.guideUrl}/` : `${SITE.guideUrl}${path}`)));
     expect(GUIDE_PATHS.length).toBeGreaterThan(9);
   });
 });

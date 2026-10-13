@@ -5,6 +5,7 @@ import { TabBar } from "@/components/layout/TabBar";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { NightSky } from "@/components/sky/NightSky";
 import { GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, type GuideCategory } from "@/lib/guide";
+import { linkHref } from "@/lib/hosts";
 import { guideIndexBreadcrumbJsonLd, guideIndexItemListJsonLd } from "@/lib/jsonld";
 import { pageMetadata } from "@/lib/seo";
 import { GuideHost } from "./GuideHost";
@@ -66,7 +67,7 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
               return (
                 <Link
                   key={tab}
-                  href={guideIndexPath(tab)}
+                  href={linkHref(guideIndexPath(tab), "guide")}
                   className={current ? `${s.tab} ${s.tabCurrent}` : s.tab}
                   aria-current={current ? "page" : undefined}
                 >

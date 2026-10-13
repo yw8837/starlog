@@ -51,6 +51,7 @@ describe("sitemap on the app host", () => {
     expect(urls.filter((url) => new URL(url).pathname.startsWith("/guide"))).toEqual([]);
     expect(urls).not.toContain(`${SITE.url}/guide`);
     expect(urls).not.toContain(`${GUIDE}/guide/tarot`);
+    expect(urls).not.toContain(`${GUIDE}/`);
   });
 
   it("leaves lastmod off the policies (their only date is the 시행일, which is still ahead) and off pages without a content date", () => {
@@ -85,11 +86,11 @@ describe("sitemap on the root domain", () => {
   const urls = entries.map((entry) => entry.url);
   const entry = (path: string) => entries.find((e) => e.url === absoluteUrl(path));
 
-  it("lists both guide tabs and every article on the root domain, and nothing else", () => {
-    expect(urls).toEqual(expect.arrayContaining([`${GUIDE}/guide/tarot`, `${GUIDE}/guide/saju`]));
+  it("lists both guide tabs (the tarot tab at the root domain's /) and every article on the root domain, and nothing else", () => {
+    expect(urls).toEqual(expect.arrayContaining([`${GUIDE}/`, `${GUIDE}/guide/saju`]));
     for (const article of GUIDE_ARTICLES) expect(urls, article.slug).toContain(`${GUIDE}/guide/${article.slug}`);
     expect(urls).toHaveLength(2 + GUIDE_ARTICLES.length);
-    expect(urls.every((url) => url.startsWith(`${GUIDE}/guide/`))).toBe(true);
+    expect(urls.filter((url) => url !== `${GUIDE}/`).every((url) => url.startsWith(`${GUIDE}/guide/`))).toBe(true);
   });
 
   it("includes every guide article with its updated date as lastmod, and each tab with its newest article's", () => {
@@ -100,9 +101,9 @@ describe("sitemap on the root domain", () => {
     expect(entry("/guide/tarot")?.lastModified).toBe(newest);
   });
 
-  it("leaves out /guide, which permanently redirects to the first tab, and the root, whose canonical is the first tab", () => {
+  it("leaves out /guide and /guide/tarot, which permanently redirect to the root domain's /", () => {
     expect(urls).not.toContain(`${GUIDE}/guide`);
-    expect(urls).not.toContain(`${GUIDE}/`);
+    expect(urls).not.toContain(`${GUIDE}/guide/tarot`);
     expect(new Set(urls).size).toBe(urls.length);
   });
 });
@@ -283,11 +284,15 @@ describe("pageMetadata", () => {
   });
 
   it("gives a guide page the root domain's address in full as its canonical and og:url, whatever host serves it", () => {
-    for (const path of ["/guide/tarot", "/guide/saju", "/guide/the-fool"]) {
+    for (const path of ["/guide/saju", "/guide/the-fool"]) {
       const meta = pageMetadata({ title: "제목", description: "설명", path });
       expect(meta.alternates?.canonical, path).toBe(`${GUIDE}${path}`);
       expect(meta.openGraph, path).toMatchObject({ url: `${GUIDE}${path}` });
     }
+    // The guide's home, the tarot tab, is the root domain's own "/".
+    const home = pageMetadata({ title: "제목", description: "설명", path: "/guide/tarot" });
+    expect(home.alternates?.canonical).toBe(`${GUIDE}/`);
+    expect(home.openGraph).toMatchObject({ url: `${GUIDE}/` });
     expect(pageMetadata({ title: "제목", description: "설명", path: "/guide/the-fool", type: "article" }).openGraph).toMatchObject({ type: "article", url: `${GUIDE}/guide/the-fool` });
   });
 

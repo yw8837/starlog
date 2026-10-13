@@ -13,7 +13,7 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig } from "@/lib/ads";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath } from "@/lib/guide";
-import { appHref } from "@/lib/hosts";
+import { appHref, linkHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
 import { koreanDate } from "@/lib/legal";
 import { pageMetadata } from "@/lib/seo";
@@ -70,7 +70,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
         <JsonLd data={guideFaqJsonLd(article)} />
         <JsonLd data={guideHowToJsonLd(article)} />
         <article className={s.article}>
-          <Stepper label={`${tab} 가이드`} backHref={guideIndexPath(article.category)} backLabel={`${tab} 가이드 목록으로`} />
+          <Stepper label={`${tab} 가이드`} backHref={linkHref(guideIndexPath(article.category), "guide")} backLabel={`${tab} 가이드 목록으로`} />
 
           <header className={s.head}>
             <p className={s.eyebrow}>{GUIDE_CATEGORY_LABEL[article.category]}</p>

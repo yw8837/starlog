@@ -71,9 +71,11 @@ describe("guide tabs", () => {
 
     it(`${tab.category}: its own title, description and canonical on the root domain`, () => {
       expect(String(tab.metadata.title).startsWith(tab.title)).toBe(true);
-      // The guide lives on the root domain: the canonical and og:url name it in full, whatever host serves the page.
-      expect(tab.metadata.alternates?.canonical).toBe(`${SITE.guideUrl}/guide/${tab.category}`);
-      expect(tab.metadata.openGraph).toMatchObject({ url: `${SITE.guideUrl}/guide/${tab.category}` });
+      // The guide lives on the root domain: the canonical and og:url name it in full, whatever host serves
+      // the page. The tarot tab is the guide's home, the root domain's own "/".
+      const address = tab.category === "tarot" ? `${SITE.guideUrl}/` : `${SITE.guideUrl}/guide/${tab.category}`;
+      expect(tab.metadata.alternates?.canonical).toBe(address);
+      expect(tab.metadata.openGraph).toMatchObject({ url: address });
       const description = String(tab.metadata.description);
       expect(description.length).toBeGreaterThan(20);
       expect(description.length).toBeLessThanOrEqual(120);
@@ -228,18 +230,18 @@ describe("links from a guide page", () => {
     });
   });
 
-  it.each(TABS)("$category tab: on the real hosts, links to the app are absolute on the app host and its own links stay paths", ({ Page, category }) => {
+  it.each(TABS)("$category tab: on the real hosts, links to the app are absolute on the app host and its own links stay paths, the guide's home its /", ({ Page, category }) => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<Page />);
     expect(navLinks()).toEqual({
       brand: `${APP}/`,
-      pills: [`${APP}/`, "/guide/tarot", `${APP}/faq`, `${APP}/story`, `${APP}/me`],
-      bar: [`${APP}/`, `${APP}/story`, "/guide/tarot", `${APP}/me`],
-      footer: [`${APP}/about`, `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/guide/tarot", `${APP}/pricing`, `${APP}/terms`, `${APP}/privacy`, `${APP}/refund`],
+      pills: [`${APP}/`, "/", `${APP}/faq`, `${APP}/story`, `${APP}/me`],
+      bar: [`${APP}/`, `${APP}/story`, "/", `${APP}/me`],
+      footer: [`${APP}/about`, `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/", `${APP}/pricing`, `${APP}/terms`, `${APP}/privacy`, `${APP}/refund`],
     });
     // The tabs and the article cards are the guide's own pages: paths, so they stay on the root domain.
     const tabs = within(screen.getByRole("navigation", { name: "가이드 분류" })).getAllByRole("link");
-    expect(tabs.map((a) => a.getAttribute("href"))).toEqual(["/guide/tarot", "/guide/saju"]);
+    expect(tabs.map((a) => a.getAttribute("href"))).toEqual(["/", "/guide/saju"]);
     const items = within(screen.getByRole("main").querySelector("ul") as HTMLElement).getAllByRole("link");
     expect(items.map((a) => a.getAttribute("href"))).toEqual(articlesIn(category).map((a) => `/guide/${a.slug}`));
   });
@@ -256,9 +258,9 @@ describe("links from a guide page", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(await page());
     expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(`${APP}${path}`);
-    expect(navLinks()).toMatchObject({ brand: `${APP}/`, pills: [`${APP}/`, "/guide/tarot", `${APP}/faq`, `${APP}/story`, `${APP}/me`] });
-    // The way back and the related reads are guide pages: paths.
-    expect(screen.getByRole("link", { name: /가이드 목록으로/ }).getAttribute("href")).toMatch(/^\/guide\/(tarot|saju)$/);
+    expect(navLinks()).toMatchObject({ brand: `${APP}/`, pills: [`${APP}/`, "/", `${APP}/faq`, `${APP}/story`, `${APP}/me`] });
+    // The way back and the related reads are guide pages: paths (the tarot tab is the root domain's /).
+    expect(screen.getByRole("link", { name: /가이드 목록으로/ }).getAttribute("href")).toBe(slug === "the-hermit" ? "/" : "/guide/saju");
     const related = within(screen.getByRole("navigation", { name: "같이 읽어 볼 글" })).getAllByRole("link");
     expect(related.every((a) => a.getAttribute("href")?.startsWith("/guide/"))).toBe(true);
   });

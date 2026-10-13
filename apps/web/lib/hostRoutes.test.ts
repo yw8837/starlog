@@ -223,16 +223,19 @@ describe("the rules (NEXT_PUBLIC_SPLIT_HOSTS=1, the deploy build)", () => {
     expect(hostRewrites()[0]?.destination).toBe(guideIndexPath("tarot"));
   });
 
-  it("send the app's /guide pages to the root domain for good (308), /guide itself straight to the tarot tab, the root domain's other paths to the app for now (307)", () => {
+  it("send /guide and the tarot tab to the root domain's / for good (308), the app's other /guide pages to the same path there (308), the root domain's other paths to the app for now (307)", () => {
     const redirects = hostRedirects();
     expect(redirects.filter((rule) => rule.permanent)).toHaveLength(redirects.length - 1);
     expect(redirects.at(-1)?.permanent).toBe(false);
     expect(redirects.at(-1)?.destination.startsWith(`${SITE.url}/`)).toBe(true);
     for (const rule of redirects.filter((r) => r.permanent)) {
       expect(rule.source.startsWith("/guide")).toBe(true);
-      expect(rule.destination.startsWith(`${SITE.guideUrl}/guide`)).toBe(true);
+      expect(rule.destination === "/" || rule.destination.startsWith(`${SITE.guideUrl}/`), rule.destination).toBe(true);
     }
-    expect(redirects.find((rule) => rule.source === "/guide")?.destination).toBe(`${SITE.guideUrl}${guideIndexPath("tarot")}`);
+    // The guide's home is the root domain's "/": /guide and the tarot tab go there from either host.
+    const home = redirects.filter((rule) => rule.source === "/guide" || rule.source === guideIndexPath("tarot"));
+    expect(home).toHaveLength(4);
+    for (const rule of home) expect(["/", `${SITE.guideUrl}/`]).toContain(rule.destination);
   });
 
   it("send HSTS without includeSubDomains, with the max-age given, on the root domain only", () => {
@@ -281,6 +284,7 @@ describe("the rules (NEXT_PUBLIC_SPLIT_HOSTS=1, the deploy build)", () => {
 
 describe("on https://yeolmaeapps.kr", () => {
   it("shows the guide index at /, without changing the address", () => {
+    expectRedirect(APEX, "/", null);
     expectRewrite(APEX, "/", { to: "/guide/tarot" });
     expectRewrite(APEX, "/guide/tarot", null);
     expectRewrite(APEX, "/me", null);
@@ -296,7 +300,6 @@ describe("on https://yeolmaeapps.kr", () => {
 
   it("serves the guide, Next's files and API, the crawler files, and the assets the guide pages load itself", () => {
     const own = [
-      "/guide/tarot",
       "/guide/saju",
       "/guide/the-fool",
       "/_next/static/chunks/0a1b2c.js",
@@ -329,20 +332,28 @@ describe("on https://yeolmaeapps.kr", () => {
   });
 
   it("serves those paths itself in any letter case too, instead of sending them to the app", () => {
-    for (const path of MIXED_CASE.filter((path) => !/^\/guide\/?$/i.test(path))) expectRedirect(APEX, path, null);
-    // /Guide alone: the Worker, which matches the manifest case-sensitively, leaves it alone too.
-    for (const path of ["/Guide", "/GUIDE", "/GUIDE/"]) expect(viaOpenNext(SPLIT.redirects, APEX, path), path).toBeNull();
+    const home = /^\/guide(?:\/tarot)?\/?$/i;
+    for (const path of MIXED_CASE.filter((path) => !home.test(path))) expectRedirect(APEX, path, null);
+    // /Guide and /Guide/tarot: the Worker, which matches the manifest case-sensitively, leaves them
+    // alone; Next's own matcher ignores case and may send them to the guide's home. Never to the app.
+    for (const path of MIXED_CASE.filter((path) => home.test(path))) {
+      expect(viaOpenNext(SPLIT.redirects, APEX, path), path).toBeNull();
+      expect(viaNext(SPLIT.redirects, APEX, path)?.to.startsWith(SITE.url) ?? false, path).toBe(false);
+    }
   });
 
-  it("keeps /guide's own rule: a permanent redirect to the first tab, on the same host", () => {
-    expectRedirect(APEX, "/guide", to(308, "/guide/tarot"));
+  it("sends /guide and the tarot tab to its own / for good (308), in one hop", () => {
+    expectRedirect(APEX, "/guide", to(308, "/"));
+    expectRedirect(APEX, "/guide/tarot", to(308, "/"));
+    expectRedirect(APEX, "/guide/saju", null);
+    expectRedirect(APEX, "/guide/the-fool", null);
   });
 });
 
 describe("on https://starlog.yeolmaeapps.kr", () => {
-  it("sends every /guide page to the same path on the root domain for good (308), and /guide straight to the tarot tab", () => {
-    expectRedirect(STARLOG, "/guide", to(308, `${SITE.guideUrl}/guide/tarot`));
-    expectRedirect(STARLOG, "/guide/tarot", to(308, `${SITE.guideUrl}/guide/tarot`));
+  it("sends every /guide page to the same path on the root domain for good (308), and /guide and the tarot tab straight to its /", () => {
+    expectRedirect(STARLOG, "/guide", to(308, `${SITE.guideUrl}/`));
+    expectRedirect(STARLOG, "/guide/tarot", to(308, `${SITE.guideUrl}/`));
     expectRedirect(STARLOG, "/guide/saju", to(308, `${SITE.guideUrl}/guide/saju`));
     expectRedirect(STARLOG, "/guide/the-fool", to(308, `${SITE.guideUrl}/guide/the-fool`));
     expectRedirect(STARLOG, "/guide/a/b", to(308, `${SITE.guideUrl}/guide/a/b`));
@@ -359,9 +370,10 @@ describe("on https://starlog.yeolmaeapps.kr", () => {
 describe("with a port in the Host header", () => {
   it("still knows the two hosts", () => {
     expectRedirect(`${APEX}:443`, "/me", to(307, `${SITE.url}/me`));
-    expectRedirect(`${APEX}:443`, "/guide/tarot", null);
+    expectRedirect(`${APEX}:443`, "/guide/saju", null);
+    expectRedirect(`${APEX}:443`, "/guide/tarot", to(308, "/"));
     expectRewrite(`${APEX}:443`, "/", { to: "/guide/tarot" });
-    expectRedirect(`${STARLOG}:443`, "/guide", to(308, `${SITE.guideUrl}/guide/tarot`));
+    expectRedirect(`${STARLOG}:443`, "/guide", to(308, `${SITE.guideUrl}/`));
     expectRedirect(`${STARLOG}:443`, "/guide/the-fool", to(308, `${SITE.guideUrl}/guide/the-fool`));
     expectRedirect(`${STARLOG}:443`, "/me", null);
   });

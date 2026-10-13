@@ -112,7 +112,8 @@ describe("indexable pages", () => {
     // Guide articles keep the guide's 80-character teaser; the other pages aim for 80-120.
     expect(description.length, description).toBeGreaterThanOrEqual(isArticle ? 20 : 60);
     expect(description.length, description).toBeLessThanOrEqual(isArticle ? 80 : 130);
-    const address = isGuidePath(path) ? `${SITE.guideUrl}${path}` : path;
+    // A guide page's address is on the root domain, the tarot tab (the guide's home) at its own "/".
+    const address = path === "/guide/tarot" ? `${SITE.guideUrl}/` : isGuidePath(path) ? `${SITE.guideUrl}${path}` : path;
     expect(meta.alternates?.canonical).toBe(address);
     expect(meta.robots).toBeUndefined();
     const og = meta.openGraph as { url?: string; images?: Array<{ url: string; width: number; height: number }>; locale?: string; type?: string };

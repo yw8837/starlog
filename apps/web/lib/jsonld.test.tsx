@@ -26,7 +26,9 @@ const byType = (nodes: Node[], type: string) => nodes.filter((node) => node["@ty
 /** The app host's URLs (the publisher, the site, images, rankings) and the guide's, on the root domain. */
 const isSiteUrl = (value: unknown) => typeof value === "string" && value.startsWith(`${SITE.url}/`);
 const isGuideUrl = (value: unknown) => typeof value === "string" && value.startsWith(`${SITE.guideUrl}/guide/`);
-const isOwnUrl = (value: unknown) => isSiteUrl(value) || isGuideUrl(value);
+/** The guide's home, the tarot tab, is the root domain's own "/". */
+const isGuideHome = (value: unknown) => value === `${SITE.guideUrl}/`;
+const isOwnUrl = (value: unknown) => isSiteUrl(value) || isGuideUrl(value) || isGuideHome(value);
 const nonEmpty = (value: unknown) => typeof value === "string" && value.trim().length > 0;
 const isoDate = (value: unknown) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
@@ -125,6 +127,9 @@ describe("JSON-LD", () => {
     expect((faq?.mainEntity as unknown[]).length).toBeGreaterThanOrEqual(8);
   });
 
+  /** A guide tab's one address: the tarot tab is the guide's home, the root domain's own "/". */
+  const tabUrl = (category: "tarot" | "saju") => (category === "tarot" ? `${SITE.guideUrl}/` : `${SITE.guideUrl}/guide/${category}`);
+
   it.each([
     ["tarot", GuideTarotPage],
     ["saju", GuideSajuPage],
@@ -136,9 +141,9 @@ describe("JSON-LD", () => {
     const urls = (list?.itemListElement as Node[]).map((item) => item.url);
     // The guide lives on the root domain: its tab, its articles and its trail say so.
     expect(urls).toEqual(articlesIn(category).map((article) => `${SITE.guideUrl}/guide/${article.slug}`));
-    expect(list?.url).toBe(`${SITE.guideUrl}/guide/${category}`);
+    expect(list?.url).toBe(tabUrl(category));
     const crumbs = (byType(nodes, "BreadcrumbList")[0]?.itemListElement as Node[]).map((item) => item.item);
-    expect(crumbs).toEqual([`${SITE.url}/`, `${SITE.guideUrl}/guide/${category}`]);
+    expect(crumbs).toEqual([`${SITE.url}/`, tabUrl(category)]);
   });
 
   it.each(GUIDE_ARTICLES.map((article) => [article.slug] as const))("/guide/%s: Article and breadcrumb, plus FAQPage and HowTo where the article has them", async (slug) => {
@@ -154,7 +159,7 @@ describe("JSON-LD", () => {
     // The publisher and the site stay the app's: 스타로그's home is the app host. The trail goes home, to the tab, to the article.
     expect(articleNode).toMatchObject({ publisher: { url: `${SITE.url}/` }, isPartOf: { url: `${SITE.url}/` } });
     const crumbs = (byType(nodes, "BreadcrumbList")[0]?.itemListElement as Node[]).map((item) => item.item);
-    expect(crumbs).toEqual([`${SITE.url}/`, `${SITE.guideUrl}/guide/${article.category}`, address]);
+    expect(crumbs).toEqual([`${SITE.url}/`, tabUrl(article.category), address]);
 
     const questions = guideQuestions(article);
     expect(byType(nodes, "FAQPage")).toHaveLength(questions.length >= 2 ? 1 : 0);

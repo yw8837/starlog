@@ -1,16 +1,17 @@
 // next.config.ts loads this file through its own loader, which has no "@/" alias: relative imports only.
 import { SITE } from "./config";
-import { splitHosts } from "./hosts";
+import { GUIDE_HOME, splitHosts } from "./hosts";
 
 /**
  * The host rules (owner decision 2026-10-03: the guides live on the root domain, where AdSense is
  * approved; the app stays on starlog.yeolmaeapps.kr). Both hosts are served by one Worker, so the
  * rules carry a `host` condition.
  *
- * - https://yeolmaeapps.kr/ shows the guide index (the tarot tab) at the same address: a rewrite.
- * - Every /guide URL on the app host moves to the same path on the root domain for good (308), so
- *   each guide URL has one home and search engines carry its signals over; /guide itself goes
- *   straight to the tarot tab.
+ * - https://yeolmaeapps.kr/ shows the guide index (the tarot tab) at the same address: a rewrite. It
+ *   is the guide's one home (owner decision 2026-10-13), so /guide and /guide/tarot on either host
+ *   move there for good (308), in one hop.
+ * - Every other /guide URL on the app host moves to the same path on the root domain for good (308),
+ *   so each guide URL has one home and search engines carry its signals over.
  * - Any other path on the root domain is an app page: 307 to the same path on the app host.
  *   Temporary on purpose, because the root domain may later get pages of its own for other apps.
  * - The root domain's responses send HSTS without includeSubDomains.
@@ -28,9 +29,6 @@ type HostHas = { type: "host"; value: string };
 type HostRedirect = { source: string; has: HostHas[]; destination: string; permanent: boolean };
 type HostRewrite = { source: string; has: HostHas[]; destination: string };
 type HostHeaders = { source: string; has: HostHas[]; headers: Array<{ key: string; value: string }> };
-
-/** The tarot tab, guideIndexPath("tarot") (lib/guide.ts is not loadable here; the test pins the two together). */
-const GUIDE_HOME = "/guide/tarot";
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -71,13 +69,20 @@ const APP_PATH = `/:first((?!(?:${OWN_SEGMENTS.map(anyCase).join("|")})(?:/|$))$
 export function hostRedirects(): HostRedirect[] {
   if (!splitHosts()) return [];
   const onApp = onHost(SITE.url);
+  const onGuide = onHost(SITE.guideUrl);
   return [
-    // "/guide" and "/guide/…" are two rules: with `/guide/:path*` the Worker would leave a literal
-    // ":path*" in the Location header for "/guide" itself, where nothing matched. /guide goes
-    // straight to the tarot tab, one hop instead of two.
-    { source: "/guide", has: onApp, destination: `${SITE.guideUrl}${GUIDE_HOME}`, permanent: true },
+    // "/guide", the guide's home and "/guide/…" are separate rules: with `/guide/:path*` the Worker
+    // would leave a literal ":path*" in the Location header for "/guide" itself, where nothing
+    // matched. The first two go straight to the root domain's "/", one hop instead of two.
+    { source: "/guide", has: onApp, destination: `${SITE.guideUrl}/`, permanent: true },
+    { source: GUIDE_HOME, has: onApp, destination: `${SITE.guideUrl}/`, permanent: true },
     { source: "/guide/:path+", has: onApp, destination: `${SITE.guideUrl}/guide/:path+`, permanent: true },
-    { source: APP_PATH, has: onHost(SITE.guideUrl), destination: `${SITE.url}/:first/:rest*`, permanent: false },
+    // On the root domain itself, ahead of next.config's own /guide rule (which would take two hops).
+    // Only the request's own path meets these: the rewrite of "/" to the guide's home comes after the
+    // redirects in both runtimes, so it never loops back here.
+    { source: "/guide", has: onGuide, destination: "/", permanent: true },
+    { source: GUIDE_HOME, has: onGuide, destination: "/", permanent: true },
+    { source: APP_PATH, has: onGuide, destination: `${SITE.url}/:first/:rest*`, permanent: false },
   ];
 }
 

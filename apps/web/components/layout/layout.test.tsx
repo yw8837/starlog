@@ -51,16 +51,16 @@ describe("TabBar", () => {
   it("on an app page with the hosts split, only the guide tab leaves for the root domain", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<TabBar active="story" />);
-    expect(hrefs(pills())).toEqual(["/", `${SITE.guideUrl}/guide/tarot`, "/faq", "/story", "/me"]);
-    expect(hrefs(bar())).toEqual(["/", "/story", `${SITE.guideUrl}/guide/tarot`, "/me"]);
+    expect(hrefs(pills())).toEqual(["/", `${SITE.guideUrl}/`, "/faq", "/story", "/me"]);
+    expect(hrefs(bar())).toEqual(["/", "/story", `${SITE.guideUrl}/`, "/me"]);
     expect(screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href")).toBe("/");
   });
 
-  it("on a guide page, the app tabs and the wordmark go to the app host when the hosts are split, and the guide tab stays a path", () => {
+  it("on a guide page, the app tabs and the wordmark go to the app host when the hosts are split, and the guide tab stays a path: the root domain's /", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<TabBar active="guide" host="guide" />);
-    expect(hrefs(pills())).toEqual([`${SITE.url}/`, "/guide/tarot", `${SITE.url}/faq`, `${SITE.url}/story`, `${SITE.url}/me`]);
-    expect(hrefs(bar())).toEqual([`${SITE.url}/`, `${SITE.url}/story`, "/guide/tarot", `${SITE.url}/me`]);
+    expect(hrefs(pills())).toEqual([`${SITE.url}/`, "/", `${SITE.url}/faq`, `${SITE.url}/story`, `${SITE.url}/me`]);
+    expect(hrefs(bar())).toEqual([`${SITE.url}/`, `${SITE.url}/story`, "/", `${SITE.url}/me`]);
     expect(screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href")).toBe(`${SITE.url}/`);
     // The active tab is still marked.
     for (const nav of navs()) expect([...nav.querySelectorAll("a")].filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent)).toEqual(["가이드"]);

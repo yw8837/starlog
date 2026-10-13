@@ -63,7 +63,7 @@ describe("Footer", () => {
       ["근거 자료", "/evidence"],
       ["이용 가이드", "/help"],
       ["FAQ", "/faq"],
-      ["가이드 글", `${SITE.guideUrl}/guide/tarot`],
+      ["가이드 글", `${SITE.guideUrl}/`],
       ["가격 안내", "/pricing"],
       ["이용약관", "/terms"],
       ["개인정보처리방침", "/privacy"],
@@ -71,7 +71,7 @@ describe("Footer", () => {
     ]);
   });
 
-  it("on a guide page, every link to the app goes to the app host when the hosts are split, and the guide link stays a path", () => {
+  it("on a guide page, every link to the app goes to the app host when the hosts are split, and the guide link stays a path: the root domain's /", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<Footer host="guide" />);
     const links = screen.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
@@ -81,7 +81,7 @@ describe("Footer", () => {
       ["근거 자료", `${SITE.url}/evidence`],
       ["이용 가이드", `${SITE.url}/help`],
       ["FAQ", `${SITE.url}/faq`],
-      ["가이드 글", "/guide/tarot"],
+      ["가이드 글", "/"],
       ["가격 안내", `${SITE.url}/pricing`],
       ["이용약관", `${SITE.url}/terms`],
       ["개인정보처리방침", `${SITE.url}/privacy`],

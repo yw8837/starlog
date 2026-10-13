@@ -27,7 +27,11 @@ describe("llms.txt", () => {
 
   it("links every guide article and tab on the root domain, and the entry pages on the app host", () => {
     for (const article of GUIDE_ARTICLES) expect(llms).toContain(`(${SITE.guideUrl}/guide/${article.slug})`);
-    for (const category of GUIDE_CATEGORIES) expect(llms).toContain(`(${SITE.guideUrl}/guide/${category})`);
+    // The tabs: the tarot tab is the guide's home, the root domain's own "/".
+    expect(GUIDE_CATEGORIES).toEqual(["tarot", "saju"]);
+    expect(llms).toContain(`(${SITE.guideUrl}/)`);
+    expect(llms).toContain(`(${SITE.guideUrl}/guide/saju)`);
+    expect(llms).not.toContain(`${SITE.guideUrl}/guide/tarot`);
     for (const path of ["/tarot/new", "/saju/new", "/now", "/today", "/faq", "/how", "/about", "/pricing", "/llms-full.txt"]) {
       expect(llms).toContain(`(${SITE.url}${path})`);
     }
@@ -83,7 +87,8 @@ describe("rss.xml", () => {
   it("keeps the whole feed on the root domain: its guids, its channel link and its own address", () => {
     expect(xml).not.toContain(`${SITE.url}/guide`);
     for (const article of GUIDE_ARTICLES) expect(xml).toContain(`<guid isPermaLink="true">${SITE.guideUrl}/guide/${article.slug}</guid>`);
-    expect(xml).toContain(`<link>${SITE.guideUrl}/guide/tarot</link>`);
+    expect(xml).toContain(`<link>${SITE.guideUrl}/</link>`);
+    expect(xml).not.toContain(`${SITE.guideUrl}/guide/tarot`);
     expect(xml).toContain(`<atom:link href="${FEED_URL}" rel="self" type="application/rss+xml"/>`);
     expect(FEED_URL).toBe(`${SITE.guideUrl}/rss.xml`);
   });
