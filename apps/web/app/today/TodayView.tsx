@@ -222,7 +222,7 @@ export function TodayView() {
     content = (
       <section className={s.closed} aria-labelledby="today-title">
         <h1 id="today-title" className={s.title}>
-          {waiting ? "고른 카드를 펼치고 있어요" : "오늘의 카드를 골라 볼까요?"}
+          {waiting ? "고른 카드를 펼치고 있어요" : "오늘의 타로 카드를 골라 볼까요?"}
         </h1>
         <p className={s.lead}>{waiting ? " " : "섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 주세요"}</p>
         {phase === "checking" ? (

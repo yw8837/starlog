@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { SajuForm } from "@/components/saju/SajuForm";
+import { SajuGuide } from "@/components/seo/toolGuides";
 import { NightSky } from "@/components/sky/NightSky";
 import { Stepper } from "@/components/tarot/Stepper";
 import { SpeechBubble } from "@/components/ui/SpeechBubble";
@@ -25,7 +26,7 @@ export default function SajuNewPage() {
           </div>
 
           <header className={s.greeting}>
-            <SpeechBubble as="h1">태어난 날을 알려주세요</SpeechBubble>
+            <SpeechBubble as="h1">태어난 날을 알려 주면 사주를 봐 드릴게요</SpeechBubble>
             <div className={s.cast}>
               <Rabbit outfit="hanbok" size={148} />
               <span className={s.assistant}>
@@ -38,6 +39,7 @@ export default function SajuNewPage() {
             <SajuForm />
           </div>
         </div>
+        <SajuGuide />
       </main>
     </div>
   );

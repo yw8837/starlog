@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TarotGuide } from "@/components/seo/toolGuides";
 import { NightSky } from "@/components/sky/NightSky";
 import { pageMetadata } from "@/lib/seo";
 import { QuestionBuilder } from "./QuestionBuilder";
@@ -15,6 +16,7 @@ export default function TarotNewPage() {
       <NightSky fixed moon={false} />
       <main className="page-col">
         <QuestionBuilder />
+        <TarotGuide />
       </main>
     </div>
   );

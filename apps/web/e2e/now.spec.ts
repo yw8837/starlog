@@ -52,7 +52,7 @@ async function shot(page: Page, name: string, fullPage = false) {
 test("지금의 한 장: how-to, a question, a short shuffle, one card, an answer from the DB and the upsell", async ({ page }) => {
   await page.goto("/now");
   await expect(page.getByRole("heading", { level: 1, name: "지금의 한 장" })).toBeVisible();
-  await expect(page.getByText("타로가 건네는 한 문장")).toBeVisible();
+  await expect(page.getByText("무료 원카드 타로가 건네는 한 문장")).toBeVisible();
 
   // First visit: the three steps are open; 알겠어요 folds them behind 사용법 보기.
   const howto = page.getByRole("region", { name: "지금의 한 장 사용법" });

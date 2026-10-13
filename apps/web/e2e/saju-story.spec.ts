@@ -59,7 +59,7 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   await ownAddress(page, info);
   // The home's entry to it is checked in "home, 내 정보 and guide"; the home layout belongs to the design pass.
   await page.goto("/saju/new");
-  await expect(page.getByRole("heading", { level: 1, name: "태어난 날을 알려주세요" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "태어난 날을 알려 주면 사주를 봐 드릴게요" })).toBeVisible();
   // W-07: nothing is filled in before the user picks it.
   await expect(page.getByLabel("태어난 연도")).toHaveValue("");
   await expect(page.getByText(/^→ /)).toHaveCount(0);
@@ -195,7 +195,7 @@ test("saju: a lunar day that does not exist is explained next to the date", asyn
 test("오늘의 한 장: shuffle, pick one of three; a reload shows only that card and its fortune", async ({ page }, info) => {
   await ownAddress(page, info);
   await page.goto("/today");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("오늘의 카드를 골라 볼까요?");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("오늘의 타로 카드를 골라 볼까요?");
   await page.getByRole("button", { name: "바로 펼치기" }).click();
   const cards = page.getByRole("button", { name: /번째 카드 고르기/ });
   await expect(cards).toHaveCount(3);

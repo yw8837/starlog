@@ -216,8 +216,11 @@ export function NowOracle({ instant = false }: NowOracleProps) {
       </header>
 
       <div className={s.intro}>
-        <h1 className={s.title}>지금의 한 장</h1>
-        <p className={s.sub}>타로가 건네는 한 문장</p>
+        {/* one h1 holds the name and its line, so the heading says 타로 (SEO plan B1) */}
+        <h1 className={s.heading}>
+          <span className={s.title}>지금의 한 장</span>{" "}
+          <span className={s.sub}>무료 원카드 타로가 건네는 한 문장</span>
+        </h1>
       </div>
 
       {phase !== "reveal" ? (

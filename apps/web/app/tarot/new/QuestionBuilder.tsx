@@ -62,7 +62,7 @@ export function QuestionBuilder() {
       <Stepper step={1} label="질문 만들기" backHref="/" backLabel="홈으로" />
 
       <div className={f.intro}>
-        <h1 className={f.title}>어떤 이야기를 볼까요?</h1>
+        <h1 className={f.title}>어떤 이야기를 타로로 볼까요?</h1>
       </div>
 
       <div className={f.sentence} aria-live="polite">

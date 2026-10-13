@@ -1,0 +1,75 @@
+/* The explanation under a tool page: quiet, readable, below everything the tool needs. */
+.guide {
+  margin: 48px auto 24px;
+  max-width: 560px;
+  padding: 22px 20px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+  line-height: 1.75;
+  text-align: left;
+}
+
+.guide p {
+  margin: 0 0 10px;
+}
+
+.title {
+  margin: 0 0 12px;
+  color: var(--gold);
+  font-size: var(--fs-h2);
+}
+
+.heading {
+  margin: 22px 0 8px;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 1.3em;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  text-decoration: none;
+}
+
+.links a:hover,
+.links a:focus-visible {
+  border-color: var(--gold);
+}
+
+.faq {
+  margin: 0;
+}
+
+.faq dt {
+  margin-top: 12px;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.faq dd {
+  margin: 4px 0 0;
+}

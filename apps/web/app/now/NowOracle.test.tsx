@@ -54,8 +54,8 @@ afterEach(() => {
 describe("지금의 한 장", () => {
   it("shows the name, an optional question and a 21-card fan for one pick", () => {
     render(<NowOracle instant />);
-    expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["지금의 한 장"]);
-    expect(screen.getByText("타로가 건네는 한 문장")).toBeTruthy();
+    expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["지금의 한 장 무료 원카드 타로가 건네는 한 문장"]);
+    expect(screen.getByText("무료 원카드 타로가 건네는 한 문장")).toBeTruthy();
     const input = screen.getByLabelText("고민 한 줄") as HTMLInputElement;
     expect(input.placeholder).toBe("예: 오늘 먼저 연락해도 될까?");
     expect(input.maxLength).toBe(40);

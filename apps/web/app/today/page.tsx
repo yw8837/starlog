@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Footer } from "@/components/layout/Footer";
+import { TodayGuide } from "@/components/seo/toolGuides";
 import { NightSky } from "@/components/sky/NightSky";
 import { pageMetadata } from "@/lib/seo";
 import { TodayView } from "./TodayView";
@@ -16,6 +17,7 @@ export default function TodayPage() {
       <NightSky fixed moon={false} seed={7} />
       <main className="page-col">
         <TodayView />
+        <TodayGuide />
       </main>
       <Footer />
     </div>

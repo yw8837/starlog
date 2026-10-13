@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NowGuide } from "@/components/seo/toolGuides";
 import { NightSky } from "@/components/sky/NightSky";
 import { pageMetadata } from "@/lib/seo";
 import { NowOracle } from "./NowOracle";
@@ -15,6 +16,7 @@ export default function NowPage() {
       <NightSky fixed moon={false} />
       <main className="page-col">
         <NowOracle />
+        <NowGuide />
       </main>
     </div>
   );
