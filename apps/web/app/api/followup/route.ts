@@ -48,7 +48,7 @@ export async function POST(request: Request): Promise<Response> {
     const drawn: DrawnCard[] = cards.map(([cardId, orientation], slot) => ({ cardId, orientation, slot, position: TEMPLATES[templateId].positions[slot]! }));
     const ctx = buildTarotContext(templateId, drawn, input);
     generate = async (hooks) => (await generateTarotFollowUp(gate.provider, ctx, reading.data, chapter.turns, question, hooks)).data;
-  } else {
+  } else if (chapter.ctx.kind === "saju") {
     const reading = StoredSajuReadingSchema.safeParse(body.data.reading);
     if (!reading.success) return errorResponse("BAD_TOKEN");
     const ctx = chapter.ctx;
@@ -64,6 +64,9 @@ export async function POST(request: Request): Promise<Response> {
       if (facts instanceof Response) return errorResponse("BAD_TOKEN");
       generate = async (hooks) => (await generateSajuFollowUp(gate.provider, facts, reading.data, chapter.turns, question, hooks)).data;
     }
+  } else {
+    // A premium chapter (P5) has no follow-ups here yet.
+    return errorResponse("BAD_TOKEN");
   }
 
   return respondGeneration(request, async (hooks) => {

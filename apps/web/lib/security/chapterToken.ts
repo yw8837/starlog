@@ -1,8 +1,10 @@
 import "server-only";
 import type { Orientation, TemplateId } from "@starlog/core";
+import type { MatchRelation } from "@/lib/ai/prompts/match";
 import type { SajuProfile } from "@/lib/ai/prompts/saju";
 import type { BirthInput, TarotInputData } from "@/lib/api/inputs";
 import type { FollowUpTurn } from "@/lib/ai/prompts/tarot";
+import type { PremiumId } from "@/lib/premium/products";
 import type { SajuTopicId } from "@/lib/reading/types";
 import { canonicalJson, sha256, signToken, verifyToken, type SignedPayload } from "./sign";
 
@@ -19,7 +21,21 @@ export const CHAPTER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export type ChapterContext =
   | { kind: "tarot"; templateId: TemplateId; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]> }
   /** 주제별 사주 chapters carry their topic (signed; `v` stays 1; a token without it is 전체 흐름). */
-  | { kind: "saju"; birth: BirthInput; profile?: SajuProfile; topic?: SajuTopicId };
+  | { kind: "saju"; birth: BirthInput; profile?: SajuProfile; topic?: SajuTopicId }
+  /** P5 premium readings. The match token carries the partner's birth: signed, not encrypted, kept only in the user's own chapter (P5 spec §9). */
+  | { kind: "tarot-deep"; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]> }
+  | {
+    kind: "match";
+    me: { birth: BirthInput; profile?: SajuProfile };
+    partner: { birth: BirthInput; label?: string };
+    relation: MatchRelation;
+    concern?: string;
+    cards: Array<[string, Orientation]>;
+  }
+  | { kind: "newyear-2027"; birth: BirthInput; profile?: SajuProfile };
+
+export const isPremiumChapter = (ctx: ChapterContext): ctx is Extract<ChapterContext, { kind: PremiumId }> =>
+  ctx.kind === "tarot-deep" || ctx.kind === "match" || ctx.kind === "newyear-2027";
 
 interface ChapterPayload extends SignedPayload {
   k: "chapter";

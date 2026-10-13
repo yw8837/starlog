@@ -1,0 +1,87 @@
+import "server-only";
+import { checkQuota, crisisResponse, errorResponse, fullReadingLimit, openGate, readJson, spendCookies } from "@/lib/api/http";
+import { respondGeneration } from "@/lib/api/stream";
+import { issueChapter } from "@/lib/security/chapterToken";
+import type { Adapter } from "./adapters";
+import { premiumOpen } from "./flags";
+import { READING_MAX_BYTES, TEASER_MAX_BYTES } from "./inputs";
+import { PREMIUM_CHAPTER_TTL_MS } from "./products";
+import { inputHash, sealResume } from "./resume";
+import { PART_COUNTS, runNextPart, type PremiumContext } from "./run";
+import { holdsUnused, planPremiumUnlock, premiumSettlement } from "./unlock";
+
+/**
+ * POST /api/premium/<id>/teaser: the free preview (spec §5, the 시험 사용 of 전자상거래법 17조 2항 5호).
+ * Open while the product is on sale for this device, or for a user who already bought it. Counts
+ * as a teaser (daily cookie quota and the network counter), like the standard first-card preview.
+ */
+export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter<B, C>) {
+  return async function POST(request: Request): Promise<Response> {
+    const gate = await openGate(request);
+    if (gate instanceof Response) return gate;
+    const parsed = adapter.teaserBody.safeParse(await readJson(request, TEASER_MAX_BYTES));
+    if (!parsed.success) return errorResponse("BAD_REQUEST");
+    if (!premiumOpen(adapter.id, gate.owner, gate.now) && !(await holdsUnused(request, gate.now, adapter.id))) return errorResponse("NOT_AVAILABLE");
+    const crisis = crisisResponse(...adapter.crisisTexts(parsed.data));
+    if (crisis) return crisis;
+    const ctx = await adapter.context(parsed.data, gate);
+    if (ctx instanceof Response) return ctx;
+    const quota = await checkQuota(gate, "teaser");
+    if (quota instanceof Response) return quota;
+    return respondGeneration(request, async (hooks) => {
+      const preview = await adapter.teaser(gate.provider, ctx, hooks);
+      return { body: { preview }, cookies: await spendCookies(gate, quota, "teaser") };
+    }, { gate, spend: "teaser" });
+  };
+}
+
+/**
+ * POST /api/premium/<id>/reading: writes the next part (spec §6.1). A purchase (or the owner pass)
+ * is required; the plan reserves or extends the credit before anything is generated, and charges
+ * the network counter per part when the purchase earned nothing (unlock.ts, security M2). A
+ * non-final part answers {status:"continue", resume, done, of}; the final part saves, spends and
+ * answers {status:"done", reading, chapterToken, readingId}. Any failure releases the credit; the
+ * client's last resume token still holds the parts written so far. STARLOG_PREMIUM gates ordering
+ * only: a reading already paid for always opens.
+ */
+export function premiumReadingRoute<B, C extends PremiumContext>(adapter: Adapter<B, C>) {
+  return async function POST(request: Request): Promise<Response> {
+    const gate = await openGate(request);
+    if (gate instanceof Response) return gate;
+    const limited = await fullReadingLimit(request, gate);
+    if (limited) return limited;
+    const parsed = adapter.readingBody.safeParse(await readJson(request, READING_MAX_BYTES));
+    if (!parsed.success) return errorResponse("BAD_REQUEST");
+    const body = parsed.data;
+    const crisis = crisisResponse(...adapter.crisisTexts(body));
+    if (crisis) return crisis;
+    const ctx = await adapter.context(body, gate);
+    if (ctx instanceof Response) return ctx;
+    // The resume token is bound to everything the reading is written from: the whole body but unlock and resume.
+    const { unlock, resume, ...input } = body;
+    const hash = await inputHash(adapter.id, input, gate.secret);
+    const plan = await planPremiumUnlock(request, gate, adapter.id, unlock.method, { resume, hash });
+    if (plan instanceof Response) return plan;
+    const written = plan.resume?.parts ?? [];
+    const of = PART_COUNTS[adapter.id];
+
+    return respondGeneration(
+      request,
+      async (hooks) => {
+        const step = await runNextPart(gate.provider, ctx, written, hooks);
+        if (!step.complete) {
+          const next = await sealResume({ product: adapter.id, subject: plan.subject, inputHash: hash, unlockId: plan.unlockId, parts: step.parts }, gate.secret, gate.now);
+          return { body: { status: "continue", resume: next, done: step.parts.length, of }, cookies: [] };
+        }
+        const chapterToken = await issueChapter(adapter.chapterContext(body, ctx), step.reading, [], gate.secret, gate.now, gate.now + PREMIUM_CHAPTER_TTL_MS);
+        return { body: { status: "done", reading: step.reading, chapterToken }, cookies: [] };
+      },
+      {
+        gate,
+        spend: plan.spend,
+        paidCost: plan.paidCost,
+        settle: premiumSettlement(plan, (response) => adapter.chapter(body, ctx, response as { reading: unknown; chapterToken: string }, gate.now), gate.now),
+      },
+    );
+  };
+}
