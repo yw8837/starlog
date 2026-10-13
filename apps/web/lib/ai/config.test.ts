@@ -53,7 +53,7 @@ describe("request shape per model", () => {
     const body = buildRequest(task(model, effort), 16000);
     expect(body.model).toBe(model);
     expect(body.max_tokens).toBe(16000);
-    expect(body.thinking).toEqual({ type: "adaptive" });
+    expect(body.thinking).toEqual({ type: "adaptive", display: "summarized" });
     expect(body.output_config.effort).toBe(effort);
     expect(body.output_config.format.type).toBe("json_schema");
     expect(body.betas).toEqual([FALLBACK_BETA]);

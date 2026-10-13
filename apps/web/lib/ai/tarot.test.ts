@@ -399,7 +399,7 @@ describe("anthropic request", () => {
     expect(body.betas).toEqual([FALLBACK_BETA]);
     expect(FALLBACK_BETA).toBe("server-side-fallback-2026-07-01");
     expect(body.fallbacks).toBe("default");
-    expect(body.thinking).toEqual({ type: "adaptive" });
+    expect(body.thinking).toEqual({ type: "adaptive", display: "summarized" });
     expect(body.output_config.effort).toBe("medium");
     expect(body.output_config.format.type).toBe("json_schema");
     expect(body.system[0]!.cache_control).toEqual({ type: "ephemeral" });

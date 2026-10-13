@@ -50,7 +50,9 @@ export function buildRequest<T>(task: GenerationTask<T>, maxTokens: number, feed
     max_tokens: maxTokens,
     betas: [FALLBACK_BETA],
     fallbacks: "default" as const,
-    thinking: { type: "adaptive" as const },
+    // "summarized" streams the thinking as it goes. The default on this model is "omitted", which leaves the stream silent
+    // while it thinks; real calls whose silence ran past about 150 s were cut (2026-10-08 to 10-13). Billing is the same.
+    thinking: { type: "adaptive" as const, display: "summarized" as const },
     output_config: { effort: task.effort, format: betaZodOutputFormat(task.schema) },
     system: [{ type: "text" as const, text: task.system, cache_control: { type: "ephemeral" as const } }],
     messages: [{ role: "user" as const, content }],

@@ -57,7 +57,9 @@ describe("주제별 사주 prompts (spec §7.5)", () => {
     // keeping the basis sentence in 계산 기준; a follow-up may name the reading's own names, never as an event (review A3).
     expect(hash(SAJU_SYSTEM)).toBe("f7ad95cbee6584d37c8570f9989ea1dddf56226912a3f3905c867c1da1e0dd3b");
     expect(hash(NEWYEAR_SYSTEM)).toBe("1307d57b62ae51e374b7be06b89445fb7c0ad161540b3384fae4447844710f13");
-    // 7절·8절's own system prompt (review of afd5498, B), pinned from its first version.
+    // 7절·8절's own system prompt (review of afd5498, B), pinned from its first version. Re-pinned 2026-10-13: both real
+    // checks wrote "문창귀인이 붙어 있어서 ~하기 쉬워요" on the first attempt, so the ban names "~귀인이 붙어 있어서",
+    // "역마 때문에", "문창귀인 덕분에" and shows the allowed form ("~에서 나왔고, ~쪽에 붙는 이름이에요").
     expect(hash(SAJU_ENRICHMENT_SYSTEM)).toMatchSnapshot();
   });
 

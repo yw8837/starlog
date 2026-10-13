@@ -2,4 +2,4 @@
 
 exports[`주제별 사주 prompts (spec §7.5) > builds the topic system prompt on the shared preamble, blind to model names, without 베타 1`] = `"f7d83638d0000db858603979133a29161b8b47393d11f44bf532e8a666f0a30c"`;
 
-exports[`주제별 사주 prompts (spec §7.5) > pins the standard and 신년운세 prompts by hash (each change is on purpose and noted here) 1`] = `"212f0783eedbc685886ce7d7a03bd5143df9b6a398e9597a58e076af6af2ec5f"`;
+exports[`주제별 사주 prompts (spec §7.5) > pins the standard and 신년운세 prompts by hash (each change is on purpose and noted here) 1`] = `"7417e0a17c71e5219bd01635206e4ef572b074a1086b8eaa6de9bb361c2f70ae"`;
