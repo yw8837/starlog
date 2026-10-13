@@ -31,7 +31,7 @@ step "saju topics: ${NEXT_PUBLIC_SAJU_TOPICS:-off (production default)}"
 unset ADSENSE_CLIENT; export ADSENSE_CLIENT="${ADSENSE:-ca-pub-2460558039875296}"   # applied 2026-10-08; ADSENSE=off-by-empty is not supported on purpose
 step "adsense: ${ADSENSE_CLIENT:-off}"
 # search-engine ownership codes (public, build time): NAVER=<content> GOOGLE=<content> BING=<content>
-[ -n "${NAVER:-}" ] && export NEXT_PUBLIC_NAVER_SITE_VERIFICATION="$NAVER"
+export NEXT_PUBLIC_NAVER_SITE_VERIFICATION="${NAVER:-13fb39cf72bf1a51ed4bd136f5c7d78d3a96d608,3be267814e5e3e1fe10641c4304bc55928634208}"   # app + guide ownership (public, 2026-10-08)
 export NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION="${GOOGLE:-MqMj7Z-R0z8mE55r8l_PfFoFxb8lIkpUv4czOhVWuIA}"   # studioyeolmae.com@gmail.com, https://yeolmaeapps.kr/ (2026-10-08)
 [ -n "${BING:-}" ] && export NEXT_PUBLIC_BING_SITE_VERIFICATION="$BING"
 step "verification: naver=${NEXT_PUBLIC_NAVER_SITE_VERIFICATION:-none} google=${NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION:-none} bing=${NEXT_PUBLIC_BING_SITE_VERIFICATION:-none}"
