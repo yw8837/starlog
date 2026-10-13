@@ -24,7 +24,8 @@ function pickSlot(slot: number, seed: string) {
   const deckIndex = Number(card.dataset.fanIndex);
   fireEvent.click(card);
   settle();
-  return drawNow(createDeck(seed, DEFAULT_REVERSAL_RATE), deckIndex, 0.5);
+  // The default card design is the Starlog deck: its why points at the Starlog picture.
+  return drawNow(createDeck(seed, DEFAULT_REVERSAL_RATE), deckIndex, 0.5, "starlog");
 }
 
 function reducedMotion(on: boolean) {

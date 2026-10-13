@@ -38,7 +38,12 @@ describe("지금의 한 장 DB lookup", () => {
     const expected = Object.fromEntries(
       Object.entries(source.cards).map(([id, sides]) => [
         id,
-        Object.fromEntries(SIDES.map((side) => [side, { lean: sides[side].lean, answers: sides[side].answers, why: sides[side].why }])),
+        Object.fromEntries(
+          SIDES.map((side) => {
+            const { lean, answers, why, whyStarlog } = sides[side] as { lean: string; answers: string[]; why: string; whyStarlog?: string };
+            return [side, { lean, answers, why, ...(whyStarlog ? { whyStarlog } : {}) }];
+          }),
+        ),
       ]),
     );
     expect(runtime).toEqual(expected);
