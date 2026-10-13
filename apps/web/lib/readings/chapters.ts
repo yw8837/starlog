@@ -1,5 +1,6 @@
 import "server-only";
 import { SITE } from "@/lib/config";
+import { PREMIUM, type PremiumId } from "@/lib/premium/products";
 import type { ServerChapter } from "./store";
 
 /**
@@ -56,5 +57,21 @@ export function sajuChapter(
     createdAt: now,
     turns: [],
     followUpsLeft: SITE.reading.followUps,
+  };
+}
+
+/**
+ * A premium chapter as the device keeps it (lib/storage/chapters.ts): the product's own fields
+ * (question and cards; relation, both births and cards; birth and title) plus the reading.
+ */
+export function premiumChapter(product: PremiumId, fields: Record<string, unknown>, body: Body, now: number): ServerChapter {
+  return {
+    kind: product,
+    ...fields,
+    reading: body.reading as Record<string, unknown>,
+    chapterToken: body.chapterToken,
+    createdAt: now,
+    turns: [],
+    followUpsLeft: PREMIUM[product].followUps,
   };
 }
