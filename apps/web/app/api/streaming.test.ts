@@ -4,12 +4,14 @@ import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { respondGeneration } from "@/lib/api/stream";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { POST as commit } from "./commit/route";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";
 import { POST as teaser } from "./tarot/teaser/route";
+import { POST as sajuReading } from "./saju/reading/route";
 import { POST as sajuTeaser } from "./saju/teaser/route";
 
 type Handler = (request: Request) => Promise<Response>;
@@ -115,6 +117,15 @@ describe("NDJSON streaming", () => {
       "start", "section:title", "section:summary", "retry", "section:title", "section:summary", "done",
     ]);
     expect(events.find((e) => e.type === "retry")).toEqual({ type: "retry", reason: "quality" });
+  });
+
+  it("streams the 정통 reading's nine sections once each, 7·8절 from their own call included, and done carries all nine", async () => {
+    const { events } = await device("203.0.113.29").stream(sajuReading, { birth: DEFAULT_SAJU_FORM });
+    const indexes = events.filter((e) => e.type === "section" && e.key === "sections").map((e) => e.index as number);
+    expect([...indexes].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    const done = events.at(-1)!;
+    expect(done.type).toBe("done");
+    expect(done.data.reading.sections.map((s: { heading: string }) => s.heading)).toEqual([...SAJU_PROLOGUE_SECTIONS]);
   });
 
   it("reports a failure after the stream started as an error event with the JSON status and body", async () => {

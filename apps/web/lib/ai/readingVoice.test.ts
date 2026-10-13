@@ -168,8 +168,8 @@ describe("the saju prompts (§4.1, §4.2)", () => {
 
   it("set the lengths: 4~8 sentences and 300~450자 a standard body section, 350~480자 a topic's 2~5절", () => {
     expect(SAJU_SYSTEM).toMatch(/1~6절은[^\n]*4~8문장[^\n]*300~450자/);
-    // 이름표 풀이 and 기운 채우기 added 600~900자 (saju enrichment 2026-10-08)
-    expect(SAJU_SYSTEM).toContain("합계 2,700~4,100자");
+    // the main call's own total: 이름표 풀이 and 기운 채우기 come from their own call (review of afd5498, B)
+    expect(SAJU_SYSTEM).toContain("합계 2,100~3,200자");
     expect(SAJU_TOPIC_SYSTEM).toContain("2~5절 각 350~480자");
     expect(SAJU_TOPIC_SYSTEM).toContain("합계 1,900~2,700자");
     expect(SAJU_TOPIC_SYSTEM).not.toContain("500~650자");

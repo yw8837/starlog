@@ -2,4 +2,4 @@
 
 exports[`standard prompts stay byte for byte > keeps TAROT_SYSTEM and SAJU_SYSTEM unchanged by the split 1`] = `"4263ae1c46975a18fa1dd9088d71c55badf68044c46c1e9e4bcafc245e6653da"`;
 
-exports[`standard prompts stay byte for byte > keeps TAROT_SYSTEM and SAJU_SYSTEM unchanged by the split 2`] = `"027b1a51231f695e5432d7e9184f7ba9433d7bdf545a3e5972a3632bd5fa50c8"`;
+exports[`standard prompts stay byte for byte > keeps TAROT_SYSTEM and SAJU_SYSTEM unchanged by the split 2`] = `"f7ad95cbee6584d37c8570f9989ea1dddf56226912a3f3905c867c1da1e0dd3b"`;

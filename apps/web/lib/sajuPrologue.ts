@@ -21,6 +21,9 @@ export const SAJU_PROLOGUE_SECTIONS: readonly string[] = Object.freeze([
   "계산 기준 · 보지 않은 것과 달라질 수 있는 것",
 ]);
 
+/** What the main call writes, in its order: 1–6 and 계산 기준. 7절·8절 come from their own call (review 2026-10-08, B). */
+export const SAJU_MAIN_SECTIONS: readonly string[] = Object.freeze(SAJU_PROLOGUE_SECTIONS.filter((heading) => heading !== SAJU_NAMES_HEADING && heading !== SAJU_GAEUN_HEADING));
+
 /**
  * 한눈에 보기 (owner 2026-10-07): the card on top of every saju full reading, 전체 흐름 and each 운. It
  * answers in plain sentences where things go well, what to watch, one everyday way to make up for

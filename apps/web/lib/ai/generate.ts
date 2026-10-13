@@ -1,10 +1,12 @@
 import "server-only";
 import type { SajuTopicId } from "@/lib/reading/types";
-import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SectionScanner } from "@/lib/api/sections";
+import { SAJU_GAEUN_HEADING, SAJU_MAIN_SECTIONS, SAJU_NAMES_HEADING, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { TOPIC_OBSERVATION_HEADING, TOPIC_SECTIONS, topicLockedToc } from "@/lib/sajuTopics";
-import { mockDaily, mockSajuFollowUp, mockSajuReading, mockSajuTeaser, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
+import { mockDaily, mockSajuEnrichment, mockSajuFollowUp, mockSajuMainReading, mockSajuTeaser, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
 import { mockSajuTopicFollowUp, mockSajuTopicReading, mockSajuTopicTeaser } from "./mockSajuTopics";
 import { SAJU_LOCKED_TOC, SAJU_OBSERVATION_HEADING, SAJU_SYSTEM, sajuFollowUpPrompt, sajuReadingPrompt, sajuTeaserPrompt, type SajuFactSet } from "./prompts/saju";
+import { SAJU_ENRICHMENT_SYSTEM, sajuEnrichmentPrompt } from "./prompts/sajuEnrichment";
 import { SAJU_TOPIC_SYSTEM, sajuTopicFollowUpPrompt, sajuTopicReadingPrompt, sajuTopicTeaserPrompt } from "./prompts/sajuTopicPrompts";
 import type { SajuTopicFactSet } from "./prompts/sajuTopics";
 import {
@@ -12,14 +14,16 @@ import {
   type FollowUpTurn, type TarotContext,
 } from "./prompts/tarot";
 import { generationSetting } from "./config";
-import { generateValidated, type GenerationHooks, type ReadingProvider, type Usage } from "./provider";
+import { GenerationError, generateValidated, type GenerationHooks, type ReadingProvider, type Usage } from "./provider";
+import { mergeSajuReading, sajuEnrichmentFallback } from "./sajuParts";
 import {
-  DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema,
-  type DailyDraft, type FollowUpAnswer, type SajuGlance, type SajuReading, type SajuTeaser, type StoredSajuReading, type StoredTarotReading,
-  type TarotReading, type TarotTeaser,
+  DailyDraftSchema, FollowUpAnswerSchema, SajuEnrichmentSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema,
+  type DailyDraft, type FollowUpAnswer, type SajuEnrichment, type SajuGlance, type SajuReading, type SajuTeaser, type StoredSajuReading,
+  type StoredTarotReading, type TarotReading, type TarotTeaser,
 } from "./schemas";
 import {
-  validateDaily, validateSajuFollowUp, validateSajuReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading, validateTarotTeaser,
+  validateDaily, validateSajuEnrichment, validateSajuFollowUp, validateSajuMainReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading,
+  validateTarotTeaser,
 } from "./validate";
 import { validateSajuTopicFollowUp, validateSajuTopicReading, validateSajuTopicTeaser } from "./validateSajuTopics";
 
@@ -117,24 +121,145 @@ export async function generateSajuTeaser(provider: ReadingProvider, facts: SajuF
   return { data: { title: data.title.trim(), summary: data.summary.trim(), lockedToc: [...SAJU_LOCKED_TOC] }, usage };
 }
 
-export async function generateSajuReading(provider: ReadingProvider, facts: SajuFactSet, hooks?: GenerationHooks): Promise<Result<SajuReading>> {
-  const { data, usage } = await generateValidated(provider, {
+/** 7절·8절's own call: cut at this budget and replaced by the code-built text (review 2026-10-08, B). */
+export const ENRICHMENT_BUDGET_MS = 90_000;
+
+interface Enrichment {
+  data: SajuEnrichment;
+  usage: Usage[];
+  source: "model" | "fallback";
+}
+
+/**
+ * 7절·8절 in a call of their own (review 2026-10-08, B): its own budget (ENRICHMENT_BUDGET_MS) and cost reservation
+ * (hooks.concurrent), aborted with the route's signal or by `stop` (the main call failed), never the main call's text or
+ * attempt events. `result` never rejects: a failure, a timeout or a draft still invalid after its one retry gives the
+ * code-built text, so a paid reading never fails because of it.
+ */
+function startSajuEnrichment(provider: ReadingProvider, facts: SajuFactSet, hooks: GenerationHooks): { result: Promise<Enrichment>; stop: () => void } {
+  const controller = new AbortController();
+  // why the call was cut, for the fallback log: its own 90 s, the main call failing, or the route (review of v2, LOW)
+  let cut: "timeout" | "stopped" | "aborted" | null = null;
+  const abort = (why: NonNullable<typeof cut>, reason: unknown) => {
+    cut ??= why;
+    controller.abort(reason);
+  };
+  const timer = setTimeout(() => abort("timeout", new Error("enrichment budget spent")), ENRICHMENT_BUDGET_MS);
+  const route = hooks.signal;
+  const follow = () => abort("aborted", route?.reason);
+  if (route?.aborted) follow();
+  else route?.addEventListener("abort", follow, { once: true });
+  const own = hooks.concurrent?.() ?? {};
+  const billed: Usage[] = [];
+  const enrichmentHooks: GenerationHooks = {
+    signal: controller.signal,
+    deadline: Math.min(hooks.deadline ?? Number.POSITIVE_INFINITY, Date.now() + ENRICHMENT_BUDGET_MS),
+    onReserve: own.onReserve,
+    onRelease: own.onRelease,
+    onUsage: (usage) => {
+      billed.push(...usage);
+      own.onUsage?.(usage);
+    },
+  };
+  const result = generateValidated(provider, {
+    name: "saju-enrichment",
+    system: SAJU_ENRICHMENT_SYSTEM,
+    user: sajuEnrichmentPrompt(facts),
+    schema: SajuEnrichmentSchema,
+    ...generationSetting("saju-enrichment"),
+    mock: () => mockSajuEnrichment(facts),
+  }, (draft) => validateSajuEnrichment(draft, facts), enrichmentHooks)
+    .then((generated): Enrichment => ({ data: generated.data, usage: generated.usage, source: "model" }))
+    .catch((error: unknown): Enrichment => {
+      // ids and codes only, as logGeneration does
+      console.info(JSON.stringify({ evt: "ai.enrichment", status: "fallback", reason: cut ?? (error instanceof GenerationError ? error.code : "error") }));
+      return { data: sajuEnrichmentFallback(facts), usage: billed, source: "fallback" };
+    })
+    .finally(() => {
+      clearTimeout(timer);
+      route?.removeEventListener("abort", follow);
+    });
+  return { result, stop: () => abort("stopped", new Error("the main reading failed")) };
+}
+
+const NAMES_AT = SAJU_PROLOGUE_SECTIONS.indexOf(SAJU_NAMES_HEADING);
+const GAEUN_AT = SAJU_PROLOGUE_SECTIONS.indexOf(SAJU_GAEUN_HEADING);
+
+/**
+ * The main call's progress in reading order (hooks.onSection): its sections where they stand among the nine (계산 기준 is the
+ * ninth), and 7절·8절 just before 계산 기준 when their call is done by then, else at the merge (`done`). Without onSection the
+ * hooks pass through.
+ */
+function readingProgress(hooks: GenerationHooks, enrichment: Promise<unknown>): { hooks: GenerationHooks; done: () => void } {
+  const onSection = hooks.onSection;
+  const main: GenerationHooks = { ...hooks, concurrent: undefined };
+  if (!onSection) return { hooks: main, done: () => {} };
+  const scanner = new SectionScanner();
+  let ready = false;
+  void enrichment.then(() => {
+    ready = true;
+  });
+  let named = false;
+  const nameTwo = () => {
+    if (named) return;
+    named = true;
+    onSection("sections", NAMES_AT);
+    onSection("sections", GAEUN_AT);
+  };
+  return {
+    hooks: {
+      ...main,
+      onText: (snapshot) => {
+        for (const event of scanner.push(snapshot)) {
+          if (event.key !== "sections") {
+            onSection(event.key, event.index);
+            continue;
+          }
+          const at = SAJU_PROLOGUE_SECTIONS.indexOf(SAJU_MAIN_SECTIONS[event.index] ?? "");
+          if (at < 0) continue;
+          if (at > GAEUN_AT && ready) nameTwo();
+          onSection("sections", at);
+        }
+      },
+      onAttempt: (attempt) => {
+        if (attempt >= 2) scanner.reset();
+        hooks.onAttempt?.(attempt);
+      },
+    },
+    done: nameTwo,
+  };
+}
+
+/**
+ * 정통 사주 in two calls started together (review 2026-10-08, B): the main one writes sections 1–6, 계산 기준, the card, the
+ * observation and the follow-up questions; 7절·8절 come from their own call or its code-built fallback. The main call failing
+ * fails the reading as before (and stops the other one); the merge puts the nine sections in reading order under code-owned
+ * headings, and the usage holds both calls.
+ */
+export async function generateSajuReading(
+  provider: ReadingProvider, facts: SajuFactSet, hooks: GenerationHooks = {},
+): Promise<Result<SajuReading> & { enrichment: Enrichment["source"] }> {
+  const enrichment = startSajuEnrichment(provider, facts, hooks);
+  const progress = readingProgress(hooks, enrichment.result);
+  const main = generateValidated(provider, {
     name: "saju-reading",
     system: SAJU_SYSTEM,
     user: sajuReadingPrompt(facts),
     schema: SajuReadingSchema,
     ...generationSetting("saju-reading"),
-    mock: () => mockSajuReading(facts),
-  }, (reading) => validateSajuReading(reading, facts), hooks);
-  // Headings are code-owned so the locked TOC stays 1:1 with the paid sections.
+    mock: () => mockSajuMainReading(facts),
+  }, (reading) => validateSajuMainReading(reading, facts), progress.hooks);
+  // a failed reading stops paying for its 7절·8절
+  main.catch(() => enrichment.stop());
+  const [first, second] = await Promise.allSettled([main, enrichment.result]);
+  if (first.status === "rejected") throw first.reason;
+  const extra: Enrichment = second.status === "fulfilled" ? second.value : { data: sajuEnrichmentFallback(facts), usage: [], source: "fallback" };
+  progress.done();
+  const data = mergeSajuReading(first.value.data, extra.data);
   return {
-    data: {
-      ...data,
-      sections: data.sections.map((section, i) => ({ heading: SAJU_PROLOGUE_SECTIONS[i]!, body: section.body.trim() })),
-      observation: { heading: SAJU_OBSERVATION_HEADING, body: data.observation.body.trim() },
-      glance: trimGlance(data.glance),
-    },
-    usage,
+    data: { ...data, observation: { heading: SAJU_OBSERVATION_HEADING, body: data.observation.body.trim() }, glance: trimGlance(data.glance) },
+    usage: [...first.value.usage, ...extra.usage],
+    enrichment: extra.source,
   };
 }
 

@@ -1,5 +1,7 @@
-// One attempt of the real 정통 사주 for a tester's chart: saves the draft and its violations (hard/soft),
+// One attempt of the real 정통 사주 for a tester's chart: saves each call's draft and its violations (hard/soft),
 // so prompt/validator fixes can be re-checked offline on the same draft. Never regenerates.
+// Since 2026-10-08 the reading is two calls started together (saju-reading: sections 1–6 and 계산 기준;
+// saju-enrichment: 7절·8절, with a code-built fallback); each call is timed and checked by its own validator.
 // usage (repo root): VOICE_OUT=<dir> VOICE_NICK=<nick> VOICE_BIRTH='<SajuForm fields as JSON>' \
 //   pnpm exec vitest run --config scripts/voice-real/vitest.config.ts saju.real
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -11,7 +13,7 @@ import { generateSajuReading } from "@/lib/ai/generate";
 import { buildFactSet } from "@/lib/ai/prompts/saju";
 import { GenerationError, type ReadingProvider, type Usage } from "@/lib/ai/provider";
 import { isSoftViolation } from "@/lib/ai/style";
-import { validateSajuReading } from "@/lib/ai/validate";
+import { validateSajuEnrichment, validateSajuMainReading, validateSajuReading } from "@/lib/ai/validate";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 
 /** 도비 (1988-08-15 10:22 양력, 서울, 여) when VOICE_BIRTH is not set. */
@@ -29,27 +31,44 @@ test("one real saju reading", async () => {
 
   const real = anthropicProvider(key!);
   const usage: Usage[] = [];
-  const attempts: { violations: string[]; data: unknown }[] = [];
+  const attempts: { task: string; seconds: number; violations: string[]; data: unknown }[] = [];
+  const check = (task: string, data: unknown) =>
+    task === "saju-enrichment" ? validateSajuEnrichment(data as never, facts) : validateSajuMainReading(data as never, facts);
   const provider: ReadingProvider = {
     name: real.name,
     async generate(task, attempt, feedback, hooks) {
       if (attempt > 1) throw new GenerationError("UPSTREAM", ["stopped-after-attempt-1"]);
-      const result = await real.generate(task, attempt, feedback, hooks);
-      usage.push(...result.usage);
-      attempts.push({ violations: validateSajuReading(result.data as never, facts), data: result.data });
-      return result;
+      const t0 = Date.now();
+      try {
+        const result = await real.generate(task, attempt, feedback, hooks);
+        usage.push(...result.usage);
+        attempts.push({ task: task.name, seconds: (Date.now() - t0) / 1000, violations: check(task.name, result.data), data: result.data });
+        return result;
+      } catch (error) {
+        attempts.push({ task: task.name, seconds: (Date.now() - t0) / 1000, violations: [`call failed: ${(error as Error).message}`], data: null });
+        throw error;
+      }
     },
   };
   const started = Date.now();
+  let merged: { violations: string[]; enrichment: string; data: unknown } | null = null;
   try {
-    await generateSajuReading(provider, facts);
+    const result = await generateSajuReading(provider, facts);
+    merged = { violations: validateSajuReading(result.data, facts), enrichment: result.enrichment, data: result.data };
   } catch {
-    // attempt 2 is stopped on purpose; the draft and its violations are in `attempts`
+    // attempt 2 is stopped on purpose; each call's draft and its violations are in `attempts`
   }
   const usd = usdOf(usage);
   const seconds = Math.round((Date.now() - started) / 100) / 10;
-  writeFileSync(`${out}/${nick}-saju-attempt1.json`, JSON.stringify({ birth, facts, attempts, usage, usd, seconds }, null, 2));
-  for (const a of attempts) for (const v of a.violations) console.log(`${isSoftViolation(v) ? "[soft]" : "[HARD]"} ${v}`);
-  console.log(`${nick} · attempts ${attempts.length} · ${seconds}s · $${usd.toFixed(4)}`);
-  expect(attempts.length).toBe(1);
+  writeFileSync(`${out}/${nick}-saju-attempt1.json`, JSON.stringify({ birth, facts, attempts, merged, usage, usd, seconds }, null, 2));
+  for (const a of attempts) {
+    console.log(`${a.task} · ${a.seconds}s`);
+    for (const v of a.violations) console.log(`  ${isSoftViolation(v) ? "[soft]" : "[HARD]"} ${v}`);
+  }
+  if (merged) {
+    console.log(`merged (7·8절 from ${merged.enrichment})`);
+    for (const v of merged.violations) console.log(`  ${isSoftViolation(v) ? "[soft]" : "[HARD]"} ${v}`);
+  }
+  console.log(`${nick} · calls ${attempts.length} · ${seconds}s · $${usd.toFixed(4)}`);
+  expect(attempts.filter((a) => a.task === "saju-reading").length).toBe(1);
 });

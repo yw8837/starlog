@@ -36,7 +36,7 @@ export interface Usage {
 }
 
 export type TaskName =
-  | "tarot-teaser" | "tarot-reading" | "tarot-daily" | "saju-teaser" | "saju-reading" | "followup"
+  | "tarot-teaser" | "tarot-reading" | "tarot-daily" | "saju-teaser" | "saju-reading" | "saju-enrichment" | "followup"
   | "saju-topic-teaser" | "saju-topic-reading"
   | "premium-teaser" | "deep-tarot-part" | "match-part" | "newyear-part" | "premium-followup";
 
@@ -76,6 +76,16 @@ export interface GenerationHooks {
   onUsage?: (usage: Usage[]) => void;
   /** epoch ms when the caller's budget runs out; no regeneration starts that cannot finish before it */
   deadline?: number;
+  /**
+   * a progress event for a part the streamed text does not show in reading order (정통 사주: its main call's sections mapped
+   * onto the nine, and 7절·8절 from their own call); the streaming route writes it as a `section` event
+   */
+  onSection?: (key: string, index: number) => void;
+  /**
+   * hooks for one more upstream call running alongside this one (정통 사주's 7절·8절): the same signal and deadline, and a
+   * cost reservation of its own, so the two calls never settle each other's
+   */
+  concurrent?: () => GenerationHooks;
 }
 
 export interface ReadingProvider {
@@ -118,7 +128,13 @@ const tarotBold = (p: Path) => (p[0] === "cards" && p[2] === "body") || (TAROT_B
  * The fields a task's screen shows with BoldText (reading-voice-2026-10 §2.2); every other task shows none. Never the
  * observation: the 돌아보기 card shows it as plain text and history keeps its first 120 characters (review 2026-10-08).
  */
-const BOLD_FIELDS: Partial<Record<TaskName, (path: Path) => boolean>> = { "saju-reading": sajuBold, "saju-topic-reading": sajuBold, "tarot-reading": tarotBold };
+const BOLD_FIELDS: Partial<Record<TaskName, (path: Path) => boolean>> = {
+  "saju-reading": sajuBold,
+  // 7절·8절, shown as sections of the 정통 reading
+  "saju-enrichment": (p) => p[0] === "nameplate" || p[0] === "gaeun",
+  "saju-topic-reading": sajuBold,
+  "tarot-reading": tarotBold,
+};
 
 /**
  * A draft with its stray `**` taken out (review 2026-10-08): only the fields its screen shows bold keep the marks, so no

@@ -1,7 +1,7 @@
 import { BRANCHES, computeChart } from "@starlog/core";
 import sajuSample from "@content/samples/saju-prologue.ko.json";
 import { describe, expect, it } from "vitest";
-import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_MAIN_SECTIONS, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { generateSajuReading } from "./generate";
 import { mockSajuFollowUp, mockSajuReading, mockSajuTeaser } from "./mock";
@@ -67,9 +67,9 @@ describe("FactSet for the sample chart (1990-01-01, female, 서울, time unknown
     expect(facts.allowed.limitGlyphs).toEqual(["丑"]);
   });
 
-  it("builds the prompt from the FactSet with the nine fixed headings and no birth date", () => {
+  it("builds the main call's prompt from the FactSet with its seven fixed headings (7절·8절 have their own call) and no birth date", () => {
     const prompt = sajuReadingPrompt(facts);
-    for (const heading of SAJU_PROLOGUE_SECTIONS) expect(prompt).toContain(heading);
+    for (const heading of SAJU_MAIN_SECTIONS) expect(prompt).toContain(heading);
     expect(prompt).toContain("庚辰");
     expect(prompt).not.toContain("1990-01-01");
     expect(prompt).not.toContain('"allowed"');

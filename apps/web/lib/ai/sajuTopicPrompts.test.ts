@@ -7,6 +7,7 @@ import { TOPIC_OBSERVATION_HEADING, TOPIC_SECTIONS, otherTopicLabels } from "@/l
 import { toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { NEWYEAR_SYSTEM } from "./prompts/newyear";
 import { SAJU_PREAMBLE, SAJU_SYSTEM } from "./prompts/saju";
+import { SAJU_ENRICHMENT_SYSTEM } from "./prompts/sajuEnrichment";
 import { buildTopicFactSet } from "./prompts/sajuTopics";
 import { SAJU_TOPIC_SYSTEM, sajuTopicFollowUpPrompt, sajuTopicReadingPrompt, sajuTopicTeaserPrompt, topicFactsBlock } from "./prompts/sajuTopicPrompts";
 import { mockSajuTopicReading } from "./mockSajuTopics";
@@ -51,8 +52,13 @@ describe("주제별 사주 prompts (spec §7.5)", () => {
     // sentence, the total to 2,700~4,100자, and a follow-up names a 살·귀인 only when asked. The preamble keeps its 신살 ban
     // byte for byte, so 신년운세 and the 운 do not move. Re-pinned the same day for the basis sentence's wording
     // ("귀인은 일간을, 도화·역마·화개는 … 기준으로 찾았고, 이 기준은 유파마다 달라요.").
-    expect(hash(SAJU_SYSTEM)).toBe("027b1a51231f695e5432d7e9184f7ba9433d7bdf545a3e5972a3632bd5fa50c8");
+    // Then SAJU_SYSTEM alone again (review of afd5498, B: its one real check was cut upstream at 155.9 s): 7절·8절 move to a
+    // parallel call of their own (SAJU_ENRICHMENT_SYSTEM), so the main format goes back to seven sections and 2,100~3,200자,
+    // keeping the basis sentence in 계산 기준; a follow-up may name the reading's own names, never as an event (review A3).
+    expect(hash(SAJU_SYSTEM)).toBe("f7ad95cbee6584d37c8570f9989ea1dddf56226912a3f3905c867c1da1e0dd3b");
     expect(hash(NEWYEAR_SYSTEM)).toBe("1307d57b62ae51e374b7be06b89445fb7c0ad161540b3384fae4447844710f13");
+    // 7절·8절's own system prompt (review of afd5498, B), pinned from its first version.
+    expect(hash(SAJU_ENRICHMENT_SYSTEM)).toMatchSnapshot();
   });
 
   it("builds the topic system prompt on the shared preamble, blind to model names, without 베타", () => {

@@ -14,7 +14,8 @@ export function ChartPanel({ result }: { result: ChartResult | null }) {
     content = (
       <>
         <ChartTable chart={result.chart} title="네 기둥" />
-        <NameChips chart={result.chart} />
+        {/* keyed by the birth data, so an open chip closes when another chart comes in */}
+        <NameChips key={JSON.stringify(result.chart.input)} chart={result.chart} />
         <ElementBar elements={result.chart.elements} note={gaeunLine(scarceElements(result.chart))} />
         <ChartCriteria chart={result.chart} />
       </>

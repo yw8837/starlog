@@ -69,15 +69,27 @@ A hit is the target branch appearing in another visible pillar's 지지. The bas
   - With no hits: one short paragraph saying the common names were checked and none applies, then a strength from the chart instead.
 - **Section 8** (250–380자):
   - Why this element: "여덟 글자 중 불 기운이 0개".
-  - Then colour, direction, habit and environment as 3–4 concrete actions tied to the reading's own advice.
+  - Then colour, direction, habit and environment as 3–4 concrete actions. (v2: 8절 is written by its own call, which never sees the main reading, so it cannot tie to that reading's advice; it ties to the scarce element only.)
 - **Facts:** `buildFactSet` adds `sinsal` (the engine output) and `scarce` (element, count, hidden). The prompt lists the allowed names, and the model may not name any other.
 - **Expected impact:** +600–900자. Generation time +10–20 s. Keep total output under about 12k tokens; the route budget is 240 s.
   - Re-measure on real readings, then update `SITE.reading.approxChars.saju`. It is shown as 약 2,500~3,000자 today.
 
+## 3a. v2: two calls (review 2026-10-08)
+
+Real calls past about 153 s were cut upstream, so 7절·8절 moved out of the main call.
+- **Main call** (`saju-reading`): sections 1–6 and 계산 기준, the glance, the observation and the follow-ups (`SAJU_MAIN_SECTIONS`, `validateSajuMainReading`, 2,100~3,200자).
+- **Enrichment call** (`saju-enrichment`, effort low, max 8,000 tokens, its own system prompt): 7절 and 8절 only, from 일간, the counts, the pillars, `sinsal` and `scarce`. The main prompt no longer sees those two keys.
+- Both start together and are joined with `Promise.allSettled`. The enrichment has its own 90 s budget and stops when the route aborts or the main call fails.
+- **Fallback:** a failure, a timeout or a draft still invalid after one retry gives the code-built text (`lib/ai/sajuParts.ts`). A paid reading never fails because of 7절·8절. The fallback log says why: `timeout`, `stopped`, `aborted`, or the error code.
+- **Merge:** `mergeSajuReading` puts 1–6, 7, 8 and 9 in order under code-owned headings; usage holds both calls.
+- **Cost:** each call has its own ledger, and every cost write of one generation goes through one queue (KV shards are read-then-write; review of v2, HIGH).
+
 ## 4. Validators
 - `lib/ai/validate.ts` has one regex (around line 502) that bans 삼재·원진·백호·도화·역마·공망·귀인·신살. Split it:
   - **Allowed:** an allow-listed name only in section 7 (and the glance card, if used), and only if that name is in `facts.sinsal`.
-  - **Always banned:** hidden or held names anywhere. "귀인을 만난다/나타난다/도움 받는다" and "~살이 있어서" event phrasing.
+  - **Banned:** hidden or held names, and event or cause phrasing ("귀인을 만난다/나타난다/도움 받는다", "~살이 있어서/있어", "역마 때문에", "문창귀인 덕분에").
+    - In 7절 they fail even when declined (`strictSinsal`).
+    - Everywhere else (sections 1–6, 계산 기준, follow-ups, 운, 신년운세, 궁합) they may appear only in a sentence that really declines them (`DECLINED`: "쓰지 않았어요", "예고는 아니에요", "단정할 수 없어요", "말하기 어려워요"). A stray 않·없 elsewhere in the sentence does not count (review of v2, M2).
 - **Section 8:** ban numbers used as luck, efficacy words, and health or body claims. Directions only as small choices.
 - Update `prompts/saju.ts` line 683 and `prompts/match.ts` line 229 (the 신살 ban lines). Make them conditional: 정통 allows the allow-list in section 7 only; match and the topic prompts keep the ban.
 

@@ -48,11 +48,11 @@ describe("개운: the scarcest element of the visible glyphs", () => {
     expect(gaeunLine(scarceElements(c))).toBe("곁에 두면 좋은 것: 빨강·흰색 포인트 · 낮 햇볕 10분");
   });
 
-  it("a tie at 1 (1987-09-09 09:30: 壬辰 辛酉 己酉 丁卯): all three, and hidden only ever for a 0", () => {
+  it("a tie at 1 (1987-09-09 09:30: 壬辰 辛酉 己酉 丁卯): all three candidates, hidden only ever for a 0; the line names two colours at most, the habit of the first", () => {
     const c = chartOf({ year: 1987, month: 9, day: 9, timeKnown: true, hour: 9, minute: 30 });
     expect(c.elements).toEqual({ 목: 1, 화: 1, 토: 2, 금: 3, 수: 1 });
     expect(scarceElements(c)).toEqual([{ element: "목", count: 1, hidden: false }, { element: "화", count: 1, hidden: false }, { element: "수", count: 1, hidden: false }]);
-    expect(gaeunLine(scarceElements(c))).toBe("곁에 두면 좋은 것: 초록·빨강·검정 포인트 · 화분 가꾸기");
+    expect(gaeunLine(scarceElements(c))).toBe("곁에 두면 좋은 것: 초록·빨강 포인트 · 화분 가꾸기");
   });
 
   it("counts the six glyphs when the hour is unknown (the sample chart: 쇠 0, 庚 inside 巳)", () => {

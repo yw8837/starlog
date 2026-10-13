@@ -51,7 +51,15 @@ describe("이 명식에 붙는 이름 and the 개운 line on the chart", () => {
     render(<ChartPanel result={{ chart: NO_NAME }} />);
     expect(within(names()).queryAllByRole("button")).toEqual([]);
     expect(within(names()).getByText(SAJU_NAMES_NONE)).toBeTruthy();
-    expect(within(elements()).getByText("곁에 두면 좋은 것: 초록·빨강·검정 포인트 · 화분 가꾸기")).toBeTruthy();
+    expect(within(elements()).getByText("곁에 두면 좋은 것: 초록·빨강 포인트 · 화분 가꾸기")).toBeTruthy();
+  });
+
+  it("closes an open chip when another chart comes in (review A7: keyed by the chart)", () => {
+    const { rerender } = render(<ChartPanel result={{ chart: DOBI }} />);
+    fireEvent.click(within(names()).getAllByRole("button")[0]!);
+    expect(within(names()).getAllByRole("button")[0]!.getAttribute("aria-expanded")).toBe("true");
+    rerender(<ChartPanel result={{ chart: chartOf({}) }} />); // the sample chart: 학당귀인 first
+    expect(within(names()).getAllByRole("button").map((chip) => [chip.textContent, chip.getAttribute("aria-expanded")])).toEqual([["학당귀인", "false"]]);
   });
 
   it("five chips at most: of all six names, 화개 is left off", () => {

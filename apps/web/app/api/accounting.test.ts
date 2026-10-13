@@ -14,6 +14,7 @@ import { POST as followup } from "./followup/route";
 import { POST as owner } from "./owner/route";
 import { POST as reading } from "./tarot/reading/route";
 import { POST as teaser } from "./tarot/teaser/route";
+import { POST as sajuReading } from "./saju/reading/route";
 import { POST as sajuTeaser } from "./saju/teaser/route";
 
 type Handler = (request: Request) => Promise<Response>;
@@ -251,6 +252,36 @@ describe("global daily spend cap", () => {
     const drawToken = await drawFor(d);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     expect(await spent()).toBe(1400);
+  });
+
+  it("settles the 정통 reading's two parallel calls each against its own reservation (7·8절 in their own call)", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "100000");
+    const real = mockProvider.generate.bind(mockProvider);
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+      hooks?.onReserve?.(EXPENSIVE);
+      await new Promise((resolve) => setTimeout(resolve, 5)); // both calls have reserved before either bills
+      const result = await real(task, attempt, feedback, hooks);
+      hooks?.onUsage?.(HALF);
+      return result;
+    });
+    const d = device("198.51.100.26");
+    expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM })).status).toBe(200);
+    expect(await spent()).toBe(2 * 1400);
+  });
+
+  it("loses no write when both calls land on one cost shard: a generation's ledgers write through one queue", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "100000");
+    vi.spyOn(Math, "random").mockReturnValue(0); // every cost write picks shard 0, as two racing ones do one time in eight
+    const real = mockProvider.generate.bind(mockProvider);
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+      hooks?.onReserve?.(EXPENSIVE); // both calls reserve in the same tick, and settle together at the end
+      const result = await real(task, attempt, feedback, hooks);
+      hooks?.onUsage?.(HALF);
+      return result;
+    });
+    const d = device("198.51.100.27");
+    expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM })).status).toBe(200);
+    expect(await spent()).toBe(2 * 1400);
   });
 
   it("keeps a reservation whose call never reported usage, and adds usage beyond a reservation", async () => {

@@ -4,7 +4,7 @@ import type { GenerationHooks } from "@/lib/ai/provider";
 import { issueCommit } from "@/lib/security/commit";
 import { generationErrorPayload, json, serializeCookie, type CookieSpec, type Gate } from "./http";
 import { SectionScanner } from "./sections";
-import { SpendLedger, addCost, addPaidCost, recordClientSpend, type SpendKind } from "./spend"; // P4: cost books
+import { SpendLedger, addCost, addPaidCost, recordClientSpend, type CostSink, type SpendKind } from "./spend"; // P4: cost books
 
 /**
  * Generation responses (.superpowers/sdd/2026-09-30-starlog-p2b/streaming-protocol.md). A request
@@ -99,14 +99,30 @@ export async function respondGeneration(
   // Charged before anything starts: leaving before `done` (or skipping /api/commit) is still counted.
   if (spend && !gate.owner) await recordClientSpend(gate.client, spend, gate.now);
   const abort = generationSignal(request, budgetMs);
-  const ledger = new SpendLedger(Date.now, paidCost ? addPaidCost : addCost); // P4: paid book
-  const accounting = {
+  const deadline = Date.now() + budgetMs;
+  // One ledger per concurrent upstream call: two calls sharing one would settle each other's reservations. Their writes
+  // still go through one queue: a cost write reads a shard and writes it back, so two at once on one shard lose one.
+  const book: CostSink = paidCost ? addPaidCost : addCost; // P4: paid book
+  let queue: Promise<unknown> = Promise.resolve();
+  const sink: CostSink = (krw, at) => {
+    const written = queue.then(() => book(krw, at));
+    queue = written.catch(() => {}); // a failed write (the ledger logs it) never stops the next one
+    return written;
+  };
+  const ledgers: SpendLedger[] = [];
+  const costHooks = (): GenerationHooks => {
+    const ledger = new SpendLedger(Date.now, sink);
+    ledgers.push(ledger);
+    return { onReserve: (usage) => ledger.reserve(usage), onRelease: () => ledger.release(), onUsage: (usage) => ledger.bill(usage) };
+  };
+  const finishLedgers = () => Promise.all(ledgers.map((ledger) => ledger.finish()));
+  const accounting: GenerationHooks = {
     signal: abort.signal,
-    deadline: Date.now() + budgetMs,
-    onReserve: (usage: Parameters<SpendLedger["reserve"]>[0]) => ledger.reserve(usage),
-    onRelease: () => ledger.release(),
-    onUsage: (usage: Parameters<SpendLedger["bill"]>[0]) => ledger.bill(usage),
-  } satisfies GenerationHooks;
+    deadline,
+    ...costHooks(),
+    // a second call alongside the first (정통 사주's 7절·8절): the same signal and deadline, a ledger of its own
+    concurrent: () => ({ signal: abort.signal, deadline, ...costHooks() }),
+  };
   // P4: a failed release is not lost: the reservation expires (RESERVATION_MS) and a sweep returns it.
   const release = async () => {
     if (!settle) return;
@@ -146,7 +162,7 @@ export async function respondGeneration(
         return json(body, { status, cookies: start });
       } finally {
         abort.done();
-        await ledger.finish();
+        await finishLedgers();
       }
     })();
     keepAlive(work);
@@ -178,6 +194,8 @@ export async function respondGeneration(
           scanner.reset();
           write({ type: "retry", reason: "quality" });
         },
+        // a part the generation reports itself (정통 사주: its sections in reading order, 7절·8절 from their own call)
+        onSection: (key, index) => write({ type: "section", key, index }),
       };
       keepAlive((async () => {
         try {
@@ -200,7 +218,7 @@ export async function respondGeneration(
               // already closed by the client
             }
           }
-          await ledger.finish();
+          await finishLedgers();
         }
       })());
     },

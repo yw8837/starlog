@@ -81,6 +81,9 @@ export const SajuReadingSchema = z.object({
   followUps: z.array(z.string()),
 });
 
+/** 정통 사주's 7절 (이름표 풀이) and 8절 (기운 채우기), written by their own call next to the main one (review 2026-10-08, B). */
+export const SajuEnrichmentSchema = z.object({ nameplate: z.string(), gaeun: z.string() });
+
 /**
  * Older saved prologues carry `story` and no `observation`, and none before 2026-10-07 has a `glance` (see StoredTarotReadingSchema).
  * A card that cannot be read is dropped, not the reading: the page leaves it out and the follow-ups go on (review 2026-10-08).
@@ -106,6 +109,7 @@ export type SajuTeaserDraft = z.infer<typeof SajuTeaserDraftSchema>;
 export type SajuTeaser = z.infer<typeof SajuTeaserSchema>;
 export type SajuGlance = z.infer<typeof SajuGlanceSchema>;
 export type SajuReading = z.infer<typeof SajuReadingSchema>;
+export type SajuEnrichment = z.infer<typeof SajuEnrichmentSchema>;
 export type StoredSajuReading = z.infer<typeof StoredSajuReadingSchema>;
 export type FollowUpAnswer = z.infer<typeof FollowUpAnswerSchema>;
 

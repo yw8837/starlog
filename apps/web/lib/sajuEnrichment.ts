@@ -75,8 +75,8 @@ export function scarceElements(chart: Pick<SajuChart, "elements" | "pillars">): 
   return ELEMENTS.filter((e) => chart.elements[e] === min).map((element) => ({ element, count: min, hidden: min === 0 && inside.has(element) }));
 }
 
-/** "곁에 두면 좋은 것: 빨강 포인트 · 낮 햇볕 10분": each candidate's colour, the first one's habit. */
+/** "곁에 두면 좋은 것: 빨강 포인트 · 낮 햇볕 10분": a tie names two colours at most, and the habit of the first. */
 export function gaeunLine(scarce: readonly ScarceElement[]): string {
-  const colours = scarce.map((s) => GAEUN[s.element].colours[0]).join("·");
-  return `곁에 두면 좋은 것: ${colours} 포인트 · ${GAEUN[scarce[0]!.element].habits[0]}`;
+  const shown = scarce.slice(0, 2);
+  return `곁에 두면 좋은 것: ${shown.map((s) => GAEUN[s.element].colours[0]).join("·")} 포인트 · ${GAEUN[shown[0]!.element].habits[0]}`;
 }
