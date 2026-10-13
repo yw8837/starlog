@@ -23,7 +23,7 @@ export const LOGO = { url: absoluteUrl("/logo.png"), width: 512, height: 512 } a
 export const SHARE_IMAGE = { url: absoluteUrl("/opengraph-image"), width: 1200, height: 630 } as const;
 
 /** One line on what the service is, used by WebSite and llms.txt. */
-export const SITE_SUMMARY = `${SITE.nameKo}(${SITE.name})는 내 질문과 상황에 맞춘 타로와 사주 풀이를 보는 곳이에요. 타로는 1909년 원판 그림으로 고양이 점성술사가, 사주는 만세력으로 세운 명식으로 한복 입은 토끼 선생님이 읽어 줘요.`;
+export const SITE_SUMMARY = `${SITE.nameKo}(${SITE.name})는 내 질문과 상황에 맞춘 타로와 사주 풀이를 보는 곳이에요. 타로는 1909년 원판의 구도를 따른 스타로그 카드로 고양이 점성술사가, 사주는 만세력으로 세운 명식으로 한복 입은 토끼 선생님이 읽어 줘요.`;
 
 /** JSON for a <script type="application/ld+json">, with "<" escaped so no text can close the tag. */
 export function jsonLdScript(data: unknown): string {
