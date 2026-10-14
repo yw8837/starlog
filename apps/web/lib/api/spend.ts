@@ -135,9 +135,14 @@ export async function overNetworkBudget(client: string, now: number): Promise<bo
 
 // ---- the day's cost ----
 
-/** `BETA_DAILY_BUDGET_KRW`, else 30,000. 0 stops every new generation. */
+/**
+ * `BETA_DAILY_BUDGET_KRW`, else 30,000. 0 stops every new generation. `off` (owner 2026-10-15: no day cap) is
+ * Infinity: no day total closes the free tier and no network share of it applies; the per-network counts, the
+ * rate limiters and the prepaid model credit still bound the spend, and the cost is still recorded.
+ */
 export function dailyBudgetKrw(env: NodeJS.ProcessEnv = process.env): number {
   const value = env.BETA_DAILY_BUDGET_KRW;
+  if (value?.trim().toLowerCase() === "off") return Infinity;
   const n = Number(value);
   return value !== undefined && value.trim() !== "" && Number.isFinite(n) && n >= 0 ? n : DEFAULT_DAILY_BUDGET_KRW;
 }
@@ -163,6 +168,8 @@ export async function spentTodayKrw(now: number): Promise<number | null> {
  * repeatedly in this isolate); else "ok". Callers treat "unknown" as closed for new generations.
  */
 export async function budgetState(now: number): Promise<"ok" | "over" | "unknown"> {
+  // No day cap: nothing to compare, so neither the total nor its readability can close anything.
+  if (dailyBudgetKrw() === Infinity) return "ok";
   if (bindingMissing()) return "unknown";
   const recentFailures = costWriteFailures.filter((t) => now - t < WRITE_FAILURE_WINDOW_MS).length;
   if (recentFailures >= WRITE_FAILURES_UNKNOWN) return "unknown";

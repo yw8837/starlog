@@ -4,7 +4,7 @@ import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { kstDay } from "@/lib/security/quota";
 import { dailyStore, resetDailyStore } from "./dailyStore";
 import type { Gate } from "./http";
-import { SpendLedger, addPaidCost, budgetState, clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "./spend";
+import { SpendLedger, addCost, addNetworkCost, addPaidCost, budgetState, clientCount, dailyBudgetKrw, networkCostKrw, overNetworkBudget, resetSpendState, spentTodayKrw } from "./spend";
 import { NDJSON, respondGeneration, type GenerationOutcome, type Settlement } from "./stream";
 
 /** Priced at 2,800원 with KRW_PER_USD=1400 (Opus 5.5: 100k output tokens = $2). */
@@ -87,6 +87,19 @@ describe("cost books", () => {
     ledger.bill(HALF);
     await ledger.finish();
     expect(writes).toEqual([2800, -1400]);
+  });
+
+  it("with BETA_DAILY_BUDGET_KRW=off has no day cap and no network share of one, and still records the spend (owner 2026-10-15)", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "off");
+    expect(dailyBudgetKrw()).toBe(Infinity);
+    const now = Date.now();
+    await addCost(1_000_000, now);
+    await addNetworkCost("net-a", 1_000_000, now);
+    expect(await budgetState(now)).toBe("ok");
+    expect(await overNetworkBudget("net-a", now)).toBe(false);
+    expect(await spentTodayKrw(now)).toBe(1_000_000);
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "OFF");
+    expect(dailyBudgetKrw()).toBe(Infinity);
   });
 
   it("keeps the paid book out of the free-tier total and the budget", async () => {

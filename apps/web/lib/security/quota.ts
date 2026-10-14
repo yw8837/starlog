@@ -34,7 +34,8 @@ function envInt(value: string | undefined, fallback: number): number {
  * never stop real people, and many share one IP: Korean mobile carriers put whole neighbourhoods
  * behind CGNAT, and an office, school or café Wi-Fi is one IP too (final QA Q-01: the 12th fresh
  * device on one IP was refused). So they sit far above what a shared network uses in a day. The
- * real cost backstop is the global daily budget (BETA_DAILY_BUDGET_KRW, closing at 80%), and the
+ * cost backstop is the global daily budget when set (BETA_DAILY_BUDGET_KRW, closing at 80%; "off" since
+ * 2026-10-15) and the prepaid model credit, and the
  * device cookies (one free first tarot reading, 5 teasers a day) stay the everyday limit.
  */
 export interface NetworkLimits {
