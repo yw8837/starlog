@@ -65,6 +65,9 @@ const matches = (order: OrderRow, payment: TossPayment) => payment.status === "D
 /** Toss's answers when our API keys themselves are refused. */
 const KEY_ERRORS = new Set(["UNAUTHORIZED_KEY", "INVALID_API_KEY", "INVALID_CLIENT_KEY", "INVALID_SECRET_KEY"]);
 const KEY_REJECTED_MESSAGE = "결제 승인을 받지 못했어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요.";
+/** Toss's answers when this store itself may not take payments (set on Toss's side; the owner's live tries, 10/14). */
+const MERCHANT_ERRORS = new Set(["NOT_AVAILABLE_PAYMENT_BY_MERCHANT"]);
+const MERCHANT_REFUSED_MESSAGE = "지금은 결제를 받을 수 없어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요.";
 
 /** The payment Toss has for this order, "none" when it has none, "unknown" when it could not be asked. */
 async function lookUpByOrder(toss: TossClient, orderId: string): Promise<TossPayment | "none" | "unknown"> {
@@ -180,6 +183,13 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
       console.error(JSON.stringify({ evt: "pay.key_rejected", orderId: order.id, status: refusal.status, code: refusal.code, message: refusal.message }));
       await setStatus(db, order.id, ["confirming"], "failed", now, refusal.code);
       return { ok: false, code: "PAY_FAILED", message: KEY_REJECTED_MESSAGE };
+    }
+    if (MERCHANT_ERRORS.has(refusal.code)) {
+      // Toss refused the store, not this payment: no confirm can pass and the lookup is refused as well,
+      // so waiting would leave the order at 확인 중 for good. An unconfirmed payment expires uncharged.
+      console.error(JSON.stringify({ evt: "pay.merchant_refused", orderId: order.id, status: refusal.status, code: refusal.code, message: refusal.message }));
+      await setStatus(db, order.id, ["confirming"], "failed", now, refusal.code);
+      return { ok: false, code: "PAY_FAILED", message: MERCHANT_REFUSED_MESSAGE };
     }
     // A definite answer (a decline, ALREADY_PROCESSED_PAYMENT, …): look the payment up before deciding.
     const found = await lookUpByOrder(toss, order.id);

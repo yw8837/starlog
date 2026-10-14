@@ -159,11 +159,11 @@ describe("confirm", () => {
     const b = await loggedIn();
     const orderId = await newOrder(b);
     const warnings = vi.spyOn(console, "warn").mockImplementation(() => {});
-    mockToss.failNext("confirm", new TossError(400, "NOT_AVAILABLE_PAYMENT_BY_MERCHANT", "토스가 보낸 설명"));
-    vi.spyOn(mockToss, "getPaymentByOrder").mockRejectedValueOnce(new TossError(400, "NOT_AVAILABLE_PAYMENT_BY_MERCHANT", "토스가 보낸 설명"));
+    mockToss.failNext("confirm", new TossError(400, "REJECT_CARD_COMPANY", "토스가 보낸 설명"));
+    vi.spyOn(mockToss, "getPaymentByOrder").mockRejectedValueOnce(new TossError(500, "FAILED_INTERNAL_SYSTEM_PROCESSING", ""));
     expect((await confirmAs(b, orderId, "mock_merchant")).status).toBe(409);
     const line = warnings.mock.calls.map(([text]) => String(text)).find((text) => text.includes('"evt":"pay.confirm_lookup_unknown"'));
-    expect(line).toContain("NOT_AVAILABLE_PAYMENT_BY_MERCHANT");
+    expect(line).toContain("REJECT_CARD_COMPANY");
     expect(line).toContain("토스가 보낸 설명");
   });
 
@@ -179,6 +179,20 @@ describe("confirm", () => {
     expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "결제 승인을 받지 못했어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요." });
     expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "UNAUTHORIZED_KEY" });
     expect(errors.mock.calls.some(([line]) => String(line).includes('"evt":"pay.key_rejected"') && String(line).includes("UNAUTHORIZED_KEY"))).toBe(true);
+  });
+
+  it("fails an order at once when Toss says this store may not take payments, even when the lookup fails too (owner's live tries, 10/14)", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockToss.failNext("confirm", new TossError(400, "NOT_AVAILABLE_PAYMENT_BY_MERCHANT", "x"));
+    vi.spyOn(mockToss, "getPaymentByOrder").mockRejectedValueOnce(new TossError(400, "NOT_AVAILABLE_PAYMENT_BY_MERCHANT", "x"));
+    const res = await confirmAs(b, orderId, "mock_key");
+    expect(res.status).toBe(402);
+    expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "지금은 결제를 받을 수 없어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요." });
+    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "NOT_AVAILABLE_PAYMENT_BY_MERCHANT" });
+    expect(errors.mock.calls.some(([line]) => String(line).includes('"evt":"pay.merchant_refused"') && String(line).includes("NOT_AVAILABLE_PAYMENT_BY_MERCHANT"))).toBe(true);
   });
 
   it("fails an order whose refusal Toss backs with a payment of its own", async () => {
