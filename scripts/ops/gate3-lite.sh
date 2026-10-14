@@ -28,7 +28,8 @@ PREV=$!
 for i in $(seq 1 90); do c=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8787/); [ "$c" = "200" ] && break; sleep 2; done
 step "preview http=$c"
 SPECS=$(ls e2e/*.spec.ts | grep -v pay-flow | grep -v saju-topics | tr '\n' ' ')
-E2E_BASE_URL=http://localhost:8787 E2E_ALLOW_LIVE=1 npx playwright test $SPECS --workers=2 --grep-invert "saju-chart-topic" --reporter=line > "$LOG/e2e-preview.log" 2>&1; step "e2e preview exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-preview.log" | tr '\n' ' ')"
+# Saju has no free full reading (owner 10/14): the specs open it with the preview's owner pass (.dev.vars, never printed).
+E2E_OWNER_CODE="$(grep -E '^STARLOG_OWNER_CODE=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" E2E_BASE_URL=http://localhost:8787 E2E_ALLOW_LIVE=1 npx playwright test $SPECS --workers=2 --grep-invert "saju-chart-topic" --reporter=line > "$LOG/e2e-preview.log" 2>&1; step "e2e preview exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-preview.log" | tr '\n' ' ')"
 kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 for p in $(powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe'\" | Where-Object { \$_.CommandLine -match 'scratchpad\\deploy\\' }).ProcessId"); do taskkill //F //T //PID $p > /dev/null 2>&1; done
 for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done

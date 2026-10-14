@@ -9,6 +9,8 @@ import { expect, test, type Page, type Request, type TestInfo } from "@playwrigh
 const NAV = 30_000;
 const GENERATION = 120_000;
 const TOPICS = ["연애운", "재회운", "재물운", "직장운"];
+/** The owner pass of the server under test (`pnpm e2e` uses this default; a preview needs its own in E2E_OWNER_CODE). */
+const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
 
 async function ownAddress(page: Page, info: TestInfo) {
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.7.${info.workerIndex}.${Math.floor(Math.random() * 250)}` });
@@ -77,9 +79,11 @@ test("주제별 사주: each 운 shows its own teaser, list and sheet under the 
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible();
 });
 
-test("주제별 사주: 재물운 sends only its topic, comes back from this device, opens with 오픈 기념, and 내 기록 names it", async ({ page }, info) => {
+test("주제별 사주: 재물운 sends only its topic, comes back from this device, opens with the owner pass (no free saju reading), and 내 기록 names it", async ({ page }, info) => {
   test.setTimeout(300_000);
   await ownAddress(page, info);
+  // Saju has no free full reading (owner 2026-10-14): this run opens it with the owner pass.
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
   const sent = teaserRequests(page);
   await toChart(page);
   expect(sent()).toHaveLength(1);
@@ -104,7 +108,7 @@ test("주제별 사주: 재물운 sends only its topic, comes back from this dev
   expect(sent()).toHaveLength(3);
 
   const sheet = page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" });
-  await sheet.getByRole("button", { name: /^전체 풀이 보기/ }).click();
+  await sheet.getByRole("button", { name: "운영자로 무료 열기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: GENERATION });
   await expect(page.getByText(/^사주 재물운 · \d+월 \d+일$/)).toBeVisible();
   await expect(page.locator("#chapter-reading article")).toHaveCount(7);

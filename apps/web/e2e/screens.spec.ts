@@ -54,6 +54,8 @@ const CONTACT_INPUT = {
 const BIRTH = { calendar: "solar", year: 1990, month: 1, day: 1, isLeapMonth: false, timeKnown: true, hour: 9, minute: 30, gender: "female", placeId: "seoul" };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** The owner pass of the server under test (scripts/ops/gate3-lite.sh passes the preview's; `pnpm e2e` uses this default). */
+const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
 
 /** Each screen gets its own client address, so the per-IP generation limiter never spans screens. */
 async function ownAddress(page: Page) {
@@ -78,7 +80,7 @@ async function dealtFlow(page: Page) {
 
 /** A full tarot reading from the API, stored as this device keeps it (`age` days old). */
 async function tarotChapter(page: Page, id: string, age = 0) {
-  // One full reading a day per device: a fresh quota cookie for each seeded reading.
+  // One free full reading per device (첫 이용 무료): fresh cookies for each seeded reading.
   await page.context().clearCookies();
   const draw = await dealtFlow(page);
   const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: CONTACT_INPUT } })).json();
@@ -97,12 +99,18 @@ async function tarotChapter(page: Page, id: string, age = 0) {
   };
 }
 
-/** A full saju reading from the API for BIRTH, stored as this device keeps it. */
+/**
+ * A full saju reading from the API for BIRTH, stored as this device keeps it. Saju has no free full
+ * reading: it is opened with the owner pass, which is then dropped so the screen is a visitor's.
+ */
 async function sajuChapter(page: Page, id: string, age = 0) {
   await page.context().clearCookies();
   await ownAddress(page);
+  const origin = new URL(test.info().project.use.baseURL!).origin;
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
   const teaser = await (await page.request.post("/api/saju/teaser", { data: { birth: BIRTH } })).json();
-  const res = await (await page.request.post("/api/saju/reading", { data: { birth: BIRTH } })).json();
+  const res = await (await page.request.post("/api/saju/reading", { data: { birth: BIRTH, unlock: { method: "owner" } } })).json();
+  await page.context().clearCookies();
   return { id, kind: "saju", createdAt: Date.now() - age * DAY_MS, chapterToken: res.chapterToken, turns: [], followUpsLeft: 3, birth: BIRTH, title: teaser.title, summary: teaser.summary, reading: res.reading };
 }
 
@@ -201,12 +209,13 @@ const SCREENS: Screen[] = [
     path: "/tarot/result",
     setup: async (page) => {
       await dealtFlow(page);
-      await fail(page, "**/api/tarot/reading", 429, { code: "BETA_LIMIT", resetsAt: new Date(Date.now() + DAY_MS).toISOString() });
+      // The device's free first reading (첫 이용 무료) is spent.
+      await fail(page, "**/api/tarot/reading", 429, { code: "BETA_LIMIT", scope: "first", message: "…" });
     },
     prepare: async (page) => {
       await waitForSheet(page);
       await page.getByRole("button", { name: /전체 풀이 보기/ }).click();
-      await expect(page.getByText("오늘 열 수 있는 풀이를 모두 열었어요").first()).toBeVisible();
+      await expect(page.getByText("첫 이용 무료 풀이를 이미 열었어요").first()).toBeVisible();
     },
   },
   {

@@ -34,7 +34,7 @@ D1 queries: `npx wrangler d1 execute starlog --remote --command "<SQL>"`.
 
 `npx wrangler secret put STARLOG_PAYMENTS` → `owner`. While a production deploy runs test keys, sales, sign-up and login stay owner-only even if STARLOG_PAYMENTS says `on` (a test payment charges nobody). On the owner-pass browser:
 
-- [ ] result page shows `로그인하고 전체 풀이 보기`; another browser still shows the 오픈 기념 sheet
+- [ ] result page shows `로그인하고 전체 풀이 보기`; another browser still shows the 첫 이용 무료 sheet (tarot; saju offers no free reading)
 - [ ] Kakao login (real) → back with login=ok; 내 정보 shows the nickname and 가입 선물 · 타로 전체 풀이 무료 with its last day
 - [ ] the first account request wrote `meta.account_secret_check` (`SELECT key FROM meta`)
 - [ ] `가입 선물로 무료로 보기` opens the tarot reading; 내 정보 says 가입 선물 사용했어요; the reading shows on another device after login; a saju sheet offers only `4,900원 결제하고 보기`
@@ -78,7 +78,7 @@ Reviewer login (Toss refuses Kakao/Google test accounts):
 ## 6. Switch on
 
 After LEGAL_EFFECTIVE_DATE (lib/legal.ts; the changed terms are announced 7 days before):
-`npx wrangler secret put STARLOG_PAYMENTS` → `on`. The 오픈 기념 free daily full reading ends; the signup gift starts.
+`npx wrangler secret put STARLOG_PAYMENTS` → `on`. 첫 이용 무료 (each device's one free tarot full reading) ends; the signup gift starts. Saju full readings were never free after 2026-10-14.
 For the first 24 h, run the checks in section 7 every two hours.
 
 ## 7. Checks
@@ -113,7 +113,7 @@ For the first 24 h, run the checks in section 7 every two hours.
 
 ## 9. Roll back
 
-`npx wrangler secret put STARLOG_PAYMENTS` → `paused`. New sales, new accounts and gifts stop, and the 오픈 기념 reading comes back. Existing accounts can still log in to open, refund or delete what they hold. Use `off` only before launch: it also closes login.
+`npx wrangler secret put STARLOG_PAYMENTS` → `paused`. New sales, new accounts and gifts stop, and 첫 이용 무료 (tarot) comes back. Existing accounts can still log in to open, refund or delete what they hold. Use `off` only before launch: it also closes login.
 
 ## 10. Do not
 

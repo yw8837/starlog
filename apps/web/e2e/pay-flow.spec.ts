@@ -2,8 +2,8 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 /**
  * Accounts and payments in owner mode (STARLOG_PAYMENTS=owner, mock Kakao and mock Toss, local D1):
- * the owner pass opens sales on this browser; everyone else keeps today's 오픈 기념 sheet, which the
- * other specs cover. A mock Kakao login without mockUser is a fresh account each time, so every run
+ * the owner pass opens sales on this browser; everyone else keeps the sheet of 첫 이용 무료 (tarot; saju
+ * offers no free reading), which the other specs cover. A mock Kakao login without mockUser is a fresh account each time, so every run
  * starts with the gift. The question steps are the ones tarot-flow.spec.ts uses (chips toggle, the
  * situation step comes after 다음).
  */
@@ -113,7 +113,7 @@ test("a browser without the owner pass keeps today's sheet in owner mode", async
   await ownAddress(page, info);
   await toResult(page);
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
-  await expect(sheet).toContainText(/오픈 기념으로 하루 .+ 무료예요/);
+  await expect(sheet).toContainText("처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요");
   await expect(sheet.getByRole("link")).toHaveCount(0);
 });
 

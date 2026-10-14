@@ -101,9 +101,9 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(sheet).toContainText("풀이 전체 · 약 2,000자");
   await expect(sheet).toContainText("이어서 물어보기 3번");
   await expect(sheet).toContainText("이 기기에 계속 보관");
-  await expect(sheet).toContainText(/오픈 기념으로 하루 .+ 무료예요/);
+  await expect(sheet).toContainText("처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요");
   await expect(sheet.getByRole("link")).toHaveCount(0);
-  const unlock = sheet.getByRole("button", { name: /^전체 풀이 보기 · 오늘 \d+번 남았어요$/ });
+  const unlock = sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ });
   await expect(unlock).toBeVisible();
   await expect(page.getByText("AI가 만든 풀이예요 · 재미와 자기 성찰을 위한 참고용이에요")).toBeVisible();
   // A money question never gets the relationship sample.
@@ -155,22 +155,23 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(page).toHaveURL(readingUrl, { timeout: NAV });
 });
 
-test("the daily limit: opening past it says when it resets, no reading is shown", async ({ page }, info) => {
+test("첫 이용 무료 used: opening again says so with no reset time, no reading is shown", async ({ page }, info) => {
   await ownAddress(page, info);
   await buildMoneyQuestion(page, info);
   await drawThree(page);
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
   await expect(sheet).toBeVisible({ timeout: 30_000 });
+  // What the server answers a device whose free first reading is spent (lib/api/http.ts checkFirstFree).
   await page.route("**/api/tarot/reading", (route) =>
-    route.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ code: "BETA_LIMIT", message: "…", resetsAt: "2099-01-01T15:00:00.000Z" }) }),
+    route.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ code: "BETA_LIMIT", scope: "first", message: "…" }) }),
   );
   await sheet.getByRole("button", { name: /전체 풀이 보기/ }).click();
-  await expect(sheet).toContainText("오늘 열 수 있는 풀이를 모두 열었어요");
-  await expect(sheet).toContainText("다시 열려요");
-  await expect(page.getByRole("status").filter({ hasText: "오늘 열 수 있는 풀이를 모두 열었어요" })).toBeAttached();
+  await expect(sheet).toContainText("첫 이용 무료 풀이를 이미 열었어요");
+  await expect(sheet).not.toContainText("다시 열려요");
+  await expect(page.getByRole("status").filter({ hasText: "첫 이용 무료 풀이를 이미 열었어요" })).toBeAttached();
   await expect(page).toHaveURL(/\/tarot\/result/);
-  // The device now knows the day is used up.
-  await expect(sheet.getByRole("button", { name: "전체 풀이 보기" })).toBeVisible();
+  // The device now knows its free first reading is used: the button stays off, for good.
+  await expect(sheet.getByRole("button", { name: "전체 풀이 보기", exact: true })).toBeDisabled();
   await sheet.scrollIntoViewIfNeeded();
   await shot(page, info, "05-limit");
 });

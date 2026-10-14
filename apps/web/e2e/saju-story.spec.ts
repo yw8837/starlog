@@ -13,6 +13,9 @@ const NAV = 30_000;
 
 const SHOTS = "test-results/saju-story";
 
+/** The owner pass of the server under test (scripts/ops/gate3-lite.sh passes the preview's; `pnpm e2e` uses this default). */
+const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
+
 async function shot(page: Page, info: TestInfo, name: string) {
   await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }); // dev-only overlay badge
   await page.evaluate(() => document.fonts.ready);
@@ -151,7 +154,14 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
   expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
   await shot(page, info, "05-saju-chart-known-time");
 
-  await sheet.getByRole("button", { name: /^전체 풀이 보기 · 오늘 \d+번 남았어요$/ }).click();
+  // No free saju full reading (owner 2026-10-14): a visitor is told it opens with a payment, and nothing opens.
+  await expect(sheet).toContainText("전체 풀이는 결제하고 열 수 있어요");
+  await expect(sheet.getByRole("button", { name: "전체 풀이 보기", exact: true })).toBeDisabled();
+  await expect(sheet).not.toContainText(/첫 이용|처음 한 번|무료로 열|남았어요/);
+  // The owner pass opens it.
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
+  await page.reload();
+  await sheet.getByRole("button", { name: "운영자로 무료 열기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: 90_000 });
   await expect(page.getByText("사주 기록 ·", { exact: false })).toBeVisible();
   const sections = page.locator("#chapter-reading article");
@@ -272,7 +282,7 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
 
   await page.goto("/me");
   await expect(page.getByRole("heading", { level: 1, name: "내 정보" })).toBeVisible();
-  await expect(page.getByText(/^오픈 기념으로 하루 .+ 전체 풀이를 무료로 열어 드려요$/)).toBeVisible();
+  await expect(page.getByText("처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요", { exact: true })).toBeVisible();
   await expect(page.getByText("아직 입력하지 않았어요")).toBeVisible();
   await expect(page.getByRole("link", { name: "입력하기" })).toHaveAttribute("href", "/saju/new");
   await expect(page.getByRole("button", { name: "달빛 충전하기" })).toHaveCount(0);
