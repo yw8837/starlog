@@ -26,10 +26,13 @@ describe("policies for the paid launch", () => {
     expect(page).not.toMatch(/켈틱|셀틱|celtic/i);
   });
 
-  it("/refund: 제공 means saved to the account; unopened is refundable for 7 KST days after the payment, failures on our side whenever, with a fallback", () => {
+  it("/refund: 제공 starts when the reading begins on screen; one left halfway reopens (3 times) but is not refunded; unopened is refundable for 7 KST days, failures on our side whenever", () => {
     const page = text(<RefundPage />);
     expect(page).toContain("제17조 제2항 제5호");
-    expect(page).toContain("완성되어 계정에 저장되면");
+    expect(page).toContain("화면에 나오기 시작하면 제공이 시작된 것으로 봐요");
+    expect(page).toContain("3번까지 다시 열어 끝까지 받을 수 있어요");
+    expect(page).toContain("이미 제공이 시작된 풀이라 이때는 환불되지 않아요");
+    expect(page).not.toContain("완성되어 계정에 저장되면");
     expect(page).toContain("결제일로부터 7일 안에 전액 환불");
     expect(page).toContain("7일째 되는 날 밤 12시(한국 시간)까지");
     expect(page).toContain("10월 6일에 결제했다면 10월 13일까지");
@@ -46,6 +49,14 @@ describe("policies for the paid launch", () => {
     // A gift reading that fails gives the gift back; the gift itself is never refunded.
     expect(page).toContain("가입 선물로 열던 풀이라면 가입 선물도 그대로 돌려 드려요");
     expect(page).toContain("가입 선물(타로 전체 풀이 1번 무료)은 무료로 드리는 혜택이라 환불 대상이 아니에요");
+  });
+
+  it("/terms and /pricing: 제공 starts when the reading begins on screen; one left halfway reopens but is not refunded", () => {
+    const terms = text(<TermsPage />);
+    expect(terms).toContain("결제한 풀이는 화면에 나오기 시작한 때 제공이 시작된 것으로 봅니다");
+    expect(terms).toContain("3번까지 다시 열어 받을 수 있고, 환불 대상이 아닙니다");
+    expect(terms).not.toContain("완성되어 계정에 저장된 때");
+    expect(text(<PricingPage />)).toContain("결제한 풀이는 화면에 나오기 시작하면 청약철회가 제한돼요");
   });
 
   it("/terms: Kakao or Google members, item-by-item payment, the signup gift clause, minors, deletion, no model name", () => {

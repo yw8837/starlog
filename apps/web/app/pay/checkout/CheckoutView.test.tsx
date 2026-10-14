@@ -49,6 +49,8 @@ describe("CheckoutView", () => {
     const actions = (await screen.findByRole("button", { name: "2,900원 결제하기" })).closest("div")!;
     expect(actions.textContent).toContain("서비스 제공 기간: 결제 즉시 · 결제하면 바로 풀이가 열리는 디지털 콘텐츠예요.");
     expect(actions.textContent).toContain("열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요.");
+    expect(screen.getByText(/풀이가 나오는 동안 화면을 닫아도 3번까지 다시 열어 받을 수 있어요/)).toBeTruthy();
+    expect(screen.getByText(/화면에 나오기 시작하면 청약철회가 제한돼요/)).toBeTruthy();
     expect(within(actions).getByRole("link", { name: "환불 정책" }).getAttribute("href")).toBe("/refund");
   });
 
