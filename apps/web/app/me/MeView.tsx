@@ -13,7 +13,7 @@ import { times } from "@/lib/helpGuide";
 import { clearTeasers } from "@/lib/reading/teaserCache";
 import { clearSajuProfile, useSajuProfile } from "@/lib/sajuFlow";
 import { profileSummary } from "@/lib/sajuForm";
-import { useRemainingToday } from "@/lib/storage/betaUsage";
+import { useRemainingFree } from "@/lib/storage/betaUsage";
 import { clearChapters, useChapters } from "@/lib/storage/chapters";
 import { clearDaily } from "@/lib/storage/daily";
 import { forgetAccountOnDevice, useAccountSync } from "@/lib/storage/sync";
@@ -45,7 +45,7 @@ function Soon({ children }: { children: string }) {
 
 /**
  * 내 정보: the account when logged in (AccountPanel), the way to /login (Kakao or Google) while sales
- * are open on this device, otherwise the 오픈 기념 free count; the saju profile kept on this device
+ * are open on this device, otherwise 첫 이용 무료 (used on this device or not); the saju profile kept on this device
  * (with 고치기), the card design, the menu, and erasing everything this device keeps. A logged-in
  * tab pulls the account's readings.
  */
@@ -54,7 +54,7 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
   const [notice, setNotice] = useState(status ?? "");
   const { profile } = useSajuProfile();
   const chapters = useChapters();
-  const remaining = useRemainingToday();
+  const remaining = useRemainingFree();
   const account = useAccount();
   useAccountSync(account);
 
@@ -98,14 +98,10 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
           <>
             <section className={s.beta} aria-labelledby="beta-title">
               <h2 id="beta-title" className={s.betaTitle}>
-                {`오픈 기념으로 하루 ${times(SITE.beta.fullPerDay)} 전체 풀이를 무료로 열어 드려요`}
+                {`처음 ${times(SITE.beta.firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요`}
               </h2>
               <p className={s.betaText}>
-                {remaining === undefined
-                  ? " "
-                  : remaining > 0
-                    ? `오늘 ${remaining}번 더 열 수 있어요 · 한국 시간 0시에 다시 채워져요`
-                    : "오늘은 모두 열었어요 · 한국 시간 0시에 다시 채워져요"}
+                {remaining === undefined ? " " : remaining > 0 ? "아직 무료로 열 수 있어요" : "이 기기에서는 이미 무료로 열었어요"}
               </p>
             </section>
             {account?.login ? (

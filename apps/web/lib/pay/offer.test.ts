@@ -11,14 +11,22 @@ const account = (over: Partial<AccountState> = {}): AccountState => ({ payments:
 const user = (over: Partial<AccountUser> = {}): AccountUser => ({ nickname: "별", gift: null, unused: [], opening: [], ...over });
 
 describe("unlock offer", () => {
-  it("keeps the 오픈 기념 reading while sales are closed for this device and nothing is held", () => {
+  it("keeps 첫 이용 무료 for tarot while sales are closed for this device and nothing is held", () => {
     expect(unlockOffer(undefined, tarot)).toEqual({ mode: "opening", login: false });
     expect(unlockOffer(null, tarot)).toEqual({ mode: "opening", login: false });
     expect(unlockOffer(account({ payments: false, login: false }), tarot)).toEqual({ mode: "opening", login: false });
   });
 
+  it("offers no free saju reading while sales are closed for this device: nothing to open or pay here", () => {
+    expect(unlockOffer(undefined, saju)).toEqual({ mode: "closed", login: false });
+    expect(unlockOffer(null, saju)).toEqual({ mode: "closed", login: false });
+    expect(unlockOffer(account({ payments: false, login: false }), saju)).toEqual({ mode: "closed", login: false });
+    expect(unlockOffer(account({ payments: false, user: user() }), saju)).toEqual({ mode: "closed", login: false });
+  });
+
   it("while sales are paused, offers buyers a quiet way to log in", () => {
     expect(unlockOffer(account({ payments: false, login: true }), tarot)).toEqual({ mode: "opening", login: true });
+    expect(unlockOffer(account({ payments: false, login: true }), saju)).toEqual({ mode: "closed", login: true });
   });
 
   it("asks a guest to log in once sales are open, naming the gift for tarot only", () => {
@@ -35,7 +43,7 @@ describe("unlock offer", () => {
 
   it("never offers the gift for saju: paying is the only way", () => {
     expect(unlockOffer(account({ user: user({ gift: GIFT }) }), saju)).toEqual({ mode: "pay", priceKrw: 4900 });
-    expect(unlockOffer(account({ payments: false, user: user({ gift: GIFT }) }), saju)).toEqual({ mode: "opening", login: false });
+    expect(unlockOffer(account({ payments: false, user: user({ gift: GIFT }) }), saju)).toEqual({ mode: "closed", login: false });
     expect(unlockOffer(account({ user: user({ gift: GIFT, unused: [{ orderId: "o1", productId: "saju" }] }) }), saju)).toEqual({ mode: "open-paid", orderId: "o1" });
   });
 

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SITE } from "@/lib/config";
 import type { DailyData, TarotReadingData } from "@/lib/reading/types";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { BETA_USAGE_KEY, countFullReading, markDayUsedUp, remainingToday, useRemainingToday } from "./betaUsage";
+import { BETA_USAGE_KEY, clearBetaUsage, countFullReading, markFreeUsedUp, remainingFree, useRemainingFree } from "./betaUsage";
 import {
   CHAPTERS_KEY,
   answerCheckin,
@@ -232,16 +232,28 @@ describe("오늘의 한 장 cache by KST day", () => {
   });
 });
 
-describe("beta count shown on the unlock", () => {
-  it("counts opened readings per KST day and resets the next day", () => {
-    const perDay = SITE.beta.fullPerDay;
-    const { result } = renderHook(() => useRemainingToday(NOW));
-    expect(result.current).toBe(perDay);
-    act(() => countFullReading(NOW));
-    expect(result.current).toBe(Math.max(0, perDay - 1));
-    act(() => markDayUsedUp(NOW));
+describe("첫 이용 무료 shown on the unlock", () => {
+  afterEach(() => clearBetaUsage());
+
+  it("counts the free readings this device opened for good: no reset the next KST day", () => {
+    const free = SITE.beta.firstFreeTarot;
+    const { result } = renderHook(() => useRemainingFree());
+    expect(result.current).toBe(free);
+    act(() => countFullReading());
+    expect(result.current).toBe(Math.max(0, free - 1));
+    act(() => markFreeUsedUp());
     expect(result.current).toBe(0);
-    expect(remainingToday(JSON.parse(localStorage.getItem(BETA_USAGE_KEY)!), NOW + DAY)).toBe(perDay);
+    // Kept with no day: nothing refills it at KST midnight.
+    const stored = JSON.parse(localStorage.getItem(BETA_USAGE_KEY)!);
+    expect(stored).not.toHaveProperty("day");
+    expect(remainingFree(stored)).toBe(0);
+  });
+
+  it("ignores the old daily count, so a device that used a day's free reading before still sees its first one", () => {
+    localStorage.setItem("starlog.beta-usage", JSON.stringify({ day: "2026-10-13", full: 1 }));
+    expect(BETA_USAGE_KEY).not.toBe("starlog.beta-usage");
+    const { result } = renderHook(() => useRemainingFree());
+    expect(result.current).toBe(SITE.beta.firstFreeTarot);
   });
 });
 

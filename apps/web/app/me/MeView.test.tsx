@@ -3,6 +3,7 @@ import { cleanup, render, screen, waitFor, within } from "@testing-library/react
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
+import { clearBetaUsage, markFreeUsedUp } from "@/lib/storage/betaUsage";
 import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
 import { MeView } from "./MeView";
 
@@ -73,6 +74,23 @@ describe("MeView logged out while sales are open", () => {
     render(<MeView status={null} />);
     expect((await screen.findByRole("link", { name: "로그인하기" })).getAttribute("href")).toBe("/login?next=%2Fme");
     expect(screen.queryByText("카카오로 로그인")).toBeNull();
+  });
+});
+
+describe("MeView logged out while sales are closed (첫 이용 무료)", () => {
+  afterEach(() => clearBetaUsage());
+
+  it("names the free first tarot reading and whether this device has used it, with no daily refill", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: false, login: false, owner: false, user: null })));
+    render(<MeView status={null} />);
+    expect(await screen.findByRole("heading", { name: "처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요" })).toBeTruthy();
+    expect(screen.getByText("아직 무료로 열 수 있어요")).toBeTruthy();
+    cleanup();
+    resetAccountForTests();
+    markFreeUsedUp();
+    render(<MeView status={null} />);
+    expect(await screen.findByText("이 기기에서는 이미 무료로 열었어요")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/오픈 기념|다시 채워져요/);
   });
 });
 

@@ -23,7 +23,8 @@ describe("policies match what the service does", () => {
 
   it("privacy: lists every cookie, the browser storage, the KV records and Kakao sharing", () => {
     const text = textOf(PrivacyPage);
-    for (const cookie of ["sl_q", "sl_daily", "sl_owner"]) expect(text).toContain(cookie);
+    for (const cookie of ["sl_q", "sl_first", "sl_daily", "sl_owner"]) expect(text).toContain(cookie);
+    expect(text).toContain("이 기기에서 첫 이용 무료(타로 전체 풀이 1회)를 썼는지 기록해 한 번만 드리는 데 씁니다. 1년 뒤 만료됩니다.");
     expect(text).toContain("로컬 저장소");
     expect(text).toContain("세션 저장소");
     // What the app does: it drops the ones past 30 days when it opens (RouteTracker), it does not promise they are gone sooner.
@@ -62,7 +63,7 @@ describe("policies match what the service does", () => {
     const text = textOf(RefundPage);
     expect(text).toContain("제17조 제6항");
     expect(text).toContain("시행령 제21조의2");
-    expect(text).toContain("오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요");
+    expect(text).toContain("첫 이용 무료 풀이는 결제가 없어 환불 대상이 아니에요");
     expect(text).toContain("자동 품질 검사 탈락");
   });
 });

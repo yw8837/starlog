@@ -59,7 +59,7 @@ export const times = (n: number) => (["한 번", "두 번", "세 번"][n - 1] ??
 
 export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   const { followUps, approxChars } = site.reading;
-  const { fullPerDay, teaserPerDay } = site.beta;
+  const { firstFreeTarot, teaserPerDay } = site.beta;
   // Widened to number: SITE is `as const`, and literal prices that differ fail the comparison below.
   const { tarotStandardKrw, sajuStandardKrw }: { tarotStandardKrw: number; sajuStandardKrw: number } = site.price;
   // 주제별 사주 (saju-topics spec §5.4, owner cut §0): the 운 help from the `on` build only.
@@ -306,10 +306,10 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
         {
           id: "beta",
           icon: "gift",
-          title: "오픈 기념 무료",
-          sub: `전체 풀이 하루 ${times(fullPerDay)}`,
-          body: `오픈 기념으로 타로와 사주 전체 풀이를 합쳐 하루 ${times(fullPerDay)} 무료로 열어 드려요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 볼 수 있고, 모두 한국 시간 0시에 다시 채워져요.`,
-          tip: "오늘 남은 횟수는 전체 풀이 보기 버튼과 내 정보에서 볼 수 있어요.",
+          title: "첫 이용 무료",
+          sub: `타로 전체 풀이 처음 ${times(firstFreeTarot)}`,
+          body: `처음 ${times(firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요. 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 볼 수 있고, 한국 시간 0시에 다시 채워져요.`,
+          tip: "아직 무료로 열 수 있는지는 전체 풀이 보기 버튼과 내 정보에서 볼 수 있어요.",
         },
         {
           id: "daily-free",

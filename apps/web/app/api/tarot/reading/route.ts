@@ -1,5 +1,5 @@
 import { generateTarotReading } from "@/lib/ai/generate";
-import { fullReadingLimit, openGate, spendCookies } from "@/lib/api/http";
+import { firstFreeCookies, fullReadingLimit, openGate } from "@/lib/api/http";
 import { respondGeneration } from "@/lib/api/stream";
 import { tarotContextFrom } from "@/lib/api/tarotRequest";
 import { planUnlock, settlementFor } from "@/lib/api/unlock";
@@ -9,7 +9,7 @@ import { issueChapter } from "@/lib/security/chapterToken";
 /**
  * POST {drawToken, input, unlock?} → {reading, chapterToken, readingId?}: the full reading for the
  * server-fixed cards.
- * - 오픈 기념 (no `unlock`): spends one daily unlock only after a validated generation.
+ * - 첫 이용 무료 (no `unlock`): spends the device's free first reading only after a validated generation.
  * - paid / the signup gift: reserves the purchase or the gift first, then saves the reading to the
  *   account and spends it before the client sees it. Any failure gives it back (spec 5.4).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
@@ -32,7 +32,7 @@ export async function POST(request: Request): Promise<Response> {
         { kind: "tarot", templateId: parsed.draw.templateId, input: parsed.input, cards: parsed.draw.cards.map((c) => [c.cardId, c.orientation]) },
         reading, [], gate.secret, gate.now,
       );
-      return { body: { reading, chapterToken }, cookies: plan.quota ? await spendCookies(gate, plan.quota, "full") : [] };
+      return { body: { reading, chapterToken }, cookies: plan.first !== null ? await firstFreeCookies(gate, plan.first) : [] };
     },
     {
       gate,

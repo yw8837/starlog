@@ -5,7 +5,8 @@ import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import {
-  QUOTA_COOKIE, QUOTA_COOKIE_MAX_AGE, hasQuota, ipLimits, nextKstMidnight, quotaLimits, readQuota, spendQuota, type QuotaKind, type QuotaState,
+  FIRST_FREE_COOKIE, FIRST_FREE_COOKIE_MAX_AGE, QUOTA_COOKIE, QUOTA_COOKIE_MAX_AGE, hasQuota, ipLimits, nextKstMidnight, quotaLimits, readFirstFree,
+  readQuota, spendFirstFree, spendQuota, type QuotaKind, type QuotaState,
 } from "@/lib/security/quota";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
@@ -269,8 +270,8 @@ export async function fullReadingLimit(request: Request, gate: Gate): Promise<Re
 /** Shown for a per-network limit (many phones can share one carrier IP); the UI may replace it by `scope`. */
 const NETWORK_LIMIT_MESSAGE = "지금 쓰는 인터넷(와이파이·통신사)에서 오늘 열 수 있는 풀이를 모두 썼어요. 자정에 다시 열려요.";
 
-/** This device's daily free full reading is used (the launch offer: one a day, resets at 0시 KST). */
-const FULL_LIMIT_MESSAGE = "오늘의 오픈 기념 무료 풀이를 이미 받았어요. 자정에 다시 열려요.";
+/** This device has used its free first tarot reading (첫 이용 무료, owner 2026-10-14): it does not come back at midnight. */
+const FIRST_FREE_USED_MESSAGE = "이 기기에서는 첫 이용 무료 풀이를 이미 받았어요.";
 
 /** Shown when the day's budget is used up (the UI may replace it by `reason`). */
 const BUDGET_MESSAGE = "오늘 준비한 풀이가 모두 나갔어요. 자정에 다시 열려요.";
@@ -315,9 +316,28 @@ export async function checkQuota(gate: Gate, kind: QuotaKind, extra: Record<stri
   if (limited) return limited;
   const quota = await readQuota(gate.cookies[QUOTA_COOKIE], gate.secret, gate.now);
   if (!gate.owner && !hasQuota(quota, kind, quotaLimits())) {
-    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, ...(kind === "full" ? { message: FULL_LIMIT_MESSAGE } : {}) });
+    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra });
   }
   return quota;
+}
+
+/**
+ * 첫 이용 무료: the free tarot full readings this device has used, or the error when it may not open
+ * one: the server limits (checkServerLimits: network caps, the day's budget, the network's budget
+ * share), then this device's `sl_first` cookie, which never resets (429 `scope: "first"`). The owner
+ * pass skips both counters.
+ */
+export async function checkFirstFree(gate: Gate): Promise<number | Response> {
+  const limited = await checkServerLimits(gate, "full");
+  if (limited) return limited;
+  const used = await readFirstFree(gate.cookies[FIRST_FREE_COOKIE], gate.secret);
+  if (!gate.owner && used >= quotaLimits().full) return errorResponse("BETA_LIMIT", { scope: "first", message: FIRST_FREE_USED_MESSAGE });
+  return used;
+}
+
+/** The cookie that spends the free first reading; set only after a validated generation. None for the owner. */
+export async function firstFreeCookies(gate: Gate, used: number): Promise<CookieSpec[]> {
+  return gate.owner ? [] : [{ name: FIRST_FREE_COOKIE, value: await spendFirstFree(used, gate.secret), maxAge: FIRST_FREE_COOKIE_MAX_AGE }];
 }
 
 /** The cookie that spends one `kind`; set only after a validated generation. None for the owner. */

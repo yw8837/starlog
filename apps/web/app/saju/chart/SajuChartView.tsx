@@ -34,7 +34,6 @@ import { chapterRequestFields, sajuContextBody, sajuStatusBody, sajuTeaserKey, u
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE, sajuTopicsVisible, topicLabel } from "@/lib/sajuTopics";
-import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storage/betaUsage";
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
@@ -62,8 +61,9 @@ const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID
  * is written once (one of the day's teasers). Opening writes the full reading of the one on screen, saves
  * it on this device and goes to it. With nothing saved, an example chart asks for the user's own birth data.
  *
- * The sheet offers what this device may use (lib/pay/offer.ts): the 오픈 기념 reading, a login, a
- * purchase or paying; never the signup gift, which opens tarot only. `autoUnlock` (?unlock=paid after
+ * The sheet offers what this device may use (lib/pay/offer.ts): a login, a purchase or paying; never a
+ * free full reading (첫 이용 무료 and the signup gift open tarot only), so while sales are closed here
+ * nothing opens but the owner pass. `autoUnlock` (?unlock=paid after
  * checkout) opens the 운 that came back with it (`initialTopic`, from ?topic=) once.
  */
 export function SajuChartView({
@@ -75,7 +75,6 @@ export function SajuChartView({
   const { form, ready, saved, result } = useSajuChart();
   const context = useSajuContext();
   const chapters = useChapters();
-  const remaining = useRemainingToday();
   const account = useAccount();
   const locale = useLocale();
   const topicsOpen = sajuTopicsVisible({ owner: account?.owner === true, locale });
@@ -221,17 +220,14 @@ export function SajuChartView({
     if (!res) return;
     if (!res.ok) {
       const code = res.error.code;
-      if (code === "BETA_LIMIT") markDayUsedUp();
       if (code === "LOGIN_REQUIRED") router.push(loginHref(returnFor(topic)));
       if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, held, form, topic, "cut");
       else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), held, form, topic, "refused");
       else if (code === "NO_CREDIT" || code === "PAYMENT_REQUIRED") void refreshAccount();
       return;
     }
-    if (chosen === "opening") countFullReading();
-    else void refreshAccount();
+    void refreshAccount();
     const status = sajuStatusBody(context);
-    // Kept on this device first; only then is the quota cookie set.
     const { chapter } = saveChapter({
       kind: "saju",
       birth: form,
@@ -242,7 +238,6 @@ export function SajuChartView({
       chapterToken: res.data.chapterToken,
       ...(res.data.readingId ? { serverId: res.data.readingId } : {}),
     });
-    if (res.commit) void commitQuota(res.commit);
     router.push(`/chapter/${chapter.serverId ?? chapter.id}`);
   };
 
@@ -335,7 +330,6 @@ export function SajuChartView({
           topicLabel={topic !== "overall" ? topicLabel(topic) : undefined}
           scopeLine={topic !== "overall" ? UNLOCK_SCOPE_LINE : undefined}
           offer={offer}
-          remaining={remaining}
           onUnlock={(chosen) => void unlock(chosen)}
           loginHref={loginHref(returnFor(topic))}
           payHref={checkoutHref("saju", returnFor(topic))}

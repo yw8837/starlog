@@ -5,6 +5,7 @@ import { resetAccountForTests } from "@/lib/account/client";
 import { FLOW_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
 import { saveTeaser } from "@/lib/reading/teaserCache";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
+import { clearBetaUsage } from "@/lib/storage/betaUsage";
 import { clearChapters, listChapters } from "@/lib/storage/chapters";
 import { FreeResult } from "./FreeResult";
 
@@ -225,6 +226,38 @@ describe("FreeResult after a reading opens", () => {
     fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
     expect(listChapters()).toMatchObject([{ serverId: ID }]);
+  });
+});
+
+describe("FreeResult and 첫 이용 무료 (the free first tarot reading)", () => {
+  const GUEST = () => Response.json({ payments: false, login: false, owner: false, user: null });
+  afterEach(() => clearBetaUsage());
+
+  it("opens it with the one button that names it, and the device then knows it is used", async () => {
+    seed();
+    stub({ me: [GUEST], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ }));
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
+    cleanup();
+    seed();
+    render(<FreeResult instant />);
+    expect(((await screen.findByRole("button", { name: "전체 풀이 보기" })) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("이 기기에서는 첫 이용 무료 풀이를 이미 열었어요")).toBeTruthy();
+  });
+
+  it("takes the server's word that it is used, but never a network's day limit for it", async () => {
+    seed();
+    let answer = Response.json({ code: "BETA_LIMIT", scope: "network", resetsAt: "2099-01-01T15:00:00.000Z", message: "x" }, { status: 429 });
+    stub({ me: [GUEST], reading: () => answer });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ }));
+    expect(await screen.findAllByText("같은 네트워크(와이파이·회사·학교)에서 오늘 열 수 있는 횟수를 다 썼어요")).not.toHaveLength(0);
+    answer = Response.json({ code: "BETA_LIMIT", scope: "first", message: "x" }, { status: 429 });
+    fireEvent.click(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ }));
+    expect(await screen.findAllByText("첫 이용 무료 풀이를 이미 열었어요")).not.toHaveLength(0);
+    expect(((await screen.findByRole("button", { name: "전체 풀이 보기" })) as HTMLButtonElement).disabled).toBe(true);
+    expect(router.push).not.toHaveBeenCalled();
   });
 });
 

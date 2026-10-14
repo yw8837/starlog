@@ -92,34 +92,59 @@ describe("UnlockSheet offers", () => {
     expect(onCheck).toHaveBeenCalledTimes(1);
   });
 
-  it("while sales are paused, shows buyers a quiet login link next to the 오픈 기념 reading", () => {
+  it("while sales are paused, shows buyers a quiet login link next to 첫 이용 무료, and on the closed saju sheet", () => {
     render(<UnlockSheet {...base} remaining={1} offer={{ mode: "opening", login: true }} onUnlock={() => {}} />);
+    expect(screen.getByRole("link", { name: "결제한 풀이가 있다면 로그인" }).getAttribute("href")).toBe(base.loginHref);
+    cleanup();
+    render(<UnlockSheet {...base} kind="saju" offer={{ mode: "closed", login: true }} onUnlock={() => {}} />);
     expect(screen.getByRole("link", { name: "결제한 풀이가 있다면 로그인" }).getAttribute("href")).toBe(base.loginHref);
   });
 
-  it("without an offer it is today's 오픈 기념 sheet, unchanged, with no 베타 anywhere", () => {
+  it("without an offer it is 첫 이용 무료: one button that names it, a caption with the rule, no 베타 anywhere", () => {
     const onUnlock = vi.fn();
     const { container } = render(<UnlockSheet kind="tarot" remaining={1} onUnlock={onUnlock} />);
-    fireEvent.click(screen.getByRole("button", { name: /전체 풀이 보기/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ }));
     expect(onUnlock).toHaveBeenCalledWith("opening");
-    expect(screen.getByText(/^오픈 기념으로 하루 .+ 무료예요$/)).toBeTruthy();
-    expect(container.textContent).not.toMatch(/베타/);
+    expect(screen.getByText("처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/베타|오픈 기념|하루|0시/);
   });
 
-  it("once today's free reading is used, offers the free cards to go on with instead of only a grey button (QA-04)", () => {
-    for (const kind of ["tarot", "saju"] as const) {
-      render(<UnlockSheet kind={kind} remaining={0} onUnlock={() => {}} />);
-      expect(screen.getByText("오늘 무료로 열 수 있는 풀이를 모두 열었어요 · 한국 시간 0시에 다시 채워져요")).toBeTruthy();
-      expect((screen.getByRole("button", { name: "전체 풀이 보기" }) as HTMLButtonElement).disabled).toBe(true);
-      expect(screen.getByRole("link", { name: "지금의 한 장 · 무제한 무료" }).getAttribute("href")).toBe("/now");
-      expect(screen.getByRole("link", { name: "오늘의 한 장" }).getAttribute("href")).toBe("/today");
-      cleanup();
-    }
+  it("once the free first reading is used, says so for good and offers the free cards to go on with (QA-04)", () => {
+    const { container } = render(<UnlockSheet kind="tarot" remaining={0} onUnlock={() => {}} />);
+    expect(screen.getByText("이 기기에서는 첫 이용 무료 풀이를 이미 열었어요")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "전체 풀이 보기" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("link", { name: "지금의 한 장 · 무제한 무료" }).getAttribute("href")).toBe("/now");
+    expect(screen.getByRole("link", { name: "오늘의 한 장" }).getAttribute("href")).toBe("/today");
+    expect(container.textContent).not.toMatch(/0시|다시 채워져요/);
   });
 
-  it("offers them only when the day is used up", () => {
+  it("offers them only when the free first reading is used", () => {
     render(<UnlockSheet kind="tarot" remaining={1} onUnlock={() => {}} />);
     expect(screen.queryByRole("link", { name: /지금의 한 장|오늘의 한 장/ })).toBeNull();
+  });
+
+  it("saju while sales are closed here: no free reading offered or promised, only that it opens with a payment", () => {
+    const onUnlock = vi.fn();
+    const { container } = render(<UnlockSheet kind="saju" offer={{ mode: "closed", login: false }} onUnlock={onUnlock} />);
+    expect(screen.getByText("전체 풀이는 결제하고 열 수 있어요")).toBeTruthy();
+    expect(screen.getByText("지금은 결제를 받지 않고 있어요")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "전체 풀이 보기" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(container.textContent).not.toMatch(/첫 이용|처음 한 번|무료로 열|오픈 기념/);
+    expect(onUnlock).not.toHaveBeenCalled();
+  });
+
+  it("lets the owner open with the pass where nothing else opens: a closed saju sheet, a used free first reading", () => {
+    const onUnlock = vi.fn();
+    render(<UnlockSheet kind="saju" owner offer={{ mode: "closed", login: false }} onUnlock={onUnlock} />);
+    fireEvent.click(screen.getByRole("button", { name: "운영자로 무료 열기" }));
+    cleanup();
+    render(<UnlockSheet kind="tarot" owner remaining={0} onUnlock={onUnlock} />);
+    fireEvent.click(screen.getByRole("button", { name: "운영자로 무료 열기" }));
+    cleanup();
+    render(<UnlockSheet kind="tarot" owner remaining={1} onUnlock={onUnlock} />);
+    expect(screen.queryByRole("button", { name: "운영자로 무료 열기" })).toBeNull();
+    expect(onUnlock.mock.calls).toEqual([["owner"], ["owner"]]);
   });
 
   it("names the 운 and says what one payment opens (주제별 사주)", () => {

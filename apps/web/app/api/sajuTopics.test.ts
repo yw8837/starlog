@@ -38,6 +38,12 @@ const C3 = golden.charts.find((c) => c.id === "C3")!.birth;
 const T0 = Date.parse("2026-10-02T03:00:00Z"); // 12:00 KST
 let ipSeq = 0;
 const fresh = () => device(`203.0.113.${100 + ++ipSeq}`);
+/** A saju full reading opens with a payment or the owner pass only (no free opening): a fresh device holding the pass. */
+async function ownerDevice() {
+  const d = fresh();
+  expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
+  return d;
+}
 const payloadOf = (token: string) => JSON.parse(Buffer.from(token.split(".")[0]!, "base64url").toString("utf8"));
 
 beforeEach(() => {
@@ -156,7 +162,7 @@ describe("/api/saju/teaser with a topic", () => {
 
 describe("/api/saju/reading with a topic", () => {
   it("opens the topic's six sections under code-owned headings, with the topic in the chapter token", async () => {
-    const res = await fresh().call(sajuReading, { birth: C3, topic: "money" });
+    const res = await (await ownerDevice()).call(sajuReading, { birth: C3, topic: "money", unlock: { method: "owner" } });
     expect(res.status).toBe(200);
     expect(res.data.reading.sections.map((s: { heading: string }) => s.heading)).toEqual(TOPIC_SECTIONS.money);
     expect(res.data.reading.observation.heading).toBe("앞으로 몇 주 · 확인해 볼 신호");
@@ -167,7 +173,7 @@ describe("/api/saju/reading with a topic", () => {
   });
 
   it("keeps 전체 흐름's token as it was: the statuses, no topic", async () => {
-    const res = await fresh().call(sajuReading, { birth: C3, loveStatus: "dating" });
+    const res = await (await ownerDevice()).call(sajuReading, { birth: C3, loveStatus: "dating", unlock: { method: "owner" } });
     expect(res.status).toBe(200);
     const payload = payloadOf(res.data.chapterToken);
     expect(payload.ctx).toMatchObject({ kind: "saju", profile: { loveStatus: "연애 중" } });
@@ -177,8 +183,8 @@ describe("/api/saju/reading with a topic", () => {
 
 describe("follow-ups on a topic chapter (spec §7.7)", () => {
   it("answers with the topic prompt, and still does after the flag is turned off", async () => {
-    const d = fresh();
-    const r = await d.call(sajuReading, { birth: C3, topic: "career" });
+    const d = await ownerDevice();
+    const r = await d.call(sajuReading, { birth: C3, topic: "career", unlock: { method: "owner" } });
     expect(r.status).toBe(200);
     vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "off");
     const spy = vi.spyOn(mockProvider, "generate");

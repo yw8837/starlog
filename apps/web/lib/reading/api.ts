@@ -70,10 +70,11 @@ export interface ApiError {
   /** REFUSED: the person may be in crisis. */
   care?: boolean;
   /**
-   * BETA_LIMIT: which count ran out — this chapter's questions, the device's day, or the day's
-   * count for the whole network (one Wi-Fi, office or school shares it).
+   * BETA_LIMIT: which count ran out — this chapter's questions, the device's day, the day's count
+   * for the whole network (one Wi-Fi, office or school shares it), or the device's free first tarot
+   * reading (첫 이용 무료, which never resets).
    */
-  scope?: "chapter" | "day" | "network";
+  scope?: "chapter" | "day" | "network" | "first";
   /** 오늘의 한 장 BETA_LIMIT: the day's card, without its text. */
   card?: { cardId: string; orientation: "upright" | "reversed" };
   /** BAD_REQUEST on saju input: the form field at fault. */
@@ -97,7 +98,7 @@ export function parseApiError(status: number, body: unknown): ApiError {
   if (typeof b.message === "string") error.message = b.message;
   if (typeof b.resetsAt === "string") error.resetsAt = b.resetsAt;
   if (b.care === true) error.care = true;
-  if (b.scope === "chapter" || b.scope === "day" || b.scope === "network") error.scope = b.scope;
+  if (b.scope === "chapter" || b.scope === "day" || b.scope === "network" || b.scope === "first") error.scope = b.scope;
   if (typeof b.field === "string") error.field = b.field;
   if (isRecord(b.card) && typeof b.card.cardId === "string" && (b.card.orientation === "upright" || b.card.orientation === "reversed")) {
     error.card = { cardId: b.card.cardId, orientation: b.card.orientation };

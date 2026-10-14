@@ -90,13 +90,13 @@ describe("policy pages", () => {
     expect(text).not.toContain("누를 때까지 보관하고, 누르면 바로 지웁니다");
   });
 
-  it("privacy: names the readings the account keeps the same way everywhere: opened while logged in with a payment or the signup gift (lib/readings/store.ts); 오픈 기념 readings stay on the device", () => {
+  it("privacy: names the readings the account keeps the same way everywhere: opened while logged in with a payment or the signup gift (lib/readings/store.ts); 첫 이용 무료 readings stay on the device", () => {
     const text = render(<PrivacyPage />).container.textContent ?? "";
-    // The broader "readings opened while logged in" would also cover an 오픈 기념 reading, which is never saved to the account.
+    // The broader "readings opened while logged in" would also cover a 첫 이용 무료 reading, which is never saved to the account.
     expect(text).not.toContain("로그인해서 연 풀이");
     const kept = "로그인해 결제하거나 가입 선물로 연 풀이";
     expect(text.split(kept).length - 1).toBeGreaterThanOrEqual(7);
-    expect(text).toContain("로그인하지 않고 연 풀이와 오픈 기념으로 연 풀이의 입력은 서버에 저장하지 않고");
+    expect(text).toContain("로그인하지 않고 연 풀이와 첫 이용 무료로 연 풀이의 입력은 서버에 저장하지 않고");
   });
 
   it("privacy: discloses 별자리 인연 (stored items, public ranking, share images, D1, retention, age) while it is live", () => {

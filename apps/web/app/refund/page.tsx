@@ -23,9 +23,9 @@ export default function RefundPage() {
       lead={`${SITE.nameKo}의 풀이는 디지털 콘텐츠예요. 결제하기 전에 알아 두면 좋은 청약철회와 환불 기준을 정리했어요.`}
     >
       <LegalNote>
-        <p className={s.noteTitle}>오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요.</p>
+        <p className={s.noteTitle}>첫 이용 무료 풀이는 결제가 없어 환불 대상이 아니에요.</p>
         <p>
-          풀이가 제대로 만들어지지 않으면 그날 무료로 열 수 있는 횟수도 차감하지 않아요. 아래 기준은 결제한 풀이에 적용해요.
+          풀이가 제대로 만들어지지 않으면 첫 이용 무료도 쓴 것으로 치지 않아요. 아래 기준은 결제한 풀이에 적용해요.
         </p>
       </LegalNote>
 

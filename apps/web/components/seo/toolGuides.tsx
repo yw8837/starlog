@@ -10,9 +10,9 @@ import { ToolGuide } from "./ToolGuide";
 const { price, reading, beta, features } = SITE;
 const guide = (slug: string) => guideHref(`/guide/${slug}`);
 
-/** The 오픈 기념 line while sales are closed for this visitor; gone once payments open (PaymentsNote reads /api/me). */
+/** The 첫 이용 무료 line (tarot only) while sales are closed for this visitor; gone once payments open (PaymentsNote reads /api/me). */
 const openingLine = (
-  <PaymentsNote>{`지금은 오픈 기념으로 타로와 사주 전체 풀이를 합쳐 하루 ${times(beta.fullPerDay)} 무료로 열 수 있어요.`}</PaymentsNote>
+  <PaymentsNote>{`지금은 처음 ${times(beta.firstFreeTarot)} 타로 전체 풀이를 무료로 열 수 있어요.`}</PaymentsNote>
 );
 
 /** /now: 지금의 한 장, the free one-card tarot (the sentences are prepared per card; no AI call). */
@@ -275,7 +275,6 @@ export function SajuGuide() {
             sajuFreeLine(features.sajuTopics, beta.teaserPerDay),
             `사주 전체 풀이는 ${won(price.sajuStandardKrw)}이에요. ${topics ? `${sajuPricingLine(features.sajuTopics)}를 열 수 있고,` : "타고난 결과 지금 지나는 10년의 흐름(대운)을 담고,"} 정통 사주는 약 ${approxCharsText(reading.approxChars.saju)}자로 풀어요.`,
             "가입 선물(타로 전체 풀이 1번)은 사주에는 쓸 수 없어요.",
-            openingLine,
           ],
         },
         {

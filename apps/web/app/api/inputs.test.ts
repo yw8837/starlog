@@ -9,7 +9,9 @@ import { validateSajuReading, validateTarotReading } from "@/lib/ai/validate";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { SAJU_BODY_MAX_BYTES, profileOf } from "@/lib/api/sajuRequest";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
+import { ownerCookie } from "@/lib/security/owner";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { signingSecret } from "@/lib/security/sign";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";
@@ -19,12 +21,16 @@ import { POST as sajuTeaser } from "./saju/teaser/route";
 
 type Handler = (request: Request) => Promise<Response>;
 
-const call = async (handler: Handler, body: unknown) => {
+const call = async (handler: Handler, body: unknown, cookie = "") => {
   const response = await handler(new Request("http://localhost/api", {
-    method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.18.0.1" }, body: JSON.stringify(body),
+    method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.18.0.1", cookie }, body: JSON.stringify(body),
   }));
   return { status: response.status, data: (await response.json()) as Record<string, any> };
 };
+
+/** A saju full reading opens with a payment or the owner pass only (no free opening): these open it with the pass. */
+const sajuFull = async (body: Record<string, unknown>) =>
+  call(sajuReading, { ...body, unlock: { method: "owner" } }, `sl_owner=${await ownerCookie(signingSecret()!, Date.now(), "owner-code-for-tests-0001")}`);
 
 const drawFor = async (templateId: string) => (await call(draw, { templateId, picks: [3, 30, 60] })).data.drawToken as string;
 
@@ -38,6 +44,7 @@ beforeEach(() => {
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("BETA_FULL_PER_DAY", "100");
   vi.stubEnv("BETA_TEASER_PER_DAY", "100");
+  vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
   resetMemoryLimiter();
   resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -128,7 +135,7 @@ describe("saju status chips (the saju side takes no free text)", () => {
 
   it("accepts the status chips on both routes and refuses unknown ones", async () => {
     expect((await call(sajuTeaser, { birth, loveStatus: "dating", workStatus: "employee" })).status).toBe(200);
-    expect((await call(sajuReading, { birth, loveStatus: "married", workStatus: "self-employed" })).status).toBe(200);
+    expect((await sajuFull({ birth, loveStatus: "married", workStatus: "self-employed" })).status).toBe(200);
     expect((await call(sajuTeaser, { birth, loveStatus: "complicated" })).status).toBe(400);
   });
 
@@ -136,7 +143,7 @@ describe("saju status chips (the saju side takes no free text)", () => {
     const spy = vi.spyOn(mockProvider, "generate");
     expect((await call(sajuTeaser, { birth, loveStatus: "dating", concern: "회사 생활이 버거워요" })).status).toBe(200);
     expect((await call(sajuTeaser, { birth, concern: "가".repeat(61) })).status).toBe(200);
-    expect((await call(sajuReading, { birth, concern: "요즘 죽고 싶다는 생각이 들어요" })).status).toBe(200);
+    expect((await sajuFull({ birth, concern: "요즘 죽고 싶다는 생각이 들어요" })).status).toBe(200);
     expect(spy).toHaveBeenCalled();
     for (const [task] of spy.mock.calls) {
       expect(task.user).not.toContain("회사 생활이 버거워요");
@@ -204,7 +211,7 @@ describe("review fixes (A2 round 2)", () => {
     expect(bytes).toBeGreaterThan(3_000); // the old cap refused this
     expect(bytes).toBeLessThanOrEqual(SAJU_BODY_MAX_BYTES);
     expect((await call(sajuTeaser, body)).status).toBe(200);
-    expect((await call(sajuReading, body)).status).toBe(200);
+    expect((await sajuFull(body)).status).toBe(200);
     expect((await call(sajuTeaser, { ...body, padding: "x".repeat(SAJU_BODY_MAX_BYTES) })).status).toBe(400);
   });
 

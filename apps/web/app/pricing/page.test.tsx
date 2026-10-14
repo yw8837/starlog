@@ -21,7 +21,7 @@ vi.mock("@/lib/config", async (importOriginal) => {
         ],
       },
       reading: { followUps: 5, approxChars: { tarot: { min: 1234, max: 1234 }, saju: { min: 5678, max: 6789 } } },
-      beta: { fullPerDay: 2, teaserPerDay: 4 },
+      beta: { firstFreeTarot: 2, teaserPerDay: 4 },
     },
   };
 });

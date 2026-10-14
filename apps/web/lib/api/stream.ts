@@ -59,7 +59,7 @@ export interface RespondOptions {
   budgetMs?: number;
   pingMs?: number;
   /**
-   * P4: saves the reading and settles its credit before the client sees it; none for 오픈 기념 readings.
+   * P4: saves the reading and settles its credit before the client sees it; none for 첫 이용 무료 readings.
    * A generation with a settlement is opened by a credit (gift, purchase) or the owner, so its cost
    * never counts toward the network's free-tier total (SEC-01).
    */

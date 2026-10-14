@@ -91,7 +91,7 @@ const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
 const giftOf = async (b: Browser) => (await me(b)).user?.gift?.status;
 
 describe("opening a full reading with credit", () => {
-  it("ends the free 오픈 기념 reading once payments are on for everyone, before any generation", async () => {
+  it("ends the free first tarot reading (첫 이용 무료) once payments are on for everyone, before any generation", async () => {
     useTestDb();
     const spy = vi.spyOn(mockProvider, "generate");
     const res = await open(browser("192.0.2.10"));
@@ -118,7 +118,7 @@ describe("opening a full reading with credit", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { readingId: string; chapterToken: string };
     expect(body.readingId).toMatch(/^[a-z0-9]{20}$/);
-    expect(res.headers.getSetCookie().some((c) => c.startsWith("sl_q="))).toBe(false);
+    expect(res.headers.getSetCookie().some((c) => c.startsWith("sl_q=") || c.startsWith("sl_first="))).toBe(false);
     expect(await giftOf(b)).toBe("used");
     expect(await one(db, "SELECT source FROM readings")).toEqual({ source: "free" });
     const { readings } = await listReadings(db, accountSecret()!, await userId(db));

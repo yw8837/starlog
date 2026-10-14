@@ -88,6 +88,7 @@ describe("no points, credits or balances anywhere a user can read", () => {
   it("on every unlock sheet, tarot and saju, in every mode", () => {
     const offers = {
       opening: [{ mode: "opening", login: false }, { mode: "opening", login: true }],
+      closed: [{ mode: "closed", login: false }, { mode: "closed", login: true }],
       login: [{ mode: "login", priceKrw: 2900, gift: true }, { mode: "login", priceKrw: 4900, gift: false }],
       "in-progress": [{ mode: "in-progress", currency: "paid" }, { mode: "in-progress", currency: "gift" }],
       "open-paid": [{ mode: "open-paid", orderId: "o1" }],
@@ -116,7 +117,7 @@ describe("no points, credits or balances anywhere a user can read", () => {
 
     account({ payments: false, login: false, owner: false, user: null });
     render(<MeView status={null} />);
-    await screen.findByText(/오픈 기념으로 하루/);
+    await screen.findByText("처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요");
     expect(document.body.textContent).not.toMatch(POINTS);
     cleanup();
     resetAccountForTests();

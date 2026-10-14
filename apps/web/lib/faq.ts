@@ -33,7 +33,7 @@ type FaqOptions = { site?: typeof SITE; ads?: boolean };
 
 export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOptions = {}): FaqGroup[] {
   const { nameKo } = site;
-  const { fullPerDay, teaserPerDay } = site.beta;
+  const { firstFreeTarot, teaserPerDay } = site.beta;
   const { approxChars } = site.reading;
   const contacts = contactChannels(site.business);
   const email = contacts.find(([label]) => label === "이메일")?.[1];
@@ -86,7 +86,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "free",
           q: `${nameKo}는 무료인가요?`,
           a: [
-            `오픈 기념으로 타로와 사주 전체 풀이를 합쳐 하루 ${times(fullPerDay)} 무료로 열어 드려요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 열 수 있고, 모두 한국 시간 0시에 다시 채워져요.`,
+            `처음 ${times(firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요(첫 이용 무료). 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 열 수 있고, 한국 시간 0시에 다시 채워져요.`,
             "지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요. 풀이 가격은 가격 안내에서 볼 수 있어요.",
           ],
           link: { href: "/pricing", label: "가격 안내" },
@@ -200,7 +200,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "refund",
           q: "환불은 어떻게 되나요?",
           a: [
-            "오픈 기념 무료 풀이는 결제가 없어 환불할 일이 생기지 않아요. 풀이가 제대로 만들어지지 않으면 오늘 열 수 있는 횟수도 줄지 않아요.",
+            "첫 이용 무료 풀이는 결제가 없어 환불할 일이 생기지 않아요. 풀이가 제대로 만들어지지 않으면 첫 이용 무료도 쓴 것으로 치지 않아요.",
             `유료 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 풀이가 만들어지지 않았거나 오류로 끝까지 나오지 않았다면 기간과 상관없이 결제한 풀이를 다시 열거나 결제 금액을 환불받을 수 있어요. 가입 선물로 열던 풀이라면 가입 선물을 그대로 돌려 드려요.`,
           ],
           link: { href: "/refund", label: "환불 정책" },

@@ -1,5 +1,5 @@
 import { generateSajuReading, generateSajuTopicReading } from "@/lib/ai/generate";
-import { fullReadingLimit, openGate, spendCookies } from "@/lib/api/http";
+import { fullReadingLimit, openGate } from "@/lib/api/http";
 import { sajuRequest } from "@/lib/api/sajuRequest";
 import { respondGeneration } from "@/lib/api/stream";
 import { planUnlock, settlementFor } from "@/lib/api/unlock";
@@ -10,7 +10,7 @@ import { issueChapter, type ChapterContext } from "@/lib/security/chapterToken";
  * POST {birth, topic?, loveStatus?, workStatus?, unlock?, display?} → {reading, chapterToken, readingId?}:
  * the full saju reading, 전체 흐름 or the 운 asked for (saju-topics spec §7.1). One payment opens one
  * reading of the topic asked for now (P4 product `saju`).
- * - 오픈 기념: one daily unlock after a validated generation.
+ * - No free opening (owner 2026-10-14): without `unlock` it is 402 PAYMENT_REQUIRED (lib/api/unlock.ts).
  * - paid: the purchase reserved, then saved and spent before the client sees it, given back on
  *   failure (spec 5.4). The signup gift opens tarot only: `free` is refused here (lib/api/unlock.ts).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
@@ -41,7 +41,7 @@ export async function POST(request: Request): Promise<Response> {
           ? (await generateSajuReading(gate.provider, parsed.facts, hooks)).data
           : (await generateSajuTopicReading(gate.provider, parsed.facts, hooks)).data;
       const chapterToken = await issueChapter(ctx, reading, [], gate.secret, gate.now);
-      return { body: { reading, chapterToken }, cookies: plan.quota ? await spendCookies(gate, plan.quota, "full") : [] };
+      return { body: { reading, chapterToken }, cookies: [] };
     },
     {
       gate,

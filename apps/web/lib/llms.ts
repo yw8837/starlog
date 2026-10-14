@@ -33,7 +33,7 @@ export function serviceFacts(site: Site = SITE): string[] {
     ...(site.features.bonds
       ? ["별자리 인연: 친구들이 별이 되어 내 별자리를 채우고, 사주로 본 인연 점수로 열두 별자리 랭킹에 올라요. 이번 주 행운 번호는 생년월일의 오행과 이번 주 카드로 고른 번호 6개를 재미로 보여 줘요."]
       : []),
-    `가격: 타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}이에요. 오픈 기념으로 타로와 사주 전체 풀이를 합쳐 하루 ${times(beta.fullPerDay)} 무료로 열 수 있고, 한국 시간 0시에 다시 채워져요.${site.features.payments ? "" : " 결제 기능은 준비 중이에요."}`,
+    `가격: 타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}이에요. 처음 ${times(beta.firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있고(첫 이용 무료), 사주 전체 풀이는 결제하고 열어요.${site.features.payments ? "" : " 결제 기능은 준비 중이에요."}`,
     `전체 풀이를 연 뒤에는 같은 풀이를 두고 이어서 물어보기를 ${site.reading.followUps}번 할 수 있어요.`,
     "하지 않는 것: 합격, 재회, 수익 같은 결과를 약속하지 않아요. 다른 사람의 마음을 사실처럼 말하지 않고, 병이나 수명, 사고를 점치지 않아요. 풀이는 재미와 자기 성찰을 위한 참고용이고, 의료·법률·투자처럼 중요한 결정은 전문가와 상의하도록 안내해요.",
   ];

@@ -10,7 +10,7 @@ import { sha256, signToken, verifyToken, type SignedPayload } from "./sign";
 
 export const COMMIT_TTL_MS = 10 * 60 * 1000;
 /** Only these cookies may be set through a commit (never the owner pass). */
-export const COMMITTABLE = new Set(["sl_q", "sl_daily"]);
+export const COMMITTABLE = new Set(["sl_q", "sl_daily", "sl_first"]);
 
 export interface CommitCookie {
   name: string;

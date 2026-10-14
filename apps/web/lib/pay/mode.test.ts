@@ -37,7 +37,7 @@ describe("payment modes", () => {
     expect([loginOpen("paused", false), loginOpen("on", false), loginOpen("owner", false), loginOpen("owner", true), loginOpen("off", true)]).toEqual([true, true, false, true, false]);
   });
 
-  it("ends the 오픈 기념 free full reading only while sales are on for everyone", () => {
+  it("ends 첫 이용 무료 (the free first tarot reading) only while sales are on for everyone", () => {
     expect([openingOffer("off"), openingOffer("owner"), openingOffer("on"), openingOffer("paused")]).toEqual([true, true, false, true]);
   });
 

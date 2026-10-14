@@ -7,16 +7,16 @@ import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
 import { openingOffer, payKeyMode, paymentsMode } from "@/lib/pay/mode";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { insertReadingStatement, newReadingId, readingExists, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
-import type { QuotaState } from "@/lib/security/quota";
-import { checkQuota, checkServerLimits, errorResponse, type Gate } from "./http";
+import { checkFirstFree, checkServerLimits, errorResponse, type Gate } from "./http";
 import type { SpendKind } from "./spend";
 import type { GenerationOutcome, Settlement } from "./stream";
 
 /**
  * How a full reading is paid for, decided before any generation starts (spec 5.4). See the table in
  * the plan's Task 10:
- * - `opening`: the 오픈 기념 daily free reading, exactly as before P4 (cookie quota, server limits,
- *   network counter). 402 PAYMENT_REQUIRED once payments are on for everyone; never for the owner.
+ * - `opening`: 첫 이용 무료, the device's one free tarot reading (owner 2026-10-14; the `sl_first`
+ *   cookie, server limits, network counter). Tarot only: saju opens with a payment or the owner pass
+ *   (402 PAYMENT_REQUIRED). 402 as well once payments are on for everyone; never for the owner.
  * - `free` (the signup gift): a standard tarot reading only (GIFT_PRODUCT; anything else is 402
  *   NO_CREDIT before anything is held). Login, the free budget and network cap (it costs us what a
  *   free reading costs), then the reservation. Using it is never gated by STARLOG_PAYMENTS.
@@ -28,8 +28,8 @@ import type { GenerationOutcome, Settlement } from "./stream";
 export interface UnlockPlan {
   method: UnlockMethod;
   productId: StandardProductId;
-  /** the device's cookie quota: the 오픈 기념 reading spends it after a validated generation */
-  quota: QuotaState | null;
+  /** 첫 이용 무료: the free readings this device used before; the route spends one after a validated generation */
+  first: number | null;
   /** RespondOptions.spend: the network day counter, charged before the start (none for a paid opening on real keys) */
   spend: SpendKind | undefined;
   /** RespondOptions.paidCost: a paid opening's model cost goes to the paid book */
@@ -38,12 +38,13 @@ export interface UnlockPlan {
 }
 
 export async function planUnlock(request: Request, gate: Gate, kind: StandardProductId, method: UnlockMethod = "opening"): Promise<UnlockPlan | Response> {
-  const base = { method, productId: kind, quota: null, spend: "full" as const, paidCost: false, save: null };
+  const base = { method, productId: kind, first: null, spend: "full" as const, paidCost: false, save: null };
   if (method === "opening") {
+    if (kind !== "tarot") return errorResponse("PAYMENT_REQUIRED");
     if (!gate.owner && !openingOffer(paymentsMode())) return errorResponse("PAYMENT_REQUIRED");
-    const quota = await checkQuota(gate, "full");
-    if (quota instanceof Response) return quota;
-    return { ...base, quota };
+    const first = await checkFirstFree(gate);
+    if (first instanceof Response) return first;
+    return { ...base, first };
   }
   if (method === "owner") {
     if (!gate.owner) return errorResponse("FORBIDDEN");
@@ -83,7 +84,7 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
   return {
     method,
     productId: kind,
-    quota: null,
+    first: null,
     spend: method === "free" || unbacked ? "full" : undefined,
     paidCost: method === "paid" && !unbacked,
     save: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: method, unlockId: reserved.unlockId },
@@ -96,7 +97,7 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
  * generation's row, so a save whose answer was lost still reaches the client. Every failure
  * releases the reservation; a client that left after the model began answering abandons it instead
  * (SEC-02: given back to reopen, at most MAX_RESTORES times, no longer refundable). Without anything
- * to save (오픈 기념, or an owner not logged in) there is no settlement.
+ * to save (첫 이용 무료, or an owner not logged in) there is no settlement.
  */
 export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string, unknown>) => ServerChapter, now: number): Settlement | undefined {
   const save = plan.save;

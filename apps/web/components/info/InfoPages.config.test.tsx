@@ -11,7 +11,7 @@ vi.mock("@/lib/config", async (importOriginal) => {
       ...actual.SITE,
       price: { ...actual.SITE.price, tarotStandardKrw: 3100, sajuStandardKrw: 4100 },
       reading: { followUps: 5, approxChars: { tarot: { min: 1234, max: 1234 }, saju: { min: 5678, max: 6789 } } },
-      beta: { ...actual.SITE.beta, fullPerDay: 2, teaserPerDay: 4 },
+      beta: { ...actual.SITE.beta, firstFreeTarot: 2, teaserPerDay: 4 },
     },
   };
 });
@@ -28,7 +28,8 @@ describe("service pages take every number from SITE", () => {
   it("/help", () => {
     const text = render(<HelpPage />).container.textContent ?? "";
     expect(text).toContain("타로 전체 풀이는 한 번에 3,100원, 사주 전체 풀이는 4,100원이에요.");
-    expect(text).toContain("전체 풀이 하루 두 번");
+    expect(text).toContain("타로 전체 풀이 처음 두 번");
+    expect(text).toContain("처음 두 번은 타로 전체 풀이를 무료로 열 수 있어요");
     expect(text).toContain("첫 풀이는 하루 4번까지");
     expect(text).toContain("이어서 물어보기 5번");
     expect(text).toContain("약 1,234자");
@@ -41,7 +42,7 @@ describe("service pages take every number from SITE", () => {
     const text = container.textContent ?? "";
     const jsonLd = container.querySelector('script[type="application/ld+json"]')?.textContent ?? "";
     for (const body of [text, jsonLd]) {
-      expect(body).toContain("하루 두 번");
+      expect(body).toContain("처음 두 번은 타로 전체 풀이를 무료로 열 수 있어요(첫 이용 무료)");
       expect(body).toContain("하루 4번까지");
       expect(body).toContain("약 1,234자");
       expect(body).toContain("약 5,678~6,789자");

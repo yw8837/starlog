@@ -70,6 +70,8 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       if (error.scope === "network") {
         return { title: "같은 네트워크(와이파이·회사·학교)에서 오늘 열 수 있는 횟수를 다 썼어요", body: resetLine(error.resetsAt, now), action: null };
       }
+      // 첫 이용 무료 is used on this device: it does not come back, so no reset line.
+      if (error.scope === "first") return { title: "첫 이용 무료 풀이를 이미 열었어요", action: null };
       if (context === "followup" && error.scope === "chapter") return { title: "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요", action: null };
       if (context === "followup") return { title: "오늘 물어볼 수 있는 질문을 모두 썼어요", body: resetLine(error.resetsAt, now), action: null };
       if (context === "daily") return { title: "오늘의 운세를 더 적을 수 없어요", body: resetLine(error.resetsAt, now), action: null };

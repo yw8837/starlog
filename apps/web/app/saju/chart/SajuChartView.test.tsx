@@ -150,7 +150,9 @@ describe("SajuChartView after a paid opening was cut off", () => {
   });
 });
 
+/** A guest while sales are closed here: the saju sheet offers no free reading (첫 이용 무료 is tarot only). */
 const OPENING_ME = () => Response.json({ payments: false, login: false, owner: false, user: null });
+const OWNER_ME = () => Response.json({ payments: false, login: false, owner: true, user: null });
 const teaserFor = (topic: SajuTopicId, title: string) => ({
   title, summary: `${title} 요약`, lockedToc: topicLockedToc(topic), topic, freshUntil: new Date(Date.now() + 86_400_000).toISOString(),
 });
@@ -233,12 +235,29 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(await screen.findByText("흙 속의 쇠")).toBeTruthy();
   });
 
-  it("opens the 운 on screen: the body carries the topic and the saved record keeps it", async () => {
+  it("offers a guest no free saju reading while sales are closed, and asks the server for none", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    const reading = vi.fn(() => Response.json(readingOf("money")));
+    stub({ me: [OPENING_ME], reading });
+    render(<SajuChartView />);
+    await screen.findByText("첫 장");
+    for (const topic of [null, "재물운"]) {
+      if (topic) tap(topic);
+      const sheet = await screen.findByRole("region", { name: /전체 풀이에 담긴 것$/ });
+      await within(sheet).findByText("전체 풀이는 결제하고 열 수 있어요");
+      expect((within(sheet).getByRole("button", { name: "전체 풀이 보기" }) as HTMLButtonElement).disabled).toBe(true);
+      expect(sheet.textContent).not.toMatch(/첫 이용|처음 한 번|무료로 열|남았어요/);
+    }
+    expect(reading).not.toHaveBeenCalled();
+  });
+
+  it("opens the 운 on screen with the owner pass: the body carries the topic and the saved record keeps it", async () => {
     seed();
     seedTopic("money", "흙 속의 쇠");
     let opened: Body | null = null;
     stub({
-      me: [OPENING_ME],
+      me: [OWNER_ME],
       reading: (body) => {
         opened = body;
         return Response.json(readingOf("money"));
@@ -247,9 +266,9 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     render(<SajuChartView />);
     await screen.findByText("첫 장");
     tap("재물운");
-    fireEvent.click(await screen.findByRole("button", { name: /전체 풀이 보기/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "운영자로 무료 열기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalled());
-    expect(opened).toMatchObject({ topic: "money" });
+    expect(opened).toMatchObject({ topic: "money", unlock: { method: "owner" } });
     expect(opened).not.toHaveProperty("loveStatus");
     expect(listChapters().at(-1)).toMatchObject({ kind: "saju", topic: "money", title: "흙 속의 쇠" });
   });

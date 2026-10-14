@@ -200,7 +200,7 @@ describe("settlement inside the generation's keepAlive work", () => {
     expect(calls).toEqual(["deliver", "recover", "release"]);
   });
 
-  it("leaves 오픈 기념 responses exactly as before", async () => {
+  it("leaves 첫 이용 무료 responses exactly as before", async () => {
     const res = await respondGeneration(post(), billed(), { gate: gate(), spend: "full" });
     expect(await res.json()).toEqual(BODY);
   });

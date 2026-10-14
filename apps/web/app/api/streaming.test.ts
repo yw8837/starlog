@@ -5,7 +5,9 @@ import { resetDailyStore } from "@/lib/api/dailyStore";
 import { respondGeneration } from "@/lib/api/stream";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { ownerCookie } from "@/lib/security/owner";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { signingSecret } from "@/lib/security/sign";
 import { POST as commit } from "./commit/route";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
@@ -90,17 +92,16 @@ describe("NDJSON streaming", () => {
     expect(JSON.stringify(events.filter((e) => e.type === "section"))).not.toContain(plain.data.firstCard.body.slice(0, 10));
   });
 
-  it("spends quota through /api/commit after done; a stale commit changes nothing", async () => {
-    vi.stubEnv("BETA_FULL_PER_DAY", "1");
+  it("spends the free first reading through /api/commit after done; a stale commit changes nothing", async () => {
     const d = device("203.0.113.22");
     const { drawToken } = await drawSelfFlow(d);
     const first = await d.stream(reading, { drawToken, input: MONEY_INPUT });
     const done = first.events.at(-1)!;
     expect(done.type).toBe("done");
     expect(typeof done.commit).toBe("string");
-    expect(d.jar.has("sl_q")).toBe(false); // nothing spent by the stream itself
+    expect(d.jar.has("sl_first")).toBe(false); // nothing spent by the stream itself
     expect((await d.call(commit, { commit: done.commit })).status).toBe(200);
-    expect(d.jar.has("sl_q")).toBe(true);
+    expect(d.jar.has("sl_first")).toBe(true);
     expect((await d.call(commit, { commit: done.commit })).data.code).toBe("BAD_TOKEN"); // replay after the cookie moved on
     const limited = await d.call(reading, { drawToken, input: MONEY_INPUT });
     expect(limited.status).toBe(429);
@@ -120,7 +121,11 @@ describe("NDJSON streaming", () => {
   });
 
   it("streams the 정통 reading's nine sections once each, 7·8절 from their own call included, and done carries all nine", async () => {
-    const { events } = await device("203.0.113.29").stream(sajuReading, { birth: DEFAULT_SAJU_FORM });
+    // A saju full reading opens with a payment or the owner pass only.
+    vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
+    const d = device("203.0.113.29");
+    d.jar.set("sl_owner", await ownerCookie(signingSecret()!, Date.now(), "owner-code-for-tests-0001"));
+    const { events } = await d.stream(sajuReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } });
     const indexes = events.filter((e) => e.type === "section" && e.key === "sections").map((e) => e.index as number);
     expect([...indexes].sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
     const done = events.at(-1)!;

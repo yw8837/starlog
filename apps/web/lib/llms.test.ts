@@ -40,10 +40,11 @@ describe("llms.txt", () => {
     expect(llms).not.toContain(`${SITE.guideUrl}/tarot`);
   });
 
-  it("states the facts from SITE: the free daily reading, the price, the follow-ups", () => {
+  it("states the facts from SITE: the free first tarot reading (첫 이용 무료), the price, the follow-ups", () => {
     const facts = serviceFacts().join("\n");
     expect(facts).toContain(won(SITE.price.tarotStandardKrw));
-    expect(facts).toContain("하루 한 번 무료");
+    expect(facts).toContain("처음 한 번은 타로 전체 풀이를 무료로 열 수 있고(첫 이용 무료), 사주 전체 풀이는 결제하고 열어요.");
+    expect(facts).not.toContain("오픈 기념");
     expect(facts).toContain(`이어서 물어보기를 ${SITE.reading.followUps}번`);
     expect(facts).toContain("1909년");
     expect(facts).toContain("만세력");

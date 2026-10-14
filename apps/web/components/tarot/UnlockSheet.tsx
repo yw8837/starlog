@@ -18,10 +18,10 @@ type UnlockSheetProps = {
   topicLabel?: string;
   /** 주제별 사주: what one payment opens, under the price ("결제 한 번에 고른 풀이 하나를 열어요"). */
   scopeLine?: string;
-  /** What this device may do now (lib/pay/offer.ts). Default: the 오픈 기념 daily free reading. */
+  /** What this device may do now (lib/pay/offer.ts). Default: 첫 이용 무료, the device's one free tarot reading. */
   offer?: UnlockOffer;
-  /** Full readings left today on this device (오픈 기념 only); undefined until read. */
-  remaining: number | undefined;
+  /** Free first readings left on this device (첫 이용 무료, the opening only); undefined until read. */
+  remaining?: number;
   onUnlock: (method: UnlockMethod) => void;
   /** The login page with the way back (offer "login", and the paused-sales link). */
   loginHref?: string;
@@ -55,10 +55,11 @@ const CheckIcon = () => (
 
 /**
  * The unlock: what the full reading holds (length, follow-ups, kept on this device) before the one
- * gold button that opens it. Without an offer (or with "opening") it is the 오픈 기념 free count
- * (when used up, when it refills); the other offers log in, open a purchase, use the signup gift
- * (tarot only) or pay, or say a reading of this kind is being opened. While a cut-off opening is
- * checked, nothing opens.
+ * gold button that opens it. Without an offer (or with "opening") it is 첫 이용 무료, the device's
+ * one free tarot reading (once used, it says so for good); "closed" (saju while sales are closed
+ * here) opens nothing and promises nothing free; the other offers log in, open a purchase, use the
+ * signup gift (tarot only) or pay, or say a reading of this kind is being opened. While a cut-off
+ * opening is checked, nothing opens.
  */
 export function UnlockSheet({
   kind,
@@ -81,7 +82,8 @@ export function UnlockSheet({
   const chars = approxCharsText(SITE.reading.approxChars[kind]);
   const opening = offer.mode === "opening";
   const usedUp = opening && remaining === 0;
-  // Two lines so the count never wraps mid-phrase on a phone; read as "전체 풀이 보기 · 오늘 N번 남았어요".
+  const closed = offer.mode === "closed";
+  // Two lines so the name never wraps mid-phrase on a phone; read as "전체 풀이 보기 · 첫 이용 무료".
   const label =
     remaining === undefined || usedUp ? (
       "전체 풀이 보기"
@@ -90,7 +92,7 @@ export function UnlockSheet({
         <span>전체 풀이 보기</span>
         <span className={s.subLine}>
           <span className="sr-only"> · </span>
-          {`오늘 ${remaining}번 남았어요`}
+          첫 이용 무료
         </span>
       </span>
     );
@@ -106,7 +108,7 @@ export function UnlockSheet({
 
   let offerPrimary: ReactNode = null;
   let offerSecondary: ReactNode = null;
-  let caption = `오픈 기념으로 하루 ${times(SITE.beta.fullPerDay)} 무료예요`;
+  let caption = `처음 ${times(SITE.beta.firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요`;
   switch (offer.mode) {
     case "in-progress":
       offerPrimary = checkAgain;
@@ -149,6 +151,9 @@ export function UnlockSheet({
       );
       caption = "결제하면 바로 열려요";
       break;
+    case "closed":
+      caption = "지금은 결제를 받지 않고 있어요";
+      break;
     case "opening":
       break;
   }
@@ -171,11 +176,9 @@ export function UnlockSheet({
   } else if (error?.care) {
     // Crisis words: no reading to open, only the way back to the question (below).
     primary = null;
-  } else if (!opening) {
-    primary = offerPrimary;
-  } else if (usedUp) {
-    // As far as this device knows, the day is used up: nothing to open until tomorrow, so the free
-    // cards are offered to go on with (QA-04).
+  } else if (usedUp || closed) {
+    // Nothing to open here: the free first reading is used (as far as this device knows), or saju
+    // while sales are closed. The free cards are offered to go on with (QA-04).
     primary = (
       <>
         <Button block disabled>
@@ -187,6 +190,8 @@ export function UnlockSheet({
         </div>
       </>
     );
+  } else if (!opening) {
+    primary = offerPrimary;
   } else {
     primary = (
       <Button block onClick={() => onUnlock("opening")}>
@@ -228,7 +233,9 @@ export function UnlockSheet({
           {error.care ? <CrisisContacts lead={false} className={s.care} /> : null}
         </div>
       ) : usedUp && !openedHref ? (
-        <p className={s.limit}>오늘 무료로 열 수 있는 풀이를 모두 열었어요 · 한국 시간 0시에 다시 채워져요</p>
+        <p className={s.limit}>이 기기에서는 첫 이용 무료 풀이를 이미 열었어요</p>
+      ) : closed && !openedHref ? (
+        <p className={s.limit}>전체 풀이는 결제하고 열 수 있어요</p>
       ) : busy && !openedHref ? (
         <p className={s.limit}>열고 있는 풀이가 있어요</p>
       ) : null}
@@ -241,7 +248,7 @@ export function UnlockSheet({
           </Button>
         ) : null}
         {openedHref || checking ? null : offerSecondary}
-        {owner && !opening && !busy && !openedHref && !checking ? (
+        {owner && (!opening || usedUp) && !busy && !openedHref && !checking ? (
           <Button variant="ghost" block onClick={() => onUnlock("owner")}>
             운영자로 무료 열기
           </Button>
@@ -251,7 +258,7 @@ export function UnlockSheet({
             <Link href={refundHref}>환불받기</Link>
           </div>
         ) : null}
-        {offer.mode === "opening" && offer.login && loginHref ? (
+        {(offer.mode === "opening" || offer.mode === "closed") && offer.login && loginHref ? (
           <div className={s.links}>
             <Link href={loginHref}>결제한 풀이가 있다면 로그인</Link>
           </div>

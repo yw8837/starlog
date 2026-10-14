@@ -145,24 +145,54 @@ describe("tarot flow with the mock provider", () => {
     expect(res.status).toBe(422);
     expect(res.data).toMatchObject({ code: "REFUSED", care: true });
     expect(res.data.message).toBe("마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요."); // the UI lists the hotlines
-    expect(d.jar.has("sl_q")).toBe(false);
+    expect(d.jar.has("sl_first")).toBe(false);
   });
 });
 
 describe("quota", () => {
-  it("stops at the daily full-reading limit and opens again after KST midnight; no quota spent on failure", async () => {
-    vi.stubEnv("BETA_FULL_PER_DAY", "1");
+  it("gives a device one free tarot full reading the first time (첫 이용 무료), not one a day; a failed one spends nothing", async () => {
     const d = device();
     const { drawToken } = await drawSelfFlow(d);
-    expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
-    const limited = await d.call(reading, { drawToken, input: MONEY_INPUT });
-    expect(limited.status).toBe(429);
-    expect(limited.data).toMatchObject({ code: "BETA_LIMIT", resetsAt: "2026-09-30T15:00:00.000Z", message: "오늘의 오픈 기념 무료 풀이를 이미 받았어요. 자정에 다시 열려요." });
-    expect(JSON.stringify(limited.data)).not.toContain("베타");
+    vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
+    expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(502);
+    expect(d.jar.has("sl_first")).toBe(false);
+    const first = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    expect(first.status).toBe(200);
+    // A signed cookie that lives a year, set only now that the reading was written.
+    expect(first.headers.getSetCookie().find((c) => c.startsWith("sl_first="))).toMatch(/^sl_first=.+; Path=\/; Max-Age=31536000; HttpOnly; SameSite=Lax/);
+    expect(d.jar.has("sl_q")).toBe(false);
+    const used = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    expect(used.status).toBe(429);
+    expect(used.data).toEqual({ code: "BETA_LIMIT", scope: "first", message: "이 기기에서는 첫 이용 무료 풀이를 이미 받았어요." });
+    expect(JSON.stringify(used.data)).not.toContain("베타");
 
-    vi.setSystemTime(Date.parse("2026-09-30T15:00:01Z")); // 00:00:01 KST the next day
+    vi.setSystemTime(Date.parse("2026-09-30T15:00:01Z")); // 00:00:01 KST the next day: it does not come back
     const next = await drawSelfFlow(d);
-    expect((await d.call(reading, { drawToken: next.drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect((await d.call(reading, { drawToken: next.drawToken, input: MONEY_INPUT })).data).toMatchObject({ code: "BETA_LIMIT", scope: "first" });
+    // Teasers stay a daily count of their own.
+    expect((await d.call(teaser, { drawToken: next.drawToken, input: MONEY_INPUT })).status).toBe(200);
+  });
+
+  it("opens no saju full reading for free: refused before any generation, nothing spent, the teaser still free", async () => {
+    const d = device("203.0.113.70");
+    const spy = vi.spyOn(mockProvider, "generate");
+    for (const body of [{ birth: DEFAULT_SAJU_FORM }, { birth: DEFAULT_SAJU_FORM, topic: "money" }]) {
+      const refused = await d.call(sajuReading, body);
+      expect(refused.status).toBe(402);
+      expect(refused.data).toMatchObject({ code: "PAYMENT_REQUIRED" });
+      expect(refused.headers.getSetCookie()).toEqual([]);
+    }
+    expect(spy).not.toHaveBeenCalled();
+    expect((await d.call(sajuTeaser, { birth: DEFAULT_SAJU_FORM })).status).toBe(200);
+    // The owner opens saju with the owner pass, never through the free opening.
+    expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
+    expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM })).status).toBe(402);
+    expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } })).status).toBe(200);
+    // This device's free tarot reading is untouched.
+    const stranger = device("203.0.113.71");
+    await stranger.call(sajuReading, { birth: DEFAULT_SAJU_FORM });
+    const { drawToken } = await drawSelfFlow(stranger);
+    expect((await stranger.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
   });
 
   it("lets the owner pass skip every quota; a wrong code sets nothing and login attempts are rate limited", async () => {
@@ -224,8 +254,8 @@ describe("quota", () => {
       statuses.push((await phone.call(reading, { drawToken, input: MONEY_INPUT })).status);
     }
     expect(statuses.every((s) => s === 200)).toBe(true);
-    // the device limit (one free full reading a day) still holds for each phone
-    expect((await phone.call(reading, { drawToken, input: MONEY_INPUT })).data.code).toBe("BETA_LIMIT");
+    // each phone's one free first reading is still its own
+    expect((await phone.call(reading, { drawToken, input: MONEY_INPUT })).data).toMatchObject({ code: "BETA_LIMIT", scope: "first" });
   });
 });
 
@@ -381,15 +411,22 @@ describe("오늘의 한 장", () => {
 describe("saju", () => {
   const birth = { ...DEFAULT_SAJU_FORM, year: 1995, month: 5, day: 20, timeKnown: true, hour: 14, minute: 5, gender: "male" };
 
-  it("writes a teaser and a prologue for a non-sample chart, and follow-ups on it", async () => {
+  /** A saju full reading opens with a payment or the owner pass only: these use the pass. */
+  async function ownerDevice() {
     const d = device();
+    expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
+    return d;
+  }
+
+  it("writes a teaser and a prologue for a non-sample chart, and follow-ups on it", async () => {
+    const d = await ownerDevice();
     const t = await d.call(sajuTeaser, { birth });
     expect(t.status).toBe(200);
     // the 한눈에 보기 card, nine sections (이름표 풀이 and 기운 채우기 since 2026-10-08), the observation
     expect(t.data.lockedToc).toHaveLength(11);
     expect(t.data.lockedToc[0]).toMatch(/^한눈에 보기 · /);
     expect(t.data.lockedToc.at(-1)).toBe("앞으로 몇 주 · 확인해 볼 신호");
-    const r = await d.call(sajuReading, { birth });
+    const r = await d.call(sajuReading, { birth, unlock: { method: "owner" } });
     expect(r.status).toBe(200);
     expect(r.data.reading.sections).toHaveLength(9);
     expect(r.data.reading.observation.heading).toBe("앞으로 몇 주 · 확인해 볼 신호");
@@ -401,8 +438,8 @@ describe("saju", () => {
   });
 
   it("answers on an older chapter whose token still carries a concern, without that concern in the prompt", async () => {
-    const d = device();
-    const r = await d.call(sajuReading, { birth });
+    const d = await ownerDevice();
+    const r = await d.call(sajuReading, { birth, unlock: { method: "owner" } });
     expect(r.status).toBe(200);
     const token = await issueChapter(
       { kind: "saju", birth: BirthBody.parse(birth), profile: { loveStatus: "솔로", concern: "이직이 고민이에요" } },

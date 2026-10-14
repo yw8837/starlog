@@ -27,7 +27,7 @@ import { progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { TarotInput, TarotReadingResponse, TarotTeaserData } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
-import { countFullReading, markDayUsedUp, useRemainingToday } from "@/lib/storage/betaUsage";
+import { countFullReading, markFreeUsedUp, useRemainingFree } from "@/lib/storage/betaUsage";
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./FreeResult.module.css";
@@ -53,14 +53,14 @@ function withHistory(input: TarotInput): TarotInput {
  * reading, saves it on this device and goes to it. Sharing sends the site and the card names,
  * never the question or note.
  *
- * The sheet offers what this device may use (lib/pay/offer.ts): the 오픈 기념 reading, a login, a
- * purchase, the signup gift or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
+ * The sheet offers what this device may use (lib/pay/offer.ts): 첫 이용 무료 (the device's one free
+ * reading), a login, a purchase, the signup gift or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
  */
 export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { instant: boolean; autoUnlock?: UnlockMethod | null; loginFlag?: string | null }) {
   const router = useRouter();
   const { flow, setFlow } = useFlowState();
   const chapters = useChapters();
-  const remaining = useRemainingToday();
+  const remaining = useRemainingFree();
   const gate = flow ? resultGate(flow) : null;
   const summary = gate === "ready" ? summarizeFlow(flow) : null;
   const draw = gate === "ready" ? flow?.draw : undefined;
@@ -194,7 +194,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     if (!result) return;
     if (!result.ok) {
       const code = result.error.code;
-      if (code === "BETA_LIMIT") markDayUsedUp();
+      // Only the device's own free first reading being used; a network's day limit passes at midnight.
+      if (code === "BETA_LIMIT" && result.error.scope === "first") markFreeUsedUp();
       if (code === "LOGIN_REQUIRED") router.push(loginHref(RETURN_TO));
       if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, held, "cut");
       else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), held, "refused");

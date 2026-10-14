@@ -58,9 +58,13 @@ export const SITE = {
      */
     approxChars: { tarot: { min: 2000, max: 2000 }, saju: { min: 2500, max: 3000 } },
   },
-  /** Public beta: every reading is free within a daily count (the server's BETA_FULL_PER_DAY). */
+  /**
+   * Free use. 첫 이용 무료 (owner 2026-10-14): a device's first tarot full reading is free, once and for good
+   * (the server's BETA_FULL_PER_DAY, named before the rule changed); saju full readings are never free.
+   * Teasers: a daily count (BETA_TEASER_PER_DAY).
+   */
   beta: {
-    fullPerDay: 1,
+    firstFreeTarot: 1,
     teaserPerDay: 5,
   },
   features: {

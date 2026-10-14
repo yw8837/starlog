@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DRAW_TOKEN_TTL_MS, dailyCard, issueDraw, openDraw } from "./drawToken";
 import { isOwner, ownerCookie } from "./owner";
-import { hasQuota, kstDay, nextKstMidnight, quotaLimits, readQuota, spendQuota } from "./quota";
+import { FIRST_FREE_COOKIE_MAX_AGE, hasQuota, kstDay, nextKstMidnight, quotaLimits, readFirstFree, readQuota, spendFirstFree, spendQuota } from "./quota";
 import { LIMITS_PER_MINUTE, rateLimit, resetMemoryLimiter } from "./rateLimit";
 import { canonicalJson, safeEqual, sha256, signToken, signingSecret, verifyToken } from "./sign";
 
@@ -75,20 +75,32 @@ describe("quota", () => {
   });
 
   it("spends within a day and resets across KST midnight", async () => {
-    const limits = { ...quotaLimits({} as NodeJS.ProcessEnv), full: 2 };
+    const limits = { ...quotaLimits({} as NodeJS.ProcessEnv), teaser: 2 };
     let state = await readQuota(undefined, SECRET, BEFORE_MIDNIGHT);
     for (let i = 0; i < 2; i++) {
-      expect(hasQuota(state, "full", limits)).toBe(true);
-      state = await readQuota(await spendQuota(state, "full", SECRET), SECRET, BEFORE_MIDNIGHT);
+      expect(hasQuota(state, "teaser", limits)).toBe(true);
+      state = await readQuota(await spendQuota(state, "teaser", SECRET), SECRET, BEFORE_MIDNIGHT);
     }
-    expect(state.full).toBe(2);
-    expect(hasQuota(state, "full", limits)).toBe(false);
-    const cookie = await spendQuota(state, "teaser", SECRET);
-    expect((await readQuota(cookie, SECRET, BEFORE_MIDNIGHT)).teaser).toBe(1);
+    expect(state.teaser).toBe(2);
+    expect(hasQuota(state, "teaser", limits)).toBe(false);
+    const cookie = await spendQuota(state, "followup", SECRET);
+    expect((await readQuota(cookie, SECRET, BEFORE_MIDNIGHT)).followup).toBe(1);
     const tomorrow = await readQuota(cookie, SECRET, AFTER_MIDNIGHT);
-    expect(tomorrow).toEqual({ day: "2026-10-01", full: 0, teaser: 0, followup: 0 });
-    expect(hasQuota(tomorrow, "full", limits)).toBe(true);
-    expect(await readQuota(tamper(cookie), SECRET, BEFORE_MIDNIGHT)).toMatchObject({ full: 0, teaser: 0 });
+    expect(tomorrow).toEqual({ day: "2026-10-01", teaser: 0, followup: 0 });
+    expect(hasQuota(tomorrow, "teaser", limits)).toBe(true);
+    expect(await readQuota(tamper(cookie), SECRET, BEFORE_MIDNIGHT)).toMatchObject({ teaser: 0, followup: 0 });
+  });
+
+  it("counts the free first tarot reading (첫 이용 무료) per device for good, not per day; a missing, forged or other cookie reads as none", async () => {
+    expect(await readFirstFree(undefined, SECRET)).toBe(0);
+    const once = await spendFirstFree(0, SECRET);
+    expect(await readFirstFree(once, SECRET)).toBe(1);
+    expect(await readFirstFree(await spendFirstFree(1, SECRET), SECRET)).toBe(2);
+    expect(await readFirstFree(tamper(once), SECRET)).toBe(0);
+    expect(await readFirstFree(once, "another-secret-0123456789-0123456789")).toBe(0);
+    const quota = await spendQuota(await readQuota(undefined, SECRET, BEFORE_MIDNIGHT), "teaser", SECRET);
+    expect(await readFirstFree(quota, SECRET)).toBe(0);
+    expect(FIRST_FREE_COOKIE_MAX_AGE).toBe(365 * 24 * 60 * 60);
   });
 
   it("reads limits from the environment, ignoring junk", () => {

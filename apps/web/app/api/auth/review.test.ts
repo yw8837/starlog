@@ -184,7 +184,7 @@ describe("a production deploy on test keys (security M1)", () => {
     expect((await signIn(reviewer)).status).toBe(200);
     const state = await me(reviewer);
     expect(state).toMatchObject({ payments: true, owner: false, user: { gift: null, review: true } });
-    // The result page offers "2,900원 결제하고 보기": no 오픈 기념 reading and no signup gift in its place.
+    // The result page offers "2,900원 결제하고 보기": no 첫 이용 무료 reading and no signup gift in its place.
     expect(unlockOffer(parseAccount(state), standardProduct("tarot"))).toEqual({ mode: "pay", priceKrw: 2900 });
     expect(await (await reviewer.send(checkout, "/api/pay/checkout?product=tarot")).json()).toMatchObject({ productId: "tarot", amount: 2900, provider: "toss", clientKey: "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm" });
     expect((await order(reviewer)).status).toBe(200);

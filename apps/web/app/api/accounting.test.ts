@@ -289,7 +289,8 @@ describe("global daily spend cap", () => {
       return result;
     });
     const d = device("198.51.100.26");
-    expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM })).status).toBe(200);
+    expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200); // saju opens with a payment or the owner pass only
+    expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } })).status).toBe(200);
     expect(await spent()).toBe(2 * 1400);
   });
 
@@ -304,7 +305,8 @@ describe("global daily spend cap", () => {
       return result;
     });
     const d = device("198.51.100.27");
-    expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM })).status).toBe(200);
+    expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200); // saju opens with a payment or the owner pass only
+    expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } })).status).toBe(200);
     expect(await spent()).toBe(2 * 1400);
   });
 
