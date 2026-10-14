@@ -80,7 +80,7 @@ export function ShareResultButton({ kind, text, create, stop, current }: ShareRe
             <>
               <p className={s.link}>{phase.url.replace(/^https?:\/\//, "")}</p>
               <div className={s.actions}>
-                <ShareButton text={text} target={{ url: phase.url, imageUrl: phase.imageUrl, button: "풀이 보기" }} />
+                <ShareButton text={text} target={{ url: phase.url, imageUrl: phase.imageUrl, button: "풀이 보기", description: "뽑은 카드와 풀이 전체를 볼 수 있어요. 질문과 개인 정보는 가렸어요." }} />
               </div>
               {phase.error ? (
                 <p className={s.note} role="alert">

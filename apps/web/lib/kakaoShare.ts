@@ -22,7 +22,7 @@ export interface KakaoSdk {
   Share: {
     sendDefault(template: {
       objectType: "feed";
-      content: { title: string; imageUrl: string; link: KakaoLink };
+      content: { title: string; description?: string; imageUrl: string; imageWidth?: number; imageHeight?: number; link: KakaoLink };
       buttons?: Array<{ title: string; link: KakaoLink }>;
     }): void;
   };
@@ -81,9 +81,19 @@ export interface KakaoTarget {
   url: string;
   imageUrl: string;
   button: string;
+  /** One or two lines under the title (owner 10/13: the thumbnail, a short intro and the cards). */
+  description?: string;
 }
 
-const SITE_TARGET: KakaoTarget = { url: SITE.url, imageUrl: `${SITE.url}/opengraph-image`, button: `${SITE.nameKo} 열기` };
+const SITE_TARGET: KakaoTarget = {
+  url: SITE.url,
+  imageUrl: `${SITE.url}/opengraph-image`,
+  button: `${SITE.nameKo} 열기`,
+  description: "타로와 사주로 내 고민을 풀어 주는 곳이에요. 지금의 한 장은 언제나 무료예요.",
+};
+
+/** Every preview image we send is 1200×630: Kakao keeps that shape instead of cropping it. */
+const IMAGE = { imageWidth: 1200, imageHeight: 630 } as const;
 
 /** Shares the text with a link and its image as a feed message (the site's, unless `target` says otherwise). */
 export async function shareToKakao(text: string, key: string = kakaoKey(), target: KakaoTarget = SITE_TARGET): Promise<void> {
@@ -91,7 +101,7 @@ export async function shareToKakao(text: string, key: string = kakaoKey(), targe
   const link = { mobileWebUrl: target.url, webUrl: target.url };
   sdk.Share.sendDefault({
     objectType: "feed",
-    content: { title: text, imageUrl: target.imageUrl, link },
+    content: { title: text, ...(target.description ? { description: target.description } : {}), imageUrl: target.imageUrl, ...IMAGE, link },
     buttons: [{ title: target.button, link }],
   });
 }

@@ -135,7 +135,14 @@ describe("ShareButton with a Kakao key", () => {
     expect(sdk.sent).toEqual([
       {
         objectType: "feed",
-        content: { title: TEXT, imageUrl: `${SITE.url}/opengraph-image`, link: { mobileWebUrl: SITE.url, webUrl: SITE.url } },
+        content: {
+          title: TEXT,
+          description: "타로와 사주로 내 고민을 풀어 주는 곳이에요. 지금의 한 장은 언제나 무료예요.",
+          imageUrl: `${SITE.url}/opengraph-image`,
+          imageWidth: 1200,
+          imageHeight: 630,
+          link: { mobileWebUrl: SITE.url, webUrl: SITE.url },
+        },
         buttons: [{ title: `${SITE.nameKo} 열기`, link: { mobileWebUrl: SITE.url, webUrl: SITE.url } }],
       },
     ]);
