@@ -53,7 +53,8 @@ export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotC
       cards: ctx.cards.map((card, i) => ({ position: card.position, cardId: card.cardId, keyword: data.cards[i]!.keyword.trim() })),
       firstCard: { heading: cardLabel(ctx.cards[0]!), body: data.firstCard.body.trim() },
       ...(second && data.secondCard ? { secondCard: { heading: cardLabel(second), body: data.secondCard.body.trim() } } : {}),
-      lockedToc: tarotLockedToc(ctx),
+      // 감질맛: with a second card the first is shown in full and the paid reading keeps it, so it is not listed as locked.
+      lockedToc: second && data.secondCard ? tarotLockedToc(ctx).filter((heading) => heading !== cardLabel(ctx.cards[0]!)) : tarotLockedToc(ctx),
     },
     usage,
   };

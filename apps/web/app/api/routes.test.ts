@@ -121,9 +121,10 @@ describe("tarot flow with the mock provider", () => {
     expect(t.status).toBe(200);
     const draft = (await spy.mock.results[0]!.value).data as { firstCard: { body: string }; secondCard: { body: string } };
     const full = draft.secondCard.body.trim();
-    // its heading is the code's card label, as on the locked list ("한 줄 결론", card 1, card 2, …)
-    expect(t.data.lockedToc[2]).toMatch(new RegExp(`^${cards[1]!.position} · `));
-    expect(t.data.secondCard).toEqual({ heading: t.data.lockedToc[2], body: teaserCut(full), cut: true });
+    // its heading is the code's card label, as on the locked list ("한 줄 결론", card 2, …: card 1 is shown in full, so not listed)
+    expect(t.data.lockedToc[1]).toMatch(new RegExp(`^${cards[1]!.position} · `));
+    expect(t.data.lockedToc).not.toContain(t.data.firstCard.heading);
+    expect(t.data.secondCard).toEqual({ heading: t.data.lockedToc[1], body: teaserCut(full), cut: true });
     const shown = t.data.secondCard.body as string;
     expect(shown.length / full.length).toBeGreaterThanOrEqual(0.35);
     expect(shown.length / full.length).toBeLessThanOrEqual(0.65);

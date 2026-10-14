@@ -204,9 +204,18 @@ describe("A2 reading-quality checks (blind judge 2026-09-30)", () => {
     expect(nonHaeyoSentences("새해를 앞둔 조용한 결심. 오늘 하루를 나를 위해. 멀리 있는 빛을 향해. 서로 다른 견해.")).toEqual([]);
     expect(nonHaeyoSentences("지금 시작해. 그 사람을 기억해.")).toEqual(["지금 시작해.", "그 사람을 기억해."]);
     expect(nonHaeyoSentences("'요즘 어떻게 지내? 문득 생각나서'라고 보내 보세요.")).toEqual([]);
+    // 합쇼체 (a real teaser on 2026-10-14: "추리는 편이 낫습니다."), but not inside the user's quoted words
+    expect(nonHaeyoSentences("들 수 있는 만큼만 추리는 편이 낫습니다. 그림 속 노인이 서 있어요. 지금이 그때입니까? 고맙습니다!")).toEqual([
+      "들 수 있는 만큼만 추리는 편이 낫습니다.",
+      "지금이 그때입니까?",
+      "고맙습니다!",
+    ]);
+    expect(nonHaeyoSentences("'잘 부탁드립니다'라고 적었죠. 그 마음을 오늘 전해 보세요.")).toEqual([]);
     const r = base();
     const haera = { ...r, alternatives: { ...r.alternatives, body: `${r.alternatives.body} 이 그림은 다른 길을 보여 준다.` } };
     expect(hard(validateTarotReading(haera, ctx)).join(" ")).toMatch(/해요체가 아닌 문장/);
+    const hasipsio = { ...r, alternatives: { ...r.alternatives, body: `${r.alternatives.body} 다른 길을 고르는 편이 낫습니다.` } };
+    expect(hard(validateTarotReading(hasipsio, ctx)).join(" ")).toMatch(/해요체가 아닌 문장/);
     // non-relational: messages are actions and must be 해요체 too
     const banmalAction = { ...r, messages: { ...r.messages, items: ["오늘 이력서 하나 보낼게.", r.messages.items[1]!] } };
     expect(hard(validateTarotReading(banmalAction, ctx)).join(" ")).toMatch(/해요체가 아닌 문장/);

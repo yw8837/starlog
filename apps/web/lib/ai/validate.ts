@@ -172,6 +172,8 @@ export function modelNameViolations(draft: unknown, out: string[]): void {
 export const QUOTED = /'[^'\n]*'|"[^"\n]*"|“[^”]*”|‘[^’]*’/g;
 /** 해라체 endings ("~한다", "~이다"): the reading voice is 해요체. */
 const HAERACHE = /(한다|는다|했다|였다|이다|았다|었다|겠다|된다|인다|린다|진다|간다|온다|본다|낸다|준다|있다|없다|같다)$/;
+/** 합쇼체 endings ("~습니다", "~입니다", "~습니까"): the reading voice is 해요체 (a real teaser on 2026-10-14 wrote "낫습니다."). */
+const HASIPSIO = /(니다|니까)$/;
 /** Unmistakable 반말 endings (a lone "해" is the sun, so single words are not judged). */
 const BANMAL = /(할게|볼게|줄게|낼게|갈게|올게|보낼게|거야|이야|잖아|거든|했어|있어|없어|하자|보자|해줘|할래|볼래|같아|좋아|싫어|해봐|알아|몰라|했지|하지 마)$/;
 /**
@@ -188,7 +190,7 @@ export function nonHaeyoSentences(text: string): string[] {
   return sentences(text.replace(QUOTED, "''")).filter((sentence) => {
     const bare = sentence.replace(/[.?!…"'’”)\]\s]+$/, "");
     if (bare.endsWith("요") || bare.length === 0) return false;
-    if (HAERACHE.test(bare) || BANMAL.test(bare)) return true;
+    if (HAERACHE.test(bare) || BANMAL.test(bare) || HASIPSIO.test(bare)) return true;
     const last = bare.split(/\s+/).at(-1) ?? "";
     return last.length >= 2 && last.endsWith("해") && !HAE_NOUNS.has(last);
   });

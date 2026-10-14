@@ -327,7 +327,17 @@ describe("mock provider", () => {
     expect(text).toContain("수입이 들쭉날쭉");
     expect(data.cards.map((c) => c.cardId)).toEqual(ctx.cards.map((c) => c.cardId));
     const teaser = await generateTarotTeaser(provider, ctx);
-    expect(teaser.data.lockedToc).toEqual(tarotLockedToc(ctx));
+    // 감질맛: the first card is shown in full and the paid reading keeps it, so the locked list leaves it out.
+    expect(teaser.data.lockedToc).toEqual(tarotLockedToc(ctx).filter((h) => h !== teaser.data.firstCard.heading));
+    expect(teaser.data.lockedToc).toContain(teaser.data.secondCard!.heading);
+  });
+
+  it("keeps the first card in the locked list of a one-card spread, whose paid reading writes it anew", async () => {
+    const provider = selectProvider({ STARLOG_AI: "mock" } as unknown as NodeJS.ProcessEnv)!;
+    const one = buildTarotContext("self-flow", draw("self-flow", "owner-case").slice(0, 1), MONEY_INPUT);
+    const teaser = await generateTarotTeaser(provider, one);
+    expect(teaser.data.secondCard).toBeUndefined();
+    expect(teaser.data.lockedToc).toEqual(tarotLockedToc(one));
   });
 });
 
