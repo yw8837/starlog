@@ -32,6 +32,10 @@ const SMOKE_MODEL = process.env.SMOKE_MODEL?.trim() || null;
 const SMOKE_EFFORT = process.env.SMOKE_EFFORT?.trim() || null;
 const SMOKE_STAMP = process.env.SMOKE_STAMP?.trim() || null;
 const SMOKE_TAROT = process.env.SMOKE_TAROT?.trim() || "money";
+/** SMOKE_KINDS=tarot-teaser,daily runs only those kinds (default: all). */
+const SMOKE_KINDS = process.env.SMOKE_KINDS?.split(",").map((k) => k.trim()).filter(Boolean) ?? null;
+/** SMOKE_CAP_KRW stops before the next call once the run has spent this much (the owner's cap for the measurement). */
+const SMOKE_CAP_KRW = Number(process.env.SMOKE_CAP_KRW) > 0 ? Number(process.env.SMOKE_CAP_KRW) : Infinity;
 
 /** The tarot input per SMOKE_TAROT: the owner's 재물운 case, or 결혼운 with its catalog chips (a talk of marriage under way). */
 function smokeTarotInput() {
@@ -137,6 +141,12 @@ test("ai smoke", async () => {
 
   async function call<T>(run: number, kind: Kind, validate: (draft: never) => string[], generate: (p: ReadingProvider) => Promise<{ data: T }>,
     recheck: (data: T) => string[], prose: (data: T) => string, input: unknown) {
+    if (SMOKE_KINDS && !SMOKE_KINDS.includes(kind)) return;
+    const spent = rows.reduce((sum, r) => sum + r.krw, 0);
+    if (spent >= SMOKE_CAP_KRW) {
+      console.log(`run ${run} ${kind}: 건너뜀 · 지금까지 ${spent}원으로 상한 ${SMOKE_CAP_KRW}원에 닿았어요`);
+      return;
+    }
     const rec = recording(real, validate);
     const started = Date.now();
     let data: T | null = null;
@@ -231,5 +241,5 @@ test("ai smoke", async () => {
 
   console.log(`\n${lines.slice(0, 3 + 2 + perKind.length + 1).join("\n")}`);
   console.log(`\n출력 폴더: apps/web/test-results/ai-smoke/${folder}/ (stamp ${stamp})`);
-  expect(rows.length).toBe(RUNS * kinds.length);
+  if (!SMOKE_KINDS && SMOKE_CAP_KRW === Infinity) expect(rows.length).toBe(RUNS * kinds.length);
 });
