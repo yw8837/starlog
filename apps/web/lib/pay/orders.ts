@@ -170,21 +170,21 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
     if (isPendingTossError(error)) {
       // 409 processing, 5xx or no answer: the payment may have gone through. The order stays
       // `confirming`; the success page asks again and reconcileConfirming() looks it up.
-      console.warn(JSON.stringify({ evt: "pay.confirm_unknown", orderId: order.id, code: error instanceof TossError ? error.code : "UNKNOWN" }));
+      console.warn(JSON.stringify({ evt: "pay.confirm_unknown", orderId: order.id, code: error instanceof TossError ? error.code : "UNKNOWN", message: error instanceof TossError ? error.message : String(error) }));
       return { ok: false, code: "PAY_PENDING" };
     }
     const refusal = error as TossError;
     if (refusal.status === 401 || KEY_ERRORS.has(refusal.code)) {
       // Our keys were refused (a wrong or mismatched secret key): nothing here can confirm the payment,
       // and Toss lets an unconfirmed one expire. Waiting would only keep the buyer staring at a spinner.
-      console.error(JSON.stringify({ evt: "pay.key_rejected", orderId: order.id, status: refusal.status, code: refusal.code }));
+      console.error(JSON.stringify({ evt: "pay.key_rejected", orderId: order.id, status: refusal.status, code: refusal.code, message: refusal.message }));
       await setStatus(db, order.id, ["confirming"], "failed", now, refusal.code);
       return { ok: false, code: "PAY_FAILED", message: KEY_REJECTED_MESSAGE };
     }
     // A definite answer (a decline, ALREADY_PROCESSED_PAYMENT, …): look the payment up before deciding.
     const found = await lookUpByOrder(toss, order.id);
     if (found === "unknown") {
-      console.warn(JSON.stringify({ evt: "pay.confirm_lookup_unknown", orderId: order.id, status: refusal.status, code: refusal.code }));
+      console.warn(JSON.stringify({ evt: "pay.confirm_lookup_unknown", orderId: order.id, status: refusal.status, code: refusal.code, message: refusal.message }));
       return { ok: false, code: "PAY_PENDING" };
     }
     if (found !== "none" && matches(order, found)) return outcomeOfPaid(db, toss, order, found, now);
@@ -195,11 +195,11 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
         .prepare("UPDATE orders SET status = 'created', payment_key = NULL, updated_at = ? WHERE id = ? AND status = 'confirming' AND payment_key = ?")
         .bind(now, order.id, paymentKey)
         .run();
-      console.info(JSON.stringify({ evt: "pay.confirm_refused", orderId: order.id, code: refusal.code }));
+      console.info(JSON.stringify({ evt: "pay.confirm_refused", orderId: order.id, code: refusal.code, message: refusal.message }));
       return { ok: false, code: "PAY_FAILED", message: refusal.message };
     }
     await setStatus(db, order.id, ["confirming"], "failed", now, refusal.code);
-    console.info(JSON.stringify({ evt: "pay.confirm_declined", orderId: order.id, code: refusal.code }));
+    console.info(JSON.stringify({ evt: "pay.confirm_declined", orderId: order.id, code: refusal.code, message: refusal.message }));
     return { ok: false, code: "PAY_FAILED", message: refusal.message };
   }
   if (!matches(order, payment)) {

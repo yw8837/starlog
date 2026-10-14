@@ -154,6 +154,19 @@ describe("confirm", () => {
     expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots WHERE currency = 'paid'").first()).toEqual({ n: 0 });
   });
 
+  it("logs Toss's own explanation with the code when a refusal cannot be looked up", async () => {
+    useTestDb();
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    const warnings = vi.spyOn(console, "warn").mockImplementation(() => {});
+    mockToss.failNext("confirm", new TossError(400, "NOT_AVAILABLE_PAYMENT_BY_MERCHANT", "토스가 보낸 설명"));
+    vi.spyOn(mockToss, "getPaymentByOrder").mockRejectedValueOnce(new TossError(400, "NOT_AVAILABLE_PAYMENT_BY_MERCHANT", "토스가 보낸 설명"));
+    expect((await confirmAs(b, orderId, "mock_merchant")).status).toBe(409);
+    const line = warnings.mock.calls.map(([text]) => String(text)).find((text) => text.includes('"evt":"pay.confirm_lookup_unknown"'));
+    expect(line).toContain("NOT_AVAILABLE_PAYMENT_BY_MERCHANT");
+    expect(line).toContain("토스가 보낸 설명");
+  });
+
   it("fails an order at once when Toss refuses our keys, says no money moved, and logs the code", async () => {
     const db = useTestDb();
     const b = await loggedIn();
