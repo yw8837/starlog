@@ -71,6 +71,19 @@ describe("/s/[id]", () => {
     expect(document.body.textContent).not.toMatch(/1990|1월 1일/);
   });
 
+  it("puts a way to the Starlog home at the top and at the end, for tarot and saju (owner 2026-10-14)", async () => {
+    for (const [id, payload] of [
+      ["aaaaaaaaaab1", buildSharePayload(tarotCtx, TAROT_SAMPLE.paid, "starlog")],
+      ["aaaaaaaaaab2", buildSharePayload(sajuCtx, sajuReading)],
+    ] as const) {
+      render(await SharePage(params(saveShare(id, payload))));
+      const home = screen.getAllByRole("link", { name: "스타로그 홈으로" });
+      expect(home.map((a) => a.getAttribute("href"))).toEqual(["/", "/"]);
+      expect(home[0]!.compareDocumentPosition(screen.getByRole("heading", { level: 1 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      cleanup();
+    }
+  });
+
   it("previews the link with the cards drawn, and keeps the page out of search", async () => {
     const id = saveShare("aaaaaaaaaaa3", buildSharePayload(tarotCtx, TAROT_SAMPLE.paid, "starlog"));
     const meta = await generateMetadata(params(id));

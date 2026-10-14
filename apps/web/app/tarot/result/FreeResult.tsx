@@ -13,7 +13,6 @@ import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
-import { ShareButton } from "@/components/ui/ShareButton";
 import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
@@ -279,9 +278,6 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
             <header className={s.head}>
               <h1 className={s.question}>{summary.question}</h1>
               <SituationSummary conditions={summary.conditions} note={summary.note} />
-              <div className={s.share}>
-                <ShareButton text={`${SITE.nameKo}에서 뽑은 카드 · ${cards.map((card) => card.name ?? card.position).join(" · ")}`} />
-              </div>
             </header>
           }
           spread={<SpreadRow size="md" cards={cards} />}

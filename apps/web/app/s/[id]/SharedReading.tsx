@@ -3,6 +3,7 @@ import { GlanceCard } from "@/components/saju/GlanceCard";
 import { ReadingArticle } from "@/components/tarot/ReadingArticle";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
+import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { NEW_SAJU_HREF, NEW_TAROT_HREF } from "@/lib/freshStart";
 import { isSajuGlance } from "@/lib/reading/validate";
@@ -47,6 +48,9 @@ function SharedTarotView({ share }: { share: SharedTarot }) {
         <Button href="/now" variant="secondary" block>
           무료로 한 장 뽑기
         </Button>
+        <Button href="/" variant="ghost" block>
+          스타로그 홈으로
+        </Button>
       </section>
     </ReadingLayout>
   );
@@ -77,12 +81,23 @@ function SharedSajuView({ share }: { share: SharedSaju }) {
         <Button href={NEW_SAJU_HREF} block trailing="→">
           사주 보기
         </Button>
+        <Button href="/" variant="ghost" block>
+          스타로그 홈으로
+        </Button>
       </section>
     </ReadingLayout>
   );
 }
 
-/** A shared reading as its result screen shows it, read-only, with a way in for the visitor. */
+/**
+ * A shared reading as its result screen shows it, read-only, with a way in for the visitor and a way to
+ * the Starlog home at the top and at the end (owner 2026-10-14).
+ */
 export function SharedReading({ share }: { share: SharePayload }) {
-  return share.kind === "tarot" ? <SharedTarotView share={share} /> : <SharedSajuView share={share} />;
+  return (
+    <>
+      <Stepper label="친구가 공유한 풀이" backHref="/" backLabel="스타로그 홈으로" />
+      {share.kind === "tarot" ? <SharedTarotView share={share} /> : <SharedSajuView share={share} />}
+    </>
+  );
 }

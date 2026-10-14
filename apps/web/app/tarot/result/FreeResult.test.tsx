@@ -75,6 +75,16 @@ afterEach(() => {
   router.replace.mockClear();
 });
 
+describe("FreeResult and sharing (owner 2026-10-14)", () => {
+  it("offers no share before the full reading exists: the only link it could send is the site's home", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody())] });
+    render(<FreeResult instant />);
+    await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
+    expect(screen.queryByRole("button", { name: /공유하기|카카오톡으로 보내기/ })).toBeNull();
+  });
+});
+
 describe("FreeResult after a paid opening was cut off", () => {
   it("offers nothing to press while it checks whether the reading opened", async () => {
     seed();

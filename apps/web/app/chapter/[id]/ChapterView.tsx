@@ -13,7 +13,6 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
-import { ShareButton } from "@/components/ui/ShareButton";
 import { SITE } from "@/lib/config";
 import type { FrontDeck } from "@/lib/deck";
 import type { TarotSampleCard } from "@/lib/fixtures";
@@ -68,13 +67,12 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, check
           <header className={s.head}>
             <p className={s.eyebrow}>{eyebrow}</p>
             <h1 className={s.title}>{question}</h1>
-            <div className={s.share}>
-              {share ? (
+            {/* Only the reading's own link is shared (owner 2026-10-14: a share that opened the home misled). */}
+            {share ? (
+              <div className={s.share}>
                 <ShareResultButton kind="tarot" text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} {...share} />
-              ) : (
-                <ShareButton text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} />
-              )}
-            </div>
+              </div>
+            ) : null}
           </header>
         }
         spread={<SpreadRow size="sm" cards={cards} onCardTap={setEnlarged} deck={deck} />}

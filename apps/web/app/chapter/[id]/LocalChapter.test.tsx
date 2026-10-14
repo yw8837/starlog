@@ -36,6 +36,12 @@ afterEach(() => {
 });
 
 describe("LocalChapter with a partial saved reading (QA Q-02)", () => {
+  it("offers no share for it: a share without the reading's own link would only send the site's home (owner 2026-10-14)", () => {
+    seed([PARTIAL]);
+    render(<LocalChapter id="abcdef12" />);
+    expect(screen.queryByRole("button", { name: /공유하기|카카오톡으로 보내기/ })).toBeNull();
+  });
+
   it("shows what it can read, says the rest is missing, takes no questions, and can erase it after a confirm", () => {
     seed([PARTIAL]);
     render(<LocalChapter id="abcdef12" />);

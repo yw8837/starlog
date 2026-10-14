@@ -11,7 +11,6 @@ import { FollowUp } from "@/components/tarot/FollowUp";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
-import { ShareButton } from "@/components/ui/ShareButton";
 import { SITE } from "@/lib/config";
 import type { SajuReadingData } from "@/lib/reading/types";
 import type { SajuForm } from "@/lib/sajuForm";
@@ -51,10 +50,12 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
             <p className={s.eyebrow}>{eyebrow}</p>
             <h1 className={s.title}>{title}</h1>
             <InputLine form={birth} className={s.question} />
-            {/* The share link carries the reading, never the birth data above. */}
-            <div className={s.share}>
-              {share ? <ShareResultButton kind="saju" text={`나의 ${SITE.nameKo} · ${title}`} {...share} /> : <ShareButton text={`나의 ${SITE.nameKo} · ${title}`} />}
-            </div>
+            {/* The share link carries the reading, never the birth data above; no reading of its own, no share. */}
+            {share ? (
+              <div className={s.share}>
+                <ShareResultButton kind="saju" text={`나의 ${SITE.nameKo} · ${title}`} {...share} />
+              </div>
+            ) : null}
           </header>
         }
         spread={<ChartPanel result={result} />}

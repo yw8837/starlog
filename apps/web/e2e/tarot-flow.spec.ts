@@ -239,7 +239,7 @@ test("draw: a cards-only shuffle opens the fan; 다시 섞기 replays it; reduce
   expect(phases[1]!.at - phases[0]!.at).toBeGreaterThanOrEqual(700);
 });
 
-test("the demo reading: one scroll, written follow-up answers, rating, share and invite", async ({ page }, info) => {
+test("the demo reading: one scroll, written follow-up answers, rating, no share, and invite", async ({ page }, info) => {
   await page.goto("/chapter/sample");
   await expect(page.getByText("예시로 보여드리는 풀이예요.")).toBeVisible();
   const followUp = page.getByRole("region", { name: /이어서 물어보기/ });
@@ -264,12 +264,8 @@ test("the demo reading: one scroll, written follow-up answers, rating, share and
   await expect(page.getByText("기록 · 토끼 사서")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "이 기록의 차례" }).getByRole("link")).toHaveText(["풀이", "이어서 물어보기"]);
 
-  // Sharing: no share sheet in the test browser, so the site link is copied (never a /chapter/ URL).
-  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.evaluate(() => Object.defineProperty(navigator, "share", { value: undefined, configurable: true }));
-  await page.getByRole("button", { name: "공유하기" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "링크를 복사했어요" })).toBeVisible();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("https://starlog.yeolmaeapps.kr");
+  // No share on the sample: only a reading's own link is shared, and the sample has none (owner 2026-10-14).
+  await expect(page.getByRole("button", { name: "공유하기" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "친구에게 한 장 받아보기" }).click();
   const dialog = page.getByRole("dialog", { name: "친구에게 보낼 카드" });
