@@ -10,7 +10,7 @@ export const INFO_PAGES = {
     path: "/about",
     label: `${SITE.nameKo}란?`,
     title: `${SITE.nameKo}란?`,
-    description: `${SITE.nameKo}는 지금 내 상황에 맞춘 타로와 사주 풀이를 보는 곳이에요. 타로는 고양이 점성술사가, 사주는 한복 입은 토끼 선생님이 읽어 줘요. 기록은 내 기기에만 남아요.`,
+    description: `${SITE.nameKo}는 지금 내 상황에 맞춘 타로와 사주 풀이를 보는 곳이에요. 타로는 고양이 점성술사가, 사주는 한복 입은 토끼 선생님이 읽어 줘요.`,
   },
   how: {
     path: "/how",

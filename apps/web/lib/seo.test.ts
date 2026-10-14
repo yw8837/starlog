@@ -62,16 +62,13 @@ describe("sitemap on the app host", () => {
     for (const path of ["/", "/now", "/today", "/faq"]) expect(entry(path)?.lastModified).toBeUndefined();
   });
 
-  it("with 별자리 인연 on, lists /lucky and /ranking but not the twelve sign rankings (their lists load in the browser, so they are noindex); with it off, none of them", () => {
+  it("lists neither /lucky nor /ranking, nor the twelve sign rankings: their lists load in the browser, so the server sends a loading state, and no page links to them", () => {
     expect(SITE.features.bonds).toBe(true);
-    for (const path of ["/lucky", "/ranking"]) expect(urls).toContain(`${SITE.url}${path}`);
+    for (const path of ["/lucky", "/ranking"]) expect(urls).not.toContain(`${SITE.url}${path}`);
     expect(CONSTELLATIONS).toHaveLength(12);
     for (const sign of CONSTELLATIONS) expect(urls, sign.id).not.toContain(`${SITE.url}/ranking/${sign.id}`);
-    expect(urls.filter((url) => new URL(url).pathname.startsWith("/ranking/"))).toEqual([]);
-    const off = sitemapEntries({ features: { bonds: false } }).map((e) => e.path);
-    expect(off.some((path) => path === "/lucky" || path.startsWith("/ranking"))).toBe(false);
-    const offApp = sitemapEntriesFor("app", { features: { bonds: false } }).map((e) => e.path);
-    expect(offApp.some((path) => path === "/lucky" || path.startsWith("/ranking"))).toBe(false);
+    expect(urls.filter((url) => /^\/(lucky|ranking)(\/|$)/.test(new URL(url).pathname))).toEqual([]);
+    expect(sitemapEntries().some((e) => e.path === "/lucky" || e.path.startsWith("/ranking"))).toBe(false);
   });
 
   it("lists each page once and leaves out personal and in-progress pages", () => {
@@ -218,8 +215,14 @@ describe("robots.txt", () => {
 
   it("keeps the API and personal pages out, but lets link previews fetch /api/og/", () => {
     const disallow = values("Disallow");
-    for (const path of ["/api/", "/chapter", "/story", "/me", "/dev", "/invite", "/bonds", "/b/", "/pay"]) expect(disallow).toContain(path);
+    for (const path of ["/api/", "/chapter", "/dev", "/invite", "/b/", "/pay"]) expect(disallow).toContain(path);
     expect(values("Allow")).toEqual(["/", "/api/og/"]);
+  });
+
+  it("leaves /me, /story and /bonds crawlable: they carry noindex (lib/seo.pages.test.ts), and a crawler that may not fetch a page never reads it", () => {
+    const disallow = values("Disallow");
+    for (const path of ["/me", "/story", "/bonds"]) expect(disallow.some((rule) => path.startsWith(rule)), path).toBe(false);
+    expect(disallow).toEqual(["/api/", "/chapter", "/dev", "/invite", "/b/", "/pay"]);
   });
 
   it("does not block the public pages, the rankings included", () => {

@@ -4,12 +4,13 @@ import type { ReactElement } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import FaqPage from "@/app/faq/page";
 import GuideArticlePage from "@/app/guide/[slug]/page";
+import GuideLayout from "@/app/guide/layout";
 import GuideSajuPage from "@/app/guide/saju/page";
 import GuideTarotPage from "@/app/guide/tarot/page";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, articlesIn, findArticle, guideSectionText } from "./guide";
-import { guideArticleJsonLd, guideQuestions, jsonLdScript, rankingItemListJsonLd } from "./jsonld";
+import { ORGANIZATION_ID, guideArticleJsonLd, guideQuestions, jsonLdScript, rankingItemListJsonLd } from "./jsonld";
 
 afterEach(cleanup);
 
@@ -118,6 +119,31 @@ describe("JSON-LD", () => {
     for (const node of nodes) expect(problems(node)).toEqual([]);
     expect(nodes[0]).toMatchObject({ name: SITE.business.name, email: SITE.business.email });
     expect(nodes[1]).toMatchObject({ name: SITE.nameKo, alternateName: expect.arrayContaining([SITE.name]) });
+  });
+
+  it.each([
+    ["the tarot hub, the root domain's /", <GuideTarotPage key="tarot" />],
+    ["the saju hub", <GuideSajuPage key="saju" />],
+  ] as const)("a guide page under the guide layout (%s) also names the root domain's own site: a WebSite with the shared publisher, and no sameAs", (_name, page) => {
+    const nodes = jsonLdOf(<GuideLayout>{page}</GuideLayout>);
+    const sites = byType(nodes, "WebSite");
+    expect(sites).toEqual([
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": `${SITE.guideUrl}/#website`,
+        name: "스타로그 가이드",
+        url: `${SITE.guideUrl}/`,
+        inLanguage: "ko-KR",
+        publisher: { "@id": ORGANIZATION_ID },
+      },
+    ]);
+    expect(JSON.stringify(sites)).not.toContain("sameAs");
+  });
+
+  it("the guide layout's WebSite does not replace the app's: SiteJsonLd keeps https://starlog.yeolmaeapps.kr/#website", () => {
+    const [site] = byType(jsonLdOf(<SiteJsonLd />), "WebSite");
+    expect(site).toMatchObject({ "@id": `${SITE.url}/#website`, url: `${SITE.url}/` });
   });
 
   it("/faq: an FAQPage with every question on the page", () => {

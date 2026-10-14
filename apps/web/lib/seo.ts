@@ -113,13 +113,13 @@ const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
 
 /**
  * Public, indexable pages of both hosts: the entry points, the free daily cards, the guide tabs and
- * every article (on the root domain), the service pages (about, how, help, FAQ), pricing, the
- * policies, and with 별자리 인연 the weekly lucky numbers and the rankings' index. `/guide` itself is a
- * permanent redirect to the first tab (next.config.ts), so it is not listed. Personal and
- * in-progress screens never are (NOINDEX), nor are the twelve /ranking/<sign> pages: their lists load
- * in the browser, so the server sends only a "불러오는 중" shell. sitemapEntriesFor splits them by host.
+ * every article (on the root domain), the service pages (about, how, help, FAQ), pricing and the
+ * policies. `/guide` itself is a permanent redirect to the first tab (next.config.ts), so it is not
+ * listed. Personal and in-progress screens never are (NOINDEX), nor are 별자리 인연's /lucky and
+ * /ranking and the twelve /ranking/<sign> pages: their lists load in the browser, so the server sends
+ * only a "불러오는 중" shell, and no page links to them. sitemapEntriesFor splits them by host.
  */
-export function sitemapEntries(site: { features: { bonds: boolean } } = SITE): SitemapEntry[] {
+export function sitemapEntries(): SitemapEntry[] {
   return [
     { path: "/", changeFrequency: "daily", priority: 1 },
     { path: "/tarot/new", changeFrequency: "monthly", priority: 0.9 },
@@ -141,13 +141,6 @@ export function sitemapEntries(site: { features: { bonds: boolean } } = SITE): S
     { path: "/pricing", changeFrequency: "monthly", priority: 0.5 },
     // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.
     ...["/refund", "/terms", "/privacy"].map((path): SitemapEntry => ({ path, changeFrequency: "yearly", priority: 0.2 })),
-    // 이번 주 행운 번호 and the rankings' index ship with 별자리 인연 (SITE.features.bonds)
-    ...(site.features.bonds
-      ? [
-          { path: "/lucky", changeFrequency: "weekly", priority: 0.5 } satisfies SitemapEntry,
-          { path: "/ranking", changeFrequency: "daily", priority: 0.5 } satisfies SitemapEntry,
-        ]
-      : []),
   ];
 }
 
@@ -158,16 +151,16 @@ export const SITEMAP_PATHS: readonly string[] = sitemapEntries().map((entry) => 
  * What one host's sitemap lists: the guide URLs on the root domain, every other page on the app host
  * (the app host's /guide URLs redirect to the root domain, so they are not listed there).
  */
-export function sitemapEntriesFor(host: SiteHost, site: { features: { bonds: boolean } } = SITE): SitemapEntry[] {
-  return sitemapEntries(site).filter((entry) => isGuidePath(entry.path) === (host === "guide"));
+export function sitemapEntriesFor(host: SiteHost): SitemapEntry[] {
+  return sitemapEntries().filter((entry) => isGuidePath(entry.path) === (host === "guide"));
 }
 
 /**
  * app/sitemap.xml/route.ts: one host's sitemap, as the sitemaps.org XML Next's own sitemap route
  * wrote (a `sitemap.ts` is handed no request, so a route reads the host and builds it).
  */
-export function sitemapXml(host: SiteHost, site: { features: { bonds: boolean } } = SITE): string {
-  const urls = sitemapEntriesFor(host, site).flatMap(({ path, lastModified, changeFrequency, priority }) => [
+export function sitemapXml(host: SiteHost): string {
+  const urls = sitemapEntriesFor(host).flatMap(({ path, lastModified, changeFrequency, priority }) => [
     "<url>",
     `<loc>${absoluteUrl(path)}</loc>`,
     ...(lastModified ? [`<lastmod>${lastModified}</lastmod>`] : []),

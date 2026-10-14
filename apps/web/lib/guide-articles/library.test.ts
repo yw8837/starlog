@@ -4,6 +4,7 @@ import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { aiTells } from "../ai/style";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, findArticle, guideSectionText, type GuideArticle } from "../guide";
+import { guideFaqJsonLd, guideQuestions } from "../jsonld";
 import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
 import { DAY_MASTER_ARTICLES } from "./day-masters";
 import { SAJU_ARTICLES } from "./saju";
@@ -30,7 +31,17 @@ interface KbCard {
 const kbPath = (cardId: string) => fileURLToPath(new URL(`../../../../content/kb/cards/${cardId}.json`, import.meta.url));
 const kbCard = (cardId: string): KbCard => JSON.parse(readFileSync(kbPath(cardId), "utf8")) as KbCard;
 
-const CARD_HEADINGS = ["그림 속 장면", "정방향으로 읽을 때", "역방향으로 읽을 때", "연애·일·돈 질문에서", "비슷한 카드와 헷갈릴 때"];
+/**
+ * A card article's five headings (SEO-05): the two meaning sections ask their question with the card's
+ * name, the way 은둔자 and 별 in lib/guide.ts do, so each heading stands alone for an answer engine.
+ */
+const cardHeadings = (name: string) => [
+  "그림 속 장면",
+  `${name} 카드 정방향은 어떤 뜻인가요`,
+  `${name} 카드 역방향은 어떤 뜻인가요`,
+  "연애·일·돈 질문에서",
+  "비슷한 카드와 헷갈릴 때",
+];
 
 /** Owner rules: no vendor or model names, no "베타", no promised outcomes (KB 글쓰기 규칙 too). */
 const BANNED = [
@@ -115,7 +126,10 @@ describe("card articles agree with the KB", () => {
     expect(card.id).toBe(cardId);
     expect(article.category).toBe("tarot");
     expect(article.title).toContain(card.names.ko);
-    expect(article.sections.map((section) => section.heading)).toEqual(CARD_HEADINGS);
+    expect(article.sections.map((section) => section.heading)).toEqual(cardHeadings(card.names.ko));
+    // The two meaning questions are what the FAQPage JSON-LD (jsonld.ts isQuestion) is built from.
+    expect(guideQuestions(article).map((entry) => entry.q)).toEqual([`${card.names.ko} 카드 정방향은 어떤 뜻인가요?`, `${card.names.ko} 카드 역방향은 어떤 뜻인가요?`]);
+    expect(guideFaqJsonLd(article)).not.toBeNull();
     // The KB's known misdescriptions of this scan (R3) must not appear anywhere in the article.
     const text = allText(article);
     for (const mis of card.imagery.commonMisdescriptions) expect(text, mis.wrong).not.toMatch(new RegExp(mis.regex));
@@ -127,6 +141,7 @@ describe("card articles agree with the KB", () => {
   it.each(BASE_CARDS.map((article) => [article.slug, article] as const))("%s (lib/guide.ts)", (_slug, article) => {
     const card = kbCard(article.cardId ?? "");
     expect(article.title).toContain(card.names.ko);
+    expect(article.sections.map((section) => section.heading)).toEqual(cardHeadings(card.names.ko));
     const text = allText(article);
     for (const mis of card.imagery.commonMisdescriptions) expect(text, mis.wrong).not.toMatch(new RegExp(mis.regex));
   });

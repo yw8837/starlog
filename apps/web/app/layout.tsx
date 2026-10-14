@@ -38,6 +38,9 @@ export const metadata: Metadata = {
   // og:title and og:description follow each page's title and description (the defaults above on
   // pages without their own). Indexable pages set their own openGraph through lib/seo.ts pageMetadata.
   openGraph: { type: "website", siteName: OG_SITE_NAME, locale: "ko_KR", images: [{ ...OG_IMAGE }] },
+  // Large image previews and full snippets for Google. Indexable pages inherit this; a page that sets its
+  // own `robots` (NOINDEX in lib/seo.ts) replaces it whole, so a noindex page never carries it.
+  robots: { googleBot: { "max-image-preview": "large", "max-snippet": -1 } },
   // Twitter/X follows Open Graph for title, description and image.
   twitter: { card: "summary_large_image" },
   // Guide articles as RSS for feed readers and 네이버 서치어드바이저 (app/rss.xml/route.ts).

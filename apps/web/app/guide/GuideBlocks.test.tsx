@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { TEMPLATES } from "@starlog/core";
+import { TEMPLATES, getCard } from "@starlog/core";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { DECK_KEY } from "@/lib/deck";
@@ -82,6 +82,16 @@ describe("guide blocks", () => {
     expect([...root.querySelectorAll("img")].map((img) => img.getAttribute("src"))).toContain("/cards/major-01-magician-sm.webp");
     expect([...root.querySelectorAll("img")].every((img) => img.getAttribute("loading") === "lazy")).toBe(true);
     expect(root.querySelector("figcaption")?.textContent).toBe("메이저 아르카나 0~2번");
+  });
+
+  it("cardRow: each face is named by its card's Korean name (image search), each back stays empty (decorative)", () => {
+    const root = show({ kind: "cardRow", cards: ["major-00-fool", "wands-01"] });
+    const images = [...root.querySelectorAll("img")];
+    const faces = images.filter((img) => !img.getAttribute("src")?.includes("/backs/"));
+    const backs = images.filter((img) => img.getAttribute("src")?.includes("/backs/"));
+    expect(faces.map((img) => img.getAttribute("alt"))).toEqual([getCard("major-00-fool").names.ko, getCard("wands-01").names.ko]);
+    expect(backs).toHaveLength(2);
+    expect(backs.map((img) => img.getAttribute("alt"))).toEqual(["", ""]);
   });
 
   it("cardRow: the pictures are the 1909 scans, whatever deck the visitor chose; only the backs follow the choice", () => {

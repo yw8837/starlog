@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SITE } from "./config";
 import { guideIndexPath } from "./guideMeta";
-import { FEED_URL, GUIDE_HOME, absoluteUrl, appHref, guideHref, hostOfPath, isGuidePath, linkHref, originOf, siteOfRequest, splitHosts } from "./hosts";
+import { FEED_URL, GUIDE_HOME, GUIDE_HOST_PAGES, absoluteUrl, appHref, guideHref, hostOfPath, isGuidePath, linkHref, originOf, siteOfRequest, splitHosts } from "./hosts";
 
 /** The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; every other build, dev server and test leaves it off. */
 const FLAG = "NEXT_PUBLIC_SPLIT_HOSTS";
@@ -116,6 +116,44 @@ describe("linkHref", () => {
     expect(linkHref("/", "guide")).toBe("https://starlog.yeolmaeapps.kr/");
     expect(linkHref("/story", "guide")).toBe("https://starlog.yeolmaeapps.kr/story");
     expect(linkHref("/faq", "guide")).toBe("https://starlog.yeolmaeapps.kr/faq");
+  });
+});
+
+describe("the pages the root domain serves besides the guide", () => {
+  it("are the operator's page and the two policies, and their canonical stays on the app host", () => {
+    expect([...GUIDE_HOST_PAGES]).toEqual(["/about", "/privacy", "/terms"]);
+    for (const path of GUIDE_HOST_PAGES) {
+      expect(hostOfPath(path), path).toBe("app");
+      expect(absoluteUrl(path), path).toBe(`https://starlog.yeolmaeapps.kr${path}`);
+    }
+  });
+
+  it("are linked from a guide page on the root domain itself, and every other app page on the app host", () => {
+    vi.stubEnv(FLAG, "1");
+    for (const path of GUIDE_HOST_PAGES) expect(linkHref(path, "guide"), path).toBe(path);
+    for (const path of ["/pricing", "/how", "/evidence", "/help", "/faq", "/refund"]) expect(linkHref(path, "guide"), path).toBe(`https://starlog.yeolmaeapps.kr${path}`);
+    // From the app host they are the app's own pages: paths, as before.
+    for (const path of GUIDE_HOST_PAGES) expect(linkHref(path, "app"), path).toBe(path);
+  });
+});
+
+describe("linkHref for a page both hosts render", () => {
+  const paths = ["/", "/about", "/how", "/guide/tarot", "/guide/saju", "/guide/the-fool"];
+
+  it("with the flag on, names the host that really serves each path: the 404 page is the same on the root domain and the app host, and a relative link would take a redirect on one of them", () => {
+    vi.stubEnv(FLAG, "1");
+    expect(paths.map((path) => linkHref(path, "either"))).toEqual([
+      "https://starlog.yeolmaeapps.kr/",
+      "https://starlog.yeolmaeapps.kr/about",
+      "https://starlog.yeolmaeapps.kr/how",
+      "https://yeolmaeapps.kr/",
+      "https://yeolmaeapps.kr/guide/saju",
+      "https://yeolmaeapps.kr/guide/the-fool",
+    ]);
+  });
+
+  it("with one origin keeps every link a path", () => {
+    for (const path of paths) expect(linkHref(path, "either"), path).toBe(path);
   });
 });
 

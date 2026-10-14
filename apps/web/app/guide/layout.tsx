@@ -1,17 +1,17 @@
-import Script from "next/script";
 import type { ReactNode } from "react";
-import { adsConfig, adsScriptSrc } from "@/lib/ads";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { guideWebsiteJsonLd } from "@/lib/jsonld";
 
 /**
- * The AdSense script loads under /guide only. Use manual ad units and keep Auto ads off in the
- * AdSense dashboard: the script stays loaded after client-side navigation to reading pages.
+ * Every /guide page, and so the root domain's "/" (the guide's home), names the site the root domain
+ * is: the guides. The AdSense script is not here: it loads on the article pages only
+ * (app/guide/[slug]/page.tsx), never on the hubs.
  */
 export default function GuideLayout({ children }: { children: ReactNode }) {
-  const ads = adsConfig();
   return (
     <>
       {children}
-      {ads ? <Script async src={adsScriptSrc(ads.client)} crossOrigin="anonymous" strategy="afterInteractive" /> : null}
+      <JsonLd data={guideWebsiteJsonLd()} />
     </>
   );
 }

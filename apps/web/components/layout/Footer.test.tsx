@@ -71,9 +71,27 @@ describe("Footer", () => {
     ]);
   });
 
-  it("on a guide page, every link to the app goes to the app host when the hosts are split, and the guide link stays a path: the root domain's /", () => {
+  it("on a guide page, every link to the app goes to the app host when the hosts are split, except the operator's page and the two policies the root domain serves itself; the guide link stays a path: the root domain's /", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<Footer host="guide" />);
+    const links = screen.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
+    expect(links).toEqual([
+      ["스타로그란?", "/about"],
+      ["풀이 과정", `${SITE.url}/how`],
+      ["근거 자료", `${SITE.url}/evidence`],
+      ["이용 가이드", `${SITE.url}/help`],
+      ["FAQ", `${SITE.url}/faq`],
+      ["가이드 글", "/"],
+      ["가격 안내", `${SITE.url}/pricing`],
+      ["이용약관", "/terms"],
+      ["개인정보처리방침", "/privacy"],
+      ["환불 정책", `${SITE.url}/refund`],
+    ]);
+  });
+
+  it("on a page both hosts render (the 404), every link names the host that serves it, so none takes a redirect on the other", () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    render(<Footer host="either" />);
     const links = screen.getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
     expect(links).toEqual([
       ["스타로그란?", `${SITE.url}/about`],
@@ -81,7 +99,7 @@ describe("Footer", () => {
       ["근거 자료", `${SITE.url}/evidence`],
       ["이용 가이드", `${SITE.url}/help`],
       ["FAQ", `${SITE.url}/faq`],
-      ["가이드 글", "/"],
+      ["가이드 글", `${SITE.guideUrl}/`],
       ["가격 안내", `${SITE.url}/pricing`],
       ["이용약관", `${SITE.url}/terms`],
       ["개인정보처리방침", `${SITE.url}/privacy`],
@@ -92,6 +110,15 @@ describe("Footer", () => {
   it("on a guide page with one origin, every link is a path as before", () => {
     render(<Footer host="guide" />);
     expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"]);
+  });
+
+  it("says on the guide host that the articles are reference content, not professional advice, and nowhere else", () => {
+    const line = "가이드 글은 오락과 자기 성찰을 위한 참고 콘텐츠예요. 의료, 법률, 투자, 진로 같은 전문적인 판단을 대신하지 않아요.";
+    const guide = render(<Footer host="guide" />).container.textContent ?? "";
+    expect(guide).toContain(line);
+    expect(guide.split(line)).toHaveLength(2);
+    cleanup();
+    for (const host of ["app", "either"] as const) expect(render(<Footer host={host} />).container.textContent, host).not.toContain("전문적인 판단");
   });
 
   it("keeps every link in one labelled row", () => {

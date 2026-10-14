@@ -21,7 +21,7 @@ export default function NotFound() {
           홈으로
         </Button>
       </main>
-      <Footer />
+      <Footer host="either" />
     </div>
   );
 }

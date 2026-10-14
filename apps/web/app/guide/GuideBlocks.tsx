@@ -109,7 +109,7 @@ function Block({ block, id }: { block: GuideBlock; id: string }) {
           <ul className={s.cards}>
             {block.cards.map((cardId) => (
               <li key={cardId} className={s.cardItem}>
-                <TarotCard cardId={cardId} faceUp size="sm" className={s.card} imageSizes="96px" loading="lazy" deck="rws1909" />
+                <TarotCard cardId={cardId} faceUp size="sm" className={s.card} imageSizes="96px" loading="lazy" deck="rws1909" alt={getCard(cardId).names.ko} />
                 <span className={s.cardName}>{getCard(cardId).names.ko}</span>
               </li>
             ))}

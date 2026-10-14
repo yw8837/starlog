@@ -1,7 +1,7 @@
 import { CONSTELLATIONS, cardImage } from "@starlog/core";
 import { SITE } from "./config";
 import { GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, type GuideArticle, type GuideCategory } from "./guide";
-import { absoluteUrl } from "./hosts";
+import { GUIDE_HOME, absoluteUrl } from "./hosts";
 
 /**
  * schema.org JSON-LD for search and answer engines (rendered as <script type="application/ld+json">,
@@ -64,6 +64,24 @@ export function websiteJsonLd() {
     alternateName: [SITE.name, `${SITE.nameKo} ${SITE.name}`],
     url: absoluteUrl("/"),
     description: SITE_SUMMARY,
+    inLanguage: "ko-KR",
+    publisher: { "@id": ORGANIZATION_ID },
+  };
+}
+
+/**
+ * The root domain's own site, the guides: 스타로그 가이드, published by the same 열매스튜디오. Carried by
+ * every guide page (app/guide/layout.tsx), next to the app's WebSite from the root layout. No sameAs:
+ * there is no real profile to list.
+ */
+export function guideWebsiteJsonLd() {
+  const home = absoluteUrl(GUIDE_HOME);
+  return {
+    "@context": CONTEXT,
+    "@type": "WebSite",
+    "@id": `${home}#website`,
+    name: `${SITE.nameKo} 가이드`,
+    url: home,
     inLanguage: "ko-KR",
     publisher: { "@id": ORGANIZATION_ID },
   };

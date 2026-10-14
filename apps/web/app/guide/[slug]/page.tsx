@@ -2,6 +2,7 @@ import { getCard } from "@starlog/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import Script from "next/script";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
@@ -11,19 +12,21 @@ import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
-import { adsConfig } from "@/lib/ads";
+import { adsConfig, adsScriptSrc } from "@/lib/ads";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath } from "@/lib/guide";
 import { appHref, linkHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
-import { koreanDate } from "@/lib/legal";
 import { pageMetadata } from "@/lib/seo";
 import { GuideBlocks } from "../GuideBlocks";
-import { CardQuote, GuideSourceLine } from "../GuideEvidence";
+import { CardQuote, GuideByline, GuideSourceLine } from "../GuideEvidence";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
 import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
 
 export const dynamicParams = false;
+
+/** The ad unit sits after this many sections of the body, so a reader has met some of the text before it and the rest still follows. */
+const SECTIONS_BEFORE_AD = 2;
 
 export function generateStaticParams() {
   return GUIDE_ARTICLES.map((article) => ({ slug: article.slug }));
@@ -59,6 +62,16 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   const picked = (article.related ?? []).map((other) => findArticle(other)).filter((other) => other !== undefined);
   const others = picked.length ? picked : GUIDE_ARTICLES.filter((other) => other.category === article.category && other.slug !== article.slug).slice(0, 4);
   const ads = adsConfig();
+  // Where the ad goes in the body, or null: with the unit set, and sections left after it.
+  const adAt = ads?.guideSlot && article.sections.length > SECTIONS_BEFORE_AD ? SECTIONS_BEFORE_AD : null;
+  const sections = (from: number, to: number) =>
+    article.sections.slice(from, to).map((section, i) => (
+      <section key={section.heading} className={s.section}>
+        <h2 className={s.sectionTitle}>{section.heading}</h2>
+        <p className={s.prose}>{section.body}</p>
+        {section.blocks ? <GuideBlocks blocks={section.blocks} id={`s${from + i + 1}`} /> : null}
+      </section>
+    ));
 
   return (
     <div className="page-shell with-tabbar">
@@ -96,11 +109,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
                 </ul>
               </div>
             ) : null}
-            {article.updated ? (
-              <p className={s.dates}>
-                <time dateTime={article.updated}>{koreanDate(article.updated)}</time> 업데이트
-              </p>
-            ) : null}
+            <GuideByline article={article} />
           </header>
 
           {card && article.cardId ? (
@@ -111,18 +120,15 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
           ) : null}
           {article.cardId ? <CardQuote cardId={article.cardId} /> : null}
 
-          <Paper className={s.body}>
-            {article.sections.map((section, i) => (
-              <section key={section.heading} className={s.section}>
-                <h2 className={s.sectionTitle}>{section.heading}</h2>
-                <p className={s.prose}>{section.body}</p>
-                {section.blocks ? <GuideBlocks blocks={section.blocks} id={`s${i + 1}`} /> : null}
-              </section>
-            ))}
-          </Paper>
+          <Paper className={s.body}>{sections(0, adAt ?? article.sections.length)}</Paper>
+          {/* On the sky, between two sheets of paper: the label is light ink, which the cream paper would hide. */}
+          {adAt !== null && ads?.guideSlot ? (
+            <>
+              <AdSlot client={ads.client} slot={ads.guideSlot} />
+              <Paper className={s.body}>{sections(adAt, article.sections.length)}</Paper>
+            </>
+          ) : null}
           <GuideSourceLine article={article} />
-
-          {ads?.guideSlot ? <AdSlot client={ads.client} slot={ads.guideSlot} /> : null}
 
           <aside className={s.cta} aria-label={cta.label}>
             <p className={s.ctaText}>{cta.text}</p>
@@ -151,6 +157,8 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
         </article>
       </main>
       <Footer host="guide" />
+      {/* Article pages only: the hubs are lists to find an article by (app/guide/layout.tsx). */}
+      {ads ? <Script async src={adsScriptSrc(ads.client)} crossOrigin="anonymous" strategy="afterInteractive" /> : null}
     </div>
   );
 }

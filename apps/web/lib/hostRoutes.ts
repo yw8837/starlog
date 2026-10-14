@@ -1,6 +1,6 @@
 // next.config.ts loads this file through its own loader, which has no "@/" alias: relative imports only.
 import { SITE } from "./config";
-import { GUIDE_HOME, splitHosts } from "./hosts";
+import { GUIDE_HOME, GUIDE_HOST_PAGES, splitHosts } from "./hosts";
 
 /**
  * The host rules (owner decision 2026-10-03: the guides live on the root domain, where AdSense is
@@ -12,6 +12,9 @@ import { GUIDE_HOME, splitHosts } from "./hosts";
  *   move there for good (308), in one hop.
  * - Every other /guide URL on the app host moves to the same path on the root domain for good (308),
  *   so each guide URL has one home and search engines carry its signals over.
+ * - The root domain also serves the operator's page and the two policies (GUIDE_HOST_PAGES: /about,
+ *   /privacy, /terms), so the domain AdSense reviews has them at its own address. Their canonical is
+ *   still the app host's.
  * - Any other path on the root domain is an app page: 307 to the same path on the app host.
  *   Temporary on purpose, because the root domain may later get pages of its own for other apps.
  * - The root domain's responses send HSTS without includeSubDomains.
@@ -53,8 +56,9 @@ const anyCase = (word: string) => [...word].map((char) => (/[a-z]/i.test(char) ?
  * pages' own fetches (/api/version), the share images, the generated share image, and the card scans in
  * public/cards. A segment with a dot is a file (robots.txt, sitemap.xml, ads.txt, llms.txt,
  * llms-full.txt, rss.xml, the favicon and icons, logo.png, the IndexNow key, .well-known/…) and stays too.
+ * The three pages of GUIDE_HOST_PAGES are served in place as well.
  */
-const OWN_SEGMENTS = ["guide", "_next", "api", "og", "opengraph-image", "cards"];
+const OWN_SEGMENTS = ["guide", "_next", "api", "og", "opengraph-image", "cards", ...GUIDE_HOST_PAGES.map((path) => path.slice(1))];
 
 const SEGMENT = "[^/.]+";
 

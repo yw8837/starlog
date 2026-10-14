@@ -1,5 +1,6 @@
 import { CONSTELLATIONS } from "@starlog/core";
 import type { Metadata } from "next";
+import { createRequire } from "node:module";
 import { describe, expect, it, vi } from "vitest";
 import { metadata as aboutMeta } from "@/app/about/page";
 import { metadata as bInviteIndexMeta } from "@/app/b/page";
@@ -36,7 +37,7 @@ import { metadata as termsMeta } from "@/app/terms/page";
 import { metadata as todayMeta } from "@/app/today/page";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES } from "./guide";
-import { isGuidePath } from "./hosts";
+import { GUIDE_HOST_PAGES, absoluteUrl, isGuidePath } from "./hosts";
 import { HOME_TITLE, NOINDEX as NOINDEX_ROBOTS, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
 
 // The root layout loads its fonts through the Next compiler, which is not running here.
@@ -49,6 +50,11 @@ vi.mock("next/font/google", () => ({ Gowun_Batang: () => ({ variable: "" }), Not
  * indexable pages, each on its own host. A page's address is its path (resolved against the app
  * host), except the guide's: those pages live on the root domain, so theirs is the full URL there.
  */
+
+/** Next's own resolver, which turns a page's `robots` into the <meta name="robots"> and <meta name="googlebot"> values. */
+const { resolveRobots } = createRequire(import.meta.url)("next/dist/lib/metadata/resolvers/resolve-basics") as {
+  resolveRobots: (robots: Metadata["robots"]) => { basic: string | null; googleBot: string | null } | null;
+};
 
 const params = <T extends Record<string, string>>(value: T) => ({ params: Promise.resolve(value) }) as never;
 
@@ -76,6 +82,12 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/ranking", rankingMeta],
   ...(await Promise.all(GUIDE_ARTICLES.map(async (article) => [`/guide/${article.slug}`, await guideArticleMeta(params({ slug: article.slug }))] as [string, Metadata]))),
 ];
+
+/**
+ * In INDEXABLE for their own metadata, but out of the sitemaps: client shells (the server sends a
+ * "불러오는 중" state) that no page links to.
+ */
+const UNLISTED = ["/lucky", "/ranking"];
 
 const NOINDEX: Array<[path: string, meta: Metadata]> = [
   ["/chapter/sample", await chapterMeta(params({ id: "sample" }))],
@@ -138,15 +150,45 @@ describe("indexable pages", () => {
   });
 
   it("is exactly the set the sitemaps list", () => {
-    expect([...SITEMAP_PATHS].sort()).toEqual(INDEXABLE.map(([path]) => path).sort());
+    expect([...SITEMAP_PATHS].sort()).toEqual(INDEXABLE.map(([path]) => path).filter((path) => !UNLISTED.includes(path)).sort());
   });
 
   it("is listed by the sitemap of the host that serves it: guide pages on the root domain, the rest on the app host", () => {
     const listed = { guide: sitemapEntriesFor("guide").map((entry) => entry.path), app: sitemapEntriesFor("app").map((entry) => entry.path) };
-    for (const [path] of INDEXABLE) {
+    for (const [path] of INDEXABLE.filter(([path]) => !UNLISTED.includes(path))) {
       expect(listed[isGuidePath(path) ? "guide" : "app"], path).toContain(path);
       expect(listed[isGuidePath(path) ? "app" : "guide"], path).not.toContain(path);
     }
+  });
+});
+
+describe("the pages the root domain serves besides the guide", () => {
+  it("/about, /privacy and /terms are indexed at the app host's address: their canonical and og:url resolve against the layout's metadataBase, whichever host served them", () => {
+    const base = layoutMeta.metadataBase;
+    expect(base?.toString()).toBe(`${SITE.url}/`);
+    for (const path of GUIDE_HOST_PAGES) {
+      const meta = INDEXABLE.find(([listed]) => listed === path)?.[1];
+      expect(meta, path).toBeDefined();
+      expect(new URL(String(meta?.alternates?.canonical), base ?? undefined).toString(), path).toBe(absoluteUrl(path));
+      expect(new URL(String((meta?.openGraph as { url?: string }).url), base ?? undefined).toString(), path).toBe(absoluteUrl(path));
+    }
+  });
+});
+
+describe("search result previews", () => {
+  it("lets Google show large image previews and full-length snippets on every indexable page: set once, in the root layout", () => {
+    expect(layoutMeta.robots).toEqual({ googleBot: { "max-image-preview": "large", "max-snippet": -1 } });
+    // What Next writes for it: no <meta name="robots"> (nothing to say), one googlebot tag.
+    expect(resolveRobots(layoutMeta.robots)).toEqual({ basic: "", googleBot: "max-image-preview:large, max-snippet:-1" });
+    // The indexable pages leave robots alone, so they inherit it.
+    for (const [path, meta] of INDEXABLE) expect(meta.robots, path).toBeUndefined();
+  });
+
+  it("does not reach personal and in-progress pages: their own robots replaces the layout's whole, so they stay plain noindex", () => {
+    for (const [path, meta] of NOINDEX) {
+      expect(resolveRobots(meta.robots), path).toEqual({ basic: "noindex, nofollow", googleBot: null });
+    }
+    expect(resolveRobots(NOINDEX_ROBOTS)).toEqual({ basic: "noindex, nofollow", googleBot: null });
   });
 });
 

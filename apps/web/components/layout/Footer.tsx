@@ -11,6 +11,9 @@ type FooterLink = { href: string; label: string; emphasis?: boolean };
 /** Shorter footer labels, so the row holds one line beside the wordmark on desktop. */
 const SHORT_LABEL: Readonly<Record<string, string>> = { [INFO_PAGES.how.path]: "풀이 과정", [INFO_PAGES.evidence.path]: "근거 자료", [INFO_PAGES.faq.path]: "FAQ" };
 
+/** On the guide host: the articles are not advice (the terms say the same of the readings, in the same words). */
+const GUIDE_NOTICE = "가이드 글은 오락과 자기 성찰을 위한 참고 콘텐츠예요. 의료, 법률, 투자, 진로 같은 전문적인 판단을 대신하지 않아요.";
+
 /** What the service is and how it works, then prices and policies: one wrapped row. */
 const LINKS: ReadonlyArray<FooterLink> = [...SERVICE_LINKS, ...LEGAL_LINKS].map((link) => ({ ...link, label: SHORT_LABEL[link.href] ?? link.label }));
 
@@ -20,9 +23,12 @@ const LINKS: ReadonlyArray<FooterLink> = [...SERVICE_LINKS, ...LEGAL_LINKS].map(
  * with "·", so a wrapped line never starts or ends on a separator, and every line may wrap inside
  * the column (the address is longer than a phone is wide). The guide pages pass `host="guide"`: they
  * live on the root domain, so their links to the app go to the app host when the hosts are split
- * (lib/hosts.ts); on the app host only the guide link leaves the page.
+ * (lib/hosts.ts), except the operator's page and the policies it serves itself; on the app host only
+ * the guide link leaves the page. They also say what the articles are: reference content, not advice.
+ * The 404 page is the same on both hosts and passes `host="either"`: every link names the host that
+ * serves it, so none takes a redirect.
  */
-export function Footer({ host = "app" }: { host?: SiteHost }) {
+export function Footer({ host = "app" }: { host?: SiteHost | "either" }) {
   const fields = businessFields(SITE.business);
   return (
     <footer className={styles.footer}>
@@ -42,6 +48,7 @@ export function Footer({ host = "app" }: { host?: SiteHost }) {
             ))}
           </ul>
         </nav>
+        {host === "guide" ? <p className={styles.business}>{GUIDE_NOTICE}</p> : null}
         {fields.length > 0 ? (
           <ul className={styles.business} aria-label="사업자 정보">
             {fields.map(([label, value]) => (

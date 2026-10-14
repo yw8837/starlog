@@ -2,6 +2,8 @@ import Link from "next/link";
 import { SAJU_SOURCE_LINE, cardQuote, cardSourceLine, evidenceHref } from "@/lib/evidence";
 import type { GuideArticle } from "@/lib/guideMeta";
 import { appHref } from "@/lib/hosts";
+import { INFO_PAGES } from "@/lib/infoPages";
+import { koreanDate } from "@/lib/legal";
 import s from "./guide.module.css";
 
 /**
@@ -37,6 +39,36 @@ export function GuideSourceLine({ article }: { article: GuideArticle }) {
     <p className={s.sources}>
       <Link href={appHref(evidenceHref(article.cardId ? "tarot" : "saju"))} className={s.sourcesLink}>
         {line}
+      </Link>
+    </p>
+  );
+}
+
+/**
+ * Under the title: who makes the guide, when this article was first posted and last updated (the dates
+ * the Article JSON-LD carries), and a link to how the guide is made. The evidence page is an app page,
+ * so it goes through appHref.
+ */
+export function GuideByline({ article }: { article: Pick<GuideArticle, "published" | "updated"> }) {
+  const { published, updated } = article;
+  return (
+    <p className={s.dates}>
+      열매스튜디오
+      {published ? (
+        <>
+          {" · 처음 올린 날 "}
+          <time dateTime={published}>{koreanDate(published)}</time>
+        </>
+      ) : null}
+      {updated ? (
+        <>
+          {" · 업데이트 "}
+          <time dateTime={updated}>{koreanDate(updated)}</time>
+        </>
+      ) : null}
+      {" · "}
+      <Link href={appHref(INFO_PAGES.evidence.path)} className={s.sourcesLink}>
+        근거와 방법
       </Link>
     </p>
   );

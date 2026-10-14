@@ -5,8 +5,9 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GuideArticlePage from "@/app/guide/[slug]/page";
 import { SITE } from "@/lib/config";
-import { GUIDE_ARTICLES } from "@/lib/guide";
+import { GUIDE_ARTICLES, findArticle } from "@/lib/guide";
 import { INFO_PAGES } from "@/lib/infoPages";
+import { koreanDate } from "@/lib/legal";
 
 // The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; these tests run on one origin unless a test says so.
 beforeEach(() => vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", ""));
@@ -71,10 +72,11 @@ describe("other guide articles", () => {
     expect(others.length).toBeGreaterThan(0);
     for (const article of others) {
       const { container } = await renderSlug(article.slug);
-      // The article itself; the site footer links the evidence page on every page.
+      // The article itself; the site footer links the evidence page on every page, and the byline under the
+      // title does too, without an anchor: the source line is the link to a section (#tarot, #saju).
       const body = container.querySelector("article") as HTMLElement;
       expect(body.querySelector("blockquote"), article.slug).toBeNull();
-      expect(body.querySelector(`a[href^="${evidence}"]`), article.slug).toBeNull();
+      expect(body.querySelector(`a[href^="${evidence}#"]`), article.slug).toBeNull();
       cleanup();
     }
   });
@@ -88,5 +90,29 @@ describe("the source line on the real hosts", () => {
     cleanup();
     const saju = await renderSlug("five-elements");
     expect(saju.container.querySelector(`a[href="${SITE.url}${evidence}#saju"]`)).not.toBeNull();
+  });
+});
+
+describe("the byline under the title", () => {
+  const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("열매스튜디오")) as HTMLElement | undefined;
+
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug]))("%s: names the maker, when it was first posted and last updated, and links the evidence page", async (slug) => {
+    const article = findArticle(slug);
+    if (!article?.published || !article.updated) throw new Error(`${slug} has no dates`);
+    const { container } = await renderSlug(slug);
+    const line = byline(container);
+    expect(line?.textContent).toBe(`열매스튜디오 · 처음 올린 날 ${koreanDate(article.published)} · 업데이트 ${koreanDate(article.updated)} · 근거와 방법`);
+    // The dates are machine-readable, the same ones the JSON-LD carries.
+    expect([...(line?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, article.updated]);
+    expect(line?.querySelector("a")?.getAttribute("href")).toBe(evidence);
+    expect(line?.querySelector("a")?.textContent).toBe("근거와 방법");
+    // One line, not the old "업데이트" line besides it.
+    expect(container.querySelectorAll("article header time")).toHaveLength(2);
+  });
+
+  it("goes to the evidence page on the app host when the hosts are split: the guide lives on the root domain", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    const { container } = await renderSlug("the-hermit");
+    expect(byline(container)?.querySelector("a")?.getAttribute("href")).toBe(`${SITE.url}${evidence}`);
   });
 });

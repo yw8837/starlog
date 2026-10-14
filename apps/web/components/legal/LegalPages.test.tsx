@@ -64,6 +64,41 @@ describe("policy pages", () => {
     expect(on).toContain("풀이 화면에는 광고를 싣지 않습니다");
   });
 
+  it("privacy: points to www.aboutads.info for other ad companies' personalised ads, once ads are on", () => {
+    vi.stubEnv("ADSENSE_CLIENT", "ca-pub-1234567890123456");
+    const { container } = render(<PrivacyPage />);
+    const link = [...container.querySelectorAll("a")].find((a) => a.getAttribute("href") === "https://www.aboutads.info");
+    expect(link?.textContent).toBe("www.aboutads.info");
+    expect(link?.closest("li")?.textContent).toBe("Google 외 제3자 광고 사업자의 맞춤 광고도 www.aboutads.info에서 끌 수 있습니다.");
+    // The Google settings link stays, and the 시행일 is the one lib/legal.ts holds.
+    expect(container.querySelector('a[href="https://adssettings.google.com"]')).not.toBeNull();
+    expect(container.querySelector('time[datetime="2026-10-15"]')).not.toBeNull();
+    cleanup();
+
+    vi.stubEnv("ADSENSE_CLIENT", "");
+    expect(render(<PrivacyPage />).container.textContent).not.toContain("aboutads");
+  });
+
+  it("privacy: tells what a shared link keeps and for how long, as the share code does", () => {
+    const text = render(<PrivacyPage />).container.textContent ?? "";
+    expect(text).toContain(
+      "공유 링크를 만들면 풀이의 공개용 사본(뽑은 카드와 풀이 본문)을 저장합니다. 질문, 직접 쓴 말과 메모, 고른 상황, 생년월일과 태어난 시각, 명식, 이어서 물어본 내용은 넣지 않고, 풀이 본문에 옮겨진 직접 쓴 말과 고른 상황, 생년월일·태어난 시각·나이는 가리며, 연락처나 링크가 들어간 문장은 빼고 저장합니다. 로그인한 상태로 만든 공유에는 계정을 함께 기록합니다.",
+    );
+    expect(text).toContain(
+      "풀이의 공유 사본은 그 풀이에서 공유 그만하기를 누르거나, 공유한 기기에서 그 풀이를 지우거나, 로그인한 상태로 공유했다면 회원 탈퇴할 때까지 보관하고, 그때 바로 지웁니다.",
+    );
+    expect(text).not.toContain("누를 때까지 보관하고, 누르면 바로 지웁니다");
+  });
+
+  it("privacy: names the readings the account keeps the same way everywhere: opened while logged in with a payment or the signup gift (lib/readings/store.ts); 오픈 기념 readings stay on the device", () => {
+    const text = render(<PrivacyPage />).container.textContent ?? "";
+    // The broader "readings opened while logged in" would also cover an 오픈 기념 reading, which is never saved to the account.
+    expect(text).not.toContain("로그인해서 연 풀이");
+    const kept = "로그인해 결제하거나 가입 선물로 연 풀이";
+    expect(text.split(kept).length - 1).toBeGreaterThanOrEqual(7);
+    expect(text).toContain("로그인하지 않고 연 풀이와 오픈 기념으로 연 풀이의 입력은 서버에 저장하지 않고");
+  });
+
   it("privacy: discloses 별자리 인연 (stored items, public ranking, share images, D1, retention, age) while it is live", () => {
     expect(SITE.features.bonds).toBe(true);
     const { container } = render(<PrivacyPage />);

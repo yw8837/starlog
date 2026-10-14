@@ -2,9 +2,10 @@ import { SITE } from "./config";
 
 /**
  * robots.txt (served by app/robots.txt/route.ts). Search engines and AI search/answer crawlers may
- * read every public page; personal pages (readings, stories, invites, the account and 별자리 인연
- * owner pages), dev screens and the API stay out, except the share images under /api/og/ that link
- * previews fetch. In-progress flow screens are crawlable but carry noindex (lib/seo.ts NOINDEX).
+ * read every public page; chapters, invites, dev screens and the API stay out, except the share
+ * images under /api/og/ that link previews fetch. The account, stories and 별자리 인연 owner pages
+ * (/me, /story, /bonds) and the in-progress flow screens are crawlable but carry noindex (lib/seo.ts
+ * NOINDEX): a crawler that may not fetch a page never reads its noindex.
  * Both hosts (the app and the guide's root domain) get the same rules; `site`, the origin of the host
  * that served the file, only sets the Sitemap and llms.txt lines (app/robots.txt/route.ts).
  * Training-only crawlers (GPTBot, ClaudeBot, Google-Extended and the like) are named nowhere here:
@@ -12,7 +13,7 @@ import { SITE } from "./config";
  */
 
 /** Path prefixes no crawler may fetch. `/b` itself is a noindex page; `/b/<code>` are friend invites. */
-export const ROBOTS_DISALLOW = ["/api/", "/chapter", "/story", "/me", "/dev", "/invite", "/bonds", "/b/", "/pay"] as const;
+export const ROBOTS_DISALLOW = ["/api/", "/chapter", "/dev", "/invite", "/b/", "/pay"] as const;
 
 /** Longest match wins, so the share images stay fetchable under the disallowed /api/. */
 export const ROBOTS_ALLOW = ["/", "/api/og/"] as const;

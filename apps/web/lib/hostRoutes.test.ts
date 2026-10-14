@@ -5,6 +5,8 @@ import nextConfig from "@/next.config";
 import { SITE } from "./config";
 import { guideIndexPath } from "./guide";
 import { hostHeaders, hostRedirects, hostRewrites } from "./hostRoutes";
+import { GUIDE_HOST_PAGES } from "./hosts";
+import { slashRedirect } from "./workerRedirects.mjs";
 
 /**
  * The host rules as production runs them. `next build` turns next.config.ts into the entries of
@@ -189,6 +191,12 @@ function expectHsts(host: string, pathname: string, expected: string, headers: H
 
 const to = (status: number, location: string): Outcome => ({ status, to: location });
 
+/** next.config.ts after the /guide rule: the two product entries that have no page of their own. */
+const ENTRY_REDIRECTS = [
+  { source: "/tarot", destination: "/tarot/new", permanent: true },
+  { source: "/saju", destination: "/saju/new", permanent: true },
+];
+
 /** First segments the root domain serves itself, in other letter cases (and the guide's path itself). */
 const MIXED_CASE = [
   "/Guide",
@@ -211,6 +219,11 @@ const MIXED_CASE = [
   "/_NEXT/static/media/font.woff2",
   "/Opengraph-Image",
   "/OPENGRAPH-IMAGE",
+  "/About",
+  "/PRIVACY",
+  "/Privacy/",
+  "/Terms",
+  "/TERMS/x",
 ];
 
 // What follows is the deploy build's; the block for the other builds turns the flag off again.
@@ -291,9 +304,11 @@ describe("on https://yeolmaeapps.kr", () => {
   });
 
   it("sends every app path to the same path on the app host, temporarily (307)", () => {
-    for (const path of ["/tarot/new", "/saju/new", "/tarot/new/situation", "/saju/chart", "/me", "/story", "/faq", "/now", "/today", "/pricing", "/b/ABC234", "/ranking/aries", "/invite/abc_DEF-123", "/guidebook", "/apiary", "/TAROT/new"]) {
+    for (const path of ["/tarot/new", "/saju/new", "/tarot/new/situation", "/saju/chart", "/me", "/story", "/faq", "/now", "/today", "/pricing", "/b/ABC234", "/ranking/aries", "/invite/abc_DEF-123", "/guidebook", "/apiary", "/TAROT/new", "/tarot", "/saju", "/refund"]) {
       expectRedirect(APEX, path, to(307, `${SITE.url}${path}`));
     }
+    // Only the three pages below are the root domain's own: a name that merely starts with one is an app path.
+    for (const path of ["/aboutus", "/privacy-policy", "/terms-of-use"]) expectRedirect(APEX, path, to(307, `${SITE.url}${path}`));
     expectRedirect(APEX, "/한글/경로", to(307, `${SITE.url}/한글/경로`));
     expectRedirect(APEX, "/%ED%95%9C/x", to(307, `${SITE.url}/%ED%95%9C/x`));
   });
@@ -317,6 +332,10 @@ describe("on https://yeolmaeapps.kr", () => {
       "/apple-icon.png",
       "/manifest.webmanifest",
       "/logo.png",
+      "/about",
+      "/privacy",
+      "/terms",
+      "/privacy/anything",
       "/74d8adb0a0b4d02a28602f80b163bf31.txt",
       "/.well-known/security.txt",
       "/opengraph-image",
@@ -357,6 +376,12 @@ describe("on https://starlog.yeolmaeapps.kr", () => {
     expectRedirect(STARLOG, "/guide/saju", to(308, `${SITE.guideUrl}/guide/saju`));
     expectRedirect(STARLOG, "/guide/the-fool", to(308, `${SITE.guideUrl}/guide/the-fool`));
     expectRedirect(STARLOG, "/guide/a/b", to(308, `${SITE.guideUrl}/guide/a/b`));
+  });
+
+  it("sends /tarot and /saju, which have no page, to their entry for good (308)", () => {
+    expectRedirect(STARLOG, "/tarot", to(308, "/tarot/new"));
+    expectRedirect(STARLOG, "/saju", to(308, "/saju/new"));
+    expectRedirect(`${STARLOG}:443`, "/tarot", to(308, "/tarot/new"));
   });
 
   it("leaves everything else alone, files and the API included", () => {
@@ -430,11 +455,11 @@ describe("without NEXT_PUBLIC_SPLIT_HOSTS (next dev, the OpenNext preview, e2e)"
     expect(hostRedirects()).toEqual([]);
     expect(hostRewrites()).toEqual([]);
     expect(hostHeaders(APEX_HSTS)).toEqual([]);
-    expect(await nextConfig.redirects?.()).toEqual([{ source: "/guide", destination: "/guide/tarot", permanent: true }]);
+    expect(await nextConfig.redirects?.()).toEqual([{ source: "/guide", destination: "/guide/tarot", permanent: true }, ...ENTRY_REDIRECTS]);
     expect(await nextConfig.rewrites?.()).toEqual({ beforeFiles: [], afterFiles: [], fallback: [] });
     expect(await nextConfig.headers?.()).toHaveLength(1);
     expect(LOCAL.beforeFiles).toEqual([]);
-    expect(LOCAL.redirects.filter((entry) => !entry.internal).map((entry) => entry.source)).toEqual(["/guide"]);
+    expect(LOCAL.redirects.filter((entry) => !entry.internal).map((entry) => entry.source)).toEqual(["/guide", "/tarot", "/saju"]);
     expect(LOCAL.headers.filter((entry) => entry.has)).toEqual([]);
   });
 
@@ -442,6 +467,8 @@ describe("without NEXT_PUBLIC_SPLIT_HOSTS (next dev, the OpenNext preview, e2e)"
     for (const host of [STARLOG, APEX, "localhost:8787", "localhost:3100", "example.com"]) {
       for (const path of ["/guide/tarot", "/guide/saju", "/guide/the-fool", "/me", "/tarot/new", "/Guide/tarot"]) expectRedirect(host, path, null, LOCAL.redirects);
       expectRedirect(host, "/guide", to(308, "/guide/tarot"), LOCAL.redirects);
+      expectRedirect(host, "/tarot", to(308, "/tarot/new"), LOCAL.redirects);
+      expectRedirect(host, "/saju", to(308, "/saju/new"), LOCAL.redirects);
       expectRewrite(host, "/", null, LOCAL.beforeFiles);
       expectHsts(host, "/guide/tarot", APP_HSTS, LOCAL.headers);
     }
@@ -461,7 +488,7 @@ describe("on every other host, with the flag on", () => {
 
 describe("next.config.ts", () => {
   it("hands Next the host rules ahead of the existing /guide rule, the apex rewrite before the files, and the apex HSTS after the global headers", async () => {
-    expect(await nextConfig.redirects?.()).toEqual([...hostRedirects(), { source: "/guide", destination: "/guide/tarot", permanent: true }]);
+    expect(await nextConfig.redirects?.()).toEqual([...hostRedirects(), { source: "/guide", destination: "/guide/tarot", permanent: true }, ...ENTRY_REDIRECTS]);
     expect(await nextConfig.rewrites?.()).toEqual({ beforeFiles: hostRewrites(), afterFiles: [], fallback: [] });
     const headers = (await nextConfig.headers?.()) ?? [];
     expect(headers).toHaveLength(2);
@@ -484,5 +511,123 @@ describe("wrangler.jsonc", () => {
       { pattern: STARLOG, custom_domain: true },
       { pattern: APEX, custom_domain: true },
     ]);
+  });
+});
+
+describe("the root domain's own pages: the operator's page and the two policies", () => {
+  it("are served on https://yeolmaeapps.kr itself, so the domain AdSense reviews carries them, in any letter case", () => {
+    for (const path of ["/about", "/privacy", "/terms", "/About", "/PRIVACY", "/Terms"]) expectRedirect(APEX, path, null);
+    expectRedirect(`${APEX}:443`, "/privacy", null);
+  });
+
+  it("take nothing else with them: the other policy and service pages still go to the app host", () => {
+    for (const path of ["/refund", "/pricing", "/how", "/evidence", "/help", "/faq"]) expectRedirect(APEX, path, to(307, `${SITE.url}${path}`));
+  });
+
+  it("are the same pages lib/hosts.ts says a guide page may link on its own host", () => {
+    expect([...GUIDE_HOST_PAGES]).toEqual(["/about", "/privacy", "/terms"]);
+  });
+});
+
+/**
+ * What OpenNext's routing does with a URL, in its own order (@opennextjs/aws 4.1.6, core/routing/matcher.js
+ * handleRedirects): a trailing slash is stripped with a 308 *before* the manifest's redirects are looked at,
+ * so a rule written for the slash form is never reached. Then the redirects, from the manifest `next build` writes.
+ */
+function openNext(request: Request): Response {
+  const url = new URL(request.url);
+  if (url.pathname !== "/" && url.pathname.endsWith("/") && !url.pathname.startsWith("/api/")) {
+    url.pathname = url.pathname.slice(0, -1);
+    return new Response(null, { status: 308, headers: { location: url.toString() } });
+  }
+  const hit = viaOpenNext(SPLIT.redirects, url.host, url.pathname);
+  if (hit?.status) return new Response(null, { status: hit.status, headers: { location: new URL(hit.to, url).toString() } });
+  return new Response("page", { status: 200 });
+}
+
+/** The redirects a client follows from `address` to a page, as [status, location]. */
+async function hopsFrom(address: string, serve: (request: Request) => Promise<Response> | Response): Promise<Array<[number, string]>> {
+  const hops: Array<[number, string]> = [];
+  let next = address;
+  for (let i = 0; i < 6; i++) {
+    const response = await serve(new Request(next));
+    const location = response.headers.get("location");
+    if (!location) return hops;
+    hops.push([response.status, location]);
+    next = location;
+  }
+  throw new Error(`redirect loop from ${address}`);
+}
+
+/** What worker.mjs does with a request it does not redirect to https: the slash redirect if there is one, else OpenNext. */
+const viaWorker = async (request: Request) => (await slashRedirect(request, app)) ?? app(request);
+
+const app = vi.fn(async (request: Request) => openNext(request));
+
+describe("trailing-slash URLs (the Worker in front of OpenNext)", () => {
+  beforeEach(() => {
+    app.mockClear();
+  });
+
+  it("take two hops through OpenNext alone: it strips the slash first, then the host rule fires", async () => {
+    expect(await hopsFrom(`https://${STARLOG}/guide/the-hermit/`, openNext)).toEqual([
+      [308, `https://${STARLOG}/guide/the-hermit`],
+      [308, `${SITE.guideUrl}/guide/the-hermit`],
+    ]);
+  });
+
+  it("take one with the Worker: the redirect for the slash-less address is the first answer", async () => {
+    const one = (location: string, status = 308): Array<[number, string]> => [[status, location]];
+    const cases: Array<[string, Array<[number, string]>]> = [
+      // the app host sends its guide pages to the root domain
+      [`https://${STARLOG}/guide/the-hermit/`, one(`${SITE.guideUrl}/guide/the-hermit`)],
+      [`https://${STARLOG}/guide/saju/`, one(`${SITE.guideUrl}/guide/saju`)],
+      [`https://${STARLOG}/guide/`, one(`${SITE.guideUrl}/`)],
+      [`https://${STARLOG}/guide/tarot/`, one(`${SITE.guideUrl}/`)],
+      // the root domain: the guide's home is its /, and an app page goes to the app host
+      [`https://${APEX}/guide/`, one(`${SITE.guideUrl}/`)],
+      [`https://${APEX}/guide/tarot/`, one(`${SITE.guideUrl}/`)],
+      [`https://${APEX}/pricing/`, one(`${SITE.url}/pricing`, 307)],
+      [`https://${APEX}/tarot/new/`, one(`${SITE.url}/tarot/new`, 307)],
+    ];
+    for (const [address, expected] of cases) {
+      const hops = await hopsFrom(address, viaWorker);
+      // The chain ends on a page: the redirect that is the first answer is also the last.
+      expect(hops, address).toEqual(expected);
+    }
+  });
+
+  it("still strip the slash when the slash-less address is a page (the app host's own, or the root domain's guide)", async () => {
+    expect(await hopsFrom(`https://${STARLOG}/pricing/`, viaWorker)).toEqual([[308, `https://${STARLOG}/pricing`]]);
+    expect(await hopsFrom(`https://${APEX}/guide/saju/`, viaWorker)).toEqual([[308, `https://${APEX}/guide/saju`]]);
+    expect(await hopsFrom(`https://${APEX}/about/`, viaWorker)).toEqual([[308, `https://${APEX}/about`]]);
+  });
+
+  it("ask OpenNext for the slash-less address with the query kept, as a request of the same kind", async () => {
+    await viaWorker(new Request(`https://${STARLOG}/guide/the-hermit/?a=1&b=%EA%B0%80`, { headers: { "accept-language": "ko" } }));
+    const asked = app.mock.calls[0]?.[0] as Request;
+    expect(asked.url).toBe(`https://${STARLOG}/guide/the-hermit?a=1&b=%EA%B0%80`);
+    expect(asked.method).toBe("GET");
+    expect(asked.headers.get("accept-language")).toBe("ko");
+  });
+
+  it("leave what is not a page request to OpenNext as it came: other methods, the API, and the root", async () => {
+    for (const request of [
+      new Request(`https://${APEX}/pricing/`, { method: "POST", body: "x" }),
+      new Request(`https://${STARLOG}/api/version/`),
+      new Request(`https://${STARLOG}/`),
+      new Request(`https://${APEX}/`),
+    ]) {
+      app.mockClear();
+      await viaWorker(request);
+      expect(app, request.url).toHaveBeenCalledTimes(1);
+      expect(app.mock.calls[0]?.[0].url, request.url).toBe(request.url);
+    }
+  });
+
+  it("pass a page without a slash straight through, asking OpenNext once", async () => {
+    const response = await viaWorker(new Request(`https://${APEX}/guide/saju`));
+    expect(response.status).toBe(200);
+    expect(app).toHaveBeenCalledTimes(1);
   });
 });

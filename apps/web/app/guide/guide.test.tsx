@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GuideArticlePage, { generateMetadata as articleMetadata } from "@/app/guide/[slug]/page";
+import GuideLayout from "@/app/guide/layout";
 import GuideSajuPage, { metadata as sajuMetadata } from "@/app/guide/saju/page";
 import GuideTarotPage, { metadata as tarotMetadata } from "@/app/guide/tarot/page";
 import { GUIDE_HOST_LINES } from "@/app/guide/GuideHost";
@@ -29,6 +31,12 @@ const PLAIN = vi.hoisted(
 vi.mock("@/lib/guide", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/guide")>();
   return { ...actual, findArticle: (slug: string) => (slug === PLAIN.slug ? PLAIN : actual.findArticle(slug)) };
+});
+
+// next/script loads in the browser only; a stand-in puts the script on the page where a test can see it.
+vi.mock("next/script", async () => {
+  const { createElement } = await import("react");
+  return { default: ({ src }: { src: string }) => createElement("script", { "data-ads-src": src }) };
 });
 
 // The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; these tests run on one origin unless a test says so.
@@ -237,7 +245,7 @@ describe("links from a guide page", () => {
       brand: `${APP}/`,
       pills: [`${APP}/`, "/", `${APP}/faq`, `${APP}/story`, `${APP}/me`],
       bar: [`${APP}/`, `${APP}/story`, "/", `${APP}/me`],
-      footer: [`${APP}/about`, `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/", `${APP}/pricing`, `${APP}/terms`, `${APP}/privacy`, `${APP}/refund`],
+      footer: ["/about", `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/", `${APP}/pricing`, "/terms", "/privacy", `${APP}/refund`],
     });
     // The tabs and the article cards are the guide's own pages: paths, so they stay on the root domain.
     const tabs = within(screen.getByRole("navigation", { name: "가이드 분류" })).getAllByRole("link");
@@ -263,5 +271,80 @@ describe("links from a guide page", () => {
     expect(screen.getByRole("link", { name: /가이드 목록으로/ }).getAttribute("href")).toBe(slug === "the-hermit" ? "/" : "/guide/saju");
     const related = within(screen.getByRole("navigation", { name: "같이 읽어 볼 글" })).getAllByRole("link");
     expect(related.every((a) => a.getAttribute("href")?.startsWith("/guide/"))).toBe(true);
+  });
+});
+
+describe("ads on guide pages", () => {
+  const CLIENT = "ca-pub-1234567890123456";
+  const SLOT = "1234567890";
+  const article = async (slug: string) => GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">);
+  const adScripts = (root: ParentNode) => [...root.querySelectorAll("script[data-ads-src]")].map((script) => script.getAttribute("data-ads-src"));
+
+  beforeEach(() => {
+    vi.stubEnv("ADSENSE_CLIENT", CLIENT);
+    vi.stubEnv("ADSENSE_SLOT_GUIDE", SLOT);
+  });
+
+  it("loads the AdSense script on an article page, once", async () => {
+    // Through the guide layout, as Next composes the route: the layout adds none of its own.
+    const { container } = render(<GuideLayout>{await article("the-hermit")}</GuideLayout>);
+    expect(adScripts(container)).toEqual([`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${CLIENT}`]);
+  });
+
+  it.each(TABS)("loads nothing on the $category hub: it is a list to find an article by, not a page to put ads on", ({ Page }) => {
+    const { container } = render(
+      <GuideLayout>
+        <Page />
+      </GuideLayout>,
+    );
+    expect(adScripts(container)).toEqual([]);
+    expect(container.querySelector("ins.adsbygoogle")).toBeNull();
+  });
+
+  it("keeps the AdSense script out of every file under app/guide but the article page", () => {
+    // jsdom tests have no file: import.meta.url; vitest runs from the repo root or from apps/web.
+    const dir = ["apps/web/app/guide", "app/guide"].map((path) => resolve(process.cwd(), path)).find((path) => existsSync(path)) ?? "";
+    const files = readdirSync(dir, { recursive: true, encoding: "utf8" }).filter((file) => /\.(tsx?|mjs)$/.test(file) && !/\.test\.tsx?$/.test(file));
+    const loaders = files.filter((file) => /adsScriptSrc|adsbygoogle\.js/.test(readFileSync(join(dir, file), "utf8")));
+    expect(loaders.map((file) => file.replaceAll("\\", "/"))).toEqual(["[slug]/page.tsx"]);
+  });
+
+  it("puts the ad on the sky between two sheets of the body, after the second section, and not in front of the call-to-action button", async () => {
+    const { container } = render(await article("the-hermit"));
+    const slot = container.querySelector<HTMLElement>('aside[aria-label="광고"]');
+    expect(slot).not.toBeNull();
+    // Not inside the cream paper: the "광고" label is light ink and would vanish on it.
+    expect(slot?.closest("section")).toBeNull();
+    const [before, after] = [slot?.previousElementSibling, slot?.nextElementSibling] as HTMLElement[];
+    const headings = (sheet: HTMLElement | undefined) => [...(sheet?.querySelectorAll("h2") ?? [])].map((h) => h.textContent);
+    const all = findArticle("the-hermit")?.sections.map((section) => section.heading) ?? [];
+    expect(all.length).toBeGreaterThan(3);
+    expect(headings(before)).toEqual(all.slice(0, 2));
+    expect(headings(after)).toEqual(all.slice(2));
+    // Every section is still there once, in order, and the button comes after the whole body.
+    expect([...container.querySelectorAll("article h2")].map((h) => h.textContent).slice(0, all.length)).toEqual(all);
+    const cta = screen.getByRole("complementary", { name: "타로 보기" });
+    expect(slot?.compareDocumentPosition(cta)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(after?.contains(cta)).toBe(false);
+    expect(slot?.nextElementSibling).not.toBe(cta);
+  });
+
+  it("keeps the numbering of a section's blocks across the ad", async () => {
+    const { container } = render(await article("five-elements"));
+    const ids = [...container.querySelectorAll("[id^='s']")].map((el) => el.id).filter((id) => /^s\d+(-|$)/.test(id));
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("puts no ad into an article too short to have text after it: the box would end up next to the button", async () => {
+    const { container } = render(await article(PLAIN.slug));
+    expect(PLAIN.sections).toHaveLength(2);
+    expect(container.querySelector('aside[aria-label="광고"]')).toBeNull();
+  });
+
+  it("shows no ad box while no ad unit is set", async () => {
+    vi.stubEnv("ADSENSE_SLOT_GUIDE", "");
+    const { container } = render(await article("the-hermit"));
+    expect(container.querySelector('aside[aria-label="광고"]')).toBeNull();
   });
 });

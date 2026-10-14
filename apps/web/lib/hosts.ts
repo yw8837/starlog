@@ -23,6 +23,14 @@ export const originOf = (host: SiteHost): string => (host === "guide" ? SITE.gui
  */
 export const GUIDE_HOME = "/guide/tarot";
 
+/**
+ * App pages the root domain serves itself as well (lib/hostRoutes.ts OWN_SEGMENTS): who runs the site and
+ * the two policies, so the domain AdSense reviews has them at its own address. They are still app pages:
+ * their canonical (absoluteUrl) is the app host's, and only a link from a guide page (linkHref) stays on
+ * the root domain.
+ */
+export const GUIDE_HOST_PAGES = ["/about", "/privacy", "/terms"] as const;
+
 /** The path that serves `path` on its own host: the guide's home is the root domain's "/". */
 const servedPath = (path: string): string => (path === GUIDE_HOME ? "/" : path);
 
@@ -52,11 +60,16 @@ export const appHref = (path: string): string => (splitHosts() ? new URL(path, S
 /**
  * href for a link in a component both hosts render (the tab bar, the footer), or on a guide page:
  * `from` is the host the page is served on. A link to the same host stays a path (on the split root
- * domain the guide's home is "/"); one to the other host goes through guideHref or appHref.
+ * domain the guide's home is "/", and GUIDE_HOST_PAGES are the root domain's too); one to the other
+ * host goes through guideHref or appHref. `from: "either"` is for a page served as it is on both hosts
+ * (the 404): every link names the host that serves its target, so none takes a redirect on the other.
  */
-export function linkHref(path: string, from: SiteHost = "app"): string {
+export function linkHref(path: string, from: SiteHost | "either" = "app"): string {
   const target = hostOfPath(path);
-  if (target === from) return target === "guide" && splitHosts() ? servedPath(path) : path;
+  if (from !== "either") {
+    if (target === from) return target === "guide" && splitHosts() ? servedPath(path) : path;
+    if (from === "guide" && (GUIDE_HOST_PAGES as readonly string[]).includes(path)) return path;
+  }
   return target === "guide" ? guideHref(path) : appHref(path);
 }
 

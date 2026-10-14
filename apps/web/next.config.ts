@@ -54,8 +54,15 @@ const nextConfig: NextConfig = {
   // so next dev, the preview and e2e have none.
   // The guide index is split into tabs (/guide/tarot, /guide/saju). /guide moved to the first tab
   // for good: a 308 before rendering, so search engines carry its signals over to the tab.
+  // /tarot and /saju have no page of their own (the entries are /tarot/new and /saju/new), and are what a
+  // person or an article guesses: they go to the entry for good, after the host rules.
   async redirects() {
-    return [...hostRedirects(), { source: "/guide", destination: "/guide/tarot", permanent: true }];
+    return [
+      ...hostRedirects(),
+      { source: "/guide", destination: "/guide/tarot", permanent: true },
+      { source: "/tarot", destination: "/tarot/new", permanent: true },
+      { source: "/saju", destination: "/saju/new", permanent: true },
+    ];
   },
   // The root domain's / shows the guide index. Before the files: the app's own page for / exists.
   async rewrites() {
