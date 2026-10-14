@@ -201,6 +201,34 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(screen.getByRole("link", { name: PAY_LINK }).getAttribute("href")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart");
   });
 
+  it("puts the way back to the 사주팔자 at the top of a 운's reading as a button, above its teaser and outside the row (owner 2026-10-14)", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    stub({ me: [OPENING_ME] });
+    render(<SajuChartView />);
+    await screen.findByText("첫 장");
+    tap("재물운");
+    const eyebrow = await screen.findByText("재물운 · 맛보기");
+    const back = screen.getByRole("button", { name: "사주팔자로 돌아가기" });
+    expect(back.className).toMatch(/secondary/);
+    expect(back.compareDocumentPosition(eyebrow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(row().contains(back)).toBe(false);
+  });
+
+  it("is step 3 of 3 with the topic step on, and its back link returns to the birth step on the 운 on screen", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    stub({ me: [OPENING_ME] });
+    render(<SajuChartView />);
+    await screen.findByText("첫 장");
+    expect(screen.getByText("3단계 중", { exact: false }).textContent).toContain("3단계 중");
+    const back = () => screen.getByRole("link", { name: "입력으로 돌아가기" });
+    expect(back().getAttribute("href")).toBe("/saju/new");
+    tap("재물운");
+    await screen.findByText("재물운 · 맛보기");
+    expect(back().getAttribute("href")).toBe("/saju/new?topic=money");
+  });
+
   it("a 운 already kept on this device sends nothing; a new one sends one request with only its id", async () => {
     seed();
     seedTopic("career", "곧은 나무");
@@ -396,6 +424,8 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(await screen.findByText("첫 장")).toBeTruthy();
     expect(screen.getByText("고요한 물")).toBeTruthy();
     expect(screen.queryByRole("group", { name: OTHER_TOPICS_LABEL })).toBeNull();
+    expect(screen.getByText("2단계 중", { exact: false })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "입력으로 돌아가기" }).getAttribute("href")).toBe("/saju/new");
   });
 
   it("in owner mode with the owner pass shows the row under the 사주팔자 teaser already on the device, asking for nothing", async () => {

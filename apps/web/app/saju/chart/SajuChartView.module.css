@@ -97,3 +97,8 @@
   color: var(--ink);
   line-height: 1.7;
 }
+
+/* 사주팔자로 돌아가기 at the top of a 운's reading. */
+.backRow {
+  display: flex;
+}

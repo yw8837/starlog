@@ -275,7 +275,7 @@ test("invite: guest picks one card, reads the sun, leaves it for 하늘", async 
 test("home, 내 정보 and guide", async ({ page }, info) => {
   await page.goto("/");
   // Every reading starts from the home; no story hero and no balance pill in the beta.
-  for (const href of ["/tarot/new?new=1", "/saju/new?new=1", "/now", "/today"]) await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
+  for (const href of ["/tarot/new?new=1", "/saju/start?new=1", "/now", "/today"]) await expect(page.locator(`main a[href="${href}"]`).first()).toBeVisible();
   await expect(page.getByRole("link", { name: /나의 스타로그 · \d장/ })).toHaveCount(0);
   await expect(page.getByRole("link", { name: /내 재화/ })).toHaveCount(0);
   await shot(page, info, "14-home");

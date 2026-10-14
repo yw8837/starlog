@@ -154,11 +154,23 @@ export function sajuTopicsVisible({ mode = sajuTopicsMode(), owner, locale = "ko
   return mode === "on" || (mode === "owner" && owner);
 }
 
+/** The topic step (/saju/start) comes before the birth input while the topics are on for everyone (owner 2026-10-14). */
+export const sajuStartsWithTopic = (mode: SajuTopicsMode = sajuTopicsMode()): boolean => mode === "on";
+
+/** The topic step's line under each name: what the reading looks at, from its section headings. */
+export const TOPIC_PICK_LINES: Readonly<Record<SajuTopic, string>> = Object.freeze({
+  overall: "타고난 결과 지금 지나는 10년의 흐름을 함께 봐요",
+  love: "사랑할 때의 나와 잘 맞는 사람, 인연의 흐름을 봐요",
+  reunion: "이별 뒤 마음이 머무는 자리와 관계가 다시 움직이는 흐름을 봐요",
+  money: "돈이 들어오는 길과 지키는 힘, 돈의 흐름을 봐요",
+  career: "일하는 방식과 잘 맞는 일, 움직일 때와 다질 때를 봐요",
+});
+
 // ---- the chart page's fixed lines (owner cut §0 decision 2) ----
 
 /** The row's heading under the 사주팔자 teaser. */
 export const OTHER_TOPICS_LABEL = "다른 운도 볼 수 있어요";
-/** The way back to the 사주팔자, shown only while a 운 is on screen. */
+/** The way back to the 사주팔자, at the top of a 운's reading. */
 export const BACK_TO_OVERALL = "사주팔자로 돌아가기";
 export const TOPIC_SWITCH_HELP = `새로 여는 맛보기는 하루 ${SITE.beta.teaserPerDay}번까지 볼 수 있어요. 이미 본 맛보기는 횟수를 쓰지 않아요.`;
 export const TEASER_LIMIT_NOTICE = "오늘 맛보기를 모두 봤어요. 자정에 다시 열려요. 이미 본 맛보기는 계속 볼 수 있어요.";

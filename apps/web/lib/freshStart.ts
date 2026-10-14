@@ -1,7 +1,7 @@
 /**
  * A question's answers live only while the user moves inside its flow (owner: "새로고침이나 페이지
  * 이동하면 초기화좀"). The tarot flow is 질문 ⇄ 상황 → 카드 뽑기 (and 결과, whose 질문 고치기 leads
- * back), the saju flow 입력 ⇄ 명식. The builder, the situation step and the saju form keep the
+ * back), the saju flow 주제 → 입력 ⇄ 명식. The builder, the situation step and the saju form keep the
  * answers only when the route shown just before was another page of the same flow — a link, a
  * push or browser back/forward between them (lib/useFlowVisit.ts, with the route tracker in the
  * root layout); a refresh, a link from elsewhere or back from the home starts clean, and so do
@@ -12,7 +12,8 @@
  */
 
 export const NEW_TAROT_HREF = "/tarot/new?new=1";
-export const NEW_SAJU_HREF = "/saju/new?new=1";
+/** Saju starts at the topic step (owner 2026-10-14); with the topics off it sends on to /saju/new. */
+export const NEW_SAJU_HREF = "/saju/start?new=1";
 
 export type FlowName = "tarot" | "saju";
 

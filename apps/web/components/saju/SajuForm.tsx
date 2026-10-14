@@ -41,6 +41,7 @@ import {
   type SajuDraft,
   type SajuField,
 } from "@/lib/sajuForm";
+import { isSajuTopicId } from "@/lib/sajuTopics";
 import s from "./SajuForm.module.css";
 
 type ErrorKey = SajuField | "consent";
@@ -154,7 +155,9 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
     if (!("form" in result)) return;
     saveSajuProfile(sanitizeSajuForm(result.form) ?? result.form);
     saveSajuContext(context);
-    router.push("/saju/chart");
+    // The 운 picked at the topic step rides in the address (/saju/new?topic=…); the chart opens on it.
+    const topic = new URLSearchParams(window.location.search).get("topic");
+    router.push(isSajuTopicId(topic) ? `/saju/chart?topic=${topic}` : "/saju/chart");
   };
 
   return (

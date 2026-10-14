@@ -58,6 +58,24 @@ test("주제별 사주: the input screen has no topic or situation chips", async
   await expect(page.getByRole("button", { name: /요즘 상황도 알려 주기/ })).toBeVisible();
 });
 
+test("주제별 사주 in three steps: 무엇이 궁금해요? → 태어난 날 → the chart opens on the 운 picked, with the way back at the top (owner 2026-10-14)", async ({ page }, info) => {
+  test.setTimeout(300_000);
+  await ownAddress(page, info);
+  await page.goto("/saju/start?new=1");
+  const picker = page.getByRole("list", { name: "무엇이 궁금해요?" });
+  await expect(picker.getByRole("link")).toHaveCount(5);
+  await picker.getByRole("link", { name: /^재물운/ }).click();
+  await expect(page).toHaveURL(/\/saju\/new\?topic=money$/, { timeout: NAV });
+  await expect(page.getByRole("link", { name: "주제 고르기로 돌아가기" })).toHaveAttribute("href", "/saju/start");
+  await fillBirth(page, 1992, 8, 3, "남성");
+  await page.getByRole("button", { name: "명식 보기" }).click();
+  await expect(page).toHaveURL(/\/saju\/chart\?topic=money$/, { timeout: NAV });
+  await expect(page.getByText("재물운 · 맛보기", { exact: true })).toBeVisible({ timeout: GENERATION });
+  await expect(page.getByRole("link", { name: "입력으로 돌아가기" })).toHaveAttribute("href", "/saju/new?topic=money");
+  await page.getByRole("button", { name: "사주팔자로 돌아가기" }).click();
+  await expect(page.getByText("첫 장", { exact: true })).toBeVisible({ timeout: GENERATION });
+});
+
 test("주제별 사주: each 운 shows its own teaser, list and sheet under the 사주팔자, and the way back", async ({ page }, info) => {
   test.setTimeout(300_000);
   await ownAddress(page, info);

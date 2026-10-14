@@ -16,27 +16,6 @@
   gap: 8px;
 }
 
-.back {
-  display: inline-flex;
-  align-items: center;
-  justify-self: start;
-  min-height: 44px;
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--ink-sub);
-  font: inherit;
-  font-size: var(--fs-sub);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-}
-
-.back:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 3px;
-}
-
 .help {
   color: var(--ink-sub);
   font-size: var(--fs-sub);

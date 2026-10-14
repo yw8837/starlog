@@ -36,7 +36,7 @@ function arrive(path: string, from: string | null) {
 describe("freshStart", () => {
   it("links a new question with ?new=1", () => {
     expect(NEW_TAROT_HREF).toBe("/tarot/new?new=1");
-    expect(NEW_SAJU_HREF).toBe("/saju/new?new=1");
+    expect(NEW_SAJU_HREF).toBe("/saju/start?new=1");
   });
 
   it("takes a flag once and leaves the rest of the address as it was", () => {

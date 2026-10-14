@@ -5,7 +5,7 @@ import { lastRoute } from "./lastRoute";
 /** Routes a move inside each flow comes from (the result's 질문 고치기 leads back into the tarot flow). */
 const FLOW_ROUTES: Readonly<Record<FlowName, readonly string[]>> = {
   tarot: ["/tarot/new", "/tarot/new/situation", "/tarot/draw", "/tarot/result"],
-  saju: ["/saju/new", "/saju/chart"],
+  saju: ["/saju/start", "/saju/new", "/saju/chart"],
 };
 
 /**

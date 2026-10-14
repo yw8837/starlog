@@ -6,6 +6,7 @@ import { SajuGuide } from "@/components/seo/toolGuides";
 import { NightSky } from "@/components/sky/NightSky";
 import { Stepper } from "@/components/tarot/Stepper";
 import { SpeechBubble } from "@/components/ui/SpeechBubble";
+import { sajuStartsWithTopic } from "@/lib/sajuTopics";
 import { pageMetadata } from "@/lib/seo";
 import s from "../saju.module.css";
 
@@ -15,14 +16,20 @@ export const metadata: Metadata = pageMetadata({
   path: "/saju/new",
 });
 
+/** The birth input: step 2 of 3 after the topic step (/saju/start), or step 1 of 2 with the topics off. */
 export default function SajuNewPage() {
+  const topicFirst = sajuStartsWithTopic();
   return (
     <div className="page-shell">
       <NightSky fixed moon={false} seed={11} />
       <main className="page-col page-wide">
         <div className={s.inputScreen}>
           <div className={s.stepper}>
-            <Stepper step={1} total={2} label="사주 보기" backHref="/" backLabel="홈으로" />
+            {topicFirst ? (
+              <Stepper step={2} total={3} label="사주 보기" backHref="/saju/start" backLabel="주제 고르기로 돌아가기" />
+            ) : (
+              <Stepper step={1} total={2} label="사주 보기" backHref="/" backLabel="홈으로" />
+            )}
           </div>
 
           <header className={s.greeting}>

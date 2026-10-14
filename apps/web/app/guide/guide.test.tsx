@@ -256,7 +256,7 @@ describe("links from a guide page", () => {
 
   it.each([
     ["the-hermit", "타로 보기", "/tarot/new?new=1"],
-    ["five-elements", "사주 보기", "/saju/new?new=1"],
+    ["five-elements", "사주 보기", "/saju/start?new=1"],
   ])("%s: the %s button starts the flow on the app host when the hosts are split, and with a path otherwise", async (slug, label, path) => {
     const page = async () => GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">);
     render(await page());

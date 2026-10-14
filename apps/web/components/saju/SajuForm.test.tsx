@@ -43,6 +43,34 @@ describe("SajuForm takes no free text", () => {
   });
 });
 
+describe("SajuForm after the topic step (owner 2026-10-14)", () => {
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  const fillAndSubmit = () => {
+    pickDate(1992, 8, 3);
+    fireEvent.click(screen.getByRole("button", { name: "남성" }));
+    consent();
+    submit();
+  };
+
+  it("opens the chart on the 운 the address carries", () => {
+    window.history.replaceState(null, "", "/saju/new?topic=money");
+    render(<SajuForm />);
+    fillAndSubmit();
+    expect(router.push).toHaveBeenCalledWith("/saju/chart?topic=money");
+  });
+
+  it("opens the 사주팔자 for 사주팔자, no topic or an unknown one", () => {
+    for (const search of ["?topic=overall", "", "?topic=nope"]) {
+      window.history.replaceState(null, "", `/saju/new${search}`);
+      render(<SajuForm />);
+      fillAndSubmit();
+      expect(router.push).toHaveBeenLastCalledWith("/saju/chart");
+      cleanup();
+    }
+  });
+});
+
 describe("W-07: a first visit starts with the date and the gender empty", () => {
   it("shows 연도·월·일 and no gender pressed, 1–31 days, 서울, and no echo line yet", () => {
     render(<SajuForm />);

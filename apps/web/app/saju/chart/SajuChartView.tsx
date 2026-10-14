@@ -33,7 +33,7 @@ import { useGeneration } from "@/lib/reading/useGeneration";
 import { chapterRequestFields, sajuContextBody, sajuStatusBody, sajuTeaserKey, useSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
-import { TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE, sajuTopicsVisible, topicLabel } from "@/lib/sajuTopics";
+import { BACK_TO_OVERALL, TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE, sajuStartsWithTopic, sajuTopicsVisible, topicLabel } from "@/lib/sajuTopics";
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
@@ -292,7 +292,16 @@ export function SajuChartView({
   }
 
   // 다른 운도 볼 수 있어요: for the user's own chart while the topics are open, under whatever the page shows first.
-  const topicRow = own && topicsOpen ? <TopicRow topic={topic} onPick={switchTopic} onBack={() => switchTopic("overall")} /> : null;
+  const topicRow = own && topicsOpen ? <TopicRow topic={topic} onPick={switchTopic} /> : null;
+  // The way back to the 사주팔자 at the top of a 운's reading (owner 2026-10-14: the link in the row was hard to see).
+  const backToOverall =
+    own && topicsOpen && topic !== "overall" ? (
+      <div className={s.backRow}>
+        <Button variant="secondary" size="md" onClick={() => switchTopic("overall")}>
+          {BACK_TO_OVERALL}
+        </Button>
+      </div>
+    ) : null;
 
   let content: ReactNode = null;
   if (chart && ready && !saved) {
@@ -375,12 +384,20 @@ export function SajuChartView({
     );
   }
 
+  // Step 3 of 3 after the topic step; back to the birth input on the 운 on screen.
+  const topicFirst = sajuStartsWithTopic();
   return (
     <>
       <p className="sr-only" role="status">
         {announce}
       </p>
-      <Stepper step={2} total={2} label="명식 보기" backHref="/saju/new" backLabel="입력으로 돌아가기" />
+      <Stepper
+        step={topicFirst ? 3 : 2}
+        total={topicFirst ? 3 : 2}
+        label="명식 보기"
+        backHref={topicFirst && topic !== "overall" ? `/saju/new?topic=${topic}` : "/saju/new"}
+        backLabel="입력으로 돌아가기"
+      />
       <ReadingLayout
         spreadLabel="명식"
         head={
@@ -400,6 +417,7 @@ export function SajuChartView({
         }
         spread={<ChartPanel result={result} />}
       >
+        {backToOverall}
         {content}
       </ReadingLayout>
     </>
