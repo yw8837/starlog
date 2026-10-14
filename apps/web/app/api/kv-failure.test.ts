@@ -13,6 +13,10 @@ import { POST as followup } from "./followup/route";
 import { POST as owner } from "./owner/route";
 import { POST as reading } from "./tarot/reading/route";
 import { POST as teaser } from "./tarot/teaser/route";
+import { duringOpening } from "@/lib/testing/clock";
+
+// These tests open the free first tarot reading (오픈 기념 무료), which ends 2026-10-31: pin the clock inside it.
+duringOpening();
 
 /**
  * A DAILY_KV binding that works, or fails every call, or fails only writes (KV's 429 on a hot key),

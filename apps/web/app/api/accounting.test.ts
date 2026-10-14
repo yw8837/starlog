@@ -17,6 +17,10 @@ import { POST as reading } from "./tarot/reading/route";
 import { POST as teaser } from "./tarot/teaser/route";
 import { POST as sajuReading } from "./saju/reading/route";
 import { POST as sajuTeaser } from "./saju/teaser/route";
+import { duringOpening } from "@/lib/testing/clock";
+
+// These tests open the free first tarot reading (오픈 기념 무료), which ends 2026-10-31: pin the clock inside it.
+duringOpening();
 
 type Handler = (request: Request) => Promise<Response>;
 

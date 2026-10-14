@@ -21,6 +21,10 @@ import { llmsFullTxt, llmsTxt } from "@/lib/llms";
 import type { UnlockOffer } from "@/lib/pay/offer";
 import type { ApiErrorCode } from "@/lib/reading/api";
 import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorContext } from "@/lib/reading/errors";
+import { duringOpening } from "@/lib/testing/clock";
+
+// These tests open the free first tarot reading (오픈 기념 무료), which ends 2026-10-31: pin the clock inside it.
+duringOpening();
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 

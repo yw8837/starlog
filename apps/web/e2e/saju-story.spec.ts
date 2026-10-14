@@ -1,10 +1,13 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { fakeBrowserClock, openingOn } from "./opening";
 
 type SajuSample = {
   free: { title: string; lockedToc: string[] };
   paid: { sections: Array<{ heading: string; body: string }> };
 };
+
+test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
 const SAJU: SajuSample = JSON.parse(readFileSync(new URL("../../../content/samples/saju-prologue.ko.json", import.meta.url), "utf8"));
 
@@ -282,8 +285,13 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
 
   await page.goto("/me");
   await expect(page.getByRole("heading", { level: 1, name: "내 정보" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "오픈 기념 무료" })).toBeVisible();
-  await expect(page.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).", { exact: true })).toBeVisible();
+  if (openingOn()) {
+    await expect(page.getByRole("heading", { name: "오픈 기념 무료" })).toBeVisible();
+    await expect(page.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).", { exact: true })).toBeVisible();
+  } else {
+    // 오픈 기념 무료 ended 2026-10-31: 내 정보 no longer shows its box.
+    await expect(page.getByRole("heading", { name: "오픈 기념 무료" })).toHaveCount(0);
+  }
   await expect(page.getByText("아직 입력하지 않았어요")).toBeVisible();
   await expect(page.getByRole("link", { name: "입력하기" })).toHaveAttribute("href", "/saju/new");
   await expect(page.getByRole("button", { name: "달빛 충전하기" })).toHaveCount(0);
@@ -334,7 +342,13 @@ test("사주 from the home starts the status chips clean but keeps the birth pro
     localStorage.setItem("starlog.saju-context", JSON.stringify({ loveStatus: "married", concern: "지난번 고민", savedAt: Date.now() }));
   });
   await page.getByRole("main").getByRole("link", { name: /사주 보기/ }).click();
-  await expect(page).toHaveURL(/\/saju\/new$/, { timeout: NAV });
+  // With the topics on (production), 사주 starts at the topic step and 사주팔자 goes on to the birth input; with
+  // them off, /saju/start sends straight to /saju/new.
+  await expect(page).toHaveURL(/\/saju\/(start|new)$/, { timeout: NAV });
+  if (page.url().endsWith("/saju/start")) {
+    await page.getByRole("list", { name: "무엇이 궁금해요?" }).getByRole("link", { name: /^사주팔자/ }).click();
+    await expect(page).toHaveURL(/\/saju\/new\?topic=overall$/, { timeout: NAV });
+  }
   await expect(page.getByText("→ 1993년 8월 17일 (양력)")).toBeVisible();
   const more = page.getByRole("button", { name: /요즘 상황도 알려 주기/ });
   await expect(more).toHaveAttribute("aria-expanded", "false");

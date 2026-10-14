@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, request as playwrightRequest, test, type Page, type TestInfo } from "@playwright/test";
+import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
 
 /**
  * Screen sweep (@screens): a full-height screenshot of every route per viewport project
@@ -80,11 +81,13 @@ async function dealtFlow(page: Page) {
 
 /** A full tarot reading from the API, stored as this device keeps it (`age` days old). */
 async function tarotChapter(page: Page, id: string, age = 0) {
-  // One free full reading per device (오픈 기념 무료): fresh cookies for each seeded reading. Stored without
-  // the `opening` mark, the record shows the follow-up box and share button a paid reading has.
+  // Opened with the owner pass (it works whether or not 오픈 기념 무료 is on), which is then dropped so the
+  // screen is a visitor's; the record shows the follow-up box and share button a paid reading has.
   await page.context().clearCookies();
   const draw = await dealtFlow(page);
-  const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: CONTACT_INPUT } })).json();
+  await ownerPass(page, test.info());
+  const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: CONTACT_INPUT, unlock: { method: "owner" } } })).json();
+  await page.context().clearCookies();
   return {
     id,
     kind: "tarot",
@@ -205,30 +208,36 @@ const SCREENS: Screen[] = [
     },
     prepare: async (page) => expect(page.getByRole("button", { name: "다시 시도" })).toBeVisible(),
   },
-  {
-    name: "tarot-result-limit",
-    path: "/tarot/result",
-    setup: async (page) => {
-      await dealtFlow(page);
-      // The device's free first reading (오픈 기념 무료) is spent.
-      await fail(page, "**/api/tarot/reading", 429, { code: "BETA_LIMIT", scope: "first", message: "…" });
-    },
-    prepare: async (page) => {
-      await waitForSheet(page);
-      await page.getByRole("button", { name: /전체 풀이 보기/ }).click();
-      await expect(page.getByText("오픈 기념 무료 풀이를 이미 열었어요").first()).toBeVisible();
-    },
-  },
+  // The device's free first reading spent: a state that exists only while 오픈 기념 무료 is on (until 10/31).
+  ...(openingOn()
+    ? [
+        {
+          name: "tarot-result-limit",
+          path: "/tarot/result",
+          setup: async (page: Page) => {
+            await dealtFlow(page);
+            await fail(page, "**/api/tarot/reading", 429, { code: "BETA_LIMIT", scope: "first", message: "…" });
+          },
+          prepare: async (page: Page) => {
+            await waitForSheet(page);
+            await page.getByRole("button", { name: /전체 풀이 보기/ }).click();
+            await expect(page.getByText("오픈 기념 무료 풀이를 이미 열었어요").first()).toBeVisible();
+          },
+        },
+      ]
+    : []),
   {
     name: "tarot-unlock-generating",
     path: "/tarot/result",
     setup: async (page) => {
+      // After 오픈 기념 무료 (10/31) a visitor has nothing free to open: the owner pass opens it instead.
+      if (!openingOn()) await ownerPass(page, test.info());
       await dealtFlow(page);
       await hold(page, "**/api/tarot/reading");
     },
     prepare: async (page) => {
       await waitForSheet(page);
-      await page.getByRole("button", { name: /전체 풀이 보기/ }).click();
+      await page.getByRole("button", { name: openingOn() ? /전체 풀이 보기/ : "운영자로 무료 열기" }).click();
       await expect(page.getByText("보통 1분 남짓 걸려요", { exact: false })).toBeVisible();
     },
   },
@@ -524,6 +533,8 @@ async function capture(page: Page, info: TestInfo, screen: Screen) {
   await page.setViewportSize(viewport);
   return result;
 }
+
+test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
 for (const screen of SCREENS) {
   test(`@screens ${screen.name}`, async ({ page }, info) => {

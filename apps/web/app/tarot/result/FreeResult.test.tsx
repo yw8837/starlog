@@ -8,6 +8,10 @@ import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { clearBetaUsage } from "@/lib/storage/betaUsage";
 import { clearChapters, listChapters } from "@/lib/storage/chapters";
 import { FreeResult } from "./FreeResult";
+import { duringOpening } from "@/lib/testing/clock";
+
+// These tests open the free first tarot reading (오픈 기념 무료), which ends 2026-10-31: pin the clock inside it.
+duringOpening();
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));

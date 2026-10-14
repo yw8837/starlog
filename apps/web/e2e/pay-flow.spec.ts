@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { fakeBrowserClock, openingOn } from "./opening";
 
 /**
  * Accounts and payments in owner mode (STARLOG_PAYMENTS=owner, mock Kakao and mock Toss, local D1):
@@ -7,6 +8,8 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
  * a new account gets no signup gift (removed, owner 2026-10-14 evening). The question steps are the ones tarot-flow.spec.ts uses (chips toggle, the
  * situation step comes after 다음). 오픈 기념 무료 ends with 2026-10-31 (KST): the sheet lines naming it go from 11월 1일.
  */
+
+test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
 const NAV = 30_000;
 const GENERATION = 120_000;
@@ -64,7 +67,8 @@ test("owner mode: log in (no signup gift), pay for a tarot reading that takes fo
   // 1. A guest is asked to log in to pay, with 오픈 기념 무료 named on the sheet; no signup gift is promised there or on the login page.
   await toResult(page);
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
-  await expect(sheet).toContainText(OPENING_RULE);
+  if (openingOn()) await expect(sheet).toContainText(OPENING_RULE);
+  else await expect(sheet).not.toContainText("오픈 기념 무료");
   await expect(sheet).not.toContainText("선물");
   await page.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).click();
   await expect(page).toHaveURL(/\/login\?next=%2Ftarot%2Fresult$/, { timeout: NAV });
@@ -124,8 +128,14 @@ test("a browser without the owner pass keeps today's sheet in owner mode", async
   await ownAddress(page, info);
   await toResult(page);
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
-  await expect(sheet).toContainText(OPENING_RULE);
-  await expect(sheet.getByRole("link")).toHaveCount(0);
+  if (openingOn()) {
+    await expect(sheet).toContainText(OPENING_RULE);
+    await expect(sheet.getByRole("link")).toHaveCount(0);
+  } else {
+    // 오픈 기념 무료 ended 2026-10-31: nothing opens for a visitor while sales are owner-only.
+    await expect(sheet).not.toContainText("오픈 기념 무료");
+    await expect(sheet.getByRole("button", { name: "전체 풀이 보기", exact: true })).toBeDisabled();
+  }
 });
 
 /** 재물운 on /saju/chart for 1992-08-03 (남성), from the form; the topics are on in dev. */
