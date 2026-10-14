@@ -37,7 +37,6 @@ import { BACK_TO_OVERALL, TEASER_LIMIT_NOTICE, TOPIC_SECTIONS, UNLOCK_SCOPE_LINE
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
 import s from "./SajuChartView.module.css";
-import { NEW_SAJU_HREF } from "@/lib/freshStart";
 import { isSajuReadingResponse, isSajuTeaser } from "@/lib/reading/validate";
 
 /** The body /api/saju/* take: birth data, 사주팔자's status chips or a 운's id, and the earlier readings that belong with it (spec §7.8). */
@@ -55,7 +54,7 @@ const returnFor = (topic: SajuTopic) => (topic === "overall" ? RETURN_TO : `${RE
 const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
 
 /**
- * Step 2/2: the chart computed from the saved input (here, in the browser), then the free reading
+ * The last step (3/3 after the topic step, 2/2 with the topics off): the chart computed from the saved input (here, in the browser), then the free reading
  * written for it and the unlock. Under the 사주팔자 teaser the row "다른 운도 볼 수 있어요" shows another
  * 운's free reading in place (주제별 사주): a teaser this device already holds shows at once, a new one
  * is written once (one of the day's teasers). Opening writes the full reading of the one on screen, saves
@@ -82,7 +81,7 @@ export function SajuChartView({
   const modeKnown = sajuTopicsMode() !== "owner" || account !== undefined;
   const chart = result && "chart" in result ? result.chart : null;
   const own = ready && saved && chart !== null && context !== undefined;
-  // The 사주팔자 first; a 운 only after a tap, or when the address brings one back from checkout or login.
+  // The 사주팔자 first; a 운 after a tap, or when the address brings one (the topic step, checkout or login).
   const [picked, setPicked] = useState<SajuTopic>(initialTopic ?? "overall");
   const topic: SajuTopic = topicsOpen ? picked : "overall";
   const fields: SajuRequestFields | null = context ? sajuContextBody(context, topic) : null;
@@ -108,11 +107,15 @@ export function SajuChartView({
     return cancelTeaser;
   }, [teaserKey, attempt, runTeaser, cancelTeaser]); // form, the 운 and the chips are the key
 
-  /** 다른 운도 볼 수 있어요: the 운 on screen changes and its teaser shows in place (the device's copy first). */
+  /**
+   * 다른 운도 볼 수 있어요: the 운 on screen changes and its teaser shows in place (the device's copy first).
+   * The address follows it (no scroll), so a reload or a way back shows the same 운.
+   */
   const switchTopic = (next: SajuTopic) => {
     if (next === picked) return;
     resetTeaser();
     setPicked(next);
+    router.replace(returnFor(next), { scroll: false });
   };
 
   const opened = own && teaserKey ? chapters?.filter((c) => c.kind === "saju" && sajuTeaserKey(c.birth, chapterRequestFields(c)) === teaserKey).pop() : undefined;
@@ -311,7 +314,7 @@ export function SajuChartView({
           내 명식은 어떨까요?
         </h2>
         <p className={s.ctaText}>태어난 날을 넣으면 내 명식을 세우고, 나에게 맞춘 풀이를 열 수 있어요.</p>
-        <Button href={NEW_SAJU_HREF} block trailing="→">
+        <Button href="/saju/new?new=1" block trailing="→">
           태어난 날 입력하기
         </Button>
       </section>

@@ -215,6 +215,24 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(row().contains(back)).toBe(false);
   });
 
+  it("keeps the address on the 운 on screen, without scrolling, so a reload shows the same one (review 2026-10-14)", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    stub({ me: [OPENING_ME] });
+    render(<SajuChartView initialTopic="money" />);
+    await screen.findByText("재물운 · 맛보기");
+    fireEvent.click(screen.getByRole("button", { name: "사주팔자로 돌아가기" }));
+    expect(router.replace).toHaveBeenLastCalledWith("/saju/chart", { scroll: false });
+    tap("재물운");
+    expect(router.replace).toHaveBeenLastCalledWith("/saju/chart?topic=money", { scroll: false });
+  });
+
+  it("sends the example chart's 태어난 날 입력하기 straight to the birth input, not the topic step", async () => {
+    stub({ me: [OPENING_ME] });
+    render(<SajuChartView />);
+    expect((await screen.findByRole("link", { name: /태어난 날 입력하기/ })).getAttribute("href")).toBe("/saju/new?new=1");
+  });
+
   it("is step 3 of 3 with the topic step on, and its back link returns to the birth step on the 운 on screen", async () => {
     seed();
     seedTopic("money", "흙 속의 쇠");

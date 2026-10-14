@@ -159,7 +159,7 @@ export const sajuStartsWithTopic = (mode: SajuTopicsMode = sajuTopicsMode()): bo
 
 /** The topic step's line under each name: what the reading looks at, from its section headings. */
 export const TOPIC_PICK_LINES: Readonly<Record<SajuTopic, string>> = Object.freeze({
-  overall: "타고난 결과 지금 지나는 10년의 흐름을 함께 봐요",
+  overall: "타고난 결, 그리고 지금 지나는 10년의 흐름을 함께 봐요",
   love: "사랑할 때의 나와 잘 맞는 사람, 인연의 흐름을 봐요",
   reunion: "이별 뒤 마음이 머무는 자리와 관계가 다시 움직이는 흐름을 봐요",
   money: "돈이 들어오는 길과 지키는 힘, 돈의 흐름을 봐요",

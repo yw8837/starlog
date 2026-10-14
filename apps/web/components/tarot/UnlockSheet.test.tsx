@@ -142,6 +142,20 @@ describe("UnlockSheet offers", () => {
     expect(container.textContent).not.toContain("이미 열었어요");
   });
 
+  it("with 첫 이용 무료 first: its caption says the first is free, and crisis words or a redraw add no way to pay (review 2026-10-14)", () => {
+    const welcome = { mode: "pay", priceKrw: 2900, first: true } as const;
+    render(<UnlockSheet {...base} remaining={1} offer={welcome} onUnlock={() => {}} />);
+    expect(screen.getByText("처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요")).toBeTruthy();
+    expect(screen.queryByText("결제하면 바로 열려요")).toBeNull();
+    cleanup();
+    render(<UnlockSheet {...base} remaining={1} offer={welcome} onUnlock={() => {}} error={{ title: "x", action: null, care: true }} />);
+    expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
+    cleanup();
+    render(<UnlockSheet {...base} remaining={1} offer={{ mode: "login", priceKrw: 2900, gift: true, first: true }} onUnlock={() => {}} error={{ title: "x", action: "redraw" }} redrawHref="/tarot/draw" />);
+    expect(screen.getByRole("link", { name: "카드 다시 뽑기" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "로그인하고 전체 풀이 보기" })).toBeNull();
+  });
+
   it("once 첫 이용 무료 is used, the sheet with sales open is as before: its own choice is the gold one", () => {
     const actions = (c: HTMLElement) => [...c.querySelectorAll("a, button")].map((el) => [el.textContent, /secondary/.test(el.className) ? "secondary" : "primary"]);
     const { container } = render(<UnlockSheet {...base} remaining={0} offer={{ mode: "gift", until: null, priceKrw: 2900 }} onUnlock={() => {}} />);

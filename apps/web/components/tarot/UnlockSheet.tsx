@@ -152,7 +152,7 @@ export function UnlockSheet({
           {`${won(offer.priceKrw)} 결제하고 보기`}
         </Button>
       );
-      caption = "결제하면 바로 열려요";
+      if (!welcome) caption = "결제하면 바로 열려요";
       break;
     case "closed":
       caption = "지금은 결제를 받지 않고 있어요";
@@ -250,7 +250,7 @@ export function UnlockSheet({
             질문 고치기
           </Button>
         ) : null}
-        {openedHref || checking ? null : welcome ? (
+        {openedHref || checking ? null : welcome && !redraw && !error?.care ? (
           <>
             {offerPrimary}
             {offerSecondary}
