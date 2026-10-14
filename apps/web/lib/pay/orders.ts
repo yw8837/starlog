@@ -62,6 +62,10 @@ async function setStatus(db: D1Binding, id: string, from: OrderStatus[], to: Ord
 /** The Toss payment is the one this order expects: DONE, same order, same amount. */
 const matches = (order: OrderRow, payment: TossPayment) => payment.status === "DONE" && payment.orderId === order.id && payment.totalAmount === order.amount_krw;
 
+/** Toss's answers when our API keys themselves are refused. */
+const KEY_ERRORS = new Set(["UNAUTHORIZED_KEY", "INVALID_API_KEY", "INVALID_CLIENT_KEY", "INVALID_SECRET_KEY"]);
+const KEY_REJECTED_MESSAGE = "결제 승인을 받지 못했어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요.";
+
 /** The payment Toss has for this order, "none" when it has none, "unknown" when it could not be asked. */
 async function lookUpByOrder(toss: TossClient, orderId: string): Promise<TossPayment | "none" | "unknown"> {
   try {
@@ -170,9 +174,19 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
       return { ok: false, code: "PAY_PENDING" };
     }
     const refusal = error as TossError;
+    if (refusal.status === 401 || KEY_ERRORS.has(refusal.code)) {
+      // Our keys were refused (a wrong or mismatched secret key): nothing here can confirm the payment,
+      // and Toss lets an unconfirmed one expire. Waiting would only keep the buyer staring at a spinner.
+      console.error(JSON.stringify({ evt: "pay.key_rejected", orderId: order.id, status: refusal.status, code: refusal.code }));
+      await setStatus(db, order.id, ["confirming"], "failed", now, refusal.code);
+      return { ok: false, code: "PAY_FAILED", message: KEY_REJECTED_MESSAGE };
+    }
     // A definite answer (a decline, ALREADY_PROCESSED_PAYMENT, …): look the payment up before deciding.
     const found = await lookUpByOrder(toss, order.id);
-    if (found === "unknown") return { ok: false, code: "PAY_PENDING" };
+    if (found === "unknown") {
+      console.warn(JSON.stringify({ evt: "pay.confirm_lookup_unknown", orderId: order.id, status: refusal.status, code: refusal.code }));
+      return { ok: false, code: "PAY_PENDING" };
+    }
     if (found !== "none" && matches(order, found)) return outcomeOfPaid(db, toss, order, found, now);
     if (found === "none") {
       // Toss holds no payment for this order: the paymentKey was not its own (a forged or stray one,

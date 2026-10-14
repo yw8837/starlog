@@ -154,6 +154,20 @@ describe("confirm", () => {
     expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots WHERE currency = 'paid'").first()).toEqual({ n: 0 });
   });
 
+  it("fails an order at once when Toss refuses our keys, says no money moved, and logs the code", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await newOrder(b);
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockToss.failNext("confirm", new TossError(401, "UNAUTHORIZED_KEY", "인증되지 않은 시크릿 키 혹은 클라이언트 키 입니다."));
+    vi.spyOn(mockToss, "getPaymentByOrder").mockRejectedValueOnce(new TossError(401, "UNAUTHORIZED_KEY", ""));
+    const res = await confirmAs(b, orderId, "mock_key");
+    expect(res.status).toBe(402);
+    expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "결제 승인을 받지 못했어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요." });
+    expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "UNAUTHORIZED_KEY" });
+    expect(errors.mock.calls.some(([line]) => String(line).includes('"evt":"pay.key_rejected"') && String(line).includes("UNAUTHORIZED_KEY"))).toBe(true);
+  });
+
   it("fails an order whose refusal Toss backs with a payment of its own", async () => {
     const db = useTestDb();
     const b = await loggedIn();
