@@ -179,7 +179,7 @@ describe("Google login", () => {
     vi.stubEnv("STARLOG_PAYMENTS", "owner");
     expect((await visitor.send(start, await googleStartUrl(visitor, "/me"))).headers.get("location")).toBe("http://localhost/me?login=closed");
     const owner = browser("198.51.100.1");
-    expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
+    expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true })).status).toBe(200);
     expect((await googleLoginAs(owner, "owner")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
     expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { gift: { status: "unused" }, google: true } });
   });

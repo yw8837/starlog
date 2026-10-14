@@ -29,7 +29,7 @@ function SharedTarotView({ share }: { share: SharedTarot }) {
         <header className={s.head}>
           <p className={s.eyebrow}>친구가 공유한 타로 풀이</p>
           <h1 className={s.title}>{tarotShareTitle(share.cards.length)}</h1>
-          <p className={s.question}>질문은 공유한 사람만 볼 수 있어요.</p>
+          <p className={s.question}>질문과 직접 쓴 말, 고른 상황은 공유한 사람만 볼 수 있어요.</p>
         </header>
       }
       spread={<SpreadRow size="sm" cards={share.cards.map(faceUpCard)} deck={share.deck} />}
@@ -60,7 +60,7 @@ function SharedSajuView({ share }: { share: SharedSaju }) {
         <header className={s.head}>
           <p className={s.eyebrow}>친구가 공유한 사주 풀이</p>
           <h1 className={s.title}>{sajuShareTitle(share)}</h1>
-          <p className={s.question}>생년월일과 명식은 공유한 사람만 볼 수 있어요.</p>
+          <p className={s.question}>생년월일과 태어난 시각, 명식, 고른 상황은 공유한 사람만 볼 수 있어요.</p>
         </header>
       }
       spread={isSajuGlance(share.reading.glance) ? <GlanceCard glance={share.reading.glance} /> : null}

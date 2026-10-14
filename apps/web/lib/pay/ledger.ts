@@ -44,6 +44,17 @@ export type Allocation = [lotId: string, units: number];
 /** How long an unlock holds its lot: the 240 s generation budget plus margin. Then a sweep returns it. */
 export const RESERVATION_MS = 6 * 60 * 1000;
 
+/** SEC-02: a lot gets its units back after its client left at most this many times; after that leaving uses it up. */
+export const MAX_RESTORES = 3;
+
+/**
+ * SEC-02: the restore of an opening the client left after the model began answering. The lot can open
+ * again, but the purchase is no longer refundable: its reading was (partly) written and paid for.
+ */
+const LEFT_RESTORE = "restore-left:";
+/** True for a lot (aliased `lot`) that was given back after its client left: not refundable any more. */
+export const LEFT_SQL = (lot: string) => `EXISTS (SELECT 1 FROM ledger WHERE lot_id = ${lot}.id AND idem_key LIKE '${LEFT_RESTORE}%')`;
+
 /** What a new lot holds: one opening. */
 const ONE_OPENING = 1;
 
@@ -160,16 +171,16 @@ export function paidLotStatements(db: D1Binding, input: { userId: string; orderI
 
 export function reserveStatements(
   db: D1Binding,
-  input: { unlockId: string; userId: string; productId: string; currency: Currency; allocations: Allocation[]; now: number },
+  input: { unlockId: string; userId: string; productId: string; currency: Currency; allocations: Allocation[]; now: number; partSeq?: number },
 ): D1Statement[] {
-  const { unlockId, userId, productId, currency, allocations, now } = input;
+  const { unlockId, userId, productId, currency, allocations, now, partSeq = 0 } = input;
   return [
     db
       .prepare(
-        `INSERT INTO unlocks (id, user_id, product_id, currency, allocations, status, reserved_until, created_at)
-         VALUES (?, ?, ?, ?, ?, 'reserved', ?, ?)`,
+        `INSERT INTO unlocks (id, user_id, product_id, currency, allocations, status, reserved_until, created_at, part_seq)
+         VALUES (?, ?, ?, ?, ?, 'reserved', ?, ?, ?)`,
       )
-      .bind(unlockId, userId, productId, currency, JSON.stringify(allocations), now + RESERVATION_MS, now),
+      .bind(unlockId, userId, productId, currency, JSON.stringify(allocations), now + RESERVATION_MS, now, partSeq),
     ...allocations.flatMap(([lotId, units]) => [
       // A lot that is no longer active, or whose account was deleted, becomes -1, which the CHECK
       // rejects: the whole batch rolls back.
@@ -198,12 +209,13 @@ export type ReserveResult = { ok: true; unlockId: string; allocations: Allocatio
  * - A lot bought with an order counts only when its payment was made under `payMode`, this deploy's
  *   Toss keys (mode.ts payKeyMode): test payments never pay for live readings; null takes none.
  * - `earmarked` (premium readings, P5) takes only lots bought for `productId` itself.
+ * - `partSeq` (premium readings): the part this reservation is taken for (extendUnlock).
  */
 export async function reserveUnlock(
   db: D1Binding,
-  input: { userId: string; productId: string; currency: Currency; now: number; payMode: PayKeyMode | null; earmarked?: boolean },
+  input: { userId: string; productId: string; currency: Currency; now: number; payMode: PayKeyMode | null; earmarked?: boolean; partSeq?: number },
 ): Promise<ReserveResult> {
-  const { userId, productId, currency, now, payMode, earmarked = false } = input;
+  const { userId, productId, currency, now, payMode, earmarked = false, partSeq } = input;
   if (currency === "free" && productId !== GIFT_PRODUCT) return { ok: false };
   // Premium readings open only from lots bought for them: a lot for any standard reading
   // (product_id NULL) must never open a 7,900원 product.
@@ -225,7 +237,7 @@ export async function reserveUnlock(
     const allocations: Allocation[] = [[whole.id, whole.units_left]];
     const unlockId = `ul_${randomId(12)}`;
     try {
-      await db.batch(reserveStatements(db, { unlockId, userId, productId, currency, allocations, now }));
+      await db.batch(reserveStatements(db, { unlockId, userId, productId, currency, allocations, now, partSeq }));
       return { ok: true, unlockId, allocations };
     } catch (error) {
       if (!isConstraintError(error)) throw error;
@@ -278,26 +290,33 @@ export async function deliverUnlock(
 }
 
 /**
- * Returns a reservation's units to their lots (failed or abandoned generation). Idempotent; false
+ * Returns a reservation's units to their lots (failed generation, or a lapsed reservation). Idempotent; false
  * when it was not reserved. Units go back only into a lot that is still active: one that expired,
  * or was revoked because its payment was cancelled, keeps nothing (minor 1). A gift whose last day
  * ended while it was held (opened just before midnight, failed after) keeps the rest of the KST day
  * it comes back on, so a failed reading never costs it.
+ * SEC-02: `left`: the client left after the model began answering; the units come back the same way,
+ * but the purchase is no longer refundable (LEFT_SQL), and only MAX_RESTORES times per lot: after
+ * that the unlock is released and its units stay used. A server failure or a lapsed reservation (the
+ * sweep) always gives the units back and never counts toward MAX_RESTORES.
  */
-export async function releaseUnlock(db: D1Binding, input: { unlockId: string; now: number }): Promise<boolean> {
+export async function releaseUnlock(db: D1Binding, input: { unlockId: string; now: number; left?: boolean }): Promise<boolean> {
   const unlock = await unlockRow(db, input.unlockId);
   if (!unlock || unlock.status !== "reserved") return false;
+  const capped = input.left ? ` AND (SELECT COUNT(*) FROM ledger WHERE lot_id = ? AND idem_key LIKE '${LEFT_RESTORE}%') < ${MAX_RESTORES}` : "";
+  const restorable = `${RESERVED}${capped}`;
+  const restorableArgs = (lotId: string) => (input.left ? [unlock.id, lotId] : [unlock.id]);
   const results = await db.batch([
     ...allocationsOf(unlock).flatMap(([lotId, units]) => [
       db
-        .prepare(`UPDATE credit_lots SET expires_at = ? WHERE id = ? AND currency = 'free' AND status = 'active' AND expires_at <= ? AND ${RESERVED}`)
-        .bind(giftExpiry(input.now, 0), lotId, input.now, unlock.id),
-      db.prepare(`UPDATE credit_lots SET units_left = units_left + ? WHERE id = ? AND status = 'active' AND ${RESERVED}`).bind(units, lotId, unlock.id),
+        .prepare(`UPDATE credit_lots SET expires_at = ? WHERE id = ? AND currency = 'free' AND status = 'active' AND expires_at <= ? AND ${restorable}`)
+        .bind(giftExpiry(input.now, 0), lotId, input.now, ...restorableArgs(lotId)),
+      db.prepare(`UPDATE credit_lots SET units_left = units_left + ? WHERE id = ? AND status = 'active' AND ${restorable}`).bind(units, lotId, ...restorableArgs(lotId)),
       db
-        .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${RESERVED} AND EXISTS (SELECT 1 FROM credit_lots WHERE id = ? AND status = 'active')`)
+        .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${restorable} AND EXISTS (SELECT 1 FROM credit_lots WHERE id = ? AND status = 'active')`)
         .bind(
-          ...values({ userId: unlock.user_id, currency: unlock.currency, kind: "restore", units, lotId, unlockId: unlock.id, idem: `restore:${unlock.id}:${lotId}`, now: input.now }),
-          unlock.id,
+          ...values({ userId: unlock.user_id, currency: unlock.currency, kind: "restore", units, lotId, unlockId: unlock.id, idem: `${input.left ? LEFT_RESTORE : "restore:"}${unlock.id}:${lotId}`, now: input.now }),
+          ...restorableArgs(lotId),
           lotId,
         ),
     ]),
@@ -310,11 +329,17 @@ export async function releaseUnlock(db: D1Binding, input: { unlockId: string; no
  * Pushes a live reservation's expiry to now + RESERVATION_MS, for a reading written over several
  * requests (P5 parts). Only this user's reservation, only while it is still reserved and not yet
  * expired (an expired one may already be swept back). False otherwise: the caller reserves again.
+ * With `parts` (a resume token's part count) it also claims the next part, in the same UPDATE: only
+ * while part_seq equals `parts`, which it then bumps, so one token runs its next part once (SEC-02).
  */
-export async function extendUnlock(db: D1Binding, input: { unlockId: string; userId: string; now: number }): Promise<boolean> {
+export async function extendUnlock(db: D1Binding, input: { unlockId: string; userId: string; now: number; parts?: number }): Promise<boolean> {
+  const claim = input.parts !== undefined;
   const result = await db
-    .prepare("UPDATE unlocks SET reserved_until = ? WHERE id = ? AND user_id = ? AND status = 'reserved' AND reserved_until > ?")
-    .bind(input.now + RESERVATION_MS, input.unlockId, input.userId, input.now)
+    .prepare(
+      `UPDATE unlocks SET reserved_until = ?${claim ? ", part_seq = part_seq + 1" : ""}
+       WHERE id = ? AND user_id = ? AND status = 'reserved' AND reserved_until > ?${claim ? " AND part_seq = ?" : ""}`,
+    )
+    .bind(input.now + RESERVATION_MS, input.unlockId, input.userId, input.now, ...(claim ? [input.parts] : []))
     .run();
   return result.meta?.changes === 1;
 }
@@ -367,13 +392,13 @@ export async function lockPaidLotForRefund(db: D1Binding, orderId: string, now: 
     db
       .prepare(
         `UPDATE orders SET status = 'refunding', updated_at = ? WHERE id = ? AND status = 'paid'
-           AND EXISTS (SELECT 1 FROM credit_lots WHERE order_id = ? AND status = 'active' AND units_left = units_total)`,
+           AND EXISTS (SELECT 1 FROM credit_lots c WHERE c.order_id = ? AND c.status = 'active' AND c.units_left = c.units_total AND NOT ${LEFT_SQL("c")})`,
       )
       .bind(now, orderId, orderId),
     db
       .prepare(
         `UPDATE credit_lots SET units_left = 0, status = 'refunding'
-         WHERE order_id = ? AND status = 'active' AND units_left = units_total
+         WHERE order_id = ? AND status = 'active' AND units_left = units_total AND NOT ${LEFT_SQL("credit_lots")}
            AND EXISTS (SELECT 1 FROM orders WHERE id = ? AND status = 'refunding' AND updated_at = ?)
          RETURNING *`,
       )
@@ -456,9 +481,11 @@ export interface Entitlements {
   gift: GiftState;
   /**
    * paid readings bought and not opened yet (a reading being opened is in `opening` instead);
-   * `paidAt`: when the payment was recorded (its lot's created_at), where the refund window starts
+   * `paidAt`: when the payment was recorded (its lot's created_at), where the refund window starts;
+   * `refundable`: false once it was given back after its client left (LEFT_SQL): it can be opened
+   * again but never refunded, by 환불받기 or by account deletion
    */
-  unused: Array<{ orderId: string; productId: string; paidAt: number }>;
+  unused: Array<{ orderId: string; productId: string; paidAt: number; refundable: boolean }>;
   /** readings being opened, oldest first */
   opening: Opening[];
 }
@@ -478,12 +505,12 @@ export async function entitlements(db: D1Binding, userId: string, now: number): 
   // Every lot that can still open something, and every gift lot (a spent one says the gift was used).
   const { results } = await db
     .prepare(
-      `SELECT currency, order_id, product_id, units_left, expires_at, created_at FROM credit_lots
+      `SELECT currency, order_id, product_id, units_left, expires_at, created_at, ${LEFT_SQL("credit_lots")} AS left_once FROM credit_lots
        WHERE user_id = ? AND status = 'active' AND (currency = 'free' OR (units_left > 0 AND (expires_at IS NULL OR expires_at > ?)))
        ORDER BY created_at`,
     )
     .bind(userId, now)
-    .all<Pick<Lot, "currency" | "order_id" | "product_id" | "units_left" | "expires_at" | "created_at">>();
+    .all<Pick<Lot, "currency" | "order_id" | "product_id" | "units_left" | "expires_at" | "created_at"> & { left_once: number }>();
   const usable = (lot: (typeof results)[number]) => lot.units_left > 0 && (lot.expires_at === null || lot.expires_at > now);
   const gifts = results.filter((lot) => lot.currency === "free");
   const left = gifts.filter(usable);
@@ -498,7 +525,7 @@ export async function entitlements(db: D1Binding, userId: string, now: number): 
     gift,
     unused: results
       .filter((lot) => usable(lot) && lot.currency === "paid" && lot.order_id !== null && lot.product_id !== null)
-      .map((lot) => ({ orderId: lot.order_id!, productId: lot.product_id!, paidAt: lot.created_at })),
+      .map((lot) => ({ orderId: lot.order_id!, productId: lot.product_id!, paidAt: lot.created_at, refundable: !lot.left_once })),
     opening: reservations.results.map((row) => ({
       productId: row.product_id,
       currency: row.currency === "paid" ? "paid" : "gift",

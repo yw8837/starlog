@@ -6,7 +6,8 @@ import { REVIEW_MAX, reviewProblem } from "@/lib/reviews/text";
 
 /**
  * 풀이 후기 (docs/superpowers/specs/2026-10-13-starlog-reviews-design.md).
- * GET ?product=&sort=recent|helpful&before= → { reviews, next, summary }: the visible reviews, public.
+ * GET ?product=&sort=recent|helpful&before= → { reviews, next, summary }: the visible reviews, public;
+ * for a signed-in viewer each says whether they marked it 도움돼요 (helpfulByMe).
  * POST {readingId, rating, body?} → { review }: writes or rewrites the review of one of my saved readings.
  * DELETE ?id= → { deleted }: my review goes.
  */
@@ -16,6 +17,14 @@ const WriteBody = z.object({
   rating: z.number().int().min(1).max(5),
   body: z.string().max(REVIEW_MAX * 2).default(""),
 });
+
+/** What a reading that takes no review is told, by why (writeReview). */
+const REFUSED: Partial<Record<string, string>> = {
+  "owner-pass": "운영자 패스로 연 풀이에는 후기를 남길 수 없어요.",
+  "test-payment": "시험 결제로 연 풀이에는 후기를 남길 수 없어요.",
+  "review-account": "심사용 계정의 풀이에는 후기를 남길 수 없어요.",
+  removed: "운영 원칙에 따라 숨긴 후기가 있는 풀이에는 후기를 다시 남길 수 없어요.",
+};
 
 export async function GET(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "ME_LIMITER" });
@@ -27,6 +36,7 @@ export async function GET(request: Request): Promise<Response> {
       product: product && /^[a-z0-9-]{3,20}$/.test(product) ? product : undefined,
       sort: params.get("sort") === "helpful" ? "helpful" : "recent",
       before: params.get("before") ?? undefined,
+      viewer: ctx.session?.user.id,
     }),
   );
 }
@@ -49,9 +59,8 @@ export async function POST(request: Request): Promise<Response> {
     now: ctx.now,
   });
   if (!result.ok) {
-    return result.reason === "owner-pass"
-      ? errorResponse("NOT_AVAILABLE", { message: "운영자 패스로 연 풀이에는 후기를 남길 수 없어요." })
-      : errorResponse("FORBIDDEN", { message: "내 계정에 저장된 풀이에만 후기를 남길 수 있어요." });
+    const refused = REFUSED[result.reason];
+    return refused ? errorResponse("NOT_AVAILABLE", { message: refused }) : errorResponse("FORBIDDEN", { message: "내 계정에 저장된 풀이에만 후기를 남길 수 있어요." });
   }
   return json({ review: result.review });
 }

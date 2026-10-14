@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { refreshAccount } from "@/lib/account/client";
 import s from "./OwnerForm.module.css";
 
 type Status = { kind: "idle" } | { kind: "sending" } | { kind: "done" } | { kind: "error"; message: string };
@@ -27,6 +28,8 @@ export function OwnerForm() {
       if (response.ok) {
         setCode("");
         setStatus({ kind: "done" });
+        // The pass is new: the page's account state learns it, and the review desk below opens.
+        void refreshAccount();
         return;
       }
       const data = (await response.json().catch(() => ({}))) as { message?: string };

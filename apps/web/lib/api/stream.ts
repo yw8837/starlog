@@ -4,7 +4,7 @@ import type { GenerationHooks } from "@/lib/ai/provider";
 import { issueCommit } from "@/lib/security/commit";
 import { generationErrorPayload, json, serializeCookie, type CookieSpec, type Gate } from "./http";
 import { SectionScanner } from "./sections";
-import { SpendLedger, addCost, addPaidCost, recordClientSpend, type CostSink, type SpendKind } from "./spend"; // P4: cost books
+import { SpendLedger, addCost, addNetworkCost, addPaidCost, recordClientSpend, type CostSink, type SpendKind } from "./spend"; // P4: cost books
 
 /**
  * Generation responses (.superpowers/sdd/2026-09-30-starlog-p2b/streaming-protocol.md). A request
@@ -37,13 +37,17 @@ export interface GenerationOutcome {
  *   saved reading's id).
  * - `recover` runs when deliver threw: what deliver would have returned if the save landed anyway
  *   (its D1 answer was lost), else null.
- * - `release` runs on every failure: generation error, budget, client gone, a save that did not
- *   land. It must be idempotent and a no-op once delivered.
+ * - `release` runs on every failure: generation error, budget, client gone before the model began
+ *   answering, a save that did not land. It must be idempotent and a no-op once delivered.
+ * - `abandon` runs instead when the client left after the model began answering (SEC-02): the credit
+ *   comes back to open again (a few times at most), but its purchase is no longer refundable. Without
+ *   it the reservation is simply kept until it lapses.
  */
 export interface Settlement {
   deliver(outcome: GenerationOutcome): Promise<Record<string, unknown>>;
   recover(): Promise<Record<string, unknown> | null>;
   release(): Promise<void>;
+  abandon?(): Promise<void>;
 }
 
 export interface RespondOptions {
@@ -54,22 +58,34 @@ export interface RespondOptions {
   spend?: SpendKind;
   budgetMs?: number;
   pingMs?: number;
-  /** P4: saves the reading and settles its credit before the client sees it; none for 오픈 기념 readings */
+  /**
+   * P4: saves the reading and settles its credit before the client sees it; none for 오픈 기념 readings.
+   * A generation with a settlement is opened by a credit (gift, purchase) or the owner, so its cost
+   * never counts toward the network's free-tier total (SEC-01).
+   */
   settle?: Settlement;
   /** P4: a paid opening: its model cost goes to the paid book (addPaidCost), never the free-tier total */
   paidCost?: boolean;
 }
 
 /** One signal for everything that should stop the generation: client gone, stream cancelled, budget spent. */
-function generationSignal(request: Request, budgetMs: number): { signal: AbortSignal; cancel: () => void; done: () => void } {
+function generationSignal(request: Request, budgetMs: number): { signal: AbortSignal; cancel: () => void; done: () => void; clientGone: () => boolean } {
   const controller = new AbortController();
+  let gone = false;
   const timer = setTimeout(() => controller.abort(new Error("generation budget spent")), budgetMs);
-  const onClientAbort = () => controller.abort(new Error("client disconnected"));
+  const onClientAbort = () => {
+    gone = true;
+    controller.abort(new Error("client disconnected"));
+  };
   if (request.signal.aborted) onClientAbort();
   else request.signal.addEventListener("abort", onClientAbort, { once: true });
   return {
     signal: controller.signal,
-    cancel: () => controller.abort(new Error("stream cancelled")),
+    clientGone: () => gone,
+    cancel: () => {
+      gone = true;
+      controller.abort(new Error("stream cancelled"));
+    },
     done: () => {
       clearTimeout(timer);
       request.signal.removeEventListener("abort", onClientAbort);
@@ -103,9 +119,13 @@ export async function respondGeneration(
   // One ledger per concurrent upstream call: two calls sharing one would settle each other's reservations. Their writes
   // still go through one queue: a cost write reads a shard and writes it back, so two at once on one shard lose one.
   const book: CostSink = paidCost ? addPaidCost : addCost; // P4: paid book
+  const network = !gate.owner && !settle; // SEC-01: free-tier generations only
   let queue: Promise<unknown> = Promise.resolve();
   const sink: CostSink = (krw, at) => {
-    const written = queue.then(() => book(krw, at));
+    const written = queue.then(async () => {
+      await book(krw, at);
+      if (network) await addNetworkCost(gate.client, krw, at);
+    });
     queue = written.catch(() => {}); // a failed write (the ledger logs it) never stops the next one
     return written;
   };
@@ -124,10 +144,13 @@ export async function respondGeneration(
     concurrent: () => ({ signal: abort.signal, deadline, ...costHooks() }),
   };
   // P4: a failed release is not lost: the reservation expires (RESERVATION_MS) and a sweep returns it.
-  const release = async () => {
+  // SEC-02: a client that left after the model began answering abandons the credit instead; a failure
+  // after the generation finished (a save that did not land) is the server's and always releases.
+  const release = async (generated: boolean) => {
     if (!settle) return;
+    const abandoned = !generated && abort.clientGone() && ledgers.some((ledger) => ledger.began);
     try {
-      await settle.release();
+      await (abandoned ? settle.abandon?.() : settle.release());
     } catch (error) {
       console.error(JSON.stringify({ evt: "settle.release_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
     }
@@ -149,15 +172,17 @@ export async function respondGeneration(
 
   if (!wantsStream(request)) {
     const work = (async () => {
+      let generated = false;
       try {
         const outcome = await run(accounting);
+        generated = true;
         const body = await settled(outcome); // P4
         // One Set-Cookie per name: the outcome's cookie replaces a start cookie of the same name.
         const names = new Set(outcome.cookies.map((c) => c.name));
         const cookies = [...startCookies.filter((c) => !names.has(c.name)), ...outcome.cookies];
         return json(body, { cookies: cookies.map(serializeCookie) });
       } catch (error) {
-        await release(); // P4
+        await release(generated); // P4
         const { status, body } = generationErrorPayload(error);
         return json(body, { status, cookies: start });
       } finally {
@@ -198,13 +223,15 @@ export async function respondGeneration(
         onSection: (key, index) => write({ type: "section", key, index }),
       };
       keepAlive((async () => {
+        let generated = false;
         try {
           const outcome = await run(hooks);
+          generated = true;
           const data = await settled(outcome); // P4: saved and spent before done
           const commit = outcome.cookies.length ? await issueCommit(outcome.cookies, cookiesAfterStart, gate.secret, gate.now) : null;
           write({ type: "done", data, ...(commit ? { commit } : {}) });
         } catch (error) {
-          await release(); // P4
+          await release(generated); // P4
           const { status, body: errorBody } = generationErrorPayload(error);
           write({ type: "error", status, body: errorBody });
         } finally {

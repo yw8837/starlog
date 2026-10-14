@@ -1,0 +1,56 @@
+.desk {
+  display: grid;
+  gap: 14px;
+  padding: 8px 0 calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+.title {
+  font-size: var(--fs-h2);
+}
+
+.lead {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.reason {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--glass);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-sub);
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.error {
+  color: var(--error);
+  font-size: var(--fs-sub);
+}

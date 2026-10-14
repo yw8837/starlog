@@ -1,10 +1,13 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { deleteAccount } from "@/lib/account/deletion";
 import { setTestDb } from "@/lib/db";
+import type { D1Binding } from "@/lib/db/d1";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { issueChapter, type ChapterContext } from "@/lib/security/chapterToken";
+import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 import { findShare } from "@/lib/share/store";
-import { browser, useTestDb } from "@/lib/testing/p4";
+import { browser, loginAs, useTestDb } from "@/lib/testing/p4";
 import { DELETE, POST } from "./route";
 
 const secret = signingSecret() as string;
@@ -79,12 +82,39 @@ describe("the card design of a share", () => {
     expect(share?.payload.kind === "tarot" && share.payload.deck).toBe("rws1909");
   });
 
-  it("falls back to the sharer's design for a reading opened before chapters carried one", async () => {
+  it("is the 1909 scans for a reading opened before chapters carried one (it was written for them), whatever the sharer's screen shows", async () => {
     const db = useTestDb();
     const chapterToken = await issueChapter(ctx, reading, [], secret, Date.now());
-    const { id } = await json(await browser().send(POST, "/api/share", { body: { chapterToken, reading, deck: "rws1909" }, origin: true }));
+    const { id } = await json(await browser().send(POST, "/api/share", { body: { chapterToken, reading, deck: "starlog" }, origin: true }));
     const share = await findShare(db, id as string);
     expect(share?.payload.kind === "tarot" && share.payload.deck).toBe("rws1909");
+  });
+});
+
+describe("the owner of a share", () => {
+  beforeEach(() => {
+    vi.stubEnv("STARLOG_PAYMENTS", "on");
+    vi.stubEnv("STARLOG_KAKAO", "mock");
+    resetMemoryLimiter();
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  const ownerOf = async (db: D1Binding, id: unknown) => (await db.prepare("SELECT user_id FROM shares WHERE id = ?").bind(id).first<{ user_id: string | null }>())?.user_id;
+
+  it("is the signed-in account that made it, and its shares go when that account is deleted", async () => {
+    const db = useTestDb();
+    const signedIn = browser("198.51.100.7");
+    await loginAs(signedIn, "alice");
+    const mine = await json(await signedIn.send(POST, "/api/share", { body: { chapterToken: await issueChapter(ctx, reading, [], secret, Date.now()), reading }, origin: true }));
+    const other = { ...reading, verdict: "다른 날의 풀이예요." };
+    const anonymous = await json(await browser().send(POST, "/api/share", { body: { chapterToken: await issueChapter(ctx, other, [], secret, Date.now()), reading: other }, origin: true }));
+    const userId = await ownerOf(db, mine.id);
+    expect(userId).toEqual(expect.any(String));
+    expect(await ownerOf(db, anonymous.id)).toBeNull();
+
+    expect(await deleteAccount(db, null, { userId: userId as string, now: Date.now() })).toEqual({ ok: true, refunded: 0 });
+    expect(await findShare(db, mine.id as string)).toBeNull();
+    expect(await findShare(db, anonymous.id as string)).not.toBeNull();
   });
 });
 

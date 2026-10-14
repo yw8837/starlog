@@ -13,6 +13,8 @@ export interface ShareActions {
   create: () => Promise<ShareLinkResult>;
   /** Stops sharing it; false when that failed. */
   stop: () => Promise<boolean>;
+  /** The live link this device already made for the reading, if any (lib/share/client.ts knownShareLink). */
+  current?: () => { url: string; imageUrl: string } | null;
 }
 
 type ShareResultButtonProps = ShareActions & {
@@ -22,18 +24,24 @@ type ShareResultButtonProps = ShareActions & {
 };
 
 const SHOWN: Record<ShareResultButtonProps["kind"], { shown: string; hidden: string }> = {
-  tarot: { shown: "뽑은 카드와 풀이 전체", hidden: "질문과 직접 쓴 말, 이어서 물어본 내용" },
-  saju: { shown: "한눈에 보기와 풀이", hidden: "생년월일, 명식, 이어서 물어본 내용" },
+  tarot: { shown: "뽑은 카드와 풀이 전체", hidden: "질문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용" },
+  saju: { shown: "한눈에 보기와 풀이", hidden: "생년월일과 태어난 시각, 명식, 고른 상황, 이어서 물어본 내용" },
 };
 
-type Phase = { at: "intro" } | { at: "making" } | { at: "ready"; url: string; imageUrl: string } | { at: "failed"; message: string } | { at: "stopped" };
+type Phase =
+  | { at: "intro" }
+  | { at: "making" }
+  | { at: "ready"; url: string; imageUrl: string; error?: string }
+  | { at: "failed"; message: string }
+  | { at: "stopped" };
 
 /**
  * 결과 공유 (owner 2026-10-13): 공유하기 first says what a friend will see and what stays hidden, and
  * only 링크 만들기 publishes the reading's copy (/s/<id>). Then the usual share buttons send that link,
- * each from its own tap (a phone's share sheet must open from one). 공유 그만하기 takes the link down.
+ * each from its own tap (a phone's share sheet must open from one). 공유 그만하기 takes the link down,
+ * and shows whenever the reading has a live link (`current`); after it, a new link can be made.
  */
-export function ShareResultButton({ kind, text, create, stop }: ShareResultButtonProps) {
+export function ShareResultButton({ kind, text, create, stop, current }: ShareResultButtonProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>({ at: "intro" });
   const copy = SHOWN[kind];
@@ -44,14 +52,20 @@ export function ShareResultButton({ kind, text, create, stop }: ShareResultButto
     setPhase(result.ok ? { at: "ready", url: result.url, imageUrl: result.imageUrl } : { at: "failed", message: result.message });
   };
 
-  const takeDown = async () => {
+  const takeDown = async (live: Extract<Phase, { at: "ready" }>) => {
     if (await stop()) setPhase({ at: "stopped" });
-    else setPhase({ at: "failed", message: "공유를 멈추지 못했어요. 잠시 뒤에 다시 시도해 주세요." });
+    else setPhase({ ...live, error: "공유를 멈추지 못했어요. 잠시 뒤에 다시 시도해 주세요." });
+  };
+
+  const openSheet = () => {
+    const live = phase.at === "intro" ? current?.() : null;
+    if (live) setPhase({ at: "ready", ...live });
+    setOpen(true);
   };
 
   return (
     <>
-      <Button variant="secondary" size="md" onClick={() => setOpen(true)}>
+      <Button variant="secondary" size="md" onClick={openSheet}>
         공유하기
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} labelledBy="share-result-title">
@@ -68,19 +82,24 @@ export function ShareResultButton({ kind, text, create, stop }: ShareResultButto
               <div className={s.actions}>
                 <ShareButton text={text} target={{ url: phase.url, imageUrl: phase.imageUrl, button: "풀이 보기" }} />
               </div>
-              <button type="button" className={s.stop} onClick={takeDown}>
+              {phase.error ? (
+                <p className={s.note} role="alert">
+                  {phase.error}
+                </p>
+              ) : null}
+              <button type="button" className={s.stop} onClick={() => takeDown(phase)}>
                 공유 그만하기
               </button>
             </>
-          ) : phase.at === "stopped" ? (
-            <p className={s.note} role="status">
-              공유를 멈췄어요. 보낸 링크는 이제 열리지 않아요.
-            </p>
           ) : (
             <>
               {phase.at === "failed" ? (
                 <p className={s.note} role="alert">
                   {phase.message}
+                </p>
+              ) : phase.at === "stopped" ? (
+                <p className={s.note} role="status">
+                  공유를 멈췄어요. 보낸 링크는 이제 열리지 않아요.
                 </p>
               ) : null}
               <Button block onClick={make} disabled={phase.at === "making"}>

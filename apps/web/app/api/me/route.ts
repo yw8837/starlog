@@ -17,7 +17,8 @@ import { signingSecret } from "@/lib/security/sign";
  * - `owner`: whether it holds the owner pass;
  * - `user`: the logged-in user's nickname, `gift` (the signup gift: `{ status: "unused", until }` with
  *   its last moment, `{ status: "used" }`, or null when there is none), unopened purchases (each with
- *   `refundUntil`, the last moment 환불받기 works) and `opening`, the readings being opened right now
+ *   `refundUntil`, the last moment 환불받기 works, or `refundable: false` instead for one given back
+ *   after its client left, SEC-02) and `opening`, the readings being opened right now
  *   (a paid one is never also in `unused`); `review: true` only on the review account, `google: true`
  *   only on a Google account.
  * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
@@ -50,7 +51,9 @@ export async function GET(request: Request): Promise<Response> {
         gift?.status === "unused"
           ? { status: "unused", until: gift.expiresAt === null ? null : new Date(gift.expiresAt).toISOString() }
           : gift,
-      unused: held.unused.map(({ orderId, productId, paidAt }) => ({ orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() })),
+      unused: held.unused.map(({ orderId, productId, paidAt, refundable }) =>
+        refundable ? { orderId, productId, refundUntil: new Date(refundDeadline(paidAt)).toISOString() } : { orderId, productId, refundable: false },
+      ),
       opening: held.opening,
       ...(review ? { review: true } : {}),
       ...(isGoogleAccount(ctx.session.user) ? { google: true } : {}),

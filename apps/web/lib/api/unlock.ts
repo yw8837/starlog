@@ -67,7 +67,8 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
   const unbacked = method === "paid" && process.env.NODE_ENV === "production" && payKeyMode() === "test";
   if (method === "free" || unbacked) {
     // Gift readings cost us what free readings cost: the free budget and the network cap apply (minor 4).
-    const limited = await checkServerLimits(gate, "full");
+    // A credit pays for them, so not the network's free-tier cost share (SEC-01).
+    const limited = await checkServerLimits(gate, "full", {}, { credit: true });
     if (limited) return limited;
   }
   const reserved = await reserveUnlock(ctx.db, {
@@ -93,8 +94,9 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
  * Saves the reading to the account, and spends the reservation, before the client sees the reading
  * (stream.ts Settlement, inside the generation's keepAlive work). recover() looks for exactly this
  * generation's row, so a save whose answer was lost still reaches the client. Every failure
- * releases the reservation. Without anything to save (오픈 기념, or an owner not logged in) there is
- * no settlement.
+ * releases the reservation; a client that left after the model began answering abandons it instead
+ * (SEC-02: given back to reopen, at most MAX_RESTORES times, no longer refundable). Without anything
+ * to save (오픈 기념, or an owner not logged in) there is no settlement.
  */
 export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string, unknown>) => ServerChapter, now: number): Settlement | undefined {
   const save = plan.save;
@@ -127,6 +129,13 @@ export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string,
     async release() {
       if (save.unlockId && (await releaseUnlock(save.db, { unlockId: save.unlockId, now: Date.now() }))) {
         console.info(JSON.stringify({ evt: "unlock.released", unlockId: save.unlockId }));
+      }
+    },
+    // SEC-02: the client left after the model began answering: the credit comes back to reopen
+    // (within MAX_RESTORES) but the purchase is no longer refundable.
+    async abandon() {
+      if (save.unlockId && (await releaseUnlock(save.db, { unlockId: save.unlockId, now: Date.now(), left: true }))) {
+        console.info(JSON.stringify({ evt: "unlock.abandoned", unlockId: save.unlockId }));
       }
     },
   };

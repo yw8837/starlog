@@ -9,7 +9,7 @@ import {
 } from "@/lib/security/quota";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
-import { budgetState, clientCount, type SpendKind } from "./spend";
+import { budgetState, clientCount, overNetworkBudget, type SpendKind } from "./spend";
 
 /**
  * Route handler plumbing: JSON bodies with a size cap, error codes, cookies, the client key for the
@@ -95,15 +95,15 @@ export function errorFromGeneration(error: unknown, cookies: string[] = []): Res
 }
 
 /**
- * The parsed JSON body, or null for a wrong content type (blocks form-post CSRF), a body over
- * `maxBytes`, or invalid JSON. An empty body reads as `{}`.
+ * The parsed JSON body, or null for a wrong content type (blocks form-post CSRF; checked first, a
+ * body-less request included), a body over `maxBytes`, or invalid JSON. An empty JSON body reads as `{}`.
  */
 export async function readJson(request: Request, maxBytes: number): Promise<unknown> {
   const type = request.headers.get("content-type") ?? "";
+  if (!type.toLowerCase().startsWith("application/json")) return null;
   const declared = Number(request.headers.get("content-length") ?? "0");
   if (declared > maxBytes) return null;
   if (!request.body) return {};
-  if (!type.toLowerCase().startsWith("application/json")) return null;
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -285,13 +285,22 @@ const CLOSED_FOR_OWNER_TOO: ReadonlySet<SpendKind> = new Set(["full", "teaser"])
  *   (owners too);
  * - 503 while the spend total cannot be trusted ("unknown": KV down, writes failing): full readings
  *   and teasers for everyone, follow-ups and the daily card for everyone but the owner;
- * - 429 `scope: "network"` once this client's network has used up `kind` today (owners skip it).
+ * - 429 `scope: "network"` once this client's network has used up `kind` today (owners skip it);
+ * - the same 429 once the network's free-tier generations cost its share of the day's budget
+ *   (spend.ts overNetworkBudget, SEC-01). Owners and `credit` openings (the signup gift, a purchase)
+ *   skip it. A network total that cannot be read counts 0: the budget check above already closes
+ *   when KV is down.
  */
-export async function checkServerLimits(gate: Gate, kind: SpendKind, extra: Record<string, unknown> = {}): Promise<Response | null> {
+export async function checkServerLimits(
+  gate: Gate, kind: SpendKind, extra: Record<string, unknown> = {}, { credit = false }: { credit?: boolean } = {},
+): Promise<Response | null> {
   const budget = await budgetState(gate.now);
   if (budget === "over") return errorResponse("AI_UNAVAILABLE", { reason: "budget", resetsAt: nextKstMidnight(gate.now), message: BUDGET_MESSAGE });
   if (budget === "unknown" && (!gate.owner || CLOSED_FOR_OWNER_TOO.has(kind))) return errorResponse("AI_UNAVAILABLE");
   if (!gate.owner && (await clientCount(gate.client, kind, gate.now)) >= ipLimits()[kind]) {
+    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, scope: "network", message: NETWORK_LIMIT_MESSAGE });
+  }
+  if (!gate.owner && !credit && (await overNetworkBudget(gate.client, gate.now))) {
     return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, scope: "network", message: NETWORK_LIMIT_MESSAGE });
   }
   return null;

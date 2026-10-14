@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { dailyStore, resetDailyStore } from "@/lib/api/dailyStore";
-import { clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
+import { clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { todayCardLine } from "./bondCardText";
 import { AI_PER_OWNER_PER_DAY, todayLine, validateTodayLine } from "./todayLine";
@@ -61,6 +61,20 @@ describe("오늘의 인연 카드 line", () => {
     });
     expect(await todayLine({ ...base, ownerId: "owner-failed" })).toBe(todayCardLine(base.cardId, base.orientation));
     expect(Math.round((await spentTodayKrw(Date.now())) ?? -1)).toBe(2800);
+  });
+
+  it("calls no model once the network used its share of the day's budget, and counts what it billed there", async () => {
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (_task, _attempt, _feedback, hooks?: GenerationHooks) => {
+      hooks?.onUsage?.(BILLED);
+      throw new GenerationError("UPSTREAM", ["APIConnectionError"]);
+    });
+    await todayLine({ ...base, ownerId: "owner-net", client: "net-share" });
+    expect(Math.round(await networkCostKrw("net-share", Date.now()))).toBe(2800);
+    vi.stubEnv("BETA_NETWORK_BUDGET_SHARE", "0");
+    const spy = vi.spyOn(mockProvider, "generate");
+    spy.mockClear();
+    expect(await todayLine({ ...base, ownerId: "owner-net-2", client: "net-share" })).toBe(todayCardLine(base.cardId, base.orientation));
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it("calls no model once the day's budget is used up", async () => {

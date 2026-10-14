@@ -4,6 +4,7 @@ import { setTestDb } from "@/lib/db";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import type { ChapterContext } from "@/lib/security/chapterToken";
 import { buildSharePayload } from "@/lib/share/payload";
+import { LIMITS_PER_MINUTE, resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { saveShare } from "@/lib/share/store";
 import { useTestDb } from "@/lib/testing/p4";
 import { GET as ogGet } from "./[id]/route";
@@ -12,8 +13,8 @@ import { GET as ogGet } from "./[id]/route";
 const { drawn } = vi.hoisted(() => ({ drawn: [] as ReactElement[] }));
 vi.mock("next/og", () => ({
   ImageResponse: class extends Response {
-    constructor(element: ReactElement) {
-      super("png", { headers: { "content-type": "image/png" } });
+    constructor(element: ReactElement, init?: { headers?: Record<string, string> }) {
+      super("png", { headers: { "content-type": "image/png", ...init?.headers } });
       drawn.push(element);
     }
   },
@@ -75,6 +76,7 @@ afterEach(() => {
   setTestDb(null);
   drawn.length = 0;
   vi.unstubAllGlobals();
+  resetMemoryLimiter();
 });
 
 describe("/api/og/share/[id]", () => {
@@ -84,6 +86,7 @@ describe("/api/og/share/[id]", () => {
     const id = await saveShare(db, "chapter-4", buildSharePayload(tarotCtx, TAROT_SAMPLE.paid, "rws1909"), Date.now());
     const res = await ogGet(new Request(`https://starlog.yeolmaeapps.kr/api/og/share/${id}`), { params: Promise.resolve({ id }) });
     expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("public, max-age=3600");
     expect(asked).toEqual([
       "https://starlog.yeolmaeapps.kr/cards/og/rws1909/major-09-hermit.jpg",
       "https://starlog.yeolmaeapps.kr/cards/og/rws1909/major-17-star.jpg",
@@ -113,5 +116,12 @@ describe("/api/og/share/[id]", () => {
     expect(drawnParts(drawn[0] as ReactElement).text).toContain("올해는 마음을 표현할수록 길이 열려요.");
     const missing = await ogGet(new Request("https://starlog.yeolmaeapps.kr/api/og/share/zzzzzzzzzzzz"), { params: Promise.resolve({ id: "zzzzzzzzzzzz" }) });
     expect(missing.status).toBe(404);
+  });
+
+  it("counts every request against the per-network limit, an unknown share too: past it, a 429", async () => {
+    useTestDb();
+    const missing = () => ogGet(new Request("https://starlog.yeolmaeapps.kr/api/og/share/zzzzzzzzzzzz"), { params: Promise.resolve({ id: "zzzzzzzzzzzz" }) });
+    for (let i = 0; i < LIMITS_PER_MINUTE.BOND_VIEW_LIMITER; i++) expect((await missing()).status).toBe(404);
+    expect((await missing()).status).toBe(429);
   });
 });

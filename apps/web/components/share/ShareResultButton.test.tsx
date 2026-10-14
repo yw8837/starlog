@@ -38,7 +38,7 @@ describe("ShareResultButton", () => {
     render(<ShareResultButton kind="tarot" text="스타로그에서 뽑은 카드 · 은둔자" create={create} stop={vi.fn()} />);
     await click(screen.getByRole("button", { name: "공유하기" }));
     expect(sheet().textContent).toContain("뽑은 카드와 풀이 전체가 보여요");
-    expect(sheet().textContent).toContain("질문과 직접 쓴 말, 이어서 물어본 내용은 보이지 않아요");
+    expect(sheet().textContent).toContain("질문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용은 보이지 않아요");
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -48,7 +48,7 @@ describe("ShareResultButton", () => {
     const create = vi.fn(async () => ({ ok: true as const, url: URL_, imageUrl: IMAGE }));
     render(<ShareResultButton kind="saju" text="나의 스타로그 · 연애운" create={create} stop={vi.fn()} />);
     await click(screen.getByRole("button", { name: "공유하기" }));
-    expect(sheet().textContent).toContain("생년월일, 명식, 이어서 물어본 내용은 보이지 않아요");
+    expect(sheet().textContent).toContain("생년월일과 태어난 시각, 명식, 고른 상황, 이어서 물어본 내용은 보이지 않아요");
     await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
     expect(create).toHaveBeenCalledOnce();
     expect(sheet().textContent).toContain("starlog.yeolmaeapps.kr/s/abcdefghijkl");
@@ -73,5 +73,34 @@ describe("ShareResultButton", () => {
     await click(within(sheet()).getByRole("button", { name: "공유 그만하기", hidden: true }));
     expect(stop).toHaveBeenCalledOnce();
     expect(within(sheet()).getByRole("status", { hidden: true }).textContent).toContain("보낸 링크는 이제 열리지 않아요");
+  });
+
+  it("shows the link this reading already has, with 공유 그만하기, without making another", async () => {
+    const create = vi.fn();
+    render(<ShareResultButton kind="tarot" text="t" create={create} stop={vi.fn()} current={() => ({ url: URL_, imageUrl: IMAGE })} />);
+    await click(screen.getByRole("button", { name: "공유하기" }));
+    expect(sheet().textContent).toContain("starlog.yeolmaeapps.kr/s/abcdefghijkl");
+    expect(within(sheet()).getByRole("button", { name: "공유 그만하기", hidden: true })).toBeTruthy();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("makes a new link after stopping, without a reload", async () => {
+    const next = "https://starlog.yeolmaeapps.kr/s/zyxwvutsrqpo";
+    const create = vi.fn(async () => ({ ok: true as const, url: next, imageUrl: IMAGE }));
+    render(<ShareResultButton kind="tarot" text="t" create={create} stop={async () => true} current={() => ({ url: URL_, imageUrl: IMAGE })} />);
+    await click(screen.getByRole("button", { name: "공유하기" }));
+    await click(within(sheet()).getByRole("button", { name: "공유 그만하기", hidden: true }));
+    await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    expect(create).toHaveBeenCalledOnce();
+    expect(sheet().textContent).toContain("starlog.yeolmaeapps.kr/s/zyxwvutsrqpo");
+  });
+
+  it("keeps the live link and 공유 그만하기 when stopping fails", async () => {
+    render(<ShareResultButton kind="tarot" text="t" create={vi.fn()} stop={async () => false} current={() => ({ url: URL_, imageUrl: IMAGE })} />);
+    await click(screen.getByRole("button", { name: "공유하기" }));
+    await click(within(sheet()).getByRole("button", { name: "공유 그만하기", hidden: true }));
+    expect(within(sheet()).getByRole("alert", { hidden: true }).textContent).toBe("공유를 멈추지 못했어요. 잠시 뒤에 다시 시도해 주세요.");
+    expect(sheet().textContent).toContain("starlog.yeolmaeapps.kr/s/abcdefghijkl");
+    expect(within(sheet()).getByRole("button", { name: "공유 그만하기", hidden: true })).toBeTruthy();
   });
 });

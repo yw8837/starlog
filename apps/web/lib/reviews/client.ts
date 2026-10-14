@@ -12,6 +12,8 @@ export interface PublicReview {
   createdAt: number;
   edited: boolean;
   helpful: number;
+  /** The signed-in viewer marked it 도움돼요. */
+  helpfulByMe: boolean;
 }
 
 export interface MyReview extends PublicReview {
@@ -56,13 +58,33 @@ export async function fetchReviews(product?: string, before?: string): Promise<R
   return result.ok ? result.data : null;
 }
 
-/** 도움돼요: the error's message when it could not be set (logged out, my own review). */
-export async function markHelpful(id: string, on: boolean): Promise<{ ok: true } | { ok: false; code: string; message: string }> {
-  const result = await postJson<{ ok: boolean }>("/api/reviews/helpful", { id, on });
-  return result.ok ? { ok: true } : { ok: false, code: result.error.code, message: result.error.message ?? "" };
+/** 도움돼요: the state and count the server holds now, or the error's message when it could not be set (logged out, my own review). */
+export async function markHelpful(id: string, on: boolean): Promise<{ ok: true; on: boolean; helpful: number } | { ok: false; code: string; message: string }> {
+  const result = await postJson<{ ok: boolean; on: boolean; helpful: number }>("/api/reviews/helpful", { id, on });
+  return result.ok ? { ok: true, on: result.data.on, helpful: result.data.helpful } : { ok: false, code: result.error.code, message: result.error.message ?? "" };
 }
 
 export async function reportReview(id: string, reason: (typeof REPORT_REASONS)[number]): Promise<{ ok: true } | { ok: false; code: string }> {
   const result = await postJson<{ ok: boolean }>("/api/reviews/report", { id, reason });
   return result.ok ? { ok: true } : { ok: false, code: result.error.code };
+}
+
+/** A reported review on the owner's desk (app/api/owner/reviews). */
+export interface ReportedReview extends PublicReview {
+  status: "visible" | "hidden";
+  hiddenReason: string | null;
+  reports: number;
+  /** each report's reason, joined with ", " (a reason repeats once per report) */
+  reasons: string;
+}
+
+export async function fetchReportedReviews(): Promise<ReportedReview[] | null> {
+  const result = await getJson<{ reviews: ReportedReview[] }>("/api/owner/reviews");
+  return result.ok ? result.data.reviews : null;
+}
+
+/** The owner hides a review for a rule reason, or restores it (reason null). */
+export async function setReviewHidden(id: string, reason: (typeof REPORT_REASONS)[number] | null): Promise<boolean> {
+  const result = await postJson<{ ok: boolean }>("/api/owner/reviews", reason ? { id, hidden: true, reason } : { id, hidden: false });
+  return result.ok && result.data.ok;
 }

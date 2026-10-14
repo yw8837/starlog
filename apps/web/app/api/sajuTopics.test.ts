@@ -20,7 +20,7 @@ function device(ip: string) {
     const response = await handler(
       new Request("http://localhost/api", {
         method: "POST",
-        headers: { "content-type": "application/json", "cf-connecting-ip": ip, cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "), ...headers },
+        headers: { "content-type": "application/json", "cf-connecting-ip": ip, origin: "http://localhost", cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "), ...headers },
         body: JSON.stringify(body),
       }),
     );

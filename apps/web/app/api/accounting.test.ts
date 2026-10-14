@@ -3,7 +3,7 @@ import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { logKvError, resetDailyStore } from "@/lib/api/dailyStore";
 import { clientKey, ipGroup } from "@/lib/api/http";
-import { BUDGET_TRIP, SpendLedger, clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
+import { BUDGET_TRIP, SpendLedger, clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { kstDay } from "@/lib/security/quota";
@@ -30,6 +30,7 @@ function device(ip: string, { cookieless = false } = {}) {
     headers: {
       "content-type": "application/json",
       "cf-connecting-ip": ip,
+      origin: "http://localhost",
       cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "),
       ...(accept ? { accept } : {}),
     },
@@ -161,6 +162,7 @@ describe("server-side day counters (per client network, whatever the cookies say
     await vi.waitFor(() => expect(aborted).toBe(true));
     await vi.waitFor(async () => expect(await spent()).toBe(2800));
     expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "teaser", Date.now())).toBe(1);
+    expect(await networkCostKrw(await keyedHash(`client:${ip}`, SECRET), Date.now())).toBe(2800);
   });
 
   it("shares one counter across an IPv6 /64", async () => {
@@ -205,6 +207,7 @@ describe("server-side day counters (per client network, whatever the cookies say
 describe("global daily spend cap", () => {
   it("adds the billed usage of every call and answers 503 to new generations, owner included, at 80% of the budget", async () => {
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "7000"); // trips at 5,600
+    vi.stubEnv("BETA_NETWORK_BUDGET_SHARE", "1");
     expect(BUDGET_TRIP).toBe(0.8);
     billing();
     const d = device("198.51.100.20");
@@ -225,6 +228,27 @@ describe("global daily spend cap", () => {
     expect((await boss.call(teaser, { drawToken: bossDraw, input: MONEY_INPUT })).status).toBe(503);
   });
 
+  it("stops a network's free generations once they cost 20% of the day's budget, while other networks and the owner on it go on", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "14000"); // 2,800 per network
+    billing();
+    const ip = "198.51.100.28";
+    const d = device(ip);
+    const drawToken = await drawFor(d);
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    const capped = await d.call(teaser, { drawToken, input: MONEY_INPUT });
+    expect(capped.status).toBe(429);
+    expect(capped.data).toMatchObject({ code: "BETA_LIMIT", scope: "network" });
+    expect((await device(ip, { cookieless: true }).call(daily, {})).status).toBe(429);
+    expect(await networkCostKrw(await keyedHash(`client:${ip}`, SECRET), Date.now())).toBe(2800);
+    expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "teaser", Date.now())).toBe(1);
+
+    const other = device("198.51.100.29");
+    expect((await other.call(teaser, { drawToken: await drawFor(other), input: MONEY_INPUT })).status).toBe(200);
+    const boss = device(ip);
+    expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
+    expect((await boss.call(teaser, { drawToken: await drawFor(boss), input: MONEY_INPUT })).status).toBe(200);
+  });
+
   it("counts what a failed generation billed", async () => {
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "100000");
     const real = mockProvider.generate.bind(mockProvider);
@@ -237,7 +261,7 @@ describe("global daily spend cap", () => {
     const drawToken = await drawFor(d);
     const res = await d.stream(teaser, { drawToken, input: MONEY_INPUT });
     expect(res.events.at(-1)).toMatchObject({ type: "error", body: { code: "QUALITY" } });
-    expect(await spent()).toBe(5600); // both attempts
+    await vi.waitFor(async () => expect(await spent()).toBe(5600)); // both attempts
   });
 
   it("reconciles each call's reservation to its real usage", async () => {
@@ -348,12 +372,59 @@ describe("follow-ups per chapter, counted server-side", () => {
     expect(replay.status).toBe(429);
     expect(replay.data).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
   });
+
+  it("holds the chapter's turn while its answer is written, so a follow-up sent meanwhile past the cap is refused; a failed answer gives the turn back", async () => {
+    vi.stubEnv("BETA_FOLLOWUPS_PER_CHAPTER", "1");
+    const d = device("198.51.100.31");
+    const r = await d.call(reading, { drawToken: await drawFor(d), input: MONEY_INPUT });
+    const ask = (question: string) => d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question });
+    const generate = vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
+    expect((await ask("지출은 어떻게 줄일까요?")).status).toBe(502);
+
+    const real = mockProvider.generate.bind(mockProvider);
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    let started = false;
+    generate.mockImplementationOnce(async (task, attempt, feedback, hooks) => {
+      started = true;
+      await held;
+      return real(task, attempt, feedback, hooks);
+    });
+    const slow = ask("이번 주 안에 할 일은요?");
+    await vi.waitFor(() => expect(started).toBe(true));
+    const meanwhile = await ask("하나 더 물어봐도 될까요?");
+    expect(meanwhile.status).toBe(429);
+    expect(meanwhile.data).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
+    release();
+    const answered = await slow;
+    expect(answered.status).toBe(200);
+    expect(answered.data.remaining).toBe(0);
+  });
+
+  it("gives the turn back when the answer was written but could not be handed out (its chapter token not signed)", async () => {
+    vi.stubEnv("BETA_FOLLOWUPS_PER_CHAPTER", "1");
+    const d = device("198.51.100.32");
+    const r = await d.call(reading, { drawToken: await drawFor(d), input: MONEY_INPUT });
+    const ask = (question: string) => d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question });
+    const real = mockProvider.generate.bind(mockProvider);
+    vi.spyOn(mockProvider, "generate").mockImplementationOnce(async (task, attempt, feedback, hooks) => {
+      const answer = await real(task, attempt, feedback, hooks);
+      vi.spyOn(crypto.subtle, "sign").mockRejectedValueOnce(new Error("sign failed")); // the next signature: the answer's chapter token
+      return answer;
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await ask("지출은 어떻게 줄일까요?")).status).toBeGreaterThanOrEqual(500);
+    const again = await ask("이번 주 안에 할 일은요?");
+    expect(again.status).toBe(200);
+    expect(again.data.remaining).toBe(0);
+  });
 });
 
 describe("model blinding in responses", () => {
   const MODEL = /claude|anthropic|opus|sonnet|haiku/i;
 
   it("never exposes a model id in a body or header, stream or JSON, and answers an identity question as 풀이 도우미", async () => {
+    vi.stubEnv("BETA_NETWORK_BUDGET_SHARE", "1");
     billing(); // the provider reports usage with model ids, as the real one does
     const d = device("198.51.100.50");
     const drawToken = await drawFor(d);

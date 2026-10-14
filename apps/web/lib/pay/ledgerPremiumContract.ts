@@ -43,6 +43,24 @@ export function premiumLedgerContract(open: () => Promise<D1Binding>) {
     expect(await unitsLeft()).toBe(1);
   });
 
+  it("lets a resume token claim its next part once: only while its part count equals part_seq, which the claim bumps", async () => {
+    const db = await open();
+    await seedUser(db, "u_1");
+    await paidLot(db, "u_1", "lot_ny", "newyear-2027");
+    const r = await reserveUnlock(db, { userId: "u_1", productId: "newyear-2027", currency: "paid", now: NOW, payMode: "live", earmarked: true, partSeq: 1 });
+    if (!r.ok) throw new Error("not reserved");
+    const partSeq = async () => (await db.prepare("SELECT part_seq FROM unlocks WHERE id = ?").bind(r.unlockId).first<{ part_seq: number }>())!.part_seq;
+    expect(await partSeq()).toBe(1);
+    expect(await extendUnlock(db, { unlockId: r.unlockId, userId: "u_1", now: NOW + 1, parts: 0 })).toBe(false);
+    const twins = await Promise.all([1, 1].map((parts) => extendUnlock(db, { unlockId: r.unlockId, userId: "u_1", now: NOW + 2, parts })));
+    expect(twins.sort()).toEqual([false, true]);
+    expect(await partSeq()).toBe(2);
+    expect(await extendUnlock(db, { unlockId: r.unlockId, userId: "u_1", now: NOW + 3 })).toBe(true);
+    expect(await partSeq()).toBe(2);
+    expect(await extendUnlock(db, { unlockId: r.unlockId, userId: "u_1", now: NOW + 4, parts: 2 })).toBe(true);
+    expect(await partSeq()).toBe(3);
+  });
+
   it("does not revive a reservation that was released or had expired", async () => {
     const db = await open();
     await seedUser(db, "u_1");

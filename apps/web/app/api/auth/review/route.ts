@@ -13,8 +13,8 @@ const ReviewBody = z.object({ id: z.string().max(200), password: z.string().max(
 /** Failed logins one network may make before it waits FAILURE_WINDOW_SECONDS (counted in DAILY_KV). */
 const MAX_FAILURES = 5;
 const FAILURE_WINDOW_SECONDS = 15 * 60;
-/** Failed logins all networks together may make, each within ALL_FAILURES_WINDOW_SECONDS of the last, before it closes for everyone. */
-const MAX_ALL_FAILURES = 50;
+/** Failed logins from all networks together, each within ALL_FAILURES_WINDOW_SECONDS of the last, that log `auth.review_failures_alert` once. */
+const ALERT_ALL_FAILURES = 50;
 const ALL_FAILURES_WINDOW_SECONDS = 60 * 60;
 const ALL_FAILURES_KEY = "review-fail:all";
 
@@ -26,8 +26,9 @@ const ALL_FAILURES_KEY = "review-fail:all";
  *   and a wrong password.
  * - A network with MAX_FAILURES failed logins waits 15 minutes after its last one, right password or
  *   not. It is counted under a keyed hash of the network, never the IP. The password is never logged.
- * - MAX_ALL_FAILURES failed logins from all networks together (a guesser with many networks) close it
- *   for everyone until an hour after the last one; `auth.review_locked` is logged then, with no values.
+ * - ALERT_ALL_FAILURES failed logins from all networks together (a guesser with many networks) log
+ *   `auth.review_failures_alert` once, with no values. They close nothing: a lockout for everyone
+ *   would let anyone keep the card company's reviewer out.
  * - No signup gift. A session this browser held before is revoked, as on a Kakao login.
  */
 export async function POST(request: Request): Promise<Response> {
@@ -41,7 +42,6 @@ export async function POST(request: Request): Promise<Response> {
   const failuresKey = `review-fail:${await keyedHash(`client:${clientKey(request)}`, ctx.secret)}`;
   const count = async (key: string) => Number(await dailyStore().get(key).catch(() => 0)) || 0;
   const [failures, allFailures] = await Promise.all([count(failuresKey), count(ALL_FAILURES_KEY)]);
-  if (allFailures >= MAX_ALL_FAILURES) return errorResponse("RATE_LIMIT", { message: "로그인 시도가 많았어요. 1시간 뒤에 다시 시도해 주세요." });
   if (failures >= MAX_FAILURES) return errorResponse("RATE_LIMIT", { message: "로그인 시도가 많았어요. 15분 뒤에 다시 시도해 주세요." });
   const body = ReviewBody.safeParse(await readJson(request, 2_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
@@ -55,7 +55,7 @@ export async function POST(request: Request): Promise<Response> {
       dailyStore().put(ALL_FAILURES_KEY, allFailures + 1, ALL_FAILURES_WINDOW_SECONDS).catch(() => {}),
     ]);
     console.warn(JSON.stringify({ evt: "auth.review_failed" }));
-    if (allFailures + 1 === MAX_ALL_FAILURES) console.warn(JSON.stringify({ evt: "auth.review_locked" }));
+    if (allFailures + 1 === ALERT_ALL_FAILURES) console.warn(JSON.stringify({ evt: "auth.review_failures_alert" }));
     return errorResponse("BAD_TOKEN", { message: "아이디 또는 비밀번호가 맞지 않아요." });
   }
   const account = await loginKakaoUser(ctx.db, { key: await reviewUserKey(login, ctx.accountSecret), nickname: "심사용 계정", ageConfirmed: false, now: ctx.now });

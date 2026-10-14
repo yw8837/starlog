@@ -82,24 +82,31 @@ export async function planPremiumUnlock(
   // The same test as lib/api/unlock.ts planUnlock (security M2): a test payment charged nobody.
   const unbacked = process.env.NODE_ENV === "production" && payKeyMode() === "test";
   if (unbacked) {
-    const limited = await checkServerLimits(gate, "full");
+    const limited = await checkServerLimits(gate, "full", {}, { credit: true });
     if (limited) return limited;
   }
 
+  // SEC-02: the token claims its next part (part_seq compare-and-set): a replay of it in parallel finds
+  // the purchase held and waits (409 `reason: "opening"`). After the client left mid-part the purchase
+  // was given back (premiumSettlement abandon): the token reserves it again for the part it was writing.
+  const written = resume?.parts.length ?? 0;
   let unlockId: string | null = null;
   if (resume?.unlockId) {
-    if (await extendUnlock(ctx.db, { unlockId: resume.unlockId, userId: user.id, now: gate.now })) unlockId = resume.unlockId;
+    if (await extendUnlock(ctx.db, { unlockId: resume.unlockId, userId: user.id, now: gate.now, parts: written })) unlockId = resume.unlockId;
     else {
-      // Delivered already (a retry after a missed answer): the reading is saved, so never reserve and spend again.
-      const delivered = await ctx.db
-        .prepare("SELECT reading_id FROM unlocks WHERE id = ? AND user_id = ? AND status = 'delivered'")
+      const held = await ctx.db
+        .prepare("SELECT status, reading_id, reserved_until FROM unlocks WHERE id = ? AND user_id = ?")
         .bind(resume.unlockId, user.id)
-        .first<{ reading_id: string | null }>();
-      if (delivered) return errorResponse("NOT_AVAILABLE", { reason: "opened", readingId: delivered.reading_id, message: OPENED });
+        .first<{ status: string; reading_id: string | null; reserved_until: number | null }>();
+      // Delivered already (a retry after a missed answer): the reading is saved, so never reserve and spend again.
+      if (held?.status === "delivered") return errorResponse("NOT_AVAILABLE", { reason: "opened", readingId: held.reading_id, message: OPENED });
+      // Still held by this token's twin: wait, never take another purchase of the product. A lapsed hold is
+      // swept back by the reservation below.
+      if (held?.status === "reserved" && (held.reserved_until ?? 0) > gate.now) return errorResponse("NOT_AVAILABLE", { reason: "opening", reservedUntil: held.reserved_until, message: OPENING });
     }
   }
   if (!unlockId) {
-    const reserved = await reserveUnlock(ctx.db, { userId: user.id, productId: product, currency: "paid", now: gate.now, payMode: payKeyMode(), earmarked: true });
+    const reserved = await reserveUnlock(ctx.db, { userId: user.id, productId: product, currency: "paid", now: gate.now, payMode: payKeyMode(), earmarked: true, partSeq: written + 1 });
     if (!reserved.ok) {
       // Another opening of this product still holds the purchase (a lost resume token, another tab): wait, never pay again.
       const held = await ctx.db
@@ -134,6 +141,10 @@ export async function planPremiumUnlock(
  *   or shown then would be a reading whose purchase stays refundable, or a second copy. The client's
  *   token then reopens it or answers 409 `reason: "opened"`. recover() finds a save whose D1 answer was lost.
  * - any failure: the reservation is released (the resume token keeps the parts written so far).
+ * - a client that left after the model began answering (SEC-02, `abandon`): released the same way, at
+ *   most MAX_RESTORES times per purchase, but the purchase is no longer refundable (lib/pay/ledger.ts
+ *   releaseUnlock `left`). The same resume token then reserves again (planPremiumUnlock) and writes
+ *   that part right away; a twin of it finds the purchase held (409 `reason: "opening"`).
  */
 export function premiumSettlement(plan: PremiumPlan, chapterOf: (body: Record<string, unknown>) => ServerChapter, now: number): Settlement | undefined {
   const save = plan.save;
@@ -170,6 +181,11 @@ export function premiumSettlement(plan: PremiumPlan, chapterOf: (body: Record<st
     async release() {
       if (plan.unlockId && (await releaseUnlock(save.db, { unlockId: plan.unlockId, now: Date.now() }))) {
         console.info(JSON.stringify({ evt: "unlock.released", product: plan.product }));
+      }
+    },
+    async abandon() {
+      if (plan.unlockId && (await releaseUnlock(save.db, { unlockId: plan.unlockId, now: Date.now(), left: true }))) {
+        console.info(JSON.stringify({ evt: "unlock.abandoned", product: plan.product }));
       }
     },
   };

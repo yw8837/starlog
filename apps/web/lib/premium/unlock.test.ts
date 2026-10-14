@@ -84,6 +84,16 @@ describe("premium settlement", () => {
     expect(await one(db, "SELECT units_left FROM credit_lots WHERE id = 'lot_ny'")).toEqual({ units_left: 1 });
   });
 
+  it("gives the purchase back when the client left after the model began answering, to reopen right away, no longer refundable", async () => {
+    const { db, plan } = await setup();
+    const settle = premiumSettlement(plan, chapterOf, NOW)!;
+    await settle.abandon!();
+    await settle.abandon!();
+    expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "released" });
+    expect(await one(db, "SELECT units_left FROM credit_lots WHERE id = 'lot_ny'")).toEqual({ units_left: 1 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'restore' AND idem_key LIKE 'restore-left:%'")).toEqual({ n: 1 });
+  });
+
   it("has nothing to settle for an owner pass without an account", () => {
     const owner: PremiumPlan = { product: "match", method: "owner", subject: "owner", spend: "full", paidCost: false, unlockId: null, save: null, resume: null };
     expect(premiumSettlement(owner, chapterOf, NOW)).toBeUndefined();

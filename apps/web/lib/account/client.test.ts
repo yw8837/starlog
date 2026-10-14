@@ -62,6 +62,11 @@ describe("account client", () => {
       { orderId: "o1", productId: "tarot", refundUntil: "2026-10-13T14:59:59.999Z" },
       { orderId: "o2", productId: "saju" },
     ]);
+    // One that can only be opened again (SEC-02) says so; anything but `false` is left out.
+    expect(read([{ orderId: "o3", productId: "tarot", refundable: false }, { orderId: "o4", productId: "tarot", refundable: "no" }])).toEqual([
+      { orderId: "o3", productId: "tarot", refundable: false },
+      { orderId: "o4", productId: "tarot" },
+    ]);
   });
 
   it("asks /api/me once for many callers, and treats a failure as unknown", async () => {

@@ -4,8 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReviewList } from "./ReviewList";
 import { ReviewPrompt } from "./ReviewPrompt";
 
-const { account } = vi.hoisted(() => ({ account: { current: null as null | { user: { id: string } | null } } }));
-vi.mock("@/lib/account/client", () => ({ useAccount: () => account.current }));
+const { account } = vi.hoisted(() => ({ account: { current: null as null | { login?: boolean; user: { id: string } | null } } }));
+vi.mock("@/lib/account/client", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/account/client")>()), useAccount: () => account.current }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/chapter/abc123" }));
 
 type Handler = (url: string, init?: RequestInit) => unknown;
 let handle: Handler;
@@ -26,7 +27,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const REVIEW = { id: "r".repeat(16), product: "tarot", label: "타로", rating: 4, body: "생각보다 구체적이었어요", nickname: "별*냥", createdAt: Date.UTC(2026, 9, 13), edited: false, helpful: 2 };
+const REVIEW = { id: "r".repeat(16), product: "tarot", label: "타로", rating: 4, body: "생각보다 구체적이었어요", nickname: "별*냥", createdAt: Date.UTC(2026, 9, 13), edited: false, helpful: 2, helpfulByMe: false };
 
 describe("ReviewPrompt", () => {
   it("opens the line after the stars, then saves the review of this reading", async () => {
@@ -62,6 +63,39 @@ describe("ReviewPrompt", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "후기 남기기" })));
     expect((await screen.findByRole("alert")).textContent).toBe("전화번호는 쓸 수 없어요.");
   });
+
+  it("tells a visitor to log in to leave a review, with a way to log in, when login is open", async () => {
+    account.current = { login: true, user: null };
+    handle = () => ({ json: {} });
+    render(<ReviewPrompt readingId={"a".repeat(20)} />);
+    expect(screen.getByText("로그인하면 후기를 남길 수 있어요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "로그인하기" }).getAttribute("href")).toBe("/login?next=%2Fchapter%2Fabc123");
+    expect(calls).toEqual([]);
+  });
+
+  it("says the same for a reading that is only on this device (no reading id)", () => {
+    account.current = { login: true, user: null };
+    render(<ReviewPrompt />);
+    expect(screen.getByText("로그인하면 후기를 남길 수 있어요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "로그인하기" })).toBeTruthy();
+  });
+
+  it("shows only the stars when login is off, or while the account is not known yet", () => {
+    for (const current of [{ login: false, user: null }, null, undefined]) {
+      account.current = current as typeof account.current;
+      const { container, unmount } = render(<ReviewPrompt />);
+      expect(container.textContent).not.toContain("로그인");
+      expect(screen.queryByRole("link")).toBeNull();
+      unmount();
+    }
+  });
+
+  it("does not ask a logged-in person to log in, and reads no review for a reading with no saved copy", () => {
+    account.current = { login: true, user: { id: "u1" } };
+    render(<ReviewPrompt />);
+    expect(screen.queryByText("로그인하면 후기를 남길 수 있어요")).toBeNull();
+    expect(calls).toEqual([]);
+  });
 });
 
 describe("ReviewList", () => {
@@ -79,6 +113,32 @@ describe("ReviewList", () => {
     const { container } = render(<ReviewList />);
     await waitFor(() => expect(calls.length).toBe(1));
     expect(container.textContent).toBe("");
+  });
+
+  it("starts a review the viewer already marked as marked, and a tap turns it off using the server's count", async () => {
+    handle = (url) =>
+      url.startsWith("/api/reviews/helpful")
+        ? { json: { ok: true, on: false, helpful: 1 } }
+        : { json: { reviews: [{ ...REVIEW, helpful: 2, helpfulByMe: true }], next: null, summary: { count: 1, average: null } } };
+    render(<ReviewList />);
+    const helpful = await screen.findByRole("button", { name: "도움돼요 2" });
+    expect(helpful.getAttribute("aria-pressed")).toBe("true");
+    await act(async () => fireEvent.click(helpful));
+    expect(calls.find((c) => c.url.startsWith("/api/reviews/helpful"))?.body).toEqual({ id: REVIEW.id, on: false });
+    const after = await screen.findByRole("button", { name: "도움돼요 1" });
+    expect(after.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("shows the count the server answers with, not its own count plus one", async () => {
+    handle = (url) =>
+      url.startsWith("/api/reviews/helpful")
+        ? { json: { ok: true, on: true, helpful: 2 } }
+        : { json: { reviews: [{ ...REVIEW, helpful: 2, helpfulByMe: false }], next: null, summary: { count: 1, average: null } } };
+    render(<ReviewList />);
+    const helpful = await screen.findByRole("button", { name: "도움돼요 2" });
+    await act(async () => fireEvent.click(helpful));
+    await waitFor(() => expect(screen.getByRole("button", { name: /도움돼요/ }).getAttribute("aria-pressed")).toBe("true"));
+    expect(screen.getByRole("button", { name: "도움돼요 2" })).toBeTruthy();
   });
 
   it("asks a visitor to log in before 도움돼요", async () => {

@@ -5,7 +5,7 @@ import { REPORT_REASONS, reportedReviews, setHidden } from "@/lib/reviews/store"
 
 /**
  * The owner's review desk (owner pass only).
- * GET → { reviews }: reviews with reports, most reported first.
+ * GET → { reviews }: reviews with reports, newest first (with each one's report count and reasons).
  * POST {id, hidden, reason?} → { ok }: hides one for a rule breach (a reason is required) or restores it.
  * A review is never hidden for being unfavourable, only for the rule reasons (spec §4).
  */

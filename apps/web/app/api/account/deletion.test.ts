@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { accountSecret } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
-import { reserveUnlock } from "@/lib/pay/ledger";
+import { releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
 import { meStatusMessage } from "@/app/me/meStatus";
@@ -111,6 +111,24 @@ describe("account deletion", () => {
     expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=refund-failed");
     expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundUntil: UNTIL }]);
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
+  });
+
+  it("completes with a purchase given back after its client left: it leaves use with the account, never refunded; the others are refunded", async () => {
+    const db = useTestDb();
+    const b = await loggedIn("alice");
+    const left = await buy(b);
+    const opening = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "paid", now: T0, payMode: "mock" });
+    if (!opening.ok) throw new Error("not reserved");
+    expect(await releaseUnlock(db, { unlockId: opening.unlockId, now: T0, left: true })).toBe(true);
+    const unused = await buy(b);
+    const cancel = vi.spyOn(mockToss, "cancel");
+    expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
+    expect(cancel).toHaveBeenCalledTimes(1);
+    const lotOf = (orderId: string) =>
+      db.prepare("SELECT o.status AS o, l.status AS l, l.units_left AS left FROM orders o JOIN credit_lots l ON l.order_id = o.id WHERE o.id = ?").bind(orderId).first();
+    expect(await lotOf(left)).toEqual({ o: "paid", l: "revoked", left: 0 });
+    expect(await lotOf(unused)).toEqual({ o: "refunded", l: "refunded", left: 0 });
+    expect(await one(db, "SELECT deleted_at, erased_at FROM users")).toEqual({ deleted_at: T0, erased_at: T0 });
   });
 
   it("still refunds an unopened purchase after the 7-day window for a buyer's 환불받기", async () => {

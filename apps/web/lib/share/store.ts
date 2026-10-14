@@ -13,15 +13,16 @@ export function newShareId(): string {
 /**
  * The link for a reading: one per chapter (`chapterKey`), so sharing the same reading again hands
  * back the same address. A second share refreshes the stored copy (the card design it is shown with,
- * a newer way of hiding the user's words) and keeps the address.
+ * a newer way of hiding the user's words) and keeps the address. `userId`: the signed-in sharer, whose
+ * account deletion takes the share down (null when not signed in; a later signed-in share sets it).
  */
-export async function saveShare(db: D1Binding, chapterKey: string, payload: SharePayload, now: number): Promise<string> {
+export async function saveShare(db: D1Binding, chapterKey: string, payload: SharePayload, now: number, userId: string | null = null): Promise<string> {
   await db
     .prepare(
-      `INSERT INTO shares (id, kind, chapter_key, payload, created_at) VALUES (?, ?, ?, ?, ?)
-       ON CONFLICT(chapter_key) DO UPDATE SET payload = excluded.payload`,
+      `INSERT INTO shares (id, kind, chapter_key, payload, created_at, user_id) VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(chapter_key) DO UPDATE SET payload = excluded.payload, user_id = COALESCE(excluded.user_id, shares.user_id)`,
     )
-    .bind(newShareId(), payload.kind, chapterKey, JSON.stringify(payload), now)
+    .bind(newShareId(), payload.kind, chapterKey, JSON.stringify(payload), now, userId)
     .run();
   const row = await db.prepare("SELECT id FROM shares WHERE chapter_key = ?").bind(chapterKey).first<{ id: string }>();
   if (!row) throw new Error("the share was not saved");

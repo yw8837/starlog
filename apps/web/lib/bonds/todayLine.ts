@@ -6,7 +6,7 @@ import { generateValidated, selectProvider } from "@/lib/ai/provider";
 import { MODEL_BLIND_RULE } from "@/lib/ai/style";
 import { charCount, modelNameViolations, nonHaeyoSentences } from "@/lib/ai/validate";
 import { dailyStore } from "@/lib/api/dailyStore";
-import { SpendLedger, budgetState, clientCount, recordClientSpend } from "@/lib/api/spend";
+import { SpendLedger, addCost, addNetworkCost, budgetState, clientCount, overNetworkBudget, recordClientSpend } from "@/lib/api/spend";
 import { kbCard } from "@/lib/kb";
 import { ipLimits } from "@/lib/security/quota";
 import { rateLimit } from "@/lib/security/rateLimit";
@@ -105,9 +105,14 @@ export async function todayLine(args: { ownerId: string; starId: string; day: st
   if (!(await safely(() => rateLimit("GEN_LIMITER", who, now), false))) return rule;
   if ((await safely(() => budgetState(now), "unknown" as const)) !== "ok") return rule;
   if ((await clientCount(who, "line", now)) >= ipLimits().line) return rule;
+  if (await safely(() => overNetworkBudget(who, now), false)) return rule;
   await recordClientSpend(who, "line", now);
 
-  const ledger = new SpendLedger();
+  // Billed to the day's total and to the network's share of it, like the reading routes.
+  const ledger = new SpendLedger(Date.now, async (krw, at) => {
+    await addCost(krw, at);
+    await addNetworkCost(who, krw, at);
+  });
   let line = rule;
   try {
     const result = await generateValidated(provider, {

@@ -69,13 +69,22 @@ export async function POST(request: Request): Promise<Response> {
     return errorResponse("BAD_TOKEN");
   }
 
+  // SEC-09: the turn is held before generating, so a follow-up sent meanwhile counts it; any failure
+  // before the answer is handed out gives it back. KV has no compare-and-set: requests sent within the
+  // same few milliseconds can still both pass.
+  await recordChapterTurns(chapter.id, answered + 1);
   return respondGeneration(request, async (hooks) => {
-    const answer = await generate(hooks);
-    const turns = [...chapter.turns, { question, answer: answer.answer }];
-    const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now, chapter.exp);
-    await recordChapterTurns(chapter.id, answered + 1);
-    const remaining = Math.max(0, limits.followupsPerChapter - (answered + 1));
-    if (body.data.readingId) await saveFollowUpTurn(request, gate.now, body.data.readingId, { question, answer: answer.answer }, chapterToken, remaining);
-    return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: await spendCookies(gate, quota, "followup") };
+    try {
+      const answer = await generate(hooks);
+      const turns = [...chapter.turns, { question, answer: answer.answer }];
+      const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now, chapter.exp);
+      const remaining = Math.max(0, limits.followupsPerChapter - (answered + 1));
+      if (body.data.readingId) await saveFollowUpTurn(request, gate.now, body.data.readingId, { question, answer: answer.answer }, chapterToken, remaining);
+      return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: await spendCookies(gate, quota, "followup") };
+    } catch (error) {
+      const held = await chapterTurns(chapter.id);
+      if (held !== null && held > answered) await recordChapterTurns(chapter.id, held - 1);
+      throw error;
+    }
   }, { gate, spend: "followup" });
 }

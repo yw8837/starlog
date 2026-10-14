@@ -1,9 +1,10 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StarRating } from "@/components/tarot/Feedback";
 import { Button } from "@/components/ui/Button";
-import { useAccount } from "@/lib/account/client";
+import { loginHref, useAccount } from "@/lib/account/client";
 import { REVIEW_MAX } from "@/lib/reviews/text";
 import { deleteReview, fetchMyReview, saveReview, type MyReview } from "@/lib/reviews/client";
 import f from "@/components/tarot/Feedback.module.css";
@@ -13,11 +14,13 @@ type State = { at: "loading" } | { at: "writing"; editing?: MyReview } | { at: "
 
 /**
  * 풀이 후기 at the end of a saved reading (spec §7): the stars first, then an optional line, then
- * 후기 남기기. One review per reading; it can be rewritten or deleted. Shown for a reading saved in
- * the account (`readingId`); the others keep the plain stars (Feedback).
+ * 후기 남기기. One review per reading; it can be rewritten or deleted. Takes the id of a reading saved
+ * in the account (`readingId`); a reading only on this device has none. Whoever is not logged in is
+ * told that logging in lets them leave a review (spec §7), when login is open on this device.
  */
-export function ReviewPrompt({ readingId }: { readingId: string }) {
+export function ReviewPrompt({ readingId }: { readingId?: string }) {
   const account = useAccount();
+  const pathname = usePathname();
   const [state, setState] = useState<State>({ at: "loading" });
   const [score, setScore] = useState(0);
   const [line, setLine] = useState("");
@@ -26,7 +29,7 @@ export function ReviewPrompt({ readingId }: { readingId: string }) {
   const loggedIn = Boolean(account?.user);
 
   useEffect(() => {
-    if (!loggedIn) return;
+    if (!loggedIn || !readingId) return;
     let live = true;
     void fetchMyReview(readingId).then((review) => {
       if (!live) return;
@@ -38,6 +41,7 @@ export function ReviewPrompt({ readingId }: { readingId: string }) {
   }, [readingId, loggedIn]);
 
   const submit = async () => {
+    if (!readingId) return;
     setBusy(true);
     setProblem("");
     const result = await saveReview(readingId, score, line);
@@ -125,6 +129,14 @@ export function ReviewPrompt({ readingId }: { readingId: string }) {
           {score && !loggedIn ? "알려 줘서 고마워요" : ""}
         </p>
       )}
+      {!loggedIn && account?.login ? (
+        <>
+          <p className={s.note}>로그인하면 후기를 남길 수 있어요</p>
+          <Button variant="secondary" size="md" href={loginHref(pathname ?? "/")}>
+            로그인하기
+          </Button>
+        </>
+      ) : null}
     </section>
   );
 }

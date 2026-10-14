@@ -1,7 +1,7 @@
 import "server-only";
 import { eraseReviewStatements } from "@/lib/reviews/store";
 import type { D1Binding } from "@/lib/db/d1";
-import { entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
+import { LEFT_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
 import { orderForUser, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { paidUnderOtherKeys, reconcileRefunding, refundUnusedOrder, setAsideForOperator } from "@/lib/pay/refunds";
 import type { TossClient } from "@/lib/pay/tossTypes";
@@ -64,7 +64,9 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
 
   const { unused } = await entitlements(db, userId, now);
   let refunded = 0;
-  for (const { orderId } of unused) {
+  for (const { orderId, refundable } of unused) {
+    // Given back after its client left (SEC-02): never refunded; it leaves use with the account (eraseDeletedAccount).
+    if (!refundable) continue;
     const order = await orderForUser(db, orderId, userId);
     if (order && toss && (await paidUnderOtherKeys(db, toss, order.id))) {
       // These keys cannot cancel it: the reading leaves use, the order stays for the operator (runbook 5).
@@ -79,13 +81,14 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
     refunded++;
   }
 
-  // One guarded statement: nothing reserved, nothing in flight, no unopened paid reading left.
+  // One guarded statement: nothing reserved, nothing in flight, no unopened refundable paid reading left.
   const marked = await db
     .prepare(
       `UPDATE users SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL
          AND NOT EXISTS (SELECT 1 FROM unlocks WHERE user_id = ? AND status = 'reserved')
          AND NOT EXISTS (SELECT 1 FROM orders WHERE user_id = ? AND ${IN_FLIGHT})
-         AND NOT EXISTS (SELECT 1 FROM credit_lots WHERE user_id = ? AND currency = 'paid' AND status = 'active' AND units_left > 0 AND units_left = units_total)
+         AND NOT EXISTS (SELECT 1 FROM credit_lots c WHERE c.user_id = ? AND c.currency = 'paid' AND c.status = 'active' AND c.units_left > 0
+           AND c.units_left = c.units_total AND NOT ${LEFT_SQL("c")})
        RETURNING id`,
     )
     .bind(now, userId, userId, userId, mode, userId)
@@ -103,8 +106,9 @@ const DELETED = "EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NOT 
 
 /**
  * Erases a deleted account's personal data in one batch, keeping what the law keeps:
- * - an unused signup gift is forfeited (its ledger rows stay);
- * - saved readings and sessions are deleted, and the account's reviews with their 도움돼요 and reports;
+ * - an unused signup gift is forfeited (its ledger rows stay), and so is a purchase given back after
+ *   its client left (SEC-02: never refunded);
+ * - saved readings, share links and sessions are deleted, and the account's reviews with their 도움돼요 and reports;
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - orders that never reached Toss are closed;
  * - kakao_key and nickname are blanked and erased_at set.
@@ -112,14 +116,18 @@ const DELETED = "EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NOT 
  * Idempotent; only for an account already marked deleted. True when this call erased it.
  */
 export async function eraseDeletedAccount(db: D1Binding, userId: string, now: number): Promise<boolean> {
-  const { results: freeLots } = await db
-    .prepare("SELECT * FROM credit_lots WHERE user_id = ? AND currency = 'free' AND status = 'active' AND units_left > 0")
+  const { results: forfeited } = await db
+    .prepare(
+      `SELECT * FROM credit_lots WHERE user_id = ? AND status = 'active' AND units_left > 0
+         AND (currency = 'free' OR (currency = 'paid' AND ${LEFT_SQL("credit_lots")}))`,
+    )
     .bind(userId)
     .all<Lot>();
   const results = await db.batch([
-    ...freeLots.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
+    ...forfeited.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
     ...eraseReviewStatements(db, userId),
     db.prepare(`DELETE FROM readings WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
+    db.prepare(`DELETE FROM shares WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM sessions WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db
       .prepare(`UPDATE gift_claims SET account_deleted_at = ? WHERE kakao_key = (SELECT kakao_key FROM users WHERE id = ? AND deleted_at IS NOT NULL)`)

@@ -18,6 +18,9 @@ import { dailyStore, logKvError } from "./dailyStore";
  *   before any token was billed releases it. Spread over shards because KV takes about one write
  *   per second per key; a write that fails moves to another shard, and repeated write failures make
  *   the total "unknown" (it would otherwise stop growing while reads still work).
+ * - `netcost:<kstDay>:<client>:<shard>`: the part of that cost billed for one client network's
+ *   free-tier generations (SEC-01), so one network cannot spend the whole day's budget; mirrored
+ *   from the same ledger writes (respondGeneration), one write each, never retried on another shard.
  * - `turns:<chapterId>`: follow-up answers given in one chapter, so replaying an older chapter token
  *   (fewer turns) cannot reset the per-chapter cap.
  * KV has no atomic increment and is eventually consistent (another location can read a value up to
@@ -39,6 +42,9 @@ const COST_WRITE_TRIES = 3;
 const DEFAULT_DAILY_BUDGET_KRW = 30_000;
 /** Lost KV updates make the total run low, so the cap trips at 80% of the budget. */
 export const BUDGET_TRIP = 0.8;
+/** SEC-01: the share of the day's budget one client network's free-tier generations may cost. */
+export const NETWORK_BUDGET_SHARE = 0.2;
+const NETWORK_COST_SHARDS = 4;
 
 // ---- KV access: every error is logged (at most one line per 10 s per isolate, with a count) ----
 
@@ -97,6 +103,34 @@ export async function recordClientSpend(client: string, kind: SpendKind, now: nu
   const key = countKey(client, kind, now);
   const current = await read(key);
   if (current !== null) await write(key, Math.max(0, current) + 1, COUNT_TTL_SECONDS);
+}
+
+const networkCostKey = (client: string, now: number, shard: number) => `netcost:${kstDay(now)}:${client}:${shard}`;
+
+/** KRW this network's free-tier generations cost today; a shard that cannot be read counts 0 (the budget check closes when KV is down). */
+export async function networkCostKrw(client: string, now: number): Promise<number> {
+  const shards = await Promise.all(Array.from({ length: NETWORK_COST_SHARDS }, (_, i) => read(networkCostKey(client, now, i))));
+  return Math.max(0, shards.reduce<number>((total, krw) => total + (krw ?? 0), 0));
+}
+
+/** Adds `krw` (negative to release) to the network's day total: one shard, one write, no retry. */
+export async function addNetworkCost(client: string, krw: number, now: number): Promise<void> {
+  if (!Number.isFinite(krw) || krw === 0) return;
+  const key = networkCostKey(client, now, Math.floor(Math.random() * NETWORK_COST_SHARDS));
+  const current = await read(key);
+  if (current !== null) await write(key, current + krw, COST_TTL_SECONDS);
+}
+
+/** `BETA_NETWORK_BUDGET_SHARE` (0 to 1), else NETWORK_BUDGET_SHARE. */
+export function networkBudgetShare(env: NodeJS.ProcessEnv = process.env): number {
+  const value = env.BETA_NETWORK_BUDGET_SHARE;
+  const n = Number(value);
+  return value !== undefined && value.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 1 ? n : NETWORK_BUDGET_SHARE;
+}
+
+/** True once this network's free-tier cost today reached its share of the day's budget. */
+export async function overNetworkBudget(client: string, now: number): Promise<boolean> {
+  return (await networkCostKrw(client, now)) >= dailyBudgetKrw() * networkBudgetShare();
 }
 
 // ---- the day's cost ----
@@ -196,6 +230,7 @@ export class SpendLedger {
   private reserved = 0;
   private reservedAt = 0;
   private billedSinceReserve = true;
+  private billedAny = false;
   private chain: Promise<void> = Promise.resolve();
 
   constructor(private readonly clock: () => number = Date.now, private readonly sink: CostSink = addCost) {} // P4: sink
@@ -217,6 +252,7 @@ export class SpendLedger {
 
   bill(usage: readonly Usage[]): void {
     const krw = krwOf(usage);
+    this.billedAny = true;
     if (this.billedSinceReserve) {
       this.add(krw, this.clock());
       return;
@@ -225,6 +261,11 @@ export class SpendLedger {
     this.reserved -= covered;
     this.billedSinceReserve = true;
     this.add(krw - covered, this.reservedAt);
+  }
+
+  /** SEC-02: a call began answering: usage was billed, or a reservation is still held (cut off after message_start). */
+  get began(): boolean {
+    return this.billedAny || !this.billedSinceReserve;
   }
 
   /** Ends the bookkeeping; resolves once every write has been tried (it never rejects). */

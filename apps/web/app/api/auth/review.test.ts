@@ -134,15 +134,11 @@ describe("review login", () => {
     expect((await signIn(b)).status).toBe(200);
   });
 
-  it("closes for everyone after 50 failures across all networks, until an hour after the last, and logs that without values", async () => {
+  it("logs one alert line, without values, after 50 failures across all networks, and still lets every other network in", async () => {
     useTestDb();
-    for (let i = 0; i < 50; i++) expect((await signIn(browser(`198.51.100.${100 + i}`), { id: ID, password: `wrong-${i}` })).status).toBe(400);
-    const closed = await signIn(browser("198.51.100.199"));
-    expect(closed.status).toBe(429);
-    expect(await closed.json()).toMatchObject({ code: "RATE_LIMIT", message: "로그인 시도가 많았어요. 1시간 뒤에 다시 시도해 주세요." });
-    const locked = vi.mocked(console.warn).mock.calls.filter(([line]) => String(line).includes("auth.review_locked"));
-    expect(locked).toEqual([[JSON.stringify({ evt: "auth.review_locked" })]]);
-    vi.setSystemTime(T0 + 60 * 60_000 + 1);
+    for (let i = 0; i < 55; i++) expect((await signIn(browser(`198.51.100.${100 + i}`), { id: ID, password: `wrong-${i}` })).status).toBe(400);
+    const alerts = vi.mocked(console.warn).mock.calls.filter(([line]) => String(line).includes("auth.review_failures_alert"));
+    expect(alerts).toEqual([[JSON.stringify({ evt: "auth.review_failures_alert" })]]);
     expect((await signIn(browser("198.51.100.199"))).status).toBe(200);
   });
 

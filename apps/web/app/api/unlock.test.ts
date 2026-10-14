@@ -7,6 +7,7 @@ import { clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { NDJSON } from "@/lib/api/stream";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
+import { RESERVATION_MS } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { listReadings } from "@/lib/readings/store";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
@@ -15,6 +16,7 @@ import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
 import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as ownerPost } from "./owner/route";
+import { POST as refund } from "./pay/refund/route";
 import { POST as sajuReading } from "./saju/reading/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";
@@ -196,7 +198,30 @@ describe("opening a full reading with credit", () => {
     expect(await giftOf(b)).toBe("unused");
   });
 
-  it("gives the gift back when the client leaves mid-stream", async () => {
+  it("gives a purchase whose reading the client left after the model began answering back to reopen, but no longer refundable", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    const orderId = await buy(b, "tarot");
+    vi.spyOn(mockProvider, "generate").mockImplementation((_task, _attempt, _feedback, hooks) => new Promise((_, reject) => {
+      hooks?.onReserve?.(EXPENSIVE);
+      hooks?.onText?.('{"cards": [{');
+      hooks?.signal?.addEventListener("abort", () => reject(new GenerationError("UPSTREAM", ["aborted"])));
+    }));
+    const controller = new AbortController();
+    const res = await open(b, "paid", NDJSON, controller.signal);
+    expect(res.status).toBe(200);
+    controller.abort();
+    await res.text().catch(() => "");
+    await vi.waitFor(async () => expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "released" }));
+    vi.mocked(mockProvider.generate).mockRestore();
+    expect(await one(db, "SELECT units_left FROM credit_lots WHERE currency = 'paid'")).toEqual({ units_left: 1 });
+    // 내 정보 lists it to open again, never with a refund deadline (no 환불받기).
+    expect((await me(b)).user?.unused).toEqual([{ orderId, productId: "tarot", refundable: false }]);
+    expect((await b.send(refund, "/api/pay/refund", { body: { orderId }, origin: true })).status).toBe(409);
+    expect((await open(b, "paid")).status).toBe(200);
+  });
+
+  it("gives the gift back when the client leaves before the model began answering", async () => {
     useTestDb();
     const { b } = await loggedIn();
     vi.spyOn(mockProvider, "generate").mockImplementation(
@@ -242,7 +267,7 @@ describe("opening a full reading with credit", () => {
     const db = useTestDb();
     expect((await open(browser("192.0.2.12"), "owner")).status).toBe(403);
     const owner = browser("192.0.2.13");
-    await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } });
+    await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
     await loginAs(owner, "owner");
     const res = await open(owner, "owner");
     expect(res.status).toBe(200);
@@ -289,7 +314,7 @@ describe("opening a full reading with credit", () => {
     const { b } = await loggedIn();
     await buy(b, "saju");
     expect((await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, topic: "career", unlock: { method: "paid" } } })).status).toBe(200);
-    expect((await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" } })).status).toBe(200);
+    expect((await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true })).status).toBe(200);
     expect((await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, topic: "love", unlock: { method: "owner" } } })).status).toBe(200);
     const { readings } = await listReadings(db, accountSecret()!, await userId(db));
     expect(readings.map((r) => r.chapter.topic).sort()).toEqual(["career", "love"]);

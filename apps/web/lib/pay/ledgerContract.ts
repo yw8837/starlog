@@ -3,6 +3,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import {
   GIFT_DAYS,
+  MAX_RESTORES,
   RESERVATION_MS,
   deliverUnlock,
   entitlements,
@@ -141,10 +142,67 @@ export function ledgerContract(make: Make) {
     await expectLotsMatchLedger(db);
   });
 
+  it("always gives a purchase back after a server failure or a lapsed reservation, however often: neither counts toward MAX_RESTORES", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    for (let i = 0; i < MAX_RESTORES + 2; i++) {
+      const unlock = await reserved(db, "paid", NOW + i);
+      expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + i })).toBe(true);
+      expect(await lotById(db, "lot_order_a")).toMatchObject({ units_left: 1 });
+    }
+    await reserved(db, "paid", NOW + 10);
+    expect(await sweepStale(db, NOW + 10 + RESERVATION_MS + 1)).toEqual({ released: 1, expired: 0 });
+    expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 1 });
+    expect(await lockPaidLotForRefund(db, "order_a", NOW + 20 + RESERVATION_MS)).not.toBeNull();
+    await expectLotsMatchLedger(db);
+  }, 20_000); // many ledger round trips: slow on local D1
+
+  it("gives an opening the client left back at most three times; the fourth uses the purchase up, server failures in between not counted", async () => {
+    expect(MAX_RESTORES).toBe(3);
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    for (let i = 0; i < MAX_RESTORES; i++) {
+      const left = await reserved(db, "paid", NOW + 2 * i);
+      expect(await releaseUnlock(db, { unlockId: left.unlockId, now: NOW + 2 * i, left: true })).toBe(true);
+      const failed = await reserved(db, "paid", NOW + 2 * i + 1);
+      expect(await releaseUnlock(db, { unlockId: failed.unlockId, now: NOW + 2 * i + 1 })).toBe(true);
+      expect(await lotById(db, "lot_order_a")).toMatchObject({ units_left: 1 });
+    }
+    const fourth = await reserved(db, "paid", NOW + 10);
+    expect(await releaseUnlock(db, { unlockId: fourth.unlockId, now: NOW + 10, left: true })).toBe(true);
+    expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 0 });
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + 20, payMode: "live" })).toEqual({ ok: false });
+    expect(await lockPaidLotForRefund(db, "order_a", NOW + 30)).toBeNull();
+    expect((await kinds(db, "lot_order_a")).filter((kind) => kind === "restore")).toHaveLength(2 * MAX_RESTORES);
+    await expectLotsMatchLedger(db);
+  }, 20_000); // many ledger round trips: slow on local D1
+
+  it("gives an opening the client left back to reopen, within the restore limit, but the purchase is no longer refundable", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    const unlock = await reserved(db, "paid");
+    expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 1, left: true })).toBe(true);
+    expect(await db.prepare("SELECT status FROM unlocks WHERE id = ?").bind(unlock.unlockId).first()).toEqual({ status: "released" });
+    expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 1 });
+    expect(await kinds(db, "lot_order_a")).toEqual(["grant", "reserve", "restore"]);
+    expect((await entitlements(db, "u_1", NOW + 2)).unused).toEqual([{ orderId: "order_a", productId: "tarot", paidAt: NOW, refundable: false }]);
+    expect(await lockPaidLotForRefund(db, "order_a", NOW + 3)).toBeNull();
+    expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + 4, payMode: "live" })).ok).toBe(true);
+    await expectLotsMatchLedger(db);
+  });
+
+  it("lets a purchase the client never left be refunded after a server failure gave its units back", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    const unlock = await reserved(db, "paid");
+    expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + 1 })).toBe(true);
+    expect(await lockPaidLotForRefund(db, "order_a", NOW + 2)).not.toBeNull();
+  });
+
   it("spends a paid lot only on its own product", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_tarot_1", "tarot");
-    expect((await entitlements(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot", paidAt: NOW }]);
+    expect((await entitlements(db, "u_1", NOW)).unused).toEqual([{ orderId: "order_tarot_1", productId: "tarot", paidAt: NOW, refundable: true }]);
     expect(await reserveUnlock(db, { userId: "u_1", productId: "saju", currency: "paid", now: NOW, payMode: "live" })).toEqual({ ok: false });
     expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW, payMode: "live" })).ok).toBe(true);
     expect((await entitlements(db, "u_1", NOW)).unused).toEqual([]);
@@ -163,7 +221,7 @@ export function ledgerContract(make: Make) {
       { productId: "tarot", currency: "paid", orderId: opened },
       { productId: "tarot", currency: "gift", orderId: null },
     ]);
-    expect(held.unused).toEqual([{ orderId: other, productId: "tarot", paidAt: NOW }]);
+    expect(held.unused).toEqual([{ orderId: other, productId: "tarot", paidAt: NOW, refundable: true }]);
     expect(await deliverUnlock(db, { unlockId: paid.unlockId, readingId: "r1", now: NOW + 3 })).toBe("delivered");
     expect(await releaseUnlock(db, { unlockId: free.unlockId, now: NOW + 4 })).toBe(true);
     expect(await entitlements(db, "u_1", NOW + 5)).toMatchObject({ opening: [], unused: [{ orderId: other, productId: "tarot" }], gift: UNUSED });

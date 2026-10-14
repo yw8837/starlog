@@ -142,6 +142,19 @@ describe("AccountPanel", () => {
     vi.useRealTimers();
   });
 
+  it("offers 열기 but no 환불받기 for a purchase whose reading the client left while it was being written, and never promises its refund on deletion", () => {
+    const left = { ...account, user: { ...account.user, unused: [...account.user.unused, { orderId: "Zz9_yXw-Vu8tSr7Qp6On5Ml4", productId: "saju", refundable: false as const }] } };
+    render(<AccountPanel account={left} />);
+    const item = screen.getByText("사주 전체 풀이 · 열지 않음").closest("li")!;
+    expect(within(item).getByRole("link", { name: "열기" })).toBeTruthy();
+    expect(within(item).queryByRole("button", { name: "환불받기" })).toBeNull();
+    expect(within(item).getByText("풀이를 받던 중에 나가서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: "환불받기" })).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
+    expect(screen.getByText("열지 않은 결제 1건은 전액 환불돼요")).toBeTruthy();
+    expect(screen.getByText("환불할 수 없는 결제 1건은 사라져요")).toBeTruthy();
+  });
+
   it("says what went wrong with a refund in refund words, never payment ones", async () => {
     for (const [body, status, line] of [
       [{ code: "PAY_PENDING" }, 409, "환불을 처리하고 있어요. 결제 내역에서 확인할 수 있어요."],

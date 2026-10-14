@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import type { GenerationHooks } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
-import { budgetState, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
+import { addNetworkCost, budgetState, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { keyedHash, signingSecret } from "@/lib/security/sign";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as followup } from "./followup/route";
@@ -134,7 +135,7 @@ describe("DAILY_KV failures", () => {
 
     kv.state.mode = "ok";
     const login = await owner(new Request("http://localhost/api", {
-      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.44" }, body: JSON.stringify({ code: "owner-code-for-tests-0001" }),
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.44", origin: "http://localhost" }, body: JSON.stringify({ code: "owner-code-for-tests-0001" }),
     }));
     const cookie = login.headers.getSetCookie()[0]!.split(";")[0]!;
     kv.state.mode = "down";
@@ -163,6 +164,18 @@ describe("DAILY_KV failures", () => {
     expect(await spentTodayKrw(Date.now())).toBe(800);
     kv.state.unreadable = /^cost:.*:[0-3]$/;
     expect(await spentTodayKrw(Date.now())).toBe(800); // 400 from four shards, scaled ×8/4
+  });
+
+  it("let a network through when only its own cost total cannot be read, while the day's budget still fails closed", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "10000");
+    const token = await drawToken();
+    const ip = "198.51.100.47";
+    await addNetworkCost(await keyedHash(`client:${ip}`, signingSecret()!), 5_000, Date.now());
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(429);
+    kv.state.unreadable = /^netcost:/;
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(200);
+    kv.state.mode = "down";
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(503);
   });
 
   it("treat a Worker without the DAILY_KV binding as unknown (closed)", async () => {

@@ -3,7 +3,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import { randomId } from "@/lib/security/sign";
 import { productById, type Product } from "./catalog";
-import { paidLotStatements } from "./ledger";
+import { LEFT_SQL, paidLotStatements } from "./ledger";
 import { TossError, isPendingTossError, type TossClient, type TossPayment } from "./tossTypes";
 
 /**
@@ -255,7 +255,7 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
   const { results } = await db
     .prepare(
       `SELECT o.id, o.product_id, o.amount_krw, o.status, o.created_at, p.receipt_url, p.method,
-              l.units_left, l.units_total, l.status AS lot_status
+              l.units_left, l.units_total, l.status AS lot_status, ${LEFT_SQL("l")} AS left_once
        FROM orders o
        LEFT JOIN payments p ON p.order_id = o.id
        LEFT JOIN credit_lots l ON l.order_id = o.id
@@ -265,7 +265,7 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
     .bind(userId, limit)
     .all<{
       id: string; product_id: string; amount_krw: number; status: OrderStatus; created_at: number; receipt_url: string | null; method: string | null;
-      units_left: number | null; units_total: number | null; lot_status: string | null;
+      units_left: number | null; units_total: number | null; lot_status: string | null; left_once: number | null;
     }>();
   return results.map((row) => {
     const active = row.lot_status === "active";
@@ -277,7 +277,7 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
       createdAt: row.created_at,
       receiptUrl: row.receipt_url,
       method: row.method,
-      refundable: row.status === "paid" && active && row.units_left === row.units_total,
+      refundable: row.status === "paid" && active && row.units_left === row.units_total && !row.left_once,
       opened: row.status === "paid" && active && row.units_left === 0,
     };
   });

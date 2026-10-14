@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import type { ChapterContext } from "@/lib/security/chapterToken";
 import { buildSharePayload, type SharePayload } from "@/lib/share/payload";
+import NotFound from "./not-found";
 import SharePage, { generateMetadata } from "./page";
 
 // The test D1 needs a file URL that jsdom does not give, so the store is a map here; the store itself
@@ -54,7 +55,7 @@ describe("/s/[id]", () => {
     render(await SharePage(params(id)));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("카드 세 장이 건넨 이야기");
     expect(document.body.textContent).toContain(TAROT_SAMPLE.paid.verdict);
-    expect(document.body.textContent).toContain("질문은 공유한 사람만 볼 수 있어요.");
+    expect(document.body.textContent).toContain("질문과 직접 쓴 말, 고른 상황은 공유한 사람만 볼 수 있어요.");
     expect(document.body.textContent).not.toContain("먼저 연락해도 될까요");
     const faces = [...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes("major-09-hermit"));
     expect(faces[0]).toContain("/cards/starlog/");
@@ -66,6 +67,7 @@ describe("/s/[id]", () => {
     render(await SharePage(params(id)));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("연애운 풀이");
     expect(document.body.textContent).toContain("올해는 마음을 표현할수록 길이 열려요.");
+    expect(document.body.textContent).toContain("생년월일과 태어난 시각, 명식, 고른 상황은 공유한 사람만 볼 수 있어요.");
     expect(document.body.textContent).not.toMatch(/1990|1월 1일/);
   });
 
@@ -77,9 +79,16 @@ describe("/s/[id]", () => {
     expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: `/api/og/share/${id}`, width: 1200, height: 630 })]);
   });
 
-  it("answers 404 for a link that was never made or was stopped", async () => {
+  it("answers 404 for a link that was never made or was stopped, kept out of search", async () => {
     await expect(SharePage(params("abcdefghijkl"))).rejects.toThrow();
     await expect(SharePage(params("../../etc"))).rejects.toThrow();
+    expect((await generateMetadata(params("abcdefghijkl"))).robots).toEqual({ index: false, follow: false });
+  });
+
+  it("shows a stopped or unknown link as a friendly page with a way home", () => {
+    render(<NotFound />);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("공유가 멈췄거나 없는 풀이예요");
+    expect(screen.getByRole("link", { name: "홈으로" }).getAttribute("href")).toBe("/");
   });
 });
 

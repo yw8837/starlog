@@ -18,6 +18,8 @@ const lastDay = (iso: string) => {
 const openHref = (productId: string) => (productId === "saju" ? "/saju/new" : "/tarot/new");
 /** Instead of 환불받기 once a purchase's refund window is over (the server's REFUND_WINDOW_CLOSED says the same). */
 const WINDOW_CLOSED = `환불 가능 기간(결제일로부터 ${REFUND_DAYS}일)이 지났어요. 문제가 있으면 문의해 주세요.`;
+/** Instead of 환불받기 for a purchase given back after its reading was cut off while written (SEC-02). */
+const LEFT_WHILE_WRITTEN = "풀이를 받던 중에 나가서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.";
 
 /** A failed 환불받기 in refund words (the payment lines would say "결제를 확인하고 있어요"). */
 function refundNotice(error: ApiError): string {
@@ -57,6 +59,8 @@ type AccountPanelProps = {
  */
 export function AccountPanel({ account, navigate = (url) => window.location.assign(url), onNotice }: AccountPanelProps) {
   const { user } = account;
+  const refundableCount = user.unused.filter((item) => item.refundable !== false).length;
+  const forfeitedCount = user.unused.length - refundableCount;
   const [ownNotice, setOwnNotice] = useState("");
   const setNotice = onNotice ?? setOwnNotice;
   const [sheet, setSheet] = useState<"refund" | "delete" | "readings" | null>(null);
@@ -126,8 +130,10 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
         {user.unused.length > 0 ? (
           <ul className={s.unused}>
             {user.unused.map((item) => {
-              // Past its window the purchase can still be opened; 환불받기 gives way to a plain line.
-              const refundable = !item.refundUntil || Date.now() <= Date.parse(item.refundUntil);
+              // Past its window, or given back after its reading was cut off, the purchase can still be
+              // opened; 환불받기 gives way to a plain line.
+              const left = item.refundable === false;
+              const refundable = !left && (!item.refundUntil || Date.now() <= Date.parse(item.refundUntil));
               return (
                 <li key={item.orderId} className={s.unusedItem}>
                   <span>{`${productById(item.productId)?.name ?? "풀이"} · 열지 않음`}</span>
@@ -146,6 +152,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
                       환불받기
                     </button>
                   ) : null}
+                  {left ? <p className={s.refundLine}>{LEFT_WHILE_WRITTEN}</p> : null}
                   {item.refundUntil ? <p className={s.refundLine}>{refundable ? `${lastDay(item.refundUntil)}까지 환불할 수 있어요` : WINDOW_CLOSED}</p> : null}
                 </li>
               );
@@ -226,7 +233,8 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
             탈퇴할까요?
           </h2>
           <ul className={s.list}>
-            {user.unused.length > 0 ? <li>{`열지 않은 결제 ${user.unused.length}건은 전액 환불돼요`}</li> : null}
+            {refundableCount > 0 ? <li>{`열지 않은 결제 ${refundableCount}건은 전액 환불돼요`}</li> : null}
+            {forfeitedCount > 0 ? <li>{`환불할 수 없는 결제 ${forfeitedCount}건은 사라져요`}</li> : null}
             {user.gift?.status === "unused" ? <li>쓰지 않은 가입 선물은 사라져요</li> : null}
             <li>계정에 보관한 풀이가 지워져요</li>
             <li>결제 기록은 법에 따라 5년 동안 보관돼요</li>

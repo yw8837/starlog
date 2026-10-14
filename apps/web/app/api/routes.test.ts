@@ -28,6 +28,7 @@ function device(ip = "203.0.113.7") {
       headers: {
         "content-type": init.type ?? "application/json",
         "cf-connecting-ip": ip,
+        origin: "http://localhost",
         cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "),
       },
       body: init.raw ?? JSON.stringify(body),

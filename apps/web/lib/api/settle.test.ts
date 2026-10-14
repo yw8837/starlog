@@ -4,7 +4,7 @@ import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { kstDay } from "@/lib/security/quota";
 import { dailyStore, resetDailyStore } from "./dailyStore";
 import type { Gate } from "./http";
-import { SpendLedger, addPaidCost, budgetState, clientCount, resetSpendState, spentTodayKrw } from "./spend";
+import { SpendLedger, addPaidCost, budgetState, clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "./spend";
 import { NDJSON, respondGeneration, type GenerationOutcome, type Settlement } from "./stream";
 
 /** Priced at 2,800원 with KRW_PER_USD=1400 (Opus 5.5: 100k output tokens = $2). */
@@ -13,7 +13,8 @@ const HALF = [{ ...EXPENSIVE[0]!, outputTokens: 50_000 }];
 const READING_ID = "abcdefghij0123456789";
 const BODY = { reading: { verdict: "v" }, chapterToken: "t" };
 
-const gate = (): Gate => ({ secret: "s".repeat(40), provider: mockProvider, owner: false, now: Date.now(), cookies: {}, client: "client-hash" }) as unknown as Gate;
+const gate = (owner = false): Gate => ({ secret: "s".repeat(40), provider: mockProvider, owner, now: Date.now(), cookies: {}, client: "client-hash" }) as unknown as Gate;
+const networkBook = async () => Math.round(await networkCostKrw("client-hash", Date.now()));
 
 /** A generation that is billed EXPENSIVE through the hooks, as the provider does, then succeeds or fails. */
 const billed = (fail = false) => async (hooks: GenerationHooks): Promise<GenerationOutcome> => {
@@ -43,8 +44,18 @@ function settlement(calls: string[], deliver: () => Promise<Record<string, unkno
     release: async () => {
       calls.push("release");
     },
+    abandon: async () => {
+      calls.push("abandon");
+    },
   };
 }
+
+/** A call the model began answering (its reservation is kept) that the client then leaves. */
+const answeringUntilAbort = async (hooks: GenerationHooks): Promise<GenerationOutcome> =>
+  new Promise((_, reject) => {
+    hooks.onReserve?.(EXPENSIVE);
+    hooks.signal?.addEventListener("abort", () => reject(new GenerationError("UPSTREAM", ["aborted"])));
+  });
 
 const post = (stream = false, signal?: AbortSignal) =>
   new Request("http://localhost/api/tarot/reading", { method: "POST", headers: stream ? { accept: NDJSON } : {}, signal });
@@ -96,6 +107,7 @@ describe("settlement inside the generation's keepAlive work", () => {
     expect(await paidBook()).toBe(2800);
     expect(await freeBook()).toBe(0);
     expect(await clientCount("client-hash", "full", Date.now())).toBe(0);
+    expect(await networkBook()).toBe(0);
   });
 
   it("JSON: a gift opening books the free total and is charged to the network before it starts", async () => {
@@ -105,6 +117,7 @@ describe("settlement inside the generation's keepAlive work", () => {
     expect(await freeBook()).toBe(2800);
     expect(await paidBook()).toBe(0);
     expect(await clientCount("client-hash", "full", Date.now())).toBe(1);
+    expect(await networkBook()).toBe(0);
   });
 
   it("JSON: releases after a failed generation, and after a save that did not land", async () => {
@@ -142,7 +155,7 @@ describe("settlement inside the generation's keepAlive work", () => {
     expect(calls).toEqual(["release"]);
   });
 
-  it("NDJSON: a client that leaves mid-generation gets its credit back", async () => {
+  it("NDJSON: a client that leaves before the model began answering gets its credit back", async () => {
     const calls: string[] = [];
     const controller = new AbortController();
     const waiting = async (hooks: GenerationHooks): Promise<GenerationOutcome> =>
@@ -153,8 +166,55 @@ describe("settlement inside the generation's keepAlive work", () => {
     await vi.waitFor(() => expect(calls).toEqual(["release"]));
   });
 
+  it("NDJSON: a client that leaves after the model began answering abandons its credit instead of getting it back", async () => {
+    const calls: string[] = [];
+    const controller = new AbortController();
+    const res = await respondGeneration(post(true, controller.signal), answeringUntilAbort, { gate: gate(), settle: settlement(calls) });
+    controller.abort();
+    await res.text().catch(() => "");
+    await vi.waitFor(() => expect(calls).toEqual(["abandon"]));
+  });
+
+  it("NDJSON: a reader that cancels the stream after the model began answering abandons its credit too", async () => {
+    const calls: string[] = [];
+    const res = await respondGeneration(post(true), answeringUntilAbort, { gate: gate(), settle: settlement(calls) });
+    await res.body!.cancel();
+    await vi.waitFor(() => expect(calls).toEqual(["abandon"]));
+  });
+
+  it("JSON: a client that leaves after the model began answering abandons its credit instead of getting it back", async () => {
+    const calls: string[] = [];
+    const controller = new AbortController();
+    const pending = respondGeneration(post(false, controller.signal), answeringUntilAbort, { gate: gate(), settle: settlement(calls) });
+    controller.abort();
+    expect((await pending).status).toBe(502);
+    expect(calls).toEqual(["abandon"]);
+  });
+
+  it("gives the credit back for a server-side failure after the client left: a save that did not land", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const calls: string[] = [];
+    const controller = new AbortController();
+    controller.abort();
+    await respondGeneration(post(false, controller.signal), billed(), { gate: gate(), settle: settlement(calls, failedSave, null) });
+    expect(calls).toEqual(["deliver", "recover", "release"]);
+  });
+
   it("leaves 오픈 기념 responses exactly as before", async () => {
     const res = await respondGeneration(post(), billed(), { gate: gate(), spend: "full" });
     expect(await res.json()).toEqual(BODY);
+  });
+
+  it("books a free-tier generation's cost on its network's day total too, a cut-off call at its reservation; never the owner's", async () => {
+    await respondGeneration(post(), billed(), { gate: gate(), spend: "teaser" });
+    expect(await networkBook()).toBe(2800);
+    const controller = new AbortController();
+    const res = await respondGeneration(post(true, controller.signal), answeringUntilAbort, { gate: gate(), spend: "teaser" });
+    controller.abort();
+    await res.text().catch(() => "");
+    await vi.waitFor(async () => expect(await networkBook()).toBe(5600));
+    await respondGeneration(post(), billed(), { gate: gate(true), spend: "teaser" });
+    expect(await networkBook()).toBe(5600);
+    expect(await freeBook()).toBe(8400);
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
+import type { ChapterContext } from "@/lib/security/chapterToken";
 import { buildSharePayload, parseSharePayload } from "./payload";
 
 const MOCK_TAROT_READING = TAROT_SAMPLE.paid;
@@ -68,10 +69,140 @@ describe("buildSharePayload (tarot)", () => {
     expect(partial.reading.verdict).toBe('"○○"라고 했지만 기다려 볼 때예요.');
   });
 
-  it("keeps the preset chips: they are the service's own words", () => {
+  it("hides the situations the user picked, like their own words", () => {
     const chip = buildSharePayload(tarotCtx, { ...reading, verdict: "연락이 끊겼어요라는 상황에서는 기다림도 답이에요." });
     if (chip.kind !== "tarot") return;
-    expect(chip.reading.verdict).toContain("연락이 끊겼어요");
+    expect(chip.reading.verdict).toBe("○○라는 상황에서는 기다림도 답이에요.");
+  });
+
+  it("is in the 1909 design for a reading whose chapter names none (it was written for those scans)", () => {
+    expect(payload.kind === "tarot" && payload.deck).toBe("rws1909");
+  });
+});
+
+/** A tarot input with only the given user text, so each case tests one field. */
+const only = (input: Record<string, unknown>) => ({ ...tarotCtx, input: { topicId: "custom", whoId: "us" as const, question: "", conditions: [], ...input } }) as ChapterContext;
+const sharedVerdict = (input: Record<string, unknown>, verdict: string) => {
+  const shared = buildSharePayload(only(input), { ...MOCK_TAROT_READING, verdict });
+  return shared.kind === "tarot" ? shared.reading.verdict : "";
+};
+
+describe("hiding the user's words as the prompt saw them (review 2026-10-14)", () => {
+  it("matches a note across a line break or a double space, the way the prompt collapsed it", () => {
+    expect(sharedVerdict({ note: "민수가 요즘\n연락이 없어요" }, "민수가 요즘 연락이 없어요. 그래도 기다려 봐요.")).toBe("○○. 그래도 기다려 봐요.");
+    expect(sharedVerdict({ note: "팀장님이  나를 싫어해요" }, "팀장님이 나를 싫어해요라는 마음이 보여요.")).toBe("○○라는 마음이 보여요.");
+  });
+
+  it("matches words typed with tag brackets or bold marks, which the prompt strips", () => {
+    expect(sharedVerdict({ question: "<민수>랑 다시 만날까" }, "민수랑 다시 만날까 하는 물음에 카드가 답해요.")).toBe("○○ 하는 물음에 카드가 답해요.");
+    expect(sharedVerdict({ question: "**지훈** 연락 올까" }, "지훈 연락 올까 하는 마음이 보여요.")).toBe("○○ 하는 마음이 보여요.");
+  });
+
+  it("matches full-width letters the way NFKC reads them", () => {
+    expect(sharedVerdict({ note: "Ｍｉｎｓｕ랑 싸웠어요" }, "Minsu랑 싸웠어요라고 했죠.")).toBe("○○라고 했죠.");
+  });
+
+  it("hides every single-quoted span, however short: the prompt quotes only the user's text in them", () => {
+    const note = { note: "민수가 요즘\n연락이 없어요" };
+    expect(sharedVerdict(note, "'민수가 요즘 연락이 없어요'라고 적었죠.")).toBe("'○○'라고 적었죠.");
+    expect(sharedVerdict(note, "'민수'에게 먼저 말을 걸어 봐요.")).toBe("'○○'에게 먼저 말을 걸어 봐요.");
+    expect(sharedVerdict({}, "'카페'에서 만나 봐요. ‘산책’도 좋아요.")).toBe("'○○'에서 만나 봐요. ‘○○’도 좋아요.");
+  });
+
+  it("keeps a double-quoted line that is not the user's", () => {
+    expect(sharedVerdict({ note: "비밀 메모예요" }, '"천천히 가도 괜찮아요"라는 그림이에요.')).toBe('"천천히 가도 괜찮아요"라는 그림이에요.');
+  });
+
+  it("hides the given name of a 누구 typed as a full name, before a particle, an honorific or a boundary", () => {
+    expect(sharedVerdict({ whoText: "김민수" }, "김민수 님은 조용해요. 민수가 먼저 연락할 수도 있어요. 민수 님께, 민수랑, 결국 민수.")).toBe(
+      "○○ 님은 조용해요. ○○가 먼저 연락할 수도 있어요. ○○ 님께, ○○랑, 결국 ○○.",
+    );
+  });
+
+  it("leaves ordinary words alone: inside a longer word, or a 누구 that is not a name", () => {
+    expect(sharedVerdict({ whoText: "김민수" }, "시민수업과 민수용 물건이에요.")).toBe("시민수업과 민수용 물건이에요.");
+    expect(sharedVerdict({ whoText: "짝사랑" }, "짝사랑 앞에서 사랑이 깊어져요.")).toBe("○○ 앞에서 사랑이 깊어져요.");
+  });
+
+  it("hides a name inside a longer 누구: its last word", () => {
+    expect(sharedVerdict({ whoText: "전 남친 민수" }, "민수가 먼저 연락할 수도 있어요.")).toBe("○○가 먼저 연락할 수도 있어요.");
+  });
+
+  it("hides a full name typed in the question or the note, and its given name, after any particle", () => {
+    expect(sharedVerdict({ question: "김민수랑 다시 잘될까" }, "민수 씨와 다시 이어질 흐름이에요. 김민수 님도 같은 마음이에요.")).toBe(
+      "○○ 씨와 다시 이어질 흐름이에요. ○○ 님도 같은 마음이에요.",
+    );
+    expect(sharedVerdict({ note: "어제 박지은이랑 싸웠어요" }, "지은이는 아직 마음이 상해 있어요. 지은 씨에게 먼저 말해 봐요.")).toBe(
+      "○○이는 아직 마음이 상해 있어요. ○○ 씨에게 먼저 말해 봐요.",
+    );
+  });
+
+  it("hides a given name typed without a surname, where the user's words use it for a person", () => {
+    expect(sharedVerdict({ question: "민수랑 다시 만날 수 있을까" }, "민수 씨와 다시 이어져요. 민수가 먼저 연락할 수도 있어요.")).toBe(
+      "○○ 씨와 다시 이어져요. ○○가 먼저 연락할 수도 있어요.",
+    );
+    expect(sharedVerdict({ note: "지훈이가 연락이 없어요" }, "지훈이 마음도 살펴봐요.")).toBe("○○이 마음도 살펴봐요.");
+    expect(sharedVerdict({ whoText: "남궁민수" }, "민수가 먼저 다가와요.")).toBe("○○가 먼저 다가와요.");
+  });
+
+  it("leaves the user's everyday words alone when they are not used for a person", () => {
+    const input = { question: "하반기에 이야기가 잘 풀릴까, 소중한 인연이 생길까", note: "우울한 날이 많고 정해진 게 없어요. 반려견이랑 지내요" };
+    const verdict = "하반기에는 이야기가 풀려요. 소중한 인연이 와요. 우울한 날도 정해진 흐름 안에 있어요. 반려견이 곁에 있어요.";
+    expect(sharedVerdict(input, verdict)).toBe(verdict);
+    expect(sharedVerdict({ whoText: "새로 온 직원" }, "직원이 먼저 다가와요.")).toBe("직원이 먼저 다가와요.");
+  });
+
+  it("hides the given name before 야말로, 까지, 부터 and the other particles", () => {
+    expect(sharedVerdict({ whoText: "김민수" }, "민수야말로 먼저 다가올 사람이에요. 민수까지, 민수부터, 민수에게도.")).toBe(
+      "○○야말로 먼저 다가올 사람이에요. ○○까지, ○○부터, ○○에게도.",
+    );
+  });
+
+  it("leaves ordinary words alone: role words, and everyday words that start like a surname", () => {
+    const input = { whoText: "회사 팀장님", question: "전남친이랑 어떻게 될까요? 연애운이 궁금해요", note: "지금은 마음이 복잡해요" };
+    const verdict = "팀장님은 바빠요. 남친이 생길 수도 있어요. 지금은 어떻게 할지보다 마음이 먼저예요. 연애운이 좋아요.";
+    expect(sharedVerdict(input, verdict)).toBe(verdict);
+    expect(sharedVerdict({ whoText: "친한 친구" }, "친구가 먼저 웃어 줄 거예요.")).toBe("친구가 먼저 웃어 줄 거예요.");
+  });
+
+  it("hides the picked situations, but not an unsure answer", () => {
+    const conditions = [
+      { label: "지금 상황", value: "지금은 수입이 없음" },
+      { label: "관심 방향", value: "잘 모르겠어요" },
+    ];
+    expect(sharedVerdict({ conditions }, "지금은 수입이 없음이라 버틸 기간부터 봐요. 잘 모르겠어요도 괜찮아요.")).toBe(
+      "○○이라 버틸 기간부터 봐요. 잘 모르겠어요도 괜찮아요.",
+    );
+  });
+});
+
+describe("contact details in shared text", () => {
+  it("drops every sentence with a link, an email, a phone number or a messenger ID, and keeps the rest", () => {
+    const steered = [
+      "자세한 건 https://evil.example/x 에서 봐요.",
+      "www.evil.example 에 들어가요.",
+      "evil-tarot.com 으로 와요.",
+      "문의는 help@evil.example 로 보내요.",
+      "010-1234-5678로 전화 주세요.",
+      "02 345 6789로도 돼요.",
+      "카톡 ID: lucky77 로 연락해요.",
+      "카카오톡 아이디는 lucky77이에요.",
+      "카​톡 아이디는 lucky77이에요.",
+      "오픈채팅방에 들어와요.",
+      "@lucky_tarot 을 팔로우해요.",
+      "ｈｔｔｐｓ://evil.example 로 가요.",
+    ];
+    const verdict = `좋은 흐름이에요. ${steered.join(" ")} 오늘은 카톡으로 짧게 안부를 건네 봐요.`;
+    expect(sharedVerdict({}, verdict)).toBe("좋은 흐름이에요. 오늘은 카톡으로 짧게 안부를 건네 봐요.");
+  });
+
+  it("drops a phone number with spaces around its dashes, and a 카카오·카톡·오픈채팅 아이디", () => {
+    const steered = ["010 - 1234 - 5678로 연락해요.", "카카오 아이디 abc123 으로 와요.", "카톡 아이디 lucky77 이에요.", "오픈채팅 아이디는 tarot77이에요."];
+    expect(sharedVerdict({}, `좋은 흐름이에요. ${steered.join(" ")} 3시간 뒤, 2027년 3월에 다시 봐요.`)).toBe("좋은 흐름이에요. 3시간 뒤, 2027년 3월에 다시 봐요.");
+  });
+
+  it("drops a line on its own, and leaves dates, ages and times that are not contact details", () => {
+    expect(sharedVerdict({}, "첫 줄이에요.\n연락처 010 1234 5678\n2027년 3월, 15:30, 3~4주 뒤에 봐요.")).toBe("첫 줄이에요.\n2027년 3월, 15:30, 3~4주 뒤에 봐요.");
   });
 });
 
@@ -102,6 +233,43 @@ describe("buildSharePayload (saju)", () => {
     expect(text).not.toMatch(/1990|1월 1일|12시 30분|birth|placeId|followUps/);
     if (payload.kind !== "saju") return;
     expect(payload.reading.sections[0]?.body).toBe("○○에 태어난 병화 일간이에요. ○○ 무렵이라 시주가 정해져요. 2027년 3월에는 기운이 바뀌어요. 3시간쯤 걸려요.");
+  });
+
+  const sajuBody = (birth: Record<string, unknown>, body: string, profile?: Record<string, string>) => {
+    const ctx = { ...sajuCtx, birth: { ...sajuCtx.birth, ...birth }, ...(profile ? { profile } : {}) };
+    const shared = buildSharePayload(ctx as never, { ...reading, sections: [{ heading: "타고난 바탕", body }] });
+    return shared.kind === "saju" ? shared.reading.sections[0]?.body : "";
+  };
+
+  it("hides the birth however it is written: 년생 in two digits, dotted dates with spaces, clock times, and every age", () => {
+    const born = { year: 1990, month: 5, day: 3, hour: 15, minute: 30 };
+    expect(sajuBody(born, "90년생답게 차분해요. 1990. 5. 3. 태어난 날이에요. 15:30, 오후 3:30 무렵이에요.")).toBe("○○답게 차분해요. ○○. 태어난 날이에요. ○○, ○○ 무렵이에요.");
+    expect(sajuBody(born, "지금 대운(34~43세, 2024~2033년)이 이어져요. 만 36세, 36살이에요.")).toBe("지금 대운(○○, 2024~2033년)이 이어져요. ○○, ○○이에요.");
+  });
+
+  it("hides a dotted birth date with a two-digit year", () => {
+    const born = { year: 1990, month: 3, day: 7 };
+    expect(sajuBody(born, "90.3.7에 태어났어요. 90. 3. 7. 생일이에요. 2027년 3월, 3시간 뒤에 봐요.")).toBe("○○에 태어났어요. ○○. 생일이에요. 2027년 3월, 3시간 뒤에 봐요.");
+  });
+
+  it("hides a written birth date with a two-digit year", () => {
+    const born = { year: 1990, month: 3, day: 7 };
+    expect(sajuBody(born, "90년 3월 7일생이에요. 90년 3월에 태어났죠. 2027년 3월에 봐요.")).toBe("○○생이에요. ○○에 태어났죠. 2027년 3월에 봐요.");
+  });
+
+  it("keeps the dates, times and words that are not the birth", () => {
+    const born = { year: 1990, month: 5, day: 3, hour: 15, minute: 30 };
+    expect(sajuBody(born, "2027년 3월에는 기운이 바뀌어요. 10:30에 걸어 봐요. 3세대가 함께 사는 집이에요.")).toBe("2027년 3월에는 기운이 바뀌어요. 10:30에 걸어 봐요. 3세대가 함께 사는 집이에요.");
+  });
+
+  it("hides the status the user picked, but not an unsure answer", () => {
+    expect(sajuBody({}, "연애 중이라면 함께 사는 생활을 봐요. 일은 잘 모르겠어요라고 했죠.", { loveStatus: "연애 중", workStatus: "잘 모르겠어요" })).toBe(
+      "○○이라면 함께 사는 생활을 봐요. 일은 잘 모르겠어요라고 했죠.",
+    );
+  });
+
+  it("drops a sentence with contact details", () => {
+    expect(sajuBody({}, "흐름이 좋아요. 상담은 010-1234-5678로 해요. 천천히 가요.")).toBe("흐름이 좋아요. 천천히 가요.");
   });
 });
 

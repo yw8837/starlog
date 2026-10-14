@@ -13,14 +13,14 @@ const FILTERS = [
 ] as const;
 
 function ReviewCard({ review }: { review: PublicReview }) {
-  const [helpful, setHelpful] = useState({ on: false, count: review.helpful });
+  // Starts from what the server says this viewer marked, and follows the server's own answer after a tap.
+  const [helpful, setHelpful] = useState({ on: review.helpfulByMe, count: review.helpful });
   const [note, setNote] = useState("");
   const [reporting, setReporting] = useState(false);
 
   const toggle = async () => {
-    const on = !helpful.on;
-    const result = await markHelpful(review.id, on);
-    if (result.ok) setHelpful({ on, count: helpful.count + (on ? 1 : -1) });
+    const result = await markHelpful(review.id, !helpful.on);
+    if (result.ok) setHelpful({ on: result.on, count: result.helpful });
     else setNote(result.code === "LOGIN_REQUIRED" ? "로그인하면 누를 수 있어요." : result.message || "지금은 누를 수 없어요.");
   };
 

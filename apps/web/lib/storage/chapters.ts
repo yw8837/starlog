@@ -7,6 +7,7 @@ import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { formatBirthDate, sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { isSajuTopicId, topicLabel } from "@/lib/sajuTopics";
 import { createLocalStore } from "@/lib/sessionStore";
+import { stopKnownShareLink } from "@/lib/share/client";
 
 /**
  * Opened readings (내 기록), kept on this device only (localStorage), oldest first. A saved reading
@@ -47,7 +48,7 @@ interface ChapterBase {
   serverId?: string;
   /**
    * The card design the reading was written for (its picture is the one it quotes); the record and
-   * its share show the cards in it. Absent on readings opened before 2026-10-14: the viewer's choice.
+   * its share show the cards in it. Absent on readings opened before 2026-10-14: those were written for the 1909 scans.
    */
   deck?: FrontDeck;
 }
@@ -235,7 +236,10 @@ export function updateChapter(id: string, update: (chapter: StoredChapter) => St
 export const hasChapterEntry = (id: string) => rawEntries().some((entry) => idOf(entry) === id);
 
 export function deleteChapter(id: string) {
+  const chapter = getChapter(id);
   store.save({ v: 1, chapters: rawEntries().filter((entry) => idOf(entry) !== id) });
+  // Its share link goes too, best effort: the delete never waits for it.
+  if (chapter) stopKnownShareLink(chapter);
 }
 
 type AccountReading = { id: string; createdAt: number; chapter: unknown };
@@ -304,7 +308,10 @@ export function removeServerChapters(): number {
 }
 
 export function clearChapters() {
+  const chapters = listChapters();
   store.clear();
+  // Their share links go too, best effort (the clear never waits): the tokens that stop them leave with the readings.
+  chapters.forEach((chapter) => stopKnownShareLink(chapter));
 }
 
 /** False while saved readings live only in memory (the browser refused to store them). */
