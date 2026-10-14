@@ -16,9 +16,14 @@ const Story = z.object({ title: z.string(), body: z.string() });
 export const TarotTeaserDraftSchema = z.object({
   cards: z.array(z.object({ position: z.string(), cardId: z.string(), keyword: z.string() })),
   firstCard: Section,
+  /** 감질맛 (owner 2026-10-14): the second card in full; the teaser route shows about half and seals the whole */
+  secondCard: Section,
 });
 
-export const TarotTeaserSchema = TarotTeaserDraftSchema.extend({ lockedToc: z.array(z.string()) });
+/** A one-card spread's teaser has no second card (code picks the schema by the spread). */
+export const OneCardTeaserDraftSchema = TarotTeaserDraftSchema.omit({ secondCard: true });
+
+export const TarotTeaserSchema = OneCardTeaserDraftSchema.extend({ secondCard: Section.optional(), lockedToc: z.array(z.string()) });
 
 export const TarotReadingSchema = z.object({
   verdict: z.string(),
@@ -100,7 +105,8 @@ export const FOLLOW_UP_KINDS = ["clarify", "scenario", "new_fact", "pushback", "
 
 export const FollowUpAnswerSchema = z.object({ kind: z.enum(FOLLOW_UP_KINDS), answer: z.string() });
 
-export type TarotTeaserDraft = z.infer<typeof TarotTeaserDraftSchema>;
+export type Section = z.infer<typeof Section>;
+export type TarotTeaserDraft = z.infer<typeof OneCardTeaserDraftSchema> & { secondCard?: Section };
 export type TarotTeaser = z.infer<typeof TarotTeaserSchema>;
 export type TarotReading = z.infer<typeof TarotReadingSchema>;
 export type StoredTarotReading = z.infer<typeof StoredTarotReadingSchema>;

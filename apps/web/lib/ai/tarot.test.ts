@@ -5,21 +5,30 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { describe, expect, it } from "vitest";
 import { kbCard } from "@/lib/kb";
 import { FALLBACK_BETA, MODEL, buildRequest } from "./anthropic";
-import { generateTarotReading, generateTarotTeaser } from "./generate";
-import { mockDaily, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
+import { generateTarotReading, generateTarotTeaser, withWrittenCards } from "./generate";
+import { mockDaily, mockProvider, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
 import {
-  CUSTOM_TEMPLATE, TAROT_SYSTEM, buildTarotContext, cardBrief, spreadFacts, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt, type TarotInput,
+  CUSTOM_TEMPLATE, TAROT_SYSTEM, buildTarotContext, cardBrief, cardLabel, spreadFacts, tarotLockedToc, tarotReadingPrompt, tarotTeaserPrompt, type TarotContext,
+  type TarotInput,
 } from "./prompts/tarot";
 import { GenerationError, generateValidated, selectProvider, type ReadingProvider } from "./provider";
 import {
   DailyDraftSchema, FollowUpAnswerSchema, SajuReadingSchema, SajuTeaserDraftSchema, SajuTeaserSchema, StoredSajuReadingSchema, StoredTarotReadingSchema,
-  TarotReadingSchema, TarotTeaserDraftSchema, TarotTeaserSchema, type TarotReading,
+  OneCardTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema, TarotTeaserSchema, type TarotReading,
 } from "./schemas";
 import { validateDaily, validateTarotFollowUp, validateTarotReading, validateTarotTeaser } from "./validate";
 import { isSoftViolation } from "./style";
 
 /** Hard violations only (soft style hints may regenerate but never fail a reading). */
 const hard = (violations: string[]) => violations.filter((v) => !isSoftViolation(v));
+
+/** The mock teaser's two cards, as the seal hands them back to the reading (code-owned headings). */
+const writtenOf = (ctx: TarotContext) => {
+  const t = mockTarotTeaser(ctx);
+  return [{ heading: cardLabel(ctx.cards[0]!), body: t.firstCard.body }, { heading: cardLabel(ctx.cards[1]!), body: t.secondCard!.body }];
+};
+/** The mock reading opened with the teaser's seal, merged as generateTarotReading merges it. */
+const continuedMock = (ctx: TarotContext) => withWrittenCards(mockTarotReading(ctx, 2), writtenOf(ctx));
 
 const GOLD_DRAW: DrawnCard[] = tarotSample.cards.map((c, slot) => ({ cardId: c.cardId, position: c.position, orientation: "upright", slot }));
 const GOLD_INPUT: TarotInput = {
@@ -133,9 +142,10 @@ describe("spread facts: numbers and ranks (gap review C3, B5)", () => {
 describe("validator", () => {
   const goldCtx = buildTarotContext("relationship-contact", GOLD_DRAW, GOLD_INPUT);
 
-  it("passes the gold sample reading and first card", () => {
+  it("passes the gold sample reading and teaser (its second card: the gold reading's 별 paragraph)", () => {
     expect(hard(validateTarotReading(GOLD_READING, goldCtx))).toEqual([]);
-    expect(hard(validateTarotTeaser({ cards: tarotSample.cards.map(({ position, cardId, keyword }) => ({ position, cardId, keyword })), firstCard: tarotSample.free.firstCard }, goldCtx))).toEqual([]);
+    const secondCard = { heading: "두 사람 사이 · 별", body: tarotSample.paid.cards[1]!.body };
+    expect(hard(validateTarotTeaser({ cards: tarotSample.cards.map(({ position, cardId, keyword }) => ({ position, cardId, keyword })), firstCard: tarotSample.free.firstCard, secondCard }, goldCtx))).toEqual([]);
   });
 
   const withVerdict = (extra: string): TarotReading => ({ ...GOLD_READING, alternatives: { ...GOLD_READING.alternatives, body: `${GOLD_READING.alternatives.body} ${extra}` } });
@@ -289,6 +299,8 @@ describe("mock provider", () => {
           const found = [
             ...validateTarotTeaser(mockTarotTeaser(ctx), ctx),
             ...hard(validateTarotReading(mockTarotReading(ctx), ctx)),
+            // the reading opened with the teaser's seal (감질맛): it reads on from the two written cards
+            ...hard(validateTarotReading(continuedMock(ctx), ctx, { written: 2 })),
             ...validateTarotFollowUp(mockTarotFollowUp(ctx), ctx, "이번 주에 무엇을 먼저 하면 좋을까요?"),
           ];
           if (found.length) failures.push(`${label} ${cards.map((c) => `${c.cardId}:${c.orientation}`).join(",")}: ${found.join(" | ")}`);
@@ -316,6 +328,113 @@ describe("mock provider", () => {
     expect(data.cards.map((c) => c.cardId)).toEqual(ctx.cards.map((c) => c.cardId));
     const teaser = await generateTarotTeaser(provider, ctx);
     expect(teaser.data.lockedToc).toEqual(tarotLockedToc(ctx));
+  });
+});
+
+describe("감질맛 teaser: the second card, and the reading that reads on from it (owner 2026-10-14)", () => {
+  const ctx = buildTarotContext("self-flow", draw("self-flow", "second-card"), MONEY_INPUT);
+  const part = (from: string, to: string) => TAROT_SYSTEM.slice(TAROT_SYSTEM.indexOf(from), TAROT_SYSTEM.indexOf(to));
+
+  it("asks the teaser for the second card under its code-owned label, with the first card's rules and no chip quoted twice", () => {
+    expect(tarotTeaserPrompt(ctx)).toContain(`<headings>\nfirstCard: ${cardLabel(ctx.cards[0]!)}\nsecondCard: ${cardLabel(ctx.cards[1]!)}\n</headings>`);
+    const teaser = part("## teaser", "## reading");
+    expect(teaser).toContain("secondCard.heading: <headings>의 secondCard 문구를 그대로 써요.");
+    expect(teaser).toContain("secondCard.body: 두 번째 카드만 다루는 완결된 문단 250~350자.");
+    expect(teaser).toContain("firstCard.body에서 이미 인용한 칩이나 메모는 다시 인용하지 않고");
+    // the first card's rules stay as they were
+    expect(teaser).toContain("firstCard.body: 첫 번째 카드만 다루는 완결된 문단 250~350자. 그림 사실 1~2문장 → 이 자리가 묻는 것 → 사용자의 칩이나 메모 반영(적어도 하나 인용) → 오늘 해 볼 수 있는 한 가지.");
+  });
+
+  it("gives the reading the written cards as data and tells it to leave their bodies to code and read on from them", () => {
+    const reading = part("## reading", "## daily");
+    expect(reading).toContain("<written_cards>가 있으면");
+    expect(reading).toContain('그 카드들의 body는 빈 문자열("")로 두고');
+    expect(reading).toContain("<written_cards>에서 이미 작은따옴표로 인용한 칩이나 메모는 다시 인용하지 않아요");
+    // without written cards the reading is told what it was told before
+    expect(reading).toContain("첫 번째 카드는 무료로 이미 보여 준 첫 장 풀이와 겹치지 않게 다른 그림 사실과 다른 각도로 써요.");
+    const written = [{ heading: "h1", body: "첫 장 <b>본문</b>이에요." }, { heading: "h2", body: "둘째 장 본문이에요." }];
+    const prompt = tarotReadingPrompt(ctx, written);
+    const inside = prompt.slice(prompt.indexOf("<written_cards>"), prompt.indexOf("</written_cards>"));
+    expect(inside).toContain(`[1] 자리 "${ctx.cards[0]!.position}" · ${ctx.cards[0]!.name}\n첫 장 b본문/b이에요.`);
+    expect(inside).toContain(`[2] 자리 "${ctx.cards[1]!.position}" · ${ctx.cards[1]!.name}\n둘째 장 본문이에요.`);
+    expect(tarotReadingPrompt(ctx)).not.toContain("<written_cards>");
+  });
+
+  it("the mock writes the second card of two-or-more-card spreads only, and passes the teaser validator", () => {
+    const teaser = mockTarotTeaser(ctx);
+    expect(teaser.secondCard?.heading).toBe(cardLabel(ctx.cards[1]!));
+    expect(validateTarotTeaser(teaser, ctx)).toEqual([]);
+    const daily = buildTarotContext("daily", pickCards(createDeck("one", 0.5), TEMPLATES.daily, [0]), null);
+    expect(mockTarotTeaser(daily)).not.toHaveProperty("secondCard");
+    expect(validateTarotTeaser(mockTarotTeaser(daily), daily).join(" ")).not.toMatch(/둘째 장/);
+  });
+
+  it("checks the second card like the first: present, its length, its picture, its orientation, no chip quoted again", () => {
+    const teaser = mockTarotTeaser(ctx);
+    const second = teaser.secondCard!;
+    const found = (secondCard: typeof second | undefined) => validateTarotTeaser({ ...teaser, secondCard }, ctx).join(" ");
+    expect(found(undefined)).toMatch(/둘째 장 풀이\(secondCard\)/);
+    expect(found({ ...second, body: "짧아요." })).toMatch(/둘째 장 풀이 길이/);
+    expect(found({ ...second, body: "오늘은 서두르지 않고 지금 할 수 있는 일 하나를 골라 해 보세요. ".repeat(6) })).toMatch(/둘째 장\(.+\)에 그 카드의 그림 사실/);
+    expect(teaser.firstCard.body).toContain("'수입이 들쭉날쭉'");
+    expect(validateTarotTeaser({ ...teaser, secondCard: { ...second, body: `${second.body} '수입이 들쭉날쭉'이라고 했죠.` } }, ctx).join(" ")).toMatch(/같은 입력을 여러 번/);
+    const flip = (orientation: "upright" | "reversed"): TarotContext => ({
+      ...ctx, cards: ctx.cards.map((c, i) => (i === 1 ? { ...c, orientation, reversedMode: orientation === "reversed" ? c.kb.reversedModes.default : null } : c)),
+    });
+    const readUpright = mockTarotTeaser(flip("upright")).secondCard!.body;
+    expect(validateTarotTeaser({ ...teaser, secondCard: { ...second, body: readUpright } }, flip("reversed")).join(" ")).toMatch(/둘째 장.*역방향으로 읽지 않았어요/);
+  });
+
+  it("asks the second card to reflect an input when the first left one out, never when the first used them all", () => {
+    const cards = ctx.cards.map(({ slot, position, cardId, orientation }) => ({ slot, position, cardId, orientation }));
+    const chips = [{ label: "지금 상황", value: "주말 플리마켓 준비" }, { label: "관심 방향", value: "부엌 찬장 정리" }];
+    const two = buildTarotContext("self-flow", cards, { ...MONEY_INPUT, conditions: chips, note: "" });
+    const teaser = mockTarotTeaser(two);
+    expect(teaser.secondCard!.body).toContain("'부엌 찬장 정리'");
+    const bare = teaser.secondCard!.body.replace(/'부엌 찬장 정리'라고 골랐으니 이 그림을 그 상황에 비춰 보면 좋아요\./, "");
+    expect(validateTarotTeaser({ ...teaser, secondCard: { ...teaser.secondCard!, body: bare } }, two).join(" ")).toMatch(/둘째 장 풀이에 사용자가 고른 조건이나 메모가 반영되지 않았어요/);
+    // one chip, quoted by the first card: the second card is not asked to bring it back
+    const one = buildTarotContext("self-flow", cards, { ...MONEY_INPUT, conditions: chips.slice(0, 1), note: "" });
+    expect(validateTarotTeaser({ ...mockTarotTeaser(one), secondCard: { ...teaser.secondCard!, body: bare } }, one).join(" ")).not.toMatch(/둘째 장 풀이에 사용자가 고른/);
+  });
+
+  it("reads on from the written cards: code fills their bodies, per-card rules skip them, whole-reading rules read the merged text", async () => {
+    const teaser = (await generateTarotTeaser(mockProvider, ctx)).data;
+    const written = [teaser.firstCard, teaser.secondCard!];
+    const { data } = await generateTarotReading(mockProvider, ctx, undefined, written);
+    expect(data.cards.map((c) => c.body)).toEqual([teaser.firstCard.body, teaser.secondCard!.body, mockTarotReading(ctx).cards[2]!.body]);
+    expect(data.cards.map((c) => c.cardId)).toEqual(ctx.cards.map((c) => c.cardId));
+    expect(data.cards.every((c) => c.heading.trim().length > 0)).toBe(true);
+
+    const draft = mockTarotReading(ctx, 2);
+    expect(draft.cards.map((c) => c.body === "")).toEqual([true, true, false]);
+    const merged = withWrittenCards(draft, written);
+    expect(validateTarotReading(merged, ctx, { written: 2 })).toEqual([]);
+    // without the option, the teaser's 250–350-character paragraphs are judged as 150–250-character card sections
+    const long = withWrittenCards(draft, written.map((w) => ({ ...w, body: `${w.body} ${w.body}` })));
+    expect(validateTarotReading(long, ctx).join(" ")).toMatch(/지금의 나 카드 절 길이/);
+    expect(validateTarotReading(long, ctx, { written: 2 }).join(" ")).not.toMatch(/카드 절 길이/);
+    // a written card with no heading still needs one
+    expect(validateTarotReading({ ...merged, cards: merged.cards.map((c, i) => (i === 0 ? { ...c, heading: " " } : c)) }, ctx, { written: 2 }).join(" ")).toMatch(/heading이 비었어요/);
+    // the whole is read merged: a chip a written card quoted, quoted again later, counts as said twice
+    const again = { ...merged, action: { ...merged.action, body: `${merged.action.body} '수입이 들쭉날쭉'이라고 했으니 천천히 해요.` } };
+    expect(validateTarotReading(again, ctx, { written: 2 }).join(" ")).toMatch(/같은 입력을 여러 번/);
+  });
+
+  it("the mock teaser and the reading opened with its seal pass every validator for every spread across many draws", () => {
+    for (const [who, topics] of Object.entries(TOPICS_BY_WHO) as Array<[NonNullable<TarotInput["whoId"]>, (typeof TOPICS_BY_WHO)["me"]]>) {
+      for (const topic of topics.filter((t) => t.template !== "daily")) {
+        for (let s = 0; s < 4; s++) {
+          const c = buildTarotContext(topic.template, draw(topic.template, `second-${who}-${topic.id}-${s}`), {
+            topicId: topic.id, whoId: who, whenId: topic.whens?.[0] ?? "month", question: "",
+            conditions: topic.conditions.map((x) => ({ label: x.label, value: x.options[0]! })), note: "요즘 이 일 때문에 고민이 많아요",
+          });
+          const label = `${who}/${topic.id}/${s}`;
+          expect([label, validateTarotTeaser(mockTarotTeaser(c), c)]).toEqual([label, []]);
+          expect([label, validateTarotReading(continuedMock(c), c, { written: 2 })]).toEqual([label, []]);
+        }
+      }
+    }
   });
 });
 
@@ -373,7 +492,7 @@ describe("provider selection", () => {
 
 describe("generateValidated", () => {
   const task = {
-    name: "tarot-teaser" as const, system: "s", user: "u", schema: TarotTeaserDraftSchema, effort: "low" as const, maxTokens: 10,
+    name: "tarot-teaser" as const, system: "s", user: "u", schema: OneCardTeaserDraftSchema, effort: "low" as const, maxTokens: 10,
     mock: () => ({ cards: [], firstCard: { heading: "", body: "" } }),
   };
 
@@ -405,12 +524,14 @@ describe("generateValidated", () => {
 
 describe("anthropic request", () => {
   it("turns every model-facing schema into a strict structured-output format", () => {
-    const schemas = [TarotTeaserDraftSchema, TarotReadingSchema, DailyDraftSchema, SajuTeaserDraftSchema, SajuReadingSchema, FollowUpAnswerSchema];
+    const schemas = [TarotTeaserDraftSchema, OneCardTeaserDraftSchema, TarotReadingSchema, DailyDraftSchema, SajuTeaserDraftSchema, SajuReadingSchema, FollowUpAnswerSchema];
     for (const schema of schemas) {
       const format = betaZodOutputFormat(schema);
       expect(format.type).toBe("json_schema");
       expect(format.schema).toMatchObject({ type: "object", additionalProperties: false });
     }
+    // 감질맛: a spread of two or more cards must write the second card (required, never optional to the model)
+    expect(betaZodOutputFormat(TarotTeaserDraftSchema).schema).toMatchObject({ required: expect.arrayContaining(["cards", "firstCard", "secondCard"]) });
   });
 
   it("uses claude-opus-5-5, adaptive thinking, explicit effort, structured output, a cached system prompt and the default fallback", () => {

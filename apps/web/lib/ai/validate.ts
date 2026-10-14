@@ -385,13 +385,25 @@ export function validateTarotTeaser(draft: TarotTeaserDraft, ctx: TarotContext):
   const body = draft.firstCard.body;
   lengthCheck("첫 장 풀이", body, 250, 350, out);
   cardSectionViolations(`첫 장(${cardLabel(first)})`, body, first, out);
-  const hasInputs = chosenChips(ctx).length > 0 || ctx.note !== "";
-  const usesInput = chosenChips(ctx).some((c) => mentions(body, c.value)) || (ctx.note !== "" && mentions(body, ctx.note, 0.3));
-  if (hasInputs && !usesInput) out.push("첫 장 풀이에 사용자가 고른 조건이나 메모가 하나도 반영되지 않았어요.");
-  commonTarotViolations([body, ...draft.cards.map((c) => c.keyword)].join("\n"), ctx, out);
-  voiceViolations(body, out);
-  inputRepeatViolations(body, quotedInputs(ctx), out);
-  aiTellViolations([body], out);
+  const inputs = [...chosenChips(ctx).map((c) => ({ text: c.value, share: 0.5 })), ...(ctx.note ? [{ text: ctx.note, share: 0.3 }] : [])];
+  const usedFirst = inputs.filter((input) => mentions(body, input.text, input.share));
+  if (inputs.length && !usedFirst.length) out.push("첫 장 풀이에 사용자가 고른 조건이나 메모가 하나도 반영되지 않았어요.");
+  // 감질맛 (owner 2026-10-14): the second card by the first card's rules. It reflects an input too, unless the first already
+  // used every one (it may not quote one again); a chip quoted in both is the soft repeat below.
+  const second = ctx.cards[1];
+  const secondBody = draft.secondCard?.body ?? "";
+  if (second && !draft.secondCard) out.push("둘째 장 풀이(secondCard)를 써 주세요.");
+  if (second && draft.secondCard) {
+    lengthCheck("둘째 장 풀이", secondBody, 250, 350, out);
+    cardSectionViolations(`둘째 장(${cardLabel(second)})`, secondBody, second, out);
+    const usesInput = inputs.some((input) => mentions(secondBody, input.text, input.share));
+    if (usedFirst.length < inputs.length && !usesInput) out.push("둘째 장 풀이에 사용자가 고른 조건이나 메모가 반영되지 않았어요. 첫 장에서 쓰지 않은 것 하나를 인용해 주세요.");
+  }
+  const bodies = secondBody ? [body, secondBody] : [body];
+  commonTarotViolations([...bodies, ...draft.cards.map((c) => c.keyword)].join("\n"), ctx, out);
+  voiceViolations(bodies.join("\n"), out);
+  inputRepeatViolations(bodies.join("\n"), quotedInputs(ctx), out);
+  aiTellViolations(bodies, out);
   return out;
 }
 
@@ -404,7 +416,11 @@ function paidBodyText(r: TarotReading): string[] {
   ];
 }
 
-export function validateTarotReading(draft: TarotReading, ctx: TarotContext): string[] {
+/**
+ * `written`: how many leading cards the teaser already wrote (감질맛, owner 2026-10-14). The draft comes merged with their
+ * bodies; per-card rules skip them (they passed as teaser sections, 250–350 characters), the whole-reading rules read it all.
+ */
+export function validateTarotReading(draft: TarotReading, ctx: TarotContext, opts: { written?: number } = {}): string[] {
   const out: string[] = [];
   const r = withoutBold(draft);
   modelNameViolations(r, out);
@@ -416,6 +432,7 @@ export function validateTarotReading(draft: TarotReading, ctx: TarotContext): st
     const card = ctx.cards[i];
     if (!card) return;
     if (!section.heading.trim()) out.push(`${card.position} 카드 절의 heading이 비었어요.`);
+    if (i < (opts.written ?? 0)) return;
     lengthCheck(`${card.position} 카드 절`, section.body, 150, 250, out);
     cardSectionViolations(`${card.position} 카드 절`, section.body, card, out);
   });

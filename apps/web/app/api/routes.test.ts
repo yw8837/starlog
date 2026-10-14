@@ -7,6 +7,7 @@ import { DEFAULT_SAJU_FORM, checkSajuForm, todayInKorea } from "@/lib/sajuForm";
 import { issueChapter } from "@/lib/security/chapterToken";
 import { dailyDeal } from "@/lib/security/drawToken";
 import { signingSecret } from "@/lib/security/sign";
+import { teaserCut } from "@/lib/security/teaserSeal";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { paidChapterOf } from "@/lib/testing/p4";
 import { GET as dailyDealState, POST as daily } from "./tarot/daily/route";
@@ -110,6 +111,50 @@ describe("tarot flow with the mock provider", () => {
     const capped = await d.call(followup, { chapterToken: token, reading: r.data.reading, question: "하나 더 물어봐도 될까요?" });
     expect(capped.status).toBe(429);
     expect(capped.data).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
+  });
+
+  it("감질맛: the teaser shows the second card cut near half and seals both cards; the reading opened with the seal reads on from them", async () => {
+    const d = device();
+    const { cards, drawToken } = await drawSelfFlow(d);
+    const spy = vi.spyOn(mockProvider, "generate");
+    const t = await d.call(teaser, { drawToken, input: MONEY_INPUT });
+    expect(t.status).toBe(200);
+    const draft = (await spy.mock.results[0]!.value).data as { firstCard: { body: string }; secondCard: { body: string } };
+    const full = draft.secondCard.body.trim();
+    // its heading is the code's card label, as on the locked list ("한 줄 결론", card 1, card 2, …)
+    expect(t.data.lockedToc[2]).toMatch(new RegExp(`^${cards[1]!.position} · `));
+    expect(t.data.secondCard).toEqual({ heading: t.data.lockedToc[2], body: teaserCut(full), cut: true });
+    const shown = t.data.secondCard.body as string;
+    expect(shown.length / full.length).toBeGreaterThanOrEqual(0.35);
+    expect(shown.length / full.length).toBeLessThanOrEqual(0.65);
+    // the rest never leaves the server as text (its words may echo the shown part, so the whole rest and its end are checked)
+    const rest = full.slice(shown.length).trim();
+    expect(JSON.stringify(t.data)).not.toContain(rest);
+    expect(JSON.stringify(t.data)).not.toContain(full.slice(-20));
+    expect(t.data.seal).toMatch(/^[A-Za-z0-9_-]+$/);
+
+    const r = await d.call(reading, { drawToken, input: MONEY_INPUT, seal: t.data.seal });
+    expect(r.status).toBe(200);
+    expect(r.data.reading.cards.map((c: { body: string }) => c.body).slice(0, 2)).toEqual([t.data.firstCard.body, full]);
+    expect(r.data.reading.cards[1].body.startsWith(shown)).toBe(true);
+    expect(r.data.reading.cards[2].body.length).toBeGreaterThan(100);
+  });
+
+  it("a seal that does not open or does not match reads the cards anew, with no error", async () => {
+    const d = device();
+    const { drawToken } = await drawSelfFlow(d);
+    const t = await d.call(teaser, { drawToken, input: MONEY_INPUT });
+    const asToday = (await device("203.0.113.30").call(reading, { drawToken, input: MONEY_INPUT })).data.reading.cards[0].body;
+    expect(asToday).not.toBe(t.data.firstCard.body);
+    // another question on the same draw, a broken seal, an oversized one
+    const other = await device("203.0.113.31").call(reading, { drawToken, input: { ...MONEY_INPUT, note: "다른 메모예요" }, seal: t.data.seal });
+    expect(other.status).toBe(200);
+    expect(other.data.reading.cards[0].body).not.toBe(t.data.firstCard.body);
+    for (const [ip, seal] of [["203.0.113.32", `${t.data.seal}x`], ["203.0.113.33", "A".repeat(12_001)]] as const) {
+      const res = await device(ip).call(reading, { drawToken, input: MONEY_INPUT, seal });
+      expect(res.status).toBe(200);
+      expect(res.data.reading.cards[0].body).toBe(asToday);
+    }
   });
 
   it("rejects a tampered or expired draw token and a reading that does not match its chapter token", async () => {

@@ -69,7 +69,10 @@ function angleText(card: TarotCardContext, angle: TopicAngle): string {
 const SECTION_BUDGET = 230;
 const count = (text: string) => text.replace(/\s/g, "").length;
 
-export function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: number, withNote: boolean, extra: string[] = [], budget = SECTION_BUDGET): string {
+/** `avoid`: words the optional sentences must not carry (the teaser's inputs, quoted once across its two cards). */
+export function cardBody(
+  ctx: TarotContext, card: TarotCardContext, factIndex: number, withNote: boolean, extra: string[] = [], budget = SECTION_BUDGET, avoid: readonly string[] = [],
+): string {
   const facts = factsOf(card.kb);
   const fact = facts[factIndex % facts.length]!;
   // the picture first, then 역방향 in the next sentence (reading-voice-2026-10 §2.7), never a lone "… 역방향으로 나왔어요."
@@ -85,7 +88,7 @@ export function cardBody(ctx: TarotContext, card: TarotCardContext, factIndex: n
     // The card's other image facts come last: a card whose KB text is mostly off this topic (8 of
     // Wands' 연락·소식 on a health reading) still reaches the section length with what it shows.
     ...facts.filter((f) => f !== fact).map((f) => factSentence(f.ko)),
-  ].filter((s): s is string => Boolean(s) && onTopic(ctx, s!));
+  ].filter((s): s is string => Boolean(s) && onTopic(ctx, s!) && !avoid.some((word) => s!.includes(word)));
   const parts = [...required];
   for (const sentence of optional) {
     if (count(parts.join("")) + count(sentence) <= budget) parts.splice(parts.length - (withNote && ctx.note ? 1 : 0), 0, sentence);
@@ -129,16 +132,22 @@ function actionOf(card: TarotCardContext, ctx?: TarotContext, index = 0): string
 // ---- tarot ----
 
 export function mockTarotTeaser(ctx: TarotContext): TarotTeaserDraft {
-  const first = ctx.cards[0]!;
-  const extra = [`내 상황에 비춰 보면 ${first.kb.core.oneLine[first.orientation]}로 읽어요.`, `${first.kb.keywordsKo.join(", ")} 같은 말을 오늘 하루 곁에 두면 좋아요.`];
-  const body = [cardBody(ctx, first, 0, true, extra, 300), `오늘은 ${actionOf(first, ctx)}`].join(" ");
+  // the first card with the note, the second (감질맛) with its own chips: no input is quoted twice, nor echoed by KB text
+  const inputs = [...chips(ctx), ...(ctx.note ? [ctx.note] : [])];
+  const section = (card: TarotCardContext, withNote: boolean) => {
+    const extra = [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}로 읽어요.`, `${card.kb.keywordsKo.join(", ")} 같은 말을 오늘 하루 곁에 두면 좋아요.`];
+    return { heading: cardLabel(card), body: [cardBody(ctx, card, 0, withNote, extra, 300, inputs), `오늘은 ${actionOf(card, ctx)}`].join(" ") };
+  };
+  const [first, second] = ctx.cards;
   return {
     cards: ctx.cards.map((c) => ({ position: c.position, cardId: c.cardId, keyword: c.kb.keywordsKo[0] ?? c.name })),
-    firstCard: { heading: cardLabel(first), body },
+    firstCard: section(first!, true),
+    ...(second ? { secondCard: section(second, false) } : {}),
   };
 }
 
-export function mockTarotReading(ctx: TarotContext): TarotReading {
+/** `written`: the leading cards the teaser already wrote (감질맛); their bodies are left empty for code to fill. */
+export function mockTarotReading(ctx: TarotContext, written = 0): TarotReading {
   const h = tarotHeadings(ctx);
   const [first] = ctx.cards as [TarotCardContext, ...TarotCardContext[]];
   const last = ctx.cards[ctx.cards.length - 1]!;
@@ -150,7 +159,7 @@ export function mockTarotReading(ctx: TarotContext): TarotReading {
     position: card.position,
     cardId: card.cardId,
     heading: `${card.name} · ${card.kb.keywordsKo[0] ?? card.position}`,
-    body: cardBody(ctx, card, 1, card.slot === 0, [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}로 읽어요.`]),
+    body: card.slot < written ? "" : cardBody(ctx, card, 1, card.slot === 0, [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}로 읽어요.`]),
   }));
 
   const labels = ctx.relational ? ["답이 빨리 오면", "답이 늦게 오면", "답이 없으면"] : ["흐름이 좋아지면", "그대로 머물면", "잠시 막히면"];

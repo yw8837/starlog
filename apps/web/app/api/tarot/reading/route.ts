@@ -5,6 +5,7 @@ import { tarotContextFrom } from "@/lib/api/tarotRequest";
 import { planUnlock, settlementFor } from "@/lib/api/unlock";
 import { tarotChapter } from "@/lib/readings/chapters";
 import { issueChapter } from "@/lib/security/chapterToken";
+import { openTeaserSeal } from "@/lib/security/teaserSeal";
 
 /**
  * POST {drawToken, input, unlock?} → {reading, chapterToken, readingId?}: the full reading for the
@@ -13,6 +14,8 @@ import { issueChapter } from "@/lib/security/chapterToken";
  *   after a validated generation; its chapter is marked `opening` (no follow-ups or share).
  * - paid / the signup gift: reserves the purchase or the gift first, then saves the reading to the
  *   account and spends it before the client sees it. Any failure gives it back (spec 5.4).
+ * - `seal` (감질맛): the teaser's two cards, for this draw and input only; the reading keeps them and reads on from the cut.
+ *   A seal that does not open is ignored: the reading is written as before.
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {
@@ -22,13 +25,14 @@ export async function POST(request: Request): Promise<Response> {
   if (limited) return limited;
   const parsed = await tarotContextFrom(request, gate);
   if (parsed instanceof Response) return parsed;
+  const written = await openTeaserSeal(parsed.seal, { drawToken: parsed.drawToken, input: parsed.input }, gate.secret, gate.now);
   const plan = await planUnlock(request, gate, "tarot", parsed.unlock);
   if (plan instanceof Response) return plan;
 
   return respondGeneration(
     request,
     async (hooks) => {
-      const reading = (await generateTarotReading(gate.provider, parsed.ctx, hooks)).data;
+      const reading = (await generateTarotReading(gate.provider, parsed.ctx, hooks, written ?? [])).data;
       const chapterToken = await issueChapter(
         {
           kind: "tarot", templateId: parsed.draw.templateId, input: parsed.input, cards: parsed.draw.cards.map((c) => [c.cardId, c.orientation]),

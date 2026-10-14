@@ -18,6 +18,19 @@
   line-height: var(--lh-prose);
 }
 
+/* 감질맛: the second card's cut part fades out over its last lines (decoration only; the text stays real text) */
+.cut {
+  -webkit-mask-image: linear-gradient(to bottom, #000 45%, rgb(0 0 0 / 0.2));
+  mask-image: linear-gradient(to bottom, #000 45%, rgb(0 0 0 / 0.2));
+}
+
+.nudge {
+  margin-top: 8px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
 .jump {
   display: flex;
   align-items: center;

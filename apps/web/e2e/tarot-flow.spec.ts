@@ -111,9 +111,13 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
   await expect(page.getByText("AI가 만든 풀이예요 · 재미와 자기 성찰을 위한 참고용이에요")).toBeVisible();
   // A money question never gets the relationship sample.
   await expect(page.locator("main")).not.toContainText("뜸해진", { useInnerText: true });
+  // 감질맛: the second card's first part ends in the nudge, and opening sends the teaser's seal so the reading reads on from it.
+  await expect(page.getByText("이어지는 이야기는 전체 풀이에서 열려요")).toBeVisible();
   await shot(page, info, "02-result");
 
+  const opened = page.waitForRequest((r) => r.url().endsWith("/api/tarot/reading"));
   await unlock.click();
+  expect(JSON.parse((await opened).postData() ?? "{}").seal).toEqual(expect.any(String));
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: 60_000 });
   const readingUrl = page.url();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("다음 주 금요일 면접, 내 재물 흐름은 어떨까?");

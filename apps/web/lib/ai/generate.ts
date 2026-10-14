@@ -17,9 +17,10 @@ import { generationSetting } from "./config";
 import { GenerationError, generateValidated, type GenerationHooks, type ReadingProvider, type Usage } from "./provider";
 import { mergeSajuReading, sajuEnrichmentFallback } from "./sajuParts";
 import {
-  DailyDraftSchema, FollowUpAnswerSchema, SajuEnrichmentSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema,
-  type DailyDraft, type FollowUpAnswer, type SajuEnrichment, type SajuGlance, type SajuReading, type SajuTeaser, type StoredSajuReading,
-  type StoredTarotReading, type TarotReading, type TarotTeaser,
+  DailyDraftSchema, FollowUpAnswerSchema, OneCardTeaserDraftSchema, SajuEnrichmentSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema,
+  TarotTeaserDraftSchema,
+  type DailyDraft, type FollowUpAnswer, type SajuEnrichment, type SajuGlance, type SajuReading, type SajuTeaser, type Section, type StoredSajuReading,
+  type StoredTarotReading, type TarotReading, type TarotTeaser, type TarotTeaserDraft,
 } from "./schemas";
 import {
   validateDaily, validateSajuEnrichment, validateSajuFollowUp, validateSajuMainReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading,
@@ -38,11 +39,12 @@ export interface Result<T> {
 }
 
 export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotContext, hooks?: GenerationHooks): Promise<Result<TarotTeaser>> {
-  const { data, usage } = await generateValidated(provider, {
+  const second = ctx.cards[1];
+  const { data, usage } = await generateValidated<TarotTeaserDraft>(provider, {
     name: "tarot-teaser",
     system: TAROT_SYSTEM,
     user: tarotTeaserPrompt(ctx),
-    schema: TarotTeaserDraftSchema,
+    schema: second ? TarotTeaserDraftSchema : OneCardTeaserDraftSchema,
     ...generationSetting("tarot-teaser"),
     mock: () => mockTarotTeaser(ctx),
   }, (draft) => validateTarotTeaser(draft, ctx), hooks);
@@ -50,26 +52,42 @@ export async function generateTarotTeaser(provider: ReadingProvider, ctx: TarotC
     data: {
       cards: ctx.cards.map((card, i) => ({ position: card.position, cardId: card.cardId, keyword: data.cards[i]!.keyword.trim() })),
       firstCard: { heading: cardLabel(ctx.cards[0]!), body: data.firstCard.body.trim() },
+      ...(second && data.secondCard ? { secondCard: { heading: cardLabel(second), body: data.secondCard.body.trim() } } : {}),
       lockedToc: tarotLockedToc(ctx),
     },
     usage,
   };
 }
 
-export async function generateTarotReading(provider: ReadingProvider, ctx: TarotContext, hooks?: GenerationHooks): Promise<Result<TarotReading>> {
+/** The reading with the teaser's written cards (감질맛) as its leading card bodies; the model's headings stay. */
+export const withWrittenCards = (reading: TarotReading, written: readonly Section[]): TarotReading => ({
+  ...reading,
+  cards: reading.cards.map((card, i) => {
+    const shown = written[i];
+    return shown ? { ...card, body: shown.body } : card;
+  }),
+});
+
+/**
+ * `written`: the teaser's first and second card, as its seal hands them back (lib/security/teaserSeal.ts). The model
+ * then writes card 3 onward and every other field reading on from them, and code puts their bodies in.
+ */
+export async function generateTarotReading(
+  provider: ReadingProvider, ctx: TarotContext, hooks?: GenerationHooks, written: readonly Section[] = [],
+): Promise<Result<TarotReading>> {
   const { data, usage } = await generateValidated(provider, {
     name: "tarot-reading",
     system: TAROT_SYSTEM,
-    user: tarotReadingPrompt(ctx),
+    user: tarotReadingPrompt(ctx, written),
     schema: TarotReadingSchema,
     ...generationSetting("tarot-reading"),
-    mock: () => mockTarotReading(ctx),
-  }, (reading) => validateTarotReading(reading, ctx), hooks);
+    mock: () => mockTarotReading(ctx, written.length),
+  }, (reading) => validateTarotReading(withWrittenCards(reading, written), ctx, { written: written.length }), hooks);
   const h = tarotHeadings(ctx);
   return {
     data: {
       ...data,
-      cards: data.cards.map((section, i) => ({ ...section, position: ctx.cards[i]!.position, cardId: ctx.cards[i]!.cardId })),
+      cards: withWrittenCards(data, written).cards.map((section, i) => ({ ...section, position: ctx.cards[i]!.position, cardId: ctx.cards[i]!.cardId })),
       connection: { ...data.connection, heading: h.connection },
       timing: { ...data.timing, heading: h.timing },
       scenarios: { ...data.scenarios, heading: h.scenarios },

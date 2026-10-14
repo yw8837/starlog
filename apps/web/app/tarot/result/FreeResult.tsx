@@ -48,7 +48,7 @@ function withHistory(input: TarotInput): TarotInput {
 
 /**
  * Step 3, in one scroll: the question as asked, the three cards the server dealt, the first card
- * read in full (the free teaser), the rest listed, and the unlock. Opening writes the full
+ * read in full and the second cut about halfway (the free teaser, 감질맛), the rest listed, and the unlock. Opening writes the full
  * reading, saves it on this device and goes to it. Sharing sends the site and the card names,
  * never the question or note.
  *
@@ -184,7 +184,11 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     checkAbort.current?.abort();
     window.scrollTo(0, 0);
     const plan = progressPlan("tarot-reading", { positions });
-    const body = { drawToken: draw.drawToken, input: withHistory(input), ...(chosen === "opening" ? {} : { unlock: { method: chosen } }) };
+    // the teaser's seal (감질맛): the reading keeps its two cards and reads on from the cut
+    const body = {
+      drawToken: draw.drawToken, input: withHistory(input), ...(chosen === "opening" ? {} : { unlock: { method: chosen } }),
+      ...(teaser?.seal ? { seal: teaser.seal } : {}),
+    };
     const startedAt = Date.now();
     if (chosen === "paid" || chosen === "free") firstTry.current ??= startedAt;
     // What the account held as it started: "kept" later means all of it is back.
@@ -291,6 +295,19 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 </h2>
                 <p className={s.prose}>{teaser.firstCard.body}</p>
               </Paper>
+              {teaser.secondCard ? (
+                <Paper as="article" aria-labelledby="second-card-title">
+                  <h2 id="second-card-title" className={s.cardHeading}>
+                    {teaser.secondCard.heading}
+                  </h2>
+                  {/* 감질맛: the server sends only this first part; the fade and the "…" are decoration, the words are real text */}
+                  <p className={`${s.prose} ${s.cut}`}>
+                    {teaser.secondCard.body}
+                    <span aria-hidden="true"> …</span>
+                  </p>
+                  <p className={s.nudge}>이어지는 이야기는 전체 풀이에서 열려요</p>
+                </Paper>
+              ) : null}
               {/* The sheet sits below the locked contents: a quiet way down right after the free part (QA-05). */}
               <a href="#unlock-title" className={s.jump}>
                 전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>

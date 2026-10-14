@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { SAJU_SYSTEM } from "./prompts/saju";
 import { TAROT_SYSTEM } from "./prompts/tarot";
 import { GenerationError, generateValidated, type ReadingProvider } from "./provider";
-import { TarotTeaserDraftSchema } from "./schemas";
+import { OneCardTeaserDraftSchema } from "./schemas";
 import { AI_TELL_THRESHOLD, STYLE_RULES, VOICE_PREFIX, aiTellViolations, aiTells, allowBold, isSoftViolation, softWarrantsRegeneration, stripBold } from "./style";
 
 /** Built from the style rules' "나쁜 예" lines plus the other tells they name. */
@@ -56,7 +56,7 @@ describe("AI-tell score", () => {
 
 describe("soft violations in generateValidated", () => {
   const task = {
-    name: "tarot-teaser" as const, system: "s", user: "u", schema: TarotTeaserDraftSchema, effort: "low" as const, maxTokens: 10,
+    name: "tarot-teaser" as const, system: "s", user: "u", schema: OneCardTeaserDraftSchema, effort: "low" as const, maxTokens: 10,
     mock: () => ({ cards: [], firstCard: { heading: "h", body: "b" } }),
   };
   const soft = "[문체] AI가 쓴 티가 나는 문장이 있어요.";

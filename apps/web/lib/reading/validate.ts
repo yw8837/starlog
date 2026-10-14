@@ -36,6 +36,7 @@ export const isSection = (value: unknown): value is Section => isRecord(value) &
 
 export function isTarotTeaser(value: unknown): value is TarotTeaserData {
   if (!isRecord(value) || !isSection(value.firstCard) || !isStrings(value.lockedToc) || !Array.isArray(value.cards)) return false;
+  if (!optional(value.secondCard, isSection) || !optional(value.seal, isString)) return false;
   return value.cards.length > 0 && value.cards.every((c) => isRecord(c) && typeof c.position === "string" && isCardId(c.cardId) && typeof c.keyword === "string");
 }
 

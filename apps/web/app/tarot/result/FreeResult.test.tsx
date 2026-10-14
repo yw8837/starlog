@@ -20,8 +20,8 @@ const CARDS = [
 const ID = "abcdefghij0123456789";
 const ORDER = "Ab3_dEf-Gh5iJk7Lm9No1Pq2";
 
-/** A question with dealt cards and its teaser, as the draw left them; returns the question. */
-function seed(): string {
+/** A question with dealt cards and its teaser (with `extra` fields), as the draw left them; returns the question. */
+function seed(extra: Record<string, unknown> = {}): string {
   const base: FlowState = { who: "me", topicId: "money", when: "week", conditions: {}, note: "" };
   const summary = summarizeFlow(base)!;
   const flow = { ...base, draw: { templateId: summary.template, drawToken: "signed.draw.token", cards: CARDS } };
@@ -31,6 +31,7 @@ function seed(): string {
     firstCard: { heading: "첫 장", body: "첫 카드 풀이" },
     lockedToc: ["흐름", "조언"],
     cards: CARDS.map((card) => ({ position: card.position, cardId: card.cardId, keyword: "열쇠" })),
+    ...extra,
   });
   return summary.question;
 }
@@ -312,6 +313,8 @@ describe("FreeResult and 오픈 기념 무료 once sales are open (owner 2026-10
     await waitFor(() => expect(router.push).toHaveBeenCalled());
     const sent = vi.mocked(fetch).mock.calls.find(([url]) => url === "/api/tarot/reading");
     expect(JSON.parse(String((sent?.[1] as RequestInit | undefined)?.body))).not.toHaveProperty("unlock");
+    // a teaser without a seal (kept before 감질맛) sends none
+    expect(JSON.parse(String((sent?.[1] as RequestInit | undefined)?.body))).not.toHaveProperty("seal");
   });
 
   it("once the server says it is used, a gift held is the gold choice again and 오픈 기념 무료 is no longer offered", async () => {
@@ -339,5 +342,46 @@ describe("FreeResult after the free teaser", () => {
     const firstCard = screen.getByText("첫 카드 풀이");
     expect(firstCard.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(jump.compareDocumentPosition(screen.getByText(/^소제목 2개/)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
+  afterEach(() => clearBetaUsage());
+  const SECOND = { heading: "흐름 · 바보", body: "둘째 카드 앞부분이에요.", cut: true };
+
+  it("shows the second card's first part as real text ending in a decorative …, the nudge, then the way down and the locked contents", async () => {
+    seed({ secondCard: SECOND, seal: "SEALED_teaser-1" });
+    stub({ me: [() => Response.json({ payments: false, login: false, owner: false, user: null })] });
+    render(<FreeResult instant />);
+    const second = await screen.findByRole("article", { name: "흐름 · 바보" });
+    expect(second.textContent).toContain("둘째 카드 앞부분이에요.");
+    const dots = [...second.querySelectorAll('[aria-hidden="true"]')].map((el) => el.textContent?.trim());
+    expect(dots).toContain("…");
+    const nudge = screen.getByText("이어지는 이야기는 전체 풀이에서 열려요");
+    expect(second.contains(nudge)).toBe(true);
+    const first = screen.getByText("첫 카드 풀이");
+    const jump = screen.getByRole("link", { name: "전체 풀이 보러 가기" });
+    expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(second.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(jump.compareDocumentPosition(screen.getByText(/^소제목 2개/)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("sends the teaser's seal with the unlock, so the reading reads on from the cut", async () => {
+    seed({ secondCard: SECOND, seal: "SEALED_teaser-1" });
+    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
+    const sent = vi.mocked(fetch).mock.calls.find(([url]) => url === "/api/tarot/reading");
+    expect(JSON.parse(String((sent?.[1] as RequestInit | undefined)?.body))).toMatchObject({ seal: "SEALED_teaser-1" });
+  });
+
+  it("shows no second card for a teaser kept before it", async () => {
+    seed();
+    stub({ me: [() => Response.json({ payments: false, login: false, owner: false, user: null })] });
+    render(<FreeResult instant />);
+    await screen.findByRole("link", { name: "전체 풀이 보러 가기" });
+    expect(screen.queryByText("이어지는 이야기는 전체 풀이에서 열려요")).toBeNull();
+    expect(screen.getAllByRole("article")).toHaveLength(1);
   });
 });

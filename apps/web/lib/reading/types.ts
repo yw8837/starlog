@@ -27,6 +27,10 @@ export interface DrawResponse {
 export interface TarotTeaserData {
   cards: Array<{ position: string; cardId: string; keyword: string }>;
   firstCard: Section;
+  /** 감질맛 (owner 2026-10-14): the second card's first part only, cut by the server (absent from teasers kept before it). */
+  secondCard?: Section & { cut: boolean };
+  /** Both cards in full, sealed by the server: sent back with the full reading, which reads on from the cut. */
+  seal?: string;
   lockedToc: string[];
 }
 

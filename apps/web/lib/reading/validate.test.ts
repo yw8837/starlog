@@ -35,6 +35,11 @@ describe("shape checks for what the reading API hands back (QA Q-02, Q-03)", () 
     expect(isTarotReading({ ...TAROT_SAMPLE.paid, followUps: [] })).toBe(true);
     expect(isTarotReadingResponse({ reading: READING, chapterToken: "t" })).toBe(true);
     expect(isTarotTeaser({ cards: [{ position: "p", cardId: "major-17-star", keyword: "k" }], firstCard: SECTION, lockedToc: ["a"] })).toBe(true);
+    // 감질맛 (owner 2026-10-14): the second card's first part and the seal; a teaser kept before them still reads
+    const teaser = { cards: [{ position: "p", cardId: "major-17-star", keyword: "k" }], firstCard: SECTION, lockedToc: ["a"] };
+    expect(isTarotTeaser({ ...teaser, secondCard: { ...SECTION, cut: true }, seal: "abc_-1" })).toBe(true);
+    expect(isTarotTeaser({ ...teaser, secondCard: { heading: "h" } })).toBe(false);
+    expect(isTarotTeaser({ ...teaser, seal: 3 })).toBe(false);
     expect(isSajuTeaser({ title: "t", summary: "s", lockedToc: [] })).toBe(true);
     expect(isSajuReadingResponse({ reading: { sections: [SECTION], observation: SECTION, followUps: [] }, chapterToken: "t" })).toBe(true);
     expect(isFollowUpData({ kind: "clarify", answer: "a", chapterToken: "t", remaining: 2 })).toBe(true);

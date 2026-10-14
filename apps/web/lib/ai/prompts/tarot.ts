@@ -321,15 +321,18 @@ ${MODEL_BLIND_RULE}
 
 ${HISTORY_RULE}`;
 
-const TAROT_FORMATS = `## teaser (무료 첫 장)
+const TAROT_FORMATS = `## teaser (무료 맛보기: 첫 장과 둘째 장)
 - cards: <cards>의 모든 카드를 순서대로. position과 cardId는 입력 그대로 복사해요. keyword는 그 자리에서 그 카드를 요약한 짧은 명사구(6~18자, 카드 이름 제외, 그림에 기댄 표현)예요.
 - firstCard.heading: <headings>의 firstCard 문구를 그대로 써요.
 - firstCard.body: 첫 번째 카드만 다루는 완결된 문단 250~350자. 그림 사실 1~2문장 → 이 자리가 묻는 것 → 사용자의 칩이나 메모 반영(적어도 하나 인용) → 오늘 해 볼 수 있는 한 가지. 다른 카드의 풀이나 전체 결론은 쓰지 않아요(그건 전체 풀이에 있어요).
+- secondCard.heading: <headings>의 secondCard 문구를 그대로 써요.
+- secondCard.body: 두 번째 카드만 다루는 완결된 문단 250~350자. firstCard.body와 같은 순서(그림 사실 1~2문장 → 이 자리가 묻는 것 → 사용자의 칩이나 메모 반영 → 오늘 해 볼 수 있는 한 가지)로 쓰고, 첫 번째 카드나 다른 카드의 풀이, 전체 결론은 쓰지 않아요. firstCard.body에서 이미 인용한 칩이나 메모는 다시 인용하지 않고, 아직 인용하지 않은 칩이나 메모가 있으면 그것을 인용해요. 오늘 해 볼 한 가지는 firstCard.body와 다른 종류로 골라요.
 - 굵게(**)는 쓰지 않아요.
 
 ## reading (전체 풀이, 합계 1,200~1,800자)
 - verdict: 한 줄 결론, 60자 이하. 결론과 그 조건(과 한계)을 한 번에 말해요. 해도 될지 묻는 질문이면 "괜찮아요 / 미뤄 보세요 / 기다려 보세요"처럼 결정이 드러나게 써요.
 - cards: <cards>의 모든 카드를 순서대로. position·cardId는 그대로 복사하고, heading은 "<카드명> · <그 자리에서의 뜻 요약>" 형식이에요. body는 카드마다 150~250자. 카드 절마다 핵심 구 하나를 **굵게** 해도 돼요(0~1개, 4~20자, 문장 전체·질문·카드 이름은 굵게 하지 않아요). 굵게는 카드 절에만 쓰고 다른 칸에는 쓰지 않아요. 첫 번째 카드는 무료로 이미 보여 준 첫 장 풀이와 겹치지 않게 다른 그림 사실과 다른 각도로 써요.
+- <written_cards>가 있으면 그 카드들의 본문은 무료 맛보기에서 이미 써서 사용자에게 보여 준 글이에요(위의 첫 번째 카드 규칙 대신 이 규칙을 따라요). cards에서 그 카드들의 body는 빈 문자열("")로 두고(코드가 그 글로 채워요), heading은 다른 카드처럼 "<카드명> · <그 자리에서의 뜻 요약>" 형식으로 써요. 나머지 카드와 다른 모든 칸은 그 글에 이어서 같은 말투로 써요: <written_cards>에 쓴 그림 문장을 되풀이하지 않고, <written_cards>에서 이미 작은따옴표로 인용한 칩이나 메모는 다시 인용하지 않아요. connection은 <written_cards>의 카드까지 함께 엮고, 합계 분량에는 <written_cards>의 본문도 들어가요.
 - connection: 세 그림의 구체적인 디테일을 하나의 흐름(무엇이 있고 → 무엇이 막고 → 어디로 가는지)으로 엮어 이 사용자의 상황을 읽어요(100~220자). 그림 셋을 쉼표로 나열하며 시작하지 말고 한 문장씩 이어요. 메이저 수, 원소 짝, 번호, 역방향 개수를 세기만 하는 문장은 쓰지 않아요. <spread_facts>는 그 사실이 이 상황을 다르게 읽게 할 때만, 그 뜻과 같은 문장 안에서 써요. 원소 짝은 "급한 마음과 묵묵한 마음이 부딪혀"처럼 쉬운 말로 써요.
 - timing: 사용자가 고른 시기 안에서 언제, 어떤 조건일 때 움직이면 좋을지(60~200자).
 - observation: 며칠에서 몇 주 안에 사용자가 직접 알아챌 수 있는 작고 확인 가능한 신호 하나(60~200자). 카드 그림 하나에 기대고, 무엇을 눈여겨보면 이 풀이가 맞는지 알 수 있는지 말해요. "~가 생겨요" 같은 예언이 아니라 "~를 눈여겨보세요"처럼 관찰로 써요.
@@ -493,17 +496,26 @@ export function spreadFacts(ctx: TarotContext): string {
 }
 
 export function tarotTeaserPrompt(ctx: TarotContext): string {
-  const first = ctx.cards[0]!;
-  return ["<task>teaser</task>", templateBlock(ctx, { firstCard: cardLabel(first) }), userDataBlock(ctx), cardsBlock(ctx)].join("\n");
+  const [first, second] = ctx.cards;
+  const headings = { firstCard: cardLabel(first!), ...(second ? { secondCard: cardLabel(second) } : {}) };
+  return ["<task>teaser</task>", templateBlock(ctx, headings), userDataBlock(ctx), cardsBlock(ctx)].join("\n");
 }
 
-export function tarotReadingPrompt(ctx: TarotContext): string {
+/** The teaser's cards the reader has already seen in full (the seal hands them back): the reading reads on from them. */
+export function writtenCardsBlock(ctx: TarotContext, written: ReadonlyArray<{ body: string }>): string {
+  const cards = written.map((section, i) => `[${i + 1}] 자리 "${ctx.cards[i]!.position}" · ${ctx.cards[i]!.name}\n${cleanUserText(section.body)}`);
+  return `<written_cards>\n${cards.join("\n")}\n</written_cards>`;
+}
+
+export function tarotReadingPrompt(ctx: TarotContext, written: ReadonlyArray<{ body: string }> = []): string {
   const h = tarotHeadings(ctx);
   const headings = {
     connection: h.connection, timing: h.timing, observation: h.observation, scenarios: h.scenarios, messages: h.messages, avoid: h.avoid,
     alternatives: h.alternatives, action: h.action,
   };
-  return ["<task>reading</task>", templateBlock(ctx, headings), userDataBlock(ctx), cardsBlock(ctx), spreadFacts(ctx)].join("\n");
+  const blocks = ["<task>reading</task>", templateBlock(ctx, headings), userDataBlock(ctx), cardsBlock(ctx), spreadFacts(ctx)];
+  if (written.length) blocks.push(writtenCardsBlock(ctx, written));
+  return blocks.join("\n");
 }
 
 export function dailyPrompt(ctx: TarotContext): string {

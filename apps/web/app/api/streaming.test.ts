@@ -87,8 +87,12 @@ describe("NDJSON streaming", () => {
     expect(events[0]).toEqual({ type: "start" });
     expect(events.at(-1)!.type).toBe("done");
     const sections = events.filter((e) => e.type === "section").map((e) => `${e.key}#${e.index}`);
-    expect(sections).toEqual(["cards#0", "cards#1", "cards#2", "firstCard#0"]);
-    expect(events.at(-1)!.data).toEqual(plain.data);
+    expect(sections).toEqual(["cards#0", "cards#1", "cards#2", "firstCard#0", "secondCard#0"]);
+    // the seal is sealed afresh each time (a random IV); the rest is the very same body
+    const { seal, ...rest } = events.at(-1)!.data as Record<string, unknown>;
+    const { seal: plainSeal, ...plainRest } = plain.data as Record<string, unknown>;
+    expect(rest).toEqual(plainRest);
+    expect([typeof seal, typeof plainSeal]).toEqual(["string", "string"]);
     expect(JSON.stringify(events.filter((e) => e.type === "section"))).not.toContain(plain.data.firstCard.body.slice(0, 10));
   });
 

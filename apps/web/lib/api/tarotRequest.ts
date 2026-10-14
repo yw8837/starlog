@@ -14,8 +14,11 @@ import { CUSTOM_TOPIC_ID, TarotBody, type TarotInputData } from "./inputs";
  * `topicText` is judged after cleaning (as the prompt will see it): text that cleans to nothing is
  * no topic, and a catalog topic ignores it (the chip path).
  */
-export async function tarotContextFrom(request: Request, gate: Gate): Promise<{ ctx: TarotContext; draw: OpenedDraw; input: Omit<TarotInputData, "history">; unlock?: UnlockMethod } | Response> {
-  const body = TarotBody.safeParse(await readJson(request, 8_000));
+export async function tarotContextFrom(
+  request: Request, gate: Gate,
+): Promise<{ ctx: TarotContext; draw: OpenedDraw; drawToken: string; input: Omit<TarotInputData, "history">; unlock?: UnlockMethod; seal?: string } | Response> {
+  // 8,000 bytes for the draw and the input, and room for the teaser's seal (at most 12,000 characters, inputs.ts)
+  const body = TarotBody.safeParse(await readJson(request, 20_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
   const draw = await openDraw(body.data.drawToken, gate.secret, gate.now);
   // The daily card and the premium spreads have their own routes.
@@ -36,5 +39,8 @@ export async function tarotContextFrom(request: Request, gate: Gate): Promise<{ 
   if (crisis) return crisis;
   // History shapes this prompt only; the chapter token (follow-ups) keeps the input without it.
   const { history, ...rest } = input;
-  return { ctx: buildTarotContext(draw.templateId, draw.cards, rest, { history: withoutCrisisItems(history, isCrisisText) }), draw, input: rest, unlock: body.data.unlock?.method };
+  return {
+    ctx: buildTarotContext(draw.templateId, draw.cards, rest, { history: withoutCrisisItems(history, isCrisisText) }),
+    draw, drawToken: body.data.drawToken, input: rest, unlock: body.data.unlock?.method, seal: body.data.seal,
+  };
 }

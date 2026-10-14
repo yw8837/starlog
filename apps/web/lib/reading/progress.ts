@@ -40,7 +40,7 @@ export function progressPlan(kind: GenerationKind, opts: { positions?: readonly 
   const cards = (opts.positions ?? []).map((position, index) => ({ key: "cards", index, caption: `${position} 카드를 읽고 있어요` }));
   switch (kind) {
     case "tarot-teaser":
-      return { opening: "카드를 읽고 있어요", stages: [...cards, one("firstCard", "첫 장을 풀어 적고 있어요")] };
+      return { opening: "카드를 읽고 있어요", stages: [...cards, one("firstCard", "첫 장을 풀어 적고 있어요"), one("secondCard", "둘째 장을 풀어 적고 있어요")] };
     case "tarot-reading":
       return {
         opening: "카드를 다시 읽고 있어요",

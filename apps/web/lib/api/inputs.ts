@@ -3,6 +3,7 @@ import { z } from "zod";
 import { HistorySchema } from "@/lib/ai/history";
 import { UNLOCK_METHODS } from "@/lib/pay/unlockMethod";
 import { findPlace } from "@/lib/sajuForm";
+import { MAX_TEASER_SEAL_CHARS } from "@/lib/security/teaserSeal";
 
 /** Request bodies. Every string is capped; unknown keys are dropped. */
 
@@ -53,6 +54,11 @@ export const TarotBody = z.object({
   drawToken: z.string().min(1).max(4096),
   input: TarotInputBody,
   unlock: UnlockBody.optional(),
+  /**
+   * The teaser's seal (감질맛, lib/security/teaserSeal.ts), sent with the full reading so it reads on from the cut. One that
+   * is not a string of the sealed size is dropped, never refused: the reading is then written as before.
+   */
+  seal: z.string().min(1).max(MAX_TEASER_SEAL_CHARS).optional().catch(undefined),
 });
 
 /** The saju form as the client holds it (lib/sajuForm.ts `SajuForm`). */
