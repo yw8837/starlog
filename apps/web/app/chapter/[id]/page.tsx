@@ -5,7 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
-import { INVITE_FIXTURE_TOKEN, TAROT_FOLLOW_UPS, TAROT_SAMPLE } from "@/lib/fixtures";
+import { INVITE_FIXTURE_TOKEN, TAROT_FOLLOW_UPS, TAROT_SAMPLE, demoInviteOn } from "@/lib/fixtures";
 import { NOT_FOUND_METADATA } from "@/lib/seo";
 import { LocalChapter } from "./LocalChapter";
 import { SampleChapter } from "./SampleChapter";
@@ -36,7 +36,7 @@ export default async function ChapterPage({ params }: PageProps<"/chapter/[id]">
             <SampleChapter
               sample={TAROT_SAMPLE}
               followUps={TAROT_FOLLOW_UPS}
-              inviteUrl={process.env.NODE_ENV === "production" ? undefined : `${SITE.url}/invite/${INVITE_FIXTURE_TOKEN}`}
+              inviteUrl={demoInviteOn() ? `${SITE.url}/invite/${INVITE_FIXTURE_TOKEN}` : undefined}
             />
           </>
         ) : (

@@ -57,7 +57,7 @@ async function toResult(page: Page) {
 test("owner mode: log in for the gift, open a tarot reading with it, pay for the next, see it in 내 정보 and refund an unopened one", async ({ page }, info) => {
   test.setTimeout(600_000);
   await ownAddress(page, info);
-  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE } })).ok()).toBe(true);
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
 
   // 1. A guest is asked to log in, with the free first tarot reading named on the sheet and the login page.
   await toResult(page);
@@ -134,7 +134,7 @@ async function toSajuTopic(page: Page) {
 test("owner mode, 주제별 사주: the 운 survives the login, the gift never opens it, 재물운 and 직장운 are each paid and open as themselves", async ({ page }, info) => {
   test.setTimeout(600_000);
   await ownAddress(page, info);
-  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE } })).ok()).toBe(true);
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
   await toSajuTopic(page);
   const money = page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" });
   // A guest is asked to log in to pay: no free reading is promised for saju.
@@ -180,7 +180,7 @@ test("owner mode, 주제별 사주: the 운 survives the login, the gift never o
 test("owner mode, 주제별 사주: a 재물운 checkout comes back as ?topic=money&unlock=paid, only ?unlock= leaves the address, and a reload on it shows 재물운", async ({ page }, info) => {
   test.setTimeout(600_000);
   await ownAddress(page, info);
-  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE } })).ok()).toBe(true);
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
   await toSajuTopic(page);
   await page.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).click();
   await expect(page).toHaveURL(/\/login\?next=%2Fsaju%2Fchart%3Ftopic%3Dmoney$/, { timeout: NAV });

@@ -25,6 +25,7 @@ afterEach(() => vi.unstubAllEnvs());
 describe("/chapter/sample's friend invite (QA-13)", () => {
   it("hands out no demo invite in production", async () => {
     vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("STARLOG_AI", "");
     const sample = propsOf(await ChapterPage(props("sample")), SampleChapter);
     expect(sample).not.toBeNull();
     expect(sample!.inviteUrl).toBeUndefined();
@@ -32,6 +33,9 @@ describe("/chapter/sample's friend invite (QA-13)", () => {
 
   it("keeps the demo invite in development and e2e", async () => {
     vi.stubEnv("NODE_ENV", "development");
+    expect(propsOf(await ChapterPage(props("sample")), SampleChapter)!.inviteUrl).toMatch(/\/invite\/abc123$/);
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("STARLOG_AI", "mock");
     expect(propsOf(await ChapterPage(props("sample")), SampleChapter)!.inviteUrl).toMatch(/\/invite\/abc123$/);
   });
 });

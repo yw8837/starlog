@@ -118,6 +118,12 @@ export const TAROT_FOLLOW_UPS: FollowUpFixture = {
 export const INVITE_FIXTURE_TOKEN = "abc123";
 
 /**
+ * The demo invite (QA-13): outside production, and on the e2e build of production, which runs the mock
+ * model (STARLOG_AI=mock; scripts/ops/deploy.sh unsets it, so a real deploy never shows it).
+ */
+export const demoInviteOn = (env: NodeJS.ProcessEnv = process.env) => env.NODE_ENV !== "production" || env.STARLOG_AI === "mock";
+
+/**
  * What a friend opening 하늘's invite sees. The friend always turns over the sun here, the same
  * card the story's pending friend scene shows (P2 stores the real draw).
  */

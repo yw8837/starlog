@@ -51,7 +51,7 @@ test("공유하기 makes the reading's own link: the cards and the reading for a
   await page.goto("/chapter/sharee2e01");
   await page.getByRole("button", { name: "공유하기" }).click();
   const sheet = page.getByRole("dialog", { name: "결과 공유하기" });
-  await expect(sheet).toContainText("질문과 직접 쓴 말, 이어서 물어본 내용은 보이지 않아요");
+  await expect(sheet).toContainText("질문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용은 보이지 않아요");
   await sheet.getByRole("button", { name: "공유 링크 만들기" }).click();
   await expect(sheet).toContainText(/\/s\/[a-z0-9]{12}/);
   const path = (/\/s\/[a-z0-9]{12}/.exec((await sheet.textContent()) ?? "") ?? [""])[0];
