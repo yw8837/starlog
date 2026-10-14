@@ -43,7 +43,7 @@ pnpm --filter @starlog/web cf:deploy > "$LOG/deploy.log" 2>&1; rc=$?; step "cf:d
 
 for i in $(seq 1 30); do v=$(curl -s https://starlog.yeolmaeapps.kr/api/version); echo "$v" | grep -q "$BUILD_ID" && break; sleep 4; done
 step "live /api/version: $v (want $BUILD_ID)"
-for u in https://starlog.yeolmaeapps.kr/ https://starlog.yeolmaeapps.kr/pricing https://starlog.yeolmaeapps.kr/refund https://starlog.yeolmaeapps.kr/now https://starlog.yeolmaeapps.kr/today https://starlog.yeolmaeapps.kr/login/review https://yeolmaeapps.kr/; do
+for u in https://starlog.yeolmaeapps.kr/ https://starlog.yeolmaeapps.kr/pricing https://starlog.yeolmaeapps.kr/refund https://starlog.yeolmaeapps.kr/now https://starlog.yeolmaeapps.kr/today https://starlog.yeolmaeapps.kr/login/review https://starlog.yeolmaeapps.kr/login https://yeolmaeapps.kr/; do
   step "$(curl -s -o /dev/null -w '%{http_code}' "$u") $u"
 done
 # The guide's home is the root domain's /: the tarot tab's old address redirects there.
