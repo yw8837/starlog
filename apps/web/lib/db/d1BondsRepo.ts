@@ -176,6 +176,9 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
     async deleteStar(id) {
       await run("DELETE FROM stars WHERE id = ?", id);
     },
+    async starsByFriend(friendKey, limit) {
+      return (await all<StarRecord>("SELECT * FROM stars WHERE friend_key = ? ORDER BY created_at DESC LIMIT ?", friendKey, limit)).map(toStar);
+    },
     async latestStarOf(ownerId, friendKey) {
       const star = await one<StarRecord>(
         `SELECT s.* FROM stars s JOIN constellations c ON c.id = s.constellation_id

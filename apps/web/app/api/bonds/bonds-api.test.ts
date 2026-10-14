@@ -93,6 +93,25 @@ describe("bonds API", () => {
     expect(body.weekTop).toMatchObject({ sign: expect.any(String), total: expect.any(Number) });
   });
 
+  it("lists under `joined` the constellations a friend device joined, members by nickname only; an owner sees theirs too (owner 2026-10-14)", async () => {
+    const { owner, code } = await startOwner("민지", "aquarius");
+    const friend: Jar = new Map();
+    let res = await joinPost(req("/api/bonds/join", friend, { code, nickname: "용우", birth: ME, pick: 0, message: "비밀 쪽지" }, "3.3.3.1"));
+    absorb(friend, res);
+    expect(res.status).toBe(200);
+    res = await joinPost(req("/api/bonds/join", new Map(), { code, nickname: "지수", birth: { calendar: "solar", year: 1991, month: 5, day: 12 }, pick: 1 }, "3.3.3.2"));
+    expect(res.status).toBe(200);
+    const body = (await (await meGet(req("/api/bonds/me", friend))).json()) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      owner: null,
+      joined: [{ ownerNickname: "민지", sign: "aquarius", status: "filling", filled: 2, members: [{ nickname: "용우", me: true }, { nickname: "지수", me: false }] }],
+    });
+    expect(JSON.stringify(body.joined)).not.toMatch(/비밀 쪽지|friendKey|constellationId|ownerId/);
+    // the owner's own view has no `joined` (nothing joined from that device), and the home row's light view never asks
+    expect(Object.keys((await (await meGet(req("/api/bonds/me", owner))).json()) as object)).not.toContain("joined");
+    expect(Object.keys((await (await meGet(req("/api/bonds/me?view=home", friend))).json()) as object)).not.toContain("joined");
+  });
+
   it("refuses self-joins", async () => {
     const { owner, code } = await startOwner("용우", "leo");
     const self = await joinPost(req("/api/bonds/join", owner, { code, nickname: "나야", birth: ME, pick: 0 }));

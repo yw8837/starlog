@@ -259,6 +259,11 @@ test.describe("별자리 인연 · friend", () => {
     await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveCount(0);
     await page.getByRole("link", { name: "나도 내 별자리 만들기" }).click();
     await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
+    // 내가 들어간 별자리 (owner 2026-10-14): the joined constellation with 나 among its members
+    const joined = page.getByRole("region", { name: "내가 들어간 별자리" });
+    await expect(joined).toContainText("용우님의 양자리");
+    await expect(joined).toContainText(" · 나");
+    await expect(joined).not.toContainText("늘 고마워");
   });
 
   test("a revoked code and an unknown code get the same answer", async ({ page, baseURL }) => {

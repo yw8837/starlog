@@ -105,6 +105,13 @@ export function createMemoryBondsRepo(): BondsRepo {
       for (const [key, s] of stars) if (s.constellationId === id) stars.delete(key);
       constellations.delete(id);
     },
+    async starsByFriend(friendKey, limit) {
+      return [...stars.values()]
+        .filter((s) => s.friendKey === friendKey)
+        .sort((a, b) => b.createdAt - a.createdAt)
+        .slice(0, limit)
+        .map(copy);
+    },
     async starsOf(constellationId) {
       return starsIn(constellationId).sort((a, b) => a.slot - b.slot).map(copy);
     },

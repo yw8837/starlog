@@ -75,3 +75,35 @@ describe("BondsView how-to (3 steps)", () => {
     expect(within(dialog).getAllByRole("listitem")).toHaveLength(3);
   });
 });
+
+describe("BondsView 내가 들어간 별자리 (owner 2026-10-14)", () => {
+  const JOINED = [
+    { ownerNickname: "민지", sign: "aquarius", status: "filling", filled: 3, slots: 7, members: [{ nickname: "지수", me: false }, { nickname: "용우", me: true }, { nickname: "하늘", me: false }] },
+    { ownerNickname: "도윤", sign: "virgo", status: "complete", filled: 6, slots: 6, members: [{ nickname: "용우", me: true }] },
+  ];
+  const listed = () =>
+    within(screen.getByRole("region", { name: "내가 들어간 별자리" }))
+      .getAllByRole("listitem")
+      .map((li) => li.textContent);
+
+  it("lists the friends' constellations this device joined under the owner's own, with 나 in its place", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ...OWNER_ME, joined: JOINED }))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    expect(listed()).toEqual(["민지님의 물병자리3/7지수 · 나 · 하늘", "도윤님의 처녀자리완성나"]);
+  });
+
+  it("shows them on the start screen too, for a device that only joined", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null, joined: JOINED }))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("button", { name: "별자리 인연 시작하기" });
+    expect(listed()).toHaveLength(2);
+  });
+
+  it("shows no list when the device joined nothing", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(OWNER_ME))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    expect(screen.queryByRole("region", { name: "내가 들어간 별자리" })).toBeNull();
+  });
+});

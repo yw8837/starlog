@@ -16,13 +16,13 @@ import { SignPicker } from "@/components/bonds/SignPicker";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { bondsApi, bondsMessage, copyText, markSeen, savedSunSign, seenUntil } from "@/lib/bonds/client";
-import type { OwnerView } from "@/lib/bonds/service";
+import type { JoinedView, OwnerView } from "@/lib/bonds/service";
 import { OwnerSetup } from "./OwnerSetup";
 import { StarList } from "./StarList";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./BondsView.module.css";
 
-type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null };
+type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null; joined?: JoinedView[] };
 
 /**
  * 별자리 인연, the owner's single scroll (spec §3): the constellation being filled with its stars, the
@@ -81,6 +81,7 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
       <>
         <Intro />
         <OwnerSetup onDone={load} />
+        <JoinedList joined={me.joined ?? []} />
         <JoinByCode />
       </>
     );
@@ -128,6 +129,35 @@ function Intro() {
   );
 }
 
+/**
+ * 내가 들어간 별자리 (owner 2026-10-14): friends' constellations this device joined, newest first, each with
+ * whose it is, how far it is filled and who is in it (나 for this device). Nothing when it joined none.
+ */
+function JoinedList({ joined }: { joined: JoinedView[] }) {
+  if (!joined.length) return null;
+  return (
+    <section className={s.section} aria-labelledby="joined-title">
+      <div className={b.sectionHead}>
+        <h2 id="joined-title" className={b.sectionTitle}>
+          내가 들어간 별자리
+        </h2>
+        <span className={b.count}>{joined.length}개</span>
+      </div>
+      <ul className={s.joined}>
+        {joined.map((item, i) => (
+          <li key={`${item.ownerNickname}-${item.sign}-${i}`}>
+            <p className={s.joinedHead}>
+              <span className={s.joinedName}>{`${item.ownerNickname}님의 ${getConstellation(item.sign).ko}`}</span>
+              <span className={s.joinedState}>{item.status === "complete" ? "완성" : `${item.filled}/${item.slots}`}</span>
+            </p>
+            <p className={s.joinedMembers}>{item.members.map((m) => (m.me ? "나" : m.nickname)).join(" · ")}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** 초대코드로 참여: someone else's code, for people who arrive here first. */
 function JoinByCode() {
   return (
@@ -140,7 +170,7 @@ function JoinByCode() {
   );
 }
 
-function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
+function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null; joined?: JoinedView[] }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
   const { owner, invite, filling, completed, top5, ranks } = view;
   const completedSigns = completed.map((c) => c.sign);
   const mySign = savedSunSign();
@@ -214,6 +244,8 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
           <StarList sign={latest.sign} stars={latest.stars} fresh={fresh} complete otherFilling={fillingInfo} onChanged={reload} />
         </details>
       ) : null}
+
+      <JoinedList joined={view.joined ?? []} />
 
       <section className={s.section} aria-labelledby="dogam-title">
         <div className={b.sectionHead}>

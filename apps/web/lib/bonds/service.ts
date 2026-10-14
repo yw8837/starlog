@@ -4,7 +4,7 @@ import {
   seededRandom,
   type BondBasis, type BondBirth, type BondPart, type Orientation, type SignId,
 } from "@starlog/core";
-import type { BondsRepo, ConstellationRow, InviteRow, OwnerRow, RankingEntry, StarRow } from "@/lib/db/bondsRepo";
+import type { BondsRepo, ConstellationRow, ConstellationStatus, InviteRow, OwnerRow, RankingEntry, StarRow } from "@/lib/db/bondsRepo";
 import { kstDay } from "@/lib/security/quota";
 import { randomId } from "@/lib/security/sign";
 import { bondCardLine } from "./bondCardText";
@@ -284,6 +284,49 @@ export async function resolveInvite(repo: BondsRepo, code: string): Promise<Invi
   }
   const stars = await repo.starsOf(filling.id);
   return { ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, allDone: false };
+}
+
+// ---- 내가 들어간 별자리 (owner 2026-10-14) ----
+
+export interface JoinedView {
+  ownerNickname: string;
+  sign: SignId;
+  status: ConstellationStatus;
+  filled: number;
+  slots: number;
+  /** the stars in slot order, by nickname only (never a message); `me` is this device's */
+  members: Array<{ nickname: string; me: boolean }>;
+}
+
+/** How many joined constellations the list shows. */
+export const JOINED_LIMIT = 12;
+
+/**
+ * The constellations this friend device has a star in, newest join first: whose, which sign, how far
+ * filled and who else is in it. Its own owner's constellations are left out (a self-join is refused,
+ * so only an owner made later on this device could match).
+ */
+export async function joinedView(repo: BondsRepo, friendKey: string, ownerId: string | null): Promise<JoinedView[]> {
+  const views: JoinedView[] = [];
+  const seen = new Set<string>();
+  for (const star of await repo.starsByFriend(friendKey, JOINED_LIMIT * 2)) {
+    if (seen.has(star.constellationId) || views.length >= JOINED_LIMIT) continue;
+    seen.add(star.constellationId);
+    const row = await repo.getConstellation(star.constellationId);
+    if (!row || row.ownerId === ownerId) continue;
+    const owner = await repo.getOwner(row.ownerId);
+    if (!owner) continue;
+    const stars = await repo.starsOf(row.id);
+    views.push({
+      ownerNickname: owner.nickname,
+      sign: row.sign,
+      status: row.status,
+      filled: stars.length,
+      slots: getConstellation(row.sign).slots,
+      members: stars.map((s) => ({ nickname: s.nickname, me: s.id === star.id })),
+    });
+  }
+  return views;
 }
 
 // ---- joining ----

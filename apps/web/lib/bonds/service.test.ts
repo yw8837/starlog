@@ -3,7 +3,7 @@ import { bondBasis, bondScore } from "@starlog/core";
 import { createMemoryBondsRepo } from "@/lib/db/memoryBondsRepo";
 import { CONSTELLATIONS } from "@starlog/core";
 import {
-  BondsError, RANKING_LIMIT, chooseSign, inviteOf, invitePage, joinStar, nextSignAfter, ownerView, rankingView, refill, regenerateInvite, removeStar, resolveInvite, saveOwner,
+  BondsError, RANKING_LIMIT, chooseSign, inviteOf, invitePage, joinStar, joinedView, nextSignAfter, ownerView, rankingView, refill, regenerateInvite, removeStar, resolveInvite, saveOwner,
   switchSign, todayBondCard,
 } from "./service";
 
@@ -444,4 +444,35 @@ describe("bonds service", () => {
     const near = await rankingView(repo, t0 + 100, "aries", "r2");
     expect(near.all.find((r) => r.mine)).toMatchObject({ rank: 3, nickname: "주인2" });
   });
+
+  it("lists the constellations this device joined, newest first: owner, sign, progress and the members in slot order with 나 (owner 2026-10-14)", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    await saveOwner(repo, t0, "o2", { nickname: "민지", birth: friends[3]! });
+    const other = (await inviteOf(repo, t0, "o2")).code;
+    await chooseSign(repo, t0, "o2", "aquarius");
+    await join(repo, t0 + 1, code, 0); // f0 = 친구0 in 용우's 양자리
+    await join(repo, t0 + 2, code, 1); // f1 = 친구1
+    await joinStar(repo, t0 + 3, { code: other, friendKey: "f1", nickname: "친구1", birth: friends[1]!, pick: 1, message: "비밀 메시지" });
+    await joinStar(repo, t0 + 4, { code: other, friendKey: "f2", nickname: "친구2", birth: friends[2]!, pick: 2, message: null });
+
+    const joined = await joinedView(repo, "f1", null);
+    expect(joined.map((j) => [j.ownerNickname, j.sign])).toEqual([["민지", "aquarius"], ["용우", "aries"]]);
+    expect(joined[0]).toMatchObject({ status: "filling", filled: 2 });
+    expect(joined[0]!.members).toEqual([{ nickname: "친구1", me: true }, { nickname: "친구2", me: false }]);
+    expect(joined[1]!.members).toEqual([{ nickname: "친구0", me: false }, { nickname: "친구1", me: true }]);
+    expect(JSON.stringify(joined)).not.toContain("비밀 메시지");
+    expect(await joinedView(repo, "nobody", null)).toEqual([]);
+  });
+
+  it("leaves out a constellation this device's owner owns, and one whose star was removed", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    const { star } = await join(repo, t0 + 1, code, 0);
+    expect(await joinedView(repo, "f0", "o1")).toEqual([]);
+    expect(await joinedView(repo, "f0", null)).toHaveLength(1);
+    await removeStar(repo, t0 + 2, "o1", star.id);
+    expect(await joinedView(repo, "f0", null)).toEqual([]);
+  });
 });
+

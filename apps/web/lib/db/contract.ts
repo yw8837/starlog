@@ -180,6 +180,20 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect(await repo.latestStarOf("o1", "nobody")).toBeNull();
   });
 
+  it("lists a friend device's stars across everyone's constellations, newest first, up to the limit", async () => {
+    const repo = await make();
+    await repo.upsertOwner(owner("o1", "용우"));
+    await repo.upsertOwner(owner("o2", "다른"));
+    await repo.insertConstellation(con("c1", "o1", 0, null, "aries"));
+    await repo.insertConstellation(con("c3", "o2", 0, null, "aries"));
+    await repo.insertStar(star("old", "c1", 0, "fx", 100));
+    await repo.insertStar(star("someone", "c1", 1, "fy", 150));
+    await repo.insertStar(star("new", "c3", 0, "fx", 300));
+    expect((await repo.starsByFriend("fx", 10)).map((s) => s.id)).toEqual(["new", "old"]);
+    expect((await repo.starsByFriend("fx", 1)).map((s) => s.id)).toEqual(["new"]);
+    expect(await repo.starsByFriend("nobody", 10)).toEqual([]);
+  });
+
   it("counts removals and switches per owner per day", async () => {
     const repo = await make();
     await repo.upsertOwner(owner("o1", "용우"));

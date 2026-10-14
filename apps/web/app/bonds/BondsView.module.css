@@ -417,3 +417,48 @@
     opacity: 0.55;
   }
 }
+
+/* ---- 내가 들어간 별자리 ---- */
+
+.joined {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.joined li {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+}
+
+.joinedHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.joinedName {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.joinedState {
+  flex: none;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.joinedMembers {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}

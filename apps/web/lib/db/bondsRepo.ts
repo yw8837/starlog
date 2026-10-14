@@ -48,6 +48,8 @@ export interface BondsRepo {
   /** Count one removal or switch on the owner's `day`; the count for that day after it. */
   bumpActions(ownerId: string, day: string): Promise<number>;
   deleteStar(id: string): Promise<void>;
+  /** This friend device's stars in anyone's constellations, newest first (내가 들어간 별자리). */
+  starsByFriend(friendKey: string, limit: number): Promise<StarRow[]>;
   /** This friend device's most recent star in any of the owner's constellations, with that constellation. */
   latestStarOf(ownerId: string, friendKey: string): Promise<{ star: StarRow; constellation: ConstellationRow } | null>;
   ranking(sign: SignId, since: number | null, limit: number): Promise<RankingEntry[]>; // public owners, complete, total desc, completedAt asc
