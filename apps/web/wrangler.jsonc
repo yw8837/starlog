@@ -39,7 +39,7 @@
   "triggers": { "crons": ["*/10 * * * *"] },
   // Public-beta cost cap per KST day in KRW (lib/api/spend.ts trips at 80%). Prepaid Anthropic credits
   // with auto-reload off are the hard backstop.
-  "vars": { "BETA_DAILY_BUDGET_KRW": "15000" },
+  "vars": { "BETA_DAILY_BUDGET_KRW": "50000" },
   // Per-IP limits for AI generation (lib/security/rateLimit.ts LIMITS_PER_MINUTE must match).
   // Owners get the 5x limiters; full readings have their own tighter one; owner-code attempts too.
   "ratelimits": [
