@@ -129,5 +129,8 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       return { title: "환불할 수 없는 결제예요", body: "이미 연 풀이이거나 환불을 처리하고 있어요.", action: null };
     case "REFUND_WINDOW_CLOSED":
       return { title: "환불 가능 기간이 지났어요", body: "문제가 있으면 문의해 주세요.", action: null };
+    case "BOT_CHECK":
+      // The Turnstile challenge could not be passed (script blocked, failed or timed out); a retry runs it again.
+      return { title: "보안 확인을 마치지 못했어요", body: "다시 시도해 주세요.", action: "retry" };
   }
 }

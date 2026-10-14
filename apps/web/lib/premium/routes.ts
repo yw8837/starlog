@@ -1,6 +1,7 @@
 import "server-only";
 import { checkQuota, crisisResponse, errorResponse, fullReadingLimit, openGate, readJson, spendCookies } from "@/lib/api/http";
 import { respondGeneration } from "@/lib/api/stream";
+import { checkBot } from "@/lib/api/turnstile";
 import { issueChapter } from "@/lib/security/chapterToken";
 import type { Adapter } from "./adapters";
 import { premiumOpen } from "./flags";
@@ -13,12 +14,15 @@ import { holdsUnused, planPremiumUnlock, premiumSettlement } from "./unlock";
 /**
  * POST /api/premium/<id>/teaser: the free preview (spec §5, the 시험 사용 of 전자상거래법 17조 2항 5호).
  * Open while the product is on sale for this device, or for a user who already bought it. Counts
- * as a teaser (daily cookie quota and the network counter), like the standard first-card preview.
+ * as a teaser (daily cookie quota and the network counter), like the standard first-card preview,
+ * and asks for a browser check first when Turnstile is on (lib/api/turnstile.ts).
  */
 export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter<B, C>) {
   return async function POST(request: Request): Promise<Response> {
     const gate = await openGate(request);
     if (gate instanceof Response) return gate;
+    const bot = await checkBot(request, gate);
+    if (bot) return bot;
     const parsed = adapter.teaserBody.safeParse(await readJson(request, TEASER_MAX_BYTES));
     if (!parsed.success) return errorResponse("BAD_REQUEST");
     if (!premiumOpen(adapter.id, gate.owner, gate.now) && !(await holdsUnused(request, gate.now, adapter.id))) return errorResponse("NOT_AVAILABLE");

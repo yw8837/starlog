@@ -6,6 +6,7 @@ import {
   checkServerLimits, clientKey, errorResponse, json, openGate, parseCookies, readJson, serializeCookie, type CookieSpec,
 } from "@/lib/api/http";
 import { respondGeneration } from "@/lib/api/stream";
+import { checkBot } from "@/lib/api/turnstile";
 import { DAILY_COOKIE, dailyCookie, readDaily, type DailyState } from "@/lib/security/dailyCookie";
 import { DAILY_DEAL_SIZE, dailyDeal, dailyLuckyNumber } from "@/lib/security/drawToken";
 import { QUOTA_COOKIE_MAX_AGE, kstDay, nextKstMidnight, quotaLimits } from "@/lib/security/quota";
@@ -23,6 +24,7 @@ import { randomId, signingSecret } from "@/lib/security/sign";
  *   every later POST that day returns it, whatever it picks. An invalid pick is 400; a missing one
  *   counts as 0 (clients from before the deal).
  * Generations are capped per device (BETA_DAILY_PER_DAY, the cookie) and by the server limits.
+ * POST asks for a browser check first when Turnstile is on (lib/api/turnstile.ts).
  * POST streams NDJSON progress with `Accept: application/x-ndjson`.
  */
 
@@ -54,6 +56,8 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
   if (gate instanceof Response) return gate;
+  const bot = await checkBot(request, gate);
+  if (bot) return bot;
   const body = await readJson(request, 1_000);
   if (body === null || typeof body !== "object" || Array.isArray(body)) return errorResponse("BAD_REQUEST");
   const requested = (body as { pick?: unknown }).pick;

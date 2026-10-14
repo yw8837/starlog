@@ -3,16 +3,20 @@ import { teaserFreshUntil } from "@/lib/ai/prompts/sajuTopics";
 import { checkQuota, openGate, spendCookies } from "@/lib/api/http";
 import { sajuRequest } from "@/lib/api/sajuRequest";
 import { respondGeneration } from "@/lib/api/stream";
+import { checkBot } from "@/lib/api/turnstile";
 
 /**
  * POST {birth, topic?, loveStatus?, workStatus?, history?} → the free teaser {title, summary, lockedToc,
  * freshUntil} (a topic adds `topic`), written from the chart the server computes itself. One of the day's
- * teasers whatever the topic, spent only after a validated generation (saju-topics spec §9.1). Streams
- * NDJSON progress with `Accept: application/x-ndjson`.
+ * teasers whatever the topic, spent only after a validated generation (saju-topics spec §9.1). A browser
+ * check first when Turnstile is on (lib/api/turnstile.ts). Streams NDJSON progress with
+ * `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
   if (gate instanceof Response) return gate;
+  const bot = await checkBot(request, gate);
+  if (bot) return bot;
   const parsed = await sajuRequest(request, gate);
   if (parsed instanceof Response) return parsed;
   const quota = await checkQuota(gate, "teaser");

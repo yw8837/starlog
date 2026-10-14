@@ -39,7 +39,10 @@
   "triggers": { "crons": ["*/10 * * * *"] },
   // Free-tier cost cap per KST day in KRW (lib/api/spend.ts trips at 80%); "off" = no day cap (owner
   // 2026-10-15). Prepaid Anthropic credits with auto-reload off are the hard backstop.
-  "vars": { "BETA_DAILY_BUDGET_KRW": "off" },
+  // TURNSTILE_SITE_KEY: the Turnstile widget's public site key (lib/api/turnstile.ts). The bot check
+  // on the free generations runs only with it and the TURNSTILE_SECRET_KEY secret both set; empty = off.
+  // Set it here, not in the dashboard: a deploy replaces the dashboard's vars with these.
+  "vars": { "BETA_DAILY_BUDGET_KRW": "off", "TURNSTILE_SITE_KEY": "" },
   // Per-IP limits for AI generation (lib/security/rateLimit.ts LIMITS_PER_MINUTE must match).
   // Owners get the 5x limiters; full readings have their own tighter one; owner-code attempts too.
   "ratelimits": [

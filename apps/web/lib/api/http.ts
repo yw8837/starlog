@@ -20,7 +20,7 @@ import { budgetState, clientCount, overNetworkBudget, type SpendKind } from "./s
 export type ErrorCode =
   | "BAD_REQUEST" | "BAD_TOKEN" | "BETA_LIMIT" | "RATE_LIMIT" | "AI_UNAVAILABLE" | "REFUSED" | "QUALITY" | "UPSTREAM"
   | "LOGIN_REQUIRED" | "PAYMENT_REQUIRED" | "NO_CREDIT" | "PAY_FAILED" | "FORBIDDEN"
-  | "NOT_AVAILABLE" | "PAY_PENDING" | "NOT_REFUNDABLE" | "REFUND_WINDOW_CLOSED" | "PAY_UNAVAILABLE";
+  | "NOT_AVAILABLE" | "PAY_PENDING" | "NOT_REFUNDABLE" | "REFUND_WINDOW_CLOSED" | "PAY_UNAVAILABLE" | "BOT_CHECK";
 
 const STATUS: Record<ErrorCode, number> = {
   BAD_REQUEST: 400,
@@ -41,6 +41,7 @@ const STATUS: Record<ErrorCode, number> = {
   NOT_REFUNDABLE: 409,
   REFUND_WINDOW_CLOSED: 409,
   PAY_UNAVAILABLE: 503,
+  BOT_CHECK: 403,
 };
 
 const MESSAGE: Record<ErrorCode, string> = {
@@ -64,6 +65,8 @@ const MESSAGE: Record<ErrorCode, string> = {
   NOT_REFUNDABLE: "이미 연 풀이이거나 환불할 수 없는 결제예요.",
   REFUND_WINDOW_CLOSED: `환불 가능 기간(결제일로부터 ${REFUND_DAYS}일)이 지났어요. 문제가 있으면 문의해 주세요.`,
   PAY_UNAVAILABLE: "지금은 로그인과 결제를 쓸 수 없어요. 잠시 뒤에 다시 시도해 주세요.",
+  // A free generation without a passing Turnstile token (lib/api/turnstile.ts).
+  BOT_CHECK: "보안 확인을 마치지 못했어요. 다시 시도해 주세요.",
 };
 
 const NO_STORE = { "Cache-Control": "no-store" };

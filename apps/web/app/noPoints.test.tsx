@@ -145,6 +145,7 @@ describe("no points, credits or balances anywhere a user can read", () => {
     const server = {
       BAD_REQUEST: 1, BAD_TOKEN: 1, BETA_LIMIT: 1, RATE_LIMIT: 1, AI_UNAVAILABLE: 1, REFUSED: 1, QUALITY: 1, UPSTREAM: 1, LOGIN_REQUIRED: 1, PAYMENT_REQUIRED: 1,
       NO_CREDIT: 1, PAY_FAILED: 1, FORBIDDEN: 1, NOT_AVAILABLE: 1, PAY_PENDING: 1, NOT_REFUNDABLE: 1, REFUND_WINDOW_CLOSED: 1, PAY_UNAVAILABLE: 1,
+      BOT_CHECK: 1,
     } satisfies Record<ErrorCode, 1>;
     const client = { ...server, NETWORK: 1, TIMEOUT: 1, INVALID: 1 } satisfies Record<ApiErrorCode, 1>;
     const contexts = { reading: 1, teaser: 1, "tarot-draw": 1, followup: 1, daily: 1, paid: 1, gift: 1 } satisfies Record<ErrorContext, 1>;

@@ -17,14 +17,17 @@ const appDir = join(root, "apps/web");
 const nextEnvFile = join(appDir, ".open-next/cloudflare/next-env.mjs");
 
 /** The app's secrets by name, and anything named like a secret. */
-const SECRET_NAME = /^(REVIEW_LOGIN_|ANTHROPIC_)|^(TOSS_SECRET_KEY|KAKAO_CLIENT_SECRET|STARLOG_OWNER_CODE|STARLOG_SIGNING_SECRET|GOOGLE_CLIENT_SECRET)$|SECRET|PASSWORD|_KEY$|TOKEN/;
+const SECRET_NAME = /^(REVIEW_LOGIN_|ANTHROPIC_)|^(TOSS_SECRET_KEY|KAKAO_CLIENT_SECRET|STARLOG_OWNER_CODE|STARLOG_SIGNING_SECRET|GOOGLE_CLIENT_SECRET|TURNSTILE_SECRET_KEY)$|SECRET|PASSWORD|_KEY$|TOKEN/;
+
+/** Named like a secret but public by design: the Turnstile site key goes to every browser the check runs in. */
+const PUBLIC_NAMES = new Set(["TURNSTILE_SITE_KEY"]);
 
 /**
  * A name whose value must never ride in a build (NEXT_PUBLIC_ values are public by design).
  * @param {string} name
  */
 export function secretLike(name) {
-  return !name.startsWith("NEXT_PUBLIC_") && SECRET_NAME.test(name);
+  return !name.startsWith("NEXT_PUBLIC_") && !PUBLIC_NAMES.has(name) && SECRET_NAME.test(name);
 }
 
 /**

@@ -6,10 +6,11 @@ describe("worker env gate (scripts/check-worker-env.mjs)", () => {
     const secrets = [
       "REVIEW_LOGIN_ID", "REVIEW_LOGIN_PASSWORD", "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL", "TOSS_SECRET_KEY", "KAKAO_CLIENT_SECRET",
       "KAKAO_REST_API_KEY", "STARLOG_OWNER_CODE", "STARLOG_SIGNING_SECRET", "STARLOG_ACCOUNT_SECRET", "STARLOG_CRON_SECRET",
-      "GOOGLE_CLIENT_SECRET", "SOME_API_TOKEN", "DB_PASSWORD",
+      "GOOGLE_CLIENT_SECRET", "SOME_API_TOKEN", "DB_PASSWORD", "TURNSTILE_SECRET_KEY",
     ];
     expect(secrets.filter((name) => !secretLike(name))).toEqual([]);
-    const plain = ["NEXT_PUBLIC_TOSS_CLIENT_KEY", "NEXT_PUBLIC_SPLIT_HOSTS", "STARLOG_PAYMENTS", "STARLOG_AI", "STARLOG_PAY", "BETA_DAILY_BUDGET_KRW", "KRW_PER_USD", "ADSENSE_CLIENT", "KEYWORDS"];
+    // TURNSTILE_SITE_KEY is public by design (handed to every browser the check runs in).
+    const plain = ["TURNSTILE_SITE_KEY", "NEXT_PUBLIC_TOSS_CLIENT_KEY", "NEXT_PUBLIC_SPLIT_HOSTS", "STARLOG_PAYMENTS", "STARLOG_AI", "STARLOG_PAY", "BETA_DAILY_BUDGET_KRW", "KRW_PER_USD", "ADSENSE_CLIENT", "KEYWORDS"];
     expect(plain.filter((name) => secretLike(name))).toEqual([]);
   });
 

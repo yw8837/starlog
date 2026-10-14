@@ -10,7 +10,13 @@
  * Generation calls also check the `done` data's shape (`accept`, lib/reading/validate.ts) and give
  * up on their own: an overall deadline a little above the server's, and a silence limit between
  * stream lines (the server pings while it writes).
+ *
+ * A free generation may be answered 403 BOT_CHECK with the Turnstile site key (lib/api/turnstile.ts):
+ * the call runs the challenge (lib/reading/turnstile.ts) and tries once more with the token. The site
+ * key is kept per path for the page's life, so later calls there bring a fresh token from the start.
  */
+
+import { turnstileToken } from "./turnstile";
 
 export type ApiErrorCode =
   | "BAD_REQUEST"
@@ -36,7 +42,9 @@ export type ApiErrorCode =
   | "PAY_PENDING"
   | "NOT_REFUNDABLE"
   | "REFUND_WINDOW_CLOSED"
-  | "PAY_UNAVAILABLE";
+  | "PAY_UNAVAILABLE"
+  /** A free generation without a passing Turnstile token. */
+  | "BOT_CHECK";
 
 const CODES: readonly ApiErrorCode[] = [
   "BAD_REQUEST",
@@ -57,7 +65,11 @@ const CODES: readonly ApiErrorCode[] = [
   "NOT_REFUNDABLE",
   "REFUND_WINDOW_CLOSED",
   "PAY_UNAVAILABLE",
+  "BOT_CHECK",
 ];
+
+/** The header a Turnstile token rides in (read by lib/api/turnstile.ts). */
+export const BOT_TOKEN_HEADER = "x-turnstile-token";
 
 export interface ApiError {
   code: ApiErrorCode;
@@ -79,6 +91,8 @@ export interface ApiError {
   card?: { cardId: string; orientation: "upright" | "reversed" };
   /** BAD_REQUEST on saju input: the form field at fault. */
   field?: string;
+  /** BOT_CHECK: the Turnstile site key to run the challenge with. */
+  siteKey?: string;
 }
 
 export type ApiResult<T> = { ok: true; data: T; commit?: string } | { ok: false; error: ApiError };
@@ -100,6 +114,7 @@ export function parseApiError(status: number, body: unknown): ApiError {
   if (b.care === true) error.care = true;
   if (b.scope === "chapter" || b.scope === "day" || b.scope === "network" || b.scope === "first") error.scope = b.scope;
   if (typeof b.field === "string") error.field = b.field;
+  if (typeof b.siteKey === "string" && b.siteKey) error.siteKey = b.siteKey;
   if (isRecord(b.card) && typeof b.card.cardId === "string" && (b.card.orientation === "upright" || b.card.orientation === "reversed")) {
     error.card = { cardId: b.card.cardId, orientation: b.card.orientation };
   }
@@ -114,11 +129,11 @@ interface CallOptions {
   fetchImpl?: Fetch;
 }
 
-async function send(path: string, body: unknown, accept: string, { signal, fetchImpl = fetch }: CallOptions): Promise<Response | null> {
+async function send(path: string, body: unknown, accept: string, { signal, fetchImpl = fetch }: CallOptions, botToken?: string): Promise<Response | null> {
   try {
     return await fetchImpl(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: accept },
+      headers: { "Content-Type": "application/json", Accept: accept, ...(botToken ? { [BOT_TOKEN_HEADER]: botToken } : {}) },
       body: JSON.stringify(body),
       credentials: "same-origin",
       signal,
@@ -218,6 +233,36 @@ export interface GenerationOptions<T> extends CallOptions {
   /** Overrides `deadlineFor(path)` and IDLE_MS (tests). */
   deadlineMs?: number;
   idleMs?: number;
+  /** Runs the Turnstile challenge for a site key: the token, or null when it could not be passed. Injected in tests. */
+  botToken?: (siteKey: string, signal?: AbortSignal) => Promise<string | null>;
+}
+
+/**
+ * The site key each path was answered BOT_CHECK with on this page. Empty while the server has not
+ * asked (the check may be off); paths it never checks (follow-ups, paid readings) never get a token.
+ */
+const botSiteKeys = new Map<string, string>();
+
+/** Tests: forget the site keys. */
+export function resetBotCheck(): void {
+  botSiteKeys.clear();
+}
+
+/**
+ * A generation call (`attempt`), with the bot check when the server asks for one: a free generation
+ * answered 403 BOT_CHECK runs the Turnstile challenge and is sent once more with its token. A
+ * challenge that cannot be passed (the script blocked, a failed or timed-out challenge) leaves the
+ * BOT_CHECK error, which the screen shows with a retry. Once a path was asked, each call to it brings
+ * a fresh token from the start (tokens are single use).
+ */
+export async function postGeneration<T>(path: string, body: unknown, options: GenerationOptions<T>): Promise<ApiResult<T>> {
+  const { botToken = turnstileToken, signal } = options;
+  const known = botSiteKeys.get(path);
+  const first = await attempt<T>(path, body, options, known ? ((await botToken(known, signal)) ?? undefined) : undefined);
+  if (first.ok || first.error.code !== "BOT_CHECK" || !first.error.siteKey || signal?.aborted) return first;
+  botSiteKeys.set(path, first.error.siteKey);
+  const token = await botToken(first.error.siteKey, signal);
+  return token && !signal?.aborted ? attempt<T>(path, body, options, token) : first;
 }
 
 /**
@@ -227,7 +272,7 @@ export interface GenerationOptions<T> extends CallOptions {
  * `idleMs` of silence the request is aborted (which stops the server too) and TIMEOUT comes back;
  * `done` data that fails `accept` comes back as INVALID, without its commit token.
  */
-export async function postGeneration<T>(path: string, body: unknown, options: GenerationOptions<T>): Promise<ApiResult<T>> {
+async function attempt<T>(path: string, body: unknown, options: GenerationOptions<T>, botToken?: string): Promise<ApiResult<T>> {
   const { accept, onProgress, deadlineMs = deadlineFor(path), idleMs = IDLE_MS } = options;
   // One controller for this call: the caller's abort and both timers end it.
   const controller = new AbortController();
@@ -255,7 +300,7 @@ export async function postGeneration<T>(path: string, body: unknown, options: Ge
     return timedOut && result.error.code === "NETWORK" ? { ok: false, error: { code: "TIMEOUT", status: 0 } } : result;
   };
 
-  const response = await send(path, body, "application/x-ndjson, application/json", { signal: controller.signal, fetchImpl: options.fetchImpl });
+  const response = await send(path, body, "application/x-ndjson, application/json", { signal: controller.signal, fetchImpl: options.fetchImpl }, botToken);
   if (!response) return finish({ ok: false, error: NETWORK });
   const type = response.headers.get("content-type") ?? "";
   if (!type.includes("application/x-ndjson") || !response.body) return finish(await readJsonResult<T>(response));

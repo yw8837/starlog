@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SajuReadingSchema } from "@/lib/ai/schemas";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
-import { commitQuota, parseApiError, parseStreamLine, postGeneration, postJson, readLines, type ApiError } from "./api";
+import { commitQuota, parseApiError, parseStreamLine, postGeneration, postJson, readLines, resetBotCheck, type ApiError } from "./api";
 import { describeApiError, resetLine } from "./errors";
 import { RETRY_CAPTION, advanceProgress, progressPlan, startProgress } from "./progress";
 
@@ -309,5 +309,67 @@ describe("generation guards (QA Q-02, Q-04)", () => {
         expect(`${view.title} ${view.body ?? ""}`).not.toMatch(/횟수/);
       }
     }
+  });
+});
+
+describe("bot check (Turnstile) on the free generations", () => {
+  const BOT_CHECK = { code: "BOT_CHECK", message: "보안 확인을 마치지 못했어요. 다시 시도해 주세요.", siteKey: "site-key-1" };
+  /** The server with the check on: a request without a token gets 403 BOT_CHECK, one with a token the teaser. */
+  function server() {
+    const sent: Array<string | null> = [];
+    const fetchImpl = vi.fn(async (_url: string, init?: RequestInit) => {
+      const token = (init?.headers as Record<string, string>)["x-turnstile-token"] ?? null;
+      sent.push(token);
+      return token ? jsonResponse({ title: "t" }) : jsonResponse(BOT_CHECK, 403);
+    }) as unknown as typeof fetch;
+    return { fetchImpl, sent };
+  }
+
+  afterEach(() => resetBotCheck());
+
+  it("asks nothing while the server does not: no challenge, no token header (the check off)", async () => {
+    const botToken = vi.fn(async () => "token");
+    const fetchImpl = vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse({ title: "t" }));
+    expect(await postGeneration("/api/tarot/teaser", {}, { accept: ANY, fetchImpl: fetchImpl as unknown as typeof fetch, botToken })).toEqual({ ok: true, data: { title: "t" } });
+    expect(botToken).not.toHaveBeenCalled();
+    expect(Object.keys(fetchImpl.mock.calls[0]![1]!.headers as Record<string, string>)).toEqual(["Content-Type", "Accept"]);
+  });
+
+  it("answers BOT_CHECK with one challenge and one more try carrying the token; later calls there bring a fresh token from the start", async () => {
+    const { fetchImpl, sent } = server();
+    let n = 0;
+    const botToken = vi.fn(async () => `token-${++n}`);
+    expect(await postGeneration("/api/tarot/teaser", {}, { accept: ANY, fetchImpl, botToken })).toEqual({ ok: true, data: { title: "t" } });
+    expect(sent).toEqual([null, "token-1"]);
+    expect(botToken).toHaveBeenLastCalledWith("site-key-1", undefined);
+    expect(await postGeneration("/api/tarot/teaser", {}, { accept: ANY, fetchImpl, botToken })).toEqual({ ok: true, data: { title: "t" } });
+    expect(sent).toEqual([null, "token-1", "token-2"]);
+    // Only where the server asked: a call it never checks (a follow-up, a paid reading) runs no challenge.
+    const followup = vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse({ answer: "a" }));
+    expect(await postGeneration("/api/followup", {}, { accept: ANY, fetchImpl: followup as unknown as typeof fetch, botToken })).toEqual({ ok: true, data: { answer: "a" } });
+    expect(botToken).toHaveBeenCalledTimes(2);
+    expect(followup.mock.calls[0]![1]!.headers).not.toHaveProperty("x-turnstile-token");
+  });
+
+  it("shows the bot-check error with a retry when the challenge cannot be passed (script blocked, failed, timed out)", async () => {
+    const { fetchImpl, sent } = server();
+    const result = await postGeneration("/api/saju/teaser", {}, { accept: ANY, fetchImpl, botToken: async () => null });
+    expect(result).toEqual({ ok: false, error: { status: 403, ...BOT_CHECK } });
+    expect(sent).toEqual([null]);
+    for (const context of ["teaser", "reading", "daily"] as const) {
+      expect(describeApiError({ code: "BOT_CHECK", status: 403 }, context)).toEqual({ title: "보안 확인을 마치지 못했어요", body: "다시 시도해 주세요.", action: "retry" });
+    }
+  });
+
+  it("sends nothing more when the caller left during the challenge", async () => {
+    const { fetchImpl, sent } = server();
+    const controller = new AbortController();
+    const botToken = async () => {
+      controller.abort();
+      return "token-late";
+    };
+    const result = await postGeneration("/api/tarot/teaser", {}, { accept: ANY, fetchImpl, botToken, signal: controller.signal });
+    expect(result.ok).toBe(false);
+    expect(sent).toEqual([null]);
   });
 });
