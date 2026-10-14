@@ -1,13 +1,16 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { GAEUN_NOTE } from "@/lib/sajuEnrichment";
 import { SAJU_GAEUN_HEADING, SAJU_NAMES_HEADING } from "@/lib/sajuPrologue";
+import { resetAccountForTests } from "@/lib/account/client";
+import { DECK_KEY } from "@/lib/deck";
+import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
 import { LocalChapter } from "./LocalChapter";
 
 const replace = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace }), usePathname: () => "/chapter/x" }));
 
 const PARTIAL = {
   id: "abcdef12",
@@ -172,5 +175,130 @@ describe("LocalChapter for a topic reading (saju-topics spec §5.3)", () => {
     render(<LocalChapter id="abcdef21" />);
     expect(screen.getByText("사주 재물운 · 10월 2일")).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1, name: "흙 속의 쇠" })).toBeTruthy();
+  });
+});
+
+/** The front image of `cardId` in `container`, as each TarotCard renders it. */
+const faceSources = (container: HTMLElement, cardId: string) =>
+  [...container.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes(cardId));
+
+describe("LocalChapter card design", () => {
+  it("shows a reading saved without its deck in the 1909 scans it was written for, whatever this device chose", () => {
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "constellation" }));
+    seed([PARTIAL]);
+    const { container } = render(<LocalChapter id="abcdef12" />);
+    const faces = faceSources(container, "major-09-hermit");
+    expect(faces.length).toBeGreaterThan(0);
+    for (const src of faces) expect(src).toBe("/cards/major-09-hermit-sm.webp");
+  });
+
+  it("keeps the deck a reading recorded", () => {
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "rws1909", back: "constellation" }));
+    seed([{ ...PARTIAL, deck: "starlog" }]);
+    const { container } = render(<LocalChapter id="abcdef12" />);
+    const faces = faceSources(container, "major-09-hermit");
+    expect(faces.length).toBeGreaterThan(0);
+    for (const src of faces) expect(src).toBe("/cards/starlog/major-09-hermit-sm.webp");
+  });
+});
+
+/** A reading saved in the account (20-character id), as GET /api/readings lists it. */
+const SERVER_ID = "abcdefghij0123456789";
+const { id: _localId, ...ACCOUNT_CHAPTER } = { ...PARTIAL, question: "계정에 있는 질문" };
+
+function accountServer(user: object | null, readings: unknown[] = []) {
+  const fetchMock = vi.fn(async (url: string) => {
+    if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user });
+    if (url.startsWith("/api/readings")) return Response.json({ readings, next: null });
+    return Response.json({});
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+const LOGGED_IN = { nickname: "별", gift: null, unused: [], opening: [] };
+
+describe("LocalChapter for a reading not on this device (QA-02)", () => {
+  // Earlier renders may have read the account already (no fetch stub: logged out).
+  beforeEach(resetAccountForTests);
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetAccountForTests();
+  });
+
+  it("logged in: finds a reading opened on another device in the account and shows it", async () => {
+    accountServer(LOGGED_IN, [{ id: SERVER_ID, createdAt: Date.now(), chapter: ACCOUNT_CHAPTER }]);
+    render(<LocalChapter id={SERVER_ID} />);
+    expect(await screen.findByRole("heading", { level: 1, name: "계정에 있는 질문" })).toBeTruthy();
+    expect(screen.queryByText(/연 기기에만 보관돼요\. 지웠거나/)).toBeNull();
+  });
+
+  it("on the device that opened it, the account id opens the same reading", () => {
+    accountServer(LOGGED_IN);
+    seed([{ ...PARTIAL, serverId: SERVER_ID }]);
+    render(<LocalChapter id={SERVER_ID} />);
+    expect(screen.getByRole("heading", { level: 1, name: "q" })).toBeTruthy();
+  });
+
+  it("logged in, found nowhere: points to 내 기록, never says every reading stays on the device that opened it", async () => {
+    const fetchMock = accountServer(LOGGED_IN);
+    render(<LocalChapter id="zzzzzz99" />);
+    expect(await screen.findByRole("heading", { level: 1, name: "이 주소의 기록을 찾지 못했어요" })).toBeTruthy();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/readings"))).toBe(true);
+    expect(screen.getByText("결제나 가입 선물로 연 풀이는 내 기록에 모두 있어요. 그 밖의 풀이는 연 기기에만 보관돼요.")).toBeTruthy();
+    const missing = screen.getByRole("region", { name: "이 주소의 기록을 찾지 못했어요" });
+    expect(within(missing).getByRole("link", { name: "내 기록으로" }).getAttribute("href")).toBe("/story");
+  });
+
+  it("logged out: says which readings come back with a login and which stay on the device that opened them", async () => {
+    const fetchMock = accountServer(null);
+    render(<LocalChapter id="zzzzzz99" />);
+    expect(await screen.findByRole("heading", { level: 1, name: "이 기기에 없는 기록이에요" })).toBeTruthy();
+    expect(screen.getByText("결제나 가입 선물로 연 풀이는 로그인하면 내 기록에서 볼 수 있어요. 그 밖의 풀이는 연 기기에만 보관돼요.")).toBeTruthy();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/readings"))).toBe(false);
+  });
+});
+
+describe("LocalChapter 풀이 후기", () => {
+  beforeEach(resetAccountForTests);
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetAccountForTests();
+  });
+
+  it("tells a visitor who is not logged in that logging in lets them review, on a reading kept in an account", async () => {
+    accountServer(null);
+    seed([{ ...PARTIAL, serverId: "abcdefghij0123456789" }]);
+    render(<LocalChapter id="abcdef12" />);
+    expect(await screen.findByText("로그인하면 후기를 남길 수 있어요")).toBeTruthy();
+  });
+
+  it("offers no account review on a reading kept only on this device: no account holds it, so logging in could not review it", async () => {
+    accountServer(null);
+    seed([PARTIAL]);
+    render(<LocalChapter id="abcdef12" />);
+    await act(async () => {});
+    expect(screen.queryByText("로그인하면 후기를 남길 수 있어요")).toBeNull();
+    expect(document.getElementById("review-title")).toBeNull();
+  });
+});
+
+describe("LocalChapter 결과 공유", () => {
+  beforeAll(() => {
+    // jsdom has no <dialog> methods; Modal calls showModal()/close().
+    const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+    proto.showModal ??= function (this: HTMLElement) {
+      this.setAttribute("open", "");
+    };
+    proto.close ??= function (this: HTMLElement) {
+      this.removeAttribute("open");
+    };
+  });
+
+  it("offers 공유 그만하기 on reopening when this device already made the reading's link", () => {
+    seed([{ ...PARTIAL, createdAt: Date.now(), cards: TAROT_SAMPLE.cards.map(({ position, cardId, orientation }) => ({ position, cardId, orientation })), reading: TAROT_SAMPLE.paid }]);
+    localStorage.setItem("starlog.shares", JSON.stringify({ abcdef12: "abcdefghijkl" }));
+    render(<LocalChapter id="abcdef12" />);
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    expect(screen.getByRole("button", { name: "공유 그만하기" })).toBeTruthy();
   });
 });

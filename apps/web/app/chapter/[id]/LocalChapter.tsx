@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Checkin } from "@/components/reading/Checkin";
 import type { AskResult } from "@/components/tarot/FollowUp";
 import { faceUpCard } from "@/components/tarot/SpreadRow";
@@ -9,8 +9,8 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { ReviewPrompt } from "@/components/reviews/ReviewPrompt";
 import type { ShareActions } from "@/components/share/ShareResultButton";
-import { useDeckPrefs } from "@/lib/deck";
-import { createShareLink, stopShareLink } from "@/lib/share/client";
+import { useAccount } from "@/lib/account/client";
+import { createShareLink, knownShareLink, stopShareLink } from "@/lib/share/client";
 import { kstMonthDay } from "@/lib/kst";
 import { commitQuota, postGeneration } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
@@ -28,6 +28,7 @@ import {
   useChapters,
   type StoredChapter,
 } from "@/lib/storage/chapters";
+import { pullAccountReadings } from "@/lib/storage/sync";
 import { ChapterView, type ChapterFollowUp } from "./ChapterView";
 import { SajuChapterView } from "./SajuChapterView";
 import s from "./ChapterView.module.css";
@@ -164,14 +165,14 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         : {}),
   };
   const date = kstMonthDay(chapter.createdAt);
-  // 결과 공유: a whole reading can get its own link, shown in the design it was written for (an
-  // older reading: the one chosen here).
-  const chosen = useDeckPrefs().front;
-  const deck = chapter.deck ?? chosen;
-  // 풀이 후기: a reading saved in the account takes one; a device-only one keeps the plain stars.
+  // Shown in the design the reading was written for: one saved before readings kept their deck was
+  // written for the 1909 scans (lib/api/inputs.ts), whatever this device chose since.
+  const deck = chapter.deck ?? "rws1909";
+  // 풀이 후기: only a reading kept in an account can be reviewed (spec §2); a visitor not logged in is offered
+  // the login there. A reading only on this device keeps its own stars.
   const rating = chapter.serverId ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
   const share: ShareActions | undefined = whole
-    ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter) }
+    ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter), current: () => knownShareLink(chapter) }
     : undefined;
 
   // The browser would not keep it (storage full or blocked): say so rather than look saved.
@@ -196,7 +197,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         eyebrow={`타로 기록 · ${date}`}
         question={chapter.question}
         cards={chapter.cards.map(faceUpCard)}
-        deck={chapter.deck}
+        deck={deck}
         reading={chapter.reading}
         followUp={followUp}
         checkin={checkin}
@@ -207,10 +208,54 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   );
 }
 
+/**
+ * An id this device does not hold. Logged in, it may be a reading saved in the account (its account
+ * id, the address it has on every device): the account's readings come onto this device, and a match
+ * then shows in place. Otherwise it says where readings are kept.
+ */
+function MissingRecord() {
+  const account = useAccount();
+  const loggedIn = Boolean(account?.user);
+  const [looked, setLooked] = useState(false);
+  useEffect(() => {
+    if (!loggedIn) return;
+    let live = true;
+    void pullAccountReadings().finally(() => {
+      if (live) setLooked(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [loggedIn]);
+  if (account === undefined || (loggedIn && !looked)) return <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />;
+  return (
+    <>
+      <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
+      <section className={s.missing} aria-labelledby="missing-title">
+        <h1 id="missing-title" className={s.missingTitle}>
+          {loggedIn ? "이 주소의 기록을 찾지 못했어요" : "이 기기에 없는 기록이에요"}
+        </h1>
+        <p className={s.missingText}>
+          {loggedIn
+            ? "결제나 가입 선물로 연 풀이는 내 기록에 모두 있어요. 그 밖의 풀이는 연 기기에만 보관돼요."
+            : "결제나 가입 선물로 연 풀이는 로그인하면 내 기록에서 볼 수 있어요. 그 밖의 풀이는 연 기기에만 보관돼요."}
+        </p>
+        <Button href={NEW_TAROT_HREF} block trailing="→">
+          타로 보기
+        </Button>
+        <Button href="/story" variant="ghost" size="md" block>
+          내 기록으로
+        </Button>
+      </section>
+    </>
+  );
+}
+
 export function LocalChapter({ id }: { id: string }) {
   const chapters = useChapters();
   if (chapters === undefined) return <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />;
-  const chapter = chapters.find((c) => c.id === id);
+  // Its own id, or (a reading saved in the account) its account id, the same on every device.
+  const chapter = chapters.find((c) => c.id === id) ?? chapters.find((c) => c.serverId === id);
   if (chapter) return <SavedReading key={chapter.id} chapter={chapter} />;
   // Stored, but not readable at all: say so and let it be erased.
   if (hasChapterEntry(id)) {
@@ -230,21 +275,5 @@ export function LocalChapter({ id }: { id: string }) {
       </>
     );
   }
-  return (
-    <>
-      <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
-      <section className={s.missing} aria-labelledby="missing-title">
-        <h1 id="missing-title" className={s.missingTitle}>
-          이 기기에 없는 기록이에요
-        </h1>
-        <p className={s.missingText}>풀이는 연 기기에만 보관돼요. 지웠거나 다른 기기에서 열었다면 여기서는 볼 수 없어요.</p>
-        <Button href={NEW_TAROT_HREF} block trailing="→">
-          타로 보기
-        </Button>
-        <Button href="/story" variant="ghost" size="md" block>
-          내 기록으로
-        </Button>
-      </section>
-    </>
-  );
+  return <MissingRecord />;
 }

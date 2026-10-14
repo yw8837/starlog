@@ -1,5 +1,6 @@
 import "server-only";
 import { SITE } from "@/lib/config";
+import type { FrontDeck } from "@/lib/deck";
 import { PREMIUM, type PremiumId } from "@/lib/premium/products";
 import type { ServerChapter } from "./store";
 
@@ -11,7 +12,7 @@ import type { ServerChapter } from "./store";
 type Body = { reading: unknown; chapterToken: string };
 
 export function tarotChapter(
-  input: { question: string; conditions: ReadonlyArray<{ label: string; value: string }>; note?: string },
+  input: { question: string; conditions: ReadonlyArray<{ label: string; value: string }>; note?: string; deck?: FrontDeck },
   cards: ReadonlyArray<{ position: string; cardId: string; orientation: "upright" | "reversed" }>,
   body: Body,
   now: number,
@@ -27,6 +28,8 @@ export function tarotChapter(
     createdAt: now,
     turns: [],
     followUpsLeft: SITE.reading.followUps,
+    // The design the reading quotes; a copy restored on another device shows it (absent: the 1909 scans).
+    ...(input.deck ? { deck: input.deck } : {}),
   };
 }
 

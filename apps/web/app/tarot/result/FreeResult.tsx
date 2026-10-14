@@ -221,7 +221,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     });
     setFlow((prev) => (prev.draw ? { ...prev, draw: { ...prev.draw, chapterId: chapter.id } } : prev));
     if (result.commit) void commitQuota(result.commit);
-    router.push(`/chapter/${chapter.id}`);
+    // Saved in the account: its account id, the address it has on every device (QA-02).
+    router.push(`/chapter/${chapter.serverId ?? chapter.id}`);
   };
 
   // After checkout (?unlock=paid) or a gift login (?unlock=free): open once, as soon as the
@@ -292,6 +293,10 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 </h2>
                 <p className={s.prose}>{teaser.firstCard.body}</p>
               </Paper>
+              {/* The sheet sits below the locked contents: a quiet way down right after the free part (QA-05). */}
+              <a href="#unlock-title" className={s.jump}>
+                전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>
+              </a>
               <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${approxCharsText(SITE.reading.approxChars.tarot)}자`} />
               <UnlockSheet
                 kind="tarot"
@@ -316,7 +321,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
           ) : (
             <GeneratingState
               layout="inline"
-              caption={teaserState.status === "running" ? teaserState.progress.caption : "카드를 다시 읽고 있어요"}
+              caption={teaserState.status === "running" ? teaserState.progress.caption : "카드를 읽고 있어요"}
               fraction={teaserState.status === "running" ? teaserState.progress.fraction : 0}
               live={false}
             />

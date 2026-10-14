@@ -6,6 +6,7 @@ import { Rabbit } from "@/components/characters/Rabbit";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginMessage } from "@/lib/account/client";
+import { safeReturnTo } from "@/lib/account/returnTo";
 import { SITE } from "@/lib/config";
 import s from "./LoginPanel.module.css";
 
@@ -17,6 +18,15 @@ type LoginPanelProps = {
   /** tests: replaces the browser navigation */
   navigate?: (url: string) => void;
 };
+
+/**
+ * Where 돌아가기 goes: `next`, except the checkout, which only sends a visitor who is not logged in
+ * here again (QA-09): the page the payment started from, else home.
+ */
+function backTarget(next: string): string {
+  const [path, search = ""] = next.split("?");
+  return path === "/pay/checkout" ? safeReturnTo(new URLSearchParams(search).get("returnTo")) : next;
+}
 
 /**
  * Sign-in right before paying or claiming the gift (spec 5.1): Kakao, and Google under it (Google's
@@ -53,7 +63,7 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
 
   return (
     <div className={s.screen}>
-      <Stepper label="로그인" backHref={next} backLabel="돌아가기" />
+      <Stepper label="로그인" backHref={backTarget(next)} backLabel="돌아가기" />
 
       <div className={s.intro}>
         <div className={s.hero}>

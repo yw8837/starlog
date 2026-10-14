@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
+import { SITE } from "@/lib/config";
 import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
 import { MeView } from "./MeView";
 
@@ -43,6 +44,14 @@ describe("MeView menu", () => {
     const rows = [...menu.querySelectorAll("li")].map((li) => li.textContent);
     expect(rows.slice(0, 3)).toEqual([expect.stringMatching(/^내 기록/), "초대코드로 참여", "알림 설정준비 중"]);
     expect(screen.getByRole("button", { name: "초대코드로 참여" }).getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("opens 문의하기 as a mail to the address in the footer's business info, no longer 준비 중 (QA-16)", async () => {
+    render(<MeView status={null} />);
+    const menu = await screen.findByRole("navigation", { name: "계정 메뉴" });
+    const contact = within(menu).getByRole("link", { name: "문의하기" });
+    expect(contact.getAttribute("href")).toBe(`mailto:${SITE.business.email}`);
+    expect(contact.textContent).not.toContain("준비 중");
   });
 });
 

@@ -243,7 +243,7 @@ export function SajuChartView({
       ...(res.data.readingId ? { serverId: res.data.readingId } : {}),
     });
     if (res.commit) void commitQuota(res.commit);
-    router.push(`/chapter/${chapter.id}`);
+    router.push(`/chapter/${chapter.serverId ?? chapter.id}`);
   };
 
   // After checkout (?unlock=paid): open once, as soon as the teaser and the account are known and

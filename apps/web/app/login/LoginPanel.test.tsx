@@ -79,4 +79,17 @@ describe("LoginPanel", () => {
     expect(screen.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeTruthy();
     expect(container.textContent).not.toMatch(/별조각|달빛|\d+개/);
   });
+
+  it("goes back to where a payment started, not to the checkout that sent here (QA-09)", () => {
+    render(<LoginPanel next="/pay/checkout?product=tarot&returnTo=%2Ftarot%2Fresult" status={null} />);
+    expect(screen.getByRole("link", { name: "돌아가기" }).getAttribute("href")).toBe("/tarot/result");
+  });
+
+  it("goes home from a checkout without a page to return to, and back to `next` otherwise", () => {
+    render(<LoginPanel next="/pay/checkout?product=tarot" status={null} />);
+    expect(screen.getByRole("link", { name: "돌아가기" }).getAttribute("href")).toBe("/");
+    cleanup();
+    render(<LoginPanel next="/tarot/result" status={null} />);
+    expect(screen.getByRole("link", { name: "돌아가기" }).getAttribute("href")).toBe("/tarot/result");
+  });
 });

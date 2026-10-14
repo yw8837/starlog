@@ -18,6 +18,12 @@ const WHO_DETAIL_EXAMPLE: Readonly<Record<Exclude<Who, "me">, string>> = {
 };
 
 /**
+ * The longest 누구 detail that still stands in the question (lib/question.ts personRef): a person's
+ * name 8 characters, a team or a group the whole field (QA-14: the field never takes more).
+ */
+const whoMax = (who: Who) => (who === "us" ? 8 : WHO_MAX);
+
+/**
  * Step 1a: build the question from 누구 × 무엇 × 언제. Picking 누구 narrows the topics. Under each
  * chip group an optional field takes the user's own words: 누구 adds detail (the chip still picks
  * the spread); 무엇 and 언제 replace their chip (typing clears the chip, a chip clears the text).
@@ -42,7 +48,8 @@ export function QuestionBuilder() {
       return next === prev ? prev : { ...next, draw: undefined };
     });
 
-  const pickWho = (who: Who) => update((prev) => (prev.who === who ? prev : { ...prev, who, topicId: undefined, conditions: {} }));
+  const pickWho = (who: Who) =>
+    update((prev) => (prev.who === who ? prev : { ...prev, who, whoText: prev.whoText?.slice(0, whoMax(who)), topicId: undefined, conditions: {} }));
 
   const pickTopic = (topicId: string) =>
     update((prev) => {
@@ -95,7 +102,7 @@ export function QuestionBuilder() {
             showLabel
             placeholder={WHO_DETAIL_EXAMPLE[state.who]}
             value={state.whoText ?? ""}
-            maxLength={WHO_MAX}
+            maxLength={whoMax(state.who)}
             onChange={(whoText) => update((prev) => ({ ...prev, whoText }))}
           />
         ) : null}

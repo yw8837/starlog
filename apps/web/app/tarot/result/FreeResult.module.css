@@ -21,3 +21,15 @@
   font-size: var(--fs-prose);
   line-height: var(--lh-prose);
 }
+
+.jump {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}

@@ -32,10 +32,15 @@ export default async function ChapterPage({ params }: PageProps<"/chapter/[id]">
         {id === "sample" ? (
           <>
             <DemoNotice />
-            <SampleChapter sample={TAROT_SAMPLE} followUps={TAROT_FOLLOW_UPS} inviteUrl={`${SITE.url}/invite/${INVITE_FIXTURE_TOKEN}`} />
+            {/* The demo invite opens in development and e2e only (app/invite/[token]): none to hand out in production (QA-13). */}
+            <SampleChapter
+              sample={TAROT_SAMPLE}
+              followUps={TAROT_FOLLOW_UPS}
+              inviteUrl={process.env.NODE_ENV === "production" ? undefined : `${SITE.url}/invite/${INVITE_FIXTURE_TOKEN}`}
+            />
           </>
         ) : (
-          // Saved on this device only: read in the browser.
+          // Saved on this device (logged in: looked up in the account too): read in the browser.
           <LocalChapter id={id} />
         )}
       </main>

@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DECK_KEY } from "@/lib/deck";
 import type { DailyData } from "@/lib/reading/types";
-import { saveDaily } from "@/lib/storage/daily";
+import { DAILY_KEY, saveDaily } from "@/lib/storage/daily";
 import { TodayView, rearranged } from "./TodayView";
 
 const REVISIT_NOTE = "오늘의 카드는 이미 골랐어요 · 내일 새 카드가 기다려요";
@@ -234,5 +236,37 @@ describe("rearranged", () => {
     );
     expect(reached.size).toBe(5);
     expect(reached.has("012")).toBe(false);
+  });
+});
+
+describe("오늘의 한 장 card design", () => {
+  const faces = (cardId: string) =>
+    [...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes(cardId));
+
+  it("shows today's fortune in the deck it was read with, after the device switched designs", () => {
+    window.localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "constellation" }));
+    saveDaily({ ...READING, deck: "rws1909" } as DailyData);
+    server();
+    render(<TodayView />);
+    expect(screen.getByText(READING.summary)).toBeTruthy();
+    expect(faces("major-17-star").length).toBeGreaterThan(0);
+    for (const src of faces("major-17-star")) expect(src).toBe("/cards/major-17-star-sm.webp");
+  });
+
+  it("keeps the deck the server sent with a fresh pick", async () => {
+    window.localStorage.setItem(DECK_KEY, JSON.stringify({ front: "rws1909", back: "constellation" }));
+    server({ post: () => Promise.resolve(respond({ ...READING, deck: "starlog" })) });
+    await toThreeCards();
+    await act(async () => cardButtons()[0]!.click());
+    expect(await screen.findByText(READING.summary)).toBeTruthy();
+    for (const src of faces("major-17-star")) expect(src).toBe("/cards/starlog/major-17-star-sm.webp");
+    expect(JSON.parse(window.localStorage.getItem(DAILY_KEY) ?? "{}").reading.deck).toBe("starlog");
+  });
+});
+
+describe("오늘의 한 장 in the server HTML (SEO-06)", () => {
+  it("has the page's h1 before this device's saved card is known", () => {
+    const html = renderToString(<TodayView />);
+    expect(html).toMatch(/<h1[^>]*>오늘의 한 장<\/h1>/);
   });
 });

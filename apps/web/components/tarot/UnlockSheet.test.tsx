@@ -106,6 +106,22 @@ describe("UnlockSheet offers", () => {
     expect(container.textContent).not.toMatch(/베타/);
   });
 
+  it("once today's free reading is used, offers the free cards to go on with instead of only a grey button (QA-04)", () => {
+    for (const kind of ["tarot", "saju"] as const) {
+      render(<UnlockSheet kind={kind} remaining={0} onUnlock={() => {}} />);
+      expect(screen.getByText("오늘 무료로 열 수 있는 풀이를 모두 열었어요 · 한국 시간 0시에 다시 채워져요")).toBeTruthy();
+      expect((screen.getByRole("button", { name: "전체 풀이 보기" }) as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.getByRole("link", { name: "지금의 한 장 · 무제한 무료" }).getAttribute("href")).toBe("/now");
+      expect(screen.getByRole("link", { name: "오늘의 한 장" }).getAttribute("href")).toBe("/today");
+      cleanup();
+    }
+  });
+
+  it("offers them only when the day is used up", () => {
+    render(<UnlockSheet kind="tarot" remaining={1} onUnlock={() => {}} />);
+    expect(screen.queryByRole("link", { name: /지금의 한 장|오늘의 한 장/ })).toBeNull();
+  });
+
   it("names the 운 and says what one payment opens (주제별 사주)", () => {
     render(<UnlockSheet {...base} kind="saju" offer={{ mode: "pay", priceKrw: 2900 }} topicLabel="재물운" scopeLine="결제 한 번에 고른 풀이 하나를 열어요" onUnlock={() => {}} />);
     expect(screen.getByRole("heading", { name: "재물운 전체 풀이에 담긴 것" })).toBeTruthy();

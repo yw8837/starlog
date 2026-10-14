@@ -2,6 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
+import { DECK_KEY } from "@/lib/deck";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { clearChapters, saveChapter, type NewChapter } from "@/lib/storage/chapters";
 import { StoryView } from "./StoryView";
@@ -52,5 +53,51 @@ describe("내 기록 titles (saju-topics spec §5.3)", () => {
     render(<StoryView />);
     expect(screen.getByText("한겨울에 뜬 해")).toBeTruthy();
     expect(screen.getByText("재물운 · 1992년 8월 3일")).toBeTruthy();
+  });
+});
+
+const TAROT: NewChapter = {
+  kind: "tarot",
+  question: "타로 질문",
+  conditions: [],
+  note: "",
+  cards: [{ position: "지금의 나", cardId: "major-09-hermit", orientation: "upright" }],
+  reading: { verdict: "결론", cards: [], action: { heading: "오늘", body: "해 볼 일" } } as never,
+  chapterToken: "tarot.token",
+};
+const SERVER_ID = "abcdefghij0123456789";
+
+describe("내 기록 records", () => {
+  afterEach(() => localStorage.removeItem(DECK_KEY));
+
+  it("shows a reading saved without its deck in the 1909 scans it was written for, and one with a deck in that deck", () => {
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "constellation" }));
+    saveChapter(TAROT, Date.now() - 1000);
+    saveChapter({ ...TAROT, cards: [{ position: "지금의 나", cardId: "major-17-star", orientation: "upright" }], deck: "starlog" } as NewChapter);
+    const { container } = render(<StoryView />);
+    const sources = [...container.querySelectorAll("img")].map((img) => img.getAttribute("src"));
+    expect(sources).toContain("/cards/major-09-hermit-sm.webp");
+    expect(sources).toContain("/cards/starlog/major-17-star-sm.webp");
+    expect(sources).not.toContain("/cards/starlog/major-09-hermit-sm.webp");
+  });
+
+  it("says only this device keeps the records when none is in the account (QA-02)", () => {
+    saveChapter(TAROT);
+    render(<StoryView />);
+    expect(screen.getByText("기록 1개 · 이 기기에 보관돼요")).toBeTruthy();
+  });
+
+  it("says the account keeps them too when they are saved there, and opens one by its account id, the same on every device (QA-02)", () => {
+    saveChapter({ ...TAROT, serverId: SERVER_ID });
+    render(<StoryView />);
+    expect(screen.getByText("기록 1개 · 이 기기와 계정에 보관돼요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: /타로 질문/ }).getAttribute("href")).toBe(`/chapter/${SERVER_ID}`);
+  });
+
+  it("counts the ones in the account when only some are (QA-02)", () => {
+    saveChapter(TAROT, Date.now() - 1000);
+    saveChapter({ ...TAROT, serverId: SERVER_ID });
+    render(<StoryView />);
+    expect(screen.getByText("기록 2개 · 이 기기에 보관돼요 · 1개는 계정에도 있어요")).toBeTruthy();
   });
 });

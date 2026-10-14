@@ -99,15 +99,31 @@ describe("QuestionBuilder", () => {
     }
   });
 
-  it("takes a short 누구 (10 characters) and keeps a sentence typed there out of the question", () => {
+  it("takes a short 누구 (8 characters for a person) and keeps a sentence typed there out of the question", () => {
     seed({ who: "us", topicId: "crush", when: "week" });
     render(<QuestionBuilder />);
     const field = screen.getByRole("textbox", { name: "구체적으로 적기 (선택)" }) as HTMLInputElement;
-    expect(field.maxLength).toBe(10);
+    expect(field.maxLength).toBe(8);
     fireEvent.change(field, { target: { value: "티끌을 얼마나 모아" } });
     expect(screen.getByText("이번 주 그 사람과 나 사이는 어떻게 될까?")).toBeTruthy();
     fireEvent.change(field, { target: { value: "엄마" } });
     expect(screen.getByText("이번 주 엄마와 나 사이는 어떻게 될까?")).toBeTruthy();
+  });
+
+  it("takes only as long a 누구 as the question can hold, so nothing typed is silently dropped (QA-14)", () => {
+    seed({ who: "us", topicId: "crush", when: "week" });
+    render(<QuestionBuilder />);
+    const field = () => screen.getByRole("textbox", { name: "구체적으로 적기 (선택)" }) as HTMLInputElement;
+    // The longest name the field takes stands in the question.
+    fireEvent.change(field(), { target: { value: "가".repeat(field().maxLength) } });
+    expect(screen.getByText(`이번 주 ${"가".repeat(8)}와 나 사이는 어떻게 될까?`)).toBeTruthy();
+    // A team or a group may be longer (10), and comes down to 8 on a switch to a person.
+    fireEvent.click(screen.getByRole("button", { name: "우리 모임" }));
+    expect(field().maxLength).toBe(10);
+    fireEvent.change(field(), { target: { value: "나".repeat(10) } });
+    fireEvent.click(screen.getByRole("button", { name: "나와 그 사람" }));
+    expect(field().maxLength).toBe(8);
+    expect(field().value).toBe("나".repeat(8));
   });
 
   it("shows a 무엇 said rather than named under the question, never in it", () => {

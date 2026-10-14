@@ -12,7 +12,8 @@ const DEMO_DELAY_MS = 1000;
 type SampleChapterProps = {
   sample: TarotSample;
   followUps: FollowUpFixture;
-  inviteUrl: string;
+  /** The demo friend invite; none in production, where it would hand out a made-up invite. */
+  inviteUrl?: string;
 };
 
 /** The noindex demo reading (/chapter/sample): the gold sample with its written follow-up answers. */
@@ -35,7 +36,7 @@ export function SampleChapter({ sample, followUps, inviteUrl }: SampleChapterPro
       cards={sample.cards.map((card) => ({ ...card, faceUp: true }))}
       reading={sample.paid}
       followUp={{ suggestions: followUps.suggestions, turns, remaining: SITE.reading.followUps - turns.length, onAsk }}
-      invite={{ url: inviteUrl, card: sample.cards[0]! }}
+      invite={inviteUrl ? { url: inviteUrl, card: sample.cards[0]! } : undefined}
     />
   );
 }

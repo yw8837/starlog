@@ -17,7 +17,7 @@ import type { DailyData, DailyDeal } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { saveDaily, useDaily } from "@/lib/storage/daily";
 import s from "./TodayView.module.css";
-import { deckPrefs } from "@/lib/deck";
+import { FRONT_DECKS, deckPrefs, type FrontDeck } from "@/lib/deck";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { isDailyData, isDailyDeal } from "@/lib/reading/validate";
 
@@ -76,6 +76,12 @@ function cardName(cardId: string, orientation: Orientation): string {
     return orientation === "reversed" ? "역방향" : "정방향";
   }
 }
+
+/**
+ * The design today's fortune was read with: it quotes that picture, so it shows in it even after the
+ * device switched designs. A fortune kept from before the deck was stored: this device's choice.
+ */
+const deckOf = (reading: DailyData): FrontDeck | undefined => FRONT_DECKS.find((deck) => deck === (reading as { deck?: unknown }).deck);
 
 const ShuffleIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
@@ -196,7 +202,8 @@ export function TodayView() {
 
   let content;
   if (saved === undefined) {
-    content = null;
+    // The server HTML and hydration: the page's heading is there before this device's card is known (SEO-06).
+    content = <h1 className="sr-only">오늘의 한 장</h1>;
   } else if (reading) {
     content = <Opened reading={reading} revisit={!justPicked} flip={justPicked} lineRef={lineRef} />;
   } else if (limited) {
@@ -315,7 +322,7 @@ function Opened({ reading, revisit, flip, lineRef }: { reading: DailyData; revis
 
       {/* 2. The card, face up, with its keyword. */}
       <div className={`${s.cardBlock} ${s.reveal}`} style={{ animationDelay: "160ms" }}>
-        <TarotCard cardId={card.cardId} orientation={card.orientation} faceUp={faceUp} size="md" highlight className={s.card} label={cardName(card.cardId, card.orientation)} />
+        <TarotCard cardId={card.cardId} orientation={card.orientation} faceUp={faceUp} size="md" highlight className={s.card} label={cardName(card.cardId, card.orientation)} deck={deckOf(reading)} />
         <p className={s.cardName}>{cardName(card.cardId, card.orientation)}</p>
         <p className={s.keyword}>{card.keyword}</p>
       </div>

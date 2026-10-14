@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { FLOW_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
 import { saveTeaser } from "@/lib/reading/teaserCache";
-import { clearChapters } from "@/lib/storage/chapters";
+import { TAROT_SAMPLE } from "@/lib/fixtures";
+import { clearChapters, listChapters } from "@/lib/storage/chapters";
 import { FreeResult } from "./FreeResult";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -210,5 +211,33 @@ describe("FreeResult and the signup gift", () => {
     expect(JSON.parse(String((sent?.[1] as RequestInit | undefined)?.body))).toMatchObject({ unlock: { method: "free" } });
     expect(screen.queryByRole("link", { name: "환불받기" })).toBeNull();
     expect(router.push).not.toHaveBeenCalled();
+  });
+});
+
+describe("FreeResult after a reading opens", () => {
+  it("goes to a reading saved in the account by its account id, the address it has on every device (QA-02)", async () => {
+    seed();
+    stub({
+      me: [() => Response.json(meBody({ unused: [{ orderId: ORDER, productId: "tarot" }] }))],
+      reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1", readingId: ID }),
+    });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(listChapters()).toMatchObject([{ serverId: ID }]);
+  });
+});
+
+describe("FreeResult after the free teaser", () => {
+  it("puts a small way to the unlock sheet right after the first card, before the locked contents (QA-05)", async () => {
+    seed();
+    stub({ me: [() => Response.json({ payments: false, login: false, owner: false, user: null })] });
+    render(<FreeResult instant />);
+    const jump = await screen.findByRole("link", { name: "전체 풀이 보러 가기" });
+    expect(jump.getAttribute("href")).toBe("#unlock-title");
+    expect(document.getElementById("unlock-title")).toBeTruthy();
+    const firstCard = screen.getByText("첫 카드 풀이");
+    expect(firstCard.compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(jump.compareDocumentPosition(screen.getByText(/^소제목 2개/)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

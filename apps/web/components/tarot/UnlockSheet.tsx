@@ -174,11 +174,18 @@ export function UnlockSheet({
   } else if (!opening) {
     primary = offerPrimary;
   } else if (usedUp) {
-    // As far as this device knows, the day is used up: nothing to press until tomorrow.
+    // As far as this device knows, the day is used up: nothing to open until tomorrow, so the free
+    // cards are offered to go on with (QA-04).
     primary = (
-      <Button block disabled>
-        전체 풀이 보기
-      </Button>
+      <>
+        <Button block disabled>
+          전체 풀이 보기
+        </Button>
+        <div className={s.links}>
+          <Link href="/now">지금의 한 장 · 무제한 무료</Link>
+          <Link href="/today">오늘의 한 장</Link>
+        </div>
+      </>
     );
   } else {
     primary = (

@@ -50,7 +50,8 @@ function Record({ chapter, now, topicsOpen }: { chapter: StoredChapter; now: num
   const title = chapter.kind === "saju" ? sajuRecordTitle(chapter, topicsOpen) : question;
   return (
     <li>
-      <Link href={`/chapter/${chapter.id}`} className={s.record}>
+      {/* A reading saved in the account opens by its account id, the same address on every device. */}
+      <Link href={`/chapter/${chapter.serverId ?? chapter.id}`} className={s.record}>
         <span className={s.recordHead}>
           <span className={s.kind} data-kind={chapter.kind}>
             {KIND_LABEL[chapter.kind]}
@@ -62,7 +63,7 @@ function Record({ chapter, now, topicsOpen }: { chapter: StoredChapter; now: num
           {chapter.kind === "tarot" ? (
             <span className={s.thumbs} aria-hidden="true">
               {chapter.cards.map((card) => (
-                <TarotCard key={card.position} cardId={card.cardId} orientation={card.orientation} faceUp size="sm" className={s.thumb} />
+                <TarotCard key={card.position} cardId={card.cardId} orientation={card.orientation} faceUp size="sm" className={s.thumb} deck={chapter.deck ?? "rws1909"} />
               ))}
             </span>
           ) : (
@@ -96,13 +97,16 @@ export function StoryView() {
   }
   if (chapters.length === 0) return <EmptyStory />;
   const now = Date.now();
+  // Every record is on this device; the ones opened with 결제 or 가입 선물 while logged in are in the account too.
+  const inAccount = chapters.filter((chapter) => chapter.serverId).length;
+  const kept = inAccount === 0 ? "이 기기에 보관돼요" : inAccount === chapters.length ? "이 기기와 계정에 보관돼요" : `이 기기에 보관돼요 · ${inAccount}개는 계정에도 있어요`;
 
   return (
     <div className={s.layout}>
       <div className={s.main}>
         <header className={s.head}>
           <h1 className={s.title}>내 기록</h1>
-          <p className={s.count}>{`기록 ${chapters.length}개 · 이 기기에 보관돼요`}</p>
+          <p className={s.count}>{`기록 ${chapters.length}개 · ${kept}`}</p>
         </header>
         <ol className={s.records} aria-label="기록 목록">
           {newestFirst(chapters).map((chapter) => (

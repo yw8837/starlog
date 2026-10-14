@@ -161,7 +161,13 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
                 <ChevronIcon />
               </Link>
             </li>
-            <Soon>문의하기</Soon>
+            <li>
+              {/* The address in the footer's business info (lib/config.ts SITE.business). */}
+              <a href={`mailto:${SITE.business.email}`} className={s.item}>
+                <span>문의하기</span>
+                <ChevronIcon />
+              </a>
+            </li>
           </ul>
         </nav>
 

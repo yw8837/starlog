@@ -17,7 +17,7 @@ import { randomId, signingSecret } from "@/lib/security/sign";
  * face-down cards per KST day, dealt from HMAC(secret, device + day) (dailyDeal): a refresh cannot
  * re-roll and the pick is real (three distinct cards). Only the picked card ever leaves the server
  * (owner order: the other two are never revealed, before or after the pick).
- * - GET → today's stored result `{ ...reading, pick }`, or `{ deal: [{index:0},{index:1},{index:2}] }`.
+ * - GET → today's stored result `{ ...reading, pick, deck }`, or `{ deal: [{index:0},{index:1},{index:2}] }`.
  * - POST {pick: 0|1|2} → the picked card's fortune, generated once and stored for the day (KV) with
  *   the pick. The first pick of the day is locked in the device cookie, and once a result is stored
  *   every later POST that day returns it, whatever it picks. An invalid pick is 400; a missing one
@@ -90,7 +90,8 @@ export async function POST(request: Request): Promise<Response> {
 
   const ctx = buildTarotContext("daily", [{ ...card, position: "오늘의 한 장", slot: 0 }], null, { deck });
   return respondGeneration(request, async (hooks) => {
-    const result = await getOrCreateDailyResult(state.did, day, async (): Promise<DailyResult> => {
+    // Stored with the deck it quotes: switching designs later that day still shows that deck's picture.
+    const result = await getOrCreateDailyResult(state.did, day, async (): Promise<DailyResult & { deck: typeof deck }> => {
       const { data } = await generateDaily(gate.provider, ctx, hooks);
       return {
         card: { ...card, keyword: data.keyword.trim() },
@@ -100,6 +101,7 @@ export async function POST(request: Request): Promise<Response> {
         lucky: { color: data.color.trim(), number: dailyLuckyNumber(state.did, day) },
         tip: data.tip.trim(),
         pick,
+        deck,
       };
     });
     if (!result.generated) return { body: result.reading, cookies: [] };
