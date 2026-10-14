@@ -14,7 +14,7 @@ import { expect, test } from "vitest";
 import { anthropicProvider } from "@/lib/ai/anthropic";
 import { EFFORTS, KIND_ENV, MODELS, generationSetting } from "@/lib/ai/config";
 import { usdOf } from "@/lib/ai/cost";
-import { generateDaily, generateSajuReading, generateSajuTeaser, generateTarotReading, generateTarotTeaser } from "@/lib/ai/generate";
+import { generateDaily, generateSajuReading, generateSajuTeaser, generateTarotReading, generateTarotTeaser, withWrittenCards } from "@/lib/ai/generate";
 import { buildFactSet, type SajuProfile } from "@/lib/ai/prompts/saju";
 import { buildTarotContext, type TarotContext } from "@/lib/ai/prompts/tarot";
 import { GenerationError, type ReadingProvider, type Usage } from "@/lib/ai/provider";
@@ -141,11 +141,11 @@ test("ai smoke", async () => {
 
   async function call<T>(run: number, kind: Kind, validate: (draft: never) => string[], generate: (p: ReadingProvider) => Promise<{ data: T }>,
     recheck: (data: T) => string[], prose: (data: T) => string, input: unknown) {
-    if (SMOKE_KINDS && !SMOKE_KINDS.includes(kind)) return;
+    if (SMOKE_KINDS && !SMOKE_KINDS.includes(kind)) return null;
     const spent = rows.reduce((sum, r) => sum + r.krw, 0);
     if (spent >= SMOKE_CAP_KRW) {
       console.log(`run ${run} ${kind}: 건너뜀 · 지금까지 ${spent}원으로 상한 ${SMOKE_CAP_KRW}원에 닿았어요`);
-      return;
+      return null;
     }
     const rec = recording(real, validate);
     const started = Date.now();
@@ -171,14 +171,17 @@ test("ai smoke", async () => {
     rows.push(row);
     writeFileSync(new URL(`${run}-${kind}.json`, dir), JSON.stringify({ ...row, input, output: data }, null, 2));
     console.log(`run ${run} ${kind}: ${row.ok ? "통과" : "실패"} · 시도 ${row.attempts} · AI티 ${row.aiTellScore} · ${row.krw}원 · ${row.seconds}s${error ? ` · ${error.slice(0, 160)}` : ""}`);
+    return data;
   }
 
   for (let run = 1; run <= RUNS; run++) {
     const cards = pickCards(createDeck(`smoke-${stamp}-${run}`, DEFAULT_REVERSAL_RATE), TEMPLATES["self-flow"], [5, 25, 50]);
     const money: TarotContext = buildTarotContext("self-flow", cards, smokeTarotInput());
     const moneyInput = { question: money.question, conditions: money.conditions, note: money.note, cards: cards.map((c) => `${c.position}: ${c.cardId} ${c.orientation}`) };
-    await call<TarotTeaser>(run, "tarot-teaser", (d) => validateTarotTeaser(d, money), (p) => generateTarotTeaser(p, money),
-      (d) => validateTarotTeaser(d, money), (d) => d.firstCard.body, moneyInput);
+    const teaser = await call<TarotTeaser>(run, "tarot-teaser", (d) => validateTarotTeaser(d, money), (p) => generateTarotTeaser(p, money),
+      (d) => validateTarotTeaser(d, money), (d) => [d.firstCard.body, d.secondCard?.body ?? ""].join(" "), moneyInput);
+    // 감질맛: the paid reading reads on from the teaser's two cards, as the reading route does with the teaser's seal.
+    const written = teaser?.secondCard ? [teaser.firstCard, teaser.secondCard] : [];
 
     // Fixed per stamp and run (not per day or device), so an A/B run sees the same daily card.
     const did = `smoke-${stamp}-${run}`;
@@ -189,8 +192,8 @@ test("ai smoke", async () => {
       (d) => validateDaily(d, daily), (d) => [d.summary, d.body, d.areas.love, d.areas.money, d.areas.work, d.tip].join("\n"),
       { card, luckyNumber: dailyLuckyNumber(did, day) });
 
-    await call<TarotReading>(run, "tarot-reading", (d) => validateTarotReading(d, money), (p) => generateTarotReading(p, money),
-      (d) => validateTarotReading(d, money), tarotProse, moneyInput);
+    await call<TarotReading>(run, "tarot-reading", (d) => validateTarotReading(withWrittenCards(d, written), money, { written: written.length }), (p) => generateTarotReading(p, money, undefined, written),
+      (d) => validateTarotReading(d, money, { written: written.length }), tarotProse, { ...moneyInput, written: written.length });
 
     const chart = { chart: "1993-08-17 07:20 부산 남", pillars: saju.pillars.map((p) => p.gz), profile };
     await call<SajuTeaser>(run, "saju-teaser", (d) => validateSajuTeaser(d, saju), (p) => generateSajuTeaser(p, saju),
