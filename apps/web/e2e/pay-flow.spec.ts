@@ -2,15 +2,17 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 /**
  * Accounts and payments in owner mode (STARLOG_PAYMENTS=owner, mock Kakao and mock Toss, local D1):
- * the owner pass opens sales on this browser; everyone else keeps the sheet of 첫 이용 무료 (tarot; saju
- * offers no free reading), which the other specs cover. A mock Kakao login without mockUser is a fresh account each time, so every run
- * starts with the gift. The question steps are the ones tarot-flow.spec.ts uses (chips toggle, the
- * situation step comes after 다음).
+ * the owner pass opens sales on this browser; everyone else keeps the sheet of 오픈 기념 무료 (tarot; saju
+ * offers no free reading), which the other specs cover. A mock Kakao login without mockUser is a fresh account each time, and
+ * a new account gets no signup gift (removed, owner 2026-10-14 evening). The question steps are the ones tarot-flow.spec.ts uses (chips toggle, the
+ * situation step comes after 다음). 오픈 기념 무료 ends with 2026-10-31 (KST): the sheet lines naming it go from 11월 1일.
  */
 
 const NAV = 30_000;
 const GENERATION = 120_000;
 const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
+/** The 오픈 기념 무료 rule as the unlock sheet says it. */
+const OPENING_RULE = "10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).";
 
 async function ownAddress(page: Page, info: TestInfo) {
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.9.${info.workerIndex}.${Math.floor(Math.random() * 250)}` });
@@ -54,39 +56,48 @@ async function toResult(page: Page) {
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
 }
 
-test("owner mode: log in for the gift, open a tarot reading with it, pay for the next, see it in 내 정보 and refund an unopened one", async ({ page }, info) => {
+test("owner mode: log in (no signup gift), pay for a tarot reading that takes follow-ups, see it in 내 정보 and refund an unopened one", async ({ page }, info) => {
   test.setTimeout(600_000);
   await ownAddress(page, info);
   expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
 
-  // 1. A guest is asked to log in, with the free first tarot reading named on the sheet and the login page.
+  // 1. A guest is asked to log in to pay, with 오픈 기념 무료 named on the sheet; no signup gift is promised there or on the login page.
   await toResult(page);
-  await expect(page.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeVisible();
+  const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
+  await expect(sheet).toContainText(OPENING_RULE);
+  await expect(sheet).not.toContainText("선물");
   await page.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).click();
   await expect(page).toHaveURL(/\/login\?next=%2Ftarot%2Fresult$/, { timeout: NAV });
-  await expect(page.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeVisible();
+  await expect(page.getByText(/가입 선물|무료로 드려요/)).toHaveCount(0);
   await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
   await page.getByRole("button", { name: "카카오로 계속하기" }).click();
   await expect(page).toHaveURL(/\/tarot\/result\?login=ok$/, { timeout: NAV });
 
-  // 2. The gift opens the reading; it is saved on this device and in the account, and the gift reads as used.
-  await expect(page.getByText(/^가입 선물은 \d+월 \d+일까지 쓸 수 있어요$/)).toBeVisible();
-  await page.getByRole("button", { name: "가입 선물로 무료로 보기" }).click();
-  await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
-  const me = await (await page.request.get("/api/me")).json();
-  expect(me.user.gift).toEqual({ status: "used" });
-  const saved = await (await page.request.get("/api/readings?limit=5")).json();
-  expect(saved.readings).toHaveLength(1);
+  // 2. The new account holds no gift: the sheet offers no gift, only 오픈 기념 무료 and paying.
+  expect((await (await page.request.get("/api/me")).json()).user.gift).toBeNull();
+  await expect(sheet.getByRole("link", { name: "2,900원 결제하고 보기" })).toBeVisible();
+  await expect(sheet.getByRole("button", { name: "가입 선물로 무료로 보기" })).toHaveCount(0);
 
-  // 3. The next reading is paid: checkout with the 청약철회 and minor notices, mock Toss, back, opened automatically.
-  await toResult(page);
-  await page.getByRole("link", { name: "2,900원 결제하고 보기" }).click();
+  // 3. The reading is paid: checkout with the 청약철회 and minor notices, mock Toss, back, opened automatically,
+  //    saved in the account, and it takes follow-ups (a 오픈 기념 무료 reading does not).
+  await sheet.getByRole("link", { name: "2,900원 결제하고 보기" }).click();
   await expect(page).toHaveURL(/\/pay\/checkout\?/, { timeout: NAV });
   await expect(page.getByText(/청약철회가 제한돼요/)).toBeVisible();
   await expect(page.getByText(/법정대리인의 동의 없이/)).toBeVisible();
   await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
   await page.getByRole("button", { name: "2,900원 결제하기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]+$/, { timeout: GENERATION });
+  const saved = await (await page.request.get("/api/readings?limit=5")).json();
+  expect(saved.readings).toHaveLength(1);
+  await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
+  const followUp = page.getByRole("region", { name: /이어서 물어보기/ });
+  await expect(followUp).toContainText("3번 남았어요");
+  const field = followUp.getByRole("textbox", { name: "이어서 물어볼 내용" });
+  await field.fill("이번 주에 무엇부터 줄이면 좋을까요?");
+  const answered = page.waitForResponse((r) => r.url().endsWith("/api/followup"));
+  await field.press("Enter");
+  await answered;
+  await expect(followUp).toContainText("2번 남았어요", { timeout: 30_000 });
 
   // 4. A saju purchase left unopened shows in 내 정보 and refunds in full.
   await page.goto("/pay/checkout?product=saju&returnTo=%2Fme");
@@ -113,7 +124,7 @@ test("a browser without the owner pass keeps today's sheet in owner mode", async
   await ownAddress(page, info);
   await toResult(page);
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
-  await expect(sheet).toContainText("처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요");
+  await expect(sheet).toContainText(OPENING_RULE);
   await expect(sheet.getByRole("link")).toHaveCount(0);
 });
 
@@ -131,7 +142,7 @@ async function toSajuTopic(page: Page) {
   await expect(page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
 }
 
-test("owner mode, 주제별 사주: the 운 survives the login, the gift never opens it, 재물운 and 직장운 are each paid and open as themselves", async ({ page }, info) => {
+test("owner mode, 주제별 사주: the 운 survives the login, no gift is offered, 재물운 and 직장운 are each paid and open as themselves", async ({ page }, info) => {
   test.setTimeout(600_000);
   await ownAddress(page, info);
   expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
@@ -146,13 +157,13 @@ test("owner mode, 주제별 사주: the 운 survives the login, the gift never o
   await page.getByRole("button", { name: "카카오로 계속하기" }).click();
   await expect(page).toHaveURL(/\/saju\/chart\?topic=money&login=ok$/, { timeout: NAV });
 
-  // The 운 came back with the address; the sheet names it, says what one payment opens, and offers only paying,
-  // though the fresh account holds an unused gift (tarot only).
+  // The 운 came back with the address; the sheet names it, says what one payment opens, and offers only paying
+  // (a new account holds no signup gift: removed, owner 2026-10-14 evening).
   await expect(money).toContainText("재물운 전체 풀이 · 4,900원");
   await expect(money).toContainText("결제 한 번에 고른 풀이 하나를 열어요");
   await expect(money.getByRole("button", { name: "가입 선물로 무료로 보기" })).toHaveCount(0);
   await expect(money).not.toContainText("선물");
-  expect((await (await page.request.get("/api/me")).json()).user.gift).toMatchObject({ status: "unused" });
+  expect((await (await page.request.get("/api/me")).json()).user.gift).toBeNull();
   await money.getByRole("link", { name: "4,900원 결제하고 보기" }).click();
   await expect(page).toHaveURL(/\/pay\/checkout\?/, { timeout: NAV });
   await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();

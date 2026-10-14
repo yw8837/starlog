@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { accountSecret, kakaoKey } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
-import { giftExpiry } from "@/lib/pay/ledger";
+import { giftExpiry, grantSignupGift } from "@/lib/pay/ledger";
 import { LIMITS_PER_MINUTE, resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, loginAs, me, startUrl, useTestDb } from "@/lib/testing/p4";
 import { GET as meGet } from "../me/route";
@@ -54,7 +54,7 @@ describe("Kakao login", () => {
     expect((await b.send(start, url)).headers.get("location")).toContain("/api/auth/kakao/callback?code=");
   });
 
-  it("logs in, gives the signup gift once, shows it in /api/me, and logs out", async () => {
+  it("logs in with no signup gift (removed, owner 2026-10-14 evening), shows the account in /api/me, and logs out", async () => {
     const db = useTestDb();
     const b = browser();
     const res = await loginAs(b, "alice");
@@ -65,23 +65,23 @@ describe("Kakao login", () => {
       payments: true,
       login: true,
       owner: false,
-      user: { nickname: "테스트 별손님", gift: { status: "unused", until: new Date(giftExpiry(T0)).toISOString() }, unused: [], opening: [] },
+      user: { nickname: "테스트 별손님", gift: null, unused: [], opening: [] },
     });
     expect((await b.send(logout, "/api/auth/logout", { method: "POST", origin: true })).status).toBe(200);
     expect((await me(b)).user).toBeNull();
     await loginAs(b, "alice");
-    expect((await me(b)).user?.gift?.status).toBe("unused");
-    expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'").first()).toEqual({ n: 1 });
+    expect((await me(b)).user?.gift).toBeNull();
+    expect(await db.prepare("SELECT (SELECT COUNT(*) FROM ledger WHERE kind = 'grant') AS grants, (SELECT COUNT(*) FROM gift_claims) AS claims").first()).toEqual({ grants: 0, claims: 0 });
   });
 
-  it("gives a gift that did not arrive at sign-up on the next login", async () => {
+  it("keeps an unused gift an account already holds (granted before the removal), and grants nothing on later logins", async () => {
     const db = useTestDb();
-    // An account whose sign-up gift failed: it exists, and no claim or lot was written.
     const key = await kakaoKey("mock-dave", accountSecret()!);
     await db.prepare("INSERT INTO users (id, kakao_key, nickname, customer_key, created_at, last_login_at) VALUES ('u_dave', ?, '데이브', 'c_dave_000000000000000000', 0, 0)").bind(key).run();
+    expect(await grantSignupGift(db, { userId: "u_dave", kakaoKey: key, now: T0 })).toBe(true);
     const b = browser();
     await loginAs(b, "dave");
-    expect((await me(b)).user?.gift?.status).toBe("unused");
+    expect((await me(b)).user?.gift).toEqual({ status: "unused", until: new Date(giftExpiry(T0)).toISOString() });
     await loginAs(b, "dave");
     expect(await db.prepare("SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'").first()).toEqual({ n: 1 });
   });
@@ -93,7 +93,7 @@ describe("Kakao login", () => {
     expect((await alice.send(logout, "/api/auth/logout", { method: "POST", origin: true })).status).toBe(200);
     vi.stubEnv("STARLOG_PAYMENTS", "paused");
     expect((await loginAs(alice, "alice")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
-    expect(await me(alice)).toMatchObject({ payments: false, login: true, user: { gift: { status: "unused" } } });
+    expect(await me(alice)).toMatchObject({ payments: false, login: true, user: { gift: null } });
     const bob = browser("198.51.100.21");
     expect((await loginAs(bob, "bob")).headers.get("location")).toBe("http://localhost/tarot/result?login=closed");
     expect(await db.prepare("SELECT COUNT(*) AS n FROM users").first()).toEqual({ n: 1 });
@@ -139,7 +139,7 @@ describe("Kakao login", () => {
     const owner = browser("198.51.100.1");
     expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true })).status).toBe(200);
     expect((await loginAs(owner, "owner")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
-    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { gift: { status: "unused" } } });
+    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { gift: null } });
     // A new owner code revokes the passes handed out under the old one.
     vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0002");
     expect(await me(owner)).toMatchObject({ payments: false, owner: false });

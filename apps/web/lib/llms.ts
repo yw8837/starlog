@@ -1,7 +1,7 @@
 import { SITE, won } from "./config";
 import { faqGroups } from "./faq";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, type GuideArticle } from "./guide";
-import { times } from "./helpGuide";
+import { openingFreeText } from "./helpGuide";
 import { absoluteUrl } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
 import { SITE_SUMMARY } from "./jsonld";
@@ -22,7 +22,7 @@ export function serviceFacts(site: Site = SITE): string[] {
   const { nameKo, name, business, price, beta } = site;
   return [
     `${nameKo}(${name})는 ${withParticle(business.name, "이/가")} 만들고 운영하는 한국어 타로·사주 웹 서비스예요. 주소는 ${site.url} 이에요.`,
-    "로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 풀이를 쓸 수 있어요. 연 풀이와 입력한 정보는 지금 쓰는 기기의 브라우저에 보관돼요. 로그인해 결제하거나 가입 선물로 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 서버에 저장하지 않아요.",
+    "로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 풀이를 쓸 수 있어요. 연 풀이와 입력한 정보는 지금 쓰는 기기의 브라우저에 보관돼요. 로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 서버에 저장하지 않아요.",
     "타로 보기: 누구의 일인지, 무엇이 궁금한지, 언제까지인지 골라 질문을 만들고 카드 3장을 뽑아요. 고른 주제(연락, 연애, 직업·이직, 이사·선택 등)에 따라 세 자리가 정해져 있어요.",
     "타로 카드는 1909년 라이더-웨이트-스미스 원판의 구도를 고양이와 토끼가 연기하는 스타로그 카드 78장이 기본이고, 설정에서 원판 그림으로 바꿀 수 있어요. 카드마다 원판 그림에 실제로 그려진 것을 정리해 두고, 그 사실을 풀이의 바탕으로 삼아요.",
     "사주 보기: 태어난 날과 시, 태어난 곳으로 만세력에 따라 네 기둥(여덟 글자)을 세우고, 타고난 결과 지금 지나는 10년(대운)의 흐름을 읽어요.",
@@ -33,8 +33,8 @@ export function serviceFacts(site: Site = SITE): string[] {
     ...(site.features.bonds
       ? ["별자리 인연: 친구들이 별이 되어 내 별자리를 채우고, 사주로 본 인연 점수로 열두 별자리 랭킹에 올라요. 이번 주 행운 번호는 생년월일의 오행과 이번 주 카드로 고른 번호 6개를 재미로 보여 줘요."]
       : []),
-    `가격: 타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}이에요. 처음 ${times(beta.firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있고(첫 이용 무료), 사주 전체 풀이는 결제하고 열어요.${site.features.payments ? "" : " 결제 기능은 준비 중이에요."}`,
-    `전체 풀이를 연 뒤에는 같은 풀이를 두고 이어서 물어보기를 ${site.reading.followUps}번 할 수 있어요.`,
+    `가격: 타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}이에요. ${openingFreeText(beta.firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요.${site.features.payments ? "" : " 결제 기능은 준비 중이에요."}`,
+    `결제하고 전체 풀이를 연 뒤에는 같은 풀이를 두고 이어서 물어보기를 ${site.reading.followUps}번 할 수 있어요.`,
     "하지 않는 것: 합격, 재회, 수익 같은 결과를 약속하지 않아요. 다른 사람의 마음을 사실처럼 말하지 않고, 병이나 수명, 사고를 점치지 않아요. 풀이는 재미와 자기 성찰을 위한 참고용이고, 의료·법률·투자처럼 중요한 결정은 전문가와 상의하도록 안내해요.",
   ];
 }

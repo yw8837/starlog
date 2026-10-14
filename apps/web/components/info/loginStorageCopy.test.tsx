@@ -48,7 +48,7 @@ const RETIRED = [
 ];
 
 /** The one sentence about the account, as /pricing words it (the guide adds "도"). */
-const ACCOUNT = /로그인해 결제하거나 가입 선물로 연 풀이는 계정에도 보관돼 다른 기기에서도? 볼 수 있어요/;
+const ACCOUNT = /로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서도? 볼 수 있어요/;
 
 const sentences = (value: string) => value.split(/(?<=[.!?])\s+|\n/).filter(Boolean);
 
@@ -71,7 +71,7 @@ describe("login and storage wording (SEO-03)", () => {
   it("/saju/new guide: the birth details kept on this device are also kept in the account for a logged-in reading", () => {
     const page = text(<SajuGuide />);
     expect(page).toContain("사주 입력 정보는 이 기기의 브라우저에 저장되고");
-    expect(page).toMatch(/로그인해 결제하거나 가입 선물로 연 풀이는 입력한 정보와 함께 암호화해 계정에도 보관돼요/);
+    expect(page).toMatch(/로그인해 결제하고 연 풀이는 입력한 정보와 함께 암호화해 계정에도 보관돼요/);
   });
 
   it("/faq: the records answer names both places, and the login answer no longer claims every feature works without login", () => {
@@ -82,6 +82,7 @@ describe("login and storage wording (SEO-03)", () => {
     expect(records).toContain("로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서는 보이지 않아요");
     const login = entries.find((entry) => entry.id === "login")?.a.join(" ") ?? "";
     expect(login).toContain("로그인하지 않아도");
-    expect(login).toContain("결제하거나 가입 선물을 받으려면");
+    expect(login).toContain("결제하려면 카카오나 Google로 로그인해야 해요");
+    expect(login).not.toContain("가입 선물");
   });
 });

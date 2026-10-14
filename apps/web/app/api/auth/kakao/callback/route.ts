@@ -7,7 +7,6 @@ import { openAccountRoute, type AccountContext } from "@/lib/account/request";
 import { kakaoKey } from "@/lib/account/secrets";
 import { clearSession, createSession, revokeSession } from "@/lib/account/session";
 import { loginKakaoUser, userByKakaoKey } from "@/lib/account/users";
-import { grantSignupGift } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { tossClient } from "@/lib/pay/toss";
 
@@ -17,8 +16,8 @@ type Back = (flag: string, cookies?: Array<CookieSpec | string>) => Response;
  * GET ?code&state (or ?error&state) from Kakao. The state must match this browser's OAuth state cookie (oauthCookieName),
  * and the Kakao settings are checked again before the code is used.
  * - login: find the account, or create one while sales are open for this device (paused: existing
- *   accounts only, else ?login=closed). While sales are open the signup gift is tried on every login
- *   (once per Kakao account). Start a session and return with ?login=ok|cancel|failed.
+ *   accounts only, else ?login=closed). No signup gift (removed, owner 2026-10-14 evening: one person
+ *   could join with Kakao and with Google and get two). Start a session and return with ?login=ok|cancel|failed.
  * - delete: the same Kakao account as the session must answer. Then deleteAccount() settles,
  *   refunds and erases, the app is unlinked from Kakao, and we land on /me?account=deleted (spec 5.8).
  */
@@ -62,10 +61,9 @@ async function finishLogin(ctx: AccountContext, key: string, nickname: string, a
     return back("failed");
   }
   const { user, created } = account;
-  const gifted = open ? await grantSignupGift(ctx.db, { userId: user.id, kakaoKey: key, now: ctx.now }) : false;
   if (ctx.session) await revokeSession(ctx.db, ctx.session.id, ctx.now);
   const session = await createSession(ctx.db, user.id, ctx.secret, ctx.now);
-  console.info(JSON.stringify({ evt: "auth.login", created, gifted }));
+  console.info(JSON.stringify({ evt: "auth.login", created }));
   return back("ok", [session.cookie]);
 }
 

@@ -51,6 +51,11 @@ interface ChapterBase {
    * its share show the cards in it. Absent on readings opened before 2026-10-14: those were written for the 1909 scans.
    */
   deck?: FrontDeck;
+  /**
+   * Opened with 오픈 기념 무료: read and kept on this device only (owner 2026-10-14 evening), so the record
+   * shows no follow-up box or share button (the server refuses both for its chapter token).
+   */
+  opening?: true;
 }
 
 export interface TarotChapter extends ChapterBase {
@@ -119,6 +124,7 @@ export function parseChapter(value: unknown): StoredChapter | null {
   if (isString(value.serverId) && /^[a-z0-9]{20}$/.test(value.serverId)) base.serverId = value.serverId;
   const deck = FRONT_DECKS.find((option) => option === value.deck);
   if (deck) base.deck = deck;
+  if (value.opening === true) base.opening = true;
   const reading = value.reading;
 
   if (value.kind === "tarot") {

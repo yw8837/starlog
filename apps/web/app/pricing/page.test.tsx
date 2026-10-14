@@ -21,7 +21,7 @@ vi.mock("@/lib/config", async (importOriginal) => {
         ],
       },
       reading: { followUps: 5, approxChars: { tarot: { min: 1234, max: 1234 }, saju: { min: 5678, max: 6789 } } },
-      beta: { firstFreeTarot: 2, teaserPerDay: 4 },
+      beta: { ...actual.SITE.beta, firstFreeTarot: 2, teaserPerDay: 4 },
     },
   };
 });
@@ -47,16 +47,14 @@ describe("/pricing", () => {
     expect(text).not.toContain("충전");
   });
 
-  it("explains the signup gift in its own short section: one free tarot reading, never saju, kept 90 days", () => {
+  it("states 오픈 기념 무료 with its rule (until 10월 31일, per device, read and keep only) and promises no signup gift (removed, owner 2026-10-14 evening)", () => {
     const { container } = render(<PricingPage />);
-    const gift = container.querySelector("#gift");
-    expect(gift?.querySelector("h2")?.textContent).toBe("가입 선물");
-    const text = gift?.textContent ?? "";
-    expect(text).toContain("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요. 계정 하나에 한 번만 드려요.");
-    expect(text).not.toContain("한 사람에게");
-    expect(text).toContain("사주 전체 풀이와 주제별 사주 풀이");
-    expect(text).toContain("받은 날부터 90일째 되는 날 밤 12시(한국 시간)까지");
-    expect(text).toContain("환불하거나 현금으로 바꿀 수 없고");
+    const rule = "10월 31일까지 기기마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).";
+    expect(container.querySelector(".noteTitle, [class*=noteTitle]")?.textContent).toBe(rule);
+    expect(container.querySelector("#free")?.textContent).toContain(rule);
+    expect(container.querySelector("#gift")).toBeNull();
+    expect(container.textContent).not.toMatch(/가입 선물|첫 이용/);
+    expect(metadata.description).not.toContain("가입 선물");
     expect(container.querySelector("#stardust")).toBeNull();
     expect(container.textContent).not.toMatch(/별조각|달빛|\d+개/);
   });

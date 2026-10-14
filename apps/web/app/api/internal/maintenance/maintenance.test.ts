@@ -8,7 +8,7 @@ import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
 import { insertReadingStatement, newReadingId } from "@/lib/readings/store";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
+import { browser, buy, grantGift, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as confirm } from "../../pay/confirm/route";
 import { POST as ordersPost } from "../../pay/orders/route";
 import { POST as refund } from "../../pay/refund/route";
@@ -246,6 +246,7 @@ describe("maintenance", () => {
   it("returns any account's stale reservation", async () => {
     const db = useTestDb();
     const b = await loggedIn();
+    await grantGift(db); // held from before the gift was removed
     const userId = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!.id;
     expect((await reserveUnlock(db, { userId, productId: "tarot", currency: "free", now: T0, payMode: "mock" })).ok).toBe(true);
     vi.setSystemTime(T0 + RESERVATION_MS + 1);
@@ -257,6 +258,7 @@ describe("maintenance", () => {
   it("finishes an erase that a deletion did not", async () => {
     const db = useTestDb();
     const b = await loggedIn();
+    await grantGift(db); // held from before the gift was removed: its claim is stamped
     await buy(b);
     const userId = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!.id;
     const chapter = { kind: "tarot" as const, reading: { verdict: "v" }, chapterToken: "t", createdAt: T0, turns: [], followUpsLeft: 3 };

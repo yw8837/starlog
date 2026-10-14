@@ -251,7 +251,7 @@
   }
 }
 
-/* ---- 첫 이용 무료 and login boxes ---- */
+/* ---- 오픈 기념 무료 and login boxes ---- */
 
 .beta {
   display: grid;
@@ -269,6 +269,12 @@
 .betaTitle {
   font-size: var(--fs-h2);
   line-height: 1.5;
+}
+
+.betaRule {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
 }
 
 .betaText {

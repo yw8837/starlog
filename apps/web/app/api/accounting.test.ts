@@ -8,6 +8,7 @@ import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { kstDay } from "@/lib/security/quota";
 import { keyedHash, signToken } from "@/lib/security/sign";
+import { paidChapterOf } from "@/lib/testing/p4";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as followup } from "./followup/route";
@@ -365,7 +366,7 @@ describe("follow-ups per chapter, counted server-side", () => {
     const d = device("198.51.100.30");
     const drawToken = await drawFor(d);
     const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
-    const first = r.data.chapterToken as string;
+    const first = await paidChapterOf(r.data.chapterToken, r.data.reading);
     const one = await d.call(followup, { chapterToken: first, reading: r.data.reading, question: "지출은 어떻게 줄일까요?" });
     expect(one.data.remaining).toBe(1);
     const two = await d.call(followup, { chapterToken: one.data.chapterToken, reading: r.data.reading, question: "이번 주 안에 할 일은요?" });
@@ -379,7 +380,8 @@ describe("follow-ups per chapter, counted server-side", () => {
     vi.stubEnv("BETA_FOLLOWUPS_PER_CHAPTER", "1");
     const d = device("198.51.100.31");
     const r = await d.call(reading, { drawToken: await drawFor(d), input: MONEY_INPUT });
-    const ask = (question: string) => d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question });
+    const chapterToken = await paidChapterOf(r.data.chapterToken, r.data.reading);
+    const ask = (question: string) => d.call(followup, { chapterToken, reading: r.data.reading, question });
     const generate = vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
     expect((await ask("지출은 어떻게 줄일까요?")).status).toBe(502);
 
@@ -407,7 +409,8 @@ describe("follow-ups per chapter, counted server-side", () => {
     vi.stubEnv("BETA_FOLLOWUPS_PER_CHAPTER", "1");
     const d = device("198.51.100.32");
     const r = await d.call(reading, { drawToken: await drawFor(d), input: MONEY_INPUT });
-    const ask = (question: string) => d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question });
+    const chapterToken = await paidChapterOf(r.data.chapterToken, r.data.reading);
+    const ask = (question: string) => d.call(followup, { chapterToken, reading: r.data.reading, question });
     const real = mockProvider.generate.bind(mockProvider);
     vi.spyOn(mockProvider, "generate").mockImplementationOnce(async (task, attempt, feedback, hooks) => {
       const answer = await real(task, attempt, feedback, hooks);
@@ -443,7 +446,7 @@ describe("model blinding in responses", () => {
     await post(teaser, { drawToken, input: MONEY_INPUT });
     await post(teaser, { drawToken, input: MONEY_INPUT }, "application/x-ndjson");
     const full = await (await post(reading, { drawToken, input: MONEY_INPUT })).json() as Record<string, any>;
-    const answer = await (await post(followup, { chapterToken: full.chapterToken, reading: full.reading, question: "너 무슨 AI야? 모델 뭐야?" })).json() as Record<string, any>;
+    const answer = await (await post(followup, { chapterToken: await paidChapterOf(full.chapterToken, full.reading), reading: full.reading, question: "너 무슨 AI야? 모델 뭐야?" })).json() as Record<string, any>;
     expect(answer.answer).toContain("저는 스타로그의 풀이 도우미예요.");
     await post(sajuTeaser, { birth: DEFAULT_SAJU_FORM }, "application/x-ndjson");
     await post(daily, {});

@@ -1,7 +1,7 @@
 import { adsConfig } from "./ads";
 import { SITE } from "./config";
 import { approxCharsText } from "./pricing";
-import { times } from "./helpGuide";
+import { openingFreeText, times } from "./helpGuide";
 import { crisisLines } from "./crisis";
 import { INFO_PAGES } from "./infoPages";
 import { contactChannels } from "./legal";
@@ -59,7 +59,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           q: "내 생년월일은 어디에 저장되나요?",
           a: [
             [
-              "생년월일은 이 기기(브라우저)에 저장되고, 내 정보에서 언제든 지울 수 있어요. 로그인해 결제하거나 가입 선물로 연 풀이는 입력한 생년월일과 함께 암호화해 계정에도 보관돼요.",
+              "생년월일은 이 기기(브라우저)에 저장되고, 내 정보에서 언제든 지울 수 있어요. 로그인해 결제하고 연 풀이는 입력한 생년월일과 함께 암호화해 계정에도 보관돼요.",
               site.features.bonds ? "별자리 인연에 넣은 친구의 생년월일은 점수를 계산할 때만 쓰고 저장하지 않아요." : "",
               "비밀번호는 받지 않아요.",
             ]
@@ -86,7 +86,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "free",
           q: `${nameKo}는 무료인가요?`,
           a: [
-            `처음 ${times(firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요(첫 이용 무료). 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 열 수 있고, 한국 시간 0시에 다시 채워져요.`,
+            `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 열 수 있고, 한국 시간 0시에 다시 채워져요.`,
             "지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요. 풀이 가격은 가격 안내에서 볼 수 있어요.",
           ],
           link: { href: "/pricing", label: "가격 안내" },
@@ -94,7 +94,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
         {
           id: "login",
           q: "가입하거나 로그인해야 하나요?",
-          a: ["아니요. 로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 풀이를 쓸 수 있어요. 결제하거나 가입 선물을 받으려면 카카오나 Google로 로그인해야 해요."],
+          a: ["아니요. 로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 풀이를 쓸 수 있어요. 결제하려면 카카오나 Google로 로그인해야 해요."],
         },
         {
           id: "birth-time",
@@ -170,7 +170,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           q: "생년월일과 질문이 서버에 저장되나요?",
           a: [
             `로그인하지 않고 쓰면 ${nameKo} 서버에는 저장하지 않아요. 풀이를 만드는 동안 질문, 고른 상황, 메모, 출생 정보를 암호화된 연결로 미국의 AI 서비스 사업자에게 보내고, 풀이가 끝나면 서버에서 바로 지워요. 그 사업자 쪽 보관 기간과 국외 이전은 개인정보처리방침에 적어 두었어요.`,
-            "입력한 내용과 연 풀이는 이 기기의 브라우저에 남아요. 로그인해 결제하거나 가입 선물로 연 풀이는 입력한 내용과 함께 암호화해 계정에도 보관하고, 내 정보에서 지우거나 탈퇴하면 지워요.",
+            "입력한 내용과 연 풀이는 이 기기의 브라우저에 남아요. 로그인해 결제하고 연 풀이는 입력한 내용과 함께 암호화해 계정에도 보관하고, 내 정보에서 지우거나 탈퇴하면 지워요.",
           ],
           link: { href: "/privacy", label: "개인정보처리방침" },
         },
@@ -178,7 +178,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "records",
           q: "기록은 어디에 남나요? 다른 기기에서도 볼 수 있나요?",
           a: [
-            "연 풀이는 지금 쓰는 기기의 브라우저에 남아요. 로그인해 결제하거나 가입 선물로 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서는 보이지 않아요.",
+            "연 풀이는 지금 쓰는 기기의 브라우저에 남아요. 로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서는 보이지 않아요.",
             "브라우저의 사이트 데이터를 지우면 이 기기의 기록도 함께 지워지고, 내 정보에서 한 번에 지울 수도 있어요. 지운 기록은 되돌릴 수 없어요.",
           ],
         },
@@ -200,8 +200,8 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "refund",
           q: "환불은 어떻게 되나요?",
           a: [
-            "첫 이용 무료 풀이는 결제가 없어 환불할 일이 생기지 않아요. 풀이가 제대로 만들어지지 않으면 첫 이용 무료도 쓴 것으로 치지 않아요.",
-            `유료 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 풀이가 만들어지지 않았거나 오류로 끝까지 나오지 않았다면 기간과 상관없이 결제한 풀이를 다시 열거나 결제 금액을 환불받을 수 있어요. 가입 선물로 열던 풀이라면 가입 선물을 그대로 돌려 드려요.`,
+            "오픈 기념 무료 풀이는 결제가 없어 환불할 일이 생기지 않아요. 풀이가 제대로 만들어지지 않으면 오픈 기념 무료도 쓴 것으로 치지 않아요.",
+            `유료 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. 풀이가 만들어지지 않았거나 오류로 끝까지 나오지 않았다면 기간과 상관없이 결제한 풀이를 다시 열거나 결제 금액을 환불받을 수 있어요.`,
           ],
           link: { href: "/refund", label: "환불 정책" },
         },

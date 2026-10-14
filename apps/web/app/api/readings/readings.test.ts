@@ -5,7 +5,7 @@ import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { insertReadingStatement, listReadings, newReadingId, type ServerChapter } from "@/lib/readings/store";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { browser, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
+import { browser, grantGift, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as followup } from "../followup/route";
 import { POST as draw } from "../tarot/draw/route";
 import { POST as reading } from "../tarot/reading/route";
@@ -89,6 +89,7 @@ describe("readings in the account", () => {
     const db = useTestDb();
     const b = browser("192.0.2.29");
     await loginAs(b);
+    await grantGift(db); // held from before the gift was removed
     const { drawToken } = (await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "self-flow", picks: [3, 30, 60] } })).json()) as { drawToken: string };
     const input = { topicId: "money", whoId: "me", whenId: "week", question: "이번 주 재물 흐름은", conditions: [{ label: "지금 상황", value: "수입이 들쭉날쭉" }] };
     const opened = (await (await b.send(reading, "/api/tarot/reading", { body: { drawToken, input, unlock: { method: "free" } } })).json()) as { reading: unknown; chapterToken: string; readingId: string };

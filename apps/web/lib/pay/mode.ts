@@ -8,7 +8,7 @@ import "server-only";
  *   - `on`: open for everyone;
  *   - `paused` (the rollback): no new orders, accounts or gifts, but existing accounts can still log
  *     in to open, refund or delete what they hold.
- * - 첫 이용 무료 (the free first tarot reading) applies in every mode (owner 2026-10-14).
+ * - 오픈 기념 무료 (the free first tarot reading, until SITE.beta.openingEndsAt) applies in every mode (owner 2026-10-14).
  * - Spending credit a user already holds is never gated by it.
  * - `STARLOG_PAY=mock` swaps Toss for the in-memory mock (tests, e2e, local dev); refused in production.
  */

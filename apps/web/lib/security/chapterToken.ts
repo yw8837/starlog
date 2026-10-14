@@ -19,7 +19,11 @@ import { canonicalJson, sha256, signToken, verifyToken, type SignedPayload } fro
 export const CHAPTER_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type ChapterContext =
-  | { kind: "tarot"; templateId: TemplateId; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]> }
+  /**
+   * `opening`: opened with 오픈 기념 무료 (signed; absent on every other opening and on older tokens):
+   * read and kept on the device only, so the follow-up and share routes refuse it.
+   */
+  | { kind: "tarot"; templateId: TemplateId; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]>; opening?: true }
   /** 주제별 사주 chapters carry their topic (signed; `v` stays 1; a token without it is 전체 흐름). */
   | { kind: "saju"; birth: BirthInput; profile?: SajuProfile; topic?: SajuTopicId }
   /** P5 premium readings. The match token carries the partner's birth: signed, not encrypted, kept only in the user's own chapter (P5 spec §9). */
@@ -33,6 +37,8 @@ export type ChapterContext =
     cards: Array<[string, Orientation]>;
   }
   | { kind: "newyear-2027"; birth: BirthInput; profile?: SajuProfile };
+
+export const isOpeningChapter = (ctx: ChapterContext) => ctx.kind === "tarot" && ctx.opening === true;
 
 export const isPremiumChapter = (ctx: ChapterContext): ctx is Extract<ChapterContext, { kind: PremiumId }> =>
   ctx.kind === "tarot-deep" || ctx.kind === "match" || ctx.kind === "newyear-2027";

@@ -80,7 +80,8 @@ async function dealtFlow(page: Page) {
 
 /** A full tarot reading from the API, stored as this device keeps it (`age` days old). */
 async function tarotChapter(page: Page, id: string, age = 0) {
-  // One free full reading per device (첫 이용 무료): fresh cookies for each seeded reading.
+  // One free full reading per device (오픈 기념 무료): fresh cookies for each seeded reading. Stored without
+  // the `opening` mark, the record shows the follow-up box and share button a paid reading has.
   await page.context().clearCookies();
   const draw = await dealtFlow(page);
   const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: CONTACT_INPUT } })).json();
@@ -209,13 +210,13 @@ const SCREENS: Screen[] = [
     path: "/tarot/result",
     setup: async (page) => {
       await dealtFlow(page);
-      // The device's free first reading (첫 이용 무료) is spent.
+      // The device's free first reading (오픈 기념 무료) is spent.
       await fail(page, "**/api/tarot/reading", 429, { code: "BETA_LIMIT", scope: "first", message: "…" });
     },
     prepare: async (page) => {
       await waitForSheet(page);
       await page.getByRole("button", { name: /전체 풀이 보기/ }).click();
-      await expect(page.getByText("첫 이용 무료 풀이를 이미 열었어요").first()).toBeVisible();
+      await expect(page.getByText("오픈 기념 무료 풀이를 이미 열었어요").first()).toBeVisible();
     },
   },
   {

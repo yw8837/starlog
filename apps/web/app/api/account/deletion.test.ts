@@ -8,7 +8,7 @@ import { TossError } from "@/lib/pay/tossTypes";
 import { meStatusMessage } from "@/app/me/meStatus";
 import { insertReadingStatement, newReadingId } from "@/lib/readings/store";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
+import { browser, buy, grantGift, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { GET as callback } from "../auth/kakao/callback/route";
 import { GET as start } from "../auth/kakao/start/route";
 import { POST as confirm } from "../pay/confirm/route";
@@ -62,6 +62,8 @@ describe("account deletion", () => {
   it("re-checks with Kakao, refunds unopened purchases, erases personal data and keeps a tombstone", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
+    // A gift granted before the removal: it is forfeited, and its claim outlives the account.
+    await grantGift(db, "alice");
     const orderId = await buy(b);
     const userId = await userIdOf(db);
     const chapter = { kind: "tarot" as const, question: "지울 질문", reading: { verdict: "v" }, chapterToken: "t", createdAt: T0, turns: [], followUpsLeft: 3 };
@@ -249,6 +251,7 @@ describe("account deletion", () => {
   it("waits while a reading is being opened", async () => {
     const db = useTestDb();
     const b = await loggedIn("alice");
+    await grantGift(db, "alice"); // held from before the gift was removed
     const reserved = await reserveUnlock(db, { userId: await userIdOf(db), productId: "tarot", currency: "free", now: T0, payMode: "mock" });
     expect(reserved.ok).toBe(true);
     expect(await deleteAs(b, "alice")).toBe("http://localhost/me?delete=in-use");

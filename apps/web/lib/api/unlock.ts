@@ -1,5 +1,6 @@
 import "server-only";
 import { openAccount } from "@/lib/account/request";
+import { openingFreeOn } from "@/lib/config";
 import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import type { D1Binding } from "@/lib/db/d1";
 import { GIFT_PRODUCT, type StandardProductId } from "@/lib/pay/catalog";
@@ -14,11 +15,13 @@ import type { GenerationOutcome, Settlement } from "./stream";
 /**
  * How a full reading is paid for, decided before any generation starts (spec 5.4). See the table in
  * the plan's Task 10:
- * - `opening`: 첫 이용 무료, the device's one free tarot reading (owner 2026-10-14; the `sl_first`
- *   cookie, server limits, network counter). Tarot only: saju opens with a payment or the owner pass
+ * - `opening`: 오픈 기념 무료, the device's one free tarot reading (the `sl_first` cookie, server limits,
+ *   network counter), until SITE.beta.openingEndsAt (owner 2026-10-14 evening); from then on it is 402
+ *   PAYMENT_REQUIRED before any generation. Tarot only: saju opens with a payment or the owner pass
  *   (402 PAYMENT_REQUIRED). It stays after payments open for everyone (owner 2026-10-14).
- * - `free` (the signup gift): a standard tarot reading only (GIFT_PRODUCT; anything else is 402
- *   NO_CREDIT before anything is held). Login, the free budget and network cap (it costs us what a
+ * - `free` (the signup gift): new accounts get none any more (owner 2026-10-14 evening); a gift granted
+ *   before still opens a standard tarot reading only (GIFT_PRODUCT; anything else is 402 NO_CREDIT
+ *   before anything is held). Login, the free budget and network cap (it costs us what a
  *   free reading costs), then the reservation. Using it is never gated by STARLOG_PAYMENTS.
  * - `paid`: login, then the reservation. Its model cost goes to the paid book. On a production deploy
  *   running test keys it earned nothing, so it is held and counted like `free` (security M2).
@@ -28,7 +31,7 @@ import type { GenerationOutcome, Settlement } from "./stream";
 export interface UnlockPlan {
   method: UnlockMethod;
   productId: StandardProductId;
-  /** 첫 이용 무료: the free readings this device used before; the route spends one after a validated generation */
+  /** 오픈 기념 무료: the free readings this device used before; the route spends one after a validated generation */
   first: number | null;
   /** RespondOptions.spend: the network day counter, charged before the start (none for a paid opening on real keys) */
   spend: SpendKind | undefined;
@@ -40,7 +43,7 @@ export interface UnlockPlan {
 export async function planUnlock(request: Request, gate: Gate, kind: StandardProductId, method: UnlockMethod = "opening"): Promise<UnlockPlan | Response> {
   const base = { method, productId: kind, first: null, spend: "full" as const, paidCost: false, save: null };
   if (method === "opening") {
-    if (kind !== "tarot") return errorResponse("PAYMENT_REQUIRED");
+    if (kind !== "tarot" || !openingFreeOn(gate.now)) return errorResponse("PAYMENT_REQUIRED");
     const first = await checkFirstFree(gate);
     if (first instanceof Response) return first;
     return { ...base, first };
@@ -96,7 +99,7 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
  * generation's row, so a save whose answer was lost still reaches the client. Every failure
  * releases the reservation; a client that left after the model began answering abandons it instead
  * (SEC-02: given back to reopen, at most MAX_RESTORES times, no longer refundable). Without anything
- * to save (첫 이용 무료, or an owner not logged in) there is no settlement.
+ * to save (오픈 기념 무료, or an owner not logged in) there is no settlement.
  */
 export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string, unknown>) => ServerChapter, now: number): Settlement | undefined {
   const save = plan.save;

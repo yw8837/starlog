@@ -8,6 +8,7 @@ import { issueChapter } from "@/lib/security/chapterToken";
 import { dailyDeal } from "@/lib/security/drawToken";
 import { signingSecret } from "@/lib/security/sign";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { paidChapterOf } from "@/lib/testing/p4";
 import { GET as dailyDealState, POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";
@@ -98,7 +99,8 @@ describe("tarot flow with the mock provider", () => {
     expect(text).not.toMatch(/연락|재회|뜸해진/);
     expect(r.data.reading.connection.heading).toBe("세 장을 이어 읽으면");
 
-    let token = r.data.chapterToken as string;
+    // That one was 오픈 기념 무료 (no follow-ups): the follow-ups run on a paid opening's chapter of the same reading.
+    let token = await paidChapterOf(r.data.chapterToken, r.data.reading);
     for (let i = 0; i < 3; i++) {
       const f = await d.call(followup, { chapterToken: token, reading: r.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" });
       expect(f.status).toBe(200);
@@ -150,7 +152,7 @@ describe("tarot flow with the mock provider", () => {
 });
 
 describe("quota", () => {
-  it("gives a device one free tarot full reading the first time (첫 이용 무료), not one a day; a failed one spends nothing", async () => {
+  it("gives a device one free tarot full reading the first time (오픈 기념 무료), not one a day; a failed one spends nothing", async () => {
     const d = device();
     const { drawToken } = await drawSelfFlow(d);
     vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
@@ -163,7 +165,7 @@ describe("quota", () => {
     expect(d.jar.has("sl_q")).toBe(false);
     const used = await d.call(reading, { drawToken, input: MONEY_INPUT });
     expect(used.status).toBe(429);
-    expect(used.data).toEqual({ code: "BETA_LIMIT", scope: "first", message: "이 기기에서는 첫 이용 무료 풀이를 이미 받았어요." });
+    expect(used.data).toEqual({ code: "BETA_LIMIT", scope: "first", message: "이 기기에서는 오픈 기념 무료 풀이를 이미 받았어요." });
     expect(JSON.stringify(used.data)).not.toContain("베타");
 
     vi.setSystemTime(Date.parse("2026-09-30T15:00:01Z")); // 00:00:01 KST the next day: it does not come back
@@ -264,13 +266,56 @@ describe("chapter tokens", () => {
     const d = device();
     const { drawToken } = await drawSelfFlow(d);
     const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    const chapterToken = await paidChapterOf(r.data.chapterToken, r.data.reading);
     vi.setSystemTime(T0 + 6 * 24 * HOUR);
-    const f = await d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" });
+    const f = await d.call(followup, { chapterToken, reading: r.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" });
     expect(f.status).toBe(200);
     vi.setSystemTime(T0 + 7 * 24 * HOUR + 1);
     const late = await d.call(followup, { chapterToken: f.data.chapterToken, reading: r.data.reading, question: "하나 더 물어봐도 될까요?" });
     expect(late.status).toBe(400);
     expect(late.data.code).toBe("BAD_TOKEN");
+  });
+});
+
+describe("오픈 기념 무료", () => {
+  it("ends with October: from 2026-11-01 00:00 KST the free opening is refused before any generation, nothing set; the owner pass still opens", async () => {
+    vi.setSystemTime(Date.parse("2026-10-31T14:59:59Z")); // 23:59:59 KST, the last free second
+    const last = device("203.0.113.80");
+    const lastDraw = await drawSelfFlow(last);
+    expect((await last.call(reading, { drawToken: lastDraw.drawToken, input: MONEY_INPUT })).status).toBe(200);
+
+    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z")); // 00:00 KST, 11월 1일
+    const d = device("203.0.113.81");
+    const { drawToken } = await drawSelfFlow(d);
+    const spy = vi.spyOn(mockProvider, "generate");
+    const gone = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    expect(gone.status).toBe(402);
+    expect(gone.data).toMatchObject({ code: "PAYMENT_REQUIRED" });
+    expect(gone.headers.getSetCookie()).toEqual([]);
+    expect(spy).not.toHaveBeenCalled();
+    // The teaser stays free, and the owner pass opens with its own method.
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
+    expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(402);
+    expect((await d.call(reading, { drawToken, input: MONEY_INPUT, unlock: { method: "owner" } })).status).toBe(200);
+  });
+
+  it("is read and kept on the device only: its chapter takes no follow-up, refused before anything is counted", async () => {
+    const d = device("203.0.113.82");
+    const { drawToken } = await drawSelfFlow(d);
+    const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    expect(r.status).toBe(200);
+    const spy = vi.spyOn(mockProvider, "generate");
+    const f = await d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" });
+    expect(f.status).toBe(409);
+    expect(f.data).toMatchObject({ code: "NOT_AVAILABLE", reason: "opening" });
+    expect(f.data.message).toContain("오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요");
+    expect(f.headers.getSetCookie()).toEqual([]);
+    expect(spy).not.toHaveBeenCalled();
+    // A reading opened with the owner pass keeps its follow-ups.
+    expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
+    const paid = await d.call(reading, { drawToken, input: MONEY_INPUT, unlock: { method: "owner" } });
+    expect((await d.call(followup, { chapterToken: paid.data.chapterToken, reading: paid.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" })).status).toBe(200);
   });
 });
 

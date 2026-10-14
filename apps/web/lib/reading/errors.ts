@@ -70,8 +70,8 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       if (error.scope === "network") {
         return { title: "같은 네트워크(와이파이·회사·학교)에서 오늘 열 수 있는 횟수를 다 썼어요", body: resetLine(error.resetsAt, now), action: null };
       }
-      // 첫 이용 무료 is used on this device: it does not come back, so no reset line.
-      if (error.scope === "first") return { title: "첫 이용 무료 풀이를 이미 열었어요", action: null };
+      // 오픈 기념 무료 is used on this device: it does not come back, so no reset line.
+      if (error.scope === "first") return { title: "오픈 기념 무료 풀이를 이미 열었어요", action: null };
       if (context === "followup" && error.scope === "chapter") return { title: "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요", action: null };
       if (context === "followup") return { title: "오늘 물어볼 수 있는 질문을 모두 썼어요", body: resetLine(error.resetsAt, now), action: null };
       if (context === "daily") return { title: "오늘의 운세를 더 적을 수 없어요", body: resetLine(error.resetsAt, now), action: null };
@@ -112,12 +112,14 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
     case "PAYMENT_REQUIRED":
       return { title: "전체 풀이는 결제하고 열 수 있어요", action: null };
     case "NO_CREDIT":
-      return { title: "열 수 있는 결제한 풀이나 가입 선물이 없어요", body: "결제하고 열 수 있어요.", action: null };
+      return { title: "열 수 있는 결제한 풀이가 없어요", body: "결제하고 열 수 있어요.", action: null };
     case "PAY_UNAVAILABLE":
       return { title: "지금은 결제를 쓸 수 없어요", body: "잠시 뒤에 다시 시도해 주세요.", action: "retry" };
     case "FORBIDDEN":
       return { title: "다시 시도해 주세요", body: "화면을 새로 고친 뒤 다시 눌러 주세요.", action: "retry" };
     case "NOT_AVAILABLE":
+      // A 오픈 기념 무료 reading takes no follow-ups: the server says why.
+      if (context === "followup") return { title: "이 풀이에는 더 물어볼 수 없어요", body: error.message, action: null };
       return { title: "지금은 열 수 없는 상품이에요", action: "home" };
     case "PAY_FAILED":
       return { title: "결제를 마치지 못했어요", body: error.message || "청구된 금액은 없어요.", action: "retry" };

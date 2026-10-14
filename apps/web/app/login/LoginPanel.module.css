@@ -49,13 +49,6 @@
   text-align: center;
 }
 
-.gift {
-  margin-top: 6px;
-  color: var(--gold);
-  font-size: var(--fs-body);
-  text-align: center;
-}
-
 .form {
   display: grid;
   gap: 12px;

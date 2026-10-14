@@ -13,6 +13,7 @@ import { useAccount } from "@/lib/account/client";
 import { createShareLink, knownShareLink, stopShareLink } from "@/lib/share/client";
 import { kstMonthDay } from "@/lib/kst";
 import { commitQuota, postGeneration } from "@/lib/reading/api";
+import { OPENING_KEEP_ONLY } from "@/lib/helpGuide";
 import { describeApiError } from "@/lib/reading/errors";
 import type { FollowUpData } from "@/lib/reading/types";
 import {
@@ -71,8 +72,8 @@ function askFollowUp(id: string, question: string): Promise<AskResult> {
       if (result.commit) void commitQuota(result.commit);
       return { answer };
     }
-    // Used up for this reading, or its token expired: no more questions here.
-    if ((result.error.code === "BETA_LIMIT" && result.error.scope === "chapter") || result.error.code === "BAD_TOKEN") {
+    // Used up for this reading, its token expired, or it is 오픈 기념 무료 (read and keep only): no more questions here.
+    if ((result.error.code === "BETA_LIMIT" && result.error.scope === "chapter") || result.error.code === "BAD_TOKEN" || result.error.code === "NOT_AVAILABLE") {
       updateChapter(id, (c) => ({ ...c, followUpsLeft: 0 }));
     }
     return { error: describeApiError(result.error, "followup") };
@@ -171,7 +172,9 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   // 풀이 후기: only a reading kept in an account can be reviewed (spec §2); a visitor not logged in is offered
   // the login there. A reading only on this device keeps its own stars.
   const rating = chapter.serverId ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
-  const share: ShareActions | undefined = whole
+  // 오픈 기념 무료 is read and kept on this device only (owner 2026-10-14 evening): no follow-ups, no share.
+  const keepOnly = chapter.opening === true;
+  const share: ShareActions | undefined = whole && !keepOnly
     ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter), current: () => knownShareLink(chapter) }
     : undefined;
 
@@ -199,7 +202,8 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         cards={chapter.cards.map(faceUpCard)}
         deck={deck}
         reading={chapter.reading}
-        followUp={followUp}
+        followUp={keepOnly ? undefined : followUp}
+        keepOnly={keepOnly ? OPENING_KEEP_ONLY : undefined}
         checkin={checkin}
         share={share}
         rating={rating}
@@ -237,8 +241,8 @@ function MissingRecord() {
         </h1>
         <p className={s.missingText}>
           {loggedIn
-            ? "결제나 가입 선물로 연 풀이는 내 기록에 모두 있어요. 그 밖의 풀이는 연 기기에만 보관돼요."
-            : "결제나 가입 선물로 연 풀이는 로그인하면 내 기록에서 볼 수 있어요. 그 밖의 풀이는 연 기기에만 보관돼요."}
+            ? "결제하고 연 풀이는 내 기록에 모두 있어요. 그 밖의 풀이는 연 기기에만 보관돼요."
+            : "결제하고 연 풀이는 로그인하면 내 기록에서 볼 수 있어요. 그 밖의 풀이는 연 기기에만 보관돼요."}
         </p>
         <Button href={NEW_TAROT_HREF} block trailing="→">
           타로 보기

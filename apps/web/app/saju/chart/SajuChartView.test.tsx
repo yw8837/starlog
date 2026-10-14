@@ -150,7 +150,7 @@ describe("SajuChartView after a paid opening was cut off", () => {
   });
 });
 
-/** A guest while sales are closed here: the saju sheet offers no free reading (첫 이용 무료 is tarot only). */
+/** A guest while sales are closed here: the saju sheet offers no free reading (오픈 기념 무료 is tarot only). */
 const OPENING_ME = () => Response.json({ payments: false, login: false, owner: false, user: null });
 const OWNER_ME = () => Response.json({ payments: false, login: false, owner: true, user: null });
 const teaserFor = (topic: SajuTopicId, title: string) => ({
@@ -293,7 +293,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
       const sheet = await screen.findByRole("region", { name: /전체 풀이에 담긴 것$/ });
       await within(sheet).findByText("전체 풀이는 결제하고 열 수 있어요");
       expect((within(sheet).getByRole("button", { name: "전체 풀이 보기" }) as HTMLButtonElement).disabled).toBe(true);
-      expect(sheet.textContent).not.toMatch(/첫 이용|처음 한 번|무료로 열|남았어요/);
+      expect(sheet.textContent).not.toMatch(/첫 이용|오픈 기념|처음 한 번|무료로 열|남았어요/);
     }
     expect(reading).not.toHaveBeenCalled();
   });

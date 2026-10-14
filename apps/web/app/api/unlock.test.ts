@@ -5,7 +5,7 @@ import { accountSecret } from "@/lib/account/secrets";
 import { dailyStore, resetDailyStore } from "@/lib/api/dailyStore";
 import { clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { NDJSON } from "@/lib/api/stream";
-import { setTestDb } from "@/lib/db";
+import { accountDb, setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { RESERVATION_MS } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
@@ -14,7 +14,7 @@ import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
-import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
+import { browser, buy, grantGift, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as ownerPost } from "./owner/route";
 import { POST as refund } from "./pay/refund/route";
 import { POST as sajuReading } from "./saju/reading/route";
@@ -62,6 +62,8 @@ async function loggedIn(name = "alice"): Promise<{ b: Browser; ip: string }> {
   const ip = `198.51.100.${++ipSeq}`;
   const b = browser(ip);
   await loginAs(b, name);
+  // Accounts here hold the signup gift, as accounts that joined before it was removed do (logins grant none).
+  await grantGift(accountDb()!, name);
   return { b, ip };
 }
 
@@ -91,17 +93,21 @@ const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
 const giftOf = async (b: Browser) => (await me(b)).user?.gift?.status;
 
 describe("opening a full reading with credit", () => {
-  it("keeps 첫 이용 무료 once payments are on for everyone (owner 2026-10-14): a device's first tarot reading opens free, once, apart from the signup gift", async () => {
-    useTestDb();
+  it("keeps 오픈 기념 무료 once payments are on for everyone (owner 2026-10-14): a device's first tarot reading opens free, once, apart from a gift held", async () => {
+    const db = useTestDb();
     const guest = browser("192.0.2.10");
     expect((await open(guest)).status).toBe(200);
     expect(guest.jar.has("sl_first")).toBe(true);
     const again = await open(guest);
     expect(again.status).toBe(429);
     expect(await again.json()).toMatchObject({ code: "BETA_LIMIT", scope: "first" });
-    // A new member's device: 첫 이용 무료 leaves the signup gift untouched, and the gift still opens one.
+    // A member holding a gift: 오픈 기념 무료 leaves it untouched, and the gift still opens one.
     const { b } = await loggedIn();
-    expect((await open(b)).status).toBe(200);
+    const free = await open(b);
+    expect(free.status).toBe(200);
+    // Never saved to the account, even logged in: no 풀이 후기 can be written for it (reviews need a saved reading).
+    expect(((await free.json()) as { readingId?: string }).readingId).toBeUndefined();
+    expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
     expect(await giftOf(b)).toBe("unused");
     expect((await open(b, "free")).status).toBe(200);
     expect(await giftOf(b)).toBe("used");

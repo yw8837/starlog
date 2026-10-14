@@ -3,14 +3,14 @@ import { signToken, verifyToken, type SignedPayload } from "./sign";
 
 /**
  * Beta quotas: limits, the KST day, the signed `sl_q` day counter cookie and the signed `sl_first`
- * cookie of the free first tarot reading (첫 이용 무료). Cookies are best effort by nature (a device
+ * cookie of the free first tarot reading (오픈 기념 무료). Cookies are best effort by nature (a device
  * can drop them); the per-IP limiter (rateLimit.ts) and the network caps are the backstop.
  */
 
 // ---- config ----
 
 export interface QuotaLimits {
-  /** 첫 이용 무료: free tarot full readings a device gets, once and for good (not a day; the env keeps its old name) */
+  /** 오픈 기념 무료: free tarot full readings a device gets, once and for good (not a day; the env keeps its old name) */
   full: number;
   teaser: number;
   /** follow-up answers per device per day, across chapters */
@@ -120,9 +120,9 @@ export async function spendQuota(state: QuotaState, kind: QuotaKind, secret: str
   return signToken(next, secret);
 }
 
-// ---- 첫 이용 무료 ----
+// ---- 오픈 기념 무료 ----
 
-/** The free first tarot reading this device used (첫 이용 무료); kept a year, set when it is spent. */
+/** The free first tarot reading this device used (오픈 기념 무료); kept a year, set when it is spent. */
 export const FIRST_FREE_COOKIE = "sl_first";
 export const FIRST_FREE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 

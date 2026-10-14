@@ -36,7 +36,10 @@ type ChapterViewProps = {
   question: string;
   cards: SpreadCard[];
   reading: ReadingBody;
-  followUp: ChapterFollowUp;
+  /** Absent: the reading takes no follow-ups (오픈 기념 무료); `keepOnly` says so instead. */
+  followUp?: ChapterFollowUp;
+  /** 오픈 기념 무료: the one line under the title saying the reading is read and kept on this device only. */
+  keepOnly?: string;
   /** 돌아보기, shown first when it is due. */
   checkin?: ReactNode;
   /** The demo's friend invite (a real reading has none until 별자리 인연). */
@@ -53,7 +56,7 @@ type ChapterViewProps = {
  * An opened tarot reading in one scroll: the question and cards, the full reading, follow-ups,
  * rating. Sharing makes the reading's own link (the cards and the reading, never the question or note).
  */
-export function ChapterView({ eyebrow, question, cards, reading, followUp, checkin, invite, share, deck, rating }: ChapterViewProps) {
+export function ChapterView({ eyebrow, question, cards, reading, followUp, keepOnly, checkin, invite, share, deck, rating }: ChapterViewProps) {
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const shown = enlarged === null ? undefined : cards[enlarged];
@@ -73,18 +76,21 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, check
                 <ShareResultButton kind="tarot" text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} {...share} />
               </div>
             ) : null}
+            {keepOnly ? <p className={s.keepOnly}>{keepOnly}</p> : null}
           </header>
         }
         spread={<SpreadRow size="sm" cards={cards} onCardTap={setEnlarged} deck={deck} />}
       >
         {checkin}
-        <ChapterContents />
+        <ChapterContents followUp={Boolean(followUp)} />
         <div id="chapter-reading" className={s.anchor}>
           <ReadingArticle paid={reading} />
         </div>
-        <div id="chapter-follow-up" className={s.anchor}>
-          <FollowUp {...followUp} />
-        </div>
+        {followUp ? (
+          <div id="chapter-follow-up" className={s.anchor}>
+            <FollowUp {...followUp} />
+          </div>
+        ) : null}
         {rating ?? <Feedback />}
         <AiNote />
 

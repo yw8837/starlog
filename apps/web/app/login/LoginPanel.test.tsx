@@ -74,10 +74,10 @@ describe("LoginPanel", () => {
     expect(screen.getByRole("status").textContent).toBe("Google 로그인은 카카오톡 밖의 브라우저에서 해 주세요.");
   });
 
-  it("explains the gift: one free full tarot reading", () => {
+  it("promises no signup gift (removed, owner 2026-10-14 evening)", () => {
     const { container } = render(<LoginPanel next="/" status={null} navigate={() => {}} />);
-    expect(screen.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeTruthy();
-    expect(container.textContent).not.toMatch(/별조각|달빛|\d+개/);
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
+    expect(container.textContent).not.toMatch(/선물|무료로 드려요|별조각|달빛|\d+개/);
   });
 
   it("goes back to where a payment started, not to the checkout that sent here (QA-09)", () => {

@@ -77,20 +77,36 @@ describe("MeView logged out while sales are open", () => {
   });
 });
 
-describe("MeView logged out while sales are closed (첫 이용 무료)", () => {
-  afterEach(() => clearBetaUsage());
+describe("MeView logged out while sales are closed (오픈 기념 무료)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-10-14T03:00:00Z"));
+  });
+  afterEach(() => {
+    clearBetaUsage();
+    vi.useRealTimers();
+  });
 
-  it("names the free first tarot reading and whether this device has used it, with no daily refill", async () => {
+  it("names 오픈 기념 무료 with its rule and whether this device has used it, with no daily refill", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: false, login: false, owner: false, user: null })));
     render(<MeView status={null} />);
-    expect(await screen.findByRole("heading", { name: "처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "오픈 기념 무료" })).toBeTruthy();
+    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).")).toBeTruthy();
     expect(screen.getByText("아직 무료로 열 수 있어요")).toBeTruthy();
     cleanup();
     resetAccountForTests();
     markFreeUsedUp();
     render(<MeView status={null} />);
     expect(await screen.findByText("이 기기에서는 이미 무료로 열었어요")).toBeTruthy();
-    expect(document.body.textContent).not.toMatch(/오픈 기념|다시 채워져요/);
+    expect(document.body.textContent).not.toMatch(/첫 이용|다시 채워져요/);
+  });
+
+  it("promises nothing free once 오픈 기념 무료 ended (11월 1일 0시 KST)", async () => {
+    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z"));
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: false, login: true, owner: false, user: null })));
+    render(<MeView status={null} />);
+    expect(await screen.findByRole("link", { name: "결제한 풀이가 있다면 로그인" })).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/오픈 기념|무료로 열/);
   });
 });
 

@@ -250,7 +250,7 @@ describe("LocalChapter for a reading not on this device (QA-02)", () => {
     render(<LocalChapter id="zzzzzz99" />);
     expect(await screen.findByRole("heading", { level: 1, name: "이 주소의 기록을 찾지 못했어요" })).toBeTruthy();
     expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/readings"))).toBe(true);
-    expect(screen.getByText("결제나 가입 선물로 연 풀이는 내 기록에 모두 있어요. 그 밖의 풀이는 연 기기에만 보관돼요.")).toBeTruthy();
+    expect(screen.getByText("결제하고 연 풀이는 내 기록에 모두 있어요. 그 밖의 풀이는 연 기기에만 보관돼요.")).toBeTruthy();
     const missing = screen.getByRole("region", { name: "이 주소의 기록을 찾지 못했어요" });
     expect(within(missing).getByRole("link", { name: "내 기록으로" }).getAttribute("href")).toBe("/story");
   });
@@ -259,7 +259,7 @@ describe("LocalChapter for a reading not on this device (QA-02)", () => {
     const fetchMock = accountServer(null);
     render(<LocalChapter id="zzzzzz99" />);
     expect(await screen.findByRole("heading", { level: 1, name: "이 기기에 없는 기록이에요" })).toBeTruthy();
-    expect(screen.getByText("결제나 가입 선물로 연 풀이는 로그인하면 내 기록에서 볼 수 있어요. 그 밖의 풀이는 연 기기에만 보관돼요.")).toBeTruthy();
+    expect(screen.getByText("결제하고 연 풀이는 로그인하면 내 기록에서 볼 수 있어요. 그 밖의 풀이는 연 기기에만 보관돼요.")).toBeTruthy();
     expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/readings"))).toBe(false);
   });
 });
@@ -285,6 +285,30 @@ describe("LocalChapter 풀이 후기", () => {
     await act(async () => {});
     expect(screen.queryByText("로그인하면 후기를 남길 수 있어요")).toBeNull();
     expect(document.getElementById("review-title")).toBeNull();
+  });
+});
+
+describe("LocalChapter for a 오픈 기념 무료 reading (read and keep only, owner 2026-10-14 evening)", () => {
+  const WHOLE = { ...PARTIAL, createdAt: Date.now(), cards: TAROT_SAMPLE.cards.map(({ position, cardId, orientation }) => ({ position, cardId, orientation })), reading: TAROT_SAMPLE.paid };
+
+  it("shows the whole reading with no follow-up box, no share button and no 이어서 물어보기 link, and says why once", () => {
+    seed([{ ...WHOLE, opening: true }]);
+    const { container } = render(<LocalChapter id="abcdef12" />);
+    expect(screen.getByRole("heading", { level: 1, name: "q" })).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "이어서 물어볼 내용" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /공유하기|카카오톡으로 보내기/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: "이어서 물어보기" })).toBeNull();
+    expect(screen.getAllByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요. 이어서 물어보기와 공유는 결제한 풀이에서 할 수 있어요.")).toHaveLength(1);
+    expect(container.textContent).not.toContain("후기");
+  });
+
+  it("keeps follow-ups and the share button on any other reading", () => {
+    seed([WHOLE]);
+    render(<LocalChapter id="abcdef12" />);
+    expect(screen.getByRole("textbox", { name: "이어서 물어볼 내용" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "이어서 물어보기" })).toBeTruthy();
+    expect(screen.queryByText(/보고 보관만 할 수 있어요/)).toBeNull();
   });
 });
 

@@ -29,7 +29,7 @@ function backTarget(next: string): string {
 }
 
 /**
- * Sign-in right before paying or claiming the gift (spec 5.1): Kakao, and Google under it (Google's
+ * Sign-in right before paying (spec 5.1; no signup gift any more, owner 2026-10-14 evening): Kakao, and Google under it (Google's
  * sign-in branding: white, the standard G mark). The 만 14세 box must be ticked first; a same-origin
  * POST (/api/auth/age) then hands back that provider's start URL with a signed 5-minute token for it,
  * and the check is recorded on the account.
@@ -71,7 +71,6 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
           <Rabbit outfit="tarot" action="write" size={168} />
         </div>
         <h1 className={s.title}>로그인하고 전체 풀이 보기</h1>
-        <p className={s.gift}>처음 가입하면 타로 전체 풀이 1번을 무료로 드려요</p>
       </div>
 
       <div className={s.form}>

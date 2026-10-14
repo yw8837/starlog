@@ -28,8 +28,8 @@ describe("service pages take every number from SITE", () => {
   it("/help", () => {
     const text = render(<HelpPage />).container.textContent ?? "";
     expect(text).toContain("타로 전체 풀이는 한 번에 3,100원, 사주 전체 풀이는 4,100원이에요.");
-    expect(text).toContain("타로 전체 풀이 처음 두 번");
-    expect(text).toContain("처음 두 번은 타로 전체 풀이를 무료로 열 수 있어요");
+    expect(text).toContain("타로 전체 풀이 두 번 · 10월 31일까지");
+    expect(text).toContain("10월 31일까지 기기마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).");
     expect(text).toContain("첫 풀이는 하루 4번까지");
     expect(text).toContain("이어서 물어보기 5번");
     expect(text).toContain("약 1,234자");
@@ -42,7 +42,7 @@ describe("service pages take every number from SITE", () => {
     const text = container.textContent ?? "";
     const jsonLd = container.querySelector('script[type="application/ld+json"]')?.textContent ?? "";
     for (const body of [text, jsonLd]) {
-      expect(body).toContain("처음 두 번은 타로 전체 풀이를 무료로 열 수 있어요(첫 이용 무료)");
+      expect(body).toContain("10월 31일까지 기기마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).");
       expect(body).toContain("하루 4번까지");
       expect(body).toContain("약 1,234자");
       expect(body).toContain("약 5,678~6,789자");

@@ -57,6 +57,14 @@
   margin-top: 14px;
 }
 
+/* 오픈 기념 무료: read and kept on this device only, said once under the title. */
+.keepOnly {
+  margin-top: 14px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
 /* In-page contents: small light pills that jump to the story, the reading and the follow-ups. */
 .contents {
   display: flex;

@@ -1,7 +1,7 @@
-import { SITE, won } from "@/lib/config";
-import { times } from "@/lib/helpGuide";
+import { OPENING_LAST_DAY, SITE, won } from "@/lib/config";
+import { openingFreeText, times } from "@/lib/helpGuide";
 import { guideHref } from "@/lib/hosts";
-import { GIFT_DAYS, REFUND_DAYS } from "@/lib/pay/catalog";
+import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { approxCharsText } from "@/lib/pricing";
 import { sajuFreeLine, sajuPricingLine } from "@/lib/sajuTopicCopy";
 import { ToolGuide } from "./ToolGuide";
@@ -9,8 +9,8 @@ import { ToolGuide } from "./ToolGuide";
 const { price, reading, beta, features } = SITE;
 const guide = (slug: string) => guideHref(`/guide/${slug}`);
 
-/** The 첫 이용 무료 line (tarot only). */
-const openingLine = `처음 ${times(beta.firstFreeTarot)} 타로 전체 풀이를 무료로 열 수 있어요.`;
+/** The 오픈 기념 무료 line (tarot only). */
+const openingLine = openingFreeText(beta.firstFreeTarot);
 
 /** /now: 지금의 한 장, the free one-card tarot (the sentences are prepared per card; no AI call). */
 export function NowGuide() {
@@ -216,7 +216,6 @@ export function TarotGuide() {
           items: [
             `첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 무료로 볼 수 있어요.`,
             `타로 전체 풀이는 ${won(price.tarotStandardKrw)}이에요. 열고 나면 같은 카드로 이어서 물어볼 수 있어요.`,
-            `처음 가입하면 타로 전체 풀이 1번을 가입 선물로 드려요. 계정 하나에 한 번이고, ${GIFT_DAYS}일 안에 쓸 수 있어요.`,
             openingLine,
           ],
         },
@@ -237,7 +236,7 @@ export function TarotGuide() {
         items: [
           { q: "카드는 몇 장 뽑아요?", a: "세 장이에요. 세 장은 각자 맡은 자리가 있고, 풀이는 세 장을 이어서 하나의 흐름으로 읽어요." },
           { q: "AI가 쓴 풀이인가요?", a: "네. 고른 질문과 상황, 뽑은 카드를 바탕으로 생성형 AI가 풀이를 써요. 카드 그림과 뜻의 근거는 근거 페이지에 정리해 두었어요." },
-          { q: "연 풀이는 어디서 다시 봐요?", a: "내 기록에서 다시 볼 수 있어요. 연 풀이는 이 기기에 보관되고, 로그인해 결제하거나 가입 선물로 연 풀이는 계정에도 보관돼 다른 기기에서도 볼 수 있어요." },
+          { q: "연 풀이는 어디서 다시 봐요?", a: "내 기록에서 다시 볼 수 있어요. 연 풀이는 이 기기에 보관되고, 로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서도 볼 수 있어요." },
           { q: "환불되나요?", a: `결제하고 열지 않은 풀이는 결제일부터 ${REFUND_DAYS}일 안에 환불받을 수 있어요. 자세한 기준은 환불 안내에 있어요.` },
         ],
       }}
@@ -271,7 +270,7 @@ export function SajuGuide() {
           items: [
             sajuFreeLine(features.sajuTopics, beta.teaserPerDay),
             `사주 전체 풀이는 ${won(price.sajuStandardKrw)}이에요. ${topics ? `${sajuPricingLine(features.sajuTopics)}를 열 수 있고,` : "타고난 결과 지금 지나는 10년의 흐름(대운)을 담고,"} 정통 사주는 약 ${approxCharsText(reading.approxChars.saju)}자로 풀어요.`,
-            "가입 선물(타로 전체 풀이 1번)은 사주에는 쓸 수 없어요.",
+            `오픈 기념 무료(${OPENING_LAST_DAY}까지, 기기마다 타로 전체 풀이 ${times(beta.firstFreeTarot)})는 사주에는 쓸 수 없어요.`,
           ],
         },
         {
@@ -319,7 +318,7 @@ export function SajuGuide() {
           { q: "태어난 시를 몰라도 되나요?", a: "네. 시를 빼고 세 기둥으로 명식을 세워요. 태어난 시 기둥이 맡는 부분은 풀이에서 다루지 않아요." },
           { q: "음력 생일로 넣어도 돼요?", a: "네. 양력과 음력 가운데 고를 수 있고, 윤달도 넣을 수 있어요." },
           { q: "AI가 쓴 풀이인가요?", a: "명식은 스타로그의 계산 프로그램이 먼저 세우고, 풀이는 그 결과를 바탕으로 생성형 AI가 써요." },
-          { q: "입력한 태어난 정보는 어디에 남아요?", a: "사주 입력 정보는 이 기기의 브라우저에 저장되고, 내 정보에서 바로 지울 수 있어요. 로그인해 결제하거나 가입 선물로 연 풀이는 입력한 정보와 함께 암호화해 계정에도 보관돼요. 자세한 내용은 개인정보 처리방침에 있어요." },
+          { q: "입력한 태어난 정보는 어디에 남아요?", a: "사주 입력 정보는 이 기기의 브라우저에 저장되고, 내 정보에서 바로 지울 수 있어요. 로그인해 결제하고 연 풀이는 입력한 정보와 함께 암호화해 계정에도 보관돼요. 자세한 내용은 개인정보 처리방침에 있어요." },
         ],
       }}
     />

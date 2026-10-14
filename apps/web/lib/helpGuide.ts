@@ -1,4 +1,4 @@
-import { SITE, won } from "./config";
+import { OPENING_LAST_DAY, SITE, won } from "./config";
 import { approxCharsText } from "./pricing";
 
 /**
@@ -57,6 +57,16 @@ const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 /** "한 번", "두 번", "세 번", then "4번". */
 export const times = (n: number) => (["한 번", "두 번", "세 번"][n - 1] ?? `${num(n)}번`);
 
+/** Said once on a 오픈 기념 무료 record, and by the follow-up and share routes when they refuse one. */
+export const OPENING_KEEP_ONLY = "오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요. 이어서 물어보기와 공유는 결제한 풀이에서 할 수 있어요.";
+
+/**
+ * 오픈 기념 무료 as screens describe it (owner 2026-10-14 evening): one tarot full reading per device until
+ * its last day, read and kept on that device only. Worded with the date, so it stays true once it ends.
+ */
+export const openingFreeText = (count: number = SITE.beta.firstFreeTarot) =>
+  `${OPENING_LAST_DAY}까지 기기마다 타로 전체 풀이 ${times(count)}을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).`;
+
 export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   const { followUps, approxChars } = site.reading;
   const { firstFreeTarot, teaserPerDay } = site.beta;
@@ -104,7 +114,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           title: "로그인 없이 쓰기",
           sub: "기록은 이 기기에 남아요",
           body: "로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 풀이를 쓸 수 있어요. 연 풀이와 입력한 정보는 지금 쓰는 브라우저에 보관되고, 로그인하지 않고 연 풀이는 스타로그 서버에 저장하지 않아요.",
-          tip: "로그인해 결제하거나 가입 선물로 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서 보이지 않고, 브라우저의 사이트 데이터를 지우면 이 기기의 기록도 함께 지워져요.",
+          tip: "로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서 보이지 않고, 브라우저의 사이트 데이터를 지우면 이 기기의 기록도 함께 지워져요.",
         },
         {
           id: "care",
@@ -306,10 +316,10 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
         {
           id: "beta",
           icon: "gift",
-          title: "첫 이용 무료",
-          sub: `타로 전체 풀이 처음 ${times(firstFreeTarot)}`,
-          body: `처음 ${times(firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요. 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 볼 수 있고, 한국 시간 0시에 다시 채워져요.`,
-          tip: "전체 풀이 보기 버튼에 첫 이용 무료가 보이면 아직 무료로 열 수 있어요.",
+          title: "오픈 기념 무료",
+          sub: `타로 전체 풀이 ${times(firstFreeTarot)} · ${OPENING_LAST_DAY}까지`,
+          body: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 볼 수 있고, 한국 시간 0시에 다시 채워져요.`,
+          tip: "전체 풀이 보기 버튼에 오픈 기념 무료가 보이면 아직 무료로 열 수 있어요.",
         },
         {
           id: "daily-free",
@@ -324,7 +334,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           title: "가격과 무료 범위",
           sub: "풀이 한 번의 가격",
           body: prices,
-          tip: "무료로 볼 수 있는 부분과 가입 선물, 환불 기준은 가격 안내와 환불 정책에 먼저 적어 둬요.",
+          tip: "무료로 볼 수 있는 부분과 환불 기준은 가격 안내와 환불 정책에 먼저 적어 둬요.",
           link: { href: "/pricing", label: "가격 안내 보기" },
         },
       ],

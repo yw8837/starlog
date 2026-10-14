@@ -1,8 +1,8 @@
-import { SITE } from "@/lib/config";
+import { SITE, openingFreeOn } from "@/lib/config";
 import { createLocalStore } from "@/lib/sessionStore";
 
 /**
- * How many free tarot full readings (첫 이용 무료) this device opened, for the unlock sheet and 내 정보.
+ * How many free tarot full readings (오픈 기념 무료) this device opened, for the unlock sheet and 내 정보.
  * The server's `sl_first` cookie decides; this mirrors it for display: counted on each opened free
  * reading, set to the limit when the server says it is used. It never resets. A new key, so the old
  * daily count (`starlog.beta-usage`) never reads as the free first reading used.
@@ -22,8 +22,9 @@ function parseUsage(value: unknown): Usage | null {
 
 const store = createLocalStore<Usage>(BETA_USAGE_KEY, parseUsage);
 
-/** Free first readings still open on this device, as far as it knows. */
+/** Free first readings still open on this device, as far as it knows: none once 오픈 기념 무료 ended. */
 export function remainingFree(usage: Usage | null): number {
+  if (!openingFreeOn()) return 0;
   return Math.max(0, SITE.beta.firstFreeTarot - (usage?.full ?? 0));
 }
 

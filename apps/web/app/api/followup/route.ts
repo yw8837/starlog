@@ -9,15 +9,16 @@ import { chapterTurns, recordChapterTurns } from "@/lib/api/spend";
 import { respondGeneration } from "@/lib/api/stream";
 import { saveFollowUpTurn } from "@/lib/readings/turns";
 import { isSajuTopicId } from "@/lib/sajuTopics";
-import { issueChapter, openChapter } from "@/lib/security/chapterToken";
+import { OPENING_KEEP_ONLY } from "@/lib/helpGuide";
+import { isOpeningChapter, issueChapter, openChapter } from "@/lib/security/chapterToken";
 import { quotaLimits } from "@/lib/security/quota";
 
 /**
  * POST {chapterToken, reading, question} → {kind, answer, chapterToken, remaining}. The reading must
  * be the one the token was issued for (digest check); the returned token carries the new turn.
- * Capped per chapter (BETA_FOLLOWUPS_PER_CHAPTER, counted server-side too, so an older token of the
- * same chapter does not reset it) and per day; the owner pass skips both caps. Chapter tokens expire
- * 7 days after the reading. Streams NDJSON progress with `Accept: application/x-ndjson`.
+ * A 오픈 기념 무료 chapter takes none (409 `reason: "opening"`). Capped per chapter
+ * (BETA_FOLLOWUPS_PER_CHAPTER, counted server-side too, so an older token of the same chapter does
+ * not reset it) and per day; the owner pass skips both caps. Chapter tokens expire 7 days after the reading. Streams NDJSON progress with `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
@@ -26,6 +27,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!body.success) return errorResponse("BAD_REQUEST");
   const chapter = await openChapter(body.data.chapterToken, body.data.reading, gate.secret, gate.now);
   if (!chapter) return errorResponse("BAD_TOKEN", { message: "후속 질문을 이어 갈 수 없는 풀이예요. 풀이를 받은 지 7일이 지났거나 내용이 달라졌어요." });
+  // 오픈 기념 무료 is read and kept on the device only (owner 2026-10-14 evening), owner pass or not.
+  if (isOpeningChapter(chapter.ctx)) return errorResponse("NOT_AVAILABLE", { reason: "opening", message: OPENING_KEEP_ONLY });
 
   const limits = quotaLimits();
   const recorded = await chapterTurns(chapter.id);

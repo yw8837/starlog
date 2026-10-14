@@ -4,7 +4,7 @@ import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
-import { GIFT_DAYS, REFUND_DAYS } from "@/lib/pay/catalog";
+import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
@@ -23,9 +23,9 @@ export default function RefundPage() {
       lead={`${SITE.nameKo}의 풀이는 디지털 콘텐츠예요. 결제하기 전에 알아 두면 좋은 청약철회와 환불 기준을 정리했어요.`}
     >
       <LegalNote>
-        <p className={s.noteTitle}>첫 이용 무료 풀이는 결제가 없어 환불 대상이 아니에요.</p>
+        <p className={s.noteTitle}>오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요.</p>
         <p>
-          풀이가 제대로 만들어지지 않으면 첫 이용 무료도 쓴 것으로 치지 않아요. 아래 기준은 결제한 풀이에 적용해요.
+          풀이가 제대로 만들어지지 않으면 오픈 기념 무료도 쓴 것으로 치지 않아요. 아래 기준은 결제한 풀이에 적용해요.
         </p>
       </LegalNote>
 
@@ -51,16 +51,12 @@ export default function RefundPage() {
 
       <LegalSection id="failure" title="생성 실패와 오류">
         <ul className={s.list}>
-          <li>풀이가 끝까지 완성되지 않았다면(생성 오류, 자동 품질 검사 탈락, 시간 초과) 결제한 풀이는 쓰이지 않아요. 같은 풀이를 다시 열 때 한 번 더 결제하지 않아요. 가입 선물로 열던 풀이라면 가입 선물도 그대로 돌려 드려요.</li>
+          <li>풀이가 끝까지 완성되지 않았다면(생성 오류, 자동 품질 검사 탈락, 시간 초과) 결제한 풀이는 쓰이지 않아요. 같은 풀이를 다시 열 때 한 번 더 결제하지 않아요.</li>
           <li>연결이 끊겼는데 풀이는 완성됐다면, 그 풀이는 내 기록과 계정에 남아 있어요. 내 정보에서 결제한 풀이와 기록을 확인할 수 있어요.</li>
           <li>풀이가 나오는 도중에 화면을 닫거나 연결이 끊겼다면, 결제한 풀이는 그대로 남아 내 정보에서 3번까지 다시 열어 끝까지 받을 수 있어요. 이미 제공이 시작된 풀이라 이때는 환불되지 않아요.</li>
           <li>{`생성 실패나 장애, 결제 오류처럼 ${SITE.nameKo} 쪽 문제로 풀이가 완성되지 않았다면 다시 여는 대신 전액 환불받을 수도 있어요. 이때는 결제일로부터 ${REFUND_DAYS}일이 지났어도 환불해 드려요. 아래 문의처로 알려 주세요.`}</li>
           <li>풀이가 결제 전에 안내한 내용과 다르게 제공됐다면, 확인한 뒤 같은 기준으로 처리해요.</li>
         </ul>
-      </LegalSection>
-
-      <LegalSection id="gift" title="가입 선물">
-        <p>{`가입 선물(타로 전체 풀이 1번 무료)은 무료로 드리는 혜택이라 환불 대상이 아니에요. 받은 날부터 ${GIFT_DAYS}일째 되는 날까지 쓸 수 있고, 현금으로 바꾸거나 다른 사람에게 넘길 수 없어요.`}</p>
       </LegalSection>
 
       <LegalSection id="minor" title="미성년자 결제 취소">

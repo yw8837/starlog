@@ -5,6 +5,8 @@ import { expect, test, type Page } from "@playwright/test";
  * and the whole reading to anyone, without the question and the note; 공유 그만하기 takes it down.
  */
 
+const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
+
 const INPUT = {
   topicId: "contact",
   whoId: "us",
@@ -23,12 +25,17 @@ async function ownAddress(page: Page) {
   await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `10.7.${n()}.${n()}` });
 }
 
-/** A full tarot reading from the API, saved on this device as the result screen keeps it. */
+/**
+ * A full tarot reading from the API, saved on this device as the result screen keeps it. Opened with the
+ * owner pass: a 오픈 기념 무료 reading is read and kept on its device only, and the server never shares it.
+ */
 async function savedReading(page: Page, id: string) {
   await page.context().clearCookies();
   await ownAddress(page);
+  const origin = new URL(test.info().project.use.baseURL!).origin;
+  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
   const draw = await (await page.request.post("/api/tarot/draw", { data: { templateId: "relationship-contact", picks: [2, 9, 15] } })).json();
-  const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: INPUT } })).json();
+  const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: INPUT, unlock: { method: "owner" } } })).json();
   const chapter = {
     id,
     kind: "tarot",

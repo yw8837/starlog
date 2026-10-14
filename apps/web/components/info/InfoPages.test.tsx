@@ -123,7 +123,7 @@ const TRUST = [
   },
   {
     q: "내 생년월일은 어디에 저장되나요?",
-    a: "생년월일은 이 기기(브라우저)에 저장되고, 내 정보에서 언제든 지울 수 있어요. 로그인해 결제하거나 가입 선물로 연 풀이는 입력한 생년월일과 함께 암호화해 계정에도 보관돼요. 별자리 인연에 넣은 친구의 생년월일은 점수를 계산할 때만 쓰고 저장하지 않아요. 비밀번호는 받지 않아요.",
+    a: "생년월일은 이 기기(브라우저)에 저장되고, 내 정보에서 언제든 지울 수 있어요. 로그인해 결제하고 연 풀이는 입력한 생년월일과 함께 암호화해 계정에도 보관돼요. 별자리 인연에 넣은 친구의 생년월일은 점수를 계산할 때만 쓰고 저장하지 않아요. 비밀번호는 받지 않아요.",
   },
   {
     q: "사주 계산은 믿을 수 있나요?",
@@ -227,7 +227,7 @@ describe("/faq", () => {
     const entries = (bonds: boolean) => faqGroups({ site: { ...SITE, features: { ...SITE.features, bonds } } }).flatMap((group) => group.entries);
     const birthDate = (bonds: boolean) => entries(bonds).find((entry) => entry.q === TRUST[1].q)?.a.join(" ");
     expect(birthDate(true)).toBe(TRUST[1].a);
-    expect(birthDate(false)).toBe("생년월일은 이 기기(브라우저)에 저장되고, 내 정보에서 언제든 지울 수 있어요. 로그인해 결제하거나 가입 선물로 연 풀이는 입력한 생년월일과 함께 암호화해 계정에도 보관돼요. 비밀번호는 받지 않아요.");
+    expect(birthDate(false)).toBe("생년월일은 이 기기(브라우저)에 저장되고, 내 정보에서 언제든 지울 수 있어요. 로그인해 결제하고 연 풀이는 입력한 생년월일과 함께 암호화해 계정에도 보관돼요. 비밀번호는 받지 않아요.");
     expect(entries(false).flatMap((entry) => [entry.q, ...entry.a]).join(" ")).not.toContain("별자리 인연");
   });
 

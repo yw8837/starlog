@@ -70,6 +70,17 @@ describe("POST /api/share", () => {
     const premium = await browser().send(POST, "/api/share", { body: { chapterToken: deep, reading }, origin: true });
     expect((await json(premium)).code).toBe("NOT_AVAILABLE");
   });
+
+  it("refuses a 오픈 기념 무료 reading (read and kept on its device only), with a clear message and nothing saved", async () => {
+    const db = useTestDb();
+    const chapterToken = await issueChapter({ ...ctx, opening: true } as ChapterContext, reading, [], secret, Date.now());
+    const res = await browser().send(POST, "/api/share", { body: { chapterToken, reading }, origin: true });
+    expect(res.status).toBe(409);
+    const body = await json(res);
+    expect(body).toMatchObject({ code: "NOT_AVAILABLE", reason: "opening" });
+    expect(body.message).toContain("오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요");
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM shares").first()).toEqual({ n: 0 });
+  });
 });
 
 describe("the card design of a share", () => {

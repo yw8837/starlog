@@ -13,7 +13,7 @@ import { randomId } from "@/lib/security/sign";
  * mode with the owner pass, or paused for existing accounts), and only after the 만 14세 check on
  * /login: `age` is the 5-minute token POST /api/auth/age signs for it. With STARLOG_KAKAO=mock it goes straight to the callback with a
  * `mock:<mockUser>` code (tests, e2e). Without `mockUser` each login is a fresh mock account, so
- * repeated e2e runs on the same local D1 each start with the signup gift.
+ * repeated e2e runs on the same local D1 each start from a new account.
  */
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);

@@ -164,8 +164,8 @@ describe("error copy", () => {
     expect(describeApiError(err("UPSTREAM"), "tarot-draw", NOW).body).not.toContain("횟수");
   });
 
-  it("says the free first tarot reading (첫 이용 무료) is used, with no reset time: it does not come back at midnight", () => {
-    expect(describeApiError(err("BETA_LIMIT", { scope: "first" }), "reading", NOW)).toEqual({ title: "첫 이용 무료 풀이를 이미 열었어요", action: null });
+  it("says the free first tarot reading (오픈 기념 무료) is used, with no reset time: it does not come back at midnight", () => {
+    expect(describeApiError(err("BETA_LIMIT", { scope: "first" }), "reading", NOW)).toEqual({ title: "오픈 기념 무료 풀이를 이미 열었어요", action: null });
     expect(parseApiError(429, { code: "BETA_LIMIT", scope: "first", message: "x" }).scope).toBe("first");
   });
 

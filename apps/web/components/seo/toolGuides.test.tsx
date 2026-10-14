@@ -47,16 +47,18 @@ describe.each([
   });
 });
 
-describe("prices and the gift come from the config", () => {
-  it("tarot: the tarot price and the gift, which saju never takes", () => {
-    render(<TarotGuide />);
+describe("prices and 오픈 기념 무료 come from the config", () => {
+  it("tarot: the tarot price and 오픈 기념 무료 with its rule, and no signup gift (removed, owner 2026-10-14 evening)", () => {
+    const { container } = render(<TarotGuide />);
     expect(screen.getByText(new RegExp(`타로 전체 풀이는 ${won(SITE.price.tarotStandardKrw)}이에요`))).toBeTruthy();
-    expect(screen.getByText(/가입 선물로 드려요/)).toBeTruthy();
+    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/가입 선물|첫 이용/);
   });
 
-  it("saju: the saju price, and the gift is not for saju", () => {
-    render(<SajuGuide />);
+  it("saju: the saju price, and 오픈 기념 무료 is not for saju", () => {
+    const { container } = render(<SajuGuide />);
     expect(screen.getByText(new RegExp(`사주 전체 풀이는 ${won(SITE.price.sajuStandardKrw)}이에요`))).toBeTruthy();
-    expect(screen.getByText("가입 선물(타로 전체 풀이 1번)은 사주에는 쓸 수 없어요.")).toBeTruthy();
+    expect(screen.getByText("오픈 기념 무료(10월 31일까지, 기기마다 타로 전체 풀이 한 번)는 사주에는 쓸 수 없어요.")).toBeTruthy();
+    expect(container.textContent).not.toContain("가입 선물");
   });
 });

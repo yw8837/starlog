@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AccountState, AccountUser } from "@/lib/account/client";
 import { standardProduct } from "./catalog";
 import { checkoutHref, unlockOffer } from "./offer";
@@ -10,8 +10,21 @@ const GIFT = { status: "unused", until: UNTIL } as const;
 const account = (over: Partial<AccountState> = {}): AccountState => ({ payments: true, login: true, owner: false, user: null, ...over });
 const user = (over: Partial<AccountUser> = {}): AccountUser => ({ nickname: "별", gift: null, unused: [], opening: [], ...over });
 
+/** 오픈 기념 무료 runs through 2026-10-31 23:59:59 KST; these offers are read on 10월 14일 unless a test says otherwise. */
+const LAST_FREE = Date.parse("2026-10-31T14:59:59Z");
+const NOVEMBER = Date.parse("2026-10-31T15:00:00Z");
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(Date.parse("2026-10-14T03:00:00Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("unlock offer", () => {
-  it("keeps 첫 이용 무료 for tarot while sales are closed for this device and nothing is held", () => {
+  it("keeps 오픈 기념 무료 for tarot while sales are closed for this device and nothing is held", () => {
     expect(unlockOffer(undefined, tarot)).toEqual({ mode: "opening", login: false });
     expect(unlockOffer(null, tarot)).toEqual({ mode: "opening", login: false });
     expect(unlockOffer(account({ payments: false, login: false }), tarot)).toEqual({ mode: "opening", login: false });
@@ -29,9 +42,9 @@ describe("unlock offer", () => {
     expect(unlockOffer(account({ payments: false, login: true }), saju)).toEqual({ mode: "closed", login: true });
   });
 
-  it("asks a guest to log in once sales are open, naming the gift for tarot only", () => {
-    expect(unlockOffer(account(), tarot)).toEqual({ mode: "login", priceKrw: 2900, gift: true });
-    expect(unlockOffer(account(), saju)).toEqual({ mode: "login", priceKrw: 4900, gift: false });
+  it("asks a guest to log in once sales are open, promising no signup gift (removed, owner 2026-10-14 evening)", () => {
+    expect(unlockOffer(account(), tarot)).toEqual({ mode: "login", priceKrw: 2900 });
+    expect(unlockOffer(account(), saju)).toEqual({ mode: "login", priceKrw: 4900 });
   });
 
   it("opens a purchase first, then the gift, then asks to pay", () => {
@@ -63,12 +76,12 @@ describe("unlock offer", () => {
     expect(unlockOffer(account({ payments: false, user: user() }), tarot)).toEqual({ mode: "opening", login: false });
   });
 
-  it("puts 첫 이용 무료 first for tarot while this device has not used it, sales open or not; logging in, the gift and paying follow it (owner 2026-10-14)", () => {
-    expect(unlockOffer(account(), tarot, true)).toEqual({ mode: "login", priceKrw: 2900, gift: true, first: true });
+  it("puts 오픈 기념 무료 first for tarot while this device has not used it, sales open or not; logging in, a gift held and paying follow it (owner 2026-10-14)", () => {
+    expect(unlockOffer(account(), tarot, true)).toEqual({ mode: "login", priceKrw: 2900, first: true });
     expect(unlockOffer(account({ user: user({ gift: GIFT }) }), tarot, true)).toEqual({ mode: "gift", until: UNTIL, priceKrw: 2900, first: true });
     expect(unlockOffer(account({ user: user() }), tarot, true)).toEqual({ mode: "pay", priceKrw: 2900, first: true });
     expect(unlockOffer(account({ payments: false, user: user({ gift: GIFT }) }), tarot, true)).toEqual({ mode: "gift", until: UNTIL, priceKrw: 2900, first: true });
-    // Sales closed: 첫 이용 무료 as before.
+    // Sales closed: 오픈 기념 무료 as before.
     expect(unlockOffer(undefined, tarot, true)).toEqual({ mode: "opening", login: false });
     expect(unlockOffer(account({ payments: false, login: true }), tarot, true)).toEqual({ mode: "opening", login: true });
     // A purchase waiting, or a reading of this kind being opened, still comes first.
@@ -76,12 +89,25 @@ describe("unlock offer", () => {
     expect(unlockOffer(account({ user: user({ opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }] }) }), tarot, true)).toEqual({ mode: "in-progress", currency: "paid" });
   });
 
-  it("once this device used 첫 이용 무료, and always for saju, offers what it did before", () => {
-    expect(unlockOffer(account(), tarot, false)).toEqual({ mode: "login", priceKrw: 2900, gift: true });
+  it("once this device used 오픈 기념 무료, and always for saju, offers what it did before", () => {
+    expect(unlockOffer(account(), tarot, false)).toEqual({ mode: "login", priceKrw: 2900 });
     expect(unlockOffer(account({ user: user() }), tarot, false)).toEqual({ mode: "pay", priceKrw: 2900 });
-    expect(unlockOffer(account(), saju, true)).toEqual({ mode: "login", priceKrw: 4900, gift: false });
+    expect(unlockOffer(account(), saju, true)).toEqual({ mode: "login", priceKrw: 4900 });
     expect(unlockOffer(account({ user: user() }), saju, true)).toEqual({ mode: "pay", priceKrw: 4900 });
     expect(unlockOffer(undefined, saju, true)).toEqual({ mode: "closed", login: false });
+  });
+
+  it("ends 오픈 기념 무료 with October: from 11월 1일 0시 KST tarot offers what a used one does, and nothing free while sales are closed", () => {
+    vi.setSystemTime(LAST_FREE);
+    expect(unlockOffer(undefined, tarot, true)).toEqual({ mode: "opening", login: false });
+    expect(unlockOffer(account({ user: user() }), tarot, true)).toEqual({ mode: "pay", priceKrw: 2900, first: true });
+    vi.setSystemTime(NOVEMBER);
+    expect(unlockOffer(undefined, tarot, true)).toEqual({ mode: "closed", login: false });
+    expect(unlockOffer(account({ payments: false, login: true }), tarot, true)).toEqual({ mode: "closed", login: true });
+    expect(unlockOffer(account(), tarot, true)).toEqual({ mode: "login", priceKrw: 2900 });
+    expect(unlockOffer(account({ user: user() }), tarot, true)).toEqual({ mode: "pay", priceKrw: 2900 });
+    // What the account holds still opens.
+    expect(unlockOffer(account({ payments: false, user: user({ gift: GIFT }) }), tarot, true)).toEqual({ mode: "gift", until: UNTIL, priceKrw: 2900 });
   });
 
   it("links the checkout with the product and the way back", () => {

@@ -19,7 +19,7 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("사주 전체 풀이");
     expect(page).toContain("2,900원");
     expect(page).toContain("이 기기에 계속 보관");
-    expect(page).toContain("받은 날부터 90일째 되는 날 밤 12시(한국 시간)까지 쓸 수 있어요");
+    expect(page).not.toContain("가입 선물");
     expect(page).toContain("열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요");
     expect(page).not.toContain("언제든 전액 환불");
     expect(page).not.toMatch(/충전|심층 풀이|프롤로그/);
@@ -43,12 +43,11 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("내 정보 > 결제한 풀이");
     expect(page).not.toContain("결제 내역의 ‘환불받기’");
     expect(page).not.toContain("결제 내역에서 ‘환불받기’");
-    expect(page).toContain("90일");
     expect(page).toContain("법정대리인");
     expect(page).not.toContain("충전");
-    // A gift reading that fails gives the gift back; the gift itself is never refunded.
-    expect(page).toContain("가입 선물로 열던 풀이라면 가입 선물도 그대로 돌려 드려요");
-    expect(page).toContain("가입 선물(타로 전체 풀이 1번 무료)은 무료로 드리는 혜택이라 환불 대상이 아니에요");
+    // The signup gift was removed (owner 2026-10-14 evening): the refund policy no longer names it.
+    expect(page).not.toContain("가입 선물");
+    expect(page).toContain("오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요");
   });
 
   it("/terms and /pricing: 제공 starts when the reading begins on screen; one left halfway reopens but is not refunded", () => {
@@ -59,39 +58,37 @@ describe("policies for the paid launch", () => {
     expect(text(<PricingPage />)).toContain("결제한 풀이는 화면에 나오기 시작하면 청약철회가 제한돼요");
   });
 
-  it("/terms: Kakao or Google members, item-by-item payment, the signup gift clause, minors, deletion, no model name", () => {
+  it("/terms: Kakao or Google members, item-by-item payment, no signup gift (제7조의2 삭제), minors, deletion, no model name", () => {
     const page = text(<TermsPage />);
     expect(page).toContain("“회원”이란 카카오 계정이나 Google 계정으로 로그인해");
-    expect(page).toContain("회원 가입은 카카오 계정이나 Google 계정으로 로그인해서 하며");
-    expect(page).toContain("카카오 계정이나 Google 계정 하나에 한 번만 드리며");
+    expect(page).toContain("회원 가입은 카카오 계정이나 Google 계정으로 로그인해서 합니다.");
     expect(page).not.toContain("한 사람에게");
     expect(page).toContain("건별로 결제");
-    expect(page).toContain("제7조의2 (가입 선물)");
+    expect(page).toContain("제7조의2 (삭제)");
     expect(page).toContain("민법 제5조");
     expect(page).toContain("열지 않은 결제 풀이는 전액 환불");
     expect(page).toContain("열기 전의 결제 풀이는 결제일로부터 7일 안에 전액 환불받을 수 있으며");
-    expect(page).toContain("가입 선물");
+    expect(page).not.toContain("가입 선물");
     expect(page).not.toContain("충전");
     expect(page).not.toMatch(MODEL_NAMES);
     expect(page).not.toContain("Anthropic");
   });
 
-  it("/terms: the signup gift is one clause: once per Kakao or Google account (not again within a year of leaving), standard tarot only, no cash value, not transferable or refundable, expires, changed only going forward with notice", () => {
+  it("/terms: 제7조의2 is 삭제 (the signup gift went, owner 2026-10-14 evening), and 제4조 sets out 오픈 기념 무료: until 2026-10-31, once per device, tarot only, read and keep only, ending by itself", () => {
     const { container } = render(<TermsPage />);
     const clause = container.querySelector("#gift");
-    expect(clause?.querySelector("h2")?.textContent).toBe("제7조의2 (가입 선물)");
-    const items = [...(clause?.querySelectorAll("ol > li") ?? [])].map((li) => li.textContent);
-    expect(items).toEqual([
-      "운영자는 처음 가입한 회원에게 가입 선물(무료 이용 혜택)로 타로 전체 풀이 1회를 무료로 드립니다. 가입 선물은 카카오 계정이나 Google 계정 하나에 한 번만 드리며, 탈퇴 후 같은 계정으로 다시 가입해도 탈퇴일로부터 1년 동안은 다시 드리지 않습니다.",
-      "가입 선물은 타로 전체 풀이에만 쓸 수 있으며, 사주 전체 풀이(주제별 사주 풀이를 포함합니다)와 그 밖의 유료 풀이에는 쓸 수 없습니다.",
-      "가입 선물은 받은 날부터 90일째 되는 날의 자정(한국 시간)까지 쓸 수 있으며, 그때까지 쓰지 않으면 사라집니다. 탈퇴한 경우에도 쓰지 않은 가입 선물은 사라집니다.",
-      "가입 선물은 운영자가 무료로 드리는 혜택으로 현금 가치가 없으며, 현금으로 바꾸거나 환불할 수 없고 다른 사람에게 넘길 수 없습니다.",
-      "운영자는 가입 선물의 내용과 조건을 바꾸거나 제공을 끝낼 수 있습니다. 이 경우 바뀌는 내용과 시행일을 시행일 7일 전부터 서비스 안에 공지하며, 바뀐 내용은 시행일 이후에 드리는 가입 선물부터 적용합니다.",
-    ]);
+    expect(clause?.querySelector("h2")?.textContent).toBe("제7조의2 (삭제)");
+    expect(clause?.querySelectorAll("li")).toHaveLength(0);
+    const service = container.querySelector("#service")?.textContent ?? "";
+    expect(service).toContain("운영자는 오픈 기념 무료로 2026년 10월 31일 23시 59분(한국 시간)까지 기기(브라우저)마다 한 번 타로 전체 풀이를 무료로 제공합니다. 사주 전체 풀이는 무료로 제공하지 않습니다.");
+    expect(service).toContain("오픈 기념 무료로 연 타로 전체 풀이는 그 기기에서 보고 보관하는 데에만 쓸 수 있으며, 이어서 물어보기와 결과 공유는 제공하지 않습니다. 오픈 기념 무료는 위 기간이 지나면 자동으로 끝납니다.");
+    expect(container.textContent).not.toMatch(/첫 이용 무료|가입 선물/);
     // Article numbers run 1, 2, 3, 4, 4의2, 5, 6, 7, 7의2, 8, (8의2,) 8의3, 9, 10, 11, 12 with nothing skipped.
     const articles = [...container.querySelectorAll("h2")].map((h) => h.textContent?.match(/^제(\d+)조(의\d+)?/)?.slice(1).join("") ?? "").filter(Boolean);
     expect(articles.filter((a) => !/의\d+$/.test(a)).map(Number)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
-    expect(container.querySelector("#definitions")?.textContent).toContain("“가입 선물”이란 운영자가 처음 가입한 회원에게 무료로 드리는 이용 혜택(타로 전체 풀이 1회)을 말하며");
+    const definitions = [...(container.querySelector("#definitions")?.querySelectorAll("ol > li") ?? [])].map((li) => li.textContent);
+    expect(definitions).toHaveLength(5);
+    expect(definitions[4]).toBe("“전체 풀이”란 무료로 공개하는 부분을 넘어 소제목 전체와 이어서 물어보기를 담은 풀이를 말하며, 건별로 결제해서 엽니다. 다만 타로 전체 풀이는 제4조의 오픈 기념 무료로도 열 수 있으며, 이때는 이어서 물어보기와 결과 공유를 제공하지 않습니다.");
   });
 
   it("/privacy: what an account keeps, for how long, and who processes it; never 'not stored' without a condition", () => {

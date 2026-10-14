@@ -90,13 +90,20 @@ describe("policy pages", () => {
     expect(text).not.toContain("누를 때까지 보관하고, 누르면 바로 지웁니다");
   });
 
-  it("privacy: names the readings the account keeps the same way everywhere: opened while logged in with a payment or the signup gift (lib/readings/store.ts); 첫 이용 무료 readings stay on the device", () => {
+  it("privacy: names the readings the account keeps the same way everywhere: opened while logged in with a payment (lib/readings/store.ts); 오픈 기념 무료 readings stay on the device", () => {
     const text = render(<PrivacyPage />).container.textContent ?? "";
-    // The broader "readings opened while logged in" would also cover a 첫 이용 무료 reading, which is never saved to the account.
+    // The broader "readings opened while logged in" would also cover a 오픈 기념 무료 reading, which is never saved to the account.
     expect(text).not.toContain("로그인해서 연 풀이");
-    const kept = "로그인해 결제하거나 가입 선물로 연 풀이";
+    const kept = "로그인해 결제하고 연 풀이";
     expect(text.split(kept).length - 1).toBeGreaterThanOrEqual(7);
-    expect(text).toContain("로그인하지 않고 연 풀이와 첫 이용 무료로 연 풀이의 입력은 서버에 저장하지 않고");
+    expect(text).toContain("로그인하지 않고 연 풀이와 오픈 기념 무료로 연 풀이의 입력은 서버에 저장하지 않고");
+  });
+
+  it("privacy: no longer offers the signup gift; describes the grant records still kept for gifts already given", () => {
+    const text = render(<PrivacyPage />).container.textContent ?? "";
+    expect(text).not.toMatch(/가입 선물로 연|중복 지급 방지|첫 이용 무료/);
+    expect(text).toContain("이미 지급한 가입 선물의 지급 기록 관리(가입 선물은 더 이상 드리지 않습니다)");
+    expect(text).toContain("가입 선물은 더 이상 드리지 않습니다. 이미 지급한 가입 선물의 지급 기록(카카오 회원번호나 Google 계정 식별값을 되돌릴 수 없게 바꾼 값과 지급 시각)은 탈퇴 뒤 1년 동안 보관한 뒤 파기합니다.");
   });
 
   it("privacy: discloses 별자리 인연 (stored items, public ranking, share images, D1, retention, age) while it is live", () => {

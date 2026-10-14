@@ -5,7 +5,8 @@ import { clientKey, errorResponse, json, parseCookies, readJson } from "@/lib/ap
 import { accountDb } from "@/lib/db";
 import { buildSharePayload } from "@/lib/share/payload";
 import { deleteShare, saveShare } from "@/lib/share/store";
-import { openChapterForShare } from "@/lib/security/chapterToken";
+import { OPENING_KEEP_ONLY } from "@/lib/helpGuide";
+import { isOpeningChapter, openChapterForShare } from "@/lib/security/chapterToken";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { sha256, signingSecret } from "@/lib/security/sign";
 
@@ -17,7 +18,8 @@ import { sha256, signingSecret } from "@/lib/security/sign";
  * signed-in sharer's account owns the share: deleting the account takes it down (lib/account/deletion.ts).
  * DELETE {chapterToken, reading} → {deleted}: stops sharing it.
  * Both take the signed chapter the result screen holds, so only the device with the reading can share
- * it or stop it, and the shared text is always the one the server wrote.
+ * it or stop it, and the shared text is always the one the server wrote. A 오픈 기념 무료 reading is never
+ * shared (409 `reason: "opening"`).
  */
 
 const ShareBody = z.object({
@@ -39,6 +41,8 @@ async function open(request: Request) {
   const chapter = await openChapterForShare(body.data.chapterToken, body.data.reading, secret);
   if (!chapter) return errorResponse("BAD_TOKEN", { message: NOT_SHAREABLE });
   if (chapter.ctx.kind !== "tarot" && chapter.ctx.kind !== "saju") return errorResponse("NOT_AVAILABLE", { message: "이 풀이는 아직 공유할 수 없어요." });
+  // 오픈 기념 무료 is read and kept on the device only (owner 2026-10-14 evening).
+  if (isOpeningChapter(chapter.ctx)) return errorResponse("NOT_AVAILABLE", { reason: "opening", message: OPENING_KEEP_ONLY });
   return { db, secret, chapter, body: body.data, chapterKey: await sha256(chapter.id) };
 }
 

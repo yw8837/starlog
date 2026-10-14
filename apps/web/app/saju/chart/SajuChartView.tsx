@@ -61,7 +61,7 @@ const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID
  * it on this device and goes to it. With nothing saved, an example chart asks for the user's own birth data.
  *
  * The sheet offers what this device may use (lib/pay/offer.ts): a login, a purchase or paying; never a
- * free full reading (첫 이용 무료 and the signup gift open tarot only), so while sales are closed here
+ * free full reading (오픈 기념 무료 and a signup gift held open tarot only), so while sales are closed here
  * nothing opens but the owner pass. `autoUnlock` (?unlock=paid after
  * checkout) opens the 운 that came back with it (`initialTopic`, from ?topic=) once.
  */

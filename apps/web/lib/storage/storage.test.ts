@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SITE } from "@/lib/config";
 import type { DailyData, TarotReadingData } from "@/lib/reading/types";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
@@ -232,8 +232,15 @@ describe("오늘의 한 장 cache by KST day", () => {
   });
 });
 
-describe("첫 이용 무료 shown on the unlock", () => {
-  afterEach(() => clearBetaUsage());
+describe("오픈 기념 무료 shown on the unlock", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-10-14T03:00:00Z"));
+  });
+  afterEach(() => {
+    clearBetaUsage();
+    vi.useRealTimers();
+  });
 
   it("counts the free readings this device opened for good: no reset the next KST day", () => {
     const free = SITE.beta.firstFreeTarot;
@@ -254,6 +261,23 @@ describe("첫 이용 무료 shown on the unlock", () => {
     expect(BETA_USAGE_KEY).not.toBe("starlog.beta-usage");
     const { result } = renderHook(() => useRemainingFree());
     expect(result.current).toBe(SITE.beta.firstFreeTarot);
+  });
+
+  it("has none left from 11월 1일 0시 KST, used or not: 오픈 기념 무료 ended", () => {
+    vi.setSystemTime(Date.parse("2026-10-31T14:59:59Z"));
+    expect(remainingFree(null)).toBe(SITE.beta.firstFreeTarot);
+    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z"));
+    expect(remainingFree(null)).toBe(0);
+    expect(remainingFree({ full: 0 })).toBe(0);
+  });
+});
+
+describe("a 오픈 기념 무료 reading on this device", () => {
+  it("keeps its mark (read and keep only), and reads any other value as an ordinary reading", () => {
+    const { chapter } = saveChapter({ ...TAROT, opening: true }, NOW);
+    expect(getChapter(chapter.id)).toMatchObject({ opening: true });
+    expect(getChapter(saveChapter(TAROT, NOW).chapter.id)).not.toHaveProperty("opening");
+    expect(parseChapter({ ...chapter, opening: "yes" })).not.toHaveProperty("opening");
   });
 });
 

@@ -72,7 +72,7 @@ export interface ApiError {
   /**
    * BETA_LIMIT: which count ran out — this chapter's questions, the device's day, the day's count
    * for the whole network (one Wi-Fi, office or school shares it), or the device's free first tarot
-   * reading (첫 이용 무료, which never resets).
+   * reading (오픈 기념 무료, which never resets).
    */
   scope?: "chapter" | "day" | "network" | "first";
   /** 오늘의 한 장 BETA_LIMIT: the day's card, without its text. */

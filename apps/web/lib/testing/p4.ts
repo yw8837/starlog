@@ -4,8 +4,13 @@ import { GET as kakaoStart } from "@/app/api/auth/kakao/start/route";
 import { GET as meGet } from "@/app/api/me/route";
 import { POST as confirmPost } from "@/app/api/pay/confirm/route";
 import { POST as ordersPost } from "@/app/api/pay/orders/route";
+import { accountSecret, kakaoKey } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
+import type { D1Binding } from "@/lib/db/d1";
 import { migratedTestD1 } from "@/lib/db/testing/migrate";
+import { grantSignupGift } from "@/lib/pay/ledger";
+import { issueChapter, openChapter } from "@/lib/security/chapterToken";
+import { signingSecret } from "@/lib/security/sign";
 import type { TestD1 } from "@/lib/db/testing/sqliteD1";
 
 /** Helpers for P4 route tests: a cookie-keeping browser, a test D1 for accountDb(), mock Kakao login. Tests only. */
@@ -81,6 +86,30 @@ export async function loginAs(b: Browser, name = "alice", returnTo = "/tarot/res
   const location = start.headers.get("location");
   if (!location?.includes("/api/auth/kakao/callback")) throw new Error(`login did not reach the callback: ${start.status} ${location}`);
   return b.send(kakaoCallback, location);
+}
+
+/**
+ * Gives the mock Kakao account `name` the signup gift, as an account that joined before the gift was
+ * removed (owner 2026-10-14 evening) holds it: logins grant none any more.
+ */
+export async function grantGift(db: D1Binding, name = "alice", now = Date.now()): Promise<void> {
+  const key = await kakaoKey(`mock-${name}`, accountSecret()!);
+  const user = await db.prepare("SELECT id FROM users WHERE kakao_key = ?").bind(key).first<{ id: string }>();
+  if (!user || !(await grantSignupGift(db, { userId: user.id, kakaoKey: key, now }))) throw new Error(`no gift for ${name}`);
+}
+
+/**
+ * The chapter a paid opening of the same tarot reading gets: a 오픈 기념 무료 chapter takes no follow-ups
+ * (owner 2026-10-14 evening), so follow-up tests on a free opening ask on this one instead.
+ */
+export async function paidChapterOf(chapterToken: string, reading: unknown): Promise<string> {
+  const secret = signingSecret()!;
+  const now = Date.now();
+  const chapter = await openChapter(chapterToken, reading, secret, now);
+  if (!chapter || chapter.ctx.kind !== "tarot") throw new Error("not a tarot chapter");
+  const ctx = { ...chapter.ctx };
+  delete ctx.opening;
+  return issueChapter(ctx, reading, chapter.turns, secret, now, chapter.exp);
 }
 
 export interface MeBody {

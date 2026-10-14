@@ -9,7 +9,8 @@ import { issueChapter } from "@/lib/security/chapterToken";
 /**
  * POST {drawToken, input, unlock?} → {reading, chapterToken, readingId?}: the full reading for the
  * server-fixed cards.
- * - 첫 이용 무료 (no `unlock`): spends the device's free first reading only after a validated generation.
+ * - 오픈 기념 무료 (no `unlock`, until SITE.beta.openingEndsAt): spends the device's free first reading only
+ *   after a validated generation; its chapter is marked `opening` (no follow-ups or share).
  * - paid / the signup gift: reserves the purchase or the gift first, then saves the reading to the
  *   account and spends it before the client sees it. Any failure gives it back (spec 5.4).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
@@ -29,7 +30,10 @@ export async function POST(request: Request): Promise<Response> {
     async (hooks) => {
       const reading = (await generateTarotReading(gate.provider, parsed.ctx, hooks)).data;
       const chapterToken = await issueChapter(
-        { kind: "tarot", templateId: parsed.draw.templateId, input: parsed.input, cards: parsed.draw.cards.map((c) => [c.cardId, c.orientation]) },
+        {
+          kind: "tarot", templateId: parsed.draw.templateId, input: parsed.input, cards: parsed.draw.cards.map((c) => [c.cardId, c.orientation]),
+          ...(plan.method === "opening" ? { opening: true as const } : {}),
+        },
         reading, [], gate.secret, gate.now,
       );
       return { body: { reading, chapterToken }, cookies: plan.first !== null ? await firstFreeCookies(gate, plan.first) : [] };

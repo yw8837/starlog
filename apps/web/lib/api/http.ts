@@ -56,7 +56,7 @@ const MESSAGE: Record<ErrorCode, string> = {
   UPSTREAM: "풀이를 만드는 중에 문제가 생겼어요. 잠시 뒤에 다시 시도해 주세요.",
   LOGIN_REQUIRED: "로그인이 필요해요. 로그인하고 다시 시도해 주세요.",
   PAYMENT_REQUIRED: "전체 풀이는 결제하고 열 수 있어요.",
-  NO_CREDIT: "열 수 있는 결제한 풀이나 가입 선물이 없어요.",
+  NO_CREDIT: "열 수 있는 결제한 풀이가 없어요.",
   PAY_FAILED: "결제를 마치지 못했어요. 청구된 금액은 없어요.",
   FORBIDDEN: "이 요청은 받을 수 없어요. 화면을 새로 고친 뒤 다시 시도해 주세요.",
   NOT_AVAILABLE: "지금은 열 수 없는 상품이에요.",
@@ -270,8 +270,8 @@ export async function fullReadingLimit(request: Request, gate: Gate): Promise<Re
 /** Shown for a per-network limit (many phones can share one carrier IP); the UI may replace it by `scope`. */
 const NETWORK_LIMIT_MESSAGE = "지금 쓰는 인터넷(와이파이·통신사)에서 오늘 열 수 있는 풀이를 모두 썼어요. 자정에 다시 열려요.";
 
-/** This device has used its free first tarot reading (첫 이용 무료, owner 2026-10-14): it does not come back at midnight. */
-const FIRST_FREE_USED_MESSAGE = "이 기기에서는 첫 이용 무료 풀이를 이미 받았어요.";
+/** This device has used its free first tarot reading (오픈 기념 무료, owner 2026-10-14): it does not come back at midnight. */
+const FIRST_FREE_USED_MESSAGE = "이 기기에서는 오픈 기념 무료 풀이를 이미 받았어요.";
 
 /** Shown when the day's budget is used up (the UI may replace it by `reason`). */
 const BUDGET_MESSAGE = "오늘 준비한 풀이가 모두 나갔어요. 자정에 다시 열려요.";
@@ -322,7 +322,7 @@ export async function checkQuota(gate: Gate, kind: QuotaKind, extra: Record<stri
 }
 
 /**
- * 첫 이용 무료: the free tarot full readings this device has used, or the error when it may not open
+ * 오픈 기념 무료: the free tarot full readings this device has used, or the error when it may not open
  * one: the server limits (checkServerLimits: network caps, the day's budget, the network's budget
  * share), then this device's `sl_first` cookie, which never resets (429 `scope: "first"`). The owner
  * pass skips both counters.

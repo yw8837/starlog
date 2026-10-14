@@ -36,8 +36,14 @@ describe("P4 error copy", () => {
     expect(describeApiError({ code: "PAY_FAILED", status: 402, message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." })).toMatchObject({ title: "결제를 마치지 못했어요", body: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." });
   });
 
-  it("names the purchase and the signup gift when nothing opens the reading", () => {
-    expect(describeApiError({ code: "NO_CREDIT", status: 402 })).toEqual({ title: "열 수 있는 결제한 풀이나 가입 선물이 없어요", body: "결제하고 열 수 있어요.", action: null });
+  it("names the purchase, never a signup gift (removed, owner 2026-10-14 evening), when nothing opens the reading", () => {
+    expect(describeApiError({ code: "NO_CREDIT", status: 402 })).toEqual({ title: "열 수 있는 결제한 풀이가 없어요", body: "결제하고 열 수 있어요.", action: null });
     expect(describeApiError({ code: "PAYMENT_REQUIRED", status: 402 })).toEqual({ title: "전체 풀이는 결제하고 열 수 있어요", action: null });
+  });
+
+  it("says a 오픈 기념 무료 reading takes no follow-ups in the server's words", () => {
+    const message = "오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요. 이어서 물어보기와 공유는 결제한 풀이에서 할 수 있어요.";
+    expect(describeApiError({ code: "NOT_AVAILABLE", status: 409, message }, "followup")).toEqual({ title: "이 풀이에는 더 물어볼 수 없어요", body: message, action: null });
+    expect(describeApiError({ code: "NOT_AVAILABLE", status: 409 })).toEqual({ title: "지금은 열 수 없는 상품이에요", action: "home" });
   });
 });

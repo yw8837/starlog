@@ -4,7 +4,7 @@ import { meStatusMessage } from "@/app/me/meStatus";
 import { loginMessage } from "@/lib/account/loginMessage";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
-import { giftExpiry } from "@/lib/pay/ledger";
+import { grantSignupGift } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, buy, loginAs, me, startUrl, useTestDb, type Browser } from "@/lib/testing/p4";
@@ -115,7 +115,7 @@ describe("Google login", () => {
     expect(verifier).toMatch(/^[A-Za-z0-9_-]{43,128}$/);
     expect(createHash("sha256").update(verifier).digest("base64url")).toBe(google.searchParams.get("code_challenge"));
     expect(sent.form!.get("code")).toBe("google-code");
-    expect((await me(b)).user).toMatchObject({ nickname: "별손님", gift: { status: "unused" }, google: true });
+    expect((await me(b)).user).toMatchObject({ nickname: "별손님", gift: null, google: true });
   });
 
   it("refuses an ID token minted for another sign-in, and logs nobody in", async () => {
@@ -131,7 +131,7 @@ describe("Google login", () => {
     expect(console.error).toHaveBeenCalledWith(JSON.stringify({ evt: "auth.google_failed", step: "id_token", status: 200 }));
   });
 
-  it("logs in to an account of its own (별손님, marked google in /api/me) and gives the signup gift once per Google account", async () => {
+  it("logs in to an account of its own (별손님, marked google in /api/me), with no signup gift (removed, owner 2026-10-14 evening)", async () => {
     const db = useTestDb();
     const b = browser();
     expect((await googleLoginAs(b, "alice")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
@@ -139,24 +139,24 @@ describe("Google login", () => {
       payments: true,
       login: true,
       owner: false,
-      user: { nickname: "별손님", gift: { status: "unused", until: new Date(giftExpiry(T0)).toISOString() }, unused: [], opening: [], google: true },
+      user: { nickname: "별손님", gift: null, unused: [], opening: [], google: true },
     });
     const { kakao_key: key } = (await db.prepare("SELECT kakao_key FROM users").first<{ kakao_key: string }>())!;
     expect(key).toMatch(/^google:[A-Za-z0-9_-]{43}$/);
     expect(key).not.toContain("alice");
     expect((await b.send(logout, "/api/auth/logout", { method: "POST", origin: true })).status).toBe(200);
     await googleLoginAs(b, "alice");
-    expect((await me(b)).user?.gift?.status).toBe("unused");
+    expect((await me(b)).user?.gift).toBeNull();
     expect(await one(db, "SELECT COUNT(*) AS n FROM users")).toEqual({ n: 1 });
-    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'")).toEqual({ n: 1 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'grant'")).toEqual({ n: 0 });
   });
 
-  it("keeps a Kakao account and a Google account apart: two accounts, a gift each (no linking)", async () => {
+  it("keeps a Kakao account and a Google account apart: two accounts (no linking), and no gift for either (the double gift is why it went)", async () => {
     const db = useTestDb();
     await loginAs(browser("198.51.100.40"), "alice");
     await googleLoginAs(browser("198.51.100.41"), "alice");
     expect(await one(db, "SELECT COUNT(*) AS n FROM users")).toEqual({ n: 2 });
-    expect(await one(db, "SELECT COUNT(*) AS n FROM gift_claims")).toEqual({ n: 2 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM gift_claims")).toEqual({ n: 0 });
   });
 
   it("while paused, logs existing Google accounts in and creates none", async () => {
@@ -181,7 +181,7 @@ describe("Google login", () => {
     const owner = browser("198.51.100.1");
     expect((await owner.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true })).status).toBe(200);
     expect((await googleLoginAs(owner, "owner")).headers.get("location")).toBe("http://localhost/tarot/result?login=ok");
-    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { gift: { status: "unused" }, google: true } });
+    expect(await me(owner)).toMatchObject({ payments: true, login: true, owner: true, user: { gift: null, google: true } });
   });
 
   it("refuses a callback whose state belongs to another browser, or was issued for Kakao", async () => {
@@ -251,6 +251,9 @@ describe("deleting a Google account", () => {
     const db = useTestDb();
     const b = browser("198.51.100.60");
     await googleLoginAs(b, "alice");
+    // A gift granted before the removal: its claim outlives the account.
+    const held = (await db.prepare("SELECT id, kakao_key FROM users").first<{ id: string; kakao_key: string }>())!;
+    expect(await grantSignupGift(db, { userId: held.id, kakaoKey: held.kakao_key, now: T0 })).toBe(true);
     const orderId = await buy(b);
     expect(await googleDeleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
     expect(b.jar.has("sl_sid")).toBe(false);

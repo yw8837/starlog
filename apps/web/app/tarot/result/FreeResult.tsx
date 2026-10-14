@@ -52,8 +52,8 @@ function withHistory(input: TarotInput): TarotInput {
  * reading, saves it on this device and goes to it. Sharing sends the site and the card names,
  * never the question or note.
  *
- * The sheet offers what this device may use (lib/pay/offer.ts): 첫 이용 무료 (the device's one free
- * reading), a login, a purchase, the signup gift or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
+ * The sheet offers what this device may use (lib/pay/offer.ts): 오픈 기념 무료 (the device's one free
+ * reading, kept marked on this device: read and keep only), a login, a purchase, a gift held or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
  */
 export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { instant: boolean; autoUnlock?: UnlockMethod | null; loginFlag?: string | null }) {
   const router = useRouter();
@@ -218,6 +218,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
       chapterToken: result.data.chapterToken,
       deck: body.input.deck,
       ...(result.data.readingId ? { serverId: result.data.readingId } : {}),
+      ...(chosen === "opening" ? { opening: true as const } : {}),
     });
     setFlow((prev) => (prev.draw ? { ...prev, draw: { ...prev.draw, chapterId: chapter.id } } : prev));
     if (result.commit) void commitQuota(result.commit);

@@ -6,6 +6,7 @@ import { addNetworkCost, budgetState, resetSpendState, spentTodayKrw } from "@/l
 import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
+import { paidChapterOf } from "@/lib/testing/p4";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as followup } from "./followup/route";
@@ -130,7 +131,8 @@ describe("DAILY_KV failures", () => {
     const full = await call(reading, { drawToken: token, input: MONEY_INPUT }, "198.51.100.43");
     kv.state.mode = "down";
     expect((await call(daily, {}, "198.51.100.43")).status).toBe(503);
-    const answer = await call(followup, { chapterToken: full.data.chapterToken, reading: full.data.reading, question: "지출은 어떻게 줄일까요?" }, "198.51.100.43");
+    const chapterToken = await paidChapterOf(full.data.chapterToken, full.data.reading);
+    const answer = await call(followup, { chapterToken, reading: full.data.reading, question: "지출은 어떻게 줄일까요?" }, "198.51.100.43");
     expect(answer.status).toBe(503); // without the chapter count an older token could reset the cap
 
     kv.state.mode = "ok";

@@ -6,7 +6,6 @@ import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute, type AccountContext } from "@/lib/account/request";
 import { clearSession, createSession, revokeSession } from "@/lib/account/session";
 import { loginKakaoUser, userByKakaoKey } from "@/lib/account/users";
-import { grantSignupGift } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { tossClient } from "@/lib/pay/toss";
 
@@ -18,8 +17,8 @@ type Back = (flag: string, cookies?: Array<CookieSpec | string>) => Response;
  *   PKCE verifier /api/auth/google/start keeps there (a state Kakao's start issued has neither). The
  *   Google settings are checked again before the code is used. The account is googleUserKey(sub).
  * - login: find the account, or create one while sales are open for this device (paused: existing
- *   accounts only, else ?login=closed). While sales are open the signup gift is tried on every login
- *   (once per Google account). The nickname is 별손님: Google is asked for nothing but the account id.
+ *   accounts only, else ?login=closed). No signup gift (removed, owner 2026-10-14 evening: one person
+ *   could join with Kakao and with Google and get two). The nickname is 별손님: Google is asked for nothing but the account id.
  *   Start a session and return with ?login=ok|cancel|failed.
  * - delete: the same Google account as the session must answer. Then deleteAccount() settles, refunds
  *   and erases, the app's access is revoked at Google, and we land on /me?account=deleted (spec 5.8).
@@ -65,10 +64,9 @@ async function finishLogin(ctx: AccountContext, key: string, age: boolean, back:
     return back("failed");
   }
   const { user, created } = account;
-  const gifted = open ? await grantSignupGift(ctx.db, { userId: user.id, kakaoKey: key, now: ctx.now }) : false;
   if (ctx.session) await revokeSession(ctx.db, ctx.session.id, ctx.now);
   const session = await createSession(ctx.db, user.id, ctx.secret, ctx.now);
-  console.info(JSON.stringify({ evt: "auth.login", provider: "google", created, gifted }));
+  console.info(JSON.stringify({ evt: "auth.login", provider: "google", created }));
   return back("ok", [session.cookie]);
 }
 

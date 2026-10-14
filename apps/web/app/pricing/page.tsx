@@ -6,8 +6,8 @@ import { LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage
 import s from "@/components/legal/legal.module.css";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { SITE, won } from "@/lib/config";
-import { times } from "@/lib/helpGuide";
-import { GIFT_DAYS, REFUND_DAYS, standardProduct } from "@/lib/pay/catalog";
+import { openingFreeText, times } from "@/lib/helpGuide";
+import { REFUND_DAYS, standardProduct } from "@/lib/pay/catalog";
 import { approxCharsText } from "@/lib/pricing";
 import { sajuFreeLine, sajuPricingLine } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
@@ -16,7 +16,7 @@ const { price, reading, beta, features } = SITE;
 
 export const metadata: Metadata = pageMetadata({
   title: "가격 안내",
-  description: `타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 무료로 볼 수 있는 부분과 가입 선물, 결제 수단을 안내해요.`,
+  description: `타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 무료로 볼 수 있는 부분, 결제 수단을 안내해요.`,
   path: "/pricing",
 });
 
@@ -52,9 +52,9 @@ function Check() {
 
 export default function PricingPage() {
   return (
-    <LegalPage title="가격 안내" lead="풀이 한 번의 가격과 무료로 볼 수 있는 부분, 가입 선물을 한곳에 모았어요.">
+    <LegalPage title="가격 안내" lead="풀이 한 번의 가격과 무료로 볼 수 있는 부분을 한곳에 모았어요.">
       <LegalNote>
-        <p className={s.noteTitle}>{`처음 ${times(beta.firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요.`}</p>
+        <p className={s.noteTitle}>{openingFreeText(beta.firstFreeTarot)}</p>
         <p>가격이 바뀔 때는 이 페이지에 먼저 알려 드려요.</p>
       </LegalNote>
 
@@ -92,7 +92,7 @@ export default function PricingPage() {
           ))}
         </div>
         <p>
-          결제하거나 가입 선물로 열어도 풀이 내용과 이어서 물어보기, 보관 범위는 같아요. 로그인해 결제하거나 가입 선물로 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요.
+          로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 오픈 기념 무료로 연 풀이는 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).
         </p>
       </LegalSection>
 
@@ -122,19 +122,10 @@ export default function PricingPage() {
 
       <LegalSection id="free" title="무료로 볼 수 있는 부분">
         <ul className={s.list}>
-          <li>{`타로 전체 풀이는 처음 ${times(beta.firstFreeTarot)} 무료로 열 수 있어요(첫 이용 무료).`}</li>
+          <li>{openingFreeText(beta.firstFreeTarot)}</li>
           <li>{`타로는 뽑은 카드 3장과 첫 풀이, 이어지는 풀이의 소제목을 먼저 무료로 볼 수 있어요. 첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 볼 수 있어요.`}</li>
           <li>{sajuFreeLine(features.sajuTopics, beta.teaserPerDay)}</li>
           <li>지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요.</li>
-        </ul>
-      </LegalSection>
-
-      <LegalSection id="gift" title="가입 선물">
-        <ul className={s.list}>
-          <li>처음 가입하면 타로 전체 풀이 1번을 무료로 드려요. 계정 하나에 한 번만 드려요.</li>
-          <li>타로 전체 풀이에만 쓸 수 있고, 사주 전체 풀이와 주제별 사주 풀이, 준비 중인 풀이에는 쓸 수 없어요.</li>
-          <li>{`받은 날부터 ${GIFT_DAYS}일째 되는 날 밤 12시(한국 시간)까지 쓸 수 있어요.`}</li>
-          <li>무료로 드리는 혜택이라 환불하거나 현금으로 바꿀 수 없고, 다른 사람에게 넘길 수 없어요. 탈퇴하면 쓰지 않은 가입 선물은 사라져요.</li>
         </ul>
       </LegalSection>
 

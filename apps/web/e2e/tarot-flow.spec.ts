@@ -3,7 +3,9 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 /**
  * Tarot on the real API (the server runs with STARLOG_AI=mock and a signing secret): the cards
  * the server deals are the cards shown, the teaser and the full reading come from the API, the
- * reading is saved on this device and survives a reload, follow-ups go through /api/followup.
+ * reading is saved on this device and survives a reload. A 오픈 기념 무료 reading is read and kept on
+ * this device only (no follow-ups or share); pay-flow.spec.ts asks a follow-up on a paid one.
+ * 오픈 기념 무료 ends with 2026-10-31 (KST): from 11월 1일 the free opening below is refused.
  */
 
 /** Client navigations wait for `next dev` to compile the next route, which is slow on this disk. */
@@ -83,7 +85,7 @@ async function drawThree(page: Page): Promise<Array<{ cardId: string; position: 
   return body.cards;
 }
 
-test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved reading that survives reload, a follow-up", async ({ page }, info) => {
+test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오픈 기념 무료 reading that survives reload, read and kept only", async ({ page }, info) => {
   await ownAddress(page, info);
   await buildMoneyQuestion(page, info);
   const cards = await drawThree(page);
@@ -99,11 +101,12 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(toc).toContainText(/소제목 \d+개 · 약 2,000자/);
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
   await expect(sheet).toContainText("풀이 전체 · 약 2,000자");
-  await expect(sheet).toContainText("이어서 물어보기 3번");
+  // 오픈 기념 무료 alone is offered: no follow-ups are promised, and its rule is said under the button.
+  await expect(sheet).not.toContainText("이어서 물어보기 3번");
   await expect(sheet).toContainText("이 기기에 계속 보관");
-  await expect(sheet).toContainText("처음 한 번은 타로 전체 풀이를 무료로 열 수 있어요");
+  await expect(sheet).toContainText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).");
   await expect(sheet.getByRole("link")).toHaveCount(0);
-  const unlock = sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ });
+  const unlock = sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ });
   await expect(unlock).toBeVisible();
   await expect(page.getByText("AI가 만든 풀이예요 · 재미와 자기 성찰을 위한 참고용이에요")).toBeVisible();
   // A money question never gets the relationship sample.
@@ -118,6 +121,11 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   const verdict = await page.locator("#verdict-label + p").innerText();
   for (const card of cards) await expect(page.locator(`img[src*="/cards/starlog/${card.cardId}"]`).first()).toBeVisible();
   await expect(page.getByText("기록 · 토끼 사서")).toHaveCount(0);
+  // Read and kept on this device only: said once, no follow-up box, no share button, no 이어서 물어보기 link.
+  await expect(page.getByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요. 이어서 물어보기와 공유는 결제한 풀이에서 할 수 있어요.")).toHaveCount(1);
+  await expect(page.getByRole("region", { name: /이어서 물어보기/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "공유하기" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "이 기록의 차례" }).getByRole("link")).toHaveText(["풀이"]);
   await shot(page, info, "03-reading");
 
   // Saved on this device: a reload shows the same reading without calling the API.
@@ -129,22 +137,6 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(page.locator("#verdict-label + p")).toHaveText(verdict);
   expect(generationCalls).toBe(0);
 
-  // A follow-up goes to /api/followup; the answer and the count are kept with the reading.
-  const followUp = page.getByRole("region", { name: /이어서 물어보기/ });
-  await expect(followUp).toContainText("3번 남았어요");
-  const field = followUp.getByRole("textbox", { name: "이어서 물어볼 내용" });
-  await field.fill("면접 전에 무엇부터 정리하면 좋을까요?");
-  const answered = page.waitForResponse((r) => r.url().endsWith("/api/followup"));
-  await field.press("Enter");
-  await answered;
-  await expect(followUp).toContainText("2번 남았어요", { timeout: 30_000 });
-  await expect(followUp.locator("li")).toHaveCount(1);
-  await followUp.scrollIntoViewIfNeeded();
-  await shot(page, info, "04-follow-up");
-  await page.reload();
-  await expect(page.getByRole("region", { name: /이어서 물어보기/ })).toContainText("2번 남았어요");
-  await expect(page.getByRole("region", { name: /이어서 물어보기/ })).toContainText("면접 전에 무엇부터 정리하면 좋을까요?");
-
   // 내 기록 lists it, newest first, and opens it.
   await page.goto("/story");
   const records = page.getByRole("list", { name: "기록 목록" }).getByRole("listitem");
@@ -155,7 +147,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a saved
   await expect(page).toHaveURL(readingUrl, { timeout: NAV });
 });
 
-test("첫 이용 무료 used: opening again says so with no reset time, no reading is shown", async ({ page }, info) => {
+test("오픈 기념 무료 used: opening again says so with no reset time, no reading is shown", async ({ page }, info) => {
   await ownAddress(page, info);
   await buildMoneyQuestion(page, info);
   await drawThree(page);
@@ -166,9 +158,9 @@ test("첫 이용 무료 used: opening again says so with no reset time, no readi
     route.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ code: "BETA_LIMIT", scope: "first", message: "…" }) }),
   );
   await sheet.getByRole("button", { name: /전체 풀이 보기/ }).click();
-  await expect(sheet).toContainText("첫 이용 무료 풀이를 이미 열었어요");
+  await expect(sheet).toContainText("오픈 기념 무료 풀이를 이미 열었어요");
   await expect(sheet).not.toContainText("다시 열려요");
-  await expect(page.getByRole("status").filter({ hasText: "첫 이용 무료 풀이를 이미 열었어요" })).toBeAttached();
+  await expect(page.getByRole("status").filter({ hasText: "오픈 기념 무료 풀이를 이미 열었어요" })).toBeAttached();
   await expect(page).toHaveURL(/\/tarot\/result/);
   // The device now knows its free first reading is used: the button stays off, for good.
   await expect(sheet.getByRole("button", { name: "전체 풀이 보기", exact: true })).toBeDisabled();
