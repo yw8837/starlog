@@ -4,7 +4,6 @@ import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import s from "@/components/legal/legal.module.css";
-import { PaymentsNote } from "@/components/legal/PaymentsNote";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { SITE, won } from "@/lib/config";
 import { times } from "@/lib/helpGuide";
@@ -54,12 +53,10 @@ function Check() {
 export default function PricingPage() {
   return (
     <LegalPage title="가격 안내" lead="풀이 한 번의 가격과 무료로 볼 수 있는 부분, 가입 선물을 한곳에 모았어요.">
-      <PaymentsNote>
-        <LegalNote>
-          <p className={s.noteTitle}>{`처음 ${times(beta.firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요.`}</p>
-          <p>가격이 바뀔 때는 이 페이지에 먼저 알려 드려요.</p>
-        </LegalNote>
-      </PaymentsNote>
+      <LegalNote>
+        <p className={s.noteTitle}>{`처음 ${times(beta.firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요.`}</p>
+        <p>가격이 바뀔 때는 이 페이지에 먼저 알려 드려요.</p>
+      </LegalNote>
 
       <LegalSection id="readings" title="풀이 가격">
         <div className={`${s.cards} ${s.cardsTwo}`}>
@@ -125,9 +122,7 @@ export default function PricingPage() {
 
       <LegalSection id="free" title="무료로 볼 수 있는 부분">
         <ul className={s.list}>
-          <PaymentsNote>
-            <li>{`타로 전체 풀이는 처음 ${times(beta.firstFreeTarot)} 무료로 열 수 있어요(첫 이용 무료).`}</li>
-          </PaymentsNote>
+          <li>{`타로 전체 풀이는 처음 ${times(beta.firstFreeTarot)} 무료로 열 수 있어요(첫 이용 무료).`}</li>
           <li>{`타로는 뽑은 카드 3장과 첫 풀이, 이어지는 풀이의 소제목을 먼저 무료로 볼 수 있어요. 첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 볼 수 있어요.`}</li>
           <li>{sajuFreeLine(features.sajuTopics, beta.teaserPerDay)}</li>
           <li>지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요.</li>

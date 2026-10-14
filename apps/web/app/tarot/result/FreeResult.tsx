@@ -99,7 +99,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const openedId = draw?.chapterId && chapters?.some((chapter) => chapter.id === draw.chapterId) ? draw.chapterId : undefined;
   const account = useAccount();
   const product = standardProduct("tarot");
-  const offer = unlockOffer(account, product);
+  const offer = unlockOffer(account, product, remaining !== undefined && remaining > 0);
   const [method, setMethod] = useState<UnlockMethod>("opening");
   const [creditView, setCreditView] = useState<ErrorView | null>(null);
   // A paid or gift opening not settled yet: "running" while the account is asked, "stalled" once

@@ -1,4 +1,3 @@
-import { PaymentsNote } from "@/components/legal/PaymentsNote";
 import { SITE, won } from "@/lib/config";
 import { times } from "@/lib/helpGuide";
 import { guideHref } from "@/lib/hosts";
@@ -10,10 +9,8 @@ import { ToolGuide } from "./ToolGuide";
 const { price, reading, beta, features } = SITE;
 const guide = (slug: string) => guideHref(`/guide/${slug}`);
 
-/** The 첫 이용 무료 line (tarot only) while sales are closed for this visitor; gone once payments open (PaymentsNote reads /api/me). */
-const openingLine = (
-  <PaymentsNote>{`지금은 처음 ${times(beta.firstFreeTarot)} 타로 전체 풀이를 무료로 열 수 있어요.`}</PaymentsNote>
-);
+/** The 첫 이용 무료 line (tarot only). */
+const openingLine = `처음 ${times(beta.firstFreeTarot)} 타로 전체 풀이를 무료로 열 수 있어요.`;
 
 /** /now: 지금의 한 장, the free one-card tarot (the sentences are prepared per card; no AI call). */
 export function NowGuide() {

@@ -5,9 +5,10 @@ import "server-only";
  * - `STARLOG_PAYMENTS`:
  *   - `off` (default): no login, no payments; the site as it is today;
  *   - `owner`: sales, sign-up and gifts open for owner-pass devices only;
- *   - `on`: open for everyone. 첫 이용 무료 (the free first tarot reading) ends; the signup gift replaces it;
+ *   - `on`: open for everyone;
  *   - `paused` (the rollback): no new orders, accounts or gifts, but existing accounts can still log
- *     in to open, refund or delete what they hold, and 첫 이용 무료 comes back.
+ *     in to open, refund or delete what they hold.
+ * - 첫 이용 무료 (the free first tarot reading) applies in every mode (owner 2026-10-14).
  * - Spending credit a user already holds is never gated by it.
  * - `STARLOG_PAY=mock` swaps Toss for the in-memory mock (tests, e2e, local dev); refused in production.
  */
@@ -32,11 +33,6 @@ export function salesOpen(mode: PaymentsMode, owner: boolean, env: NodeJS.Proces
 /** An existing account may log in on this device (a new one only while salesOpen). */
 export function loginOpen(mode: PaymentsMode, owner: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
   return salesOpen(mode, owner, env) || mode === "paused";
-}
-
-/** 첫 이용 무료 (the free first tarot reading) applies until sales open for everyone. */
-export function openingOffer(mode: PaymentsMode): boolean {
-  return mode !== "on";
 }
 
 export type PayProvider = "toss" | "mock";

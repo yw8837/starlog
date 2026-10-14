@@ -98,6 +98,9 @@ export function UnlockSheet({
     );
   const redraw = error?.action === "redraw" && redrawHref;
   const priced = offer.mode === "login" || offer.mode === "pay" || offer.mode === "gift";
+  // 첫 이용 무료 while sales are open (owner 2026-10-14): it is the gold choice, the offer's own follow.
+  const welcome = priced && offer.first === true;
+  const lead = welcome ? "secondary" : "primary";
 
   const busy = offer.mode === "in-progress";
   const checkAgain = onCheck ? (
@@ -116,7 +119,7 @@ export function UnlockSheet({
       break;
     case "login":
       offerPrimary = (
-        <Button href={loginHref ?? "/login"} block>
+        <Button href={loginHref ?? "/login"} variant={lead} block>
           로그인하고 전체 풀이 보기
         </Button>
       );
@@ -132,7 +135,7 @@ export function UnlockSheet({
       break;
     case "gift":
       offerPrimary = (
-        <Button block onClick={() => onUnlock("free")}>
+        <Button variant={lead} block onClick={() => onUnlock("free")}>
           가입 선물로 무료로 보기
         </Button>
       );
@@ -145,7 +148,7 @@ export function UnlockSheet({
       break;
     case "pay":
       offerPrimary = (
-        <Button href={payHref ?? "/pricing"} block>
+        <Button href={payHref ?? "/pricing"} variant={lead} block>
           {`${won(offer.priceKrw)} 결제하고 보기`}
         </Button>
       );
@@ -190,7 +193,7 @@ export function UnlockSheet({
         </div>
       </>
     );
-  } else if (!opening) {
+  } else if (!opening && !welcome) {
     primary = offerPrimary;
   } else {
     primary = (
@@ -247,7 +250,14 @@ export function UnlockSheet({
             질문 고치기
           </Button>
         ) : null}
-        {openedHref || checking ? null : offerSecondary}
+        {openedHref || checking ? null : welcome ? (
+          <>
+            {offerPrimary}
+            {offerSecondary}
+          </>
+        ) : (
+          offerSecondary
+        )}
         {owner && (!opening || usedUp) && !busy && !openedHref && !checking ? (
           <Button variant="ghost" block onClick={() => onUnlock("owner")}>
             운영자로 무료 열기

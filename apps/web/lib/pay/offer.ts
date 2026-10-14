@@ -16,20 +16,25 @@ import { GIFT_PRODUCT, type Product, type ProductId } from "./catalog";
  * - gift: the unused signup gift opens this reading (tarot only), usable until `until`; paying is
  *   the secondary choice;
  * - pay.
+ * `first` on login, gift and pay: this device has not used 첫 이용 무료 yet, so the free first tarot
+ * reading is the gold choice and the mode's own choices follow it (owner 2026-10-14: 첫 이용 무료
+ * stays after sales open).
  * What the account already holds always opens, whatever the sales flag says.
  */
 export type UnlockOffer =
   | { mode: "opening"; login: boolean }
   | { mode: "closed"; login: boolean }
-  | { mode: "login"; priceKrw: number; gift: boolean }
+  | { mode: "login"; priceKrw: number; gift: boolean; first?: true }
   | { mode: "in-progress"; currency: "paid" | "gift" }
   | { mode: "open-paid"; orderId: string }
-  | { mode: "gift"; until: string | null; priceKrw: number }
-  | { mode: "pay"; priceKrw: number };
+  | { mode: "gift"; until: string | null; priceKrw: number; first?: true }
+  | { mode: "pay"; priceKrw: number; first?: true };
 
-export function unlockOffer(account: AccountState | null | undefined, product: Product): UnlockOffer {
+/** `firstUnused`: this device has not used 첫 이용 무료 (as far as it knows). */
+export function unlockOffer(account: AccountState | null | undefined, product: Product, firstUnused = false): UnlockOffer {
   const user = account?.user;
   const giftable = product.id === GIFT_PRODUCT;
+  const welcome = firstUnused && product.id === "tarot" ? { first: true as const } : {};
   // Sales closed here: tarot's first reading is free, saju has nothing to open.
   const unsold = (login: boolean): UnlockOffer => (product.id === "tarot" ? { mode: "opening", login } : { mode: "closed", login });
   if (account && user) {
@@ -37,10 +42,10 @@ export function unlockOffer(account: AccountState | null | undefined, product: P
     if (busy) return { mode: "in-progress", currency: busy.currency };
     const bought = user.unused.find((item) => item.productId === product.id);
     if (bought) return { mode: "open-paid", orderId: bought.orderId };
-    if (giftable && user.gift?.status === "unused") return { mode: "gift", until: user.gift.until, priceKrw: product.krw };
-    return account.payments ? { mode: "pay", priceKrw: product.krw } : unsold(false);
+    if (giftable && user.gift?.status === "unused") return { mode: "gift", until: user.gift.until, priceKrw: product.krw, ...welcome };
+    return account.payments ? { mode: "pay", priceKrw: product.krw, ...welcome } : unsold(false);
   }
-  if (account?.payments) return { mode: "login", priceKrw: product.krw, gift: giftable };
+  if (account?.payments) return { mode: "login", priceKrw: product.krw, gift: giftable, ...welcome };
   return unsold(Boolean(account?.login));
 }
 

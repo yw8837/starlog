@@ -4,7 +4,7 @@ import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import type { D1Binding } from "@/lib/db/d1";
 import { GIFT_PRODUCT, type StandardProductId } from "@/lib/pay/catalog";
 import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
-import { openingOffer, payKeyMode, paymentsMode } from "@/lib/pay/mode";
+import { payKeyMode } from "@/lib/pay/mode";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { insertReadingStatement, newReadingId, readingExists, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
 import { checkFirstFree, checkServerLimits, errorResponse, type Gate } from "./http";
@@ -16,7 +16,7 @@ import type { GenerationOutcome, Settlement } from "./stream";
  * the plan's Task 10:
  * - `opening`: 첫 이용 무료, the device's one free tarot reading (owner 2026-10-14; the `sl_first`
  *   cookie, server limits, network counter). Tarot only: saju opens with a payment or the owner pass
- *   (402 PAYMENT_REQUIRED). 402 as well once payments are on for everyone; never for the owner.
+ *   (402 PAYMENT_REQUIRED). It stays after payments open for everyone (owner 2026-10-14).
  * - `free` (the signup gift): a standard tarot reading only (GIFT_PRODUCT; anything else is 402
  *   NO_CREDIT before anything is held). Login, the free budget and network cap (it costs us what a
  *   free reading costs), then the reservation. Using it is never gated by STARLOG_PAYMENTS.
@@ -41,7 +41,6 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
   const base = { method, productId: kind, first: null, spend: "full" as const, paidCost: false, save: null };
   if (method === "opening") {
     if (kind !== "tarot") return errorResponse("PAYMENT_REQUIRED");
-    if (!gate.owner && !openingOffer(paymentsMode())) return errorResponse("PAYMENT_REQUIRED");
     const first = await checkFirstFree(gate);
     if (first instanceof Response) return first;
     return { ...base, first };

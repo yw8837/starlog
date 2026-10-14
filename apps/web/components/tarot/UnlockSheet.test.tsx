@@ -118,6 +118,37 @@ describe("UnlockSheet offers", () => {
     expect(container.textContent).not.toMatch(/0시|다시 채워져요/);
   });
 
+  it("puts 첫 이용 무료 first while sales are open and this device has not used it; logging in, the gift and paying follow as their sheets show them (owner 2026-10-14)", () => {
+    const FIRST = "전체 풀이 보기 · 첫 이용 무료";
+    const actions = (c: HTMLElement) => [...c.querySelectorAll("a, button")].map((el) => [el.textContent, /secondary/.test(el.className) ? "secondary" : /primary/.test(el.className) ? "primary" : "?"]);
+    const onUnlock = vi.fn();
+    let { container } = render(<UnlockSheet {...base} remaining={1} offer={{ mode: "login", priceKrw: 2900, gift: true, first: true }} onUnlock={onUnlock} />);
+    expect(actions(container)).toEqual([[FIRST, "primary"], ["로그인하고 전체 풀이 보기", "secondary"]]);
+    expect(screen.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).getAttribute("href")).toBe(base.loginHref);
+    expect(screen.getByText("처음 가입하면 타로 전체 풀이 1번을 무료로 드려요")).toBeTruthy();
+    expect(screen.getByText("전체 풀이 · 2,900원")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ }));
+    expect(onUnlock).toHaveBeenCalledWith("opening");
+    cleanup();
+    ({ container } = render(<UnlockSheet {...base} remaining={1} offer={{ mode: "gift", until: "2026-12-30T14:59:59.999Z", priceKrw: 2900, first: true }} onUnlock={onUnlock} />));
+    expect(actions(container)).toEqual([[FIRST, "primary"], ["가입 선물로 무료로 보기", "secondary"], ["2,900원 결제하고 보기", "secondary"]]);
+    fireEvent.click(screen.getByRole("button", { name: "가입 선물로 무료로 보기" }));
+    expect(onUnlock).toHaveBeenLastCalledWith("free");
+    expect(screen.getByText("가입 선물은 12월 30일까지 쓸 수 있어요")).toBeTruthy();
+    cleanup();
+    ({ container } = render(<UnlockSheet {...base} remaining={1} offer={{ mode: "pay", priceKrw: 2900, first: true }} onUnlock={onUnlock} />));
+    expect(actions(container)).toEqual([[FIRST, "primary"], ["2,900원 결제하고 보기", "secondary"]]);
+    expect(screen.getByRole("link", { name: "2,900원 결제하고 보기" }).getAttribute("href")).toBe(base.payHref);
+    expect(container.textContent).not.toContain("이미 열었어요");
+  });
+
+  it("once 첫 이용 무료 is used, the sheet with sales open is as before: its own choice is the gold one", () => {
+    const actions = (c: HTMLElement) => [...c.querySelectorAll("a, button")].map((el) => [el.textContent, /secondary/.test(el.className) ? "secondary" : "primary"]);
+    const { container } = render(<UnlockSheet {...base} remaining={0} offer={{ mode: "gift", until: null, priceKrw: 2900 }} onUnlock={() => {}} />);
+    expect(actions(container)).toEqual([["가입 선물로 무료로 보기", "primary"], ["2,900원 결제하고 보기", "secondary"]]);
+    expect(container.textContent).not.toMatch(/첫 이용 무료/);
+  });
+
   it("offers them only when the free first reading is used", () => {
     render(<UnlockSheet kind="tarot" remaining={1} onUnlock={() => {}} />);
     expect(screen.queryByRole("link", { name: /지금의 한 장|오늘의 한 장/ })).toBeNull();

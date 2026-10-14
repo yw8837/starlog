@@ -63,6 +63,27 @@ describe("unlock offer", () => {
     expect(unlockOffer(account({ payments: false, user: user() }), tarot)).toEqual({ mode: "opening", login: false });
   });
 
+  it("puts 첫 이용 무료 first for tarot while this device has not used it, sales open or not; logging in, the gift and paying follow it (owner 2026-10-14)", () => {
+    expect(unlockOffer(account(), tarot, true)).toEqual({ mode: "login", priceKrw: 2900, gift: true, first: true });
+    expect(unlockOffer(account({ user: user({ gift: GIFT }) }), tarot, true)).toEqual({ mode: "gift", until: UNTIL, priceKrw: 2900, first: true });
+    expect(unlockOffer(account({ user: user() }), tarot, true)).toEqual({ mode: "pay", priceKrw: 2900, first: true });
+    expect(unlockOffer(account({ payments: false, user: user({ gift: GIFT }) }), tarot, true)).toEqual({ mode: "gift", until: UNTIL, priceKrw: 2900, first: true });
+    // Sales closed: 첫 이용 무료 as before.
+    expect(unlockOffer(undefined, tarot, true)).toEqual({ mode: "opening", login: false });
+    expect(unlockOffer(account({ payments: false, login: true }), tarot, true)).toEqual({ mode: "opening", login: true });
+    // A purchase waiting, or a reading of this kind being opened, still comes first.
+    expect(unlockOffer(account({ user: user({ unused: [{ orderId: "o1", productId: "tarot" }] }) }), tarot, true)).toEqual({ mode: "open-paid", orderId: "o1" });
+    expect(unlockOffer(account({ user: user({ opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }] }) }), tarot, true)).toEqual({ mode: "in-progress", currency: "paid" });
+  });
+
+  it("once this device used 첫 이용 무료, and always for saju, offers what it did before", () => {
+    expect(unlockOffer(account(), tarot, false)).toEqual({ mode: "login", priceKrw: 2900, gift: true });
+    expect(unlockOffer(account({ user: user() }), tarot, false)).toEqual({ mode: "pay", priceKrw: 2900 });
+    expect(unlockOffer(account(), saju, true)).toEqual({ mode: "login", priceKrw: 4900, gift: false });
+    expect(unlockOffer(account({ user: user() }), saju, true)).toEqual({ mode: "pay", priceKrw: 4900 });
+    expect(unlockOffer(undefined, saju, true)).toEqual({ mode: "closed", login: false });
+  });
+
   it("links the checkout with the product and the way back", () => {
     expect(checkoutHref("saju", "/saju/chart")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart");
   });

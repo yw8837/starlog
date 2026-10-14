@@ -261,6 +261,37 @@ describe("FreeResult and 첫 이용 무료 (the free first tarot reading)", () =
   });
 });
 
+describe("FreeResult and 첫 이용 무료 once sales are open (owner 2026-10-14)", () => {
+  afterEach(() => clearBetaUsage());
+
+  it("puts it first for a guest, logging in next to it, and opens it as 첫 이용 무료 (no unlock sent)", async () => {
+    seed();
+    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    render(<FreeResult instant />);
+    const login = await screen.findByRole("link", { name: "로그인하고 전체 풀이 보기" });
+    expect(login.className).toMatch(/secondary/);
+    const first = screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ });
+    expect(first.className).toMatch(/primary/);
+    fireEvent.click(first);
+    await waitFor(() => expect(router.push).toHaveBeenCalled());
+    const sent = vi.mocked(fetch).mock.calls.find(([url]) => url === "/api/tarot/reading");
+    expect(JSON.parse(String((sent?.[1] as RequestInit | undefined)?.body))).not.toHaveProperty("unlock");
+  });
+
+  it("once the server says it is used, the gift is the gold choice again and 첫 이용 무료 is no longer offered", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody({ gift: GIFT }))], reading: () => Response.json({ code: "BETA_LIMIT", scope: "first", message: "x" }, { status: 429 }) });
+    render(<FreeResult instant />);
+    expect((await screen.findByRole("button", { name: "가입 선물로 무료로 보기" })).className).toMatch(/secondary/);
+    expect(screen.getByRole("link", { name: "2,900원 결제하고 보기" }).className).toMatch(/secondary/);
+    fireEvent.click(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*첫 이용 무료$/ }));
+    expect(await screen.findAllByText("첫 이용 무료 풀이를 이미 열었어요")).not.toHaveLength(0);
+    expect((await screen.findByRole("button", { name: "가입 선물로 무료로 보기" })).className).toMatch(/primary/);
+    expect(screen.queryByRole("button", { name: /첫 이용 무료/ })).toBeNull();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+});
+
 describe("FreeResult after the free teaser", () => {
   it("puts a small way to the unlock sheet right after the first card, before the locked contents (QA-05)", async () => {
     seed();

@@ -309,7 +309,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           title: "첫 이용 무료",
           sub: `타로 전체 풀이 처음 ${times(firstFreeTarot)}`,
           body: `처음 ${times(firstFreeTarot)}은 타로 전체 풀이를 무료로 열 수 있어요. 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 볼 수 있고, 한국 시간 0시에 다시 채워져요.`,
-          tip: "아직 무료로 열 수 있는지는 전체 풀이 보기 버튼과 내 정보에서 볼 수 있어요.",
+          tip: "전체 풀이 보기 버튼에 첫 이용 무료가 보이면 아직 무료로 열 수 있어요.",
         },
         {
           id: "daily-free",

@@ -91,12 +91,32 @@ const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
 const giftOf = async (b: Browser) => (await me(b)).user?.gift?.status;
 
 describe("opening a full reading with credit", () => {
-  it("ends the free first tarot reading (첫 이용 무료) once payments are on for everyone, before any generation", async () => {
+  it("keeps 첫 이용 무료 once payments are on for everyone (owner 2026-10-14): a device's first tarot reading opens free, once, apart from the signup gift", async () => {
+    useTestDb();
+    const guest = browser("192.0.2.10");
+    expect((await open(guest)).status).toBe(200);
+    expect(guest.jar.has("sl_first")).toBe(true);
+    const again = await open(guest);
+    expect(again.status).toBe(429);
+    expect(await again.json()).toMatchObject({ code: "BETA_LIMIT", scope: "first" });
+    // A new member's device: 첫 이용 무료 leaves the signup gift untouched, and the gift still opens one.
+    const { b } = await loggedIn();
+    expect((await open(b)).status).toBe(200);
+    expect(await giftOf(b)).toBe("unused");
+    expect((await open(b, "free")).status).toBe(200);
+    expect(await giftOf(b)).toBe("used");
+  });
+
+  it("keeps the free opening's guards once payments are on, and saju still has no free reading", async () => {
     useTestDb();
     const spy = vi.spyOn(mockProvider, "generate");
-    const res = await open(browser("192.0.2.10"));
-    expect(res.status).toBe(402);
-    expect(await res.json()).toMatchObject({ code: "PAYMENT_REQUIRED" });
+    const saju = await browser("192.0.2.14").send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM } });
+    expect(saju.status).toBe(402);
+    expect(await saju.json()).toMatchObject({ code: "PAYMENT_REQUIRED" });
+    vi.stubEnv("BETA_IP_FULL_PER_DAY", "0");
+    const capped = await open(browser("192.0.2.15"));
+    expect(capped.status).toBe(429);
+    expect(await capped.json()).toMatchObject({ code: "BETA_LIMIT", scope: "network" });
     expect(spy).not.toHaveBeenCalled();
   });
 
