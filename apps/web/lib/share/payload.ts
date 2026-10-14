@@ -43,10 +43,20 @@ const BASIS_HEADING = "계산 기준";
 const QUOTES = /(["“”「」『』])([^"“”'‘’「」『』\n]{4,200}?)(["“”「」『』])/g;
 
 /**
- * Single quotes hold only the user's own text in a tarot reading (the prompt quotes the picked
- * situations and the note in them, lib/ai/prompts/tarot.ts), so whatever they hold is hidden.
+ * Single quotes: the prompt quotes the picked situations and the note in them (lib/ai/prompts/tarot.ts),
+ * but a reading also quotes a card's own words ('한 주기의 완성'). Hidden, however short, when what they
+ * hold is part of the user's own words or holds them.
  */
-const SINGLE_QUOTED = /(['‘’])[^'‘’\n]+?(['‘’])/g;
+const SINGLE_QUOTED = /(['‘’])([^'‘’\n]+?)(['‘’])/g;
+
+/** Without spaces and in NFKC, so a quote matches the user's words however the lines broke. */
+const squeeze = (text: string) => text.normalize("NFKC").replace(/\s+/g, "");
+
+/** True when a quotation holds part of the user's own words, or holds one of them. */
+const quotesUser = (inner: string, words: readonly string[]) => {
+  const said = squeeze(inner);
+  return said.length > 0 && words.some((word) => squeeze(word).includes(said) || said.includes(squeeze(word)));
+};
 
 /** 잘 모르겠어요, 아직 모르겠어요: not a situation, and ordinary words in a reading. */
 const UNSURE = new Set(unsureWords("ko"));
@@ -170,15 +180,13 @@ function hideWords(text: string, words: readonly string[]): string {
 }
 
 /**
- * The text with the user's own words replaced by ○○: every single-quoted span, every other quotation
- * that is part of them, every occurrence of them, and the names among them (userNames).
+ * The text with the user's own words replaced by ○○: every quotation that holds part of them, every
+ * occurrence of them, and the names among them (userNames).
  */
 export function hideOwnWords(text: string, words: readonly string[], name: RegExp | null = null): string {
-  let out = text.replace(SINGLE_QUOTED, `$1${HIDDEN}$2`);
-  out = out.replace(QUOTES, (whole, open: string, inner: string, close: string) => {
-    const said = inner.replace(/\s+/g, " ").trim();
-    return words.some((word) => word.includes(said)) ? `${open}${HIDDEN}${close}` : whole;
-  });
+  const hideQuote = (whole: string, open: string, inner: string, close: string) => (quotesUser(inner, words) ? `${open}${HIDDEN}${close}` : whole);
+  let out = text.replace(SINGLE_QUOTED, hideQuote);
+  out = out.replace(QUOTES, hideQuote);
   out = hideWords(out, words);
   return name ? out.replace(name, HIDDEN) : out;
 }

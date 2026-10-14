@@ -102,11 +102,12 @@ describe("hiding the user's words as the prompt saw them (review 2026-10-14)", (
     expect(sharedVerdict({ note: "Ｍｉｎｓｕ랑 싸웠어요" }, "Minsu랑 싸웠어요라고 했죠.")).toBe("○○라고 했죠.");
   });
 
-  it("hides every single-quoted span, however short: the prompt quotes only the user's text in them", () => {
-    const note = { note: "민수가 요즘\n연락이 없어요" };
+  it("hides a single-quoted span that quotes the user's words, however short, and keeps one that quotes the card", () => {
+    const note = { note: "민수가 요즘\n연락이 없어요. 카페에서 만났어요" };
     expect(sharedVerdict(note, "'민수가 요즘 연락이 없어요'라고 적었죠.")).toBe("'○○'라고 적었죠.");
     expect(sharedVerdict(note, "'민수'에게 먼저 말을 걸어 봐요.")).toBe("'○○'에게 먼저 말을 걸어 봐요.");
-    expect(sharedVerdict({}, "'카페'에서 만나 봐요. ‘산책’도 좋아요.")).toBe("'○○'에서 만나 봐요. ‘○○’도 좋아요.");
+    expect(sharedVerdict(note, "'카페'에서 만나 봐요. ‘민수가요즘’도 좋아요.")).toBe("'○○'에서 만나 봐요. ‘○○’도 좋아요.");
+    expect(sharedVerdict(note, "지금은 '한 주기의 완성' 쪽으로 움직여 봐요.")).toBe("지금은 '한 주기의 완성' 쪽으로 움직여 봐요.");
   });
 
   it("keeps a double-quoted line that is not the user's", () => {
