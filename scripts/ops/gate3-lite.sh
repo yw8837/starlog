@@ -6,7 +6,9 @@ step() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$LOG/summary.log"; }
 source "$(dirname "$0")/preclean.sh"; preclean
 # stale previews/dev servers from earlier gates would answer on 8787/3100 with an old build
 for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
-cd "$D" && git checkout -q -- . && git fetch -q /d/Money/apps/saju-tarot feat/p1-foundation && git checkout -q --detach FETCH_HEAD
+# A failed fetch used to leave the clone on its old commit and the gate tested that (10/14): stop instead.
+cd "$D" && git checkout -q -- . && git fetch -q /d/Money/apps/saju-tarot feat/p1-foundation && git checkout -q --detach FETCH_HEAD   || { step "STOP: could not move the clone to feat/p1-foundation (if objects are missing: git -c fetch.negotiationAlgorithm=noop fetch)"; exit 8; }
+[ "$(git rev-parse HEAD)" = "$(git -C /d/Money/apps/saju-tarot rev-parse feat/p1-foundation)" ] || { step "STOP: clone HEAD is not feat/p1-foundation"; exit 8; }
 step "HEAD $(git log --oneline -1)"
 pnpm install --frozen-lockfile > "$LOG/install.log" 2>&1; step "install exit=$?"
 STARLOG_AI=mock npx vitest run --maxWorkers=1 > "$LOG/unit.log" 2>&1; step "unit exit=$? $(grep -E 'Tests ' "$LOG/unit.log" | tail -1)"
