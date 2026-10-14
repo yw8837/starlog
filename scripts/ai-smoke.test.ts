@@ -34,8 +34,10 @@ const SMOKE_STAMP = process.env.SMOKE_STAMP?.trim() || null;
 const SMOKE_TAROT = process.env.SMOKE_TAROT?.trim() || "money";
 /** SMOKE_KINDS=tarot-teaser,daily runs only those kinds (default: all). */
 const SMOKE_KINDS = process.env.SMOKE_KINDS?.split(",").map((k) => k.trim()).filter(Boolean) ?? null;
-/** SMOKE_CAP_KRW stops before the next call once the run has spent this much (the owner's cap for the measurement). */
+/** SMOKE_CAP_KRW: no attempt starts unless the spend so far plus ATTEMPT_KRW for it stays under this (the owner's cap). */
 const SMOKE_CAP_KRW = Number(process.env.SMOKE_CAP_KRW) > 0 ? Number(process.env.SMOKE_CAP_KRW) : Infinity;
+/** A generous cost of one attempt per kind (measured: teaser 45–115원, tarot reading 187–316원, saju reading up to 413원). */
+const ATTEMPT_KRW = { "tarot-teaser": 150, "tarot-reading": 400, daily: 100, "saju-teaser": 100, "saju-reading": 550 } as const;
 
 /** The tarot input per SMOKE_TAROT: the owner's 재물운 case, or 결혼운 with its catalog chips (a talk of marriage under way). */
 function smokeTarotInput() {
@@ -81,12 +83,14 @@ interface Row {
 }
 
 /** Wraps the real provider: counts attempts, keeps each attempt's violations and every usage entry. */
-function recording(real: ReadingProvider, validate: (draft: never) => string[]) {
+/** `guard` runs before every upstream attempt (retries included) and throws to stop at the cost cap. */
+function recording(real: ReadingProvider, validate: (draft: never) => string[], guard: (usage: Usage[]) => void = () => {}) {
   const attempts: string[][] = [];
   const usage: Usage[] = [];
   const provider: ReadingProvider = {
     name: real.name,
     async generate(task, attempt, feedback) {
+      guard(usage);
       try {
         const result = await real.generate(task, attempt, feedback);
         usage.push(...result.usage);
@@ -142,12 +146,15 @@ test("ai smoke", async () => {
   async function call<T>(run: number, kind: Kind, validate: (draft: never) => string[], generate: (p: ReadingProvider) => Promise<{ data: T }>,
     recheck: (data: T) => string[], prose: (data: T) => string, input: unknown) {
     if (SMOKE_KINDS && !SMOKE_KINDS.includes(kind)) return null;
-    const spent = rows.reduce((sum, r) => sum + r.krw, 0);
-    if (spent >= SMOKE_CAP_KRW) {
-      console.log(`run ${run} ${kind}: 건너뜀 · 지금까지 ${spent}원으로 상한 ${SMOKE_CAP_KRW}원에 닿았어요`);
+    // An attempt starts only if the spend so far plus a generous estimate of one attempt stays under the cap.
+    const spentWith = (usage: Usage[]) => rows.reduce((sum, r) => sum + r.krw, 0) + Math.round(usdOf(usage) * KRW_PER_USD);
+    if (spentWith([]) + ATTEMPT_KRW[kind] > SMOKE_CAP_KRW) {
+      console.log(`run ${run} ${kind}: 건너뜀 · 지금까지 ${spentWith([])}원, 한 번 더 하면 상한 ${SMOKE_CAP_KRW}원을 넘을 수 있어요`);
       return null;
     }
-    const rec = recording(real, validate);
+    const rec = recording(real, validate, (usage) => {
+      if (spentWith(usage) + ATTEMPT_KRW[kind] > SMOKE_CAP_KRW) throw new Error(`cost cap ${SMOKE_CAP_KRW}원: stopped before another attempt (${spentWith(usage)}원 spent)`);
+    });
     const started = Date.now();
     let data: T | null = null;
     let error: string | null = null;
