@@ -5,7 +5,7 @@ import { pageMetadata } from "@/lib/seo";
 import { NowOracle } from "./NowOracle";
 
 export const metadata: Metadata = pageMetadata({
-  title: "지금의 한 장 · 무료 원카드 타로",
+  title: "무료 타로 · 지금의 한 장 원카드",
   description: "고민 하나를 떠올리고 타로 카드 한 장을 골라요. 카드 그림에서 읽은 한 문장과 그 이유를 바로 보여 드려요. 횟수 제한 없이 무료예요.",
   path: "/now",
 });

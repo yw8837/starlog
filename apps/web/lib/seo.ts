@@ -31,7 +31,7 @@ export const HOME_TITLE = `${SITE.nameKo}(${SITE.name}) · 내 질문에 맞춘 
 
 /** The home's meta description and the default for pages without one. */
 export const HOME_DESCRIPTION =
-  "1909년 원판 구도를 따른 스타로그 타로 카드와 만세력 사주로 내 질문에 맞춰 풀이해요. 지금의 한 장과 오늘의 한 장은 무료예요.";
+  "1909년 원판 구도를 따른 스타로그 타로 카드와 만세력 사주로 내 질문에 맞춰 풀이해요. 무료 타로로 지금의 한 장과 오늘의 한 장을 볼 수 있어요.";
 
 interface PageMetadataInput {
   /** Leave out to keep the layout's default title (the home). */
