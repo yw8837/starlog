@@ -209,7 +209,7 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     // 2026-10-08: the six first-wave articles rewritten at the length of the later ones, with question
     // headings; 은둔자 and 별 follow the card template (KB keyword table, 연애·일·돈, 비슷한 카드) and are
     // titled "타로 … 카드 뜻" like the other twenty cards.
-    ...["how-to-read-tarot", "upright-and-reversed", "saju-without-birth-time", "five-elements", "the-hermit", "the-star"].map(
+    ...["how-to-read-tarot", "upright-and-reversed", "saju-without-birth-time"].map(
       (slug) => [slug, { published: "2026-09-30", updated: "2026-10-08" }] as const,
     ),
     // 2026-10-07: the same words restructured into tables, diagrams, steps, callouts and card rows, with
@@ -217,15 +217,24 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     // read only negatively").
     ...[
       "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "minor-arcana-suits", "court-cards",
-      "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
-      "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
-      "heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune",
+      "earthly-branches", "day-master", "ten-gods", "manseryeok", "saju-compatibility",
     ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-07" }] as const),
     ...[
       "major-and-minor-arcana", "wands-suit", "cups-suit", "swords-suit", "pentacles-suit", "major-arcana-overview",
-      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
+      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
       "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
       "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
     ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-07" }] as const),
+    // 2026-10-14 (AdSense review ADS-04, SEO-05): every card article names its card in all five headings; the
+    // picture, 연애·일·돈 and look-alike headings say what that card shows instead of one shared wording.
+    // The six shortest saju articles (ADS-03) gain a worked example on one chart (1995-08-20 12:00 Seoul, computeChart),
+    // step-by-step reading and common misreadings.
+    ...["the-hermit", "the-star", "five-elements"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-14" }] as const),
+    ...["heavenly-stems", "daewoon", "saju-vs-astrology", "new-year-fortune"].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-14" }] as const),
+    ...["twelve-stages"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-14" }] as const),
+    ...[
+      "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
+      "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
+    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-14" }] as const),
   ],
 );
