@@ -12,8 +12,9 @@ import { Button } from "@/components/ui/Button";
 import { ShareButton } from "@/components/ui/ShareButton";
 import { commitQuota, getJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
-import { progressPlan } from "@/lib/reading/progress";
+import { progressPlan, timeFraction, waitLine } from "@/lib/reading/progress";
 import type { DailyData, DailyDeal } from "@/lib/reading/types";
+import { useElapsed } from "@/lib/reading/useElapsed";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { saveDaily, useDaily } from "@/lib/storage/daily";
 import s from "./TodayView.module.css";
@@ -263,12 +264,7 @@ export function TodayView() {
           pickError ? (
             <ErrorPanel view={pickError} onRetry={() => picked !== null && void pick(picked)} />
           ) : (
-            <div className={s.progress}>
-              <p className={s.caption}>{state.status === "running" ? state.progress.caption : DAILY_PLAN.opening}</p>
-              <div className={s.track} aria-hidden="true">
-                <span className={s.fill} style={{ transform: `scaleX(${Math.max(0.06, state.status === "running" ? state.progress.fraction : 0)})` }} />
-              </div>
-            </div>
+            <DailyProgress caption={state.status === "running" ? state.progress.caption : DAILY_PLAN.opening} fraction={state.status === "running" ? state.progress.fraction : 0} />
           )
         ) : (
           <>
@@ -296,6 +292,23 @@ export function TodayView() {
       </p>
       {content}
     </>
+  );
+}
+
+/**
+ * While the picked card is read: the bar (the stream's share or the time's, whichever is further, so it never
+ * stands still) and the seconds since the pick under it. Mounted with the pick, so its clock starts there.
+ */
+function DailyProgress({ caption, fraction }: { caption: string; fraction: number }) {
+  const elapsed = useElapsed();
+  return (
+    <div className={s.progress}>
+      <p className={s.caption}>{caption}</p>
+      <div className={s.track} aria-hidden="true">
+        <span className={s.fill} style={{ transform: `scaleX(${Math.max(0.06, fraction, timeFraction("daily", elapsed))})` }} />
+      </div>
+      <p className={s.note}>{waitLine("daily", elapsed)}</p>
+    </div>
   );
 }
 

@@ -165,6 +165,23 @@ describe("오늘의 한 장 다시 섞기 after the pick", () => {
     expect(postedPick(posts(fetchMock)[0]!)).toBe(1);
   });
 
+  it("counts the seconds under the bar while the card is read, and the bar creeps meanwhile", async () => {
+    server({ post: () => new Promise<Response>(() => {}) });
+    await toThreeCards();
+    vi.useFakeTimers();
+
+    fireEvent.click(cardButtons()[0]!);
+    expect(screen.getByText("보통 10초 안팎")).toBeTruthy();
+    const fill = () => Number(/scaleX\(([\d.]+)\)/.exec(document.querySelector<HTMLElement>('[style*="scaleX"]')!.style.transform)![1]);
+    const first = fill();
+    act(() => vi.advanceTimersByTime(9_000));
+    expect(screen.getByText("9초째 · 보통 10초 안팎")).toBeTruthy();
+    expect(fill()).toBeGreaterThan(first);
+    act(() => vi.advanceTimersByTime(7_000));
+    expect(screen.getByText("16초째 · 조금 더 걸리고 있어요. 길게는 30초까지 걸려요")).toBeTruthy();
+    expect(fill()).toBeLessThan(1);
+  });
+
   it("stays gone when the pick failed: 다시 시도 sends the same pick again and there is no way to choose another card", async () => {
     let attempts = 0;
     const fetchMock = server({

@@ -22,10 +22,11 @@ import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { commitQuota } from "@/lib/reading/api";
 import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorView } from "@/lib/reading/errors";
-import { progressPlan } from "@/lib/reading/progress";
+import { checklist, progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { TarotInput, TarotReadingResponse, TarotTeaserData } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
+import { TAROT_TIPS } from "@/lib/reading/waitingTips";
 import { countFullReading, markFreeUsedUp, useRemainingFree } from "@/lib/storage/betaUsage";
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
@@ -176,6 +177,9 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     void refreshAccount();
   };
 
+  // The full reading's waiting captions and checklist.
+  const readingPlan = progressPlan("tarot-reading", { positions });
+
   const unlock = async (chosen: UnlockMethod) => {
     if (!draw || !input || !summary) return;
     setMethod(chosen);
@@ -183,7 +187,6 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     setCheck(null);
     checkAbort.current?.abort();
     window.scrollTo(0, 0);
-    const plan = progressPlan("tarot-reading", { positions });
     // the teaser's seal (감질맛): the reading keeps its two cards and reads on from the cut
     const body = {
       drawToken: draw.drawToken, input: withHistory(input), ...(chosen === "opening" ? {} : { unlock: { method: chosen } }),
@@ -193,7 +196,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     if (chosen === "paid" || chosen === "free") firstTry.current ??= startedAt;
     // What the account held as it started: "kept" later means all of it is back.
     const held = heldCredit(account?.user, product.id);
-    const result = await unlockGen.run("/api/tarot/reading", body, plan, isTarotReadingResponse);
+    const result = await unlockGen.run("/api/tarot/reading", body, readingPlan, isTarotReadingResponse);
     if (!result) return;
     if (!result.ok) {
       const code = result.error.code;
@@ -270,8 +273,17 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   if (!draw || !summary) {
     content = <Stepper step={3} label="카드 풀이" backHref="/" backLabel="홈으로" />;
   } else if (opening) {
-    const progress = unlockGen.state.status === "running" ? unlockGen.state.progress : { caption: "다 적었어요", fraction: 1 };
-    content = <GeneratingState caption={progress.caption} fraction={progress.fraction} hint="보통 1분 남짓 걸려요. 이 화면을 열어 둔 채로 기다려 주세요." live={false} />;
+    const progress = unlockGen.state.status === "running" ? unlockGen.state.progress : { caption: "다 적었어요", fraction: 1, reached: readingPlan.stages.length };
+    content = (
+      <GeneratingState
+        kind="tarot-reading"
+        caption={progress.caption}
+        fraction={progress.fraction}
+        steps={checklist(readingPlan, progress.reached)}
+        tips={TAROT_TIPS}
+        live={false}
+      />
+    );
   } else {
     const keywords = new Map(teaser?.cards.map((card) => [card.position, card.keyword]));
     const cards = draw.cards.map((card) => faceUpCard({ ...card, keyword: keywords.get(card.position) }));
@@ -335,6 +347,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
             <ErrorPanel view={teaserError} onRetry={() => setAttempt((n) => n + 1)} redrawHref={withFlags("/tarot/draw", { instant })} editHref="/tarot/new" />
           ) : (
             <GeneratingState
+              kind="tarot-teaser"
               layout="inline"
               caption={teaserState.status === "running" ? teaserState.progress.caption : "카드를 읽고 있어요"}
               fraction={teaserState.status === "running" ? teaserState.progress.fraction : 0}

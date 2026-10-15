@@ -26,10 +26,11 @@ import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { commitQuota } from "@/lib/reading/api";
 import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorView } from "@/lib/reading/errors";
-import { progressPlan } from "@/lib/reading/progress";
+import { checklist, progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuReadingResponse, SajuRequestFields, SajuTeaserData, SajuTopic, SajuTopicId } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
+import { sajuTips } from "@/lib/reading/waitingTips";
 import { chapterRequestFields, sajuContextBody, sajuStatusBody, sajuTeaserKey, useSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
@@ -198,6 +199,9 @@ export function SajuChartView({
     void refreshAccount();
   };
 
+  // The full reading of the 운 on screen: its waiting captions and checklist.
+  const readingPlan = progressPlan("saju-reading", { sections: topic === "overall" ? SAJU_PROLOGUE_SECTIONS : TOPIC_SECTIONS[topic] });
+
   const unlock = async (chosen: UnlockMethod) => {
     if (!own || !teaser || !fields) return;
     setMethod(chosen);
@@ -205,7 +209,6 @@ export function SajuChartView({
     setCheck(null);
     checkAbort.current?.abort();
     window.scrollTo(0, 0);
-    const plan = progressPlan("saju-reading", { sections: topic === "overall" ? SAJU_PROLOGUE_SECTIONS : TOPIC_SECTIONS[topic] });
     // A reading opened with credit (or the owner pass, when logged in) is saved to the account with
     // the teaser's title and summary.
     const body = {
@@ -219,7 +222,7 @@ export function SajuChartView({
     }
     // What the account held as it started: "kept" later means all of it is back.
     const held = heldCredit(account?.user, product.id);
-    const res = await unlockGen.run("/api/saju/reading", body, plan, isSajuReadingResponse);
+    const res = await unlockGen.run("/api/saju/reading", body, readingPlan, isSajuReadingResponse);
     if (!res) return;
     if (!res.ok) {
       const code = res.error.code;
@@ -283,13 +286,21 @@ export function SajuChartView({
               : "";
 
   if (unlockGen.state.status === "running" || unlockGen.state.status === "done") {
-    const progress = unlockGen.state.status === "running" ? unlockGen.state.progress : { caption: "다 적었어요", fraction: 1 };
+    const progress = unlockGen.state.status === "running" ? unlockGen.state.progress : { caption: "다 적었어요", fraction: 1, reached: readingPlan.stages.length };
     return (
       <>
         <p className="sr-only" role="status">
           {announce}
         </p>
-        <GeneratingState mode="saju" caption={progress.caption} fraction={progress.fraction} hint="보통 1~2분 걸려요. 이 화면을 열어 둔 채로 기다려 주세요." live={false} />
+        <GeneratingState
+          mode="saju"
+          kind="saju-reading"
+          caption={progress.caption}
+          fraction={progress.fraction}
+          steps={checklist(readingPlan, progress.reached)}
+          tips={sajuTips(chart?.dayMaster.ko)}
+          live={false}
+        />
       </>
     );
   }
@@ -376,8 +387,11 @@ export function SajuChartView({
     content = (
       <>
         {topicRow}
+        {/* Keyed by the 운's teaser: a new one (another 운 tapped) starts its own clock. */}
         <GeneratingState
+          key={teaserKey}
           mode="saju"
+          kind="saju-teaser"
           layout="inline"
           caption={teaserState.status === "running" ? teaserState.progress.caption : "명식을 다시 살피고 있어요"}
           fraction={teaserState.status === "running" ? teaserState.progress.fraction : 0}

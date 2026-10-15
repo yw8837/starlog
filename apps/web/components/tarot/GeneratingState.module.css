@@ -98,6 +98,120 @@
   text-wrap: balance;
 }
 
+/* The clock under the bar ("38초째 · 보통 2분 안팎"), then (page) the line to keep the screen open. */
+.elapsed,
+.stay {
+  display: block;
+}
+
+.elapsed {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 기다리는 동안: one reviewed guide line at a time, with room for three lines so a turn moves nothing below. */
+.tip {
+  width: min(100%, 340px);
+  padding: 14px 18px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.tipLabel {
+  margin-bottom: 4px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.tipText {
+  display: grid;
+  align-items: center;
+  min-height: 4.8em;
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  text-wrap: pretty;
+  animation: tipIn 700ms ease-out;
+}
+
+/* The reading's parts: ticked once written, lit while written, dim until then. */
+.steps {
+  display: grid;
+  gap: 6px;
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  opacity: 0.65;
+  transition: opacity 400ms ease-out, color 400ms ease-out;
+}
+
+.step[data-state="done"] {
+  opacity: 0.9;
+}
+
+.step[data-state="now"] {
+  color: var(--ink);
+  font-weight: 700;
+  opacity: 1;
+}
+
+.mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  color: var(--gold);
+}
+
+/* Not written yet: a small dim dot. Being written: a gold one that breathes. */
+.step[data-state="later"] .mark::before,
+.step[data-state="now"] .mark::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.step[data-state="later"] .mark {
+  color: var(--ink-sub);
+}
+
+.step[data-state="now"] .mark::before {
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 8px rgba(243, 220, 161, 0.6);
+  animation: breathe 1600ms ease-in-out infinite alternate;
+}
+
+@keyframes tipIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes breathe {
+  from {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
 @keyframes captionIn {
   from {
     opacity: 0;

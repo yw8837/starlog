@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { FLOW_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
 import { saveTeaser } from "@/lib/reading/teaserCache";
+import { TAROT_TIPS } from "@/lib/reading/waitingTips";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { clearBetaUsage } from "@/lib/storage/betaUsage";
 import { clearChapters, listChapters } from "@/lib/storage/chapters";
@@ -378,6 +379,21 @@ describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
     await waitFor(() => expect(router.push).toHaveBeenCalled());
     const sent = vi.mocked(fetch).mock.calls.find(([url]) => url === "/api/tarot/reading");
     expect(JSON.parse(String((sent?.[1] as RequestInit | undefined)?.body))).toMatchObject({ seal: "SEALED_teaser-1" });
+  });
+
+  it("while the full reading is written, lists its steps by card position and shows tarot tips", async () => {
+    seed();
+    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })], reading: () => new Promise<Response>(() => {}) });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
+    const steps = await screen.findByRole("list", { name: "풀이 순서" });
+    const items = within(steps).getAllByRole("listitem");
+    expect(items.map((item) => item.getAttribute("data-state"))).toEqual(["now", "later", "later", "later", "later", "later", "later"]);
+    for (const label of ["지금의 나 카드", "흐름 카드", "조언 카드", "세 장의 연결과 시기", "오늘 해 볼 일"]) expect(within(steps).getByText(label)).toBeTruthy();
+    expect(screen.getByText(TAROT_TIPS[0]!)).toBeTruthy();
+    expect(screen.getByText("보통 1분 안팎")).toBeTruthy();
+    expect(screen.getByText("이 화면을 열어 둔 채로 기다려 주세요.")).toBeTruthy();
+    clearBetaUsage();
   });
 
   it("shows no second card for a teaser kept before it", async () => {

@@ -238,7 +238,7 @@ const SCREENS: Screen[] = [
     prepare: async (page) => {
       await waitForSheet(page);
       await page.getByRole("button", { name: openingOn() ? /전체 풀이 보기/ : "운영자로 무료 열기" }).click();
-      await expect(page.getByText("보통 1분 남짓 걸려요", { exact: false })).toBeVisible();
+      await expect(page.getByText("이 화면을 열어 둔 채로 기다려 주세요.")).toBeVisible();
     },
   },
   { name: "login", path: "/login" },
