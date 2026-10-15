@@ -59,8 +59,22 @@ describe("buildSharePayload (tarot)", () => {
   it("hides the user's own words wherever the reading quotes them", () => {
     if (payload.kind !== "tarot") return;
     expect(payload.reading.verdict).toBe("○○께 먼저 짧게 안부를 건네 볼 만한 때예요.");
-    expect(payload.reading.cards[0]?.body.startsWith('메모에 적은 "○○"라는 말처럼')).toBe(true);
+    // F-08: the sentence that quoted the note is dropped; the card's own sentences after it stay.
+    expect(payload.reading.cards[0]?.body).toBe(MOCK_TAROT_READING.cards[0]!.body.split(/(?<=[.!?])\s+/).slice(1).join(" "));
     expect(JSON.stringify(payload)).not.toMatch(/회식|팀장님|이직 고민/);
+  });
+
+  it("drops a sentence that only quotes the user's hidden words, never leaving \"'○○'이라고 골랐으니\" behind (F-08)", () => {
+    const input = { conditions: [{ label: "지금 상황", value: "지금은 수입이 없음" }], note: "비밀메모큐에이문구" };
+    expect(sharedVerdict(input, "'지금은 수입이 없음'이라고 골랐으니 이 그림을 그 상황에 비춰 보면 좋아요. 카드는 천천히 가라고 해요.")).toBe("카드는 천천히 가라고 해요.");
+    expect(sharedVerdict(input, "그림이 조용해요. 메모에 '비밀메모큐에이문구'라고 적었죠. 그 마음이 그림에 보여요.")).toBe("그림이 조용해요. 그 마음이 그림에 보여요.");
+    expect(sharedVerdict(input, '그림이 조용해요.\n메모에 "비밀메모큐에이문구"라고 적었죠.')).toBe("그림이 조용해요.");
+    // A hidden word outside quotes reads as a plain blank and stays, as before.
+    expect(sharedVerdict(input, "지금은 수입이 없음이라 버틸 기간부터 봐요. 카드는 천천히 가라고 해요.")).toBe("○○이라 버틸 기간부터 봐요. 카드는 천천히 가라고 해요.");
+  });
+
+  it("keeps a field whose every sentence quotes hidden words rather than empty it: the words stay hidden (F-08)", () => {
+    expect(sharedVerdict({ note: "비밀메모큐에이문구" }, "메모에 '비밀메모큐에이문구'라고 적었죠.")).toBe("메모에 '○○'라고 적었죠.");
   });
 
   it("hides a quote that is only part of the note", () => {
@@ -271,6 +285,10 @@ describe("buildSharePayload (saju)", () => {
 
   it("drops a sentence with contact details", () => {
     expect(sajuBody({}, "흐름이 좋아요. 상담은 010-1234-5678로 해요. 천천히 가요.")).toBe("흐름이 좋아요. 천천히 가요.");
+  });
+
+  it("drops a sentence that only quotes the status the user picked (F-08)", () => {
+    expect(sajuBody({}, "흐름이 좋아요. '연애 중'이라고 골랐으니 함께 사는 생활을 봐요. 천천히 가요.", { loveStatus: "연애 중" })).toBe("흐름이 좋아요. 천천히 가요.");
   });
 });
 

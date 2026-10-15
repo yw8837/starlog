@@ -208,17 +208,35 @@ const hasContact = (text: string) => {
   return CONTACT.some((pattern) => pattern.test(plain));
 };
 
-/** The text without every sentence (or line) that carries contact details. */
-export function dropContactSentences(text: string): string {
-  if (!hasContact(text)) return text;
+/** The text without every sentence (or line) that `drops`. */
+function dropSentences(text: string, drops: (sentence: string) => boolean): string {
   // sentence, separator, sentence, …
   const parts = text.split(/((?<=[.!?。…])\s+|\n+)/);
   let out = "";
   for (let i = 0; i < parts.length; i += 2) {
     const sentence = parts[i] ?? "";
-    if (!hasContact(sentence)) out += sentence + (parts[i + 1] ?? "");
+    if (!drops(sentence)) out += sentence + (parts[i + 1] ?? "");
   }
   return out.trimEnd();
+}
+
+/** The text without every sentence (or line) that carries contact details. */
+export function dropContactSentences(text: string): string {
+  return hasContact(text) ? dropSentences(text, hasContact) : text;
+}
+
+/** A quotation the hiding emptied: the reading quoted nothing but the user's own words ('○○', "○○"). */
+const HIDDEN_QUOTE = /['‘’"“”「」『』]○○['‘’"“”「」『』]/;
+const quotesHidden = (sentence: string) => HIDDEN_QUOTE.test(sentence);
+
+/**
+ * The text without the sentences that quote the user's hidden words ("'○○'이라고 골랐으니…", "메모에
+ * '○○'라고 적었죠."): once the words are gone they read oddly (F-08). A text made only of such
+ * sentences stays as it is (its words are hidden already), so no block is ever emptied.
+ */
+function dropHiddenQuotes(text: string): string {
+  if (!quotesHidden(text)) return text;
+  return dropSentences(text, quotesHidden) || text;
 }
 
 /**
@@ -281,7 +299,7 @@ export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: F
       v: 1,
       deck,
       cards: ctx.cards.map(([cardId, orientation], slot) => ({ cardId, orientation, position: positions[slot] ?? "" })),
-      reading: mapStrings(body, (text) => hideOwnWords(dropContactSentences(text), words, name)) as unknown as ReadingBody,
+      reading: mapStrings(body, (text) => dropHiddenQuotes(hideOwnWords(dropContactSentences(text), words, name))) as unknown as ReadingBody,
     };
   }
   if (ctx.kind === "saju") {
@@ -294,7 +312,7 @@ export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: F
     // The status chips the user picked (전체 흐름) and the one-line concern an older chapter may carry.
     const profile = ctx.profile;
     const words = asPromptSaw([profile?.loveStatus, profile?.workStatus, profile?.concern].filter((text) => !UNSURE.has(text?.trim() ?? "")));
-    const hide = (text: string) => hideWords(hideBirth(dropContactSentences(text), ctx.birth), words);
+    const hide = (text: string) => dropHiddenQuotes(hideWords(hideBirth(dropContactSentences(text), ctx.birth), words));
     return { kind: "saju", v: 1, ...(ctx.topic ? { topic: ctx.topic } : {}), reading: mapStrings(shared, hide) };
   }
   throw new Error(`a ${ctx.kind} reading is not shared yet`);
