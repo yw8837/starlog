@@ -2,15 +2,38 @@
 
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
-import { refreshAccount } from "@/lib/account/client";
+import { refreshAccount, useAccount } from "@/lib/account/client";
 import s from "./OwnerForm.module.css";
 
 type Status = { kind: "idle" } | { kind: "sending" } | { kind: "done" } | { kind: "error"; message: string };
 
-/** One password field; the code goes only in the POST body, never in a URL. */
+/**
+ * One password field; the code goes only in the POST body, never in a URL. A device that holds the pass
+ * (just now, or from before) sees that it does and where to go next instead (owner 2026-10-15).
+ */
 export function OwnerForm() {
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+  const account = useAccount();
+
+  if (status.kind === "done" || account?.owner === true) {
+    return (
+      <section className={s.form} aria-labelledby="owner-title">
+        <h1 id="owner-title" className={s.title}>
+          운영자로 확인된 기기예요
+        </h1>
+        <p className={s.lead} role="status">
+          이 기기에서는 결제 없이 풀이를 열 수 있고, 결제도 시험할 수 있어요.
+        </p>
+        <Button href="/" block>
+          홈으로 가기
+        </Button>
+        <Button href="/saju/start?new=1" variant="secondary" block>
+          사주 보러 가기
+        </Button>
+      </section>
+    );
+  }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -55,7 +78,7 @@ export function OwnerForm() {
         aria-describedby="owner-status"
       />
       <p id="owner-status" className={status.kind === "error" ? s.error : s.status} role="status" aria-live="polite">
-        {status.kind === "done" ? "확인됐어요. 이 기기에서는 횟수 제한 없이 볼 수 있어요." : status.kind === "error" ? status.message : ""}
+        {status.kind === "error" ? status.message : ""}
       </p>
       <Button type="submit" block disabled={status.kind === "sending"}>
         {status.kind === "sending" ? "확인하는 중" : "확인하기"}
