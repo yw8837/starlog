@@ -17,8 +17,20 @@ interface OwnerPayload extends SignedPayload {
   cf: string;
 }
 
+/** A code shorter than this can be guessed (H-1): it still works, but the isolate says so once. */
+const MIN_OWNER_CODE_LENGTH = 24;
+let warnedShort = false;
+
 /** The deploy's owner code, or null when none is set (then nobody is the owner). */
-export const ownerCode = (env: NodeJS.ProcessEnv = process.env): string | null => env.STARLOG_OWNER_CODE?.trim() || null;
+export const ownerCode = (env: NodeJS.ProcessEnv = process.env): string | null => {
+  const code = env.STARLOG_OWNER_CODE?.trim() || null;
+  if (code && code.length < MIN_OWNER_CODE_LENGTH && !warnedShort) {
+    warnedShort = true;
+    // The length only, never the code.
+    console.warn(JSON.stringify({ evt: "owner.code_short", length: code.length, min: MIN_OWNER_CODE_LENGTH }));
+  }
+  return code;
+};
 
 const fingerprint = (code: string, secret: string) => keyedHash(code, secret, "starlog/owner/v1");
 
