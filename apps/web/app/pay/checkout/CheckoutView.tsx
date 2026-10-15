@@ -183,6 +183,8 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
                 {`열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. `}
                 <Link href="/refund">환불 정책</Link>
               </p>
+              {/* F3: some card companies may still refuse this store; no list of them, only what to do. */}
+              <p>결제가 안 되면 다른 카드나 간편결제로 해 보세요.</p>
             </div>
             <Button block onClick={() => void pay()} disabled={!agreed || !ready || busy}>
               {`${won(info.amount)} 결제하기`}

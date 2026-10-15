@@ -190,7 +190,8 @@ describe("confirm", () => {
     vi.spyOn(mockToss, "getPaymentByOrder").mockRejectedValueOnce(new TossError(400, "NOT_AVAILABLE_PAYMENT_BY_MERCHANT", "x"));
     const res = await confirmAs(b, orderId, "mock_key");
     expect(res.status).toBe(402);
-    expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "지금은 결제를 받을 수 없어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요." });
+    // F3: a refusal of the store or the card is not transient: another card or 간편결제, not "잠시 뒤".
+    expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "이 결제 수단으로는 지금 결제할 수 없어요. 돈은 빠져나가지 않았어요. 다른 카드나 간편결제로 다시 해 보세요." });
     expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "NOT_AVAILABLE_PAYMENT_BY_MERCHANT" });
     expect(errors.mock.calls.some(([line]) => String(line).includes('"evt":"pay.merchant_refused"') && String(line).includes("NOT_AVAILABLE_PAYMENT_BY_MERCHANT"))).toBe(true);
   });

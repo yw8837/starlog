@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { loginHref, refreshAccount } from "@/lib/account/client";
 import { withQuery } from "@/lib/account/returnTo";
-import { getJson, postJson, type ApiResult } from "@/lib/reading/api";
+import { getJson, postJson, type ApiError, type ApiResult } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import s from "../pay.module.css";
 
@@ -56,6 +56,8 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<ErrorView | null>(null);
   const [loginTo, setLoginTo] = useState<string | null>(null);
+  /** After a refusal: the reading the payment was for, to try another card from (F3). */
+  const [back, setBack] = useState<string | null>(null);
   // What the page needs, kept from the first render: the address bar no longer has it.
   const payment = useRef({ paymentKey, orderId, amount });
   const started = useRef(false);
@@ -87,10 +89,20 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
       navigate(target);
     };
     const confirm = (): Promise<ApiResult<Paid>> => postJson<Paid>("/api/pay/confirm", { paymentKey, orderId, amount: Number(amount) });
+    /** Nothing was charged: say why, and find the way back to the reading. */
+    const fail = (view: ErrorView, returnTo?: string) => {
+      setError(view);
+      if (returnTo) return setBack(returnTo);
+      void getJson<{ returnTo: string }>(`/api/pay/orders?id=${encodeURIComponent(orderId)}`).then((res) => {
+        if (res.ok && alive.current) setBack(res.data.returnTo);
+      });
+    };
+    /** A final answer: a refusal leads back to the reading; an unreadable request only to 내 정보. */
+    const end = (error: ApiError) => (error.code === "PAY_FAILED" ? fail(describeApiError(error)) : setError(describeApiError(error)));
     void (async () => {
       const res = await confirm();
       if (res.ok) return finish(res.data);
-      if (FINAL.has(res.error.code)) return setError(describeApiError(res.error));
+      if (FINAL.has(res.error.code)) return end(res.error);
       setPending(true);
       let confirmedAgain = false;
       for (const delay of pollSchedule(pollMs)) {
@@ -102,13 +114,13 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
           continue;
         }
         if (status.data.status === "paid") return finish(status.data);
-        if (status.data.status === "failed") return setError({ title: "결제를 마치지 못했어요", body: "청구된 금액은 없어요.", action: "retry" });
+        if (status.data.status === "failed") return fail({ title: "결제를 마치지 못했어요", body: "청구된 금액은 없어요.", action: "retry" }, status.data.returnTo);
         if (status.data.status === "created" && !confirmedAgain) {
           // The first confirm never landed (Toss keeps the approval open for 10 minutes): once more.
           confirmedAgain = true;
           const again = await confirm();
           if (again.ok) return finish(again.data);
-          if (FINAL.has(again.error.code)) return setError(describeApiError(again.error));
+          if (FINAL.has(again.error.code)) return end(again.error);
         }
       }
       if (alive.current) setError(LATE);
@@ -129,6 +141,11 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
         <div role="alert" className={s.panel}>
           <p className={s.title}>{error.title}</p>
           {error.body ? <p>{error.body}</p> : null}
+          {back ? (
+            <Button href={back} block>
+              풀이로 돌아가기
+            </Button>
+          ) : null}
           <Button href="/me" variant="secondary" block>
             내 정보로 가기
           </Button>

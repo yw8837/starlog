@@ -65,9 +65,12 @@ const matches = (order: OrderRow, payment: TossPayment) => payment.status === "D
 /** Toss's answers when our API keys themselves are refused. */
 const KEY_ERRORS = new Set(["UNAUTHORIZED_KEY", "INVALID_API_KEY", "INVALID_CLIENT_KEY", "INVALID_SECRET_KEY"]);
 const KEY_REJECTED_MESSAGE = "결제 승인을 받지 못했어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요.";
-/** Toss's answers when this store itself may not take payments (set on Toss's side; the owner's live tries, 10/14). */
+/**
+ * Toss's answers when this store itself may not take payments (set on Toss's side; the owner's live tries, 10/14):
+ * not transient (a card company still reviewing the store), so another card or 간편결제, never "잠시 뒤" (F3).
+ */
 const MERCHANT_ERRORS = new Set(["NOT_AVAILABLE_PAYMENT_BY_MERCHANT"]);
-const MERCHANT_REFUSED_MESSAGE = "지금은 결제를 받을 수 없어요. 돈은 빠져나가지 않았어요. 잠시 뒤 다시 시도해 주세요.";
+const MERCHANT_REFUSED_MESSAGE = "이 결제 수단으로는 지금 결제할 수 없어요. 돈은 빠져나가지 않았어요. 다른 카드나 간편결제로 다시 해 보세요.";
 
 /** The payment Toss has for this order, "none" when it has none, "unknown" when it could not be asked. */
 async function lookUpByOrder(toss: TossClient, orderId: string): Promise<TossPayment | "none" | "unknown"> {

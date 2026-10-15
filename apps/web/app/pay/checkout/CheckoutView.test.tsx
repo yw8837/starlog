@@ -55,6 +55,8 @@ describe("CheckoutView", () => {
     // F2-b: the "3번까지" promise says what happens after the third.
     expect(screen.getByText(/다 받기 전에 화면을 닫거나 연결이 끊겨도 3번까지 다시 열어 받을 수 있어요\. 네 번째로 끊기면 그 결제는 쓴 것으로 처리돼요\./)).toBeTruthy();
     expect(within(actions).getByRole("link", { name: "환불 정책" }).getAttribute("href")).toBe("/refund");
+    // F3: some card companies may refuse for now; no list of them, only what to do.
+    expect(actions.textContent).toContain("결제가 안 되면 다른 카드나 간편결제로 해 보세요.");
   });
 
   it("sends a guest to login and back to this page", async () => {

@@ -61,11 +61,19 @@ describe("PaySuccess", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it("says why a payment was not completed", async () => {
-    stub({ "/api/pay/confirm": [() => Response.json({ code: "PAY_FAILED", message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." }, { status: 402 })] });
+  it("says why a payment was not completed, and leads back to the reading first, 내 정보 second (F3)", async () => {
+    const bodies = stub({
+      "/api/pay/confirm": [() => Response.json({ code: "PAY_FAILED", message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." }, { status: 402 })],
+      "/api/pay/orders": [order("failed")],
+    });
     render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={() => {}} />);
     expect(await screen.findByText("결제를 마치지 못했어요")).toBeTruthy();
     expect(screen.getByText("한도초과 혹은 잔액부족으로 결제에 실패했습니다.")).toBeTruthy();
+    const back = await screen.findByRole("link", { name: "풀이로 돌아가기" });
+    expect(back.getAttribute("href")).toBe("/tarot/result");
+    expect(screen.getByRole("link", { name: "내 정보로 가기" }).getAttribute("href")).toBe("/me");
+    expect(back.compareDocumentPosition(screen.getByRole("link", { name: "내 정보로 가기" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(bodies["/api/pay/orders"]).toHaveLength(1);
   });
 
   it("never takes a lost answer, a busy server or a rate limit as the end: it waits for the order", async () => {
