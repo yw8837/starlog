@@ -83,6 +83,8 @@ describe("account client", () => {
       throw new TypeError("offline");
     }) as typeof fetch;
     expect(await refreshAccount(down)).toBeNull();
+    // F-11: a server error is a failure too (null), never a logged-out account ({ user: null }).
+    expect(await refreshAccount((async () => Response.json({ code: "UPSTREAM" }, { status: 500 })) as typeof fetch)).toBeNull();
   });
 
   it("builds the login link and the messages for ?login=", () => {

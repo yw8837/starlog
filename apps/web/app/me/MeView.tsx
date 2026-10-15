@@ -6,7 +6,7 @@ import { ChevronIcon } from "@/components/home/icons";
 import { Button } from "@/components/ui/Button";
 import { DotLine } from "@/components/ui/DotLine";
 import { Modal } from "@/components/ui/Modal";
-import { loginHref, useAccount } from "@/lib/account/client";
+import { loginHref, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { clearFlow } from "@/lib/flowState";
 import { openingFreeText } from "@/lib/helpGuide";
@@ -81,11 +81,22 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
         <header className={s.profile}>
           <div className={s.profileText}>
             <h1 className={s.nickname}>내 정보</h1>
-            {account?.user ? null : <p className={s.provider}>로그인 없이, 기록은 이 기기에 보관돼요</p>}
+            {account?.user || account === null ? null : <p className={s.provider}>로그인 없이, 기록은 이 기기에 보관돼요</p>}
           </div>
         </header>
 
-        {account?.user ? (
+        {account === null ? (
+          // /api/me failed: whether this is a member is not known, so neither view is shown (F-11).
+          <section className={s.beta} aria-labelledby="account-error-title">
+            <h2 id="account-error-title" className={s.betaTitle}>
+              내 정보를 불러오지 못했어요
+            </h2>
+            <p className={s.betaText}>잠시 뒤에 다시 시도해 주세요.</p>
+            <Button block onClick={() => void refreshAccount()}>
+              다시 시도
+            </Button>
+          </section>
+        ) : account?.user ? (
           <AccountPanel account={{ ...account, user: account.user }} onNotice={setNotice} />
         ) : account?.payments ? (
           <section className={s.beta} aria-labelledby="login-title">

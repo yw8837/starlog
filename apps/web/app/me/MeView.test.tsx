@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
@@ -107,6 +107,21 @@ describe("MeView logged out while sales are closed (오픈 기념 무료)", () =
     render(<MeView status={null} />);
     expect(await screen.findByRole("link", { name: "결제한 풀이가 있다면 로그인" })).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/오픈 기념|무료로 열/);
+  });
+});
+
+describe("MeView when 내 정보 cannot be loaded (F-11)", () => {
+  it("says so with 다시 시도 instead of showing a logged-in member the logged-out view, and recovers", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ code: "UPSTREAM" }, { status: 500 })));
+    render(<MeView status={null} />);
+    expect(await screen.findByRole("heading", { name: "내 정보를 불러오지 못했어요" })).toBeTruthy();
+    expect(screen.queryByText("로그인 없이, 기록은 이 기기에 보관돼요")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "오픈 기념 무료" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "로그인하기" })).toBeNull();
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: true, login: true, owner: false, user: { nickname: "별빛", gift: null, unused: [], opening: [] } })));
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    expect(await screen.findByRole("heading", { name: "별빛" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "내 정보를 불러오지 못했어요" })).toBeNull();
   });
 });
 

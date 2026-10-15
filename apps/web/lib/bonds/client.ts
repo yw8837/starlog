@@ -52,10 +52,15 @@ const FIELD_MESSAGES: Record<string, string> = {
   birth: "생년월일을 다시 확인해 주세요",
 };
 
-export function bondsMessage(result: { code: string; field?: string; retryAt?: string }): string {
+/** For a failure no code explains: loading, unless the caller says what it was doing. */
+const LOAD_FAILED = "지금은 별자리를 불러올 수 없어요. 잠시 뒤에 다시 시도해 주세요";
+/** A friend's 별 되기 that failed for no known reason (F-12): it was the joining that failed, not a load. */
+export const JOIN_FAILED = "별자리에 참여하지 못했어요. 잠시 뒤에 다시 시도해 주세요";
+
+export function bondsMessage(result: { code: string; field?: string; retryAt?: string }, fallback: string = LOAD_FAILED): string {
   if (result.code === "BAD_INPUT") return (result.field && FIELD_MESSAGES[result.field]) || "입력한 내용을 다시 확인해 주세요";
   if (result.code === "COOLDOWN" && result.retryAt) return `${MESSAGES.COOLDOWN}. ${clock(Date.parse(result.retryAt))}부터 다시 할 수 있어요`;
-  return MESSAGES[result.code] ?? "지금은 별자리를 불러올 수 없어요. 잠시 뒤에 다시 시도해 주세요";
+  return MESSAGES[result.code] ?? fallback;
 }
 
 /** "오후 3:05" in Korean time. */

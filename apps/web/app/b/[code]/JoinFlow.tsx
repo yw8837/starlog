@@ -13,7 +13,7 @@ import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { bondsApi, bondsMessage, copyText } from "@/lib/bonds/client";
+import { JOIN_FAILED, bondsApi, bondsMessage, copyText } from "@/lib/bonds/client";
 import { MESSAGE_MAX, NICKNAME_MAX, NICKNAME_MIN } from "@/lib/bonds/text";
 import { useSajuProfile } from "@/lib/sajuFlow";
 import type { FriendResultView, InviteState } from "./loadInvite";
@@ -187,7 +187,7 @@ function OpenInvite({ invite }: { invite: Open }) {
     });
     setBusy(false);
     if (!res.ok) {
-      const text = bondsMessage(res);
+      const text = bondsMessage(res, JOIN_FAILED);
       if (res.field === "nickname" || res.field === "birth") {
         setErrors({ [res.field]: text });
         setPhase("form");

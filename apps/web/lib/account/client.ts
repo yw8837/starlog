@@ -2,8 +2,10 @@ import { useEffect, useSyncExternalStore } from "react";
 
 /**
  * Browser side of accounts: GET /api/me, shared by every component through one small store (one
- * request however many components ask). `undefined` until loaded, `null` when it failed (screens
- * then behave as they do without accounts).
+ * request however many components ask). `undefined` until loaded, `null` when it failed (a lost
+ * connection, an error status or an odd body; never a logged-out account, which is `user: null`).
+ * Most screens then behave as they do without accounts; 내 정보 says it could not load and offers
+ * 다시 시도 (refreshAccount), so a member never sees the logged-out view by mistake (F-11).
  */
 
 export interface AccountUser {
