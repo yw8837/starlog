@@ -21,6 +21,7 @@ import {
   sweepStale,
   type Lot,
 } from "./ledger";
+import { orderHistory } from "./orders";
 
 const NOW = Date.parse("2026-10-01T03:00:00Z"); // 12:00 KST
 
@@ -169,8 +170,12 @@ export function ledgerContract(make: Make) {
       expect(await lotById(db, "lot_order_a")).toMatchObject({ units_left: 1 });
     }
     const fourth = await reserved(db, "paid", NOW + 10);
+    // 결제 내역 while the fourth opening runs: being opened, not used up.
+    expect(await orderHistory(db, "u_1")).toMatchObject([{ orderId: "order_a", opened: true, unfinished: false, refundable: false }]);
     expect(await releaseUnlock(db, { unlockId: fourth.unlockId, now: NOW + 10, left: true })).toBe(true);
     expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 0 });
+    // F2-b: used up with no reading delivered: never listed as opened (열어 봤어요).
+    expect(await orderHistory(db, "u_1")).toMatchObject([{ orderId: "order_a", opened: false, unfinished: true, refundable: false }]);
     expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + 20, payMode: "live" })).toEqual({ ok: false });
     expect(await lockPaidLotForRefund(db, "order_a", NOW + 30)).toBeNull();
     expect((await kinds(db, "lot_order_a")).filter((kind) => kind === "restore")).toHaveLength(2 * MAX_RESTORES);
@@ -189,6 +194,15 @@ export function ledgerContract(make: Make) {
     expect(await lockPaidLotForRefund(db, "order_a", NOW + 3)).toBeNull();
     expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + 4, payMode: "live" })).ok).toBe(true);
     await expectLotsMatchLedger(db);
+  });
+
+  it("lists a delivered purchase in 결제 내역 as opened, not used up unfinished (F2-b)", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    expect(await orderHistory(db, "u_1")).toMatchObject([{ orderId: "order_a", opened: false, unfinished: false, refundable: true }]);
+    const unlock = await reserved(db, "paid");
+    expect(await deliverUnlock(db, { unlockId: unlock.unlockId, readingId: "r1", now: NOW + 1 })).toBe("delivered");
+    expect(await orderHistory(db, "u_1")).toMatchObject([{ orderId: "order_a", opened: true, unfinished: false, refundable: false }]);
   });
 
   it("lets a purchase the client never left be refunded after a server failure gave its units back", async () => {

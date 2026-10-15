@@ -272,14 +272,23 @@ export interface OrderListItem {
   refundable: boolean;
   /** paid and opened (or being opened) */
   opened: boolean;
+  /**
+   * paid and used up with no reading delivered: its client left while it was written once more than
+   * MAX_RESTORES allows (lib/pay/ledger.ts releaseUnlock), so it was never "opened" (F2-b)
+   */
+  unfinished: boolean;
 }
+
+/** A lot (aliased `lot`) none of whose openings was delivered or is under way. */
+const NOTHING_DELIVERED_SQL = (lot: string) =>
+  `NOT EXISTS (SELECT 1 FROM ledger g JOIN unlocks u ON u.id = g.unlock_id WHERE g.lot_id = ${lot}.id AND g.kind = 'reserve' AND u.status IN ('reserved', 'delivered'))`;
 
 /** 결제 내역: the user's orders that reached Toss, newest first. */
 export async function orderHistory(db: D1Binding, userId: string, limit = 50): Promise<OrderListItem[]> {
   const { results } = await db
     .prepare(
       `SELECT o.id, o.product_id, o.amount_krw, o.status, o.created_at, p.receipt_url, p.method,
-              l.units_left, l.units_total, l.status AS lot_status, ${LEFT_SQL("l")} AS left_once
+              l.units_left, l.units_total, l.status AS lot_status, ${LEFT_SQL("l")} AS left_once, ${NOTHING_DELIVERED_SQL("l")} AS undelivered
        FROM orders o
        LEFT JOIN payments p ON p.order_id = o.id
        LEFT JOIN credit_lots l ON l.order_id = o.id
@@ -289,10 +298,11 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
     .bind(userId, limit)
     .all<{
       id: string; product_id: string; amount_krw: number; status: OrderStatus; created_at: number; receipt_url: string | null; method: string | null;
-      units_left: number | null; units_total: number | null; lot_status: string | null; left_once: number | null;
+      units_left: number | null; units_total: number | null; lot_status: string | null; left_once: number | null; undelivered: number | null;
     }>();
   return results.map((row) => {
     const active = row.lot_status === "active";
+    const empty = row.status === "paid" && active && row.units_left === 0;
     return {
       orderId: row.id,
       productId: row.product_id,
@@ -302,7 +312,8 @@ export async function orderHistory(db: D1Binding, userId: string, limit = 50): P
       receiptUrl: row.receipt_url,
       method: row.method,
       refundable: row.status === "paid" && active && row.units_left === row.units_total && !row.left_once,
-      opened: row.status === "paid" && active && row.units_left === 0,
+      opened: empty && !row.undelivered,
+      unfinished: empty && Boolean(row.undelivered),
     };
   });
 }

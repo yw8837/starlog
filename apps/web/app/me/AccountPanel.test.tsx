@@ -61,6 +61,18 @@ describe("AccountPanel", () => {
     expect(screen.queryByText(/계정에 보관하기/)).toBeNull();
   });
 
+  it("in 결제 내역, labels a purchase used up before its reading was finished apart from one opened (F2-b)", async () => {
+    const row = { amount: 2900, status: "paid", createdAt: Date.parse("2026-10-01T03:00:00Z"), receiptUrl: null, method: "카드", refundable: false };
+    vi.stubGlobal("fetch", vi.fn(async (url: string) =>
+      url === "/api/pay/orders"
+        ? Response.json({ orders: [{ ...row, orderId: "o1", productId: "tarot", opened: false, unfinished: true }, { ...row, orderId: "o2", productId: "saju", opened: true, unfinished: false }] })
+        : Response.json({ payments: true, login: true, owner: false, user: null }),
+    ));
+    render(<AccountPanel account={account} />);
+    expect(await screen.findByText("다 받기 전에 끊겨 쓴 것으로 처리됐어요")).toBeTruthy();
+    expect(screen.getAllByText("열어 봤어요")).toHaveLength(1);
+  });
+
   it("says a used gift was used, and shows nothing once it expired or was never given; never a count", () => {
     render(<AccountPanel account={{ ...account, user: { ...account.user, gift: { status: "used" } } }} />);
     expect(document.getElementById("gift")?.textContent).toBe("가입 선물사용했어요");

@@ -16,10 +16,13 @@ interface OrderItem {
   method: string | null;
   refundable: boolean;
   opened: boolean;
+  /** used up before its reading was finished (left while written a fourth time) */
+  unfinished?: boolean;
 }
 
+const paidLabel = (item: OrderItem) => (item.unfinished ? "다 받기 전에 끊겨 쓴 것으로 처리됐어요" : item.opened ? "열어 봤어요" : "열지 않음");
 const label = (item: OrderItem) =>
-  item.status === "paid" ? (item.opened ? "열어 봤어요" : "열지 않음") : item.status === "refunded" ? "환불됨" : item.status === "refunding" ? "환불 중" : "확인 중";
+  item.status === "paid" ? paidLabel(item) : item.status === "refunded" ? "환불됨" : item.status === "refunding" ? "환불 중" : "확인 중";
 
 const day = (ms: number) => {
   const kst = new Date(ms + 9 * 60 * 60 * 1000);

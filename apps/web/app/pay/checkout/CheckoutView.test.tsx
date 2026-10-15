@@ -49,8 +49,11 @@ describe("CheckoutView", () => {
     const actions = (await screen.findByRole("button", { name: "2,900원 결제하기" })).closest("div")!;
     expect(actions.textContent).toContain("서비스 제공 기간: 결제 즉시 · 결제하면 바로 풀이가 열리는 디지털 콘텐츠예요.");
     expect(actions.textContent).toContain("열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요.");
-    expect(screen.getByText(/풀이가 나오는 동안 화면을 닫아도 3번까지 다시 열어 받을 수 있어요/)).toBeTruthy();
-    expect(screen.getByText(/화면에 나오기 시작하면 청약철회가 제한돼요/)).toBeTruthy();
+    // F2-a: 제공 starts when the reading starts being written, which follows the payment by itself.
+    expect(screen.getByText(/결제하면 바로 풀이를 적기 시작해요\. 풀이를 적기 시작하면 제공이 시작된 것이라 청약철회가 제한돼요/)).toBeTruthy();
+    expect(document.body.textContent).not.toContain("화면에 나오기");
+    // F2-b: the "3번까지" promise says what happens after the third.
+    expect(screen.getByText(/다 받기 전에 화면을 닫거나 연결이 끊겨도 3번까지 다시 열어 받을 수 있어요\. 네 번째로 끊기면 그 결제는 쓴 것으로 처리돼요\./)).toBeTruthy();
     expect(within(actions).getByRole("link", { name: "환불 정책" }).getAttribute("href")).toBe("/refund");
   });
 

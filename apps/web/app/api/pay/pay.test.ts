@@ -281,7 +281,7 @@ describe("confirm", () => {
     const b = await loggedIn();
     const orderId = await buy(b);
     const { orders } = (await (await b.send(ordersGet, "/api/pay/orders")).json()) as { orders: Array<Record<string, unknown>> };
-    expect(orders).toEqual([{ orderId, productId: "tarot", amount: 2900, status: "paid", createdAt: T0, receiptUrl: null, method: "카드", refundable: true, opened: false }]);
+    expect(orders).toEqual([{ orderId, productId: "tarot", amount: 2900, status: "paid", createdAt: T0, receiptUrl: null, method: "카드", refundable: true, opened: false, unfinished: false }]);
     expect((await browser("192.0.2.79").send(ordersGet, "/api/pay/orders")).status).toBe(401);
   });
 });

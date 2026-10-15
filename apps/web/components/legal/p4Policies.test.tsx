@@ -26,12 +26,17 @@ describe("policies for the paid launch", () => {
     expect(page).not.toMatch(/켈틱|셀틱|celtic/i);
   });
 
-  it("/refund: 제공 starts when the reading begins on screen; one left halfway reopens (3 times) but is not refunded; unopened is refundable for 7 KST days, failures on our side whenever", () => {
+  it("/refund: 제공 starts when the reading starts being written (right after payment); one left halfway reopens (3 times) but is not refunded, a fourth time uses it up; unopened is refundable for 7 KST days, failures on our side whenever", () => {
     const page = text(<RefundPage />);
     expect(page).toContain("제17조 제2항 제5호");
-    expect(page).toContain("화면에 나오기 시작하면 제공이 시작된 것으로 봐요");
+    // F2-a: the server counts 제공 from the moment the model starts answering, not from anything on screen.
+    expect(page).not.toContain("화면에 나오기");
+    expect(page).toContain("결제한 풀이를 적기 시작하면 제공이 시작된 것으로 봐요. 풀이는 결제 직후 자동으로 적기 시작해요.");
     expect(page).toContain("3번까지 다시 열어 끝까지 받을 수 있어요");
     expect(page).toContain("이미 제공이 시작된 풀이라 이때는 환불되지 않아요");
+    // F2-b: what happens after the third (lib/pay/ledger.ts MAX_RESTORES).
+    expect(page).toContain("3번까지 다시 열어 끝까지 받을 수 있어요. 네 번째로 끊기면 그 결제는 쓴 것으로 처리돼요.");
+    expect(page).toContain("네 번째로 끊기면 그 결제는 쓴 것으로 처리되고 다시 열 수 없어요.");
     expect(page).not.toContain("완성되어 계정에 저장되면");
     expect(page).toContain("결제일로부터 7일 안에 전액 환불");
     expect(page).toContain("7일째 되는 날 밤 12시(한국 시간)까지");
@@ -50,12 +55,15 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요");
   });
 
-  it("/terms and /pricing: 제공 starts when the reading begins on screen; one left halfway reopens but is not refunded", () => {
+  it("/terms and /pricing: 제공 starts when the reading starts being written (right after payment); one left halfway reopens but is not refunded, a fourth time uses it up", () => {
     const terms = text(<TermsPage />);
-    expect(terms).toContain("결제한 풀이는 화면에 나오기 시작한 때 제공이 시작된 것으로 봅니다");
-    expect(terms).toContain("3번까지 다시 열어 받을 수 있고, 환불 대상이 아닙니다");
+    expect(terms).toContain("결제한 풀이는 풀이를 적기 시작한 때 제공이 시작된 것으로 보며, 풀이는 결제 직후 자동으로 적기 시작합니다.");
+    expect(terms).toContain("3번까지 다시 열어 받을 수 있고, 환불 대상이 아닙니다. 네 번째로 끊긴 때에는 그 결제 풀이를 쓴 것으로 봅니다.");
     expect(terms).not.toContain("완성되어 계정에 저장된 때");
-    expect(text(<PricingPage />)).toContain("결제한 풀이는 화면에 나오기 시작하면 청약철회가 제한돼요");
+    expect(terms).not.toContain("화면에 나오기");
+    const pricing = text(<PricingPage />);
+    expect(pricing).toContain("결제한 풀이는 결제 직후 자동으로 적기 시작하고, 적기 시작하면 청약철회가 제한돼요.");
+    expect(pricing).not.toContain("화면에 나오기");
   });
 
   it("/terms: Kakao or Google members, item-by-item payment, no signup gift (제7조의2 삭제), minors, deletion, no model name", () => {
