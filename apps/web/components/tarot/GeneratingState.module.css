@@ -25,6 +25,14 @@
   align-self: end;
 }
 
+/* Phones: the whole stack centred in the screen, no open sky above the leader. */
+@media (max-width: 599px) {
+  .page {
+    grid-template-rows: none;
+    align-content: center;
+  }
+}
+
 /* Short screens (small phones): a smaller leader, so the cards and the progress fit under it. */
 @media (max-height: 760px) {
   .page .characters {
