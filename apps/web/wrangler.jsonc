@@ -42,7 +42,7 @@
   // TURNSTILE_SITE_KEY: the Turnstile widget's public site key (lib/api/turnstile.ts). The bot check
   // on the free generations runs only with it and the TURNSTILE_SECRET_KEY secret both set; empty = off.
   // Set it here, not in the dashboard: a deploy replaces the dashboard's vars with these.
-  "vars": { "BETA_DAILY_BUDGET_KRW": "off", "TURNSTILE_SITE_KEY": "" },
+  "vars": { "BETA_DAILY_BUDGET_KRW": "off", "TURNSTILE_SITE_KEY": "0x4AAAAAAFXRHXQ1qm3TScEj" },
   // Per-IP limits for AI generation (lib/security/rateLimit.ts LIMITS_PER_MINUTE must match).
   // Owners get the 5x limiters; full readings have their own tighter one; owner-code attempts too.
   "ratelimits": [
