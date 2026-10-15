@@ -74,6 +74,15 @@ describe("the saju prompts (§4.1, §4.2)", () => {
     }
   });
 
+  it("end each section's advice on a strength to grow, its cost when overdone, a question to ask oneself or one act, and what improves (owner 2026-10-15)", () => {
+    const rule4 = SAJU_VOICE_RULES.match(/^4\. [^\n]*/m)?.[0] ?? "";
+    for (const part of ["키우면 될 힘", "지나칠 때 생기는 일", "스스로 던져 볼 질문", "무엇이 나아지는지", "겁주지 않고", "규칙의 낱말은 본문에 쓰지 않아요", "절 분량을 지켜요"]) expect(rule4, part).toContain(part);
+    for (const example of SAJU_VOICE_EXAMPLES) {
+      // the advice closes on what gets better: 가벼워져요, 남아요
+      expect(example).toMatch(/(가벼워져요|남아요)\.$/);
+    }
+  });
+
   it("give 신년운세's own format the voice's words: a 해석 marker and a scene question, not the confirmation formula", () => {
     expect(NEWYEAR_SYSTEM).toContain("(해석임을 드러내는 말로)");
     expect(NEWYEAR_SYSTEM).toContain("그 경향이 드러나는 장면을 묻는 질문 하나");
@@ -220,6 +229,11 @@ describe("the tarot prompt (§2.7, §4.2 15–18)", () => {
     expect(TAROT_SYSTEM).toMatch(/- connection:[^\n]*쉼표로 나열하며 시작하지/);
     expect(DEEP_TAROT_SYSTEM.startsWith(TAROT_PREAMBLE)).toBe(true);
     expect(DEEP_TAROT_SYSTEM).not.toContain("**굵게**");
+  });
+
+  it("makes 오늘 해볼 작은 행동 the reading's advice: a strength, its cost, one act today and what improves (owner 2026-10-15)", () => {
+    expect(TAROT_SYSTEM).toMatch(/- action: [^\n]*80~200자[^\n]*살리면 좋은 힘[^\n]*지나칠 때 생기는 일[^\n]*오늘 할 수 있는 작은 행동 하나[^\n]*무엇이 나아지는지[^\n]*규칙의 낱말은 본문에 쓰지 않아요/);
+    // the first real checks (2026-10-15) wrote "키울 힘은 ~이에요": the rule's own words, now banned from the text
   });
 });
 

@@ -1,5 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`주제별 사주 prompts (spec §7.5) > builds the topic system prompt on the shared preamble, blind to model names, without 베타 1`] = `"f7d83638d0000db858603979133a29161b8b47393d11f44bf532e8a666f0a30c"`;
+exports[`주제별 사주 prompts (spec §7.5) > builds the topic system prompt on the shared preamble, blind to model names, without 베타 1`] = `"75dc3427c7a9cc89f850d3310fa7b5df49fd995d73f00cef0a4fe35ed9495a3f"`;
 
-exports[`주제별 사주 prompts (spec §7.5) > pins the standard and 신년운세 prompts by hash (each change is on purpose and noted here) 1`] = `"7417e0a17c71e5219bd01635206e4ef572b074a1086b8eaa6de9bb361c2f70ae"`;
+exports[`주제별 사주 prompts (spec §7.5) > pins the standard and 신년운세 prompts by hash (each change is on purpose and noted here) 1`] = `"d84c9c0aa5992083eddac3fd21f83a02baaedc6ce7fcafce011b53d8c4c9e05f"`;

@@ -1,5 +1,5 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`standard prompts stay byte for byte > keeps TAROT_SYSTEM and SAJU_SYSTEM unchanged by the split 1`] = `"a1553cb92394f19ac0b9cf9ea45c80b8c58ef96510221c9d1ed9a6ed61cb0ace"`;
+exports[`standard prompts stay byte for byte > keeps TAROT_SYSTEM and SAJU_SYSTEM unchanged by the split 1`] = `"a7676173ed7c598500799ce84ce21293f851f769e021bd56d36bb739ec766079"`;
 
-exports[`standard prompts stay byte for byte > keeps TAROT_SYSTEM and SAJU_SYSTEM unchanged by the split 2`] = `"f7ad95cbee6584d37c8570f9989ea1dddf56226912a3f3905c867c1da1e0dd3b"`;
+exports[`standard prompts stay byte for byte > keeps TAROT_SYSTEM and SAJU_SYSTEM unchanged by the split 2`] = `"7bc8791958cdab23b1fbb4929fa8d7096e4b413a06296f1f3fcb9e9c8e024493"`;

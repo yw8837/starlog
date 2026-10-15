@@ -94,7 +94,9 @@ function recording(real: ReadingProvider, validate: (draft: never) => string[], 
       try {
         const result = await real.generate(task, attempt, feedback);
         usage.push(...result.usage);
-        attempts.push(validate(result.data as never));
+        // 7절·8절's parallel call shares the saju reading's provider but not its shape: the reading validator threw a
+        // TypeError on it, so every smoke run fell back to the code-built 7절·8절 (2026-10-15). Its own validator already ran.
+        attempts.push(task.name === "saju-enrichment" ? [] : validate(result.data as never));
         return result;
       } catch (error) {
         attempts.push([`(${error instanceof GenerationError ? error.code : "error"})`]);
