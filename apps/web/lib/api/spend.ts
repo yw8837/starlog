@@ -166,11 +166,12 @@ export async function spentTodayKrw(now: number): Promise<number | null> {
  * "over" once today's estimated spend reaches BUDGET_TRIP of the budget; "unknown" when the total
  * cannot be trusted (KV unreadable, the binding missing on Workers, or cost writes failing
  * repeatedly in this isolate); else "ok". Callers treat "unknown" as closed for new generations.
+ * With no day cap (`off`) nothing is compared, but KV that cannot be read (or a missing binding) is
+ * still "unknown": the per-network day counts would read 0 then and bound nothing (H-2).
  */
 export async function budgetState(now: number): Promise<"ok" | "over" | "unknown"> {
-  // No day cap: nothing to compare, so neither the total nor its readability can close anything.
-  if (dailyBudgetKrw() === Infinity) return "ok";
   if (bindingMissing()) return "unknown";
+  if (dailyBudgetKrw() === Infinity) return (await spentTodayKrw(now)) === null ? "unknown" : "ok";
   const recentFailures = costWriteFailures.filter((t) => now - t < WRITE_FAILURE_WINDOW_MS).length;
   if (recentFailures >= WRITE_FAILURES_UNKNOWN) return "unknown";
   const spent = await spentTodayKrw(now);

@@ -184,6 +184,28 @@ describe("DAILY_KV failures", () => {
     expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(503);
   });
 
+  it("with no day cap (BETA_DAILY_BUDGET_KRW=off), still close while KV cannot be read: the per-network counts would read 0 (H-2)", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "off");
+    const token = await drawToken();
+    expect(await budgetState(Date.now())).toBe("ok");
+    kv.state.mode = "down";
+    expect(await budgetState(Date.now())).toBe("unknown");
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.48")).status).toBe(503);
+    expect((await call(daily, {}, "198.51.100.48")).status).toBe(503);
+    kv.state.mode = "ok";
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.48")).status).toBe(200);
+    // Still no day cap: a large day total closes nothing.
+    await addNetworkCost("someone-else", 10_000_000, Date.now());
+    for (let i = 0; i < 8; i++) kv.data.set(`cost:${kstDay(Date.now())}:${i}`, JSON.stringify(1_000_000));
+    expect(await budgetState(Date.now())).toBe("ok");
+  });
+
+  it("with no day cap, still treat a Worker without the DAILY_KV binding as unknown (closed) (H-2)", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "off");
+    kv.state.bound = false;
+    expect(await budgetState(Date.now())).toBe("unknown");
+  });
+
   it("treat a Worker without the DAILY_KV binding as unknown (closed)", async () => {
     kv.state.bound = false;
     expect(await budgetState(Date.now())).toBe("unknown");
