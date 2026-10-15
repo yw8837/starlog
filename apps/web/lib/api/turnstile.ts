@@ -1,4 +1,5 @@
 import "server-only";
+import { SITE } from "@/lib/config";
 import { BOT_TOKEN_HEADER } from "@/lib/reading/api";
 import { errorResponse, type Gate } from "./http";
 
@@ -10,12 +11,16 @@ import { errorResponse, type Gate } from "./http";
  * - Off unless both TURNSTILE_SITE_KEY (public, a wrangler var) and TURNSTILE_SECRET_KEY (a Worker
  *   secret) are set: dev, unit tests and e2e run without it. Only one of them set is logged once per
  *   isolate, by name (an error in production when the site key is set and the secret is not).
- * - No token, or one Siteverify does not pass: 403 BOT_CHECK carrying the site key, so the page runs
- *   the challenge and tries once more (lib/reading/api.ts postGeneration).
- * - Siteverify cannot answer (network error, timeout, 5xx, not JSON) or the failure is ours (its
- *   internal error, a secret it does not accept): the request passes, logged as an error.
- *   Availability over strictness: an outage or a slip on our side must not close the free readings
- *   to everyone; the per-network limiters and day counts still hold.
+ * - No token, one Siteverify does not pass, or a pass for a challenge run on a host that is not ours
+ *   (L-2): 403 BOT_CHECK carrying the site key, so the page runs the challenge and tries once more
+ *   (lib/reading/api.ts postGeneration).
+ * - Siteverify cannot answer (network error, timeout, 5xx, not JSON) or fails on its side (its
+ *   internal error, no secret sent): the request passes, logged as an error. Availability over
+ *   strictness: an outage must not close the free readings to everyone; the per-network limiters
+ *   and day counts still hold.
+ * - Siteverify rejects our secret (`invalid-input-secret`, a wrong TURNSTILE_SECRET_KEY): refused and
+ *   logged as an error (bot_check.secret_rejected), so a bad secret never switches the check off
+ *   unseen (L-2).
  * - The owner pass skips it. Logs never carry the token, the secret or the IP.
  */
 
@@ -23,8 +28,10 @@ const SITEVERIFY = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 const VERIFY_TIMEOUT_MS = 5_000;
 /** Siteverify's limit: a longer token is never valid. */
 const MAX_TOKEN_LENGTH = 2048;
-/** Siteverify error codes that are not the visitor's doing. */
-const OUR_FAILURES = new Set(["internal-error", "missing-input-secret", "invalid-input-secret"]);
+/** Siteverify error codes that are not the visitor's doing, and let the request pass. */
+const OUR_FAILURES = new Set(["internal-error", "missing-input-secret"]);
+/** Siteverify does not accept our secret: fail closed for this one (L-2). */
+const SECRET_REJECTED = "invalid-input-secret";
 
 export interface TurnstileConfig {
   siteKey: string;
@@ -47,7 +54,10 @@ export function turnstileConfig(env: NodeJS.ProcessEnv = process.env): Turnstile
   return null;
 }
 
-type Siteverify = { success?: unknown; "error-codes"?: unknown };
+type Siteverify = { success?: unknown; "error-codes"?: unknown; hostname?: unknown };
+
+/** Where a passing challenge may have run: the two production hosts, or the host this request came to (a local or preview run). */
+const ourHosts = (request: Request) => new Set([new URL(SITE.url).hostname, new URL(SITE.guideUrl).hostname, new URL(request.url).hostname]);
 
 /** Siteverify's answer, or null when it cannot be had. */
 async function siteverify(secret: string, token: string, ip: string | undefined): Promise<Siteverify | null> {
@@ -77,8 +87,18 @@ export async function checkBot(request: Request, gate: Gate): Promise<Response |
   const token = request.headers.get(BOT_TOKEN_HEADER)?.trim() ?? "";
   if (!token || token.length > MAX_TOKEN_LENGTH) return refused();
   const result = await siteverify(config.secret, token, request.headers.get("cf-connecting-ip")?.trim() || undefined);
-  if (!result || result.success === true) return null;
+  if (!result) return null;
+  if (result.success === true) {
+    const hostname = typeof result.hostname === "string" ? result.hostname : "";
+    if (ourHosts(request).has(hostname)) return null;
+    console.warn(JSON.stringify({ evt: "bot_check.refused", reason: "hostname", hostname }));
+    return refused();
+  }
   const codes = Array.isArray(result["error-codes"]) ? result["error-codes"].filter((code): code is string => typeof code === "string") : [];
+  if (codes.includes(SECRET_REJECTED)) {
+    console.error(JSON.stringify({ evt: "bot_check.secret_rejected", codes, fix: "Siteverify rejects TURNSTILE_SECRET_KEY: every free generation is refused until it is set right" }));
+    return refused();
+  }
   if (codes.some((code) => OUR_FAILURES.has(code))) {
     console.error(JSON.stringify({ evt: "bot_check.unverified", codes }));
     return null;

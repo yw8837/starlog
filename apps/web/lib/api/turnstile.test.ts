@@ -76,14 +76,14 @@ describe("checkBot (Cloudflare Turnstile)", () => {
     expect(logged).not.toMatch(/token-used|token-forged|secret-key-1/);
   });
 
-  it("lets the request through, logged, when Siteverify cannot answer: network error, timeout, 5xx, not JSON, its own error or our secret", async () => {
+  it("lets the request through, logged, when Siteverify cannot answer: network error, timeout, 5xx, not JSON, its own error or a missing secret", async () => {
     const unreachable: Array<() => unknown> = [
       () => vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new TypeError("fetch failed")))),
       () => vi.stubGlobal("fetch", vi.fn(async () => Promise.reject(new DOMException("timed out", "TimeoutError")))),
       () => siteverify({ success: false }, 503),
       () => vi.stubGlobal("fetch", vi.fn(async () => new Response("<html>bad gateway</html>", { status: 200 }))),
       () => siteverify({ success: false, "error-codes": ["internal-error"] }),
-      () => siteverify({ success: false, "error-codes": ["invalid-input-secret"] }, 400),
+      () => siteverify({ success: false, "error-codes": ["missing-input-secret"] }, 400),
     ];
     for (const [i, arrange] of unreachable.entries()) {
       arrange();
@@ -92,6 +92,31 @@ describe("checkBot (Cloudflare Turnstile)", () => {
     const logged = vi.mocked(console.error).mock.calls.map((args) => String(args[0]));
     expect(logged.filter((line) => line.includes("bot_check.unverified"))).toHaveLength(unreachable.length);
     expect(logged.join("\n")).not.toMatch(/token-x|secret-key-1|203\.0\.113\.7/);
+  });
+
+  it("refuses, loudly, when Siteverify rejects our secret: a wrong secret must not switch the check off unseen (L-2)", async () => {
+    siteverify({ success: false, "error-codes": ["invalid-input-secret"] }, 400);
+    expect(await bodyOf(await checkBot(request("token-x"), gate()))).toEqual({ status: 403, body: REFUSED });
+    const logged = vi.mocked(console.error).mock.calls.map((args) => String(args[0])).join("\n");
+    expect(logged).toContain('"evt":"bot_check.secret_rejected"');
+    expect(logged).not.toMatch(/token-x|secret-key-1|203\.0\.113\.7/);
+  });
+
+  it("refuses a passing token issued on a host that is not ours, or naming none (L-2)", async () => {
+    for (const hostname of ["evil.example", "starlog.yeolmaeapps.kr.evil.example", undefined]) {
+      siteverify({ success: true, "error-codes": [], ...(hostname ? { hostname } : {}) });
+      expect(await bodyOf(await checkBot(request("token-ok"), gate())), String(hostname)).toEqual({ status: 403, body: REFUSED });
+    }
+    const logged = vi.mocked(console.warn).mock.calls.map((args) => String(args[0])).join("\n");
+    expect(logged).toContain('"evt":"bot_check.refused"');
+    expect(logged).toContain('"reason":"hostname"');
+  });
+
+  it("lets a passing token through from either production host, or the host the request came to (a local or preview run)", async () => {
+    for (const hostname of ["starlog.yeolmaeapps.kr", "yeolmaeapps.kr", "localhost"]) {
+      siteverify({ success: true, "error-codes": [], hostname });
+      expect(await checkBot(request("token-ok"), gate()), hostname).toBeNull();
+    }
   });
 
   it("skips the owner pass", async () => {

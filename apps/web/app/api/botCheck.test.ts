@@ -61,7 +61,8 @@ beforeEach(() => {
   vi.stubEnv("TURNSTILE_SECRET_KEY", "secret-key-1");
   siteverify = vi.fn(async (_url: string, init?: RequestInit) => {
     const passed = (JSON.parse(String(init?.body)) as { response: string }).response === "human";
-    return Response.json({ success: passed, "error-codes": passed ? [] : ["invalid-input-response"] });
+    // Siteverify names the host the challenge ran on: these requests come to localhost.
+    return Response.json({ success: passed, "error-codes": passed ? [] : ["invalid-input-response"], ...(passed ? { hostname: "localhost" } : {}) });
   });
   vi.stubGlobal("fetch", siteverify);
   resetMemoryLimiter();
