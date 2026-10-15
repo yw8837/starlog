@@ -15,6 +15,8 @@ type PaySuccessProps = {
   navigate?: (url: string) => void;
   /** the first wait before the order's status is asked (ms); later waits grow (pollSchedule) */
   pollMs?: number;
+  /** how long the plain "결제를 마무리하고 있어요" line stays before the calm explanation and its buttons (ms) */
+  slowMs?: number;
 };
 
 type Paid = { status: "paid"; returnTo: string; signedIn: boolean };
@@ -23,37 +25,50 @@ type Paid = { status: "paid"; returnTo: string; signedIn: boolean };
 const FINAL = new Set(["PAY_FAILED", "BAD_REQUEST"]);
 /** Keep asking a little past the server's 15 minutes, after which a confirm that never landed is decided. */
 const WAIT_MS = 16 * 60_000;
+/** Toss keeps an approval open for 10 minutes: an order still `created` is confirmed again until then. */
+const CONFIRM_WINDOW_MS = 10 * 60_000;
+/** After this long without an answer the page explains itself and offers 다시 확인하기 and 내 정보 (F-01). */
+const SLOW_MS = 20_000;
 
 /**
- * The waits between status checks: `firstMs`, then half as long again each time, at most 6×
- * `firstMs` (5 s → 30 s), until `totalMs`. PAY_LIMITER allows 20 a minute per IP and a shared
- * network shares it, so the page asks rarely.
+ * The waits between status checks: `firstMs`, then half as long again each time, at most 3×
+ * `firstMs` (5 s → 15 s), until `totalMs`. PAY_LIMITER allows 20 a minute per IP and a shared
+ * network shares it; a check may confirm once more as well, so the page asks rarely.
  */
 export function pollSchedule(firstMs: number, totalMs: number = WAIT_MS): number[] {
   const delays: number[] = [];
   let next = firstMs;
   for (let total = 0; total < totalMs; total += delays[delays.length - 1]!) {
     delays.push(next);
-    next = Math.min(Math.round(next * 1.5), firstMs * 6);
+    next = Math.min(Math.round(next * 1.5), firstMs * 3);
   }
   return delays;
 }
 
-const LATE: ErrorView = { title: "결제를 확인하고 있어요", body: "확인이 늦어지고 있어요. 결제가 끝나면 내 정보의 결제 내역과 결제한 풀이에 나타나요.", action: null };
+const LATE: ErrorView = {
+  title: "결제를 아직 확인하지 못했어요",
+  body: "확인되지 않은 결제는 청구되지 않아요. 결제가 확인됐다면 내 정보의 결제 내역과 결제한 풀이에 나타나요.",
+  action: null,
+};
 const NO_DETAILS: ErrorView = { title: "결제 결과는 내 정보에서 볼 수 있어요", body: "결제가 끝났다면 결제 내역과 결제한 풀이에 나타나요.", action: null };
 
 /**
  * Toss's successUrl (spec 5.3). It confirms on the server, then goes back to the reading with
  * ?unlock=paid, and the reading opens. Only a refusal (PAY_FAILED) or an unreadable request ends
  * it; any other answer (a lost connection, 5xx, 429, PAY_PENDING) may still be charged, so it asks
- * for the order's status, less and less often, and confirms once more an order still `created`
- * (safe to repeat). Neither call needs the session (M5): in a browser without it (a card app or
+ * for the order's status, less and less often (about every 15 s), and confirms again an order still
+ * `created` while Toss holds the approval (safe to repeat), so a server that comes back still
+ * confirms it. After SLOW_MS it says the payment is safe and offers 다시 확인하기 (a check now) and
+ * 내 정보, so the screen always has a way out (F-01). Neither call needs the session (M5): in a browser without it (a card app or
  * KakaoTalk handing over) the page says the payment went through and asks for a login, which
  * returns to the reading and opens it. paymentKey, orderId and amount leave the address bar as soon
  * as they are read.
  */
-export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => window.location.replace(url), pollMs = 5000 }: PaySuccessProps) {
+export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => window.location.replace(url), pollMs = 5000, slowMs = SLOW_MS }: PaySuccessProps) {
   const [pending, setPending] = useState(false);
+  const [slow, setSlow] = useState(false);
+  /** Ends the wait before the next status check: 다시 확인하기. */
+  const wake = useRef<(() => void) | null>(null);
   const [error, setError] = useState<ErrorView | null>(null);
   const [loginTo, setLoginTo] = useState<string | null>(null);
   /** After a refusal: the reading the payment was for, to try another card from (F3). */
@@ -68,6 +83,11 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
       alive.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSlow(true), slowMs);
+    return () => clearTimeout(timer);
+  }, [slowMs]);
 
   useEffect(() => {
     if (started.current) return;
@@ -104,9 +124,17 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
       if (res.ok) return finish(res.data);
       if (FINAL.has(res.error.code)) return end(res.error);
       setPending(true);
-      let confirmedAgain = false;
+      const since = Date.now();
       for (const delay of pollSchedule(pollMs)) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise<void>((resolve) => {
+          const done = () => {
+            clearTimeout(timer);
+            wake.current = null;
+            resolve();
+          };
+          const timer = setTimeout(done, delay);
+          wake.current = done;
+        });
         if (!alive.current) return;
         const status = await getJson<{ status: string; returnTo: string; signedIn: boolean }>(`/api/pay/orders?id=${encodeURIComponent(orderId)}`);
         if (!status.ok) {
@@ -115,9 +143,8 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
         }
         if (status.data.status === "paid") return finish(status.data);
         if (status.data.status === "failed") return fail({ title: "결제를 마치지 못했어요", body: "청구된 금액은 없어요.", action: "retry" }, status.data.returnTo);
-        if (status.data.status === "created" && !confirmedAgain) {
-          // The first confirm never landed (Toss keeps the approval open for 10 minutes): once more.
-          confirmedAgain = true;
+        if (status.data.status === "created" && Date.now() - since < CONFIRM_WINDOW_MS) {
+          // The confirm never landed (Toss keeps the approval open for 10 minutes): again.
           const again = await confirm();
           if (again.ok) return finish(again.data);
           if (FINAL.has(again.error.code)) return end(again.error);
@@ -146,6 +173,17 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
               풀이로 돌아가기
             </Button>
           ) : null}
+          <Button href="/me" variant="secondary" block>
+            내 정보로 가기
+          </Button>
+        </div>
+      ) : slow ? (
+        <div role="status" className={s.panel}>
+          <p className={s.title}>결제를 확인하고 있어요</p>
+          <p>확인이 조금 늦어지고 있어요. 결제는 안전해요. 확인되면 바로 풀이로 넘어가고, 확인되지 않은 결제는 청구되지 않아요.</p>
+          <Button block onClick={() => wake.current?.()}>
+            다시 확인하기
+          </Button>
           <Button href="/me" variant="secondary" block>
             내 정보로 가기
           </Button>

@@ -66,6 +66,18 @@ describe("CheckoutView", () => {
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/login?next=%2Fpay%2Fcheckout%3Fproduct%3Dtarot%26returnTo%3D%252Ftarot%252Fresult"));
   });
 
+  it("when the payment details cannot be loaded, says so in payment words (never a reading error) and tries again (F-03)", async () => {
+    stubFetch(new Response("<html>bad gateway</html>", { status: 502 }));
+    render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
+    expect(await screen.findByText("결제 정보를 불러오지 못했어요")).toBeTruthy();
+    expect(screen.getByText("청구된 금액은 없어요. 다시 시도해 주세요.")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/풀이를 다 적지 못했어요|횟수/);
+    expect(within(screen.getByRole("alert")).getByRole("link", { name: "풀이로 돌아가기" }).getAttribute("href")).toBe("/tarot/result");
+    stubFetch(Response.json({ productId: "tarot", name: "타로 전체 풀이", amount: 2900, customerKey: "c_x", provider: "mock", clientKey: null }));
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    expect(await screen.findByText("2,900원")).toBeTruthy();
+  });
+
   it("explains a product that cannot be bought", async () => {
     stubFetch(Response.json({ code: "NOT_AVAILABLE", message: "지금은 열 수 없는 상품이에요." }, { status: 409 }));
     render(<CheckoutView productId="match" returnTo="/" navigate={() => {}} />);

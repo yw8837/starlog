@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { PaySuccess, pollSchedule } from "./PaySuccess";
@@ -89,7 +89,7 @@ describe("PaySuccess", () => {
     }
   });
 
-  it("confirms a still-created order once more, and only once", async () => {
+  it("confirms a still-created order again at every check while Toss holds the approval, so a server that comes back still confirms it (F-01)", async () => {
     const bodies = stub({
       "/api/pay/confirm": [() => { throw new TypeError("offline"); }, () => Response.json({ code: "PAY_PENDING" }, { status: 409 })],
       "/api/pay/orders": [order("created"), order("created"), order("paid")],
@@ -98,7 +98,37 @@ describe("PaySuccess", () => {
     render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={navigate} pollMs={5} />);
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/tarot/result?unlock=paid"));
     const sent = { paymentKey: "tgen_1", orderId: ORDER, amount: 2900 };
-    expect(bodies["/api/pay/confirm"]).toEqual([sent, sent]);
+    expect(bodies["/api/pay/confirm"]).toEqual([sent, sent, sent]);
+  });
+
+  it("when the confirm keeps failing: soon says the payment is safe, with 다시 확인하기 and 내 정보, and opens the reading once a check gets through (F-01)", async () => {
+    let down = true;
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      const key = url.split("?")[0]!;
+      calls.push(key);
+      if (key === "/api/pay/confirm") return down ? new Response("<html>bad gateway</html>", { status: 502 }) : paid();
+      if (key === "/api/pay/orders") return order("created")();
+      return Response.json({ payments: true, login: true, owner: false, user: null });
+    }));
+    const navigate = vi.fn();
+    // The first automatic check is a minute away: only 다시 확인하기 can bring it sooner.
+    render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={navigate} pollMs={60_000} slowMs={10} />);
+    expect(await screen.findByText("확인이 조금 늦어지고 있어요. 결제는 안전해요. 확인되면 바로 풀이로 넘어가고, 확인되지 않은 결제는 청구되지 않아요.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "내 정보로 가기" }).getAttribute("href")).toBe("/me");
+    expect(navigate).not.toHaveBeenCalled();
+    down = false;
+    await waitFor(() => {
+      fireEvent.click(screen.getByRole("button", { name: "다시 확인하기" }));
+      expect(calls).toContain("/api/pay/orders");
+    });
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/tarot/result?unlock=paid"));
+  });
+
+  it("checks again by itself about every 15 seconds once the first checks are done", () => {
+    const delays = pollSchedule(5_000);
+    expect(delays.slice(0, 4)).toEqual([5_000, 7_500, 11_250, 15_000]);
+    expect(Math.max(...delays)).toBe(15_000);
   });
 
   it("stops at once on a request the server cannot read", async () => {
@@ -130,10 +160,11 @@ describe("PaySuccess", () => {
   it("asks every 5 seconds at first, then less often, well under the payment limit of 20 a minute", () => {
     const delays = pollSchedule(5_000);
     expect(delays.slice(0, 3)).toEqual([5_000, 7_500, 11_250]);
-    expect(Math.max(...delays)).toBe(30_000);
+    expect(Math.max(...delays)).toBe(15_000);
     expect(delays.reduce((sum, ms) => sum + ms, 0)).toBeGreaterThanOrEqual(15 * 60_000);
     let elapsed = 0;
     const times = delays.map((ms) => (elapsed += ms));
-    for (const t of times) expect(times.filter((u) => u > t - 60_000 && u <= t).length).toBeLessThanOrEqual(12);
+    // Each check may confirm once more too: at most 2 requests a check, still under 20 a minute.
+    for (const t of times) expect(2 * times.filter((u) => u > t - 60_000 && u <= t).length).toBeLessThanOrEqual(12);
   });
 });

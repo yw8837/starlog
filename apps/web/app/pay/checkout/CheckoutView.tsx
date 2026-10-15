@@ -46,6 +46,10 @@ const scopeLines = (productId: string): string[] => {
   ];
 };
 
+/** The details could not be loaded (a server error or a lost connection): payment words, never a reading's (F-03). */
+const LOAD_FAILED: ErrorView = { title: "결제 정보를 불러오지 못했어요", body: "청구된 금액은 없어요. 다시 시도해 주세요.", action: "retry" };
+const LOAD_FAILURES = new Set(["UPSTREAM", "QUALITY", "TIMEOUT", "INVALID", "NETWORK"]);
+
 type CheckoutViewProps = {
   productId: string;
   returnTo: string;
@@ -65,6 +69,8 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
   const [agreed, setAgreed] = useState(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** 다시 시도 after the details failed to load: loads them again. */
+  const [attempt, setAttempt] = useState(0);
   const widgets = useRef<TossWidgets | null>(null);
   const here = `/pay/checkout?${new URLSearchParams({ product: productId, returnTo })}`;
 
@@ -75,7 +81,7 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
       if (cancelled) return;
       if (!res.ok) {
         if (res.error.code === "LOGIN_REQUIRED") navigate(loginHref(here));
-        else setError(describeApiError(res.error));
+        else setError(LOAD_FAILURES.has(res.error.code) ? LOAD_FAILED : describeApiError(res.error));
         return;
       }
       setInfo(res.data);
@@ -102,9 +108,9 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
     return () => {
       cancelled = true;
     };
-    // `here` and `navigate` follow productId/returnTo; the widget is set up once per product.
+    // `here` and `navigate` follow productId/returnTo; the widget is set up once per product (and per 다시 시도).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productId]);
+  }, [productId, attempt]);
 
   const pay = async () => {
     if (!info || !agreed || !ready || busy) return;
@@ -204,6 +210,17 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
         <div role="alert" className={s.panel}>
           <p className={s.title}>{error.title}</p>
           {error.body ? <p>{error.body}</p> : null}
+          {error.action === "retry" ? (
+            <Button
+              block
+              onClick={() => {
+                setError(null);
+                setAttempt((n) => n + 1);
+              }}
+            >
+              다시 시도
+            </Button>
+          ) : null}
           <Button href={returnTo} variant="secondary" block>
             풀이로 돌아가기
           </Button>
