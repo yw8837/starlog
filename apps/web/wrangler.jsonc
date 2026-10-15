@@ -20,10 +20,12 @@
   "observability": {
     "enabled": true
   },
-  // Run the Worker near Tokyo. Korean visitors on Cloudflare's free zone plan are often served from
-  // other colos (e.g. Hong Kong), and the Anthropic API answers 403 "Request not allowed" to requests
-  // leaving from unsupported regions. Tokyo is supported and ~30 ms from Korea.
-  "placement": { "region": "aws:ap-northeast-1" },
+  // Run the Worker near the Anthropic API. Korean visitors on Cloudflare's free zone plan are often served
+  // from Hong Kong, and the Anthropic API answers 403 "Request not allowed" to requests leaving from there.
+  // "region": "aws:ap-northeast-1" stopped being applied (2026-10-15: a probe Worker with it ran in HKG 6 of
+  // 12 times, production 7 of 10, and the owner's saju teasers all failed); a hostname probe placed the same
+  // probe in MIA 12 of 12, where Anthropic answers.
+  "placement": { "hostname": "api.anthropic.com" },
   // Production origins: the app (SITE.url) and, on the root domain, the guides (SITE.guideUrl).
   // Wrangler creates the DNS records and certificates on deploy; an existing A, AAAA or CNAME
   // record on the root domain can block that (docs/seo/guide-domain.md). lib/hostRoutes.ts sends
