@@ -21,6 +21,8 @@ export function PayFail({ code, message, orderId }: { code: string; message: str
   const cancelled = code === "PAY_PROCESS_CANCELED";
   return (
     <div className={s.screen}>
+      {/* F-14: the page's one h1; the panel carries the visible title. */}
+      <h1 className="sr-only">결제 결과</h1>
       <div role="alert" className={s.panel}>
         <p className={s.title}>{cancelled ? "결제를 취소했어요" : "결제를 마치지 못했어요"}</p>
         {!cancelled && message ? <p>{message.slice(0, 120)}</p> : null}

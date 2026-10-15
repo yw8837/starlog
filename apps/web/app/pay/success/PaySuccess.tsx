@@ -156,6 +156,8 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
 
   return (
     <div className={s.screen} aria-busy={!loginTo && !error}>
+      {/* F-14: the page's one h1; the panels below carry the visible titles. */}
+      <h1 className="sr-only">결제 확인</h1>
       {loginTo ? (
         <div role="status" className={s.panel}>
           <p className={s.title}>결제했어요</p>

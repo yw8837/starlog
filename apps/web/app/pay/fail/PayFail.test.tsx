@@ -25,4 +25,9 @@ describe("PayFail", () => {
     expect(screen.getByText("청구된 금액은 없어요.")).toBeTruthy();
     expect(screen.queryByText(/다른 카드나 간편결제/)).toBeNull();
   });
+
+  it("has one h1 for the page (F-14)", () => {
+    render(<PayFail code="PAY_PROCESS_CANCELED" message="" orderId={null} />);
+    expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["결제 결과"]);
+  });
 });

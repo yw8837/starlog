@@ -155,7 +155,7 @@
   color: var(--ink-sub);
 }
 
-.item:hover:not(.itemSoon) {
+.item:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
@@ -163,18 +163,6 @@
   outline: 2px solid var(--focus-ring);
   outline-offset: -3px;
   border-radius: 14px;
-}
-
-.itemSoon {
-  color: var(--ink-sub);
-  cursor: default;
-}
-
-.soon {
-  padding: 1px 9px;
-  border: 1px solid var(--glass-line);
-  border-radius: 999px;
-  font-size: var(--fs-sub);
 }
 
 /* 초대코드로 참여: a menu row that opens a code box in place (InviteCodeRow) */

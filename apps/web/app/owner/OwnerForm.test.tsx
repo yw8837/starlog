@@ -29,6 +29,9 @@ describe("OwnerForm (owner 2026-10-15: show whether this device is the owner's, 
     expect(screen.queryByLabelText("운영자 코드")).toBeNull();
     expect(screen.getByRole("link", { name: "홈으로 가기" }).getAttribute("href")).toBe("/");
     expect(screen.getByRole("link", { name: "사주 보러 가기" }).getAttribute("href")).toBe("/saju/start?new=1");
+    // F-18: production takes real payments; nothing here is a test.
+    expect(screen.getByText("이 기기에서는 결제 없이 풀이를 열 수 있어요. 결제는 실제로 청구돼요.")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("시험");
   });
 
   it("shows the confirmed state on a later visit from a device that already holds the pass", async () => {

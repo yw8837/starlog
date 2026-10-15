@@ -23,7 +23,7 @@ export function OwnerForm() {
           운영자로 확인된 기기예요
         </h1>
         <p className={s.lead} role="status">
-          이 기기에서는 결제 없이 풀이를 열 수 있고, 결제도 시험할 수 있어요.
+          이 기기에서는 결제 없이 풀이를 열 수 있어요. 결제는 실제로 청구돼요.
         </p>
         <Button href="/" block>
           홈으로 가기

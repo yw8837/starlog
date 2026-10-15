@@ -43,7 +43,9 @@ describe("MeView menu", () => {
     render(<MeView status={null} />);
     const menu = await screen.findByRole("navigation", { name: "계정 메뉴" });
     const rows = [...menu.querySelectorAll("li")].map((li) => li.textContent);
-    expect(rows.slice(0, 3)).toEqual([expect.stringMatching(/^내 기록/), "초대코드로 참여", "알림 설정준비 중"]);
+    // F-13: no 알림 설정 · 준비 중 row.
+    expect(rows.slice(0, 3)).toEqual([expect.stringMatching(/^내 기록/), "초대코드로 참여", "이용약관"]);
+    expect(menu.textContent).not.toMatch(/알림 설정|준비 중/);
     expect(screen.getByRole("button", { name: "초대코드로 참여" }).getAttribute("aria-expanded")).toBe("false");
   });
 
@@ -70,10 +72,31 @@ describe("MeView card design", () => {
 });
 
 describe("MeView logged out while sales are open", () => {
+  afterEach(() => {
+    clearBetaUsage();
+    vi.useRealTimers();
+  });
+
   it("offers the login page, naming no one provider (Kakao and Google are both there)", async () => {
     render(<MeView status={null} />);
     expect((await screen.findByRole("link", { name: "로그인하기" })).getAttribute("href")).toBe("/login?next=%2Fme");
     expect(screen.queryByText("카카오로 로그인")).toBeNull();
+  });
+
+  it("still names 오픈 기념 무료 until it ends, beside the login (F-17)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-10-14T03:00:00Z"));
+    render(<MeView status={null} />);
+    expect(await screen.findByRole("link", { name: "로그인하기" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "오픈 기념 무료" })).toBeTruthy();
+    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).")).toBeTruthy();
+    expect(screen.getByText("아직 무료로 열 수 있어요")).toBeTruthy();
+    cleanup();
+    resetAccountForTests();
+    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z"));
+    render(<MeView status={null} />);
+    expect(await screen.findByRole("link", { name: "로그인하기" })).toBeTruthy();
+    await waitFor(() => expect(document.body.textContent).not.toMatch(/오픈 기념|무료로 열/));
   });
 });
 

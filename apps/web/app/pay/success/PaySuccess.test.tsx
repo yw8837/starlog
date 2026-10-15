@@ -36,6 +36,12 @@ describe("PaySuccess", () => {
     expect(bodies["/api/pay/confirm"]).toEqual([{ paymentKey: "tgen_1", orderId: ORDER, amount: 2900 }]);
   });
 
+  it("has one h1 for the page, whatever it shows (F-14)", async () => {
+    stub({ "/api/pay/confirm": [() => Response.json({ code: "PAY_PENDING" }, { status: 409 })], "/api/pay/orders": [order("confirming")] });
+    render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={() => {}} pollMs={60_000} />);
+    expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["결제 확인"]);
+  });
+
   it("waits while the payment is being checked", async () => {
     stub({
       "/api/pay/confirm": [() => Response.json({ code: "PAY_PENDING" }, { status: 409 })],

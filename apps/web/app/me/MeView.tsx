@@ -32,20 +32,9 @@ type MeViewProps = {
 
 type Sheet = "erase" | null;
 
-function Soon({ children }: { children: string }) {
-  return (
-    <li>
-      <span className={`${s.item} ${s.itemSoon}`}>
-        <span>{children}</span>
-        <span className={s.soon}>준비 중</span>
-      </span>
-    </li>
-  );
-}
-
 /**
  * 내 정보: the account when logged in (AccountPanel), the way to /login (Kakao or Google) while sales
- * are open on this device, otherwise 오픈 기념 무료 until it ends (used on this device or not); the saju profile kept on this device
+ * are open on this device, and 오픈 기념 무료 until it ends (used on this device or not); the saju profile kept on this device
  * (with 고치기), the card design, the menu, and erasing everything this device keeps. A logged-in
  * tab pulls the account's readings.
  */
@@ -64,6 +53,19 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
     if (!accountDeleted) return;
     if (forgetAccountOnDevice() > 0) setNotice((line) => `${line ? `${line} ` : ""}이 기기에 받아 둔 계정 풀이도 지웠어요.`);
   }, [accountDeleted]);
+
+  // 오픈 기념 무료 until it ends (used on this device or not), whether sales are open or not (F-17).
+  const openingBox = openingEnded ? null : (
+    <section className={s.beta} aria-labelledby="beta-title">
+      <h2 id="beta-title" className={s.betaTitle}>
+        오픈 기념 무료
+      </h2>
+      <p className={s.betaRule}>{openingFreeText()}</p>
+      <p className={s.betaText}>
+        {remaining === undefined ? " " : remaining > 0 ? "아직 무료로 열 수 있어요" : "이 기기에서는 이미 무료로 열었어요"}
+      </p>
+    </section>
+  );
 
   const erase = () => {
     clearChapters();
@@ -99,27 +101,20 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
         ) : account?.user ? (
           <AccountPanel account={{ ...account, user: account.user }} onNotice={setNotice} />
         ) : account?.payments ? (
-          <section className={s.beta} aria-labelledby="login-title">
-            <h2 id="login-title" className={s.betaTitle}>
-              로그인하면 결제한 풀이를 다른 기기에서도 볼 수 있어요
-            </h2>
-            <Button href={loginHref("/me")} block>
-              로그인하기
-            </Button>
-          </section>
+          <>
+            <section className={s.beta} aria-labelledby="login-title">
+              <h2 id="login-title" className={s.betaTitle}>
+                로그인하면 결제한 풀이를 다른 기기에서도 볼 수 있어요
+              </h2>
+              <Button href={loginHref("/me")} block>
+                로그인하기
+              </Button>
+            </section>
+            {openingBox}
+          </>
         ) : (
           <>
-            {openingEnded ? null : (
-              <section className={s.beta} aria-labelledby="beta-title">
-                <h2 id="beta-title" className={s.betaTitle}>
-                  오픈 기념 무료
-                </h2>
-                <p className={s.betaRule}>{openingFreeText()}</p>
-                <p className={s.betaText}>
-                  {remaining === undefined ? " " : remaining > 0 ? "아직 무료로 열 수 있어요" : "이 기기에서는 이미 무료로 열었어요"}
-                </p>
-              </section>
-            )}
+            {openingBox}
             {account?.login ? (
               <p className={s.provider}>
                 <Link href={loginHref("/me")} className={a.link}>
@@ -160,7 +155,6 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
               </Link>
             </li>
             <InviteCodeRow />
-            <Soon>알림 설정</Soon>
             <li>
               <Link href="/terms" className={s.item}>
                 <span>이용약관</span>
