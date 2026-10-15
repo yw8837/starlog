@@ -42,11 +42,14 @@ export function resetLine(resetsAt: string | undefined, now: number = Date.now()
  */
 export const CREDIT_CHECKING: ErrorView = { title: "풀이가 열렸는지 확인하고 있어요", body: "잠시만 기다려 주세요.", action: null };
 
-/** The check found the purchase or the gift unused: only now may the page say so. */
+/**
+ * The check found the purchase or the gift unused: only now may the page say so. A purchase left while
+ * it was written comes back too but is no longer refundable (F1), so no refund is promised here.
+ */
 export function creditKept(context: "paid" | "gift"): ErrorView {
   return {
     title: "풀이를 다 적지 못했어요",
-    body: context === "paid" ? "결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요." : "가입 선물은 그대로예요. 한 번 더 시도해 주세요.",
+    body: context === "paid" ? "결제한 풀이는 그대로 남아 있어요. 다시 열어 끝까지 받을 수 있어요." : "가입 선물은 그대로예요. 한 번 더 시도해 주세요.",
     action: "retry",
   };
 }
@@ -57,7 +60,7 @@ export function creditUnknown(context: "paid" | "gift"): ErrorView {
     title: "풀이가 열렸는지 아직 확인하지 못했어요",
     body:
       context === "paid"
-        ? "몇 분 안에 내 정보의 결제한 풀이나 기록에 나타나요. 열리지 않은 결제는 내 정보에서 다시 열거나 환불받을 수 있어요."
+        ? "몇 분 안에 내 정보의 결제한 풀이나 기록에 나타나요. 열리지 않은 결제는 다시 열 수 있고, 환불할 수 있는 결제면 내 정보에 환불받기가 보여요."
         : "몇 분 안에 내 정보의 가입 선물이나 기록에서 확인할 수 있어요.",
     action: null,
   };

@@ -221,6 +221,9 @@ describe("/faq", () => {
     expect(refund).toContain("유료 풀이는 열기 전이면 결제일로부터 7일 안에 전액 환불받을 수 있어요");
     expect(refund).toContain("기간과 상관없이");
     expect(refund).not.toContain("전액 취소할 수 있어요");
+    // F1: a purchase left while it was written reopens but is not refunded; only failures on our side are.
+    expect(refund).toContain("스타로그 쪽 오류로 풀이가 만들어지지 않았거나 끝까지 나오지 않았다면 기간과 상관없이");
+    expect(refund).toContain("풀이를 받던 중에 화면을 닫거나 연결이 끊긴 결제는 환불되지 않아요. 대신 3번까지 다시 열어 끝까지 받을 수 있고, 네 번째로 끊기면 그 결제는 쓴 것으로 처리돼요.");
   });
 
   it("names 별자리 인연 in the birth-date answer only while it is open", () => {

@@ -67,6 +67,8 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("제7조의2 (삭제)");
     expect(page).toContain("민법 제5조");
     expect(page).toContain("열지 않은 결제 풀이는 전액 환불");
+    // F1: account deletion skips a purchase given back after its reading was cut off (lib/account/deletion.ts).
+    expect(page).toContain("다만 풀이를 받던 중에 이용자가 화면을 닫거나 연결이 끊겨 제7조에 따라 환불 대상이 아닌 결제 풀이는 환불하지 않으며, 탈퇴와 함께 더 이상 열 수 없습니다.");
     expect(page).toContain("열기 전의 결제 풀이는 결제일로부터 7일 안에 전액 환불받을 수 있으며");
     expect(page).not.toContain("가입 선물");
     expect(page).not.toContain("충전");

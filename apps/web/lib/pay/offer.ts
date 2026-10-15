@@ -12,7 +12,8 @@ import { GIFT_PRODUCT, type Product, type ProductId } from "./catalog";
  * - login: a guest while sales are open (signing up brings no gift any more, owner 2026-10-14 evening);
  * - in-progress: a reading of this kind is being opened with a purchase or the gift right now (a
  *   cut-off opening the server may still deliver): nothing to buy or open until it settles;
- * - open-paid: a purchase of this reading is waiting;
+ * - open-paid: a purchase of this reading is waiting; `refundable: false` when it was given back after its
+ *   reading was cut off while written (it opens again, but is never refunded);
  * - gift: an unused signup gift granted before it was removed opens this reading (tarot only), usable
  *   until `until`; paying is the secondary choice;
  * - pay.
@@ -26,7 +27,7 @@ export type UnlockOffer =
   | { mode: "closed"; login: boolean }
   | { mode: "login"; priceKrw: number; first?: true }
   | { mode: "in-progress"; currency: "paid" | "gift" }
-  | { mode: "open-paid"; orderId: string }
+  | { mode: "open-paid"; orderId: string; refundable?: false }
   | { mode: "gift"; until: string | null; priceKrw: number; first?: true }
   | { mode: "pay"; priceKrw: number; first?: true };
 
@@ -42,7 +43,7 @@ export function unlockOffer(account: AccountState | null | undefined, product: P
     const busy = user.opening.find((item) => item.productId === product.id);
     if (busy) return { mode: "in-progress", currency: busy.currency };
     const bought = user.unused.find((item) => item.productId === product.id);
-    if (bought) return { mode: "open-paid", orderId: bought.orderId };
+    if (bought) return { mode: "open-paid", orderId: bought.orderId, ...(bought.refundable === false ? { refundable: false as const } : {}) };
     if (giftable && user.gift?.status === "unused") return { mode: "gift", until: user.gift.until, priceKrw: product.krw, ...welcome };
     return account.payments ? { mode: "pay", priceKrw: product.krw, ...welcome } : unsold(false);
   }

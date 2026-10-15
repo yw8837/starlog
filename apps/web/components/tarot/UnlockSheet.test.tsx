@@ -64,6 +64,20 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#purchases");
   });
 
+  it("a purchase given back after its reading was cut off while written: says it opens again but is not refundable, and offers no 환불받기 (F1)", () => {
+    const left = { mode: "open-paid", orderId: "o1", refundable: false } as const;
+    const { container } = render(
+      <UnlockSheet {...base} offer={left} onUnlock={() => {}} refundHref="/me#purchases"
+        error={{ title: "풀이를 다 적지 못했어요", body: "결제한 풀이는 그대로 남아 있어요.", action: "retry" }} />,
+    );
+    expect(screen.queryByRole("link", { name: "환불받기" })).toBeNull();
+    expect(screen.getByText("풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요")).toBeTruthy();
+    expect(container.textContent).not.toContain("환불할 수 있어요");
+    cleanup();
+    render(<UnlockSheet {...base} offer={left} onUnlock={() => {}} />);
+    expect(screen.getByText("풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요")).toBeTruthy();
+  });
+
   it("while a cut-off opening is being checked, offers nothing to press, whatever the offer says", () => {
     const checking = { title: "풀이가 열렸는지 확인하고 있어요", body: "잠시만 기다려 주세요.", action: null };
     for (const offer of [{ mode: "open-paid", orderId: "o1" }, { mode: "gift", until: null, priceKrw: 2900 }, { mode: "pay", priceKrw: 2900 }] as const) {

@@ -26,7 +26,10 @@ describe("P4 error copy", () => {
   });
 
   it("says what the check found", () => {
-    expect(creditKept("paid")).toMatchObject({ title: "풀이를 다 적지 못했어요", body: "결제한 풀이는 그대로 남아 있어요. 다시 열거나 내 정보에서 환불받을 수 있어요.", action: "retry" });
+    expect(creditKept("paid")).toMatchObject({ title: "풀이를 다 적지 못했어요", body: "결제한 풀이는 그대로 남아 있어요. 다시 열어 끝까지 받을 수 있어요.", action: "retry" });
+    // F1: a purchase left while it was written is no longer refundable, and the copy cannot tell which this is.
+    expect(creditKept("paid").body).not.toMatch(/환불/);
+    expect(creditUnknown("paid").body).toBe("몇 분 안에 내 정보의 결제한 풀이나 기록에 나타나요. 열리지 않은 결제는 다시 열 수 있고, 환불할 수 있는 결제면 내 정보에 환불받기가 보여요.");
     expect(creditKept("gift").body).toBe("가입 선물은 그대로예요. 한 번 더 시도해 주세요.");
     expect(creditUnknown("gift").body).toBe("몇 분 안에 내 정보의 가입 선물이나 기록에서 확인할 수 있어요.");
     for (const context of ["paid", "gift"] as const) expect(`${creditUnknown(context).title} ${creditUnknown(context).body}`).not.toMatch(/그대로/);

@@ -29,7 +29,10 @@ type UnlockSheetProps = {
   payHref?: string;
   /** The owner pass: a quiet "운영자로 무료 열기" beside the paid offers. */
   owner?: boolean;
-  /** After a failed paid reading: where 환불받기 goes (내 정보 > 결제한 풀이, /me#purchases). */
+  /**
+   * After a failed paid reading: where 환불받기 goes (내 정보 > 결제한 풀이, /me#purchases). Not shown for a
+   * purchase the account says is no longer refundable (open-paid `refundable: false`).
+   */
   refundHref?: string;
   /** The last try's error, shown above the button (the button tries again). */
   error?: ErrorView | null;
@@ -132,7 +135,11 @@ export function UnlockSheet({
           결제한 풀이 열기
         </Button>
       );
-      caption = `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
+      // F1: given back after its reading was cut off while written, it opens again but is never refunded.
+      caption =
+        offer.refundable === false
+          ? "풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요"
+          : `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
       break;
     case "gift":
       offerPrimary = (
@@ -267,7 +274,7 @@ export function UnlockSheet({
             운영자로 무료 열기
           </Button>
         ) : null}
-        {error && refundHref && !openedHref ? (
+        {error && refundHref && !openedHref && !(offer.mode === "open-paid" && offer.refundable === false) ? (
           <div className={s.links}>
             <Link href={refundHref}>환불받기</Link>
           </div>

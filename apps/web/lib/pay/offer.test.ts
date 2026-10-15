@@ -54,6 +54,11 @@ describe("unlock offer", () => {
     expect(unlockOffer(account({ user: user() }), tarot)).toEqual({ mode: "pay", priceKrw: 2900 });
   });
 
+  it("says when the purchase to open was given back after its reading was cut off while written: it opens again but is not refundable (F1)", () => {
+    expect(unlockOffer(account({ user: user({ unused: [{ orderId: "o1", productId: "tarot", refundable: false }] }) }), tarot)).toEqual({ mode: "open-paid", orderId: "o1", refundable: false });
+    expect(unlockOffer(account({ user: user({ unused: [{ orderId: "o1", productId: "saju", refundUntil: UNTIL }] }) }), saju)).toEqual({ mode: "open-paid", orderId: "o1" });
+  });
+
   it("never offers the gift for saju: paying is the only way", () => {
     expect(unlockOffer(account({ user: user({ gift: GIFT }) }), saju)).toEqual({ mode: "pay", priceKrw: 4900 });
     expect(unlockOffer(account({ payments: false, user: user({ gift: GIFT }) }), saju)).toEqual({ mode: "closed", login: false });
