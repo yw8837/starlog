@@ -1,7 +1,8 @@
 // One attempt of the real 정통 사주 for a tester's chart: saves each call's draft and its violations (hard/soft),
 // so prompt/validator fixes can be re-checked offline on the same draft. Never regenerates.
-// Since 2026-10-08 the reading is two calls started together (saju-reading: sections 1–6 and 계산 기준;
-// saju-enrichment: 7절·8절, with a code-built fallback); each call is timed and checked by its own validator.
+// Since 2026-10-08 the reading is calls started together (saju-enrichment: 7절·8절, with a code-built fallback), and since
+// 2026-10-16 the main reading is two halves (saju-reading: 1–3절 and 계산 기준; saju-reading-b: 4–6절, the observation and the
+// card); each call is timed and checked by its own validator.
 // usage (repo root): VOICE_OUT=<dir> VOICE_NICK=<nick> VOICE_BIRTH='<SajuForm fields as JSON>' \
 //   pnpm exec vitest run --config scripts/voice-real/vitest.config.ts saju.real
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -13,7 +14,7 @@ import { generateSajuReading } from "@/lib/ai/generate";
 import { buildFactSet } from "@/lib/ai/prompts/saju";
 import { GenerationError, type ReadingProvider, type Usage } from "@/lib/ai/provider";
 import { isSoftViolation } from "@/lib/ai/style";
-import { validateSajuEnrichment, validateSajuMainReading, validateSajuReading } from "@/lib/ai/validate";
+import { validateSajuEnrichment, validateSajuReading, validateSajuReadingPartA, validateSajuReadingPartB } from "@/lib/ai/validate";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 
 /** 도비 (1988-08-15 10:22 양력, 서울, 여) when VOICE_BIRTH is not set. */
@@ -33,7 +34,8 @@ test("one real saju reading", async () => {
   const usage: Usage[] = [];
   const attempts: { task: string; seconds: number; violations: string[]; data: unknown }[] = [];
   const check = (task: string, data: unknown) =>
-    task === "saju-enrichment" ? validateSajuEnrichment(data as never, facts) : validateSajuMainReading(data as never, facts);
+    task === "saju-enrichment" ? validateSajuEnrichment(data as never, facts)
+      : task === "saju-reading-b" ? validateSajuReadingPartB(data as never, facts) : validateSajuReadingPartA(data as never, facts);
   const provider: ReadingProvider = {
     name: real.name,
     async generate(task, attempt, feedback, hooks) {

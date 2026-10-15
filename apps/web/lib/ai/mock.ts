@@ -1,14 +1,16 @@
 import "server-only";
 import type { SajuElement } from "@starlog/core";
 import type { KbCard, TopicAngle } from "@/lib/kb";
-import { SAJU_MAIN_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_MAIN_SECTIONS, SAJU_PART_A_SECTIONS, SAJU_PART_B_SECTIONS } from "@/lib/sajuPrologue";
 import { PLAIN_WORDS, glossOnce, glossText } from "./plainWords";
 import { ELEMENT_WORD, ORDER, SAJU_OBSERVATION_HEADING, SINSAL_BASIS_LINE, ymKo, type SajuFactSet } from "./prompts/saju";
 import { groupOf, type GroupName } from "./prompts/sajuTopics";
 import { UNSURE_OPTIONS, WHEN_KO, cardLabel, onTopic, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import { GenerationError, type GenerationHooks, type GenerationTask, type ReadingProvider } from "./provider";
 import { mergeSajuReading, sajuEnrichmentFallback } from "./sajuParts";
-import type { DailyDraft, FollowUpAnswer, SajuEnrichment, SajuGlance, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
+import type {
+  DailyDraft, FollowUpAnswer, SajuEnrichment, SajuGlance, SajuReading, SajuReadingPartA, SajuReadingPartB, SajuTeaserDraft, TarotReading, TarotTeaserDraft,
+} from "./schemas";
 import { actionVerbs } from "./validate";
 
 /**
@@ -373,6 +375,8 @@ export function mockSajuMainReading(f: SajuFactSet): SajuReading {
   // The reading voice (owner 2026-10-08): each body section opens on a scene question, gives one plain reason, says the tendency
   // with its core in bold and ends on one everyday act, with one 명리 term at most, glossed where it first appears (the card first).
   const say = glossOnce();
+  // 4–6절 are the second half's (owner 2026-10-16), written apart: it glosses its own first terms
+  const sayB = glossOnce();
   const glance = mockGlance(f);
   const day = f.pillars.find((p) => p.pillar.includes("일주"))!;
   const month = f.pillars.find((p) => p.pillar.includes("월주"))!;
@@ -441,7 +445,7 @@ export function mockSajuMainReading(f: SajuFactSet): SajuReading {
     ],
     [
       "가까운 사람과 오래 붙어 있다 보면 고마운 마음과 별개로 혼자만의 시간이 문득 그리워질 때가 있지 않아요?",
-      `사주로 보면 나와 가장 가까운 자리에 ${josa(say(close), "이", "가")} 있어서 **${CLOSE[groupOf(close)]}** 편이에요.`,
+      `사주로 보면 나와 가장 가까운 자리에 ${josa(sayB(close), "이", "가")} 있어서 **${CLOSE[groupOf(close)]}** 편이에요.`,
       dayRelation
         ? `그 자리가 다른 자리와 ${dayRelation} 배치도 함께 있어서 가까운 사이일수록 마음이 이쪽저쪽으로 자주 오가요.`
         : "그래서 가까운 사이에서도 내 몫과 상대 몫을 조용히 나눠 두고 그 선이 지켜질 때 마음이 놓여요.",
@@ -500,6 +504,18 @@ export function mockSajuMainReading(f: SajuFactSet): SajuReading {
     glance,
     followUps: ["지금 대운에서 해 볼 작은 실험은요?", "많은 기운을 일상에 어떻게 쓸까요?"],
   };
+}
+
+/** The main call's first half (owner 2026-10-16): the main mock's 1–3절 and 계산 기준, and its follow-up questions. */
+export function mockSajuReadingPartA(f: SajuFactSet): SajuReadingPartA {
+  const main = mockSajuMainReading(f);
+  return { sections: SAJU_PART_A_SECTIONS.map((heading) => main.sections[SAJU_MAIN_SECTIONS.indexOf(heading)]!), followUps: main.followUps };
+}
+
+/** The second half: the main mock's 4–6절, its observation and its card. */
+export function mockSajuReadingPartB(f: SajuFactSet): SajuReadingPartB {
+  const main = mockSajuMainReading(f);
+  return { sections: SAJU_PART_B_SECTIONS.map((heading) => main.sections[SAJU_MAIN_SECTIONS.indexOf(heading)]!), observation: main.observation, glance: main.glance };
 }
 
 /** 7절·8절's mock: the code-built text the reading falls back to (sajuParts.ts). */

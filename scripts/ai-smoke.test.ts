@@ -20,7 +20,7 @@ import { buildTarotContext, type TarotContext } from "@/lib/ai/prompts/tarot";
 import { GenerationError, type ReadingProvider, type Usage } from "@/lib/ai/provider";
 import type { DailyDraft, SajuReading, SajuTeaser, TarotReading, TarotTeaser } from "@/lib/ai/schemas";
 import { aiTells } from "@/lib/ai/style";
-import { validateDaily, validateSajuReading, validateSajuTeaser, validateTarotReading, validateTarotTeaser } from "@/lib/ai/validate";
+import { validateDaily, validateSajuReading, validateSajuReadingPartA, validateSajuTeaser, validateTarotReading, validateTarotTeaser } from "@/lib/ai/validate";
 import { LOVE_STATUS, WORK_STATUS } from "@/lib/api/inputs";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { dailyCard, dailyLuckyNumber } from "@/lib/security/drawToken";
@@ -82,6 +82,9 @@ interface Row {
   seconds: number;
 }
 
+/** Calls a kind starts next to its own task, each checked by its own validator inside generateValidated. */
+const PARALLEL_TASKS = new Set(["saju-enrichment", "saju-reading-b"]);
+
 /** Wraps the real provider: counts attempts, keeps each attempt's violations and every usage entry. */
 /** `guard` runs before every upstream attempt (retries included) and throws to stop at the cost cap. */
 function recording(real: ReadingProvider, validate: (draft: never) => string[], guard: (usage: Usage[]) => void = () => {}) {
@@ -96,7 +99,8 @@ function recording(real: ReadingProvider, validate: (draft: never) => string[], 
         usage.push(...result.usage);
         // 7절·8절's parallel call shares the saju reading's provider but not its shape: the reading validator threw a
         // TypeError on it, so every smoke run fell back to the code-built 7절·8절 (2026-10-15). Its own validator already ran.
-        attempts.push(task.name === "saju-enrichment" ? [] : validate(result.data as never));
+        // The main reading's second half (owner 2026-10-16) is skipped the same way: `validate` is the kind's own task's.
+        attempts.push(PARALLEL_TASKS.has(task.name) ? [] : validate(result.data as never));
         return result;
       } catch (error) {
         attempts.push([`(${error instanceof GenerationError ? error.code : "error"})`]);
@@ -207,7 +211,8 @@ test("ai smoke", async () => {
     const chart = { chart: "1993-08-17 07:20 부산 남", pillars: saju.pillars.map((p) => p.gz), profile };
     await call<SajuTeaser>(run, "saju-teaser", (d) => validateSajuTeaser(d, saju), (p) => generateSajuTeaser(p, saju),
       (d) => validateSajuTeaser(d, saju), (d) => d.summary, chart);
-    await call<SajuReading>(run, "saju-reading", (d) => validateSajuReading(d, saju), (p) => generateSajuReading(p, saju),
+    // the split reading (owner 2026-10-16): attempts of "saju-reading" are its first half; the merged reading is rechecked whole
+    await call<SajuReading>(run, "saju-reading", (d) => validateSajuReadingPartA(d, saju), (p) => generateSajuReading(p, saju),
       (d) => validateSajuReading(d, saju), (d) => [...d.sections.map((s) => s.body), d.observation.body].join("\n"), chart);
   }
 

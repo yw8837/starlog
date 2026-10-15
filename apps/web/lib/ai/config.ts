@@ -22,6 +22,7 @@ export const KIND_ENV: Record<TaskName, string> = {
   "tarot-daily": "DAILY",
   "saju-teaser": "SAJU_TEASER",
   "saju-reading": "SAJU_FULL",
+  "saju-reading-b": "SAJU_FULL_B",
   "saju-enrichment": "SAJU_ENRICHMENT",
   "saju-topic-teaser": "SAJU_TOPIC_TEASER",
   "saju-topic-reading": "SAJU_TOPIC_FULL",
@@ -39,6 +40,8 @@ export const DEFAULT_EFFORT: Record<TaskName, Effort> = {
   "tarot-daily": "low",
   "saju-teaser": "low",
   "saju-reading": "medium",
+  // 정통 사주's second half (owner 2026-10-16), at the first half's ("saju-reading") effort: paid quality stays
+  "saju-reading-b": "medium",
   // 정통 사주's 7절·8절 (about 700자) in their own call, next to the main one: kept short so it finishes first
   "saju-enrichment": "low",
   "saju-topic-teaser": "low",
@@ -57,7 +60,9 @@ const BASE_MAX_TOKENS: Record<TaskName, number> = {
   "tarot-reading": 16000,
   "tarot-daily": 8000,
   "saju-teaser": 8000,
+  // each half of 정통 사주 writes ~1,500자 (~7–9k output tokens with thinking, the whole was ~15k); 16000 is the medium floor
   "saju-reading": 16000,
+  "saju-reading-b": 16000,
   "saju-enrichment": 8000,
   "saju-topic-teaser": 8000,
   "saju-topic-reading": 16000,

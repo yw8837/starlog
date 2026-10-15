@@ -1,9 +1,11 @@
 import "server-only";
 import type { SajuTopicId } from "@/lib/reading/types";
 import { SectionScanner } from "@/lib/api/sections";
-import { SAJU_GAEUN_HEADING, SAJU_MAIN_SECTIONS, SAJU_NAMES_HEADING, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_GAEUN_HEADING, SAJU_NAMES_HEADING, SAJU_PART_A_SECTIONS, SAJU_PART_B_SECTIONS, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { TOPIC_OBSERVATION_HEADING, TOPIC_SECTIONS, topicLockedToc } from "@/lib/sajuTopics";
-import { mockDaily, mockSajuEnrichment, mockSajuFollowUp, mockSajuMainReading, mockSajuTeaser, mockTarotFollowUp, mockTarotReading, mockTarotTeaser } from "./mock";
+import {
+  mockDaily, mockSajuEnrichment, mockSajuFollowUp, mockSajuReadingPartA, mockSajuReadingPartB, mockSajuTeaser, mockTarotFollowUp, mockTarotReading, mockTarotTeaser,
+} from "./mock";
 import { mockSajuTopicFollowUp, mockSajuTopicReading, mockSajuTopicTeaser } from "./mockSajuTopics";
 import { SAJU_LOCKED_TOC, SAJU_OBSERVATION_HEADING, SAJU_SYSTEM, sajuFollowUpPrompt, sajuReadingPrompt, sajuTeaserPrompt, type SajuFactSet } from "./prompts/saju";
 import { SAJU_ENRICHMENT_SYSTEM, sajuEnrichmentPrompt } from "./prompts/sajuEnrichment";
@@ -15,16 +17,17 @@ import {
 } from "./prompts/tarot";
 import { generationSetting } from "./config";
 import { GenerationError, generateValidated, type GenerationHooks, type ReadingProvider, type Usage } from "./provider";
-import { mergeSajuReading, sajuEnrichmentFallback } from "./sajuParts";
+import { joinSajuHalves, mergeSajuReading, sajuEnrichmentFallback } from "./sajuParts";
 import {
-  DailyDraftSchema, FollowUpAnswerSchema, OneCardTeaserDraftSchema, SajuEnrichmentSchema, SajuReadingSchema, SajuTeaserDraftSchema, TarotReadingSchema,
-  TarotTeaserDraftSchema,
+  DailyDraftSchema, FollowUpAnswerSchema, OneCardTeaserDraftSchema, SajuEnrichmentSchema, SajuReadingPartASchema, SajuReadingPartBSchema, SajuReadingSchema,
+  SajuTeaserDraftSchema, TarotReadingSchema, TarotTeaserDraftSchema,
   type DailyDraft, type FollowUpAnswer, type SajuEnrichment, type SajuGlance, type SajuReading, type SajuTeaser, type Section, type StoredSajuReading,
   type StoredTarotReading, type TarotReading, type TarotTeaser, type TarotTeaserDraft,
 } from "./schemas";
+import { VOICE_PREFIX, isSoftViolation } from "./style";
 import {
-  validateDaily, validateSajuEnrichment, validateSajuFollowUp, validateSajuMainReading, validateSajuTeaser, validateTarotFollowUp, validateTarotReading,
-  validateTarotTeaser,
+  validateDaily, validateSajuEnrichment, validateSajuFollowUp, validateSajuMainReading, validateSajuReadingPartA, validateSajuReadingPartB, validateSajuTeaser,
+  validateTarotFollowUp, validateTarotReading, validateTarotTeaser,
 } from "./validate";
 import { validateSajuTopicFollowUp, validateSajuTopicReading, validateSajuTopicTeaser } from "./validateSajuTopics";
 
@@ -201,85 +204,156 @@ function startSajuEnrichment(provider: ReadingProvider, facts: SajuFactSet, hook
   return { result, stop: () => abort("stopped", new Error("the main reading failed")) };
 }
 
-const NAMES_AT = SAJU_PROLOGUE_SECTIONS.indexOf(SAJU_NAMES_HEADING);
-const GAEUN_AT = SAJU_PROLOGUE_SECTIONS.indexOf(SAJU_GAEUN_HEADING);
+/** A section's stage on the waiting screen: where it stands among the nine (계산 기준 is the ninth). */
+const stageOf = (heading: string) => `sections#${SAJU_PROLOGUE_SECTIONS.indexOf(heading)}`;
+/** The waiting screen's stages in reading order (lib/reading/progress.ts): the nine sections, the observation, the card, the questions. */
+const READING_ORDER = [...SAJU_PROLOGUE_SECTIONS.map(stageOf), "observation#0", "glance#0", "followUps#0"];
+/** Each call's stages (owner 2026-10-16): the first half, the second half, 7절·8절. */
+const FIRST_HALF_STAGES = [...SAJU_PART_A_SECTIONS.map(stageOf), "followUps#0"];
+const SECOND_HALF_STAGES = [...SAJU_PART_B_SECTIONS.map(stageOf), "observation#0", "glance#0"];
+const ENRICHMENT_STAGES = [stageOf(SAJU_NAMES_HEADING), stageOf(SAJU_GAEUN_HEADING)];
+
+interface CallProgress {
+  /** onText and onAttempt for the call (the route's onAttempt alone without onSection) */
+  hooks: GenerationHooks;
+  /** the call is done: every stage of it is written */
+  finish: () => void;
+}
 
 /**
- * The main call's progress in reading order (hooks.onSection): its sections where they stand among the nine (계산 기준 is the
- * ninth), and 7절·8절 just before 계산 기준 when their call is done by then, else at the merge (`done`). Without onSection the
- * hooks pass through.
+ * The reading's progress (hooks.onSection) from its three calls at once (owner 2026-10-16): each half's streamed sections where
+ * they stand among the nine, the observation, the card and the questions, and 7절·8절 when their call is done. A stage is told
+ * once it has started and the stage before it is done (its call wrote past it or finished), so the stages arrive in reading
+ * order and the waiting screen, which keeps the furthest one, never shows 4절 or the card while the first half still writes
+ * 1–3절. The returned function gives one call its hooks: `stages` are its own, `headings` its sections in its order.
  */
-function readingProgress(hooks: GenerationHooks, enrichment: Promise<unknown>): { hooks: GenerationHooks; done: () => void } {
+function readingProgress(hooks: GenerationHooks): (stages: readonly string[], headings?: readonly string[]) => CallProgress {
   const onSection = hooks.onSection;
-  const main: GenerationHooks = { ...hooks, concurrent: undefined };
-  if (!onSection) return { hooks: main, done: () => {} };
-  const scanner = new SectionScanner();
-  let ready = false;
-  void enrichment.then(() => {
-    ready = true;
-  });
-  let named = false;
-  const nameTwo = () => {
-    if (named) return;
-    named = true;
-    onSection("sections", NAMES_AT);
-    onSection("sections", GAEUN_AT);
+  const started = new Set<string>();
+  const finished = new Set<string>();
+  let next = 0;
+  const flush = () => {
+    if (!onSection) return;
+    for (; next < READING_ORDER.length; next++) {
+      const stage = READING_ORDER[next]!;
+      if (!started.has(stage) || (next > 0 && !finished.has(READING_ORDER[next - 1]!))) return;
+      const [key, index] = stage.split("#");
+      onSection(key!, Number(index));
+    }
   };
-  return {
-    hooks: {
-      ...main,
-      onText: (snapshot) => {
-        for (const event of scanner.push(snapshot)) {
-          if (event.key !== "sections") {
-            onSection(event.key, event.index);
-            continue;
+  return (stages, headings = []) => {
+    const finish = () => {
+      for (const stage of stages) {
+        started.add(stage);
+        finished.add(stage);
+      }
+      flush();
+    };
+    if (!onSection) return { hooks: { onAttempt: hooks.onAttempt }, finish };
+    const scanner = new SectionScanner();
+    let last: string | null = null;
+    return {
+      hooks: {
+        onText: (snapshot) => {
+          for (const event of scanner.push(snapshot)) {
+            const stage = event.key === "sections" ? stageOf(headings[event.index] ?? "") : `${event.key}#${event.index}`;
+            if (!stages.includes(stage)) continue;
+            if (last) finished.add(last);
+            started.add(stage);
+            last = stage;
           }
-          const at = SAJU_PROLOGUE_SECTIONS.indexOf(SAJU_MAIN_SECTIONS[event.index] ?? "");
-          if (at < 0) continue;
-          if (at > GAEUN_AT && ready) nameTwo();
-          onSection("sections", at);
-        }
+          flush();
+        },
+        onAttempt: (attempt) => {
+          // the regeneration writes from the start again; what was told stays told
+          if (attempt >= 2) {
+            scanner.reset();
+            last = null;
+          }
+          hooks.onAttempt?.(attempt);
+        },
       },
-      onAttempt: (attempt) => {
-        if (attempt >= 2) scanner.reset();
-        hooks.onAttempt?.(attempt);
-      },
-    },
-    done: nameTwo,
+      finish,
+    };
   };
 }
 
 /**
- * 정통 사주 in two calls started together (review 2026-10-08, B): the main one writes sections 1–6, 계산 기준, the card, the
- * observation and the follow-up questions; 7절·8절 come from their own call or its code-built fallback. The main call failing
- * fails the reading as before (and stops the other one); the merge puts the nine sections in reading order under code-owned
- * headings, and the usage holds both calls.
+ * 정통 사주 in three calls started together. The main reading is written in two halves (owner 2026-10-16: as one call it ran
+ * 110–150 s, and calls past about 150 s are cut upstream): "saju-reading" writes 1–3절, 계산 기준 and the follow-up questions,
+ * "saju-reading-b" 4–6절, the observation and the card, each told the other's headings so they do not overlap; 7절·8절 come from
+ * their own call or its code-built fallback (review 2026-10-08, B). Each half is validated and regenerated on its own; either
+ * failing fails the reading as before and stops the other calls. The second half reserves and bills on a ledger of its own
+ * (hooks.concurrent), as 7절·8절 do. The halves passing implies every hard rule of the whole (validate.ts MainShare); what only
+ * the merged reading can show (the voice's caps, repeated acts, the AI-tell count, all soft) is logged as counts, never
+ * regenerated. The merge puts the nine sections in reading order under code-owned headings, and the usage holds every call.
  */
 export async function generateSajuReading(
   provider: ReadingProvider, facts: SajuFactSet, hooks: GenerationHooks = {},
 ): Promise<Result<SajuReading> & { enrichment: Enrichment["source"] }> {
   const enrichment = startSajuEnrichment(provider, facts, hooks);
-  const progress = readingProgress(hooks, enrichment.result);
-  const main = generateValidated(provider, {
+  // one stop for both halves: the route's signal, or the other half failing
+  const halves = new AbortController();
+  const route = hooks.signal;
+  const follow = () => halves.abort(route?.reason);
+  if (route?.aborted) follow();
+  else route?.addEventListener("abort", follow, { once: true });
+  const part = readingProgress(hooks);
+  const [first, second] = [part(FIRST_HALF_STAGES, SAJU_PART_A_SECTIONS), part(SECOND_HALF_STAGES, SAJU_PART_B_SECTIONS)];
+  void enrichment.result.then(part(ENRICHMENT_STAGES).finish);
+  const failures: unknown[] = [];
+  // a failed half fails the reading with its own error, and stops paying for the others
+  const settle = <T>(half: Promise<T>, done: () => void) => half.then(
+    (value) => {
+      done();
+      return value;
+    },
+    (error: unknown) => {
+      failures.push(error);
+      halves.abort(error);
+      enrichment.stop();
+      throw error;
+    },
+  );
+  const own = hooks.concurrent?.() ?? {};
+  const a = settle(generateValidated(provider, {
     name: "saju-reading",
     system: SAJU_SYSTEM,
-    user: sajuReadingPrompt(facts),
-    schema: SajuReadingSchema,
+    user: sajuReadingPrompt(facts, "a"),
+    schema: SajuReadingPartASchema,
     ...generationSetting("saju-reading"),
-    mock: () => mockSajuMainReading(facts),
-  }, (reading) => validateSajuMainReading(reading, facts), progress.hooks);
-  // a failed reading stops paying for its 7절·8절
-  main.catch(() => enrichment.stop());
-  const [first, second] = await Promise.allSettled([main, enrichment.result]);
-  if (first.status === "rejected") throw first.reason;
-  const extra: Enrichment = second.status === "fulfilled" ? second.value : { data: sajuEnrichmentFallback(facts), usage: [], source: "fallback" };
-  progress.done();
-  const data = mergeSajuReading(first.value.data, extra.data);
+    mock: () => mockSajuReadingPartA(facts),
+  }, (draft) => validateSajuReadingPartA(draft, facts), { ...hooks, concurrent: undefined, signal: halves.signal, ...first.hooks }), first.finish);
+  const b = settle(generateValidated(provider, {
+    name: "saju-reading-b",
+    system: SAJU_SYSTEM,
+    user: sajuReadingPrompt(facts, "b"),
+    schema: SajuReadingPartBSchema,
+    ...generationSetting("saju-reading-b"),
+    mock: () => mockSajuReadingPartB(facts),
+  }, (draft) => validateSajuReadingPartB(draft, facts), {
+    signal: halves.signal, deadline: hooks.deadline, onReserve: own.onReserve, onRelease: own.onRelease, onUsage: own.onUsage, ...second.hooks,
+  }), second.finish);
+  const [one, two, three] = await Promise.allSettled([a, b, enrichment.result]);
+  route?.removeEventListener("abort", follow);
+  if (one.status === "rejected" || two.status === "rejected") throw failures[0];
+  const extra: Enrichment = three.status === "fulfilled" ? three.value : { data: sajuEnrichmentFallback(facts), usage: [], source: "fallback" };
+  const main = joinSajuHalves(one.value.data, two.value.data);
+  logMergedFindings(validateSajuMainReading(main, facts));
+  const data = mergeSajuReading(main, extra.data);
   return {
     data: { ...data, observation: { heading: SAJU_OBSERVATION_HEADING, body: data.observation.body.trim() }, glance: trimGlance(data.glance) },
-    usage: [...first.value.usage, ...extra.usage],
+    usage: [...one.value.usage, ...two.value.usage, ...extra.usage],
     enrichment: extra.source,
   };
+}
+
+/** What only the merged main reading shows, as counts (never the findings' words, which quote the reading). */
+function logMergedFindings(findings: readonly string[]): void {
+  if (!findings.length) return;
+  const voice = findings.filter((f) => f.startsWith(VOICE_PREFIX)).length;
+  const soft = findings.filter(isSoftViolation).length - voice;
+  console.info(JSON.stringify({ evt: "ai.merged", task: "saju-reading", hard: findings.length - voice - soft, soft, voice }));
 }
 
 /** The 한눈에 보기 sentences as written, without stray whitespace (the card's labels are code-owned on screen). */

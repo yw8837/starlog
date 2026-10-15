@@ -57,7 +57,11 @@ describe("주제별 사주 prompts (spec §7.5)", () => {
     // keeping the basis sentence in 계산 기준; a follow-up may name the reading's own names, never as an event (review A3).
     // Then SAJU_VOICE_RULES (owner 2026-10-15): the advice slot names the strength to grow, its cost when overdone, and a
     // question to ask oneself or one act with what improves; both examples end that way. The preamble and 신년운세 do not move.
-    expect(hash(SAJU_SYSTEM)).toBe("7bc8791958cdab23b1fbb4929fa8d7096e4b413a06296f1f3fcb9e9c8e024493");
+    // (owner 2026-10-16) SAJU_SYSTEM alone again: the main call (110–150 s, cut upstream past about 150 s) is written in two halves
+    // at once, reading-a (1–3절, 7절 계산 기준, followUps; 1,200~1,850자) and reading-b (4–6절, observation, glance; 900~1,350자),
+    // each with its own scenes, forms and acts so the merged reading keeps the voice's caps; items 1–7 and the basis rules are
+    // byte for byte. SAJU_VOICE_RULES, the preamble and 신년운세 do not move.
+    expect(hash(SAJU_SYSTEM)).toBe("a49b96dd3f7fc2a7184878e5c973610b837d0d9d1c27d77eacc2072a47ee6111");
     expect(hash(NEWYEAR_SYSTEM)).toBe("1307d57b62ae51e374b7be06b89445fb7c0ad161540b3384fae4447844710f13");
     // 7절·8절's own system prompt (review of afd5498, B), pinned from its first version. Re-pinned 2026-10-13: both real
     // checks wrote "문창귀인이 붙어 있어서 ~하기 쉬워요" on the first attempt, so the ban names "~귀인이 붙어 있어서",

@@ -12,6 +12,8 @@ const hash = (text: string) => createHash("sha256").update(text).digest("hex");
 describe("standard prompts stay byte for byte", () => {
   it("keeps TAROT_SYSTEM and SAJU_SYSTEM unchanged by the split", () => {
     expect(hash(TAROT_SYSTEM)).toMatchSnapshot();
+    // (owner 2026-10-16) SAJU_SYSTEM re-pinned on purpose: the 정통 reading format is written in two halves at once (see
+    // sajuTopicPrompts.test.ts's note); the premium split itself still leaves it alone.
     expect(hash(SAJU_SYSTEM)).toMatchSnapshot();
   });
 });

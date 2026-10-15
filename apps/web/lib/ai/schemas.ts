@@ -86,6 +86,13 @@ export const SajuReadingSchema = z.object({
   followUps: z.array(z.string()),
 });
 
+/**
+ * The main call's two halves, written at once (owner 2026-10-16; lib/sajuPrologue.ts SAJU_PART_A_SECTIONS, _B_): the first
+ * 1–3절, 계산 기준 and the follow-up questions; the second 4–6절, the observation and then the card that sums them up.
+ */
+export const SajuReadingPartASchema = z.object({ sections: z.array(Section), followUps: z.array(z.string()) });
+export const SajuReadingPartBSchema = z.object({ sections: z.array(Section), observation: Section, glance: SajuGlanceSchema });
+
 /** 정통 사주's 7절 (이름표 풀이) and 8절 (기운 채우기), written by their own call next to the main one (review 2026-10-08, B). */
 export const SajuEnrichmentSchema = z.object({ nameplate: z.string(), gaeun: z.string() });
 
@@ -115,6 +122,8 @@ export type SajuTeaserDraft = z.infer<typeof SajuTeaserDraftSchema>;
 export type SajuTeaser = z.infer<typeof SajuTeaserSchema>;
 export type SajuGlance = z.infer<typeof SajuGlanceSchema>;
 export type SajuReading = z.infer<typeof SajuReadingSchema>;
+export type SajuReadingPartA = z.infer<typeof SajuReadingPartASchema>;
+export type SajuReadingPartB = z.infer<typeof SajuReadingPartBSchema>;
 export type SajuEnrichment = z.infer<typeof SajuEnrichmentSchema>;
 export type StoredSajuReading = z.infer<typeof StoredSajuReadingSchema>;
 export type FollowUpAnswer = z.infer<typeof FollowUpAnswerSchema>;

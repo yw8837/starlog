@@ -25,6 +25,13 @@ export const SAJU_PROLOGUE_SECTIONS: readonly string[] = Object.freeze([
 export const SAJU_MAIN_SECTIONS: readonly string[] = Object.freeze(SAJU_PROLOGUE_SECTIONS.filter((heading) => heading !== SAJU_NAMES_HEADING && heading !== SAJU_GAEUN_HEADING));
 
 /**
+ * The main call in two halves written at once (owner 2026-10-16: one call ran 110–150 s, and calls past about 150 s are cut
+ * upstream). The first writes 1–3절 and 계산 기준 (and the follow-up questions), the second 4–6절 (and the observation and the card).
+ */
+export const SAJU_PART_A_SECTIONS: readonly string[] = Object.freeze([...SAJU_MAIN_SECTIONS.slice(0, 3), SAJU_MAIN_SECTIONS[6]!]);
+export const SAJU_PART_B_SECTIONS: readonly string[] = Object.freeze(SAJU_MAIN_SECTIONS.slice(3, 6));
+
+/**
  * 한눈에 보기 (owner 2026-10-07): the card on top of every saju full reading, 전체 흐름 and each 운. It
  * answers in plain sentences where things go well, what to watch, one everyday way to make up for
  * it, and this year's flow with one thing to do. The model writes the sentences; these words are

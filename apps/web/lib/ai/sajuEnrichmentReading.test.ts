@@ -104,13 +104,16 @@ describe("the facts", () => {
 
 describe("the prompts", () => {
   it("bring the main format back to seven sections and 2,100~3,200자: 1–6 and 계산 기준 with its basis sentence, nothing of 7·8절", () => {
-    expect(SAJU_SYSTEM).toContain("sections: 정확히 7개");
+    // since owner 2026-10-16 two halves write them at once, each its own <headings> (sajuReadingHalves.test.ts)
+    expect(SAJU_SYSTEM).toContain("sections: <headings>의 절만, 그 순서와 문구 그대로.");
     expect(SAJU_SYSTEM).toContain("합계 2,100~3,200자");
     expect(SAJU_SYSTEM).toMatch(/1~6절은[^\n]*300~450자\. 7절은 300~550자\./);
     expect(SAJU_SYSTEM).toMatch(/\n {2}7\. 계산 기준: [^\n]*귀인은 일간을, 도화·역마·화개는 태어난 해와 날의 지지를 기준으로 찾았고, 이 기준은 유파마다 달라요/);
     expect(SAJU_SYSTEM).not.toMatch(/이름표 풀이:|기운 채우기:|sinsal|scarce|280~420|250~380/);
     expect(SINSAL_BASIS_LINE).toBe("귀인은 일간을, 도화·역마·화개는 태어난 해와 날의 지지를 기준으로 찾았고, 이 기준은 유파마다 달라요.");
-    expect(sajuReadingPrompt(factsOf(DOBI))).toContain(`<headings>\n${SAJU_MAIN_SECTIONS.map((h, i) => `${i + 1}. ${h}`).join("\n")}\nobservation: `);
+    const numbered = (heading: string) => `${SAJU_MAIN_SECTIONS.indexOf(heading) + 1}. ${heading}`;
+    expect(sajuReadingPrompt(factsOf(DOBI), "a")).toContain(`<headings>\n${SAJU_MAIN_SECTIONS.filter((_, i) => i < 3 || i === 6).map(numbered).join("\n")}\n</headings>`);
+    expect(sajuReadingPrompt(factsOf(DOBI), "b")).toContain(`<headings>\n${SAJU_MAIN_SECTIONS.slice(3, 6).map(numbered).join("\n")}\nobservation: `);
   });
 
   it("let a 정통 follow-up name the reading's own names, never as an event, and no other 살", () => {

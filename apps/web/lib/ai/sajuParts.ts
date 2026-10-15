@@ -1,9 +1,9 @@
 import "server-only";
 import type { SajuElement, SinsalName } from "@starlog/core";
 import { hasFinalConsonant } from "@/lib/korean";
-import { SAJU_GAEUN_HEADING, SAJU_MAIN_SECTIONS, SAJU_NAMES_HEADING, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_GAEUN_HEADING, SAJU_MAIN_SECTIONS, SAJU_NAMES_HEADING, SAJU_PART_A_SECTIONS, SAJU_PART_B_SECTIONS, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { ELEMENT_WORD, ORDER, type SajuFactSet } from "./prompts/saju";
-import type { SajuEnrichment, SajuReading } from "./schemas";
+import type { SajuEnrichment, SajuReading, SajuReadingPartA, SajuReadingPartB } from "./schemas";
 
 /**
  * 정통 사주 in two parts (review 2026-10-08, B): the main call's sections 1–6 and 계산 기준, and 7절·8절 from their own call.
@@ -149,6 +149,18 @@ export function sajuEnrichmentFallback(f: SajuFactSet): SajuEnrichment {
 }
 
 // ---- merge ----
+
+/**
+ * The main call's halves (owner 2026-10-16) as the one main draft they replace: 1–6절 and 계산 기준 in SAJU_MAIN_SECTIONS order
+ * under code-owned headings, the second half's observation and card, the first half's follow-up questions.
+ */
+export function joinSajuHalves(a: SajuReadingPartA, b: SajuReadingPartB): SajuReading {
+  const bodyOf = (heading: string) => {
+    const i = SAJU_PART_A_SECTIONS.indexOf(heading);
+    return (i >= 0 ? a.sections[i] : b.sections[SAJU_PART_B_SECTIONS.indexOf(heading)])?.body ?? "";
+  };
+  return { sections: SAJU_MAIN_SECTIONS.map((heading) => ({ heading, body: bodyOf(heading) })), observation: b.observation, glance: b.glance, followUps: a.followUps };
+}
 
 /** The nine sections in reading order under code-owned headings: the main call's 1–6, 7절·8절, the main call's 계산 기준. */
 export function mergeSajuReading(main: SajuReading, enrichment: SajuEnrichment): SajuReading {

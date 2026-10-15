@@ -4,7 +4,7 @@ import {
   type SajuChart, type SajuElement,
 } from "@starlog/core";
 import { GAEUN, SINSAL_MEANINGS, scarceElements } from "@/lib/sajuEnrichment";
-import { SAJU_GLANCE_HEADING, SAJU_MAIN_SECTIONS, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
+import { SAJU_GLANCE_HEADING, SAJU_MAIN_SECTIONS, SAJU_PART_A_SECTIONS, SAJU_PART_B_SECTIONS, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { HISTORY_RULE, historyBlock, sanitizeHistory, type HistoryItem } from "../history";
 import { plainWordsBlock } from "../plainWords";
 import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
@@ -801,8 +801,9 @@ const SAJU_FORMATS = `## teaser (무료 요약)
 - summary: 250~400자. (1) 일간과 물상(해석임을 드러내는 말로) (2) 태어난 달과 계절 (3) 가장 두드러진 오행 특징 하나(개수를 함께, 없는 오행이나 숨은 오행) (4) 눈에 띄는 십성 관계 하나를 일상어로, 그 경향이 드러나는 장면을 묻는 질문과 함께 (5) <user_context>가 있으면 그 사람의 상태나 고민에 닿는 한 문장 (6) 올해나 이번 달에 해 볼 만한 작은 일 한 가지 (7) 태어난 시를 모르면 그 한계 한 문장. 신강·용신·대운의 사건은 쓰지 않아요.
 - 굵게(**)는 쓰지 않아요.
 
-## reading (프롤로그, 합계 2,100~3,200자)
-- sections: 정확히 7개, <headings>의 순서와 문구 그대로. 1~6절은 위 "풀이 목소리"의 네 칸으로 4~8문장, 300~450자. 7절은 300~550자.
+## reading (프롤로그, 두 부분을 합쳐 합계 2,100~3,200자)
+- 프롤로그는 앞부분과 뒷부분으로 나눠 서로 다른 호출이 동시에 쓰고, 서버가 읽는 순서대로 이어 붙여 한 풀이로 보여 줘요. <task>가 가리키는 부분만 써요. <other_part>의 절은 다른 부분이 쓰니 쓰지 않고, 그 절이 다루는 주제(제목의 · 뒤)와 장면도 이 부분에 가져오지 않아요.
+- sections: <headings>의 절만, 그 순서와 문구 그대로. 1~6절은 위 "풀이 목소리"의 네 칸으로 4~8문장, 300~450자. 7절은 300~550자.
   절마다 적힌 사실은 고를 근거 후보예요. 그중 하나만 골라 쉬운 말로 말하고, 나머지는 늘어놓지 않아요.
   1. 타고난 바탕: 기운이 차오르거나 빠지는 장면 하나로 열어요. 근거 후보는 월지·일지·년지(시지가 있으면 시지)의 12운성 단계, 태어난 달이 일간에 힘을 싣는 정도(월령), 뿌리가 있는 자리예요. 12운성을 늘어놓지 않아요.
   2. 많은 기운·적은 기운: 가장 많은 기운이나 없는 기운 하나와 그 개수만 말해요. 근거 후보는 많은 기운, 없는 기운, 지장간에만 숨은 기운(자리와 세기)이고, 세는 기준은 7절에서 밝혀요.
@@ -811,6 +812,21 @@ const SAJU_FORMATS = `## teaser (무료 요약)
   5. 일할 때·쉴 때: 일하는 장면 하나, 쉬는 장면 하나를 질문으로 열고, 앞 절과 겹치지 않는 근거 하나와 그 사람 상황에 맞는 작은 행동으로 맺어요.
   6. 지금의 10년과 올해(위 규칙의 "대운 절"과 "지금의 10년 절"이 이 절이에요): 요즘 장면을 묻는 질문으로 열어요. 근거 후보는 지금 대운의 간지·기간·십성, 천간·지지 반기 관점, 원국과의 관계, 올해 세운(연도·간지·십성)과 원국·대운의 접점이에요. 근거는 "지금 10년 흐름(○○ 대운, ○○○○년 ○월 무렵까지)이 ~라서"처럼 한 번이면 되고 관계를 늘어놓지 않아요. 대운이 없으면 첫 대운 전이라는 사실과 첫 대운의 성격만.
   7. 계산 기준: calculation과 limits의 내용을 모두, 살·귀인을 찾은 기준 한 문장("${SINSAL_BASIS_LINE}"), 태어난 시각을 알게 되면 다시 계산할 수 있다는 안내까지. limits에만 나오는 다른 기둥(경계 시각에 따라 바뀔 수 있는 시주·일주 같은 것)은 이 절에서만 말해요.
+- 두 부분은 서로의 글을 보지 못하는데, 같은 표현·문형의 횟수 상한(두세 번까지)은 두 부분을 합친 풀이에 걸려요. 그래서 장면·문형·행동은 아래 자기 몫에서 고르고(같은 문형은 한 부분 안에서 두 번까지), 몫에 없는 표현·문형은 한 부분 안에서 한 번만 써요.
+- 앞부분(<task>reading-a</task>): sections 4개(1~3절과 7절 계산 기준, 합계 1,200~1,850자)와 followUps를 써요.
+  - 장면 몫: 그 사람 혼자의 하루. 기운이 차오르거나 빠지는 때, 손이 먼저 가는 일과 미뤄 두는 일, 결정 앞의 망설임. 3절의 결정 장면은 그 사람의 연애·일 상태에 맞춰요.
+  - 문형 몫: 장면 질문 "○○할 때 ○○한 적 많지 않나요?"·"○○하면 ○○부터 하게 되죠?", 두 번째 장면 "○○하는 식이죠", 조언 "○○하는 건 장점이에요. 그래도 …"·"○○하는 힘으로 자랄 수 있어요. 다만 …".
+  - 행동 몫: 정리하기, 찾아보기, 덜어 내기, 스스로 물어보기.
+  - "명리에서는 ~로 읽어요"와 "적어 보세요·기록해 보세요"는 쓴다면 이 부분에서 한 번씩만 써요. 빗나감 한마디는 뒷부분 몫이라 쓰지 않아요.
+  - 결혼은 꺼내지 않아요. 연애 중·결혼 준비 중·기혼이면 뒷부분의 4절이 다뤄요.
+- 뒷부분(<task>reading-b</task>): sections 3개(4~6절, 합계 900~1,350자)와 observation, glance를 써요.
+  - 장면 몫: 사람과 일과 시기. 가까운 사람 곁, 일하는 날과 쉬는 날, 요즘 달라진 마음과 올해. 4절과 6절의 장면은 그 사람의 연애·일 상태에 맞춰요.
+  - 문형 몫: 장면 질문 "○○할 때가 있지 않아요?"·"○○하는 편 아닌가요?", 두 번째 장면 "○○하곤 해요", 조언 "○○해도 나쁘지 않아요. 다만 …"과 새로 지은 꼴.
+  - 행동 몫: 연락하기, 신청하기, 직접 가 보기, 일정 비워 두기.
+  - "명리에서는 ~로 읽어요"와 "적어 보세요·기록해 보세요"는 앞부분 몫이라 쓰지 않아요. 빗나감 한마디는 쓴다면 이 부분의 한 곳에만 둬요.
+  - 계산 기준 절은 앞부분이 써요. limits, 해명, 살·귀인을 찾은 기준은 이 부분에 쓰지 않아요.
+  - 연애 중·결혼 준비 중·기혼이면 결혼은 4절에서 한두 문장으로 다뤄요.
+  - glance는 이 부분의 본문과 <facts>를 근거로 정리해요. 앞부분의 글은 볼 수 없으니 그 장면을 짐작해 옮기지 않아요.
 - observation: 앞으로 며칠에서 몇 주 안에 사용자가 직접 알아챌 수 있는 작고 확인 가능한 신호 하나(60~200자). 지금 대운이나 올해 세운, 앞으로 두 달의 월건(monthly), 두드러진 십성에 기대고, 무엇을 눈여겨보면 이 풀이가 맞는지 알 수 있는지 말해요. monthly의 두 월건은 label(이번 달·다음 달·그다음 달)이 어느 달인지 알려 줘요. 이번 달이 열흘 안에 끝나면 다음 달과 그다음 달만 와요. 달은 시작하는 절기와 간지로만 불러요(예: 한로부터 드는 무술(戊戌)월). '9월에는'처럼 달 이름(1~12월)으로 부르거나 '이번 달'·'다음 달'이라고 부르지 않아요. 월건은 이 관찰에서만, 간지로 한 번만 쓰고 십성 이름은 쓰지 않아요. 시작하는 절기와 원국·세운과의 관계까지만 말하며, 그 달에 생길 일을 지어내지 않아요. "~가 생겨요" 같은 예언이 아니라 "~하는 순간이 늘어나는지 눈여겨보세요"처럼 관찰로 써요. heading은 <headings>의 observation 문구 그대로예요.
 ${SAJU_GLANCE_FORMAT}
 - followUps: 사용자가 이어서 물어볼 만한 질문 2개(각 30자 이하).
@@ -859,10 +875,25 @@ export function sajuTeaserPrompt(facts: SajuFactSet): string {
   return ["<task>teaser</task>", factsBlock(facts), userContextBlock(facts), historyBlock(facts.history ?? [])].join("\n");
 }
 
-/** The main call: sections 1–6 and 계산 기준 (SAJU_MAIN_SECTIONS), the card, the observation, the follow-ups. */
-export function sajuReadingPrompt(facts: SajuFactSet): string {
-  const headings = [...SAJU_MAIN_SECTIONS.map((heading, i) => `${i + 1}. ${heading}`), `observation: ${SAJU_OBSERVATION_HEADING}`].join("\n");
-  return ["<task>reading</task>", `<headings>\n${headings}\n</headings>`, factsBlock(facts), userContextBlock(facts), historyBlock(facts.history ?? [])].join("\n");
+/** The main call's halves, written at once (owner 2026-10-16): "a" 1–3절, 계산 기준, the follow-ups; "b" 4–6절, the observation, the card. */
+export type SajuReadingPart = "a" | "b";
+
+/** "7. 계산 기준 · …": a main section by its number in the reading format. */
+const numbered = (heading: string) => `${SAJU_MAIN_SECTIONS.indexOf(heading) + 1}. ${heading}`;
+const OBSERVATION_LINE = `observation: ${SAJU_OBSERVATION_HEADING}`;
+
+/**
+ * One half of the main call: its own headings, and the other half's under <other_part>, so it writes neither their sections
+ * nor their themes. Both get the same facts and user context; the first half by default.
+ */
+export function sajuReadingPrompt(facts: SajuFactSet, part: SajuReadingPart = "a"): string {
+  const [own, other] = part === "a"
+    ? [SAJU_PART_A_SECTIONS.map(numbered), [...SAJU_PART_B_SECTIONS.map(numbered), OBSERVATION_LINE, `glance: ${SAJU_GLANCE_HEADING}`]]
+    : [[...SAJU_PART_B_SECTIONS.map(numbered), OBSERVATION_LINE], [...SAJU_PART_A_SECTIONS.map(numbered), "followUps: 이어서 물어볼 질문"]];
+  return [
+    `<task>reading-${part}</task>`, `<headings>\n${own.join("\n")}\n</headings>`, `<other_part>\n${other.join("\n")}\n</other_part>`,
+    factsBlock(facts), userContextBlock(facts), historyBlock(facts.history ?? []),
+  ].join("\n");
 }
 
 export function sajuFollowUpPrompt(facts: SajuFactSet, reading: unknown, turns: FollowUpTurn[], question: string): string {

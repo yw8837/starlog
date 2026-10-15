@@ -2,13 +2,16 @@ import "server-only";
 import { BRANCHES, STEMS, ganzhiKo } from "@starlog/core";
 import { KB_CARDS, type KbCard } from "@/lib/kb";
 import {
-  SAJU_GAEUN_HEADING, SAJU_GLANCE_ACTION_LABEL, SAJU_GLANCE_HEADING, SAJU_GLANCE_LABELS, SAJU_MAIN_SECTIONS, SAJU_NAMES_HEADING, SAJU_PROLOGUE_SECTIONS,
+  SAJU_GAEUN_HEADING, SAJU_GLANCE_ACTION_LABEL, SAJU_GLANCE_HEADING, SAJU_GLANCE_LABELS, SAJU_MAIN_SECTIONS, SAJU_NAMES_HEADING, SAJU_PART_A_SECTIONS,
+  SAJU_PART_B_SECTIONS, SAJU_PROLOGUE_SECTIONS,
 } from "@/lib/sajuPrologue";
 import { maskGanzhiReadings } from "./ganzhi";
 import { bareFirstTerms, glossed, outsideBrackets } from "./plainWords";
 import type { SajuFactSet } from "./prompts/saju";
 import { UNSURE_OPTIONS, cardLabel, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
-import type { DailyDraft, FollowUpAnswer, SajuEnrichment, SajuGlance, SajuReading, SajuTeaserDraft, TarotReading, TarotTeaserDraft } from "./schemas";
+import type {
+  DailyDraft, FollowUpAnswer, SajuEnrichment, SajuGlance, SajuReading, SajuReadingPartA, SajuReadingPartB, SajuTeaserDraft, TarotReading, TarotTeaserDraft,
+} from "./schemas";
 import { MODEL_NAMES, SOFT_PREFIX, aiTellViolations, allowBold } from "./style";
 import { sajuVoiceViolations, tarotVoiceViolations } from "./voice";
 
@@ -866,60 +869,111 @@ export function validateSajuTeaser(d: SajuTeaserDraft, facts: SajuFactSet): stri
 }
 
 /**
- * The main call's draft (review 2026-10-08, B): sections 1–6 and 계산 기준 (SAJU_MAIN_SECTIONS), the card, the observation and
- * the follow-up questions. 7절·8절 are validateSajuEnrichment's. No 살·귀인 name but in 계산 기준's basis sentence.
+ * What one call of the main reading writes (owner 2026-10-16: two halves at once), or the whole they merge into: its sections in
+ * order (with `basis`, the last is 계산 기준), their total (±TOLERANCE), whether it writes the observation and the card (`card`)
+ * and the follow-up questions, and whether the user's status (and 결혼) must show in it.
  */
-export function validateSajuMainReading(draft: SajuReading, facts: SajuFactSet): string[] {
+interface MainShare {
+  headings: readonly string[];
+  basis: boolean;
+  total: readonly [number, number];
+  /** the finding's subject for the total */
+  amount: string;
+  card: boolean;
+  followUps: boolean;
+  profile: boolean;
+}
+
+const WHOLE_MAIN: MainShare = { headings: SAJU_MAIN_SECTIONS, basis: true, total: [2100, 3200], amount: "프롤로그 분량", card: true, followUps: true, profile: true };
+/**
+ * The halves' bands add up to the whole's, tolerance included (900 + 675 = 1,575; 2,312.5 + 1,687.5 = 4,000), so two halves that
+ * pass never fail the whole's total. The status and 결혼 scenes are the second half's (4–6절), so its check implies the whole's.
+ */
+const FIRST_HALF: MainShare = { headings: SAJU_PART_A_SECTIONS, basis: true, total: [1200, 1850], amount: "이 부분의 분량", card: false, followUps: true, profile: false };
+const SECOND_HALF: MainShare = { headings: SAJU_PART_B_SECTIONS, basis: false, total: [900, 1350], amount: "이 부분의 분량", card: true, followUps: false, profile: true };
+
+const NO_GLANCE: SajuGlance = { goesWell: "", watchOut: "", remedy: "", thisYear: "", thisYearAction: "" };
+const NO_OBSERVATION = { heading: "", body: "" };
+
+/** The main reading's checks for one share; what a share does not write is empty and not checked. */
+function mainShareViolations(draft: SajuReading, facts: SajuFactSet, share: MainShare): string[] {
   const out: string[] = [];
   const r = withoutBold(draft);
   modelNameViolations(r, out);
-  if (r.sections.length !== SAJU_MAIN_SECTIONS.length) out.push(`sections는 정확히 ${SAJU_MAIN_SECTIONS.length}개여야 해요.`);
-  const basisIndex = SAJU_MAIN_SECTIONS.length - 1;
+  const { headings } = share;
+  if (r.sections.length !== headings.length) out.push(`sections는 정확히 ${headings.length}개여야 해요.`);
+  const basisIndex = share.basis ? headings.length - 1 : -1;
   r.sections.forEach((section, i) => {
     const n = charCount(section.body);
-    const heading = SAJU_MAIN_SECTIONS[i] ?? `${i + 1}번째 절`;
+    const heading = headings[i] ?? `${i + 1}번째 절`;
     // body sections 300~450자 in the reading voice (owner 2026-10-08), the 계산 기준 절 as before
     if (n < 150 || n > 900) out.push(`'${heading}' 절이 공백 제외 ${n}자예요. ${i === basisIndex ? "300~550" : "300~450"}자로 써 주세요.`);
   });
   const total = r.sections.reduce((sum, s) => sum + charCount(s.body), 0);
-  if (total < 2100 * (1 - TOLERANCE) || total > 3200 * (1 + TOLERANCE)) out.push(`프롤로그 분량이 공백 제외 ${total}자예요. 2,100~3,200자로 맞춰 주세요.`);
-  const basis = r.sections.at(-1)?.body ?? "";
-  if (!facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(basis)) out.push("계산 기준 절에 태어난 시를 몰라 시주 없이 읽었다는 한계를 넣어 주세요.");
-  observationViolations(r.observation.body, out);
-  // a month by 절기 and 간지 only: the months given may have shifted (review 2026-10-08)
-  const month = (MONTH_NAME.exec(r.observation.body) ?? NAMED_MONTH.exec(r.observation.body))?.[0];
-  if (month) out.push(`관찰에 '${month}'처럼 달을 가리키는 말이 있어요. 끝나 가는 달을 가리키지 않도록 달은 시작하는 절기와 간지로만 불러 주세요(예: 한로부터 드는 무술(戊戌)월).`);
+  const [lo, hi] = share.total;
+  if (total < lo * (1 - TOLERANCE) || total > hi * (1 + TOLERANCE)) out.push(`${share.amount}이 공백 제외 ${total}자예요. ${lo.toLocaleString("ko-KR")}~${hi.toLocaleString("ko-KR")}자로 맞춰 주세요.`);
+  const basis = share.basis ? r.sections.at(-1)?.body ?? "" : "";
+  if (share.basis && !facts.input.timeKnown && !TIME_UNKNOWN_LINE.test(basis)) out.push("계산 기준 절에 태어난 시를 몰라 시주 없이 읽었다는 한계를 넣어 주세요.");
+  if (share.card) {
+    observationViolations(r.observation.body, out);
+    // a month by 절기 and 간지 only: the months given may have shifted (review 2026-10-08)
+    const month = (MONTH_NAME.exec(r.observation.body) ?? NAMED_MONTH.exec(r.observation.body))?.[0];
+    if (month) out.push(`관찰에 '${month}'처럼 달을 가리키는 말이 있어요. 끝나 가는 달을 가리키지 않도록 달은 시작하는 절기와 간지로만 불러 주세요(예: 한로부터 드는 무술(戊戌)월).`);
+    glanceViolations(r.glance, facts.annual, out, { timing: true, ganzhi: cardGanzhi(facts) });
+  }
   // the card answers first, so its rules come with the body's: the facts, the blocklists, 해요체, 월건 (observation only)
-  const glance = glanceTexts(r.glance);
-  glanceViolations(r.glance, facts.annual, out, { timing: true, ganzhi: cardGanzhi(facts) });
-  monthlyViolations([GLANCE_LABEL, ...SAJU_MAIN_SECTIONS], [glance.join("\n"), ...r.sections.map((s) => s.body)], facts, out);
-  if (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40)) out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
-  const bodies = [...r.sections.map((s) => s.body), r.observation.body];
+  const glance = share.card ? glanceTexts(r.glance) : [];
+  monthlyViolations([GLANCE_LABEL, ...headings], [glance.join("\n"), ...r.sections.map((s) => s.body)], facts, out);
+  if (share.followUps && (r.followUps.length < 1 || r.followUps.length > 3 || r.followUps.some((q) => !q.trim() || charCount(q) > 40))) {
+    out.push("followUps는 30자 이하 질문 2개로 써 주세요.");
+  }
+  const observation = share.card ? r.observation.body : "";
+  const followUps = share.followUps ? r.followUps : [];
+  const bodies = [...r.sections.map((s) => s.body), ...(share.card ? [observation] : [])];
   // the 계산 기준 절 (the last section) copies the limits, so it alone may name the other pillars they name
-  const basisAt = r.sections.length ? glance.length + r.sections.length - 1 : -1;
-  const checked = [...glance, ...bodies, ...r.followUps].map((text, i) => allowLimitPillars(maskGanzhiReadings(text), facts, i === basisAt));
+  const lastBasis = share.basis ? r.sections.length - 1 : -1;
+  const basisAt = lastBasis >= 0 ? glance.length + lastBasis : -1;
+  const checked = [...glance, ...bodies, ...followUps].map((text, i) => allowLimitPillars(maskGanzhiReadings(text), facts, i === basisAt));
   sajuFactViolations(checked.join("\n"), facts, out, profileText(facts), false);
   sinsalPartViolations([
     [GLANCE_LABEL, glance.join("\n"), "other"],
-    ...r.sections.map((s, i) => [SAJU_MAIN_SECTIONS[i] ?? `${i + 1}번째 절`, s.body, i === basisIndex ? "basis" : "other"] as const),
-    ["관찰", r.observation.body, "other"],
-    ["이어서 물어볼 질문", r.followUps.join("\n"), "other"],
+    ...r.sections.map((s, i) => [headings[i] ?? `${i + 1}번째 절`, s.body, i === basisIndex ? "basis" : "other"] as const),
+    ["관찰", observation, "other"],
+    ["이어서 물어볼 질문", followUps.join("\n"), "other"],
   ], facts, profileText(facts), out);
-  voiceViolations([...glance, ...bodies, ...r.followUps].join("\n"), out);
-  profileUseViolations(bodies.join("\n"), facts, out);
+  voiceViolations([...glance, ...bodies, ...followUps].join("\n"), out);
+  if (share.profile) profileUseViolations(bodies.join("\n"), facts, out);
   actionVarietyViolations(bodies, out);
   // one or two bold phrases a body section are not formatting; the 계산 기준 절 and the observation have none
-  aiTellViolations([...draft.sections.map((s, i) => allowBold(s.body, i === basisIndex ? 0 : 2)), draft.observation.body], out);
+  aiTellViolations([...draft.sections.map((s, i) => allowBold(s.body, i === basisIndex ? 0 : 2)), ...(share.card ? [draft.observation.body] : [])], out);
   // the 계산 기준 절 may name its terms as they are (reading-voice-2026-10 §4.4): the body says them in plain words
-  plainWordViolations([...glance, ...bodies.filter((_, i) => i !== r.sections.length - 1)], out);
+  plainWordViolations([...glance, ...bodies.filter((_, i) => i !== lastBasis)], out);
+  const bodyCount = share.basis ? basisIndex : headings.length;
   sajuVoiceViolations({
-    headings: SAJU_MAIN_SECTIONS.slice(0, basisIndex), bodies: draft.sections.slice(0, basisIndex).map((s) => s.body),
-    basis: draft.sections[basisIndex]?.body ?? "", observation: draft.observation.body, glance: draft.glance,
+    headings: headings.slice(0, bodyCount), bodies: draft.sections.slice(0, bodyCount).map((s) => s.body),
+    basis: share.basis ? draft.sections[basisIndex]?.body ?? "" : "", observation: share.card ? draft.observation.body : "", glance: share.card ? draft.glance : NO_GLANCE,
   }, out);
   return out;
 }
 
-const NO_GLANCE: SajuGlance = { goesWell: "", watchOut: "", remedy: "", thisYear: "", thisYearAction: "" };
+/**
+ * The main reading as one draft (review 2026-10-08, B): sections 1–6 and 계산 기준 (SAJU_MAIN_SECTIONS), the card, the observation
+ * and the follow-up questions; since owner 2026-10-16 the halves' merge, checked once more by the whole's rules. 7절·8절 are
+ * validateSajuEnrichment's. No 살·귀인 name but in 계산 기준's basis sentence.
+ */
+export function validateSajuMainReading(draft: SajuReading, facts: SajuFactSet): string[] {
+  return mainShareViolations(draft, facts, WHOLE_MAIN);
+}
+
+/** The first half (owner 2026-10-16): 1–3절, 계산 기준 and the follow-up questions, by the main reading's rules for what it writes. */
+export function validateSajuReadingPartA(draft: SajuReadingPartA, facts: SajuFactSet): string[] {
+  return mainShareViolations({ ...draft, observation: NO_OBSERVATION, glance: NO_GLANCE }, facts, FIRST_HALF);
+}
+
+/** The second half: 4–6절, the observation and the card; the user's status and 결혼 show here. */
+export function validateSajuReadingPartB(draft: SajuReadingPartB, facts: SajuFactSet): string[] {
+  return mainShareViolations({ ...draft, followUps: [] }, facts, SECOND_HALF);
+}
 
 /**
  * 7절 이름표 풀이 and 8절 기운 채우기 (spec 2026-10-08 §3, §4), as their own call writes them or the code builds them: their

@@ -4,11 +4,13 @@ import { describe, expect, it } from "vitest";
 import { SAJU_MAIN_SECTIONS, SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { generateSajuReading } from "./generate";
-import { mockSajuFollowUp, mockSajuReading, mockSajuTeaser } from "./mock";
+import { mockSajuFollowUp, mockSajuReading, mockSajuReadingPartA, mockSajuReadingPartB, mockSajuTeaser } from "./mock";
 import { SAJU_PREAMBLE, SAJU_SYSTEM, buildFactSet, glyphDisplay, sajuReadingPrompt, tenGod, twelveStage, type Relation } from "./prompts/saju";
 import { mockProvider } from "./mock";
 import type { SajuReading } from "./schemas";
-import { allowLimitPillars, allowedFactViolations, validateSajuFollowUp, validateSajuReading, validateSajuTeaser } from "./validate";
+import {
+  allowLimitPillars, allowedFactViolations, validateSajuFollowUp, validateSajuReading, validateSajuReadingPartA, validateSajuReadingPartB, validateSajuTeaser,
+} from "./validate";
 import { validateSajuTopicFollowUp, validateSajuTopicReading } from "./validateSajuTopics";
 import { mockSajuTopicFollowUp, mockSajuTopicReading } from "./mockSajuTopics";
 import { buildTopicFactSet } from "./prompts/sajuTopics";
@@ -306,6 +308,9 @@ describe("saju mock", () => {
     const facts = factsOf(patch);
     expect(validateSajuTeaser(mockSajuTeaser(facts), facts)).toEqual([]);
     expect(validateSajuReading(mockSajuReading(facts), facts)).toEqual([]);
+    // each half of the main call on its own (owner 2026-10-16): the mock provider runs them through these
+    expect(validateSajuReadingPartA(mockSajuReadingPartA(facts), facts)).toEqual([]);
+    expect(validateSajuReadingPartB(mockSajuReadingPartB(facts), facts)).toEqual([]);
     expect(validateSajuFollowUp(mockSajuFollowUp(facts), facts)).toEqual([]);
   });
 
@@ -320,6 +325,8 @@ describe("saju mock", () => {
       const found = [
         ...validateSajuTeaser(mockSajuTeaser(facts), facts),
         ...validateSajuReading(mockSajuReading(facts), facts),
+        ...validateSajuReadingPartA(mockSajuReadingPartA(facts), facts),
+        ...validateSajuReadingPartB(mockSajuReadingPartB(facts), facts),
         ...validateSajuFollowUp(mockSajuFollowUp(facts), facts),
       ];
       if (found.length) failures.push(`${JSON.stringify(patch)}: ${found.join(" | ")}`);

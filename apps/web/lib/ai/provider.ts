@@ -36,7 +36,7 @@ export interface Usage {
 }
 
 export type TaskName =
-  | "tarot-teaser" | "tarot-reading" | "tarot-daily" | "saju-teaser" | "saju-reading" | "saju-enrichment" | "followup"
+  | "tarot-teaser" | "tarot-reading" | "tarot-daily" | "saju-teaser" | "saju-reading" | "saju-reading-b" | "saju-enrichment" | "followup"
   | "saju-topic-teaser" | "saju-topic-reading"
   | "premium-teaser" | "deep-tarot-part" | "match-part" | "newyear-part" | "premium-followup";
 
@@ -130,6 +130,8 @@ const tarotBold = (p: Path) => (p[0] === "cards" && p[2] === "body") || (TAROT_B
  */
 const BOLD_FIELDS: Partial<Record<TaskName, (path: Path) => boolean>> = {
   "saju-reading": sajuBold,
+  // the main call's second half (owner 2026-10-16): 4–6절 and the card
+  "saju-reading-b": sajuBold,
   // 7절·8절, shown as sections of the 정통 reading
   "saju-enrichment": (p) => p[0] === "nameplate" || p[0] === "gaeun",
   "saju-topic-reading": sajuBold,

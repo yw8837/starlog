@@ -16,7 +16,7 @@ const usageOf = (outputTokens: number): Usage[] => [{ model: "claude-opus-5-5", 
 
 type Answer = (task: GenerationTask<unknown>, attempt: number, hooks: GenerationHooks) => Promise<unknown>;
 
-/** A provider answering each task with `answer`; the main call bills 9,000 output tokens, the 7·8절 call 1,000. */
+/** A provider answering each task with `answer`; the main call's halves bill 9,000 and 7,000 output tokens (owner 2026-10-16), the 7·8절 call 1,000. */
 function stub(answer: Answer): ReadingProvider & { calls: string[] } {
   const calls: string[] = [];
   return {
@@ -25,7 +25,7 @@ function stub(answer: Answer): ReadingProvider & { calls: string[] } {
     async generate<T>(task: GenerationTask<T>, attempt: number, _feedback?: string[], hooks: GenerationHooks = {}) {
       calls.push(`${task.name}#${attempt}`);
       const data = await answer(task as GenerationTask<unknown>, attempt, hooks);
-      return { data: data as T, usage: usageOf(task.name === "saju-enrichment" ? 1_000 : 9_000) };
+      return { data: data as T, usage: usageOf(task.name === "saju-enrichment" ? 1_000 : task.name === "saju-reading-b" ? 7_000 : 9_000) };
     },
   };
 }
@@ -64,12 +64,12 @@ describe("정통 사주 in two calls", () => {
     expect(data.sections.map((s) => s.heading)).toEqual([...SAJU_PROLOGUE_SECTIONS]);
     expect(data.sections.map((s) => s.body)).toEqual([...main.sections.slice(0, 6).map((s) => s.body), extra.nameplate, extra.gaeun, main.sections[6]!.body]);
     expect([data.observation, data.glance, data.followUps]).toEqual([main.observation, main.glance, main.followUps]);
-    expect(usage.map((u) => u.outputTokens).sort((a, b) => a - b)).toEqual([1_000, 9_000]);
-    expect(p.calls.sort()).toEqual(["saju-enrichment#1", "saju-reading#1"]);
+    expect(usage.map((u) => u.outputTokens).sort((a, b) => a - b)).toEqual([1_000, 7_000, 9_000]);
+    expect(p.calls.sort()).toEqual(["saju-enrichment#1", "saju-reading#1", "saju-reading-b#1"]);
     expect(enrichment).toBe("model");
   });
 
-  it("starts both calls before either one answers", async () => {
+  it("starts every call before any one answers", async () => {
     const started: string[] = [];
     let release!: () => void;
     const gate = new Promise<void>((resolve) => {
@@ -81,7 +81,7 @@ describe("정통 사주 in two calls", () => {
       return task.mock(1);
     });
     const pending = generateSajuReading(p, facts);
-    await vi.waitFor(() => expect([...started].sort()).toEqual(["saju-enrichment", "saju-reading"]));
+    await vi.waitFor(() => expect([...started].sort()).toEqual(["saju-enrichment", "saju-reading", "saju-reading-b"]));
     release();
     expect((await pending).data.sections).toHaveLength(9);
   });
@@ -95,7 +95,7 @@ describe("정통 사주 in two calls", () => {
     const fallback = sajuEnrichmentFallback(facts);
     expect([data.sections[6]!.body, data.sections[7]!.body]).toEqual([fallback.nameplate, fallback.gaeun]);
     expect(enrichment).toBe("fallback");
-    expect(usage.map((u) => u.outputTokens)).toEqual([9_000]);
+    expect(usage.map((u) => u.outputTokens).sort((a, b) => a - b)).toEqual([7_000, 9_000]);
     expect(fallbackLogs()).toEqual(["fallback/UPSTREAM"]);
   });
 
@@ -133,19 +133,20 @@ describe("정통 사주 in two calls", () => {
     await vi.waitFor(() => expect(fallbackLogs()).toEqual(["fallback/stopped"]));
   });
 
-  it("stops both calls when the route's signal aborts (client gone, route budget spent)", async () => {
+  it("stops every call when the route's signal aborts (client gone, route budget spent)", async () => {
     const route = new AbortController();
     const stopped: string[] = [];
     const p = stub((task, _attempt, hooks) => hang(hooks, () => stopped.push(task.name)));
     const pending = generateSajuReading(p, facts, { signal: route.signal });
-    await vi.waitFor(() => expect(p.calls).toHaveLength(2));
+    await vi.waitFor(() => expect(p.calls).toHaveLength(3));
     route.abort();
     await expect(pending).rejects.toMatchObject({ code: "UPSTREAM" });
-    expect(stopped.sort()).toEqual(["saju-enrichment", "saju-reading"]);
+    expect(stopped.sort()).toEqual(["saju-enrichment", "saju-reading", "saju-reading-b"]);
     expect(fallbackLogs()).toEqual(["fallback/aborted"]);
   });
 
   it("gives the 7·8절 call its own cost hooks (hooks.concurrent), never the main call's text or attempts", async () => {
+    // the second half of the main call takes a ledger of its own too (owner 2026-10-16)
     const main: string[] = [];
     const side: string[] = [];
     const p = stub(async (task, _attempt, hooks) => {
@@ -158,7 +159,7 @@ describe("정통 사주 in two calls", () => {
       onUsage: () => main.push("bill"),
       concurrent: () => ({ onReserve: () => side.push("reserve"), onUsage: () => side.push("bill") }),
     });
-    expect([main, side]).toEqual([["reserve", "bill"], ["reserve", "bill"]]);
+    expect([main, side]).toEqual([["reserve", "bill"], ["reserve", "bill", "reserve", "bill"]]);
   });
 });
 
@@ -173,23 +174,25 @@ describe("progress in reading order (hooks.onSection)", () => {
     return data;
   });
   const sections = ["sections#0", "sections#1", "sections#2", "sections#3", "sections#4", "sections#5"];
+  // the screen's stages in reading order; the follow-up questions are one stage (owner 2026-10-16: the halves' events are told in order)
+  const after = ["sections#6", "sections#7", "sections#8", "observation#0", "glance#0", "followUps#0"];
 
   it("names 7절·8절 just before 계산 기준 when their call is done by then, and the main's last section as the ninth", async () => {
     const events: string[] = [];
     await generateSajuReading(streaming({ "saju-enrichment": 0, "saju-reading": 20 }), facts, { onText: () => {}, onSection: (key, index) => events.push(`${key}#${index}`) });
-    expect(events).toEqual([...sections, "sections#6", "sections#7", "sections#8", "observation#0", "glance#0", "followUps#0", "followUps#1"]);
+    expect(events).toEqual([...sections, ...after]);
   });
 
-  it("names them at the merge when their call finishes after the main one", async () => {
+  it("holds 계산 기준 and what follows until 7절·8절 are done, so the screen never passes them by", async () => {
     const events: string[] = [];
     await generateSajuReading(streaming({ "saju-enrichment": 40, "saju-reading": 0 }), facts, { onText: () => {}, onSection: (key, index) => events.push(`${key}#${index}`) });
-    expect(events).toEqual([...sections, "sections#8", "observation#0", "glance#0", "followUps#0", "followUps#1", "sections#6", "sections#7"]);
+    expect(events).toEqual([...sections, ...after]);
   });
 
   it("works with the mock provider the routes use", async () => {
     const events: string[] = [];
     const { data } = await generateSajuReading(mockProvider, facts, { onText: () => {}, onSection: (key, index) => events.push(`${key}#${index}`) });
-    expect(new Set(events)).toEqual(new Set([...sections, "sections#6", "sections#7", "sections#8", "observation#0", "glance#0", "followUps#0", "followUps#1"]));
+    expect(events).toEqual([...sections, ...after]);
     expect(data.sections).toHaveLength(9);
   });
 });
