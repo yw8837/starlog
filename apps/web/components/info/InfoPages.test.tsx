@@ -283,6 +283,16 @@ describe("/help", () => {
     }
   });
 
+  it("describes sharing as it works: the link shows the whole reading, the user's own words and details stay hidden (F-02)", () => {
+    const share = helpGroups().flatMap((group) => group.items).find((item) => item.id === "share")!;
+    expect(share.sub).toBe("풀이를 볼 수 있는 링크를 보내요");
+    expect(share.steps).toEqual(["결제한 풀이 화면에서 공유하기를 누르고, 공유 링크 만들기를 눌러요.", "휴대폰에서는 공유 창이 열리고, 컴퓨터에서는 링크가 복사돼요."]);
+    expect(share.tip).toBe(
+      "링크를 받은 사람은 뽑은 카드나 한눈에 보기와 함께 풀이 전체를 볼 수 있어요. 질문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용, 생년월일과 명식은 보이지 않고, 풀이에 나온 이름 같은 개인 정보는 가려서 보여요. 공유 그만하기를 누르면 보낸 링크가 더 이상 열리지 않아요.",
+    );
+    expect(JSON.stringify(share)).not.toContain("카드 이름과");
+  });
+
   it("never asks for a one-line concern on the saju side", () => {
     const saju = helpGroups().find((group) => group.id === "saju")!;
     expect(JSON.stringify(saju)).not.toMatch(/고민 한 줄|고민을 한 줄/);
