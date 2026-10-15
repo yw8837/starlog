@@ -22,7 +22,7 @@ describe("time-based progress (the bar creeps while the model thinks)", () => {
   });
 
   it("sits near 0.9 at each kind's usual length (measured: saju ~2분, tarot ~1분, teasers and 오늘의 한 장 ~10초)", () => {
-    expect(timeFraction("saju-reading", 150_000)).toBeCloseTo(0.9, 3);
+    expect(timeFraction("saju-reading", 75_000)).toBeCloseTo(0.9, 3);
     expect(timeFraction("tarot-reading", 65_000)).toBeCloseTo(0.9, 3);
     for (const kind of ["saju-teaser", "tarot-teaser", "daily"] as const) expect(timeFraction(kind, 15_000)).toBeCloseTo(0.9, 3);
     // the saju reading's first minute (the model thinking) no longer looks frozen
@@ -32,11 +32,11 @@ describe("time-based progress (the bar creeps while the model thinks)", () => {
 
 describe("the line under the bar", () => {
   it("counts the time in 초/분 and says the usual length", () => {
-    expect(waitLine("saju-reading", 0)).toBe("보통 2분 안팎");
-    expect(waitLine("saju-reading", 999)).toBe("보통 2분 안팎");
-    expect(waitLine("saju-reading", 38_400)).toBe("38초째 · 보통 2분 안팎");
-    expect(waitLine("saju-reading", 72_000)).toBe("1분 12초째 · 보통 2분 안팎");
-    expect(waitLine("saju-reading", 120_000)).toBe("2분째 · 보통 2분 안팎");
+    expect(waitLine("saju-reading", 0)).toBe("보통 1분 안팎");
+    expect(waitLine("saju-reading", 999)).toBe("보통 1분 안팎");
+    expect(waitLine("saju-reading", 38_400)).toBe("38초째 · 보통 1분 안팎");
+    expect(waitLine("saju-reading", 72_000)).toBe("1분 12초째 · 보통 1분 안팎");
+    expect(waitLine("saju-reading", 120_000)).toBe("2분째 · 조금 더 걸리고 있어요. 길게는 3분까지 걸려요");
     expect(waitLine("tarot-reading", 30_000)).toBe("30초째 · 보통 1분 안팎");
     for (const kind of ["saju-teaser", "tarot-teaser", "daily"] as const) expect(waitLine(kind, 9_000)).toBe("9초째 · 보통 10초 안팎");
   });

@@ -124,11 +124,12 @@ export function checklist(plan: ProgressPlan, reached: number): ChecklistStep[] 
 }
 
 /**
- * How long each kind usually takes (measured 2026-10: saju full 110–150 s, tarot full 45–65 s, teasers 8–15 s,
+ * How long each kind usually takes (measured 2026-10: saju full 63–66 s since its body is written in two halves at once
+ * (owner 2026-10-16; 110–150 s before), tarot full 45–65 s, teasers 8–15 s,
  * 오늘의 한 장 ~11 s) and the longest it is said to take once it runs past that.
  */
 const WAIT: Record<GenerationKind, { usualMs: number; longestMs: number; usual: string; longest: string }> = {
-  "saju-reading": { usualMs: 150_000, longestMs: 180_000, usual: "보통 2분 안팎", longest: "3분" },
+  "saju-reading": { usualMs: 75_000, longestMs: 180_000, usual: "보통 1분 안팎", longest: "3분" },
   "tarot-reading": { usualMs: 65_000, longestMs: 120_000, usual: "보통 1분 안팎", longest: "2분" },
   "saju-teaser": { usualMs: 15_000, longestMs: 30_000, usual: "보통 10초 안팎", longest: "30초" },
   "tarot-teaser": { usualMs: 15_000, longestMs: 30_000, usual: "보통 10초 안팎", longest: "30초" },

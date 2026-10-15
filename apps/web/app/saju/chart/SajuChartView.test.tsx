@@ -340,7 +340,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     await waitFor(() => expect(within(shown()).getByText(`${dayMaster!.stem} ${dayMaster!.ko}`)).toBeTruthy());
     expect(within(shown()).getByText("내 일간")).toBeTruthy();
     expect(within(shown()).getByText(DAY_MASTER_TIPS[dayMaster!.ko]![0]!)).toBeTruthy();
-    expect(screen.getByText("보통 2분 안팎")).toBeTruthy();
+    expect(screen.getByText("보통 1분 안팎")).toBeTruthy();
     expect(screen.getByText("이 화면을 열어 둔 채로 기다려 주세요.")).toBeTruthy();
   });
 

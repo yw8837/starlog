@@ -28,10 +28,10 @@ const bar = (container: HTMLElement) => Number(/scaleX\(([\d.]+)\)/.exec(contain
 describe("GeneratingState: the time under the bar", () => {
   it("counts from when the reading started, with the usual length, and keeps the line to leave the screen open", () => {
     render(<GeneratingState mode="saju" kind="saju-reading" caption="명식을 다시 살피고 있어요" fraction={0} live={false} />);
-    expect(screen.getByText("보통 2분 안팎")).toBeTruthy();
+    expect(screen.getByText("보통 1분 안팎")).toBeTruthy();
     expect(screen.getByText(STAY)).toBeTruthy();
     tick(38_000);
-    expect(screen.getByText("38초째 · 보통 2분 안팎")).toBeTruthy();
+    expect(screen.getByText("38초째 · 보통 1분 안팎")).toBeTruthy();
     tick(113_000);
     expect(screen.getByText("2분 31초째 · 조금 더 걸리고 있어요. 길게는 3분까지 걸려요")).toBeTruthy();
   });
