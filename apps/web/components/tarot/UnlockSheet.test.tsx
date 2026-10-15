@@ -147,7 +147,11 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByRole("link", { name: "로그인하고 전체 풀이 보기" }).getAttribute("href")).toBe(base.loginHref);
     expect(screen.getByText(OPENING)).toBeTruthy();
     expect(container.textContent).not.toMatch(/가입 선물|무료로 드려요/);
-    expect(screen.getByText("전체 풀이 · 2,900원")).toBeTruthy();
+    // F-07: above the free button, only what the free opening holds: no price, no follow-ups.
+    expect(screen.queryByText("전체 풀이 · 2,900원")).toBeNull();
+    expect(screen.queryByText("이어서 물어보기 3번")).toBeNull();
+    expect(screen.getByText("풀이 전체 · 약 2,000자")).toBeTruthy();
+    expect(screen.getByText("이 기기에 계속 보관")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
     expect(onUnlock).toHaveBeenCalledWith("opening");
     cleanup();
@@ -160,6 +164,8 @@ describe("UnlockSheet offers", () => {
     ({ container } = render(<UnlockSheet {...base} remaining={1} offer={{ mode: "pay", priceKrw: 2900, first: true }} onUnlock={onUnlock} />));
     expect(actions(container)).toEqual([[FIRST, "primary"], ["2,900원 결제하고 보기", "secondary"]]);
     expect(screen.getByRole("link", { name: "2,900원 결제하고 보기" }).getAttribute("href")).toBe(base.payHref);
+    expect(screen.queryByText("전체 풀이 · 2,900원")).toBeNull();
+    expect(screen.queryByText("이어서 물어보기 3번")).toBeNull();
     expect(container.textContent).not.toContain("이미 열었어요");
   });
 

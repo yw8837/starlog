@@ -217,15 +217,16 @@ export function UnlockSheet({
       <h2 id="unlock-title" className={s.title}>
         {topicLabel ? `${topicLabel} 전체 풀이에 담긴 것` : "전체 풀이에 담긴 것"}
       </h2>
-      {priced ? <p className={s.price}>{`${topicLabel ? `${topicLabel} ` : ""}전체 풀이 · ${won(offer.priceKrw)}`}</p> : null}
+      {/* F-07: with 오픈 기념 무료 first, the list above its button holds only what the free opening gives. */}
+      {priced && !welcome ? <p className={s.price}>{`${topicLabel ? `${topicLabel} ` : ""}전체 풀이 · ${won(offer.priceKrw)}`}</p> : null}
       {scopeLine && (priced || offer.mode === "open-paid") ? <p className={s.scope}>{scopeLine}</p> : null}
       <ul className={s.includes}>
         <li>
           <CheckIcon />
           {`풀이 전체 · 약 ${chars}자`}
         </li>
-        {/* 오픈 기념 무료 alone is offered: it takes no follow-ups. */}
-        {opening ? null : (
+        {/* 오픈 기념 무료 is offered (alone, or first): it takes no follow-ups. */}
+        {opening || welcome ? null : (
           <li>
             <CheckIcon />
             {`이어서 물어보기 ${SITE.reading.followUps}번`}
