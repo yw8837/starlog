@@ -31,6 +31,8 @@ export const SITE = {
     address: "부산광역시 영도구 동삼서로 51-7, 3층 302호(동삼동, 금관빌리지)",
     email: "studioyeolmae.com@gmail.com",
     phone: "010-8282-8837",
+    /** 전자상거래법 제10조 제1항, 시행령 제11조의4: who hosts the site (the Worker runs on Cloudflare). */
+    hosting: "Cloudflare, Inc.",
   },
   /** One payment opens one reading. New accounts get no signup gift any more (owner 2026-10-14 evening). */
   price: {
@@ -112,6 +114,7 @@ const FOOTER_FIELDS = [
   ["사업장 주소", "address"],
   ["이메일", "email"],
   ["전화", "phone"],
+  ["호스팅서비스 제공자", "hosting"],
 ] as const satisfies ReadonlyArray<readonly [string, keyof Business]>;
 
 /** [label, value] for every non-empty business field, in display order. */

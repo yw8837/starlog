@@ -35,7 +35,9 @@ describe("policy pages", () => {
     expect(text).toContain("제17조 제2항 제5호");
     expect(text).toContain("결제하기 전에");
     expect(text).toContain("결제일로부터 7일 안에 전액 환불");
-    expect(text).toContain("영업일 기준 3~7일");
+    // F8: 전자상거래법 제18조 제1항: within 3 business days.
+    expect(text).toContain("확인한 날부터 3영업일 안에 결제를 취소하고 결제한 수단으로 환불해 드려요.");
+    expect(text).not.toContain("3~7일");
     expect(text).toContain("콘텐츠이용자보호지침");
     expect(text).toContain("본인 명의 계좌로 환불");
   });

@@ -7,6 +7,8 @@ describe("SITE", () => {
     expect(SITE.business.mailOrderNo).toBe("2026-부산영도-0153");
     expect(SITE.business.email).toBe("studioyeolmae.com@gmail.com");
     expect(SITE.business.phone).toBe("010-8282-8837");
+    // F7: 전자상거래법 제10조 제1항, 시행령 제11조의4: the hosting provider's name.
+    expect(SITE.business.hosting).toBe("Cloudflare, Inc.");
   });
 
   it("names the service and the production origin from one place", () => {
@@ -31,6 +33,7 @@ describe("footerNotice", () => {
       "사업장 주소 부산광역시 영도구 동삼서로 51-7, 3층 302호(동삼동, 금관빌리지)",
       "이메일 studioyeolmae.com@gmail.com",
       "전화 010-8282-8837",
+      "호스팅서비스 제공자 Cloudflare, Inc.",
     ]);
   });
 
