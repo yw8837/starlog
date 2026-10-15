@@ -131,7 +131,8 @@ export default function AboutPage() {
         <ul className={s.related}>
           {related.map((info) => (
             <li key={info.path}>
-              <Link href={info.path} className={s.relatedLink}>
+              {/* The root domain serves this page too: no prefetch of app pages it redirects (F-05). */}
+              <Link href={info.path} prefetch={false} className={s.relatedLink}>
                 <span>{info.label}</span>
                 <ChevronIcon />
               </Link>

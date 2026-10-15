@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SITE } from "./config";
 import { guideIndexPath } from "./guideMeta";
-import { FEED_URL, GUIDE_HOME, GUIDE_HOST_PAGES, absoluteUrl, appHref, guideHref, hostOfPath, isGuidePath, linkHref, originOf, siteOfRequest, splitHosts } from "./hosts";
+import { FEED_URL, GUIDE_HOME, GUIDE_HOST_PAGES, absoluteUrl, appHref, guideHostServes, guideHref, hostOfPath, isGuidePath, linkHref, originOf, siteOfRequest, splitHosts } from "./hosts";
 
 /** The deploy build sets NEXT_PUBLIC_SPLIT_HOSTS=1; every other build, dev server and test leaves it off. */
 const FLAG = "NEXT_PUBLIC_SPLIT_HOSTS";
@@ -134,6 +134,13 @@ describe("the pages the root domain serves besides the guide", () => {
     for (const path of ["/pricing", "/how", "/evidence", "/help", "/faq", "/refund"]) expect(linkHref(path, "guide"), path).toBe(`https://starlog.yeolmaeapps.kr${path}`);
     // From the app host they are the app's own pages: paths, as before.
     for (const path of GUIDE_HOST_PAGES) expect(linkHref(path, "app"), path).toBe(path);
+  });
+});
+
+describe("guideHostServes (F-05)", () => {
+  it("is true for the guide and the pages the root domain serves itself, false for every other app page (a prefetch of those from the root domain is a blocked cross-host redirect)", () => {
+    for (const path of [...GUIDE_HOST_PAGES, GUIDE_HOME, "/guide/the-fool"]) expect(guideHostServes(path), path).toBe(true);
+    for (const path of ["/", "/how", "/evidence", "/help", "/faq", "/pricing", "/refund", "/me", "/story", "/tarot/new"]) expect(guideHostServes(path), path).toBe(false);
   });
 });
 

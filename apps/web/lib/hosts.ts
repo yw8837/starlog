@@ -31,6 +31,13 @@ export const GUIDE_HOME = "/guide/tarot";
  */
 export const GUIDE_HOST_PAGES = ["/about", "/privacy", "/terms"] as const;
 
+/**
+ * The root domain serves `path` itself: the guide, and GUIDE_HOST_PAGES. Those pages render the app's
+ * links too, and Next's prefetch of any other app path from the root domain is a redirect to the app
+ * host that CORS blocks (F-05): links that can be rendered there pass `prefetch={false}` for those.
+ */
+export const guideHostServes = (path: string): boolean => isGuidePath(path) || (GUIDE_HOST_PAGES as readonly string[]).includes(path);
+
 /** The path that serves `path` on its own host: the guide's home is the root domain's "/". */
 const servedPath = (path: string): string => (path === GUIDE_HOME ? "/" : path);
 

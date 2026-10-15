@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { SITE, businessFields } from "@/lib/config";
-import { linkHref, type SiteHost } from "@/lib/hosts";
+import { guideHostServes, linkHref, type SiteHost } from "@/lib/hosts";
 import { INFO_PAGES, SERVICE_LINKS } from "@/lib/infoPages";
 import { LEGAL_LINKS } from "@/lib/legal";
 import styles from "./Footer.module.css";
@@ -41,7 +41,8 @@ export function Footer({ host = "app" }: { host?: SiteHost | "either" }) {
           <ul className={styles.links}>
             {LINKS.map((link) => (
               <li key={link.href}>
-                <Link href={linkHref(link.href, host)} className={styles.link}>
+                {/* The root domain renders this footer on /about, /privacy and /terms too (F-05). */}
+                <Link href={linkHref(link.href, host)} prefetch={guideHostServes(link.href) ? undefined : false} className={styles.link}>
                   {link.emphasis ? <strong className={styles.strong}>{link.label}</strong> : link.label}
                 </Link>
               </li>
