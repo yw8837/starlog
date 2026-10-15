@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RETRY_CAPTION, checklist, progressPlan } from "@/lib/reading/progress";
 import { GeneratingState } from "./GeneratingState";
@@ -68,58 +68,125 @@ describe("GeneratingState: the time under the bar", () => {
   });
 });
 
-describe("GeneratingState: the reading's steps", () => {
-  it("ticks what is written, lights what is being written and dims the rest", () => {
-    render(<GeneratingState kind="tarot-reading" caption="필요한 것 카드를 읽고 있어요" fraction={0.3} steps={checklist(plan, SECOND_CARD)} live={false} />);
-    const list = screen.getByRole("list", { name: "풀이 순서" });
-    const items = within(list).getAllByRole("listitem");
-    expect(items.map((item) => item.getAttribute("data-state"))).toEqual(["done", "now", "later", "later", "later", "later", "later"]);
-    expect(within(items[0]!).getByText("지금의 나 카드")).toBeTruthy();
-    // done: a drawn tick (hidden from screen readers), and the state in words for them
-    expect(items[0]!.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
-    expect(items[0]!.textContent).toContain("다 적었어요");
-    expect(items[1]!.querySelector("svg")).toBeNull();
-    expect(items[1]!.textContent).toContain("적고 있어요");
-    expect(items[2]!.textContent).toBe("이 시기의 흐름 카드");
-  });
-});
+const TIPS = [
+  { label: "타로 상식", text: "하나" },
+  { label: "타로 상식", text: "둘" },
+] as const;
+const carousel = () => screen.getByRole("region", { name: "기다리는 동안 읽을거리" });
+/** The card on show (the cards beside it, ready to slide in, are hidden from screen readers). */
+const shown = () => within(carousel()).getByRole("group");
+/** The strip the cards slide in: drag it sideways to turn them. */
+const strip = () => shown().parentElement!.parentElement!;
+const drag = (from: number, to: number) => {
+  fireEvent.pointerDown(strip(), { pointerId: 1, clientX: from });
+  fireEvent.pointerMove(strip(), { pointerId: 1, clientX: to });
+  fireEvent.pointerUp(strip(), { pointerId: 1, clientX: to });
+};
+const page = (props: Partial<Parameters<typeof GeneratingState>[0]> = {}) => (
+  <GeneratingState kind="tarot-reading" caption="필요한 것 카드를 읽고 있어요" fraction={0.3} steps={checklist(plan, SECOND_CARD)} tips={TIPS} live={false} {...props} />
+);
 
-describe("GeneratingState: 기다리는 동안", () => {
-  it("shows one tip at a time and turns to the next every 8 seconds, round and round", () => {
-    render(<GeneratingState kind="tarot-reading" caption="카드를 다시 읽고 있어요" fraction={0} tips={["하나", "둘", "셋"]} live={false} />);
-    expect(screen.getByText("기다리는 동안")).toBeTruthy();
-    expect(screen.getByText("하나")).toBeTruthy();
-    expect(screen.queryByText("둘")).toBeNull();
-    tick(7_000);
-    expect(screen.getByText("하나")).toBeTruthy();
-    tick(1_000);
-    expect(screen.getByText("둘")).toBeTruthy();
-    expect(screen.queryByText("하나")).toBeNull();
-    tick(16_000);
-    expect(screen.getByText("하나")).toBeTruthy();
+describe("GeneratingState: the cards while a full reading is written (a game-loader carousel)", () => {
+  it("shows one card at a time, first the part being written with how far along it is", () => {
+    render(page());
+    expect(carousel().getAttribute("aria-roledescription")).toBe("carousel");
+    const card = shown();
+    expect(card.getAttribute("aria-roledescription")).toBe("slide");
+    expect(within(card).getByText("지금 적는 중")).toBeTruthy();
+    expect(within(card).getByText("필요한 것 카드")).toBeTruthy();
+    expect(within(card).getByText("2 / 7")).toBeTruthy();
+    // no list of the steps any more
+    expect(screen.queryByRole("list")).toBeNull();
+  });
+
+  it("keeps the first card on the part the stream is writing now", () => {
+    const { rerender } = render(page());
+    rerender(page({ steps: checklist(plan, plan.stages.findIndex((stage) => stage.key === "scenarios")) }));
+    expect(within(shown()).getByText("흘러갈 갈래")).toBeTruthy();
+    expect(within(shown()).getByText("5 / 7")).toBeTruthy();
+  });
+
+  it("turns to the next card every 7 seconds, sliding for 0.4 s, round and round", () => {
+    render(page());
+    tick(6_900);
+    expect(within(shown()).getByText("지금 적는 중")).toBeTruthy();
+    tick(500);
+    expect(within(shown()).getByText("하나")).toBeTruthy();
+    expect(within(shown()).getByText("타로 상식")).toBeTruthy();
+    tick(7_400);
+    expect(within(shown()).getByText("둘")).toBeTruthy();
+    tick(7_400);
+    expect(within(shown()).getByText("지금 적는 중")).toBeTruthy();
+  });
+
+  it("has a dot per card under it: buttons named by place, the current one marked; a dot goes to its card", () => {
+    render(page());
+    const dots = within(carousel()).getAllByRole("button");
+    expect(dots.map((dot) => dot.getAttribute("aria-label"))).toEqual(["1번째 카드", "2번째 카드", "3번째 카드"]);
+    expect(dots.map((dot) => dot.getAttribute("aria-current"))).toEqual(["true", null, null]);
+    fireEvent.click(dots[2]!);
+    tick(400);
+    expect(within(shown()).getByText("둘")).toBeTruthy();
+    expect(within(carousel()).getAllByRole("button").map((dot) => dot.getAttribute("aria-current"))).toEqual([null, null, "true"]);
+  });
+
+  it("turns by a swipe: left for the next, right for the previous (round the end), a short drag stays", () => {
+    render(page());
+    drag(200, 100);
+    tick(400);
+    expect(within(shown()).getByText("하나")).toBeTruthy();
+    drag(100, 130);
+    tick(400);
+    expect(within(shown()).getByText("하나")).toBeTruthy();
+    drag(100, 220);
+    tick(400);
+    expect(within(shown()).getByText("지금 적는 중")).toBeTruthy();
+    drag(100, 220);
+    tick(400);
+    expect(within(shown()).getByText("둘")).toBeTruthy();
+  });
+
+  it("holds still while a finger or the pointer is on it", () => {
+    render(page());
+    fireEvent.pointerEnter(carousel());
+    tick(30_000);
+    expect(within(shown()).getByText("지금 적는 중")).toBeTruthy();
+    fireEvent.pointerLeave(carousel());
+    tick(7_400);
+    expect(within(shown()).getByText("하나")).toBeTruthy();
+  });
+
+  it("deals the tips alone when there are no steps", () => {
+    render(page({ steps: undefined }));
+    expect(within(shown()).getByText("하나")).toBeTruthy();
+    expect(within(carousel()).getAllByRole("button")).toHaveLength(2);
   });
 });
 
 describe("GeneratingState: what screen readers hear", () => {
-  it("keeps the caption the only live region: the clock, the steps and the tips stay quiet", () => {
-    const props = { kind: "saju-reading", mode: "saju", caption: "타고난 바탕을 적고 있어요", fraction: 0.2, steps: checklist(plan, SECOND_CARD), tips: ["하나", "둘"] } as const;
+  it("keeps the caption the only live region: the clock and the cards stay quiet", () => {
+    const props = { kind: "saju-reading", mode: "saju", caption: "타고난 바탕을 적고 있어요", fraction: 0.2, steps: checklist(plan, SECOND_CARD), tips: TIPS } as const;
     const { container, rerender } = render(<GeneratingState {...props} />);
-    const live = container.querySelectorAll('[role="status"], [role="alert"], [role="log"], [role="timer"], [aria-live]');
+    const speaking = '[role="status"], [role="alert"], [role="log"], [role="timer"], [aria-live]:not([aria-live="off"])';
+    const live = container.querySelectorAll(speaking);
     expect(live).toHaveLength(1);
     expect(live[0]!.textContent).toBe("타고난 바탕을 적고 있어요");
+    expect(container.querySelector('[aria-live="off"]')).not.toBeNull();
     expect(container.querySelector("section")!.getAttribute("aria-busy")).toBe("true");
+    tick(7_400);
+    expect(container.querySelectorAll(speaking)).toHaveLength(1);
     rerender(<GeneratingState {...props} live={false} />);
-    expect(container.querySelectorAll('[role="status"], [role="alert"], [role="log"], [role="timer"], [aria-live]')).toHaveLength(0);
+    expect(container.querySelectorAll(speaking)).toHaveLength(0);
   });
 });
 
 describe("GeneratingState inline (a teaser on its way)", () => {
-  it("shows the clock only: no steps, no tips, no line to keep the screen open", () => {
-    render(<GeneratingState layout="inline" kind="tarot-teaser" caption="카드를 읽고 있어요" fraction={0} steps={checklist(plan, 0)} tips={["하나"]} live={false} />);
+  it("shows the clock only: no cards, no line to keep the screen open", () => {
+    render(<GeneratingState layout="inline" kind="tarot-teaser" caption="카드를 읽고 있어요" fraction={0} steps={checklist(plan, 0)} tips={TIPS} live={false} />);
     expect(screen.getByText("보통 10초 안팎")).toBeTruthy();
     tick(16_000);
     expect(screen.getByText("16초째 · 조금 더 걸리고 있어요. 길게는 30초까지 걸려요")).toBeTruthy();
-    expect(screen.queryByRole("list")).toBeNull();
+    expect(screen.queryByRole("region", { name: "기다리는 동안 읽을거리" })).toBeNull();
     expect(screen.queryByText("하나")).toBeNull();
     expect(screen.queryByText(STAY)).toBeNull();
   });

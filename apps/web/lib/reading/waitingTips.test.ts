@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DAY_MASTER_ARTICLES } from "@/lib/guide-articles/day-masters";
 import { SAJU_CONCEPT_ARTICLES } from "@/lib/guide-articles/saju-concepts";
 import { TAROT_BASICS_ARTICLES } from "@/lib/guide-articles/tarot-basics";
-import { DAY_MASTER_TIPS, SAJU_CONCEPT_TIPS, TAROT_TIPS, sajuTips } from "./waitingTips";
+import { DAY_MASTER_TIPS, SAJU_CONCEPT_TIPS, TAROT_TIPS, TAROT_TIP_CARDS, sajuTipCards } from "./waitingTips";
 
 const keyPointsOf = (articles: readonly { keyPoints?: readonly string[] }[]) => new Set(articles.flatMap((article) => article.keyPoints ?? []));
 
@@ -36,9 +36,19 @@ describe("기다리는 동안 tips stay equal to the reviewed guide articles", (
     expect(new Set(TAROT_TIPS).size).toBe(TAROT_TIPS.length);
   });
 
-  it("starts the saju tips with the user's own 일간, then the concepts", () => {
-    expect(sajuTips("병화")).toEqual([...DAY_MASTER_TIPS["병화"]!, ...SAJU_CONCEPT_TIPS]);
-    expect(sajuTips(undefined)).toEqual(SAJU_CONCEPT_TIPS);
-    expect(sajuTips("모름")).toEqual(SAJU_CONCEPT_TIPS);
+  it("deals the saju cards with the user's own 일간 first (one key point a card, the stem as the title), then 사주 상식", () => {
+    const concepts = SAJU_CONCEPT_TIPS.map((text) => ({ label: "사주 상식", text }));
+    expect(sajuTipCards({ stem: "丙", ko: "병화" })).toEqual([...DAY_MASTER_TIPS["병화"]!.map((text) => ({ label: "내 일간", title: "丙 병화", text })), ...concepts]);
+    expect(sajuTipCards(undefined)).toEqual(concepts);
+  });
+
+  it("deals one 타로 상식 card per tarot line", () => {
+    expect(TAROT_TIP_CARDS).toEqual(TAROT_TIPS.map((text) => ({ label: "타로 상식", text })));
+  });
+
+  it("keeps few enough cards that their dots fit a 360px phone (24px each)", () => {
+    // the 지금 적는 중 card, then the tips
+    expect(1 + sajuTipCards({ stem: "甲", ko: "갑목" }).length).toBeLessThanOrEqual(12);
+    expect(1 + TAROT_TIP_CARDS.length).toBeLessThanOrEqual(12);
   });
 });

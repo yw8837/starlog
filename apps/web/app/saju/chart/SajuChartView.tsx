@@ -30,7 +30,7 @@ import { checklist, progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuReadingResponse, SajuRequestFields, SajuTeaserData, SajuTopic, SajuTopicId } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
-import { sajuTips } from "@/lib/reading/waitingTips";
+import { sajuTipCards } from "@/lib/reading/waitingTips";
 import { chapterRequestFields, sajuContextBody, sajuStatusBody, sajuTeaserKey, useSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
@@ -298,7 +298,7 @@ export function SajuChartView({
           caption={progress.caption}
           fraction={progress.fraction}
           steps={checklist(readingPlan, progress.reached)}
-          tips={sajuTips(chart?.dayMaster.ko)}
+          tips={sajuTipCards(chart?.dayMaster)}
           live={false}
         />
       </>

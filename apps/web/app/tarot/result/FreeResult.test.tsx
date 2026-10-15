@@ -381,16 +381,21 @@ describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
     expect(JSON.parse(String((sent?.[1] as RequestInit | undefined)?.body))).toMatchObject({ seal: "SEALED_teaser-1" });
   });
 
-  it("while the full reading is written, lists its steps by card position and shows tarot tips", async () => {
+  it("while the full reading is written, deals its cards: the step being written (by card position), then 타로 상식", async () => {
     seed();
     stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })], reading: () => new Promise<Response>(() => {}) });
     render(<FreeResult instant />);
     fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
-    const steps = await screen.findByRole("list", { name: "풀이 순서" });
-    const items = within(steps).getAllByRole("listitem");
-    expect(items.map((item) => item.getAttribute("data-state"))).toEqual(["now", "later", "later", "later", "later", "later", "later"]);
-    for (const label of ["지금의 나 카드", "흐름 카드", "조언 카드", "세 장의 연결과 시기", "오늘 해 볼 일"]) expect(within(steps).getByText(label)).toBeTruthy();
-    expect(screen.getByText(TAROT_TIPS[0]!)).toBeTruthy();
+    const cards = await screen.findByRole("region", { name: "기다리는 동안 읽을거리" });
+    const shown = () => within(cards).getByRole("group");
+    expect(within(shown()).getByText("지금 적는 중")).toBeTruthy();
+    expect(within(shown()).getByText("지금의 나 카드")).toBeTruthy();
+    expect(within(shown()).getByText("1 / 7")).toBeTruthy();
+    const dots = within(cards).getAllByRole("button");
+    expect(dots).toHaveLength(1 + TAROT_TIPS.length);
+    fireEvent.click(dots[1]!);
+    await waitFor(() => expect(within(shown()).getByText(TAROT_TIPS[0]!)).toBeTruthy());
+    expect(within(shown()).getByText("타로 상식")).toBeTruthy();
     expect(screen.getByText("보통 1분 안팎")).toBeTruthy();
     expect(screen.getByText("이 화면을 열어 둔 채로 기다려 주세요.")).toBeTruthy();
     clearBetaUsage();

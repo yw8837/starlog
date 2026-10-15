@@ -9,6 +9,41 @@
   text-align: center;
 }
 
+/*
+ * The whole screen while a full reading is written, like a game loader: the characters on top, the cards in
+ * the middle, the progress at the bottom. It fits one phone screen (360x740 and up) without scrolling.
+ */
+.page {
+  grid-template-rows: 1fr auto auto;
+  align-content: stretch;
+  gap: 20px;
+  padding: 20px 0 28px;
+}
+
+/* The leader sits just above the cards; the sky stays open above it. */
+.page .characters {
+  align-self: end;
+}
+
+/* Short screens (small phones): a smaller leader, so the cards and the progress fit under it. */
+@media (max-height: 760px) {
+  .page .characters {
+    zoom: 0.72;
+  }
+}
+
+/* The caption, the bar and the clock, together at the bottom. */
+.status {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.page .track {
+  width: min(100%, 360px);
+}
+
 /* In place of the text on its way: a calm card under the cards already shown. */
 .inline {
   min-height: 0;
@@ -108,110 +143,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* 기다리는 동안: one reviewed guide line at a time, with room for three lines so a turn moves nothing below. */
-.tip {
-  width: min(100%, 340px);
-  padding: 14px 18px 12px;
-  border: 1px solid var(--glass-line);
-  border-radius: 20px;
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-}
-
-.tipLabel {
-  margin-bottom: 4px;
-  color: var(--gold);
-  font-size: var(--fs-sub);
-  font-weight: 700;
-}
-
-.tipText {
-  display: grid;
-  align-items: center;
-  min-height: 4.8em;
-  font-size: var(--fs-body);
-  line-height: 1.6;
-  text-wrap: pretty;
-  animation: tipIn 700ms ease-out;
-}
-
-/* The reading's parts: ticked once written, lit while written, dim until then. */
-.steps {
-  display: grid;
-  gap: 6px;
-  width: max-content;
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-}
-
-.step {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  line-height: 1.5;
-  opacity: 0.65;
-  transition: opacity 400ms ease-out, color 400ms ease-out;
-}
-
-.step[data-state="done"] {
-  opacity: 0.9;
-}
-
-.step[data-state="now"] {
-  color: var(--ink);
-  font-weight: 700;
-  opacity: 1;
-}
-
-.mark {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  color: var(--gold);
-}
-
-/* Not written yet: a small dim dot. Being written: a gold one that breathes. */
-.step[data-state="later"] .mark::before,
-.step[data-state="now"] .mark::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.step[data-state="later"] .mark {
-  color: var(--ink-sub);
-}
-
-.step[data-state="now"] .mark::before {
-  width: 8px;
-  height: 8px;
-  box-shadow: 0 0 8px rgba(243, 220, 161, 0.6);
-  animation: breathe 1600ms ease-in-out infinite alternate;
-}
-
-@keyframes tipIn {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes breathe {
-  from {
-    opacity: 0.5;
-    transform: scale(0.8);
-  }
-}
-
 @keyframes captionIn {
   from {
     opacity: 0;
@@ -224,4 +155,104 @@
     opacity: 0;
     transform: translateY(16px) scale(0.9);
   }
+}
+
+/*
+ * 기다리는 동안: one card at a time, turned like a page (a 400ms slide, or a plain swap under reduced motion:
+ * globals.css drops the transition). The cards share one height, so a turn moves nothing around them.
+ */
+.carousel {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: min(100%, 440px);
+}
+
+.viewport {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 22px;
+  cursor: grab;
+  /* Sideways drags turn the card; up and down still scroll the page. */
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.strip {
+  display: flex;
+  will-change: transform;
+}
+
+.slide {
+  display: grid;
+  flex: 0 0 100%;
+  align-content: center;
+  gap: 6px;
+  min-height: 190px;
+  padding: 20px 22px;
+  border: 1px solid var(--glass-line);
+  border-radius: 22px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.slideLabel {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.slideTitle {
+  font-family: var(--font-display), serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+
+.slideText {
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.slideCount {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+/* A dot per card: a 24px target around a small mark; the current one a gold bar. */
+.dots {
+  display: flex;
+  justify-content: center;
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--ink-sub);
+  opacity: 0.45;
+  transition: width 300ms ease-out, opacity 300ms ease-out;
+}
+
+.dot[aria-current="true"]::before {
+  width: 16px;
+  background: var(--gold);
+  opacity: 1;
 }

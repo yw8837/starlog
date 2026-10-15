@@ -1,8 +1,15 @@
 /**
- * 기다리는 동안: lines the waiting screen turns through while a full reading is written. Each one is a
+ * 기다리는 동안: cards the waiting screen turns through while a full reading is written. Each line is a
  * reviewed guide article's key point (핵심 정리), copied word for word so the client bundle does not carry
  * the guide library; waitingTips.test.ts keeps them equal to the articles. No new text is written here.
  */
+
+/** One card: a small label, an optional big title, one line. */
+export interface TipCard {
+  label: string;
+  title?: string;
+  text: string;
+}
 
 /** lib/guide-articles/day-masters.ts: each 일간's three key points, by SajuChart.dayMaster.ko. */
 export const DAY_MASTER_TIPS: Readonly<Record<string, readonly string[]>> = {
@@ -60,7 +67,8 @@ export const DAY_MASTER_TIPS: Readonly<Record<string, readonly string[]>> = {
 
 /**
  * lib/guide-articles/saju-concepts.ts: the key points that stand on their own while waiting (none about the
- * birth input, Starlog's own rules, 용신 the reading does not name, or 인연 점수).
+ * birth input, Starlog's own rules, 용신 the reading does not name, or 인연 점수). Eight, so the cards' dots
+ * fit a phone.
  */
 export const SAJU_CONCEPT_TIPS: readonly string[] = [
   "사주는 연주·월주·일주·시주 네 기둥, 여덟 글자로 읽어요.",
@@ -70,9 +78,7 @@ export const SAJU_CONCEPT_TIPS: readonly string[] = [
   "오행의 균형은 개수를 똑같이 맞추는 일이 아니에요.",
   "합은 끌어당기는 관계, 충은 움직임과 긴장이 생기는 관계로 읽어요.",
   "12운성은 일간의 기운을 장생부터 양까지 한살이에 빗댄 이름이에요.",
-  "병·사·묘·절은 불운이 아니라 기운의 세기와 방향을 나타내요.",
   "운은 대운, 세운, 월운, 일진의 층으로 겹쳐 읽어요.",
-  "월운은 절기마다, 일진은 날마다 바뀌는 간지예요.",
 ];
 
 /** lib/guide-articles/tarot-basics.ts: the key points that read on their own, without their article around them. */
@@ -90,5 +96,14 @@ export const TAROT_TIPS: readonly string[] = [
   "라이더-웨이트-스미스 덱에서는 8번이 힘, 11번이 정의예요.",
 ];
 
-/** The saju reading's tips: the user's own 일간 first, then the concepts. */
-export const sajuTips = (dayMaster: string | undefined): readonly string[] => [...((dayMaster && DAY_MASTER_TIPS[dayMaster]) || []), ...SAJU_CONCEPT_TIPS];
+/** The saju reading's cards: the user's own 일간 first (its stem as the title, a key point a card), then 사주 상식. */
+export function sajuTipCards(dayMaster: { stem: string; ko: string } | undefined): TipCard[] {
+  const own = dayMaster ? (DAY_MASTER_TIPS[dayMaster.ko] ?? []) : [];
+  return [
+    ...own.map((text) => ({ label: "내 일간", title: `${dayMaster!.stem} ${dayMaster!.ko}`, text })),
+    ...SAJU_CONCEPT_TIPS.map((text) => ({ label: "사주 상식", text })),
+  ];
+}
+
+/** The tarot reading's cards: 타로 상식, a line a card. */
+export const TAROT_TIP_CARDS: readonly TipCard[] = TAROT_TIPS.map((text) => ({ label: "타로 상식", text }));

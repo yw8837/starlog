@@ -26,7 +26,7 @@ import { checklist, progressPlan } from "@/lib/reading/progress";
 import { readTeaser, saveTeaser } from "@/lib/reading/teaserCache";
 import type { TarotInput, TarotReadingResponse, TarotTeaserData } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
-import { TAROT_TIPS } from "@/lib/reading/waitingTips";
+import { TAROT_TIP_CARDS } from "@/lib/reading/waitingTips";
 import { countFullReading, markFreeUsedUp, useRemainingFree } from "@/lib/storage/betaUsage";
 import { historyFor, listChapters, mergeServerReadings, saveChapter, useChapters } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
@@ -280,7 +280,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
         caption={progress.caption}
         fraction={progress.fraction}
         steps={checklist(readingPlan, progress.reached)}
-        tips={TAROT_TIPS}
+        tips={TAROT_TIP_CARDS}
         live={false}
       />
     );

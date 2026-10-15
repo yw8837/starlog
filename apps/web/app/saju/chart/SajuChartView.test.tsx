@@ -6,7 +6,7 @@ import { resetAccountForTests } from "@/lib/account/client";
 import { chartFor } from "@/components/saju/useSajuChart";
 import { saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuTopicId } from "@/lib/reading/types";
-import { DAY_MASTER_TIPS } from "@/lib/reading/waitingTips";
+import { DAY_MASTER_TIPS, SAJU_CONCEPT_TIPS } from "@/lib/reading/waitingTips";
 import { clearSajuProfile, sajuTeaserKey, saveSajuProfile } from "@/lib/sajuFlow";
 import { DEFAULT_SAJU_FORM, sanitizeSajuForm } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
@@ -322,20 +322,24 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(listChapters().at(-1)).toMatchObject({ kind: "saju", topic: "money", title: "흙 속의 쇠" });
   });
 
-  it("while the 사주팔자 reading is written, lists its parts and opens the tips with the user's own 일간", async () => {
+  it("while the 사주팔자 reading is written, deals its cards: the part being written, the user's own 일간, then 사주 상식", async () => {
     seed();
     stub({ me: [OWNER_ME], reading: () => new Promise<Response>(() => {}) });
     render(<SajuChartView />);
     fireEvent.click(await screen.findByRole("button", { name: "운영자로 무료 열기" }));
-    const steps = await screen.findByRole("list", { name: "풀이 순서" });
-    const items = within(steps).getAllByRole("listitem");
-    expect(items).toHaveLength(SAJU_PROLOGUE_SECTIONS.length + 1);
-    expect(items.map((item) => item.getAttribute("data-state"))).toEqual(["now", ...items.slice(1).map(() => "later")]);
-    expect(within(steps).getByText("타고난 바탕")).toBeTruthy();
-    expect(within(steps).getByText("한눈에 보기")).toBeTruthy();
+    const cards = await screen.findByRole("region", { name: "기다리는 동안 읽을거리" });
+    const shown = () => within(cards).getByRole("group");
+    expect(within(shown()).getByText("지금 적는 중")).toBeTruthy();
+    expect(within(shown()).getByText("타고난 바탕")).toBeTruthy();
+    expect(within(shown()).getByText(`1 / ${SAJU_PROLOGUE_SECTIONS.length + 1}`)).toBeTruthy();
     const chart = chartFor(BIRTH);
-    const dayMaster = "chart" in chart ? chart.chart.dayMaster.ko : "";
-    expect(screen.getByText(DAY_MASTER_TIPS[dayMaster]![0]!)).toBeTruthy();
+    const dayMaster = "chart" in chart ? chart.chart.dayMaster : null;
+    const dots = within(cards).getAllByRole("button");
+    expect(dots).toHaveLength(1 + 3 + SAJU_CONCEPT_TIPS.length);
+    fireEvent.click(dots[1]!);
+    await waitFor(() => expect(within(shown()).getByText(`${dayMaster!.stem} ${dayMaster!.ko}`)).toBeTruthy());
+    expect(within(shown()).getByText("내 일간")).toBeTruthy();
+    expect(within(shown()).getByText(DAY_MASTER_TIPS[dayMaster!.ko]![0]!)).toBeTruthy();
     expect(screen.getByText("보통 2분 안팎")).toBeTruthy();
     expect(screen.getByText("이 화면을 열어 둔 채로 기다려 주세요.")).toBeTruthy();
   });
