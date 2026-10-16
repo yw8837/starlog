@@ -29,6 +29,7 @@ declare global {
     PAY_LIMITER?: RateLimitBinding;
     WEBHOOK_LIMITER?: RateLimitBinding;
     ME_LIMITER?: RateLimitBinding;
+    SHARE_IMAGE_LIMITER?: RateLimitBinding;
     DAILY_KV?: KvBinding;
     /** The starlog-ai Worker (ai-proxy/), the way to the Anthropic API (lib/ai/provider.ts selectProvider) */
     AI_PROXY?: ServiceBinding;
