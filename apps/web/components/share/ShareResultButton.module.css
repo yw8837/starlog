@@ -8,14 +8,15 @@
   font-size: var(--fs-h1);
 }
 
+/* The sheet is the night gradient (Modal.module.css), so the words take the sky's light tokens (M-01). */
 .lead {
-  color: #4a3d63;
+  color: var(--ink-sub);
   font-size: var(--fs-body);
   line-height: 1.6;
 }
 
 .lead strong {
-  color: var(--paper-ink);
+  color: var(--ink);
 }
 
 /* The address, so the sharer sees which link goes out. */
@@ -23,8 +24,8 @@
   overflow: hidden;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(93, 77, 122, 0.08);
-  color: #5d4d7a;
+  background: var(--glass);
+  color: var(--ink-sub);
   font-size: var(--fs-sub);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -37,17 +38,21 @@
 }
 
 .note {
-  color: #5d4d7a;
+  color: var(--ink-sub);
   font-size: var(--fs-sub);
   line-height: 1.5;
 }
 
+/* A quiet text button with a full 44px target (M-09). */
 .stop {
+  display: inline-flex;
+  align-items: center;
   justify-self: start;
-  padding: 4px 0;
+  min-height: 44px;
+  padding: 0;
   border: 0;
   background: none;
-  color: #6b5d84;
+  color: var(--ink-sub);
   font: inherit;
   font-size: var(--fs-sub);
   text-decoration: underline;
