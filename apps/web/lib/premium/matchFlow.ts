@@ -3,7 +3,7 @@ import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { createSessionStore } from "@/lib/sessionStore";
 import { clearPremiumTeaser } from "@/lib/reading/teaserCache";
-import { clearPremiumResume } from "./client";
+import { clearPremiumResume, hasPremiumResume } from "./client";
 
 /**
  * 우리 사이 궁합's flow (form → five cards → preview), kept in this tab's sessionStorage only: the other
@@ -131,13 +131,16 @@ export function clearMatchFlow() {
 
 /**
  * Whenever a page opens (RouteTracker): an unfinished 궁합 flow ends once the user leaves its pages, or 24 hours after it
- * was last saved (review 2026-10-17 M4). The partner's birth leaves the tab with its preview and resume token.
+ * was last saved (review 2026-10-17 M4). The partner's birth leaves the tab with its preview and resume token. A paid
+ * reading with parts already written (its resume token) is kept on leaving, so it can be finished; only the 24 hours
+ * end it (review 2026-10-17 #7).
  */
 export function pruneMatchFlow(pathname: string, now: number = Date.now()): void {
   const flow = store.read();
   if (!flow) return;
+  const fresh = flow.savedAt !== undefined && now - flow.savedAt < MATCH_FLOW_TTL_MS;
   const inFlow = MATCH_FLOW_PATHS.some((path) => pathname.startsWith(path));
-  if (inFlow && flow.savedAt !== undefined && now - flow.savedAt < MATCH_FLOW_TTL_MS) return;
+  if (fresh && (inFlow || hasPremiumResume("match"))) return;
   store.clear();
   clearPremiumTeaser("match|");
   clearPremiumResume("match");

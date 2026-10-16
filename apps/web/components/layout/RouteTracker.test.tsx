@@ -92,11 +92,24 @@ describe("RouteTracker", () => {
       expect(left()).toEqual([true, true, true]);
     });
 
-    it("forgets the partner's birth once the user leaves it: the flow, its preview and its resume token", () => {
+    it("forgets the partner's birth once the user leaves it unpaid: the flow and its preview", () => {
       keep(Date.now());
+      sessionStorage.removeItem("starlog.premium-resume.match");
       nav.path = "/saju/chart";
       render(<RouteTracker />);
       expect(left()).toEqual([false, false, false]);
+    });
+
+    it("keeps a paid flow whose reading is part written (its resume token) when the user leaves; only its 24 hours end it (review 2026-10-17 #7)", () => {
+      keep(Date.now());
+      nav.path = "/saju/chart";
+      sessionStorage.removeItem("starlog.teaser.premium");
+      render(<RouteTracker />);
+      expect([MATCH_FLOW_KEY, "starlog.premium-resume.match"].map((key) => sessionStorage.getItem(key) !== null)).toEqual([true, true]);
+      cleanup();
+      sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify({ ...JSON.parse(sessionStorage.getItem(MATCH_FLOW_KEY)!), savedAt: Date.now() - 25 * 3_600_000 }));
+      render(<RouteTracker />);
+      expect([MATCH_FLOW_KEY, "starlog.premium-resume.match"].map((key) => sessionStorage.getItem(key) !== null)).toEqual([false, false]);
     });
 
     it("forgets a flow kept past 24 hours, even on its own pages", () => {

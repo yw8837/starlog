@@ -90,6 +90,15 @@ function clear(store: Store | null, id: PremiumId) {
   }
 }
 
+/** This tab holds a resume token of `id`: a paid reading with parts already written (review 2026-10-17 #7). */
+export function hasPremiumResume(id: PremiumId, store: Store | null = session()): boolean {
+  try {
+    return store?.getItem(PREMIUM_RESUME_KEY(id)) != null;
+  } catch {
+    return false;
+  }
+}
+
 /** Forgets this tab's resume token of `id` (and the input it holds: for 궁합, the partner's birth). */
 export function clearPremiumResume(id: PremiumId, store: Store | null = session()): void {
   clear(store, id);
