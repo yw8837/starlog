@@ -1,3 +1,4 @@
+import { computeChart } from "@starlog/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import { accountSecret } from "@/lib/account/secrets";
@@ -6,7 +7,7 @@ import { resetSpendState } from "@/lib/api/spend";
 import { setTestDb } from "@/lib/db";
 import { mockToss } from "@/lib/pay/tossMock";
 import { listReadings } from "@/lib/readings/store";
-import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { issueChapter, openChapter, type ChapterContext } from "@/lib/security/chapterToken";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
@@ -67,6 +68,11 @@ describe("the 궁합 partner's information (owner 2026-10-16)", () => {
     expect(chapter).toMatchObject({ kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", concern: "요즘 연락이 뜸해요", me: { birth: DEFAULT_SAJU_FORM }, chapterToken: "" });
     expect(chapter).not.toHaveProperty("partner");
     expect(JSON.stringify(chapter)).not.toMatch(/1987|"partner"/);
+    // Owner 2026-10-17 (H1): the reading the account keeps names none of the other person's pillars either.
+    const mine = Object.values(computeChart(toSajuInput(DEFAULT_SAJU_FORM)).pillars).flatMap((p) => (p ? [p.stem + p.branch] : []));
+    const theirs = Object.values(computeChart(toSajuInput(PARTNER)).pillars).flatMap((p) => (p ? [p.stem + p.branch] : [])).filter((gz) => !mine.includes(gz));
+    expect(theirs.length).toBeGreaterThan(0);
+    for (const gz of theirs) expect(JSON.stringify(chapter.reading)).not.toContain(gz);
   });
 
   it("travels to the device sealed inside the chapter token, never as text", async () => {

@@ -56,6 +56,13 @@ describe("the policies' premium text", () => {
     expect(text).toContain("최대 30일");
     expect(text).toContain("공유 이미지");
     expect(text).toContain("계정에 보관하는 궁합 풀이에는 상대방의 출생 정보와 명식을 넣지 않습니다");
+    // As it works since 2026-10-17: only the day master and the tilt go to the AI, the share image carries the relation,
+    // the account keeps the relation and the label, a login again on the writing device keeps follow-ups, 30 days then gone.
+    expect(text).toContain("일간과 오행의 기울기만");
+    expect(text).toContain("공유 이미지에는 고른 관계만");
+    expect(text).toContain("관계, 부르는 말");
+    expect(text).toContain("풀이를 연 기기에서는 다시 로그인해도");
+    expect(text).not.toContain("풀이를 열 때 지웁니다");
     expect(screen.getByRole("heading", { name: "프리미엄 풀이를 볼 때" })).toBeTruthy();
   });
 
@@ -67,7 +74,11 @@ describe("the policies' premium text", () => {
     for (const line of ["켈틱 크로스 10장", "7,900원", "프리미엄 궁합", "2027 신년운세", "14,900원", "이어서 물어보기 5번", "30일"]) expect(text).toContain(line);
     expect(text).toContain("2026년 11월 15일 0시부터 2027년 11월 30일까지");
     expect(text).toContain("이미 지난 달도");
-    expect(text).toContain("완성되어 저장되지 않으면 결제한 풀이는 쓰이지 않으며");
+    expect(text).toContain("운영자 쪽 문제로 완성되지 않은 풀이는 쓰이지 않습니다");
+    // The same reopening rule as 제7조 and the refund page (MAX_RESTORES 3).
+    expect(text).toContain("3번까지 다시 열어");
+    expect(text).toContain("네 번째로 끊긴 때에는");
+    expect(text).toContain("계정에는 관계와 부르는 말만");
     expect(text).not.toContain("우리 사이");
     expect(text).not.toMatch(/베타|오픈 기념|정확|비법/);
   });

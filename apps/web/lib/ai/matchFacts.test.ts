@@ -51,37 +51,39 @@ describe("match facts", () => {
     expect(JSON.stringify(f.pair)).not.toMatch(/점수|점\b|%|천생연분|궁합/);
   });
 
-  it("allows the glyphs, ten gods and years of both charts and of the shared years", () => {
+  it("allows my glyphs, ten gods and years, the shared years, and of the other person only the day stem (owner 2026-10-17)", () => {
     const f = buildMatchFacts(me, chart(1992, 2, 26), { relation: "spouse", label: "민지", concern: "요즘 대화가 줄었어요" }, NOW);
-    expect(f.allowed.glyphs).toEqual(expect.arrayContaining(["丙", "寅", "壬", "申"]));
+    expect(f.allowed.glyphs).toEqual(expect.arrayContaining(["丙", "寅", "壬"]));
+    expect(f.allowed.glyphs).not.toContain("申");
     expect(f.allowed.tenGods).toEqual(expect.arrayContaining(["편관", "편재"]));
-    expect(f.allowed.years).toEqual(expect.arrayContaining([1990, 1992, 2026]));
+    expect(f.allowed.years).toEqual(expect.arrayContaining([1990, 2026]));
+    expect(f.allowed.years).not.toContain(1992);
     expect(f.label).toBe("민지");
     for (const line of f.pair.luck.sharedYears) expect(line).toMatch(/^20\d\d년 /);
   });
 
   it("calls the same 일지 in two charts 같은 글자, never 자형, and gives neither chart the standard reading's monthly (M3)", () => {
     const f = buildMatchFacts(chart(1990, 1, 5), chart(1990, 1, 17, { gender: "male" }), { relation: "friend" }, NOW); // 庚午 × 壬午
-    expect(f.pair.dayBranches.map((r) => `${r.type} ${r.members.join("-")}`)).toEqual(["같은 글자 午(나의 일지)-午(그 사람의 일지)"]);
+    expect(f.pair.dayBranches).toEqual([{ type: "같은 글자", note: "같은 글자가 겹침" }]);
+    expect(JSON.stringify(f.pair)).not.toContain("午");
     expect(JSON.stringify(f.pair)).not.toContain("자형");
     expect([f.me.monthly, f.partner.monthly]).toEqual([undefined, undefined]);
   });
 
-  it("lets the 기둥 절 name 같은 간지·같은 글자 when that is all two charts share", () => {
-    const f = buildMatchFacts(me, chart(1996, 10, 18, { gender: "male" }), { relation: "friend" }, NOW); // 丙子 戊戌 戊子: my 월주 is their 년주
-    expect(new Set(f.pair.pillars.map((r) => r.type))).toEqual(new Set(["같은 간지", "같은 글자"]));
+  it("asks the 일지 절 for no relation when the two 일지 have none (丙寅 × 戊子)", () => {
+    const f = buildMatchFacts(me, chart(1996, 10, 18, { gender: "male" }), { relation: "friend" }, NOW);
+    expect(f.pair.dayBranches).toEqual([]);
     expect(validateMatchPartA(mockMatchPartA(f), f).filter((v) => v.includes("계산된 관계"))).toEqual([]);
   });
 
-  it("names a whole pillar both charts hold 같은 간지, in place of its two 같은 글자 (both 년주 庚午)", () => {
+  it("hands over no relation between the other pillars, nor the other person's pillars, 대운 or birth year (owner 2026-10-17)", () => {
     const f = buildMatchFacts(chart(1990, 3, 1), chart(1990, 5, 1, { gender: "male" }), { relation: "friend" }, NOW); // 庚午 戊寅 乙丑 × 庚午 庚辰 丙寅
-    const lines = f.pair.pillars.map((r) => `${r.type} ${r.members.join("-")}`);
-    expect(lines).toContain("같은 간지 庚午(나의 년주)-庚午(그 사람의 년주)");
-    expect(lines).not.toContain("같은 글자 庚(나의 년간)-庚(그 사람의 년간)");
-    expect(lines).not.toContain("같은 글자 午(나의 년지)-午(그 사람의 년지)");
-    expect(lines).toContain("같은 글자 庚(나의 년간)-庚(그 사람의 월간)");
-    // the 기둥 절 may name it in those words
-    expect(validateMatchPartA({ ...mockMatchPartA(f), pillars: { body: "두 사람의 년주는 같은 간지예요." } }, f).filter((v) => v.includes("계산된 관계"))).toEqual([]);
+    const pair = JSON.stringify(f.pair);
+    expect(pair).not.toMatch(/그 사람의 (년|월|시)|庚辰|丙寅/);
+    expect(f.pair).not.toHaveProperty("pillars");
+    expect(f.pair.elements.partner).toEqual({ most: expect.any(Array), fewest: expect.any(Array) });
+    expect(f.pair.luck.partner).toMatch(/^그 사람의 대운(이 [123]년 안에 바뀌어요|은 3년 안에는 바뀌지 않아요)$/);
+    expect(f.pair.luck.currentKo).toEqual(f.me.luck?.current ? [f.me.luck.current.ko] : []);
   });
 
   it("counts a year for both only when its 세운 meets each 일지 by a relation; 같은 글자 is no meeting (M2)", () => {

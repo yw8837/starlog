@@ -3,6 +3,7 @@ import type {
   DeepPartA, DeepPartB, DeepTeaserDraft, MatchPartA, MatchPartB, MatchTeaserDraft, NewYearPartA, NewYearPartB, NewYearPartC, NewYearTeaserDraft,
 } from "./premiumSchemas";
 import { MATCH_HEADINGS, ROMANTIC_RELATIONS, matchUserText, type MatchFacts } from "./prompts/match";
+import { yearGanzhi, ymKo } from "./prompts/saju";
 import { NEWYEAR_HEADINGS, type MonthFact, type NewYearFacts } from "./prompts/newyear";
 import { ROMANCE_WORDS, cardLabel, mentionsWord, type TarotContext } from "./prompts/tarot";
 import { SOFT_PREFIX, aiTellViolations } from "./style";
@@ -147,11 +148,33 @@ export function matchSafetyViolations(text: string, m: MatchFacts, out: string[]
   }
 }
 
+/**
+ * Owner 2026-10-17 (H1): the other person is named by their day master, the tilt of their elements and relation names
+ * only. Their pillars, their 대운 (간지, start month) and their birth year are refused here as a safety net; the model is
+ * never given them (prompts/match.ts partnerView), and a glyph only their chart holds fails allowedFactViolations.
+ */
+export function partnerTextViolations(text: string, m: MatchFacts, out: string[]): void {
+  // What the text may name for its own reasons: my pillars and 대운, this year's 세운 and every year the facts allow.
+  const mine = new Set([...m.me.pillars.map((p) => p.gz), ...(m.me.luck?.cycles ?? []).map((c) => c.gz), m.me.annual.gz, ...m.allowed.years.map(yearGanzhi)]);
+  const myLuck = new Set([...mine, ...(m.me.luck?.cycles ?? []).flatMap((c) => (c.from ? [c.from] : []))]);
+  const named = (gz: string, ko: string, tail: string) => text.includes(gz) || new RegExp(`${ko}(${tail})`).test(text);
+  const pillar = m.partner.pillars.find((p) => !mine.has(p.gz) && named(p.gz, p.ko, "\\(|년|월|일|시|주"));
+  if (pillar) out.push(`그 사람의 기둥 간지(${pillar.ko})는 쓰지 않아요. 그 사람 쪽은 일간과 오행 기울기, 두 사람 사이의 관계 이름으로만 말해 주세요.`);
+  const cycles = (m.partner.luck?.cycles ?? []).filter((c) => !myLuck.has(c.gz));
+  const months = (m.partner.luck?.cycles ?? []).flatMap((c) => (c.from && !myLuck.has(c.from) ? [c.from, ymKo(c.from)] : []));
+  if (cycles.some((c) => named(c.gz, c.ko, "\\(|\\s?대운")) || months.some((ym) => text.includes(ym))) {
+    out.push("그 사람의 대운(기간·간지·시작 연월)은 쓰지 않아요. 입력의 연도 없는 문장 그대로만 말해 주세요.");
+  }
+  const year = m.partner.input.birthYear;
+  if (year !== m.me.input.birthYear && new RegExp(`${year}\\s?년`).test(text)) out.push("그 사람의 출생 연도는 쓰지 않아요.");
+}
+
 export function validateMatchTeaser(d: MatchTeaserDraft, m: MatchFacts): string[] {
   const out: string[] = [];
   premiumCommonViolations(d, [d.summary], out);
   lengthCheck("두 사람 첫인상", d.summary, 300, 400, out);
   allowedFactViolations(maskGanzhiReadings(d.summary), m.allowed, out, matchUserText(m));
+  partnerTextViolations(d.summary, m, out);
   matchSafetyViolations(d.summary, m, out);
   voiceViolations(d.summary, out);
   aiTellViolations([d.summary], out);
@@ -166,11 +189,12 @@ export function validateMatchPartA(a: MatchPartA, m: MatchFacts): string[] {
   keys.forEach((k) => lengthCheck(MATCH_HEADINGS[k], a[k].body, 550, 750, out));
   const text = bodies.join("\n");
   allowedFactViolations(maskGanzhiReadings(text), m.allowed, out, matchUserText(m));
+  partnerTextViolations(text, m, out);
   matchSafetyViolations(text, m, out);
   const mine = m.me.dayMaster.display.slice(0, 2);
   const theirs = m.partner.dayMaster.display.slice(0, 2);
   if (!a.dayMasters.body.includes(mine) || !a.dayMasters.body.includes(theirs)) out.push(`${MATCH_HEADINGS.dayMasters} 절에서 두 일간(${mine}, ${theirs})을 모두 불러 주세요.`);
-  if (m.pair.pillars.length && !/합|충|형|파|해\(|같은 글자|같은 간지/.test(a.pillars.body)) out.push(`${MATCH_HEADINGS.pillars} 절에 계산된 관계(합·충·형·파·해, 같은 글자·같은 간지)가 보이지 않아요.`);
+  if (m.pair.dayBranches.length && !/합|충|형|파|해\(|같은 글자/.test(a.pillars.body)) out.push(`${MATCH_HEADINGS.pillars} 절에 계산된 관계(합·충·형·파·해, 같은 글자)가 보이지 않아요.`);
   for (const ko of m.pair.luck.currentKo) if (!a.luck.body.includes(ko)) out.push(`${MATCH_HEADINGS.luck} 절에 지금 대운(${ko})이 보이지 않아요.`);
   voiceViolations(text, out);
   if (m.concern && !mentions(text, m.concern, 0.3)) out.push(`${SOFT_PREFIX}사용자의 한 줄 고민이 사주 풀이에 보이지 않아요. 그 고민에 닿는 장면을 하나 골라 주세요.`);
@@ -202,6 +226,7 @@ export function validateMatchPartB(b: MatchPartB, m: MatchFacts, ctx: TarotConte
   // Card names are not claims: "죽음" and "연인" are cards here, not a death topic or a romance word.
   const plain = withoutDrawnNames(maskGanzhiReadings(text), ctx.cards.map((c) => c.kb));
   allowedFactViolations(plain, m.allowed, out, matchUserText(m), { cardText: true });
+  partnerTextViolations(text, m, out);
   matchSafetyViolations(plain, m, out);
   voiceViolations([text, ...b.followUps].join("\n"), out);
   actionVarietyViolations([b.action.body, b.observation.body], out);
@@ -314,6 +339,7 @@ export function validateMatchFollowUp(a: FollowUpAnswer, m: MatchFacts, ctx: Tar
   premiumCommonViolations(a, [a.answer], out);
   lengthCheck("answer", a.answer, 150, 450, out);
   allowedFactViolations(maskGanzhiReadings(a.answer), m.allowed, out, `${matchUserText(m)} ${question}`);
+  partnerTextViolations(a.answer, m, out);
   matchSafetyViolations(a.answer, m, out);
   foreignCardViolations(a.answer, ctx.cards.map((c) => c.kb), out);
   voiceViolations(a.answer, out);

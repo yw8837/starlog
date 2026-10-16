@@ -13,7 +13,7 @@ import {
  * (crossing, two axes, the staff), timing, action and observation. Both parts share the cards block.
  */
 
-const DEEP_FORMATS = `# 작업별 형식 (심층 타로 · 카드 10장)
+const DEEP_FORMATS = `# 작업별 형식 (카드 10장)
 
 이 리딩은 카드 10장을 정해진 열 자리에 놓고 읽어요. <template>의 자리 열 개와 각 자리가 묻는 것을 그대로 따르고, 이 배열에 전통 배열의 이름을 붙이지 않아요. 카드 10장 리딩에서는 카드를 주어로 세운 문장을 리딩 전체에서 여섯 번 이하로 써요(위의 세 번 규칙 대신이에요). 사용자의 칩과 메모는 리딩 전체에서 각각 한 번만 인용해요.
 

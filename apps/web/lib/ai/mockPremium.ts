@@ -144,7 +144,7 @@ export function mockMatchTeaser(m: MatchFacts): MatchTeaserDraft {
     summary: fill([
       `명리에서는 두 사람의 일간을 ${m.pair.dayMasters.images}의 짝으로 읽어요.`,
       `${m.pair.dayMasters.meeting}.`,
-      e.partnerFillsMine.length ? `내 명식에 겉으로 없는 ${e.partnerFillsMine[0]}개를 ${nameOf(m)} 쪽이 품고 있어요.` : "두 사람의 오행은 서로 겹치는 쪽이 많아요.",
+      e.partnerFillsMine.length ? `${nameOf(m)} 쪽은 내 명식에 겉으로 없는 기운을 품고 있어요: ${e.partnerFillsMine[0]}.` : "두 사람의 오행은 서로 겹치는 쪽이 많아요.",
       concernLine(m, "두 결의 속도 차이부터 비춰 볼게요."),
       "이번 주에는 둘이 함께 정할 일 하나를 골라 먼저 순서를 나눠 보세요.",
     ], SAJU_PAIR_POOL, 310, 400),
@@ -169,16 +169,18 @@ export function mockMatchPartA(m: MatchFacts): MatchPartA {
     },
     elements: {
       body: fill([
-        `${e.basis}로 세면 나는 ${countsLine(e.me)}, ${who} 쪽은 ${countsLine(e.partner)}이에요.`,
-        e.partnerFillsMine.length ? `내 명식에 겉으로 없는 기운 가운데 ${e.partnerFillsMine.join(", ")}개를 ${who} 쪽이 품고 있어요.` : `${who} 쪽이 내게 없는 기운을 따로 채워 주지는 않아요.`,
+        `${e.basis}로 세면 나는 ${countsLine(e.me)}이에요.`,
+        `${who} 쪽은 많은 기운이 ${e.partner.most.join("·")}, 적은 기운이 ${e.partner.fewest.join("·")} 쪽으로 기울어 있어요.`,
+        e.partnerFillsMine.length ? `내 명식에 겉으로 없는 기운 가운데 ${who} 쪽이 품은 것도 있어요: ${e.partnerFillsMine.join(", ")}.` : `${who} 쪽이 내게 없는 기운을 따로 채워 주지는 않아요.`,
         e.mineFillsPartner.length ? `거꾸로 ${who} 쪽에 없는 ${e.mineFillsPartner.join(", ")}개는 내 쪽에 있어요.` : `${who} 쪽에 없는 기운을 내가 따로 채우지는 않아요.`,
         e.bothMissing.length ? `둘 다 겉에 없는 기운도 있어요(${e.bothMissing.join("·")}). 함께 의식해서 꺼내 써야 하는 힘이에요.` : "",
       ], SAJU_PAIR_POOL, 560, 750),
     },
     pillars: {
       body: fill([
-        m.pair.dayBranches.length ? `가장 가까운 자리인 두 일지 사이에는 ${relationText(m.pair.dayBranches)} 관계가 있어요.` : "두 일지 사이에는 따로 묶이거나 부딪히는 관계가 보이지 않아요.",
-        m.pair.pillars.length ? `기둥 전체로 보면 ${relationText(m.pair.pillars.slice(0, 3))} 같은 관계가 계산돼요.` : "기둥 사이에도 계산된 관계가 없어 서로 담백한 거리를 두는 결로 읽어요.",
+        m.pair.dayBranches.length
+          ? `가장 가까운 자리인 두 일지 사이에는 ${m.pair.dayBranches.map((r) => r.type).join(", ")} 관계가 있어요.`
+          : "두 일지 사이에는 따로 묶이거나 부딪히는 관계가 보이지 않아 서로 담백한 거리를 두는 결로 읽어요.",
         "관계가 있다는 사실은 사건이 아니라 움직임이 늘어나거나 묶이려는 성질로만 읽어요.",
         // The pair's limits, said once as the prompt asks (the model copies these lines).
         ...m.pair.limits,
@@ -187,7 +189,7 @@ export function mockMatchPartA(m: MatchFacts): MatchPartA {
     luck: {
       body: fill([
         m.pair.luck.me ? `${m.pair.luck.me.replace(/^나: /, "나는 ")}의 흐름에 있어요.` : "나는 첫 대운이 시작되기 전의 흐름으로 읽어요.",
-        m.pair.luck.partner ? `${m.pair.luck.partner.replace(/^그 사람: /, `${who} 쪽은 `)}의 흐름에 있어요.` : `${who} 쪽은 첫 대운이 시작되기 전의 흐름으로 읽어요.`,
+        m.pair.luck.partner ? `${m.pair.luck.partner.replace(/^그 사람/, who)}.` : "",
         ...m.pair.luck.changes.map((line) => `${line}.`),
         ...m.pair.luck.sharedYears.map((line) => `${line} 관계가 있어 함께 움직임이 늘어나는 해로 읽어요.`),
         "대운은 방향을 보는 도구이지 특정한 일이 생긴다는 약속은 아니에요.",

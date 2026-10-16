@@ -24,6 +24,12 @@ describe("premium samples", () => {
     expect(JSON.stringify(match)).not.toMatch(/"partner"|"birth"/);
   });
 
+  it("name the other person in the 궁합 by their day master only (owner 2026-10-17): no pillar, 대운 or birth year of theirs", () => {
+    // The sample's other person: 1992-02-26, time unknown (壬申 壬寅 壬申), in 己亥 대운 2019-05~2029-05, then 戊戌.
+    expect(JSON.stringify(match.reading)).toContain("임수(壬水)");
+    expect(JSON.stringify(match.reading)).not.toMatch(/壬申|壬寅|己亥|戊戌|1992|2019-05|2029-05|2029년 5월|그 사람: |그 사람의 (년|월|시)/);
+  });
+
   it("give each product page a short excerpt that ends on a sentence", () => {
     for (const id of ["tarot-deep", "match", "newyear-2027"] as const) {
       const excerpt = sampleExcerpt(id);
