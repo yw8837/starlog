@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { parseAccount, type AccountState, type AccountUser } from "@/lib/account/client";
-import { getJson } from "@/lib/reading/api";
-import { forgetServerIds, mergeServerReadings, removeServerChapters } from "./chapters";
+import { getJson, postJson } from "@/lib/reading/api";
+import { forgetServerIds, listChapters, mergeServerReadings, removeServerChapters, updateChapter } from "./chapters";
+import { matchSeal } from "./matchSeals";
 
 /** The account's saved readings on this device (spec 5.7), and the check after a cut-off paid reading (M4). */
 
@@ -110,7 +111,43 @@ export async function pullAccountReadings(fetchImpl: typeof fetch = fetch): Prom
     if (!result.next) break;
     before = result.next;
   }
+  await restoreMatchTokens(fetchImpl);
   return added;
+}
+
+export interface IssuedMatchToken {
+  chapterToken: string;
+  followUpsLeft: number;
+}
+
+/**
+ * A 궁합's chapter token again (review 2026-10-17 H3): from the seal this device kept, or right after a cut-off from the
+ * tab's input and resume token. Null when the server cannot vouch for the partner.
+ */
+export async function requestMatchToken(
+  body: { readingId: string; sealed: string } | { readingId: string; resume: string; input: unknown },
+  fetchImpl: typeof fetch = fetch,
+): Promise<IssuedMatchToken | null> {
+  const res = await postJson<{ chapterToken?: unknown; followUpsLeft?: unknown }>("/api/premium/match/chapter", body, { fetchImpl });
+  if (!res.ok || typeof res.data.chapterToken !== "string" || !res.data.chapterToken || typeof res.data.followUpsLeft !== "number") return null;
+  return { chapterToken: res.data.chapterToken, followUpsLeft: res.data.followUpsLeft };
+}
+
+/** Puts an issued token on the 궁합 this device keeps for that account reading. */
+export function giveMatchToken(readingId: string, issued: IssuedMatchToken): void {
+  const chapter = listChapters().find((c) => c.kind === "match" && (c.serverId === readingId || c.id === readingId));
+  if (chapter) updateChapter(chapter.id, (c) => ({ ...c, chapterToken: issued.chapterToken, followUpsLeft: issued.followUpsLeft }));
+}
+
+/** After a pull: every 궁합 that came back without a token and whose seal this device kept gets its token again. */
+export async function restoreMatchTokens(fetchImpl: typeof fetch = fetch, now: number = Date.now()): Promise<void> {
+  for (const chapter of listChapters()) {
+    if (chapter.kind !== "match" || chapter.chapterToken || !chapter.serverId) continue;
+    const sealed = matchSeal(chapter.serverId, now);
+    if (!sealed) continue;
+    const issued = await requestMatchToken({ readingId: chapter.serverId, sealed }, fetchImpl);
+    if (issued) giveMatchToken(chapter.serverId, issued);
+  }
 }
 
 /** Deletes every reading saved in the account. This device keeps its own copies. */

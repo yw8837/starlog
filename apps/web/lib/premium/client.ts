@@ -101,6 +101,11 @@ export function pendingResume(id: PremiumId, input: Record<string, unknown>, sto
   return saved ? { done: saved.done } : null;
 }
 
+/** This tab's last resume token for this input (a 궁합's token is asked again with it after a cut-off, review 2026-10-17 H3), or null. */
+export function pendingResumeToken(id: PremiumId, input: Record<string, unknown>, store: Store | null = session()): string | null {
+  return read(store, id, JSON.stringify(input))?.resume ?? null;
+}
+
 export async function runPremiumReading<R>(
   id: PremiumId,
   input: Record<string, unknown>,

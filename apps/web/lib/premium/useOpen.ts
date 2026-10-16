@@ -29,9 +29,9 @@ export interface PremiumOpenOptions<R> {
   /**
    * The reading was finished without passing through `save`: the account's copy, found after a cut-off
    * (delivered) or answered by 409 `opened`. Called with its account id before its chapter opens, so the
-   * screen binds or forgets what `save` would have (review 2026-10-16 #2, #3).
+   * screen binds or forgets what `save` would have (review 2026-10-16 #2, #3); awaited before the chapter opens.
    */
-  onDelivered?: (readingId: string) => void;
+  onDelivered?: (readingId: string) => void | Promise<void>;
   /** Back from checkout (?unlock=paid): open the purchase once, as soon as `ready` (the preview is shown) and it is held. */
   autoOpen?: boolean;
   ready?: boolean;
@@ -92,8 +92,11 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
       void refreshAccount();
       if (result.status === "delivered") {
         mergeServerReadings([result.reading]);
-        onDelivered?.(result.reading.id);
-        router.push(`/chapter/${result.reading.id}`);
+        const readingId = result.reading.id;
+        void (async () => {
+          await onDelivered?.(readingId);
+          router.push(`/chapter/${readingId}`);
+        })();
       } else if (result.status === "kept") {
         setError(creditKept("paid"));
       } else {
@@ -118,7 +121,7 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
       // Already written and saved (a retry after a missed answer): bring the account's copy here and open it.
       await pullAccountReadings();
       void refreshAccount();
-      onDelivered?.(failure.readingId);
+      await onDelivered?.(failure.readingId);
       router.push(`/chapter/${failure.readingId}`);
       return;
     }

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CARDS, TEMPLATES } from "@starlog/core";
 import { resetAccountForTests } from "@/lib/account/client";
-import { MATCH_FLOW_KEY } from "@/lib/premium/matchFlow";
+import { MATCH_FLOW_KEY, matchBody, type MatchFlow } from "@/lib/premium/matchFlow";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { resetBotCheck } from "@/lib/reading/api";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
@@ -34,8 +34,13 @@ const READING = {
   connection: section("연결"), bridge: section("사주와 카드"), action: section("해 볼 일"), observation: section("신호"), followUps: [],
 };
 
-function stub(reading: Array<() => Response> = [], teaser: () => Response = () => Response.json({ preview: PREVIEW }), readings: () => Response = () => Response.json({ readings: [], next: null })) {
+function stub(
+  reading: Array<() => Response> = [], teaser: () => Response = () => Response.json({ preview: PREVIEW }),
+  readings: () => Response = () => Response.json({ readings: [], next: null }),
+  token: () => Response = () => Response.json({ code: "BAD_TOKEN" }, { status: 400 }),
+) {
   const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
+    if (url === "/api/premium/match/chapter") return token();
     if (url === "/api/premium/status") return Response.json({ products: [{ id: "match", open: true, visible: true, opensAt: null }] });
     if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [{ orderId: "o", productId: "match" }], opening: [] } });
     if (url === "/api/premium/match/teaser") return teaser();
@@ -140,6 +145,43 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
     expect(leftovers()).toEqual([null, null, null]);
+  });
+
+  it("gets the chapter token again on both recovery paths before forgetting the partner: the tab's input and its last resume token (review 2026-10-17 H3)", async () => {
+    const saved = {
+      id: ID, createdAt: Date.now(),
+      chapter: { kind: "match", relation: "friend", relationLabel: "친구", me: { birth: DEFAULT_SAJU_FORM }, cards: DRAWN, reading: READING, chapterToken: "", createdAt: 1, turns: [], followUpsLeft: 5 },
+    };
+    const issued = () => Response.json({ chapterToken: "issued.token", followUpsLeft: 5 });
+    const sent = (fetchMock: ReturnType<typeof stub>) => fetchMock.mock.calls.filter(([url]) => url === "/api/premium/match/chapter").map(([, init]) => JSON.parse(String(init!.body)));
+    const input = matchBody(FLOW as unknown as MatchFlow);
+
+    // Cut off on the last part, then found delivered in the account.
+    let fetchMock = stub(
+      [() => Response.json({ status: "continue", resume: "r1", done: 1, of: 2 }), () => Response.json({ code: "UPSTREAM" }, { status: 502 })],
+      undefined, () => Response.json({ readings: [saved], next: null }), issued,
+    );
+    render(<MatchPreview instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(sent(fetchMock)).toEqual([{ readingId: ID, resume: "r1", input }]);
+    expect(listChapters()[0]).toMatchObject({ serverId: ID, chapterToken: "issued.token", followUpsLeft: 5 });
+    expect(sessionStorage.getItem("starlog.premium-resume.match")).toBeNull();
+    cleanup();
+    resetAccountForTests();
+    clearChapters();
+    router.push.mockReset();
+
+    // The last part's token sent again after delivery: 409 opened.
+    sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify(FLOW));
+    sessionStorage.setItem("starlog.premium-resume.match", JSON.stringify({ input: JSON.stringify(input), resume: "r2", done: 1 }));
+    fetchMock = stub([() => Response.json({ code: "NOT_AVAILABLE", reason: "opened", readingId: ID }, { status: 409 })], undefined, () => Response.json({ readings: [saved], next: null }), issued);
+    render(<MatchPreview instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "이어서 받기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(sent(fetchMock)).toEqual([{ readingId: ID, resume: "r2", input }]);
+    expect(listChapters()[0]).toMatchObject({ serverId: ID, chapterToken: "issued.token" });
+    expect(sessionStorage.getItem(MATCH_FLOW_KEY)).toBeNull();
   });
 
   it("sends a flow without its answers to the form and one without its five cards to the draw", async () => {

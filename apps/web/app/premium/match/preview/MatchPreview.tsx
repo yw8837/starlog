@@ -17,7 +17,7 @@ import s from "@/app/tarot/result/FreeResult.module.css";
 import { useAccount } from "@/lib/account/client";
 import { withFlags } from "@/lib/flowState";
 import { approxCharsText } from "@/lib/pricing";
-import { clearPremiumResume, premiumApiPath } from "@/lib/premium/client";
+import { clearPremiumResume, pendingResumeToken, premiumApiPath } from "@/lib/premium/client";
 import { clearMatchFlow, matchBody, matchReady, relationLabel, useMatchFlow } from "@/lib/premium/matchFlow";
 import { PREMIUM } from "@/lib/premium/products";
 import { usePremiumStatus } from "@/lib/premium/status";
@@ -29,6 +29,7 @@ import type { MatchPreviewData, MatchReadingData } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { isMatchPreview, isMatchReading } from "@/lib/reading/validate";
 import { saveChapter, useChapters } from "@/lib/storage/chapters";
+import { giveMatchToken, requestMatchToken } from "@/lib/storage/sync";
 
 const ID = "match";
 const PREVIEW_PATH = "/premium/match/preview";
@@ -129,8 +130,14 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
       forgetPartner();
       return chapter.serverId ?? chapter.id;
     },
-    // The account's copy (after a cut-off, or 409 opened): the birth leaves the tab the same way, resume token too.
-    onDelivered: () => forgetPartner(),
+    // The account's copy (after a cut-off, or 409 opened) holds no token: one is asked again with the tab's input and its
+    // resume token (review 2026-10-17 H3), then the birth leaves the tab the same way, resume token too.
+    onDelivered: async (readingId) => {
+      const resume = body ? pendingResumeToken(ID, body) : null;
+      const issued = resume && body ? await requestMatchToken({ readingId, resume, input: body }) : null;
+      if (issued) giveMatchToken(readingId, issued);
+      forgetPartner();
+    },
   });
 
   useEffect(() => {
