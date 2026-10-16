@@ -3,7 +3,7 @@
 # usage: bash deploy.sh <full-or-short-sha-that-gate3-passed>
 set -u
 SHA="${1:?gated commit sha required}"
-SP="${DEPLOY_SP:-/d/Money/.starlog-ops}"   # folder holding the isolated clone ./deploy (out of %TEMP%: Windows cleaned files out of the old one, 10/16 and 10/17)
+SP="${DEPLOY_SP:-/c/starlog-ops}"   # folder holding the isolated clone ./deploy: on the SSD (D: is a USB disk, 10x slower) and out of %TEMP% (Windows cleaned files out of the old one, 10/16 and 10/17)
 D="$SP/deploy"
 LOG="${OPS_LOG:-$HOME/starlog-ops}/deploy-run"
 mkdir -p "$LOG"; rm -f "$LOG"/*.log
