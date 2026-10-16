@@ -3,7 +3,7 @@ import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { accountSecret } from "@/lib/account/secrets";
 import { dailyStore, resetDailyStore } from "@/lib/api/dailyStore";
-import { clientCount, networkCostKrw, resetSpendState, spentTodayKrw, type SpendKind } from "@/lib/api/spend";
+import { addNetworkCost, clientCount, networkCostKrw, resetSpendState, spentTodayKrw, type SpendKind } from "@/lib/api/spend";
 import { NDJSON } from "@/lib/api/stream";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
@@ -12,7 +12,7 @@ import { mockToss } from "@/lib/pay/tossMock";
 import { PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import { listReadings } from "@/lib/readings/store";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { isPremiumChapter, openChapter } from "@/lib/security/chapterToken";
+import { isPremiumChapter, issueChapter, openChapter } from "@/lib/security/chapterToken";
 import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
@@ -587,5 +587,86 @@ describe("a premium purchase on a production deploy's test keys (security M2)", 
     expect(await networkCount(address, "full")).toBe(2);
     expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks WHERE status = 'released'")).toEqual({ n: 1 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks WHERE status = 'delivered'")).toEqual({ n: 1 });
+  });
+});
+
+describe("who paid for a premium chapter is signed in its token (follow-up books)", () => {
+  const SECRETS = { STARLOG_SIGNING_SECRET: "signing-secret-for-premium-tests-0123456789", STARLOG_ACCOUNT_SECRET: "account-secret-for-premium-tests-0123456789" };
+  /** This deploy moves to production on Toss test keys (a test payment charges nobody). */
+  function productionTestKeys(b: Browser) {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("STARLOG_PAY", "");
+    vi.stubEnv("NEXT_PUBLIC_TOSS_CLIENT_KEY", "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm");
+    vi.stubEnv("TOSS_SECRET_KEY", "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6");
+    const sid = b.jar.get("sl_sid");
+    if (sid) b.jar.set("__Host-sl_sid", sid);
+  }
+  const ask = (b: Browser, done: Record<string, any>, question = "이번 달 지출은 어떻게 줄이면 좋을까요?") =>
+    b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question } });
+
+  it("keeps a purchase made on real keys in the paid book, even after the deploy moves to test keys", async () => {
+    for (const [k, v] of Object.entries(SECRETS)) vi.stubEnv(k, v);
+    useTestDb();
+    const b = await shopper();
+    await buy(b, "tarot-deep");
+    const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
+    expect((await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now()))?.ctx).toMatchObject({ kind: "tarot-deep", paid: true });
+    productionTestKeys(b);
+    const before = await paidBook();
+    billing();
+    expect((await ask(b, done)).status).toBe(200);
+    expect((await paidBook()) - before).toBe(2800);
+    expect(await freeBook()).toBe(0);
+  });
+
+  it("books the follow-ups of a reading the owner pass opened like free ones", async () => {
+    useTestDb();
+    const b = browser("192.0.2.61");
+    await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    const { done } = await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } });
+    expect((await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now()))?.ctx).toMatchObject({ kind: "newyear-2027", paid: false });
+    billing();
+    expect((await ask(b, done, "3월에는 무엇을 하면 좋을까요?")).status).toBe(200);
+    expect(await paidBook()).toBe(0);
+    expect(await freeBook()).toBe(2800);
+  });
+
+  it("reads a token from before the rule (no `paid`) by the deploy's keys, as before", async () => {
+    useTestDb();
+    const b = browser("192.0.2.62");
+    await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    const { done } = await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } });
+    const opened = (await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now()))!;
+    const { paid: _paid, ...older } = opened.ctx as Extract<typeof opened.ctx, { kind: "newyear-2027" }>;
+    const legacy = await issueChapter(older, done.reading, [], signingSecret()!, Date.now(), opened.exp);
+    billing();
+    expect((await ask(b, { ...done, chapterToken: legacy }, "3월에는 무엇을 하면 좋을까요?")).status).toBe(200);
+    expect(await paidBook()).toBe(2800); // not production: real keys
+    expect(await freeBook()).toBe(0);
+  });
+
+  it("treats a test payment's follow-ups as free-tier: the free book, the network's share, and its check", async () => {
+    for (const [k, v] of Object.entries(SECRETS)) vi.stubEnv(k, v);
+    const db = useTestDb();
+    const address = "198.51.100.201";
+    const b = browser(address);
+    await loginAs(b, "tester2");
+    const orderId = await buy(b, "tarot-deep");
+    await db.prepare("UPDATE payments SET mode = 'test' WHERE order_id = ?").bind(orderId).run();
+    productionTestKeys(b);
+    vi.stubEnv("BETA_IP_FULL_PER_DAY", "5");
+    const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
+    expect((await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now()))?.ctx).toMatchObject({ paid: false });
+    const client = await keyedHash(`client:${address}`, signingSecret()!);
+    const free = await freeBook();
+    billing();
+    expect((await ask(b, done)).status).toBe(200);
+    expect(await paidBook()).toBe(0);
+    expect((await freeBook()) - free).toBe(2800);
+    expect(await networkCostKrw(client, Date.now())).toBeGreaterThanOrEqual(2800);
+    await addNetworkCost(client, 10_000, Date.now());
+    const capped = await ask(b, done, "하나 더 궁금한 게 있어요");
+    expect(capped.status).toBe(429);
+    expect(await json(capped)).toMatchObject({ code: "BETA_LIMIT", scope: "network" });
   });
 });

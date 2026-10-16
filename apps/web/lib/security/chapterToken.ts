@@ -26,8 +26,12 @@ export type ChapterContext =
   | { kind: "tarot"; templateId: TemplateId; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]>; opening?: true }
   /** 주제별 사주 chapters carry their topic (signed; `v` stays 1; a token without it is 전체 흐름). */
   | { kind: "saju"; birth: BirthInput; profile?: SajuProfile; topic?: SajuTopicId }
-  /** P5 premium readings. The match token carries the partner's birth: signed, not encrypted, kept only in the user's own chapter (P5 spec §9). */
-  | { kind: "tarot-deep"; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]> }
+  /**
+   * P5 premium readings. The match token carries the partner's birth: signed, not encrypted, kept only in the user's own chapter (P5 spec §9).
+   * `paid` (signed when the reading is written): opened with a purchase on real keys, so its follow-ups are paid
+   * for; false for the owner pass and a test payment. Tokens issued before it have none (the deploy's keys decide).
+   */
+  | { kind: "tarot-deep"; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]>; paid?: boolean }
   | {
     kind: "match";
     me: { birth: BirthInput; profile?: SajuProfile };
@@ -35,8 +39,9 @@ export type ChapterContext =
     relation: MatchRelation;
     concern?: string;
     cards: Array<[string, Orientation]>;
+    paid?: boolean;
   }
-  | { kind: "newyear-2027"; birth: BirthInput; profile?: SajuProfile };
+  | { kind: "newyear-2027"; birth: BirthInput; profile?: SajuProfile; paid?: boolean };
 
 export const isOpeningChapter = (ctx: ChapterContext) => ctx.kind === "tarot" && ctx.opening === true;
 

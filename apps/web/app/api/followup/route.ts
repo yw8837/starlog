@@ -24,7 +24,8 @@ import { quotaLimits } from "@/lib/security/quota";
  * not reset it) and per day; the owner pass skips both caps. Chapter tokens expire 7 days after the reading. Streams NDJSON progress with `Accept: application/x-ndjson`.
  * A premium chapter (P5 spec §6.3) takes PREMIUM[kind].followUps (5) for 30 days: paid for with the
  * reading, so outside the beta's daily cookie quota; the chapter count and the network limits stay,
- * and its cost goes to the paid book (unless the purchase earned nothing: test keys on production, M2).
+ * and its cost goes to the paid book when the chapter says it was paid for (signed `paid`; not the owner
+ * pass or a test payment, M2), where the free day's budget does not stop it.
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
@@ -44,8 +45,10 @@ export async function POST(request: Request): Promise<Response> {
   if (recorded === null && !gate.owner) return errorResponse("AI_UNAVAILABLE");
   const answered = Math.max(chapter.turns.length, recorded ?? 0);
   if (!gate.owner && answered >= cap) return errorResponse("BETA_LIMIT", { scope: "chapter", remaining: 0 });
-  // The same test as a premium reading's (lib/premium/unlock.ts, security M2): a test payment charged nobody.
-  const paid = premium && !(process.env.NODE_ENV === "production" && payKeyMode() === "test");
+  // Paid for when the reading was: signed in the chapter (a purchase on real keys; not the owner pass or a test
+  // payment). A token from before that rule: the same test as a premium reading's (lib/premium/unlock.ts, M2).
+  const signedPaid = isPremiumChapter(chapter.ctx) ? chapter.ctx.paid : undefined;
+  const paid = premium && (typeof signedPaid === "boolean" ? signedPaid : !(process.env.NODE_ENV === "production" && payKeyMode() === "test"));
   const limited = premium ? await checkServerLimits(gate, "followup", { scope: "day" }, { credit: paid, paid }) : null;
   if (limited) return limited;
   const quota = premium ? null : await checkQuota(gate, "followup", { scope: "day" });
