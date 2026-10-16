@@ -148,7 +148,7 @@ describe("confirm", () => {
     // Someone else's paymentKey, or a decline Toss keeps no payment for: the order must not die of it.
     const res = await confirmAs(browser("192.0.2.67"), orderId, "mock_fail_1");
     expect(res.status).toBe(402);
-    expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다." });
+    expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "한도초과 혹은 잔액부족으로 결제에 실패했습니다. 다른 카드나 간편결제로 다시 해 보세요." });
     expect(lookUp).toHaveBeenCalledWith(orderId);
     expect(await db.prepare("SELECT status, fail_code, payment_key FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "created", fail_code: null, payment_key: null });
     expect(await db.prepare("SELECT COUNT(*) AS n FROM credit_lots WHERE currency = 'paid'").first()).toEqual({ n: 0 });
@@ -194,6 +194,22 @@ describe("confirm", () => {
     expect(await res.json()).toMatchObject({ code: "PAY_FAILED", message: "이 결제 수단으로는 지금 결제할 수 없어요. 돈은 빠져나가지 않았어요. 다른 카드나 간편결제로 다시 해 보세요." });
     expect(await db.prepare("SELECT status, fail_code FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "failed", fail_code: "NOT_AVAILABLE_PAYMENT_BY_MERCHANT" });
     expect(errors.mock.calls.some(([line]) => String(line).includes('"evt":"pay.merchant_refused"') && String(line).includes("NOT_AVAILABLE_PAYMENT_BY_MERCHANT"))).toBe(true);
+  });
+
+  it("adds another card or 간편결제 to Toss's own words for every card decline, both when Toss keeps the payment and when it keeps none (card reviews pending, 2026-10-16)", async () => {
+    useTestDb();
+    const b = await loggedIn();
+    const kept = await newOrder(b);
+    mockToss.failNext("confirm", new TossError(403, "REJECT_CARD_COMPANY", "카드사에서 승인을 거절했어요."));
+    vi.spyOn(mockToss, "getPaymentByOrder").mockResolvedValueOnce({ paymentKey: "mock_kept", orderId: kept, status: "ABORTED", totalAmount: 2900, balanceAmount: 2900, method: null, approvedAt: null, receiptUrl: null });
+    const first = await confirmAs(b, kept, "mock_kept");
+    expect(await first.json()).toMatchObject({ code: "PAY_FAILED", message: "카드사에서 승인을 거절했어요. 다른 카드나 간편결제로 다시 해 보세요." });
+
+    const none = await newOrder(b);
+    mockToss.failNext("confirm", new TossError(403, "REJECT_CARD_COMPANY", "카드사에서 승인을 거절했어요."));
+    vi.spyOn(mockToss, "getPaymentByOrder").mockRejectedValueOnce(new TossError(404, "NOT_FOUND_PAYMENT", ""));
+    const second = await confirmAs(b, none, "mock_none");
+    expect(await second.json()).toMatchObject({ code: "PAY_FAILED", message: "카드사에서 승인을 거절했어요. 다른 카드나 간편결제로 다시 해 보세요." });
   });
 
   it("fails an order whose refusal Toss backs with a payment of its own", async () => {

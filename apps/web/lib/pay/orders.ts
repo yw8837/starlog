@@ -71,6 +71,9 @@ const KEY_REJECTED_MESSAGE = "결제 승인을 받지 못했어요. 돈은 빠�
  */
 const MERCHANT_ERRORS = new Set(["NOT_AVAILABLE_PAYMENT_BY_MERCHANT"]);
 const MERCHANT_REFUSED_MESSAGE = "이 결제 수단으로는 지금 결제할 수 없어요. 돈은 빠져나가지 않았어요. 다른 카드나 간편결제로 다시 해 보세요.";
+/** A card decline in Toss's own words, with the way on (card companies still reviewing the store decline like this too). */
+const OTHER_CARD = "다른 카드나 간편결제로 다시 해 보세요.";
+const withOtherCard = (message: string) => (message.includes(OTHER_CARD) ? message : `${message.trim()} ${OTHER_CARD}`.trim());
 
 /** The payment Toss has for this order, "none" when it has none, "unknown" when it could not be asked. */
 async function lookUpByOrder(toss: TossClient, orderId: string): Promise<TossPayment | "none" | "unknown"> {
@@ -209,11 +212,11 @@ export async function confirmOrder(db: D1Binding, toss: TossClient, input: { ord
         .bind(now, order.id, paymentKey)
         .run();
       console.info(JSON.stringify({ evt: "pay.confirm_refused", orderId: order.id, code: refusal.code, message: refusal.message }));
-      return { ok: false, code: "PAY_FAILED", message: refusal.message };
+      return { ok: false, code: "PAY_FAILED", message: withOtherCard(refusal.message) };
     }
     await setStatus(db, order.id, ["confirming"], "failed", now, refusal.code);
     console.info(JSON.stringify({ evt: "pay.confirm_declined", orderId: order.id, code: refusal.code, message: refusal.message }));
-    return { ok: false, code: "PAY_FAILED", message: refusal.message };
+    return { ok: false, code: "PAY_FAILED", message: withOtherCard(refusal.message) };
   }
   if (!matches(order, payment)) {
     await setStatus(db, order.id, ["confirming"], "failed", now, `UNEXPECTED_${payment.status}`);
