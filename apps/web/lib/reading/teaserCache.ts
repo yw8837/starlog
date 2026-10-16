@@ -99,6 +99,11 @@ export function clearSajuTeasers() {
   }
 }
 
+/** Forgets the premium preview kept for this tab (a 궁합's, once its reading is saved: the partner's birth leaves the tab). */
+export function clearPremiumTeaser() {
+  premiumStore.clear();
+}
+
 /** Forgets every kept teaser (내 정보 → 기록 모두 지우기). */
 export function clearTeasers() {
   tarotStore.clear();

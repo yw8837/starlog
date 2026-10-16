@@ -40,6 +40,7 @@ import {
   type LeapChoice,
   type SajuDraft,
   type SajuField,
+  type SajuForm as SajuFormValue,
 } from "@/lib/sajuForm";
 import { isSajuTopicId } from "@/lib/sajuTopics";
 import s from "./SajuForm.module.css";
@@ -85,6 +86,26 @@ export function SajuForm() {
   );
 }
 
+type FieldsOptions = {
+  /** Instead of saving the profile and opening the chart: hand the checked form and the status chips back. */
+  onDone?: (form: SajuFormValue, context: SajuContext) => void;
+  /**
+   * The other person's birth (우리 사이 궁합): no birthplace (서울, P5 spec default 6), no status chips, and no
+   * consent line of the user's own (the 궁합 form asks its own).
+   */
+  partner?: boolean;
+  /** The submit button (명식 보기 by default). */
+  submitLabel?: string;
+};
+
+/**
+ * The birth fields on their own, for a form that is not the saju flow's (the premium forms): they start from
+ * `initial` (or empty), save nothing and go nowhere; `onDone` gets the checked form. One per screen (its ids).
+ */
+export function SajuFields({ initial, initialContext = {}, ...options }: { initial: SajuFormValue | null; initialContext?: SajuContext } & FieldsOptions) {
+  return <SajuFormFields initial={initial ? draftOf(initial) : EMPTY_SAJU_DRAFT} initialContext={initialContext} ready {...options} />;
+}
+
 function FieldError({ id, message }: { id: string; message: string | undefined }) {
   if (!message) return null;
   return (
@@ -99,7 +120,9 @@ function FieldError({ id, message }: { id: string; message: string | undefined }
  * render that reads them puts the draft's values back on every select, so an earlier pick was lost and a
  * year read back as "" became year 0.
  */
-function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft; initialContext: SajuContext; ready: boolean }) {
+function SajuFormFields({
+  initial, initialContext, ready, onDone, partner = false, submitLabel = "명식 보기",
+}: { initial: SajuDraft; initialContext: SajuContext; ready: boolean } & FieldsOptions) {
   const router = useRouter();
   const [draft, setDraft] = useState<SajuDraft>(initial);
   const [context, setContext] = useState<SajuContext>(initialContext);
@@ -144,7 +167,7 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
     const result = checkSajuDraft(draft, todayInKorea());
     const next: Errors = {};
     if ("errors" in result) for (const error of result.errors) next[error.field] ??= error.message;
-    if (!consent) next.consent = CONSENT_ERROR;
+    if (!consent && !partner) next.consent = CONSENT_ERROR;
     setErrors(next);
 
     const first = ERROR_ORDER.find((key) => next[key]);
@@ -153,6 +176,12 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
       return;
     }
     if (!("form" in result)) return;
+    if (onDone) {
+      const form = sanitizeSajuForm(result.form) ?? result.form;
+      // The other person's birthplace is not asked: 서울 (P5 spec default 6).
+      onDone(partner ? { ...form, placeId: "seoul" } : form, partner ? {} : context);
+      return;
+    }
     saveSajuProfile(sanitizeSajuForm(result.form) ?? result.form);
     saveSajuContext(context);
     // The 운 picked at the topic step rides in the address (/saju/new?topic=…); the chart opens on it.
@@ -336,6 +365,7 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
         <FieldError id="gender-error" message={errors.gender} />
       </fieldset>
 
+      {partner ? null : (
       <div className={s.group}>
         <label htmlFor="birth-place" className={s.label}>
           태어난 곳
@@ -371,7 +401,9 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
         </p>
         <FieldError id="place-error" message={errors.place} />
       </div>
+      )}
 
+      {partner ? null : (
       <div className={s.group}>
         <button type="button" className={s.more} aria-expanded={moreOpen} aria-controls="saju-more" onClick={() => setMoreOpen((open) => !open)}>
           <span>
@@ -415,7 +447,9 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
           </div>
         ) : null}
       </div>
+      )}
 
+      {partner ? null : (
       <div className={s.consent}>
         <Checkbox
           ref={consentRef}
@@ -432,11 +466,12 @@ function SajuFormFields({ initial, initialContext, ready }: { initial: SajuDraft
         </Checkbox>
         <FieldError id="consent-error" message={errors.consent} />
       </div>
+      )}
 
       <div ref={submitRef} tabIndex={-1} className={s.submit}>
         <FieldError id="form-error" message={errors.form} />
         <Button type="submit" block trailing="→">
-          명식 보기
+          {submitLabel}
         </Button>
       </div>
     </form>

@@ -9,6 +9,7 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { prefersReducedMotion } from "@/lib/motion";
 import { postJson } from "@/lib/reading/api";
+import type { FrontDeck } from "@/lib/deck";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import type { DrawResponse, DrawTemplateId, DrawnCardData } from "@/lib/reading/types";
 import s from "./DeckDraw.module.css";
@@ -36,6 +37,8 @@ type DeckDrawProps = {
   onDealt: (draw: DealtDraw) => void;
   /** Every card is face up and the hold is over: move on. */
   onRevealed: () => void;
+  /** Pins the faces to the design the reading quotes (the 궁합's 1909 pictures); omit to follow the visitor's choice. */
+  deck?: FrontDeck;
 };
 
 const FLIP_GAP_MS = 400;
@@ -81,7 +84,7 @@ const ShuffleIcon = () => (
  * The page owns where the draw is kept and where it goes next (the standard tarot flow, the 10-card
  * reading, the 궁합's five cards). Renders the screen's children; the page gives the screen box.
  */
-export function DeckDraw({ instant, templateId, heading, step, onDealt, onRevealed }: DeckDrawProps) {
+export function DeckDraw({ instant, templateId, heading, step, onDealt, onRevealed, deck: faces }: DeckDrawProps) {
   const known = heading !== null;
   const template = TEMPLATES[templateId];
   const max = template.positions.length;
@@ -226,7 +229,7 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
       {known ? (
         // A soft glow comes up behind the slots while the cards turn over.
         <div className={s.spread} data-glow={phase === "reveal" ? "" : undefined}>
-          <SpreadRow cards={slots} size={many ? "sm" : "md"} columns={slotColumns(max)} className={max === 1 ? s.single : many ? s.grid : s.slots} />
+          <SpreadRow cards={slots} size={many ? "sm" : "md"} columns={slotColumns(max)} className={max === 1 ? s.single : many ? s.grid : s.slots} deck={faces} />
         </div>
       ) : null}
 

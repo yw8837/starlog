@@ -1,0 +1,101 @@
+/* The premium forms (우리 사이 궁합, 2027 신년운세): who the reading is for, one line each, with 고치기. */
+.who {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.whoRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 8px 10px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+}
+
+.whoText {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.whoName {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.whoLine {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+/* 고치기: a quiet text button with a full 44px target. */
+.edit {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink-sub);
+  font: inherit;
+  font-size: var(--fs-sub);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.edit:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* 부르는 말: one short line, 16px so phones do not zoom in. */
+.input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: rgba(13, 10, 38, 0.55);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 16px;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.hint {
+  margin-top: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+.privacy {
+  margin-top: 26px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.consent {
+  margin-top: 12px;
+}
+
+.form {
+  margin-top: 18px;
+}
