@@ -76,6 +76,8 @@ export const DEEP_ADAPTER: Adapter<DeepTarotBodyData, ContextOf<"tarot-deep">> =
       conditions: b.input.conditions.map(({ label, value }) => ({ label, value })),
       note: (b.input.note ?? "").trim(),
       cards: drawnOf(ctx.tarot),
+      // The design the reading quotes (absent: the 1909 scans), so a record synced to another device shows it.
+      ...(b.input.deck ? { deck: b.input.deck } : {}),
     }, response, now),
 };
 

@@ -221,6 +221,16 @@ describe("paid premium readings", () => {
     expect(chapter?.exp).toBe(T0 + PREMIUM_CHAPTER_TTL_MS);
   });
 
+  it("keeps the card design the deep reading was written for in the account's copy, so a synced record shows the pictures it quotes", async () => {
+    const db = useTestDb();
+    const b = await shopper();
+    await buy(b, "tarot-deep");
+    const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: { ...DEEP_INPUT, deck: "starlog" }, unlock: { method: "paid" } });
+    expect(done.status).toBe("done");
+    const saved = await listReadings(db, accountSecret()!, (await db.prepare("SELECT id FROM users LIMIT 1").first<{ id: string }>())!.id);
+    expect(saved.readings[0]?.chapter).toMatchObject({ kind: "tarot-deep", deck: "starlog" });
+  });
+
   it("keeps one reservation across the parts, extended part by part past its first six minutes", async () => {
     const db = useTestDb();
     const b = await shopper();
