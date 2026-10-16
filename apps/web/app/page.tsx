@@ -4,11 +4,15 @@ import { HomeFaq, HomeGuide, HomeHero, QuickCards, SajuEntry, TarotEntry } from 
 import { HomeCheckin } from "@/components/home/HomeCheckin";
 import { HomeTopBar } from "@/components/home/HomeTopBar";
 import { Footer } from "@/components/layout/Footer";
+import { PremiumRows } from "@/components/premium/PremiumRows";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
 import { HOME_DESCRIPTION, pageMetadata } from "@/lib/seo";
 import s from "./page.module.css";
+
+/** 더 깊게 보기's order (plan-reconciled §7.4 default): 2027 신년운세, 프리미엄 궁합, 켈틱 크로스 10장. */
+const HOME_PREMIUM = ["newyear-2027", "match", "tarot-deep"] as const;
 
 // The layout's default title (HOME_TITLE) with the home's own description, canonical and og:url.
 export const metadata: Metadata = pageMetadata({ description: HOME_DESCRIPTION, path: "/" });
@@ -16,7 +20,8 @@ export const metadata: Metadata = pageMetadata({ description: HOME_DESCRIPTION, 
 /**
  * Home, the same for every visitor, in reading order: the hero line; 타로 보기 (gold, the one
  * primary) and 사주 보기 with their characters; the two free quick cards; a 돌아보기 row when a past
- * reading is due; 별자리 인연 (while SITE.features.bonds is on); the guide; four FAQ questions.
+ * reading is due; 더 깊게 보기 where premium is visible (a client island: nothing while STARLOG_PREMIUM is off);
+ * 별자리 인연 (while SITE.features.bonds is on); the guide; four FAQ questions.
  * Desktop keeps that order: 타로 | 사주 side by side, the rest full width.
  */
 export default function HomePage() {
@@ -40,6 +45,8 @@ export default function HomePage() {
             <QuickCards />
           </div>
           <HomeCheckin className={s.wide} />
+          {/* 더 깊게 보기 (plan-reconciled §4.1): the season's product first, never gold, no row at all until premium is visible here. */}
+          <PremiumRows look="home" title="더 깊게 보기" ids={HOME_PREMIUM} className={s.wide} />
           {/* Row 4, 별자리 인연: renders nothing until this device's state is loaded (no empty gap). */}
           {SITE.features.bonds ? <BondsHomeRow className={s.wide} /> : null}
         </div>

@@ -1,0 +1,145 @@
+/* Premium rows (plan-reconciled §4.1, §4.3): glass rows after a reading or a guide, ivory cards on the home; never gold. */
+.section {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.title {
+  font-size: var(--fs-h2);
+  line-height: 1.4;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 14px 44px 14px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.row:hover {
+  border-color: var(--gold);
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+}
+
+.name {
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.price {
+  padding: 1px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.line {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+.badge {
+  width: fit-content;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--surface-light);
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+}
+
+/* The home's 더 깊게 보기: a section heading like the home's, ivory paper cards (dark ink), three across on desktop. */
+.home {
+  gap: 14px;
+  margin-top: 0;
+}
+
+.home .title {
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.ivory {
+  border-color: rgba(122, 90, 18, 0.25);
+  background: linear-gradient(160deg, #f7f1e4 0%, #ece3cf 100%);
+  color: var(--paper-ink);
+}
+
+.ivory:hover {
+  border-color: rgba(122, 90, 18, 0.55);
+}
+
+.ivory .line,
+.ivory .arrow {
+  color: #4a3f5e;
+}
+
+.ivory .price {
+  border-color: rgba(43, 33, 64, 0.35);
+}
+
+.ivory .badge {
+  background: rgba(43, 33, 64, 0.08);
+  color: var(--paper-ink);
+}
+
+@media (min-width: 1024px) {
+  .home .list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .home .title {
+    font-size: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row {
+    transition: none;
+  }
+}
