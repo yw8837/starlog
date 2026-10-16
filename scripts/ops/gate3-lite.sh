@@ -33,7 +33,9 @@ E2E_OWNER_CODE="$(grep -E '^STARLOG_OWNER_CODE=' .dev.vars | cut -d= -f2- | tr -
 kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 # -like, not -match: the old regex 'scratchpad\deploy\' (trailing backslash) failed to parse, so the preview's workerd/node
 # processes outlived the gate and a later preview on 8787 answered from a dead one (2026-10-16).
-for p in $(powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe'\" | Where-Object { \$_.CommandLine -and (\$_.CommandLine -like '*scratchpad\deploy*' -or \$_.CommandLine -like '*scratchpad/deploy*') }).ProcessId"); do taskkill //F //T //PID $p > /dev/null 2>&1; done
+# Killed one pass at a time, wrangler restarted the runtime it lost ("runtime crashed ... being restarted") and the new
+# workerd kept 8787 and ~1 GB (2026-10-16): stop the whole set in PowerShell, again until none is left.
+powershell -NoProfile -Command "for (\$i = 0; \$i -lt 6; \$i++) { \$ps = Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe' or Name='esbuild.exe'\" | Where-Object { \$_.CommandLine -and (\$_.CommandLine -like '*scratchpad\deploy*' -or \$_.CommandLine -like '*scratchpad/deploy*') }; if (-not \$ps) { break }; \$ps | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 1 }"
 for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 sleep 3
 STARLOG_AI=mock pnpm e2e e2e/pay-flow.spec.ts --workers=1 --project=desktop --project=mobile --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"
