@@ -31,8 +31,8 @@ export interface Adapter<B, C extends PremiumContext> {
   crisisTexts(body: B): Array<string | undefined>;
   context(body: B, gate: Gate): Promise<C | Response>;
   teaser(provider: ReadingProvider, ctx: C, hooks?: GenerationHooks): Promise<unknown>;
-  /** What the chapter token carries; `secret` seals what only this server may read again (the 궁합 partner). */
-  chapterContext(body: B, ctx: C, secret: string): ChapterContext | Promise<ChapterContext>;
+  /** What the chapter token carries; `secret` seals what only this server may read again (the 궁합 partner), bound to `chapterId`. */
+  chapterContext(body: B, ctx: C, secret: string, chapterId: string): ChapterContext | Promise<ChapterContext>;
   chapter(body: B, ctx: C, response: { reading: unknown; chapterToken: string }, now: number): ServerChapter;
 }
 
@@ -106,14 +106,14 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
     return { product: "match", match: { facts, cards: matchCardsContext(b.relation, draw.cards) } };
   },
   teaser: async (provider, ctx, hooks) => (await generateMatchTeaser(provider, ctx.match, hooks)).data,
-  async chapterContext(b, ctx, secret) {
+  async chapterContext(b, ctx, secret, chapterId) {
     const { label, concern } = ctx.match.facts;
     const profile = profileOf(b.me);
     return {
       kind: "match",
       me: { birth: b.me.birth, ...(profile ? { profile } : {}) },
       // Sealed: the device keeps it for follow-ups, our servers never keep it (owner 2026-10-16).
-      partner: { sealed: await sealPartner(b.partner.birth, secret), ...(label ? { label } : {}) },
+      partner: { sealed: await sealPartner(b.partner.birth, secret, chapterId), ...(label ? { label } : {}) },
       relation: b.relation,
       ...(concern ? { concern } : {}),
       cards: cardsOf(ctx.match.cards),

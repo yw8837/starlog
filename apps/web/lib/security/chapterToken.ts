@@ -64,6 +64,11 @@ export async function readingDigest(reading: unknown): Promise<string> {
   return sha256(canonicalJson(reading));
 }
 
+/** A chapter's id: every token of one chapter shares the reading digest and the original expiry. */
+export async function chapterIdOf(reading: unknown, exp: number): Promise<string> {
+  return `${exp}.${await readingDigest(reading)}`;
+}
+
 /** `exp` defaults to 7 days from now (a new reading); follow-ups pass the chapter's own expiry. */
 export async function issueChapter(
   ctx: ChapterContext, reading: unknown, turns: FollowUpTurn[], secret: string, now: number, exp = now + CHAPTER_TOKEN_TTL_MS,
@@ -79,8 +84,7 @@ export async function openChapter(
   const p = await verifyToken<ChapterPayload>(token, "chapter", secret, now);
   if (!p || p.v !== 1 || !p.ctx || !Array.isArray(p.turns) || typeof p.exp !== "number") return null;
   if ((await readingDigest(reading)) !== p.h) return null;
-  // Every token of one chapter shares the reading digest and the original expiry.
-  return { id: `${p.exp}.${p.h}`, ctx: p.ctx, turns: p.turns, exp: p.exp };
+  return { id: await chapterIdOf(reading, p.exp), ctx: p.ctx, turns: p.turns, exp: p.exp };
 }
 
 /**

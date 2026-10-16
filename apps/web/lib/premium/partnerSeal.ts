@@ -20,14 +20,17 @@ interface PartnerPayload {
   birth: BirthInput;
 }
 
-export function sealPartner(birth: BirthInput, secret: string): Promise<string> {
+/** Bound to its chapter (security/chapterToken.ts chapterIdOf) as AES-GCM additional data: moved into another chapter's token, it does not open (review 2026-10-17 L6). */
+const contextOf = (chapterId: string) => `${CONTEXT}:${chapterId}`;
+
+export function sealPartner(birth: BirthInput, secret: string, chapterId: string): Promise<string> {
   const payload: PartnerPayload = { v: 1, birth };
-  return sealJson(payload, keyOf(secret), CONTEXT);
+  return sealJson(payload, keyOf(secret), contextOf(chapterId));
 }
 
-/** The partner's birth (checked again by the chart), or null when the seal is missing, altered or from another secret. */
-export async function openPartner(sealed: unknown, secret: string): Promise<BirthInput | null> {
+/** The partner's birth (checked again by the chart), or null when the seal is missing, altered, from another secret or another chapter. */
+export async function openPartner(sealed: unknown, secret: string, chapterId: string): Promise<BirthInput | null> {
   if (typeof sealed !== "string" || sealed.length === 0 || sealed.length > MAX_SEALED_CHARS) return null;
-  const p = await openJson<PartnerPayload>(sealed, keyOf(secret), CONTEXT);
+  const p = await openJson<PartnerPayload>(sealed, keyOf(secret), contextOf(chapterId));
   return p && p.v === 1 && typeof p.birth === "object" && p.birth !== null ? p.birth : null;
 }

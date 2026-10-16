@@ -120,4 +120,23 @@ describe("the 궁합 partner's information (owner 2026-10-16)", () => {
     expect(await json(res)).toMatchObject({ code: "BAD_TOKEN", message: "이어서 물어보기는 풀이한 기기에서만 돼요." });
     expect(spy).not.toHaveBeenCalled();
   });
+
+  it("opens a sealed partner only inside the chapter it was sealed for: moved into another reading's token, it is no partner (review 2026-10-17 L6)", async () => {
+    useTestDb();
+    const b = browser("198.51.100.154");
+    await loginAs(b, "pair154");
+    await buy(b, "match");
+    await buy(b, "match");
+    const first = await writeMatch(b);
+    const second = await writeMatch(b);
+    const a = await openChapter(first.chapterToken, first.reading, signingSecret()!, Date.now());
+    const other = await openChapter(second.chapterToken, second.reading, signingSecret()!, Date.now());
+    const moved = { ...other!.ctx, partner: { ...(other!.ctx as { partner: object }).partner, sealed: (a!.ctx as { partner: { sealed: string } }).partner.sealed } } as unknown as ChapterContext;
+    const token = await issueChapter(moved, second.reading, [], signingSecret()!, Date.now(), other!.exp);
+    const spy = vi.spyOn(mockProvider, "generate");
+    const res = await b.send(followup, "/api/followup", { body: { chapterToken: token, reading: second.reading, question: "이번 주에는요?" } });
+    expect(res.status).toBe(400);
+    expect(spy).not.toHaveBeenCalled();
+    expect((await b.send(followup, "/api/followup", { body: { chapterToken: second.chapterToken, reading: second.reading, question: "이번 주에는요?" } })).status).toBe(200);
+  });
 });

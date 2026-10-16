@@ -12,7 +12,7 @@ import { openPartner, sealPartner } from "@/lib/premium/partnerSeal";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import { inputHash, openResume } from "@/lib/premium/resume";
 import { readingForUser } from "@/lib/readings/store";
-import { issueChapter, openChapter, type ChapterContext } from "@/lib/security/chapterToken";
+import { chapterIdOf, issueChapter, openChapter, type ChapterContext } from "@/lib/security/chapterToken";
 
 /**
  * POST {readingId, sealed} or {readingId, input, resume} → {chapterToken, followUpsLeft} (review 2026-10-17 H3).
@@ -73,10 +73,11 @@ export async function POST(request: Request): Promise<Response> {
   const exp = saved.createdAt + PREMIUM_CHAPTER_TTL_MS;
   if (exp <= ctx.now) return refused();
 
+  const chapterId = await chapterIdOf(copy.reading, exp);
   let sealed: string;
   let profile: ReturnType<typeof profileOf>;
   if ("sealed" in body) {
-    if (!(await openPartner(body.sealed, ctx.secret))) return refused();
+    if (!(await openPartner(body.sealed, ctx.secret, chapterId))) return refused();
     sealed = body.sealed;
   } else {
     const hash = await inputHash("match", body.input, ctx.secret);
@@ -87,7 +88,7 @@ export async function POST(request: Request): Promise<Response> {
       .bind(resume.unlockId, userId, body.readingId)
       .first();
     if (!delivered) return refused();
-    sealed = await sealPartner(body.input.partner.birth, ctx.secret);
+    sealed = await sealPartner(body.input.partner.birth, ctx.secret, chapterId);
     profile = profileOf(body.input.me);
   }
 

@@ -84,7 +84,7 @@ export async function POST(request: Request): Promise<Response> {
     }
   } else {
     // The facts as of the reading (a premium token lives 30 days from it): a 궁합's 10 years and shared years do not move.
-    const prepared = await preparePremiumFollowUp(chapter.ctx, body.data.reading, chapter.exp - PREMIUM_CHAPTER_TTL_MS, gate.secret);
+    const prepared = await preparePremiumFollowUp(chapter.ctx, body.data.reading, chapter.exp - PREMIUM_CHAPTER_TTL_MS, gate.secret, chapter.id);
     if (prepared instanceof Response) return prepared;
     generate = (hooks) => prepared.generate(gate.provider, chapter.turns, question, hooks);
   }

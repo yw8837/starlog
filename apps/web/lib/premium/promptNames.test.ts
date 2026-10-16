@@ -3,10 +3,11 @@ import { mockProvider } from "@/lib/ai/mock";
 import type { GenerationTask, ReadingProvider } from "@/lib/ai/provider";
 import type { Gate } from "@/lib/api/http";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { chapterIdOf } from "@/lib/security/chapterToken";
 import { issueDraw } from "@/lib/security/drawToken";
 import { DEEP_ADAPTER, MATCH_ADAPTER, NEWYEAR_ADAPTER, type Adapter } from "./adapters";
 import { preparePremiumFollowUp } from "./followup";
-import { PREMIUM } from "./products";
+import { PREMIUM, PREMIUM_CHAPTER_TTL_MS } from "./products";
 import { runNextPart, type PremiumContext } from "./run";
 
 /**
@@ -46,8 +47,8 @@ async function everyTask<B, C extends PremiumContext>(adapter: Adapter<B, C>, ra
     if (step.complete) reading = step.reading;
     else done = step.parts;
   }
-  const chapter = await adapter.chapterContext(body, ctx, SECRET);
-  const followUp = await preparePremiumFollowUp(chapter as Parameters<typeof preparePremiumFollowUp>[0], reading, NOW, SECRET);
+  const chapter = await adapter.chapterContext(body, ctx, SECRET, await chapterIdOf(reading, NOW + PREMIUM_CHAPTER_TTL_MS));
+  const followUp = await preparePremiumFollowUp(chapter as Parameters<typeof preparePremiumFollowUp>[0], reading, NOW, SECRET, await chapterIdOf(reading, NOW + PREMIUM_CHAPTER_TTL_MS));
   if (followUp instanceof Response) throw new Error(`follow-up ${followUp.status}`);
   await followUp.generate(provider, [], "가장 먼저 해 볼 일은 뭘까요?");
   return tasks;

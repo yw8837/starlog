@@ -4,7 +4,7 @@ import { budgetState, buyerPreviews, recordBuyerPreview } from "@/lib/api/spend"
 import { respondGeneration } from "@/lib/api/stream";
 import { checkBot } from "@/lib/api/turnstile";
 import { sessionCookieName } from "@/lib/account/session";
-import { issueChapter } from "@/lib/security/chapterToken";
+import { chapterIdOf, issueChapter } from "@/lib/security/chapterToken";
 import { nextKstMidnight } from "@/lib/security/quota";
 import type { Adapter } from "./adapters";
 import { premiumOpen } from "./flags";
@@ -105,8 +105,9 @@ export function premiumReadingRoute<B, C extends PremiumContext>(adapter: Adapte
           return { body: { status: "continue", resume: next, done: step.parts.length, of }, cookies: [] };
         }
         // Who paid is signed into the chapter: its follow-ups are paid for only when the reading was (real keys, not the owner pass).
-        const chapterCtx = { ...(await adapter.chapterContext(body, ctx, gate.secret)), paid: plan.paidCost };
-        const chapterToken = await issueChapter(chapterCtx, step.reading, [], gate.secret, gate.now, gate.now + PREMIUM_CHAPTER_TTL_MS);
+        const exp = gate.now + PREMIUM_CHAPTER_TTL_MS;
+        const chapterCtx = { ...(await adapter.chapterContext(body, ctx, gate.secret, await chapterIdOf(step.reading, exp))), paid: plan.paidCost };
+        const chapterToken = await issueChapter(chapterCtx, step.reading, [], gate.secret, gate.now, exp);
         return { body: { status: "done", reading: step.reading, chapterToken }, cookies: [] };
       },
       {

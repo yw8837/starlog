@@ -7,9 +7,11 @@ import type { GenerationTask, ReadingProvider } from "@/lib/ai/provider";
 import { validateMatchPartA } from "@/lib/ai/validatePremium";
 import type { Gate } from "@/lib/api/http";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
+import { chapterIdOf } from "@/lib/security/chapterToken";
 import { issueDraw } from "@/lib/security/drawToken";
 import { MATCH_ADAPTER } from "./adapters";
 import { preparePremiumFollowUp } from "./followup";
+import { PREMIUM_CHAPTER_TTL_MS } from "./products";
 import { runNextPart, type PremiumContext } from "./run";
 
 /**
@@ -42,8 +44,8 @@ async function written() {
   const first = await runNextPart(provider, ctx, []);
   const last = await runNextPart(provider, ctx, first.parts);
   if (!last.complete) throw new Error("not finished");
-  const chapter = await MATCH_ADAPTER.chapterContext(body, ctx, SECRET);
-  const followUp = await preparePremiumFollowUp(chapter as Parameters<typeof preparePremiumFollowUp>[0], last.reading, NOW, SECRET);
+  const chapter = await MATCH_ADAPTER.chapterContext(body, ctx, SECRET, await chapterIdOf(last.reading, NOW + PREMIUM_CHAPTER_TTL_MS));
+  const followUp = await preparePremiumFollowUp(chapter as Parameters<typeof preparePremiumFollowUp>[0], last.reading, NOW, SECRET, await chapterIdOf(last.reading, NOW + PREMIUM_CHAPTER_TTL_MS));
   if (followUp instanceof Response) throw new Error("follow-up refused");
   await followUp.generate(provider, [], "대화를 어떻게 시작하면 좋을까요?");
   return { tasks, reading: last.reading, facts: ctx.match, partA: first.parts[0] };

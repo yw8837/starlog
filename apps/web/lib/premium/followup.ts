@@ -88,7 +88,7 @@ const common = { name: "premium-followup" as const, schema: FollowUpAnswerSchema
  * stream starts). `now`: when the reading was written, so the computed facts are the ones it was written from.
  */
 export async function preparePremiumFollowUp(
-  ctx: Extract<ChapterContext, { kind: "tarot-deep" | "match" | "newyear-2027" }>, reading: unknown, now: number, secret: string,
+  ctx: Extract<ChapterContext, { kind: "tarot-deep" | "match" | "newyear-2027" }>, reading: unknown, now: number, secret: string, chapterId: string,
 ): Promise<PreparedFollowUp | Response> {
   const today = todayInKorea(new Date(now));
   if (ctx.kind === "tarot-deep") {
@@ -105,7 +105,7 @@ export async function preparePremiumFollowUp(
   if (ctx.kind === "match") {
     if (!MatchReadingSchema.safeParse(reading).success) return errorResponse("BAD_TOKEN");
     // The partner travels sealed in the device's token only (owner 2026-10-16): a token without it is no follow-up.
-    const partnerBirth = await openPartner((ctx.partner as { sealed?: unknown }).sealed, secret);
+    const partnerBirth = await openPartner((ctx.partner as { sealed?: unknown }).sealed, secret, chapterId);
     if (!partnerBirth) return errorResponse("BAD_TOKEN", { message: MATCH_FOLLOWUP_DEVICE_ONLY });
     const me = checkSajuForm(ctx.me.birth, today);
     const partner = checkSajuForm(partnerBirth, today);
