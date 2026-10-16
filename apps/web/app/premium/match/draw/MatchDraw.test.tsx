@@ -23,12 +23,12 @@ afterEach(() => {
 });
 
 describe("우리 사이 궁합's five cards (Task 20)", () => {
-  it("deals the five-card spread under 우리 사이 · <relation>, keeps it in the tab and opens the preview", async () => {
+  it("deals the five-card spread under 프리미엄 궁합 · <relation>, keeps it in the tab and opens the preview", async () => {
     sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify(FLOW));
     const fetchMock = vi.fn(async () => Response.json(DEALT));
     vi.stubGlobal("fetch", fetchMock);
     render(<MatchDraw instant />);
-    expect(await screen.findByRole("heading", { level: 1, name: "우리 사이 · 친구" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "프리미엄 궁합 · 친구" })).toBeTruthy();
     expect(screen.getByText("마음이 가는 카드를 5장 골라 주세요")).toBeTruthy();
     for (let i = 0; i < 5; i++) fireEvent.click(fanCards()[i]!);
     await act(async () => {

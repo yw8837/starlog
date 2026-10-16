@@ -180,7 +180,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
       <>
         {stepper}
         <header className={s.head}>
-          <h1 className={s.question}>{`우리 사이 · ${relationLabel(flow.relation)}`}</h1>
+          <h1 className={s.question}>{`${PREMIUM[ID].name} · ${relationLabel(flow.relation)}`}</h1>
         </header>
         {preview ? (
           <>

@@ -48,7 +48,7 @@ describe("the policies' premium text", () => {
   it("privacy: the 궁합 partner's items, purpose, that our servers keep none of it, the sealed 30 days on the device, and deletion", async () => {
     stub(true);
     render(<PrivacyPage />);
-    const section = await screen.findByRole("heading", { name: "우리 사이 궁합에 입력한 상대방 정보" });
+    const section = await screen.findByRole("heading", { name: "프리미엄 궁합에 입력한 상대방 정보" });
     const text = section.parentElement!.textContent ?? "";
     for (const item of ["생년월일", "양력·음력", "태어난 시", "성별", "부르는 말", "관계"]) expect(text).toContain(item);
     expect(text).toContain("이 풀이를 만들고 이어서 물어보기에 답하는 데만");
@@ -64,10 +64,11 @@ describe("the policies' premium text", () => {
     render(<TermsPage />);
     const article = await screen.findByRole("region", { name: "제7조의3 (프리미엄 풀이)" });
     const text = article.textContent ?? "";
-    for (const line of ["켈틱 크로스 10장", "7,900원", "우리 사이 궁합", "2027 신년운세", "14,900원", "이어서 물어보기 5번", "30일"]) expect(text).toContain(line);
+    for (const line of ["켈틱 크로스 10장", "7,900원", "프리미엄 궁합", "2027 신년운세", "14,900원", "이어서 물어보기 5번", "30일"]) expect(text).toContain(line);
     expect(text).toContain("2026년 11월 15일 0시부터 2027년 11월 30일까지");
     expect(text).toContain("이미 지난 달도");
     expect(text).toContain("완성되어 저장되지 않으면 결제한 풀이는 쓰이지 않으며");
+    expect(text).not.toContain("우리 사이");
     expect(text).not.toMatch(/베타|오픈 기념|정확|비법/);
   });
 

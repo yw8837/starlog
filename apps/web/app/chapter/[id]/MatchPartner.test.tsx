@@ -38,7 +38,7 @@ describe("a 궁합 record and its partner (owner 2026-10-16)", () => {
   it("asks follow-ups on the device that wrote it, within its 30 days", () => {
     seed([MATCH]);
     render(<LocalChapter id="match0001" />);
-    expect(screen.getByRole("heading", { level: 1, name: "우리 사이 · 친구" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "프리미엄 궁합 · 친구" })).toBeTruthy();
     expect(screen.getByRole("textbox")).toBeTruthy();
   });
 

@@ -69,6 +69,7 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     const fetchMock = stub();
     render(<MatchPreview instant />);
     expect(await screen.findByText(PREVIEW.summary.body)).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "프리미엄 궁합 · 친구" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "나" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "민지" })).toBeTruthy();
     expect(screen.getByText("단단한 쇠")).toBeTruthy();

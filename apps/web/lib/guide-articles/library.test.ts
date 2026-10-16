@@ -178,7 +178,7 @@ describe("upcoming products are introduced without a date", () => {
   });
 
   it.each([
-    ["saju-compatibility", "우리 사이 궁합"],
+    ["saju-compatibility", "프리미엄 궁합"],
     ["new-year-fortune", "2027 신년운세"],
   ])("%s introduces %s as 준비 중 with no date", (slug, product) => {
     const text = allText(findArticle(slug) as GuideArticle);

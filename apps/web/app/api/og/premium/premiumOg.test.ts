@@ -47,7 +47,7 @@ describe("premium share images: no personal data, ever", () => {
     expect(drawn[0]!.init).toMatchObject({ width: 1080, height: 1350 });
 
     expect((await post({ product: "match", relation: "friend", cards: cards(TEMPLATES.match.positions.length) })).status).toBe(200);
-    expect(textOf(drawn[1]!.element)).toContain("우리 사이 · 친구");
+    expect(textOf(drawn[1]!.element)).toContain("프리미엄 궁합 · 친구");
 
     expect((await post({ product: "newyear-2027", title: "차근차근 쌓아 가는 해" }, "?size=story")).status).toBe(200);
     expect(textOf(drawn[2]!.element)).toContain("2027년, 차근차근 쌓아 가는 해");

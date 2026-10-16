@@ -9,6 +9,12 @@ describe("premium products", () => {
     expect([PREMIUM["tarot-deep"].krw, PREMIUM.match.krw, PREMIUM["newyear-2027"].krw]).toEqual([7900, 7900, 14900]);
   });
 
+  it("calls 궁합 프리미엄 궁합 everywhere (owner 2026-10-17): the name checkout, receipts and screens show is the entries' name", () => {
+    expect(PREMIUM.match.name).toBe("프리미엄 궁합");
+    expect(PREMIUM.match.entry).toBe(PREMIUM.match.name);
+    expect(JSON.stringify(SITE.price.premium)).not.toContain("우리 사이");
+  });
+
   it("maps slugs to products and paths", () => {
     expect(premiumBySlug("deep-tarot")?.id).toBe("tarot-deep");
     expect(premiumPath("newyear-2027")).toBe("/premium/newyear-2027");

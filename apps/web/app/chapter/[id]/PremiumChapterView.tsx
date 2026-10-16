@@ -76,7 +76,7 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
     spread = <CrossSpread cards={chapter.cards} deck={deck} />;
     article = <DeepTarotArticle reading={chapter.reading} cards={chapter.cards} deck={deck} showSpread={false} />;
   } else if (chapter.kind === "match") {
-    title = `우리 사이 · ${chapter.relationLabel}`;
+    title = `${PREMIUM.match.name} · ${chapter.relationLabel}`;
     spread = <SpreadRow size="sm" cards={chapter.cards.map(faceUpCard)} deck={deck} />;
     article = <MatchArticle reading={chapter.reading} cards={chapter.cards} deck={deck} />;
   } else {

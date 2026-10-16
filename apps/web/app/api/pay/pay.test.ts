@@ -85,7 +85,7 @@ describe("checkout and orders", () => {
     expect(await (await b.send(checkout, "/api/pay/checkout?product=match")).json()).toMatchObject({ productId: "match", amount: 7900 });
     const res = await order(b, { productId: "match", returnTo: "/premium/match/preview", ack: true });
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ amount: 7900, orderName: "스타로그 우리 사이 궁합" });
+    expect(await res.json()).toMatchObject({ amount: 7900, orderName: "스타로그 프리미엄 궁합" });
   });
 });
 

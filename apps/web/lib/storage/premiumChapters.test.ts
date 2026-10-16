@@ -41,7 +41,7 @@ describe("premium chapters on the device", () => {
   it("labels them in 내 기록 and 돌아보기, and keeps them out of the history the next reading reads", () => {
     const [deep, match, year] = [DEEP, MATCH, YEAR].map((c) => parseChapter(c)!);
     expect(recordLine(deep!)).toEqual({ question: "이번 달 내 재물 흐름은 어떨까?", verdict: "v" });
-    expect(recordLine(match!)).toEqual({ question: "우리 사이 궁합 · 친구", verdict: "속도를 맞춰 가요" });
+    expect(recordLine(match!)).toEqual({ question: "프리미엄 궁합 · 친구", verdict: "속도를 맞춰 가요" });
     expect(recordLine(year!)).toEqual({ question: "2027 신년운세", verdict: "차근차근 쌓아 가는 해" });
     expect(checkinSource(year!)).toBe("10월 20일 2027 신년운세");
     expect(historyFor([deep!, match!, year!])).toEqual([]);
