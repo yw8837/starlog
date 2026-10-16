@@ -14,3 +14,21 @@
   font-weight: 700;
   line-height: 1.4;
 }
+
+/* The status could not be read twice: say so, keep the choice, offer to ask again. */
+.unread {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  margin: 0 0 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+}
+
+.unreadText {
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}

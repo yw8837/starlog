@@ -1,30 +1,59 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/Button";
 import { useAccount, type AccountState } from "@/lib/account/client";
 import type { FlowState } from "@/lib/flowState";
-import { usePremiumStatus, type PremiumStatus } from "@/lib/premium/status";
+import { refreshPremiumStatus, usePremiumStatus, type PremiumStatus } from "@/lib/premium/status";
 import s from "./DeepSpreadGate.module.css";
 
 /**
  * Whether this device may stand on 켈틱 크로스 10장: premium is visible here, or the account holds a purchase
  * of it (unopened or being opened: a reading already paid for always opens, plan-reconciled §4.4). Undefined
- * until both have answered what is needed.
+ * until both have answered what is needed, and while the status could not be read (null): a choice is never
+ * dropped on a guess (review 2026-10-16 #4).
  */
 export function deepAllowed(status: PremiumStatus | null | undefined, account: AccountState | null | undefined): boolean | undefined {
   if (status?.["tarot-deep"].visible) return true;
   const user = account?.user;
   if (user && [...user.unused, ...user.opening].some((item) => item.productId === "tarot-deep")) return true;
-  return status === undefined || account === undefined ? undefined : false;
+  return status === undefined || status === null || account === undefined ? undefined : false;
 }
 
-/** Mounted only while the flow asks for the ten cards, so a standard flow asks nothing new. */
+/**
+ * Mounted only while the flow asks for the ten cards, so a standard flow asks nothing new. A status that
+ * could not be read is asked once more; failing again, it says so and offers 다시 확인하기, keeping the choice.
+ */
 function DeepSpreadGate({ onDecide }: { onDecide: (allowed: boolean) => void }) {
-  const allowed = deepAllowed(usePremiumStatus(), useAccount());
+  const status = usePremiumStatus();
+  const allowed = deepAllowed(status, useAccount());
+  const retried = useRef(false);
+  const [unread, setUnread] = useState(false);
   useEffect(() => {
     if (allowed !== undefined) onDecide(allowed);
   }, [allowed, onDecide]);
-  return null;
+  useEffect(() => {
+    if (status !== null) return setUnread(false);
+    if (retried.current) return setUnread(true);
+    retried.current = true;
+    // A second null changes nothing in the store, so the answer of this try is read here.
+    let live = true;
+    void refreshPremiumStatus().then((next) => {
+      if (live && next === null) setUnread(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [status]);
+  if (allowed !== undefined || !unread) return null;
+  return (
+    <div className={s.unread} role="status">
+      <p className={s.unreadText}>켈틱 크로스 10장을 지금 볼 수 있는지 확인하지 못했어요</p>
+      <Button variant="secondary" size="md" onClick={() => void refreshPremiumStatus()}>
+        다시 확인하기
+      </Button>
+    </div>
+  );
 }
 
 /**
