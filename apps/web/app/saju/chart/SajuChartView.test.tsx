@@ -94,6 +94,20 @@ describe("SajuChartView and the signup gift (tarot only)", () => {
   });
 });
 
+describe("SajuChartView after the free 맛보기", () => {
+  it("puts the tarot result's small way down to the sheet right after the 맛보기, before the locked contents and the sheet (M-05)", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody())] });
+    render(<SajuChartView />);
+    const jump = await screen.findByRole("link", { name: "전체 풀이 보러 가기" });
+    expect(jump.getAttribute("href")).toBe("#unlock-title");
+    expect(document.getElementById("unlock-title")).toBeTruthy();
+    expect(screen.getByText("고요한 물").compareDocumentPosition(jump) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(jump.compareDocumentPosition(screen.getByText(/^소제목 2개/)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(jump.compareDocumentPosition(screen.getByRole("region", { name: "전체 풀이에 담긴 것" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
 describe("SajuChartView after a paid opening was cut off", () => {
   it("offers nothing to press while it checks whether the reading opened", async () => {
     seed();

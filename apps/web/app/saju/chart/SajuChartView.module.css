@@ -102,3 +102,16 @@
 .backRow {
   display: flex;
 }
+
+/* 전체 풀이 보러 가기 ↓ under the 맛보기: the same small link as the tarot result's (app/tarot/result). */
+.jump {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-underline-offset: 3px;
+}

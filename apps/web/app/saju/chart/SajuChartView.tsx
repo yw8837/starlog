@@ -346,6 +346,10 @@ export function SajuChartView({
             <span>풀이 · 토끼 선생님</span>
           </footer>
         </Paper>
+        {/* The sheet sits below the row and the locked contents: the tarot result's quiet way down right after the free part (M-05). */}
+        <a href="#unlock-title" className={s.jump}>
+          전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>
+        </a>
         {topicRow}
         <LockedToc items={teaser.lockedToc} meta={`소제목 ${teaser.lockedToc.length}개 · 약 ${approxCharsText(SITE.reading.approxChars.saju)}자`} />
         <UnlockSheet
