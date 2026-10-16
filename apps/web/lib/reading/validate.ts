@@ -1,11 +1,15 @@
 import { CARDS } from "@starlog/core";
 import { isSajuTopic } from "@/lib/sajuTopics";
 import type {
+  ChartViewData,
   DailyData,
   DailyDeal,
+  DeepTarotPreviewData,
   DeepTarotReadingData,
   FollowUpData,
+  MatchPreviewData,
   MatchReadingData,
+  NewYearPreviewData,
   NewYearReadingData,
   SajuGlance,
   SajuReadingData,
@@ -96,6 +100,26 @@ export function isNewYearReading(value: unknown): value is NewYearReadingData {
   if (!isRecord(areas) || !isString(areas.heading) || ![areas.work, areas.money, areas.relations, areas.health].every(isSection)) return false;
   return Array.isArray(value.months) && value.months.every(isMonth) && optional(value.followUps, isStrings);
 }
+
+const isPreviewCard = (c: unknown) => isRecord(c) && isString(c.position) && isCardId(c.cardId) && isOrientation(c.orientation) && isString(c.keyword);
+const isPreviewCards = (value: unknown) => Array.isArray(value) && value.length > 0 && value.every(isPreviewCard);
+
+/** A computed chart as a preview shows it (PairCharts, ChartCard): no birth date. */
+export function isChartView(value: unknown): value is ChartViewData {
+  if (!isRecord(value) || !Array.isArray(value.pillars) || !isRecord(value.elements) || !isRecord(value.dayMaster)) return false;
+  if (!value.pillars.every((p) => isRecord(p) && isString(p.label) && isString(p.gz) && isString(p.ko))) return false;
+  return Object.values(value.elements).every((n) => typeof n === "number") && isString(value.dayMaster.display) && isString(value.dayMaster.image);
+}
+
+export const isDeepTarotPreview = (value: unknown): value is DeepTarotPreviewData =>
+  isRecord(value) && isPreviewCards(value.cards) && isSection(value.now) && isStrings(value.lockedToc);
+
+export const isMatchPreview = (value: unknown): value is MatchPreviewData =>
+  isRecord(value) && isStrings(value.facts) && isRecord(value.charts) && isChartView(value.charts.me) && isChartView(value.charts.partner) &&
+  isPreviewCards(value.cards) && isSection(value.summary) && isStrings(value.lockedToc);
+
+export const isNewYearPreview = (value: unknown): value is NewYearPreviewData =>
+  isRecord(value) && isString(value.title) && isStrings(value.facts) && isSection(value.summary) && isStrings(value.lockedToc);
 
 /**
  * A saju reading saved on this device that can be shown whole: the 한눈에 보기 card aside, which the page leaves out on its

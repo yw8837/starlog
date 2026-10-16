@@ -7,9 +7,12 @@ import { createLocalStore, createSessionStore, type SessionStore } from "@/lib/s
  *   that topic's chips (lib/sajuFlow.ts sajuTeaserKey), each until the server's `freshUntil` (30 days,
  *   the next 입춘 or the end of the 대운) and never past 30 days. A topic seen here switches back for free.
  *   One past its time is ignored on read, dropped at the next save and whenever the app opens (RouteTracker).
+ * - premium (P5): the preview written last in this tab (sessionStorage), keyed by the product and what it
+ *   was written from (a 궁합's partner birth stays in the tab, spec §9); apart from the tarot slot, so the
+ *   standard flow's teaser is never pushed out by a premium one.
  */
 
-type Slot = "tarot" | "saju";
+type Slot = "tarot" | "saju" | "premium";
 
 interface Entry {
   key: string;
@@ -20,6 +23,7 @@ const parseEntry = (value: unknown): Entry | null =>
   typeof value === "object" && value !== null && typeof (value as Entry).key === "string" && "value" in value ? (value as Entry) : null;
 
 const tarotStore: SessionStore<Entry> = createSessionStore("starlog.teaser.tarot", parseEntry);
+const premiumStore: SessionStore<Entry> = createSessionStore("starlog.teaser.premium", parseEntry);
 
 /** v2 (2026-10-08): the locked lists kept under v1 lack the 한눈에 보기 card and the plain headings, so v1 is not read again. */
 export const SAJU_TEASERS_KEY = "starlog.teaser.saju.v2";
@@ -50,8 +54,8 @@ const sajuStore = createLocalStore<SajuEntry[]>(SAJU_TEASERS_KEY, (value) => (Ar
 
 /** The teaser kept for `key`, or null; one past its time, or no longer of the teaser's shape, counts as none. */
 export function readTeaser<T>(slot: Slot, key: string, accept: (value: unknown) => value is T, now = Date.now()): T | null {
-  if (slot === "tarot") {
-    const entry = tarotStore.read();
+  if (slot !== "saju") {
+    const entry = (slot === "tarot" ? tarotStore : premiumStore).read();
     return entry && entry.key === key && accept(entry.value) ? entry.value : null;
   }
   const entry = (sajuStore.read() ?? []).find((e) => e.key === key && e.freshUntil > now);
@@ -60,8 +64,8 @@ export function readTeaser<T>(slot: Slot, key: string, accept: (value: unknown) 
 
 /** Keeps `value` for `key`; a saju teaser until its `freshUntil` (30 days at most), the newest 15 at most. */
 export function saveTeaser(slot: Slot, key: string, value: unknown, now = Date.now()) {
-  if (slot === "tarot") {
-    tarotStore.save({ key, value });
+  if (slot !== "saju") {
+    (slot === "tarot" ? tarotStore : premiumStore).save({ key, value });
     return;
   }
   const stated = typeof value === "object" && value !== null ? Date.parse(String((value as { freshUntil?: unknown }).freshUntil ?? "")) : Number.NaN;
@@ -98,5 +102,6 @@ export function clearSajuTeasers() {
 /** Forgets every kept teaser (내 정보 → 기록 모두 지우기). */
 export function clearTeasers() {
   tarotStore.clear();
+  premiumStore.clear();
   clearSajuTeasers();
 }

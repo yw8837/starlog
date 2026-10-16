@@ -147,6 +147,18 @@ export function premiumProgressPlans(id: PremiumId, opts: { positions?: readonly
   }
 }
 
+/** A premium free preview's captions (one short call, like the standard teasers), keyed by its draft's fields. */
+export function premiumTeaserPlan(id: PremiumId): ProgressPlan {
+  switch (id) {
+    case "tarot-deep":
+      return { opening: "카드 열 장을 읽고 있어요", stages: [one("now", "지금의 나를 적고 있어요")] };
+    case "match":
+      return { opening: "두 사람의 명식을 나란히 놓고 있어요", stages: [one("summary", "두 사람 사이를 한눈에 적고 있어요")] };
+    case "newyear-2027":
+      return { opening: "2027년의 흐름을 살피고 있어요", stages: [one("title", "한 해에 이름을 붙이고 있어요"), one("summary", "2027년을 미리 적고 있어요")] };
+  }
+}
+
 /** The whole reading's bar: the parts written plus the share of the one being written. */
 export const premiumFraction = (part: number, of: number, state: ProgressState): number => Math.min(1, (part + state.fraction) / of);
 
