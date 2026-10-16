@@ -7,6 +7,7 @@ import {
   CHECKIN_ANSWERS, type CheckinAnswer, type DeepTarotReadingData, type HistoryItem, type MatchReadingData, type NewYearReadingData, type SajuContext,
   type SajuReadingData, type SajuTopic, type SajuTopicId, type TarotReadingData,
 } from "@/lib/reading/types";
+import { isCardId, isDeepTarotReading, isMatchReading, isNewYearReading } from "@/lib/reading/validate";
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { formatBirthDate, sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { isSajuTopicId, topicLabel } from "@/lib/sajuTopics";
@@ -186,11 +187,13 @@ export function parseChapter(value: unknown): StoredChapter | null {
       reading: reading as unknown as TarotReadingData,
     };
   }
+  // A premium record is read whole or not at all: its page reads every block (and draws every card), so a
+  // damaged one goes to the 이 기록을 읽지 못했어요 screen instead of breaking it.
   if (value.kind === "tarot-deep" || value.kind === "match") {
     const cards = Array.isArray(value.cards) ? value.cards.map(parseCard) : [];
-    if (cards.length === 0 || cards.some((c) => c === null) || !isString(reading.verdict) || !isSection(reading.observation)) return null;
+    if (cards.length === 0 || cards.some((c) => c === null || !isCardId(c.cardId))) return null;
     if (value.kind === "tarot-deep") {
-      if (!Array.isArray(reading.positions)) return null;
+      if (!isDeepTarotReading(reading)) return null;
       const conditions = Array.isArray(value.conditions)
         ? value.conditions.filter((c): c is { label: string; value: string } => isRecord(c) && isString(c.label) && isString(c.value))
         : [];
@@ -206,7 +209,7 @@ export function parseChapter(value: unknown): StoredChapter | null {
     }
     const me = isRecord(value.me) ? sanitizeSajuForm(value.me.birth) : null;
     const partner = isRecord(value.partner) ? sanitizeSajuForm(value.partner.birth) : null;
-    if (!me || !partner || !isString(value.relation) || !isRecord(reading.saju) || !Array.isArray(reading.cards)) return null;
+    if (!me || !partner || !isString(value.relation) || !isMatchReading(reading)) return null;
     return {
       ...base,
       kind: "match",
@@ -222,7 +225,7 @@ export function parseChapter(value: unknown): StoredChapter | null {
   }
   if (value.kind === "newyear-2027") {
     const birth = sanitizeSajuForm(value.birth);
-    if (!birth || !Array.isArray(reading.months) || !isSection(reading.observation)) return null;
+    if (!birth || !isNewYearReading(reading)) return null;
     const context = sanitizeSajuContext(value.context);
     return {
       ...base,

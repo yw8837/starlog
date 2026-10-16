@@ -58,4 +58,28 @@ describe("a premium reading saved on this device", () => {
     expect(screen.getByText("풀이를 연 지 30일이 지나 더 물어볼 수 없어요")).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
   });
+
+  it("sends a record whose reading lost a part its page reads (or names a card no deck has) to the damaged-record screen, never a broken page", () => {
+    const match = {
+      id: "pair0001", createdAt: Date.now(), chapterToken: "t", turns: [], followUpsLeft: 5, kind: "match", relation: "friend", relationLabel: "친구",
+      me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: DEFAULT_SAJU_FORM }, cards: CARDS.slice(0, 5),
+      reading: {
+        verdict: "결론", saju: { dayMasters: section("일간"), elements: section("오행"), pillars: section("기둥") },
+        cards: CARDS.slice(0, 5).map((c) => ({ position: c.position, cardId: c.cardId, heading: `${c.position} 카드`, body: "본문이에요." })),
+        connection: section("연결"), bridge: section("사주와 카드"), action: section("해 볼 일"), observation: section("신호"), followUps: [],
+      },
+    };
+    const broken = [
+      { ...DEEP, id: "deep0002", reading: { ...DEEP.reading, axes: { vertical: section("세로"), horizontal: section("가로") } } },
+      { ...DEEP, id: "deep0003", cards: [{ position: "지금의 나", cardId: "no-such-card", orientation: "upright" }] },
+      { ...YEAR, id: "year0002", reading: { ...YEAR.reading, areas: { heading: "영역별로 보면" } } },
+      match,
+    ];
+    seed(broken);
+    for (const { id } of broken) {
+      render(<LocalChapter id={id} />);
+      expect(screen.getByRole("heading", { level: 1, name: "이 기록을 읽지 못했어요" }), id).toBeTruthy();
+      cleanup();
+    }
+  });
 });

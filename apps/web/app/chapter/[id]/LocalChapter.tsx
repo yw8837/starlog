@@ -37,7 +37,7 @@ import { SajuChapterView } from "./SajuChapterView";
 import { PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import s from "./ChapterView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
-import { isFollowUpData, isWholeSajuReading, partialTarotReading } from "@/lib/reading/validate";
+import { isDeepTarotReading, isFollowUpData, isMatchReading, isNewYearReading, isWholeSajuReading, partialTarotReading } from "@/lib/reading/validate";
 
 /** Chapter tokens expire 7 days after the reading, 30 for a premium one (the server's rule): no follow-ups after that. */
 const FOLLOW_UP_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -123,10 +123,19 @@ function EraseRecord({ id }: { id: string }) {
 
 /**
  * True when every part of the saved reading can be shown (an older or edited one may lack some). A
- * premium reading is checked as it is read back (parseChapter): what its page needs is there.
+ * premium reading is read whole or not at all (parseChapter sends a damaged one to the unreadable-record
+ * screen); the same check stands here.
  */
 const isWhole = (chapter: StoredChapter) =>
-  isPremiumChapter(chapter) ? true : chapter.kind === "tarot" ? partialTarotReading(chapter.reading).complete : isWholeSajuReading(chapter.reading);
+  chapter.kind === "tarot-deep"
+    ? isDeepTarotReading(chapter.reading)
+    : chapter.kind === "match"
+      ? isMatchReading(chapter.reading)
+      : chapter.kind === "newyear-2027"
+        ? isNewYearReading(chapter.reading)
+        : chapter.kind === "tarot"
+          ? partialTarotReading(chapter.reading).complete
+          : isWholeSajuReading(chapter.reading);
 
 /** A reading saved on this device, as its kind shows it. It never calls the API to be shown again. */
 function SavedReading({ chapter }: { chapter: StoredChapter }) {

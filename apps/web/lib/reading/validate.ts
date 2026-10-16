@@ -3,7 +3,10 @@ import { isSajuTopic } from "@/lib/sajuTopics";
 import type {
   DailyData,
   DailyDeal,
+  DeepTarotReadingData,
   FollowUpData,
+  MatchReadingData,
+  NewYearReadingData,
   SajuGlance,
   SajuReadingData,
   SajuReadingResponse,
@@ -65,6 +68,33 @@ export const isSajuGlance = (value: unknown): value is SajuGlance =>
 export function isSajuReading(value: unknown): value is SajuReadingData {
   if (!isRecord(value) || !Array.isArray(value.sections) || value.sections.length === 0 || !value.sections.every(isSection)) return false;
   return optional(value.observation, isSection) && optional(value.glance, isSajuGlance) && optional(value.followUps, isStrings);
+}
+
+// ---- premium readings (P5): every block their pages read, so a damaged record never breaks its page ----
+
+const isCardSection = (c: unknown) => isRecord(c) && isString(c.position) && isCardId(c.cardId) && isString(c.heading) && isString(c.body);
+
+export function isDeepTarotReading(value: unknown): value is DeepTarotReadingData {
+  if (!isRecord(value) || !isString(value.verdict) || !Array.isArray(value.positions) || !value.positions.every(isCardSection)) return false;
+  if (![value.crossing, value.staff, value.timing, value.action, value.observation].every(isSection)) return false;
+  const axes = value.axes;
+  return isRecord(axes) && isString(axes.heading) && isSection(axes.vertical) && isSection(axes.horizontal) && optional(value.followUps, isStrings);
+}
+
+export function isMatchReading(value: unknown): value is MatchReadingData {
+  if (!isRecord(value) || !isString(value.verdict) || !Array.isArray(value.cards) || !value.cards.every(isCardSection)) return false;
+  const saju = value.saju;
+  if (!isRecord(saju) || ![saju.dayMasters, saju.elements, saju.pillars, saju.luck].every(isSection)) return false;
+  return [value.connection, value.bridge, value.action, value.observation].every(isSection) && optional(value.followUps, isStrings);
+}
+
+const isMonth = (m: unknown) => isRecord(m) && typeof m.month === "number" && isString(m.heading) && isString(m.body);
+
+export function isNewYearReading(value: unknown): value is NewYearReadingData {
+  if (!isRecord(value) || !isString(value.title) || ![value.overview, value.luck, value.lucky, value.closing, value.observation].every(isSection)) return false;
+  const areas = value.areas;
+  if (!isRecord(areas) || !isString(areas.heading) || ![areas.work, areas.money, areas.relations, areas.health].every(isSection)) return false;
+  return Array.isArray(value.months) && value.months.every(isMonth) && optional(value.followUps, isStrings);
 }
 
 /**
