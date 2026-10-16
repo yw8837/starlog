@@ -11,6 +11,7 @@ import { REFUND_DAYS, standardProduct } from "@/lib/pay/catalog";
 import { approxCharsText } from "@/lib/pricing";
 import { sajuFreeLine, sajuPricingLine } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
+import { PremiumPricing } from "./PremiumPricing";
 
 const { price, reading, beta, features } = SITE;
 
@@ -99,26 +100,31 @@ export default function PricingPage() {
       {/* 풀이 후기: shows itself once there is one (spec 2026-10-13 §7) */}
       <ReviewList />
 
-      <LegalSection id="premium" title="준비 중인 풀이">
-        <div className={s.cards}>
-          {price.premium.map((product) => (
-            <section key={product.id} className={s.card} aria-labelledby={`premium-${product.id}`}>
-              <div>
-                <h3 id={`premium-${product.id}`} className={s.cardTitle}>
-                  {product.name} <span className={s.badge}>준비 중</span>
-                </h3>
-                <p className={s.cardSub}>{product.sub}</p>
-              </div>
-              <p className={s.price}>
-                {won(product.krw)}
-                <span className={s.priceUnit}>1회</span>
-              </p>
-              {product.opens ? <p className={s.muted}>{product.opens}</p> : null}
-            </section>
-          ))}
-        </div>
-        <p>준비 중인 풀이는 열기 전에 담기는 내용과 함께 이 페이지에 먼저 알려 드려요.</p>
-      </LegalSection>
+      {/* 깊게 보는 풀이 where premium is visible (plan-reconciled §4.2); until then, and while STARLOG_PREMIUM is off, today's section. */}
+      <PremiumPricing
+        fallback={
+          <LegalSection id="premium" title="준비 중인 풀이">
+            <div className={s.cards}>
+              {price.premium.map((product) => (
+                <section key={product.id} className={s.card} aria-labelledby={`premium-${product.id}`}>
+                  <div>
+                    <h3 id={`premium-${product.id}`} className={s.cardTitle}>
+                      {product.name} <span className={s.badge}>준비 중</span>
+                    </h3>
+                    <p className={s.cardSub}>{product.sub}</p>
+                  </div>
+                  <p className={s.price}>
+                    {won(product.krw)}
+                    <span className={s.priceUnit}>1회</span>
+                  </p>
+                  {product.opens ? <p className={s.muted}>{product.opens}</p> : null}
+                </section>
+              ))}
+            </div>
+            <p>준비 중인 풀이는 열기 전에 담기는 내용과 함께 이 페이지에 먼저 알려 드려요.</p>
+          </LegalSection>
+        }
+      />
 
       <LegalSection id="free" title="무료로 볼 수 있는 부분">
         <ul className={s.list}>
