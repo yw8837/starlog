@@ -5,7 +5,7 @@ import { parseCookies } from "@/lib/api/http";
 import { entitlements } from "@/lib/pay/ledger";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import { signingSecret } from "@/lib/security/sign";
-import { premiumVisible } from "./flags";
+import { premiumOpen, premiumVisible } from "./flags";
 import type { PremiumId } from "./products";
 
 /**
@@ -18,11 +18,21 @@ async function thisRequest(): Promise<Request> {
   return new Request("https://starlog.local/", { headers: await headers() });
 }
 
+/** The owner pass, read from this request's cookie. */
+async function ownerHere(now: number): Promise<boolean> {
+  const secret = signingSecret();
+  return secret ? isOwner(parseCookies(await thisRequest())[OWNER_COOKIE], secret, now) : false;
+}
+
 /** This device may see the product's entries and screens (premiumVisible with the owner pass read from the cookie). */
 export async function premiumVisibleHere(id: PremiumId, now: number = Date.now()): Promise<boolean> {
-  const secret = signingSecret();
-  const owner = secret ? await isOwner(parseCookies(await thisRequest())[OWNER_COOKIE], secret, now) : false;
-  return premiumVisible(id, owner);
+  return premiumVisible(id, await ownerHere(now));
+}
+
+/** A product page's state here (plan-reconciled §4.6): whether it shows at all, and whether 시작하기 may start it now. */
+export async function premiumStateHere(id: PremiumId, now: number = Date.now()): Promise<{ visible: boolean; open: boolean }> {
+  const owner = await ownerHere(now);
+  return { visible: premiumVisible(id, owner), open: premiumOpen(id, owner, now) };
 }
 
 /**

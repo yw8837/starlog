@@ -1,0 +1,222 @@
+/* A premium product page (plan-reconciled §4.6): one reading column on the night sky, one gold primary at the top. */
+.page {
+  display: grid;
+  gap: 36px;
+  padding: 24px 0 40px;
+}
+
+.head {
+  display: grid;
+  gap: 10px;
+}
+
+.eyebrow {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.title {
+  font-family: var(--font-display), serif;
+  font-size: var(--fs-title);
+  line-height: 1.3;
+}
+
+.sub {
+  color: var(--ink-sub);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 6px 0 8px;
+  color: var(--ink);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.priceUnit {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 400;
+}
+
+/* When it opens / 준비 중이에요: a calm line in place of the button, the same height, nothing to press. */
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  text-align: center;
+}
+
+.section {
+  display: grid;
+  gap: 14px;
+}
+
+.sectionTitle {
+  font-size: var(--fs-h1);
+  line-height: 1.35;
+}
+
+.subTitle {
+  margin-top: 6px;
+  font-size: var(--fs-h2);
+}
+
+.text {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.75;
+}
+
+.text a {
+  color: var(--gold);
+  text-underline-offset: 3px;
+}
+
+.steps {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+}
+
+.checks {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.checks li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+}
+
+.checks svg {
+  flex: none;
+  margin-top: 3px;
+  color: var(--gold);
+}
+
+.note {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+.excerpt {
+  display: grid;
+  gap: 10px;
+}
+
+.excerptHeading {
+  color: var(--paper-ink);
+  font-size: var(--fs-h2);
+}
+
+.excerptBody {
+  color: var(--paper-ink);
+  font-size: var(--fs-prose);
+  line-height: var(--lh-prose);
+}
+
+.more {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 44px;
+  color: var(--gold);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.more:focus-visible,
+.guide:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.again {
+  display: grid;
+}
+
+.guide {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 14px 18px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: var(--glass);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.guide:hover {
+  border-color: var(--gold);
+}
+
+.guideLabel {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.guideTitle {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* The sample page: the made-up input line, then the reading as a record shows it. */
+.sampleHead {
+  display: grid;
+  gap: 8px;
+  padding-top: 24px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.sampleBody {
+  display: grid;
+  gap: 20px;
+  padding: 20px 0 40px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide {
+    transition: none;
+  }
+}
