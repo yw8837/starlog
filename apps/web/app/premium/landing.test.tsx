@@ -141,4 +141,13 @@ describe("the premium sample pages", () => {
       cleanup();
     }
   });
+
+  it("show the 궁합's second sample after the first: the other person's time unknown (owner 2026-10-17)", async () => {
+    gate.visible = true;
+    const { container } = render(await MatchSample());
+    const text = container.textContent ?? "";
+    expect(screen.getByRole("heading", { name: "상대가 태어난 시를 몰라도" })).toBeTruthy();
+    expect(text.indexOf("두 사람 모두 태어난 시를 알아요")).toBeLessThan(text.indexOf("상대가 태어난 시를 몰라요"));
+    expect(text.split("가상의 입력으로 만든 샘플이에요")).toHaveLength(3);
+  });
 });

@@ -11,7 +11,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const staticDir = join(root, "apps/web/.next/static");
 const samples = ["content/samples/saju-prologue.ko.json", "content/samples/tarot-contact.ko.json"];
 /** P5: the premium samples' whole reading is paid text, rendered on the server by the sample pages only. */
-const premiumSamples = ["content/samples/premium/tarot-deep.json", "content/samples/premium/match.json", "content/samples/premium/newyear-2027.json"];
+const premiumSamples = ["content/samples/premium/tarot-deep.json", "content/samples/premium/match.json", "content/samples/premium/match-2.json", "content/samples/premium/newyear-2027.json"];
 /**
  * Free reference text a client page may legitimately ship (the cards' KB, the core catalog). The placeholder premium
  * samples are mock outputs built from it, so a probe found there is not paid text and is left out.

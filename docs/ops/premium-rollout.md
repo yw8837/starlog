@@ -25,7 +25,7 @@
    - 모의 실행(무료): `SMOKE_PROVIDER=mock pnpm ai:premium` → 26개 호출 모두 통과, 0원
    - 실제 실행: `pnpm ai:premium` (예산 7,000원에서 자동으로 멈춤. 다른 상한은 `SMOKE_BUDGET_KRW=5000 pnpm ai:premium`)
    - 결과: `apps/web/test-results/premium-eval/<시각>-real/summary.md`(호출마다 비용·시간·검증기 결과)와 풀이 원문. 상품마다 풀이+이어서 묻기 비용이 가격의 12% 안인지, 검증기 재생성이 잦지 않은지 본다.
-5. **사장님 샘플 승인**(아래 6절). 승인 전엔 `on` 금지: 지금 상품 페이지의 샘플 발췌는 모의 출력이다.
+5. **사장님 샘플 승인**(아래 6절): 2026-10-17에 실제 평가 결과로 승인·교체했다.
 
 ## 1. `off` (지금): 확인할 것
 
@@ -84,6 +84,8 @@ D1:
 로그(`wrangler tail`): `premium.part`(파트 수), `premium.reserved`, `unlock.released`(실패한 파트), `unlock.reservation_lost`(0이어야 함), 유료 비용 장부. 구매자 미리보기는 상품마다 하루 5번까지(D1 `buyer_previews`, `SELECT product_id, kst_day, COUNT(*), MAX(n) FROM buyer_previews GROUP BY 1, 2;`).
 
 ## 6. 사장님 샘플 승인
+
+2026-10-17 승인·교체 끝: 켈틱 크로스 10장은 D1(연애·연락), 프리미엄 궁합은 M1(연인)과 M2(썸, 상대 시각 모름, 샘플 페이지 두 번째), 2027 신년운세는 N3(2027년에 대운이 바뀜). 다음에 바꿀 때 아래 순서대로.
 
 1. 4차 실제 평가 결과(0절 4)에서 상품마다 풀이 하나를 고른다.
 2. 사장님이 그 풀이를 처음부터 끝까지 읽고 승인한다(안 되면 프롬프트를 고치고 그 상품만 다시 평가).

@@ -1,6 +1,7 @@
 import "server-only";
 import type { Orientation } from "@starlog/core";
 import deep from "@content/samples/premium/tarot-deep.json";
+import match2 from "@content/samples/premium/match-2.json";
 import match from "@content/samples/premium/match.json";
 import year from "@content/samples/premium/newyear-2027.json";
 import { stripBold } from "@/lib/reading/bold";
@@ -9,8 +10,8 @@ import type { PremiumId } from "./products";
 
 /**
  * The samples on the product pages (plan-reconciled §4.6): imported on the server only, so the paid text is
- * rendered there and never ships in a client bundle (scripts/check-client-bundle.mjs probes it). Stage 3 commits
- * mock-provider outputs as placeholders; stage 4 replaces them with owner-approved real outputs before premium opens.
+ * rendered there and never ships in a client bundle (scripts/check-client-bundle.mjs probes it). They are the
+ * owner-approved real outputs of the stage 4 eval (2026-10-17), from made-up inputs summarised in `input`.
  */
 
 export interface SampleCard {
@@ -29,6 +30,9 @@ export interface PremiumSamples {
   match: SampleBase & { cards: SampleCard[]; reading: MatchReadingData };
   "newyear-2027": SampleBase & { reading: NewYearReadingData };
 }
+
+/** The 궁합's second sample, after the first on its page: the other person's birth time unknown (owner 2026-10-17). */
+export const MATCH_SECOND_SAMPLE = match2 as unknown as PremiumSamples["match"];
 
 export const PREMIUM_SAMPLES: PremiumSamples = {
   "tarot-deep": deep as unknown as PremiumSamples["tarot-deep"],
