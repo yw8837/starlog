@@ -2,6 +2,7 @@ import { computeChart } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import { mockMatchPartA } from "@/lib/ai/mockPremium";
+import { MATCH_SAJU_SYSTEM, buildMatchFacts } from "@/lib/ai/prompts/match";
 import { ymKo } from "@/lib/ai/prompts/saju";
 import type { GenerationTask, ReadingProvider } from "@/lib/ai/provider";
 import { validateMatchPartA } from "@/lib/ai/validatePremium";
@@ -101,6 +102,30 @@ describe("the other person in a 궁합 (owner 2026-10-17 H1)", () => {
     expect(withLine(`준호의 년주는 ${p.pillars[0]!.ko}(${p.pillars[0]!.gz})예요.`).join(" ")).toMatch(/그 사람의 (기둥|간지)/);
     expect(withLine(`준호는 ${p.months[1]} 무렵 대운이 바뀌어요.`).join(" ")).toMatch(/그 사람의 대운/);
     expect(withLine(`준호는 ${p.year}년생이에요.`).join(" ")).toMatch(/그 사람의 (출생|생년)/);
+  });
+});
+
+describe("two 일지 of the same glyph (review 2026-10-17 #3)", () => {
+  // 1990-01-05 庚午 (me) × 1990-01-17 壬午 (the other person): the relation is 같은 글자, so naming that glyph for them
+  // would name their 일지.
+  const facts = buildMatchFacts(computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, day: 5 })), computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, day: 17, gender: "male" })), { relation: "friend", label: "민지" }, NOW);
+  const base = mockMatchPartA(facts);
+  const said = (line: string) => validateMatchPartA({ ...base, pillars: { body: `${base.pillars.body} ${line}` } }, facts).filter((v) => v.includes("그 사람의 일지"));
+
+  it("refuses the glyph or its reading said for the other person's 일지, and lets my own 일지 be named", () => {
+    expect(facts.pair.dayBranches.map((r) => r.type)).toEqual(["같은 글자"]);
+    expect(said("")).toEqual([]);
+    expect(said("두 사람 모두 일지가 午예요.")).toHaveLength(1);
+    expect(said("민지의 일지도 오(午)라서 같은 글자예요.")).toHaveLength(1);
+    expect(said("그 사람 일지는 오화예요.")).toHaveLength(1);
+    expect(said("나의 일지는 오(午)예요.")).toEqual([]);
+    expect(said("두 사람의 일지는 같은 글자예요.")).toEqual([]);
+    // A year's 간지 is no 일지 of theirs, even when it holds the glyph.
+    expect(said("2026년 병오(丙午)는 나의 일지와 그 사람의 일지 모두와 같은 글자예요.")).toEqual([]);
+  });
+
+  it("tells the model not to write that glyph for them", () => {
+    expect(MATCH_SAJU_SYSTEM).toContain("두 일지가 같은 글자라도");
   });
 });
 

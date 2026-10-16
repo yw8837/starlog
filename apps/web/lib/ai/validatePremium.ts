@@ -1,4 +1,5 @@
 import "server-only";
+import { BRANCHES, BRANCHES_KO } from "@starlog/core";
 import type {
   DeepPartA, DeepPartB, DeepTeaserDraft, MatchPartA, MatchPartB, MatchTeaserDraft, NewYearPartA, NewYearPartB, NewYearPartC, NewYearTeaserDraft,
 } from "./premiumSchemas";
@@ -164,6 +165,18 @@ export function partnerTextViolations(text: string, m: MatchFacts, out: string[]
   const months = (m.partner.luck?.cycles ?? []).flatMap((c) => (c.from && !myLuck.has(c.from) ? [c.from, ymKo(c.from)] : []));
   if (cycles.some((c) => named(c.gz, c.ko, "\\(|\\s?대운")) || months.some((ym) => text.includes(ym))) {
     out.push("그 사람의 대운(기간·간지·시작 연월)은 쓰지 않아요. 입력의 연도 없는 문장 그대로만 말해 주세요.");
+  }
+  // Their 일지 by its glyph or reading: with two 일지 of one glyph (같은 글자) it is also mine, so the allow-list passes it.
+  const day = m.partner.pillars.find((p) => p.pillar.includes("일주"));
+  if (day) {
+    const glyph = day.gz.charAt(1);
+    const ko = BRANCHES_KO[BRANCHES.indexOf(glyph as (typeof BRANCHES)[number])];
+    // the glyph alone, not inside a 간지 (a 세운 like 丙午 names a year); its reading only as "오화"-like words ("해(害)" is a relation)
+    const named = new RegExp(String.raw`(?<![甲乙丙丁戊己庚辛壬癸])${glyph}|(?<![갑을병정무기경신임계])${ko}[목화토금수]`);
+    const who = ["그 사람", "상대", "두 사람", ...(m.label ? [m.label] : [])];
+    if (sentences(text).some((s) => s.includes("일지") && who.some((w) => s.includes(w)) && named.test(s))) {
+      out.push("그 사람의 일지 글자는 쓰지 않아요. 두 일지 사이는 관계 이름으로만 말해 주세요.");
+    }
   }
   const year = m.partner.input.birthYear;
   if (year !== m.me.input.birthYear && new RegExp(`${year}\\s?년`).test(text)) out.push("그 사람의 출생 연도는 쓰지 않아요.");
