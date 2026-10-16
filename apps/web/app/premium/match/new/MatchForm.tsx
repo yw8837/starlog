@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { WhoRows } from "@/components/premium/WhoRows";
 import p from "@/components/premium/premiumForm.module.css";
 import { SajuFields } from "@/components/saju/SajuForm";
 import { Stepper } from "@/components/tarot/Stepper";
@@ -14,7 +15,6 @@ import { MATCH_CONCERN_MAX, MATCH_RELATION_OPTIONS, PARTNER_LABEL_MAX, useMatchF
 import { PREMIUM } from "@/lib/premium/products";
 import type { SajuContext } from "@/lib/reading/types";
 import { saveSajuProfile, useSajuContext, useSajuProfile } from "@/lib/sajuFlow";
-import { profileSummary, type SajuForm } from "@/lib/sajuForm";
 
 type Step = "me" | "partner" | "relation";
 
@@ -22,25 +22,6 @@ const statusOf = (context: SajuContext): MatchFlow["meStatus"] => {
   const status = { ...(context.loveStatus ? { loveStatus: context.loveStatus } : {}), ...(context.workStatus ? { workStatus: context.workStatus } : {}) };
   return Object.keys(status).length ? status : undefined;
 };
-
-/** Who the reading is for, one line each, with 고치기. */
-function Who({ rows }: { rows: Array<{ name: string; form: SajuForm; edit: string; onEdit: () => void }> }) {
-  return (
-    <ul className={p.who}>
-      {rows.map((row) => (
-        <li key={row.name} className={p.whoRow}>
-          <span className={p.whoText}>
-            <span className={p.whoName}>{row.name}</span>
-            <span className={p.whoLine}>{profileSummary(row.form)}</span>
-          </span>
-          <button type="button" className={p.edit} aria-label={row.edit} onClick={row.onEdit}>
-            고치기
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 /**
  * 우리 사이 궁합's step 1 (Task 20), one part at a time so one birth form is on screen: 나 (the saved saju
@@ -107,7 +88,7 @@ export function MatchForm() {
         <div className={f.intro}>
           <h1 className={f.title}>그 사람의 태어난 날을 알려 주세요</h1>
         </div>
-        <Who rows={[meRow!]} />
+        <WhoRows rows={[meRow!]} />
         <div className={f.group}>
           <label htmlFor="partner-label" className={f.groupLabel}>
             부르는 말 <span className={n.optional}>(선택)</span>
@@ -157,7 +138,7 @@ export function MatchForm() {
       <div className={f.intro}>
         <h1 className={f.title}>어떤 사이인지 알려 주세요</h1>
       </div>
-      <Who
+      <WhoRows
         rows={[
           meRow!,
           { name: flow.partnerLabel || "그 사람", form: flow.partner, edit: "그 사람의 태어난 날 고치기", onEdit: () => setStep("partner") },
