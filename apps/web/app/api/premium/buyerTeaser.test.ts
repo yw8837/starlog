@@ -105,6 +105,22 @@ describe("a buyer's premium previews are bounded and paid for (review 2026-10-17
     expect((await b.send(deepTeaser, TEASER, { body: { drawToken: await dealt(b), input: DEEP_INPUT } })).status).toBe(200);
   });
 
+  it("never passes five when the previews come at once: each one claims its place before it starts (review 2026-10-17 #6)", async () => {
+    useTestDb();
+    const { b } = await buyerOf("198.51.100.215", "buyer215");
+    const drawToken = await dealt(b);
+    // A slow store, as KV is: a count read and written back by each request would let every one of them read 0.
+    const store = dailyStore();
+    const get = store.get.bind(store);
+    vi.spyOn(store, "get").mockImplementation(async (key: string) => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return get(key);
+    });
+    const statuses = await Promise.all(Array.from({ length: 8 }, () => b.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } }).then((res) => res.status)));
+    expect(statuses.filter((s) => s === 200)).toHaveLength(5);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(3);
+  });
+
   it("is closed while the day's spend cannot be read (budget unknown), for a buyer too", async () => {
     useTestDb();
     const { b } = await buyerOf("198.51.100.212", "buyer212");

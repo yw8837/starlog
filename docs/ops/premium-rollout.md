@@ -19,7 +19,7 @@
 ## 0. 켜기 전 준비 (한 번)
 
 1. **최신 코드 배포**: 이 브랜치의 프리미엄 코드가 운영에 올라가 있는지 확인한다. `wrangler.jsonc`에 새 속도 제한 `SHARE_IMAGE_LIMITER`(namespace 1105)가 있어서 배포하면 같이 생긴다.
-2. **D1 마이그레이션 확인**: `npx wrangler d1 migrations list starlog --remote`. 남은 게 있으면 먼저 백업(`npx wrangler d1 export starlog --remote --output=readings-before-premium.sql`)하고 `npx wrangler d1 migrations apply starlog --remote`. 이미 적용된 마이그레이션 파일은 절대 고치지 않는다.
+2. **D1 마이그레이션 확인**: `npx wrangler d1 migrations list starlog --remote`. 이번 차수에 `0009_buyer_previews.sql`(구매자 미리보기 하루 횟수)이 새로 생겼다. 배포 전에 적용해야 구매자 미리보기가 열린다. 남은 게 있으면 먼저 백업(`npx wrangler d1 export starlog --remote --output=readings-before-premium.sql`)하고 `npx wrangler d1 migrations apply starlog --remote`. 이미 적용된 마이그레이션 파일은 절대 고치지 않는다.
 3. **API 크레딧**: Anthropic 선불 잔액이 운영과 같이 쓰인다. 평가·오픈 전에 잔액을 확인한다.
 4. **실제 평가(4차)**: 컨트롤러가 돌린다. 저장소 루트에서
    - 모의 실행(무료): `SMOKE_PROVIDER=mock pnpm ai:premium` → 26개 호출 모두 통과, 0원
@@ -81,7 +81,7 @@ D1:
 - 너무 오래 잡힌 예약(다음 정리 뒤에는 비어야 함): `SELECT id, product_id, reserved_until FROM unlocks WHERE status = 'reserved' AND reserved_until < (strftime('%s','now') * 1000);`
 - 저장된 풀이: `SELECT kind, COUNT(*) FROM readings WHERE kind IN ('tarot-deep','match','newyear-2027') GROUP BY kind;`
 
-로그(`wrangler tail`): `premium.part`(파트 수), `premium.reserved`, `unlock.released`(실패한 파트), `unlock.reservation_lost`(0이어야 함), 유료 비용 장부. 구매자 미리보기는 상품마다 하루 5번까지(KV `bpreview:*`).
+로그(`wrangler tail`): `premium.part`(파트 수), `premium.reserved`, `unlock.released`(실패한 파트), `unlock.reservation_lost`(0이어야 함), 유료 비용 장부. 구매자 미리보기는 상품마다 하루 5번까지(D1 `buyer_previews`, `SELECT product_id, kst_day, COUNT(*), MAX(n) FROM buyer_previews GROUP BY 1, 2;`).
 
 ## 6. 사장님 샘플 승인
 

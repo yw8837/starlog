@@ -1,11 +1,12 @@
 import "server-only";
 import { checkQuota, crisisResponse, errorResponse, fullReadingLimit, openGate, readJson, spendCookies, type Gate } from "@/lib/api/http";
-import { budgetState, buyerPreviews, recordBuyerPreview } from "@/lib/api/spend";
+import { budgetState } from "@/lib/api/spend";
+import { accountDb } from "@/lib/db";
 import { respondGeneration } from "@/lib/api/stream";
 import { checkBot } from "@/lib/api/turnstile";
 import { sessionCookieName } from "@/lib/account/session";
 import { chapterIdOf, issueChapter } from "@/lib/security/chapterToken";
-import { nextKstMidnight } from "@/lib/security/quota";
+import { kstDay, nextKstMidnight } from "@/lib/security/quota";
 import type { Adapter } from "./adapters";
 import { premiumOpen } from "./flags";
 import { READING_MAX_BYTES, TEASER_MAX_BYTES } from "./inputs";
@@ -17,12 +18,24 @@ import { paymentsUnbacked, planPremiumUnlock, premiumSettlement, unusedBuyer } f
 /** A buyer's previews of one product per KST day (review 2026-10-17 H2): they skip the free counts, so this bounds them. */
 export const BUYER_PREVIEWS_PER_DAY = 5;
 
-/** A buyer's preview may start: the day's spend can be read (an unknown budget closes everything), and today's count is under the cap. */
+/**
+ * A buyer's preview may start: the day's spend can be read (an unknown budget closes everything), and it claims its
+ * place among today's previews of the product in one atomic UPSERT (review 2026-10-17 #6: previews that come at once
+ * each get their own number). The place is taken when the preview starts, like the network counts.
+ */
 async function buyerPreviewLimit(gate: Gate, userId: string, product: PremiumId): Promise<Response | null> {
   if ((await budgetState(gate.now)) === "unknown") return errorResponse("AI_UNAVAILABLE");
-  const used = await buyerPreviews(userId, product, gate.now);
-  if (used === null) return errorResponse("AI_UNAVAILABLE");
-  if (used >= BUYER_PREVIEWS_PER_DAY) return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), scope: "buyer" });
+  const db = accountDb();
+  if (!db) return errorResponse("AI_UNAVAILABLE");
+  const row = await db
+    .prepare(
+      `INSERT INTO buyer_previews (user_id, product_id, kst_day, n) VALUES (?, ?, ?, 1)
+       ON CONFLICT (user_id, product_id, kst_day) DO UPDATE SET n = n + 1 RETURNING n`,
+    )
+    .bind(userId, product, kstDay(gate.now))
+    .first<{ n: number }>();
+  if (!row) return errorResponse("AI_UNAVAILABLE");
+  if (row.n > BUYER_PREVIEWS_PER_DAY) return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), scope: "buyer" });
   return null;
 }
 
@@ -53,7 +66,6 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
     if (buyer) {
       const limited = await buyerPreviewLimit(gate, buyer, adapter.id);
       if (limited) return limited;
-      await recordBuyerPreview(buyer, adapter.id, gate.now);
     }
     const quota = buyer ? null : await checkQuota(gate, "teaser");
     if (quota instanceof Response) return quota;
