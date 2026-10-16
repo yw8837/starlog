@@ -1,7 +1,7 @@
 import { TEMPLATES } from "@starlog/core";
 import { won } from "@/lib/config";
 import { DEEP_TAROT_HREF } from "@/lib/freshStart";
-import { PREMIUM, premiumPath, type PremiumId } from "./products";
+import { PREMIUM, PREMIUM_IDS, premiumPath, type PremiumId } from "./products";
 
 /**
  * What each product page says (plan-reconciled §4.6; owner: every premium explains how it reads and links its guide
@@ -90,3 +90,6 @@ export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
     start: `${premiumPath("newyear-2027")}/new`,
   },
 };
+
+/** The product a guide article belongs to (its link under the article), or null for every other article. */
+export const premiumForGuide = (slug: string): PremiumId | null => PREMIUM_IDS.find((id) => LANDING[id].guide === slug) ?? null;
