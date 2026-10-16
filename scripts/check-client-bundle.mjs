@@ -10,6 +10,23 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const staticDir = join(root, "apps/web/.next/static");
 const samples = ["content/samples/saju-prologue.ko.json", "content/samples/tarot-contact.ko.json"];
+/** P5: the premium samples' whole reading is paid text, rendered on the server by the sample pages only. */
+const premiumSamples = ["content/samples/premium/tarot-deep.json", "content/samples/premium/match.json", "content/samples/premium/newyear-2027.json"];
+/**
+ * Free reference text a client page may legitimately ship (the cards' KB, the core catalog). The placeholder premium
+ * samples are mock outputs built from it, so a probe found there is not paid text and is left out.
+ */
+const freeSources = ["apps/web/lib/kb/cards.generated.json", ...filesUnder(join(root, "packages/core/src")).map((path) => relative(root, path))];
+
+function filesUnder(dir) {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) out.push(...filesUnder(path));
+    else if (/\.(ts|json)$/.test(name)) out.push(path);
+  }
+  return out;
+}
 
 /** Every long string under `paid` (headings excepted: they are the free locked list) and the story body. */
 function probesFrom(sample) {
@@ -28,11 +45,18 @@ function probesFrom(sample) {
   return out;
 }
 
+/** P5: every long string of a premium sample's reading (headings excepted, as above), minus free reference text. */
+function premiumProbesFrom(sample, freeText) {
+  return probesFrom({ paid: sample.reading }).filter((probe) => !freeText.includes(probe));
+}
+
+const freeReference = freeSources.map((file) => readFileSync(join(root, file), "utf8")).join(" ");
 const probes = [
   // The review's probe strings, kept verbatim.
   "태어난 달의 지지 자수(子水)는 병화에게 정관",
   "먼저 보내도 괜찮아요. 다만 카드가 힘을 실어",
   ...samples.flatMap((file) => probesFrom(JSON.parse(readFileSync(join(root, file), "utf8")))),
+  ...premiumSamples.flatMap((file) => premiumProbesFrom(JSON.parse(readFileSync(join(root, file), "utf8")), freeReference)),
 ];
 
 // A probe must be real paid text, and never also free text (or the check would be meaningless).
