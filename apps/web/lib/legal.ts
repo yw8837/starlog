@@ -3,6 +3,20 @@ import { SITE } from "./config";
 /** 시행일 shared by the terms, privacy and refund pages. */
 export const LEGAL_EFFECTIVE_DATE = "2026-10-15";
 
+/**
+ * The premium clauses (owner 2026-10-17): announced with the 10/17 deploy, in force 7 days later. Before this KST midnight
+ * each policy keeps today's text and 시행일 and shows them as 개정 예정 under a notice; from it the pages (rendered per
+ * request) put them in the text and show this 시행일, with no deploy. SITE.price.premium opens 켈틱 크로스 10장 and 프리미엄
+ * 궁합 at the same moment (premiumSchedule.test.tsx keeps them equal). A later deploy moves both to its date + 7 days.
+ */
+export const PREMIUM_LEGAL_EFFECTIVE_DATE = "2026-10-24";
+const PREMIUM_LEGAL_EFFECTIVE_AT = Date.parse(`${PREMIUM_LEGAL_EFFECTIVE_DATE}T00:00:00+09:00`);
+
+export const premiumLegalInForce = (now: number = Date.now()): boolean => now >= PREMIUM_LEGAL_EFFECTIVE_AT;
+
+/** The 시행일 a policy shows at `now`. */
+export const legalEffectiveDate = (now: number = Date.now()): string => (premiumLegalInForce(now) ? PREMIUM_LEGAL_EFFECTIVE_DATE : LEGAL_EFFECTIVE_DATE);
+
 /** "2026년 10월 1일" */
 export function koreanDate(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);

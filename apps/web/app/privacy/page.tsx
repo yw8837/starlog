@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Facts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { PremiumPrivacy } from "@/components/legal/PremiumLegal";
+import { MATCH_AI_ROW, PremiumLegalNotice, PremiumPrivacy, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
-import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
+import { contactChannels, koreanDate, legalEffectiveDate, premiumLegalInForce } from "@/lib/legal";
 import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
@@ -23,13 +23,19 @@ export const metadata: Metadata = pageMetadata({
   path: "/privacy",
 });
 
+/** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
+export const dynamic = "force-dynamic";
+
 const BIRTH = "생년월일, 양력·음력(윤달 여부), 태어난 시(아는 경우), 성별, 출생 지역";
 
 type Rows = ReadonlyArray<readonly [string, ReactNode]>;
 type Processor = { name: string; rows: Rows };
 
-/** 국외 이전 disclosures (개인정보 보호법 제28조의8): recipient, country, items, when and how, purpose, retention, contact. */
-const PROCESSORS: readonly Processor[] = [
+/**
+ * 국외 이전 disclosures (개인정보 보호법 제28조의8): recipient, country, items, when and how, purpose, retention, contact.
+ * `premium`: the premium clauses are in force (lib/legal.ts), so Anthropic's items name the 궁합's too.
+ */
+const processors = (premium: boolean): readonly Processor[] => [
   {
     name: "Anthropic, PBC",
     rows: [
@@ -37,7 +43,7 @@ const PROCESSORS: readonly Processor[] = [
       ["맡기는 일", `AI 풀이 생성(타로·사주 풀이, 후속 질문의 답, 오늘의 한 장${BONDS ? ", 별자리 인연의 오늘의 인연 카드 한두 줄" : ""})`],
       [
         "이전 항목",
-        `타로: 질문, 고른 주제와 상황, 직접 쓰기 칸에 적은 내용, 메모 · 사주: 출생 정보로 계산한 명식과 계산 기준(태어난 해, 양력·음력 구분, 보정한 시각, 대운 시기), ${sajuPrivacySent(TOPICS)} · 공통: 후속 질문과 앞선 풀이, 이 기기에 남은 지난 풀이 요약(최대 3개)${BONDS ? " · 오늘의 인연 카드: 뽑힌 카드의 이름과 방향만(닉네임, 한 줄, 인연 점수, 생년월일은 보내지 않습니다)" : ""}`,
+        `타로: 질문, 고른 주제와 상황, 직접 쓰기 칸에 적은 내용, 메모 · 사주: 출생 정보로 계산한 명식과 계산 기준(태어난 해, 양력·음력 구분, 보정한 시각, 대운 시기), ${sajuPrivacySent(TOPICS)} · 공통: 후속 질문과 앞선 풀이, 이 기기에 남은 지난 풀이 요약(최대 3개)${BONDS ? " · 오늘의 인연 카드: 뽑힌 카드의 이름과 방향만(닉네임, 한 줄, 인연 점수, 생년월일은 보내지 않습니다)" : ""}${premium ? ` · ${MATCH_AI_ROW}` : ""}`,
       ],
       ["이전 시기와 방법", "풀이를 요청할 때마다 암호화된 연결(TLS)로 API에 전송"],
       [
@@ -97,13 +103,17 @@ const COOKIES: Rows = [
 export default function PrivacyPage() {
   const contacts = contactChannels();
   const ads = adsConfig();
+  const now = Date.now();
+  const inForce = premiumLegalInForce(now);
+  const effective = legalEffectiveDate(now);
 
   return (
     <LegalPage
       title="개인정보처리방침"
-      effective={LEGAL_EFFECTIVE_DATE}
+      effective={effective}
       lead={`${business.name}(이하 “운영자”)는 ${nameKo} 이용자의 개인정보를 「개인정보 보호법」 등 관련 법령에 따라 처리하고 보호합니다. 어떤 정보를 왜 처리하고, 얼마나 보관하며, 누구에게 맡기는지 알려 드립니다.`}
     >
+      {inForce ? null : <PremiumLegalNotice />}
       <LegalNote>
         <p className={s.noteTitle}>한눈에 보기</p>
         <p>
@@ -153,8 +163,15 @@ export default function PrivacyPage() {
         <ul className={s.list}>
           <li>공유 링크를 만들면 풀이의 공개용 사본(뽑은 카드와 풀이 본문)을 저장합니다. 질문, 직접 쓴 말과 메모, 고른 상황, 생년월일과 태어난 시각, 명식, 이어서 물어본 내용은 넣지 않고, 풀이 본문에 옮겨진 직접 쓴 말과 고른 상황, 생년월일·태어난 시각·나이는 가리며, 연락처나 링크가 들어간 문장은 빼고 저장합니다. 로그인한 상태로 만든 공유에는 계정을 함께 기록합니다.</li>
         </ul>
-        {/* 프리미엄 풀이와 궁합의 상대방 정보 where premium is visible (plan task 24, owner 2026-10-16); nothing while it is off. */}
-        <PremiumPrivacy />
+        {/* 프리미엄 풀이와 궁합의 상대방 정보: 개정 예정 until it comes in force (lib/legal.ts), then part of the text. */}
+        {inForce ? (
+          <PremiumPrivacy />
+        ) : (
+          <PremiumUpcoming>
+            <PremiumPrivacy />
+            <p>{`국외 이전(Anthropic, PBC)의 이전 항목에 더해지는 것 · ${MATCH_AI_ROW}`}</p>
+          </PremiumUpcoming>
+        )}
         <h3 className={s.sub}>서비스를 이용하는 동안 자동으로 생기는 정보</h3>
         <ul className={s.list}>
           <li>이용 중인 기기의 브라우저 저장소에 보관되는 입력 내용과 풀이 기록</li>
@@ -237,7 +254,7 @@ export default function PrivacyPage() {
       <LegalSection id="processors" title={`${num(4)}. 처리 위탁과 국외 이전`}>
         <p>운영자는 서비스를 제공하기 위해 아래 사업자에게 개인정보 처리를 맡기며, 이 중 일부는 「개인정보 보호법」 제28조의8에 따라 국외로 이전됩니다.</p>
         <div className={s.cards}>
-          {PROCESSORS.map((processor) => (
+          {processors(inForce).map((processor) => (
             <section key={processor.name} className={s.card} aria-label={processor.name}>
               <h3 className={s.cardTitle}>{processor.name}</h3>
               <Facts rows={processor.rows} stack />
@@ -342,7 +359,7 @@ export default function PrivacyPage() {
       </LegalSection>
 
       <LegalSection id="changes" title={`${num(11)}. 방침의 변경`}>
-        <p>{`이 방침을 바꿀 때는 시행 7일 전부터 서비스 안에 공지합니다. 이 방침은 ${koreanDate(LEGAL_EFFECTIVE_DATE)}부터 시행합니다.`}</p>
+        <p>{`이 방침을 바꿀 때는 시행 7일 전부터 서비스 안에 공지합니다. 이 방침은 ${koreanDate(effective)}부터 시행합니다.`}</p>
       </LegalSection>
     </LegalPage>
   );

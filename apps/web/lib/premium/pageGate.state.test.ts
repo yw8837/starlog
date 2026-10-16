@@ -9,7 +9,7 @@ vi.mock("next/headers", () => ({ headers: async () => new Headers(request.cookie
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), connection: async () => {} }));
 
 const CODE = "owner-code-for-tests-0001";
-const OCT = Date.parse("2026-10-20T03:00:00Z");
+const OCT = Date.parse("2026-10-25T03:00:00Z"); // after 10/24 (켈틱·궁합 on sale), before 11/15
 
 beforeEach(() => {
   for (const [k, v] of Object.entries({ STARLOG_PAYMENTS: "on", STARLOG_PAY: "mock", STARLOG_OWNER_CODE: CODE })) vi.stubEnv(k, v);

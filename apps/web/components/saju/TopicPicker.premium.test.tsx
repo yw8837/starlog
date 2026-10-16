@@ -4,17 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { TopicPicker } from "./TopicPicker";
 
-const OCT = Date.parse("2026-10-20T12:00:00+09:00");
+const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after 10/24 (켈틱·궁합 on sale), before 11/15
 const NOV15 = Date.parse("2026-11-15T00:00:00+09:00");
 
 type Visible = { match: boolean; newyear: boolean };
-function stub({ match, newyear }: Visible) {
+function stub({ match, newyear, newyearOpen = false }: Visible & { newyearOpen?: boolean }) {
   const fetchMock = vi.fn(async () =>
     Response.json({
       products: [
         { id: "tarot-deep", open: match, visible: match, opensAt: null },
         { id: "match", open: match, visible: match, opensAt: null },
-        { id: "newyear-2027", open: false, visible: newyear, opensAt: NOV15 },
+        { id: "newyear-2027", open: newyearOpen, visible: newyear, opensAt: NOV15 },
       ],
     }),
   );
@@ -75,14 +75,15 @@ describe("TopicPicker's premium rows (owner 2026-10-16)", () => {
 
   it("opens the 2027 신년운세 row from 2026-11-15 00:00 KST", async () => {
     vi.setSystemTime(NOV15);
-    stub({ match: true, newyear: true });
+    // From then the status says it is open to this device (sales on): a row inside its window follows the status.
+    stub({ match: true, newyear: true, newyearOpen: true });
     render(<TopicPicker />);
     const year = await screen.findByRole("link", { name: /2027 신년운세/ });
     expect(year.getAttribute("href")).toBe("/premium/newyear-2027/new");
     expect(year.hasAttribute("aria-disabled")).toBe(false);
   });
 
-  it("draws an undated product it cannot start here (premium on, payments closed) as 준비 중이에요, not a link (review 2026-10-16 #10)", async () => {
+  it("draws a product inside its window it cannot start here (premium on, payments closed) as 준비 중이에요, not a link (review 2026-10-16 #10)", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>

@@ -38,7 +38,9 @@ describe("premium products", () => {
     expect(inWindow(ny, Date.parse("2026-11-14T23:59:59+09:00"))).toBe(false);
     expect(inWindow(ny, Date.parse("2026-11-15T00:00:00+09:00"))).toBe(true);
     expect(inWindow(ny, Date.parse("2027-12-01T00:00:00+09:00"))).toBe(false);
-    expect(inWindow(PREMIUM.match, 0)).toBe(true);
+    // 켈틱 크로스 10장 and 프리미엄 궁합 go on sale with the premium clauses (owner 2026-10-17)
+    expect(inWindow(PREMIUM.match, Date.parse("2026-10-24T00:00:00+09:00") - 1)).toBe(false);
+    expect(inWindow(PREMIUM.match, Date.parse("2026-10-24T00:00:00+09:00"))).toBe(true);
   });
 
   it("has one name per product on every screen, checkout and receipt (owner 2026-10-17); never 셀틱, Celtic or 베타", () => {

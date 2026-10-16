@@ -40,8 +40,8 @@ const PREMIUM_ROWS = ["match", "newyear-2027"] as const;
  * Below the five rows (owner 2026-10-16): a thin divider, a small 프리미엄 label, then 프리미엄 궁합 and 2027
  * 신년운세 with their prices, the same size as the rows above and never gold. Each row only where its
  * product is visible (usePremiumStatus); nothing at all while the status is unknown or premium is off. A
- * product before its sales window says when it opens and cannot be followed (contrast unchanged); an undated
- * one this device cannot start (payments closed) says 준비 중이에요 the same way (review 2026-10-16 #10).
+ * product before its sales window says when it opens and cannot be followed (contrast unchanged); one inside its
+ * window this device cannot start (payments closed) says 준비 중이에요 the same way (review 2026-10-16 #10).
  */
 function PremiumTopics() {
   const status = usePremiumStatus();
@@ -58,7 +58,8 @@ function PremiumTopics() {
         {rows.map((id) => {
           const spec = PREMIUM[id];
           const opensAt = spec.opensAt !== undefined && now < spec.opensAt ? spec.opensAt : null;
-          const closed = spec.opensAt === undefined && !status?.[id].open;
+          // Inside its window (or undated) but not open to this device (payments closed): 준비 중이에요.
+          const closed = opensAt === null && !status?.[id].open;
           const body = (
             <>
               <span className={s.head}>

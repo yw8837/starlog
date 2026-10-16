@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: 
 
 /** The next step at the end of a finished reading (plan-reconciled §4.3): never gold, only where premium is visible. */
 
-const OCT = Date.parse("2026-10-20T12:00:00+09:00");
+const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after 10/24 (켈틱·궁합 on sale), before 11/15
 const NOV20 = Date.parse("2026-11-20T12:00:00+09:00");
 const seed = (chapters: unknown[]) => localStorage.setItem(CHAPTERS_KEY, JSON.stringify({ v: 1, chapters }));
 const TAROT = {

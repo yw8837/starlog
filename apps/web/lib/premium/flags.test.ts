@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { premiumMode, premiumOpen, premiumVisible } from "./flags";
 
 const env = (vars: Record<string, string>) => ({ NODE_ENV: "test", ...vars }) as unknown as NodeJS.ProcessEnv;
-const OCT = Date.parse("2026-10-20T12:00:00+09:00");
+const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after 10/24 (켈틱·궁합 on sale), before 11/15
 const DEC = Date.parse("2026-12-01T12:00:00+09:00");
 
 describe("premium sales flag", () => {

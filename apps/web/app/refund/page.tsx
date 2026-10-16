@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { PremiumRefund } from "@/components/legal/PremiumLegal";
+import { PremiumLegalNotice, PremiumRefund, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
-import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
+import { contactChannels, koreanDate, legalEffectiveDate, premiumLegalInForce } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
@@ -14,15 +14,22 @@ export const metadata: Metadata = pageMetadata({
   path: "/refund",
 });
 
+/** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
+export const dynamic = "force-dynamic";
+
 export default function RefundPage() {
   const contacts = contactChannels();
+  const now = Date.now();
+  const inForce = premiumLegalInForce(now);
+  const effective = legalEffectiveDate(now);
 
   return (
     <LegalPage
       title="환불 정책"
-      effective={LEGAL_EFFECTIVE_DATE}
+      effective={effective}
       lead={`${SITE.nameKo}의 풀이는 디지털 콘텐츠예요. 결제하기 전에 알아 두면 좋은 청약철회와 환불 기준을 정리했어요.`}
     >
+      {inForce ? null : <PremiumLegalNotice haeyo />}
       <LegalNote>
         <p className={s.noteTitle}>오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요.</p>
         <p>
@@ -60,8 +67,14 @@ export default function RefundPage() {
         </ul>
       </LegalSection>
 
-      {/* 프리미엄 풀이 where premium is visible (plan task 24); nothing while it is off. */}
-      <PremiumRefund />
+      {/* 프리미엄 풀이: 개정 예정 until it comes in force (lib/legal.ts), then part of the text. */}
+      {inForce ? (
+        <PremiumRefund />
+      ) : (
+        <PremiumUpcoming>
+          <PremiumRefund />
+        </PremiumUpcoming>
+      )}
 
       <LegalSection id="minor" title="미성년자 결제 취소">
         <ul className={s.list}>
@@ -90,7 +103,7 @@ export default function RefundPage() {
         <p>
           {"가격은 "}
           <Link href="/pricing">가격 안내</Link>
-          {`에서 볼 수 있어요. 이 정책은 ${koreanDate(LEGAL_EFFECTIVE_DATE)}부터 시행해요.`}
+          {`에서 볼 수 있어요. 이 정책은 ${koreanDate(effective)}부터 시행해요.`}
         </p>
       </LegalSection>
     </LegalPage>

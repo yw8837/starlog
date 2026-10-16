@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { won } from "@/lib/config";
+import { PREMIUM_LEGAL_EFFECTIVE_DATE, koreanDate } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, PREMIUM_IDS } from "@/lib/premium/products";
 import s from "./legal.module.css";
@@ -105,5 +107,37 @@ export function PremiumRefund() {
         <li>프리미엄 풀이는 여러 부분으로 나눠 적어요. 중간에 생성이 실패하면 결제한 풀이는 그대로 남아 다시 열어 이어서 받을 수 있어요. 다 받기 전에 화면을 닫거나 연결이 끊긴 경우는 위와 같이 3번까지 다시 열 수 있어요.</li>
       </ul>
     </section>
+  );
+}
+
+const IN_FORCE_ON = koreanDate(PREMIUM_LEGAL_EFFECTIVE_DATE);
+const NAMES = PREMIUM_IDS.map((id) => PREMIUM[id].name).join(", ");
+
+/** The 국외 이전 table's line for the 궁합 (privacy, Anthropic's items) once the premium clauses are in force. */
+export const MATCH_AI_ROW = `${PREMIUM.match.name}: ${MATCH_AI_ITEMS}`;
+
+/** On top of a policy until the premium clauses come in force (owner 2026-10-17: announced 7 days ahead). `haeyo`: the refund page's voice. */
+export function PremiumLegalNotice({ haeyo = false }: { haeyo?: boolean }) {
+  return (
+    <aside className={s.note} aria-labelledby="premium-notice-title">
+      <h2 id="premium-notice-title" className={s.noteTitle}>{`${IN_FORCE_ON}부터 바뀌는 내용`}</h2>
+      <p>
+        {haeyo
+          ? `${IN_FORCE_ON}부터 프리미엄 풀이(${NAMES})에 관한 내용이 더해져요. 바뀌는 내용은 `
+          : `${IN_FORCE_ON}부터 프리미엄 풀이(${NAMES})에 관한 내용이 더해집니다. 바뀌는 내용은 `}
+        <a href="#premium-upcoming">개정 예정</a>
+        {haeyo ? "에서 미리 볼 수 있어요." : "에서 미리 볼 수 있습니다."}
+      </p>
+    </aside>
+  );
+}
+
+/** The premium clauses as they will read, until they come in force. */
+export function PremiumUpcoming({ children }: { children: ReactNode }) {
+  return (
+    <div id="premium-upcoming" role="group" className={s.note} aria-labelledby="premium-upcoming-title">
+      <p id="premium-upcoming-title" className={s.noteTitle}>{`개정 예정 · ${IN_FORCE_ON}부터 시행`}</p>
+      {children}
+    </div>
   );
 }

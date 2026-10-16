@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { PremiumTerms } from "@/components/legal/PremiumLegal";
+import { PremiumLegalNotice, PremiumTerms, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
-import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
+import { contactChannels, koreanDate, legalEffectiveDate, premiumLegalInForce } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
@@ -18,11 +18,18 @@ export const metadata: Metadata = pageMetadata({
   path: "/terms",
 });
 
+/** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
+export const dynamic = "force-dynamic";
+
 export default function TermsPage() {
   const hasContact = contactChannels().length > 0;
+  const now = Date.now();
+  const inForce = premiumLegalInForce(now);
+  const effective = legalEffectiveDate(now);
 
   return (
-    <LegalPage title="이용약관" effective={LEGAL_EFFECTIVE_DATE}>
+    <LegalPage title="이용약관" effective={effective}>
+      {inForce ? null : <PremiumLegalNotice />}
       <LegalSection id="purpose" title="제1조 (목적)">
         <p>
           {`이 약관은 ${SITE.business.name}(이하 “운영자”)가 제공하는 ${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건과 절차, 운영자와 이용자의 권리·의무와 책임을 정합니다.`}
@@ -135,8 +142,14 @@ export default function TermsPage() {
         <p>이 조는 삭제되었습니다.</p>
       </LegalSection>
 
-      {/* 제7조의3 (프리미엄 풀이) where premium is visible (plan task 24); nothing while it is off. */}
-      <PremiumTerms />
+      {/* 제7조의3 (프리미엄 풀이): 개정 예정 until it comes in force (lib/legal.ts), then part of the text. */}
+      {inForce ? (
+        <PremiumTerms />
+      ) : (
+        <PremiumUpcoming>
+          <PremiumTerms />
+        </PremiumUpcoming>
+      )}
 
       <LegalSection id="duties" title="제8조 (이용자의 의무)">
         <p>이용자는 다음 행위를 해서는 안 됩니다.</p>
@@ -203,7 +216,7 @@ export default function TermsPage() {
       </LegalSection>
 
       <LegalSection id="addendum" title="부칙">
-        <p>{`이 약관은 ${koreanDate(LEGAL_EFFECTIVE_DATE)}부터 시행합니다.`}</p>
+        <p>{`이 약관은 ${koreanDate(effective)}부터 시행합니다.`}</p>
       </LegalSection>
     </LegalPage>
   );

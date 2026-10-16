@@ -76,9 +76,14 @@ describe("checkout and orders", () => {
     expect((await order(b, { productId: "tarot", ack: true })).status).toBe(409);
   });
 
-  it("sells a premium reading only while STARLOG_PREMIUM opens it", async () => {
+  it("sells a premium reading only while STARLOG_PREMIUM opens it, from its sale's first moment", async () => {
+    vi.setSystemTime(Date.parse("2026-10-23T23:00:00+09:00"));
     useTestDb();
     const b = await loggedIn();
+    vi.stubEnv("STARLOG_PREMIUM", "on");
+    expect((await b.send(checkout, "/api/pay/checkout?product=match")).status).toBe(409); // before 2026-10-24 00:00 KST
+    vi.setSystemTime(Date.parse("2026-10-24T00:00:00+09:00"));
+    vi.stubEnv("STARLOG_PREMIUM", "off");
     expect((await order(b, { productId: "match", ack: true })).status).toBe(409);
     expect((await b.send(checkout, "/api/pay/checkout?product=match")).status).toBe(409);
     vi.stubEnv("STARLOG_PREMIUM", "on");

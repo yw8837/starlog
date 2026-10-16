@@ -5,7 +5,7 @@ import { SITE } from "@/lib/config";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { PremiumRows } from "./PremiumRows";
 
-const OCT = Date.parse("2026-10-20T12:00:00+09:00");
+const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after 10/24 (켈틱·궁합 on sale), before 11/15
 const NOV15 = Date.parse("2026-11-15T00:00:00+09:00");
 const IDS = ["newyear-2027", "match", "tarot-deep"] as const;
 

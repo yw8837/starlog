@@ -16,6 +16,8 @@ const MODE = (process.env.E2E_PREMIUM ?? "off").trim().toLowerCase() as "off" | 
 const NAV = 30_000;
 const GENERATION = 120_000;
 const NEWYEAR_OPENS_AT = Date.parse("2026-11-15T00:00:00+09:00");
+/** 켈틱 크로스 10장 and 프리미엄 궁합 go on sale with the premium clauses (owner 2026-10-17). */
+const SALE_OPENS_AT = Date.parse("2026-10-24T00:00:00+09:00");
 /** Never on a premium screen: another spelling of the spread's name, beta framing, a model or vendor name. */
 const BANS = /셀틱|celtic|베타|claude|anthropic|gpt|opus|sonnet/i;
 
@@ -156,7 +158,15 @@ if (MODE !== "off") {
       await expect(match).toBeVisible({ timeout: NAV });
       await expect(match).toContainText("7,900원");
       await noSideScroll(page);
-      await match.click();
+      if (Date.now() < SALE_OPENS_AT) {
+        // Before its sale the row says when, for the owner too; the owner starts from the product page (its pass opens it).
+        await expect(match).toContainText("10월 24일 열려요");
+        await expect(match).toHaveAttribute("aria-disabled", "true");
+        await page.goto("/premium/match");
+        await page.getByRole("link", { name: "시작하기" }).first().click();
+      } else {
+        await match.click();
+      }
       await expect(page).toHaveURL(/\/premium\/match\/new$/, { timeout: NAV });
 
       // A fresh browser has no saved profile: my birth first (with the consent), then the other person's (none asked for them).
