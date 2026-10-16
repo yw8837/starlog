@@ -95,6 +95,18 @@ describe("2027 신년운세's preview (Task 21)", () => {
     expect(listChapters()[0]).toMatchObject({ kind: "newyear-2027", title: "차근차근 쌓아 가는 해", context: { workStatus: "employee" }, serverId: ID });
   });
 
+  it("lets a buyer open the purchase when the free preview cannot be written", async () => {
+    stub(() => Response.json({ code: "BOT_CHECK_FAILED" }, { status: 403 }), [
+      () => Response.json({ status: "continue", resume: "r1", done: 1, of: 3 }),
+      () => Response.json({ status: "continue", resume: "r2", done: 2, of: 3 }),
+      () => Response.json({ status: "done", reading: READING, chapterToken: "c1", readingId: ID }),
+    ]);
+    render(<NewYearPreview />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(listChapters()[0]).toMatchObject({ kind: "newyear-2027", serverId: ID });
+  });
+
   it("sends a visit without a saved birth to the form", async () => {
     localStorage.removeItem(SAJU_PROFILE_KEY);
     stub(() => Response.json({ preview: PREVIEW }));

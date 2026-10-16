@@ -86,6 +86,9 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
   const draw = flow?.draw;
   const plans = premiumProgressPlans(ID, { positions: draw?.cards.map((card) => card.position) ?? [] });
   const keywords = new Map(preview?.cards.map((card) => [card.position, card.keyword]));
+  // A purchase of it (unopened or being opened) opens when the free preview could not be written: the paid reading needs none.
+  const holds = Boolean(account?.user && [...account.user.unused, ...account.user.opening].some((item) => item.productId === ID));
+  const teaserFailed = !preview && teaserGen.state.status === "error";
   const opener = usePremiumOpen<MatchReadingData>({
     id: ID,
     input: body,
@@ -93,7 +96,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     returnTo: PREVIEW_PATH,
     cleanHref: withFlags(PREVIEW_PATH, { instant }),
     autoOpen: autoUnlock,
-    ready: Boolean(preview),
+    ready: Boolean(preview) || (holds && teaserFailed),
     accept: isMatchReading,
     // This flow's reading: the same relation, the same other person and the very same five cards.
     matches: (chapter) => {
@@ -157,6 +160,22 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     content = <PremiumProgress id={ID} part={opener.running.part} state={opener.running.progress} live={false} />;
   } else {
     const cards = draw.cards.map((card) => ({ ...card, keyword: keywords.get(card.position) }));
+    const unlock = (
+      <PremiumUnlock
+        id={ID}
+        account={account}
+        status={status === null ? null : status?.[ID]}
+        returnTo={PREVIEW_PATH}
+        onOpen={opener.open}
+        resumable={opener.resumable}
+        error={opener.error}
+        refundHref={opener.method === "paid" && opener.error?.action === "retry" ? "/me#purchases" : undefined}
+        redrawHref={withFlags("/premium/match/draw", { instant })}
+        openedHref={openedId ? `/chapter/${openedId}` : undefined}
+        checking={opener.checking}
+        onCheck={opener.stalled || (!opener.checking && busy) ? opener.recheck : undefined}
+      />
+    );
     content = (
       <>
         {stepper}
@@ -184,20 +203,13 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
               items={preview.lockedToc}
               meta={`소제목 ${preview.lockedToc.length}개 · 약 ${approxCharsText({ min: PREMIUM[ID].approxChars, max: PREMIUM[ID].approxChars })}자`}
             />
-            <PremiumUnlock
-              id={ID}
-              account={account}
-              status={status === null ? null : status?.[ID]}
-              returnTo={PREVIEW_PATH}
-              onOpen={opener.open}
-              resumable={opener.resumable}
-              error={opener.error}
-              refundHref={opener.method === "paid" && opener.error?.action === "retry" ? "/me#purchases" : undefined}
-              redrawHref={withFlags("/premium/match/draw", { instant })}
-              openedHref={openedId ? `/chapter/${openedId}` : undefined}
-              checking={opener.checking}
-              onCheck={opener.stalled || (!opener.checking && busy) ? opener.recheck : undefined}
-            />
+            {unlock}
+            <AiNote />
+          </>
+        ) : holds && teaserError ? (
+          <>
+            <SpreadList title="카드 5장" cards={cards} deck={DECK} />
+            {unlock}
             <AiNote />
           </>
         ) : teaserError ? (

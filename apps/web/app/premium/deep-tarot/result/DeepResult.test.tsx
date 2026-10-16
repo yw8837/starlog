@@ -137,6 +137,29 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     expect(screen.getByRole("link", { name: "환불받기" }).getAttribute("href")).toBe("/me#purchases");
   });
 
+  it("lets a buyer open the purchase when the free preview cannot be written (day's previews used, browser check refused): kept without keywords", async () => {
+    stub({
+      teaser: [() => Response.json({ code: "BETA_LIMIT", resetsAt: Date.now() + 3_600_000 }, { status: 429 })],
+      reading: [
+        () => Response.json({ status: "continue", resume: "r1", done: 1, of: 2 }),
+        () => Response.json({ status: "done", reading: READING, chapterToken: "c1", readingId: ID }),
+      ],
+    });
+    render(<DeepResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    const [chapter] = listChapters();
+    expect(chapter && "cards" in chapter ? chapter.cards.map((card) => "keyword" in card) : null).toEqual(Array(10).fill(false));
+  });
+
+  it("offers no open panel without a purchase when the preview fails: the preview's error and its retry", async () => {
+    stub({ teaser: [() => Response.json({ code: "BETA_LIMIT", resetsAt: Date.now() + 3_600_000 }, { status: 429 })], unused: [] });
+    render(<DeepResult instant />);
+    await waitFor(() => expect(document.body.textContent).toMatch(/오늘|내일|다시/));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByRole("heading", { name: "심층 타로에 담긴 것" })).toBeNull();
+  });
+
   it("sends a flow without its ten cards to the draw, one without a question to the ten-card builder, and a standard flow to the standard screen", async () => {
     stub({});
     sessionStorage.setItem(FLOW_KEY, JSON.stringify({ ...FLOW, draw: undefined, savedAt: Date.now() }));

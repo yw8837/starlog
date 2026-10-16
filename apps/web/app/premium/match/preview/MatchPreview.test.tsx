@@ -34,11 +34,11 @@ const READING = {
   connection: section("연결"), bridge: section("사주와 카드"), action: section("해 볼 일"), observation: section("신호"), followUps: [],
 };
 
-function stub(reading: Array<() => Response> = []) {
+function stub(reading: Array<() => Response> = [], teaser: () => Response = () => Response.json({ preview: PREVIEW })) {
   const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
     if (url === "/api/premium/status") return Response.json({ products: [{ id: "match", open: true, visible: true, opensAt: null }] });
     if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [{ orderId: "o", productId: "match" }], opening: [] } });
-    if (url === "/api/premium/match/teaser") return Response.json({ preview: PREVIEW });
+    if (url === "/api/premium/match/teaser") return teaser();
     if (url === "/api/premium/match/reading") return reading.shift()!();
     return Response.json({ readings: [], next: null });
   });
@@ -93,6 +93,21 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     expect(chapter).toMatchObject({ kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", concern: "요즘 연락이 뜸해요", partner: { birth: PARTNER }, serverId: ID });
     expect(chapter && "deck" in chapter).toBe(false); // the 1909 pictures the reading quotes
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it("lets a buyer open the purchase when the free preview cannot be written, then forgets the partner as usual", async () => {
+    stub(
+      [
+        () => Response.json({ status: "continue", resume: "r1", done: 1, of: 2 }),
+        () => Response.json({ status: "done", reading: READING, chapterToken: "c1", readingId: ID }),
+      ],
+      () => Response.json({ code: "AI_UNAVAILABLE", reason: "budget" }, { status: 503 }),
+    );
+    render(<MatchPreview instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(listChapters()[0]).toMatchObject({ kind: "match", serverId: ID });
+    expect(sessionStorage.getItem(MATCH_FLOW_KEY)).toBeNull();
   });
 
   it("sends a flow without its answers to the form and one without its five cards to the draw", async () => {
