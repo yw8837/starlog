@@ -184,6 +184,18 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
   });
 
+  it("recognises its reading in the account by the ten cards and their directions, whatever question text the copy carries (review 2026-10-16 #8)", async () => {
+    const copy = (cards: typeof DRAWN) => ({ id: ID, createdAt: Date.now(), chapter: { kind: "tarot-deep", question: "계정 쪽에서 다르게 적힌 질문", conditions: [], note: "", cards, reading: READING, chapterToken: "c", createdAt: 1, turns: [], followUpsLeft: 5 } });
+    stub({
+      teaser: [() => Response.json({ preview: PREVIEW })],
+      reading: [() => Response.json({ code: "UPSTREAM" }, { status: 502 })],
+      readings: () => Response.json({ readings: [copy(DRAWN)], next: null }),
+    });
+    render(<DeepResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+  });
+
   it("binds the draw on 409 opened too", async () => {
     const saved = { id: ID, createdAt: Date.now(), chapter: { kind: "tarot-deep", question: "q", conditions: [], note: "", cards: DRAWN, reading: READING, chapterToken: "c", createdAt: 1, turns: [], followUpsLeft: 5 } };
     stub({

@@ -100,14 +100,11 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
     autoOpen: autoUnlock,
     ready: Boolean(preview) || (holds && teaserFailed),
     accept: isDeepTarotReading,
-    // This flow's reading: the same question and the very same ten cards.
+    // This flow's reading: the very same ten cards in the same directions (a dealt draw is this question's; the
+    // account copy's question text is not compared, review 2026-10-16 #8).
     matches: (chapter) => {
-      const c = chapter as { kind?: string; question?: string; cards?: Array<{ cardId: string; orientation: string }> };
-      return (
-        c.kind === ID &&
-        c.question === summary?.question &&
-        JSON.stringify(c.cards?.map((x) => [x.cardId, x.orientation])) === JSON.stringify(draw?.cards.map((x) => [x.cardId, x.orientation]))
-      );
+      const c = chapter as { kind?: string; cards?: Array<{ cardId: string; orientation: string }> };
+      return c.kind === ID && JSON.stringify(c.cards?.map((x) => [x.cardId, x.orientation])) === JSON.stringify(draw?.cards.map((x) => [x.cardId, x.orientation]));
     },
     save: (done) => {
       const { chapter } = saveChapter({
