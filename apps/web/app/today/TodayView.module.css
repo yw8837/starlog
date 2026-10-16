@@ -20,9 +20,24 @@
   color: var(--ink-sub);
 }
 
+/*
+ * Before this device's card is known (server HTML, hydration): the screen before the pick, unseen, so the
+ * guide below is laid out where it stays (M-06). Its title is a <p> set like the <h1> it stands in for.
+ */
+.held {
+  visibility: hidden;
+}
+
+.held .title {
+  font-family: var(--font-display), "Noto Serif KR", serif;
+  font-weight: 700;
+  text-wrap: balance;
+}
+
 /* Held while the server says whether today's card was picked: the shuffle's room, so nothing jumps. */
 .stagePlaceholder {
   height: 220px;
+  margin: 8px 0;
 }
 
 .shuffle {

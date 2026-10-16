@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -285,5 +287,18 @@ describe("오늘의 한 장 in the server HTML (SEO-06)", () => {
   it("has the page's h1 before this device's saved card is known", () => {
     const html = renderToString(<TodayView />);
     expect(html).toMatch(/<h1[^>]*>오늘의 한 장<\/h1>/);
+  });
+
+  it("holds the first visit's screen in place, unseen, so the guide below does not jump when it appears (M-06)", () => {
+    const doc = new DOMParser().parseFromString(renderToString(<TodayView />), "text/html");
+    expect(doc.querySelectorAll("h1")).toHaveLength(1);
+    const held = [...doc.querySelectorAll('[aria-hidden="true"]')].find((el) => el.textContent?.includes("오늘의 타로 카드를 골라 볼까요?"));
+    expect(held?.textContent).toContain("오늘의 타로 카드를 골라 볼까요?");
+    expect(held?.textContent).toContain("섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 주세요");
+    expect(held?.textContent).toContain("하루 한 번 · 고른 카드는 오늘 하루 그대로예요");
+    // the same room the server's answer is awaited in (the shuffle's 220px)
+    expect(held?.querySelector("div")).toBeTruthy();
+    const file = ["apps/web/app/today/TodayView.module.css", "app/today/TodayView.module.css"].map((path) => resolve(process.cwd(), path)).find((path) => existsSync(path));
+    expect(readFileSync(file ?? "", "utf8")).toMatch(/\.held \{[^}]*visibility: hidden;/);
   });
 });

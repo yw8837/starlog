@@ -24,6 +24,10 @@ import { isDailyData, isDailyDeal } from "@/lib/reading/validate";
 
 const DAILY_PLAN = progressPlan("daily");
 const DEAL = [0, 1, 2] as const;
+/** The screen before the pick; the server HTML holds the same lines unseen (M-06). */
+const PICK_TITLE = "오늘의 타로 카드를 골라 볼까요?";
+const PICK_LEAD = "섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 주세요";
+const PICK_NOTE = "하루 한 번 · 고른 카드는 오늘 하루 그대로예요";
 /** 다시 섞기 plays one riffle (1.2s) like 지금의 한 장, so asking again stays quick; the first shuffle keeps its two. */
 const RESHUFFLE_RIFFLES = 1;
 
@@ -203,8 +207,19 @@ export function TodayView() {
 
   let content;
   if (saved === undefined) {
-    // The server HTML and hydration: the page's heading is there before this device's card is known (SEO-06).
-    content = <h1 className="sr-only">오늘의 한 장</h1>;
+    // The server HTML and hydration: the page's heading is there before this device's card is known (SEO-06),
+    // and the first visit's screen holds its room, unseen, so the guide below does not jump when it appears (M-06).
+    content = (
+      <>
+        <h1 className="sr-only">오늘의 한 장</h1>
+        <div className={`${s.closed} ${s.held}`} aria-hidden="true">
+          <p className={s.title}>{PICK_TITLE}</p>
+          <p className={s.lead}>{PICK_LEAD}</p>
+          <div className={s.stagePlaceholder} />
+          <p className={s.note}>{PICK_NOTE}</p>
+        </div>
+      </>
+    );
   } else if (reading) {
     content = <Opened reading={reading} revisit={!justPicked} flip={justPicked} lineRef={lineRef} />;
   } else if (limited) {
@@ -231,9 +246,9 @@ export function TodayView() {
     content = (
       <section className={s.closed} aria-labelledby="today-title">
         <h1 id="today-title" className={s.title}>
-          {waiting ? "고른 카드를 펼치고 있어요" : "오늘의 타로 카드를 골라 볼까요?"}
+          {waiting ? "고른 카드를 펼치고 있어요" : PICK_TITLE}
         </h1>
-        <p className={s.lead}>{waiting ? " " : "섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 주세요"}</p>
+        <p className={s.lead}>{waiting ? " " : PICK_LEAD}</p>
         {phase === "checking" ? (
           <div className={s.stagePlaceholder} aria-hidden="true" />
         ) : phase === "shuffle" ? (
@@ -276,7 +291,7 @@ export function TodayView() {
                 </Button>
               </div>
             ) : null}
-            <p className={s.note}>하루 한 번 · 고른 카드는 오늘 하루 그대로예요</p>
+            <p className={s.note}>{PICK_NOTE}</p>
           </>
         )}
       </section>
