@@ -2,9 +2,13 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { takeFlag, type FlowName } from "./freshStart";
 import { lastRoute } from "./lastRoute";
 
-/** Routes a move inside each flow comes from (the result's 질문 고치기 leads back into the tarot flow). */
+/**
+ * Routes a move inside each flow comes from (the result's 질문 고치기 leads back into the tarot flow). The
+ * 켈틱 크로스 10장 result (lib/flowState.ts DEEP_RESULT_PATH, written out: flowState imports this file) is one
+ * of the tarot flow's results.
+ */
 const FLOW_ROUTES: Readonly<Record<FlowName, readonly string[]>> = {
-  tarot: ["/tarot/new", "/tarot/new/situation", "/tarot/draw", "/tarot/result"],
+  tarot: ["/tarot/new", "/tarot/new/situation", "/tarot/draw", "/tarot/result", "/premium/deep-tarot/result"],
   saju: ["/saju/start", "/saju/new", "/saju/chart"],
 };
 
