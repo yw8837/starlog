@@ -97,6 +97,20 @@ describe("TabBar", () => {
     expect(desktop).toMatch(/\.bar \{\s*display: none;/);
     expect(desktop).toMatch(/\.pill \{[^}]*min-height: 44px/);
   });
+
+  it("steps the bottom bar aside while a field is typed in, so the keyboard never pushes it over the field (M-04)", () => {
+    const file = ["apps/web/components/layout/TabBar.module.css", "components/layout/TabBar.module.css"]
+      .map((path) => resolve(process.cwd(), path))
+      .find((path) => existsSync(path));
+    const css = readFileSync(file ?? "", "utf8");
+    const rule = /body:has\(([^{]*)\) \.bar \{\s*display: none;\s*\}/.exec(css);
+    expect(rule).not.toBeNull();
+    const fields = rule![1]!;
+    expect(fields).toContain("textarea:focus");
+    expect(fields).toMatch(/input:focus:not\(\[type="checkbox"\], \[type="radio"\]\)/);
+    // phones only: the rule sits outside the desktop block, where the bar is hidden anyway
+    expect(css.indexOf(rule![0])).toBeLessThan(css.indexOf("@media (min-width: 1024px)"));
+  });
 });
 
 describe("Footer", () => {

@@ -23,6 +23,11 @@
   backdrop-filter: blur(16px);
 }
 
+/* A field being typed in: the keyboard may lift the bar over the field and its send button, so it steps aside (M-04). */
+body:has(textarea:focus, input:focus:not([type="checkbox"], [type="radio"])) .bar {
+  display: none;
+}
+
 .inner {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
