@@ -119,7 +119,7 @@ export async function respondGeneration(
   // One ledger per concurrent upstream call: two calls sharing one would settle each other's reservations. Their writes
   // still go through one queue: a cost write reads a shard and writes it back, so two at once on one shard lose one.
   const book: CostSink = paidCost ? addPaidCost : addCost; // P4: paid book
-  const network = !gate.owner && !settle; // SEC-01: free-tier generations only
+  const network = !gate.owner && !settle && !paidCost; // SEC-01: free-tier generations only (a paid follow-up has no settlement but is paid for)
   let queue: Promise<unknown> = Promise.resolve();
   const sink: CostSink = (krw, at) => {
     const written = queue.then(async () => {

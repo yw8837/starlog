@@ -3,7 +3,7 @@ import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { accountSecret } from "@/lib/account/secrets";
 import { dailyStore, resetDailyStore } from "@/lib/api/dailyStore";
-import { clientCount, resetSpendState, spentTodayKrw, type SpendKind } from "@/lib/api/spend";
+import { clientCount, networkCostKrw, resetSpendState, spentTodayKrw, type SpendKind } from "@/lib/api/spend";
 import { NDJSON } from "@/lib/api/stream";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
@@ -513,6 +513,22 @@ describe("premium follow-ups (P5 spec §6.3)", () => {
     const replay = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "처음 받은 토큰으로 다시 물어봐요" } });
     expect(replay.status).toBe(429);
     expect(await json(replay)).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
+  });
+
+  it("books a paid follow-up's model cost in the paid book only: never the free total, never the network's free share", async () => {
+    useTestDb();
+    const address = "198.51.100.230";
+    const b = browser(address);
+    await loginAs(b, "payer");
+    await buy(b, "tarot-deep");
+    const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
+    const before = await paidBook();
+    billing();
+    const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "이번 달 지출은 어떻게 줄이면 좋을까요?" } });
+    expect(res.status).toBe(200);
+    expect((await paidBook()) - before).toBe(2800);
+    expect(await freeBook()).toBe(0);
+    expect(await networkCostKrw(await keyedHash(`client:${address}`, signingSecret()!), Date.now())).toBe(0);
   });
 
   it("refuses a premium chapter whose reading was changed, generating nothing", async () => {
