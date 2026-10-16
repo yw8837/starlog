@@ -23,6 +23,9 @@ export function parsePremiumStatus(body: unknown): PremiumStatus | null {
   return status;
 }
 
+/** An unanswered status request gives up after this long and reads as could not be read (review 2026-10-16 #9). */
+export const STATUS_TIMEOUT_MS = 8_000;
+
 let snapshot: PremiumStatus | null | undefined;
 let inflight: Promise<PremiumStatus | null> | null = null;
 const listeners = new Set<() => void>();
@@ -32,11 +35,15 @@ export function refreshPremiumStatus(fetchImpl: typeof fetch = fetch): Promise<P
   if (inflight) return inflight;
   inflight = (async () => {
     let next: PremiumStatus | null = null;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), STATUS_TIMEOUT_MS);
     try {
-      const response = await fetchImpl("/api/premium/status", { headers: { Accept: "application/json" }, credentials: "same-origin" });
+      const response = await fetchImpl("/api/premium/status", { headers: { Accept: "application/json" }, credentials: "same-origin", signal: controller.signal });
       next = response.ok ? parsePremiumStatus(await response.json()) : null;
     } catch {
       next = null;
+    } finally {
+      clearTimeout(timer);
     }
     snapshot = next;
     inflight = null;
