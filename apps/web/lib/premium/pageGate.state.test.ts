@@ -5,6 +5,8 @@ import { premiumStateHere } from "./pageGate";
 
 const request = vi.hoisted(() => ({ cookie: "" }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers(request.cookie ? { cookie: request.cookie } : {}) }));
+// Outside a request, the real connection() throws; the gate calls it to keep its pages off the build.
+vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), connection: async () => {} }));
 
 const CODE = "owner-code-for-tests-0001";
 const OCT = Date.parse("2026-10-20T03:00:00Z");

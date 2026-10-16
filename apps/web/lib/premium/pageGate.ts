@@ -1,5 +1,6 @@
 import "server-only";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { openAccount } from "@/lib/account/request";
 import { parseCookies } from "@/lib/api/http";
 import { entitlements } from "@/lib/pay/ledger";
@@ -20,6 +21,9 @@ async function thisRequest(): Promise<Request> {
 
 /** The owner pass, read from this request's cookie. */
 async function ownerHere(now: number): Promise<boolean> {
+  // First, before anything can return: the build has no signing secret, so a gate that read no request
+  // let Next prerender its page with premium off, and the switch never reached it (2026-10-17, as /login 10/14).
+  await connection();
   const secret = signingSecret();
   return secret ? isOwner(parseCookies(await thisRequest())[OWNER_COOKIE], secret, now) : false;
 }
