@@ -3,9 +3,10 @@
 // part (as the routes write it), and one follow-up, through the routes' own adapters, so every prompt is the one
 // production sends. Writes every output, summary.md and summary.json to apps/web/test-results/premium-eval/<folder>/
 // (gitignored; SMOKE_OUT overrides).
-// Budget: SMOKE_BUDGET_KRW (vitest.premium.config.ts defaults it to 7,000). Before every model attempt (a
-// regeneration included) the spend so far plus the larger of spec §11's estimate for that attempt and the dearest
-// attempt of its kind seen so far must stay within it, or nothing more is called. Costs come from lib/ai/cost.ts.
+// Budget: SMOKE_BUDGET_KRW (vitest.premium.config.ts defaults it to 7,000). Before every upstream call (an attempt, a
+// regeneration, the provider's own second call after max_tokens) the spend so far plus the larger of spec §11's
+// estimate and the dearest call of its kind seen so far must stay within it, or nothing more is called. Every billed
+// usage counts once, a refused or cut-off call's too (lib/ai/budgetGuard.ts, costs from lib/ai/cost.ts).
 // Never prints the key. Writes no partner birth: only the reading text and the case's label leave this process.
 // usage: SMOKE_PROVIDER=mock pnpm ai:premium      (free dry run, mock provider, no key needed)
 //        pnpm ai:premium                          (real API, 7,000원 cap)
@@ -17,6 +18,7 @@ import { expect, test } from "vitest";
 import { anthropicProvider } from "@/lib/ai/anthropic";
 import { krwPerUsd, usdOf } from "@/lib/ai/cost";
 import { mockProvider } from "@/lib/ai/mock";
+import { budgeted, newBudget } from "@/lib/ai/budgetGuard";
 import { GenerationError, type ReadingProvider, type Usage } from "@/lib/ai/provider";
 import { aiTells } from "@/lib/ai/style";
 import type { Gate } from "@/lib/api/http";
@@ -140,47 +142,25 @@ test("premium eval", async () => {
   console.log(`ai:premium · ${mock ? "모의 공급자(무료)" : "실제 API"} · 예산 ${BUDGET_KRW.toLocaleString("ko-KR")}원 · 환율 ${FX}원/$`);
 
   const rows: Row[] = [];
-  let spent = 0;
-  let stopped: string | null = null;
-  const dearest = new Map<string, number>();
+  const budget = newBudget(BUDGET_KRW);
 
   /** One call (several attempts inside generateValidated), each attempt checked against the budget before it starts. */
   async function call<T>(c: Case, kind: Kind, index: number, fn: (p: ReadingProvider) => Promise<T>): Promise<T | null> {
-    if (stopped) return null;
-    const usage: Usage[] = [];
-    let attempts = 0;
-    let regenerated: string[] = [];
-    const slot = `${c.product}:${kind}`;
-    const provider: ReadingProvider = {
-      name: real.name,
-      async generate(task, attempt, feedback, hooks) {
-        const estimate = Math.max(ATTEMPT_KRW[c.product][kind], dearest.get(slot) ?? 0);
-        if (spent + estimate > BUDGET_KRW) {
-          stopped = `${c.product} ${c.id} ${kind}${index} 시도 ${attempt} 전: 지금까지 ${Math.round(spent)}원 + 이번 추정 ${estimate}원 > 예산 ${BUDGET_KRW}원`;
-          const stop = new Error(stopped);
-          stop.name = "BudgetStop";
-          throw stop;
-        }
-        attempts++;
-        if (attempt > 1 && feedback) regenerated = feedback;
-        const result = await real.generate(task, attempt, feedback, hooks);
-        const krw = usdOf(result.usage) * FX;
-        spent += krw;
-        dearest.set(slot, Math.max(dearest.get(slot) ?? 0, Math.ceil(krw)));
-        usage.push(...result.usage);
-        return result;
-      },
-    };
+    if (budget.stopped) return null;
+    // Every upstream call checked before it starts, every billed usage counted once (lib/ai/budgetGuard.ts).
+    const rec = budgeted(real, budget, { slot: `${c.product}:${kind}`, estimateKrw: ATTEMPT_KRW[c.product][kind], fx: FX, label: `${c.product} ${c.id} ${kind}${index}` });
+    const { usage } = rec;
     const started = Date.now();
     let out: T | null = null;
     let error: string | null = null;
     try {
-      out = await fn(provider);
+      out = await fn(rec.provider);
     } catch (e) {
       error = e instanceof GenerationError ? `${e.code}${e.detail.length ? `: ${e.detail.join(" | ")}` : ""}` : e instanceof Error ? e.name : "error";
     }
+    const attempts = rec.attempts();
     const row: Row = {
-      product: c.product, caseId: c.id, kind, index, ok: out !== null, error, attempts, regenerated,
+      product: c.product, caseId: c.id, kind, index, ok: out !== null, error, attempts, regenerated: rec.regenerated(),
       aiTells: out ? aiTells(JSON.stringify(out)).map((t) => t.id) : [], tokens: tokensOf(usage),
       krw: Math.round(usdOf(usage) * FX), seconds: Math.round((Date.now() - started) / 100) / 10,
     };
@@ -192,7 +172,7 @@ test("premium eval", async () => {
 
   const gate: Gate = { secret: SECRET, provider: real, owner: false, now: NOW, cookies: {}, client: "premium-eval" };
   for (const c of await cases()) {
-    if (stopped) break;
+    if (budget.stopped) break;
     const body = c.adapter.teaserBody.parse(c.body);
     const ctx = await c.adapter.context(body, gate);
     if (ctx instanceof Response) {
@@ -203,7 +183,7 @@ test("premium eval", async () => {
     await call(c, "preview", 0, (p) => c.adapter.teaser(p, ctx));
     let done: unknown[] = [];
     let reading: unknown = null;
-    for (let part = 0; part < 3 && !reading && !stopped; part++) {
+    for (let part = 0; part < 3 && !reading && !budget.stopped; part++) {
       const step = await call(c, "part", part, (p) => runNextPart(p, ctx, done));
       if (!step) break;
       if (step.complete) reading = step.reading;
@@ -227,8 +207,8 @@ test("premium eval", async () => {
   const won = (n: number) => `${Math.round(n).toLocaleString("ko-KR")}원`;
   const lines = [
     `# ai:premium 요약 (${folder})`, "",
-    `- 공급자: ${mock ? "모의(무료)" : "실제 API"} · 총비용 약 ${won(spent)} · 예산 ${won(BUDGET_KRW)} · 환율 ${FX}원/$`,
-    `- 예산 중단: ${stopped ?? "없음"}`, "",
+    `- 공급자: ${mock ? "모의(무료)" : "실제 API"} · 총비용 약 ${won(budget.spentKrw)} · 예산 ${won(BUDGET_KRW)} · 환율 ${FX}원/$`,
+    `- 예산 중단: ${budget.stopped ?? "없음"}`, "",
     "## 호출마다", "",
     "| 상품 | 케이스 | 호출 | 결과 | 시도 | 원 | 초 | 입력/출력/캐시읽기/캐시쓰기 토큰 | 검증기 | AI 티 |",
     "|---|---|---|---|---|---|---|---|---|---|",
@@ -249,13 +229,13 @@ test("premium eval", async () => {
     const partMax = Math.max(0, ...r.filter((row) => row.kind === "part").map((row) => row.seconds));
     lines.push(`| ${product} | ${complete}/${ids.length} | ${won(preview)} | ${won(avg(readings))} | ${won(followup)} | ${won(total)} | ${((100 * total) / PREMIUM[product].krw).toFixed(1)}% | ${partMax}s |`);
   }
-  writeFileSync(new URL("summary.json", dir), JSON.stringify({ folder, provider: mock ? "mock" : "real", budget: BUDGET_KRW, spent: Math.round(spent), stopped, rows }, null, 2));
+  writeFileSync(new URL("summary.json", dir), JSON.stringify({ folder, provider: mock ? "mock" : "real", budget: BUDGET_KRW, spent: Math.round(budget.spentKrw), stopped: budget.stopped, rows }, null, 2));
   writeFileSync(new URL("summary.md", dir), `${lines.join("\n")}\n`);
   console.log(`\n${lines.join("\n")}\n\n출력 폴더: ${dir.pathname}`);
   expect(rows.length).toBeGreaterThan(0);
   if (mock) {
     // The dry run proves the harness: every call passes and nothing is spent.
-    expect(spent).toBe(0);
+    expect(budget.spentKrw).toBe(0);
     expect(rows.filter((r) => !r.ok)).toEqual([]);
     expect(rows).toHaveLength(6 * 2 + (2 + 2 + 3) * 2);
   }

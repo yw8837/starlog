@@ -22,8 +22,8 @@ export default defineConfig({
     include: ["scripts/premium-smoke.test.ts"],
     environment: "node",
     // The budget defaults to 7,000원 here (an env prefix on the npm script would not work in Windows' shell); the
-    // shell environment wins, then apps/web/.env.local (gitignored, may hold the key).
-    env: { SMOKE_BUDGET_KRW: "7000", ...loadEnv("", fromRoot("./apps/web"), ""), ...process.env } as Record<string, string>,
+    // shell environment wins. Of apps/web/.env* (gitignored) only ANTHROPIC_* is read: the key, never a budget.
+    env: { SMOKE_BUDGET_KRW: "7000", ...loadEnv("", fromRoot("./apps/web"), "ANTHROPIC_"), ...process.env } as Record<string, string>,
     // Six readings with their parts, previews and follow-ups, one after another.
     testTimeout: 3_600_000,
     maxWorkers: 1,
