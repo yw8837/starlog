@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Facts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
+import { PremiumPrivacy } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
@@ -152,6 +153,8 @@ export default function PrivacyPage() {
         <ul className={s.list}>
           <li>공유 링크를 만들면 풀이의 공개용 사본(뽑은 카드와 풀이 본문)을 저장합니다. 질문, 직접 쓴 말과 메모, 고른 상황, 생년월일과 태어난 시각, 명식, 이어서 물어본 내용은 넣지 않고, 풀이 본문에 옮겨진 직접 쓴 말과 고른 상황, 생년월일·태어난 시각·나이는 가리며, 연락처나 링크가 들어간 문장은 빼고 저장합니다. 로그인한 상태로 만든 공유에는 계정을 함께 기록합니다.</li>
         </ul>
+        {/* 프리미엄 풀이와 궁합의 상대방 정보 where premium is visible (plan task 24, owner 2026-10-16); nothing while it is off. */}
+        <PremiumPrivacy />
         <h3 className={s.sub}>서비스를 이용하는 동안 자동으로 생기는 정보</h3>
         <ul className={s.list}>
           <li>이용 중인 기기의 브라우저 저장소에 보관되는 입력 내용과 풀이 기록</li>

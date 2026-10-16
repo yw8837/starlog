@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/LegalPage";
+import { PremiumTerms } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
@@ -133,6 +134,9 @@ export default function TermsPage() {
       <LegalSection id="gift" title="제7조의2 (삭제)">
         <p>이 조는 삭제되었습니다.</p>
       </LegalSection>
+
+      {/* 제7조의3 (프리미엄 풀이) where premium is visible (plan task 24); nothing while it is off. */}
+      <PremiumTerms />
 
       <LegalSection id="duties" title="제8조 (이용자의 의무)">
         <p>이용자는 다음 행위를 해서는 안 됩니다.</p>

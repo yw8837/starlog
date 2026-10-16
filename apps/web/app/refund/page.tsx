@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
+import { PremiumRefund } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
 import { LEGAL_EFFECTIVE_DATE, contactChannels, koreanDate } from "@/lib/legal";
@@ -58,6 +59,9 @@ export default function RefundPage() {
           <li>풀이가 결제 전에 안내한 내용과 다르게 제공됐다면, 확인한 뒤 같은 기준으로 처리해요.</li>
         </ul>
       </LegalSection>
+
+      {/* 프리미엄 풀이 where premium is visible (plan task 24); nothing while it is off. */}
+      <PremiumRefund />
 
       <LegalSection id="minor" title="미성년자 결제 취소">
         <ul className={s.list}>
