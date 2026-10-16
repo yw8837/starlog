@@ -82,6 +82,26 @@ describe("TopicPicker's premium rows (owner 2026-10-16)", () => {
     expect(year.hasAttribute("aria-disabled")).toBe(false);
   });
 
+  it("draws an undated product it cannot start here (premium on, payments closed) as 준비 중이에요, not a link (review 2026-10-16 #10)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          products: [
+            { id: "match", open: false, visible: true, opensAt: null },
+            { id: "newyear-2027", open: false, visible: true, opensAt: NOV15 },
+          ],
+        }),
+      ),
+    );
+    render(<TopicPicker />);
+    const match = await screen.findByRole("link", { name: /프리미엄 궁합/ });
+    expect(match.getAttribute("href")).toBeNull();
+    expect(match.getAttribute("aria-disabled")).toBe("true");
+    expect(match.textContent).toContain("준비 중이에요");
+    expect(match.textContent).toContain("7,900원");
+  });
+
   it("draws each row by its own product's visibility", async () => {
     stub({ match: false, newyear: true });
     render(<TopicPicker />);
