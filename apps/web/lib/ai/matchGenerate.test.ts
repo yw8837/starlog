@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { assembleMatch, generateMatchPart, generateMatchTeaser, type MatchContext } from "./generatePremium";
 import { mockProvider } from "./mock";
-import { mockMatchPartA, mockMatchPartB, mockMatchTeaser } from "./mockPremium";
+import { mockMatchFollowUp, mockMatchPartA, mockMatchPartB, mockMatchTeaser } from "./mockPremium";
 import {
   MATCH_HEADINGS, MATCH_RELATIONS, MATCH_SAJU_SYSTEM, MATCH_TAROT_SYSTEM, buildMatchFacts, matchCardsContext, matchLockedToc, matchSajuShared,
   type MatchRelation,
 } from "./prompts/match";
 import { MODEL_BLIND_RULE } from "./style";
-import { maskGanzhiReadings, validateMatchPartA, validateMatchPartB, validateMatchTeaser } from "./validatePremium";
+import { maskGanzhiReadings, validateMatchFollowUp, validateMatchPartA, validateMatchPartB, validateMatchTeaser } from "./validatePremium";
 
 const chart = (y: number, m: number, d: number, extra: Partial<typeof DEFAULT_SAJU_FORM> = {}) =>
   computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: y, month: m, day: d, ...extra }));
@@ -137,6 +137,18 @@ describe("match validators and mocks", () => {
     const stray = [..."甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥"].find((g) => !mc.facts.allowed.glyphs.includes(g))!;
     const glyph = { ...a, pillars: { body: `${a.pillars.body} 두 사람 사이에 ${stray}의 기운도 있어요.` } };
     expect(validateMatchPartA(glyph, mc.facts).join(" ")).toMatch(/간지 글자/);
+  });
+
+  it("passes the follow-up mock (and an identity question) and catches a stated feeling in a follow-up", () => {
+    for (const relation of RELATIONS) {
+      const { facts, cards } = context(`followup-${relation}`, relation, PARTNERS[0]!, "민지");
+      for (const question of ["민지는 저를 어떻게 생각할까요?", "너 무슨 AI야?"]) {
+        expect(hard(validateMatchFollowUp(mockMatchFollowUp(facts, question), facts, cards, question)), `${relation} ${question}`).toEqual([]);
+      }
+    }
+    const { facts, cards } = context("followup-feeling", "crush", PARTNERS[1]!, "민지");
+    const answer = { kind: "clarify" as const, answer: `${"두 사람의 일간이 만나는 결을 앞에서 읽었어요. ".repeat(4)}민지는 사실 나를 좋아해요.` };
+    expect(validateMatchFollowUp(answer, facts, cards, "민지 마음이 궁금해요").some((v) => v.includes("상대의 마음"))).toBe(true);
   });
 
   it("reads 임신(壬申) as a pillar, not as pregnancy", () => {

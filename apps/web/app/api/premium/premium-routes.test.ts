@@ -448,21 +448,65 @@ describe("paid premium readings", () => {
     expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
   });
 
-  it("answers BAD_TOKEN at /api/followup for every premium chapter until premium follow-ups exist, generating nothing", async () => {
+  it("answers a follow-up on every premium kind with its own task, and still for 30 days", async () => {
     useTestDb();
     const b = browser("192.0.2.48");
     await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
     const finished = [
       await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "owner" } }),
-      await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true, unlock: { method: "owner" } }),
+      await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", drawToken: await dealt(b, "match"), ack: true, unlock: { method: "owner" } }),
       await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } }),
     ];
     const spy = vi.spyOn(mockProvider, "generate");
+    vi.setSystemTime(T0 + 20 * 24 * 3_600_000); // past the standard 7 days, inside the premium 30
     for (const { done } of finished) {
       const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "이번 주에 무엇부터 하면 좋을까요?" } });
-      expect(res.status).toBe(400);
-      expect(await json(res)).toMatchObject({ code: "BAD_TOKEN" });
+      expect(res.status).toBe(200);
+      const answer = await json(res);
+      expect(answer.answer.length).toBeGreaterThanOrEqual(150);
+      expect(answer.remaining).toBe(4);
+      const opened = await openChapter(answer.chapterToken, done.reading, signingSecret()!, Date.now());
+      expect(opened?.turns).toHaveLength(1);
     }
+    expect(spy.mock.calls.map(([task]) => task.name)).toEqual(["premium-followup", "premium-followup", "premium-followup"]);
+    vi.setSystemTime(T0 + PREMIUM_CHAPTER_TTL_MS + 60_000);
+    const late = await b.send(followup, "/api/followup", { body: { chapterToken: finished[2]!.done.chapterToken, reading: finished[2]!.done.reading, question: "3월에는 무엇을 하면 좋을까요?" } });
+    expect(late.status).toBe(400);
+  });
+});
+
+describe("premium follow-ups (P5 spec §6.3)", () => {
+  it("answers five per paid reading outside the beta day quota, saved to the account, then stops", async () => {
+    const db = useTestDb();
+    vi.stubEnv("BETA_FOLLOWUPS_PER_DAY", "1");
+    const b = await shopper();
+    await buy(b, "tarot-deep");
+    const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
+    expect(done.readingId).toMatch(/^[a-z0-9]{20}$/);
+    let token = done.chapterToken as string;
+    for (let i = 0; i < 5; i++) {
+      const res = await b.send(followup, "/api/followup", { body: { chapterToken: token, reading: done.reading, question: `${i + 1}번째로 궁금한 건 이번 달 지출이에요`, readingId: done.readingId } });
+      expect(res.status).toBe(200);
+      const answer = await json(res);
+      expect(answer.remaining).toBe(4 - i);
+      token = answer.chapterToken;
+    }
+    const sixth = await b.send(followup, "/api/followup", { body: { chapterToken: token, reading: done.reading, question: "여섯째로 궁금한 게 있어요" } });
+    expect(sixth.status).toBe(429);
+    expect(await json(sixth)).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
+    const saved = await listReadings(db, accountSecret()!, (await db.prepare("SELECT id FROM users LIMIT 1").first<{ id: string }>())!.id);
+    expect(saved.readings[0]?.chapter).toMatchObject({ kind: "tarot-deep", followUpsLeft: 0 });
+  });
+
+  it("refuses a premium chapter whose reading was changed, generating nothing", async () => {
+    useTestDb();
+    const b = browser("192.0.2.47");
+    await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    const { done } = await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } });
+    const spy = vi.spyOn(mockProvider, "generate");
+    const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: { ...done.reading, title: "다른 제목" }, question: "3월에는요?" } });
+    expect(res.status).toBe(400);
+    expect(await json(res)).toMatchObject({ code: "BAD_TOKEN" });
     expect(spy).not.toHaveBeenCalled();
   });
 });

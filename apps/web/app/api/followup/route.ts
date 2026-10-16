@@ -2,7 +2,7 @@ import { TEMPLATES, type DrawnCard } from "@starlog/core";
 import { generateSajuFollowUp, generateSajuTopicFollowUp, generateTarotFollowUp } from "@/lib/ai/generate";
 import { buildTarotContext } from "@/lib/ai/prompts/tarot";
 import { StoredSajuReadingSchema, StoredTarotReadingSchema, type FollowUpAnswer } from "@/lib/ai/schemas";
-import { checkQuota, crisisResponse, errorResponse, openGate, readJson, spendCookies } from "@/lib/api/http";
+import { checkQuota, checkServerLimits, crisisResponse, errorResponse, openGate, readJson, spendCookies } from "@/lib/api/http";
 import { FollowUpBody } from "@/lib/api/inputs";
 import { factsFromBirth, topicFactsFromBirth, withoutConcern } from "@/lib/api/sajuRequest";
 import { chapterTurns, recordChapterTurns } from "@/lib/api/spend";
@@ -10,7 +10,10 @@ import { respondGeneration } from "@/lib/api/stream";
 import { saveFollowUpTurn } from "@/lib/readings/turns";
 import { isSajuTopicId } from "@/lib/sajuTopics";
 import { OPENING_KEEP_ONLY } from "@/lib/helpGuide";
-import { isOpeningChapter, issueChapter, openChapter } from "@/lib/security/chapterToken";
+import { payKeyMode } from "@/lib/pay/mode";
+import { preparePremiumFollowUp } from "@/lib/premium/followup";
+import { PREMIUM } from "@/lib/premium/products";
+import { isOpeningChapter, isPremiumChapter, issueChapter, openChapter } from "@/lib/security/chapterToken";
 import { quotaLimits } from "@/lib/security/quota";
 
 /**
@@ -19,6 +22,9 @@ import { quotaLimits } from "@/lib/security/quota";
  * A 오픈 기념 무료 chapter takes none (409 `reason: "opening"`). Capped per chapter
  * (BETA_FOLLOWUPS_PER_CHAPTER, counted server-side too, so an older token of the same chapter does
  * not reset it) and per day; the owner pass skips both caps. Chapter tokens expire 7 days after the reading. Streams NDJSON progress with `Accept: application/x-ndjson`.
+ * A premium chapter (P5 spec §6.3) takes PREMIUM[kind].followUps (5) for 30 days: paid for with the
+ * reading, so outside the beta's daily cookie quota; the chapter count and the network limits stay,
+ * and its cost goes to the paid book (unless the purchase earned nothing: test keys on production, M2).
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
@@ -31,12 +37,18 @@ export async function POST(request: Request): Promise<Response> {
   if (isOpeningChapter(chapter.ctx)) return errorResponse("NOT_AVAILABLE", { reason: "opening", message: OPENING_KEEP_ONLY });
 
   const limits = quotaLimits();
+  const premium = isPremiumChapter(chapter.ctx);
+  const cap = isPremiumChapter(chapter.ctx) ? PREMIUM[chapter.ctx.kind].followUps : limits.followupsPerChapter;
   const recorded = await chapterTurns(chapter.id);
   // Without the server's count an older token could reset the chapter cap: no new answer until KV reads again.
   if (recorded === null && !gate.owner) return errorResponse("AI_UNAVAILABLE");
   const answered = Math.max(chapter.turns.length, recorded ?? 0);
-  if (!gate.owner && answered >= limits.followupsPerChapter) return errorResponse("BETA_LIMIT", { scope: "chapter", remaining: 0 });
-  const quota = await checkQuota(gate, "followup", { scope: "day" });
+  if (!gate.owner && answered >= cap) return errorResponse("BETA_LIMIT", { scope: "chapter", remaining: 0 });
+  // The same test as a premium reading's (lib/premium/unlock.ts, security M2): a test payment charged nobody.
+  const paid = premium && !(process.env.NODE_ENV === "production" && payKeyMode() === "test");
+  const limited = premium ? await checkServerLimits(gate, "followup", { scope: "day" }, { credit: paid }) : null;
+  if (limited) return limited;
+  const quota = premium ? null : await checkQuota(gate, "followup", { scope: "day" });
   if (quota instanceof Response) return quota;
   const question = body.data.question;
   const crisis = crisisResponse(question);
@@ -68,8 +80,9 @@ export async function POST(request: Request): Promise<Response> {
       generate = async (hooks) => (await generateSajuFollowUp(gate.provider, facts, reading.data, chapter.turns, question, hooks)).data;
     }
   } else {
-    // A premium chapter (P5) has no follow-ups here yet.
-    return errorResponse("BAD_TOKEN");
+    const prepared = preparePremiumFollowUp(chapter.ctx, body.data.reading, gate.now);
+    if (prepared instanceof Response) return prepared;
+    generate = (hooks) => prepared.generate(gate.provider, chapter.turns, question, hooks);
   }
 
   // SEC-09: the turn is held before generating, so a follow-up sent meanwhile counts it; any failure
@@ -81,13 +94,13 @@ export async function POST(request: Request): Promise<Response> {
       const answer = await generate(hooks);
       const turns = [...chapter.turns, { question, answer: answer.answer }];
       const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now, chapter.exp);
-      const remaining = Math.max(0, limits.followupsPerChapter - (answered + 1));
+      const remaining = Math.max(0, cap - (answered + 1));
       if (body.data.readingId) await saveFollowUpTurn(request, gate.now, body.data.readingId, { question, answer: answer.answer }, chapterToken, remaining);
-      return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: await spendCookies(gate, quota, "followup") };
+      return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: quota ? await spendCookies(gate, quota, "followup") : [] };
     } catch (error) {
       const held = await chapterTurns(chapter.id);
       if (held !== null && held > answered) await recordChapterTurns(chapter.id, held - 1);
       throw error;
     }
-  }, { gate, spend: "followup" });
+  }, { gate, spend: "followup", ...(paid ? { paidCost: true } : {}) });
 }

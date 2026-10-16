@@ -8,11 +8,12 @@ import { ROMANCE_WORDS, cardLabel, mentionsWord, type TarotContext } from "./pro
 import { SOFT_PREFIX, aiTellViolations } from "./style";
 import {
   HEDGE, TOLERANCE, actionVarietyViolations, allowedFactViolations, cardIdentityViolations, cardSectionViolations, cardSubjectCount, charCount,
-  chosenChips, commonTarotViolations, inputRepeatViolations, inputUseViolations, inventedAmountViolations, lengthCheck, marriageContext,
+  chosenChips, commonTarotViolations, foreignCardViolations, inputRepeatViolations, inputUseViolations, inventedAmountViolations, lengthCheck, marriageContext,
   mentions, modelNameViolations, namesOf, profileUseViolations, quotedInputs, sentences, sharedMisdescriptionHits, userTextOf, voiceViolations,
   withoutDrawnNames,
 } from "./validate";
 import { maskGanzhiReadings } from "./ganzhi";
+import type { FollowUpAnswer } from "./schemas";
 
 /**
  * Premium validators (P5 spec §5). Same contract as validate.ts: a list of Korean violations, soft
@@ -301,6 +302,22 @@ export function validateNewYearPartC(c: NewYearPartC, n: NewYearFacts): string[]
   lengthCheck(NEWYEAR_HEADINGS.observation, c.observation.body, 80, 180, out);
   followUpViolations(c.followUps, out);
   newyearProse([...texts, ...c.followUps], n, out);
+  return out;
+}
+
+/**
+ * A follow-up on a 궁합 reading (P5 spec §6.3): the standard length, the pair's allowed facts (the
+ * question's own words may be quoted), the 궁합 bans, no card outside the five drawn.
+ */
+export function validateMatchFollowUp(a: FollowUpAnswer, m: MatchFacts, ctx: TarotContext, question = ""): string[] {
+  const out: string[] = [];
+  premiumCommonViolations(a, [a.answer], out);
+  lengthCheck("answer", a.answer, 150, 450, out);
+  allowedFactViolations(maskGanzhiReadings(a.answer), m.allowed, out, `${matchUserText(m)} ${question}`);
+  matchSafetyViolations(a.answer, m, out);
+  foreignCardViolations(a.answer, ctx.cards.map((c) => c.kb), out);
+  voiceViolations(a.answer, out);
+  aiTellViolations([a.answer], out);
   return out;
 }
 

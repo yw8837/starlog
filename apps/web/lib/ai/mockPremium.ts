@@ -7,6 +7,7 @@ import { previewKeyword } from "./prompts/deepTarot";
 import type { MatchFacts } from "./prompts/match";
 import type { MonthFact, NewYearFacts } from "./prompts/newyear";
 import type { Relation } from "./prompts/saju";
+import type { FollowUpAnswer } from "./schemas";
 import { WHEN_KO, onTopic, type TarotContext } from "./prompts/tarot";
 
 /**
@@ -347,5 +348,22 @@ export function mockNewYearPartC(n: NewYearFacts): NewYearPartC {
       ], 85, 180),
     },
     followUps: ["올해 가장 힘을 줄 달은 언제예요?", "올해 새로 시작하기 좋은 무렵은요?"],
+  };
+}
+
+// ---- 이어서 물어보기 ----
+
+/** "너 무슨 AI야?" and the like: answered as the blinding rule says (lib/ai/mock.ts does the same). */
+const IDENTITY = /ai|에이아이|인공지능|모델|챗봇|누가 만들|무엇으로 만들|뭘로 만들/i;
+
+export function mockMatchFollowUp(m: MatchFacts, question = ""): FollowUpAnswer {
+  const identity = IDENTITY.test(question);
+  return {
+    kind: identity ? "out_of_scope" : "clarify",
+    answer: fill([
+      ...(identity ? ["저는 스타로그의 풀이 도우미예요. 어떤 기술로 만들었는지는 알려 드리지 않아요."] : []),
+      `앞의 풀이에서 두 사람의 일간을 ${m.pair.dayMasters.images}의 짝으로 읽었어요.`,
+      `${nameOf(m)}의 마음을 단정할 수는 없어서, 확인할 수 있는 신호와 대화의 방법으로 이어서 답할게요.`,
+    ], SAJU_PAIR_POOL, 160, 440),
   };
 }
