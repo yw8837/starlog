@@ -33,6 +33,7 @@ import {
 } from "@/lib/storage/chapters";
 import { pullAccountReadings } from "@/lib/storage/sync";
 import { ChapterView, type ChapterFollowUp } from "./ChapterView";
+import { PremiumRows } from "@/components/premium/PremiumRows";
 import { PremiumChapterView } from "./PremiumChapterView";
 import { SajuChapterView } from "./SajuChapterView";
 import { MATCH_FOLLOWUP_DEVICE_ONLY, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
@@ -214,6 +215,19 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     </p>
   ) : null;
 
+  // The next step after a finished standard reading (plan-reconciled §4.3), never gold and only where premium is
+  // visible (PremiumRows draws nothing otherwise). A premium reading offers no other product.
+  const next = !whole ? undefined : chapter.kind === "tarot" ? (
+    <PremiumRows ids={["tarot-deep"]} title="더 깊게 보고 싶다면" lines={{ "tarot-deep": "한 가지 고민을 카드 10장으로, 자리마다 나눠 더 깊게 봐요" }} />
+  ) : chapter.kind === "saju" ? (
+    <PremiumRows
+      ids={["newyear-2027", "match"]}
+      onlyOpen
+      title="더 깊게 보고 싶다면"
+      lines={{ "newyear-2027": "다가올 2027년 한 해를 달마다 미리 봐요", match: "다른 사람과 함께, 두 사람의 사주와 카드로 봐요" }}
+    />
+  ) : undefined;
+
   if (isPremiumChapter(chapter)) {
     return (
       <>
@@ -226,7 +240,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} share={share} rating={rating} />
+        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} share={share} rating={rating} next={next} />
       </>
     );
   }
@@ -244,6 +258,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         checkin={checkin}
         share={share}
         rating={rating}
+        next={next}
       />
     </>
   );

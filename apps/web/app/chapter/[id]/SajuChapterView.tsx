@@ -34,10 +34,12 @@ type SajuChapterViewProps = {
   share?: ShareActions;
   /** 풀이 후기 for a reading saved in the account; otherwise the plain stars. */
   rating?: ReactNode;
+  /** After 카드로 이어서 보기 (plan-reconciled §4.3: 2027 신년운세 and 프리미엄 궁합 where premium is visible). */
+  next?: ReactNode;
 };
 
 /** An opened saju reading in one scroll: the chart, the sections, follow-ups, rating, and a way on to tarot. */
-export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin, share, rating }: SajuChapterViewProps) {
+export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin, share, rating, next }: SajuChapterViewProps) {
   const result = useMemo(() => chartFor(birth), [birth]);
 
   return (
@@ -80,6 +82,7 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
             타로 보기
           </Button>
         </section>
+        {next}
       </ReadingLayout>
     </>
   );
