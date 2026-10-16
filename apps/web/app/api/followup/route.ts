@@ -84,7 +84,7 @@ export async function POST(request: Request): Promise<Response> {
     }
   } else {
     // The facts as of the reading (a premium token lives 30 days from it): a 궁합's 10 years and shared years do not move.
-    const prepared = preparePremiumFollowUp(chapter.ctx, body.data.reading, chapter.exp - PREMIUM_CHAPTER_TTL_MS);
+    const prepared = await preparePremiumFollowUp(chapter.ctx, body.data.reading, chapter.exp - PREMIUM_CHAPTER_TTL_MS, gate.secret);
     if (prepared instanceof Response) return prepared;
     generate = (hooks) => prepared.generate(gate.provider, chapter.turns, question, hooks);
   }
@@ -101,7 +101,8 @@ export async function POST(request: Request): Promise<Response> {
       const turns = [...chapter.turns, { question, answer: answer.answer }];
       const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now, chapter.exp);
       const remaining = Math.max(0, cap - (answered + 1));
-      if (body.data.readingId) await saveFollowUpTurn(request, gate.now, body.data.readingId, { question, answer: answer.answer }, chapterToken, remaining);
+      // A 궁합's turns and token stay on its device: the account's copy keeps no partner, sealed or not (owner 2026-10-16).
+      if (body.data.readingId && chapter.ctx.kind !== "match") await saveFollowUpTurn(request, gate.now, body.data.readingId, { question, answer: answer.answer }, chapterToken, remaining);
       return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: quota ? await spendCookies(gate, quota, "followup") : [] };
     } catch (error) {
       const held = await chapterTurns(chapter.id);

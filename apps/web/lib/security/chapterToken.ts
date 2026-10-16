@@ -27,7 +27,8 @@ export type ChapterContext =
   /** 주제별 사주 chapters carry their topic (signed; `v` stays 1; a token without it is 전체 흐름). */
   | { kind: "saju"; birth: BirthInput; profile?: SajuProfile; topic?: SajuTopicId }
   /**
-   * P5 premium readings. The match token carries the partner's birth: signed, not encrypted, kept only in the user's own chapter (P5 spec §9).
+   * P5 premium readings. The match token carries the partner's birth sealed (lib/premium/partnerSeal.ts): only this server
+   * opens it, the device keeps it with its chapter for the 30 follow-up days, and the account's copy has no token (owner 2026-10-16).
    * `paid` (signed when the reading is written): opened with a purchase on real keys, so its follow-ups are paid
    * for; false for the owner pass and a test payment. Tokens issued before it have none (the deploy's keys decide).
    */
@@ -35,7 +36,7 @@ export type ChapterContext =
   | {
     kind: "match";
     me: { birth: BirthInput; profile?: SajuProfile };
-    partner: { birth: BirthInput; label?: string };
+    partner: { sealed: string; label?: string };
     relation: MatchRelation;
     concern?: string;
     cards: Array<[string, Orientation]>;

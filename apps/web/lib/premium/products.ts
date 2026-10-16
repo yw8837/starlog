@@ -81,5 +81,8 @@ export function inWindow(spec: PremiumSpec, now: number): boolean {
   return (spec.opensAt === undefined || spec.opensAt <= now) && (spec.closesAt === undefined || now < spec.closesAt);
 }
 
+/** A 궁합 synced from the account, or whose token carries no sealed partner: follow-ups are asked where it was written (owner 2026-10-16). */
+export const MATCH_FOLLOWUP_DEVICE_ONLY = "이어서 물어보기는 풀이한 기기에서만 돼요.";
+
 /** Premium chapter tokens (follow-ups) live 30 days (spec default 12). */
 export const PREMIUM_CHAPTER_TTL_MS = 30 * 24 * 60 * 60 * 1000;

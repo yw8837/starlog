@@ -19,6 +19,7 @@ import {
   DeepTarotBody, DeepTarotReadingBody, MatchBody, MatchReadingBody, NewYearBody, NewYearReadingBody,
   type DeepTarotBodyData, type MatchBodyData, type NewYearBodyData,
 } from "./inputs";
+import { sealPartner } from "./partnerSeal";
 import type { PremiumContext } from "./run";
 
 /** Per product: how a body becomes a context, what is crisis-checked, previewed, tokenised and saved. */
@@ -30,7 +31,8 @@ export interface Adapter<B, C extends PremiumContext> {
   crisisTexts(body: B): Array<string | undefined>;
   context(body: B, gate: Gate): Promise<C | Response>;
   teaser(provider: ReadingProvider, ctx: C, hooks?: GenerationHooks): Promise<unknown>;
-  chapterContext(body: B, ctx: C): ChapterContext;
+  /** What the chapter token carries; `secret` seals what only this server may read again (the 궁합 partner). */
+  chapterContext(body: B, ctx: C, secret: string): ChapterContext | Promise<ChapterContext>;
   chapter(body: B, ctx: C, response: { reading: unknown; chapterToken: string }, now: number): ServerChapter;
 }
 
@@ -104,18 +106,22 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
     return { product: "match", match: { facts, cards: matchCardsContext(b.relation, draw.cards) } };
   },
   teaser: async (provider, ctx, hooks) => (await generateMatchTeaser(provider, ctx.match, hooks)).data,
-  chapterContext(b, ctx) {
+  async chapterContext(b, ctx, secret) {
     const { label, concern } = ctx.match.facts;
     const profile = profileOf(b.me);
     return {
       kind: "match",
       me: { birth: b.me.birth, ...(profile ? { profile } : {}) },
-      partner: { birth: b.partner.birth, ...(label ? { label } : {}) },
+      // Sealed: the device keeps it for follow-ups, our servers never keep it (owner 2026-10-16).
+      partner: { sealed: await sealPartner(b.partner.birth, secret), ...(label ? { label } : {}) },
       relation: b.relation,
       ...(concern ? { concern } : {}),
       cards: cardsOf(ctx.match.cards),
     };
   },
+  // The account's copy (owner 2026-10-16): the reading, the relation, the label, the concern, the cards and the user's own
+  // birth; never the partner's birth or chart, and no chapter token (it carries the partner, sealed). Follow-ups are asked
+  // on the device that wrote it.
   chapter(b, ctx, response, now) {
     const { label, concern } = ctx.match.facts;
     return premiumChapter("match", {
@@ -123,10 +129,9 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
       relationLabel: RELATION_KO[b.relation],
       ...(label ? { partnerLabel: label } : {}),
       me: { birth: b.me.birth },
-      partner: { birth: b.partner.birth },
       ...(concern ? { concern } : {}),
       cards: drawnOf(ctx.match.cards),
-    }, response, now);
+    }, { ...response, chapterToken: "" }, now);
   },
 };
 

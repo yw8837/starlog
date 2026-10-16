@@ -84,7 +84,7 @@ export function premiumReadingRoute<B, C extends PremiumContext>(adapter: Adapte
           return { body: { status: "continue", resume: next, done: step.parts.length, of }, cookies: [] };
         }
         // Who paid is signed into the chapter: its follow-ups are paid for only when the reading was (real keys, not the owner pass).
-        const chapterCtx = { ...adapter.chapterContext(body, ctx), paid: plan.paidCost };
+        const chapterCtx = { ...(await adapter.chapterContext(body, ctx, gate.secret)), paid: plan.paidCost };
         const chapterToken = await issueChapter(chapterCtx, step.reading, [], gate.secret, gate.now, gate.now + PREMIUM_CHAPTER_TTL_MS);
         return { body: { status: "done", reading: step.reading, chapterToken }, cookies: [] };
       },

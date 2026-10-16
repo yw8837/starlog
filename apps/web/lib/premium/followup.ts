@@ -15,6 +15,8 @@ import { validateSajuFollowUp, validateTarotFollowUp } from "@/lib/ai/validate";
 import { errorResponse } from "@/lib/api/http";
 import { checkSajuForm, todayInKorea } from "@/lib/sajuForm";
 import type { ChapterContext } from "@/lib/security/chapterToken";
+import { openPartner } from "./partnerSeal";
+import { MATCH_FOLLOWUP_DEVICE_ONLY } from "./products";
 
 /**
  * Follow-ups on a premium reading (P5 spec §6.3). The product's shared block (cards, charts, the
@@ -85,9 +87,9 @@ const common = { name: "premium-followup" as const, schema: FollowUpAnswerSchema
  * The follow-up for a premium chapter, or the 400 when its reading or births no longer read (checked before a
  * stream starts). `now`: when the reading was written, so the computed facts are the ones it was written from.
  */
-export function preparePremiumFollowUp(
-  ctx: Extract<ChapterContext, { kind: "tarot-deep" | "match" | "newyear-2027" }>, reading: unknown, now: number,
-): PreparedFollowUp | Response {
+export async function preparePremiumFollowUp(
+  ctx: Extract<ChapterContext, { kind: "tarot-deep" | "match" | "newyear-2027" }>, reading: unknown, now: number, secret: string,
+): Promise<PreparedFollowUp | Response> {
   const today = todayInKorea(new Date(now));
   if (ctx.kind === "tarot-deep") {
     if (!DeepTarotReadingSchema.safeParse(reading).success) return errorResponse("BAD_TOKEN");
@@ -102,8 +104,11 @@ export function preparePremiumFollowUp(
   }
   if (ctx.kind === "match") {
     if (!MatchReadingSchema.safeParse(reading).success) return errorResponse("BAD_TOKEN");
+    // The partner travels sealed in the device's token only (owner 2026-10-16): a token without it is no follow-up.
+    const partnerBirth = await openPartner((ctx.partner as { sealed?: unknown }).sealed, secret);
+    if (!partnerBirth) return errorResponse("BAD_TOKEN", { message: MATCH_FOLLOWUP_DEVICE_ONLY });
     const me = checkSajuForm(ctx.me.birth, today);
-    const partner = checkSajuForm(ctx.partner.birth, today);
+    const partner = checkSajuForm(partnerBirth, today);
     if ("error" in me || "error" in partner) return errorResponse("BAD_TOKEN");
     const facts = buildMatchFacts(me.chart, partner.chart, { relation: ctx.relation, label: ctx.partner.label ?? "", concern: ctx.concern ?? "", meProfile: ctx.me.profile }, now);
     const cards = matchCardsContext(ctx.relation, drawn("match", ctx.cards));
