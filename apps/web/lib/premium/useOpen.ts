@@ -73,6 +73,8 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
   const [check, setCheck] = useState<"running" | "stalled" | null>(null);
   const firstTry = useRef<number | null>(null);
   const work = useRef<AbortController | null>(null);
+  // One opening at a time: a second tap before the screen changes must not start (and abort) another (review 2026-10-16 #7).
+  const opening = useRef(false);
   useEffect(() => () => work.current?.abort(), []);
 
   /** Since when an account reading of this flow counts as this opening's: a try made here, or the longest a reservation lives. */
@@ -133,7 +135,8 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
   };
 
   const open = (chosen: "paid" | "owner") => {
-    if (!input) return;
+    if (!input || opening.current) return;
+    opening.current = true;
     work.current?.abort();
     const controller = new AbortController();
     work.current = controller;
@@ -148,16 +151,21 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
     const first = pendingResume(id, input)?.done ?? 0;
     setRunning({ part: first, progress: startProgress(plans[Math.min(first, plans.length - 1)]!) });
     void (async () => {
-      const result = await runPremiumReading<R>(id, input, {
-        method: chosen,
-        of: plans.length,
-        signal: controller.signal,
-        onProgress: ({ part, progress }) => {
-          if (controller.signal.aborted) return;
-          const plan = plans[Math.min(part, plans.length - 1)]!;
-          setRunning((prev) => ({ part, progress: progress === null || !prev || prev.part !== part ? startProgress(plan) : advanceProgress(prev.progress, progress, plan) }));
-        },
-      });
+      let result: Awaited<ReturnType<typeof runPremiumReading<R>>>;
+      try {
+        result = await runPremiumReading<R>(id, input, {
+          method: chosen,
+          of: plans.length,
+          signal: controller.signal,
+          onProgress: ({ part, progress }) => {
+            if (controller.signal.aborted) return;
+            const plan = plans[Math.min(part, plans.length - 1)]!;
+            setRunning((prev) => ({ part, progress: progress === null || !prev || prev.part !== part ? startProgress(plan) : advanceProgress(prev.progress, progress, plan) }));
+          },
+        });
+      } finally {
+        opening.current = false;
+      }
       if (controller.signal.aborted) return;
       if (result.ok && accept(result.data.reading)) {
         // Kept on this device first, then its chapter.
