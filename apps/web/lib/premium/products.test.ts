@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "@/lib/config";
-import { PREMIUM, PREMIUM_IDS, inWindow, isPremiumId, premiumBySlug, premiumPath } from "./products";
+import { PREMIUM, PREMIUM_IDS, inWindow, isPremiumId, premiumBySlug, premiumPath, premiumShareHref } from "./products";
 
 describe("premium products", () => {
   it("prices and names come from SITE", () => {
@@ -17,6 +17,8 @@ describe("premium products", () => {
   it("maps slugs to products and paths", () => {
     expect(premiumBySlug("deep-tarot")?.id).toBe("tarot-deep");
     expect(premiumPath("newyear-2027")).toBe("/premium/newyear-2027");
+    // A shared record's link: its product page, which sends the recipient home while premium is hidden (review 2026-10-17 L5)
+    expect(premiumShareHref("match")).toBe("/premium/match?from=share");
     expect(isPremiumId("match")).toBe(true);
     expect(isPremiumId("tarot")).toBe(false);
   });

@@ -67,6 +67,9 @@ export const PREMIUM: Readonly<Record<PremiumId, PremiumSpec>> = Object.freeze(
 
 export const premiumBySlug = (slug: string): PremiumSpec | null => Object.values(PREMIUM).find((p) => p.slug === slug) ?? null;
 export const premiumPath = (id: PremiumId) => `/premium/${PREMIUM[id].slug}`;
+/** A shared record's link: its product page, marked so a recipient who cannot see premium goes home, not to a 404 (review 2026-10-17 L5). */
+export const PREMIUM_SHARE_FROM = "share";
+export const premiumShareHref = (id: PremiumId) => `${premiumPath(id)}?from=${PREMIUM_SHARE_FROM}`;
 
 /** Inside the product's sales window (undated products always are). */
 export function inWindow(spec: PremiumSpec, now: number): boolean {

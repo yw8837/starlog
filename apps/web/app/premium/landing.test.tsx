@@ -19,7 +19,10 @@ vi.mock("@/lib/premium/pageGate", () => ({
 const notFound = vi.hoisted(() => vi.fn(() => {
   throw new Error("NEXT_HTTP_ERROR_FALLBACK;404");
 }));
-vi.mock("next/navigation", () => ({ notFound, useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/premium" }));
+const redirect = vi.hoisted(() => vi.fn((to: string) => {
+  throw new Error(`NEXT_REDIRECT ${to}`);
+}));
+vi.mock("next/navigation", () => ({ notFound, redirect, useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/premium" }));
 
 const OCT = Date.parse("2026-10-20T12:00:00+09:00");
 const NOV = Date.parse("2026-11-20T12:00:00+09:00");
@@ -41,6 +44,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
   notFound.mockClear();
+  redirect.mockClear();
   gate.asked = [];
   gate.visible = false;
   gate.open = false;
@@ -50,6 +54,15 @@ const show = async (page: () => Promise<ReactElement>) => render(await page());
 const jsonLd = (container: HTMLElement) => JSON.parse(container.querySelector('script[type="application/ld+json"]')!.textContent!) as Record<string, any>;
 
 describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
+  it("send a shared record's link (?from=share) home instead of a 404 while premium is not visible here (review 2026-10-17 L5)", async () => {
+    for (const { Page } of PAGES) {
+      await expect(Page({ params: Promise.resolve({}), searchParams: Promise.resolve({ from: "share" }) })).rejects.toThrow("NEXT_REDIRECT /");
+    }
+    gate.visible = true;
+    for (const { Page } of PAGES) render(await Page({ params: Promise.resolve({}), searchParams: Promise.resolve({ from: "share" }) }));
+    expect(redirect).toHaveBeenCalledTimes(3);
+  });
+
   it("are 404 with their samples while premium is not visible here (STARLOG_PREMIUM off)", async () => {
     for (const { Page, Sample, id } of PAGES) {
       await expect(Page()).rejects.toThrow("404");

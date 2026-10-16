@@ -19,7 +19,7 @@ import { absoluteUrl } from "@/lib/hosts";
 import { kstMonthDay } from "@/lib/kst";
 import { MATCH_RELATION_OPTIONS } from "@/lib/premium/matchFlow";
 import { SITE } from "@/lib/config";
-import { PREMIUM, premiumPath } from "@/lib/premium/products";
+import { PREMIUM, premiumShareHref } from "@/lib/premium/products";
 import type { NewYearChapter, PremiumChapter } from "@/lib/storage/chapters";
 import { ChapterContents } from "./ChapterContents";
 import type { ChapterFollowUp } from "./ChapterView";
@@ -108,7 +108,7 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
                   body={shareBody}
                   fileName={`starlog-${PREMIUM[chapter.kind].slug}.png`}
                   shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
-                  shareUrl={absoluteUrl(premiumPath(chapter.kind))}
+                  shareUrl={absoluteUrl(premiumShareHref(chapter.kind))}
                   label="이미지로 공유"
                 />
               </div>
