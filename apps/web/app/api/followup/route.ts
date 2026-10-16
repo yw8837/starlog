@@ -33,7 +33,7 @@ export async function POST(request: Request): Promise<Response> {
   const body = FollowUpBody.safeParse(await readJson(request, 64_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
   const chapter = await openChapter(body.data.chapterToken, body.data.reading, gate.secret, gate.now);
-  if (!chapter) return errorResponse("BAD_TOKEN", { message: "후속 질문을 이어 갈 수 없는 풀이예요. 풀이를 받은 지 7일이 지났거나 내용이 달라졌어요." });
+  if (!chapter) return errorResponse("BAD_TOKEN", { message: "후속 질문을 이어 갈 수 없는 풀이예요. 물어볼 수 있는 기간이 지났거나 내용이 달라졌어요." });
   // 오픈 기념 무료 is read and kept on the device only (owner 2026-10-14 evening), owner pass or not.
   if (isOpeningChapter(chapter.ctx)) return errorResponse("NOT_AVAILABLE", { reason: "opening", message: OPENING_KEEP_ONLY });
 
