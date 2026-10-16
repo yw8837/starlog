@@ -179,7 +179,8 @@ export function partnerTextViolations(text: string, m: MatchFacts, out: string[]
     }
   }
   const year = m.partner.input.birthYear;
-  if (year !== m.me.input.birthYear && new RegExp(`${year}\\s?년`).test(text)) out.push("그 사람의 출생 연도는 쓰지 않아요.");
+  // A year my own facts name (my 대운's start, a child born then) is no birth year of theirs (review 2026-10-17 #9).
+  if (year !== m.me.input.birthYear && !m.allowed.years.includes(year) && new RegExp(`${year}\\s?년`).test(text)) out.push("그 사람의 출생 연도는 쓰지 않아요.");
 }
 
 export function validateMatchTeaser(d: MatchTeaserDraft, m: MatchFacts): string[] {

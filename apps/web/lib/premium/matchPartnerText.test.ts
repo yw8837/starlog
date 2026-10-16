@@ -129,6 +129,18 @@ describe("two 일지 of the same glyph (review 2026-10-17 #3)", () => {
   });
 });
 
+describe("a child born in a year my own facts name (review 2026-10-17 #9)", () => {
+  // Me 1990-01-01 in 경진 대운 from 2021-06; the other person, my child, born 2021.
+  const facts = buildMatchFacts(computeChart(toSajuInput(DEFAULT_SAJU_FORM)), computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: 2021, month: 3, day: 10 })), { relation: "family", label: "하린" }, NOW);
+  const base = mockMatchPartA(facts);
+
+  it("lets my 대운 year be said: a year the facts allow is no birth year of theirs", () => {
+    expect(facts.allowed.years).toContain(2021);
+    const found = validateMatchPartA({ ...base, luck: { body: `${base.luck.body} 나는 2021년 6월부터 지금의 대운을 지나고 있어요.` } }, facts);
+    expect(found.filter((v) => v.includes("출생 연도"))).toEqual([]);
+  });
+});
+
 // The engine's pillars for the two births, so a later engine change shows up here first.
 describe("the births above", () => {
   it("are 丙寅 (me) and 壬申 (the other person) by their day pillars", () => {
