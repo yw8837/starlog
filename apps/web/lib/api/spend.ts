@@ -34,7 +34,7 @@ export type SpendKind = "full" | "teaser" | "followup" | "daily" | "line";
 
 const COUNT_TTL_SECONDS = 36 * 60 * 60;
 const COST_TTL_SECONDS = 48 * 60 * 60;
-/** chapter tokens live 7 days */
+/** standard chapter tokens live 7 days; a premium chapter's count passes its own expiry (recordChapterTurns `ttlSeconds`) */
 const TURNS_TTL_SECONDS = 8 * 24 * 60 * 60;
 const COST_SHARDS = 8;
 /** a cost write that fails tries this many shards in all */
@@ -301,6 +301,7 @@ export function chapterTurns(chapterId: string): Promise<number | null> {
   return read(`turns:${chapterId}`);
 }
 
-export async function recordChapterTurns(chapterId: string, turns: number): Promise<void> {
-  await write(`turns:${chapterId}`, turns, TURNS_TTL_SECONDS);
+/** `ttlSeconds`: how long the count must outlive (a token that lives longer than 7 days passes its own). */
+export async function recordChapterTurns(chapterId: string, turns: number, ttlSeconds: number = TURNS_TTL_SECONDS): Promise<void> {
+  await write(`turns:${chapterId}`, turns, ttlSeconds);
 }

@@ -87,8 +87,10 @@ export async function POST(request: Request): Promise<Response> {
 
   // SEC-09: the turn is held before generating, so a follow-up sent meanwhile counts it; any failure
   // before the answer is handed out gives it back. KV has no compare-and-set: requests sent within the
-  // same few milliseconds can still both pass.
-  await recordChapterTurns(chapter.id, answered + 1);
+  // same few milliseconds can still both pass. A premium chapter's count lives until its token dies
+  // (30 days) and a day more, so its first token can never find the count gone and start over.
+  const turnsTtl = premium ? Math.ceil((chapter.exp - gate.now) / 1000) + 86_400 : undefined;
+  await recordChapterTurns(chapter.id, answered + 1, turnsTtl);
   return respondGeneration(request, async (hooks) => {
     try {
       const answer = await generate(hooks);
@@ -99,7 +101,7 @@ export async function POST(request: Request): Promise<Response> {
       return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: quota ? await spendCookies(gate, quota, "followup") : [] };
     } catch (error) {
       const held = await chapterTurns(chapter.id);
-      if (held !== null && held > answered) await recordChapterTurns(chapter.id, held - 1);
+      if (held !== null && held > answered) await recordChapterTurns(chapter.id, held - 1, turnsTtl);
       throw error;
     }
   }, { gate, spend: "followup", ...(paid ? { paidCost: true } : {}) });

@@ -498,6 +498,23 @@ describe("premium follow-ups (P5 spec §6.3)", () => {
     expect(saved.readings[0]?.chapter).toMatchObject({ kind: "tarot-deep", followUpsLeft: 0 });
   });
 
+  it("keeps the chapter's count for as long as its token lives: the first token sent again after the standard 8 days still finds all five used", async () => {
+    useTestDb();
+    const b = await shopper();
+    await buy(b, "tarot-deep");
+    const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
+    let token = done.chapterToken as string;
+    for (let i = 0; i < 5; i++) {
+      const res = await b.send(followup, "/api/followup", { body: { chapterToken: token, reading: done.reading, question: `${i + 1}번째로 궁금한 건 이번 달 지출이에요` } });
+      expect(res.status).toBe(200);
+      token = (await json(res)).chapterToken;
+    }
+    vi.setSystemTime(T0 + 9 * 24 * 3_600_000); // past the standard chapters' 8-day count, inside the premium 30 days
+    const replay = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "처음 받은 토큰으로 다시 물어봐요" } });
+    expect(replay.status).toBe(429);
+    expect(await json(replay)).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
+  });
+
   it("refuses a premium chapter whose reading was changed, generating nothing", async () => {
     useTestDb();
     const b = browser("192.0.2.47");
