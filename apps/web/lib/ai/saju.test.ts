@@ -414,7 +414,7 @@ describe("the pillars the limits name besides the chart's own (review 2026-10-08
     expect(glyphFindings(validateSajuTopicReading(topicSection(5, "몇 분 늦게 태어났다면 시주가 을묘(乙卯)가 될 수 있어요."), t))).toEqual([]);
   });
 
-  it("leaves the 신년운세 and 궁합 allow-lists as HEAD (a086c7a) built them for the same charts and moment", () => {
+  it("leaves the 신년운세 allow-list as HEAD (a086c7a) built it, and the 궁합's as H1 left it (owner 2026-10-17: of the other person only the day stem)", () => {
     const chart = (patch: Partial<SajuForm>) => computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, ...patch }));
     const sorted = (glyphs: string[]) => [...new Set(glyphs)].sort().join("");
     const hour = chart(BOUNDARY); // HOUR_BOUNDARY: 시주 乙卯
@@ -423,8 +423,9 @@ describe("the pillars the limits name besides the chart's own (review 2026-10-08
     const unknown = chart({}); // DAY_PILLAR_WINDOW
     // the twelve 월건 of 2027 hold every glyph
     for (const c of [hour, jasi, into, unknown]) expect(sorted(buildNewYearFacts(c).allowed.glyphs)).toBe("丁丑丙乙亥午卯壬子寅己巳庚戊戌未甲申癸辛辰酉");
-    expect(sorted(buildMatchFacts(hour, jasi, { relation: "lover" }, at).allowed.glyphs)).toBe("丁丑丙乙午卯壬子寅己庚戊戌未甲申癸辛酉");
-    expect(sorted(buildMatchFacts(unknown, into, { relation: "lover" }, at).allowed.glyphs)).toBe("丁丑丙乙亥午卯壬子寅己巳庚戊未甲申癸辛辰");
+    // 궁합: my glyphs, the other person's day stem, the shared years' (H1 dropped the rest of theirs: 卯 and 子 of 乙卯·丙子 here)
+    expect(sorted(buildMatchFacts(hour, jasi, { relation: "lover" }, at).allowed.glyphs)).toBe("丁丑丙乙午壬寅己庚戊戌未甲申癸辛酉");
+    expect(sorted(buildMatchFacts(unknown, into, { relation: "lover" }, at).allowed.glyphs)).toBe("丁丑丙乙午卯壬子寅己巳庚戊甲癸辛辰");
   });
 });
 
