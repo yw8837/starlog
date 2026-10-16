@@ -59,12 +59,13 @@ describe("a 궁합 record and its partner (owner 2026-10-16)", () => {
     expect(raw()).not.toContain("sealed.token");
   });
 
-  it("reads an older record that still holds the partner's birth as text without it, and drops it from storage when it is opened", async () => {
+  it("reads an older record that still holds the partner's birth as text without it, and drops it from storage when it is opened, with that version's token (it held the birth too, review 2026-10-17 L1)", async () => {
     seed([{ ...MATCH, partner: { birth: PARTNER_BIRTH } }]);
     expect(listChapters()[0]).not.toHaveProperty("partner");
     render(<LocalChapter id="match0001" />);
     await waitFor(() => expect(raw()).not.toContain("1987"));
-    expect(screen.getByRole("textbox")).toBeTruthy();
+    expect(raw()).not.toContain("sealed.token");
+    await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
   });
 
   it("shows no chart beside the record, only the five cards (eight letters of a chart nearly give a birth date away)", () => {

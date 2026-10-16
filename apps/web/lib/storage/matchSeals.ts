@@ -68,6 +68,11 @@ export function keepMatchSeals(entries: readonly unknown[], now: number = Date.n
   if (added) store.save(seals);
 }
 
+/** Drops the seals past their follow-up days (the app opening, chapters.ts pruneMatchPartners). */
+export function pruneMatchSeals(now: number = Date.now()): void {
+  live(now);
+}
+
 /** The seal kept for this account reading, while its follow-up days last. */
 export function matchSeal(serverId: string, now: number = Date.now()): string | null {
   return live(now)[serverId]?.sealed ?? null;

@@ -13,7 +13,7 @@ import { formatBirthDate, sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm
 import { isSajuTopicId, topicLabel } from "@/lib/sajuTopics";
 import { createLocalStore } from "@/lib/sessionStore";
 import { stopKnownShareLink } from "@/lib/share/client";
-import { keepMatchSeals } from "./matchSeals";
+import { keepMatchSeals, pruneMatchSeals } from "./matchSeals";
 
 /**
  * Opened readings (내 기록), kept on this device only (localStorage), oldest first. A saved reading
@@ -336,16 +336,35 @@ export function updateChapter(id: string, update: (chapter: StoredChapter) => St
 }
 
 /**
- * 궁합 (owner 2026-10-16): what this device may still hold of the partner, put right when the record is opened. A
- * birth kept as text by an older version goes; past the 30 follow-up days the token, with its sealed partner, goes too.
+ * 궁합 (owner 2026-10-16): what this device may still hold of the partner. A birth kept as text by an older version goes,
+ * with the token of that version (it carried the birth too, review 2026-10-17 L1); past the 30 follow-up days the token,
+ * with its sealed partner, goes too. Null when the entry is fine as it is.
  */
-export function tidyMatchChapter(id: string, now: number = Date.now()): void {
-  const entry = rawEntries().find((e) => idOf(e) === id);
-  if (!isRecord(entry) || entry.kind !== "match") return;
+function tidiedMatch(entry: unknown, now: number): Record<string, unknown> | null {
+  if (!isRecord(entry) || entry.kind !== "match") return null;
   const expired = typeof entry.createdAt === "number" && now - entry.createdAt >= PREMIUM_CHAPTER_TTL_MS;
   const sealed = isString(entry.chapterToken) && entry.chapterToken !== "";
-  if (!("partner" in entry) && !(expired && sealed)) return;
-  updateChapter(id, (chapter) => (expired ? { ...chapter, chapterToken: "" } : chapter));
+  const legacy = "partner" in entry;
+  if (!legacy && !(expired && sealed)) return null;
+  const { partner: _partner, ...rest } = entry;
+  return { ...rest, chapterToken: "" };
+}
+
+/** Put right when the record is opened. */
+export function tidyMatchChapter(id: string, now: number = Date.now()): void {
+  const entries = rawEntries();
+  if (!entries.some((e) => idOf(e) === id && tidiedMatch(e, now))) return;
+  store.save({ v: 1, chapters: entries.map((e) => (idOf(e) === id ? (tidiedMatch(e, now) ?? e) : e)) });
+}
+
+/**
+ * Whenever the app opens (RouteTracker), every 궁합 is put right, opened or not, and the seals kept across a logout past
+ * their days go (review 2026-10-17 M2): the policy says the partner is gone after the 30 days. Writes nothing otherwise.
+ */
+export function pruneMatchPartners(now: number = Date.now()): void {
+  const entries = rawEntries();
+  if (entries.some((e) => tidiedMatch(e, now))) store.save({ v: 1, chapters: entries.map((e) => tidiedMatch(e, now) ?? e) });
+  pruneMatchSeals(now);
 }
 
 /** True when this device holds an entry with this id, readable or not (a broken one can be erased). */
