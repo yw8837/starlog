@@ -125,7 +125,7 @@ function Cards({ slides }: { slides: readonly Slide[] }) {
   /** Sideways drag in px while a finger or the mouse holds the card. */
   const [drag, setDrag] = useState<number | null>(null);
   const [hovered, setHovered] = useState(false);
-  const grab = useRef<{ id: number; x: number } | null>(null);
+  const grab = useRef<{ id: number; x: number; y: number } | null>(null);
   const settle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(settle.current), []);
 
@@ -155,7 +155,7 @@ function Cards({ slides }: { slides: readonly Slide[] }) {
 
   const onDown = (e: PointerEvent<HTMLDivElement>) => {
     if (turn || count < 2) return;
-    grab.current = { id: e.pointerId, x: e.clientX };
+    grab.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
     e.currentTarget.setPointerCapture?.(e.pointerId);
     setDrag(0);
   };
@@ -165,8 +165,11 @@ function Cards({ slides }: { slides: readonly Slide[] }) {
   const onUp = (e: PointerEvent<HTMLDivElement>) => {
     if (grab.current?.id !== e.pointerId) return;
     const dx = e.clientX - grab.current.x;
+    const dy = e.clientY - grab.current.y;
     grab.current = null;
-    if (Math.abs(dx) >= SWIPE_PX) return go(dx < 0 ? 1 : -1);
+    // A turn is a release far enough sideways, more sideways than up or down. A cancel (the page took the
+    // touch to scroll) is never one: its position may be (0, 0). Anything else springs back (M-02).
+    if (e.type === "pointerup" && Math.abs(dx) >= SWIPE_PX && Math.abs(dx) > Math.abs(dy)) return go(dx < 0 ? 1 : -1);
     setDrag(null);
     setMoving(true);
     after(() => setMoving(false));

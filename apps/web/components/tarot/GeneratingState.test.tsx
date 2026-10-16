@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RETRY_CAPTION, checklist, progressPlan } from "@/lib/reading/progress";
@@ -144,6 +146,34 @@ describe("GeneratingState: the cards while a full reading is written (a game-loa
     drag(100, 220);
     tick(400);
     expect(within(shown()).getByText("둘")).toBeTruthy();
+  });
+
+  it("never turns on a cancelled touch (the page took it to scroll), even when the cancel reports (0, 0) (M-02)", () => {
+    render(page());
+    fireEvent.pointerDown(strip(), { pointerId: 1, clientX: 200, clientY: 300 });
+    fireEvent.pointerMove(strip(), { pointerId: 1, clientX: 196, clientY: 260 });
+    fireEvent.pointerCancel(strip(), { pointerId: 1, clientX: 0, clientY: 0 });
+    tick(400);
+    expect(within(shown()).getByText("지금 적는 중")).toBeTruthy();
+    // the drag is over: the cards turn on their own again
+    tick(7_000);
+    expect(within(shown()).getByText("하나")).toBeTruthy();
+  });
+
+  it("does not turn on a drag that goes more up or down than sideways (M-02)", () => {
+    render(page());
+    fireEvent.pointerDown(strip(), { pointerId: 1, clientX: 200, clientY: 100 });
+    fireEvent.pointerMove(strip(), { pointerId: 1, clientX: 140, clientY: 300 });
+    fireEvent.pointerUp(strip(), { pointerId: 1, clientX: 140, clientY: 300 });
+    tick(400);
+    expect(within(shown()).getByText("지금 적는 중")).toBeTruthy();
+  });
+
+  it("leaves up and down to the page on the card (touch-action: pan-y)", () => {
+    const file = ["apps/web/components/tarot/GeneratingState.module.css", "components/tarot/GeneratingState.module.css"]
+      .map((path) => resolve(process.cwd(), path))
+      .find((path) => existsSync(path));
+    expect(readFileSync(file ?? "", "utf8")).toMatch(/\.viewport \{[^}]*touch-action: pan-y;/);
   });
 
   it("holds still while a finger or the pointer is on it", () => {
