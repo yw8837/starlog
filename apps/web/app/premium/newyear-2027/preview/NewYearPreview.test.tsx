@@ -48,6 +48,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   resetAccountForTests();
   resetPremiumStatusForTests();
@@ -73,11 +74,22 @@ describe("2027 신년운세's preview (Task 21)", () => {
   });
 
   it("before it opens, a 409 from the preview says 11월 15일 0시에 열려요 and no error", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-10-20T12:00:00+09:00"));
     stub(() => Response.json({ code: "NOT_AVAILABLE" }, { status: 409 }));
     render(<NewYearPreview />);
     expect(await screen.findByText("11월 15일 0시에 열려요", { selector: "p:not([role=status])" })).toBeTruthy();
     expect(screen.queryByText("지금은 열 수 없는 상품이에요")).toBeNull();
     expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+
+  it("from 2026-11-15 00:00 KST a 409 is not its opening date any more (review 2026-10-16 #6): the preview's error", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-11-20T12:00:00+09:00"));
+    stub(() => Response.json({ code: "NOT_AVAILABLE" }, { status: 409 }), [], []);
+    render(<NewYearPreview />);
+    expect((await screen.findAllByText("지금은 열 수 없는 상품이에요")).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/11월 15일 0시에 열려요/)).toBeNull();
   });
 
   it("writes the reading in three parts, sending each resume token in order, and opens the chapter", async () => {

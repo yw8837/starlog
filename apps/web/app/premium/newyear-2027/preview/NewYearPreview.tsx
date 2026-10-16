@@ -113,8 +113,10 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
 
   const teaserState = teaserGen.state;
   const failed = !preview && teaserState.status === "error" ? teaserState.error : null;
-  // Not open yet (before 2026-11-15 for everyone but the owner pass): when it opens, not an error.
-  const notYet = failed?.code === "NOT_AVAILABLE" ? opensAtText(PREMIUM[ID].opensAt ?? Date.now()) : null;
+  // Not open yet (before 2026-11-15 for everyone but the owner pass): when it opens, not an error. Once that moment
+  // has passed a 409 is the preview's error like any other (review 2026-10-16 #6).
+  const opensAt = PREMIUM[ID].opensAt;
+  const notYet = failed?.code === "NOT_AVAILABLE" && opensAt !== undefined && opensAt > Date.now() ? opensAtText(opensAt) : null;
   const teaserError = failed && !notYet ? describeApiError(failed, "teaser") : null;
   const busy = Boolean(account?.user?.opening.some((item) => item.productId === ID));
   // This birth's year was opened already: offer that reading, not the payment again (review 2026-10-16 #2). A second
