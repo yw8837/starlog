@@ -15,7 +15,7 @@ import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 import { browser, buy, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
 import { sealResume } from "./resume";
-import { holdsUnused, planPremiumUnlock, premiumSettlement, type PremiumPlan } from "./unlock";
+import { planPremiumUnlock, premiumSettlement, unusedBuyer, type PremiumPlan } from "./unlock";
 
 const SECRET = "account-secret-for-tests-0123456789abcdef";
 const NOW = Date.parse("2026-10-20T03:00:00Z");
@@ -253,13 +253,13 @@ describe("planning a premium opening", () => {
     expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks")).toEqual({ n: 0 });
   });
 
-  it("holdsUnused: true only for a member holding an unopened purchase of that product", async () => {
+  it("unusedBuyer: the member's id only while they hold an unopened purchase of that product", async () => {
     useTestDb();
     const b = await member();
-    expect(await holdsUnused(requestOf(browser("192.0.2.70")), NOW, "tarot-deep")).toBe(false);
-    expect(await holdsUnused(requestOf(b), NOW, "tarot-deep")).toBe(false);
+    expect(await unusedBuyer(requestOf(browser("192.0.2.70")), NOW, "tarot-deep")).toBeNull();
+    expect(await unusedBuyer(requestOf(b), NOW, "tarot-deep")).toBeNull();
     await buy(b, "tarot-deep");
-    expect(await holdsUnused(requestOf(b), NOW, "tarot-deep")).toBe(true);
-    expect(await holdsUnused(requestOf(b), NOW, "match")).toBe(false);
+    expect(await unusedBuyer(requestOf(b), NOW, "tarot-deep")).toMatch(/\S/);
+    expect(await unusedBuyer(requestOf(b), NOW, "match")).toBeNull();
   });
 });

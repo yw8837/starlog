@@ -23,6 +23,8 @@ import { dailyStore, logKvError } from "./dailyStore";
  *   from the same ledger writes (respondGeneration), one write each, never retried on another shard.
  * - `turns:<chapterId>`: follow-up answers given in one chapter, so replaying an older chapter token
  *   (fewer turns) cannot reset the per-chapter cap.
+ * - `bpreview:<kstDay>:<product>:<userId>`: free previews a buyer of a premium product started today
+ *   (they skip the device and network preview counts, so this bounds them).
  * KV has no atomic increment and is eventually consistent (another location can read a value up to
  * about 60 s old), so every count here is approximate: two writes racing on one key can lose one,
  * and a burst can overshoot by what the per-minute limiters let through. The budget therefore trips
@@ -292,6 +294,22 @@ export class SpendLedger {
     if (krw === 0) return;
     this.chain = this.chain.then(() => this.sink(krw, at)).catch((error: unknown) => logKvError("spend.kv_error", "ledger", error));
   }
+}
+
+// ---- premium buyers' previews ----
+
+const buyerPreviewKey = (userId: string, product: string, now: number) => `bpreview:${kstDay(now)}:${product}:${userId}`;
+
+/** Previews of `product` its buyer started today, or null when KV cannot be read. */
+export function buyerPreviews(userId: string, product: string, now: number): Promise<number | null> {
+  return read(buyerPreviewKey(userId, product, now));
+}
+
+/** Charged when the preview starts, like the network counts. */
+export async function recordBuyerPreview(userId: string, product: string, now: number): Promise<void> {
+  const key = buyerPreviewKey(userId, product, now);
+  const current = await read(key);
+  if (current !== null) await write(key, Math.max(0, current) + 1, COUNT_TTL_SECONDS);
 }
 
 // ---- chapters ----

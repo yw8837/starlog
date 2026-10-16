@@ -79,8 +79,7 @@ export async function planPremiumUnlock(
   if (isReviewAccount(user) && !(await isReviewer(user, ctx.accountSecret))) return errorResponse("NOT_AVAILABLE");
   const resume = await resumeFor(user.id);
   if (resume instanceof Response) return resume;
-  // The same test as lib/api/unlock.ts planUnlock (security M2): a test payment charged nobody.
-  const unbacked = process.env.NODE_ENV === "production" && payKeyMode() === "test";
+  const unbacked = paymentsUnbacked();
   if (unbacked) {
     const limited = await checkServerLimits(gate, "full", {}, { credit: true });
     if (limited) return limited;
@@ -191,9 +190,13 @@ export function premiumSettlement(plan: PremiumPlan, chapterOf: (body: Record<st
   };
 }
 
-/** The user holds an unopened purchase of `product` (previews stay open for them when sales close). */
-export async function holdsUnused(request: Request, now: number, product: PremiumId): Promise<boolean> {
+/** The same test as lib/api/unlock.ts planUnlock (security M2): on a production deploy's test keys a payment charged nobody. */
+export const paymentsUnbacked = (): boolean => process.env.NODE_ENV === "production" && payKeyMode() === "test";
+
+/** The signed-in user's id when they hold an unopened purchase of `product` (previews stay open for them when sales close), else null. */
+export async function unusedBuyer(request: Request, now: number, product: PremiumId): Promise<string | null> {
   const ctx = await openAccount(request, now);
-  if (ctx instanceof Response || !ctx.session?.user) return false;
-  return (await entitlements(ctx.db, ctx.session.user.id, now)).unused.some((u) => u.productId === product);
+  if (ctx instanceof Response || !ctx.session?.user) return null;
+  const { id } = ctx.session.user;
+  return (await entitlements(ctx.db, id, now)).unused.some((u) => u.productId === product) ? id : null;
 }

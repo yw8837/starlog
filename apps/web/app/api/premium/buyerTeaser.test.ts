@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mockProvider } from "@/lib/ai/mock";
+import type { GenerationHooks } from "@/lib/ai/provider";
 import { dailyStore, resetDailyStore } from "@/lib/api/dailyStore";
-import { clientCount, resetSpendState } from "@/lib/api/spend";
+import { clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { setTestDb } from "@/lib/db";
 import { mockToss } from "@/lib/pay/tossMock";
 import { kstDay } from "@/lib/security/quota";
@@ -37,6 +39,18 @@ afterEach(() => {
 const dealt = async (b: Browser) =>
   ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "deep-tarot", picks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] } })).json()) as { drawToken: string }).drawToken;
 const networkCount = async (address: string) => clientCount(await keyedHash(`client:${address}`, signingSecret()!), "teaser", Date.now());
+const networkCost = async (address: string) => networkCostKrw(await keyedHash(`client:${address}`, signingSecret()!), Date.now());
+async function paidBook(): Promise<number> {
+  let sum = 0;
+  for (let shard = 0; shard < 8; shard++) sum += Number((await dailyStore().get(`paidcost:${kstDay(Date.now())}:${shard}`)) ?? 0);
+  return Math.round(sum);
+}
+
+async function buyerOf(address: string, name: string): Promise<{ b: Browser; orderId: string }> {
+  const b = browser(address);
+  await loginAs(b, name);
+  return { b, orderId: await buy(b, "tarot-deep") };
+}
 
 describe("a buyer's premium preview (review 2026-10-16 #1)", () => {
   it("never spends or stops at the day's free previews: the reading it was bought for needs no preview", async () => {
@@ -75,5 +89,66 @@ describe("a buyer's premium preview (review 2026-10-16 #1)", () => {
     await buy(buyer, "tarot-deep");
     vi.stubEnv("STARLOG_PREMIUM", "off");
     expect((await buyer.send(deepTeaser, TEASER, { body: { drawToken: await dealt(buyer), input: DEEP_INPUT } })).status).toBe(200);
+  });
+});
+
+describe("a buyer's premium previews are bounded and paid for (review 2026-10-17 H2)", () => {
+  it("stops at five a day for each product a buyer holds, and starts again the next KST day", async () => {
+    useTestDb();
+    const { b } = await buyerOf("198.51.100.211", "buyer211");
+    const drawToken = await dealt(b);
+    for (let i = 0; i < 5; i++) expect((await b.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } })).status).toBe(200);
+    const sixth = await b.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } });
+    expect(sixth.status).toBe(429);
+    expect(await sixth.json()).toMatchObject({ code: "BETA_LIMIT", scope: "buyer" });
+    vi.setSystemTime(Date.parse("2026-11-21T00:00:00+09:00"));
+    expect((await b.send(deepTeaser, TEASER, { body: { drawToken: await dealt(b), input: DEEP_INPUT } })).status).toBe(200);
+  });
+
+  it("is closed while the day's spend cannot be read (budget unknown), for a buyer too", async () => {
+    useTestDb();
+    const { b } = await buyerOf("198.51.100.212", "buyer212");
+    const drawToken = await dealt(b);
+    const store = dailyStore();
+    const get = store.get.bind(store);
+    vi.spyOn(store, "get").mockImplementation(async (key: string) => {
+      if (key.startsWith("cost:")) throw new Error("kv down");
+      return get(key);
+    });
+    const res = await b.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } });
+    expect(res.status).toBe(503);
+    expect(await res.json()).toMatchObject({ code: "AI_UNAVAILABLE" });
+  });
+
+  it("books its model cost in the paid book: never the free day's total, never the network's free share", async () => {
+    useTestDb();
+    vi.stubEnv("KRW_PER_USD", "1400");
+    const address = "198.51.100.213";
+    const { b } = await buyerOf(address, "buyer213");
+    const drawToken = await dealt(b);
+    const real = mockProvider.generate.bind(mockProvider);
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+      hooks?.onUsage?.([{ model: "claude-opus-5-5", inputTokens: 0, outputTokens: 10_000, cacheReadTokens: 0, cacheWriteTokens: 0 }]);
+      return real(task, attempt, feedback, hooks);
+    });
+    expect((await b.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } })).status).toBe(200);
+    expect(await paidBook()).toBe(280);
+    expect(Math.round((await spentTodayKrw(Date.now())) ?? -1)).toBe(0);
+    expect(await networkCost(address)).toBe(0);
+  });
+
+  it("takes the ordinary preview path on a production deploy's test keys: a test payment charged nobody", async () => {
+    vi.stubEnv("STARLOG_SIGNING_SECRET", "signing-secret-for-premium-tests-0123456789");
+    vi.stubEnv("STARLOG_ACCOUNT_SECRET", "account-secret-for-premium-tests-0123456789");
+    const db = useTestDb();
+    const { b, orderId } = await buyerOf("198.51.100.214", "buyer214");
+    await db.prepare("UPDATE payments SET mode = 'test' WHERE order_id = ?").bind(orderId).run();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("STARLOG_PAY", "");
+    vi.stubEnv("NEXT_PUBLIC_TOSS_CLIENT_KEY", "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm");
+    vi.stubEnv("TOSS_SECRET_KEY", "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6");
+    b.jar.set("__Host-sl_sid", b.jar.get("sl_sid")!);
+    vi.stubEnv("STARLOG_PREMIUM", "off");
+    expect((await b.send(deepTeaser, TEASER, { body: { drawToken: await dealt(b), input: DEEP_INPUT } })).status).toBe(409);
   });
 });

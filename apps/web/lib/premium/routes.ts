@@ -1,24 +1,40 @@
 import "server-only";
-import { checkQuota, crisisResponse, errorResponse, fullReadingLimit, openGate, readJson, spendCookies } from "@/lib/api/http";
+import { checkQuota, crisisResponse, errorResponse, fullReadingLimit, openGate, readJson, spendCookies, type Gate } from "@/lib/api/http";
+import { budgetState, buyerPreviews, recordBuyerPreview } from "@/lib/api/spend";
 import { respondGeneration } from "@/lib/api/stream";
 import { checkBot } from "@/lib/api/turnstile";
 import { sessionCookieName } from "@/lib/account/session";
 import { issueChapter } from "@/lib/security/chapterToken";
+import { nextKstMidnight } from "@/lib/security/quota";
 import type { Adapter } from "./adapters";
 import { premiumOpen } from "./flags";
 import { READING_MAX_BYTES, TEASER_MAX_BYTES } from "./inputs";
-import { PREMIUM_CHAPTER_TTL_MS } from "./products";
+import { PREMIUM_CHAPTER_TTL_MS, type PremiumId } from "./products";
 import { inputHash, sealResume } from "./resume";
 import { PART_COUNTS, runNextPart, type PremiumContext } from "./run";
-import { holdsUnused, planPremiumUnlock, premiumSettlement } from "./unlock";
+import { paymentsUnbacked, planPremiumUnlock, premiumSettlement, unusedBuyer } from "./unlock";
+
+/** A buyer's previews of one product per KST day (review 2026-10-17 H2): they skip the free counts, so this bounds them. */
+export const BUYER_PREVIEWS_PER_DAY = 5;
+
+/** A buyer's preview may start: the day's spend can be read (an unknown budget closes everything), and today's count is under the cap. */
+async function buyerPreviewLimit(gate: Gate, userId: string, product: PremiumId): Promise<Response | null> {
+  if ((await budgetState(gate.now)) === "unknown") return errorResponse("AI_UNAVAILABLE");
+  const used = await buyerPreviews(userId, product, gate.now);
+  if (used === null) return errorResponse("AI_UNAVAILABLE");
+  if (used >= BUYER_PREVIEWS_PER_DAY) return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), scope: "buyer" });
+  return null;
+}
 
 /**
  * POST /api/premium/<id>/teaser: the free preview (spec §5, the 시험 사용 of 전자상거래법 17조 2항 5호).
  * Open while the product is on sale for this device, or for a user who already bought it. Counts
  * as a teaser (daily cookie quota and the network counter), like the standard first-card preview,
  * and asks for a browser check first when Turnstile is on (lib/api/turnstile.ts). A buyer's preview
- * spends none of that and passes the free day's budget, like the paid reading it was bought for
- * (review 2026-10-16 #1): only a request with a session cookie asks the account.
+ * spends none of that and passes the free day's spent budget, like the paid reading it was bought for
+ * (review 2026-10-16 #1), but stops at BUYER_PREVIEWS_PER_DAY, closes while the budget is unknown, and
+ * books its cost as paid (review 2026-10-17 H2). Only a request with a session cookie asks the account;
+ * on a production deploy's test keys a purchase charged nobody, so its preview takes the ordinary path.
  */
 export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter<B, C>) {
   return async function POST(request: Request): Promise<Response> {
@@ -28,18 +44,23 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
     if (bot) return bot;
     const parsed = adapter.teaserBody.safeParse(await readJson(request, TEASER_MAX_BYTES));
     if (!parsed.success) return errorResponse("BAD_REQUEST");
-    const buyer = gate.cookies[sessionCookieName()] ? await holdsUnused(request, gate.now, adapter.id) : false;
+    const buyer = gate.cookies[sessionCookieName()] && !paymentsUnbacked() ? await unusedBuyer(request, gate.now, adapter.id) : null;
     if (!buyer && !premiumOpen(adapter.id, gate.owner, gate.now)) return errorResponse("NOT_AVAILABLE");
     const crisis = crisisResponse(...adapter.crisisTexts(parsed.data));
     if (crisis) return crisis;
     const ctx = await adapter.context(parsed.data, gate);
     if (ctx instanceof Response) return ctx;
+    if (buyer) {
+      const limited = await buyerPreviewLimit(gate, buyer, adapter.id);
+      if (limited) return limited;
+      await recordBuyerPreview(buyer, adapter.id, gate.now);
+    }
     const quota = buyer ? null : await checkQuota(gate, "teaser");
     if (quota instanceof Response) return quota;
     return respondGeneration(request, async (hooks) => {
       const preview = await adapter.teaser(gate.provider, ctx, hooks);
       return { body: { preview }, cookies: quota ? await spendCookies(gate, quota, "teaser") : [] };
-    }, { gate, ...(buyer ? {} : { spend: "teaser" as const }) });
+    }, { gate, ...(buyer ? { paidCost: true } : { spend: "teaser" as const }) });
   };
 }
 
