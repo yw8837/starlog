@@ -20,8 +20,12 @@
   }
 }
 
+/*
+ * The chart's room while it is computed: just under the real panel's height (766–870px measured from 320 to
+ * 1280px wide), never over it, so the page below barely moves when the chart comes in (M-07).
+ */
 .placeholder {
-  min-height: 420px;
+  min-height: 760px;
 }
 
 .failed {
