@@ -9,14 +9,15 @@ import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { checkoutHref } from "@/lib/pay/offer";
 import { opensAtText, premiumOffer } from "@/lib/premium/offer";
 import { PREMIUM, type PremiumId } from "@/lib/premium/products";
+import { refreshPremiumStatus } from "@/lib/premium/status";
 import type { ErrorView } from "@/lib/reading/errors";
 
 type PremiumUnlockProps = {
   id: PremiumId;
   /** useAccount(); undefined while it loads. */
   account: AccountState | null | undefined;
-  /** usePremiumStatus()[id]; undefined while it loads. */
-  status: { open: boolean; opensAt: number | null } | undefined;
+  /** usePremiumStatus()[id]; undefined while it loads, null when it could not be read. */
+  status: { open: boolean; opensAt: number | null } | null | undefined;
   /** Where login and checkout come back to (this preview). */
   returnTo: string;
   onOpen: (method: "paid" | "owner") => void;
@@ -100,6 +101,14 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
       break;
     case "closed":
       note = "준비 중이에요";
+      break;
+    case "unknown":
+      note = "지금 열 수 있는지 확인하지 못했어요";
+      primary = (
+        <Button variant="secondary" block onClick={() => void refreshPremiumStatus()}>
+          다시 확인하기
+        </Button>
+      );
       break;
     case "loading":
       break;

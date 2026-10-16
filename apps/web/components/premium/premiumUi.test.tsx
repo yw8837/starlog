@@ -1,15 +1,20 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AccountState } from "@/lib/account/client";
 import { premiumOffer } from "@/lib/premium/offer";
+import { resetPremiumStatusForTests, usePremiumStatus } from "@/lib/premium/status";
 import { DeepTarotArticle } from "./DeepTarotArticle";
 import { MatchArticle } from "./MatchArticle";
 import { NewYearArticle } from "./NewYearArticle";
 import { PremiumProgress } from "./PremiumProgress";
 import { PremiumUnlock } from "./PremiumUnlock";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  resetPremiumStatusForTests();
+});
 
 type Unused = { orderId: string; productId: string; refundable?: false };
 const user = (unused: Unused[] = [], opening: Array<{ productId: string; currency: "paid" }> = []) =>
@@ -33,6 +38,34 @@ describe("premiumOffer", () => {
     expect(premiumOffer(account(), "newyear-2027", { open: false, opensAt: NOV15 }, NOV15 + 1)).toEqual({ mode: "closed" });
     expect(premiumOffer(account(), "match", undefined, OCT)).toEqual({ mode: "loading" });
     expect(premiumOffer(undefined, "match", OPEN, OCT)).toEqual({ mode: "loading" });
+  });
+
+  it("says the sales state could not be read (null) instead of loading forever; a held purchase still opens", () => {
+    expect(premiumOffer(account(), "match", null, OCT)).toEqual({ mode: "unknown" });
+    expect(premiumOffer(account({ user: user([{ orderId: "o", productId: "match" }]) }), "match", null, OCT)).toEqual({ mode: "open-paid" });
+  });
+});
+
+describe("premium status when it cannot be read", () => {
+  /** The panel as a preview screen wires it: the status hook's value for this product. */
+  function Panel() {
+    const status = usePremiumStatus();
+    return <PremiumUnlock id="match" account={account({ user: user() })} status={status === null ? null : status?.match} returnTo="/x" onOpen={vi.fn()} />;
+  }
+
+  it("offers 다시 확인하기 after a failed status call, asks again, and then sells", async () => {
+    const answers = [
+      () => Promise.reject(new TypeError("offline")),
+      () => Promise.resolve(Response.json({ products: [{ id: "match", open: true, visible: true, opensAt: null }] })),
+    ];
+    const fetchMock = vi.fn(() => answers.shift()!());
+    vi.stubGlobal("fetch", fetchMock);
+    render(<Panel />);
+    expect(await screen.findByText("지금 열 수 있는지 확인하지 못했어요")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "다시 확인하기" }));
+    expect(await screen.findByRole("link", { name: "7,900원 결제하고 보기" })).toBeTruthy();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 });
 

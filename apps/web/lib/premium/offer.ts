@@ -11,7 +11,8 @@ import { PREMIUM, type PremiumId } from "./products";
  *   `refundable: false` when it was given back after its reading was cut off while written;
  * - login / pay: on sale for this device;
  * - soon: not on sale yet, opening at `opensAt` (2027 신년운세 before 2026-11-15);
- * - closed: not on sale.
+ * - closed: not on sale;
+ * - unknown: the sales state could not be read (null): say so and ask again, sell nothing on a guess.
  * The owner pass adds its own quiet choice in the panel; the signup gift never opens premium.
  */
 export type PremiumOffer =
@@ -21,12 +22,13 @@ export type PremiumOffer =
   | { mode: "login"; priceKrw: number }
   | { mode: "pay"; priceKrw: number }
   | { mode: "soon"; opensAt: number }
-  | { mode: "closed" };
+  | { mode: "closed" }
+  | { mode: "unknown" };
 
 export function premiumOffer(
   account: AccountState | null | undefined,
   id: PremiumId,
-  status: { open: boolean; opensAt: number | null } | undefined,
+  status: { open: boolean; opensAt: number | null } | null | undefined,
   now: number = Date.now(),
 ): PremiumOffer {
   if (account === undefined) return { mode: "loading" };
@@ -37,6 +39,7 @@ export function premiumOffer(
     if (bought) return { mode: "open-paid", ...(bought.refundable === false ? { refundable: false as const } : {}) };
   }
   if (status === undefined) return { mode: "loading" };
+  if (status === null) return { mode: "unknown" };
   if (!status.open) return status.opensAt !== null && status.opensAt > now ? { mode: "soon", opensAt: status.opensAt } : { mode: "closed" };
   return user ? { mode: "pay", priceKrw: PREMIUM[id].krw } : { mode: "login", priceKrw: PREMIUM[id].krw };
 }
