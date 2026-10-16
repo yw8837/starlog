@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { SITE, businessFields } from "@/lib/config";
 import { guideHostServes, linkHref, type SiteHost } from "@/lib/hosts";
 import { INFO_PAGES, SERVICE_LINKS } from "@/lib/infoPages";
 import { LEGAL_LINKS } from "@/lib/legal";
+import { PremiumFooterLink } from "./PremiumFooterLink";
 import styles from "./Footer.module.css";
 
 type FooterLink = { href: string; label: string; emphasis?: boolean };
@@ -40,12 +42,16 @@ export function Footer({ host = "app" }: { host?: SiteHost | "either" }) {
         <nav className={styles.nav} aria-label="사이트 안내">
           <ul className={styles.links}>
             {LINKS.map((link) => (
-              <li key={link.href}>
-                {/* The root domain renders this footer on /about, /privacy and /terms too (F-05). */}
-                <Link href={linkHref(link.href, host)} prefetch={guideHostServes(link.href) ? undefined : false} className={styles.link}>
-                  {link.emphasis ? <strong className={styles.strong}>{link.label}</strong> : link.label}
-                </Link>
-              </li>
+              <Fragment key={link.href}>
+                <li>
+                  {/* The root domain renders this footer on /about, /privacy and /terms too (F-05). */}
+                  <Link href={linkHref(link.href, host)} prefetch={guideHostServes(link.href) ? undefined : false} className={styles.link}>
+                    {link.emphasis ? <strong className={styles.strong}>{link.label}</strong> : link.label}
+                  </Link>
+                </li>
+                {/* 프리미엄 풀이 after 가격 안내 where premium is visible (plan-reconciled §4.5); nothing while it is off. */}
+                {link.href === "/pricing" ? <PremiumFooterLink host={host} /> : null}
+              </Fragment>
             ))}
           </ul>
         </nav>

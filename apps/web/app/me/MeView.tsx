@@ -20,6 +20,7 @@ import { forgetAccountOnDevice, useAccountSync } from "@/lib/storage/sync";
 import { AccountPanel } from "./AccountPanel";
 import { DeckSettings } from "./DeckSettings";
 import { InviteCodeRow } from "./InviteCodeRow";
+import { PremiumMenuRow } from "./PremiumMenuRow";
 import s from "./MeView.module.css";
 import a from "./account.module.css";
 
@@ -155,6 +156,8 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
               </Link>
             </li>
             <InviteCodeRow />
+            {/* 프리미엄 풀이 보기 where premium is visible (plan-reconciled §4.4); nothing while it is off. */}
+            <PremiumMenuRow />
             <li>
               <Link href="/terms" className={s.item}>
                 <span>이용약관</span>
