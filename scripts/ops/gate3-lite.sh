@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Deploy gate v3 (uq-gate + local D1 migrations), run in the isolated clone on committed code only.
-SP="${DEPLOY_SP:-/c/Users/최용우/AppData/Local/Temp/claude/D--Money-apps/4114789f-d0ea-4824-9406-16baa6850970/scratchpad}"   # folder holding the isolated clone ./deploy
+SP="${DEPLOY_SP:-/d/Money/.starlog-ops}"   # folder holding the isolated clone ./deploy (out of %TEMP%: Windows cleaned files out of the old one, 10/16 and 10/17)
 D="$SP/deploy"; LOG="${OPS_LOG:-$HOME/starlog-ops}/gate3"; mkdir -p "$LOG"; rm -f "$LOG"/*.log
 step() { echo "[$(date +%H:%M:%S)] $*" | tee -a "$LOG/summary.log"; }
 source "$(dirname "$0")/preclean.sh"; preclean
 # stale previews/dev servers from earlier gates would answer on 8787/3100 with an old build
 for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 # A failed fetch used to leave the clone on its old commit and the gate tested that (10/14): stop instead.
-cd "$D" && git checkout -q -- . && git fetch -q /d/Money/apps/saju-tarot feat/p1-foundation && git checkout -q --detach FETCH_HEAD   || { step "STOP: could not move the clone to feat/p1-foundation (if objects are missing: git -c fetch.negotiationAlgorithm=noop fetch)"; exit 8; }
+cd "$D" && git checkout -q -- . && { git fetch -q /d/Money/apps/saju-tarot feat/p1-foundation || git -c fetch.negotiationAlgorithm=noop fetch -q /d/Money/apps/saju-tarot feat/p1-foundation; } && git checkout -q --detach FETCH_HEAD   || { step "STOP: could not move the clone to feat/p1-foundation (if objects are missing: git -c fetch.negotiationAlgorithm=noop fetch)"; exit 8; }
 [ "$(git rev-parse HEAD)" = "$(git -C /d/Money/apps/saju-tarot rev-parse feat/p1-foundation)" ] || { step "STOP: clone HEAD is not feat/p1-foundation"; exit 8; }
 step "HEAD $(git log --oneline -1)"
 pnpm install --frozen-lockfile > "$LOG/install.log" 2>&1; step "install exit=$?"
@@ -36,7 +36,7 @@ kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 # processes outlived the gate and a later preview on 8787 answered from a dead one (2026-10-16).
 # Killed one pass at a time, wrangler restarted the runtime it lost ("runtime crashed ... being restarted") and the new
 # workerd kept 8787 and ~1 GB (2026-10-16): stop the whole set in PowerShell, again until none is left.
-powershell -NoProfile -Command "for (\$i = 0; \$i -lt 6; \$i++) { \$ps = Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe' or Name='esbuild.exe'\" | Where-Object { \$_.CommandLine -and (\$_.CommandLine -like '*scratchpad\deploy*' -or \$_.CommandLine -like '*scratchpad/deploy*') }; if (-not \$ps) { break }; \$ps | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 1 }"
+powershell -NoProfile -Command "for (\$i = 0; \$i -lt 6; \$i++) { \$ps = Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe' or Name='esbuild.exe'\" | Where-Object { \$_.CommandLine -and (\$_.CommandLine -like '*starlog-ops\deploy*' -or \$_.CommandLine -like '*starlog-ops/deploy*') }; if (-not \$ps) { break }; \$ps | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 1 }"
 for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 sleep 3
 STARLOG_AI=mock pnpm e2e e2e/pay-flow.spec.ts --workers=1 --project=desktop --project=mobile --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"

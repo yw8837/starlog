@@ -3,7 +3,7 @@
 # usage: bash deploy.sh <full-or-short-sha-that-gate3-passed>
 set -u
 SHA="${1:?gated commit sha required}"
-SP="${DEPLOY_SP:-/c/Users/최용우/AppData/Local/Temp/claude/D--Money-apps/4114789f-d0ea-4824-9406-16baa6850970/scratchpad}"   # folder holding the isolated clone ./deploy
+SP="${DEPLOY_SP:-/d/Money/.starlog-ops}"   # folder holding the isolated clone ./deploy (out of %TEMP%: Windows cleaned files out of the old one, 10/16 and 10/17)
 D="$SP/deploy"
 LOG="${OPS_LOG:-$HOME/starlog-ops}/deploy-run"
 mkdir -p "$LOG"; rm -f "$LOG"/*.log
@@ -12,7 +12,7 @@ source "$(dirname "$0")/preclean.sh"; preclean
 for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 
 cd "$D" || exit 1
-git checkout -q -- . && git fetch -q /d/Money/apps/saju-tarot feat/p1-foundation && git checkout -q --detach "$SHA" || { step "checkout $SHA failed"; exit 1; }
+git checkout -q -- . && { git fetch -q /d/Money/apps/saju-tarot feat/p1-foundation || git -c fetch.negotiationAlgorithm=noop fetch -q /d/Money/apps/saju-tarot feat/p1-foundation; } && git checkout -q --detach "$SHA" || { step "checkout $SHA failed"; exit 1; }
 BUILD_ID="$(git rev-parse --short=12 HEAD)"
 step "HEAD $(git log --oneline -1)"
 pnpm install --frozen-lockfile > "$LOG/install.log" 2>&1; step "install exit=$?"
