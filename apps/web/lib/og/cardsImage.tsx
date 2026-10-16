@@ -271,3 +271,48 @@ export function shareOgImage(data: ShareOgData): ReactElement {
 export function shareOgText(data: ShareOgData): { serif: string; sans: string } {
   return { serif: `스타로그${data.headline}`, sans: `STARLOG ${data.label} ${data.body ?? ""} ${data.host}` };
 }
+
+// ---- 프리미엄 풀이 (P5 task 23; 1080×1350, or the story size) ----
+
+/** A premium share: the product's line, the cards or the year's title, the host. Never a question, a name or a birth. */
+export interface PremiumShareData {
+  /** "심층 타로 · 카드 10장" / "우리 사이 · 친구" / "2027년, 차근차근 쌓아 가는 해" */
+  headline: string;
+  cards: { cardId: string; orientation: Orientation }[];
+  host: string;
+  width: number;
+  height: number;
+}
+
+export const PREMIUM_SHARE = { width: 1080, height: 1350 } as const;
+
+export function premiumShareImage(data: PremiumShareData): ReactElement {
+  const { width, height } = data;
+  // Ten cards in two rows of five, five in one row; none for the year.
+  const rows = data.cards.length > 5 ? [data.cards.slice(0, 5), data.cards.slice(5)] : data.cards.length ? [data.cards] : [];
+  const plate = data.cards.length > 5 ? 170 : 180;
+  const top = Math.round(height * (rows.length ? 0.2 : 0.36));
+  return frame(width, height, [
+    <div key="body" style={{ position: "absolute", left: 0, top, width, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ display: "flex", color: GOLD, fontSize: 30, fontWeight: 700, letterSpacing: 8 }}>STARLOG</div>
+      <div style={{ display: "flex", marginTop: 34, width: 900, justifyContent: "center", textAlign: "center", fontFamily: "Serif", fontSize: rows.length ? 60 : 80, fontWeight: 700, lineHeight: 1.35 }}>
+        {data.headline}
+      </div>
+      {rows.map((row, r) => (
+        <div key={`row-${r}`} style={{ display: "flex", marginTop: r === 0 ? 80 : 26, gap: 18 }}>
+          {row.map((card, i) => (
+            <CardPlate key={`${card.cardId}-${r}-${i}`} cardId={card.cardId} orientation={card.orientation} width={plate} />
+          ))}
+        </div>
+      ))}
+    </div>,
+    <div key="host" style={{ position: "absolute", left: 0, bottom: 110, width, display: "flex", justifyContent: "center", color: GOLD, fontSize: 30, letterSpacing: 2 }}>
+      {data.host}
+    </div>,
+  ]);
+}
+
+export function premiumShareText(data: PremiumShareData): { serif: string; sans: string } {
+  const names = data.cards.map((c) => `${getCard(c.cardId).roman ?? ""}${getCard(c.cardId).names.ko}`).join("");
+  return { serif: `${data.headline}${names}`, sans: `STARLOG 역방향 ${data.host}` };
+}
