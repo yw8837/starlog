@@ -2,7 +2,7 @@ import { TEMPLATES, TOPICS_BY_WHO, composeQuestion, createDeck, pickCards, type 
 import sajuSample from "@content/samples/saju-prologue.ko.json";
 import tarotSample from "@content/samples/tarot-contact.ko.json";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { kbCard } from "@/lib/kb";
 import { FALLBACK_BETA, MODEL, buildRequest } from "./anthropic";
 import { generateTarotReading, generateTarotTeaser, withWrittenCards } from "./generate";
@@ -497,6 +497,18 @@ describe("provider selection", () => {
     expect(selectProvider(env({ NODE_ENV: "production", STARLOG_AI: "mock" }))?.name).toBe("mock");
     expect(selectProvider(env({ NODE_ENV: "development" }))?.name).toBe("mock");
     expect(selectProvider(env({ NODE_ENV: "test", ANTHROPIC_API_KEY: "sk-test" }))?.name).toBe("anthropic");
+  });
+
+  it("goes through the starlog-ai proxy in production when the AI_PROXY binding is there, key or not; mock still wins", async () => {
+    const proxy = { fetch: vi.fn(async () => new Response('{"type":"error","error":{"type":"invalid_request_error"}}', { status: 400 })) };
+    const viaProxy = selectProvider(env({ NODE_ENV: "production" }), proxy);
+    expect(viaProxy?.name).toBe("anthropic");
+    const task = { name: "tarot-teaser" as const, system: "s", user: "u", schema: OneCardTeaserDraftSchema, effort: "low" as const, maxTokens: 10, mock: () => ({}) as never };
+    await expect(viaProxy!.generate(task, 1)).rejects.toMatchObject({ code: "UPSTREAM" });
+    expect(proxy.fetch).toHaveBeenCalledTimes(1);
+    expect(selectProvider(env({ NODE_ENV: "production", STARLOG_AI: "mock" }), proxy)?.name).toBe("mock");
+    // `next dev` may carry the binding with no proxy behind it: outside production it is ignored
+    expect(selectProvider(env({ NODE_ENV: "development" }), proxy)?.name).toBe("mock");
   });
 });
 

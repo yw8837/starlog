@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { describe, expect, it, vi } from "vitest";
-import { anthropicProvider, type MessagesClient } from "./anthropic";
+import { FALLBACK_BETA, anthropicProvider, anthropicProxyProvider, proxyFetch, type MessagesClient } from "./anthropic";
 import { GenerationError, failureStatus, generateValidated, type GenerationTask } from "./provider";
 import { FollowUpAnswerSchema, type FollowUpAnswer } from "./schemas";
 
@@ -202,5 +202,78 @@ describe("anthropic provider response handling (fake SDK)", () => {
       ["claude-opus-5-5", 80, 0, 70],
       ["claude-opus-5", 90, 40, 0],
     ]);
+  });
+});
+
+describe("through the starlog-ai proxy (service binding)", () => {
+  type Call = { url: string; init: RequestInit };
+  const encoder = new TextEncoder();
+  const sse = (events: Array<Record<string, unknown>>) => events.map((e) => `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`).join("");
+  const reply = (text: string) => sse([
+    { type: "message_start", message: { id: "msg_1", type: "message", role: "assistant", model: "claude-opus-5-5", content: [], stop_reason: null, stop_sequence: null, usage: { input_tokens: 100, output_tokens: 1, cache_read_input_tokens: 20, cache_creation_input_tokens: 30 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: text.slice(0, 10) } },
+    { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: text.slice(10) } },
+    { type: "content_block_stop", index: 0 },
+    { type: "message_delta", delta: { stop_reason: "end_turn", stop_sequence: null }, usage: { output_tokens: 50 } },
+    { type: "message_stop" },
+  ]);
+  /** A fake AI_PROXY binding: records each call and answers with the given event stream. */
+  const binding = (answer: (init: RequestInit) => Response) => {
+    const calls: Call[] = [];
+    return { calls, fetch: async (input: string | URL | Request, init?: RequestInit) => {
+      calls.push({ url: String(input), init: init ?? {} });
+      return answer(init ?? {});
+    } };
+  };
+  const eventStream = (body: ReadableStream<Uint8Array> | string) => new Response(body, { headers: { "content-type": "text/event-stream" } });
+
+  it("drops the key header and keeps URL, method, body and signal", async () => {
+    const proxy = binding(() => new Response("{}"));
+    const signal = new AbortController().signal;
+    await proxyFetch(proxy)("https://api.anthropic.com/v1/messages?beta=true", {
+      method: "POST", body: "{\"a\":1}", signal, headers: { "x-api-key": "sk-ant-real", "anthropic-version": "2023-06-01" },
+    });
+    const { url, init } = proxy.calls[0]!;
+    expect(url).toBe("https://api.anthropic.com/v1/messages?beta=true");
+    expect([init.method, init.body, init.signal]).toEqual(["POST", "{\"a\":1}", signal]);
+    expect(Object.fromEntries(new Headers(init.headers))).toEqual({ "anthropic-version": "2023-06-01" });
+  });
+
+  it("streams a reading through the real SDK: text as it comes, parsed data and usage, the request as the API expects it", async () => {
+    const proxy = binding(() => eventStream(reply(ANSWER)));
+    const snapshots: string[] = [];
+    const result = await anthropicProxyProvider(proxy).generate(task(), 1, undefined, { onText: (s) => snapshots.push(s) });
+    expect(result.data).toEqual(JSON.parse(ANSWER));
+    expect(result.usage).toEqual([{ model: "claude-opus-5-5", inputTokens: 100, outputTokens: 50, cacheReadTokens: 20, cacheWriteTokens: 30 }]);
+    expect(snapshots.at(-1)).toBe(ANSWER);
+    expect(snapshots.length).toBeGreaterThan(1);
+    expect(proxy.calls).toHaveLength(1);
+    const { url, init } = proxy.calls[0]!;
+    expect(new URL(url).pathname).toBe("/v1/messages");
+    const headers = new Headers(init.headers);
+    expect(headers.has("x-api-key")).toBe(false);
+    expect(headers.get("anthropic-beta")).toContain(FALLBACK_BETA);
+    expect(JSON.parse(String(init.body))).toMatchObject({ model: "claude-opus-5-5", stream: true, fallbacks: "default" });
+  });
+
+  it("cancels the proxied call when the caller's signal aborts", async () => {
+    let upstreamSignal: AbortSignal | undefined;
+    const proxy = binding((init) => {
+      upstreamSignal = init.signal ?? undefined;
+      // starts answering, then hangs until cancelled, like a long reading
+      return eventStream(new ReadableStream<Uint8Array>({
+        start(c) {
+          c.enqueue(encoder.encode(reply(ANSWER).split("event: content_block_delta")[0]!));
+          init.signal?.addEventListener("abort", () => c.error(new DOMException("aborted", "AbortError")));
+        },
+      }));
+    });
+    const controller = new AbortController();
+    const pending = anthropicProxyProvider(proxy).generate(task(), 1, undefined, { signal: controller.signal });
+    await vi.waitFor(() => expect(upstreamSignal).toBeDefined());
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ code: "UPSTREAM" });
+    expect(upstreamSignal!.aborted).toBe(true);
   });
 });

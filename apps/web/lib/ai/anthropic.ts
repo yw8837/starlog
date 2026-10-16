@@ -1,6 +1,7 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+import type { ServiceBinding } from "@/lib/cloudflare";
 import { DEFAULT_MODEL } from "./config";
 import { GenerationError, type GenerationHooks, type GenerationTask, type ReadingProvider, type Usage } from "./provider";
 
@@ -30,6 +31,36 @@ function client(apiKey: string): Anthropic {
     clients.set(apiKey, c);
   }
   return c;
+}
+
+/**
+ * The SDK's fetch through the starlog-ai Worker (ai-proxy/worker.mjs, near the API, holding the key): the same URL, method, body and AbortSignal (so streaming, cancelling
+ * and usage work as before), minus the x-api-key header; the proxy adds the real key.
+ */
+export function proxyFetch(proxy: ServiceBinding) {
+  return (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+    const headers = new Headers(init?.headers);
+    headers.delete("x-api-key");
+    return proxy.fetch(input, { ...init, headers });
+  };
+}
+
+/** The SDK insists on a key; proxyFetch drops this one before the call leaves the Worker. */
+const KEY_SET_BY_PROXY = "set-by-starlog-ai";
+const proxyClients = new WeakMap<ServiceBinding, Anthropic>();
+
+export function proxyClient(proxy: ServiceBinding): Anthropic {
+  let c = proxyClients.get(proxy);
+  if (!c) {
+    c = new Anthropic({ apiKey: KEY_SET_BY_PROXY, timeout: TIMEOUT_MS, maxRetries: 1, fetch: proxyFetch(proxy) });
+    proxyClients.set(proxy, c);
+  }
+  return c;
+}
+
+/** The production provider: the same calls, sent through the starlog-ai Worker (service binding AI_PROXY). */
+export function anthropicProxyProvider(proxy: ServiceBinding): ReadingProvider {
+  return anthropicProvider(KEY_SET_BY_PROXY, proxyClient(proxy));
 }
 
 /** The request body; exported so tests can pin its shape without calling the API. */

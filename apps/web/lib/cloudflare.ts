@@ -13,6 +13,11 @@ export interface KvBinding {
   delete(key: string): Promise<void>;
 }
 
+/** A service binding to another Worker (Fetcher), as far as the app calls it. */
+export interface ServiceBinding {
+  fetch(input: string | URL | Request, init?: RequestInit): Promise<Response>;
+}
+
 declare global {
   interface CloudflareEnv {
     GEN_LIMITER?: RateLimitBinding;
@@ -25,6 +30,8 @@ declare global {
     WEBHOOK_LIMITER?: RateLimitBinding;
     ME_LIMITER?: RateLimitBinding;
     DAILY_KV?: KvBinding;
+    /** The starlog-ai Worker (ai-proxy/), the way to the Anthropic API (lib/ai/provider.ts selectProvider) */
+    AI_PROXY?: ServiceBinding;
     /** Worker secrets read from here, never process.env (lib/account/review.ts, lib/account/google.ts) */
     REVIEW_LOGIN_ID?: string;
     REVIEW_LOGIN_PASSWORD?: string;

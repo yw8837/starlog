@@ -15,17 +15,22 @@
     {
       "binding": "WORKER_SELF_REFERENCE",
       "service": "starlog"
+    },
+    // The Anthropic API goes through the starlog-ai Worker (ai-proxy/), which runs near the API and holds the key
+    // (lib/ai/provider.ts). Deploy it before this Worker: the binding needs it to exist.
+    {
+      "binding": "AI_PROXY",
+      "service": "starlog-ai"
     }
   ],
   "observability": {
     "enabled": true
   },
-  // Run the Worker near the Anthropic API. Korean visitors on Cloudflare's free zone plan are often served
-  // from Hong Kong, and the Anthropic API answers 403 "Request not allowed" to requests leaving from there.
-  // "region": "aws:ap-northeast-1" stopped being applied (2026-10-15: a probe Worker with it ran in HKG 6 of
-  // 12 times, production 7 of 10, and the owner's saju teasers all failed); a hostname probe placed the same
-  // probe in MIA 12 of 12, where Anthropic answers.
-  "placement": { "hostname": "api.anthropic.com" },
+  // Placement off: the Worker runs where the visitor's request lands, near them and D1. From 2026-10-15 to 10-16 it
+  // carried "placement": { "hostname": "api.anthropic.com" } (Anthropic answers 403 "Request not allowed" to Hong
+  // Kong, where Korean visitors on the free zone plan often land), which put every page in MIA/LHR at 0.4–1 s TTFB.
+  // That placement now sits on the starlog-ai proxy only (AI_PROXY above). "off" is explicit so a deploy clears it.
+  "placement": { "mode": "off" },
   // Production origins: the app (SITE.url) and, on the root domain, the guides (SITE.guideUrl).
   // Wrangler creates the DNS records and certificates on deploy; an existing A, AAAA or CNAME
   // record on the root domain can block that (docs/seo/guide-domain.md). lib/hostRoutes.ts sends

@@ -1,6 +1,7 @@
 import "server-only";
 import type { z } from "zod";
-import { anthropicProvider } from "./anthropic";
+import { cloudflareEnv, type ServiceBinding } from "@/lib/cloudflare";
+import { anthropicProvider, anthropicProxyProvider } from "./anthropic";
 import type { Effort, ModelId } from "./config";
 import { mockProvider } from "./mock";
 import { isSoftViolation, softWarrantsRegeneration, stripBold } from "./style";
@@ -95,12 +96,13 @@ export interface ReadingProvider {
 }
 
 /**
- * `mock` when STARLOG_AI=mock, or outside production without a key; `anthropic` when a key is set;
- * null (routes answer 503 AI_UNAVAILABLE) in production without a key.
+ * `mock` when STARLOG_AI=mock, or outside production without a key; `anthropic` through the starlog-ai Worker
+ * in production when the AI_PROXY binding is there (the proxy holds the key), else with a key set here;
+ * null (routes answer 503 AI_UNAVAILABLE) in production with neither.
  */
 let warnedMockInProduction = false;
 
-export function selectProvider(env: NodeJS.ProcessEnv = process.env): ReadingProvider | null {
+export function selectProvider(env: NodeJS.ProcessEnv = process.env, proxy: ServiceBinding | null = cloudflareEnv()?.AI_PROXY ?? null): ReadingProvider | null {
   if (env.STARLOG_AI === "mock") {
     // Meant for e2e on a production build; on a real deployment it would hide the real key.
     if (env.NODE_ENV === "production" && env.ANTHROPIC_API_KEY?.trim() && !warnedMockInProduction) {
@@ -109,6 +111,9 @@ export function selectProvider(env: NodeJS.ProcessEnv = process.env): ReadingPro
     }
     return mockProvider;
   }
+  // The main Worker runs near its visitors, where the API may refuse the region (Hong Kong); the proxy runs near
+  // the API. Production only: `next dev` with STARLOG_CF_DEV=1 has the binding too, but no proxy running behind it.
+  if (proxy && env.NODE_ENV === "production") return anthropicProxyProvider(proxy);
   const key = env.ANTHROPIC_API_KEY?.trim();
   if (key) return anthropicProvider(key);
   return env.NODE_ENV === "production" ? null : mockProvider;
