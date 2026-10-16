@@ -34,7 +34,13 @@ describe("premium products", () => {
     expect(inWindow(PREMIUM.match, 0)).toBe(true);
   });
 
-  it("never names the ten-card spread after its tradition, never says 베타", () => {
-    expect(JSON.stringify(PREMIUM)).not.toMatch(/켈틱|셀틱|celtic|베타/i);
+  it("calls the ten-card spread 켈틱 크로스 on screens only (owner 2026-10-16): never in the name, scope or parts checkout and receipts show; never 베타", () => {
+    expect([PREMIUM["tarot-deep"].entry, PREMIUM.match.entry, PREMIUM["newyear-2027"].entry]).toEqual(["켈틱 크로스 10장", "프리미엄 궁합", "2027 신년운세"]);
+    const shown = PREMIUM_IDS.map((id) => {
+      const { entry: _entry, ...rest } = PREMIUM[id];
+      return rest;
+    });
+    expect(JSON.stringify(shown)).not.toMatch(/켈틱|셀틱|celtic/i);
+    expect(JSON.stringify(PREMIUM)).not.toMatch(/베타/);
   });
 });

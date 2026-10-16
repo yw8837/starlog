@@ -26,7 +26,8 @@ describe("premium spreads", () => {
     expect([...PREMIUM_TEMPLATES]).toEqual(["deep-tarot", "match"]);
   });
 
-  it("never names the ten-card spread after its tradition", () => {
+  // Screens may call it 켈틱 크로스 (owner 2026-10-16, lib/premium/products.ts `entry`); these positions reach the model, which never names it.
+  it("never names the ten-card spread after its tradition in what the reading is written from", () => {
     expect(JSON.stringify(TEMPLATES)).not.toMatch(/켈틱|셀틱|celtic/i);
   });
 });

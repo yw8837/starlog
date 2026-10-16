@@ -27,24 +27,32 @@ export interface PremiumSpec {
   parts: readonly string[];
   /** checkout's three scope lines (P4 CheckoutView) */
   scope: readonly string[];
+  /**
+   * What the entries call it (the 다리 화면, the saju list, the builder's chip): "켈틱 크로스 10장" may be said on
+   * screens (owner 2026-10-16), never in `name`, checkout, receipts or the reading, which say positions only.
+   */
+  entry: string;
   opensAt?: number;
   closesAt?: number;
 }
 
-type Local = Pick<PremiumSpec, "followUps" | "approxChars" | "approxMinutes" | "parts" | "scope">;
+type Local = Pick<PremiumSpec, "followUps" | "approxChars" | "approxMinutes" | "parts" | "scope" | "entry">;
 
 const LOCAL: Record<PremiumId, Local> = {
   "tarot-deep": {
     followUps: 5, approxChars: 5000, approxMinutes: 3, parts: ["자리별 풀이", "엮어 읽기"],
     scope: ["카드 10장 풀이 전체 · 약 5,000자", "이어서 물어보기 5번", "이 기기와 계정에 보관"],
+    entry: "켈틱 크로스 10장",
   },
   match: {
     followUps: 5, approxChars: 5000, approxMinutes: 3, parts: ["사주로 본 두 사람", "카드로 본 지금"],
     scope: ["사주 궁합과 카드 5장 풀이 전체 · 약 5,000자", "이어서 물어보기 5번", "이 기기와 계정에 보관"],
+    entry: "프리미엄 궁합",
   },
   "newyear-2027": {
     followUps: 5, approxChars: 6800, approxMinutes: 4, parts: ["한 해의 큰 흐름", "1월~6월", "7월~12월"],
     scope: ["2027년 한 해와 열두 달 풀이 전체 · 약 6,800자", "이어서 물어보기 5번", "이 기기와 계정에 보관"],
+    entry: "2027 신년운세",
   },
 };
 

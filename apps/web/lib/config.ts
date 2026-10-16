@@ -40,8 +40,9 @@ export const SITE = {
     sajuStandardKrw: 4900,
     /**
      * Premium readings (P5). Sales open with STARLOG_PREMIUM (lib/premium/flags.ts) and, for a dated
-     * product, inside [opensAt, closesAt) (KST ISO, "" when undated). The 10-card spread is never
-     * named after its tradition in the UI.
+     * product, inside [opensAt, closesAt) (KST ISO, "" when undated). Screens may call the 10-card spread
+     * 켈틱 크로스 (owner 2026-10-16, lib/premium/products.ts `entry`); these names (checkout, receipts) and the
+     * reading never do.
      */
     premium: [
       { id: "tarot-deep", slug: "deep-tarot", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, opens: "", opensAt: "", closesAt: "" },
