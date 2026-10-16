@@ -46,7 +46,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!gate.owner && answered >= cap) return errorResponse("BETA_LIMIT", { scope: "chapter", remaining: 0 });
   // The same test as a premium reading's (lib/premium/unlock.ts, security M2): a test payment charged nobody.
   const paid = premium && !(process.env.NODE_ENV === "production" && payKeyMode() === "test");
-  const limited = premium ? await checkServerLimits(gate, "followup", { scope: "day" }, { credit: paid }) : null;
+  const limited = premium ? await checkServerLimits(gate, "followup", { scope: "day" }, { credit: paid, paid }) : null;
   if (limited) return limited;
   const quota = premium ? null : await checkQuota(gate, "followup", { scope: "day" });
   if (quota instanceof Response) return quota;

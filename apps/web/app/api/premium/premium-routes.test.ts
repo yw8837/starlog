@@ -531,6 +531,16 @@ describe("premium follow-ups (P5 spec §6.3)", () => {
     expect(await networkCostKrw(await keyedHash(`client:${address}`, signingSecret()!), Date.now())).toBe(0);
   });
 
+  it("answers a paid follow-up on a day whose free budget is spent, like the paid reading itself", async () => {
+    useTestDb();
+    const b = await shopper();
+    await buy(b, "tarot-deep");
+    const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
+    const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "이번 달 지출은 어떻게 줄이면 좋을까요?" } });
+    expect(res.status).toBe(200);
+  });
+
   it("refuses a premium chapter whose reading was changed, generating nothing", async () => {
     useTestDb();
     const b = browser("192.0.2.47");

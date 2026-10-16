@@ -294,12 +294,14 @@ const CLOSED_FOR_OWNER_TOO: ReadonlySet<SpendKind> = new Set(["full", "teaser"])
  *   (spend.ts overNetworkBudget, SEC-01). Owners and `credit` openings (the signup gift, a purchase)
  *   skip it. A network total that cannot be read counts 0: the budget check above already closes
  *   when KV is down.
+ * `paid`: a generation paid for on real keys (a premium follow-up) is not stopped by the free day's
+ * budget, like a paid opening (which never asks it); a total that cannot be trusted still stops it.
  */
 export async function checkServerLimits(
-  gate: Gate, kind: SpendKind, extra: Record<string, unknown> = {}, { credit = false }: { credit?: boolean } = {},
+  gate: Gate, kind: SpendKind, extra: Record<string, unknown> = {}, { credit = false, paid = false }: { credit?: boolean; paid?: boolean } = {},
 ): Promise<Response | null> {
   const budget = await budgetState(gate.now);
-  if (budget === "over") return errorResponse("AI_UNAVAILABLE", { reason: "budget", resetsAt: nextKstMidnight(gate.now), message: BUDGET_MESSAGE });
+  if (budget === "over" && !paid) return errorResponse("AI_UNAVAILABLE", { reason: "budget", resetsAt: nextKstMidnight(gate.now), message: BUDGET_MESSAGE });
   if (budget === "unknown" && (!gate.owner || CLOSED_FOR_OWNER_TOO.has(kind))) return errorResponse("AI_UNAVAILABLE");
   if (!gate.owner && (await clientCount(gate.client, kind, gate.now)) >= ipLimits()[kind]) {
     return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, scope: "network", message: NETWORK_LIMIT_MESSAGE });

@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
-import { resetDailyStore } from "./dailyStore";
+import { dailyStore, resetDailyStore } from "./dailyStore";
 import { checkServerLimits, readJson, type Gate } from "./http";
-import { NETWORK_BUDGET_SHARE, addNetworkCost, resetSpendState } from "./spend";
+import { NETWORK_BUDGET_SHARE, addCost, addNetworkCost, resetSpendState } from "./spend";
 
 const NOW = Date.parse("2026-10-14T03:00:00Z"); // 12:00 KST
 const DAY = 24 * 60 * 60 * 1000;
@@ -60,5 +60,17 @@ describe("free-tier cost per network", () => {
     expect(await checkServerLimits(gate(), "teaser")).toBeNull();
     vi.stubEnv("BETA_NETWORK_BUDGET_SHARE", "not-a-number");
     expect((await checkServerLimits(gate(), "teaser"))?.status).toBe(429);
+  });
+});
+
+describe("a paid generation and the free daily budget", () => {
+  it("passes a day whose free budget is spent, but not a total that cannot be read", async () => {
+    await addCost(9_000, NOW); // past 80% of 10,000
+    expect((await checkServerLimits(gate(), "followup", {}, { credit: true }))?.status).toBe(503);
+    expect(await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true })).toBeNull();
+    vi.spyOn(dailyStore(), "get").mockRejectedValue(new Error("KV GET failed"));
+    const unknown = await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true });
+    expect(unknown?.status).toBe(503);
+    expect(await unknown!.json()).toMatchObject({ code: "AI_UNAVAILABLE" });
   });
 });
