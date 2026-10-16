@@ -19,6 +19,8 @@ import { createMemoryBondsRepo } from "./memoryBondsRepo";
  * - Bonds (P3) never store birth dates, questions or notes.
  * - Accounts (P4) keep readings opened while logged in: question, situation, note or birth data,
  *   sealed with AES-256-GCM (lib/account/secrets.ts) and erased on account deletion or on request.
+ * - 우리 사이 궁합 (P5) keeps no partner birth or chart and no chapter token in the account (owner 2026-10-16):
+ *   the partner travels sealed in the device's token only (lib/premium/partnerSeal.ts).
  */
 
 export { getDb } from "./d1";

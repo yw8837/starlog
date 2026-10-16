@@ -26,6 +26,7 @@ import {
   isPremiumChapter,
   observationOf,
   sajuChapterEyebrow,
+  tidyMatchChapter,
   updateChapter,
   useChapters,
   type StoredChapter,
@@ -34,7 +35,7 @@ import { pullAccountReadings } from "@/lib/storage/sync";
 import { ChapterView, type ChapterFollowUp } from "./ChapterView";
 import { PremiumChapterView } from "./PremiumChapterView";
 import { SajuChapterView } from "./SajuChapterView";
-import { PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
+import { MATCH_FOLLOWUP_DEVICE_ONLY, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import s from "./ChapterView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { isDeepTarotReading, isFollowUpData, isMatchReading, isNewYearReading, isWholeSajuReading, partialTarotReading } from "@/lib/reading/validate";
@@ -170,7 +171,13 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   const premium = isPremiumChapter(chapter);
   const followUpMs = premium ? PREMIUM_CHAPTER_TTL_MS : FOLLOW_UP_DAYS_MS;
   const expired = openedAt - chapter.createdAt >= followUpMs;
-  const closed = expired || !whole;
+  // A 궁합 from the account carries no token (owner 2026-10-16): asked only where it was written.
+  const deviceOnly = chapter.kind === "match" && !chapter.chapterToken && !expired;
+  const closed = expired || !whole || deviceOnly;
+  // The partner leaves a 궁합 as it is opened: a birth kept as text, and past its 30 days the sealed token.
+  useEffect(() => {
+    if (chapter.kind === "match") tidyMatchChapter(chapter.id);
+  }, [chapter.id, chapter.kind]);
   const suggestions: unknown = chapter.reading.followUps;
   const followUp: ChapterFollowUp = {
     suggestions: Array.isArray(suggestions) ? suggestions.filter((q): q is string => typeof q === "string") : [],
@@ -182,7 +189,9 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
       ? { endedText: "이 기록은 일부를 읽지 못해 더 물어볼 수 없어요" }
       : expired && chapter.followUpsLeft > 0
         ? { endedText: `풀이를 연 지 ${Math.round(followUpMs / DAY_MS)}일이 지나 더 물어볼 수 없어요` }
-        : {}),
+        : deviceOnly
+          ? { endedText: MATCH_FOLLOWUP_DEVICE_ONLY }
+          : {}),
   };
   const date = kstMonthDay(chapter.createdAt);
   // Shown in the design the reading was written for: one saved before readings kept their deck was

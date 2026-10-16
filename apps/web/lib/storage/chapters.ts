@@ -2,7 +2,7 @@ import type { Orientation } from "@starlog/core";
 import { FRONT_DECKS, type FrontDeck } from "@/lib/deck";
 import { SITE } from "@/lib/config";
 import { kstDate, kstDaysBetween, kstMonthDay } from "@/lib/kst";
-import { PREMIUM, isPremiumId, type PremiumId } from "@/lib/premium/products";
+import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, isPremiumId, type PremiumId } from "@/lib/premium/products";
 import {
   CHECKIN_ANSWERS, type CheckinAnswer, type DeepTarotReadingData, type HistoryItem, type MatchReadingData, type NewYearReadingData, type SajuContext,
   type SajuReadingData, type SajuTopic, type SajuTopicId, type TarotReadingData,
@@ -95,7 +95,11 @@ export interface DeepTarotChapter extends ChapterBase {
   reading: DeepTarotReadingData;
 }
 
-/** P5 우리 사이 궁합: both births (the partner's lives only here and in the tab that wrote it, spec §9) and the five cards. */
+/**
+ * P5 우리 사이 궁합: the user's birth, the relation and label, and the five cards. The partner's birth is never kept as
+ * text (owner 2026-10-16): it lives only sealed inside `chapterToken`, for the 30 follow-up days, on the device that
+ * wrote it; a copy from the account has no token ("") and takes no follow-up.
+ */
 export interface MatchChapter extends ChapterBase {
   kind: "match";
   relation: string;
@@ -104,7 +108,6 @@ export interface MatchChapter extends ChapterBase {
   /** What the user calls the other person, when given. */
   partnerLabel?: string;
   me: { birth: SajuForm };
-  partner: { birth: SajuForm };
   concern?: string;
   cards: ChapterCard[];
   reading: MatchReadingData;
@@ -207,9 +210,9 @@ export function parseChapter(value: unknown): StoredChapter | null {
         reading: reading as unknown as DeepTarotReadingData,
       };
     }
+    // An older shape's partner birth (text) is read past and dropped (owner 2026-10-16).
     const me = isRecord(value.me) ? sanitizeSajuForm(value.me.birth) : null;
-    const partner = isRecord(value.partner) ? sanitizeSajuForm(value.partner.birth) : null;
-    if (!me || !partner || !isString(value.relation) || !isMatchReading(reading)) return null;
+    if (!me || !isString(value.relation) || !isMatchReading(reading)) return null;
     return {
       ...base,
       kind: "match",
@@ -217,7 +220,6 @@ export function parseChapter(value: unknown): StoredChapter | null {
       relationLabel: isString(value.relationLabel) ? value.relationLabel : "",
       ...(isString(value.partnerLabel) && value.partnerLabel ? { partnerLabel: value.partnerLabel } : {}),
       me: { birth: me },
-      partner: { birth: partner },
       ...(isString(value.concern) && value.concern ? { concern: value.concern } : {}),
       cards: cards as ChapterCard[],
       reading: reading as unknown as MatchReadingData,
@@ -330,6 +332,19 @@ export function updateChapter(id: string, update: (chapter: StoredChapter) => St
       return parseChapter(next) ? next : entry;
     }),
   });
+}
+
+/**
+ * 궁합 (owner 2026-10-16): what this device may still hold of the partner, put right when the record is opened. A
+ * birth kept as text by an older version goes; past the 30 follow-up days the token, with its sealed partner, goes too.
+ */
+export function tidyMatchChapter(id: string, now: number = Date.now()): void {
+  const entry = rawEntries().find((e) => idOf(e) === id);
+  if (!isRecord(entry) || entry.kind !== "match") return;
+  const expired = typeof entry.createdAt === "number" && now - entry.createdAt >= PREMIUM_CHAPTER_TTL_MS;
+  const sealed = isString(entry.chapterToken) && entry.chapterToken !== "";
+  if (!("partner" in entry) && !(expired && sealed)) return;
+  updateChapter(id, (chapter) => (expired ? { ...chapter, chapterToken: "" } : chapter));
 }
 
 /** True when this device holds an entry with this id, readable or not (a broken one can be erased). */

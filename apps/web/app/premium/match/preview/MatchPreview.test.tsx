@@ -7,7 +7,7 @@ import { MATCH_FLOW_KEY } from "@/lib/premium/matchFlow";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { resetBotCheck } from "@/lib/reading/api";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { clearChapters, listChapters } from "@/lib/storage/chapters";
+import { CHAPTERS_KEY, clearChapters, listChapters } from "@/lib/storage/chapters";
 import { MatchPreview } from "./MatchPreview";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -91,7 +91,10 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     expect(sessionStorage.getItem(MATCH_FLOW_KEY)).toBeNull();
     expect(sessionStorage.getItem("starlog.teaser.premium")).toBeNull();
     const [chapter] = listChapters();
-    expect(chapter).toMatchObject({ kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", concern: "요즘 연락이 뜸해요", partner: { birth: PARTNER }, serverId: ID });
+    expect(chapter).toMatchObject({ kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", concern: "요즘 연락이 뜸해요", serverId: ID });
+    // Owner 2026-10-16: the partner's birth is never kept as text on the device either (only sealed, inside the token).
+    expect(chapter).not.toHaveProperty("partner");
+    expect(localStorage.getItem(CHAPTERS_KEY)).not.toContain('"year":1992');
     expect(chapter && "deck" in chapter).toBe(false); // the 1909 pictures the reading quotes
     expect(router.replace).not.toHaveBeenCalled();
   });
@@ -114,7 +117,7 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
   it("forgets the partner on both recovery paths too: cut off but delivered, and 409 opened (the flow, the preview, the resume token)", async () => {
     const saved = {
       id: ID, createdAt: Date.now(),
-      chapter: { kind: "match", relation: "friend", relationLabel: "친구", me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, cards: DRAWN, reading: READING, chapterToken: "c", createdAt: 1, turns: [], followUpsLeft: 5 },
+      chapter: { kind: "match", relation: "friend", relationLabel: "친구", me: { birth: DEFAULT_SAJU_FORM }, cards: DRAWN, reading: READING, chapterToken: "", createdAt: 1, turns: [], followUpsLeft: 5 },
     };
     const leftovers = () => [MATCH_FLOW_KEY, "starlog.teaser.premium", "starlog.premium-resume.match"].map((key) => sessionStorage.getItem(key));
     stub(

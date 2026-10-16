@@ -34,11 +34,6 @@ const ID = "match";
 const PREVIEW_PATH = "/premium/match/preview";
 /** The 궁합 reading quotes the 1909 pictures: its request carries no card design (lib/premium/inputs.ts MatchBody). */
 const DECK = "rws1909";
-/** A birth as both sides write it, whatever the key order. */
-const birthKey = (b: unknown) => {
-  const x = (b ?? {}) as Record<string, unknown>;
-  return JSON.stringify([x.calendar, x.year, x.month, x.day, x.isLeapMonth, x.timeKnown, x.hour, x.minute, x.gender]);
-};
 const acceptPreview = (data: unknown): data is { preview: MatchPreviewData } =>
   typeof data === "object" && data !== null && isMatchPreview((data as { preview?: unknown }).preview);
 
@@ -105,13 +100,12 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     autoOpen: autoUnlock,
     ready: Boolean(preview) || (holds && teaserFailed),
     accept: isMatchReading,
-    // This flow's reading: the same relation, the same other person and the very same five cards.
+    // This flow's reading: the same relation and the very same five cards (the account's copy holds no partner, owner 2026-10-16).
     matches: (chapter) => {
-      const c = chapter as { kind?: string; relation?: string; partner?: { birth?: unknown }; cards?: Array<{ cardId: string; orientation: string }> };
+      const c = chapter as { kind?: string; relation?: string; cards?: Array<{ cardId: string; orientation: string }> };
       return (
         c.kind === ID &&
         c.relation === flow?.relation &&
-        birthKey(c.partner?.birth) === birthKey(flow?.partner) &&
         JSON.stringify(c.cards?.map((x) => [x.cardId, x.orientation])) === JSON.stringify(draw?.cards.map((x) => [x.cardId, x.orientation]))
       );
     },
@@ -122,7 +116,6 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
         relationLabel: relationLabel(flow!.relation!),
         ...(body!.partner.label ? { partnerLabel: body!.partner.label } : {}),
         me: { birth: flow!.me! },
-        partner: { birth: flow!.partner! },
         ...(body!.concern ? { concern: body!.concern } : {}),
         cards: draw!.cards.map((card) => {
           const keyword = keywords.get(card.position);

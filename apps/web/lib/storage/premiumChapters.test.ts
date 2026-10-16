@@ -33,7 +33,8 @@ describe("premium chapters on the device", () => {
   it("skips one missing what its page needs", () => {
     expect(parseChapter({ ...DEEP, cards: [] })).toBeNull();
     expect(parseChapter({ ...DEEP, reading: { ...DEEP.reading, observation: undefined } })).toBeNull();
-    expect(parseChapter({ ...MATCH, partner: { birth: { year: "x" } } })).toBeNull();
+    // Owner 2026-10-16: a partner's birth kept as text (an older shape) is dropped, never required.
+    expect(parseChapter({ ...MATCH, partner: { birth: { year: "x" } } })).not.toHaveProperty("partner");
     expect(parseChapter({ ...YEAR, reading: { ...YEAR.reading, months: "x" } })).toBeNull();
   });
 
