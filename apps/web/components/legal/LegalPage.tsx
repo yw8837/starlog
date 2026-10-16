@@ -71,7 +71,14 @@ export function LegalNote({ children }: { children: ReactNode }) {
 
 /** Business details as label/value rows: only filled fields, never the postal address. */
 export function BusinessFacts() {
-  return <Facts rows={businessFields(SITE.business)} />;
+  // On a narrow screen the email may wrap only before its @, never inside a word (M-15).
+  const rows = businessFields(SITE.business).map(([label, value]) => {
+    const at = value.indexOf("@");
+    return label === "이메일" && at > 0
+      ? ([label, <>{value.slice(0, at)}<wbr />{value.slice(at)}</>] as const)
+      : ([label, value] as const);
+  });
+  return <Facts rows={rows} />;
 }
 
 type FactsProps = {

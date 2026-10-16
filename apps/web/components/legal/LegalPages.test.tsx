@@ -29,6 +29,14 @@ describe("policy pages", () => {
     });
   }
 
+  it("lets the business email break only before its @, never inside a word (M-15)", () => {
+    const { container } = render(<RefundPage />);
+    const email = [...container.querySelectorAll("dd")].find((dd) => dd.textContent === SITE.business.email);
+    expect(email).toBeTruthy();
+    const at = SITE.business.email.indexOf("@");
+    expect(email!.innerHTML).toBe(`${SITE.business.email.slice(0, at)}<wbr>${SITE.business.email.slice(at)}`);
+  });
+
   it("refund: cites the withdrawal limit, the unopened-payment refund, and the governing law and guideline", () => {
     const { container } = render(<RefundPage />);
     const text = container.textContent ?? "";
