@@ -63,7 +63,8 @@ function YearChart({ chapter }: { chapter: NewYearChapter }) {
  * rating. No other product is offered here.
  */
 export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false }: PremiumChapterViewProps) {
-  const eyebrow = `${PREMIUM[chapter.kind].name} · ${kstMonthDay(chapter.createdAt)}`;
+  // A 궁합's title carries the product's name already ("프리미엄 궁합 · 친구"): its line above says the date only.
+  const eyebrow = chapter.kind === "match" ? kstMonthDay(chapter.createdAt) : `${PREMIUM[chapter.kind].name} · ${kstMonthDay(chapter.createdAt)}`;
   // The design the reading was written for; one saved before readings kept their deck was written for the 1909 scans.
   const deck = chapter.deck ?? "rws1909";
   let title: string;

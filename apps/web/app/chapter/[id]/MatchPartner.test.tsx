@@ -39,6 +39,8 @@ describe("a 궁합 record and its partner (owner 2026-10-16)", () => {
     seed([MATCH]);
     render(<LocalChapter id="match0001" />);
     expect(screen.getByRole("heading", { level: 1, name: "프리미엄 궁합 · 친구" })).toBeTruthy();
+    // The line above the title says the date only: the product's name is in the title already (coordinator 2026-10-17).
+    expect(screen.getByRole("heading", { level: 1 }).parentElement?.textContent?.match(/프리미엄 궁합/g)).toHaveLength(1);
     expect(screen.getByRole("textbox")).toBeTruthy();
   });
 
