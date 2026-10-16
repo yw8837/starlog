@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CheckoutView } from "./CheckoutView";
@@ -136,5 +138,15 @@ describe("CheckoutView", () => {
     expect(await screen.findByText("이 기기에 계속 보관")).toBeTruthy();
     expect(screen.getByText("풀이 전체 · 약 2,000자")).toBeTruthy();
     expect(screen.queryByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeNull();
+  });
+});
+
+describe("CheckoutView notice lines (M-13)", () => {
+  it("keeps the link inside a notice line inline, its tap room from padding, so the line is not taller than the rest", () => {
+    const file = ["apps/web/app/pay/pay.module.css", "app/pay/pay.module.css"].map((path) => resolve(process.cwd(), path)).find((path) => existsSync(path));
+    const rule = /\.notice a \{([^}]*)\}/.exec(readFileSync(file ?? "", "utf8"))?.[1] ?? "";
+    expect(rule).toMatch(/display: inline;/);
+    expect(rule).not.toMatch(/min-height|inline-flex/);
+    expect(rule).toMatch(/padding: 12px 0;/);
   });
 });
