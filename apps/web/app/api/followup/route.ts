@@ -12,7 +12,7 @@ import { isSajuTopicId } from "@/lib/sajuTopics";
 import { OPENING_KEEP_ONLY } from "@/lib/helpGuide";
 import { payKeyMode } from "@/lib/pay/mode";
 import { preparePremiumFollowUp } from "@/lib/premium/followup";
-import { PREMIUM } from "@/lib/premium/products";
+import { PREMIUM, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import { isOpeningChapter, isPremiumChapter, issueChapter, openChapter } from "@/lib/security/chapterToken";
 import { quotaLimits } from "@/lib/security/quota";
 
@@ -83,7 +83,8 @@ export async function POST(request: Request): Promise<Response> {
       generate = async (hooks) => (await generateSajuFollowUp(gate.provider, facts, reading.data, chapter.turns, question, hooks)).data;
     }
   } else {
-    const prepared = preparePremiumFollowUp(chapter.ctx, body.data.reading, gate.now);
+    // The facts as of the reading (a premium token lives 30 days from it): a 궁합's 10 years and shared years do not move.
+    const prepared = preparePremiumFollowUp(chapter.ctx, body.data.reading, chapter.exp - PREMIUM_CHAPTER_TTL_MS);
     if (prepared instanceof Response) return prepared;
     generate = (hooks) => prepared.generate(gate.provider, chapter.turns, question, hooks);
   }

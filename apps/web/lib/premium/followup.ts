@@ -81,7 +81,10 @@ export interface PreparedFollowUp {
 
 const common = { name: "premium-followup" as const, schema: FollowUpAnswerSchema, ...generationSetting("premium-followup") };
 
-/** The follow-up for a premium chapter, or the 400 when its reading or births no longer read (checked before a stream starts). */
+/**
+ * The follow-up for a premium chapter, or the 400 when its reading or births no longer read (checked before a
+ * stream starts). `now`: when the reading was written, so the computed facts are the ones it was written from.
+ */
 export function preparePremiumFollowUp(
   ctx: Extract<ChapterContext, { kind: "tarot-deep" | "match" | "newyear-2027" }>, reading: unknown, now: number,
 ): PreparedFollowUp | Response {

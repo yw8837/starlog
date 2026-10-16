@@ -27,6 +27,13 @@ import { POST as yearTeaser } from "./newyear-2027/teaser/route";
 import { POST as deepReading } from "./tarot-deep/reading/route";
 import { POST as deepTeaser } from "./tarot-deep/teaser/route";
 
+// A pass-through spy: which moment a 궁합 follow-up computes the pair's facts for.
+const matchPrompts = vi.hoisted(() => ({ calls: [] as number[] }));
+vi.mock("@/lib/ai/prompts/match", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/ai/prompts/match")>();
+  return { ...real, buildMatchFacts: (...args: Parameters<typeof real.buildMatchFacts>) => (matchPrompts.calls.push(args[3]), real.buildMatchFacts(...args)) };
+});
+
 const T0 = Date.parse("2026-11-20T03:00:00Z"); // inside 2027 신년운세's window
 const DEEP_INPUT = {
   topicId: "money", whoId: "me", whenId: "month", question: "",
@@ -539,6 +546,18 @@ describe("premium follow-ups (P5 spec §6.3)", () => {
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
     const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "이번 달 지출은 어떻게 줄이면 좋을까요?" } });
     expect(res.status).toBe(200);
+  });
+
+  it("answers a 궁합 follow-up from the pair's facts as of the reading, not as of the question", async () => {
+    useTestDb();
+    const b = browser("192.0.2.63");
+    await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    const { done } = await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true, unlock: { method: "owner" } });
+    vi.setSystemTime(T0 + 20 * 24 * 3_600_000);
+    matchPrompts.calls.length = 0;
+    const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "요즘 서로 연락이 뜸한데 어떻게 할까요?" } });
+    expect(res.status).toBe(200);
+    expect(matchPrompts.calls).toEqual([T0]);
   });
 
   it("refuses a premium chapter whose reading was changed, generating nothing", async () => {
