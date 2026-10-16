@@ -62,7 +62,7 @@ function PremiumTopics() {
           const body = (
             <>
               <span className={s.head}>
-                <strong className={s.name}>{spec.entry}</strong>
+                <strong className={s.name}>{spec.name}</strong>
                 <span className={s.price}>{won(spec.krw)}</span>
               </span>
               <span className={s.line}>{opensAt !== null ? opensOnText(opensAt) : closed ? "준비 중이에요" : spec.sub}</span>

@@ -41,9 +41,9 @@ export function PremiumPricing({ fallback }: { fallback: ReactNode }) {
             <section key={id} className={s.card} aria-labelledby={`premium-${id}`}>
               <div>
                 <h3 id={`premium-${id}`} className={s.cardTitle}>
-                  {spec.entry} <span className={s.badge}>{badge}</span>
+                  {spec.name} <span className={s.badge}>{badge}</span>
                 </h3>
-                <p className={s.cardSub}>{spec.entry === spec.name ? spec.sub : `${spec.name} · ${spec.sub}`}</p>
+                <p className={s.cardSub}>{spec.sub}</p>
               </div>
               <p className={s.price}>
                 {won(spec.krw)}

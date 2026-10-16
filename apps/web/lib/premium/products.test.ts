@@ -11,7 +11,6 @@ describe("premium products", () => {
 
   it("calls 궁합 프리미엄 궁합 everywhere (owner 2026-10-17): the name checkout, receipts and screens show is the entries' name", () => {
     expect(PREMIUM.match.name).toBe("프리미엄 궁합");
-    expect(PREMIUM.match.entry).toBe(PREMIUM.match.name);
     expect(JSON.stringify(SITE.price.premium)).not.toContain("우리 사이");
   });
 
@@ -40,13 +39,10 @@ describe("premium products", () => {
     expect(inWindow(PREMIUM.match, 0)).toBe(true);
   });
 
-  it("calls the ten-card spread 켈틱 크로스 on screens only (owner 2026-10-16): never in the name, scope or parts checkout and receipts show; never 베타", () => {
-    expect([PREMIUM["tarot-deep"].entry, PREMIUM.match.entry, PREMIUM["newyear-2027"].entry]).toEqual(["켈틱 크로스 10장", "프리미엄 궁합", "2027 신년운세"]);
-    const shown = PREMIUM_IDS.map((id) => {
-      const { entry: _entry, ...rest } = PREMIUM[id];
-      return rest;
-    });
-    expect(JSON.stringify(shown)).not.toMatch(/켈틱|셀틱|celtic/i);
+  it("has one name per product on every screen, checkout and receipt (owner 2026-10-17); never 셀틱, Celtic or 베타", () => {
+    expect(PREMIUM_IDS.map((id) => PREMIUM[id].name)).toEqual(["켈틱 크로스 10장", "프리미엄 궁합", "2027 신년운세"]);
+    for (const id of PREMIUM_IDS) expect(PREMIUM[id]).not.toHaveProperty("entry");
+    expect(JSON.stringify(PREMIUM)).not.toMatch(/셀틱|celtic/i);
     expect(JSON.stringify(PREMIUM)).not.toMatch(/베타/);
   });
 });

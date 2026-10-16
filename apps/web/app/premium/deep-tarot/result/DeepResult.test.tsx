@@ -76,7 +76,7 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     expect(within(list).getAllByRole("listitem")).toHaveLength(10);
     expect(within(list).getByText("지금의 나 열쇠")).toBeTruthy();
     expect(screen.getByText(`소제목 ${PREVIEW.lockedToc.length}개 · 약 5,000자`)).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "심층 타로에 담긴 것" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "켈틱 크로스 10장에 담긴 것" })).toBeTruthy();
     expect(screen.getByText("켈틱 크로스 10장")).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/베타|Claude|Anthropic/);
   });
@@ -157,7 +157,7 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     render(<DeepResult instant />);
     await waitFor(() => expect(document.body.textContent).toMatch(/오늘|내일|다시/));
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(screen.queryByRole("heading", { name: "심층 타로에 담긴 것" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "켈틱 크로스 10장에 담긴 것" })).toBeNull();
   });
 
   it("binds the draw to the reading on both recovery paths (cut off but delivered, 409 opened), so it is never offered for sale again", async () => {

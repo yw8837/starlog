@@ -7,7 +7,7 @@ import { PREMIUM } from "@/lib/premium/products";
 import { NOINDEX } from "@/lib/seo";
 import { DeepResult } from "./DeepResult";
 
-export const metadata: Metadata = { title: `${PREMIUM["tarot-deep"].entry} · ${PREMIUM["tarot-deep"].name}`, robots: NOINDEX };
+export const metadata: Metadata = { title: PREMIUM["tarot-deep"].name, robots: NOINDEX };
 
 /**
  * 켈틱 크로스 10장's preview and opening (Task 19). Rendered per request: a 404 unless premium is visible here

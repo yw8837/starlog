@@ -61,7 +61,7 @@ export function SituationPicker() {
       </div>
 
       <div className={f.intro}>
-        {spread === "deep" ? <SpreadChip>{PREMIUM["tarot-deep"].entry}</SpreadChip> : null}
+        {spread === "deep" ? <SpreadChip>{PREMIUM["tarot-deep"].name}</SpreadChip> : null}
         <h1 className={f.title}>{topic ? "지금 상황을 골라 주세요" : "지금 상황을 적어 주세요"}</h1>
         <p className={f.lead}>{topic ? "해당하는 것만 골라도 괜찮아요" : "적지 않아도 괜찮아요"}</p>
       </div>

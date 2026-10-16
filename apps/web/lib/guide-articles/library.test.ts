@@ -166,12 +166,13 @@ describe("card articles agree with the KB", () => {
 });
 
 describe("upcoming products are introduced without a date", () => {
-  it("the Celtic Cross article explains the 10 positions and names 심층 타로 as 준비 중", () => {
+  it("the Celtic Cross article explains the 10 positions and names 켈틱 크로스 10장 as 준비 중", () => {
     const article = findArticle(CELTIC_SLUG);
     expect(article?.category).toBe("tarot");
     const text = allText(article as GuideArticle);
     expect(text).toContain("켈틱 크로스");
-    expect(text).toContain("심층 타로");
+    expect(text).toContain("켈틱 크로스 10장");
+    expect(text).not.toContain("심층 타로");
     expect(text).toContain("준비");
     for (let n = 1; n <= 10; n++) expect(text, `${n}번 자리`).toContain(`${n}번`);
     expect(text).not.toMatch(OPENING_DATE);

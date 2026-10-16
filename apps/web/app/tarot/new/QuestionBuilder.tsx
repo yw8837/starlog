@@ -80,7 +80,7 @@ export function QuestionBuilder() {
 
       {gate}
       <div className={f.intro}>
-        {spread === "deep" ? <SpreadChip>{PREMIUM["tarot-deep"].entry}</SpreadChip> : null}
+        {spread === "deep" ? <SpreadChip>{PREMIUM["tarot-deep"].name}</SpreadChip> : null}
         <h1 className={f.title}>어떤 이야기를 타로로 볼까요?</h1>
       </div>
 

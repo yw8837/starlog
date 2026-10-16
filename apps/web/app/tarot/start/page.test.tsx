@@ -32,6 +32,7 @@ describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
     expect(links[0]!.textContent).toContain("카드 3장");
     expect(links[1]!.textContent).toContain("켈틱 크로스 10장");
     expect(links[1]!.textContent).toContain("7,900원");
+    expect(links[1]!.textContent).not.toContain("심층 타로");
     // One gold choice on the screen: the free flow stays the main one.
     expect(container.querySelectorAll("[data-primary]")).toHaveLength(1);
     expect(links[0]!.hasAttribute("data-primary")).toBe(true);

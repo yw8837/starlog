@@ -33,8 +33,10 @@ describe("catalog", () => {
     expect(productById("")).toBeNull();
   });
 
-  it("never names the 10-card spread after its tradition", () => {
-    expect(JSON.stringify(PRODUCTS)).not.toMatch(/켈틱|셀틱|celtic/i);
+  it("names the premium readings as their screens do (owner 2026-10-17), never 셀틱 or Celtic", () => {
+    expect(productById("tarot-deep")).toMatchObject({ name: "켈틱 크로스 10장", orderName: `${SITE.nameKo} 켈틱 크로스 10장` });
+    expect(productById("match")).toMatchObject({ name: "프리미엄 궁합", orderName: `${SITE.nameKo} 프리미엄 궁합` });
+    expect(JSON.stringify(PRODUCTS)).not.toMatch(/셀틱|celtic/i);
   });
 
   it("gives Toss an order name of 100 characters or fewer", () => {

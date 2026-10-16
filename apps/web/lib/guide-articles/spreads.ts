@@ -2,7 +2,7 @@ import type { GuideArticle } from "../guide";
 
 /**
  * How-to articles: spreads, one-card questions, redrawing, the minor arcana and the court cards.
- * The Celtic Cross is named only here (the product calls its 10-card reading 심층 타로); the
+ * The product reading this spread is 켈틱 크로스 10장 (owner 2026-10-17); the
  * positions follow Waite's "An Ancient Celtic Method of Divination" (PKT 1910, Part III §7).
  * Card pictures follow content/kb/cards; Starlog's spread positions follow @starlog/core templates.
  */
@@ -119,7 +119,7 @@ export const SPREAD_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "스타로그에서 열 장을 볼 때",
-        body: "스타로그의 타로 보기는 카드 세 장으로 읽어요. 연락, 연애, 직업·이직, 이사·선택처럼 고른 주제에 따라 세 자리가 정해져 있어서 한 가지 고민을 빠르게 보기에 맞죠. 카드 열 장으로 한 상황을 깊게 보는 풀이는 심층 타로라는 이름으로 준비 중이에요. 열기 전에 담기는 내용과 가격은 가격 안내 페이지에 먼저 알려 드려요. 그전까지는 세 장 스프레드로 질문을 좁혀 보는 연습을 해 두면 열 장을 펼칠 때 훨씬 수월해요.",
+        body: "스타로그의 타로 보기는 카드 세 장으로 읽어요. 연락, 연애, 직업·이직, 이사·선택처럼 고른 주제에 따라 세 자리가 정해져 있어서 한 가지 고민을 빠르게 보기에 맞죠. 카드 열 장으로 한 상황을 깊게 보는 풀이는 켈틱 크로스 10장이라는 이름으로 준비 중이에요. 열기 전에 담기는 내용과 가격은 가격 안내 페이지에 먼저 알려 드려요. 그전까지는 세 장 스프레드로 질문을 좁혀 보는 연습을 해 두면 열 장을 펼칠 때 훨씬 수월해요.",
       },
     ],
     related: ["three-card-spread", "upright-and-reversed", "how-to-read-tarot", "minor-arcana-suits"],

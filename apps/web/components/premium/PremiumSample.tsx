@@ -30,10 +30,10 @@ export function PremiumSample({ id }: { id: PremiumId }) {
     <article aria-labelledby="sample-title">
       <header className={s.sampleHead}>
         <Link href={premiumPath(id)} className={s.back}>
-          {`← ${spec.entry} 안내로`}
+          {`← ${spec.name} 안내로`}
         </Link>
         <p className={s.eyebrow}>샘플</p>
-        <h1 id="sample-title" className={s.title}>{`${spec.entry} 샘플`}</h1>
+        <h1 id="sample-title" className={s.title}>{`${spec.name} 샘플`}</h1>
         <p className={s.note}>{`가상의 입력으로 만든 샘플이에요 · ${PREMIUM_SAMPLES[id].input.summary}`}</p>
       </header>
       <div className={s.sampleBody}>

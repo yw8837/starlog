@@ -26,8 +26,6 @@ const kstDate = (ms: number) => {
   return `${d.getUTCFullYear()}년 ${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`;
 };
 
-const productName = (id: (typeof PREMIUM_IDS)[number]) => (PREMIUM[id].entry === PREMIUM[id].name ? PREMIUM[id].name : `${PREMIUM[id].entry}(${PREMIUM[id].name})`);
-
 /** 개인정보처리방침 §1: what the premium readings take, and the 궁합 partner's information (합니다체, as the policy). */
 export function PremiumPrivacy() {
   if (!usePremiumShown()) return null;
@@ -36,7 +34,7 @@ export function PremiumPrivacy() {
       <div>
         <h3 className={s.sub}>프리미엄 풀이를 볼 때</h3>
         <ul className={s.list}>
-          <li>{`${productName("tarot-deep")}: 타로 풀이와 같은 항목(질문, 고른 주제와 상황, 직접 쓰기 칸에 적은 내용, 메모)`}</li>
+          <li>{`${PREMIUM["tarot-deep"].name}: 타로 풀이와 같은 항목(질문, 고른 주제와 상황, 직접 쓰기 칸에 적은 내용, 메모)`}</li>
           <li>{`${PREMIUM["newyear-2027"].name}: 사주 풀이와 같은 출생 정보와 고른 지금 상태`}</li>
           <li>{`로그인해 결제하고 연 프리미엄 풀이는 다른 풀이처럼 계정에 암호화해 보관합니다. 다만 ${PREMIUM.match.name}은 아래와 같이 상대방 정보를 빼고 보관합니다.`}</li>
         </ul>
@@ -78,7 +76,7 @@ export function PremiumTerms() {
           와 각 풀이의 안내 화면에 게시합니다.
           <ul className={s.list}>
             {PREMIUM_IDS.map((id) => (
-              <li key={id}>{`${productName(id)}: ${won(PREMIUM[id].krw)}, ${PREMIUM[id].scope.slice(0, 2).join(", ")}`}</li>
+              <li key={id}>{`${PREMIUM[id].name}: ${won(PREMIUM[id].krw)}, ${PREMIUM[id].scope.slice(0, 2).join(", ")}`}</li>
             ))}
           </ul>
         </li>
@@ -103,8 +101,8 @@ export function PremiumRefund() {
         프리미엄 풀이
       </h2>
       <ul className={s.list}>
-        <li>{`${productName("tarot-deep")}, ${PREMIUM.match.name}, ${PREMIUM["newyear-2027"].name}도 같은 기준이에요. 열기 전의 결제는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있고, 풀이를 적기 시작하면 청약철회가 제한돼요.`}</li>
-        <li>{`결제하기 전에 무료로 먼저 보여 드려요. ${PREMIUM["tarot-deep"].entry}은 카드 10장의 키워드와 '지금의 나' 풀이, ${PREMIUM.match.name}은 두 사람의 명식과 카드 5장, 한눈에 보는 요약, ${PREMIUM["newyear-2027"].name}는 한 해의 제목과 요약이에요.`}</li>
+        <li>{`${PREMIUM["tarot-deep"].name}, ${PREMIUM.match.name}, ${PREMIUM["newyear-2027"].name}도 같은 기준이에요. 열기 전의 결제는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있고, 풀이를 적기 시작하면 청약철회가 제한돼요.`}</li>
+        <li>{`결제하기 전에 무료로 먼저 보여 드려요. ${PREMIUM["tarot-deep"].name}은 카드 10장의 키워드와 '지금의 나' 풀이, ${PREMIUM.match.name}은 두 사람의 명식과 카드 5장, 한눈에 보는 요약, ${PREMIUM["newyear-2027"].name}는 한 해의 제목과 요약이에요.`}</li>
         <li>프리미엄 풀이는 여러 부분으로 나눠 적어요. 중간에 생성이 실패하면 결제한 풀이는 그대로 남아 다시 열어 이어서 받을 수 있어요. 다 받기 전에 화면을 닫거나 연결이 끊긴 경우는 위와 같이 3번까지 다시 열 수 있어요.</li>
       </ul>
     </section>

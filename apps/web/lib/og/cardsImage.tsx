@@ -276,7 +276,7 @@ export function shareOgText(data: ShareOgData): { serif: string; sans: string } 
 
 /** A premium share: the product's line, the cards or the year's title, the host. Never a question, a name or a birth. */
 export interface PremiumShareData {
-  /** "심층 타로 · 카드 10장" / "우리 사이 · 친구" / "2027년, 차근차근 쌓아 가는 해" */
+  /** "켈틱 크로스 10장" / "프리미엄 궁합 · 친구" / "2027년, 차근차근 쌓아 가는 해" */
   headline: string;
   cards: { cardId: string; orientation: Orientation }[];
   host: string;

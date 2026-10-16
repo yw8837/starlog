@@ -53,7 +53,7 @@ export function PremiumRows({ ids, title, lines = {}, look = "rows", onlyOpen = 
             <li key={id}>
               <Link href={linkHref(premiumPath(id), host)} prefetch={host === "app" ? undefined : false} className={look === "home" ? `${s.row} ${s.ivory}` : s.row}>
                 <span className={s.head}>
-                  <strong className={s.name}>{spec.entry}</strong>
+                  <strong className={s.name}>{spec.name}</strong>
                   <span className={s.price}>{won(spec.krw)}</span>
                 </span>
                 <span className={s.line}>{lines[id] ?? spec.sub}</span>

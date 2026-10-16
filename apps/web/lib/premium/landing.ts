@@ -10,7 +10,7 @@ import { PREMIUM, PREMIUM_IDS, premiumPath, type PremiumId } from "./products";
  */
 
 export interface LandingCopy {
-  /** <title>: the entry name and, where it differs, the product name */
+  /** <title>: the product's name */
   title: string;
   /** meta description: ≤155 characters with the price */
   description: string;
@@ -26,7 +26,6 @@ export interface LandingCopy {
 }
 
 const REOPEN = "다 받기 전에 화면을 닫거나 연결이 끊겨도 3번까지 다시 열어 끝까지 받을 수 있어요.";
-const titleOf = (id: PremiumId) => (PREMIUM[id].entry === PREMIUM[id].name ? PREMIUM[id].name : `${PREMIUM[id].entry} · ${PREMIUM[id].name}`);
 const minutes = (id: PremiumId) => `보통 ${PREMIUM[id].approxMinutes}분쯤 걸려요`;
 /** "2026년 11월 15일" (Korean time). */
 const kstDate = (ms: number) => {
@@ -39,7 +38,7 @@ const yearWindow = year.opensAt !== undefined && year.closesAt !== undefined ? `
 
 export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
   "tarot-deep": {
-    title: titleOf("tarot-deep"),
+    title: PREMIUM["tarot-deep"].name,
     description: `고민 하나를 카드 10장, 열 자리로 나눠 깊게 읽는 타로예요. 자리마다의 풀이와 열 장을 엮어 읽는 풀이, 이어서 물어보기 5번을 담아 ${won(PREMIUM["tarot-deep"].krw)}이에요.`,
     method: `고민 하나를 카드 10장으로 봐요. 카드마다 자리가 정해져 있어요(${TEMPLATES["deep-tarot"].positions.join(", ")}). 자리마다 한 장씩 읽은 다음, 열 장이 서로 어떻게 이어지는지 엮어 읽어요.`,
     steps: [
@@ -56,7 +55,7 @@ export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
     start: DEEP_TAROT_HREF,
   },
   match: {
-    title: titleOf("match"),
+    title: PREMIUM.match.name,
     description: `나와 그 사람의 사주, 카드 5장으로 두 사람 사이를 함께 읽는 궁합이에요. 사주로 본 두 사람과 카드로 본 지금, 이어서 물어보기 5번을 담아 ${won(PREMIUM.match.krw)}이에요.`,
     method: `두 사람의 생년월일로 각자의 명식을 세우고, 두 일간과 오행, 기둥 사이의 관계, 지금 지나는 10년을 나란히 놓고 읽어요. 이어서 카드 5장(${TEMPLATES.match.positions.join(", ")})으로 지금 두 사람 사이를 봐요.`,
     steps: [
@@ -73,7 +72,7 @@ export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
     start: `${premiumPath("match")}/new`,
   },
   "newyear-2027": {
-    title: titleOf("newyear-2027"),
+    title: PREMIUM["newyear-2027"].name,
     description: `내 명식에 2027년의 흐름과 열두 달을 겹쳐 읽는 신년운세예요. 한 해의 큰 흐름과 달마다의 풀이, 이어서 물어보기 5번을 담아 ${won(PREMIUM["newyear-2027"].krw)}이에요.`,
     method: "내 생년월일로 세운 명식에 2027년(정미년)의 기운과 그해에 지나는 10년, 열두 달의 흐름을 겹쳐 읽어요. 일, 돈, 관계, 몸과 생활 리듬을 나눠 보고 1월부터 12월까지 달마다 풀이해요.",
     steps: [

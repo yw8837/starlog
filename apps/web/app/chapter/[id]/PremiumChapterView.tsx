@@ -106,7 +106,7 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
                   imageUrl="/api/og/premium"
                   body={shareBody}
                   fileName={`starlog-${PREMIUM[chapter.kind].slug}.png`}
-                  shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].entry}`}
+                  shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
                   shareUrl={absoluteUrl(premiumPath(chapter.kind))}
                   label="이미지로 공유"
                 />

@@ -40,12 +40,12 @@ export const SITE = {
     sajuStandardKrw: 4900,
     /**
      * Premium readings (P5). Sales open with STARLOG_PREMIUM (lib/premium/flags.ts) and, for a dated
-     * product, inside [opensAt, closesAt) (KST ISO, "" when undated). Screens may call the 10-card spread
-     * 켈틱 크로스 (owner 2026-10-16, lib/premium/products.ts `entry`); these names (checkout, receipts) and the
-     * reading never do.
+     * product, inside [opensAt, closesAt) (KST ISO, "" when undated). One name per product on every screen,
+     * checkout and receipt (owner 2026-10-17); the model never sees it (lib/premium/promptNames.test.ts), and the
+     * reading names the 10-card spread's positions only (validatePremium.ts).
      */
     premium: [
-      { id: "tarot-deep", slug: "deep-tarot", name: "심층 타로", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, opens: "", opensAt: "", closesAt: "" },
+      { id: "tarot-deep", slug: "deep-tarot", name: "켈틱 크로스 10장", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, opens: "", opensAt: "", closesAt: "" },
       { id: "match", slug: "match", name: "프리미엄 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 7900, opens: "", opensAt: "", closesAt: "" },
       {
         id: "newyear-2027", slug: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 14900,

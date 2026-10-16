@@ -180,7 +180,7 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
         <ReadingLayout
           head={
             <header className={s.head}>
-              <SpreadChip>{PREMIUM[ID].entry}</SpreadChip>
+              <SpreadChip>{PREMIUM[ID].name}</SpreadChip>
               <h1 className={s.question}>{summary.question}</h1>
               <SituationSummary conditions={summary.conditions} note={summary.note} />
             </header>

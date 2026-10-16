@@ -69,9 +69,9 @@ export function PremiumLanding({ id, open, now }: { id: PremiumId; open: boolean
       <header className={s.head}>
         <p className={s.eyebrow}>프리미엄 풀이</p>
         <h1 id="premium-title" className={s.title}>
-          {spec.entry}
+          {spec.name}
         </h1>
-        <p className={s.sub}>{spec.entry === spec.name ? spec.sub : `${spec.name} · ${spec.sub}`}</p>
+        <p className={s.sub}>{spec.sub}</p>
         <p className={s.price}>
           {won(spec.krw)}
           <span className={s.priceUnit}>1회</span>

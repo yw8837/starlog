@@ -42,7 +42,7 @@ describe("premium share images: no personal data, ever", () => {
     const deep = await post({ product: "tarot-deep", cards: cards(10) });
     expect(deep.status).toBe(200);
     expect(deep.headers.get("content-type")).toBe("image/png");
-    expect(textOf(drawn[0]!.element)).toContain("심층 타로 · 카드 10장");
+    expect(textOf(drawn[0]!.element)).toContain("켈틱 크로스 10장");
     expect(textOf(drawn[0]!.element)).toContain("starlog.yeolmaeapps.kr");
     expect(drawn[0]!.init).toMatchObject({ width: 1080, height: 1350 });
 

@@ -23,7 +23,7 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요");
     expect(page).not.toContain("언제든 전액 환불");
     expect(page).not.toMatch(/충전|심층 풀이|프롤로그/);
-    expect(page).not.toMatch(/켈틱|셀틱|celtic/i);
+    expect(page).not.toMatch(/셀틱|celtic/i);
   });
 
   it("/refund: 제공 starts when the reading starts being written (right after payment); one left halfway reopens (3 times) but is not refunded, a fourth time uses it up; unopened is refundable for 7 KST days, failures on our side whenever", () => {

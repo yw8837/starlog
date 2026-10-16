@@ -59,7 +59,7 @@ describe("/pricing", () => {
     expect(container.textContent).not.toMatch(/별조각|달빛|\d+개/);
   });
 
-  it("lists the premium readings as 준비 중 with their SITE prices, never naming the 10-card spread", () => {
+  it("lists the premium readings as 준비 중 with their SITE prices, never 셀틱 or Celtic", () => {
     const { container } = render(<PricingPage />);
     const premium = container.querySelector("#premium");
     const text = premium?.textContent ?? "";
@@ -70,7 +70,7 @@ describe("/pricing", () => {
     expect(text).toContain("11월 중순 오픈 예정");
     expect(premium?.querySelectorAll("h3")).toHaveLength(2);
     for (const heading of premium?.querySelectorAll("h3") ?? []) expect(heading.textContent).toContain("준비 중");
-    expect(container.textContent).not.toMatch(/켈틱|셀틱|Celtic/i);
+    expect(container.textContent).not.toMatch(/셀틱|Celtic/i);
   });
 
   it("shows each reading on sale with a picture, and says when it is provided and how it is refunded", () => {

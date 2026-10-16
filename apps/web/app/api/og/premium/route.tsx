@@ -31,7 +31,7 @@ export async function POST(request: Request): Promise<Response> {
   const size = new URL(request.url).searchParams.get("size") === "story" ? STORY : PREMIUM_SHARE;
   const b = body.data;
   const headline =
-    b.product === "tarot-deep" ? `${PREMIUM["tarot-deep"].name} · 카드 10장` : b.product === "match" ? `${PREMIUM.match.name} · ${RELATION_KO[b.relation]}` : `2027년, ${b.title.trim()}`;
+    b.product === "tarot-deep" ? PREMIUM["tarot-deep"].name : b.product === "match" ? `${PREMIUM.match.name} · ${RELATION_KO[b.relation]}` : `2027년, ${b.title.trim()}`;
   const data = { headline, cards: b.product === "newyear-2027" ? [] : b.cards, host: new URL(SITE.url).host, ...size };
   const text = premiumShareText(data);
   // Every field allowed in is the same for anyone who sends it, so the image may be cached.

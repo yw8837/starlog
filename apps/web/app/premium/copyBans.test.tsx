@@ -6,13 +6,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PremiumProgress } from "@/components/premium/PremiumProgress";
 import { PremiumRows } from "@/components/premium/PremiumRows";
 import { PremiumUnlock } from "@/components/premium/PremiumUnlock";
-import { PREMIUM_IDS } from "@/lib/premium/products";
+import { PREMIUM, PREMIUM_IDS } from "@/lib/premium/products";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 
 /**
  * Plan task 24's copy bans over the premium screens stage 3 adds or touches: no model or vendor name, no beta or
- * opening-promotion framing, no accuracy or secret-method claim; the panel that leads to checkout keeps the product
- * names (no tradition name, owner 2026-10-16: only the entries may say 켈틱 크로스); no premium text under 13px.
+ * opening-promotion framing, no accuracy or secret-method claim; the panel that leads to checkout says the product's one
+ * name (owner 2026-10-17: 켈틱 크로스 10장 everywhere, never 셀틱 or Celtic); no premium text under 13px.
  */
 
 const BANS = /셀틱|celtic|베타|오픈 기념|claude|anthropic|gpt|opus|sonnet|정확|적중|비법/i;
@@ -42,7 +42,7 @@ describe("premium copy and type size", () => {
         </>,
       );
       expect(container.textContent).not.toMatch(BANS);
-      expect(container.textContent).not.toMatch(/켈틱/);
+      expect(container.textContent).toContain(PREMIUM[id].name);
       cleanup();
     }
   });

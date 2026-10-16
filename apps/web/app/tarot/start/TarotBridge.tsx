@@ -9,7 +9,7 @@ import s from "./TarotBridge.module.css";
 
 /**
  * The 다리 화면 (owner 2026-10-16): which tarot to read before the question is built. 일반 타로 is today's
- * 3-card flow and the screen's one gold choice; 켈틱 크로스 10장 (심층 타로) is the quiet ivory one with its
+ * 3-card flow and the screen's one gold choice; 켈틱 크로스 10장 is the quiet ivory one with its
  * price. Both go on to the same question builder; the ten-card one carries the display flag `spread=deep`.
  */
 export function TarotBridge() {
@@ -34,8 +34,8 @@ export function TarotBridge() {
         <li>
           <Link href={DEEP_TAROT_HREF} className={`${s.card} ${s.ivory}`}>
             <span className={s.text}>
-              <span className={s.name}>{deep.entry}</span>
-              <span className={s.sub}>{`${deep.name} · ${deep.sub}`}</span>
+              <span className={s.name}>{deep.name}</span>
+              <span className={s.sub}>{deep.sub}</span>
               <span className={s.price}>{won(deep.krw)}</span>
             </span>
             <span className={s.arrow} aria-hidden="true">

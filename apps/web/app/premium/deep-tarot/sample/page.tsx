@@ -7,7 +7,7 @@ import { premiumStateHere } from "@/lib/premium/pageGate";
 import { PREMIUM } from "@/lib/premium/products";
 
 /** Crawlable (not in robots.txt) so its noindex is read; never in the sitemap. */
-export const metadata: Metadata = { title: `${PREMIUM["tarot-deep"].entry} 샘플`, robots: { index: false, follow: true } };
+export const metadata: Metadata = { title: `${PREMIUM["tarot-deep"].name} 샘플`, robots: { index: false, follow: true } };
 
 /** The whole sample (plan-reconciled §4.6): a 404 unless premium is visible here, like its product page. */
 export default async function DeepTarotSamplePage() {
