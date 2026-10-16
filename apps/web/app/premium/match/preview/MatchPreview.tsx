@@ -135,7 +135,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     onDelivered: async (readingId) => {
       const resume = body ? pendingResumeToken(ID, body) : null;
       const issued = resume && body ? await requestMatchToken({ readingId, resume, input: body }) : null;
-      if (issued) giveMatchToken(readingId, issued);
+      if (issued && issued !== "refused") giveMatchToken(readingId, issued);
       forgetPartner();
     },
   });

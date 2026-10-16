@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { parseAccount, type AccountState, type AccountUser } from "@/lib/account/client";
 import { getJson, postJson } from "@/lib/reading/api";
 import { forgetServerIds, listChapters, mergeServerReadings, removeServerChapters, updateChapter } from "./chapters";
-import { matchSeal } from "./matchSeals";
+import { dropMatchSeal, matchSeal } from "./matchSeals";
 
 /** The account's saved readings on this device (spec 5.7), and the check after a cut-off paid reading (M4). */
 
@@ -122,14 +122,16 @@ export interface IssuedMatchToken {
 
 /**
  * A 궁합's chapter token again (review 2026-10-17 H3): from the seal this device kept, or right after a cut-off from the
- * tab's input and resume token. Null when the server cannot vouch for the partner.
+ * tab's input and resume token. "refused" when the server cannot vouch for the partner (400: what was sent will never
+ * do), null when it could not answer (try again another time).
  */
 export async function requestMatchToken(
   body: { readingId: string; sealed: string } | { readingId: string; resume: string; input: unknown },
   fetchImpl: typeof fetch = fetch,
-): Promise<IssuedMatchToken | null> {
+): Promise<IssuedMatchToken | "refused" | null> {
   const res = await postJson<{ chapterToken?: unknown; followUpsLeft?: unknown }>("/api/premium/match/chapter", body, { fetchImpl });
-  if (!res.ok || typeof res.data.chapterToken !== "string" || !res.data.chapterToken || typeof res.data.followUpsLeft !== "number") return null;
+  if (!res.ok) return res.error.status === 400 ? "refused" : null;
+  if (typeof res.data.chapterToken !== "string" || !res.data.chapterToken || typeof res.data.followUpsLeft !== "number") return null;
   return { chapterToken: res.data.chapterToken, followUpsLeft: res.data.followUpsLeft };
 }
 
@@ -146,7 +148,9 @@ export async function restoreMatchTokens(fetchImpl: typeof fetch = fetch, now: n
     const sealed = matchSeal(chapter.serverId, now);
     if (!sealed) continue;
     const issued = await requestMatchToken({ readingId: chapter.serverId, sealed }, fetchImpl);
-    if (issued) giveMatchToken(chapter.serverId, issued);
+    // A seal the server refused will never open (another secret, past its days): forget it (review 2026-10-17 #10).
+    if (issued === "refused") dropMatchSeal(chapter.serverId, now);
+    else if (issued) giveMatchToken(chapter.serverId, issued);
   }
 }
 

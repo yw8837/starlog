@@ -38,12 +38,12 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function account(createdAt: number, issued: { chapterToken: string; followUpsLeft: number } | null) {
+function account(createdAt: number, issued: { chapterToken: string; followUpsLeft: number } | null, failure = 400) {
   const posts: unknown[] = [];
   const fetchImpl = vi.fn(async (url: string, init?: RequestInit) => {
     if (url === "/api/premium/match/chapter") {
       posts.push(JSON.parse(String(init?.body)));
-      return issued ? Response.json(issued) : Response.json({ code: "BAD_TOKEN" }, { status: 400 });
+      return issued ? Response.json(issued) : Response.json({ code: failure === 400 ? "BAD_TOKEN" : "AI_UNAVAILABLE" }, { status: failure });
     }
     return Response.json({ readings: [{ id: ID, createdAt, chapter: copy(createdAt) }], next: null });
   }) as unknown as typeof fetch;
@@ -113,5 +113,20 @@ describe("a 궁합's follow-ups across a logout (review 2026-10-17 H3)", () => {
       clearChapters();
       expect(localStorage.getItem(MATCH_SEALS_KEY) ?? "").not.toContain("SEALED-PARTNER");
     });
+  });
+
+  it("forgets a seal the server refused (400), and keeps one it could not answer for (review 2026-10-17 #10)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    const createdAt = NOW - DAY;
+    const sealed = () => seed([{ ...copy(createdAt), id: ID, serverId: ID, chapterToken: tokenWith("SEALED-PARTNER", createdAt + 30 * DAY) }]);
+
+    sealed();
+    forgetAccountOnDevice();
+    await pullAccountReadings(account(createdAt, null, 503).fetchImpl);
+    expect(localStorage.getItem(MATCH_SEALS_KEY)).toContain("SEALED-PARTNER");
+
+    await pullAccountReadings(account(createdAt, null, 400).fetchImpl);
+    expect(localStorage.getItem(MATCH_SEALS_KEY) ?? "").not.toContain("SEALED-PARTNER");
   });
 });
