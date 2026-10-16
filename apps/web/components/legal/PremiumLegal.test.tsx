@@ -50,13 +50,18 @@ describe("the policies' premium text", () => {
     const text = section.parentElement!.textContent ?? "";
     for (const item of ["생년월일", "양력·음력", "태어난 시", "성별", "부르는 말", "관계"]) expect(text).toContain(item);
     expect(text).toContain("이 풀이를 만들고 이어서 물어보기에 답하는 데만");
-    expect(text).toContain("운영자의 서버에는 저장하지 않습니다");
+    expect(text).toContain("운영자의 서버에는 상대방의 생년월일과 태어난 시를 저장하지 않습니다");
     expect(text).toContain("최대 30일");
     expect(text).toContain("공유 이미지");
     expect(text).toContain("계정에 보관하는 궁합 풀이에는 상대방의 출생 정보와 명식을 넣지 않습니다");
     // As it works since 2026-10-17: only the day master and the tilt go to the AI, the share image carries the relation,
     // the account keeps the relation and the label, a login again on the writing device keeps follow-ups, 30 days then gone.
-    expect(text).toContain("일간과 오행의 기울기만");
+    // What the AI gets of the other person, exactly (review 2026-10-17 #1), and what it never gets.
+    for (const item of ["부르는 말과 관계", "일간(한 글자)", "오행의 기울기", "두 사람의 일지 사이 관계 이름", "대운이 바뀌는 시기(몇 년 안인지)", "태어난 시를 아는지 여부"]) expect(text).toContain(item);
+    expect(text).toContain("일간 한 글자를 뺀 기둥 간지, 대운의 간지와 시작 시기는 전달하지 않고 풀이 글에도 쓰지 않습니다");
+    expect(text).not.toContain("일간과 오행의 기울기만");
+    expect(text).toContain("30일이 지난 뒤 앱을 처음 열 때 지웁니다");
+    expect(text).toContain("풀이 글(상대방의 일간·오행 기울기·두 사람 일지 관계에 대한 해석이 들어 있습니다)");
     expect(text).toContain("결제하지 않고 떠나거나 24시간이 지나면 지웁니다");
     expect(text).toContain("공유 이미지에는 고른 관계만");
     expect(text).toContain("관계, 부르는 말");
@@ -77,7 +82,7 @@ describe("the policies' premium text", () => {
     // The same reopening rule as 제7조 and the refund page (MAX_RESTORES 3).
     expect(text).toContain("3번까지 다시 열어");
     expect(text).toContain("네 번째로 끊긴 때에는");
-    expect(text).toContain("계정에는 관계와 부르는 말만");
+    expect(text).toContain("운영자는 상대방의 생년월일과 태어난 시를 서버에 저장하지 않으며(계정에는 관계, 부르는 말, 고민과 풀이 글을 보관합니다)");
     expect(text).not.toContain("우리 사이");
     expect(text).not.toMatch(/베타|오픈 기념|정확|비법/);
   });

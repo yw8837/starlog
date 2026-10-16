@@ -54,6 +54,14 @@ const show = async (page: () => Promise<ReactElement>) => render(await page());
 const jsonLd = (container: HTMLElement) => JSON.parse(container.querySelector('script[type="application/ld+json"]')!.textContent!) as Record<string, any>;
 
 describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
+  it("says where the 궁합 partner's details go as it works (review 2026-10-17 #1)", async () => {
+    gate.visible = true;
+    const { container } = await show(MatchPage);
+    expect(container.textContent).toContain("그 사람의 생년월일과 태어난 시는 스타로그 서버에 남기지 않아요");
+    expect(container.textContent).toContain("30일이 지난 뒤 앱을 처음 열 때 지워요");
+    expect(container.textContent).not.toContain("계정에는 관계와 부르는 말만");
+  });
+
   it("send a shared record's link (?from=share) home instead of a 404 while premium is not visible here (review 2026-10-17 L5)", async () => {
     for (const { Page } of PAGES) {
       await expect(Page({ params: Promise.resolve({}), searchParams: Promise.resolve({ from: "share" }) })).rejects.toThrow("NEXT_REDIRECT /");

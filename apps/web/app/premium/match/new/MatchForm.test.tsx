@@ -44,7 +44,7 @@ describe("우리 사이 궁합's form (Task 20)", () => {
     window.history.replaceState(null, "", "/premium/match/new");
     render(<MatchForm />);
     expect(await screen.findByRole("heading", { level: 1, name: "어떤 사이인지 알려 주세요" })).toBeTruthy();
-    expect(screen.getByText("상대 정보는 이 풀이를 만드는 데만 써요. 스타로그 서버에는 남기지 않고, 이어서 물어보기를 위해 이 기기에만 잠근 채로 30일 동안 둬요.")).toBeTruthy();
+    expect(screen.getByText("상대의 생년월일과 태어난 시는 이 풀이를 만드는 데만 쓰고 스타로그 서버에 남기지 않아요. 이어서 물어보기를 위해 이 기기에만 잠근 채로 30일 동안 둬요.")).toBeTruthy();
     expect(primary().disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "친구" }));
     expect(primary().disabled).toBe(true);

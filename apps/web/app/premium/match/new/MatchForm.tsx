@@ -177,7 +177,7 @@ export function MatchForm() {
         </p>
       </section>
 
-      <p className={p.privacy}>상대 정보는 이 풀이를 만드는 데만 써요. 스타로그 서버에는 남기지 않고, 이어서 물어보기를 위해 이 기기에만 잠근 채로 30일 동안 둬요.</p>
+      <p className={p.privacy}>상대의 생년월일과 태어난 시는 이 풀이를 만드는 데만 쓰고 스타로그 서버에 남기지 않아요. 이어서 물어보기를 위해 이 기기에만 잠근 채로 30일 동안 둬요.</p>
       <div className={p.consent}>
         <Checkbox checked={ack} onChange={setAck} required>
           상대에게 알리거나 동의를 받을 수 있는 사이에서만 입력할게요
