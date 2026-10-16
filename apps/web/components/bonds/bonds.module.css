@@ -79,16 +79,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* At 360px each select still shows its widest choice: "1999", and "선택" / two digits (M-03). */
 .dateRow {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
 }
 
 .dateField {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -109,7 +110,7 @@
   content: "";
   position: absolute;
   top: 50%;
-  right: 14px;
+  right: 10px;
   width: 7px;
   height: 7px;
   border-right: 1.8px solid var(--ink-sub);
@@ -123,7 +124,7 @@
   min-width: 0;
   height: 48px;
   margin: 0;
-  padding: 0 30px 0 12px;
+  padding: 0 24px 0 10px;
   border: 1px solid var(--glass-line);
   border-radius: 14px;
   background: var(--glass);
