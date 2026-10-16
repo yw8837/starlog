@@ -60,6 +60,23 @@
   margin-top: 20px;
 }
 
+/*
+ * More than five positions: two rows of small slots (10 → 5+5, 7 → 4+3), so the fan keeps its place on a
+ * 360px screen (about 59px per card in five columns). Position names wrap between words at 13px.
+ */
+.grid {
+  --spread-card-max: 72px;
+  margin-top: 16px;
+  row-gap: 12px;
+}
+
+.grid p {
+  font-size: 13px;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: keep-all;
+}
+
 /* Fan, shuffle and reveal share the space between the slots and the CTA, centred. */
 .stage {
   display: flex;

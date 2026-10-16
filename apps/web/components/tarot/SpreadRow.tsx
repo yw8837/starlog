@@ -23,6 +23,8 @@ type SpreadRowProps = {
   className?: string;
   /** The faces' design; omitted, the viewer's own choice in 내 정보. A shared reading shows the one it was read with. */
   deck?: FrontDeck;
+  /** Cards per row; omitted, all in one row (a ten-card draw lays them 5+5). */
+  columns?: number;
 };
 
 export function cardLabel(card: SpreadCard): string {
@@ -45,9 +47,9 @@ export function faceUpCard(card: { position: string; cardId: string; orientation
 }
 
 /** Cards laid side by side, position name above and name/keyword below each. */
-export function SpreadRow({ cards, size = "md", onCardTap, className, deck }: SpreadRowProps) {
+export function SpreadRow({ cards, size = "md", onCardTap, className, deck, columns }: SpreadRowProps) {
   return (
-    <ol className={[s.row, s[size], className ?? ""].filter(Boolean).join(" ")} style={{ gridTemplateColumns: `repeat(${cards.length}, minmax(0, 1fr))` }}>
+    <ol className={[s.row, s[size], className ?? ""].filter(Boolean).join(" ")} style={{ gridTemplateColumns: `repeat(${columns ?? cards.length}, minmax(0, 1fr))` }}>
       {cards.map((card, i) => {
         const label = cardLabel(card);
         const face = (

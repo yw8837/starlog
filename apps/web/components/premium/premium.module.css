@@ -1,0 +1,205 @@
+/* Premium blocks: tokens from app/globals.css, visible text 13px or more, 44px targets where interactive. */
+
+/* ---- CrossSpread: the ten cards as dealt (a cross and a column of four, 4 columns at 360px) ---- */
+
+.cross {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-areas:
+    ".    goal .    outcome"
+    "past now  next hope"
+    ".    base .    around"
+    ".    .    .    self";
+  gap: 12px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crossSlot {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.crossCard {
+  --card-w: min(100%, 64px);
+}
+
+/* The second card lies across the first. */
+.crossSlot[data-crossing] {
+  z-index: 1;
+  align-self: start;
+  transform: rotate(90deg);
+  pointer-events: none;
+}
+
+.crossSlot[data-crossing] .crossLabel {
+  display: none;
+}
+
+.crossLabel {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.3;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.crossNo {
+  margin-right: 3px;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+/* ---- SpreadList: one row per card ---- */
+
+.list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listItem {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+}
+
+.listCard {
+  --card-w: 48px;
+}
+
+.listText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.listPosition {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.listNo {
+  display: inline-block;
+  min-width: 1.4em;
+}
+
+.listName {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.listReversed {
+  color: var(--ink-sub);
+  font-weight: 400;
+}
+
+.listKeyword,
+.listNote {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+/* ---- ChartCard and PairCharts: two charts side by side, never a birth date ---- */
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.chart {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+  padding: 14px 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+}
+
+.chartWho {
+  color: var(--gold);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.chartImage {
+  color: var(--ink);
+  font-size: var(--fs-body);
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.chartDay {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.pillars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pillar {
+  display: grid;
+  justify-items: center;
+}
+
+.pillarGz {
+  color: var(--ink);
+  font-size: var(--fs-h2);
+  letter-spacing: 0.02em;
+}
+
+.pillarKo {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.countDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--el);
+}
