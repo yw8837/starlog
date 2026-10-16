@@ -77,6 +77,14 @@
   word-break: keep-all;
 }
 
+/* Every position name holds two lines, a one-line name sitting on its card, so the cards of a row stay level (360px review 2026-10-17). */
+.grid > li > p:first-child {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 2.5em;
+}
+
 /* Fan, shuffle and reveal share the space between the slots and the CTA, centred. */
 .stage {
   display: flex;

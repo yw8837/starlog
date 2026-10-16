@@ -20,7 +20,8 @@
   display: grid;
   justify-items: center;
   align-content: start;
-  gap: 4px;
+  /* A reversed card's tag hangs 11px below it (TarotCard .tag): its position name starts below that (360px review 2026-10-17). */
+  gap: 14px;
   min-width: 0;
 }
 
