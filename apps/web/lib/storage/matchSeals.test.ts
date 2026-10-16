@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { CHAPTERS_KEY, clearChapters, listChapters } from "./chapters";
+import { CHAPTERS_KEY, clearChapters, deleteChapter, listChapters } from "./chapters";
 import { MATCH_SEALS_KEY } from "./matchSeals";
 import { forgetAccountOnDevice, pullAccountReadings } from "./sync";
 
@@ -89,5 +89,29 @@ describe("a 궁합's follow-ups across a logout (review 2026-10-17 H3)", () => {
     await pullAccountReadings(fetchImpl);
     expect(posts).toEqual([]);
     expect(listChapters()[0]).toMatchObject({ chapterToken: "" });
+  });
+
+  describe("a seal leaves with what it was kept for (review 2026-10-17 #5)", () => {
+    const sealedChapter = (createdAt: number) => ({ ...copy(createdAt), id: ID, serverId: ID, chapterToken: tokenWith("SEALED-PARTNER", createdAt + 30 * DAY) });
+
+    it("an account's deletion takes the seals too: nothing is left to ask a token with", () => {
+      seed([sealedChapter(Date.now() - DAY)]);
+      expect(forgetAccountOnDevice({ accountDeleted: true })).toBe(1);
+      expect(localStorage.getItem(MATCH_SEALS_KEY) ?? "").not.toContain("SEALED-PARTNER");
+    });
+
+    it("deleting the 궁합 on this device drops its seal, and erasing every record drops them all", () => {
+      seed([sealedChapter(Date.now() - DAY)]);
+      forgetAccountOnDevice();
+      expect(localStorage.getItem(MATCH_SEALS_KEY)).toContain("SEALED-PARTNER");
+      seed([{ ...copy(Date.now() - DAY), id: ID, serverId: ID }]);
+      deleteChapter(ID);
+      expect(localStorage.getItem(MATCH_SEALS_KEY) ?? "").not.toContain("SEALED-PARTNER");
+
+      seed([sealedChapter(Date.now() - DAY)]);
+      forgetAccountOnDevice();
+      clearChapters();
+      expect(localStorage.getItem(MATCH_SEALS_KEY) ?? "").not.toContain("SEALED-PARTNER");
+    });
   });
 });

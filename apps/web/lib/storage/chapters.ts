@@ -13,7 +13,7 @@ import { formatBirthDate, sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm
 import { isSajuTopicId, topicLabel } from "@/lib/sajuTopics";
 import { createLocalStore } from "@/lib/sessionStore";
 import { stopKnownShareLink } from "@/lib/share/client";
-import { keepMatchSeals, pruneMatchSeals } from "./matchSeals";
+import { clearMatchSeals, dropMatchSeal, keepMatchSeals, pruneMatchSeals } from "./matchSeals";
 
 /**
  * Opened readings (내 기록), kept on this device only (localStorage), oldest first. A saved reading
@@ -373,6 +373,8 @@ export const hasChapterEntry = (id: string) => rawEntries().some((entry) => idOf
 export function deleteChapter(id: string) {
   const chapter = getChapter(id);
   store.save({ v: 1, chapters: rawEntries().filter((entry) => idOf(entry) !== id) });
+  // A 궁합's seal kept across a logout goes with it (review 2026-10-17 #5).
+  if (chapter?.kind === "match" && chapter.serverId) dropMatchSeal(chapter.serverId);
   // Its share link goes too, best effort: the delete never waits for it.
   if (chapter) stopKnownShareLink(chapter);
 }
@@ -434,11 +436,13 @@ export function forgetServerIds() {
  * After a logout or the account's deletion: every chapter that came from or went to the account
  * (it has a serverId) leaves this device, so the next person on a shared phone does not see its
  * birth data or questions. Chapters opened here without the account stay. Returns how many left.
- * A 궁합's sealed partner stays behind on its own (matchSeals.ts), so this device can ask follow-ups again.
+ * A 궁합's sealed partner stays behind on its own after a logout (matchSeals.ts), so this device can ask follow-ups
+ * again; after the account's deletion (`keepSeals: false`) nothing stays (review 2026-10-17 #5).
  */
-export function removeServerChapters(): number {
+export function removeServerChapters({ keepSeals = true }: { keepSeals?: boolean } = {}): number {
   const entries = rawEntries();
-  keepMatchSeals(entries);
+  if (keepSeals) keepMatchSeals(entries);
+  else clearMatchSeals();
   const kept = entries.filter((entry) => !(isRecord(entry) && "serverId" in entry));
   if (kept.length !== entries.length) store.save({ v: 1, chapters: kept });
   return entries.length - kept.length;
@@ -447,6 +451,7 @@ export function removeServerChapters(): number {
 export function clearChapters() {
   const chapters = listChapters();
   store.clear();
+  clearMatchSeals();
   // Their share links go too, best effort (the clear never waits): the tokens that stop them leave with the readings.
   chapters.forEach((chapter) => stopKnownShareLink(chapter));
 }

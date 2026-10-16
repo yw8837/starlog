@@ -68,6 +68,20 @@ export function keepMatchSeals(entries: readonly unknown[], now: number = Date.n
   if (added) store.save(seals);
 }
 
+/** Drops the seal kept for one account reading (its 궁합 deleted on this device). */
+export function dropMatchSeal(serverId: string, now: number = Date.now()): void {
+  const seals = live(now);
+  if (!(serverId in seals)) return;
+  delete seals[serverId];
+  if (Object.keys(seals).length) store.save(seals);
+  else store.clear();
+}
+
+/** Drops every seal (the account deleted, or every record erased on this device). */
+export function clearMatchSeals(): void {
+  store.clear();
+}
+
 /** Drops the seals past their follow-up days (the app opening, chapters.ts pruneMatchPartners). */
 export function pruneMatchSeals(now: number = Date.now()): void {
   live(now);

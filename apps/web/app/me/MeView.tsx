@@ -52,7 +52,7 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
 
   useEffect(() => {
     if (!accountDeleted) return;
-    if (forgetAccountOnDevice() > 0) setNotice((line) => `${line ? `${line} ` : ""}이 기기에 받아 둔 계정 풀이도 지웠어요.`);
+    if (forgetAccountOnDevice({ accountDeleted: true }) > 0) setNotice((line) => `${line ? `${line} ` : ""}이 기기에 받아 둔 계정 풀이도 지웠어요.`);
   }, [accountDeleted]);
 
   // 오픈 기념 무료 until it ends (used on this device or not), whether sales are open or not (F-17).

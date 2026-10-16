@@ -166,13 +166,14 @@ export async function deleteAccountReadings(fetchImpl: typeof fetch = fetch): Pr
  * (the ones opened here without it stay), and a later login in this tab pulls them again. Returns
  * how many left.
  */
-export function forgetAccountOnDevice(): number {
+export function forgetAccountOnDevice({ accountDeleted = false }: { accountDeleted?: boolean } = {}): number {
   try {
     sessionStorage.removeItem(SYNCED_KEY);
   } catch {
     // storage blocked: nothing was kept there
   }
-  return removeServerChapters();
+  // A logout keeps a 궁합's seal for this device's follow-ups; the account's deletion keeps nothing (review 2026-10-17 #5).
+  return removeServerChapters({ keepSeals: !accountDeleted });
 }
 
 /** Once per tab, when a user is logged in: pull the account's readings onto this device. */
