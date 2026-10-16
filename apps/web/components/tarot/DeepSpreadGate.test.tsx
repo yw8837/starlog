@@ -22,10 +22,10 @@ function Page() {
 }
 
 const visible = () => Response.json({ products: [{ id: "tarot-deep", open: true, visible: true, opensAt: null }] });
-function stub(status: Array<() => Response | Promise<Response>>) {
+function stub(status: Array<() => Response | Promise<Response>>, me: () => Response | Promise<Response> = () => Response.json({ payments: true, login: true, owner: false, user: null })) {
   const fetchMock = vi.fn(async (url: string) => {
     if (url === "/api/premium/status") return (status.shift() ?? (() => Promise.reject(new TypeError("offline"))))();
-    if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+    if (url === "/api/me") return me();
     return Response.json({});
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -50,8 +50,17 @@ describe("the 켈틱 크로스 10장 gate when the premium status cannot be read
     expect(screen.getByTestId("kept").textContent).toBe("deep");
   });
 
-  it("never drops the chosen spread on a status it could not read: it says so and offers to ask again", async () => {
+  it("goes on as the 3-card flow when the status fails twice and the account holds no purchase of it (review 2026-10-17 L3)", async () => {
     const fetchMock = stub([offline, offline, visible]);
+    render(<Page />);
+    await waitFor(() => expect(screen.getByTestId("kept").textContent).toBe("dropped"));
+    expect(screen.getByTestId("spread").textContent).toBe("standard");
+    expect(statusCalls(fetchMock)).toBe(2);
+    expect(screen.queryByText("켈틱 크로스 10장을 지금 볼 수 있는지 확인하지 못했어요")).toBeNull();
+  });
+
+  it("keeps the chosen spread while neither the status nor the account can be read: it says so and offers to ask again", async () => {
+    const fetchMock = stub([offline, offline, visible], offline);
     render(<Page />);
     expect(await screen.findByText("켈틱 크로스 10장을 지금 볼 수 있는지 확인하지 못했어요")).toBeTruthy();
     expect(statusCalls(fetchMock)).toBe(2);

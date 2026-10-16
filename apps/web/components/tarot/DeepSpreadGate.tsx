@@ -22,16 +22,24 @@ export function deepAllowed(status: PremiumStatus | null | undefined, account: A
 
 /**
  * Mounted only while the flow asks for the ten cards, so a standard flow asks nothing new. A status that
- * could not be read is asked once more; failing again, it says so and offers 다시 확인하기, keeping the choice.
+ * could not be read is asked once more; failing again, the flow goes on as the 3-card one when the account
+ * answered and holds no purchase of it (review 2026-10-17 L3), and only while the account cannot be read
+ * either does it say so and offer 다시 확인하기, keeping the choice.
  */
 function DeepSpreadGate({ onDecide }: { onDecide: (allowed: boolean) => void }) {
   const status = usePremiumStatus();
-  const allowed = deepAllowed(status, useAccount());
+  const account = useAccount();
+  const allowed = deepAllowed(status, account);
   const retried = useRef(false);
   const [unread, setUnread] = useState(false);
   useEffect(() => {
     if (allowed !== undefined) onDecide(allowed);
   }, [allowed, onDecide]);
+  // The status failed twice and the account answered without a purchase of it (deepAllowed would be true with one).
+  const fallBack = unread && allowed === undefined && Boolean(account);
+  useEffect(() => {
+    if (fallBack) onDecide(false);
+  }, [fallBack, onDecide]);
   useEffect(() => {
     if (status !== null) return setUnread(false);
     if (retried.current) return setUnread(true);
@@ -45,7 +53,7 @@ function DeepSpreadGate({ onDecide }: { onDecide: (allowed: boolean) => void }) 
       live = false;
     };
   }, [status]);
-  if (allowed !== undefined || !unread) return null;
+  if (allowed !== undefined || !unread || fallBack) return null;
   return (
     <div className={s.unread} role="status">
       <p className={s.unreadText}>켈틱 크로스 10장을 지금 볼 수 있는지 확인하지 못했어요</p>
