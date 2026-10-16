@@ -2,7 +2,11 @@ import type { Orientation } from "@starlog/core";
 import { FRONT_DECKS, type FrontDeck } from "@/lib/deck";
 import { SITE } from "@/lib/config";
 import { kstDate, kstDaysBetween, kstMonthDay } from "@/lib/kst";
-import { CHECKIN_ANSWERS, type CheckinAnswer, type HistoryItem, type SajuContext, type SajuReadingData, type SajuTopic, type SajuTopicId, type TarotReadingData } from "@/lib/reading/types";
+import { PREMIUM, isPremiumId, type PremiumId } from "@/lib/premium/products";
+import {
+  CHECKIN_ANSWERS, type CheckinAnswer, type DeepTarotReadingData, type HistoryItem, type MatchReadingData, type NewYearReadingData, type SajuContext,
+  type SajuReadingData, type SajuTopic, type SajuTopicId, type TarotReadingData,
+} from "@/lib/reading/types";
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { formatBirthDate, sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { isSajuTopicId, topicLabel } from "@/lib/sajuTopics";
@@ -80,7 +84,45 @@ export interface SajuChapter extends ChapterBase {
   reading: SajuReadingData;
 }
 
-export type StoredChapter = TarotChapter | SajuChapter;
+/** P5 심층 타로: the question flow's fields and the ten cards as dealt. */
+export interface DeepTarotChapter extends ChapterBase {
+  kind: "tarot-deep";
+  question: string;
+  conditions: Array<{ label: string; value: string }>;
+  note: string;
+  cards: ChapterCard[];
+  reading: DeepTarotReadingData;
+}
+
+/** P5 우리 사이 궁합: both births (the partner's lives only here and in the tab that wrote it, spec §9) and the five cards. */
+export interface MatchChapter extends ChapterBase {
+  kind: "match";
+  relation: string;
+  /** "친구" */
+  relationLabel: string;
+  /** What the user calls the other person, when given. */
+  partnerLabel?: string;
+  me: { birth: SajuForm };
+  partner: { birth: SajuForm };
+  concern?: string;
+  cards: ChapterCard[];
+  reading: MatchReadingData;
+}
+
+/** P5 2027 신년운세. */
+export interface NewYearChapter extends ChapterBase {
+  kind: "newyear-2027";
+  birth: SajuForm;
+  /** The reading's theme ("차근차근 쌓아 가는 해"). */
+  title: string;
+  context?: SajuContext;
+  reading: NewYearReadingData;
+}
+
+export type PremiumChapter = DeepTarotChapter | MatchChapter | NewYearChapter;
+export type StoredChapter = TarotChapter | SajuChapter | PremiumChapter;
+
+export const isPremiumChapter = (chapter: { kind: string }): chapter is PremiumChapter => isPremiumId(chapter.kind);
 
 type Fresh<T> = T extends StoredChapter ? Omit<T, "id" | "createdAt" | "turns" | "followUpsLeft" | "checkin"> : never;
 export type NewChapter = Fresh<StoredChapter>;
@@ -142,6 +184,53 @@ export function parseChapter(value: unknown): StoredChapter | null {
       note: isString(value.note) ? value.note : "",
       cards: cards as ChapterCard[],
       reading: reading as unknown as TarotReadingData,
+    };
+  }
+  if (value.kind === "tarot-deep" || value.kind === "match") {
+    const cards = Array.isArray(value.cards) ? value.cards.map(parseCard) : [];
+    if (cards.length === 0 || cards.some((c) => c === null) || !isString(reading.verdict) || !isSection(reading.observation)) return null;
+    if (value.kind === "tarot-deep") {
+      if (!Array.isArray(reading.positions)) return null;
+      const conditions = Array.isArray(value.conditions)
+        ? value.conditions.filter((c): c is { label: string; value: string } => isRecord(c) && isString(c.label) && isString(c.value))
+        : [];
+      return {
+        ...base,
+        kind: "tarot-deep",
+        question: isString(value.question) ? value.question : "",
+        conditions: conditions.map(({ label, value: v }) => ({ label, value: v })),
+        note: isString(value.note) ? value.note : "",
+        cards: cards as ChapterCard[],
+        reading: reading as unknown as DeepTarotReadingData,
+      };
+    }
+    const me = isRecord(value.me) ? sanitizeSajuForm(value.me.birth) : null;
+    const partner = isRecord(value.partner) ? sanitizeSajuForm(value.partner.birth) : null;
+    if (!me || !partner || !isString(value.relation) || !isRecord(reading.saju) || !Array.isArray(reading.cards)) return null;
+    return {
+      ...base,
+      kind: "match",
+      relation: value.relation,
+      relationLabel: isString(value.relationLabel) ? value.relationLabel : "",
+      ...(isString(value.partnerLabel) && value.partnerLabel ? { partnerLabel: value.partnerLabel } : {}),
+      me: { birth: me },
+      partner: { birth: partner },
+      ...(isString(value.concern) && value.concern ? { concern: value.concern } : {}),
+      cards: cards as ChapterCard[],
+      reading: reading as unknown as MatchReadingData,
+    };
+  }
+  if (value.kind === "newyear-2027") {
+    const birth = sanitizeSajuForm(value.birth);
+    if (!birth || !Array.isArray(reading.months) || !isSection(reading.observation)) return null;
+    const context = sanitizeSajuContext(value.context);
+    return {
+      ...base,
+      kind: "newyear-2027",
+      birth,
+      title: isString(value.title) ? value.title : isString(reading.title) ? reading.title : "",
+      ...(context ? { context } : {}),
+      reading: reading as unknown as NewYearReadingData,
     };
   }
   if (value.kind === "saju") {
@@ -216,7 +305,9 @@ export function getChapter(id: string): StoredChapter | undefined {
  * browser would not keep it (storage full or blocked): it then lives only until the tab closes.
  */
 export function saveChapter(input: NewChapter, now: number = Date.now()): { chapter: StoredChapter; persisted: boolean } {
-  const chapter = { ...input, id: newId(), createdAt: now, turns: [], followUpsLeft: SITE.reading.followUps } as StoredChapter;
+  // a premium reading includes its own follow-ups (PREMIUM[kind].followUps, 5); the standard ones SITE's
+  const followUpsLeft = isPremiumId(input.kind) ? PREMIUM[input.kind as PremiumId].followUps : SITE.reading.followUps;
+  const chapter = { ...input, id: newId(), createdAt: now, turns: [], followUpsLeft } as StoredChapter;
   const persisted = store.save({ v: 1, chapters: [...rawEntries(), chapter] });
   return { chapter, persisted };
 }
@@ -371,7 +462,9 @@ const clip = (text: string, max: number) => {
 
 /** What a record says in one line: the question and the short answer ("사주 재물운 · <맛보기 제목>" for a topic). */
 export function recordLine(chapter: StoredChapter): { question: string; verdict: string } {
-  if (chapter.kind === "tarot") return { question: chapter.question, verdict: chapter.reading.verdict };
+  if (chapter.kind === "tarot" || chapter.kind === "tarot-deep") return { question: chapter.question, verdict: chapter.reading.verdict };
+  if (chapter.kind === "match") return { question: `${PREMIUM.match.name} · ${chapter.relationLabel}`, verdict: chapter.reading.verdict };
+  if (chapter.kind === "newyear-2027") return { question: PREMIUM["newyear-2027"].name, verdict: chapter.title };
   const label = chapter.topic ? `사주 ${topicLabel(chapter.topic)}` : "사주";
   return { question: chapter.title ? `${label} · ${chapter.title}` : label, verdict: chapter.summary };
 }
@@ -396,6 +489,7 @@ export function sajuChapterEyebrow(chapter: SajuChapter): string {
 export function checkinSource(chapter: StoredChapter): string {
   const date = kstMonthDay(chapter.createdAt);
   if (chapter.kind === "tarot") return `${date} 타로`;
+  if (isPremiumChapter(chapter)) return `${date} ${PREMIUM[chapter.kind].name}`;
   return chapter.topic ? `${date} 사주 · ${topicLabel(chapter.topic)}` : `${date} 사주`;
 }
 
@@ -403,10 +497,12 @@ export function checkinSource(chapter: StoredChapter): string {
  * Up to 3 recent readings as the `history` field (server caps: question 60, verdict 80, observation 120).
  * A saju request passes its topic (spec §7.8): a topic gets only its own topic's saju records, 전체 흐름
  * gets tarot and the saju records without a topic; a tarot request passes nothing and gets every record.
+ * Premium readings are never sent (P5 spec default 17).
  */
 export function historyFor(chapters: readonly StoredChapter[], opts: { topic?: SajuTopic } = {}): HistoryItem[] {
   const { topic } = opts;
-  const fits = (chapter: StoredChapter) => {
+  const fits = (chapter: StoredChapter): chapter is TarotChapter | SajuChapter => {
+    if (isPremiumChapter(chapter)) return false;
     if (topic === undefined) return true;
     if (topic === "overall") return chapter.kind === "tarot" || !chapter.topic;
     return chapter.kind === "saju" && chapter.topic === topic;

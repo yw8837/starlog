@@ -12,7 +12,9 @@ import { Button } from "@/components/ui/Button";
 import { useAccount } from "@/lib/account/client";
 import { kstMonthDay } from "@/lib/kst";
 import { sajuTopicsVisible } from "@/lib/sajuTopics";
-import { checkinDue, newestFirst, recordLine, sajuRecordTitle, useChapters, type SajuChapter, type StoredChapter } from "@/lib/storage/chapters";
+import { PREMIUM } from "@/lib/premium/products";
+import type { SajuForm } from "@/lib/sajuForm";
+import { checkinDue, newestFirst, recordLine, sajuRecordTitle, useChapters, type StoredChapter } from "@/lib/storage/chapters";
 import { useAccountSync } from "@/lib/storage/sync";
 import s from "./StoryView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
@@ -23,10 +25,19 @@ const PlusIcon = () => (
   </svg>
 );
 
-const KIND_LABEL = { tarot: "타로", saju: "사주" } as const;
+const KIND_LABEL: Record<StoredChapter["kind"], string> = {
+  tarot: "타로",
+  saju: "사주",
+  "tarot-deep": PREMIUM["tarot-deep"].name,
+  match: PREMIUM.match.name,
+  "newyear-2027": PREMIUM["newyear-2027"].name,
+};
+
+/** Card thumbnails a record shows: the three of a standard reading, the first three of a larger spread. */
+const THUMBS = 3;
 
 /** The day pillar as two element tiles, and the day master's name. */
-function DayPillar({ chapter }: { chapter: SajuChapter }) {
+function DayPillar({ chapter }: { chapter: { birth: SajuForm } }) {
   const result = chartFor(chapter.birth);
   if (!("chart" in result)) return null;
   const { day } = result.chart.pillars;
@@ -60,9 +71,9 @@ function Record({ chapter, now, topicsOpen }: { chapter: StoredChapter; now: num
           {checkinDue(chapter, now) ? <span className={s.due}>돌아볼 때예요</span> : chapter.checkin ? <span className={s.checked}>{`돌아보기 · ${chapter.checkin.answer}`}</span> : null}
         </span>
         <span className={s.recordBody}>
-          {chapter.kind === "tarot" ? (
+          {chapter.kind === "tarot" || chapter.kind === "tarot-deep" || chapter.kind === "match" ? (
             <span className={s.thumbs} aria-hidden="true">
-              {chapter.cards.map((card) => (
+              {chapter.cards.slice(0, THUMBS).map((card) => (
                 <TarotCard key={card.position} cardId={card.cardId} orientation={card.orientation} faceUp size="sm" className={s.thumb} deck={chapter.deck ?? "rws1909"} />
               ))}
             </span>

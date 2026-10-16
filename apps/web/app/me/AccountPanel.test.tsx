@@ -207,7 +207,7 @@ describe("AccountPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
     expect(await screen.findByText("로그아웃했어요. 이 기기에 받아 둔 계정 풀이는 지웠어요.")).toBeTruthy();
     expect(requests.some((r) => r.url === "/api/auth/logout" && r.method === "POST")).toBe(true);
-    expect(listChapters().map((chapter) => (chapter.kind === "tarot" ? chapter.question : chapter.title))).toEqual(["기기 질문"]);
+    expect(listChapters().map((chapter) => (chapter.kind === "tarot" ? chapter.question : chapter.kind === "saju" ? chapter.title : chapter.kind))).toEqual(["기기 질문"]);
     expect(sessionStorage.getItem("starlog.account-synced")).toBeNull();
   });
 

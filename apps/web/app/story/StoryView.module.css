@@ -74,7 +74,9 @@
   font-weight: 700;
 }
 
-.kind[data-kind="saju"] {
+.kind[data-kind="saju"],
+.kind[data-kind="match"],
+.kind[data-kind="newyear-2027"] {
   background: rgba(247, 239, 224, 0.16);
   color: #f5eedf;
 }

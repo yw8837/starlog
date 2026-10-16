@@ -152,7 +152,8 @@ describe("chapters store", () => {
 
   it("keeps a reading saved before the story block was dropped", () => {
     const old = { ...TAROT, id: "abcdef12", createdAt: NOW, reading: { ...READING, observation: undefined, story: { title: "t", body: "b" } } };
-    expect(parseChapter(old)?.reading.story).toEqual({ title: "t", body: "b" });
+    const chapter = parseChapter(old);
+    expect(chapter?.kind === "tarot" ? chapter.reading.story : undefined).toEqual({ title: "t", body: "b" });
   });
 });
 

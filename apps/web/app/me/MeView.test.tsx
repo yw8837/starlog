@@ -152,7 +152,7 @@ describe("MeView after the account was deleted", () => {
   it("takes the account's readings off this device and says so; readings opened here stay", async () => {
     render(<MeView status="탈퇴했어요. 그동안 고마웠어요." accountDeleted />);
     expect(await screen.findByText("탈퇴했어요. 그동안 고마웠어요. 이 기기에 받아 둔 계정 풀이도 지웠어요.")).toBeTruthy();
-    expect(listChapters().map((chapter) => (chapter.kind === "tarot" ? chapter.question : chapter.title))).toEqual(["기기 질문"]);
+    expect(listChapters().map((chapter) => (chapter.kind === "tarot" ? chapter.question : chapter.kind === "saju" ? chapter.title : chapter.kind))).toEqual(["기기 질문"]);
     expect(sessionStorage.getItem("starlog.account-synced")).toBeNull();
   });
 

@@ -23,6 +23,7 @@ import {
   deleteChapter,
   getChapter,
   hasChapterEntry,
+  isPremiumChapter,
   observationOf,
   sajuChapterEyebrow,
   updateChapter,
@@ -31,13 +32,16 @@ import {
 } from "@/lib/storage/chapters";
 import { pullAccountReadings } from "@/lib/storage/sync";
 import { ChapterView, type ChapterFollowUp } from "./ChapterView";
+import { PremiumChapterView } from "./PremiumChapterView";
 import { SajuChapterView } from "./SajuChapterView";
+import { PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import s from "./ChapterView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { isFollowUpData, isWholeSajuReading, partialTarotReading } from "@/lib/reading/validate";
 
-/** Chapter tokens expire 7 days after the reading (the server's rule): no follow-ups after that. */
+/** Chapter tokens expire 7 days after the reading, 30 for a premium one (the server's rule): no follow-ups after that. */
 const FOLLOW_UP_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Follow-ups on their way, per reading. Leaving the page does not stop one (the answer is still
@@ -117,8 +121,12 @@ function EraseRecord({ id }: { id: string }) {
   );
 }
 
-/** True when every part of the saved reading can be shown (an older or edited one may lack some). */
-const isWhole = (chapter: StoredChapter) => (chapter.kind === "tarot" ? partialTarotReading(chapter.reading).complete : isWholeSajuReading(chapter.reading));
+/**
+ * True when every part of the saved reading can be shown (an older or edited one may lack some). A
+ * premium reading is checked as it is read back (parseChapter): what its page needs is there.
+ */
+const isWhole = (chapter: StoredChapter) =>
+  isPremiumChapter(chapter) ? true : chapter.kind === "tarot" ? partialTarotReading(chapter.reading).complete : isWholeSajuReading(chapter.reading);
 
 /** A reading saved on this device, as its kind shows it. It never calls the API to be shown again. */
 function SavedReading({ chapter }: { chapter: StoredChapter }) {
@@ -150,7 +158,9 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     ) : undefined);
 
   const [openedAt] = useState(() => Date.now());
-  const expired = openedAt - chapter.createdAt >= FOLLOW_UP_DAYS_MS;
+  const premium = isPremiumChapter(chapter);
+  const followUpMs = premium ? PREMIUM_CHAPTER_TTL_MS : FOLLOW_UP_DAYS_MS;
+  const expired = openedAt - chapter.createdAt >= followUpMs;
   const closed = expired || !whole;
   const suggestions: unknown = chapter.reading.followUps;
   const followUp: ChapterFollowUp = {
@@ -162,7 +172,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     ...(!whole
       ? { endedText: "이 기록은 일부를 읽지 못해 더 물어볼 수 없어요" }
       : expired && chapter.followUpsLeft > 0
-        ? { endedText: "풀이를 연 지 7일이 지나 더 물어볼 수 없어요" }
+        ? { endedText: `풀이를 연 지 ${Math.round(followUpMs / DAY_MS)}일이 지나 더 물어볼 수 없어요` }
         : {}),
   };
   const date = kstMonthDay(chapter.createdAt);
@@ -174,7 +184,8 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   const rating = chapter.serverId ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
   // 오픈 기념 무료 is read and kept on this device only (owner 2026-10-14 evening): no follow-ups, no share.
   const keepOnly = chapter.opening === true;
-  const share: ShareActions | undefined = whole && !keepOnly
+  // A premium reading has no share link yet (its share image comes with P5 Task 23).
+  const share: ShareActions | undefined = whole && !keepOnly && !premium
     ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter), current: () => knownShareLink(chapter) }
     : undefined;
 
@@ -185,6 +196,14 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     </p>
   ) : null;
 
+  if (isPremiumChapter(chapter)) {
+    return (
+      <>
+        {unsaved}
+        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} />
+      </>
+    );
+  }
   if (chapter.kind === "saju") {
     return (
       <>
