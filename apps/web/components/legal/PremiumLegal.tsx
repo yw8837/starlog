@@ -1,22 +1,14 @@
-"use client";
-
 import Link from "next/link";
 import { won } from "@/lib/config";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, PREMIUM_IDS } from "@/lib/premium/products";
-import { usePremiumStatus } from "@/lib/premium/status";
 import s from "./legal.module.css";
 
 /**
- * The policies' premium text (plan task 24; owner 2026-10-16: the 궁합 partner is never kept on our servers). Client
- * islands on the premium status, like 별자리 인연's text follows its feature flag: nothing before the status answers,
- * when it fails, or while no premium product is visible here, so STARLOG_PREMIUM off shows today's policies.
+ * The policies' premium text (plan task 24; owner 2026-10-16: the 궁합 partner is never kept on our servers). Part of
+ * the documents themselves, rendered with the page whatever STARLOG_PREMIUM says (review 2026-10-17 M3): the names and
+ * prices are public on /pricing already, and a policy must not wait for a client request to say what it says.
  */
-
-function usePremiumShown(): boolean {
-  const status = usePremiumStatus();
-  return Boolean(status && PREMIUM_IDS.some((id) => status[id].visible));
-}
 
 const FOLLOW_UP_DAYS = Math.round(PREMIUM_CHAPTER_TTL_MS / (24 * 60 * 60 * 1000));
 
@@ -28,11 +20,10 @@ const kstDate = (ms: number) => {
 
 /** 개인정보처리방침 §1: what the premium readings take, and the 궁합 partner's information (합니다체, as the policy). */
 export function PremiumPrivacy() {
-  if (!usePremiumShown()) return null;
   return (
     <>
       <div>
-        <h3 className={s.sub}>프리미엄 풀이를 볼 때</h3>
+        <h3 className={s.sub}>프리미엄 풀이를 이용하는 경우</h3>
         <ul className={s.list}>
           <li>{`${PREMIUM["tarot-deep"].name}: 타로 풀이와 같은 항목(질문, 고른 주제와 상황, 직접 쓰기 칸에 적은 내용, 메모)`}</li>
           <li>{`${PREMIUM["newyear-2027"].name}: 사주 풀이와 같은 출생 정보와 고른 지금 상태`}</li>
@@ -60,7 +51,6 @@ export function PremiumPrivacy() {
 
 /** 이용약관 제7조의3 (합니다체, as the terms). */
 export function PremiumTerms() {
-  if (!usePremiumShown()) return null;
   const year = PREMIUM["newyear-2027"];
   const window = year.opensAt !== undefined && year.closesAt !== undefined ? `${kstDate(year.opensAt)} 0시부터 ${kstDate(year.closesAt - 1)}까지(한국 시간)` : "운영자가 정한 판매 기간 동안";
   return (
@@ -96,7 +86,6 @@ export function PremiumTerms() {
 
 /** 환불 정책 (해요체, as the refund page). */
 export function PremiumRefund() {
-  if (!usePremiumShown()) return null;
   return (
     <section id="premium" className={s.section} aria-labelledby="premium-title">
       <h2 id="premium-title" className={s.sectionTitle}>

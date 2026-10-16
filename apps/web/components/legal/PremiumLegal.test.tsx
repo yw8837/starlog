@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
@@ -8,7 +8,8 @@ import { resetPremiumStatusForTests } from "@/lib/premium/status";
 
 /**
  * Plan task 24 and the owner's decision of 2026-10-16 (the 궁합 partner is never kept on our servers): the policies
- * describe the premium readings only where premium is visible, as client islands; STARLOG_PREMIUM off shows today's text.
+ * describe the premium readings in the documents themselves, whatever STARLOG_PREMIUM says (review 2026-10-17 M3: the
+ * names and prices are public on /pricing already, and a policy must not depend on a client request).
  */
 
 function stub(visible: boolean | "fail") {
@@ -32,15 +33,12 @@ afterEach(() => {
 
 describe("the policies' premium text", () => {
   for (const state of [false, "fail"] as const) {
-    it(`is absent while premium is ${state === false ? "off" : "unknown"}: today's policies`, async () => {
+    it(`is in the documents while premium is ${state === false ? "off" : "unknown"}, in the first render (review 2026-10-17 M3)`, () => {
       for (const Page of PAGES) {
-        const fetchMock = stub(state);
+        stub(state);
         const { container } = render(<Page />);
-        await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url === "/api/premium/status")).toBe(true));
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        expect(container.textContent).not.toMatch(/프리미엄|상대방|2027 신년운세|우리 사이 궁합|켈틱/);
+        expect(container.textContent).toMatch(/프리미엄 풀이/);
         cleanup();
-        resetPremiumStatusForTests();
       }
     });
   }
@@ -64,7 +62,7 @@ describe("the policies' premium text", () => {
     expect(text).toContain("관계, 부르는 말");
     expect(text).toContain("풀이를 연 기기에서는 다시 로그인해도");
     expect(text).not.toContain("풀이를 열 때 지웁니다");
-    expect(screen.getByRole("heading", { name: "프리미엄 풀이를 볼 때" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "프리미엄 풀이를 이용하는 경우" })).toBeTruthy();
   });
 
   it("terms: the three products with their prices and what they hold, the 2027 신년운세 sales window, and an unfinished reading kept", async () => {
