@@ -26,7 +26,7 @@ import type { NewYearPreviewData, NewYearReadingData } from "@/lib/reading/types
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { isNewYearPreview, isNewYearReading } from "@/lib/reading/validate";
 import { sajuStatusBody, useSajuContext, useSajuProfile } from "@/lib/sajuFlow";
-import { saveChapter } from "@/lib/storage/chapters";
+import { saveChapter, useChapters } from "@/lib/storage/chapters";
 
 const ID = "newyear-2027";
 const PREVIEW_PATH = "/premium/newyear-2027/preview";
@@ -49,6 +49,7 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
   const context = useSajuContext();
   const account = useAccount();
   const status = usePremiumStatus();
+  const chapters = useChapters();
 
   useEffect(() => {
     if (profile === null) router.replace("/premium/newyear-2027/new");
@@ -116,6 +117,10 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
   const notYet = failed?.code === "NOT_AVAILABLE" ? opensAtText(PREMIUM[ID].opensAt ?? Date.now()) : null;
   const teaserError = failed && !notYet ? describeApiError(failed, "teaser") : null;
   const busy = Boolean(account?.user?.opening.some((item) => item.productId === ID));
+  // This birth's year was opened already: offer that reading, not the payment again (review 2026-10-16 #2). A second
+  // purchase held for it still opens.
+  const opened = profile ? chapters?.find((c) => c.kind === ID && birthKey(c.birth) === birthKey(profile)) : undefined;
+  const openedHref = opened && !account?.user?.unused.some((item) => item.productId === ID) ? `/chapter/${opened.id}` : undefined;
   const announce = opener.running
     ? opener.running.progress.caption
     : opener.error
@@ -141,6 +146,7 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
         resumable={opener.resumable}
         error={opener.error}
         refundHref={opener.method === "paid" && opener.error?.action === "retry" ? "/me#purchases" : undefined}
+        openedHref={openedHref}
         checking={opener.checking}
         onCheck={opener.stalled || (!opener.checking && busy) ? opener.recheck : undefined}
       />

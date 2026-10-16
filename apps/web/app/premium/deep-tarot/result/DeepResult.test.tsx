@@ -160,6 +160,43 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     expect(screen.queryByRole("heading", { name: "심층 타로에 담긴 것" })).toBeNull();
   });
 
+  it("binds the draw to the reading on both recovery paths (cut off but delivered, 409 opened), so it is never offered for sale again", async () => {
+    let question = "";
+    const saved = () => ({ id: ID, createdAt: Date.now(), chapter: { kind: "tarot-deep", question, conditions: [], note: "", cards: DRAWN, reading: READING, chapterToken: "c", createdAt: 1, turns: [], followUpsLeft: 5 } });
+    stub({
+      teaser: [() => Response.json({ preview: PREVIEW })],
+      reading: [() => Response.json({ code: "UPSTREAM" }, { status: 502 })],
+      readings: () => Response.json({ readings: [saved()], next: null }),
+    });
+    render(<DeepResult instant />);
+    const open = await screen.findByRole("button", { name: "결제한 풀이 열기" });
+    question = screen.getByRole("heading", { level: 1 }).textContent ?? "";
+    fireEvent.click(open);
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw.chapterId).toBe(ID);
+    cleanup();
+    resetAccountForTests();
+
+    // Back on the preview: the reading it holds, not a second sale.
+    stub({ teaser: [() => Response.json({ preview: PREVIEW })], unused: [] });
+    render(<DeepResult instant />);
+    expect((await screen.findByRole("link", { name: /열어 둔 풀이 보기/ })).getAttribute("href")).toBe(`/chapter/${ID}`);
+    expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
+  });
+
+  it("binds the draw on 409 opened too", async () => {
+    const saved = { id: ID, createdAt: Date.now(), chapter: { kind: "tarot-deep", question: "q", conditions: [], note: "", cards: DRAWN, reading: READING, chapterToken: "c", createdAt: 1, turns: [], followUpsLeft: 5 } };
+    stub({
+      teaser: [() => Response.json({ preview: PREVIEW })],
+      reading: [() => Response.json({ code: "NOT_AVAILABLE", reason: "opened", readingId: ID }, { status: 409 })],
+      readings: () => Response.json({ readings: [saved], next: null }),
+    });
+    render(<DeepResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw.chapterId).toBe(ID);
+  });
+
   it("sends a flow without its ten cards to the draw, one without a question to the ten-card builder, and a standard flow to the standard screen", async () => {
     stub({});
     sessionStorage.setItem(FLOW_KEY, JSON.stringify({ ...FLOW, draw: undefined, savedAt: Date.now() }));

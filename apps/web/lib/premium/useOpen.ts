@@ -26,6 +26,12 @@ export interface PremiumOpenOptions<R> {
   accept: (reading: unknown) => reading is R;
   /** Keeps the finished reading on this device; answers the chapter's address id. */
   save: (done: PremiumDone<R>) => string;
+  /**
+   * The reading was finished without passing through `save`: the account's copy, found after a cut-off
+   * (delivered) or answered by 409 `opened`. Called with its account id before its chapter opens, so the
+   * screen binds or forgets what `save` would have (review 2026-10-16 #2, #3).
+   */
+  onDelivered?: (readingId: string) => void;
   /** Back from checkout (?unlock=paid): open the purchase once, as soon as `ready` (the preview is shown) and it is held. */
   autoOpen?: boolean;
   ready?: boolean;
@@ -58,7 +64,7 @@ export interface PremiumOpen {
  * account before anything is said (delivered → its chapter; kept → open again, 이어서 받기). 409 `opened`
  * brings the account's copy here and opens it; 409 `opening` waits (the panel shows the purchase in use).
  */
-export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept, save, autoOpen = false, ready = false, cleanHref = returnTo }: PremiumOpenOptions<R>): PremiumOpen {
+export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept, save, onDelivered, autoOpen = false, ready = false, cleanHref = returnTo }: PremiumOpenOptions<R>): PremiumOpen {
   const router = useRouter();
   const account = useAccount();
   const [running, setRunning] = useState<PremiumOpen["running"]>(null);
@@ -84,6 +90,7 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
       void refreshAccount();
       if (result.status === "delivered") {
         mergeServerReadings([result.reading]);
+        onDelivered?.(result.reading.id);
         router.push(`/chapter/${result.reading.id}`);
       } else if (result.status === "kept") {
         setError(creditKept("paid"));
@@ -109,6 +116,7 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
       // Already written and saved (a retry after a missed answer): bring the account's copy here and open it.
       await pullAccountReadings();
       void refreshAccount();
+      onDelivered?.(failure.readingId);
       router.push(`/chapter/${failure.readingId}`);
       return;
     }

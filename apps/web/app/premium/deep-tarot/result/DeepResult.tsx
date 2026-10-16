@@ -128,6 +128,8 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
       setFlow((prev) => (prev.draw ? { ...prev, draw: { ...prev.draw, chapterId: chapter.id } } : prev));
       return chapter.serverId ?? chapter.id;
     },
+    // The account's copy (after a cut-off, or 409 opened) binds the draw the same way, by its account id.
+    onDelivered: (readingId) => setFlow((prev) => (prev.draw ? { ...prev, draw: { ...prev.draw, chapterId: readingId } } : prev)),
   });
 
   // After a failed opening the reason comes into view and takes focus.
@@ -138,7 +140,8 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
     reason?.focus({ preventScroll: true });
   }, [opener.error]);
 
-  const openedId = draw?.chapterId && chapters?.some((c) => c.id === draw.chapterId) ? draw.chapterId : undefined;
+  // Bound by its id on this device or, for the account's copy, its account id.
+  const openedId = draw?.chapterId ? chapters?.find((c) => c.id === draw.chapterId || c.serverId === draw.chapterId)?.id : undefined;
   const teaserState = teaserGen.state;
   const teaserError = !preview && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
   const busy = Boolean(account?.user?.opening.some((item) => item.productId === ID));

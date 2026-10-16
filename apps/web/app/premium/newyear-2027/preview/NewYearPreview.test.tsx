@@ -6,7 +6,7 @@ import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { resetBotCheck } from "@/lib/reading/api";
 import { SAJU_CONTEXT_KEY, SAJU_PROFILE_KEY } from "@/lib/sajuFlow";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { clearChapters, listChapters } from "@/lib/storage/chapters";
+import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
 import { NewYearPreview } from "./NewYearPreview";
 
 const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
@@ -28,10 +28,10 @@ const READING = {
   closing: section("한 해를 보내는 방법"), observation: section("첫 달에 확인해 볼 신호"), followUps: [],
 };
 
-function stub(teaser: () => Response, reading: Array<() => Response> = []) {
+function stub(teaser: () => Response, reading: Array<() => Response> = [], unused: Array<{ orderId: string; productId: string }> = [{ orderId: "o", productId: "newyear-2027" }]) {
   const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
     if (url === "/api/premium/status") return Response.json({ products: [{ id: "newyear-2027", open: true, visible: true, opensAt: Date.parse("2026-11-15T00:00:00+09:00") }] });
-    if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [{ orderId: "o", productId: "newyear-2027" }], opening: [] } });
+    if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused, opening: [] } });
     if (url === "/api/premium/newyear-2027/teaser") return teaser();
     if (url === "/api/premium/newyear-2027/reading") return reading.shift()!();
     return Response.json({ readings: [], next: null });
@@ -105,6 +105,21 @@ describe("2027 신년운세's preview (Task 21)", () => {
     fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
     expect(listChapters()[0]).toMatchObject({ kind: "newyear-2027", serverId: ID });
+  });
+
+  it("after the year is opened, back on the preview it offers that reading, never the payment again", async () => {
+    saveChapter({ kind: "newyear-2027", birth: DEFAULT_SAJU_FORM, title: READING.title, reading: READING as never, chapterToken: "c", serverId: ID });
+    stub(() => Response.json({ preview: PREVIEW }), [], []);
+    render(<NewYearPreview />);
+    expect((await screen.findByRole("link", { name: /열어 둔 풀이 보기/ })).getAttribute("href")).toMatch(/^\/chapter\//);
+    expect(screen.queryByRole("link", { name: /결제하고 보기/ })).toBeNull();
+  });
+
+  it("still opens a second purchase held for the same birth", async () => {
+    saveChapter({ kind: "newyear-2027", birth: DEFAULT_SAJU_FORM, title: READING.title, reading: READING as never, chapterToken: "c", serverId: ID });
+    stub(() => Response.json({ preview: PREVIEW }));
+    render(<NewYearPreview />);
+    expect(await screen.findByRole("button", { name: "결제한 풀이 열기" })).toBeTruthy();
   });
 
   it("sends a visit without a saved birth to the form", async () => {
