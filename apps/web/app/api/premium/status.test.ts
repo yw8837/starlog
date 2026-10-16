@@ -8,7 +8,8 @@ describe("GET /api/premium/status", () => {
     vi.stubEnv("STARLOG_PREMIUM", "on");
     vi.stubEnv("STARLOG_PAYMENTS", "on");
     const res = await GET(new Request("http://localhost/api/premium/status"));
-    expect(res.headers.get("cache-control")).toContain("no-store");
+    // Kept by this browser for a minute (every page's footer asks it), never by a shared cache (review 2026-10-17 L4).
+    expect(res.headers.get("cache-control")).toBe("private, max-age=60");
     const { products } = (await res.json()) as { products: Array<{ id: string; open: boolean; opensAt: number | null }> };
     expect(products.map((p) => p.id)).toEqual(["tarot-deep", "match", "newyear-2027"]);
     expect(products[0]).toMatchObject({ open: true, opensAt: null });
