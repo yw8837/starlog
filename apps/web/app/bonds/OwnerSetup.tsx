@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { flushSync } from "react-dom";
 import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -35,8 +36,12 @@ function SetupForm({ initial, prefilled, onDone }: { initial: BirthValue; prefil
     const body = birthBody(birth);
     if (!body) next.birth = BIRTH_MISSING;
     if (!consent) next.consent = "확인에 체크해 주세요";
-    setErrors(next);
-    if (Object.keys(next).length || !body) return;
+    // Drawn at once, so focus can go to the first field marked wrong (it scrolls into view) (M-12).
+    flushSync(() => setErrors(next));
+    if (Object.keys(next).length || !body) {
+      e.currentTarget.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+      return;
+    }
     setBusy(true);
     const result = await bondsApi<{ code: string }>("owner", { nickname: nickname.trim(), birth: body });
     setBusy(false);

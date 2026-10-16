@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SAJU_PROFILE_KEY } from "@/lib/sajuFlow";
 import { OwnerSetup } from "./OwnerSetup";
@@ -27,6 +27,22 @@ describe("OwnerSetup", () => {
     expect((screen.getByRole("checkbox", { name: "윤달이에요" }) as HTMLInputElement).checked).toBe(true);
     screen.getByRole("button", { name: "바꾸기" }).click();
     expect(document.activeElement).toBe(screen.getByLabelText("태어난 연도"));
+  });
+
+  it("on an empty submit moves focus to the first field to fix, so it scrolls into view (M-12)", () => {
+    render(<OwnerSetup onDone={() => undefined} />);
+    const submit = screen.getByRole("button", { name: "별자리 인연 시작하기" });
+    fireEvent.click(submit);
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "닉네임" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "닉네임" }), { target: { value: "알감자" } });
+    fireEvent.change(screen.getByLabelText("태어난 연도"), { target: { value: "1999" } });
+    fireEvent.click(submit);
+    // the first part of the date still to pick
+    expect(document.activeElement).toBe(screen.getByLabelText("태어난 월"));
+    fireEvent.change(screen.getByLabelText("태어난 월"), { target: { value: "12" } });
+    fireEvent.change(screen.getByLabelText("태어난 일"), { target: { value: "28" } });
+    fireEvent.click(submit);
+    expect(document.activeElement).toBe(screen.getByRole("checkbox", { name: /만 14세 이상이고/ }));
   });
 
   it("leaves the date empty without a saved profile", () => {
