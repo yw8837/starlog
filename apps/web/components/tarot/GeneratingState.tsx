@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
-import { timeFraction, waitLine, type ChecklistStep, type GenerationKind } from "@/lib/reading/progress";
+import { timeFraction, waitLine, type ChecklistStep, type WaitKind } from "@/lib/reading/progress";
 import { useElapsed } from "@/lib/reading/useElapsed";
 import type { TipCard } from "@/lib/reading/waitingTips";
 import s from "./GeneratingState.module.css";
@@ -19,7 +19,7 @@ type GeneratingStateProps = {
   /** Tarot: the cat reads, the rabbit librarian writes. Saju: roles swap, both in hanbok. */
   mode?: "tarot" | "saju";
   /** What is being generated: its usual length sets the line under the bar and how the bar creeps. */
-  kind: GenerationKind;
+  kind: WaitKind;
   /** What is being written now (from the stream's section events). */
   caption: string;
   /** 0..1 from the stream; the bar shows the larger of this and the time's share, so it never stands still. */

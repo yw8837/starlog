@@ -294,7 +294,7 @@ export function SajuChartView({
         </p>
         <GeneratingState
           mode="saju"
-          kind="saju-reading"
+          kind={topic === "overall" ? "saju-reading" : "saju-topic-reading"}
           caption={progress.caption}
           fraction={progress.fraction}
           steps={checklist(readingPlan, progress.reached)}

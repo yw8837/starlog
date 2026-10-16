@@ -33,6 +33,10 @@ describe("time-based progress (the bar creeps while the model thinks)", () => {
 describe("the line under the bar", () => {
   it("counts the time in 초/분 and says the usual length", () => {
     expect(waitLine("saju-reading", 0)).toBe("보통 1분 안팎");
+    // a 운 reading is still one call (~95–130 s, review M2): its own line
+    expect(waitLine("saju-topic-reading", 72_000)).toBe("1분 12초째 · 보통 2분 안팎");
+    expect(waitLine("saju-topic-reading", 151_000)).toBe("2분 31초째 · 조금 더 걸리고 있어요. 길게는 3분까지 걸려요");
+    expect(timeFraction("saju-topic-reading", 140_000)).toBeCloseTo(0.9, 3);
     expect(waitLine("saju-reading", 999)).toBe("보통 1분 안팎");
     expect(waitLine("saju-reading", 38_400)).toBe("38초째 · 보통 1분 안팎");
     expect(waitLine("saju-reading", 72_000)).toBe("1분 12초째 · 보통 1분 안팎");

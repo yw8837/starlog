@@ -344,6 +344,17 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(screen.getByText("이 화면을 열어 둔 채로 기다려 주세요.")).toBeTruthy();
   });
 
+  it("while a 운 reading (one call, ~2 minutes) is written, says 보통 2분 안팎, not the 사주팔자's minute (review M2)", async () => {
+    seed();
+    seedTopic("money", "흙 속의 쇠");
+    stub({ me: [OWNER_ME], reading: () => new Promise<Response>(() => {}) });
+    render(<SajuChartView initialTopic="money" />);
+    fireEvent.click(await screen.findByRole("button", { name: "운영자로 무료 열기" }));
+    await screen.findByRole("region", { name: "기다리는 동안 읽을거리" });
+    expect(screen.getByText("보통 2분 안팎")).toBeTruthy();
+    expect(screen.queryByText("보통 1분 안팎")).toBeNull();
+  });
+
   it("links the reading opened on this device for the same 운 only", async () => {
     seed();
     seedTopic("money", "흙 속의 쇠");

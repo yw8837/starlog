@@ -128,8 +128,12 @@ export function checklist(plan: ProgressPlan, reached: number): ChecklistStep[] 
  * (owner 2026-10-16; 110–150 s before), tarot full 45–65 s, teasers 8–15 s,
  * 오늘의 한 장 ~11 s) and the longest it is said to take once it runs past that.
  */
-const WAIT: Record<GenerationKind, { usualMs: number; longestMs: number; usual: string; longest: string }> = {
+/** A waiting screen's clock: the generation kinds, and a 운 reading, still written in one call (~95–130 s, review M2). */
+export type WaitKind = GenerationKind | "saju-topic-reading";
+
+const WAIT: Record<WaitKind, { usualMs: number; longestMs: number; usual: string; longest: string }> = {
   "saju-reading": { usualMs: 75_000, longestMs: 180_000, usual: "보통 1분 안팎", longest: "3분" },
+  "saju-topic-reading": { usualMs: 140_000, longestMs: 180_000, usual: "보통 2분 안팎", longest: "3분" },
   "tarot-reading": { usualMs: 65_000, longestMs: 120_000, usual: "보통 1분 안팎", longest: "2분" },
   "saju-teaser": { usualMs: 15_000, longestMs: 30_000, usual: "보통 10초 안팎", longest: "30초" },
   "tarot-teaser": { usualMs: 15_000, longestMs: 30_000, usual: "보통 10초 안팎", longest: "30초" },
@@ -143,14 +147,14 @@ const TIME_CAP = 0.95;
  * The bar's share from the time alone: rises smoothly from 0, reaches 0.9 at the kind's usual length and
  * creeps on toward TIME_CAP, never to 1. The screen shows the larger of this and the stream's fraction.
  */
-export function timeFraction(kind: GenerationKind, elapsedMs: number): number {
+export function timeFraction(kind: WaitKind, elapsedMs: number): number {
   // 1 - e^(-k) = 0.9 / TIME_CAP at the usual length
   const k = Math.log(TIME_CAP / (TIME_CAP - 0.9));
   return TIME_CAP * (1 - Math.exp((-k * Math.max(0, elapsedMs)) / WAIT[kind].usualMs));
 }
 
 /** "38초째 · 보통 2분 안팎"; past the usual length, calmly that it takes a bit longer. */
-export function waitLine(kind: GenerationKind, elapsedMs: number): string {
+export function waitLine(kind: WaitKind, elapsedMs: number): string {
   const wait = WAIT[kind];
   const note =
     elapsedMs < wait.usualMs ? wait.usual : elapsedMs < wait.longestMs ? `조금 더 걸리고 있어요. 길게는 ${wait.longest}까지 걸려요` : "조금 더 걸리고 있어요";

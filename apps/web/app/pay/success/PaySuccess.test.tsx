@@ -36,6 +36,21 @@ describe("PaySuccess", () => {
     expect(bodies["/api/pay/confirm"]).toEqual([{ paymentKey: "tgen_1", orderId: ORDER, amount: 2900 }]);
   });
 
+  it("once the buyer has left the page, an answer that lands later neither opens the reading nor asks for a login (review M1)", async () => {
+    // The buyer leaves (e.g. 내 정보로 가기) while the confirm is still on its way; it then comes back paid.
+    let answer: (response: Response) => void = () => {};
+    vi.stubGlobal("fetch", vi.fn((url: string) =>
+      url.startsWith("/api/pay/confirm") ? new Promise<Response>((resolve) => (answer = resolve)) : Promise.resolve(Response.json({ payments: true, login: true, owner: false, user: null })),
+    ));
+    const navigate = vi.fn();
+    const { unmount } = render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={navigate} />);
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith("/api/pay/confirm", expect.anything()));
+    unmount();
+    answer(paid());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it("has one h1 for the page, whatever it shows (F-14)", async () => {
     stub({ "/api/pay/confirm": [() => Response.json({ code: "PAY_PENDING" }, { status: 409 })], "/api/pay/orders": [order("confirming")] });
     render(<PaySuccess paymentKey="tgen_1" orderId={ORDER} amount="2900" navigate={() => {}} pollMs={60_000} />);

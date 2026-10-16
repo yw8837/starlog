@@ -102,7 +102,10 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
       setError(NO_DETAILS);
       return;
     }
+    // A buyer who has left the page (내 정보로 가기) is not pulled back: opening the reading would start writing it and
+    // end its refund (review M1, 2026-10-16). The payment stays in 내 정보, unopened.
     const finish = (paid: { returnTo: string; signedIn?: boolean }) => {
+      if (!alive.current) return;
       const target = withQuery(paid.returnTo, { unlock: "paid" });
       if (paid.signedIn === false) return setLoginTo(loginHref(target));
       void refreshAccount();
@@ -111,6 +114,7 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
     const confirm = (): Promise<ApiResult<Paid>> => postJson<Paid>("/api/pay/confirm", { paymentKey, orderId, amount: Number(amount) });
     /** Nothing was charged: say why, and find the way back to the reading. */
     const fail = (view: ErrorView, returnTo?: string) => {
+      if (!alive.current) return;
       setError(view);
       if (returnTo) return setBack(returnTo);
       void getJson<{ returnTo: string }>(`/api/pay/orders?id=${encodeURIComponent(orderId)}`).then((res) => {
@@ -118,7 +122,7 @@ export function PaySuccess({ paymentKey, orderId, amount, navigate = (url) => wi
       });
     };
     /** A final answer: a refusal leads back to the reading; an unreadable request only to 내 정보. */
-    const end = (error: ApiError) => (error.code === "PAY_FAILED" ? fail(describeApiError(error)) : setError(describeApiError(error)));
+    const end = (error: ApiError) => (error.code === "PAY_FAILED" ? fail(describeApiError(error)) : alive.current && setError(describeApiError(error)));
     void (async () => {
       const res = await confirm();
       if (res.ok) return finish(res.data);
