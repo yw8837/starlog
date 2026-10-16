@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { logout, refreshAccount, type AccountState, type AccountUser } from "@/lib/account/client";
+import { DEEP_TAROT_HREF } from "@/lib/freshStart";
 import { REFUND_DAYS, productById } from "@/lib/pay/catalog";
+import { premiumPath } from "@/lib/premium/products";
 import { postJson, type ApiError } from "@/lib/reading/api";
 import { describeApiError } from "@/lib/reading/errors";
 import { deleteAccountReadings, forgetAccountOnDevice } from "@/lib/storage/sync";
@@ -15,7 +17,18 @@ const lastDay = (iso: string) => {
   const kst = new Date(Date.parse(iso) + 9 * 60 * 60 * 1000);
   return `${kst.getUTCMonth() + 1}월 ${kst.getUTCDate()}일`;
 };
-const openHref = (productId: string) => (productId === "saju" ? "/saju/new" : "/tarot/new");
+/**
+ * Where an unopened purchase is opened: its reading's first step. A premium one opens whatever the premium
+ * switch says (plan-reconciled §4.4): 켈틱 크로스 10장 in the question builder (no 다리 화면), the 궁합 and
+ * 신년운세 in their forms.
+ */
+const OPEN_HREF: Readonly<Record<string, string>> = {
+  saju: "/saju/new",
+  "tarot-deep": DEEP_TAROT_HREF,
+  match: `${premiumPath("match")}/new`,
+  "newyear-2027": `${premiumPath("newyear-2027")}/new`,
+};
+const openHref = (productId: string) => OPEN_HREF[productId] ?? "/tarot/new";
 /** Instead of 환불받기 once a purchase's refund window is over (the server's REFUND_WINDOW_CLOSED says the same). */
 const WINDOW_CLOSED = `환불 가능 기간(결제일로부터 ${REFUND_DAYS}일)이 지났어요. 문제가 있으면 문의해 주세요.`;
 /** Instead of 환불받기 for a purchase given back after its reading was cut off while written (SEC-02). */

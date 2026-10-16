@@ -51,6 +51,21 @@ afterEach(() => {
 });
 
 describe("AccountPanel", () => {
+  it("opens each unopened premium purchase where its reading is written: the ten-card builder, the 궁합 form, the 신년운세 form (whatever the premium switch says)", () => {
+    const unused = [
+      { orderId: "o-deep", productId: "tarot-deep" },
+      { orderId: "o-match", productId: "match" },
+      { orderId: "o-year", productId: "newyear-2027" },
+    ];
+    render(<AccountPanel account={{ ...account, user: { ...account.user, unused } }} />);
+    const purchases = document.getElementById("purchases")!;
+    expect(within(purchases).getAllByRole("link", { name: "열기" }).map((a) => a.getAttribute("href"))).toEqual([
+      "/tarot/new?new=1&spread=deep",
+      "/premium/match/new",
+      "/premium/newyear-2027/new",
+    ]);
+  });
+
   it("shows the nickname, the unused gift with its last day, the unopened purchase and the receipt", async () => {
     render(<AccountPanel account={account} />);
     expect(screen.getByRole("heading", { name: "별빛" })).toBeTruthy();
