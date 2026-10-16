@@ -147,6 +147,6 @@ describe("CheckoutView notice lines (M-13)", () => {
     const rule = /\.notice a \{([^}]*)\}/.exec(readFileSync(file ?? "", "utf8"))?.[1] ?? "";
     expect(rule).toMatch(/display: inline;/);
     expect(rule).not.toMatch(/min-height|inline-flex/);
-    expect(rule).toMatch(/padding: 12px 0;/);
+    expect(rule).toMatch(/padding: 13px 0;/);
   });
 });

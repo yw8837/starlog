@@ -62,7 +62,7 @@
 /* A link inside a notice line stays inline (its line no taller than the rest); padding gives the tap room (M-13). */
 .notice a {
   display: inline;
-  padding: 12px 0;
+  padding: 13px 0;
   color: var(--gold);
   font-weight: 700;
   text-underline-offset: 3px;
