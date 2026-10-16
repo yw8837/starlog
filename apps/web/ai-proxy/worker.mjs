@@ -42,6 +42,8 @@ export default {
         signal: request.signal,
       });
     } catch (cause) {
+      // The caller left (a closed tab, a cancelled reading): nothing to report, nobody to answer.
+      if (request.signal.aborted) return error(499, "client_closed");
       // The class name only; the message may echo the request.
       console.error(JSON.stringify({ evt: "proxy.upstream_failed", kind: cause instanceof Error ? cause.name : "unknown" }));
       return error(502, "upstream_unreachable");

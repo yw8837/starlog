@@ -17,7 +17,8 @@
       "service": "starlog"
     },
     // The Anthropic API goes through the starlog-ai Worker (ai-proxy/), which runs near the API and holds the key
-    // (lib/ai/provider.ts). Deploy it before this Worker: the binding needs it to exist.
+    // (lib/ai/provider.ts). Deploy it before this Worker: the binding needs it to exist. A local `cf:preview` has no
+    // starlog-ai behind the binding, so real readings fail there: preview with STARLOG_AI=mock, as the gate does.
     {
       "binding": "AI_PROXY",
       "service": "starlog-ai"

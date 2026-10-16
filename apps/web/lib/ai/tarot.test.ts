@@ -506,6 +506,9 @@ describe("provider selection", () => {
     const task = { name: "tarot-teaser" as const, system: "s", user: "u", schema: OneCardTeaserDraftSchema, effort: "low" as const, maxTokens: 10, mock: () => ({}) as never };
     await expect(viaProxy!.generate(task, 1)).rejects.toMatchObject({ code: "UPSTREAM" });
     expect(proxy.fetch).toHaveBeenCalledTimes(1);
+    // a key left on the main Worker (kept for rollback) does not take the call off the proxy
+    await expect(selectProvider(env({ NODE_ENV: "production", ANTHROPIC_API_KEY: "sk-test" }), proxy)!.generate(task, 1)).rejects.toMatchObject({ code: "UPSTREAM" });
+    expect(proxy.fetch).toHaveBeenCalledTimes(2);
     expect(selectProvider(env({ NODE_ENV: "production", STARLOG_AI: "mock" }), proxy)?.name).toBe("mock");
     // `next dev` may carry the binding with no proxy behind it: outside production it is ignored
     expect(selectProvider(env({ NODE_ENV: "development" }), proxy)?.name).toBe("mock");

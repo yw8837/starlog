@@ -104,10 +104,10 @@ let warnedMockInProduction = false;
 
 export function selectProvider(env: NodeJS.ProcessEnv = process.env, proxy: ServiceBinding | null = cloudflareEnv()?.AI_PROXY ?? null): ReadingProvider | null {
   if (env.STARLOG_AI === "mock") {
-    // Meant for e2e on a production build; on a real deployment it would hide the real key.
-    if (env.NODE_ENV === "production" && env.ANTHROPIC_API_KEY?.trim() && !warnedMockInProduction) {
+    // Meant for e2e on a production build; on a real deployment it would hide the real API (key or proxy).
+    if (env.NODE_ENV === "production" && (env.ANTHROPIC_API_KEY?.trim() || proxy) && !warnedMockInProduction) {
       warnedMockInProduction = true;
-      console.warn(JSON.stringify({ evt: "config.mock_in_production", note: "STARLOG_AI=mock overrides ANTHROPIC_API_KEY" }));
+      console.warn(JSON.stringify({ evt: "config.mock_in_production", note: "STARLOG_AI=mock overrides the Anthropic API" }));
     }
     return mockProvider;
   }
