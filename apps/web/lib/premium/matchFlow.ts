@@ -2,6 +2,8 @@ import type { DrawnCardData, LoveStatus, WorkStatus } from "@/lib/reading/types"
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { createSessionStore } from "@/lib/sessionStore";
+import { clearPremiumTeaser } from "@/lib/reading/teaserCache";
+import { clearPremiumResume } from "./client";
 
 /**
  * 우리 사이 궁합's flow (form → five cards → preview), kept in this tab's sessionStorage only: the other
@@ -39,7 +41,14 @@ export interface MatchFlow {
   ack?: boolean;
   /** The five cards the server dealt, with their signed token; `chapterId` once opened. */
   draw?: { drawToken: string; cards: DrawnCardData[]; chapterId?: string };
+  /** When the flow was last saved (epoch ms): it lives MATCH_FLOW_TTL_MS from there. */
+  savedAt?: number;
 }
+
+/** An unfinished flow (the partner's birth) is kept 24 hours at most (review 2026-10-17 M4). */
+export const MATCH_FLOW_TTL_MS = 24 * 60 * 60 * 1000;
+/** Pages a 궁합 flow passes through: its own, checkout, login and the policies its form links to. Any other page ends it. */
+const MATCH_FLOW_PATHS = ["/premium/match", "/pay/", "/login", "/auth/", "/privacy", "/terms", "/refund"];
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const clip = (value: unknown, max: number) => (typeof value === "string" ? Array.from(value).slice(0, max).join("") : undefined);
@@ -75,6 +84,7 @@ export function sanitizeMatchFlow(value: unknown): MatchFlow {
     ...(concern ? { concern } : {}),
     ...(value.ack === true ? { ack: true } : {}),
     ...(draw ? { draw } : {}),
+    ...(typeof value.savedAt === "number" && Number.isFinite(value.savedAt) ? { savedAt: value.savedAt } : {}),
   };
 }
 
@@ -107,8 +117,8 @@ export function useMatchFlow(): { flow: MatchFlow | undefined; setFlow: (next: M
   return { flow: value === undefined ? undefined : (value ?? {}), setFlow: saveMatchFlow };
 }
 
-export function saveMatchFlow(next: MatchFlow) {
-  store.save(sanitizeMatchFlow(next));
+export function saveMatchFlow(next: MatchFlow, now: number = Date.now()) {
+  store.save(sanitizeMatchFlow({ ...next, savedAt: now }));
 }
 
 /** The flow now (browser only). */
@@ -117,4 +127,18 @@ export const readMatchFlow = (): MatchFlow => store.read() ?? {};
 /** After the reading is saved: the partner's birth leaves the tab. */
 export function clearMatchFlow() {
   store.clear();
+}
+
+/**
+ * Whenever a page opens (RouteTracker): an unfinished 궁합 flow ends once the user leaves its pages, or 24 hours after it
+ * was last saved (review 2026-10-17 M4). The partner's birth leaves the tab with its preview and resume token.
+ */
+export function pruneMatchFlow(pathname: string, now: number = Date.now()): void {
+  const flow = store.read();
+  if (!flow) return;
+  const inFlow = MATCH_FLOW_PATHS.some((path) => pathname.startsWith(path));
+  if (inFlow && flow.savedAt !== undefined && now - flow.savedAt < MATCH_FLOW_TTL_MS) return;
+  store.clear();
+  clearPremiumTeaser("match|");
+  clearPremiumResume("match");
 }

@@ -6,9 +6,11 @@ import { SAJU_TEASERS_KEY, saveTeaser } from "@/lib/reading/teaserCache";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
 import { MATCH_SEALS_KEY } from "@/lib/storage/matchSeals";
+import { MATCH_FLOW_KEY } from "@/lib/premium/matchFlow";
 import { RouteTracker } from "./RouteTracker";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/saju/chart" }));
+const nav = vi.hoisted(() => ({ path: "/saju/chart" }));
+vi.mock("next/navigation", () => ({ usePathname: () => nav.path }));
 
 const DAY = 86_400_000;
 const teaser = { title: "t", summary: "s", lockedToc: [] };
@@ -17,7 +19,9 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
   forgetRoutes();
+  nav.path = "/saju/chart";
 });
 
 describe("RouteTracker", () => {
@@ -68,5 +72,44 @@ describe("RouteTracker", () => {
     expect(localStorage.getItem(CHAPTERS_KEY)).not.toContain("1987");
     expect(localStorage.getItem(MATCH_SEALS_KEY)).not.toContain("SEAL-PAST");
     expect(localStorage.getItem(MATCH_SEALS_KEY)).toContain("SEAL-KEPT");
+  });
+
+  describe("an unfinished 궁합 flow (review 2026-10-17 M4)", () => {
+    const keep = (savedAt: number) => {
+      sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify({ me: DEFAULT_SAJU_FORM, partner: { ...DEFAULT_SAJU_FORM, year: 1987 }, relation: "friend", ack: true, savedAt }));
+      sessionStorage.setItem("starlog.teaser.premium", JSON.stringify({ key: "match|{\"partner\":1987}", value: {} }));
+      sessionStorage.setItem("starlog.premium-resume.match", JSON.stringify({ input: "{\"partner\":1987}", resume: "r1", done: 1 }));
+    };
+    const left = () => [MATCH_FLOW_KEY, "starlog.teaser.premium", "starlog.premium-resume.match"].map((key) => sessionStorage.getItem(key) !== null);
+
+    it("stays while the user is in it, at checkout, at login or reading the policies", () => {
+      keep(Date.now());
+      for (const path of ["/premium/match/preview", "/pay/checkout", "/login", "/privacy"]) {
+        nav.path = path;
+        render(<RouteTracker />);
+        cleanup();
+      }
+      expect(left()).toEqual([true, true, true]);
+    });
+
+    it("forgets the partner's birth once the user leaves it: the flow, its preview and its resume token", () => {
+      keep(Date.now());
+      nav.path = "/saju/chart";
+      render(<RouteTracker />);
+      expect(left()).toEqual([false, false, false]);
+    });
+
+    it("forgets a flow kept past 24 hours, even on its own pages", () => {
+      keep(Date.now() - 25 * 3_600_000);
+      nav.path = "/premium/match/preview";
+      render(<RouteTracker />);
+      expect(left()).toEqual([false, false, false]);
+    });
+
+    it("leaves another product's preview alone", () => {
+      sessionStorage.setItem("starlog.teaser.premium", JSON.stringify({ key: "tarot-deep|{}", value: {} }));
+      render(<RouteTracker />);
+      expect(sessionStorage.getItem("starlog.teaser.premium")).not.toBeNull();
+    });
   });
 });

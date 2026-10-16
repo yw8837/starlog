@@ -99,8 +99,9 @@ export function clearSajuTeasers() {
   }
 }
 
-/** Forgets the premium preview kept for this tab (a 궁합's, once its reading is saved: the partner's birth leaves the tab). */
-export function clearPremiumTeaser() {
+/** Forgets the premium preview kept for this tab (a 궁합's, once its reading is saved: the partner's birth leaves the tab); with `prefix`, only one whose key starts so. */
+export function clearPremiumTeaser(prefix?: string) {
+  if (prefix !== undefined && !premiumStore.read()?.key.startsWith(prefix)) return;
   premiumStore.clear();
 }
 

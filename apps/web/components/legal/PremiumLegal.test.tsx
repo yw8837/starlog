@@ -59,6 +59,7 @@ describe("the policies' premium text", () => {
     // As it works since 2026-10-17: only the day master and the tilt go to the AI, the share image carries the relation,
     // the account keeps the relation and the label, a login again on the writing device keeps follow-ups, 30 days then gone.
     expect(text).toContain("일간과 오행의 기울기만");
+    expect(text).toContain("결제하지 않고 떠나거나 24시간이 지나면 지웁니다");
     expect(text).toContain("공유 이미지에는 고른 관계만");
     expect(text).toContain("관계, 부르는 말");
     expect(text).toContain("풀이를 연 기기에서는 다시 로그인해도");

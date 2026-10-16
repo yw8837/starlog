@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { noteRoute } from "@/lib/lastRoute";
 import { pruneSajuTeasers } from "@/lib/reading/teaserCache";
+import { pruneMatchFlow } from "@/lib/premium/matchFlow";
 import { pruneMatchPartners } from "@/lib/storage/chapters";
 
 /**
@@ -19,6 +20,8 @@ export function RouteTracker() {
   const pathname = usePathname();
   useEffect(() => {
     noteRoute(pathname);
+    // An unfinished 궁합 flow ends once its pages are left, or after 24 hours (lib/premium/matchFlow.ts).
+    pruneMatchFlow(pathname);
   }, [pathname]);
   useEffect(() => {
     pruneSajuTeasers();
