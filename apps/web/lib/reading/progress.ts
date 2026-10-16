@@ -1,4 +1,5 @@
 import { withParticle } from "@/lib/korean";
+import { PREMIUM, PREMIUM_IDS, type PremiumId } from "@/lib/premium/products";
 import type { Progress } from "./api";
 
 /**
@@ -93,6 +94,67 @@ export function progressPlan(kind: GenerationKind, opts: { positions?: readonly 
   }
 }
 
+/**
+ * A premium reading's plans, one per part (P5 spec §6.1: one request writes one part), keyed by the
+ * part draft's top-level fields as the stream names them. Positions are the spread's (10 or 5);
+ * the new year's months default to 1월~12월.
+ */
+export function premiumProgressPlans(id: PremiumId, opts: { positions?: readonly string[]; months?: readonly string[] } = {}): ProgressPlan[] {
+  const card = (key: string) => (position: string, index: number): Stage => ({ key, index, caption: `${position} 카드를 읽고 있어요` });
+  const month = (key: string) => (label: string, index: number): Stage => ({ key, index, caption: `${withParticle(label, "을/를")} 적고 있어요` });
+  const months = opts.months ?? Array.from({ length: 12 }, (_, i) => `${i + 1}월`);
+  const positions = opts.positions ?? [];
+  switch (id) {
+    case "tarot-deep":
+      return [
+        { opening: "카드 열 장을 펼쳐 보고 있어요", stages: [one("verdict", "한 줄 결론을 적고 있어요"), ...positions.map(card("positions"))] },
+        {
+          opening: "자리 사이를 이어 읽고 있어요",
+          stages: [
+            one("crossing", "지금의 나와 가로막는 것을 엮고 있어요"), one("axes", "두 갈래를 이어 읽고 있어요"), one("staff", "기둥을 쌓아 읽고 있어요"),
+            one("timing", "시기를 살피고 있어요"), one("action", "오늘 해 볼 일을 적고 있어요"), one("observation", "확인해 볼 신호를 고르고 있어요"),
+            one("followUps", "마무리하고 있어요"),
+          ],
+        },
+      ];
+    case "match":
+      return [
+        {
+          opening: "두 사람의 명식을 나란히 놓고 있어요",
+          stages: [one("dayMasters", "두 사람의 일간을 읽고 있어요"), one("elements", "오행을 견주고 있어요"), one("pillars", "기둥 사이를 살피고 있어요"), one("luck", "두 사람의 10년을 겹쳐 보고 있어요")],
+        },
+        {
+          opening: "카드 다섯 장을 다시 보고 있어요",
+          stages: [
+            one("verdict", "한 줄로 정리하고 있어요"), ...positions.map(card("cards")), one("connection", "다섯 장을 엮고 있어요"),
+            one("bridge", "사주와 카드를 나란히 놓고 있어요"), one("action", "이번 주 해 볼 일을 적고 있어요"), one("observation", "확인해 볼 신호를 고르고 있어요"),
+            one("followUps", "마무리하고 있어요"),
+          ],
+        },
+      ];
+    case "newyear-2027":
+      return [
+        {
+          opening: "2027년의 흐름을 살피고 있어요",
+          stages: [one("title", "한 해에 이름을 붙이고 있어요"), one("overview", "한 해의 큰 흐름을 적고 있어요"), one("luck", "대운을 살피고 있어요"), one("areas", "영역별로 나눠 보고 있어요"), one("lucky", "가벼운 행운을 고르고 있어요")],
+        },
+        { opening: "1월부터 6월까지 적고 있어요", stages: months.slice(0, 6).map(month("firstHalf")) },
+        {
+          opening: "7월부터 12월까지 적고 있어요",
+          stages: [...months.slice(6).map(month("secondHalf")), one("closing", "한 해를 정리하고 있어요"), one("observation", "첫 달의 신호를 고르고 있어요"), one("followUps", "마무리하고 있어요")],
+        },
+      ];
+  }
+}
+
+/** The whole reading's bar: the parts written plus the share of the one being written. */
+export const premiumFraction = (part: number, of: number, state: ProgressState): number => Math.min(1, (part + state.fraction) / of);
+
+/** The parts as the waiting screen's steps ("지금 적는 중 · 1월~6월 · 2 / 3"). */
+export function premiumSteps(id: PremiumId, part: number): ChecklistStep[] {
+  return PREMIUM[id].parts.map((label, i) => ({ label, state: i < part ? "done" : i === part ? "now" : "later" }));
+}
+
 export const startProgress = (plan: ProgressPlan): ProgressState => ({ caption: plan.opening, fraction: 0, reached: -1 });
 
 export function advanceProgress(state: ProgressState, event: Progress, plan: ProgressPlan): ProgressState {
@@ -128,10 +190,23 @@ export function checklist(plan: ProgressPlan, reached: number): ChecklistStep[] 
  * (owner 2026-10-16; 110–150 s before), tarot full 45–65 s, teasers 8–15 s,
  * 오늘의 한 장 ~11 s) and the longest it is said to take once it runs past that.
  */
-/** A waiting screen's clock: the generation kinds, and a 운 reading, still written in one call (~95–130 s, review M2). */
-export type WaitKind = GenerationKind | "saju-topic-reading";
+/**
+ * A waiting screen's clock: the generation kinds, a 운 reading, still written in one call (~95–130 s, review M2),
+ * and a whole premium reading (all its parts, one request each: the product's usual minutes, at most twice that).
+ */
+export type WaitKind = GenerationKind | "saju-topic-reading" | `premium-${PremiumId}`;
 
-const WAIT: Record<WaitKind, { usualMs: number; longestMs: number; usual: string; longest: string }> = {
+type Wait = { usualMs: number; longestMs: number; usual: string; longest: string };
+
+const PREMIUM_WAIT = Object.fromEntries(
+  PREMIUM_IDS.map((id) => {
+    const minutes = PREMIUM[id].approxMinutes;
+    return [`premium-${id}`, { usualMs: minutes * 60_000, longestMs: minutes * 120_000, usual: `보통 ${minutes}분 안팎`, longest: `${minutes * 2}분` }];
+  }),
+) as Record<`premium-${PremiumId}`, Wait>;
+
+const WAIT: Record<WaitKind, Wait> = {
+  ...PREMIUM_WAIT,
   "saju-reading": { usualMs: 75_000, longestMs: 180_000, usual: "보통 1분 안팎", longest: "3분" },
   "saju-topic-reading": { usualMs: 140_000, longestMs: 180_000, usual: "보통 2분 안팎", longest: "3분" },
   "tarot-reading": { usualMs: 65_000, longestMs: 120_000, usual: "보통 1분 안팎", longest: "2분" },

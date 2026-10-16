@@ -1,6 +1,9 @@
 import type { Orientation, TemplateId } from "@starlog/core";
 import type { FrontDeck } from "@/lib/deck";
 import type { SajuGlance } from "@/lib/ai/schemas";
+import type {
+  ChartView, DeepTarotPreview, DeepTarotReading, MatchPreview, MatchReading, NewYearPreview, NewYearReading, PreviewCard,
+} from "@/lib/ai/premiumSchemas";
 
 /**
  * The reading API's bodies as the browser reads them (route handlers under app/api). Fields the
@@ -179,3 +182,15 @@ export interface SajuContext {
 export interface SajuRequestFields extends SajuContext {
   topic?: SajuTopicId;
 }
+
+// ---- premium readings (P5) ----
+// The server's shapes (lib/ai/premiumSchemas.ts), imported as types only: nothing of that module reaches the browser.
+
+export type PreviewCardData = PreviewCard;
+export type ChartViewData = ChartView;
+export type DeepTarotPreviewData = DeepTarotPreview;
+export type DeepTarotReadingData = DeepTarotReading;
+export type MatchPreviewData = MatchPreview;
+export type MatchReadingData = MatchReading;
+export type NewYearPreviewData = NewYearPreview;
+export type NewYearReadingData = NewYearReading;
