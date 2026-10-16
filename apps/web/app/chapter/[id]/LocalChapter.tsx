@@ -203,7 +203,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   const rating = chapter.serverId ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
   // 오픈 기념 무료 is read and kept on this device only (owner 2026-10-14 evening): no follow-ups, no share.
   const keepOnly = chapter.opening === true;
-  // A premium reading has no share link yet (its share image comes with P5 Task 23).
+  // A premium reading has no share link: it shares an image of its cards or title (PremiumChapterView, P5 task 23).
   const share: ShareActions | undefined = whole && !keepOnly && !premium
     ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter), current: () => knownShareLink(chapter) }
     : undefined;
@@ -232,7 +232,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} />
+        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} shareable={whole} />
       </>
     );
   }

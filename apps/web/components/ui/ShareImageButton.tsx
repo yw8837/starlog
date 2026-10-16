@@ -8,6 +8,8 @@ import own from "./ShareImageButton.module.css";
 type ShareImageButtonProps = {
   /** a same-origin PNG route (e.g. /api/og/bonds/<id>) */
   imageUrl: string;
+  /** Posted as JSON to `imageUrl` (a route that draws from a body, e.g. /api/og/premium); without it, a GET. */
+  body?: unknown;
   fileName: string;
   /** what the share sheet says with the image; never a question, a note or birth data */
   shareText: string;
@@ -31,7 +33,7 @@ const TOAST: Record<Exclude<Toast, "">, string> = {
  * otherwise the image is downloaded and the link copied. The toast reports each step as it went, and
  * when the link could not be copied it is shown under the button to copy by hand.
  */
-export function ShareImageButton({ imageUrl, fileName, shareText, shareUrl, primary = false, label = "공유하기" }: ShareImageButtonProps) {
+export function ShareImageButton({ imageUrl, body, fileName, shareText, shareUrl, primary = false, label = "공유하기" }: ShareImageButtonProps) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<Toast>("");
 
@@ -39,7 +41,7 @@ export function ShareImageButton({ imageUrl, fileName, shareText, shareUrl, prim
     setBusy(true);
     setToast("");
     try {
-      const res = await fetch(imageUrl);
+      const res = body === undefined ? await fetch(imageUrl) : await fetch(imageUrl, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error(String(res.status));
       const blob = await res.blob();
       const file = new File([blob], fileName, { type: "image/png" });

@@ -14,8 +14,12 @@ import { FollowUp } from "@/components/tarot/FollowUp";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
+import { ShareImageButton } from "@/components/ui/ShareImageButton";
+import { absoluteUrl } from "@/lib/hosts";
 import { kstMonthDay } from "@/lib/kst";
-import { PREMIUM } from "@/lib/premium/products";
+import { MATCH_RELATION_OPTIONS } from "@/lib/premium/matchFlow";
+import { SITE } from "@/lib/config";
+import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import type { NewYearChapter, PremiumChapter } from "@/lib/storage/chapters";
 import { ChapterContents } from "./ChapterContents";
 import type { ChapterFollowUp } from "./ChapterView";
@@ -28,7 +32,24 @@ type PremiumChapterViewProps = {
   checkin?: ReactNode;
   /** 풀이 후기 for a reading saved in the account; otherwise the plain stars. */
   rating?: ReactNode;
+  /** The record reads whole: it may make its share image. */
+  shareable?: boolean;
 };
+
+/** The year titles /api/og/premium draws (plain Korean, 2–14 characters); any other title gets no share button. */
+const SHARE_TITLE = /^[가-힣\s·,]{2,14}$/;
+
+/**
+ * What a premium record's share image is drawn from (plan task 23), built here by code from the chapter: the dealt
+ * cards, the relation's fixed id, or the year's own title. Never the question, note, label, concern or a birth.
+ */
+export function premiumShareBody(chapter: PremiumChapter): Record<string, unknown> | null {
+  const cards = () => chapter.kind === "newyear-2027" ? [] : chapter.cards.map(({ cardId, orientation }) => ({ cardId, orientation }));
+  if (chapter.kind === "tarot-deep") return { product: "tarot-deep", cards: cards() };
+  if (chapter.kind === "match") return MATCH_RELATION_OPTIONS.some((o) => o.value === chapter.relation) ? { product: "match", relation: chapter.relation, cards: cards() } : null;
+  const title = chapter.reading.title.trim();
+  return SHARE_TITLE.test(title) ? { product: "newyear-2027", title } : null;
+}
 
 /** The 2027 chart beside the reading, recomputed from the birth it was written for (as the saju record does). */
 function YearChart({ chapter }: { chapter: NewYearChapter }) {
@@ -41,7 +62,7 @@ function YearChart({ chapter }: { chapter: NewYearChapter }) {
  * question or theme, the cards or the chart beside the paid body, the five follow-ups, 돌아보기 and the
  * rating. No other product is offered here.
  */
-export function PremiumChapterView({ chapter, followUp, checkin, rating }: PremiumChapterViewProps) {
+export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false }: PremiumChapterViewProps) {
   const eyebrow = `${PREMIUM[chapter.kind].name} · ${kstMonthDay(chapter.createdAt)}`;
   // The design the reading was written for; one saved before readings kept their deck was written for the 1909 scans.
   const deck = chapter.deck ?? "rws1909";
@@ -66,6 +87,9 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating }: Premi
     line = <InputLine form={chapter.birth} className={s.question} />;
   }
 
+  // The image only, linking the product page (never the record): built from the allowed fields above.
+  const shareBody = shareable ? premiumShareBody(chapter) : null;
+
   return (
     <>
       <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
@@ -76,6 +100,18 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating }: Premi
             <p className={s.eyebrow}>{eyebrow}</p>
             <h1 className={s.title}>{title}</h1>
             {line}
+            {shareBody ? (
+              <div className={s.share}>
+                <ShareImageButton
+                  imageUrl="/api/og/premium"
+                  body={shareBody}
+                  fileName={`starlog-${PREMIUM[chapter.kind].slug}.png`}
+                  shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].entry}`}
+                  shareUrl={absoluteUrl(premiumPath(chapter.kind))}
+                  label="이미지로 공유"
+                />
+              </div>
+            ) : null}
           </header>
         }
         spread={spread}
