@@ -49,3 +49,9 @@ export function opensAtText(ms: number): string {
   const d = new Date(ms + 9 * 3_600_000);
   return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 ${d.getUTCHours()}시에 열려요`;
 }
+
+/** "11월 15일 열려요" (Korean date): an entry's line before its product opens. */
+export function opensOnText(ms: number): string {
+  const d = new Date(ms + 9 * 3_600_000);
+  return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일 열려요`;
+}

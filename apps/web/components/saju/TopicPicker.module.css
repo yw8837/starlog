@@ -42,3 +42,45 @@
   font-size: var(--fs-sub);
   line-height: 1.5;
 }
+
+/* The premium rows under the five: a thin divider and a small label, rows of the same size, never gold. */
+.divider {
+  height: 0;
+  margin: 18px 0 0;
+  border: 0;
+  border-top: 1px solid var(--glass-line);
+}
+
+.premiumLabel {
+  margin: 12px 0 10px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+}
+
+.price {
+  padding: 1px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+/* Before its sales window: the same colours (contrast kept), nothing to press. */
+.soon {
+  cursor: default;
+}
+
+.soon:hover {
+  border-color: var(--glass-line);
+}
