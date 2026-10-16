@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { premiumMode, premiumOpen } from "./flags";
+import { premiumMode, premiumOpen, premiumVisible } from "./flags";
 
 const env = (vars: Record<string, string>) => ({ NODE_ENV: "test", ...vars }) as unknown as NodeJS.ProcessEnv;
 const OCT = Date.parse("2026-10-20T12:00:00+09:00");
@@ -34,5 +34,16 @@ describe("premium sales flag", () => {
     const testKeys = { NODE_ENV: "production", STARLOG_PREMIUM: "on", STARLOG_PAYMENTS: "on", TOSS_SECRET_KEY: "test_gsk_x" };
     expect(premiumOpen("match", false, OCT, env(testKeys))).toBe(false);
     expect(premiumOpen("match", false, OCT, env({ ...testKeys, TOSS_SECRET_KEY: "live_gsk_x" }))).toBe(true);
+  });
+
+  it("shows premium screens and entries only while the flag is on (to the owner's devices while it is owner)", () => {
+    // off (production today): nothing new is visible to anyone, the owner included
+    expect(premiumVisible("tarot-deep", false, env({ STARLOG_PAYMENTS: "on" }))).toBe(false);
+    expect(premiumVisible("tarot-deep", true, env({ STARLOG_PAYMENTS: "on" }))).toBe(false);
+    expect(premiumVisible("match", false, env({ STARLOG_PREMIUM: "owner" }))).toBe(false);
+    expect(premiumVisible("match", true, env({ STARLOG_PREMIUM: "owner" }))).toBe(true);
+    // on: visible before its window too (the opening date is shown), and without payments (the button says so)
+    expect(premiumVisible("newyear-2027", false, env({ STARLOG_PREMIUM: "on", STARLOG_PAYMENTS: "on" }))).toBe(true);
+    expect(premiumVisible("match", false, env({ STARLOG_PREMIUM: "on" }))).toBe(true);
   });
 });

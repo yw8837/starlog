@@ -21,3 +21,14 @@ export function premiumOpen(id: PremiumId, owner: boolean, now: number, env: Nod
   if (owner) return mode !== "off";
   return mode === "on" && salesOpen(paymentsMode(env), false, env) && inWindow(PREMIUM[id], now);
 }
+
+/**
+ * Whether this device may see premium screens and entries at all (the 다리 화면's 켈틱 크로스, the saju
+ * list's premium rows, the home row, the product pages): `on` for everyone, `owner` for the owner pass
+ * only, `off` for nobody. Unlike premiumOpen it ignores payments and the sales window, so a product
+ * before its window still shows its opening date. Opening a reading already paid for never asks it.
+ */
+export function premiumVisible(_id: PremiumId, owner: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
+  const mode = premiumMode(env);
+  return mode === "on" || (mode === "owner" && owner);
+}

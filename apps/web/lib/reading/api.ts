@@ -93,6 +93,12 @@ export interface ApiError {
   field?: string;
   /** BOT_CHECK: the Turnstile site key to run the challenge with. */
   siteKey?: string;
+  /** BAD_TOKEN on a premium reading: the cards' token died (deal again) or the resume token did (start over). */
+  token?: "draw" | "resume";
+  /** NOT_AVAILABLE: why ("opened": a premium reading already saved, with `readingId`; "opening": held until `reservedUntil`). */
+  reason?: string;
+  readingId?: string;
+  reservedUntil?: number;
 }
 
 export type ApiResult<T> = { ok: true; data: T; commit?: string } | { ok: false; error: ApiError };
@@ -115,6 +121,10 @@ export function parseApiError(status: number, body: unknown): ApiError {
   if (b.scope === "chapter" || b.scope === "day" || b.scope === "network" || b.scope === "first") error.scope = b.scope;
   if (typeof b.field === "string") error.field = b.field;
   if (typeof b.siteKey === "string" && b.siteKey) error.siteKey = b.siteKey;
+  if (b.token === "draw" || b.token === "resume") error.token = b.token;
+  if (typeof b.reason === "string") error.reason = b.reason;
+  if (typeof b.readingId === "string" && /^[a-z0-9]{20}$/.test(b.readingId)) error.readingId = b.readingId;
+  if (typeof b.reservedUntil === "number") error.reservedUntil = b.reservedUntil;
   if (isRecord(b.card) && typeof b.card.cardId === "string" && (b.card.orientation === "upright" || b.card.orientation === "reversed")) {
     error.card = { cardId: b.card.cardId, orientation: b.card.orientation };
   }

@@ -15,8 +15,15 @@ describe("GET /api/premium/status", () => {
     expect(products[2]!.opensAt).toBe(Date.parse("2026-11-15T00:00:00+09:00"));
   });
 
-  it("answers closed when the flag is off", async () => {
-    const { products } = (await (await GET(new Request("http://localhost/api/premium/status"))).json()) as { products: Array<{ open: boolean }> };
-    expect(products.every((p) => !p.open)).toBe(true);
+  it("answers closed and hidden when the flag is off", async () => {
+    const { products } = (await (await GET(new Request("http://localhost/api/premium/status"))).json()) as { products: Array<{ open: boolean; visible: boolean }> };
+    expect(products.every((p) => !p.open && !p.visible)).toBe(true);
+  });
+
+  it("shows a product before its window while the flag is on", async () => {
+    vi.stubEnv("STARLOG_PREMIUM", "on");
+    vi.stubEnv("STARLOG_PAYMENTS", "on");
+    const { products } = (await (await GET(new Request("http://localhost/api/premium/status"))).json()) as { products: Array<{ id: string; open: boolean; visible: boolean }> };
+    expect(products.every((p) => p.visible)).toBe(true);
   });
 });
