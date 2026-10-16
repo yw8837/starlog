@@ -90,6 +90,11 @@ function clear(store: Store | null, id: PremiumId) {
   }
 }
 
+/** Forgets this tab's resume token of `id` (and the input it holds: for 궁합, the partner's birth). */
+export function clearPremiumResume(id: PremiumId, store: Store | null = session()): void {
+  clear(store, id);
+}
+
 /** Parts already written for this input in this tab (to say "이어서 받기"), or null. */
 export function pendingResume(id: PremiumId, input: Record<string, unknown>, store: Store | null = session()): { done: number } | null {
   const saved = read(store, id, JSON.stringify(input));

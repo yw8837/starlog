@@ -17,7 +17,7 @@ import s from "@/app/tarot/result/FreeResult.module.css";
 import { useAccount } from "@/lib/account/client";
 import { withFlags } from "@/lib/flowState";
 import { approxCharsText } from "@/lib/pricing";
-import { premiumApiPath } from "@/lib/premium/client";
+import { clearPremiumResume, premiumApiPath } from "@/lib/premium/client";
 import { clearMatchFlow, matchBody, matchReady, relationLabel, useMatchFlow } from "@/lib/premium/matchFlow";
 import { PREMIUM } from "@/lib/premium/products";
 import { usePremiumStatus } from "@/lib/premium/status";
@@ -57,6 +57,13 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
   const ready = flow ? matchReady(flow) : null;
   // Once the reading is kept the flow is cleared on purpose: the chapter opens, the form is not shown again.
   const left = useRef(false);
+  /** The other person's birth leaves this tab (P5 spec §9): the flow, the preview kept for it, the resume token. */
+  const forgetPartner = () => {
+    left.current = true;
+    clearMatchFlow();
+    clearPremiumTeaser();
+    clearPremiumResume(ID);
+  };
 
   useEffect(() => {
     if (left.current) return;
@@ -126,11 +133,11 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
         ...(done.readingId ? { serverId: done.readingId } : {}),
       });
       // The other person's birth leaves the tab: it lives in the user's own chapter only.
-      left.current = true;
-      clearMatchFlow();
-      clearPremiumTeaser();
+      forgetPartner();
       return chapter.serverId ?? chapter.id;
     },
+    // The account's copy (after a cut-off, or 409 opened): the birth leaves the tab the same way, resume token too.
+    onDelivered: () => forgetPartner(),
   });
 
   useEffect(() => {

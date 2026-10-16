@@ -34,12 +34,13 @@ const READING = {
   connection: section("연결"), bridge: section("사주와 카드"), action: section("해 볼 일"), observation: section("신호"), followUps: [],
 };
 
-function stub(reading: Array<() => Response> = [], teaser: () => Response = () => Response.json({ preview: PREVIEW })) {
+function stub(reading: Array<() => Response> = [], teaser: () => Response = () => Response.json({ preview: PREVIEW }), readings: () => Response = () => Response.json({ readings: [], next: null })) {
   const fetchMock = vi.fn(async (url: string, _init?: RequestInit) => {
     if (url === "/api/premium/status") return Response.json({ products: [{ id: "match", open: true, visible: true, opensAt: null }] });
     if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [{ orderId: "o", productId: "match" }], opening: [] } });
     if (url === "/api/premium/match/teaser") return teaser();
     if (url === "/api/premium/match/reading") return reading.shift()!();
+    if (url.startsWith("/api/readings")) return readings();
     return Response.json({ readings: [], next: null });
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -108,6 +109,33 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
     expect(listChapters()[0]).toMatchObject({ kind: "match", serverId: ID });
     expect(sessionStorage.getItem(MATCH_FLOW_KEY)).toBeNull();
+  });
+
+  it("forgets the partner on both recovery paths too: cut off but delivered, and 409 opened (the flow, the preview, the resume token)", async () => {
+    const saved = {
+      id: ID, createdAt: Date.now(),
+      chapter: { kind: "match", relation: "friend", relationLabel: "친구", me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, cards: DRAWN, reading: READING, chapterToken: "c", createdAt: 1, turns: [], followUpsLeft: 5 },
+    };
+    const leftovers = () => [MATCH_FLOW_KEY, "starlog.teaser.premium", "starlog.premium-resume.match"].map((key) => sessionStorage.getItem(key));
+    stub(
+      [() => Response.json({ status: "continue", resume: "r1", done: 1, of: 2 }), () => Response.json({ code: "UPSTREAM" }, { status: 502 })],
+      undefined,
+      () => Response.json({ readings: [saved], next: null }),
+    );
+    render(<MatchPreview instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(leftovers()).toEqual([null, null, null]);
+    cleanup();
+    resetAccountForTests();
+    router.push.mockReset();
+
+    sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify(FLOW));
+    stub([() => Response.json({ code: "NOT_AVAILABLE", reason: "opened", readingId: ID }, { status: 409 })], undefined, () => Response.json({ readings: [saved], next: null }));
+    render(<MatchPreview instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    expect(leftovers()).toEqual([null, null, null]);
   });
 
   it("sends a flow without its answers to the form and one without its five cards to the draw", async () => {
