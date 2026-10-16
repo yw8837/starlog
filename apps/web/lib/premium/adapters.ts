@@ -124,11 +124,13 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
   // on the device that wrote it.
   chapter(b, ctx, response, now) {
     const { label, concern } = ctx.match.facts;
+    // My own status chips too (review 2026-10-17 #8): a token issued again from the seal reads the same facts.
+    const profile = profileOf(b.me);
     return premiumChapter("match", {
       relation: b.relation,
       relationLabel: RELATION_KO[b.relation],
       ...(label ? { partnerLabel: label } : {}),
-      me: { birth: b.me.birth },
+      me: { birth: b.me.birth, ...(profile ? { profile } : {}) },
       ...(concern ? { concern } : {}),
       cards: drawnOf(ctx.match.cards),
     }, { ...response, chapterToken: "" }, now);

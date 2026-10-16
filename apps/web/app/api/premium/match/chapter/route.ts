@@ -5,6 +5,7 @@ import type { MatchRelation } from "@/lib/ai/prompts/match";
 import { errorResponse, json, readJson } from "@/lib/api/http";
 import type { BirthInput } from "@/lib/api/inputs";
 import { profileOf } from "@/lib/api/sajuRequest";
+import type { SajuProfile } from "@/lib/ai/prompts/saju";
 import { chapterTurns } from "@/lib/api/spend";
 import type { D1Binding } from "@/lib/db/d1";
 import { MatchBody, READING_MAX_BYTES } from "@/lib/premium/inputs";
@@ -32,7 +33,7 @@ const Body = z.union([
 interface MatchCopy {
   kind: "match";
   reading: unknown;
-  me: { birth: BirthInput };
+  me: { birth: BirthInput; profile?: SajuProfile };
   relation: MatchRelation;
   partnerLabel?: string;
   concern?: string;
@@ -79,6 +80,7 @@ export async function POST(request: Request): Promise<Response> {
   if ("sealed" in body) {
     if (!(await openPartner(body.sealed, ctx.secret, chapterId))) return refused();
     sealed = body.sealed;
+    profile = copy.me.profile;
   } else {
     const hash = await inputHash("match", body.input, ctx.secret);
     const resume = await openResume(body.resume, { product: "match", subject: userId, inputHash: hash }, ctx.secret, ctx.now);
