@@ -6,7 +6,7 @@ import { cloudflareEnv, warnMissingBinding } from "@/lib/cloudflare";
 export type LimiterName =
   | "GEN_LIMITER" | "OWNER_GEN_LIMITER" | "FULL_LIMITER" | "OWNER_FULL_LIMITER" | "OWNER_LOGIN_LIMITER"
   | "BOND_JOIN_LIMITER" | "BOND_CODE_LIMITER" | "BOND_VIEW_LIMITER"
-  | "AUTH_LIMITER" | "PAY_LIMITER" | "WEBHOOK_LIMITER" | "ME_LIMITER";
+  | "AUTH_LIMITER" | "PAY_LIMITER" | "WEBHOOK_LIMITER" | "ME_LIMITER" | "SHARE_IMAGE_LIMITER";
 
 /**
  * Requests per 60 s; must match wrangler.jsonc so the in-memory fallback behaves like production.
@@ -33,6 +33,8 @@ export const LIMITS_PER_MINUTE: Record<LimiterName, number> = {
   WEBHOOK_LIMITER: 60,
   /** /api/me, which every page with an account line asks (P4): generous, like BOND_VIEW_LIMITER */
   ME_LIMITER: 120,
+  /** premium share images (/api/og/premium), apart from the AI generations' GEN_LIMITER (review 2026-10-17 L2) */
+  SHARE_IMAGE_LIMITER: 30,
 };
 
 const WINDOW_MS = 60_000;

@@ -1,7 +1,7 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CARDS, TEMPLATES } from "@starlog/core";
-import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { LIMITS_PER_MINUTE, rateLimit, resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { POST } from "./route";
 
 /** /api/og/premium (plan task 23): next/og and the fonts are replaced, so the test reads what the image draws. */
@@ -34,6 +34,7 @@ const post = (body: unknown, query = "") =>
 beforeEach(() => {
   resetMemoryLimiter();
   drawn.length = 0;
+  vi.stubEnv("STARLOG_PREMIUM", "on");
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -71,5 +72,26 @@ describe("premium share images: no personal data, ever", () => {
     expect((await post({ product: "tarot-deep", cards: [...cards(9), { cardId: "not-a-card", orientation: "upright" }] })).status).toBe(400);
     expect((await post({ product: "tarot-deep", cards: cards(3) })).status).toBe(400);
     expect((await post({ product: "fusion", cards: cards(7) })).status).toBe(400);
+  });
+});
+
+describe("the premium share image route (review 2026-10-17 L2)", () => {
+  it("is not there while premium is off", async () => {
+    vi.stubEnv("STARLOG_PREMIUM", "off");
+    expect((await post({ product: "tarot-deep", cards: cards(10) })).status).toBe(404);
+    expect(drawn).toHaveLength(0);
+  });
+
+  it("is never kept by a cache", async () => {
+    const res = await post({ product: "tarot-deep", cards: cards(10) });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  });
+
+  it("counts on a limiter of its own, apart from the AI generations'", async () => {
+    for (let i = 0; i < LIMITS_PER_MINUTE.GEN_LIMITER; i++) await rateLimit("GEN_LIMITER", "203.0.113.90");
+    expect((await post({ product: "tarot-deep", cards: cards(10) })).status).toBe(200);
+    for (let i = 1; i < LIMITS_PER_MINUTE.SHARE_IMAGE_LIMITER; i++) await post({ product: "tarot-deep", cards: cards(10) });
+    expect((await post({ product: "tarot-deep", cards: cards(10) })).status).toBe(429);
   });
 });
