@@ -1,12 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useLayoutEffect } from "react";
 import type { When, Who } from "@starlog/core";
+import { SpreadChip, useFlowSpread } from "@/components/tarot/DeepSpreadGate";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { CustomField } from "@/components/ui/CustomField";
 import { EMPTY_FLOW, WHEN_OPTIONS, WHO_OPTIONS, allowedWhens, builderTopics, findTopic, summarizeFlow, useFlowState, useFreshFlowOnEntry, type FlowState } from "@/lib/flowState";
+import { PREMIUM } from "@/lib/premium/products";
 import { CUSTOM_MAX, WHO_MAX } from "@/lib/question";
 import f from "../flow.module.css";
 
@@ -34,6 +37,13 @@ export function QuestionBuilder() {
   const { flow, setFlow } = useFlowState();
   // Answers stay only on a move inside the flow; a refresh or an entry from elsewhere starts clean.
   useFreshFlowOnEntry();
+  // 켈틱 크로스 10장 (the 다리 화면, 내 정보): the address's display flag puts the spread on the flow, after the
+  // entry rule above has run; without it the flow keeps what it stands on.
+  useLayoutEffect(() => {
+    if (new URLSearchParams(window.location.search).get("spread") !== "deep") return;
+    setFlow((prev) => (prev.spread === "deep" ? prev : { ...prev, spread: "deep", draw: undefined }));
+  }, [setFlow]);
+  const { spread, gate } = useFlowSpread(flow, setFlow);
   const state = flow ?? EMPTY_FLOW;
   const topic = findTopic(state.who, state.topicId);
   const whens = allowedWhens(topic);
@@ -68,7 +78,9 @@ export function QuestionBuilder() {
     <div className={f.screen}>
       <Stepper step={1} label="질문 만들기" backHref="/" backLabel="홈으로" />
 
+      {gate}
       <div className={f.intro}>
+        {spread === "deep" ? <SpreadChip>{PREMIUM["tarot-deep"].entry}</SpreadChip> : null}
         <h1 className={f.title}>어떤 이야기를 타로로 볼까요?</h1>
       </div>
 

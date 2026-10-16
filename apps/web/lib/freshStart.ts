@@ -12,6 +12,15 @@
  */
 
 export const NEW_TAROT_HREF = "/tarot/new?new=1";
+/**
+ * The same builder for 켈틱 크로스 10장 (P5 심층 타로): the 다리 화면 and 내 정보 start here. `spread=deep` is a
+ * display flag like `instant` (never user text); it stays in the address, so a refresh keeps the spread.
+ */
+export const DEEP_TAROT_HREF = "/tarot/new?new=1&spread=deep";
+/** Back into the ten-card builder from inside its flow (the answers stay). */
+export const DEEP_BUILDER_HREF = "/tarot/new?spread=deep";
+/** The 다리 화면 (일반 타로 or 켈틱 크로스 10장); only while premium is visible, else it sends on to NEW_TAROT_HREF. */
+export const TAROT_BRIDGE_HREF = "/tarot/start";
 /** Saju starts at the topic step (owner 2026-10-14); with the topics off it sends on to /saju/new. */
 export const NEW_SAJU_HREF = "/saju/start?new=1";
 

@@ -59,6 +59,12 @@ export interface FlowState {
   conditions: Record<string, string>;
   note: string;
   draw?: FlowDraw;
+  /**
+   * "deep": the same question, drawn and read as 켈틱 크로스 10장 (P5 심층 타로), chosen on the 다리 화면
+   * (/tarot/start) or from 내 정보. The standard screens never read it: their template and gates stay as
+   * they were, and a premium switch that is off drops it (components/tarot/DeepSpreadGate.tsx).
+   */
+  spread?: "deep";
   /** When the flow was last saved (ms); the builder starts clean once it is 30 minutes old. */
   savedAt?: number;
 }
@@ -89,7 +95,7 @@ function typedPart(value: unknown, max = CUSTOM_MAX): string | undefined {
   return text.trim() ? text : undefined;
 }
 
-const DRAW_TEMPLATES: readonly DrawTemplateId[] = ["relationship-contact", "relationship", "work", "choice", "self-flow", "group"];
+const DRAW_TEMPLATES: readonly DrawTemplateId[] = ["relationship-contact", "relationship", "work", "choice", "self-flow", "group", "deep-tarot"];
 
 function sanitizeDraw(value: unknown): FlowDraw | undefined {
   if (!isRecord(value) || typeof value.drawToken !== "string" || !value.drawToken || value.drawToken.length > 4096) return undefined;
@@ -127,6 +133,7 @@ export function sanitizeFlow(value: unknown): FlowState {
   const note = typeof value.note === "string" ? value.note.slice(0, NOTE_MAX) : "";
   const draw = sanitizeDraw(value.draw);
   const savedAt = typeof value.savedAt === "number" && Number.isFinite(value.savedAt) ? value.savedAt : undefined;
+  const spread = value.spread === "deep" ? ("deep" as const) : undefined;
   return {
     ...(who ? { who } : {}),
     ...(whoText ? { whoText } : {}),
@@ -137,6 +144,7 @@ export function sanitizeFlow(value: unknown): FlowState {
     conditions,
     note,
     ...(draw ? { draw } : {}),
+    ...(spread ? { spread } : {}),
     ...(savedAt !== undefined ? { savedAt } : {}),
   };
 }
@@ -185,6 +193,18 @@ export function resultGate(flow: FlowState): "builder" | "draw" | "ready" {
   if (!flow.draw || flow.draw.templateId !== summary.template) return "draw";
   return "ready";
 }
+
+/** The 켈틱 크로스 10장 result screen. */
+export const DEEP_RESULT_PATH = "/premium/deep-tarot/result";
+
+/** Where the ten-card result screen sends a flow it cannot read yet: no question, or no ten-card draw for it. */
+export function deepResultGate(flow: FlowState): "builder" | "draw" | "ready" {
+  if (!summarizeFlow(flow)) return "builder";
+  return flow.draw?.templateId === "deep-tarot" ? "ready" : "draw";
+}
+
+/** Where the draw goes once the cards are face up, by the spread the flow stands on. */
+export const spreadResultHref = (spread: "deep" | "standard") => (spread === "deep" ? DEEP_RESULT_PATH : "/tarot/result");
 
 /** The `input` for /api/tarot/teaser and /api/tarot/reading (history is added by the caller). */
 export function tarotInput(flow: FlowState, summary: FlowSummary): TarotInput {

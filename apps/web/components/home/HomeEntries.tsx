@@ -9,8 +9,9 @@ import { GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath } fr
 import { guideHref } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { ArrowIcon, ChevronIcon } from "./icons";
+import { TarotEntryLink } from "./TarotEntryLink";
 import s from "./home.module.css";
-import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
+import { NEW_SAJU_HREF } from "@/lib/freshStart";
 
 /** What the site is, in one line, then who reads what. The page's one <h1>. */
 export function HomeHero() {
@@ -27,12 +28,12 @@ export function HomeHero() {
 /**
  * Row 1: the gold 타로 보기 card, the screen's one primary, with the cat astrologer standing inside
  * it on the left. The cat is a sibling laid over the card, not part of the link: tapping it only
- * makes it react.
+ * makes it react. The link is the builder, or the 다리 화면 where premium is visible (TarotEntryLink).
  */
 export function TarotEntry() {
   return (
     <div className={`${s.entryRow} ${s.entryRowStart}`}>
-      <Link href={NEW_TAROT_HREF} className={`${s.entry} ${s.entryPrimary}`}>
+      <TarotEntryLink className={`${s.entry} ${s.entryPrimary}`}>
         <span className={s.entryText}>
           <span className={s.entryTitle}>타로 보기</span>
           <span className={s.entrySub}>카드 3장으로 지금을 봐요</span>
@@ -41,7 +42,7 @@ export function TarotEntry() {
             <ChevronIcon size={16} />
           </span>
         </span>
-      </Link>
+      </TarotEntryLink>
       <span className={s.entryCharacter}>
         <Cat outfit="tarot" size={120} />
       </span>

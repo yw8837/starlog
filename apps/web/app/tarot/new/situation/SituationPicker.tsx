@@ -2,10 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { SpreadChip, useFlowSpread } from "@/components/tarot/DeepSpreadGate";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { NOTE_MAX, summarizeFlow, useFlowState, useFreshFlowOnEntry } from "@/lib/flowState";
+import { DEEP_BUILDER_HREF } from "@/lib/freshStart";
+import { PREMIUM } from "@/lib/premium/products";
 import { notePlaceholder } from "@/lib/notePlaceholder";
 import f from "../../flow.module.css";
 import s from "./SituationPicker.module.css";
@@ -20,6 +23,9 @@ export function SituationPicker() {
   const summary = summarizeFlow(flow);
   // Answers stay only on a move inside the flow; a refresh or an entry from elsewhere starts clean.
   useFreshFlowOnEntry();
+  const { spread, gate } = useFlowSpread(flow, setFlow);
+  // Back into the same builder: the ten-card one keeps its display flag.
+  const builderHref = spread === "deep" ? DEEP_BUILDER_HREF : "/tarot/new";
 
   // A direct visit without a question goes back to the builder.
   useEffect(() => {
@@ -46,7 +52,8 @@ export function SituationPicker() {
 
   return (
     <div className={f.screen}>
-      <Stepper step={1} label="상황 고르기" backHref="/tarot/new" backLabel="질문 만들기로" />
+      {gate}
+      <Stepper step={1} label="상황 고르기" backHref={builderHref} backLabel="질문 만들기로" />
 
       <div className={f.sentence}>
         <p className={f.sentenceText}>{summary.question}</p>
@@ -54,6 +61,7 @@ export function SituationPicker() {
       </div>
 
       <div className={f.intro}>
+        {spread === "deep" ? <SpreadChip>{PREMIUM["tarot-deep"].entry}</SpreadChip> : null}
         <h1 className={f.title}>{topic ? "지금 상황을 골라 주세요" : "지금 상황을 적어 주세요"}</h1>
         <p className={f.lead}>{topic ? "해당하는 것만 골라도 괜찮아요" : "적지 않아도 괜찮아요"}</p>
       </div>
