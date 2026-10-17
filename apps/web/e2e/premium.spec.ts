@@ -89,8 +89,9 @@ if (MODE !== "on") {
     await expect(page.getByRole("contentinfo").getByRole("link", { name: "프리미엄 풀이" })).toHaveCount(0);
     await expect(main).not.toContainText("켈틱 크로스 10장");
 
+    // The server sends /tarot/start on to /tarot/new?new=1; the builder then takes `new=1` off the address (takeFlag).
     await page.goto("/tarot/start");
-    await expect(page).toHaveURL(/\/tarot\/new\?new=1$/, { timeout: NAV });
+    await expect(page).toHaveURL(/\/tarot\/new(\?new=1)?$/, { timeout: NAV });
 
     await page.goto("/saju/start");
     await page.waitForLoadState("networkidle");
