@@ -6,6 +6,7 @@ import match from "@content/samples/premium/match.json";
 import year from "@content/samples/premium/newyear-2027.json";
 import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { DeepTarotReadingSchema, MatchReadingSchema, NewYearReadingSchema } from "@/lib/ai/premiumSchemas";
+import { kbCard } from "@/lib/kb";
 import { isDeepTarotReading, isMatchReading, isNewYearReading } from "@/lib/reading/validate";
 import { MATCH_SECOND_SAMPLE, PREMIUM_SAMPLES, sampleExcerpt } from "./samples";
 
@@ -14,6 +15,16 @@ import { MATCH_SECOND_SAMPLE, PREMIUM_SAMPLES, sampleExcerpt } from "./samples";
  * 프리미엄 궁합 M1 (연인) and M2 (썸, the other person's time unknown), 2027 신년운세 N3 (대운 changes in 2027). Each passed
  * its validators when written; their inputs are made up and only summarised here.
  */
+/** How closely a card's section quotes one of `facts`: the best fact's share of its 6-character pieces found in the section. */
+function quoted(body: string, facts: Array<{ ko: string }>): number {
+  const plain = (text: string) => text.replace(/[\s,.()]/g, "");
+  const text = plain(body);
+  return Math.max(0, ...facts.map(({ ko }) => {
+    const fact = plain(ko);
+    const pieces = Array.from({ length: Math.max(0, fact.length - 5) }, (_, i) => fact.slice(i, i + 6));
+    return pieces.length ? pieces.filter((piece) => text.includes(piece)).length / pieces.length : 0;
+  }));
+}
 const pillarsOf = (form: Partial<SajuForm>) => Object.values(computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, ...form })).pillars).flatMap((p) => (p ? [p.stem + p.branch] : []));
 describe("premium samples", () => {
   it("parse as whole readings, as the record screens read them", () => {
@@ -45,6 +56,23 @@ describe("premium samples", () => {
       expect(text).not.toContain(String(partner.year));
     }
     expect(MATCH_SECOND_SAMPLE.input.summary).toContain("상대가 태어난 시를 몰라요");
+  });
+
+  it("record the card design their text describes, so their pages show those faces: the 1909 scans for all three (never regenerated)", () => {
+    const samples = [["D1", PREMIUM_SAMPLES["tarot-deep"], PREMIUM_SAMPLES["tarot-deep"].reading.positions], ["M1", PREMIUM_SAMPLES.match, PREMIUM_SAMPLES.match.reading.cards], ["M2", MATCH_SECOND_SAMPLE, MATCH_SECOND_SAMPLE.reading.cards]] as const;
+    for (const [name, sample, sections] of samples) {
+      expect([name, sample.deck]).toEqual([name, "rws1909"]);
+      // Measured, not assumed: each card's section quotes the facts only its recorded deck draws far more than the other's.
+      const score = { rws1909: 0, starlog: 0 };
+      for (const { cardId, body } of sections) {
+        const kb = kbCard(cardId);
+        const pictures = { rws1909: kb.imagery.facts, starlog: kb.imagery.decks!.starlog!.facts };
+        score.rws1909 += quoted(body, pictures.rws1909.filter((f) => !pictures.starlog.some((o) => o.ko === f.ko)));
+        score.starlog += quoted(body, pictures.starlog.filter((f) => !pictures.rws1909.some((o) => o.ko === f.ko)));
+      }
+      const other = sample.deck === "starlog" ? "rws1909" : "starlog";
+      expect(score[sample.deck], `${name} ${JSON.stringify(score)}`).toBeGreaterThan(score[other] * 2);
+    }
   });
 
   it("give each product page a short excerpt that ends on a sentence", () => {

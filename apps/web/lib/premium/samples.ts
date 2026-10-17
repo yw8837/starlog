@@ -4,6 +4,7 @@ import deep from "@content/samples/premium/tarot-deep.json";
 import match2 from "@content/samples/premium/match-2.json";
 import match from "@content/samples/premium/match.json";
 import year from "@content/samples/premium/newyear-2027.json";
+import type { FrontDeck } from "@/lib/deck";
 import { stripBold } from "@/lib/reading/bold";
 import type { DeepTarotReadingData, MatchReadingData, NewYearReadingData } from "@/lib/reading/types";
 import type { PremiumId } from "./products";
@@ -25,9 +26,18 @@ interface SampleBase {
   input: { summary: string };
 }
 
+/**
+ * A sample with cards, and the card design its text describes: its page shows the faces in it, whatever the visitor chose.
+ * All three were written for the 1909 scans (their eval inputs carried no design) and are kept as approved, never regenerated.
+ */
+interface CardSample {
+  cards: SampleCard[];
+  deck: FrontDeck;
+}
+
 export interface PremiumSamples {
-  "tarot-deep": SampleBase & { cards: SampleCard[]; reading: DeepTarotReadingData };
-  match: SampleBase & { cards: SampleCard[]; reading: MatchReadingData };
+  "tarot-deep": SampleBase & CardSample & { reading: DeepTarotReadingData };
+  match: SampleBase & CardSample & { reading: MatchReadingData };
   "newyear-2027": SampleBase & { reading: NewYearReadingData };
 }
 

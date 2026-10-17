@@ -36,10 +36,11 @@ describe("우리 사이 궁합's five cards (Task 20)", () => {
     });
     expect(JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body)).templateId).toBe("match");
     expect(stored().draw).toEqual({ drawToken: DEALT.drawToken, cards: DEALT.cards });
-    // The reading quotes the 1909 pictures (the request carries no design): the cards show those.
+    // The reading quotes the deck the user sees (owner 2026-10-17): with nothing chosen, the Starlog deck.
     await waitFor(() => expect([...document.querySelectorAll("img")].some((el) => el.getAttribute("src")?.includes(DEALT.cards[0]!.cardId))).toBe(true));
     const faces = [...document.querySelectorAll("img")].map((el) => el.getAttribute("src") ?? "").filter((src) => DEALT.cards.some((c) => src.includes(c.cardId)));
-    expect(faces.every((src) => src.startsWith("/cards/") && !src.startsWith("/cards/starlog/"))).toBe(true);
+    expect(faces.length).toBeGreaterThan(0);
+    expect(faces.every((src) => src.startsWith("/cards/starlog/"))).toBe(true);
     await waitFor(() => expect(router.push).toHaveBeenCalledWith("/premium/match/preview?instant=1"));
   });
 

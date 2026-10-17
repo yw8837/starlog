@@ -231,6 +231,17 @@ describe("paid premium readings", () => {
     expect(saved.readings[0]?.chapter).toMatchObject({ kind: "tarot-deep", deck: "starlog" });
   });
 
+  it("keeps the card design the 궁합 was written for in the account's copy too (owner 2026-10-17)", async () => {
+    const db = useTestDb();
+    const b = await shopper();
+    await buy(b, "match");
+    const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true, deck: "starlog" };
+    const { done } = await finish(b, matchReading, { ...pair, unlock: { method: "paid" } });
+    expect(done.status).toBe("done");
+    const saved = await listReadings(db, accountSecret()!, (await db.prepare("SELECT id FROM users LIMIT 1").first<{ id: string }>())!.id);
+    expect(saved.readings[0]?.chapter).toMatchObject({ kind: "match", deck: "starlog" });
+  });
+
   it("keeps one reservation across the parts, extended part by part past its first six minutes", async () => {
     const db = useTestDb();
     const b = await shopper();

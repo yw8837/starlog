@@ -1,5 +1,6 @@
 import { DEFAULT_REVERSAL_RATE, TEMPLATES, computeChart, createDeck, pickCards } from "@starlog/core";
 import { describe, expect, it } from "vitest";
+import { kbCard } from "@/lib/kb";
 import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { assembleMatch, generateMatchPart, generateMatchTeaser, type MatchContext } from "./generatePremium";
 import { mockProvider } from "./mock";
@@ -117,6 +118,16 @@ describe("match validators and mocks", () => {
       expect(hard(validateMatchTeaser(mockMatchTeaser(mc.facts), mc.facts)), `teaser ${label}`).toEqual([]);
       expect(hard(validateMatchPartA(mockMatchPartA(mc.facts), mc.facts)), `A ${label}`).toEqual([]);
       expect(hard(validateMatchPartB(mockMatchPartB(mc.facts, mc.cards), mc.facts, mc.cards)), `B ${label}`).toEqual([]);
+    }
+  });
+
+  it("passes the card part's mock and validator with the Starlog deck's own pictures, the design most users see (owner 2026-10-17)", () => {
+    for (let i = 0; i < 40; i++) {
+      const { facts } = randomContext(3000 + i);
+      const drawn = pickCards(createDeck(`match-starlog-${i}`, DEFAULT_REVERSAL_RATE), TEMPLATES.match, [4, 18, 33, 51, 70]);
+      const cards = matchCardsContext(facts.relation, drawn, "starlog");
+      for (const card of cards.cards) expect(card.kb.imagery.facts, card.cardId).toEqual(kbCard(card.cardId).imagery.decks?.starlog?.facts);
+      expect(hard(validateMatchPartB(mockMatchPartB(facts, cards), facts, cards)), `B ${i} ${facts.relation}`).toEqual([]);
     }
   });
 

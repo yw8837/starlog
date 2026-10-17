@@ -1,5 +1,6 @@
 import "server-only";
 import { BRANCHES, HIDDEN_STEMS, ganzhiKo, type DrawnCard, type SajuChart, type SajuElement } from "@starlog/core";
+import type { FrontDeck } from "@/lib/deck";
 import type { TopicAngle } from "@/lib/kb";
 import type { ChartView, MatchPartA } from "../premiumSchemas";
 import { MODEL_BLIND_RULE, STYLE_RULES } from "../style";
@@ -301,15 +302,18 @@ const ANGLES: Record<MatchRelation, TopicAngle[]> = {
   friend: ["group", "contact"], coworker: ["work", "group"], family: ["self", "group"],
 };
 
-/** The five cards as a tarot context: relation decides the angles and the banned romance words. */
-export function matchCardsContext(relation: MatchRelation, drawn: DrawnCard[]): TarotContext {
+/**
+ * The five cards as a tarot context: relation decides the angles and the banned romance words; `deck` the pictures quoted,
+ * as the other tarot readings do (absent: the 1909 scans, which earlier 궁합 were written for).
+ */
+export function matchCardsContext(relation: MatchRelation, drawn: DrawnCard[], deck?: FrontDeck): TarotContext {
   const romantic = ROMANTIC_RELATIONS.has(relation);
   return {
     templateId: "match", topic: null, who: "us", when: null,
     question: `${RELATION_KO[relation]} 사이의 두 사람`,
     conditions: [], note: "", angles: ANGLES[relation], relational: romantic,
     bannedWords: romantic ? [] : [...ROMANCE_WORDS],
-    custom: { topic: "", who: "", when: "" }, history: [], cards: cardContexts(drawn),
+    custom: { topic: "", who: "", when: "" }, history: [], cards: cardContexts(drawn, deck),
   };
 }
 

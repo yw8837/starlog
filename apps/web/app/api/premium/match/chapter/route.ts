@@ -8,6 +8,7 @@ import { profileOf } from "@/lib/api/sajuRequest";
 import type { SajuProfile } from "@/lib/ai/prompts/saju";
 import { chapterTurns } from "@/lib/api/spend";
 import type { D1Binding } from "@/lib/db/d1";
+import type { FrontDeck } from "@/lib/deck";
 import { MatchBody, READING_MAX_BYTES } from "@/lib/premium/inputs";
 import { openPartner, sealPartner } from "@/lib/premium/partnerSeal";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
@@ -38,6 +39,7 @@ interface MatchCopy {
   partnerLabel?: string;
   concern?: string;
   cards: Array<{ cardId: string; orientation: Orientation }>;
+  deck?: FrontDeck;
 }
 
 const refused = () => errorResponse("BAD_TOKEN", { message: PARTNER_MISSING });
@@ -101,6 +103,8 @@ export async function POST(request: Request): Promise<Response> {
     relation: copy.relation,
     ...(copy.concern ? { concern: copy.concern } : {}),
     cards: copy.cards.map((card) => [card.cardId, card.orientation]),
+    // The design the cards were read in, so the follow-ups quote the same pictures.
+    ...(copy.deck ? { deck: copy.deck } : {}),
     paid: await paidFor(ctx.db, userId, body.readingId),
   };
   const chapterToken = await issueChapter(chapterCtx, copy.reading, [], ctx.secret, ctx.now, exp);

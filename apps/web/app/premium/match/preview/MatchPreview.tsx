@@ -15,6 +15,7 @@ import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
 import { useAccount } from "@/lib/account/client";
+import { deckPrefs } from "@/lib/deck";
 import { withFlags } from "@/lib/flowState";
 import { approxCharsText } from "@/lib/pricing";
 import { clearPremiumResume, pendingResumeToken, premiumApiPath } from "@/lib/premium/client";
@@ -33,8 +34,6 @@ import { giveMatchToken, requestMatchToken } from "@/lib/storage/sync";
 
 const ID = "match";
 const PREVIEW_PATH = "/premium/match/preview";
-/** The 궁합 reading quotes the 1909 pictures: its request carries no card design (lib/premium/inputs.ts MatchBody). */
-const DECK = "rws1909";
 const acceptPreview = (data: unknown): data is { preview: MatchPreviewData } =>
   typeof data === "object" && data !== null && isMatchPreview((data as { preview?: unknown }).preview);
 
@@ -67,7 +66,9 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     else if (ready === "draw") router.replace(withFlags("/premium/match/draw", { instant }));
   }, [ready, instant, router]);
 
-  const body = ready === "ready" && flow ? matchBody(flow) : null;
+  // The design the user sees (owner 2026-10-17): the five cards quote its pictures, and the record shows them in it.
+  const [deck] = useState(() => deckPrefs().front);
+  const body = ready === "ready" && flow ? matchBody(flow, deck) : null;
   const teaserKey = body ? `${ID}|${JSON.stringify(body)}` : null;
   const teaserGen = useGeneration<{ preview: MatchPreviewData }>();
   const [attempt, setAttempt] = useState(0);
@@ -124,6 +125,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
         }),
         reading: done.reading,
         chapterToken: done.chapterToken,
+        deck,
         ...(done.readingId ? { serverId: done.readingId } : {}),
       });
       // The other person's birth leaves the tab: it lives in the user's own chapter only.
@@ -199,7 +201,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
                 </li>
               ))}
             </ul>
-            <SpreadList title="카드 5장" cards={cards} deck={DECK} />
+            <SpreadList title="카드 5장" cards={cards} deck={deck} />
             <Paper as="article" aria-labelledby="match-summary-title">
               <h2 id="match-summary-title" className={s.cardHeading}>
                 {preview.summary.heading}
@@ -215,7 +217,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
           </>
         ) : holds && teaserError ? (
           <>
-            <SpreadList title="카드 5장" cards={cards} deck={DECK} />
+            <SpreadList title="카드 5장" cards={cards} deck={deck} />
             {unlock}
             <AiNote />
           </>
@@ -228,7 +230,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
           />
         ) : (
           <>
-            <SpreadList title="카드 5장" cards={cards} deck={DECK} />
+            <SpreadList title="카드 5장" cards={cards} deck={deck} />
             <GeneratingState
               mode="saju"
               kind="saju-teaser"

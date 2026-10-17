@@ -1,3 +1,4 @@
+import type { FrontDeck } from "@/lib/deck";
 import type { DrawnCardData, LoveStatus, WorkStatus } from "@/lib/reading/types";
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
@@ -94,8 +95,11 @@ export function matchReady(flow: MatchFlow): "form" | "draw" | "ready" {
   return flow.draw ? "ready" : "draw";
 }
 
-/** The request /api/premium/match/* takes (lib/premium/inputs.ts MatchBody), or null before the flow is ready. */
-export function matchBody(flow: MatchFlow) {
+/**
+ * The request /api/premium/match/* takes (lib/premium/inputs.ts MatchBody), or null before the flow is ready. `deck`: the
+ * card design the user sees, whose pictures the five cards are read in (as the other tarot readings send it).
+ */
+export function matchBody(flow: MatchFlow, deck?: FrontDeck) {
   if (matchReady(flow) !== "ready") return null;
   const label = flow.partnerLabel?.trim();
   const concern = flow.concern?.trim();
@@ -106,6 +110,7 @@ export function matchBody(flow: MatchFlow) {
     ...(concern ? { concern } : {}),
     drawToken: flow.draw!.drawToken,
     ack: true as const,
+    ...(deck ? { deck } : {}),
   };
 }
 

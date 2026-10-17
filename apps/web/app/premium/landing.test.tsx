@@ -8,6 +8,8 @@ import MatchPage, { metadata as matchMeta } from "./match/page";
 import MatchSample from "./match/sample/page";
 import YearPage, { metadata as yearMeta } from "./newyear-2027/page";
 import YearSample from "./newyear-2027/sample/page";
+import { DECK_KEY } from "@/lib/deck";
+import { MATCH_SECOND_SAMPLE, PREMIUM_SAMPLES } from "@/lib/premium/samples";
 
 const gate = vi.hoisted(() => ({ visible: false, open: false, asked: [] as string[] }));
 vi.mock("@/lib/premium/pageGate", () => ({
@@ -149,5 +151,28 @@ describe("the premium sample pages", () => {
     expect(screen.getByRole("heading", { name: "상대가 태어난 시를 몰라도" })).toBeTruthy();
     expect(text.indexOf("두 사람 모두 태어난 시를 알아요")).toBeLessThan(text.indexOf("상대가 태어난 시를 몰라요"));
     expect(text.split("가상의 입력으로 만든 샘플이에요")).toHaveLength(3);
+  });
+
+  it("show each sample's cards in the deck it records (the one its text describes), whatever this visitor chose", async () => {
+    gate.visible = true;
+    const pages = [
+      { Sample: DeepSample, samples: [PREMIUM_SAMPLES["tarot-deep"]] },
+      { Sample: MatchSample, samples: [PREMIUM_SAMPLES.match, MATCH_SECOND_SAMPLE] },
+    ];
+    try {
+      for (const { Sample, samples } of pages) {
+        for (const sample of samples) {
+          // The visitor chose the other deck: the sample still shows its own.
+          localStorage.setItem(DECK_KEY, JSON.stringify({ front: sample.deck === "starlog" ? "rws1909" : "starlog", back: "constellation" }));
+          const { container } = await show(Sample);
+          const faces = [...container.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => sample.cards.some((c) => src.includes(c.cardId)));
+          expect(faces.length).toBeGreaterThan(0);
+          for (const src of faces) expect([sample.deck, src.startsWith("/cards/starlog/")]).toEqual([sample.deck, sample.deck === "starlog"]);
+          cleanup();
+        }
+      }
+    } finally {
+      localStorage.removeItem(DECK_KEY);
+    }
   });
 });

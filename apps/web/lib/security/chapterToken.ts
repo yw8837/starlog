@@ -3,6 +3,7 @@ import type { Orientation, TemplateId } from "@starlog/core";
 import type { MatchRelation } from "@/lib/ai/prompts/match";
 import type { SajuProfile } from "@/lib/ai/prompts/saju";
 import type { BirthInput, TarotInputData } from "@/lib/api/inputs";
+import type { FrontDeck } from "@/lib/deck";
 import type { FollowUpTurn } from "@/lib/ai/prompts/tarot";
 import type { PremiumId } from "@/lib/premium/products";
 import type { SajuTopicId } from "@/lib/reading/types";
@@ -40,6 +41,8 @@ export type ChapterContext =
     relation: MatchRelation;
     concern?: string;
     cards: Array<[string, Orientation]>;
+    /** the card design the five cards were read in (signed; absent on earlier tokens: the 1909 scans) */
+    deck?: FrontDeck;
     paid?: boolean;
   }
   | { kind: "newyear-2027"; birth: BirthInput; profile?: SajuProfile; paid?: boolean };

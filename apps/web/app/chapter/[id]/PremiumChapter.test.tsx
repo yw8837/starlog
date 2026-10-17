@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DECK_KEY } from "@/lib/deck";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
 import { LocalChapter } from "./LocalChapter";
@@ -57,6 +58,30 @@ describe("a premium reading saved on this device", () => {
     expect(screen.getAllByRole("list", { name: "카드 10장 배치" })).toHaveLength(1);
     expect(screen.getByText("풀이를 연 지 30일이 지나 더 물어볼 수 없어요")).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
+  it("shows a 궁합's five cards in the deck it recorded, and one saved before 궁합 kept its deck in the 1909 scans it was written for (owner 2026-10-17)", () => {
+    const pair = {
+      id: "pair0002", createdAt: Date.now(), chapterToken: "t", turns: [], followUpsLeft: 5, kind: "match", relation: "friend", relationLabel: "친구",
+      me: { birth: DEFAULT_SAJU_FORM }, cards: CARDS.slice(0, 5),
+      reading: {
+        verdict: "결론", saju: { dayMasters: section("일간"), elements: section("오행"), pillars: section("기둥"), luck: section("10년") },
+        cards: CARDS.slice(0, 5).map((c) => ({ position: c.position, cardId: c.cardId, heading: `${c.position} 카드`, body: "본문이에요." })),
+        connection: section("연결"), bridge: section("사주와 카드"), action: section("해 볼 일"), observation: section("신호"), followUps: [],
+      },
+    };
+    const faces = (container: HTMLElement) => [...container.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes("cups-01"));
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "rws1909", back: "constellation" }));
+    seed([{ ...pair, deck: "starlog" }, { ...pair, id: "pair0003" }]);
+    let { container } = render(<LocalChapter id="pair0002" />);
+    expect(screen.getByRole("heading", { level: 1, name: "프리미엄 궁합 · 친구" })).toBeTruthy();
+    expect(faces(container).length).toBeGreaterThan(0);
+    for (const src of faces(container)) expect(src.startsWith("/cards/starlog/cups-01")).toBe(true);
+    cleanup();
+    localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "constellation" }));
+    ({ container } = render(<LocalChapter id="pair0003" />));
+    expect(faces(container).length).toBeGreaterThan(0);
+    for (const src of faces(container)) expect(src.startsWith("/cards/cups-01")).toBe(true);
   });
 
   it("sends a record whose reading lost a part its page reads (or names a card no deck has) to the damaged-record screen, never a broken page", () => {

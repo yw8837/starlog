@@ -47,9 +47,9 @@ const sealedOf = (token: string) =>
   (JSON.parse(Buffer.from(token.split(".")[0]!, "base64url").toString("utf8")) as { ctx: { partner: { sealed: string } } }).ctx.partner.sealed;
 
 /** Writes a paid 궁합 and answers its input, the resume token after the first part, and the finished reading. */
-async function writeMatch(b: Browser, me: Record<string, unknown> = { birth: DEFAULT_SAJU_FORM }) {
+async function writeMatch(b: Browser, me: Record<string, unknown> = { birth: DEFAULT_SAJU_FORM }, extra: Record<string, unknown> = {}) {
   const drawToken = ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "match", picks: [4, 18, 33, 51, 70] } })).json()) as { drawToken: string }).drawToken;
-  const input = { me, partner: { birth: PARTNER, label: "민지" }, relation: "friend", concern: "요즘 연락이 뜸해요", drawToken, ack: true };
+  const input = { me, partner: { birth: PARTNER, label: "민지" }, relation: "friend", concern: "요즘 연락이 뜸해요", drawToken, ack: true, ...extra };
   const first = await json(await b.send(matchReading, "/r", { body: { ...input, unlock: { method: "paid" } } }));
   const done = await json(await b.send(matchReading, "/r", { body: { ...input, unlock: { method: "paid" }, resume: first.resume } }));
   return { input, resume: first.resume as string, done };
@@ -113,6 +113,17 @@ describe("a 궁합's chapter token issued again (review 2026-10-17 H3)", () => {
     const after = await openChapter(issued.chapterToken, done.reading, signingSecret()!, Date.now());
     expect((after!.ctx as { me: unknown }).me).toEqual((before!.ctx as { me: unknown }).me);
     expect((after!.ctx as { me: { profile?: unknown } }).me.profile).toEqual({ loveStatus: "연애 중", workStatus: "직장인" });
+  });
+
+  it("keeps the card design through a token issued again, from the seal or from the tab's input (owner 2026-10-17)", async () => {
+    useTestDb();
+    const b = await member("198.51.100.166", "pair166");
+    const { input, resume, done } = await writeMatch(b, undefined, { deck: "starlog" });
+    const fromSeal = await json(await b.send(chapterToken, ROUTE, { body: { readingId: done.readingId, sealed: sealedOf(done.chapterToken) }, origin: true }));
+    const fromInput = await json(await b.send(chapterToken, ROUTE, { body: { readingId: done.readingId, resume, input }, origin: true }));
+    for (const token of [done.chapterToken, fromSeal.chapterToken, fromInput.chapterToken]) {
+      expect((await openChapter(token, done.reading, signingSecret()!, Date.now()))!.ctx).toMatchObject({ kind: "match", deck: "starlog" });
+    }
   });
 
   it("only for the reading's own account, a seal this server made, and within the 30 days", async () => {

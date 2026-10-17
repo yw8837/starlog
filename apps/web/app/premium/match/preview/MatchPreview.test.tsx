@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CARDS, TEMPLATES } from "@starlog/core";
 import { resetAccountForTests } from "@/lib/account/client";
+import { DECK_KEY } from "@/lib/deck";
 import { MATCH_FLOW_KEY, matchBody, type MatchFlow } from "@/lib/premium/matchFlow";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { resetBotCheck } from "@/lib/reading/api";
@@ -65,9 +66,13 @@ afterEach(() => {
   resetBotCheck();
   sessionStorage.clear();
   clearChapters();
+  localStorage.removeItem(DECK_KEY);
   router.push.mockReset();
   router.replace.mockReset();
 });
+
+/** The front image of each drawn card on the page. */
+const faces = () => [...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => DRAWN.some((c) => src.includes(c.cardId)));
 
 describe("우리 사이 궁합's preview (Task 20)", () => {
   it("shows both charts side by side, the computed lines, the five cards, the summary and the 14 locked headings", async () => {
@@ -86,6 +91,32 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     expect(JSON.parse(String(init!.body))).toMatchObject({ me: { birth: DEFAULT_SAJU_FORM, loveStatus: "single" }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", ack: true, drawToken: "signed.match.draw" });
   });
 
+  it("reads the five cards in the deck the user sees (owner 2026-10-17): the Starlog deck by default, the 1909 scans when chosen, sent, shown and kept", async () => {
+    for (const [chosen, front, prefix] of [[null, "starlog", "/cards/starlog/"], ["rws1909", "rws1909", "/cards/"]] as const) {
+      if (chosen) localStorage.setItem(DECK_KEY, JSON.stringify({ front: chosen, back: "constellation" }));
+      sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify(FLOW));
+      const fetchMock = stub([
+        () => Response.json({ status: "continue", resume: "r1", done: 1, of: 2 }),
+        () => Response.json({ status: "done", reading: READING, chapterToken: "c1", readingId: ID }),
+      ]);
+      render(<MatchPreview instant />);
+      expect(await screen.findByText(PREVIEW.summary.body)).toBeTruthy();
+      expect(faces().length).toBeGreaterThan(0);
+      expect(faces().every((src) => src.startsWith(prefix) && (front === "starlog" || !src.startsWith("/cards/starlog/"))), front).toBe(true);
+      fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+      await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+      const sent = fetchMock.mock.calls.filter(([url]) => url === "/api/premium/match/teaser" || url === "/api/premium/match/reading");
+      expect(sent.map(([, init]) => JSON.parse(String(init!.body)).deck)).toEqual([front, front, front]);
+      expect(listChapters()[0]).toMatchObject({ kind: "match", deck: front });
+      cleanup();
+      vi.unstubAllGlobals();
+      resetAccountForTests();
+      resetPremiumStatusForTests();
+      clearChapters();
+      router.push.mockReset();
+    }
+  });
+
   it("after the reading is saved, the partner's birth leaves the tab: the flow and the preview kept for it are gone", async () => {
     stub([
       () => Response.json({ status: "continue", resume: "r1", done: 1, of: 2 }),
@@ -101,7 +132,7 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     // Owner 2026-10-16: the partner's birth is never kept as text on the device either (only sealed, inside the token).
     expect(chapter).not.toHaveProperty("partner");
     expect(localStorage.getItem(CHAPTERS_KEY)).not.toContain('"year":1992');
-    expect(chapter && "deck" in chapter).toBe(false); // the 1909 pictures the reading quotes
+    expect(chapter).toMatchObject({ deck: "starlog" }); // the deck the reading quotes (the default, nothing chosen)
     expect(router.replace).not.toHaveBeenCalled();
   });
 
@@ -154,7 +185,7 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     };
     const issued = () => Response.json({ chapterToken: "issued.token", followUpsLeft: 5 });
     const sent = (fetchMock: ReturnType<typeof stub>) => fetchMock.mock.calls.filter(([url]) => url === "/api/premium/match/chapter").map(([, init]) => JSON.parse(String(init!.body)));
-    const input = matchBody(FLOW as unknown as MatchFlow);
+    const input = matchBody(FLOW as unknown as MatchFlow, "starlog");
 
     // Cut off on the last part, then found delivered in the account.
     let fetchMock = stub(

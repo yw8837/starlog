@@ -111,7 +111,7 @@ export async function preparePremiumFollowUp(
     const partner = checkSajuForm(partnerBirth, today);
     if ("error" in me || "error" in partner) return errorResponse("BAD_TOKEN");
     const facts = buildMatchFacts(me.chart, partner.chart, { relation: ctx.relation, label: ctx.partner.label ?? "", concern: ctx.concern ?? "", meProfile: ctx.me.profile }, now);
-    const cards = matchCardsContext(ctx.relation, drawn("match", ctx.cards));
+    const cards = matchCardsContext(ctx.relation, drawn("match", ctx.cards), ctx.deck);
     return {
       generate: async (provider, turns, question, hooks) =>
         (await generateValidated(provider, {

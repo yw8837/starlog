@@ -103,7 +103,7 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
       concern: cleanUserText(b.concern ?? ""),
       meProfile: profileOf(b.me),
     }, gate.now);
-    return { product: "match", match: { facts, cards: matchCardsContext(b.relation, draw.cards) } };
+    return { product: "match", match: { facts, cards: matchCardsContext(b.relation, draw.cards, b.deck) } };
   },
   teaser: async (provider, ctx, hooks) => (await generateMatchTeaser(provider, ctx.match, hooks)).data,
   async chapterContext(b, ctx, secret, chapterId) {
@@ -117,6 +117,8 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
       relation: b.relation,
       ...(concern ? { concern } : {}),
       cards: cardsOf(ctx.match.cards),
+      // The design the cards were read in (absent: the 1909 scans), so follow-ups quote the same pictures.
+      ...(b.deck ? { deck: b.deck } : {}),
     };
   },
   // The account's copy (owner 2026-10-16): the reading, the relation, the label, the concern, the cards and the user's own
@@ -133,6 +135,8 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
       me: { birth: b.me.birth, ...(profile ? { profile } : {}) },
       ...(concern ? { concern } : {}),
       cards: drawnOf(ctx.match.cards),
+      // The design the reading quotes (absent: the 1909 scans), so a record synced to another device shows it.
+      ...(b.deck ? { deck: b.deck } : {}),
     }, { ...response, chapterToken: "" }, now);
   },
 };
