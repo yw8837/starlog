@@ -311,7 +311,7 @@ export function getChapter(id: string): StoredChapter | undefined {
  * browser would not keep it (storage full or blocked): it then lives only until the tab closes.
  */
 export function saveChapter(input: NewChapter, now: number = Date.now()): { chapter: StoredChapter; persisted: boolean } {
-  // a premium reading includes its own follow-ups (PREMIUM[kind].followUps, 5); the standard ones SITE's
+  // a premium reading includes its own follow-ups (PREMIUM[kind].followUps, 3); the standard ones SITE's
   const followUpsLeft = isPremiumId(input.kind) ? PREMIUM[input.kind as PremiumId].followUps : SITE.reading.followUps;
   const chapter = { ...input, id: newId(), createdAt: now, turns: [], followUpsLeft } as StoredChapter;
   const persisted = store.save({ v: 1, chapters: [...rawEntries(), chapter] });

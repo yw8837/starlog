@@ -90,7 +90,7 @@ describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
       expect(container.textContent).toContain(price);
       const how = screen.getByRole("region", { name: "이렇게 읽어요" });
       expect(within(how).getAllByRole("listitem").length).toBeGreaterThanOrEqual(3 + 3);
-      expect(how.textContent).toContain("이어서 물어보기 5번");
+      expect(how.textContent).toContain("이어서 물어보기 3번");
       expect(screen.getByRole("region", { name: "샘플로 미리 보기" }).textContent).toContain("가상의 입력으로 만든 샘플이에요");
       expect(screen.getByRole("link", { name: /샘플 전체 보기/ }).getAttribute("href")).toBe(`/premium/${slug}/sample`);
       expect(container.querySelector(`a[href="${guide}"]`)).not.toBeNull();

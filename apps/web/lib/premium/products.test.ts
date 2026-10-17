@@ -23,10 +23,11 @@ describe("premium products", () => {
     expect(isPremiumId("tarot")).toBe(false);
   });
 
-  it("holds five follow-ups and three scope lines each", () => {
+  it("holds three follow-ups (owner 2026-10-17) and three scope lines each, the count in its line", () => {
     for (const id of PREMIUM_IDS) {
-      expect(PREMIUM[id].followUps).toBe(5);
+      expect(PREMIUM[id].followUps).toBe(3);
       expect(PREMIUM[id].scope).toHaveLength(3);
+      expect(PREMIUM[id].scope[1]).toBe("이어서 물어보기 3번");
     }
     expect(PREMIUM["newyear-2027"].parts).toHaveLength(3);
     expect(PREMIUM["tarot-deep"].parts).toHaveLength(2);

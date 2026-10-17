@@ -59,7 +59,7 @@ function YearChart({ chapter }: { chapter: NewYearChapter }) {
 
 /**
  * An opened premium reading (P5) in one scroll, in the records' design: the product and date, the
- * question or theme, the cards or the chart beside the paid body, the five follow-ups, 돌아보기 and the
+ * question or theme, the cards or the chart beside the paid body, its three follow-ups, 돌아보기 and the
  * rating. No other product is offered here.
  */
 export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false }: PremiumChapterViewProps) {

@@ -62,7 +62,7 @@ describe("/pricing's premium tier (plan-reconciled §4.2)", () => {
     ]);
     expect(cards[0]!.textContent).toContain("7,900원");
     expect(cards[0]!.textContent).toContain("판매 중");
-    expect(cards[0]!.textContent).toContain("이어서 물어보기 5번");
+    expect(cards[0]!.textContent).toContain("이어서 물어보기 3번");
     expect(cards[2]!.textContent).toContain("14,900원");
     expect(cards[2]!.textContent).toContain("11월 15일 0시에 열려요");
     expect(within(premium()).getAllByRole("link", { name: /자세히 보기/ }).map((a) => a.getAttribute("href"))).toEqual(["/premium/deep-tarot", "/premium/match", "/premium/newyear-2027"]);

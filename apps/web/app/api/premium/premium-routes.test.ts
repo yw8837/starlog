@@ -212,7 +212,7 @@ describe("paid premium readings", () => {
     expect(last.readingId).toMatch(/^[a-z0-9]{20}$/);
     expect(last.reading.positions).toHaveLength(10);
     const saved = await listReadings(db, accountSecret()!, (await db.prepare("SELECT id FROM users LIMIT 1").first<{ id: string }>())!.id);
-    expect(saved.readings[0]?.chapter).toMatchObject({ kind: "tarot-deep", followUpsLeft: 5 });
+    expect(saved.readings[0]?.chapter).toMatchObject({ kind: "tarot-deep", followUpsLeft: 3 });
     expect((await me(b)).user?.unused).toEqual([]);
     expect(await one(db, "SELECT COUNT(*) AS n FROM unlocks WHERE status = 'delivered'")).toEqual({ n: 1 });
     const chapter = await openChapter(last.chapterToken, last.reading, signingSecret()!, Date.now());
@@ -492,7 +492,7 @@ describe("paid premium readings", () => {
       expect(res.status).toBe(200);
       const answer = await json(res);
       expect(answer.answer.length).toBeGreaterThanOrEqual(150);
-      expect(answer.remaining).toBe(4);
+      expect(answer.remaining).toBe(2);
       const opened = await openChapter(answer.chapterToken, done.reading, signingSecret()!, Date.now());
       expect(opened?.turns).toHaveLength(1);
     }
@@ -504,7 +504,7 @@ describe("paid premium readings", () => {
 });
 
 describe("premium follow-ups (P5 spec §6.3)", () => {
-  it("answers five per paid reading outside the beta day quota, saved to the account, then stops", async () => {
+  it("answers three per paid reading (owner 2026-10-17) outside the beta day quota, saved to the account, then stops", async () => {
     const db = useTestDb();
     vi.stubEnv("BETA_FOLLOWUPS_PER_DAY", "1");
     const b = await shopper();
@@ -512,27 +512,27 @@ describe("premium follow-ups (P5 spec §6.3)", () => {
     const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
     expect(done.readingId).toMatch(/^[a-z0-9]{20}$/);
     let token = done.chapterToken as string;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       const res = await b.send(followup, "/api/followup", { body: { chapterToken: token, reading: done.reading, question: `${i + 1}번째로 궁금한 건 이번 달 지출이에요`, readingId: done.readingId } });
       expect(res.status).toBe(200);
       const answer = await json(res);
-      expect(answer.remaining).toBe(4 - i);
+      expect(answer.remaining).toBe(2 - i);
       token = answer.chapterToken;
     }
-    const sixth = await b.send(followup, "/api/followup", { body: { chapterToken: token, reading: done.reading, question: "여섯째로 궁금한 게 있어요" } });
-    expect(sixth.status).toBe(429);
-    expect(await json(sixth)).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
+    const fourth = await b.send(followup, "/api/followup", { body: { chapterToken: token, reading: done.reading, question: "넷째로 궁금한 게 있어요" } });
+    expect(fourth.status).toBe(429);
+    expect(await json(fourth)).toMatchObject({ code: "BETA_LIMIT", scope: "chapter" });
     const saved = await listReadings(db, accountSecret()!, (await db.prepare("SELECT id FROM users LIMIT 1").first<{ id: string }>())!.id);
     expect(saved.readings[0]?.chapter).toMatchObject({ kind: "tarot-deep", followUpsLeft: 0 });
   });
 
-  it("keeps the chapter's count for as long as its token lives: the first token sent again after the standard 8 days still finds all five used", async () => {
+  it("keeps the chapter's count for as long as its token lives: the first token sent again after the standard 8 days still finds all three used", async () => {
     useTestDb();
     const b = await shopper();
     await buy(b, "tarot-deep");
     const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
     let token = done.chapterToken as string;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       const res = await b.send(followup, "/api/followup", { body: { chapterToken: token, reading: done.reading, question: `${i + 1}번째로 궁금한 건 이번 달 지출이에요` } });
       expect(res.status).toBe(200);
       token = (await json(res)).chapterToken;

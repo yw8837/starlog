@@ -96,7 +96,7 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     expect(sent[0]).toMatchObject({ drawToken: "signed.deep.draw", unlock: { method: "paid" }, input: { topicId: "money", note: "카드값이 많이 나왔어요" } });
     expect(sent[1]).toMatchObject({ resume: "r1", unlock: { method: "paid" } });
     const [chapter] = listChapters();
-    expect(chapter).toMatchObject({ kind: "tarot-deep", serverId: ID, followUpsLeft: 5, deck: sent[0].input.deck });
+    expect(chapter).toMatchObject({ kind: "tarot-deep", serverId: ID, followUpsLeft: 3, deck: sent[0].input.deck });
     expect(chapter && "cards" in chapter ? chapter.cards[0]?.keyword : null).toBe("지금의 나 열쇠");
     expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw.chapterId).toBe(chapter!.id);
   });

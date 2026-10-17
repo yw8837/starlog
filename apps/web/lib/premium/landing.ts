@@ -39,7 +39,7 @@ const yearWindow = year.opensAt !== undefined && year.closesAt !== undefined ? `
 export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
   "tarot-deep": {
     title: PREMIUM["tarot-deep"].name,
-    description: `고민 하나를 카드 10장, 열 자리로 나눠 깊게 읽는 타로예요. 자리마다의 풀이와 열 장을 엮어 읽는 풀이, 이어서 물어보기 5번을 담아 ${won(PREMIUM["tarot-deep"].krw)}이에요.`,
+    description: `고민 하나를 카드 10장, 열 자리로 나눠 깊게 읽는 타로예요. 자리마다의 풀이와 열 장을 엮어 읽는 풀이, 이어서 물어보기 ${PREMIUM["tarot-deep"].followUps}번을 담아 ${won(PREMIUM["tarot-deep"].krw)}이에요.`,
     method: `고민 하나를 카드 10장으로 봐요. 카드마다 자리가 정해져 있어요(${TEMPLATES["deep-tarot"].positions.join(", ")}). 자리마다 한 장씩 읽은 다음, 열 장이 서로 어떻게 이어지는지 엮어 읽어요.`,
     steps: [
       "질문을 만들고 카드 10장을 뽑아요",
@@ -56,7 +56,7 @@ export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
   },
   match: {
     title: PREMIUM.match.name,
-    description: `나와 그 사람의 사주, 카드 5장으로 두 사람 사이를 함께 읽는 궁합이에요. 사주로 본 두 사람과 카드로 본 지금, 이어서 물어보기 5번을 담아 ${won(PREMIUM.match.krw)}이에요.`,
+    description: `나와 그 사람의 사주, 카드 5장으로 두 사람 사이를 함께 읽는 궁합이에요. 사주로 본 두 사람과 카드로 본 지금, 이어서 물어보기 ${PREMIUM.match.followUps}번을 담아 ${won(PREMIUM.match.krw)}이에요.`,
     method: `두 사람의 생년월일로 각자의 명식을 세우고, 두 일간과 오행, 두 일지 사이의 관계, 지금 지나는 10년을 나란히 놓고 읽어요. 그 사람 쪽은 일간과 오행의 기울기로만 말해요. 이어서 카드 5장(${TEMPLATES.match.positions.join(", ")})으로 지금 두 사람 사이를 봐요.`,
     steps: [
       "나와 그 사람의 생년월일, 관계를 적고 카드 5장을 뽑아요",
@@ -73,7 +73,7 @@ export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
   },
   "newyear-2027": {
     title: PREMIUM["newyear-2027"].name,
-    description: `내 명식에 2027년의 흐름과 열두 달을 겹쳐 읽는 신년운세예요. 한 해의 큰 흐름과 달마다의 풀이, 이어서 물어보기 5번을 담아 ${won(PREMIUM["newyear-2027"].krw)}이에요.`,
+    description: `내 명식에 2027년의 흐름과 열두 달을 겹쳐 읽는 신년운세예요. 한 해의 큰 흐름과 달마다의 풀이, 이어서 물어보기 ${PREMIUM["newyear-2027"].followUps}번을 담아 ${won(PREMIUM["newyear-2027"].krw)}이에요.`,
     method: "내 생년월일로 세운 명식에 2027년(정미년)의 기운과 그해에 지나는 10년, 열두 달의 흐름을 겹쳐 읽어요. 일, 돈, 관계, 몸과 생활 리듬을 나눠 보고 1월부터 12월까지 달마다 풀이해요.",
     steps: [
       "생년월일과 지금 상태를 골라요",

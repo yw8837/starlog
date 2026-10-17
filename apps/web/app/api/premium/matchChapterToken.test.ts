@@ -77,14 +77,14 @@ describe("a 궁합's chapter token issued again (review 2026-10-17 H3)", () => {
     const res = await b.send(chapterToken, ROUTE, { body: { readingId: done.readingId, sealed: sealedOf(done.chapterToken) }, origin: true });
     expect(res.status).toBe(200);
     const issued = await json(res);
-    expect(issued.followUpsLeft).toBe(3);
+    expect(issued.followUpsLeft).toBe(1);
     const before = await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now());
     const after = await openChapter(issued.chapterToken, done.reading, signingSecret()!, Date.now());
     expect(after!.id).toBe(before!.id);
     expect(after!.exp).toBe(before!.exp);
     expect(after!.ctx).toMatchObject({ kind: "match", relation: "friend", partner: { label: "민지" }, concern: "요즘 연락이 뜸해요", paid: true });
     expect(JSON.stringify(after!.ctx)).not.toContain("1987");
-    for (let i = 0; i < 3; i++) expect((await ask(b, issued.chapterToken, done.reading, done.readingId)).status).toBe(200);
+    expect((await ask(b, issued.chapterToken, done.reading, done.readingId)).status).toBe(200);
     expect((await ask(b, issued.chapterToken, done.reading, done.readingId)).status).toBe(429);
   });
 
@@ -95,7 +95,7 @@ describe("a 궁합's chapter token issued again (review 2026-10-17 H3)", () => {
     const res = await b.send(chapterToken, ROUTE, { body: { readingId: done.readingId, resume, input }, origin: true });
     expect(res.status).toBe(200);
     const issued = await json(res);
-    expect(issued.followUpsLeft).toBe(5);
+    expect(issued.followUpsLeft).toBe(3);
     expect((await ask(b, issued.chapterToken, done.reading, done.readingId)).status).toBe(200);
 
     // Another partner than the one this reading was written for: the resume token does not vouch for it.

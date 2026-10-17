@@ -75,7 +75,7 @@ describe("the policies' premium text", () => {
     render(<TermsPage />);
     const article = await screen.findByRole("region", { name: "제7조의3 (프리미엄 풀이)" });
     const text = article.textContent ?? "";
-    for (const line of ["켈틱 크로스 10장", "7,900원", "프리미엄 궁합", "2027 신년운세", "14,900원", "이어서 물어보기 5번", "30일"]) expect(text).toContain(line);
+    for (const line of ["켈틱 크로스 10장", "7,900원", "프리미엄 궁합", "2027 신년운세", "14,900원", "이어서 물어보기 3번", "30일"]) expect(text).toContain(line);
     expect(text).toContain("2026년 11월 15일 0시부터 2027년 11월 30일까지");
     expect(text).toContain("이미 지난 달도");
     expect(text).toContain("운영자 쪽 문제로 완성되지 않은 풀이는 쓰이지 않습니다");

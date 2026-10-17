@@ -33,18 +33,22 @@ export interface PremiumSpec {
 
 type Local = Pick<PremiumSpec, "followUps" | "approxChars" | "approxMinutes" | "parts" | "scope">;
 
+/** Follow-ups one purchase holds, the same for every premium reading (owner 2026-10-17: 3). */
+const FOLLOW_UPS = 3;
+const FOLLOW_UP_LINE = `이어서 물어보기 ${FOLLOW_UPS}번`;
+
 const LOCAL: Record<PremiumId, Local> = {
   "tarot-deep": {
-    followUps: 5, approxChars: 5000, approxMinutes: 3, parts: ["자리별 풀이", "엮어 읽기"],
-    scope: ["카드 10장 풀이 전체 · 약 5,000자", "이어서 물어보기 5번", "이 기기와 계정에 보관"],
+    followUps: FOLLOW_UPS, approxChars: 5000, approxMinutes: 3, parts: ["자리별 풀이", "엮어 읽기"],
+    scope: ["카드 10장 풀이 전체 · 약 5,000자", FOLLOW_UP_LINE, "이 기기와 계정에 보관"],
   },
   match: {
-    followUps: 5, approxChars: 5000, approxMinutes: 3, parts: ["사주로 본 두 사람", "카드로 본 지금"],
-    scope: ["사주 궁합과 카드 5장 풀이 전체 · 약 5,000자", "이어서 물어보기 5번", "이 기기와 계정에 보관"],
+    followUps: FOLLOW_UPS, approxChars: 5000, approxMinutes: 3, parts: ["사주로 본 두 사람", "카드로 본 지금"],
+    scope: ["사주 궁합과 카드 5장 풀이 전체 · 약 5,000자", FOLLOW_UP_LINE, "이 기기와 계정에 보관"],
   },
   "newyear-2027": {
-    followUps: 5, approxChars: 6800, approxMinutes: 4, parts: ["한 해의 큰 흐름", "1월~6월", "7월~12월"],
-    scope: ["2027년 한 해와 열두 달 풀이 전체 · 약 6,800자", "이어서 물어보기 5번", "이 기기와 계정에 보관"],
+    followUps: FOLLOW_UPS, approxChars: 6800, approxMinutes: 4, parts: ["한 해의 큰 흐름", "1월~6월", "7월~12월"],
+    scope: ["2027년 한 해와 열두 달 풀이 전체 · 약 6,800자", FOLLOW_UP_LINE, "이 기기와 계정에 보관"],
   },
 };
 

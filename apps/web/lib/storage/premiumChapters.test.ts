@@ -47,9 +47,9 @@ describe("premium chapters on the device", () => {
     expect(historyFor([deep!, match!, year!])).toEqual([]);
   });
 
-  it("saves a fresh premium reading with its five follow-ups, and brings one from the account", () => {
+  it("saves a fresh premium reading with its three follow-ups, and brings one from the account", () => {
     const { chapter } = saveChapter({ kind: "newyear-2027", birth: DEFAULT_SAJU_FORM, title: YEAR.title, reading: YEAR.reading, chapterToken: "t" } as never);
-    expect(chapter.followUpsLeft).toBe(5);
+    expect(chapter.followUpsLeft).toBe(3);
     expect(mergeServerReadings([{ id: "srvabcdefghij0123456", createdAt: 1, chapter: { ...MATCH, id: undefined } }])).toBe(1);
     expect(listChapters().map((c) => c.kind)).toEqual(["newyear-2027", "match"]);
     expect(JSON.parse(localStorage.getItem(CHAPTERS_KEY)!).chapters).toHaveLength(2);

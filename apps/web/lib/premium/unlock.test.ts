@@ -72,7 +72,7 @@ describe("premium settlement", () => {
     expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "delivered" });
     const { readings: [saved] } = await listReadings(db, SECRET, "u_1");
     expect(saved?.id).toBe(extra.readingId);
-    expect(saved?.chapter).toMatchObject({ kind: "newyear-2027", title: "차근차근 쌓아 가는 해", followUpsLeft: 5, chapterToken: "c" });
+    expect(saved?.chapter).toMatchObject({ kind: "newyear-2027", title: "차근차근 쌓아 가는 해", followUpsLeft: 3, chapterToken: "c" });
   });
 
   it("releases on failure, once", async () => {

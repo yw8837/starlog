@@ -75,7 +75,7 @@ describe("PremiumUnlock", () => {
     expect(screen.getByRole("link", { name: "로그인하고 결제하기" }).getAttribute("href")).toBe("/login?next=%2Fpremium%2Fmatch%2Fpreview");
     expect(screen.getByText("7,900원")).toBeTruthy();
     expect(screen.getByText("사주 궁합과 카드 5장 풀이 전체 · 약 5,000자")).toBeTruthy();
-    expect(screen.getByText("이어서 물어보기 5번")).toBeTruthy();
+    expect(screen.getByText("이어서 물어보기 3번")).toBeTruthy();
     expect(actions(container).filter(([, v]) => v === "primary")).toHaveLength(1);
     expect(screen.getByRole("link", { name: "결제와 환불 안내" }).getAttribute("href")).toBe("/refund");
   });
