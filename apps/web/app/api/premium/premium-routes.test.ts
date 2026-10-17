@@ -696,6 +696,8 @@ describe("who paid for a premium chapter is signed in its token (follow-up books
     productionTestKeys(b);
     vi.stubEnv("BETA_IP_FULL_PER_DAY", "5");
     const { done } = await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "paid" } });
+    // The reading itself first: a refusal (its code and reason) shows here, not as an unsigned token below.
+    expect(done).toMatchObject({ status: "done", chapterToken: expect.any(String) });
     expect((await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now()))?.ctx).toMatchObject({ paid: false });
     const client = await keyedHash(`client:${address}`, signingSecret()!);
     const free = await freeBook();
