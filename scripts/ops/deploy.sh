@@ -22,7 +22,7 @@ npx wrangler d1 migrations list starlog --remote > "$LOG/migrations.log" 2>&1
 step "remote D1 pending migrations: $(grep -cE '^[│| ]*000[0-9]' "$LOG/migrations.log") (see migrations.log; 'No migrations' means none)"
 grep -qi "no migrations" "$LOG/migrations.log" || { step "STOP: pending migrations or unknown state — apply them first"; exit 2; }
 
-rm -rf .open-next; [ -e .open-next ] && { step "STOP: .open-next still locked"; exit 9; }
+rm -rf .open-next .next/dev; [ -e .open-next ] && { step "STOP: .open-next still locked"; exit 9; }
 unset STARLOG_AI STARLOG_PAY NEXT_PUBLIC_SAJU_TOPICS NEXT_PUBLIC_LOCALES NEXT_PUBLIC_LOCALES_PREVIEW
 export NEXT_PUBLIC_SPLIT_HOSTS=1 NEXT_PUBLIC_FEATURE_BONDS=1 NEXT_PUBLIC_BUILD_ID="$BUILD_ID"
 [ -n "${TOPICS:-}" ] && export NEXT_PUBLIC_SAJU_TOPICS="$TOPICS"   # off (default) | owner | on

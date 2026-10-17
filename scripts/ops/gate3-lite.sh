@@ -13,7 +13,7 @@ step "HEAD $(git log --oneline -1)"
 pnpm install --frozen-lockfile > "$LOG/install.log" 2>&1; step "install exit=$?"
 STARLOG_AI=mock npx vitest run --maxWorkers=1 > "$LOG/unit.log" 2>&1; step "unit exit=$? $(grep -E 'Tests ' "$LOG/unit.log" | tail -1)"
 pnpm typecheck > "$LOG/tsc.log" 2>&1; step "typecheck exit=$?"
-cd apps/web && rm -rf .open-next; [ -e .open-next ] && { step "STOP: .open-next still locked"; exit 9; }
+cd apps/web && rm -rf .open-next .next/dev; [ -e .open-next ] && { step "STOP: .open-next still locked"; exit 9; }
 echo y | npx wrangler d1 migrations apply starlog --local > "$LOG/migrate-local.log" 2>&1; step "local D1 migrations exit=$?"; grep -oE "000[0-9]_[a-z_]+" "$LOG/migrate-local.log" | sort -u >> "$LOG/summary.log"
 export NEXT_PUBLIC_FEATURE_BONDS=1 NEXT_PUBLIC_BUILD_ID=$(git rev-parse --short=12 HEAD) STARLOG_AI=mock
 export NEXT_PUBLIC_KAKAO_JS_KEY="$(grep -E '^NEXT_PUBLIC_KAKAO_JS_KEY=' /d/Money/apps/saju-tarot/apps/web/.env.local | cut -d= -f2- | tr -d '\r\"')"
