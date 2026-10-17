@@ -50,12 +50,13 @@ describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
     expect(metadata.robots).toMatchObject({ index: false });
   });
 
-  it("looks like saju step 1: a back-to-home bar, the question in the rabbit's bubble, the pair in hanbok", async () => {
+  it("looks like saju step 1 with tarot's own cast: a back-to-home bar, the question in a bubble, the astrologer cat leading and the librarian rabbit", async () => {
     await renderBridge();
     expect(screen.getByRole("link", { name: "홈으로" }).getAttribute("href")).toBe("/");
     expect(screen.getByText("타로 보기")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "한복 입은 토끼 선생님" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "한복 입은 고양이 조수" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "별을 읽는 점성술사 고양이" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "기록하는 사서 토끼" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /한복/ })).toBeNull();
   });
 
   it("says what each one holds, every number from config: today's free first reading and price, the 10-card length and follow-ups", async () => {

@@ -31,9 +31,10 @@ export function TarotBridge() {
       <header className={s.greeting}>
         <SpeechBubble as="h1">어떤 타로를 볼까요?</SpeechBubble>
         <div className={s.cast}>
-          <Rabbit outfit="hanbok" size={148} />
+          {/* Tarot's own cast, as on the home's 타로 보기 card: the astrologer cat leads, the librarian rabbit assists. */}
+          <Cat outfit="tarot" size={148} />
           <span className={s.assistant}>
-            <Cat outfit="hanbok" size={92} />
+            <Rabbit outfit="tarot" size={92} />
           </span>
         </div>
       </header>
