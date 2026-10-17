@@ -50,7 +50,10 @@
   // TURNSTILE_SITE_KEY: the Turnstile widget's public site key (lib/api/turnstile.ts). The bot check
   // on the free generations runs only with it and the TURNSTILE_SECRET_KEY secret both set; empty = off.
   // Set it here, not in the dashboard: a deploy replaces the dashboard's vars with these.
-  "vars": { "BETA_DAILY_BUDGET_KRW": "off", "TURNSTILE_SITE_KEY": "0x4AAAAAAFXRHXQ1qm3TScEj" },
+  // ADSENSE_CLIENT: the public AdSense publisher id (lib/ads.ts, also in ads.txt). deploy.sh exports it for the build, which
+  // static pages keep; pages rendered per request (/privacy since 2026-10-17) read it here at run time, or the privacy
+  // policy loses its 광고 쿠키 section while the guides still show ads. Keep it equal to deploy.sh's default.
+  "vars": { "BETA_DAILY_BUDGET_KRW": "off", "TURNSTILE_SITE_KEY": "0x4AAAAAAFXRHXQ1qm3TScEj", "ADSENSE_CLIENT": "ca-pub-2460558039875296" },
   // Per-IP limits for AI generation (lib/security/rateLimit.ts LIMITS_PER_MINUTE must match).
   // Owners get the 5x limiters; full readings have their own tighter one; owner-code attempts too.
   "ratelimits": [
