@@ -17,7 +17,7 @@ export default async function TarotStartPage() {
   return (
     <div className="page-shell">
       <NightSky fixed moon={false} />
-      <main className="page-col">
+      <main className="page-col page-wide">
         <TarotBridge />
       </main>
     </div>

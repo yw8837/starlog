@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { SITE, won } from "@/lib/config";
+import { times } from "@/lib/helpGuide";
+import { PREMIUM } from "@/lib/premium/products";
 import TarotStartPage, { metadata } from "./page";
 
 const gate = vi.hoisted(() => ({ visible: false }));
@@ -10,10 +13,19 @@ const redirect = vi.hoisted(() => vi.fn((href: string) => {
 }));
 vi.mock("next/navigation", () => ({ redirect, useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/tarot/start" }));
 
+const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
+
 afterEach(() => {
   cleanup();
   redirect.mockClear();
 });
+
+async function renderBridge() {
+  gate.visible = true;
+  const view = render(await TarotStartPage());
+  const links = within(screen.getByRole("list", { name: "타로 고르기" })).getAllByRole("link");
+  return { ...view, links };
+}
 
 describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
   it("does not exist while premium is not visible here: straight on to today's question builder", async () => {
@@ -23,20 +35,65 @@ describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
   });
 
   it("offers 일반 타로 (the gold one, today's 3-card flow) and 켈틱 크로스 10장 with its price, both into the same builder", async () => {
-    gate.visible = true;
-    const { container } = render(await TarotStartPage());
+    const { container, links } = await renderBridge();
     expect(screen.getByRole("heading", { level: 1, name: "어떤 타로를 볼까요?" })).toBeTruthy();
-    const links = within(screen.getByRole("list", { name: "타로 고르기" })).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/tarot/new?new=1", "/tarot/new?new=1&spread=deep"]);
     expect(links[0]!.textContent).toContain("일반 타로");
     expect(links[0]!.textContent).toContain("카드 3장");
     expect(links[1]!.textContent).toContain("켈틱 크로스 10장");
-    expect(links[1]!.textContent).toContain("7,900원");
+    expect(links[1]!.textContent).toContain(won(PREMIUM["tarot-deep"].krw));
     expect(links[1]!.textContent).not.toContain("심층 타로");
     // One gold choice on the screen: the free flow stays the main one.
     expect(container.querySelectorAll("[data-primary]")).toHaveLength(1);
     expect(links[0]!.hasAttribute("data-primary")).toBe(true);
     expect(container.textContent).not.toMatch(/베타/);
     expect(metadata.robots).toMatchObject({ index: false });
+  });
+
+  it("looks like saju step 1: a back-to-home bar, the question in the rabbit's bubble, the pair in hanbok", async () => {
+    await renderBridge();
+    expect(screen.getByRole("link", { name: "홈으로" }).getAttribute("href")).toBe("/");
+    expect(screen.getByText("타로 보기")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "한복 입은 토끼 선생님" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "한복 입은 고양이 조수" })).toBeTruthy();
+  });
+
+  it("says what each one holds, every number from config: today's free first reading and price, the 10-card length and follow-ups", async () => {
+    const deep = PREMIUM["tarot-deep"];
+    const { links } = await renderBridge();
+    expect(links[0]!.textContent).toContain(`첫 풀이 하루 ${times(SITE.beta.teaserPerDay)} 무료`);
+    expect(links[0]!.textContent).toContain(`전체 풀이 ${won(SITE.price.tarotStandardKrw)}`);
+    expect(links[1]!.textContent).toContain(`약 ${num(deep.approxChars)}자`);
+    expect(links[1]!.textContent).toContain(`이어서 물어보기 ${deep.followUps}번`);
+  });
+
+  it("reads the 10-card counts from PREMIUM at render time, never a hard-coded copy", async () => {
+    const deep = PREMIUM["tarot-deep"];
+    const saved = { followUps: deep.followUps, approxChars: deep.approxChars };
+    deep.followUps = 7;
+    deep.approxChars = 4321;
+    try {
+      const { links } = await renderBridge();
+      expect(links[1]!.textContent).toContain("약 4,321자");
+      expect(links[1]!.textContent).toContain("이어서 물어보기 7번");
+    } finally {
+      Object.assign(deep, saved);
+    }
+  });
+
+  it("draws a small spread on each card (three backs in a fan, the cross and staff of ten), hidden from screen readers", async () => {
+    const { links } = await renderBridge();
+    const three = links[0]!.querySelector("[data-spread]");
+    const celtic = links[1]!.querySelector("[data-spread]");
+    expect(three?.getAttribute("data-spread")).toBe("three");
+    expect(celtic?.getAttribute("data-spread")).toBe("celtic");
+    for (const art of [three!, celtic!]) {
+      expect(art.getAttribute("aria-hidden")).toBe("true");
+      expect(art.getAttribute("focusable")).toBe("false");
+    }
+    expect(three!.querySelectorAll("[data-back]")).toHaveLength(3);
+    expect(celtic!.querySelectorAll("[data-back]")).toHaveLength(10);
+    // The pictures add nothing to the link names.
+    expect(links[0]!.querySelector("[data-spread] title, [data-spread] text")).toBeNull();
   });
 });
