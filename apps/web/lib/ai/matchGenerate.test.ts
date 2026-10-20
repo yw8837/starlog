@@ -73,6 +73,12 @@ describe("match prompts (saju only, owner 2026-10-17)", () => {
     for (const task of ["## match-teaser", "## match-a", "## match-b", "## match-followup"]) expect(MATCH_SAJU_SYSTEM).toContain(task);
   });
 
+  it("tells part 2 the words its checks refuse, even in a negation, and how to speak of a period instead (real eval 2026-10-20: both cases regenerated)", () => {
+    const partB = MATCH_SAJU_SYSTEM.slice(MATCH_SAJU_SYSTEM.indexOf("## match-b"), MATCH_SAJU_SYSTEM.indexOf("## match-followup"));
+    for (const word of ["점수", "좋은 달", "나쁜 달", "반드시", "무조건", "확실히", "확률", "부정문으로도"]) expect(partB, word).toContain(word);
+    for (const way of ["움직이기 편한 때", "다지기 좋은 때"]) expect(partB, way).toContain(way);
+  });
+
   it("puts my chart, the other person's day master and tilt, the pair facts and the label (as data) in the shared block", () => {
     const shared = matchSajuShared(context("lover", PARTNERS[0]!, "민지").facts);
     for (const tag of ["<me>", "<partner>", "<pair_facts>", "<relation>", "<user_context>"]) expect(shared).toContain(tag);
