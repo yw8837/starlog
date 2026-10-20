@@ -350,8 +350,9 @@ export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKin
  * Crisis words (lib/crisis.ts CRISIS_WORDS) mean no reading, a gentle pointer to help instead. Judged on
  * the text as the prompt will see it (cleanUserText), so markup cannot split a word.
  */
-// Zero-width characters cannot split a phrase (죽​고 싶어).
-export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS_WORDS.test(cleanUserText(text!).replace(/[​-‍﻿]/g, ""));
+// Invisible characters cannot split a phrase (죽 + zero-width space + 고 싶어).
+const INVISIBLE = /[​-‍⁠­﻿]/g;
+export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS_WORDS.test(cleanUserText(text!).replace(INVISIBLE, ""));
 
 /** The care response when any user-written text reads as a crisis; null otherwise. */
 export function crisisResponse(...texts: Array<string | undefined>): Response | null {

@@ -293,7 +293,7 @@ const readPair = (pair: string) => `${STEMS_KO[STEMS.indexOf(pair[0]!)]}${BRANCH
 
 /** A year's own name right after a year ("2026년 병오(丙午)년", "올해 丙午년"): about the calendar, not the birth. */
 const YEAR_BEFORE = /(?:\d{4}년|올해|내년|작년|새해)(?:은|는)?\s?$/;
-const YEAR_AFTER = /^(?:\s?(?:년|年)(?!생)|의)/;
+const YEAR_AFTER = /^\s?(?:년|年)(?!생)/;
 const yearName = (text: string, start: number, end: number) =>
   YEAR_BEFORE.test(text.slice(Math.max(0, start - 8), start)) && YEAR_AFTER.test(text.slice(end, end + 3));
 /** A bare pair's whole name when it sits in one ("병오(丙午)", "丙午(병오)"), so a kept year name stays whole. */
