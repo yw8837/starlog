@@ -138,7 +138,11 @@ export function mockTarotTeaser(ctx: TarotContext): TarotTeaserDraft {
   const inputs = [...chips(ctx), ...(ctx.note ? [ctx.note] : [])];
   const section = (card: TarotCardContext, withNote: boolean) => {
     const extra = [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}로 읽어요.`, `${card.kb.keywordsKo.join(", ")} 같은 말을 오늘 하루 곁에 두면 좋아요.`];
-    return { heading: cardLabel(card), body: [cardBody(ctx, card, 0, withNote, extra, 300, inputs), `오늘은 ${actionOf(card, ctx)}`].join(" ") };
+    const body = cardBody(ctx, card, 0, withNote, extra, 300, inputs);
+    // today's action, never one whose ending the body already said (other KB text may word it nearly alike): the cut
+    // 감질맛 must not show the end
+    const action = [...actionsOf(card, ctx), ...FALLBACK_ACTIONS].find((a) => !body.includes(a.slice(-20))) ?? actionOf(card, ctx);
+    return { heading: cardLabel(card), body: `${body} 오늘은 ${action}` };
   };
   const [first, second] = ctx.cards;
   return {
