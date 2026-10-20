@@ -155,11 +155,13 @@
   color: #4b3f5e;
 }
 
-/* The scope line under a dashed fold, like a ticket stub; the chip sits at its end (wraps under if it must). */
+/* The scope line under a dashed fold, like a ticket stub; the price chip always sits at its right end, the same place on
+   both cards (owner 2026-10-20: 금액란 통일), and a long line wraps inside its own column instead of pushing the chip
+   under it. */
 .scope {
   grid-area: scope;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 6px 10px;
@@ -171,6 +173,7 @@
 }
 
 .scopeLine {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -182,6 +185,7 @@
 /* The price, as a chip. */
 .price {
   flex: none;
+  margin-left: auto;
   padding: 1px 10px;
   border: 1px solid rgba(43, 33, 64, 0.35);
   border-radius: 999px;
