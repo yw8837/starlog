@@ -21,3 +21,10 @@ minimumReleaseAgeExclude:
   - '@next/swc-win32-arm64-msvc@16.3.7'
   - '@next/swc-win32-x64-msvc@16.3.7'
   - next@16.3.7
+# pnpm audit 2026-10-21, dev/build tooling only: miniflare (wrangler's local runtime) pins undici 7.29.0 and
+# sharp 0.35.4, and postcss takes source-map-js 1.2.1. Force the patched releases within the same major
+# (jsdom's undici 8 and the root's sharp 0.35.5 are left alone).
+overrides:
+  "undici@<7.29.1": "~7.29.1"
+  "sharp@<0.35.5": "^0.35.5"
+  "source-map-js": "^1.2.2"
