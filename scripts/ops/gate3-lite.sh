@@ -19,8 +19,9 @@ export NEXT_PUBLIC_FEATURE_BONDS=1 NEXT_PUBLIC_BUILD_ID=$(git rev-parse --short=
 export NEXT_PUBLIC_KAKAO_JS_KEY="$(grep -E '^NEXT_PUBLIC_KAKAO_JS_KEY=' /d/Money/apps/saju-tarot/apps/web/.env.local | cut -d= -f2- | tr -d '\r\"')"
 pnpm cf:build > "$LOG/build.log" 2>&1; step "cf:build exit=$?"
 # Pages that read a runtime setting must not be prerendered: a build without the setting froze /login as a 404 (10/14),
-# and the premium pages and the tarot bridge as 404/redirect with STARLOG_PREMIUM off (10/17).
-node -e 'const r=require("./.next/prerender-manifest.json").routes;const p=["deep-tarot","match","newyear-2027"].flatMap(s=>["/premium/"+s,"/premium/"+s+"/sample"]);const bad=["/login","/tarot/start",...p].filter(x=>x in r);console.log(bad.length?"prerendered: "+bad.join(" "):"ok");process.exit(bad.length?1:0)' > "$LOG/prerender.log" 2>&1; step "runtime pages not prerendered exit=$? $(tail -1 "$LOG/prerender.log")"
+# and the premium pages and the tarot bridge as 404/redirect with STARLOG_PREMIUM off (10/17); the premium flows and the
+# policies too (10/20: the policies put the clauses and the change notice in by the clock).
+node -e 'const r=require("./.next/prerender-manifest.json").routes;const p=["deep-tarot","match","newyear-2027"].flatMap(s=>["/premium/"+s,"/premium/"+s+"/sample"]);const f=["/premium/deep-tarot/result","/premium/match/new","/premium/match/preview","/premium/newyear-2027/new","/premium/newyear-2027/preview","/privacy","/terms","/refund"];const bad=["/login","/tarot/start",...p,...f].filter(x=>x in r);console.log(bad.length?"prerendered: "+bad.join(" "):"ok");process.exit(bad.length?1:0)' > "$LOG/prerender.log" 2>&1; step "runtime pages not prerendered exit=$? $(tail -1 "$LOG/prerender.log")"
 (cd ../.. && node scripts/check-client-bundle.mjs > "$LOG/bundle.log" 2>&1); step "bundle exit=$? $(tail -1 "$LOG/bundle.log")"
 if [ -f ../../scripts/check-worker-env.mjs ]; then (cd ../.. && node scripts/check-worker-env.mjs > "$LOG/worker-env.log" 2>&1); step "worker env exit=$? $(tail -1 "$LOG/worker-env.log")"; fi
 if grep -q '"check:worker"' package.json ../../package.json 2>/dev/null; then (cd ../.. && node scripts/check-worker-size.mjs > "$LOG/worker.log" 2>&1); step "worker size exit=$? $(tail -2 "$LOG/worker.log" | tr '\n' ' ')"; fi

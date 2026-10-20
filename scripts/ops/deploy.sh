@@ -19,7 +19,7 @@ pnpm install --frozen-lockfile > "$LOG/install.log" 2>&1; step "install exit=$?"
 
 cd apps/web
 npx wrangler d1 migrations list starlog --remote > "$LOG/migrations.log" 2>&1
-step "remote D1 pending migrations: $(grep -cE '^[│| ]*000[0-9]' "$LOG/migrations.log") (see migrations.log; 'No migrations' means none)"
+step "remote D1 pending migrations: $(grep -cE '^[│| ]*[0-9]{4}_' "$LOG/migrations.log") (see migrations.log; 'No migrations' means none)"
 grep -qi "no migrations" "$LOG/migrations.log" || { step "STOP: pending migrations or unknown state — apply them first"; exit 2; }
 
 rm -rf .open-next .next/dev; [ -e .open-next ] && { step "STOP: .open-next still locked"; exit 9; }
