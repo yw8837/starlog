@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
+import { kstDay } from "@/lib/security/quota";
 import { dailyStore, resetDailyStore } from "./dailyStore";
 import { checkServerLimits, crisisResponse, isCrisisText, readJson, type Gate } from "./http";
-import { NETWORK_BUDGET_SHARE, addCost, addNetworkCost, resetSpendState } from "./spend";
+import { BUDGET_CEILING, NETWORK_BUDGET_SHARE, addCost, addNetworkCost, budgetState, resetSpendState } from "./spend";
 
 const NOW = Date.parse("2026-10-14T03:00:00Z"); // 12:00 KST
 const DAY = 24 * 60 * 60 * 1000;
@@ -17,6 +18,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
@@ -33,45 +35,130 @@ describe("readJson", () => {
   });
 });
 
+const FREE_KINDS = ["full", "teaser", "followup", "daily"] as const;
+const BUDGET = { code: "AI_UNAVAILABLE", reason: "budget", message: "오늘 준비한 풀이가 모두 나갔어요. 자정에 다시 열려요." };
+
 describe("free-tier cost per network", () => {
-  it("refuses new free-tier generations from a network whose cost today reached 20% of the day's budget, like the network count does", async () => {
+  it("refuses free full readings from a network whose free-tier cost today reached 20% of the day's budget; its teasers, follow-ups and daily cards go on (one IP can be a whole office or carrier)", async () => {
     expect(NETWORK_BUDGET_SHARE).toBe(0.2);
     await addNetworkCost("net-a", 1_999, NOW);
-    expect(await checkServerLimits(gate(), "teaser")).toBeNull();
+    expect(await checkServerLimits(gate(), "full")).toBeNull();
     await addNetworkCost("net-a", 1, NOW);
-    for (const kind of ["full", "teaser", "followup", "daily"] as const) {
-      const refused = await checkServerLimits(gate(), kind);
-      expect(refused?.status, kind).toBe(429);
-      expect(await refused!.json()).toMatchObject({ code: "BETA_LIMIT", scope: "network", message: NETWORK_MESSAGE });
-    }
-    expect(await checkServerLimits(gate({ client: "net-b" }), "teaser")).toBeNull();
-    expect(await checkServerLimits(gate({ now: NOW + DAY }), "teaser")).toBeNull();
+    const refused = await checkServerLimits(gate(), "full");
+    expect(refused?.status).toBe(429);
+    expect(await refused!.json()).toMatchObject({ code: "BETA_LIMIT", scope: "network", message: NETWORK_MESSAGE });
+    for (const kind of ["teaser", "followup", "daily"] as const) expect(await checkServerLimits(gate(), kind), kind).toBeNull();
+    expect(await checkServerLimits(gate({ client: "net-b" }), "full")).toBeNull();
+    expect(await checkServerLimits(gate({ now: NOW + DAY }), "full")).toBeNull();
   });
 
   it("never refuses the owner pass or an opening paid by a credit (the signup gift, a purchase)", async () => {
     await addNetworkCost("net-a", 5_000, NOW);
-    expect(await checkServerLimits(gate({ owner: true }), "teaser")).toBeNull();
+    expect(await checkServerLimits(gate({ owner: true }), "full")).toBeNull();
     expect(await checkServerLimits(gate(), "full", {}, { credit: true })).toBeNull();
   });
 
   it("takes the share from BETA_NETWORK_BUDGET_SHARE, read like the budget", async () => {
     await addNetworkCost("net-a", 2_000, NOW);
     vi.stubEnv("BETA_NETWORK_BUDGET_SHARE", "0.5");
-    expect(await checkServerLimits(gate(), "teaser")).toBeNull();
+    expect(await checkServerLimits(gate(), "full")).toBeNull();
     vi.stubEnv("BETA_NETWORK_BUDGET_SHARE", "not-a-number");
-    expect((await checkServerLimits(gate(), "teaser"))?.status).toBe(429);
+    expect((await checkServerLimits(gate(), "full"))?.status).toBe(429);
+  });
+});
+
+describe("the day's budget (10,000: the cap trips at 8,000, the ceiling at 16,000)", () => {
+  it("at the cap closes free full readings only (503 budget, the gift's included); teasers, follow-ups and the daily card go on", async () => {
+    await addCost(7_999, NOW);
+    expect(await checkServerLimits(gate(), "full")).toBeNull();
+    await addCost(1, NOW);
+    for (const options of [{}, { credit: true }]) {
+      const closed = await checkServerLimits(gate(), "full", {}, options);
+      expect(closed?.status).toBe(503);
+      expect(await closed!.json()).toMatchObject(BUDGET);
+    }
+    for (const kind of ["teaser", "followup", "daily"] as const) expect(await checkServerLimits(gate(), kind), kind).toBeNull();
+  });
+
+  it("at the ceiling, twice the cap, closes every free generation, teasers included (it keeps the prepaid model credit for paid readings)", async () => {
+    expect(BUDGET_CEILING).toBe(2);
+    await addCost(15_999, NOW);
+    expect(await checkServerLimits(gate(), "teaser")).toBeNull();
+    await addCost(1, NOW);
+    for (const kind of FREE_KINDS) {
+      const closed = await checkServerLimits(gate(), kind);
+      expect(closed?.status, kind).toBe(503);
+      expect(await closed!.json()).toMatchObject(BUDGET);
+    }
+  });
+
+  it("never closes a paid generation or the owner pass, past the ceiling too", async () => {
+    await addCost(100_000, NOW);
+    expect(await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true })).toBeNull();
+    for (const kind of FREE_KINDS) expect(await checkServerLimits(gate({ owner: true }), kind), kind).toBeNull();
+  });
+
+  it("at 0 closes every free generation, still never a paid one or the owner pass", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
+    for (const kind of FREE_KINDS) expect((await checkServerLimits(gate(), kind))?.status, kind).toBe(503);
+    expect(await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true })).toBeNull();
+    expect(await checkServerLimits(gate({ owner: true }), "full")).toBeNull();
+  });
+
+  it("with no day cap (off) closes nothing at any total, and no network share applies, as before", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "off");
+    await addCost(10_000_000, NOW);
+    await addNetworkCost("net-a", 10_000_000, NOW);
+    for (const kind of FREE_KINDS) expect(await checkServerLimits(gate(), kind), kind).toBeNull();
+  });
+});
+
+describe("a day total that cannot be trusted", () => {
+  it("that cannot be read at all closes every free generation (the network counts would read 0), never a paid one or the owner pass", async () => {
+    for (const cap of ["10000", "off"]) {
+      vi.stubEnv("BETA_DAILY_BUDGET_KRW", cap);
+      const get = vi.spyOn(dailyStore(), "get").mockRejectedValue(new Error("KV GET failed"));
+      expect(await budgetState(NOW), cap).toBe("unknown");
+      for (const kind of FREE_KINDS) {
+        const closed = await checkServerLimits(gate(), kind);
+        expect(closed?.status, `${cap} ${kind}`).toBe(503);
+        const body = await closed!.json();
+        expect(body).toMatchObject({ code: "AI_UNAVAILABLE" });
+        expect(body.reason).toBeUndefined();
+      }
+      expect(await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true }), cap).toBeNull();
+      for (const kind of FREE_KINDS) expect(await checkServerLimits(gate({ owner: true }), kind), `${cap} ${kind}`).toBeNull();
+      get.mockRestore();
+    }
+  });
+
+  it("whose cost writes keep failing while reads work closes free full readings only; teasers still stop at the ceiling", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    const put = vi.spyOn(dailyStore(), "put").mockRejectedValue(new Error("KV PUT failed: 429 Too Many Requests"));
+    for (let i = 0; i < 3; i++) await addCost(100, NOW);
+    put.mockRestore();
+    expect(await budgetState(NOW)).toBe("lagging");
+    const closed = await checkServerLimits(gate(), "full");
+    expect(closed?.status).toBe(503);
+    expect((await closed!.json()).reason).toBeUndefined();
+    for (const kind of ["teaser", "followup", "daily"] as const) expect(await checkServerLimits(gate(), kind), kind).toBeNull();
+    expect(await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true })).toBeNull();
+    expect(await checkServerLimits(gate({ owner: true }), "full")).toBeNull();
+    // What could be read is past the ceiling: the total is only higher in truth.
+    await dailyStore().put(`cost:${kstDay(NOW)}:0`, 16_000, 3_600);
+    expect(await budgetState(NOW)).toBe("ceiling");
+    expect(await (await checkServerLimits(gate(), "teaser"))!.json()).toMatchObject(BUDGET);
   });
 });
 
 describe("a paid generation and the free daily budget", () => {
-  it("passes a day whose free budget is spent, but not a total that cannot be read", async () => {
+  it("passes a day whose free budget is spent, and a total that cannot be read (paid never closes)", async () => {
     await addCost(9_000, NOW); // past 80% of 10,000
-    expect((await checkServerLimits(gate(), "followup", {}, { credit: true }))?.status).toBe(503);
+    expect((await checkServerLimits(gate(), "full", {}, { credit: true }))?.status).toBe(503);
     expect(await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true })).toBeNull();
     vi.spyOn(dailyStore(), "get").mockRejectedValue(new Error("KV GET failed"));
-    const unknown = await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true });
-    expect(unknown?.status).toBe(503);
-    expect(await unknown!.json()).toMatchObject({ code: "AI_UNAVAILABLE" });
+    expect(await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true })).toBeNull();
   });
 });
 

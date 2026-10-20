@@ -17,7 +17,7 @@ import { dailyStore, logKvError } from "./dailyStore";
  *   cut off after the model began answering stays charged at its reservation, one that failed
  *   before any token was billed releases it. Spread over shards because KV takes about one write
  *   per second per key; a write that fails moves to another shard, and repeated write failures make
- *   the total "unknown" (it would otherwise stop growing while reads still work).
+ *   the total "lagging" (it stops growing while reads still work).
  * - `netcost:<kstDay>:<client>:<shard>`: the part of that cost billed for one client network's
  *   free-tier generations (SEC-01), so one network cannot spend the whole day's budget; mirrored
  *   from the same ledger writes (respondGeneration), one write each, never retried on another shard.
@@ -42,6 +42,12 @@ const COST_WRITE_TRIES = 3;
 const DEFAULT_DAILY_BUDGET_KRW = 30_000;
 /** Lost KV updates make the total run low, so the cap trips at 80% of the budget. */
 export const BUDGET_TRIP = 0.8;
+/**
+ * The hard ceiling, as a multiple of the budget (on the same 80% trip): past the cap only free full readings stop,
+ * and the other free generations (teasers, which the paywall shows after) stop here, so they cannot use up the
+ * prepaid model credit the paid readings need (owner 2026-10-21).
+ */
+export const BUDGET_CEILING = 2;
 /** SEC-01: the share of the day's budget one client network's free-tier generations may cost. */
 export const NETWORK_BUDGET_SHARE = 0.2;
 const NETWORK_COST_SHARDS = 4;
@@ -78,7 +84,7 @@ function bindingMissing(): boolean {
 
 /** Cost writes that failed on every shard, recent ones only (per isolate). */
 const WRITE_FAILURE_WINDOW_MS = 60_000;
-const WRITE_FAILURES_UNKNOWN = 3;
+const WRITE_FAILURES_LAGGING = 3;
 let costWriteFailures: number[] = [];
 
 function noteCostWrite(ok: boolean, now: number): void {
@@ -136,7 +142,7 @@ export async function overNetworkBudget(client: string, now: number): Promise<bo
 // ---- the day's cost ----
 
 /**
- * `BETA_DAILY_BUDGET_KRW`, else 30,000. 0 stops every new generation. `off` (owner 2026-10-15: no day cap) is
+ * `BETA_DAILY_BUDGET_KRW`, else 30,000. 0 stops every new free generation (its ceiling is 0 too). `off` (owner 2026-10-15: no day cap) is
  * Infinity: no day total closes the free tier and no network share of it applies; the per-network counts, the
  * rate limiters and the prepaid model credit still bound the spend, and the cost is still recorded.
  */
@@ -163,20 +169,25 @@ export async function spentTodayKrw(now: number): Promise<number | null> {
 }
 
 /**
- * "over" once today's estimated spend reaches BUDGET_TRIP of the budget; "unknown" when the total
- * cannot be trusted (KV unreadable, the binding missing on Workers, or cost writes failing
- * repeatedly in this isolate); else "ok". Callers treat "unknown" as closed for new generations.
- * With no day cap (`off`) nothing is compared, but KV that cannot be read (or a missing binding) is
- * still "unknown": the per-network day counts would read 0 then and bound nothing (H-2).
+ * Today's estimated spend against the budget, both lines on the BUDGET_TRIP margin:
+ * - "ceiling" once it reaches BUDGET_CEILING times the budget, "over" once it reaches the budget, else "ok";
+ * - "lagging" (below both lines) while cost writes keep failing in this isolate: reads work but the
+ *   total stopped growing. A total past a line already is only higher in truth, so the line wins;
+ * - "unknown" when the total cannot be read at all (KV unreadable, or the binding missing on Workers).
+ * With no day cap (`off`) nothing is compared and write failures do not count, but a total that cannot
+ * be read is still "unknown": the per-network day counts would read 0 then and bound nothing (H-2).
+ * What each state closes: http.ts checkServerLimits.
  */
-export async function budgetState(now: number): Promise<"ok" | "over" | "unknown"> {
+export async function budgetState(now: number): Promise<"ok" | "over" | "ceiling" | "lagging" | "unknown"> {
   if (bindingMissing()) return "unknown";
-  if (dailyBudgetKrw() === Infinity) return (await spentTodayKrw(now)) === null ? "unknown" : "ok";
-  const recentFailures = costWriteFailures.filter((t) => now - t < WRITE_FAILURE_WINDOW_MS).length;
-  if (recentFailures >= WRITE_FAILURES_UNKNOWN) return "unknown";
   const spent = await spentTodayKrw(now);
   if (spent === null) return "unknown";
-  return spent >= dailyBudgetKrw() * BUDGET_TRIP ? "over" : "ok";
+  const budget = dailyBudgetKrw();
+  if (budget === Infinity) return "ok";
+  if (spent >= budget * BUDGET_CEILING * BUDGET_TRIP) return "ceiling";
+  if (spent >= budget * BUDGET_TRIP) return "over";
+  const recentFailures = costWriteFailures.filter((t) => now - t < WRITE_FAILURE_WINDOW_MS).length;
+  return recentFailures >= WRITE_FAILURES_LAGGING ? "lagging" : "ok";
 }
 
 /** Adds `krw` (negative to release a reservation) to that day's total, moving to another shard when a write fails. */

@@ -69,13 +69,17 @@ describe("a buyer's premium preview (review 2026-10-16 #1)", () => {
     expect((await visitor.send(deepTeaser, TEASER, { body: { drawToken: visitorDraw, input: DEEP_INPUT } })).status).toBe(429);
   });
 
-  it("is written past the free day's spent budget, like the paid reading; a visitor's is not", async () => {
+  it("is written past the free day's spent budget, like the paid reading; a visitor's past the cap but not past its ceiling", async () => {
     useTestDb();
     const buyer = browser("198.51.100.203");
     await loginAs(buyer, "buyer203");
     await buy(buyer, "tarot-deep");
     const drawToken = await dealt(buyer);
-    // The day's estimated spend at the budget: free generations stop.
+    // At the cap (80% of 1,000) a visitor's preview still opens: the paywall shows after it.
+    for (let shard = 0; shard < 8; shard++) await dailyStore().put(`cost:${kstDay(Date.now())}:${shard}`, 100, 3600);
+    const early = browser("198.51.100.206");
+    expect((await early.send(deepTeaser, TEASER, { body: { drawToken: await dealt(early), input: DEEP_INPUT } })).status).toBe(200);
+    // Past the ceiling (twice that): free generations stop.
     for (let shard = 0; shard < 8; shard++) await dailyStore().put(`cost:${kstDay(Date.now())}:${shard}`, 1000, 3600);
     const visitor = browser("198.51.100.204");
     expect((await visitor.send(deepTeaser, TEASER, { body: { drawToken: await dealt(visitor), input: DEEP_INPUT } })).status).toBe(503);

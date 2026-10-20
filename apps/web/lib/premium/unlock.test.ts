@@ -218,13 +218,11 @@ describe("planning a premium opening", () => {
     expect(opened).toMatchObject({ spend: "full", paidCost: false });
   });
 
-  it("opens with the owner pass only, held to the day's budget, bound to 'owner' without a login", async () => {
+  it("opens with the owner pass only, never held to the day's budget, bound to 'owner' without a login", async () => {
     useTestDb();
     const guest = browser("192.0.2.60");
     expect(await refusal(await plan(guest, "owner"))).toMatchObject({ status: 403, code: "FORBIDDEN" });
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
-    expect(await refusal(await plan(guest, "owner", true))).toMatchObject({ status: 503, reason: "budget" });
-    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "30000");
     expect(await plan(guest, "owner", true)).toMatchObject({ method: "owner", subject: "owner", paidCost: false, unlockId: null, save: null, resume: null });
   });
 

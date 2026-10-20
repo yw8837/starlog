@@ -3,7 +3,7 @@ import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { logKvError, resetDailyStore } from "@/lib/api/dailyStore";
 import { clientKey, ipGroup } from "@/lib/api/http";
-import { BUDGET_TRIP, SpendLedger, clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
+import { BUDGET_CEILING, BUDGET_TRIP, SpendLedger, clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { kstDay } from "@/lib/security/quota";
@@ -210,48 +210,61 @@ describe("server-side day counters (per client network, whatever the cookies say
 });
 
 describe("global daily spend cap", () => {
-  it("adds the billed usage of every call and answers 503 to new generations, owner included, at 80% of the budget", async () => {
-    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "7000"); // trips at 5,600
+  it("adds the billed usage of every call; at 80% of the budget only free full readings stop (503 budget), teasers at twice that, the owner never", async () => {
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "7000"); // the cap trips at 5,600, the ceiling at 11,200
     vi.stubEnv("BETA_NETWORK_BUDGET_SHARE", "1");
     expect(BUDGET_TRIP).toBe(0.8);
+    expect(BUDGET_CEILING).toBe(2);
     billing();
     const d = device("198.51.100.20");
     const drawToken = await drawFor(d);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     expect(await spent()).toBe(2800);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
-    expect(await spent()).toBe(5600); // under the budget, at the trip point
-    const over = await d.call(teaser, { drawToken, input: MONEY_INPUT });
+    expect(await spent()).toBe(5600); // at the cap's trip point
+    // The free first reading (오픈 기념 무료) stops; the teaser, which the paywall shows after, goes on: the day's buyers can still pay.
+    const over = await d.call(reading, { drawToken, input: MONEY_INPUT });
     expect(over.status).toBe(503);
     expect(over.data).toMatchObject({ code: "AI_UNAVAILABLE", reason: "budget", message: "오늘 준비한 풀이가 모두 나갔어요. 자정에 다시 열려요." });
     expect(Date.parse(over.data.resetsAt)).toBeGreaterThan(Date.now());
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect((await d.call(sajuTeaser, { birth: DEFAULT_SAJU_FORM })).status).toBe(200);
+    expect(await spent()).toBe(11200); // the ceiling
+    const ceiling = await d.call(teaser, { drawToken, input: MONEY_INPUT });
+    expect(ceiling.status).toBe(503);
+    expect(ceiling.data).toMatchObject({ code: "AI_UNAVAILABLE", reason: "budget" });
     expect((await d.call(sajuTeaser, { birth: DEFAULT_SAJU_FORM })).status).toBe(503);
 
+    // The owner pass: a teaser, a reading and its follow-up, past the ceiling.
     const boss = device("198.51.100.21");
     await boss.call(owner, { code: "owner-code-for-tests-0001" });
     const bossDraw = await drawFor(boss);
-    expect((await boss.call(teaser, { drawToken: bossDraw, input: MONEY_INPUT })).status).toBe(503);
+    expect((await boss.call(teaser, { drawToken: bossDraw, input: MONEY_INPUT })).status).toBe(200);
+    const opened = await boss.call(reading, { drawToken: bossDraw, input: MONEY_INPUT, unlock: { method: "owner" } });
+    expect(opened.status).toBe(200);
+    expect((await boss.call(followup, { chapterToken: opened.data.chapterToken, reading: opened.data.reading, question: "지출은 어떻게 줄일까요?" })).status).toBe(200);
   });
 
-  it("stops a network's free generations once they cost 20% of the day's budget, while other networks and the owner on it go on", async () => {
+  it("stops a network's free full readings once its free generations cost 20% of the day's budget; its teasers and daily cards go on (one IP can be a whole office or carrier), other networks and the owner on it too", async () => {
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "14000"); // 2,800 per network
     billing();
     const ip = "198.51.100.28";
     const d = device(ip);
     const drawToken = await drawFor(d);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
-    const capped = await d.call(teaser, { drawToken, input: MONEY_INPUT });
+    expect(await networkCostKrw(await keyedHash(`client:${ip}`, SECRET), Date.now())).toBe(2800);
+    const capped = await d.call(reading, { drawToken, input: MONEY_INPUT });
     expect(capped.status).toBe(429);
     expect(capped.data).toMatchObject({ code: "BETA_LIMIT", scope: "network" });
-    expect((await device(ip, { cookieless: true }).call(daily, {})).status).toBe(429);
-    expect(await networkCostKrw(await keyedHash(`client:${ip}`, SECRET), Date.now())).toBe(2800);
-    expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "teaser", Date.now())).toBe(1);
+    expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect((await device(ip, { cookieless: true }).call(daily, {})).status).toBe(200);
+    expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "teaser", Date.now())).toBe(2);
 
     const other = device("198.51.100.29");
-    expect((await other.call(teaser, { drawToken: await drawFor(other), input: MONEY_INPUT })).status).toBe(200);
+    expect((await other.call(reading, { drawToken: await drawFor(other), input: MONEY_INPUT })).status).toBe(200);
     const boss = device(ip);
     expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
-    expect((await boss.call(teaser, { drawToken: await drawFor(boss), input: MONEY_INPUT })).status).toBe(200);
+    expect((await boss.call(reading, { drawToken: await drawFor(boss), input: MONEY_INPUT, unlock: { method: "owner" } })).status).toBe(200);
   });
 
   it("counts what a failed generation billed", async () => {

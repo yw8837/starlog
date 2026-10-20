@@ -275,34 +275,44 @@ const FIRST_FREE_USED_MESSAGE = "이 기기에서는 오픈 기념 무료 풀이
 /** Shown when the day's budget is used up (the UI may replace it by `reason`). */
 const BUDGET_MESSAGE = "오늘 준비한 풀이가 모두 나갔어요. 자정에 다시 열려요.";
 
-/** Kinds that stop for everyone, owner included, while the day's spend cannot be trusted (the expensive ones). */
-const CLOSED_FOR_OWNER_TOO: ReadonlySet<SpendKind> = new Set(["full", "teaser"]);
-
 /**
- * The server's own limits before a new generation, counted server-side whatever the cookies say
- * (spend.ts):
- * - 503 `reason: "budget"` once the day's estimated spend reaches 80% of BETA_DAILY_BUDGET_KRW
- *   (owners too);
- * - 503 while the spend total cannot be trusted ("unknown": KV down, writes failing): full readings
- *   and teasers for everyone, follow-ups and the daily card for everyone but the owner;
- * - 429 `scope: "network"` once this client's network has used up `kind` today (owners skip it);
- * - the same 429 once the network's free-tier generations cost its share of the day's budget
- *   (spend.ts overNetworkBudget, SEC-01). Owners and `credit` openings (the signup gift, a purchase)
- *   skip it. A network total that cannot be read counts 0: the budget check above already closes
- *   when KV is down.
- * `paid`: a generation paid for on real keys (a premium follow-up) is not stopped by the free day's
- * budget, like a paid opening (which never asks it); a total that cannot be trusted still stops it.
+ * The server's own limits before a new generation, counted server-side whatever the cookies say (spend.ts).
+ * The day's budget (BETA_DAILY_BUDGET_KRW; spend.ts budgetState, every line on the 80% trip) and the network's share
+ * of it (spend.ts overNetworkBudget, SEC-01) close only what this table says (owner 2026-10-21):
+ *
+ *   the day's spend                           | free full (1)   | free teaser, follow-up, daily | paid (2) | owner
+ *   ------------------------------------------+-----------------+-------------------------------+----------+------
+ *   under the cap                             | open            | open                          | open     | open
+ *   at the cap ("over")                       | 503 budget      | open                          | open     | open
+ *   at 2x the cap ("ceiling", BUDGET_CEILING) | 503 budget      | 503 budget                    | open     | open
+ *   writes failing, reads work ("lagging")    | 503             | open (the ceiling applies)    | open     | open
+ *   cannot be read at all ("unknown")         | 503             | 503                           | open     | open
+ *   this network's share (20%) reached        | 429 network (3) | open                          | open     | open
+ *   `off`: no cap, no ceiling, no share; "unknown" still closes as above
+ *
+ *   (1) 오픈 기념 무료 and any other free full reading: the signup gift, a purchase on a production deploy's test keys.
+ *   (2) `paid`: paid for on real keys (a follow-up whose chapter says so). Paid openings on real keys never ask here.
+ *   (3) not for `credit` openings (the signup gift, a test-key purchase): a credit pays for them.
+ * Teasers stay open past the cap because the paywall shows only after one (a closed teaser stops the day's sales,
+ * and a buyer who lost the teaser could not open); the ceiling keeps the prepaid model credit for the paid readings.
+ * "unknown" closes the free ones because the network counts below would read 0 then and bound nothing (H-2).
+ * Besides the budget: 429 `scope: "network"` once this client's network has used up `kind` today (owners skip it),
+ * and the per-minute limiters and Turnstile in front. A network total that cannot be read counts 0.
  */
 export async function checkServerLimits(
   gate: Gate, kind: SpendKind, extra: Record<string, unknown> = {}, { credit = false, paid = false }: { credit?: boolean; paid?: boolean } = {},
 ): Promise<Response | null> {
-  const budget = await budgetState(gate.now);
-  if (budget === "over" && !paid) return errorResponse("AI_UNAVAILABLE", { reason: "budget", resetsAt: nextKstMidnight(gate.now), message: BUDGET_MESSAGE });
-  if (budget === "unknown" && (!gate.owner || CLOSED_FOR_OWNER_TOO.has(kind))) return errorResponse("AI_UNAVAILABLE");
+  if (!gate.owner && !paid) {
+    const budget = await budgetState(gate.now);
+    if (budget === "ceiling" || (budget === "over" && kind === "full")) {
+      return errorResponse("AI_UNAVAILABLE", { reason: "budget", resetsAt: nextKstMidnight(gate.now), message: BUDGET_MESSAGE });
+    }
+    if (budget === "unknown" || (budget === "lagging" && kind === "full")) return errorResponse("AI_UNAVAILABLE");
+  }
   if (!gate.owner && (await clientCount(gate.client, kind, gate.now)) >= ipLimits()[kind]) {
     return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, scope: "network", message: NETWORK_LIMIT_MESSAGE });
   }
-  if (!gate.owner && !credit && (await overNetworkBudget(gate.client, gate.now))) {
+  if (!gate.owner && !credit && kind === "full" && (await overNetworkBudget(gate.client, gate.now))) {
     return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, scope: "network", message: NETWORK_LIMIT_MESSAGE });
   }
   return null;
@@ -310,10 +320,12 @@ export async function checkServerLimits(
 
 /**
  * Today's cookie counters, or the error when a new `kind` generation may not start: the server
- * limits (checkServerLimits), then this device's cookie quota (the owner pass skips both counters).
+ * limits (checkServerLimits, with its `credit` and `paid`), then this device's cookie quota (the owner pass skips both counters).
  */
-export async function checkQuota(gate: Gate, kind: QuotaKind, extra: Record<string, unknown> = {}): Promise<QuotaState | Response> {
-  const limited = await checkServerLimits(gate, kind, extra);
+export async function checkQuota(
+  gate: Gate, kind: QuotaKind, extra: Record<string, unknown> = {}, options: { credit?: boolean; paid?: boolean } = {},
+): Promise<QuotaState | Response> {
+  const limited = await checkServerLimits(gate, kind, extra, options);
   if (limited) return limited;
   const quota = await readQuota(gate.cookies[QUOTA_COOKIE], gate.secret, gate.now);
   if (!gate.owner && !hasQuota(quota, kind, quotaLimits())) {

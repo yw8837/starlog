@@ -692,7 +692,7 @@ describe("who paid for a premium chapter is signed in its token (follow-up books
     expect(await freeBook()).toBe(0);
   });
 
-  it("treats a test payment's follow-ups as free-tier: the free book, the network's share, and its check", async () => {
+  it("treats a test payment's follow-ups as free-tier: the free book and the network's share (whose check closes free full readings only)", async () => {
     for (const [k, v] of Object.entries(SECRETS)) vi.stubEnv(k, v);
     const db = useTestDb();
     const address = "198.51.100.201";
@@ -714,8 +714,6 @@ describe("who paid for a premium chapter is signed in its token (follow-up books
     expect((await freeBook()) - free).toBe(2800);
     expect(await networkCostKrw(client, Date.now())).toBeGreaterThanOrEqual(2800);
     await addNetworkCost(client, 10_000, Date.now());
-    const capped = await ask(b, done, "하나 더 궁금한 게 있어요");
-    expect(capped.status).toBe(429);
-    expect(await json(capped)).toMatchObject({ code: "BETA_LIMIT", scope: "network" });
+    expect((await ask(b, done, "하나 더 궁금한 게 있어요")).status).toBe(200); // a follow-up, not a full reading (owner 2026-10-21)
   });
 });

@@ -145,13 +145,19 @@ describe("DAILY_KV failures", () => {
     }));
     const cookie = login.headers.getSetCookie()[0]!.split(";")[0]!;
     kv.state.mode = "down";
-    const asOwner = await daily(new Request("http://localhost/api", {
-      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.44", cookie }, body: "{}",
+    const asOwner = (handler: Handler, body: unknown) => handler(new Request("http://localhost/api", {
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.44", cookie }, body: JSON.stringify(body),
     }));
-    expect(asOwner.status).toBe(200);
+    expect((await asOwner(daily, {})).status).toBe(200);
+    // Nor a teaser, a reading or its follow-up: the owner pass is never closed by a total that cannot be read.
+    expect((await asOwner(teaser, { drawToken: token, input: MONEY_INPUT })).status).toBe(200);
+    const ownerReading = await asOwner(reading, { drawToken: token, input: MONEY_INPUT, unlock: { method: "owner" } });
+    expect(ownerReading.status).toBe(200);
+    const opened = (await ownerReading.json()) as { reading: unknown; chapterToken: string };
+    expect((await asOwner(followup, { chapterToken: opened.chapterToken, reading: opened.reading, question: "지출은 어떻게 줄일까요?" })).status).toBe(200);
   });
 
-  it("make the budget unknown after repeated failed cost writes, even while reads work", async () => {
+  it("make the budget lagging after repeated failed cost writes, even while reads work: free full readings close, teasers go on", async () => {
     const real = mockProvider.generate.bind(mockProvider);
     vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
       hooks?.onUsage?.([{ model: "claude-opus-5-5", inputTokens: 0, outputTokens: 1_000, cacheReadTokens: 0, cacheWriteTokens: 0 }]);
@@ -160,8 +166,11 @@ describe("DAILY_KV failures", () => {
     const token = await drawToken();
     kv.state.mode = "no-writes";
     for (let i = 0; i < 3; i++) expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45")).status).toBe(200);
-    expect(await budgetState(Date.now())).toBe("unknown");
-    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45")).status).toBe(503);
+    expect(await budgetState(Date.now())).toBe("lagging");
+    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45")).status).toBe(200);
+    const full = await call(reading, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45");
+    expect(full.status).toBe(503);
+    expect(full.data).toMatchObject({ code: "AI_UNAVAILABLE" });
   });
 
   it("scale a partly readable total up to all shards", async () => {
@@ -177,9 +186,9 @@ describe("DAILY_KV failures", () => {
     const token = await drawToken();
     const ip = "198.51.100.47";
     await addNetworkCost(await keyedHash(`client:${ip}`, signingSecret()!), 5_000, Date.now());
-    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(429);
+    expect((await call(reading, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(429);
     kv.state.unreadable = /^netcost:/;
-    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(200);
+    expect((await call(reading, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(200);
     kv.state.mode = "down";
     expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(503);
   });
