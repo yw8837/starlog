@@ -57,7 +57,11 @@ export function TarotBridge() {
                 <span className={s.scopeLine}>
                   <span className={s.piece}>{`첫 풀이 하루 ${times(SITE.beta.teaserPerDay)} 무료`}</span>
                   {" · "}
-                  <span className={s.piece}>{`전체 풀이 ${won(SITE.price.tarotStandardKrw)}`}</span>
+                  <span className={s.piece}>{`이어서 물어보기 ${SITE.reading.followUps}번`}</span>
+                </span>
+                {/* Both cards show their price the same way, a chip at the end (owner 2026-10-20). */}
+                <span className={s.price} data-price="">
+                  {won(SITE.price.tarotStandardKrw)}
                 </span>
               </span>
             </Link>
@@ -80,7 +84,9 @@ export function TarotBridge() {
                   {" · "}
                   <span className={s.piece}>{`이어서 물어보기 ${deep.followUps}번`}</span>
                 </span>
-                <span className={s.price}>{won(deep.krw)}</span>
+                <span className={s.price} data-price="">
+                  {won(deep.krw)}
+                </span>
               </span>
             </Link>
           </li>

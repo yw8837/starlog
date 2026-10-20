@@ -63,9 +63,16 @@ describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
     const deep = PREMIUM["tarot-deep"];
     const { links } = await renderBridge();
     expect(links[0]!.textContent).toContain(`첫 풀이 하루 ${times(SITE.beta.teaserPerDay)} 무료`);
-    expect(links[0]!.textContent).toContain(`전체 풀이 ${won(SITE.price.tarotStandardKrw)}`);
+    expect(links[0]!.textContent).toContain(`이어서 물어보기 ${SITE.reading.followUps}번`);
     expect(links[1]!.textContent).toContain(`약 ${num(deep.approxChars)}자`);
     expect(links[1]!.textContent).toContain(`이어서 물어보기 ${deep.followUps}번`);
+  });
+
+  it("shows each price the same way, a chip at the end of the scope line (owner 2026-10-20: 금액란 통일)", async () => {
+    const { links } = await renderBridge();
+    const chips = links.map((link) => link.querySelector("[data-price]")?.textContent);
+    expect(chips).toEqual([won(SITE.price.tarotStandardKrw), won(PREMIUM["tarot-deep"].krw)]);
+    expect(links[0]!.textContent).not.toContain("전체 풀이");
   });
 
   it("reads the 10-card counts from PREMIUM at render time, never a hard-coded copy", async () => {
