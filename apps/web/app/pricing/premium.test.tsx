@@ -36,14 +36,15 @@ afterEach(() => {
 
 describe("/pricing's premium tier (plan-reconciled §4.2)", () => {
   for (const state of [false, "fail"] as const) {
-    it(`keeps today's 준비 중인 풀이 while premium is ${state === false ? "off" : "unknown"}: no new button or link`, async () => {
+    it(`shows the premium readings plainly while premium is ${state === false ? "off" : "unknown"}: names and prices, never 준비 중 (review 2026-10-20 A3), no button or link`, async () => {
       const fetchMock = stub(state);
       render(<PricingPage />);
       await waitFor(() => expect(fetchMock).toHaveBeenCalled());
       await new Promise((resolve) => setTimeout(resolve, 0));
-      expect(within(premium()).getByRole("heading", { level: 2 }).textContent).toBe("준비 중인 풀이");
-      expect(premium().querySelectorAll("h3")).toHaveLength(3);
-      for (const heading of premium().querySelectorAll("h3")) expect(heading.textContent).toContain("준비 중");
+      expect(within(premium()).getByRole("heading", { level: 2 }).textContent).toBe("깊게 보는 풀이");
+      expect([...premium().querySelectorAll("h3")].map((h) => h.textContent)).toEqual(["켈틱 크로스 10장", "프리미엄 궁합", "2027 신년운세"]);
+      expect(premium().textContent).toContain("14,900원");
+      expect(premium().textContent).not.toContain("준비 중");
       expect(premium().querySelector("a")).toBeNull();
       expect(document.querySelector('a[href^="/premium/"]')).toBeNull();
     });
@@ -52,7 +53,7 @@ describe("/pricing's premium tier (plan-reconciled §4.2)", () => {
   it("where premium is visible: 깊게 보는 풀이 with each product's scope lines, state and product page", async () => {
     stub(true);
     const { container } = render(<PricingPage />);
-    await waitFor(() => expect(within(premium()).getByRole("heading", { level: 2 }).textContent).toBe("깊게 보는 풀이"));
+    await waitFor(() => expect(within(premium()).getAllByRole("link", { name: /자세히 보기/ })).toHaveLength(3));
     const cards = [...premium().querySelectorAll("section")];
     expect(cards.map((card) => card.querySelector("h3")?.textContent)).toEqual([
       expect.stringContaining("켈틱 크로스 10장"),

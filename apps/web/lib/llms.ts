@@ -53,7 +53,7 @@ export function llmsTxt(site: Site = SITE): string {
     link(INFO_PAGES.evidence.title, INFO_PAGES.evidence.path, "타로 원전·Book T·현대 해석 대조, 사주 음력·절입 시각 검증의 출처와 숫자."),
     link(INFO_PAGES.help.title, INFO_PAGES.help.path, "기능별 쓰는 법."),
     link(INFO_PAGES.faq.title, INFO_PAGES.faq.path, "무료 범위, 저장, 결제 전 많이 묻는 질문."),
-    link("가격 안내", "/pricing", "풀이 가격, 무료로 볼 수 있는 부분, 준비 중인 풀이."),
+    link("가격 안내", "/pricing", `풀이 가격, 깊게 보는 풀이(${site.price.premium.map((p) => p.name).join("·")}), 무료로 볼 수 있는 부분.`),
   ];
   const guides = GUIDE_CATEGORIES.flatMap((category) => [
     "",

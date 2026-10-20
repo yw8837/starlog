@@ -20,7 +20,7 @@ function Check() {
 /**
  * /pricing's second tier (plan-reconciled §4.2): 깊게 보는 풀이, one card per product with its scope lines, its state
  * (판매 중 / when it opens / 준비 중) and its product page. A client island (the page stays static): until the premium
- * status says a product is visible here it shows `fallback`, today's 준비 중인 풀이, so STARLOG_PREMIUM off changes nothing.
+ * status says a product is visible here it shows `fallback` (the readings named and priced plainly), so STARLOG_PREMIUM off adds no link.
  */
 export function PremiumPricing({ fallback }: { fallback: ReactNode }) {
   const status = usePremiumStatus();

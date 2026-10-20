@@ -14,6 +14,7 @@ vi.mock("@/lib/config", async (importOriginal) => {
         sajuStandardKrw: 4100,
         premium: [
           { id: "tarot-deep", slug: "deep-tarot", name: "심층 타로", sub: "카드 10장", krw: 6100, opens: "", opensAt: "", closesAt: "" },
+          { id: "match", slug: "match", name: "우리 궁합", sub: "두 사람", krw: 6600, opens: "", opensAt: "", closesAt: "" },
           {
             id: "newyear-2027", slug: "newyear-2027", name: "2027 신년운세", sub: "한 해", krw: 12100,
             opens: "11월 중순 오픈 예정", opensAt: "2026-11-15T00:00:00+09:00", closesAt: "2027-12-01T00:00:00+09:00",
@@ -59,7 +60,7 @@ describe("/pricing", () => {
     expect(container.textContent).not.toMatch(/별조각|달빛|\d+개/);
   });
 
-  it("lists the premium readings as 준비 중 with their SITE prices, never 셀틱 or Celtic", () => {
+  it("lists the premium readings with their SITE prices, never as 준비 중 (on sale since 2026-10-20, review A3), never 셀틱 or Celtic", () => {
     const { container } = render(<PricingPage />);
     const premium = container.querySelector("#premium");
     const text = premium?.textContent ?? "";
@@ -68,8 +69,10 @@ describe("/pricing", () => {
     expect(text).toContain("2027 신년운세");
     expect(text).toContain("12,100원");
     expect(text).toContain("11월 중순 오픈 예정");
-    expect(premium?.querySelectorAll("h3")).toHaveLength(2);
-    for (const heading of premium?.querySelectorAll("h3") ?? []) expect(heading.textContent).toContain("준비 중");
+    expect(text).toContain("우리 궁합");
+    expect(text).toContain("6,600원");
+    expect(premium?.querySelectorAll("h3")).toHaveLength(3);
+    expect(text).not.toContain("준비 중");
     expect(container.textContent).not.toMatch(/셀틱|Celtic/i);
   });
 
@@ -95,6 +98,10 @@ describe("/pricing", () => {
     const { container } = render(<PricingPage />);
     expect(container.querySelectorAll("h1")).toHaveLength(1);
     expect(metadata.description).toContain("3,100원");
+    // the premium readings by their SITE names, never 준비 중 (review 2026-10-20 A3)
+    expect(metadata.description).toContain("심층 타로");
+    expect(metadata.description).toContain("2027 신년운세");
+    expect(metadata.description).not.toContain("준비 중");
   });
 
   it("says one payment opens one chosen reading and that the four 운's teasers are free (saju-topics owner cut §0)", () => {

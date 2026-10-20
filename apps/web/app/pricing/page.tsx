@@ -17,7 +17,7 @@ const { price, reading, beta, features } = SITE;
 
 export const metadata: Metadata = pageMetadata({
   title: "가격 안내",
-  description: `타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 준비 중인 풀이, 무료로 볼 수 있는 부분, 결제 수단을 안내해요.`,
+  description: `타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}. 풀이 한 번에 담기는 것, 깊게 보는 풀이(${price.premium.map((p) => p.name).join("·")}), 무료로 볼 수 있는 부분, 결제 수단을 안내해요.`,
   path: "/pricing",
 });
 
@@ -100,16 +100,17 @@ export default function PricingPage() {
       {/* 풀이 후기: shows itself once there is one (spec 2026-10-13 §7) */}
       <ReviewList />
 
-      {/* 깊게 보는 풀이 where premium is visible (plan-reconciled §4.2); until then, and while STARLOG_PREMIUM is off, today's section. */}
+      {/* 깊게 보는 풀이 where premium is visible (plan-reconciled §4.2). The server's first render, and the page while
+          STARLOG_PREMIUM is off, names and prices them plainly: never 준비 중 for a reading on sale (review 2026-10-20 A3). */}
       <PremiumPricing
         fallback={
-          <LegalSection id="premium" title="준비 중인 풀이">
+          <LegalSection id="premium" title="깊게 보는 풀이">
             <div className={s.cards}>
               {price.premium.map((product) => (
                 <section key={product.id} className={s.card} aria-labelledby={`premium-${product.id}`}>
                   <div>
                     <h3 id={`premium-${product.id}`} className={s.cardTitle}>
-                      {product.name} <span className={s.badge}>준비 중</span>
+                      {product.name}
                     </h3>
                     <p className={s.cardSub}>{product.sub}</p>
                   </div>
@@ -121,7 +122,7 @@ export default function PricingPage() {
                 </section>
               ))}
             </div>
-            <p>준비 중인 풀이는 열기 전에 담기는 내용과 함께 이 페이지에 먼저 알려 드려요.</p>
+            <p>{`깊게 보는 풀이도 결제와 환불 기준은 같아요. 열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요.`}</p>
           </LegalSection>
         }
       />

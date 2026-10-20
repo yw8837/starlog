@@ -1,4 +1,8 @@
+import { SITE, won } from "../config";
 import type { GuideArticle } from "../guide";
+
+/** On sale since 2026-10-20 (owner): named and priced from SITE (review 2026-10-20 A3). */
+const DEEP = SITE.price.premium.find((p) => p.id === "tarot-deep")!;
 
 /**
  * How-to articles: spreads, one-card questions, redrawing, the minor arcana and the court cards.
@@ -119,7 +123,7 @@ export const SPREAD_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "스타로그에서 열 장을 볼 때",
-        body: "스타로그의 타로 보기는 카드 세 장으로 읽어요. 연락, 연애, 직업·이직, 이사·선택처럼 고른 주제에 따라 세 자리가 정해져 있어서 한 가지 고민을 빠르게 보기에 맞죠. 카드 열 장으로 한 상황을 깊게 보는 풀이는 켈틱 크로스 10장이라는 이름으로 준비 중이에요. 열기 전에 담기는 내용과 가격은 가격 안내 페이지에 먼저 알려 드려요. 그전까지는 세 장 스프레드로 질문을 좁혀 보는 연습을 해 두면 열 장을 펼칠 때 훨씬 수월해요.",
+        body: `스타로그의 타로 보기는 카드 세 장으로 읽어요. 연락, 연애, 직업·이직, 이사·선택처럼 고른 주제에 따라 세 자리가 정해져 있어서 한 가지 고민을 빠르게 보기에 맞죠. 카드 열 장으로 한 상황을 깊게 보는 풀이는 ${DEEP.name}이라는 이름으로 따로 볼 수 있어요. 카드 10장의 키워드와 '지금의 나' 풀이는 결제하기 전에 무료로 먼저 보여 드리고, 풀이 전체는 ${won(DEEP.krw)}이에요. 처음이라면 세 장 스프레드로 질문을 좁혀 보는 연습을 해 두면 열 장을 펼칠 때 훨씬 수월해요.`,
       },
     ],
     related: ["three-card-spread", "upright-and-reversed", "how-to-read-tarot", "minor-arcana-suits"],

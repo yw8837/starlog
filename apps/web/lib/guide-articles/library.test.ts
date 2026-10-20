@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { aiTells } from "../ai/style";
+import { SITE, won } from "../config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, findArticle, guideSectionText, type GuideArticle } from "../guide";
 import { guideFaqJsonLd, guideQuestions, isQuestion } from "../jsonld";
 import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
@@ -165,26 +166,30 @@ describe("card articles agree with the KB", () => {
   });
 });
 
-describe("upcoming products are introduced without a date", () => {
-  it("the Celtic Cross article explains the 10 positions and names 켈틱 크로스 10장 as 준비 중", () => {
+describe("the premium readings, on sale since 2026-10-20, are introduced as they are: no 준비 중, no date (review 2026-10-20 A3)", () => {
+  const premium = (id: string) => SITE.price.premium.find((p) => p.id === id)!;
+
+  it("the Celtic Cross article explains the 10 positions and names 켈틱 크로스 10장 with its SITE price, never 준비 중", () => {
     const article = findArticle(CELTIC_SLUG);
     expect(article?.category).toBe("tarot");
     const text = allText(article as GuideArticle);
     expect(text).toContain("켈틱 크로스");
-    expect(text).toContain("켈틱 크로스 10장");
+    expect(text).toContain(premium("tarot-deep").name);
+    expect(text).toContain(won(premium("tarot-deep").krw));
     expect(text).not.toContain("심층 타로");
-    expect(text).toContain("준비");
+    expect(text).not.toMatch(/준비 중|준비하고/);
     for (let n = 1; n <= 10; n++) expect(text, `${n}번 자리`).toContain(`${n}번`);
     expect(text).not.toMatch(OPENING_DATE);
   });
 
   it.each([
-    ["saju-compatibility", "프리미엄 궁합"],
-    ["new-year-fortune", "2027 신년운세"],
-  ])("%s introduces %s as 준비 중 with no date", (slug, product) => {
+    ["saju-compatibility", "match"],
+    ["new-year-fortune", "newyear-2027"],
+  ])("%s introduces %s by its SITE name and price, never 준비 중, with no date", (slug, id) => {
     const text = allText(findArticle(slug) as GuideArticle);
-    expect(text).toContain(product);
-    expect(text).toContain("준비 중");
+    expect(text).toContain(premium(id).name);
+    expect(text).toContain(won(premium(id).krw));
+    expect(text).not.toMatch(/준비 중|준비하고/);
     expect(text).not.toMatch(OPENING_DATE);
   });
 

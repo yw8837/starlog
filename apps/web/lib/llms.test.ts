@@ -40,6 +40,13 @@ describe("llms.txt", () => {
     expect(llms).not.toContain(`${SITE.guideUrl}/tarot`);
   });
 
+  it("never calls a reading on sale 준비 중: the premium readings are named from SITE (review 2026-10-20 A3)", () => {
+    expect(llms).not.toContain("준비 중");
+    expect(llmsFull).not.toMatch(/준비 중이에요|준비 중인 풀이/);
+    const pricing = llms.split("\n").find((line) => line.includes("/pricing")) ?? "";
+    for (const product of SITE.price.premium) expect(pricing).toContain(product.name);
+  });
+
   it("states the facts from SITE: 오픈 기념 무료 with its rule, the price, the follow-ups, and no signup gift", () => {
     const facts = serviceFacts().join("\n");
     expect(facts).toContain(won(SITE.price.tarotStandardKrw));

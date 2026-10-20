@@ -1,4 +1,9 @@
+import { SITE, won } from "../config";
 import type { GuideArticle } from "../guide";
+
+/** On sale since 2026-10-20 (owner): named and priced from SITE (review 2026-10-20 A3). */
+const MATCH = SITE.price.premium.find((p) => p.id === "match")!;
+const NEW_YEAR = SITE.price.premium.find((p) => p.id === "newyear-2027")!;
 
 /**
  * Saju articles. They follow saju-policy@1 and the chart engine in @starlog/core: year and month
@@ -874,8 +879,8 @@ export const SAJU_ARTICLES: readonly GuideArticle[] = [
         ],
       },
       {
-        heading: "프리미엄 궁합은 준비 중이에요",
-        body: "스타로그는 두 사람의 사주로 관계와 앞으로 1년을 보는 프리미엄 궁합을 준비 중이에요. 담기는 내용과 가격은 열기 전에 가격 안내 페이지에서 먼저 알려 드려요. 그전까지는 사주 보기로 내 명식을 먼저 세워 두고 연애나 연락 같은 주제로 타로 보기를 해 보면 두 사람 사이를 살펴보는 데 도움이 돼요.",
+        heading: "스타로그에서 궁합을 볼 때",
+        body: `스타로그의 ${MATCH.name}은 두 사람의 사주로 관계와 앞으로 1년을 함께 읽는 풀이예요. 두 사람의 명식과 한눈에 보는 요약은 결제하기 전에 무료로 먼저 볼 수 있고, 풀이 전체는 ${won(MATCH.krw)}이에요. 사주 보기로 내 명식을 먼저 세워 두면 두 사람을 나란히 놓았을 때 내 쪽의 결이 한결 잘 보여요.`,
       },
     ],
     related: ["earthly-branches", "day-master", "five-elements", "heavenly-stems"],
@@ -988,8 +993,8 @@ export const SAJU_ARTICLES: readonly GuideArticle[] = [
         ],
       },
       {
-        heading: "2027 신년운세는 준비 중이에요",
-        body: "스타로그는 사주로 미리 보는 2027년 한 해, 2027 신년운세를 준비 중이에요. 담기는 내용과 가격은 열기 전에 가격 안내 페이지에서 먼저 알려 드려요. 그전에 사주 보기로 내 명식과 지금의 10년을 먼저 읽어 두면 새해의 흐름이 내 명식의 어디에 닿는지 한결 쉽게 보여요. 태어난 시를 모른다면 시주 없이 여섯 글자로 읽고 그만큼 시주가 맡는 해석은 다루지 않는다는 점도 함께 알아 두세요.",
+        heading: "스타로그에서 신년운세를 볼 때",
+        body: `스타로그의 ${NEW_YEAR.name}는 사주로 2027년 한 해와 열두 달을 미리 읽는 풀이예요. 한 해의 제목과 요약은 결제하기 전에 무료로 먼저 볼 수 있고, 풀이 전체는 ${won(NEW_YEAR.krw)}이에요. 사주 보기로 내 명식과 지금의 10년을 먼저 읽어 두면 새해의 흐름이 내 명식의 어디에 닿는지 한결 쉽게 보여요. 태어난 시를 모른다면 시주 없이 여섯 글자로 읽고 그만큼 시주가 맡는 해석은 다루지 않는다는 점도 함께 알아 두세요.`,
       },
     ],
     related: ["daewoon", "ten-gods", "earthly-branches", "manseryeok"],
