@@ -296,14 +296,18 @@ export function misdescriptionHits(text: string, card: KbCard): string[] {
   return card.imagery.misdescriptions.filter((m) => new RegExp(m.regex).test(text)).map((m) => m.wrong);
 }
 
-const legitimate = new Map<string, string>();
+/**
+ * Keyed by the card as a deck draws it, never by its id: the 1909 scans and the Starlog deck share an id but not their
+ * pictures (kbForDeck), and a reading in one must not be judged by the other's.
+ */
+const legitimate = new WeakMap<KbCard, string>();
 
 /** A card's KB text without its misdescription list (what a reading may legitimately echo). */
 function legitimateText(card: KbCard): string {
-  let text = legitimate.get(card.id);
+  let text = legitimate.get(card);
   if (text === undefined) {
     text = JSON.stringify({ ...card, imagery: { ...card.imagery, misdescriptions: [] } });
-    legitimate.set(card.id, text);
+    legitimate.set(card, text);
   }
   return text;
 }
