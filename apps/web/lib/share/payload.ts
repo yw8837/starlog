@@ -283,6 +283,29 @@ export function hideBirth(text: string, birth: BirthInput): string {
   return patterns.reduce((out, pattern) => out.replace(new RegExp(pattern, "g"), HIDDEN), text);
 }
 
+/** The ten stems and twelve branches, each with its Hangul reading: the 간지 pair 庚申 reads 경신. */
+const STEMS = "甲乙丙丁戊己庚辛壬癸";
+const STEMS_KO = "갑을병정무기경신임계";
+const BRANCHES = "子丑寅卯辰巳午未申酉戌亥";
+const BRANCHES_KO = "자축인묘진사오미신유술해";
+const PAIR = `[${STEMS}][${BRANCHES}]`;
+const readPair = (pair: string) => `${STEMS_KO[STEMS.indexOf(pair[0]!)]}${BRANCHES_KO[BRANCHES.indexOf(pair[1]!)]}`;
+
+/**
+ * The text without any 간지 pair written in hanja, nor its Hangul reading beside it ("경신(庚申)", "庚申(경신)",
+ * "庚申" → ○○): the chart's pillars give the birth month and year away (A2 SHARE-2). Every pair, since the
+ * builder has no chart to tell the user's pillars from a 대운's (which gives the month away too) or a
+ * year's. A pillar named in Hangul only ("월주 경신") stays: without the chart it is an ordinary word.
+ */
+function hidePillars(text: string): string {
+  return text
+    .replace(new RegExp(String.raw`([가-힣]{2})\s?[(（](${PAIR})[)）]`, "g"), (whole, ko: string, pair: string) =>
+      readPair(pair) === ko ? HIDDEN : whole.replace(pair, HIDDEN),
+    )
+    .replace(new RegExp(String.raw`(${PAIR})\s?[(（]([가-힣]{2})[)）]`, "g"), (whole, pair: string, ko: string) => (readPair(pair) === ko ? HIDDEN : whole))
+    .replace(new RegExp(PAIR, "g"), HIDDEN);
+}
+
 /** Every string in a JSON value, rewritten by `edit` (objects and arrays keep their shape). */
 function mapStrings<T>(value: T, edit: (text: string) => string): T {
   if (typeof value === "string") return edit(value) as T;
@@ -325,7 +348,7 @@ export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: F
     // The status chips the user picked (전체 흐름) and the one-line concern an older chapter may carry.
     const profile = ctx.profile;
     const words = asPromptSaw([profile?.loveStatus, profile?.workStatus, profile?.concern].filter((text) => !UNSURE.has(text?.trim() ?? "")));
-    const hide = (text: string) => dropHiddenQuotes(hideWords(hideBirth(dropContactSentences(text), ctx.birth), words));
+    const hide = (text: string) => dropHiddenQuotes(hideWords(hidePillars(hideBirth(dropContactSentences(text), ctx.birth)), words));
     return { kind: "saju", v: 1, ...(ctx.topic ? { topic: ctx.topic } : {}), reading: mapStrings(shared, hide) };
   }
   throw new Error(`a ${ctx.kind} reading is not shared yet`);

@@ -290,6 +290,24 @@ describe("buildSharePayload (saju)", () => {
   it("drops a sentence that only quotes the status the user picked (F-08)", () => {
     expect(sajuBody({}, "흐름이 좋아요. '연애 중'이라고 골랐으니 함께 사는 생활을 봐요. 천천히 가요.", { loveStatus: "연애 중" })).toBe("흐름이 좋아요. 천천히 가요.");
   });
+
+  it("hides every 간지 pair written in hanja, with its Hangul reading beside it: the pillars give the birth month and year away (A2 SHARE-2)", () => {
+    expect(sajuBody({}, "월주 경신(庚申)에 비견이 둘이나 있는 명식이라, 일에서는 혼자 버티는 힘이 커요.")).toBe(
+      "월주 ○○에 비견이 둘이나 있는 명식이라, 일에서는 혼자 버티는 힘이 커요.",
+    );
+    expect(sajuBody({}, "연주 기사(己巳), 일주 병오 (丙午), 시주 甲午(갑오)로 불 기운이 겹쳐요. 庚申월의 쇠 기운도 있어요.")).toBe(
+      "연주 ○○, 일주 ○○, 시주 ○○로 불 기운이 겹쳐요. ○○월의 쇠 기운도 있어요.",
+    );
+    // A word beside the pair that is not its reading stays; so do single stems, elements and relations.
+    expect(sajuBody({}, "월주(庚申)를 보면 일간 병화(丙火)와 충(沖), 천간충(天干沖)이 함께 있어요.")).toBe("월주(○○)를 보면 일간 병화(丙火)와 충(沖), 천간충(天干沖)이 함께 있어요.");
+    // The glance is hidden the same way.
+    const shared = buildSharePayload(sajuCtx as never,{ ...reading, glance: { ...reading.glance, thisYear: "일지 오화(午火)와 병오(丙午)가 만나 불 기운이 강해요." } });
+    expect(shared.kind === "saju" ? shared.reading.glance?.thisYear : "").toBe("일지 오화(午火)와 ○○가 만나 불 기운이 강해요.");
+  });
+
+  it("keeps a pillar named in Hangul only: without the chart it cannot be told from an ordinary word", () => {
+    expect(sajuBody({}, "월주 경신에 비견이 있어요.")).toBe("월주 경신에 비견이 있어요.");
+  });
 });
 
 describe("parseSharePayload", () => {
