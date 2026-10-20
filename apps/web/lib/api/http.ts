@@ -351,7 +351,7 @@ export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKin
  * the text as the prompt will see it (cleanUserText), so markup cannot split a word.
  */
 // Invisible characters cannot split a phrase (죽 + zero-width space + 고 싶어).
-const INVISIBLE = /[​-‍⁠­﻿]/g;
+const INVISIBLE = /[\u200B-\u200D\u2060\u00AD\uFEFF]/g;
 export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS_WORDS.test(cleanUserText(text!).replace(INVISIBLE, ""));
 
 /** The care response when any user-written text reads as a crisis; null otherwise. */
