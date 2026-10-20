@@ -1,5 +1,5 @@
 import "server-only";
-import { historyForTopic, historyUserTexts, withoutCrisisItems, type HistoryItem } from "@/lib/ai/history";
+import { historyForTopic, withoutCrisisItems, type HistoryItem } from "@/lib/ai/history";
 import { buildFactSet, type SajuFactSet, type SajuProfile } from "@/lib/ai/prompts/saju";
 import { buildTopicFactSet, type SajuTopicFactSet } from "@/lib/ai/prompts/sajuTopics";
 import { sajuTopicsMode } from "@/lib/config";
@@ -69,8 +69,8 @@ export async function sajuRequest(request: Request, gate: Pick<Gate, "now" | "ow
   const body = parsed.data;
   if (body.topic !== "overall" && !topicsOpenFor(request, gate)) return errorResponse("BAD_REQUEST", { field: "topic" });
   const profile = body.topic === "overall" ? profileOf(body) : undefined;
-  // What the user wrote (earlier questions) and the status labels.
-  const crisis = crisisResponse(profile?.loveStatus, profile?.workStatus, ...historyUserTexts(body.history));
+  // The status labels; earlier questions only leave the prompt (withoutCrisisItems).
+  const crisis = crisisResponse(profile?.loveStatus, profile?.workStatus);
   if (crisis) return crisis;
   const history = historyForTopic(withoutCrisisItems(body.history, isCrisisText), body.topic);
   if (body.topic === "overall") {

@@ -60,17 +60,14 @@ export function historyBlock(items: readonly HistoryItem[]): string {
   return `<history>\n${lines.join("\n")}\n</history>`;
 }
 
-/** What the user wrote in the items (their earlier questions), for the crisis pre-check. */
-export function historyUserTexts(history: readonly HistoryItem[] | undefined): string[] {
-  return (history ?? []).map((item) => item.question);
-}
-
 /**
- * The items without those whose model-written text (verdict, observation) trips `isCrisis`. That
- * text is ours, not the user's, so it never refuses a reading; the item just stays out of the prompt.
+ * The items without those whose question or model-written text (verdict, observation) trips `isCrisis`:
+ * the item stays out of the prompt and never refuses a reading. Only what the user writes now refuses
+ * (fix review 2026-10-21 #1): an earlier question passed the words of its day, and refusing on it would
+ * keep refusing every new question until the reading is deleted.
  */
 export function withoutCrisisItems(history: readonly HistoryItem[] | undefined, isCrisis: (text: string | undefined) => boolean): HistoryItem[] {
-  return (history ?? []).filter((item) => !isCrisis(item.verdict) && !isCrisis(item.observation));
+  return (history ?? []).filter((item) => !isCrisis(item.question) && !isCrisis(item.verdict) && !isCrisis(item.observation));
 }
 
 /** The rule every system prompt carries (stable text, cached). */

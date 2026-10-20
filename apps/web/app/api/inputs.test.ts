@@ -219,13 +219,17 @@ describe("review fixes (A2 round 2)", () => {
     expect((await call(sajuTeaser, { ...body, padding: "x".repeat(SAJU_BODY_MAX_BYTES) })).status).toBe(400);
   });
 
-  it("refuses with care when an earlier question the user wrote reads as a crisis (tarot and saju)", async () => {
-    const history = [{ ...HISTORY[0]!, question: "요즘 죽고 싶다는 생각뿐이에요" }];
+  it("drops an earlier question that reads as a crisis from the prompt instead of refusing: what the user writes now is what is checked (fix review #1)", async () => {
+    const history = [{ ...HISTORY[0]!, question: "요즘 죽고 싶다는 생각뿐이에요" }, { ...HISTORY[0]!, date: "2026-09-20", question: "이번 달 지출은 어떨까" }];
+    const spy = vi.spyOn(mockProvider, "generate");
     const drawToken = await drawFor("self-flow");
     const tarot = await call(teaser, { drawToken, input: { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "", history } });
-    expect(tarot.status).toBe(422);
-    expect(tarot.data.care).toBe(true);
-    expect((await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, history: history.map((h) => ({ ...h, kind: "saju" })) })).status).toBe(422);
+    expect(tarot.status).toBe(200);
+    expect(spy.mock.calls[0]![0].user).toContain("이번 달 지출은 어떨까");
+    expect(spy.mock.calls[0]![0].user).not.toContain("죽고 싶다");
+    const saju = await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, history: history.map((h) => ({ ...h, kind: "saju" })) });
+    expect(saju.status).toBe(200);
+    expect(spy.mock.calls.at(-1)![0].user).not.toContain("죽고 싶다");
   });
 
   it.each([
@@ -249,8 +253,11 @@ describe("review fixes (A2 round 2)", () => {
     const drawToken = await drawFor("self-flow");
     const input = { topicId: "money", whoId: "me", whenId: "week", question: "죽<고> 싶어요", conditions: [], note: "" };
     expect((await call(teaser, { drawToken, input })).status).toBe(422);
+    // An earlier question is judged the same way, and then left out of the prompt (fix review #1).
+    const spy = vi.spyOn(mockProvider, "generate");
     const history = [{ ...HISTORY[0]!, kind: "saju", question: "사라<지>고   싶어요" }];
-    expect((await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, history })).status).toBe(422);
+    expect((await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM, history })).status).toBe(200);
+    expect(spy.mock.calls.at(-1)![0].user).not.toContain(HISTORY[0]!.date);
   });
 
   it("runs the crisis check over condition labels", async () => {

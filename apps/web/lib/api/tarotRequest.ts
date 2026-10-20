@@ -1,6 +1,6 @@
 import "server-only";
 import { PREMIUM_TEMPLATES } from "@starlog/core";
-import { historyUserTexts, withoutCrisisItems } from "@/lib/ai/history";
+import { withoutCrisisItems } from "@/lib/ai/history";
 import { CUSTOM_TEMPLATE, buildTarotContext, cleanUserText, resolveTopic, type TarotContext } from "@/lib/ai/prompts/tarot";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { openDraw, type OpenedDraw } from "@/lib/security/drawToken";
@@ -34,7 +34,7 @@ export async function tarotContextFrom(
   const input: TarotInputData = custom ? { ...parsed, topicText } : parsed;
   const crisis = crisisResponse(
     input.question, input.note, input.topicText, input.whoText, input.whenText,
-    ...input.conditions.flatMap((c) => [c.label, c.value]), ...historyUserTexts(input.history),
+    ...input.conditions.flatMap((c) => [c.label, c.value]),
   );
   if (crisis) return crisis;
   // History shapes this prompt only; the chapter token (follow-ups) keeps the input without it.
