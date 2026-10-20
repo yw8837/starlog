@@ -14,6 +14,15 @@ const PREMIUM_LEGAL_EFFECTIVE_AT = Date.parse(`${PREMIUM_LEGAL_EFFECTIVE_DATE}T0
 
 export const premiumLegalInForce = (now: number = Date.now()): boolean => now >= PREMIUM_LEGAL_EFFECTIVE_AT;
 
+/**
+ * Sales opened the day the premium clauses came in force, before a 7-day notice could run (review 2026-10-20 A1): each
+ * policy shows what changed on 2026-10-20 on top for 7 days, until this KST midnight (exclusive), by code.
+ */
+export const PREMIUM_CHANGE_NOTICE_UNTIL = "2026-10-27";
+const PREMIUM_CHANGE_NOTICE_UNTIL_AT = Date.parse(`${PREMIUM_CHANGE_NOTICE_UNTIL}T00:00:00+09:00`);
+
+export const premiumChangeNoticeShown = (now: number = Date.now()): boolean => premiumLegalInForce(now) && now < PREMIUM_CHANGE_NOTICE_UNTIL_AT;
+
 /** The 시행일 a policy shows at `now`. */
 export const legalEffectiveDate = (now: number = Date.now()): string => (premiumLegalInForce(now) ? PREMIUM_LEGAL_EFFECTIVE_DATE : LEGAL_EFFECTIVE_DATE);
 

@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Facts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { MATCH_AI_ROW, PremiumLegalNotice, PremiumPrivacy, PremiumUpcoming } from "@/components/legal/PremiumLegal";
+import { MATCH_AI_ROW, PremiumChangeNotice, PremiumLegalNotice, PremiumPrivacy, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
-import { contactChannels, koreanDate, legalEffectiveDate, premiumLegalInForce } from "@/lib/legal";
+import { contactChannels, koreanDate, legalEffectiveDate, premiumChangeNoticeShown, premiumLegalInForce } from "@/lib/legal";
 import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
@@ -114,6 +114,7 @@ export default function PrivacyPage() {
       lead={`${business.name}(이하 “운영자”)는 ${nameKo} 이용자의 개인정보를 「개인정보 보호법」 등 관련 법령에 따라 처리하고 보호합니다. 어떤 정보를 왜 처리하고, 얼마나 보관하며, 누구에게 맡기는지 알려 드립니다.`}
     >
       {inForce ? null : <PremiumLegalNotice />}
+      {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
       <LegalNote>
         <p className={s.noteTitle}>한눈에 보기</p>
         <p>

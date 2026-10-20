@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/LegalPage";
-import { PremiumLegalNotice, PremiumTerms, PremiumUpcoming } from "@/components/legal/PremiumLegal";
+import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
-import { contactChannels, koreanDate, legalEffectiveDate, premiumLegalInForce } from "@/lib/legal";
+import { contactChannels, koreanDate, legalEffectiveDate, premiumChangeNoticeShown, premiumLegalInForce } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
@@ -30,6 +30,7 @@ export default function TermsPage() {
   return (
     <LegalPage title="이용약관" effective={effective}>
       {inForce ? null : <PremiumLegalNotice />}
+      {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
       <LegalSection id="purpose" title="제1조 (목적)">
         <p>
           {`이 약관은 ${SITE.business.name}(이하 “운영자”)가 제공하는 ${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건과 절차, 운영자와 이용자의 권리·의무와 책임을 정합니다.`}

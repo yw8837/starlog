@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
 import TermsPage from "@/app/terms/page";
-import { PREMIUM_LEGAL_EFFECTIVE_DATE } from "@/lib/legal";
+import { MATCH_AI_ITEMS } from "@/components/legal/PremiumLegal";
+import { PREMIUM_CHANGE_NOTICE_UNTIL, PREMIUM_LEGAL_EFFECTIVE_DATE } from "@/lib/legal";
 import { productById, sellable } from "@/lib/pay/catalog";
 import { premiumOpen } from "@/lib/premium/flags";
 import { PREMIUM, PREMIUM_IDS } from "@/lib/premium/products";
@@ -75,6 +76,47 @@ describe("everything open now, the premium clauses in force from 2026-10-20 00:0
       expect(container.textContent).toContain(MATCH_ROW);
       cleanup();
     }
+  });
+
+  describe("the notice of what changed on 10/20, for 7 days (review 2026-10-20 A1: sales opened before a 7-day notice could run)", () => {
+    const CHANGED = "2026년 10월 20일 바뀐 내용";
+    const UNTIL = Date.parse("2026-10-27T00:00:00+09:00");
+    const notice = () => screen.queryByRole("heading", { name: CHANGED })?.closest("aside") ?? null;
+
+    it("is the first thing in each policy from 10/20 00:00 until 10/27 00:00 KST, in the first (server) render, and sums up the premium additions", () => {
+      expect(PREMIUM_CHANGE_NOTICE_UNTIL).toBe("2026-10-27");
+      for (const at of [AT, NOW, UNTIL - 1]) {
+        vi.setSystemTime(at);
+        for (const Page of PAGES) {
+          const { container } = render(<Page />);
+          const box = notice();
+          expect(box, new Date(at).toISOString()).not.toBeNull();
+          const text = box!.textContent ?? "";
+          for (const id of PREMIUM_IDS) expect(text).toContain(PREMIUM[id].name);
+          expect(text).toContain("이어서 물어보기 3번");
+          expect(text).toContain("두 사람의 사주로만");
+          expect(text).toContain(MATCH_AI_ITEMS);
+          expect(text).not.toMatch(/개정 예정|베타|정확/);
+          // on top: before the first section and before any other boxed note
+          for (const later of container.querySelectorAll("article section, article > div")) {
+            if (later.contains(box)) continue;
+            expect(box!.compareDocumentPosition(later) & Node.DOCUMENT_POSITION_FOLLOWING, later.id || later.className).toBeTruthy();
+          }
+          cleanup();
+        }
+      }
+    });
+
+    it("is not there before 10/20 00:00 (the old notice is) nor from 10/27 00:00 KST", () => {
+      for (const at of [BEFORE, AT - 1, UNTIL, UNTIL + 24 * 3_600_000]) {
+        vi.setSystemTime(at);
+        for (const Page of PAGES) {
+          render(<Page />);
+          expect(notice(), new Date(at).toISOString()).toBeNull();
+          cleanup();
+        }
+      }
+    });
   });
 
   it("sells all three now (STARLOG_PREMIUM on, payments open), 2027 신년운세 until 2027-11-30", () => {

@@ -135,6 +135,25 @@ export function PremiumLegalNotice({ haeyo = false }: { haeyo?: boolean }) {
   );
 }
 
+/**
+ * On top of a policy for 7 days from the day the premium clauses came in force (review 2026-10-20 A1; lib/legal.ts
+ * premiumChangeNoticeShown): what was added that day, in short. `haeyo`: the refund page's voice.
+ */
+export function PremiumChangeNotice({ haeyo = false }: { haeyo?: boolean }) {
+  const end = (plain: string, polite: string) => (haeyo ? polite : plain);
+  return (
+    <aside className={s.note} aria-labelledby="premium-change-title">
+      <h2 id="premium-change-title" className={s.noteTitle}>{`${IN_FORCE_ON} 바뀐 내용`}</h2>
+      <ul className={s.list}>
+        <li>{`프리미엄 풀이 세 가지(${NAMES})를 건별 유료로 더${end("했습니다", "했어요")}.`}</li>
+        <li>{`한 번 결제에 풀이 전체와 이어서 물어보기 ${PREMIUM["tarot-deep"].followUps}번이 담기고, 이어서 물어보기는 풀이를 연 날부터 ${FOLLOW_UP_DAYS}일 동안 할 수 있${end("습니다", "어요")}.`}</li>
+        <li>{`${PREMIUM.match.name}은 두 사람의 사주로만 ${end("봅니다", "봐요")}.`}</li>
+        <li>{`${PREMIUM.match.name}의 상대방 생년월일과 태어난 시는 운영자의 서버에 저장하지 않고, AI 사업자에게는 ${MATCH_AI_ITEMS}만 전달${end("합니다", "해요")}.`}</li>
+      </ul>
+    </aside>
+  );
+}
+
 /** The premium clauses as they will read, until they come in force. */
 export function PremiumUpcoming({ children }: { children: ReactNode }) {
   return (
