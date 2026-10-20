@@ -74,10 +74,10 @@ for (const file of samples) {
  */
 const blindProbes = ["claude-", "Claude", "클로드", "Opus", "오푸스", "Sonnet", "GPT", "gemini-", "Google Gemini", "제미나이"];
 
-// Secrets must never reach the browser: Toss secret-key prefixes, and the real values when this shell
-// has them (reported by name only, never printed).
-const SECRET_PREFIXES = ["test_gsk_", "live_gsk_", "test_sk_", "live_sk_"];
-const SECRET_NAMES = ["TOSS_SECRET_KEY", "KAKAO_CLIENT_SECRET", "STARLOG_ACCOUNT_SECRET", "STARLOG_SIGNING_SECRET", "STARLOG_CRON_SECRET", "ANTHROPIC_API_KEY", "STARLOG_OWNER_CODE", "REVIEW_LOGIN_ID", "REVIEW_LOGIN_PASSWORD", "TURNSTILE_SECRET_KEY"];
+// Secrets must never reach the browser: Toss, Google OAuth (GOCSPX-) and Anthropic (sk-ant-) secret-key
+// prefixes, and the real values when this shell has them (reported by name only, never printed).
+const SECRET_PREFIXES = ["test_gsk_", "live_gsk_", "test_sk_", "live_sk_", "GOCSPX-", "sk-ant-"];
+const SECRET_NAMES = ["TOSS_SECRET_KEY", "KAKAO_CLIENT_SECRET", "GOOGLE_CLIENT_SECRET", "STARLOG_ACCOUNT_SECRET", "STARLOG_SIGNING_SECRET", "STARLOG_CRON_SECRET", "ANTHROPIC_API_KEY", "STARLOG_OWNER_CODE", "REVIEW_LOGIN_ID", "REVIEW_LOGIN_PASSWORD", "TURNSTILE_SECRET_KEY"];
 const secretProbes = [
   ...SECRET_PREFIXES.map((prefix) => ({ label: `secret key prefix ${prefix}`, value: prefix })),
   ...SECRET_NAMES.flatMap((name) => {
