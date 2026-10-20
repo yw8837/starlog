@@ -175,7 +175,7 @@ describe("AccountPanel", () => {
     const item = screen.getByText("사주 전체 풀이 · 열지 않음").closest("li")!;
     expect(within(item).getByRole("link", { name: "열기" })).toBeTruthy();
     expect(within(item).queryByRole("button", { name: "환불받기" })).toBeNull();
-    expect(within(item).getByText("풀이를 받던 중에 나가서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.")).toBeTruthy();
+    expect(within(item).getByText("풀이를 받던 중에 끊겨서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.")).toBeTruthy();
     expect(screen.getAllByRole("button", { name: "환불받기" })).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
     expect(screen.getByText("열지 않은 결제 1건은 전액 환불돼요")).toBeTruthy();

@@ -5,7 +5,7 @@ import { MATCH_AI_ROW, PremiumChangeNotice, PremiumLegalNotice, PremiumPrivacy, 
 import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
-import { contactChannels, koreanDate, legalEffectiveDate, premiumChangeNoticeShown, premiumLegalInForce } from "@/lib/legal";
+import { PRIVACY_REVISION_DATE, contactChannels, koreanDate, premiumChangeNoticeShown, premiumLegalInForce, privacyEffectiveDate, privacyRevisionInForce } from "@/lib/legal";
 import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
@@ -100,12 +100,17 @@ const COOKIES: Rows = [
     : []),
 ];
 
+/** The revision of PRIVACY_REVISION_DATE (lib/legal.ts): shown as 개정 예정 until then, in the text from then. */
+const SHARE_EXPIRY = "풀이의 공유 사본과 링크는 공유한 날부터 180일이 지나면 자동으로 지웁니다.";
+const FOLLOW_UP_COUNT_KEPT = "풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 일반 풀이는 8일, 프리미엄 풀이는 31일 동안 보관한 뒤 자동으로 지웁니다.";
+
 export default function PrivacyPage() {
   const contacts = contactChannels();
   const ads = adsConfig();
   const now = Date.now();
   const inForce = premiumLegalInForce(now);
-  const effective = legalEffectiveDate(now);
+  const revised = privacyRevisionInForce(now);
+  const effective = privacyEffectiveDate(now);
 
   return (
     <LegalPage
@@ -115,6 +120,15 @@ export default function PrivacyPage() {
     >
       {inForce ? null : <PremiumLegalNotice />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
+      {revised ? null : (
+        <LegalNote>
+          <p className={s.noteTitle}>{`개정 예정 · ${koreanDate(PRIVACY_REVISION_DATE)}부터 시행`}</p>
+          <ul className={s.list}>
+            <li>{SHARE_EXPIRY}</li>
+            <li>{FOLLOW_UP_COUNT_KEPT}</li>
+          </ul>
+        </LegalNote>
+      )}
       <LegalNote>
         <p className={s.noteTitle}>한눈에 보기</p>
         <p>
@@ -217,7 +231,11 @@ export default function PrivacyPage() {
           <li>로그인하지 않고 연 풀이의 입력(질문, 상황, 메모, 출생 정보, 후속 질문, 지난 풀이 요약)은 운영자의 서버에 저장하지 않습니다. 풀이를 생성하는 동안에만 쓰고, 생성이 끝나면 바로 파기합니다.</li>
           <li>로그인해 결제하고 연 풀이는 계정에 암호화해 보관하고, 이용자가 내 정보에서 지우거나 탈퇴하면 지체 없이 파기합니다.</li>
           <li>오늘의 한 장은 무작위 기기 식별값과 날짜로 묶어 호스팅 사업자의 저장소에 36시간 보관한 뒤 자동으로 지웁니다. 같은 날 다시 열 때 같은 쪽지를 보여 드리기 위해서이며, 입력하신 정보는 들어 있지 않습니다.</li>
-          <li>하루 이용 횟수(IP 주소를 변환한 값별 횟수)는 36시간, 풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 8일 동안 보관한 뒤 자동으로 지웁니다.</li>
+          <li>
+            {revised
+              ? `하루 이용 횟수(IP 주소를 변환한 값별 횟수)는 36시간 동안 보관한 뒤 자동으로 지웁니다. ${FOLLOW_UP_COUNT_KEPT}`
+              : "하루 이용 횟수(IP 주소를 변환한 값별 횟수)는 36시간, 풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 8일 동안 보관한 뒤 자동으로 지웁니다."}
+          </li>
           <li>기기에 저장되는 기록(내 기록, 사주 입력 정보, 사주 맛보기, 오늘의 한 장, 하루 이용 표시)은 브라우저의 로컬 저장소에 남습니다. 사주 맛보기는 이 기기의 로컬 저장소에 저장되고, 30일이 지난 것은 다음에 스타로그를 열 때 지워집니다. 내 정보에서 기록이나 사주 정보를 지우거나 브라우저의 사이트 데이터를 지우면 바로 삭제됩니다. 진행 중인 질문과 타로 첫 풀이는 탭을 닫으면 지워지는 세션 저장소에 둡니다.</li>
           {BONDS ? (
             <li>
@@ -227,7 +245,9 @@ export default function PrivacyPage() {
             </li>
           ) : null}
           <li>풀이 후기는 작성자가 지우거나 탈퇴할 때까지 보관하고, 탈퇴하면 그 계정의 후기와 도움돼요·신고 기록을 지체 없이 파기합니다. 후기는 누구나 볼 수 있으며, 공개되는 것은 별점, 한 줄 후기, 상품과 주제, 가린 닉네임입니다.</li>
-          <li>풀이의 공유 사본은 그 풀이에서 공유 그만하기를 누르거나, 공유한 기기에서 그 풀이를 지우거나, 로그인한 상태로 공유했다면 회원 탈퇴할 때까지 보관하고, 그때 바로 지웁니다. 그 전이라도 공유한 날부터 180일이 지나면 링크와 함께 자동으로 지웁니다. 링크를 아는 사람은 누구나 볼 수 있지만 검색에는 나오지 않게 합니다.</li>
+          <li>
+            {`풀이의 공유 사본은 그 풀이에서 공유 그만하기를 누르거나, 공유한 기기에서 그 풀이를 지우거나, 로그인한 상태로 공유했다면 회원 탈퇴할 때까지 보관하고, 그때 바로 지웁니다. ${revised ? "그 전이라도 공유한 날부터 180일이 지나면 링크와 함께 자동으로 지웁니다. " : ""}링크를 아는 사람은 누구나 볼 수 있지만 검색에는 나오지 않게 합니다.`}
+          </li>
           <li>호스팅 서버의 접속 기록은 최대 7일 동안 보관된 뒤 자동으로 삭제됩니다.</li>
           <li>회원 정보는 탈퇴할 때까지 보관하고, 탈퇴하면 지체 없이 파기합니다. 로그인 세션은 30일 뒤 끝나고, 끝난 세션 기록은 지웁니다.</li>
           <li>「전자상거래 등에서의 소비자보호에 관한 법률」에 따라 계약 또는 청약철회 등에 관한 기록과 대금결제 및 재화 등의 공급에 관한 기록은 5년, 소비자의 불만 또는 분쟁처리에 관한 기록은 3년 동안 보관합니다. 탈퇴한 회원의 이 기록은 회원 식별 정보(카카오 회원번호나 Google 계정 식별값을 바꾼 값, 닉네임)를 지운 채 보관하고, 기간이 끝나면 파기합니다.</li>

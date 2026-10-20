@@ -26,6 +26,21 @@ export const premiumChangeNoticeShown = (now: number = Date.now()): boolean => p
 /** The 시행일 a policy shows at `now`. */
 export const legalEffectiveDate = (now: number = Date.now()): string => (premiumLegalInForce(now) ? PREMIUM_LEGAL_EFFECTIVE_DATE : LEGAL_EFFECTIVE_DATE);
 
+/**
+ * 개인정보처리방침 revision announced 2026-10-21, in force 7 days later (the policy promises 7 days' notice; owner
+ * 2026-10-17's 지금 공지, 7일 뒤 시행): a share's copy and link are deleted 180 days after the share (SHARE-3), and the
+ * follow-up count is kept 8 days for a standard reading, 31 for a premium one (it was written as 8 for all). Before this KST
+ * midnight the policy keeps its old lines and shows the new ones as 개정 예정 on top; from it, in the text, with no deploy.
+ * Nothing is deleted for age before 2027-04-11 anyway (180 days after the first share, 2026-10-13).
+ */
+export const PRIVACY_REVISION_DATE = "2026-10-28";
+const PRIVACY_REVISION_AT = Date.parse(`${PRIVACY_REVISION_DATE}T00:00:00+09:00`);
+
+export const privacyRevisionInForce = (now: number = Date.now()): boolean => now >= PRIVACY_REVISION_AT;
+
+/** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
+export const privacyEffectiveDate = (now: number = Date.now()): string => (privacyRevisionInForce(now) ? PRIVACY_REVISION_DATE : legalEffectiveDate(now));
+
 /** "2026년 10월 1일" */
 export function koreanDate(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);

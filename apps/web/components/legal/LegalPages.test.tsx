@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SITE } from "@/lib/config";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
@@ -9,9 +9,15 @@ import TermsPage from "@/app/terms/page";
 const PAGES = { terms: TermsPage, privacy: PrivacyPage, refund: RefundPage } as const;
 
 describe("policy pages", () => {
+  // A fixed day between the premium clauses (2026-10-20) and the privacy revision (2026-10-28), so no date can break these.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-10-21T12:00:00+09:00"));
+  });
   afterEach(() => {
     cleanup();
     vi.unstubAllEnvs();
+    vi.useRealTimers();
   });
 
   for (const [name, Page] of Object.entries(PAGES)) {
@@ -89,14 +95,27 @@ describe("policy pages", () => {
     expect(render(<PrivacyPage />).container.textContent).not.toContain("aboutads");
   });
 
-  it("privacy: tells what a shared link keeps and for how long, as the share code does", () => {
-    const text = render(<PrivacyPage />).container.textContent ?? "";
+  it("privacy: tells what a shared link keeps and for how long, as the share code does; the 180 days and the follow-up periods come in force on 2026-10-28 after a 7-day notice", () => {
+    let text = render(<PrivacyPage />).container.textContent ?? "";
     expect(text).toContain(
       "공유 링크를 만들면 풀이의 공개용 사본(뽑은 카드와 풀이 본문)을 저장합니다. 질문, 직접 쓴 말과 메모, 고른 상황, 생년월일과 태어난 시각, 명식, 이어서 물어본 내용은 넣지 않고, 풀이 본문에 옮겨진 직접 쓴 말과 고른 상황, 생년월일·태어난 시각·나이는 가리며, 연락처나 링크가 들어간 문장은 빼고 저장합니다. 로그인한 상태로 만든 공유에는 계정을 함께 기록합니다.",
     );
+    // Before: the old lines, and the revision announced on top.
+    expect(text).toContain("개정 예정 · 2026년 10월 28일부터 시행");
+    expect(text).toContain("풀이의 공유 사본과 링크는 공유한 날부터 180일이 지나면 자동으로 지웁니다.");
+    expect(text).toContain("회원 탈퇴할 때까지 보관하고, 그때 바로 지웁니다. 링크를 아는 사람은 누구나 볼 수 있지만");
+    expect(text).toContain("풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 8일 동안 보관한 뒤 자동으로 지웁니다.");
+    cleanup();
+    // From: in the text, with the new 시행일.
+    vi.setSystemTime(Date.parse("2026-10-28T00:00:00+09:00"));
+    const { container } = render(<PrivacyPage />);
+    text = container.textContent ?? "";
+    expect(text).not.toContain("개정 예정 · 2026년 10월 28일");
     expect(text).toContain(
       "풀이의 공유 사본은 그 풀이에서 공유 그만하기를 누르거나, 공유한 기기에서 그 풀이를 지우거나, 로그인한 상태로 공유했다면 회원 탈퇴할 때까지 보관하고, 그때 바로 지웁니다. 그 전이라도 공유한 날부터 180일이 지나면 링크와 함께 자동으로 지웁니다.",
     );
+    expect(text).toContain("풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 일반 풀이는 8일, 프리미엄 풀이는 31일 동안 보관한 뒤 자동으로 지웁니다.");
+    expect(container.querySelector('time[datetime="2026-10-28"]')).not.toBeNull();
     expect(text).not.toContain("누를 때까지 보관하고, 누르면 바로 지웁니다");
   });
 

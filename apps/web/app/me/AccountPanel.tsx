@@ -32,7 +32,7 @@ const openHref = (productId: string) => OPEN_HREF[productId] ?? "/tarot/new";
 /** Instead of 환불받기 once a purchase's refund window is over (the server's REFUND_WINDOW_CLOSED says the same). */
 const WINDOW_CLOSED = `환불 가능 기간(결제일로부터 ${REFUND_DAYS}일)이 지났어요. 문제가 있으면 문의해 주세요.`;
 /** Instead of 환불받기 for a purchase given back after its reading was cut off while written (SEC-02). */
-const LEFT_WHILE_WRITTEN = "풀이를 받던 중에 나가서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.";
+const LEFT_WHILE_WRITTEN = "풀이를 받던 중에 끊겨서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.";
 
 /** A failed 환불받기 in refund words (the payment lines would say "결제를 확인하고 있어요"). */
 function refundNotice(error: ApiError): string {
