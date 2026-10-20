@@ -52,7 +52,7 @@ export function PremiumLanding({ id, open, now }: { id: PremiumId; open: boolean
   const spec = PREMIUM[id];
   const copy = LANDING[id];
   const soon = !open && spec.opensAt !== undefined && spec.opensAt > now;
-  // A placeholder (mock) sample is never shown as one: no excerpt, no link to it (the 궁합 until its real samples, 2026-10-17).
+  // A placeholder (mock) sample is never shown as one: no excerpt, no link to it (all three are approved real ones since 2026-10-20).
   const excerpt = sampleApproved(id) ? sampleExcerpt(id) : null;
   const guide = findArticle(copy.guide);
   const action = (primary: boolean) =>

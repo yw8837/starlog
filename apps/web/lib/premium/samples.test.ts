@@ -11,10 +11,10 @@ import { isDeepTarotReading, isMatchReading, isNewYearReading } from "@/lib/read
 import { MATCH_SECOND_SAMPLE, PREMIUM_SAMPLES, sampleApproved, sampleExcerpt } from "./samples";
 
 /**
- * 켈틱 크로스 10장 D1 (연애·연락) and 2027 신년운세 N3 (대운 changes in 2027) are the owner-approved real outputs of the stage 4
- * eval (2026-10-17). The 프리미엄 궁합's M1 (연인) and M2 (썸, the other person's time unknown) are mock-provider placeholders in
- * its saju-only shape (owner 2026-10-17) until the real eval's approved outputs replace them. Their inputs are made up
- * and only summarised here.
+ * The samples are real outputs of the premium eval, approved: 켈틱 크로스 10장 D1 (연애·연락) and 2027 신년운세 N3 (대운 changes
+ * in 2027) from 2026-10-17, and the saju-only 프리미엄 궁합's M1 (연인) and M2 (썸, the other person's time unknown) from
+ * 2026-10-20 (its real eval, the other person's chart and years checked absent). Their inputs are made up and only
+ * summarised here.
  */
 /** How closely a card's section quotes one of `facts`: the best fact's share of its 6-character pieces found in the section. */
 function quoted(body: string, facts: Array<{ ko: string }>): number {
@@ -43,10 +43,17 @@ describe("premium samples", () => {
     }
   });
 
-  it("keep the 궁합's mock samples marked as placeholders, so no product page shows them as samples; the others are approved", () => {
-    expect([match.placeholder, match2.placeholder]).toEqual([true, true]);
-    expect([sampleApproved("tarot-deep"), sampleApproved("match"), sampleApproved("newyear-2027")]).toEqual([true, false, true]);
-    expect(["placeholder" in deep, "placeholder" in year]).toEqual([false, false]);
+  it("are all approved real outputs now: no placeholder left, so every product page shows its sample (the 궁합's from 2026-10-20)", () => {
+    for (const sample of [deep, match, match2, year]) expect("placeholder" in sample).toBe(false);
+    expect([sampleApproved("tarot-deep"), sampleApproved("match"), sampleApproved("newyear-2027")]).toEqual([true, true, true]);
+    // the real 궁합: the year ahead in the four bands of the eval's moment (2026-11-20), written from the two births' saju
+    for (const sample of [match, match2]) {
+      expect(sample.reading.periods.map((p) => p.heading)).toEqual(["2026년 11월~2027년 1월", "2027년 2월~4월", "2027년 5월~7월", "2027년 8월~10월"]);
+      expect(sample.reading.together.heading).toBe("서로에게 맞는 말과 행동");
+    }
+    expect(match.input.summary).toBe("연인 · 두 사람 모두 태어난 시를 알아요 · 고민: 요즘 대화가 줄었어요");
+    expect(match.reading.saju.dayMasters.body).toContain("준호");
+    expect(match2.input.summary).toBe("썸 · 상대가 태어난 시를 몰라요");
   });
 
   it("never name a model, the tradition or a beta, and carry no birth of a partner", () => {

@@ -11,10 +11,10 @@ import type { PremiumId } from "./products";
 
 /**
  * The samples on the product pages (plan-reconciled §4.6): imported on the server only, so the paid text is
- * rendered there and never ships in a client bundle (scripts/check-client-bundle.mjs probes it). 켈틱 크로스 10장 and
- * 2027 신년운세 are the owner-approved real outputs of the stage 4 eval (2026-10-17), from made-up inputs summarised in
- * `input`. The 프리미엄 궁합's two are mock-provider placeholders in its saju-only shape (owner 2026-10-17, `placeholder`)
- * until the real eval's approved outputs replace them: its product page shows no excerpt or sample link meanwhile.
+ * rendered there and never ships in a client bundle (scripts/check-client-bundle.mjs probes it). All are approved real
+ * outputs of the premium eval, from made-up inputs summarised in `input`: 켈틱 크로스 10장 D1 and 2027 신년운세 N3
+ * (2026-10-17), the saju-only 프리미엄 궁합's M1 and M2 (2026-10-20). A sample marked `placeholder` (a mock output standing
+ * in) is never shown on its product page.
  */
 
 export interface SampleCard {
