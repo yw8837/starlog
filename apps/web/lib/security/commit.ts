@@ -1,4 +1,6 @@
 import "server-only";
+import { DAILY_COOKIE } from "./dailyCookie";
+import { FIRST_FREE_COOKIE, QUOTA_COOKIE } from "./quota";
 import { sha256, signToken, verifyToken, type SignedPayload } from "./sign";
 
 /**
@@ -9,8 +11,8 @@ import { sha256, signToken, verifyToken, type SignedPayload } from "./sign";
  */
 
 export const COMMIT_TTL_MS = 10 * 60 * 1000;
-/** Only these cookies may be set through a commit (never the owner pass). */
-export const COMMITTABLE = new Set(["sl_q", "sl_daily", "sl_first"]);
+/** Only these cookies may be set through a commit (never the owner pass): by their constants, so a rename cannot drop one silently (B14). */
+export const COMMITTABLE = new Set([QUOTA_COOKIE, DAILY_COOKIE, FIRST_FREE_COOKIE]);
 
 export interface CommitCookie {
   name: string;
