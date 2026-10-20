@@ -5,7 +5,7 @@ import { errorResponse, json, readJson } from "@/lib/api/http";
 import type { BirthInput } from "@/lib/api/inputs";
 import { profileOf } from "@/lib/api/sajuRequest";
 import type { SajuProfile } from "@/lib/ai/prompts/saju";
-import { chapterTurns } from "@/lib/api/spend";
+import { answeredTurns } from "@/lib/api/chapterTurns";
 import type { D1Binding } from "@/lib/db/d1";
 import { MatchBody, READING_MAX_BYTES } from "@/lib/premium/inputs";
 import { openPartner, sealPartner } from "@/lib/premium/partnerSeal";
@@ -102,7 +102,7 @@ export async function POST(request: Request): Promise<Response> {
   };
   const chapterToken = await issueChapter(chapterCtx, copy.reading, [], ctx.secret, ctx.now, exp);
   const chapter = await openChapter(chapterToken, copy.reading, ctx.secret, ctx.now);
-  const answered = chapter ? await chapterTurns(chapter.id) : null;
+  const answered = chapter ? await answeredTurns(chapter.id) : null;
   if (answered === null) return errorResponse("AI_UNAVAILABLE");
   return json({ chapterToken, followUpsLeft: Math.max(0, PREMIUM.match.followUps - answered) });
 }

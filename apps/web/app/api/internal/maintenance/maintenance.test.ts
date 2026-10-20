@@ -270,7 +270,7 @@ describe("maintenance", () => {
     expect(await one(db, "SELECT account_deleted_at FROM gift_claims")).toEqual({ account_deleted_at: T0 });
   });
 
-  it("purges sessions, year-old gift claims of deleted accounts, and records past five years", async () => {
+  it("purges sessions, year-old gift claims of deleted accounts, dead chapters' follow-up counts, and records past five years", async () => {
     const db = useTestDb();
     await loggedIn("alice");
     await db.batch([
@@ -287,8 +287,11 @@ describe("maintenance", () => {
       // Preview counts erased before deletions took them (A2 PII-2): purged with the account, a recent one's kept.
       db.prepare("INSERT INTO buyer_previews (user_id, product_id, kst_day, n) VALUES ('u_old', 'deep-tarot', '2021-10-01', 1)"),
       db.prepare("INSERT INTO buyer_previews (user_id, product_id, kst_day, n) VALUES ('u_recent', 'deep-tarot', '2026-10-01', 1)"),
+      // G1: a chapter's follow-up count is kept a day past its token, then purged.
+      db.prepare("INSERT INTO chapter_turns (chapter_id, turns, expires_at) VALUES ('ch_dead', 3, ?), ('ch_live', 1, ?)").bind(T0 - 1, T0 + 1000),
     ]);
-    expect(await report()).toMatchObject({ sessions: 1, giftClaims: 1, purgedAccounts: 1 });
+    expect(await report()).toMatchObject({ sessions: 1, giftClaims: 1, chapterTurns: 1, purgedAccounts: 1 });
+    expect((await db.prepare("SELECT chapter_id FROM chapter_turns").all()).results).toEqual([{ chapter_id: "ch_live" }]);
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_old'")).toEqual({ n: 0 });
     expect(await db.prepare("SELECT user_id FROM buyer_previews").all()).toMatchObject({ results: [{ user_id: "u_recent" }] });
     expect(await one(db, "SELECT COUNT(*) AS n FROM payments WHERE payment_key = 'pk_old'")).toEqual({ n: 0 });

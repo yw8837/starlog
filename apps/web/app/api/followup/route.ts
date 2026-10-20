@@ -5,7 +5,7 @@ import { StoredSajuReadingSchema, StoredTarotReadingSchema, type FollowUpAnswer 
 import { checkQuota, checkServerLimits, crisisResponse, errorResponse, openGate, readJson, spendCookies } from "@/lib/api/http";
 import { FollowUpBody } from "@/lib/api/inputs";
 import { factsFromBirth, topicFactsFromBirth, withoutConcern } from "@/lib/api/sajuRequest";
-import { chapterTurns, recordChapterTurns } from "@/lib/api/spend";
+import { answeredTurns, giveBackTurn, holdTurn } from "@/lib/api/chapterTurns";
 import { respondGeneration } from "@/lib/api/stream";
 import { saveFollowUpTurn } from "@/lib/readings/turns";
 import { isSajuTopicId } from "@/lib/sajuTopics";
@@ -41,7 +41,7 @@ export async function POST(request: Request): Promise<Response> {
   const limits = quotaLimits();
   const premium = isPremiumChapter(chapter.ctx);
   const cap = isPremiumChapter(chapter.ctx) ? PREMIUM[chapter.ctx.kind].followUps : limits.followupsPerChapter;
-  const recorded = await chapterTurns(chapter.id);
+  const recorded = await answeredTurns(chapter.id);
   // Without the server's count an older token could reset the chapter cap: no new answer until KV reads again.
   if (recorded === null && !gate.owner) return errorResponse("AI_UNAVAILABLE");
   const answered = Math.max(chapter.turns.length, recorded ?? 0);
@@ -92,23 +92,24 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // SEC-09: the turn is held before generating, so a follow-up sent meanwhile counts it; any failure
-  // before the answer is handed out gives it back. KV has no compare-and-set: requests sent within the
-  // same few milliseconds can still both pass. A premium chapter's count lives until its token dies
-  // (30 days) and a day more, so its first token can never find the count gone and start over.
+  // before the answer is handed out gives it back. G1: held in D1 with one conditional upsert, so
+  // follow-ups sent together cannot pass the cap (lib/api/chapterTurns.ts). The count lives until the
+  // chapter token dies and a day more, so its first token can never find the count gone and start over.
   const turnsTtl = premium ? Math.ceil((chapter.exp - gate.now) / 1000) + 86_400 : undefined;
-  await recordChapterTurns(chapter.id, answered + 1, turnsTtl);
+  const held = await holdTurn(chapter.id, { answered, cap: gate.owner ? Number.MAX_SAFE_INTEGER : cap, until: chapter.exp + 86_400_000, ttlSeconds: turnsTtl });
+  if (held === "capped") return errorResponse("BETA_LIMIT", { scope: "chapter", remaining: 0 });
+  if (held === null && !gate.owner) return errorResponse("AI_UNAVAILABLE");
   return respondGeneration(request, async (hooks) => {
     try {
       const answer = await generate(hooks);
       const turns = [...chapter.turns, { question, answer: answer.answer }];
       const chapterToken = await issueChapter(chapter.ctx, body.data.reading, turns, gate.secret, gate.now, chapter.exp);
-      const remaining = Math.max(0, cap - (answered + 1));
+      const remaining = Math.max(0, cap - (typeof held === "number" ? held : answered + 1));
       // A 궁합's turns and token stay on its device: the account's copy keeps no partner, sealed or not (owner 2026-10-16).
       if (body.data.readingId && chapter.ctx.kind !== "match") await saveFollowUpTurn(request, gate.now, body.data.readingId, { question, answer: answer.answer }, chapterToken, remaining);
       return { body: { kind: answer.kind, answer: answer.answer, chapterToken, remaining }, cookies: quota ? await spendCookies(gate, quota, "followup") : [] };
     } catch (error) {
-      const held = await chapterTurns(chapter.id);
-      if (held !== null && held > answered) await recordChapterTurns(chapter.id, held - 1, turnsTtl);
+      if (typeof held === "number") await giveBackTurn(chapter.id, held, turnsTtl);
       throw error;
     }
   }, { gate, spend: "followup", ...(paid ? { paidCost: true } : {}) });

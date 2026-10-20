@@ -22,7 +22,8 @@ import { dailyStore, logKvError } from "./dailyStore";
  *   free-tier generations (SEC-01), so one network cannot spend the whole day's budget; mirrored
  *   from the same ledger writes (respondGeneration), one write each, never retried on another shard.
  * - `turns:<chapterId>`: follow-up answers given in one chapter, so replaying an older chapter token
- *   (fewer turns) cannot reset the per-chapter cap.
+ *   (fewer turns) cannot reset the per-chapter cap. G1: the count moved to D1 (lib/api/chapterTurns.ts);
+ *   this one is only read as a floor for older chapters, and still counts where there is no D1 (next dev).
  * KV has no atomic increment and is eventually consistent (another location can read a value up to
  * about 60 s old), so every count here is approximate: two writes racing on one key can lose one,
  * and a burst can overshoot by what the per-minute limiters let through. The budget therefore trips
@@ -105,6 +106,12 @@ export async function clientCount(client: string, kind: SpendKind, now: number):
   return (await read(countKey(client, kind, now))) ?? 0;
 }
 
+/**
+ * G1/AI-2: stays a KV read-then-write, so requests sent together can count once. Moving it to D1 would add a
+ * write to every generation, teasers included, for a count that is already bounded elsewhere: the per-minute
+ * limiters (FULL 20, GEN 60 per network), a Turnstile token per free generation, and the day's budget and its
+ * ceiling. The exact fix is a per-network Durable Object counter (this module's planned replacement).
+ */
 export async function recordClientSpend(client: string, kind: SpendKind, now: number): Promise<void> {
   const key = countKey(client, kind, now);
   const current = await read(key);
