@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { won } from "@/lib/config";
+import { SITE, won } from "@/lib/config";
 import { opensOnText } from "@/lib/premium/offer";
 import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import { usePremiumStatus } from "@/lib/premium/status";
@@ -23,7 +23,13 @@ export function TopicPicker() {
         {SAJU_TOPICS.map((topic) => (
           <li key={topic.id}>
             <Link href={`/saju/new?topic=${topic.id}`} className={s.item}>
-              <strong className={s.name}>{topic.label}</strong>
+              {/* The price beside the name, as on the premium rows below (owner 2026-10-20: 금액란 통일). */}
+              <span className={s.head}>
+                <strong className={s.name}>{topic.label}</strong>
+                <span className={s.price} data-price="">
+                  {won(SITE.price.sajuStandardKrw)}
+                </span>
+              </span>
               <span className={s.line}>{TOPIC_PICK_LINES[topic.id]}</span>
             </Link>
           </li>
@@ -64,7 +70,9 @@ function PremiumTopics() {
             <>
               <span className={s.head}>
                 <strong className={s.name}>{spec.name}</strong>
-                <span className={s.price}>{won(spec.krw)}</span>
+                <span className={s.price} data-price="">
+                  {won(spec.krw)}
+                </span>
               </span>
               <span className={s.line}>{opensAt !== null ? opensOnText(opensAt) : closed ? "준비 중이에요" : spec.sub}</span>
             </>
