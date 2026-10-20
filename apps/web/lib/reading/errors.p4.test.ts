@@ -9,6 +9,14 @@ describe("P4 error copy", () => {
     expect(parseApiError(409, { code: "PAY_PENDING" }).code).toBe("PAY_PENDING");
   });
 
+  it("tells a buyer at the day's preview cap, in words that fit every premium reading (no 첫 장, no card), that the bought reading opens now (review 2026-10-20 A5)", () => {
+    const error = parseApiError(429, { code: "BETA_LIMIT", scope: "buyer", resetsAt: "2026-10-21T00:00:00+09:00" });
+    expect(error.scope).toBe("buyer");
+    const view = describeApiError(error, "teaser");
+    expect(view).toEqual({ title: "오늘 볼 수 있는 미리보기를 모두 봤어요", body: "결제한 풀이는 바로 열 수 있어요.", action: null });
+    expect(`${view.title} ${view.body}`).not.toMatch(/첫 장|카드/);
+  });
+
   it("never says a failed paid or gift reading kept what opened it before the account was checked", () => {
     for (const context of ["paid", "gift"] as const) {
       for (const error of [
