@@ -76,8 +76,6 @@ export const SITE = {
     teaserPerDay: 5,
   },
   features: {
-    /** Payments are open to everyone (nothing reads this since llms.txt stopped saying they are coming). Who may buy on a deploy: STARLOG_PAYMENTS (lib/pay/mode.ts). */
-    payments: true,
     /**
      * 별자리 인연 (/bonds, /ranking, /b, /api/bonds and the home row). On in dev and tests; a production
      * build turns it on with NEXT_PUBLIC_FEATURE_BONDS=1 at build time, after the D1 migration is applied.
