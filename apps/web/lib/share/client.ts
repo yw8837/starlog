@@ -1,4 +1,3 @@
-import type { FrontDeck } from "@/lib/deck";
 import { kstDate } from "@/lib/kst";
 import { postJson } from "@/lib/reading/api";
 
@@ -56,9 +55,9 @@ export function shareUrls(path: string, origin: string = window.location.origin)
   return { url: new URL(path, origin).toString(), imageUrl: new URL(`/api/og/share/${id}`, origin).toString() };
 }
 
-/** Makes (or finds) the reading's share link. */
-export async function createShareLink(chapter: ShareableChapter, deck: FrontDeck): Promise<ShareLinkResult> {
-  const result = await postJson<{ id: string; path: string }>("/api/share", { chapterToken: chapter.chapterToken, reading: chapter.reading, deck });
+/** Makes (or finds) the reading's share link; the server takes the design from the signed chapter. */
+export async function createShareLink(chapter: ShareableChapter): Promise<ShareLinkResult> {
+  const result = await postJson<{ id: string; path: string }>("/api/share", { chapterToken: chapter.chapterToken, reading: chapter.reading });
   if (!result.ok) return { ok: false, message: result.error.message || FAILED };
   remember(chapter.id, result.data.id);
   return { ok: true, ...shareUrls(result.data.path) };

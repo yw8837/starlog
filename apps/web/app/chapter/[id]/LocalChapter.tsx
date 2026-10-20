@@ -205,7 +205,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   const keepOnly = chapter.opening === true;
   // A premium reading has no share link: it shares an image of its cards or title (PremiumChapterView, P5 task 23).
   const share: ShareActions | undefined = whole && !keepOnly && !premium
-    ? { create: () => createShareLink(chapter, deck), stop: () => stopShareLink(chapter), current: () => knownShareLink(chapter) }
+    ? { create: () => createShareLink(chapter), stop: () => stopShareLink(chapter), current: () => knownShareLink(chapter) }
     : undefined;
 
   // The browser would not keep it (storage full or blocked): say so rather than look saved.

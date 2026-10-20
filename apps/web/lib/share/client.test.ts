@@ -39,10 +39,12 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 describe("the share link a device remembers per reading", () => {
   it("is the one it made, until it is stopped", async () => {
-    stubShareApi();
+    const calls = stubShareApi();
     const chapter = { id: "chapter01", chapterToken: "chapter.token", reading: { verdict: "v" } };
     expect(knownShareLink(chapter)).toBeNull();
-    await createShareLink(chapter, "starlog");
+    await createShareLink(chapter);
+    // The server takes the design from the signed chapter, so no `deck` is sent (B B25).
+    expect(calls.at(-1)).toEqual({ method: "POST", body: { chapterToken: "chapter.token", reading: { verdict: "v" } } });
     expect(knownShareLink(chapter)).toEqual({ url: `${location.origin}/s/abcdefghijkl`, imageUrl: `${location.origin}/api/og/share/abcdefghijkl` });
     expect(knownShareLink({ id: "chapter02" })).toBeNull();
     expect(await stopShareLink(chapter)).toBe(true);
@@ -52,7 +54,7 @@ describe("the share link a device remembers per reading", () => {
   it("is stopped when its reading is deleted on the device, with the reading's own token", async () => {
     const calls = stubShareApi();
     const { chapter } = saveChapter(chapterInput);
-    await createShareLink(chapter, "starlog");
+    await createShareLink(chapter);
     deleteChapter(chapter.id);
     expect(listChapters()).toEqual([]);
     await settle();
@@ -65,8 +67,8 @@ describe("the share link a device remembers per reading", () => {
     const first = saveChapter({ ...chapterInput, chapterToken: "first.token" }).chapter;
     const second = saveChapter({ ...chapterInput, chapterToken: "second.token" }).chapter;
     saveChapter(chapterInput);
-    await createShareLink(first, "starlog");
-    await createShareLink(second, "starlog");
+    await createShareLink(first);
+    await createShareLink(second);
     clearChapters();
     expect(listChapters()).toEqual([]);
     await settle();
@@ -78,7 +80,7 @@ describe("the share link a device remembers per reading", () => {
   it("never holds up the clear when offline", async () => {
     stubShareApi({ failDelete: true });
     const shared = saveChapter(chapterInput).chapter;
-    await createShareLink(shared, "starlog");
+    await createShareLink(shared);
     expect(() => clearChapters()).not.toThrow();
     expect(listChapters()).toEqual([]);
     await settle();
@@ -87,7 +89,7 @@ describe("the share link a device remembers per reading", () => {
   it("never holds up the delete: offline, or no link at all", async () => {
     const calls = stubShareApi({ failDelete: true });
     const shared = saveChapter(chapterInput).chapter;
-    await createShareLink(shared, "starlog");
+    await createShareLink(shared);
     const plain = saveChapter(chapterInput).chapter;
     expect(() => deleteChapter(shared.id)).not.toThrow();
     deleteChapter(plain.id);
