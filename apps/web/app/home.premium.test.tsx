@@ -52,17 +52,16 @@ describe("the home's 더 깊게 보기 (plan-reconciled §4.1)", () => {
     });
   }
 
-  it("where premium is visible: 2027 신년운세, 프리미엄 궁합, 켈틱 크로스 10장 after the quick cards and before the guide, no 가장 깊게", async () => {
-    stub(true);
+  it("shows no premium row even where premium is visible (owner 2026-10-20: the home stays as it was; premium is entered from the tarot bridge and the saju list)", async () => {
+    const fetchMock = stub(true);
     const { container } = render(<HomePage />);
-    const section = await screen.findByRole("region", { name: "더 깊게 보기" });
-    expect(within(section).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027", "/premium/match", "/premium/deep-tarot"]);
-    expect(section.textContent).toContain("11월 15일 열려요");
-    expect(section.textContent).not.toContain("가장 깊게");
-    const quick = screen.getByRole("link", { name: /오늘의 한 장/ });
-    const guide = screen.getByRole("heading", { level: 2, name: "알아 두면 좋은 이야기" });
-    expect(quick.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(section.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url === "/api/premium/status")).toBe(true));
+    // The tarot entry goes on to the bridge once the status says premium is visible here.
+    await waitFor(() => expect(screen.getByRole("link", { name: /타로 보기/ }).getAttribute("href")).toBe("/tarot/start"));
+    const main = screen.getByRole("main");
+    expect(screen.queryByText("더 깊게 보기")).toBeNull();
+    expect(main.querySelector('a[href^="/premium/"]')).toBeNull();
+    expect(within(main).queryByText(/켈틱 크로스 10장|프리미엄 궁합|2027 신년운세/)).toBeNull();
     expect(container.querySelectorAll("h1")).toHaveLength(1);
   });
 });
