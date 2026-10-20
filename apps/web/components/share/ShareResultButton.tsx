@@ -23,17 +23,21 @@ type ShareResultButtonProps = ShareActions & {
   text: string;
 };
 
-/** What the sheet says a friend sees and what stays out, and the line under the Kakao message's title. */
+/**
+ * What the sheet says a friend sees and what stays out, and the line under the Kakao message's title.
+ * Only what lib/share/payload.ts really leaves out: the reading itself still carries what the worry is
+ * about, and a saju reading can name the chart's pillars in Hangul, so neither promises more (A2 SHARE-1/2).
+ */
 const SHOWN: Record<ShareResultButtonProps["kind"], { shown: string; hidden: string; kakao: string }> = {
   tarot: {
     shown: "뽑은 카드와 풀이 전체",
-    hidden: "질문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용은 보이지 않아요.",
-    kakao: "뽑은 카드와 풀이 전체를 볼 수 있어요. 질문과 개인 정보는 가렸어요.",
+    hidden: "질문 원문과 직접 쓴 말은 가려요. 다만 풀이에 고민 내용이 담겨 있으니 보낼 사람을 골라 주세요.",
+    kakao: "뽑은 카드와 풀이 전체를 볼 수 있어요. 질문 원문과 직접 쓴 말은 가렸어요.",
   },
   saju: {
     shown: "한눈에 보기와 풀이",
-    hidden: "생년월일과 태어난 시각, 명식, 고른 상황, 이어서 물어본 내용은 보이지 않아요.",
-    kakao: "뽑은 카드와 풀이 전체를 볼 수 있어요. 질문과 개인 정보는 가렸어요.",
+    hidden: "생년월일과 태어난 시각, 고른 상황은 가려요. 다만 풀이에 내 사주 이야기가 담겨 있으니 보낼 사람을 골라 주세요.",
+    kakao: "한눈에 보기와 사주 풀이를 볼 수 있어요. 생년월일과 태어난 시각은 가렸어요.",
   },
   daily: {
     shown: "오늘 뽑은 카드와 풀이",

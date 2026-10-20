@@ -43,8 +43,28 @@ describe("ShareResultButton", () => {
     render(<ShareResultButton kind="tarot" text="스타로그에서 뽑은 카드 · 은둔자" create={create} stop={vi.fn()} />);
     await click(screen.getByRole("button", { name: "공유하기" }));
     expect(sheet().textContent).toContain("뽑은 카드와 풀이 전체가 보여요");
-    expect(sheet().textContent).toContain("질문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용은 보이지 않아요");
+    // True to what the link carries: the question's text and the typed words are hidden, the worry itself is in the reading (A2 SHARE-1).
+    expect(sheet().textContent).toContain("질문 원문과 직접 쓴 말은 가려요. 다만 풀이에 고민 내용이 담겨 있으니 보낼 사람을 골라 주세요.");
+    expect(sheet().textContent).not.toContain("보이지 않아요");
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["tarot", "뽑은 카드와 풀이 전체를 볼 수 있어요. 질문 원문과 직접 쓴 말은 가렸어요."],
+    // A saju share has no cards and no question (B B08).
+    ["saju", "한눈에 보기와 사주 풀이를 볼 수 있어요. 생년월일과 태어난 시각은 가렸어요."],
+  ] as const)("the %s Kakao message says only what the link really leaves out", async (kind, description) => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
+    try {
+      const create = vi.fn(async () => ({ ok: true as const, url: URL_, imageUrl: IMAGE }));
+      render(<ShareResultButton kind={kind} text="나의 스타로그" create={create} stop={vi.fn()} />);
+      await click(screen.getByRole("button", { name: "공유하기" }));
+      await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+      await click(within(sheet()).getByRole("button", { name: "카카오톡으로 보내기", hidden: true }));
+      expect(kakao).toHaveBeenLastCalledWith("나의 스타로그", "test-key", { url: URL_, imageUrl: IMAGE, button: "풀이 보기", description });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("makes the link on 공유 링크 만들기, then shares that link (not the site) from its own tap", async () => {
@@ -53,7 +73,9 @@ describe("ShareResultButton", () => {
     const create = vi.fn(async () => ({ ok: true as const, url: URL_, imageUrl: IMAGE }));
     render(<ShareResultButton kind="saju" text="나의 스타로그 · 연애운" create={create} stop={vi.fn()} />);
     await click(screen.getByRole("button", { name: "공유하기" }));
-    expect(sheet().textContent).toContain("생년월일과 태어난 시각, 명식, 고른 상황, 이어서 물어본 내용은 보이지 않아요");
+    // The reading can name the chart's pillars in Hangul, so the sheet no longer says the 명식 stays out (A2 SHARE-2).
+    expect(sheet().textContent).toContain("생년월일과 태어난 시각, 고른 상황은 가려요. 다만 풀이에 내 사주 이야기가 담겨 있으니 보낼 사람을 골라 주세요.");
+    expect(sheet().textContent).not.toContain("명식");
     await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
     expect(create).toHaveBeenCalledOnce();
     expect(sheet().textContent).toContain("starlog.yeolmaeapps.kr/s/abcdefghijkl");

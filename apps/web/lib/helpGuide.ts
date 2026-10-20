@@ -305,7 +305,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
             "휴대폰에서는 공유 창이 열리고, 컴퓨터에서는 링크가 복사돼요.",
           ],
           // The share sheet (components/share/ShareResultButton.tsx) and lib/share/payload.ts, in plain words.
-          tip: "링크를 받은 사람은 뽑은 카드나 한눈에 보기와 함께 풀이 전체를 볼 수 있어요. 질문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용, 생년월일과 명식은 보이지 않고, 풀이에 나온 이름 같은 개인 정보는 가려서 보여요. 공유 그만하기를 누르면 보낸 링크가 더 이상 열리지 않아요.",
+          tip: "링크를 받은 사람은 뽑은 카드나 한눈에 보기와 함께 풀이 전체를 볼 수 있어요. 질문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용, 생년월일은 보이지 않고, 풀이에 나온 이름 같은 개인 정보는 가려서 보여요. 공유 그만하기를 누르면 보낸 링크가 더 이상 열리지 않아요.",
         },
       ],
     },

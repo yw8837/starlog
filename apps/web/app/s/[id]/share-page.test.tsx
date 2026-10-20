@@ -55,7 +55,7 @@ describe("/s/[id]", () => {
     render(await SharePage(params(id)));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("카드 세 장이 건넨 이야기");
     expect(document.body.textContent).toContain(TAROT_SAMPLE.paid.verdict);
-    expect(document.body.textContent).toContain("질문과 직접 쓴 말, 고른 상황은 공유한 사람만 볼 수 있어요.");
+    expect(document.body.textContent).toContain("질문 원문과 직접 쓴 말은 공유한 사람만 볼 수 있어요.");
     expect(document.body.textContent).not.toContain("먼저 연락해도 될까요");
     const faces = [...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes("major-09-hermit"));
     expect(faces[0]).toContain("/cards/starlog/");
@@ -67,7 +67,8 @@ describe("/s/[id]", () => {
     render(await SharePage(params(id)));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("연애운 풀이");
     expect(document.body.textContent).toContain("올해는 마음을 표현할수록 길이 열려요.");
-    expect(document.body.textContent).toContain("생년월일과 태어난 시각, 명식, 고른 상황은 공유한 사람만 볼 수 있어요.");
+    expect(document.body.textContent).toContain("생년월일과 태어난 시각, 고른 상황은 공유한 사람만 볼 수 있어요.");
+    expect(document.body.textContent).not.toContain("명식");
     expect(document.body.textContent).not.toMatch(/1990|1월 1일/);
   });
 
