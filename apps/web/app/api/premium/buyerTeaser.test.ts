@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
-import type { GenerationHooks } from "@/lib/ai/provider";
+import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { dailyStore, resetDailyStore } from "@/lib/api/dailyStore";
 import { clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { setTestDb } from "@/lib/db";
@@ -119,6 +119,28 @@ describe("a buyer's premium previews are bounded and paid for (review 2026-10-17
     const statuses = await Promise.all(Array.from({ length: 8 }, () => b.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } }).then((res) => res.status)));
     expect(statuses.filter((s) => s === 200)).toHaveLength(5);
     expect(statuses.filter((s) => s === 429)).toHaveLength(3);
+  });
+
+  it("gives its place back when the model could not write it, so failures never use up the five; a refused text keeps it (review 2026-10-20 A5)", async () => {
+    useTestDb();
+    const { b } = await buyerOf("198.51.100.216", "buyer216");
+    const drawToken = await dealt(b);
+    const real = mockProvider.generate.bind(mockProvider);
+    let failure: GenerationError | null = new GenerationError("UPSTREAM", ["APIError:529"]);
+    vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
+      if (failure) throw failure;
+      return real(task, attempt, feedback, hooks);
+    });
+    const send = () => b.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } });
+    for (let i = 0; i < 3; i++) expect(await (await send()).json()).toMatchObject({ code: "UPSTREAM" });
+    failure = null;
+    for (let i = 0; i < 4; i++) expect((await send()).status).toBe(200);
+    failure = new GenerationError("REFUSED");
+    expect((await send()).status).toBe(422);
+    failure = null;
+    const sixth = await send();
+    expect(sixth.status).toBe(429);
+    expect(await sixth.json()).toMatchObject({ code: "BETA_LIMIT", scope: "buyer" });
   });
 
   it("is closed while the day's spend cannot be read (budget unknown), for a buyer too", async () => {

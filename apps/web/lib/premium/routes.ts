@@ -5,6 +5,7 @@ import { accountDb } from "@/lib/db";
 import { respondGeneration } from "@/lib/api/stream";
 import { checkBot } from "@/lib/api/turnstile";
 import { sessionCookieName } from "@/lib/account/session";
+import { GenerationError } from "@/lib/ai/provider";
 import { chapterIdOf, issueChapter } from "@/lib/security/chapterToken";
 import { kstDay, nextKstMidnight } from "@/lib/security/quota";
 import type { Adapter } from "./adapters";
@@ -40,13 +41,29 @@ async function buyerPreviewLimit(gate: Gate, userId: string, product: PremiumId)
 }
 
 /**
+ * A buyer's preview the model could not write gives its place back (review 2026-10-20 A5): that day's count, never below 0.
+ * Best effort: a lost write only costs the buyer one of the day's previews.
+ */
+async function giveBackBuyerPreview(gate: Gate, userId: string, product: PremiumId): Promise<void> {
+  try {
+    await accountDb()
+      ?.prepare("UPDATE buyer_previews SET n = n - 1 WHERE user_id = ? AND product_id = ? AND kst_day = ? AND n > 0")
+      .bind(userId, product, kstDay(gate.now))
+      .run();
+  } catch (error) {
+    console.error(JSON.stringify({ evt: "buyer_preview.give_back_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
+  }
+}
+
+/**
  * POST /api/premium/<id>/teaser: the free preview (spec §5, the 시험 사용 of 전자상거래법 17조 2항 5호).
  * Open while the product is on sale for this device, or for a user who already bought it. Counts
  * as a teaser (daily cookie quota and the network counter), like the standard first-card preview,
  * and asks for a browser check first when Turnstile is on (lib/api/turnstile.ts). A buyer's preview
  * spends none of that and passes the free day's spent budget, like the paid reading it was bought for
  * (review 2026-10-16 #1), but stops at BUYER_PREVIEWS_PER_DAY, closes while the budget is unknown, and
- * books its cost as paid (review 2026-10-17 H2). Only a request with a session cookie asks the account;
+ * books its cost as paid (review 2026-10-17 H2); one the model could not write gives its place back (review 2026-10-20
+ * A5), one stopped (the client left, its time ran out) or refused does not. Only a request with a session cookie asks the account;
  * on a production deploy's test keys a purchase charged nobody, so its preview takes the ordinary path.
  */
 export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter<B, C>) {
@@ -70,8 +87,14 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
     const quota = buyer ? null : await checkQuota(gate, "teaser");
     if (quota instanceof Response) return quota;
     return respondGeneration(request, async (hooks) => {
-      const preview = await adapter.teaser(gate.provider, ctx, hooks);
-      return { body: { preview }, cookies: quota ? await spendCookies(gate, quota, "teaser") : [] };
+      try {
+        const preview = await adapter.teaser(gate.provider, ctx, hooks);
+        return { body: { preview }, cookies: quota ? await spendCookies(gate, quota, "teaser") : [] };
+      } catch (error) {
+        const refused = error instanceof GenerationError && error.code === "REFUSED";
+        if (buyer && !hooks.signal?.aborted && !refused) await giveBackBuyerPreview(gate, buyer, adapter.id);
+        throw error;
+      }
     }, { gate, ...(buyer ? { paidCost: true } : { spend: "teaser" as const }) });
   };
 }
