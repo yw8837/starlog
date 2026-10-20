@@ -339,4 +339,23 @@ describe("sharing 오늘의 한 장 (owner 2026-10-20)", () => {
       delete (navigator as { share?: unknown }).share;
     }
   });
+
+  it("stops the link of the card's own day, even with the sheet left open past midnight (review 2026-10-20 A6)", async () => {
+    dialogs();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-10-20T23:58:00+09:00"));
+    saveDaily(READING);
+    const calls: Array<{ method: string; body: unknown }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+      calls.push({ method: init?.method ?? "GET", body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      return respond(init?.method === "DELETE" ? { deleted: true } : { id: "dailyshare01", path: "/s/dailyshare01" });
+    }));
+    render(<TodayView />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "공유하기" })));
+    const sheet = screen.getByRole("dialog", { hidden: true });
+    await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true })));
+    vi.setSystemTime(Date.parse("2026-10-21T00:02:00+09:00"));
+    await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: "공유 그만하기", hidden: true })));
+    expect(calls.at(-1)).toEqual({ method: "DELETE", body: { day: "2026-10-20" } });
+  });
 });

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
+import { kstDate } from "@/lib/kst";
 import { clearChapters, deleteChapter, listChapters, saveChapter } from "@/lib/storage/chapters";
 import { createDailyShareLink, createShareLink, knownDailyShareLink, knownShareLink, stopDailyShareLink, stopShareLink } from "./client";
 
@@ -118,8 +119,25 @@ describe("오늘의 한 장's share link (owner 2026-10-20)", () => {
     expect(knownDailyShareLink()).toEqual(link);
     expect(knownDailyShareLink(Date.now() + 24 * 3_600_000)).toBeNull();
     expect(await stopDailyShareLink()).toBe(true);
-    expect(calls.at(-1)).toEqual({ url: "/api/share/daily", method: "DELETE", body: {} });
+    expect(calls.at(-1)).toEqual({ url: "/api/share/daily", method: "DELETE", body: { day: kstDate(Date.now()) } });
     expect(knownDailyShareLink()).toBeNull();
+  });
+
+  it("stops the link of the day it is told, a past one too, and forgets only that day's (review 2026-10-20 A6)", async () => {
+    const calls = stubDailyApi();
+    const now = Date.now();
+    await createDailyShareLink();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(now + 24 * 3_600_000);
+      await createDailyShareLink();
+      expect(await stopDailyShareLink(kstDate(now))).toBe(true);
+      expect(calls.at(-1)).toEqual({ url: "/api/share/daily", method: "DELETE", body: { day: kstDate(now) } });
+      expect(knownDailyShareLink(now)).toBeNull();
+      expect(knownDailyShareLink()).not.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("says why when the server cannot make it", async () => {

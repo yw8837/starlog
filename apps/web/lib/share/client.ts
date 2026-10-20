@@ -104,16 +104,19 @@ export async function createDailyShareLink(): Promise<ShareLinkResult> {
   return { ok: true, ...shareUrls(result.data.path) };
 }
 
-/** Stops sharing today's 오늘의 한 장: its link stops answering. False when it could not be stopped. */
-export async function stopDailyShareLink(): Promise<boolean> {
+/**
+ * Stops sharing this device's 오늘의 한 장 of `day` (KST, today by default; a past day's too, review 2026-10-20 A6): its
+ * link stops answering. False when it could not be stopped.
+ */
+export async function stopDailyShareLink(day: string = kstDate(Date.now())): Promise<boolean> {
   try {
     const response = await fetch("/api/share/daily", {
       method: "DELETE",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       credentials: "same-origin",
-      body: "{}",
+      body: JSON.stringify({ day }),
     });
-    if (response.ok) remember(dailyKey(Date.now()), null);
+    if (response.ok) remember(`daily:${day}`, null);
     return response.ok;
   } catch {
     return false;

@@ -140,6 +140,35 @@ describe("DELETE /api/share/daily", () => {
     expect(again.id).not.toBe(id);
   });
 
+  it("stops a past day's link when told its day: only this device's own, by the same hashed key, whatever day its cookie is on now (review 2026-10-20 A6)", async () => {
+    const db = useTestDb();
+    const YESTERDAY_NOON = Date.parse("2026-10-20T12:00:00+09:00");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(YESTERDAY_NOON);
+      const b = await deviceWithCard("device-mmmm");
+      const { id } = await json(await b.send(POST, "/api/share/daily", { body: {}, origin: true }));
+      // The next day: the device's cookie still says yesterday (this tab never asked /api/tarot/daily again).
+      vi.setSystemTime(YESTERDAY_NOON + 24 * 3_600_000);
+      expect(await json(await b.send(DELETE, "/api/share/daily", { method: "DELETE", body: {}, origin: true }))).toEqual({ deleted: false });
+      expect(await findShare(db, id as string)).not.toBeNull();
+      // Another device naming that day stops nothing of this one's.
+      const other = await deviceWithCard("device-nnnn", READING, "2026-10-20", "198.51.100.10");
+      expect(await json(await other.send(DELETE, "/api/share/daily", { method: "DELETE", body: { day: "2026-10-20" }, origin: true }))).toEqual({ deleted: false });
+      expect(await findShare(db, id as string)).not.toBeNull();
+      // A day that is not a day is refused.
+      for (const day of ["2026-10-2", "20261020", 20261020, "2026-10-20T00:00"]) {
+        expect((await b.send(DELETE, "/api/share/daily", { method: "DELETE", body: { day }, origin: true })).status, String(day)).toBe(400);
+      }
+      // This device, its cookie moved on to today with the same device id, names the day: the link stops.
+      b.jar.set(DAILY_COOKIE, await dailyCookie({ did: "device-mmmm", day: "2026-10-21", gen: 0 }, secret));
+      expect(await json(await b.send(DELETE, "/api/share/daily", { method: "DELETE", body: { day: "2026-10-20" }, origin: true }))).toEqual({ deleted: true });
+      expect(await findShare(db, id as string)).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("only stops this device's own link, and only from our pages", async () => {
     const db = useTestDb();
     const { id } = await json(await (await deviceWithCard("device-kkkk")).send(POST, "/api/share/daily", { body: {}, origin: true }));

@@ -18,6 +18,7 @@ import { useElapsed } from "@/lib/reading/useElapsed";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { createDailyShareLink, knownDailyShareLink, stopDailyShareLink } from "@/lib/share/client";
 import { saveDaily, useDaily } from "@/lib/storage/daily";
+import { kstDate } from "@/lib/kst";
 import s from "./TodayView.module.css";
 import { FRONT_DECKS, deckPrefs, type FrontDeck } from "@/lib/deck";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
@@ -308,6 +309,8 @@ function DailyProgress({ caption, fraction }: { caption: string; fraction: numbe
 
 function Opened({ reading, revisit, flip, lineRef }: { reading: DailyData; revisit: boolean; flip: boolean; lineRef: RefObject<HTMLHeadingElement | null> }) {
   const { card, areas, lucky } = reading;
+  // The card's own day (it is today's when shown): its share link is that day's, even past midnight (review 2026-10-20 A6).
+  const [shownAt] = useState(() => Date.now());
   // Just picked: the card turns over (instantly under reduced motion); a revisit shows it face up.
   const [faceUp, setFaceUp] = useState(!flip);
   useEffect(() => {
@@ -399,8 +402,8 @@ function Opened({ reading, revisit, flip, lineRef }: { reading: DailyData; revis
           kind="daily"
           text={`오늘의 카드: ${reading.summary}`}
           create={createDailyShareLink}
-          stop={stopDailyShareLink}
-          current={() => knownDailyShareLink()}
+          stop={() => stopDailyShareLink(kstDate(shownAt))}
+          current={() => knownDailyShareLink(shownAt)}
         />
         <Button href={NEW_TAROT_HREF} variant="ghost" size="md">
           카드 세 장으로 더 물어보기
