@@ -35,7 +35,11 @@ export const FIRST_CHECK_DELAYS = [0, 2_000, 4_000];
 export const LATER_CHECK_DELAYS = [15_000, 30_000, 60_000, 120_000];
 /** Server and device clocks differ; a reading this much older than the request still counts. */
 const CLOCK_SLACK_MS = 2 * 60_000;
-/** A reservation lives at most 6 minutes (spec 5.4): a reading still being opened was started within this window. */
+/**
+ * A reservation lives 6 minutes (spec 5.4): a reading still being opened was started within this window. A premium
+ * opening extends its reservation for each part (lib/pay/ledger.ts extendUnlock), so there the window counts from the
+ * last part's start; usePremiumOpen also counts from its own first try.
+ */
 export const OPENING_WINDOW_MS = 6 * 60_000;
 
 const sleep = (ms: number, signal?: AbortSignal) =>

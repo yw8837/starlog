@@ -7,7 +7,7 @@ import { dailyStore, logKvError } from "./dailyStore";
 
 /**
  * Server-side accounting in DAILY_KV, independent of cookies and of /api/commit (which only moves
- * the device's own cookie counters). Three kinds of keys:
+ * the device's own cookie counters). Four kinds of keys here (the paid book's `paidcost:` is at addPaidCost):
  * - `count:<kstDay>:<kind>:<client>`: generations started today by one client network (Gate.client,
  *   a keyed hash of the IP; raw IPs are never stored). Charged when a generation starts, so a
  *   client that disconnects before `done` is still counted; checked before the next one

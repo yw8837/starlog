@@ -21,7 +21,7 @@ import { quotaLimits } from "@/lib/security/quota";
  * be the one the token was issued for (digest check); the returned token carries the new turn.
  * A 오픈 기념 무료 chapter takes none (409 `reason: "opening"`). Capped per chapter
  * (BETA_FOLLOWUPS_PER_CHAPTER, counted server-side too, so an older token of the same chapter does
- * not reset it) and per day; the owner pass skips both caps. Chapter tokens expire 7 days after the reading. Streams NDJSON progress with `Accept: application/x-ndjson`.
+ * not reset it) and per day; the owner pass skips both caps. Chapter tokens expire 7 days after the reading (a premium one's 30, below). Streams NDJSON progress with `Accept: application/x-ndjson`.
  * A premium chapter (P5 spec §6.3) takes PREMIUM[kind].followUps (3) for 30 days: paid for with the
  * reading, so outside the beta's daily cookie quota; the chapter count and the network limits stay,
  * and its cost goes to the paid book when the chapter says it was paid for (signed `paid`; not the owner

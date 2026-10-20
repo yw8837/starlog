@@ -76,7 +76,7 @@ export const SITE = {
     teaserPerDay: 5,
   },
   features: {
-    /** Payments are open to everyone; while false, llms.txt says they are coming. Who may buy on a deploy: STARLOG_PAYMENTS (lib/pay/mode.ts). */
+    /** Payments are open to everyone (nothing reads this since llms.txt stopped saying they are coming). Who may buy on a deploy: STARLOG_PAYMENTS (lib/pay/mode.ts). */
     payments: true,
     /**
      * 별자리 인연 (/bonds, /ranking, /b, /api/bonds and the home row). On in dev and tests; a production

@@ -11,8 +11,8 @@ import { canonicalJson, sha256, signToken, verifyToken, type SignedPayload } fro
 /**
  * A chapter token travels with every opened reading. It carries what follow-ups need (the draw or
  * the birth input, the follow-up turns so far) and a digest of the reading, so the client can send
- * the reading back without being able to rewrite it. The token expires 7 days after the reading
- * (follow-up turns keep the original expiry). The per-chapter cap is also counted server-side under
+ * the reading back without being able to rewrite it. The token expires 7 days after the reading, a
+ * premium chapter's 30 (lib/premium/products.ts PREMIUM_CHAPTER_TTL_MS); follow-up turns keep the original expiry. The per-chapter cap is also counted server-side under
  * the chapter's id (spend.ts), so replaying an older token with fewer turns does not reset it.
  */
 

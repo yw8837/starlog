@@ -14,7 +14,7 @@ export interface Product {
   /** Toss orderName, 100 characters at most */
   orderName: string;
   krw: number;
-  /** a generator exists, so a purchase can be delivered (premium generators arrive in P5) */
+  /** a generator exists, so a purchase can be delivered (every product has one since P5) */
   deliverable: boolean;
   /** first moment it may be sold (ms), for a product that opens later */
   opensAt?: number;

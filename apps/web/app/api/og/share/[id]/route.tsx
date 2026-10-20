@@ -21,7 +21,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   return new ImageResponse(shareOgImage(data), {
     ...OG_CARD,
     fonts: await ogFonts(text.serif, text.sans),
-    // A share only changes by being stopped; an hour of a stale preview after that shows card names only.
+    // A share only changes by being stopped; for an hour after that a cached preview can still show it: the card
+    // names, and for saju its first line (the glance's 올해 or the first sentence), for 오늘의 한 장 its summary.
     headers: { "Cache-Control": "public, max-age=3600" },
   });
 }

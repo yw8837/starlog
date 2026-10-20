@@ -5,7 +5,8 @@ import { PREMIUM, inWindow, type PremiumId } from "./products";
 /**
  * `STARLOG_PREMIUM` (spec §8): `off` (default), `owner` (owner-pass devices only), `on`. New orders
  * and free previews need it, payments open for this device (P4 `salesOpen`) and the sales window.
- * The owner pass skips the window and the payments flag (QA before a product opens). Opening a
+ * The owner pass skips the window and the payments flag here (QA before a product opens), but a new
+ * order still needs the catalog's sales window (lib/pay/catalog.ts sellable, owner included). Opening a
  * reading the user already paid for is never gated by any of this.
  */
 
