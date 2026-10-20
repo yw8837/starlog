@@ -17,7 +17,15 @@ export const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000
 
 /** The test server's owner pass for this browser context (never a production code). */
 export async function ownerPass(page: Page, info: TestInfo): Promise<void> {
-  const res = await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } });
+  const post = () => page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } });
+  let res = await post();
+  // OWNER_LOGIN_LIMITER lets five owner logins a minute through: a run with more owner tests than that met a 429 and
+  // failed now and then (@screens story-records, premium.spec). Wait the minute out once, then try again.
+  if (res.status() === 429) {
+    info.setTimeout(info.timeout + 75_000);
+    await page.waitForTimeout(61_000);
+    res = await post();
+  }
   if (!res.ok()) throw new Error(`owner pass refused: ${res.status()}`);
 }
 

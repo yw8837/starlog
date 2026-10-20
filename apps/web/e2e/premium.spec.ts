@@ -46,10 +46,20 @@ async function pickFanCard(page: Page, n: number) {
 async function pickCards(page: Page, n: number) {
   await expect(page.locator("[data-fan-index]").first()).toBeVisible({ timeout: NAV });
   await settleAnimations(page);
-  const count = await page.locator("[data-fan-index]").count();
-  const step = Math.floor(count / n);
-  expect(step).toBeGreaterThan(0);
-  for (let i = n - 1; i >= 0; i--) await pickFanCard(page, i * step);
+  if (n <= 5) {
+    const count = await page.locator("[data-fan-index]").count();
+    const step = Math.floor(count / n);
+    expect(step).toBeGreaterThan(0);
+    for (let i = n - 1; i >= 0; i--) await pickFanCard(page, i * step);
+  } else {
+    // Ten picks on a phone's fan of 21 overlapping cards leave too little of each card to click by point (six of ten
+    // landed, 2026-10-20), so press the cards' own buttons; a picked card leaves the group, so the first is always new.
+    const cards = page.getByRole("group", { name: /장 고르기/ }).getByRole("button", { name: /^카드 \d+$/ });
+    for (let i = 0; i < n; i++) {
+      await cards.first().evaluate((el) => (el as HTMLElement).click());
+      await settleAnimations(page);
+    }
+  }
   await expect(page.getByText("모두 골랐어요")).toBeVisible();
   await page.getByRole("button", { name: "결과 보기" }).click();
 }
@@ -119,7 +129,8 @@ if (MODE !== "off") {
       await expect(page.getByRole("heading", { level: 1, name: "어떤 타로를 볼까요?" })).toBeVisible({ timeout: NAV });
       await noSideScroll(page);
       await page.getByRole("list", { name: "타로 고르기" }).getByRole("link", { name: /켈틱 크로스 10장/ }).click();
-      await expect(page).toHaveURL(/\/tarot\/new\?new=1&spread=deep$/, { timeout: NAV });
+      // The bridge links to ?new=1&spread=deep; the builder then takes `new=1` off the address (takeFlag).
+      await expect(page).toHaveURL(/\/tarot\/new\?(new=1&)?spread=deep$/, { timeout: NAV });
 
       // The same builder, with the chip saying which spread was chosen (not a button).
       await expect(page.getByText("켈틱 크로스 10장", { exact: true }).first()).toBeVisible({ timeout: NAV });
