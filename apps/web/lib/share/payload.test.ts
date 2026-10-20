@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import type { ChapterContext } from "@/lib/security/chapterToken";
-import { buildSharePayload, parseSharePayload } from "./payload";
+import { buildDailySharePayload, buildSharePayload, parseSharePayload } from "./payload";
 
 const MOCK_TAROT_READING = TAROT_SAMPLE.paid;
 
@@ -299,5 +299,50 @@ describe("parseSharePayload", () => {
     expect(parseSharePayload("{}")).toBeNull();
     expect(parseSharePayload("not json")).toBeNull();
     expect(parseSharePayload(JSON.stringify({ kind: "tarot", v: 2, cards: [], reading: {} }))).toBeNull();
+  });
+});
+
+describe("buildDailySharePayload (오늘의 한 장, owner 2026-10-20)", () => {
+  const stored = {
+    card: { cardId: "major-17-star", orientation: "reversed" as const, keyword: "희망" },
+    summary: "작은 빛 하나를 따라가 보는 하루",
+    body: "별 카드는 밤하늘 아래 물을 붓는 사람을 그려요.",
+    areas: { love: "먼저 안부를 건네 보세요", money: "작은 지출을 적어 봐요", work: "한 가지만 끝내 봐요" },
+    lucky: { color: "하늘색", number: 7 },
+    tip: "물 한 잔을 천천히 마셔 보세요",
+    pick: 2,
+    deck: "starlog",
+    did: "device-id-123",
+  };
+
+  it("keeps only the card, its design, what the screen shows and the KST day: no pick, no device", () => {
+    const payload = buildDailySharePayload(stored, "2026-10-20");
+    expect(payload).toEqual({
+      kind: "daily",
+      v: 1,
+      deck: "starlog",
+      day: "2026-10-20",
+      reading: {
+        card: { cardId: "major-17-star", orientation: "reversed", keyword: "희망" },
+        summary: stored.summary,
+        body: stored.body,
+        areas: stored.areas,
+        lucky: stored.lucky,
+        tip: stored.tip,
+      },
+    });
+    expect(JSON.stringify(payload)).not.toContain("device-id-123");
+  });
+
+  it("is in the 1909 scans for a fortune stored without its design", () => {
+    expect(buildDailySharePayload({ ...stored, deck: undefined }, "2026-10-20").deck).toBe("rws1909");
+  });
+
+  it("reads back as stored, and a malformed one is refused", () => {
+    const payload = buildDailySharePayload(stored, "2026-10-20");
+    expect(parseSharePayload(JSON.stringify(payload))).toEqual(payload);
+    expect(parseSharePayload(JSON.stringify({ ...payload, deck: "other" }))).toBeNull();
+    expect(parseSharePayload(JSON.stringify({ ...payload, day: "어제" }))).toBeNull();
+    expect(parseSharePayload(JSON.stringify({ ...payload, reading: { ...payload.reading, card: null } }))).toBeNull();
   });
 });

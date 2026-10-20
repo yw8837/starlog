@@ -10,6 +10,7 @@ import { isSajuGlance } from "@/lib/reading/validate";
 import type { SharedSaju, SharedTarot, SharePayload } from "@/lib/share/payload";
 import { topicLabel } from "@/lib/sajuTopics";
 import { SajuSections } from "../../chapter/[id]/SajuSections";
+import { SharedDailyView } from "./SharedDaily";
 import s from "../../chapter/[id]/ChapterView.module.css";
 
 const COUNT = ["한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
@@ -97,7 +98,7 @@ export function SharedReading({ share }: { share: SharePayload }) {
   return (
     <>
       <Stepper label="친구가 공유한 풀이" backHref="/" backLabel="스타로그 홈으로" />
-      {share.kind === "tarot" ? <SharedTarotView share={share} /> : <SharedSajuView share={share} />}
+      {share.kind === "tarot" ? <SharedTarotView share={share} /> : share.kind === "saju" ? <SharedSajuView share={share} /> : <SharedDailyView share={share} />}
     </>
   );
 }

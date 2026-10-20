@@ -3,7 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import type { ChapterContext } from "@/lib/security/chapterToken";
-import { buildSharePayload, type SharePayload } from "@/lib/share/payload";
+import { buildDailySharePayload, buildSharePayload, type SharePayload } from "@/lib/share/payload";
 import NotFound from "./not-found";
 import SharePage, { generateMetadata } from "./page";
 
@@ -88,6 +88,51 @@ describe("/s/[id]", () => {
     const id = saveShare("aaaaaaaaaaa3", buildSharePayload(tarotCtx, TAROT_SAMPLE.paid, "starlog"));
     const meta = await generateMetadata(params(id));
     expect(meta.title).toBe("친구가 뽑은 카드 · 은둔자 · 별(역) · 컵 3");
+    expect(meta.robots).toEqual({ index: false, follow: false });
+    expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: `/api/og/share/${id}`, width: 1200, height: 630 })]);
+  });
+
+  const daily = buildDailySharePayload(
+    {
+      card: { cardId: "major-17-star", orientation: "reversed", keyword: "희망" },
+      summary: "작은 빛 하나를 따라가 보는 하루",
+      body: "별 카드는 밤하늘 아래 물을 붓는 사람을 그려요. 서두르지 않아도 괜찮다는 이야기예요.",
+      areas: { love: "먼저 안부를 건네 보세요", money: "작은 지출을 적어 봐요", work: "한 가지만 끝내 봐요" },
+      lucky: { color: "하늘색", number: 7 },
+      tip: "물 한 잔을 천천히 마셔 보세요",
+      deck: "starlog",
+    },
+    "2026-10-20",
+  );
+
+  it("shows a shared 오늘의 한 장 as the sender saw it: the day, the card face in its design, its name and the whole reading", async () => {
+    render(await SharePage(params(saveShare("aaaaaaaaaad1", daily))));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("10월 20일의 한 장");
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("친구가 공유한 오늘의 한 장");
+    expect(text).toContain("별 · 역방향");
+    for (const part of ["희망", "작은 빛 하나를 따라가 보는 하루", daily.kind === "daily" ? daily.reading.body : "", "먼저 안부를 건네 보세요", "작은 지출을 적어 봐요", "한 가지만 끝내 봐요", "하늘색", "7", "물 한 잔을 천천히 마셔 보세요"]) {
+      expect(text).toContain(part);
+    }
+    const faces = [...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes("major-17-star"));
+    expect(faces[0]).toContain("/cards/starlog/");
+    expect(text).not.toMatch(/베타|Claude|Anthropic|GPT|정확도|적중/);
+  });
+
+  it("invites the visitor to draw their own card on /today, the one gold button of the page", async () => {
+    const { container } = render(await SharePage(params(saveShare("aaaaaaaaaad2", daily))));
+    const draw = screen.getByRole("link", { name: /오늘의 한 장 뽑기/ });
+    expect(draw.getAttribute("href")).toBe("/today");
+    const primaries = [...container.querySelectorAll("a, button")].filter((el) => /primary/.test(el.className));
+    expect(primaries).toEqual([draw]);
+    expect(screen.getAllByRole("link", { name: "스타로그 홈으로" }).map((a) => a.getAttribute("href"))).toEqual(["/", "/"]);
+  });
+
+  it("previews a shared 오늘의 한 장 with its card and today's line", async () => {
+    const id = saveShare("aaaaaaaaaad3", daily);
+    const meta = await generateMetadata(params(id));
+    expect(meta.title).toBe("친구가 뽑은 오늘의 한 장 · 별(역)");
+    expect(meta.description).toBe("작은 빛 하나를 따라가 보는 하루");
     expect(meta.robots).toEqual({ index: false, follow: false });
     expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: `/api/og/share/${id}`, width: 1200, height: 630 })]);
   });

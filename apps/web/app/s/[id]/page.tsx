@@ -20,8 +20,12 @@ const load = cache(async (id: string) => {
 
 const firstSentence = (text: string) => text.trim().split(/(?<=[.?!요])\s+/)[0] ?? text.trim();
 
-/** The link preview: what was drawn (or the saju's short conclusion), never the question or birth data. */
+/** The link preview: what was drawn (오늘의 한 장: its card and line, or the saju's short conclusion), never the question or birth data. */
 function preview(share: SharePayload): { title: string; description: string } {
+  if (share.kind === "daily") {
+    const { card } = share.reading;
+    return { title: `친구가 뽑은 오늘의 한 장 · ${getCard(card.cardId).names.ko}${card.orientation === "reversed" ? "(역)" : ""}`, description: share.reading.summary };
+  }
   if (share.kind === "tarot") {
     const names = share.cards.map((card) => `${getCard(card.cardId).names.ko}${card.orientation === "reversed" ? "(역)" : ""}`).join(" · ");
     return { title: `친구가 뽑은 카드 · ${names}`, description: `${SITE.nameKo}에서 카드로 본 타로 풀이예요. 나도 카드를 뽑아 볼 수 있어요.` };

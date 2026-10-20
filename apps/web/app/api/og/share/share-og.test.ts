@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { setTestDb } from "@/lib/db";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import type { ChapterContext } from "@/lib/security/chapterToken";
-import { buildSharePayload } from "@/lib/share/payload";
+import { buildDailySharePayload, buildSharePayload } from "@/lib/share/payload";
 import { LIMITS_PER_MINUTE, resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { saveShare } from "@/lib/share/store";
 import { useTestDb } from "@/lib/testing/p4";
@@ -116,6 +116,29 @@ describe("/api/og/share/[id]", () => {
     expect(drawnParts(drawn[0] as ReactElement).text).toContain("올해는 마음을 표현할수록 길이 열려요.");
     const missing = await ogGet(new Request("https://starlog.yeolmaeapps.kr/api/og/share/zzzzzzzzzzzz"), { params: Promise.resolve({ id: "zzzzzzzzzzzz" }) });
     expect(missing.status).toBe(404);
+  });
+
+  it("draws a shared 오늘의 한 장: its card face in the design it was read with, its name and today's line", async () => {
+    const db = useTestDb();
+    const asked = stubFaces(true);
+    const daily = {
+      card: { cardId: "major-17-star", orientation: "reversed" as const, keyword: "희망" },
+      summary: "작은 빛 하나를 따라가 보는 하루",
+      body: "별 카드는 밤하늘 아래 물을 붓는 사람을 그려요.",
+      areas: { love: "먼저 안부를 건네 보세요", money: "작은 지출을 적어 봐요", work: "한 가지만 끝내 봐요" },
+      lucky: { color: "하늘색", number: 7 },
+      tip: "물 한 잔을 천천히 마셔 보세요",
+      deck: "starlog",
+    };
+    const id = await saveShare(db, "daily:device-day", buildDailySharePayload(daily, "2026-10-20"), Date.now());
+    const res = await ogGet(new Request(`https://starlog.yeolmaeapps.kr/api/og/share/${id}`), { params: Promise.resolve({ id }) });
+    expect(res.status).toBe(200);
+    expect(asked).toEqual(["https://starlog.yeolmaeapps.kr/cards/og/starlog/major-17-star.jpg"]);
+    const { text, images } = drawnParts(drawn[0] as ReactElement);
+    expect(text).toContain("친구가 공유한 오늘의 한 장");
+    expect(text).toContain("별(역)");
+    expect(text).toContain("작은 빛 하나를 따라가 보는 하루");
+    expect(images).toEqual(["data:image/jpeg;base64,/9j/2Q=="]);
   });
 
   it("counts every request against the per-network limit, an unknown share too: past it, a 429", async () => {

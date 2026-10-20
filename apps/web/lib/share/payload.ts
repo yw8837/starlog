@@ -2,7 +2,7 @@ import { TEMPLATES, unsureWords, type Orientation, type TemplateId } from "@star
 import type { ReadingBody } from "@/components/tarot/ReadingArticle";
 import { cleanUserText } from "@/lib/ai/prompts/tarot";
 import type { FrontDeck } from "@/lib/deck";
-import type { Section, SajuGlance, SajuTopicId } from "@/lib/reading/types";
+import type { DailyData, Section, SajuGlance, SajuTopicId } from "@/lib/reading/types";
 import { isSajuGlance, isSection } from "@/lib/reading/validate";
 import { isSajuTopicId } from "@/lib/sajuTopics";
 import type { BirthInput } from "@/lib/api/inputs";
@@ -31,7 +31,20 @@ export interface SharedSaju {
   reading: { glance?: SajuGlance; sections: Section[]; observation?: Section };
 }
 
-export type SharePayload = SharedTarot | SharedSaju;
+/**
+ * 오늘의 한 장 (owner 2026-10-20): the card, the design it was read in, what the screen shows and the KST
+ * day. It has no birth data or question, and nothing of the device (no pick, no device id).
+ */
+export interface SharedDaily {
+  kind: "daily";
+  v: 1;
+  deck: FrontDeck;
+  /** the KST day it was drawn for, "2026-10-20" */
+  day: string;
+  reading: Omit<DailyData, "pick">;
+}
+
+export type SharePayload = SharedTarot | SharedSaju | SharedDaily;
 
 /** What stands in for the user's own words, wherever the reading quotes them. */
 export const HIDDEN = "○○";
@@ -318,6 +331,29 @@ export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: F
   throw new Error(`a ${ctx.kind} reading is not shared yet`);
 }
 
+/**
+ * The public copy of this device's 오늘의 한 장, from the fortune the server stored for it
+ * (lib/api/dailyStore.ts): only the parts the screen shows, field by field. A fortune stored without its
+ * design: the 1909 scans.
+ */
+export function buildDailySharePayload(stored: DailyData & { deck?: unknown }, day: string): SharedDaily {
+  const { card, areas, lucky } = stored;
+  return {
+    kind: "daily",
+    v: 1,
+    deck: stored.deck === "starlog" ? "starlog" : "rws1909",
+    day,
+    reading: {
+      card: { cardId: card.cardId, orientation: card.orientation, keyword: card.keyword },
+      summary: stored.summary,
+      body: stored.body,
+      areas: { love: areas.love, money: areas.money, work: areas.work },
+      lucky: { color: lucky.color, number: lucky.number },
+      tip: stored.tip,
+    },
+  };
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
 /** A stored payload, or null when it is not one this version wrote. */
@@ -336,6 +372,12 @@ export function parseSharePayload(text: string): SharePayload | null {
   if (value.kind === "saju") {
     if (!Array.isArray(value.reading.sections) || (value.topic !== undefined && !isSajuTopicId(value.topic))) return null;
     return value as unknown as SharedSaju;
+  }
+  if (value.kind === "daily") {
+    const card = value.reading.card;
+    if (!isRecord(card) || typeof card.cardId !== "string" || (value.deck !== "starlog" && value.deck !== "rws1909")) return null;
+    if (typeof value.day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value.day) || typeof value.reading.summary !== "string") return null;
+    return value as unknown as SharedDaily;
   }
   return null;
 }

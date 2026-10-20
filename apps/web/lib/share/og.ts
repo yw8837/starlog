@@ -9,9 +9,19 @@ const BODY_MAX = 90;
 
 const clip = (text: string) => (text.length > BODY_MAX ? `${text.slice(0, BODY_MAX - 1)}…` : text);
 
-/** What the link preview of a shared reading shows: the cards drawn, or the saju's short conclusion. */
+/** What the link preview of a shared reading shows: the cards drawn (오늘의 한 장: its card and line), or the saju's short conclusion. */
 export function shareOgData(share: SharePayload, origin: string): ShareOgData {
   const host = new URL(SITE.url).host;
+  if (share.kind === "daily") {
+    const { card } = share.reading;
+    return {
+      label: "친구가 공유한 오늘의 한 장",
+      headline: `${getCard(card.cardId).names.ko}${card.orientation === "reversed" ? "(역)" : ""}`,
+      body: clip(share.reading.summary),
+      cards: [{ cardId: card.cardId, src: `${origin}/cards/og/${share.deck}/${card.cardId}.jpg`, reversed: card.orientation === "reversed" }],
+      host,
+    };
+  }
   if (share.kind === "tarot") {
     return {
       label: "친구가 공유한 타로 풀이",

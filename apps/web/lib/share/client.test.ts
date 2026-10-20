@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { clearChapters, deleteChapter, listChapters, saveChapter } from "@/lib/storage/chapters";
-import { createShareLink, knownShareLink, stopShareLink } from "./client";
+import { createDailyShareLink, createShareLink, knownDailyShareLink, knownShareLink, stopDailyShareLink, stopShareLink } from "./client";
 
 /** The share API as the browser sees it: POST hands back /s/<id>, DELETE stops it; `calls` records both. */
 function stubShareApi(options: { failDelete?: boolean } = {}) {
@@ -93,5 +93,38 @@ describe("the share link a device remembers per reading", () => {
     expect(listChapters()).toEqual([]);
     await settle();
     expect(calls.filter((call) => call.method === "DELETE")).toHaveLength(1);
+  });
+});
+
+describe("오늘의 한 장's share link (owner 2026-10-20)", () => {
+  /** The daily share API as the browser sees it; `calls` records where each call went, how, and what it sent. */
+  function stubDailyApi() {
+    const calls: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      const method = init.method ?? "GET";
+      calls.push({ url: String(url), method, body: JSON.parse(String(init.body)) });
+      const answer = method === "DELETE" ? { deleted: true } : { id: "dailyshare01", path: "/s/dailyshare01" };
+      return new Response(JSON.stringify(answer), { headers: { "content-type": "application/json" } });
+    });
+    return calls;
+  }
+
+  it("is made by the server from this device's own card (nothing of the reading is sent), kept for today, and stopped", async () => {
+    const calls = stubDailyApi();
+    const link = { url: `${location.origin}/s/dailyshare01`, imageUrl: `${location.origin}/api/og/share/dailyshare01` };
+    expect(knownDailyShareLink()).toBeNull();
+    expect(await createDailyShareLink()).toEqual({ ok: true, ...link });
+    expect(calls).toEqual([{ url: "/api/share/daily", method: "POST", body: {} }]);
+    expect(knownDailyShareLink()).toEqual(link);
+    expect(knownDailyShareLink(Date.now() + 24 * 3_600_000)).toBeNull();
+    expect(await stopDailyShareLink()).toBe(true);
+    expect(calls.at(-1)).toEqual({ url: "/api/share/daily", method: "DELETE", body: {} });
+    expect(knownDailyShareLink()).toBeNull();
+  });
+
+  it("says why when the server cannot make it", async () => {
+    vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ code: "NOT_AVAILABLE", message: "오늘 고른 카드가 있어야 공유할 수 있어요." }), { status: 409, headers: { "content-type": "application/json" } }));
+    expect(await createDailyShareLink()).toEqual({ ok: false, message: "오늘 고른 카드가 있어야 공유할 수 있어요." });
+    expect(knownDailyShareLink()).toBeNull();
   });
 });

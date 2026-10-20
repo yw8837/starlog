@@ -1,4 +1,5 @@
 import type { FrontDeck } from "@/lib/deck";
+import { kstDate } from "@/lib/kst";
 import { postJson } from "@/lib/reading/api";
 
 /**
@@ -82,4 +83,39 @@ export async function stopShareLink(chapter: ShareableChapter): Promise<boolean>
 /** A deleted reading takes its link down, when this device made one. Fire and forget: never throws. */
 export function stopKnownShareLink(chapter: ShareableChapter): void {
   if (knownShareLink(chapter)) void stopShareLink(chapter);
+}
+
+/** 오늘의 한 장 among the links this device remembers: one per KST day (the device keeps only today's card). */
+const dailyKey = (now: number) => `daily:${kstDate(now)}`;
+
+/** The live link this device made for today's 오늘의 한 장, or null. */
+export function knownDailyShareLink(now: number = Date.now()): { url: string; imageUrl: string } | null {
+  return knownShareLink({ id: dailyKey(now) });
+}
+
+/**
+ * Makes (or finds) the link to today's 오늘의 한 장 (app/api/share/daily). Nothing of the reading is
+ * sent: the server makes the copy from the card it stored for this device.
+ */
+export async function createDailyShareLink(): Promise<ShareLinkResult> {
+  const result = await postJson<{ id: string; path: string }>("/api/share/daily", {});
+  if (!result.ok) return { ok: false, message: result.error.message || FAILED };
+  remember(dailyKey(Date.now()), result.data.id);
+  return { ok: true, ...shareUrls(result.data.path) };
+}
+
+/** Stops sharing today's 오늘의 한 장: its link stops answering. False when it could not be stopped. */
+export async function stopDailyShareLink(): Promise<boolean> {
+  try {
+    const response = await fetch("/api/share/daily", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      credentials: "same-origin",
+      body: "{}",
+    });
+    if (response.ok) remember(dailyKey(Date.now()), null);
+    return response.ok;
+  } catch {
+    return false;
+  }
 }

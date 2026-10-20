@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DECK_KEY } from "@/lib/deck";
@@ -300,5 +300,43 @@ describe("오늘의 한 장 in the server HTML (SEO-06)", () => {
     expect(held?.querySelector("div")).toBeTruthy();
     const file = ["apps/web/app/today/TodayView.module.css", "app/today/TodayView.module.css"].map((path) => resolve(process.cwd(), path)).find((path) => existsSync(path));
     expect(readFileSync(file ?? "", "utf8")).toMatch(/\.held \{[^}]*visibility: hidden;/);
+  });
+});
+
+describe("sharing 오늘의 한 장 (owner 2026-10-20)", () => {
+  /** The share sheet is a <dialog>; jsdom has no showModal()/close(). */
+  function dialogs() {
+    const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+    proto.showModal ??= function (this: HTMLElement) {
+      this.setAttribute("open", "");
+    };
+    proto.close ??= function (this: HTMLElement) {
+      this.removeAttribute("open");
+    };
+  }
+
+  it("shares the card's own page (/s/<id>, made by the server from this device's card), never the home", async () => {
+    dialogs();
+    saveDaily(READING);
+    const calls: Array<{ url: string; method: string; body: unknown }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), method: init?.method ?? "GET", body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      return respond({ id: "dailyshare01", path: "/s/dailyshare01" });
+    }));
+    const share = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "share", { value: share, configurable: true, writable: true });
+    try {
+      render(<TodayView />);
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: "공유하기" })));
+      const sheet = screen.getByRole("dialog", { hidden: true });
+      expect(sheet.textContent).toContain("오늘 뽑은 카드와 풀이가 보여요");
+      expect(calls).toEqual([]);
+      await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true })));
+      expect(calls).toEqual([{ url: "/api/share/daily", method: "POST", body: {} }]);
+      await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: "공유하기", hidden: true })));
+      expect(share).toHaveBeenCalledWith(expect.objectContaining({ url: `${location.origin}/s/dailyshare01`, text: `오늘의 카드: ${READING.summary}` }));
+    } finally {
+      delete (navigator as { share?: unknown }).share;
+    }
   });
 });

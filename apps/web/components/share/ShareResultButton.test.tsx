@@ -5,6 +5,9 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { ShareResultButton } from "./ShareResultButton";
 
+const { kakao } = vi.hoisted(() => ({ kakao: vi.fn(async () => undefined) }));
+vi.mock("@/lib/kakaoShare", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/kakaoShare")>()), shareToKakao: kakao }));
+
 // jsdom has no <dialog> methods; Modal calls showModal()/close().
 beforeAll(() => {
   const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
@@ -56,6 +59,27 @@ describe("ShareResultButton", () => {
     expect(sheet().textContent).toContain("starlog.yeolmaeapps.kr/s/abcdefghijkl");
     await click(within(sheet()).getByRole("button", { name: "공유하기", hidden: true }));
     expect(share).toHaveBeenCalledWith(expect.objectContaining({ url: URL_, text: "나의 스타로그 · 연애운" }));
+  });
+
+  it("for 오늘의 한 장, says a friend sees today's card and its reading and nothing personal, and the Kakao message opens that link with 풀이 보기", async () => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
+    try {
+      const create = vi.fn(async () => ({ ok: true as const, url: URL_, imageUrl: IMAGE }));
+      render(<ShareResultButton kind="daily" text="오늘의 카드: 작은 빛 하나를 따라가 보는 하루" create={create} stop={vi.fn()} />);
+      await click(screen.getByRole("button", { name: "공유하기" }));
+      expect(sheet().textContent).toContain("링크를 받은 사람에게는 오늘 뽑은 카드와 풀이가 보여요.");
+      expect(sheet().textContent).toContain("이름이나 기기 정보 같은 개인 정보는 담기지 않아요.");
+      await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+      await click(within(sheet()).getByRole("button", { name: "카카오톡으로 보내기", hidden: true }));
+      expect(kakao).toHaveBeenCalledWith("오늘의 카드: 작은 빛 하나를 따라가 보는 하루", "test-key", {
+        url: URL_,
+        imageUrl: IMAGE,
+        button: "풀이 보기",
+        description: "오늘 뽑은 카드와 풀이를 볼 수 있어요. 나도 오늘의 한 장을 뽑아 볼 수 있어요.",
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("says why when the link cannot be made, and lets the person try again", async () => {
