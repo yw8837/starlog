@@ -221,6 +221,27 @@ describe("contact details in shared text", () => {
   });
 });
 
+describe("sentences that bring back an earlier reading (A2 SHARE-1)", () => {
+  it("drops a sentence that refers back to an earlier reading of this device, whose question the share cannot hide, and keeps the rest", () => {
+    const back = [
+      "지난번 '전 남친이랑 재회할 수 있을까' 풀이에서 확인해 보자던 신호가 '맞았어요'였다면, 이번에도 마음을 서두르지 않는 쪽이 맞아요.",
+      "지난 풀이에서 본 은둔자가 이번에도 이어져요.",
+      "저번에 물었던 이직 고민과도 닿아 있어요.",
+      "예전 타로 풀이의 결론처럼 기다림이 길어질 수 있어요.",
+      "10월 3일에 '재회 가능성'을 물어보셨던 흐름과 같은 결이에요.",
+      "이전 재물 풀이에서 확인해 보기로 했던 지출 습관을 다시 봐요.",
+    ];
+    expect(sharedVerdict({}, `먼저 짧게 안부를 건네 볼 만한 때예요. ${back.join(" ")} 이번 주 안에 한 번 연락해 봐요.`)).toBe(
+      "먼저 짧게 안부를 건네 볼 만한 때예요. 이번 주 안에 한 번 연락해 봐요.",
+    );
+  });
+
+  it("keeps time words and the spread's own cards: 지난해, 지난달, 지난주, 이전 카드, 앞선 카드", () => {
+    const kept = "지난달부터 이어진 답답함이 풀려요. 지난해의 흐름이 정리되는 때예요. 이전 카드에서 본 망설임이 여기서 풀려요. 앞선 카드의 고요함이 이어져요. 지난주보다 마음이 가벼워요.";
+    expect(sharedVerdict({}, kept)).toBe(kept);
+  });
+});
+
 describe("buildSharePayload (saju)", () => {
   const sajuCtx = { kind: "saju" as const, birth: { calendar: "solar", year: 1990, month: 1, day: 1, isLeapMonth: false, gender: "female", timeKnown: true, hour: 12, minute: 30, placeId: "seoul" }, topic: "love" as const };
   const reading = {
@@ -285,6 +306,12 @@ describe("buildSharePayload (saju)", () => {
 
   it("drops a sentence with contact details", () => {
     expect(sajuBody({}, "흐름이 좋아요. 상담은 010-1234-5678로 해요. 천천히 가요.")).toBe("흐름이 좋아요. 천천히 가요.");
+  });
+
+  it("drops a sentence that brings back an earlier tarot question (전체 흐름 is written with this device's tarot history, A2 SHARE-1)", () => {
+    expect(sajuBody({}, "올해는 사람 운이 열려요. 지난 타로 풀이에서 물었던 이직 고민도 이 흐름과 이어져요. 지난해보다 일이 가벼워져요.")).toBe(
+      "올해는 사람 운이 열려요. 지난해보다 일이 가벼워져요.",
+    );
   });
 
   it("drops a sentence that only quotes the status the user picked (F-08)", () => {

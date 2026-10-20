@@ -238,6 +238,22 @@ export function dropContactSentences(text: string): string {
   return hasContact(text) ? dropSentences(text, hasContact) : text;
 }
 
+/**
+ * A sentence that brings back an earlier reading (A2 SHARE-1): the prompt carries up to three of this
+ * device's earlier readings with their questions (lib/ai/history.ts HISTORY_RULE: "지난번 재물 풀이에서
+ * 확인해 보자던 신호가…"), but the chapter does not, so their words cannot be hidden one by one. 지난번,
+ * 저번, 지난·예전·이전 (주제) 풀이·질문·타로·사주, 물었던, 보자던, 보기로 했던. Time words (지난해, 지난달,
+ * 지난주) and the spread's own cards (이전 카드, 앞선 카드) are not one.
+ */
+const EARLIER_READING =
+  /지난\s?번|저번|(?:지난(?![해달주날밤])|예전|이전|전에\s?(?:본|봤던|보신|보셨던|받은|받았던))\s?(?:(?:타로|사주|재물|금전|연애|재회|직업운?|이직|관계|궁합)\s?)?(?:풀이|질문|타로|사주|리딩)|물었던|물어봤던|물어보셨던|물으셨던|보자던|보기로\s?했던/;
+const bringsBack = (sentence: string) => EARLIER_READING.test(sentence.normalize("NFKC"));
+
+/** The text without every sentence (or line) that brings back an earlier reading. */
+export function dropEarlierReadingSentences(text: string): string {
+  return bringsBack(text) ? dropSentences(text, bringsBack) : text;
+}
+
 /** A quotation the hiding emptied: the reading quoted nothing but the user's own words ('○○', "○○"). */
 const HIDDEN_QUOTE = /['‘’"“”「」『』]○○['‘’"“”「」『』]/;
 const quotesHidden = (sentence: string) => HIDDEN_QUOTE.test(sentence);
@@ -351,7 +367,7 @@ export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: F
       v: 1,
       deck,
       cards: ctx.cards.map(([cardId, orientation], slot) => ({ cardId, orientation, position: positions[slot] ?? "" })),
-      reading: mapStrings(body, (text) => dropHiddenQuotes(hideOwnWords(dropContactSentences(text), words, name))) as unknown as ReadingBody,
+      reading: mapStrings(body, (text) => dropHiddenQuotes(hideOwnWords(dropContactSentences(dropEarlierReadingSentences(text)), words, name))) as unknown as ReadingBody,
     };
   }
   if (ctx.kind === "saju") {
@@ -364,7 +380,7 @@ export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: F
     // The status chips the user picked (전체 흐름) and the one-line concern an older chapter may carry.
     const profile = ctx.profile;
     const words = asPromptSaw([profile?.loveStatus, profile?.workStatus, profile?.concern].filter((text) => !UNSURE.has(text?.trim() ?? "")));
-    const hide = (text: string) => dropHiddenQuotes(hideWords(hidePillars(hideBirth(dropContactSentences(text), ctx.birth)), words));
+    const hide = (text: string) => dropHiddenQuotes(hideWords(hidePillars(hideBirth(dropContactSentences(dropEarlierReadingSentences(text)), ctx.birth)), words));
     return { kind: "saju", v: 1, ...(ctx.topic ? { topic: ctx.topic } : {}), reading: mapStrings(shared, hide) };
   }
   throw new Error(`a ${ctx.kind} reading is not shared yet`);
