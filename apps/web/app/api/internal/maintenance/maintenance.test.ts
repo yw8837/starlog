@@ -7,6 +7,7 @@ import { GIFT_CLAIM_KEEP_MS, RECORD_KEEP_MS, TOSS_CALLS_PER_RUN, TOSS_DEADLINE_M
 import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
 import { insertReadingStatement, newReadingId } from "@/lib/readings/store";
+import { SHARE_TTL_MS } from "@/lib/share/store";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { browser, buy, grantGift, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as confirm } from "../../pay/confirm/route";
@@ -270,7 +271,7 @@ describe("maintenance", () => {
     expect(await one(db, "SELECT account_deleted_at FROM gift_claims")).toEqual({ account_deleted_at: T0 });
   });
 
-  it("purges sessions, year-old gift claims of deleted accounts, dead chapters' follow-up counts, and records past five years", async () => {
+  it("purges sessions, year-old gift claims of deleted accounts, dead chapters' follow-up counts, shares past 180 days, and records past five years", async () => {
     const db = useTestDb();
     await loggedIn("alice");
     await db.batch([
@@ -289,8 +290,11 @@ describe("maintenance", () => {
       db.prepare("INSERT INTO buyer_previews (user_id, product_id, kst_day, n) VALUES ('u_recent', 'deep-tarot', '2026-10-01', 1)"),
       // G1: a chapter's follow-up count is kept a day past its token, then purged.
       db.prepare("INSERT INTO chapter_turns (chapter_id, turns, expires_at) VALUES ('ch_dead', 3, ?), ('ch_live', 1, ?)").bind(T0 - 1, T0 + 1000),
+      // SHARE-3: a share link lives 180 days from when it was made.
+      db.prepare("INSERT INTO shares (id, kind, chapter_key, payload, created_at, user_id) VALUES ('shareold0001', 'tarot', 'k_old', '{}', ?, NULL), ('sharenew0001', 'tarot', 'k_new', '{}', ?, NULL)").bind(T0 - SHARE_TTL_MS, T0 - SHARE_TTL_MS + 1),
     ]);
-    expect(await report()).toMatchObject({ sessions: 1, giftClaims: 1, chapterTurns: 1, purgedAccounts: 1 });
+    expect(await report()).toMatchObject({ sessions: 1, giftClaims: 1, chapterTurns: 1, shares: 1, purgedAccounts: 1 });
+    expect((await db.prepare("SELECT id FROM shares").all()).results).toEqual([{ id: "sharenew0001" }]);
     expect((await db.prepare("SELECT chapter_id FROM chapter_turns").all()).results).toEqual([{ chapter_id: "ch_live" }]);
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_old'")).toEqual({ n: 0 });
     expect(await db.prepare("SELECT user_id FROM buyer_previews").all()).toMatchObject({ results: [{ user_id: "u_recent" }] });

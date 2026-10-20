@@ -1,6 +1,7 @@
 import "server-only";
 import { eraseDeletedAccount } from "@/lib/account/deletion";
 import { purgeChapterTurns } from "@/lib/api/chapterTurns";
+import { purgeExpiredShares } from "@/lib/share/store";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import { sweepStale } from "./ledger";
 import { RECONCILE_AFTER_MS, STALE_CONFIRM_MS, reconcileConfirming, type OrderRow } from "./orders";
@@ -40,6 +41,8 @@ export interface MaintenanceReport {
   giftClaims: number;
   /** follow-up counts of chapters whose token died more than a day ago (G1) */
   chapterTurns: number;
+  /** share links past their 180 days (SHARE-3) */
+  shares: number;
   purgedAccounts: number;
   /** items (or whole steps) that threw; each is logged and the run goes on */
   failed: number;
@@ -97,7 +100,7 @@ function counted(toss: TossClient): { client: TossClient; calls: () => number } 
 export async function runMaintenance(db: D1Binding, toss: TossClient | null, now: number, options: { clock?: () => number } = {}): Promise<MaintenanceReport> {
   const clock = options.clock ?? Date.now;
   const report: MaintenanceReport = {
-    confirming: 0, refunding: 0, released: 0, expired: 0, abandoned: 0, erased: 0, sessions: 0, giftClaims: 0, chapterTurns: 0, purgedAccounts: 0, failed: 0,
+    confirming: 0, refunding: 0, released: 0, expired: 0, abandoned: 0, erased: 0, sessions: 0, giftClaims: 0, chapterTurns: 0, shares: 0, purgedAccounts: 0, failed: 0,
   };
   /** One item or step: its result, or null when it threw (logged, counted, and the run goes on). */
   const attempt = async <T>(evt: string, work: () => Promise<T>, orderId?: string): Promise<T | null> => {
@@ -147,6 +150,9 @@ export async function runMaintenance(db: D1Binding, toss: TossClient | null, now
   });
   await attempt("cron.purge_failed", async () => {
     report.chapterTurns = await purgeChapterTurns(db, now, ROWS_PER_PURGE);
+  });
+  await attempt("cron.purge_failed", async () => {
+    report.shares = await purgeExpiredShares(db, now, ROWS_PER_PURGE);
   });
   await attempt("cron.purge_failed", async () => {
     const purgeable = await db

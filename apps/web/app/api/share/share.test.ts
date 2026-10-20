@@ -6,7 +6,8 @@ import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { issueChapter, type ChapterContext } from "@/lib/security/chapterToken";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
-import { findShare } from "@/lib/share/store";
+import { buildSharePayload } from "@/lib/share/payload";
+import { SHARE_TTL_MS, findShare, purgeExpiredShares, saveShare } from "@/lib/share/store";
 import { browser, loginAs, useTestDb } from "@/lib/testing/p4";
 import { DELETE, POST } from "./route";
 
@@ -126,6 +127,26 @@ describe("the owner of a share", () => {
     expect(await deleteAccount(db, null, { userId: userId as string, now: Date.now() })).toEqual({ ok: true, refunded: 0 });
     expect(await findShare(db, mine.id as string)).toBeNull();
     expect(await findShare(db, anonymous.id as string)).not.toBeNull();
+  });
+});
+
+describe("the life of a share (SHARE-3)", () => {
+  it("answers nothing 180 days after it was made and is purged then; shared again before the purge, it starts its 180 days over", async () => {
+    expect(SHARE_TTL_MS).toBe(180 * DAY);
+    const db = useTestDb();
+    const T0 = Date.parse("2026-10-22T03:00:00Z");
+    const payload = buildSharePayload(ctx, reading, "starlog");
+    const id = await saveShare(db, "key_life", payload, T0);
+    expect(await findShare(db, id, T0 + SHARE_TTL_MS - 1)).not.toBeNull();
+    expect(await findShare(db, id, T0 + SHARE_TTL_MS)).toBeNull();
+    // Sharing the same reading again keeps its address; one past its 180 days starts over.
+    expect(await saveShare(db, "key_life", payload, T0 + 10 * DAY)).toBe(id);
+    expect(await findShare(db, id, T0 + SHARE_TTL_MS)).toBeNull();
+    expect(await saveShare(db, "key_life", payload, T0 + SHARE_TTL_MS + 5)).toBe(id);
+    expect(await findShare(db, id, T0 + 2 * SHARE_TTL_MS)).not.toBeNull();
+    expect(await purgeExpiredShares(db, T0 + 2 * SHARE_TTL_MS + 4)).toBe(0);
+    expect(await purgeExpiredShares(db, T0 + 2 * SHARE_TTL_MS + 5)).toBe(1);
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM shares").first()).toEqual({ n: 0 });
   });
 });
 
