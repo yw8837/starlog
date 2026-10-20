@@ -58,11 +58,15 @@ const subscribe = (listener: () => void) => {
   return () => listeners.delete(listener);
 };
 
-/** The status: undefined until it answers, null when it could not be read. */
+/**
+ * The status: undefined until it answers, null when it could not be read. A screen that mounts after a
+ * failed request asks again (concurrent ones share the request), so one failure does not hide the
+ * premium entries for the rest of the tab (audit B B02).
+ */
 export function usePremiumStatus(): PremiumStatus | null | undefined {
   const value = useSyncExternalStore(subscribe, () => snapshot, () => undefined);
   useEffect(() => {
-    if (snapshot === undefined) void refreshPremiumStatus();
+    if (snapshot === undefined || snapshot === null) void refreshPremiumStatus();
   }, []);
   return value;
 }
