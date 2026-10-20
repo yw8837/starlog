@@ -80,6 +80,27 @@ describe("CheckoutView", () => {
     expect(await screen.findByText("2,900원")).toBeTruthy();
   });
 
+  it("has a premium buyer agree to the premium clauses (이용약관 제7조의3, the refund policy's premium part), linked, in the one check before the one pay button (review 2026-10-20 A1)", async () => {
+    stubFetch(Response.json({ productId: "match", name: "프리미엄 궁합", amount: 7900, customerKey: "c_x", provider: "mock", clientKey: null }));
+    render(<CheckoutView productId="match" returnTo="/premium/match/preview" navigate={vi.fn()} />);
+    expect(await screen.findByText("7,900원")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "이용약관 제7조의3" }).getAttribute("href")).toBe("/terms#premium");
+    expect(screen.getByRole("link", { name: "환불 정책의 프리미엄 풀이" }).getAttribute("href")).toBe("/refund#premium");
+    expect(screen.getAllByRole("checkbox")).toHaveLength(1);
+    const check = screen.getByRole("checkbox", { name: "위 내용과 이용약관 제7조의3, 환불 정책의 프리미엄 풀이 항목에 동의해요" });
+    const pay = screen.getByRole("button", { name: "7,900원 결제하기" }) as HTMLButtonElement;
+    expect(screen.getAllByRole("button", { name: /결제하기/ })).toHaveLength(1);
+    expect(pay.disabled).toBe(true);
+    fireEvent.click(check);
+    expect(pay.disabled).toBe(false);
+  });
+
+  it("keeps the standard readings' check as it is: no premium clause", async () => {
+    render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
+    expect(await screen.findByRole("checkbox", { name: "위 내용을 확인했어요" })).toBeTruthy();
+    expect(document.body.textContent).not.toContain("제7조의3");
+  });
+
   it("explains a product that cannot be bought", async () => {
     stubFetch(Response.json({ code: "NOT_AVAILABLE", message: "지금은 열 수 없는 상품이에요." }, { status: 409 }));
     render(<CheckoutView productId="match" returnTo="/" navigate={() => {}} />);

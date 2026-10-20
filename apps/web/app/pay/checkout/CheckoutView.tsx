@@ -165,9 +165,19 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
               <Link href="/refund">환불 정책</Link>
             </p>
             <p>만 19세 미만이 법정대리인의 동의 없이 결제하면 본인이나 법정대리인이 결제를 취소할 수 있어요.</p>
+            {/* A premium purchase also agrees to the premium clauses, in force from 2026-10-20 (review 2026-10-20 A1). */}
+            {isPremiumId(info.productId) ? (
+              <p>
+                {"프리미엄 풀이에는 "}
+                <Link href="/terms#premium">이용약관 제7조의3</Link>
+                {"과 "}
+                <Link href="/refund#premium">환불 정책의 프리미엄 풀이</Link>
+                {" 항목이 함께 적용돼요."}
+              </p>
+            ) : null}
           </section>
           <Checkbox checked={agreed} onChange={setAgreed} required>
-            위 내용을 확인했어요
+            {isPremiumId(info.productId) ? "위 내용과 이용약관 제7조의3, 환불 정책의 프리미엄 풀이 항목에 동의해요" : "위 내용을 확인했어요"}
           </Checkbox>
           {info.provider === "toss" ? (
             <>
