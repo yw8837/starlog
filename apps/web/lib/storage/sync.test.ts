@@ -1,6 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseAccount } from "@/lib/account/client";
+import { matchesThisFlow, type MatchFlow } from "@/lib/premium/matchFlow";
+import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { clearChapters, listChapters, mergeServerReadings } from "./chapters";
 import { checkDelivery, heldCredit } from "./sync";
 
@@ -115,5 +117,18 @@ describe("checking a cut-off paid or gift reading", () => {
     const controller = new AbortController();
     controller.abort();
     expect(await checkDelivery({ ...flow, method: "paid" }, { delays: [0, 0], fetchImpl, signal: controller.signal })).toEqual({ status: "unknown" });
+  });
+});
+
+describe("a cut-off 궁합 (review 2026-10-20 A4)", () => {
+  it("finds this flow's reading, not another 궁합 of the same relation on the account with another own birth", async () => {
+    const mine: MatchFlow = { me: DEFAULT_SAJU_FORM, partner: { ...DEFAULT_SAJU_FORM, year: 1992 }, relation: "friend", ack: true };
+    const theirs: MatchFlow = { ...mine, me: { ...DEFAULT_SAJU_FORM, year: 1988, gender: "male" } };
+    const chapter = (flow: MatchFlow) => ({ kind: "match", relation: "friend", relationLabel: "친구", me: { birth: flow.me }, reading: {}, chapterToken: "" });
+    const other = { id: "zzzzzzzzzz0123456789", createdAt: STARTED + 60_000, chapter: chapter(theirs) };
+    const own = { id: ID, createdAt: STARTED + 30_000, chapter: chapter(mine) };
+    const matchFlow = { startedAt: STARTED, matches: (c: unknown) => matchesThisFlow(c, mine), productId: "match", method: "paid" as const };
+    expect(await checkDelivery(matchFlow, { delays: [0], fetchImpl: stub([other, own], me(userWith())) })).toEqual({ status: "delivered", reading: own });
+    expect(await checkDelivery(matchFlow, { delays: [0], fetchImpl: stub([other], me(userWith())) })).toEqual({ status: "unknown" });
   });
 });

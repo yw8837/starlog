@@ -91,6 +91,24 @@ export function matchBody(flow: MatchFlow) {
   };
 }
 
+/**
+ * The account's copy of this flow's 궁합, found after a cut-off (lib/storage/sync.ts checkDelivery): the same relation,
+ * label and concern, and the same own birth (me.birth), so two 궁합 of one relation on one account never cross (review
+ * 2026-10-20 A4). Never the other person's birth: the account's copy holds none (owner 2026-10-16).
+ */
+export function matchesThisFlow(chapter: unknown, flow: MatchFlow): boolean {
+  const body = matchBody(flow);
+  if (!body || !isRecord(chapter) || chapter.kind !== "match") return false;
+  const me = isRecord(chapter.me) ? sanitizeSajuForm(chapter.me.birth) : null;
+  return (
+    chapter.relation === body.relation &&
+    (chapter.partnerLabel ?? "") === (body.partner.label ?? "") &&
+    (chapter.concern ?? "") === (body.concern ?? "") &&
+    me !== null &&
+    JSON.stringify(me) === JSON.stringify(sanitizeSajuForm(body.me.birth))
+  );
+}
+
 const store = createSessionStore<MatchFlow>(MATCH_FLOW_KEY, (value) => sanitizeMatchFlow(value));
 
 /** `flow` is undefined until the browser snapshot is read; {} when nothing is kept. */

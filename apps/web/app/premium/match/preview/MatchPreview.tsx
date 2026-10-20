@@ -17,7 +17,7 @@ import { useAccount } from "@/lib/account/client";
 import { withFlags } from "@/lib/flowState";
 import { approxCharsText } from "@/lib/pricing";
 import { clearPremiumResume, pendingResumeToken, premiumApiPath } from "@/lib/premium/client";
-import { clearMatchFlow, matchBody, matchReady, relationLabel, useMatchFlow } from "@/lib/premium/matchFlow";
+import { clearMatchFlow, matchBody, matchReady, matchesThisFlow, relationLabel, useMatchFlow } from "@/lib/premium/matchFlow";
 import { PREMIUM } from "@/lib/premium/products";
 import { usePremiumStatus } from "@/lib/premium/status";
 import { usePremiumOpen } from "@/lib/premium/useOpen";
@@ -94,12 +94,9 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     autoOpen: autoUnlock,
     ready: Boolean(preview) || (holds && teaserFailed),
     accept: isMatchReading,
-    // This flow's reading, written after it started: the same relation, label and concern (the account's copy holds no
-    // partner, owner 2026-10-16; and no cards since the 궁합 is saju only, 2026-10-17).
-    matches: (chapter) => {
-      const c = chapter as { kind?: string; relation?: string; partnerLabel?: string; concern?: string };
-      return c.kind === ID && c.relation === flow?.relation && (c.partnerLabel ?? "") === (body?.partner.label ?? "") && (c.concern ?? "") === (body?.concern ?? "");
-    },
+    // This flow's reading, written after it started: the same relation, label, concern and own birth, never the partner's
+    // (the account's copy holds no partner, owner 2026-10-16; review 2026-10-20 A4).
+    matches: (chapter) => (flow ? matchesThisFlow(chapter, flow) : false),
     save: (done) => {
       const { chapter } = saveChapter({
         kind: ID,
