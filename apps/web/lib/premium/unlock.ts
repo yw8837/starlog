@@ -6,7 +6,7 @@ import type { SpendKind } from "@/lib/api/spend";
 import type { GenerationOutcome, Settlement } from "@/lib/api/stream";
 import type { D1Binding } from "@/lib/db/d1";
 import { deliverUnlock, entitlements, extendUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
-import { payKeyMode } from "@/lib/pay/mode";
+import { payKeyMode, paymentsUnbacked } from "@/lib/pay/mode";
 import { insertReadingStatement, newReadingId, readingExists, type ServerChapter } from "@/lib/readings/store";
 import type { PremiumId } from "./products";
 import { openResume, type Resume } from "./resume";
@@ -189,9 +189,6 @@ export function premiumSettlement(plan: PremiumPlan, chapterOf: (body: Record<st
     },
   };
 }
-
-/** The same test as lib/api/unlock.ts planUnlock (security M2): on a production deploy's test keys a payment charged nobody. */
-export const paymentsUnbacked = (): boolean => process.env.NODE_ENV === "production" && payKeyMode() === "test";
 
 /** The signed-in user's id when they hold an unopened purchase of `product` (previews stay open for them when sales close), else null. */
 export async function unusedBuyer(request: Request, now: number, product: PremiumId): Promise<string | null> {

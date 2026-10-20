@@ -7,6 +7,7 @@ import { profileOf } from "@/lib/api/sajuRequest";
 import type { SajuProfile } from "@/lib/ai/prompts/saju";
 import { answeredTurns } from "@/lib/api/chapterTurns";
 import type { D1Binding } from "@/lib/db/d1";
+import { paymentsUnbacked } from "@/lib/pay/mode";
 import { MatchBody, READING_MAX_BYTES } from "@/lib/premium/inputs";
 import { openPartner, sealPartner } from "@/lib/premium/partnerSeal";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
@@ -53,7 +54,7 @@ async function paidFor(db: D1Binding, userId: string, readingId: string): Promis
     )
     .bind(readingId, userId)
     .first<{ source: string; mode: string | null }>();
-  return row?.source === "paid" && !(process.env.NODE_ENV === "production" && row.mode === "test");
+  return row?.source === "paid" && !paymentsUnbacked(process.env, row.mode);
 }
 
 export async function POST(request: Request): Promise<Response> {

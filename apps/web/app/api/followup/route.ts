@@ -10,7 +10,7 @@ import { respondGeneration } from "@/lib/api/stream";
 import { saveFollowUpTurn } from "@/lib/readings/turns";
 import { isSajuTopicId } from "@/lib/sajuTopics";
 import { OPENING_KEEP_ONLY } from "@/lib/helpGuide";
-import { payKeyMode } from "@/lib/pay/mode";
+import { paymentsUnbacked } from "@/lib/pay/mode";
 import { preparePremiumFollowUp } from "@/lib/premium/followup";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import { isOpeningChapter, isPremiumChapter, issueChapter, openChapter } from "@/lib/security/chapterToken";
@@ -50,7 +50,7 @@ export async function POST(request: Request): Promise<Response> {
   // payment). A premium token from before that rule: the same test as a premium reading's (lib/premium/unlock.ts, M2); a
   // standard one: not paid, as before.
   const signedPaid = chapter.ctx.paid;
-  const paid = typeof signedPaid === "boolean" ? signedPaid : premium && !(process.env.NODE_ENV === "production" && payKeyMode() === "test");
+  const paid = typeof signedPaid === "boolean" ? signedPaid : premium && !paymentsUnbacked();
   const limited = premium ? await checkServerLimits(gate, "followup", { scope: "day" }, { credit: paid, paid }) : null;
   if (limited) return limited;
   const quota = premium ? null : await checkQuota(gate, "followup", { scope: "day" }, { credit: paid, paid });

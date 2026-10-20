@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loginOpen, payConfigProblems, payKeyMode, payProvider, paymentsMode, salesOpen, tossClientKey } from "./mode";
+import { loginOpen, payConfigProblems, payKeyMode, payProvider, paymentsMode, paymentsUnbacked, salesOpen, tossClientKey } from "./mode";
 
 const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
 const KEYS = { NEXT_PUBLIC_TOSS_CLIENT_KEY: "test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm", TOSS_SECRET_KEY: "test_gsk_docs_OaPz8L5KdmQXkzRz3y47BMw6" };
@@ -23,6 +23,15 @@ describe("payment modes", () => {
     expect([salesOpen("on", false, prodTest), salesOpen("on", true, prodTest), salesOpen("owner", true, prodTest), salesOpen("off", true, prodTest)]).toEqual([false, true, true, false]);
     expect([loginOpen("on", false, prodTest), loginOpen("owner", true, prodTest)]).toEqual([false, true]);
     expect([salesOpen("on", false, prodLive), salesOpen("on", false, env({ NODE_ENV: "development", ...KEYS }))]).toEqual([true, true]);
+  });
+
+  it("voids a payment made with test keys on a production deploy, and only that: this deploy's keys, or a payment's recorded mode (B05, M2)", () => {
+    const prodTest = env({ NODE_ENV: "production", ...KEYS });
+    const prodLive = env({ NODE_ENV: "production", NEXT_PUBLIC_TOSS_CLIENT_KEY: "live_gck_a", TOSS_SECRET_KEY: "live_gsk_b" });
+    const prodNone = env({ NODE_ENV: "production" });
+    const devTest = env({ NODE_ENV: "development", ...KEYS });
+    expect([paymentsUnbacked(prodTest), paymentsUnbacked(prodLive), paymentsUnbacked(prodNone), paymentsUnbacked(devTest)]).toEqual([true, false, false, false]);
+    expect([paymentsUnbacked(prodLive, "test"), paymentsUnbacked(prodTest, "live"), paymentsUnbacked(prodTest, null), paymentsUnbacked(devTest, "test")]).toEqual([true, false, false, false]);
   });
 
   it("names the keys a deploy runs with: test, live, the mock outside production, or none", () => {

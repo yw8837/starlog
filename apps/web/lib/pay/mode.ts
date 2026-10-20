@@ -26,7 +26,7 @@ export function paymentsMode(env: NodeJS.ProcessEnv = process.env): PaymentsMode
  * public must never be able to buy credit with one (security M1).
  */
 export function salesOpen(mode: PaymentsMode, owner: boolean, env: NodeJS.ProcessEnv = process.env): boolean {
-  if (env.NODE_ENV === "production" && payKeyMode(env) === "test") return owner && (mode === "on" || mode === "owner");
+  if (paymentsUnbacked(env)) return owner && (mode === "on" || mode === "owner");
   return mode === "on" || (mode === "owner" && owner);
 }
 
@@ -53,6 +53,16 @@ export function payKeyMode(env: NodeJS.ProcessEnv = process.env): PayKeyMode | n
   if (payProvider(env) === "mock") return env.NODE_ENV === "production" ? null : "mock";
   const secret = env.TOSS_SECRET_KEY?.trim() ?? "";
   return secret.startsWith("live_") ? "live" : secret.startsWith("test_") ? "test" : null;
+}
+
+/**
+ * Security M1/M2, the one rule (B05): a payment made with test keys on a production deploy charged nobody,
+ * so it earned nothing: sales open to the owner only (salesOpen), and such a purchase is held and counted
+ * like a free reading, its follow-ups booked like free ones. `mode`: whose keys, this deploy's by default,
+ * or a payment's recorded payments.mode.
+ */
+export function paymentsUnbacked(env: NodeJS.ProcessEnv = process.env, mode: string | null = payKeyMode(env)): boolean {
+  return env.NODE_ENV === "production" && mode === "test";
 }
 
 /**

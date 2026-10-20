@@ -5,7 +5,7 @@ import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import type { D1Binding } from "@/lib/db/d1";
 import { GIFT_PRODUCT, type StandardProductId } from "@/lib/pay/catalog";
 import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
-import { payKeyMode } from "@/lib/pay/mode";
+import { payKeyMode, paymentsUnbacked } from "@/lib/pay/mode";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { insertReadingStatement, newReadingId, readingExists, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
 import { checkFirstFree, checkServerLimits, errorResponse, type Gate } from "./http";
@@ -65,7 +65,7 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
   if (isReviewAccount(user) && !(await isReviewer(user, ctx.accountSecret))) return errorResponse("NOT_AVAILABLE");
   // A paid opening on a production deploy's test keys earned nothing (a test payment charges nobody):
   // it is held and counted like a free one (security M2).
-  const unbacked = method === "paid" && process.env.NODE_ENV === "production" && payKeyMode() === "test";
+  const unbacked = method === "paid" && paymentsUnbacked();
   if (method === "free" || unbacked) {
     // Gift readings cost us what free readings cost: the free budget and the network cap apply (minor 4).
     // A credit pays for them, so not the network's free-tier cost share (SEC-01).

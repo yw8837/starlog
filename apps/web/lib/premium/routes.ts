@@ -6,6 +6,7 @@ import { respondGeneration } from "@/lib/api/stream";
 import { checkBot } from "@/lib/api/turnstile";
 import { sessionCookieName } from "@/lib/account/session";
 import { GenerationError } from "@/lib/ai/provider";
+import { paymentsUnbacked } from "@/lib/pay/mode";
 import { chapterIdOf, issueChapter } from "@/lib/security/chapterToken";
 import { kstDay, nextKstMidnight } from "@/lib/security/quota";
 import type { Adapter } from "./adapters";
@@ -14,7 +15,7 @@ import { READING_MAX_BYTES, TEASER_MAX_BYTES } from "./inputs";
 import { PREMIUM_CHAPTER_TTL_MS, type PremiumId } from "./products";
 import { inputHash, sealResume } from "./resume";
 import { PART_COUNTS, runNextPart, type PremiumContext } from "./run";
-import { paymentsUnbacked, planPremiumUnlock, premiumSettlement, unusedBuyer } from "./unlock";
+import { planPremiumUnlock, premiumSettlement, unusedBuyer } from "./unlock";
 
 /** A buyer's previews of one product per KST day (review 2026-10-17 H2): they skip the free counts, so this bounds them. */
 export const BUYER_PREVIEWS_PER_DAY = 5;
