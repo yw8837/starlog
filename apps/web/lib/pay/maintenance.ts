@@ -53,6 +53,8 @@ function purgeStatements(db: D1Binding, userId: string): D1Statement[] {
     db.prepare("DELETE FROM sessions WHERE user_id = ?").bind(userId),
     // The erase deleted them already; one an interrupted erase left behind must not block the purge.
     db.prepare("DELETE FROM readings WHERE user_id = ?").bind(userId),
+    // Preview counts: the erase deletes them too; an account erased before it did keeps them until here.
+    db.prepare("DELETE FROM buyer_previews WHERE user_id = ?").bind(userId),
     db.prepare("DELETE FROM users WHERE id = ? AND erased_at IS NOT NULL").bind(userId),
   ];
 }

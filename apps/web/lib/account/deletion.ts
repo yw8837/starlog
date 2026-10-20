@@ -108,7 +108,7 @@ const DELETED = "EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NOT 
  * Erases a deleted account's personal data in one batch, keeping what the law keeps:
  * - an unused signup gift is forfeited (its ledger rows stay), and so is a purchase given back after
  *   its client left (SEC-02: never refunded);
- * - saved readings, share links and sessions are deleted, and the account's reviews with their 도움돼요 and reports;
+ * - saved readings, share links, sessions and premium preview counts are deleted, and the account's reviews with their 도움돼요 and reports;
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
  * - orders that never reached Toss are closed;
  * - kakao_key and nickname are blanked and erased_at set.
@@ -129,6 +129,7 @@ export async function eraseDeletedAccount(db: D1Binding, userId: string, now: nu
     db.prepare(`DELETE FROM readings WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM shares WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db.prepare(`DELETE FROM sessions WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
+    db.prepare(`DELETE FROM buyer_previews WHERE user_id = ? AND ${DELETED}`).bind(userId, userId),
     db
       .prepare(`UPDATE gift_claims SET account_deleted_at = ? WHERE kakao_key = (SELECT kakao_key FROM users WHERE id = ? AND deleted_at IS NOT NULL)`)
       .bind(now, userId),

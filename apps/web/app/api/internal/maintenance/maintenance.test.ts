@@ -284,9 +284,13 @@ describe("maintenance", () => {
       db.prepare("INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES ('s_old', 'u_recent', 0, ?)").bind(T0 - 1),
       // A reading an interrupted erase left behind does not stop the purge.
       db.prepare("INSERT INTO readings (id, user_id, kind, product_id, source, payload, key_version, created_at, updated_at) VALUES ('r_old', 'u_old', 'tarot', 'tarot', 'paid', 'p', 1, 0, 0)"),
+      // Preview counts erased before deletions took them (A2 PII-2): purged with the account, a recent one's kept.
+      db.prepare("INSERT INTO buyer_previews (user_id, product_id, kst_day, n) VALUES ('u_old', 'deep-tarot', '2021-10-01', 1)"),
+      db.prepare("INSERT INTO buyer_previews (user_id, product_id, kst_day, n) VALUES ('u_recent', 'deep-tarot', '2026-10-01', 1)"),
     ]);
     expect(await report()).toMatchObject({ sessions: 1, giftClaims: 1, purgedAccounts: 1 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_old'")).toEqual({ n: 0 });
+    expect(await db.prepare("SELECT user_id FROM buyer_previews").all()).toMatchObject({ results: [{ user_id: "u_recent" }] });
     expect(await one(db, "SELECT COUNT(*) AS n FROM payments WHERE payment_key = 'pk_old'")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE id = 'u_recent'")).toEqual({ n: 1 });

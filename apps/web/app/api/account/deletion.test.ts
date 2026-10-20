@@ -68,11 +68,17 @@ describe("account deletion", () => {
     const userId = await userIdOf(db);
     const chapter = { kind: "tarot" as const, question: "지울 질문", reading: { verdict: "v" }, chapterToken: "t", createdAt: T0, turns: [], followUpsLeft: 3 };
     await (await insertReadingStatement(db, accountSecret()!, { id: newReadingId(), userId, productId: "tarot", source: "paid", unlockId: null, chapter, now: T0 })).run();
+    // A buyer's preview counts (A2 PII-2): the account's go with it, another account's stay.
+    await db.batch([
+      db.prepare("INSERT INTO buyer_previews (user_id, product_id, kst_day, n) VALUES (?, 'deep-tarot', '2026-10-20', 2)").bind(userId),
+      db.prepare("INSERT INTO buyer_previews (user_id, product_id, kst_day, n) VALUES ('u_someone_else', 'deep-tarot', '2026-10-20', 1)"),
+    ]);
 
     expect(await deleteAs(b, "alice")).toBe("http://localhost/me?account=deleted");
     expect(b.jar.has("sl_sid")).toBe(false);
     expect(await one(db, "SELECT kakao_key, nickname, deleted_at, erased_at FROM users")).toEqual({ kakao_key: null, nickname: null, deleted_at: T0, erased_at: T0 });
     expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
+    expect(await db.prepare("SELECT user_id FROM buyer_previews").all()).toMatchObject({ results: [{ user_id: "u_someone_else" }] });
     expect(await one(db, "SELECT COUNT(*) AS n FROM sessions")).toEqual({ n: 0 });
     expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(orderId).first()).toEqual({ status: "refunded" });
     expect((await mockToss.getPaymentByOrder(orderId)).status).toBe("CANCELED");
