@@ -24,9 +24,9 @@ type Paid = { status: "paid"; returnTo: string; signedIn: boolean };
 /** The only answers that end the page: Toss refused, or the server cannot read the request. Anything else may still be charged. */
 const FINAL = new Set(["PAY_FAILED", "BAD_REQUEST"]);
 /** Keep asking a little past the server's 15 minutes, after which a confirm that never landed is decided. */
-const WAIT_MS = 16 * 60_000;
+export const WAIT_MS = 16 * 60_000;
 /** Toss keeps an approval open for 10 minutes: an order still `created` is confirmed again until then. */
-const CONFIRM_WINDOW_MS = 10 * 60_000;
+export const CONFIRM_WINDOW_MS = 10 * 60_000;
 /** After this long without an answer the page explains itself and offers 다시 확인하기 and 내 정보 (F-01). */
 const SLOW_MS = 20_000;
 

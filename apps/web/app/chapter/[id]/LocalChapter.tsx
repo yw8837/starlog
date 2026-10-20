@@ -42,7 +42,7 @@ import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { isDeepTarotReading, isFollowUpData, isNewYearReading, isStoredMatchReading, isWholeSajuReading, partialTarotReading } from "@/lib/reading/validate";
 
 /** Chapter tokens expire 7 days after the reading, 30 for a premium one (the server's rule): no follow-ups after that. */
-const FOLLOW_UP_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+export const FOLLOW_UP_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**

@@ -20,7 +20,7 @@ export const MODEL = DEFAULT_MODEL;
 /** The `"default"` scalar form of `fallbacks` needs exactly this beta header. */
 export const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 /** Matches the routes' overall generation budget (lib/api/stream.ts). */
-const TIMEOUT_MS = 240_000;
+export const TIMEOUT_MS = 240_000;
 
 const clients = new Map<string, Anthropic>();
 

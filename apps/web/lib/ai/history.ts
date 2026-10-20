@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { SajuTopic } from "@/lib/reading/types";
+import { CHECKIN_ANSWERS, type SajuTopic } from "@/lib/reading/types";
 
 /**
  * Up to three earlier readings the device kept (date, kind, question, verdict, the observation and
@@ -9,15 +9,14 @@ import type { SajuTopic } from "@/lib/reading/types";
 
 const text = (max: number) => z.string().trim().max(max);
 
-export const CHECKINS = ["맞았어요", "아직이에요", "다르게 흘렀어요"] as const;
-
 export const HistoryItemSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   kind: z.enum(["tarot", "saju"]),
   question: text(60),
   verdict: text(80),
   observation: text(120).optional(),
-  checkin: z.enum(CHECKINS).optional(),
+  /** the device's own list (B04): a new answer there can never make every request with it a 400 */
+  checkin: z.enum(CHECKIN_ANSWERS).optional(),
   /** 주제별 사주: a saju record's topic (saju-topics spec §7.8) */
   topic: z.enum(["love", "reunion", "money", "career"]).optional(),
 });

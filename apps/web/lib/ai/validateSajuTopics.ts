@@ -19,7 +19,7 @@ import {
  * regenerates once with the findings as feedback, then fails as QUALITY (lib/ai/provider.ts).
  */
 
-const ALL: readonly SajuTopicId[] = ["love", "reunion", "money", "career"];
+export const ALL: readonly SajuTopicId[] = ["love", "reunion", "money", "career"];
 
 /**
  * "~지 않아요" declines. "~지 않아도 재회하게 돼요" and "~지 않고도" concede and then say it anyway, so they decline nothing;
