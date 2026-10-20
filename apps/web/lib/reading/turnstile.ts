@@ -8,7 +8,7 @@
  * cannot load, the challenge fails or times out, or the caller leaves: never a silent wait.
  */
 
-const SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+export const TURNSTILE_SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 /** The script loads within this, or the check fails (the next request tries again). */
 const LOAD_MS = 15_000;
 /** A challenge answers within this, an interactive one included, or it fails. */
@@ -53,7 +53,7 @@ function loadScript(): Promise<TurnstileApi | null> {
       resolve(window.turnstile ?? null);
     };
     const timer = setTimeout(done, LOAD_MS);
-    script.src = SCRIPT_URL;
+    script.src = TURNSTILE_SCRIPT_URL;
     script.async = true;
     script.onload = done;
     script.onerror = done;

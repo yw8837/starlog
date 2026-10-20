@@ -203,6 +203,24 @@ describe("next.config.ts", () => {
     expect(rule?.headers).toContainEqual({ key: "X-Frame-Options", value: "DENY" });
   });
 
+  it("reports, never blocks, scripts from anywhere but this site and the third parties the code loads (CSP report-only)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "");
+    const { default: nextConfig } = await import("@/next.config");
+    const [rule] = await nextConfig.headers!();
+    // The enforced policy stays frame-ancestors only: nothing a report-only policy says can break a page.
+    expect(rule?.headers).toContainEqual({ key: "Content-Security-Policy", value: "frame-ancestors 'none'" });
+    const policy = rule?.headers.find((header) => header.key === "Content-Security-Policy-Report-Only")?.value ?? "";
+    const scriptSrc = policy.split(";").map((part) => part.trim()).find((part) => part.startsWith("script-src "))?.split(/\s+/) ?? [];
+    expect(scriptSrc).toEqual(expect.arrayContaining(["'self'", "'unsafe-inline'"]));
+    const { KAKAO_SDK } = await import("@/lib/kakaoShare");
+    const { TOSS_SDK_URL } = await import("@/lib/pay/tossSdk");
+    const { TURNSTILE_SCRIPT_URL } = await import("@/lib/reading/turnstile");
+    const { adsScriptSrc } = await import("@/lib/ads");
+    for (const url of [KAKAO_SDK.src, TOSS_SDK_URL, TURNSTILE_SCRIPT_URL, adsScriptSrc("ca-pub-0000000000000000")]) expect(scriptSrc).toContain(new URL(url).origin);
+    expect(policy).toContain("object-src 'none'");
+    expect(policy).toContain("base-uri 'self'");
+  });
+
   it("in the deploy build, drops includeSubDomains on the root domain only, with an entry after the global one so it wins there", async () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     const { default: nextConfig } = await import("@/next.config");
