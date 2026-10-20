@@ -6,7 +6,7 @@ import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type Erro
 import { advanceProgress, startProgress, type ProgressPlan, type ProgressState } from "@/lib/reading/progress";
 import { mergeServerReadings } from "@/lib/storage/chapters";
 import { LATER_CHECK_DELAYS, OPENING_WINDOW_MS, checkDelivery, heldCredit, pullAccountReadings, type DeliveryCheck, type HeldCredit } from "@/lib/storage/sync";
-import { pendingResume, runPremiumReading, type PremiumDone } from "./client";
+import { clearPremiumResume, pendingResume, runPremiumReading, type PremiumDone } from "./client";
 import type { PremiumId } from "./products";
 
 /** Errors after which a paid part may still have been saved (P4 M4): the account is asked before anything is said. */
@@ -95,6 +95,9 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
         const readingId = result.reading.id;
         void (async () => {
           await onDelivered?.(readingId);
+          // Done: a resume token left in this tab would make the next purchase with this input read as opened (B12).
+          // Only after onDelivered, which may still need it (a 궁합 asks its chapter token again with it, H3).
+          clearPremiumResume(id);
           router.push(`/chapter/${readingId}`);
         })();
       } else if (result.status === "kept") {
@@ -116,12 +119,16 @@ export function usePremiumOpen<R>({ id, input, plans, returnTo, matches, accept,
   };
 
   const fail = async (failure: ApiError, chosen: "paid" | "owner", startedAt: number, held: HeldCredit) => {
-    if (failure.code === "LOGIN_REQUIRED") router.push(loginHref(returnTo));
+    if (failure.code === "LOGIN_REQUIRED") {
+      router.push(loginHref(returnTo));
+      return;
+    }
     if (failure.code === "NOT_AVAILABLE" && failure.reason === "opened" && failure.readingId) {
       // Already written and saved (a retry after a missed answer): bring the account's copy here and open it.
       await pullAccountReadings();
       void refreshAccount();
       await onDelivered?.(failure.readingId);
+      clearPremiumResume(id);
       router.push(`/chapter/${failure.readingId}`);
       return;
     }
