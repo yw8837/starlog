@@ -291,19 +291,35 @@ const BRANCHES_KO = "자축인묘진사오미신유술해";
 const PAIR = `[${STEMS}][${BRANCHES}]`;
 const readPair = (pair: string) => `${STEMS_KO[STEMS.indexOf(pair[0]!)]}${BRANCHES_KO[BRANCHES.indexOf(pair[1]!)]}`;
 
+/** A year's own name right after a year ("2026년 병오(丙午)년", "올해 丙午년"): about the calendar, not the birth. */
+const YEAR_BEFORE = /(?:\d{4}년|올해|내년|작년|새해)\s?$/;
+const YEAR_AFTER = /^\s?년(?!생)/;
+const yearName = (text: string, start: number, end: number) =>
+  YEAR_BEFORE.test(text.slice(Math.max(0, start - 8), start)) && YEAR_AFTER.test(text.slice(end, end + 3));
+/** A bare pair's whole name when it sits in one ("병오(丙午)", "丙午(병오)"), so a kept year name stays whole. */
+const nameSpan = (text: string, start: number, end: number): [number, number] => {
+  const before = /[가-힣]{2}\s?[(（]$/.exec(text.slice(Math.max(0, start - 4), start));
+  if (before && /^[)）]/.test(text.slice(end))) return [start - before[0].length, end + 1];
+  const after = /^\s?[(（][가-힣]{2}[)）]/.exec(text.slice(end));
+  return after ? [start, end + after[0].length] : [start, end];
+};
+
 /**
  * The text without any 간지 pair written in hanja, nor its Hangul reading beside it ("경신(庚申)", "庚申(경신)",
  * "庚申" → ○○): the chart's pillars give the birth month and year away (A2 SHARE-2). Every pair, since the
- * builder has no chart to tell the user's pillars from a 대운's (which gives the month away too) or a
- * year's. A pillar named in Hangul only ("월주 경신") stays: without the chart it is an ordinary word.
+ * builder has no chart to tell the user's pillars from a 대운's (which gives the month away too), except a
+ * year's own name right after that year (yearName). A pillar named in Hangul only ("월주 경신") stays:
+ * without the chart it is an ordinary word.
  */
 function hidePillars(text: string): string {
   return text
-    .replace(new RegExp(String.raw`([가-힣]{2})\s?[(（](${PAIR})[)）]`, "g"), (whole, ko: string, pair: string) =>
-      readPair(pair) === ko ? HIDDEN : whole.replace(pair, HIDDEN),
+    .replace(new RegExp(String.raw`([가-힣]{2})\s?[(（](${PAIR})[)）]`, "g"), (whole, ko: string, pair: string, at: number, all: string) =>
+      yearName(all, at, at + whole.length) ? whole : readPair(pair) === ko ? HIDDEN : whole.replace(pair, HIDDEN),
     )
-    .replace(new RegExp(String.raw`(${PAIR})\s?[(（]([가-힣]{2})[)）]`, "g"), (whole, pair: string, ko: string) => (readPair(pair) === ko ? HIDDEN : whole))
-    .replace(new RegExp(PAIR, "g"), HIDDEN);
+    .replace(new RegExp(String.raw`(${PAIR})\s?[(（]([가-힣]{2})[)）]`, "g"), (whole, pair: string, ko: string, at: number, all: string) =>
+      yearName(all, at, at + whole.length) || readPair(pair) !== ko ? whole : HIDDEN,
+    )
+    .replace(new RegExp(PAIR, "g"), (pair, at: number, all: string) => (yearName(all, ...nameSpan(all, at, at + pair.length)) ? pair : HIDDEN));
 }
 
 /** Every string in a JSON value, rewritten by `edit` (objects and arrays keep their shape). */

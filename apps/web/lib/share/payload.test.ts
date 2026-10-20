@@ -305,6 +305,16 @@ describe("buildSharePayload (saju)", () => {
     expect(shared.kind === "saju" ? shared.reading.glance?.thisYear : "").toBe("일지 오화(午火)와 ○○가 만나 불 기운이 강해요.");
   });
 
+  it("keeps a year's own name after a year ('2026년 병오(丙午)년', '올해 丙午년'): it says nothing about the birth", () => {
+    expect(sajuBody({}, "2026년 병오(丙午)년에는 불 기운이 강해요. 올해 丙午년은 바빠요. 내년 정미(丁未)년도 이어져요.")).toBe(
+      "2026년 병오(丙午)년에는 불 기운이 강해요. 올해 丙午년은 바빠요. 내년 정미(丁未)년도 이어져요.",
+    );
+    // A birth year, or a pair after "년" with no year before it, is still hidden.
+    expect(sajuBody({}, "을해(乙亥)년생이라 2026년 경신(庚申)월에 바빠요. 병오(丙午)년인 올해는 좋아요.")).toBe(
+      "○○년생이라 2026년 ○○월에 바빠요. ○○년인 올해는 좋아요.",
+    );
+  });
+
   it("keeps a pillar named in Hangul only: without the chart it cannot be told from an ordinary word", () => {
     expect(sajuBody({}, "월주 경신에 비견이 있어요.")).toBe("월주 경신에 비견이 있어요.");
   });
