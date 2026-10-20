@@ -8,6 +8,7 @@ import {
   RESERVATION_MS,
   deliverUnlock,
   entitlements,
+  extendUnlock,
   giftExpiry,
   grantSignupGift,
   grantStatements,
@@ -221,6 +222,45 @@ export function ledgerContract(make: Make) {
     expect(await lockPaidLotForRefund(db, "order_a", NOW + 3)).toBeNull();
     expect((await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + 4, payMode: "live" })).ok).toBe(true);
     await expectLotsMatchLedger(db);
+  });
+
+  it("keeps a premium purchase whose first part was written reopenable but no longer refundable once its reservation lapses (L-2)", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_ny", "newyear-2027");
+    const premium = async (now: number, partSeq: number) => {
+      const result = await reserveUnlock(db, { userId: "u_1", productId: "newyear-2027", currency: "paid", now, payMode: "live", earmarked: true, partSeq });
+      if (!result.ok) throw new Error("not reserved");
+      return result;
+    };
+    const first = await premium(NOW, 1);
+    // Part 1 written: the continue extends the hold. Then the next part never comes and the hold lapses.
+    expect(await extendUnlock(db, { unlockId: first.unlockId, userId: "u_1", now: NOW + 60_000 })).toBe(true);
+    expect(await sweepStale(db, NOW + 60_000 + RESERVATION_MS + 1)).toEqual({ released: 1, expired: 0 });
+    const later = NOW + 60_000 + RESERVATION_MS + 2;
+    expect(await lotById(db, "lot_order_ny")).toMatchObject({ status: "active", units_left: 1 });
+    expect((await entitlements(db, "u_1", later)).unused).toEqual([{ orderId: "order_ny", productId: "newyear-2027", paidAt: NOW, refundable: false }]);
+    expect(await orderHistory(db, "u_1")).toMatchObject([{ orderId: "order_ny", refundable: false }]);
+    expect(await lockPaidLotForRefund(db, "order_ny", later)).toBeNull();
+    // A server failure on the resumed part 2 gives it back the same way, never counted as the client leaving.
+    const resumed = await premium(later + 1, 2);
+    expect(await releaseUnlock(db, { unlockId: resumed.unlockId, now: later + 2 })).toBe(true);
+    expect(await lockPaidLotForRefund(db, "order_ny", later + 3)).toBeNull();
+    expect(await count(db, "SELECT COUNT(*) AS n FROM ledger WHERE idem_key LIKE 'restore-left:%'")).toBe(0);
+    expect((await premium(later + 4, 2)).allocations).toEqual([["lot_order_ny", 1]]);
+    await expectLotsMatchLedger(db);
+  });
+
+  it("keeps a premium purchase that never wrote a part refundable after its reservation lapses or fails (L-2)", async () => {
+    const db = await setup(make);
+    await paidOrder(db, "order_ny", "newyear-2027");
+    const premium = (now: number) => reserveUnlock(db, { userId: "u_1", productId: "newyear-2027", currency: "paid", now, payMode: "live", earmarked: true, partSeq: 1 });
+    expect((await premium(NOW)).ok).toBe(true);
+    expect(await sweepStale(db, NOW + RESERVATION_MS + 1)).toEqual({ released: 1, expired: 0 });
+    const failed = await premium(NOW + RESERVATION_MS + 2);
+    if (!failed.ok) throw new Error("not reserved");
+    expect(await releaseUnlock(db, { unlockId: failed.unlockId, now: NOW + RESERVATION_MS + 3 })).toBe(true);
+    expect((await entitlements(db, "u_1", NOW + RESERVATION_MS + 4)).unused).toEqual([{ orderId: "order_ny", productId: "newyear-2027", paidAt: NOW, refundable: true }]);
+    expect(await lockPaidLotForRefund(db, "order_ny", NOW + RESERVATION_MS + 5)).not.toBeNull();
   });
 
   it("lists a delivered purchase in 결제 내역 as opened, not used up unfinished (F2-b)", async () => {

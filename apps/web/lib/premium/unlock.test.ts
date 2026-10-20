@@ -7,7 +7,7 @@ import { resetSpendState } from "@/lib/api/spend";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { migratedTestD1 } from "@/lib/db/testing/migrate";
-import { RESERVATION_MS, grantStatements, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
+import { LEFT_SQL, RESERVATION_MS, grantStatements, releaseUnlock, reserveUnlock, sweepUser } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { premiumChapter } from "@/lib/readings/chapters";
 import { listReadings } from "@/lib/readings/store";
@@ -52,7 +52,7 @@ const chapterOf = (body: Record<string, unknown>) =>
 const DONE = { body: { status: "done", reading: { title: "t" }, chapterToken: "c" }, cookies: [] };
 
 describe("premium settlement", () => {
-  it("keeps the reservation alive between parts and saves nothing", async () => {
+  it("keeps the reservation alive between parts and saves nothing; a lapse after that part leaves the purchase not refundable (L-2)", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW + 300_000);
     const { db, plan } = await setup();
@@ -60,6 +60,9 @@ describe("premium settlement", () => {
     expect(await settle.deliver({ body: { status: "continue", resume: "t", done: 1, of: 3 }, cookies: [] })).toEqual({});
     expect(await one(db, "SELECT reserved_until FROM unlocks")).toEqual({ reserved_until: NOW + 300_000 + RESERVATION_MS });
     expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });
+    await sweepUser(db, "u_1", NOW + 300_000 + RESERVATION_MS + 1);
+    expect(await one(db, "SELECT units_left FROM credit_lots WHERE id = 'lot_ny'")).toEqual({ units_left: 1 });
+    expect(await one(db, `SELECT ${LEFT_SQL("credit_lots")} AS kept FROM credit_lots WHERE id = 'lot_ny'`)).toEqual({ kept: 1 });
   });
 
   it("saves the finished reading and spends the reservation in one batch", async () => {

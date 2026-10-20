@@ -129,8 +129,10 @@ export async function planPremiumUnlock(
 
 /**
  * Before the client sees a result (stream.ts Settlement):
- * - `{status: "continue"}`: nothing is saved; the reservation is extended for the next part. A failed
- *   extension (a D1 error) is logged and the part kept: the reservation lapses and the next part reserves again.
+ * - `{status: "continue"}`: nothing is saved; the reservation is extended for the next part and marked as
+ *   having written one (L-2): giving it back from then on, a lapse included, leaves the purchase reopenable
+ *   but not refundable. A failed extension (a D1 error) is logged and the part kept: the reservation lapses
+ *   and the next part reserves again.
  * - `{status: "done"}`: the chapter is saved and the reservation spent in one batch (P4 deliverUnlock),
  *   the save only while the reservation is still held. Unlike a standard reading (lib/api/unlock.ts),
  *   a reservation lost meanwhile saves nothing and throws: with one resume token in several requests,

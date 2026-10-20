@@ -59,8 +59,18 @@ export const MAX_LOT_RESTORES = 10;
  * again, but the purchase is no longer refundable: its reading was (partly) written and paid for.
  */
 const LEFT_RESTORE = "restore-left:";
-/** True for a lot (aliased `lot`) that was given back after its client left: not refundable any more. */
-export const LEFT_SQL = (lot: string) => `EXISTS (SELECT 1 FROM ledger WHERE lot_id = ${lot}.id AND idem_key LIKE '${LEFT_RESTORE}%')`;
+/**
+ * L-2: the restore of a premium opening that had written a part (unlocks.part_written, or a reservation
+ * taken for part 2 or later). The lot can open again to finish it, but the purchase is no longer
+ * refundable, like a delivered one. Not counted toward MAX_RESTORES: the client did not leave.
+ */
+const PART_RESTORE = "restore-part:";
+/**
+ * True for a lot (aliased `lot`) that is not refundable any more: given back after its client left, or
+ * after a part of its premium reading was written (L-2).
+ */
+export const LEFT_SQL = (lot: string) =>
+  `EXISTS (SELECT 1 FROM ledger WHERE lot_id = ${lot}.id AND (idem_key LIKE '${LEFT_RESTORE}%' OR idem_key LIKE '${PART_RESTORE}%'))`;
 
 /** What a new lot holds: one opening. */
 const ONE_OPENING = 1;
@@ -259,10 +269,12 @@ interface UnlockRow {
   currency: Currency;
   allocations: string;
   status: "reserved" | "delivered" | "released";
+  part_seq: number;
+  part_written: number;
 }
 
 const unlockRow = (db: D1Binding, id: string) =>
-  db.prepare("SELECT id, user_id, currency, allocations, status FROM unlocks WHERE id = ?").bind(id).first<UnlockRow>();
+  db.prepare("SELECT id, user_id, currency, allocations, status, part_seq, part_written FROM unlocks WHERE id = ?").bind(id).first<UnlockRow>();
 
 const allocationsOf = (row: UnlockRow) => JSON.parse(row.allocations) as Allocation[];
 
@@ -306,7 +318,8 @@ export async function deliverUnlock(
  * but the purchase is no longer refundable (LEFT_SQL), and only MAX_RESTORES times per lot: after
  * that the unlock is released and its units stay used. A server failure or a lapsed reservation (the
  * sweep) gives the units back without counting toward MAX_RESTORES. L-1: every restore counts toward
- * MAX_LOT_RESTORES; past it the unlock is released the same way and its units stay used.
+ * MAX_LOT_RESTORES; past it the unlock is released the same way and its units stay used. L-2: a premium
+ * reservation that had written a part gives its units back as PART_RESTORE: no longer refundable.
  */
 export async function releaseUnlock(db: D1Binding, input: { unlockId: string; now: number; left?: boolean }): Promise<boolean> {
   const unlock = await unlockRow(db, input.unlockId);
@@ -315,6 +328,7 @@ export async function releaseUnlock(db: D1Binding, input: { unlockId: string; no
   const capped = input.left ? ` AND (SELECT COUNT(*) FROM ledger WHERE lot_id = ? AND idem_key LIKE '${LEFT_RESTORE}%') < ${MAX_RESTORES}` : "";
   const restorable = `${RESERVED}${total}${capped}`;
   const restorableArgs = (lotId: string) => (input.left ? [unlock.id, lotId, lotId] : [unlock.id, lotId]);
+  const marker = input.left ? LEFT_RESTORE : unlock.part_written || unlock.part_seq > 1 ? PART_RESTORE : "restore:";
   const allocations = allocationsOf(unlock);
   const results = await db.batch([
     ...allocations.flatMap(([lotId, units]) => [
@@ -325,7 +339,7 @@ export async function releaseUnlock(db: D1Binding, input: { unlockId: string; no
       db
         .prepare(`INSERT INTO ledger ${COLUMNS} SELECT ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${restorable} AND EXISTS (SELECT 1 FROM credit_lots WHERE id = ? AND status = 'active')`)
         .bind(
-          ...values({ userId: unlock.user_id, currency: unlock.currency, kind: "restore", units, lotId, unlockId: unlock.id, idem: `${input.left ? LEFT_RESTORE : "restore:"}${unlock.id}:${lotId}`, now: input.now }),
+          ...values({ userId: unlock.user_id, currency: unlock.currency, kind: "restore", units, lotId, unlockId: unlock.id, idem: `${marker}${unlock.id}:${lotId}`, now: input.now }),
           ...restorableArgs(lotId),
           lotId,
         ),
@@ -348,12 +362,14 @@ export async function releaseUnlock(db: D1Binding, input: { unlockId: string; no
  * expired (an expired one may already be swept back). False otherwise: the caller reserves again.
  * With `parts` (a resume token's part count) it also claims the next part, in the same UPDATE: only
  * while part_seq equals `parts`, which it then bumps, so one token runs its next part once (SEC-02).
+ * Either way a part of the reading was written (after a part, or a token holding one), so it marks
+ * part_written: giving the reservation back from then on keeps the purchase from being refunded (L-2).
  */
 export async function extendUnlock(db: D1Binding, input: { unlockId: string; userId: string; now: number; parts?: number }): Promise<boolean> {
   const claim = input.parts !== undefined;
   const result = await db
     .prepare(
-      `UPDATE unlocks SET reserved_until = ?${claim ? ", part_seq = part_seq + 1" : ""}
+      `UPDATE unlocks SET reserved_until = ?, part_written = 1${claim ? ", part_seq = part_seq + 1" : ""}
        WHERE id = ? AND user_id = ? AND status = 'reserved' AND reserved_until > ?${claim ? " AND part_seq = ?" : ""}`,
     )
     .bind(input.now + RESERVATION_MS, input.unlockId, input.userId, input.now, ...(claim ? [input.parts] : []))
@@ -499,8 +515,8 @@ export interface Entitlements {
   /**
    * paid readings bought and not opened yet (a reading being opened is in `opening` instead);
    * `paidAt`: when the payment was recorded (its lot's created_at), where the refund window starts;
-   * `refundable`: false once it was given back after its client left (LEFT_SQL): it can be opened
-   * again but never refunded, by 환불받기 or by account deletion
+   * `refundable`: false once it was given back after its client left, or after a part of its premium
+   * reading was written (LEFT_SQL): it can be opened again but never refunded, by 환불받기 or by account deletion
    */
   unused: Array<{ orderId: string; productId: string; paidAt: number; refundable: boolean }>;
   /** readings being opened, oldest first */
