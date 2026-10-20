@@ -5,8 +5,8 @@ import { Checkin } from "@/components/reading/Checkin";
 import { answerCheckin, checkinSource, dueCheckin, observationOf, useChapters, type StoredChapter } from "@/lib/storage/chapters";
 
 /**
- * 돌아보기 on the home: the newest reading whose observation is due (3+ days old, not yet
- * answered). Nothing renders otherwise, so the home grid closes up around it.
+ * 지난 풀이 돌아보기, shown in 내 정보 (owner 2026-10-20; it was on the home): the newest reading whose
+ * observation is due (3+ days old, not yet answered). Nothing renders otherwise.
  */
 export function HomeCheckin({ className }: { className?: string }) {
   const chapters = useChapters();

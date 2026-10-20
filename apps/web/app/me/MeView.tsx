@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { HomeCheckin } from "@/components/home/HomeCheckin";
 import { ChevronIcon } from "@/components/home/icons";
 import { Button } from "@/components/ui/Button";
 import { DotLine } from "@/components/ui/DotLine";
@@ -125,6 +126,8 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
             ) : null}
           </>
         )}
+        {/* 지난 풀이 돌아보기 (owner 2026-10-20: here, not on the home): only while a reading is due. */}
+        <HomeCheckin />
         <p className={s.notice} role="status">
           {notice}
         </p>

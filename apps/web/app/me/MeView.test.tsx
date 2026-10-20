@@ -38,6 +38,25 @@ afterEach(() => {
   sessionStorage.clear();
 });
 
+describe("MeView 지난 풀이 돌아보기 (owner 2026-10-20: moved here from the home)", () => {
+  it("shows the newest reading whose check-in is due (3+ days old) in 내 정보", async () => {
+    saveChapter(
+      {
+        kind: "tarot",
+        question: "돌아볼 질문",
+        conditions: [],
+        note: "",
+        cards: [card],
+        reading: { ...reading, observation: { heading: "며칠 안에 확인해 볼 신호", body: "답장이 오는지 보세요" } } as never,
+        chapterToken: "t",
+      },
+      Date.now() - 4 * 86_400_000,
+    );
+    render(<MeView status={null} />);
+    expect((await screen.findByRole("heading", { name: /지난 풀이 돌아보기/ })).textContent).toContain("지난 풀이 돌아보기");
+  });
+});
+
 describe("MeView menu", () => {
   it("puts 초대코드로 참여 right under 내 기록, closed", async () => {
     render(<MeView status={null} />);
