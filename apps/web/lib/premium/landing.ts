@@ -33,8 +33,9 @@ const kstDate = (ms: number) => {
   return `${d.getUTCFullYear()}년 ${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일`;
 };
 const year = PREMIUM["newyear-2027"];
-/** The 2027 신년운세 window from SITE: from its first moment to the last day before it closes. */
-const yearWindow = year.opensAt !== undefined && year.closesAt !== undefined ? `${kstDate(year.opensAt)} 0시부터 ${kstDate(year.closesAt - 1)}까지` : "판매 기간 동안";
+/** The 2027 신년운세 window from SITE: on sale now (owner 2026-10-20) until the last day before it closes; an opening date only if one is set again. */
+const yearUntil = year.closesAt !== undefined ? `${kstDate(year.closesAt - 1)}까지` : "";
+const yearWindow = year.opensAt !== undefined && year.closesAt !== undefined ? `${kstDate(year.opensAt)} 0시부터 ${yearUntil}` : yearUntil || "판매 기간 동안";
 
 export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
   "tarot-deep": {

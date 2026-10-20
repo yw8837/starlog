@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { premiumMode, premiumOpen, premiumVisible } from "./flags";
 
 const env = (vars: Record<string, string>) => ({ NODE_ENV: "test", ...vars }) as unknown as NodeJS.ProcessEnv;
-const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after 10/24 (켈틱·궁합 on sale), before 11/15
+const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after everything went on sale (owner 2026-10-20)
 const DEC = Date.parse("2026-12-01T12:00:00+09:00");
 
 describe("premium sales flag", () => {
@@ -19,10 +19,12 @@ describe("premium sales flag", () => {
     expect(premiumOpen("match", false, OCT, env({ STARLOG_PREMIUM: "off", STARLOG_PAYMENTS: "on" }))).toBe(false);
   });
 
-  it("keeps 2027 신년운세 closed before its window for everyone but the owner", () => {
+  it("opens 2027 신년운세 now for everyone (owner 2026-10-20, no opening date), until it closes at 2027-12-01 00:00 KST", () => {
     const on = env({ STARLOG_PREMIUM: "on", STARLOG_PAYMENTS: "on" });
-    expect(premiumOpen("newyear-2027", false, OCT, on)).toBe(false);
+    expect(premiumOpen("newyear-2027", false, Date.parse("2026-10-20T12:00:00+09:00"), on)).toBe(true);
+    expect(premiumOpen("newyear-2027", false, OCT, on)).toBe(true);
     expect(premiumOpen("newyear-2027", false, DEC, on)).toBe(true);
+    expect(premiumOpen("newyear-2027", false, Date.parse("2027-12-01T00:00:00+09:00"), on)).toBe(false);
     expect(premiumOpen("newyear-2027", true, OCT, env({ STARLOG_PREMIUM: "owner" }))).toBe(true);
   });
 

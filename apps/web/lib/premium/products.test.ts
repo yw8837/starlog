@@ -41,15 +41,15 @@ describe("premium products", () => {
     expect(JSON.stringify(PREMIUM.match)).not.toMatch(/카드|타로|5장/);
   });
 
-  it("opens 2027 신년운세 from 2026-11-15 00:00 to 2027-12-01 00:00 KST", () => {
+  it("dates no opening (owner 2026-10-20 \"전부 오픈해\"): all three in their window now, 2027 신년운세 until 2027-12-01 00:00 KST", () => {
+    const now = Date.parse("2026-10-20T12:00:00+09:00");
+    for (const id of PREMIUM_IDS) {
+      expect(PREMIUM[id].opensAt, id).toBeUndefined();
+      expect(inWindow(PREMIUM[id], now), id).toBe(true);
+    }
     const ny = PREMIUM["newyear-2027"];
-    expect(ny.opensAt).toBe(Date.parse("2026-11-15T00:00:00+09:00"));
-    expect(inWindow(ny, Date.parse("2026-11-14T23:59:59+09:00"))).toBe(false);
-    expect(inWindow(ny, Date.parse("2026-11-15T00:00:00+09:00"))).toBe(true);
+    expect(inWindow(ny, Date.parse("2027-12-01T00:00:00+09:00") - 1)).toBe(true);
     expect(inWindow(ny, Date.parse("2027-12-01T00:00:00+09:00"))).toBe(false);
-    // 켈틱 크로스 10장 and 프리미엄 궁합 go on sale with the premium clauses (owner 2026-10-17)
-    expect(inWindow(PREMIUM.match, Date.parse("2026-10-24T00:00:00+09:00") - 1)).toBe(false);
-    expect(inWindow(PREMIUM.match, Date.parse("2026-10-24T00:00:00+09:00"))).toBe(true);
   });
 
   it("has one name per product on every screen, checkout and receipt (owner 2026-10-17); never 셀틱, Celtic or 베타", () => {

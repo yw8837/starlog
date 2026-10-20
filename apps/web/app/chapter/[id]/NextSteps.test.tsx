@@ -11,8 +11,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: 
 
 /** The next step at the end of a finished reading (plan-reconciled §4.3): never gold, only where premium is visible. */
 
-const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after 10/24 (켈틱·궁합 on sale), before 11/15
-const NOV20 = Date.parse("2026-11-20T12:00:00+09:00");
+const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after everything went on sale (owner 2026-10-20)
 const seed = (chapters: unknown[]) => localStorage.setItem(CHAPTERS_KEY, JSON.stringify({ v: 1, chapters }));
 const TAROT = {
   id: "tarot0001", createdAt: OCT, chapterToken: "x", turns: [], followUpsLeft: 3, kind: "tarot", question: "q", conditions: [], note: "",
@@ -33,7 +32,7 @@ function stub(visible: boolean | "fail") {
       products: [
         { id: "tarot-deep", open: visible, visible, opensAt: null },
         { id: "match", open: visible, visible, opensAt: null },
-        { id: "newyear-2027", open: false, visible, opensAt: Date.parse("2026-11-15T00:00:00+09:00") },
+        { id: "newyear-2027", open: visible === true, visible, opensAt: null },
       ],
     });
   });
@@ -87,19 +86,12 @@ describe("the next step at a reading's end", () => {
     expect(section.querySelector('[class*="primary"]')).toBeNull();
   });
 
-  it("offers 프리미엄 궁합 after a saju reading, and 2027 신년운세 too from 2026-11-15", async () => {
+  it("offers 2027 신년운세 and 프리미엄 궁합 after a saju reading, both on sale now (owner 2026-10-20)", async () => {
     stub(true);
     seed([SAJU]);
     render(<LocalChapter id="saju00001" />);
-    const before = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
-    expect(within(before).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/match"]);
-    expect(before.textContent).toContain("다른 사람과 함께");
-    cleanup();
-    resetPremiumStatusForTests();
-    vi.setSystemTime(NOV20);
-    stub(true);
-    render(<LocalChapter id="saju00001" />);
-    const after = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
-    expect(within(after).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027", "/premium/match"]);
+    const next = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
+    expect(within(next).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027", "/premium/match"]);
+    expect(next.textContent).toContain("다른 사람과 함께");
   });
 });

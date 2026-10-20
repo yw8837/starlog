@@ -7,7 +7,7 @@ import { fakeBrowserClock, ownerPass } from "./opening";
  * - `owner` or `on` (a preview with STARLOG_PREMIUM set, mock AI): the visitor check above still holds for `owner`, and
  *   with the owner pass the entries lead through the flows: the tarot bridge → 켈틱 크로스 10장 → the builder's chip →
  *   ten cards → the free preview → the open panel; saju step 1's premium rows → the 프리미엄 궁합 form → its preview; and
- *   the 2027 신년운세 row, before 2026-11-15 00:00 KST, shows its opening date and opens nothing.
+ *   the 2027 신년운세 row leads to its form (everything on sale since 2026-10-20, owner: no opening dates).
  * Which tests exist follows E2E_PREMIUM, so the default run (premium off) only declares what off must show.
  * run: E2E_PREMIUM=owner E2E_BASE_URL=<preview> E2E_OWNER_CODE=<its pass> pnpm e2e --grep premium
  */
@@ -15,9 +15,6 @@ import { fakeBrowserClock, ownerPass } from "./opening";
 const MODE = (process.env.E2E_PREMIUM ?? "off").trim().toLowerCase() as "off" | "owner" | "on";
 const NAV = 30_000;
 const GENERATION = 120_000;
-const NEWYEAR_OPENS_AT = Date.parse("2026-11-15T00:00:00+09:00");
-/** 켈틱 크로스 10장 and 프리미엄 궁합 go on sale with the premium clauses (owner 2026-10-17). */
-const SALE_OPENS_AT = Date.parse("2026-10-24T00:00:00+09:00");
 /** Never on a premium screen: another spelling of the spread's name, beta framing, a model or vendor name. */
 const BANS = /셀틱|celtic|베타|claude|anthropic|gpt|opus|sonnet/i;
 
@@ -159,15 +156,7 @@ if (MODE !== "off") {
       await expect(match).toBeVisible({ timeout: NAV });
       await expect(match).toContainText("7,900원");
       await noSideScroll(page);
-      if (Date.now() < SALE_OPENS_AT) {
-        // Before its sale the row says when, for the owner too; the owner starts from the product page (its pass opens it).
-        await expect(match).toContainText("10월 24일 열려요");
-        await expect(match).toHaveAttribute("aria-disabled", "true");
-        await page.goto("/premium/match");
-        await page.getByRole("link", { name: "시작하기" }).first().click();
-      } else {
-        await match.click();
-      }
+      await match.click();
       await expect(page).toHaveURL(/\/premium\/match\/new$/, { timeout: NAV });
 
       // A fresh browser has no saved profile: my birth first (with the consent), then the other person's (none asked for them).
@@ -196,18 +185,13 @@ if (MODE !== "off") {
       await noSideScroll(page);
     });
 
-    test("the 2027 신년운세 row shows its opening date and opens nothing before 2026-11-15 00:00 KST", async ({ page }) => {
+    test("the 2027 신년운세 row leads to its form, with no opening date (owner 2026-10-20)", async ({ page }) => {
       await page.goto("/saju/start");
       const row = page.getByRole("link", { name: /2027 신년운세/ });
       await expect(row).toBeVisible({ timeout: NAV });
       await expect(row).toContainText("14,900원");
-      if (Date.now() < NEWYEAR_OPENS_AT) {
-        await expect(row).toContainText("11월 15일 열려요");
-        await expect(row).toHaveAttribute("aria-disabled", "true");
-        expect(await row.getAttribute("href")).toBeNull();
-      } else {
-        await expect(row).toHaveAttribute("href", "/premium/newyear-2027/new");
-      }
+      await expect(row).not.toContainText("열려요");
+      await expect(row).toHaveAttribute("href", "/premium/newyear-2027/new");
     });
   });
 }

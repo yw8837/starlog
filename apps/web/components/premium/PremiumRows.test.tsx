@@ -5,8 +5,7 @@ import { SITE } from "@/lib/config";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { PremiumRows } from "./PremiumRows";
 
-const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after 10/24 (켈틱·궁합 on sale), before 11/15
-const NOV15 = Date.parse("2026-11-15T00:00:00+09:00");
+const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after everything went on sale (owner 2026-10-20)
 const IDS = ["newyear-2027", "match", "tarot-deep"] as const;
 
 function stub(visible: boolean, open = visible) {
@@ -15,7 +14,7 @@ function stub(visible: boolean, open = visible) {
       products: [
         { id: "tarot-deep", open, visible, opensAt: null },
         { id: "match", open, visible, opensAt: null },
-        { id: "newyear-2027", open: false, visible, opensAt: NOV15 },
+        { id: "newyear-2027", open, visible, opensAt: null },
       ],
     }),
   );
@@ -60,7 +59,8 @@ describe("PremiumRows (the premium rows of the home, the reading ends and the gu
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027", "/premium/match", "/premium/deep-tarot"]);
     expect(links[0]!.textContent).toContain("2027 신년운세");
     expect(links[0]!.textContent).toContain("14,900원");
-    expect(links[0]!.textContent).toContain("11월 15일 열려요");
+    // on sale now, no opening date (owner 2026-10-20)
+    expect(section.textContent).not.toMatch(/열려요/);
     expect(links[1]!.textContent).toContain("프리미엄 궁합");
     expect(links[2]!.textContent).toContain("켈틱 크로스 10장");
     expect(links[2]!.textContent).toContain("7,900원");
@@ -68,17 +68,12 @@ describe("PremiumRows (the premium rows of the home, the reading ends and the gu
     expect(container.textContent).not.toMatch(/가장 깊게|타로×사주|베타/);
   });
 
-  it("takes a line per product, and leaves out one before its window where asked (a reading end offers 2027 신년운세 from 11/15)", async () => {
+  it("takes a line per product; with no opening date (owner 2026-10-20) a reading end offers 2027 신년운세 too", async () => {
     stub(true);
     render(<PremiumRows ids={["newyear-2027", "match"]} title="더 깊게 보고 싶다면" onlyOpen lines={{ match: "다른 사람과 함께 봐요" }} />);
     const section = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
-    expect(within(section).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/match"]);
+    expect(within(section).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/premium/newyear-2027", "/premium/match"]);
     expect(section.textContent).toContain("다른 사람과 함께 봐요");
-    cleanup();
-    vi.setSystemTime(NOV15);
-    render(<PremiumRows ids={["newyear-2027", "match"]} title="더 깊게 보고 싶다면" onlyOpen />);
-    const later = await screen.findByRole("region", { name: "더 깊게 보고 싶다면" });
-    expect(within(later).getAllByRole("link")).toHaveLength(2);
   });
 
   it("on a guide page with the hosts split, links to the app host", async () => {

@@ -4,8 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { TopicPicker } from "./TopicPicker";
 
-const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after 10/24 (켈틱·궁합 on sale), before 11/15
-const NOV15 = Date.parse("2026-11-15T00:00:00+09:00");
+const OCT = Date.parse("2026-10-25T12:00:00+09:00"); // after everything went on sale (owner 2026-10-20)
 
 type Visible = { match: boolean; newyear: boolean };
 function stub({ match, newyear, newyearOpen = false }: Visible & { newyearOpen?: boolean }) {
@@ -14,7 +13,7 @@ function stub({ match, newyear, newyearOpen = false }: Visible & { newyearOpen?:
       products: [
         { id: "tarot-deep", open: match, visible: match, opensAt: null },
         { id: "match", open: match, visible: match, opensAt: null },
-        { id: "newyear-2027", open: newyearOpen, visible: newyear, opensAt: NOV15 },
+        { id: "newyear-2027", open: newyearOpen, visible: newyear, opensAt: null },
       ],
     }),
   );
@@ -57,7 +56,7 @@ describe("TopicPicker's premium rows (owner 2026-10-16)", () => {
   });
 
   it("adds, under a divider and a small 프리미엄 label, 프리미엄 궁합 and 2027 신년운세 with their prices; the five rows stay as they were", async () => {
-    stub({ match: true, newyear: true });
+    stub({ match: true, newyear: true, newyearOpen: true });
     const { container } = render(<TopicPicker />);
     const premium = await screen.findByRole("list", { name: "프리미엄" });
     expect(container.querySelector("hr")).not.toBeNull();
@@ -65,22 +64,12 @@ describe("TopicPicker's premium rows (owner 2026-10-16)", () => {
     const match = within(premium).getByRole("link", { name: /프리미엄 궁합/ });
     expect(match.getAttribute("href")).toBe("/premium/match/new");
     expect(match.textContent).toContain("7,900원");
-    // Before 2026-11-15 00:00 KST: says when it opens, cannot be followed.
+    // On sale now with no opening date (owner 2026-10-20): a link to its form, no date line.
     const year = within(premium).getByRole("link", { name: /2027 신년운세/ });
-    expect(year.getAttribute("href")).toBeNull();
-    expect(year.getAttribute("aria-disabled")).toBe("true");
-    expect(year.textContent).toContain("11월 15일 열려요");
-    expect(year.textContent).toContain("14,900원");
-  });
-
-  it("opens the 2027 신년운세 row from 2026-11-15 00:00 KST", async () => {
-    vi.setSystemTime(NOV15);
-    // From then the status says it is open to this device (sales on): a row inside its window follows the status.
-    stub({ match: true, newyear: true, newyearOpen: true });
-    render(<TopicPicker />);
-    const year = await screen.findByRole("link", { name: /2027 신년운세/ });
     expect(year.getAttribute("href")).toBe("/premium/newyear-2027/new");
     expect(year.hasAttribute("aria-disabled")).toBe(false);
+    expect(year.textContent).toContain("14,900원");
+    expect(premium.textContent).not.toMatch(/열려요/);
   });
 
   it("draws a product inside its window it cannot start here (premium on, payments closed) as 준비 중이에요, not a link (review 2026-10-16 #10)", async () => {
@@ -90,7 +79,7 @@ describe("TopicPicker's premium rows (owner 2026-10-16)", () => {
         Response.json({
           products: [
             { id: "match", open: false, visible: true, opensAt: null },
-            { id: "newyear-2027", open: false, visible: true, opensAt: NOV15 },
+            { id: "newyear-2027", open: false, visible: true, opensAt: null },
           ],
         }),
       ),

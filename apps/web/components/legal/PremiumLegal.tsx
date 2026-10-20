@@ -63,7 +63,9 @@ export function PremiumPrivacy() {
 /** 이용약관 제7조의3 (합니다체, as the terms). */
 export function PremiumTerms() {
   const year = PREMIUM["newyear-2027"];
-  const window = year.opensAt !== undefined && year.closesAt !== undefined ? `${kstDate(year.opensAt)} 0시부터 ${kstDate(year.closesAt - 1)}까지(한국 시간)` : "운영자가 정한 판매 기간 동안";
+  // on sale now (owner 2026-10-20): an opening date shows only if one is set again
+  const until = year.closesAt !== undefined ? `${kstDate(year.closesAt - 1)}까지(한국 시간)` : "";
+  const window = year.opensAt !== undefined && year.closesAt !== undefined ? `${kstDate(year.opensAt)} 0시부터 ${until}` : until || "운영자가 정한 판매 기간 동안";
   return (
     <section id="premium" className={s.section} aria-labelledby="premium-title">
       <h2 id="premium-title" className={s.sectionTitle}>

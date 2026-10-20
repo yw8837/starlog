@@ -18,7 +18,7 @@ import { sealResume } from "./resume";
 import { planPremiumUnlock, premiumSettlement, unusedBuyer, type PremiumPlan } from "./unlock";
 
 const SECRET = "account-secret-for-tests-0123456789abcdef";
-const NOW = Date.parse("2026-10-25T03:00:00Z"); // after 10/24 (켈틱·궁합 on sale)
+const NOW = Date.parse("2026-10-25T03:00:00Z"); // after everything went on sale (owner 2026-10-20)
 
 beforeEach(() => {
   vi.spyOn(console, "info").mockImplementation(() => {});

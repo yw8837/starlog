@@ -4,12 +4,12 @@ import { SITE } from "./config";
 export const LEGAL_EFFECTIVE_DATE = "2026-10-15";
 
 /**
- * The premium clauses (owner 2026-10-17): announced with the 10/17 deploy, in force 7 days later. Before this KST midnight
- * each policy keeps today's text and 시행일 and shows them as 개정 예정 under a notice; from it the pages (rendered per
- * request) put them in the text and show this 시행일, with no deploy. SITE.price.premium opens 켈틱 크로스 10장 and 프리미엄
- * 궁합 at the same moment (premiumSchedule.test.tsx keeps them equal). A later deploy moves both to its date + 7 days.
+ * The premium clauses: in force from 2026-10-20 00:00 KST, when every premium reading went on sale (owner 2026-10-20 "전부
+ * 오픈해"). Before this KST midnight a policy keeps its old text and 시행일 and shows the clauses as 개정 예정 under a
+ * notice; from it the pages (rendered per request) put them in the text and show this 시행일, with no deploy (owner
+ * 2026-10-17's mechanism, premiumSchedule.test.tsx).
  */
-export const PREMIUM_LEGAL_EFFECTIVE_DATE = "2026-10-24";
+export const PREMIUM_LEGAL_EFFECTIVE_DATE = "2026-10-20";
 const PREMIUM_LEGAL_EFFECTIVE_AT = Date.parse(`${PREMIUM_LEGAL_EFFECTIVE_DATE}T00:00:00+09:00`);
 
 export const premiumLegalInForce = (now: number = Date.now()): boolean => now >= PREMIUM_LEGAL_EFFECTIVE_AT;

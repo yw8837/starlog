@@ -9,7 +9,7 @@ vi.mock("next/headers", () => ({ headers: async () => new Headers(request.cookie
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), connection: async () => {} }));
 
 const CODE = "owner-code-for-tests-0001";
-const OCT = Date.parse("2026-10-25T03:00:00Z"); // after 10/24 (켈틱·궁합 on sale), before 11/15
+const OCT = Date.parse("2026-10-25T03:00:00Z"); // after everything went on sale (owner 2026-10-20)
 
 beforeEach(() => {
   for (const [k, v] of Object.entries({ STARLOG_PAYMENTS: "on", STARLOG_PAY: "mock", STARLOG_OWNER_CODE: CODE })) vi.stubEnv(k, v);
@@ -24,9 +24,9 @@ describe("a product page's state on the server (stage 3)", () => {
     expect(await premiumStateHere("match", OCT)).toEqual({ visible: false, open: false });
   });
 
-  it("shows 2027 신년운세 before its window without starting it; the owner pass may start it for QA", async () => {
+  it("shows and starts 2027 신년운세 now, as the others (owner 2026-10-20: no opening date); the owner pass too", async () => {
     vi.stubEnv("STARLOG_PREMIUM", "on");
-    expect(await premiumStateHere("newyear-2027", OCT)).toEqual({ visible: true, open: false });
+    expect(await premiumStateHere("newyear-2027", OCT)).toEqual({ visible: true, open: true });
     expect(await premiumStateHere("match", OCT)).toEqual({ visible: true, open: true });
     request.cookie = `${OWNER_COOKIE}=${await ownerCookie(signingSecret()!, OCT, CODE)}`;
     expect(await premiumStateHere("newyear-2027", OCT)).toEqual({ visible: true, open: true });

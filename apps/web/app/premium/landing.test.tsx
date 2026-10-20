@@ -132,15 +132,15 @@ describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
     expect(String(matchMeta.description)).toContain("앞으로 1년");
   });
 
-  it("2027 신년운세 before 2026-11-15 00:00 KST: says when it opens instead of a button, the price shown, a pre-order offer", async () => {
+  it("2027 신년운세 on sale now (owner 2026-10-20): 시작하기, no opening date, in stock, sold until 2027-11-30", async () => {
     vi.setSystemTime(OCT);
     gate.visible = true;
-    gate.open = false;
+    gate.open = true;
     const { container } = await show(YearPage);
-    expect(screen.getAllByText("11월 15일 0시에 열려요").length).toBeGreaterThan(0);
-    expect(screen.queryByRole("link", { name: /시작하기/ })).toBeNull();
-    expect(container.textContent).toContain("14,900원");
-    expect(jsonLd(container).offers.availability).toBe("https://schema.org/PreOrder");
+    expect(screen.getAllByRole("link", { name: /시작하기/ }).length).toBeGreaterThan(0);
+    expect(container.textContent).not.toMatch(/열려요|오픈 예정|2026년 11월 15일/);
+    expect(container.textContent).toContain("2027년 11월 30일까지 열 수 있어요");
+    expect(jsonLd(container).offers.availability).toBe("https://schema.org/InStock");
   });
 
   it("an undated product this device cannot start says 준비 중이에요, no button", async () => {

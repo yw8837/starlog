@@ -73,14 +73,13 @@ describe("2027 신년운세's preview (Task 21)", () => {
     expect(JSON.parse(String(init!.body))).toEqual({ birth: DEFAULT_SAJU_FORM, workStatus: "employee" });
   });
 
-  it("before it opens, a 409 from the preview says 11월 15일 0시에 열려요 and no error", async () => {
+  it("on sale now with no opening date (owner 2026-10-20): a 409 from the preview is its error, never an opening date", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.parse("2026-10-20T12:00:00+09:00"));
-    stub(() => Response.json({ code: "NOT_AVAILABLE" }, { status: 409 }));
+    stub(() => Response.json({ code: "NOT_AVAILABLE" }, { status: 409 }), [], []);
     render(<NewYearPreview />);
-    expect(await screen.findByText("11월 15일 0시에 열려요", { selector: "p:not([role=status])" })).toBeTruthy();
-    expect(screen.queryByText("지금은 열 수 없는 상품이에요")).toBeNull();
-    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+    expect((await screen.findAllByText("지금은 열 수 없는 상품이에요")).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/열려요/)).toBeNull();
   });
 
   it("from 2026-11-15 00:00 KST a 409 is not its opening date any more (review 2026-10-16 #6): the preview's error", async () => {

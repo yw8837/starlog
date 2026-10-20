@@ -10,7 +10,7 @@ import { PREMIUM, type PremiumId } from "./products";
  * - open-paid: a purchase of this product is waiting (it opens whatever the sales flag says);
  *   `refundable: false` when it was given back after its reading was cut off while written;
  * - login / pay: on sale for this device;
- * - soon: not on sale yet, opening at `opensAt` (2027 신년운세 before 2026-11-15);
+ * - soon: not on sale yet, opening at `opensAt` (a dated product; none since owner 2026-10-20 opened everything);
  * - closed: not on sale;
  * - unknown: the sales state could not be read (null): say so and ask again, sell nothing on a guess.
  * The owner pass adds its own quiet choice in the panel; the signup gift never opens premium.

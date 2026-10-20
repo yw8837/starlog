@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "@/lib/config";
-import { GIFT_DAYS, GIFT_PRODUCT, NEWYEAR_OPENS_AT, PRODUCTS, productById, sellable, standardProduct } from "./catalog";
+import { GIFT_DAYS, GIFT_PRODUCT, PRODUCTS, productById, sellable, standardProduct } from "./catalog";
 
 const NOW = Date.parse("2026-10-01T12:00:00+09:00");
 
@@ -15,18 +15,16 @@ describe("catalog", () => {
     for (const premium of SITE.price.premium) {
       expect(productById(premium.id)).toMatchObject({ name: premium.name, krw: premium.krw, deliverable: true });
     }
-    expect(sellable(productById("match")!, Date.parse("2026-10-24T00:00:00+09:00") - 1)).toBe(false);
-    expect(sellable(productById("match")!, Date.parse("2026-10-24T00:00:00+09:00"))).toBe(true);
+    expect(sellable(productById("match")!, Date.parse("2026-10-20T00:00:00+09:00"))).toBe(true);
     expect(sellable(productById("newyear-2027")!, Date.parse("2027-12-01T00:00:00+09:00"))).toBe(false);
     expect([productById("tarot-deep")?.krw, productById("match")?.krw, productById("newyear-2027")?.krw]).toEqual([7900, 7900, 14900]);
   });
 
-  it("opens 2027 신년운세 at 2026-11-15 00:00 KST", () => {
-    expect(NEWYEAR_OPENS_AT).toBe(Date.parse("2026-11-15T00:00:00+09:00"));
-    expect(productById("newyear-2027")?.opensAt).toBe(NEWYEAR_OPENS_AT);
-    const opened = productById("newyear-2027")!;
-    expect(sellable(opened, NEWYEAR_OPENS_AT - 1)).toBe(false);
-    expect(sellable(opened, NEWYEAR_OPENS_AT)).toBe(true);
+  it("sells every premium reading now, with no opening date (owner 2026-10-20); 2027 신년운세 until it closes", () => {
+    for (const id of ["tarot-deep", "match", "newyear-2027"]) expect(productById(id)?.opensAt, id).toBeUndefined();
+    const year = productById("newyear-2027")!;
+    expect(sellable(year, Date.parse("2026-10-20T15:00:00+09:00"))).toBe(true);
+    expect(sellable(year, Date.parse("2027-12-01T00:00:00+09:00") - 1)).toBe(true);
   });
 
   it("knows no other ids", () => {

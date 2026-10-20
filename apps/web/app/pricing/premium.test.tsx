@@ -5,7 +5,6 @@ import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import PricingPage from "./page";
 
 const OCT = Date.parse("2026-10-20T12:00:00+09:00");
-const NOV15 = Date.parse("2026-11-15T00:00:00+09:00");
 
 function stub(visible: boolean | "fail") {
   const fetchMock = vi.fn(async (url: string) => {
@@ -15,7 +14,7 @@ function stub(visible: boolean | "fail") {
       products: [
         { id: "tarot-deep", open: visible, visible, opensAt: null },
         { id: "match", open: visible, visible, opensAt: null },
-        { id: "newyear-2027", open: false, visible, opensAt: NOV15 },
+        { id: "newyear-2027", open: visible, visible, opensAt: null },
       ],
     });
   });
@@ -64,7 +63,9 @@ describe("/pricing's premium tier (plan-reconciled §4.2)", () => {
     expect(cards[0]!.textContent).toContain("판매 중");
     expect(cards[0]!.textContent).toContain("이어서 물어보기 3번");
     expect(cards[2]!.textContent).toContain("14,900원");
-    expect(cards[2]!.textContent).toContain("11월 15일 0시에 열려요");
+    // on sale now, no opening date (owner 2026-10-20)
+    expect(cards[2]!.textContent).toContain("판매 중");
+    expect(premium().textContent).not.toMatch(/열려요|곧 열려요|오픈 예정/);
     expect(within(premium()).getAllByRole("link", { name: /자세히 보기/ }).map((a) => a.getAttribute("href"))).toEqual(["/premium/deep-tarot", "/premium/match", "/premium/newyear-2027"]);
     expect(premium().textContent).not.toMatch(/베타|오픈 기념|가장 깊게|타로×사주/);
     expect(container.querySelectorAll("h1")).toHaveLength(1);

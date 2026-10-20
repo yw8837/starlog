@@ -40,8 +40,8 @@ const birthKey = (b: unknown) => {
 
 /**
  * 2027 신년운세's step 2 (Task 21): the year's theme ("2027년, <title>"), the three lines code computed, the
- * free summary, the 21 locked headings and the open panel. Before 2026-11-15 00:00 KST the preview's 409
- * says when it opens instead of an error. Opening writes the three parts and opens the chapter.
+ * free summary, the 21 locked headings and the open panel. Before an opening date (none since owner 2026-10-20: on sale
+ * now) the preview's 409 says when it opens instead of an error. Opening writes the three parts and opens the chapter.
  */
 export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean }) {
   const router = useRouter();
@@ -113,8 +113,8 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
 
   const teaserState = teaserGen.state;
   const failed = !preview && teaserState.status === "error" ? teaserState.error : null;
-  // Not open yet (before 2026-11-15 for everyone but the owner pass): when it opens, not an error. Once that moment
-  // has passed a 409 is the preview's error like any other (review 2026-10-16 #6).
+  // Not open yet (only if an opening date is set again; none since owner 2026-10-20): when it opens, not an error. With
+  // none, or once that moment has passed, a 409 is the preview's error like any other (review 2026-10-16 #6).
   const opensAt = PREMIUM[ID].opensAt;
   const notYet = failed?.code === "NOT_AVAILABLE" && opensAt !== undefined && opensAt > Date.now() ? opensAtText(opensAt) : null;
   const teaserError = failed && !notYet ? describeApiError(failed, "teaser") : null;

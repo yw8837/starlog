@@ -176,13 +176,13 @@ describe("premium previews", () => {
     expect((await answer(deepTeaser, { drawToken: deep, input: { topicId: "custom", topicText: "이사", question: "", conditions: [] } })).code).toBe("BAD_REQUEST");
   });
 
-  it("keeps 2027 신년운세 closed before 2026-11-15 for everyone but the owner", async () => {
+  it("previews 2027 신년운세 now for everyone (owner 2026-10-20: no opening date), and not once it has closed", async () => {
     useTestDb();
-    vi.setSystemTime(Date.parse("2026-11-01T03:00:00Z"));
+    vi.setSystemTime(Date.parse("2026-10-20T03:00:00Z"));
     const b = browser("192.0.2.41");
-    expect((await b.send(yearTeaser, "/api/premium/newyear-2027/teaser", { body: { birth: DEFAULT_SAJU_FORM } })).status).toBe(409);
-    await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
     expect((await b.send(yearTeaser, "/api/premium/newyear-2027/teaser", { body: { birth: DEFAULT_SAJU_FORM } })).status).toBe(200);
+    vi.setSystemTime(Date.parse("2027-12-01T00:00:00+09:00"));
+    expect((await browser("192.0.2.39").send(yearTeaser, "/api/premium/newyear-2027/teaser", { body: { birth: DEFAULT_SAJU_FORM } })).status).toBe(409);
   });
 });
 

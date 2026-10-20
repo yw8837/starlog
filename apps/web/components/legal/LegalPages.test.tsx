@@ -15,10 +15,10 @@ describe("policy pages", () => {
   });
 
   for (const [name, Page] of Object.entries(PAGES)) {
-    it(`${name}: one h1, effective 2026-10-15, and no address but the configured business one`, () => {
+    it(`${name}: one h1, effective 2026-10-20 (the premium clauses in force, owner 2026-10-20), and no address but the configured business one`, () => {
       const { container } = render(<Page />);
       expect(container.querySelectorAll("h1")).toHaveLength(1);
-      expect(container.querySelector('time[datetime="2026-10-15"]')).not.toBeNull();
+      expect(container.querySelector('time[datetime="2026-10-20"]')).not.toBeNull();
       // Allowed: "IP 주소" (a logged item in the privacy policy) and SITE.business.address with its label.
       const rest = (container.textContent ?? "")
         .replaceAll("IP 주소", "")
@@ -82,7 +82,7 @@ describe("policy pages", () => {
     expect(link?.closest("li")?.textContent).toBe("Google 외 제3자 광고 사업자의 맞춤 광고도 www.aboutads.info에서 끌 수 있습니다.");
     // The Google settings link stays, and the 시행일 is the one lib/legal.ts holds.
     expect(container.querySelector('a[href="https://adssettings.google.com"]')).not.toBeNull();
-    expect(container.querySelector('time[datetime="2026-10-15"]')).not.toBeNull();
+    expect(container.querySelector('time[datetime="2026-10-20"]')).not.toBeNull();
     cleanup();
 
     vi.stubEnv("ADSENSE_CLIENT", "");

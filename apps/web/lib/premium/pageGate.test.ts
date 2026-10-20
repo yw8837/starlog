@@ -14,7 +14,7 @@ const connection = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), connection }));
 
 const CODE = "owner-code-for-tests-0001";
-const NOW = Date.parse("2026-10-25T03:00:00Z"); // after 10/24 (켈틱·궁합 on sale)
+const NOW = Date.parse("2026-10-25T03:00:00Z"); // after everything went on sale (owner 2026-10-20)
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });

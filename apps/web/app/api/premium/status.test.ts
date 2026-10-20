@@ -9,7 +9,7 @@ afterEach(() => {
 describe("GET /api/premium/status", () => {
   it("lists every premium product with its state and window", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.parse("2026-10-25T12:00:00+09:00")); // after 10/24 (켈틱·궁합 on sale)
+    vi.setSystemTime(Date.parse("2026-10-25T12:00:00+09:00")); // after everything went on sale (owner 2026-10-20)
     vi.stubEnv("STARLOG_PREMIUM", "on");
     vi.stubEnv("STARLOG_PAYMENTS", "on");
     const res = await GET(new Request("http://localhost/api/premium/status"));
@@ -17,8 +17,9 @@ describe("GET /api/premium/status", () => {
     expect(res.headers.get("cache-control")).toBe("private, max-age=60");
     const { products } = (await res.json()) as { products: Array<{ id: string; open: boolean; opensAt: number | null }> };
     expect(products.map((p) => p.id)).toEqual(["tarot-deep", "match", "newyear-2027"]);
-    expect(products[0]).toMatchObject({ open: true, opensAt: Date.parse("2026-10-24T00:00:00+09:00") });
-    expect(products[2]!.opensAt).toBe(Date.parse("2026-11-15T00:00:00+09:00"));
+    // all open, no opening date (owner 2026-10-20); 2027 신년운세 says when it closes
+    expect(products.map((p) => [p.open, p.opensAt])).toEqual([[true, null], [true, null], [true, null]]);
+    expect((products[2] as { closesAt?: number }).closesAt).toBe(Date.parse("2027-12-01T00:00:00+09:00"));
   });
 
   it("answers closed and hidden when the flag is off", async () => {

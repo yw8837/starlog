@@ -57,9 +57,6 @@ const PREMIUM: Product[] = SITE.price.premium.map((premium) => {
   };
 });
 
-/** 2027 신년운세 opens mid-November (SITE.price.premium). */
-export const NEWYEAR_OPENS_AT = Date.parse(SITE.price.premium.find((p) => p.id === "newyear-2027")!.opensAt);
-
 export const PRODUCTS: readonly Product[] = [...STANDARD, ...PREMIUM];
 
 export function productById(id: string): Product | null {
