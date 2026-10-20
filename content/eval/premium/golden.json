@@ -1,6 +1,6 @@
 {
   "schema": "premium-golden/1",
-  "note": "Stage 4 real-API eval (2026-10-17): two cases per product, the most representative of spec §12's six. Births are fictional. Births omit what DEFAULT_SAJU_FORM gives (solar, time unknown, Seoul). 2027 신년운세 takes no free text (saju-topics §18-1), so N1's 고민 is its 일 상태 only. A seed fixes the cards (createDeck(seed), picks 0..n-1).",
+  "note": "Stage 4 real-API eval (2026-10-17): two cases per product, the most representative of spec §12's six. Births are fictional. Births omit what DEFAULT_SAJU_FORM gives (solar, time unknown, Seoul). 2027 신년운세 takes no free text (saju-topics §18-1), so N1's 고민 is its 일 상태 only. A seed fixes the cards of 켈틱 크로스 10장 (createDeck(seed), picks 0..n-1). The 프리미엄 궁합 reads the two people's saju only since 2026-10-17 (no cards, no seed); its facts are computed as of the harness's NOW (2026-11-20), so its year ahead runs 2026-11 to 2027-10.",
   "tarot-deep": [
     {
       "id": "D1", "label": "연애·연락", "seed": "golden-D1",
@@ -21,12 +21,12 @@
   ],
   "match": [
     {
-      "id": "M1", "label": "연인(둘 다 시각 앎)", "seed": "golden-M1", "relation": "lover", "partnerLabel": "준호", "concern": "요즘 대화가 줄었어요",
+      "id": "M1", "label": "연인(둘 다 시각 앎)", "relation": "lover", "partnerLabel": "준호", "concern": "요즘 대화가 줄었어요",
       "me": { "year": 1990, "month": 1, "day": 1, "timeKnown": true, "hour": 21, "minute": 10, "gender": "female" },
       "partner": { "year": 1992, "month": 2, "day": 26, "timeKnown": true, "hour": 8, "minute": 30, "gender": "male" }
     },
     {
-      "id": "M2", "label": "썸(상대 시각 모름)", "seed": "golden-M2", "relation": "crush",
+      "id": "M2", "label": "썸(상대 시각 모름)", "relation": "crush",
       "me": { "year": 1995, "month": 3, "day": 10, "timeKnown": true, "hour": 14, "minute": 0, "gender": "female" },
       "partner": { "year": 1993, "month": 11, "day": 2, "gender": "male" }
     }

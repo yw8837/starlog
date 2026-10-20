@@ -3,6 +3,7 @@
 // part (as the routes write it), and one follow-up, through the routes' own adapters, so every prompt is the one
 // production sends. Writes every output, summary.md and summary.json to apps/web/test-results/premium-eval/<folder>/
 // (gitignored; SMOKE_OUT overrides).
+// Products: SMOKE_PRODUCTS (comma-separated ids, e.g. "match"; default all three) runs only their golden cases.
 // Budget: SMOKE_BUDGET_KRW (vitest.premium.config.ts defaults it to 7,000). Before every upstream call (an attempt, a
 // regeneration, the provider's own second call after max_tokens) the spend so far plus the larger of spec §11's
 // estimate and the dearest call of its kind seen so far must stay within it, or nothing more is called. Every billed
@@ -11,6 +12,7 @@
 // usage: SMOKE_PROVIDER=mock pnpm ai:premium      (free dry run, mock provider, no key needed)
 //        pnpm ai:premium                          (real API, 7,000원 cap)
 //        SMOKE_BUDGET_KRW=5000 pnpm ai:premium    (another cap)
+//        SMOKE_PRODUCTS=match SMOKE_BUDGET_KRW=2500 pnpm ai:premium   (the two 프리미엄 궁합 cases only)
 import { mkdirSync, writeFileSync } from "node:fs";
 import { DEFAULT_REVERSAL_RATE, TEMPLATES, createDeck, pickCards, type TemplateId } from "@starlog/core";
 import goldenJson from "@content/eval/premium/golden.json";
@@ -24,7 +26,7 @@ import { aiTells } from "@/lib/ai/style";
 import type { Gate } from "@/lib/api/http";
 import { DEEP_ADAPTER, MATCH_ADAPTER, NEWYEAR_ADAPTER, type Adapter } from "@/lib/premium/adapters";
 import { preparePremiumFollowUp } from "@/lib/premium/followup";
-import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, type PremiumId } from "@/lib/premium/products";
+import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, PREMIUM_IDS, isPremiumId, type PremiumId } from "@/lib/premium/products";
 import { runNextPart, type PremiumContext } from "@/lib/premium/run";
 import { DEFAULT_SAJU_FORM, type SajuForm } from "@/lib/sajuForm";
 import { chapterIdOf, type ChapterContext } from "@/lib/security/chapterToken";
@@ -35,6 +37,7 @@ type Kind = "preview" | "part" | "followup";
 /**
  * Spec §11's estimate of one attempt (KRW at 1,500원/$, the high end): previews and follow-ups as listed; a part is its
  * reading's high end split over its parts, ×1.5 since the parts are not equal (deep 705/2, match 680/2, new year 830/3).
+ * The 궁합's second part is saju now (owner 2026-10-17), about the size its card part was.
  */
 export const ATTEMPT_KRW: Record<PremiumId, Record<Kind, number>> = {
   "tarot-deep": { preview: 50, part: 529, followup: 76 },
@@ -50,13 +53,16 @@ const FOLLOW_UP: Record<PremiumId, string> = {
 
 interface Golden {
   "tarot-deep": Array<{ id: string; label: string; seed: string; input: Record<string, unknown> }>;
-  match: Array<{ id: string; label: string; seed: string; relation: string; partnerLabel?: string; concern?: string; me: Partial<SajuForm>; partner: Partial<SajuForm> }>;
+  match: Array<{ id: string; label: string; relation: string; partnerLabel?: string; concern?: string; me: Partial<SajuForm>; partner: Partial<SajuForm> }>;
   "newyear-2027": Array<{ id: string; label: string; birth: Partial<SajuForm>; loveStatus?: string; workStatus?: string }>;
 }
 const golden = goldenJson as unknown as Golden;
 
 const env = process.env;
 const BUDGET_KRW = Number(env.SMOKE_BUDGET_KRW ?? 7000);
+/** SMOKE_PRODUCTS="match" (or "match,newyear-2027"): only these products' cases; unset or empty: all three. */
+const PRODUCTS_RAW = (env.SMOKE_PRODUCTS ?? "").split(",").map((p) => p.trim()).filter(Boolean);
+const PRODUCTS: PremiumId[] = PRODUCTS_RAW.length ? PRODUCTS_RAW.filter(isPremiumId) : [...PREMIUM_IDS];
 const FX = krwPerUsd();
 /** Inside the 2027 신년운세 window; the facts of a 궁합 are computed as of now. */
 const NOW = Date.parse("2026-11-20T12:00:00+09:00");
@@ -105,12 +111,13 @@ async function cases(): Promise<Case[]> {
   for (const g of golden["tarot-deep"]) {
     out.push({ product: "tarot-deep", id: g.id, label: g.label, adapter: DEEP_ADAPTER as unknown as Case["adapter"], body: { drawToken: await fixedDraw("deep-tarot", g.seed), input: g.input } });
   }
+  // saju only (owner 2026-10-17): the two births, the relation, the label and the concern; no cards
   for (const g of golden.match) {
     out.push({
       product: "match", id: g.id, label: g.label, adapter: MATCH_ADAPTER as unknown as Case["adapter"],
       body: {
         me: { birth: form(g.me) }, partner: { birth: form(g.partner), ...(g.partnerLabel ? { label: g.partnerLabel } : {}) },
-        relation: g.relation, ...(g.concern ? { concern: g.concern } : {}), drawToken: await fixedDraw("match", g.seed), ack: true,
+        relation: g.relation, ...(g.concern ? { concern: g.concern } : {}), ack: true,
       },
     });
   }
@@ -120,7 +127,7 @@ async function cases(): Promise<Case[]> {
       body: { birth: form(g.birth), ...(g.loveStatus ? { loveStatus: g.loveStatus } : {}), ...(g.workStatus ? { workStatus: g.workStatus } : {}) },
     });
   }
-  return out;
+  return out.filter((c) => PRODUCTS.includes(c.product));
 }
 
 /** What may be written of an output: a 궁합 preview's charts and code-written lines come from both births, so they stay out. */
@@ -134,12 +141,13 @@ test("premium eval", async () => {
   const mock = env.SMOKE_PROVIDER === "mock";
   const key = env.ANTHROPIC_API_KEY?.trim();
   if (!Number.isFinite(BUDGET_KRW) || BUDGET_KRW <= 0) throw new Error("SMOKE_BUDGET_KRW는 0보다 큰 원 단위 숫자여야 해요.");
+  if (PRODUCTS_RAW.length && PRODUCTS.length !== PRODUCTS_RAW.length) throw new Error(`SMOKE_PRODUCTS에 없는 상품이 있어요: ${PRODUCTS_RAW.join(", ")} (tarot-deep, match, newyear-2027 가운데서)`);
   if (!mock && !key) throw new Error("ANTHROPIC_API_KEY가 없어 아무것도 부르지 않았어요. 모의 실행은 SMOKE_PROVIDER=mock 으로 해요.");
   const real = mock ? mockProvider : anthropicProvider(key!);
   const folder = `${new Date().toISOString().replace(/[:.]/g, "-")}-${mock ? "mock" : "real"}`;
   const dir = env.SMOKE_OUT ? new URL(`file:///${env.SMOKE_OUT.replace(/\\/g, "/").replace(/\/?$/, "/")}${folder}/`) : new URL(`../apps/web/test-results/premium-eval/${folder}/`, import.meta.url);
   mkdirSync(dir, { recursive: true });
-  console.log(`ai:premium · ${mock ? "모의 공급자(무료)" : "실제 API"} · 예산 ${BUDGET_KRW.toLocaleString("ko-KR")}원 · 환율 ${FX}원/$`);
+  console.log(`ai:premium · ${mock ? "모의 공급자(무료)" : "실제 API"} · 예산 ${BUDGET_KRW.toLocaleString("ko-KR")}원 · 환율 ${FX}원/$ · 상품 ${PRODUCTS.join(", ")}`);
 
   const rows: Row[] = [];
   const budget = newBudget(BUDGET_KRW);
@@ -207,7 +215,7 @@ test("premium eval", async () => {
   const won = (n: number) => `${Math.round(n).toLocaleString("ko-KR")}원`;
   const lines = [
     `# ai:premium 요약 (${folder})`, "",
-    `- 공급자: ${mock ? "모의(무료)" : "실제 API"} · 총비용 약 ${won(budget.spentKrw)} · 예산 ${won(BUDGET_KRW)} · 환율 ${FX}원/$`,
+    `- 공급자: ${mock ? "모의(무료)" : "실제 API"} · 총비용 약 ${won(budget.spentKrw)} · 예산 ${won(BUDGET_KRW)} · 환율 ${FX}원/$ · 상품 ${PRODUCTS.join(", ")}`,
     `- 예산 중단: ${budget.stopped ?? "없음"}`, "",
     "## 호출마다", "",
     "| 상품 | 케이스 | 호출 | 결과 | 시도 | 원 | 초 | 입력/출력/캐시읽기/캐시쓰기 토큰 | 검증기 | AI 티 |",
@@ -217,7 +225,7 @@ test("premium eval", async () => {
     "| 상품 | 완성 | 미리보기 평균 | 풀이(파트 합) 평균 | 물어보기 1회 평균 | 풀이+물어보기 1회 | 가격 대비 | 파트 초 최대 |",
     "|---|---|---|---|---|---|---|---|",
   ];
-  for (const product of Object.keys(ATTEMPT_KRW) as PremiumId[]) {
+  for (const product of PRODUCTS) {
     const r = rows.filter((row) => row.product === product);
     const ids = [...new Set(r.map((row) => row.caseId))];
     const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
@@ -229,7 +237,7 @@ test("premium eval", async () => {
     const partMax = Math.max(0, ...r.filter((row) => row.kind === "part").map((row) => row.seconds));
     lines.push(`| ${product} | ${complete}/${ids.length} | ${won(preview)} | ${won(avg(readings))} | ${won(followup)} | ${won(total)} | ${((100 * total) / PREMIUM[product].krw).toFixed(1)}% | ${partMax}s |`);
   }
-  writeFileSync(new URL("summary.json", dir), JSON.stringify({ folder, provider: mock ? "mock" : "real", budget: BUDGET_KRW, spent: Math.round(budget.spentKrw), stopped: budget.stopped, rows }, null, 2));
+  writeFileSync(new URL("summary.json", dir), JSON.stringify({ folder, provider: mock ? "mock" : "real", products: PRODUCTS, budget: BUDGET_KRW, spent: Math.round(budget.spentKrw), stopped: budget.stopped, rows }, null, 2));
   writeFileSync(new URL("summary.md", dir), `${lines.join("\n")}\n`);
   console.log(`\n${lines.join("\n")}\n\n출력 폴더: ${dir.pathname}`);
   expect(rows.length).toBeGreaterThan(0);
@@ -237,6 +245,7 @@ test("premium eval", async () => {
     // The dry run proves the harness: every call passes and nothing is spent.
     expect(budget.spentKrw).toBe(0);
     expect(rows.filter((r) => !r.ok)).toEqual([]);
-    expect(rows).toHaveLength(6 * 2 + (2 + 2 + 3) * 2);
+    // per case: the preview, each part and one follow-up
+    expect(rows).toHaveLength(PRODUCTS.reduce((n, product) => n + golden[product].length * (2 + PREMIUM[product].parts.length), 0));
   }
 });
