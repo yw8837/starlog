@@ -96,8 +96,8 @@ export function progressPlan(kind: GenerationKind, opts: { positions?: readonly 
 
 /**
  * A premium reading's plans, one per part (P5 spec §6.1: one request writes one part), keyed by the
- * part draft's top-level fields as the stream names them. Positions are the spread's (10 or 5);
- * the new year's months default to 1월~12월.
+ * part draft's top-level fields as the stream names them. Positions are the 10-card spread's; the
+ * 궁합's year ahead is four bands; the new year's months default to 1월~12월.
  */
 export function premiumProgressPlans(id: PremiumId, opts: { positions?: readonly string[]; months?: readonly string[] } = {}): ProgressPlan[] {
   const card = (key: string) => (position: string, index: number): Stage => ({ key, index, caption: `${position} 카드를 읽고 있어요` });
@@ -124,11 +124,12 @@ export function premiumProgressPlans(id: PremiumId, opts: { positions?: readonly
           stages: [one("dayMasters", "두 사람의 일간을 읽고 있어요"), one("elements", "오행을 견주고 있어요"), one("pillars", "기둥 사이를 살피고 있어요"), one("luck", "두 사람의 10년을 겹쳐 보고 있어요")],
         },
         {
-          opening: "카드 다섯 장을 다시 보고 있어요",
+          opening: "두 사람의 앞으로 1년을 살피고 있어요",
           stages: [
-            one("verdict", "한 줄로 정리하고 있어요"), ...positions.map(card("cards")), one("connection", "다섯 장을 엮고 있어요"),
-            one("bridge", "사주와 카드를 나란히 놓고 있어요"), one("action", "이번 주 해 볼 일을 적고 있어요"), one("observation", "확인해 볼 신호를 고르고 있어요"),
-            one("followUps", "마무리하고 있어요"),
+            one("verdict", "한 줄로 정리하고 있어요"),
+            ...["첫", "두 번째", "세 번째", "마지막"].map((nth, index): Stage => ({ key: "periods", index, caption: `${nth} 석 달을 적고 있어요` })),
+            one("together", "서로에게 맞는 말과 행동을 고르고 있어요"), one("avoid", "피하면 좋은 말과 행동을 고르고 있어요"),
+            one("action", "오늘 해 볼 일을 적고 있어요"), one("observation", "확인해 볼 신호를 고르고 있어요"), one("followUps", "마무리하고 있어요"),
           ],
         },
       ];

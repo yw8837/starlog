@@ -10,7 +10,8 @@ import { MAX_TEASER_SEAL_CHARS } from "@/lib/security/teaserSeal";
 const WHO = z.enum(["me", "us", "work", "group"]);
 const WHEN = z.enum(["today", "week", "month", "year"]);
 
-export const DRAW_TEMPLATES = ["relationship-contact", "relationship", "work", "choice", "self-flow", "group", "deep-tarot", "match"] as const;
+/** The spreads /api/tarot/draw deals. The 프리미엄 궁합 reads no cards since 2026-10-17 (owner), so none is dealt for it. */
+export const DRAW_TEMPLATES = ["relationship-contact", "relationship", "work", "choice", "self-flow", "group", "deep-tarot"] as const;
 
 export const DrawBody = z.object({
   templateId: z.enum(DRAW_TEMPLATES),

@@ -8,12 +8,13 @@ import { DEFAULT_SAJU_FORM, toSajuInput, type SajuForm } from "@/lib/sajuForm";
 import { DeepTarotReadingSchema, MatchReadingSchema, NewYearReadingSchema } from "@/lib/ai/premiumSchemas";
 import { kbCard } from "@/lib/kb";
 import { isDeepTarotReading, isMatchReading, isNewYearReading } from "@/lib/reading/validate";
-import { MATCH_SECOND_SAMPLE, PREMIUM_SAMPLES, sampleExcerpt } from "./samples";
+import { MATCH_SECOND_SAMPLE, PREMIUM_SAMPLES, sampleApproved, sampleExcerpt } from "./samples";
 
 /**
- * The samples are the owner-approved real outputs of the stage 4 eval (2026-10-17): 켈틱 크로스 10장 D1 (연애·연락),
- * 프리미엄 궁합 M1 (연인) and M2 (썸, the other person's time unknown), 2027 신년운세 N3 (대운 changes in 2027). Each passed
- * its validators when written; their inputs are made up and only summarised here.
+ * 켈틱 크로스 10장 D1 (연애·연락) and 2027 신년운세 N3 (대운 changes in 2027) are the owner-approved real outputs of the stage 4
+ * eval (2026-10-17). The 프리미엄 궁합's M1 (연인) and M2 (썸, the other person's time unknown) are mock-provider placeholders in
+ * its saju-only shape (owner 2026-10-17) until the real eval's approved outputs replace them. Their inputs are made up
+ * and only summarised here.
  */
 /** How closely a card's section quotes one of `facts`: the best fact's share of its 6-character pieces found in the section. */
 function quoted(body: string, facts: Array<{ ko: string }>): number {
@@ -32,10 +33,20 @@ describe("premium samples", () => {
     expect(MatchReadingSchema.safeParse(match.reading).success).toBe(true);
     expect(MatchReadingSchema.safeParse(match2.reading).success).toBe(true);
     expect(isMatchReading(match2.reading)).toBe(true);
-    expect(match2.cards).toHaveLength(5);
     expect(NewYearReadingSchema.safeParse(year.reading).success).toBe(true);
     expect([isDeepTarotReading(deep.reading), isMatchReading(match.reading), isNewYearReading(year.reading)]).toEqual([true, true, true]);
-    expect([deep.cards.length, match.cards.length]).toEqual([10, 5]);
+    expect(deep.cards.length).toBe(10);
+    // saju only (owner 2026-10-17): the year ahead in four bands, no card
+    for (const sample of [match, match2]) {
+      expect(sample.reading.periods).toHaveLength(4);
+      expect(JSON.stringify(sample)).not.toMatch(/"cards"|"deck"|cardId/);
+    }
+  });
+
+  it("keep the 궁합's mock samples marked as placeholders, so no product page shows them as samples; the others are approved", () => {
+    expect([match.placeholder, match2.placeholder]).toEqual([true, true]);
+    expect([sampleApproved("tarot-deep"), sampleApproved("match"), sampleApproved("newyear-2027")]).toEqual([true, false, true]);
+    expect(["placeholder" in deep, "placeholder" in year]).toEqual([false, false]);
   });
 
   it("never name a model, the tradition or a beta, and carry no birth of a partner", () => {
@@ -58,8 +69,8 @@ describe("premium samples", () => {
     expect(MATCH_SECOND_SAMPLE.input.summary).toContain("상대가 태어난 시를 몰라요");
   });
 
-  it("record the card design their text describes, so their pages show those faces: the 1909 scans for all three (never regenerated)", () => {
-    const samples = [["D1", PREMIUM_SAMPLES["tarot-deep"], PREMIUM_SAMPLES["tarot-deep"].reading.positions], ["M1", PREMIUM_SAMPLES.match, PREMIUM_SAMPLES.match.reading.cards], ["M2", MATCH_SECOND_SAMPLE, MATCH_SECOND_SAMPLE.reading.cards]] as const;
+  it("record the card design their text describes, so their pages show those faces: the 1909 scans for D1 (never regenerated)", () => {
+    const samples = [["D1", PREMIUM_SAMPLES["tarot-deep"], PREMIUM_SAMPLES["tarot-deep"].reading.positions]] as const;
     for (const [name, sample, sections] of samples) {
       expect([name, sample.deck]).toEqual([name, "rws1909"]);
       // Measured, not assumed: each card's section quotes the facts only its recorded deck draws far more than the other's.

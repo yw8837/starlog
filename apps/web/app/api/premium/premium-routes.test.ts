@@ -70,9 +70,9 @@ async function shopper(): Promise<Browser> {
   return b;
 }
 
-async function dealt(b: Browser, templateId: "deep-tarot" | "match"): Promise<string> {
-  const picks = templateId === "deep-tarot" ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : [4, 18, 33, 51, 70];
-  return ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId, picks } })).json()) as { drawToken: string }).drawToken;
+/** The ten cards of 켈틱 크로스 10장 (the 궁합 reads none since 2026-10-17). */
+async function dealt(b: Browser, templateId: "deep-tarot"): Promise<string> {
+  return ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId, picks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] } })).json()) as { drawToken: string }).drawToken;
 }
 
 const json = async (res: Response) => (await res.json()) as Record<string, any>;
@@ -143,34 +143,35 @@ describe("premium previews", () => {
     const deep = { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT };
     expect((await b.send(deepTeaser, "/t", { body: deep })).status).toBe(200);
     expect((await browser("192.0.2.47").send(deepTeaser, "/t", { body: deep })).status).toBe(409);
-    const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true };
+    const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true };
     expect((await b.send(matchTeaser, "/t", { body: pair })).status).toBe(409);
   });
 
-  it("previews the pair: both charts and the five cards; a partner birth the chart cannot take names its field", async () => {
+  it("previews the pair: both charts and no cards (saju only, owner 2026-10-17); a partner birth the chart cannot take names its field", async () => {
     useTestDb();
     const b = browser("192.0.2.45");
-    const body = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true };
+    const body = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true };
     const res = await b.send(matchTeaser, "/t", { body });
     expect(res.status).toBe(200);
     const { preview } = await json(res);
-    expect(preview.cards).toHaveLength(5);
+    expect(preview).not.toHaveProperty("cards");
+    expect(preview.lockedToc).toHaveLength(13);
     expect(Object.keys(preview.charts)).toEqual(["me", "partner"]);
     const future = await b.send(matchTeaser, "/t", { body: { ...body, partner: { birth: { ...PARTNER, year: 2030 } } } });
     expect(future.status).toBe(400);
     expect(await json(future)).toMatchObject({ code: "BAD_REQUEST", field: "partner.date" });
   });
 
-  it("refuses a draw of another spread, the one-card daily topic and a typed topic without its who", async () => {
+  it("refuses a draw of another spread, the one-card daily topic and a typed topic without its who; a 궁합 takes no draw at all", async () => {
     useTestDb();
     const b = browser("192.0.2.46");
     const deep = await dealt(b, "deep-tarot");
-    const pair = await dealt(b, "match");
+    const standard = ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "relationship", picks: [0, 1, 2] } })).json()) as { drawToken: string }).drawToken;
     const answer = async (handler: typeof deepTeaser, body: unknown) => json(await b.send(handler, "/t", { body }));
     // `token: "draw"`: deal the cards again (a resume token that fails says `token: "resume"`)
-    expect(await answer(deepTeaser, { drawToken: pair, input: DEEP_INPUT })).toMatchObject({ code: "BAD_TOKEN", token: "draw" });
-    expect(await answer(matchTeaser, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: deep, ack: true }))
-      .toMatchObject({ code: "BAD_TOKEN", token: "draw" });
+    expect(await answer(deepTeaser, { drawToken: standard, input: DEEP_INPUT })).toMatchObject({ code: "BAD_TOKEN", token: "draw" });
+    // an older tab's draw token is dropped with the rest of what the 궁합 no longer reads
+    expect((await b.send(matchTeaser, "/t", { body: { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: deep, ack: true } })).status).toBe(200);
     expect((await answer(deepTeaser, { drawToken: deep, input: { ...DEEP_INPUT, topicId: "daily" } })).code).toBe("BAD_REQUEST");
     expect((await answer(deepTeaser, { drawToken: deep, input: { topicId: "custom", topicText: "이사", question: "", conditions: [] } })).code).toBe("BAD_REQUEST");
   });
@@ -231,15 +232,21 @@ describe("paid premium readings", () => {
     expect(saved.readings[0]?.chapter).toMatchObject({ kind: "tarot-deep", deck: "starlog" });
   });
 
-  it("keeps the card design the 궁합 was written for in the account's copy too (owner 2026-10-17)", async () => {
+  it("writes the 궁합 from the two people's saju only (owner 2026-10-17): no cards or card design in the account's copy or its token", async () => {
     const db = useTestDb();
     const b = await shopper();
     await buy(b, "match");
-    const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true, deck: "starlog" };
+    const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true, deck: "starlog" };
     const { done } = await finish(b, matchReading, { ...pair, unlock: { method: "paid" } });
     expect(done.status).toBe("done");
+    expect(done.reading.periods).toHaveLength(4);
     const saved = await listReadings(db, accountSecret()!, (await db.prepare("SELECT id FROM users LIMIT 1").first<{ id: string }>())!.id);
-    expect(saved.readings[0]?.chapter).toMatchObject({ kind: "match", deck: "starlog" });
+    expect(saved.readings[0]?.chapter).toMatchObject({ kind: "match", relation: "friend" });
+    expect(saved.readings[0]?.chapter).not.toHaveProperty("cards");
+    expect(saved.readings[0]?.chapter).not.toHaveProperty("deck");
+    const ctx = (await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now()))?.ctx;
+    expect(ctx).not.toHaveProperty("cards");
+    expect(ctx).not.toHaveProperty("deck");
   });
 
   it("keeps one reservation across the parts, extended part by part past its first six minutes", async () => {
@@ -413,7 +420,7 @@ describe("paid premium readings", () => {
     const b = await shopper();
     await buy(b, "match");
     const spy = vi.spyOn(mockProvider, "generate");
-    const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true };
+    const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true };
     const labelled = { ...pair, partner: { birth: PARTNER, label: "죽고 싶어" }, unlock: { method: "paid" } };
     expect((await b.send(matchReading, "/r", { body: labelled })).status).toBe(422);
     expect((await b.send(matchTeaser, "/t", { body: { ...pair, concern: "요즘 사라지고 싶어요" } })).status).toBe(422);
@@ -430,7 +437,7 @@ describe("paid premium readings", () => {
       accept: NDJSON,
       body: {
         me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: { ...DEFAULT_SAJU_FORM, year: 1992, month: 1, day: 26 } },
-        relation: "spouse", drawToken: await dealt(b, "match"), ack: true, unlock: { method: "paid" },
+        relation: "spouse", ack: true, unlock: { method: "paid" },
       },
     });
     const events = (await res.text()).trim().split("\n").map((line) => JSON.parse(line) as { type: string; data?: Record<string, unknown> });
@@ -482,7 +489,7 @@ describe("paid premium readings", () => {
     await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
     const finished = [
       await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "owner" } }),
-      await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", drawToken: await dealt(b, "match"), ack: true, unlock: { method: "owner" } }),
+      await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", ack: true, unlock: { method: "owner" } }),
       await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } }),
     ];
     const spy = vi.spyOn(mockProvider, "generate");
@@ -573,7 +580,7 @@ describe("premium follow-ups (P5 spec §6.3)", () => {
     useTestDb();
     const b = browser("192.0.2.63");
     await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
-    const { done } = await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", drawToken: await dealt(b, "match"), ack: true, unlock: { method: "owner" } });
+    const { done } = await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true, unlock: { method: "owner" } });
     vi.setSystemTime(T0 + 20 * 24 * 3_600_000);
     matchPrompts.calls.length = 0;
     const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: done.reading, question: "요즘 서로 연락이 뜸한데 어떻게 할까요?" } });

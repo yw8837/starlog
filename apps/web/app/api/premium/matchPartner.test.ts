@@ -13,12 +13,11 @@ import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 import { browser, buy, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as followup } from "../followup/route";
-import { POST as draw } from "../tarot/draw/route";
 import { POST as matchReading } from "./match/reading/route";
 
 /**
  * Owner 2026-10-16: the 궁합 partner's information is never kept on our servers. The account's copy holds the
- * reading, the relation, the label, the concern, the cards and the user's own birth only, and no chapter token;
+ * reading, the relation, the label, the concern and the user's own birth only (no cards since 2026-10-17), and no chapter token;
  * the device's token carries the partner sealed, for follow-ups on that device for 30 days.
  */
 
@@ -46,9 +45,9 @@ afterEach(() => {
 const json = async (res: Response) => (await res.json()) as Record<string, any>;
 const tokenPayload = (token: string) => JSON.parse(Buffer.from(token.split(".")[0]!, "base64url").toString("utf8")) as { ctx: Record<string, any> };
 
-async function writeMatch(b: Browser) {
-  const drawToken = ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "match", picks: [4, 18, 33, 51, 70] } })).json()) as { drawToken: string }).drawToken;
-  const body = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", concern: "요즘 연락이 뜸해요", drawToken, ack: true, unlock: { method: "paid" } };
+/** `concern`: a second reading written from other words reads differently (the mock writes the same text for the same input). */
+async function writeMatch(b: Browser, concern = "요즘 연락이 뜸해요") {
+  const body = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", concern, ack: true, unlock: { method: "paid" } };
   let res = await json(await b.send(matchReading, "/r", { body }));
   while (res.status === "continue") res = await json(await b.send(matchReading, "/r", { body: { ...body, resume: res.resume } }));
   return res;
@@ -128,7 +127,7 @@ describe("the 궁합 partner's information (owner 2026-10-16)", () => {
     await buy(b, "match");
     await buy(b, "match");
     const first = await writeMatch(b);
-    const second = await writeMatch(b);
+    const second = await writeMatch(b, "요즘 대화가 줄었어요");
     const a = await openChapter(first.chapterToken, first.reading, signingSecret()!, Date.now());
     const other = await openChapter(second.chapterToken, second.reading, signingSecret()!, Date.now());
     const moved = { ...other!.ctx, partner: { ...(other!.ctx as { partner: object }).partner, sealed: (a!.ctx as { partner: { sealed: string } }).partner.sealed } } as unknown as ChapterContext;

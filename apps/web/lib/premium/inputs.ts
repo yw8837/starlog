@@ -18,16 +18,14 @@ export const DeepTarotBody = z.object({
 });
 export const DeepTarotReadingBody = DeepTarotBody.extend({ unlock: Unlock, resume: Resume });
 
+/** Saju only (owner 2026-10-17): no draw token, no card design; one an older tab still sends is dropped. */
 export const MatchBody = z.object({
   me: z.object({ birth: BirthBody, ...Status }),
   partner: z.object({ birth: BirthBody, label: z.string().trim().max(10).optional() }),
   relation: z.enum(MATCH_RELATIONS),
   concern: z.string().trim().max(60).optional(),
-  drawToken: z.string().min(1).max(4096),
   /** "상대에게 알리거나 동의를 받을 수 있는 사이에서만 입력할게요" (spec §5.2) */
   ack: z.literal(true),
-  /** The card design the user sees, as the deep reading's input takes it: the five cards quote its pictures (absent: the 1909 scans). */
-  deck: TarotInputBody.shape.deck,
 });
 export const MatchReadingBody = MatchBody.extend({ unlock: Unlock, resume: Resume });
 

@@ -19,17 +19,15 @@ afterEach(() => {
 });
 
 describe("premium draws", () => {
-  it("deals ten cards for deep-tarot and five for match", async () => {
+  it("deals ten cards for deep-tarot, and none for the 궁합: it reads no cards since 2026-10-17 (owner)", async () => {
     const deep = await post(draw, { templateId: "deep-tarot", picks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] });
     expect(deep.status).toBe(200);
     expect(((await deep.json()) as { cards: unknown[] }).cards).toHaveLength(10);
-    const match = await post(draw, { templateId: "match", picks: [10, 20, 30, 40, 50] });
-    expect(((await match.json()) as { cards: unknown[] }).cards).toHaveLength(5);
+    expect((await post(draw, { templateId: "match", picks: [10, 20, 30, 40, 50] })).status).toBe(400);
   });
 
   it("refuses a pick count the spread cannot take", async () => {
     expect((await post(draw, { templateId: "deep-tarot", picks: [0, 1, 2] })).status).toBe(400);
-    expect((await post(draw, { templateId: "match", picks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] })).status).toBe(400);
   });
 
   it("does not open a standard reading with a premium draw", async () => {

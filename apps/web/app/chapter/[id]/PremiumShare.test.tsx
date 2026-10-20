@@ -21,14 +21,22 @@ const DEEP = {
     staff: section("기둥"), timing: section("시기"), action: section("오늘 해 볼 일"), observation: section("확인해 볼 신호"), followUps: [],
   },
 };
+const SAJU = { dayMasters: section("두 사람의 일간"), elements: section("오행"), pillars: section("기둥 사이"), luck: section("두 사람의 10년") };
+const MATCH = {
+  id: "match0001", createdAt: Date.now(), chapterToken: "t", turns: [], followUpsLeft: 3, kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", concern: "요즘 연락이 뜸해요",
+  me: { birth: DEFAULT_SAJU_FORM },
+  reading: {
+    verdict: "속도를 맞춰 가요", saju: SAJU, periods: ["2026년 10월~12월", "2027년 1월~3월", "2027년 4월~6월", "2027년 7월~9월"].map(section),
+    together: section("서로에게 맞는 말과 행동"), avoid: section("서로 피하면 좋은 말과 행동"), action: section("오늘 해 볼 일"), observation: section("확인해 볼 신호"), followUps: [],
+  },
+};
 const POS5 = ["나의 마음", "그 사람 쪽 흐름", "두 사람 사이", "엇갈리는 지점", "함께 가꿀 방향"];
 const CARDS5 = POS5.map((position, i) => ({ position, cardId: `wands-0${i + 1}`, orientation: "upright" }));
-const MATCH = {
-  id: "match0001", createdAt: Date.now(), chapterToken: "t", turns: [], followUpsLeft: 5, kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", concern: "요즘 연락이 뜸해요",
-  me: { birth: DEFAULT_SAJU_FORM }, cards: CARDS5,
+/** One written with five cards before the 궁합 became saju only. */
+const LEGACY_MATCH = {
+  ...MATCH, id: "match0002", cards: CARDS5,
   reading: {
-    verdict: "속도를 맞춰 가요", saju: { dayMasters: section("두 사람의 일간"), elements: section("오행"), pillars: section("기둥 사이"), luck: section("두 사람의 10년") },
-    cards: CARDS5.map((c) => ({ position: c.position, cardId: c.cardId, heading: `${c.position} 카드`, body: "본문이에요." })),
+    verdict: "속도를 맞춰 가요", saju: SAJU, cards: CARDS5.map((c) => ({ position: c.position, cardId: c.cardId, heading: `${c.position} 카드`, body: "본문이에요." })),
     connection: section("다섯 장의 연결"), bridge: section("사주와 카드"), action: section("이번 주 해 볼 일"), observation: section("확인해 볼 신호"), followUps: [],
   },
 };
@@ -65,10 +73,11 @@ describe("sharing a premium record", () => {
     expect(body).toEqual({ product: "tarot-deep", cards: CARDS10.map(({ cardId, orientation }) => ({ cardId, orientation })) });
   });
 
-  it("궁합: the relation and the five cards only, never the label, the concern or a birth", async () => {
-    seed([MATCH]);
-    const { body } = await sharedBody("match0001");
-    expect(body).toEqual({ product: "match", relation: "friend", cards: CARDS5.map(({ cardId, orientation }) => ({ cardId, orientation })) });
+  it("궁합: the relation only (saju only, owner 2026-10-17), never the label, the concern or a birth; one written with cards too", async () => {
+    seed([MATCH, LEGACY_MATCH]);
+    expect((await sharedBody("match0001")).body).toEqual({ product: "match", relation: "friend" });
+    cleanup();
+    expect((await sharedBody("match0002")).body).toEqual({ product: "match", relation: "friend" });
   });
 
   it("신년운세: the year's own title only; a title the image would refuse means no share button", async () => {

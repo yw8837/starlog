@@ -2,7 +2,7 @@ import type { Orientation, TemplateId } from "@starlog/core";
 import type { FrontDeck } from "@/lib/deck";
 import type { SajuGlance } from "@/lib/ai/schemas";
 import type {
-  ChartView, DeepTarotPreview, DeepTarotReading, MatchPreview, MatchReading, NewYearPreview, NewYearReading, PreviewCard,
+  ChartView, DeepTarotPreview, DeepTarotReading, LegacyMatchReading, MatchPreview, MatchReading, NewYearPreview, NewYearReading, PreviewCard,
 } from "@/lib/ai/premiumSchemas";
 
 /**
@@ -192,5 +192,9 @@ export type DeepTarotPreviewData = DeepTarotPreview;
 export type DeepTarotReadingData = DeepTarotReading;
 export type MatchPreviewData = MatchPreview;
 export type MatchReadingData = MatchReading;
+/** A 궁합 from before it became saju only (2026-10-17): its records still open, with their five cards. */
+export type LegacyMatchReadingData = LegacyMatchReading;
+/** Either, as a record keeps it. */
+export type StoredMatchReadingData = MatchReadingData | LegacyMatchReadingData;
 export type NewYearPreviewData = NewYearPreview;
 export type NewYearReadingData = NewYearReading;

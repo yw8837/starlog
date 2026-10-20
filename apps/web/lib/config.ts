@@ -47,7 +47,7 @@ export const SITE = {
      */
     premium: [
       { id: "tarot-deep", slug: "deep-tarot", name: "켈틱 크로스 10장", sub: "카드 10장으로 깊게 보는 흐름", krw: 7900, opens: "10월 24일 오픈 예정", opensAt: "2026-10-24T00:00:00+09:00", closesAt: "" },
-      { id: "match", slug: "match", name: "프리미엄 궁합", sub: "사주와 타로로 함께 보는 두 사람", krw: 7900, opens: "10월 24일 오픈 예정", opensAt: "2026-10-24T00:00:00+09:00", closesAt: "" },
+      { id: "match", slug: "match", name: "프리미엄 궁합", sub: "두 사람의 사주로 보는 관계와 앞으로 1년", krw: 7900, opens: "10월 24일 오픈 예정", opensAt: "2026-10-24T00:00:00+09:00", closesAt: "" },
       {
         id: "newyear-2027", slug: "newyear-2027", name: "2027 신년운세", sub: "사주로 미리 보는 2027년 한 해", krw: 14900,
         opens: "11월 중순 오픈 예정", opensAt: "2026-11-15T00:00:00+09:00", closesAt: "2027-12-01T00:00:00+09:00",

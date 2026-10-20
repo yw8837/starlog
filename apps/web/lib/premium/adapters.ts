@@ -3,7 +3,7 @@ import type { Orientation, SajuChart } from "@starlog/core";
 import type { z } from "zod";
 import { generateDeepTeaser, generateMatchTeaser, generateNewYearTeaser } from "@/lib/ai/generatePremium";
 import { buildDeepContext } from "@/lib/ai/prompts/deepTarot";
-import { RELATION_KO, buildMatchFacts, matchCardsContext } from "@/lib/ai/prompts/match";
+import { RELATION_KO, buildMatchFacts } from "@/lib/ai/prompts/match";
 import { buildNewYearFacts } from "@/lib/ai/prompts/newyear";
 import { cleanUserText, resolveTopic, type TarotContext } from "@/lib/ai/prompts/tarot";
 import type { GenerationHooks, ReadingProvider } from "@/lib/ai/provider";
@@ -83,7 +83,7 @@ export const DEEP_ADAPTER: Adapter<DeepTarotBodyData, ContextOf<"tarot-deep">> =
     }, response, now),
 };
 
-// ---- 우리 사이 궁합 ----
+// ---- 프리미엄 궁합 (saju only, owner 2026-10-17) ----
 
 export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
   id: "match",
@@ -95,15 +95,13 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
     if (me instanceof Response) return me;
     const partner = chartOf(b.partner.birth, "partner", gate.now);
     if (partner instanceof Response) return partner;
-    const draw = await openDraw(b.drawToken, gate.secret, gate.now);
-    if (!draw || draw.templateId !== "match") return errorResponse("BAD_TOKEN", { token: "draw" });
     const facts = buildMatchFacts(me, partner, {
       relation: b.relation,
       label: cleanUserText(b.partner.label ?? ""),
       concern: cleanUserText(b.concern ?? ""),
       meProfile: profileOf(b.me),
     }, gate.now);
-    return { product: "match", match: { facts, cards: matchCardsContext(b.relation, draw.cards, b.deck) } };
+    return { product: "match", match: { facts } };
   },
   teaser: async (provider, ctx, hooks) => (await generateMatchTeaser(provider, ctx.match, hooks)).data,
   async chapterContext(b, ctx, secret, chapterId) {
@@ -116,14 +114,11 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
       partner: { sealed: await sealPartner(b.partner.birth, secret, chapterId), ...(label ? { label } : {}) },
       relation: b.relation,
       ...(concern ? { concern } : {}),
-      cards: cardsOf(ctx.match.cards),
-      // The design the cards were read in (absent: the 1909 scans), so follow-ups quote the same pictures.
-      ...(b.deck ? { deck: b.deck } : {}),
     };
   },
-  // The account's copy (owner 2026-10-16): the reading, the relation, the label, the concern, the cards and the user's own
-  // birth; never the partner's birth or chart, and no chapter token (it carries the partner, sealed). Follow-ups are asked
-  // on the device that wrote it.
+  // The account's copy (owner 2026-10-16): the reading, the relation, the label, the concern and the user's own birth;
+  // never the partner's birth or chart, and no chapter token (it carries the partner, sealed). Follow-ups are asked on
+  // the device that wrote it.
   chapter(b, ctx, response, now) {
     const { label, concern } = ctx.match.facts;
     // My own status chips too (review 2026-10-17 #8): a token issued again from the seal reads the same facts.
@@ -134,9 +129,6 @@ export const MATCH_ADAPTER: Adapter<MatchBodyData, ContextOf<"match">> = {
       ...(label ? { partnerLabel: label } : {}),
       me: { birth: b.me.birth, ...(profile ? { profile } : {}) },
       ...(concern ? { concern } : {}),
-      cards: drawnOf(ctx.match.cards),
-      // The design the reading quotes (absent: the 1909 scans), so a record synced to another device shows it.
-      ...(b.deck ? { deck: b.deck } : {}),
     }, { ...response, chapterToken: "" }, now);
   },
 };

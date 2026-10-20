@@ -75,11 +75,10 @@ describe("the screens' product names stay out of every model prompt", () => {
   });
 
   it("프리미엄 궁합: the preview, both parts and a follow-up", async () => {
-    const { drawToken } = await issueDraw("match", [0, 1, 2, 3, 4], SECRET, NOW);
     const tasks = await everyTask(MATCH_ADAPTER, {
       me: { birth: DEFAULT_SAJU_FORM },
       partner: { birth: { ...DEFAULT_SAJU_FORM, year: 1992, month: 2, day: 26, gender: "male" }, label: "준호" },
-      relation: "lover", concern: "요즘 대화가 줄었어요", drawToken, ack: true,
+      relation: "lover", concern: "요즘 대화가 줄었어요", ack: true,
     });
     expect(tasks.map((t) => t.name)).toEqual(["premium-teaser", "match-part", "match-part", "premium-followup"]);
     for (const task of tasks) {

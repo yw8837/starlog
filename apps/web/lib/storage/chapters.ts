@@ -4,10 +4,10 @@ import { SITE } from "@/lib/config";
 import { kstDate, kstDaysBetween, kstMonthDay } from "@/lib/kst";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, isPremiumId, type PremiumId } from "@/lib/premium/products";
 import {
-  CHECKIN_ANSWERS, type CheckinAnswer, type DeepTarotReadingData, type HistoryItem, type MatchReadingData, type NewYearReadingData, type SajuContext,
+  CHECKIN_ANSWERS, type CheckinAnswer, type DeepTarotReadingData, type HistoryItem, type NewYearReadingData, type SajuContext, type StoredMatchReadingData,
   type SajuReadingData, type SajuTopic, type SajuTopicId, type TarotReadingData,
 } from "@/lib/reading/types";
-import { isCardId, isDeepTarotReading, isMatchReading, isNewYearReading } from "@/lib/reading/validate";
+import { isCardId, isDeepTarotReading, isLegacyMatchReading, isMatchReading, isNewYearReading } from "@/lib/reading/validate";
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { formatBirthDate, sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { isSajuTopicId, topicLabel } from "@/lib/sajuTopics";
@@ -97,9 +97,10 @@ export interface DeepTarotChapter extends ChapterBase {
 }
 
 /**
- * P5 우리 사이 궁합: the user's birth, the relation and label, and the five cards. The partner's birth is never kept as
- * text (owner 2026-10-16): it lives only sealed inside `chapterToken`, for the 30 follow-up days, on the device that
- * wrote it; a copy from the account has no token ("") and takes no follow-up.
+ * P5 프리미엄 궁합: the user's birth, the relation and label. The partner's birth is never kept as text (owner
+ * 2026-10-16): it lives only sealed inside `chapterToken`, for the 30 follow-up days, on the device that wrote it; a
+ * copy from the account has no token ("") and takes no follow-up. Saju only since 2026-10-17 (owner): a 궁합 written
+ * before keeps its five cards (and their `deck`) and its reading's card part, and still opens.
  */
 export interface MatchChapter extends ChapterBase {
   kind: "match";
@@ -110,8 +111,9 @@ export interface MatchChapter extends ChapterBase {
   partnerLabel?: string;
   me: { birth: SajuForm };
   concern?: string;
-  cards: ChapterCard[];
-  reading: MatchReadingData;
+  /** the five cards of a 궁합 written before it became saju only */
+  cards?: ChapterCard[];
+  reading: StoredMatchReadingData;
 }
 
 /** P5 2027 신년운세. */
@@ -195,8 +197,9 @@ export function parseChapter(value: unknown): StoredChapter | null {
   // damaged one goes to the 이 기록을 읽지 못했어요 screen instead of breaking it.
   if (value.kind === "tarot-deep" || value.kind === "match") {
     const cards = Array.isArray(value.cards) ? value.cards.map(parseCard) : [];
-    if (cards.length === 0 || cards.some((c) => c === null || !isCardId(c.cardId))) return null;
+    const cardsWhole = cards.length > 0 && cards.every((c) => c !== null && isCardId(c.cardId));
     if (value.kind === "tarot-deep") {
+      if (!cardsWhole) return null;
       if (!isDeepTarotReading(reading)) return null;
       const conditions = Array.isArray(value.conditions)
         ? value.conditions.filter((c): c is { label: string; value: string } => isRecord(c) && isString(c.label) && isString(c.value))
@@ -213,7 +216,10 @@ export function parseChapter(value: unknown): StoredChapter | null {
     }
     // An older shape's partner birth (text) is read past and dropped (owner 2026-10-16).
     const me = isRecord(value.me) ? sanitizeSajuForm(value.me.birth) : null;
-    if (!me || !isString(value.relation) || !isMatchReading(reading)) return null;
+    if (!me || !isString(value.relation)) return null;
+    // Saju only now; one written with five cards still opens, whole with its cards (owner 2026-10-17).
+    const legacy = isLegacyMatchReading(reading);
+    if (legacy ? !cardsWhole : !isMatchReading(reading)) return null;
     return {
       ...base,
       kind: "match",
@@ -222,8 +228,8 @@ export function parseChapter(value: unknown): StoredChapter | null {
       ...(isString(value.partnerLabel) && value.partnerLabel ? { partnerLabel: value.partnerLabel } : {}),
       me: { birth: me },
       ...(isString(value.concern) && value.concern ? { concern: value.concern } : {}),
-      cards: cards as ChapterCard[],
-      reading: reading as unknown as MatchReadingData,
+      ...(legacy ? { cards: cards as ChapterCard[] } : {}),
+      reading: reading as unknown as StoredMatchReadingData,
     };
   }
   if (value.kind === "newyear-2027") {

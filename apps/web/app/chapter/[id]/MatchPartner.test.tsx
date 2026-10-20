@@ -14,15 +14,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: 
 
 const DAY = 24 * 60 * 60 * 1000;
 const section = (heading: string) => ({ heading, body: `${heading} 본문이에요.` });
-const POS = ["나의 마음", "그 사람 쪽 흐름", "두 사람 사이", "엇갈리는 지점", "함께 가꿀 방향"];
-const CARDS = POS.map((position, i) => ({ position, cardId: `wands-0${i + 1}`, orientation: "upright" }));
 const MATCH = {
-  id: "match0001", createdAt: Date.now() - 3 * DAY, chapterToken: "sealed.token", turns: [], followUpsLeft: 5,
-  kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", me: { birth: DEFAULT_SAJU_FORM }, cards: CARDS,
+  id: "match0001", createdAt: Date.now() - 3 * DAY, chapterToken: "sealed.token", turns: [], followUpsLeft: 3,
+  kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", me: { birth: DEFAULT_SAJU_FORM },
   reading: {
     verdict: "속도를 맞춰 가요", saju: { dayMasters: section("두 사람의 일간"), elements: section("오행"), pillars: section("기둥 사이"), luck: section("두 사람의 10년") },
-    cards: CARDS.map((c) => ({ position: c.position, cardId: c.cardId, heading: `${c.position} 카드`, body: "본문이에요." })),
-    connection: section("다섯 장의 연결"), bridge: section("사주와 카드"), action: section("이번 주 해 볼 일"), observation: section("확인해 볼 신호"), followUps: [],
+    periods: ["2026년 10월~12월", "2027년 1월~3월", "2027년 4월~6월", "2027년 7월~9월"].map(section),
+    together: section("서로에게 맞는 말과 행동"), avoid: section("서로 피하면 좋은 말과 행동"), action: section("오늘 해 볼 일"), observation: section("확인해 볼 신호"), followUps: [],
   },
 };
 const PARTNER_BIRTH = { ...DEFAULT_SAJU_FORM, year: 1987, month: 7, day: 13 };
@@ -68,7 +66,7 @@ describe("a 궁합 record and its partner (owner 2026-10-16)", () => {
     await waitFor(() => expect(screen.queryByRole("textbox")).toBeNull());
   });
 
-  it("shows no chart beside the record, only the five cards (eight letters of a chart nearly give a birth date away)", () => {
+  it("shows no chart beside the record (eight letters of a chart nearly give a birth date away), nor cards since it is saju only", () => {
     seed([MATCH]);
     const { container } = render(<LocalChapter id="match0001" />);
     expect(screen.queryByText("명식")).toBeNull();

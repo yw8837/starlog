@@ -11,8 +11,10 @@ import type { PremiumId } from "./products";
 
 /**
  * The samples on the product pages (plan-reconciled §4.6): imported on the server only, so the paid text is
- * rendered there and never ships in a client bundle (scripts/check-client-bundle.mjs probes it). They are the
- * owner-approved real outputs of the stage 4 eval (2026-10-17), from made-up inputs summarised in `input`.
+ * rendered there and never ships in a client bundle (scripts/check-client-bundle.mjs probes it). 켈틱 크로스 10장 and
+ * 2027 신년운세 are the owner-approved real outputs of the stage 4 eval (2026-10-17), from made-up inputs summarised in
+ * `input`. The 프리미엄 궁합's two are mock-provider placeholders in its saju-only shape (owner 2026-10-17, `placeholder`)
+ * until the real eval's approved outputs replace them: its product page shows no excerpt or sample link meanwhile.
  */
 
 export interface SampleCard {
@@ -24,11 +26,13 @@ export interface SampleCard {
 interface SampleBase {
   /** what the made-up input was, in one line (never a real person's) */
   input: { summary: string };
+  /** a mock-provider output standing in until an approved real one replaces it: never shown as a sample on a product page */
+  placeholder?: true;
 }
 
 /**
  * A sample with cards, and the card design its text describes: its page shows the faces in it, whatever the visitor chose.
- * All three were written for the 1909 scans (their eval inputs carried no design) and are kept as approved, never regenerated.
+ * D1 was written for the 1909 scans (its eval input carried no design) and is kept as approved, never regenerated.
  */
 interface CardSample {
   cards: SampleCard[];
@@ -37,7 +41,7 @@ interface CardSample {
 
 export interface PremiumSamples {
   "tarot-deep": SampleBase & CardSample & { reading: DeepTarotReadingData };
-  match: SampleBase & CardSample & { reading: MatchReadingData };
+  match: SampleBase & { reading: MatchReadingData };
   "newyear-2027": SampleBase & { reading: NewYearReadingData };
 }
 
@@ -49,6 +53,9 @@ export const PREMIUM_SAMPLES: PremiumSamples = {
   match: match as unknown as PremiumSamples["match"],
   "newyear-2027": year as unknown as PremiumSamples["newyear-2027"],
 };
+
+/** The product page shows a sample (excerpt and link) only once it is an approved real output, never a placeholder. */
+export const sampleApproved = (id: PremiumId): boolean => PREMIUM_SAMPLES[id].placeholder !== true && (id !== "match" || MATCH_SECOND_SAMPLE.placeholder !== true);
 
 /** Sentences of `text` (bold marks dropped) up to `max` characters, never cut inside one. */
 function firstSentences(text: string, max: number): string {

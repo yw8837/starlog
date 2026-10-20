@@ -11,7 +11,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
 const PARTNER = { ...DEFAULT_SAJU_FORM, year: 1992, month: 2, day: 26 };
 const stored = () => JSON.parse(sessionStorage.getItem(MATCH_FLOW_KEY) ?? "{}");
-const primary = () => screen.getByRole("button", { name: /카드 5장 뽑으러 가기/ }) as HTMLButtonElement;
+const primary = () => screen.getByRole("button", { name: /두 사람 미리 보기/ }) as HTMLButtonElement;
 
 afterEach(() => {
   cleanup();
@@ -39,7 +39,7 @@ describe("우리 사이 궁합's form (Task 20)", () => {
     expect(screen.getByLabelText("태어난 곳")).toBeTruthy();
   });
 
-  it("keeps the gold button off until a relation is chosen and the consent box is ticked, then goes to the five cards; nothing enters the address", async () => {
+  it("keeps the gold button off until a relation is chosen and the consent box is ticked, then goes to the free preview (no cards, owner 2026-10-17); nothing enters the address", async () => {
     sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify({ me: DEFAULT_SAJU_FORM, partner: PARTNER, partnerLabel: "민지" }));
     window.history.replaceState(null, "", "/premium/match/new");
     render(<MatchForm />);
@@ -53,7 +53,9 @@ describe("우리 사이 궁합's form (Task 20)", () => {
     fireEvent.change(screen.getByLabelText(/고민 한 줄/), { target: { value: "요즘 연락이 뜸해요" } });
     fireEvent.click(primary());
     expect(stored()).toMatchObject({ relation: "friend", ack: true, concern: "요즘 연락이 뜸해요", partnerLabel: "민지" });
-    expect(router.push).toHaveBeenCalledWith("/premium/match/draw");
+    expect(router.push).toHaveBeenCalledWith("/premium/match/preview");
+    expect(document.body.textContent).toContain("2단계 중 1/2단계");
+    expect(document.body.textContent).not.toMatch(/카드/);
     expect(window.location.pathname + window.location.search + window.location.hash).toBe("/premium/match/new");
   });
 });

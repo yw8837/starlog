@@ -39,7 +39,7 @@ import { SajuChapterView } from "./SajuChapterView";
 import { MATCH_FOLLOWUP_DEVICE_ONLY, PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import s from "./ChapterView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
-import { isDeepTarotReading, isFollowUpData, isMatchReading, isNewYearReading, isWholeSajuReading, partialTarotReading } from "@/lib/reading/validate";
+import { isDeepTarotReading, isFollowUpData, isNewYearReading, isStoredMatchReading, isWholeSajuReading, partialTarotReading } from "@/lib/reading/validate";
 
 /** Chapter tokens expire 7 days after the reading, 30 for a premium one (the server's rule): no follow-ups after that. */
 const FOLLOW_UP_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -132,7 +132,7 @@ const isWhole = (chapter: StoredChapter) =>
   chapter.kind === "tarot-deep"
     ? isDeepTarotReading(chapter.reading)
     : chapter.kind === "match"
-      ? isMatchReading(chapter.reading)
+      ? isStoredMatchReading(chapter.reading)
       : chapter.kind === "newyear-2027"
         ? isNewYearReading(chapter.reading)
         : chapter.kind === "tarot"
@@ -224,7 +224,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
       ids={["newyear-2027", "match"]}
       onlyOpen
       title="더 깊게 보고 싶다면"
-      lines={{ "newyear-2027": "다가올 2027년 한 해를 달마다 미리 봐요", match: "다른 사람과 함께, 두 사람의 사주와 카드로 봐요" }}
+      lines={{ "newyear-2027": "다가올 2027년 한 해를 달마다 미리 봐요", match: "다른 사람과 함께, 두 사람의 사주로 앞으로 1년까지 봐요" }}
     />
   ) : undefined;
 

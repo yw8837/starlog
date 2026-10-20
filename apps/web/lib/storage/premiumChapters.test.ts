@@ -12,10 +12,17 @@ const DEEP = {
   cards: [{ position: "지금의 나", cardId: "cups-02", orientation: "upright" }],
   reading: { verdict: "v", positions: [], crossing: section, axes: { heading: "a", vertical: section, horizontal: section }, staff: section, timing: section, action: section, observation: { heading: "o", body: "다음 주 지출을 눈여겨보세요." }, followUps: [] },
 };
+const SAJU = { dayMasters: section, elements: section, pillars: section, luck: section };
+/** Saju only (owner 2026-10-17): the year ahead in four bands and how to treat each other, no cards. */
 const MATCH = {
   ...base, kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: DEFAULT_SAJU_FORM },
+  reading: { verdict: "속도를 맞춰 가요", saju: SAJU, periods: [section, section, section, section], together: section, avoid: section, action: section, observation: section, followUps: [] },
+};
+/** A 궁합 from before (the owner's test readings, 2026-10-16~17): five cards in its second part. */
+const LEGACY_MATCH = {
+  ...base, kind: "match", relation: "friend", relationLabel: "친구", me: { birth: DEFAULT_SAJU_FORM }, deck: "starlog",
   cards: [{ position: "나의 마음", cardId: "wands-01", orientation: "reversed" }],
-  reading: { verdict: "속도를 맞춰 가요", saju: { dayMasters: section, elements: section, pillars: section, luck: section }, cards: [], connection: section, bridge: section, action: section, observation: section, followUps: [] },
+  reading: { verdict: "속도를 맞춰 가요", saju: SAJU, cards: [{ position: "나의 마음", cardId: "wands-01", heading: "나의 마음 · 완드 에이스", body: "b" }], connection: section, bridge: section, action: section, observation: section, followUps: [] },
 };
 const YEAR = {
   ...base, kind: "newyear-2027", birth: DEFAULT_SAJU_FORM, title: "차근차근 쌓아 가는 해",
@@ -28,6 +35,14 @@ describe("premium chapters on the device", () => {
     expect(kinds.map((c) => c?.kind)).toEqual(["tarot-deep", "match", "newyear-2027"]);
     expect(kinds.every((c) => c && isPremiumChapter(c))).toBe(true);
     expect(parseChapter(MATCH)).toMatchObject({ partnerLabel: "민지", relationLabel: "친구" });
+    expect(parseChapter(MATCH)).not.toHaveProperty("cards");
+  });
+
+  it("still opens a 궁합 written with five cards, with its cards and their design", () => {
+    expect(parseChapter(LEGACY_MATCH)).toMatchObject({ kind: "match", cards: [{ cardId: "wands-01", orientation: "reversed" }], deck: "starlog" });
+    // a damaged old one is still the 이 기록을 읽지 못했어요 screen
+    expect(parseChapter({ ...LEGACY_MATCH, reading: { ...LEGACY_MATCH.reading, bridge: undefined } })).toBeNull();
+    expect(parseChapter({ ...LEGACY_MATCH, cards: [{ position: "나의 마음", cardId: "no-such-card", orientation: "upright" }] })).toBeNull();
   });
 
   it("skips one missing what its page needs", () => {
@@ -36,6 +51,8 @@ describe("premium chapters on the device", () => {
     // Owner 2026-10-16: a partner's birth kept as text (an older shape) is dropped, never required.
     expect(parseChapter({ ...MATCH, partner: { birth: { year: "x" } } })).not.toHaveProperty("partner");
     expect(parseChapter({ ...YEAR, reading: { ...YEAR.reading, months: "x" } })).toBeNull();
+    expect(parseChapter({ ...MATCH, reading: { ...MATCH.reading, periods: "x" } })).toBeNull();
+    expect(parseChapter({ ...MATCH, reading: { ...MATCH.reading, avoid: undefined } })).toBeNull();
   });
 
   it("labels them in 내 기록 and 돌아보기, and keeps them out of the history the next reading reads", () => {

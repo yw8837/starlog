@@ -1,9 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CARDS, TEMPLATES } from "@starlog/core";
 import { resetAccountForTests } from "@/lib/account/client";
-import { DECK_KEY } from "@/lib/deck";
 import { MATCH_FLOW_KEY, matchBody, type MatchFlow } from "@/lib/premium/matchFlow";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import { resetBotCheck } from "@/lib/reading/api";
@@ -15,24 +13,23 @@ const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
 const PARTNER = { ...DEFAULT_SAJU_FORM, year: 1992, month: 2, day: 26 };
-const DRAWN = TEMPLATES.match.positions.map((position, i) => ({ position, cardId: CARDS[i + 20]!.id, orientation: "upright" as const }));
-const FLOW = { me: DEFAULT_SAJU_FORM, meStatus: { loveStatus: "single" }, partner: PARTNER, partnerLabel: "민지", relation: "friend", concern: "요즘 연락이 뜸해요", ack: true, draw: { drawToken: "signed.match.draw", cards: DRAWN } };
+const FLOW = { me: DEFAULT_SAJU_FORM, meStatus: { loveStatus: "single" }, partner: PARTNER, partnerLabel: "민지", relation: "friend", concern: "요즘 연락이 뜸해요", ack: true };
 const ID = "abcdefghij0123456789";
 const section = (heading: string) => ({ heading, body: `${heading} 본문이에요.` });
 const chart = (image: string) => ({ pillars: [{ label: "일주", gz: "甲子", ko: "갑자" }], elements: { 목: 2, 화: 1, 토: 1, 금: 2, 수: 2 }, dayMaster: { display: "甲 갑목", image } });
-const TOC = ["한 줄로 보면", "두 사람의 일간", "오행", "기둥 사이", "두 사람의 10년", ...DRAWN.map((c) => `${c.position} 카드`), "다섯 장의 연결", "사주와 카드", "이번 주 해 볼 일", "확인해 볼 신호"];
+const BANDS = ["2026년 10월~12월", "2027년 1월~3월", "2027년 4월~6월", "2027년 7월~9월"];
+const TOC = ["한 줄로 보면", "두 사람의 일간", "오행", "기둥 사이", "두 사람의 10년", ...BANDS, "서로에게 맞는 말과 행동", "서로 피하면 좋은 말과 행동", "오늘 해 볼 일", "몇 주 안에 확인해 볼 신호"];
 const PREVIEW = {
   facts: ["두 사람의 일간은 갑목과 경금이에요.", "오행은 서로 모자란 쪽을 채워요."],
   charts: { me: chart("큰 나무"), partner: chart("단단한 쇠") },
-  cards: DRAWN.map((c) => ({ ...c, keyword: `${c.position} 열쇠` })),
   summary: { heading: "우리 사이 한눈에", body: "두 사람은 속도가 달라도 같은 쪽을 보고 있어요." },
   lockedToc: TOC,
 };
 const READING = {
   verdict: "속도를 맞춰 가요",
   saju: { dayMasters: section("일간"), elements: section("오행"), pillars: section("기둥"), luck: section("10년") },
-  cards: DRAWN.map((c) => ({ position: c.position, cardId: c.cardId, heading: `${c.position} 카드`, body: "본문이에요." })),
-  connection: section("연결"), bridge: section("사주와 카드"), action: section("해 볼 일"), observation: section("신호"), followUps: [],
+  periods: BANDS.map(section), together: section("서로에게 맞는 말과 행동"), avoid: section("서로 피하면 좋은 말과 행동"),
+  action: section("오늘 해 볼 일"), observation: section("신호"), followUps: [],
 };
 
 function stub(
@@ -66,16 +63,12 @@ afterEach(() => {
   resetBotCheck();
   sessionStorage.clear();
   clearChapters();
-  localStorage.removeItem(DECK_KEY);
   router.push.mockReset();
   router.replace.mockReset();
 });
 
-/** The front image of each drawn card on the page. */
-const faces = () => [...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => DRAWN.some((c) => src.includes(c.cardId)));
-
-describe("우리 사이 궁합's preview (Task 20)", () => {
-  it("shows both charts side by side, the computed lines, the five cards, the summary and the 14 locked headings", async () => {
+describe("프리미엄 궁합's preview (Task 20; saju only, owner 2026-10-17)", () => {
+  it("shows both charts side by side, the computed lines, the summary and the 13 locked headings; no card anywhere", async () => {
     const fetchMock = stub();
     render(<MatchPreview instant />);
     expect(await screen.findByText(PREVIEW.summary.body)).toBeTruthy();
@@ -84,37 +77,29 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     expect(screen.getByRole("heading", { level: 3, name: "민지" })).toBeTruthy();
     expect(screen.getByText("단단한 쇠")).toBeTruthy();
     for (const fact of PREVIEW.facts) expect(screen.getByText(fact)).toBeTruthy();
-    expect(within(screen.getByRole("list", { name: "카드 5장" })).getAllByRole("listitem")).toHaveLength(5);
-    expect(within(screen.getByRole("region", { name: "이어지는 풀이" })).getAllByRole("listitem")).toHaveLength(14);
-    expect(screen.getByText("소제목 14개 · 약 5,000자")).toBeTruthy();
+    expect(screen.queryByRole("list", { name: "카드 5장" })).toBeNull();
+    expect(document.querySelectorAll("img[src*='/cards/']")).toHaveLength(0);
+    expect(within(screen.getByRole("region", { name: "이어지는 풀이" })).getAllByRole("listitem")).toHaveLength(13);
+    expect(screen.getByText("소제목 13개 · 약 5,000자")).toBeTruthy();
+    expect(document.body.textContent).toContain("2단계 중 2/2단계");
     const [, init] = fetchMock.mock.calls.find(([url]) => url === "/api/premium/match/teaser")!;
-    expect(JSON.parse(String(init!.body))).toMatchObject({ me: { birth: DEFAULT_SAJU_FORM, loveStatus: "single" }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", ack: true, drawToken: "signed.match.draw" });
+    expect(JSON.parse(String(init!.body))).toEqual({ me: { birth: DEFAULT_SAJU_FORM, loveStatus: "single" }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", concern: "요즘 연락이 뜸해요", ack: true });
   });
 
-  it("reads the five cards in the deck the user sees (owner 2026-10-17): the Starlog deck by default, the 1909 scans when chosen, sent, shown and kept", async () => {
-    for (const [chosen, front, prefix] of [[null, "starlog", "/cards/starlog/"], ["rws1909", "rws1909", "/cards/"]] as const) {
-      if (chosen) localStorage.setItem(DECK_KEY, JSON.stringify({ front: chosen, back: "constellation" }));
-      sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify(FLOW));
-      const fetchMock = stub([
-        () => Response.json({ status: "continue", resume: "r1", done: 1, of: 2 }),
-        () => Response.json({ status: "done", reading: READING, chapterToken: "c1", readingId: ID }),
-      ]);
-      render(<MatchPreview instant />);
-      expect(await screen.findByText(PREVIEW.summary.body)).toBeTruthy();
-      expect(faces().length).toBeGreaterThan(0);
-      expect(faces().every((src) => src.startsWith(prefix) && (front === "starlog" || !src.startsWith("/cards/starlog/"))), front).toBe(true);
-      fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
-      await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
-      const sent = fetchMock.mock.calls.filter(([url]) => url === "/api/premium/match/teaser" || url === "/api/premium/match/reading");
-      expect(sent.map(([, init]) => JSON.parse(String(init!.body)).deck)).toEqual([front, front, front]);
-      expect(listChapters()[0]).toMatchObject({ kind: "match", deck: front });
-      cleanup();
-      vi.unstubAllGlobals();
-      resetAccountForTests();
-      resetPremiumStatusForTests();
-      clearChapters();
-      router.push.mockReset();
-    }
+  it("writes and keeps the reading with no cards or card design: every request is the form's answers only", async () => {
+    const fetchMock = stub([
+      () => Response.json({ status: "continue", resume: "r1", done: 1, of: 2 }),
+      () => Response.json({ status: "done", reading: READING, chapterToken: "c1", readingId: ID }),
+    ]);
+    render(<MatchPreview instant />);
+    fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
+    const sent = fetchMock.mock.calls.filter(([url]) => url === "/api/premium/match/teaser" || url === "/api/premium/match/reading").map(([, init]) => JSON.parse(String(init!.body)));
+    expect(sent).toHaveLength(3);
+    for (const body of sent) expect(Object.keys(body).filter((k) => /draw|deck|card/i.test(k))).toEqual([]);
+    const [chapter] = listChapters();
+    expect(chapter).not.toHaveProperty("cards");
+    expect(chapter).not.toHaveProperty("deck");
   });
 
   it("after the reading is saved, the partner's birth leaves the tab: the flow and the preview kept for it are gone", async () => {
@@ -132,7 +117,6 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     // Owner 2026-10-16: the partner's birth is never kept as text on the device either (only sealed, inside the token).
     expect(chapter).not.toHaveProperty("partner");
     expect(localStorage.getItem(CHAPTERS_KEY)).not.toContain('"year":1992');
-    expect(chapter).toMatchObject({ deck: "starlog" }); // the deck the reading quotes (the default, nothing chosen)
     expect(router.replace).not.toHaveBeenCalled();
   });
 
@@ -154,7 +138,7 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
   it("forgets the partner on both recovery paths too: cut off but delivered, and 409 opened (the flow, the preview, the resume token)", async () => {
     const saved = {
       id: ID, createdAt: Date.now(),
-      chapter: { kind: "match", relation: "friend", relationLabel: "친구", me: { birth: DEFAULT_SAJU_FORM }, cards: DRAWN, reading: READING, chapterToken: "", createdAt: 1, turns: [], followUpsLeft: 5 },
+      chapter: { kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", concern: "요즘 연락이 뜸해요", me: { birth: DEFAULT_SAJU_FORM }, reading: READING, chapterToken: "", createdAt: 1, turns: [], followUpsLeft: 3 },
     };
     const leftovers = () => [MATCH_FLOW_KEY, "starlog.teaser.premium", "starlog.premium-resume.match"].map((key) => sessionStorage.getItem(key));
     stub(
@@ -181,11 +165,11 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
   it("gets the chapter token again on both recovery paths before forgetting the partner: the tab's input and its last resume token (review 2026-10-17 H3)", async () => {
     const saved = {
       id: ID, createdAt: Date.now(),
-      chapter: { kind: "match", relation: "friend", relationLabel: "친구", me: { birth: DEFAULT_SAJU_FORM }, cards: DRAWN, reading: READING, chapterToken: "", createdAt: 1, turns: [], followUpsLeft: 5 },
+      chapter: { kind: "match", relation: "friend", relationLabel: "친구", partnerLabel: "민지", concern: "요즘 연락이 뜸해요", me: { birth: DEFAULT_SAJU_FORM }, reading: READING, chapterToken: "", createdAt: 1, turns: [], followUpsLeft: 3 },
     };
-    const issued = () => Response.json({ chapterToken: "issued.token", followUpsLeft: 5 });
+    const issued = () => Response.json({ chapterToken: "issued.token", followUpsLeft: 3 });
     const sent = (fetchMock: ReturnType<typeof stub>) => fetchMock.mock.calls.filter(([url]) => url === "/api/premium/match/chapter").map(([, init]) => JSON.parse(String(init!.body)));
-    const input = matchBody(FLOW as unknown as MatchFlow, "starlog");
+    const input = matchBody(FLOW as unknown as MatchFlow);
 
     // Cut off on the last part, then found delivered in the account.
     let fetchMock = stub(
@@ -196,7 +180,7 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
     expect(sent(fetchMock)).toEqual([{ readingId: ID, resume: "r1", input }]);
-    expect(listChapters()[0]).toMatchObject({ serverId: ID, chapterToken: "issued.token", followUpsLeft: 5 });
+    expect(listChapters()[0]).toMatchObject({ serverId: ID, chapterToken: "issued.token", followUpsLeft: 3 });
     expect(sessionStorage.getItem("starlog.premium-resume.match")).toBeNull();
     cleanup();
     resetAccountForTests();
@@ -215,11 +199,14 @@ describe("우리 사이 궁합's preview (Task 20)", () => {
     expect(sessionStorage.getItem(MATCH_FLOW_KEY)).toBeNull();
   });
 
-  it("sends a flow without its answers to the form and one without its five cards to the draw", async () => {
-    stub();
-    sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify({ ...FLOW, draw: undefined }));
+  it("sends a flow without its answers to the form, and previews an older tab's flow that still holds five cards without them", async () => {
+    const fetchMock = stub();
+    sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify({ ...FLOW, draw: { drawToken: "signed.match.draw", cards: [{ position: "나의 마음", cardId: "cups-01", orientation: "upright" }] } }));
     const { unmount } = render(<MatchPreview instant />);
-    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/premium/match/draw?instant=1"));
+    expect(await screen.findByText(PREVIEW.summary.body)).toBeTruthy();
+    const [, init] = fetchMock.mock.calls.find(([url]) => url === "/api/premium/match/teaser")!;
+    expect(JSON.parse(String(init!.body))).not.toHaveProperty("drawToken");
+    expect(router.replace).not.toHaveBeenCalled();
     unmount();
     sessionStorage.setItem(MATCH_FLOW_KEY, JSON.stringify({ ...FLOW, relation: undefined }));
     render(<MatchPreview instant />);

@@ -152,7 +152,7 @@ if (MODE !== "off") {
       await noSideScroll(page);
     });
 
-    test("saju step 1's premium rows → the 프리미엄 궁합 form → five cards → its preview", async ({ page }) => {
+    test("saju step 1's premium rows → the 프리미엄 궁합 form → its preview (saju only, no cards)", async ({ page }) => {
       test.setTimeout(300_000);
       await page.goto("/saju/start");
       const match = page.getByRole("link", { name: /프리미엄 궁합/ });
@@ -182,19 +182,14 @@ if (MODE !== "off") {
       await expect(page.getByRole("heading", { level: 1, name: "어떤 사이인지 알려 주세요" })).toBeVisible({ timeout: NAV });
       await page.getByRole("button", { name: "친구" }).click();
       await page.getByRole("checkbox", { name: "상대에게 알리거나 동의를 받을 수 있는 사이에서만 입력할게요" }).check();
-      await page.getByRole("button", { name: "카드 5장 뽑으러 가기" }).click();
-      await expect(page).toHaveURL(/\/premium\/match\/draw$/, { timeout: NAV });
+      await page.getByRole("button", { name: "두 사람 미리 보기" }).click();
+      await expect(page).toHaveURL(/\/premium\/match\/preview$/, { timeout: NAV });
       // The partner's birth stays out of the address all the way.
       expect(page.url()).not.toMatch(/1992|partner/);
 
-      await page.goto("/premium/match/draw?instant=1");
-      await expect(page.getByRole("heading", { level: 1, name: "프리미엄 궁합 · 친구" })).toBeVisible({ timeout: NAV });
-      await pickCards(page, 5);
-      await expect(page).toHaveURL(/\/premium\/match\/preview/, { timeout: NAV });
-
       await expect(page.getByRole("heading", { level: 1, name: "프리미엄 궁합 · 친구" })).toBeVisible({ timeout: NAV });
       await expect(page.getByRole("heading", { level: 3, name: "민지" })).toBeVisible({ timeout: GENERATION });
-      await expect(page.getByRole("list", { name: "카드 5장", exact: true }).getByRole("listitem")).toHaveCount(5);
+      await expect(page.getByRole("list", { name: "카드 5장", exact: true })).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "프리미엄 궁합에 담긴 것" })).toBeVisible({ timeout: GENERATION });
       await expect(page.getByRole("main")).not.toContainText(BANS);
       expect(page.url()).not.toMatch(/1992|partner/);

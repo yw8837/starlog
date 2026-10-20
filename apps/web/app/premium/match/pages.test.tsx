@@ -1,5 +1,6 @@
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import MatchDrawPage from "./draw/page";
 import MatchNewPage, { metadata } from "./new/page";
 import MatchPreviewPage from "./preview/page";
 
@@ -26,17 +27,19 @@ describe("우리 사이 궁합's pages", () => {
   it("are 404 while premium is off here and nothing of it was bought", async () => {
     gate.open = false;
     await expect(MatchNewPage()).rejects.toThrow("404");
-    await expect(MatchDrawPage(query)).rejects.toThrow("404");
     await expect(MatchPreviewPage(query)).rejects.toThrow("404");
-    expect(gate.asked).toEqual(["match", "match", "match"]);
+    expect(gate.asked).toEqual(["match", "match"]);
   });
 
   it("render otherwise, never indexed", async () => {
     gate.open = true;
     expect(await MatchNewPage()).toBeTruthy();
-    expect(await MatchDrawPage(query)).toBeTruthy();
     expect(await MatchPreviewPage(query)).toBeTruthy();
     expect(notFound).not.toHaveBeenCalled();
     expect(metadata.robots).toMatchObject({ index: false });
+  });
+
+  it("have no card step: the form goes straight to the preview (saju only, owner 2026-10-17)", () => {
+    expect(existsSync(fileURLToPath(new URL("./draw/page.tsx", import.meta.url)))).toBe(false);
   });
 });

@@ -20,8 +20,7 @@ export function PremiumSample({ id }: { id: PremiumId }) {
     const sample = PREMIUM_SAMPLES["tarot-deep"];
     article = <DeepTarotArticle reading={sample.reading} cards={sample.cards} deck={sample.deck} />;
   } else if (id === "match") {
-    const sample = PREMIUM_SAMPLES.match;
-    article = <MatchArticle reading={sample.reading} cards={sample.cards} deck={sample.deck} />;
+    article = <MatchArticle reading={PREMIUM_SAMPLES.match.reading} />;
   } else {
     article = <NewYearArticle reading={PREMIUM_SAMPLES["newyear-2027"].reading} />;
   }
@@ -44,7 +43,7 @@ export function PremiumSample({ id }: { id: PremiumId }) {
               <h2 id="sample-second-title" className={s.title}>상대가 태어난 시를 몰라도</h2>
               <p className={s.note}>{`가상의 입력으로 만든 샘플이에요 · ${MATCH_SECOND_SAMPLE.input.summary}`}</p>
             </header>
-            <MatchArticle reading={MATCH_SECOND_SAMPLE.reading} cards={MATCH_SECOND_SAMPLE.cards} deck={MATCH_SECOND_SAMPLE.deck} />
+            <MatchArticle reading={MATCH_SECOND_SAMPLE.reading} />
           </section>
         ) : null}
         <AiNote />

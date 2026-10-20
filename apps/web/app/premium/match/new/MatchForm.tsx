@@ -24,10 +24,11 @@ const statusOf = (context: SajuContext): MatchFlow["meStatus"] => {
 };
 
 /**
- * 우리 사이 궁합's step 1 (Task 20), one part at a time so one birth form is on screen: 나 (the saved saju
+ * 프리미엄 궁합's step 1 of 2 (Task 20), one part at a time so one birth form is on screen: 나 (the saved saju
  * profile as a line, or the birth form), 그 사람 (the birth form without a birthplace, a 10-character
  * 부르는 말), then 관계 (six chips), an optional one-line concern, the privacy line and the required
- * consent. Everything stays in this tab (lib/premium/matchFlow.ts); no birth data ever enters a URL.
+ * consent; then the free preview (no cards since 2026-10-17). Everything stays in this tab
+ * (lib/premium/matchFlow.ts); no birth data ever enters a URL.
  */
 export function MatchForm() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export function MatchForm() {
     setStep(!me ? "me" : flow.partner ? "relation" : "partner");
   }, [loaded, step, flow, me]);
 
-  const stepper = <Stepper step={1} total={3} label={PREMIUM.match.name} backHref="/saju/start" backLabel="무엇이 궁금해요로 돌아가기" />;
+  const stepper = <Stepper step={1} total={2} label={PREMIUM.match.name} backHref="/saju/start" backLabel="무엇이 궁금해요로 돌아가기" />;
   if (!loaded || step === null) return <div className={f.screen}>{stepper}</div>;
 
   const meRow = me ? { name: "나", form: me, edit: "나의 태어난 날 고치기", onEdit: () => setStep("me") } : null;
@@ -72,7 +73,7 @@ export function MatchForm() {
             submitLabel="다음"
             onDone={(form, context) => {
               saveSajuProfile(form);
-              setFlow({ ...flow, me: form, meStatus: statusOf(context), draw: undefined });
+              setFlow({ ...flow, me: form, meStatus: statusOf(context) });
               setStep(flow.partner ? "relation" : "partner");
             }}
           />
@@ -115,7 +116,7 @@ export function MatchForm() {
             submitLabel="다음"
             onDone={(form) => {
               const partnerLabel = label.trim();
-              setFlow({ ...flow, me, partner: form, partnerLabel: partnerLabel || undefined, draw: undefined });
+              setFlow({ ...flow, me, partner: form, partnerLabel: partnerLabel || undefined });
               setStep("relation");
             }}
           />
@@ -127,9 +128,8 @@ export function MatchForm() {
   const go = () => {
     if (!relation || !ack) return;
     const text = concern.trim();
-    // A new deal for what was given now: cards dealt for earlier answers are dropped.
-    setFlow({ ...flow, me, relation, concern: text || undefined, ack: true, draw: undefined });
-    router.push("/premium/match/draw");
+    setFlow({ ...flow, me, relation, concern: text || undefined, ack: true });
+    router.push("/premium/match/preview");
   };
 
   return (
@@ -186,7 +186,7 @@ export function MatchForm() {
 
       <div className={f.footer}>
         <Button block disabled={!relation || !ack} onClick={go} trailing="→">
-          카드 5장 뽑으러 가기
+          두 사람 미리 보기
         </Button>
       </div>
     </div>

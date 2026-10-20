@@ -71,12 +71,15 @@ function Record({ chapter, now, topicsOpen }: { chapter: StoredChapter; now: num
           {checkinDue(chapter, now) ? <span className={s.due}>돌아볼 때예요</span> : chapter.checkin ? <span className={s.checked}>{`돌아보기 · ${chapter.checkin.answer}`}</span> : null}
         </span>
         <span className={s.recordBody}>
-          {chapter.kind === "tarot" || chapter.kind === "tarot-deep" || chapter.kind === "match" ? (
+          {chapter.kind === "tarot" || chapter.kind === "tarot-deep" || (chapter.kind === "match" && chapter.cards?.length) ? (
             <span className={s.thumbs} aria-hidden="true">
-              {chapter.cards.slice(0, THUMBS).map((card) => (
+              {(chapter.cards ?? []).slice(0, THUMBS).map((card) => (
                 <TarotCard key={card.position} cardId={card.cardId} orientation={card.orientation} faceUp size="sm" className={s.thumb} deck={chapter.deck ?? "rws1909"} />
               ))}
             </span>
+          ) : chapter.kind === "match" ? (
+            // saju only (owner 2026-10-17): my own day pillar, as the saju records show it; never the other person's
+            <DayPillar chapter={{ birth: chapter.me.birth }} />
           ) : (
             <DayPillar chapter={chapter} />
           )}

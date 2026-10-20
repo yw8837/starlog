@@ -82,7 +82,7 @@ describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
   });
 
   for (const { id, slug, Page, meta, entry, price, start, guide } of PAGES) {
-    it(`${entry}: name, price, how it reads, a sample excerpt and its full sample, the guide, three questions and the refund summary`, async () => {
+    it(`${entry}: name, price, how it reads, a sample excerpt and its full sample (none while it is a placeholder), the guide, three questions and the refund summary`, async () => {
       gate.visible = true;
       gate.open = true;
       const { container } = await show(Page);
@@ -91,8 +91,16 @@ describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
       const how = screen.getByRole("region", { name: "이렇게 읽어요" });
       expect(within(how).getAllByRole("listitem").length).toBeGreaterThanOrEqual(3 + 3);
       expect(how.textContent).toContain("이어서 물어보기 3번");
-      expect(screen.getByRole("region", { name: "샘플로 미리 보기" }).textContent).toContain("가상의 입력으로 만든 샘플이에요");
-      expect(screen.getByRole("link", { name: /샘플 전체 보기/ }).getAttribute("href")).toBe(`/premium/${slug}/sample`);
+      if (id === "match") {
+        // Its samples are mock placeholders in the saju-only shape until the real eval's approved outputs (owner 2026-10-17):
+        // never shown as a sample here.
+        expect(PREMIUM_SAMPLES.match.placeholder).toBe(true);
+        expect(screen.queryByRole("region", { name: "샘플로 미리 보기" })).toBeNull();
+        expect(screen.queryByRole("link", { name: /샘플 전체 보기/ })).toBeNull();
+      } else {
+        expect(screen.getByRole("region", { name: "샘플로 미리 보기" }).textContent).toContain("가상의 입력으로 만든 샘플이에요");
+        expect(screen.getByRole("link", { name: /샘플 전체 보기/ }).getAttribute("href")).toBe(`/premium/${slug}/sample`);
+      }
       expect(container.querySelector(`a[href="${guide}"]`)).not.toBeNull();
       expect(container.querySelectorAll("details")).toHaveLength(3);
       expect(screen.getByRole("region", { name: "결제와 환불" }).querySelector('a[href="/refund"]')).not.toBeNull();
@@ -144,10 +152,13 @@ describe("the premium sample pages", () => {
     }
   });
 
-  it("show the 궁합's second sample after the first: the other person's time unknown (owner 2026-10-17)", async () => {
+  it("show the 궁합's second sample after the first: the other person's time unknown (owner 2026-10-17), with no card", async () => {
     gate.visible = true;
     const { container } = render(await MatchSample());
     const text = container.textContent ?? "";
+    expect(MATCH_SECOND_SAMPLE.placeholder).toBe(true);
+    expect(container.querySelectorAll("img[src*='/cards/']")).toHaveLength(0);
+    expect(screen.getAllByRole("heading", { name: "앞으로 1년과 서로 대하는 법" })).toHaveLength(2);
     expect(screen.getByRole("heading", { name: "상대가 태어난 시를 몰라도" })).toBeTruthy();
     expect(text.indexOf("두 사람 모두 태어난 시를 알아요")).toBeLessThan(text.indexOf("상대가 태어난 시를 몰라요"));
     expect(text.split("가상의 입력으로 만든 샘플이에요")).toHaveLength(3);
@@ -155,10 +166,8 @@ describe("the premium sample pages", () => {
 
   it("show each sample's cards in the deck it records (the one its text describes), whatever this visitor chose", async () => {
     gate.visible = true;
-    const pages = [
-      { Sample: DeepSample, samples: [PREMIUM_SAMPLES["tarot-deep"]] },
-      { Sample: MatchSample, samples: [PREMIUM_SAMPLES.match, MATCH_SECOND_SAMPLE] },
-    ];
+    // the 궁합's read no cards (saju only, owner 2026-10-17)
+    const pages = [{ Sample: DeepSample, samples: [PREMIUM_SAMPLES["tarot-deep"]] }];
     try {
       for (const { Sample, samples } of pages) {
         for (const sample of samples) {

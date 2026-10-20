@@ -97,7 +97,7 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     expect(sent[1]).toMatchObject({ resume: "r1", unlock: { method: "paid" } });
     const [chapter] = listChapters();
     expect(chapter).toMatchObject({ kind: "tarot-deep", serverId: ID, followUpsLeft: 3, deck: sent[0].input.deck });
-    expect(chapter && "cards" in chapter ? chapter.cards[0]?.keyword : null).toBe("지금의 나 열쇠");
+    expect(chapter && "cards" in chapter ? chapter.cards?.[0]?.keyword : null).toBe("지금의 나 열쇠");
     expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw.chapterId).toBe(chapter!.id);
   });
 
@@ -149,7 +149,7 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     fireEvent.click(await screen.findByRole("button", { name: "결제한 풀이 열기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalledWith(`/chapter/${ID}`));
     const [chapter] = listChapters();
-    expect(chapter && "cards" in chapter ? chapter.cards.map((card) => "keyword" in card) : null).toEqual(Array(10).fill(false));
+    expect(chapter && "cards" in chapter ? chapter.cards?.map((card) => "keyword" in card) : null).toEqual(Array(10).fill(false));
   });
 
   it("offers no open panel without a purchase when the preview fails: the preview's error and its retry", async () => {

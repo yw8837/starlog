@@ -3,11 +3,11 @@ import { TEMPLATES, type DrawnCard, type Orientation } from "@starlog/core";
 import { generationSetting } from "@/lib/ai/config";
 import { mockSajuFollowUp, mockTarotFollowUp } from "@/lib/ai/mock";
 import { mockMatchFollowUp } from "@/lib/ai/mockPremium";
-import { DeepTarotReadingSchema, MatchReadingSchema, NewYearReadingSchema } from "@/lib/ai/premiumSchemas";
+import { DeepTarotReadingSchema, LegacyMatchReadingSchema, MatchReadingSchema, NewYearReadingSchema } from "@/lib/ai/premiumSchemas";
 import { DEEP_TAROT_SYSTEM, buildDeepContext, deepShared } from "@/lib/ai/prompts/deepTarot";
-import { MATCH_SAJU_SYSTEM, buildMatchFacts, matchCardsContext, matchSajuShared } from "@/lib/ai/prompts/match";
+import { MATCH_SAJU_SYSTEM, buildMatchFacts, matchSajuShared } from "@/lib/ai/prompts/match";
 import { NEWYEAR_SYSTEM, buildNewYearFacts, newyearShared } from "@/lib/ai/prompts/newyear";
-import { cardsBlock, cleanUserText, type FollowUpTurn } from "@/lib/ai/prompts/tarot";
+import { cleanUserText, type FollowUpTurn } from "@/lib/ai/prompts/tarot";
 import { FollowUpAnswerSchema, type FollowUpAnswer } from "@/lib/ai/schemas";
 import { generateValidated, type GenerationHooks, type ReadingProvider } from "@/lib/ai/provider";
 import { validateMatchFollowUp } from "@/lib/ai/validatePremium";
@@ -65,7 +65,7 @@ export function readingDigest(reading: unknown, question: string): string {
   ].join("\n");
 }
 
-const drawn = (templateId: "deep-tarot" | "match", cards: Array<[string, Orientation]>): DrawnCard[] =>
+const drawn = (templateId: "deep-tarot", cards: Array<[string, Orientation]>): DrawnCard[] =>
   cards.map(([cardId, orientation], slot) => ({ cardId, orientation, slot, position: TEMPLATES[templateId].positions[slot]! }));
 
 function tail(task: string, reading: unknown, turns: FollowUpTurn[], question: string): string {
@@ -103,7 +103,8 @@ export async function preparePremiumFollowUp(
     };
   }
   if (ctx.kind === "match") {
-    if (!MatchReadingSchema.safeParse(reading).success) return errorResponse("BAD_TOKEN");
+    // A reading from before the 궁합 became saju only (its five cards, owner test readings) still answers from its own digest.
+    if (!MatchReadingSchema.safeParse(reading).success && !LegacyMatchReadingSchema.safeParse(reading).success) return errorResponse("BAD_TOKEN");
     // The partner travels sealed in the device's token only (owner 2026-10-16): a token without it is no follow-up.
     const partnerBirth = await openPartner((ctx.partner as { sealed?: unknown }).sealed, secret, chapterId);
     if (!partnerBirth) return errorResponse("BAD_TOKEN", { message: MATCH_FOLLOWUP_DEVICE_ONLY });
@@ -111,13 +112,12 @@ export async function preparePremiumFollowUp(
     const partner = checkSajuForm(partnerBirth, today);
     if ("error" in me || "error" in partner) return errorResponse("BAD_TOKEN");
     const facts = buildMatchFacts(me.chart, partner.chart, { relation: ctx.relation, label: ctx.partner.label ?? "", concern: ctx.concern ?? "", meProfile: ctx.me.profile }, now);
-    const cards = matchCardsContext(ctx.relation, drawn("match", ctx.cards), ctx.deck);
     return {
       generate: async (provider, turns, question, hooks) =>
         (await generateValidated(provider, {
-          ...common, system: MATCH_SAJU_SYSTEM, shared: matchSajuShared(facts), user: [cardsBlock(cards), tail("match-followup", reading, turns, question)].join("\n"),
+          ...common, system: MATCH_SAJU_SYSTEM, shared: matchSajuShared(facts), user: tail("match-followup", reading, turns, question),
           mock: () => mockMatchFollowUp(facts, question),
-        }, (a) => validateMatchFollowUp(a, facts, cards, question), hooks)).data,
+        }, (a) => validateMatchFollowUp(a, facts, question), hooks)).data,
     };
   }
   if (!NewYearReadingSchema.safeParse(reading).success) return errorResponse("BAD_TOKEN");

@@ -7,6 +7,7 @@ import type {
   DeepTarotPreviewData,
   DeepTarotReadingData,
   FollowUpData,
+  LegacyMatchReadingData,
   MatchPreviewData,
   MatchReadingData,
   NewYearPreviewData,
@@ -85,12 +86,24 @@ export function isDeepTarotReading(value: unknown): value is DeepTarotReadingDat
   return isRecord(axes) && isString(axes.heading) && isSection(axes.vertical) && isSection(axes.horizontal) && optional(value.followUps, isStrings);
 }
 
+const isMatchSaju = (saju: unknown) => isRecord(saju) && [saju.dayMasters, saju.elements, saju.pillars, saju.luck].every(isSection);
+
+/** A 궁합 as it is written now (saju only, owner 2026-10-17): the saju part, the year in bands, how to treat each other. */
 export function isMatchReading(value: unknown): value is MatchReadingData {
+  if (!isRecord(value) || !isString(value.verdict) || !isMatchSaju(value.saju)) return false;
+  if (!Array.isArray(value.periods) || value.periods.length === 0 || !value.periods.every(isSection)) return false;
+  return [value.together, value.avoid, value.action, value.observation].every(isSection) && optional(value.followUps, isStrings);
+}
+
+/** A 궁합 written with five cards, before it became saju only: still read whole, so its record opens. */
+export function isLegacyMatchReading(value: unknown): value is LegacyMatchReadingData {
   if (!isRecord(value) || !isString(value.verdict) || !Array.isArray(value.cards) || !value.cards.every(isCardSection)) return false;
-  const saju = value.saju;
-  if (!isRecord(saju) || ![saju.dayMasters, saju.elements, saju.pillars, saju.luck].every(isSection)) return false;
+  if (!isMatchSaju(value.saju)) return false;
   return [value.connection, value.bridge, value.action, value.observation].every(isSection) && optional(value.followUps, isStrings);
 }
+
+/** Either shape, as a record on this device or in the account keeps it. */
+export const isStoredMatchReading = (value: unknown): value is MatchReadingData | LegacyMatchReadingData => isMatchReading(value) || isLegacyMatchReading(value);
 
 const isMonth = (m: unknown) => isRecord(m) && typeof m.month === "number" && isString(m.heading) && isString(m.body);
 
@@ -116,7 +129,7 @@ export const isDeepTarotPreview = (value: unknown): value is DeepTarotPreviewDat
 
 export const isMatchPreview = (value: unknown): value is MatchPreviewData =>
   isRecord(value) && isStrings(value.facts) && isRecord(value.charts) && isChartView(value.charts.me) && isChartView(value.charts.partner) &&
-  isPreviewCards(value.cards) && isSection(value.summary) && isStrings(value.lockedToc);
+  isSection(value.summary) && isStrings(value.lockedToc);
 
 export const isNewYearPreview = (value: unknown): value is NewYearPreviewData =>
   isRecord(value) && isString(value.title) && isStrings(value.facts) && isSection(value.summary) && isStrings(value.lockedToc);

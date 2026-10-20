@@ -60,6 +60,28 @@ describe("a premium reading saved on this device", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 
+  it("opens a 궁합 read from the two people's saju only (owner 2026-10-17): both parts, the four bands of the year, no cards and no chart beside it", () => {
+    const bands = ["2026년 10월~12월", "2027년 1월~3월", "2027년 4월~6월", "2027년 7월~9월"];
+    seed([{
+      id: "pair0004", createdAt: Date.now(), chapterToken: "t", turns: [], followUpsLeft: 3, kind: "match", relation: "friend", relationLabel: "친구",
+      me: { birth: DEFAULT_SAJU_FORM },
+      reading: {
+        verdict: "결론", saju: { dayMasters: section("두 사람의 일간"), elements: section("오행"), pillars: section("두 일지"), luck: section("10년") },
+        periods: bands.map(section), together: section("서로에게 맞는 말과 행동"), avoid: section("서로 피하면 좋은 말과 행동"),
+        action: section("오늘 해 볼 일"), observation: section("몇 주 안에 확인해 볼 신호"), followUps: ["앞으로 석 달 먼저 해 볼 일은요?"],
+      },
+    }]);
+    const { container } = render(<LocalChapter id="pair0004" />);
+    expect(screen.getByRole("heading", { level: 1, name: "프리미엄 궁합 · 친구" })).toBeTruthy();
+    for (const name of ["사주로 본 두 사람", "앞으로 1년과 서로 대하는 법", ...bands, "서로에게 맞는 말과 행동", "서로 피하면 좋은 말과 행동", "오늘 해 볼 일"]) {
+      expect(screen.getByRole("heading", { name }), name).toBeTruthy();
+    }
+    expect(container.querySelectorAll("img[src*='/cards/']")).toHaveLength(0);
+    expect(screen.queryByRole("complementary", { name: "뽑은 카드" })).toBeNull();
+    expect(screen.queryByText("명식")).toBeNull();
+    expect(screen.getByRole("textbox")).toBeTruthy();
+  });
+
   it("shows a 궁합's five cards in the deck it recorded, and one saved before 궁합 kept its deck in the 1909 scans it was written for (owner 2026-10-17)", () => {
     const pair = {
       id: "pair0002", createdAt: Date.now(), chapterToken: "t", turns: [], followUpsLeft: 5, kind: "match", relation: "friend", relationLabel: "친구",

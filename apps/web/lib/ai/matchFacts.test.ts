@@ -1,8 +1,8 @@
-import { TEMPLATES, computeChart } from "@starlog/core";
+import { computeChart } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { mockMatchPartA } from "./mockPremium";
-import { buildMatchFacts, elementMeeting, matchCardsContext, matchCardsShared } from "./prompts/match";
+import { buildMatchFacts, elementMeeting } from "./prompts/match";
 import { validateMatchPartA } from "./validatePremium";
 
 const chart = (y: number, m: number, d: number, extra: Partial<typeof DEFAULT_SAJU_FORM> = {}) =>
@@ -94,14 +94,25 @@ describe("match facts", () => {
       .toEqual(["2026년 병오(丙午): 나의 일지와 충(沖), 그 사람의 일지와 육합(六合)"]);
   });
 
-  it("gives the five cards the element relations of the two sides, the middle and the last two places (C1, B6)", () => {
-    const ids = ["wands-03", "cups-05", "swords-02", "pentacles-04", "major-19-sun"];
-    const ctx = matchCardsContext("lover", ids.map((cardId, slot) => ({ cardId, position: TEMPLATES.match.positions[slot]!, orientation: "upright" as const, slot })));
-    const shared = matchCardsShared(buildMatchFacts(me, chart(1992, 2, 26), { relation: "lover" }, NOW), ctx);
-    expect(shared).toContain("<spread_facts>");
-    expect(shared).toContain("나와 그 사람 쪽 원소 관계: 나의 마음(완드 3) × 그 사람 쪽 흐름(컵 5) 서로 부딪히는 짝");
-    expect(shared).toContain("두 사람 사이 기준 원소 관계: 두 사람 사이(검 2) × 나의 마음(완드 3) 서로 돕는 짝, 두 사람 사이(검 2) × 그 사람 쪽 흐름(컵 5) 무난한 짝");
-    expect(shared).toContain("엇갈리는 지점과 함께 가꿀 방향 원소 관계: 엇갈리는 지점(펜타클 4) × 함께 가꿀 방향(태양) 무난한 짝");
+  it("reads the twelve months ahead in four bands of three: my ten god of the month, and how its branch meets my 일지 and (names only) theirs (owner 2026-10-17)", () => {
+    // 丙寅 × 壬申 from 2026-10: 戊戌 己亥 庚子 · 辛丑 壬寅 癸卯 · 甲辰 乙巳 丙午 · 丁未 戊申 己酉 (the 15th, noon KST)
+    const f = buildMatchFacts(me, chart(1992, 2, 26, { gender: "male" }), { relation: "lover" }, NOW);
+    expect(f.pair.schemaVersion).toBe("pair-facts/3");
+    expect(f.pair.year.map((band) => band.label)).toEqual(["2026년 10월~12월", "2027년 1월~3월", "2027년 4월~6월", "2027년 7월~9월"]);
+    expect(f.pair.year.map((band) => band.months.length)).toEqual([3, 3, 3, 3]);
+    expect(f.pair.year[0]!.months[1]).toEqual({ month: "2026년 11월", tenGod: "상관", withMyDay: ["육합(六合)", "파(破)"], withTheirDay: ["해(害)"] });
+    // 寅 against my 寅 only repeats a glyph (no meeting); against their 申 it clashes
+    expect(f.pair.year[1]!.months[1]).toEqual({ month: "2027년 2월", tenGod: "편관", withMyDay: [], withTheirDay: ["충(沖)", "형(刑)"] });
+    // no glyph of the months (their branches would name the other person's 일지 by the relations), my ten gods and both years allowed
+    expect(JSON.stringify(f.pair.year)).not.toMatch(/[甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥]/);
+    expect(f.allowed.tenGods).toEqual(expect.arrayContaining(["식신", "상관", "편재", "정재", "편관", "정관", "편인", "정인", "비견", "겁재"]));
+    expect(f.allowed.years).toEqual(expect.arrayContaining([2026, 2027]));
+    expect(f.allowed.glyphs).not.toContain("申");
+  });
+
+  it("starts the year ahead in the month of the reading, across the new year", () => {
+    const f = buildMatchFacts(me, chart(1992, 2, 26), { relation: "friend" }, Date.parse("2026-11-20T12:00:00+09:00"));
+    expect(f.pair.year.map((band) => band.label)).toEqual(["2026년 11월~2027년 1월", "2027년 2월~4월", "2027년 5월~7월", "2027년 8월~10월"]);
   });
 
   it("states element meetings both ways", () => {

@@ -1,15 +1,14 @@
 import { computeChart } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
-import { mockMatchPartA } from "@/lib/ai/mockPremium";
+import { mockMatchPartA, mockMatchPartB } from "@/lib/ai/mockPremium";
 import { MATCH_SAJU_SYSTEM, buildMatchFacts } from "@/lib/ai/prompts/match";
 import { ymKo } from "@/lib/ai/prompts/saju";
 import type { GenerationTask, ReadingProvider } from "@/lib/ai/provider";
-import { validateMatchPartA } from "@/lib/ai/validatePremium";
+import { validateMatchPartA, validateMatchPartB } from "@/lib/ai/validatePremium";
 import type { Gate } from "@/lib/api/http";
 import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { chapterIdOf } from "@/lib/security/chapterToken";
-import { issueDraw } from "@/lib/security/drawToken";
 import { MATCH_ADAPTER } from "./adapters";
 import { preparePremiumFollowUp } from "./followup";
 import { PREMIUM_CHAPTER_TTL_MS } from "./products";
@@ -38,8 +37,7 @@ async function written() {
       return mockProvider.generate(task, attempt, feedback, hooks);
     },
   };
-  const { drawToken } = await issueDraw("match", [0, 1, 2, 3, 4], SECRET, NOW);
-  const body = MATCH_ADAPTER.teaserBody.parse({ ...BODY, drawToken });
+  const body = MATCH_ADAPTER.teaserBody.parse(BODY);
   const ctx = (await MATCH_ADAPTER.context(body, gateOf(provider))) as Extract<PremiumContext, { product: "match" }>;
   await MATCH_ADAPTER.teaser(provider, ctx);
   const first = await runNextPart(provider, ctx, []);
@@ -49,7 +47,7 @@ async function written() {
   const followUp = await preparePremiumFollowUp(chapter as Parameters<typeof preparePremiumFollowUp>[0], last.reading, NOW, SECRET, await chapterIdOf(last.reading, NOW + PREMIUM_CHAPTER_TTL_MS));
   if (followUp instanceof Response) throw new Error("follow-up refused");
   await followUp.generate(provider, [], "대화를 어떻게 시작하면 좋을까요?");
-  return { tasks, reading: last.reading, facts: ctx.match, partA: first.parts[0] };
+  return { tasks, reading: last.reading, facts: ctx.match, partA: first.parts[0], partB: last.parts[1] };
 }
 
 /** What only the other person's chart holds: pillar 간지, 일지·년지 glyphs, 대운 간지 and start months, the birth year. */
@@ -102,6 +100,39 @@ describe("the other person in a 궁합 (owner 2026-10-17 H1)", () => {
     expect(withLine(`준호의 년주는 ${p.pillars[0]!.ko}(${p.pillars[0]!.gz})예요.`).join(" ")).toMatch(/그 사람의 (기둥|간지)/);
     expect(withLine(`준호는 ${p.months[1]} 무렵 대운이 바뀌어요.`).join(" ")).toMatch(/그 사람의 대운/);
     expect(withLine(`준호는 ${p.year}년생이에요.`).join(" ")).toMatch(/그 사람의 (출생|생년)/);
+  });
+
+  it("is refused in part 2 too (the year ahead and how to treat each other, owner 2026-10-17)", async () => {
+    const { facts, partB } = await written();
+    const f = facts.facts;
+    const p = partnerOnly(f);
+    const base = (partB ?? mockMatchPartB(f)) as ReturnType<typeof mockMatchPartB>;
+    expect(validateMatchPartB(base, f).filter((v) => v.includes("그 사람의"))).toEqual([]);
+    const inBand = (line: string) => validateMatchPartB({ ...base, periods: [{ body: `${base.periods[0]!.body} ${line}` }, ...base.periods.slice(1)] }, f).join(" ");
+    const inWays = (line: string) => validateMatchPartB({ ...base, avoid: { body: `${base.avoid.body} ${line}` } }, f).join(" ");
+    expect(inBand(`준호의 년주는 ${p.pillars[0]!.ko}(${p.pillars[0]!.gz})예요.`)).toMatch(/그 사람의 (기둥|간지)/);
+    expect(inBand(`준호는 ${p.months[1]} 무렵 대운이 바뀌어요.`)).toMatch(/그 사람의 대운/);
+    expect(inWays(`준호는 ${p.year}년생이라 말이 빨라요.`)).toMatch(/그 사람의 (출생|생년)/);
+    const day = f.partner.pillars.find((x) => x.pillar.includes("일주"))!.gz.charAt(1);
+    expect(inWays(`준호의 일지는 ${day}예요.`)).toMatch(/그 사람의 일지/);
+  });
+
+  it("lets part 2 name the months ahead, even one the other person's 대운 turns in (a month of mine, not theirs)", () => {
+    // The next twelve months are mine to name: a band's month is never refused as their 대운's start.
+    const me = computeChart(toSajuInput(DEFAULT_SAJU_FORM));
+    let found: { f: ReturnType<typeof buildMatchFacts>; month: string } | null = null;
+    for (let i = 0; i < 400 && !found; i++) {
+      const partner = computeChart(toSajuInput({ ...DEFAULT_SAJU_FORM, year: 1975 + (i % 30), month: 1 + (i % 12), day: 1 + (i % 28), gender: i % 2 ? "male" : "female" }));
+      const f = buildMatchFacts(me, partner, { relation: "lover", label: "준호" }, NOW);
+      const ahead = new Set(f.pair.year.flatMap((band) => band.months.map((m) => m.month)));
+      const month = (f.partner.luck?.cycles ?? []).map((c) => (c.from ? ymKo(c.from) : "")).find((m) => ahead.has(m));
+      if (month) found = { f, month };
+    }
+    expect(found).not.toBeNull();
+    const { f, month } = found!;
+    const base = mockMatchPartB(f);
+    const said = validateMatchPartB({ ...base, together: { body: `${base.together.body} ${month}에는 둘이 같이 걷는 시간을 정해 보세요.` } }, f);
+    expect(said.filter((v) => v.includes("그 사람의 대운"))).toEqual([]);
   });
 });
 

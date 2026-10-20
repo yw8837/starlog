@@ -33,6 +33,14 @@ describe("premium products", () => {
     expect(PREMIUM["tarot-deep"].parts).toHaveLength(2);
   });
 
+  it("reads the 프리미엄 궁합 from the two people's saju only (owner 2026-10-17): its parts, scope and sub say no card or 타로", () => {
+    expect(PREMIUM.match.parts).toEqual(["사주로 본 두 사람", "앞으로 1년과 서로 대하는 법"]);
+    expect(PREMIUM.match.scope[0]).toBe("두 사람의 사주 궁합과 앞으로 1년 풀이 전체 · 약 5,000자");
+    expect(PREMIUM.match.sub).toBe("두 사람의 사주로 보는 관계와 앞으로 1년");
+    expect([PREMIUM.match.approxChars, PREMIUM.match.krw]).toEqual([5000, 7900]);
+    expect(JSON.stringify(PREMIUM.match)).not.toMatch(/카드|타로|5장/);
+  });
+
   it("opens 2027 신년운세 from 2026-11-15 00:00 to 2027-12-01 00:00 KST", () => {
     const ny = PREMIUM["newyear-2027"];
     expect(ny.opensAt).toBe(Date.parse("2026-11-15T00:00:00+09:00"));

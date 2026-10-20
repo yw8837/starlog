@@ -3,6 +3,7 @@ import s from "./ReadingLayout.module.css";
 
 type ReadingLayoutProps = {
   head: ReactNode;
+  /** null: nothing beside the reading (a saju-only 궁합), one column on every screen */
   spread: ReactNode;
   /** Accessible name of the spread column. */
   spreadLabel?: string;
@@ -14,12 +15,15 @@ type ReadingLayoutProps = {
  * left column with large cards; head and reading share a right column capped at 640px.
  */
 export function ReadingLayout({ head, spread, spreadLabel = "뽑은 카드", children }: ReadingLayoutProps) {
+  const solo = spread === null || spread === undefined;
   return (
-    <div className={s.layout}>
+    <div className={solo ? `${s.layout} ${s.solo}` : s.layout}>
       <div className={s.head}>{head}</div>
-      <aside className={s.spread} aria-label={spreadLabel}>
-        {spread}
-      </aside>
+      {solo ? null : (
+        <aside className={s.spread} aria-label={spreadLabel}>
+          {spread}
+        </aside>
+      )}
       <div className={s.body}>{children}</div>
     </div>
   );

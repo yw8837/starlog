@@ -11,7 +11,7 @@ import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { LANDING } from "@/lib/premium/landing";
 import { opensAtText } from "@/lib/premium/offer";
 import { PREMIUM, premiumPath, type PremiumId } from "@/lib/premium/products";
-import { PREMIUM_SAMPLES, sampleExcerpt } from "@/lib/premium/samples";
+import { PREMIUM_SAMPLES, sampleApproved, sampleExcerpt } from "@/lib/premium/samples";
 import s from "./landing.module.css";
 
 const CheckIcon = () => (
@@ -52,7 +52,8 @@ export function PremiumLanding({ id, open, now }: { id: PremiumId; open: boolean
   const spec = PREMIUM[id];
   const copy = LANDING[id];
   const soon = !open && spec.opensAt !== undefined && spec.opensAt > now;
-  const excerpt = sampleExcerpt(id);
+  // A placeholder (mock) sample is never shown as one: no excerpt, no link to it (the 궁합 until its real samples, 2026-10-17).
+  const excerpt = sampleApproved(id) ? sampleExcerpt(id) : null;
   const guide = findArticle(copy.guide);
   const action = (primary: boolean) =>
     open ? (
@@ -100,19 +101,21 @@ export function PremiumLanding({ id, open, now }: { id: PremiumId; open: boolean
         </ul>
       </section>
 
-      <section className={s.section} aria-labelledby="premium-sample">
-        <h2 id="premium-sample" className={s.sectionTitle}>
-          샘플로 미리 보기
-        </h2>
-        <p className={s.note}>{`가상의 입력으로 만든 샘플이에요 · ${PREMIUM_SAMPLES[id].input.summary}`}</p>
-        <Paper as="div" className={s.excerpt}>
-          <h3 className={s.excerptHeading}>{excerpt.heading}</h3>
-          <p className={s.excerptBody}>{excerpt.body}</p>
-        </Paper>
-        <Link href={`${premiumPath(id)}/sample`} className={s.more}>
-          샘플 전체 보기 →
-        </Link>
-      </section>
+      {excerpt ? (
+        <section className={s.section} aria-labelledby="premium-sample">
+          <h2 id="premium-sample" className={s.sectionTitle}>
+            샘플로 미리 보기
+          </h2>
+          <p className={s.note}>{`가상의 입력으로 만든 샘플이에요 · ${PREMIUM_SAMPLES[id].input.summary}`}</p>
+          <Paper as="div" className={s.excerpt}>
+            <h3 className={s.excerptHeading}>{excerpt.heading}</h3>
+            <p className={s.excerptBody}>{excerpt.body}</p>
+          </Paper>
+          <Link href={`${premiumPath(id)}/sample`} className={s.more}>
+            샘플 전체 보기 →
+          </Link>
+        </section>
+      ) : null}
 
       <div className={s.again}>{action(false)}</div>
 

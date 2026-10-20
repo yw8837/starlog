@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { PairCharts } from "@/components/premium/PairCharts";
 import { PremiumProgress } from "@/components/premium/PremiumProgress";
 import { PremiumUnlock } from "@/components/premium/PremiumUnlock";
-import { SpreadList } from "@/components/premium/SpreadList";
 import v from "@/components/premium/preview.module.css";
 import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
@@ -15,7 +14,6 @@ import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
 import { useAccount } from "@/lib/account/client";
-import { deckPrefs } from "@/lib/deck";
 import { withFlags } from "@/lib/flowState";
 import { approxCharsText } from "@/lib/pricing";
 import { clearPremiumResume, pendingResumeToken, premiumApiPath } from "@/lib/premium/client";
@@ -29,7 +27,7 @@ import { clearPremiumTeaser, readTeaser, saveTeaser } from "@/lib/reading/teaser
 import type { MatchPreviewData, MatchReadingData } from "@/lib/reading/types";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { isMatchPreview, isMatchReading } from "@/lib/reading/validate";
-import { saveChapter, useChapters } from "@/lib/storage/chapters";
+import { saveChapter } from "@/lib/storage/chapters";
 import { giveMatchToken, requestMatchToken } from "@/lib/storage/sync";
 
 const ID = "match";
@@ -38,15 +36,14 @@ const acceptPreview = (data: unknown): data is { preview: MatchPreviewData } =>
   typeof data === "object" && data !== null && isMatchPreview((data as { preview?: unknown }).preview);
 
 /**
- * 우리 사이 궁합's step 3 (Task 20): both computed charts side by side, the lines code wrote from them, the five
- * cards with their keywords, the free summary, the locked contents and the open panel. Opening writes the
- * two parts and keeps the reading on this device; then the tab forgets the flow and its preview, so the
- * other person's birth lives only in the user's own chapter (P5 spec §9).
+ * 프리미엄 궁합's step 2 of 2 (Task 20; saju only since 2026-10-17): both computed charts side by side, the lines code
+ * wrote from them, the free summary, the locked contents and the open panel. Opening writes the two parts and keeps
+ * the reading on this device; then the tab forgets the flow and its preview, so the other person's birth lives only
+ * sealed in the user's own chapter token (P5 spec §9).
  */
 export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean; autoUnlock?: boolean }) {
   const router = useRouter();
   const { flow } = useMatchFlow();
-  const chapters = useChapters();
   const account = useAccount();
   const status = usePremiumStatus();
   const ready = flow ? matchReady(flow) : null;
@@ -63,19 +60,16 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
   useEffect(() => {
     if (left.current) return;
     if (ready === "form") router.replace("/premium/match/new");
-    else if (ready === "draw") router.replace(withFlags("/premium/match/draw", { instant }));
-  }, [ready, instant, router]);
+  }, [ready, router]);
 
-  // The design the user sees (owner 2026-10-17): the five cards quote its pictures, and the record shows them in it.
-  const [deck] = useState(() => deckPrefs().front);
-  const body = ready === "ready" && flow ? matchBody(flow, deck) : null;
+  const body = ready === "ready" && flow ? matchBody(flow) : null;
   const teaserKey = body ? `${ID}|${JSON.stringify(body)}` : null;
   const teaserGen = useGeneration<{ preview: MatchPreviewData }>();
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: MatchPreviewData } | null>(null);
   const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("premium", teaserKey, isMatchPreview)) : null;
 
-  // The free preview once per answers and cards (kept for this tab), through the browser check like the free teasers.
+  // The free preview once per answers (kept for this tab), through the browser check like the free teasers.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
     if (!teaserKey || !body || readTeaser("premium", teaserKey, isMatchPreview)) return;
@@ -87,9 +81,7 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     return cancelTeaser;
   }, [teaserKey, attempt, runTeaser, cancelTeaser]);
 
-  const draw = flow?.draw;
-  const plans = premiumProgressPlans(ID, { positions: draw?.cards.map((card) => card.position) ?? [] });
-  const keywords = new Map(preview?.cards.map((card) => [card.position, card.keyword]));
+  const plans = premiumProgressPlans(ID);
   // A purchase of it (unopened or being opened) opens when the free preview could not be written: the paid reading needs none.
   const holds = Boolean(account?.user && [...account.user.unused, ...account.user.opening].some((item) => item.productId === ID));
   const teaserFailed = !preview && teaserGen.state.status === "error";
@@ -102,14 +94,11 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     autoOpen: autoUnlock,
     ready: Boolean(preview) || (holds && teaserFailed),
     accept: isMatchReading,
-    // This flow's reading: the same relation and the very same five cards (the account's copy holds no partner, owner 2026-10-16).
+    // This flow's reading, written after it started: the same relation, label and concern (the account's copy holds no
+    // partner, owner 2026-10-16; and no cards since the 궁합 is saju only, 2026-10-17).
     matches: (chapter) => {
-      const c = chapter as { kind?: string; relation?: string; cards?: Array<{ cardId: string; orientation: string }> };
-      return (
-        c.kind === ID &&
-        c.relation === flow?.relation &&
-        JSON.stringify(c.cards?.map((x) => [x.cardId, x.orientation])) === JSON.stringify(draw?.cards.map((x) => [x.cardId, x.orientation]))
-      );
+      const c = chapter as { kind?: string; relation?: string; partnerLabel?: string; concern?: string };
+      return c.kind === ID && c.relation === flow?.relation && (c.partnerLabel ?? "") === (body?.partner.label ?? "") && (c.concern ?? "") === (body?.concern ?? "");
     },
     save: (done) => {
       const { chapter } = saveChapter({
@@ -119,13 +108,8 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
         ...(body!.partner.label ? { partnerLabel: body!.partner.label } : {}),
         me: { birth: flow!.me! },
         ...(body!.concern ? { concern: body!.concern } : {}),
-        cards: draw!.cards.map((card) => {
-          const keyword = keywords.get(card.position);
-          return keyword ? { ...card, keyword } : card;
-        }),
         reading: done.reading,
         chapterToken: done.chapterToken,
-        deck,
         ...(done.readingId ? { serverId: done.readingId } : {}),
       });
       // The other person's birth leaves the tab: it lives in the user's own chapter only.
@@ -149,7 +133,6 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
     reason?.focus({ preventScroll: true });
   }, [opener.error]);
 
-  const openedId = draw?.chapterId && chapters?.some((c) => c.id === draw.chapterId) ? draw.chapterId : undefined;
   const teaserState = teaserGen.state;
   const teaserError = !preview && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
   const busy = Boolean(account?.user?.opening.some((item) => item.productId === ID));
@@ -161,14 +144,13 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
         ? teaserState.progress.caption
         : (teaserError?.title ?? "");
 
-  const stepper = <Stepper step={3} total={3} label={PREMIUM[ID].name} backHref="/premium/match/new" backLabel="궁합 정보로" />;
+  const stepper = <Stepper step={2} total={2} label={PREMIUM[ID].name} backHref="/premium/match/new" backLabel="궁합 정보로" />;
   let content;
-  if (!body || !flow?.relation || !draw) {
+  if (!body || !flow?.relation) {
     content = stepper;
   } else if (opener.running) {
     content = <PremiumProgress id={ID} part={opener.running.part} state={opener.running.progress} live={false} />;
   } else {
-    const cards = draw.cards.map((card) => ({ ...card, keyword: keywords.get(card.position) }));
     const unlock = (
       <PremiumUnlock
         id={ID}
@@ -179,8 +161,6 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
         resumable={opener.resumable}
         error={opener.error}
         refundHref={opener.method === "paid" && opener.error?.action === "retry" ? "/me#purchases" : undefined}
-        redrawHref={withFlags("/premium/match/draw", { instant })}
-        openedHref={openedId ? `/chapter/${openedId}` : undefined}
         checking={opener.checking}
         onCheck={opener.stalled || (!opener.checking && busy) ? opener.recheck : undefined}
       />
@@ -201,7 +181,6 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
                 </li>
               ))}
             </ul>
-            <SpreadList title="카드 5장" cards={cards} deck={deck} />
             <Paper as="article" aria-labelledby="match-summary-title">
               <h2 id="match-summary-title" className={s.cardHeading}>
                 {preview.summary.heading}
@@ -217,20 +196,13 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
           </>
         ) : holds && teaserError ? (
           <>
-            <SpreadList title="카드 5장" cards={cards} deck={deck} />
             {unlock}
             <AiNote />
           </>
         ) : teaserError ? (
-          <ErrorPanel
-            view={teaserError}
-            onRetry={() => setAttempt((n) => n + 1)}
-            redrawHref={withFlags("/premium/match/draw", { instant })}
-            editHref="/premium/match/new"
-          />
+          <ErrorPanel view={teaserError} onRetry={() => setAttempt((n) => n + 1)} editHref="/premium/match/new" />
         ) : (
           <>
-            <SpreadList title="카드 5장" cards={cards} deck={deck} />
             <GeneratingState
               mode="saju"
               kind="saju-teaser"

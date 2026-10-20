@@ -9,7 +9,7 @@ import { TOPIC_SECTIONS, TOPIC_SECTION_LENGTH } from "@/lib/sajuTopics";
 import { mockDaily, mockSajuReading, mockTarotReading } from "./mock";
 import { mockSajuTopicReading } from "./mockSajuTopics";
 import { DEEP_TAROT_SYSTEM } from "./prompts/deepTarot";
-import { MATCH_TAROT_SYSTEM } from "./prompts/match";
+import { MATCH_SAJU_SYSTEM } from "./prompts/match";
 import { NEWYEAR_SYSTEM } from "./prompts/newyear";
 import { SAJU_PLAIN_RULES, SAJU_PREAMBLE, SAJU_SYSTEM, SAJU_VOICE_EXAMPLES, SAJU_VOICE_RULES, buildFactSet, sajuFollowUpPrompt } from "./prompts/saju";
 import { buildTopicFactSet } from "./prompts/sajuTopics";
@@ -103,11 +103,10 @@ describe("the saju prompts (§4.1, §4.2)", () => {
     expect(validateSajuFollowUp({ kind: "clarify", answer }, facts).join(" ")).toMatch(/라벨을 단정했어요[^"]*계산 기준 절에서/);
   });
 
-  it("let 심층 타로 and 궁합's card sections end on an act, a question or a short summary, a maxim once a reading (§4.2 rule 16)", () => {
-    for (const [system, line] of [[DEEP_TAROT_SYSTEM, "- positions:"], [MATCH_TAROT_SYSTEM, "- cards:"]] as const) {
-      expect(system).not.toContain("→ 한 줄 정리");
-      expect(system).toMatch(new RegExp(`${line}[^\\n]*행동·질문·짧은 정리 가운데 하나로 맺기`));
-    }
+  it("let 심층 타로's card sections end on an act, a question or a short summary, a maxim once a reading (§4.2 rule 16; the 궁합 reads no cards since 2026-10-17)", () => {
+    expect(DEEP_TAROT_SYSTEM).not.toContain("→ 한 줄 정리");
+    expect(DEEP_TAROT_SYSTEM).toMatch(new RegExp(`- positions:[^\\n]*행동·질문·짧은 정리 가운데 하나로 맺기`));
+    expect(MATCH_SAJU_SYSTEM).not.toContain("- cards:");
   });
 
   it("drop the lines that made the stock phrases, in every prompt built on the preamble", () => {

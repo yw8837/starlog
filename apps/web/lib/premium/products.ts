@@ -42,9 +42,10 @@ const LOCAL: Record<PremiumId, Local> = {
     followUps: FOLLOW_UPS, approxChars: 5000, approxMinutes: 3, parts: ["자리별 풀이", "엮어 읽기"],
     scope: ["카드 10장 풀이 전체 · 약 5,000자", FOLLOW_UP_LINE, "이 기기와 계정에 보관"],
   },
+  // saju only (owner 2026-10-17): the two people, then the year ahead and how to treat each other
   match: {
-    followUps: FOLLOW_UPS, approxChars: 5000, approxMinutes: 3, parts: ["사주로 본 두 사람", "카드로 본 지금"],
-    scope: ["사주 궁합과 카드 5장 풀이 전체 · 약 5,000자", FOLLOW_UP_LINE, "이 기기와 계정에 보관"],
+    followUps: FOLLOW_UPS, approxChars: 5000, approxMinutes: 3, parts: ["사주로 본 두 사람", "앞으로 1년과 서로 대하는 법"],
+    scope: ["두 사람의 사주 궁합과 앞으로 1년 풀이 전체 · 약 5,000자", FOLLOW_UP_LINE, "이 기기와 계정에 보관"],
   },
   "newyear-2027": {
     followUps: FOLLOW_UPS, approxChars: 6800, approxMinutes: 4, parts: ["한 해의 큰 흐름", "1월~6월", "7월~12월"],

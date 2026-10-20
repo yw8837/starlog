@@ -1,5 +1,4 @@
-import type { FrontDeck } from "@/lib/deck";
-import type { DrawnCardData, LoveStatus, WorkStatus } from "@/lib/reading/types";
+import type { LoveStatus, WorkStatus } from "@/lib/reading/types";
 import { sanitizeSajuContext } from "@/lib/sajuFlow";
 import { sanitizeSajuForm, type SajuForm } from "@/lib/sajuForm";
 import { createSessionStore } from "@/lib/sessionStore";
@@ -7,9 +6,9 @@ import { clearPremiumTeaser } from "@/lib/reading/teaserCache";
 import { clearPremiumResume, hasPremiumResume } from "./client";
 
 /**
- * 우리 사이 궁합's flow (form → five cards → preview), kept in this tab's sessionStorage only: the other
- * person's birth dies with the tab (P5 spec §9) and never goes into a URL. After the reading is saved the
- * flow is cleared, so the partner's birth then lives only in the user's own chapter.
+ * 프리미엄 궁합's flow (form → preview; saju only since 2026-10-17, no cards to draw), kept in this tab's sessionStorage
+ * only: the other person's birth dies with the tab (P5 spec §9) and never goes into a URL. After the reading is saved
+ * the flow is cleared, so the partner's birth then lives only sealed in the user's own chapter token.
  */
 
 export const MATCH_FLOW_KEY = "starlog.match-flow";
@@ -40,8 +39,6 @@ export interface MatchFlow {
   concern?: string;
   /** 상대에게 알리거나 동의를 받을 수 있는 사이에서만 입력할게요 */
   ack?: boolean;
-  /** The five cards the server dealt, with their signed token; `chapterId` once opened. */
-  draw?: { drawToken: string; cards: DrawnCardData[]; chapterId?: string };
   /** When the flow was last saved (epoch ms): it lives MATCH_FLOW_TTL_MS from there. */
   savedAt?: number;
 }
@@ -54,19 +51,7 @@ const MATCH_FLOW_PATHS = ["/premium/match", "/pay/", "/login", "/auth/", "/priva
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const clip = (value: unknown, max: number) => (typeof value === "string" ? Array.from(value).slice(0, max).join("") : undefined);
 
-function sanitizeDraw(value: unknown): MatchFlow["draw"] {
-  if (!isRecord(value) || typeof value.drawToken !== "string" || !value.drawToken || value.drawToken.length > 4096 || !Array.isArray(value.cards)) return undefined;
-  const cards: DrawnCardData[] = [];
-  for (const card of value.cards) {
-    if (!isRecord(card) || typeof card.position !== "string" || typeof card.cardId !== "string") return undefined;
-    if (card.orientation !== "upright" && card.orientation !== "reversed") return undefined;
-    cards.push({ position: card.position, cardId: card.cardId, orientation: card.orientation });
-  }
-  if (cards.length === 0) return undefined;
-  return { drawToken: value.drawToken, cards, ...(typeof value.chapterId === "string" ? { chapterId: value.chapterId } : {}) };
-}
-
-/** Keeps only what the flow knows, so stale or edited storage can never break a page. */
+/** Keeps only what the flow knows, so stale or edited storage can never break a page (an older tab's cards included). */
 export function sanitizeMatchFlow(value: unknown): MatchFlow {
   if (!isRecord(value)) return {};
   const me = sanitizeSajuForm(value.me) ?? undefined;
@@ -75,7 +60,6 @@ export function sanitizeMatchFlow(value: unknown): MatchFlow {
   const partnerLabel = clip(value.partnerLabel, PARTNER_LABEL_MAX);
   const relation = MATCH_RELATION_OPTIONS.find((o) => o.value === value.relation)?.value;
   const concern = clip(value.concern, MATCH_CONCERN_MAX);
-  const draw = sanitizeDraw(value.draw);
   return {
     ...(me ? { me } : {}),
     ...(status && (status.loveStatus || status.workStatus) ? { meStatus: status } : {}),
@@ -84,22 +68,17 @@ export function sanitizeMatchFlow(value: unknown): MatchFlow {
     ...(relation ? { relation } : {}),
     ...(concern ? { concern } : {}),
     ...(value.ack === true ? { ack: true } : {}),
-    ...(draw ? { draw } : {}),
     ...(typeof value.savedAt === "number" && Number.isFinite(value.savedAt) ? { savedAt: value.savedAt } : {}),
   };
 }
 
-/** The form until both births, the relation and the consent are given; the draw until five cards are dealt. */
-export function matchReady(flow: MatchFlow): "form" | "draw" | "ready" {
-  if (!flow.me || !flow.partner || !flow.relation || !flow.ack) return "form";
-  return flow.draw ? "ready" : "draw";
+/** The form until both births, the relation and the consent are given; then the preview. */
+export function matchReady(flow: MatchFlow): "form" | "ready" {
+  return flow.me && flow.partner && flow.relation && flow.ack ? "ready" : "form";
 }
 
-/**
- * The request /api/premium/match/* takes (lib/premium/inputs.ts MatchBody), or null before the flow is ready. `deck`: the
- * card design the user sees, whose pictures the five cards are read in (as the other tarot readings send it).
- */
-export function matchBody(flow: MatchFlow, deck?: FrontDeck) {
+/** The request /api/premium/match/* takes (lib/premium/inputs.ts MatchBody), or null before the flow is ready. */
+export function matchBody(flow: MatchFlow) {
   if (matchReady(flow) !== "ready") return null;
   const label = flow.partnerLabel?.trim();
   const concern = flow.concern?.trim();
@@ -108,9 +87,7 @@ export function matchBody(flow: MatchFlow, deck?: FrontDeck) {
     partner: { birth: flow.partner!, ...(label ? { label } : {}) },
     relation: flow.relation!,
     ...(concern ? { concern } : {}),
-    drawToken: flow.draw!.drawToken,
     ack: true as const,
-    ...(deck ? { deck } : {}),
   };
 }
 

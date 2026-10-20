@@ -3,7 +3,6 @@ import type { Orientation, TemplateId } from "@starlog/core";
 import type { MatchRelation } from "@/lib/ai/prompts/match";
 import type { SajuProfile } from "@/lib/ai/prompts/saju";
 import type { BirthInput, TarotInputData } from "@/lib/api/inputs";
-import type { FrontDeck } from "@/lib/deck";
 import type { FollowUpTurn } from "@/lib/ai/prompts/tarot";
 import type { PremiumId } from "@/lib/premium/products";
 import type { SajuTopicId } from "@/lib/reading/types";
@@ -32,6 +31,7 @@ export type ChapterContext =
    * opens it, the device keeps it with its chapter for the 30 follow-up days, and the account's copy has no token (owner 2026-10-16).
    * `paid` (signed when the reading is written): opened with a purchase on real keys, so its follow-ups are paid
    * for; false for the owner pass and a test payment. Tokens issued before it have none (the deploy's keys decide).
+   * A match token from before it became saju only (2026-10-17) also carries the five cards and their design: read past.
    */
   | { kind: "tarot-deep"; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]>; paid?: boolean }
   | {
@@ -40,9 +40,6 @@ export type ChapterContext =
     partner: { sealed: string; label?: string };
     relation: MatchRelation;
     concern?: string;
-    cards: Array<[string, Orientation]>;
-    /** the card design the five cards were read in (signed; absent on earlier tokens: the 1909 scans) */
-    deck?: FrontDeck;
     paid?: boolean;
   }
   | { kind: "newyear-2027"; birth: BirthInput; profile?: SajuProfile; paid?: boolean };

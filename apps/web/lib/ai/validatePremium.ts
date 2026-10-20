@@ -119,7 +119,7 @@ export function validateDeepPartB(b: DeepPartB, ctx: TarotContext): string[] {
   return out;
 }
 
-// ---- 우리 사이 궁합 ----
+// ---- 프리미엄 궁합 (saju only, owner 2026-10-17) ----
 
 /** Marriage/divorce/reunion talk, 궁합 verdicts and scores, gender stereotypes (spec §5.2 hard bans). */
 const MATCH_FORBIDDEN: Array<[RegExp, string]> = [
@@ -158,11 +158,13 @@ export function partnerTextViolations(text: string, m: MatchFacts, out: string[]
   // What the text may name for its own reasons: my pillars and 대운, this year's 세운 and every year the facts allow.
   const mine = new Set([...m.me.pillars.map((p) => p.gz), ...(m.me.luck?.cycles ?? []).map((c) => c.gz), m.me.annual.gz, ...m.allowed.years.map(yearGanzhi)]);
   const myLuck = new Set([...mine, ...(m.me.luck?.cycles ?? []).flatMap((c) => (c.from ? [c.from] : []))]);
+  // the months ahead are mine to name too ("2027년 3월"), even one the other person's 대운 turns in
+  const ahead = new Set(m.pair.year.flatMap((band) => band.months.map((x) => x.month)));
   const named = (gz: string, ko: string, tail: string) => text.includes(gz) || new RegExp(`${ko}(${tail})`).test(text);
   const pillar = m.partner.pillars.find((p) => !mine.has(p.gz) && named(p.gz, p.ko, "\\(|년|월|일|시|주"));
   if (pillar) out.push(`그 사람의 기둥 간지(${pillar.ko})는 쓰지 않아요. 그 사람 쪽은 일간과 오행 기울기, 두 사람 사이의 관계 이름으로만 말해 주세요.`);
   const cycles = (m.partner.luck?.cycles ?? []).filter((c) => !myLuck.has(c.gz));
-  const months = (m.partner.luck?.cycles ?? []).flatMap((c) => (c.from && !myLuck.has(c.from) ? [c.from, ymKo(c.from)] : []));
+  const months = (m.partner.luck?.cycles ?? []).flatMap((c) => (c.from && !myLuck.has(c.from) && !ahead.has(ymKo(c.from)) ? [c.from, ymKo(c.from)] : []));
   if (cycles.some((c) => named(c.gz, c.ko, "\\(|\\s?대운")) || months.some((ym) => text.includes(ym))) {
     out.push("그 사람의 대운(기간·간지·시작 연월)은 쓰지 않아요. 입력의 연도 없는 문장 그대로만 말해 주세요.");
   }
@@ -216,35 +218,36 @@ export function validateMatchPartA(a: MatchPartA, m: MatchFacts): string[] {
   return out;
 }
 
-export function validateMatchPartB(b: MatchPartB, m: MatchFacts, ctx: TarotContext): string[] {
+/** "11월" for a band's month, never inside "11월" when the band holds 1월. */
+const monthNamed = (text: string, month: string) => new RegExp(String.raw`(?<!\d)${Number(month.match(/(\d+)월$/)?.[1])}월`).test(text);
+
+/** Part 2 (앞으로 1년과 서로 대하는 법): the four bands in order, each naming one of its months, both ways of treating each other. */
+export function validateMatchPartB(b: MatchPartB, m: MatchFacts): string[] {
   const out: string[] = [];
-  const texts = [b.verdict, ...b.cards.map((c) => c.body), b.connection.body, b.bridge.body, b.action.body, b.observation.body];
+  const h = MATCH_HEADINGS;
+  const texts = [b.verdict, ...b.periods.map((p) => p.body), b.together.body, b.avoid.body, b.action.body, b.observation.body];
   premiumCommonViolations(b, [...texts, ...b.followUps], out);
-  cardIdentityViolations(b.cards, ctx, out);
   const verdict = charCount(b.verdict);
-  if (verdict === 0 || verdict > 88) out.push(`${MATCH_HEADINGS.verdict}은 70자 이하 한 문장으로 써 주세요(지금 ${verdict}자).`);
-  b.cards.forEach((section, i) => {
-    const card = ctx.cards[i];
-    if (!card) return;
-    lengthCheck(`${card.position} 절`, section.body, 200, 280, out);
-    cardSectionViolations(`${card.position} 절`, section.body, card, out);
+  if (verdict === 0 || verdict > 88) out.push(`${h.verdict}은 70자 이하 한 문장으로 써 주세요(지금 ${verdict}자).`);
+  const bands = m.pair.year;
+  if (b.periods.length !== bands.length) out.push(`앞으로 1년은 석 달씩 ${bands.length}개를 순서대로 써 주세요(지금 ${b.periods.length}개).`);
+  b.periods.slice(0, bands.length).forEach((period, i) => {
+    const band = bands[i]!;
+    lengthCheck(band.label, period.body, 300, 400, out);
+    const months = band.months.map((x) => x.month.replace(/^\d+년 /, ""));
+    if (!band.months.some((x) => monthNamed(period.body, x.month))) out.push(`${band.label} 문단에서 그 석 달(${months.join(", ")}) 가운데 한 달 이상을 불러 주세요.`);
   });
-  lengthCheck(MATCH_HEADINGS.connection, b.connection.body, 220, 320, out);
-  lengthCheck(MATCH_HEADINGS.bridge, b.bridge.body, 250, 380, out);
-  lengthCheck(MATCH_HEADINGS.action, b.action.body, 80, 160, out);
-  lengthCheck(MATCH_HEADINGS.observation, b.observation.body, 80, 180, out);
-  if (!b.bridge.body.includes("사주") || !b.bridge.body.includes("카드")) out.push(`${MATCH_HEADINGS.bridge} 절은 "사주로는 ~, 카드로는 ~"처럼 두 출처를 밝혀 나란히 놓아 주세요.`);
+  lengthCheck(h.together, b.together.body, 300, 420, out);
+  lengthCheck(h.avoid, b.avoid.body, 300, 420, out);
+  lengthCheck(h.action, b.action.body, 80, 160, out);
+  lengthCheck(h.observation, b.observation.body, 80, 180, out);
   followUpViolations(b.followUps, out);
   const text = texts.join("\n");
-  commonTarotViolations(maskGanzhiReadings([text, ...b.followUps].join("\n")), ctx, out, { topic: true, extraUserText: matchUserText(m) });
-  // Card names are not claims: "죽음" and "연인" are cards here, not a death topic or a romance word.
-  const plain = withoutDrawnNames(maskGanzhiReadings(text), ctx.cards.map((c) => c.kb));
-  allowedFactViolations(plain, m.allowed, out, matchUserText(m), { cardText: true });
+  allowedFactViolations(maskGanzhiReadings([text, ...b.followUps].join("\n")), m.allowed, out, matchUserText(m));
   partnerTextViolations(text, m, out);
-  matchSafetyViolations(plain, m, out);
+  matchSafetyViolations(text, m, out);
   voiceViolations([text, ...b.followUps].join("\n"), out);
   actionVarietyViolations([b.action.body, b.observation.body], out);
-  if (cardSubjectCount(text, ctx.cards) > 3) out.push(`${SOFT_PREFIX}카드를 주어로 세운 문장이 많아요. 3번 이하로 줄여 주세요.`);
   aiTellViolations([text], out);
   return out;
 }
@@ -346,16 +349,15 @@ export function validateNewYearPartC(c: NewYearPartC, n: NewYearFacts): string[]
 
 /**
  * A follow-up on a 궁합 reading (P5 spec §6.3): the standard length, the pair's allowed facts (the
- * question's own words may be quoted), the 궁합 bans, no card outside the five drawn.
+ * question's own words may be quoted), the 궁합 bans and the other person's safety nets.
  */
-export function validateMatchFollowUp(a: FollowUpAnswer, m: MatchFacts, ctx: TarotContext, question = ""): string[] {
+export function validateMatchFollowUp(a: FollowUpAnswer, m: MatchFacts, question = ""): string[] {
   const out: string[] = [];
   premiumCommonViolations(a, [a.answer], out);
   lengthCheck("answer", a.answer, 150, 450, out);
   allowedFactViolations(maskGanzhiReadings(a.answer), m.allowed, out, `${matchUserText(m)} ${question}`);
   partnerTextViolations(a.answer, m, out);
   matchSafetyViolations(a.answer, m, out);
-  foreignCardViolations(a.answer, ctx.cards.map((c) => c.kb), out);
   voiceViolations(a.answer, out);
   aiTellViolations([a.answer], out);
   return out;

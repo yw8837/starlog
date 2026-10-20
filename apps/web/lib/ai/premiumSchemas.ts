@@ -60,23 +60,40 @@ export interface DeepTarotPreview {
   lockedToc: string[];
 }
 
-// ---- 우리 사이 궁합 ----
+// ---- 프리미엄 궁합 (saju only, owner 2026-10-17) ----
 
 export const MatchTeaserDraftSchema = z.object({ summary: z.string() });
 
+/** Part 1, 사주로 본 두 사람. */
 export const MatchPartASchema = z.object({ dayMasters: Body, elements: Body, pillars: Body, luck: Body });
 
+/** Part 2, 앞으로 1년과 서로 대하는 법: the year ahead in four bands of three months, what suits each other, what to avoid. */
 export const MatchPartBSchema = z.object({
   verdict: z.string(),
-  cards: z.array(CardBody),
-  connection: Body,
-  bridge: Body,
+  periods: z.array(Body),
+  together: Body,
+  avoid: Body,
   action: Body,
   observation: Body,
   followUps: z.array(z.string()),
 });
 
 export const MatchReadingSchema = z.object({
+  verdict: z.string(),
+  saju: z.object({ dayMasters: Section, elements: Section, pillars: Section, luck: Section }),
+  periods: z.array(Section),
+  together: Section,
+  avoid: Section,
+  action: Section,
+  observation: Section,
+  followUps: z.array(z.string()),
+});
+
+/**
+ * A 궁합 written before it became saju only (2026-10-16~17, the owner's own test readings): its second part read five
+ * cards. Never written again; its record still opens and its follow-ups still answer.
+ */
+export const LegacyMatchReadingSchema = z.object({
   verdict: z.string(),
   saju: z.object({ dayMasters: Section, elements: Section, pillars: Section, luck: Section }),
   cards: z.array(CardSection),
@@ -91,6 +108,7 @@ export type MatchTeaserDraft = z.infer<typeof MatchTeaserDraftSchema>;
 export type MatchPartA = z.infer<typeof MatchPartASchema>;
 export type MatchPartB = z.infer<typeof MatchPartBSchema>;
 export type MatchReading = z.infer<typeof MatchReadingSchema>;
+export type LegacyMatchReading = z.infer<typeof LegacyMatchReadingSchema>;
 
 /** What a chart shows on screen (preview and chapter): no birth date, just the computed pillars. */
 export interface ChartView {
@@ -102,7 +120,6 @@ export interface ChartView {
 export interface MatchPreview {
   facts: string[];
   charts: { me: ChartView; partner: ChartView };
-  cards: PreviewCard[];
   summary: { heading: string; body: string };
   lockedToc: string[];
 }

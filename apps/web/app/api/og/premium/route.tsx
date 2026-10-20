@@ -16,16 +16,16 @@ const Card = z.object({ cardId: z.string().refine((id) => CARD_IDS.has(id)), ori
 /**
  * Only what a premium share may show (plan task 23, spec §9): the dealt cards, the relation's fixed name and the year's
  * own title. Every object is strict, so a question, a note, a name or label, a birth or the day masters (they come from
- * the partner's birth) is a 400, never drawn.
+ * the partner's birth) is a 400, never drawn. The 프리미엄 궁합 reads no cards (owner 2026-10-17): its relation only.
  */
 const PremiumImageBody = z.discriminatedUnion("product", [
   z.object({ product: z.literal("tarot-deep"), cards: z.array(Card).length(10) }).strict(),
-  z.object({ product: z.literal("match"), relation: z.enum(MATCH_RELATIONS), cards: z.array(Card).length(5) }).strict(),
+  z.object({ product: z.literal("match"), relation: z.enum(MATCH_RELATIONS) }).strict(),
   z.object({ product: z.literal("newyear-2027"), title: z.string().regex(/^[가-힣\s·,]{2,14}$/) }).strict(),
 ]);
 
 /**
- * POST {product, cards | relation+cards | title} → a 1080×1350 PNG (`?size=story`: 1080×1920). Nothing personal in it.
+ * POST {product, cards | relation | title} → a 1080×1350 PNG (`?size=story`: 1080×1920). Nothing personal in it.
  * Not there while premium is off; never cached; its own per-IP limiter, apart from the AI generations' (review 2026-10-17 L2).
  */
 export async function POST(request: Request): Promise<Response> {
@@ -37,7 +37,7 @@ export async function POST(request: Request): Promise<Response> {
   const b = body.data;
   const headline =
     b.product === "tarot-deep" ? PREMIUM["tarot-deep"].name : b.product === "match" ? `${PREMIUM.match.name} · ${RELATION_KO[b.relation]}` : `2027년, ${b.title.trim()}`;
-  const data = { headline, cards: b.product === "newyear-2027" ? [] : b.cards, host: new URL(SITE.url).host, ...size };
+  const data = { headline, cards: b.product === "tarot-deep" ? b.cards : [], host: new URL(SITE.url).host, ...size };
   const text = premiumShareText(data);
   return new ImageResponse(premiumShareImage(data), { ...size, fonts: await ogFonts(text.serif, text.sans), headers: { "Cache-Control": "no-store" } });
 }

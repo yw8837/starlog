@@ -12,7 +12,7 @@ import type { TarotContext } from "@/lib/ai/prompts/tarot";
 import type { GenerationHooks, ReadingProvider, Usage } from "@/lib/ai/provider";
 import type { PremiumId } from "./products";
 
-/** What a premium generation reads: the cards, the two charts and the cards, or the 2027 facts. */
+/** What a premium generation reads: the cards, the two charts, or the 2027 facts. */
 export type PremiumContext =
   | { product: "tarot-deep"; tarot: TarotContext }
   | { product: "match"; match: MatchContext }

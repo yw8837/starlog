@@ -21,9 +21,13 @@ describe("premium progress", () => {
     expect(deep).toHaveLength(2);
     expect(deep[0]!.stages.filter((s) => s.key === "positions")).toHaveLength(10);
     expect(advanceProgress(startProgress(deep[0]!), { type: "section", key: "positions", index: 9 }, deep[0]!).caption).toBe("결과의 방향 카드를 읽고 있어요");
-    const match = premiumProgressPlans("match", { positions: ["나", "그 사람", "사이", "엇갈림", "함께"] });
+    // saju only (owner 2026-10-17): part 2 is the year in four bands and how to treat each other, no cards
+    const match = premiumProgressPlans("match");
     expect(match).toHaveLength(2);
-    expect(match[1]!.stages.filter((s) => s.key === "cards")).toHaveLength(5);
+    expect(match[1]!.stages.filter((s) => s.key === "periods")).toHaveLength(4);
+    expect(match[1]!.stages.map((s) => s.key)).toEqual(["verdict", "periods", "periods", "periods", "periods", "together", "avoid", "action", "observation", "followUps"]);
+    expect(JSON.stringify(match)).not.toContain("카드");
+    expect(advanceProgress(startProgress(match[1]!), { type: "section", key: "periods", index: 3 }, match[1]!).caption).toBe("마지막 석 달을 적고 있어요");
     // the new year months default to 1월~12월
     expect(premiumProgressPlans("newyear-2027")[2]!.stages.filter((s) => s.key === "secondHalf")).toHaveLength(6);
   });

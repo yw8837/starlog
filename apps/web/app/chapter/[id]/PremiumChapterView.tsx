@@ -41,12 +41,12 @@ const SHARE_TITLE = /^[가-힣\s·,]{2,14}$/;
 
 /**
  * What a premium record's share image is drawn from (plan task 23), built here by code from the chapter: the dealt
- * cards, the relation's fixed id, or the year's own title. Never the question, note, label, concern or a birth.
+ * cards, the relation's fixed id (the 궁합 reads no cards, owner 2026-10-17), or the year's own title. Never the
+ * question, note, label, concern or a birth.
  */
 export function premiumShareBody(chapter: PremiumChapter): Record<string, unknown> | null {
-  const cards = () => chapter.kind === "newyear-2027" ? [] : chapter.cards.map(({ cardId, orientation }) => ({ cardId, orientation }));
-  if (chapter.kind === "tarot-deep") return { product: "tarot-deep", cards: cards() };
-  if (chapter.kind === "match") return MATCH_RELATION_OPTIONS.some((o) => o.value === chapter.relation) ? { product: "match", relation: chapter.relation, cards: cards() } : null;
+  if (chapter.kind === "tarot-deep") return { product: "tarot-deep", cards: chapter.cards.map(({ cardId, orientation }) => ({ cardId, orientation })) };
+  if (chapter.kind === "match") return MATCH_RELATION_OPTIONS.some((o) => o.value === chapter.relation) ? { product: "match", relation: chapter.relation } : null;
   const title = chapter.reading.title.trim();
   return SHARE_TITLE.test(title) ? { product: "newyear-2027", title } : null;
 }
@@ -68,7 +68,7 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
   // The design the reading was written for; one saved before readings kept their deck was written for the 1909 scans.
   const deck = chapter.deck ?? "rws1909";
   let title: string;
-  let spread: ReactNode;
+  let spread: ReactNode = null;
   let spreadLabel = "뽑은 카드";
   let article: ReactNode;
   let line: ReactNode = null;
@@ -78,7 +78,9 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
     article = <DeepTarotArticle reading={chapter.reading} cards={chapter.cards} deck={deck} showSpread={false} />;
   } else if (chapter.kind === "match") {
     title = `${PREMIUM.match.name} · ${chapter.relationLabel}`;
-    spread = <SpreadRow size="sm" cards={chapter.cards.map(faceUpCard)} deck={deck} />;
+    // Saju only (owner 2026-10-17): nothing beside it, no chart either (eight letters nearly give a birth away). One
+    // written before keeps its five cards.
+    if (chapter.cards?.length) spread = <SpreadRow size="sm" cards={chapter.cards.map(faceUpCard)} deck={deck} />;
     article = <MatchArticle reading={chapter.reading} cards={chapter.cards} deck={deck} />;
   } else {
     title = `2027년, ${chapter.title}`;

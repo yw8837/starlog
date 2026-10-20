@@ -15,8 +15,8 @@ import {
   DEEP_TAROT_SYSTEM, deepHeadings, deepLockedToc, deepPartAPrompt, deepPartBPrompt, deepShared, deepTeaserPrompt, previewKeyword,
 } from "./prompts/deepTarot";
 import {
-  MATCH_HEADINGS, MATCH_SAJU_SYSTEM, MATCH_TAROT_SYSTEM, chartView, matchCardsShared, matchLockedToc, matchPartAPrompt, matchPartBPrompt,
-  matchPreviewFacts, matchSajuShared, matchTeaserPrompt, type MatchFacts,
+  MATCH_HEADINGS, MATCH_SAJU_SYSTEM, chartView, matchLockedToc, matchPartAPrompt, matchPartBPrompt, matchPreviewFacts, matchSajuShared,
+  matchTeaserPrompt, type MatchFacts,
 } from "./prompts/match";
 import {
   NEWYEAR_HEADINGS, NEWYEAR_SYSTEM, monthHeading, newyearLockedToc, newyearPartPrompt, newyearPreviewFacts, newyearShared, newyearTeaserPrompt,
@@ -97,11 +97,11 @@ export function assembleDeep(ctx: TarotContext, parts: readonly unknown[]): Deep
   };
 }
 
-// ---- 우리 사이 궁합 ----
+// ---- 프리미엄 궁합 (saju only, owner 2026-10-17) ----
 
+/** What a 궁합 is written from: the two charts' facts and what lies between them (no cards since 2026-10-17). */
 export interface MatchContext {
   facts: MatchFacts;
-  cards: TarotContext;
 }
 
 export const MATCH_PART_COUNT = 2;
@@ -120,29 +120,28 @@ export async function generateMatchTeaser(provider: ReadingProvider, mc: MatchCo
     data: {
       facts: matchPreviewFacts(mc.facts),
       charts: { me: chartView(mc.facts.me), partner: chartView(mc.facts.partner) },
-      cards: mc.cards.cards.map((c) => ({ position: c.position, cardId: c.cardId, orientation: c.orientation, keyword: previewKeyword(c, mc.cards) })),
       summary: { heading: "두 사람 첫인상", body: data.summary.trim() },
-      lockedToc: matchLockedToc(mc.cards),
+      lockedToc: matchLockedToc(mc.facts),
     },
     usage,
   };
 }
 
+/** Both parts read the same saju block (system and shared alike), so the second is written from the cache. */
 export async function generateMatchPart(
   provider: ReadingProvider, mc: MatchContext, index: number, prior: readonly unknown[], hooks?: GenerationHooks,
 ): Promise<Result<MatchPartA | MatchPartB>> {
+  const common = { name: "match-part" as const, system: MATCH_SAJU_SYSTEM, shared: matchSajuShared(mc.facts), ...generationSetting("match-part") };
   if (index === 0) {
     const { data, usage } = await generateValidated(provider, {
-      name: "match-part", system: MATCH_SAJU_SYSTEM, shared: matchSajuShared(mc.facts), user: matchPartAPrompt(),
-      schema: MatchPartASchema, ...generationSetting("match-part"), mock: () => mockMatchPartA(mc.facts),
+      ...common, user: matchPartAPrompt(), schema: MatchPartASchema, mock: () => mockMatchPartA(mc.facts),
     }, (a) => validateMatchPartA(a, mc.facts), hooks);
     return { data, usage };
   }
   const a = MatchPartASchema.parse(prior[0]);
   const { data, usage } = await generateValidated(provider, {
-    name: "match-part", system: MATCH_TAROT_SYSTEM, shared: matchCardsShared(mc.facts, mc.cards), user: matchPartBPrompt(mc.facts, a),
-    schema: MatchPartBSchema, ...generationSetting("match-part"), mock: () => mockMatchPartB(mc.facts, mc.cards),
-  }, (b) => validateMatchPartB(b, mc.facts, mc.cards), hooks);
+    ...common, user: matchPartBPrompt(mc.facts, a), schema: MatchPartBSchema, mock: () => mockMatchPartB(mc.facts),
+  }, (b) => validateMatchPartB(b, mc.facts), hooks);
   return { data, usage };
 }
 
@@ -158,9 +157,9 @@ export function assembleMatch(mc: MatchContext, parts: readonly unknown[]): Matc
       pillars: { heading: h.pillars, body: a.pillars.body.trim() },
       luck: { heading: h.luck, body: a.luck.body.trim() },
     },
-    cards: mc.cards.cards.map((card, i) => ({ position: card.position, cardId: card.cardId, heading: cardLabel(card), body: b.cards[i]!.body.trim() })),
-    connection: { heading: h.connection, body: b.connection.body.trim() },
-    bridge: { heading: h.bridge, body: b.bridge.body.trim() },
+    periods: mc.facts.pair.year.map((band, i) => ({ heading: band.label, body: b.periods[i]!.body.trim() })),
+    together: { heading: h.together, body: b.together.body.trim() },
+    avoid: { heading: h.avoid, body: b.avoid.body.trim() },
     action: { heading: h.action, body: b.action.body.trim() },
     observation: { heading: h.observation, body: b.observation.body.trim() },
     followUps: b.followUps.map((q) => q.trim()).filter(Boolean).slice(0, 2),

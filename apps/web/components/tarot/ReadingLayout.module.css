@@ -39,6 +39,15 @@
     justify-content: center;
   }
 
+  /* Nothing beside the reading (a saju-only 궁합): head and body in the one 640px column. */
+  .solo {
+    grid-template-areas:
+      "head"
+      "body";
+    grid-template-columns: minmax(0, 640px);
+    grid-template-rows: auto auto;
+  }
+
   /* Taller than the window (the saju chart with its names, 오행 and basis), the sticky column scrolls on its own,
      or its lower half stayed out of reach until the reading was scrolled to the end (owner 2026-10-15). */
   .spread {

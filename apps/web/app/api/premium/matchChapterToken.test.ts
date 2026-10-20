@@ -9,12 +9,11 @@ import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
 import { browser, buy, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as followup } from "../followup/route";
-import { POST as draw } from "../tarot/draw/route";
 import { POST as chapterToken } from "./match/chapter/route";
 import { POST as matchReading } from "./match/reading/route";
 
 /**
- * Review 2026-10-17 H3: a 궁합's five follow-ups must not vanish on the device that wrote it. The account's copy holds no
+ * Review 2026-10-17 H3: a 궁합's follow-ups must not vanish on the device that wrote it. The account's copy holds no
  * partner (owner 2026-10-16), so a token is issued again from the partner the device still holds: sealed (kept across a
  * logout) or, right after a cut-off reading, the tab's own input proven by its resume token. Nothing about the partner is
  * stored on our servers either way.
@@ -47,9 +46,8 @@ const sealedOf = (token: string) =>
   (JSON.parse(Buffer.from(token.split(".")[0]!, "base64url").toString("utf8")) as { ctx: { partner: { sealed: string } } }).ctx.partner.sealed;
 
 /** Writes a paid 궁합 and answers its input, the resume token after the first part, and the finished reading. */
-async function writeMatch(b: Browser, me: Record<string, unknown> = { birth: DEFAULT_SAJU_FORM }, extra: Record<string, unknown> = {}) {
-  const drawToken = ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "match", picks: [4, 18, 33, 51, 70] } })).json()) as { drawToken: string }).drawToken;
-  const input = { me, partner: { birth: PARTNER, label: "민지" }, relation: "friend", concern: "요즘 연락이 뜸해요", drawToken, ack: true, ...extra };
+async function writeMatch(b: Browser, me: Record<string, unknown> = { birth: DEFAULT_SAJU_FORM }) {
+  const input = { me, partner: { birth: PARTNER, label: "민지" }, relation: "friend", concern: "요즘 연락이 뜸해요", ack: true };
   const first = await json(await b.send(matchReading, "/r", { body: { ...input, unlock: { method: "paid" } } }));
   const done = await json(await b.send(matchReading, "/r", { body: { ...input, unlock: { method: "paid" }, resume: first.resume } }));
   return { input, resume: first.resume as string, done };
@@ -115,14 +113,17 @@ describe("a 궁합's chapter token issued again (review 2026-10-17 H3)", () => {
     expect((after!.ctx as { me: { profile?: unknown } }).me.profile).toEqual({ loveStatus: "연애 중", workStatus: "직장인" });
   });
 
-  it("keeps the card design through a token issued again, from the seal or from the tab's input (owner 2026-10-17)", async () => {
+  it("issues no cards or card design, from the seal or from the tab's input (saju only, owner 2026-10-17)", async () => {
     useTestDb();
     const b = await member("198.51.100.166", "pair166");
-    const { input, resume, done } = await writeMatch(b, undefined, { deck: "starlog" });
+    const { input, resume, done } = await writeMatch(b);
     const fromSeal = await json(await b.send(chapterToken, ROUTE, { body: { readingId: done.readingId, sealed: sealedOf(done.chapterToken) }, origin: true }));
     const fromInput = await json(await b.send(chapterToken, ROUTE, { body: { readingId: done.readingId, resume, input }, origin: true }));
     for (const token of [done.chapterToken, fromSeal.chapterToken, fromInput.chapterToken]) {
-      expect((await openChapter(token, done.reading, signingSecret()!, Date.now()))!.ctx).toMatchObject({ kind: "match", deck: "starlog" });
+      const ctx = (await openChapter(token, done.reading, signingSecret()!, Date.now()))!.ctx;
+      expect(ctx).toMatchObject({ kind: "match", relation: "friend" });
+      expect(ctx).not.toHaveProperty("cards");
+      expect(ctx).not.toHaveProperty("deck");
     }
   });
 

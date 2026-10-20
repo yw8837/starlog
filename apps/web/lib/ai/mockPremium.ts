@@ -4,7 +4,7 @@ import type {
 } from "./premiumSchemas";
 import { FALLBACK_ACTIONS, actionsOf, cardBody, distinctActions, factSentence, factsOf, hasFinal, josa, ro } from "./mock";
 import { previewKeyword } from "./prompts/deepTarot";
-import type { MatchFacts } from "./prompts/match";
+import type { MatchFacts, MonthAhead, YearBand } from "./prompts/match";
 import type { MonthFact, NewYearFacts } from "./prompts/newyear";
 import type { Relation } from "./prompts/saju";
 import type { FollowUpAnswer } from "./schemas";
@@ -198,28 +198,64 @@ export function mockMatchPartA(m: MatchFacts): MatchPartA {
   };
 }
 
-export function mockMatchPartB(m: MatchFacts, ctx: TarotContext): MatchPartB {
+/** Relation-neutral closers for a band of the year ahead: no glyphs, years, grades, dates, romance words or verdicts. */
+const BAND_POOL: readonly string[] = [
+  "이 무렵에는 서두르기보다 서로의 일정부터 한 번 맞춰 보는 편이 나아요.",
+  "작은 약속 하나를 정해 지켜 보면 이 석 달의 결이 또렷해져요.",
+  "말이 엇갈린 날에는 결론보다 순서를 먼저 정하면 한결 부드러워요.",
+  "함께 보내는 시간이 짧아도 그 시간을 여는 첫마디가 오래 남아요.",
+  "한 사람이 바쁜 주에는 다른 사람이 먼저 안부를 건네 보는 것도 방법이에요.",
+  "둘 다 편한 시간대를 찾아 두면 대화가 덜 끊기죠.",
+  "이 석 달에 해 본 작은 일이 다음 석 달의 기준이 돼요.",
+  "서로의 속도를 묻는 한 문장이 생각보다 큰 힘이 돼요.",
+  "같이 정한 일을 하나 끝내고 나면 다음 이야기가 쉬워져요.",
+  "주말 하루쯤은 할 일을 비워 두고 쉬는 시간을 나눠 보세요.",
+];
+
+const monthName = (x: MonthAhead) => x.month.replace(/^\d+년 /, "");
+
+/** A band of the year ahead: its months and my ten gods, the relations its months meet both 일지 with (theirs by name). */
+function bandBody(band: YearBand, i: number, who: string): string {
+  const moving = band.months.filter((x) => x.withMyDay.length || x.withTheirDay.length).slice(0, 2);
+  return fill([
+    `${band.months.map(monthName).join(", ")}에는 달마다 천간이 내게 ${[...new Set(band.months.map((x) => x.tenGod))].join("·")}의 결로 들어와요.`,
+    ...moving.map((x) => {
+      const meets = [x.withMyDay.length ? `나의 일지와 ${x.withMyDay.join("·")}` : "", x.withTheirDay.length ? `${who}의 일지와 ${x.withTheirDay.join("·")}` : ""].filter(Boolean);
+      return `${monthName(x)}에는 그달의 지지가 ${meets.join(", ")} 관계를 맺어 움직임이 늘어나는 때로 읽어요.`;
+    }),
+    moving.length ? "" : "이 석 달에는 두 일지와 따로 묶이거나 부딪히는 달이 없어 담백하게 이어 가기 쉬운 때로 읽어요.",
+  ], rotate(BAND_POOL, i * 2), 310, 400);
+}
+
+export function mockMatchPartB(m: MatchFacts): MatchPartB {
   const who = nameOf(m);
-  const c = ctx.cards;
-  const line = (i: number) => lineOf(ctx, i);
+  const d = m.pair.dayMasters;
+  const e = m.pair.elements;
   return {
-    verdict: "서로의 속도를 한 번 맞춰 보는 쪽으로 움직여 보세요.",
-    cards: c.map((card) => ({
-      position: card.position, cardId: card.cardId,
-      body: cardBody(ctx, card, 1, false, [`두 사람 사이에서는 ${lineOf(ctx, card.slot)} 쪽으로 읽어요.`], 275),
-    })),
-    connection: { body: fill([`다섯 장을 차례로 보면 ${c.map((x) => x.name).join(", ")} 순서로 이어져요.`, `나의 마음 자리의 '${line(0)}'에서 함께 가꿀 방향 자리의 '${line(4)}'까지가 한 흐름이에요.`], NEUTRAL_POOL, 230, 320) },
-    bridge: {
+    verdict: "앞으로 1년은 서로의 속도를 묻는 한 문장부터 맞춰 보세요.",
+    periods: m.pair.year.map((band, i) => ({ body: bandBody(band, i, who) })),
+    together: {
       body: fill([
-        `사주로는 두 사람의 일간을 ${m.pair.dayMasters.images}의 짝으로 읽었어요.`,
-        `카드로는 두 사람 사이 자리에 ${c[2]!.name} 그림이 놓였어요.`,
-        `같은 곳을 가리키는 부분은 서로 다른 속도를 인정하는 쪽이고, 다르게 보이는 부분은 엇갈리는 지점 자리의 '${line(3)}'예요.`,
-        "두 근거는 따로 읽은 것이라 하나로 합쳐 판정하지 않아요.",
-      ], NEUTRAL_POOL, 260, 380),
+        `명리에서는 ${eunOf(`${who}의 일간`)} 내게 ${d.partnerIsToMe}, 나의 일간은 ${who}에게 ${d.meIsToPartner}의 자리에 놓인다고 읽어요.`,
+        e.partnerFillsMine.length ? `내게 겉으로 없는 기운을 ${who} 쪽이 품고 있어 그 결을 알아봐 주는 말이 잘 닿아요.` : "두 사람의 오행이 겹치는 쪽이 있어 같은 취향을 짚어 주는 말이 잘 닿아요.",
+        "\"오늘 어땠어요?\"처럼 먼저 안부를 묻는 말, \"고마워요\"처럼 짧게 건네는 말이 서로에게 편하게 닿아요.",
+        "행동으로는 약속 시간을 미리 정해 두기, 상대가 잘한 일을 한 가지씩 짚어 주기, 함께 걷는 시간을 10분 만들기가 좋아요.",
+      ], SAJU_PAIR_POOL, 310, 420),
     },
-    action: { body: fill(["이번 주에 둘이 함께 정할 일 하나를 골라 순서를 먼저 나눠 보세요."], ACTION_POOL, 85, 160) },
-    observation: { body: fill([`몇 주 동안 ${c[1]!.name} 그림처럼 ${who} 쪽 흐름이 바뀌는 순간을 눈여겨보세요.`], ["그때 내 쪽 반응이 어떤지도 함께 보면 좋아요.", ...ACTION_POOL], 85, 180) },
-    followUps: ["둘이 먼저 맞춰 볼 일은 뭘까요?", "엇갈릴 때는 어떻게 하면 좋을까요?"],
+    avoid: {
+      body: fill([
+        m.pair.dayBranches.length
+          ? `두 일지 사이에 ${m.pair.dayBranches.map((r) => r.type).join(", ")} 관계가 있어 같은 일을 두고 움직이는 속도가 엇갈리기 쉬운 결로 읽어요.`
+          : "두 일지 사이에 따로 묶이거나 부딪히는 관계가 없어 서로 거리를 넉넉히 두는 결로 읽어요.",
+        e.bothMost.length ? `둘 다 ${e.bothMost.join("·")} 기운이 많아 같은 쪽으로만 힘이 쏠리기 쉬워요.` : "",
+        "바쁜 날 결론부터 따지는 말, 지난 일을 한꺼번에 꺼내는 말은 피하는 편이 좋아요.",
+        "대신 \"지금 이야기해도 괜찮아요?\"라고 먼저 묻고, 할 말을 하나만 골라 꺼내 보세요.",
+        "답을 재촉하기보다 하루쯤 기다려 주는 쪽이 서로에게 편해요.",
+      ], SAJU_PAIR_POOL, 310, 420),
+    },
+    action: { body: fill(["오늘은 \"요즘 어때요?\"라고 먼저 한 문장을 건네 보세요."], ACTION_POOL, 85, 160) },
+    observation: { body: fill([`몇 주 동안 ${who}와 이야기가 길어지는 때가 언제인지 눈여겨보세요.`], ["그때 내 쪽 반응이 어떤지도 함께 보면 좋아요.", ...ACTION_POOL], 85, 180) },
+    followUps: ["앞으로 석 달 먼저 해 볼 일은요?", "엇갈릴 때는 어떻게 하면 좋을까요?"],
   };
 }
 
