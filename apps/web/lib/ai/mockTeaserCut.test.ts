@@ -30,4 +30,21 @@ describe("the mock teaser's second card", () => {
     }
     expect(repeated).toEqual([]);
   });
+
+  // The routes test failed now and then on a pair whose two cards both fell back to the same action ("지금 할 수 있는
+  // 일 하나를 골라 20분만 해 보세요."): the first card showed whole what the second card's cut must keep back.
+  it("never ends on what the first card already shows whole, for every pair of cards and orientations", () => {
+    const template = TEMPLATES["self-flow"];
+    const shown: string[] = [];
+    const orientations: Orientation[] = ["upright", "reversed"];
+    for (const a of CARDS) for (const oa of orientations) for (const b of CARDS) for (const ob of orientations) {
+      if (a.id === b.id) continue;
+      const third = [CARDS[0]!, CARDS[1]!, CARDS[2]!].find((c) => c.id !== a.id && c.id !== b.id)!;
+      const drawn = [a.id, b.id, third.id].map((cardId, slot) => ({ cardId, slot, position: template.positions[slot]!, orientation: slot === 0 ? oa : slot === 1 ? ob : ("upright" as Orientation) }));
+      const teaser = mockTarotTeaser(buildTarotContext("self-flow", drawn, INPUT as never));
+      const end = teaser.secondCard!.body.trim().slice(-20);
+      if (teaser.firstCard.body.includes(end)) shown.push(`${a.id} ${oa} / ${b.id} ${ob}`);
+    }
+    expect(shown.slice(0, 5)).toEqual([]);
+  }, 120_000);
 });

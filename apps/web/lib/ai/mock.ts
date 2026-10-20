@@ -136,19 +136,21 @@ function actionOf(card: TarotCardContext, ctx?: TarotContext, index = 0): string
 export function mockTarotTeaser(ctx: TarotContext): TarotTeaserDraft {
   // the first card with the note, the second (감질맛) with its own chips: no input is quoted twice, nor echoed by KB text
   const inputs = [...chips(ctx), ...(ctx.note ? [ctx.note] : [])];
-  const section = (card: TarotCardContext, withNote: boolean) => {
+  // `shown`: text the teaser already shows whole (the first card), which the second card's ending must not repeat
+  const section = (card: TarotCardContext, withNote: boolean, shown = "") => {
     const extra = [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}로 읽어요.`, `${card.kb.keywordsKo.join(", ")} 같은 말을 오늘 하루 곁에 두면 좋아요.`];
     const body = cardBody(ctx, card, 0, withNote, extra, 300, inputs);
-    // today's action, never one whose ending the body already said (other KB text may word it nearly alike): the cut
-    // 감질맛 must not show the end
-    const action = [...actionsOf(card, ctx), ...FALLBACK_ACTIONS].find((a) => !body.includes(a.slice(-20))) ?? actionOf(card, ctx);
+    // today's action, never one whose ending the body or the first card already said (other KB text may word it nearly
+    // alike, and two cards may fall back to the same action): the cut 감질맛 must not show the end
+    const action = [...actionsOf(card, ctx), ...FALLBACK_ACTIONS].find((a) => !body.includes(a.slice(-20)) && !shown.includes(a.slice(-20))) ?? actionOf(card, ctx);
     return { heading: cardLabel(card), body: `${body} 오늘은 ${action}` };
   };
   const [first, second] = ctx.cards;
+  const firstCard = section(first!, true);
   return {
     cards: ctx.cards.map((c) => ({ position: c.position, cardId: c.cardId, keyword: c.kb.keywordsKo[0] ?? c.name })),
-    firstCard: section(first!, true),
-    ...(second ? { secondCard: section(second, false) } : {}),
+    firstCard,
+    ...(second ? { secondCard: section(second, false, firstCard.body) } : {}),
   };
 }
 
