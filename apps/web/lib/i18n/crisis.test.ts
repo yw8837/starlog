@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CRISIS_CONTACTS } from "@/lib/crisis";
-import { HOTLINES, crisisLead, hotlineLines, isCrisisAnyLanguage } from "./crisis";
+import { CRISIS_CONTACTS, CRISIS_WORDS } from "@/lib/crisis";
+import { CRISIS_PATTERNS, HOTLINES, crisisLead, hotlineLines, isCrisisAnyLanguage } from "./crisis";
 import { LOCALES } from "./locales";
 
 describe("crisis", () => {
@@ -10,6 +10,10 @@ describe("crisis", () => {
 
   it.each(["죽음 카드가 나왔어요", "The Death card came up", "死神のカード", "死神牌出現了", "I'm dying to know"])("lets %s through", (text) => {
     expect(isCrisisAnyLanguage(text)).toBe(false);
+  });
+
+  it("checks Korean with the server's own pattern (lib/crisis.ts), not a copy", () => {
+    expect(CRISIS_PATTERNS.ko).toBe(CRISIS_WORDS);
   });
 
   it("keeps the Korean lines exactly and adds Korea's 109 to every other locale", () => {

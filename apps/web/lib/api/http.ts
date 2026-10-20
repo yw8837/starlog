@@ -2,6 +2,7 @@ import "server-only";
 import { aiConfigProblems } from "@/lib/ai/config";
 import { cleanUserText } from "@/lib/ai/prompts/tarot";
 import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/provider";
+import { CRISIS_LEAD, CRISIS_WORDS } from "@/lib/crisis";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import {
@@ -350,11 +351,11 @@ export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKin
   return gate.owner ? [] : [{ name: QUOTA_COOKIE, value: await spendQuota(quota, kind, gate.secret), maxAge: QUOTA_COOKIE_MAX_AGE }];
 }
 
-/** Words that mean the person may be in crisis: no reading, a gentle pointer to help instead. */
-const CRISIS = /죽고\s?싶|자살|자해|극단적\s?(인\s?)?선택|살기\s?싫|사라지고\s?싶/;
-
-/** Judged on the text as the prompt will see it (cleanUserText), so markup cannot split a word. */
-export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS.test(cleanUserText(text!));
+/**
+ * Crisis words (lib/crisis.ts CRISIS_WORDS) mean no reading, a gentle pointer to help instead. Judged on
+ * the text as the prompt will see it (cleanUserText), so markup cannot split a word.
+ */
+export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS_WORDS.test(cleanUserText(text!));
 
 /** The care response when any user-written text reads as a crisis; null otherwise. */
 export function crisisResponse(...texts: Array<string | undefined>): Response | null {
@@ -362,6 +363,6 @@ export function crisisResponse(...texts: Array<string | undefined>): Response | 
   return errorResponse("REFUSED", {
     care: true,
     // The UI lists the hotlines (109, 1577-0199, 1388, 1588-9191) under this line; no numbers here.
-    message: "마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요.",
+    message: CRISIS_LEAD,
   });
 }

@@ -1,14 +1,16 @@
-import { CRISIS_CONTACTS, CRISIS_LEAD } from "@/lib/crisis";
+import { CRISIS_CONTACTS, CRISIS_LEAD, CRISIS_WORDS } from "@/lib/crisis";
 import type { Locale } from "./locales";
 
 /**
- * Crisis words in every language, checked on every user text whatever the UI language (spec §7.7),
- * and the helplines shown per UI language, each with Korea's 109 for readers in Korea. Numbers outside
- * the Korean list carry their official source and the date someone checked it; re-check before launch.
+ * Crisis words per language, and the helplines shown per UI language, each with Korea's 109 for readers
+ * in Korea. Not wired yet: the server checks only the Korean words (lib/crisis.ts CRISIS_WORDS, the same
+ * pattern as `ko` here) through lib/api/http.ts; nothing calls isCrisisAnyLanguage until the other UI
+ * languages go live (spec §7.7). Numbers outside the Korean list carry their official source and the date
+ * someone checked it; re-check before launch.
  */
 
 export const CRISIS_PATTERNS: Readonly<Record<Locale, RegExp>> = {
-  ko: /죽고\s?싶|자살|자해|극단적\s?(인\s?)?선택|살기\s?싫|사라지고\s?싶/,
+  ko: CRISIS_WORDS,
   en: /\b(kill(?:ing)? myself|suicid(?:e|al)|end(?:ing)? my life|want(?:ed)? to die|wanna die|self[-\s]?harm|hurt(?:ing)? myself|don'?t want to (?:live|be alive)|no reason to live)\b/i,
   ja: /死にたい|自殺|自死|自傷|リスカ|消えたい|生きていたくない|生きるのがつらい|命を絶/,
   "zh-hant": /想死|自殺|自杀|自殘|自残|輕生|轻生|不想活|活不下去|結束(?:自己的)?生命|结束(?:自己的)?生命/,
