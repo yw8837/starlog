@@ -8,10 +8,11 @@ export const CRISIS_LEAD = "마음이 많이 힘들다면 풀이보다 사람과
 /**
  * Words that mean the person may be in crisis: the one pattern the server checks on every user-written
  * text (lib/api/http.ts isCrisisText) before anything is generated. Kept narrow on purpose: bare words
- * such as 끝내고 싶, 목숨, ㅈㅅ or a spaced 자 살 (남자 살 빼는 법) would refuse ordinary questions.
+ * such as 끝내고 싶, 목숨, ㅈㅅ or a spaced 자 살 (남자 살 빼는 법) would refuse ordinary questions, and so
+ * would 끝내주게 (인생을 끝내주게 살고 싶어) or 생을 마감 inside another word (모집 학생을 마감했어요).
  */
 export const CRISIS_WORDS =
-  /죽\s*고\s*싶|죽\s*고\s*파|죽어\s?버리고\s?싶|자살|자해|극단적\s?(인\s?)?선택|살\s*기\s*싫|살고\s?싶지\s?않|사라지고\s?싶|없어지고\s?싶|목숨을\s?끊|뛰어\s?내리고\s?싶|삶을\s?끝내|인생을\s?끝내|생을\s?마감|suicide|kill\s?myself/i;
+  /죽\s*고\s*싶|죽\s*고\s*파|죽어\s?버리고\s?싶|자살|자해|극단적\s?(인\s?)?선택|살\s*기\s*싫|살고\s?싶지\s?않|사라지고\s?싶|없어지고\s?싶|목숨을\s?끊|뛰어\s?내리고\s?싶|(?:삶|인생)을\s?(?:끝내(?!주)|마감)|(?<![가-힣])생을\s?마감|suicide|kill\s?myself/i;
 
 export interface CrisisContact {
   name: string;

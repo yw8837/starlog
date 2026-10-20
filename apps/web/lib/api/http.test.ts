@@ -78,7 +78,7 @@ describe("a paid generation and the free daily budget", () => {
 describe("crisis words (one pattern for every server check)", () => {
   it.each([
     "살고 싶지 않아요", "죽어버리고 싶다", "목숨을 끊고 싶어", "뛰어내리고 싶어요", "없어지고 싶어", "죽 고 싶 어", "자살",
-    "죽고싶어", "죽고파", "살 기 싫 어", "삶을 끝내고 싶어", "인생을 끝내고 싶다", "생을 마감하고 싶어요", "자해", "극단적인 선택",
+    "죽고싶어", "죽고파", "살 기 싫 어", "삶을 끝내고 싶어", "인생을 끝내고 싶다", "생을 마감하고 싶어요", "인생을 마감하고 싶어", "자해", "극단적인 선택",
     "사라지고 싶은 밤", "thinking about suicide", "I want to kill myself",
   ])("hits %s", (text) => {
     expect(isCrisisText(text)).toBe(true);
@@ -87,7 +87,7 @@ describe("crisis words (one pattern for every server check)", () => {
 
   it.each([
     "연애를 끝내고 싶어요", "회사 그만두고 싶어", "여행 떠나고 싶어", "목숨 걸고 준비한 시험", "남자 살 빼는 법", "ㅈㅅ 늦었어", "이 관계 끝내고 싶어",
-    "죽음 카드가 나왔어요", "이직하고 싶어요",
+    "죽음 카드가 나왔어요", "이직하고 싶어요", "모집 학생을 마감했어요", "인생을 끝내주게 살고 싶어", "삶을 끝내주게 즐기는 법",
   ])("lets %s through", (text) => {
     expect(isCrisisText(text)).toBe(false);
     expect(crisisResponse(text)).toBeNull();
