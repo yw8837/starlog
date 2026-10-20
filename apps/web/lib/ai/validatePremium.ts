@@ -10,9 +10,8 @@ import { ROMANCE_WORDS, cardLabel, mentionsWord, type TarotContext } from "./pro
 import { SOFT_PREFIX, aiTellViolations } from "./style";
 import {
   HEDGE, TOLERANCE, actionVarietyViolations, allowedFactViolations, cardIdentityViolations, cardSectionViolations, cardSubjectCount, charCount,
-  chosenChips, commonTarotViolations, foreignCardViolations, inputRepeatViolations, inputUseViolations, inventedAmountViolations, lengthCheck, marriageContext,
+  chosenChips, commonTarotViolations, inputRepeatViolations, inputUseViolations, inventedAmountViolations, lengthCheck, marriageContext,
   mentions, modelNameViolations, namesOf, profileUseViolations, quotedInputs, sentences, sharedMisdescriptionHits, userTextOf, voiceViolations,
-  withoutDrawnNames,
 } from "./validate";
 import { maskGanzhiReadings } from "./ganzhi";
 import type { FollowUpAnswer } from "./schemas";

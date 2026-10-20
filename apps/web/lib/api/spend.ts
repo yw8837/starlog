@@ -215,16 +215,6 @@ export async function addPaidCost(krw: number, now: number): Promise<void> {
 
 export const krwOf = (usage: readonly Usage[]) => usdOf(usage) * krwPerUsd();
 
-/** True unless the budget is known to have room ("unknown" counts as over: fail closed). */
-export async function overDailyBudget(now: number): Promise<boolean> {
-  return (await budgetState(now)) !== "ok";
-}
-
-/** Adds a finished call's usage to today's total (callers outside respondGeneration, which uses SpendLedger). */
-export async function recordCost(usage: readonly Usage[], now: number): Promise<void> {
-  await addCost(krwOf(usage), now);
-}
-
 /**
  * One generation's cost bookkeeping, written to the day total as it happens.
  * - `reserve`: before each upstream call, its worst case.

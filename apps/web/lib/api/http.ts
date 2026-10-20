@@ -94,11 +94,6 @@ export function generationErrorPayload(error: unknown): { status: number; body: 
   return errorPayload("UPSTREAM");
 }
 
-export function errorFromGeneration(error: unknown, cookies: string[] = []): Response {
-  const { status, body } = generationErrorPayload(error);
-  return json(body, { status, cookies });
-}
-
 /**
  * The parsed JSON body, or null for a wrong content type (blocks form-post CSRF; checked first, a
  * body-less request included), a body over `maxBytes`, or invalid JSON. An empty JSON body reads as `{}`.

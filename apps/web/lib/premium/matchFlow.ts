@@ -121,9 +121,6 @@ export function saveMatchFlow(next: MatchFlow, now: number = Date.now()) {
   store.save(sanitizeMatchFlow({ ...next, savedAt: now }));
 }
 
-/** The flow now (browser only). */
-export const readMatchFlow = (): MatchFlow => store.read() ?? {};
-
 /** After the reading is saved: the partner's birth leaves the tab. */
 export function clearMatchFlow() {
   store.clear();

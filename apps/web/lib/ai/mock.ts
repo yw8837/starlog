@@ -42,9 +42,6 @@ export function hasFinal(word: string): boolean {
   return code >= 0 && code <= 11171 && code % 28 !== 0;
 }
 
-/** "은둔자는", "별은": topic particle chosen by the last syllable (digits read as-is: 컵 2 → 는). */
-export const topic = (word: string) => `${word}${hasFinal(word) ? "은" : "는"}`;
-
 /** A KB fact as one 해요체 sentence (two facts hold two sentences: "붓는다. 물줄기는 …" → "붓고, 물줄기는 …"). */
 export const factSentence = (fact: string) => `${fact.replace(/(는)?다\.\s+/g, "고, ")}는 장면이 그려져 있어요.`;
 

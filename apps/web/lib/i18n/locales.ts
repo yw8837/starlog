@@ -60,4 +60,3 @@ export function routedLocales(pub: readonly Locale[] = publicLocales(), preview:
   return ordered(new Set<Locale>([...pub, ...preview]));
 }
 
-export const isPublicLocale = (locale: Locale): boolean => publicLocales().includes(locale);

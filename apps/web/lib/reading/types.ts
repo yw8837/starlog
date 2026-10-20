@@ -2,7 +2,7 @@ import type { Orientation, TemplateId } from "@starlog/core";
 import type { FrontDeck } from "@/lib/deck";
 import type { SajuGlance } from "@/lib/ai/schemas";
 import type {
-  ChartView, DeepTarotPreview, DeepTarotReading, LegacyMatchReading, MatchPreview, MatchReading, NewYearPreview, NewYearReading, PreviewCard,
+  ChartView, DeepTarotPreview, DeepTarotReading, LegacyMatchReading, MatchPreview, MatchReading, NewYearPreview, NewYearReading,
 } from "@/lib/ai/premiumSchemas";
 
 /**
@@ -148,11 +148,6 @@ export interface TarotInput {
   deck?: FrontDeck;
 }
 
-export interface TarotRequest {
-  drawToken: string;
-  input: TarotInput;
-}
-
 /** Spreads the draw endpoint deals (오늘의 한 장 has its own route). */
 export type DrawTemplateId = Exclude<TemplateId, "daily">;
 
@@ -186,7 +181,6 @@ export interface SajuRequestFields extends SajuContext {
 // ---- premium readings (P5) ----
 // The server's shapes (lib/ai/premiumSchemas.ts), imported as types only: nothing of that module reaches the browser.
 
-export type PreviewCardData = PreviewCard;
 export type ChartViewData = ChartView;
 export type DeepTarotPreviewData = DeepTarotPreview;
 export type DeepTarotReadingData = DeepTarotReading;
