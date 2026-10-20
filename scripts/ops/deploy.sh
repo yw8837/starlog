@@ -49,6 +49,7 @@ for u in https://starlog.yeolmaeapps.kr/ https://starlog.yeolmaeapps.kr/pricing 
   step "$(curl -s -o /dev/null -w '%{http_code}' "$u") $u"
 done
 # Saju step 1 is the topic list (200 with its rows); a build with the topics off answers 307 to /saju/new instead.
+rm -f "$LOG/saju-start.html"   # a failed curl must not read the last run's page
 step "saju topics live: $(curl -s -o "$LOG/saju-start.html" -w '%{http_code}' https://starlog.yeolmaeapps.kr/saju/start) $(grep -q '재회운' "$LOG/saju-start.html" && echo 'topic list shown' || echo 'NO topic list') (want 200 topic list shown)"
 # The guide's home is the root domain's /: the tarot tab's old address redirects there.
 for u in https://yeolmaeapps.kr/guide/tarot https://starlog.yeolmaeapps.kr/guide/tarot; do

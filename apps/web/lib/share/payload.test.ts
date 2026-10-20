@@ -309,7 +309,12 @@ describe("buildSharePayload (saju)", () => {
     expect(sajuBody({}, "2026년 병오(丙午)년에는 불 기운이 강해요. 올해 丙午년은 바빠요. 내년 정미(丁未)년도 이어져요.")).toBe(
       "2026년 병오(丙午)년에는 불 기운이 강해요. 올해 丙午년은 바빠요. 내년 정미(丁未)년도 이어져요.",
     );
-    // A birth year, or a pair after "년" with no year before it, is still hidden.
+    // With 은/는 after the year, or 年/의 after the name (fix review #5).
+    expect(sajuBody({}, "올해는 병오(丙午)년이라 불 기운이 강해요. 2026년은 병오(丙午)년이에요. 올해 병오(丙午)의 기운이 강해요. 2026년 丙午年에는 바빠요.")).toBe(
+      "올해는 병오(丙午)년이라 불 기운이 강해요. 2026년은 병오(丙午)년이에요. 올해 병오(丙午)의 기운이 강해요. 2026년 丙午年에는 바빠요.",
+    );
+    // A birth year, or a pair after "년" with no year before it, is still hidden; so is a 대운.
+    expect(sajuBody({}, "2031년부터 경신(庚申) 대운이에요. 월주 경신(庚申)의 힘이 커요.")).toBe("2031년부터 ○○ 대운이에요. 월주 ○○의 힘이 커요.");
     expect(sajuBody({}, "을해(乙亥)년생이라 2026년 경신(庚申)월에 바빠요. 병오(丙午)년인 올해는 좋아요.")).toBe(
       "○○년생이라 2026년 ○○월에 바빠요. ○○년인 올해는 좋아요.",
     );
