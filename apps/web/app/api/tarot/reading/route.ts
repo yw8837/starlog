@@ -43,6 +43,8 @@ export async function POST(request: Request): Promise<Response> {
         {
           kind: "tarot", templateId: parsed.draw.templateId, input: parsed.input, cards: parsed.draw.cards.map((c) => [c.cardId, c.orientation]),
           ...(plan.method === "opening" ? { opening: true as const } : {}),
+          // Its follow-ups are paid for only when the reading was (real keys; not the gift, the owner pass or test keys).
+          ...(plan.paidCost ? { paid: true as const } : {}),
         },
         reading, [], gate.secret, gate.now,
       );

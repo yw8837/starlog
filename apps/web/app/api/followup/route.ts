@@ -25,7 +25,8 @@ import { quotaLimits } from "@/lib/security/quota";
  * A premium chapter (P5 spec §6.3) takes PREMIUM[kind].followUps (3) for 30 days: paid for with the
  * reading, so outside the beta's daily cookie quota; the chapter count and the network limits stay,
  * and its cost goes to the paid book when the chapter says it was paid for (signed `paid`; not the owner
- * pass or a test payment, M2), where the free day's budget does not stop it.
+ * pass or a test payment, M2), where the free day's budget does not stop it. A standard chapter whose reading
+ * was bought on real keys says so too (signed `paid`, owner 2026-10-21): the same, inside the daily cookie quota.
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
@@ -45,13 +46,14 @@ export async function POST(request: Request): Promise<Response> {
   if (recorded === null && !gate.owner) return errorResponse("AI_UNAVAILABLE");
   const answered = Math.max(chapter.turns.length, recorded ?? 0);
   if (!gate.owner && answered >= cap) return errorResponse("BETA_LIMIT", { scope: "chapter", remaining: 0 });
-  // Paid for when the reading was: signed in the chapter (a purchase on real keys; not the owner pass or a test
-  // payment). A token from before that rule: the same test as a premium reading's (lib/premium/unlock.ts, M2).
-  const signedPaid = isPremiumChapter(chapter.ctx) ? chapter.ctx.paid : undefined;
-  const paid = premium && (typeof signedPaid === "boolean" ? signedPaid : !(process.env.NODE_ENV === "production" && payKeyMode() === "test"));
+  // Paid for when the reading was: signed in the chapter (a purchase on real keys; not the owner pass, the gift or a test
+  // payment). A premium token from before that rule: the same test as a premium reading's (lib/premium/unlock.ts, M2); a
+  // standard one: not paid, as before.
+  const signedPaid = chapter.ctx.paid;
+  const paid = typeof signedPaid === "boolean" ? signedPaid : premium && !(process.env.NODE_ENV === "production" && payKeyMode() === "test");
   const limited = premium ? await checkServerLimits(gate, "followup", { scope: "day" }, { credit: paid, paid }) : null;
   if (limited) return limited;
-  const quota = premium ? null : await checkQuota(gate, "followup", { scope: "day" });
+  const quota = premium ? null : await checkQuota(gate, "followup", { scope: "day" }, { credit: paid, paid });
   if (quota instanceof Response) return quota;
   const question = body.data.question;
   const crisis = crisisResponse(question);

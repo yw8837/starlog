@@ -25,9 +25,11 @@ export async function POST(request: Request): Promise<Response> {
   const plan = await planUnlock(request, gate, "saju", parsed.body.unlock?.method);
   if (plan instanceof Response) return plan;
   const { birth, loveStatus, workStatus, display } = parsed.body;
-  // What the chapter token and the account copy carry: 전체 흐름's status labels, or the topic.
+  // What the chapter token and the account copy carry: 전체 흐름's status labels, or the topic. Its follow-ups are paid
+  // for only when the reading was (real keys; not the owner pass or test keys).
+  const paid = plan.paidCost ? { paid: true as const } : {};
   const ctx: ChapterContext =
-    parsed.topic === "overall" ? { kind: "saju", birth, profile: parsed.profile } : { kind: "saju", birth, topic: parsed.topic };
+    parsed.topic === "overall" ? { kind: "saju", birth, profile: parsed.profile, ...paid } : { kind: "saju", birth, topic: parsed.topic, ...paid };
   const copy =
     parsed.topic === "overall"
       ? { birth, context: { loveStatus, workStatus }, display }

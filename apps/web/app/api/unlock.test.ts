@@ -3,7 +3,7 @@ import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { accountSecret } from "@/lib/account/secrets";
 import { dailyStore, resetDailyStore } from "@/lib/api/dailyStore";
-import { clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
+import { addCost, clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { NDJSON } from "@/lib/api/stream";
 import { accountDb, setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
@@ -11,10 +11,12 @@ import { RESERVATION_MS } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { listReadings } from "@/lib/readings/store";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { issueChapter, openChapter } from "@/lib/security/chapterToken";
 import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
 import { browser, buy, grantGift, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
+import { POST as followup } from "./followup/route";
 import { POST as ownerPost } from "./owner/route";
 import { POST as refund } from "./pay/refund/route";
 import { POST as sajuReading } from "./saju/reading/route";
@@ -404,9 +406,84 @@ describe("a paid opening on a production deploy's test keys (security M2)", () =
   it("counts like a free full reading: on the network's day count and the free budget, never the paid book", async () => {
     const { b, ip } = await heldOnTestKeys();
     billing();
-    expect((await open(b, "paid")).status).toBe(200);
+    const opened = await open(b, "paid");
+    expect(opened.status).toBe(200);
     expect(await freeBook()).toBe(2800);
     expect(await paidBook()).toBe(0);
     expect(await clientCount(await keyedHash(`client:${ip}`, signingSecret()!), "full", Date.now())).toBe(1);
+    // Nor is its chapter signed as paid for: its follow-ups stay free generations.
+    const { reading: body, chapterToken } = (await opened.json()) as { reading: unknown; chapterToken: string };
+    expect((await openChapter(chapterToken, body, signingSecret()!, Date.now()))?.ctx).not.toHaveProperty("paid");
+  });
+});
+
+describe("follow-ups on a standard reading and the day's budget", () => {
+  type Opened = { reading: unknown; chapterToken: string };
+  const ask = (b: Browser, opened: Opened) =>
+    b.send(followup, "/api/followup", { body: { chapterToken: opened.chapterToken, reading: opened.reading, question: "이번 달 지출은 어떻게 줄이면 좋을까요?" } });
+  const ctxOf = async (opened: Opened) => (await openChapter(opened.chapterToken, opened.reading, signingSecret()!, Date.now()))?.ctx;
+
+  async function paidReading(b: Browser): Promise<Opened> {
+    await buy(b);
+    const res = await open(b, "paid");
+    expect(res.status).toBe(200);
+    return (await res.json()) as Opened;
+  }
+
+  /** The same chapter as a token issued before the signed `paid` (2026-10-21). */
+  async function withoutPaid(opened: Opened): Promise<Opened> {
+    const chapter = (await openChapter(opened.chapterToken, opened.reading, signingSecret()!, Date.now()))!;
+    const ctx = { ...chapter.ctx };
+    delete ctx.paid;
+    return { reading: opened.reading, chapterToken: await issueChapter(ctx, opened.reading, chapter.turns, signingSecret()!, Date.now(), chapter.exp) };
+  }
+
+  it("answers a paid reading's follow-up past the free cap and its ceiling, on the paid book: its chapter says it was paid for", async () => {
+    useTestDb();
+    const { b } = await loggedIn();
+    const opened = await paidReading(b);
+    expect(await ctxOf(opened)).toMatchObject({ kind: "tarot", paid: true });
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0"); // every free generation stops
+    billing();
+    expect((await ask(b, opened)).status).toBe(200);
+    expect(await paidBook()).toBe(2800);
+    expect(await freeBook()).toBe(0);
+  });
+
+  it("signs `paid` into a paid saju chapter too (전체 흐름 and a topic), whose follow-up answers past the ceiling", async () => {
+    useTestDb();
+    const { b } = await loggedIn();
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
+    for (const topic of [undefined, "money"]) {
+      await buy(b, "saju");
+      const res = await b.send(sajuReading, "/api/saju/reading", { body: { birth: DEFAULT_SAJU_FORM, ...(topic ? { topic } : {}), unlock: { method: "paid" } } });
+      expect(res.status).toBe(200);
+      const opened = (await res.json()) as Opened;
+      expect(await ctxOf(opened)).toMatchObject({ kind: "saju", paid: true });
+      expect((await ask(b, opened)).status, topic).toBe(200);
+    }
+  });
+
+  it("keeps a token without the signed `paid` (issued before it) and a gift reading's on the free path: open past the cap, on the free book, closed at the ceiling", async () => {
+    useTestDb();
+    const { b } = await loggedIn();
+    const paid = await paidReading(b);
+    const old = await withoutPaid(paid);
+    const giftRes = await open(b, "free");
+    expect(giftRes.status).toBe(200);
+    const gift = (await giftRes.json()) as Opened;
+    expect(await ctxOf(gift)).not.toHaveProperty("paid");
+    vi.stubEnv("BETA_DAILY_BUDGET_KRW", "10000");
+    await addCost(8_000, Date.now()); // the cap trips at 8,000; the ceiling at 16,000
+    billing();
+    expect((await ask(b, old)).status).toBe(200);
+    expect((await ask(b, gift)).status).toBe(200);
+    expect(await freeBook()).toBe(8_000 + 2 * 2800);
+    expect(await paidBook()).toBe(0);
+    await addCost(16_000, Date.now());
+    const closed = await ask(b, old);
+    expect(closed.status).toBe(503);
+    expect(await closed.json()).toMatchObject({ code: "AI_UNAVAILABLE", reason: "budget" });
+    expect((await ask(b, paid)).status).toBe(200); // the same chapter's signed token still answers
   });
 });

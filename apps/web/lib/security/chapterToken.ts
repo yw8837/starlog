@@ -22,10 +22,13 @@ export type ChapterContext =
   /**
    * `opening`: opened with 오픈 기념 무료 (signed; absent on every other opening and on older tokens):
    * read and kept on the device only, so the follow-up and share routes refuse it.
+   * `paid` (here and on saju; signed): opened with a purchase on real keys, so its follow-ups are paid for and the
+   * free day's budget never stops them (owner 2026-10-21). Absent (or false) on every other opening (오픈 기념 무료, the
+   * gift, the owner pass, a test-key purchase) and on tokens issued before it: their follow-ups stay free.
    */
-  | { kind: "tarot"; templateId: TemplateId; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]>; opening?: true }
+  | { kind: "tarot"; templateId: TemplateId; input: Omit<TarotInputData, "history">; cards: Array<[string, Orientation]>; opening?: true; paid?: boolean }
   /** 주제별 사주 chapters carry their topic (signed; `v` stays 1; a token without it is 전체 흐름). */
-  | { kind: "saju"; birth: BirthInput; profile?: SajuProfile; topic?: SajuTopicId }
+  | { kind: "saju"; birth: BirthInput; profile?: SajuProfile; topic?: SajuTopicId; paid?: boolean }
   /**
    * P5 premium readings. The match token carries the partner's birth sealed (lib/premium/partnerSeal.ts): only this server
    * opens it, the device keeps it with its chapter for the 30 follow-up days, and the account's copy has no token (owner 2026-10-16).
