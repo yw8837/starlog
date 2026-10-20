@@ -111,7 +111,7 @@ export function mockDeepPartB(ctx: TarotContext): DeepPartB {
   };
 }
 
-// ---- 우리 사이 궁합 ----
+// ---- 프리미엄 궁합 (saju only, owner 2026-10-17) ----
 
 /** Pair-neutral sentences: no glyphs, ten gods, years, romance words or verdicts. */
 export const SAJU_PAIR_POOL: readonly string[] = [

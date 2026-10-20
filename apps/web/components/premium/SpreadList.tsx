@@ -14,7 +14,7 @@ export interface SpreadListCard {
 }
 
 type SpreadListProps = {
-  /** The list's accessible name ("카드 10장", "카드 5장"). */
+  /** The list's accessible name ("카드 10장"). */
   title: string;
   cards: SpreadListCard[];
   deck?: FrontDeck;

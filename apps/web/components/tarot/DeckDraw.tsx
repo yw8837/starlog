@@ -79,7 +79,7 @@ const ShuffleIcon = () => (
  * turn over. While picking, 다시 섞기 shuffles a fresh deck. The fan is only the visual: the server
  * deals the cards for the picked positions (/api/tarot/draw), and those are the cards turned over.
  * The page owns where the draw is kept and where it goes next (the standard tarot flow, the 10-card
- * reading, the 궁합's five cards). Renders the screen's children; the page gives the screen box.
+ * reading). Renders the screen's children; the page gives the screen box.
  */
 export function DeckDraw({ instant, templateId, heading, step, onDealt, onRevealed }: DeckDrawProps) {
   const known = heading !== null;
