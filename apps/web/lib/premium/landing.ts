@@ -58,7 +58,7 @@ export const LANDING: Readonly<Record<PremiumId, LandingCopy>> = {
   // saju only (owner 2026-10-17): the two people, then the year ahead and how to treat each other
   match: {
     title: PREMIUM.match.name,
-    description: `나와 그 사람의 사주로 두 사람의 결과 앞으로 1년을 함께 읽는 궁합이에요. 사주로 본 두 사람, 앞으로 1년과 서로에게 맞는 말과 행동, 이어서 물어보기 ${PREMIUM.match.followUps}번을 담아 ${won(PREMIUM.match.krw)}이에요.`,
+    description: `나와 그 사람의 사주로 두 사람의 관계와 앞으로 1년을 함께 읽는 궁합이에요. 사주로 본 두 사람, 앞으로 1년과 서로에게 맞는 말과 행동, 이어서 물어보기 ${PREMIUM.match.followUps}번을 담아 ${won(PREMIUM.match.krw)}이에요.`,
     method: "두 사람의 생년월일로 각자의 명식을 세우고, 두 일간과 오행, 두 일지 사이의 관계, 지금 지나는 10년을 나란히 놓고 읽어요. 그 사람 쪽은 일간과 오행의 기울기, 관계 이름으로만 말해요. 이어서 앞으로 1년을 석 달씩 나눠 두 사람의 흐름을 보고, 서로에게 맞는 말과 행동, 피하면 좋은 말과 행동을 생활의 말로 적어요.",
     steps: [
       "나와 그 사람의 생년월일과 관계를 적어요",

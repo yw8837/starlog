@@ -123,6 +123,9 @@ describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
     expect(container.querySelector("article")!.textContent?.match(/.{0,30}(카드|(?<!스)타로).{0,30}/g) ?? []).toEqual([]);
     expect(String(matchMeta.description)).not.toMatch(/카드|타로/);
     expect(String(matchMeta.description)).toContain("앞으로 1년");
+    // plain words: "두 사람의 결과" read as a result (review 2026-10-20 LOW)
+    expect(String(matchMeta.description)).toContain("두 사람의 관계와 앞으로 1년");
+    expect(String(matchMeta.description)).not.toContain("결과");
   });
 
   it("2027 신년운세 on sale now (owner 2026-10-20): 시작하기, no opening date, in stock, sold until 2027-11-30", async () => {
