@@ -48,16 +48,15 @@
   // Every 10 minutes: settle stale payments and refunds, stale reservations, unfinished erasures and
   // old records (worker.mjs → /api/internal/maintenance, guarded by STARLOG_CRON_SECRET).
   "triggers": { "crons": ["*/10 * * * *"] },
-  // Free-tier cost cap per KST day in KRW (lib/api/spend.ts trips at 80%, and one network may spend 20% of it):
-  // 30,000 (owner 2026-10-21; "off" = no day cap, as from 2026-10-15). Prepaid Anthropic credits with
-  // auto-reload off are the hard backstop.
+  // Free-tier cost cap per KST day in KRW (lib/api/spend.ts trips at 80%); "off" = no day cap (owner
+  // 2026-10-15). Prepaid Anthropic credits with auto-reload off are the hard backstop.
   // TURNSTILE_SITE_KEY: the Turnstile widget's public site key (lib/api/turnstile.ts). The bot check
   // on the free generations runs only with it and the TURNSTILE_SECRET_KEY secret both set; empty = off.
   // Set it here, not in the dashboard: a deploy replaces the dashboard's vars with these.
   // ADSENSE_CLIENT: the public AdSense publisher id (lib/ads.ts, also in ads.txt). deploy.sh exports it for the build, which
   // static pages keep; pages rendered per request (/privacy since 2026-10-17) read it here at run time, or the privacy
   // policy loses its 광고 쿠키 section while the guides still show ads. Keep it equal to deploy.sh's default.
-  "vars": { "BETA_DAILY_BUDGET_KRW": "30000","TURNSTILE_SITE_KEY": "0x4AAAAAAFXRHXQ1qm3TScEj", "ADSENSE_CLIENT": "ca-pub-2460558039875296" },
+  "vars": { "BETA_DAILY_BUDGET_KRW": "off", "TURNSTILE_SITE_KEY": "0x4AAAAAAFXRHXQ1qm3TScEj", "ADSENSE_CLIENT": "ca-pub-2460558039875296" },
   // Per-IP limits for AI generation (lib/security/rateLimit.ts LIMITS_PER_MINUTE must match).
   // Owners get the 5x limiters; full readings have their own tighter one; owner-code attempts too.
   "ratelimits": [

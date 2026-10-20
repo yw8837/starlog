@@ -102,26 +102,6 @@ describe("cost books", () => {
     expect(dailyBudgetKrw()).toBe(Infinity);
   });
 
-  it("with the deployed day cap (wrangler.jsonc: 30,000, owner 2026-10-21) closes the free tier at 80% and one network at its 20% share (SEC-01)", async () => {
-    const { readFileSync } = await import("node:fs");
-    const raw = readFileSync(new URL("../../wrangler.jsonc", import.meta.url), "utf8").replace(/^\s*\/\/.*$/gm, "");
-    const deployed = (JSON.parse(raw) as { vars: Record<string, string> }).vars.BETA_DAILY_BUDGET_KRW;
-    expect(deployed).toBe("30000");
-    vi.stubEnv("BETA_DAILY_BUDGET_KRW", deployed);
-    vi.stubEnv("BETA_NETWORK_BUDGET_SHARE", "");
-    expect(dailyBudgetKrw()).toBe(30_000);
-    const now = Date.now();
-    await addCost(23_999, now);
-    expect(await budgetState(now)).toBe("ok");
-    await addCost(1, now);
-    expect(await budgetState(now)).toBe("over");
-    await addNetworkCost("net-a", 5_999, now);
-    expect(await overNetworkBudget("net-a", now)).toBe(false);
-    await addNetworkCost("net-a", 1, now);
-    expect(await overNetworkBudget("net-a", now)).toBe(true);
-    expect(await overNetworkBudget("net-b", now)).toBe(false);
-  });
-
   it("keeps the paid book out of the free-tier total and the budget", async () => {
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "1000");
     await addPaidCost(5000, Date.now());

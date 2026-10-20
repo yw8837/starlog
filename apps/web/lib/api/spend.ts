@@ -136,7 +136,7 @@ export async function overNetworkBudget(client: string, now: number): Promise<bo
 // ---- the day's cost ----
 
 /**
- * `BETA_DAILY_BUDGET_KRW` (the deploy sets 30,000, owner 2026-10-21), else 30,000. 0 stops every new generation. `off` (no day cap, deployed 2026-10-15 to 10-21) is
+ * `BETA_DAILY_BUDGET_KRW`, else 30,000. 0 stops every new generation. `off` (owner 2026-10-15: no day cap) is
  * Infinity: no day total closes the free tier and no network share of it applies; the per-network counts, the
  * rate limiters and the prepaid model credit still bound the spend, and the cost is still recorded.
  */
