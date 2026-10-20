@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { parseAccount, type AccountState, type AccountUser } from "@/lib/account/client";
 import { getJson, postJson } from "@/lib/reading/api";
 import { forgetServerIds, listChapters, mergeServerReadings, removeServerChapters, updateChapter } from "./chapters";
@@ -180,10 +180,24 @@ export function forgetAccountOnDevice({ accountDeleted = false }: { accountDelet
   return removeServerChapters({ keepSeals: !accountDeleted });
 }
 
-/** Once per tab, when a user is logged in: pull the account's readings onto this device. */
+/**
+ * Once per tab, when a user is logged in: pull the account's readings onto this device. When /api/me
+ * says for sure that nobody is logged in here (a session that ran out, the account deleted on another
+ * device), the account's readings leave this device as on a logout, so the next person on a shared
+ * phone does not see them (A2 PII-1). Only on that answer: a failed or refused /api/me is null, and the
+ * answer while accounts cannot be read on the server says login: false, so neither removes anything.
+ * A logout on this screen (logged in here first) is the 로그아웃 button's: it removes them and says so.
+ */
 export function useAccountSync(account: AccountState | null | undefined): void {
   const loggedIn = Boolean(account?.user);
+  const loggedOut = account?.user === null && account.login;
+  const wasLoggedIn = useRef(false);
   useEffect(() => {
+    if (loggedIn) wasLoggedIn.current = true;
+    if (loggedOut) {
+      if (!wasLoggedIn.current && listChapters().some((chapter) => chapter.serverId)) forgetAccountOnDevice();
+      return;
+    }
     if (!loggedIn) return;
     try {
       if (sessionStorage.getItem(SYNCED_KEY)) return;
@@ -192,5 +206,5 @@ export function useAccountSync(account: AccountState | null | undefined): void {
       // storage blocked: pull anyway
     }
     void pullAccountReadings();
-  }, [loggedIn]);
+  }, [loggedIn, loggedOut]);
 }
