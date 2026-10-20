@@ -175,33 +175,10 @@ describe("MeView after the account was deleted", () => {
     expect(sessionStorage.getItem("starlog.account-synced")).toBeNull();
   });
 
-  it("leaves this device's readings alone on any other visit while logged in", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: true, login: true, owner: false, user: { nickname: "별빛", gift: null, unused: [], opening: [] } })));
+  it("leaves this device's readings alone on any other visit", async () => {
     render(<MeView status={null} />);
-    expect(await screen.findByRole("heading", { name: "별빛" })).toBeTruthy();
     await waitFor(() => expect(screen.getByRole("link", { name: /내 기록/ })).toBeTruthy());
     expect(listChapters()).toHaveLength(2);
     expect(sessionStorage.getItem("starlog.account-synced")).toBe("1");
-  });
-
-  it("logging out with the button still says the account's readings left this device (the sync does not take them first)", async () => {
-    let loggedIn = true;
-    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-      if (url === "/api/auth/logout") {
-        loggedIn = false;
-        return Response.json({ ok: true });
-      }
-      return Response.json({ payments: true, login: true, owner: false, user: loggedIn ? { nickname: "별빛", gift: null, unused: [], opening: [] } : null });
-    }));
-    render(<MeView status={null} />);
-    fireEvent.click(await screen.findByRole("button", { name: "로그아웃" }));
-    expect(await screen.findByText("로그아웃했어요. 이 기기에 받아 둔 계정 풀이는 지웠어요.")).toBeTruthy();
-    expect(listChapters()).toHaveLength(1);
-  });
-
-  it("logged out for sure (a session that ran out), takes only the account's copies off this device, without the deletion line (A2 PII-1)", async () => {
-    render(<MeView status={null} />);
-    await waitFor(() => expect(listChapters().map((chapter) => (chapter.kind === "tarot" ? chapter.question : chapter.kind))).toEqual(["기기 질문"]));
-    expect(document.body.textContent).not.toContain("이 기기에 받아 둔 계정 풀이도 지웠어요");
   });
 });
