@@ -40,8 +40,11 @@
     { "pattern": "starlog.yeolmaeapps.kr", "custom_domain": true },
     { "pattern": "yeolmaeapps.kr", "custom_domain": true }
   ],
-  // No *.workers.dev origin: it would serve the same app outside the zone's WAF and rules.
+  // No *.workers.dev origin: it would serve the same app outside the zone's WAF and rules. The same goes
+  // for per-version preview URLs (<version>-starlog.<subdomain>.workers.dev): off explicitly, since a
+  // missing key leaves whatever the dashboard has.
   "workers_dev": false,
+  "preview_urls": false,
   // Every 10 minutes: settle stale payments and refunds, stale reservations, unfinished erasures and
   // old records (worker.mjs → /api/internal/maintenance, guarded by STARLOG_CRON_SECRET).
   "triggers": { "crons": ["*/10 * * * *"] },
