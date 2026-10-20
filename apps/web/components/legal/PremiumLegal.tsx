@@ -16,11 +16,12 @@ const FOLLOW_UP_DAYS = Math.round(PREMIUM_CHAPTER_TTL_MS / (24 * 60 * 60 * 1000)
 
 /**
  * What the AI provider gets of a 궁합's other person, exactly as lib/ai/prompts/match.ts sends it (review 2026-10-17 #1):
- * the label and relation, their day stem, the tilt of their elements, the 일지 relation's name, their 대운 change in years,
- * and whether their birth time is known.
+ * the label and relation, their day stem, the tilt of their elements, the 일지 relation's name, the names of the relations
+ * the coming years and months have with their 일지 (the year ahead, saju only since 2026-10-17), their 대운 change in
+ * years, and whether their birth time is known.
  */
 export const MATCH_AI_ITEMS =
-  "상대방의 부르는 말과 관계, 일간(한 글자), 오행의 기울기, 두 사람의 일지 사이 관계 이름, 대운이 바뀌는 시기(몇 년 안인지), 태어난 시를 아는지 여부";
+  "상대방의 부르는 말과 관계, 일간(한 글자), 오행의 기울기, 두 사람의 일지 사이 관계 이름, 앞으로의 해와 달이 상대방의 일지와 맺는 관계 이름, 대운이 바뀌는 시기(몇 년 안인지), 태어난 시를 아는지 여부";
 
 /** "2026년 11월 15일" (Korean time). */
 const kstDate = (ms: number) => {
@@ -51,7 +52,7 @@ export function PremiumPrivacy() {
           </li>
           <li>{`풀이를 만들 때와 이어서 물어볼 때 아래 처리 위탁과 국외 이전 항목의 AI 사업자에게는 ${MATCH_AI_ITEMS}만 전달합니다. 상대방의 생년월일, 일간 한 글자를 뺀 기둥 간지, 대운의 간지와 시작 시기는 전달하지 않고 풀이 글에도 쓰지 않습니다.`}</li>
           <li>{`이어서 물어보기를 위해 상대방의 출생 정보는 운영자만 열 수 있게 암호화한 형태로 이 기기에 최대 ${FOLLOW_UP_DAYS}일 동안 두고, ${FOLLOW_UP_DAYS}일이 지난 뒤 앱을 처음 열 때 지웁니다. 로그아웃해도 이 암호화한 정보만은 남겨 두어, 풀이를 연 기기에서는 다시 로그인해도 이어서 물어볼 수 있습니다.`}</li>
-          <li>계정에 보관하는 궁합 풀이에는 상대방의 출생 정보와 명식을 넣지 않습니다. 관계, 부르는 말, 고민, 뽑은 카드, 내 출생 정보와 고른 지금 상태, 풀이 글(상대방의 일간·오행 기울기·두 사람 일지 관계에 대한 해석이 들어 있습니다)을 보관하며, 다른 기기에서는 이어서 물어볼 수 없습니다.</li>
+          <li>계정에 보관하는 궁합 풀이에는 상대방의 출생 정보와 명식을 넣지 않습니다. 관계, 부르는 말, 고민, 내 출생 정보와 고른 지금 상태, 풀이 글(상대방의 일간·오행 기울기·일지가 맺는 관계에 대한 해석이 들어 있습니다)을 보관하며, 다른 기기에서는 이어서 물어볼 수 없습니다.</li>
           <li>이 기기에서 그 풀이를 지우거나 브라우저의 사이트 데이터를 지우면 함께 지워집니다. 다른 사람의 정보는 그 사람의 동의를 받은 경우에만 입력해 주세요.</li>
         </ul>
       </div>
@@ -103,7 +104,7 @@ export function PremiumRefund() {
       </h2>
       <ul className={s.list}>
         <li>{`${PREMIUM["tarot-deep"].name}, ${PREMIUM.match.name}, ${PREMIUM["newyear-2027"].name}도 같은 기준이에요. 열기 전의 결제는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있고, 풀이를 적기 시작하면 청약철회가 제한돼요.`}</li>
-        <li>{`결제하기 전에 무료로 먼저 보여 드려요. ${PREMIUM["tarot-deep"].name}은 카드 10장의 키워드와 '지금의 나' 풀이, ${PREMIUM.match.name}은 두 사람의 명식과 카드 5장, 한눈에 보는 요약, ${PREMIUM["newyear-2027"].name}는 한 해의 제목과 요약이에요.`}</li>
+        <li>{`결제하기 전에 무료로 먼저 보여 드려요. ${PREMIUM["tarot-deep"].name}은 카드 10장의 키워드와 '지금의 나' 풀이, ${PREMIUM.match.name}은 두 사람의 명식과 한눈에 보는 요약, ${PREMIUM["newyear-2027"].name}는 한 해의 제목과 요약이에요.`}</li>
         <li>프리미엄 풀이는 여러 부분으로 나눠 적어요. 중간에 생성이 실패하면 결제한 풀이는 그대로 남아 다시 열어 이어서 받을 수 있어요. 다 받기 전에 화면을 닫거나 연결이 끊긴 경우는 위와 같이 3번까지 다시 열 수 있어요.</li>
       </ul>
     </section>

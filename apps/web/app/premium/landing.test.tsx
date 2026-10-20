@@ -118,6 +118,20 @@ describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
     });
   }
 
+  it("프리미엄 궁합 reads the two people's saju only (owner 2026-10-17): its description, method, steps and questions name no card or 타로, and say the year ahead", async () => {
+    gate.visible = true;
+    gate.open = true;
+    const { container } = await show(MatchPage);
+    const how = screen.getByRole("region", { name: "이렇게 읽어요" }).textContent ?? "";
+    expect(how).toContain("앞으로 1년");
+    expect(how).toContain("서로에게 맞는 말과 행동");
+    expect(how).toContain("'사주로 본 두 사람'과 '앞으로 1년과 서로 대하는 법'");
+    // the product's own page (the site footer says 카드와 사주 for the whole site)
+    expect(container.querySelector("article")!.textContent?.match(/.{0,30}(카드|(?<!스)타로).{0,30}/g) ?? []).toEqual([]);
+    expect(String(matchMeta.description)).not.toMatch(/카드|타로/);
+    expect(String(matchMeta.description)).toContain("앞으로 1년");
+  });
+
   it("2027 신년운세 before 2026-11-15 00:00 KST: says when it opens instead of a button, the price shown, a pre-order offer", async () => {
     vi.setSystemTime(OCT);
     gate.visible = true;

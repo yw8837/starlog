@@ -58,10 +58,13 @@ describe("the policies' premium text", () => {
     // the account keeps the relation and the label, a login again on the writing device keeps follow-ups, 30 days then gone.
     // What the AI gets of the other person, exactly (review 2026-10-17 #1), and what it never gets.
     for (const item of ["부르는 말과 관계", "일간(한 글자)", "오행의 기울기", "두 사람의 일지 사이 관계 이름", "대운이 바뀌는 시기(몇 년 안인지)", "태어난 시를 아는지 여부"]) expect(text).toContain(item);
+    // saju only (owner 2026-10-17): the year ahead reads how the coming years and months meet their 일지, by name only
+    expect(text).toContain("앞으로의 해와 달이 상대방의 일지와 맺는 관계 이름");
+    expect(text).not.toMatch(/뽑은 카드|카드/);
     expect(text).toContain("일간 한 글자를 뺀 기둥 간지, 대운의 간지와 시작 시기는 전달하지 않고 풀이 글에도 쓰지 않습니다");
     expect(text).not.toContain("일간과 오행의 기울기만");
     expect(text).toContain("30일이 지난 뒤 앱을 처음 열 때 지웁니다");
-    expect(text).toContain("풀이 글(상대방의 일간·오행 기울기·두 사람 일지 관계에 대한 해석이 들어 있습니다)");
+    expect(text).toContain("풀이 글(상대방의 일간·오행 기울기·일지가 맺는 관계에 대한 해석이 들어 있습니다)");
     expect(text).toContain("결제하지 않고 떠나거나 24시간이 지나면 지웁니다");
     expect(text).toContain("공유 이미지에는 고른 관계만");
     expect(text).toContain("관계, 부르는 말");
@@ -96,5 +99,8 @@ describe("the policies' premium text", () => {
     expect(text).toContain("7일 안에 전액 환불");
     expect(text).toContain("카드 10장의 키워드");
     expect(text).toContain("결제한 풀이는 그대로 남아");
+    // the 궁합 shows its two charts and the summary first: no cards (owner 2026-10-17)
+    expect(text).toContain("프리미엄 궁합은 두 사람의 명식과 한눈에 보는 요약");
+    expect(text).not.toContain("카드 5장");
   });
 });
