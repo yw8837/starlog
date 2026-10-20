@@ -1,8 +1,9 @@
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
 import type { D1Binding } from "@/lib/db/d1";
 import { isConstraintError } from "@/lib/db/sqlErrors";
 import {
   GIFT_DAYS,
+  MAX_LOT_RESTORES,
   MAX_RESTORES,
   RESERVATION_MS,
   deliverUnlock,
@@ -143,7 +144,7 @@ export function ledgerContract(make: Make) {
     await expectLotsMatchLedger(db);
   });
 
-  it("always gives a purchase back after a server failure or a lapsed reservation, however often: neither counts toward MAX_RESTORES", async () => {
+  it("gives a purchase back after a server failure or a lapsed reservation, within MAX_LOT_RESTORES: neither counts toward MAX_RESTORES", async () => {
     const db = await setup(make);
     await paidOrder(db, "order_a");
     for (let i = 0; i < MAX_RESTORES + 2; i++) {
@@ -157,6 +158,32 @@ export function ledgerContract(make: Make) {
     expect(await lockPaidLotForRefund(db, "order_a", NOW + 20 + RESERVATION_MS)).not.toBeNull();
     await expectLotsMatchLedger(db);
   }, 20_000); // many ledger round trips: slow on local D1
+
+  it("gives a lot back at most MAX_LOT_RESTORES times in all, left openings and lapsed reservations included; past that it stays used, unfinished, and the cap is logged (L-1)", async () => {
+    expect(MAX_LOT_RESTORES).toBe(10);
+    const db = await setup(make);
+    await paidOrder(db, "order_a");
+    for (let i = 0; i < MAX_LOT_RESTORES; i++) {
+      const unlock = await reserved(db, "paid", NOW + i);
+      expect(await releaseUnlock(db, { unlockId: unlock.unlockId, now: NOW + i, left: i < MAX_RESTORES })).toBe(true);
+      expect(await lotById(db, "lot_order_a")).toMatchObject({ units_left: 1 });
+    }
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      // The eleventh: a lapsed reservation the sweep gives back, as after a server failure.
+      const last = await reserved(db, "paid", NOW + 20);
+      expect(await sweepStale(db, NOW + 20 + RESERVATION_MS + 1)).toEqual({ released: 1, expired: 0 });
+      expect(await db.prepare("SELECT status FROM unlocks WHERE id = ?").bind(last.unlockId).first()).toEqual({ status: "released" });
+      expect(warn).toHaveBeenCalledWith(JSON.stringify({ evt: "ledger.restore_capped", unlockId: last.unlockId, lotId: "lot_order_a", left: false }));
+    } finally {
+      warn.mockRestore();
+    }
+    expect(await lotById(db, "lot_order_a")).toMatchObject({ status: "active", units_left: 0 });
+    expect(await orderHistory(db, "u_1")).toMatchObject([{ orderId: "order_a", opened: false, unfinished: true, refundable: false }]);
+    expect(await reserveUnlock(db, { userId: "u_1", productId: "tarot", currency: "paid", now: NOW + RESERVATION_MS + 30, payMode: "live" })).toEqual({ ok: false });
+    expect((await kinds(db, "lot_order_a")).filter((kind) => kind === "restore")).toHaveLength(MAX_LOT_RESTORES);
+    await expectLotsMatchLedger(db);
+  }, 30_000); // many ledger round trips: slow on local D1
 
   it("gives an opening the client left back at most three times; the fourth uses the purchase up, server failures in between not counted", async () => {
     expect(MAX_RESTORES).toBe(3);
