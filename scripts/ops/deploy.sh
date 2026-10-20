@@ -25,8 +25,10 @@ grep -qi "no migrations" "$LOG/migrations.log" || { step "STOP: pending migratio
 rm -rf .open-next .next/dev; [ -e .open-next ] && { step "STOP: .open-next still locked"; exit 9; }
 unset STARLOG_AI STARLOG_PAY NEXT_PUBLIC_SAJU_TOPICS NEXT_PUBLIC_LOCALES NEXT_PUBLIC_LOCALES_PREVIEW
 export NEXT_PUBLIC_SPLIT_HOSTS=1 NEXT_PUBLIC_FEATURE_BONDS=1 NEXT_PUBLIC_BUILD_ID="$BUILD_ID"
-[ -n "${TOPICS:-}" ] && export NEXT_PUBLIC_SAJU_TOPICS="$TOPICS"   # off (default) | owner | on
-step "saju topics: ${NEXT_PUBLIC_SAJU_TOPICS:-off (production default)}"
+# 주제별 사주 is live (saju starts with the topic list): on unless TOPICS says otherwise. A build without it
+# falls back to lib/config.ts's production default (off), which redirects /saju/start and refuses topic requests.
+export NEXT_PUBLIC_SAJU_TOPICS="${TOPICS:-on}"   # on (default) | owner | off
+step "saju topics: $NEXT_PUBLIC_SAJU_TOPICS"
 # AdSense publisher id (public): read at build time; /ads.txt, /privacy, /faq and the guides are static
 unset ADSENSE_CLIENT; export ADSENSE_CLIENT="${ADSENSE:-ca-pub-2460558039875296}"   # applied 2026-10-08; ADSENSE=off-by-empty is not supported on purpose
 step "adsense: ${ADSENSE_CLIENT:-off}"
@@ -46,6 +48,8 @@ step "live /api/version: $v (want $BUILD_ID)"
 for u in https://starlog.yeolmaeapps.kr/ https://starlog.yeolmaeapps.kr/pricing https://starlog.yeolmaeapps.kr/refund https://starlog.yeolmaeapps.kr/now https://starlog.yeolmaeapps.kr/today https://starlog.yeolmaeapps.kr/login/review https://starlog.yeolmaeapps.kr/login https://yeolmaeapps.kr/; do
   step "$(curl -s -o /dev/null -w '%{http_code}' "$u") $u"
 done
+# Saju step 1 is the topic list (200 with its rows); a build with the topics off answers 307 to /saju/new instead.
+step "saju topics live: $(curl -s -o "$LOG/saju-start.html" -w '%{http_code}' https://starlog.yeolmaeapps.kr/saju/start) $(grep -q '재회운' "$LOG/saju-start.html" && echo 'topic list shown' || echo 'NO topic list') (want 200 topic list shown)"
 # The guide's home is the root domain's /: the tarot tab's old address redirects there.
 for u in https://yeolmaeapps.kr/guide/tarot https://starlog.yeolmaeapps.kr/guide/tarot; do
   step "$(curl -s -o /dev/null -w '%{http_code} -> %{redirect_url}' "$u") $u"

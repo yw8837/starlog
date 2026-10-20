@@ -63,3 +63,17 @@ describe("scripts/ops/deploy.sh: the remote D1's pending migrations", () => {
     expect(listing.filter((line) => pending.test(line))).toEqual(listing.slice(2, 6));
   });
 });
+
+describe("scripts/ops/deploy.sh: 주제별 사주 (audit B B01)", () => {
+  it("builds with the saju topics on unless TOPICS says otherwise (the production default in lib/config.ts is off)", () => {
+    const deploy = ops("deploy.sh");
+    expect(deploy).toMatch(/^export NEXT_PUBLIC_SAJU_TOPICS="\$\{TOPICS:-on\}"/m);
+    expect(deploy).not.toMatch(/\[ -n "\$\{TOPICS:-\}" \]/);
+  });
+
+  it("checks after the deploy that /saju/start answers with the topic list, not the redirect a build without topics gives", () => {
+    const check = ops("deploy.sh").split(/\r?\n/).find((line) => line.includes("https://starlog.yeolmaeapps.kr/saju/start"));
+    expect(check).toBeTruthy();
+    expect(check).toContain("재회운");
+  });
+});
