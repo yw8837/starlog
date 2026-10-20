@@ -27,9 +27,13 @@ export default {
     }
     const request = new Request(MAINTENANCE_URL, { method: "POST", headers: { authorization: `Bearer ${secret}` } });
     ctx.waitUntil(
-      handler.fetch(request, env, ctx).then((response) => {
-        if (!response.ok) console.error(JSON.stringify({ evt: "cron.maintenance_failed", status: response.status }));
-      }),
+      handler
+        .fetch(request, env, ctx)
+        .then((response) => {
+          if (!response.ok) console.error(JSON.stringify({ evt: "cron.maintenance_failed", status: response.status }));
+        })
+        // A call that throws leaves the same event, with the error's kind only (B15).
+        .catch((error) => console.error(JSON.stringify({ evt: "cron.maintenance_failed", error: error instanceof Error ? error.constructor.name : typeof error }))),
     );
   },
 };

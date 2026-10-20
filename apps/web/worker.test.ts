@@ -73,3 +73,30 @@ describe("plain http", () => {
     expect(app.fetch).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("the cron (audit B B15)", () => {
+  const run = async () => {
+    const waited: Promise<unknown>[] = [];
+    await worker.scheduled({}, { STARLOG_CRON_SECRET: "cron-secret" }, { waitUntil: (promise: Promise<unknown>) => waited.push(promise) });
+    await Promise.all(waited);
+  };
+
+  it("logs a maintenance call that throws as cron.maintenance_failed, with the error's kind only", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    app.fetch.mockImplementation(async () => {
+      throw new TypeError("network down at 10.0.0.1");
+    });
+    await run();
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(error.mock.calls[0]![0]))).toEqual({ evt: "cron.maintenance_failed", error: "TypeError" });
+    error.mockRestore();
+  });
+
+  it("still logs a refused maintenance call with its status", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    app.fetch.mockImplementation(async () => new Response(null, { status: 503 }));
+    await run();
+    expect(JSON.parse(String(error.mock.calls[0]![0]))).toEqual({ evt: "cron.maintenance_failed", status: 503 });
+    error.mockRestore();
+  });
+});

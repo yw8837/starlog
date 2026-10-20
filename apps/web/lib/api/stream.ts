@@ -162,7 +162,10 @@ export async function respondGeneration(
     try {
       extra = await settle.deliver(outcome);
     } catch (error) {
-      const recovered = await settle.recover().catch(() => null);
+      const recovered = await settle.recover().catch((recoverError: unknown) => {
+        console.error(JSON.stringify({ evt: "settle.recover_failed", error: recoverError instanceof Error ? recoverError.constructor.name : typeof recoverError }));
+        return null;
+      });
       if (!recovered) throw error;
       console.warn(JSON.stringify({ evt: "settle.recovered" }));
       extra = recovered;

@@ -164,6 +164,24 @@ describe("settlement inside the generation's keepAlive work", () => {
     expect(again).toEqual(["deliver", "recover", "release"]);
   });
 
+  it("JSON: a recovery that throws is logged as settle.recover_failed (the error's kind only), and the generation releases (audit B B15)", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const calls: string[] = [];
+    const broken: Settlement = {
+      ...settlement(calls, failedSave),
+      recover: async () => {
+        calls.push("recover");
+        throw new RangeError("D1 read failed for user u_123");
+      },
+    };
+    const res = await respondGeneration(post(), billed(), { gate: gate(), settle: broken });
+    expect(res.status).toBe(502);
+    expect(calls).toEqual(["deliver", "recover", "release"]);
+    const logged = error.mock.calls.map(([line]) => String(line));
+    expect(logged.map((line) => JSON.parse(line))).toContainEqual({ evt: "settle.recover_failed", error: "RangeError" });
+    expect(logged.join("\n")).not.toContain("u_123");
+  });
+
   it("JSON: a save whose answer was lost is recovered, not released", async () => {
     const calls: string[] = [];
     const res = await respondGeneration(post(), billed(), { gate: gate(), settle: settlement(calls, failedSave, { readingId: READING_ID }) });
