@@ -23,7 +23,7 @@ import { partsFit } from "./run";
  *   says until when instead of 402. Its model cost goes to the paid book. On a production deploy
  *   running test keys the purchase earned nothing, so it is held to the free budget and counted like
  *   a free full reading (M2), once per part: 2 or 3 network "full" counts per premium reading.
- * - `owner`: the owner pass and the owner's server limits, no ledger; saved when logged in.
+ * - `owner`: the owner pass, which no server limit or budget closes (http.ts checkServerLimits), no ledger; saved when logged in.
  * A resume token that does not open, or whose parts this deploy cannot continue, is 400 BAD_TOKEN
  * `token: "resume"` before anything is held (the routes say `token: "draw"` for the cards).
  * The signup gift (`free`) and `beta` never open premium: the request schema refuses them, and the
@@ -60,8 +60,6 @@ export async function planPremiumUnlock(
 
   if (method === "owner") {
     if (!gate.owner) return errorResponse("FORBIDDEN");
-    const limited = await checkServerLimits(gate, "full");
-    if (limited) return limited;
     const ctx = await openAccount(request, gate.now);
     const user = ctx instanceof Response ? null : (ctx.session?.user ?? null);
     const subject = user ? user.id : "owner";

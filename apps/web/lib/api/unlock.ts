@@ -25,7 +25,7 @@ import type { GenerationOutcome, Settlement } from "./stream";
  *   free reading costs), then the reservation. Using it is never gated by STARLOG_PAYMENTS.
  * - `paid`: login, then the reservation. Its model cost goes to the paid book. On a production deploy
  *   running test keys it earned nothing, so it is held and counted like `free` (security M2).
- * - `owner`: the owner pass and the owner's server limits, no ledger; saved when logged in.
+ * - `owner`: the owner pass, which no server limit or budget closes (http.ts checkServerLimits), no ledger; saved when logged in.
  */
 
 export interface UnlockPlan {
@@ -50,8 +50,6 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
   }
   if (method === "owner") {
     if (!gate.owner) return errorResponse("FORBIDDEN");
-    const limited = await checkServerLimits(gate, "full");
-    if (limited) return limited;
     const ctx = await openAccount(request, gate.now);
     const user = ctx instanceof Response ? null : ctx.session?.user;
     if (ctx instanceof Response || !user) return base;

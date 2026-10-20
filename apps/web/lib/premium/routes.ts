@@ -20,7 +20,7 @@ import { paymentsUnbacked, planPremiumUnlock, premiumSettlement, unusedBuyer } f
 export const BUYER_PREVIEWS_PER_DAY = 5;
 
 /**
- * A buyer's preview may start: the day's spend can be read (an unknown budget closes everything), and it claims its
+ * A buyer's preview may start: the day's spend can be read (an unknown budget closes it; paid openings and the owner never ask here), and it claims its
  * place among today's previews of the product in one atomic UPSERT (review 2026-10-17 #6: previews that come at once
  * each get their own number). The place is taken when the preview starts, like the network counts.
  */

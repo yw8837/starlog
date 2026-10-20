@@ -132,7 +132,7 @@ describe("a day total that cannot be trusted", () => {
     }
   });
 
-  it("whose cost writes keep failing while reads work closes free full readings only; teasers still stop at the ceiling", async () => {
+  it("whose cost writes keep failing while reads work closes every free generation (the total stopped growing); paid and the owner stay open", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
     const put = vi.spyOn(dailyStore(), "put").mockRejectedValue(new Error("KV PUT failed: 429 Too Many Requests"));
@@ -142,7 +142,7 @@ describe("a day total that cannot be trusted", () => {
     const closed = await checkServerLimits(gate(), "full");
     expect(closed?.status).toBe(503);
     expect((await closed!.json()).reason).toBeUndefined();
-    for (const kind of ["teaser", "followup", "daily"] as const) expect(await checkServerLimits(gate(), kind), kind).toBeNull();
+    for (const kind of ["teaser", "followup", "daily"] as const) expect((await checkServerLimits(gate(), kind))?.status, kind).toBe(503);
     expect(await checkServerLimits(gate(), "followup", {}, { credit: true, paid: true })).toBeNull();
     expect(await checkServerLimits(gate({ owner: true }), "full")).toBeNull();
     // What could be read is past the ceiling: the total is only higher in truth.

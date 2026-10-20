@@ -103,7 +103,7 @@ For the first 24 h, run the checks in section 7 every two hours.
   `SELECT DISTINCT o.id, o.created_at FROM orders o JOIN credit_lots l ON l.order_id = o.id JOIN unlocks u ON u.user_id = o.user_id AND u.status = 'released' AND u.product_id = o.product_id WHERE o.status = 'paid' AND l.units_left = l.units_total`
 - Sales per KST day, live payments only (minor 12):
   `SELECT date(o.created_at/1000, 'unixepoch', '+9 hours') AS day, COUNT(*) AS n, SUM(o.amount_krw) AS krw FROM orders o JOIN payments p ON p.order_id = o.id WHERE p.mode = 'live' AND o.status IN ('paid','refunded') GROUP BY day ORDER BY day DESC LIMIT 14`
-- Paid-reading model cost: DAILY_KV keys `paidcost:<YYYY-MM-DD>:<0-7>` (sum the eight shards of a day). The free-tier total stays in `cost:`: at 80% of BETA_DAILY_BUDGET_KRW it closes free full readings, at twice that every free generation (teasers too); paid readings, their follow-ups and the owner pass never close (table: `lib/api/http.ts` checkServerLimits).
+- Paid-reading model cost: DAILY_KV keys `paidcost:<YYYY-MM-DD>:<0-7>` (sum the eight shards of a day). The free-tier total stays in `cost:`: at 80% of BETA_DAILY_BUDGET_KRW it closes free full readings, at twice that every free generation (teasers too); paid readings, their follow-ups and the owner pass never close on the budget; while cost writes fail ("lagging") or the total cannot be read, every free generation closes, and a paid follow-up also stops while KV cannot be read (its chapter count) (table: `lib/api/http.ts` checkServerLimits).
 
 ## 8. Refunds by hand
 

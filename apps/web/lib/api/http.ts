@@ -285,14 +285,16 @@ const BUDGET_MESSAGE = "오늘 준비한 풀이가 모두 나갔어요. 자정�
  *   under the cap                             | open            | open                          | open     | open
  *   at the cap ("over")                       | 503 budget      | open                          | open     | open
  *   at 2x the cap ("ceiling", BUDGET_CEILING) | 503 budget      | 503 budget                    | open     | open
- *   writes failing, reads work ("lagging")    | 503             | open (the ceiling applies)    | open     | open
- *   cannot be read at all ("unknown")         | 503             | 503                           | open     | open
+ *   writes failing, reads work ("lagging")    | 503             | 503                           | open (4) | open
+ *   cannot be read at all ("unknown")         | 503             | 503                           | open (4) | open
  *   this network's share (20%) reached        | 429 network (3) | open                          | open     | open
  *   `off`: no cap, no ceiling, no share; "unknown" still closes as above
  *
  *   (1) 오픈 기념 무료 and any other free full reading: the signup gift, a purchase on a production deploy's test keys.
  *   (2) `paid`: paid for on real keys (a follow-up whose chapter says so). Paid openings on real keys never ask here.
  *   (3) not for `credit` openings (the signup gift, a test-key purchase): a credit pays for them.
+ *   (4) here; a paid follow-up still needs its chapter count, which closes while KV cannot be read (followup/route.ts).
+ * "lagging" closes the free ones too: the total stopped growing, so neither the cap nor the ceiling would ever be reached.
  * Teasers stay open past the cap because the paywall shows only after one (a closed teaser stops the day's sales,
  * and a buyer who lost the teaser could not open); the ceiling keeps the prepaid model credit for the paid readings.
  * "unknown" closes the free ones because the network counts below would read 0 then and bound nothing (H-2).
@@ -307,7 +309,7 @@ export async function checkServerLimits(
     if (budget === "ceiling" || (budget === "over" && kind === "full")) {
       return errorResponse("AI_UNAVAILABLE", { reason: "budget", resetsAt: nextKstMidnight(gate.now), message: BUDGET_MESSAGE });
     }
-    if (budget === "unknown" || (budget === "lagging" && kind === "full")) return errorResponse("AI_UNAVAILABLE");
+    if (budget === "unknown" || budget === "lagging") return errorResponse("AI_UNAVAILABLE");
   }
   if (!gate.owner && (await clientCount(gate.client, kind, gate.now)) >= ipLimits()[kind]) {
     return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra, scope: "network", message: NETWORK_LIMIT_MESSAGE });

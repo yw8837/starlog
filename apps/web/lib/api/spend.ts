@@ -100,7 +100,7 @@ export function resetSpendState(): void {
 
 const countKey = (client: string, kind: SpendKind, now: number) => `count:${kstDay(now)}:${kind}:${client}`;
 
-/** Generations of `kind` this client network started today (0 when KV cannot be read: the budget check closes then). */
+/** Generations of `kind` this client network started today (0 when KV cannot be read: the budget check closes the free generations then; the owner skips counts, a paid follow-up stops at its chapter count). */
 export async function clientCount(client: string, kind: SpendKind, now: number): Promise<number> {
   return (await read(countKey(client, kind, now))) ?? 0;
 }
@@ -215,7 +215,7 @@ const PAID_COST_TTL_SECONDS = 35 * 24 * 60 * 60;
 /**
  * P4: the model cost of readings opened with a purchase, in `paidcost:<kstDay>:<shard>`. budgetState
  * never reads these keys, so paid readings never close the free tier; the purchase price covers
- * them (spec 11). A failed write is logged (write()) and does not count toward "unknown".
+ * them (spec 11). A failed write is logged (write()) and does not count toward "lagging".
  */
 export async function addPaidCost(krw: number, now: number): Promise<void> {
   if (!Number.isFinite(krw) || krw === 0) return;

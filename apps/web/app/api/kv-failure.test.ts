@@ -157,7 +157,7 @@ describe("DAILY_KV failures", () => {
     expect((await asOwner(followup, { chapterToken: opened.chapterToken, reading: opened.reading, question: "지출은 어떻게 줄일까요?" })).status).toBe(200);
   });
 
-  it("make the budget lagging after repeated failed cost writes, even while reads work: free full readings close, teasers go on", async () => {
+  it("make the budget lagging after repeated failed cost writes, even while reads work: every free generation closes, since the total stopped growing (budget review E MEDIUM)", async () => {
     const real = mockProvider.generate.bind(mockProvider);
     vi.spyOn(mockProvider, "generate").mockImplementation(async (task, attempt, feedback, hooks?: GenerationHooks) => {
       hooks?.onUsage?.([{ model: "claude-opus-5-5", inputTokens: 0, outputTokens: 1_000, cacheReadTokens: 0, cacheWriteTokens: 0 }]);
@@ -167,7 +167,9 @@ describe("DAILY_KV failures", () => {
     kv.state.mode = "no-writes";
     for (let i = 0; i < 3; i++) expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45")).status).toBe(200);
     expect(await budgetState(Date.now())).toBe("lagging");
-    expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45")).status).toBe(200);
+    const teaserLagging = await call(teaser, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45");
+    expect(teaserLagging.status).toBe(503);
+    expect(teaserLagging.data).toMatchObject({ code: "AI_UNAVAILABLE" });
     const full = await call(reading, { drawToken: token, input: MONEY_INPUT }, "198.51.100.45");
     expect(full.status).toBe(503);
     expect(full.data).toMatchObject({ code: "AI_UNAVAILABLE" });
