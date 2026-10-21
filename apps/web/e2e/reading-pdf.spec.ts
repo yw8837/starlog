@@ -80,6 +80,7 @@ const DEEP = {
 async function pressSave(page: Page, type: string) {
   await page.evaluate(() => {
     window.print = () => {
+      window.dispatchEvent(new Event("beforeprint"));
       (window as unknown as { printedAs?: string }).printedAs = document.title;
       window.dispatchEvent(new Event("afterprint"));
     };
@@ -105,7 +106,7 @@ async function printsCleanly(page: Page, info: TestInfo, name: string, texts: st
   await expect(page.locator("nav:visible")).toHaveCount(0); // tab bar, site footer links, 이 기록의 차례
   await expect(page.locator("input:visible, textarea:visible")).toHaveCount(0); // the follow-up box
   await expect(page.getByRole("contentinfo")).toBeHidden(); // the site footer
-  await expect(page.getByText("인쇄 화면에서 'PDF로 저장'을 고르면 돼요")).toBeHidden();
+  await expect(page.getByText("인쇄 화면에서 'PDF로 저장'(아이폰은 공유 → 파일에 저장)을 고르면 돼요")).toBeHidden();
 
   const look = await page.evaluate(() => {
     const rgb = (value: string) => value.match(/\d+/g)!.slice(0, 3).map(Number);
@@ -154,6 +155,14 @@ test("PDF로 저장 on a premium reading (켈틱 크로스 10장): the ten cards
   await expect(page.getByRole("heading", { level: 1, name: DEEP.question })).toBeVisible();
   await pressSave(page, "켈틱크로스10장");
   await printsCleanly(page, info, "premium", [DEEP.question, "지금의 나 카드", "오늘 해 볼 일"]);
+});
+
+test("the demo's notice stays on screen: it never tops the printed page", async ({ page }) => {
+  await page.goto("/chapter/sample");
+  await expect(page.getByText("예시로 보여드리는 풀이예요.")).toBeVisible();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByText("예시로 보여드리는 풀이예요.")).toBeHidden();
+  await expect(page.getByRole("main").getByText(BRAND, { exact: true })).toBeVisible();
 });
 
 test.describe("in KakaoTalk's in-app browser", () => {

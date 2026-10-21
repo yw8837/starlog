@@ -83,3 +83,11 @@
   gap: 6px;
   margin-top: 2px;
 }
+
+/* PDF로 저장: the marks' light sky colours darkened for white paper (the chart's tiles keep theirs). */
+@media print {
+  .glance {
+    --el-wood: #2f7a5c;
+    --gold-deep: #8a6416;
+  }
+}

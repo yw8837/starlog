@@ -173,7 +173,11 @@
 
 /* PDF로 저장: the questions asked and their answers only; nothing to ask with on paper, and no box when none was asked. */
 @media print {
-  .box:not(:has(.thread)),
+  /* On its own: a browser without :has() drops only this rule, not the list below. */
+  .box:not(:has(.thread)) {
+    display: none;
+  }
+
   .count,
   .avatar,
   .suggestions,

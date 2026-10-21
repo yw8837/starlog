@@ -233,7 +233,8 @@
  */
 @media print {
   .share,
-  .keepOnly {
+  .keepOnly,
+  .unsaved {
     display: none;
   }
 
