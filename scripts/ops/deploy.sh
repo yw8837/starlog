@@ -19,6 +19,8 @@ pnpm install --frozen-lockfile > "$LOG/install.log" 2>&1; step "install exit=$?"
 
 cd apps/web
 npx wrangler d1 migrations list starlog --remote > "$LOG/migrations.log" 2>&1
+# The API now and then refuses one call while the OAuth token refreshes (7403 on 10-17 and 10-21, 10000 on 10-20): ask once more.
+grep -qE "code: (7403|10000)" "$LOG/migrations.log" && { sleep 10; npx wrangler d1 migrations list starlog --remote > "$LOG/migrations.log" 2>&1; }
 step "remote D1 pending migrations: $(grep -cE '^[│| ]*[0-9]{4}_' "$LOG/migrations.log") (see migrations.log; 'No migrations' means none)"
 grep -qi "no migrations" "$LOG/migrations.log" || { step "STOP: pending migrations or unknown state — apply them first"; exit 2; }
 
