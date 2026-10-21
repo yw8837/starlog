@@ -8,6 +8,9 @@ export const GA_MEASUREMENT_ID = "G-8X11ZGFZKY";
 /** gtag.js; its origin is in next.config.ts's script policy. */
 export const gaScriptSrc = (id: string): string => `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
 
+/** The window property that, set to true, makes gtag.js send nothing for this measurement ID. */
+export const gaDisableKey = (id: string): string => `ga-disable-${id}`;
+
 /**
  * The address GA may see, when it must differ from the page's: no query or hash on /pay (Toss returns paymentKey,
  * orderId and amount there), and no share id on /s/<id> (the link opens someone's reading). No app URL carries a
