@@ -31,6 +31,8 @@ describe("Footer prefetch (F-05)", () => {
       "/terms": "auto",
       "/privacy": "auto",
       "/refund": "false",
+      // Both hosts serve /privacy, so its 방문 통계 setting is never a cross-host redirect.
+      "/privacy#analytics": "auto",
     });
   });
 });

@@ -12,9 +12,12 @@ export type AnalyticsChoice = "granted" | "denied";
 
 /** The last choice made on this page load: what is read when the browser refuses storage, so the banner does not ask again on every page. */
 let remembered: AnalyticsChoice | null = null;
+/** The browser refused to store `remembered`: it wins over whatever older choice storage still holds. */
+let unsaved = false;
 const listeners = new Set<() => void>();
 
 export function readChoice(): AnalyticsChoice | null {
+  if (unsaved) return remembered;
   try {
     const raw = window.localStorage.getItem(CONSENT_KEY);
     const choice: unknown = raw ? (JSON.parse(raw) as { choice?: unknown } | null)?.choice : undefined;
@@ -42,8 +45,10 @@ export function chooseAnalytics(choice: AnalyticsChoice): void {
   remembered = choice;
   try {
     window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ choice, at: new Date().toISOString() }));
+    unsaved = false;
   } catch {
     // Kept in memory for this page load (above).
+    unsaved = true;
   }
   if (choice === "denied") stopAnalytics(GA_MEASUREMENT_ID);
   for (const listener of listeners) listener();

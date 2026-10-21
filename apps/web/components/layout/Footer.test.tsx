@@ -50,6 +50,7 @@ describe("Footer", () => {
       ["이용약관", "/terms"],
       ["개인정보처리방침", "/privacy"],
       ["환불 정책", "/refund"],
+      ["방문 통계 설정", "/privacy#analytics"],
     ]);
   });
 
@@ -68,6 +69,7 @@ describe("Footer", () => {
       ["이용약관", "/terms"],
       ["개인정보처리방침", "/privacy"],
       ["환불 정책", "/refund"],
+      ["방문 통계 설정", "/privacy#analytics"],
     ]);
   });
 
@@ -86,6 +88,7 @@ describe("Footer", () => {
       ["이용약관", "/terms"],
       ["개인정보처리방침", "/privacy"],
       ["환불 정책", `${SITE.url}/refund`],
+      ["방문 통계 설정", "/privacy#analytics"],
     ]);
   });
 
@@ -104,12 +107,13 @@ describe("Footer", () => {
       ["이용약관", `${SITE.url}/terms`],
       ["개인정보처리방침", `${SITE.url}/privacy`],
       ["환불 정책", `${SITE.url}/refund`],
+      ["방문 통계 설정", "/privacy#analytics"],
     ]);
   });
 
   it("on a guide page with one origin, every link is a path as before", () => {
     render(<Footer host="guide" />);
-    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"]);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"]);
   });
 
   it("says on the guide host that the articles are reference content, not professional advice, and nowhere else", () => {
@@ -124,7 +128,7 @@ describe("Footer", () => {
   it("keeps every link in one labelled row", () => {
     render(<Footer />);
     const rows = screen.getAllByRole("navigation").map((nav) => [nav.getAttribute("aria-label"), within(nav).getAllByRole("link").length]);
-    expect(rows).toEqual([["사이트 안내", 10]]);
+    expect(rows).toEqual([["사이트 안내", 11]]);
   });
 
   it("spaces items with gaps, never a '·' that could start or end a wrapped line", () => {
