@@ -41,7 +41,8 @@ export const dynamic = "force-dynamic";
 const BIRTH = "생년월일, 양력·음력(윤달 여부), 태어난 시(아는 경우), 성별, 출생 지역";
 
 type Rows = ReadonlyArray<readonly [string, ReactNode]>;
-type Processor = { name: string; rows: Rows };
+/** `id`: an anchor for the card, where the text links to it. */
+type Processor = { name: string; rows: Rows; id?: string };
 
 /**
  * 방문 통계 (Google Analytics), the revision of GA_REVISION_DATE (lib/legal.ts): 개정 예정 until then, in the text from
@@ -54,7 +55,7 @@ const GA_ITEMS = [
   "방문한 페이지의 주소(공유·초대·기록 번호와 결제 정보는 지우고, 홍보 링크의 utm 꼬리표만 남긴 주소)와 페이지 제목",
   "이전 페이지의 주소(스타로그의 페이지는 같은 방식으로 지운 주소, 다른 사이트는 그 사이트의 도메인만)",
   "기기·브라우저·화면 정보(기기 종류, 운영체제, 브라우저, 화면 크기, 언어)",
-  "IP 주소(위치 추정에만 쓰이고 Google 애널리틱스에 저장되지 않음)",
+  "IP 주소(위치 추정 등에 쓰이고, Google 설명으로는 Google 애널리틱스에 저장되지 않음)",
   "대략적 위치(접속한 IP 주소로 Google이 추정하는 국가·도시 수준)",
   "방문 시각",
   "페이지에 머문 시간",
@@ -116,6 +117,7 @@ const processors = (premium: boolean, ga: boolean): readonly Processor[] => [
     ? [
         {
           name: "Google LLC",
+          id: "google-transfer",
           rows: [
             ["국가", "미국"],
             ["이전 목적", "이용 통계 분석(방문 통계를 허용한 경우에만)"],
@@ -191,7 +193,7 @@ export default function PrivacyPage() {
             <ul className={s.list}>
               <li>
                 방문 통계: 허용한 분에 한해 Google 애널리틱스로 방문한 페이지(공유·초대·기록 번호는 가림)와 이전 페이지, 기기·브라우저·화면 정보, IP
-                주소(위치 추정에만 쓰임), 대략적 위치, 방문 시각, 페이지에 머문 시간을 모아 이용 통계를 분석하고, 이를 위해 Google LLC(미국)로 국외
+                주소(위치 추정 등에 쓰임), 대략적 위치, 방문 시각, 페이지에 머문 시간을 모아 이용 통계를 분석하고, 이를 위해 Google LLC(미국)로 국외
                 이전합니다.
               </li>
               <li>보유 기간: 이벤트 데이터 2개월, 사용자 데이터 14개월(새 방문이 있으면 그때부터 다시 계산), 방문 통계 쿠키는 마지막 방문부터 최대 2년.</li>
@@ -366,7 +368,7 @@ export default function PrivacyPage() {
         <p>{`운영자는 서비스를 제공하${ga ? "고, 허용한 분의 방문 통계를 분석하" : ""}기 위해 아래 사업자에게 개인정보 처리를 맡기며, 이 중 일부는 「개인정보 보호법」 제28조의8에 따라 국외로 이전됩니다.`}</p>
         <div className={s.cards}>
           {processors(inForce, ga).map((processor) => (
-            <section key={processor.name} className={s.card} aria-label={processor.name}>
+            <section key={processor.name} id={processor.id} className={s.card} aria-label={processor.name}>
               <h3 className={s.cardTitle}>{processor.name}</h3>
               <Facts rows={processor.rows} stack />
             </section>
@@ -413,7 +415,7 @@ export default function PrivacyPage() {
             <ul className={s.list}>
               <li>
                 방문 통계 정보는 Google LLC(미국)로 국외 이전됩니다. 이전 항목과 보유 기간은{" "}
-                <a href="#processors">{`${num(4)}항 처리 위탁과 국외 이전`}</a>의 Google LLC에 있습니다.
+                <a href="#google-transfer">{`${num(4)}항 처리 위탁과 국외 이전의 Google LLC 안내`}</a>에 있습니다.
               </li>
               <li>
                 방문 통계를 허용한 경우에만 Google 애널리틱스를 불러오고, 그때 Google 애널리틱스가 아래 쿠키를 만듭니다. 쿠키는 앱(starlog.yeolmaeapps.kr)과

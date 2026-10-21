@@ -34,6 +34,10 @@ describe("gaLocation: the address GA may see", () => {
     [`${APP}/S/abc123`, `${APP}/s/`],
     [`${APP}/Chapter/8f2c1d`, `${APP}/chapter/`],
     [`${APP}/PAY/success?paymentKey=tgen_1&utm_source=x`, `${APP}/PAY/success`],
+    // ...and after percent-decoding (a malformed escape is compared as it is).
+    [`${APP}/%73/abc123`, `${APP}/s/`],
+    [`${APP}/%70ay/success?paymentKey=tgen_1`, `${APP}/%70ay/success`],
+    [`${APP}/%E0%A4%A/x?y=1`, `${APP}/%E0%A4%A/x`],
   ];
   for (const [href, expected] of cases) {
     it(`${href} → ${expected}`, () => expect(gaLocation(href)).toBe(expected));

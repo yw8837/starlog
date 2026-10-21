@@ -130,6 +130,11 @@ ol.list {
   font-weight: 700;
 }
 
+/* A card the text links to (#google-transfer) clears the top edge as the sections do. */
+.card[id] {
+  scroll-margin-top: 16px;
+}
+
 /* The privacy policy's 방문 통계 block (#analytics, the consent banner's 자세히 link) and its setting. */
 .analytics {
   display: grid;

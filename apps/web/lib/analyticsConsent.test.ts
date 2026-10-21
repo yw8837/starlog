@@ -60,6 +60,8 @@ describe("analytics consent store: one choice per browser, in localStorage", () 
     });
     consent.chooseAnalytics("denied");
     expect(consent.readChoice()).toBe("denied");
+    // The older choice is gone from storage too: the next page load asks again rather than reading it.
+    expect(window.localStorage.getItem(KEY)).toBeNull();
   });
 
   it("tells its subscribers about a choice made here and one made in another tab", () => {

@@ -25,8 +25,8 @@ export function ConsentBanner() {
         방문 통계를 켜도 될까요?
       </h2>
       <p className={s.body}>
-        어떤 화면을 많이 보는지 알아보려고, 허용하면 방문한 페이지(공유·초대 번호는 가림)와 기기 정보를 Google 애널리틱스로 Google LLC(미국)에
-        보내요. 마지막 방문부터 최대 14개월 보관하고, 거부해도 이용에 제한은 없어요.{" "}
+        어떤 화면을 많이 보는지 알아보려고, 허용하면 방문한 페이지(공유·초대 번호는 가림)·기기 정보·IP 주소·쿠키 식별값을 Google 애널리틱스로
+        Google LLC(미국)에 보내요. 마지막 방문부터 최대 14개월 보관하고, 거부해도 이용에 제한은 없어요.{" "}
         <Link href="/privacy#analytics" className={s.more}>
           자세히
         </Link>
