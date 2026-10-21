@@ -280,8 +280,7 @@ export interface OrderListItem {
   opened: boolean;
   /**
    * paid and used up with no reading delivered: its client left while it was written once more than
-   * MAX_RESTORES allows, or it failed past MAX_LOT_RESTORES (lib/pay/ledger.ts releaseUnlock), so it
-   * was never "opened" (F2-b)
+   * MAX_RESTORES allows (lib/pay/ledger.ts releaseUnlock), so it was never "opened" (F2-b)
    */
   unfinished: boolean;
 }
