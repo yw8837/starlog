@@ -3,7 +3,9 @@ import { openAccountRoute, requireSession } from "@/lib/account/request";
 import { safeReturnTo } from "@/lib/account/returnTo";
 import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import { errorResponse, json, readJson } from "@/lib/api/http";
+import type { D1Binding } from "@/lib/db/d1";
 import { productById, sellable } from "@/lib/pay/catalog";
+import { entitlements } from "@/lib/pay/ledger";
 import { paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { RECONCILE_AFTER_MS, createOrder, orderById, orderHistory, reconcileConfirming, type OrderRow } from "@/lib/pay/orders";
 import { reconcileRefunding } from "@/lib/pay/refunds";
@@ -17,7 +19,11 @@ const OrderBody = z.object({ productId: z.string().max(40), returnTo: z.string()
 /** Unopened paid readings a review account may hold before it must open or refund one (security M2). */
 const REVIEW_MAX_UNOPENED = 3;
 
-/** POST {productId, returnTo?, ack: true} → a new order at the catalog price, plus Toss's success and fail URLs. */
+/**
+ * POST {productId, returnTo?, ack: true} → a new order at the catalog price, plus Toss's success and fail URLs.
+ * G3: a premium order also says how many purchases of that product the buyer holds unopened or is opening
+ * (`held`), so the checkout asks before a second one; it never refuses one (two 프리미엄 궁합 for two people).
+ */
 export async function POST(request: Request): Promise<Response> {
   const ctx = await openAccountRoute(request, { limiter: "PAY_LIMITER", write: true });
   if (ctx instanceof Response) return ctx;
@@ -42,7 +48,22 @@ export async function POST(request: Request): Promise<Response> {
   const order = await createOrder(ctx.db, { userId: session.user.id, product, returnTo: safeReturnTo(body.data.returnTo), now: ctx.now });
   const origin = new URL(request.url).origin;
   console.info(JSON.stringify({ evt: "pay.order_created", orderId: order.id, productId: product.id }));
-  return json({ orderId: order.id, orderName: order.order_name, amount: order.amount_krw, successUrl: `${origin}/pay/success`, failUrl: `${origin}/pay/fail` });
+  const held = isPremiumId(product.id) ? await heldPurchases(ctx.db, session.user.id, product.id, ctx.now) : null;
+  return json({
+    orderId: order.id, orderName: order.order_name, amount: order.amount_krw, successUrl: `${origin}/pay/success`, failUrl: `${origin}/pay/fail`,
+    ...(held === null ? {} : { held }),
+  });
+}
+
+/** G3: a hint for the checkout, never a gate: null (no `held`) when it cannot be read. */
+async function heldPurchases(db: D1Binding, userId: string, productId: string, now: number): Promise<number | null> {
+  try {
+    const { unused, opening } = await entitlements(db, userId, now);
+    return [...unused, ...opening].filter((item) => item.productId === productId).length;
+  } catch (error) {
+    console.error(JSON.stringify({ evt: "pay.held_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
+    return null;
+  }
 }
 
 /**

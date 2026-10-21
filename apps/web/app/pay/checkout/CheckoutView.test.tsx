@@ -2,23 +2,34 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { CheckoutView } from "./CheckoutView";
 
 const ORDER = "Ab3_dEf-Gh5iJk7Lm9No1Pq2";
 let calls: Array<{ url: string; init?: RequestInit }> = [];
 
-function stubFetch(checkout: Response) {
+function stubFetch(checkout: Response, order: Record<string, unknown> = {}) {
   calls = [];
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
     calls.push({ url, init });
     if (url.startsWith("/api/pay/checkout")) return checkout.clone();
     if (url === "/api/pay/orders") {
-      return Response.json({ orderId: ORDER, orderName: "스타로그 타로 전체 풀이", amount: 2900, successUrl: "http://localhost/pay/success", failUrl: "http://localhost/pay/fail" });
+      return Response.json({ orderId: ORDER, orderName: "스타로그 타로 전체 풀이", amount: 2900, successUrl: "http://localhost/pay/success", failUrl: "http://localhost/pay/fail", ...order });
     }
     return new Response(null, { status: 404 });
   }));
 }
+
+// jsdom has no <dialog> methods; Modal calls showModal()/close().
+beforeAll(() => {
+  const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+  proto.showModal ??= function (this: HTMLElement) {
+    this.setAttribute("open", "");
+  };
+  proto.close ??= function (this: HTMLElement) {
+    this.removeAttribute("open");
+  };
+});
 
 beforeEach(() => stubFetch(Response.json({ productId: "tarot", name: "타로 전체 풀이", amount: 2900, customerKey: "c_x", provider: "mock", clientKey: null })));
 afterEach(() => {
@@ -99,6 +110,74 @@ describe("CheckoutView", () => {
     render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
     expect(await screen.findByRole("checkbox", { name: "위 내용을 확인했어요" })).toBeTruthy();
     expect(document.body.textContent).not.toContain("제7조의3");
+  });
+
+  describe("a premium purchase held already (G3)", () => {
+    const MATCH = Response.json({ productId: "match", name: "프리미엄 궁합", amount: 7900, customerKey: "c_x", provider: "mock", clientKey: null });
+    const SUCCESS = `http://localhost/pay/success?paymentType=NORMAL&orderId=${ORDER}&paymentKey=mock_${ORDER}&amount=7900`;
+
+    async function payForMatch(navigate: (url: string) => void) {
+      render(<CheckoutView productId="match" returnTo="/premium/match/preview" navigate={navigate} />);
+      await screen.findByText("7,900원");
+      fireEvent.click(screen.getByRole("checkbox", { name: "위 내용과 이용약관 제7조의3, 환불 정책의 프리미엄 풀이 항목에 동의해요" }));
+      fireEvent.click(screen.getByRole("button", { name: "7,900원 결제하기" }));
+    }
+
+    it("asks before a second one: open the one held, back where the buyer came from", async () => {
+      stubFetch(MATCH, { orderName: "스타로그 프리미엄 궁합", amount: 7900, held: 1 });
+      const navigate = vi.fn();
+      await payForMatch(navigate);
+      const dialog = (await screen.findByRole("heading", { name: "이미 안 연 구매가 있어요" })).closest("dialog")!;
+      expect(dialog.hasAttribute("open")).toBe(true);
+      expect(dialog.textContent).toContain("그걸로 열거나 하나 더 살 수 있어요.");
+      expect(navigate).not.toHaveBeenCalled();
+      fireEvent.click(within(dialog).getByRole("button", { name: "그걸로 열기" }));
+      expect(navigate).toHaveBeenCalledWith("/premium/match/preview");
+    });
+
+    it("buys another when asked to, with the order already made (two 궁합 for two people)", async () => {
+      stubFetch(MATCH, { orderName: "스타로그 프리미엄 궁합", amount: 7900, held: 1 });
+      const navigate = vi.fn();
+      await payForMatch(navigate);
+      const dialog = (await screen.findByRole("heading", { name: "이미 안 연 구매가 있어요" })).closest("dialog")!;
+      fireEvent.click(within(dialog).getByRole("button", { name: "하나 더 결제하기" }));
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith(SUCCESS));
+      expect(calls.filter((c) => c.url === "/api/pay/orders")).toHaveLength(1);
+    });
+
+    it("closes the dialog before Toss opens its payment window, which would sit under a modal <dialog>", async () => {
+      stubFetch(Response.json({ productId: "match", name: "프리미엄 궁합", amount: 7900, customerKey: "c_x", provider: "toss", clientKey: "test_gck_x" }), {
+        orderName: "스타로그 프리미엄 궁합", amount: 7900, held: 1,
+      });
+      let dialogOpen: boolean | null = null;
+      const widgets = {
+        setAmount: async () => {},
+        renderPaymentMethods: async () => {},
+        renderAgreement: async () => {},
+        requestPayment: vi.fn(async () => {
+          dialogOpen = document.querySelector("dialog")!.hasAttribute("open");
+        }),
+      };
+      vi.stubGlobal("TossPayments", () => ({ widgets: () => widgets }));
+      render(<CheckoutView productId="match" returnTo="/premium/match/preview" navigate={vi.fn()} />);
+      await screen.findByText("7,900원");
+      fireEvent.click(screen.getByRole("checkbox", { name: "위 내용과 이용약관 제7조의3, 환불 정책의 프리미엄 풀이 항목에 동의해요" }));
+      const pay = screen.getByRole("button", { name: "7,900원 결제하기" }) as HTMLButtonElement;
+      await waitFor(() => expect(pay.disabled).toBe(false));
+      fireEvent.click(pay);
+      const dialog = (await screen.findByRole("heading", { name: "이미 안 연 구매가 있어요" })).closest("dialog")!;
+      fireEvent.click(within(dialog).getByRole("button", { name: "하나 더 결제하기" }));
+      await waitFor(() => expect(widgets.requestPayment).toHaveBeenCalledTimes(1));
+      expect(dialogOpen).toBe(false);
+    });
+
+    it("goes straight on without one held", async () => {
+      stubFetch(MATCH, { orderName: "스타로그 프리미엄 궁합", amount: 7900, held: 0 });
+      const navigate = vi.fn();
+      await payForMatch(navigate);
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith(SUCCESS));
+      expect(screen.getByText("이미 안 연 구매가 있어요").closest("dialog")!.hasAttribute("open")).toBe(false);
+    });
   });
 
   it("explains a product that cannot be bought", async () => {

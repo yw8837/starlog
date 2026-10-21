@@ -135,6 +135,24 @@
   text-align: center;
 }
 
+/* G3: the ask before a second purchase of a premium product held already (in a Modal). */
+.confirm {
+  display: grid;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.confirmTitle {
+  padding-right: 40px;
+  font-size: var(--fs-h1);
+  line-height: 1.4;
+}
+
+.confirmText {
+  color: var(--ink-sub);
+  line-height: 1.7;
+}
+
 .status {
   padding: 48px 0;
   color: var(--ink-sub);

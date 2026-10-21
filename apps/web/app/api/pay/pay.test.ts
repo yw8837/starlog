@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setTestDb } from "@/lib/db";
+import { reserveUnlock } from "@/lib/pay/ledger";
+import { payKeyMode } from "@/lib/pay/mode";
 import { mockToss } from "@/lib/pay/tossMock";
 import { TossError } from "@/lib/pay/tossTypes";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
@@ -89,6 +91,61 @@ describe("checkout and orders", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toMatchObject({ amount: 7900, orderName: "스타로그 프리미엄 궁합" });
     expect(await (await b.send(checkout, "/api/pay/checkout?product=newyear-2027")).json()).toMatchObject({ productId: "newyear-2027", amount: 14900 });
+  });
+});
+
+describe("a premium purchase held already (G3)", () => {
+  it("tells the order the buyer holds that product unopened or being opened, and still creates it: two 궁합 for two people stay possible", async () => {
+    vi.setSystemTime(Date.parse("2026-10-20T12:00:00+09:00"));
+    vi.stubEnv("STARLOG_PREMIUM", "on");
+    const db = useTestDb();
+    const b = await loggedIn();
+    const match = async () => {
+      const res = await order(b, { productId: "match", returnTo: "/premium/match/preview", ack: true });
+      expect(res.status).toBe(200);
+      return (await res.json()) as { orderId: string; amount: number; held: number };
+    };
+    expect(await match()).toMatchObject({ amount: 7900, held: 0 });
+    await buy(b, "match");
+    const again = await match();
+    expect(again).toMatchObject({ amount: 7900, held: 1 });
+    expect(await db.prepare("SELECT status FROM orders WHERE id = ?").bind(again.orderId).first()).toEqual({ status: "created" });
+    // Being opened counts too; another premium product does not.
+    const user = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!;
+    expect((await reserveUnlock(db, { userId: user.id, productId: "match", currency: "paid", now: Date.now(), payMode: payKeyMode(), earmarked: true })).ok).toBe(true);
+    expect(await match()).toMatchObject({ held: 1 });
+    await buy(b, "match");
+    expect(await match()).toMatchObject({ held: 2 });
+    const res = await order(b, { productId: "newyear-2027", returnTo: "/premium/newyear-2027/preview", ack: true });
+    expect(await res.json()).toMatchObject({ amount: 14900, held: 0 });
+  });
+
+  it("still answers the order when what the buyer holds cannot be read: `held` is a hint, never a gate", async () => {
+    vi.setSystemTime(Date.parse("2026-10-20T12:00:00+09:00"));
+    vi.stubEnv("STARLOG_PREMIUM", "on");
+    const db = useTestDb();
+    const b = await loggedIn();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const prepare = db.prepare.bind(db);
+    vi.spyOn(db, "prepare").mockImplementation((sql: string) => {
+      if (sql.includes("FROM unlocks")) throw new Error("D1_ERROR: unlocks unreadable");
+      return prepare(sql);
+    });
+    const res = await order(b, { productId: "match", returnTo: "/premium/match/preview", ack: true });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({ amount: 7900 });
+    expect(body).not.toHaveProperty("held");
+    expect(error.mock.calls.map(([line]) => JSON.parse(String(line)))).toContainEqual({ evt: "pay.held_failed", error: "Error" });
+  });
+
+  it("leaves a standard reading's order as it was", async () => {
+    useTestDb();
+    const b = await loggedIn();
+    await buy(b, "tarot");
+    const body = await (await order(b, { productId: "tarot", returnTo: "/tarot/result", ack: true })).json();
+    expect(body).toMatchObject({ amount: 2900 });
+    expect(body).not.toHaveProperty("held");
   });
 });
 

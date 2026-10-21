@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { Modal } from "@/components/ui/Modal";
 import { loginHref } from "@/lib/account/client";
 import { SITE, sajuTopicsMode, won } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
@@ -31,6 +32,8 @@ interface OrderInfo {
   amount: number;
   successUrl: string;
   failUrl: string;
+  /** G3, premium only: purchases of this product the buyer holds unopened or is opening */
+  held?: number;
 }
 
 const scopeLines = (productId: string): string[] => {
@@ -69,6 +72,8 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
   const [agreed, setAgreed] = useState(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  /** G3: an order made while the buyer holds this premium product already, waiting for 하나 더 결제하기 */
+  const [again, setAgain] = useState<OrderInfo | null>(null);
   /** 다시 시도 after the details failed to load: loads them again. */
   const [attempt, setAttempt] = useState(0);
   const widgets = useRef<TossWidgets | null>(null);
@@ -128,7 +133,17 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
       setError({ title: "가격이 바뀌었어요", body: "화면을 새로 고친 뒤 다시 확인해 주세요.", action: "retry" });
       return;
     }
-    if (info.provider === "mock") {
+    // G3: ask, never refuse: a second 프리미엄 궁합 can be for someone else.
+    if ((order.held ?? 0) > 0) {
+      setBusy(false);
+      setAgain(order);
+      return;
+    }
+    await requestPayment(info, order);
+  };
+
+  const requestPayment = async (checkout: CheckoutInfo, order: OrderInfo) => {
+    if (checkout.provider === "mock") {
       navigate(`${order.successUrl}?${new URLSearchParams({ paymentType: "NORMAL", orderId: order.orderId, paymentKey: `mock_${order.orderId}`, amount: String(order.amount) })}`);
       return;
     }
@@ -215,6 +230,32 @@ export function CheckoutView({ productId, returnTo, navigate = (url) => window.l
               </Button>
             ) : null}
           </div>
+          <Modal open={again !== null} onClose={() => setAgain(null)} labelledBy="held-title">
+            <div className={s.confirm}>
+              <h2 id="held-title" className={s.confirmTitle}>
+                이미 안 연 구매가 있어요
+              </h2>
+              <p className={s.confirmText}>그걸로 열거나 하나 더 살 수 있어요.</p>
+              <Button block onClick={() => navigate(returnTo)}>
+                그걸로 열기
+              </Button>
+              <Button
+                variant="secondary"
+                block
+                onClick={() => {
+                  // Closed now, not on the next render: Toss's payment window would open under a modal <dialog>.
+                  document.getElementById("held-title")?.closest("dialog")?.close();
+                  const order = again;
+                  setAgain(null);
+                  if (!order) return;
+                  setBusy(true);
+                  void requestPayment(info, order);
+                }}
+              >
+                하나 더 결제하기
+              </Button>
+            </div>
+          </Modal>
         </>
       ) : error ? (
         <div role="alert" className={s.panel}>
