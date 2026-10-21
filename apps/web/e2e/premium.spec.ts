@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { pickCard, tableCards } from "./cards";
 import { fakeBrowserClock, ownerPass } from "./opening";
 
 /**
@@ -28,38 +29,11 @@ async function settleAnimations(page: Page) {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity));
 }
 
-/** Clicks the nth card of the fan where it shows (cards overlap), as tarot-flow.spec.ts does. */
-async function pickFanCard(page: Page, n: number) {
-  const point = await page.evaluate((index) => {
-    const el = document.querySelectorAll("[data-fan-index]")[index];
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    for (let y = r.top + 6; y < r.bottom; y += 6)
-      for (let x = r.left + 2; x < r.right; x += 3) if (document.elementFromPoint(x, y)?.closest("[data-fan-index]") === el) return { x, y };
-    return null;
-  }, n);
-  expect(point).not.toBeNull();
-  await page.mouse.click(point!.x, point!.y);
-}
-
-/** Picks `n` cards from the fan, the highest index first, so a picked card leaving the fan moves none still to pick. */
+/** Picks `n` cards from the table (each click finds a card whose middle is on top). */
 async function pickCards(page: Page, n: number) {
-  await expect(page.locator("[data-fan-index]").first()).toBeVisible({ timeout: NAV });
+  await expect(tableCards(page).first()).toBeVisible({ timeout: NAV });
   await settleAnimations(page);
-  if (n <= 5) {
-    const count = await page.locator("[data-fan-index]").count();
-    const step = Math.floor(count / n);
-    expect(step).toBeGreaterThan(0);
-    for (let i = n - 1; i >= 0; i--) await pickFanCard(page, i * step);
-  } else {
-    // Ten picks on a phone's fan of 21 overlapping cards leave too little of each card to click by point (six of ten
-    // landed, 2026-10-20), so press the cards' own buttons; a picked card leaves the group, so the first is always new.
-    const cards = page.getByRole("group", { name: /장 고르기/ }).getByRole("button", { name: /^카드 \d+$/ });
-    for (let i = 0; i < n; i++) {
-      await cards.first().evaluate((el) => (el as HTMLElement).click());
-      await settleAnimations(page);
-    }
-  }
+  for (let i = 0; i < n; i++) await pickCard(page);
   await expect(page.getByText("모두 골랐어요")).toBeVisible();
   await page.getByRole("button", { name: "결과 보기" }).click();
 }

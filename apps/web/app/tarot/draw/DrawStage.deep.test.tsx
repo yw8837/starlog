@@ -17,7 +17,8 @@ const dealt = (templateId: "deep-tarot" | "self-flow") => ({
   drawToken: "signed.draw.token",
 });
 
-const fanCards = () => screen.getAllByRole("button").filter((b) => b.hasAttribute("data-fan-index"));
+/** The face-down cards left on the table (a picked card leaves it for its slot). */
+const tableCards = () => screen.getAllByRole("button", { name: /^카드 \d+$/ });
 const stored = () => JSON.parse(sessionStorage.getItem(FLOW_KEY) ?? "{}");
 
 function stub(visible: boolean) {
@@ -43,7 +44,7 @@ afterEach(() => {
 });
 
 async function pickAllAndReveal(n: number) {
-  for (let i = 0; i < n; i++) fireEvent.click(fanCards()[i]!);
+  for (let i = 0; i < n; i++) fireEvent.click(tableCards()[i]!);
   await act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "결과 보기" }));
   });

@@ -61,7 +61,7 @@
 }
 
 /*
- * More than five positions: two rows of small slots (10 → 5+5, 7 → 4+3), so the fan keeps its place on a
+ * More than five positions: two rows of small slots (10 → 5+5, 7 → 4+3), so the table keeps its place on a
  * 360px screen (about 59px per card in five columns). Position names wrap between words at 13px.
  */
 .grid {
@@ -85,7 +85,7 @@
   min-height: 2.5em;
 }
 
-/* Fan, shuffle and reveal share the space between the slots and the CTA, centred. */
+/* Table, shuffle and reveal share the space between the slots and the CTA, centred. */
 .stage {
   display: flex;
   flex: 1;
@@ -101,27 +101,11 @@
 }
 
 /*
- * The shuffle and the fan (with 다시 섞기 in its hollow) sit in the same wrapper: a plain block,
- * not a direct child of .stage (whose width: 100% would stop a wide fan spreading into the
- * gutters on phones), so the shuffled deck and the fan's middle card share one box.
+ * The shuffle sits in a plain block, not a direct child of .stage (whose width: 100% would stop its
+ * wide box spreading into the gutters on phones).
  */
 .arc {
   position: relative;
-}
-
-/*
- * Where the arc's cards meet: the fan seems to open out from behind this button. The secondary
- * button is transparent, so a night-coloured pill keeps its label clear of the card tips behind it.
- */
-.reshuffle {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  z-index: 1;
-  border-radius: 22px;
-  background: rgba(13, 10, 38, 0.88);
-  box-shadow: 0 6px 18px rgba(5, 3, 15, 0.5);
-  transform: translateX(-50%);
 }
 
 .cta {
@@ -134,7 +118,7 @@
 
 /*
  * Picking: room for the primary (52px) and the undo (44px) from the start, so nothing moves.
- * Reserved while shuffling too, so the fan opens exactly where the deck was.
+ * Reserved while shuffling too, so the table opens where the deck was.
  */
 .cta[data-phase="shuffle"],
 .cta[data-phase="pick"] {

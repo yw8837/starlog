@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { DEFAULT_REVERSAL_RATE, createDeck, getCard, type DeckState } from "@starlog/core";
-import { CardFan } from "@/components/tarot/CardFan";
+import { CardTable } from "@/components/tarot/CardTable";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
@@ -21,7 +21,7 @@ type NowOracleProps = {
 };
 
 const QUESTION_MAX = 40;
-/** The picked card stays raised in the fan for a moment before the spread gives way to it. */
+/** The picked card stays raised on the table for a moment before the table gives way to it. */
 const HOLD_MS = 450;
 /** The card is shown face down first, so the turn is seen; the page opens as it turns. */
 const TURN_MS = 250;
@@ -89,16 +89,6 @@ const Chevron = () => (
   </svg>
 );
 
-const ShuffleIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
-    <path d="M3 7h3.5c2 0 3.2 1 4.3 2.6l2.4 3.8C14.3 15 15.5 16 17.5 16H21" />
-    <path d="M3 16h3.5c1.3 0 2.3-.5 3.1-1.3" />
-    <path d="M13.4 8.3C14.2 7.5 15.2 7 16.5 7H21" />
-    <path d="m18 4 3 3-3 3" />
-    <path d="m18 13 3 3-3 3" />
-  </svg>
-);
-
 /** Corner flourish of the answer page, drawn for the top-left corner and mirrored for the others. */
 const Corner = ({ at }: { at: "tl" | "tr" | "bl" | "br" }) => (
   <svg className={s.corner} data-at={at} viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" aria-hidden="true" focusable="false">
@@ -119,7 +109,7 @@ const Emblem = () => (
 );
 
 /**
- * 지금의 한 장: think of one worry (typing it is optional), pick one card from a fan of 21, and the
+ * 지금의 한 장: think of one worry (typing it is optional), pick one of the 78 cards on the table, and the
  * card turns over to one line from the card DB, with why and one small thing to do. Everything
  * happens in the browser: a random deck per draw, no server, no quota.
  */
@@ -127,7 +117,7 @@ export function NowOracle({ instant = false }: NowOracleProps) {
   // The card design shown: the why points at its picture.
   const { front } = useDeckPrefs();
   const [question, setQuestion] = useState("");
-  // Shuffles asked for in this visit (한 번 더 뽑기 or 다시 섞기); focus follows them to 바로 펼치기.
+  // Draws again asked for in this visit (한 번 더 뽑기); focus follows them to 바로 펼치기.
   const [reshuffles, setReshuffles] = useState(0);
   const [deck, setDeck] = useState<DeckState | null>(null);
   const [phase, setPhase] = useState<Phase>(instant ? "pick" : "shuffle");
@@ -147,10 +137,10 @@ export function NowOracle({ instant = false }: NowOracleProps) {
     if (howtoSeen()) setHowtoOpen(false);
   }, []);
 
-  // After 다시 섞기 the button is gone while the deck shuffles; bring focus back once the fan is out.
+  // After 한 번 더 뽑기, focus waits on 바로 펼치기 while the deck shuffles; once the table is out, 다시 섞기 takes it.
   useEffect(() => {
     const lost = !document.activeElement || document.activeElement === document.body;
-    if (phase === "pick" && reshuffles > 0 && lost) reshuffleRef.current?.querySelector("button")?.focus();
+    if (phase === "pick" && reshuffles > 0 && lost) reshuffleRef.current?.querySelector<HTMLElement>("[data-reshuffle]")?.focus();
   }, [phase, reshuffles]);
 
   // Picked: hold the raised card a moment, show it face down, then turn it and open the page.
@@ -188,11 +178,6 @@ export function NowOracle({ instant = false }: NowOracleProps) {
     setTurned(false);
     setReshuffles((n) => n + 1);
     setPhase(instant ? "pick" : "shuffle");
-  };
-
-  const reshuffle = () => {
-    if (phase !== "pick" || picked.length > 0) return;
-    shuffleAgain();
   };
 
   const again = () => {
@@ -297,17 +282,9 @@ export function NowOracle({ instant = false }: NowOracleProps) {
                 <ShuffleStage onDone={() => setPhase("pick")} focusSkip={reshuffles > 0} riffles={SHUFFLE_RIFFLES} />
               </div>
             ) : deck ? (
-              <div className={s.arc}>
-                {/* Keyed by the deck, so every new draw deals out afresh. */}
-                <CardFan key={deck.seed} picked={picked} max={1} onPick={pick} />
-                {/* After the fan in the tab order; drawn over the fan's hollow. */}
-                {picked.length === 0 ? (
-                  <div ref={reshuffleRef} className={s.reshuffle}>
-                    <Button variant="secondary" size="md" onClick={reshuffle} trailing={<ShuffleIcon />}>
-                      다시 섞기
-                    </Button>
-                  </div>
-                ) : null}
+              <div ref={reshuffleRef}>
+                {/* Keyed by the deck, so every new draw deals out afresh. Its 다시 섞기 reshuffles this deck's cards. */}
+                <CardTable key={deck.seed} picked={picked} max={1} onPick={pick} instant={instant} />
               </div>
             ) : null}
           </div>

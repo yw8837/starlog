@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { filledSlots, pickCard, tableCards } from "./cards";
 import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
 
 /**
@@ -25,26 +26,11 @@ async function ownAddress(page: Page, info: TestInfo) {
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.1.${info.workerIndex}.${(info.repeatEachIndex * 50 + info.retry * 7 + Math.floor(Math.random() * 200)) % 250}` });
 }
 
-/** Waits until every finite CSS animation (e.g. the fan's deal-out) has finished. */
+/** Waits until every finite CSS animation and transition (e.g. the table's spread) has finished. */
 async function settleAnimations(page: Page) {
   await page.waitForFunction(() =>
     document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity),
   );
-}
-
-/** Fan cards overlap, so click each one on a point where it is the top-most element. */
-async function pickFanCard(page: Page, n: number) {
-  const point = await page.evaluate((index) => {
-    const el = document.querySelectorAll("[data-fan-index]")[index];
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    for (let y = r.top + 6; y < r.bottom; y += 6)
-      for (let x = r.left + 2; x < r.right; x += 3)
-        if (document.elementFromPoint(x, y)?.closest("[data-fan-index]") === el) return { x, y };
-    return null;
-  }, n);
-  expect(point, `fan card ${n} has a visible spot`).not.toBeNull();
-  await page.mouse.click(point!.x, point!.y);
 }
 
 /** Builds 나 · 재물운 · (typed 언제) and picks one situation chip and a note. */
@@ -72,12 +58,12 @@ async function buildMoneyQuestion(page: Page, info: TestInfo) {
   await expect(page).toHaveURL(/\/tarot\/draw$/, { timeout: NAV });
 }
 
-/** Picks three fan cards and returns the cards the server dealt for them. */
+/** Picks three cards from the table and returns the cards the server dealt for them. */
 async function drawThree(page: Page): Promise<Array<{ cardId: string; position: string }>> {
   await page.goto("/tarot/draw?instant=1");
-  await expect(page.locator("[data-fan-index]")).toHaveCount(21);
+  await expect(tableCards(page)).toHaveCount(78);
   await settleAnimations(page);
-  for (const n of [3, 10, 17]) await pickFanCard(page, n);
+  for (let i = 0; i < 3; i++) await pickCard(page);
   await expect(page.getByText("모두 골랐어요")).toBeVisible();
   const dealt = page.waitForResponse((r) => r.url().endsWith("/api/tarot/draw") && r.request().method() === "POST");
   await page.getByRole("button", { name: "결과 보기" }).click();
@@ -218,7 +204,7 @@ test("a typed 무엇 with a named person reads with the 누구 chip's spread", a
   await expect(page.getByRole("region", { name: "이어지는 풀이" })).toBeVisible({ timeout: 30_000 });
 });
 
-test("draw: a cards-only shuffle opens the fan; 다시 섞기 replays it; reduced motion still shows a short one", async ({ page }) => {
+test("draw: a cards-only shuffle opens the table of 78; 다시 섞기 shuffles on the table and keeps the picks; reduced motion still shows a short one", async ({ page }) => {
   await page.addInitScript(() =>
     window.sessionStorage.setItem("starlog.tarot-flow", JSON.stringify({ who: "me", topicId: "money", when: "week", conditions: {}, note: "" })),
   );
@@ -226,13 +212,21 @@ test("draw: a cards-only shuffle opens the fan; 다시 섞기 replays it; reduce
   await expect(page.getByText("카드를 섞고 있어요")).toBeVisible();
   // No character on the draw screen, only the deck.
   await expect(page.getByRole("img", { name: /고양이/ })).toHaveCount(0);
-  await expect(page.locator("[data-fan-index]")).toHaveCount(21, { timeout: 6_000 });
+  await expect(tableCards(page)).toHaveCount(78, { timeout: 6_000 });
   await expect(page.getByRole("img", { name: /고양이/ })).toHaveCount(0);
+  await settleAnimations(page);
 
-  await page.getByRole("button", { name: "다시 섞기" }).click();
-  await expect(page.getByText("카드를 섞고 있어요")).toBeVisible();
-  await page.getByRole("button", { name: "바로 펼치기" }).click();
-  await expect(page.locator("[data-fan-index]")).toHaveCount(21);
+  // A pick flies to its slot; 다시 섞기 then shuffles only the 77 left, on the table, with input held meanwhile.
+  await pickCard(page);
+  await expect(filledSlots(page)).toHaveCount(1);
+  const reshuffle = page.getByRole("button", { name: "다시 섞기" });
+  await reshuffle.click();
+  await expect(reshuffle).toHaveAttribute("aria-disabled", "true");
+  await expect(page.getByText("카드를 섞고 있어요")).toHaveCount(0);
+  await expect(reshuffle).toHaveAttribute("aria-disabled", "false", { timeout: 10_000 });
+  await expect(page.getByRole("status").filter({ hasText: "카드를 다시 섞었어요. 2장 더 골라 주세요" })).toBeVisible();
+  await expect(filledSlots(page)).toHaveCount(1);
+  await expect(tableCards(page)).toHaveCount(77);
 
   // Reduced motion: not skipped. The stacked deck is shown for a moment (opacity only), then the fan.
   // It lasts only ~0.8s, so record the draw phases (data-phase) as they happen instead of racing it.
@@ -246,11 +240,45 @@ test("draw: a cards-only shuffle opens the fan; 다시 섞기 replays it; reduce
   });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
-  await expect(page.locator("[data-fan-index]")).toHaveCount(21, { timeout: 5_000 });
+  await expect(tableCards(page)).toHaveCount(78, { timeout: 5_000 });
   const phases = await page.evaluate(() => (window as unknown as { __drawPhases: Array<{ phase: string; at: number }> }).__drawPhases);
   expect(phases.map((p) => p.phase)).toEqual(["shuffle", "pick"]);
   // The gentle version runs its 0.8s after hydration, so the shuffle phase lasts at least that long.
   expect(phases[1]!.at - phases[0]!.at).toBeGreaterThanOrEqual(700);
+});
+
+test("draw: the table takes the keyboard on its ring, and 돌리기 is remembered on this device", async ({ page }) => {
+  await page.addInitScript(() =>
+    window.sessionStorage.setItem("starlog.tarot-flow", JSON.stringify({ savedAt: Date.now(), who: "me", topicId: "money", when: "week", conditions: {}, note: "" })),
+  );
+  await page.goto("/tarot/draw?instant=1");
+  await expect(tableCards(page)).toHaveCount(78);
+  const modes = page.getByRole("group", { name: "카드 펼치는 방식" });
+  await expect(modes.getByRole("button", { name: "흩뿌리기" })).toHaveAttribute("aria-pressed", "true");
+  await modes.getByRole("button", { name: "돌리기" }).click();
+  await expect(modes.getByRole("button", { name: "돌리기" })).toHaveAttribute("aria-pressed", "true");
+  await settleAnimations(page);
+
+  // One tab stop: Tab from the reshuffle button lands on the card on top of the ring; arrows walk it, Enter picks.
+  await page.getByRole("button", { name: "다시 섞기" }).focus();
+  await page.keyboard.press("Tab");
+  const first = await page.evaluate(() => (document.activeElement as HTMLElement).dataset.card ?? null);
+  expect(first, "Tab lands on a table card").not.toBeNull();
+  await page.keyboard.press("ArrowRight");
+  const second = await page.evaluate(() => (document.activeElement as HTMLElement).dataset.card ?? null);
+  expect(second).not.toBeNull();
+  expect(second).not.toBe(first);
+  await page.keyboard.press("Enter");
+  await expect(filledSlots(page)).toHaveCount(1);
+  await expect(page.locator(`[data-card="${second}"]`)).toBeHidden();
+  // Focus stays on the table, on the next card.
+  expect(await page.evaluate(() => (document.activeElement as HTMLElement).dataset.card ?? null)).not.toBeNull();
+
+  await page.reload();
+  await expect(tableCards(page)).toHaveCount(78);
+  await expect(modes.getByRole("button", { name: "돌리기" })).toHaveAttribute("aria-pressed", "true");
+  // No sideways scroll at this width in either mode.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 });
 
 test("the demo reading: one scroll, written follow-up answers, rating, no share, and invite", async ({ page }, info) => {
@@ -292,11 +320,11 @@ test("the demo reading: one scroll, written follow-up answers, rating, no share,
 test.describe("before hydration (no JavaScript)", () => {
   test.use({ javaScriptEnabled: false });
 
-  test("the draw page holds the question, slots and fan until the saved flow is read", async ({ page }) => {
+  test("the draw page holds the question, slots and table until the saved flow is read", async ({ page }) => {
     await page.goto("/tarot/draw?instant=1");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("");
     await expect(page.locator("main")).not.toContainText("나의 마음", { useInnerText: true });
-    await expect(page.locator("[data-fan-index]")).toHaveCount(0);
+    await expect(page.locator("[data-card]")).toHaveCount(0);
   });
 });
 

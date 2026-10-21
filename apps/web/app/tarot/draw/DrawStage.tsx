@@ -35,7 +35,7 @@ export function DrawStage({ instant }: DrawStageProps) {
       <DeckDraw
         instant={instant}
         templateId={spread === "deep" ? "deep-tarot" : (summary?.template ?? "self-flow")}
-        // The slots and the fan wait (the deck already shuffles) until the spread is known: no pick before it.
+        // The slots and the table wait (the deck already shuffles) until the spread is known: no pick before it.
         heading={summary && spread ? summary.question : null}
         step={{ step: 2, label: "카드 뽑기", backHref: "/tarot/new/situation", backLabel: "상황 고르기로" }}
         onDealt={(draw) => setFlow((prev) => ({ ...prev, draw }))}

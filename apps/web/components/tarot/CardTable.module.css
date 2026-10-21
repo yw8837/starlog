@@ -1,0 +1,177 @@
+/* The two ways to lay the cards (left) and 다시 섞기 (right), over the table. */
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.modes {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid rgba(185, 176, 224, 0.3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mode {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-sub);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Gold ring and text, not a gold fill: the screen keeps one gold primary (결과 보기). */
+.mode[aria-pressed="true"] {
+  background: rgba(243, 220, 161, 0.16);
+  color: var(--gold);
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.mode:disabled {
+  cursor: default;
+}
+
+.mode:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/*
+ * The table: cards are placed by transform from its top centre (CardTable.tsx). Vertical scrolling and
+ * pinch-zoom stay with the browser; a sideways drag is the ring's.
+ */
+.stage {
+  position: relative;
+  isolation: isolate;
+  height: 280px;
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(185, 176, 224, 0.15);
+  border-radius: 18px;
+  background:
+    radial-gradient(90% 70% at 50% 100%, rgba(125, 100, 225, 0.28), transparent 70%),
+    rgba(255, 255, 255, 0.02);
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (min-width: 480px) {
+  .stage {
+    height: 320px;
+  }
+}
+
+/* Shuffling: no input until the cards are down. */
+.stage[data-busy] {
+  pointer-events: none;
+}
+
+.card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--cw, 56px);
+  aspect-ratio: 600 / 1040;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 6px;
+  background: #1b1650;
+  box-shadow:
+    0 0 0 1px rgba(243, 220, 161, 0.55),
+    0 6px 14px rgba(3, 1, 15, 0.55);
+  cursor: pointer;
+  /* Mode switch, the ring closing a gap: 1.4 s. The shuffle sets its own per step. */
+  transition:
+    transform 1.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.2s;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* Dragging (and jumps such as a resize): the cards follow at once. */
+.stage[data-drag] .card {
+  transition: filter 0.15s;
+}
+
+/* An arrow key turns the ring quickly. */
+.stage[data-turn] .card {
+  transition:
+    transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.2s;
+}
+
+/* The card under a finger that has just come down. */
+.card[data-lift] {
+  filter: brightness(1.25) drop-shadow(0 0 10px rgba(243, 220, 161, 0.55));
+}
+
+/* Focus brings the card over the others so its ring shows. */
+.card:focus-visible {
+  z-index: 6000 !important;
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+/* A pick that stays on the table (지금의 한 장). */
+.chosen {
+  cursor: default;
+  filter: drop-shadow(0 0 12px rgba(243, 220, 161, 0.6));
+  box-shadow:
+    0 0 0 2px var(--gold),
+    0 10px 22px rgba(3, 1, 15, 0.6);
+}
+
+/* Every card picked: the rest stay opaque, so the overlapped backs never show through each other. */
+.dim {
+  filter: brightness(0.5) saturate(0.6);
+  cursor: default;
+}
+
+.hint {
+  position: absolute;
+  right: 0;
+  bottom: 12px;
+  left: 0;
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* A picked card on its way to its slot (appended to <body>, placed by CardTable.tsx). */
+.fly {
+  position: fixed;
+  z-index: 60;
+  border-radius: 6px;
+  background: #1b1650 center / cover no-repeat;
+  box-shadow:
+    0 0 0 1px rgba(243, 220, 161, 0.6),
+    0 10px 24px rgba(3, 1, 15, 0.6);
+  pointer-events: none;
+  transition: transform 850ms cubic-bezier(0.3, 0.7, 0.2, 1);
+  will-change: transform;
+}

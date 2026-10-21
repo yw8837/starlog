@@ -8,8 +8,9 @@ import { drawNow } from "@/lib/decision";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
 import { HOWTO_SEEN_KEY, NowOracle } from "./NowOracle";
 
-const fanCards = () => screen.getAllByRole("button").filter((b) => b.hasAttribute("data-fan-index"));
-const queryFanCards = () => screen.queryAllByRole("button").filter((b) => b.hasAttribute("data-fan-index"));
+/** The face-down cards on the table. */
+const tableCards = () => screen.getAllByRole("button", { name: /^카드 \d+$/ });
+const queryTableCards = () => screen.queryAllByRole("button", { name: /^카드 \d+$/ });
 const howtoToggle = () => screen.getByRole("button", { name: "사용법 보기" });
 const howtoSteps = () => within(screen.getByRole("region", { name: "지금의 한 장 사용법" })).queryAllByRole("listitem");
 
@@ -18,10 +19,10 @@ function settle() {
   for (let i = 0; i < 3; i++) act(() => vi.runAllTimers());
 }
 
-/** Picks the fan card in `slot` and returns the draw the page should show for it. */
+/** Picks the table card in `slot` and returns the draw the page should show for it. */
 function pickSlot(slot: number, seed: string) {
-  const card = fanCards()[slot]!;
-  const deckIndex = Number(card.dataset.fanIndex);
+  const card = tableCards()[slot]!;
+  const deckIndex = Number(card.dataset.card);
   fireEvent.click(card);
   settle();
   // The default card design is the Starlog deck: its why points at the Starlog picture.
@@ -53,15 +54,15 @@ afterEach(() => {
 });
 
 describe("지금의 한 장", () => {
-  it("shows the name, an optional question and a 21-card fan for one pick", () => {
+  it("shows the name, an optional question and all 78 cards on the table for one pick", () => {
     render(<NowOracle instant />);
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["지금의 한 장 무료 원카드 타로가 건네는 한 문장"]);
     expect(screen.getByText("무료 원카드 타로가 건네는 한 문장")).toBeTruthy();
     const input = screen.getByLabelText("고민 한 줄") as HTMLInputElement;
     expect(input.placeholder).toBe("예: 오늘 먼저 연락해도 될까?");
     expect(input.maxLength).toBe(40);
-    expect(fanCards()).toHaveLength(21);
-    expect(screen.getByRole("group", { name: "카드 21장 중 1장 고르기" })).toBeTruthy();
+    expect(tableCards()).toHaveLength(78);
+    expect(screen.getByRole("group", { name: "카드 78장 중 1장 고르기" })).toBeTruthy();
     // Nothing is revealed before a card is picked.
     expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
   });
@@ -96,8 +97,8 @@ describe("지금의 한 장", () => {
     expect(screen.queryByText(new RegExp(won(SITE.price.tarotStandardKrw)))).toBeNull();
     expect(screen.queryByText(/기본 타로 3장/)).toBeNull();
     expect(screen.getByRole("button", { name: "한 번 더 뽑기" })).toBeTruthy();
-    // The fan, the question field and the how-to are gone while the answer is shown.
-    expect(queryFanCards()).toHaveLength(0);
+    // The table, the question field and the how-to are gone while the answer is shown.
+    expect(queryTableCards()).toHaveLength(0);
     expect(screen.queryByLabelText("고민 한 줄")).toBeNull();
     expect(screen.queryByRole("region", { name: "지금의 한 장 사용법" })).toBeNull();
   });
@@ -117,32 +118,35 @@ describe("지금의 한 장", () => {
     fireEvent.click(screen.getByRole("button", { name: "한 번 더 뽑기" }));
     expect(howtoToggle().getAttribute("aria-expanded")).toBe("false");
     expect((screen.getByLabelText("고민 한 줄") as HTMLInputElement).value).toBe("이직 준비를 시작할까?");
-    expect(fanCards()).toHaveLength(21);
-    expect(fanCards().every((b) => b.getAttribute("aria-pressed") === "false")).toBe(true);
+    expect(tableCards()).toHaveLength(78);
+    expect(tableCards().every((b) => b.getAttribute("aria-pressed") === "false")).toBe(true);
 
     const second = pickSlot(3, "now-seed-second");
     expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(second.answer);
   });
 
-  it("다시 섞기 deals a new deck before a card is picked", () => {
+  it("다시 섞기 shuffles the cards on the table again; the pick still reads this visit's deck", () => {
     render(<NowOracle instant />);
     fireEvent.click(screen.getByRole("button", { name: "다시 섞기" }));
-    const fromSecondDeck = pickSlot(5, "now-seed-second");
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(fromSecondDeck.answer);
+    expect(tableCards()).toHaveLength(78);
+    const expected = pickSlot(5, "now-seed-first");
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(expected.answer);
   });
 });
 
 describe("지금의 한 장 shuffle", () => {
-  it("shuffles for one riffle (1.2s), then deals the fan, and shuffles again for the next draw", () => {
+  it("shuffles for one riffle (1.2s), then spreads the table, and shuffles again for the next draw", () => {
     reducedMotion(false);
     render(<NowOracle />);
     expect(screen.getByText("카드를 섞고 있어요")).toBeTruthy();
     act(() => vi.advanceTimersByTime(1100));
-    expect(queryFanCards()).toHaveLength(0);
+    expect(queryTableCards()).toHaveLength(0);
     act(() => vi.advanceTimersByTime(150));
-    expect(fanCards()).toHaveLength(21);
+    expect(tableCards()).toHaveLength(78);
 
-    fireEvent.click(fanCards()[2]!);
+    fireEvent.click(tableCards()[2]!);
+    // The picked card stays on the table, raised, until the page turns it.
+    expect(screen.getByRole("button", { name: "1번째로 고른 카드" })).toBeTruthy();
     // The raised card is held, then turns (each pause is scheduled once the one before has run).
     act(() => vi.advanceTimersByTime(500));
     act(() => vi.advanceTimersByTime(300));
@@ -151,14 +155,16 @@ describe("지금의 한 장 shuffle", () => {
     // The new shuffle was asked for, so focus waits on 바로 펼치기.
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "바로 펼치기" }));
     act(() => vi.advanceTimersByTime(1250));
-    expect(fanCards()).toHaveLength(21);
+    expect(tableCards()).toHaveLength(78);
+    // Once the table is out, focus moves from the shuffle's 바로 펼치기 to 다시 섞기.
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "다시 섞기" }));
   });
 
   it("under reduced motion the deck only pulses for 0.8s", () => {
     reducedMotion(true);
     render(<NowOracle />);
     act(() => vi.advanceTimersByTime(850));
-    expect(fanCards()).toHaveLength(21);
+    expect(tableCards()).toHaveLength(78);
   });
 });
 

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
+import { pickCard, tableCards } from "./cards";
 
 type Side = { answers: string[]; why: string; tip: string };
 const DB: Record<string, Record<"upright" | "reversed", Side>> = JSON.parse(
@@ -14,32 +15,17 @@ const SIZES = [
   { width: 1280, height: 800 },
 ];
 
-/** Waits until every finite CSS animation (the fan's deal-out, the page opening) has finished. */
+/** Waits until every finite CSS animation and transition (the table's spread, the page opening) has finished. */
 async function settleAnimations(page: Page) {
   await page.waitForFunction(() =>
     document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity),
   );
 }
 
-/** Fan cards overlap, so click the card on a point where it is the top-most element. */
-async function pickFanCard(page: Page, n: number) {
-  const point = await page.evaluate((index) => {
-    const el = document.querySelectorAll("[data-fan-index]")[index];
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    for (let y = r.top + 6; y < r.bottom; y += 6)
-      for (let x = r.left + 2; x < r.right; x += 3)
-        if (document.elementFromPoint(x, y)?.closest("[data-fan-index]") === el) return { x, y };
-    return null;
-  }, n);
-  expect(point, `fan card ${n} has a visible spot`).not.toBeNull();
-  await page.mouse.click(point!.x, point!.y);
-}
-
-/** Skips the shuffle and waits for the 21-card fan to be dealt. */
-async function openFan(page: Page) {
+/** Skips the shuffle and waits for the 78 cards to be spread on the table. */
+async function openTable(page: Page) {
   await page.getByRole("button", { name: "바로 펼치기" }).click();
-  await expect(page.locator("[data-fan-index]")).toHaveCount(21);
+  await expect(tableCards(page)).toHaveCount(78);
   await settleAnimations(page);
 }
 
@@ -64,11 +50,11 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   await expect(howto.getByRole("listitem")).toHaveCount(0);
   await expect(toggle).toBeFocused();
 
-  // The shuffle is one riffle: the fan is out well within 2 seconds without skipping it.
+  // The shuffle is one riffle: the table is out well within 2 seconds without skipping it.
   await page.getByLabel("고민 한 줄").fill("오늘 먼저 연락해도 될까?");
-  await expect(page.locator("[data-fan-index]")).toHaveCount(21, { timeout: 2500 });
+  await expect(tableCards(page)).toHaveCount(78, { timeout: 2500 });
   await settleAnimations(page);
-  await pickFanCard(page, 10);
+  await pickCard(page);
 
   const answer = page.locator("h2:not(#now-guide)");
   await expect(answer).toBeVisible();
@@ -97,11 +83,14 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   await expect(page.getByText("카드를 섞고 있어요")).toBeVisible();
   await expect(page.getByLabel("고민 한 줄")).toHaveValue("오늘 먼저 연락해도 될까?");
   await expect(page.getByRole("button", { name: "사용법 보기" })).toHaveAttribute("aria-expanded", "false");
-  await openFan(page);
-  // 다시 섞기 before picking deals a new deck.
-  await page.getByRole("button", { name: "다시 섞기" }).click();
-  await openFan(page);
-  await pickFanCard(page, 4);
+  await openTable(page);
+  // 다시 섞기 before picking shuffles the cards on the table again (input waits until they are down).
+  const reshuffle = page.getByRole("button", { name: "다시 섞기" });
+  await reshuffle.click();
+  await expect(reshuffle).toHaveAttribute("aria-disabled", "true");
+  await expect(reshuffle).toHaveAttribute("aria-disabled", "false", { timeout: 10_000 });
+  await settleAnimations(page);
+  await pickCard(page);
   await expect(page.locator("h2:not(#now-guide)")).toBeVisible();
 
   // A later visit keeps the steps folded.
@@ -118,9 +107,9 @@ test("지금의 한 장 screens at 375, 360 and 1280 wide @screens", async ({ pa
     await page.setViewportSize(size);
     await page.goto("/now");
     await page.getByLabel("고민 한 줄").fill("오늘 먼저 연락해도 될까?");
-    await openFan(page);
+    await openTable(page);
     await shot(page, `${tag}-01-pick`);
-    await pickFanCard(page, 10);
+    await pickCard(page);
     await expect(page.locator("h2:not(#now-guide)")).toBeVisible();
     await settleAnimations(page);
     await page.evaluate(() => window.scrollTo(0, 0));

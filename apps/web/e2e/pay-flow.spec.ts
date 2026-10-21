@@ -1,4 +1,5 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
+import { pickCard, tableCards } from "./cards";
 import { fakeBrowserClock, openingOn } from "./opening";
 
 /**
@@ -25,19 +26,6 @@ async function settleAnimations(page: Page) {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity));
 }
 
-async function pickFanCard(page: Page, n: number) {
-  const point = await page.evaluate((index) => {
-    const el = document.querySelectorAll("[data-fan-index]")[index];
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    for (let y = r.top + 6; y < r.bottom; y += 6)
-      for (let x = r.left + 2; x < r.right; x += 3) if (document.elementFromPoint(x, y)?.closest("[data-fan-index]") === el) return { x, y };
-    return null;
-  }, n);
-  expect(point).not.toBeNull();
-  await page.mouse.click(point!.x, point!.y);
-}
-
 /** 나 · 재물운 · 이번 주 → one situation chip → three cards → the result with its free teaser. */
 async function toResult(page: Page) {
   await page.goto("/tarot/new");
@@ -50,9 +38,9 @@ async function toResult(page: Page) {
   await page.getByRole("button", { name: "카드 뽑기" }).click();
   await expect(page).toHaveURL(/\/tarot\/draw$/, { timeout: NAV });
   await page.goto("/tarot/draw?instant=1");
-  await expect(page.locator("[data-fan-index]")).toHaveCount(21);
+  await expect(tableCards(page)).toHaveCount(78);
   await settleAnimations(page);
-  for (const n of [2, 9, 16]) await pickFanCard(page, n);
+  for (let i = 0; i < 3; i++) await pickCard(page);
   await expect(page.getByText("모두 골랐어요")).toBeVisible();
   await page.getByRole("button", { name: "결과 보기" }).click();
   await expect(page).toHaveURL(/\/tarot\/result/, { timeout: NAV });

@@ -205,7 +205,7 @@
   text-align: center;
 }
 
-/* Shuffle and fan share one box (as on the tarot draw screen), so the fan opens where the deck was. */
+/* Shuffle and table share one box (as on the tarot draw screen). */
 .stage {
   display: flex;
   flex-direction: column;
@@ -221,21 +221,6 @@
 
 .arc {
   position: relative;
-}
-
-/*
- * 다시 섞기 sits where the arc's cards meet, as on the tarot draw screen; a night-coloured pill keeps
- * its label clear of the card tips behind it.
- */
-.reshuffle {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  z-index: 1;
-  border-radius: 22px;
-  background: rgba(13, 10, 38, 0.88);
-  box-shadow: 0 6px 18px rgba(5, 3, 15, 0.5);
-  transform: translateX(-50%);
 }
 
 /* ---- how answers are made ---- */

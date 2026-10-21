@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, request as playwrightRequest, test, type Page, type TestInfo } from "@playwright/test";
+import { pickCard } from "./cards";
 import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
 
 /**
@@ -184,7 +185,7 @@ const SCREENS: Screen[] = [
     setup: (page) => seedFlow(page, FLOW),
     prepare: async (page) => {
       await settleAnimations(page);
-      for (const n of [3, 10, 17]) await pickFanCard(page, n);
+      for (let i = 0; i < 3; i++) await pickCard(page);
       await expect(page.getByText("모두 골랐어요")).toBeVisible();
     },
   },
@@ -322,26 +323,11 @@ const SCREENS: Screen[] = [
 /** Product meta copy that must never appear on a user screen (global constraints). */
 const META_COPY = ["무료로 다 보여드려요", "예시예요", "같은 품질"];
 
-/** Waits until every finite CSS animation (e.g. the fan's deal-out) has finished. */
+/** Waits until every finite CSS animation and transition (e.g. the table's spread) has finished. */
 async function settleAnimations(page: Page) {
   await page.waitForFunction(() =>
     document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity),
   );
-}
-
-/** Fan cards overlap, so click each one on a point where it is the top-most element. */
-async function pickFanCard(page: Page, n: number) {
-  const point = await page.evaluate((index) => {
-    const el = document.querySelectorAll("[data-fan-index]")[index];
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    for (let y = r.top + 6; y < r.bottom; y += 6)
-      for (let x = r.left + 2; x < r.right; x += 3)
-        if (document.elementFromPoint(x, y)?.closest("[data-fan-index]") === el) return { x, y };
-    return null;
-  }, n);
-  expect(point, `fan card ${n} has a visible spot`).not.toBeNull();
-  await page.mouse.click(point!.x, point!.y);
 }
 
 type Audit = {

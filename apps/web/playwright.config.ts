@@ -67,12 +67,12 @@ export default defineConfig({
     launchOptions: executablePath ? { executablePath } : {},
   },
   projects: [
-    { name: "mobile", testIgnore: /fan-touch/, use: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2 } },
-    { name: "desktop", testIgnore: /fan-touch/, use: { viewport: { width: 1280, height: 800 } } },
+    { name: "mobile", testIgnore: /draw-touch/, use: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2 } },
+    { name: "desktop", testIgnore: /draw-touch/, use: { viewport: { width: 1280, height: 800 } } },
     // Narrow Android width: only the screen sweep (e2e/screens.spec.ts).
     { name: "narrow", testMatch: /screens\.spec/, use: { viewport: { width: 360, height: 780 }, deviceScaleFactor: 2 } },
-    // Real touch input (pointerType "touch") for the card fan.
-    { name: "touch", testMatch: /fan-touch/, use: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
+    // Real touch input (pointerType "touch") for the draw table.
+    { name: "touch", testMatch: /draw-touch/, use: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true } },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

@@ -34,8 +34,9 @@ describe("DeckDraw", () => {
     const slots = screen.getByText("결과의 방향").closest("ol")!;
     expect(within(slots).getAllByRole("listitem")).toHaveLength(10);
     expect(slots.style.gridTemplateColumns).toBe("repeat(5, minmax(0, 1fr))");
-    const fan = screen.getAllByRole("button").filter((b) => b.hasAttribute("data-fan-index"));
-    for (const i of [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]) fireEvent.click(fan[i]!);
+    const table = screen.getAllByRole("button", { name: /^카드 \d+$/ });
+    expect(table).toHaveLength(78);
+    for (const i of [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]) fireEvent.click(table[i]!);
     expect(screen.getByRole("status").textContent).toBe("모두 골랐어요");
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "결과 보기" }));
