@@ -125,6 +125,8 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
     case "NOT_AVAILABLE":
       // A 오픈 기념 무료 reading takes no follow-ups: the server says why.
       if (context === "followup") return { title: "이 풀이에는 더 물어볼 수 없어요", body: error.message, action: null };
+      // L-1: a purchase whose reading kept failing opens no more; it was not used (lib/api/unlock.ts CAPPED_MESSAGE).
+      if (error.reason === "capped") return { title: context === "gift" ? "이 가입 선물로는 더 열 수 없어요" : "이 결제로는 더 열 수 없어요", body: error.message, action: null };
       return { title: "지금은 열 수 없는 상품이에요", action: "home" };
     case "PAY_FAILED":
       return { title: "결제를 마치지 못했어요", body: error.message || "청구된 금액은 없어요.", action: "retry" };

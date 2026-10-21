@@ -16,7 +16,7 @@ interface OrderItem {
   method: string | null;
   refundable: boolean;
   opened: boolean;
-  /** used up before its reading was finished (left while written a fourth time, or past the restore cap: L-1) */
+  /** used up before its reading was finished (left while written a fourth time) */
   unfinished?: boolean;
 }
 

@@ -7,7 +7,9 @@ import { addCost, clientCount, resetSpendState, spentTodayKrw } from "@/lib/api/
 import { NDJSON } from "@/lib/api/stream";
 import { accountDb, setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
-import { RESERVATION_MS } from "@/lib/pay/ledger";
+import { MAX_BEGAN_RESTORES, RESERVATION_MS, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
+import { payKeyMode } from "@/lib/pay/mode";
+import { orderHistory } from "@/lib/pay/orders";
 import { mockToss } from "@/lib/pay/tossMock";
 import { listReadings } from "@/lib/readings/store";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
@@ -135,6 +137,41 @@ describe("opening a full reading with credit", () => {
     const res = await open(b, "paid");
     expect(res.status).toBe(402);
     expect(await res.json()).toMatchObject({ code: "NO_CREDIT" });
+  });
+
+  it("opens no more with a purchase the model began writing MAX_BEGAN_RESTORES times and never finished, before any generation; it stays unused and refundable (L-1)", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    const orderId = await buy(b, "tarot");
+    const { id: userId } = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!;
+    for (let i = 0; i < MAX_BEGAN_RESTORES; i++) {
+      const held = await reserveUnlock(db, { userId, productId: "tarot", currency: "paid", now: Date.now(), payMode: payKeyMode() });
+      if (!held.ok) throw new Error("not reserved");
+      expect(await releaseUnlock(db, { unlockId: held.unlockId, now: Date.now(), began: true })).toBe(true);
+    }
+    const generate = vi.spyOn(mockProvider, "generate");
+    const res = await open(b, "paid");
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "NOT_AVAILABLE", reason: "capped", message: "풀이가 여러 번 끝까지 나오지 않아 이 결제로는 더 열 수 없어요. 결제는 쓰이지 않았으니 문의해 주시면 기간과 상관없이 전액 환불해 드려요." });
+    expect(generate).not.toHaveBeenCalled();
+    expect(vi.mocked(console.warn).mock.calls.map(([line]) => JSON.parse(String(line)))).toContainEqual({ evt: "unlock.capped", productId: "tarot", lotId: `lot_${orderId}` });
+    expect((await me(b)).user?.unused).toMatchObject([{ productId: "tarot" }]);
+    expect(await orderHistory(db, userId)).toMatchObject([{ productId: "tarot", opened: false, unfinished: false, refundable: true }]);
+  });
+
+  it("says a signup gift that kept failing opens no more, in a gift's words: there is no payment to refund (L-1)", async () => {
+    const db = useTestDb();
+    const { b } = await loggedIn();
+    const { id: userId } = (await db.prepare("SELECT id FROM users").first<{ id: string }>())!;
+    for (let i = 0; i < MAX_BEGAN_RESTORES; i++) {
+      const held = await reserveUnlock(db, { userId, productId: "tarot", currency: "free", now: Date.now(), payMode: payKeyMode() });
+      if (!held.ok) throw new Error("not reserved");
+      expect(await releaseUnlock(db, { unlockId: held.unlockId, now: Date.now(), began: true })).toBe(true);
+    }
+    const res = await open(b, "free");
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "NOT_AVAILABLE", reason: "capped", message: "풀이가 여러 번 끝까지 나오지 않아 이 가입 선물로는 더 열 수 없어요. 문의해 주세요." });
+    expect((await me(b)).user?.gift).toMatchObject({ status: "unused" });
   });
 
   it("opens a tarot reading with the signup gift: saved and spent only then, no quota cookie, counted like a free reading", async () => {
