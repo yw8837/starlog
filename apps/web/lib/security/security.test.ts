@@ -216,7 +216,10 @@ describe("next.config.ts", () => {
     const { TOSS_SDK_URL } = await import("@/lib/pay/tossSdk");
     const { TURNSTILE_SCRIPT_URL } = await import("@/lib/reading/turnstile");
     const { adsScriptSrc } = await import("@/lib/ads");
-    for (const url of [KAKAO_SDK.src, TOSS_SDK_URL, TURNSTILE_SCRIPT_URL, adsScriptSrc("ca-pub-0000000000000000")]) expect(scriptSrc).toContain(new URL(url).origin);
+    const { gaScriptSrc } = await import("@/lib/analytics");
+    for (const url of [KAKAO_SDK.src, TOSS_SDK_URL, TURNSTILE_SCRIPT_URL, adsScriptSrc("ca-pub-0000000000000000"), gaScriptSrc("G-TEST")]) expect(scriptSrc).toContain(new URL(url).origin);
+    // Cloudflare Web Analytics, which Cloudflare injects into every HTML page (host only: its path carries a version).
+    expect(scriptSrc).toContain("https://static.cloudflareinsights.com");
     expect(policy).toContain("object-src 'none'");
     expect(policy).toContain("base-uri 'self'");
   });
