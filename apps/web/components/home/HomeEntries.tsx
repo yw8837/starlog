@@ -20,7 +20,7 @@ export function HomeHero() {
       <h1 className={s.heroTitle}>
         <span className={s.heroLine}>연애도 일도 사람 사이도</span> <span className={s.heroLine}>고민 그대로 편하게 물어보세요</span>
       </h1>
-      <p className={s.heroSub}>타로는 타로로가, 사주는 사주주가 내 상황에 맞춰 읽어 드려요.</p>
+      <p className={s.heroSub}>타로는 고양이 타로로가, 사주는 토끼 사주주가 내 상황에 맞춰 읽어 드려요.</p>
     </div>
   );
 }

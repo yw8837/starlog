@@ -105,6 +105,13 @@ describe("service pages", () => {
     }
   });
 
+  it("keeps each guide's name and its dot on one line in the about cast (a no-break space before ·)", () => {
+    const { container } = render(<AboutPage />);
+    const names = [...container.querySelectorAll("p")].map((p) => p.textContent ?? "").filter((text) => text.includes("·"));
+    expect(names).toContain("타로로 · 고양이 점성술사");
+    expect(names).toContain("사주주 · 토끼 선생님");
+  });
+
   it("lists the four pages in the app host's sitemap", () => {
     const xml = sitemapXml("app");
     for (const info of Object.values(INFO_PAGES)) expect(xml).toContain(`<loc>${SITE.url}${info.path}</loc>`);
