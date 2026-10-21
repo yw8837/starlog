@@ -1,4 +1,5 @@
 import { SITE, won } from "./config";
+import { evidenceHighlights } from "./evidence";
 import { faqGroups } from "./faq";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, type GuideArticle } from "./guide";
 import { absoluteUrl } from "./hosts";
@@ -34,7 +35,12 @@ export function serviceFacts(site: Site = SITE): string[] {
       : []),
     // No 오픈 기념 무료 here: this file is cached for a year, and a dated offer would outlive its end (2026-10-31).
     `가격: 타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}이에요. 풀이는 건별로 결제하고, 결제 한 번에 풀이 하나가 열려요.`,
+    `깊게 보는 풀이: ${price.premium.map((product) => `${product.name} ${won(product.krw)}(${product.sub})`).join(", ")}이에요. 결제 한 번에 하나가 열려요.`,
     `결제하고 전체 풀이를 연 뒤에는 같은 풀이를 두고 이어서 물어보기를 ${site.reading.followUps}번 할 수 있어요.`,
+    // The /evidence page's four top numbers, word for word from content/evidence.json and the source files.
+    `검증 숫자(${INFO_PAGES.evidence.title}): ${evidenceHighlights().map(({ label, value }) => `${label}: ${value}`).join("; ")}.`,
+    // Operator facts from SITE.business only, never the postal address.
+    `운영: ${business.name}(대표 ${business.ceo}, 사업자등록번호 ${business.regNo}, 통신판매업 신고번호 ${business.mailOrderNo}).${business.email.trim() ? ` 문의 메일: ${business.email.trim()}` : ""}`,
     "하지 않는 것: 합격, 재회, 수익 같은 결과를 약속하지 않아요. 다른 사람의 마음을 사실처럼 말하지 않고, 병이나 수명, 사고를 점치지 않아요. 풀이는 재미와 자기 성찰을 위한 참고용이고, 의료·법률·투자처럼 중요한 결정은 전문가와 상의하도록 안내해요.",
   ];
 }
@@ -44,6 +50,7 @@ const articleLine = (article: GuideArticle) => link(article.title, `/guide/${art
 /** llms.txt: the summary, the facts, and links to every public page and guide article. */
 export function llmsTxt(site: Site = SITE): string {
   const pages = [
+    link(`${site.nameKo} 홈`, "/", "타로 보기, 사주 보기, 지금의 한 장, 오늘의 한 장으로 들어가는 첫 화면이에요."),
     link("타로 보기", "/tarot/new", "질문을 만들고 카드 3장을 뽑아 내 상황에 맞춘 타로 풀이를 봐요."),
     link("사주 보기", "/saju/new", "태어난 날과 시, 태어난 곳으로 만세력 명식을 세우고 풀이를 봐요."),
     link("지금의 한 장", "/now", "고민 하나에 카드 한 장으로 짧은 답을 듣는 무료 원카드 타로예요."),
@@ -54,6 +61,7 @@ export function llmsTxt(site: Site = SITE): string {
     link(INFO_PAGES.help.title, INFO_PAGES.help.path, "기능별 쓰는 법."),
     link(INFO_PAGES.faq.title, INFO_PAGES.faq.path, "무료 범위, 저장, 결제 전 많이 묻는 질문."),
     link("가격 안내", "/pricing", `풀이 가격, 깊게 보는 풀이(${site.price.premium.map((p) => p.name).join("·")}), 무료로 볼 수 있는 부분.`),
+    ...site.price.premium.map((product) => link(product.name, `/premium/${product.slug}`, `${product.sub}. ${product.name} ${won(product.krw)}이에요.`)),
   ];
   const guides = GUIDE_CATEGORIES.flatMap((category) => [
     "",

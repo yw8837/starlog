@@ -57,6 +57,19 @@ describe("llms.txt", () => {
     expect(facts).toContain("만세력");
   });
 
+  it("names the premium readings with price, line and page, links the app home, gives the operator and contact from SITE.business, and quotes the /evidence numbers (SEO P1-3)", async () => {
+    const { evidenceHighlights } = await import("./evidence");
+    for (const product of SITE.price.premium) {
+      expect(llms).toContain(`- [${product.name}](${SITE.url}/premium/${product.slug}): `);
+      expect(llms).toContain(`${product.name} ${won(product.krw)}`);
+      expect(llms).toContain(product.sub);
+    }
+    expect(llms).toContain(`(${SITE.url}/)`);
+    for (const value of [SITE.business.name, SITE.business.ceo, SITE.business.regNo, SITE.business.mailOrderNo, SITE.business.email]) expect(llms).toContain(value);
+    expect(llms).not.toContain(SITE.business.address);
+    for (const { value, label } of evidenceHighlights()) expect(llms).toContain(`${label}: ${value}`);
+  });
+
   it("llms-full.txt carries every article in full (blocks included), its 요약 and 한눈에 보기 first, and the FAQ", () => {
     for (const article of GUIDE_ARTICLES) {
       expect(llmsFull).toContain(`### ${article.title}`);
