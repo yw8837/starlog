@@ -63,6 +63,13 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL: BASE_URL,
+    // Every spec starts with 방문 통계 answered (거부): from 2026-10-30 the consent banner (components/seo/ConsentBanner.tsx)
+    // asks a browser with no choice, and it must not cover what the specs look at; gtag.js never loads either.
+    // e2e/analytics-consent.spec.ts starts without it.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: new URL(BASE_URL).origin, localStorage: [{ name: "starlog.analytics.consent", value: JSON.stringify({ choice: "denied", at: "2026-10-22T00:00:00.000Z" }) }] }],
+    },
     trace: "retain-on-failure",
     launchOptions: executablePath ? { executablePath } : {},
   },
