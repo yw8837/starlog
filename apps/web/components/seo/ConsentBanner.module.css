@@ -1,18 +1,19 @@
 /*
- * The consent banner: a small sheet (UnlockSheet's colours) fixed near the bottom, the column's width on phones and a
- * corner card on desktop. Non-blocking: the page behind it scrolls and works.
+ * The consent banner: a small sheet (UnlockSheet's colours), the column's width on phones and a corner card on desktop.
+ * Non-blocking: sticky at the end of <body>, so it stays in view near the bottom while the page scrolls behind it, and at
+ * the end of the page it takes its own room: nothing of the page is ever left under it.
  */
 .banner {
-  position: fixed;
-  right: var(--gutter);
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  left: var(--gutter);
+  --banner-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  position: sticky;
+  bottom: var(--banner-bottom);
   /* Above the tab bar (20), below the share toast (30). */
   z-index: 25;
   display: grid;
   gap: 8px;
+  width: calc(100% - 2 * var(--gutter));
   max-width: var(--col-max);
-  margin-inline: auto;
+  margin: 12px auto var(--banner-bottom);
   padding: 16px 18px;
   border: 1px solid rgba(243, 220, 161, 0.22);
   border-radius: 22px;
@@ -29,30 +30,29 @@
   }
 }
 
-/* Phones and tablets: above the bottom tab bar, and above the floating button where a page has one. */
+/* Phones and tablets: above the fixed bottom tab bar, and above the floating button where a page has one (globals.css classes). */
 @media (max-width: 1023px) {
-  :root:has(.with-tabbar) .banner {
-    bottom: calc(var(--tab-h) + 12px + env(safe-area-inset-bottom, 0px));
+  :root:has(:global(.with-tabbar)) .banner {
+    --banner-bottom: calc(var(--tab-h) + 12px + env(safe-area-inset-bottom, 0px));
   }
 
-  :root:has(.with-tabbar.with-fab) .banner {
-    bottom: calc(var(--tab-h) + 84px + env(safe-area-inset-bottom, 0px));
+  :root:has(:global(.with-tabbar.with-fab)) .banner {
+    --banner-bottom: calc(var(--tab-h) + 84px + env(safe-area-inset-bottom, 0px));
   }
 }
 
 /* Desktop: a card in the bottom-right corner. */
 @media (min-width: 1024px) {
   .banner {
-    right: 24px;
-    bottom: 24px;
-    left: auto;
+    --banner-bottom: 24px;
     width: 380px;
+    margin: 24px 24px var(--banner-bottom) auto;
   }
 }
 
-/* A field being typed in: the keyboard may lift it over the field, so it steps aside as the tab bar does. */
+/* A field being typed in: the keyboard may lift it over the field, so it steps aside (keeping its room) as the tab bar does. */
 body:has(textarea:focus, input:focus:not([type="checkbox"], [type="radio"])) .banner {
-  display: none;
+  visibility: hidden;
 }
 
 .title {
