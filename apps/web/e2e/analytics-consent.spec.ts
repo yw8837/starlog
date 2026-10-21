@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page, test } from "@playwright/test";
-import { pickCard, tableCards } from "./cards";
-import { OWNER_CODE } from "./opening";
+import { cardTable, pickCard, tableCards } from "./cards";
+import { ownerPass } from "./opening";
 
 /**
  * 방문 통계 consent (components/seo/ConsentBanner.tsx, GoogleAnalytics.tsx) in a browser that has not answered yet: the
@@ -43,7 +43,7 @@ test("from then: the banner asks with two equal buttons above the tab bar; 거�
   await page.goto("/");
   await expect(banner(page)).toBeVisible();
   // The transfer abroad told before consent (제28조의8 제2항): recipient and country, items, retention, no disadvantage.
-  for (const part of ["Google LLC(미국)", "방문한 페이지(공유·초대 번호는 가림)", "기기 정보", "최대 14개월", "거부해도 이용에 제한은 없어요"]) await expect(banner(page)).toContainText(part);
+  for (const part of ["Google LLC(미국)", "방문한 페이지(공유·초대 번호는 가림)", "기기 정보", "IP 주소", "쿠키 식별값", "최대 14개월", "거부해도 이용에 제한은 없어요"]) await expect(banner(page)).toContainText(part);
   await expect(banner(page).getByRole("link", { name: "자세히" })).toHaveAttribute("href", "/privacy#analytics");
 
   const allow = banner(page).getByRole("button", { name: "허용" });
@@ -111,13 +111,10 @@ test("허용 loads gtag.js on this page, without a reload, and counts it with a 
 
 /** Its own client address, so the per-IP limiters never span tests. */
 async function ownAddress(page: Page) {
+  // cf-connecting-ip is the one the Workers preview reads (as bonds.spec.ts sets it); x-forwarded-for, next dev's.
   const n = () => Math.floor(Math.random() * 250);
-  await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `10.8.${n()}.${n()}` });
-}
-
-async function ownerPass(page: Page) {
-  const origin = new URL(test.info().project.use.baseURL!).origin;
-  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
+  const ip = `10.8.${n()}.${n()}`;
+  await page.context().setExtraHTTPHeaders({ "cf-connecting-ip": ip, "x-forwarded-for": ip });
 }
 
 /**
@@ -174,16 +171,13 @@ test.describe("unanswered on 10/30: the key controls stay usable under the banne
     await page.clock.install({ time: new Date("2026-10-30T10:00:00+09:00") });
   });
 
-  test("/pay/checkout: the pay button", async ({ page }) => {
-    await ownerPass(page);
-    await page.goto("/login?next=%2Fme");
-    await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
-    await page.getByRole("button", { name: "카카오로 계속하기" }).click();
-    await expect(page).toHaveURL(/\/me/, { timeout: 30_000 });
+  // A guest is sent from checkout to log in (pay-flow.spec.ts, on the dev server, pays as a logged-in owner).
+  test("/pay/checkout as a guest: the login it leads to, and 카카오로 계속하기", async ({ page }) => {
     await page.goto("/pay/checkout?product=saju&returnTo=%2Fme");
+    await expect(page).toHaveURL(/\/login\?next=%2Fpay%2Fcheckout/, { timeout: 30_000 });
     await expect(banner(page)).toBeVisible();
-    await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
-    await usable(page.getByRole("button", { name: "4,900원 결제하기" }));
+    await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
+    await usable(page.getByRole("button", { name: "카카오로 계속하기" }));
   });
 
   test("/tarot/draw: three cards picked, then 결과 보기", async ({ page }) => {
@@ -194,13 +188,17 @@ test.describe("unanswered on 10/30: the key controls stay usable under the banne
     await expect(banner(page)).toBeVisible();
     await expect(tableCards(page)).toHaveCount(78);
     await settleAnimations(page);
+    // On this step the banner waits at the end of the page, never over the card table.
+    const table = await cardTable(page).boundingBox();
+    const box = await banner(page).boundingBox();
+    expect(box!.y).toBeGreaterThanOrEqual(table!.y + table!.height);
     for (let i = 0; i < 3; i++) await pickCard(page);
     await expect(page.getByText("모두 골랐어요")).toBeVisible();
     await usable(page.getByRole("button", { name: "결과 보기" }));
   });
 
   test("/story and /s/<id>: 새로 물어보기 (the floating one on phones) and the shared reading's 타로 보기", async ({ page }) => {
-    await ownerPass(page);
+    await ownerPass(page, test.info());
     const share = await savedReadings(page);
     await page.goto("/story");
     await expect(banner(page)).toBeVisible();
