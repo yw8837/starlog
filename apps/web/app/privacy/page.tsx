@@ -4,6 +4,7 @@ import { Facts, LegalNote, LegalPage, LegalSection } from "@/components/legal/Le
 import { MATCH_AI_ROW, PremiumChangeNotice, PremiumLegalNotice, PremiumPrivacy, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
 import { PRIVACY_REVISION_DATE, contactChannels, koreanDate, premiumChangeNoticeShown, premiumLegalInForce, privacyEffectiveDate, privacyRevisionInForce } from "@/lib/legal";
 import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
@@ -31,11 +32,35 @@ const BIRTH = "생년월일, 양력·음력(윤달 여부), 태어난 시(아는
 type Rows = ReadonlyArray<readonly [string, ReactNode]>;
 type Processor = { name: string; rows: Rows };
 
+/** GA4's cookies (components/seo/GoogleAnalytics.tsx): _ga, and _ga_ with the measurement ID after "G-". */
+const GA_COOKIES = `_ga, _ga_${GA_MEASUREMENT_ID.replace(/^G-/, "") || "<측정 ID>"}`;
+const GA_OPT_OUT = "https://tools.google.com/dlpage/gaoptout";
+
+/** Google Analytics as a processor transferred abroad, from the PRIVACY_REVISION_DATE revision (lib/legal.ts). */
+const GOOGLE_ANALYTICS: Processor = {
+  name: "Google LLC",
+  rows: [
+    ["국가", "미국"],
+    ["맡기는 일", "방문 통계 분석(Google 애널리틱스)"],
+    ["이전 항목", "쿠키 식별자, 방문 페이지, 기기·브라우저 정보, 대략적 위치(IP 주소로 추정)"],
+    ["이전 시기와 방법", "페이지를 열 때 암호화된 연결(HTTPS)로 네트워크를 통해 전송"],
+    ["보유·이용 기간", "Google의 정책에 따름"],
+    [
+      "거부 방법",
+      <>
+        브라우저 쿠키 차단 또는 <a href={GA_OPT_OUT}>Google 애널리틱스 차단 부가기능</a> 설치. 거부해도 서비스는 그대로 쓸 수 있습니다
+      </>,
+    ],
+    ["개인정보 문의", <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>],
+  ],
+};
+
 /**
  * 국외 이전 disclosures (개인정보 보호법 제28조의8): recipient, country, items, when and how, purpose, retention, contact.
- * `premium`: the premium clauses are in force (lib/legal.ts), so Anthropic's items name the 궁합's too.
+ * `premium`: the premium clauses are in force (lib/legal.ts), so Anthropic's items name the 궁합's too. `analytics`: the
+ * privacy revision is in force, which adds Google Analytics.
  */
-const processors = (premium: boolean): readonly Processor[] => [
+const processors = (premium: boolean, analytics: boolean): readonly Processor[] => [
   {
     name: "Anthropic, PBC",
     rows: [
@@ -82,6 +107,7 @@ const processors = (premium: boolean): readonly Processor[] => [
       ["보유·이용 기간", "관련 법령과 해당 사업자의 정책에 따름"],
     ],
   },
+  ...(analytics ? [GOOGLE_ANALYTICS] : []),
 ];
 
 /** Cookies the server sets: all HttpOnly, SameSite=Lax, Secure in production, signed so they cannot be forged. */
@@ -103,6 +129,7 @@ const COOKIES: Rows = [
 /** The revision of PRIVACY_REVISION_DATE (lib/legal.ts): shown as 개정 예정 until then, in the text from then. */
 const SHARE_EXPIRY = "풀이의 공유 사본과 링크는 공유한 날부터 180일이 지나면 자동으로 지웁니다.";
 const FOLLOW_UP_COUNT_KEPT = "풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 일반 풀이는 8일, 프리미엄 풀이는 31일 동안 보관한 뒤 자동으로 지웁니다.";
+const GA_ADDED = `이용 통계를 보기 위해 Google 애널리틱스를 씁니다. 쿠키(${GA_COOKIES})와 처리 위탁·국외 이전(Google LLC, 미국)에 그 내용을 더합니다.`;
 
 export default function PrivacyPage() {
   const contacts = contactChannels();
@@ -126,6 +153,7 @@ export default function PrivacyPage() {
           <ul className={s.list}>
             <li>{SHARE_EXPIRY}</li>
             <li>{FOLLOW_UP_COUNT_KEPT}</li>
+            <li>{GA_ADDED}</li>
           </ul>
         </LegalNote>
       )}
@@ -275,7 +303,7 @@ export default function PrivacyPage() {
       <LegalSection id="processors" title={`${num(4)}. 처리 위탁과 국외 이전`}>
         <p>운영자는 서비스를 제공하기 위해 아래 사업자에게 개인정보 처리를 맡기며, 이 중 일부는 「개인정보 보호법」 제28조의8에 따라 국외로 이전됩니다.</p>
         <div className={s.cards}>
-          {processors(inForce).map((processor) => (
+          {processors(inForce, revised).map((processor) => (
             <section key={processor.name} className={s.card} aria-label={processor.name}>
               <h3 className={s.cardTitle}>{processor.name}</h3>
               <Facts rows={processor.rows} stack />
@@ -286,6 +314,7 @@ export default function PrivacyPage() {
           <li>이 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다.</li>
           <li>무료 풀이를 요청하면 자동화된 접근을 막기 위해 Cloudflare Turnstile이 브라우저 신호(브라우저·기기 정보와 IP 주소)로 사람이 보낸 요청인지 확인할 수 있습니다.</li>
           <li>AI 사업자로의 국외 이전을 원하지 않으면 AI 풀이를 요청하지 않으시면 됩니다. 이 경우 AI 풀이를 받을 수 없고, AI를 거치지 않는 지금의 한 장은 계속 쓸 수 있습니다. 호스팅은 서비스 제공에 꼭 필요해, 거부하시면 서비스를 이용할 수 없습니다.</li>
+          {revised ? <li>방문 통계(Google LLC)로의 이전은 위의 거부 방법으로 막을 수 있고, 막아도 서비스는 그대로 쓸 수 있습니다.</li> : null}
         </ul>
       </LegalSection>
 
@@ -293,6 +322,8 @@ export default function PrivacyPage() {
         <ul className={s.list}>
           {ads ? (
             <li>운영자는 서비스 제공에 필요한 범위에서 아래 쿠키를 쓰고, 가이드 글 페이지에서는 아래 광고 쿠키가 쓰일 수 있습니다. 타로·사주 풀이 화면에는 광고를 싣지 않습니다.</li>
+          ) : revised ? (
+            <li>운영자는 서비스 제공에 필요한 아래 쿠키와 아래 방문 통계 쿠키만 쓰며, 광고를 위한 쿠키는 쓰지 않습니다.</li>
           ) : (
             <li>운영자는 서비스 제공에 필요한 범위에서만 아래 쿠키를 쓰며, 광고나 행동 추적을 위한 쿠키는 쓰지 않습니다.</li>
           )}
@@ -304,6 +335,23 @@ export default function PrivacyPage() {
           {BONDS ? <li>별자리 인연과 행운 번호의 표시용 정보(내 태양 별자리, 새 별을 마지막으로 본 시각, 이번 주 번호)도 브라우저 저장소에 둡니다. 생년월일은 두지 않습니다.</li> : null}
           <li>브라우저 설정에서 쿠키 저장을 거부하거나 저장된 쿠키와 사이트 데이터를 지울 수 있습니다. 거부하시면 하루 이용 횟수가 맞게 표시되지 않거나 오늘의 한 장을 다시 열 수 없는 등 일부 기능을 쓰기 어려울 수 있습니다.</li>
         </ul>
+        {revised ? (
+          <>
+            <h3 className={s.sub}>방문 통계 쿠키(Google 애널리틱스)</h3>
+            <ul className={s.list}>
+              <li>{`운영자는 어떤 페이지가 얼마나 읽히는지 이용 통계를 보기 위해 Google 애널리틱스를 씁니다. 페이지를 열면 Google의 스크립트가 이 사이트의 쿠키(${GA_COOKIES})를 만들어 같은 브라우저의 방문을 이어서 셉니다.`}</li>
+              <li>수집되는 정보: 쿠키 식별자, 방문한 페이지, 기기·브라우저 정보, IP 주소로 추정한 대략적 위치. 결제 페이지 주소의 결제 정보와 공유 링크의 번호는 지우고 보내며, 질문, 출생 정보, 이름이나 연락처는 보내지 않습니다.</li>
+              <li>운영자는 개인을 알아볼 수 없는 통계만 봅니다. Google 신호와 광고 맞춤 설정은 끄고 씁니다.</li>
+              <li>
+                보유 기간과 처리 방식은 Google의 정책을 따릅니다. Google이 정보를 쓰는 방식은{" "}
+                <a href="https://policies.google.com/technologies/partner-sites">Google 파트너 사이트 정보 이용 안내</a>에서 볼 수 있습니다.
+              </li>
+              <li>
+                브라우저에서 쿠키를 차단하거나 <a href={GA_OPT_OUT}>Google 애널리틱스 차단 부가기능</a>을 설치하면 수집되지 않으며, 그래도 서비스는 그대로 쓸 수 있습니다.
+              </li>
+            </ul>
+          </>
+        ) : null}
         <h3 className={s.sub}>카카오톡 공유</h3>
         <ul className={s.list}>
           <li>카카오톡으로 보내기를 누를 때만 카카오의 공유 스크립트를 불러옵니다. 이때 카카오에는 공유할 문구(뽑은 카드 이름 등)와 서비스 링크가 전달되고, 카카오의 개인정보처리방침이 적용됩니다.</li>

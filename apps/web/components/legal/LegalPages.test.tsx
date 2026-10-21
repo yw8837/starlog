@@ -119,6 +119,26 @@ describe("policy pages", () => {
     expect(text).not.toContain("누를 때까지 보관하고, 누르면 바로 지웁니다");
   });
 
+  it("privacy: announces Google Analytics in the 2026-10-28 revision, then discloses it in the cookie section and as a processor transferred abroad (Google LLC, 미국)", () => {
+    // Before: the notice says it is coming; the text and the processors do not have it yet.
+    let container = render(<PrivacyPage />).container;
+    const notice = [...container.querySelectorAll("p")].find((p) => p.textContent === "개정 예정 · 2026년 10월 28일부터 시행")?.parentElement?.textContent ?? "";
+    expect(notice).toContain("Google 애널리틱스");
+    expect(notice).toContain("Google LLC");
+    expect(container.querySelector('[aria-label="Google LLC"]')).toBeNull();
+    expect(container.querySelector("#cookies")?.textContent).not.toContain("_ga");
+    cleanup();
+    // From 2026-10-28: in the text.
+    vi.setSystemTime(Date.parse("2026-10-28T00:00:00+09:00"));
+    container = render(<PrivacyPage />).container;
+    const cookies = container.querySelector("#cookies")?.textContent ?? "";
+    for (const part of ["Google 애널리틱스", "_ga", "_ga_8X11ZGFZKY", "이용 통계", "개인을 알아볼 수 없는 통계만", "Google 애널리틱스 차단 부가기능"]) expect(cookies, part).toContain(part);
+    expect(cookies).not.toContain("광고나 행동 추적을 위한 쿠키는 쓰지 않습니다");
+    const google = container.querySelector('[aria-label="Google LLC"]')?.textContent ?? "";
+    for (const part of ["미국", "쿠키 식별자", "방문 페이지", "기기·브라우저 정보", "대략적 위치", "페이지를 열 때", "브라우저 쿠키 차단", "Google 애널리틱스 차단 부가기능"]) expect(google, part).toContain(part);
+    expect(container.querySelector('a[href="https://tools.google.com/dlpage/gaoptout"]')).not.toBeNull();
+  });
+
   it("privacy: names the readings the account keeps the same way everywhere: opened while logged in with a payment (lib/readings/store.ts); 오픈 기념 무료 readings stay on the device", () => {
     const text = render(<PrivacyPage />).container.textContent ?? "";
     // The broader "readings opened while logged in" would also cover a 오픈 기념 무료 reading, which is never saved to the account.
