@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GuideArticlePage from "@/app/guide/[slug]/page";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
@@ -61,6 +62,15 @@ describe("the three premium guide articles link their product", () => {
       await article(slug);
       const section = await screen.findByRole("region", { name: "이 풀이로 더 깊게 보기" });
       expect(within(section).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual([href]);
+    });
+  }
+
+  for (const [slug, href, name] of [["saju-compatibility", "/premium/match", "프리미엄 궁합"], ["new-year-fortune", "/premium/newyear-2027", "2027 신년운세"], ["celtic-cross-spread", "/premium/deep-tarot", "켈틱 크로스 10장"]] as const) {
+    it(`/guide/${slug}: the server HTML links ${href} in one line, so crawlers find the product page (SEO P1-1)`, async () => {
+      stub(true);
+      const html = renderToString(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
+      expect(html).toContain(`href="${href}"`);
+      expect(html).toContain(name);
     });
   }
 

@@ -105,6 +105,12 @@ describe("service pages", () => {
     }
   });
 
+  it("about: 무엇을 볼 수 있나요 links the indexable saju page /saju/new in plain text (SEO P1-2)", () => {
+    const { container } = render(<AboutPage />);
+    const link = container.querySelector('#what-title ~ dl a[href="/saju/new"]');
+    expect(link?.textContent).toBe("사주 보기");
+  });
+
   it("lists the four pages in the app host's sitemap", () => {
     const xml = sitemapXml("app");
     for (const info of Object.values(INFO_PAGES)) expect(xml).toContain(`<loc>${SITE.url}${info.path}</loc>`);

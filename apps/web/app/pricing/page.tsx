@@ -9,6 +9,7 @@ import { OpeningOnly } from "@/components/ui/OpeningOnly";
 import { SITE, won } from "@/lib/config";
 import { openingFreeText, times } from "@/lib/helpGuide";
 import { REFUND_DAYS, standardProduct } from "@/lib/pay/catalog";
+import { premiumPath } from "@/lib/premium/products";
 import { approxCharsText } from "@/lib/pricing";
 import { sajuFreeLine, sajuPricingLine } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
@@ -30,6 +31,8 @@ export const metadata: Metadata = pageMetadata({
 const PRODUCTS = [
   {
     name: standardProduct("tarot").name,
+    href: "/tarot/new",
+    cta: "타로 보기",
     sub: "카드 3장으로 보는 지금",
     krw: standardProduct("tarot").krw,
     includes: [`소제목으로 나눈 풀이 전체 · 약 ${approxCharsText(reading.approxChars.tarot)}자`, "카드별 풀이와 세 카드의 연결, 시기, 상황별 갈래, 오늘 해 볼 일"],
@@ -37,6 +40,8 @@ const PRODUCTS = [
   },
   {
     name: standardProduct("saju").name,
+    href: "/saju/new",
+    cta: "사주 보기",
     sub: "타고난 결로 보는 나",
     krw: standardProduct("saju").krw,
     includes: [`소제목으로 나눈 풀이 전체 · 약 ${approxCharsText(reading.approxChars.saju)}자`, sajuPricingLine(features.sajuTopics)],
@@ -92,6 +97,9 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
+              <p>
+                <Link href={product.href}>{product.cta}</Link>
+              </p>
               <p className={s.muted}>서비스 제공 기간: 결제 즉시 · 결제하면 바로 풀이가 열리는 디지털 콘텐츠예요.</p>
               <p className={s.muted}>
                 {`열기 전에는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. `}
@@ -109,7 +117,8 @@ export default function PricingPage() {
       <ReviewList />
 
       {/* 깊게 보는 풀이 where premium is visible (plan-reconciled §4.2). The server's first render, and the page while
-          STARLOG_PREMIUM is off, names and prices them plainly: never 준비 중 for a reading on sale (review 2026-10-20 A3). */}
+          STARLOG_PREMIUM is off, names and prices them plainly: never 준비 중 for a reading on sale (review 2026-10-20 A3),
+          each with a static link to its product page so crawlers find it (SEO P1-1; turning premium off then needs a deploy to drop them). */}
       <PremiumPricing
         fallback={
           <LegalSection id="premium" title="깊게 보는 풀이">
@@ -127,6 +136,9 @@ export default function PricingPage() {
                     <span className={s.priceUnit}>1회</span>
                   </p>
                   {product.opens ? <p className={s.muted}>{product.opens}</p> : null}
+                  <p>
+                    <Link href={premiumPath(product.id)}>자세히 보기</Link>
+                  </p>
                 </section>
               ))}
             </div>

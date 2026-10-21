@@ -14,10 +14,12 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig, adsScriptSrc } from "@/lib/ads";
+import { won } from "@/lib/config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath } from "@/lib/guide";
 import { appHref, linkHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
 import { premiumForGuide } from "@/lib/premium/landing";
+import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import { pageMetadata } from "@/lib/seo";
 import { GuideBlocks } from "../GuideBlocks";
 import { CardQuote, GuideByline, GuideSourceLine } from "../GuideEvidence";
@@ -60,7 +62,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   const card = article.cardId ? getCard(article.cardId) : null;
   const cta = CTA[article.category];
   // The premium product this article explains (owner: every premium has its guide), linked under the article where
-  // premium is visible; a client island, so the static page is today's while STARLOG_PREMIUM is off.
+  // premium is visible (a client island); the static HTML links it in one line until the status answers.
   const premium = premiumForGuide(article.slug);
   const tab = GUIDE_CATEGORY_LABEL[article.category];
   // The article's own picks; an article without them falls back to the first others in its tab.
@@ -142,7 +144,21 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
             </Button>
           </aside>
 
-          {premium ? <PremiumRows ids={[premium]} title="이 풀이로 더 깊게 보기" host="guide" /> : null}
+          {premium ? (
+            <PremiumRows
+              ids={[premium]}
+              title="이 풀이로 더 깊게 보기"
+              host="guide"
+              fallback={
+                // The server's HTML: one plain line to the product page (SEO P1-1); the rows replace it where premium is visible.
+                <p className={s.sources}>
+                  <Link href={appHref(premiumPath(premium))} prefetch={false} className={s.sourcesLink}>
+                    {`${PREMIUM[premium].name}(${won(PREMIUM[premium].krw)}) 자세히 보기`}
+                  </Link>
+                </p>
+              }
+            />
+          ) : null}
 
           <nav className={s.more} aria-labelledby="more-title">
             <h2 id="more-title" className={s.moreTitle}>
