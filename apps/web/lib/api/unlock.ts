@@ -4,7 +4,7 @@ import { openingFreeOn } from "@/lib/config";
 import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import type { D1Binding } from "@/lib/db/d1";
 import { GIFT_PRODUCT, type StandardProductId } from "@/lib/pay/catalog";
-import { deliverUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
+import { deliverUnlock, releaseUnlock, reserveUnlock, type Currency } from "@/lib/pay/ledger";
 import { payKeyMode, paymentsUnbacked } from "@/lib/pay/mode";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { insertReadingStatement, newReadingId, readingExists, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
@@ -27,6 +27,21 @@ import type { GenerationOutcome, Settlement } from "./stream";
  *   running test keys it earned nothing, so it is held and counted like `free` (security M2).
  * - `owner`: the owner pass, which no server limit or budget closes (http.ts checkServerLimits), no ledger; saved when logged in.
  */
+
+/**
+ * L-1: a purchase whose openings the model began writing failed MAX_BEGAN_RESTORES times opens no more
+ * (lib/pay/ledger.ts reserveUnlock `capped`). It was never used: a failure on our side is refunded on
+ * request whenever it was paid (app/refund, 생성 실패와 오류). A signup gift has nothing to refund.
+ * The log names the lot, so a request can be found (lot_<order id> for a purchase).
+ */
+export const CAPPED_MESSAGE: Readonly<Record<Currency, string>> = {
+  paid: "풀이가 여러 번 끝까지 나오지 않아 이 결제로는 더 열 수 없어요. 결제는 쓰이지 않았으니 문의해 주시면 기간과 상관없이 전액 환불해 드려요.",
+  free: "풀이가 여러 번 끝까지 나오지 않아 이 가입 선물로는 더 열 수 없어요. 문의해 주세요.",
+};
+export const cappedResponse = (productId: string, currency: Currency, lotId: string | undefined) => {
+  console.warn(JSON.stringify({ evt: "unlock.capped", productId, lotId }));
+  return errorResponse("NOT_AVAILABLE", { reason: "capped", message: CAPPED_MESSAGE[currency] });
+};
 
 export interface UnlockPlan {
   method: UnlockMethod;
@@ -72,14 +87,9 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     const limited = await checkServerLimits(gate, "full", {}, { credit: true });
     if (limited) return limited;
   }
-  const reserved = await reserveUnlock(ctx.db, {
-    userId: user.id,
-    productId: kind,
-    currency: method === "paid" ? "paid" : "free",
-    now: gate.now,
-    payMode: payKeyMode(),
-  });
-  if (!reserved.ok) return errorResponse("NO_CREDIT");
+  const currency = method === "paid" ? "paid" : "free";
+  const reserved = await reserveUnlock(ctx.db, { userId: user.id, productId: kind, currency, now: gate.now, payMode: payKeyMode() });
+  if (!reserved.ok) return reserved.capped ? cappedResponse(kind, currency, reserved.lotId) : errorResponse("NO_CREDIT");
   console.info(JSON.stringify({ evt: "unlock.reserved", method, productId: kind }));
   return {
     method,

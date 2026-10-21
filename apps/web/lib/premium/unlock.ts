@@ -4,6 +4,7 @@ import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import { checkServerLimits, errorResponse, type Gate } from "@/lib/api/http";
 import type { SpendKind } from "@/lib/api/spend";
 import type { GenerationOutcome, Settlement } from "@/lib/api/stream";
+import { cappedResponse } from "@/lib/api/unlock";
 import type { D1Binding } from "@/lib/db/d1";
 import { deliverUnlock, entitlements, extendUnlock, releaseUnlock, reserveUnlock } from "@/lib/pay/ledger";
 import { payKeyMode, paymentsUnbacked } from "@/lib/pay/mode";
@@ -106,11 +107,13 @@ export async function planPremiumUnlock(
     const reserved = await reserveUnlock(ctx.db, { userId: user.id, productId: product, currency: "paid", now: gate.now, payMode: payKeyMode(), earmarked: true, partSeq: written + 1 });
     if (!reserved.ok) {
       // Another opening of this product still holds the purchase (a lost resume token, another tab): wait, never pay again.
+      // Asked first: a second purchase being opened is the one to wait for, even when the first opens no more (L-1).
       const held = await ctx.db
         .prepare("SELECT MAX(reserved_until) AS until FROM unlocks WHERE user_id = ? AND product_id = ? AND status = 'reserved' AND reserved_until >= ?")
         .bind(user.id, product, gate.now)
         .first<{ until: number | null }>();
-      return held?.until ? errorResponse("NOT_AVAILABLE", { reason: "opening", reservedUntil: held.until, message: OPENING }) : errorResponse("NO_CREDIT");
+      if (held?.until) return errorResponse("NOT_AVAILABLE", { reason: "opening", reservedUntil: held.until, message: OPENING });
+      return reserved.capped ? cappedResponse(product, "paid", reserved.lotId) : errorResponse("NO_CREDIT");
     }
     unlockId = reserved.unlockId;
   }

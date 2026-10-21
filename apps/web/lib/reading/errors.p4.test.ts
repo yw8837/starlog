@@ -33,6 +33,13 @@ describe("P4 error copy", () => {
     }
   });
 
+  it("says why a purchase or a signup gift opens no more, in the server's words (L-1)", () => {
+    const paid = parseApiError(409, { code: "NOT_AVAILABLE", reason: "capped", message: "풀이가 여러 번 끝까지 나오지 않아 이 결제로는 더 열 수 없어요. 결제는 쓰이지 않았으니 문의해 주시면 기간과 상관없이 전액 환불해 드려요." });
+    expect(describeApiError(paid, "paid")).toEqual({ title: "이 결제로는 더 열 수 없어요", body: "풀이가 여러 번 끝까지 나오지 않아 이 결제로는 더 열 수 없어요. 결제는 쓰이지 않았으니 문의해 주시면 기간과 상관없이 전액 환불해 드려요.", action: null });
+    const gift = parseApiError(409, { code: "NOT_AVAILABLE", reason: "capped", message: "풀이가 여러 번 끝까지 나오지 않아 이 가입 선물로는 더 열 수 없어요. 문의해 주세요." });
+    expect(describeApiError(gift, "gift")).toEqual({ title: "이 가입 선물로는 더 열 수 없어요", body: "풀이가 여러 번 끝까지 나오지 않아 이 가입 선물로는 더 열 수 없어요. 문의해 주세요.", action: null });
+  });
+
   it("says what the check found", () => {
     expect(creditKept("paid")).toMatchObject({ title: "풀이를 다 적지 못했어요", body: "결제한 풀이는 그대로 남아 있어요. 다시 열어 끝까지 받을 수 있어요.", action: "retry" });
     // F1: a purchase left while it was written is no longer refundable, and the copy cannot tell which this is.

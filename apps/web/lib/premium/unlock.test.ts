@@ -7,7 +7,7 @@ import { resetSpendState } from "@/lib/api/spend";
 import { setTestDb } from "@/lib/db";
 import type { D1Binding } from "@/lib/db/d1";
 import { migratedTestD1 } from "@/lib/db/testing/migrate";
-import { LEFT_SQL, RESERVATION_MS, grantStatements, releaseUnlock, reserveUnlock, sweepUser } from "@/lib/pay/ledger";
+import { LEFT_SQL, MAX_BEGAN_RESTORES, RESERVATION_MS, grantStatements, releaseUnlock, reserveUnlock, sweepUser } from "@/lib/pay/ledger";
 import { mockToss } from "@/lib/pay/tossMock";
 import { premiumChapter } from "@/lib/readings/chapters";
 import { listReadings } from "@/lib/readings/store";
@@ -192,6 +192,35 @@ describe("planning a premium opening", () => {
   const userIdOf = async (db: D1Binding) => (await db.prepare("SELECT id FROM users").first<{ id: string }>())!.id;
   const adminLot = (db: D1Binding, userId: string, id: string, productId: string | null) =>
     db.batch(grantStatements(db, { id, userId, currency: "paid", source: "admin", orderId: null, productId, units: 1, expiresAt: null }, NOW));
+
+  it("opens no more with a purchase the model began writing MAX_BEGAN_RESTORES times and never finished (L-1)", async () => {
+    const db = useTestDb();
+    const b = await member();
+    const userId = await userIdOf(db);
+    await buy(b, "tarot-deep");
+    for (let i = 0; i < MAX_BEGAN_RESTORES; i++) {
+      const held = await reserveUnlock(db, { userId, productId: "tarot-deep", currency: "paid", now: Date.now(), payMode: "mock", earmarked: true, partSeq: 1 });
+      if (!held.ok) throw new Error("not reserved");
+      expect(await releaseUnlock(db, { unlockId: held.unlockId, now: Date.now(), began: true })).toBe(true);
+    }
+    expect(await refusal(await plan(b))).toMatchObject({ status: 409, code: "NOT_AVAILABLE", reason: "capped", message: "풀이가 여러 번 끝까지 나오지 않아 이 결제로는 더 열 수 없어요. 결제는 쓰이지 않았으니 문의해 주시면 기간과 상관없이 전액 환불해 드려요." });
+  });
+
+  it("waits for a second purchase being opened elsewhere before saying the first opens no more (L-1)", async () => {
+    const db = useTestDb();
+    const b = await member();
+    const userId = await userIdOf(db);
+    await buy(b, "tarot-deep");
+    const reserve = () => reserveUnlock(db, { userId, productId: "tarot-deep", currency: "paid", now: Date.now(), payMode: "mock", earmarked: true, partSeq: 1 });
+    for (let i = 0; i < MAX_BEGAN_RESTORES; i++) {
+      const held = await reserve();
+      if (!held.ok) throw new Error("not reserved");
+      expect(await releaseUnlock(db, { unlockId: held.unlockId, now: Date.now(), began: true })).toBe(true);
+    }
+    await buy(b, "tarot-deep");
+    expect((await reserve()).ok).toBe(true); // the second purchase, being opened in another tab
+    expect(await refusal(await plan(b))).toMatchObject({ status: 409, code: "NOT_AVAILABLE", reason: "opening" });
+  });
 
   it("opens only with a purchase of this product; its model cost goes to the paid book, even with the free budget spent", async () => {
     const db = useTestDb();
