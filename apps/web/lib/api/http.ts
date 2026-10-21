@@ -366,7 +366,9 @@ export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKin
  */
 // Invisible characters cannot split a phrase (죽 + zero-width space + 고 싶어).
 const INVISIBLE = /[\u200B-\u200D\u2060\u00AD\uFEFF]/g;
-export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS_WORDS.test(cleanUserText(text!).replace(INVISIBLE, ""));
+/** A line break ends a sentence (CRISIS_WORDS looks for some phrases at a sentence's start); cleanUserText folds it into a space. */
+const LINE_BREAK = /\s*\n\s*/g;
+export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS_WORDS.test(cleanUserText(text!.replace(LINE_BREAK, ". ")).replace(INVISIBLE, ""));
 
 /** The care response when any user-written text reads as a crisis; null otherwise. */
 export function crisisResponse(...texts: Array<string | undefined>): Response | null {
