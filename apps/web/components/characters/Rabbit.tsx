@@ -8,8 +8,8 @@ import type { CharacterProps } from "./types";
 import s from "./characters.module.css";
 
 const COPY = {
-  tarot: { label: "기록하는 사서 토끼", line: "톡, 적어둘게요" },
-  hanbok: { label: "한복 입은 토끼 선생님", line: "어디 한번 볼까요" },
+  tarot: { label: "기록하는 사서 토끼 사주주", line: "톡, 적어둘게요" },
+  hanbok: { label: "한복 입은 토끼 선생님 사주주", line: "어디 한번 볼까요" },
 } as const;
 
 /** White rabbit. Tarot: librarian staff (never a hat). Saju: 두루마기 leader. */

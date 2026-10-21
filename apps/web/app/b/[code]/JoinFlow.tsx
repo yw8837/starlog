@@ -284,7 +284,7 @@ function OpenInvite({ invite }: { invite: Open }) {
           <div className={s.drawHead}>
             <Cat outfit="tarot" action={phase === "shuffle" ? "shuffle" : "none"} expression="focus" size={96} reactOnTap={false} />
             <h2 id="draw-title" className={b.sectionTitle}>
-              {phase === "shuffle" ? "고양이가 카드를 섞고 있어요" : "두 사람을 떠올리며 한 장을 골라요"}
+              {phase === "shuffle" ? "타로로가 카드를 섞고 있어요" : "두 사람을 떠올리며 한 장을 골라요"}
             </h2>
           </div>
           <p className={b.helper} role="status">

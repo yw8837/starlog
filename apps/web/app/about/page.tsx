@@ -55,13 +55,13 @@ export default function AboutPage() {
           <div className={s.castCard}>
             <span className={s.castMode}>타로</span>
             <Cat outfit="tarot" size={96} reactOnTap={false} />
-            <p className={s.castName}>고양이 점성술사</p>
+            <p className={s.castName}>타로로 · 고양이 점성술사</p>
             <p className={s.castRole}>카드를 섞고, 그림에 담긴 장면을 내 이야기에 비춰 읽어요</p>
           </div>
           <div className={s.castCard}>
             <span className={s.castMode}>사주</span>
             <Rabbit outfit="hanbok" size={96} reactOnTap={false} />
-            <p className={s.castName}>토끼 선생님</p>
+            <p className={s.castName}>사주주 · 토끼 선생님</p>
             <p className={s.castRole}>한복을 입고, 태어난 날로 세운 명식을 차근차근 읽어요</p>
           </div>
         </div>

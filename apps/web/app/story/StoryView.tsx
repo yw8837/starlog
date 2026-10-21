@@ -166,7 +166,7 @@ export function EmptyStory() {
         <Rabbit outfit="tarot" action="write" size={176} />
       </div>
       <p className={s.emptyTitle}>아직 기록이 없어요</p>
-      <p className={s.emptyText}>풀이를 열면 토끼가 여기에 적어 둬요.</p>
+      <p className={s.emptyText}>풀이를 열면 사주주가 여기에 적어 둬요.</p>
       <div className={s.emptyCta}>
         <Button href={NEW_TAROT_HREF} block trailing="→">
           첫 타로 보기

@@ -13,4 +13,4 @@ export const OG_TEXT = {
 } as const;
 
 /** The site's link preview (app/opengraph-image.tsx): what the brand picture shows. */
-export const OG_ALT = `${SITE.name} · ${SITE.nameKo} — 타로와 사주로 내 고민을 풀어 주는 곳. 타로 카드를 든 고양이와 사주표를 든 토끼`;
+export const OG_ALT = `${SITE.name} · ${SITE.nameKo} — 타로와 사주로 내 고민을 풀어 주는 곳. 타로 카드를 든 고양이 타로로와 사주표를 든 토끼 사주주`;

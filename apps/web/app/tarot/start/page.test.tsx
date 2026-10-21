@@ -54,8 +54,8 @@ describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
     await renderBridge();
     expect(screen.getByRole("link", { name: "홈으로" }).getAttribute("href")).toBe("/");
     expect(screen.getByText("타로 보기")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "별을 읽는 점성술사 고양이" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "기록하는 사서 토끼" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "별을 읽는 점성술사 고양이 타로로" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "기록하는 사서 토끼 사주주" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /한복/ })).toBeNull();
   });
 

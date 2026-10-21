@@ -12,7 +12,7 @@ describe("plush character art", () => {
   it("is the default and keeps the tap button and its label", () => {
     const { container } = render(<Cat outfit="tarot" size={120} />);
     expect(hrefs(container)).toEqual(["/characters/cat-tarot.v1-600.webp"]);
-    expect(screen.getByRole("button", { name: "별을 읽는 점성술사 고양이" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "별을 읽는 점성술사 고양이 타로로" })).toBeTruthy();
   });
 
   it("uses the 300 px file at small sizes", () => {

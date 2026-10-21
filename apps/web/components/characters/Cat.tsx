@@ -7,8 +7,8 @@ import { PlushArt, plushSrc } from "./plush";
 import type { CharacterProps } from "./types";
 
 const COPY = {
-  tarot: { label: "별을 읽는 점성술사 고양이", line: "냥, 섞어볼까" },
-  hanbok: { label: "한복 입은 고양이 조수", line: "냥, 여기 있어요" },
+  tarot: { label: "별을 읽는 점성술사 고양이 타로로", line: "냥, 섞어볼까" },
+  hanbok: { label: "한복 입은 고양이 조수 타로로", line: "냥, 여기 있어요" },
 } as const;
 
 /** Cream cat. Tarot: astrologer leader. Saju: 색동 저고리 assistant. */

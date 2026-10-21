@@ -343,7 +343,7 @@ export function SajuChartView({
             <span aria-hidden="true">
               <Rabbit outfit="hanbok" size={52} expression="happy" reactOnTap={false} />
             </span>
-            <span>풀이 · 토끼 선생님</span>
+            <span>풀이 · 사주주</span>
           </footer>
         </Paper>
         {/* The sheet sits below the row and the locked contents: the tarot result's quiet way down right after the free part (M-05). */}

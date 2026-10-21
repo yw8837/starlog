@@ -19,7 +19,7 @@ describe("GuideHost", () => {
     render(<GuideHost category="saju" />);
     expect(screen.getByText(GUIDE_HOST_LINES.saju[4]!)).toBeTruthy();
 
-    const host = screen.getByRole("button", { name: "한복 입은 토끼 선생님" });
+    const host = screen.getByRole("button", { name: "한복 입은 토끼 선생님 사주주" });
     random.mockReturnValue(0.6); // 7 others: pick 4, which skips the current 4 to land on 5
     fireEvent.click(host);
     expect(screen.getByText(GUIDE_HOST_LINES.saju[5]!)).toBeTruthy();

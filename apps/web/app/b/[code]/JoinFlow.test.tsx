@@ -48,7 +48,7 @@ describe("JoinFlow", () => {
     fireEvent.change(screen.getByLabelText("태어난 월"), { target: { value: "8" } });
     fireEvent.change(screen.getByLabelText("태어난 일"), { target: { value: "3" } });
     fireEvent.click(screen.getByRole("button", { name: "카드 고르러 가기" }));
-    expect(screen.getByRole("heading", { name: "고양이가 카드를 섞고 있어요" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "타로로가 카드를 섞고 있어요" })).toBeTruthy();
   });
 
   it("answers an unknown code and an owner between signs plainly", () => {
