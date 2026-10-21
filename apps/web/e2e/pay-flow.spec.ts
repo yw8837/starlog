@@ -1,6 +1,7 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { pickCard, tableCards } from "./cards";
-import { fakeBrowserClock, openingOn } from "./opening";
+import { consentBanner, usable } from "./consent";
+import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
 
 /**
  * Accounts and payments in owner mode (STARLOG_PAYMENTS=owner, mock Kakao and mock Toss, local D1):
@@ -229,4 +230,24 @@ test("owner mode, 주제별 사주: a 재물운 checkout comes back as ?topic=mo
   await expect(page.getByText(/^사주 재물운 · /)).toBeVisible();
   const saved = await (await page.request.get("/api/readings?limit=5")).json();
   expect(saved.readings.map((r: { chapter: { topic?: string } }) => r.chapter.topic)).toEqual(["money"]);
+});
+
+test("unanswered on 10/30, the 방문 통계 banner leaves checkout usable: a guest is sent to log in and back, and 결제하기 can be pressed", async ({ page }, info) => {
+  await ownAddress(page, info);
+  // The shared owner pass: it waits out the five-a-minute owner logins this file's other tests may have used up.
+  await ownerPass(page, info);
+  // No stored choice (the config's 거부 is dropped), a clock that runs from 10/30, and nothing sent to Google.
+  await page.addInitScript(() => window.localStorage.removeItem("starlog.analytics.consent"));
+  await page.clock.install({ time: new Date("2026-10-30T10:00:00+09:00") });
+  await page.context().route((url) => /google|doubleclick/.test(url.hostname), (route) => route.abort());
+  await page.goto("/pay/checkout?product=saju&returnTo=%2Fme");
+  await expect(page).toHaveURL(/\/login\?next=%2Fpay%2Fcheckout/, { timeout: NAV });
+  await expect(consentBanner(page)).toBeVisible();
+  await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
+  await usable(page.getByRole("button", { name: "카카오로 계속하기" }));
+  await page.getByRole("button", { name: "카카오로 계속하기" }).click();
+  await expect(page).toHaveURL(/\/pay\/checkout\?product=saju/, { timeout: NAV });
+  await expect(consentBanner(page)).toBeVisible();
+  await page.getByRole("checkbox", { name: "위 내용을 확인했어요" }).check();
+  await usable(page.getByRole("button", { name: "4,900원 결제하기" }));
 });

@@ -47,8 +47,13 @@ export function chooseAnalytics(choice: AnalyticsChoice): void {
     window.localStorage.setItem(CONSENT_KEY, JSON.stringify({ choice, at: new Date().toISOString() }));
     unsaved = false;
   } catch {
-    // Kept in memory for this page load (above).
+    // Kept in memory for this page load (above); an older stored choice must not come back on the next one.
     unsaved = true;
+    try {
+      window.localStorage.removeItem(CONSENT_KEY);
+    } catch {
+      // Storage refused altogether: nothing stored to come back.
+    }
   }
   if (choice === "denied") stopAnalytics(GA_MEASUREMENT_ID);
   for (const listener of listeners) listener();

@@ -136,7 +136,7 @@ describe("policy pages", () => {
         "방문 통계",
         "허용한 분에 한해 Google 애널리틱스",
         "Google LLC(미국)",
-        "IP 주소(위치 추정에만 쓰임)",
+        "IP 주소(위치 추정 등에 쓰임)",
         "방문 시각, 페이지에 머문 시간을 모아",
         "이용 통계를 분석",
         "보유 기간: 이벤트 데이터 2개월, 사용자 데이터 14개월(새 방문이 있으면 그때부터 다시 계산), 방문 통계 쿠키는 마지막 방문부터 최대 2년",
@@ -149,6 +149,7 @@ describe("policy pages", () => {
       expect(anchor?.contains(ga!)).toBe(true);
       expect(anchor!.querySelector("button")).toBeNull();
       expect(container.querySelector('[aria-label="Google LLC"]')).toBeNull();
+      expect(container.querySelector("#google-transfer")).toBeNull();
       expect(container.textContent).not.toContain("_ga");
       expect(container.textContent).toContain("이 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며");
       cleanup();
@@ -183,7 +184,7 @@ describe("policy pages", () => {
           "방문한 페이지의 주소(공유·초대·기록 번호와 결제 정보는 지우고, 홍보 링크의 utm 꼬리표만 남긴 주소)와 페이지 제목",
           "이전 페이지의 주소(스타로그의 페이지는 같은 방식으로 지운 주소, 다른 사이트는 그 사이트의 도메인만)",
           "기기·브라우저·화면 정보",
-          "IP 주소(위치 추정에만 쓰이고 Google 애널리틱스에 저장되지 않음)",
+          "IP 주소(위치 추정 등에 쓰이고, Google 설명으로는 Google 애널리틱스에 저장되지 않음)",
           "대략적 위치(접속한 IP 주소로 Google이 추정하는 국가·도시 수준)",
           "방문 시각",
           "페이지에 머문 시간",
@@ -227,9 +228,9 @@ describe("policy pages", () => {
         expect(text).not.toContain("개인을 알아볼 수 없");
         // First: the transfer abroad, with a link to the Google LLC card.
         const first = analytics!.querySelector("li");
-        expect(first?.textContent).toBe("방문 통계 정보는 Google LLC(미국)로 국외 이전됩니다. 이전 항목과 보유 기간은 5항 처리 위탁과 국외 이전의 Google LLC에 있습니다.");
-        expect(first?.querySelector("a")?.getAttribute("href")).toBe("#processors");
-        expect(container.querySelector("#processors")).not.toBeNull();
+        expect(first?.textContent).toBe("방문 통계 정보는 Google LLC(미국)로 국외 이전됩니다. 이전 항목과 보유 기간은 5항 처리 위탁과 국외 이전의 Google LLC 안내에 있습니다.");
+        expect(first?.querySelector("a")?.getAttribute("href")).toBe("#google-transfer");
+        expect(container.querySelector("#google-transfer")?.getAttribute("aria-label")).toBe("Google LLC");
         // The setting itself: the two choices.
         expect([...analytics!.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["허용", "거부"]);
         // No longer "no behaviour-tracking cookies" while ads are off.
@@ -251,7 +252,7 @@ describe("policy pages", () => {
         expect(rows["이전 항목"]).toContain("페이지에 머문 시간");
         expect(rows["이전 항목"]).toContain("방문한 페이지의 주소(공유·초대·기록 번호와 결제 정보는 지우고");
         expect(rows["이전 시기와 방법"]).toBe("방문 통계를 허용한 뒤 페이지를 열고 머무는 동안 암호화된 연결(HTTPS)로 전송");
-        expect(rows["이전 항목"]).toContain("IP 주소(위치 추정에만 쓰이고 Google 애널리틱스에 저장되지 않음)");
+        expect(rows["이전 항목"]).toContain("IP 주소(위치 추정 등에 쓰이고, Google 설명으로는 Google 애널리틱스에 저장되지 않음)");
         expect(rows["보유·이용 기간"]).toContain("방문 통계 쿠키는 마지막 방문부터 최대 2년");
         expect(rows["보유·이용 기간"]).toContain("이벤트 데이터 2개월, 사용자 데이터 14개월");
         expect(rows["이전 근거"]).toBe("정보주체의 동의(「개인정보 보호법」 제28조의8 제1항 제1호)");

@@ -51,7 +51,7 @@ describe("ConsentBanner: asks once, from the GA revision, until this browser has
     expect(region).not.toBeNull();
     expect(region!.getAttribute("aria-modal")).toBeNull();
     // What 제28조의8 제2항 asks before consent: recipient and country, items, retention, no disadvantage on refusal.
-    for (const part of ["Google LLC(미국)", "방문한 페이지(공유·초대 번호는 가림)", "기기 정보", "마지막 방문부터 최대 14개월 보관", "거부해도 이용에 제한은 없어요"])
+    for (const part of ["Google LLC(미국)", "방문한 페이지(공유·초대 번호는 가림)", "기기 정보", "IP 주소", "쿠키 식별값", "마지막 방문부터 최대 14개월 보관", "거부해도 이용에 제한은 없어요"])
       expect(region!.textContent, part).toContain(part);
     expect(screen.getByRole("link", { name: "자세히" }).getAttribute("href")).toBe("/privacy#analytics");
     const [allow, deny] = screen.getAllByRole("button");

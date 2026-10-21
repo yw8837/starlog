@@ -1,11 +1,13 @@
 /*
- * The consent banner: a small sheet (UnlockSheet's colours), the column's width on phones and a corner card on desktop.
- * Non-blocking: sticky at the end of <body>, so it stays in view near the bottom while the page scrolls behind it, and at
- * the end of the page it takes its own room: nothing of the page is ever left under it.
+ * The consent banner: a small sheet (UnlockSheet's colours), the column's width on phones and a corner card on desktop,
+ * at the end of <body>. Non-blocking: on the pages with the tab bar (home, guides, records, shares) it is sticky, in view
+ * near the bottom while the page scrolls behind it and taking its own room at the end, so nothing is ever left under it;
+ * on the step-by-step screens (questions, the card table, checkout, login) it waits at the end of the page, since there it
+ * would lie over the card table and the step's buttons.
  */
 .banner {
   --banner-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  position: sticky;
+  position: static;
   bottom: var(--banner-bottom);
   /* Above the tab bar (20), below the share toast (30). */
   z-index: 25;
@@ -30,7 +32,12 @@
   }
 }
 
-/* Phones and tablets: above the fixed bottom tab bar, and above the floating button where a page has one (globals.css classes). */
+/* globals.css's class for the pages with the tab bar. */
+:root:has(:global(.with-tabbar)) .banner {
+  position: sticky;
+}
+
+/* Phones and tablets: above the fixed bottom tab bar, and above the floating button where a page has one. */
 @media (max-width: 1023px) {
   :root:has(:global(.with-tabbar)) .banner {
     --banner-bottom: calc(var(--tab-h) + 12px + env(safe-area-inset-bottom, 0px));
