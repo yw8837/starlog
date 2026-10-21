@@ -132,7 +132,7 @@ describe("policy pages", () => {
       expect(ga).not.toBeNull();
       expect(ga).not.toBe(may);
       expect(may!.textContent).not.toContain("Google");
-      for (const part of ["방문 통계", "허용한 분에 한해 Google 애널리틱스", "Google LLC(미국)", "이용 통계를 분석", "거부해도 서비스 이용에 제한이 없"]) expect(ga!.textContent, part).toContain(part);
+      for (const part of ["방문 통계", "허용한 분에 한해 Google 애널리틱스", "Google LLC(미국)", "방문 시각, 페이지에 머문 시간을 모아", "이용 통계를 분석", "거부해도 서비스 이용에 제한이 없"]) expect(ga!.textContent, part).toContain(part);
       expect(container.querySelector("#analytics")).toBeNull();
       expect(container.querySelector('[aria-label="Google LLC"]')).toBeNull();
       expect(container.textContent).not.toContain("_ga");
@@ -171,6 +171,7 @@ describe("policy pages", () => {
           "기기·브라우저·화면 정보",
           "대략적 위치(접속한 IP 주소로 Google이 추정하는 국가·도시 수준)",
           "방문 시각",
+          "페이지에 머문 시간",
         ])
           expect(items, part).toContain(part);
         expect(items).not.toMatch(/이용 행동|스크롤|클릭/);
@@ -227,6 +228,7 @@ describe("policy pages", () => {
         const rows = Object.fromEntries([...google!.querySelectorAll("dt")].map((dt) => [dt.textContent, dt.nextElementSibling?.textContent ?? ""]));
         expect(rows["국가"]).toBe("미국");
         expect(rows["이전 목적"]).toBe("이용 통계 분석(방문 통계를 허용한 경우에만)");
+        expect(rows["이전 항목"]).toContain("페이지에 머문 시간");
         expect(rows["이전 항목"]).toContain("방문한 페이지의 주소(공유·초대·기록 번호와 결제 정보는 지우고");
         expect(rows["이전 시기와 방법"]).toBe("방문 통계를 허용한 뒤 페이지를 열 때마다 암호화된 연결(HTTPS)로 전송");
         expect(rows["보유·이용 기간"]).toContain("이벤트 데이터 2개월, 사용자 데이터 14개월");
