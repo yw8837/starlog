@@ -245,13 +245,30 @@ export function dropContactSentences(text: string): string {
  * 저번, 지난·예전·이전 (주제) 풀이·질문·타로·사주, 물었던, 보자던, 보기로 했던. Time words (지난해, 지난달,
  * 지난주) and the spread's own cards (이전 카드, 앞선 카드) are not one.
  */
-const EARLIER_READING =
-  /지난\s?번|저번|(?:지난(?![해달주날밤])|예전|이전|전에\s?(?:본|봤던|보신|보셨던|받은|받았던))\s?(?:(?:타로|사주|재물|금전|연애|재회|직업운?|이직|관계|궁합)\s?)?(?:풀이|질문|타로|사주|리딩)|물었던|물어봤던|물어보셨던|물으셨던|보자던|보기로\s?했던/;
+const EARLIER_READING = new RegExp(
+  [
+    String.raw`지난\s?번`,
+    String.raw`저번(?!\s?(?:주|달|해))`, // 저번 주·달 are time words
+    String.raw`(?:지난(?![해달주날밤])|예전|이전|전에\s?(?:본|봤던|보신|보셨던|받은|받았던))\s?(?:(?:타로|사주|재물|금전|연애|재회|직업운?|이직|관계|궁합)\s?)?(?:풀이|질문|타로|사주|리딩)`,
+    String.raw`(?:^|[^가-힣])(?:물었던|물어봤던|물어보셨던|물으셨던)`, // not 다물었던
+    String.raw`그때\s?(?:물으신|물었던|물어보신|여쭤|보신|봤던)`,
+    String.raw`\d{1,2}월\s?\d{1,2}일[^.!?\n]{0,40}(?:풀이|질문)`,
+    String.raw`['‘"“][^'’"”]{2,40}['’"”]\s?풀이(?:에서|를|을|처럼|와|과|도|의)`,
+    String.raw`보자던`,
+    String.raw`보기로\s?했던`,
+  ].join("|"),
+);
 const bringsBack = (sentence: string) => EARLIER_READING.test(sentence.normalize("NFKC"));
+const QUOTED = /\s?['‘"“「『][^'’"”」』]{1,60}['’"”」』]/g;
 
-/** The text without every sentence (or line) that brings back an earlier reading. */
+/**
+ * The text without every sentence (or line) that brings back an earlier reading. A field made only of such sentences
+ * (a one-line verdict) is not left blank: it keeps them without their quoted words, where an earlier question would be.
+ */
 export function dropEarlierReadingSentences(text: string): string {
-  return bringsBack(text) ? dropSentences(text, bringsBack) : text;
+  if (!bringsBack(text)) return text;
+  const kept = dropSentences(text, bringsBack);
+  return kept.trim() ? kept : text.replace(QUOTED, "").replace(/\s{2,}/g, " ").trim();
 }
 
 /** A quotation the hiding emptied: the reading quoted nothing but the user's own words ('○○', "○○"). */

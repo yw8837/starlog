@@ -240,6 +240,20 @@ describe("sentences that bring back an earlier reading (A2 SHARE-1)", () => {
     const kept = "지난달부터 이어진 답답함이 풀려요. 지난해의 흐름이 정리되는 때예요. 이전 카드에서 본 망설임이 여기서 풀려요. 앞선 카드의 고요함이 이어져요. 지난주보다 마음이 가벼워요.";
     expect(sharedVerdict({}, kept)).toBe(kept);
   });
+
+  it("drops the other ways a reading names an earlier one: a date or a quoted question before 풀이, 그때 물으신 (harden review M2)", () => {
+    const back = ["10월 3일 '이직해도 될까' 풀이에서 본 신호가 다시 보여요.", "그때 물으신 '재회 가능성'은 이번에도 열려 있어요.", "'이직해도 될까' 풀이에서처럼 기다려 봐요."];
+    expect(sharedVerdict({}, `흐름이 밝아요. ${back.join(" ")} 천천히 가요.`)).toBe("흐름이 밝아요. 천천히 가요.");
+  });
+
+  it("keeps ordinary sentences that only look alike: 저번 주, 저번 달, 다물었던 (harden review L1)", () => {
+    const kept = "저번 주보다 마음이 가벼워요. 저번 달의 지출이 정리돼요. 입을 다물었던 사람이 먼저 말을 걸어요.";
+    expect(sharedVerdict({}, kept)).toBe(kept);
+  });
+
+  it("never empties a field made only of such a sentence: it keeps the sentence without the quoted earlier question (harden review L1)", () => {
+    expect(sharedVerdict({}, "지난번 '이직해도 될까' 풀이처럼 지금은 기다려 볼 때예요.")).toBe("지난번 풀이처럼 지금은 기다려 볼 때예요.");
+  });
 });
 
 describe("buildSharePayload (saju)", () => {
