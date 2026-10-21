@@ -48,6 +48,14 @@ export const RESERVATION_MS = 6 * 60 * 1000;
 export const MAX_RESTORES = 3;
 
 /**
+ * L-1: a lot gets its units back after an opening the model began writing (its cost was recorded) at most
+ * this many times, left openings included. Past it such an opening uses the lot up, logged as
+ * ledger.restore_capped; 결제 내역 then says to get in touch. A failure before the model began (it cost
+ * nothing, a provider outage included) and a lapsed reservation (the sweep) never count.
+ */
+export const MAX_BEGAN_RESTORES = 10;
+
+/**
  * SEC-02: the restore of an opening the client left after the model began answering. The lot can open
  * again, but the purchase is no longer refundable: its reading was (partly) written and paid for.
  */
@@ -59,11 +67,19 @@ const LEFT_RESTORE = "restore-left:";
  */
 const PART_RESTORE = "restore-part:";
 /**
+ * L-1: the restore of an opening that failed on the server after the model began writing. Counted toward
+ * MAX_BEGAN_RESTORES; still refundable, since the failure was ours.
+ */
+const BEGAN_RESTORE = "restore-began:";
+/** L-1 and L-2: the same for a premium opening that had written a part: counted, and no longer refundable. */
+const PART_BEGAN_RESTORE = "restore-part-began:";
+const marked = (...markers: string[]) => markers.map((marker) => `idem_key LIKE '${marker}%'`).join(" OR ");
+/**
  * True for a lot (aliased `lot`) that is not refundable any more: given back after its client left, or
  * after a part of its premium reading was written (L-2).
  */
 export const LEFT_SQL = (lot: string) =>
-  `EXISTS (SELECT 1 FROM ledger WHERE lot_id = ${lot}.id AND (idem_key LIKE '${LEFT_RESTORE}%' OR idem_key LIKE '${PART_RESTORE}%'))`;
+  `EXISTS (SELECT 1 FROM ledger WHERE lot_id = ${lot}.id AND (${marked(LEFT_RESTORE, PART_RESTORE, PART_BEGAN_RESTORE)}))`;
 
 /** What a new lot holds: one opening. */
 const ONE_OPENING = 1;
@@ -310,18 +326,27 @@ export async function deliverUnlock(
  * SEC-02: `left`: the client left after the model began answering; the units come back the same way,
  * but the purchase is no longer refundable (LEFT_SQL), and only MAX_RESTORES times per lot: after
  * that the unlock is released and its units stay used. A server failure or a lapsed reservation (the
- * sweep) always gives the units back and never counts toward MAX_RESTORES. L-2: a premium reservation that had
+ * sweep) never counts toward MAX_RESTORES, and gives the units back unless L-1 below. L-2: a premium reservation that had
  * written a part gives its units back as PART_RESTORE: no longer refundable.
+ * L-1: `began`: the server failed after the model began writing (its cost was recorded). The units come
+ * back only while the lot has fewer than MAX_BEGAN_RESTORES such restores, left ones included; past it
+ * the unlock is released, its units stay used and ledger.restore_capped names the lot.
  */
-export async function releaseUnlock(db: D1Binding, input: { unlockId: string; now: number; left?: boolean }): Promise<boolean> {
+export async function releaseUnlock(db: D1Binding, input: { unlockId: string; now: number; left?: boolean; began?: boolean }): Promise<boolean> {
   const unlock = await unlockRow(db, input.unlockId);
   if (!unlock || unlock.status !== "reserved") return false;
-  const capped = input.left ? ` AND (SELECT COUNT(*) FROM ledger WHERE lot_id = ? AND idem_key LIKE '${LEFT_RESTORE}%') < ${MAX_RESTORES}` : "";
-  const restorable = `${RESERVED}${capped}`;
-  const restorableArgs = (lotId: string) => (input.left ? [unlock.id, lotId] : [unlock.id]);
-  const marker = input.left ? LEFT_RESTORE : unlock.part_written || unlock.part_seq > 1 ? PART_RESTORE : "restore:";
+  const counted = Boolean(input.left || input.began);
+  const caps = [
+    ...(counted ? [`(SELECT COUNT(*) FROM ledger WHERE lot_id = ? AND (${marked(LEFT_RESTORE, BEGAN_RESTORE, PART_BEGAN_RESTORE)})) < ${MAX_BEGAN_RESTORES}`] : []),
+    ...(input.left ? [`(SELECT COUNT(*) FROM ledger WHERE lot_id = ? AND ${marked(LEFT_RESTORE)}) < ${MAX_RESTORES}`] : []),
+  ];
+  const restorable = [RESERVED, ...caps].join(" AND ");
+  const restorableArgs = (lotId: string) => [unlock.id, ...caps.map(() => lotId)];
+  const part = unlock.part_written || unlock.part_seq > 1;
+  const marker = input.left ? LEFT_RESTORE : input.began ? (part ? PART_BEGAN_RESTORE : BEGAN_RESTORE) : part ? PART_RESTORE : "restore:";
+  const allocations = allocationsOf(unlock);
   const results = await db.batch([
-    ...allocationsOf(unlock).flatMap(([lotId, units]) => [
+    ...allocations.flatMap(([lotId, units]) => [
       db
         .prepare(`UPDATE credit_lots SET expires_at = ? WHERE id = ? AND currency = 'free' AND status = 'active' AND expires_at <= ? AND ${restorable}`)
         .bind(giftExpiry(input.now, 0), lotId, input.now, ...restorableArgs(lotId)),
@@ -336,7 +361,16 @@ export async function releaseUnlock(db: D1Binding, input: { unlockId: string; no
     ]),
     db.prepare("UPDATE unlocks SET status = 'released', settled_at = ? WHERE id = ? AND status = 'reserved'").bind(input.now, unlock.id),
   ]);
-  return results[results.length - 1]?.meta?.changes === 1;
+  const released = results[results.length - 1]?.meta?.changes === 1;
+  // Released, but a lot still active got nothing back: a restore cap kept it used.
+  if (released && counted) {
+    for (const [i, [lotId]] of allocations.entries()) {
+      if (results[i * 3 + 1]?.meta?.changes === 1) continue;
+      const lot = await db.prepare("SELECT status FROM credit_lots WHERE id = ?").bind(lotId).first<{ status: string }>();
+      if (lot?.status === "active") console.warn(JSON.stringify({ evt: "ledger.restore_capped", unlockId: unlock.id, lotId, left: Boolean(input.left) }));
+    }
+  }
+  return released;
 }
 
 /**

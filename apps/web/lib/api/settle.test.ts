@@ -41,8 +41,8 @@ function settlement(calls: string[], deliver: () => Promise<Record<string, unkno
       calls.push("recover");
       return recovered;
     },
-    release: async () => {
-      calls.push("release");
+    release: async (began) => {
+      calls.push(began ? "release:began" : "release");
     },
     abandon: async () => {
       calls.push("abandon");
@@ -137,11 +137,11 @@ describe("settlement inside the generation's keepAlive work", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const calls: string[] = [];
     expect((await respondGeneration(post(), billed(true), { gate: gate(), settle: settlement(calls) })).status).toBe(502);
-    expect(calls).toEqual(["release"]);
+    expect(calls).toEqual(["release:began"]);
     const again: string[] = [];
     const res = await respondGeneration(post(), billed(), { gate: gate(), settle: settlement(again, failedSave, null) });
     expect(res.status).toBe(502);
-    expect(again).toEqual(["deliver", "recover", "release"]);
+    expect(again).toEqual(["deliver", "recover", "release:began"]);
   });
 
   it("JSON: a recovery that throws is logged as settle.recover_failed (the error's kind only), and the generation releases (audit B B15)", async () => {
@@ -156,7 +156,7 @@ describe("settlement inside the generation's keepAlive work", () => {
     };
     const res = await respondGeneration(post(), billed(), { gate: gate(), settle: broken });
     expect(res.status).toBe(502);
-    expect(calls).toEqual(["deliver", "recover", "release"]);
+    expect(calls).toEqual(["deliver", "recover", "release:began"]);
     const logged = error.mock.calls.map(([line]) => String(line));
     expect(logged.map((line) => JSON.parse(line))).toContainEqual({ evt: "settle.recover_failed", error: "RangeError" });
     expect(logged.join("\n")).not.toContain("u_123");
@@ -183,7 +183,21 @@ describe("settlement inside the generation's keepAlive work", () => {
     const calls: string[] = [];
     const list = await events(await respondGeneration(post(true), billed(true), { gate: gate(), settle: settlement(calls) }));
     expect(list.at(-1)).toMatchObject({ type: "error", status: 502 });
-    expect(calls).toEqual(["release"]);
+    expect(calls).toEqual(["release:began"]);
+  });
+
+  it("tells release whether the model began answering: a failure after its cost was recorded counts toward the restore cap, one before does not (L-1)", async () => {
+    const before = async (hooks: GenerationHooks): Promise<GenerationOutcome> => {
+      hooks.onReserve?.(EXPENSIVE);
+      hooks.onRelease?.();
+      throw new GenerationError("UPSTREAM");
+    };
+    for (const stream of [false, true]) {
+      const calls: string[] = [];
+      await (await respondGeneration(post(stream), before, { gate: gate(), settle: settlement(calls) })).text();
+      await (await respondGeneration(post(stream), billed(true), { gate: gate(), settle: settlement(calls) })).text();
+      expect(calls).toEqual(["release", "release:began"]);
+    }
   });
 
   it("NDJSON: a client that leaves before the model began answering gets its credit back", async () => {
@@ -228,7 +242,7 @@ describe("settlement inside the generation's keepAlive work", () => {
     const controller = new AbortController();
     controller.abort();
     await respondGeneration(post(false, controller.signal), billed(), { gate: gate(), settle: settlement(calls, failedSave, null) });
-    expect(calls).toEqual(["deliver", "recover", "release"]);
+    expect(calls).toEqual(["deliver", "recover", "release:began"]);
   });
 
   it("leaves 첫 이용 무료 responses exactly as before", async () => {

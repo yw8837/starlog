@@ -81,10 +81,18 @@ describe("premium settlement", () => {
   it("releases on failure, once", async () => {
     const { db, plan } = await setup();
     const settle = premiumSettlement(plan, chapterOf, NOW)!;
-    await settle.release();
-    await settle.release();
+    await settle.release(false);
+    await settle.release(false);
     expect(await one(db, "SELECT status FROM unlocks")).toEqual({ status: "released" });
     expect(await one(db, "SELECT units_left FROM credit_lots WHERE id = 'lot_ny'")).toEqual({ units_left: 1 });
+  });
+
+  it("tells the ledger a failure the model began writing, so it counts toward the restore cap (L-1)", async () => {
+    const { db, plan } = await setup();
+    const settle = premiumSettlement(plan, chapterOf, NOW)!;
+    await settle.release(true);
+    expect(await one(db, "SELECT units_left FROM credit_lots WHERE id = 'lot_ny'")).toEqual({ units_left: 1 });
+    expect(await one(db, "SELECT COUNT(*) AS n FROM ledger WHERE kind = 'restore' AND idem_key LIKE 'restore-began:%'")).toEqual({ n: 1 });
   });
 
   it("gives the purchase back when the client left after the model began answering, to reopen right away, no longer refundable", async () => {

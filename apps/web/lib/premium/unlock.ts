@@ -177,8 +177,8 @@ export function premiumSettlement(plan: PremiumPlan, chapterOf: (body: Record<st
     async recover() {
       return (await readingExists(save.db, save.userId, readingId)) ? { readingId } : null;
     },
-    async release() {
-      if (plan.unlockId && (await releaseUnlock(save.db, { unlockId: plan.unlockId, now: Date.now() }))) {
+    async release(began) {
+      if (plan.unlockId && (await releaseUnlock(save.db, { unlockId: plan.unlockId, now: Date.now(), began }))) {
         console.info(JSON.stringify({ evt: "unlock.released", product: plan.product }));
       }
     },

@@ -38,7 +38,8 @@ export interface GenerationOutcome {
  * - `recover` runs when deliver threw: what deliver would have returned if the save landed anyway
  *   (its D1 answer was lost), else null.
  * - `release` runs on every failure: generation error, budget, client gone before the model began
- *   answering, a save that did not land. It must be idempotent and a no-op once delivered.
+ *   answering, a save that did not land. It must be idempotent and a no-op once delivered. `began`: the
+ *   model began answering (its cost was recorded), so the restore counts toward the ledger's cap (L-1).
  * - `abandon` runs instead when the client left after the model began answering (SEC-02): the credit
  *   comes back to open again (a few times at most), but its purchase is no longer refundable. Without
  *   it the reservation is simply kept until it lapses.
@@ -46,7 +47,7 @@ export interface GenerationOutcome {
 export interface Settlement {
   deliver(outcome: GenerationOutcome): Promise<Record<string, unknown>>;
   recover(): Promise<Record<string, unknown> | null>;
-  release(): Promise<void>;
+  release(began: boolean): Promise<void>;
   abandon?(): Promise<void>;
 }
 
@@ -148,9 +149,10 @@ export async function respondGeneration(
   // after the generation finished (a save that did not land) is the server's and always releases.
   const release = async (generated: boolean) => {
     if (!settle) return;
-    const abandoned = !generated && abort.clientGone() && ledgers.some((ledger) => ledger.began);
+    const began = ledgers.some((ledger) => ledger.began);
+    const abandoned = !generated && abort.clientGone() && began;
     try {
-      await (abandoned ? settle.abandon?.() : settle.release());
+      await (abandoned ? settle.abandon?.() : settle.release(began));
     } catch (error) {
       console.error(JSON.stringify({ evt: "settle.release_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
     }
