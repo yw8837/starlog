@@ -14,8 +14,8 @@ export interface ToolGuideProps {
   title: string;
   intro: ReactNode[];
   steps: { title: string; items: ReactNode[] };
-  /** More short parts under their own heading: paragraphs, or a bulleted list with `list`. */
-  parts?: { title: string; items: ReactNode[]; list?: boolean }[];
+  /** More short parts under their own heading: paragraphs, or a bulleted list with `list`; `note` follows the items. */
+  parts?: { title: string; items: ReactNode[]; list?: boolean; note?: ReactNode }[];
   links: { title: string; items: GuideLink[] };
   faq: { title: string; items: { q: string; a: ReactNode }[] };
 }
@@ -53,6 +53,7 @@ export function ToolGuide({ id, title, intro, steps, parts = [], links, faq }: T
           ) : (
             part.items.map((item, i) => <p key={i}>{item}</p>)
           )}
+          {part.note}
         </div>
       ))}
 

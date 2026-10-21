@@ -1,3 +1,4 @@
+import { OpeningOnly } from "@/components/ui/OpeningOnly";
 import { OPENING_LAST_DAY, SITE, won } from "@/lib/config";
 import { openingFreeText, times } from "@/lib/helpGuide";
 import { guideHref } from "@/lib/hosts";
@@ -9,7 +10,7 @@ import { ToolGuide } from "./ToolGuide";
 const { price, reading, beta, features } = SITE;
 const guide = (slug: string) => guideHref(`/guide/${slug}`);
 
-/** The 오픈 기념 무료 line (tarot only). */
+/** The 오픈 기념 무료 line (tarot only), shown in the browser while it runs (OpeningOnly), never in the cached HTML. */
 const openingLine = openingFreeText(beta.firstFreeTarot);
 
 /** /now: 지금의 한 장, the free one-card tarot (the sentences are prepared per card; no AI call). */
@@ -216,8 +217,12 @@ export function TarotGuide() {
           items: [
             `첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 무료로 볼 수 있어요.`,
             `타로 전체 풀이는 ${won(price.tarotStandardKrw)}이에요. 열고 나면 같은 카드로 이어서 물어볼 수 있어요.`,
-            openingLine,
           ],
+          note: (
+            <OpeningOnly>
+              <p>{openingLine}</p>
+            </OpeningOnly>
+          ),
         },
       ]}
       links={{
@@ -270,8 +275,12 @@ export function SajuGuide() {
           items: [
             sajuFreeLine(features.sajuTopics, beta.teaserPerDay),
             `사주 전체 풀이는 ${won(price.sajuStandardKrw)}이에요. ${topics ? `${sajuPricingLine(features.sajuTopics)}를 열 수 있고,` : "타고난 결과 지금 지나는 10년의 흐름(대운)을 담고,"} 정통 사주는 약 ${approxCharsText(reading.approxChars.saju)}자로 풀어요.`,
-            `오픈 기념 무료(${OPENING_LAST_DAY}까지, 기기마다 타로 전체 풀이 ${times(beta.firstFreeTarot)})는 사주에는 쓸 수 없어요.`,
           ],
+          note: (
+            <OpeningOnly>
+              <p>{`오픈 기념 무료(${OPENING_LAST_DAY}까지, 기기마다 타로 전체 풀이 ${times(beta.firstFreeTarot)})는 사주에는 쓸 수 없어요.`}</p>
+            </OpeningOnly>
+          ),
         },
         {
           title: "명식에서 먼저 볼 것",

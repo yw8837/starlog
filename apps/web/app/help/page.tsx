@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AccordionItem, InfoPage, Steps, Tip } from "@/components/info/InfoPage";
 import s from "@/components/info/info.module.css";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
+import { OpeningOnly } from "@/components/ui/OpeningOnly";
 import { helpGroups } from "@/lib/helpGuide";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { pageMetadata } from "@/lib/seo";
@@ -40,21 +41,24 @@ export default function HelpPage() {
             <p className={s.groupSub}>{group.sub}</p>
           </div>
           <ul className={s.list}>
-            {group.items.map((item) => (
-              <li key={item.id}>
-                <AccordionItem id={`${group.id}-${item.id}`} icon={item.icon} title={item.title} sub={item.sub}>
-                  {item.body ? <p>{item.body}</p> : null}
-                  {item.steps ? <Steps steps={item.steps} /> : null}
-                  {item.tip ? <Tip>{item.tip}</Tip> : null}
-                  {item.crisis ? <CrisisContacts /> : null}
-                  {item.link ? (
-                    <Link href={item.link.href} className={s.more}>
-                      {item.link.label}
-                    </Link>
-                  ) : null}
-                </AccordionItem>
-              </li>
-            ))}
+            {group.items.map((item) => {
+              const card = (
+                <li key={item.id}>
+                  <AccordionItem id={`${group.id}-${item.id}`} icon={item.icon} title={item.title} sub={item.sub}>
+                    {item.body ? <p>{item.body}</p> : null}
+                    {item.steps ? <Steps steps={item.steps} /> : null}
+                    {item.tip ? <Tip>{item.tip}</Tip> : null}
+                    {item.crisis ? <CrisisContacts /> : null}
+                    {item.link ? (
+                      <Link href={item.link.href} className={s.more}>
+                        {item.link.label}
+                      </Link>
+                    ) : null}
+                  </AccordionItem>
+                </li>
+              );
+              return item.opening ? <OpeningOnly key={item.id}>{card}</OpeningOnly> : card;
+            })}
           </ul>
         </section>
       ))}

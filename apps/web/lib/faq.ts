@@ -1,5 +1,5 @@
 import { adsConfig } from "./ads";
-import { SITE } from "./config";
+import { SITE, won } from "./config";
 import { approxCharsText } from "./pricing";
 import { openingFreeText, times } from "./helpGuide";
 import { crisisLines } from "./crisis";
@@ -21,6 +21,11 @@ export interface FaqEntry {
   link?: { href: string; label: string };
   /** Ends with the helplines (components/ui/CrisisContacts). */
   crisis?: boolean;
+  /**
+   * A last paragraph about 오픈 기념 무료: /faq shows it after mount, only while it runs (components/ui/OpeningOnly).
+   * Never in the server HTML, the FAQPage JSON-LD, the home's FAQ or llms-full.txt, which are cached and must stay true.
+   */
+  opening?: string;
 }
 
 export interface FaqGroup {
@@ -35,6 +40,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
   const { nameKo } = site;
   const { firstFreeTarot, teaserPerDay } = site.beta;
   const { approxChars } = site.reading;
+  const { tarotStandardKrw, sajuStandardKrw } = site.price;
   const contacts = contactChannels(site.business);
   const email = contacts.find(([label]) => label === "이메일")?.[1];
   const phone = contacts.find(([label]) => label === "전화")?.[1];
@@ -85,10 +91,12 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
         {
           id: "free",
           q: `${nameKo}는 무료인가요?`,
+          // The direct answer first, in facts that stay true (AEO); the dated offer only in `opening`.
           a: [
-            `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 열 수 있고, 한국 시간 0시에 다시 채워져요.`,
-            "지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요. 풀이 가격은 가격 안내에서 볼 수 있어요.",
+            `일부는 무료예요. 지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료이고, 타로 전체 풀이는 ${won(tarotStandardKrw)}, 사주 전체 풀이는 ${won(sajuStandardKrw)}이에요.`,
+            `먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 무료로 열 수 있고, 한국 시간 0시에 다시 채워져요. 깊게 보는 풀이의 가격도 가격 안내에서 볼 수 있어요.`,
           ],
+          opening: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요.`,
           link: { href: "/pricing", label: "가격 안내" },
         },
         {

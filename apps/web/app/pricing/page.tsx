@@ -5,6 +5,7 @@ import { Rabbit } from "@/components/characters/Rabbit";
 import { LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import s from "@/components/legal/legal.module.css";
 import { ReviewList } from "@/components/reviews/ReviewList";
+import { OpeningOnly } from "@/components/ui/OpeningOnly";
 import { SITE, won } from "@/lib/config";
 import { openingFreeText, times } from "@/lib/helpGuide";
 import { REFUND_DAYS, standardProduct } from "@/lib/pay/catalog";
@@ -43,6 +44,9 @@ const PRODUCTS = [
   },
 ] as const;
 
+/** One sentence with every price on this page: the two readings, then the premium ones by name. */
+const PRICE_SUMMARY = `타로 전체 풀이는 ${won(price.tarotStandardKrw)}, 사주 전체 풀이는 ${won(price.sajuStandardKrw)}이고, 깊게 보는 풀이는 ${price.premium.map((p) => `${p.name} ${won(p.krw)}`).join(", ")}이에요.`;
+
 function Check() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -54,8 +58,12 @@ function Check() {
 export default function PricingPage() {
   return (
     <LegalPage title="가격 안내" lead="풀이 한 번의 가격과 무료로 볼 수 있는 부분을 한곳에 모았어요.">
+      {/* Every price in one sentence first (AEO), facts that stay true; the dated 오픈 기념 무료 only in the browser while it runs. */}
       <LegalNote>
-        <p className={s.noteTitle}>{openingFreeText(beta.firstFreeTarot)}</p>
+        <p className={s.noteTitle}>{PRICE_SUMMARY}</p>
+        <OpeningOnly>
+          <p>{openingFreeText(beta.firstFreeTarot)}</p>
+        </OpeningOnly>
         <p>가격이 바뀔 때는 이 페이지에 먼저 알려 드려요.</p>
       </LegalNote>
 
@@ -129,7 +137,9 @@ export default function PricingPage() {
 
       <LegalSection id="free" title="무료로 볼 수 있는 부분">
         <ul className={s.list}>
-          <li>{openingFreeText(beta.firstFreeTarot)}</li>
+          <OpeningOnly>
+            <li>{openingFreeText(beta.firstFreeTarot)}</li>
+          </OpeningOnly>
           <li>{`타로는 뽑은 카드 3장과 첫 풀이, 이어지는 풀이의 소제목을 먼저 무료로 볼 수 있어요. 첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 볼 수 있어요.`}</li>
           <li>{sajuFreeLine(features.sajuTopics, beta.teaserPerDay)}</li>
           <li>지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요.</li>
