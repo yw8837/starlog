@@ -195,8 +195,8 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
           : {}),
   };
   const date = kstMonthDay(chapter.createdAt);
-  // PDF로 저장: the day it was read; a reading in the account also opens in another browser (after a login).
-  const kept = { at: chapter.createdAt, inAccount: Boolean(chapter.serverId) };
+  // PDF로 저장: the day it was read; a reading in the account also opens in another browser (after a login), at its account id.
+  const kept = { at: chapter.createdAt, inAccount: Boolean(chapter.serverId), path: `/chapter/${chapter.serverId ?? chapter.id}` };
   // Shown in the design the reading was written for: one saved before readings kept their deck was
   // written for the 1909 scans (lib/api/inputs.ts), whatever this device chose since.
   const deck = chapter.deck ?? "rws1909";
@@ -234,7 +234,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} shareable={whole} />
+        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} shareable={whole} kept={kept} />
       </>
     );
   }

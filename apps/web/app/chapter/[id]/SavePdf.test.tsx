@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
@@ -75,6 +75,25 @@ describe("PDF로 저장 on a finished reading", () => {
     render(<LocalChapter id="saju0001" />);
     savePdf();
     expect(titleWhilePrinting).toBe("스타로그-사주-2026-10-21");
+  });
+
+  it("in an in-app browser, 링크 복사 gives the account address, not this device's own id, so another browser finds it", async () => {
+    const userAgent = navigator.userAgent;
+    Object.defineProperty(navigator, "userAgent", { value: `${userAgent} KAKAOTALK 2410110`, configurable: true });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    try {
+      seed([{ ...TAROT, serverId: "abcdefghij0123456789" }]);
+      render(<LocalChapter id="tarot001" />);
+      savePdf();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "링크 복사" }));
+      });
+      expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/chapter/abcdefghij0123456789`);
+    } finally {
+      Object.defineProperty(navigator, "userAgent", { value: userAgent, configurable: true });
+      delete (navigator as { clipboard?: unknown }).clipboard;
+    }
   });
 
   it("a premium reading: printed under its product's name", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isInAppBrowser, isKakaoTalk } from "./inApp";
+import { isInAppBrowser, isIos, isKakaoTalk } from "./inApp";
 
 const UA = {
   chromeAndroid: "Mozilla/5.0 (Linux; Android 14; SM-S918N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36",
@@ -13,11 +13,15 @@ const UA = {
   naver: "Mozilla/5.0 (Linux; Android 14; SM-S918N Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0.0.0 Mobile Safari/537.36 NAVER(inapp; search; 2000; 12.10.1)",
   line: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari Line/14.16.0",
   daum: "Mozilla/5.0 (Linux; Android 14; SM-S918N Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/129.0.0.0 Mobile Safari/537.36 DaumApps/8.10.0",
+  // Captured user agents: Everytime (a pentest UA list), X/Twitter (inapp-spy's test set).
+  everytime: "Mozilla/5.0 (Linux; Android 7.0; SM-N920S Build/NRD90M; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/66.0.3359.158 Mobile Safari/537.36 (everytimeApp; Android/4.4.7 (Android/7.0; SM-N920S))",
+  twitter: "Mozilla/5.0 (iPhone; CPU iPhone OS 10_2_1 like Mac OS X) AppleWebKit/602.3.12 (KHTML, like Gecko) Mobile/14D27 Twitter for iPhone",
+  ipadDesktop: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15",
 };
 
 describe("in-app browsers (PDF로 저장: window.print() does nothing there)", () => {
-  it("names KakaoTalk, Instagram, Threads, Facebook, NAVER, LINE and Daum", () => {
-    for (const ua of [UA.kakao, UA.instagram, UA.threads, UA.facebook, UA.naver, UA.line, UA.daum]) expect(isInAppBrowser(ua), ua).toBe(true);
+  it("names KakaoTalk, Instagram, Threads, Facebook, NAVER, LINE, Daum, Everytime and X (Twitter)", () => {
+    for (const ua of [UA.kakao, UA.instagram, UA.threads, UA.facebook, UA.naver, UA.line, UA.daum, UA.everytime, UA.twitter]) expect(isInAppBrowser(ua), ua).toBe(true);
   });
 
   it("leaves the phone's own browsers and desktop alone", () => {
@@ -29,5 +33,17 @@ describe("in-app browsers (PDF로 저장: window.print() does nothing there)", (
     expect(isKakaoTalk(UA.kakao.replace("KAKAOTALK", "kakaotalk"))).toBe(true);
     expect(isKakaoTalk(UA.instagram)).toBe(false);
     expect(isKakaoTalk(UA.chromeAndroid)).toBe(false);
+  });
+});
+
+describe("iOS (PDF로 저장 waits for no beforeprint there: its Safari may never send one)", () => {
+  it("names iPhones, and iPads that ask for the desktop site (a Mac with touch)", () => {
+    expect(isIos(UA.safariIos)).toBe(true);
+    expect(isIos(UA.ipadDesktop, 5)).toBe(true);
+  });
+
+  it("leaves Android, desktop and a Mac without touch alone", () => {
+    for (const ua of [UA.chromeAndroid, UA.samsung, UA.desktop]) expect(isIos(ua), ua).toBe(false);
+    expect(isIos(UA.ipadDesktop, 0)).toBe(false);
   });
 });
