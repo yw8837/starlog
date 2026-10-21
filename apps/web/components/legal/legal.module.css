@@ -130,6 +130,36 @@ ol.list {
   font-weight: 700;
 }
 
+/* The privacy policy's 방문 통계 block (#analytics, the consent banner's 자세히 link) and its setting. */
+.analytics {
+  display: grid;
+  gap: 12px;
+  scroll-margin-top: 16px;
+}
+
+.setting {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+}
+
+/* The two choices side by side, the same size. */
+.settingButtons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-width: 320px;
+}
+
+/* This browser's choice, marked without pushing either. */
+.settingButtons [aria-pressed="true"] {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
 /* ---- label/value rows ---- */
 
 .facts {

@@ -3,6 +3,8 @@ import { Gowun_Batang, Noto_Sans_KR } from "next/font/google";
 import { CharacterDefs } from "@/components/characters/defs";
 import { RouteTracker } from "@/components/layout/RouteTracker";
 import { VersionCheck } from "@/components/layout/VersionCheck";
+import { ConsentBanner } from "@/components/seo/ConsentBanner";
+import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
@@ -66,8 +68,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <RouteTracker />
         <VersionCheck />
-        {/* GA4 (components/seo/GoogleAnalytics.tsx) is not mounted yet: it waits for the owner's call on consent for the
-            overseas transfer to Google and for a privacy revision of its own, announced 7 days ahead. */}
+        {/* GA4 on consent (owner: 동의 받고 켜기), from the privacy revision of lib/legal.ts GA_REVISION_DATE: the banner
+            asks once, the loader runs only after 허용. Both render nothing on the server. */}
+        <ConsentBanner />
+        <GoogleAnalytics />
       </body>
     </html>
   );

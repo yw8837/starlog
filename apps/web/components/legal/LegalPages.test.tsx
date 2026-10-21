@@ -119,6 +119,130 @@ describe("policy pages", () => {
     expect(text).not.toContain("누를 때까지 보관하고, 누르면 바로 지웁니다");
   });
 
+  describe("privacy: Google Analytics on consent, a revision of its own in force 2026-10-30 00:00 KST", () => {
+    const noteOf = (container: HTMLElement, title: string) => [...container.querySelectorAll("p")].find((p) => p.textContent === title)?.parentElement ?? null;
+    const MAY = "개정 예정 · 2026년 10월 28일부터 시행";
+    const GA = "개정 예정 · 2026년 10월 30일부터 시행";
+
+    it("until then: announced in a box of its own beside the 10/28 one (each with its date), and nothing of it in the text", () => {
+      let container = render(<PrivacyPage />).container;
+      const may = noteOf(container, MAY);
+      const ga = noteOf(container, GA);
+      expect(may).not.toBeNull();
+      expect(ga).not.toBeNull();
+      expect(ga).not.toBe(may);
+      expect(may!.textContent).not.toContain("Google");
+      for (const part of ["방문 통계", "허용한 분에 한해 Google 애널리틱스", "Google LLC(미국)", "방문 시각, 페이지에 머문 시간을 모아", "이용 통계를 분석", "거부해도 서비스 이용에 제한이 없"]) expect(ga!.textContent, part).toContain(part);
+      expect(container.querySelector("#analytics")).toBeNull();
+      expect(container.querySelector('[aria-label="Google LLC"]')).toBeNull();
+      expect(container.textContent).not.toContain("_ga");
+      expect(container.textContent).toContain("이 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며");
+      cleanup();
+      // 10/29: the 10/28 revision is in force, the GA one still announced.
+      vi.setSystemTime(Date.parse("2026-10-29T23:59:59+09:00"));
+      container = render(<PrivacyPage />).container;
+      expect(noteOf(container, MAY)).toBeNull();
+      expect(noteOf(container, GA)).not.toBeNull();
+      expect(container.querySelector('time[datetime="2026-10-28"]')).not.toBeNull();
+      expect(container.querySelector("#analytics")).toBeNull();
+    });
+
+    describe("from then", () => {
+      beforeEach(() => vi.setSystemTime(Date.parse("2026-10-30T00:00:00+09:00")));
+
+      it("no 개정 예정 left, 시행일 2026-10-30, and the 10/28 revision's lines as they were", () => {
+        const { container } = render(<PrivacyPage />);
+        const text = container.textContent ?? "";
+        expect(text).not.toContain("개정 예정");
+        expect(container.querySelector('time[datetime="2026-10-30"]')).not.toBeNull();
+        expect(text).toContain("이 방침은 2026년 10월 30일부터 시행합니다.");
+        expect(text).toContain("그 전이라도 공유한 날부터 180일이 지나면 링크와 함께 자동으로 지웁니다.");
+        expect(text).toContain("풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 일반 풀이는 8일, 프리미엄 풀이는 31일 동안 보관한 뒤 자동으로 지웁니다.");
+      });
+
+      it("1항 lists what GA collects, as the code sends it (redacted addresses), and no behaviour it does not send; 2항 adds 이용 통계 분석", () => {
+        const { container } = render(<PrivacyPage />);
+        const items = container.querySelector("#items")?.textContent ?? "";
+        for (const part of [
+          "방문 통계(허용한 경우에만)",
+          "Google 애널리틱스 쿠키에 담긴 무작위 식별값",
+          "방문한 페이지의 주소(공유·초대·기록 번호와 결제 정보는 지우고, 홍보 링크의 utm 꼬리표만 남긴 주소)와 페이지 제목",
+          "이전 페이지의 주소(스타로그의 페이지는 같은 방식으로 지운 주소, 다른 사이트는 그 사이트의 도메인만)",
+          "기기·브라우저·화면 정보",
+          "대략적 위치(접속한 IP 주소로 Google이 추정하는 국가·도시 수준)",
+          "방문 시각",
+          "페이지에 머문 시간",
+        ])
+          expect(items, part).toContain(part);
+        expect(items).not.toMatch(/이용 행동|스크롤|클릭/);
+        expect(container.querySelector("#purposes")?.textContent).toContain("이용 통계 분석");
+      });
+
+      it("3항 gives GA's retention as the property sets it: events 2 months, users 14 months (reset on a new visit), cookies up to 2 years, aggregate reports apart", () => {
+        const retention = render(<PrivacyPage />).container.querySelector("#retention")?.textContent ?? "";
+        expect(retention).toContain(
+          "Google 애널리틱스의 방문 통계 중 이벤트 데이터는 2개월, 사용자 데이터는 14개월(그 사이 새 방문이 있으면 그때부터 다시 계산) 동안 보관한 뒤 Google이 자동으로 지웁니다.",
+        );
+        expect(retention).toContain("페이지별 방문 수 같은 합계 보고서는 이 기간과 관계없이 남을 수 있습니다.");
+        expect(retention).toContain("방문 통계 쿠키는 브라우저에 최대 2년 동안 남습니다.");
+        expect(retention).not.toContain("정책에 따");
+      });
+
+      it("the cookie section's #analytics names _ga and _ga_8X11ZGFZKY on .yeolmaeapps.kr, says the operator views GA reports, and how to refuse and withdraw (with the setting there)", () => {
+        vi.stubEnv("ADSENSE_CLIENT", "");
+        const { container } = render(<PrivacyPage />);
+        const cookies = container.querySelector("#cookies")!;
+        const analytics = cookies.querySelector("#analytics");
+        expect(analytics).not.toBeNull();
+        const text = analytics!.textContent ?? "";
+        for (const part of [
+          "방문 통계 쿠키(허용한 경우에만)",
+          "_ga",
+          "_ga_8X11ZGFZKY",
+          "(.yeolmaeapps.kr)",
+          "최대 2년 뒤 만료",
+          "운영자는 Google 애널리틱스 보고서에서",
+          "처음 방문할 때 나오는 안내",
+          "거부하면 Google 애널리틱스를 불러오지 않고",
+          "이 브라우저의 방문 통계 쿠키를 지웁니다",
+          "거부해도 서비스 이용에 제한이 없습니다",
+          "그것만으로는 방문 통계가 멈추지 않을 수 있으니",
+        ])
+          expect(text, part).toContain(part);
+        expect(text).not.toContain("개인을 알아볼 수 없");
+        // The setting itself: the two choices.
+        expect([...analytics!.querySelectorAll("button")].map((button) => button.textContent)).toEqual(["허용", "거부"]);
+        // No longer "no behaviour-tracking cookies" while ads are off.
+        expect(cookies.textContent).not.toContain("광고나 행동 추적을 위한 쿠키는 쓰지 않습니다");
+        expect(cookies.textContent).toContain("방문 통계를 허용한 경우에만 아래 방문 통계 쿠키를 씁니다. 광고 쿠키는 쓰지 않습니다.");
+        cleanup();
+        vi.stubEnv("ADSENSE_CLIENT", "ca-pub-1234567890123456");
+        const on = render(<PrivacyPage />).container.querySelector("#cookies")?.textContent ?? "";
+        expect(on).toContain("방문 통계를 허용한 경우에만 아래 방문 통계 쿠키를 씁니다. 가이드 글 페이지에서는 아래 광고 쿠키가 쓰일 수 있습니다.");
+      });
+
+      it("4항 has a Google LLC card on consent (제28조의8 제1항 제1호), and the 'needed to provide the service' basis names only Anthropic and Cloudflare", () => {
+        const { container } = render(<PrivacyPage />);
+        const google = container.querySelector('[aria-label="Google LLC"]');
+        expect(google).not.toBeNull();
+        const rows = Object.fromEntries([...google!.querySelectorAll("dt")].map((dt) => [dt.textContent, dt.nextElementSibling?.textContent ?? ""]));
+        expect(rows["국가"]).toBe("미국");
+        expect(rows["이전 목적"]).toBe("이용 통계 분석(방문 통계를 허용한 경우에만)");
+        expect(rows["이전 항목"]).toContain("페이지에 머문 시간");
+        expect(rows["이전 항목"]).toContain("방문한 페이지의 주소(공유·초대·기록 번호와 결제 정보는 지우고");
+        expect(rows["이전 시기와 방법"]).toBe("방문 통계를 허용한 뒤 페이지를 열 때마다 암호화된 연결(HTTPS)로 전송");
+        expect(rows["보유·이용 기간"]).toContain("이벤트 데이터 2개월, 사용자 데이터 14개월");
+        expect(rows["이전 근거"]).toBe("정보주체의 동의(「개인정보 보호법」 제28조의8 제1항 제1호)");
+        expect(rows["거부 방법과 거부 시 불이익"]).toBe("처음 방문할 때 나오는 안내나 이 방침 6항의 방문 통계 설정에서 거부하거나 동의를 철회할 수 있으며, 거부해도 서비스 이용에 제한이 없습니다.");
+        expect(google!.querySelector('a[href="https://policies.google.com/privacy"]')?.textContent).toBe("policies.google.com/privacy");
+        const processors = container.querySelector("#processors")?.textContent ?? "";
+        expect(processors).toContain("Anthropic과 Cloudflare로의 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며");
+        expect(processors).toContain("Google LLC로의 이전은 방문 통계를 허용한 분의 동의에 따른 것으로");
+        expect(processors).not.toContain("이 이전은 이용자가 요청한");
+      });
+    });
+  });
+
   it("privacy: names the readings the account keeps the same way everywhere: opened while logged in with a payment (lib/readings/store.ts); 오픈 기념 무료 readings stay on the device", () => {
     const text = render(<PrivacyPage />).container.textContent ?? "";
     // The broader "readings opened while logged in" would also cover a 오픈 기념 무료 reading, which is never saved to the account.

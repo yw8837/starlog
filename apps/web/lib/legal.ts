@@ -38,8 +38,20 @@ const PRIVACY_REVISION_AT = Date.parse(`${PRIVACY_REVISION_DATE}T00:00:00+09:00`
 
 export const privacyRevisionInForce = (now: number = Date.now()): boolean => now >= PRIVACY_REVISION_AT;
 
+/**
+ * A second 개인정보처리방침 revision, apart from the one above: Google Analytics for visitors who allow it (owner's call
+ * "동의 받고 켜기"), announced 2026-10-22, in force 7 days after the notice (review: the 10/28 date left the GA notice
+ * short of 7 days). Before this KST midnight there is no consent banner and no GA, and the policy shows the addition as
+ * 개정 예정; from it, the text has it and the browser asks (components/seo/ConsentBanner.tsx), by the browser's clock.
+ */
+export const GA_REVISION_DATE = "2026-10-30";
+const GA_REVISION_AT = Date.parse(`${GA_REVISION_DATE}T00:00:00+09:00`);
+
+export const gaRevisionInForce = (now: number = Date.now()): boolean => now >= GA_REVISION_AT;
+
 /** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
-export const privacyEffectiveDate = (now: number = Date.now()): string => (privacyRevisionInForce(now) ? PRIVACY_REVISION_DATE : legalEffectiveDate(now));
+export const privacyEffectiveDate = (now: number = Date.now()): string =>
+  gaRevisionInForce(now) ? GA_REVISION_DATE : privacyRevisionInForce(now) ? PRIVACY_REVISION_DATE : legalEffectiveDate(now);
 
 /** "2026년 10월 1일" */
 export function koreanDate(iso: string): string {
