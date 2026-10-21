@@ -53,7 +53,12 @@
   line-height: 1.6;
 }
 
+/* 공유하기 (or 이미지로 공유) and PDF로 저장 side by side, wrapping on narrow screens. */
 .share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   margin-top: 14px;
 }
 
@@ -219,4 +224,29 @@
   margin-bottom: 8px;
   color: var(--ink-sub);
   line-height: 1.7;
+}
+
+/*
+ * PDF로 저장: the head keeps the type and day, the title and the birth line; the buttons and the keep-only line stay
+ * on screen. In the body only the reading and its follow-ups print (the .anchor parts): no 돌아보기, contents, rating,
+ * next step or invite, and nothing added there later.
+ */
+@media print {
+  .share,
+  .keepOnly {
+    display: none;
+  }
+
+  :has(> .anchor) > :not(.anchor) {
+    display: none;
+  }
+
+  /* Block flow, as the layout around it (components/tarot/ReadingLayout.module.css). */
+  .sections {
+    display: block;
+  }
+
+  .sections > * + * {
+    margin-top: 14px;
+  }
 }

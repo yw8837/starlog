@@ -195,6 +195,8 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
           : {}),
   };
   const date = kstMonthDay(chapter.createdAt);
+  // PDF로 저장: the day it was read; a reading in the account also opens in another browser (after a login).
+  const kept = { at: chapter.createdAt, inAccount: Boolean(chapter.serverId) };
   // Shown in the design the reading was written for: one saved before readings kept their deck was
   // written for the 1909 scans (lib/api/inputs.ts), whatever this device chose since.
   const deck = chapter.deck ?? "rws1909";
@@ -240,7 +242,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} share={share} rating={rating} next={next} />
+        <SajuChapterView eyebrow={sajuChapterEyebrow(chapter)} title={chapter.title || "나의 사주"} birth={chapter.birth} reading={chapter.reading} followUp={followUp} checkin={checkin} share={share} kept={kept} rating={rating} next={next} />
       </>
     );
   }
@@ -257,6 +259,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
         keepOnly={keepOnly ? OPENING_KEEP_ONLY : undefined}
         checkin={checkin}
         share={share}
+        kept={kept}
         rating={rating}
         next={next}
       />

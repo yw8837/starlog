@@ -151,3 +151,23 @@
   flex: none;
   color: #c9962e;
 }
+
+/* PDF로 저장: block flow like the layout around it (see ReadingLayout.module.css); no glow on paper, the gold ring as a border. */
+@media print {
+  .article {
+    display: block;
+  }
+
+  .article > * + * {
+    margin-top: 14px;
+  }
+
+  .verdict {
+    box-shadow: none;
+  }
+
+  .article .action {
+    border: 2px solid var(--gold-deep);
+    box-shadow: none;
+  }
+}

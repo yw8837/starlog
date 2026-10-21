@@ -196,3 +196,58 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * PDF로 저장 (window.print, components/share/SavePdfButton.tsx): A4, white paper and dark ink instead of the night
+ * sky, the content column at full width. The sky, the tab bar and the site footer (everything in the page frame but
+ * <main>) stay on screen; each screen hides its own controls in its CSS module.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 14mm;
+  }
+
+  :root {
+    color-scheme: light;
+    --ink: #2b2140;
+    --ink-sub: #5a4f6e;
+    --gold: #8a6416;
+    --glass: transparent;
+    --glass-line: #d9d2c4;
+    --line-strong: #c9c0ae;
+    --fs-title: 22px;
+    --fs-prose: 15px;
+    --lh-prose: 1.75;
+  }
+
+  html,
+  body {
+    background: #fff;
+  }
+
+  body,
+  .page-shell {
+    min-height: 0;
+  }
+
+  .with-tabbar {
+    padding-bottom: 0;
+  }
+
+  .page-shell > :not(main) {
+    display: none !important;
+  }
+
+  .page-col,
+  .page-col.page-wide {
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  /* The 오행 tiles keep their colours on paper. */
+  [data-el] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

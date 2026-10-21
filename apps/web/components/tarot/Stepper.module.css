@@ -59,3 +59,10 @@
 .track .filled {
   background: var(--gold);
 }
+
+/* PDF로 저장: the way back and the steps stay on screen. */
+@media print {
+  .bar {
+    display: none;
+  }
+}

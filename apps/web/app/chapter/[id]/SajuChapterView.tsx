@@ -2,6 +2,7 @@
 
 import { useMemo, type ReactNode } from "react";
 import { AiNote } from "@/components/reading/AiNote";
+import { PrintFoot, PrintHead, SavePdfButton, type KeptReading } from "@/components/share/SavePdfButton";
 import { ShareResultButton, type ShareActions } from "@/components/share/ShareResultButton";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
@@ -32,6 +33,8 @@ type SajuChapterViewProps = {
   checkin?: ReactNode;
   /** 결과 공유: the reading's own share link. Without it 공유하기 sends the site. */
   share?: ShareActions;
+  /** PDF로 저장: the day it was read and where it is kept. */
+  kept?: KeptReading;
   /** 풀이 후기 for a reading saved in the account; otherwise the plain stars. */
   rating?: ReactNode;
   /** After 카드로 이어서 보기 (plan-reconciled §4.3: 2027 신년운세 and 프리미엄 궁합 where premium is visible). */
@@ -39,12 +42,13 @@ type SajuChapterViewProps = {
 };
 
 /** An opened saju reading in one scroll: the chart, the sections, follow-ups, rating, and a way on to tarot. */
-export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin, share, rating, next }: SajuChapterViewProps) {
+export function SajuChapterView({ eyebrow, title, birth, reading, followUp, checkin, share, kept, rating, next }: SajuChapterViewProps) {
   const result = useMemo(() => chartFor(birth), [birth]);
 
   return (
     <>
       <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
+      <PrintHead at={kept?.at} />
       <ReadingLayout
         spreadLabel="명식"
         head={
@@ -52,12 +56,11 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
             <p className={s.eyebrow}>{eyebrow}</p>
             <h1 className={s.title}>{title}</h1>
             <InputLine form={birth} className={s.question} />
-            {/* The share link carries the reading, never the birth data above; no reading of its own, no share. */}
-            {share ? (
-              <div className={s.share}>
-                <ShareResultButton kind="saju" text={`나의 ${SITE.nameKo} · ${title}`} {...share} />
-              </div>
-            ) : null}
+            <div className={s.share}>
+              {/* The share link carries the reading, never the birth data above; no reading of its own, no share. */}
+              {share ? <ShareResultButton kind="saju" text={`나의 ${SITE.nameKo} · ${title}`} {...share} /> : null}
+              <SavePdfButton type="사주" kept={kept} />
+            </div>
           </header>
         }
         spread={<ChartPanel result={result} />}
@@ -84,6 +87,7 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
         </section>
         {next}
       </ReadingLayout>
+      <PrintFoot />
     </>
   );
 }

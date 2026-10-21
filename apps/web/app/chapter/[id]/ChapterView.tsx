@@ -6,6 +6,7 @@ import { Feedback } from "@/components/tarot/Feedback";
 import { FollowUp, type AskResult } from "@/components/tarot/FollowUp";
 import { ReadingArticle, type ReadingBody } from "@/components/tarot/ReadingArticle";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
+import { PrintFoot, PrintHead, SavePdfButton, type KeptReading } from "@/components/share/SavePdfButton";
 import { ShareResultButton, type ShareActions } from "@/components/share/ShareResultButton";
 import { SharePreview } from "@/components/tarot/SharePreview";
 import { SpreadRow, cardLabel, type SpreadCard } from "@/components/tarot/SpreadRow";
@@ -46,6 +47,8 @@ type ChapterViewProps = {
   invite?: { url: string; card: TarotSampleCard };
   /** 결과 공유: a saved reading's own share link. Without it (the demo) 공유하기 sends the site. */
   share?: ShareActions;
+  /** PDF로 저장: the day it was read and where it is kept; absent for the demo. */
+  kept?: KeptReading;
   /** The design the reading was written for; omitted, the viewer's choice. */
   deck?: FrontDeck;
   /** 풀이 후기 for a reading saved in the account; otherwise the plain stars. */
@@ -58,7 +61,7 @@ type ChapterViewProps = {
  * An opened tarot reading in one scroll: the question and cards, the full reading, follow-ups,
  * rating. Sharing makes the reading's own link (the cards and the reading, never the question or note).
  */
-export function ChapterView({ eyebrow, question, cards, reading, followUp, keepOnly, checkin, invite, share, deck, rating, next }: ChapterViewProps) {
+export function ChapterView({ eyebrow, question, cards, reading, followUp, keepOnly, checkin, invite, share, kept, deck, rating, next }: ChapterViewProps) {
   const [enlarged, setEnlarged] = useState<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const shown = enlarged === null ? undefined : cards[enlarged];
@@ -67,17 +70,17 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, keepO
   return (
     <>
       <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
+      <PrintHead at={kept?.at} />
       <ReadingLayout
         head={
           <header className={s.head}>
             <p className={s.eyebrow}>{eyebrow}</p>
             <h1 className={s.title}>{question}</h1>
-            {/* Only the reading's own link is shared (owner 2026-10-14: a share that opened the home misled). */}
-            {share ? (
-              <div className={s.share}>
-                <ShareResultButton kind="tarot" text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} {...share} />
-              </div>
-            ) : null}
+            <div className={s.share}>
+              {/* Only the reading's own link is shared (owner 2026-10-14: a share that opened the home misled). */}
+              {share ? <ShareResultButton kind="tarot" text={`${SITE.nameKo}에서 뽑은 카드 · ${names}`} {...share} /> : null}
+              <SavePdfButton type="타로" kept={kept} />
+            </div>
             {keepOnly ? <p className={s.keepOnly}>{keepOnly}</p> : null}
           </header>
         }
@@ -109,6 +112,7 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, keepO
           </section>
         ) : null}
       </ReadingLayout>
+      <PrintFoot />
 
       <Modal open={shown !== undefined} onClose={() => setEnlarged(null)} labelledBy="enlarged-title">
         {shown ? (
