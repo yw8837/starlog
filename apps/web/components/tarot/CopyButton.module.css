@@ -22,3 +22,10 @@
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
+
+/* PDF로 저장: nothing to copy on paper. */
+@media print {
+  .copy {
+    display: none;
+  }
+}

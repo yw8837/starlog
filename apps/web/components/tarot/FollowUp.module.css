@@ -170,3 +170,32 @@
   font-size: var(--fs-body);
   line-height: 1.6;
 }
+
+/* PDF로 저장: the questions asked and their answers only; nothing to ask with on paper, and no box when none was asked. */
+@media print {
+  .box:not(:has(.thread)),
+  .count,
+  .avatar,
+  .suggestions,
+  .form,
+  .done,
+  .error,
+  .box button {
+    display: none;
+  }
+
+  /* Block flow, as the reading above it (components/tarot/ReadingLayout.module.css). */
+  .box,
+  .thread {
+    display: block;
+  }
+
+  .box > * + *,
+  .thread > * + * {
+    margin-top: 14px;
+  }
+
+  .turn {
+    break-inside: avoid;
+  }
+}

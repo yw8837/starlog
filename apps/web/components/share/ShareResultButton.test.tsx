@@ -156,7 +156,8 @@ describe("ShareResultButton", () => {
 describe("ShareResultButton on the sheet's night gradient (M-01)", () => {
   // Tests run from the repo root or from apps/web.
   const read = (path: string) => readFileSync([`apps/web/${path}`, path].map((p) => resolve(process.cwd(), p)).find((p) => existsSync(p)) ?? "", "utf8");
-  const tokens = new Map([...read("app/globals.css").matchAll(/--([\w-]+):\s*(#[0-9a-f]{6});/gi)].map(([, name, hex]) => [name!, hex!]));
+  // The screen's tokens: the print block at the end (PDF로 저장's paper ink) does not light the sheet.
+  const tokens = new Map([...read("app/globals.css").split("@media print")[0]!.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6});/gi)].map(([, name, hex]) => [name!, hex!]));
   const rgb = (value: string) => {
     const hex = value.startsWith("var(") ? tokens.get(/--([\w-]+)/.exec(value)![1]!)! : value;
     return [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));

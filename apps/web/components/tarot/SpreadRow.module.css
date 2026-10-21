@@ -112,3 +112,10 @@
     transform: translateY(4px);
   }
 }
+
+/* PDF로 저장: a card never splits across two pages. */
+@media print {
+  .item {
+    break-inside: avoid;
+  }
+}

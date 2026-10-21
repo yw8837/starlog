@@ -16,3 +16,13 @@
 .paper h3 {
   color: var(--paper-ink);
 }
+
+/* PDF로 저장: a plain white section with a hairline edge, kept on one page where it fits. */
+@media print {
+  .paper {
+    background: #fff;
+    box-shadow: none;
+    border: 1px solid #e3dccd;
+    break-inside: avoid;
+  }
+}

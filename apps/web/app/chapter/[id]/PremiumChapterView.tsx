@@ -14,6 +14,7 @@ import { FollowUp } from "@/components/tarot/FollowUp";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
+import { PrintFoot, PrintHead, SavePdfButton } from "@/components/share/SavePdfButton";
 import { ShareImageButton } from "@/components/ui/ShareImageButton";
 import { absoluteUrl } from "@/lib/hosts";
 import { kstMonthDay } from "@/lib/kst";
@@ -96,6 +97,7 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
   return (
     <>
       <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
+      <PrintHead at={chapter.createdAt} />
       <ReadingLayout
         spreadLabel={spreadLabel}
         head={
@@ -103,8 +105,8 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
             <p className={s.eyebrow}>{eyebrow}</p>
             <h1 className={s.title}>{title}</h1>
             {line}
-            {shareBody ? (
-              <div className={s.share}>
+            <div className={s.share}>
+              {shareBody ? (
                 <ShareImageButton
                   imageUrl="/api/og/premium"
                   body={shareBody}
@@ -113,8 +115,9 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
                   shareUrl={absoluteUrl(premiumShareHref(chapter.kind))}
                   label="이미지로 공유"
                 />
-              </div>
-            ) : null}
+              ) : null}
+              <SavePdfButton type={PREMIUM[chapter.kind].name} kept={{ at: chapter.createdAt, inAccount: Boolean(chapter.serverId) }} />
+            </div>
           </header>
         }
         spread={spread}
@@ -130,6 +133,7 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
         {rating ?? <Feedback />}
         <AiNote />
       </ReadingLayout>
+      <PrintFoot />
     </>
   );
 }

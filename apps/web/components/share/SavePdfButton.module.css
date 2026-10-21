@@ -1,0 +1,70 @@
+/* One quiet line under the buttons, across the row (the result screens' share row wraps). */
+.hint {
+  flex-basis: 100%;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+}
+
+/* In an in-app browser: how to save instead, with 링크 복사. */
+.guide {
+  display: grid;
+  flex-basis: 100%;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+  background: var(--glass);
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.manual {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
+.manualField {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+/* The printed page's top line and its end: print only. */
+.printHead,
+.printFoot {
+  display: none;
+}
+
+@media print {
+  .printHead {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #d9d2c4;
+    color: #5a4f6e;
+    font-size: 11px;
+  }
+
+  .printFoot {
+    display: grid;
+    gap: 2px;
+    margin-top: 28px;
+    padding-top: 10px;
+    border-top: 1px solid #d9d2c4;
+    color: #5a4f6e;
+    font-size: 11px;
+    text-align: center;
+    break-inside: avoid;
+  }
+}

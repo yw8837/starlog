@@ -1,5 +1,6 @@
 import "server-only";
 import { SITE } from "@/lib/config";
+import { isKakaoTalk } from "@/lib/inApp";
 
 /**
  * Kakao Login, server-side authorization-code flow (developers.kakao.com/docs/latest/ko/kakaologin/rest-api).
@@ -50,7 +51,7 @@ export function authorizeUrl(state: string, purpose: "login" | "delete", env: No
 }
 
 /** KakaoTalk's in-app browser: its Kakao login rides on the app's own session, so it cannot re-check an account deletion. */
-export const isKakaoTalkInApp = (request: Request) => /KAKAOTALK/i.test(request.headers.get("user-agent") ?? "");
+export const isKakaoTalkInApp = (request: Request) => isKakaoTalk(request.headers.get("user-agent") ?? "");
 
 export interface KakaoProfile {
   /** the Kakao member number as a string (hash it with kakaoKey before storing) */

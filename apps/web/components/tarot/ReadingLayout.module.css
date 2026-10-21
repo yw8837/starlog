@@ -68,3 +68,19 @@
     backdrop-filter: blur(14px);
   }
 }
+
+/*
+ * PDF로 저장: one column in plain block flow. Chromium misplaces grid items that a page break pushes onto the next
+ * page (a card or a section kept whole), so the parts after them overlapped on paper.
+ */
+@media print {
+  .layout,
+  .body {
+    display: block;
+  }
+
+  .layout > * + *,
+  .body > * + * {
+    margin-top: 20px;
+  }
+}
