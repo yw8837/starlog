@@ -27,6 +27,8 @@ describe("the 404 page", () => {
       `${SITE.url}/terms`,
       `${SITE.url}/privacy`,
       `${SITE.url}/refund`,
+      // 방문 통계 설정: both hosts serve /privacy, and the choice is kept per host, so it stays a path.
+      "/privacy#analytics",
     ]);
     // "/" is a page on each host (the guide's home on the root domain, the app's on its own), never a redirect.
     expect(screen.getByRole("link", { name: "홈으로" }).getAttribute("href")).toBe("/");
@@ -34,6 +36,6 @@ describe("the 404 page", () => {
 
   it("with one origin keeps every link a path", () => {
     render(<NotFound />);
-    expect(footerHrefs()).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund"]);
+    expect(footerHrefs()).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"]);
   });
 });
