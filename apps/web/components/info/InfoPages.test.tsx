@@ -163,7 +163,7 @@ describe("/faq", () => {
 
     const cards = [...container.querySelectorAll("details")];
     expect(cards.length).toBeGreaterThanOrEqual(10);
-    expect(cards.length).toBeLessThanOrEqual(19); // 19 with "다른 앱과 사주(명식)가 다르게 나와요" (2026-10-07)
+    expect(cards.length).toBeLessThanOrEqual(21); // 19 with "다른 앱과 사주(명식)가 다르게 나와요" (2026-10-07), 21 with 가격은 얼마예요 and 누가 만들었나요 (SEO P1-4)
     expect(data.mainEntity).toHaveLength(cards.length);
 
     data.mainEntity.forEach((question, i) => {
@@ -176,6 +176,20 @@ describe("/faq", () => {
       expect(question.name.trim()).not.toBe("");
       expect(question.acceptedAnswer.text.trim()).not.toBe("");
     });
+  });
+
+  it("answers 가격은 얼마예요 and 누가 만들었나요 directly, from SITE, on the page and in the JSON-LD (SEO P1-4)", () => {
+    const { container } = render(<FaqPage />);
+    const answers = new Map(readJsonLd(container).mainEntity.map((question) => [question.name, question.acceptedAnswer.text]));
+    const price = answers.get("가격은 얼마예요?") ?? "";
+    const krw = SITE.price.premium.map((p) => p.krw);
+    expect(price.startsWith(`타로 전체 풀이는 ${won(SITE.price.tarotStandardKrw)}, 사주 전체 풀이는 ${won(SITE.price.sajuStandardKrw)}이에요.`)).toBe(true);
+    expect(price).toContain(`${won(Math.min(...krw))}부터 ${won(Math.max(...krw))}까지`);
+    const maker = answers.get("누가 만들었나요?") ?? "";
+    for (const value of [SITE.business.name, SITE.business.ceo, SITE.business.regNo, SITE.business.mailOrderNo]) expect(maker).toContain(value);
+    expect(maker).not.toContain(SITE.business.address);
+    const text = container.textContent ?? "";
+    for (const answer of [price, maker]) expect(text).toContain(answer.split(". ")[0]);
   });
 
   it("escapes < so no answer can close the script tag", () => {

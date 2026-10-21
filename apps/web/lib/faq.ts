@@ -4,6 +4,7 @@ import { approxCharsText } from "./pricing";
 import { openingFreeText, times } from "./helpGuide";
 import { crisisLines } from "./crisis";
 import { INFO_PAGES } from "./infoPages";
+import { withParticle } from "./korean";
 import { contactChannels } from "./legal";
 import { REFUND_DAYS } from "./pay/catalog";
 
@@ -41,6 +42,8 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
   const { firstFreeTarot, teaserPerDay } = site.beta;
   const { approxChars } = site.reading;
   const { tarotStandardKrw, sajuStandardKrw } = site.price;
+  const premiumKrw = site.price.premium.map((product) => product.krw);
+  const { business } = site;
   const contacts = contactChannels(site.business);
   const email = contacts.find(([label]) => label === "이메일")?.[1];
   const phone = contacts.find(([label]) => label === "전화")?.[1];
@@ -97,6 +100,15 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
             `먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 무료로 열 수 있고, 한국 시간 0시에 다시 채워져요. 깊게 보는 풀이의 가격도 가격 안내에서 볼 수 있어요.`,
           ],
           opening: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요.`,
+          link: { href: "/pricing", label: "가격 안내" },
+        },
+        {
+          id: "price",
+          q: "가격은 얼마예요?",
+          a: [
+            `타로 전체 풀이는 ${won(tarotStandardKrw)}, 사주 전체 풀이는 ${won(sajuStandardKrw)}이에요. 풀이는 건별로 결제하고, 결제 한 번에 풀이 하나와 이어서 물어보기 ${site.reading.followUps}번이 열려요.`,
+            `카드 10장이나 두 사람의 사주, 2027년 한 해를 깊게 보는 풀이는 ${won(Math.min(...premiumKrw))}부터 ${won(Math.max(...premiumKrw))}까지예요. 지금의 한 장과 오늘의 한 장은 무료예요.`,
+          ],
           link: { href: "/pricing", label: "가격 안내" },
         },
         {
@@ -231,6 +243,16 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
                 "가이드 글의 광고는 Google이 쿠키를 써서 보여 줘요. 맞춤 광고를 끄는 방법은 개인정보처리방침에 적어 두었어요.",
               ]
             : ["지금은 광고가 없어요. 광고를 싣게 되면 가이드 글 페이지에만 싣고, 타로와 사주 풀이, 내 기록 화면에는 싣지 않아요."],
+        },
+        {
+          // Operator facts from SITE.business, never the postal address (that stays in the footer notice).
+          id: "maker",
+          q: "누가 만들었나요?",
+          a: [
+            `${nameKo}는 ${withParticle(business.name, "이/가")} 만들고 운영해요(대표 ${business.ceo}, 사업자등록번호 ${business.regNo}, 통신판매업 신고번호 ${business.mailOrderNo}).`,
+            `사업자 정보는 페이지 아래쪽과 ‘${INFO_PAGES.about.title}’ 페이지에도 적어 두었어요.`,
+          ],
+          link: { href: INFO_PAGES.about.path, label: INFO_PAGES.about.title },
         },
         {
           id: "contact",
