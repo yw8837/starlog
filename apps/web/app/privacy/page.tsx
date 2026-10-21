@@ -1,11 +1,23 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { AnalyticsSetting } from "@/components/legal/AnalyticsSetting";
 import { Facts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import { MATCH_AI_ROW, PremiumChangeNotice, PremiumLegalNotice, PremiumPrivacy, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
-import { PRIVACY_REVISION_DATE, contactChannels, koreanDate, premiumChangeNoticeShown, premiumLegalInForce, privacyEffectiveDate, privacyRevisionInForce } from "@/lib/legal";
+import {
+  GA_REVISION_DATE,
+  PRIVACY_REVISION_DATE,
+  contactChannels,
+  gaRevisionInForce,
+  koreanDate,
+  premiumChangeNoticeShown,
+  premiumLegalInForce,
+  privacyEffectiveDate,
+  privacyRevisionInForce,
+} from "@/lib/legal";
 import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
 
@@ -32,10 +44,26 @@ type Rows = ReadonlyArray<readonly [string, ReactNode]>;
 type Processor = { name: string; rows: Rows };
 
 /**
- * 국외 이전 disclosures (개인정보 보호법 제28조의8): recipient, country, items, when and how, purpose, retention, contact.
- * `premium`: the premium clauses are in force (lib/legal.ts), so Anthropic's items name the 궁합's too.
+ * 방문 통계 (Google Analytics), the revision of GA_REVISION_DATE (lib/legal.ts): 개정 예정 until then, in the text from
+ * then. The items are what the loader sends (lib/analytics.ts gaPage: page views only, addresses and titles redacted)
+ * and what gtag.js adds of the device; the periods are the property's settings.
  */
-const processors = (premium: boolean): readonly Processor[] => [
+const GA_COOKIE = `_ga_${GA_MEASUREMENT_ID.replace(/^G-/, "")}`;
+const GA_ITEMS = [
+  "Google 애널리틱스 쿠키에 담긴 무작위 식별값",
+  "방문한 페이지의 주소(공유·초대·기록 번호와 결제 정보는 지우고, 홍보 링크의 utm 꼬리표만 남긴 주소)와 페이지 제목",
+  "이전 페이지의 주소(스타로그의 페이지는 같은 방식으로 지운 주소, 다른 사이트는 그 사이트의 도메인만)",
+  "기기·브라우저·화면 정보(기기 종류, 운영체제, 브라우저, 화면 크기, 언어)",
+  "대략적 위치(접속한 IP 주소로 Google이 추정하는 국가·도시 수준)",
+  "방문 시각",
+];
+
+/**
+ * 국외 이전 disclosures (개인정보 보호법 제28조의8): recipient, country, items, when and how, purpose, retention, contact.
+ * `premium`: the premium clauses are in force (lib/legal.ts), so Anthropic's items name the 궁합's too. `ga`: the GA
+ * revision is in force, so Google LLC is listed, on the visitor's consent (제1항 제1호) rather than as needed for the service.
+ */
+const processors = (premium: boolean, ga: boolean): readonly Processor[] => [
   {
     name: "Anthropic, PBC",
     rows: [
@@ -82,6 +110,29 @@ const processors = (premium: boolean): readonly Processor[] => [
       ["보유·이용 기간", "관련 법령과 해당 사업자의 정책에 따름"],
     ],
   },
+  ...(ga
+    ? [
+        {
+          name: "Google LLC",
+          rows: [
+            ["국가", "미국"],
+            ["이전 목적", "이용 통계 분석(방문 통계를 허용한 경우에만)"],
+            ["이전 항목", GA_ITEMS.join(" · ")],
+            ["이전 시기와 방법", "방문 통계를 허용한 뒤 페이지를 열 때마다 암호화된 연결(HTTPS)로 전송"],
+            [
+              "보유·이용 기간",
+              "이벤트 데이터 2개월, 사용자 데이터 14개월(그 사이 새 방문이 있으면 그때부터 다시 계산) 동안 보관한 뒤 자동으로 지웁니다. 합계 보고서는 이 기간과 관계없이 남을 수 있습니다. 방문 통계 쿠키는 최대 2년 동안 남습니다.",
+            ],
+            ["이전 근거", "정보주체의 동의(「개인정보 보호법」 제28조의8 제1항 제1호)"],
+            [
+              "거부 방법과 거부 시 불이익",
+              `처음 방문할 때 나오는 안내나 이 방침 ${num(5)}항의 방문 통계 설정에서 거부하거나 동의를 철회할 수 있으며, 거부해도 서비스 이용에 제한이 없습니다.`,
+            ],
+            ["개인정보 문의", <a href="https://policies.google.com/privacy">policies.google.com/privacy</a>],
+          ] as Rows,
+        },
+      ]
+    : []),
 ];
 
 /** Cookies the server sets: all HttpOnly, SameSite=Lax, Secure in production, signed so they cannot be forged. */
@@ -110,6 +161,7 @@ export default function PrivacyPage() {
   const now = Date.now();
   const inForce = premiumLegalInForce(now);
   const revised = privacyRevisionInForce(now);
+  const ga = gaRevisionInForce(now);
   const effective = privacyEffectiveDate(now);
 
   return (
@@ -126,6 +178,18 @@ export default function PrivacyPage() {
           <ul className={s.list}>
             <li>{SHARE_EXPIRY}</li>
             <li>{FOLLOW_UP_COUNT_KEPT}</li>
+          </ul>
+        </LegalNote>
+      )}
+      {ga ? null : (
+        <LegalNote>
+          <p className={s.noteTitle}>{`개정 예정 · ${koreanDate(GA_REVISION_DATE)}부터 시행`}</p>
+          <ul className={s.list}>
+            <li>
+              방문 통계: 허용한 분에 한해 Google 애널리틱스로 방문한 페이지(공유·초대·기록 번호는 가림)와 이전 페이지, 기기·브라우저·화면 정보,
+              대략적 위치, 방문 시각을 모아 이용 통계를 분석하고, 이를 위해 Google LLC(미국)로 국외 이전합니다.
+            </li>
+            <li>처음 방문할 때 허용할지 여쭤보고, 거부해도 서비스 이용에 제한이 없으며, 이 방침에서 언제든 바꿀 수 있습니다.</li>
           </ul>
         </LegalNote>
       )}
@@ -194,6 +258,17 @@ export default function PrivacyPage() {
           <li>하루 이용 횟수를 세기 위해 접속한 네트워크의 IP 주소를 비밀 키로 변환한 값(IP 주소 원문은 저장하지 않습니다)</li>
           <li>호스팅 서버에 남는 접속 기록(IP 주소, 브라우저 정보, 접속 일시, 요청한 페이지)</li>
         </ul>
+        {ga ? (
+          <>
+            <h3 className={s.sub}>방문 통계(허용한 경우에만)</h3>
+            <ul className={s.list}>
+              {GA_ITEMS.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+              <li>{`방문 통계를 허용한 뒤 페이지를 열 때마다 Google 애널리틱스가 수집합니다(아래 ${num(5)}항).`}</li>
+            </ul>
+          </>
+        ) : null}
         {BONDS ? (
           <>
             <h3 className={s.sub}>별자리 인연을 쓸 때</h3>
@@ -217,6 +292,7 @@ export default function PrivacyPage() {
           {BONDS ? <li>별자리 인연: 친구 초대와 참여, 인연 점수 계산, 별자리 도감과 랭킹, 공유 이미지 만들기, 이번 주 행운 번호 고르기</li> : null}
           <li>하루 무료 이용 횟수를 지키고, 자동화된 대량 요청 같은 부정 이용을 막기</li>
           <li>오류 확인 등 서비스를 안정적으로 운영하기</li>
+          {ga ? <li>이용 통계 분석: 어떤 화면을 많이 보고 어디서 들어오는지 알아보고 서비스를 고치기(방문 통계를 허용한 경우에만)</li> : null}
           <li>문의에 답하기</li>
           <li>회원 관리(로그인, 탈퇴), 결제와 환불 처리, 거래 기록 보관</li>
           <li>이미 지급한 가입 선물의 지급 기록 관리(가입 선물은 더 이상 드리지 않습니다)</li>
@@ -249,6 +325,13 @@ export default function PrivacyPage() {
             {`풀이의 공유 사본은 그 풀이에서 공유 그만하기를 누르거나, 공유한 기기에서 그 풀이를 지우거나, 로그인한 상태로 공유했다면 회원 탈퇴할 때까지 보관하고, 그때 바로 지웁니다. ${revised ? "그 전이라도 공유한 날부터 180일이 지나면 링크와 함께 자동으로 지웁니다. " : ""}링크를 아는 사람은 누구나 볼 수 있지만 검색에는 나오지 않게 합니다.`}
           </li>
           <li>호스팅 서버의 접속 기록은 최대 7일 동안 보관된 뒤 자동으로 삭제됩니다.</li>
+          {ga ? (
+            <li>
+              Google 애널리틱스의 방문 통계 중 이벤트 데이터는 2개월, 사용자 데이터는 14개월(그 사이 새 방문이 있으면 그때부터 다시 계산) 동안 보관한 뒤
+              Google이 자동으로 지웁니다. 이 기간은 방문자별·방문별 기록에 적용되고, 페이지별 방문 수 같은 합계 보고서는 이 기간과 관계없이 남을 수
+              있습니다. 방문 통계 쿠키는 브라우저에 최대 2년 동안 남습니다. 거부하면 그때 지웁니다.
+            </li>
+          ) : null}
           <li>회원 정보는 탈퇴할 때까지 보관하고, 탈퇴하면 지체 없이 파기합니다. 로그인 세션은 30일 뒤 끝나고, 끝난 세션 기록은 지웁니다.</li>
           <li>「전자상거래 등에서의 소비자보호에 관한 법률」에 따라 계약 또는 청약철회 등에 관한 기록과 대금결제 및 재화 등의 공급에 관한 기록은 5년, 소비자의 불만 또는 분쟁처리에 관한 기록은 3년 동안 보관합니다. 탈퇴한 회원의 이 기록은 회원 식별 정보(카카오 회원번호나 Google 계정 식별값을 바꾼 값, 닉네임)를 지운 채 보관하고, 기간이 끝나면 파기합니다.</li>
           <li>가입 선물은 더 이상 드리지 않습니다. 이미 지급한 가입 선물의 지급 기록(카카오 회원번호나 Google 계정 식별값을 되돌릴 수 없게 바꾼 값과 지급 시각)은 탈퇴 뒤 1년 동안 보관한 뒤 파기합니다.</li>
@@ -273,9 +356,9 @@ export default function PrivacyPage() {
       ) : null}
 
       <LegalSection id="processors" title={`${num(4)}. 처리 위탁과 국외 이전`}>
-        <p>운영자는 서비스를 제공하기 위해 아래 사업자에게 개인정보 처리를 맡기며, 이 중 일부는 「개인정보 보호법」 제28조의8에 따라 국외로 이전됩니다.</p>
+        <p>{`운영자는 서비스를 제공하${ga ? "고, 허용한 분의 방문 통계를 분석하" : ""}기 위해 아래 사업자에게 개인정보 처리를 맡기며, 이 중 일부는 「개인정보 보호법」 제28조의8에 따라 국외로 이전됩니다.`}</p>
         <div className={s.cards}>
-          {processors(inForce).map((processor) => (
+          {processors(inForce, ga).map((processor) => (
             <section key={processor.name} className={s.card} aria-label={processor.name}>
               <h3 className={s.cardTitle}>{processor.name}</h3>
               <Facts rows={processor.rows} stack />
@@ -283,7 +366,11 @@ export default function PrivacyPage() {
           ))}
         </div>
         <ul className={s.list}>
-          <li>이 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다.</li>
+          <li>
+            {ga
+              ? "Anthropic과 Cloudflare로의 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다. Google LLC로의 이전은 방문 통계를 허용한 분의 동의에 따른 것으로, 허용한 경우에만 이뤄집니다."
+              : "이 이전은 이용자가 요청한 풀이를 만들고 서비스를 제공하는 데 필요한 처리 위탁과 보관이며, 「개인정보 보호법」에 따라 이 방침으로 알려 드립니다."}
+          </li>
           <li>무료 풀이를 요청하면 자동화된 접근을 막기 위해 Cloudflare Turnstile이 브라우저 신호(브라우저·기기 정보와 IP 주소)로 사람이 보낸 요청인지 확인할 수 있습니다.</li>
           <li>AI 사업자로의 국외 이전을 원하지 않으면 AI 풀이를 요청하지 않으시면 됩니다. 이 경우 AI 풀이를 받을 수 없고, AI를 거치지 않는 지금의 한 장은 계속 쓸 수 있습니다. 호스팅은 서비스 제공에 꼭 필요해, 거부하시면 서비스를 이용할 수 없습니다.</li>
         </ul>
@@ -291,7 +378,11 @@ export default function PrivacyPage() {
 
       <LegalSection id="cookies" title={`${num(5)}. 쿠키와 브라우저 저장소`}>
         <ul className={s.list}>
-          {ads ? (
+          {ga ? (
+            <li>
+              {`운영자는 서비스 제공에 필요한 범위에서 아래 쿠키를 쓰고, 방문 통계를 허용한 경우에만 아래 방문 통계 쿠키를 씁니다. ${ads ? "가이드 글 페이지에서는 아래 광고 쿠키가 쓰일 수 있습니다. 타로·사주 풀이 화면에는 광고를 싣지 않습니다." : "광고 쿠키는 쓰지 않습니다."}`}
+            </li>
+          ) : ads ? (
             <li>운영자는 서비스 제공에 필요한 범위에서 아래 쿠키를 쓰고, 가이드 글 페이지에서는 아래 광고 쿠키가 쓰일 수 있습니다. 타로·사주 풀이 화면에는 광고를 싣지 않습니다.</li>
           ) : (
             <li>운영자는 서비스 제공에 필요한 범위에서만 아래 쿠키를 쓰며, 광고나 행동 추적을 위한 쿠키는 쓰지 않습니다.</li>
@@ -309,6 +400,34 @@ export default function PrivacyPage() {
           <li>카카오톡으로 보내기를 누를 때만 카카오의 공유 스크립트를 불러옵니다. 이때 카카오에는 공유할 문구(뽑은 카드 이름 등)와 서비스 링크가 전달되고, 카카오의 개인정보처리방침이 적용됩니다.</li>
           <li>공유에는 질문, 메모, 출생 정보를 담지 않습니다.</li>
         </ul>
+        {ga ? (
+          <div id="analytics" className={s.analytics}>
+            <h3 className={s.sub}>방문 통계 쿠키(허용한 경우에만)</h3>
+            <ul className={s.list}>
+              <li>
+                방문 통계를 허용한 경우에만 Google 애널리틱스를 불러오고, 그때 Google 애널리틱스가 아래 쿠키를 만듭니다. 쿠키는 앱(starlog.yeolmaeapps.kr)과
+                가이드(yeolmaeapps.kr)가 함께 쓰는 도메인(.yeolmaeapps.kr)에 저장됩니다.
+              </li>
+            </ul>
+            <Facts
+              rows={[
+                ["_ga", "이 브라우저를 다른 방문자와 구별하는 무작위 식별값입니다. 최대 2년 뒤 만료됩니다."],
+                [GA_COOKIE, "같은 방문을 이어서 세는 데 씁니다. 최대 2년 뒤 만료됩니다."],
+              ]}
+              stack
+            />
+            <ul className={s.list}>
+              <li>운영자는 Google 애널리틱스 보고서에서 어떤 페이지를 얼마나 보는지, 어디서 들어오는지 같은 방문 통계를 봅니다. Google 신호와 광고 맞춤 신호는 끈 채로 쓰고, 방문 통계를 광고에 쓰지 않습니다.</li>
+              <li>
+                허용과 거부는 처음 방문할 때 나오는 안내나 아래 방문 통계 설정에서 언제든 바꿀 수 있습니다. 거부하면 Google 애널리틱스를 불러오지 않고, 이미 불러온
+                화면에서도 더 보내지 않으며, 이 브라우저의 방문 통계 쿠키를 지웁니다. 거부해도 서비스 이용에 제한이 없습니다.
+              </li>
+              <li>설정은 이 브라우저에 저장되고, 앱과 가이드에서 따로 여쭤봅니다. 브라우저의 사이트 데이터를 지우면 다시 여쭤봅니다.</li>
+              <li>브라우저 설정에서 쿠키를 지우거나 막을 수도 있지만, 그것만으로는 방문 통계가 멈추지 않을 수 있으니 거부는 아래 설정으로 해 주세요.</li>
+            </ul>
+            <AnalyticsSetting />
+          </div>
+        ) : null}
         {ads ? (
           <>
             <h3 className={s.sub}>광고 쿠키와 행태정보</h3>
