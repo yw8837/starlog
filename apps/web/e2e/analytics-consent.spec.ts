@@ -1,5 +1,6 @@
-import { expect, type Locator, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { cardTable, pickCard, tableCards } from "./cards";
+import { usable } from "./consent";
 import { ownerPass } from "./opening";
 
 /**
@@ -118,22 +119,6 @@ async function ownAddress(page: Page) {
 }
 
 /**
- * The page's key control can be used while the banner is up: brought to the middle of the window, nothing lies over
- * its centre (the banner included), and a click would land on it.
- */
-async function usable(control: Locator) {
-  await expect(control).toBeVisible();
-  await control.evaluate((el) => el.scrollIntoView({ block: "center" }));
-  const onTop = await control.evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-    return hit !== null && el.contains(hit);
-  });
-  expect(onTop, "nothing covers the control").toBe(true);
-  await control.click({ trial: true });
-}
-
-/**
  * A tarot reading opened with the owner pass (as share.spec.ts makes one), kept on this device four times (a 내 기록
  * long enough that its footer is not where the floating button sits) and shared once; returns the share's path.
  */
@@ -171,14 +156,8 @@ test.describe("unanswered on 10/30: the key controls stay usable under the banne
     await page.clock.install({ time: new Date("2026-10-30T10:00:00+09:00") });
   });
 
-  // A guest is sent from checkout to log in (pay-flow.spec.ts, on the dev server, pays as a logged-in owner).
-  test("/pay/checkout as a guest: the login it leads to, and 카카오로 계속하기", async ({ page }) => {
-    await page.goto("/pay/checkout?product=saju&returnTo=%2Fme");
-    await expect(page).toHaveURL(/\/login\?next=%2Fpay%2Fcheckout/, { timeout: 30_000 });
-    await expect(banner(page)).toBeVisible();
-    await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
-    await usable(page.getByRole("button", { name: "카카오로 계속하기" }));
-  });
+  // Checkout's pay button: pay-flow.spec.ts, which runs on the dev server, where login and payments work (the Workers
+  // preview answers PAY_UNAVAILABLE).
 
   test("/tarot/draw: three cards picked, then 결과 보기", async ({ page }) => {
     const flow = { who: "us", topicId: "contact", when: "month", conditions: { relation: "알아가는 중", "recent-contact": "뜸해짐" }, note: "" };
