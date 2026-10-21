@@ -70,18 +70,29 @@ test("흩뿌리기: a tap picks the card on top under the finger; the undo puts 
 
 test("a quick double tap on one spot picks one card; a tap there a moment later picks the next", async ({ page }) => {
   const box = await tableBox(page);
-  const spot = { x: box.x + box.width / 2, y: box.y + box.height * 0.45 };
+  // A spot where at least three cards lie on top of each other, so one is still there for the third tap.
+  const spot = await page.evaluate(({ x, y, width, height }) => {
+    for (let fy = 0.3; fy <= 0.7; fy += 0.05)
+      for (let fx = 0.3; fx <= 0.7; fx += 0.05) {
+        const at = { x: x + width * fx, y: y + height * fy };
+        const under = new Set(document.elementsFromPoint(at.x, at.y).map((el) => el.closest("[data-card]")).filter(Boolean));
+        if (under.size >= 3) return at;
+      }
+    return null;
+  }, box);
+  expect(spot, "three cards overlap somewhere in the middle of the table").not.toBeNull();
   // Two taps back to back, the raw stream a finger sends: the first card leaves for its slot, the second tap
   // lands on the card under it.
   const cdp = await page.context().newCDPSession(page);
   for (let i = 0; i < 2; i++) {
-    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [spot] });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [spot!] });
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   }
   await expect(filledSlots(page)).toHaveCount(1);
   await page.waitForTimeout(400);
   await expect(filledSlots(page)).toHaveCount(1);
-  await page.touchscreen.tap(spot.x, spot.y);
+  expect(await cardAt(page, spot!.x, spot!.y), "a card still lies under the spot").not.toBeNull();
+  await page.touchscreen.tap(spot!.x, spot!.y);
   await expect(filledSlots(page)).toHaveCount(2);
 });
 

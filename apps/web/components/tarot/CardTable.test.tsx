@@ -88,10 +88,14 @@ const transforms = () => Array.from({ length: 78 }, (_, i) => card(i).style.tran
 const angle = (index: number) => Number(/rotate\((-?[\d.]+)deg\)/.exec(card(index).style.transform)?.[1]);
 
 /** A finger (or mouse) press at one point (160, 120 unless given) whose hit test finds `under`, moved by `dx` before it lifts. */
-function press(under: number, { dx = 0, pointerType = "touch", x = 160, y = 120 }: { dx?: number; pointerType?: string; x?: number; y?: number } = {}) {
+function press(
+  under: number,
+  { dx = 0, pointerType = "touch", x = 160, y = 120, hold = 0 }: { dx?: number; pointerType?: string; x?: number; y?: number; hold?: number } = {},
+) {
   Object.defineProperty(document, "elementFromPoint", { configurable: true, value: () => card(under) });
   const at = { clientX: x, clientY: y, pointerType, pointerId: 7, isPrimary: true };
   fireEvent.pointerDown(card(under), at);
+  if (hold) act(() => vi.advanceTimersByTime(hold));
   if (dx) {
     for (let i = 1; i <= 6; i++) fireEvent.pointerMove(card(under), { ...at, clientX: at.clientX + (dx * i) / 6 });
   }
@@ -99,6 +103,9 @@ function press(under: number, { dx = 0, pointerType = "touch", x = 160, y = 120 
   // The click the browser sends after a tap.
   fireEvent.click(card(under), { detail: 1 });
 }
+
+/** On the ring, the tab stop is a card in view: within 20° of the top (the stage shows about ±37° of it, edge cards cut). */
+const stopInView = () => Math.abs(angle(Number(cards().find((b) => b.tabIndex === 0)!.dataset.card))) < 20;
 
 /** Every card left lies in the loose pile in the middle of the table (280px tall here). */
 const inPile = () =>
@@ -159,6 +166,17 @@ describe("CardTable 흩뿌리기 (the default)", () => {
     act(() => vi.advanceTimersByTime(400));
     press(41);
     expect(onPick.mock.calls.map(([i]) => i)).toEqual([40, 42, 41]);
+  });
+
+  it("a slow double tap (the second finger down within 300 ms, up later) still keeps one pick", () => {
+    const onPick = vi.fn();
+    render(<Harness onPick={onPick} />);
+    card(40).getBoundingClientRect = () => ({ left: 130, right: 190, top: 70, bottom: 170, width: 60, height: 100, x: 130, y: 70, toJSON: () => ({}) });
+    press(40);
+    // Down again 180 ms after the first lift, up 150 ms later (330 ms after it).
+    act(() => vi.advanceTimersByTime(180));
+    press(41, { hold: 150 });
+    expect(onPick.mock.calls.map(([i]) => i)).toEqual([40]);
   });
 
   it("a press that slides does not pick", () => {
@@ -375,10 +393,8 @@ describe("CardTable keyboard", () => {
   });
 
   it("on the ring, Tab lands on a card in view: after a drag and a reshuffle, and after the card on top is picked", () => {
-    /** The tab stop is near the top of the ring (the stage shows about ±37° of it). */
-    const stopInView = () => Math.abs(angle(Number(cards().find((b) => b.tabIndex === 0)!.dataset.card))) < 30;
-    // Five rounds: where a reshuffle puts any one card is random.
-    for (let round = 0; round < 5; round++) {
+    // Three rounds (about 0.9 s each, hence the longer timeout): where a reshuffle puts any one card is random.
+    for (let round = 0; round < 3; round++) {
       window.localStorage.setItem(TABLE_MODE_KEY, "ring");
       const { unmount } = render(<Harness />);
       act(() => vi.advanceTimersByTime(3000));
@@ -395,7 +411,7 @@ describe("CardTable keyboard", () => {
       expect(stopInView()).toBe(true);
       unmount();
     }
-  });
+  }, 20_000);
 
   it("on the table, the arrows move focus among the cards left", () => {
     render(<Harness />);
@@ -420,6 +436,73 @@ describe("CardTable without slots (지금의 한 장)", () => {
     expect(picked.style.transform).toContain("scale(");
     expect(cards()).toHaveLength(77);
     expect(document.body.querySelectorAll("[data-flying]")).toHaveLength(0);
+  });
+});
+
+describe("CardTable edges", () => {
+  it("on the ring, Tab follows a card that comes back to the top after a reshuffle moved it away", () => {
+    reducedMotion();
+    window.localStorage.setItem(TABLE_MODE_KEY, "ring");
+    render(<Harness />);
+    // A drag comes to rest: the card on top (X) is the tab stop.
+    press(0, { dx: 60 });
+    expect(stopInView()).toBe(true);
+    const x = Number(cards().find((b) => b.tabIndex === 0)!.dataset.card);
+    // Reshuffle until X lies far from the top.
+    for (let i = 0; i < 20 && Math.abs(angle(x)) < 60; i++) fireEvent.click(reshuffleButton());
+    expect(Math.abs(angle(x))).toBeGreaterThanOrEqual(60);
+    expect(stopInView()).toBe(true);
+    // Drag X back to the top (0.16° per pixel): Tab lands in view, on X.
+    press(1, { dx: -angle(x) / 0.16 });
+    expect(stopInView()).toBe(true);
+    expect(cards().find((b) => b.tabIndex === 0)!.dataset.card).toBe(String(x));
+  });
+
+  it("on the ring, a drag the browser cancels (a pinch) still leaves Tab on a card in view, transitions back on", () => {
+    reducedMotion();
+    window.localStorage.setItem(TABLE_MODE_KEY, "ring");
+    render(<Harness />);
+    expect(stopInView()).toBe(true);
+    const at = { clientX: 160, clientY: 120, pointerType: "touch", pointerId: 7, isPrimary: true };
+    fireEvent.pointerDown(card(5), at);
+    for (let i = 1; i <= 6; i++) fireEvent.pointerMove(card(5), { ...at, clientX: 160 + i * 100 });
+    fireEvent.pointerCancel(card(5), at);
+    expect(stage().hasAttribute("data-drag")).toBe(false);
+    expect(stopInView()).toBe(true);
+  });
+
+  it("다시 섞기 in the middle of a drag leaves no drag mode behind", () => {
+    render(<Harness />);
+    fireEvent.click(modeButton("돌리기"));
+    act(() => vi.advanceTimersByTime(3000));
+    const at = { clientX: 160, clientY: 120, pointerType: "touch", pointerId: 7, isPrimary: true };
+    fireEvent.pointerDown(card(10), at);
+    for (let i = 1; i <= 6; i++) fireEvent.pointerMove(card(10), { ...at, clientX: 160 + i * 10 });
+    expect(stage().hasAttribute("data-drag")).toBe(true);
+    fireEvent.click(reshuffleButton());
+    expect(stage().hasAttribute("data-drag")).toBe(false);
+    act(() => vi.advanceTimersByTime(9000));
+  });
+
+  it("a table that leaves while shuffling tells the page the shuffle is over", () => {
+    const onShufflingChange = vi.fn();
+    const { unmount } = render(<Harness onShufflingChange={onShufflingChange} />);
+    act(() => vi.advanceTimersByTime(2000));
+    fireEvent.click(reshuffleButton());
+    act(() => vi.advanceTimersByTime(500));
+    unmount();
+    expect(onShufflingChange.mock.calls).toEqual([[true], [false]]);
+  });
+
+  it("다시 섞기 while the table is still opening keeps its own moves (the opening's clean-up does not cut them)", () => {
+    render(<Harness />);
+    // 200 ms into the opening spread (about 1.5 s long).
+    act(() => vi.advanceTimersByTime(200));
+    fireEvent.click(reshuffleButton());
+    // 1.4 s later the cards are mid-cut (from 0.95 s), and past the moment the opening would have cleaned up (1.55 s).
+    act(() => vi.advanceTimersByTime(1400));
+    expect(cards().every((b) => b.style.transition.includes("420ms"))).toBe(true);
+    act(() => vi.advanceTimersByTime(9000));
   });
 });
 

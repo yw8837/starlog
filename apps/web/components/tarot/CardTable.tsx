@@ -41,8 +41,8 @@ const CLICK_AFTER_POINTER_MS = 600;
  * left for its slot and the one under it is on top now. As CardFan guarded a re-tap on its rising card.
  */
 const RETAP_MS = 300;
-/** On the ring, a card this near the top is in view (the stage shows about ±37° of it on a phone). */
-const IN_VIEW_DEG = 30;
+/** On the ring, a card this near the top is wholly in view (the stage shows about ±37° of it on a phone, the edge cards cut). */
+const IN_VIEW_DEG = 20;
 
 type CardTableProps = {
   /** Cards in the shuffled deck, all face down on the table. */
@@ -70,7 +70,7 @@ type Spot = { x: number; y: number; r: number };
 /** The ring's order, each card's spot on the table and the table's stacking order (bottom first). */
 type Deal = { order: number[]; spots: Spot[]; stack: number[] };
 type Geometry = { w: number; h: number; cw: number; ch: number; radius: number; pivot: number };
-type Press = { id: number; x: number; y: number; from: number; moved: boolean; lastX: number; lastT: number };
+type Press = { id: number; x: number; y: number; from: number; moved: boolean; lastX: number; lastT: number; downAt: number };
 type Flight = { el: HTMLElement; target: HTMLElement; timer: number };
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i);
@@ -188,6 +188,8 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
   /** The last card a tap picked: when, and its box on screen then. */
   const lastTap = useRef<{ at: number; box: DOMRect } | null>(null);
   const pickedBefore = useRef(picked.length);
+  /** The opening spread's clean-up (its own transitions off), until it runs or a reshuffle takes over. */
+  const opening = useRef(0);
 
   const flies = slotFor !== undefined;
   const full = picked.length >= max;
@@ -204,9 +206,9 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
       : (table.order.find(free) ?? table.order[0]!);
 
   // What timers, frames and window events read: the latest render's values.
-  const latest = useRef({ mode, table, picked, flies, busy });
+  const latest = useRef({ mode, table, picked, flies, busy, onShufflingChange });
   useLayoutEffect(() => {
-    latest.current = { mode, table, picked, flies, busy };
+    latest.current = { mode, table, picked, flies, busy, onShufflingChange };
   });
 
   const quiet = () => instant || prefersReducedMotion();
@@ -368,9 +370,9 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
     });
     layout();
     const clear = () => all.forEach((i) => cards.current[i]?.style.setProperty("transition", ""));
-    const timer = window.setTimeout(clear, SPREAD_MS + all.length * SPREAD_STAGGER_MS);
+    opening.current = window.setTimeout(clear, SPREAD_MS + all.length * SPREAD_STAGGER_MS);
     return () => {
-      window.clearTimeout(timer);
+      window.clearTimeout(opening.current);
       clear();
     };
     // Once, when the table opens.
@@ -426,6 +428,8 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
       pending.clear();
       inFlight.forEach(land);
       cancelAnimationFrame(spin.current);
+      // Gone mid-shuffle: the page's own input (the undo) must not stay held.
+      if (latest.current.busy) latest.current.onShufflingChange?.(false);
     };
   }, []);
 
@@ -472,7 +476,7 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
     if (!e.isPrimary || busy || (e.pointerType === "mouse" && e.button !== 0)) return;
     stopSpin();
     velocity.current = 0;
-    press.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: offset.current, moved: false, lastX: e.clientX, lastT: e.timeStamp };
+    press.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: offset.current, moved: false, lastX: e.clientX, lastT: e.timeStamp, downAt: Date.now() };
     lift(cardAt(e.clientX, e.clientY));
   };
 
@@ -513,7 +517,8 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
       lift(null);
       const last = lastTap.current;
       const { clientX: x, clientY: y } = e;
-      if (last && Date.now() - last.at < RETAP_MS && x >= last.box.left && x <= last.box.right && y >= last.box.top && y <= last.box.bottom) return;
+      // Timed from when this finger came down, so a slow second tap (down soon, up late) is still the same tap.
+      if (last && p.downAt - last.at < RETAP_MS && x >= last.box.left && x <= last.box.right && y >= last.box.top && y <= last.box.bottom) return;
       const box = i !== null ? cards.current[i]?.getBoundingClientRect() : undefined;
       if (i !== null && pick(i, false) && box) lastTap.current = { at: Date.now(), box };
       return;
@@ -521,10 +526,12 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
     if (mode === "ring") coast();
   };
 
+  // The browser took the press (a pinch, a scroll): on the ring, whatever it turned comes to rest there.
   const onPointerCancel = () => {
     press.current = null;
     lift(null);
-    stageRef.current?.removeAttribute("data-drag");
+    if (mode === "ring") settle();
+    else stageRef.current?.removeAttribute("data-drag");
   };
 
   /** Keyboard (Enter or Space) and assistive tech: a click no pointer press has already decided. */
@@ -595,14 +602,18 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
     if (frozen) return;
     if (quiet()) {
       setTable(redeal());
+      setFocusCard(null);
       onReshuffled?.();
       return;
     }
     const stage = stageRef.current;
     if (!stage) return;
-    // A flick still coasting would carry the ring over the pile.
+    // A flick still coasting would carry the ring over the pile; a drag still going ends here; the opening's
+    // clean-up would cut the shuffle's moves.
     stopSpin();
     press.current = null;
+    stage.removeAttribute("data-drag");
+    window.clearTimeout(opening.current);
     setBusy(true);
     onShufflingChange?.(true);
     lift(null);
@@ -628,6 +639,7 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
         if (el) el.style.transition = `transform ${SPREAD_MS}ms cubic-bezier(0.2, 0.8, 0.2, 1) ${k * SPREAD_STAGGER_MS}ms`;
       });
       setTable(redeal());
+      setFocusCard(null);
     };
     const done = () => {
       cards.current.forEach((el) => el?.style.setProperty("transition", ""));
