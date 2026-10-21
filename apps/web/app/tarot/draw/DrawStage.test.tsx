@@ -10,7 +10,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => router }));
 /** 나 · 재물운 · 이번 주: the self-flow spread (3 cards). */
 const MONEY_FLOW = { who: "me", topicId: "money", when: "week", conditions: {}, note: "" };
 
-/** What the server deals: never the cards the browser's fan happens to hold. */
+/** What the server deals: never the cards the browser's table happens to hold. */
 const DEALT = {
   cards: [
     { position: "지금의 나", cardId: "major-09-hermit", orientation: "upright" },
@@ -155,11 +155,18 @@ describe("DrawStage 다시 섞기", () => {
     expect(screen.queryByText("카드를 섞고 있어요")).toBeNull();
     expect(reshuffleButton.getAttribute("aria-disabled")).toBe("true");
     expect(document.activeElement).toBe(reshuffleButton);
+    // The undo rests until the cards are down.
+    act(() => vi.advanceTimersByTime(700));
+    click("방금 고른 카드 빼기");
+    expect(filledSlots()).toHaveLength(1);
     act(() => vi.advanceTimersByTime(6000));
     expect(reshuffleButton.getAttribute("aria-disabled")).toBe("false");
     expect(document.activeElement).toBe(reshuffleButton);
     expect(filledSlots()).toHaveLength(1);
     expect(status()).toBe("카드를 다시 섞었어요. 2장 더 골라 주세요");
+    // Then it works again.
+    click("방금 고른 카드 빼기");
+    expect(filledSlots()).toHaveLength(0);
   });
 
   it("riffles for about 2.4s before the table opens", () => {

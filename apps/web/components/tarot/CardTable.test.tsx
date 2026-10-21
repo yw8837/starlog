@@ -37,7 +37,19 @@ afterEach(() => {
 });
 
 /** The draw screens around the table: slots for the picks (or none, like 지금의 한 장) and the undo. */
-function Harness({ max = 3, slots = true, onReshuffled, onPick }: { max?: number; slots?: boolean; onReshuffled?: () => void; onPick?: (index: number) => void }) {
+function Harness({
+  max = 3,
+  slots = true,
+  onReshuffled,
+  onShufflingChange,
+  onPick,
+}: {
+  max?: number;
+  slots?: boolean;
+  onReshuffled?: () => void;
+  onShufflingChange?: (shuffling: boolean) => void;
+  onPick?: (index: number) => void;
+}) {
   const [picked, setPicked] = useState<number[]>([]);
   return (
     <>
@@ -57,6 +69,7 @@ function Harness({ max = 3, slots = true, onReshuffled, onPick }: { max?: number
         }}
         slotFor={slots ? (order) => document.querySelector(`[data-testid="slot-card-${order}"]`) : undefined}
         onReshuffled={onReshuffled}
+        onShufflingChange={onShufflingChange}
       />
       <button type="button" onClick={() => setPicked((prev) => prev.slice(0, -1))}>
         방금 고른 카드 빼기
@@ -74,10 +87,10 @@ const reshuffleButton = () => screen.getByRole("button", { name: "다시 섞기"
 const transforms = () => Array.from({ length: 78 }, (_, i) => card(i).style.transform);
 const angle = (index: number) => Number(/rotate\((-?[\d.]+)deg\)/.exec(card(index).style.transform)?.[1]);
 
-/** A finger (or mouse) press at one point whose hit test finds `under`, moved by `dx` before it lifts. */
-function press(under: number, { dx = 0, pointerType = "touch" }: { dx?: number; pointerType?: string } = {}) {
+/** A finger (or mouse) press at one point (160, 120 unless given) whose hit test finds `under`, moved by `dx` before it lifts. */
+function press(under: number, { dx = 0, pointerType = "touch", x = 160, y = 120 }: { dx?: number; pointerType?: string; x?: number; y?: number } = {}) {
   Object.defineProperty(document, "elementFromPoint", { configurable: true, value: () => card(under) });
-  const at = { clientX: 160, clientY: 120, pointerType, pointerId: 7, isPrimary: true };
+  const at = { clientX: x, clientY: y, pointerType, pointerId: 7, isPrimary: true };
   fireEvent.pointerDown(card(under), at);
   if (dx) {
     for (let i = 1; i <= 6; i++) fireEvent.pointerMove(card(under), { ...at, clientX: at.clientX + (dx * i) / 6 });
@@ -86,6 +99,13 @@ function press(under: number, { dx = 0, pointerType = "touch" }: { dx?: number; 
   // The click the browser sends after a tap.
   fireEvent.click(card(under), { detail: 1 });
 }
+
+/** Every card left lies in the loose pile in the middle of the table (280px tall here). */
+const inPile = () =>
+  cards().every((b) => {
+    const m = /translate\((-?[\d.]+)px, (-?[\d.]+)px\)/.exec(b.style.transform);
+    return m !== null && Math.abs(Number(m[1])) <= 20 && Math.abs(Number(m[2]) - 140) <= 14;
+  });
 
 function reducedMotion() {
   window.matchMedia = ((query: string) => ({ matches: query.includes("reduce"), media: query })) as unknown as typeof window.matchMedia;
@@ -122,6 +142,25 @@ describe("CardTable 흩뿌리기 (the default)", () => {
     expect(document.body.querySelectorAll("[data-flying]")).toHaveLength(0);
   });
 
+  it("a quick second tap on the same spot (a double tap) keeps one pick; a farther or later tap picks", () => {
+    const onPick = vi.fn();
+    render(<Harness onPick={onPick} />);
+    // The first card's box around the finger (jsdom lays nothing out).
+    card(40).getBoundingClientRect = () => ({ left: 130, right: 190, top: 70, bottom: 170, width: 60, height: 100, x: 130, y: 70, toJSON: () => ({}) });
+    press(40);
+    // 120 ms later the finger lands there again: the card below is on top now, but this is the same tap twice.
+    act(() => vi.advanceTimersByTime(120));
+    press(41);
+    expect(onPick.mock.calls.map(([i]) => i)).toEqual([40]);
+    // As soon, but elsewhere on the table: a second pick.
+    press(42, { x: 300, y: 240 });
+    expect(onPick.mock.calls.map(([i]) => i)).toEqual([40, 42]);
+    // Later, on the first spot again: a pick.
+    act(() => vi.advanceTimersByTime(400));
+    press(41);
+    expect(onPick.mock.calls.map(([i]) => i)).toEqual([40, 42, 41]);
+  });
+
   it("a press that slides does not pick", () => {
     const onPick = vi.fn();
     render(<Harness onPick={onPick} />);
@@ -147,6 +186,8 @@ describe("CardTable 흩뿌리기 (the default)", () => {
     expect(cards().every((b) => b.getAttribute("aria-disabled") === "true")).toBe(true);
     expect(reshuffleButton().getAttribute("aria-disabled")).toBe("true");
     press(3);
+    // Past the click that follows a pointer press (600 ms), so this keyboard pick meets the full-spread guard itself.
+    act(() => vi.advanceTimersByTime(700));
     fireEvent.click(card(4), { detail: 0 });
     expect(onPick).toHaveBeenCalledTimes(2);
   });
@@ -225,27 +266,32 @@ describe("CardTable 다시 섞기", () => {
   it("keeps the picks and reshuffles only the cards left, with a visible shuffle that holds input until it is done", () => {
     const onPick = vi.fn();
     const onReshuffled = vi.fn();
-    render(<Harness onPick={onPick} onReshuffled={onReshuffled} />);
+    const onShufflingChange = vi.fn();
+    render(<Harness onPick={onPick} onReshuffled={onReshuffled} onShufflingChange={onShufflingChange} />);
     press(30);
     press(31);
     act(() => vi.advanceTimersByTime(1000));
     const spotsBefore = transforms();
 
     fireEvent.click(reshuffleButton());
-    // Shuffling: the button keeps focus but rests, the toggle and the cards take no input.
+    // Shuffling: the button keeps focus but rests, the toggle and the cards take no input, and the page is told
+    // (so its undo can rest too).
+    expect(onShufflingChange.mock.calls).toEqual([[true]]);
     expect(reshuffleButton().getAttribute("aria-disabled")).toBe("true");
     expect((modeButton("돌리기") as HTMLButtonElement).disabled).toBe(true);
-    press(50);
+    // The cards left gather into one loose pile in the middle of the table first.
+    act(() => vi.advanceTimersByTime(700));
+    expect(inPile()).toBe(true);
+    // Still shuffling, and long past the click that follows the last pointer press (600 ms): a keyboard pick, a tap
+    // and 다시 섞기 again all meet the shuffle's own guard.
     fireEvent.click(card(51), { detail: 0 });
+    press(50);
     fireEvent.click(reshuffleButton());
     expect(onPick).toHaveBeenCalledTimes(2);
-    // The cards left gather into one loose pile in the middle of the table (280px tall here) first.
-    act(() => vi.advanceTimersByTime(700));
-    const pile = cards().map((b) => /translate\((-?[\d.]+)px, (-?[\d.]+)px\)/.exec(b.style.transform)!.slice(1).map(Number));
-    expect(pile.every(([x, y]) => Math.abs(x!) <= 20 && Math.abs(y! - 140) <= 14)).toBe(true);
 
     act(() => vi.advanceTimersByTime(8000));
     expect(onReshuffled).toHaveBeenCalledTimes(1);
+    expect(onShufflingChange.mock.calls).toEqual([[true], [false]]);
     expect(reshuffleButton().getAttribute("aria-disabled")).toBe("false");
     // The two picks stay picked; every card left lies somewhere new.
     expect(cards()).toHaveLength(76);
@@ -257,6 +303,34 @@ describe("CardTable 다시 섞기", () => {
     // Input is back.
     press(50);
     expect(onPick).toHaveBeenLastCalledWith(50);
+  });
+
+  it("on the ring, a flick still coasting stops when 다시 섞기 starts, so the cards gather into the pile", () => {
+    render(<Harness />);
+    fireEvent.click(modeButton("돌리기"));
+    act(() => vi.advanceTimersByTime(3000));
+    press(10, { dx: 120 });
+    fireEvent.click(reshuffleButton());
+    act(() => vi.advanceTimersByTime(700));
+    expect(inPile()).toBe(true);
+    act(() => vi.advanceTimersByTime(9000));
+  });
+
+  it("on the ring, the gap a pick leaves does not close over the pile when 다시 섞기 comes right after", () => {
+    render(<Harness />);
+    fireEvent.click(modeButton("돌리기"));
+    act(() => vi.advanceTimersByTime(3000));
+    press(20);
+    fireEvent.click(reshuffleButton());
+    act(() => vi.advanceTimersByTime(700));
+    expect(inPile()).toBe(true);
+    act(() => vi.advanceTimersByTime(9000));
+    // Then the 77 left lie evenly on the ring again.
+    const left = Array.from({ length: 78 }, (_, i) => i)
+      .filter((i) => i !== 20)
+      .map(angle)
+      .sort((a, b) => a - b);
+    for (let k = 1; k < left.length; k++) expect(left[k]! - left[k - 1]!).toBeCloseTo(360 / 77, 1);
   });
 
   it("gives the ring a new order", () => {
@@ -298,6 +372,29 @@ describe("CardTable keyboard", () => {
     expect(cards()).toHaveLength(77);
     expect((document.activeElement as HTMLElement).dataset.card).toBeDefined();
     expect(document.activeElement).not.toBe(first);
+  });
+
+  it("on the ring, Tab lands on a card in view: after a drag and a reshuffle, and after the card on top is picked", () => {
+    /** The tab stop is near the top of the ring (the stage shows about ±37° of it). */
+    const stopInView = () => Math.abs(angle(Number(cards().find((b) => b.tabIndex === 0)!.dataset.card))) < 30;
+    // Five rounds: where a reshuffle puts any one card is random.
+    for (let round = 0; round < 5; round++) {
+      window.localStorage.setItem(TABLE_MODE_KEY, "ring");
+      const { unmount } = render(<Harness />);
+      act(() => vi.advanceTimersByTime(3000));
+      press(0, { dx: 90 + round * 13 });
+      act(() => vi.advanceTimersByTime(3000));
+      expect(stopInView()).toBe(true);
+      fireEvent.click(reshuffleButton());
+      act(() => vi.advanceTimersByTime(9000));
+      expect(stopInView()).toBe(true);
+      // A touch pick of the card on top: the stop moves on to the card on top now.
+      const top = cards().find((b) => b.tabIndex === 0)!;
+      press(Number(top.dataset.card));
+      act(() => vi.advanceTimersByTime(1000));
+      expect(stopInView()).toBe(true);
+      unmount();
+    }
   });
 
   it("on the table, the arrows move focus among the cards left", () => {

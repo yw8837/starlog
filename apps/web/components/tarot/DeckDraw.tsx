@@ -28,7 +28,7 @@ type DeckDrawProps = {
   templateId: DrawTemplateId;
   /**
    * The line over the slots (the question, or "우리 사이 · 친구"). Null until the page has read it from
-   * the browser: the deck already shuffles, the slots and the fan wait.
+   * the browser: the deck already shuffles, the slots and the table wait.
    */
   heading: string | null;
   step: { step?: number; total?: number; label: string; backHref: string; backLabel?: string };
@@ -89,6 +89,8 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
   const [reshuffles, setReshuffles] = useState(0);
   // Just reshuffled: until the next pick or undo, the status says so.
   const [freshDeck, setFreshDeck] = useState(false);
+  // The table is shuffling its cards: the undo waits until they are down.
+  const [shuffling, setShuffling] = useState(false);
   // The slots, where a picked card flies to.
   const spreadRef = useRef<HTMLDivElement>(null);
   // The page's latest "move on", read when the hold ends (a new closure per render must not restart the timers).
@@ -122,7 +124,7 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
   };
 
   const undo = () => {
-    if (phase !== "pick" || dealing) return;
+    if (phase !== "pick" || dealing || shuffling) return;
     setFreshDeck(false);
     setDealError(null);
     setPicked((prev) => prev.slice(0, -1));
@@ -216,6 +218,7 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
             // A slot's card (SpreadRow: position name, card, meta).
             slotFor={(order) => spreadRef.current?.querySelectorAll("li")[order]?.children[1] ?? null}
             onReshuffled={reshuffled}
+            onShufflingChange={setShuffling}
             disabled={dealing}
             instant={instant}
           />
@@ -229,9 +232,9 @@ export function DeckDraw({ instant, templateId, heading, step, onDealt, onReveal
           </Button>
         ) : null}
         {phase === "pick" ? (
-          // Keeps its room while hidden, so the fan never moves under a finger on the first pick.
+          // Keeps its room while hidden, so the table never moves under a finger on the first pick.
           <div className={s.undo} data-hidden={picked.length === 0 ? "" : undefined}>
-            <Button variant="ghost" size="md" block onClick={undo} trailing={<UndoIcon />}>
+            <Button variant="ghost" size="md" block onClick={undo} disabled={shuffling} trailing={<UndoIcon />}>
               {max === 1 ? "다시 고르기" : "방금 고른 카드 빼기"}
             </Button>
           </div>

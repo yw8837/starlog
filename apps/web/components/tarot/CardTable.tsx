@@ -36,6 +36,13 @@ const SLOP_PX = 7;
 const DEG_PER_PX = 0.16;
 /** The click a browser sends after a pointer press belongs to that press, which pointerup already decided. */
 const CLICK_AFTER_POINTER_MS = 600;
+/**
+ * A tap this soon on the card just picked (where it was) is the same tap twice, a double tap: the card has
+ * left for its slot and the one under it is on top now. As CardFan guarded a re-tap on its rising card.
+ */
+const RETAP_MS = 300;
+/** On the ring, a card this near the top is in view (the stage shows about ±37° of it on a phone). */
+const IN_VIEW_DEG = 30;
 
 type CardTableProps = {
   /** Cards in the shuffled deck, all face down on the table. */
@@ -50,6 +57,8 @@ type CardTableProps = {
   slotFor?: (order: number) => Element | null;
   /** 다시 섞기 has gathered, riffled and spread the cards left (the picks stayed). */
   onReshuffled?: () => void;
+  /** The cards are being shuffled (true) or are down again (false): the page holds its own input meanwhile (the undo). */
+  onShufflingChange?: (shuffling: boolean) => void;
   /** Takes no picks and no reshuffle (e.g. while the picks are being dealt). */
   disabled?: boolean;
   /** No deal-out, shuffle or flight animations (tests). */
@@ -81,6 +90,25 @@ const deal = (count: number): Deal => ({ order: shuffled(range(count)), spots: r
 
 /** An angle in -180..180. */
 const wrap = (deg: number) => (((deg % 360) + 540) % 360) - 180;
+
+/** Each card on the ring (all but the ones that flew to their slots) and how far it is turned from the top. */
+function ringTurns(order: readonly number[], picked: readonly number[], flies: boolean, offset: number): Map<number, number> {
+  const ring = order.filter((i) => !flies || !picked.includes(i));
+  return new Map(ring.map((i, rank) => [i, wrap(rank * (360 / ring.length) + offset)]));
+}
+
+/** Of the cards left to pick, the one nearest the top of the ring. */
+function topOf(turns: Map<number, number>, picked: readonly number[]): number | null {
+  let best: number | null = null;
+  let nearest = Infinity;
+  for (const [i, turn] of turns) {
+    if (!picked.includes(i) && Math.abs(turn) < nearest) {
+      nearest = Math.abs(turn);
+      best = i;
+    }
+  }
+  return best;
+}
 
 function measure(stage: HTMLElement): Geometry {
   // jsdom measures nothing: lay out as on a phone.
@@ -133,7 +161,7 @@ const ShuffleIcon = () => (
  * random anyway, so which sliver a finger lands on never matters. Cards move by transform only; the
  * positions are written straight to the cards, outside React, so a drag never re-renders 78 buttons.
  */
-export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffled, disabled = false, instant = false }: CardTableProps) {
+export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffled, onShufflingChange, disabled = false, instant = false }: CardTableProps) {
   const { back } = useDeckPrefs();
   const backSrc = backImage(back, "sm");
   const [mode, setMode] = useState<TableMode>(savedMode);
@@ -157,14 +185,23 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
   const pointerAt = useRef(0);
   /** A card picked with the keyboard: focus moves on to a card still on the table. */
   const keyPick = useRef<number | null>(null);
+  /** The last card a tap picked: when, and its box on screen then. */
+  const lastTap = useRef<{ at: number; box: DOMRect } | null>(null);
   const pickedBefore = useRef(picked.length);
 
   const flies = slotFor !== undefined;
   const full = picked.length >= max;
   const frozen = busy || disabled || full;
   const free = (i: number) => !picked.includes(i);
-  // One tab stop for the whole table.
-  const tabStop = focusCard !== null && free(focusCard) ? focusCard : (table.order.find(free) ?? table.order[0]!);
+  // One tab stop for the whole table; on the ring always a card in view (the focused one, or else the one on top).
+  const turns = mode === "ring" ? ringTurns(table.order, picked, flies, offset.current) : null;
+  const tabStop = turns
+    ? focusCard !== null && free(focusCard) && Math.abs(turns.get(focusCard) ?? 180) < IN_VIEW_DEG
+      ? focusCard
+      : (topOf(turns, picked) ?? table.order[0]!)
+    : focusCard !== null && free(focusCard)
+      ? focusCard
+      : (table.order.find(free) ?? table.order[0]!);
 
   // What timers, frames and window events read: the latest render's values.
   const latest = useRef({ mode, table, picked, flies, busy });
@@ -243,18 +280,8 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
 
   /** The card nearest the top of the ring that can still be picked. */
   const topOfRing = (): number | null => {
-    const ring = ringCards();
-    const { picked: p } = latest.current;
-    let best: number | null = null;
-    let nearest = Infinity;
-    ring.forEach((i, rank) => {
-      const turn = Math.abs(wrap(rank * (360 / ring.length) + offset.current));
-      if (!p.includes(i) && turn < nearest) {
-        nearest = turn;
-        best = i;
-      }
-    });
-    return best;
+    const { table: t, picked: p, flies: f } = latest.current;
+    return topOf(ringTurns(t.order, p, f, offset.current), p);
   };
 
   /** The cards the arrow keys walk through: around the ring, or left to right on the table. */
@@ -299,8 +326,9 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
     flights.current.add(flight);
   };
 
-  const pick = (i: number, byKey: boolean) => {
-    if (frozen || !free(i)) return;
+  /** Picks a card left on the table; false when the table takes no pick now. */
+  const pick = (i: number, byKey: boolean): boolean => {
+    if (frozen || !free(i)) return false;
     if (flies && !quiet()) {
       const box = cards.current[i]?.getBoundingClientRect();
       if (box) takeoffs.current.set(i, { x: box.left + box.width / 2, y: box.top + box.height / 2, r: turnOf(i) });
@@ -313,6 +341,7 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
       keyPick.current = i;
     }
     onPick(i);
+    return true;
   };
 
   // The table opens: from one pile in the middle (where the shuffle left the deck) the cards spread out.
@@ -358,7 +387,10 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
       if (target instanceof HTMLElement) fly(from, target);
     }
     if (grew && mode === "ring" && flies && !quiet()) {
-      const timer = window.setTimeout(layout, CLOSE_GAP_MS);
+      // Not over a shuffle that began in the meantime: its spread lays the ring out.
+      const timer = window.setTimeout(() => {
+        if (!latest.current.busy) layout();
+      }, CLOSE_GAP_MS);
       return () => window.clearTimeout(timer);
     }
     layout();
@@ -479,7 +511,11 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
       // The card the finger came down on (it was raised), or else the one on top under it now.
       const i = lifted.current ?? cardAt(e.clientX, e.clientY);
       lift(null);
-      if (i !== null) pick(i, false);
+      const last = lastTap.current;
+      const { clientX: x, clientY: y } = e;
+      if (last && Date.now() - last.at < RETAP_MS && x >= last.box.left && x <= last.box.right && y >= last.box.top && y <= last.box.bottom) return;
+      const box = i !== null ? cards.current[i]?.getBoundingClientRect() : undefined;
+      if (i !== null && pick(i, false) && box) lastTap.current = { at: Date.now(), box };
       return;
     }
     if (mode === "ring") coast();
@@ -564,7 +600,11 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
     }
     const stage = stageRef.current;
     if (!stage) return;
+    // A flick still coasting would carry the ring over the pile.
+    stopSpin();
+    press.current = null;
     setBusy(true);
+    onShufflingChange?.(true);
     lift(null);
     const g = (geo.current ??= measure(stage));
     const middle = g.h / 2;
@@ -592,6 +632,7 @@ export function CardTable({ count = 78, picked, max, onPick, slotFor, onReshuffl
     const done = () => {
       cards.current.forEach((el) => el?.style.setProperty("transition", ""));
       setBusy(false);
+      onShufflingChange?.(false);
       onReshuffled?.();
     };
 

@@ -68,6 +68,23 @@ test("흩뿌리기: a tap picks the card on top under the finger; the undo puts 
   await expect(tableCards(page)).toHaveCount(78);
 });
 
+test("a quick double tap on one spot picks one card; a tap there a moment later picks the next", async ({ page }) => {
+  const box = await tableBox(page);
+  const spot = { x: box.x + box.width / 2, y: box.y + box.height * 0.45 };
+  // Two taps back to back, the raw stream a finger sends: the first card leaves for its slot, the second tap
+  // lands on the card under it.
+  const cdp = await page.context().newCDPSession(page);
+  for (let i = 0; i < 2; i++) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [spot] });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  }
+  await expect(filledSlots(page)).toHaveCount(1);
+  await page.waitForTimeout(400);
+  await expect(filledSlots(page)).toHaveCount(1);
+  await page.touchscreen.tap(spot.x, spot.y);
+  await expect(filledSlots(page)).toHaveCount(2);
+});
+
 test("돌리기: a sideways drag turns the ring without picking or scrolling the page; a tap then picks", async ({ page }) => {
   await modeButton(page, "돌리기").tap();
   await settleAnimations(page);

@@ -223,10 +223,13 @@ test("draw: a cards-only shuffle opens the table of 78; 다시 섞기 shuffles o
   await reshuffle.click();
   await expect(reshuffle).toHaveAttribute("aria-disabled", "true");
   await expect(page.getByText("카드를 섞고 있어요")).toHaveCount(0);
+  // The undo waits until the cards are down.
+  await expect(page.getByRole("button", { name: "방금 고른 카드 빼기" })).toBeDisabled();
   await expect(reshuffle).toHaveAttribute("aria-disabled", "false", { timeout: 10_000 });
   await expect(page.getByRole("status").filter({ hasText: "카드를 다시 섞었어요. 2장 더 골라 주세요" })).toBeVisible();
   await expect(filledSlots(page)).toHaveCount(1);
   await expect(tableCards(page)).toHaveCount(77);
+  await expect(page.getByRole("button", { name: "방금 고른 카드 빼기" })).toBeEnabled();
 
   // Reduced motion: not skipped. The stacked deck is shown for a moment (opacity only), then the fan.
   // It lasts only ~0.8s, so record the draw phases (data-phase) as they happen instead of racing it.

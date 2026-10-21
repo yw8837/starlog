@@ -25,4 +25,6 @@ export async function pickCard(page: Page): Promise<void> {
   });
   expect(name, "a card on the table shows its middle").not.toBeNull();
   await page.getByRole("button", { name: name!, exact: true }).click();
+  // A tap within 300 ms on the spot of the card just picked counts as the same tap (a double tap), so the next pick waits that out.
+  await page.waitForTimeout(320);
 }
