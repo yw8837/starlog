@@ -16,6 +16,12 @@ const SHORT_LABEL: Readonly<Record<string, string>> = { [INFO_PAGES.how.path]: "
 /** On the guide host: the articles are not advice (the terms say the same of the readings, in the same words). */
 const GUIDE_NOTICE = "가이드 글은 오락과 자기 성찰을 위한 참고 콘텐츠예요. 의료, 법률, 투자, 진로 같은 전문적인 판단을 대신하지 않아요.";
 
+/**
+ * The 방문 통계 setting (app/privacy/page.tsx #analytics), last. A path on every host: both serve /privacy, and the choice
+ * is kept per host, so it must open where the visitor is.
+ */
+const ANALYTICS_SETTING = { href: "/privacy#analytics", label: "방문 통계 설정" };
+
 /** What the service is and how it works, then prices and policies: one wrapped row. */
 const LINKS: ReadonlyArray<FooterLink> = [...SERVICE_LINKS, ...LEGAL_LINKS].map((link) => ({ ...link, label: SHORT_LABEL[link.href] ?? link.label }));
 
@@ -53,6 +59,11 @@ export function Footer({ host = "app" }: { host?: SiteHost | "either" }) {
                 {link.href === "/pricing" ? <PremiumFooterLink host={host} /> : null}
               </Fragment>
             ))}
+            <li>
+              <Link href={ANALYTICS_SETTING.href} className={styles.link}>
+                {ANALYTICS_SETTING.label}
+              </Link>
+            </li>
           </ul>
         </nav>
         {host === "guide" ? <p className={styles.business}>{GUIDE_NOTICE}</p> : null}

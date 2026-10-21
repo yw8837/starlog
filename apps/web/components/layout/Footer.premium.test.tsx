@@ -25,12 +25,12 @@ afterEach(() => {
 
 describe("the footer's 프리미엄 풀이 link (plan-reconciled §4.5)", () => {
   for (const state of [false, "fail"] as const) {
-    it(`is absent while premium is ${state === false ? "off" : "unknown"}: today's ten links`, async () => {
+    it(`is absent while premium is ${state === false ? "off" : "unknown"}: today's eleven links (방문 통계 설정 last)`, async () => {
       const fetchMock = stub(state);
       render(<Footer />);
       await waitFor(() => expect(fetchMock).toHaveBeenCalled());
       await new Promise((resolve) => setTimeout(resolve, 0));
-      expect(labels()).toHaveLength(10);
+      expect(labels()).toHaveLength(11);
       expect(labels()).not.toContain("프리미엄 풀이");
     });
   }
@@ -41,7 +41,7 @@ describe("the footer's 프리미엄 풀이 link (plan-reconciled §4.5)", () => 
     const link = await screen.findByRole("link", { name: "프리미엄 풀이" });
     expect(link.getAttribute("href")).toBe("/pricing#premium");
     expect(labels().indexOf("프리미엄 풀이")).toBe(labels().indexOf("가격 안내") + 1);
-    expect(labels()).toHaveLength(11);
+    expect(labels()).toHaveLength(12);
   });
 
   it("names the app host from a guide page when the hosts are split", async () => {

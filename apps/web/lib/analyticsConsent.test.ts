@@ -53,6 +53,15 @@ describe("analytics consent store: one choice per browser, in localStorage", () 
     expect(consent.readChoice()).toBe("granted");
   });
 
+  it("when only writing fails, the choice made now wins over the older one still stored", () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ choice: "granted", at: "2026-10-30T00:00:00.000Z" }));
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("full", "QuotaExceededError");
+    });
+    consent.chooseAnalytics("denied");
+    expect(consent.readChoice()).toBe("denied");
+  });
+
   it("tells its subscribers about a choice made here and one made in another tab", () => {
     const listener = vi.fn();
     const unsubscribe = consent.subscribeChoice(listener);

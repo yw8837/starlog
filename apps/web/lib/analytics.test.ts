@@ -30,6 +30,10 @@ describe("gaLocation: the address GA may see", () => {
     [`${APP}/ranking/aries`, `${APP}/ranking/aries`],
     [`${GUIDES}/guide/the-hermit?q=1`, `${GUIDES}/guide/the-hermit`],
     ["http://localhost:3100/b/K7Q2ZP?code=1", "http://localhost:3100/b/"],
+    // Compared in lower case: another spelling of an id path is still redacted.
+    [`${APP}/S/abc123`, `${APP}/s/`],
+    [`${APP}/Chapter/8f2c1d`, `${APP}/chapter/`],
+    [`${APP}/PAY/success?paymentKey=tgen_1&utm_source=x`, `${APP}/PAY/success`],
   ];
   for (const [href, expected] of cases) {
     it(`${href} → ${expected}`, () => expect(gaLocation(href)).toBe(expected));
@@ -70,6 +74,7 @@ describe("gaPage: one page_view's fields, never a raw title that can carry a rea
     expect(title("/chapter/8f2c1d", "스타로그-타로-2026-10-30")).toBe("내 기록 · 스타로그");
     expect(title("/invite/abc123", "카드 한 장 부탁 · 스타로그")).toBe("카드 한 장 부탁 · 스타로그");
     expect(title("/ranking/aries", "양자리 랭킹 · 스타로그")).toBe("양자리 랭킹 · 스타로그");
+    expect(title("/S/abc123", "친구가 뽑은 카드 · 바보 · 스타로그")).toBe("공유된 풀이 · 스타로그");
   });
 
   it("later pages: the page before as referrer, and a title still the one hidden on the page before is not sent", () => {

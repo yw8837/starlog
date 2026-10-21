@@ -24,7 +24,8 @@ export const GA_CONFIG = { send_page_view: false, allow_google_signals: false, a
  */
 const ID_PAGES: Readonly<Record<string, string>> = { "/s/": "공유된 풀이", "/b/": "별자리 인연 초대", "/chapter/": "내 기록", "/invite/": "카드 한 장 부탁" };
 
-const idPrefix = (pathname: string): string | undefined => Object.keys(ID_PAGES).find((prefix) => pathname.startsWith(prefix));
+/** Compared in lower case, so another spelling of an id path is redacted too. */
+const idPrefix = (pathname: string): string | undefined => Object.keys(ID_PAGES).find((prefix) => pathname.toLowerCase().startsWith(prefix));
 
 /**
  * The address GA may see: the origin, the path (an id page's bare prefix, see ID_PAGES), and only the utm_* parameters,
@@ -33,7 +34,8 @@ const idPrefix = (pathname: string): string | undefined => Object.keys(ID_PAGES)
  */
 export function gaLocation(href: string): string {
   const url = new URL(href);
-  const pay = url.pathname === "/pay" || url.pathname.startsWith("/pay/");
+  const path = url.pathname.toLowerCase();
+  const pay = path === "/pay" || path.startsWith("/pay/");
   const utm = new URLSearchParams(pay ? [] : [...url.searchParams].filter(([name]) => name.startsWith("utm_"))).toString();
   return `${url.origin}${idPrefix(url.pathname) ?? url.pathname}${utm ? `?${utm}` : ""}`;
 }
