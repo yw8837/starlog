@@ -1,0 +1,89 @@
+/*
+ * The consent banner: a small sheet (UnlockSheet's colours) fixed near the bottom, the column's width on phones and a
+ * corner card on desktop. Non-blocking: the page behind it scrolls and works.
+ */
+.banner {
+  position: fixed;
+  right: var(--gutter);
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  left: var(--gutter);
+  /* Above the tab bar (20), below the share toast (30). */
+  z-index: 25;
+  display: grid;
+  gap: 8px;
+  max-width: var(--col-max);
+  margin-inline: auto;
+  padding: 16px 18px;
+  border: 1px solid rgba(243, 220, 161, 0.22);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #2c2670 0%, #1d1850 100%);
+  box-shadow: 0 10px 40px rgba(5, 3, 15, 0.5);
+  /* Off under prefers-reduced-motion (globals.css). */
+  animation: rise 240ms ease-out both;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* Phones and tablets: above the bottom tab bar, and above the floating button where a page has one. */
+@media (max-width: 1023px) {
+  :root:has(.with-tabbar) .banner {
+    bottom: calc(var(--tab-h) + 12px + env(safe-area-inset-bottom, 0px));
+  }
+
+  :root:has(.with-tabbar.with-fab) .banner {
+    bottom: calc(var(--tab-h) + 84px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Desktop: a card in the bottom-right corner. */
+@media (min-width: 1024px) {
+  .banner {
+    right: 24px;
+    bottom: 24px;
+    left: auto;
+    width: 380px;
+  }
+}
+
+/* A field being typed in: the keyboard may lift it over the field, so it steps aside as the tab bar does. */
+body:has(textarea:focus, input:focus:not([type="checkbox"], [type="radio"])) .banner {
+  display: none;
+}
+
+.title {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: var(--fs-body);
+  line-height: 1.4;
+}
+
+.body {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.more {
+  color: var(--gold);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+/* 허용 and 거부: the same button, side by side, the same width. */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+@media print {
+  .banner {
+    display: none;
+  }
+}
