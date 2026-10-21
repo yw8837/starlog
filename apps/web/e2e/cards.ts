@@ -15,16 +15,25 @@ export const filledSlots = (page: Page) => page.getByRole("img", { name: /자리
  */
 export async function pickCard(page: Page): Promise<void> {
   await cardTable(page).scrollIntoViewIfNeeded();
-  const name = await page.evaluate(() => {
-    for (const el of document.querySelectorAll<HTMLElement>("button[data-card]:not([hidden])")) {
-      if (el.getAttribute("aria-disabled") === "true") continue;
-      const r = el.getBoundingClientRect();
-      if (document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest("button") === el) return el.getAttribute("aria-label");
+  // The table can still be settling when the card is chosen, so another card may come to lie over it by the time of
+  // the click: then choose again (a card on top at that moment) instead of waiting on a covered one.
+  for (let attempt = 1; ; attempt++) {
+    const name = await page.evaluate(() => {
+      for (const el of document.querySelectorAll<HTMLElement>("button[data-card]:not([hidden])")) {
+        if (el.getAttribute("aria-disabled") === "true") continue;
+        const r = el.getBoundingClientRect();
+        if (document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest("button") === el) return el.getAttribute("aria-label");
+      }
+      return null;
+    });
+    expect(name, "a card on the table shows its middle").not.toBeNull();
+    try {
+      await page.getByRole("button", { name: name!, exact: true }).click({ timeout: 3_000 });
+      break;
+    } catch (error) {
+      if (attempt >= 5) throw error;
     }
-    return null;
-  });
-  expect(name, "a card on the table shows its middle").not.toBeNull();
-  await page.getByRole("button", { name: name!, exact: true }).click();
+  }
   // A tap within 300 ms on the spot of the card just picked counts as the same tap (a double tap), so the next pick waits that out.
   await page.waitForTimeout(320);
 }
