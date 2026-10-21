@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 import PricingPage from "./page";
@@ -34,9 +35,17 @@ afterEach(() => {
   resetPremiumStatusForTests();
 });
 
+describe("/pricing links each reading to the page that starts it (SEO P1-1, P1-2)", () => {
+  it("the tarot card links /tarot/new, the saju card /saju/new and each premium card its product page, in the server HTML", () => {
+    stub(false);
+    const html = renderToString(<PricingPage />);
+    for (const href of ["/tarot/new", "/saju/new", "/premium/deep-tarot", "/premium/match", "/premium/newyear-2027"]) expect(html).toContain(`href="${href}"`);
+  });
+});
+
 describe("/pricing's premium tier (plan-reconciled §4.2)", () => {
   for (const state of [false, "fail"] as const) {
-    it(`shows the premium readings plainly while premium is ${state === false ? "off" : "unknown"}: names and prices, never 준비 중 (review 2026-10-20 A3), no button or link`, async () => {
+    it(`shows the premium readings plainly while premium is ${state === false ? "off" : "unknown"}: names, prices and their product pages (static links, SEO P1-1), never 준비 중 (review 2026-10-20 A3)`, async () => {
       const fetchMock = stub(state);
       render(<PricingPage />);
       await waitFor(() => expect(fetchMock).toHaveBeenCalled());
@@ -45,8 +54,8 @@ describe("/pricing's premium tier (plan-reconciled §4.2)", () => {
       expect([...premium().querySelectorAll("h3")].map((h) => h.textContent)).toEqual(["켈틱 크로스 10장", "프리미엄 궁합", "2027 신년운세"]);
       expect(premium().textContent).toContain("14,900원");
       expect(premium().textContent).not.toContain("준비 중");
-      expect(premium().querySelector("a")).toBeNull();
-      expect(document.querySelector('a[href^="/premium/"]')).toBeNull();
+      expect([...premium().querySelectorAll("a")].map((a) => a.getAttribute("href"))).toEqual(["/premium/deep-tarot", "/premium/match", "/premium/newyear-2027"]);
+      expect(premium().querySelector("button")).toBeNull();
     });
   }
 

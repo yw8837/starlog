@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AccordionItem, InfoPage } from "@/components/info/InfoPage";
 import s from "@/components/info/info.module.css";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
+import { OpeningOnly } from "@/components/ui/OpeningOnly";
 import { faqGroups, faqJsonLd, jsonLdScript } from "@/lib/faq";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { pageMetadata } from "@/lib/seo";
@@ -31,6 +32,11 @@ export default function FaqPage() {
                   {entry.a.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
+                  {entry.opening ? (
+                    <OpeningOnly>
+                      <p>{entry.opening}</p>
+                    </OpeningOnly>
+                  ) : null}
                   {entry.crisis ? <CrisisContacts /> : null}
                   {entry.link ? (
                     <Link href={entry.link.href} className={s.more}>

@@ -112,6 +112,12 @@ describe("service pages", () => {
     expect(names).toContain("사주주 · 토끼 선생님");
   });
 
+  it("about: 무엇을 볼 수 있나요 links the indexable saju page /saju/new in plain text (SEO P1-2)", () => {
+    const { container } = render(<AboutPage />);
+    const link = container.querySelector('#what-title ~ dl a[href="/saju/new"]');
+    expect(link?.textContent).toBe("사주 보기");
+  });
+
   it("lists the four pages in the app host's sitemap", () => {
     const xml = sitemapXml("app");
     for (const info of Object.values(INFO_PAGES)) expect(xml).toContain(`<loc>${SITE.url}${info.path}</loc>`);
@@ -159,14 +165,18 @@ describe("/faq", () => {
   }
 
   it("carries valid FAQPage JSON-LD that says exactly what the page shows", () => {
+    // As the cached HTML shows it: 오픈 기념 무료 (a browser-only line while it runs) is in neither.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-11-01T00:00:00+09:00"));
     const { container } = render(<FaqPage />);
+    vi.useRealTimers();
     const data = readJsonLd(container);
     expect(data["@context"]).toBe("https://schema.org");
     expect(data["@type"]).toBe("FAQPage");
 
     const cards = [...container.querySelectorAll("details")];
     expect(cards.length).toBeGreaterThanOrEqual(10);
-    expect(cards.length).toBeLessThanOrEqual(19); // 19 with "다른 앱과 사주(명식)가 다르게 나와요" (2026-10-07)
+    expect(cards.length).toBeLessThanOrEqual(21); // 19 with "다른 앱과 사주(명식)가 다르게 나와요" (2026-10-07), 21 with 가격은 얼마예요 and 누가 만들었나요 (SEO P1-4)
     expect(data.mainEntity).toHaveLength(cards.length);
 
     data.mainEntity.forEach((question, i) => {
@@ -179,6 +189,20 @@ describe("/faq", () => {
       expect(question.name.trim()).not.toBe("");
       expect(question.acceptedAnswer.text.trim()).not.toBe("");
     });
+  });
+
+  it("answers 가격은 얼마예요 and 누가 만들었나요 directly, from SITE, on the page and in the JSON-LD (SEO P1-4)", () => {
+    const { container } = render(<FaqPage />);
+    const answers = new Map(readJsonLd(container).mainEntity.map((question) => [question.name, question.acceptedAnswer.text]));
+    const price = answers.get("가격은 얼마예요?") ?? "";
+    const krw = SITE.price.premium.map((p) => p.krw);
+    expect(price.startsWith(`타로 전체 풀이는 ${won(SITE.price.tarotStandardKrw)}, 사주 전체 풀이는 ${won(SITE.price.sajuStandardKrw)}이에요.`)).toBe(true);
+    expect(price).toContain(`${won(Math.min(...krw))}부터 ${won(Math.max(...krw))}까지`);
+    const maker = answers.get("누가 만들었나요?") ?? "";
+    for (const value of [SITE.business.name, SITE.business.ceo, SITE.business.regNo, SITE.business.mailOrderNo]) expect(maker).toContain(value);
+    expect(maker).not.toContain(SITE.business.address);
+    const text = container.textContent ?? "";
+    for (const answer of [price, maker]) expect(text).toContain(answer.split(". ")[0]);
   });
 
   it("escapes < so no answer can close the script tag", () => {

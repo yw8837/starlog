@@ -8,15 +8,17 @@ const HSTS_MAX_AGE = "max-age=63072000";
 /**
  * Report-only script policy (A2 CSP): the browser reports, and never blocks, a script from anywhere but
  * this site and the third parties the code loads: the Kakao SDK (lib/kakaoShare.ts), Turnstile
- * (lib/reading/turnstile.ts), the Toss SDK (lib/pay/tossSdk.ts) and AdSense on the root domain's guide
- * pages (lib/ads.ts; it pulls in more Google origins, which the reports will show). 'unsafe-inline'
+ * (lib/reading/turnstile.ts), the Toss SDK (lib/pay/tossSdk.ts), AdSense on the root domain's guide
+ * pages (lib/ads.ts; it pulls in more Google origins, which the reports will show), GA4's gtag.js (lib/analytics.ts)
+ * and the Cloudflare Web Analytics beacon Cloudflare injects into every HTML page (host only: its path carries a
+ * version; it reports to this site's /cdn-cgi/rum). 'unsafe-inline'
  * because Next's own inline scripts carry no nonce. No report-uri: reports show in the browser console.
  * Enforcing it needs a proxy.ts (none yet) that sets a per-request nonce, with 'strict-dynamic' in place
  * of the host list and 'unsafe-inline', which makes every page render per request (Next's guide
  * content-security-policy.md in node_modules/next/dist/docs).
  */
 const SCRIPT_POLICY = [
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://t1.kakaocdn.net https://challenges.cloudflare.com https://js.tosspayments.com https://pagead2.googlesyndication.com`,
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""} https://t1.kakaocdn.net https://challenges.cloudflare.com https://js.tosspayments.com https://pagead2.googlesyndication.com https://www.googletagmanager.com https://static.cloudflareinsights.com`,
   "object-src 'none'",
   "base-uri 'self'",
 ].join("; ");

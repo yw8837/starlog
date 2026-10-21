@@ -47,14 +47,27 @@ describe("llms.txt", () => {
     for (const product of SITE.price.premium) expect(pricing).toContain(product.name);
   });
 
-  it("states the facts from SITE: 오픈 기념 무료 with its rule, the price, the follow-ups, and no signup gift", () => {
+  it("states the facts from SITE: the price, the follow-ups, no signup gift, and no 오픈 기념 무료 offer (cached for a year, it would outlive 2026-10-31)", () => {
     const facts = serviceFacts().join("\n");
     expect(facts).toContain(won(SITE.price.tarotStandardKrw));
-    expect(facts).toContain("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외). 사주 전체 풀이는 결제하고 열어요.");
+    for (const text of [facts, llms, llmsFull]) expect(text).not.toMatch(/10월 31일까지|오픈 기념 무료\(/);
     expect(facts).not.toMatch(/가입 선물|첫 이용/);
     expect(facts).toContain(`이어서 물어보기를 ${SITE.reading.followUps}번`);
     expect(facts).toContain("1909년");
     expect(facts).toContain("만세력");
+  });
+
+  it("names the premium readings with price, line and page, links the app home, gives the operator and contact from SITE.business, and quotes the /evidence numbers (SEO P1-3)", async () => {
+    const { evidenceHighlights } = await import("./evidence");
+    for (const product of SITE.price.premium) {
+      expect(llms).toContain(`- [${product.name}](${SITE.url}/premium/${product.slug}): `);
+      expect(llms).toContain(`${product.name} ${won(product.krw)}`);
+      expect(llms).toContain(product.sub);
+    }
+    expect(llms).toContain(`(${SITE.url}/)`);
+    for (const value of [SITE.business.name, SITE.business.ceo, SITE.business.regNo, SITE.business.mailOrderNo, SITE.business.email]) expect(llms).toContain(value);
+    expect(llms).not.toContain(SITE.business.address);
+    for (const { value, label } of evidenceHighlights()) expect(llms).toContain(`${label}: ${value}`);
   });
 
   it("llms-full.txt carries every article in full (blocks included), its 요약 and 한눈에 보기 first, and the FAQ", () => {

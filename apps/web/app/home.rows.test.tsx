@@ -22,6 +22,13 @@ afterEach(() => {
   localStorage.clear();
 });
 
+it("names the site on its home: the app's WebSite JSON-LD (스타로그, also Starlog), which the root layout no longer repeats on every page (SEO P1-9)", () => {
+  const { container } = render(<HomePage />);
+  const sites = [...container.querySelectorAll('script[type="application/ld+json"]')].map((script) => JSON.parse(script.textContent ?? "")).filter((node) => node["@type"] === "WebSite");
+  expect(sites).toHaveLength(1);
+  expect(sites[0]).toMatchObject({ "@id": "https://starlog.yeolmaeapps.kr/#website", name: "스타로그", url: "https://starlog.yeolmaeapps.kr/" });
+});
+
 describe("the home's rows", () => {
   it("shows no 지난 풀이 돌아보기 even when a reading is due (owner 2026-10-20: it lives in 내 정보)", async () => {
     saveChapter(

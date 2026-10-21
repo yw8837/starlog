@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import { won } from "@/lib/config";
 import { linkHref, type SiteHost } from "@/lib/hosts";
 import { opensOnText } from "@/lib/premium/offer";
@@ -21,6 +21,11 @@ type PremiumRowsProps = {
   /** The host the page is served on: a guide page links to the app host. */
   host?: SiteHost;
   className?: string;
+  /**
+   * Shown until the status answers, so the server's HTML (a static page) links the product for crawlers; gone once it
+   * answers, replaced by the rows, or by nothing where premium is not visible or the status cannot be read.
+   */
+  fallback?: ReactNode;
 };
 
 /**
@@ -29,9 +34,10 @@ type PremiumRowsProps = {
  * gold. A client island on the shared premium status (pages stay static): nothing before it answers, when it cannot
  * be read, or for a product not visible here, so STARLOG_PREMIUM off shows today's page exactly.
  */
-export function PremiumRows({ ids, title, lines = {}, look = "rows", onlyOpen = false, host = "app", className }: PremiumRowsProps) {
+export function PremiumRows({ ids, title, lines = {}, look = "rows", onlyOpen = false, host = "app", className, fallback = null }: PremiumRowsProps) {
   const status = usePremiumStatus();
   const titleId = useId();
+  if (status === undefined) return <>{fallback}</>;
   if (!status) return null;
   const now = Date.now();
   const opensAt = (id: PremiumId) => {

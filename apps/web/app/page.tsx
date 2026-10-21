@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { BondsHomeRow } from "@/components/bonds/BondsHomeRow";
 import { HomeFaq, HomeGuide, HomeHero, QuickCards, SajuEntry, TarotEntry } from "@/components/home/HomeEntries";
 import { HomeTopBar } from "@/components/home/HomeTopBar";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { Footer } from "@/components/layout/Footer";
 import { TabBar } from "@/components/layout/TabBar";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
+import { websiteJsonLd } from "@/lib/jsonld";
 import { HOME_DESCRIPTION, pageMetadata } from "@/lib/seo";
 import s from "./page.module.css";
 
@@ -24,6 +26,8 @@ export default function HomePage() {
       <NightSky constellation />
       <TabBar active="home" />
       <main className={`page-col page-wide ${s.home}`}>
+        {/* The site's name for search (스타로그 / Starlog): on the home, where Google reads it. */}
+        <JsonLd data={websiteJsonLd()} />
         <HomeTopBar />
         <HomeHero />
 

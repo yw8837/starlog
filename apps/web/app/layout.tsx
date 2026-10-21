@@ -3,6 +3,7 @@ import { Gowun_Batang, Noto_Sans_KR } from "next/font/google";
 import { CharacterDefs } from "@/components/characters/defs";
 import { RouteTracker } from "@/components/layout/RouteTracker";
 import { VersionCheck } from "@/components/layout/VersionCheck";
+import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { adsConfig } from "@/lib/ads";
 import { SITE } from "@/lib/config";
@@ -38,9 +39,9 @@ export const metadata: Metadata = {
   // og:title and og:description follow each page's title and description (the defaults above on
   // pages without their own). Indexable pages set their own openGraph through lib/seo.ts pageMetadata.
   openGraph: { type: "website", siteName: OG_SITE_NAME, locale: "ko_KR", images: [{ ...OG_IMAGE }] },
-  // Large image previews and full snippets for Google. Indexable pages inherit this; a page that sets its
-  // own `robots` (NOINDEX in lib/seo.ts) replaces it whole, so a noindex page never carries it.
-  robots: { googleBot: { "max-image-preview": "large", "max-snippet": -1 } },
+  // Large image previews for every engine (Bing reads the robots meta) and full snippets for Google. Indexable pages
+  // inherit this; a page that sets its own `robots` (NOINDEX in lib/seo.ts) replaces it whole, so a noindex page never carries it.
+  robots: { "max-image-preview": "large", googleBot: { "max-image-preview": "large", "max-snippet": -1 } },
   // Twitter/X follows Open Graph for title, description and image.
   twitter: { card: "summary_large_image" },
   // Guide articles as RSS for feed readers and 네이버 서치어드바이저 (app/rss.xml/route.ts).
@@ -66,6 +67,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <RouteTracker />
         <VersionCheck />
+        {/* GA4 on both hosts, client-side only and only once the privacy revision is in force (components/seo/GoogleAnalytics.tsx). */}
+        <GoogleAnalytics />
       </body>
     </html>
   );

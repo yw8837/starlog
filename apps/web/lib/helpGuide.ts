@@ -41,6 +41,8 @@ export interface HelpItem {
   link?: { href: string; label: string };
   /** Ends with the helplines (components/ui/CrisisContacts). */
   crisis?: boolean;
+  /** 오픈 기념 무료: /help shows this card after mount, only while it runs (components/ui/OpeningOnly), never in its cached HTML. */
+  opening?: boolean;
 }
 
 export interface HelpGroup {
@@ -319,15 +321,16 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           icon: "gift",
           title: "오픈 기념 무료",
           sub: `타로 전체 풀이 ${times(firstFreeTarot)} · ${OPENING_LAST_DAY}까지`,
-          body: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 볼 수 있고, 한국 시간 0시에 다시 채워져요.`,
+          body: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요.`,
           tip: "전체 풀이 보기 버튼에 오픈 기념 무료가 보이면 아직 무료로 열 수 있어요.",
+          opening: true,
         },
         {
           id: "daily-free",
           icon: "spark",
           title: "매일 무료로 보는 것",
           sub: "지금의 한 장, 오늘의 한 장",
-          body: "지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료로 볼 수 있어요.",
+          body: `지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료로 볼 수 있어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 볼 수 있고, 한국 시간 0시에 다시 채워져요.`,
         },
         {
           id: "pricing",

@@ -78,16 +78,15 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/refund", refundMeta],
   ["/terms", termsMeta],
   ["/privacy", privacyMeta],
-  ["/lucky", luckyMeta],
   ["/ranking", rankingMeta],
   ...(await Promise.all(GUIDE_ARTICLES.map(async (article) => [`/guide/${article.slug}`, await guideArticleMeta(params({ slug: article.slug }))] as [string, Metadata]))),
 ];
 
 /**
- * In INDEXABLE for their own metadata, but out of the sitemaps: client shells (the server sends a
- * "불러오는 중" state) that no page links to.
+ * In INDEXABLE for its own metadata, but out of the sitemaps: no page links to it. (/ranking renders its leaders on
+ * the server per request, so it stays indexable; /lucky, a client shell, is NOINDEX below.)
  */
-const UNLISTED = ["/lucky", "/ranking"];
+const UNLISTED = ["/ranking"];
 
 const NOINDEX: Array<[path: string, meta: Metadata]> = [
   ["/chapter/sample", await chapterMeta(params({ id: "sample" }))],
@@ -102,6 +101,8 @@ const NOINDEX: Array<[path: string, meta: Metadata]> = [
   ["/bonds", bondsMeta],
   ["/owner", ownerMeta],
   ["/login/review", reviewLoginMeta],
+  // 이번 주 행운 번호 is drawn in the browser from a birth date: the server sends a form and a loading line (SEO P2-4).
+  ["/lucky", luckyMeta],
   // Their lists load in the browser, so the server sends a "불러오는 중" shell: thin to a crawler.
   ...(await Promise.all(CONSTELLATIONS.map(async (sign) => [`/ranking/${sign.id}`, await rankingSignMeta(params({ sign: sign.id }))] as [string, Metadata]))),
 ];
@@ -177,9 +178,9 @@ describe("the pages the root domain serves besides the guide", () => {
 
 describe("search result previews", () => {
   it("lets Google show large image previews and full-length snippets on every indexable page: set once, in the root layout", () => {
-    expect(layoutMeta.robots).toEqual({ googleBot: { "max-image-preview": "large", "max-snippet": -1 } });
-    // What Next writes for it: no <meta name="robots"> (nothing to say), one googlebot tag.
-    expect(resolveRobots(layoutMeta.robots)).toEqual({ basic: "", googleBot: "max-image-preview:large, max-snippet:-1" });
+    expect(layoutMeta.robots).toEqual({ "max-image-preview": "large", googleBot: { "max-image-preview": "large", "max-snippet": -1 } });
+    // What Next writes for it: <meta name="robots"> for every engine (Bing and the rest, SEO P2-16), and the googlebot tag.
+    expect(resolveRobots(layoutMeta.robots)).toEqual({ basic: "max-image-preview:large", googleBot: "max-image-preview:large, max-snippet:-1" });
     // The indexable pages leave robots alone, so they inherit it.
     for (const [path, meta] of INDEXABLE) expect(meta.robots, path).toBeUndefined();
   });

@@ -10,7 +10,7 @@ import GuideTarotPage from "@/app/guide/tarot/page";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, articlesIn, findArticle, guideSectionText } from "./guide";
-import { ORGANIZATION_ID, guideArticleJsonLd, guideQuestions, jsonLdScript, rankingItemListJsonLd } from "./jsonld";
+import { GUIDE_WEBSITE_ID, ORGANIZATION_ID, guideArticleJsonLd, guideQuestions, jsonLdScript, rankingItemListJsonLd, standardProductJsonLd } from "./jsonld";
 
 afterEach(cleanup);
 
@@ -113,12 +113,12 @@ function problems(node: Node): string[] {
 const renderArticle = async (slug: string) => GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">);
 
 describe("JSON-LD", () => {
-  it("site-wide: the publisher with logo and contact email, and the site's name with its alternate", () => {
+  it("site-wide: the publisher with its legal name, logo and contact email; the app's WebSite is on its home only (app/page.tsx), so a root-domain page names one site (SEO P1-9)", () => {
     const nodes = jsonLdOf(<SiteJsonLd />);
-    expect(nodes.map((node) => node["@type"])).toEqual(["Organization", "WebSite"]);
+    expect(nodes.map((node) => node["@type"])).toEqual(["Organization"]);
     for (const node of nodes) expect(problems(node)).toEqual([]);
-    expect(nodes[0]).toMatchObject({ name: SITE.business.name, email: SITE.business.email });
-    expect(nodes[1]).toMatchObject({ name: SITE.nameKo, alternateName: expect.arrayContaining([SITE.name]) });
+    expect(nodes[0]).toMatchObject({ name: SITE.business.name, legalName: SITE.business.name, email: SITE.business.email });
+    expect(JSON.stringify(nodes)).not.toContain("sameAs");
   });
 
   it.each([
@@ -141,9 +141,34 @@ describe("JSON-LD", () => {
     expect(JSON.stringify(sites)).not.toContain("sameAs");
   });
 
-  it("the guide layout's WebSite does not replace the app's: SiteJsonLd keeps https://starlog.yeolmaeapps.kr/#website", () => {
-    const [site] = byType(jsonLdOf(<SiteJsonLd />), "WebSite");
-    expect(site).toMatchObject({ "@id": `${SITE.url}/#website`, url: `${SITE.url}/` });
+  it("a guide page under the root layout's site nodes and the guide layout carries exactly one WebSite, the root domain's", () => {
+    const nodes = jsonLdOf(
+      <>
+        <SiteJsonLd />
+        <GuideLayout>
+          <GuideTarotPage />
+        </GuideLayout>
+      </>,
+    );
+    expect(byType(nodes, "WebSite").map((site) => site["@id"])).toEqual([GUIDE_WEBSITE_ID]);
+    expect(GUIDE_WEBSITE_ID).toBe(`${SITE.guideUrl}/#website`);
+  });
+
+  it.each([
+    ["tarot", "/tarot/new", SITE.price.tarotStandardKrw],
+    ["saju", "/saju/new", SITE.price.sajuStandardKrw],
+  ] as const)("%s: a Product with an Offer at the SITE price, like the premium pages, and never a rating or review (SEO P2-8)", (id, path, krw) => {
+    const node = standardProductJsonLd(id, "설명");
+    expect(node).toMatchObject({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: id === "tarot" ? "타로 전체 풀이" : "사주 전체 풀이",
+      description: "설명",
+      brand: { "@type": "Brand", name: SITE.nameKo },
+      url: `${SITE.url}${path}`,
+      offers: { "@type": "Offer", priceCurrency: "KRW", price: krw, url: `${SITE.url}${path}`, availability: "https://schema.org/InStock" },
+    });
+    expect(JSON.stringify(node)).not.toMatch(/aggregateRating|review/i);
   });
 
   it("/faq: an FAQPage with every question on the page", () => {
@@ -182,8 +207,8 @@ describe("JSON-LD", () => {
     const [articleNode] = byType(nodes, "Article");
     expect(articleNode).toMatchObject({ headline: article.title, datePublished: article.published, dateModified: article.updated, abstract: article.summary });
     expect(articleNode).toMatchObject({ url: address, "@id": `${address}#article`, mainEntityOfPage: { "@type": "WebPage", "@id": address } });
-    // The publisher and the site stay the app's: 스타로그's home is the app host. The trail goes home, to the tab, to the article.
-    expect(articleNode).toMatchObject({ publisher: { url: `${SITE.url}/` }, isPartOf: { url: `${SITE.url}/` } });
+    // The publisher stays the app's (스타로그's home is the app host); the article is part of the root domain's site, the guides (SEO P1-9).
+    expect(articleNode).toMatchObject({ publisher: { url: `${SITE.url}/` }, isPartOf: { "@id": GUIDE_WEBSITE_ID, url: `${SITE.guideUrl}/` } });
     const crumbs = (byType(nodes, "BreadcrumbList")[0]?.itemListElement as Node[]).map((item) => item.item);
     expect(crumbs).toEqual([`${SITE.url}/`, tabUrl(article.category), address]);
 
