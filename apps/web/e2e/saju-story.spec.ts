@@ -53,6 +53,9 @@ async function ownAddress(page: Page, info: TestInfo) {
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.2.${info.workerIndex}.${Math.floor(Math.random() * 250)}` });
 }
 
+/** The 명식 table's caption (components/saju/ChartTable.tsx). */
+const PILLAR_TABLE = "사주 명식, 왼쪽부터 시주·일주·월주·연주";
+
 test("saju: input, consent, the example chart, then the user's own chart with 丙寅 and 병화", async ({ page }, info) => {
   // Nothing saved yet: an example chart (computed, no reading text) asks for the user's own birth data.
   await page.goto("/saju/chart");
@@ -111,7 +114,8 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   expect(JSON.parse((await teaserRequest).postData() ?? "{}")).not.toHaveProperty("concern");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("나의 명식");
   const chart = page.getByRole("complementary", { name: "명식" });
-  await expect(chart.getByRole("table").getByRole("columnheader")).toHaveText(["시주", "일주", "월주", "연주"]);
+  // the pillar table by name: 오행과 나의 힘 adds two visually hidden tables of its numbers
+  await expect(chart.getByRole("table", { name: PILLAR_TABLE }).getByRole("columnheader")).toHaveText(["시주", "일주", "월주", "연주"]);
   await expect(chart).toContainText("丙寅");
   await expect(chart).toContainText("병화");
   // free, no AI (saju enrichment 2026-10-08): the names under 네 기둥 (丙 → 학당귀인 on the 일지 寅) and the 개운 line (쇠 0)
@@ -145,7 +149,7 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
   await page.getByRole("button", { name: "명식 보기" }).click();
   await expect(page).toHaveURL(/\/saju\/chart$/, { timeout: NAV });
   const chart = page.getByRole("complementary", { name: "명식" });
-  await expect(chart.getByRole("table")).toContainText("壬");
+  await expect(chart.getByRole("table", { name: PILLAR_TABLE })).toContainText("壬");
   await expect(chart).toContainText("보정 시각 08:57");
   await expect(page.getByText("1990년 1월 1일 (양력) · 9시 30분 · 여성 · 서울")).toBeVisible();
 
