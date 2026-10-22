@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { dynamic as robotsDynamic, GET as robotsRoute } from "@/app/robots.txt/route";
 import { dynamic as sitemapDynamic, GET as sitemapRoute } from "@/app/sitemap.xml/route";
 import { SITE } from "./config";
-import { GUIDE_ARTICLES } from "./guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES } from "./guide";
 import { FEED_URL, absoluteUrl } from "./hosts";
 import { NAMED_CRAWLERS, daumWebmasterLine, robotsTxt } from "./robots";
 import { pageMetadata, siteVerification, sitemapEntries, sitemapEntriesFor, sitemapXml } from "./seo";
@@ -94,8 +94,10 @@ describe("sitemap on the root domain", () => {
     for (const article of GUIDE_ARTICLES) {
       expect(entry(`/guide/${article.slug}`)?.lastModified, article.slug).toBe(article.updated);
     }
-    const newest = GUIDE_ARTICLES.map((article) => article.updated ?? "").sort().at(-1);
-    expect(entry("/guide/tarot")?.lastModified).toBe(newest);
+    for (const category of GUIDE_CATEGORIES) {
+      const newest = GUIDE_ARTICLES.filter((article) => article.category === category).map((article) => article.updated ?? "").sort().at(-1);
+      expect(entry(`/guide/${category}`)?.lastModified, category).toBe(newest);
+    }
   });
 
   it("leaves out /guide and /guide/tarot, which permanently redirect to the root domain's /", () => {
