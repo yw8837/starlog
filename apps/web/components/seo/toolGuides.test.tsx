@@ -9,7 +9,7 @@ import { NowGuide, SajuGuide, TarotGuide, TodayGuide } from "./toolGuides";
 afterEach(cleanup);
 
 /** Paths on the app host the guides may link to. */
-const APP_PATHS = new Set(["/now", "/today", "/tarot/new", "/saju/new", "/pricing", "/evidence"]);
+const APP_PATHS = new Set(["/now", "/today", "/tarot/new", "/saju/new", "/pricing", "/evidence", "/birth-card"]);
 
 /** Visible characters without spaces, as the SEO plan measured the pages (2026-10-08). */
 const charCount = (el: HTMLElement) => (el.textContent ?? "").replace(/\s/g, "").length;

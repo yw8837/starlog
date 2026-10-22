@@ -70,6 +70,7 @@ export function NowGuide() {
         items: [
           { href: "/tarot/new", label: "내 질문으로 카드 3장 보기" },
           { href: "/today", label: "오늘의 한 장" },
+          { href: "/birth-card", label: "나를 닮은 타로 카드" },
           { href: guide("one-card-yes-no"), label: "원카드로 묻는 법" },
           { href: guide("how-to-read-tarot"), label: "타로 카드 읽는 법" },
           { href: guide("upright-and-reversed"), label: "정방향과 역방향" },

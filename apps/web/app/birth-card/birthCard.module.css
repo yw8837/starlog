@@ -1,0 +1,362 @@
+/* 나를 닮은 타로 카드: the form page and the 22 result pages share these. */
+
+.screen {
+  display: grid;
+  gap: 24px;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding-top: 8px;
+  margin-bottom: -16px;
+}
+
+.back {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-left: -10px;
+  border-radius: 22px;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.back:hover {
+  background: var(--glass);
+}
+
+.back:focus-visible,
+.cardLink:focus-visible,
+.more a:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---- the form page ---- */
+
+.intro {
+  display: grid;
+  gap: 10px;
+  text-align: center;
+}
+
+.heading {
+  margin: 0;
+}
+
+.heading > span {
+  display: block;
+}
+
+.title {
+  font-size: var(--fs-title);
+  line-height: 1.35;
+}
+
+.sub {
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.lead {
+  margin: 0;
+  color: var(--ink-sub);
+  line-height: 1.65;
+}
+
+.form {
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+}
+
+.block {
+  display: grid;
+  gap: 10px;
+}
+
+.blockTitle {
+  margin: 0;
+  color: var(--gold);
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.prose {
+  margin: 0;
+  color: var(--ink-sub);
+  line-height: 1.7;
+}
+
+.example {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--glass);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.cardList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cardLink {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--glass-line);
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.cardLink:hover {
+  background: var(--glass);
+}
+
+.cardRoman {
+  min-width: 2.6em;
+  color: var(--gold);
+  font-family: var(--font-display), serif;
+  font-size: 13px;
+}
+
+.note {
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.65;
+}
+
+/* ---- a result ---- */
+
+.result {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.name {
+  margin: -8px 0 0;
+  font-size: 30px;
+  line-height: 1.3;
+}
+
+.roman {
+  color: var(--gold);
+  font-size: 20px;
+}
+
+.face {
+  --card-w: 200px;
+  margin: 4px 0;
+  filter: drop-shadow(0 16px 32px rgba(5, 3, 15, 0.45));
+}
+
+.panel {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 20px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+  text-align: left;
+}
+
+.panelTitle {
+  margin: 0;
+  color: var(--gold);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.panelTitle + .traits,
+.panelTitle + .asks {
+  margin-top: -2px;
+}
+
+.traits {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.traits li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.traits li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.6em;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.asks {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* 짝 카드 (10–21): the card the two digits add up to, as a row linking to its page. */
+.pair {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.pairHow {
+  margin: -2px 0 0;
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pairLink {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.pairLink:hover {
+  border-color: var(--line-strong);
+}
+
+.pairLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.pairFace {
+  --card-w: 56px;
+}
+
+.pairText {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pairName {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pairName .roman {
+  font-size: 14px;
+}
+
+.pairTrait {
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pairArrow {
+  color: var(--gold);
+}
+
+.nudge {
+  margin: 4px 0 -4px;
+  color: var(--ink-sub);
+  line-height: 1.6;
+}
+
+.actions {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+}
+
+/* ShareButton's 공유하기 (and 카카오톡으로 보내기 with a key): full width like the buttons around it. */
+.share {
+  display: grid;
+  gap: 8px;
+}
+
+.share > a,
+.share > button,
+.share > span {
+  width: 100%;
+}
+
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.more a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: 14px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.more a:hover {
+  color: var(--ink);
+}
+
+.find {
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-line);
+  scroll-margin-top: 16px;
+}

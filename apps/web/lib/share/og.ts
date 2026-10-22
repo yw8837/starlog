@@ -41,7 +41,7 @@ export function shareOgData(share: SharePayload, origin: string): ShareOgData {
 
 
 /** An image as a data URI, so the renderer needs no fetch of its own; undefined when it cannot be read. */
-async function inline(src: string, fetchImpl: typeof fetch): Promise<string | undefined> {
+export async function inline(src: string, fetchImpl: typeof fetch): Promise<string | undefined> {
   try {
     const response = await fetchImpl(src);
     if (!response.ok || !(response.headers.get("content-type") ?? "").startsWith("image/jpeg")) return undefined;

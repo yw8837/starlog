@@ -172,6 +172,8 @@ const SCREENS: Screen[] = [
     },
   },
   { name: "lucky", path: "/lucky", setup: ownAddress },
+  { name: "birth-card", path: "/birth-card" },
+  { name: "birth-card-result", path: "/birth-card/hermit" },
   { name: "tarot-new", path: "/tarot/new" },
   // ?keep=1: as if reached from inside the flow (a plain visit starts the builder clean, lib/freshStart.ts).
   { name: "tarot-new-filled", path: "/tarot/new?keep=1", setup: (page) => seedFlow(page, FLOW) },
