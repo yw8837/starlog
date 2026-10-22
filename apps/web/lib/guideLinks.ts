@@ -37,7 +37,8 @@ export function guideLinkTarget(url: string): GuideLinkTarget | null {
     return null;
   }
   if (parsed.protocol !== "https:" || parsed.username || parsed.password || parsed.port) return null;
-  if (parsed.hostname === APP_HOST) return { kind: "app", path: `${parsed.pathname}${parsed.search}${parsed.hash}` };
+  // A path starting "//" would read as another host once it is put back on a page (a protocol-relative URL).
+  if (parsed.hostname === APP_HOST) return parsed.pathname.startsWith("//") ? null : { kind: "app", path: `${parsed.pathname}${parsed.search}${parsed.hash}` };
   if ((GUIDE_SOURCE_HOSTS as readonly string[]).includes(parsed.hostname)) return { kind: "external", url: parsed.toString() };
   return null;
 }

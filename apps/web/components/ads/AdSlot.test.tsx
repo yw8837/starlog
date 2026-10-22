@@ -38,6 +38,8 @@ describe("AdSlot", () => {
     expect(screen.queryByText("광고")).toBeNull();
     expect(aside.getAttribute("data-ad-state")).toBe("pending");
     expect(aside.hidden).toBe(false);
+    // An empty 광고 landmark is not announced to a screen reader while nothing fills it.
+    expect(aside.getAttribute("aria-hidden")).toBe("true");
   });
 
   it("hides the whole slot once AdSense marks the unit unfilled", async () => {
@@ -49,6 +51,7 @@ describe("AdSlot", () => {
     });
     expect(aside.getAttribute("data-ad-state")).toBe("unfilled");
     expect(aside.hidden).toBe(true);
+    expect(aside.getAttribute("aria-hidden")).toBe("true");
     expect(screen.queryByText("광고")).toBeNull();
   });
 
@@ -61,6 +64,7 @@ describe("AdSlot", () => {
     });
     expect(aside.getAttribute("data-ad-state")).toBe("filled");
     expect(aside.hidden).toBe(false);
+    expect(aside.hasAttribute("aria-hidden")).toBe(false);
     expect(screen.getByText("광고")).toBeTruthy();
   });
 
