@@ -23,6 +23,7 @@ import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import { pageMetadata } from "@/lib/seo";
 import { GuideBlocks } from "../GuideBlocks";
 import { GuideBreadcrumbs } from "../GuideBreadcrumbs";
+import { GuideText } from "../GuideText";
 import { CardQuote, GuideByline, GuideSourceLine, GuideTrustBox } from "../GuideEvidence";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
@@ -85,7 +86,9 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
     article.sections.slice(from, to).map((section, i) => (
       <section key={section.heading} className={s.section}>
         <h2 className={s.sectionTitle}>{section.heading}</h2>
-        <p className={s.prose}>{section.body}</p>
+        <p className={s.prose}>
+          <GuideText text={section.body} />
+        </p>
         {section.blocks ? <GuideBlocks blocks={section.blocks} id={`s${from + i + 1}`} /> : null}
       </section>
     ));

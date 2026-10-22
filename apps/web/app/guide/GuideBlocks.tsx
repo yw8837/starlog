@@ -2,6 +2,7 @@ import { getCard } from "@starlog/core";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import type { GuideBlock, GuideCalloutTone } from "@/lib/guideMeta";
 import { GuideDiagram } from "./GuideDiagram";
+import { GuideText } from "./GuideText";
 import s from "./GuideBlocks.module.css";
 
 /**
@@ -17,13 +18,19 @@ const LONG_CELL = 12;
 function Block({ block, id }: { block: GuideBlock; id: string }) {
   switch (block.kind) {
     case "p":
-      return <p className={`${s.block} ${s.p}`}>{block.text}</p>;
+      return (
+        <p className={`${s.block} ${s.p}`}>
+          <GuideText text={block.text} />
+        </p>
+      );
     case "list": {
       const List = block.ordered ? "ol" : "ul";
       return (
         <List className={`${s.block} ${s.list}`}>
           {block.items.map((item) => (
-            <li key={item}>{item}</li>
+            <li key={item}>
+              <GuideText text={item} />
+            </li>
           ))}
         </List>
       );
@@ -85,7 +92,9 @@ function Block({ block, id }: { block: GuideBlock; id: string }) {
             <span className={s.calloutTone}>{TONE_LABEL[block.tone]}</span>
             {block.title}
           </p>
-          <p className={s.calloutText}>{block.text}</p>
+          <p className={s.calloutText}>
+            <GuideText text={block.text} />
+          </p>
         </div>
       );
     case "steps":
@@ -98,7 +107,9 @@ function Block({ block, id }: { block: GuideBlock; id: string }) {
                 {i + 1}
               </span>
               <p className={s.stepTitle}>{step.title}</p>
-              <p className={s.stepText}>{step.text}</p>
+              <p className={s.stepText}>
+                <GuideText text={step.text} />
+              </p>
             </li>
           ))}
         </ol>

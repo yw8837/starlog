@@ -445,3 +445,10 @@
 .markStart {
   text-anchor: start;
 }
+
+/* A link in an article's text ([텍스트](주소)): navy ink on the paper, underlined. */
+.link {
+  color: var(--navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
