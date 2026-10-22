@@ -16,9 +16,9 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
   "five-elements":
     "오행은 목(木)·화(火)·토(土)·금(金)·수(水) 다섯 가지 기운이고, 사주의 천간 열 글자와 지지 열두 글자는 모두 이 가운데 하나에 속해요. 나무는 불을, 불은 흙을, 흙은 쇠를, 쇠는 물을, 물은 나무를 살리는 상생과 서로 누르는 상극의 관계로 읽죠. 어떤 오행이 많거나 없다고 해서 좋고 나쁨이 정해지지는 않아요.",
   "the-hermit":
-    "은둔자는 메이저 아르카나 9번 카드로, 하얀 봉우리 위에서 노인이 등불을 머리 높이로 들고 홀로 서 있는 그림이에요. 정방향은 멀리 있는 답보다 지금 선 자리를 확인하며 혼자 마음을 고르는 카드로 읽어요. 역방향이면 혼자 있는 시간이 길어져 마음이 닫혔거나, 이제 사람들 곁으로 돌아올 때가 된 상태로 읽죠.",
+    "은둔자는 메이저 아르카나 9번 카드로, 정방향에서는 멀리 있는 답보다 지금 선 자리를 확인하며 혼자 마음을 고르는 카드로 읽어요. 하얀 봉우리 위에서 노인이 등불을 머리 높이로 들고 홀로 선 그림이 그 뜻을 보여 주죠. 역방향이면 혼자 있는 시간이 길어져 마음이 닫혔거나, 이제 사람들 곁으로 돌아올 때가 된 상태로 읽죠.",
   "the-star":
-    "별은 메이저 아르카나 17번 카드로, 큰 별 하나와 작은 별 일곱 개 아래에서 여인이 두 항아리의 물을 연못과 땅에 붓는 그림이에요. 정방향은 요란하지 않게 조금씩 다시 채워지는 회복과 희망으로 읽고, 16번 탑 다음 번호라 흔들림 뒤에 다시 채워지는 단계로도 봐요. 역방향이면 희망이 흐려졌거나, 나를 채우기보다 퍼 주기만 해서 회복이 더딘 상태로 읽어요.",
+    "별은 메이저 아르카나 17번 카드로, 정방향에서는 요란하지 않게 조금씩 다시 채워지는 회복과 희망으로 읽어요. 큰 별 하나와 작은 별 일곱 개 아래에서 여인이 두 항아리의 물을 연못과 땅에 붓는 그림이고, 16번 탑 다음 번호라 흔들림 뒤에 다시 채워지는 단계로도 봐요. 역방향이면 희망이 흐려졌거나, 나를 채우기보다 퍼 주기만 해서 회복이 더딘 상태로 읽어요.",
 
   "celtic-cross-spread":
     "켈틱 크로스는 카드 열 장을 왼쪽 십자 여섯 자리와 오른쪽 기둥 네 자리로 놓고 한 질문을 여러 방향에서 읽는 스프레드예요. 1번 지금의 분위기와 2번 걸림돌을 한 쌍으로 먼저 읽고, 3·4번의 목표와 바탕, 5·1·6번의 시간 흐름, 7·8번의 나와 주변을 차례로 견줘요. 9번 바람과 두려움을 본 뒤 10번 결말을 읽되, 정해진 결과보다 지금 흐름이 이어질 때의 모습으로 받아들이죠.",
@@ -235,6 +235,9 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     ...[
       "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
       "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
-    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-14" }] as const),
+    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-22" }] as const),
+    // 2026-10-22 (AdSense "가치가 별로 없는 콘텐츠"): all 22 card articles gain the Starlog deck's own scene, three worked
+    // examples, their own 자주 묻는 질문 and links on; the frames two cards shared once their names were taken out are rewritten.
+    ...["the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-22" }] as const),
   ],
 );
