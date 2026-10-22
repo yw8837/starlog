@@ -19,7 +19,8 @@ export interface BirthCardOgData {
   host: string;
 }
 
-const FACE = { width: 270, height: Math.round(270 * (416 / 240)) } as const;
+/** The JPEG's own 240×416: scaled up it only blurs, and the PNG grows by a fifth (470 KB against 380 KB). */
+const FACE = { width: 240, height: 416 } as const;
 const LINE = `${BIRTH_CARD_TITLE} · 스타로그`;
 
 /** Long names (운명의 수레바퀴) step down so they stay on one line beside the card. */
@@ -30,7 +31,7 @@ export function birthCardOgImage(data: BirthCardOgData): ReactElement {
   return (
     <div style={{ position: "relative", display: "flex", width: "100%", height: "100%", backgroundColor: "#0d0a26", backgroundImage: NIGHT, color: INK, fontFamily: "Sans" }}>
       {starField(width, height, Math.round((width * height) / 14000))}
-      <div style={{ position: "absolute", left: 120, top: (height - FACE.height) / 2, display: "flex" }}>
+      <div style={{ position: "absolute", left: 140, top: (height - FACE.height) / 2, display: "flex" }}>
         {data.face ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={data.face} width={FACE.width} height={FACE.height} style={{ borderRadius: 16, boxShadow: "0 22px 48px rgba(5,3,15,0.55)" }} />
