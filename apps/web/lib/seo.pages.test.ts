@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from "vitest";
 import { metadata as aboutMeta } from "@/app/about/page";
 import { metadata as bInviteIndexMeta } from "@/app/b/page";
 import { generateMetadata as bInviteMeta } from "@/app/b/[code]/page";
+import { metadata as birthCardMeta } from "@/app/birth-card/page";
+import { generateMetadata as birthCardResultMeta } from "@/app/birth-card/[card]/page";
 import { metadata as bondsMeta } from "@/app/bonds/page";
 import { generateMetadata as chapterMeta } from "@/app/chapter/[id]/page";
 import { metadata as evidenceMeta } from "@/app/evidence/page";
@@ -35,6 +37,7 @@ import { metadata as tarotSituationMeta } from "@/app/tarot/new/situation/page";
 import { metadata as tarotResultMeta } from "@/app/tarot/result/page";
 import { metadata as termsMeta } from "@/app/terms/page";
 import { metadata as todayMeta } from "@/app/today/page";
+import { BIRTH_CARDS } from "./birthCard";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES } from "./guide";
 import { GUIDE_HOST_PAGES, absoluteUrl, isGuidePath } from "./hosts";
@@ -80,6 +83,8 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/privacy", privacyMeta],
   ["/ranking", rankingMeta],
   ...(await Promise.all(GUIDE_ARTICLES.map(async (article) => [`/guide/${article.slug}`, await guideArticleMeta(params({ slug: article.slug }))] as [string, Metadata]))),
+  ["/birth-card", birthCardMeta],
+  ...(await Promise.all(BIRTH_CARDS.map(async (card) => [`/birth-card/${card.slug}`, await birthCardResultMeta(params({ card: card.slug }))] as [string, Metadata]))),
 ];
 
 /**
@@ -133,7 +138,8 @@ describe("indexable pages", () => {
     expect(og.url).toBe(address);
     expect(og.locale).toBe("ko_KR");
     expect(og.type).toBe(isArticle ? "article" : "website");
-    expect(og.images?.[0]).toMatchObject({ url: "/opengraph-image", width: 1200, height: 630 });
+    // A birth card page shows its own card (/api/og/birth-card/<slug>); every other page the site's picture.
+    expect(og.images?.[0]).toMatchObject({ url: path.startsWith("/birth-card/") ? `/api/og${path}` : "/opengraph-image", width: 1200, height: 630 });
   });
 
   it("gives every page its own title and description", () => {

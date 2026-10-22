@@ -5,6 +5,7 @@ import { BIRTH_CARDS } from "@/lib/birthCard";
 import { SITE } from "@/lib/config";
 import { findArticle } from "@/lib/guide";
 import { NOT_FOUND_METADATA } from "@/lib/seo";
+import { NowGuide } from "@/components/seo/toolGuides";
 import BirthCardPage, { metadata as formMetadata } from "./page";
 import BirthCardResultPage, { generateMetadata, generateStaticParams } from "./[card]/page";
 
@@ -82,6 +83,11 @@ describe("/birth-card, the form", () => {
     const hrefs = within(list).getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual(BIRTH_CARDS.map((card) => `/birth-card/${card.slug}`));
     expect(container.textContent).toContain("재미로 보는 테스트예요");
+  });
+
+  it("is found from 지금의 한 장's guide, where the free tools link each other", () => {
+    render(<NowGuide />);
+    expect(screen.getByRole("link", { name: "나를 닮은 타로 카드" }).getAttribute("href")).toBe("/birth-card");
   });
 
   it("has its own title, description and canonical, with the site's preview image", () => {

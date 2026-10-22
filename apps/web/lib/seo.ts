@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BIRTH_CARDS, BIRTH_CARD_PATH, birthCardPath } from "./birthCard";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath } from "./guide";
 import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
@@ -128,6 +129,9 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     { path: "/saju/new", changeFrequency: "monthly", priority: 0.9 },
     { path: "/now", changeFrequency: "monthly", priority: 0.8 },
     { path: "/today", changeFrequency: "daily", priority: 0.8 },
+    // 나를 닮은 타로 카드: the form and its 22 card pages (fixed text, linked from the form).
+    { path: BIRTH_CARD_PATH, changeFrequency: "monthly", priority: 0.7 },
+    ...BIRTH_CARDS.map((card): SitemapEntry => ({ path: birthCardPath(card.slug), changeFrequency: "monthly", priority: 0.5 })),
     ...GUIDE_CATEGORIES.map(
       (category): SitemapEntry => ({
         path: guideIndexPath(category),

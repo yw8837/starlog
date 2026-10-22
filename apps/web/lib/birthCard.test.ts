@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
+import { sitemapEntriesFor, sitemapXml } from "./seo";
 import {
   BIRTH_CARDS,
   BIRTH_CARD_PATH,
@@ -154,5 +155,19 @@ describe("what each card page says", () => {
       const wrong = kbOf(card.cardId).imagery.decks?.starlog?.misdescriptions ?? [];
       for (const line of lines(card)) for (const { regex } of wrong) expect(line, `${card.slug}: ${line}`).not.toMatch(new RegExp(regex));
     }
+  });
+});
+
+describe("in the sitemap", () => {
+  const paths = [BIRTH_CARD_PATH, ...BIRTH_CARDS.map((card) => birthCardPath(card.slug))];
+
+  it("lists the form and the 22 card pages once each, on the app host only", () => {
+    const app = sitemapEntriesFor("app").map((entry) => entry.path);
+    expect(paths).toHaveLength(23);
+    for (const path of paths) expect(app.filter((listed) => listed === path), path).toHaveLength(1);
+    const guide = sitemapEntriesFor("guide").map((entry) => entry.path);
+    for (const path of paths) expect(guide, path).not.toContain(path);
+    const xml = sitemapXml("app");
+    for (const path of paths) expect(xml).toContain(`<loc>https://starlog.yeolmaeapps.kr${path}</loc>`);
   });
 });
