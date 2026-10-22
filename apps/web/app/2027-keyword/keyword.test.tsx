@@ -7,12 +7,13 @@ import { PREMIUM_IDS } from "@/lib/premium/products";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 
 const push = vi.hoisted(() => vi.fn());
+const nav = vi.hoisted(() => ({ pathname: "/2027-keyword" }));
 const notFound = vi.hoisted(() =>
   vi.fn(() => {
     throw new Error("NEXT_HTTP_ERROR_FALLBACK;404");
   }),
 );
-vi.mock("next/navigation", () => ({ notFound, useRouter: () => ({ push, replace: vi.fn(), prefetch: vi.fn() }), usePathname: () => KEYWORD_PATH }));
+vi.mock("next/navigation", () => ({ notFound, useRouter: () => ({ push, replace: vi.fn(), prefetch: vi.fn() }), usePathname: () => nav.pathname }));
 
 const { default: KeywordTestPage, metadata: formMetadata } = await import("./page");
 const { default: KeywordResultPage, generateMetadata, generateStaticParams, dynamicParams } = await import("./[ilju]/page");
@@ -34,6 +35,7 @@ function pick(label: string, value: string | number) {
 }
 
 beforeEach(() => {
+  nav.pathname = KEYWORD_PATH;
   push.mockClear();
   notFound.mockClear();
 });
@@ -74,6 +76,24 @@ describe("the form", () => {
     fireEvent.click(screen.getByRole("button", { name: "내 키워드 보기" }));
     // 음력 2020 윤4월 1일 is 양력 2020-05-23, a 丙寅 day (평달 4월 1일, 2020-04-23, would be 丙申).
     expect(push).toHaveBeenCalledWith("/2027-keyword/byeong-in");
+  });
+
+  it("on a shared page of the same 일주, goes back up to the result instead of a push that changes nothing", () => {
+    nav.pathname = "/2027-keyword/mu-o";
+    const scrollTo = vi.fn();
+    vi.stubGlobal("scrollTo", scrollTo);
+    render(<KeywordForm />);
+    pick("태어난 연도", 2000);
+    pick("태어난 월", 1);
+    pick("태어난 일", 1);
+    fireEvent.click(screen.getByRole("button", { name: "내 키워드 보기" }));
+    expect(push).not.toHaveBeenCalled();
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
+    // Another 일주 still opens its own page.
+    pick("태어난 일", 2);
+    fireEvent.click(screen.getByRole("button", { name: "내 키워드 보기" }));
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(scrollTo).toHaveBeenCalledTimes(1);
   });
 
   it("asks for every part of the date and goes nowhere until then", () => {

@@ -129,7 +129,7 @@ export function reasonLines(ilju: Ilju): string[] {
   }
   const ko = branchKo(ilju.branch);
   const day = `未와 태어난 날의 아래 글자(일지) ${glyph(ilju.branch, ko, "은/는")}`;
-  if (meeting.length === 0) lines.push(`${day} 따로 맺는 관계가 없어요. ${toneOf(ilju.branch)}`);
+  if (meeting.length === 0) lines.push(`未와 태어난 날의 아래 글자(일지) ${ilju.branch}(${ko}) 사이에는 이 테스트에서 따로 보는 관계가 없어요. ${toneOf(ilju.branch)}`);
   else if (meeting[0] === "같은 글자") lines.push(`올해의 未와 내 일지 ${glyph(ilju.branch, ko, "은/는")} 같은 글자예요.`);
   else lines.push(`${day} ${RELATION_PLAIN[meeting[0]!]}${copula("짝")}.${meeting.includes("형(刑)") ? ` ${PUNISH_NOTE}` : ""}`);
   return lines;
@@ -170,7 +170,7 @@ export const KEYWORD_CONTENT: Readonly<Record<string, KeywordContent>> = {
   乙丑: { keyword: "익숙함 벗기", brings: "익숙한 방식을 벗어날수록 재주가 살아나는 편이에요.", watch: "바꾸고 싶은 일이 한꺼번에 몰려 마음이 바빠질 때가 있어요.", action: "늘 다니던 길 대신 다른 길로 한 번 가 봐요." },
   乙卯: { keyword: "같이 만들기", brings: "뜻 맞는 사람과 손잡고 만들 때 힘이 나는 해예요.", watch: "어울리다 보면 내 몫을 말 못 하고 넘기기 쉬워요.", action: "함께하는 일은 시작할 때 나눌 몫부터 정해요." },
   乙巳: { keyword: "솜씨 자랑", brings: "좋아서 하던 일이 남들 눈에 띄기 쉬워요.", watch: "재미에 빠지면 쉬는 시간을 자꾸 미루게 돼요.", action: "만든 것 하나를 사진으로 남겨 모아 둬요." },
-  乙未: { keyword: "내 밭 넓히기", brings: "늘 하던 일의 범위가 조금씩 넓어지는 해예요.", watch: "익숙한 방식만 고집하면 새 길이 안 보여요.", action: "안 해 본 방법 하나를 작게 시험해 봐요." },
+  乙未: { keyword: "내 밭 넓히기", brings: "늘 하던 일의 범위를 조금씩 넓혀 보기 좋은 때예요.", watch: "익숙한 방식만 고집하면 새 길이 안 보여요.", action: "안 해 본 방법 하나를 작게 시험해 봐요." },
   乙酉: { keyword: "다듬어 내놓기", brings: "꼼꼼히 손본 결과물로 인정받기 쉬워요.", watch: "남의 평가 한마디에 마음이 크게 출렁이기도 해요.", action: "내 기준 세 가지를 적고 그걸로 먼저 점검해요." },
   乙亥: { keyword: "혼자 서기", brings: "기대던 데서 한 발 떼면 내 재주가 또렷해져요.", watch: "도와주던 사람의 사정이 바뀌어 기댈 곳이 줄 수 있어요.", action: "남에게 묻기 전에 내 답을 먼저 적어 봐요." },
   // 丙 · 겁재/상관: 사람 사이에서 겨루고 드러냄
@@ -204,7 +204,7 @@ export const KEYWORD_CONTENT: Readonly<Record<string, KeywordContent>> = {
   // 庚 · 정관/정인: 맡은 자리와 인정
   庚子: { keyword: "말의 무게", brings: "맡은 자리에서 내 말에 무게가 실리기 쉬워요.", watch: "솔직한 한마디가 규칙을 건드려 오해를 사기도 해요.", action: "중요한 말은 보내기 전에 소리 내 읽어 봐요." },
   庚寅: { keyword: "책임 맡기", brings: "맡은 일을 끝까지 챙기면 다음 자리가 열리기 쉬워요.", watch: "일이 몰려 가족과 보내는 시간이 줄어들기 쉬워요.", action: "일주일에 한 번은 일 없는 저녁을 정해 둬요." },
-  庚辰: { keyword: "자격 갖추기", brings: "배워 둔 것이 이름표처럼 나를 증명해 주는 해예요.", watch: "준비만 길어지고 써먹을 때를 놓칠 수 있어요.", action: "배운 것을 써 볼 자리를 하나 먼저 잡아요." },
+  庚辰: { keyword: "자격 갖추기", brings: "배워 둔 것을 자격이나 기록으로 정리해 보기 좋은 때예요.", watch: "준비만 길어지고 써먹을 때를 놓칠 수 있어요.", action: "배운 것을 써 볼 자리를 하나 먼저 잡아요." },
   庚午: { keyword: "자리 잡기", brings: "나를 믿고 맡겨 주는 곳과 손발이 잘 맞는 편이에요.", watch: "기대에 맞추려다 내 속도를 잃기 쉬워요.", action: "맡은 일의 우선순위 세 개를 매주 다시 정해요." },
   庚申: { keyword: "단단해지기", brings: "까다로운 일을 거칠수록 실력이 여물어요.", watch: "자존심에 도움을 마다하는 걸 조심해요.", action: "힘든 일 하나는 같이 할 사람을 먼저 찾아요." },
   庚戌: { keyword: "다시 세우기", brings: "계획을 다시 세우며 내 기준이 또렷해지는 해예요.", watch: "기준이 흔들릴 때 서둘러 정하려는 마음을 살펴요.", action: "바뀐 일은 정리해서 한 번 더 확인받아요." },
@@ -219,9 +219,9 @@ export const KEYWORD_CONTENT: Readonly<Record<string, KeywordContent>> = {
   壬子: { keyword: "약속 챙기기", brings: "흩어진 일과 약속을 하나로 묶어 챙기는 해예요.", watch: "가까운 사람과 돈을 섞으면 서운함이 남기 쉬워요.", action: "함께 쓰는 돈은 쓰는 곳을 따로 나눠 적어요." },
   壬寅: { keyword: "일 굴리기", brings: "일과 살림을 함께 챙기는 감각이 살아나기 쉬워요.", watch: "일을 넓히다 맺은 약속을 깜빡할 때가 있어요.", action: "주간 일정표에 약속부터 적고 일을 채워요." },
   壬辰: { keyword: "큰물 다스리기", brings: "책임이 커져도 나눠 맡으면 길이 잡히는 편이에요.", watch: "맡은 일이 넘치면 마감끼리 부딪쳐요.", action: "마감이 겹치는 주는 한 가지를 미리 미뤄 둬요." },
-  壬午: { keyword: "손잡기", brings: "일에서도 사람에서도 손잡을 인연이 닿기 쉬워요.", watch: "정에 끌려 따져 봐야 할 조건을 넘길 수 있어요.", action: "중요한 약속은 조건을 글로 한 번 정리해요." },
+  壬午: { keyword: "손잡기", brings: "일을 함께할 사람과 조건을 맞춰 보기 좋은 때예요.", watch: "정에 끌려 따져 봐야 할 조건을 넘길 수 있어요.", action: "중요한 약속은 조건을 글로 한 번 정리해요." },
   壬申: { keyword: "뒤에서 챙기기", brings: "앞에 나서기보다 뒤에서 챙기는 쪽이 편한 해예요.", watch: "생각만 하다 정해야 할 때를 놓치기 쉬워요.", action: "고민하는 일은 마감을 정하고 그날 결정해요." },
-  壬戌: { keyword: "계약 다시 보기", brings: "맺어 둔 약속과 조건을 다시 들여다보게 되는 해예요.", watch: "고친 약속을 말로만 두면 서로 다르게 기억할 수 있어요.", action: "서명하기 전에 바뀐 부분만 따로 표시해 읽어요." },
+  壬戌: { keyword: "계약 다시 보기", brings: "맺어 둔 약속과 조건을 다시 들여다보기 좋은 때예요.", watch: "고친 약속을 말로만 두면 서로 다르게 기억할 수 있어요.", action: "서명하기 전에 바뀐 부분만 따로 표시해 읽어요." },
   // 癸 · 편재/편관 + 丁癸 천간충: 크게 굴리되 부딪힘을 살핌
   癸丑: { keyword: "정면 돌파", brings: "미뤄 둔 문제를 마주하고 매듭짓는 해예요.", watch: "부딪힘이 위아래로 겹쳐 쉽게 지칠 수 있어요.", action: "큰 결정은 하루 자고 나서 다시 보고 정해요." },
   癸卯: { keyword: "재주로 넓히기", brings: "가볍게 시작한 재주가 사람을 타고 퍼지기 쉬워요.", watch: "기회가 많아 보여도 다 잡으려다 흩어지기 쉬워요.", action: "올해 키울 것 딱 두 가지만 골라 적어요." },
