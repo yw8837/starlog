@@ -14,6 +14,8 @@ import { inline } from "@/lib/share/og";
  */
 
 const TTL = 24 * 60 * 60;
+/** A preview drawn without its face (the JPEG could not be read): sent briefly and never kept, so the next request tries the face again. */
+const FALLBACK_TTL = 5 * 60;
 
 export async function GET(request: Request, { params }: { params: Promise<{ card: string }> }): Promise<Response> {
   const card = findBirthCard((await params).card);
@@ -26,5 +28,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ card
   const data = { roman: card.roman, name: card.name, trait: card.traits[0], face, host: new URL(SITE.url).host };
   const text = birthCardOgText(data);
   const image = new ImageResponse(birthCardOgImage(data), { ...BIRTH_CARD_OG, fonts: await ogFonts(text.serif, text.sans) });
+  if (!face) {
+    const headers = new Headers(image.headers);
+    headers.set("Cache-Control", `public, max-age=${FALLBACK_TTL}`);
+    return new Response(image.body, { status: image.status, headers });
+  }
   return toCache(key, image, TTL);
 }

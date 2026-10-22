@@ -7,8 +7,6 @@ import { Button } from "@/components/ui/Button";
 import { birthCardFor, birthCardPath, solarBirthDate } from "@/lib/birthCard";
 import s from "./birthCard.module.css";
 
-const NO_SUCH_DAY = "없는 날짜예요. 양력·음력과 날짜를 다시 확인해 주세요.";
-
 /**
  * 내 카드 찾기: the app's date fields (양력/음력, year · month · day), then the card's page. The date stays in
  * this component's state: it is added up here and dropped; only the card's slug goes into the address.
@@ -23,10 +21,11 @@ export function BirthCardForm({ id, primary = true }: { id: string; primary?: bo
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!birthComplete(birth)) return setError(BIRTH_MISSING);
-    const date = solarBirthDate(birth);
-    if (!date) return setError(NO_SUCH_DAY);
+    const result = solarBirthDate(birth);
+    if ("error" in result) return setError(result.error);
     setError("");
-    const href = birthCardPath(birthCardFor(date.year, date.month, date.day).slug);
+    const { year, month, day } = result.date;
+    const href = birthCardPath(birthCardFor(year, month, day).slug);
     // The same card as the page shown (a friend shares it): back up to it rather than a push that changes nothing.
     if (href === pathname) window.scrollTo({ top: 0 });
     else router.push(href);
@@ -34,7 +33,17 @@ export function BirthCardForm({ id, primary = true }: { id: string; primary?: bo
 
   return (
     <form className={s.form} onSubmit={submit} noValidate>
-      <BirthFields id={id} value={birth} onChange={setBirth} error={error} helper="카드를 찾는 데만 쓰고 저장하지 않아요. 주소에도 남지 않아요." />
+      <BirthFields
+        id={id}
+        value={birth}
+        onChange={(value) => {
+          setBirth(value);
+          // A new pick answers the message: it goes until the next 내 카드 찾기.
+          setError("");
+        }}
+        error={error}
+        helper="카드를 찾는 데만 쓰고 저장하지 않아요. 주소에도 남지 않아요."
+      />
       <Button type="submit" block variant={primary ? "primary" : "secondary"}>
         내 카드 찾기
       </Button>

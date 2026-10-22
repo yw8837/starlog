@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BIRTH_CARDS, pairCardOf } from "@/lib/birthCard";
 import { SITE } from "@/lib/config";
@@ -16,6 +17,15 @@ vi.mock("next/navigation", () => ({
   notFound: () => {
     throw new Error("NEXT_NOT_FOUND");
   },
+}));
+
+// next/link as a plain anchor that shows whether it prefetches, so the list's links can be checked.
+vi.mock("next/link", () => ({
+  default: ({ href, prefetch, children, ...rest }: { href: string; prefetch?: boolean; children?: ReactNode } & Record<string, unknown>) => (
+    <a href={href} data-prefetch={prefetch === false ? "false" : undefined} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 const params = (card: string) => ({ params: Promise.resolve({ card }) }) as never;
@@ -74,6 +84,24 @@ describe("/birth-card, the form", () => {
     fireEvent.click(within(form).getByRole("button", { name: "내 카드 찾기" }));
     expect(screen.getByRole("alert").textContent).toBe("생년월일을 끝까지 골라 주세요");
     expect(nav.push).not.toHaveBeenCalled();
+    // Picking again clears the message at once.
+    fireEvent.change(within(form).getByLabelText("태어난 월"), { target: { value: "5" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("refuses a day after today in Korea and goes nowhere", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-22T12:00:00+09:00"));
+    try {
+      render(<BirthCardPage />);
+      const form = screen.getByRole("button", { name: "내 카드 찾기" }).closest("form")!;
+      pick(form, "2026", "12", "31");
+      fireEvent.click(within(form).getByRole("button", { name: "내 카드 찾기" }));
+      expect(screen.getByRole("alert").textContent).toBe("오늘 이후의 날짜는 고를 수 없어요.");
+      expect(nav.push).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("explains the rule and links all 22 cards, each by its slug alone", () => {
@@ -82,6 +110,8 @@ describe("/birth-card, the form", () => {
     const list = screen.getByRole("navigation", { name: "메이저 아르카나 22장" });
     const hrefs = within(list).getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(hrefs).toEqual(BIRTH_CARDS.map((card) => `/birth-card/${card.slug}`));
+    // 22 links on one screen: none is prefetched before it is tapped.
+    for (const a of within(list).getAllByRole("link")) expect(a.getAttribute("data-prefetch"), a.textContent ?? "").toBe("false");
     expect(container.textContent).toContain("재미로 보는 테스트예요");
   });
 

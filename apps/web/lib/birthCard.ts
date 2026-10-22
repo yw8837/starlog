@@ -1,4 +1,5 @@
 import { CARDS, computeChart } from "@starlog/core";
+import { todayInKorea, type CivilDay } from "./sajuForm";
 
 /**
  * 나를 닮은 타로 카드 (the tarot birth card, free test ①): a birth date → one of the 22 major arcana.
@@ -42,7 +43,7 @@ export interface BirthCard {
   traits: readonly [string, string, string];
   /** 요즘 이 카드가 묻는 것 */
   asks: string;
-  /** One line toward a reading, above 이 카드로 지금 고민 보기. */
+  /** One line toward a reading, above 내 고민도 타로로 보기. */
   nudge: string;
   /** The knowledge base phrases the lines above are drawn from. */
   basis: readonly string[];
@@ -219,12 +220,12 @@ export function birthCardFor(year: number, month: number, day: number): BirthCar
   return BIRTH_CARDS[birthCardNumber(year, month, day)]!;
 }
 
-/** What the date fields hold (components/bonds/BirthFields): a part stays null until it is picked. */
+/** A whole date from the date fields (components/bonds/BirthFields, once birthComplete). */
 export interface BirthDateInput {
   calendar: "solar" | "lunar";
-  year: number | null;
-  month: number | null;
-  day: number | null;
+  year: number;
+  month: number;
+  day: number;
   isLeapMonth: boolean;
 }
 
@@ -234,10 +235,19 @@ export interface SolarDate {
   day: number;
 }
 
-/** The solar date to add up: a solar date as it is, a lunar one through the 만세력 engine; null while incomplete or for a day that does not exist. */
-export function solarBirthDate(input: BirthDateInput): SolarDate | null {
+const NO_SUCH_DAY = "없는 날짜예요. 양력·음력과 날짜를 다시 확인해 주세요.";
+/** The saju form's words for the same mistake. */
+const AFTER_TODAY = "오늘 이후의 날짜는 고를 수 없어요.";
+
+const dayNumber = ({ year, month, day }: SolarDate) => year * 10_000 + month * 100 + day;
+
+/**
+ * The solar date to add up: a solar date as it is, a lunar one through the 만세력 engine. A day that does not
+ * exist, or one after today in Korea (a lunar date by its solar day), is refused with the words to show.
+ */
+export function solarBirthDate(input: BirthDateInput, today: CivilDay = todayInKorea()): { date: SolarDate } | { error: string } {
   const { calendar, year, month, day } = input;
-  if (year === null || month === null || day === null) return null;
+  let date: SolarDate;
   try {
     // The engine checks the date and, for a lunar one, finds its solar day; the time and place play no part in the date.
     const chart = computeChart({
@@ -251,8 +261,9 @@ export function solarBirthDate(input: BirthDateInput): SolarDate | null {
       place: { name: "서울", longitude: 126.978 },
     });
     const [y, m, d] = chart.solarDate.split("-").map(Number) as [number, number, number];
-    return { year: y, month: m, day: d };
+    date = { year: y, month: m, day: d };
   } catch {
-    return null;
+    return { error: NO_SUCH_DAY };
   }
+  return dayNumber(date) > dayNumber(today) ? { error: AFTER_TODAY } : { date };
 }
