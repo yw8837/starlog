@@ -135,6 +135,15 @@ export function reasonLines(ilju: Ilju): string[] {
   return lines;
 }
 
+// ---- the notes under the form and each result ----
+
+/** What the test is and is not, in the app's plain words: under the form and under every result. */
+export const KEYWORD_NOTES = [
+  "재미로 보는 테스트예요. 2027 신년운세나 사주 풀이처럼 내 명식 전체를 읽지는 않아요.",
+  "태어난 시는 쓰지 않고 날짜로 일주를 찾아요. 자정을 막 넘겨 태어났다면 전날 일주로 보기도 해서, 정확한 일주는 사주 명식에서 확인해 주세요.",
+  "생일은 이 화면에서만 쓰고 저장하지 않아요. 결과 주소에는 일주 이름만 남아요.",
+] as const;
+
 // ---- the 60 texts ----
 
 export interface KeywordContent {
