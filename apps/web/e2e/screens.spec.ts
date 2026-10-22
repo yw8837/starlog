@@ -273,6 +273,8 @@ const SCREENS: Screen[] = [
     },
   },
   { name: "saju-reading", path: "/chapter/screendd04", setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screendd04")]) },
+  { name: "keyword-2027", path: "/2027-keyword" },
+  { name: "keyword-2027-result", path: "/2027-keyword/jeong-mi" },
   { name: "today", path: "/today", setup: (page) => ownAddress(page) },
   {
     name: "today-pick",
