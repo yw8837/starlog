@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthComplete, type BirthValue } from "@/components/bonds/BirthFields";
 import { Button } from "@/components/ui/Button";
@@ -14,6 +14,7 @@ import s from "./keyword.module.css";
  */
 export function KeywordForm({ primary = true }: { primary?: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [birth, setBirth] = useState<BirthValue>(EMPTY_BIRTH);
   const [error, setError] = useState("");
 
@@ -29,7 +30,10 @@ export function KeywordForm({ primary = true }: { primary?: boolean }) {
       return;
     }
     setError("");
-    router.push(keywordPath(result.ilju));
+    const href = keywordPath(result.ilju);
+    // The 일주 of the page shown (a friend shared it): back up to the result rather than a push that changes nothing.
+    if (href === pathname) window.scrollTo({ top: 0 });
+    else router.push(href);
   };
 
   return (

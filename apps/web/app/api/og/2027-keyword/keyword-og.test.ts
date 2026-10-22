@@ -39,7 +39,8 @@ describe("the 일주's share image", () => {
     const res = await get("gap-ja");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/png");
-    expect(res.headers.get("cache-control")).toMatch(/^public, max-age=\d+/);
+    // A day, at the edge and in the browser: no longer than the other share images keep theirs.
+    expect(res.headers.get("cache-control")).toBe("public, max-age=86400");
     expect(drawn[0]!.init).toMatchObject({ width: 1200, height: 630 });
     const text = textOf(drawn[0]!.element);
     expect(text).toContain(contentOf(ILJU[0]!).keyword);

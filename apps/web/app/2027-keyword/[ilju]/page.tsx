@@ -22,7 +22,7 @@ export function generateStaticParams() {
   return ILJU.map((ilju) => ({ ilju: ilju.slug }));
 }
 
-/** "'솜씨 값 받기'예요", "'무대 체질'이에요": the copula follows the keyword's last syllable. */
+/** "'꺼내 보이기'예요", "'무대 체질'이에요": the copula follows the keyword's last syllable. */
 const isKeyword = (keyword: string) => `'${keyword}'${particle(keyword, "이/가") === "이" ? "이에요" : "예요"}`;
 
 export async function generateMetadata({ params }: PageProps<"/2027-keyword/[ilju]">): Promise<Metadata> {

@@ -107,6 +107,14 @@ test("a shared link shows that 일주 to anyone, with 내 키워드 찾기; prem
   await find.getByRole("button", { name: "내 키워드 보기" }).click();
   await page.waitForURL(`**/2027-keyword/${SLUG}`);
   expect(new URL(page.url()).search).toBe("");
+
+  // The same 일주 again (one's own birth on a page shared with that 일주): back up to the result, no new page.
+  await page.locator("#find").scrollIntoViewIfNeeded();
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  await fillBirth(page, page.locator("#find"));
+  await page.locator("#find").getByRole("button", { name: "내 키워드 보기" }).click();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  expect(new URL(page.url()).pathname).toBe(`/2027-keyword/${SLUG}`);
 });
 
 test("each 일주's card is a PNG, an unknown one a 404; 丁未 meets its own year", async ({ page, request }, info) => {

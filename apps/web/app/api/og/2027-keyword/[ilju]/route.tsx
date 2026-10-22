@@ -8,11 +8,11 @@ import { KEYWORD_OG, keywordOgImage, keywordOgText } from "@/lib/og/keywordImage
 
 /**
  * GET → one 일주's 2027 keyword card (1200×630), the og:image of /2027-keyword/<slug> and its Kakao message. Sixty
- * fixed pictures: only the slug is read (any query is ignored), anything else is a 404, and each is cached at the
- * edge for 30 days, so a popular link renders once per location.
+ * fixed pictures: only the slug is read (any query is ignored), anything else is a 404, and each is kept a day at the
+ * edge and in the browser (no longer than the other share images), so a popular link renders once a day per location.
  */
 
-const TTL = 30 * 24 * 60 * 60;
+const TTL = 24 * 60 * 60;
 
 export async function GET(_request: Request, { params }: { params: Promise<{ ilju: string }> }): Promise<Response> {
   const ilju = iljuBySlug((await params).ilju);
