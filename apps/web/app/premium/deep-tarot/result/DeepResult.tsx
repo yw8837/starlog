@@ -6,7 +6,6 @@ import { CrossSpread } from "@/components/premium/CrossSpread";
 import { PremiumProgress } from "@/components/premium/PremiumProgress";
 import { PremiumUnlock } from "@/components/premium/PremiumUnlock";
 import { SpreadList } from "@/components/premium/SpreadList";
-import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { SpreadChip, useFlowSpread } from "@/components/tarot/DeepSpreadGate";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
@@ -201,12 +200,10 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
                 meta={`소제목 ${preview.lockedToc.length}개 · 약 ${approxCharsText({ min: PREMIUM[ID].approxChars, max: PREMIUM[ID].approxChars })}자`}
               />
               {unlock}
-              <AiNote />
             </>
           ) : holds && teaserError ? (
             <>
               {unlock}
-              <AiNote />
             </>
           ) : teaserError ? (
             <ErrorPanel view={teaserError} onRetry={() => setAttempt((n) => n + 1)} redrawHref={withFlags("/tarot/draw", { instant })} editHref={DEEP_BUILDER_HREF} />

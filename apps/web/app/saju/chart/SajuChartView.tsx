@@ -5,7 +5,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { useLocale } from "@/components/i18n/LocaleProvider";
-import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
@@ -368,7 +367,6 @@ export function SajuChartView({
           checking={check !== null}
           onCheck={check === "stalled" || (check === null && offer.mode === "in-progress") ? recheck : undefined}
         />
-        <AiNote />
       </>
     );
   } else if (own && teaserUsedUp) {

@@ -155,7 +155,7 @@ describe("PDF로 저장", () => {
 });
 
 describe("the printed page's header and footer", () => {
-  it("print the site and the reading's date in Korea, and the AI note with the address", () => {
+  it("print the site and the reading's date in Korea, and the address, with no AI note (owner 2026-10-23: 약관에만)", () => {
     render(
       <>
         <PrintHead at={AT} />
@@ -164,7 +164,7 @@ describe("the printed page's header and footer", () => {
     );
     expect(screen.getByText("스타로그 · starlog.yeolmaeapps.kr")).toBeTruthy();
     expect(screen.getByText("2026년 10월 21일")).toBeTruthy();
-    expect(screen.getByText(/AI가 만든 풀이예요/)).toBeTruthy();
+    expect(screen.queryByText(/AI가 만든|재미와 자기/)).toBeNull();
     expect(screen.getByText("starlog.yeolmaeapps.kr")).toBeTruthy();
   });
 

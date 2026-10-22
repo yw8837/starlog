@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { AI_NOTE } from "@/components/reading/AiNote";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
 import { isInAppBrowser, isIos } from "@/lib/inApp";
@@ -127,11 +126,10 @@ export function PrintHead({ at }: { at?: number }) {
   );
 }
 
-/** The printed page's end: the AI note every reading carries, and the address. Print only. */
+/** The printed page's end: the address (no AI note, owner 2026-10-23: 약관에만). Print only. */
 export function PrintFoot() {
   return (
     <div className={s.printFoot}>
-      <p>{AI_NOTE}</p>
       <p>{SITE_HOST}</p>
     </div>
   );

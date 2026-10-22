@@ -222,7 +222,7 @@ test("오늘의 한 장: shuffle, pick one of three; a reload shows only that ca
   const summary = await line.innerText();
   await expect(page.getByRole("heading", { level: 2, name: "오늘의 흐름" })).toBeVisible();
   for (const area of ["애정", "금전", "일"]) await expect(page.getByText(area, { exact: true })).toBeVisible();
-  await expect(page.getByText("AI가 만든 풀이예요 · 재미와 자기 성찰을 위한 참고용이에요")).toBeVisible();
+  await expect(page.getByText(/AI가 만든|재미와 자기/)).toHaveCount(0); // owner 2026-10-23: 약관에만
   await shot(page, info, "10-today-opened");
 
   // Only the picked card is ever shown: one card image on the page, no face-down ones to pick.

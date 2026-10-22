@@ -1,4 +1,3 @@
-import { AiNote } from "@/components/reading/AiNote";
 import { GlanceCard } from "@/components/saju/GlanceCard";
 import { ReadingArticle } from "@/components/tarot/ReadingArticle";
 import { ReadingLayout } from "@/components/tarot/ReadingLayout";
@@ -37,7 +36,6 @@ function SharedTarotView({ share }: { share: SharedTarot }) {
       spread={<SpreadRow size="sm" cards={share.cards.map(faceUpCard)} deck={share.deck} />}
     >
       <ReadingArticle paid={share.reading} />
-      <AiNote />
       <section className={s.invite} aria-labelledby="try-title">
         <h2 id="try-title" className={s.inviteTitle}>
           나도 카드 뽑아 보기
@@ -73,7 +71,6 @@ function SharedSajuView({ share }: { share: SharedSaju }) {
       <div className={s.sections}>
         <SajuSections reading={share.reading} glance={false} />
       </div>
-      <AiNote />
       <section className={s.invite} aria-labelledby="try-title">
         <h2 id="try-title" className={s.inviteTitle}>
           내 사주도 보기

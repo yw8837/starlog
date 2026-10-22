@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, type ReactNode } from "react";
-import { AiNote } from "@/components/reading/AiNote";
 import { PrintFoot, PrintHead, SavePdfButton, type KeptReading } from "@/components/share/SavePdfButton";
 import { ShareResultButton, type ShareActions } from "@/components/share/ShareResultButton";
 import { ChartPanel } from "@/components/saju/ChartPanel";
@@ -74,7 +73,6 @@ export function SajuChapterView({ eyebrow, title, birth, reading, followUp, chec
           <FollowUp {...followUp} reader="rabbit" />
         </div>
         {rating ?? <Feedback />}
-        <AiNote />
 
         <section className={s.invite} aria-labelledby="next-title">
           <h2 id="next-title" className={s.inviteTitle}>

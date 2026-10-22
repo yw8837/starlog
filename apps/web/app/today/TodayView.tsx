@@ -2,7 +2,6 @@
 
 import { getCard, type Orientation } from "@starlog/core";
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { Paper } from "@/components/tarot/Paper";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
@@ -409,7 +408,6 @@ function Opened({ reading, revisit, flip, lineRef }: { reading: DailyData; revis
           카드 세 장으로 더 물어보기
         </Button>
       </div>
-      <AiNote />
     </article>
   );
 }

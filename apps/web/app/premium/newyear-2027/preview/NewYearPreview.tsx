@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { PremiumProgress } from "@/components/premium/PremiumProgress";
 import { PremiumUnlock } from "@/components/premium/PremiumUnlock";
 import v from "@/components/premium/preview.module.css";
-import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
@@ -179,7 +178,6 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
               meta={`소제목 ${preview.lockedToc.length}개 · 약 ${approxCharsText({ min: PREMIUM[ID].approxChars, max: PREMIUM[ID].approxChars })}자`}
             />
             {unlock}
-            <AiNote />
           </>
         ) : holds && teaserError ? (
           <>
@@ -187,7 +185,6 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
               <h1 className={s.question}>2027년 미리 보기</h1>
             </header>
             {unlock}
-            <AiNote />
           </>
         ) : (
           <>
