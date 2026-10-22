@@ -148,6 +148,7 @@ export function TodayGuide() {
         title: "함께 보면 좋은 곳",
         items: [
           { href: "/now", label: "지금의 한 장" },
+          { href: "/2027-keyword", label: "2027년 나의 키워드" },
           { href: "/tarot/new", label: "내 질문으로 카드 3장 보기" },
           { href: guide("how-to-read-tarot"), label: "타로 카드 읽는 법" },
           { href: guide("major-arcana-overview"), label: "메이저 아르카나 22장" },
