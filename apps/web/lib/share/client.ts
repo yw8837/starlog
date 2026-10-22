@@ -84,6 +84,17 @@ export function stopKnownShareLink(chapter: ShareableChapter): void {
   if (knownShareLink(chapter)) void stopShareLink(chapter);
 }
 
+/** Posts to a share route that makes the copy itself; nothing to remember (the same body answers the same link). */
+async function makeShare(route: string, body: unknown): Promise<ShareLinkResult> {
+  const result = await postJson<{ id: string; path: string }>(route, body);
+  if (!result.ok) return { ok: false, message: result.error.message || FAILED };
+  return { ok: true, ...shareUrls(result.data.path) };
+}
+
+/** 지금의 한 장 (owner 2026-10-23): the server writes the copy from the card DB; only the draw goes, never the worry typed. */
+export const createNowShareLink = (draw: { cardId: string; orientation: string; pick: number }, deck: string): Promise<ShareLinkResult> =>
+  makeShare("/api/share/now", { cardId: draw.cardId, orientation: draw.orientation, pick: draw.pick, deck });
+
 /** 오늘의 한 장 among the links this device remembers: one per KST day (the device keeps only today's card). */
 const dailyKey = (now: number) => `daily:${kstDate(now)}`;
 

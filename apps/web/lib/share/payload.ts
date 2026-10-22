@@ -3,7 +3,10 @@ import type { ReadingBody } from "@/components/tarot/ReadingArticle";
 import { cleanUserText } from "@/lib/ai/prompts/tarot";
 import type { FrontDeck } from "@/lib/deck";
 import type { DailyData, Section, SajuGlance, SajuTopicId } from "@/lib/reading/types";
-import { isSajuGlance, isSection } from "@/lib/reading/validate";
+import { isCardId, isSajuGlance, isSection } from "@/lib/reading/validate";
+import { decisionFor, type Lean } from "@/lib/decision";
+import { PREMIUM_IDS, type PremiumId } from "@/lib/premium/products";
+import { MATCH_RELATIONS, type MatchRelation } from "@/lib/ai/prompts/match";
 import { isSajuTopicId } from "@/lib/sajuTopics";
 import type { BirthInput } from "@/lib/api/inputs";
 import type { ChapterContext } from "@/lib/security/chapterToken";
@@ -44,7 +47,68 @@ export interface SharedDaily {
   reading: Omit<DailyData, "pick">;
 }
 
-export type SharePayload = SharedTarot | SharedSaju | SharedDaily;
+/** 지금의 한 장 (owner 2026-10-23): the card, the line it gave and why, all from the card DB (lib/decision.ts); never the worry typed. */
+export interface SharedNow {
+  kind: "now";
+  v: 1;
+  deck: FrontDeck;
+  card: { cardId: string; orientation: Orientation };
+  lean: Lean;
+  answer: string;
+  why: string;
+}
+
+/**
+ * The free first tarot reading (owner 2026-10-23): the cards and the two paragraphs the free screen shows, the second
+ * one only up to its cut (lib/security/teaserSeal.ts teaserCut). Never the paid reading.
+ */
+export interface SharedTarotFree {
+  kind: "tarot-free";
+  v: 1;
+  deck: FrontDeck;
+  cards: Array<{ cardId: string; orientation: Orientation; position: string }>;
+  first: Section;
+  second?: Section;
+}
+
+/** The free saju teaser or a 운's 맛보기 (owner 2026-10-23): its title and summary only, never the chart or the birth. */
+export interface SharedSajuFree {
+  kind: "saju-free";
+  v: 1;
+  topic?: SajuTopicId;
+  title: string;
+  summary: string;
+}
+
+/** A premium reading (owner 2026-10-23), with what its share image draws (PremiumChapterView premiumShareBody), never its text. */
+export interface SharedPremium {
+  kind: "premium";
+  v: 1;
+  product: PremiumId;
+  deck?: FrontDeck;
+  cards?: Array<{ cardId: string; orientation: Orientation }>;
+  relation?: MatchRelation;
+  title?: string;
+}
+
+/**
+ * 별자리 인연 (owner 2026-10-23): a link to an owner's constellation, or to a friend's own star in it. The page reads it
+ * live from the bonds store, so a removed star or constellation is gone from the link too; nothing personal is copied.
+ */
+export interface SharedBonds {
+  kind: "bonds";
+  v: 1;
+  constellationId: string;
+}
+
+export interface SharedBond {
+  kind: "bond";
+  v: 1;
+  constellationId: string;
+  starId: string;
+}
+
+export type SharePayload = SharedTarot | SharedSaju | SharedDaily | SharedNow | SharedTarotFree | SharedSajuFree | SharedPremium | SharedBonds | SharedBond;
 
 /** What stands in for the user's own words, wherever the reading quotes them. */
 export const HIDDEN = "○○";
@@ -365,6 +429,24 @@ function mapStrings<T>(value: T, edit: (text: string) => string): T {
   return value;
 }
 
+type TarotCtx = Extract<ChapterContext, { kind: "tarot" }>;
+type SajuCtx = Pick<Extract<ChapterContext, { kind: "saju" }>, "birth" | "profile" | "topic">;
+
+/** A tarot text as a share may show it: no earlier reading, no contact, none of the user's own words or names. */
+function tarotText(input: TarotCtx["input"]): (text: string) => string {
+  const words = ownWords(input);
+  const name = userNames(input);
+  return (text) => dropHiddenQuotes(hideOwnWords(dropContactSentences(dropEarlierReadingSentences(text)), words, name));
+}
+
+/** A saju text as a share may show it: no birth, no pillar in hanja, none of the picked chips or the concern. */
+function sajuText(ctx: SajuCtx): (text: string) => string {
+  // The status chips the user picked (전체 흐름) and the one-line concern an older chapter may carry.
+  const profile = ctx.profile;
+  const words = asPromptSaw([profile?.loveStatus, profile?.workStatus, profile?.concern].filter((text) => !UNSURE.has(text?.trim() ?? "")));
+  return (text) => dropHiddenQuotes(hideWords(hidePillars(hideBirth(dropContactSentences(dropEarlierReadingSentences(text)), ctx.birth)), words));
+}
+
 const READING_KEYS = ["verdict", "cards", "connection", "timing", "observation", "scenarios", "messages", "avoid", "alternatives", "action"] as const;
 
 /**
@@ -374,8 +456,6 @@ const READING_KEYS = ["verdict", "cards", "connection", "timing", "observation",
 export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: FrontDeck = "rws1909"): SharePayload {
   const r = (reading ?? {}) as Record<string, unknown>;
   if (ctx.kind === "tarot") {
-    const words = ownWords(ctx.input);
-    const name = userNames(ctx.input);
     const positions = TEMPLATES[ctx.templateId as TemplateId].positions;
     // Only the reading's own blocks: never the follow-up suggestions or an old story block.
     const body = Object.fromEntries(READING_KEYS.filter((key) => r[key] !== undefined).map((key) => [key, r[key]]));
@@ -384,7 +464,7 @@ export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: F
       v: 1,
       deck,
       cards: ctx.cards.map(([cardId, orientation], slot) => ({ cardId, orientation, position: positions[slot] ?? "" })),
-      reading: mapStrings(body, (text) => dropHiddenQuotes(hideOwnWords(dropContactSentences(dropEarlierReadingSentences(text)), words, name))) as unknown as ReadingBody,
+      reading: mapStrings(body, tarotText(ctx.input)) as unknown as ReadingBody,
     };
   }
   if (ctx.kind === "saju") {
@@ -394,11 +474,7 @@ export function buildSharePayload(ctx: ChapterContext, reading: unknown, deck: F
       sections,
       ...(isSection(r.observation) ? { observation: r.observation } : {}),
     };
-    // The status chips the user picked (전체 흐름) and the one-line concern an older chapter may carry.
-    const profile = ctx.profile;
-    const words = asPromptSaw([profile?.loveStatus, profile?.workStatus, profile?.concern].filter((text) => !UNSURE.has(text?.trim() ?? "")));
-    const hide = (text: string) => dropHiddenQuotes(hideWords(hidePillars(hideBirth(dropContactSentences(dropEarlierReadingSentences(text)), ctx.birth)), words));
-    return { kind: "saju", v: 1, ...(ctx.topic ? { topic: ctx.topic } : {}), reading: mapStrings(shared, hide) };
+    return { kind: "saju", v: 1, ...(ctx.topic ? { topic: ctx.topic } : {}), reading: mapStrings(shared, sajuText(ctx)) };
   }
   throw new Error(`a ${ctx.kind} reading is not shared yet`);
 }
@@ -426,6 +502,86 @@ export function buildDailySharePayload(stored: DailyData & { deck?: unknown }, d
   };
 }
 
+/** lib/deck.ts FRONT_DECKS, written out: that module is the browser's (its store), and this one is the server's. */
+const isFrontDeck = (value: unknown): value is FrontDeck => value === "starlog" || value === "rws1909";
+const isSide = (value: unknown): value is Orientation => value === "upright" || value === "reversed";
+
+/** 지금의 한 장 as drawn on a device: the card, its side, which of its lines (0-2) and the design. Null for anything else. */
+export function buildNowSharePayload(draw: { cardId: unknown; orientation: unknown; pick: unknown; deck: unknown }): SharedNow | null {
+  const { cardId, orientation, pick, deck } = draw;
+  if (!isCardId(cardId) || !isSide(orientation) || !isFrontDeck(deck) || typeof pick !== "number" || !Number.isInteger(pick)) return null;
+  const entry = decisionFor(cardId, orientation, deck);
+  const answer = entry.answers[pick];
+  if (pick < 0 || answer === undefined) return null;
+  return { kind: "now", v: 1, deck, card: { cardId, orientation }, lean: entry.lean, answer, why: entry.why };
+}
+
+/** The free first tarot reading's share (written by the teaser route, where the input and the draw are known). */
+export function buildTarotFreePayload(ctx: Pick<TarotCtx, "templateId" | "input" | "cards">, teaser: { first: Section; second?: Section }): SharedTarotFree {
+  const positions = TEMPLATES[ctx.templateId as TemplateId].positions;
+  const edit = tarotText(ctx.input);
+  const part = (section: Section): Section => ({ heading: edit(section.heading), body: edit(section.body) });
+  return {
+    kind: "tarot-free",
+    v: 1,
+    deck: ctx.input.deck ?? "rws1909",
+    cards: ctx.cards.map(([cardId, orientation], slot) => ({ cardId, orientation, position: positions[slot] ?? "" })),
+    first: part(teaser.first),
+    ...(teaser.second ? { second: part(teaser.second) } : {}),
+  };
+}
+
+/** The free saju teaser's share (written by the teaser route, where the birth is known). */
+export function buildSajuFreePayload(ctx: SajuCtx, teaser: { title: string; summary: string }): SharedSajuFree {
+  const edit = sajuText(ctx);
+  return { kind: "saju-free", v: 1, ...(ctx.topic ? { topic: ctx.topic } : {}), title: edit(teaser.title), summary: edit(teaser.summary) };
+}
+
+/** The year titles /api/og/premium draws (plain Korean, 2-14 characters), as PremiumChapterView checks them. */
+const PREMIUM_TITLE = /^[가-힣\s·,]{2,14}$/;
+
+/** A premium reading's share, from its signed chapter: what its image draws, never its text. */
+export function buildPremiumSharePayload(ctx: Extract<ChapterContext, { kind: PremiumId }>, reading: unknown): SharedPremium {
+  if (ctx.kind === "tarot-deep") {
+    return { kind: "premium", v: 1, product: "tarot-deep", deck: ctx.input.deck ?? "rws1909", cards: ctx.cards.map(([cardId, orientation]) => ({ cardId, orientation })) };
+  }
+  if (ctx.kind === "match") return { kind: "premium", v: 1, product: "match", ...((MATCH_RELATIONS as readonly string[]).includes(ctx.relation) ? { relation: ctx.relation } : {}) };
+  const title = isRecord(reading) && typeof reading.title === "string" ? reading.title.trim() : "";
+  return { kind: "premium", v: 1, product: "newyear-2027", ...(PREMIUM_TITLE.test(title) ? { title } : {}) };
+}
+
+/** A bonds store id (lib/security/sign.ts randomId). */
+const BOND_ID = /^[A-Za-z0-9_-]{16,64}$/;
+const isPart = (value: unknown): value is Section => isRecord(value) && typeof value.heading === "string" && typeof value.body === "string";
+
+function parseNewKind(value: Record<string, unknown>): SharePayload | null {
+  if (value.kind === "now") {
+    const card = value.card;
+    if (!isRecord(card) || !isCardId(card.cardId) || !isSide(card.orientation) || !isFrontDeck(value.deck)) return null;
+    return typeof value.answer === "string" && typeof value.why === "string" ? (value as unknown as SharedNow) : null;
+  }
+  if (value.kind === "tarot-free") {
+    const cards = value.cards;
+    if (!isFrontDeck(value.deck) || !Array.isArray(cards) || cards.length === 0 || !cards.every((c) => isRecord(c) && isCardId(c.cardId) && isSide(c.orientation))) return null;
+    return isPart(value.first) && (value.second === undefined || isPart(value.second)) ? (value as unknown as SharedTarotFree) : null;
+  }
+  if (value.kind === "saju-free") {
+    if (typeof value.title !== "string" || typeof value.summary !== "string" || (value.topic !== undefined && !isSajuTopicId(value.topic))) return null;
+    return value as unknown as SharedSajuFree;
+  }
+  if (value.kind === "premium") {
+    if (!(PREMIUM_IDS as readonly unknown[]).includes(value.product)) return null;
+    if (value.cards !== undefined && !(Array.isArray(value.cards) && value.cards.every((c) => isRecord(c) && isCardId(c.cardId) && isSide(c.orientation)))) return null;
+    return value as unknown as SharedPremium;
+  }
+  if (value.kind === "bonds") return typeof value.constellationId === "string" && BOND_ID.test(value.constellationId) ? (value as unknown as SharedBonds) : null;
+  if (value.kind === "bond") {
+    const ok = typeof value.constellationId === "string" && BOND_ID.test(value.constellationId) && typeof value.starId === "string" && BOND_ID.test(value.starId);
+    return ok ? (value as unknown as SharedBond) : null;
+  }
+  return null;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
 
 /** A stored payload, or null when it is not one this version wrote. */
@@ -436,7 +592,9 @@ export function parseSharePayload(text: string): SharePayload | null {
   } catch {
     return null;
   }
-  if (!isRecord(value) || value.v !== 1 || !isRecord(value.reading)) return null;
+  if (!isRecord(value) || value.v !== 1) return null;
+  if (value.kind !== "tarot" && value.kind !== "saju" && value.kind !== "daily") return parseNewKind(value);
+  if (!isRecord(value.reading)) return null;
   if (value.kind === "tarot") {
     if (!Array.isArray(value.cards) || value.cards.length === 0 || (value.deck !== "starlog" && value.deck !== "rws1909")) return null;
     return value as unknown as SharedTarot;

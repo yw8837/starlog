@@ -6,7 +6,10 @@ import { DEFAULT_REVERSAL_RATE, createDeck, getCard, type DeckState } from "@sta
 import { CardTable } from "@/components/tarot/CardTable";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
+import { ShareResultButton } from "@/components/share/ShareResultButton";
 import { Button } from "@/components/ui/Button";
+import { SITE } from "@/lib/config";
+import { createNowShareLink } from "@/lib/share/client";
 import { drawNow, type NowDraw } from "@/lib/decision";
 import { backImage, useDeckPrefs } from "@/lib/deck";
 import { guideHref } from "@/lib/hosts";
@@ -340,6 +343,15 @@ export function NowOracle({ instant = false }: NowOracleProps) {
                 <Button variant="secondary" block onClick={again}>
                   한 번 더 뽑기
                 </Button>
+              </div>
+              {/* 공유하기 (owner 2026-10-23): this draw's own link, card + line + why; a new draw starts a new sheet. */}
+              <div className={s.share}>
+                <ShareResultButton
+                  key={`${draw.cardId}-${draw.orientation}-${draw.pick}`}
+                  kind="now"
+                  text={`${SITE.nameKo} 지금의 한 장 · ${card.names.ko}${reversed ? "(역)" : ""}`}
+                  create={() => createNowShareLink(draw, front)}
+                />
               </div>
             </div>
           ) : null}

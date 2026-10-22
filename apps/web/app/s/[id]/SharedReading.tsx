@@ -10,6 +10,7 @@ import type { SharedSaju, SharedTarot, SharePayload } from "@/lib/share/payload"
 import { topicLabel } from "@/lib/sajuTopics";
 import { SajuSections } from "../../chapter/[id]/SajuSections";
 import { SharedDailyView } from "./SharedDaily";
+import { SharedNowView, SharedPremiumView, SharedSajuFreeView, SharedTarotFreeView } from "./SharedKinds";
 import s from "../../chapter/[id]/ChapterView.module.css";
 
 const COUNT = ["한", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
@@ -95,7 +96,29 @@ export function SharedReading({ share }: { share: SharePayload }) {
   return (
     <>
       <Stepper label="친구가 공유한 풀이" backHref="/" backLabel="스타로그 홈으로" />
-      {share.kind === "tarot" ? <SharedTarotView share={share} /> : share.kind === "saju" ? <SharedSajuView share={share} /> : <SharedDailyView share={share} />}
+      <SharedBody share={share} />
     </>
   );
+}
+
+function SharedBody({ share }: { share: SharePayload }) {
+  switch (share.kind) {
+    case "tarot":
+      return <SharedTarotView share={share} />;
+    case "saju":
+      return <SharedSajuView share={share} />;
+    case "daily":
+      return <SharedDailyView share={share} />;
+    case "now":
+      return <SharedNowView share={share} />;
+    case "tarot-free":
+      return <SharedTarotFreeView share={share} title={tarotShareTitle(share.cards.length)} />;
+    case "saju-free":
+      return <SharedSajuFreeView share={share} />;
+    case "premium":
+      return <SharedPremiumView share={share} />;
+    default:
+      // 별자리 인연 links are read live and drawn by page.tsx (SharedBondsPage).
+      return null;
+  }
 }

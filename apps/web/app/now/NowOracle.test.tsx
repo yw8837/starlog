@@ -231,3 +231,37 @@ describe("지금의 한 장 how-to", () => {
     expect(within(panel).getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ }).getAttribute("href")).toBe(`${SITE.guideUrl}/guide/now-card-how-to`);
   });
 });
+
+describe("지금의 한 장 공유하기 (owner 2026-10-23)", () => {
+  beforeEach(() => {
+    const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+    proto.showModal ??= function (this: HTMLElement) {
+      this.setAttribute("open", "");
+    };
+    proto.close ??= function (this: HTMLElement) {
+      this.removeAttribute("open");
+    };
+  });
+
+  it("shares the turned card's own link: the card, its side, which line and the design, never the worry typed; nothing to stop", async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: "abcdefghijkl", path: "/s/abcdefghijkl" }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "이직해도 될까?" } });
+    const expected = pickSlot(6, "now-seed-first");
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
+    expect(sheet.textContent).toContain("뽑은 카드와 카드가 건넨 한 문장, 그렇게 읽은 이유가 보여요");
+    await act(async () => {
+      fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    });
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/share/now");
+    // Math.random() is 0.5 here: the second of the three lines.
+    expect(JSON.parse(String(init.body))).toEqual({ cardId: expected.cardId, orientation: expected.orientation, pick: 1, deck: "starlog" });
+    expect(String(init.body)).not.toContain("이직");
+    expect(sheet.textContent).toContain("/s/abcdefghijkl");
+    expect(within(sheet).queryByRole("button", { name: "공유 그만하기", hidden: true })).toBeNull();
+    vi.unstubAllGlobals();
+  });
+});

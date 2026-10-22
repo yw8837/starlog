@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ShareButton } from "@/components/ui/ShareButton";
@@ -11,8 +11,11 @@ import s from "./ShareResultButton.module.css";
 export interface ShareActions {
   /** Makes (or finds) the reading's public link. */
   create: () => Promise<ShareLinkResult>;
-  /** Stops sharing it; false when that failed. */
-  stop: () => Promise<boolean>;
+  /**
+   * Stops sharing it; false when that failed. Absent for a share that holds nothing of the person (지금의 한 장: the same
+   * card, line and design is one link for everyone), so 공유 그만하기 does not show.
+   */
+  stop?: () => Promise<boolean>;
   /** The live link this device already made for the reading, if any (lib/share/client.ts knownShareLink). */
   current?: () => { url: string; imageUrl: string } | null;
   /**
@@ -22,10 +25,22 @@ export interface ShareActions {
   unavailable?: string;
 }
 
+export type ShareKind = "tarot" | "saju" | "daily" | "now" | "tarot-free" | "saju-free" | "premium" | "bonds" | "bond";
+
 type ShareResultButtonProps = ShareActions & {
-  kind: "tarot" | "saju" | "daily";
+  kind: ShareKind;
   /** What the share sheet and the Kakao message say with the link, e.g. "스타로그에서 뽑은 카드 · 은둔자 · 별". */
   text: string;
+  /** More ways to send the same link once it is made (a premium reading's image). */
+  extra?: (link: { url: string; imageUrl: string }) => ReactNode;
+  /** The button's own label, where a screen has more than one thing to share (default 공유하기). */
+  label?: string;
+};
+
+/** 이 after a final consonant, 가 after a vowel: "풀이 전체가", "합계와 평균이". */
+const subject = (word: string) => {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code < 11172 && code % 28 !== 0 ? "이" : "가";
 };
 
 /**
@@ -33,7 +48,7 @@ type ShareResultButtonProps = ShareActions & {
  * Only what lib/share/payload.ts really leaves out: the reading itself still carries what the worry is
  * about, and a saju reading can name the chart's pillars in Hangul, so neither promises more (A2 SHARE-1/2).
  */
-const SHOWN: Record<ShareResultButtonProps["kind"], { shown: string; hidden: string; kakao: string }> = {
+const SHOWN: Record<ShareKind, { shown: string; hidden: string; kakao: string; button?: string }> = {
   tarot: {
     shown: "뽑은 카드와 풀이 전체",
     hidden: "질문 원문과 직접 쓴 말은 가려요. 다만 풀이에 고민 내용이 담겨 있으니 보낼 사람을 골라 주세요.",
@@ -48,6 +63,39 @@ const SHOWN: Record<ShareResultButtonProps["kind"], { shown: string; hidden: str
     shown: "오늘 뽑은 카드와 풀이",
     hidden: "이름이나 기기 정보 같은 개인 정보는 담기지 않아요.",
     kakao: "오늘 뽑은 카드와 풀이를 볼 수 있어요. 나도 오늘의 한 장을 뽑아 볼 수 있어요.",
+  },
+  now: {
+    shown: "뽑은 카드와 카드가 건넨 한 문장, 그렇게 읽은 이유",
+    hidden: "적은 고민은 담기지 않아요.",
+    kakao: "친구가 뽑은 지금의 한 장이에요. 나도 한 장 뽑아 볼 수 있어요.",
+    button: "카드 보기",
+  },
+  "tarot-free": {
+    shown: "뽑은 카드와 무료로 본 첫 풀이",
+    hidden: "질문 원문과 직접 쓴 말은 가리고, 결제해야 보이는 뒷부분은 담지 않아요. 다만 풀이에 고민 내용이 담겨 있으니 보낼 사람을 골라 주세요.",
+    kakao: "뽑은 카드와 무료로 본 첫 풀이를 볼 수 있어요. 질문 원문과 직접 쓴 말은 가렸어요.",
+  },
+  "saju-free": {
+    shown: "맛보기 제목과 요약",
+    hidden: "생년월일과 태어난 시각, 명식은 담기지 않아요.",
+    kakao: "사주 맛보기의 제목과 요약을 볼 수 있어요. 생년월일과 태어난 시각은 담기지 않아요.",
+  },
+  premium: {
+    shown: "어떤 프리미엄 풀이인지와 카드나 제목",
+    hidden: "풀이 본문과 질문, 생년월일은 담기지 않아요.",
+    kakao: "친구가 연 프리미엄 풀이예요. 나도 볼 수 있어요.",
+  },
+  bonds: {
+    shown: "내 별자리와 별이 된 친구들의 닉네임, 인연 점수 합계와 평균",
+    hidden: "친구마다의 점수와 남긴 한 줄, 생년월일은 담기지 않아요.",
+    kakao: "친구들이 별이 되어 채운 별자리예요. 나도 별자리 인연을 시작할 수 있어요.",
+    button: "별자리 보기",
+  },
+  bond: {
+    shown: "내 인연 카드와 인연 점수, 점수 근거",
+    hidden: "생년월일과 남긴 한 줄은 담기지 않아요.",
+    kakao: "별자리 인연에서 받은 인연 점수예요. 나도 친구와 점수를 볼 수 있어요.",
+    button: "인연 보기",
   },
 };
 
@@ -64,7 +112,7 @@ type Phase =
  * each from its own tap (a phone's share sheet must open from one). 공유 그만하기 takes the link down,
  * and shows whenever the reading has a live link (`current`); after it, a new link can be made.
  */
-export function ShareResultButton({ kind, text, create, stop, current, unavailable }: ShareResultButtonProps) {
+export function ShareResultButton({ kind, text, create, stop, current, unavailable, extra, label = "공유하기" }: ShareResultButtonProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>({ at: "intro" });
   const copy = SHOWN[kind];
@@ -76,6 +124,7 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
   };
 
   const takeDown = async (live: Extract<Phase, { at: "ready" }>) => {
+    if (!stop) return;
     if (await stop()) setPhase({ at: "stopped" });
     else setPhase({ ...live, error: "공유를 멈추지 못했어요. 잠시 뒤에 다시 시도해 주세요." });
   };
@@ -89,7 +138,7 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
   return (
     <>
       <Button variant="secondary" size="md" onClick={openSheet}>
-        공유하기
+        {label}
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} labelledBy="share-result-title">
         <div className={s.sheet}>
@@ -97,7 +146,8 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
             결과 공유하기
           </h2>
           <p className={s.lead}>
-            링크를 받은 사람에게는 <strong>{copy.shown}</strong>가 보여요. {copy.hidden}
+            링크를 받은 사람에게는 <strong>{copy.shown}</strong>
+            {subject(copy.shown)} 보여요. {copy.hidden}
           </p>
           {unavailable ? (
             <p className={s.note} role="status">
@@ -107,16 +157,19 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
             <>
               <p className={s.link}>{phase.url.replace(/^https?:\/\//, "")}</p>
               <div className={s.actions}>
-                <ShareButton text={text} target={{ url: phase.url, imageUrl: phase.imageUrl, button: "풀이 보기", description: copy.kakao }} />
+                <ShareButton text={text} target={{ url: phase.url, imageUrl: phase.imageUrl, button: copy.button ?? "풀이 보기", description: copy.kakao }} />
               </div>
+              {extra ? <div className={s.actions}>{extra({ url: phase.url, imageUrl: phase.imageUrl })}</div> : null}
               {phase.error ? (
                 <p className={s.note} role="alert">
                   {phase.error}
                 </p>
               ) : null}
-              <button type="button" className={s.stop} onClick={() => takeDown(phase)}>
-                공유 그만하기
-              </button>
+              {stop ? (
+                <button type="button" className={s.stop} onClick={() => takeDown(phase)}>
+                  공유 그만하기
+                </button>
+              ) : null}
             </>
           ) : (
             <>

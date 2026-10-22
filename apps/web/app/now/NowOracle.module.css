@@ -439,6 +439,13 @@
   margin-top: 24px;
 }
 
+/* 공유하기 under the two actions, centred like them (owner 2026-10-23). */
+.share {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
 .more {
   color: var(--ink-sub);
   font-size: var(--fs-sub);

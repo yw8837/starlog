@@ -1,6 +1,7 @@
 import { getCard } from "@starlog/core";
 import { SITE } from "@/lib/config";
 import type { ShareOgData } from "@/lib/og/cardsImage";
+import { PREMIUM } from "@/lib/premium/products";
 import { topicLabel } from "@/lib/sajuTopics";
 import type { SharePayload } from "./payload";
 
@@ -12,6 +13,30 @@ const clip = (text: string) => (text.length > BODY_MAX ? `${text.slice(0, BODY_M
 /** What the link preview of a shared reading shows: the cards drawn (오늘의 한 장: its card and line), or the saju's short conclusion. */
 export function shareOgData(share: SharePayload, origin: string): ShareOgData {
   const host = new URL(SITE.url).host;
+  const face = (deck: string, card: { cardId: string; orientation: string }) => ({ cardId: card.cardId, src: `${origin}/cards/og/${deck}/${card.cardId}.jpg`, reversed: card.orientation === "reversed" });
+  const name = (card: { cardId: string; orientation: string }) => `${getCard(card.cardId).names.ko}${card.orientation === "reversed" ? "(역)" : ""}`;
+  if (share.kind === "now") {
+    return { label: "친구가 뽑은 지금의 한 장", headline: name(share.card), body: clip(share.answer), cards: [face(share.deck, share.card)], host };
+  }
+  if (share.kind === "tarot-free") {
+    return { label: "친구가 공유한 무료 타로 풀이", headline: share.cards.map(name).join(" · "), cards: share.cards.map((card) => face(share.deck, card)), host };
+  }
+  if (share.kind === "saju-free") {
+    return { label: `친구가 공유한 ${share.topic ? `${topicLabel(share.topic)} ` : "사주 "}맛보기`, headline: share.title, body: clip(share.summary), host };
+  }
+  if (share.kind === "premium") {
+    const product = PREMIUM[share.product];
+    return {
+      label: `친구가 연 ${product.name}`,
+      headline: share.title ? `2027년, ${share.title}` : product.name,
+      body: product.sub,
+      ...(share.cards?.length ? { cards: share.cards.slice(0, 3).map((card) => face(share.deck ?? "rws1909", card)) } : {}),
+      host,
+    };
+  }
+  if (share.kind === "bonds" || share.kind === "bond") {
+    return { label: "친구의 별자리 인연", headline: share.kind === "bonds" ? "친구들이 채운 별자리" : "별자리 인연 점수", host };
+  }
   if (share.kind === "daily") {
     const { card } = share.reading;
     return {

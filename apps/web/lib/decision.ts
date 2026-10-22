@@ -23,6 +23,8 @@ export interface NowDraw {
   lean: Lean;
   answer: string;
   why: string;
+  /** Which of the card side's lines was picked (0-2): its share link names it (app/api/share/now). */
+  pick: number;
 }
 
 type RawEntry = { lean: string; answers: string[]; why: string; whyStarlog?: string };
@@ -55,5 +57,5 @@ export function drawNow(deck: DeckState, index: number, random: number, design: 
   }
   const { lean, answers, why } = decisionFor(cardId, orientation, design);
   const pick = Math.min(answers.length - 1, Math.max(0, Math.floor(random * answers.length)));
-  return { cardId, orientation, lean, answer: answers[pick] ?? answers[0] ?? "", why };
+  return { cardId, orientation, lean, answer: answers[pick] ?? answers[0] ?? "", why, pick: answers[pick] === undefined ? 0 : pick };
 }

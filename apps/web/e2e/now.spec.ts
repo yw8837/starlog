@@ -56,7 +56,7 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   await settleAnimations(page);
   await pickCard(page);
 
-  const answer = page.locator("h2:not(#now-guide)");
+  const answer = page.locator("h2:not(#now-guide):not(#share-result-title)");
   await expect(answer).toBeVisible();
   const text = (await answer.textContent()) ?? "";
   expect(ALL_ANSWERS.has(text), `"${text}" is a line from decision.ko.json`).toBe(true);
@@ -91,7 +91,7 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   await expect(reshuffle).toHaveAttribute("aria-disabled", "false", { timeout: 10_000 });
   await settleAnimations(page);
   await pickCard(page);
-  await expect(page.locator("h2:not(#now-guide)")).toBeVisible();
+  await expect(page.locator("h2:not(#now-guide):not(#share-result-title)")).toBeVisible();
 
   // A later visit keeps the steps folded.
   await page.reload();
@@ -110,11 +110,45 @@ test("지금의 한 장 screens at 375, 360 and 1280 wide @screens", async ({ pa
     await openTable(page);
     await shot(page, `${tag}-01-pick`);
     await pickCard(page);
-    await expect(page.locator("h2:not(#now-guide)")).toBeVisible();
+    await expect(page.locator("h2:not(#now-guide):not(#share-result-title)")).toBeVisible();
     await settleAnimations(page);
     await page.evaluate(() => window.scrollTo(0, 0));
     await shot(page, `${tag}-02-result`);
     await page.getByRole("button", { name: "어떻게 답이 나오나요?" }).click();
     await shot(page, `${tag}-03-result-full`, true);
   }
+});
+
+test("지금의 한 장 → 공유하기 → the link shows that card, its line and why, and 나도 한 장 뽑아 보기 (owner 2026-10-23)", async ({ page }, info) => {
+  await page.goto("/now");
+  await page.getByLabel("고민 한 줄").fill("이직해도 될까?");
+  await openTable(page);
+  await pickCard(page);
+  const answer = page.locator("h2:not(#now-guide):not(#share-result-title)");
+  await expect(answer).toBeVisible();
+  const line = (await answer.innerText()).trim();
+  const share = page.getByRole("button", { name: "공유하기" });
+  await expect(share).toBeVisible();
+  if (info.project.name === "mobile") {
+    await share.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: "test-results/share-shots/now-button.png" });
+  }
+  await share.click();
+  const sheet = page.getByRole("dialog", { name: "결과 공유하기" });
+  await sheet.getByRole("button", { name: "공유 링크 만들기" }).click();
+  await expect(sheet).toContainText(/\/s\/[a-z0-9]{12}/, { timeout: 30_000 });
+  await expect(sheet.getByRole("button", { name: "공유 그만하기" })).toHaveCount(0);
+  const path = (/\/s\/[a-z0-9]{12}/.exec((await sheet.textContent()) ?? "") ?? [""])[0];
+
+  const visitor = await page.context().browser()!.newPage({ viewport: page.viewportSize() ?? undefined });
+  await visitor.goto(new URL(path, page.url()).toString());
+  await expect(visitor).toHaveURL(new RegExp(`${path}$`));
+  await expect(visitor.getByRole("heading", { level: 1 })).toHaveText(line);
+  await expect(visitor.locator("main")).not.toContainText("이직해도");
+  const cta = visitor.getByRole("link", { name: /나도 한 장 뽑아 보기/ });
+  await expect(cta).toBeVisible();
+  if (info.project.name === "mobile") await visitor.screenshot({ path: "test-results/share-shots/now-shared.png", fullPage: true });
+  await cta.click();
+  await expect(visitor).toHaveURL(/\/now$/);
+  await visitor.close();
 });
