@@ -125,7 +125,8 @@ describe("the 60 result pages", () => {
       for (const a of container.querySelectorAll("a[href]")) expect(a.getAttribute("href")!.replaceAll("2027", ""), ilju.slug).not.toMatch(/\d{4}/);
       cleanup();
     }
-  });
+    // Sixty full pages: several seconds when the whole suite shares the machine.
+  }, 60_000);
 
   it("answer 404 for anything that is not one of the 60", async () => {
     await expect(KeywordResultPage(params("gap-chuk"))).rejects.toThrow("404");
