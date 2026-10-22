@@ -83,10 +83,10 @@ describe("sitemap on the root domain", () => {
   const urls = entries.map((entry) => entry.url);
   const entry = (path: string) => entries.find((e) => e.url === absoluteUrl(path));
 
-  it("lists both guide tabs (the tarot tab at the root domain's /) and every article on the root domain, and nothing else", () => {
-    expect(urls).toEqual(expect.arrayContaining([`${GUIDE}/`, `${GUIDE}/guide/saju`]));
+  it("lists both guide tabs (the tarot tab at the root domain's /), the editorial page and every article on the root domain, and nothing else", () => {
+    expect(urls).toEqual(expect.arrayContaining([`${GUIDE}/`, `${GUIDE}/guide/saju`, `${GUIDE}/guide/about`]));
     for (const article of GUIDE_ARTICLES) expect(urls, article.slug).toContain(`${GUIDE}/guide/${article.slug}`);
-    expect(urls).toHaveLength(2 + GUIDE_ARTICLES.length);
+    expect(urls).toHaveLength(3 + GUIDE_ARTICLES.length);
     expect(urls.filter((url) => url !== `${GUIDE}/`).every((url) => url.startsWith(`${GUIDE}/guide/`))).toBe(true);
   });
 

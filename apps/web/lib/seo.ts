@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BIRTH_CARDS, BIRTH_CARD_PATH, birthCardPath } from "./birthCard";
 import { SITE } from "./config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath, lastReviewed } from "./guide";
+import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath, lastReviewed } from "./guide";
 import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
 import { ILJU, KEYWORD_PATH, keywordPath } from "./keyword2027";
@@ -144,6 +144,8 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     ...GUIDE_ARTICLES.map(
       (article): SitemapEntry => ({ path: `/guide/${article.slug}`, lastModified: lastReviewed(article), changeFrequency: "monthly", priority: 0.7 }),
     ),
+    // 가이드 소개와 편집 원칙: who writes the guide and how (no lastModified: the page carries no date of its own).
+    { path: GUIDE_ABOUT_PATH, changeFrequency: "monthly", priority: 0.5 },
     ...Object.values(INFO_PAGES).map((page): SitemapEntry => ({ path: page.path, changeFrequency: "monthly", priority: 0.6 })),
     // 2027년 나의 키워드: the form and its 60 일주 pages (fixed text, linked from the form).
     { path: KEYWORD_PATH, changeFrequency: "monthly", priority: 0.7 },

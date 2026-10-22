@@ -555,3 +555,25 @@
   font-size: var(--fs-sub);
   line-height: 1.6;
 }
+
+/* A link on the cream paper: navy ink, underlined. */
+.paperLink {
+  color: var(--navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.contactList {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 1.3em;
+  font-size: var(--fs-prose);
+  line-height: 1.7;
+}
+
+/* A card without a thumbnail: the text and nothing else. */
+.itemPlain {
+  grid-template-columns: minmax(0, 1fr);
+  padding-left: 16px;
+}
