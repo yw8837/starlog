@@ -33,25 +33,28 @@ const kbPath = (cardId: string) => fileURLToPath(new URL(`../../../../content/kb
 const kbCard = (cardId: string): KbCard => JSON.parse(readFileSync(kbPath(cardId), "utf8")) as KbCard;
 
 /**
- * A card article's five headings (SEO-05, ADS-04): the two meaning sections ask their question with the card's
- * name; the picture, 연애·일·돈 and look-alike sections name the card in words of their own (the look-alike one
- * also names the first card of its row), so each heading stands alone for an answer engine and none is shared
- * between cards. Only the two meaning headings are questions, so the FAQPage stays those two.
+ * A card article's seven headings (SEO-05, ADS-04; the Starlog scene and 자주 묻는 질문 since 2026-10-22, tarot.test.ts):
+ * the two meaning sections ask their question with the card's name; the picture, 연애·일·돈, Starlog scene and
+ * look-alike sections name the card in words of their own (the look-alike one also names the first card of its row),
+ * so each heading stands alone for an answer engine and none is shared between cards. Only the two meaning headings
+ * are questions, so the FAQPage stays those two.
  */
 const SHARED_CARD_HEADINGS = ["그림 속 장면", "연애·일·돈 질문에서", "비슷한 카드와 헷갈릴 때"];
 function expectCardHeadings(article: GuideArticle, name: string) {
   const headings = article.sections.map((section) => section.heading);
-  expect(headings).toHaveLength(5);
+  expect(headings).toHaveLength(7);
   expect(headings.slice(1, 3)).toEqual([`${name} 카드 정방향은 어떤 뜻인가요`, `${name} 카드 역방향은 어떤 뜻인가요`]);
   for (const heading of headings) {
     expect(heading).toContain(`${name} 카드`);
     expect(SHARED_CARD_HEADINGS).not.toContain(heading);
   }
-  const [picture, , , topics, lookAlike] = headings as [string, string, string, string, string];
+  const [picture, , , topics, starlog, lookAlike, faq] = headings as [string, string, string, string, string, string, string];
   expect(picture).toContain("그림");
   expect(topics).toContain("연애·일·돈");
-  for (const heading of [picture, topics, lookAlike]) expect(isQuestion(heading), heading).toBe(false);
-  const row = article.sections[4]?.blocks?.find((block) => block.kind === "cardRow");
+  expect(starlog).toContain("스타로그");
+  expect(faq).toBe(`${name} 카드 자주 묻는 질문`);
+  for (const heading of [picture, topics, starlog, lookAlike, faq]) expect(isQuestion(heading), heading).toBe(false);
+  const row = article.sections[5]?.blocks?.find((block) => block.kind === "cardRow");
   const firstLookAlike = row?.kind === "cardRow" ? row.cards[1] : undefined;
   expect(firstLookAlike, article.slug).toBeDefined();
   expect(lookAlike).toContain(getCard(firstLookAlike ?? "").names.ko);
@@ -117,12 +120,12 @@ describe("guide library", () => {
     for (const other of related) expect(findArticle(other), other).toBeDefined();
   });
 
-  it("gives every library article a substantial body (card articles 1,500-2,300 characters)", () => {
+  it("gives every library article a substantial body (card articles 2,800-3,800 characters with the 2026-10-22 sections)", () => {
     for (const article of LIBRARY) {
       const length = bodyLength(article);
       if (article.cardId) {
-        expect(length, article.slug).toBeGreaterThanOrEqual(1500);
-        expect(length, article.slug).toBeLessThanOrEqual(2300);
+        expect(length, article.slug).toBeGreaterThanOrEqual(2800);
+        expect(length, article.slug).toBeLessThanOrEqual(3800);
       } else {
         expect(length, article.slug).toBeGreaterThanOrEqual(1500);
         expect(length, article.slug).toBeLessThanOrEqual(3200);
@@ -152,9 +155,9 @@ describe("card articles agree with the KB", () => {
   // 은둔자 and 별 live in lib/guide.ts with their own question headings; their pictures follow the same KB rules.
   const BASE_CARDS = GUIDE_ARTICLES.filter((article) => article.cardId && !MAJOR_ARCANA_ARTICLES.some((library) => library.slug === article.slug));
   it("finds the two card articles of lib/guide.ts", () => expect(BASE_CARDS.map((article) => article.slug)).toEqual(["the-hermit", "the-star"]));
-  it("gives the 22 card articles 110 headings with none shared between cards", () => {
+  it("gives the 22 card articles 154 headings with none shared between cards", () => {
     const headings = GUIDE_ARTICLES.filter((article) => article.cardId).flatMap((article) => article.sections.map((section) => section.heading));
-    expect(headings).toHaveLength(22 * 5);
+    expect(headings).toHaveLength(22 * 7);
     expect(new Set(headings).size).toBe(headings.length);
   });
   it.each(BASE_CARDS.map((article) => [article.slug, article] as const))("%s (lib/guide.ts)", (_slug, article) => {
