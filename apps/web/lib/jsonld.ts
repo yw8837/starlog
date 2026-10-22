@@ -2,6 +2,7 @@ import { CONSTELLATIONS, cardImage } from "@starlog/core";
 import { SITE } from "./config";
 import { standardProduct, type StandardProductId } from "./pay/catalog";
 import { GUIDE_ABOUT_PATH, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, lastReviewed, type GuideArticle, type GuideCategory } from "./guide";
+import { guidePlainText } from "./guideLinks";
 import { GUIDE_HOME, absoluteUrl } from "./hosts";
 
 /**
@@ -179,13 +180,23 @@ const asQuestion = (text: string) => (text.trim().endsWith("?") ? text.trim() : 
 
 /**
  * Question-and-answer pairs the page shows: the title when it asks a question (answered by the 요약),
- * then every section whose heading is a question (answered by its text: the body, then its blocks).
+ * then, in page order, every section whose heading is a question (answered by its text: the body, then its blocks) and
+ * every question of a 자주 묻는 질문 section (a step whose title asks, answered by its text as the page shows it).
  */
 export function guideQuestions(article: GuideArticle): Array<{ q: string; a: string }> {
   const fromTitle = isQuestion(article.title) && article.summary ? [{ q: asQuestion(article.title), a: article.summary }] : [];
-  const fromSections = article.sections.filter((section) => isQuestion(section.heading)).map((section) => ({ q: asQuestion(section.heading), a: guideSectionText(section) }));
+  const fromSections = article.sections.flatMap((section) => {
+    if (isQuestion(section.heading)) return [{ q: asQuestion(section.heading), a: guideSectionText(section) }];
+    if (!FAQ_HEADING.test(section.heading)) return [];
+    return (section.blocks ?? []).flatMap((block) =>
+      block.kind === "steps" ? block.items.filter((step) => isQuestion(step.title)).map((step) => ({ q: step.title.trim(), a: guidePlainText(step.text) })) : [],
+    );
+  });
   return [...fromTitle, ...fromSections];
 }
+
+/** A section of questions and answers, one step per question (the card articles' "<카드> 카드 자주 묻는 질문"). */
+const FAQ_HEADING = /자주 묻는 질문/;
 
 /** FAQPage for an article with at least two question-style parts; null otherwise. */
 export function guideFaqJsonLd(article: GuideArticle) {

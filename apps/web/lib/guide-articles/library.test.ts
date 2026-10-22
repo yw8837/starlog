@@ -144,8 +144,11 @@ describe("card articles agree with the KB", () => {
     expect(article.category).toBe("tarot");
     expect(article.title).toContain(card.names.ko);
     expectCardHeadings(article, card.names.ko);
-    // The two meaning questions are what the FAQPage JSON-LD (jsonld.ts isQuestion) is built from.
-    expect(guideQuestions(article).map((entry) => entry.q)).toEqual([`${card.names.ko} 카드 정방향은 어떤 뜻인가요?`, `${card.names.ko} 카드 역방향은 어떤 뜻인가요?`]);
+    // The FAQPage JSON-LD (jsonld.ts guideQuestions): the two meaning questions, then the 자주 묻는 질문 section's questions.
+    const faq = article.sections.find((section) => section.heading === `${card.names.ko} 카드 자주 묻는 질문`);
+    const asked = (faq?.blocks ?? []).flatMap((block) => (block.kind === "steps" ? block.items.map((step) => step.title) : []));
+    expect(asked.length).toBeGreaterThanOrEqual(2);
+    expect(guideQuestions(article).map((entry) => entry.q)).toEqual([`${card.names.ko} 카드 정방향은 어떤 뜻인가요?`, `${card.names.ko} 카드 역방향은 어떤 뜻인가요?`, ...asked]);
     expect(guideFaqJsonLd(article)).not.toBeNull();
     // The KB's known misdescriptions of this scan (R3) must not appear anywhere in the article.
     const text = allText(article);
