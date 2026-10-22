@@ -4,6 +4,7 @@ import { readSession, sessionCookieName } from "@/lib/account/session";
 import { clientKey, errorResponse, json, parseCookies, readJson } from "@/lib/api/http";
 import { accountDb } from "@/lib/db";
 import { buildSharePayload } from "@/lib/share/payload";
+import { sharePreview } from "@/lib/share/preview";
 import { deleteShare, saveShare } from "@/lib/share/store";
 import { openChapterForShare } from "@/lib/security/chapterToken";
 import { rateLimit } from "@/lib/security/rateLimit";
@@ -52,7 +53,7 @@ export async function POST(request: Request): Promise<Response> {
   const now = Date.now();
   const session = await readSession(opened.db, parseCookies(request)[sessionCookieName()], opened.secret, now);
   const id = await saveShare(opened.db, opened.chapterKey, payload, now, session?.user.id ?? null);
-  return json({ id, path: `/s/${id}` });
+  return json({ id, path: `/s/${id}`, preview: sharePreview(payload) });
 }
 
 export async function DELETE(request: Request): Promise<Response> {

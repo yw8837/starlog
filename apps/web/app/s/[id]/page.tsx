@@ -11,6 +11,8 @@ import type { SharePayload } from "@/lib/share/payload";
 import { SHARE_ID, findShare } from "@/lib/share/store";
 import { NOT_FOUND_METADATA } from "@/lib/seo";
 import { PREMIUM } from "@/lib/premium/products";
+import { SHARE_IMAGE } from "@/lib/kakaoShare";
+import { sharePreview } from "@/lib/share/preview";
 import { SharedReading, sajuShareTitle } from "./SharedReading";
 import { shortCardName } from "./SharedKinds";
 
@@ -57,13 +59,16 @@ export async function generateMetadata({ params }: PageProps<"/s/[id]">): Promis
   const share = await load(id);
   if (!share) return NOT_FOUND_METADATA;
   const { title, description } = preview(share.payload);
-  const image = { url: `/api/og/share/${share.id}`, width: 1200, height: 630, alt: title };
+  // What a link pasted into Threads, an Instagram DM or KakaoTalk shows: the same title, first sentence and 2:1 image
+  // the Kakao message carries (lib/share/preview.ts; owner 2026-10-23 "텍스트만 날라간다").
+  const card = sharePreview(share.payload);
+  const image = { url: `/api/og/share/${share.id}`, ...SHARE_IMAGE, alt: card.title };
   return {
     title,
     description,
     robots: { index: false, follow: false },
-    openGraph: { title, description, images: [image], type: "website", url: `/s/${share.id}` },
-    twitter: { card: "summary_large_image", title, description, images: [image.url] },
+    openGraph: { title: card.title, description: card.description, images: [image], type: "website", url: `/s/${share.id}` },
+    twitter: { card: "summary_large_image", title: card.title, description: card.description, images: [image.url] },
   };
 }
 

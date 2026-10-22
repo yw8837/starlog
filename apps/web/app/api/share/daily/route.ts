@@ -8,6 +8,7 @@ import { kstDay } from "@/lib/security/quota";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
 import { buildDailySharePayload } from "@/lib/share/payload";
+import { sharePreview } from "@/lib/share/preview";
 import { deleteShare, saveShare } from "@/lib/share/store";
 
 /**
@@ -57,7 +58,7 @@ export async function POST(request: Request): Promise<Response> {
   const payload = buildDailySharePayload(stored, opened.day);
   const session = await readSession(opened.db, parseCookies(request)[sessionCookieName()], opened.secret, opened.now);
   const id = await saveShare(opened.db, opened.shareKey, payload, opened.now, session?.user.id ?? null);
-  return json({ id, path: `/s/${id}` });
+  return json({ id, path: `/s/${id}`, preview: sharePreview(payload) });
 }
 
 export async function DELETE(request: Request): Promise<Response> {

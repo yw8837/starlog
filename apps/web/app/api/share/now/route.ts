@@ -3,6 +3,7 @@ import { clientKey, errorResponse, json, readJson } from "@/lib/api/http";
 import { accountDb } from "@/lib/db";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { buildNowSharePayload } from "@/lib/share/payload";
+import { sharePreview } from "@/lib/share/preview";
 import { saveShare } from "@/lib/share/store";
 
 /**
@@ -27,5 +28,5 @@ export async function POST(request: Request): Promise<Response> {
   if (!payload) return errorResponse("BAD_REQUEST");
   const key = `now:${payload.deck}:${payload.card.cardId}:${payload.card.orientation}:${String(draw!.pick)}`;
   const id = await saveShare(db, key, payload, Date.now(), null);
-  return json({ id, path: `/s/${id}` });
+  return json({ id, path: `/s/${id}`, preview: sharePreview(payload) });
 }

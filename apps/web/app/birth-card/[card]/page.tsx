@@ -115,7 +115,7 @@ export default async function BirthCardResultPage({ params }: PageProps<"/birth-
             <div className={s.share}>
               <ShareButton
                 text={`${BIRTH_CARD_TITLE}는 ${card.name} · ${SITE.nameKo}`}
-                target={{ url, imageUrl: `${SITE.url}${birthCardOgPath(card.slug)}`, button: "내 카드 찾기", description: "생년월일로 찾는 나를 닮은 타로 카드예요. 내 카드도 찾아보세요." }}
+                target={{ url, imageUrl: `${SITE.url}${birthCardOgPath(card.slug)}`, button: "내 카드 찾기", description: "생년월일로 찾는 나를 닮은 타로 카드예요. 내 카드도 찾아보세요.", imageSize: { width: 1200, height: 630 } }}
               />
             </div>
             <Button href="#find" variant="secondary" block>

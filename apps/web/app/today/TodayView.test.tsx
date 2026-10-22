@@ -334,7 +334,8 @@ describe("sharing 오늘의 한 장 (owner 2026-10-20)", () => {
       await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true })));
       expect(calls).toEqual([{ url: "/api/share/daily", method: "POST", body: {} }]);
       await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: "공유하기", hidden: true })));
-      expect(share).toHaveBeenCalledWith(expect.objectContaining({ url: `${location.origin}/s/dailyshare01`, text: `오늘의 카드: ${READING.summary}` }));
+      expect(share).toHaveBeenCalledWith(expect.objectContaining({ url: `${location.origin}/s/dailyshare01`, text: `오늘의 카드: ${READING.summary}
+${location.origin}/s/dailyshare01` }));
     } finally {
       delete (navigator as { share?: unknown }).share;
     }

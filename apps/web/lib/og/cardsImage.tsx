@@ -141,40 +141,51 @@ export function luckyShareText(data: LuckyShareData): { serif: string; sans: str
   return { serif: data.numbers.join(""), sans: `이번 주 행운 번호 ${data.week} ${LUCKY_NOTICE} ${data.host}` };
 }
 
-// ---- 결과 공유 (link preview, 1200×630) ----
+// ---- 결과 공유 (link preview and Kakao feed image, 1200×600) ----
+
+/** 2:1 and 800px or more wide, as Kakao's feed recommends; link previews take it as well (owner 2026-10-23). */
+export const SHARE_OG = { width: 1200, height: 600 } as const;
 
 export interface ShareOgData {
   /** "친구가 공유한 타로 풀이" */
   label: string;
   /** tarot: the card names; saju: "연애운 풀이" */
   headline: string;
-  /** saju: the short conclusion; tarot: none (the cards say it) */
+  /** A large gold line under the headline: the 인연 score ("인연 83점"). */
+  big?: string;
+  /** saju: the short conclusion; 한 장: its line; tarot: none (the cards say it) */
   body?: string;
   /**
    * tarot: the cards drawn. `src` is the face as a JPEG (satori cannot decode WebP), inlined by the
    * route; a face that could not be read is drawn as its name plate. Reversed ones are turned.
    */
   cards?: Array<{ cardId: string; src?: string; reversed: boolean }>;
+  /** 별자리 인연: the constellation drawn on the right, `lit` of its stars filled. */
+  sign?: SignId;
+  lit?: number;
   host: string;
 }
 
 export function shareOgImage(data: ShareOgData): ReactElement {
-  const { width, height } = OG_CARD;
+  const { width, height } = SHARE_OG;
   const cards = (data.cards ?? []).slice(0, 3);
-  const cardWidth = cards.length > 2 ? 150 : 180;
-  const textWidth = cards.length ? 560 : 1040;
+  const cardWidth = cards.length > 2 ? 148 : 176;
+  const side = cards.length > 0 || data.sign !== undefined;
+  const textWidth = side ? 580 : 1050;
   return frame(width, height, [
-    <div key="text" style={{ position: "absolute", left: 80, top: 96, width: textWidth, display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", color: GOLD, fontSize: 26, fontWeight: 700, letterSpacing: 8 }}>STARLOG</div>
-      <div style={{ display: "flex", marginTop: 8, fontFamily: "Serif", fontSize: 64, fontWeight: 700 }}>스타로그</div>
-      <div style={{ display: "flex", marginTop: 26, color: INK_SUB, fontSize: 32 }}>{data.label}</div>
-      <div style={{ display: "flex", marginTop: 18, fontFamily: "Serif", fontSize: cards.length ? 38 : 44, fontWeight: 700, lineHeight: 1.35 }}>{data.headline}</div>
-      {data.body ? (
-        <div style={{ display: "flex", marginTop: 18, color: INK, fontSize: 32, lineHeight: 1.5 }}>{data.body}</div>
-      ) : null}
+    <div key="text" style={{ position: "absolute", left: 72, top: 58, width: textWidth, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", color: GOLD, fontSize: 24, fontWeight: 700, letterSpacing: 4 }}>STARLOG · 스타로그</div>
+      <div style={{ display: "flex", marginTop: 20, color: INK_SUB, fontSize: 28 }}>{data.label}</div>
+      <div style={{ display: "flex", marginTop: 12, fontFamily: "Serif", fontSize: side ? 42 : 48, fontWeight: 700, lineHeight: 1.3 }}>{data.headline}</div>
+      {data.big ? <div style={{ display: "flex", marginTop: 6, color: GOLD, fontFamily: "Serif", fontSize: 96, fontWeight: 700, lineHeight: 1.1 }}>{data.big}</div> : null}
+      {data.body ? <div style={{ display: "flex", marginTop: 14, color: INK, fontSize: 28, lineHeight: 1.45 }}>{data.body}</div> : null}
     </div>,
-    cards.length ? (
-      <div key="cards" style={{ position: "absolute", right: 70, top: 0, height, display: "flex", alignItems: "center", gap: 18 }}>
+    data.sign ? (
+      <div key="art" style={{ position: "absolute", right: 56, top: 70, display: "flex" }}>
+        {constellationSvg(data.sign, 460, data.lit)}
+      </div>
+    ) : cards.length ? (
+      <div key="cards" style={{ position: "absolute", right: 64, top: 0, height, display: "flex", alignItems: "center", gap: 16 }}>
         {cards.map((card, i) =>
           card.src ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -193,14 +204,14 @@ export function shareOgImage(data: ShareOgData): ReactElement {
     ) : (
       <div key="none" style={{ display: "flex" }} />
     ),
-    <div key="host" style={{ position: "absolute", left: 80, bottom: 56, display: "flex", color: GOLD, fontSize: 26, letterSpacing: 2 }}>
+    <div key="host" style={{ position: "absolute", left: 72, bottom: 44, display: "flex", color: GOLD, fontSize: 24, letterSpacing: 2 }}>
       {data.host}
     </div>,
   ]);
 }
 
 export function shareOgText(data: ShareOgData): { serif: string; sans: string } {
-  return { serif: `스타로그${data.headline}`, sans: `STARLOG ${data.label} ${data.body ?? ""} ${data.host}` };
+  return { serif: `${data.headline}${data.big ?? ""}`, sans: `STARLOG · 스타로그 ${data.label} ${data.body ?? ""} ${data.host}` };
 }
 
 // ---- 프리미엄 풀이 (P5 task 23; 1080×1350, or the story size) ----

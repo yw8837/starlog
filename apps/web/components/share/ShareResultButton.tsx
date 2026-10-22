@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ShareButton } from "@/components/ui/ShareButton";
-import type { ShareLinkResult } from "@/lib/share/client";
+import type { ShareLink, ShareLinkResult } from "@/lib/share/client";
 import s from "./ShareResultButton.module.css";
 
 /** What a result screen hands 공유하기: making the reading's link and taking it down. */
@@ -17,7 +17,7 @@ export interface ShareActions {
    */
   stop?: () => Promise<boolean>;
   /** The live link this device already made for the reading, if any (lib/share/client.ts knownShareLink). */
-  current?: () => { url: string; imageUrl: string } | null;
+  current?: () => ShareLink | null;
   /**
    * Why this result cannot be shared yet (still being written, or a record not read whole): 공유하기 still shows on
    * every result screen (owner 2026-10-23) and its sheet says why instead of making a link.
@@ -102,7 +102,7 @@ const SHOWN: Record<ShareKind, { shown: string; hidden: string; kakao: string; b
 type Phase =
   | { at: "intro" }
   | { at: "making" }
-  | { at: "ready"; url: string; imageUrl: string; error?: string }
+  | ({ at: "ready"; error?: string } & ShareLink)
   | { at: "failed"; message: string }
   | { at: "stopped" };
 
@@ -120,7 +120,7 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
   const make = async () => {
     setPhase({ at: "making" });
     const result = await create();
-    setPhase(result.ok ? { at: "ready", url: result.url, imageUrl: result.imageUrl } : { at: "failed", message: result.message });
+    setPhase(result.ok ? { at: "ready", url: result.url, imageUrl: result.imageUrl, ...(result.preview ? { preview: result.preview } : {}) } : { at: "failed", message: result.message });
   };
 
   const takeDown = async (live: Extract<Phase, { at: "ready" }>) => {
@@ -157,7 +157,18 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
             <>
               <p className={s.link}>{phase.url.replace(/^https?:\/\//, "")}</p>
               <div className={s.actions}>
-                <ShareButton text={text} target={{ url: phase.url, imageUrl: phase.imageUrl, button: copy.button ?? "풀이 보기", description: copy.kakao }} />
+                <ShareButton
+                  text={phase.preview?.title ?? text}
+                  target={{
+                    url: phase.url,
+                    imageUrl: phase.imageUrl,
+                    button: copy.button ?? "풀이 보기",
+                    description: phase.preview?.description ?? copy.kakao,
+                    // 나도 뽑아 보기 / 내 별자리 만들기: the visitor's own try, on this site.
+                    ...(phase.preview ? { second: { title: phase.preview.try.label, url: new URL(phase.preview.try.path, phase.url).toString() } } : {}),
+                    attachImage: true,
+                  }}
+                />
               </div>
               {extra ? <div className={s.actions}>{extra({ url: phase.url, imageUrl: phase.imageUrl })}</div> : null}
               {phase.error ? (

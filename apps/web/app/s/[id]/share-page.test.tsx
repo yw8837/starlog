@@ -90,7 +90,7 @@ describe("/s/[id]", () => {
     const meta = await generateMetadata(params(id));
     expect(meta.title).toBe("친구가 뽑은 카드 · 은둔자 · 별(역) · 컵 3");
     expect(meta.robots).toEqual({ index: false, follow: false });
-    expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: `/api/og/share/${id}`, width: 1200, height: 630 })]);
+    expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: `/api/og/share/${id}`, width: 1200, height: 600 })]);
   });
 
   const daily = buildDailySharePayload(
@@ -135,7 +135,7 @@ describe("/s/[id]", () => {
     expect(meta.title).toBe("친구가 뽑은 오늘의 한 장 · 별(역)");
     expect(meta.description).toBe("작은 빛 하나를 따라가 보는 하루");
     expect(meta.robots).toEqual({ index: false, follow: false });
-    expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: `/api/og/share/${id}`, width: 1200, height: 630 })]);
+    expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: `/api/og/share/${id}`, width: 1200, height: 600 })]);
   });
 
   it("answers 404 for a link that was never made or was stopped, kept out of search", async () => {

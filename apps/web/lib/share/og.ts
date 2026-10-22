@@ -4,9 +4,10 @@ import type { ShareOgData } from "@/lib/og/cardsImage";
 import { PREMIUM } from "@/lib/premium/products";
 import { topicLabel } from "@/lib/sajuTopics";
 import type { SharePayload } from "./payload";
+import { firstSentence } from "./preview";
 
 /** The longest saju conclusion the preview prints (about three lines). */
-const BODY_MAX = 90;
+const BODY_MAX = 72;
 
 const clip = (text: string) => (text.length > BODY_MAX ? `${text.slice(0, BODY_MAX - 1)}…` : text);
 
@@ -48,9 +49,11 @@ export function shareOgData(share: SharePayload, origin: string): ShareOgData {
     };
   }
   if (share.kind === "tarot") {
+    const verdict = firstSentence(share.reading.verdict);
     return {
       label: "친구가 공유한 타로 풀이",
       headline: share.cards.map((card) => `${getCard(card.cardId).names.ko}${card.orientation === "reversed" ? "(역)" : ""}`).join(" · "),
+      ...(verdict ? { body: clip(verdict) } : {}),
       cards: share.cards.map((card) => ({ cardId: card.cardId, src: `${origin}/cards/og/${share.deck}/${card.cardId}.jpg`, reversed: card.orientation === "reversed" })),
       host,
     };

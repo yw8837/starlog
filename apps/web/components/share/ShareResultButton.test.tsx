@@ -61,7 +61,7 @@ describe("ShareResultButton", () => {
       await click(screen.getByRole("button", { name: "공유하기" }));
       await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
       await click(within(sheet()).getByRole("button", { name: "카카오톡으로 보내기", hidden: true }));
-      expect(kakao).toHaveBeenLastCalledWith("나의 스타로그", "test-key", { url: URL_, imageUrl: IMAGE, button: "풀이 보기", description });
+      expect(kakao).toHaveBeenLastCalledWith("나의 스타로그", "test-key", { url: URL_, imageUrl: IMAGE, button: "풀이 보기", description, attachImage: true });
     } finally {
       vi.unstubAllEnvs();
     }
@@ -80,7 +80,8 @@ describe("ShareResultButton", () => {
     expect(create).toHaveBeenCalledOnce();
     expect(sheet().textContent).toContain("starlog.yeolmaeapps.kr/s/abcdefghijkl");
     await click(within(sheet()).getByRole("button", { name: "공유하기", hidden: true }));
-    expect(share).toHaveBeenCalledWith(expect.objectContaining({ url: URL_, text: "나의 스타로그 · 연애운" }));
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ url: URL_, text: `나의 스타로그 · 연애운
+${URL_}` }));
   });
 
   it("for 오늘의 한 장, says a friend sees today's card and its reading and nothing personal, and the Kakao message opens that link with 풀이 보기", async () => {
@@ -98,7 +99,35 @@ describe("ShareResultButton", () => {
         imageUrl: IMAGE,
         button: "풀이 보기",
         description: "오늘 뽑은 카드와 풀이를 볼 수 있어요. 나도 오늘의 한 장을 뽑아 볼 수 있어요.",
+        attachImage: true,
       });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("sends what the server said the share holds (owner 2026-10-23 \"텍스트만 날라간다\"): its title and first sentence, 풀이 보기 to the link and the visitor's own try", async () => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
+    const share = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "share", { value: share, configurable: true, writable: true });
+    try {
+      const preview = { title: "완드 3 · 컵 시종 · 완드 2 · 지금은 짧게 안부를 건네 볼 때예요.", description: "먼저 손을 내미는 쪽이 편해지는 흐름이에요.", try: { label: "나도 뽑아 보기", path: "/tarot/start" } };
+      const create = vi.fn(async () => ({ ok: true as const, url: URL_, imageUrl: IMAGE, preview }));
+      render(<ShareResultButton kind="tarot" text="스타로그에서 뽑은 카드 · 완드 3 · 컵 시종 · 완드 2" create={create} stop={vi.fn()} />);
+      await click(screen.getByRole("button", { name: "공유하기" }));
+      await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+      await click(within(sheet()).getByRole("button", { name: "카카오톡으로 보내기", hidden: true }));
+      expect(kakao).toHaveBeenLastCalledWith(preview.title, "test-key", {
+        url: URL_,
+        imageUrl: IMAGE,
+        button: "풀이 보기",
+        description: preview.description,
+        second: { title: "나도 뽑아 보기", url: "https://starlog.yeolmaeapps.kr/tarot/start" },
+        attachImage: true,
+      });
+      await click(within(sheet()).getByRole("button", { name: "공유하기", hidden: true }));
+      expect(share).toHaveBeenCalledWith(expect.objectContaining({ title: "스타로그", text: `${preview.title}
+${URL_}`, url: URL_ }));
     } finally {
       vi.unstubAllEnvs();
     }

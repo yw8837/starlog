@@ -81,7 +81,8 @@ test("a birth date finds its card: the card's page, 공유하기 with that page,
 
   await page.getByRole("button", { name: "공유하기" }).click();
   await expect.poll(() => page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared)).toEqual([
-    { title: "스타로그", text: "나를 닮은 타로 카드는 여황제 · 스타로그", url: `${SITE_URL}/birth-card/empress` },
+    { title: "스타로그", text: `나를 닮은 타로 카드는 여황제 · 스타로그
+${SITE_URL}/birth-card/empress`, url: `${SITE_URL}/birth-card/empress` },
   ]);
 
   await page.getByRole("link", { name: /내 고민도 타로로 보기/ }).click();

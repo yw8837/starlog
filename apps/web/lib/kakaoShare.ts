@@ -1,5 +1,3 @@
-import { SITE } from "./config";
-
 /**
  * 카카오톡 공유 (Kakao JavaScript SDK). Only when NEXT_PUBLIC_KAKAO_JS_KEY is set; the SDK is
  * loaded from Kakao's CDN on the first tap, with the integrity value Kakao documents for this
@@ -76,32 +74,48 @@ export function loadKakao(key: string): Promise<KakaoSdk> {
   return loading;
 }
 
-/** Where a Kakao message leads: the site by default, or a shared reading with its own preview image. */
+/**
+ * Where a share leads, always the shared thing's own page (owner 2026-10-23: a share that opened the home misled), with
+ * its preview image and what the message says.
+ */
 export interface KakaoTarget {
   url: string;
   imageUrl: string;
+  /** The first button, to the shared page ("풀이 보기"). */
   button: string;
-  /** One or two lines under the title (owner 10/13: the thumbnail, a short intro and the cards). */
+  /** The message's title; the share's text when absent. */
+  title?: string;
+  /** One or two lines under the title: the shared page's first sentence (lib/share/preview.ts). */
   description?: string;
+  /** The second button: the visitor's own try ("나도 뽑아 보기" → /tarot/start). */
+  second?: { title: string; url: string };
+  /** The phone's share sheet also carries the preview image as a PNG where the device can share files (stories). */
+  attachImage?: boolean;
+  /** The preview image's size; the share pages' own is 1200×600 (2:1, as Kakao's feed recommends). */
+  imageSize?: { width: number; height: number };
 }
 
-const SITE_TARGET: KakaoTarget = {
-  url: SITE.url,
-  imageUrl: `${SITE.url}/opengraph-image`,
-  button: `${SITE.nameKo} 열기`,
-  description: "타로와 사주로 내 고민을 풀어 주는 곳이에요. 지금의 한 장은 언제나 무료예요.",
-};
+/** The share pages' preview image (app/api/og/share/[id]): 2:1 and 800px or more wide, as Kakao's feed recommends. */
+export const SHARE_IMAGE = { width: 1200, height: 600 } as const;
 
-/** Every preview image we send is 1200×630: Kakao keeps that shape instead of cropping it. */
-const IMAGE = { imageWidth: 1200, imageHeight: 630 } as const;
-
-/** Shares the text with a link and its image as a feed message (the site's, unless `target` says otherwise). */
-export async function shareToKakao(text: string, key: string = kakaoKey(), target: KakaoTarget = SITE_TARGET): Promise<void> {
+/** Shares a feed message: the image, the title and description, 풀이 보기 to the shared page and the visitor's own try. */
+export async function shareToKakao(text: string, key: string, target: KakaoTarget): Promise<void> {
   const sdk = await loadKakao(key);
   const link = { mobileWebUrl: target.url, webUrl: target.url };
+  const size = target.imageSize ?? SHARE_IMAGE;
   sdk.Share.sendDefault({
     objectType: "feed",
-    content: { title: text, ...(target.description ? { description: target.description } : {}), imageUrl: target.imageUrl, ...IMAGE, link },
-    buttons: [{ title: target.button, link }],
+    content: {
+      title: target.title ?? text,
+      ...(target.description ? { description: target.description } : {}),
+      imageUrl: target.imageUrl,
+      imageWidth: size.width,
+      imageHeight: size.height,
+      link,
+    },
+    buttons: [
+      { title: target.button, link },
+      ...(target.second ? [{ title: target.second.title, link: { mobileWebUrl: target.second.url, webUrl: target.second.url } }] : []),
+    ],
   });
 }

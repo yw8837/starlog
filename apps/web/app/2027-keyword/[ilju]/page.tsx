@@ -94,7 +94,7 @@ export default async function KeywordResultPage({ params }: PageProps<"/2027-key
         <div className={s.share}>
           <ShareButton
             text={`${ilju.ko}일주의 2027년 키워드는 '${content.keyword}' · ${KEYWORD_TITLE}`}
-            target={{ url, imageUrl: `${SITE.url}${keywordImagePath(ilju)}`, button: "내 키워드 찾기", description: content.brings }}
+            target={{ url, imageUrl: `${SITE.url}${keywordImagePath(ilju)}`, button: "내 키워드 찾기", description: content.brings, imageSize: { width: 1200, height: 630 } }}
           />
         </div>
 

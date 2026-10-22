@@ -101,3 +101,17 @@ describe("/s/<id> for a premium reading", () => {
     expect(document.body.textContent).not.toContain("민수");
   });
 });
+
+describe("/s/<id> link previews (owner 2026-10-23: a pasted link shows an image and a title, not text alone)", () => {
+  it("og:title and og:description say what the Kakao message says, with the 2:1 image of the share", async () => {
+    const { sharePreview } = await import("@/lib/share/preview");
+    const payload = buildNowSharePayload({ cardId: "major-17-star", orientation: "upright", pick: 1, deck: "starlog" })!;
+    const id = save("nnnnnnnnnnn2", payload);
+    const meta = await generateMetadata(params(id));
+    const preview = sharePreview(payload);
+    expect(meta.openGraph?.title).toBe(preview.title);
+    expect(meta.openGraph?.description).toBe(preview.description);
+    expect(meta.openGraph?.images).toEqual([expect.objectContaining({ url: `/api/og/share/${id}`, width: 1200, height: 600 })]);
+    expect(meta.twitter).toMatchObject({ card: "summary_large_image", title: preview.title });
+  });
+});
