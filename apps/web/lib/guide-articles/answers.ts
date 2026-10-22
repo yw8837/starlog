@@ -249,5 +249,7 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
       "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
       "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
     ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-23" }] as const),
+    // 2026-10-23: 오행이 뭐예요? keeps its facts with varied sentence endings (10 of 61 ended in 않아요), and links 십신 and 용신.
+    ...["five-elements"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-23" }] as const),
   ],
 );
