@@ -50,7 +50,8 @@ export default function BirthCardPage() {
           <ul className={s.cardList}>
             {BIRTH_CARDS.map((card) => (
               <li key={card.slug}>
-                <Link href={birthCardPath(card.slug)} className={s.cardLink}>
+                {/* 22 links on one screen: fetched when tapped, not all at once on load. */}
+                <Link href={birthCardPath(card.slug)} className={s.cardLink} prefetch={false}>
                   <span className={s.cardRoman}>{card.roman}</span>
                   {card.name}
                 </Link>

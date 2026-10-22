@@ -50,6 +50,13 @@ function stubFaces(ok: boolean): string[] {
 
 const get = (slug: string) => GET(new Request(`https://starlog.yeolmaeapps.kr/api/og/birth-card/${slug}`), { params: Promise.resolve({ card: slug }) });
 
+/** A Workers edge cache that is always empty, recording what is stored in it. */
+function stubEdgeCache(): string[] {
+  const stored: string[] = [];
+  vi.stubGlobal("caches", { default: { match: async () => undefined, put: async (request: Request) => void stored.push(request.url) } });
+  return stored;
+}
+
 afterEach(() => {
   drawn.length = 0;
   fonts.length = 0;
@@ -77,10 +84,21 @@ describe("/api/og/birth-card/[card]", () => {
     for (const ch of text.replace(/\s/g, "")) expect(serif + sans, ch).toContain(ch);
   });
 
-  it("draws a face it cannot read as a framed numeral, the rest as it is", async () => {
+  it("keeps a drawn preview at the edge for a day under the slug's address", async () => {
+    stubFaces(true);
+    const stored = stubEdgeCache();
+    const res = await get("hermit");
+    expect(res.headers.get("cache-control")).toBe("public, max-age=86400");
+    expect(stored).toEqual(["https://starlog.yeolmaeapps.kr/api/og/birth-card/hermit"]);
+  });
+
+  it("draws a face it cannot read as a framed numeral, sent for five minutes and never kept at the edge, so the next request tries the face again", async () => {
     stubFaces(false);
+    const stored = stubEdgeCache();
     const res = await get("hermit");
     expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("public, max-age=300");
+    expect(stored).toEqual([]);
     const { text, images } = drawnParts(drawn[0] as ReactElement);
     expect(images).toEqual([]);
     expect(text).toContain("IX");

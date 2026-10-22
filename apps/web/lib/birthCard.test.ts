@@ -97,19 +97,32 @@ describe("짝 카드: a card of 10–21 also shows the card its two digits add u
 });
 
 describe("solarBirthDate: the date the sum is taken from", () => {
+  /** "Today" in Korea for these tests. */
+  const TODAY = { year: 2026, month: 10, day: 22 };
+  const solar = (year: number, month: number, day: number) => ({ calendar: "solar" as const, year, month, day, isLeapMonth: false });
+  const lunar = (year: number, month: number, day: number, isLeapMonth = false) => ({ calendar: "lunar" as const, year, month, day, isLeapMonth });
+
   it("keeps a solar date as it is", () => {
-    expect(solarBirthDate({ calendar: "solar", year: 1990, month: 5, day: 15, isLeapMonth: false })).toEqual({ year: 1990, month: 5, day: 15 });
+    expect(solarBirthDate(solar(1990, 5, 15), TODAY)).toEqual({ date: { year: 1990, month: 5, day: 15 } });
   });
 
   it("turns a lunar date into its solar day (설날 2000 was 2월 5일, 설날 1990 was 1월 27일)", () => {
-    expect(solarBirthDate({ calendar: "lunar", year: 2000, month: 1, day: 1, isLeapMonth: false })).toEqual({ year: 2000, month: 2, day: 5 });
-    expect(solarBirthDate({ calendar: "lunar", year: 1990, month: 1, day: 1, isLeapMonth: false })).toEqual({ year: 1990, month: 1, day: 27 });
+    expect(solarBirthDate(lunar(2000, 1, 1), TODAY)).toEqual({ date: { year: 2000, month: 2, day: 5 } });
+    expect(solarBirthDate(lunar(1990, 1, 1), TODAY)).toEqual({ date: { year: 1990, month: 1, day: 27 } });
   });
 
-  it("answers null for a part not picked yet or a lunar day that does not exist", () => {
-    expect(solarBirthDate({ calendar: "solar", year: 1990, month: null, day: 15, isLeapMonth: false })).toBeNull();
+  it("refuses a lunar day that does not exist", () => {
     // 1990 has no 윤1월 (its leap month is 5월).
-    expect(solarBirthDate({ calendar: "lunar", year: 1990, month: 1, day: 1, isLeapMonth: true })).toBeNull();
+    expect(solarBirthDate(lunar(1990, 1, 1, true), TODAY)).toEqual({ error: "없는 날짜예요. 양력·음력과 날짜를 다시 확인해 주세요." });
+  });
+
+  it("refuses a day after today in Korea, in the saju form's words; today itself is fine", () => {
+    const future = { error: "오늘 이후의 날짜는 고를 수 없어요." };
+    expect(solarBirthDate(solar(2026, 10, 22), TODAY)).toEqual({ date: { year: 2026, month: 10, day: 22 } });
+    expect(solarBirthDate(solar(2026, 10, 23), TODAY)).toEqual(future);
+    expect(solarBirthDate(solar(2026, 12, 31), TODAY)).toEqual(future);
+    // A lunar date counts by its solar day: 음력 2026-11-01 falls in December.
+    expect(solarBirthDate(lunar(2026, 11, 1), TODAY)).toEqual(future);
   });
 });
 
