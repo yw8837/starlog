@@ -60,7 +60,7 @@ describe("P4 error copy", () => {
   });
 
   it("says a 오픈 기념 무료 reading takes no follow-ups in the server's words", () => {
-    const message = "오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요. 이어서 물어보기와 공유는 결제한 풀이에서 할 수 있어요.";
+    const message = "오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.";
     expect(describeApiError({ code: "NOT_AVAILABLE", status: 409, message }, "followup")).toEqual({ title: "이 풀이에는 더 물어볼 수 없어요", body: message, action: null });
     expect(describeApiError({ code: "NOT_AVAILABLE", status: 409 })).toEqual({ title: "지금은 열 수 없는 상품이에요", action: "home" });
   });

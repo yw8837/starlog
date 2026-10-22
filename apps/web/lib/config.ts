@@ -68,7 +68,7 @@ export const SITE = {
    * Free use. 오픈 기념 무료 (owner 2026-10-14 evening): a device's first tarot full reading is free, once
    * (the server's BETA_FULL_PER_DAY, named before the rule changed), until `openingEndsAt` (KST ISO,
    * exclusive: the last free moment is 2026-10-31 23:59:59 KST); it is read and kept on that device
-   * only (no follow-ups or share). Saju full readings are never free. Teasers: a daily count (BETA_TEASER_PER_DAY).
+   * only (no follow-ups; shareable since owner 2026-10-23). Saju full readings are never free. Teasers: a daily count (BETA_TEASER_PER_DAY).
    */
   beta: {
     firstFreeTarot: 1,

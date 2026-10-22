@@ -108,7 +108,7 @@ describe("MeView logged out while sales are open", () => {
     render(<MeView status={null} />);
     expect(await screen.findByRole("link", { name: "로그인하기" })).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "오픈 기념 무료" })).toBeTruthy();
-    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).")).toBeTruthy();
+    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).")).toBeTruthy();
     expect(screen.getByText("아직 무료로 열 수 있어요")).toBeTruthy();
     cleanup();
     resetAccountForTests();
@@ -133,7 +133,7 @@ describe("MeView logged out while sales are closed (오픈 기념 무료)", () =
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: false, login: false, owner: false, user: null })));
     render(<MeView status={null} />);
     expect(await screen.findByRole("heading", { name: "오픈 기념 무료" })).toBeTruthy();
-    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).")).toBeTruthy();
+    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).")).toBeTruthy();
     expect(screen.getByText("아직 무료로 열 수 있어요")).toBeTruthy();
     cleanup();
     resetAccountForTests();

@@ -12,7 +12,7 @@ import { openTeaserSeal } from "@/lib/security/teaserSeal";
  * POST {drawToken, input, unlock?} → {reading, chapterToken, readingId?}: the full reading for the
  * server-fixed cards.
  * - 오픈 기념 무료 (no `unlock`, until SITE.beta.openingEndsAt): spends the device's free first reading only
- *   after a validated generation; its chapter is marked `opening` (no follow-ups or share). It asks for
+ *   after a validated generation; its chapter is marked `opening` (no follow-ups; shared since owner 2026-10-23). It asks for
  *   a browser check first when Turnstile is on (lib/api/turnstile.ts); the other openings do not.
  * - paid / the signup gift: reserves the purchase or the gift first, then saves the reading to the
  *   account and spends it before the client sees it. Any failure gives it back (spec 5.4).

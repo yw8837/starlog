@@ -6,7 +6,7 @@ import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
  * Tarot on the real API (the server runs with STARLOG_AI=mock and a signing secret): the cards
  * the server deals are the cards shown, the teaser and the full reading come from the API, the
  * reading is saved on this device and survives a reload. A 오픈 기념 무료 reading is read and kept on
- * this device only (no follow-ups or share); pay-flow.spec.ts asks a follow-up on a paid one.
+ * this device (no follow-ups, but shareable since owner 2026-10-23); pay-flow.spec.ts asks a follow-up on a paid one.
  * 오픈 기념 무료 ends with 2026-10-31 (KST): from 11월 1일 the free opening below is refused.
  */
 
@@ -98,7 +98,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
   if (free) {
     // 오픈 기념 무료 alone is offered: no follow-ups are promised, and its rule is said under the button.
     await expect(sheet).not.toContainText("이어서 물어보기 3번");
-    await expect(sheet).toContainText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).");
+    await expect(sheet).toContainText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).");
     await expect(sheet.getByRole("link")).toHaveCount(0);
   } else {
     await expect(sheet).not.toContainText("오픈 기념 무료");
@@ -124,13 +124,13 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
   for (const card of cards) await expect(page.locator(`img[src*="/cards/starlog/${card.cardId}"]`).first()).toBeVisible();
   await expect(page.getByText("기록 · 토끼 사서")).toHaveCount(0);
   if (free) {
-    // Read and kept on this device only: said once, no follow-up box, no share button, no 이어서 물어보기 link.
-    await expect(page.getByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요. 이어서 물어보기와 공유는 결제한 풀이에서 할 수 있어요.")).toHaveCount(1);
+    // Read and kept on this device: said once, no follow-up box, no 이어서 물어보기 link; 공유하기 shows (owner 2026-10-23).
+    await expect(page.getByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toHaveCount(1);
     await expect(page.getByRole("region", { name: /이어서 물어보기/ })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "공유하기" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "이 기록의 차례" }).getByRole("link")).toHaveText(["풀이"]);
   } else {
-    await expect(page.getByText(/보고 보관만 할 수 있어요/)).toHaveCount(0);
+    await expect(page.getByText(/보고 보관할 수 있어요/)).toHaveCount(0);
     await expect(page.getByRole("region", { name: /이어서 물어보기/ })).toBeVisible();
   }
   await shot(page, info, "03-reading");

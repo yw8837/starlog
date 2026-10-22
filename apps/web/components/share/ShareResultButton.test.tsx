@@ -104,6 +104,15 @@ describe("ShareResultButton", () => {
     }
   });
 
+  it("still shows 공유하기 when the result cannot be shared yet, and says why instead of making a link", async () => {
+    const create = vi.fn();
+    render(<ShareResultButton kind="tarot" text="t" create={create} stop={vi.fn()} unavailable="풀이를 다 적으면 공유할 수 있어요" />);
+    await click(screen.getByRole("button", { name: "공유하기" }));
+    expect(sheet().textContent).toContain("풀이를 다 적으면 공유할 수 있어요");
+    expect(within(sheet()).queryByRole("button", { name: "공유 링크 만들기", hidden: true })).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+  });
+
   it("says why when the link cannot be made, and lets the person try again", async () => {
     const create = vi.fn(async () => ({ ok: false as const, message: "지금은 공유 링크를 만들 수 없어요." }));
     render(<ShareResultButton kind="tarot" text="t" create={create} stop={vi.fn()} />);

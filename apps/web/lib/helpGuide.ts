@@ -59,15 +59,15 @@ const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 /** "한 번", "두 번", "세 번", then "4번". */
 export const times = (n: number) => (["한 번", "두 번", "세 번"][n - 1] ?? `${num(n)}번`);
 
-/** Said once on a 오픈 기념 무료 record, and by the follow-up and share routes when they refuse one. */
-export const OPENING_KEEP_ONLY = "오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요. 이어서 물어보기와 공유는 결제한 풀이에서 할 수 있어요.";
+/** Said once on a 오픈 기념 무료 record, and by the follow-up route when it refuses one (it is shared like any other, owner 2026-10-23). */
+export const OPENING_KEEP_ONLY = "오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.";
 
 /**
  * 오픈 기념 무료 as screens describe it (owner 2026-10-14 evening): one tarot full reading per device until
- * its last day, read and kept on that device only. Worded with the date, so it stays true once it ends.
+ * its last day, read and kept on that device only and shareable (owner 2026-10-23), with no follow-ups. Worded with the date, so it stays true once it ends.
  */
 export const openingFreeText = (count: number = SITE.beta.firstFreeTarot) =>
-  `${OPENING_LAST_DAY}까지 기기마다 타로 전체 풀이 ${times(count)}을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).`;
+  `${OPENING_LAST_DAY}까지 기기마다 타로 전체 풀이 ${times(count)}을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).`;
 
 export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   const { followUps, approxChars } = site.reading;

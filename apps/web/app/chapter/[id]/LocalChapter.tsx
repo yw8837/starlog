@@ -203,12 +203,18 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   // 풀이 후기: only a reading kept in an account can be reviewed (spec §2); a visitor not logged in is offered
   // the login there. A reading only on this device keeps its own stars.
   const rating = chapter.serverId ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
-  // 오픈 기념 무료 is read and kept on this device only (owner 2026-10-14 evening): no follow-ups, no share.
+  // 오픈 기념 무료 takes no follow-ups (owner 2026-10-14 evening); it is shared like any other (owner 2026-10-23).
   const keepOnly = chapter.opening === true;
+  // Every result screen shows 공유하기 (owner 2026-10-23); a record not read whole says why it cannot make a link.
   // A premium reading has no share link: it shares an image of its cards or title (PremiumChapterView, P5 task 23).
-  const share: ShareActions | undefined = whole && !keepOnly && !premium
-    ? { create: () => createShareLink(chapter), stop: () => stopShareLink(chapter), current: () => knownShareLink(chapter) }
-    : undefined;
+  const share: ShareActions | undefined = premium
+    ? undefined
+    : {
+        create: () => createShareLink(chapter),
+        stop: () => stopShareLink(chapter),
+        current: () => knownShareLink(chapter),
+        ...(whole ? {} : { unavailable: "이 기록은 일부를 읽지 못해 공유할 수 없어요." }),
+      };
 
   // The browser would not keep it (storage full or blocked): say so rather than look saved.
   const unsaved = !chaptersPersisted() ? (
