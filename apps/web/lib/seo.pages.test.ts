@@ -2,6 +2,8 @@ import { CONSTELLATIONS } from "@starlog/core";
 import type { Metadata } from "next";
 import { createRequire } from "node:module";
 import { describe, expect, it, vi } from "vitest";
+import { metadata as keywordMeta } from "@/app/2027-keyword/page";
+import { generateMetadata as keywordResultMeta } from "@/app/2027-keyword/[ilju]/page";
 import { metadata as aboutMeta } from "@/app/about/page";
 import { metadata as bInviteIndexMeta } from "@/app/b/page";
 import { generateMetadata as bInviteMeta } from "@/app/b/[code]/page";
@@ -41,6 +43,7 @@ import { BIRTH_CARDS } from "./birthCard";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES } from "./guide";
 import { GUIDE_HOST_PAGES, absoluteUrl, isGuidePath } from "./hosts";
+import { ILJU, KEYWORD_PATH } from "./keyword2027";
 import { HOME_TITLE, NOINDEX as NOINDEX_ROBOTS, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
 
 // The root layout loads its fonts through the Next compiler, which is not running here.
@@ -70,6 +73,8 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/saju/new", sajuNewMeta],
   ["/now", nowMeta],
   ["/today", todayMeta],
+  ["/2027-keyword", keywordMeta],
+  ...(await Promise.all(ILJU.map(async (ilju) => [`/2027-keyword/${ilju.slug}`, await keywordResultMeta(params({ ilju: ilju.slug }))] as [string, Metadata]))),
   ["/guide/tarot", guideTarotMeta],
   ["/guide/saju", guideSajuMeta],
   ["/about", aboutMeta],
@@ -135,6 +140,12 @@ describe("indexable pages", () => {
     expect(meta.alternates?.canonical).toBe(address);
     expect(meta.robots).toBeUndefined();
     const og = meta.openGraph as { url?: string; images?: Array<{ url: string; width: number; height: number }>; locale?: string; type?: string };
+    if (path.startsWith(`${KEYWORD_PATH}/`)) {
+      // A 일주's page shows its own keyword card (/api/og/2027-keyword/<slug>) in place of the site's picture.
+      expect(og).toMatchObject({ url: address, locale: "ko_KR", type: "website" });
+      expect(og.images?.[0]).toMatchObject({ url: `/api/og${path}`, width: 1200, height: 630 });
+      return;
+    }
     expect(og.url).toBe(address);
     expect(og.locale).toBe("ko_KR");
     expect(og.type).toBe(isArticle ? "article" : "website");

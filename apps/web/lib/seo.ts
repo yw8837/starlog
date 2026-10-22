@@ -4,6 +4,7 @@ import { SITE } from "./config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath } from "./guide";
 import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
+import { ILJU, KEYWORD_PATH, keywordPath } from "./keyword2027";
 import { OG_ALT } from "./og";
 import { PREMIUM_IDS, premiumPath } from "./premium/products";
 
@@ -144,6 +145,9 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
       (article): SitemapEntry => ({ path: `/guide/${article.slug}`, lastModified: article.updated, changeFrequency: "monthly", priority: 0.7 }),
     ),
     ...Object.values(INFO_PAGES).map((page): SitemapEntry => ({ path: page.path, changeFrequency: "monthly", priority: 0.6 })),
+    // 2027년 나의 키워드: the form and its 60 일주 pages (fixed text, linked from the form).
+    { path: KEYWORD_PATH, changeFrequency: "monthly", priority: 0.7 },
+    ...ILJU.map((ilju): SitemapEntry => ({ path: keywordPath(ilju), changeFrequency: "monthly", priority: 0.5 })),
     { path: "/pricing", changeFrequency: "monthly", priority: 0.5 },
     ...(premium ? PREMIUM_IDS.map((id): SitemapEntry => ({ path: premiumPath(id), changeFrequency: "monthly", priority: 0.5 })) : []),
     // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.

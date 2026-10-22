@@ -14,6 +14,9 @@ const APP_PATHS = new Set(["/now", "/today", "/tarot/new", "/saju/new", "/pricin
 /** Visible characters without spaces, as the SEO plan measured the pages (2026-10-08). */
 const charCount = (el: HTMLElement) => (el.textContent ?? "").replace(/\s/g, "").length;
 
+/** The free tests the guides link to besides the tools (2027년 나의 키워드, from 오늘의 한 장). */
+APP_PATHS.add("/2027-keyword");
+
 describe.each([
   ["지금의 한 장", NowGuide],
   ["오늘의 한 장", TodayGuide],
