@@ -235,10 +235,11 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     ...[
       "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
       "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
-    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-22" }] as const),
+    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-23" }] as const),
     // 2026-10-22 (AdSense "가치가 별로 없는 콘텐츠"): all 22 card articles gain the Starlog deck's own scene, three worked
     // examples, their own 자주 묻는 질문 and links on; the frames two cards shared once their names were taken out are rewritten.
-    ...["the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-22" }] as const),
+    // 2026-10-23: every section opens in the card's own words and 연애·일·돈 starts from the card's own situation.
+    ...["the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-23" }] as const),
     // 2026-10-23 (AdSense "가치가 별로 없는 콘텐츠"): the 29 saju articles rewritten with their own worked examples, the date
     // each entry carries itself (GuideDates.test.tsx keeps the two the same).
     ...["heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune"].map(

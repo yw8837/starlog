@@ -42,11 +42,11 @@ describe("GUIDE_DATES and the articles' own dates", () => {
     if (entry.updated) expect(dates?.updated).toBe(entry.updated);
   });
 
-  it("dates every article, the 22 card articles' last check 2026-10-22, the 29 rewritten saju articles' 2026-10-23", () => {
+  it("dates every article, the 22 card articles' last check 2026-10-23, the 29 rewritten saju articles' 2026-10-23", () => {
     for (const article of GUIDE_ARTICLES) expect(GUIDE_DATES[article.slug], article.slug).toBeDefined();
     const cards = GUIDE_ARTICLES.filter((article) => article.cardId);
     expect(cards).toHaveLength(22);
-    for (const card of cards) expect(lastReviewed(card), card.slug).toBe("2026-10-22");
+    for (const card of cards) expect(lastReviewed(card), card.slug).toBe("2026-10-23");
     const saju = [...SAJU_ARTICLES, ...SAJU_CONCEPT_ARTICLES, ...DAY_MASTER_ARTICLES];
     expect(saju).toHaveLength(29);
     for (const entry of saju) expect(GUIDE_DATES[entry.slug]?.updated, entry.slug).toBe("2026-10-23");
