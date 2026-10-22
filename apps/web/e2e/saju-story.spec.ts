@@ -122,7 +122,7 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   await expect(chip).toHaveAttribute("aria-expanded", "true");
   await expect(names).toContainText("배움이 자라기 쉬운 자리에 붙는 이름이에요.");
   await expect(names).toContainText("일간 丙 기준 → 태어난 날 寅");
-  await expect(chart.getByRole("region", { name: "오행" })).toContainText("곁에 두면 좋은 것: 흰색 포인트 · 비우기·청소");
+  await expect(chart.getByRole("region", { name: "오행과 나의 힘" })).toContainText("곁에 두면 좋은 것: 흰색 포인트 · 비우기·청소");
   await expect(page.getByRole("region", { name: "이어지는 풀이" })).toContainText(/소제목 \d+개 · 약 2,500~3,000자/, { timeout: 30_000 });
   // The sample's written prologue is never shown, even for the sample chart.
   expect(await page.locator("body").innerText()).not.toContain(SAJU.paid.sections[0]!.body.slice(0, 40));
