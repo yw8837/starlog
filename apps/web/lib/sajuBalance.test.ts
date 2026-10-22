@@ -79,10 +79,12 @@ describe("십성 · 비율 (the donut)", () => {
     expect(shares.items.map((g) => g.places)).toEqual(topic.groups.items.map((g) => g.visible.map((v) => v.replace(/^년/, "연"))));
   });
 
-  it.each(EXAMPLES)("%s: the percentages add up to 100 and each is its count's share, rounded", (_, chart) => {
+  it.each(EXAMPLES)("%s: each percentage is its own count's share rounded, the same count the same percentage, the total 99 to 101", (_, chart) => {
     const { items, total } = groupShares(chart);
-    expect(items.reduce((sum, g) => sum + g.percent, 0)).toBe(100);
-    for (const g of items) expect(Math.abs(g.percent - (g.count / total) * 100), g.group).toBeLessThan(1);
+    for (const g of items) expect(g.percent, g.group).toBe(Math.round((g.count / total) * 100));
+    for (const a of items) for (const b of items) if (a.count === b.count) expect(a.percent, `${a.group}·${b.group}`).toBe(b.percent);
+    expect(items.reduce((sum, g) => sum + g.percent, 0)).toBeGreaterThanOrEqual(99);
+    expect(items.reduce((sum, g) => sum + g.percent, 0)).toBeLessThanOrEqual(101);
   });
 
   it.each(EXAMPLES)("%s: a group equals its element's glyph count, less the day master for 비겁 (radar and donut agree)", (_, chart) => {
@@ -102,24 +104,25 @@ describe("십성 · 비율 (the donut)", () => {
     }
   });
 
-  it("도비 (壬): 비겁 0 (숨음) · 식상 2 · 재성 0 (숨음) · 관성 3 · 인성 2 of 7 → 0 · 29 · 0 · 43 · 28", () => {
+  it("도비 (壬): 비겁 0 (숨음) · 식상 2 · 재성 0 (숨음) · 관성 3 · 인성 2 of 7 → 0 · 29 · 0 · 43 · 29 (101: equal counts, equal shares)", () => {
     const { items } = groupShares(EXAMPLES.at(-1)![1]);
     expect(items.map((g) => [g.group, g.word, g.count, g.percent, g.hiddenOnly])).toEqual([
       ["비겁", "물", 0, 0, true],
       ["식상", "나무", 2, 29, false],
       ["재성", "불", 0, 0, true],
       ["관성", "흙", 3, 43, false],
-      ["인성", "쇠", 2, 28, false],
+      ["인성", "쇠", 2, 29, false],
     ]);
     expect(items.find((g) => g.group === "관성")!.places).toEqual(["연간 戊 편관", "연지 辰 편관", "시지 辰 편관"]);
   });
 });
 
 describe("roundShares", () => {
-  it("largest remainder: the leftover points go to the biggest remainders, the earlier one on a tie", () => {
+  it("rounds each share on its own: equal counts never differ, so the total can be 99 or 101", () => {
     expect(roundShares([3, 1, 2, 1, 0])).toEqual([43, 14, 29, 14, 0]);
-    expect(roundShares([1, 1, 1, 0, 0])).toEqual([34, 33, 33, 0, 0]);
+    expect(roundShares([2, 2, 0, 2, 1])).toEqual([29, 29, 0, 29, 14]); // 101
+    expect(roundShares([1, 1, 1, 0, 0])).toEqual([33, 33, 33, 0, 0]); // 99
     expect(roundShares([1, 1, 1, 1, 1])).toEqual([20, 20, 20, 20, 20]);
-    expect(roundShares([2, 1, 1, 1, 0])).toEqual([40, 20, 20, 20, 0]);
+    expect(roundShares([0, 0, 0, 0, 0])).toEqual([0, 0, 0, 0, 0]);
   });
 });

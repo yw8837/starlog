@@ -42,7 +42,7 @@ describe("오행과 나의 힘", () => {
   it("the donut: an image naming each group's share, a table with counts and shares, and the basis in the middle", () => {
     render(<BalanceCard chart={DOBI} />);
     const donut = within(card()).getByRole("img", { name: /십성 비율/ });
-    expect(donut.getAttribute("aria-label")).toBe("십성 비율, 일간을 뺀 7글자: 비겁(물) 0%, 식상(나무) 29%, 재성(불) 0%, 관성(흙) 43%, 인성(쇠) 28%");
+    expect(donut.getAttribute("aria-label")).toBe("십성 비율, 일간을 뺀 7글자: 비겁(물) 0%, 식상(나무) 29%, 재성(불) 0%, 관성(흙) 43%, 인성(쇠) 29%");
     expect(donut.textContent).toContain("7글자");
     const table = within(card()).getByRole("table", { name: "십성 비율" });
     expect(table.closest(".sr-only")).not.toBeNull();
@@ -51,7 +51,7 @@ describe("오행과 나의 힘", () => {
       ["식상", "나무(목)", "2", "29%"],
       ["재성", "불(화)", "0", "0%"],
       ["관성", "흙(토)", "3", "43%"],
-      ["인성", "쇠(금)", "2", "28%"],
+      ["인성", "쇠(금)", "2", "29%"],
     ]);
     // one arc per group that has a glyph
     expect(donut.querySelectorAll("[data-arc]")).toHaveLength(3);

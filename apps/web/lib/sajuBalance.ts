@@ -63,17 +63,12 @@ export function elementAxes(chart: Pick<SajuChart, "elements" | "dayMaster">): E
 }
 
 /**
- * Whole percentages that add up to 100 (largest remainder): each count's share rounded down, then the points left over
- * go to the largest remainders, the earlier one on a tie.
+ * Whole percentages, each count's share rounded on its own (coordinator 2026-10-23): the same count always shows the same
+ * percentage, so the total may be 99 or 101 (2/7 three times: 29 · 29 · 29 · 14). The donut's middle says "N글자", not 100%.
  */
 export function roundShares(counts: readonly number[]): number[] {
   const total = counts.reduce((sum, n) => sum + n, 0);
-  if (total === 0) return counts.map(() => 0);
-  const exact = counts.map((n) => (n * 100) / total);
-  const out = exact.map(Math.floor);
-  const order = exact.map((x, i) => ({ i, rest: x - Math.floor(x) })).sort((a, b) => b.rest - a.rest || a.i - b.i);
-  for (let k = 0, left = 100 - out.reduce((sum, n) => sum + n, 0); k < left; k++) out[order[k]!.i]!++;
-  return out;
+  return counts.map((n) => (total === 0 ? 0 : Math.round((n * 100) / total)));
 }
 
 export interface GroupShare {
