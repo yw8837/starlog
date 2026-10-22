@@ -75,6 +75,12 @@ export function GuideByline({ article }: { article: Pick<GuideArticle, "publishe
   );
 }
 
+/** How an article is made, per category: the editorial page's own facts (app/guide/about), nothing it does not say. */
+const MADE_HOW: Record<GuideArticle["category"], string> = {
+  tarot: "AI 도구로 초안을 쓰고 1909년 원판 그림과 웨이트 해설서에 대조해 다듬었어요.",
+  saju: "AI 도구로 초안을 쓰고 만세력 계산 규칙에 대조해 다듬었어요.",
+};
+
 /**
  * 이 글에 대해, after the body (the ad never sits inside it): who writes and checks the article, its two dates, the
  * sources its category rests on (guideReferences, never typed per article), and how to report an error. The
@@ -93,6 +99,10 @@ export function GuideTrustBox({ article }: { article: GuideArticle }) {
         <div className={s.trustRow}>
           <dt>글·검토</dt>
           <dd>{SITE.business.name}</dd>
+        </div>
+        <div className={s.trustRow}>
+          <dt>만든 방법</dt>
+          <dd>{MADE_HOW[article.category]}</dd>
         </div>
         {published ? (
           <div className={s.trustRow}>
