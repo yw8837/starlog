@@ -225,12 +225,13 @@ describe("the converted articles' tables agree with the engine, the reading tabl
     const table = tableIn("how-to-read-tarot", "마이너 아르카나의 네 벌");
     expect(table.head).toEqual(["벌", "원소", "주로 읽는 영역"]);
     const ELEMENT_KO = { fire: "불", water: "물", air: "공기", earth: "흙" } as const;
-    const suits = findArticle("minor-arcana-suits")?.sections.map((section) => section.heading) ?? [];
+    // The minor arcana overview compares the four suits in one table, with the same element and area.
+    const compare = tableIn("minor-arcana-suits", "네 벌 비교");
+    expect(compare.head.slice(2, 4)).toEqual(["원소", "다루는 영역"]);
     for (const [i, suit] of (["wands", "cups", "swords", "pentacles"] as const).entries()) {
       const [name = "", element = "", area = ""] = table.rows[i] ?? [];
       expect(element, name).toBe(ELEMENT_KO[getCard(`${suit}-01`).element as keyof typeof ELEMENT_KO]);
-      // "완드는 불, 의욕과 움직임": the heading of that suit's part in the suits article.
-      expect(suits.some((heading) => heading.includes(`${element}, ${area}`)), name).toBe(true);
+      expect(compare.rows[i]?.slice(2, 4), name).toEqual([element, area]);
     }
   });
 });
