@@ -6,6 +6,7 @@
 
 import { getCard } from "@starlog/core";
 import { withGuideLibrary } from "./guide-articles";
+import { guidePlainText } from "./guideLinks";
 import { lastReviewed, type GuideArticle, type GuideBlock, type GuideCategory, type GuideSection } from "./guideMeta";
 
 // Server side only: the article data below. Client components import ./guideMeta (guide.client.test.ts).
@@ -656,7 +657,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
             kind: "steps",
             items: [
               { title: "별이 나왔는데 지금 너무 힘들다면 어떻게 읽어야 하나요?", text: "힘든 마음을 덮고 억지로 희망을 품으라는 카드로 읽지는 않아요. 연못이 한 번에 차지 않듯 조금씩 채워지는 회복을 그린 그림이라, 오늘 할 수 있는 가장 작은 돌봄 하나면 충분해요. 힘든 마음이 오래 이어진다면 전문가와 이야기해 보는 것도 회복의 한 걸음이에요." },
-              { title: "별 카드를 탄생 카드로 가진 사람도 있나요?", text: "있어요. 생년월일 여덟 자리 숫자의 합이 17이면 별이 탄생 카드예요. 1+7로 8번 힘이 짝 카드가 되고, '나를 닮은 타로 카드'에서 두 장을 함께 볼 수 있어요." },
+              { title: "별 카드를 탄생 카드로 가진 사람도 있나요?", text: "있어요. 생년월일 여덟 자리 숫자의 합이 17이면 별이 탄생 카드예요. 1+7로 8번 힘이 짝 카드가 되고, '[나를 닮은 타로 카드](https://starlog.yeolmaeapps.kr/birth-card)'에서 두 장을 함께 볼 수 있어요." },
             ],
           },
         ],
@@ -720,5 +721,8 @@ function blockLines(block: GuideBlock): string[] {
   }
 }
 
-/** A section as plain text: its body, then its blocks' lines (llms-full, FAQ answers, length and style checks). */
-export const guideSectionText = (section: GuideSection): string => [section.body, ...(section.blocks ?? []).flatMap(blockLines)].join("\n");
+/**
+ * A section as plain text: its body, then its blocks' lines (llms-full, FAQ answers, length and style checks), each
+ * [텍스트](주소) link read as its words (guidePlainText).
+ */
+export const guideSectionText = (section: GuideSection): string => guidePlainText([section.body, ...(section.blocks ?? []).flatMap(blockLines)].join("\n"));
