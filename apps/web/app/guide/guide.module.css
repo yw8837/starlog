@@ -572,9 +572,9 @@
   line-height: 1.7;
 }
 
-/* A card without a thumbnail: the text and nothing else. */
+/* A card without a thumbnail: the text, then the arrow where it has one. */
 .itemPlain {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   padding-left: 16px;
 }
 
@@ -694,4 +694,10 @@
   .starterList {
     grid-template-columns: 1fr;
   }
+}
+
+/* A small heading inside a section on the cream paper. */
+.paperSub {
+  margin-top: 18px;
+  font-size: 16px;
 }

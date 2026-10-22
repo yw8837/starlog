@@ -85,8 +85,10 @@ describe("the previous and next article of the tab", () => {
     }
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: links them and its tab's list, after the related reads; never a dead end", async (slug, article) => {
-    await renderSlug(slug);
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: links them and its tab's list, after the related reads; never a dead end, nothing unfinished", async (slug, article) => {
+    const { container } = await renderSlug(slug);
+    // No under-construction wording on a page the root domain serves (AdSense: no ads on unfinished screens).
+    expect(container.textContent).not.toMatch(/준비 중|개발 중|공사 중/);
     const tab = GUIDE_CATEGORY_LABEL[article.category];
     const nav = screen.getByRole("navigation", { name: `${tab} 가이드 이어 읽기` });
     const links = within(nav).getAllByRole("link");

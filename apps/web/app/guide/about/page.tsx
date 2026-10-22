@@ -87,7 +87,8 @@ export default function GuideAboutPage() {
                 누가 만드나요
               </h2>
               <p className={s.prose}>{`타로·사주 앱 ${withParticle(SITE.nameKo, "을/를")} 만드는 ${withParticle(SITE.business.name, "이/가")} 가이드도 쓰고 운영해요.`}</p>
-              <GuideBlocks id="who" blocks={[{ kind: "table", caption: "운영자 정보", head: ["항목", "내용"], rows: businessFields(SITE.business).map(([label, value]) => [label, value]) }]} />
+              {/* A list, not a table: the address and the email wrap on a phone instead of scrolling sideways. */}
+              <GuideBlocks id="who" blocks={[{ kind: "list", items: businessFields(SITE.business).map(([label, value]) => `${label}: ${value}`) }]} />
             </section>
 
             <section className={s.section} aria-labelledby="how-title">
@@ -210,19 +211,12 @@ export default function GuideAboutPage() {
                 참고하는 자료
               </h2>
               <p className={s.prose}>타로 글과 사주 글은 각각 아래 자료에 기대요. 글 끝의 이 글에 대해 상자에도 같은 목록이 있어요.</p>
+              {/* Lists, not tables: a title and its use wrap on a phone instead of squeezing into two columns. */}
               {GUIDE_CATEGORIES.map((category) => (
-                <GuideBlocks
-                  key={category}
-                  id={`sources-${category}`}
-                  blocks={[
-                    {
-                      kind: "table",
-                      caption: `${GUIDE_CATEGORY_LABEL[category]} 글이 기대는 자료`,
-                      head: ["자료", "쓰는 곳"],
-                      rows: guideReferences(category).map((row) => [row.title, row.note]),
-                    },
-                  ]}
-                />
+                <div key={category}>
+                  <h3 className={s.paperSub}>{`${GUIDE_CATEGORY_LABEL[category]} 글이 기대는 자료`}</h3>
+                  <GuideBlocks id={`sources-${category}`} blocks={[{ kind: "list", items: guideReferences(category).map((row) => `${row.title}: ${row.note}`) }]} />
+                </div>
               ))}
               <p className={s.prose}>
                 출처마다 무엇을 어떻게 대조했는지는{" "}
