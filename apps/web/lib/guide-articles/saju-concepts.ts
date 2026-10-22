@@ -7,6 +7,9 @@ import type { GuideArticle } from "../guide";
  * computeChart; the 12운성 table and the relation lists follow lib/ai/prompts/saju.ts; the 인연 점수
  * follows packages/core/src/bonds/score.ts and the 별자리 인연 screens.
  */
+/** The 2026-10-23 rewrite (AdSense): `updated` set here wins over GUIDE_DATES (index.ts withAnswers). */
+const UPDATED = "2026-10-23";
+
 export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
   {
     slug: "four-pillars",
@@ -21,15 +24,15 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "네 기둥은 어떻게 세우나요",
-        body: "사주는 태어난 해·달·날·시를 기둥 네 개로 세워요.",
+        body: "사주의 네 기둥은 태어난 해·달·날·시를 각각 간지 두 글자로 세운 연주·월주·일주·시주예요.",
         blocks: [
           { kind: "p", text: "기둥을 한자로 주(柱)라고 해서 각각 연주, 월주, 일주, 시주라고 부르고, 연주는 년주라고 쓰기도 하죠. 기둥마다 위에는 천간, 아래에는 지지가 한 글자씩 놓여 모두 여덟 글자가 돼요." },
           { kind: "p", text: "기둥을 세우는 기준은 조금씩 달라요. 연주는 입춘, 월주는 절기가 들어오는 순간에 바뀌고, 일주는 그날의 일진을, 시주는 태어난 곳에 맞춰 보정한 시각을 따르죠." },
           { kind: "p", text: "스타로그 명식 표는 옛 방식대로 오른쪽에 연주를 두고 왼쪽으로 월주, 일주, 시주 순서로 놓아요. 여덟 글자를 찾는 자세한 순서는 만세력 글에 정리해 두었으니, 이 글에서는 찾은 기둥을 어떻게 읽는지를 다뤄요." },
-          { kind: "p", text: "예를 들어 1990년 5월 15일 낮 12시에 서울에서 태어났다면 경오년, 신사월, 경진일, 임오시라서 명식은 경오·신사·경진·임오 네 기둥이 돼요." },
+          { kind: "p", text: "예를 들어 1990년 5월 15일 낮 12시에 서울에서 태어난 가상의 인물이라면 경오년, 신사월, 경진일, 임오시라서 명식은 경오·신사·경진·임오 네 기둥이 돼요. 일주 경진에서 일간은 경이고 일지 진은 편인이라, 나와 가장 가까운 자리에 나를 기르는 흙이 놓인 명식이죠." },
           {
             kind: "table",
-            caption: "1990년 5월 15일 낮 12시, 서울에서 태어났다면 (오른쪽이 연주)",
+            caption: "예시 명식 · 1990년 5월 15일 낮 12시 서울 출생 (오른쪽이 연주)",
             head: ["구분", "시주", "일주", "월주", "연주"],
             rows: [
               ["천간", "임", "경", "신", "경"],
@@ -111,6 +114,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
     ],
     related: ["manseryeok", "day-master", "ten-gods", "saju-without-birth-time", "ipchun-jeolgi"],
+    updated: UPDATED,
   },
   {
     slug: "ipchun-jeolgi",
@@ -125,7 +129,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "1월 1일도 설날도 아닌 이유",
-        body: "사주에서 한 해는 양력 1월 1일에도, 음력 1월 1일인 설날에도 바뀌지 않아요. 사주의 해와 달은 해가 하늘에서 움직이는 길을 따라 정하기 때문이에요.",
+        body: "사주의 해와 달은 해가 하늘을 도는 길을 스물넷으로 나눈 절기를 따르기 때문에, 봄이 시작되는 입춘에 해가 바뀌어요. 양력 1월 1일에도, 음력 1월 1일인 설날에도 바뀌지 않아요.",
         blocks: [
           {
             kind: "table",
@@ -189,7 +193,13 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
               ["2027년", "2월 4일 오전 10시 46분"],
             ],
           },
-          { kind: "p", text: "같은 2월 4일생이라도 몇 시에 태어났는지에 따라 연주가 달라질 수 있다는 뜻이죠. 2024년 2월 4일 오후 5시에 서울에서 태어났다면 아직 계묘년 을축월이고, 오후 6시에 태어났다면 갑진년 병인월이 돼요." },
+          { kind: "p", text: "같은 2월 4일생이라도 몇 시에 태어났는지에 따라 연주가 달라질 수 있다는 뜻이죠." },
+          {
+            kind: "callout",
+            tone: "note",
+            title: "예시 · 2024년 2월 4일 서울에서 태어났다면",
+            text: "그해 입춘은 오후 5시 27분에 들었어요. 그래서 오후 5시에 태어났다면 아직 계묘년 을축월이고, 오후 6시에 태어났다면 갑진년 병인월이 돼요.",
+          },
           { kind: "p", text: "달이 바뀌는 다른 절기에서도 같은 일이 생겨서, 절기가 드는 날에 태어났다면 시각까지 확인해야 월주가 정해져요." },
         ],
       },
@@ -204,6 +214,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
     ],
     related: ["earthly-branches", "manseryeok", "heavenly-stems", "new-year-fortune", "daewoon"],
+    updated: UPDATED,
   },
   {
     slug: "jasi-birth",
@@ -218,9 +229,9 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "하루의 경계에 걸친 자시",
-        body: "사주는 하루를 두 시간씩 열두 칸으로 나눠 지지 이름을 붙이고, 그 첫 칸이 자시예요. 자시는 밤 11시부터 새벽 1시까지라서 한가운데에 자정이 끼어 있어요.",
+        body: "스타로그는 보정한 시각으로 밤 11시부터 자정 사이에 태어났다면 일주는 그날로 두고 시주만 다음 날의 자시로 봐요. 자정부터 새벽 1시 사이라면 날이 이미 바뀌었으니 일주도 다음 날이에요.",
         blocks: [
-          { kind: "p", text: "다른 시진은 하루 안에 얌전히 들어가는데 자시만 어제와 오늘에 걸쳐 있는 셈이죠. 그래서 이 시간에 태어난 사람은 일주를 어느 날로 볼지, 시주의 천간을 어느 날 기준으로 정할지가 관법에 따라 갈려요." },
+          { kind: "p", text: "사주는 하루를 두 시간씩 열두 칸으로 나눠 지지 이름을 붙이고, 그 첫 칸인 자시는 밤 11시부터 새벽 1시까지라 한가운데에 자정이 끼어 있어요. 다른 시진은 하루 안에 얌전히 들어가는데 자시만 어제와 오늘에 걸쳐 있는 셈이라, 일주를 어느 날로 볼지와 시주의 천간을 어느 날 기준으로 정할지가 관법에 따라 갈려요." },
           { kind: "p", text: "여기서 말하는 시각은 시계에 적힌 시각이 아니라 태어난 곳의 해에 맞춰 보정한 시각이라는 점도 함께 기억해 두세요." },
         ],
       },
@@ -271,8 +282,10 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
             ],
           },
           {
-            kind: "p",
-            text: "2026년 3월 10일 계미일을 예로 들면, 서울에서 밤 11시 40분에 태어났을 때 보정한 시각은 11시 7분쯤이라 일주는 계미, 시주는 다음 날인 갑신일의 자시인 갑자가 돼요. 시주를 그날 기준으로 정하는 관법이라면 같은 시각의 시주가 임자로 나오니, 이 시간대만큼은 다른 만세력과 결과가 다를 수 있어요.",
+            kind: "callout",
+            tone: "note",
+            title: "예시 · 2026년 3월 10일 밤 11시 40분 서울",
+            text: "계미일인 이날 밤 11시 40분에 태어났다면 보정한 시각은 11시 7분쯤이라 일주는 계미, 시주는 다음 날인 갑신일의 자시인 갑자가 돼요. 시주를 그날 기준으로 정하는 관법이라면 같은 시각의 시주가 임자로 나오니, 이 시간대만큼은 다른 만세력과 결과가 다를 수 있어요.",
           },
         ],
       },
@@ -306,6 +319,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
     ],
     related: ["saju-without-birth-time", "manseryeok", "day-master", "earthly-branches", "saju-birth-info"],
+    updated: UPDATED,
   },
   {
     slug: "saju-birth-info",
@@ -320,7 +334,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "생년월일과 양력·음력",
-        body: "사주 계산은 양력 날짜를 기준으로 해요.",
+        body: "생년월일은 네 기둥의 바탕, 태어난 시각은 시주, 태어난 곳은 시각 보정, 성별은 대운의 방향에 쓰여요. 그 가운데 날짜는 양력을 기준으로 계산해요.",
         blocks: [
           { kind: "p", text: "음력 생일을 넣으면 먼저 양력으로 바꾼 뒤 명식을 세우죠. 음력이라면 그달이 윤달이었는지도 함께 골라야 해요. 윤달이 든 해에는 같은 음력 날짜가 평달과 윤달에 한 번씩 두 번 있어서, 어느 쪽인지에 따라 양력 날짜가 한 달 가까이 달라지거든요." },
           { kind: "p", text: "달력에 없는 음력 날짜를 넣으면 스타로그는 계산하지 않고 평달·윤달과 날짜를 다시 확인해 달라고 알려 드려요." },
@@ -353,6 +367,12 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
             ],
           },
           { kind: "p", text: "광주와 제주는 서울보다 조금 더 서쪽이에요. 동쪽으로 갈수록 빼는 시간이 줄어드는 셈이죠. 스타로그는 시·군 단위로 태어난 곳을 고르고, 그 시청이나 군청의 경도를 써요. 고르지 않으면 서울을 기준으로 계산하고요." },
+          {
+            kind: "callout",
+            tone: "note",
+            title: "예시 · 같은 시각, 서울과 부산",
+            text: "1990년 5월 15일 오전 7시 25분에 태어났다면 서울은 보정한 시각이 6시 52분쯤이라 기묘시, 부산은 7시 1분쯤이라 경진시가 돼요. 시계는 같아도 태어난 곳에 따라 시주가 갈리는 거죠.",
+          },
           { kind: "p", text: "연주와 월주는 실제로 태어난 순간을 절입 시각과 견줘서 정하기 때문에 태어난 곳에 따라 달라지지 않아요." },
         ],
       },
@@ -383,8 +403,8 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
         ],
       },
       {
-        heading: "모르는 정보가 있을 때",
-        body: "정보가 하나 빠졌다고 사주를 못 보는 건 아니에요. 시각을 모르면 세 기둥으로, 태어난 곳을 모르면 서울 기준으로 읽고, 그만큼 확실하지 않은 부분은 명식 화면의 적용한 기준에 적어 둬요.",
+        heading: "모르는 정보가 있으면 사주를 못 보나요?",
+        body: "볼 수 있어요. 시각을 모르면 세 기둥으로, 태어난 곳을 모르면 서울 기준으로 읽고, 그만큼 확실하지 않은 부분은 명식 화면의 적용한 기준에 적어 둬요.",
         blocks: [
           { kind: "p", text: "다만 입춘이나 절기가 드는 날, 자정 무렵에 태어났다면 시각 하나로 연주나 월주, 일주가 갈릴 수 있으니 이때만큼은 시각을 찾아보는 게 좋아요." },
           { kind: "p", text: "나중에 정확한 정보를 알게 되면 내 정보에서 사주 정보를 고치고 명식을 다시 세울 수 있어요. 같은 정보를 넣으면 명식도 언제나 같게 나와요." },
@@ -392,6 +412,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
     ],
     related: ["saju-without-birth-time", "manseryeok", "daewoon", "jasi-birth", "ipchun-jeolgi"],
+    updated: UPDATED,
   },
   {
     slug: "branch-relations",
@@ -406,7 +427,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "열두 글자가 맺는 관계",
-        body: "지지 열두 글자를 시계처럼 동그랗게 놓아 보면 글자마다 짝이 보이기 시작해요.",
+        body: "지지끼리는 끌어당기는 합(육합·삼합·방합), 정반대에 놓여 맞서는 충, 서로 다치게 하거나 깨뜨리거나 방해한다고 보는 형·파·해라는 관계를 맺어요. 열두 글자를 시계처럼 동그랗게 놓아 보면 이 짝들이 눈에 들어와요.",
         blocks: [
           { kind: "p", text: "정반대에 놓인 글자, 나란히 짝을 이루는 글자, 네 칸씩 떨어져 세 글자가 삼각형을 이루는 글자가 있죠. 명리에서는 이런 자리 관계에 합, 충, 형, 파, 해 같은 이름을 붙여 명식 안의 글자들이 서로 어떤 영향을 주고받는지 읽어요." },
           { kind: "p", text: "이 관계는 내 명식 안에서만 보는 게 아니라 대운이나 세운에서 들어오는 글자, 다른 사람의 명식과도 견줘 봐요. 스타로그 사주 풀이는 이런 관계가 있다는 사실을 짚되, 그 관계가 얼마나 센지나 어떤 사건이 생기는지는 판정하지 않아요." },
@@ -441,7 +462,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "형·파·해는 무엇인가요",
-        body: "형(刑)은 서로 다치게 한다는 뜻을 담은 관계예요. 파(破)는 깨뜨린다는 뜻, 해(害)는 서로 방해한다는 뜻이에요.",
+        body: "형(刑)은 서로 다치게 하고, 파(破)는 깨뜨리고, 해(害)는 서로 방해한다는 뜻을 담은 지지의 관계예요.",
         blocks: [
           {
             kind: "table",
@@ -479,6 +500,29 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
         ],
       },
       {
+        heading: "예시 명식에서 지지 관계 찾아보기",
+        body: "경금 일간 글의 가상 인물, 1994년 3월 25일 오후 2시 10분 서울생의 명식 갑술·정묘·경술·계미로 지지 네 글자 사이의 관계를 모두 찾아볼게요.",
+        blocks: [
+          {
+            kind: "table",
+            caption: "예시 명식 · 1994년 3월 25일 오후 2시 10분 서울 출생 (가상의 인물), 지지끼리의 관계",
+            head: ["두 지지", "관계"],
+            rows: [
+              ["연지 술과 월지 묘", "육합"],
+              ["월지 묘와 일지 술", "육합"],
+              ["월지 묘와 시지 미", "반합"],
+              ["연지 술과 시지 미", "형, 파"],
+              ["일지 술과 시지 미", "형, 파"],
+            ],
+          },
+          {
+            kind: "p",
+            text: "묘는 연지와 일지의 술 둘과 동시에 육합을 이루고, 시지 미와는 해·묘·미 삼합의 두 글자라 반합이 돼요. 술과 미는 한 쌍이 형과 파를 함께 맺는데, 축·술·미 삼형 가운데 두 글자라 유파에 따라 형으로 보는 경우예요. 연지와 일지는 같은 술이지만 술은 자형에 드는 글자가 아니라 이름이 붙지 않아요.",
+          },
+          { kind: "p", text: "한 명식 안에서도 끌림과 긴장이 이렇게 얽혀 있어서, 관계 하나만 떼어 좋고 나쁨을 말하지 않아요." },
+        ],
+      },
+      {
         heading: "명식에서 읽을 때",
         body: "관계를 읽을 때는 어느 기둥끼리 맺어졌는지를 먼저 봐요.",
         blocks: [
@@ -490,7 +534,8 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
         ],
       },
     ],
-    related: ["earthly-branches", "heavenly-stems", "saju-compatibility", "five-elements", "saju-glossary"],
+    related: ["earthly-branches", "saju-compatibility", "day-master-gyeonggeum", "new-year-fortune", "saju-glossary"],
+    updated: UPDATED,
   },
   {
     slug: "twelve-stages",
@@ -554,7 +599,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "장생의 자리는 어떻게 정하나요",
-        body: "12운성은 일간마다 장생이 되는 지지가 정해져 있어요.",
+        body: "천간마다 장생이 되는 지지가 정해져 있고, 양의 천간은 거기서 순서대로, 음의 천간은 거꾸로 세어 가요.",
         blocks: [
           {
             kind: "table",
@@ -598,8 +643,8 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
         ],
       },
       {
-        heading: "명식 한 장에서 12운성 찾아보기",
-        body: "1995년 8월 20일 낮 12시에 서울에서 태어난 사람의 명식 을해·갑신·계미·무오로 순서를 따라가 볼게요.",
+        heading: "예시 명식에서 12운성 찾아보기",
+        body: "1995년 8월 20일 낮 12시에 서울에서 태어난 가상의 인물의 명식 을해·갑신·계미·무오로 순서를 따라가 볼게요.",
         blocks: [
           {
             kind: "steps",
@@ -631,7 +676,8 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
         ],
       },
     ],
-    related: ["day-master", "earthly-branches", "ten-gods", "yongsin", "saju-glossary"],
+    related: ["day-master", "earthly-branches", "ten-gods", "yongsin", "day-master-singeum"],
+    updated: UPDATED,
   },
   {
     slug: "yongsin",
@@ -646,7 +692,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "균형은 다섯 개를 똑같이 맞추는 일이 아니에요",
-        body: "오행의 균형이라고 하면 목·화·토·금·수가 고르게 하나 이상씩 있는 명식을 떠올리기 쉬워요. 그런데 명리에서 말하는 균형은 개수를 똑같이 맞추는 일과 거리가 있어요.",
+        body: "용신은 명식의 오행 균형을 잡는 데 가장 쓸모 있는 기운을 말하는데, 여기서 균형은 다섯 오행의 개수를 똑같이 맞추는 일이 아니에요. 목·화·토·금·수가 고르게 하나 이상씩 있는 명식을 떠올리기 쉽지만, 명리에서 말하는 균형은 그것과 거리가 있어요.",
         blocks: [
           {
             kind: "p",
@@ -691,11 +737,11 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "예시로 보는 오행의 쏠림",
-        body: "1990년 5월 15일 낮 12시에 서울에서 태어난 사람의 명식은 경오·신사·경진·임오예요.",
+        body: "1990년 5월 15일 낮 12시에 서울에서 태어난 가상의 인물의 명식은 경오·신사·경진·임오예요.",
         blocks: [
           {
             kind: "table",
-            caption: "겉에 보이는 여덟 글자로 센 오행",
+            caption: "예시 명식 · 1990년 5월 15일 낮 12시, 겉에 보이는 여덟 글자로 센 오행",
             head: ["오행", "개수"],
             rows: [
               ["금", "3"],
@@ -731,6 +777,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
     ],
     related: ["five-elements", "day-master", "ten-gods", "twelve-stages", "saju-glossary"],
+    updated: UPDATED,
   },
   {
     slug: "wolun-iljin",
@@ -745,7 +792,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "운에도 층이 있어요",
-        body: "사주에서 시간의 흐름은 여러 층으로 겹쳐 읽어요.",
+        body: "월운은 절기마다 바뀌는 그달의 간지, 일진은 날마다 바뀌는 그날의 간지예요. 둘 다 대운과 세운이 만든 큰 흐름 위에 얹어 내 명식과 견줘 봐요.",
         blocks: [
           {
             kind: "table",
@@ -805,6 +852,12 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
               { title: "큰 흐름 위에 얹기", text: "이렇게 읽은 내용은 대운과 세운이 만든 큰 흐름 위에 얹어서 봐야 해요. 한 달의 기운이 10년의 계절을 뒤집지는 않으니까요." },
             ],
           },
+          {
+            kind: "callout",
+            tone: "note",
+            title: "예시 · 2026년 11월, 계수 일간에게",
+            text: "1995년 8월 20일 낮 12시 서울생 가상의 인물(명식 을해·갑신·계미·무오, 일간 계수)이라면 11월 7일 입동부터 기해월이 시작돼요. 기는 편관, 해의 본기인 임은 겁재라 맡은 책임과 곁의 사람을 함께 챙기는 일에 마음이 쓰이기 쉬운 달로 보기도 해요. 지지 해는 명식의 연지 해와 같은 글자이고 월지 신과는 해(害)를 이뤄요.",
+          },
           { kind: "p", text: "월운은 이번 달에 힘을 실어 볼 일을 고르는 정도로, 일진은 하루를 시작하며 마음을 가다듬는 정도로 가볍게 쓰는 편이 좋아요." },
         ],
       },
@@ -839,7 +892,8 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
         ],
       },
     ],
-    related: ["daewoon", "new-year-fortune", "manseryeok", "ten-gods"],
+    related: ["daewoon", "new-year-fortune", "manseryeok", "ten-gods", "branch-relations"],
+    updated: UPDATED,
   },
   {
     slug: "bond-score",
@@ -854,10 +908,10 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "별자리 인연과 인연 점수",
-        body: "별자리 인연은 내가 고른 별자리를 친구들이 별이 되어 하나씩 채워 가는 스타로그의 기능이에요. 초대코드나 링크를 받은 친구는 로그인하지 않아도 닉네임과 생년월일을 넣고 카드 한 장을 골라 별이 될 수 있어요.",
+        body: "인연 점수는 두 사람의 생년월일로 세운 세 기둥 명식을 견줘, 일간끼리의 합·상생, 띠와 일지의 합·충, 서로 채워 주는 오행을 보고 55점에서 99점 사이로 매겨요. 별자리 인연은 내가 고른 별자리를 친구들이 별이 되어 하나씩 채워 가는 스타로그의 기능이고, 들어온 친구마다 이 점수가 붙어요.",
         blocks: [
-          { kind: "p", text: "들어온 친구마다 사주로 본 인연 점수가 붙고, 별자리를 다 채우면 도감에 들어가며 랭킹에도 올라요." },
-          { kind: "p", text: "인연 점수는 55점에서 99점 사이로 나와요. 점수 옆에는 왜 이 점수가 나왔는지를 알려 주는 근거 문장이 함께 붙죠. 이 글에서는 그 점수가 사주의 무엇을 보고 매겨지는지, 숫자를 어떻게 받아들이면 좋을지를 정리해요." },
+          { kind: "p", text: "초대코드나 링크를 받은 친구는 로그인하지 않아도 닉네임과 생년월일을 넣고 카드 한 장을 골라 별이 될 수 있어요. 별자리를 다 채우면 도감에 들어가며 랭킹에도 올라요." },
+          { kind: "p", text: "점수 옆에는 왜 이 점수가 나왔는지를 알려 주는 근거 문장이 함께 붙죠. 이 글에서는 그 점수가 사주의 무엇을 보고 매겨지는지, 숫자를 어떻게 받아들이면 좋을지를 정리해요." },
         ],
       },
       {
@@ -894,6 +948,22 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
         ],
       },
       {
+        heading: "예시: 두 사람의 점수를 따라 계산해 보기",
+        body: "궁합 글에 나온 가상의 두 사람, 1999년 10월 3일생 서진과 1993년 6월 11일생 하윤의 점수를 계산해 볼게요. 인연 점수는 생년월일만 쓰니 태어난 시간은 빼고 세 기둥으로 봐요.",
+        blocks: [
+          {
+            kind: "steps",
+            items: [
+              { title: "기본 점수 62", text: "모든 계산은 62점에서 시작해요." },
+              { title: "일간끼리 +12", text: "서진은 무토, 하윤은 계수라 천간합의 짝이에요. 근거에는 '두 분의 일간이 서로 합을 이루는 사이예요'라는 문장이 붙어요." },
+              { title: "띠끼리 -5", text: "서진은 묘(토끼띠), 하윤은 유(닭띠)라 정반대에 놓인 충이에요. 근거에는 '띠가 마주 보는 사이라, 부딪히면서 서로를 깨워요'가 적히죠." },
+              { title: "일지와 오행 0", text: "일지 자와 해 사이에는 육합도 삼합도 충도 없고, 서로에게 가장 적은 오행을 둘 이상 가진 쪽도 없어서 더하거나 빼는 점수가 없어요." },
+            ],
+          },
+          { kind: "p", text: "62점에 12점을 더하고 5점을 빼서 69점이 나와요. 하윤 쪽에서 계산해도 같은 69점이고, 언제 다시 계산해도 바뀌지 않죠." },
+        ],
+      },
+      {
         heading: "점수 근거를 읽는 법",
         body: "점수 근거는 쉬운 문장으로 보여 드려요. 두 분의 일간이 서로 살려 주는 사이라거나 띠가 짝을 이루는 사이라는 식이에요.",
         blocks: [
@@ -924,6 +994,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
       },
     ],
     related: ["saju-compatibility", "earthly-branches", "branch-relations", "day-master", "five-elements"],
+    updated: UPDATED,
   },
   {
     slug: "saju-glossary",
@@ -938,7 +1009,7 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
     sections: [
       {
         heading: "명식을 이루는 말",
-        body: "사주팔자는 태어난 해·달·날·시의 네 기둥, 여덟 글자를 말해요.",
+        body: "사주 풀이에 자주 나오는 말은 명식을 이루는 말, 오행과 음양, 십신, 글자끼리의 관계, 운의 흐름, 달력과 시각, 유파마다 갈리는 라벨까지, 일곱 묶음으로 나눠 보면 쉽게 정리돼요. 첫 묶음의 사주팔자는 태어난 해·달·날·시의 네 기둥, 여덟 글자를 말해요.",
         blocks: [
           {
             kind: "table",
@@ -953,6 +1024,12 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
               ["월지", "태어난 달의 지지, 태어난 계절을 알려 줌"],
               ["연지", "태어난 해의 지지, 흔히 말하는 띠"],
             ],
+          },
+          {
+            kind: "callout",
+            tone: "note",
+            title: "예시 · 한 명식으로 짚어 보기",
+            text: "1995년 8월 20일 낮 12시 서울생 가상의 인물의 명식 을해·갑신·계미·무오에서 일간은 계, 일지는 미, 월지는 신, 연지는 해예요. 연지가 해라서 띠는 돼지띠이고, 월지 신은 가을이 시작되는 달이에요.",
           },
         ],
       },
@@ -1063,11 +1140,17 @@ export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
               ["신살", "도화나 역마처럼 특정 글자 조합에 붙인 별명 같은 이름"],
             ],
           },
-          { kind: "callout", tone: "note", title: "스타로그는 붙이지 않아요", text: "그래서 스타로그는 이런 라벨을 풀이에 붙이지 않고, 오행 개수와 태어난 계절처럼 명식에서 바로 확인할 수 있는 사실부터 이야기해요." },
+          {
+            kind: "callout",
+            tone: "note",
+            title: "스타로그가 쓰는 것과 쓰지 않는 것",
+            text: "스타로그는 신강·신약, 용신, 격국을 풀이에 붙이지 않고 오행 개수와 태어난 계절처럼 명식에서 바로 확인할 수 있는 사실부터 이야기해요. 신살 가운데서는 천을·문창·학당귀인과 도화·역마·화개 여섯 이름만, 어떤 글자를 기준으로 찾았는지와 함께 보여 드려요.",
+          },
           { kind: "p", text: "낯선 말이 나와도 이 글에서 묶음을 찾아보면 대부분 어디쯤 놓인 개념인지 감이 잡혀요." },
         ],
       },
     ],
     related: ["heavenly-stems", "earthly-branches", "ten-gods", "daewoon", "manseryeok"],
+    updated: UPDATED,
   },
 ];
