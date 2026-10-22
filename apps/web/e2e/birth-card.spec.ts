@@ -44,7 +44,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("a birth date finds its card: the card's page, 공유하기 with that page, 이 카드로 지금 고민 보기 into a reading", async ({ page }, info) => {
+test("a birth date finds its card: the card's page, 공유하기 with that page, 내 고민도 타로로 보기 into a reading", async ({ page }, info) => {
   const urls: string[] = [];
   page.on("request", (request) => urls.push(request.url()));
   // `next dev` compiles a route on its first request: warm the card route so the click below measures the app.
@@ -84,7 +84,7 @@ test("a birth date finds its card: the card's page, 공유하기 with that page,
     { title: "스타로그", text: "나를 닮은 타로 카드는 여황제 · 스타로그", url: `${SITE_URL}/birth-card/empress` },
   ]);
 
-  await page.getByRole("link", { name: /이 카드로 지금 고민 보기/ }).click();
+  await page.getByRole("link", { name: /내 고민도 타로로 보기/ }).click();
   // The 다리 화면 where premium is visible, else straight on to the question builder.
   await expect(page).toHaveURL(/\/tarot\/(start|new)/);
 
@@ -93,7 +93,7 @@ test("a birth date finds its card: the card's page, 공유하기 with that page,
   expect(await page.evaluate(() => JSON.stringify({ ...window.localStorage }) + JSON.stringify({ ...window.sessionStorage }))).not.toMatch(/1990|0515/);
 });
 
-test("a shared card opened as it is: the same page for a friend, and 친구 생일로도 해 보기 finds theirs", async ({ page }, info) => {
+test("a shared card opened as it is: the same page for a friend, 친구 생일로도 해 보기 finds theirs, and a 짝 카드 leads to its card", async ({ page }, info) => {
   await page.request.get("/birth-card/strength");
   await page.goto("/birth-card/hermit");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("은둔자");
@@ -109,10 +109,16 @@ test("a shared card opened as it is: the same page for a friend, and 친구 생�
   await expect(page).toHaveURL(/\/birth-card\/strength$/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("힘");
 
-  // The longest name, for the shots.
+  // The longest name, for the shots, and a card with a 짝 카드 (1+0 = 1 마법사), whose link goes to that card.
   await page.goto("/birth-card/wheel-of-fortune");
   await faceLoaded(page.getByRole("img", { name: "운명의 수레바퀴 타로 카드" }));
+  const pair = page.getByRole("region", { name: "짝 카드" });
+  await expect(pair).toContainText("1+0 = 1");
   await shot(page, info, "wheel-of-fortune");
+  await pair.getByRole("link", { name: /마법사/ }).click();
+  await expect(page).toHaveURL(/\/birth-card\/magician$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("마법사");
+  await expect(page.getByRole("region", { name: "짝 카드" })).toHaveCount(0);
 });
 
 test("the card's preview image is a PNG, and an unknown card is not a page", async ({ page }, info) => {

@@ -7,7 +7,7 @@ import { NightSky } from "@/components/sky/NightSky";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { ShareButton } from "@/components/ui/ShareButton";
-import { BIRTH_CARDS, BIRTH_CARD_NOTE, BIRTH_CARD_PATH, BIRTH_CARD_TITLE, birthCardOgPath, birthCardPath, findBirthCard, type BirthCard } from "@/lib/birthCard";
+import { BIRTH_CARDS, BIRTH_CARD_NOTE, BIRTH_CARD_PATH, BIRTH_CARD_TITLE, birthCardOgPath, birthCardPath, findBirthCard, pairCardOf, type BirthCard } from "@/lib/birthCard";
 import { SITE } from "@/lib/config";
 import { TAROT_BRIDGE_HREF } from "@/lib/freshStart";
 import { GUIDE_ARTICLES } from "@/lib/guide";
@@ -49,6 +49,7 @@ export default async function BirthCardResultPage({ params }: PageProps<"/birth-
   const card = findBirthCard((await params).card);
   if (!card) notFound();
   const guide = GUIDE_ARTICLES.find((article) => article.cardId === card.cardId);
+  const pair = pairCardOf(card);
   const url = `${SITE.url}${birthCardPath(card.slug)}`;
   return (
     <div className="page-shell">
@@ -83,10 +84,33 @@ export default async function BirthCardResultPage({ params }: PageProps<"/birth-
             <p className={s.asks}>{card.asks}</p>
           </div>
 
+          {pair ? (
+            <section className={s.pair} aria-labelledby="birth-card-pair">
+              <h2 id="birth-card-pair" className={s.panelTitle}>
+                짝 카드
+              </h2>
+              <p className={s.pairHow}>
+                {`${[...String(card.number)].join("+")} = ${pair.number}`}. 두 자리를 한 번 더 더하면 나오는, 나를 닮은 또 한 장이에요.
+              </p>
+              <Link href={birthCardPath(pair.slug)} className={s.pairLink}>
+                <TarotCard cardId={pair.cardId} faceUp deck="starlog" size="sm" className={s.pairFace} imageSizes="56px" />
+                <span className={s.pairText}>
+                  <span className={s.pairName}>
+                    <span className={s.roman}>{pair.roman}</span> {pair.name}
+                  </span>
+                  <span className={s.pairTrait}>{pair.traits[0]}</span>
+                </span>
+                <span className={s.pairArrow} aria-hidden="true">
+                  →
+                </span>
+              </Link>
+            </section>
+          ) : null}
+
           <p className={s.nudge}>{card.nudge}</p>
           <div className={s.actions}>
             <Button href={TAROT_BRIDGE_HREF} block trailing="→">
-              이 카드로 지금 고민 보기
+              내 고민도 타로로 보기
             </Button>
             <div className={s.share}>
               <ShareButton

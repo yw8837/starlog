@@ -240,6 +240,73 @@
   line-height: 1.6;
 }
 
+/* 짝 카드 (10–21): the card the two digits add up to, as a row linking to its page. */
+.pair {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+}
+
+.pairHow {
+  margin: -2px 0 0;
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pairLink {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.pairLink:hover {
+  border-color: var(--line-strong);
+}
+
+.pairLink:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.pairFace {
+  --card-w: 56px;
+}
+
+.pairText {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pairName {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.pairName .roman {
+  font-size: 14px;
+}
+
+.pairTrait {
+  color: var(--ink-sub);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pairArrow {
+  color: var(--gold);
+}
+
 .nudge {
   margin: 4px 0 -4px;
   color: var(--ink-sub);

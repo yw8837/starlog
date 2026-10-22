@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { BIRTH_CARDS } from "@/lib/birthCard";
+import { BIRTH_CARDS, pairCardOf } from "@/lib/birthCard";
 import { SITE } from "@/lib/config";
 import { findArticle } from "@/lib/guide";
 import { NOT_FOUND_METADATA } from "@/lib/seo";
@@ -120,7 +120,25 @@ describe("/birth-card/<slug>, the result", () => {
     expect(container.textContent).toContain(card.nudge);
 
     // One gold call to a reading, then a friend's birthday (the form below), the free one-card and the card's guide.
-    expect(screen.getByRole("link", { name: /이 카드로 지금 고민 보기/ }).getAttribute("href")).toBe("/tarot/start");
+    // Worded so the birth card is not taken for part of the reading (it draws its own three cards).
+    expect(screen.getByRole("link", { name: /내 고민도 타로로 보기/ }).getAttribute("href")).toBe("/tarot/start");
+    expect(container.textContent).not.toContain("이 카드로 지금 고민 보기");
+
+    // 짝 카드 (10–21): the card its two digits add up to, with the sum, its first trait and its page.
+    const pair = pairCardOf(card);
+    const slot = screen.queryByRole("region", { name: "짝 카드" });
+    if (pair) {
+      expect(slot, slug).toBeTruthy();
+      const [tens, ones] = String(card.number);
+      expect(slot!.textContent).toContain(`${tens}+${ones} = ${pair.number}`);
+      const link = within(slot!).getByRole("link");
+      expect(link.getAttribute("href")).toBe(`/birth-card/${pair.slug}`);
+      expect(link.textContent).toContain(pair.name);
+      expect(link.textContent).toContain(pair.traits[0]);
+      for (const img of slot!.querySelectorAll("img")) expect(img.getAttribute("src") ?? "").toMatch(/^\/cards\/(starlog|backs)\//);
+    } else {
+      expect(slot, slug).toBeNull();
+    }
     expect(screen.getByRole("link", { name: "친구 생일로도 해 보기" }).getAttribute("href")).toBe("#find");
     expect(container.querySelector("#find")?.textContent).toContain("내 카드 찾기");
     expect(screen.getByRole("link", { name: /지금의 한 장/ }).getAttribute("href")).toBe("/now");
@@ -140,6 +158,14 @@ describe("/birth-card/<slug>, the result", () => {
       fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
     });
     expect(share).toHaveBeenCalledExactlyOnceWith({ title: SITE.nameKo, text: "나를 닮은 타로 카드는 은둔자 · 스타로그", url: `${SITE.url}/birth-card/hermit` });
+  });
+
+  it("shows 운명의 수레바퀴's 짝 카드 as 마법사 and 태양's as 운명의 수레바퀴: one step of adding per page", async () => {
+    const { unmount } = render(await BirthCardResultPage(params("wheel-of-fortune")));
+    expect(within(screen.getByRole("region", { name: "짝 카드" })).getByRole("link").getAttribute("href")).toBe("/birth-card/magician");
+    unmount();
+    render(await BirthCardResultPage(params("sun")));
+    expect(within(screen.getByRole("region", { name: "짝 카드" })).getByRole("link").getAttribute("href")).toBe("/birth-card/wheel-of-fortune");
   });
 
   it("finds a friend's card from the form below it, onto that card's page", async () => {

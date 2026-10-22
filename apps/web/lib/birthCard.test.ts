@@ -10,6 +10,7 @@ import {
   birthCardOgPath,
   birthCardPath,
   findBirthCard,
+  pairCardOf,
   solarBirthDate,
 } from "./birthCard";
 
@@ -57,6 +58,41 @@ describe("birthCardNumber: every digit of YYYYMMDD added, added again while over
     // A date's digits add up to at least 4 (2000-01-10), and 10, 11, 19 and 20 stay as they are: the sum
     // never lands on 1 or 2. Their pages exist (shared links, the list of 22) but no birth date leads there.
     expect([...seen].sort((a, b) => a - b)).toEqual([0, ...Array.from({ length: 19 }, (_, i) => i + 3)]);
+  });
+});
+
+describe("짝 카드: a card of 10–21 also shows the card its two digits add up to, once", () => {
+  it.each([
+    [10, 1], // 1+0 마법사
+    [11, 2], // 1+1 여사제
+    [12, 3],
+    [13, 4],
+    [14, 5],
+    [15, 6],
+    [16, 7],
+    [17, 8],
+    [18, 9],
+    [19, 10], // 1+9 운명의 수레바퀴 (whose own 짝 카드 is 마법사: one step per page)
+    [20, 2], // 2+0 여사제
+    [21, 3], // 2+1 여황제
+  ])("%i → %i", (number, pair) => {
+    expect(pairCardOf(BIRTH_CARDS[number]!)?.number).toBe(pair);
+  });
+
+  it("is none for 0–9", () => {
+    for (const card of BIRTH_CARDS.slice(0, 10)) expect(pairCardOf(card), card.slug).toBeUndefined();
+  });
+
+  it("with the 짝 카드, every one of the 22 cards comes out of some birth date from 1900 to 2100", () => {
+    const seen = new Set<number>();
+    for (let t = Date.UTC(1900, 0, 1); t <= Date.UTC(2100, 11, 31); t += 86_400_000) {
+      const date = new Date(t);
+      const card = birthCardFor(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate());
+      seen.add(card.number);
+      const pair = pairCardOf(card);
+      if (pair) seen.add(pair.number);
+    }
+    expect([...seen].sort((a, b) => a - b)).toEqual(Array.from({ length: 22 }, (_, i) => i));
   });
 });
 

@@ -6,7 +6,8 @@ import { CARDS, computeChart } from "@starlog/core";
  * The rule: add every digit of the solar date written YYYYMMDD; while the sum is over 22, add its digits
  * again; 22 is 0, 바보 (so all of 0–21 have a number to land on). 1990-05-15 → 1+9+9+0+0+5+1+5 = 30 → 3,
  * 여황제. The digits of a date add up to at least 4, and 10, 11, 19 and 20 stay as they are, so I 마법사 and
- * II 여사제 never come out of the sum: their pages exist (the list of 22, a shared link) for anyone to read.
+ * II 여사제 never come out of the sum itself; they come as the 짝 카드 of 10, 11 and 20 (pairCardOf), so every one
+ * of the 22 is someone's card.
  *
  * The date is used in the browser and dropped: it is never in an address, a link, a share, storage or an
  * analytics hit. Every address carries the card's slug only (/birth-card/hermit).
@@ -197,6 +198,15 @@ const BY_SLUG: ReadonlyMap<string, BirthCard> = new Map(BIRTH_CARDS.map((card) =
 export const findBirthCard = (slug: string): BirthCard | undefined => BY_SLUG.get(slug);
 
 const digitSum = (digits: string): number => [...digits].reduce((sum, digit) => sum + Number(digit), 0);
+
+/**
+ * 짝 카드, as the traditional birth card pairs them: for 10–21, the card its two digits add up to (19 → 1+9 = 10).
+ * Added once, so a page has one rule and at most one 짝 카드: 19 태양's is 10 운명의 수레바퀴, whose own page
+ * shows 1 마법사. 0–9 have none.
+ */
+export function pairCardOf(card: BirthCard): BirthCard | undefined {
+  return card.number >= 10 ? BIRTH_CARDS[digitSum(String(card.number))] : undefined;
+}
 
 /** The birth card's number (0–21) for a solar date: see the rule above. */
 export function birthCardNumber(year: number, month: number, day: number): number {
