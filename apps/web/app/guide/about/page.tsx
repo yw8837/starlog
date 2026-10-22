@@ -144,10 +144,10 @@ export default function GuideAboutPage() {
 
             <section className={s.section} aria-labelledby="review-title">
               <h2 id="review-title" className={s.sectionTitle}>
-                얼마나 자주 다시 보나요
+                글은 언제 다시 보나요
               </h2>
               <p className={s.prose}>
-                모든 글을 석 달에 한 번 이상 근거 자료와 다시 맞춰 봐요. 앱의 계산 규칙이나 근거 자료가 바뀌면 그때 관련 글을 바로 고쳐요.
+                글은 주기적으로 다시 보고, 고친 날을 글에 적어요. 앱의 계산 규칙이나 근거 자료가 바뀌면 그때 관련 글을 바로 고쳐요.
               </p>
               <GuideBlocks
                 id="review"

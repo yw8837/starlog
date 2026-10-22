@@ -80,10 +80,12 @@ describe("the editorial page", () => {
     for (const claim of ["한 줄씩", "전문가 검수", "검수 완료", "전문가가 검토"]) expect(text(), claim).not.toContain(claim);
   });
 
-  it("says how often articles are checked again and what 마지막 검토 means, with the latest date on the site", () => {
+  it("says articles are checked again and dated, without promising a cadence the owner has not set, and what 마지막 검토 means", () => {
     render(<GuideAboutPage />);
     const review = section("review").textContent ?? "";
-    expect(review).toContain("석 달에 한 번");
+    expect(review).toContain("주기적으로 다시 보고, 고친 날을 글에 적어요");
+    // No fixed interval until the owner sets one.
+    expect(text()).not.toMatch(/석 달|세 달|분기|매달|매주|\d+\s*(일|주|개월|달)(에|마다) 한 번/);
     expect(review).toContain("마지막 검토");
     const latest = GUIDE_ARTICLES.map(lastReviewed).filter((date): date is string => Boolean(date)).sort().at(-1) as string;
     expect(review).toContain(koreanDate(latest));
