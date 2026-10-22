@@ -59,7 +59,7 @@ interface ChapterBase {
   deck?: FrontDeck;
   /**
    * Opened with 오픈 기념 무료: read and kept on this device only (owner 2026-10-14 evening), so the record
-   * shows no follow-up box or share button (the server refuses both for its chapter token).
+   * shows no follow-up box (the server refuses follow-ups for its chapter token); it is shared like any other (owner 2026-10-23).
    */
   opening?: true;
 }

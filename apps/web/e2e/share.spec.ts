@@ -26,16 +26,16 @@ async function ownAddress(page: Page) {
 }
 
 /**
- * A full tarot reading from the API, saved on this device as the result screen keeps it. Opened with the
- * owner pass: a 오픈 기념 무료 reading is read and kept on its device only, and the server never shares it.
+ * A full tarot reading from the API, saved on this device as the result screen keeps it: opened with the
+ * owner pass, or (`opening`) with 오픈 기념 무료, which takes no follow-ups but is shared like any other (owner 2026-10-23).
  */
-async function savedReading(page: Page, id: string) {
+async function savedReading(page: Page, id: string, { opening = false } = {}) {
   await page.context().clearCookies();
   await ownAddress(page);
   const origin = new URL(test.info().project.use.baseURL!).origin;
-  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
+  if (!opening) expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
   const draw = await (await page.request.post("/api/tarot/draw", { data: { templateId: "relationship-contact", picks: [2, 9, 15] } })).json();
-  const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: INPUT, unlock: { method: "owner" } } })).json();
+  const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: INPUT, ...(opening ? {} : { unlock: { method: "owner" } }) } })).json();
   const chapter = {
     id,
     kind: "tarot",
@@ -48,6 +48,7 @@ async function savedReading(page: Page, id: string) {
     note: INPUT.note,
     cards: draw.cards,
     reading: res.reading,
+    ...(opening ? { opening: true } : {}),
   };
   await page.addInitScript((value) => window.localStorage.setItem("starlog.chapters", value), JSON.stringify([chapter]));
   return res.reading as { verdict: string };
@@ -79,5 +80,23 @@ test("공유하기 makes the reading's own link: the cards and the reading for a
   await expect(sheet).toContainText("보낸 링크는 이제 열리지 않아요");
   const gone = await visitor.goto(link);
   expect(gone?.status()).toBe(404);
+  await visitor.close();
+});
+
+test("a 오픈 기념 무료 reading shares too (owner 2026-10-23): its link opens the cards and the reading, not the home", async ({ page }) => {
+  const reading = await savedReading(page, "sharee2e02", { opening: true });
+  await page.goto("/chapter/sharee2e02");
+  await expect(page.getByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toBeVisible();
+  await page.getByRole("button", { name: "공유하기" }).click();
+  const sheet = page.getByRole("dialog", { name: "결과 공유하기" });
+  await sheet.getByRole("button", { name: "공유 링크 만들기" }).click();
+  await expect(sheet).toContainText(/\/s\/[a-z0-9]{12}/);
+  const path = (/\/s\/[a-z0-9]{12}/.exec((await sheet.textContent()) ?? "") ?? [""])[0];
+  const visitor = await page.context().browser()!.newPage();
+  await visitor.goto(new URL(path, page.url()).toString());
+  await expect(visitor).toHaveURL(new RegExp(`${path}$`));
+  await expect(visitor.getByRole("heading", { level: 1 })).toHaveText("카드 세 장이 건넨 이야기");
+  await expect(visitor.locator("main")).toContainText(reading.verdict.replace(/\*\*/g, "").slice(0, 12));
+  await expect(visitor.locator("main")).not.toContainText(INPUT.question);
   await visitor.close();
 });

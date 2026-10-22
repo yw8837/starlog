@@ -62,10 +62,10 @@ describe("PDF로 저장 on a finished reading", () => {
     expect(screen.getByText("2026년 10월 21일")).toBeTruthy();
   });
 
-  it("a 오픈 기념 무료 reading, which has no share, still keeps its PDF", () => {
+  it("a 오픈 기념 무료 reading, which takes no follow-ups, still keeps its PDF", () => {
     seed([{ ...TAROT, opening: true }]);
     render(<LocalChapter id="tarot001" />);
-    expect(screen.queryByRole("button", { name: "공유하기" })).toBeNull();
+    expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
     savePdf();
     expect(titleWhilePrinting).toBe("스타로그-타로-2026-10-21");
   });

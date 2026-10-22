@@ -59,7 +59,7 @@ const CheckIcon = () => (
 /**
  * The unlock: what the full reading holds (length, follow-ups, kept on this device) before the one
  * gold button that opens it. Without an offer (or with "opening") it is 오픈 기념 무료, the device's
- * one free tarot reading, read and kept on this device only (no follow-ups or share; once used, it
+ * one free tarot reading, read and kept on this device only (no follow-ups, shareable; once used, it
  * says so for good); "closed" (saju while sales are closed here, tarot once 오픈 기념 무료 ended) opens
  * nothing and promises nothing free; the other offers log in, open a purchase, use a signup gift
  * held from before it was removed (tarot only) or pay, or say a reading of this kind is being

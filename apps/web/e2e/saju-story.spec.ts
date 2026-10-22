@@ -287,7 +287,7 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await expect(page.getByRole("heading", { level: 1, name: "내 정보" })).toBeVisible();
   if (openingOn()) {
     await expect(page.getByRole("heading", { name: "오픈 기념 무료" })).toBeVisible();
-    await expect(page.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).", { exact: true })).toBeVisible();
+    await expect(page.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).", { exact: true })).toBeVisible();
   } else {
     // 오픈 기념 무료 ended 2026-10-31: 내 정보 no longer shows its box.
     await expect(page.getByRole("heading", { name: "오픈 기념 무료" })).toHaveCount(0);

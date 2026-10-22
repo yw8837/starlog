@@ -72,15 +72,16 @@ describe("POST /api/share", () => {
     expect((await json(premium)).code).toBe("NOT_AVAILABLE");
   });
 
-  it("refuses a 오픈 기념 무료 reading (read and kept on its device only), with a clear message and nothing saved", async () => {
+  it("shares a 오픈 기념 무료 reading too (owner 2026-10-23), without the question or the note", async () => {
     const db = useTestDb();
     const chapterToken = await issueChapter({ ...ctx, opening: true } as ChapterContext, reading, [], secret, Date.now());
     const res = await browser().send(POST, "/api/share", { body: { chapterToken, reading }, origin: true });
-    expect(res.status).toBe(409);
-    const body = await json(res);
-    expect(body).toMatchObject({ code: "NOT_AVAILABLE", reason: "opening" });
-    expect(body.message).toContain("오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요");
-    expect(await db.prepare("SELECT COUNT(*) AS n FROM shares").first()).toEqual({ n: 0 });
+    expect(res.status).toBe(200);
+    const { id, path } = await json(res);
+    expect(path).toBe(`/s/${id}`);
+    const stored = JSON.stringify((await findShare(db, id as string))?.payload);
+    expect(stored).not.toContain("먼저 연락해도");
+    expect(stored).not.toContain("비밀 메모");
   });
 });
 

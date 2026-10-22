@@ -15,6 +15,11 @@ export interface ShareActions {
   stop: () => Promise<boolean>;
   /** The live link this device already made for the reading, if any (lib/share/client.ts knownShareLink). */
   current?: () => { url: string; imageUrl: string } | null;
+  /**
+   * Why this result cannot be shared yet (still being written, or a record not read whole): 공유하기 still shows on
+   * every result screen (owner 2026-10-23) and its sheet says why instead of making a link.
+   */
+  unavailable?: string;
 }
 
 type ShareResultButtonProps = ShareActions & {
@@ -59,7 +64,7 @@ type Phase =
  * each from its own tap (a phone's share sheet must open from one). 공유 그만하기 takes the link down,
  * and shows whenever the reading has a live link (`current`); after it, a new link can be made.
  */
-export function ShareResultButton({ kind, text, create, stop, current }: ShareResultButtonProps) {
+export function ShareResultButton({ kind, text, create, stop, current, unavailable }: ShareResultButtonProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>({ at: "intro" });
   const copy = SHOWN[kind];
@@ -94,7 +99,11 @@ export function ShareResultButton({ kind, text, create, stop, current }: ShareRe
           <p className={s.lead}>
             링크를 받은 사람에게는 <strong>{copy.shown}</strong>가 보여요. {copy.hidden}
           </p>
-          {phase.at === "ready" ? (
+          {unavailable ? (
+            <p className={s.note} role="status">
+              {unavailable}
+            </p>
+          ) : phase.at === "ready" ? (
             <>
               <p className={s.link}>{phase.url.replace(/^https?:\/\//, "")}</p>
               <div className={s.actions}>

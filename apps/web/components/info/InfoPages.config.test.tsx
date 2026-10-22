@@ -23,7 +23,7 @@ const { default: HowPage } = await import("@/app/how/page");
 /** Inside 오픈 기념 무료 (its last second, KST) and the first second after it. */
 const LAST = Date.parse("2026-10-31T23:59:59+09:00");
 const ENDED = Date.parse("2026-11-01T00:00:00+09:00");
-const OPENING = "10월 31일까지 기기마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관만 할 수 있어요(이어서 물어보기·공유 제외).";
+const OPENING = "10월 31일까지 기기마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).";
 
 describe("service pages take every number from SITE", () => {
   afterEach(() => {

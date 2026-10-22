@@ -36,10 +36,23 @@ afterEach(() => {
 });
 
 describe("LocalChapter with a partial saved reading (QA Q-02)", () => {
-  it("offers no share for it: a share without the reading's own link would only send the site's home (owner 2026-10-14)", () => {
+  beforeAll(() => {
+    const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+    proto.showModal ??= function (this: HTMLElement) {
+      this.setAttribute("open", "");
+    };
+    proto.close ??= function (this: HTMLElement) {
+      this.removeAttribute("open");
+    };
+  });
+
+  it("still shows 공유하기 (every result screen has it, owner 2026-10-23), which says why this record cannot be shared and makes no link", () => {
     seed([PARTIAL]);
     render(<LocalChapter id="abcdef12" />);
-    expect(screen.queryByRole("button", { name: /공유하기|카카오톡으로 보내기/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    expect(screen.getByRole("dialog", { name: "결과 공유하기", hidden: true }).textContent).toContain("이 기록은 일부를 읽지 못해 공유할 수 없어요");
+    expect(screen.queryByRole("button", { name: "공유 링크 만들기", hidden: true })).toBeNull();
+    expect(screen.queryByRole("button", { name: /카카오톡으로 보내기/, hidden: true })).toBeNull();
   });
 
   it("shows what it can read, says the rest is missing, takes no questions, and can erase it after a confirm", () => {
@@ -288,18 +301,26 @@ describe("LocalChapter 풀이 후기", () => {
   });
 });
 
-describe("LocalChapter for a 오픈 기념 무료 reading (read and keep only, owner 2026-10-14 evening)", () => {
+describe("LocalChapter for a 오픈 기념 무료 reading (no follow-ups; shared like any other since owner 2026-10-23)", () => {
   const WHOLE = { ...PARTIAL, createdAt: Date.now(), cards: TAROT_SAMPLE.cards.map(({ position, cardId, orientation }) => ({ position, cardId, orientation })), reading: TAROT_SAMPLE.paid };
 
-  it("shows the whole reading with no follow-up box, no share button and no 이어서 물어보기 link, and says why once", () => {
+  it("shows the whole reading with 공유하기, but no follow-up box and no 이어서 물어보기 link, and says why once", () => {
     seed([{ ...WHOLE, opening: true }]);
     const { container } = render(<LocalChapter id="abcdef12" />);
     expect(screen.getByRole("heading", { level: 1, name: "q" })).toBeTruthy();
     expect(screen.queryByRole("textbox", { name: "이어서 물어볼 내용" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /공유하기|카카오톡으로 보내기/ })).toBeNull();
+    // The owner opened one and found no 공유하기 (2026-10-23: "결과창들은 무조건 공유가 되어야지").
+    expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "이어서 물어보기" })).toBeNull();
-    expect(screen.getAllByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관만 할 수 있어요. 이어서 물어보기와 공유는 결제한 풀이에서 할 수 있어요.")).toHaveLength(1);
+    expect(screen.getAllByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toHaveLength(1);
     expect(container.textContent).not.toContain("후기");
+    expect(container.textContent).not.toContain("공유는 결제한");
+  });
+
+  it("shows 공유하기 on a paid reading kept in the account (opened at its account id)", () => {
+    seed([{ ...WHOLE, serverId: "abcdefghij0123456789" }]);
+    render(<LocalChapter id="abcdefghij0123456789" />);
+    expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
   });
 
   it("keeps follow-ups and the share button on any other reading", () => {
@@ -308,7 +329,7 @@ describe("LocalChapter for a 오픈 기념 무료 reading (read and keep only, o
     expect(screen.getByRole("textbox", { name: "이어서 물어볼 내용" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "이어서 물어보기" })).toBeTruthy();
-    expect(screen.queryByText(/보고 보관만 할 수 있어요/)).toBeNull();
+    expect(screen.queryByText(/보고 보관할 수 있어요/)).toBeNull();
   });
 });
 
