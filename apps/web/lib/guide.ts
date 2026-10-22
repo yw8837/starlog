@@ -9,7 +9,7 @@ import { withGuideLibrary } from "./guide-articles";
 import type { GuideArticle, GuideBlock, GuideCategory, GuideSection } from "./guideMeta";
 
 // Server side only: the article data below. Client components import ./guideMeta (guide.client.test.ts).
-export { GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, guideIndexPath } from "./guideMeta";
+export { GUIDE_ABOUT_PATH, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, guideIndexPath, lastReviewed } from "./guideMeta";
 export type { GuideArticle, GuideBlock, GuideCalloutTone, GuideCategory, GuideHowTo, GuideSection, GuideThreeCardSpread } from "./guideMeta";
 
 const BASE_ARTICLES: readonly GuideArticle[] = [

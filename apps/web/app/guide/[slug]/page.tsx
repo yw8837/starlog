@@ -15,14 +15,14 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig, adsScriptSrc } from "@/lib/ads";
 import { won } from "@/lib/config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath } from "@/lib/guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath, lastReviewed } from "@/lib/guide";
 import { appHref, linkHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
 import { premiumForGuide } from "@/lib/premium/landing";
 import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import { pageMetadata } from "@/lib/seo";
 import { GuideBlocks } from "../GuideBlocks";
-import { CardQuote, GuideByline, GuideSourceLine } from "../GuideEvidence";
+import { CardQuote, GuideByline, GuideSourceLine, GuideTrustBox } from "../GuideEvidence";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
 import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: PageProps<"/guide/[slug]">): 
     path: `/guide/${article.slug}`,
     type: "article",
     publishedTime: article.published,
-    modifiedTime: article.updated,
+    modifiedTime: lastReviewed(article),
   });
 }
 
@@ -136,6 +136,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
             </>
           ) : null}
           <GuideSourceLine article={article} />
+          <GuideTrustBox article={article} />
 
           <aside className={s.cta} aria-label={cta.label}>
             <p className={s.ctaText}>{cta.text}</p>

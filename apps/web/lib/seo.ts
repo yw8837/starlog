@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BIRTH_CARDS, BIRTH_CARD_PATH, birthCardPath } from "./birthCard";
 import { SITE } from "./config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath } from "./guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath, lastReviewed } from "./guide";
 import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
 import { ILJU, KEYWORD_PATH, keywordPath } from "./keyword2027";
@@ -136,13 +136,13 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     ...GUIDE_CATEGORIES.map(
       (category): SitemapEntry => ({
         path: guideIndexPath(category),
-        lastModified: latest(articlesIn(category).map((article) => article.updated)),
+        lastModified: latest(articlesIn(category).map(lastReviewed)),
         changeFrequency: "weekly",
         priority: 0.8,
       }),
     ),
     ...GUIDE_ARTICLES.map(
-      (article): SitemapEntry => ({ path: `/guide/${article.slug}`, lastModified: article.updated, changeFrequency: "monthly", priority: 0.7 }),
+      (article): SitemapEntry => ({ path: `/guide/${article.slug}`, lastModified: lastReviewed(article), changeFrequency: "monthly", priority: 0.7 }),
     ),
     ...Object.values(INFO_PAGES).map((page): SitemapEntry => ({ path: page.path, changeFrequency: "monthly", priority: 0.6 })),
     // 2027년 나의 키워드: the form and its 60 일주 pages (fixed text, linked from the form).

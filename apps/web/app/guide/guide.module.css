@@ -488,3 +488,70 @@
 .moreTitle {
   font-size: var(--fs-h2);
 }
+
+/* 이 글에 대해: who writes and checks the article, its dates and sources, in the 한눈에 보기 box's quiet glass. */
+.trust {
+  display: grid;
+  gap: 10px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.trustTitle {
+  font-size: 17px;
+}
+
+.trustFacts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.trustRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+
+.trustRow dt {
+  min-width: 5.5em;
+  color: var(--ink-sub);
+}
+
+.trustRow dd {
+  margin: 0;
+}
+
+.trustSub {
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.trustList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.trustList li::marker {
+  color: var(--gold);
+}
+
+.trustSource {
+  font-weight: 700;
+}
+
+.trustNote {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}

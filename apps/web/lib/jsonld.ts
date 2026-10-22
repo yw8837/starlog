@@ -1,7 +1,7 @@
 import { CONSTELLATIONS, cardImage } from "@starlog/core";
 import { SITE } from "./config";
 import { standardProduct, type StandardProductId } from "./pay/catalog";
-import { GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, type GuideArticle, type GuideCategory } from "./guide";
+import { GUIDE_ABOUT_PATH, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, lastReviewed, type GuideArticle, type GuideCategory } from "./guide";
 import { GUIDE_HOME, absoluteUrl } from "./hosts";
 
 /**
@@ -118,9 +118,13 @@ export function guideIndexBreadcrumbJsonLd(category: GuideCategory) {
   return breadcrumbJsonLd([HOME_CRUMB, guideTabCrumb(category)]);
 }
 
-/** Article for a guide: dates from answers.ts, the card scan first for a card article, then the share image. */
+/**
+ * Article for a guide: dates from answers.ts (dateModified is the page's 마지막 검토), the card scan first for a card
+ * article, then the share image; publishingPrinciples is the guide's editorial page.
+ */
 export function guideArticleJsonLd(article: GuideArticle) {
   const url = absoluteUrl(guideArticlePath(article));
+  const modified = lastReviewed(article);
   const images = [...(article.cardId ? [absoluteUrl(cardImage(article.cardId, "lg"))] : []), SHARE_IMAGE.url];
   return {
     "@context": CONTEXT,
@@ -134,10 +138,11 @@ export function guideArticleJsonLd(article: GuideArticle) {
     inLanguage: "ko-KR",
     articleSection: `${GUIDE_CATEGORY_LABEL[article.category]} 가이드`,
     ...(article.published ? { datePublished: article.published } : {}),
-    ...(article.updated ? { dateModified: article.updated } : {}),
+    ...(modified ? { dateModified: modified } : {}),
     image: images,
     author: organizationRef(),
     publisher: organizationRef(),
+    publishingPrinciples: absoluteUrl(GUIDE_ABOUT_PATH),
     isPartOf: { "@type": "WebSite", "@id": GUIDE_WEBSITE_ID, name: `${SITE.nameKo} 가이드`, url: absoluteUrl(GUIDE_HOME) },
   };
 }
