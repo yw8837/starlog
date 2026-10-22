@@ -15,13 +15,14 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig, adsScriptSrc } from "@/lib/ads";
 import { won } from "@/lib/config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, findArticle, guideIndexPath, lastReviewed } from "@/lib/guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, adjacentArticles, articlesIn, findArticle, guideIndexPath, lastReviewed } from "@/lib/guide";
 import { appHref, linkHref } from "@/lib/hosts";
-import { guideArticleBreadcrumbJsonLd, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
+import { guideArticleBreadcrumbJsonLd, guideArticleCrumbs, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
 import { premiumForGuide } from "@/lib/premium/landing";
 import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import { pageMetadata } from "@/lib/seo";
 import { GuideBlocks } from "../GuideBlocks";
+import { GuideBreadcrumbs } from "../GuideBreadcrumbs";
 import { CardQuote, GuideByline, GuideSourceLine, GuideTrustBox } from "../GuideEvidence";
 import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
@@ -68,6 +69,8 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   // The article's own picks; an article without them falls back to the first others in its tab.
   const picked = (article.related ?? []).map((other) => findArticle(other)).filter((other) => other !== undefined);
   const others = picked.length ? picked : GUIDE_ARTICLES.filter((other) => other.category === article.category && other.slug !== article.slug).slice(0, 4);
+  const { prev, next } = adjacentArticles(article);
+  const tabHref = linkHref(guideIndexPath(article.category), "guide");
   const ads = adsConfig();
   // Where the ad goes in the body, or null: with the unit set, and sections left after it.
   const adAt = ads?.guideSlot && article.sections.length > SECTIONS_BEFORE_AD ? SECTIONS_BEFORE_AD : null;
@@ -90,10 +93,11 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
         <JsonLd data={guideFaqJsonLd(article)} />
         <JsonLd data={guideHowToJsonLd(article)} />
         <article className={s.article}>
-          <Stepper label={`${tab} 가이드`} backHref={linkHref(guideIndexPath(article.category), "guide")} backLabel={`${tab} 가이드 목록으로`} />
+          <Stepper label={`${tab} 가이드`} backHref={tabHref} backLabel={`${tab} 가이드 목록으로`} />
 
           <header className={s.head}>
-            <p className={s.eyebrow}>{GUIDE_CATEGORY_LABEL[article.category]}</p>
+            {/* Where the eyebrow was: the trail the BreadcrumbList JSON-LD carries (SEO-17). */}
+            <GuideBreadcrumbs crumbs={guideArticleCrumbs(article)} />
             <h1 className={s.title}>{article.title}</h1>
             {/* The answer first (요약), so a reader, a search snippet or an AI answer gets it in one place. */}
             {article.summary ? (
@@ -177,6 +181,40 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
                 </li>
               ))}
             </ul>
+          </nav>
+
+          {/* The tab's order, so no article ends in a dead end: the one before, the one after, and the whole list. */}
+          <nav className={s.more} aria-labelledby="pager-title">
+            <h2 id="pager-title" className={s.moreTitle}>
+              {`${tab} 가이드 이어 읽기`}
+            </h2>
+            <ul className={s.pager}>
+              {prev ? (
+                <li>
+                  <Link href={`/guide/${prev.slug}`} rel="prev" className={`${s.item} ${s.itemCompact} ${s.itemPlain}`}>
+                    <span className={s.itemText}>
+                      <span className={s.itemDesc}>← 이전 글</span>
+                      <span className={s.itemTitle}>{prev.title}</span>
+                    </span>
+                  </Link>
+                </li>
+              ) : null}
+              {next ? (
+                <li>
+                  <Link href={`/guide/${next.slug}`} rel="next" className={`${s.item} ${s.itemCompact} ${s.itemPlain} ${s.pagerNext}`}>
+                    <span className={s.itemText}>
+                      <span className={s.itemDesc}>다음 글 →</span>
+                      <span className={s.itemTitle}>{next.title}</span>
+                    </span>
+                  </Link>
+                </li>
+              ) : null}
+            </ul>
+            <p className={s.sources}>
+              <Link href={tabHref} className={s.sourcesLink}>
+                {`${tab} 가이드 글 ${articlesIn(article.category).length}편 전체 보기`}
+              </Link>
+            </p>
           </nav>
         </article>
       </main>

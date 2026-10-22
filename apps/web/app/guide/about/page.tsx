@@ -15,7 +15,10 @@ import { withParticle } from "@/lib/korean";
 import { koreanDate } from "@/lib/legal";
 import { policyLines } from "@/lib/sajuCriteria";
 import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbJsonLd, guideAboutCrumbs } from "@/lib/jsonld";
 import { GuideBlocks } from "../GuideBlocks";
+import { GuideBreadcrumbs } from "../GuideBreadcrumbs";
 import s from "../guide.module.css";
 
 const TITLE = "가이드 소개와 편집 원칙";
@@ -54,11 +57,12 @@ export default function GuideAboutPage() {
       <NightSky fixed seed={41} moon={false} />
       <TabBar active="guide" host="guide" />
       <main className="page-col page-wide">
+        <JsonLd data={breadcrumbJsonLd(guideAboutCrumbs(TITLE))} />
         <article className={s.article}>
           <Stepper label="가이드" backHref={home} backLabel="가이드 홈으로" />
 
           <header className={s.head}>
-            <p className={s.eyebrow}>가이드 소개</p>
+            <GuideBreadcrumbs crumbs={guideAboutCrumbs(TITLE)} />
             <h1 className={s.title}>{TITLE}</h1>
             <p className={s.lead}>스타로그 가이드를 누가, 어떻게, 왜 쓰는지 적었어요. 글이 무엇에 기대는지, 틀린 곳은 어디로 알리면 되는지도 여기 있어요.</p>
           </header>

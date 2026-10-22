@@ -577,3 +577,63 @@
   grid-template-columns: minmax(0, 1fr);
   padding-left: 16px;
 }
+
+/* 현재 위치: the breadcrumb where the eyebrow was, in its gold and size; "›" between crumbs, never at a line's start. */
+.crumbs {
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.crumbList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crumb {
+  color: var(--ink-sub);
+}
+
+.crumb[aria-current="page"] {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.crumb + .crumb::before {
+  content: "›";
+  margin: 0 8px;
+  color: var(--ink-sub);
+}
+
+.crumbLink {
+  color: var(--gold);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.crumbLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 이어 읽기: the article before and after, side by side once there is room. */
+.pager {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 560px) {
+  .pager {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pagerNext {
+    text-align: right;
+  }
+}

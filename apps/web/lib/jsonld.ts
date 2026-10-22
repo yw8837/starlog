@@ -110,9 +110,15 @@ const guideTabCrumb = (category: GuideCategory): Crumb => ({ name: `${GUIDE_CATE
 
 export const guideArticlePath = (article: Pick<GuideArticle, "slug">) => `/guide/${article.slug}`;
 
+/** An article's trail: 스타로그 (the app's home), its tab, the article. The visible breadcrumb (GuideBreadcrumbs) shows the same. */
+export const guideArticleCrumbs = (article: GuideArticle): Crumb[] => [HOME_CRUMB, guideTabCrumb(article.category), { name: article.title, path: guideArticlePath(article) }];
+
 export function guideArticleBreadcrumbJsonLd(article: GuideArticle) {
-  return breadcrumbJsonLd([HOME_CRUMB, guideTabCrumb(article.category), { name: article.title, path: guideArticlePath(article) }]);
+  return breadcrumbJsonLd(guideArticleCrumbs(article));
 }
+
+/** The editorial page's trail: 스타로그, the guide's home, the page. */
+export const guideAboutCrumbs = (title: string): Crumb[] => [HOME_CRUMB, { name: "가이드", path: GUIDE_HOME }, { name: title, path: GUIDE_ABOUT_PATH }];
 
 export function guideIndexBreadcrumbJsonLd(category: GuideCategory) {
   return breadcrumbJsonLd([HOME_CRUMB, guideTabCrumb(category)]);

@@ -617,6 +617,13 @@ export const findArticle = (slug: string): GuideArticle | undefined => GUIDE_ART
 /** One tab's list: the category's articles in their GUIDE_ARTICLES order. */
 export const articlesIn = (category: GuideCategory): GuideArticle[] => GUIDE_ARTICLES.filter((article) => article.category === category);
 
+/** The articles before and after this one in its tab's order (이어 읽기 at the end of an article); none past either end. */
+export function adjacentArticles(article: Pick<GuideArticle, "slug" | "category">): { prev: GuideArticle | undefined; next: GuideArticle | undefined } {
+  const list = articlesIn(article.category);
+  const at = list.findIndex((other) => other.slug === article.slug);
+  return { prev: at > 0 ? list[at - 1] : undefined, next: at >= 0 ? list[at + 1] : undefined };
+}
+
 /**
  * A block's text as plain lines, with no list marks: each item, step or table row on its own line
  * (a row as "head: cell" pairs), card names for a card row, and captions (never an image's alt).
