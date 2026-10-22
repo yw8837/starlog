@@ -197,10 +197,28 @@
 .all summary {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   min-height: 44px;
   color: var(--ink);
   font-weight: 700;
+  list-style: none;
   cursor: pointer;
+}
+
+.all summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The flex summary drops the browser's triangle: a sign of its own says it opens. */
+.all summary::after {
+  content: "+";
+  color: var(--gold);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.all[open] summary::after {
+  content: "−";
 }
 
 .all summary:focus-visible {
