@@ -40,8 +40,8 @@ export const ILJU: readonly Ilju[] = Object.freeze(
 export const iljuBySlug = (slug: string): Ilju | null => ILJU.find((ilju) => ilju.slug === slug) ?? null;
 export const iljuByHanja = (hanja: string): Ilju | null => ILJU.find((ilju) => ilju.hanja === hanja) ?? null;
 export const keywordPath = (ilju: Ilju): string => `${KEYWORD_PATH}/${ilju.slug}`;
-/** The 일주's share image (app/api/og/keyword/[ilju]/route.tsx), 1200×630. */
-export const keywordImagePath = (ilju: Ilju): string => `/api/og/keyword/${ilju.slug}`;
+/** The 일주's share image (app/api/og/2027-keyword/[ilju]/route.tsx), 1200×630. */
+export const keywordImagePath = (ilju: Ilju): string => `/api/og/2027-keyword/${ilju.slug}`;
 
 /** A birth date as the form holds it once every part is picked (components/bonds/BirthFields). */
 export interface KeywordBirth {
