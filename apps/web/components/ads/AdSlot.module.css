@@ -1,7 +1,15 @@
+/* No room is taken until AdSense fills the unit: an unapproved site or an empty unit leaves no blank box. */
 .slot {
-  margin-block: 28px;
   display: grid;
   gap: 6px;
+}
+
+.slot[data-ad-state="filled"] {
+  margin-block: 28px;
+}
+
+.slot[hidden] {
+  display: none;
 }
 
 .label {
@@ -12,5 +20,4 @@
 
 .unit {
   display: block;
-  min-height: 100px;
 }

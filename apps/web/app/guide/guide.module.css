@@ -488,3 +488,216 @@
 .moreTitle {
   font-size: var(--fs-h2);
 }
+
+/* 이 글에 대해: who writes and checks the article, its dates and sources, in the 한눈에 보기 box's quiet glass. */
+.trust {
+  display: grid;
+  gap: 10px;
+  padding: 18px 18px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.trustTitle {
+  font-size: 17px;
+}
+
+.trustFacts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.trustRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+
+.trustRow dt {
+  min-width: 5.5em;
+  color: var(--ink-sub);
+}
+
+.trustRow dd {
+  margin: 0;
+}
+
+.trustSub {
+  margin-top: 4px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.trustList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 1.1em;
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.trustList li::marker {
+  color: var(--gold);
+}
+
+.trustSource {
+  font-weight: 700;
+}
+
+.trustNote {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+/* A link on the cream paper: navy ink, underlined. */
+.paperLink {
+  color: var(--navy);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.contactList {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding-left: 1.3em;
+  font-size: var(--fs-prose);
+  line-height: 1.7;
+}
+
+/* A card without a thumbnail: the text, then the arrow where it has one. */
+.itemPlain {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding-left: 16px;
+}
+
+/* 현재 위치: the breadcrumb where the eyebrow was, in its gold and size; "›" between crumbs, never at a line's start. */
+.crumbs {
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.crumbList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crumb {
+  color: var(--ink-sub);
+}
+
+.crumb[aria-current="page"] {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.crumb + .crumb::before {
+  content: "›";
+  margin: 0 8px;
+  color: var(--ink-sub);
+}
+
+.crumbLink {
+  color: var(--gold);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.crumbLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* 이어 읽기: the article before and after, side by side once there is room. */
+.pager {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 560px) {
+  .pager {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pagerNext {
+    text-align: right;
+  }
+}
+
+/* ---- the hub's own blocks: intro, reading path ---- */
+
+.intro {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(243, 220, 161, 0.3);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.introTitle {
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.introText {
+  max-width: 44em;
+  font-size: var(--fs-body);
+  line-height: 1.7;
+}
+
+.introMeta {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.starters {
+  display: grid;
+  gap: 18px;
+}
+
+.starterGroup {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.starterTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+/* Desktop: the two paths side by side, each one column. */
+@media (min-width: 1024px) {
+  .starters {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .starterList {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* A small heading inside a section on the cream paper. */
+.paperSub {
+  margin-top: 18px;
+  font-size: 16px;
+}

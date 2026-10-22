@@ -14,6 +14,7 @@ import { generateMetadata as chapterMeta } from "@/app/chapter/[id]/page";
 import { metadata as evidenceMeta } from "@/app/evidence/page";
 import { metadata as faqMeta } from "@/app/faq/page";
 import { generateMetadata as guideArticleMeta } from "@/app/guide/[slug]/page";
+import { metadata as guideAboutMeta } from "@/app/guide/about/page";
 import { metadata as guideSajuMeta } from "@/app/guide/saju/page";
 import { metadata as guideTarotMeta } from "@/app/guide/tarot/page";
 import { metadata as helpMeta } from "@/app/help/page";
@@ -77,6 +78,7 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ...(await Promise.all(ILJU.map(async (ilju) => [`/2027-keyword/${ilju.slug}`, await keywordResultMeta(params({ ilju: ilju.slug }))] as [string, Metadata]))),
   ["/guide/tarot", guideTarotMeta],
   ["/guide/saju", guideSajuMeta],
+  ["/guide/about", guideAboutMeta],
   ["/about", aboutMeta],
   ["/how", howMeta],
   ["/evidence", evidenceMeta],
@@ -131,7 +133,7 @@ describe("indexable pages", () => {
     const title = fullTitle(meta);
     expect(title.length, title).toBeLessThanOrEqual(60);
     const description = String(meta.description ?? "");
-    const isArticle = /^\/guide\/(?!tarot$|saju$)/.test(path);
+    const isArticle = /^\/guide\/(?!tarot$|saju$|about$)/.test(path);
     // Guide articles keep the guide's 80-character teaser; the other pages aim for 80-120.
     expect(description.length, description).toBeGreaterThanOrEqual(isArticle ? 20 : 60);
     expect(description.length, description).toBeLessThanOrEqual(isArticle ? 80 : 130);

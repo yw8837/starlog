@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Fragment } from "react";
 import { Wordmark } from "@/components/brand/Wordmark";
 import { SITE, businessFields } from "@/lib/config";
+import { GUIDE_ABOUT_PATH, guideIndexPath } from "@/lib/guideMeta";
 import { guideHostServes, linkHref, type SiteHost } from "@/lib/hosts";
 import { INFO_PAGES, SERVICE_LINKS } from "@/lib/infoPages";
 import { LEGAL_LINKS } from "@/lib/legal";
@@ -26,6 +27,21 @@ const ANALYTICS_SETTING = { href: "/privacy#analytics", label: "방문 통계 �
 const LINKS: ReadonlyArray<FooterLink> = [...SERVICE_LINKS, ...LEGAL_LINKS].map((link) => ({ ...link, label: SHORT_LABEL[link.href] ?? link.label }));
 
 /**
+ * On the guide host, after 가이드 글: how the guide is written and checked, and where to write (the editorial page's
+ * #contact), the pages a reviewer of the root domain looks for next to the operator's page and the policies.
+ */
+const GUIDE_LINKS: ReadonlyArray<FooterLink> = [
+  { href: GUIDE_ABOUT_PATH, label: "편집 원칙" },
+  { href: `${GUIDE_ABOUT_PATH}#contact`, label: "문의" },
+];
+
+const linksFor = (host: SiteHost | "either"): ReadonlyArray<FooterLink> => {
+  if (host !== "guide") return LINKS;
+  const at = LINKS.findIndex((link) => link.href === guideIndexPath("tarot")) + 1;
+  return [...LINKS.slice(0, at), ...GUIDE_LINKS, ...LINKS.slice(at)];
+};
+
+/**
  * One block: the wordmark and a one-line tagline, one wrapped row of links, then the business
  * notice (its fields come from businessFields in lib/config.ts). Items are spaced with gaps, never
  * with "·", so a wrapped line never starts or ends on a separator, and every line may wrap inside
@@ -47,7 +63,7 @@ export function Footer({ host = "app" }: { host?: SiteHost | "either" }) {
         </div>
         <nav className={styles.nav} aria-label="사이트 안내">
           <ul className={styles.links}>
-            {LINKS.map((link) => (
+            {linksFor(host).map((link) => (
               <Fragment key={link.href}>
                 <li>
                   {/* The root domain renders this footer on /about, /privacy and /terms too (F-05). */}

@@ -234,7 +234,7 @@ describe("links from a guide page", () => {
       brand: "/",
       pills: ["/", "/guide/tarot", "/faq", "/story", "/me"],
       bar: ["/", "/story", "/guide/tarot", "/me"],
-      footer: ["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"],
+      footer: ["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/guide/about", "/guide/about#contact", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"],
     });
   });
 
@@ -245,7 +245,7 @@ describe("links from a guide page", () => {
       brand: `${APP}/`,
       pills: [`${APP}/`, "/", `${APP}/faq`, `${APP}/story`, `${APP}/me`],
       bar: [`${APP}/`, `${APP}/story`, "/", `${APP}/me`],
-      footer: ["/about", `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/", `${APP}/pricing`, "/terms", "/privacy", `${APP}/refund`, "/privacy#analytics"],
+      footer: ["/about", `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/", "/guide/about", "/guide/about#contact", `${APP}/pricing`, "/terms", "/privacy", `${APP}/refund`, "/privacy#analytics"],
     });
     // The tabs and the article cards are the guide's own pages: paths, so they stay on the root domain.
     const tabs = within(screen.getByRole("navigation", { name: "가이드 분류" })).getAllByRole("link");

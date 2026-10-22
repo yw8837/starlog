@@ -84,6 +84,8 @@ describe("Footer", () => {
       ["이용 가이드", `${SITE.url}/help`],
       ["FAQ", `${SITE.url}/faq`],
       ["가이드 글", "/"],
+      ["편집 원칙", "/guide/about"],
+      ["문의", "/guide/about#contact"],
       ["가격 안내", `${SITE.url}/pricing`],
       ["이용약관", "/terms"],
       ["개인정보처리방침", "/privacy"],
@@ -113,7 +115,7 @@ describe("Footer", () => {
 
   it("on a guide page with one origin, every link is a path as before", () => {
     render(<Footer host="guide" />);
-    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"]);
+    expect(screen.getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual(["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/guide/about", "/guide/about#contact", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"]);
   });
 
   it("says on the guide host that the articles are reference content, not professional advice, and nowhere else", () => {

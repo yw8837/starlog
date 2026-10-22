@@ -19,6 +19,12 @@ export const GUIDE_CATEGORIES: readonly GuideCategory[] = ["tarot", "saju"];
 
 export const guideIndexPath = (category: GuideCategory): string => `/guide/${category}`;
 
+/**
+ * 가이드 소개와 편집 원칙 (app/guide/about): who makes the guide, how an article is written and checked, how to
+ * report an error. A static route next to [slug], so no article slug may be "about" either.
+ */
+export const GUIDE_ABOUT_PATH = "/guide/about";
+
 /** The three-card spreads of the app (TEMPLATES in @starlog/core) a three-card diagram can label. */
 export type GuideThreeCardSpread = Exclude<TemplateId, "daily" | "deep-tarot" | "match">;
 
@@ -79,3 +85,10 @@ export interface GuideArticle {
   updated?: string;
   howTo?: GuideHowTo;
 }
+
+/**
+ * 마지막 검토: the article's last content change (`updated`, made when it was checked against its sources again), or
+ * its first publication when it has none. The byline, the trust box, the Article JSON-LD's dateModified, the
+ * sitemap and the hub's recently checked list all read this one date.
+ */
+export const lastReviewed = (article: Pick<GuideArticle, "published" | "updated">): string | undefined => article.updated ?? article.published;

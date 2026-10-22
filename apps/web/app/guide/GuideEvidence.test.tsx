@@ -94,25 +94,22 @@ describe("the source line on the real hosts", () => {
 });
 
 describe("the byline under the title", () => {
-  const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("열매스튜디오")) as HTMLElement | undefined;
+  // The full line, both dates and the editorial link are in GuideTrust.test.tsx; the evidence page moved to the
+  // trust box after the body.
+  const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글·검토")) as HTMLElement | undefined;
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug]))("%s: names the maker, when it was first posted and last updated, and links the evidence page", async (slug) => {
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug]))("%s: one line under the title, with two dates", async (slug) => {
     const article = findArticle(slug);
     if (!article?.published || !article.updated) throw new Error(`${slug} has no dates`);
     const { container } = await renderSlug(slug);
-    const line = byline(container);
-    expect(line?.textContent).toBe(`열매스튜디오 · 처음 올린 날 ${koreanDate(article.published)} · 업데이트 ${koreanDate(article.updated)} · 근거와 방법`);
-    // The dates are machine-readable, the same ones the JSON-LD carries.
-    expect([...(line?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, article.updated]);
-    expect(line?.querySelector("a")?.getAttribute("href")).toBe(evidence);
-    expect(line?.querySelector("a")?.textContent).toBe("근거와 방법");
+    expect(byline(container)?.textContent).toContain(`처음 쓴 날 ${koreanDate(article.published)}`);
     // One line, not the old "업데이트" line besides it.
     expect(container.querySelectorAll("article header time")).toHaveLength(2);
   });
 
-  it("goes to the evidence page on the app host when the hosts are split: the guide lives on the root domain", async () => {
+  it("links the evidence page on the app host when the hosts are split: the guide lives on the root domain", async () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     const { container } = await renderSlug("the-hermit");
-    expect(byline(container)?.querySelector("a")?.getAttribute("href")).toBe(`${SITE.url}${evidence}`);
+    expect(container.querySelector(`section[aria-labelledby="trust-title"] a[href="${SITE.url}${evidence}"]`)).not.toBeNull();
   });
 });

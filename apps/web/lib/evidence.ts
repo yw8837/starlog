@@ -148,3 +148,28 @@ export function evidenceSources(): { kind: string; title: string; note: string; 
     { kind: "지도 데이터", title: "OpenStreetMap 기여자 (ODbL 1.0)", note: `출생지 ${factValue("saju-birth-places")}의 경도`, href: BIRTH_PLACE_CREDIT_URL },
   ];
 }
+
+/** Which guide category each kind of source in evidenceSources() backs. */
+const SOURCE_AREA: Readonly<Record<string, EvidenceArea>> = {
+  원전: "tarot",
+  원판: "tarot",
+  대조: "tarot",
+  만세력: "saju",
+  "공공 데이터": "saju",
+  "천문 데이터": "saju",
+  "천문 계산": "saju",
+  "역사 자료": "saju",
+  "지도 데이터": "saju",
+};
+
+/**
+ * 참고한 자료 on a guide article: the rows of evidenceSources() its category rests on, in the evidence page's order,
+ * so an article's list is driven by its category and never typed per article.
+ */
+export function guideReferences(area: EvidenceArea): ReturnType<typeof evidenceSources> {
+  return evidenceSources().filter((row) => {
+    const of = SOURCE_AREA[row.kind];
+    if (!of) throw new Error(`lib/evidence.ts: no guide category for the source kind ${row.kind}`);
+    return of === area;
+  });
+}
