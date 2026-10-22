@@ -6,7 +6,7 @@
 
 import { getCard } from "@starlog/core";
 import { withGuideLibrary } from "./guide-articles";
-import type { GuideArticle, GuideBlock, GuideCategory, GuideSection } from "./guideMeta";
+import { lastReviewed, type GuideArticle, type GuideBlock, type GuideCategory, type GuideSection } from "./guideMeta";
 
 // Server side only: the article data below. Client components import ./guideMeta (guide.client.test.ts).
 export { GUIDE_ABOUT_PATH, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, guideIndexPath, lastReviewed } from "./guideMeta";
@@ -616,6 +616,23 @@ export const findArticle = (slug: string): GuideArticle | undefined => GUIDE_ART
 
 /** One tab's list: the category's articles in their GUIDE_ARTICLES order. */
 export const articlesIn = (category: GuideCategory): GuideArticle[] => GUIDE_ARTICLES.filter((article) => article.category === category);
+
+/**
+ * 처음이라면 on the guide's home: a reading path for a first visit per category, in reading order, from the basics
+ * (what the cards are, how a chart is laid out) to the first reading (a three-card spread, the 10-year 대운).
+ */
+export const GUIDE_STARTERS: Readonly<Record<GuideCategory, readonly string[]>> = {
+  tarot: ["how-to-read-tarot", "major-and-minor-arcana", "upright-and-reversed", "three-card-spread"],
+  saju: ["four-pillars", "five-elements", "day-master", "daewoon"],
+};
+
+/** 최근 검토한 글 on the guide's home: the newest 마지막 검토 first, ties in the guide's own order. */
+export function recentlyReviewed(count: number): GuideArticle[] {
+  return GUIDE_ARTICLES.map((article, i) => ({ article, i, date: lastReviewed(article) ?? "" }))
+    .sort((a, b) => (a.date === b.date ? a.i - b.i : a.date < b.date ? 1 : -1))
+    .slice(0, count)
+    .map(({ article }) => article);
+}
 
 /** The articles before and after this one in its tab's order (이어 읽기 at the end of an article); none past either end. */
 export function adjacentArticles(article: Pick<GuideArticle, "slug" | "category">): { prev: GuideArticle | undefined; next: GuideArticle | undefined } {

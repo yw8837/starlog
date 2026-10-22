@@ -637,3 +637,61 @@
     text-align: right;
   }
 }
+
+/* ---- the hub's own blocks: intro, reading path ---- */
+
+.intro {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(243, 220, 161, 0.3);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.introTitle {
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.introText {
+  max-width: 44em;
+  font-size: var(--fs-body);
+  line-height: 1.7;
+}
+
+.introMeta {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.starters {
+  display: grid;
+  gap: 18px;
+}
+
+.starterGroup {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.starterTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+/* Desktop: the two paths side by side, each one column. */
+@media (min-width: 1024px) {
+  .starters {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .starterList {
+    grid-template-columns: 1fr;
+  }
+}
