@@ -24,6 +24,10 @@ export const birthCardOgPath = (slug: string): string => `/api/og/birth-card/${s
 /** The test's name, as the pages, the share text and the preview image say it. */
 export const BIRTH_CARD_TITLE = "나를 닮은 타로 카드";
 
+/** Under both pages: a test for fun, and where the date goes (nowhere). */
+export const BIRTH_CARD_NOTE =
+  "재미로 보는 테스트예요. 카드는 생년월일 숫자로만 정해져서 한 사람을 다 설명하지는 못해요. 고른 생년월일은 이 화면에서 카드를 찾는 데만 쓰고 어디에도 보내거나 저장하지 않아요.";
+
 export interface BirthCard {
   /** The card id without "major-NN-": "hermit" for major-09-hermit. */
   slug: string;
