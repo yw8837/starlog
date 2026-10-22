@@ -239,5 +239,15 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     // 2026-10-22 (AdSense "가치가 별로 없는 콘텐츠"): all 22 card articles gain the Starlog deck's own scene, three worked
     // examples, their own 자주 묻는 질문 and links on; the frames two cards shared once their names were taken out are rewritten.
     ...["the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-22" }] as const),
+    // 2026-10-23 (AdSense "가치가 별로 없는 콘텐츠"): the 29 saju articles rewritten with their own worked examples, the date
+    // each entry carries itself (GuideDates.test.tsx keeps the two the same).
+    ...["heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune"].map(
+      (slug) => [slug, { published: "2026-10-01", updated: "2026-10-23" }] as const,
+    ),
+    ...[
+      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
+      "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
+      "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
+    ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-23" }] as const),
   ],
 );
