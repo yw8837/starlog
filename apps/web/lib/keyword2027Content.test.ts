@@ -90,6 +90,7 @@ describe("the 60 texts", () => {
     expect(keywords.length - new Set(keywords).size).toBe(0);
   });
 
+  // The paid reading's own bans (lib/ai/prompts/saju.ts): no 신살 label such as 귀인, no event read from a relation (이사), no graded year.
   it("write each line as one plain 해요체 sentence under 40 characters: no terms, no hanja, no scores, no promises", () => {
     for (const ilju of ILJU) {
       const content = KEYWORD_CONTENT[ilju.hanja]!;
@@ -98,7 +99,7 @@ describe("the 60 texts", () => {
         const where = `${ilju.hanja}.${field}: ${line}`;
         expect(line.length, where).toBeLessThanOrEqual(40);
         expect(line, where).toMatch(/요\.$/);
-        expect(line, where).not.toMatch(/[()一-龥A-Za-z%]|\d+\s?점|대박|보장|확실|무조건|반드시|행운이|건강|질병|병원|합격|재회|수익/);
+        expect(line, where).not.toMatch(/[()一-龥A-Za-z%]|\d+\s?점|대박|보장|확실|무조건|반드시|행운이|건강|질병|병원|합격|재회|수익|귀인|좋은 해|나쁜 해|이사|이동|나타나|운명/);
         expect(nonHaeyoSentences(line), where).toEqual([]);
         const out: string[] = [];
         blocklistViolations(line, "", out);

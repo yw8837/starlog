@@ -212,6 +212,8 @@
 /* The flex summary drops the browser's triangle: a sign of its own says it opens. */
 .all summary::after {
   content: "+";
+  /* drawn, not read: the summary says what it opens */
+  content: "+" / "";
   color: var(--gold);
   font-size: 22px;
   line-height: 1;
@@ -219,6 +221,7 @@
 
 .all[open] summary::after {
   content: "−";
+  content: "−" / "";
 }
 
 .all summary:focus-visible {
