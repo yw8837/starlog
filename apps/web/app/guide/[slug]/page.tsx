@@ -15,7 +15,7 @@ import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { adsConfig, adsScriptSrc } from "@/lib/ads";
 import { won } from "@/lib/config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, adjacentArticles, articlesIn, findArticle, guideIndexPath, lastReviewed } from "@/lib/guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, adjacentArticles, articlesIn, findArticle, guideIndexPath, guideSectionText, lastReviewed } from "@/lib/guide";
 import { appHref, linkHref } from "@/lib/hosts";
 import { guideArticleBreadcrumbJsonLd, guideArticleCrumbs, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
 import { premiumForGuide } from "@/lib/premium/landing";
@@ -32,6 +32,12 @@ export const dynamicParams = false;
 
 /** The ad unit sits after this many sections of the body, so a reader has met some of the text before it and the rest still follows. */
 const SECTIONS_BEFORE_AD = 2;
+
+/**
+ * An article gets the unit only with a body at least this long (its sections' text, guideSectionText): AdSense allows no
+ * ads on a screen with little publisher content (https://support.google.com/adsense/answer/9335564).
+ */
+const MIN_AD_BODY_CHARS = 1000;
 
 export function generateStaticParams() {
   return GUIDE_ARTICLES.map((article) => ({ slug: article.slug }));
@@ -72,8 +78,9 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   const { prev, next } = adjacentArticles(article);
   const tabHref = linkHref(guideIndexPath(article.category), "guide");
   const ads = adsConfig();
-  // Where the ad goes in the body, or null: with the unit set, and sections left after it.
-  const adAt = ads?.guideSlot && article.sections.length > SECTIONS_BEFORE_AD ? SECTIONS_BEFORE_AD : null;
+  // Where the ad goes in the body, or null: with the unit set, a substantial body, and sections left after it.
+  const substantial = article.sections.map(guideSectionText).join("\n").length >= MIN_AD_BODY_CHARS;
+  const adAt = ads?.guideSlot && substantial && article.sections.length > SECTIONS_BEFORE_AD ? SECTIONS_BEFORE_AD : null;
   const sections = (from: number, to: number) =>
     article.sections.slice(from, to).map((section, i) => (
       <section key={section.heading} className={s.section}>
