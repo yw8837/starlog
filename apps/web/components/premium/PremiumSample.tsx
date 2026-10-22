@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { AiNote } from "@/components/reading/AiNote";
 import { PREMIUM, premiumPath, type PremiumId } from "@/lib/premium/products";
 import { MATCH_SECOND_SAMPLE, PREMIUM_SAMPLES } from "@/lib/premium/samples";
 import { DeepTarotArticle } from "./DeepTarotArticle";
@@ -46,7 +45,6 @@ export function PremiumSample({ id }: { id: PremiumId }) {
             <MatchArticle reading={MATCH_SECOND_SAMPLE.reading} />
           </section>
         ) : null}
-        <AiNote />
       </div>
     </article>
   );

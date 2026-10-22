@@ -106,7 +106,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
   }
   const unlock = free ? sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }) : sheet.getByRole("button", { name: "운영자로 무료 열기" });
   await expect(unlock).toBeVisible();
-  await expect(page.getByText("AI가 만든 풀이예요 · 재미와 자기 성찰을 위한 참고용이에요")).toBeVisible();
+  await expect(page.getByText(/AI가 만든|재미와 자기/)).toHaveCount(0); // owner 2026-10-23: 약관에만
   // A money question never gets the relationship sample.
   await expect(page.locator("main")).not.toContainText("뜸해진", { useInnerText: true });
   // 감질맛: the second card's first part ends in the nudge, and opening sends the teaser's seal so the reading reads on from it.

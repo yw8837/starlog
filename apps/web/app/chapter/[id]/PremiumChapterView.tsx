@@ -5,7 +5,6 @@ import { MatchArticle } from "@/components/premium/MatchArticle";
 import { CrossSpread } from "@/components/premium/CrossSpread";
 import { DeepTarotArticle } from "@/components/premium/DeepTarotArticle";
 import { NewYearArticle } from "@/components/premium/NewYearArticle";
-import { AiNote } from "@/components/reading/AiNote";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
 import { chartFor } from "@/components/saju/useSajuChart";
@@ -133,7 +132,6 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
           <FollowUp {...followUp} reader={chapter.kind === "tarot-deep" ? "cat" : "rabbit"} />
         </div>
         {rating ?? <Feedback />}
-        <AiNote />
       </ReadingLayout>
       <PrintFoot />
     </>

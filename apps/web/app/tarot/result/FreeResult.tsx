@@ -3,7 +3,6 @@
 import { deckPrefs } from "@/lib/deck";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
@@ -341,7 +340,6 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 checking={check !== null}
                 onCheck={check === "stalled" || (check === null && offer.mode === "in-progress") ? recheck : undefined}
               />
-              <AiNote />
             </>
           ) : teaserError ? (
             <ErrorPanel view={teaserError} onRetry={() => setAttempt((n) => n + 1)} redrawHref={withFlags("/tarot/draw", { instant })} editHref="/tarot/new" />

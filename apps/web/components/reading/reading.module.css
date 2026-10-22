@@ -34,12 +34,3 @@
   max-width: 22em;
 }
 
-/* ---- honesty line ---- */
-
-.aiNote {
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  line-height: 1.6;
-  text-align: center;
-  text-wrap: balance;
-}

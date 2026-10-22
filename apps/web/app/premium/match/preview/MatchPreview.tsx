@@ -6,7 +6,6 @@ import { PairCharts } from "@/components/premium/PairCharts";
 import { PremiumProgress } from "@/components/premium/PremiumProgress";
 import { PremiumUnlock } from "@/components/premium/PremiumUnlock";
 import v from "@/components/premium/preview.module.css";
-import { AiNote } from "@/components/reading/AiNote";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
@@ -189,12 +188,10 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
               meta={`소제목 ${preview.lockedToc.length}개 · 약 ${approxCharsText({ min: PREMIUM[ID].approxChars, max: PREMIUM[ID].approxChars })}자`}
             />
             {unlock}
-            <AiNote />
           </>
         ) : holds && teaserError ? (
           <>
             {unlock}
-            <AiNote />
           </>
         ) : teaserError ? (
           <ErrorPanel view={teaserError} onRetry={() => setAttempt((n) => n + 1)} editHref="/premium/match/new" />

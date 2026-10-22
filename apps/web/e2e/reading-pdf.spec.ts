@@ -98,7 +98,7 @@ async function printsCleanly(page: Page, info: TestInfo, name: string, texts: st
   const main = page.getByRole("main");
   await expect(main.getByText(BRAND, { exact: true })).toBeVisible();
   for (const text of texts) await expect(main.getByText(text, { exact: true }).first()).toBeVisible();
-  await expect(main.getByText(/AI가 만든 풀이예요/).last()).toBeVisible();
+  await expect(main.getByText(/AI가 만든|재미와 자기/)).toHaveCount(0); // owner 2026-10-23: 약관에만
 
   // getByRole leaves out what print media hides (display: none)
   for (const button of ["PDF로 저장", "공유하기", "이미지로 공유", "보내기"]) await expect(page.getByRole("button", { name: button, exact: true })).toHaveCount(0);

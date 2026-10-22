@@ -1,5 +1,4 @@
 import { getCard } from "@starlog/core";
-import { AiNote } from "@/components/reading/AiNote";
 import { Paper } from "@/components/tarot/Paper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
@@ -97,8 +96,6 @@ export function SharedDailyView({ share }: { share: SharedDaily }) {
         </h2>
         <p className={t.tipText}>{share.reading.tip}</p>
       </section>
-
-      <AiNote />
 
       <section className={s.invite} aria-labelledby="try-title">
         <h2 id="try-title" className={s.inviteTitle}>

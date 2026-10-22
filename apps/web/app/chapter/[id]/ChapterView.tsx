@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { AiNote } from "@/components/reading/AiNote";
 import { Feedback } from "@/components/tarot/Feedback";
 import { FollowUp, type AskResult } from "@/components/tarot/FollowUp";
 import { ReadingArticle, type ReadingBody } from "@/components/tarot/ReadingArticle";
@@ -97,7 +96,6 @@ export function ChapterView({ eyebrow, question, cards, reading, followUp, keepO
           </div>
         ) : null}
         {rating ?? <Feedback />}
-        <AiNote />
         {next}
 
         {invite ? (
