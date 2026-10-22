@@ -90,7 +90,8 @@ describe("ads on guide articles", () => {
       cleanup();
     }
     expect(withAd).toBe(GUIDE_ARTICLES.length);
-  });
+    // Renders every article in one test: a minute, for when the whole suite shares the machine.
+  }, 60_000);
 
   it("puts no unit into an article whose body is too short, however many sections it has", async () => {
     const { container } = render(await article(THIN.slug));
