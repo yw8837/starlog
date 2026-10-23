@@ -12,6 +12,7 @@ import { GUIDE_HOST_LINES } from "@/app/guide/GuideHost";
 import { SITE } from "@/lib/config";
 import { DECK_KEY } from "@/lib/deck";
 import { GUIDE_CATEGORIES, articlesIn, findArticle, type GuideArticle } from "@/lib/guide";
+import { guidePlainText } from "@/lib/guideLinks";
 import nextConfig from "@/next.config";
 
 // A plain article, as the first six once were (no 한눈에 보기, no blocks). Every real article has both since
@@ -156,7 +157,8 @@ describe("guide article body", () => {
     await renderSlug("the-hermit");
     for (const section of plain) {
       expect(sectionTags(section.heading)).toEqual(["H2", "P"]);
-      expect(screen.getByRole("heading", { level: 2, name: section.heading }).nextElementSibling?.textContent).toBe(section.body);
+      // A [text](url) link in the body shows as its words.
+      expect(screen.getByRole("heading", { level: 2, name: section.heading }).nextElementSibling?.textContent).toBe(guidePlainText(section.body));
     }
   });
 

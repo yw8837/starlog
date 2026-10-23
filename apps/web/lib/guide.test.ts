@@ -9,8 +9,8 @@ describe("GUIDE_ARTICLES", () => {
       "정방향과 역방향은 뭐가 달라요?",
       "출생시간을 모를 때 사주는?",
       "오행이 뭐예요?",
-      // Renamed 2026-10-08 to match the other card articles ("타로 바보 카드 뜻").
-      "타로 은둔자 카드 뜻",
+      // Renamed 2026-10-08 to match the other card articles, and again 2026-10-23 so no two card titles share one frame.
+      "타로 은둔자 카드: 등불 속 별과 혼자 있는 시간",
       "타로 별 카드 뜻",
     ]);
   });
