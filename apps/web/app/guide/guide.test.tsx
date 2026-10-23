@@ -122,6 +122,16 @@ describe("guide article", () => {
     const nav = screen.getByRole("navigation", { name: "같이 읽어 볼 글" });
     expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(related.map((other) => `/guide/${other}`));
   });
+
+  it.each([["the-fool", "타로 보기"], ["the-star", "타로 보기"], ["daewoon", "사주 보기"]])(
+    "%s: reading comes first, the related reads before the app's call-to-action (review 2026-10-23)",
+    async (slug, label) => {
+      render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
+      const related = screen.getByRole("navigation", { name: "같이 읽어 볼 글" });
+      const cta = screen.getByRole("complementary", { name: label });
+      expect(related.compareDocumentPosition(cta)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    },
+  );
 });
 
 describe("guide article body", () => {

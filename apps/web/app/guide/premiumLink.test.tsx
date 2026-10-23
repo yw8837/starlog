@@ -71,6 +71,8 @@ describe("the three premium guide articles link their product", () => {
       const html = renderToString(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
       expect(html).toContain(`href="${href}"`);
       expect(html).toContain(name);
+      // Reading first (review 2026-10-23): the product line comes after 같이 읽어 볼 글, not right under the body.
+      expect(html.indexOf(`href="${href}"`)).toBeGreaterThan(html.indexOf("같이 읽어 볼 글"));
     });
   }
 

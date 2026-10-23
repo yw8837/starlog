@@ -152,6 +152,25 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
           <GuideSourceLine article={article} />
           <GuideTrustBox article={article} />
 
+          <nav className={s.more} aria-labelledby="more-title">
+            <h2 id="more-title" className={s.moreTitle}>
+              같이 읽어 볼 글
+            </h2>
+            <ul className={s.list}>
+              {others.map((other) => (
+                <li key={other.slug}>
+                  <Link href={`/guide/${other.slug}`} className={`${s.item} ${s.itemCompact}`}>
+                    <GuideThumb article={other} />
+                    <span className={s.itemText}>
+                      <span className={s.itemTitle}>{other.title}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Reading first (review 2026-10-23): the app and the paid product follow the related reads, not the body. */}
           <aside className={s.cta} aria-label={cta.label}>
             <p className={s.ctaText}>{cta.text}</p>
             <Button href={appHref(cta.href)} block trailing="→">
@@ -174,24 +193,6 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
               }
             />
           ) : null}
-
-          <nav className={s.more} aria-labelledby="more-title">
-            <h2 id="more-title" className={s.moreTitle}>
-              같이 읽어 볼 글
-            </h2>
-            <ul className={s.list}>
-              {others.map((other) => (
-                <li key={other.slug}>
-                  <Link href={`/guide/${other.slug}`} className={`${s.item} ${s.itemCompact}`}>
-                    <GuideThumb article={other} />
-                    <span className={s.itemText}>
-                      <span className={s.itemTitle}>{other.title}</span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
 
           {/* The tab's order, so no article ends in a dead end: the one before, the one after, and the whole list. */}
           <nav className={s.more} aria-labelledby="pager-title">
