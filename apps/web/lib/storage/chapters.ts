@@ -426,6 +426,34 @@ export function mergeServerReadings(readings: readonly AccountReading[]): number
   return fresh.length;
 }
 
+/**
+ * Account sync: a chapter moved into the account takes its account id (lib/storage/move.ts). A copy of it pulled from the
+ * account before (a move that landed but whose answer was lost) leaves, so 내 기록 holds the reading once.
+ */
+export function linkServerId(id: string, serverId: string): void {
+  const entries = rawEntries();
+  if (!entries.some((entry) => idOf(entry) === id)) return;
+  store.save({
+    v: 1,
+    chapters: entries.flatMap((entry) => {
+      if (!isRecord(entry)) return [entry];
+      if (entry.id === id) return [{ ...entry, serverId }];
+      return entry.id === serverId || entry.serverId === serverId ? [] : [entry];
+    }),
+  });
+}
+
+/** 내 기록: each reading once, whether it came from this device or the account (by its own id and its account id); the first stays. */
+export function uniqueChapters(chapters: readonly StoredChapter[]): StoredChapter[] {
+  const seen = new Set<string>();
+  return chapters.filter((chapter) => {
+    const keys = chapter.serverId ? [chapter.id, chapter.serverId] : [chapter.id];
+    if (keys.some((key) => seen.has(key))) return false;
+    keys.forEach((key) => seen.add(key));
+    return true;
+  });
+}
+
 /** After the account's copies were deleted: this device's chapters stand alone again. */
 export function forgetServerIds() {
   store.save({

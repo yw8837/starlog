@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
+import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearChapters, listChapters, removeServerChapters, saveChapter } from "./chapters";
-import { deleteAccountReadings, forgetAccountOnDevice, pullAccountReadings } from "./sync";
+import { clearMoveMarks, moveMarks, putOffMove } from "./move";
+import { deleteAccountReadings, forgetAccountOnDevice, pullAccountReadings, useAccountSync } from "./sync";
 
 afterEach(() => clearChapters());
 
@@ -32,11 +34,38 @@ describe("pulling the account's readings", () => {
     saveChapter({ kind: "tarot", question: "계정 질문", conditions: [], note: "", cards: [card], reading: reading as never, chapterToken: "t", serverId: "abcdefghij0123456789" });
     await pullAccountReadings(vi.fn(async () => Response.json({ readings: [remote(3)], next: null })) as unknown as typeof fetch);
     sessionStorage.setItem("starlog.account-synced", "1");
+    putOffMove([own]);
     expect(listChapters()).toHaveLength(3);
     expect(forgetAccountOnDevice()).toBe(2);
     expect(listChapters().map((chapter) => chapter.id)).toEqual([own.id]);
     expect(sessionStorage.getItem("starlog.account-synced")).toBeNull();
     expect(removeServerChapters()).toBe(0);
+    // Account sync: the next login offers to move this device's readings again.
+    expect(moveMarks().later).toEqual([]);
+    clearMoveMarks();
+  });
+
+  it("pulls on every visit of 내 기록 or 내 정보 while logged in, at most once a minute (account sync: another device's reading shows without a new tab)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(Date.parse("2026-10-31T03:00:00Z"));
+      const fetchImpl = vi.fn(async () => Response.json({ readings: [], next: null }));
+      vi.stubGlobal("fetch", fetchImpl);
+      const logged = { payments: true, login: true, owner: false, user: { nickname: "별" } } as never;
+      const visit = () => renderHook(() => useAccountSync(logged)).unmount();
+      visit();
+      visit();
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+      vi.setSystemTime(Date.parse("2026-10-31T03:01:01Z"));
+      visit();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+      renderHook(() => useAccountSync({ payments: true, login: true, owner: false, user: null } as never)).unmount();
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+      sessionStorage.clear();
+    }
   });
 
   it("deletes the account's copies and lets this device's chapters stand alone", async () => {

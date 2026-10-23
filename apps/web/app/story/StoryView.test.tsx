@@ -100,4 +100,33 @@ describe("내 기록 records", () => {
     render(<StoryView />);
     expect(screen.getByText("기록 2개 · 이 기기에 보관돼요 · 1개는 계정에도 있어요")).toBeTruthy();
   });
+
+  it("account sync: logged in, marks each record this device alone keeps (이 기기에만), shows a reading once when its account copy is here too, newest first", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) =>
+        url === "/api/me"
+          ? Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } })
+          : Response.json({ readings: [], next: null }),
+      ),
+    );
+    const local = saveChapter({ ...TAROT, question: "이 기기에서만 연 질문" }, Date.now() - 2000).chapter;
+    saveChapter({ ...TAROT, question: "계정에도 있는 질문", serverId: SERVER_ID }, Date.now() - 1000);
+    // The same account reading as a record of its own (pulled before a lost move answer linked it): shown once.
+    localStorage.setItem("starlog.chapters", JSON.stringify({ v: 1, chapters: [...JSON.parse(localStorage.getItem("starlog.chapters")!).chapters, { ...TAROT, id: SERVER_ID, serverId: SERVER_ID, createdAt: Date.now() - 1000, turns: [], followUpsLeft: 3, question: "계정에도 있는 질문" }] }));
+    render(<StoryView />);
+    const badge = await screen.findByText("이 기기에만");
+    const links = screen.getAllByRole("link", { name: /질문/ });
+    expect(links.map((link) => link.textContent?.includes("계정에도 있는 질문"))).toEqual([true, false]);
+    expect(links[1]!.contains(badge)).toBe(true);
+    expect(links[1]!.getAttribute("href")).toBe(`/chapter/${local.id}`);
+    expect(screen.getAllByText("이 기기에만")).toHaveLength(1);
+    expect(screen.getByText("기록 2개 · 이 기기에 보관돼요 · 1개는 계정에도 있어요")).toBeTruthy();
+  });
+
+  it("marks nothing for a visitor who is not logged in: every record is on this device alone, as the header says", () => {
+    saveChapter(TAROT);
+    render(<StoryView />);
+    expect(screen.queryByText("이 기기에만")).toBeNull();
+  });
 });

@@ -1,0 +1,74 @@
+/* Account sync's offer on 내 기록 and 내 정보: the 오픈 기념 무료 box's look (app/me/MeView.module.css .beta). */
+
+.offer {
+  display: grid;
+  gap: 6px;
+  padding: 18px 18px 16px;
+  border: 1px solid rgba(243, 220, 161, 0.28);
+  border-radius: 24px;
+  background:
+    radial-gradient(90% 80% at 100% 0%, rgba(243, 220, 161, 0.12), transparent 60%),
+    rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.title {
+  font-size: var(--fs-h2);
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.lead {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.fine {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.link {
+  color: var(--ink-sub);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 6px 6px 6px 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+}
+
+.rowText {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.status {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+.status:empty {
+  display: none;
+}

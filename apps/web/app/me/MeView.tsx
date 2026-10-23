@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { MoveToAccount } from "@/components/account/MoveToAccount";
 import { HomeCheckin } from "@/components/home/HomeCheckin";
 import { ChevronIcon } from "@/components/home/icons";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +12,7 @@ import { loginHref, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { clearFlow } from "@/lib/flowState";
 import { openingFreeText } from "@/lib/helpGuide";
+import { syncRevisionInForce } from "@/lib/legal";
 import { clearTeasers } from "@/lib/reading/teaserCache";
 import { clearSajuProfile, useSajuProfile } from "@/lib/sajuFlow";
 import { profileSummary } from "@/lib/sajuForm";
@@ -106,7 +108,7 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
           <>
             <section className={s.beta} aria-labelledby="login-title">
               <h2 id="login-title" className={s.betaTitle}>
-                로그인하면 결제한 풀이를 다른 기기에서도 볼 수 있어요
+                {syncRevisionInForce() ? "로그인하면 내 풀이를 다른 기기에서도 볼 수 있어요" : "로그인하면 결제한 풀이를 다른 기기에서도 볼 수 있어요"}
               </h2>
               <Button href={loginHref("/me")} block>
                 로그인하기
@@ -126,6 +128,8 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
             ) : null}
           </>
         )}
+        {/* Account sync: logged in, this device's own readings are offered to move into the account. */}
+        <MoveToAccount />
         {/* 지난 풀이 돌아보기 (owner 2026-10-20: here, not on the home): only while a reading is due. */}
         <HomeCheckin />
         <p className={s.notice} role="status">
