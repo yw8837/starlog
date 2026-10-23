@@ -35,10 +35,11 @@ export const dynamicParams = false;
 const SECTIONS_BEFORE_AD = 2;
 
 /**
- * An article gets the unit only with a body at least this long (its sections' text, guideSectionText): AdSense allows no
- * ads on a screen with little publisher content (https://support.google.com/adsense/answer/9335564).
+ * An article gets the unit only with a body at least this long (its sections' text, guideSectionText, joined by line
+ * breaks): AdSense allows no ads on a screen with little publisher content (https://support.google.com/adsense/answer/9335564),
+ * so the shorter basics carry none (raised from 1,000 for the re-review of 2026-10-23).
  */
-const MIN_AD_BODY_CHARS = 1000;
+const MIN_AD_BODY_CHARS = 2500;
 
 export function generateStaticParams() {
   return GUIDE_ARTICLES.map((article) => ({ slug: article.slug }));

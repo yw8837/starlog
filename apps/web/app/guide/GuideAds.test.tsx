@@ -17,25 +17,33 @@ import { GUIDE_ARTICLES, guideSectionText, type GuideArticle } from "@/lib/guide
  * the tab lists and the editorial page carry no ad and no ad script; with ads off nothing ad-shaped renders at all.
  */
 
-// An article with enough sections for the slot but too little text for an ad: the slot must stay out.
-const THIN = vi.hoisted(
-  (): GuideArticle => ({
-    slug: "thin-article",
-    title: "본문이 짧은 글",
+/** The body an article needs for the unit (MIN_AD_BODY_CHARS in app/guide/[slug]/page.tsx): its sections' text joined, guideSectionText. */
+const MIN_AD_BODY = 2500;
+const bodyLength = (a: GuideArticle) => a.sections.map(guideSectionText).join("\n").length;
+
+// An article with enough sections for the slot but too little text for an ad: the slot must stay out. Two more sit
+// one character either side of the line (four bodies joined by three line breaks).
+const { THIN, UNDER, AT } = vi.hoisted(() => {
+  const made = (slug: string, last: string): GuideArticle => ({
+    slug,
+    title: "본문 길이를 보는 글",
     category: "saju",
-    description: "섹션은 넉넉하지만 본문이 짧은 글이에요.",
+    description: "섹션은 넉넉하고 본문 길이만 다른 글이에요.",
     published: "2026-10-01",
     sections: [
       { heading: "첫 절", body: "짧은 문단이에요." },
       { heading: "둘째 절", body: "짧은 문단이에요." },
       { heading: "셋째 절", body: "짧은 문단이에요." },
-      { heading: "넷째 절", body: "짧은 문단이에요." },
+      { heading: "넷째 절", body: last },
     ],
-  }),
-);
+  });
+  // Three bodies of 9 characters and three line breaks: 30 before the last body.
+  return { THIN: made("thin-article", "짧은 문단이에요."), UNDER: made("almost-article", "가".repeat(2500 - 30 - 1)), AT: made("enough-article", "가".repeat(2500 - 30)) };
+});
 vi.mock("@/lib/guide", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/guide")>();
-  return { ...actual, findArticle: (slug: string) => (slug === THIN.slug ? THIN : actual.findArticle(slug)) };
+  const made = new Map([THIN, UNDER, AT].map((a) => [a.slug, a]));
+  return { ...actual, findArticle: (slug: string) => made.get(slug) ?? actual.findArticle(slug) };
 });
 
 vi.mock("next/script", async () => {
@@ -79,17 +87,16 @@ describe("ads on guide articles", () => {
     cleanup();
   });
 
-  it("every real article that gets the unit has a substantial body", async () => {
+  it("puts the unit into a real article exactly when its body reaches 2,500 characters: a thin article carries none", async () => {
     let withAd = 0;
     for (const a of GUIDE_ARTICLES) {
       const { container } = render(await article(a.slug));
-      if (adParts(container).units) {
-        withAd += 1;
-        expect(a.sections.map(guideSectionText).join("\n").length, a.slug).toBeGreaterThanOrEqual(1000);
-      }
+      const substantial = bodyLength(a) >= MIN_AD_BODY && a.sections.length > 2;
+      expect(adParts(container).units, `${a.slug}: ${bodyLength(a)} characters`).toBe(substantial ? 1 : 0);
+      if (substantial) withAd += 1;
       cleanup();
     }
-    expect(withAd).toBe(GUIDE_ARTICLES.length);
+    expect(withAd).toBeGreaterThan(0);
     // Renders every article in one test: a minute, for when the whole suite shares the machine.
   }, 60_000);
 
@@ -98,6 +105,15 @@ describe("ads on guide articles", () => {
     expect(THIN.sections.length).toBeGreaterThan(2);
     expect(adParts(container).units).toBe(0);
     expect(adParts(container).slots).toBe(0);
+  });
+
+  it("draws the line at 2,500 characters of body: one short of it, no unit; at it, one", async () => {
+    expect([bodyLength(UNDER), bodyLength(AT)]).toEqual([MIN_AD_BODY - 1, MIN_AD_BODY]);
+    const under = render(await article(UNDER.slug));
+    expect(adParts(under.container)).toMatchObject({ units: 0, slots: 0 });
+    cleanup();
+    const at = render(await article(AT.slug));
+    expect(adParts(at.container)).toMatchObject({ units: 1, slots: 1 });
   });
 
   it("renders nothing ad-shaped and loads no script when ads are off", async () => {
