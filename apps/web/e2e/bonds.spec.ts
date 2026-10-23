@@ -365,10 +365,11 @@ test.describe("별자리 인연 · friend", () => {
   });
 
   /**
-   * owner 2026-10-23: the owner's public link shows each friend's score once that friend saw the notice, filling or not;
-   * with an earlier friend among them, that one by nickname only, and no total or average.
+   * owner 2026-10-23: the owner's public link shows each friend's score once that friend saw the notice, filling or not.
+   * Review 2026-10-23: once an earlier friend comes in, the constellation shows nicknames only, for good, and the form
+   * tells the next friend their score will not show.
    */
-  test("the owner's public link, while filling: friends with their scores; an earlier friend by nickname only", async ({ page, baseURL }, info) => {
+  test("the owner's public link, while filling: friends with their scores; after an earlier friend, nicknames only", async ({ page, baseURL }, info) => {
     const shots = info.project.name === "mobile";
     await startOwner(page, "용우");
     await page.getByRole("list", { name: "별자리 고르기" }).getByRole("button", { name: /사자자리/ }).click();
@@ -394,13 +395,20 @@ test.describe("별자리 인연 · friend", () => {
     await expect(viewer.getByRole("meter", { name: "평균 인연 점수" })).toBeVisible();
     if (shots) await viewer.screenshot({ path: "test-results/share-shots/bonds-shared-filling-scores.png", fullPage: true });
 
-    // An earlier friend joins (an earlier form, no notice): the same live link hides that score, the total and the average.
+    // An earlier friend joins (an earlier form, no notice): the same live link shows every friend by nickname only.
     const c = await friendJoin(baseURL!, code, FRIENDS[2]!, 2, false);
     await viewer.reload();
-    await expect(list).toHaveText([new RegExp(`^${FRIENDS[0]!.nickname} · 인연 \\d+점$`), new RegExp(`^${FRIENDS[1]!.nickname} · 인연 \\d+점$`), FRIENDS[2]!.nickname]);
+    await expect(list).toHaveText([FRIENDS[0]!.nickname, FRIENDS[1]!.nickname, FRIENDS[2]!.nickname]);
     await expect(viewer.getByRole("meter")).toHaveCount(0);
-    await expect(viewer.locator("main")).not.toContainText("합계");
+    await expect(viewer.locator("main")).toContainText("이 별자리는 친구마다의 점수를 공유하지 않아요.");
+    await expect(viewer.locator("main")).not.toContainText(/합계|\d+점/);
     if (shots) await viewer.screenshot({ path: "test-results/share-shots/bonds-shared-filling-mixed.png", fullPage: true });
+    // the next friend's form says so, and the checkbox agrees only to the nickname showing
+    await viewer.context().clearCookies();
+    await viewer.goto(new URL(`/b/${code}`, page.url()).toString(), { timeout: 120_000 });
+    await expect(viewer.getByText("용우님이 별자리를 공유하면 내 닉네임이 공유 링크와 이미지에 보여요. 인연 점수는 보이지 않아요.").first()).toBeVisible();
+    await expect(viewer.getByRole("checkbox")).toHaveAccessibleName(/공유하면 닉네임이 보이는 데 동의해요/);
+    if (shots) await viewer.screenshot({ path: "test-results/share-shots/bonds-join-private.png", fullPage: true });
     await viewer.close();
     for (const ctx of [a, b, c]) await ctx.dispose();
   });
