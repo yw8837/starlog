@@ -62,6 +62,13 @@ const SYNC_REVISION_AT = Date.parse(`${SYNC_REVISION_DATE}T00:00:00+09:00`);
 
 export const syncRevisionInForce = (now: number = Date.now()): boolean => now >= SYNC_REVISION_AT;
 
+/**
+ * The terms' revision on the same date (owner 2026-10-23: the AI notice stays in the terms only, and results are always
+ * shareable, 오픈 기념 무료 too): before this KST midnight the terms keep their old lines and show the new ones as 개정 예정;
+ * from it, in the text, with no deploy. The refund policy keeps legalEffectiveDate.
+ */
+export const termsEffectiveDate = (now: number = Date.now()): string => (syncRevisionInForce(now) ? SYNC_REVISION_DATE : legalEffectiveDate(now));
+
 /** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
 export const privacyEffectiveDate = (now: number = Date.now()): string =>
   syncRevisionInForce(now)

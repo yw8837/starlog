@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BusinessFacts, LegalPage, LegalSection } from "@/components/legal/LegalPage";
+import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { OPENING_LAST_DATE, SITE } from "@/lib/config";
-import { contactChannels, koreanDate, legalEffectiveDate, premiumChangeNoticeShown, premiumLegalInForce } from "@/lib/legal";
+import { SYNC_REVISION_DATE, contactChannels, koreanDate, premiumChangeNoticeShown, premiumLegalInForce, syncRevisionInForce, termsEffectiveDate } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
@@ -18,6 +18,23 @@ export const metadata: Metadata = pageMetadata({
   path: "/terms",
 });
 
+/**
+ * The revision of SYNC_REVISION_DATE (lib/legal.ts): shown as 개정 예정 until then, in the text from then. The AI item has a
+ * link, so it is a component; the other lines are plain text.
+ */
+const AI_ITEM = (
+  <>
+    {"운영자는 「인공지능 발전과 신뢰 기반 조성 등에 관한 기본법」 제31조에 따라 이 약관과 서비스 화면("}
+    <Link href="/how" prefetch={false}>
+      풀이 과정 안내
+    </Link>
+    {" 등)으로 생성형 인공지능을 쓴다는 사실을 미리 알립니다."}
+  </>
+);
+const NO_FOLLOW_UP = "이때는 이어서 물어보기를 제공하지 않습니다.";
+const FREE_OPENING =
+  "오픈 기념 무료로 연 타로 전체 풀이에는 이어서 물어보기를 제공하지 않습니다. 결과 공유는 다른 풀이와 같이 할 수 있고, 로그인한 상태로 연 풀이는 계정에도 보관됩니다. 오픈 기념 무료는 위 기간이 지나면 자동으로 끝납니다.";
+
 /** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
 export const dynamic = "force-dynamic";
 
@@ -25,12 +42,23 @@ export default function TermsPage() {
   const hasContact = contactChannels().length > 0;
   const now = Date.now();
   const inForce = premiumLegalInForce(now);
-  const effective = legalEffectiveDate(now);
+  const revised = syncRevisionInForce(now);
+  const effective = termsEffectiveDate(now);
 
   return (
     <LegalPage title="이용약관" effective={effective}>
       {inForce ? null : <PremiumLegalNotice />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
+      {revised ? null : (
+        <LegalNote>
+          <p className={s.noteTitle}>{`개정 예정 · ${koreanDate(SYNC_REVISION_DATE)}부터 시행`}</p>
+          <ul className={s.list}>
+            <li>{AI_ITEM}</li>
+            <li>{`오픈 기념 무료로 연 타로 전체 풀이: ${NO_FOLLOW_UP}`}</li>
+            <li>{FREE_OPENING}</li>
+          </ul>
+        </LegalNote>
+      )}
       <LegalSection id="purpose" title="제1조 (목적)">
         <p>
           {`이 약관은 ${SITE.business.name}(이하 “운영자”)가 제공하는 ${SITE.nameKo}(${SITE.name}) 서비스의 이용 조건과 절차, 운영자와 이용자의 권리·의무와 책임을 정합니다.`}
@@ -43,7 +71,7 @@ export default function TermsPage() {
           <li>{`“이용자”란 이 약관에 따라 ${SITE.nameKo}를 이용하는 회원과 비회원을 말합니다.`}</li>
           <li>“회원”이란 카카오 계정이나 Google 계정으로 로그인해 서비스를 이용하는 사람을, “비회원”이란 로그인하지 않고 이용하는 사람을 말합니다.</li>
           <li>“풀이”란 이용자가 입력한 질문·상황·출생 정보와 뽑은 카드 또는 계산한 명식을 바탕으로 AI가 생성해 제공하는 타로·사주 해석 콘텐츠를 말합니다.</li>
-          <li>“전체 풀이”란 무료로 공개하는 부분을 넘어 소제목 전체와 이어서 물어보기를 담은 풀이를 말하며, 건별로 결제해서 엽니다. 다만 타로 전체 풀이는 제4조의 오픈 기념 무료로도 열 수 있으며, 이때는 이어서 물어보기와 결과 공유를 제공하지 않습니다.</li>
+          <li>“전체 풀이”란 무료로 공개하는 부분을 넘어 소제목 전체와 이어서 물어보기를 담은 풀이를 말하며, 건별로 결제해서 엽니다. 다만 타로 전체 풀이는 제4조의 오픈 기념 무료로도 열 수 있으며, {revised ? NO_FOLLOW_UP : "이때는 이어서 물어보기와 결과 공유를 제공하지 않습니다."}</li>
         </ol>
       </LegalSection>
 
@@ -77,14 +105,22 @@ export default function TermsPage() {
             </Link>
             {"에 표시합니다."}
           </li>
-          <li>오픈 기념 무료로 연 타로 전체 풀이는 그 기기에서 보고 보관하는 데에만 쓸 수 있으며, 이어서 물어보기와 결과 공유는 제공하지 않습니다. 오픈 기념 무료는 위 기간이 지나면 자동으로 끝납니다.</li>
+          <li>
+            {revised
+              ? FREE_OPENING
+              : "오픈 기념 무료로 연 타로 전체 풀이는 그 기기에서 보고 보관하는 데에만 쓸 수 있으며, 이어서 물어보기와 결과 공유는 제공하지 않습니다. 오픈 기념 무료는 위 기간이 지나면 자동으로 끝납니다."}
+          </li>
         </ol>
       </LegalSection>
 
       <LegalSection id="ai" title="제4조의2 (AI가 만든 콘텐츠의 표시)">
         <ol className={s.list}>
           <li>타로·사주 풀이, 후속 질문의 답, 오늘의 한 장은 생성형 인공지능이 만든 결과물입니다. 사주 명식은 운영자의 계산 프로그램이 먼저 계산하고, AI는 그 결과를 바탕으로 풀이를 씁니다.</li>
-          <li>운영자는 「인공지능 발전과 신뢰 기반 조성 등에 관한 기본법」 제31조에 따라 이 약관과 서비스 화면으로 생성형 인공지능을 쓴다는 사실을 미리 알리고, 풀이 화면마다 AI가 만든 풀이라는 사실을 표시합니다.</li>
+          <li>
+            {revised
+              ? AI_ITEM
+              : "운영자는 「인공지능 발전과 신뢰 기반 조성 등에 관한 기본법」 제31조에 따라 이 약관과 서비스 화면으로 생성형 인공지능을 쓴다는 사실을 미리 알리고, 풀이 화면마다 AI가 만든 풀이라는 사실을 표시합니다."}
+          </li>
           <li>지금의 한 장은 운영자가 카드마다 미리 준비한 문장 가운데 하나를 보여 주며, 요청할 때마다 새로 생성하지 않습니다.</li>
           {BONDS ? (
             <li>별자리 인연의 인연 점수, 인연 카드의 한 줄, 이번 주 행운 번호는 운영자가 정한 규칙으로 계산합니다. 오늘의 인연 카드의 한두 줄은 AI가 만들 수 있습니다.</li>
@@ -131,7 +167,7 @@ export default function TermsPage() {
             </Link>
             {"을 따릅니다."}
           </li>
-          <li>오픈 기념 무료로 연 풀이에는 제4조에서 정한 대로 이어서 물어보기와 결과 공유를 제공하지 않습니다.</li>
+          <li>{`오픈 기념 무료로 연 풀이에는 제4조에서 정한 대로 이어서 물어보기${revised ? "를" : "와 결과 공유를"} 제공하지 않습니다.`}</li>
           <li>가격 안내에 준비 중으로 표시한 풀이는 판매를 시작하기 전에 가격과 제공 내용을 알리며, 그 전에는 결제를 받지 않습니다.</li>
           <li>풀이가 완성되어 저장되지 않으면 결제한 풀이를 쓰지 않습니다.</li>
           <li>영수증은 내 정보의 결제 내역에서 확인할 수 있습니다.</li>

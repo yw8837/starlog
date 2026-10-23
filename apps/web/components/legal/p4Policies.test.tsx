@@ -1,13 +1,16 @@
 // @vitest-environment jsdom
 import { cleanup, render } from "@testing-library/react";
 import type { ReactElement } from "react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import PricingPage from "@/app/pricing/page";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
 import TermsPage from "@/app/terms/page";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 const text = (node: ReactElement) => render(node).container.textContent ?? "";
 const MODEL_NAMES = /Claude|클로드|Opus|오푸스|Sonnet|GPT|Gemini/;
@@ -85,6 +88,9 @@ describe("policies for the paid launch", () => {
   });
 
   it("/terms: 제7조의2 is 삭제 (the signup gift went, owner 2026-10-14 evening), and 제4조 sets out 오픈 기념 무료: until 2026-10-31, once per device, tarot only, read and keep only, ending by itself", () => {
+    // The old 제2조·제4조 lines: pinned before the terms' 2026-10-31 00:00 KST revision (premiumSchedule.test.tsx has the new ones).
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-10-30T12:00:00+09:00"));
     const { container } = render(<TermsPage />);
     const clause = container.querySelector("#gift");
     expect(clause?.querySelector("h2")?.textContent).toBe("제7조의2 (삭제)");

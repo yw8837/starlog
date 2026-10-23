@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "./config";
 import {
-  GA_REVISION_DATE, LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, PRIVACY_REVISION_DATE, SYNC_REVISION_DATE, contactChannels, gaRevisionInForce, koreanDate, privacyEffectiveDate,
-  privacyRevisionInForce, syncRevisionInForce,
+  GA_REVISION_DATE, LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, PRIVACY_REVISION_DATE, SYNC_REVISION_DATE, contactChannels, gaRevisionInForce, koreanDate, legalEffectiveDate, privacyEffectiveDate,
+  privacyRevisionInForce, syncRevisionInForce, termsEffectiveDate,
 } from "./legal";
 
 describe("legal helpers", () => {
@@ -42,5 +42,12 @@ describe("legal helpers", () => {
     expect(syncRevisionInForce(at)).toBe(true);
     expect(privacyEffectiveDate(at - 1)).toBe("2026-10-30");
     expect(privacyEffectiveDate(at)).toBe("2026-10-31");
+  });
+
+  it("shows the terms' own 시행일: 2026-10-20 until the 2026-10-31 00:00 KST revision, 2026-10-31 from it (the refund policy keeps legalEffectiveDate)", () => {
+    const at = Date.parse("2026-10-31T00:00:00+09:00");
+    expect(termsEffectiveDate(at - 1)).toBe("2026-10-20");
+    expect(termsEffectiveDate(at)).toBe("2026-10-31");
+    expect(legalEffectiveDate(at)).toBe("2026-10-20");
   });
 });
