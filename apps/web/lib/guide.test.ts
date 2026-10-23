@@ -11,7 +11,7 @@ describe("GUIDE_ARTICLES", () => {
       "오행이 뭐예요?",
       // Renamed 2026-10-08 to match the other card articles, and again 2026-10-23 so no two card titles share one frame.
       "타로 은둔자 카드: 등불 속 별과 혼자 있는 시간",
-      "타로 별 카드 뜻",
+      "별 카드 뜻: 탑 다음에 오는 조용한 회복",
     ]);
   });
 
@@ -22,7 +22,7 @@ describe("GUIDE_ARTICLES", () => {
   });
 
   it("finds an article by slug, and nothing for an unknown slug", () => {
-    expect(findArticle("the-star")?.title).toBe("타로 별 카드 뜻");
+    expect(findArticle("the-star")?.title).toBe("별 카드 뜻: 탑 다음에 오는 조용한 회복");
     expect(findArticle("nope")).toBeUndefined();
   });
 
