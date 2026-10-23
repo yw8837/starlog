@@ -187,9 +187,8 @@ describe("/birth-card/<slug>, the result", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
     });
-    // The text ends in the link too: some apps show the text only (owner 2026-10-23 "텍스트만 날라간다").
-    expect(share).toHaveBeenCalledExactlyOnceWith({ title: SITE.nameKo, text: `나를 닮은 타로 카드는 은둔자 · 스타로그
-${SITE.url}/birth-card/hermit`, url: `${SITE.url}/birth-card/hermit` });
+    // The link goes once, as url (review 2026-10-23: Android Chrome joins text and url, so a link in the text went twice).
+    expect(share).toHaveBeenCalledExactlyOnceWith({ title: SITE.nameKo, text: "나를 닮은 타로 카드는 은둔자 · 스타로그", url: `${SITE.url}/birth-card/hermit` });
   });
 
   it("shows 운명의 수레바퀴's 짝 카드 as 마법사 and 태양's as 운명의 수레바퀴: one step of adding per page", async () => {

@@ -22,19 +22,6 @@ type ShareButtonProps = {
   target: KakaoTarget;
 };
 
-/** The preview image as a PNG file for the share sheet, where the device can share files; null otherwise. */
-async function imageFile(imageUrl: string, signal: AbortSignal): Promise<File | null> {
-  if (typeof navigator.canShare !== "function" || typeof File !== "function") return null;
-  try {
-    const response = await fetch(imageUrl, { signal });
-    if (!response.ok) return null;
-    const file = new File([await response.blob()], "starlog-share.png", { type: "image/png" });
-    return navigator.canShare({ files: [file] }) ? file : null;
-  } catch {
-    return null;
-  }
-}
-
 const ShareIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" focusable="false">
     <path d="M12 15V3.5" />
@@ -53,9 +40,9 @@ const TalkIcon = () => (
  * 공유하기: the system share sheet where there is one (phones), otherwise the link is copied and a
  * small toast says so. When the copy is refused too, the link is shown in a field to copy by hand.
  * The link is always the shared thing's own page (`target`): a reading's /s/<id>, never the home. The sheet gets the
- * title, the text with the link at its end (some apps show the text only, owner 2026-10-23 "텍스트만 날라간다") and
- * the link; with `target.attachImage`, where the device can share files, the preview image as a PNG too (stories).
- * With a Kakao key, 카카오톡으로 보내기 sits beside it (the SDK loads on the first tap). Secondary style, never the
+ * title, the text and the link, the link once (Android Chrome joins text and url) and never a file: with an image an
+ * app such as KakaoTalk can keep the image and drop the link (review 2026-10-23). The link's preview (og) carries the
+ * image; a screen that shares an image does it from its own button (ShareImageButton). With a Kakao key, 카카오톡으로 보내기 sits beside it (the SDK loads on the first tap). Secondary style, never the
  * screen's gold primary.
  */
 export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao = kakaoKey(), target }: ShareButtonProps) {
@@ -64,27 +51,14 @@ export function ShareButton({ text, title = SITE.nameKo, onPaper = false, kakao 
   // The link to copy by hand, once the clipboard refused it (stays until the next try).
   const [manual, setManual] = useState(false);
   const url = target.url;
-  // Fetched before the tap, so the share sheet still opens from the tap itself (a phone needs that).
-  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (state === "failed") setManual(true);
   }, [state]);
 
-  useEffect(() => {
-    if (!target.attachImage) return;
-    const controller = new AbortController();
-    void imageFile(target.imageUrl, controller.signal).then((made) => {
-      if (!controller.signal.aborted) setFile(made);
-    });
-    return () => controller.abort();
-  }, [target.attachImage, target.imageUrl]);
-
   const share = async () => {
     setManual(false);
-    const base: ShareData = { title, text: `${text}\n${url}`, url };
-    // The image goes along only where this device takes it with the rest; otherwise the link alone, as before.
-    const data: ShareData = file && typeof navigator.canShare === "function" && navigator.canShare({ ...base, files: [file] }) ? { ...base, files: [file] } : base;
+    const data: ShareData = { title, text, url };
     if (typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare(data))) {
       try {
         await navigator.share(data);

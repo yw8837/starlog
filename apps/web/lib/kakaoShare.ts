@@ -89,8 +89,6 @@ export interface KakaoTarget {
   description?: string;
   /** The second button: the visitor's own try ("나도 뽑아 보기" → /tarot/start). */
   second?: { title: string; url: string };
-  /** The phone's share sheet also carries the preview image as a PNG where the device can share files (stories). */
-  attachImage?: boolean;
   /** The preview image's size; the share pages' own is 1200×600 (2:1, as Kakao's feed recommends). */
   imageSize?: { width: number; height: number };
 }

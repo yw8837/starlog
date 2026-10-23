@@ -37,14 +37,13 @@ afterEach(() => {
 });
 
 describe("ShareButton", () => {
-  it("opens the share sheet with the title, the text with the link at its end (apps that show the text only) and the link", async () => {
+  it("opens the share sheet with the title, the text and the link, the link once (Android Chrome joins text and url) and no file", async () => {
     const share = vi.fn().mockResolvedValue(undefined);
     const writeText = vi.fn().mockResolvedValue(undefined);
     stubNavigator({ share, clipboard: { writeText } });
     render(<ShareButton text={TEXT} target={TARGET} />);
     await press();
-    expect(share).toHaveBeenCalledWith({ title: SITE.nameKo, text: `${TEXT}
-${URL_}`, url: URL_ });
+    expect(share).toHaveBeenCalledWith({ title: SITE.nameKo, text: TEXT, url: URL_ });
     expect(writeText).not.toHaveBeenCalled();
     expect(screen.getByRole("status").textContent).toBe("");
   });
@@ -97,23 +96,18 @@ ${URL_}`, url: URL_ });
     expect(button.className).not.toMatch(/primary/);
   });
 
-  it("attaches the preview image as a PNG where the device can share files (stories), fetched before the tap", async () => {
+  it("never sends the image file with the link, even where the device shares files: an app such as KakaoTalk would keep the image and drop the link (review 2026-10-23); the link's own preview shows the image", async () => {
     const share = vi.fn().mockResolvedValue(undefined);
-    const canShare = vi.fn((data: { files?: File[] }) => Boolean(data.files?.every((f) => f.type === "image/png")));
     stubNavigator({ share, clipboard: { writeText: vi.fn() } });
-    Object.defineProperty(navigator, "canShare", { value: canShare, configurable: true, writable: true });
+    Object.defineProperty(navigator, "canShare", { value: () => true, configurable: true, writable: true });
     const fetchMock = vi.fn(async () => new Response(new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     try {
-      render(<ShareButton text={TEXT} target={{ ...TARGET, attachImage: true }} />);
+      render(<ShareButton text={TEXT} target={TARGET} />);
       await act(async () => {});
-      expect(fetchMock).toHaveBeenCalledWith(IMAGE, expect.anything());
       await press();
-      const data = share.mock.calls[0]![0] as { title: string; text: string; url: string; files: File[] };
-      expect(data).toMatchObject({ title: SITE.nameKo, text: `${TEXT}
-${URL_}`, url: URL_ });
-      expect(data.files).toHaveLength(1);
-      expect(data.files[0]!.type).toBe("image/png");
+      expect(share).toHaveBeenCalledWith({ title: SITE.nameKo, text: TEXT, url: URL_ });
+      expect(fetchMock).not.toHaveBeenCalled();
     } finally {
       vi.unstubAllGlobals();
       delete (navigator as { canShare?: unknown }).canShare;

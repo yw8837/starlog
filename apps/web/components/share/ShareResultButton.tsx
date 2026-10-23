@@ -169,7 +169,6 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
                     description: phase.preview?.description ?? copy.kakao,
                     // 나도 뽑아 보기 / 내 별자리 만들기: the visitor's own try, on this site.
                     ...(phase.preview ? { second: { title: phase.preview.try.label, url: new URL(phase.preview.try.path, phase.url).toString() } } : {}),
-                    attachImage: true,
                   }}
                 />
               </div>

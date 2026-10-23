@@ -61,7 +61,7 @@ describe("ShareResultButton", () => {
       await click(screen.getByRole("button", { name: "공유하기" }));
       await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
       await click(within(sheet()).getByRole("button", { name: "카카오톡으로 보내기", hidden: true }));
-      expect(kakao).toHaveBeenLastCalledWith("나의 스타로그", "test-key", { url: URL_, imageUrl: IMAGE, button: "풀이 보기", description, attachImage: true });
+      expect(kakao).toHaveBeenLastCalledWith("나의 스타로그", "test-key", { url: URL_, imageUrl: IMAGE, button: "풀이 보기", description });
     } finally {
       vi.unstubAllEnvs();
     }
@@ -80,8 +80,7 @@ describe("ShareResultButton", () => {
     expect(create).toHaveBeenCalledOnce();
     expect(sheet().textContent).toContain("starlog.yeolmaeapps.kr/s/abcdefghijkl");
     await click(within(sheet()).getByRole("button", { name: "공유하기", hidden: true }));
-    expect(share).toHaveBeenCalledWith(expect.objectContaining({ url: URL_, text: `나의 스타로그 · 연애운
-${URL_}` }));
+    expect(share).toHaveBeenCalledWith({ title: "스타로그", url: URL_, text: "나의 스타로그 · 연애운" });
   });
 
   it("for 오늘의 한 장, says a friend sees today's card and its reading and nothing personal, and the Kakao message opens that link with 풀이 보기", async () => {
@@ -99,7 +98,6 @@ ${URL_}` }));
         imageUrl: IMAGE,
         button: "풀이 보기",
         description: "오늘 뽑은 카드와 풀이를 볼 수 있어요. 나도 오늘의 한 장을 뽑아 볼 수 있어요.",
-        attachImage: true,
       });
     } finally {
       vi.unstubAllEnvs();
@@ -123,11 +121,9 @@ ${URL_}` }));
         button: "풀이 보기",
         description: preview.description,
         second: { title: "나도 뽑아 보기", url: "https://starlog.yeolmaeapps.kr/tarot/start" },
-        attachImage: true,
       });
       await click(within(sheet()).getByRole("button", { name: "공유하기", hidden: true }));
-      expect(share).toHaveBeenCalledWith(expect.objectContaining({ title: "스타로그", text: `${preview.title}
-${URL_}`, url: URL_ }));
+      expect(share).toHaveBeenCalledWith({ title: "스타로그", text: preview.title, url: URL_ });
     } finally {
       vi.unstubAllEnvs();
     }

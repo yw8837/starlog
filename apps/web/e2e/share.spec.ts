@@ -111,7 +111,7 @@ if (openingOn()) test("a 오픈 기념 무료 reading shares too (owner 2026-10-
  * sheet carry the reading's own /s/<id>, its title and first sentence, its 2:1 image and the visitor's own try; 풀이 보기
  * opens the shared reading, not the home. Needs NEXT_PUBLIC_KAKAO_JS_KEY on the dev server (any value: the SDK is mocked).
  */
-test("Kakao feed and the share sheet carry the reading's link, title, first sentence and image; 풀이 보기 opens the reading", async ({ page }, info) => {
+test("Kakao feed carries the reading's link, title, first sentence and image; the share sheet title, text and link once; 풀이 보기 opens the reading", async ({ page }, info) => {
   await page.addInitScript(() => {
     const sent: unknown[] = [];
     const shared: Array<{ title?: string; text?: string; url?: string; files?: Array<{ type: string; size: number }> }> = [];
@@ -131,7 +131,6 @@ test("Kakao feed and the share sheet carry the reading's link, title, first sent
   await page.goto("/chapter/sharee2e03");
   await page.getByRole("button", { name: "공유하기" }).click();
   const sheet = page.getByRole("dialog", { name: "결과 공유하기" });
-  const imageLoaded = page.waitForResponse((r) => r.url().includes("/api/og/share/"), { timeout: 90_000 });
   await sheet.getByRole("button", { name: "공유 링크 만들기" }).click();
   await expect(sheet).toContainText(/\/s\/[a-z0-9]{12}/, { timeout: 30_000 });
   const path = (/\/s\/[a-z0-9]{12}/.exec((await sheet.textContent()) ?? "") ?? [""])[0];
@@ -157,20 +156,19 @@ test("Kakao feed and the share sheet carry the reading's link, title, first sent
     ["나도 뽑아 보기", new URL("/tarot/start", page.url()).toString()],
   ]);
 
-  // The phone's share sheet: title, the text ending in the link, the link, and the image as a PNG.
-  // The image is fetched as the link is made, before the tap (a phone opens its sheet only from the tap itself).
-  const image = await imageLoaded;
-  expect(image.headers()["content-type"]).toBe("image/png");
-  await page.waitForTimeout(300);
+  // The phone's share sheet: title, text and the link once, and no file (with an image KakaoTalk and others can keep the
+  // image and drop the link; the link's own preview carries the image, review 2026-10-23).
   await sheet.getByRole("button", { name: "공유하기" }).click();
   await expect.poll(async () => (await page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared)).length, { timeout: 10_000 }).toBe(1);
   const shared = (await page.evaluate(() => (window as unknown as { __shared: Array<{ title: string; text: string; url: string; files?: Array<{ type: string; size: number }> }> }).__shared))[0]!;
   expect(shared.title).toBe("스타로그");
   expect(shared.url).toBe(link);
-  expect(shared.text.endsWith(link)).toBe(true);
-  expect(shared.text).toContain(template.content.title);
-  expect(shared.files?.map((f) => f.type)).toEqual(["image/png"]);
-  expect(shared.files![0]!.size).toBeGreaterThan(10_000);
+  expect(shared.text).toBe(template.content.title);
+  expect(shared.text).not.toContain(link);
+  expect(shared.files).toBeUndefined();
+  // The preview the link carries instead: its 2:1 image.
+  const og = await page.request.get(template.content.imageUrl, { timeout: 120_000 });
+  expect(og.headers()["content-type"]).toBe("image/png");
 
   // 풀이 보기, as Kakao opens it: the shared reading, never the home; its preview says the same as the message.
   const visitor = await page.context().browser()!.newPage();
