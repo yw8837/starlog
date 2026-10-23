@@ -137,7 +137,7 @@ describe("everything open now, the premium clauses in force from 2026-10-20 00:0
 /**
  * Owner 2026-10-23: the AI notice stays in the terms only, and results are always shareable (오픈 기념 무료 too, kept in the
  * account while logged in). The terms change from 2026-10-31 00:00 KST (SYNC_REVISION_DATE, 7 days' notice): before it the
- * old text stays with the three changes as 개정 예정 on top; from it the new text is in the body and 시행일 is 2026-10-31.
+ * old text stays with the four changes as 개정 예정 on top; from it the new text is in the body and 시행일 is 2026-10-31.
  */
 describe("the terms' revision of 2026-10-31 00:00 KST (AI notice, sharing of 오픈 기념 무료 readings)", () => {
   const T_BEFORE = Date.parse("2026-10-30T23:59:00+09:00");
@@ -153,7 +153,7 @@ describe("the terms' revision of 2026-10-31 00:00 KST (AI notice, sharing of 오
   const OLD_PAID = "제4조에서 정한 대로 이어서 물어보기와 결과 공유를 제공하지 않습니다.";
   const NEW_PAID = "제4조에서 정한 대로 이어서 물어보기를 제공하지 않습니다.";
 
-  it("before 10/31 00:00: the old sentences and 시행일 2026-10-20, the three changes as 개정 예정 in a notice box on top", () => {
+  it("before 10/31 00:00: the old sentences and 시행일 2026-10-20, the four changes as 개정 예정 in a notice box on top", () => {
     vi.setSystemTime(T_BEFORE);
     const { container } = render(<TermsPage />);
     const text = container.textContent ?? "";
@@ -161,9 +161,10 @@ describe("the terms' revision of 2026-10-31 00:00 KST (AI notice, sharing of 오
     for (const fresh of [NEW_AI, NEW_FREE]) expect(text.split(fresh), fresh).toHaveLength(2); // only in the notice
     expect(text).toContain("이 약관은 2026년 10월 20일부터 시행합니다.");
     const note = screen.getByText(T_UPCOMING).closest("div")!;
-    expect(note.querySelectorAll("li")).toHaveLength(3);
+    expect(note.querySelectorAll("li")).toHaveLength(4);
     expect(note.textContent).toContain(NEW_AI);
-    expect(note.textContent).toContain(NEW_DEF);
+    expect(note.textContent).toContain("제2조 5호: 오픈 기념 무료로 연 타로 전체 풀이에는 이어서 물어보기만 제공하지 않습니다(결과 공유는 할 수 있습니다).");
+    expect(note.textContent).toContain(`제7조 5호: 오픈 기념 무료로 연 풀이에는 ${NEW_PAID}`);
     expect(note.textContent).toContain(NEW_FREE);
     expect(note.textContent).toContain("오픈 기념 무료는 위 기간이 지나면 자동으로 끝납니다.");
     expect(container.querySelector("#ai")?.textContent).not.toContain(NEW_AI);

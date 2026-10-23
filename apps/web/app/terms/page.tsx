@@ -53,9 +53,13 @@ export default function TermsPage() {
         <LegalNote>
           <p className={s.noteTitle}>{`개정 예정 · ${koreanDate(SYNC_REVISION_DATE)}부터 시행`}</p>
           <ul className={s.list}>
-            <li>{AI_ITEM}</li>
-            <li>{`오픈 기념 무료로 연 타로 전체 풀이: ${NO_FOLLOW_UP}`}</li>
-            <li>{FREE_OPENING}</li>
+            <li>
+              {"제4조의2 2호: "}
+              {AI_ITEM}
+            </li>
+            <li>{"제2조 5호: 오픈 기념 무료로 연 타로 전체 풀이에는 이어서 물어보기만 제공하지 않습니다(결과 공유는 할 수 있습니다)."}</li>
+            <li>{`제4조: ${FREE_OPENING}`}</li>
+            <li>{"제7조 5호: 오픈 기념 무료로 연 풀이에는 제4조에서 정한 대로 이어서 물어보기를 제공하지 않습니다."}</li>
           </ul>
         </LegalNote>
       )}
