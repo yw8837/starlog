@@ -100,3 +100,79 @@ test("a 오픈 기념 무료 reading shares too (owner 2026-10-23): its link ope
   await expect(visitor.locator("main")).not.toContainText(INPUT.question);
   await visitor.close();
 });
+
+/**
+ * owner 2026-10-23 "결과공유하면 텍스트만 날라간다": the Kakao feed (SDK mocked: the template is checked) and the phone's share
+ * sheet carry the reading's own /s/<id>, its title and first sentence, its 2:1 image and the visitor's own try; 풀이 보기
+ * opens the shared reading, not the home. Needs NEXT_PUBLIC_KAKAO_JS_KEY on the dev server (any value: the SDK is mocked).
+ */
+test("Kakao feed and the share sheet carry the reading's link, title, first sentence and image; 풀이 보기 opens the reading", async ({ page }, info) => {
+  await page.addInitScript(() => {
+    const sent: unknown[] = [];
+    const shared: Array<{ title?: string; text?: string; url?: string; files?: Array<{ type: string; size: number }> }> = [];
+    let ready = false;
+    Object.assign(window, {
+      __kakao: sent,
+      __shared: shared,
+      Kakao: { init: () => void (ready = true), isInitialized: () => ready, Share: { sendDefault: (template: unknown) => void sent.push(template) } },
+    });
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: ShareData) => void shared.push({ title: data.title, text: data.text, url: data.url, files: data.files?.map((f) => ({ type: f.type, size: f.size })) }),
+    });
+    Object.defineProperty(navigator, "canShare", { configurable: true, value: (data: ShareData) => !data.files || data.files.every((f) => f.type === "image/png") });
+  });
+  await savedReading(page, "sharee2e03");
+  await page.goto("/chapter/sharee2e03");
+  await page.getByRole("button", { name: "공유하기" }).click();
+  const sheet = page.getByRole("dialog", { name: "결과 공유하기" });
+  const imageLoaded = page.waitForResponse((r) => r.url().includes("/api/og/share/"), { timeout: 90_000 });
+  await sheet.getByRole("button", { name: "공유 링크 만들기" }).click();
+  await expect(sheet).toContainText(/\/s\/[a-z0-9]{12}/, { timeout: 30_000 });
+  const path = (/\/s\/[a-z0-9]{12}/.exec((await sheet.textContent()) ?? "") ?? [""])[0];
+  const link = new URL(path, page.url()).toString();
+  if (info.project.name === "mobile") await page.screenshot({ path: "test-results/share-shots/sheet-ready.png" });
+
+  const kakaoButton = sheet.getByRole("button", { name: "카카오톡으로 보내기" });
+  await expect(kakaoButton).toBeVisible();
+  await kakaoButton.click();
+  const template = (await page.evaluate(() => (window as unknown as { __kakao: unknown[] }).__kakao))[0] as {
+    content: { title: string; description: string; imageUrl: string; imageWidth: number; imageHeight: number; link: { webUrl: string; mobileWebUrl: string } };
+    buttons: Array<{ title: string; link: { webUrl: string } }>;
+  };
+  expect(template.content.link).toEqual({ webUrl: link, mobileWebUrl: link });
+  expect(template.content.imageUrl).toBe(new URL(`/api/og/share/${path.slice(3)}`, page.url()).toString());
+  expect([template.content.imageWidth, template.content.imageHeight]).toEqual([1200, 600]);
+  expect(template.content.title.length).toBeGreaterThan(5);
+  expect(template.content.description.length).toBeGreaterThan(5);
+  expect(JSON.stringify(template)).not.toContain(INPUT.question);
+  expect(JSON.stringify(template)).not.toContain(INPUT.note);
+  expect(template.buttons.map((b) => [b.title, b.link.webUrl])).toEqual([
+    ["풀이 보기", link],
+    ["나도 뽑아 보기", new URL("/tarot/start", page.url()).toString()],
+  ]);
+
+  // The phone's share sheet: title, the text ending in the link, the link, and the image as a PNG.
+  // The image is fetched as the link is made, before the tap (a phone opens its sheet only from the tap itself).
+  const image = await imageLoaded;
+  expect(image.headers()["content-type"]).toBe("image/png");
+  await page.waitForTimeout(300);
+  await sheet.getByRole("button", { name: "공유하기" }).click();
+  await expect.poll(async () => (await page.evaluate(() => (window as unknown as { __shared: unknown[] }).__shared)).length, { timeout: 10_000 }).toBe(1);
+  const shared = (await page.evaluate(() => (window as unknown as { __shared: Array<{ title: string; text: string; url: string; files?: Array<{ type: string; size: number }> }> }).__shared))[0]!;
+  expect(shared.title).toBe("스타로그");
+  expect(shared.url).toBe(link);
+  expect(shared.text.endsWith(link)).toBe(true);
+  expect(shared.text).toContain(template.content.title);
+  expect(shared.files?.map((f) => f.type)).toEqual(["image/png"]);
+  expect(shared.files![0]!.size).toBeGreaterThan(10_000);
+
+  // 풀이 보기, as Kakao opens it: the shared reading, never the home; its preview says the same as the message.
+  const visitor = await page.context().browser()!.newPage();
+  await visitor.goto(template.buttons[0]!.link.webUrl);
+  await expect(visitor).toHaveURL(link);
+  await expect(visitor.getByRole("heading", { level: 1 })).toHaveText("카드 세 장이 건넨 이야기");
+  expect(await visitor.locator('meta[property="og:title"]').getAttribute("content")).toBe(template.content.title);
+  expect(await visitor.locator('meta[property="og:description"]').getAttribute("content")).toBe(template.content.description);
+  await visitor.close();
+});
