@@ -47,12 +47,12 @@ describe("D1 BondsRepo reads", () => {
   });
 });
 
-describe("D1 BondsRepo and stars.score_public (owner 2026-10-23, migration 0016)", () => {
-  /** A D1 whose stars table has or lacks score_public; it records every batch's SQL. */
-  function starsD1(hasColumn: boolean, batches: string[][]): D1Binding {
-    const after = { id: "c1", owner_id: "o1", sign: "aries", status: "filling", total: 87, started_at: 1, completed_at: null };
+describe("D1 BondsRepo, stars.score_public (0016) and constellations.scores_private (0017), owner and review 2026-10-23", () => {
+  /** A D1 whose tables lack the `missing` columns; it records every batch's SQL and answers reads with `record`. */
+  function bondsD1(missing: string[], batches: string[][], record: Record<string, unknown> | null = null): D1Binding {
+    const after = { id: "c1", owner_id: "o1", sign: "aries", status: "filling", total: 87, started_at: 1, completed_at: null, scores_private: 0 };
     const statement = (sql: string): D1Statement & { sql: string } => {
-      const s = { sql, bind: () => s, first: async () => null, all: async () => ({ results: [], success: true }), run: async () => ({ results: [], success: true }) };
+      const s = { sql, bind: () => s, first: async () => record, all: async () => ({ results: [], success: true }), run: async () => ({ results: [], success: true }) };
       return s as D1Statement & { sql: string };
     };
     return {
@@ -60,33 +60,71 @@ describe("D1 BondsRepo and stars.score_public (owner 2026-10-23, migration 0016)
       batch: async (statements) => {
         const sqls = statements.map((st) => (st as unknown as { sql: string }).sql);
         batches.push(sqls);
-        if (!hasColumn && sqls.some((sql) => sql.includes("score_public"))) throw new Error("D1_ERROR: table stars has no column named score_public: SQLITE_ERROR");
+        const gone = missing.find((column) => sqls.some((sql) => sql.includes(column)));
+        if (gone) throw new Error(`D1_ERROR: no such column: ${gone}: SQLITE_ERROR`);
         return statements.map((_, i) => ({ results: i === statements.length - 1 ? [after] : [], success: true }));
       },
     };
   }
   const row = { id: "s1", constellationId: "c1", slot: 0, nickname: "하늘", message: null, cardId: "cups-02", orientation: "upright" as const, score: 87, parts: [], friendKey: "k", createdAt: 1, scorePublic: true };
+  const earlier = { ...row, scorePublic: false };
+  const marks = (sqls: string[]) => sqls.some((sql) => sql.includes("SET scores_private = 1"));
 
-  it("writes the flag where the column exists", async () => {
+  it("writes the star's flag, and leaves the constellation's alone for a star that saw the notice", async () => {
     const batches: string[][] = [];
-    await createD1BondsRepo(starsD1(true, batches)).joinStar(row, 4, "2026-10-23", 1);
+    await createD1BondsRepo(bondsD1([], batches)).joinStar(row, 4, "2026-10-23", 1);
     expect(batches).toHaveLength(1);
     expect(batches[0]![0]).toContain("score_public");
+    expect(marks(batches[0]!)).toBe(false);
   });
 
-  it("still joins on a database without 0016 (code deployed first): the star goes in without the flag, as an earlier star", async () => {
+  it("marks the constellation private in the same batch (one transaction) for a star without the notice", async () => {
     const batches: string[][] = [];
-    const after = await createD1BondsRepo(starsD1(false, batches)).joinStar(row, 4, "2026-10-23", 1);
+    await createD1BondsRepo(bondsD1([], batches)).joinStar(earlier, 4, "2026-10-23", 1);
+    expect(batches).toHaveLength(1);
+    expect(marks(batches[0]!)).toBe(true);
+    batches.length = 0;
+    await createD1BondsRepo(bondsD1([], batches)).insertStar(earlier);
+    expect(batches).toHaveLength(1);
+    expect(marks(batches[0]!)).toBe(true);
+  });
+
+  it("still joins on a database without 0016 and 0017 (code deployed first): the star goes in as an earlier one", async () => {
+    const batches: string[][] = [];
+    const after = await createD1BondsRepo(bondsD1(["score_public", "scores_private"], batches)).joinStar(row, 4, "2026-10-23", 1);
     expect(after.id).toBe("c1");
     expect(batches).toHaveLength(2);
-    expect(batches[1]![0]).not.toContain("score_public");
+    expect(batches[1]!.join(" ")).not.toMatch(/score_public|scores_private/);
   });
 
-  it("is a column of stars after every migration, 0 for a star written before", () => {
+  it("still joins on a database with 0016 but not 0017", async () => {
+    const batches: string[][] = [];
+    expect((await createD1BondsRepo(bondsD1(["scores_private"], batches)).joinStar(earlier, 4, "2026-10-23", 1)).id).toBe("c1");
+    expect(batches).toHaveLength(2);
+    expect(batches[1]!.join(" ")).not.toMatch(/score_public|scores_private/);
+  });
+
+  it("reads a constellation as private where the column is missing or 1, as shown only where it is 0", async () => {
+    const base = { id: "c1", owner_id: "o1", sign: "aries", status: "filling", total: 87, started_at: 1, completed_at: null };
+    const read = async (record: Record<string, unknown>) => (await createD1BondsRepo(bondsD1([], [], record)).getConstellation("c1"))?.scoresPrivate;
+    expect(await read(base)).toBe(true);
+    expect(await read({ ...base, scores_private: 1 })).toBe(true);
+    expect(await read({ ...base, scores_private: 0 })).toBeUndefined();
+  });
+
+  it("adds both columns at 0 for rows written after, and 0017 marks every constellation already holding a star", () => {
+    const files = readdirSync(MIGRATIONS).filter((file) => /^\d{4}_.+\.sql$/.test(file)).sort();
+    expect(files.slice(-3)).toEqual(["0015_reading_origin.sql", "0016_star_score_public.sql", "0017_constellation_scores_private.sql"]);
     const db = new DatabaseSync(":memory:");
-    for (const name of readdirSync(MIGRATIONS).filter((file) => /^\d{4}_.+\.sql$/.test(file)).sort()) db.exec(readFileSync(`${MIGRATIONS}${name}`, "utf8"));
-    const columns = db.prepare("PRAGMA table_info(stars)").all().map((c) => (c as { name: string; dflt_value: string | null }));
-    expect(columns.find((c) => c.name === "score_public")?.dflt_value).toBe("0");
-    expect(readdirSync(MIGRATIONS).filter((file) => /^\d{4}_/.test(file)).sort().slice(-3)).toEqual(["0014_more_share_kinds.sql", "0015_reading_origin.sql", "0016_star_score_public.sql"]);
+    for (const name of files.slice(0, -1)) db.exec(readFileSync(`${MIGRATIONS}${name}`, "utf8"));
+    db.exec(`INSERT INTO owners (id, nickname, ranking_public, basis_json, created_at) VALUES ('o1', '용우', 1, '{}', 1), ('o2', '민지', 1, '{}', 1);
+      INSERT INTO constellations (id, owner_id, sign, status, total, started_at) VALUES ('with', 'o1', 'aries', 'filling', 80, 1), ('empty', 'o2', 'leo', 'filling', 0, 1);
+      INSERT INTO stars (id, constellation_id, slot, nickname, card_id, orientation, score, parts_json, friend_key, created_at) VALUES ('s', 'with', 0, '하늘', 'cups-02', 'upright', 80, '[]', 'k', 1);`);
+    db.exec(readFileSync(`${MIGRATIONS}${files.at(-1)}`, "utf8"));
+    const flags = Object.fromEntries(db.prepare("SELECT id, scores_private FROM constellations").all().map((r) => [(r as { id: string }).id, (r as { scores_private: number }).scores_private]));
+    expect(flags).toEqual({ with: 1, empty: 0 });
+    const columns = (table: string) => db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c as { name: string; dflt_value: string | null });
+    expect(columns("stars").find((c) => c.name === "score_public")?.dflt_value).toBe("0");
+    expect(columns("constellations").find((c) => c.name === "scores_private")?.dflt_value).toBe("0");
   });
 });

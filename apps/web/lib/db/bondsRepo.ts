@@ -9,7 +9,14 @@ export interface OwnerRow {
 }
 export interface InviteRow { code: string; ownerId: string; createdAt: number; revokedAt: number | null }
 export type ConstellationStatus = "filling" | "complete";
-export interface ConstellationRow { id: string; ownerId: string; sign: SignId; status: ConstellationStatus; total: number; startedAt: number; completedAt: number | null }
+export interface ConstellationRow {
+  id: string; ownerId: string; sign: SignId; status: ConstellationStatus; total: number; startedAt: number; completedAt: number | null;
+  /**
+   * its friends' scores never show on its public share (migration 0017): set once a star goes in without the score
+   * notice, and never cleared. Absent: shown; the D1 repository reads a database without the column as private.
+   */
+  scoresPrivate?: boolean;
+}
 export interface StarRow {
   id: string; constellationId: string; slot: number; nickname: string; message: string | null;
   cardId: string; orientation: Orientation; score: number; parts: BondPart[]; friendKey: string; createdAt: number;
@@ -36,13 +43,15 @@ export interface BondsRepo {
   updateConstellation(id: string, patch: Partial<Pick<ConstellationRow, "status" | "total" | "completedAt">>): Promise<void>;
   deleteConstellation(id: string): Promise<void>; // deletes its stars too
   starsOf(constellationId: string): Promise<StarRow[]>; // slot order
-  insertStar(row: StarRow): Promise<void>; // rejects duplicate (constellationId, slot) or (constellationId, friendKey)
+  /** rejects duplicate (constellationId, slot) or (constellationId, friendKey); a star without `scorePublic` makes its constellation's scores private, as joinStar does */
+  insertStar(row: StarRow): Promise<void>;
   /**
    * One atomic step: insert the star, recount the constellation (total = sum of scores; complete with
    * completedAt `now` once it holds `slots` stars), count the join on the owner's `day`, and when this
    * star completes it, start `next` as the sign being filled (skipped if the owner already has that
-   * sign or a sign being filled). Nothing is written when the star cannot go in (a duplicate slot or
-   * friend). Returns the constellation after it.
+   * sign or a sign being filled). A star without `scorePublic` sets the constellation's scoresPrivate in the
+   * same step, for good. Nothing is written when the star cannot go in (a duplicate slot or friend). Returns
+   * the constellation after it.
    */
   joinStar(row: StarRow, slots: number, day: string, now: number, next?: { id: string; sign: SignId } | null): Promise<ConstellationRow>;
   /** Recount a constellation from its stars (total; complete when it holds `slots` stars). */

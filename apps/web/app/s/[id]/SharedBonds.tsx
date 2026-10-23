@@ -47,7 +47,7 @@ function SharedConstellation({ view }: { view: Extract<BondsShareView, { kind: "
       <div className={`${b.panel} ${b.panelGold}`}>
         {view.complete ? <p className={b.eyebrow}>완성한 별자리</p> : null}
         <ConstellationArt sign={view.sign} lit={view.members.map((m) => m.slot)} labels={labels} size={320} />
-        {/* Each friend's score where they joined after the score notice; the total and average only when every one shows. */}
+        {/* Each friend's score, the total and the average where the constellation's scores show (lib/bonds/share.ts). */}
         <ul className={s.question} aria-label="별이 된 친구">
           {view.members.map((m) => (
             <li key={m.slot}>{m.score === null ? m.nickname : `${m.nickname} · 인연 ${m.score}점`}</li>
@@ -57,7 +57,7 @@ function SharedConstellation({ view }: { view: Extract<BondsShareView, { kind: "
         {view.average !== null ? <ScoreGauge score={view.average} label="평균 인연 점수" /> : null}
         <p className={b.helper}>
           {view.members.some((m) => m.score === null)
-            ? "점수 안내 전에 들어온 친구의 점수와 남긴 한 줄은 별자리 주인만 볼 수 있어요."
+            ? "이 별자리는 친구마다의 점수를 공유하지 않아요. 점수와 남긴 한 줄은 별자리 주인만 볼 수 있어요."
             : "친구가 남긴 한 줄은 별자리 주인만 볼 수 있어요."}
         </p>
       </div>

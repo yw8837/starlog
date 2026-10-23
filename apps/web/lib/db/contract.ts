@@ -150,6 +150,31 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect((await repo.starsOf("c1")).map((s) => s.id)).toEqual(["s0"]);
   });
 
+  it("round-trips a star's score notice, and a star without it makes its constellation's scores private for good (0016, 0017)", async () => {
+    const repo = await make();
+    await repo.upsertOwner(owner("o1", "용우"));
+    await repo.insertConstellation(con("c1", "o1", 0, null));
+    await repo.joinStar({ ...star("s0", "c1", 0, "f0"), scorePublic: true }, 3, "2026-10-23", 500);
+    expect((await repo.starsOf("c1"))[0]).toEqual({ ...star("s0", "c1", 0, "f0"), scorePublic: true });
+    expect((await repo.getConstellation("c1"))?.scoresPrivate).toBeUndefined();
+    const after = await repo.joinStar(star("s1", "c1", 1, "f1"), 3, "2026-10-23", 600);
+    expect(after.scoresPrivate).toBe(true);
+    expect((await repo.starsOf("c1"))[1]).toEqual(star("s1", "c1", 1, "f1"));
+    // removing that star, recounting and completing with stars that saw the notice never clear it
+    await repo.deleteStar("s1");
+    await repo.tally("c1", 3, 650);
+    expect((await repo.getConstellation("c1"))?.scoresPrivate).toBe(true);
+    await repo.joinStar({ ...star("s2", "c1", 1, "f2"), scorePublic: true }, 2, "2026-10-23", 700);
+    expect(await repo.getConstellation("c1")).toMatchObject({ status: "complete", scoresPrivate: true });
+    expect((await repo.completedOf("o1"))[0]?.scoresPrivate).toBe(true);
+    // insertStar keeps the same rule; a constellation's flag is its own
+    await repo.insertConstellation(con("c2", "o1", 0, null, "leo"));
+    await repo.insertStar({ ...star("t0", "c2", 0, "g0"), scorePublic: true });
+    expect((await repo.fillingOf("o1"))?.scoresPrivate).toBeUndefined();
+    await repo.insertStar(star("t1", "c2", 1, "g1"));
+    expect((await repo.fillingOf("o1"))?.scoresPrivate).toBe(true);
+  });
+
   it("recounts from the stars and keeps an earlier completion time", async () => {
     const repo = await make();
     await repo.upsertOwner(owner("o1", "용우"));

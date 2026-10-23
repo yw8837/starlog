@@ -31,6 +31,12 @@ export function createMemoryBondsRepo(): BondsRepo {
     if (stars.has(row.id)) throw new Error("UNIQUE");
   };
 
+  /** A star without the score notice makes its constellation's scores private, for good (as D1's migration 0017). */
+  const markPrivate = (row: StarRow) => {
+    const constellation = constellations.get(row.constellationId);
+    if (constellation && !row.scorePublic) constellations.set(row.constellationId, { ...constellation, scoresPrivate: true });
+  };
+
   const tallyNow = (constellationId: string, slots: number, now: number) => {
     const row = constellations.get(constellationId);
     if (!row) return;
@@ -118,12 +124,14 @@ export function createMemoryBondsRepo(): BondsRepo {
     async insertStar(row) {
       checkStar(row);
       stars.set(row.id, copy(row));
+      markPrivate(row);
     },
     async joinStar(row, slots, day, now, next = null) {
       checkStar(row);
       const constellation = constellations.get(row.constellationId);
       if (!constellation) throw new Error("FOREIGN KEY");
       stars.set(row.id, copy(row));
+      markPrivate(row);
       tallyNow(row.constellationId, slots, now);
       const owner = owners.get(constellation.ownerId);
       if (owner) owners.set(owner.id, { ...owner, joinsCount: owner.joinsDay === day ? owner.joinsCount + 1 : 1, joinsDay: day });
