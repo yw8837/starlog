@@ -1,0 +1,322 @@
+/* 오행과 나의 힘: one glass card, the radar and the donut stacked on a phone, side by side once the card has room. */
+.card {
+  padding: 16px 14px 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 20px;
+  background: var(--glass);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.title {
+  font-size: var(--fs-h2);
+}
+
+.dayLabel {
+  padding: 3px 10px;
+  border: 1px solid rgba(243, 220, 161, 0.4);
+  border-radius: 999px;
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.body {
+  container-type: inline-size;
+  margin-top: 14px;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+@container (min-width: 400px) {
+  .charts {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+
+.figure {
+  container-type: inline-size;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 8px;
+}
+
+.captionTitle {
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.captionSub {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+/* ---- radar ---- */
+
+.radar {
+  display: block;
+  width: 100%;
+  max-width: 230px;
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.grid polygon,
+.grid line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 1;
+}
+
+.shape {
+  fill: rgba(243, 220, 161, 0.26);
+  stroke: var(--gold);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.vertex {
+  fill: var(--el);
+  stroke: var(--night-0);
+  stroke-width: 1.2;
+}
+
+.axisLabel {
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.axisWord {
+  fill: var(--el);
+  font-weight: 700;
+}
+
+.axisCount {
+  fill: var(--ink);
+  font-weight: 700;
+}
+
+.axisZero {
+  fill: var(--ink-sub);
+  font-weight: 700;
+}
+
+.axisGroup {
+  fill: var(--ink-sub);
+}
+
+/* ---- donut ---- */
+
+.donutBody {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+/* A phone-wide figure: the ring on the left, its legend beside it. */
+@container (min-width: 250px) {
+  .donutBody {
+    grid-template-columns: 116px minmax(0, 1fr);
+    align-items: center;
+    justify-items: stretch;
+  }
+}
+
+.donut {
+  display: block;
+  width: 116px;
+  height: 116px;
+}
+
+.track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 18;
+}
+
+.arc {
+  fill: none;
+  stroke: var(--el);
+  stroke-width: 18;
+}
+
+.donutTotal {
+  fill: var(--ink);
+  font-family: var(--font-display), var(--font-body), serif;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.donutUnit {
+  fill: var(--ink-sub);
+  font-family: var(--font-body), system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.legend {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legendRow {
+  display: grid;
+  grid-template-columns: 10px auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  font-size: var(--fs-sub);
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--el);
+}
+
+.legendName {
+  font-weight: 700;
+}
+
+.legendWord {
+  color: var(--ink-sub);
+}
+
+.legendPercent {
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.legendRow[data-empty] .legendName,
+.legendRow[data-empty] .legendPercent {
+  color: var(--ink-sub);
+}
+
+.legendRow[data-empty] .legendDot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--el);
+}
+
+/* ---- the 개운 line and 비율 자세히 보기 ---- */
+
+.note {
+  margin-top: 14px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+.more {
+  margin-top: 12px;
+  border-top: 1px solid var(--glass-line);
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding-top: 4px;
+  color: var(--ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.chevron {
+  flex: none;
+  color: var(--ink-sub);
+  transition: transform 160ms ease;
+}
+
+.more[open] .chevron {
+  transform: rotate(180deg);
+}
+
+.moreBody {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 4px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.65;
+}
+
+.groups {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.group {
+  padding-left: 10px;
+  border-left: 3px solid var(--el);
+}
+
+.groupHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 10px;
+}
+
+.groupName {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.groupCount {
+  font-variant-numeric: tabular-nums;
+}
+
+.groupPlaces {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
+}

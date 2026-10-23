@@ -15,7 +15,7 @@ const NO_NAME = chartOf({ year: 1987, month: 9, day: 9, timeKnown: true, hour: 9
 const ALL_SIX = chartOf({ year: 1995, month: 7, day: 5, timeKnown: true, hour: 2, minute: 30 }); // 辛丑 丁酉 壬午 乙亥
 
 const names = () => screen.getByRole("region", { name: SAJU_NAMES_TITLE });
-const elements = () => screen.getByRole("region", { name: "오행" });
+const elements = () => screen.getByRole("region", { name: "오행과 나의 힘" });
 const follows = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 describe("이 명식에 붙는 이름 and the 개운 line on the chart", () => {
@@ -42,7 +42,7 @@ describe("이 명식에 붙는 이름 and the 개운 line on the chart", () => {
     expect(chips[0]!.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("도비: the 개운 line under the 오행 bars", () => {
+  it("도비: the 개운 line in 오행과 나의 힘", () => {
     render(<ChartPanel result={{ chart: DOBI }} />);
     expect(within(elements()).getByText("곁에 두면 좋은 것: 빨강 포인트 · 낮 햇볕 10분")).toBeTruthy();
   });

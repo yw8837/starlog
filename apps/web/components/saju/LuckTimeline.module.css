@@ -1,0 +1,119 @@
+.box {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--fs-h2);
+}
+
+.lead,
+.note {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.6;
+}
+
+/* One row of cards that scrolls sideways inside itself; room on top for the 지금 badge. */
+.row {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 2px 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+  list-style: none;
+}
+
+/* Three 세운 share the width. */
+.years .card {
+  flex: 1 1 0;
+}
+
+.card {
+  position: relative;
+  flex: 0 0 88px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 3px;
+  padding: 12px 6px 10px;
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+  background: var(--glass);
+  scroll-snap-align: center;
+  text-align: center;
+}
+
+.current {
+  border-color: var(--gold);
+  background: rgba(243, 220, 161, 0.1);
+  box-shadow: 0 0 18px rgba(243, 220, 161, 0.25);
+}
+
+.badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 9px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--paper-ink);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.when {
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.age {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  white-space: nowrap;
+}
+
+.tiles {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.tile {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background:
+    radial-gradient(120% 90% at 30% 0%, rgba(255, 255, 255, 0.45), transparent 60%),
+    var(--el);
+  color: #221a38;
+  font-family: var(--font-display), var(--font-body), serif;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.ko {
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.gods {
+  display: grid;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.35;
+}
