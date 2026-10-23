@@ -92,16 +92,16 @@ function SharedSajuView({ share }: { share: SharedSaju }) {
  * A shared reading as its result screen shows it, read-only, with a way in for the visitor and a way to
  * the Starlog home at the top and at the end (owner 2026-10-14).
  */
-export function SharedReading({ share }: { share: SharePayload }) {
+export function SharedReading({ share, productVisible }: { share: SharePayload; productVisible?: boolean }) {
   return (
     <>
       <Stepper label="친구가 공유한 풀이" backHref="/" backLabel="스타로그 홈으로" />
-      <SharedBody share={share} />
+      <SharedBody share={share} productVisible={productVisible} />
     </>
   );
 }
 
-function SharedBody({ share }: { share: SharePayload }) {
+function SharedBody({ share, productVisible }: { share: SharePayload; productVisible?: boolean }) {
   switch (share.kind) {
     case "tarot":
       return <SharedTarotView share={share} />;
@@ -116,7 +116,7 @@ function SharedBody({ share }: { share: SharePayload }) {
     case "saju-free":
       return <SharedSajuFreeView share={share} />;
     case "premium":
-      return <SharedPremiumView share={share} />;
+      return <SharedPremiumView share={share} productVisible={productVisible} />;
     default:
       // 별자리 인연 links are read live and drawn by page.tsx (SharedBondsPage).
       return null;

@@ -58,7 +58,7 @@ describe("POST /api/share", () => {
     expect(res.status).toBe(200);
   });
 
-  it("refuses a reading the server did not write, another site's page, and a premium reading for now", async () => {
+  it("refuses a reading the server did not write and another site's page; a premium reading shares its image's fields only (owner 2026-10-23)", async () => {
     useTestDb();
     const chapterToken = await issueChapter(ctx, reading, [], secret, Date.now());
     const edited = { ...reading, verdict: "스타로그가 쓰지 않은 말" };
@@ -67,9 +67,13 @@ describe("POST /api/share", () => {
     expect((await json(forged)).code).toBe("BAD_TOKEN");
     const crossSite = await browser().send(POST, "/api/share", { body: { chapterToken, reading } });
     expect(crossSite.status).toBe(403);
+    const db = useTestDb();
     const deep = await issueChapter({ kind: "tarot-deep", input: ctx.input, cards: ctx.cards } as ChapterContext, reading, [], secret, Date.now());
     const premium = await browser().send(POST, "/api/share", { body: { chapterToken: deep, reading }, origin: true });
-    expect((await json(premium)).code).toBe("NOT_AVAILABLE");
+    expect(premium.status).toBe(200);
+    const shared = await findShare(db, (await json(premium)).id as string);
+    expect(shared?.payload).toEqual({ kind: "premium", v: 1, product: "tarot-deep", deck: "rws1909", cards: ctx.cards.map(([cardId, orientation]) => ({ cardId, orientation })) });
+    expect(JSON.stringify(shared?.payload)).not.toContain(reading.verdict);
   });
 
   it("shares a 오픈 기념 무료 reading too (owner 2026-10-23), without the question or the note", async () => {

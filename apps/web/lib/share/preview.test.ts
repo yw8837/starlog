@@ -47,7 +47,7 @@ describe("sharePreview", () => {
     const free = sharePreview(buildTarotFreePayload(tarotCtx, { first: { heading: "완드 3 · 지금의 나", body: "멀리 내다보는 때예요. 둘째 문장." } }));
     expect(free.description).toBe("멀리 내다보는 때예요.");
     expect(free.try.path).toBe("/tarot/start");
-    expect(sharePreview({ kind: "premium", v: 1, product: "match", relation: "friend" }).try.path).toBe("/premium/match");
+    expect(sharePreview({ kind: "premium", v: 1, product: "match", relation: "friend" }).try.path).toBe("/premium/match?from=share");
   });
 
   it("a 별자리 인연 link says the sign and its score once read live, and offers 내 별자리 만들기", () => {

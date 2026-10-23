@@ -205,16 +205,18 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   const rating = chapter.serverId ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
   // 오픈 기념 무료 takes no follow-ups (owner 2026-10-14 evening); it is shared like any other (owner 2026-10-23).
   const keepOnly = chapter.opening === true;
-  // Every result screen shows 공유하기 (owner 2026-10-23); a record not read whole says why it cannot make a link.
-  // A premium reading has no share link: it shares an image of its cards or title (PremiumChapterView, P5 task 23).
-  const share: ShareActions | undefined = premium
-    ? undefined
-    : {
-        create: () => createShareLink(chapter),
-        stop: () => stopShareLink(chapter),
-        current: () => knownShareLink(chapter),
-        ...(whole ? {} : { unavailable: "이 기록은 일부를 읽지 못해 공유할 수 없어요." }),
-      };
+  // Every result screen shows 공유하기 (owner 2026-10-23); a record not read whole says why it cannot make a link, and so
+  // does a 궁합 from the account (it carries no token, owner 2026-10-16). A premium link shows only what its image draws.
+  const share: ShareActions = {
+    create: () => createShareLink(chapter),
+    stop: () => stopShareLink(chapter),
+    current: () => knownShareLink(chapter),
+    ...(!whole
+      ? { unavailable: "이 기록은 일부를 읽지 못해 공유할 수 없어요." }
+      : !chapter.chapterToken
+        ? { unavailable: "이 풀이는 처음 연 기기에서 공유할 수 있어요." }
+        : {}),
+  };
 
   // The browser would not keep it (storage full or blocked): say so rather than look saved.
   const unsaved = !chaptersPersisted() ? (
@@ -240,7 +242,7 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
     return (
       <>
         {unsaved}
-        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} shareable={whole} kept={kept} />
+        <PremiumChapterView chapter={chapter} followUp={followUp} checkin={checkin} rating={rating} shareable={whole} share={share} kept={kept} />
       </>
     );
   }

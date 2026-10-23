@@ -1,13 +1,27 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
 import { LocalChapter } from "./LocalChapter";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/chapter/x" }));
 
-/** A premium record's share (plan task 23): the image route gets the allowed fields only, the link is the product page. */
+/**
+ * A premium record's share (plan task 23; owner 2026-10-23): 공유하기 makes the reading's own link (/s/<id>, which shows
+ * the product and what its image draws, never its text), and the image goes with that link; the image route gets the
+ * allowed fields only.
+ */
+
+beforeAll(() => {
+  const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+  proto.showModal ??= function (this: HTMLElement) {
+    this.setAttribute("open", "");
+  };
+  proto.close ??= function (this: HTMLElement) {
+    this.removeAttribute("open");
+  };
+});
 
 const section = (heading: string) => ({ heading, body: `${heading} 본문이에요.` });
 const seed = (chapters: unknown[]) => localStorage.setItem(CHAPTERS_KEY, JSON.stringify({ v: 1, chapters }));
@@ -55,22 +69,45 @@ afterEach(() => {
   localStorage.clear();
 });
 
-async function sharedBody(id: string): Promise<{ url: string; body: Record<string, unknown> }> {
-  const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => new Response(new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" })));
+async function sharedBody(id: string): Promise<{ url: string; body: Record<string, unknown>; linked: string; posted: unknown }> {
+  const fetchMock = vi.fn(async (url: string, _init?: RequestInit) =>
+    String(url) === "/api/share"
+      ? new Response(JSON.stringify({ id: "premshare001", path: "/s/premshare001" }), { status: 200, headers: { "content-type": "application/json" } })
+      : new Response(new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" })),
+  );
   vi.stubGlobal("fetch", fetchMock);
+  const writeText = vi.fn(async () => undefined);
+  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  URL.createObjectURL = vi.fn(() => "blob:x");
+  URL.revokeObjectURL = vi.fn();
   render(<LocalChapter id={id} />);
+  fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
   await act(async () => {
-    fireEvent.click(screen.getByRole("button", { name: "이미지로 공유" }));
+    fireEvent.click(screen.getByRole("button", { name: "공유 링크 만들기", hidden: true }));
   });
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "이미지로 공유", hidden: true }));
+  });
+  const post = fetchMock.mock.calls.find(([url]) => String(url) === "/api/share") as unknown as [string, RequestInit];
   const call = fetchMock.mock.calls.find(([url]) => String(url) === "/api/og/premium") as unknown as [string, RequestInit];
-  return { url: call[0], body: JSON.parse(String(call[1].body)) as Record<string, unknown> };
+  return { url: call[0], body: JSON.parse(String(call[1].body)) as Record<string, unknown>, linked: String((writeText.mock.calls as unknown as string[][])[0]?.[0]), posted: JSON.parse(String(post[1].body)) };
 }
 
 describe("sharing a premium record", () => {
+  it("a 궁합 from the account carries no token: 공유하기 still shows and says where it can be shared", () => {
+    seed([{ ...MATCH, id: "match0003", chapterToken: "", serverId: "abcdefghij0123456789" }]);
+    render(<LocalChapter id="match0003" />);
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    expect(screen.getByRole("dialog", { name: "결과 공유하기", hidden: true }).textContent).toContain("이 풀이는 처음 연 기기에서 공유할 수 있어요");
+  });
+
   it("켈틱 크로스 10장: the ten cards and their directions only, never the question or the note", async () => {
     seed([DEEP]);
-    const { body } = await sharedBody("deep0001");
+    const { body, linked, posted } = await sharedBody("deep0001");
     expect(body).toEqual({ product: "tarot-deep", cards: CARDS10.map(({ cardId, orientation }) => ({ cardId, orientation })) });
+    // The link with the image is the reading's own page, never the product page or the home (owner 2026-10-23).
+    expect(linked).toBe(`${location.origin}/s/premshare001`);
+    expect(posted).toEqual({ chapterToken: "t", reading: DEEP.reading });
   });
 
   it("궁합: the relation only (saju only, owner 2026-10-17), never the label, the concern or a birth; one written with cards too", async () => {
@@ -80,13 +117,14 @@ describe("sharing a premium record", () => {
     expect((await sharedBody("match0002")).body).toEqual({ product: "match", relation: "friend" });
   });
 
-  it("신년운세: the year's own title only; a title the image would refuse means no share button", async () => {
+  it("신년운세: the year's own title only; a title the image would refuse means no image, though the link still shares", async () => {
     seed([YEAR]);
     const { body } = await sharedBody("year0001");
     expect(body).toEqual({ product: "newyear-2027", title: "차근차근 쌓아 가는 해" });
     cleanup();
     seed([{ ...YEAR, id: "year0002", title: "2027! 좋은 해", reading: { ...YEAR.reading, title: "2027! 좋은 해" } }]);
     render(<LocalChapter id="year0002" />);
-    expect(screen.queryByRole("button", { name: "이미지로 공유" })).toBeNull();
+    expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "이미지로 공유", hidden: true })).toBeNull();
   });
 });

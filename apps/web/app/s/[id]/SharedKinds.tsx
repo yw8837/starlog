@@ -133,7 +133,7 @@ export function SharedSajuFreeView({ share }: { share: SharedSajuFree }) {
 }
 
 /** A shared premium reading: its name and what its share image draws (the ten cards, the relation, the year's title). */
-export function SharedPremiumView({ share }: { share: SharedPremium }) {
+export function SharedPremiumView({ share, productVisible = true }: { share: SharedPremium; productVisible?: boolean }) {
   const product = PREMIUM[share.product];
   const positions = TEMPLATES["deep-tarot"].positions;
   const title =
@@ -155,11 +155,20 @@ export function SharedPremiumView({ share }: { share: SharedPremium }) {
           cards={share.cards.map((card, i) => faceUpCard({ ...card, position: positions[i] ?? `${i + 1}번` }))}
         />
       ) : null}
-      <TryOwn title={`나도 ${product.name} 보기`} text={product.sub}>
-        <Button href={premiumPath(share.product)} block trailing="→">
-          {`${product.name} 알아보기`}
-        </Button>
-      </TryOwn>
+      {productVisible ? (
+        <TryOwn title={`나도 ${product.name} 보기`} text={product.sub}>
+          <Button href={premiumPath(share.product)} block trailing="→">
+            {`${product.name} 알아보기`}
+          </Button>
+        </TryOwn>
+      ) : (
+        // Premium is not offered here now: the free ways in instead of a page that would not open.
+        <TryOwn title="나도 풀이 보기" text="고민 하나를 골라 카드로 물어보거나, 태어난 날로 사주를 볼 수 있어요.">
+          <Button href={share.product === "tarot-deep" ? NEW_TAROT_HREF : NEW_SAJU_HREF} block trailing="→">
+            {share.product === "tarot-deep" ? "타로 보기" : "사주 보기"}
+          </Button>
+        </TryOwn>
+      )}
     </article>
   );
 }

@@ -15,11 +15,11 @@ import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { PrintFoot, PrintHead, SavePdfButton, type KeptReading } from "@/components/share/SavePdfButton";
 import { ShareImageButton } from "@/components/ui/ShareImageButton";
-import { absoluteUrl } from "@/lib/hosts";
+import { ShareResultButton, type ShareActions } from "@/components/share/ShareResultButton";
 import { kstMonthDay } from "@/lib/kst";
 import { MATCH_RELATION_OPTIONS } from "@/lib/premium/matchFlow";
 import { SITE } from "@/lib/config";
-import { PREMIUM, premiumShareHref } from "@/lib/premium/products";
+import { PREMIUM } from "@/lib/premium/products";
 import type { NewYearChapter, PremiumChapter } from "@/lib/storage/chapters";
 import { ChapterContents } from "./ChapterContents";
 import type { ChapterFollowUp } from "./ChapterView";
@@ -34,6 +34,8 @@ type PremiumChapterViewProps = {
   rating?: ReactNode;
   /** The record reads whole: it may make its share image. */
   shareable?: boolean;
+  /** 공유하기: the reading's own link (/s/<id>, what its image draws), owner 2026-10-23. */
+  share?: ShareActions;
   /** PDF로 저장: the day it was read and where it is kept. */
   kept: KeptReading;
 };
@@ -64,7 +66,7 @@ function YearChart({ chapter }: { chapter: NewYearChapter }) {
  * question or theme, the cards or the chart beside the paid body, its three follow-ups, 돌아보기 and the
  * rating. No other product is offered here.
  */
-export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false, kept }: PremiumChapterViewProps) {
+export function PremiumChapterView({ chapter, followUp, checkin, rating, shareable = false, share, kept }: PremiumChapterViewProps) {
   // A 궁합's title carries the product's name already ("프리미엄 궁합 · 친구"): its line above says the date only.
   const eyebrow = chapter.kind === "match" ? kstMonthDay(chapter.createdAt) : `${PREMIUM[chapter.kind].name} · ${kstMonthDay(chapter.createdAt)}`;
   // The design the reading was written for; one saved before readings kept their deck was written for the 1909 scans.
@@ -107,14 +109,26 @@ export function PremiumChapterView({ chapter, followUp, checkin, rating, shareab
             <h1 className={s.title}>{title}</h1>
             {line}
             <div className={s.share}>
-              {shareBody ? (
-                <ShareImageButton
-                  imageUrl="/api/og/premium"
-                  body={shareBody}
-                  fileName={`starlog-${PREMIUM[chapter.kind].slug}.png`}
-                  shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
-                  shareUrl={absoluteUrl(premiumShareHref(chapter.kind))}
-                  label="이미지로 공유"
+              {share ? (
+                <ShareResultButton
+                  kind="premium"
+                  text={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
+                  {...share}
+                  // The image goes with the reading's own link, never the product page (owner 2026-10-23).
+                  extra={
+                    shareBody
+                      ? (link) => (
+                          <ShareImageButton
+                            imageUrl="/api/og/premium"
+                            body={shareBody}
+                            fileName={`starlog-${PREMIUM[chapter.kind].slug}.png`}
+                            shareText={`${SITE.nameKo} · ${PREMIUM[chapter.kind].name}`}
+                            shareUrl={link.url}
+                            label="이미지로 공유"
+                          />
+                        )
+                      : undefined
+                  }
                 />
               ) : null}
               <SavePdfButton type={PREMIUM[chapter.kind].name} kept={kept} />

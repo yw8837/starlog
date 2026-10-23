@@ -18,6 +18,7 @@ import { shortCardName } from "./SharedKinds";
 import { SharedBondsView } from "./SharedBonds";
 import { Stepper } from "@/components/tarot/Stepper";
 import { bondsPreviewData, liveBondsShare } from "@/lib/bonds/share";
+import { premiumStateHere } from "@/lib/premium/pageGate";
 
 /**
  * One lookup per request, shared by the metadata and the page. A 별자리 인연 link is read live from the bonds store
@@ -97,7 +98,7 @@ export default async function SharePage({ params }: PageProps<"/s/[id]">) {
             <SharedBondsView view={share.bonds} />
           </>
         ) : (
-          <SharedReading share={share.payload} />
+          <SharedReading share={share.payload} productVisible={share.payload.kind === "premium" ? (await premiumStateHere(share.payload.product)).visible : undefined} />
         )}
       </main>
       <Footer />

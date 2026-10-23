@@ -12,6 +12,8 @@ import SharePage, { generateMetadata } from "./page";
 
 const { shares } = vi.hoisted(() => ({ shares: new Map<string, SharePayload>() }));
 vi.mock("@/lib/db", () => ({ accountDb: () => ({}), bondsRepo: () => ({}) }));
+const { premium } = vi.hoisted(() => ({ premium: { visible: true } }));
+vi.mock("@/lib/premium/pageGate", () => ({ premiumStateHere: async () => ({ visible: premium.visible, open: premium.visible }) }));
 vi.mock("@/lib/share/store", () => ({
   SHARE_ID: /^[a-z0-9]{12}$/,
   findShare: async (_db: unknown, id: string) => (shares.has(id) ? { id, payload: shares.get(id), createdAt: 0 } : null),
@@ -92,6 +94,19 @@ describe("/s/<id> for a premium reading", () => {
     expect(document.body.textContent).toContain("켈틱 크로스");
     for (const cardId of cards) expect(document.body.textContent).toContain(getCard(cardId).names.ko);
     expect(screen.getAllByRole("link").some((a) => (a.getAttribute("href") ?? "").includes("deep-tarot"))).toBe(true);
+  });
+
+  it("leads into the free readings instead of a product page premium is not offered on", async () => {
+    premium.visible = false;
+    try {
+      const id = save("ppppppppppp3", buildPremiumSharePayload({ kind: "newyear-2027", birth: {} as never }, { title: "단단히 뿌리내리는 해" }));
+      render(await SharePage(params(id)));
+      expect(document.body.textContent).toContain("2027년, 단단히 뿌리내리는 해");
+      expect(screen.getAllByRole("link").some((a) => (a.getAttribute("href") ?? "").startsWith("/premium"))).toBe(false);
+      expect(screen.getByRole("link", { name: /사주 보기/ })).toBeTruthy();
+    } finally {
+      premium.visible = true;
+    }
   });
 
   it("궁합: the relation and the product, nothing of either person", async () => {

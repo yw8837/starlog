@@ -39,7 +39,7 @@ afterEach(() => {
 });
 
 describe("a premium reading saved on this device", () => {
-  it("opens in its own layout with its five follow-ups still open after the standard 7 days (30 for premium), and no share yet", () => {
+  it("opens in its own layout with its five follow-ups still open after the standard 7 days (30 for premium), and 공유하기 (owner 2026-10-23)", () => {
     seed([YEAR]);
     render(<LocalChapter id="year0001" />);
     expect(screen.getByRole("heading", { level: 1, name: "2027년, 차근차근 쌓아 가는 해" })).toBeTruthy();
@@ -47,7 +47,7 @@ describe("a premium reading saved on this device", () => {
     expect(screen.getByRole("heading", { name: "1월 · 신축월" })).toBeTruthy();
     expect(screen.getByRole("textbox")).toBeTruthy();
     expect(screen.getByText("3월에는 무엇을 하면 좋을까요?")).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /공유하기/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
   });
 
   it("shows the ten cards beside the 10-card reading and closes its questions after 30 days", () => {

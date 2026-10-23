@@ -3,16 +3,17 @@ import { sameOrigin } from "@/lib/account/request";
 import { readSession, sessionCookieName } from "@/lib/account/session";
 import { clientKey, errorResponse, json, parseCookies, readJson } from "@/lib/api/http";
 import { accountDb } from "@/lib/db";
-import { buildSharePayload } from "@/lib/share/payload";
+import { buildPremiumSharePayload, buildSharePayload } from "@/lib/share/payload";
 import { sharePreview } from "@/lib/share/preview";
 import { deleteShare, saveShare } from "@/lib/share/store";
-import { openChapterForShare } from "@/lib/security/chapterToken";
+import { isPremiumChapter, openChapterForShare } from "@/lib/security/chapterToken";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { sha256, signingSecret } from "@/lib/security/sign";
 
 /**
  * 결과 공유 (owner 2026-10-13).
- * POST {chapterToken, reading} → {id, path}: the public copy of a tarot or saju reading at
+ * POST {chapterToken, reading} → {id, path, preview}: the public copy of a tarot or saju reading (a premium one: only
+ * what its share image draws) at
  * /s/<id> (lib/share/payload.ts says what it leaves out), in the card design signed in its chapter
  * (an older client's `deck` is ignored). Sharing the same reading again answers the same address. A
  * signed-in sharer's account owns the share: deleting the account takes it down (lib/account/deletion.ts).
@@ -40,7 +41,6 @@ async function open(request: Request) {
   if (!body.success) return errorResponse("BAD_REQUEST");
   const chapter = await openChapterForShare(body.data.chapterToken, body.data.reading, secret);
   if (!chapter) return errorResponse("BAD_TOKEN", { message: NOT_SHAREABLE });
-  if (chapter.ctx.kind !== "tarot" && chapter.ctx.kind !== "saju") return errorResponse("NOT_AVAILABLE", { message: "이 풀이는 아직 공유할 수 없어요." });
   return { db, secret, chapter, body: body.data, chapterKey: await sha256(chapter.id) };
 }
 
@@ -49,7 +49,8 @@ export async function POST(request: Request): Promise<Response> {
   if (opened instanceof Response) return opened;
   // The design the reading was written for (signed in its chapter; none: the 1909 scans).
   const ctx = opened.chapter.ctx;
-  const payload = buildSharePayload(ctx, opened.body.reading, ctx.kind === "tarot" ? ctx.input.deck : undefined);
+  // A premium reading shares what its image draws (the cards, the relation, the year's title), never its text (owner 2026-10-23).
+  const payload = isPremiumChapter(ctx) ? buildPremiumSharePayload(ctx, opened.body.reading) : buildSharePayload(ctx, opened.body.reading, ctx.kind === "tarot" ? ctx.input.deck : undefined);
   const now = Date.now();
   const session = await readSession(opened.db, parseCookies(request)[sessionCookieName()], opened.secret, now);
   const id = await saveShare(opened.db, opened.chapterKey, payload, now, session?.user.id ?? null);

@@ -1,6 +1,6 @@
 import { getCard } from "@starlog/core";
 import { SITE } from "@/lib/config";
-import { PREMIUM, premiumPath } from "@/lib/premium/products";
+import { PREMIUM, premiumShareHref } from "@/lib/premium/products";
 import { topicLabel } from "@/lib/sajuTopics";
 import { HIDDEN, type SharePayload } from "./payload";
 
@@ -88,7 +88,8 @@ export function sharePreview(share: SharePayload, live?: BondsPreviewData | null
       return {
         title: clip(share.title ? `${product.name} · 2027년, ${share.title}` : `친구가 연 ${product.name}`, TITLE_MAX),
         description: clip(share.cards?.length ? `${share.cards.map(cardName).slice(0, 3).join(" · ")} 외 ${Math.max(0, share.cards.length - 3)}장 · ${product.sub}` : product.sub, DESCRIPTION_MAX),
-        try: { label: "나도 보기", path: premiumPath(share.product) },
+        // The product page, or the home where premium is not offered (premiumShareHref), never a 404.
+        try: { label: "나도 보기", path: premiumShareHref(share.product) },
       };
     }
     case "bonds":
