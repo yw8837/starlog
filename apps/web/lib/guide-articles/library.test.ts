@@ -33,28 +33,16 @@ const kbPath = (cardId: string) => fileURLToPath(new URL(`../../../../content/kb
 const kbCard = (cardId: string): KbCard => JSON.parse(readFileSync(kbPath(cardId), "utf8")) as KbCard;
 
 /**
- * A card article's headings (SEO-05, ADS-04): every one names the card and none is shared between cards, so each stands
- * alone for an answer engine. The core sections are there, in whatever order suits the card: the picture, the two
- * meaning questions, the Starlog deck scene, the look-alike row (its heading names the row's first other card) and
- * 자주 묻는 질문. Only the two meaning headings ask; the FAQPage is those two, then the 자주 묻는 질문 section's questions.
+ * A card article's headings (SEO-05, ADS-04): every one names the card, so each stands alone for an answer engine, and
+ * none is a stock heading. Since the editorial rework of 2026-10-23 a card has no fixed set of sections: which parts it
+ * has, in what order and under what wording is the card's own (tarot.test.ts keeps those shapes varied).
  */
 const SHARED_CARD_HEADINGS = ["그림 속 장면", "연애·일·돈 질문에서", "비슷한 카드와 헷갈릴 때"];
 function expectCardHeadings(article: GuideArticle, name: string) {
-  const headings = article.sections.map((section) => section.heading);
-  for (const heading of headings) {
-    expect(heading).toContain(`${name} 카드`);
+  for (const heading of article.sections.map((section) => section.heading)) {
+    expect(heading).toContain(name);
     expect(SHARED_CARD_HEADINGS).not.toContain(heading);
   }
-  const meaning = [`${name} 카드 정방향은 어떤 뜻인가요`, `${name} 카드 역방향은 어떤 뜻인가요`];
-  expect(headings.filter((heading) => isQuestion(heading))).toEqual(meaning);
-  expect(headings).toContain(`${name} 카드 자주 묻는 질문`);
-  expect(headings.some((heading) => heading.includes("그림") && !heading.includes("스타로그")), "the 1909 picture").toBe(true);
-  expect(headings.some((heading) => heading.includes("스타로그")), "the Starlog deck scene").toBe(true);
-  const lookAlike = article.sections.find((section) => section.blocks?.some((block) => block.kind === "cardRow"));
-  const row = lookAlike?.blocks?.find((block) => block.kind === "cardRow");
-  const firstLookAlike = row?.kind === "cardRow" ? row.cards[1] : undefined;
-  expect(firstLookAlike, article.slug).toBeDefined();
-  expect(lookAlike?.heading).toContain(getCard(firstLookAlike ?? "").names.ko);
 }
 
 /** Owner rules: no vendor or model names, no "베타", no promised outcomes (KB 글쓰기 규칙 too). */
@@ -117,11 +105,13 @@ describe("guide library", () => {
     for (const other of related) expect(findArticle(other), other).toBeDefined();
   });
 
-  it("gives every library article a substantial body (card articles 2,800-3,800 characters with the 2026-10-22 sections)", () => {
+  it("gives every library article a substantial body (card articles 2,000-3,800 characters, in whatever shape the card has)", () => {
+    // Card articles were 2,800 or more while each carried the 2026-10-22 boilerplate (a 300-character deck section, a
+    // two-row keyword table, a one-line FAQ intro); the rework of 2026-10-23 cut those and kept the card's own reading.
     for (const article of LIBRARY) {
       const length = bodyLength(article);
       if (article.cardId) {
-        expect(length, article.slug).toBeGreaterThanOrEqual(2800);
+        expect(length, article.slug).toBeGreaterThanOrEqual(2000);
         expect(length, article.slug).toBeLessThanOrEqual(3800);
       } else {
         expect(length, article.slug).toBeGreaterThanOrEqual(1500);
@@ -141,11 +131,10 @@ describe("card articles agree with the KB", () => {
     expect(article.category).toBe("tarot");
     expect(article.title).toContain(card.names.ko);
     expectCardHeadings(article, card.names.ko);
-    // The FAQPage JSON-LD (jsonld.ts guideQuestions): the two meaning questions, then the 자주 묻는 질문 section's questions.
-    const faq = article.sections.find((section) => section.heading === `${card.names.ko} 카드 자주 묻는 질문`);
-    const asked = (faq?.blocks ?? []).flatMap((block) => (block.kind === "steps" ? block.items.map((step) => step.title) : []));
+    // The FAQPage JSON-LD (jsonld.ts guideQuestions): the questions the card's own headings ask, in page order.
+    const asked = article.sections.filter((section) => isQuestion(section.heading)).map((section) => `${section.heading.replace(/\?$/, "")}?`);
     expect(asked.length).toBeGreaterThanOrEqual(2);
-    expect(guideQuestions(article).map((entry) => entry.q)).toEqual([`${card.names.ko} 카드 정방향은 어떤 뜻인가요?`, `${card.names.ko} 카드 역방향은 어떤 뜻인가요?`, ...asked]);
+    expect(guideQuestions(article).map((entry) => entry.q)).toEqual(asked);
     expect(guideFaqJsonLd(article)).not.toBeNull();
     // The KB's known misdescriptions of this scan (R3) must not appear anywhere in the article.
     const text = allText(article);

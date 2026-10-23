@@ -43,20 +43,32 @@ function shownFaq(container: HTMLElement): Array<[string, string]> {
 }
 
 const WITH_FAQ = GUIDE_ARTICLES.filter((article) => article.sections.some((section) => section.heading.includes("자주 묻는 질문")));
+const CARD_ARTICLES = GUIDE_ARTICLES.filter((article) => article.cardId);
+
+/** The page's h2 headings, each as shown. */
+const headingsOf = (container: HTMLElement) => [...container.querySelectorAll("article h2")].map((h) => squash(h.textContent ?? ""));
 
 describe("FAQPage on a guide article", () => {
-  it("covers the articles with a 자주 묻는 질문 section: the 22 card articles", () => {
-    expect(WITH_FAQ.filter((article) => article.cardId)).toHaveLength(22);
-  });
-
-  it.each(WITH_FAQ.map((article) => [article.slug] as const))("%s: every question of 자주 묻는 질문, word for word as shown", async (slug) => {
+  // Since 2026-10-23 a card's questions are its own question headings (죽음 카드는 실제 죽음이나 병을 뜻하나요?…), not a
+  // 자주 묻는 질문 section with a one-line intro on every card.
+  it.each(CARD_ARTICLES.map((article) => [article.slug] as const))("%s: a FAQPage of the questions its headings ask, each shown as a heading", async (slug) => {
     const { container } = await renderSlug(slug);
-    const shown = shownFaq(container);
-    expect(shown.length, slug).toBeGreaterThanOrEqual(2);
     const ld = faqOf(container);
     expect(ld, slug).not.toBeNull();
-    const pairs = (ld?.mainEntity ?? []).map((q) => [q.name, squash(q.acceptedAnswer.text)]);
-    for (const [question, answer] of shown) expect(pairs, question).toContainEqual([question, answer]);
+    expect(ld?.mainEntity.length ?? 0).toBeGreaterThanOrEqual(2);
+    const headings = headingsOf(container);
+    for (const { name } of ld?.mainEntity ?? []) expect(headings.some((text) => text === name || `${text}?` === name), name).toBe(true);
+  });
+
+  it("every question of a 자주 묻는 질문 section, word for word as shown, wherever one is left", async () => {
+    for (const article of WITH_FAQ) {
+      const { container } = await renderSlug(article.slug);
+      const shown = shownFaq(container);
+      expect(shown.length, article.slug).toBeGreaterThanOrEqual(2);
+      const pairs = (faqOf(container)?.mainEntity ?? []).map((q) => [q.name, squash(q.acceptedAnswer.text)]);
+      for (const [question, answer] of shown) expect(pairs, question).toContainEqual([question, answer]);
+      cleanup();
+    }
   });
 
   it.each(GUIDE_ARTICLES.map((article) => [article.slug] as const))("%s: nothing the page does not show", async (slug) => {

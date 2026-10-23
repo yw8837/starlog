@@ -5,18 +5,24 @@ import { describe, expect, it } from "vitest";
 import { aiTells } from "../ai/style";
 import { GUIDE_ARTICLES, findArticle, guideSectionText, type GuideArticle, type GuideBlock, type GuideSection } from "../guide";
 import { guidePlainText } from "../guideLinks";
-import { guideQuestions } from "../jsonld";
+import { guideQuestions, isQuestion } from "../jsonld";
 
 /**
- * The 22 major arcana articles after the AdSense rewrite of 2026-10-22 ("가치가 별로 없는 콘텐츠"; Google's scaled content
- * and helpful content guidance). Each card page carries what only Starlog can show: its own deck's picture of the card,
- * described from the KB (content/kb/cards imagery.decks.starlog); three worked examples picked for that card; its own
- * 자주 묻는 질문; and links on to the cards it is read with. No page may read as another with the name swapped: once
- * the card names and numbers are taken out, no sentence repeats on another card, nor nearly repeats.
+ * The 22 major arcana pages after the editorial rework of 2026-10-23 (AdSense "가치가 별로 없는 콘텐츠"; Google's scaled
+ * content guidance). An independent review found that the sentences were varied but every card wore one skeleton: the
+ * same seven headings (그림, 정방향은 어떤 뜻인가요, 역방향은 어떤 뜻인가요, 연애·일·돈, 스타로그 덱, 견주기, 자주 묻는 질문), the
+ * same 한 줄로/핵심 낱말 table, exactly three 예시 per card, one description frame and a long mascot section on all 22.
+ * Now each card has a shape chosen for what people ask about it (죽음·탑·악마 open with the fear, 연인 with the choice,
+ * 수레바퀴 with timing, 정의 with contracts and disputes…). These tests keep that variety measurable: no heading frame on
+ * more than three cards, varied section counts, tables and examples only where they help, a FAQPage made of the
+ * questions the page really asks, the Starlog deck in a sentence or two next to its picture, and no sentence that
+ * another card repeats once the card names are taken out.
  */
 
 const CARD_ARTICLES = GUIDE_ARTICLES.filter((article) => article.cardId);
 const nameOf = (article: GuideArticle) => getCard(article.cardId ?? "").names.ko;
+const bodyOf = (article: GuideArticle) => article.sections.map(guideSectionText).join("\n");
+const blocksOf = (article: GuideArticle) => article.sections.flatMap((section) => section.blocks ?? []);
 
 interface StarlogDeck {
   facts: { id: string; ko: string }[];
@@ -26,15 +32,25 @@ const kbPath = (cardId: string) => fileURLToPath(new URL(`../../../../content/kb
 const starlogDeck = (cardId: string): StarlogDeck =>
   (JSON.parse(readFileSync(kbPath(cardId), "utf8")) as { imagery: { decks: { starlog: StarlogDeck } } }).imagery.decks.starlog;
 
-const isStarlogFigure = (article: GuideArticle) => (block: GuideBlock) => block.kind === "figure" && block.src === `/cards/starlog/${article.cardId}.webp`;
-const starlogSection = (article: GuideArticle) => article.sections.find((section) => section.blocks?.some(isStarlogFigure(article)));
 type Steps = Extract<GuideBlock, { kind: "steps" }>;
+type Table = Extract<GuideBlock, { kind: "table" }>;
 const stepsIn = (section: GuideSection | undefined): Steps[] => (section?.blocks ?? []).filter((block): block is Steps => block.kind === "steps");
 const EXAMPLE = "예시 · ";
-const examplesOf = (article: GuideArticle) =>
-  article.sections.flatMap((section) => stepsIn(section)).filter((block) => block.items.every((item) => item.title.startsWith(EXAMPLE)));
-const faqSection = (article: GuideArticle) => article.sections.find((section) => section.heading === `${nameOf(article)} 카드 자주 묻는 질문`);
-const lookAlikeSection = (article: GuideArticle) => article.sections.find((section) => section.blocks?.some((block) => block.kind === "cardRow"));
+const examplesOf = (article: GuideArticle) => article.sections.flatMap((section) => stepsIn(section)).flatMap((block) => block.items.filter((item) => item.title.startsWith(EXAMPLE)));
+const tablesOf = (article: GuideArticle) => blocksOf(article).filter((block): block is Table => block.kind === "table");
+
+/** The Starlog deck's picture of the card and the sentence or two right after it. */
+function starlogNote(article: GuideArticle): { alt: string; note: string } | undefined {
+  for (const section of article.sections) {
+    const blocks = section.blocks ?? [];
+    const i = blocks.findIndex((block) => block.kind === "figure" && block.src === `/cards/starlog/${article.cardId}.webp`);
+    if (i < 0) continue;
+    const figure = blocks[i];
+    const next = blocks[i + 1];
+    return { alt: figure?.kind === "figure" ? figure.alt : "", note: next?.kind === "p" ? next.text : "" };
+  }
+  return undefined;
+}
 
 const sentences = (text: string) =>
   text
@@ -43,14 +59,7 @@ const sentences = (text: string) =>
     .map((sentence) => sentence.trim())
     .filter(Boolean);
 const firstSentence = (text: string) => sentences(text)[0] ?? "";
-
-/** The new parts of a card page: the Starlog scene, the worked examples and the 자주 묻는 질문. */
-const newText = (article: GuideArticle) =>
-  [
-    guideSectionText(starlogSection(article) ?? { heading: "", body: "" }),
-    ...examplesOf(article).flatMap((block) => block.items.map((item) => `${item.title}: ${item.text}`)),
-    guideSectionText(faqSection(article) ?? { heading: "", body: "" }),
-  ].join("\n");
+const count = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].length;
 
 /** Every card name (the 78, longest first) and every number taken out, then spaces and punctuation: the sentence's frame. */
 const NAMES = [...new Set(CARDS.map((card) => card.names.ko))].sort((a, b) => b.length - a.length);
@@ -67,108 +76,153 @@ function bigrams(text: string): Map<string, number> {
 }
 function dice(x: Map<string, number>, y: Map<string, number>, pairs: number): number {
   let shared = 0;
-  for (const [gram, count] of x) shared += Math.min(count, y.get(gram) ?? 0);
+  for (const [gram, n] of x) shared += Math.min(n, y.get(gram) ?? 0);
   return (2 * shared) / Math.max(1, pairs);
+}
+const similar = (a: string, b: string) => dice(bigrams(a), bigrams(b), a.length + b.length - 2);
+
+/** For each item, the cards whose item is the same frame or a near copy (Dice 0.8+); the groups with more than `limit` cards. */
+function crowded(items: { slug: string; text: string }[], limit: number): string[] {
+  const framed = items.map((item) => ({ ...item, frame: frame(item.text) }));
+  const found = new Set<string>();
+  for (const a of framed) {
+    const cards = new Set(framed.filter((b) => b.frame === a.frame || (a.frame.length >= 6 && b.frame.length >= 6 && similar(a.frame, b.frame) >= 0.8)).map((b) => b.slug));
+    if (cards.size > limit) found.add(`${a.text} (${[...cards].join(", ")})`);
+  }
+  return [...found];
 }
 
 /** Everything a card page says in sentences: 요약, 한눈에 보기 and every section (body, blocks, captions). */
 const pageSentences = (article: GuideArticle) =>
   sentences([article.summary ?? "", ...(article.keyPoints ?? []), ...article.sections.map(guideSectionText)].join("\n"));
 
-describe("the 22 major arcana pages: what only Starlog has", () => {
+describe("each card article has a shape of its own", () => {
+  const each = CARD_ARTICLES.map((article) => [article.slug, article] as const);
+
   it("covers the 22 cards", () => expect(CARD_ARTICLES).toHaveLength(22));
 
-  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: a Starlog deck scene grounded in the KB, with the card's own picture", (_slug, article) => {
-    const section = starlogSection(article);
-    expect(section, "a section showing /cards/starlog/<id>.webp").toBeDefined();
-    const name = nameOf(article);
-    expect(section?.heading).toContain(`${name} 카드`);
-    expect(section?.heading).toContain("스타로그");
-    const figure = section?.blocks?.find(isStarlogFigure(article));
-    expect(figure?.kind === "figure" && [figure.width, figure.height]).toEqual([600, 1040]);
-    const alt = figure?.kind === "figure" ? figure.alt : "";
-    const text = [section?.heading ?? "", guideSectionText(section ?? { heading: "", body: "" }), alt].join("\n");
-    expect(text.length).toBeGreaterThanOrEqual(300);
-    // The deck's own known misdescriptions (a cat, not a young man; a rabbit, not a dog...) never appear.
-    const deck = starlogDeck(article.cardId ?? "");
-    for (const mis of deck.commonMisdescriptions) expect(text, mis.wrong).not.toMatch(new RegExp(mis.regex));
-    // Its characters are the ones the KB draws: the cat and the rabbit where the card has them.
-    const facts = deck.facts.map((fact) => fact.ko).join(" ");
-    for (const animal of ["고양이", "토끼"]) if (facts.includes(animal)) expect(text, animal).toContain(animal);
-    // It says how the scene differs from the 1909 picture the rest of the page describes.
-    expect(text).toContain("1909");
+  it("shares no heading frame, nor a near copy of one, across more than three cards (names and numbers taken out)", () => {
+    const headings = CARD_ARTICLES.flatMap((article) => article.sections.map((section) => ({ slug: article.slug, text: section.heading })));
+    expect(crowded(headings, 3)).toEqual([]);
   });
 
-  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: three worked examples, labelled 예시, each a question and a 2-3 sentence answer", (_slug, article) => {
-    const blocks = examplesOf(article);
-    expect(blocks).toHaveLength(1);
-    const items = blocks[0]?.items ?? [];
-    expect(items).toHaveLength(3);
-    for (const item of items) {
+  it("varies the section count: 4-7 on each card, at least three different counts, no count on more than half the cards", () => {
+    const counts = CARD_ARTICLES.map((article) => article.sections.length);
+    for (const n of counts) expect(n).toBeGreaterThanOrEqual(4);
+    for (const n of counts) expect(n).toBeLessThanOrEqual(7);
+    expect(new Set(counts).size).toBeGreaterThanOrEqual(3);
+    for (const n of new Set(counts)) expect(counts.filter((c) => c === n).length, `${n} sections`).toBeLessThanOrEqual(11);
+  });
+
+  it("drops the uniform 한 줄로/핵심 낱말 table; tables only where they help, and no table head on more than two cards", () => {
+    for (const article of CARD_ARTICLES) {
+      for (const table of tablesOf(article)) expect(table.rows.map((row) => row[0]), `${article.slug}: ${table.caption}`).not.toContain("한 줄로");
+    }
+    const withTable = CARD_ARTICLES.filter((article) => tablesOf(article).length > 0);
+    expect(withTable.length).toBeGreaterThan(0);
+    expect(withTable.length).toBeLessThan(CARD_ARTICLES.length);
+    const heads = CARD_ARTICLES.flatMap((article) => tablesOf(article).map((table) => ({ slug: article.slug, text: table.head.join(" ") })));
+    expect(crowded(heads, 2)).toEqual([]);
+  });
+
+  it("varies the worked examples: 0-4 per card, at least three different counts, some cards with none", () => {
+    const counts = CARD_ARTICLES.map((article) => examplesOf(article).length);
+    for (const n of counts) expect(n).toBeLessThanOrEqual(4);
+    expect(new Set(counts).size).toBeGreaterThanOrEqual(3);
+    expect(counts.filter((n) => n === 0).length).toBeGreaterThan(0);
+  });
+
+  it.each(each)("%s: each worked example asks a question and answers it in 1-3 sentences", (_slug, article) => {
+    for (const item of examplesOf(article)) {
       expect(item.title, item.title).toMatch(/^예시 · .+\?$/);
-      expect(sentences(item.text).length, item.text).toBeGreaterThanOrEqual(2);
+      expect(sentences(item.text).length, item.text).toBeGreaterThanOrEqual(1);
       expect(sentences(item.text).length, item.text).toBeLessThanOrEqual(3);
     }
   });
 
   it("never asks the same example question on two cards, even with the names taken out", () => {
-    const titles = CARD_ARTICLES.flatMap((article) => (examplesOf(article)[0]?.items ?? []).map((item) => frame(item.title)));
-    expect(titles).toHaveLength(66);
+    const titles = CARD_ARTICLES.flatMap((article) => examplesOf(article).map((item) => frame(item.title)));
     expect(new Set(titles).size).toBe(titles.length);
   });
 
-  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: the reversed card in one line, in the keyword table", (_slug, article) => {
-    const table = article.sections.flatMap((section) => section.blocks ?? []).find((block) => block.kind === "table" && block.caption === `${nameOf(article)} 카드의 키워드`);
-    const row = table?.kind === "table" ? table.rows.find((cells) => cells[0] === "한 줄로") : undefined;
-    expect(table?.kind === "table" && table.head[2]).toBe("역방향");
-    expect((row?.[2] ?? "").length).toBeGreaterThan(10);
+  it("keeps the stock closers rare: 적어 보 once a card at most and 8 in all, 어느 쪽이든 twice in all, 단정하지 않아요 twice in all", () => {
+    const bodies = CARD_ARTICLES.map((article) => ({ slug: article.slug, text: bodyOf(article) }));
+    for (const { slug, text } of bodies) expect(count(text, /적어 보/g), slug).toBeLessThanOrEqual(1);
+    expect(bodies.reduce((sum, { text }) => sum + count(text, /적어 보/g), 0)).toBeLessThanOrEqual(8);
+    expect(bodies.reduce((sum, { text }) => sum + count(text, /어느 쪽이든/g), 0)).toBeLessThanOrEqual(2);
+    expect(bodies.reduce((sum, { text }) => sum + count(text, /단정하지(는)? 않/g), 0)).toBeLessThanOrEqual(2);
   });
 
-  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: 자주 묻는 질문 last, 2-3 questions of its own, each answered first in one short sentence", (_slug, article) => {
-    const section = faqSection(article);
-    expect(section, `${nameOf(article)} 카드 자주 묻는 질문`).toBeDefined();
-    expect(article.sections.at(-1)).toBe(section);
-    const items = stepsIn(section).flatMap((block) => block.items);
-    expect(items.length).toBeGreaterThanOrEqual(2);
-    expect(items.length).toBeLessThanOrEqual(3);
-    for (const item of items) {
-      expect(item.title, item.title).toMatch(/\?$/);
-      // Not the two meaning questions the page already answers under its own headings.
-      expect(item.title).not.toMatch(/(정|역)방향은 어떤 뜻/);
-      expect(firstSentence(item.text).length, item.text).toBeLessThanOrEqual(120);
-      expect(sentences(item.text).length, item.text).toBeGreaterThanOrEqual(2);
+  it("gives every card a description of its own: the card name and 타로, no shared or near-copied frame, not the old one", () => {
+    for (const article of CARD_ARTICLES) {
+      expect(article.description, article.slug).toContain(nameOf(article));
+      expect(article.description, article.slug).toContain("타로");
+      expect(article.description, article.slug).not.toMatch(/정방향·역방향 뜻과 연애·일·돈/);
     }
-    // The FAQPage answers (정방향, 역방향) open with their answer too.
-    for (const { a } of guideQuestions(article)) expect(firstSentence(a).length, a).toBeLessThanOrEqual(120);
+    expect(crowded(CARD_ARTICLES.map((article) => ({ slug: article.slug, text: article.description })), 1)).toEqual([]);
   });
 
-  it("never asks the same 자주 묻는 질문 on two cards, even with the names taken out", () => {
-    const questions = CARD_ARTICLES.flatMap((article) => stepsIn(faqSection(article)).flatMap((block) => block.items.map((item) => frame(item.title))));
+  it.each(each)("%s: reads the card both ways up somewhere on the page", (_slug, article) => {
+    expect(bodyOf(article)).toMatch(/역방향|거꾸로/);
+  });
+
+  it.each(each)("%s: a FAQPage of 2-4 questions the page asks in its own headings, each answered in its first sentence", (_slug, article) => {
+    const questions = guideQuestions(article);
+    expect(questions.length).toBeGreaterThanOrEqual(2);
+    expect(questions.length).toBeLessThanOrEqual(4);
+    const asked = article.sections.filter((section) => isQuestion(section.heading)).map((section) => section.heading.replace(/\?$/, ""));
+    for (const { q, a } of questions) {
+      expect(q, q).toMatch(/\?$/);
+      expect(asked, q).toContain(q.replace(/\?$/, ""));
+      // Not the two stock meaning questions every card used to ask.
+      expect(q).not.toMatch(/(정|역)방향은 어떤 뜻인가요/);
+      expect(firstSentence(a).length, a).toBeLessThanOrEqual(120);
+    }
+    // A 자주 묻는 질문 section, if a card has one, opens with more than a one-line restatement of the card.
+    for (const section of article.sections.filter((s) => s.heading.includes("자주 묻는 질문"))) expect(sentences(section.body).length, section.body).toBeGreaterThanOrEqual(2);
+  });
+
+  it("never asks the same FAQ question on two cards, even with the names taken out", () => {
+    const questions = CARD_ARTICLES.flatMap((article) => guideQuestions(article).map(({ q }) => frame(q)));
     expect(new Set(questions).size).toBe(questions.length);
   });
 
-  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: links on to 2 or more major cards it says why to read with, and to a guide beyond the cards", (_slug, article) => {
+  it("links to the birth-card calculator from one card at most, instead of a 탄생 카드 FAQ on every card", () => {
+    const linking = CARD_ARTICLES.filter((article) => article.sections.some((section) => JSON.stringify(section).includes("/birth-card")));
+    expect(linking.length).toBeLessThanOrEqual(1);
+  });
+
+  it.each(each)("%s: the Starlog deck's picture with a sentence or two on what it draws differently, grounded in the deck KB", (_slug, article) => {
+    const starlog = starlogNote(article);
+    expect(starlog, "a figure of /cards/starlog/<id>.webp").toBeDefined();
+    const { alt = "", note = "" } = starlog ?? {};
+    expect(sentences(note).length, note).toBeGreaterThanOrEqual(1);
+    expect(sentences(note).length, note).toBeLessThanOrEqual(2);
+    expect(note).toContain("스타로그");
+    // The deck's own known misdescriptions (a cat, not a young man; a rabbit, not a dog...) never appear.
+    for (const mis of starlogDeck(article.cardId ?? "").commonMisdescriptions) expect(`${alt}\n${note}`, mis.wrong).not.toMatch(new RegExp(mis.regex));
+    // No section of its own for the deck any more.
+    for (const section of article.sections) expect(section.heading).not.toContain("스타로그");
+  });
+
+  it.each(each)("%s: links on to 2 or more major cards it names, and to a guide beyond the cards", (_slug, article) => {
     const related = (article.related ?? []).map((slug) => findArticle(slug));
     for (const [i, other] of related.entries()) expect(other, article.related?.[i]).toBeDefined();
     const cards = related.filter((other) => other?.cardId);
     expect(cards.length).toBeGreaterThanOrEqual(2);
-    // The look-alike section (함께 읽는 카드) names at least two of them; every linked card is named somewhere on the page.
-    const lookAlike = guideSectionText(lookAlikeSection(article) ?? { heading: "", body: "" });
-    expect(cards.filter((other) => lookAlike.includes(nameOf(other as GuideArticle))).length).toBeGreaterThanOrEqual(2);
-    const page = article.sections.map(guideSectionText).join("\n");
+    const page = bodyOf(article);
     for (const other of cards) expect(page, other?.slug).toContain(nameOf(other as GuideArticle));
     expect(related.some((other) => other && !other.cardId), "a guide that is not a card article").toBe(true);
   });
 
-  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: the 요약 answers what the card means in its first sentence", (_slug, article) => {
+  it.each(each)("%s: the 요약 answers what the card means in its first sentence", (_slug, article) => {
     const first = firstSentence(article.summary ?? "");
     expect(first).toContain(nameOf(article));
     expect(first).toMatch(/정방향|뜻/);
   });
 
-  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: no AI tells in the new parts, and the page dated 2026-10-23", (_slug, article) => {
-    const hits = aiTells(newText(article));
-    expect(hits.map((hit) => `${hit.id} ${hit.label}`)).toEqual([]);
+  it.each(each)("%s: no AI tells in the body, and the page dated 2026-10-23", (_slug, article) => {
+    expect(aiTells(bodyOf(article)).map((hit) => `${hit.id} ${hit.label}`)).toEqual([]);
     expect(article.updated).toBe("2026-10-23");
   });
 });
@@ -200,15 +254,13 @@ describe("no card page is another card page with the name swapped", () => {
     expect(shared(endings)).toEqual([]);
   });
 
-  it("opens the new sections (Starlog scene, 자주 묻는 질문) in their own words: no opening shared by three cards", () => {
-    for (const pick of [starlogSection, faqSection]) {
-      const openings = new Map<string, string[]>();
-      for (const article of CARD_ARTICLES) {
-        const opening = frame(firstSentence(pick(article)?.body ?? "")).slice(0, 12);
-        openings.set(opening, [...(openings.get(opening) ?? []), article.slug]);
-      }
-      expect([...openings.entries()].filter(([, slugs]) => slugs.length > 2)).toEqual([]);
+  it("opens the Starlog notes in their own words: no opening shared by three cards", () => {
+    const openings = new Map<string, string[]>();
+    for (const article of CARD_ARTICLES) {
+      const opening = frame(firstSentence(starlogNote(article)?.note ?? "")).slice(0, 12);
+      openings.set(opening, [...(openings.get(opening) ?? []), article.slug]);
     }
+    expect([...openings.entries()].filter(([, slugs]) => slugs.length > 2)).toEqual([]);
   });
 
   it("has no sentence that another card repeats once the card names and numbers are taken out", () => {

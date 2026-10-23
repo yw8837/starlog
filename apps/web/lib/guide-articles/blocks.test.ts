@@ -194,25 +194,16 @@ describe("the converted articles' tables agree with the engine, the reading tabl
     expect(blocksOf(findArticle("upright-and-reversed") as GuideArticle).some((block) => block.kind === "figure" && block.src === "/cards/major-17-star.webp")).toBe(true);
   });
 
-  it("card articles: the keyword table quotes the card's KB word for word, and a card row shows the card", () => {
-    const withoutTable: string[] = [];
+  it("card articles: no uniform 한 줄로/핵심 낱말 keyword table any more, and a card row on a card page shows that card", () => {
+    // The editorial rework of 2026-10-23 dropped the two-row table every card carried; a card keeps a table only where it
+    // helps that card (tarot.test.ts), and the KB's one-line meanings are read in the text instead.
     for (const article of GUIDE_ARTICLES.filter((a) => a.cardId)) {
       const cardId = article.cardId as string;
-      const table = blocksOf(article).find((block): block is Table => block.kind === "table" && block.caption === `${getCard(cardId).names.ko} 카드의 키워드`);
-      if (!table) {
-        withoutTable.push(article.slug);
-        continue;
+      for (const block of blocksOf(article)) {
+        if (block.kind === "table") expect(block.rows.map((row) => row[0]), `${article.slug}: ${block.caption}`).not.toContain("핵심 낱말");
+        if (block.kind === "cardRow") expect(block.cards, article.slug).toContain(cardId);
       }
-      const kb = kbCard(cardId);
-      expect(table.head, article.slug).toEqual(["구분", "정방향", "역방향"]);
-      expect(table.rows, article.slug).toEqual([
-        ["한 줄로", kb.core.oneLine.upright, kb.core.oneLine.reversed],
-        ["핵심 낱말", kb.keywordsKo.join(", "), kb.core.reversed.join(", ")],
-      ]);
-      expect(blocksOf(article).some((block) => block.kind === "cardRow" && block.cards.includes(cardId)), article.slug).toBe(true);
     }
-    // Every card article has it, 은둔자 and 별 in lib/guide.ts too (은둔자 had no blocks until 2026-10-08).
-    expect(withoutTable).toEqual([]);
   });
 
   it("celtic-cross-spread: the tables name the ten places as the diagram's legend does, in order", () => {

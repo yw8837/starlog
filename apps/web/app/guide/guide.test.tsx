@@ -199,7 +199,8 @@ describe("guide card pictures", () => {
     const picture = within(screen.getAllByRole("figure")[0]!).getByRole("img", { name: "바보 타로 카드" });
     expect(picture.getAttribute("src")).toBe("/cards/major-00-fool-sm.webp");
     expect(picture.getAttribute("srcset")).toBe("/cards/major-00-fool-sm.webp 240w, /cards/major-00-fool.webp 600w");
-    // The one Starlog face is the 스타로그 덱 section's own figure (2026-10-22), there whatever deck was chosen; every
+    // The one Starlog face is the deck's own figure in the article body (2026-10-22; its note cut to a sentence or two on
+    // 2026-10-23), there whatever deck was chosen; every
     // other face on the page (the card, the card rows) stays a 1909 scan.
     expect(faceSrcs(container).filter((src) => src.startsWith("/cards/starlog/"))).toEqual(["/cards/starlog/major-00-fool.webp"]);
   });
