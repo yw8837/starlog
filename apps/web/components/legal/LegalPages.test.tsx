@@ -165,10 +165,10 @@ describe("policy pages", () => {
     describe("from then", () => {
       beforeEach(() => vi.setSystemTime(Date.parse("2026-10-30T00:00:00+09:00")));
 
-      it("no 개정 예정 left, 시행일 2026-10-30, and the 10/28 revision's lines as they were", () => {
+      it("no 개정 예정 left but account sync's (10/31), 시행일 2026-10-30, and the 10/28 revision's lines as they were", () => {
         const { container } = render(<PrivacyPage />);
         const text = container.textContent ?? "";
-        expect(text).not.toContain("개정 예정");
+        expect(text.match(/개정 예정 · [^시]*시행/g)).toEqual(["개정 예정 · 2026년 10월 31일부터 시행"]);
         expect(container.querySelector('time[datetime="2026-10-30"]')).not.toBeNull();
         expect(text).toContain("이 방침은 2026년 10월 30일부터 시행합니다.");
         expect(text).toContain("그 전이라도 공유한 날부터 180일이 지나면 링크와 함께 자동으로 지웁니다.");
@@ -273,6 +273,54 @@ describe("policy pages", () => {
     const kept = "로그인해 결제하고 연 풀이";
     expect(text.split(kept).length - 1).toBeGreaterThanOrEqual(7);
     expect(text).toContain("로그인하지 않고 연 풀이와 오픈 기념 무료로 연 풀이의 입력은 서버에 저장하지 않고");
+  });
+
+  describe("privacy: account sync (owner 2026-10-23), a revision of its own in force 2026-10-31 00:00 KST", () => {
+    const noteOf = (container: HTMLElement, title: string) => [...container.querySelectorAll("p")].find((p) => p.textContent === title)?.parentElement ?? null;
+    const SYNC = "개정 예정 · 2026년 10월 31일부터 시행";
+    const OLD = "로그인해 결제하고 연 풀이";
+
+    it("until then: announced in a box of its own (what is kept, the move only on the user's 옮기기, erasure as today), and the text as it was", () => {
+      vi.setSystemTime(Date.parse("2026-10-30T23:59:59+09:00"));
+      const { container } = render(<PrivacyPage />);
+      const note = noteOf(container, SYNC);
+      expect(note).not.toBeNull();
+      for (const part of [
+        "로그인한 상태로 연 풀이는 무엇으로 열었든(오픈 기념 무료 포함)",
+        "암호화해 계정에 보관하고, 같은 계정으로 로그인한 다른 기기의 내 기록에서도 보여 드립니다",
+        "이용자가 내 기록이나 내 정보에서 옮기기를 누른 경우에만",
+        "운영자의 서버가 만든 풀이인지 확인할 수 있는 것만 옮기고, 확인할 수 없는 기록은 이 기기에만 남습니다",
+        "내 정보에서 지우거나 탈퇴하면 지체 없이 파기합니다",
+      ])
+        expect(note!.textContent, part).toContain(part);
+      const text = container.textContent ?? "";
+      expect(text).toContain("로그인하지 않고 연 풀이와 오픈 기념 무료로 연 풀이의 입력은 서버에 저장하지 않고");
+      expect(text.split(OLD).length - 1).toBeGreaterThanOrEqual(7);
+      expect(container.querySelector('time[datetime="2026-10-30"]')).not.toBeNull();
+    });
+
+    it("from then: in the text everywhere the account's readings are named, 시행일 2026-10-31, no 개정 예정", () => {
+      vi.setSystemTime(Date.parse("2026-10-31T00:00:00+09:00"));
+      const { container } = render(<PrivacyPage />);
+      const text = container.textContent ?? "";
+      const section = (id: string) => container.querySelector(`#${id}`)?.textContent ?? "";
+      expect(text).not.toContain("개정 예정");
+      expect(container.querySelector('time[datetime="2026-10-31"]')).not.toBeNull();
+      expect(text).toContain("이 방침은 2026년 10월 31일부터 시행합니다.");
+      expect(text).not.toContain(OLD);
+      expect(text).not.toContain("로그인해서 연 풀이");
+      expect(text).toContain("카카오나 Google로 로그인한 상태로 연 풀이와, 로그인한 뒤 이 기기의 풀이 중 직접 계정으로 옮긴 풀이는 질문·출생 정보와 함께 암호화해 운영자의 저장소(Cloudflare D1)에 보관하고");
+      expect(section("items")).toContain("로그인한 상태로 연 풀이(오픈 기념 무료 포함)와 이 기기에서 계정으로 옮긴 풀이: 질문, 상황, 메모 또는 출생 정보와 풀이 결과, 이어서 물어본 내용. 암호화해서 저장합니다");
+      expect(section("items")).toContain("계정으로 옮기기는 이용자가 옮기기를 누른 경우에만 하고, 운영자의 서버가 만든 풀이인지 확인할 수 있는 것만 옮깁니다");
+      expect(section("purposes")).toContain("로그인한 상태로 연 풀이와 계정으로 옮긴 풀이를 다른 기기에서 보여 주기");
+      expect(section("retention")).toContain("다만 로그인한 뒤 이용자가 그 풀이를 계정으로 옮기면 다음 항목과 같이 보관합니다.");
+      expect(section("retention")).toContain("로그인한 상태로 연 풀이와 계정으로 옮긴 풀이는 계정에 암호화해 보관하고, 이용자가 내 정보에서 지우거나 탈퇴하면 지체 없이 파기합니다.");
+      expect(section("rights")).toContain("계정에 보관한 풀이는 내 정보에서 지울 수 있고, 탈퇴도 내 정보에서 할 수 있습니다.");
+      expect(section("security")).toContain("로그인하지 않고 연 풀이의 입력은 이용자가 계정으로 옮기지 않는 한 서버에 저장하지 않고, 계정에 보관하는 풀이는 AES-256-GCM으로 암호화해 저장하며");
+      const cloudflare = container.querySelector('[aria-label="Cloudflare, Inc."]')?.textContent ?? "";
+      expect(cloudflare).toContain("회원·결제 기록과 계정에 보관한 풀이의 저장(D1)");
+      expect(cloudflare).toContain("계정에 보관한 풀이(암호화)");
+    });
   });
 
   it("privacy: no longer offers the signup gift; describes the grant records still kept for gifts already given", () => {

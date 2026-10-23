@@ -66,9 +66,10 @@ describe("everything open now, the premium clauses in force from 2026-10-20 00:0
         expect(screen.queryByRole("group", { name: UPCOMING })).toBeNull();
         expect(container.textContent).toMatch(/프리미엄 풀이/);
         expect(container.textContent).toContain("2026년 10월 20일");
-        // The privacy revisions of 2026-10-28 and 2026-10-30 (lib/legal.ts PRIVACY_REVISION_DATE, GA_REVISION_DATE) have their own
-        // notices; the premium clauses have none left.
-        expect(container.textContent?.replace("개정 예정 · 2026년 10월 28일부터 시행", "").replace("개정 예정 · 2026년 10월 30일부터 시행", "")).not.toMatch(
+        // The privacy revisions of 2026-10-28, 2026-10-30 and 2026-10-31 (lib/legal.ts PRIVACY_REVISION_DATE, GA_REVISION_DATE,
+        // SYNC_REVISION_DATE) have their own notices; the premium clauses have none left.
+        const revisions = ["개정 예정 · 2026년 10월 28일부터 시행", "개정 예정 · 2026년 10월 30일부터 시행", "개정 예정 · 2026년 10월 31일부터 시행"];
+        expect(revisions.reduce((text, notice) => text.replace(notice, ""), container.textContent ?? "")).not.toMatch(
           /개정 예정|2026년 10월 24일|2026년 11월 15일/,
         );
         cleanup();
