@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { CARDS } from "@starlog/core";
+import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
-import { findArticle, guideSectionText, type GuideArticle, type GuideBlock } from "../guide";
+import { GUIDE_ARTICLES, findArticle, guideSectionText, type GuideArticle, type GuideBlock } from "../guide";
 import { guidePlainText } from "../guideLinks";
 
 /**
@@ -107,5 +107,60 @@ describe("the suit articles each read their suit from an angle of their own", ()
     expect(table, "a table with one row per suit").toBeDefined();
     // The overview no longer describes an ace scene by scene: those pictures live in the suit articles.
     expect(text(overview)).not.toMatch(/구름에서 나온 손이/);
+  });
+});
+
+describe("the tarot basics say exactly what the deck holds (review 2026-10-23)", () => {
+  type Table = Extract<GuideBlock, { kind: "table" }>;
+
+  it("the 22-card overview: 바보 apart as the traveller, three rows of seven, each caption the range its heading names", () => {
+    const overview = article("major-arcana-overview");
+    const rows = overview.sections.flatMap((section) =>
+      (section.blocks ?? []).filter((block): block is Table => block.kind === "table" && block.head[0] === "번호").map((table) => ({ heading: section.heading, table })),
+    );
+    expect(rows).toHaveLength(3);
+    for (const { heading, table } of rows) {
+      const [from = 0, to = 0] = (/^(\d+)번부터 (\d+)번까지$/.exec(table.caption) ?? []).slice(1).map(Number);
+      expect(heading, table.caption).toContain(table.caption);
+      expect(table.rows.map((row) => row[0])).toEqual(Array.from({ length: to - from + 1 }, (_, i) => `${from + i}번`));
+      expect(table.rows).toHaveLength(7);
+    }
+    expect(text(overview)).toContain("일곱 장씩 세 줄");
+  });
+
+  it("the overview tells the journey in its own words, not the card articles' 한눈에 보기", () => {
+    const overview = article("major-arcana-overview");
+    const cardOf = (name: string) => GUIDE_ARTICLES.find((a) => a.cardId && getCard(a.cardId).names.ko === name) as GuideArticle;
+    for (const section of overview.sections) {
+      for (const block of section.blocks ?? []) {
+        if (block.kind !== "table" || block.head[0] !== "번호") continue;
+        for (const [, name = "", line = ""] of block.rows) {
+          const points = cardOf(name).keyPoints ?? [];
+          for (const point of points) expect(dice(frame(point), frame(line)), `${name}: ${line} / ${point}`).toBeLessThan(0.6);
+        }
+      }
+    }
+  });
+
+  it("no overstated odds: three cards with no major happens about one draw in three", () => {
+    const body = text(article("major-and-minor-arcana"));
+    expect(body).not.toMatch(/흔해요|흔한 일/);
+    expect(body).toContain("세 번에 한 번 남짓");
+  });
+
+  it("the two arcana article leaves the four suits to the suit hub, and each suit article links to it", () => {
+    const raw = (a: GuideArticle) => a.sections.flatMap((section) => [section.body, ...(section.blocks ?? []).map((block) => JSON.stringify(block))]).join("\n");
+    expect(raw(article("major-and-minor-arcana"))).toContain("(/guide/minor-arcana-suits)");
+    expect(text(article("major-and-minor-arcana"))).not.toMatch(/완드는 의욕/);
+    for (const slug of Object.keys(SUITS)) expect(raw(article(slug)), slug).toContain("(/guide/minor-arcana-suits)");
+  });
+
+  it("suit titles say what a search asks: '<벌> 카드 뜻: … 14장'", () => {
+    expect(Object.keys(SUITS).map((slug) => article(slug).title)).toEqual([
+      "완드 카드 뜻: 일·열정을 읽는 14장",
+      "컵 카드 뜻: 연애·감정을 읽는 14장",
+      "소드(검) 카드 뜻: 무섭게 보이는 그림까지 14장 읽기",
+      "펜타클 카드 뜻: 돈과 생활을 읽는 14장",
+    ]);
   });
 });

@@ -220,7 +220,7 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
       "earthly-branches", "day-master", "ten-gods", "manseryeok", "saju-compatibility",
     ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-07" }] as const),
     ...[
-      "major-and-minor-arcana", "wands-suit", "cups-suit", "swords-suit", "pentacles-suit", "major-arcana-overview",
+      "wands-suit", "cups-suit", "swords-suit", "pentacles-suit",
       "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
       "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
       "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
@@ -244,6 +244,9 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     // overview compares the four and links on instead of retelling them.
     ...["wands-suit", "cups-suit", "swords-suit", "pentacles-suit"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-23" }] as const),
     ...["minor-arcana-suits"].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-23" }] as const),
+    // 2026-10-23: the 22-card overview reads the cards as the 바보의 여정 (0 the traveller, three rows of seven) instead of
+    // repeating each card's 한눈에 보기; the two arcana article points to the suit hub instead of listing the four suits.
+    ...["major-and-minor-arcana", "major-arcana-overview"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-23" }] as const),
     // 2026-10-23 (AdSense "가치가 별로 없는 콘텐츠"): the 29 saju articles rewritten with their own worked examples, the date
     // each entry carries itself (GuideDates.test.tsx keeps the two the same).
     ...["heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune"].map(
