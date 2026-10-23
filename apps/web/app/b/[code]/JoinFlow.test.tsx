@@ -100,7 +100,7 @@ describe("JoinFlow", () => {
       expect(within(table).getByText("+10")).toBeTruthy();
       fireEvent.click(screen.getByRole("button", { name: "내 인연 공유하기" }));
       const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
-      expect(sheet.textContent).toContain("내 인연 카드와 인연 점수, 점수 근거가 보여요");
+      expect(sheet.textContent).toContain("내 인연 카드와 인연 점수가 보여요. 점수 근거와 생년월일, 남긴 한 줄은 담기지 않아요.");
       await act(async () => {
         fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
       });

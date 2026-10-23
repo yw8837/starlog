@@ -79,8 +79,9 @@ const SHOWN: Record<ShareKind, { shown: string; hidden: string; kakao: string; b
   },
   "saju-free": {
     shown: "맛보기 제목과 요약",
-    hidden: "생년월일과 태어난 시각, 명식은 담기지 않아요.",
-    kakao: "사주 맛보기의 제목과 요약을 볼 수 있어요. 생년월일과 태어난 시각은 담기지 않아요.",
+    // Like the paid saju's: pillars in hanja are hidden, a Hangul one ("병화 일간") can stay (lib/share/payload.ts hidePillars).
+    hidden: "생년월일과 태어난 시각은 가려요. 다만 맛보기에 내 사주 이야기가 담겨 있으니 보낼 사람을 골라 주세요.",
+    kakao: "사주 맛보기의 제목과 요약을 볼 수 있어요. 생년월일과 태어난 시각은 가렸어요.",
   },
   premium: {
     shown: "어떤 프리미엄 풀이인지와 카드나 제목",
@@ -88,14 +89,14 @@ const SHOWN: Record<ShareKind, { shown: string; hidden: string; kakao: string; b
     kakao: "친구가 연 프리미엄 풀이예요. 나도 볼 수 있어요.",
   },
   bonds: {
-    shown: "내 별자리와 별이 된 친구들의 닉네임, 인연 점수 합계와 평균",
-    hidden: "친구마다의 점수와 남긴 한 줄, 생년월일은 담기지 않아요.",
+    shown: "내 별자리와 별이 된 친구들의 닉네임",
+    hidden: "인연 점수 합계와 평균은 별자리를 다 채운 뒤에만 보여요. 친구마다의 점수와 남긴 한 줄, 생년월일은 담기지 않아요.",
     kakao: "친구들이 별이 되어 채운 별자리예요. 나도 별자리 인연을 시작할 수 있어요.",
     button: "별자리 보기",
   },
   bond: {
-    shown: "내 인연 카드와 인연 점수, 점수 근거",
-    hidden: "생년월일과 남긴 한 줄은 담기지 않아요.",
+    shown: "내 인연 카드와 인연 점수",
+    hidden: "점수 근거와 생년월일, 남긴 한 줄은 담기지 않아요.",
     kakao: "별자리 인연에서 받은 인연 점수예요. 나도 친구와 점수를 볼 수 있어요.",
     button: "인연 보기",
   },

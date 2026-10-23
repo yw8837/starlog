@@ -347,7 +347,8 @@ function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext 
         <InviteCode code={view.invite.code} filling={{ sign: def.id, filled }} />
         {filled > 0 ? (
           <div className={s.shareRow}>
-            <BondsShareButton constellationId={filling.row.id} text={`${view.owner.nickname}님의 ${def.ko} · 인연 ${total}점`} />
+            {/* No score in what a filling share says: a sum of few friends is their scores (privacy §4). */}
+            <BondsShareButton constellationId={filling.row.id} text={`${view.owner.nickname}님의 ${def.ko} · 별 ${filled}/${def.slots}`} />
           </div>
         ) : null}
       </section>

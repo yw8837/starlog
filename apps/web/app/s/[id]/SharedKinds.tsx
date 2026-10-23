@@ -118,7 +118,7 @@ export function SharedSajuFreeView({ share }: { share: SharedSajuFree }) {
         <h1 id="shared-saju-free-title" className={s.title}>
           {share.title}
         </h1>
-        <p className={s.question}>생년월일과 태어난 시각, 명식은 공유한 사람만 볼 수 있어요.</p>
+        <p className={s.question}>생년월일과 태어난 시각은 공유한 사람만 볼 수 있어요.</p>
       </header>
       <Paper>
         <p className={f.prose}>{share.summary}</p>

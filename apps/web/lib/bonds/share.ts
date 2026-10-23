@@ -1,5 +1,5 @@
 import "server-only";
-import { getConstellation, mirrorParts, type BondPart, type Orientation, type SignId } from "@starlog/core";
+import { getConstellation, type Orientation, type SignId } from "@starlog/core";
 import { SITE } from "@/lib/config";
 import { bondsRepo } from "@/lib/db";
 import type { BondsRepo, StarRow } from "@/lib/db/bondsRepo";
@@ -10,10 +10,12 @@ import { bondCardLine } from "./bondCardText";
 /**
  * 별자리 인연 shares (owner 2026-10-23), read live from the bonds store each time the link is opened, so a removed star
  * or a refilled constellation is gone from the link too and nothing personal is copied into the share.
- * - an owner's constellation: the friends' nicknames on their stars, the 인연 total and average, complete or not.
- *   Never a friend's own score or message: those are the owner's only (privacy §4); the average follows from the
- *   total and the count, which the share image shows already.
- * - a friend's own star: their nickname, score and its reasons from their side, their card, the owner's nickname.
+ * - an owner's constellation: the friends' nicknames on their stars and how many are filled; the 인연 total and
+ *   average only once complete, as the share image always had them. While filling a sum is no shield: one star's
+ *   total is that friend's score, two friends can work out each other's, and a live link's growing total gives each
+ *   newcomer's away (privacy §4, review 2026-10-23). Never a friend's own score or message.
+ * - a friend's own star: their nickname, score and card, the owner's nickname. Not the reasons: the 오행 a friend fills
+ *   and the 띠 relations hint at the owner's chart and age (review 2026-10-23).
  */
 
 export type BondsShareView =
@@ -23,7 +25,8 @@ export type BondsShareView =
       ownerNickname: string;
       slots: number;
       members: Array<{ slot: number; nickname: string }>;
-      total: number;
+      /** only once complete (null while filling) */
+      total: number | null;
       average: number | null;
       complete: boolean;
       completedAt: number | null;
@@ -34,7 +37,6 @@ export type BondsShareView =
       ownerNickname: string;
       friendNickname: string;
       score: number;
-      parts: BondPart[];
       card: { cardId: string; orientation: Orientation };
       bondLine: string;
     };
@@ -46,6 +48,7 @@ export async function loadBondsShare(repo: BondsRepo, share: SharedBonds | Share
   if (!owner) return null;
   const stars = await repo.starsOf(row.id);
   if (share.kind === "bonds") {
+    const complete = row.status === "complete";
     const total = stars.reduce((sum, star) => sum + star.score, 0);
     return {
       kind: "bonds",
@@ -53,9 +56,9 @@ export async function loadBondsShare(repo: BondsRepo, share: SharedBonds | Share
       ownerNickname: owner.nickname,
       slots: getConstellation(row.sign).slots,
       members: stars.map((star) => ({ slot: star.slot, nickname: star.nickname })),
-      total,
-      average: stars.length ? Math.round(total / stars.length) : null,
-      complete: row.status === "complete",
+      total: complete ? total : null,
+      average: complete && stars.length ? Math.round(total / stars.length) : null,
+      complete,
       completedAt: row.completedAt,
     };
   }
@@ -67,8 +70,6 @@ export async function loadBondsShare(repo: BondsRepo, share: SharedBonds | Share
     ownerNickname: owner.nickname,
     friendNickname: star.nickname,
     score: star.score,
-    // stored from the owner's side; the friend's link reads them from the friend's
-    parts: mirrorParts(star.parts),
     card: { cardId: star.cardId, orientation: star.orientation },
     bondLine: bondCardLine(star.cardId, star.orientation),
   };
@@ -80,8 +81,7 @@ export function bondsPreviewData(view: BondsShareView): BondsPreviewData {
   if (view.kind === "bonds") {
     return { kind: "bonds", signKo, ownerNickname: view.ownerNickname, stars: view.members.length, slots: view.slots, total: view.total, average: view.average, complete: view.complete };
   }
-  const reason = view.parts.find((part) => part.points > 0)?.text ?? null;
-  return { kind: "bond", signKo, ownerNickname: view.ownerNickname, friendNickname: view.friendNickname, score: view.score, reason };
+  return { kind: "bond", signKo, ownerNickname: view.ownerNickname, friendNickname: view.friendNickname, score: view.score };
 }
 
 /** The constellation, when `ownerId` owns it. */

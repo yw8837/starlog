@@ -50,10 +50,13 @@ describe("sharePreview", () => {
     expect(sharePreview({ kind: "premium", v: 1, product: "match", relation: "friend" }).try.path).toBe("/premium/match?from=share");
   });
 
-  it("a 별자리 인연 link says the sign and its score once read live, and offers 내 별자리 만들기", () => {
-    const owner = sharePreview({ kind: "bonds", v: 1, constellationId: "abcdefghij0123456789" }, { kind: "bonds", signKo: "사자자리", ownerNickname: "별님", stars: 5, slots: 9, total: 380, average: 76, complete: false });
-    expect(owner.title).toBe("별님님의 사자자리 · 인연 380점");
-    expect(owner.description).toBe("친구 5명이 별이 되어 9칸 가운데 5칸을 채웠어요 · 평균 76점");
-    expect(owner.try).toEqual({ label: "내 별자리 만들기", path: "/bonds" });
+  it("a 별자리 인연 link says the sign and how far it is filled, its score only once complete, and offers 내 별자리 만들기", () => {
+    const filling = sharePreview({ kind: "bonds", v: 1, constellationId: "abcdefghij0123456789" }, { kind: "bonds", signKo: "사자자리", ownerNickname: "별님", stars: 5, slots: 9, total: null, average: null, complete: false });
+    expect(filling.title).toBe("별님님의 사자자리 · 별 5/9");
+    expect(filling.description).toBe("친구 5명이 별이 되어 9칸 가운데 5칸을 채웠어요");
+    expect(filling.try).toEqual({ label: "내 별자리 만들기", path: "/bonds" });
+    const done = sharePreview({ kind: "bonds", v: 1, constellationId: "abcdefghij0123456789" }, { kind: "bonds", signKo: "사자자리", ownerNickname: "별님", stars: 9, slots: 9, total: 684, average: 76, complete: true });
+    expect(done.title).toBe("별님님의 사자자리 완성 · 인연 684점");
+    expect(done.description).toBe("친구 9명이 별이 되어 9칸을 모두 채웠어요 · 평균 76점");
   });
 });

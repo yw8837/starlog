@@ -160,9 +160,9 @@ export interface ShareOgData {
    * route; a face that could not be read is drawn as its name plate. Reversed ones are turned.
    */
   cards?: Array<{ cardId: string; src?: string; reversed: boolean }>;
-  /** 별자리 인연: the constellation drawn on the right, `lit` of its stars filled. */
+  /** 별자리 인연: the constellation drawn on the right; `lit`: the first N stars, or the exact slots (a removed star leaves its gap). */
   sign?: SignId;
-  lit?: number;
+  lit?: number | readonly number[];
   /**
    * Saju: the five 기운 as a motif on the right (木火土金水 in their colours). A decoration, never the person's chart: the
    * pillars give a birth away (A2 SHARE-2), so a saju share has none to draw.

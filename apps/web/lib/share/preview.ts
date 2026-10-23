@@ -19,8 +19,9 @@ export interface SharePreview {
 
 /** What a 별자리 인연 link shows, read live from the bonds store (app/s/[id]/bondsShare.ts). */
 export type BondsPreviewData =
-  | { kind: "bonds"; signKo: string; ownerNickname: string; stars: number; slots: number; total: number; average: number | null; complete: boolean }
-  | { kind: "bond"; signKo: string; ownerNickname: string; friendNickname: string; score: number; reason: string | null };
+  /** `total` and `average` only once complete (lib/bonds/share.ts: a filling constellation shares no number). */
+  | { kind: "bonds"; signKo: string; ownerNickname: string; stars: number; slots: number; total: number | null; average: number | null; complete: boolean }
+  | { kind: "bond"; signKo: string; ownerNickname: string; friendNickname: string; score: number };
 
 const TITLE_MAX = 60;
 const DESCRIPTION_MAX = 90;
@@ -95,17 +96,25 @@ export function sharePreview(share: SharePayload, live?: BondsPreviewData | null
     case "bonds":
     case "bond": {
       const build = { label: "내 별자리 만들기", path: "/bonds" };
-      if (live?.kind === "bonds") {
+      if (live?.kind === "bonds" && live.complete && live.total !== null) {
         return {
-          title: clip(`${live.ownerNickname}님의 ${live.signKo}${live.complete ? " 완성" : ""} · 인연 ${live.total}점`, TITLE_MAX),
-          description: clip(`친구 ${live.stars}명이 별이 되어 ${live.slots}칸 가운데 ${live.stars}칸을 채웠어요${live.average === null ? "" : ` · 평균 ${live.average}점`}`, DESCRIPTION_MAX),
+          title: clip(`${live.ownerNickname}님의 ${live.signKo} 완성 · 인연 ${live.total}점`, TITLE_MAX),
+          description: clip(`친구 ${live.stars}명이 별이 되어 ${live.slots}칸을 모두 채웠어요${live.average === null ? "" : ` · 평균 ${live.average}점`}`, DESCRIPTION_MAX),
+          try: build,
+        };
+      }
+      if (live?.kind === "bonds") {
+        // Filling: no number (a sum of few friends is their scores).
+        return {
+          title: clip(`${live.ownerNickname}님의 ${live.signKo} · 별 ${live.stars}/${live.slots}`, TITLE_MAX),
+          description: clip(`친구 ${live.stars}명이 별이 되어 ${live.slots}칸 가운데 ${live.stars}칸을 채웠어요`, DESCRIPTION_MAX),
           try: build,
         };
       }
       if (live?.kind === "bond") {
         return {
           title: clip(`${live.friendNickname}님과 ${live.ownerNickname}님의 인연 ${live.score}점`, TITLE_MAX),
-          description: clip(live.reason ? `${live.reason}` : `${live.ownerNickname}님의 ${live.signKo}에 별이 되었어요.`, DESCRIPTION_MAX),
+          description: clip(`${live.ownerNickname}님의 ${live.signKo}에 별이 되었어요.`, DESCRIPTION_MAX),
           try: build,
         };
       }

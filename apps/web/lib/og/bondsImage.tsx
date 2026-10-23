@@ -89,9 +89,10 @@ export function framedStars(sign: SignId): Array<[number, number]> {
 }
 
 /** The figure, lines and stars of a sign as an SVG `px` wide, framed; the first `lit` stars lit. */
-export function constellationSvg(sign: SignId, px: number, lit = Infinity): ReactElement {
+export function constellationSvg(sign: SignId, px: number, lit: number | readonly number[] = Infinity): ReactElement {
   const def = getConstellation(sign);
-  const on = (i: number) => i < lit;
+  // the first N stars, or the exact slots lit (a removed star leaves its gap)
+  const on = (i: number) => (typeof lit === "number" ? i < lit : lit.includes(i));
   const { cx, cy, zoom } = framing(sign);
   const side = 1000 / zoom;
   return (

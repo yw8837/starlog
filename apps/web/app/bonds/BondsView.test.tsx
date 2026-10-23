@@ -149,8 +149,8 @@ describe("BondsView 인연 점수 한눈에 and 공유하기 (owner 2026-10-23)"
     await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
     fireEvent.click(screen.getByRole("button", { name: "별자리 공유하기" }));
     const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
-    expect(sheet.textContent).toContain("내 별자리와 별이 된 친구들의 닉네임, 인연 점수 합계와 평균이 보여요");
-    expect(sheet.textContent).toContain("친구마다의 점수와 남긴 한 줄, 생년월일은 담기지 않아요.");
+    expect(sheet.textContent).toContain("내 별자리와 별이 된 친구들의 닉네임이 보여요");
+    expect(sheet.textContent).toContain("인연 점수 합계와 평균은 별자리를 다 채운 뒤에만 보여요. 친구마다의 점수와 남긴 한 줄, 생년월일은 담기지 않아요.");
     await act(async () => {
       fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
     });

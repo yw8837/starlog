@@ -37,24 +37,24 @@ export function shareOgData(share: SharePayload, origin: string, live: BondsShar
     };
   }
   if (live?.kind === "bonds") {
-    // The constellation and its score, big (owner 2026-10-23); friends' nicknames stay on the page, the image says the total.
+    // The constellation with its stars where they are; its score, big, only once complete (a filling one shares no
+    // number: a sum of few friends is their scores).
+    const done = live.complete && live.total !== null;
     return {
-      label: live.complete ? "완성한 별자리 인연" : "친구들이 채우는 별자리 인연",
+      label: done ? "완성한 별자리 인연" : "친구들이 채우는 별자리 인연",
       headline: `${live.ownerNickname}님의 ${getConstellation(live.sign).ko}`,
-      big: `인연 ${live.total}점`,
-      body: `별 ${live.members.length}/${live.slots}${live.average === null ? "" : ` · 평균 ${live.average}점`}`,
+      ...(done ? { big: `인연 ${live.total}점` } : {}),
+      body: `별 ${live.members.length}/${live.slots}${done && live.average !== null ? ` · 평균 ${live.average}점` : ""}`,
       sign: live.sign,
-      lit: live.members.length,
+      lit: live.members.map((member) => member.slot),
       host,
     };
   }
   if (live?.kind === "bond") {
-    const reason = live.parts.find((part) => part.points > 0)?.text;
     return {
       label: `${live.ownerNickname}님의 ${getConstellation(live.sign).ko} · 별자리 인연`,
       headline: `${live.friendNickname}님과 ${live.ownerNickname}님`,
       big: `인연 ${live.score}점`,
-      ...(reason ? { body: clip(reason) } : {}),
       sign: live.sign,
       host,
     };
