@@ -71,10 +71,13 @@ export async function insertReadingStatement(
   },
 ): Promise<D1Statement> {
   const held = input.whileReserved ? " AND EXISTS (SELECT 1 FROM unlocks WHERE id = ? AND status = 'reserved')" : "";
+  // origin is named only when there is one: a purchase, the gift or the owner pass saves as before the column existed,
+  // so a deploy that runs ahead of its migration still saves them (only account sync's writes need it).
+  const [originColumn, originValue] = input.origin ? [", origin", ", ?"] : ["", ""];
   return db
     .prepare(
-      `INSERT INTO readings (id, user_id, kind, product_id, source, unlock_id, payload, key_version, created_at, updated_at, origin)
-       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      `INSERT INTO readings (id, user_id, kind, product_id, source, unlock_id, payload, key_version, created_at, updated_at${originColumn})
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?${originValue}
        WHERE EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NULL)${held}
        ON CONFLICT DO NOTHING`,
     )
@@ -89,7 +92,7 @@ export async function insertReadingStatement(
       READING_KEY_VERSION,
       input.now,
       input.now,
-      input.origin ?? null,
+      ...(input.origin ? [input.origin] : []),
       input.userId,
       ...(input.whileReserved ? [input.unlockId] : []),
     );
