@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openingOn } from "./opening";
 import { openShared, shotButton } from "./shareShots";
 
 /**
@@ -86,7 +87,8 @@ test("공유하기 makes the reading's own link: the cards and the reading for a
   await visitor.close();
 });
 
-test("a 오픈 기념 무료 reading shares too (owner 2026-10-23): its link opens the cards and the reading, not the home", async ({ page }) => {
+// 오픈 기념 무료 opens readings until 2026-10-31 (KST); from 11월 1일 there is none to share, so the test is not declared.
+if (openingOn()) test("a 오픈 기념 무료 reading shares too (owner 2026-10-23): its link opens the cards and the reading, not the home", async ({ page }) => {
   const reading = await savedReading(page, "sharee2e02", { opening: true });
   await page.goto("/chapter/sharee2e02");
   await expect(page.getByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toBeVisible();
