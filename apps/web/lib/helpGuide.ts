@@ -60,14 +60,16 @@ const num = (n: number) => new Intl.NumberFormat("ko-KR").format(n);
 export const times = (n: number) => (["한 번", "두 번", "세 번"][n - 1] ?? `${num(n)}번`);
 
 /** Said once on a 오픈 기념 무료 record, and by the follow-up route when it refuses one (it is shared like any other, owner 2026-10-23). */
-export const OPENING_KEEP_ONLY = "오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.";
+export const OPENING_KEEP_ONLY = "오픈 기념 무료 풀이는 내 기록에 보관돼요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.";
 
 /**
  * 오픈 기념 무료 as screens describe it (owner 2026-10-14 evening): one tarot full reading per device until
- * its last day, read and kept on that device only and shareable (owner 2026-10-23), with no follow-ups. Worded with the date, so it stays true once it ends.
+ * its last day, kept in 내 기록 and shareable (owner 2026-10-23), with no follow-ups. Worded with the date, so it stays true once it ends.
+ * 내 기록, not "이 기기": from SYNC_REVISION_DATE one opened while logged in is kept in the account too (account sync), and
+ * these lines are prerendered on /pricing and /help, so they say what is true before and after that date.
  */
 export const openingFreeText = (count: number = SITE.beta.firstFreeTarot) =>
-  `${OPENING_LAST_DAY}까지 기기마다 타로 전체 풀이 ${times(count)}을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).`;
+  `${OPENING_LAST_DAY}까지 기기마다 타로 전체 풀이 ${times(count)}을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).`;
 
 export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   const { followUps, approxChars } = site.reading;

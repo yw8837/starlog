@@ -254,7 +254,7 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     seed();
     stub({ me: [GUEST], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
     render(<FreeResult instant />);
-    expect(await screen.findByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).")).toBeTruthy();
+    expect(await screen.findByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
     await waitFor(() => expect(router.push).toHaveBeenCalled());
     // Read and kept on this device only: the record shows no follow-up box or share button.

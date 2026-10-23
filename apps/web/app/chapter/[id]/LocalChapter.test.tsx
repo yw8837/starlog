@@ -312,7 +312,7 @@ describe("LocalChapter for a 오픈 기념 무료 reading (no follow-ups; shared
     // The owner opened one and found no 공유하기 (2026-10-23: "결과창들은 무조건 공유가 되어야지").
     expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "이어서 물어보기" })).toBeNull();
-    expect(screen.getAllByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toHaveLength(1);
+    expect(screen.getAllByText("오픈 기념 무료 풀이는 내 기록에 보관돼요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toHaveLength(1);
     expect(container.textContent).not.toContain("후기");
     expect(container.textContent).not.toContain("공유는 결제한");
   });
@@ -329,7 +329,7 @@ describe("LocalChapter for a 오픈 기념 무료 reading (no follow-ups; shared
     expect(screen.getByRole("textbox", { name: "이어서 물어볼 내용" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "이어서 물어보기" })).toBeTruthy();
-    expect(screen.queryByText(/보고 보관할 수 있어요/)).toBeNull();
+    expect(screen.queryByText(/오픈 기념 무료 풀이는 내 기록에 보관돼요/)).toBeNull();
   });
 });
 

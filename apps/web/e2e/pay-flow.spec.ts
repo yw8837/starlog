@@ -17,7 +17,7 @@ const NAV = 30_000;
 const GENERATION = 120_000;
 const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
 /** The 오픈 기념 무료 rule as the unlock sheet says it. */
-const OPENING_RULE = "10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).";
+const OPENING_RULE = "10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).";
 
 async function ownAddress(page: Page, info: TestInfo) {
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.9.${info.workerIndex}.${Math.floor(Math.random() * 250)}` });
