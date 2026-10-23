@@ -169,7 +169,7 @@ export const TAROT_BASICS_ARTICLES: readonly GuideArticle[] = [
     slug: "cups-suit",
     title: "컵 카드 뜻: 연애·감정을 읽는 14장",
     category: "tarot",
-    description: "금빛 잔에 담긴 마음을 읽는 컵 14장, 관계를 여는 카드와 마음이 흔들리는 카드, 인물 넷과 연애 질문 예시예요.",
+    description: "금빛 잔에 담긴 마음을 읽는 컵 14장, 관계를 여는 카드와 마음이 흔들리는 카드, 인물 넷과 연애 질문 예시를 담았어요.",
     keyPoints: [
       "잔에 무엇이 담겼는지 보듯, 컵은 마음의 상태를 읽어요.",
       "에이스·2·3·10은 관계가 열리고 무르익는 카드예요.",
@@ -226,7 +226,7 @@ export const TAROT_BASICS_ARTICLES: readonly GuideArticle[] = [
     slug: "swords-suit",
     title: "소드(검) 카드 뜻: 무섭게 보이는 그림까지 14장 읽기",
     category: "tarot",
-    description: "칼이 그려진 검 14장, 겁나 보이는 3·9·10을 실제로 읽는 법과 결정의 카드, 인물 넷과 고민 질문 예시예요.",
+    description: "칼이 그려진 검 14장, 겁나 보이는 3·9·10을 실제로 읽는 법과 결정의 카드, 인물 넷과 고민 질문 예시를 담았어요.",
     keyPoints: [
       "검은 생각과 말, 결정과 갈등을 다루는 공기의 벌이에요.",
       "3·9·10처럼 무서운 그림도 실제 사고나 병을 뜻하지 않아요.",
