@@ -134,6 +134,25 @@ test.describe("별자리 인연 · owner", () => {
     for (const friend of FRIENDS) await expect(page.getByRole("img", { name: /양자리/ }).first()).toContainText(friend.nickname);
     await shot(page, "complete");
 
+    // 별자리 공유하기 (owner 2026-10-23): the constellation's own link: the figure with the friends' nicknames, the total and
+    // the average, never a friend's own score.
+    const ownerShare = page.getByRole("button", { name: "별자리 공유하기" });
+    await ownerShare.scrollIntoViewIfNeeded();
+    if (test.info().project.name === "mobile") await page.screenshot({ path: "test-results/share-shots/bonds-owner-button.png" });
+    await ownerShare.click();
+    const ownerSheet = page.getByRole("dialog", { name: "결과 공유하기" });
+    await ownerSheet.getByRole("button", { name: "공유 링크 만들기" }).click();
+    await expect(ownerSheet).toContainText(/\/s\/[a-z0-9]{12}/, { timeout: 30_000 });
+    const ownerPath = (/\/s\/[a-z0-9]{12}/.exec((await ownerSheet.textContent()) ?? "") ?? [""])[0];
+    await ownerSheet.getByRole("button", { name: "닫기" }).click();
+    const viewer = await page.context().browser()!.newPage({ viewport: page.viewportSize() ?? undefined });
+    await viewer.goto(new URL(ownerPath, page.url()).toString(), { timeout: 120_000 });
+    await expect(viewer.getByRole("heading", { level: 1 })).toHaveText("용우님의 양자리");
+    await expect(viewer.getByRole("meter", { name: "평균 인연 점수" })).toBeVisible();
+    for (const friend of FRIENDS) await expect(viewer.locator("main")).toContainText(friend.nickname);
+    if (test.info().project.name === "mobile") await viewer.screenshot({ path: "test-results/share-shots/bonds-owner-shared.png", fullPage: true });
+    await viewer.close();
+
     // Share images: the completed constellation (feed and story) and the invite card are PNGs.
     const me = (await (await page.request.get("/api/bonds/me")).json()) as { completed: { id: string }[] };
     for (const url of [`/api/og/bonds/${me.completed[0]!.id}`, `/api/og/bonds/${me.completed[0]!.id}?size=story`, `/api/og/invite/${code}`]) {
@@ -225,7 +244,7 @@ test.describe("별자리 인연 · friend", () => {
     await expect(page).toHaveURL(new RegExp(`/b/${code}$`), { timeout: 120_000 });
     await expect(page.getByRole("heading", { level: 1, name: "용우님의 양자리에 별이 되어 주세요" })).toBeVisible();
     await expect(page.getByText("1/4", { exact: true })).toBeVisible();
-    await expect(page.getByText("용우님이 별자리를 공유하면 이 닉네임이 이미지에 보여요")).toBeVisible();
+    await expect(page.getByText("용우님이 별자리를 공유하면 이 닉네임이 공유 이미지와 링크에 보여요")).toBeVisible();
     await shot(page, "friend-form");
 
     await page.getByRole("textbox", { name: "닉네임" }).fill("하늘");
@@ -245,14 +264,34 @@ test.describe("별자리 인연 · friend", () => {
     await page.getByRole("button", { name: "별 되기" }).click();
 
     await expect(page.getByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeVisible();
-    await expect(page.getByText(/^인연 \d+점$/)).toBeVisible();
-    expect(await page.getByRole("list", { name: "점수 근거" }).getByRole("listitem").count()).toBeGreaterThan(0);
+    // 인연 점수 한눈에 (owner 2026-10-23): the number on its 55–99 gauge and the table of what made it.
+    const meter = page.getByRole("meter", { name: "인연 점수" });
+    await expect(meter).toBeVisible();
+    const score = Number(await meter.getAttribute("aria-valuenow"));
+    expect(score).toBeGreaterThanOrEqual(55);
+    await expect(page.getByRole("table", { name: "점수를 만든 항목" }).getByRole("row")).toHaveCount(7);
     await expect(page.getByText(/요즘 두 사람 사이/)).toBeVisible();
     await expect(page.getByText(/인연 카드 · /)).toBeVisible();
     await expect(page.getByRole("link", { name: "오늘의 한 장 받기" })).toHaveAttribute("href", "/today");
     // the birth date and message are not shown back
     await expect(page.locator("main")).not.toContainText("1992");
     await shot(page, "friend-result");
+    // 내 인연 공유하기 (owner 2026-10-23): the friend's own result, whose link opens it, never the home.
+    if (test.info().project.name === "mobile") await page.screenshot({ path: "test-results/share-shots/bond-friend-button.png", fullPage: true });
+    await page.getByRole("button", { name: "내 인연 공유하기" }).click();
+    const sheet = page.getByRole("dialog", { name: "결과 공유하기" });
+    await sheet.getByRole("button", { name: "공유 링크 만들기" }).click();
+    await expect(sheet).toContainText(/\/s\/[a-z0-9]{12}/, { timeout: 30_000 });
+    const sharePath = (/\/s\/[a-z0-9]{12}/.exec((await sheet.textContent()) ?? "") ?? [""])[0];
+    await sheet.getByRole("button", { name: "닫기" }).click();
+    const visitor = await page.context().browser()!.newPage({ viewport: page.viewportSize() ?? undefined });
+    await visitor.goto(new URL(sharePath, page.url()).toString(), { timeout: 120_000 });
+    await expect(visitor.getByRole("heading", { level: 1 })).toHaveText("하늘님과 용우님의 인연");
+    await expect(visitor.getByRole("meter", { name: "인연 점수" })).toHaveAttribute("aria-valuenow", String(score));
+    await expect(visitor.locator("main")).not.toContainText("늘 고마워");
+    await expect(visitor.locator("main")).not.toContainText("1992");
+    if (test.info().project.name === "mobile") await visitor.screenshot({ path: "test-results/share-shots/bond-friend-shared.png", fullPage: true });
+    await visitor.close();
     // Q-05: a reload shows this device's result again, not the empty form
     await page.reload();
     await expect(page.getByRole("heading", { level: 1, name: "이미 양자리에 별이 되어 있어요" })).toBeVisible();

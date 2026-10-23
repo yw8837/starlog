@@ -610,6 +610,8 @@ export interface FriendResultView {
   completed: boolean;
   sign: SignId;
   slot: number;
+  /** the star's id: the friend's own share link names it (app/api/share/bond checks the device owns it) */
+  starId: string;
   ownerNickname: string;
   card: { cardId: string; orientation: Orientation };
   bondLine: string;
@@ -646,6 +648,7 @@ export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerI
         completed: found.constellation.status === "complete",
         sign: found.constellation.sign,
         slot: found.star.slot,
+        starId: found.star.id,
         ownerNickname: owner.nickname,
         card: { cardId: found.star.cardId, orientation: found.star.orientation },
         bondLine: bondCardLine(found.star.cardId, found.star.orientation),

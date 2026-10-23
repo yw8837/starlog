@@ -6,6 +6,7 @@ import { ogFonts } from "@/lib/og/googleFont";
 import { rateLimit } from "@/lib/security/rateLimit";
 import { shareOgData, withInlineFaces } from "@/lib/share/og";
 import { findShare } from "@/lib/share/store";
+import { liveBondsShare } from "@/lib/bonds/share";
 
 /**
  * GET → the 1200×630 link preview of a shared reading; 404 once it is no longer shared. Every request
@@ -16,7 +17,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const db = accountDb();
   const share = db ? await findShare(db, (await params).id) : null;
   if (!share) return new Response("Not found", { status: 404 });
-  const data = await withInlineFaces(shareOgData(share.payload, new URL(request.url).origin));
+  const live = share.payload.kind === "bonds" || share.payload.kind === "bond" ? await liveBondsShare(share.payload) : null;
+  if ((share.payload.kind === "bonds" || share.payload.kind === "bond") && !live) return new Response("Not found", { status: 404 });
+  const data = await withInlineFaces(shareOgData(share.payload, new URL(request.url).origin, live));
   const text = shareOgText(data);
   return new ImageResponse(shareOgImage(data), {
     ...SHARE_OG,

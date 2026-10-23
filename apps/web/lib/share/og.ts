@@ -1,4 +1,5 @@
-import { getCard } from "@starlog/core";
+import { getCard, getConstellation } from "@starlog/core";
+import type { BondsShareView } from "@/lib/bonds/share";
 import { SITE } from "@/lib/config";
 import type { ShareOgData } from "@/lib/og/cardsImage";
 import { PREMIUM } from "@/lib/premium/products";
@@ -12,7 +13,7 @@ const BODY_MAX = 72;
 const clip = (text: string) => (text.length > BODY_MAX ? `${text.slice(0, BODY_MAX - 1)}…` : text);
 
 /** What the link preview of a shared reading shows: the cards drawn (오늘의 한 장: its card and line), or the saju's short conclusion. */
-export function shareOgData(share: SharePayload, origin: string): ShareOgData {
+export function shareOgData(share: SharePayload, origin: string, live: BondsShareView | null = null): ShareOgData {
   const host = new URL(SITE.url).host;
   const face = (deck: string, card: { cardId: string; orientation: string }) => ({ cardId: card.cardId, src: `${origin}/cards/og/${deck}/${card.cardId}.jpg`, reversed: card.orientation === "reversed" });
   const name = (card: { cardId: string; orientation: string }) => `${getCard(card.cardId).names.ko}${card.orientation === "reversed" ? "(역)" : ""}`;
@@ -35,8 +36,31 @@ export function shareOgData(share: SharePayload, origin: string): ShareOgData {
       host,
     };
   }
+  if (live?.kind === "bonds") {
+    // The constellation and its score, big (owner 2026-10-23); friends' nicknames stay on the page, the image says the total.
+    return {
+      label: live.complete ? "완성한 별자리 인연" : "친구들이 채우는 별자리 인연",
+      headline: `${live.ownerNickname}님의 ${getConstellation(live.sign).ko}`,
+      big: `인연 ${live.total}점`,
+      body: `별 ${live.members.length}/${live.slots}${live.average === null ? "" : ` · 평균 ${live.average}점`}`,
+      sign: live.sign,
+      lit: live.members.length,
+      host,
+    };
+  }
+  if (live?.kind === "bond") {
+    const reason = live.parts.find((part) => part.points > 0)?.text;
+    return {
+      label: `${live.ownerNickname}님의 ${getConstellation(live.sign).ko} · 별자리 인연`,
+      headline: `${live.friendNickname}님과 ${live.ownerNickname}님`,
+      big: `인연 ${live.score}점`,
+      ...(reason ? { body: clip(reason) } : {}),
+      sign: live.sign,
+      host,
+    };
+  }
   if (share.kind === "bonds" || share.kind === "bond") {
-    return { label: "친구의 별자리 인연", headline: share.kind === "bonds" ? "친구들이 채운 별자리" : "별자리 인연 점수", host };
+    return { label: "별자리 인연", headline: "친구의 별자리 인연", host };
   }
   if (share.kind === "daily") {
     const { card } = share.reading;

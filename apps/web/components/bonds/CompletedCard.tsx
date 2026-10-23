@@ -10,6 +10,8 @@ import { bondsApi, bondsMessage, monthDay } from "@/lib/bonds/client";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ConstellationArt } from "./ConstellationArt";
 import { ShareConstellation } from "./ShareConstellation";
+import { ConstellationStats } from "./BondScore";
+import { BondsShareButton } from "./BondsShareButton";
 import s from "./CompletedCard.module.css";
 import b from "./bonds.module.css";
 
@@ -66,6 +68,7 @@ export function CompletedCard({ row, ownerNickname, allRank, filling, sharePrima
       <p className={s.total}>
         인연 <strong>{row.total}</strong>점
       </p>
+      <ConstellationStats scores={row.stars.map((star) => star.score)} />
       <p className={s.meta}>
         {ownerNickname}님의 {def.ko}
         {row.completedAt ? ` · ${monthDay(row.completedAt)} 완성` : ""}
@@ -74,7 +77,18 @@ export function CompletedCard({ row, ownerNickname, allRank, filling, sharePrima
         <li>{allRank ? `${def.ko} ${allRank}위` : "랭킹에는 없어요"}</li>
       </ul>
       <div className={`${b.actions} ${s.actions}`}>
-        <ShareConstellation constellationId={row.id} sign={row.sign} total={row.total} primary={sharePrimary} label={shareLabel} />
+        {shareLabel ? (
+          // 내 순위 공유하기: the rank, so the image goes with the sign's ranking.
+          <ShareConstellation constellationId={row.id} sign={row.sign} total={row.total} primary={sharePrimary} label={shareLabel} />
+        ) : (
+          // 별자리 공유하기 (owner 2026-10-23): the constellation's own link, with its image as one more way to send it.
+          <BondsShareButton
+            constellationId={row.id}
+            primary={sharePrimary}
+            text={`${ownerNickname}님의 ${def.ko} 완성 · 인연 ${row.total}점`}
+            extra={(link) => <ShareConstellation constellationId={row.id} sign={row.sign} total={row.total} primary={false} label="이미지로 공유" shareUrl={link.url} />}
+          />
+        )}
         <Button variant="secondary" block onClick={() => setConfirming(true)}>
           새로 채우기
         </Button>

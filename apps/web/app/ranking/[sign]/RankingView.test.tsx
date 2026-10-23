@@ -211,7 +211,7 @@ describe("my completed constellation beside the board", () => {
     ]) {
       cleanup();
       card(data);
-      expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "별자리 공유하기" })).toBeTruthy();
       expect(screen.queryByRole("button", { name: "내 순위 공유하기" })).toBeNull();
     }
   });

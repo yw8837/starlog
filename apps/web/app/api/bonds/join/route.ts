@@ -36,6 +36,7 @@ export async function POST(request: Request): Promise<Response> {
         completed: result.completed,
         sign: result.sign,
         slot: result.star.slot,
+        starId: result.star.id,
         ownerNickname: result.ownerNickname,
         card: result.card,
         bondLine: result.bondLine,

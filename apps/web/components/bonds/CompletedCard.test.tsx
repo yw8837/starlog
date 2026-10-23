@@ -33,7 +33,7 @@ describe("CompletedCard", () => {
 
   it("shares with the plain label, or with the one a ranking page gives it, through the same image", () => {
     show();
-    expect(screen.getByRole("button", { name: "공유하기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "별자리 공유하기" })).toBeTruthy();
     cleanup();
     show({ shareLabel: "내 순위 공유하기", sharePrimary: true });
     expect(screen.getByRole("button", { name: "내 순위 공유하기" })).toBeTruthy();

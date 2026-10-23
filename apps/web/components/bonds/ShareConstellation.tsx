@@ -12,6 +12,8 @@ type ShareConstellationProps = {
   primary: boolean;
   /** the button's label (default 공유하기) */
   label?: string;
+  /** the link that goes with the image (default the sign's ranking; a shared constellation's own /s/<id>) */
+  shareUrl?: string;
 };
 
 /**
@@ -19,14 +21,14 @@ type ShareConstellationProps = {
  * never their scores; the owner's 인연 total, and the owner's rank while ranked and public) with the sign's
  * ranking link.
  */
-export function ShareConstellation({ constellationId, sign, total, primary, label }: ShareConstellationProps) {
+export function ShareConstellation({ constellationId, sign, total, primary, label, shareUrl }: ShareConstellationProps) {
   const def = getConstellation(sign);
   return (
     <ShareImageButton
       imageUrl={`/api/og/bonds/${encodeURIComponent(constellationId)}`}
       fileName={`starlog-${sign}.png`}
       shareText={`내 ${def.ko} 완성! 인연 ${total}점 · ${SITE.nameKo} 별자리 인연`}
-      shareUrl={`${SITE.url}/ranking/${sign}`}
+      shareUrl={shareUrl ?? `${SITE.url}/ranking/${sign}`}
       primary={primary}
       label={label}
     />

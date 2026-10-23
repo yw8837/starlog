@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getCard, getConstellation, type Orientation, type SignId } from "@starlog/core";
+import { BondScore } from "@/components/bonds/BondScore";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { bondsApi, bondsMessage } from "@/lib/bonds/client";
@@ -71,29 +72,14 @@ export function StarList({ sign, stars, fresh, complete, otherFilling, onChanged
                     {fresh.has(star.id) ? <span className={s.newTag}>새 별</span> : null}
                   </p>
                   {star.message ? <p className={s.message}>“{star.message}”</p> : null}
-                  <p className={s.score}>
-                    인연 <strong>{star.score}</strong>점 · 사주
-                  </p>
                   <p className={s.energy}>지금의 기운 · {cardName(star.cardId, star.orientation)}</p>
                 </div>
               </div>
               <p className={s.line}>{star.line}</p>
-              <details className={s.parts}>
-                <summary>점수 근거 보기</summary>
-                <ul>
-                  <li>
-                    <span>기본</span>
-                    <span>62</span>
-                  </li>
-                  {star.parts.map((part) => (
-                    <li key={part.id}>
-                      <span>{part.text}</span>
-                      <span>{part.points > 0 ? `+${part.points}` : part.points === 0 ? "" : part.points}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className={b.helper}>명리에서 두 분의 날짜로 읽은 값이에요. 55점에서 99점 사이로 나와요.</p>
-              </details>
+              {/* 인연 점수 한눈에 (owner 2026-10-23): the number, the 55–99 gauge and what made it. */}
+              <div className={s.parts}>
+                <BondScore score={star.score} parts={star.parts} caption="명리에서 두 분의 생년월일로 읽은 값이에요. 언제 다시 봐도 같은 점수예요." />
+              </div>
               <div className={s.starActions}>
                 <button type="button" className={s.todayButton} onClick={() => drawToday(star)} disabled={t === "loading"} aria-expanded={Boolean(t && t !== "loading")}>
                   {t === "loading" ? "카드를 고르는 중이에요" : "오늘의 인연 카드"}

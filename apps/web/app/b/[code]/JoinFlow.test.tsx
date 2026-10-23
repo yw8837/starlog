@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SAJU_PROFILE_KEY } from "@/lib/sajuFlow";
 import { JoinFlow } from "./JoinFlow";
@@ -14,19 +14,20 @@ afterEach(() => {
 const OPEN = { status: "open", kind: "open", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4, earlier: null } as const;
 const RESULT = {
   nickname: "하늘", score: 87, parts: [{ id: "stem-generate" as const, points: 10, text: "두 분의 일간이 서로 살려 주는 사이예요" }], completed: false,
-  sign: "aries" as const, slot: 1, ownerNickname: "용우", card: { cardId: "cups-02", orientation: "upright" as const }, bondLine: "요즘 두 사람 사이엔 ‘마음을 주고받음’의 기운이 흘러요",
+  sign: "aries" as const, slot: 1, starId: "star0123456789abcdef", ownerNickname: "용우", card: { cardId: "cups-02", orientation: "upright" as const }, bondLine: "요즘 두 사람 사이엔 ‘마음을 주고받음’의 기운이 흘러요",
 };
 
 describe("JoinFlow", () => {
   it("names the owner's constellation and warns that the nickname shows on the share image", () => {
     render(<JoinFlow state={OPEN} />);
     expect(screen.getByRole("heading", { level: 1, name: "용우님의 양자리에 별이 되어 주세요" })).toBeTruthy();
-    expect(screen.getByText("용우님이 별자리를 공유하면 이 닉네임이 이미지에 보여요")).toBeTruthy();
+    // A shared constellation shows the nicknames on its image and on its link (owner 2026-10-23).
+    expect(screen.getByText("용우님이 별자리를 공유하면 이 닉네임이 공유 이미지와 링크에 보여요")).toBeTruthy();
   });
 
   it("tells the friend, right above the consent checkbox and as its description, that the nickname may show on the owner's share image and the birth date is not stored", () => {
     render(<JoinFlow state={OPEN} />);
-    const note = screen.getByText("내 닉네임이 용우님의 별자리 공유 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.");
+    const note = screen.getByText("내 닉네임이 용우님의 별자리 공유 이미지와 링크에 나올 수 있어요. 생년월일은 저장하지 않아요.");
     const consent = screen.getByRole("checkbox");
     expect(note.id).not.toBe("");
     expect(consent.getAttribute("aria-describedby")?.split(" ")).toContain(note.id);
@@ -77,6 +78,37 @@ describe("JoinFlow", () => {
     expect(screen.getByText("두 분의 일간이 서로 살려 주는 사이예요")).toBeTruthy();
     expect(screen.getByRole("link", { name: "나도 내 별자리 만들기" })).toBeTruthy();
     expect(screen.queryByRole("textbox", { name: "닉네임" })).toBeNull();
+  });
+
+  it("shows the friend's score big on a 55–99 gauge with the table of what made it, and shares the friend's own result (owner 2026-10-23)", async () => {
+    const calls: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push({ url: String(url), body: JSON.parse(String(init?.body ?? "{}")) });
+        return new Response(JSON.stringify({ id: "bondshare001", path: "/s/bondshare001" }), { status: 200, headers: { "content-type": "application/json" } });
+      }),
+    );
+    const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+    proto.showModal ??= function (this: HTMLElement) {
+      this.setAttribute("open", "");
+    };
+    try {
+      render(<JoinFlow state={{ status: "joined", kind: "joined", code: "K7M4QX", result: RESULT }} />);
+      expect(screen.getByRole("meter", { name: "인연 점수" }).getAttribute("aria-valuenow")).toBe("87");
+      const table = screen.getByRole("table", { name: "점수를 만든 항목" });
+      expect(within(table).getByText("+10")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "내 인연 공유하기" }));
+      const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
+      expect(sheet.textContent).toContain("내 인연 카드와 인연 점수, 점수 근거가 보여요");
+      await act(async () => {
+        fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+      });
+      expect(calls).toEqual([{ url: "/api/share/bond", body: { starId: "star0123456789abcdef" } }]);
+      expect(sheet.textContent).toContain("/s/bondshare001");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("notes an earlier star above the form for the next sign", () => {

@@ -92,49 +92,15 @@
   text-align: center;
 }
 
+/* 인연 점수 한눈에 (components/bonds/BondScore), then 내 인연 공유하기 centred under it. */
 .scoreCard {
-  justify-items: center;
-}
-
-.score {
-  color: var(--ink-sub);
-}
-
-.score strong {
-  color: var(--gold);
-  font-family: var(--font-display), serif;
-  font-size: 44px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-.parts {
   display: grid;
-  gap: 6px;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  text-align: left;
-}
-
-.parts li {
-  display: flex;
-  justify-content: space-between;
   gap: 12px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--ink);
-  font-size: 14px;
-  line-height: 1.5;
 }
 
-.parts li span:last-child {
-  flex: none;
-  color: var(--gold);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+.shareRow {
+  display: flex;
+  justify-content: center;
 }
 
 .cardPanel {

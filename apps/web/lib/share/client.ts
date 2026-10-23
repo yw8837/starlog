@@ -112,6 +112,24 @@ async function makeShare(route: string, body: unknown): Promise<ShareLinkResult>
 export const createNowShareLink = (draw: { cardId: string; orientation: string; pick: number }, deck: string): Promise<ShareLinkResult> =>
   makeShare("/api/share/now", { cardId: draw.cardId, orientation: draw.orientation, pick: draw.pick, deck });
 
+/** Stops a share made by a route that takes the same body to stop it. False when it could not be stopped. */
+async function stopShare(route: string, body: unknown): Promise<boolean> {
+  try {
+    const response = await fetch(route, { method: "DELETE", headers: { "Content-Type": "application/json", Accept: "application/json" }, credentials: "same-origin", body: JSON.stringify(body) });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/** 별자리 인연, the owner's constellation (owner 2026-10-23): the server checks this device owns it. */
+export const createBondsShareLink = (constellationId: string) => makeShare("/api/share/bonds", { constellationId });
+export const stopBondsShareLink = (constellationId: string) => stopShare("/api/share/bonds", { constellationId });
+
+/** 별자리 인연, a friend's own star (owner 2026-10-23): the server checks this device is that friend. */
+export const createBondShareLink = (starId: string) => makeShare("/api/share/bond", { starId });
+export const stopBondShareLink = (starId: string) => stopShare("/api/share/bond", { starId });
+
 /** 오늘의 한 장 among the links this device remembers: one per KST day (the device keeps only today's card). */
 const dailyKey = (now: number) => `daily:${kstDate(now)}`;
 

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { BondsView } from "./BondsView";
 
@@ -105,5 +105,56 @@ describe("BondsView 내가 들어간 별자리 (owner 2026-10-14)", () => {
     render(<BondsView initialSign={null} />);
     await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
     expect(screen.queryByRole("region", { name: "내가 들어간 별자리" })).toBeNull();
+  });
+});
+
+describe("BondsView 인연 점수 한눈에 and 공유하기 (owner 2026-10-23)", () => {
+  const TWO = {
+    ...OWNER_ME,
+    filling: {
+      row: { id: "c1abcdefghijklmnop", sign: "aries", status: "filling", total: 156, startedAt: 1, completedAt: null },
+      stars: [
+        { id: "s0", slot: 0, nickname: "하늘", message: null, cardId: "wands-01", orientation: "upright", score: 87, parts: [{ id: "stem-generate", points: 10, text: "두 분의 일간이 서로 살려 주는 사이예요" }, { id: "year-six", points: 8, text: "띠가 짝을 이루는 사이예요" }, { id: "fill-mine", points: 5, text: "내게 부족한 수 기운을 친구가 채워 줘요" }, { id: "day-three", points: 2, text: "x" }], createdAt: 1, line: "" },
+        { id: "s1", slot: 1, nickname: "바다", message: null, cardId: "cups-02", orientation: "upright", score: 69, parts: [{ id: "stem-combine", points: 12, text: "두 분의 일간이 서로 합을 이루는 사이예요" }, { id: "year-clash", points: -5, text: "띠가 마주 보는 사이라, 부딪히면서 서로를 깨워요" }], createdAt: 2, line: "" },
+      ],
+    },
+  };
+
+  it("shows each star's score big on a 55–99 gauge with its table, and the constellation's average and best", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(TWO))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    const meters = screen.getAllByRole("meter", { name: "인연 점수" });
+    expect(meters.map((m) => m.getAttribute("aria-valuenow"))).toEqual(["87", "69"]);
+    const tables = screen.getAllByRole("table", { name: "점수를 만든 항목" });
+    expect(tables).toHaveLength(2);
+    expect(within(tables[1]!).getByText("−5")).toBeTruthy();
+    expect(screen.getByText("평균").nextSibling?.textContent).toBe("78점");
+    expect(screen.getByText("최고").nextSibling?.textContent).toBe("87점");
+  });
+
+  it("shares the constellation's own link: 공유하기 makes /s/<id> from the owner's constellation", async () => {
+    const calls: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (String(url).startsWith("/api/share/bonds")) {
+          calls.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+          return new Response(JSON.stringify({ id: "bondsshare01", path: "/s/bondsshare01" }), { status: 200, headers: { "content-type": "application/json" } });
+        }
+        return new Response(JSON.stringify(TWO));
+      }),
+    );
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    fireEvent.click(screen.getByRole("button", { name: "별자리 공유하기" }));
+    const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
+    expect(sheet.textContent).toContain("내 별자리와 별이 된 친구들의 닉네임, 인연 점수 합계와 평균이 보여요");
+    expect(sheet.textContent).toContain("친구마다의 점수와 남긴 한 줄, 생년월일은 담기지 않아요.");
+    await act(async () => {
+      fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    });
+    expect(calls).toEqual([{ url: "/api/share/bonds", body: { constellationId: "c1abcdefghijklmnop" } }]);
+    expect(sheet.textContent).toContain("/s/bondsshare01");
   });
 });

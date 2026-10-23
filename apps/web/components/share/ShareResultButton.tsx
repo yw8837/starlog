@@ -35,6 +35,8 @@ type ShareResultButtonProps = ShareActions & {
   extra?: (link: { url: string; imageUrl: string }) => ReactNode;
   /** The button's own label, where a screen has more than one thing to share (default 공유하기). */
   label?: string;
+  /** The screen's gold primary (the ranking page's own constellation); a secondary otherwise. */
+  primary?: boolean;
 };
 
 /** 이 after a final consonant, 가 after a vowel: "풀이 전체가", "합계와 평균이". */
@@ -112,7 +114,7 @@ type Phase =
  * each from its own tap (a phone's share sheet must open from one). 공유 그만하기 takes the link down,
  * and shows whenever the reading has a live link (`current`); after it, a new link can be made.
  */
-export function ShareResultButton({ kind, text, create, stop, current, unavailable, extra, label = "공유하기" }: ShareResultButtonProps) {
+export function ShareResultButton({ kind, text, create, stop, current, unavailable, extra, label = "공유하기", primary = false }: ShareResultButtonProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>({ at: "intro" });
   const copy = SHOWN[kind];
@@ -137,7 +139,7 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
 
   return (
     <>
-      <Button variant="secondary" size="md" onClick={openSheet}>
+      <Button variant={primary ? "primary" : "secondary"} size="md" onClick={openSheet}>
         {label}
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} labelledBy="share-result-title">

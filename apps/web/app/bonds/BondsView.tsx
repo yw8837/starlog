@@ -19,6 +19,8 @@ import { bondsApi, bondsMessage, copyText, markSeen, savedSunSign, seenUntil } f
 import type { JoinedView, OwnerView } from "@/lib/bonds/service";
 import { OwnerSetup } from "./OwnerSetup";
 import { StarList } from "./StarList";
+import { ConstellationStats } from "@/components/bonds/BondScore";
+import { BondsShareButton } from "@/components/bonds/BondsShareButton";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./BondsView.module.css";
 
@@ -338,10 +340,16 @@ function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext 
           </strong>
           <span> · 인연 {total}점</span>
         </p>
+        <ConstellationStats scores={filling.stars.map((star) => star.score)} />
         <p className={b.helper}>
           {filled === 0 ? "초대코드를 보내면 친구가 첫 번째 별이 돼요." : `별 ${def.slots - filled}개만 더 모이면 완성이에요.`}
         </p>
         <InviteCode code={view.invite.code} filling={{ sign: def.id, filled }} />
+        {filled > 0 ? (
+          <div className={s.shareRow}>
+            <BondsShareButton constellationId={filling.row.id} text={`${view.owner.nickname}님의 ${def.ko} · 인연 ${total}점`} />
+          </div>
+        ) : null}
       </section>
 
       <section className={s.section} aria-labelledby="stars-title">

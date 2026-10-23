@@ -15,11 +15,21 @@ import { SHARE_IMAGE } from "@/lib/kakaoShare";
 import { sharePreview } from "@/lib/share/preview";
 import { SharedReading, sajuShareTitle } from "./SharedReading";
 import { shortCardName } from "./SharedKinds";
+import { SharedBondsView } from "./SharedBonds";
+import { Stepper } from "@/components/tarot/Stepper";
+import { bondsPreviewData, liveBondsShare } from "@/lib/bonds/share";
 
-/** One lookup per request, shared by the metadata and the page. */
+/**
+ * One lookup per request, shared by the metadata and the page. A 별자리 인연 link is read live from the bonds store
+ * (lib/bonds/share.ts): gone there, gone here.
+ */
 const load = cache(async (id: string) => {
   const db = accountDb();
-  return SHARE_ID.test(id) && db ? findShare(db, id) : null;
+  const share = SHARE_ID.test(id) && db ? await findShare(db, id) : null;
+  if (!share) return null;
+  if (share.payload.kind !== "bonds" && share.payload.kind !== "bond") return { ...share, bonds: null };
+  const bonds = await liveBondsShare(share.payload);
+  return bonds ? { ...share, bonds } : null;
 });
 
 const firstSentence = (text: string) => text.trim().split(/(?<=[.?!요])\s+/)[0] ?? text.trim();
@@ -61,7 +71,7 @@ export async function generateMetadata({ params }: PageProps<"/s/[id]">): Promis
   const { title, description } = preview(share.payload);
   // What a link pasted into Threads, an Instagram DM or KakaoTalk shows: the same title, first sentence and 2:1 image
   // the Kakao message carries (lib/share/preview.ts; owner 2026-10-23 "텍스트만 날라간다").
-  const card = sharePreview(share.payload);
+  const card = sharePreview(share.payload, share.bonds ? bondsPreviewData(share.bonds) : null);
   const image = { url: `/api/og/share/${share.id}`, ...SHARE_IMAGE, alt: card.title };
   return {
     title,
@@ -81,7 +91,14 @@ export default async function SharePage({ params }: PageProps<"/s/[id]">) {
       <NightSky fixed moon={false} />
       <TabBar />
       <main className="page-col page-wide">
-        <SharedReading share={share.payload} />
+        {share.bonds ? (
+          <>
+            <Stepper label="친구가 공유한 별자리 인연" backHref="/" backLabel="스타로그 홈으로" />
+            <SharedBondsView view={share.bonds} />
+          </>
+        ) : (
+          <SharedReading share={share.payload} />
+        )}
       </main>
       <Footer />
     </div>

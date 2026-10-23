@@ -79,7 +79,7 @@ function SetupForm({ initial, prefilled, onDone }: { initial: BirthValue; prefil
           aria-describedby="bonds-nickname-help"
         />
         <p id="bonds-nickname-help" className={b.helper}>
-          랭킹과 공유 이미지에 쓰이는 이름이라 실명 대신 별명을 권해요
+          랭킹과 공유 이미지, 공유 링크에 쓰이는 이름이라 실명 대신 별명을 권해요
         </p>
         {errors.nickname ? (
           <p className={b.error} role="alert">

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
 import { getCard, getConstellation } from "@starlog/core";
 import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
+import { BondScore } from "@/components/bonds/BondScore";
+import { BondShareButton } from "@/components/bonds/BondsShareButton";
 import { CodeEntry } from "@/components/bonds/CodeEntry";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
 import { InviteShareButton } from "@/components/bonds/InviteShareButton";
@@ -104,17 +106,7 @@ function EarlierStar({ earlier }: { earlier: JoinResult }) {
         <span className={s.earlierTitle}>이미 {def.ko}에 별이 됐어요</span>
         <span className={s.earlierMore}>결과 보기</span>
       </summary>
-      <p className={s.score}>
-        인연 <strong>{earlier.score}</strong>점
-      </p>
-      <ul className={s.parts} aria-label="점수 근거">
-        {earlier.parts.map((part) => (
-          <li key={part.id}>
-            <span>{part.text}</span>
-            <span>{part.points > 0 ? `+${part.points}` : part.points === 0 ? "" : part.points}</span>
-          </li>
-        ))}
-      </ul>
+      <BondScore score={earlier.score} parts={earlier.parts} />
       <p className={s.line}>
         인연 카드 · {card.names.ko}
         {earlier.card.orientation === "reversed" ? " 역방향" : ""}. {earlier.bondLine}
@@ -244,7 +236,7 @@ function OpenInvite({ invite }: { invite: Open }) {
               aria-describedby="friend-nickname-help"
             />
             <p id="friend-nickname-help" className={b.helper}>
-              {invite.ownerNickname}님이 별자리를 공유하면 이 닉네임이 이미지에 보여요
+              {invite.ownerNickname}님이 별자리를 공유하면 이 닉네임이 공유 이미지와 링크에 보여요
             </p>
             {errors.nickname ? (
               <p className={b.error} role="alert">
@@ -262,7 +254,7 @@ function OpenInvite({ invite }: { invite: Open }) {
           />
           <div className={b.group}>
             <p id="friend-consent-note" className={b.helper}>
-              내 닉네임이 {invite.ownerNickname}님의 별자리 공유 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.
+              내 닉네임이 {invite.ownerNickname}님의 별자리 공유 이미지와 링크에 나올 수 있어요. 생년월일은 저장하지 않아요.
             </p>
             <Checkbox checked={consent} onChange={setConsent} invalid={Boolean(errors.consent)} describedBy="friend-consent-note" required>
               만 14세 이상이고, 닉네임과 인연 점수가 {invite.ownerNickname}님의 별자리에 남는 데 동의해요
@@ -332,7 +324,7 @@ function OpenInvite({ invite }: { invite: Open }) {
               aria-describedby="friend-message-help"
             />
             <p id="friend-message-help" className={b.helper}>
-              {invite.ownerNickname}님의 별자리 화면에만 보이고, 공유 이미지에는 들어가지 않아요
+              {invite.ownerNickname}님의 별자리 화면에만 보이고, 공유 이미지와 링크에는 들어가지 않아요
             </p>
             {errors.message ? (
               <p className={b.error} role="alert">
@@ -366,25 +358,12 @@ function Result({ result, headingRef, again = false }: { result: JoinResult; hea
       <h1 id="result-title" ref={headingRef} tabIndex={-1} className={s.title}>
         {again ? `이미 ${def.ko}에 별이 되어 있어요` : result.completed ? `${def.ko}가 완성됐어요` : `${def.ko}에 별이 됐어요`}
       </h1>
+      {/* 인연 점수 한눈에 (owner 2026-10-23): the number, the 55–99 gauge and the table of what made it. */}
       <div className={`${b.panel} ${b.panelGold} ${s.scoreCard}`}>
-        <p className={s.score}>
-          인연 <strong>{result.score}</strong>점
-        </p>
-        <p className={b.helper}>두 사람의 생년월일로 본 사주 궁합이에요. 언제 다시 봐도 같은 점수예요.</p>
-        <ul className={s.parts} aria-label="점수 근거">
-          {result.parts.length === 0 ? (
-            <li>
-              <span>더하거나 뺄 항목이 없어 기본 점수예요</span>
-              <span>62</span>
-            </li>
-          ) : null}
-          {result.parts.map((part) => (
-            <li key={part.id}>
-              <span>{part.text}</span>
-              <span>{part.points > 0 ? `+${part.points}` : part.points === 0 ? "" : part.points}</span>
-            </li>
-          ))}
-        </ul>
+        <BondScore score={result.score} parts={result.parts} caption="두 사람의 생년월일로 본 사주 궁합이에요. 언제 다시 봐도 같은 점수예요." />
+        <div className={s.shareRow}>
+          <BondShareButton starId={result.starId} text={`${result.nickname}님과 ${result.ownerNickname}님의 인연 ${result.score}점`} />
+        </div>
       </div>
       <div className={`${b.panel} ${s.cardPanel}`}>
         <TarotCard cardId={result.card.cardId} orientation={result.card.orientation} faceUp size="md" label={`${card.names.ko}${reversed ? " 역방향" : ""}`} />
