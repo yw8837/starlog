@@ -194,7 +194,8 @@ export function shareOgImage(data: ShareOgData): ReactElement {
               src={card.src}
               width={cardWidth}
               height={Math.round(cardWidth * (416 / 240))}
-              style={{ borderRadius: 12, boxShadow: "0 18px 40px rgba(5,3,15,0.5)", transform: card.reversed ? "rotate(180deg)" : undefined }}
+              // satori refuses `transform: undefined` (the whole image fails): an upright face carries no transform at all.
+              style={{ borderRadius: 12, boxShadow: "0 18px 40px rgba(5,3,15,0.5)", ...(card.reversed ? { transform: "rotate(180deg)" } : {}) }}
             />
           ) : (
             <CardPlate key={`${card.cardId}-${i}`} cardId={card.cardId} orientation={card.reversed ? "reversed" : "upright"} width={cardWidth} />
