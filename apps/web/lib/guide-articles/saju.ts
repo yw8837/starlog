@@ -357,7 +357,8 @@ export const SAJU_ARTICLES: readonly GuideArticle[] = [
           },
           { kind: "p", text: "일간의 음양도 함께 보면 좋아요. 갑·병·무·경·임 같은 양의 일간은 밖으로 뻗는 쪽, 을·정·기·신·계 같은 음의 일간은 안으로 모으는 쪽으로 읽는 경향이 있어요." },
           { kind: "callout", tone: "note", title: "음양과 성격", text: "양이라서 외향적이고 음이라서 내성적이라고 나누는 건 지나친 단순화예요." },
-          { kind: "p", text: "열 일간은 저마다 따로 쓴 글이 있어요. 사주 가이드 목록에서 갑목 일간부터 계수 일간까지 내 일간을 골라 예시 명식과 생활 장면을 함께 읽어 보세요." },
+          { kind: "p", text: "열 일간은 저마다 따로 쓴 글이 있고, 글마다 그 일간에 맞는 각도로 풀었어요. [갑목](/guide/day-master-gapmok)은 적천수 구절과 다섯 단계로 읽는 봄 명식, [을목](/guide/day-master-eulmok)은 덩굴이 기대는 법과 쇠 셋 사이의 가을 명식, [병화](/guide/day-master-byeonghwa)는 한여름과 한겨울 두 명식의 비교, [정화](/guide/day-master-jeonghwa)는 해와 등불의 차이와 흙이 없는 겨울 명식을 중심에 뒀어요." },
+          { kind: "p", text: "[무토](/guide/day-master-muto)는 산의 풍경으로 옮긴 십신 지도와 천간충 짝이 없다는 것의 뜻, [기토](/guide/day-master-gito)는 밭의 네 가지 형편과 여섯 일주, [경금](/guide/day-master-gyeonggeum)은 마른 흙에 묻힌 원석과 궁통보감의 처방, [신금](/guide/day-master-singeum)은 보석이 빛나는 네 가지 조건, [임수](/guide/day-master-imsu)는 계절마다 달라지는 강의 수위와 둑, [계수](/guide/day-master-gyesu)는 무토 하나를 두고 끌리는 두 빗방울을 따라가요. 명식은 모두 지어낸 생일로 세운 가상의 것이라 실제 인물과는 관계가 없어요." },
         ],
       },
       {
