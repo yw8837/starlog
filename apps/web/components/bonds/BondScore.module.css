@@ -58,7 +58,7 @@
   justify-content: space-between;
   margin: 0;
   color: var(--ink-sub);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .caption {
@@ -93,7 +93,7 @@
 .table thead th {
   border-top: 0;
   color: var(--ink-sub);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -153,7 +153,7 @@ tr[data-sign="plus"] .points {
 
 .stat dt {
   color: var(--ink-sub);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
 }
 
