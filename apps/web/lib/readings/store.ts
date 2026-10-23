@@ -2,10 +2,13 @@ import "server-only";
 import { READING_KEY_VERSION, openJson, sealJson } from "@/lib/account/secrets";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import type { PremiumId } from "@/lib/premium/products";
+import { keyedHash } from "@/lib/security/sign";
 
 /**
  * Readings kept in the account (spec 5.7). A reading opened with 결제, the signup gift or the owner pass
- * while logged in is saved automatically (device-only readings are not moved in P4).
+ * while logged in is saved automatically. Account sync (from SYNC_REVISION_DATE, lib/legal.ts): so is a
+ * 오픈 기념 무료 reading (origin 'opening'), and a reading a device kept moves in when its user asks
+ * (origin 'moved', lib/readings/move.ts).
  * - The payload is the chapter exactly as the device stores it (lib/storage/chapters.ts), sealed
  *   with AES-GCM under the row's key_version and bound to the row (`${userId}:${id}` as additional
  *   data: copied or moved to another row, it does not open). It holds the question, note or birth data.
@@ -14,6 +17,8 @@ import type { PremiumId } from "@/lib/premium/products";
  */
 
 export type ReadingSource = "paid" | "free" | "owner";
+/** Where a saved reading came from (migration 0014); none: opened and saved with a purchase, the gift or the owner pass. */
+export type ReadingOrigin = "opening" | "moved";
 
 /** A chapter as the device keeps it (StoredChapter) without its local id. */
 export interface ServerChapter {
@@ -42,6 +47,16 @@ export function newReadingId(): string {
 }
 
 /**
+ * The id of a reading kept from a chapter (오픈 기념 무료 while logged in, or moved from a device): one per account and
+ * chapter (chapterToken.ts chapterIdOf), so keeping the same chapter again, from a retry or another device, finds the
+ * same row (ON CONFLICT DO NOTHING) instead of adding a copy. Keyed with the account secret: nobody can name another's.
+ */
+export async function chapterReadingId(secret: string, userId: string, chapterId: string): Promise<string> {
+  const hash = await keyedHash(`${userId}:${chapterId}`, secret, "starlog-reading-id-v1");
+  return Array.from(hash.slice(0, 20), (c) => (c.charCodeAt(0) % 36).toString(36)).join("");
+}
+
+/**
  * The INSERT for a reading, for a live account only (a deleted one gets nothing). A second insert
  * for the same unlock does nothing (ON CONFLICT DO NOTHING), so a retried delivery never fails on
  * its own first save. `whileReserved` (P5 premium): only while its unlock is still reserved, so in
@@ -52,13 +67,14 @@ export async function insertReadingStatement(
   secret: string,
   input: {
     id: string; userId: string; productId: string; source: ReadingSource; unlockId: string | null; chapter: ServerChapter; now: number; whileReserved?: boolean;
+    origin?: ReadingOrigin;
   },
 ): Promise<D1Statement> {
   const held = input.whileReserved ? " AND EXISTS (SELECT 1 FROM unlocks WHERE id = ? AND status = 'reserved')" : "";
   return db
     .prepare(
-      `INSERT INTO readings (id, user_id, kind, product_id, source, unlock_id, payload, key_version, created_at, updated_at)
-       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      `INSERT INTO readings (id, user_id, kind, product_id, source, unlock_id, payload, key_version, created_at, updated_at, origin)
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
        WHERE EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NULL)${held}
        ON CONFLICT DO NOTHING`,
     )
@@ -73,6 +89,7 @@ export async function insertReadingStatement(
       READING_KEY_VERSION,
       input.now,
       input.now,
+      input.origin ?? null,
       input.userId,
       ...(input.whileReserved ? [input.unlockId] : []),
     );

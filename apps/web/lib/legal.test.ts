@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "./config";
-import { GA_REVISION_DATE, LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, PRIVACY_REVISION_DATE, contactChannels, gaRevisionInForce, koreanDate, privacyEffectiveDate, privacyRevisionInForce } from "./legal";
+import {
+  GA_REVISION_DATE, LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, PRIVACY_REVISION_DATE, SYNC_REVISION_DATE, contactChannels, gaRevisionInForce, koreanDate, privacyEffectiveDate,
+  privacyRevisionInForce, syncRevisionInForce,
+} from "./legal";
 
 describe("legal helpers", () => {
   it("takes effect on 2026-10-15", () => {
@@ -30,5 +33,14 @@ describe("legal helpers", () => {
     expect(privacyEffectiveDate(Date.parse("2026-10-27T12:00:00+09:00"))).toBe("2026-10-20");
     expect(privacyEffectiveDate(Date.parse("2026-10-29T12:00:00+09:00"))).toBe("2026-10-28");
     expect(privacyEffectiveDate(at)).toBe("2026-10-30");
+  });
+
+  it("dates the account-sync revision 2026-10-31 00:00 KST (7 days' notice from 10/24 at the latest), after which the 시행일 is its own", () => {
+    expect(SYNC_REVISION_DATE).toBe("2026-10-31");
+    const at = Date.parse("2026-10-31T00:00:00+09:00");
+    expect(syncRevisionInForce(at - 1)).toBe(false);
+    expect(syncRevisionInForce(at)).toBe(true);
+    expect(privacyEffectiveDate(at - 1)).toBe("2026-10-30");
+    expect(privacyEffectiveDate(at)).toBe("2026-10-31");
   });
 });

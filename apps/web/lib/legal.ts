@@ -49,9 +49,28 @@ const GA_REVISION_AT = Date.parse(`${GA_REVISION_DATE}T00:00:00+09:00`);
 
 export const gaRevisionInForce = (now: number = Date.now()): boolean => now >= GA_REVISION_AT;
 
+/**
+ * A third 개인정보처리방침 revision, account sync (owner 2026-10-23 "웹이랑 모바일에서 각각 로그인하면 내결과가 공유안됨"):
+ * a reading opened while logged in is kept in the account whatever opened it (오픈 기념 무료 too), and a reading a device kept
+ * moves into the account when its user asks. Both widen what the account keeps, and the policy promises 7 days' notice
+ * (as GA, consent-based too, waited for its date): before this KST midnight neither happens (the reading route and
+ * /api/readings/move check it, and the screens offer nothing) and the policy shows both as 개정 예정; from it, in the
+ * text, with no deploy. 7 days from a deploy on 10/24 at the latest; a later deploy moves this date.
+ */
+export const SYNC_REVISION_DATE = "2026-10-31";
+const SYNC_REVISION_AT = Date.parse(`${SYNC_REVISION_DATE}T00:00:00+09:00`);
+
+export const syncRevisionInForce = (now: number = Date.now()): boolean => now >= SYNC_REVISION_AT;
+
 /** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
 export const privacyEffectiveDate = (now: number = Date.now()): string =>
-  gaRevisionInForce(now) ? GA_REVISION_DATE : privacyRevisionInForce(now) ? PRIVACY_REVISION_DATE : legalEffectiveDate(now);
+  syncRevisionInForce(now)
+    ? SYNC_REVISION_DATE
+    : gaRevisionInForce(now)
+      ? GA_REVISION_DATE
+      : privacyRevisionInForce(now)
+        ? PRIVACY_REVISION_DATE
+        : legalEffectiveDate(now);
 
 /** "2026년 10월 1일" */
 export function koreanDate(iso: string): string {
