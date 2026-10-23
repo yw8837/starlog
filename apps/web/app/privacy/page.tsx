@@ -10,6 +10,7 @@ import { OPENING_LAST_DATE, SITE } from "@/lib/config";
 import {
   GA_REVISION_DATE,
   PRIVACY_REVISION_DATE,
+  SYNC_REVISION_DATE,
   contactChannels,
   gaRevisionInForce,
   koreanDate,
@@ -17,6 +18,7 @@ import {
   premiumLegalInForce,
   privacyEffectiveDate,
   privacyRevisionInForce,
+  syncRevisionInForce,
 } from "@/lib/legal";
 import { sajuPrivacyItem, sajuPrivacySent } from "@/lib/sajuTopicCopy";
 import { pageMetadata } from "@/lib/seo";
@@ -66,7 +68,7 @@ const GA_ITEMS = [
  * `premium`: the premium clauses are in force (lib/legal.ts), so Anthropic's items name the 궁합's too. `ga`: the GA
  * revision is in force, so Google LLC is listed, on the visitor's consent (제1항 제1호) rather than as needed for the service.
  */
-const processors = (premium: boolean, ga: boolean): readonly Processor[] => [
+const processors = (premium: boolean, ga: boolean, synced: boolean): readonly Processor[] => [
   {
     name: "Anthropic, PBC",
     rows: [
@@ -90,11 +92,11 @@ const processors = (premium: boolean, ga: boolean): readonly Processor[] => [
       ["국가", "미국"],
       [
         "맡기는 일",
-        `서비스 호스팅과 전송, 하루 이용 횟수와 오늘의 한 장의 임시 저장, 접속 기록 보관, 회원·결제 기록과 로그인해 결제하고 연 풀이의 저장(D1)${BONDS ? ", 별자리 인연 정보의 저장(Cloudflare D1 데이터베이스)" : ""}`,
+        `서비스 호스팅과 전송, 하루 이용 횟수와 오늘의 한 장의 임시 저장, 접속 기록 보관, 회원·결제 기록과 ${synced ? SYNC_KEPT : KEPT}의 저장(D1)${BONDS ? ", 별자리 인연 정보의 저장(Cloudflare D1 데이터베이스)" : ""}`,
       ],
       [
         "이전 항목",
-        `서비스를 이용하며 주고받는 정보, 쿠키, 접속 기록(IP 주소, 브라우저 정보, 접속 일시, 요청한 페이지), 아래 3항의 임시 기록, 회원 정보(카카오 회원번호나 Google 계정 식별값을 바꾼 값, 닉네임)와 결제 기록, 로그인해 결제하고 연 풀이(암호화)${BONDS ? ", 별자리 인연의 닉네임·한 줄·고른 카드·인연 점수와 궁합 기준값(아래 4항)" : ""}`,
+        `서비스를 이용하며 주고받는 정보, 쿠키, 접속 기록(IP 주소, 브라우저 정보, 접속 일시, 요청한 페이지), 아래 3항의 임시 기록, 회원 정보(카카오 회원번호나 Google 계정 식별값을 바꾼 값, 닉네임)와 결제 기록, ${synced ? SYNC_KEPT : KEPT}(암호화)${BONDS ? ", 별자리 인연의 닉네임·한 줄·고른 카드·인연 점수와 궁합 기준값(아래 4항)" : ""}`,
       ],
       ["이전 시기와 방법", "서비스에 접속할 때마다 암호화된 연결(HTTPS)로 전송"],
       [
@@ -155,6 +157,19 @@ const COOKIES: Rows = [
     : []),
 ];
 
+/**
+ * Account sync, the revision of SYNC_REVISION_DATE (lib/legal.ts): until then the account keeps the readings opened while
+ * logged in with a payment (KEPT); from then every reading opened while logged in and every reading its user moved in from
+ * a device (SYNC_KEPT, lib/readings/store.ts origin), shown as 개정 예정 until then (SYNC_UPCOMING).
+ */
+const KEPT = "로그인해 결제하고 연 풀이";
+const SYNC_KEPT = "계정에 보관한 풀이";
+const SYNC_UPCOMING = [
+  "로그인한 상태로 연 풀이는 무엇으로 열었든(오픈 기념 무료 포함) 질문·상황·메모나 출생 정보, 풀이 결과, 이어서 물어본 내용과 함께 암호화해 계정에 보관하고, 같은 계정으로 로그인한 다른 기기의 내 기록에서도 보여 드립니다.",
+  "로그인하기 전에 이 기기에서 연 풀이는 이용자가 내 기록이나 내 정보에서 옮기기를 누른 경우에만 같은 방식으로 계정에 보관합니다. 운영자의 서버가 만든 풀이인지 확인할 수 있는 것만 옮기고, 확인할 수 없는 기록은 이 기기에만 남습니다.",
+  "계정에 보관한 풀이는 지금처럼 내 정보에서 지우거나 탈퇴하면 지체 없이 파기합니다.",
+];
+
 /** The revision of PRIVACY_REVISION_DATE (lib/legal.ts): shown as 개정 예정 until then, in the text from then. */
 const SHARE_EXPIRY = "풀이의 공유 사본과 링크는 공유한 날부터 180일이 지나면 자동으로 지웁니다.";
 const FOLLOW_UP_COUNT_KEPT = "풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 일반 풀이는 8일, 프리미엄 풀이는 31일 동안 보관한 뒤 자동으로 지웁니다.";
@@ -166,6 +181,7 @@ export default function PrivacyPage() {
   const inForce = premiumLegalInForce(now);
   const revised = privacyRevisionInForce(now);
   const ga = gaRevisionInForce(now);
+  const synced = syncRevisionInForce(now);
   const effective = privacyEffectiveDate(now);
 
   return (
@@ -202,13 +218,22 @@ export default function PrivacyPage() {
           </LegalNote>
         </div>
       )}
+      {synced ? null : (
+        <LegalNote>
+          <p className={s.noteTitle}>{`개정 예정 · ${koreanDate(SYNC_REVISION_DATE)}부터 시행`}</p>
+          <ul className={s.list}>
+            {SYNC_UPCOMING.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </LegalNote>
+      )}
       <LegalNote>
         <p className={s.noteTitle}>한눈에 보기</p>
         <p>
-          로그인하지 않으면 이름이나 연락처를 받지 않고, 풀이에 쓰는 질문과 출생 정보는 풀이를 만드는 동안에만 운영자의 서버를 거쳐 AI 사업자에게
-          전달될 뿐 서버에 남기지 않습니다. 카카오나 Google로 로그인해 결제하고 연 풀이는 질문·출생 정보와 함께 암호화해 운영자의
-          저장소(Cloudflare D1)에 보관하고, 내 정보에서 지우거나 탈퇴하면 파기합니다. 회원 정보로는 카카오 회원번호나 Google 계정 식별값을 되돌릴
-          수 없게 바꾼 값과 닉네임만 둡니다.
+          {`로그인하지 않으면 이름이나 연락처를 받지 않고, 풀이에 쓰는 질문과 출생 정보는 풀이를 만드는 동안에만 운영자의 서버를 거쳐 AI 사업자에게 전달될 뿐 서버에 남기지 않습니다. ${
+            synced ? "카카오나 Google로 로그인한 상태로 연 풀이와, 로그인한 뒤 이 기기의 풀이 중 직접 계정으로 옮긴 풀이는" : `카카오나 Google로 ${KEPT}는`
+          } 질문·출생 정보와 함께 암호화해 운영자의 저장소(Cloudflare D1)에 보관하고, 내 정보에서 지우거나 탈퇴하면 파기합니다. 회원 정보로는 카카오 회원번호나 Google 계정 식별값을 되돌릴 수 없게 바꾼 값과 닉네임만 둡니다.`}
         </p>
         {BONDS ? (
           <p>
@@ -240,7 +265,14 @@ export default function PrivacyPage() {
           <li>Google 계정 식별값(Google로 로그인한 경우): 되돌릴 수 없는 값(HMAC)으로 바꿔서만 저장하며, Google의 토큰은 저장하지 않습니다. Google에서는 이 식별값만 받고 이름, 이메일, 프로필 사진은 받지 않습니다</li>
           <li>닉네임(카카오 동의 항목. Google로 로그인한 경우 ‘별손님’), 만 14세 이상 확인 시각, 로그인 세션</li>
           <li>결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 링크. 카드번호 등 결제 정보는 토스페이먼츠가 처리하며 운영자는 받지 않습니다</li>
-          <li>로그인해 결제하고 연 풀이: 질문, 상황, 메모 또는 출생 정보와 풀이 결과, 이어서 물어본 내용. 암호화해서 저장합니다</li>
+          {synced ? (
+            <li>
+              로그인한 상태로 연 풀이(오픈 기념 무료 포함)와 이 기기에서 계정으로 옮긴 풀이: 질문, 상황, 메모 또는 출생 정보와 풀이 결과, 이어서 물어본 내용.
+              암호화해서 저장합니다. 계정으로 옮기기는 이용자가 옮기기를 누른 경우에만 하고, 운영자의 서버가 만든 풀이인지 확인할 수 있는 것만 옮깁니다
+            </li>
+          ) : (
+            <li>로그인해 결제하고 연 풀이: 질문, 상황, 메모 또는 출생 정보와 풀이 결과, 이어서 물어본 내용. 암호화해서 저장합니다</li>
+          )}
           <li>수집 출처: 카카오(카카오 로그인 시 회원번호와 닉네임), Google(Google 로그인 시 계정 식별값)</li>
         </ul>
         <h3 className={s.sub}>풀이 후기를 남길 때</h3>
@@ -307,7 +339,7 @@ export default function PrivacyPage() {
           <li>문의에 답하기</li>
           <li>회원 관리(로그인, 탈퇴), 결제와 환불 처리, 거래 기록 보관</li>
           <li>이미 지급한 가입 선물의 지급 기록 관리(가입 선물은 더 이상 드리지 않습니다)</li>
-          <li>로그인해 결제하고 연 풀이를 다른 기기에서 보여 주기</li>
+          <li>{synced ? "로그인한 상태로 연 풀이와 계정으로 옮긴 풀이를 다른 기기에서 보여 주기" : `${KEPT}를 다른 기기에서 보여 주기`}</li>
           <li>풀이 후기를 보여 주고, 운영 원칙(욕설·개인정보·광고·관계없는 글 금지)에 맞게 관리하기</li>
           <li>이용자가 만든 공유 링크로 풀이를 다른 사람에게 보여 주기</li>
         </ul>
@@ -315,8 +347,12 @@ export default function PrivacyPage() {
 
       <LegalSection id="retention" title="3. 보유 기간과 파기">
         <ul className={s.list}>
-          <li>로그인하지 않고 연 풀이의 입력(질문, 상황, 메모, 출생 정보, 후속 질문, 지난 풀이 요약)은 운영자의 서버에 저장하지 않습니다. 풀이를 생성하는 동안에만 쓰고, 생성이 끝나면 바로 파기합니다.</li>
-          <li>로그인해 결제하고 연 풀이는 계정에 암호화해 보관하고, 이용자가 내 정보에서 지우거나 탈퇴하면 지체 없이 파기합니다.</li>
+          <li>
+            {`로그인하지 않고 연 풀이의 입력(질문, 상황, 메모, 출생 정보, 후속 질문, 지난 풀이 요약)은 운영자의 서버에 저장하지 않습니다. 풀이를 생성하는 동안에만 쓰고, 생성이 끝나면 바로 파기합니다.${
+              synced ? " 다만 로그인한 뒤 이용자가 그 풀이를 계정으로 옮기면 다음 항목과 같이 보관합니다." : ""
+            }`}
+          </li>
+          <li>{`${synced ? "로그인한 상태로 연 풀이와 계정으로 옮긴 풀이" : KEPT}는 계정에 암호화해 보관하고, 이용자가 내 정보에서 지우거나 탈퇴하면 지체 없이 파기합니다.`}</li>
           <li>오늘의 한 장은 무작위 기기 식별값과 날짜로 묶어 호스팅 사업자의 저장소에 36시간 보관한 뒤 자동으로 지웁니다. 같은 날 다시 열 때 같은 쪽지를 보여 드리기 위해서이며, 입력하신 정보는 들어 있지 않습니다.</li>
           <li>
             {revised
@@ -369,7 +405,7 @@ export default function PrivacyPage() {
       <LegalSection id="processors" title={`${num(4)}. 처리 위탁과 국외 이전`}>
         <p>{`운영자는 서비스를 제공하${ga ? "고, 허용한 분의 방문 통계를 분석하" : ""}기 위해 아래 사업자에게 개인정보 처리를 맡기며, 이 중 일부는 「개인정보 보호법」 제28조의8에 따라 국외로 이전됩니다.`}</p>
         <div className={s.cards}>
-          {processors(inForce, ga).map((processor) => (
+          {processors(inForce, ga, synced).map((processor) => (
             <section key={processor.name} id={processor.id} className={s.card} aria-label={processor.name}>
               <h3 className={s.cardTitle}>{processor.name}</h3>
               <Facts rows={processor.rows} stack />
@@ -469,7 +505,7 @@ export default function PrivacyPage() {
         <ul className={s.list}>
           <li>이용자는 언제든지 자신의 개인정보에 대해 열람, 정정, 삭제, 처리정지를 요구할 수 있습니다.</li>
           <li>기기에 저장된 기록은 내 정보의 기록 지우기나 브라우저의 사이트 데이터 삭제로 직접 지울 수 있습니다.</li>
-          <li>로그인해 결제하고 연 풀이는 내 정보에서 지울 수 있고, 탈퇴도 내 정보에서 할 수 있습니다.</li>
+          <li>{`${synced ? SYNC_KEPT : KEPT}는 내 정보에서 지울 수 있고, 탈퇴도 내 정보에서 할 수 있습니다.`}</li>
           {BONDS ? <li>별자리 인연에서 주인은 별을 직접 지우고 랭킹 공개를 끌 수 있습니다. 별자리 전체나 친구로 남긴 별의 삭제는 아래 개인정보 보호책임자에게 요청해 주세요.</li> : null}
           <li>운영자가 보관하는 정보에 대한 요구는 아래 개인정보 보호책임자에게 해 주시면 지체 없이 조치합니다. 법정대리인이나 위임을 받은 사람을 통해서도 요구할 수 있습니다.</li>
         </ul>
@@ -484,7 +520,13 @@ export default function PrivacyPage() {
       <LegalSection id="security" title={`${num(8)}. 안전성 확보 조치`}>
         <ul className={s.list}>
           <li>모든 통신을 HTTPS로 암호화합니다.</li>
-          <li>로그인하지 않고 연 풀이와 오픈 기념 무료로 연 풀이의 입력은 서버에 저장하지 않고, 로그인해 결제하고 연 풀이는 AES-256-GCM으로 암호화해 저장하며, 카카오 회원번호, Google 계정 식별값, IP 주소는 비밀 키로 변환한 값으로만 다루는 등 꼭 필요한 정보만 처리합니다.</li>
+          <li>
+            {`${
+              synced
+                ? "로그인하지 않고 연 풀이의 입력은 이용자가 계정으로 옮기지 않는 한 서버에 저장하지 않고, 계정에 보관하는 풀이는"
+                : `로그인하지 않고 연 풀이와 오픈 기념 무료로 연 풀이의 입력은 서버에 저장하지 않고, ${KEPT}는`
+            } AES-256-GCM으로 암호화해 저장하며, 카카오 회원번호, Google 계정 식별값, IP 주소는 비밀 키로 변환한 값으로만 다루는 등 꼭 필요한 정보만 처리합니다.`}
+          </li>
           {BONDS ? <li>별자리 인연 저장소에는 생년월일을 남기지 않고, 친구의 기기 식별값은 해시로만 둡니다. 초대코드는 새로 만들면 예전 코드가 바로 막힙니다.</li> : null}
           <li>운영자의 쿠키와 풀이 확인값은 서명해 위조를 막습니다.</li>
           <li>AI 사업자 API 키 같은 비밀 정보는 코드와 분리해 서버에만 두고, 접근 권한을 운영자로 한정합니다.</li>

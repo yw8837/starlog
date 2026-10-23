@@ -7,6 +7,7 @@ import { Rabbit } from "@/components/characters/Rabbit";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { ELEMENT_KEY } from "@/components/saju/elements";
 import { chartFor } from "@/components/saju/useSajuChart";
+import { MoveToAccount } from "@/components/account/MoveToAccount";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { useAccount } from "@/lib/account/client";
@@ -14,7 +15,7 @@ import { kstMonthDay } from "@/lib/kst";
 import { sajuTopicsVisible } from "@/lib/sajuTopics";
 import { PREMIUM } from "@/lib/premium/products";
 import type { SajuForm } from "@/lib/sajuForm";
-import { checkinDue, newestFirst, recordLine, sajuRecordTitle, useChapters, type StoredChapter } from "@/lib/storage/chapters";
+import { checkinDue, newestFirst, recordLine, sajuRecordTitle, uniqueChapters, useChapters, type StoredChapter } from "@/lib/storage/chapters";
 import { useAccountSync } from "@/lib/storage/sync";
 import s from "./StoryView.module.css";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
@@ -56,7 +57,8 @@ function DayPillar({ chapter }: { chapter: { birth: SajuForm } }) {
   );
 }
 
-function Record({ chapter, now, topicsOpen }: { chapter: StoredChapter; now: number; topicsOpen: boolean }) {
+/** `deviceOnly`: logged in, and this record is on this device alone (account sync: it can move into the account). */
+function Record({ chapter, now, topicsOpen, deviceOnly }: { chapter: StoredChapter; now: number; topicsOpen: boolean; deviceOnly: boolean }) {
   const { question, verdict } = recordLine(chapter);
   const title = chapter.kind === "saju" ? sajuRecordTitle(chapter, topicsOpen) : question;
   return (
@@ -68,6 +70,7 @@ function Record({ chapter, now, topicsOpen }: { chapter: StoredChapter; now: num
             {KIND_LABEL[chapter.kind]}
           </span>
           <span className={s.date}>{kstMonthDay(chapter.createdAt)}</span>
+          {deviceOnly ? <span className={s.local}>이 기기에만</span> : null}
           {checkinDue(chapter, now) ? <span className={s.due}>돌아볼 때예요</span> : chapter.checkin ? <span className={s.checked}>{`돌아보기 · ${chapter.checkin.answer}`}</span> : null}
         </span>
         <span className={s.recordBody}>
@@ -96,10 +99,12 @@ function Record({ chapter, now, topicsOpen }: { chapter: StoredChapter; now: num
 /** 내 기록: every reading opened on this device, newest first; each opens the saved reading. */
 export function StoryView() {
   const account = useAccount();
-  // Readings opened on another device while logged in come onto this one (once per tab).
+  // Readings opened on another device while logged in come onto this one (each visit, at most once a minute).
   useAccountSync(account);
   const topicsOpen = sajuTopicsVisible({ owner: account?.owner === true, locale: useLocale() });
-  const chapters = useChapters();
+  const stored = useChapters();
+  // Account sync: a reading whose account copy came onto this device too shows once.
+  const chapters = stored && uniqueChapters(stored);
   if (chapters === undefined) {
     return (
       <div className={s.main}>
@@ -111,7 +116,7 @@ export function StoryView() {
   }
   if (chapters.length === 0) return <EmptyStory />;
   const now = Date.now();
-  // Every record is on this device; the ones opened with 결제 or 가입 선물 while logged in are in the account too.
+  // Every record is on this device; the ones opened while logged in (or moved, account sync) are in the account too.
   const inAccount = chapters.filter((chapter) => chapter.serverId).length;
   const kept = inAccount === 0 ? "이 기기에 보관돼요" : inAccount === chapters.length ? "이 기기와 계정에 보관돼요" : `이 기기에 보관돼요 · ${inAccount}개는 계정에도 있어요`;
 
@@ -122,9 +127,12 @@ export function StoryView() {
           <h1 className={s.title}>내 기록</h1>
           <p className={s.count}>{`기록 ${chapters.length}개 · ${kept}`}</p>
         </header>
+        <div className={s.move}>
+          <MoveToAccount />
+        </div>
         <ol className={s.records} aria-label="기록 목록">
           {newestFirst(chapters).map((chapter) => (
-            <Record key={chapter.id} chapter={chapter} now={now} topicsOpen={topicsOpen} />
+            <Record key={chapter.id} chapter={chapter} now={now} topicsOpen={topicsOpen} deviceOnly={Boolean(account?.user) && !chapter.serverId} />
           ))}
         </ol>
       </div>

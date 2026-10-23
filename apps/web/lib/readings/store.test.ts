@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { D1Binding } from "@/lib/db/d1";
 import { migratedTestD1 } from "@/lib/db/testing/migrate";
 import {
+  chapterReadingId,
   deleteAllReadings,
   deleteReading,
   insertReadingStatement,
@@ -126,5 +127,29 @@ describe("saved readings", () => {
     expect((await listReadings(db, SECRET, "u_1")).readings).toEqual([]);
     expect(error).toHaveBeenCalledWith(expect.stringContaining("readings.unreadable"));
     error.mockRestore();
+  });
+
+  it("gives a chapter kept from a device one id per account (account sync): the same chapter again finds the same row", async () => {
+    const db = await setup();
+    const id = await chapterReadingId(SECRET, "u_1", "1700000000000.abc");
+    expect(id).toMatch(/^[a-z0-9]{20}$/);
+    expect(await chapterReadingId(SECRET, "u_1", "1700000000000.abc")).toBe(id);
+    expect(await chapterReadingId(SECRET, "u_2", "1700000000000.abc")).not.toBe(id);
+    expect(await chapterReadingId(SECRET, "u_1", "1700000000000.abd")).not.toBe(id);
+    expect(await chapterReadingId("another-secret-for-tests-0123456789abcd", "u_1", "1700000000000.abc")).not.toBe(id);
+    const keep = async (question: string) =>
+      (await insertReadingStatement(db, SECRET, { id, userId: "u_1", productId: "tarot", source: "free", origin: "moved", unlockId: null, chapter: chapter(question), now: 10 })).run();
+    expect((await keep("처음")).meta?.changes).toBe(1);
+    expect((await keep("다시")).meta?.changes).toBe(0);
+    expect(await count(db)).toBe(1);
+    expect((await readingForUser(db, SECRET, "u_1", id))?.chapter.question).toBe("처음");
+    expect(await db.prepare("SELECT source, origin FROM readings WHERE id = ?").bind(id).first()).toEqual({ source: "free", origin: "moved" });
+  });
+
+  it("leaves origin empty for a reading opened with a purchase, the gift or the owner pass, and refuses an unknown origin", async () => {
+    const db = await setup();
+    const id = await save(db, "u_1", chapter("결제"));
+    expect(await db.prepare("SELECT origin FROM readings WHERE id = ?").bind(id).first()).toEqual({ origin: null });
+    await expect(db.prepare("UPDATE readings SET origin = 'pasted' WHERE id = ?").bind(id).run()).rejects.toThrow(/CHECK/);
   });
 });

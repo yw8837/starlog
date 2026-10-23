@@ -3,6 +3,7 @@ import { parseAccount, type AccountState, type AccountUser } from "@/lib/account
 import { getJson, postJson } from "@/lib/reading/api";
 import { forgetServerIds, listChapters, mergeServerReadings, removeServerChapters, updateChapter } from "./chapters";
 import { dropMatchSeal, matchSeal } from "./matchSeals";
+import { forgetPutOff } from "./move";
 
 /** The account's saved readings on this device (spec 5.7), and the check after a cut-off paid reading (M4). */
 
@@ -100,7 +101,10 @@ export async function checkDelivery(
   return { status: "unknown" };
 }
 
+/** When this tab last pulled the account's readings (ms; "1" from before account sync reads as long ago). */
 const SYNCED_KEY = "starlog.account-synced";
+/** Account sync: 내 기록 and 내 정보 pull again on a visit once this long has passed, so a reading opened on another device shows without a new tab. */
+const PULL_AGAIN_MS = 60_000;
 /** 50 readings a page: 1,000 per pull is far beyond any account; the next pull goes on from the top. */
 const MAX_PAGES = 20;
 
@@ -180,18 +184,25 @@ export function forgetAccountOnDevice({ accountDeleted = false }: { accountDelet
   } catch {
     // storage blocked: nothing was kept there
   }
+  // Account sync: the next login offers to move this device's readings again.
+  forgetPutOff();
   // A logout keeps a 궁합's seal for this device's follow-ups; the account's deletion keeps nothing (review 2026-10-17 #5).
   return removeServerChapters({ keepSeals: !accountDeleted });
 }
 
-/** Once per tab, when a user is logged in: pull the account's readings onto this device. */
+/**
+ * While a user is logged in, each visit of 내 기록 or 내 정보 pulls the account's readings onto this device, at most once
+ * a minute per tab (account sync: once per tab before, so a phone left open never saw what the web opened).
+ */
 export function useAccountSync(account: AccountState | null | undefined): void {
   const loggedIn = Boolean(account?.user);
   useEffect(() => {
     if (!loggedIn) return;
+    const now = Date.now();
     try {
-      if (sessionStorage.getItem(SYNCED_KEY)) return;
-      sessionStorage.setItem(SYNCED_KEY, "1");
+      const last = Number(sessionStorage.getItem(SYNCED_KEY));
+      if (last > 1 && now - last < PULL_AGAIN_MS) return;
+      sessionStorage.setItem(SYNCED_KEY, String(now));
     } catch {
       // storage blocked: pull anyway
     }

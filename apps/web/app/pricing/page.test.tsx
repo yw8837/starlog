@@ -56,7 +56,7 @@ describe("/pricing", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.parse("2026-10-31T23:59:59+09:00"));
     const { container } = render(<PricingPage />);
-    const rule = "10월 31일까지 기기마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).";
+    const rule = "10월 31일까지 기기마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).";
     expect(container.querySelector(".noteTitle, [class*=noteTitle]")?.textContent).toBe(
       "타로 전체 풀이는 3,100원, 사주 전체 풀이는 4,100원이고, 깊게 보는 풀이는 심층 타로 6,100원, 우리 궁합 6,600원, 2027 신년운세 12,100원이에요.",
     );

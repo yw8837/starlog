@@ -355,7 +355,7 @@ describe("오픈 기념 무료", () => {
     const f = await d.call(followup, { chapterToken: r.data.chapterToken, reading: r.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" });
     expect(f.status).toBe(409);
     expect(f.data).toMatchObject({ code: "NOT_AVAILABLE", reason: "opening" });
-    expect(f.data.message).toContain("오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.");
+    expect(f.data.message).toContain("오픈 기념 무료 풀이는 내 기록에 보관돼요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.");
     expect(f.headers.getSetCookie()).toEqual([]);
     expect(spy).not.toHaveBeenCalled();
     // A reading opened with the owner pass keeps its follow-ups.

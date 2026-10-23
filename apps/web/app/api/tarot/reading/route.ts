@@ -3,7 +3,7 @@ import { firstFreeCookies, fullReadingLimit, openGate } from "@/lib/api/http";
 import { respondGeneration } from "@/lib/api/stream";
 import { tarotContextFrom } from "@/lib/api/tarotRequest";
 import { checkBot } from "@/lib/api/turnstile";
-import { planUnlock, settlementFor } from "@/lib/api/unlock";
+import { keepOpening, planUnlock, settlementFor } from "@/lib/api/unlock";
 import { tarotChapter } from "@/lib/readings/chapters";
 import { issueChapter } from "@/lib/security/chapterToken";
 import { openTeaserSeal } from "@/lib/security/teaserSeal";
@@ -12,7 +12,8 @@ import { openTeaserSeal } from "@/lib/security/teaserSeal";
  * POST {drawToken, input, unlock?} → {reading, chapterToken, readingId?}: the full reading for the
  * server-fixed cards.
  * - 오픈 기념 무료 (no `unlock`, until SITE.beta.openingEndsAt): spends the device's free first reading only
- *   after a validated generation; its chapter is marked `opening` (no follow-ups; shared since owner 2026-10-23). It asks for
+ *   after a validated generation; its chapter is marked `opening` (no follow-ups; shared since owner 2026-10-23). Logged in,
+ *   from SYNC_REVISION_DATE (account sync), it is kept in the account too and answers its `readingId`. It asks for
  *   a browser check first when Turnstile is on (lib/api/turnstile.ts); the other openings do not.
  * - paid / the signup gift: reserves the purchase or the gift first, then saves the reading to the
  *   account and spends it before the client sees it. Any failure gives it back (spec 5.4).
@@ -48,7 +49,9 @@ export async function POST(request: Request): Promise<Response> {
         },
         reading, [], gate.secret, gate.now,
       );
-      return { body: { reading, chapterToken }, cookies: plan.first !== null ? await firstFreeCookies(gate, plan.first) : [] };
+      // Account sync: a 오픈 기념 무료 reading opened while logged in goes to the account too (lib/api/unlock.ts keepOpening).
+      const readingId = await keepOpening(plan, tarotChapter(parsed.input, parsed.draw.cards, { reading, chapterToken }, gate.now), gate.secret);
+      return { body: { reading, chapterToken, ...(readingId ? { readingId } : {}) }, cookies: plan.first !== null ? await firstFreeCookies(gate, plan.first) : [] };
     },
     {
       gate,

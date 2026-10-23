@@ -6,7 +6,7 @@ import { UnlockSheet } from "./UnlockSheet";
 afterEach(cleanup);
 
 /** The 오픈 기념 무료 caption: one tarot reading per device until 10월 31일, read and kept on this device only. */
-const OPENING = "10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 이 기기에서 보고 보관할 수 있어요(이어서 물어보기 제외).";
+const OPENING = "10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).";
 
 const base = { kind: "tarot" as const, remaining: undefined, loginHref: "/login?next=%2Ftarot%2Fresult", payHref: "/pay/checkout?product=tarot&returnTo=%2Ftarot%2Fresult" };
 

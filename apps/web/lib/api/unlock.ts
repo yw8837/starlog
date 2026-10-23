@@ -1,13 +1,16 @@
 import "server-only";
 import { openAccount } from "@/lib/account/request";
+import { sessionCookieName } from "@/lib/account/session";
 import { openingFreeOn } from "@/lib/config";
 import { isReviewAccount, isReviewer } from "@/lib/account/review";
 import type { D1Binding } from "@/lib/db/d1";
+import { syncRevisionInForce } from "@/lib/legal";
 import { GIFT_PRODUCT, type StandardProductId } from "@/lib/pay/catalog";
 import { deliverUnlock, releaseUnlock, reserveUnlock, type Currency } from "@/lib/pay/ledger";
 import { payKeyMode, paymentsUnbacked } from "@/lib/pay/mode";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
-import { insertReadingStatement, newReadingId, readingExists, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
+import { chapterReadingId, insertReadingStatement, newReadingId, readingExists, type ReadingSource, type ServerChapter } from "@/lib/readings/store";
+import { openChapter } from "@/lib/security/chapterToken";
 import { checkFirstFree, checkServerLimits, errorResponse, type Gate } from "./http";
 import type { SpendKind } from "./spend";
 import type { GenerationOutcome, Settlement } from "./stream";
@@ -18,7 +21,8 @@ import type { GenerationOutcome, Settlement } from "./stream";
  * - `opening`: 오픈 기념 무료, the device's one free tarot reading (the `sl_first` cookie, server limits,
  *   network counter), until SITE.beta.openingEndsAt (owner 2026-10-14 evening); from then on it is 402
  *   PAYMENT_REQUIRED before any generation. Tarot only: saju opens with a payment or the owner pass
- *   (402 PAYMENT_REQUIRED). It stays after payments open for everyone (owner 2026-10-14).
+ *   (402 PAYMENT_REQUIRED). It stays after payments open for everyone (owner 2026-10-14). From SYNC_REVISION_DATE
+ *   (account sync) one opened while logged in is kept in the account too (`keep`, keepOpening).
  * - `free` (the signup gift): new accounts get none any more (owner 2026-10-14 evening); a gift granted
  *   before still opens a standard tarot reading only (GIFT_PRODUCT; anything else is 402 NO_CREDIT
  *   before anything is held). Login, the free budget and network cap (it costs us what a
@@ -53,6 +57,11 @@ export interface UnlockPlan {
   /** RespondOptions.paidCost: a paid opening's model cost goes to the paid book */
   paidCost: boolean;
   save: { db: D1Binding; accountSecret: string; userId: string; source: ReadingSource; unlockId: string | null } | null;
+  /**
+   * Account sync (from SYNC_REVISION_DATE): a 오픈 기념 무료 reading opened while logged in is kept in the account too
+   * (keepOpening). No settlement: nothing is held or spent, so the opening counts as a free one as before (SEC-01).
+   */
+  keep?: { db: D1Binding; accountSecret: string; userId: string; source: ReadingSource };
 }
 
 export async function planUnlock(request: Request, gate: Gate, kind: StandardProductId, method: UnlockMethod = "opening"): Promise<UnlockPlan | Response> {
@@ -61,7 +70,12 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     if (kind !== "tarot" || !openingFreeOn(gate.now)) return errorResponse("PAYMENT_REQUIRED");
     const first = await checkFirstFree(gate);
     if (first instanceof Response) return first;
-    return { ...base, first };
+    // Only with a session cookie: a visitor's opening never waits on D1, and an account that cannot be read keeps it on the device.
+    if (!syncRevisionInForce(gate.now) || !gate.cookies[sessionCookieName()]) return { ...base, first };
+    const ctx = await openAccount(request, gate.now);
+    const user = ctx instanceof Response ? null : ctx.session?.user;
+    if (ctx instanceof Response || !user) return { ...base, first };
+    return { ...base, first, keep: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: gate.owner ? "owner" : "free" } };
   }
   if (method === "owner") {
     if (!gate.owner) return errorResponse("FORBIDDEN");
@@ -150,4 +164,28 @@ export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string,
       }
     },
   };
+}
+
+/**
+ * Account sync: keeps a 오픈 기념 무료 reading in the account of the session that opened it, as the server wrote it (the
+ * chapter is built from the request's own draw and input, never from what a client says), under the chapter's own id
+ * (chapterReadingId), so moving its device copy later adds nothing. Best effort: a save that fails leaves the reading
+ * on the device, as before the revision, and never fails the reading. Its account id, or null.
+ */
+export async function keepOpening(plan: UnlockPlan, chapter: ServerChapter, secret: string): Promise<string | null> {
+  const keep = plan.keep;
+  if (!keep) return null;
+  try {
+    const opened = await openChapter(chapter.chapterToken, chapter.reading, secret, Date.now());
+    if (!opened) return null;
+    const id = await chapterReadingId(keep.accountSecret, keep.userId, opened.id);
+    const insert = await insertReadingStatement(keep.db, keep.accountSecret, {
+      id, userId: keep.userId, productId: plan.productId, source: keep.source, origin: "opening", unlockId: null, chapter: { ...chapter, opening: true }, now: chapter.createdAt,
+    });
+    const saved = (await insert.run()).meta?.changes === 1 || (await readingExists(keep.db, keep.userId, id));
+    return saved ? id : null;
+  } catch (error) {
+    console.error(JSON.stringify({ evt: "opening.keep_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
+    return null;
+  }
 }

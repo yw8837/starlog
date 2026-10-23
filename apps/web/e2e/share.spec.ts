@@ -91,7 +91,7 @@ test("공유하기 makes the reading's own link: the cards and the reading for a
 if (openingOn()) test("a 오픈 기념 무료 reading shares too (owner 2026-10-23): its link opens the cards and the reading, not the home", async ({ page }) => {
   const reading = await savedReading(page, "sharee2e02", { opening: true });
   await page.goto("/chapter/sharee2e02");
-  await expect(page.getByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toBeVisible();
+  await expect(page.getByText("오픈 기념 무료 풀이는 내 기록에 보관돼요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toBeVisible();
   await page.getByRole("button", { name: "공유하기" }).click();
   const sheet = page.getByRole("dialog", { name: "결과 공유하기" });
   await sheet.getByRole("button", { name: "공유 링크 만들기" }).click();
