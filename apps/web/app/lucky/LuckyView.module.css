@@ -34,6 +34,30 @@
   text-align: center;
 }
 
+/* A friend's shared numbers (owner 2026-10-23), above one's own form. */
+.shared {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  background: var(--glass);
+  box-shadow: inset 0 0 0 1px var(--glass-line);
+  text-align: center;
+}
+
+.sharedTitle {
+  color: var(--gold);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+}
+
+.sharedWeek,
+.sharedNext {
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
 .balls {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

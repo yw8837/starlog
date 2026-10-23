@@ -155,7 +155,7 @@ function Result({ lucky, onAgain }: { lucky: Lucky; onAgain: () => void }) {
         imageUrl={`/api/og/lucky?${query}`}
         fileName={`starlog-lucky-${lucky.weekId}.png`}
         shareText={`이번 주 행운 번호 · ${SITE.nameKo}`}
-        shareUrl={`${SITE.url}/lucky`}
+        shareUrl={`${SITE.url}/lucky?${query}`}
         primary
       />
       <button type="button" className={b.textButton} onClick={onAgain}>

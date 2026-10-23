@@ -317,9 +317,10 @@ describe("/help", () => {
   it("describes sharing as it works: the link shows the whole reading, the user's own words and details stay hidden (F-02)", () => {
     const share = helpGroups().flatMap((group) => group.items).find((item) => item.id === "share")!;
     expect(share.sub).toBe("풀이를 볼 수 있는 링크를 보내요");
-    expect(share.steps).toEqual(["결제한 풀이 화면에서 공유하기를 누르고, 공유 링크 만들기를 눌러요.", "휴대폰에서는 공유 창이 열리고, 컴퓨터에서는 링크가 복사돼요."]);
+    // Every result screen shares, the free ones too (owner 2026-10-23).
+    expect(share.steps).toEqual(["풀이 화면에서 공유하기를 누르고, 공유 링크 만들기를 눌러요. 무료로 본 풀이, 지금의 한 장, 별자리 인연 결과도 같아요.", "휴대폰에서는 공유 창이 열리고, 컴퓨터에서는 링크가 복사돼요."]);
     expect(share.tip).toBe(
-      "링크를 받은 사람은 뽑은 카드나 한눈에 보기와 함께 풀이 전체를 볼 수 있어요. 질문 원문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용, 생년월일은 가려요. 다만 풀이에는 고민 내용이 담겨 있으니 보낼 사람을 골라 주세요. 공유 그만하기를 누르면 보낸 링크가 더 이상 열리지 않아요.",
+      "링크를 받은 사람은 뽑은 카드나 한눈에 보기와 함께 풀이 전체를 볼 수 있어요. 무료로 본 풀이는 무료로 보인 부분만, 프리미엄 풀이는 카드나 제목만 보여요. 질문 원문과 직접 쓴 말, 고른 상황, 이어서 물어본 내용, 생년월일은 가려요. 다만 풀이에는 고민 내용이 담겨 있으니 보낼 사람을 골라 주세요. 공유 그만하기를 누르면 보낸 링크가 더 이상 열리지 않아요.",
     );
     expect(JSON.stringify(share)).not.toContain("카드 이름과");
   });

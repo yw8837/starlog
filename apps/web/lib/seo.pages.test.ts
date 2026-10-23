@@ -21,7 +21,7 @@ import { metadata as helpMeta } from "@/app/help/page";
 import { metadata as howMeta } from "@/app/how/page";
 import { metadata as layoutMeta } from "@/app/layout";
 import { metadata as reviewLoginMeta } from "@/app/login/review/page";
-import { metadata as luckyMeta } from "@/app/lucky/page";
+import { generateMetadata as luckyMeta } from "@/app/lucky/page";
 import { metadata as meMeta } from "@/app/me/page";
 import { metadata as nowMeta } from "@/app/now/page";
 import { metadata as ownerMeta } from "@/app/owner/page";
@@ -114,7 +114,7 @@ const NOINDEX: Array<[path: string, meta: Metadata]> = [
   ["/owner", ownerMeta],
   ["/login/review", reviewLoginMeta],
   // 이번 주 행운 번호 is drawn in the browser from a birth date: the server sends a form and a loading line (SEO P2-4).
-  ["/lucky", luckyMeta],
+  ["/lucky", await luckyMeta()],
   // Their lists load in the browser, so the server sends a "불러오는 중" shell: thin to a crawler.
   ...(await Promise.all(CONSTELLATIONS.map(async (sign) => [`/ranking/${sign.id}`, await rankingSignMeta(params({ sign: sign.id }))] as [string, Metadata]))),
 ];
