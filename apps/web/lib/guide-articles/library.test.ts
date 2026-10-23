@@ -113,6 +113,10 @@ describe("guide library", () => {
       if (article.cardId) {
         expect(length, article.slug).toBeGreaterThanOrEqual(2000);
         expect(length, article.slug).toBeLessThanOrEqual(3800);
+      } else if (article.slug.startsWith("day-master-")) {
+        // The ten day masters read their stem through its verse, seasons, a worked chart and its neighbours (saju-guides.test.ts).
+        expect(length, article.slug).toBeGreaterThanOrEqual(4400);
+        expect(length, article.slug).toBeLessThanOrEqual(7000);
       } else {
         expect(length, article.slug).toBeGreaterThanOrEqual(1500);
         expect(length, article.slug).toBeLessThanOrEqual(3200);

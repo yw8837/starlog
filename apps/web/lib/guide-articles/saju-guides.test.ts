@@ -8,8 +8,9 @@ import { elementMeeting } from "../ai/prompts/match";
 import { DAY_MASTER_IMAGE, SEASON, branchRelations, stemRelations, tenGod, twelveStage } from "../ai/prompts/saju";
 import { aiTells } from "../ai/style";
 import { SITE } from "../config";
-import { findArticle, guideSectionText, type GuideArticle, type GuideBlock } from "../guide";
-import { isQuestion } from "../jsonld";
+import { findArticle, guideSectionText, type GuideArticle, type GuideBlock, type GuideSection } from "../guide";
+import { guidePlainText, inlineParts } from "../guideLinks";
+import { guideFaqJsonLd, isQuestion } from "../jsonld";
 import { KEYWORD_PATH, iljuBySlug } from "../keyword2027";
 import { DAY_MASTER_ARTICLES } from "./day-masters";
 import { SAJU_ARTICLES } from "./saju";
@@ -125,14 +126,56 @@ function masked(sentence: string): string {
     .replace(/◇+/g, "◇");
 }
 
-const COMPAT = /궁합|맞는|맞물|부딪|끌리|맞서|긴장|손잡|가까워|빛나게/;
-/** E 예시 명식, L 생활, C 잘 맞는·부딪히는 일간, Q a question (FAQ), X anything else. */
-function role(heading: string): string {
-  if (heading.includes("예시 명식")) return "E";
-  if (heading.includes("생활")) return "L";
-  if (!isQuestion(heading) && heading.includes("일간") && COMPAT.test(heading)) return "C";
+/**
+ * What a section is about, read from its heading: E a worked chart, S the seasons, V the 적천수 verse, C how it meets other
+ * day masters, L everyday life, M what people get wrong, Q any other question, X anything else. The series once had one
+ * sequence of these slots on every page; now no two pages share a sequence.
+ */
+function slot(heading: string): string {
+  if (/예시|명식/.test(heading)) return "E";
+  if (/계절|태어난 달|봄|여름|가을|겨울/.test(heading)) return "S";
+  if (/적천수|구절/.test(heading)) return "V";
+  if (/합|충|궁합|일간끼리|사이|만남|끌리|부딪|긴장|맞서/.test(heading)) return "C";
+  if (/생활|일상|장면|하루/.test(heading)) return "L";
+  if (/오해|착각|잘못/.test(heading)) return "M";
   return isQuestion(heading) ? "Q" : "X";
 }
+const slots = (article: GuideArticle) => article.sections.map((section) => slot(section.heading)).join("");
+/** The blocks a section is built from, in order ("p+table|list|…"): the page's shape without its words. */
+const shape = (article: GuideArticle) => article.sections.map((section) => ["body", ...(section.blocks ?? []).map((block) => block.kind)].join("+")).join("|");
+/** The old template's slot words: none may head a section on more than three pages. */
+const SLOT_WORDS: ReadonlyArray<readonly [string, RegExp]> = [
+  ["예시 명식", /예시 명식/], ["생활", /생활/], ["끌리는", /끌리/], ["긴장", /긴장/], ["가까워지는", /가까워지/], ["부딪히는", /부딪/],
+  ["맞물리는", /맞물/], ["손잡는", /손잡/], ["…의 글자", /글자/], ["…일간, …일간", /일간, .*일간/], ["X 일간은 …?", /일간은 .+(\?|나요|가요)$/],
+];
+/** Body length as the reviewer measured it: the text a reader reads in the sections, spaces left out. */
+const bodyChars = (article: GuideArticle) => bodyText(article).replace(/\s/g, "").length;
+
+/** "1996년 2월 7일 오전 7시 20분 서울": a fictional birth the page reads, recomputed. */
+const BIRTH = /(\d{4})년 (\d{1,2})월 (\d{1,2})일 (오전|오후) (\d{1,2})시 (\d{1,2})분 서울/g;
+const births = (text: string) =>
+  [...new Set([...text.matchAll(BIRTH)].map((m) => m[0]))].map((birth) => {
+    const [, y, mo, d, half, h, mi] = new RegExp(BIRTH.source).exec(birth) as RegExpExecArray;
+    return at(Number(y), Number(mo), Number(d), (Number(h) % 12) + (half === "오후" ? 12 : 0), Number(mi));
+  });
+/** A section's prose: its body, paragraphs, list items, steps and callouts (no table cells or captions). */
+const prose = (section: GuideSection) =>
+  [section.body, ...(section.blocks ?? []).flatMap((block) => (block.kind === "p" ? [block.text] : block.kind === "list" ? [...block.items] : block.kind === "steps" ? block.items.map((step) => step.text) : block.kind === "callout" ? [block.text] : []))].map(guidePlainText).join(" ");
+const SEAT_GOD = /(연간|월간|시간|연지|월지|일지|시지)[^.,()]{0,8}\((비견|겁재|식신|상관|편재|정재|편관|정관|편인|정인)\)/g;
+const SEAT_KEY = { 연간: ["year", "stemGod"], 월간: ["month", "stemGod"], 시간: ["hour", "stemGod"], 연지: ["year", "branchGod"], 월지: ["month", "branchGod"], 일지: ["day", "branchGod"], 시지: ["hour", "branchGod"] } as const;
+/** Every question the FAQPage carries and the first sentence of its answer. */
+const faq = (article: GuideArticle) =>
+  article.sections.flatMap((section) =>
+    isQuestion(section.heading)
+      ? [{ q: section.heading, first: firstSentence(section.body) }]
+      : /자주 묻는 질문/.test(section.heading)
+        ? (section.blocks ?? []).flatMap((block) => (block.kind === "steps" ? block.items.filter((step) => isQuestion(step.title)).map((step) => ({ q: step.title, first: firstSentence(guidePlainText(step.text)) })) : []))
+        : [],
+  );
+const guideLinks = (article: GuideArticle) =>
+  article.sections
+    .flatMap((section) => [section.body, ...(section.blocks ?? []).flatMap((block) => (block.kind === "p" ? [block.text] : block.kind === "list" ? [...block.items] : block.kind === "steps" ? block.items.map((step) => step.text) : block.kind === "callout" ? [block.text] : []))])
+    .flatMap((text) => inlineParts(text).filter((part): part is { text: string; url: string } => typeof part !== "string" && part.url.startsWith("/guide/")));
 
 describe("the ten day masters are ten articles, not one template", () => {
   it("covers the ten stems, each page about its own", () => {
@@ -140,21 +183,21 @@ describe("the ten day masters are ten articles, not one template", () => {
     for (const article of DAY_MASTERS) expect(article.title, article.slug).toContain(nameOf(DAY_MASTER_STEM[article.slug] as string));
   });
 
-  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: one 예시 명식, one 생활 section, one 일간 궁합 section, 2-3 FAQ", (_slug, article) => {
-    const roles = article.sections.map((section) => role(section.heading));
-    expect(roles.filter((r) => r === "E"), roles.join("")).toHaveLength(1);
-    expect(roles.filter((r) => r === "L"), roles.join("")).toHaveLength(1);
-    expect(roles.filter((r) => r === "C"), roles.join("")).toHaveLength(1);
-    const faq = roles.filter((r) => r === "Q").length;
-    expect(faq, roles.join("")).toBeGreaterThanOrEqual(2);
-    expect(faq, roles.join("")).toBeLessThanOrEqual(3);
+  it("gives every page its own order of topics and its own shape, at three or more lengths", () => {
+    const orders = DAY_MASTERS.map(slots);
+    expect(new Set(orders).size, orders.join(" ")).toBe(10);
+    expect(new Set(DAY_MASTERS.map(shape)).size).toBe(10);
+    expect(new Set(DAY_MASTERS.map((article) => article.sections.length)).size, DAY_MASTERS.map((a) => a.sections.length).join(" ")).toBeGreaterThanOrEqual(3);
+    // A pillar table and a section on the other day masters are where a page needs them, not on every page.
+    const withTable = DAY_MASTERS.filter((article) => tables(article).some((t) => t.head[0] === "기둥")).length;
+    expect(withTable).toBeGreaterThanOrEqual(3);
+    expect(withTable).toBeLessThanOrEqual(7);
+    expect(DAY_MASTERS.filter((article) => slots(article).includes("C")).length).toBeLessThanOrEqual(7);
   });
 
-  it("orders its sections ten different ways, the example not always in one place", () => {
-    const sequences = DAY_MASTERS.map((article) => article.sections.map((section) => role(section.heading)).join(""));
-    expect(new Set(sequences).size, sequences.join(" ")).toBe(10);
-    expect(new Set(sequences.map((s) => s.indexOf("E"))).size, sequences.join(" ")).toBeGreaterThanOrEqual(3);
-    expect(new Set(sequences.map((s) => s.indexOf("C"))).size, sequences.join(" ")).toBeGreaterThanOrEqual(3);
+  it.each(SLOT_WORDS)("heads a section with %s on three pages at most", (_name, pattern) => {
+    const pages = DAY_MASTERS.filter((article) => article.sections.some((section) => pattern.test(section.heading))).map((article) => article.slug);
+    expect(pages.length, pages.join(", ")).toBeLessThanOrEqual(3);
   });
 
   it("never shares a heading, with the stem taken out, across more than two pages", () => {
@@ -162,6 +205,11 @@ describe("the ten day masters are ten articles, not one template", () => {
     for (const article of DAY_MASTERS) for (const section of article.sections) pages.set(masked(section.heading), [...(pages.get(masked(section.heading)) ?? []), article.slug]);
     const shared = [...pages].filter(([, slugs]) => slugs.length > 2).map(([heading, slugs]) => `${heading}: ${slugs.join(", ")}`);
     expect(shared).toEqual([]);
+  });
+
+  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: a body of 3,400-5,200 characters without spaces", (_slug, article) => {
+    expect(bodyChars(article)).toBeGreaterThanOrEqual(3400);
+    expect(bodyChars(article)).toBeLessThanOrEqual(5200);
   });
 
   it("has no sentence that another day master repeats with only the stem changed", () => {
@@ -182,45 +230,64 @@ describe("the ten day masters are ten articles, not one template", () => {
     expect(repeats).toEqual([]);
   });
 
-  it("asks FAQ questions of its own, answered in the first sentence (120 characters or less)", () => {
-    const questions = new Map<string, string>();
+  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: a FAQPage of 2-4 questions of its own, each answered in its first sentence (120 characters or less)", (_slug, article) => {
+    const questions = faq(article);
+    expect(questions.length, questions.map((x) => x.q).join(" | ")).toBeGreaterThanOrEqual(2);
+    expect(questions.length, questions.map((x) => x.q).join(" | ")).toBeLessThanOrEqual(4);
+    expect(guideFaqJsonLd(article)).not.toBeNull();
+    for (const { q, first } of questions) expect(first.length, q).toBeLessThanOrEqual(120);
+  });
+
+  it("asks no question another day master asks with only the stem changed", () => {
+    const asked = new Map<string, string>();
     for (const article of DAY_MASTERS) {
-      for (const section of article.sections.filter((s) => isQuestion(s.heading))) {
-        const key = masked(section.heading);
-        expect(questions.get(key), `${article.slug}: ${section.heading}`).toBeUndefined();
-        questions.set(key, article.slug);
-        expect(firstSentence(section.body).length, section.heading).toBeLessThanOrEqual(120);
+      for (const { q } of faq(article)) {
+        expect(asked.get(masked(q)), `${article.slug}: ${q}`).toBeUndefined();
+        asked.set(masked(q), article.slug);
       }
     }
   });
 
-  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: the 예시 명식 is a labelled fictional chart the 만세력 computes, with this day master", (slug, article) => {
-    const section = article.sections.find((s) => role(s.heading) === "E");
-    const table = section?.blocks?.find((block): block is Table => block.kind === "table" && block.caption.startsWith("예시 명식"));
-    if (!section || !table) throw new Error(`${slug}: no example table`);
-    const chart = exampleChart(table);
-    expectPillarTable(table, chart);
-    expect(chart.pillars.day.stem).toBe(DAY_MASTER_STEM[slug]);
-    expect(section.body).toContain(pillarLine(chart));
-    // 3-4 sentences read the day master in that chart.
-    const reading = (section.blocks ?? []).filter((block) => block.kind === "p").map((block) => (block.kind === "p" ? block.text : "")).join(" ");
-    expect(sentences(reading).length).toBeGreaterThanOrEqual(3);
-    expect(sentences(reading).length).toBeLessThanOrEqual(4);
+  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: a fictional chart read step by step, the one the 만세력 computes, with this day master", (slug, article) => {
+    const withBirth = article.sections.filter((section) => births(guideSectionText(section)).length > 0);
+    expect(withBirth.length, slug).toBeGreaterThanOrEqual(1);
+    for (const section of withBirth) {
+      const text = guideSectionText(section);
+      const charts = births(text);
+      // Labelled as made up, never a real person.
+      expect(text, section.heading).toContain("가상");
+      for (const chart of charts) {
+        expect(chart.warnings.map((w) => w.code), section.heading).toEqual([]);
+        expect(chart.ambiguous, section.heading).toEqual([]);
+        expect(chart.pillars.day.stem, section.heading).toBe(DAY_MASTER_STEM[slug]);
+        expect(text, section.heading).toContain(pillarLine(chart));
+      }
+      for (const table of (section.blocks ?? []).filter((block): block is Table => block.kind === "table" && block.head[0] === "기둥")) expectPillarTable(table, exampleChart(table));
+      // Each 연간·월지… (십신) the reading names is that seat's ten god in the chart.
+      if (charts.length === 1) {
+        const chart = charts[0] as SajuChart;
+        for (const [, seat = "", god = ""] of text.matchAll(SEAT_GOD)) {
+          const [key, field] = SEAT_KEY[seat as keyof typeof SEAT_KEY];
+          expect(chart.pillars[key]?.[field], `${slug}: ${seat} ${god}`).toBe(god);
+        }
+      }
+      // Read in prose, not a table and a line.
+      expect(sentences(prose(section)).length, section.heading).toBeGreaterThanOrEqual(6);
+    }
   });
 
-  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: the 궁합 section names the 천간합 and 천간충 partners the app's tables give", (slug, article) => {
+  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: names the 천간합 and 천간충 partners the app's tables give", (slug, article) => {
     const stem = DAY_MASTER_STEM[slug] as string;
-    const section = article.sections.find((s) => role(s.heading) === "C");
-    const text = section ? guideSectionText(section) : "";
+    const text = bodyText(article);
     const combine = partner(stem, "천간합");
     const clash = partner(stem, "천간충");
     expect(combine, slug).toBeDefined();
     expect(text).toContain(nameOf(combine as string));
     expect(text).toContain("천간합");
-    expect(text).toContain("천간충");
-    if (clash) expect(text).toContain(nameOf(clash));
-    else expect(text, "戊·己 have no 천간충 partner").toMatch(/천간충[^.]*없어요/);
-    expect(article.related).toContain("saju-compatibility");
+    if (clash) {
+      expect(text).toContain(nameOf(clash));
+      expect(text).toContain("천간충");
+    } else expect(text, "戊·己 have no 천간충 partner").toMatch(/천간충[^.]*없/);
   });
 
   it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: every 12운성 and 일주 claim is the reading tables' own", (slug, article) => {
@@ -236,6 +303,13 @@ describe("the ten day masters are ten articles, not one template", () => {
         expect(god, ilju).toBe(tenGod(stem, mainHiddenStem(branch)));
       }
     }
+  });
+
+  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: 3-6 links in the text to other guide pages", (_slug, article) => {
+    const links = guideLinks(article);
+    expect(links.length, links.map((l) => l.url).join(" ")).toBeGreaterThanOrEqual(3);
+    expect(links.length, links.map((l) => l.url).join(" ")).toBeLessThanOrEqual(6);
+    expect(links.every((link) => link.url !== `/guide/${article.slug}`)).toBe(true);
   });
 
   it("names the free 2027 keyword tool next to a few examples, not on every page", () => {
