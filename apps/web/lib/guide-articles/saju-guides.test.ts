@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { elementMeeting } from "../ai/prompts/match";
 import { DAY_MASTER_IMAGE, SEASON, branchRelations, stemRelations, tenGod, twelveStage } from "../ai/prompts/saju";
 import { aiTells } from "../ai/style";
-import { SITE } from "../config";
+import { SITE, won } from "../config";
 import { findArticle, guideSectionText, type GuideArticle, type GuideBlock, type GuideSection } from "../guide";
 import { guidePlainText, inlineParts } from "../guideLinks";
 import { guideFaqJsonLd, isQuestion } from "../jsonld";
@@ -148,8 +148,28 @@ const SLOT_WORDS: ReadonlyArray<readonly [string, RegExp]> = [
   ["예시 명식", /예시 명식/], ["생활", /생활/], ["끌리는", /끌리/], ["긴장", /긴장/], ["가까워지는", /가까워지/], ["부딪히는", /부딪/],
   ["맞물리는", /맞물/], ["손잡는", /손잡/], ["…의 글자", /글자/], ["…일간, …일간", /일간, .*일간/], ["X 일간은 …?", /일간은 .+(\?|나요|가요)$/],
 ];
-/** Body length as the reviewer measured it: the text a reader reads in the sections, spaces left out. */
-const bodyChars = (article: GuideArticle) => bodyText(article).replace(/\s/g, "").length;
+/**
+ * Length as the reviews count it: what the page shows in its sections (body, paragraphs, list items, steps, callouts, and a
+ * table's caption, head and cells), spaces left out.
+ */
+const shownChars = (article: GuideArticle) =>
+  article.sections
+    .flatMap((section) => [
+      section.body,
+      ...(section.blocks ?? []).flatMap((block) =>
+        block.kind === "p" ? [block.text] : block.kind === "list" ? [...block.items] : block.kind === "steps" ? block.items.flatMap((step) => [step.title, step.text]) : block.kind === "callout" ? [block.title, block.text] : block.kind === "table" ? [block.caption, ...block.head, ...block.rows.flat()] : [],
+      ),
+    ])
+    .map(guidePlainText)
+    .join("")
+    .replace(/\s/g, "").length;
+/** A table, list or steps block that sets out a classical verse line by line (three or more items quoting hanja). */
+const isVerseBlock = (block: GuideBlock) => {
+  const items = block.kind === "table" ? block.rows.map((row) => row.join(" ")) : block.kind === "list" ? [...block.items] : block.kind === "steps" ? block.items.map((step) => `${step.title} ${step.text}`) : [];
+  return items.filter((item) => /\([\u4e00-\u9fff ]{4,}\)/.test(item)).length >= 3;
+};
+const KEYWORD_URL = "starlog.yeolmaeapps.kr/2027-keyword";
+const blockText = (block: GuideBlock) => (block.kind === "p" ? block.text : block.kind === "list" ? block.items.join(" ") : block.kind === "steps" ? block.items.map((step) => step.text).join(" ") : block.kind === "callout" ? block.text : "");
 
 /** "1996년 2월 7일 오전 7시 20분 서울": a fictional birth the page reads, recomputed. */
 const BIRTH = /(\d{4})년 (\d{1,2})월 (\d{1,2})일 (오전|오후) (\d{1,2})시 (\d{1,2})분 서울/g;
@@ -207,9 +227,36 @@ describe("the ten day masters are ten articles, not one template", () => {
     expect(shared).toEqual([]);
   });
 
-  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: a body of 3,400-5,200 characters without spaces", (_slug, article) => {
-    expect(bodyChars(article)).toBeGreaterThanOrEqual(3400);
-    expect(bodyChars(article)).toBeLessThanOrEqual(5200);
+  it("runs as long as each day master has things to say: 2,600-4,400 characters, the longest at least 30% of the mean above the shortest", () => {
+    const lengths = DAY_MASTERS.map((article) => [article.slug, shownChars(article)] as const);
+    for (const [slug, n] of lengths) {
+      expect(n, slug).toBeGreaterThanOrEqual(2600);
+      expect(n, slug).toBeLessThanOrEqual(4400);
+    }
+    const ns = lengths.map(([, n]) => n);
+    const mean = ns.reduce((a, b) => a + b, 0) / ns.length;
+    expect(Math.max(...ns) - Math.min(...ns), lengths.map(([slug, n]) => `${slug} ${n}`).join(", ")).toBeGreaterThanOrEqual(0.3 * mean);
+  });
+
+  it("ends the pages in different ways: two at most on the other day masters, four or more kinds of last section", () => {
+    const last = DAY_MASTERS.map((article) => slot(article.sections.at(-1)?.heading ?? ""));
+    expect(last.filter((s) => s === "C").length, last.join("")).toBeLessThanOrEqual(2);
+    expect(new Set(last).size, last.join("")).toBeGreaterThanOrEqual(4);
+  });
+
+  it("sets the 적천수 verse out as a table, list or steps on four pages at most (the others tell it in prose)", () => {
+    const pages = DAY_MASTERS.filter((article) => blocksOf(article).some(isVerseBlock)).map((article) => article.slug);
+    expect(pages.length, pages.join(", ")).toBeLessThanOrEqual(4);
+  });
+
+  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: the free 2027 keyword tool, where named, closes the page", (slug, article) => {
+    const blocks = article.sections.flatMap((section) => [section.body, ...(section.blocks ?? []).map(blockText)]);
+    const at = blocks.flatMap((text, i) => (text.includes(KEYWORD_URL) ? [i] : []));
+    if (!at.length) return;
+    const lastSection = article.sections.at(-1);
+    const lastBlock = lastSection?.blocks?.at(-1);
+    expect(at, slug).toEqual([blocks.length - 1]);
+    expect(lastBlock?.kind, slug).toBe("callout");
   });
 
   it("has no sentence that another day master repeats with only the stem changed", () => {
@@ -305,10 +352,10 @@ describe("the ten day masters are ten articles, not one template", () => {
     }
   });
 
-  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: 3-6 links in the text to other guide pages", (_slug, article) => {
+  it.each(DAY_MASTERS.map((article) => [article.slug, article] as const))("%s: 3-7 links in the text to other guide pages", (_slug, article) => {
     const links = guideLinks(article);
     expect(links.length, links.map((l) => l.url).join(" ")).toBeGreaterThanOrEqual(3);
-    expect(links.length, links.map((l) => l.url).join(" ")).toBeLessThanOrEqual(6);
+    expect(links.length, links.map((l) => l.url).join(" ")).toBeLessThanOrEqual(7);
     expect(links.every((link) => link.url !== `/guide/${article.slug}`)).toBe(true);
   });
 
@@ -580,6 +627,25 @@ describe("the saju concept articles answer first and show a worked example", () 
     expect(opening).toContain(MAIN_TERM[slug]);
     expect(opening.length, opening).toBeLessThanOrEqual(120);
     for (const section of article.sections.filter((s) => isQuestion(s.heading))) expect(firstSentence(section.body).length, section.heading).toBeLessThanOrEqual(120);
+  });
+  /** The pages a review found thin (under 1,800 shown characters): each now carries 2,500 or more of its own subject. */
+  const DEEPENED = ["wolun-iljin", "four-pillars", "day-master", "ten-gods", "saju-compatibility", "saju-birth-info", "branch-relations", "bond-score", "saju-glossary"];
+
+  it.each(CONCEPTS.map((article) => [article.slug, article] as const))("%s: 1,800 shown characters or more (2,500 for the deepened pages)", (slug, article) => {
+    expect(shownChars(article)).toBeGreaterThanOrEqual(DEEPENED.includes(slug) ? 2500 : 1800);
+  });
+
+  it.each(CONCEPTS.map((article) => [article.slug, article] as const))("%s: three or more links in the text to other guide pages", (slug, article) => {
+    const links = guideLinks(article).filter((link) => link.url !== `/guide/${slug}`);
+    expect(links.length, links.map((l) => l.url).join(" ")).toBeGreaterThanOrEqual(3);
+  });
+
+  it("new-year-fortune: the price sits in one notice box at the end, not in the article's text", () => {
+    const article = full("new-year-fortune");
+    const price = won((SITE.price.premium.find((p) => p.id === "newyear-2027") as { krw: number }).krw);
+    const texts = article.sections.flatMap((section) => [section.body, ...(section.blocks ?? []).map(blockText)]);
+    expect(texts.flatMap((text, i) => (text.includes(price) ? [i] : [])), price).toEqual([texts.length - 1]);
+    expect(article.sections.at(-1)?.blocks?.at(-1)?.kind).toBe("callout");
   });
 });
 

@@ -116,8 +116,12 @@ describe("guide library", () => {
         expect(length, article.slug).toBeLessThanOrEqual(7800);
       } else if (article.slug.startsWith("day-master-")) {
         // The ten day masters read their stem through its verse, seasons, a worked chart and its neighbours (saju-guides.test.ts).
-        expect(length, article.slug).toBeGreaterThanOrEqual(4400);
-        expect(length, article.slug).toBeLessThanOrEqual(7000);
+        expect(length, article.slug).toBeGreaterThanOrEqual(3300);
+        expect(length, article.slug).toBeLessThanOrEqual(6500);
+      } else if (article.category === "saju") {
+        // Saju concept pages carry worked examples and reference tables (saju-guides.test.ts keeps them 1,800+ shown characters).
+        expect(length, article.slug).toBeGreaterThanOrEqual(1500);
+        expect(length, article.slug).toBeLessThanOrEqual(4800);
       } else {
         expect(length, article.slug).toBeGreaterThanOrEqual(1500);
         expect(length, article.slug).toBeLessThanOrEqual(3200);

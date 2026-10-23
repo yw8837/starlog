@@ -1086,11 +1086,13 @@ export const SAJU_ARTICLES: readonly GuideArticle[] = [
             kind: "p",
             text: "여섯째 달인 정미월은 그해의 간지와 그달의 간지가 모두 정미라서 같은 글자가 한 번 더 겹치는 달이에요. 마지막 계축월은 2028년 1월에 시작하지만 다음 입춘 전이라 여전히 정미년에 속하죠. 절기가 드는 날은 시각에 따라 달이 갈리니, 그날이 생일이라면 태어난 시각까지 확인해 보세요.",
           },
+          {
+            kind: "callout",
+            tone: "note",
+            title: `스타로그의 ${NEW_YEAR.name}`,
+            text: `${NEW_YEAR.name}는 사주로 2027년 한 해와 열두 달을 미리 읽는 풀이예요. 한 해의 제목과 요약은 결제하기 전에 무료로 먼저 볼 수 있고, 풀이 전체는 ${won(NEW_YEAR.krw)}이에요. 태어난 시를 모르면 시주 없이 여섯 글자로 읽어요. 생일만으로 내 일주의 키워드를 보는 무료 테스트 2027년 나의 키워드([starlog.yeolmaeapps.kr/2027-keyword](https://starlog.yeolmaeapps.kr/2027-keyword))도 있어요.`,
+          },
         ],
-      },
-      {
-        heading: "스타로그에서 신년운세를 볼 때",
-        body: `스타로그의 ${NEW_YEAR.name}는 사주로 2027년 한 해와 열두 달을 미리 읽는 풀이예요. 한 해의 제목과 요약은 결제하기 전에 무료로 먼저 볼 수 있고, 풀이 전체는 ${won(NEW_YEAR.krw)}이에요. 사주 보기로 내 명식과 지금의 10년을 먼저 읽어 두면 새해의 흐름이 내 명식의 어디에 닿는지 한결 쉽게 보여요. 태어난 시를 모른다면 시주 없이 여섯 글자로 읽고 그만큼 시주가 맡는 해석은 다루지 않는다는 점도 함께 알아 두세요. 2027년을 가볍게 먼저 맛보고 싶다면 무료 테스트인 2027년 나의 키워드([starlog.yeolmaeapps.kr/2027-keyword](https://starlog.yeolmaeapps.kr/2027-keyword))에서 생일만으로 내 일주의 키워드를 볼 수 있어요.`,
       },
     ],
     related: ["daewoon", "wolun-iljin", "ten-gods", "earthly-branches", "day-master-gyesu"],
