@@ -83,7 +83,7 @@ export function newReviewId(): string {
 
 export type WriteResult =
   | { ok: true; review: MyReview }
-  | { ok: false; reason: "not-yours" | "owner-pass" | "review-account" | "test-payment" | "removed" };
+  | { ok: false; reason: "not-yours" | "owner-pass" | "moved" | "review-account" | "test-payment" | "removed" };
 
 /**
  * Writes or rewrites the review of one of my saved readings. Reviews must come from real readers: a
@@ -98,15 +98,17 @@ export async function writeReview(
 ): Promise<WriteResult> {
   const row = await db
     .prepare(
-      `SELECT rd.kind, rd.source, u.kakao_key,
+      `SELECT rd.kind, rd.source, rd.origin, u.kakao_key,
         EXISTS (SELECT 1 FROM unlocks k JOIN credit_lots l ON l.id = json_extract(k.allocations, '$[0][0]') JOIN payments p ON p.order_id = l.order_id
           WHERE k.id = rd.unlock_id AND p.mode = 'test') AS test_paid
        FROM readings rd JOIN users u ON u.id = rd.user_id WHERE rd.id = ? AND rd.user_id = ?`,
     )
     .bind(input.readingId, input.userId)
-    .first<{ kind: string; source: string; kakao_key: string | null; test_paid: number }>();
+    .first<{ kind: string; source: string; origin: string | null; kakao_key: string | null; test_paid: number }>();
   if (!row) return { ok: false, reason: "not-yours" };
   if (row.source === "owner") return { ok: false, reason: "owner-pass" };
+  // Account sync: a reading moved from a device may have been opened with the owner pass, logged out; nothing says it was not.
+  if (row.origin === "moved") return { ok: false, reason: "moved" };
   if (isReviewAccount(row)) return { ok: false, reason: "review-account" };
   if (row.test_paid) return { ok: false, reason: "test-payment" };
   // The topic comes from the saved reading itself, never from what the browser says.

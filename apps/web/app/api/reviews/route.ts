@@ -21,6 +21,7 @@ const WriteBody = z.object({
 /** What a reading that takes no review is told, by why (writeReview). */
 const REFUSED: Partial<Record<string, string>> = {
   "owner-pass": "운영자 패스로 연 풀이에는 후기를 남길 수 없어요.",
+  moved: "이 기기에서 옮긴 풀이에는 후기를 남길 수 없어요.",
   "test-payment": "시험 결제로 연 풀이에는 후기를 남길 수 없어요.",
   "review-account": "심사용 계정의 풀이에는 후기를 남길 수 없어요.",
   removed: "운영 원칙에 따라 숨긴 후기가 있는 풀이에는 후기를 다시 남길 수 없어요.",
