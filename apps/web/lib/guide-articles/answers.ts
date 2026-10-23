@@ -70,11 +70,11 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
   "the-moon":
     "달 카드는 모든 게 흐릿해 불안과 상상이 커지는 상태를 뜻해요. 누군가 나를 속인다는 판정이 아니라 확인할 것부터 보라는 쪽이고, 거꾸로 나오면 흐릿하던 것이 걷히기 시작하는지 두려움이 안으로 맴도는지를 함께 보죠.",
   "the-sun":
-    "태양은 메이저 아르카나 19번 카드로, 정방향에서는 숨길 것 없이 또렷하고 밝게, 기쁨을 드러내도 좋은 흐름으로 읽어요. 역방향이면 해가 구름에 가린 듯 기쁨과 자신감이 약해져, 좋은 일이 있어도 마음이 다 개지 않은 상태로 먼저 읽죠.",
+    "태양 카드는 숨길 것 없이 또렷하고 밝게, 기쁨을 드러내도 좋은 흐름을 뜻해요. 모든 일이 저절로 잘 풀린다는 확정은 아니고, 거꾸로 나오면 해가 구름에 가린 듯 기쁨과 자신감이 잠시 약해진 상태로 보죠.",
   judgement:
-    "심판은 메이저 아르카나 20번 카드로, 정방향에서는 지난 일을 돌아보고 정리한 뒤 새 부름에 응답해 다시 일어서는 쪽으로 읽어요. 역방향이면 해야 한다는 건 알면서도 그 부름에 응답하기를 미루는 막힘으로 먼저 읽죠.",
+    "심판 카드는 지난 일을 돌아보고 정리한 뒤 새 부름에 응답해 다시 일어서는 쪽을 뜻해요. 벌을 받는다는 뜻이 아니고, 거꾸로 나오면 해야 한다는 걸 알면서도 그 부름에 응답하기를 미루는 상태부터 보죠.",
   "the-world":
-    "세계는 메이저 아르카나의 마지막 21번 카드로, 정방향에서는 한 주기를 온전히 마치고 다음 문 앞에 서는 완성으로 읽어요. 역방향이면 거의 다 왔는데 마지막 한 단계가 남아 끝맺음이 미뤄지는 막힘으로 먼저 읽죠. 0번 바보와 짝을 지어 한 바퀴의 끝과 다음 출발로 읽기도 해요.",
+    "세계 카드는 한 주기를 온전히 마치고 다음 문 앞에 서는 완성을 뜻해요. 모든 게 끝난다는 뜻이 아니라 다시 0번 바보로 이어지는 마침이고, 거꾸로 나오면 마지막 한 단계가 남아 끝맺음이 미뤄진 상태부터 보죠.",
 
   "heavenly-stems":
     "천간은 사주 네 기둥의 위쪽 글자로, 갑(甲)·을(乙)·병(丙)·정(丁)·무(戊)·기(己)·경(庚)·신(辛)·임(壬)·계(癸) 열 글자예요. 두 글자씩 목·화·토·금·수 다섯 오행에 속하고, 짝마다 앞 글자가 양, 뒤 글자가 음이죠. 태어난 해의 천간은 연도 끝자리로 찾을 수 있지만, 사주에서 해가 바뀌는 날은 입춘이라는 점을 함께 봐야 해요.",
@@ -241,7 +241,9 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     // 2026-10-23: every section opens in the card's own words and 연애·일·돈 starts from the card's own situation.
     ...["the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-23" }] as const),
     // 2026-10-23: the four suit articles read their suit from angles of their own, with worked examples; the minor arcana
-    // overview compares the four and links on instead of retelling them.
+    // overview compares the four and links on instead of retelling them, then (second review) tells where the suits came
+    // from (the Italian and Spanish playing-card suits), reads one question through the four aces and adds the elemental
+    // dignities.
     ...["wands-suit", "cups-suit", "swords-suit", "pentacles-suit"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-23" }] as const),
     ...["minor-arcana-suits"].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-23" }] as const),
     // 2026-10-23: the 22-card overview reads the cards as the 바보의 여정 (0 the traveller, three rows of seven) instead of

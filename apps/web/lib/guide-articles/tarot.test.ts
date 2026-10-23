@@ -289,3 +289,123 @@ describe("no card page is another card page with the name swapped", () => {
     expect(found).toEqual([]);
   });
 });
+
+/**
+ * The second independent read of 2026-10-23: accurate, but the cards still read as mass-produced. Bodies were ~1,600
+ * characters of KB paraphrase; 21 of 22 summaries opened "X는 메이저 아르카나 N번 카드로, 정방향에서는…", 22 of 22 titles were
+ * "타로 X 카드 뜻" and 22 descriptions said "타로 N번 X 카드"; keyPoints ran "~카드예요 / 정방향은… / 역방향은…"; 17 cards closed on a
+ * "X 카드와 Y·Z 카드" section ending in a card row of "N번 Y와 함께 나오면…"; "읽어요" came 124 times. Each card now carries
+ * substance of its own (Waite's own words, the older decks, a worked three-card reading, its look-alikes), so these checks
+ * keep that measurable.
+ */
+describe("each card article carries substance of its own (second review, 2026-10-23)", () => {
+  const each = CARD_ARTICLES.map((article) => [article.slug, article] as const);
+  const noSpace = (text: string) => text.replace(/\s/g, "").length;
+  const MAJOR_NAMES = CARDS.filter((card) => card.arcana === "major").map((card) => card.names.ko);
+  const raw = (article: GuideArticle) => article.sections.flatMap((section) => [section.body, ...(section.blocks ?? []).map((block) => JSON.stringify(block))]).join("\n");
+
+  /** What a section is, from its heading and blocks: its place in the card's order. */
+  function sectionKind(article: GuideArticle, section: GuideSection): string {
+    const own = nameOf(article);
+    const blocks = section.blocks ?? [];
+    if (/역방향|거꾸로/.test(section.heading)) return "R";
+    if (MAJOR_NAMES.some((name) => name !== own && !own.includes(name) && section.heading.replace(own, "").includes(name))) return "C";
+    if (blocks.some((block) => block.kind === "steps" && block.items.some((item) => item.title.startsWith(EXAMPLE)))) return "E";
+    if (blocks.some((block) => block.kind === "figure")) return "F";
+    if (blocks.some((block) => block.kind === "table")) return "T";
+    if (isQuestion(section.heading)) return "Q";
+    return "P";
+  }
+
+  // Body text with blocks, no spaces: 1,578 on average before (the review's ~1,785 also counted headings and 한눈에 보기).
+  it.each(each)("%s: a body of 3,100-5,800 characters (no spaces), real reading rather than a paraphrase of the KB", (_slug, article) => {
+    const length = noSpace(bodyOf(article));
+    expect(length).toBeGreaterThanOrEqual(3100);
+    expect(length).toBeLessThanOrEqual(5800);
+  });
+
+  it("gives no two cards the same order of sections", () => {
+    const orders = CARD_ARTICLES.map((article) => ({ slug: article.slug, order: article.sections.map((section) => sectionKind(article, section)).join(">") }));
+    const shared = orders.filter((a) => orders.some((b) => b.slug !== a.slug && b.order === a.order)).map((a) => `${a.slug}: ${a.order}`);
+    expect(shared).toEqual([]);
+  });
+
+  it("opens no more than three summaries alike, and none on the old 'X는 메이저 아르카나 N번 카드로' frame", () => {
+    const summaries = CARD_ARTICLES.map((article) => ({ slug: article.slug, text: article.summary ?? "" }));
+    for (const { slug, text } of summaries) expect(text, slug).not.toMatch(/메이저 아르카나 (의 마지막 )?\d+번 카드로/);
+    const openings = new Map<string, string[]>();
+    for (const { slug, text } of summaries) {
+      const opening = frame(firstSentence(text)).slice(0, 8);
+      openings.set(opening, [...(openings.get(opening) ?? []), slug]);
+    }
+    expect([...openings].filter(([, slugs]) => slugs.length > 3)).toEqual([]);
+    expect(crowded(summaries.map(({ slug, text }) => ({ slug, text: firstSentence(text) })), 3)).toEqual([]);
+  });
+
+  it("writes 한눈에 보기 in each card's own shape: never the '~카드예요 / 정방향은… / 역방향은…' frame, no point frame on more than three cards", () => {
+    for (const article of CARD_ARTICLES) {
+      const [, second = "", third = ""] = article.keyPoints ?? [];
+      expect(/^정방향/.test(second) && /^역방향/.test(third), article.slug).toBe(false);
+    }
+    const starts = CARD_ARTICLES.flatMap((article) => article.keyPoints ?? []).filter((point) => /^(정방향|역방향)은/.test(point));
+    expect(starts.length).toBeLessThanOrEqual(4);
+    expect(crowded(CARD_ARTICLES.flatMap((article) => (article.keyPoints ?? []).map((text) => ({ slug: article.slug, text }))), 3)).toEqual([]);
+  });
+
+  it("titles each card for what people ask about it, with '<name> 카드' kept for search and no title frame on more than two cards", () => {
+    for (const article of CARD_ARTICLES) {
+      expect(article.title, article.slug).toContain(`${nameOf(article)} 카드`);
+      expect(article.title, article.slug).not.toBe(`타로 ${nameOf(article)} 카드 뜻`);
+      expect(article.title.length, article.title).toBeLessThanOrEqual(34);
+    }
+    expect(crowded(CARD_ARTICLES.map((article) => ({ slug: article.slug, text: article.title })), 2)).toEqual([]);
+    expect(CARD_ARTICLES.filter((article) => /타로 \d+번/.test(article.description)).length).toBeLessThanOrEqual(3);
+  });
+
+  it("drops the closing comparison list: few sections end on a card row, and the 'N번 X와 함께 나오면' lines are rare", () => {
+    expect(CARD_ARTICLES.filter((article) => (article.sections.at(-1)?.blocks ?? []).some((block) => block.kind === "cardRow")).length).toBeLessThanOrEqual(3);
+    const pairs = CARD_ARTICLES.map((article) => ({ slug: article.slug, n: count(bodyOf(article), /함께 나오면|함께라면/g) }));
+    for (const { slug, n } of pairs) expect(n, slug).toBeLessThanOrEqual(2);
+    expect(pairs.reduce((sum, { n }) => sum + n, 0)).toBeLessThanOrEqual(12);
+  });
+
+  it("varies the first heading: a question on at most nine cards, '~인가요?' on at most four", () => {
+    const first = CARD_ARTICLES.map((article) => article.sections[0]?.heading ?? "");
+    expect(first.filter((heading) => isQuestion(heading)).length).toBeLessThanOrEqual(9);
+    expect(first.filter((heading) => /인가요\?$/.test(heading)).length).toBeLessThanOrEqual(4);
+  });
+
+  it("brings the stock endings down to a natural level: 읽어요, 카드예요, 함께라면", () => {
+    const pages = CARD_ARTICLES.map((article) => ({ slug: article.slug, text: [article.summary ?? "", ...(article.keyPoints ?? []), bodyOf(article)].join("\n") }));
+    for (const { slug, text } of pages) {
+      expect(count(text, /읽어요/g), slug).toBeLessThanOrEqual(4);
+      expect(count(text, /카드예요/g), slug).toBeLessThanOrEqual(1);
+    }
+    expect(pages.reduce((sum, { text }) => sum + count(text, /읽어요/g), 0)).toBeLessThanOrEqual(60);
+    expect(pages.reduce((sum, { text }) => sum + count(text, /카드예요/g), 0)).toBeLessThanOrEqual(10);
+    expect(pages.reduce((sum, { text }) => sum + count(text, /함께라면/g), 0)).toBeLessThanOrEqual(6);
+  });
+
+  it("keeps the caution box for the cards that need it (no more than nine)", () => {
+    const withCaution = CARD_ARTICLES.filter((article) => blocksOf(article).some((block) => block.kind === "callout" && block.tone === "caution"));
+    expect(withCaution.length).toBeLessThanOrEqual(9);
+  });
+
+  it.each(each)("%s: 3-5 links in the text to other guide articles that exist, never to itself", (_slug, article) => {
+    const slugs = [...raw(article).matchAll(/\]\(\/guide\/([a-z0-9-]+)/g)].map((match) => match[1] as string);
+    expect(slugs.length).toBeGreaterThanOrEqual(3);
+    expect(slugs.length).toBeLessThanOrEqual(5);
+    for (const slug of slugs) {
+      expect(findArticle(slug), slug).toBeDefined();
+      expect(slug).not.toBe(article.slug);
+    }
+  });
+
+  it.each(each)("%s: what Waite wrote is attributed to him and his book, and the worked reading says it is made up", (_slug, article) => {
+    const text = bodyOf(article);
+    expect(text).toMatch(/웨이트/);
+    expect(text).toMatch(/그림 열쇠|Pictorial Key/);
+    // The worked reading is an illustration, never a client's story.
+    expect(text).toMatch(/지어낸|꾸며 낸|꾸민|가상의|가정해/);
+  });
+});
