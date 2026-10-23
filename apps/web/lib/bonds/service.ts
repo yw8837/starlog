@@ -342,6 +342,11 @@ export interface JoinInput {
   /** index 0-20 into the friend's fan of face-down cards */
   pick: number;
   message?: string | null;
+  /**
+   * the join form said "○○님이 별자리를 공유하면 내 닉네임과 ○○님과의 인연 점수가 공유 링크와 이미지에 보여요" (owner 2026-10-23):
+   * the star's score may show on the owner's public share. Absent (an earlier form): it stays the owner's.
+   */
+  scoreNotice?: boolean;
 }
 
 export interface JoinResult {
@@ -407,6 +412,7 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
     const row: StarRow = {
       id: randomId(), constellationId: filling.id, slot, nickname: nickname.value, message: message.value,
       cardId: card.cardId, orientation: card.orientation, score, parts, friendKey: input.friendKey, createdAt: now,
+      scorePublic: input.scoreNotice === true,
     };
     try {
       // Insert, recount, count the join and (when it completes) start the next sign, in one atomic step.
@@ -622,8 +628,11 @@ export type InvitePage =
   | { kind: "self"; ownerNickname: string; sign: SignId | null; filled: number; slots: number }
   /** this device is already a star of the sign being filled */
   | { kind: "joined"; result: FriendResultView }
-  /** open for a new star; `earlier` is this device's star in an earlier sign of the same owner */
-  | { kind: "open"; ownerNickname: string; sign: SignId; filled: number; slots: number; earlier: FriendResultView | null }
+  /**
+   * open for a new star; `earlier` is this device's star in an earlier sign of the same owner; `myNickname` the nickname
+   * this device already used (its own constellation's, or a star it left elsewhere), to fill the form (owner 2026-10-23)
+   */
+  | { kind: "open"; ownerNickname: string; sign: SignId; filled: number; slots: number; earlier: FriendResultView | null; myNickname: string | null }
   | { kind: "choosing"; ownerNickname: string; earlier: FriendResultView | null }
   | { kind: "alldone"; ownerNickname: string; earlier: FriendResultView | null };
 
@@ -659,5 +668,10 @@ export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerI
     const allDone = (await repo.completedOf(owner.id)).length >= CONSTELLATIONS.length;
     return allDone ? { kind: "alldone", ownerNickname: owner.nickname, earlier: result } : { kind: "choosing", ownerNickname: owner.nickname, earlier: result };
   }
-  return { kind: "open", ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, earlier: result };
+  const myNickname =
+    result?.nickname ??
+    (viewer.ownerId ? (await repo.getOwner(viewer.ownerId))?.nickname : undefined) ??
+    (viewer.friendKey ? (await repo.starsByFriend(viewer.friendKey, 1))[0]?.nickname : undefined) ??
+    null;
+  return { kind: "open", ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, earlier: result, myNickname };
 }

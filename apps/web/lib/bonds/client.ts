@@ -77,9 +77,12 @@ export const inviteUrl = (code: string) => `${SITE.url}/b/${code}`;
 
 export type ShareOutcome = "shared" | "copied" | "failed" | "cancelled";
 
-/** The system share sheet where there is one; otherwise the text and link go to the clipboard. */
-export async function shareLink(text: string, url: string): Promise<ShareOutcome> {
-  const data = { title: SITE.nameKo, text, url };
+/**
+ * The system share sheet where there is one (title, text and the link; never a file, so no app keeps an image and drops
+ * the link); otherwise the link goes to the clipboard.
+ */
+export async function shareLink(text: string, url: string, title: string = SITE.nameKo): Promise<ShareOutcome> {
+  const data = { title, text, url };
   if (typeof navigator.share === "function" && (typeof navigator.canShare !== "function" || navigator.canShare(data))) {
     try {
       await navigator.share(data);
@@ -88,7 +91,7 @@ export async function shareLink(text: string, url: string): Promise<ShareOutcome
       if ((error as { name?: unknown } | null)?.name === "AbortError") return "cancelled";
     }
   }
-  return copyText(`${text}\n${url}`);
+  return copyText(url);
 }
 
 export async function copyText(text: string): Promise<"copied" | "failed"> {

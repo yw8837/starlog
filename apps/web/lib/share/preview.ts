@@ -19,8 +19,14 @@ export interface SharePreview {
 
 /** What a 별자리 인연 link shows, read live from the bonds store (app/s/[id]/bondsShare.ts). */
 export type BondsPreviewData =
-  /** `total` and `average` only once complete (lib/bonds/share.ts: a filling constellation shares no number). */
-  | { kind: "bonds"; signKo: string; ownerNickname: string; stars: number; slots: number; total: number | null; average: number | null; complete: boolean }
+  /**
+   * `members[].score`: shown only for a friend who joined after the score notice; `total` and `average` only when every
+   * score shows (lib/bonds/share.ts).
+   */
+  | {
+      kind: "bonds"; signKo: string; ownerNickname: string; stars: number; slots: number; total: number | null; average: number | null; complete: boolean;
+      members: Array<{ nickname: string; score: number | null }>;
+    }
   | { kind: "bond"; signKo: string; ownerNickname: string; friendNickname: string; score: number };
 
 const TITLE_MAX = 60;
@@ -96,18 +102,17 @@ export function sharePreview(share: SharePayload, live?: BondsPreviewData | null
     case "bonds":
     case "bond": {
       const build = { label: "내 별자리 만들기", path: "/bonds" };
-      if (live?.kind === "bonds" && live.complete && live.total !== null) {
-        return {
-          title: clip(`${live.ownerNickname}님의 ${live.signKo} 완성 · 인연 ${live.total}점`, TITLE_MAX),
-          description: clip(`친구 ${live.stars}명이 별이 되어 ${live.slots}칸을 모두 채웠어요${live.average === null ? "" : ` · 평균 ${live.average}점`}`, DESCRIPTION_MAX),
-          try: build,
-        };
-      }
       if (live?.kind === "bonds") {
-        // Filling: no number (a sum of few friends is their scores).
+        // Each friend's score where it shows ("하늘 · 인연 87점, 바다"); the total and average only when every one does.
+        const head = `${live.ownerNickname}님의 ${live.signKo}${live.complete ? " 완성" : ""}`;
+        const shown = live.members.some((m) => m.score !== null);
+        const list = live.members.map((m) => (m.score === null ? m.nickname : `${m.nickname} · 인연 ${m.score}점`)).join(", ");
         return {
-          title: clip(`${live.ownerNickname}님의 ${live.signKo} · 별 ${live.stars}/${live.slots}`, TITLE_MAX),
-          description: clip(`친구 ${live.stars}명이 별이 되어 ${live.slots}칸 가운데 ${live.stars}칸을 채웠어요`, DESCRIPTION_MAX),
+          title: clip(live.total !== null ? `${head} · 인연 ${live.total}점` : `${head} · 별 ${live.stars}/${live.slots}`, TITLE_MAX),
+          description: clip(
+            shown ? `${list}${live.average === null ? "" : ` · 평균 ${live.average}점`}` : `친구 ${live.stars}명이 별이 되어 ${live.slots}칸 가운데 ${live.stars}칸을 채웠어요`,
+            DESCRIPTION_MAX,
+          ),
           try: build,
         };
       }

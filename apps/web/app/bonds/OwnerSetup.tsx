@@ -14,15 +14,19 @@ import b from "@/components/bonds/bonds.module.css";
  * The first step of 별자리 인연: a nickname for the ranking and the birth date for the 궁합 basis.
  * The date starts from this device's saju profile when there is one; it is sent once and not stored.
  */
-export function OwnerSetup({ onDone }: { onDone: () => void }) {
+/**
+ * `defaultNickname`: the nickname this device already used (as a friend in someone's constellation), filled in so
+ * starting takes fewer steps (owner 2026-10-23); the birth date comes from this device's saved saju profile, as before.
+ */
+export function OwnerSetup({ onDone, defaultNickname = "" }: { onDone: () => void; defaultNickname?: string }) {
   const { profile } = useSajuProfile();
   const initial = savedBirth(profile);
   // Remount once the saved profile is read, so the fields start from it.
-  return <SetupForm key={initial ? "profile" : "fresh"} initial={initial ?? EMPTY_BIRTH} prefilled={Boolean(initial)} onDone={onDone} />;
+  return <SetupForm key={initial ? "profile" : "fresh"} initial={initial ?? EMPTY_BIRTH} prefilled={Boolean(initial)} defaultNickname={defaultNickname} onDone={onDone} />;
 }
 
-function SetupForm({ initial, prefilled, onDone }: { initial: BirthValue; prefilled: boolean; onDone: () => void }) {
-  const [nickname, setNickname] = useState("");
+function SetupForm({ initial, prefilled, defaultNickname, onDone }: { initial: BirthValue; prefilled: boolean; defaultNickname: string; onDone: () => void }) {
+  const [nickname, setNickname] = useState(defaultNickname);
   const [birth, setBirth] = useState<BirthValue>(initial);
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<{ nickname?: string; birth?: string; consent?: string; form?: string }>({});

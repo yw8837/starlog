@@ -25,7 +25,7 @@ describe("BondsHomeRow", () => {
     vi.unstubAllGlobals();
   });
 
-  it("shows the badge `양자리 2/4 · 174점` and 초대하기 while filling", async () => {
+  it("shows the badge `양자리 2/4 · 174점` and one invite button while filling (카카오톡으로 초대하기, or 다른 앱으로 보내기 without a Kakao key)", async () => {
     respond({
       ok: true,
       owner: { nickname: "용우", rankingPublic: true, refillReadyAt: null },
@@ -37,7 +37,8 @@ describe("BondsHomeRow", () => {
     });
     render(<BondsHomeRow enabled />);
     expect(await screen.findByText("양자리 2/4 · 174점")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "초대하기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "다른 앱으로 보내기" })).toBeTruthy();
+    expect(screen.queryByRole("textbox")).toBeNull();
     expect(screen.getByRole("link", { name: /별자리 인연, 양자리 2\/4 · 174점/ }).getAttribute("href")).toBe("/bonds");
   });
 

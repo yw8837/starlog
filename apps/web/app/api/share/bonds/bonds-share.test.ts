@@ -32,8 +32,11 @@ const req = (url: string, jar: Jar, body: unknown, { ip = "1.1.1.1", method = "P
 
 const BIRTHS = [[1991, 5, 12], [1992, 8, 3], [1988, 11, 20], [1995, 2, 28]] as const;
 
-/** An owner of `sign` with `count` friends joined (aries has 4 slots: four complete it). */
-async function constellationWithTwo(sign = "leo", count = 2) {
+/**
+ * An owner of `sign` with `count` friends joined (aries has 4 slots: four complete it). `notice[i]`: friend i joined after
+ * the form's score notice (owner 2026-10-23); absent: an earlier star.
+ */
+async function constellationWithTwo(sign = "leo", count = 2, notice: boolean[] = []) {
   const owner: Jar = new Map();
   const res = await ownerPost(req("/api/bonds/owner", owner, { nickname: "용우", birth: { calendar: "solar", year: 1990, month: 1, day: 1 } }));
   absorb(owner, res);
@@ -42,7 +45,7 @@ async function constellationWithTwo(sign = "leo", count = 2) {
   const friends: Array<{ jar: Jar; starId: string; score: number }> = [];
   for (const [i, [year, month, day]] of BIRTHS.slice(0, count).entries()) {
     const jar: Jar = new Map();
-    const joined = await joinPost(req("/api/bonds/join", jar, { code, nickname: `친구${i}`, birth: { calendar: "solar", year, month, day }, pick: i }, { ip: `2.2.2.${i}` }));
+    const joined = await joinPost(req("/api/bonds/join", jar, { code, nickname: `친구${i}`, birth: { calendar: "solar", year, month, day }, pick: i, ...(notice[i] ? { scoreNotice: true } : {}) }, { ip: `2.2.2.${i}` }));
     absorb(jar, joined);
     const body = (await joined.json()) as { starId: string; score: number };
     friends.push({ jar, starId: body.starId, score: body.score });
@@ -71,7 +74,7 @@ describe("POST /api/share/bonds and /api/share/bond", () => {
     setTestDb(null);
   });
 
-  it("the owner shares a filling constellation: a live link with the sign, the stars filled and the nicknames, and no number at all; nobody else can", async () => {
+  it("the owner shares a constellation of earlier stars (joined before the score notice): the sign, the stars filled and the nicknames, no number; nobody else can", async () => {
     const db = useTestDb();
     const { owner, friends, constellationId } = await constellationWithTwo();
     const res = await bondsPost(req("/api/share/bonds", owner, { constellationId }));
@@ -80,16 +83,17 @@ describe("POST /api/share/bonds and /api/share/bond", () => {
     expect(path).toBe(`/s/${id}`);
     const share = await findShare(db, id);
     expect(share?.payload).toEqual({ kind: "bonds", v: 1, constellationId });
-    // With one star the total is that friend's score; with two, one friend could work out the other's; a live link's
-    // growing total gives each newcomer's away: a filling constellation shares no number (privacy §4, review 2026-10-23).
+    // These friends were told only that their nickname shows: their scores stay the owner's, and so does the total
+    // (it would give them away).
     const slots = getConstellation("leo").slots;
     expect(preview.title).toBe(`용우님의 사자자리 · 별 2/${slots}`);
     expect(preview.description).toBe(`친구 2명이 별이 되어 ${slots}칸 가운데 2칸을 채웠어요`);
     expect(preview.try.path).toBe("/bonds");
     const view = await loadBondsShare(bondsRepo(), { kind: "bonds", v: 1, constellationId });
     expect(view).toMatchObject({ kind: "bonds", ownerNickname: "용우", total: null, average: null, complete: false });
+    expect(view?.kind === "bonds" && view.members.map((m) => m.score)).toEqual([null, null]);
     for (const f of friends) expect(JSON.stringify({ view, preview })).not.toContain(String(f.score));
-    expect(JSON.stringify(view)).not.toMatch(/"score"|message|birth/);
+    expect(JSON.stringify(view)).not.toMatch(/message|birth|비밀/);
     // A friend's device, or a stranger's, cannot share it.
     const stranger = await bondsPost(req("/api/share/bonds", friends[0]!.jar, { constellationId }));
     expect(stranger.status).not.toBe(200);
@@ -99,14 +103,43 @@ describe("POST /api/share/bonds and /api/share/bond", () => {
     expect(await findShare(db, id)).toBeNull();
   });
 
-  it("the owner shares a complete constellation: its total and average show, as the share image's total always did", async () => {
+  it("while filling, every friend who joined after the score notice shows with their score, and the total and average too (owner 2026-10-23)", async () => {
     useTestDb();
-    const { owner, friends, constellationId } = await constellationWithTwo("aries", 4);
+    const { owner, friends, constellationId } = await constellationWithTwo("leo", 2, [true, true]);
+    const { preview } = (await (await bondsPost(req("/api/share/bonds", owner, { constellationId }))).json()) as { preview: { title: string; description: string } };
+    const total = friends[0]!.score + friends[1]!.score;
+    const slots = getConstellation("leo").slots;
+    expect(preview.title).toBe(`용우님의 사자자리 · 인연 ${total}점`);
+    expect(preview.description).toBe(`친구0 · 인연 ${friends[0]!.score}점, 친구1 · 인연 ${friends[1]!.score}점 · 평균 ${Math.round(total / 2)}점`);
+    const view = await loadBondsShare(bondsRepo(), { kind: "bonds", v: 1, constellationId });
+    expect(view).toMatchObject({ total, average: Math.round(total / 2), complete: false, slots });
+    expect(view?.kind === "bonds" && view.members).toEqual([
+      { slot: 0, nickname: "친구0", score: friends[0]!.score },
+      { slot: 1, nickname: "친구1", score: friends[1]!.score },
+    ]);
+  });
+
+  it("with one earlier star among them: its score and the total and average stay hidden (the total minus the shown scores would give it away)", async () => {
+    useTestDb();
+    const { owner, friends, constellationId } = await constellationWithTwo("leo", 2, [true, false]);
+    const { preview } = (await (await bondsPost(req("/api/share/bonds", owner, { constellationId }))).json()) as { preview: { title: string; description: string } };
+    expect(preview.description).toBe(`친구0 · 인연 ${friends[0]!.score}점, 친구1`);
+    expect(preview.title).toMatch(/^용우님의 사자자리 · 별 2\/\d+$/);
+    const view = await loadBondsShare(bondsRepo(), { kind: "bonds", v: 1, constellationId });
+    expect(view).toMatchObject({ total: null, average: null });
+    expect(view?.kind === "bonds" && view.members.map((m) => m.score)).toEqual([friends[0]!.score, null]);
+    expect(JSON.stringify({ view, preview })).not.toContain(String(friends[1]!.score));
+  });
+
+  it("a complete constellation of friends who saw the notice: its total and average show", async () => {
+    useTestDb();
+    const { owner, friends, constellationId } = await constellationWithTwo("aries", 4, [true, true, true, true]);
     const res = await bondsPost(req("/api/share/bonds", owner, { constellationId }));
     const { preview } = (await res.json()) as { preview: { title: string; description: string } };
     const total = friends.reduce((sum, f) => sum + f.score, 0);
     expect(preview.title).toBe(`용우님의 양자리 완성 · 인연 ${total}점`);
-    expect(preview.description).toBe(`친구 4명이 별이 되어 4칸을 모두 채웠어요 · 평균 ${Math.round(total / 4)}점`);
+    expect(preview.description.endsWith(`· 평균 ${Math.round(total / 4)}점`)).toBe(true);
+    expect(preview.description.startsWith(`친구0 · 인연 ${friends[0]!.score}점, `)).toBe(true);
     const view = await loadBondsShare(bondsRepo(), { kind: "bonds", v: 1, constellationId });
     expect(view).toMatchObject({ kind: "bonds", total, average: Math.round(total / 4), complete: true });
   });

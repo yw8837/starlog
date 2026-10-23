@@ -10,10 +10,11 @@ import { bondCardLine } from "./bondCardText";
 /**
  * 별자리 인연 shares (owner 2026-10-23), read live from the bonds store each time the link is opened, so a removed star
  * or a refilled constellation is gone from the link too and nothing personal is copied into the share.
- * - an owner's constellation: the friends' nicknames on their stars and how many are filled; the 인연 total and
- *   average only once complete, as the share image always had them. While filling a sum is no shield: one star's
- *   total is that friend's score, two friends can work out each other's, and a live link's growing total gives each
- *   newcomer's away (privacy §4, review 2026-10-23). Never a friend's own score or message.
+ * - an owner's constellation: the friends' nicknames on their stars and how many are filled, each friend's own 인연
+ *   score where that friend joined after the join form said it would show (stars.score_public, owner 2026-10-23:
+ *   "A랑 나랑 몇 점인지, B랑 나랑 몇 점인지"), filling or complete. The total and average only when every star's score
+ *   shows: with one earlier star among them, the total minus the shown scores would give its score away. Never a
+ *   friend's message.
  * - a friend's own star: their nickname, score and card, the owner's nickname. Not the reasons: the 오행 a friend fills
  *   and the 띠 relations hint at the owner's chart and age (review 2026-10-23).
  */
@@ -24,8 +25,9 @@ export type BondsShareView =
       sign: SignId;
       ownerNickname: string;
       slots: number;
-      members: Array<{ slot: number; nickname: string }>;
-      /** only once complete (null while filling) */
+      /** `score`: the friend's 인연 score where they joined after the score notice, else null (it stays the owner's) */
+      members: Array<{ slot: number; nickname: string; score: number | null }>;
+      /** only when every star's score shows (null otherwise) */
       total: number | null;
       average: number | null;
       complete: boolean;
@@ -50,14 +52,15 @@ export async function loadBondsShare(repo: BondsRepo, share: SharedBonds | Share
   if (share.kind === "bonds") {
     const complete = row.status === "complete";
     const total = stars.reduce((sum, star) => sum + star.score, 0);
+    const allShown = stars.length > 0 && stars.every((star) => star.scorePublic === true);
     return {
       kind: "bonds",
       sign: row.sign,
       ownerNickname: owner.nickname,
       slots: getConstellation(row.sign).slots,
-      members: stars.map((star) => ({ slot: star.slot, nickname: star.nickname })),
-      total: complete ? total : null,
-      average: complete && stars.length ? Math.round(total / stars.length) : null,
+      members: stars.map((star) => ({ slot: star.slot, nickname: star.nickname, score: star.scorePublic === true ? star.score : null })),
+      total: allShown ? total : null,
+      average: allShown ? Math.round(total / stars.length) : null,
       complete,
       completedAt: row.completedAt,
     };
@@ -79,7 +82,10 @@ export async function loadBondsShare(repo: BondsRepo, share: SharedBonds | Share
 export function bondsPreviewData(view: BondsShareView): BondsPreviewData {
   const signKo = getConstellation(view.sign).ko;
   if (view.kind === "bonds") {
-    return { kind: "bonds", signKo, ownerNickname: view.ownerNickname, stars: view.members.length, slots: view.slots, total: view.total, average: view.average, complete: view.complete };
+    return {
+      kind: "bonds", signKo, ownerNickname: view.ownerNickname, stars: view.members.length, slots: view.slots, total: view.total, average: view.average,
+      complete: view.complete, members: view.members.map(({ nickname, score }) => ({ nickname, score })),
+    };
   }
   return { kind: "bond", signKo, ownerNickname: view.ownerNickname, friendNickname: view.friendNickname, score: view.score };
 }

@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getConstellation, type SignId } from "@starlog/core";
 import type { WeekTop } from "@/app/ranking/loadLeaders";
 import { BondsMoreTiles } from "@/components/bonds/BondsMoreTiles";
-import { CodeEntry } from "@/components/bonds/CodeEntry";
 import { CompletedCard } from "@/components/bonds/CompletedCard";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
@@ -82,9 +81,9 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
     return (
       <>
         <Intro />
-        <OwnerSetup onDone={load} />
+        {/* The nickname this device used as a friend, if any; a friend's code is entered in 내 정보, not here (owner 2026-10-02). */}
+        <OwnerSetup onDone={load} defaultNickname={me.joined?.flatMap((j) => j.members).find((m) => m.me)?.nickname ?? ""} />
         <JoinedList joined={me.joined ?? []} />
-        <JoinByCode />
       </>
     );
   }
@@ -123,7 +122,7 @@ function Intro() {
         <p className={b.eyebrow}>별자리 인연</p>
         <h1 className={s.title}>친구가 별이 되어 내 별자리를 채워요</h1>
         <p className={s.lead}>
-          별자리를 하나 고르고 초대코드를 보내요. 들어온 친구마다 사주로 본 인연 점수가 붙고, 다 채우면 도감에 들어가고 랭킹에 올라요.
+          별자리를 하나 고르고 카톡으로 초대 링크를 보내요. 들어온 친구마다 사주로 본 인연 점수가 붙고, 다 채우면 도감에 들어가고 랭킹에 올라요.
         </p>
       </header>
       <HowToCard />
@@ -160,20 +159,10 @@ function JoinedList({ joined }: { joined: JoinedView[] }) {
   );
 }
 
-/** 초대코드로 참여: someone else's code, for people who arrive here first. */
-function JoinByCode() {
-  return (
-    <section className={`${b.panel} ${s.joinPanel}`} aria-labelledby="join-title">
-      <h2 id="join-title" className={b.sectionTitle}>
-        친구의 초대코드가 있나요?
-      </h2>
-      <CodeEntry id="join-code" />
-    </section>
-  );
-}
-
 function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null; joined?: JoinedView[] }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
   const { owner, invite, filling, completed, top5, ranks } = view;
+  // A sign was just chosen here: the invite is brought into view once (owner 2026-10-23).
+  const [justMade, setJustMade] = useState(false);
   const completedSigns = completed.map((c) => c.sign);
   const mySign = savedSunSign();
   const latest = completed.length ? completed.reduce((a, c) => ((c.completedAt ?? 0) > (a.completedAt ?? 0) ? c : a)) : null;
@@ -212,6 +201,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
             mySign={mySign}
             reload={reload}
             autoNext={Boolean(latest) && filling.stars.length === 0}
+            justMade={justMade}
           />
         </>
       ) : (
@@ -232,7 +222,10 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
             mySign={mySign}
             completed={completedSigns}
             initialSign={initialSign && !completedSigns.includes(initialSign) ? initialSign : null}
-            onChosen={reload}
+            onChosen={() => {
+              setJustMade(true);
+              reload();
+            }}
           />
           <InviteCode code={invite.code} filling={null} />
         </>
@@ -294,11 +287,17 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
   );
 }
 
-function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext }: {
+function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext, justMade = false }: {
   view: OwnerView; fresh: ReadonlySet<string>; completedSigns: SignId[]; mySign: SignId | null; reload: () => void;
   /** started by itself after a completion, still empty: say so and offer a swap without a confirm */
   autoNext: boolean;
+  /** chosen just now on this page: the invite comes into view (a share sheet cannot open by itself, so it is a big button) */
+  justMade?: boolean;
 }) {
+  const inviteRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (justMade) inviteRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [justMade]);
   const filling = view.filling!;
   const def = getConstellation(filling.row.sign);
   const filled = filling.stars.length;
@@ -333,6 +332,12 @@ function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext 
           {autoNext ? `다음은 ${def.ko}예요` : def.ko} <span className={s.en}>· {def.en}</span>
         </h2>
         {autoNext ? <p className={b.helper}>바꾸고 싶으면 지금 바꿀 수 있어요. 아직 별이 없어서 바로 바뀌어요.</p> : null}
+        {/* Just made (no star yet): the invite comes first, big; a browser may refuse to open a share sheet by itself. */}
+        {filled === 0 ? (
+          <div ref={inviteRef} className={s.inviteFirst}>
+            <InviteShareButton code={view.invite.code} sign={def.id} filled={filled} ownerNickname={view.owner.nickname} />
+          </div>
+        ) : null}
         <ConstellationArt sign={def.id} lit={litSlots} newSlots={newSlots} labels={labels} size={320} className={s.art} />
         <p className={s.progress}>
           <strong>
@@ -342,8 +347,13 @@ function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext 
         </p>
         <ConstellationStats scores={filling.stars.map((star) => star.score)} />
         <p className={b.helper}>
-          {filled === 0 ? "초대코드를 보내면 친구가 첫 번째 별이 돼요." : `별 ${def.slots - filled}개만 더 모이면 완성이에요.`}
+          {filled === 0 ? "카톡으로 초대 링크를 보내면 친구가 첫 번째 별이 돼요." : `별 ${def.slots - filled}개만 더 모이면 완성이에요.`}
         </p>
+        {filled > 0 ? (
+          <div className={s.inviteFirst}>
+            <InviteShareButton code={view.invite.code} sign={def.id} filled={filled} ownerNickname={view.owner.nickname} />
+          </div>
+        ) : null}
         <InviteCode code={view.invite.code} filling={{ sign: def.id, filled }} />
         {filled > 0 ? (
           <div className={s.shareRow}>
@@ -441,7 +451,10 @@ function ChooseSection({ first, mySign, completed, initialSign, onChosen }: {
   );
 }
 
-/** The invite code and link: 초대하기 (the screen's gold) while filling, plus copy and 코드 새로 만들기. */
+/**
+ * The code itself, folded under 초대코드 보기 (owner 2026-10-23, the 2026-10-02 decision): the invite is a link sent on
+ * KakaoTalk (InviteShareButton); the code, its copy and 코드 새로 만들기 are for the rare friend who gets the code only.
+ */
 function InviteCode({ code: initialCode, filling }: { code: string; filling: { sign: SignId; filled: number } | null }) {
   const [code, setCode] = useState(initialCode);
   const [toast, setToast] = useState("");
@@ -460,12 +473,11 @@ function InviteCode({ code: initialCode, filling }: { code: string; filling: { s
   };
 
   return (
-    <div className={s.invite}>
-      <p className={b.eyebrow}>내 초대코드</p>
+    <details className={s.invite}>
+      <summary className={s.inviteSummary}>초대코드 보기</summary>
       <p className={s.code} aria-label={`초대코드 ${code.split("").join(" ")}`}>
         {code}
       </p>
-      {filling ? <InviteShareButton code={code} sign={filling.sign} filled={filling.filled} /> : null}
       <div className={s.inviteTools}>
         <button
           type="button"
@@ -485,7 +497,7 @@ function InviteCode({ code: initialCode, filling }: { code: string; filling: { s
       <ConfirmDialog open={confirm} title="코드를 새로 만들까요?" confirmLabel="새 코드 만들기" onConfirm={regenerate} onClose={() => setConfirm(false)} busy={busy}>
         <p>지금 코드와 링크는 바로 막혀요. 모르는 사람에게 퍼졌을 때 써 주세요. 이미 들어온 별은 그대로예요.</p>
       </ConfirmDialog>
-    </div>
+    </details>
   );
 }
 

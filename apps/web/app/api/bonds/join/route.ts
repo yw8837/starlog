@@ -11,6 +11,8 @@ const JoinBody = z.object({
   birth: BirthSchema,
   pick: z.number().int().min(0).max(20),
   message: z.string().max(200).nullish(),
+  /** the form showed the score notice (owner 2026-10-23): only then may this star's score show on the owner's share */
+  scoreNotice: z.boolean().optional(),
 });
 
 /** POST → a friend becomes the next star of the owner's constellation. */

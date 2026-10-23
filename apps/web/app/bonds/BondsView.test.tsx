@@ -149,12 +149,86 @@ describe("BondsView 인연 점수 한눈에 and 공유하기 (owner 2026-10-23)"
     await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
     fireEvent.click(screen.getByRole("button", { name: "별자리 공유하기" }));
     const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
-    expect(sheet.textContent).toContain("내 별자리와 별이 된 친구들의 닉네임이 보여요");
-    expect(sheet.textContent).toContain("인연 점수 합계와 평균은 별자리를 다 채운 뒤에만 보여요. 친구마다의 점수와 남긴 한 줄, 생년월일은 담기지 않아요.");
+    expect(sheet.textContent).toContain("내 별자리와 별이 된 친구들의 닉네임, 인연 점수가 보여요");
+    expect(sheet.textContent).toContain("점수는 참여할 때 안내를 받은 친구만 보여요(그 전에 들어온 친구가 있으면 합계와 평균은 빼요). 남긴 한 줄과 생년월일은 담기지 않아요.");
     await act(async () => {
       fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
     });
     expect(calls).toEqual([{ url: "/api/share/bonds", body: { constellationId: "c1abcdefghijklmnop" } }]);
     expect(sheet.textContent).toContain("/s/bondsshare01");
+  });
+});
+
+describe("BondsView invites in one go (owner 2026-10-23, the 2026-10-02 decision: no codes to copy, make or type)", () => {
+  const EMPTY = { ...OWNER_ME, filling: { row: { id: "c1abcdefghijklmnop", sign: "aries", status: "filling", total: 0, startedAt: 1, completedAt: null }, stars: [] } };
+
+  it("puts 카카오톡으로 초대하기 first on a constellation just made, before its figure, and the code folded under 초대코드 보기", async () => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(EMPTY))));
+    render(<BondsView initialSign={null} />);
+    const panel = await screen.findByRole("region", { name: /양자리/ });
+    const first = within(panel).getAllByRole("button")[0]!;
+    expect(first.textContent).toBe("카카오톡으로 초대하기");
+    expect(within(panel).getByRole("button", { name: "다른 앱으로 보내기" })).toBeTruthy();
+    const art = within(panel).getByRole("img", { name: /양자리/ });
+    expect(first.compareDocumentPosition(art) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const fold = within(panel).getByText("초대코드 보기").closest("details")!;
+    expect(fold.open).toBe(false);
+    expect(within(fold).getByText("K7M4QX")).toBeTruthy();
+    expect(within(fold).getByRole("button", { name: "코드 복사", hidden: true })).toBeTruthy();
+    expect(within(fold).getByRole("button", { name: "코드 새로 만들기", hidden: true })).toBeTruthy();
+    vi.unstubAllEnvs();
+  });
+
+  it("asks for no friend's code on /bonds (it lives in 내 정보) and says the invite is a link sent on KakaoTalk", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null }))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("button", { name: "별자리 인연 시작하기" });
+    expect(screen.queryByText("친구의 초대코드가 있나요?")).toBeNull();
+    expect(screen.queryByRole("textbox", { name: /초대코드/ })).toBeNull();
+    expect(document.body.textContent).toContain("카톡으로 초대 링크를 보내요");
+    expect(document.body.textContent).not.toContain("초대코드를 보내요");
+  });
+
+  it("fills the nickname this device already used as a friend, so starting takes fewer steps", async () => {
+    const joined = [{ ownerNickname: "민지", sign: "aquarius", status: "filling", filled: 2, slots: 7, members: [{ nickname: "지수", me: false }, { nickname: "용우별", me: true }] }];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null, joined }))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("button", { name: "별자리 인연 시작하기" });
+    expect((screen.getByRole("textbox", { name: "닉네임" }) as HTMLInputElement).value).toBe("용우별");
+  });
+});
+
+describe("BondsView right after making a constellation (owner 2026-10-23)", () => {
+  it("brings the invite into view at once (a browser may refuse to open a share sheet by itself, so the button shows big)", async () => {
+    const CHOOSING = { ...OWNER_ME, filling: null };
+    const EMPTY = { ...OWNER_ME, filling: { row: { id: "c1abcdefghijklmnop", sign: "aries", status: "filling", total: 0, startedAt: 1, completedAt: null }, stars: [] } };
+    let chosen = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).includes("/api/bonds/choose")) {
+          chosen = true;
+          return new Response(JSON.stringify({ ok: true }));
+        }
+        return new Response(JSON.stringify(chosen ? EMPTY : CHOOSING));
+      }),
+    );
+    const scrolled: Element[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this);
+    };
+    try {
+      render(<BondsView initialSign={null} />);
+      fireEvent.click(await screen.findByRole("button", { name: /양자리/ }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "양자리로 시작하기" }));
+      });
+      const invite = await screen.findByRole("button", { name: /카카오톡으로 초대하기|다른 앱으로 보내기/ });
+      expect(scrolled.some((el) => el.contains(invite))).toBe(true);
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
   });
 });

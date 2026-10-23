@@ -13,6 +13,8 @@ export interface ConstellationRow { id: string; ownerId: string; sign: SignId; s
 export interface StarRow {
   id: string; constellationId: string; slot: number; nickname: string; message: string | null;
   cardId: string; orientation: Orientation; score: number; parts: BondPart[]; friendKey: string; createdAt: number;
+  /** the friend joined after the form said their score shows on the owner's share (migration 0016); absent: false */
+  scorePublic?: boolean;
 }
 export interface RankingEntry { constellationId: string; nickname: string; total: number; completedAt: number }
 export interface SignTop { sign: SignId; rank: number; nickname: string; total: number; completedAt: number }

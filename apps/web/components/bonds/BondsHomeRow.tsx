@@ -82,7 +82,7 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
         <span className={s.badge}>{badge}</span>
       </Link>
       <div className={s.actions}>
-        <InviteShareButton code={me.invite.code} sign={def.id} filled={filling.stars.length} variant="secondary" />
+        <InviteShareButton code={me.invite.code} sign={def.id} filled={filling.stars.length} ownerNickname={me.owner.nickname} variant="secondary" single />
       </div>
       <BondsMoreTiles rankLine={rankLine} className={s.more} />
     </section>
