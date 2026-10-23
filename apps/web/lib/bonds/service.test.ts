@@ -421,6 +421,16 @@ describe("bonds service", () => {
     await expect(invitePage(repo, "ZZZZZZ", { ownerId: null, friendKey: null })).rejects.toMatchObject({ code: "BAD_CODE" });
   });
 
+  it("marks a star whose friend saw the score notice (owner 2026-10-23): only those scores may show on the owner's public link", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    const seen = await joinStar(repo, t0, { code, friendKey: "f0", nickname: "친구0", birth: friends[0]!, pick: 0, message: null, scoreNotice: true });
+    const before = await joinStar(repo, t0, { code, friendKey: "f1", nickname: "친구1", birth: friends[1]!, pick: 1, message: null });
+    const stars = await repo.starsOf(seen.star.constellationId);
+    expect(stars.find((s) => s.id === seen.star.id)?.scorePublic).toBe(true);
+    expect(stars.find((s) => s.id === before.star.id)?.scorePublic ?? false).toBe(false);
+  });
+
   it("gives the form the nickname this device already used (an owner here, or a friend elsewhere), so joining takes fewer steps (owner 2026-10-23)", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");

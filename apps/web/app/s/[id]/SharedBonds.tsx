@@ -47,11 +47,18 @@ function SharedConstellation({ view }: { view: Extract<BondsShareView, { kind: "
       <div className={`${b.panel} ${b.panelGold}`}>
         {view.complete ? <p className={b.eyebrow}>완성한 별자리</p> : null}
         <ConstellationArt sign={view.sign} lit={view.members.map((m) => m.slot)} labels={labels} size={320} />
-        {/* The total and average only once complete: while filling, a sum of few friends is their scores (privacy §4). */}
+        {/* Each friend's score where they joined after the score notice; the total and average only when every one shows. */}
+        <ul className={s.question} aria-label="별이 된 친구">
+          {view.members.map((m) => (
+            <li key={m.slot}>{m.score === null ? m.nickname : `${m.nickname} · 인연 ${m.score}점`}</li>
+          ))}
+        </ul>
         <p className={b.helper}>{view.total !== null ? `별이 된 친구 ${view.members.length}명 · 인연 합계 ${view.total}점` : `별이 된 친구 ${view.members.length}명`}</p>
         {view.average !== null ? <ScoreGauge score={view.average} label="평균 인연 점수" /> : null}
         <p className={b.helper}>
-          {view.complete ? "친구마다의 점수와 남긴 한 줄은 별자리 주인만 볼 수 있어요." : "인연 점수는 별자리를 다 채우면 보여요. 친구마다의 점수와 남긴 한 줄은 별자리 주인만 볼 수 있어요."}
+          {view.members.some((m) => m.score === null)
+            ? "점수 안내 전에 들어온 친구의 점수와 남긴 한 줄은 별자리 주인만 볼 수 있어요."
+            : "친구가 남긴 한 줄은 별자리 주인만 볼 수 있어요."}
         </p>
       </div>
       <StartOwn text="내 별자리를 고르고 친구를 초대하면, 친구가 별이 되어 하나씩 채워 줘요. 생년월일로 두 사람의 인연 점수도 나와요." />

@@ -21,20 +21,18 @@ describe("JoinFlow", () => {
   it("names the owner's constellation and warns that the nickname shows on the share image", () => {
     render(<JoinFlow state={OPEN} />);
     expect(screen.getByRole("heading", { level: 1, name: "용우님의 양자리에 별이 되어 주세요" })).toBeTruthy();
-    // A shared constellation shows the nicknames on its image and on its link (owner 2026-10-23).
-    expect(screen.getByText("용우님이 별자리를 공유하면 이 닉네임이 공유 이미지와 링크에 보여요")).toBeTruthy();
+    // A shared constellation shows the nickname and the friend's score on its link and image (owner 2026-10-23).
+    expect(screen.getByText("용우님이 별자리를 공유하면 내 닉네임과 용우님과의 인연 점수가 공유 링크와 이미지에 보여요.")).toBeTruthy();
   });
 
-  it("tells the friend, right above the consent checkbox and as its description, that the nickname may show on the owner's share image and the birth date is not stored", () => {
+  it("tells the friend, right above the consent checkbox and as its description, that the nickname and the score may show on the owner's share and the birth date is not stored", () => {
     render(<JoinFlow state={OPEN} />);
-    const note = screen.getByText("내 닉네임이 용우님의 별자리 공유 이미지와 링크에 나올 수 있어요. 생년월일은 저장하지 않아요.");
+    const note = screen.getByText("내 닉네임과 용우님과의 인연 점수가 용우님의 별자리 공유 링크와 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.");
     const consent = screen.getByRole("checkbox");
     expect(note.id).not.toBe("");
     expect(consent.getAttribute("aria-describedby")?.split(" ")).toContain(note.id);
     // above the checkbox, in the same group, with nothing between them
     expect(note.nextElementSibling).toBe(consent.closest("label"));
-    // the friend's score is not on the share image, so the form never says it is
-    expect(document.body.textContent).not.toContain("인연 점수가 용우님의 별자리 공유 이미지");
   });
 
   it("does not move on until the birth date is picked (no default date)", () => {
@@ -63,11 +61,15 @@ describe("JoinFlow", () => {
     expect(screen.getByRole("heading", { level: 1, name: "용우님은 열두 별자리를 모두 채웠어요. 함께해 줘서 고마워요" })).toBeTruthy();
   });
 
-  it("shows the owner their own code instead of the form", () => {
+  it("tells the owner on their own link that it is their invite link, and sends them to their constellation first (spec §11)", () => {
     render(<JoinFlow state={{ status: "self", kind: "self", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4 }} />);
-    expect(screen.getByRole("heading", { level: 1, name: "내 초대코드예요" })).toBeTruthy();
-    expect(screen.getByText("K7M4QX")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "내 초대 링크예요" })).toBeTruthy();
+    const go = screen.getByRole("link", { name: "내 별자리로 가기" });
+    expect(go.getAttribute("href")).toBe("/bonds");
+    expect(go.className).toMatch(/primary/);
     expect(screen.getByRole("button", { name: "다른 앱으로 보내기" })).toBeTruthy();
+    // no code to copy here: the link is the invite (owner 2026-10-02)
+    expect(screen.queryByText("K7M4QX")).toBeNull();
     expect(screen.queryByRole("textbox", { name: "닉네임" })).toBeNull();
   });
 
@@ -105,6 +107,7 @@ describe("JoinFlow", () => {
         fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
       });
       expect(calls).toEqual([{ url: "/api/share/bond", body: { starId: "star0123456789abcdef" } }]);
+      expect(sheet.textContent).not.toContain("점수 근거가 보여요");
       expect(sheet.textContent).toContain("/s/bondshare001");
     } finally {
       vi.unstubAllGlobals();

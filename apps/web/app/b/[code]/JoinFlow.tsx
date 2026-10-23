@@ -15,7 +15,7 @@ import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { JOIN_FAILED, bondsApi, bondsMessage, copyText } from "@/lib/bonds/client";
+import { JOIN_FAILED, bondsApi, bondsMessage } from "@/lib/bonds/client";
 import { MESSAGE_MAX, NICKNAME_MAX, NICKNAME_MIN } from "@/lib/bonds/text";
 import { useSajuProfile } from "@/lib/sajuFlow";
 import type { FriendResultView, InviteState } from "./loadInvite";
@@ -67,30 +67,23 @@ export function JoinFlow({ state }: { state: InviteState }) {
   );
 }
 
-/** The owner opened their own link (Q-11): the code to send, no form. */
+/**
+ * The owner opened their own link (Q-11, spec §11: no joining one's own): says it is their invite link and sends them to
+ * their constellation first; sending it on is still one tap away. No code to copy: the link is the invite (owner 2026-10-02).
+ */
 function SelfInvite({ invite }: { invite: Self }) {
-  const [toast, setToast] = useState("");
   return (
     <section className={s.closed} aria-labelledby="self-title">
       {invite.sign ? <ConstellationArt sign={invite.sign} lit={invite.filled} size={180} className={s.headArt} /> : null}
       <h1 id="self-title" className={s.title}>
-        내 초대코드예요
+        내 초대 링크예요
       </h1>
-      <p className={b.helper}>친구에게 보내 주세요. 들어온 순서대로 내 별자리의 다음 별이 돼요.</p>
-      <p className={s.code} aria-label={`초대코드 ${invite.code.split("").join(" ")}`}>
-        {invite.code}
-      </p>
+      <p className={b.helper}>친구가 이 링크를 열면 내 별자리의 다음 별이 돼요. 내 링크로는 내 별자리에 참여할 수 없어요.</p>
       <div className={`${b.actions} ${s.wide}`}>
-        {invite.sign ? <InviteShareButton code={invite.code} sign={invite.sign} filled={invite.filled} ownerNickname={invite.ownerNickname} /> : null}
-        <Button variant="secondary" block onClick={async () => setToast((await copyText(invite.code)) === "copied" ? "코드를 복사했어요" : "복사하지 못했어요. 코드를 직접 알려 주세요")}>
-          코드 복사
-        </Button>
-        <p className={b.toast} role="status">
-          {toast}
-        </p>
-        <Button href="/bonds" variant="ghost" block>
+        <Button href="/bonds" block trailing="→">
           내 별자리로 가기
         </Button>
+        {invite.sign ? <InviteShareButton code={invite.code} sign={invite.sign} filled={invite.filled} ownerNickname={invite.ownerNickname} variant="secondary" /> : null}
       </div>
     </section>
   );
@@ -172,6 +165,8 @@ function OpenInvite({ invite }: { invite: Open }) {
     setBusy(true);
     setErrors({});
     const res = await bondsApi<JoinResult>("join", {
+      // this form says the score shows on the owner's share (above 별 되기)
+      scoreNotice: true,
       code: invite.code,
       nickname: nickname.trim(),
       birth: birthDate,
@@ -237,7 +232,7 @@ function OpenInvite({ invite }: { invite: Open }) {
               aria-describedby="friend-nickname-help"
             />
             <p id="friend-nickname-help" className={b.helper}>
-              {invite.ownerNickname}님이 별자리를 공유하면 이 닉네임이 공유 이미지와 링크에 보여요
+              {invite.ownerNickname}님이 별자리를 공유하면 내 닉네임과 {invite.ownerNickname}님과의 인연 점수가 공유 링크와 이미지에 보여요.
             </p>
             {errors.nickname ? (
               <p className={b.error} role="alert">
@@ -255,7 +250,7 @@ function OpenInvite({ invite }: { invite: Open }) {
           />
           <div className={b.group}>
             <p id="friend-consent-note" className={b.helper}>
-              내 닉네임이 {invite.ownerNickname}님의 별자리 공유 이미지와 링크에 나올 수 있어요. 생년월일은 저장하지 않아요.
+              내 닉네임과 {invite.ownerNickname}님과의 인연 점수가 {invite.ownerNickname}님의 별자리 공유 링크와 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.
             </p>
             <Checkbox checked={consent} onChange={setConsent} invalid={Boolean(errors.consent)} describedBy="friend-consent-note" required>
               만 14세 이상이고, 닉네임과 인연 점수가 {invite.ownerNickname}님의 별자리에 남는 데 동의해요
@@ -338,6 +333,10 @@ function OpenInvite({ invite }: { invite: Open }) {
               {errors.form}
             </p>
           ) : null}
+          {/* Said again right above the button that joins (owner 2026-10-23): this is what marks the star's score as shown. */}
+          <p className={b.helper}>
+            {invite.ownerNickname}님이 별자리를 공유하면 내 닉네임과 {invite.ownerNickname}님과의 인연 점수가 공유 링크와 이미지에 보여요.
+          </p>
           <Button block onClick={submit} disabled={busy}>
             {busy ? "별을 다는 중이에요" : "별 되기"}
           </Button>

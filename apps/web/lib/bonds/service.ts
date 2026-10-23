@@ -342,6 +342,11 @@ export interface JoinInput {
   /** index 0-20 into the friend's fan of face-down cards */
   pick: number;
   message?: string | null;
+  /**
+   * the join form said "○○님이 별자리를 공유하면 내 닉네임과 ○○님과의 인연 점수가 공유 링크와 이미지에 보여요" (owner 2026-10-23):
+   * the star's score may show on the owner's public share. Absent (an earlier form): it stays the owner's.
+   */
+  scoreNotice?: boolean;
 }
 
 export interface JoinResult {
@@ -407,6 +412,7 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
     const row: StarRow = {
       id: randomId(), constellationId: filling.id, slot, nickname: nickname.value, message: message.value,
       cardId: card.cardId, orientation: card.orientation, score, parts, friendKey: input.friendKey, createdAt: now,
+      scorePublic: input.scoreNotice === true,
     };
     try {
       // Insert, recount, count the join and (when it completes) start the next sign, in one atomic step.

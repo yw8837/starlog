@@ -37,14 +37,14 @@ export function shareOgData(share: SharePayload, origin: string, live: BondsShar
     };
   }
   if (live?.kind === "bonds") {
-    // The constellation with its stars where they are; its score, big, only once complete (a filling one shares no
-    // number: a sum of few friends is their scores).
-    const done = live.complete && live.total !== null;
+    // The constellation with its stars where they are, each friend's score where it shows; the total, big, only when
+    // every score shows (an earlier star's would follow from it).
+    const shown = live.members.some((m) => m.score !== null);
     return {
-      label: done ? "완성한 별자리 인연" : "친구들이 채우는 별자리 인연",
+      label: live.complete ? "완성한 별자리 인연" : `친구들이 채우는 별자리 인연 · 별 ${live.members.length}/${live.slots}`,
       headline: `${live.ownerNickname}님의 ${getConstellation(live.sign).ko}`,
-      ...(done ? { big: `인연 ${live.total}점` } : {}),
-      body: `별 ${live.members.length}/${live.slots}${done && live.average !== null ? ` · 평균 ${live.average}점` : ""}`,
+      ...(live.total !== null ? { big: `인연 ${live.total}점` } : {}),
+      body: shown ? clip(live.members.map((m) => (m.score === null ? m.nickname : `${m.nickname} ${m.score}점`)).join(" · ")) : `별 ${live.members.length}/${live.slots}`,
       sign: live.sign,
       lit: live.members.map((member) => member.slot),
       host,

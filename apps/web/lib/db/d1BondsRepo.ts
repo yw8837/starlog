@@ -16,6 +16,8 @@ interface ConstellationRecord {
 interface StarRecord {
   id: string; constellation_id: string; slot: number; nickname: string; message: string | null; card_id: string;
   orientation: string; score: number; parts_json: string; friend_key: string; created_at: number;
+  /** migration 0016; absent on a database it has not reached */
+  score_public?: number;
 }
 interface RankingRecord { id: string; nickname: string; total: number; completed_at: number }
 
@@ -31,7 +33,7 @@ const toConstellation = (r: ConstellationRecord): ConstellationRow => ({
 const toStar = (r: StarRecord): StarRow => ({
   id: r.id, constellationId: r.constellation_id, slot: r.slot, nickname: r.nickname, message: r.message, cardId: r.card_id,
   orientation: r.orientation as Orientation, score: r.score, parts: JSON.parse(r.parts_json) as BondPart[], friendKey: r.friend_key,
-  createdAt: r.created_at,
+  createdAt: r.created_at, ...(r.score_public === 1 ? { scorePublic: true } : {}),
 });
 
 /** Complete constellations of public owners for a sign (the ranking pool); `?1` is the sign, `?2` since or null. */
@@ -50,19 +52,53 @@ const TALLY = `UPDATE constellations SET
     completed_at = CASE WHEN completed_at IS NULL AND (SELECT COUNT(*) FROM stars WHERE constellation_id = ?1) >= ?2 THEN ?3 ELSE completed_at END
   WHERE id = ?1`;
 
-const INSERT_STAR = `INSERT INTO stars (id, constellation_id, slot, nickname, message, card_id, orientation, score, parts_json, friend_key, created_at)
+const INSERT_STAR = `INSERT INTO stars (id, constellation_id, slot, nickname, message, card_id, orientation, score, parts_json, friend_key, created_at, score_public)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+/** Before migration 0016 reaches the database: the star goes in as an earlier one (its score stays the owner's). */
+const INSERT_STAR_LEGACY = `INSERT INTO stars (id, constellation_id, slot, nickname, message, card_id, orientation, score, parts_json, friend_key, created_at)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-const starValues = (row: StarRow) => [
+const starValues = (row: StarRow, legacy = false) => [
   row.id, row.constellationId, row.slot, row.nickname, row.message, row.cardId, row.orientation, row.score,
-  JSON.stringify(row.parts), row.friendKey, row.createdAt,
+  JSON.stringify(row.parts), row.friendKey, row.createdAt, ...(legacy ? [] : [row.scorePublic ? 1 : 0]),
 ];
+
+/** The database has not run migration 0016 yet (code deployed first). */
+const lacksScorePublic = (error: unknown) => /score_public/i.test(error instanceof Error ? error.message : String(error));
 
 export function createD1BondsRepo(db: D1Binding): BondsRepo {
   const one = <T>(sql: string, ...values: unknown[]) => db.prepare(sql).bind(...values).first<T>();
   const all = async <T>(sql: string, ...values: unknown[]) => (await db.prepare(sql).bind(...values).all<T>()).results;
   const run = async (sql: string, ...values: unknown[]) => {
     await db.prepare(sql).bind(...values).run();
+  };
+  /** The join as one D1 batch (one transaction: a failing statement rolls back the whole sequence). */
+  const joinBatch = async (row: StarRow, slots: number, day: string, now: number, next: { id: string; sign: SignId } | null, legacy: boolean) => {
+    const statements = [
+      db.prepare(legacy ? INSERT_STAR_LEGACY : INSERT_STAR).bind(...starValues(row, legacy)),
+      db.prepare(TALLY).bind(row.constellationId, slots, now),
+      db.prepare(
+        `UPDATE owners SET joins_count = CASE WHEN joins_day = ?2 THEN joins_count + 1 ELSE 1 END, joins_day = ?2
+         WHERE id = (SELECT owner_id FROM constellations WHERE id = ?1)`,
+      ).bind(row.constellationId, day),
+    ];
+    if (next) {
+      // Only when this star completed it, and never a second sign being filled or a second row of a sign
+      // (OR IGNORE: the unique indexes turn a lost race into a no-op, not a failed join).
+      statements.push(
+        db.prepare(
+          `INSERT OR IGNORE INTO constellations (id, owner_id, sign, status, total, started_at, completed_at)
+           SELECT ?1, c.owner_id, ?2, 'filling', 0, ?3, NULL FROM constellations c
+           WHERE c.id = ?4 AND c.status = 'complete' AND c.completed_at = ?3
+             AND NOT EXISTS (SELECT 1 FROM constellations f WHERE f.owner_id = c.owner_id AND f.status = 'filling')`,
+        ).bind(next.id, next.sign, now, row.constellationId),
+      );
+    }
+    statements.push(db.prepare("SELECT * FROM constellations WHERE id = ?").bind(row.constellationId));
+    const results = await db.batch(statements);
+    const after = results[results.length - 1]?.results[0] as ConstellationRecord | undefined;
+    if (!after) throw new Error("constellation missing after join");
+    return toConstellation(after);
   };
 
   return {
@@ -133,35 +169,21 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
       return (await all<StarRecord>("SELECT * FROM stars WHERE constellation_id = ? ORDER BY slot ASC", constellationId)).map(toStar);
     },
     async insertStar(row) {
-      await run(INSERT_STAR, ...starValues(row));
+      try {
+        await run(INSERT_STAR, ...starValues(row));
+      } catch (error) {
+        if (!lacksScorePublic(error)) throw error;
+        await run(INSERT_STAR_LEGACY, ...starValues(row, true));
+      }
     },
     async joinStar(row, slots, day, now, next = null) {
-      // A D1 batch is one transaction: a failing statement rolls back the whole sequence.
-      const statements = [
-        db.prepare(INSERT_STAR).bind(...starValues(row)),
-        db.prepare(TALLY).bind(row.constellationId, slots, now),
-        db.prepare(
-          `UPDATE owners SET joins_count = CASE WHEN joins_day = ?2 THEN joins_count + 1 ELSE 1 END, joins_day = ?2
-           WHERE id = (SELECT owner_id FROM constellations WHERE id = ?1)`,
-        ).bind(row.constellationId, day),
-      ];
-      if (next) {
-        // Only when this star completed it, and never a second sign being filled or a second row of a sign
-        // (OR IGNORE: the unique indexes turn a lost race into a no-op, not a failed join).
-        statements.push(
-          db.prepare(
-            `INSERT OR IGNORE INTO constellations (id, owner_id, sign, status, total, started_at, completed_at)
-             SELECT ?1, c.owner_id, ?2, 'filling', 0, ?3, NULL FROM constellations c
-             WHERE c.id = ?4 AND c.status = 'complete' AND c.completed_at = ?3
-               AND NOT EXISTS (SELECT 1 FROM constellations f WHERE f.owner_id = c.owner_id AND f.status = 'filling')`,
-          ).bind(next.id, next.sign, now, row.constellationId),
-        );
+      try {
+        return await joinBatch(row, slots, day, now, next, false);
+      } catch (error) {
+        // A D1 batch is one transaction, so nothing of the first try stays: join again without the column.
+        if (!lacksScorePublic(error)) throw error;
+        return joinBatch(row, slots, day, now, next, true);
       }
-      statements.push(db.prepare("SELECT * FROM constellations WHERE id = ?").bind(row.constellationId));
-      const results = await db.batch(statements);
-      const after = results[results.length - 1]?.results[0] as ConstellationRecord | undefined;
-      if (!after) throw new Error("constellation missing after join");
-      return toConstellation(after);
     },
     async tally(constellationId, slots, now) {
       await run(TALLY, constellationId, slots, now);
