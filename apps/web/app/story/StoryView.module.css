@@ -85,6 +85,17 @@
   color: var(--ink-sub);
 }
 
+/* account sync: the offer to move this device's records, above them (nothing to move: no gap) */
+.move {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.move:empty {
+  display: none;
+}
+
 /* account sync: logged in, a record this device alone keeps */
 .local {
   padding: 1px 8px;

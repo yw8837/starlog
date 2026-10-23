@@ -127,7 +127,9 @@ export function StoryView() {
           <h1 className={s.title}>내 기록</h1>
           <p className={s.count}>{`기록 ${chapters.length}개 · ${kept}`}</p>
         </header>
-        <MoveToAccount />
+        <div className={s.move}>
+          <MoveToAccount />
+        </div>
         <ol className={s.records} aria-label="기록 목록">
           {newestFirst(chapters).map((chapter) => (
             <Record key={chapter.id} chapter={chapter} now={now} topicsOpen={topicsOpen} deviceOnly={Boolean(account?.user) && !chapter.serverId} />
