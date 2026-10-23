@@ -81,7 +81,7 @@ function SelfInvite({ invite }: { invite: Self }) {
         {invite.code}
       </p>
       <div className={`${b.actions} ${s.wide}`}>
-        {invite.sign ? <InviteShareButton code={invite.code} sign={invite.sign} filled={invite.filled} /> : null}
+        {invite.sign ? <InviteShareButton code={invite.code} sign={invite.sign} filled={invite.filled} ownerNickname={invite.ownerNickname} /> : null}
         <Button variant="secondary" block onClick={async () => setToast((await copyText(invite.code)) === "copied" ? "코드를 복사했어요" : "복사하지 못했어요. 코드를 직접 알려 주세요")}>
           코드 복사
         </Button>
@@ -118,7 +118,8 @@ function EarlierStar({ earlier }: { earlier: JoinResult }) {
 function OpenInvite({ invite }: { invite: Open }) {
   const def = getConstellation(invite.sign);
   const [phase, setPhase] = useState<Phase>("form");
-  const [nickname, setNickname] = useState("");
+  // The nickname this device already used, if any (the birth date comes from the saved saju profile, below).
+  const [nickname, setNickname] = useState(invite.myNickname ?? "");
   const [birth, setBirthValue] = useState<BirthValue>(EMPTY_BIRTH);
   // This device's own saved saju profile fills the date once it is read, unless the friend already chose one.
   const { profile } = useSajuProfile();

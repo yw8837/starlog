@@ -81,17 +81,40 @@
 
 /* ---- invite ---- */
 
+/* 초대코드 보기: the code, folded (owner 2026-10-23: the invite is the link). */
 .invite {
   display: grid;
   justify-items: center;
   gap: 8px;
   width: 100%;
-  padding-top: 14px;
+  padding-top: 10px;
   border-top: 1px solid var(--glass-line);
 }
 
-.invite > button,
-.invite > a {
+.invite[open] {
+  padding-bottom: 4px;
+}
+
+.inviteSummary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inviteSummary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* 카카오톡으로 초대하기 and 다른 앱으로 보내기, full width: first on a constellation just made. */
+.inviteFirst {
+  display: grid;
+  gap: 8px;
   width: 100%;
 }
 
@@ -331,10 +354,6 @@
   color: var(--gold);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-.joinPanel {
-  gap: 10px;
 }
 
 .inlineLink {

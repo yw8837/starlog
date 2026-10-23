@@ -98,6 +98,76 @@ async function apiOwner(baseURL: string, nickname: string, sign: string | null):
 }
 
 test.describe("별자리 인연 · owner", () => {
+  /**
+   * owner 2026-10-23 (the 2026-10-02 decision): invites in one go. Made → 카카오톡으로 초대하기 first (the SDK mocked: the
+   * feed's 별 되러 가기 opens /b/<code>) → a friend opens that link, joins with no code typed → the star is on the owner's page.
+   */
+  test("make → 카카오톡으로 초대하기 → a friend joins from the /b link → the owner sees the star", async ({ page, baseURL }, info) => {
+    const shots = info.project.name === "mobile";
+    await page.addInitScript(() => {
+      const sent: unknown[] = [];
+      let ready = false;
+      Object.assign(window, { __kakao: sent, Kakao: { init: () => void (ready = true), isInitialized: () => ready, Share: { sendDefault: (t: unknown) => void sent.push(t) } } });
+    });
+    await startOwner(page, "용우");
+    await page.getByRole("list", { name: "별자리 고르기" }).getByRole("button", { name: /양자리/ }).click();
+    await page.getByRole("button", { name: "양자리로 시작하기" }).click();
+    const panel = page.getByRole("region", { name: /양자리/ }).first();
+    const kakao = panel.getByRole("button", { name: "카카오톡으로 초대하기" });
+    await expect(kakao).toBeVisible();
+    // Brought into view right after making it, without scrolling.
+    await expect(kakao).toBeInViewport();
+    // Just made: the invite is the first button, above the figure; the code waits folded under 초대코드 보기.
+    await expect(panel.getByRole("button").first()).toHaveText("카카오톡으로 초대하기");
+    await expect(panel.getByText("초대코드 보기")).toBeVisible();
+    await expect(panel.locator("p[aria-label^='초대코드']")).toBeHidden();
+    if (shots) {
+      await page.addStyleTag({ content: "nextjs-portal{display:none!important}" });
+      await page.screenshot({ path: "test-results/share-shots/bonds-made.png" });
+      await page.screenshot({ path: "test-results/share-shots/bonds-kakao-invite.png", clip: { x: 0, y: Math.max(0, ((await kakao.boundingBox())?.y ?? 0) - 120), width: 375, height: 360 } });
+    }
+    const code = await inviteCode(page);
+    await kakao.click();
+    const template = (await page.evaluate(() => (window as unknown as { __kakao: unknown[] }).__kakao))[0] as {
+      content: { title: string; imageUrl: string; link: { webUrl: string } };
+      buttons: Array<{ title: string; link: { webUrl: string } }>;
+    };
+    // The invite names the site's own address (SITE.url), whatever server this run uses.
+    const link = `https://starlog.yeolmaeapps.kr/b/${code}`;
+    expect(template.content.title).toBe("용우님의 양자리에 별이 되어 주세요");
+    expect(template.content.imageUrl).toBe(`https://starlog.yeolmaeapps.kr/api/og/invite/${code}`);
+    expect(template.buttons).toEqual([{ title: "별 되러 가기", link: { mobileWebUrl: link, webUrl: link } }]);
+
+    // The friend taps 별 되러 가기 (the same path on this server) and joins with no code to type.
+    const friendContext = await page.context().browser()!.newContext({ viewport: page.viewportSize() ?? undefined });
+    const friend = await friendContext.newPage();
+    await friend.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
+    await friend.goto(new URL(new URL(template.buttons[0]!.link.webUrl).pathname, baseURL).toString(), { timeout: 120_000 });
+    await expect(friend.getByRole("heading", { level: 1, name: "용우님의 양자리에 별이 되어 주세요" })).toBeVisible();
+    await expect(friend.getByRole("textbox", { name: /초대코드/ })).toHaveCount(0);
+    if (shots) await friend.screenshot({ path: "test-results/share-shots/bonds-friend-join.png", fullPage: true });
+    await friend.getByRole("textbox", { name: "닉네임" }).fill("하늘");
+    await friend.getByLabel("태어난 연도").selectOption("1992");
+    await friend.getByLabel("태어난 월").selectOption("8");
+    await friend.getByLabel("태어난 일").selectOption("3");
+    await friend.getByRole("checkbox").check();
+    await friend.getByRole("button", { name: "카드 고르러 가기" }).click();
+    await friend.getByRole("button", { name: "바로 펼치기" }).click();
+    await expect(friend.locator("[data-fan-index]")).toHaveCount(21);
+    await settleAnimations(friend);
+    await friend.locator("[data-fan-index]").nth(10).scrollIntoViewIfNeeded();
+    await settleAnimations(friend);
+    await pickFanCard(friend, 10);
+    await friend.getByRole("button", { name: "별 되기" }).click();
+    await expect(friend.getByRole("heading", { level: 1, name: "양자리에 별이 됐어요" })).toBeVisible();
+    await expect(friend.getByRole("link", { name: "나도 내 별자리 만들기" })).toHaveAttribute("href", "/bonds");
+    await friendContext.close();
+
+    await page.reload();
+    await expect(page.getByText("1/4", { exact: false }).first()).toBeVisible();
+    await expect(page.getByRole("list").filter({ hasText: "하늘" }).first()).toBeVisible();
+  });
+
   test("start → 양자리 → 4 friends → complete → 도감 → ranking → 새로 채우기 → home badge", async ({ page, baseURL }) => {
     await startOwner(page);
     const picker = page.getByRole("list", { name: "별자리 고르기" });
@@ -109,7 +179,7 @@ test.describe("별자리 인연 · owner", () => {
 
     await expect(page.getByRole("heading", { name: /양자리/ }).first()).toBeVisible();
     await expect(page.getByText("0/4 · 인연 0점")).toBeVisible();
-    await expect(page.getByRole("button", { name: "초대하기" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "카카오톡으로 초대하기" })).toBeVisible();
     const code = await inviteCode(page);
     await shot(page, "filling-empty");
 

@@ -411,7 +411,7 @@ export function MyCard({ sign, data, reload }: { sign: SignId; data: Ranking; re
           · 인연 {data.filling.total}점
         </p>
         <p className={b.helper}>다 채우면 이 랭킹에 올라요.</p>
-        {data.invite ? <InviteShareButton code={data.invite.code} sign={sign} filled={data.filling.filled} /> : null}
+        {data.invite && data.owner ? <InviteShareButton code={data.invite.code} sign={sign} filled={data.filling.filled} ownerNickname={data.owner.nickname} /> : null}
         <Link href="/bonds" className={s.link}>
           내 별자리로 가기
         </Link>

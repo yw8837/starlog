@@ -54,7 +54,7 @@ export function StarList({ sign, stars, fresh, complete, otherFilling, onChanged
   };
 
   if (stars.length === 0) {
-    return <p className={s.emptyStars}>아직 들어온 별이 없어요. 초대코드를 보내면 친구가 첫 번째 별이 돼요.</p>;
+    return <p className={s.emptyStars}>아직 들어온 별이 없어요. 카톡으로 초대 링크를 보내면 친구가 첫 번째 별이 돼요.</p>;
   }
 
   return (

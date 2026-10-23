@@ -11,7 +11,7 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-const OPEN = { status: "open", kind: "open", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4, earlier: null } as const;
+const OPEN = { status: "open", kind: "open", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4, earlier: null, myNickname: null } as const;
 const RESULT = {
   nickname: "하늘", score: 87, parts: [{ id: "stem-generate" as const, points: 10, text: "두 분의 일간이 서로 살려 주는 사이예요" }], completed: false,
   sign: "aries" as const, slot: 1, starId: "star0123456789abcdef", ownerNickname: "용우", card: { cardId: "cups-02", orientation: "upright" as const }, bondLine: "요즘 두 사람 사이엔 ‘마음을 주고받음’의 기운이 흘러요",
@@ -67,7 +67,7 @@ describe("JoinFlow", () => {
     render(<JoinFlow state={{ status: "self", kind: "self", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4 }} />);
     expect(screen.getByRole("heading", { level: 1, name: "내 초대코드예요" })).toBeTruthy();
     expect(screen.getByText("K7M4QX")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "초대하기" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "다른 앱으로 보내기" })).toBeTruthy();
     expect(screen.queryByRole("textbox", { name: "닉네임" })).toBeNull();
   });
 
@@ -133,5 +133,12 @@ describe("JoinFlow", () => {
     render(<JoinFlow state={OPEN} />);
     expect((screen.getByLabelText("태어난 연도") as HTMLSelectElement).value).toBe("");
     expect(screen.queryByText("저장된 사주 정보로 채웠어요")).toBeNull();
+  });
+});
+
+describe("JoinFlow fills what this device already knows (owner 2026-10-23)", () => {
+  it("starts the nickname with the one this device used before", () => {
+    render(<JoinFlow state={{ ...OPEN, myNickname: "하늘별" }} />);
+    expect((screen.getByRole("textbox", { name: "닉네임" }) as HTMLInputElement).value).toBe("하늘별");
   });
 });
