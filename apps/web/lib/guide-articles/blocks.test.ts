@@ -35,8 +35,10 @@ const kbCard = (cardId: string): KbCard =>
 describe("guide blocks: authoring rules", () => {
   it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s", async (_slug, article) => {
     if (article.keyPoints) {
-      expect(article.keyPoints).toHaveLength(3);
-      expect(new Set(article.keyPoints).size).toBe(3);
+      // 2-4 points: since the third review (2026-10-23) the card articles no longer all carry exactly three.
+      expect(article.keyPoints.length).toBeGreaterThanOrEqual(2);
+      expect(article.keyPoints.length).toBeLessThanOrEqual(4);
+      expect(new Set(article.keyPoints).size).toBe(article.keyPoints.length);
       for (const point of article.keyPoints) {
         expect(point.length, point).toBeGreaterThanOrEqual(8);
         expect(point.length, point).toBeLessThanOrEqual(60);
