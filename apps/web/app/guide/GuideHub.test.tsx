@@ -81,7 +81,8 @@ describe("the hub", () => {
       expect(text).toContain(`타로 ${articlesIn("tarot").length}편`);
       expect(text).toContain(`사주 ${articlesIn("saju").length}편`);
       const newest = GUIDE_ARTICLES.map((article) => lastReviewed(article) ?? "").sort().at(-1) as string;
-      expect(text).toContain(`마지막 검토 ${koreanDate(newest)}`);
+      expect(text).toContain(`마지막 수정 ${koreanDate(newest)}`);
+      expect(text).not.toContain("검토");
       expect(hrefsIn(intro)).toContain(GUIDE_ABOUT_PATH);
       // The intro comes right under the hero, before the tab's list.
       const list = screen.getByRole("heading", { level: 2, name: tab.category === "tarot" ? "타로 가이드" : "사주 가이드" });
@@ -103,10 +104,12 @@ describe("the hub", () => {
       }
     });
 
-    it(`${tab.category}: the five most recently checked articles with their dates`, () => {
+    it(`${tab.category}: the five most recently changed articles with their dates`, () => {
       render(<tab.Page />);
       const recent = section("hub-recent-title");
-      expect(within(recent).getByRole("heading", { level: 2 }).textContent).toBe("최근 검토한 글");
+      // Changed, not reviewed: 검토 is only what the owner has read himself (lib/guideReview.ts).
+      expect(within(recent).getByRole("heading", { level: 2 }).textContent).toBe("최근 고친 글");
+      expect(recent.textContent).not.toContain("검토");
       const expected = recentlyReviewed(5);
       expect(hrefsIn(recent)).toEqual(expected.map((article) => `/guide/${article.slug}`));
       expect([...recent.querySelectorAll("time")].map((time) => time.getAttribute("datetime"))).toEqual(expected.map(lastReviewed));

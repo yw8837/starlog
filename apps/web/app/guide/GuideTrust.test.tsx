@@ -6,13 +6,15 @@ import { SITE } from "@/lib/config";
 import { guideReferences } from "@/lib/evidence";
 import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, lastReviewed, type GuideArticle } from "@/lib/guide";
 import { INFO_PAGES } from "@/lib/infoPages";
+import { guideReview } from "@/lib/guideReview";
 import { guideArticleJsonLd } from "@/lib/jsonld";
 import { koreanDate } from "@/lib/legal";
 import { sitemapEntriesFor } from "@/lib/seo";
 
 /**
- * Site-level trust on every guide article (AdSense "가치가 별로 없는 콘텐츠", Search Central's Who/How/Why): who writes
- * and checks it, when it was first written and last checked, and what it rests on, by category, never hand-typed.
+ * Site-level trust on every guide article (AdSense "가치가 별로 없는 콘텐츠", Search Central's Who/How/Why): an AI draft
+ * the owner is responsible for as its editor, when it was first written and last changed, a review only where the owner
+ * has read it (lib/guideReview.ts), and what it rests on, by category, never hand-typed.
  */
 
 vi.mock("next/script", async () => {
@@ -28,9 +30,11 @@ afterEach(() => {
 
 const renderSlug = async (slug: string) => render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
 const trustBox = (container: HTMLElement) => container.querySelector<HTMLElement>('section[aria-labelledby="trust-title"]');
-const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글·검토")) as HTMLElement | undefined;
+const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글 AI 도구로 초안")) as HTMLElement | undefined;
+/** The editor of every article (owner decision 2026-10-23): the business owner, by name and title. */
+const EDITOR = `${SITE.business.ceo}(${SITE.business.name} 대표)`;
 
-describe("마지막 검토: one date for the byline, the trust box, JSON-LD and the sitemap", () => {
+describe("마지막 수정: one date for the byline, the trust box, JSON-LD and the sitemap", () => {
   it("is the article's last content change, or its first publication when it has none", () => {
     const base: Pick<GuideArticle, "published" | "updated"> = { published: "2026-10-01" };
     expect(lastReviewed(base)).toBe("2026-10-01");
@@ -70,27 +74,33 @@ describe("the sources a guide article names, by category", () => {
 });
 
 describe("the byline under the title", () => {
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: who writes and checks it, both dates, and the editorial page", async (slug, article) => {
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: an AI draft, its editor, both dates, a review only on record, and the editorial page", async (slug, article) => {
     const { container } = await renderSlug(slug);
     const line = byline(container);
-    const reviewed = lastReviewed(article) as string;
-    expect(line?.textContent).toBe(`글·검토 ${SITE.business.name} · 처음 쓴 날 ${koreanDate(article.published as string)} · 마지막 검토 ${koreanDate(reviewed)} · 편집 원칙`);
-    expect([...(line?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, reviewed]);
+    const changed = lastReviewed(article) as string;
+    const review = guideReview(slug);
+    const reviewed = review ? ` · 검토 ${review.by}(${koreanDate(review.on)})` : "";
+    expect(line?.textContent).toBe(`글 AI 도구로 초안 · 편집 책임 ${EDITOR} · 처음 쓴 날 ${koreanDate(article.published as string)} · 마지막 수정 ${koreanDate(changed)}${reviewed} · 편집 원칙`);
+    expect([...(line?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, changed, ...(review ? [review.on] : [])]);
     expect(within(line as HTMLElement).getByRole("link", { name: "편집 원칙" }).getAttribute("href")).toBe(GUIDE_ABOUT_PATH);
   });
 });
 
 describe("the trust box after the body", () => {
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: maker, dates, its category's sources, how to report an error", async (slug, article) => {
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: editor, how it was made, dates, its category's sources, how to report an error", async (slug, article) => {
     const { container } = await renderSlug(slug);
     const box = trustBox(container);
     expect(box, slug).not.toBeNull();
     const text = box?.textContent ?? "";
     expect(within(box as HTMLElement).getByRole("heading", { level: 2 }).textContent).toBe("이 글에 대해");
-    expect(text).toContain(`글·검토${SITE.business.name}`);
+    expect(text).toContain(`편집 책임${EDITOR}`);
+    // A review only where the owner has read the article; none of the old 글·검토 or 마지막 검토 labels.
+    const review = guideReview(slug);
+    if (review) expect(text).toContain(`검토${review.by} · ${koreanDate(review.on)}`);
+    else expect(text).not.toContain("검토");
     // How it was made, the same facts as the editorial page: an AI draft checked against its category's sources.
     expect(text).toContain(article.category === "tarot" ? "AI 도구로 초안을 쓰고 1909년 원판 그림과 웨이트 해설서에 대조해 다듬었어요" : "AI 도구로 초안을 쓰고 만세력 계산 규칙에 대조해 다듬었어요");
-    expect([...(box?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, lastReviewed(article)]);
+    expect([...(box?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, lastReviewed(article), ...(review ? [review.on] : [])]);
 
     const listed = [...(box?.querySelectorAll("li") ?? [])].map((li) => li.textContent);
     const expected = guideReferences(article.category);

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SITE } from "@/lib/config";
 import { SAJU_SOURCE_LINE, cardQuote, cardSourceLine, evidenceHref, guideReferences } from "@/lib/evidence";
 import { GUIDE_ABOUT_PATH, lastReviewed, type GuideArticle } from "@/lib/guideMeta";
+import { GUIDE_EDITOR, guideReview } from "@/lib/guideReview";
 import { appHref } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { koreanDate } from "@/lib/legal";
@@ -45,26 +46,38 @@ export function GuideSourceLine({ article }: { article: GuideArticle }) {
   );
 }
 
+/** 편집 책임: the owner by name and title, on every article (lib/guideReview.ts). */
+const EDITOR_LINE = `${GUIDE_EDITOR.name}(${GUIDE_EDITOR.title})`;
+
 /**
- * Under the title: who writes and checks the guide, when this article was first written and last checked (the dates
- * the Article JSON-LD carries, lastReviewed), and a link to the editorial page, a guide page on the same host.
+ * Under the title: an AI draft and its editor, when this article was first written and last changed (the dates the
+ * Article JSON-LD carries, lastReviewed), the owner's review only where he has read it (guideReview), and a link to the
+ * editorial page, a guide page on the same host.
  */
-export function GuideByline({ article }: { article: Pick<GuideArticle, "published" | "updated"> }) {
+export function GuideByline({ article }: { article: Pick<GuideArticle, "slug" | "published" | "updated"> }) {
   const { published } = article;
-  const reviewed = lastReviewed(article);
+  const changed = lastReviewed(article);
+  const review = guideReview(article.slug);
   return (
     <p className={s.dates}>
-      {`글·검토 ${SITE.business.name}`}
+      {`글 AI 도구로 초안 · 편집 책임 ${EDITOR_LINE}`}
       {published ? (
         <>
           {" · 처음 쓴 날 "}
           <time dateTime={published}>{koreanDate(published)}</time>
         </>
       ) : null}
-      {reviewed ? (
+      {changed ? (
         <>
-          {" · 마지막 검토 "}
-          <time dateTime={reviewed}>{koreanDate(reviewed)}</time>
+          {" · 마지막 수정 "}
+          <time dateTime={changed}>{koreanDate(changed)}</time>
+        </>
+      ) : null}
+      {review ? (
+        <>
+          {` · 검토 ${review.by}(`}
+          <time dateTime={review.on}>{koreanDate(review.on)}</time>
+          {")"}
         </>
       ) : null}
       {" · "}
@@ -82,13 +95,15 @@ const MADE_HOW: Record<GuideArticle["category"], string> = {
 };
 
 /**
- * 이 글에 대해, after the body (the ad never sits inside it): who writes and checks the article, its two dates, the
- * sources its category rests on (guideReferences, never typed per article), and how to report an error. The
- * evidence page is an app page, so it goes through appHref; the editorial page is the guide's own.
+ * 이 글에 대해, after the body (the ad never sits inside it): the article's editor, how it was made, its two dates, the
+ * owner's review only where he has read it, the sources its category rests on (guideReferences, never typed per
+ * article), and how to report an error. The evidence page is an app page, so it goes through appHref; the editorial
+ * page is the guide's own.
  */
 export function GuideTrustBox({ article }: { article: GuideArticle }) {
   const { published } = article;
-  const reviewed = lastReviewed(article);
+  const changed = lastReviewed(article);
+  const review = guideReview(article.slug);
   const email = SITE.business.email.trim();
   return (
     <section className={s.trust} aria-labelledby="trust-title">
@@ -97,8 +112,8 @@ export function GuideTrustBox({ article }: { article: GuideArticle }) {
       </h2>
       <dl className={s.trustFacts}>
         <div className={s.trustRow}>
-          <dt>글·검토</dt>
-          <dd>{SITE.business.name}</dd>
+          <dt>편집 책임</dt>
+          <dd>{EDITOR_LINE}</dd>
         </div>
         <div className={s.trustRow}>
           <dt>만든 방법</dt>
@@ -112,11 +127,20 @@ export function GuideTrustBox({ article }: { article: GuideArticle }) {
             </dd>
           </div>
         ) : null}
-        {reviewed ? (
+        {changed ? (
           <div className={s.trustRow}>
-            <dt>마지막 검토</dt>
+            <dt>마지막 수정</dt>
             <dd>
-              <time dateTime={reviewed}>{koreanDate(reviewed)}</time>
+              <time dateTime={changed}>{koreanDate(changed)}</time>
+            </dd>
+          </div>
+        ) : null}
+        {review ? (
+          <div className={s.trustRow}>
+            <dt>검토</dt>
+            <dd>
+              {`${review.by} · `}
+              <time dateTime={review.on}>{koreanDate(review.on)}</time>
             </dd>
           </div>
         ) : null}
@@ -138,7 +162,7 @@ export function GuideTrustBox({ article }: { article: GuideArticle }) {
       </ul>
       {email ? (
         <p className={s.trustNote}>
-          틀린 곳이나 오래된 내용이 보이면 글 주소를 적어 이메일로 알려 주세요. 확인해서 고치면 마지막 검토 날짜도 바꿔요.{" "}
+          틀린 곳이나 오래된 내용이 보이면 글 주소를 적어 이메일로 알려 주세요. 확인해서 고치면 마지막 수정 날짜도 바꿔요.{" "}
           <a href={`mailto:${email}`} className={s.sourcesLink}>
             {email}
           </a>

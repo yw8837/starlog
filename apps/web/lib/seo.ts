@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BIRTH_CARDS, BIRTH_CARD_PATH, birthCardPath } from "./birthCard";
 import { SITE } from "./config";
 import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath, lastReviewed } from "./guide";
+import { GUIDE_EDITOR } from "./guideReview";
 import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
 import { ILJU, KEYWORD_PATH, keywordPath } from "./keyword2027";
@@ -65,7 +66,7 @@ export function pageMetadata({ title, description, path, type = "website", publi
     alternates: { canonical: url, types: FEED_ALTERNATES },
     openGraph:
       type === "article"
-        ? { ...shared, type: "article", ...(publishedTime ? { publishedTime } : {}), ...(modifiedTime ? { modifiedTime } : {}), authors: [SITE.business.name] }
+        ? { ...shared, type: "article", ...(publishedTime ? { publishedTime } : {}), ...(modifiedTime ? { modifiedTime } : {}), authors: [GUIDE_EDITOR.name] }
         : { ...shared, type: "website" },
   };
 }

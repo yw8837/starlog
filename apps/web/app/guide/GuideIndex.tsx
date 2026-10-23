@@ -53,7 +53,7 @@ const FREE_TOOLS: ReadonlyArray<{ path: string; name: string; line: string }> = 
   { path: KEYWORD_PATH, name: KEYWORD_TITLE, line: "생일의 일주로 2027년 정미년에 붙들 키워드를 골라 드려요." },
 ];
 
-/** How many articles 최근 검토한 글 lists. */
+/** How many articles 최근 고친 글 lists. */
 const RECENT_COUNT = 5;
 
 function Arrow() {
@@ -115,7 +115,7 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
               {GUIDE_CATEGORIES.map((tab) => `${GUIDE_CATEGORY_LABEL[tab]} ${articlesIn(tab).length}편`).join(" · ")}
               {newest ? (
                 <>
-                  {" · 마지막 검토 "}
+                  {" · 마지막 수정 "}
                   <time dateTime={newest}>{koreanDate(newest)}</time>
                 </>
               ) : null}
@@ -206,9 +206,9 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
           <section className={s.group} aria-labelledby="hub-recent-title">
             <div className={s.groupHead}>
               <h2 id="hub-recent-title" className={s.groupTitle}>
-                최근 검토한 글
+                최근 고친 글
               </h2>
-              <p className={s.groupSub}>근거와 다시 맞춰 보고 고친 글이에요</p>
+              <p className={s.groupSub}>내용을 가장 최근에 고친 글이에요</p>
             </div>
             <ul className={s.list}>
               {recentlyReviewed(RECENT_COUNT).map((article) => {
@@ -222,7 +222,7 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
                         <span className={s.itemDesc}>
                           {`${GUIDE_CATEGORY_LABEL[article.category]} · `}
                           <time dateTime={reviewed}>{koreanDate(reviewed)}</time>
-                          {" 검토"}
+                          {" 수정"}
                         </span>
                       </span>
                       <Arrow />
