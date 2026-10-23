@@ -4,10 +4,13 @@ import { checkQuota, openGate, spendCookies } from "@/lib/api/http";
 import { sajuRequest } from "@/lib/api/sajuRequest";
 import { respondGeneration } from "@/lib/api/stream";
 import { checkBot } from "@/lib/api/turnstile";
+import { sealFreeShare } from "@/lib/share/freeSeal";
+import { buildSajuFreePayload } from "@/lib/share/payload";
 
 /**
  * POST {birth, topic?, loveStatus?, workStatus?, history?} → the free teaser {title, summary, lockedToc,
- * freshUntil} (a topic adds `topic`), written from the chart the server computes itself. One of the day's
+ * freshUntil, share} (a topic adds `topic`; `share` is its title and summary as a share holds them, birth and pillars
+ * hidden, sealed: lib/share/freeSeal.ts, owner 2026-10-23), written from the chart the server computes itself. One of the day's
  * teasers whatever the topic, spent only after a validated generation (saju-topics spec §9.1). A browser
  * check first when Turnstile is on (lib/api/turnstile.ts). Streams NDJSON progress with
  * `Accept: application/x-ndjson`.
@@ -27,6 +30,10 @@ export async function POST(request: Request): Promise<Response> {
       parsed.topic === "overall"
         ? { ...(await generateSajuTeaser(gate.provider, parsed.facts, hooks)).data, freshUntil: teaserFreshUntil(parsed.facts, gate.now) }
         : (await generateSajuTopicTeaser(gate.provider, parsed.facts, hooks)).data;
-    return { body: teaser, cookies: await spendCookies(gate, quota, "teaser") };
+    const free = buildSajuFreePayload(
+      { birth: parsed.body.birth, ...(parsed.topic === "overall" ? (parsed.profile ? { profile: parsed.profile } : {}) : { topic: parsed.topic }) },
+      { title: teaser.title, summary: teaser.summary },
+    );
+    return { body: { ...teaser, share: await sealFreeShare(free, gate.secret, gate.now) }, cookies: await spendCookies(gate, quota, "teaser") };
   }, { gate, spend: "teaser" });
 }

@@ -122,6 +122,10 @@ async function stopShare(route: string, body: unknown): Promise<boolean> {
   }
 }
 
+/** The free first reading (owner 2026-10-23): only the server's sealed share of what the free screen shows goes back. */
+export const createFreeShareLink = (share: string) => makeShare("/api/share/free", { share });
+export const stopFreeShareLink = (share: string) => stopShare("/api/share/free", { share });
+
 /** 별자리 인연, the owner's constellation (owner 2026-10-23): the server checks this device owns it. */
 export const createBondsShareLink = (constellationId: string) => makeShare("/api/share/bonds", { constellationId });
 export const stopBondsShareLink = (constellationId: string) => stopShare("/api/share/bonds", { constellationId });

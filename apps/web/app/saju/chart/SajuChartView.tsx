@@ -9,6 +9,11 @@ import { ErrorPanel } from "@/components/reading/ErrorPanel";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
 import { TopicRow } from "@/components/saju/TopicRow";
+import { ShareResultButton } from "@/components/share/ShareResultButton";
+import { createFreeShareLink, stopFreeShareLink } from "@/lib/share/client";
+
+/** A 맛보기 kept from before its share was sealed (2026-10-23) has nothing the server can share. */
+const SAJU_SHARE_LATER = "이 맛보기는 공유하기가 생기기 전에 열려서 공유할 수 없어요.";
 import { useSajuChart } from "@/components/saju/useSajuChart";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
@@ -345,6 +350,17 @@ export function SajuChartView({
             <span>풀이 · 사주주</span>
           </footer>
         </Paper>
+        {/* 공유하기 (owner 2026-10-23): this 맛보기's title and summary as the server sealed them, never the birth or the chart. */}
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <ShareResultButton
+            key={teaser.share ?? topic}
+            kind="saju-free"
+            text={`나의 ${SITE.nameKo} · ${teaser.title}`}
+            create={() => (teaser.share ? createFreeShareLink(teaser.share) : Promise.resolve({ ok: false as const, message: SAJU_SHARE_LATER }))}
+            stop={() => (teaser.share ? stopFreeShareLink(teaser.share) : Promise.resolve(false))}
+            {...(teaser.share ? {} : { unavailable: SAJU_SHARE_LATER })}
+          />
+        </div>
         {/* The sheet sits below the row and the locked contents: the tarot result's quiet way down right after the free part (M-05). */}
         <a href="#unlock-title" className={s.jump}>
           전체 풀이 보러 가기<span aria-hidden="true"> ↓</span>

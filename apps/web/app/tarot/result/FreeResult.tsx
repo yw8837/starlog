@@ -18,6 +18,8 @@ import { approxCharsText } from "@/lib/pricing";
 import { resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { standardProduct } from "@/lib/pay/catalog";
 import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
+import { ShareResultButton } from "@/components/share/ShareResultButton";
+import { createFreeShareLink, stopFreeShareLink } from "@/lib/share/client";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { commitQuota } from "@/lib/reading/api";
 import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorView } from "@/lib/reading/errors";
@@ -33,6 +35,8 @@ import s from "./FreeResult.module.css";
 import { isTarotReadingResponse, isTarotTeaser } from "@/lib/reading/validate";
 
 const RETURN_TO = "/tarot/result";
+/** A teaser kept from before its share was sealed (2026-10-23) has nothing the server can share. */
+const FREE_SHARE_LATER = "이 맛보기는 지금 공유할 수 없어요. 카드를 다시 뽑으면 공유할 수 있어요.";
 /** Errors after which the server may still have saved the reading (M4). */
 const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
 
@@ -294,6 +298,16 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
             <header className={s.head}>
               <h1 className={s.question}>{summary.question}</h1>
               <SituationSummary conditions={summary.conditions} note={summary.note} />
+              {/* 공유하기 (owner 2026-10-23): the free part only, as the server sealed it; while it is written it says so. */}
+              <div className={s.share}>
+                <ShareResultButton
+                  kind="tarot-free"
+                  text={`${SITE.nameKo}에서 뽑은 카드 · ${cards.map((card) => card.name ?? card.position).join(" · ")}`}
+                  create={() => (teaser?.share ? createFreeShareLink(teaser.share) : Promise.resolve({ ok: false as const, message: FREE_SHARE_LATER }))}
+                  stop={() => (teaser?.share ? stopFreeShareLink(teaser.share) : Promise.resolve(false))}
+                  {...(!teaser ? { unavailable: "카드 풀이를 다 적으면 공유할 수 있어요." } : !teaser.share ? { unavailable: FREE_SHARE_LATER } : {})}
+                />
+              </div>
             </header>
           }
           spread={<SpreadRow size="md" cards={cards} />}

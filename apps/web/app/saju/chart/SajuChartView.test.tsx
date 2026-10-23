@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { resetAccountForTests } from "@/lib/account/client";
@@ -549,5 +549,35 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     );
     expect(await screen.findByText("고요한 물")).toBeTruthy();
     expect(screen.queryByRole("group", { name: OTHER_TOPICS_LABEL })).toBeNull();
+  });
+});
+
+describe("SajuChartView 공유하기 (owner 2026-10-23: \"무료풀이에서도 공유가 가능하게\")", () => {
+  it("shares the 맛보기 as the server sealed it (title and summary, no birth): the link is its own page", async () => {
+    const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void };
+    proto.showModal ??= function (this: HTMLElement) {
+      this.setAttribute("open", "");
+    };
+    saveSajuProfile(BIRTH);
+    saveTeaser("saju", sajuTeaserKey(BIRTH, {}), { title: "고요한 물", summary: "첫 장 요약", lockedToc: ["성향", "올해"], share: "sealed.saju.share" });
+    const posted: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/me") return Response.json(meBody());
+      if (url === "/api/share/free") {
+        posted.push(JSON.parse(String(init?.body)));
+        return Response.json({ id: "sajushare001", path: "/s/sajushare001" });
+      }
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<SajuChartView />);
+    expect(await screen.findByText("첫 장")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
+    expect(sheet.textContent).toContain("맛보기 제목과 요약이 보여요");
+    await act(async () => {
+      fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    });
+    expect(posted).toEqual([{ share: "sealed.saju.share" }]);
+    expect(sheet.textContent).toContain("/s/sajushare001");
   });
 });

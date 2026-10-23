@@ -44,13 +44,13 @@ export const isSection = (value: unknown): value is Section => isRecord(value) &
 
 export function isTarotTeaser(value: unknown): value is TarotTeaserData {
   if (!isRecord(value) || !isSection(value.firstCard) || !isStrings(value.lockedToc) || !Array.isArray(value.cards)) return false;
-  if (!optional(value.secondCard, isSection) || !optional(value.seal, isString)) return false;
+  if (!optional(value.secondCard, isSection) || !optional(value.seal, isString) || !optional(value.share, isString)) return false;
   return value.cards.length > 0 && value.cards.every((c) => isRecord(c) && typeof c.position === "string" && isCardId(c.cardId) && typeof c.keyword === "string");
 }
 
 export function isSajuTeaser(value: unknown): value is SajuTeaserData {
   if (!isRecord(value) || !isString(value.title) || !isString(value.summary) || !isStrings(value.lockedToc)) return false;
-  return optional(value.topic, isSajuTopic) && optional(value.freshUntil, isString);
+  return optional(value.topic, isSajuTopic) && optional(value.freshUntil, isString) && optional(value.share, isString);
 }
 
 const isReadingCard = (c: unknown) => isRecord(c) && isString(c.position) && isCardId(c.cardId) && isString(c.heading) && isString(c.body);

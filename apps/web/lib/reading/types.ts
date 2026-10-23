@@ -34,6 +34,8 @@ export interface TarotTeaserData {
   secondCard?: Section & { cut: boolean };
   /** Both cards in full, sealed by the server: sent back with the full reading, which reads on from the cut. */
   seal?: string;
+  /** 공유하기: the free part as its share holds it, sealed by the server (lib/share/freeSeal.ts; absent before 2026-10-23). */
+  share?: string;
   lockedToc: string[];
 }
 
@@ -69,6 +71,8 @@ export interface SajuTeaserData {
   topic?: SajuTopic;
   /** Until when a device may show it again without asking (ISO; spec §9.3). */
   freshUntil?: string;
+  /** 공유하기: its title and summary as a share holds them, sealed by the server (lib/share/freeSeal.ts). */
+  share?: string;
 }
 
 /** 한눈에 보기 (owner 2026-10-07): one plain sentence per item; the labels are the screen's (lib/sajuPrologue.ts). Defined once, by its schema. */

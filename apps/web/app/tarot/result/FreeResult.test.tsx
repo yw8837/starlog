@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { FLOW_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
@@ -81,13 +81,45 @@ afterEach(() => {
   router.replace.mockClear();
 });
 
-describe("FreeResult and sharing (owner 2026-10-14)", () => {
-  it("offers no share before the full reading exists: the only link it could send is the site's home", async () => {
+describe("FreeResult and sharing (owner 2026-10-23: \"무료풀이에서도 공유가 가능하게\")", () => {
+  beforeEach(() => {
+    const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+    proto.showModal ??= function (this: HTMLElement) {
+      this.setAttribute("open", "");
+    };
+  });
+
+  it("shares the free part only: 공유하기 sends the teaser's sealed share, never its text, and the link is the free reading's own page", async () => {
+    seed({ share: "sealed.free.share" });
+    const posted: Array<{ url: string; body: unknown }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/me") return Response.json(meBody());
+      if (url === "/api/share/free") {
+        posted.push({ url, body: JSON.parse(String(init?.body)) });
+        return Response.json({ id: "freeshare001", path: "/s/freeshare001" });
+      }
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
+    expect(sheet.textContent).toContain("뽑은 카드와 무료로 본 첫 풀이가 보여요");
+    expect(sheet.textContent).toContain("결제해야 보이는 뒷부분은 담지 않아요");
+    await act(async () => {
+      fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    });
+    expect(posted).toEqual([{ url: "/api/share/free", body: { share: "sealed.free.share" } }]);
+    expect(sheet.textContent).toContain("/s/freeshare001");
+  });
+
+  it("still shows 공유하기 on a teaser kept from before shares were sealed, and says how to share", async () => {
     seed();
     stub({ me: [() => Response.json(meBody())] });
     render(<FreeResult instant />);
     await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
-    expect(screen.queryByRole("button", { name: /공유하기|카카오톡으로 보내기/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    expect(screen.getByRole("dialog", { name: "결과 공유하기", hidden: true }).textContent).toContain("카드를 다시 뽑으면 공유할 수 있어요");
   });
 });
 
