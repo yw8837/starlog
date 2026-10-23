@@ -4,7 +4,11 @@ import { setTestDb } from "@/lib/db";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { findShare } from "@/lib/share/store";
-import { useTestDb } from "@/lib/testing/p4";
+import { browser, loginAs, useTestDb } from "@/lib/testing/p4";
+import { deleteAccount } from "@/lib/account/deletion";
+import { signingSecret } from "@/lib/security/sign";
+import { sealFreeShare } from "@/lib/share/freeSeal";
+import { buildSajuFreePayload } from "@/lib/share/payload";
 import { POST as draw } from "../../tarot/draw/route";
 import { POST as teaser } from "../../tarot/teaser/route";
 import { POST as sajuTeaser } from "../../saju/teaser/route";
@@ -90,6 +94,36 @@ describe("POST /api/share/free", () => {
     expect(stored?.payload).toMatchObject({ kind: "saju-free", v: 1 });
     expect(Object.keys(stored!.payload).sort()).toEqual(["kind", "summary", "title", "v"]);
     expect(JSON.stringify(stored?.payload)).not.toContain(String(DEFAULT_SAJU_FORM.year));
+  });
+
+  it("stops a share after its seal's week too: DELETE ignores the expiry, only a new POST is refused (review 2026-10-23)", async () => {
+    const db = useTestDb();
+    const call = device("203.0.113.73");
+    const secret = signingSecret() as string;
+    const payload = buildSajuFreePayload({ birth: DEFAULT_SAJU_FORM as never }, { title: "고요한 물", summary: "천천히 데워지는 마음이에요." });
+    const made = await call(POST, { share: await sealFreeShare(payload, secret, Date.now()) });
+    expect(made.status).toBe(200);
+    const weekOld = await sealFreeShare(payload, secret, Date.now() - 8 * 24 * 3_600_000);
+    expect((await call(POST, { share: weekOld })).status).not.toBe(200);
+    expect((await call(DELETE, { share: weekOld }, "DELETE")).data).toEqual({ deleted: true });
+    expect(await findShare(db, made.data.id as string)).toBeNull();
+  });
+
+  it("records the signed-in sharer, so deleting the account takes the share down (privacy: 로그인한 상태로 만든 공유에는 계정을 기록)", async () => {
+    vi.stubEnv("STARLOG_PAYMENTS", "on");
+    vi.stubEnv("STARLOG_KAKAO", "mock");
+    const db = useTestDb();
+    const secret = signingSecret() as string;
+    const signedIn = browser("198.51.100.17");
+    await loginAs(signedIn, "alice");
+    const payload = buildSajuFreePayload({ birth: DEFAULT_SAJU_FORM as never }, { title: "맑은 불", summary: "사람을 모으는 힘이 있어요." });
+    const res = await signedIn.send(POST, "/api/share/free", { body: { share: await sealFreeShare(payload, secret, Date.now()) }, origin: true });
+    expect(res.status).toBe(200);
+    const { id } = (await res.json()) as { id: string };
+    const row = await db.prepare("SELECT user_id FROM shares WHERE id = ?").bind(id).first<{ user_id: string | null }>();
+    expect(row?.user_id).toEqual(expect.any(String));
+    await deleteAccount(db, null, { userId: row!.user_id!, now: Date.now() });
+    expect(await findShare(db, id)).toBeNull();
   });
 
   it("refuses text the server did not seal, and another site's page", async () => {

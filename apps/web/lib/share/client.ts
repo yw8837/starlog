@@ -122,9 +122,27 @@ async function stopShare(route: string, body: unknown): Promise<boolean> {
   }
 }
 
-/** The free first reading (owner 2026-10-23): only the server's sealed share of what the free screen shows goes back. */
-export const createFreeShareLink = (share: string) => makeShare("/api/share/free", { share });
-export const stopFreeShareLink = (share: string) => stopShare("/api/share/free", { share });
+/**
+ * The free first reading (owner 2026-10-23): only the server's sealed share of what the free screen shows goes back. The
+ * device remembers the link under its seal (a teaser keeps one seal while it is shown), so 공유 그만하기 shows again later.
+ */
+const freeKey = (share: string) => `free:${share.slice(-32)}`;
+
+export async function createFreeShareLink(share: string): Promise<ShareLinkResult> {
+  const result = await postJson<Made>("/api/share/free", { share });
+  if (!result.ok) return { ok: false, message: result.error.message || FAILED };
+  remember(freeKey(share), result.data);
+  return made(result.data);
+}
+
+export async function stopFreeShareLink(share: string): Promise<boolean> {
+  const stopped = await stopShare("/api/share/free", { share });
+  if (stopped) remember(freeKey(share), null);
+  return stopped;
+}
+
+/** The live link this device made for this free reading, or null. */
+export const knownFreeShareLink = (share: string): ShareLink | null => knownShareLink({ id: freeKey(share) });
 
 /** 별자리 인연, the owner's constellation (owner 2026-10-23): the server checks this device owns it. */
 export const createBondsShareLink = (constellationId: string) => makeShare("/api/share/bonds", { constellationId });

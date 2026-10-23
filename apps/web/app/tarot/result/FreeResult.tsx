@@ -19,7 +19,7 @@ import { resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "
 import { standardProduct } from "@/lib/pay/catalog";
 import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
-import { createFreeShareLink, stopFreeShareLink } from "@/lib/share/client";
+import { createFreeShareLink, knownFreeShareLink, stopFreeShareLink } from "@/lib/share/client";
 import type { UnlockMethod } from "@/lib/pay/unlockMethod";
 import { commitQuota } from "@/lib/reading/api";
 import { CREDIT_CHECKING, creditKept, creditUnknown, describeApiError, type ErrorView } from "@/lib/reading/errors";
@@ -305,6 +305,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                   text={`${SITE.nameKo}에서 뽑은 카드 · ${cards.map((card) => card.name ?? card.position).join(" · ")}`}
                   create={() => (teaser?.share ? createFreeShareLink(teaser.share) : Promise.resolve({ ok: false as const, message: FREE_SHARE_LATER }))}
                   stop={() => (teaser?.share ? stopFreeShareLink(teaser.share) : Promise.resolve(false))}
+                  current={() => (teaser?.share ? knownFreeShareLink(teaser.share) : null)}
                   {...(!teaser ? { unavailable: "카드 풀이를 다 적으면 공유할 수 있어요." } : !teaser.share ? { unavailable: FREE_SHARE_LATER } : {})}
                 />
               </div>

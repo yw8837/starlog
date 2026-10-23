@@ -10,7 +10,7 @@ import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
 import { TopicRow } from "@/components/saju/TopicRow";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
-import { createFreeShareLink, stopFreeShareLink } from "@/lib/share/client";
+import { createFreeShareLink, knownFreeShareLink, stopFreeShareLink } from "@/lib/share/client";
 
 /** A 맛보기 kept from before its share was sealed (2026-10-23) has nothing the server can share. */
 const SAJU_SHARE_LATER = "이 맛보기는 공유하기가 생기기 전에 열려서 공유할 수 없어요.";
@@ -358,6 +358,7 @@ export function SajuChartView({
             text={`나의 ${SITE.nameKo} · ${teaser.title}`}
             create={() => (teaser.share ? createFreeShareLink(teaser.share) : Promise.resolve({ ok: false as const, message: SAJU_SHARE_LATER }))}
             stop={() => (teaser.share ? stopFreeShareLink(teaser.share) : Promise.resolve(false))}
+            current={() => (teaser.share ? knownFreeShareLink(teaser.share) : null)}
             {...(teaser.share ? {} : { unavailable: SAJU_SHARE_LATER })}
           />
         </div>

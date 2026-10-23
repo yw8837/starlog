@@ -111,6 +111,15 @@ describe("FreeResult and sharing (owner 2026-10-23: \"무료풀이에서도 공�
     });
     expect(posted).toEqual([{ url: "/api/share/free", body: { share: "sealed.free.share" } }]);
     expect(sheet.textContent).toContain("/s/freeshare001");
+    // Back later, the device remembers the link: 공유 그만하기 shows without making another (review 2026-10-23).
+    cleanup();
+    render(<FreeResult instant />);
+    await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    const again = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
+    expect(again.textContent).toContain("/s/freeshare001");
+    expect(within(again).getByRole("button", { name: "공유 그만하기", hidden: true })).toBeTruthy();
+    expect(posted).toHaveLength(1);
   });
 
   it("still shows 공유하기 on a teaser kept from before shares were sealed, and says how to share", async () => {
