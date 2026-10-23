@@ -98,13 +98,13 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
   "major-and-minor-arcana":
     "타로 78장은 0번 바보부터 21번 세계까지 번호와 이름이 있는 메이저 아르카나 22장과, 완드·컵·검·펜타클 네 벌의 숫자 카드와 인물 카드로 이뤄진 마이너 아르카나 56장으로 나뉘어요. 메이저는 삶의 큰 주제와 전환점을, 마이너는 하루하루의 일과 감정, 생각과 생활을 다루죠. 한 스프레드에 메이저가 많으면 큰 흐름이 걸린 질문으로 읽어요.",
   "wands-suit":
-    "완드는 잎이 돋은 나무 지팡이를 그린 벌로 불에 이어 보고, 의욕과 시작, 추진력과 도전을 다뤄요. 에이스의 새 불씨에서 시작해 축하와 경쟁, 인정과 방어를 지나 10에서는 혼자 짊어진 무거운 짐에 이르는 흐름으로 읽죠. 시종·기사·여왕·왕은 그 불을 다루는 서로 다른 태도를 보여 줘요.",
+    "완드는 잎이 돋은 나무 지팡이로 그리는 벌이라 하고 싶은 마음과 시작하는 힘, 밀고 나가는 기세를 다뤄요. 에이스의 새 불씨가 축하와 경쟁, 인정을 지나 10에서는 혼자 짊어진 짐이 되는 흐름이라 높은 숫자일수록 책임의 무게도 함께 읽죠. 시종·기사·여왕·왕은 같은 불을 서로 다르게 다루는 네 사람이에요.",
   "cups-suit":
-    "컵은 금빛 잔을 그린 벌로 물에 이어 보고, 마음과 감정, 관계와 위로를 다뤄요. 에이스의 넘치는 마음에서 시작해 주고받음과 상실, 추억과 환상, 떠남을 지나 10에서는 함께하는 충만함에 이르는 흐름으로 읽죠. 시종·기사·여왕·왕은 감정을 다루는 서로 다른 태도를 보여 줘요.",
+    "컵에는 금빛 잔이 그려져 있어서 마음에 무엇이 담겼고 얼마나 차 있는지를 보는 벌로 읽어요. 물에 이어 보며 감정과 관계, 위로와 상상을 다루고, 숫자는 마음이 넘쳤다가 비워지고 다시 채워지는 흐름이죠. 상대의 속마음을 단정하기보다 내 마음이 어떤지를 먼저 보는 데 쓰면 좋아요.",
   "swords-suit":
-    "검은 양날 칼을 그린 벌로 공기에 이어 보고, 생각과 판단, 말과 결정, 갈등을 다뤄요. 에이스의 분명한 결단에서 시작해 마음의 아픔과 쉼, 떠남과 갇힌 생각을 지나 10에서는 바닥을 친 끝과 새벽 직전에 이르는 흐름으로 읽죠. 무서운 그림이 많지만 스타로그는 검 카드로 실제 사고나 병을 점치지 않아요.",
+    "검은 양날 칼로 그리는 벌이라 공기에 이어 보고, 생각과 판단, 말과 결정, 갈등을 다뤄요. 상처를 그린 그림이 많아 무섭게 보이지만 대부분 머릿속에서 커진 생각과 오가는 말을 비추는 카드라서, 스타로그는 검 카드로 실제 사고나 병을 점치지 않아요. 걱정이 커질 때는 사실과 상상을 나눠 적는 데 쓰기 좋아요.",
   "pentacles-suit":
-    "펜타클은 별 모양이 새겨진 금빛 원반을 그린 벌로 흙에 이어 보고, 돈과 일의 결과, 몸과 생활, 기술처럼 손에 잡히는 현실을 다뤄요. 에이스의 기회에서 시작해 균형과 협력, 움켜쥠과 결핍, 점검과 연습을 지나 10에서는 세대를 잇는 안정에 이르는 흐름으로 읽죠. 펜타클이 많이 나왔다고 돈이 들어온다는 뜻으로 읽지는 않아요.",
+    "펜타클은 별 모양이 새겨진 금빛 원반을 그린 벌이고, 흙처럼 시간을 들여 키우는 돈과 일의 결과, 생활과 기술을 다뤄요. 기회를 받아 기술을 쌓고, 가진 것을 지키거나 나누며, 결실을 누리는 순서로 읽으면 열네 장이 한 줄로 이어지죠. 펜타클이 많다고 돈이 들어온다는 뜻은 아니에요.",
   "major-arcana-overview":
     "메이저 아르카나는 0번 바보부터 21번 세계까지 번호가 붙은 스물두 장으로, 라이더-웨이트-스미스 덱에서는 11번이 정의이고 8번이 힘이에요. 바보는 가벼운 첫걸음, 죽음은 한 국면을 닫는 정리, 별은 조용한 회복, 세계는 한 주기의 완성처럼 카드마다 흔히 읽는 뜻이 있죠. 0번 바보가 21번 세계까지 장면을 차례로 지나는 바보의 여정으로 읽으면 순서를 기억하기 쉬워요.",
 
@@ -235,10 +235,15 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     ...[
       "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
       "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
-    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-22" }] as const),
+    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-23" }] as const),
     // 2026-10-22 (AdSense "가치가 별로 없는 콘텐츠"): all 22 card articles gain the Starlog deck's own scene, three worked
     // examples, their own 자주 묻는 질문 and links on; the frames two cards shared once their names were taken out are rewritten.
-    ...["the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-22" }] as const),
+    // 2026-10-23: every section opens in the card's own words and 연애·일·돈 starts from the card's own situation.
+    ...["the-hermit", "the-star"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-23" }] as const),
+    // 2026-10-23: the four suit articles read their suit from angles of their own, with worked examples; the minor arcana
+    // overview compares the four and links on instead of retelling them.
+    ...["wands-suit", "cups-suit", "swords-suit", "pentacles-suit"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-23" }] as const),
+    ...["minor-arcana-suits"].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-23" }] as const),
     // 2026-10-23 (AdSense "가치가 별로 없는 콘텐츠"): the 29 saju articles rewritten with their own worked examples, the date
     // each entry carries itself (GuideDates.test.tsx keeps the two the same).
     ...["heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune"].map(

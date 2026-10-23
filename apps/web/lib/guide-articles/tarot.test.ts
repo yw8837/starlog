@@ -4,6 +4,7 @@ import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { aiTells } from "../ai/style";
 import { GUIDE_ARTICLES, findArticle, guideSectionText, type GuideArticle, type GuideBlock, type GuideSection } from "../guide";
+import { guidePlainText } from "../guideLinks";
 import { guideQuestions } from "../jsonld";
 
 /**
@@ -165,16 +166,39 @@ describe("the 22 major arcana pages: what only Starlog has", () => {
     expect(first).toMatch(/정방향|뜻/);
   });
 
-  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: no AI tells in the new parts, and the page dated 2026-10-22", (_slug, article) => {
+  it.each(CARD_ARTICLES.map((article) => [article.slug, article] as const))("%s: no AI tells in the new parts, and the page dated 2026-10-23", (_slug, article) => {
     const hits = aiTells(newText(article));
     expect(hits.map((hit) => `${hit.id} ${hit.label}`)).toEqual([]);
-    expect(article.updated).toBe("2026-10-22");
+    expect(article.updated).toBe("2026-10-23");
   });
 });
 
 describe("no card page is another card page with the name swapped", () => {
   const all = CARD_ARTICLES.flatMap((article) => pageSentences(article).map((sentence) => ({ slug: article.slug, sentence, frame: frame(sentence) })));
   const shown = (a: (typeof all)[number], b: (typeof all)[number]) => `${a.slug}: ${a.sentence}\n${b.slug}: ${b.sentence}`;
+
+  /** A sentence as words, every card name masked as X (with the particle after it) and the card numbers gone. */
+  const maskedWords = (sentence: string) => {
+    let text = guidePlainText(sentence);
+    for (const name of NAMES) text = text.split(name).join("X");
+    return text.replace(/\d+번?(\([IVXL]+\))?/g, "").replace(/X[가-힣]*/g, "X").replace(/\s+/g, " ").trim().split(" ");
+  };
+
+  it("opens every section in its own words: no first sentence starts or ends with the same two words on three cards", () => {
+    const openings = new Map<string, Set<string>>();
+    const endings = new Map<string, Set<string>>();
+    for (const article of CARD_ARTICLES) {
+      for (const section of article.sections) {
+        const words = maskedWords(firstSentence(section.body));
+        for (const [map, key] of [[openings, words.slice(0, 2).join(" ")], [endings, words.slice(-2).join(" ")]] as const) {
+          map.set(key, new Set([...(map.get(key) ?? []), article.slug]));
+        }
+      }
+    }
+    const shared = (map: Map<string, Set<string>>) => [...map].filter(([, slugs]) => slugs.size > 2).map(([key, slugs]) => `${key}: ${[...slugs].join(", ")}`);
+    expect(shared(openings)).toEqual([]);
+    expect(shared(endings)).toEqual([]);
+  });
 
   it("opens the new sections (Starlog scene, 자주 묻는 질문) in their own words: no opening shared by three cards", () => {
     for (const pick of [starlogSection, faqSection]) {

@@ -51,6 +51,8 @@ describe("the editorial page", () => {
     expect(what).toContain("참고");
     expect(what).toContain(`타로 글 ${articlesIn("tarot").length}편`);
     expect(what).toContain(`사주 글 ${articlesIn("saju").length}편`);
+    // The tarot count includes the suit and court card articles, so the scope names them too.
+    expect(what).toContain("마이너 아르카나 네 벌과 코트 카드");
   });
 
   it("Who: the business that makes and runs it, from SITE.business", () => {
@@ -83,7 +85,9 @@ describe("the editorial page", () => {
   it("says articles are checked again and dated, without promising a cadence the owner has not set, and what 마지막 검토 means", () => {
     render(<GuideAboutPage />);
     const review = section("review").textContent ?? "";
-    expect(review).toContain("주기적으로 다시 보고, 고친 날을 글에 적어요");
+    expect(review).toContain("글을 고칠 때마다 제목 아래 날짜를 바꿔요");
+    // Said as it is done: a date changes when the article does, not on a schedule nobody keeps.
+    expect(text()).not.toContain("주기적");
     // No fixed interval until the owner sets one.
     expect(text()).not.toMatch(/석 달|세 달|분기|매달|매주|\d+\s*(일|주|개월|달)(에|마다) 한 번/);
     expect(review).toContain("마지막 검토");

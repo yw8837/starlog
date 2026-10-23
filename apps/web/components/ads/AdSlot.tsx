@@ -49,7 +49,8 @@ export function AdSlot({ client, slot }: Props) {
   }, []);
 
   return (
-    <aside className={s.slot} aria-label="광고" data-ad-state={state} hidden={state === "unfilled"}>
+    // Not filled (pending, unfilled, blocked): no 광고 landmark for a screen reader to announce over an empty box.
+    <aside className={s.slot} aria-label="광고" aria-hidden={state === "filled" ? undefined : true} data-ad-state={state} hidden={state === "unfilled"}>
       {state === "filled" ? (
         <p className={s.label} aria-hidden="true">
           광고

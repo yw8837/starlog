@@ -32,14 +32,14 @@ export const metadata: Metadata = pageMetadata({
 
 /** What each tab covers, in the tabs' own words (app/guide/GuideIndex.tsx). */
 const TAB_SCOPE: Record<(typeof GUIDE_CATEGORIES)[number], string> = {
-  tarot: "카드 읽는 법, 스프레드, 메이저 아르카나 22장",
+  tarot: "카드 읽는 법, 스프레드, 메이저 아르카나 22장, 마이너 아르카나 네 벌과 코트 카드",
   saju: "오행과 천간·지지, 일간과 십신, 대운과 만세력",
 };
 
 /**
  * 가이드 소개와 편집 원칙, on the root domain with the guide (the AdSense review's site): Who makes the guide (SITE.business),
  * How an article is written and checked (AI drafts checked against the sources, said as it is, with no review it cannot
- * show), Why it exists, how often it is checked again, how to report an error (#contact), and that tarot and saju are for
+ * show), Why it exists, that its date changes whenever an article does, how to report an error (#contact), and that tarot and saju are for
  * fun and reflection. The counts, the latest 마지막 검토, the calendar rules (policyLines, the app's own words) and the
  * sources (guideReferences, the articles' rows) are read from the data, so the page never drifts from the guide. No ads.
  */
@@ -147,7 +147,7 @@ export default function GuideAboutPage() {
                 글은 언제 다시 보나요
               </h2>
               <p className={s.prose}>
-                글은 주기적으로 다시 보고, 고친 날을 글에 적어요. 앱의 계산 규칙이나 근거 자료가 바뀌면 그때 관련 글을 바로 고쳐요.
+                글을 고칠 때마다 제목 아래 날짜를 바꿔요. 앱의 계산 규칙이나 근거 자료가 바뀌면 그때 관련 글을 바로 고쳐요.
               </p>
               <GuideBlocks
                 id="review"

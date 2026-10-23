@@ -32,6 +32,7 @@ describe("guideLinkTarget", () => {
     "https://starlog.yeolmaeapps.kr.evil.example/now",
     "https://user@starlog.yeolmaeapps.kr/now",
     "https://starlog.yeolmaeapps.kr:8443/now",
+    "https://starlog.yeolmaeapps.kr//evil.example",
     "https://evil.example/page",
     "http://en.wikisource.org/wiki/X",
     "//evil.example/x",

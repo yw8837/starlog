@@ -88,6 +88,8 @@ describe("the trust box after the body", () => {
     const text = box?.textContent ?? "";
     expect(within(box as HTMLElement).getByRole("heading", { level: 2 }).textContent).toBe("이 글에 대해");
     expect(text).toContain(`글·검토${SITE.business.name}`);
+    // How it was made, the same facts as the editorial page: an AI draft checked against its category's sources.
+    expect(text).toContain(article.category === "tarot" ? "AI 도구로 초안을 쓰고 1909년 원판 그림과 웨이트 해설서에 대조해 다듬었어요" : "AI 도구로 초안을 쓰고 만세력 계산 규칙에 대조해 다듬었어요");
     expect([...(box?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([article.published, lastReviewed(article)]);
 
     const listed = [...(box?.querySelectorAll("li") ?? [])].map((li) => li.textContent);
