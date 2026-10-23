@@ -17,7 +17,7 @@ import { keyedHash } from "@/lib/security/sign";
  */
 
 export type ReadingSource = "paid" | "free" | "owner";
-/** Where a saved reading came from (migration 0014); none: opened and saved with a purchase, the gift or the owner pass. */
+/** Where a saved reading came from (migration 0015); none: opened and saved with a purchase, the gift or the owner pass. */
 export type ReadingOrigin = "opening" | "moved";
 
 /** A chapter as the device keeps it (StoredChapter) without its local id. */
