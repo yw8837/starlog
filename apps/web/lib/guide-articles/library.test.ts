@@ -105,14 +105,15 @@ describe("guide library", () => {
     for (const other of related) expect(findArticle(other), other).toBeDefined();
   });
 
-  it("gives every library article a substantial body (card articles 2,000-3,800 characters, in whatever shape the card has)", () => {
+  it("gives every library article a substantial body (card articles 4,000-7,800 characters, in whatever shape the card has)", () => {
     // Card articles were 2,800 or more while each carried the 2026-10-22 boilerplate (a 300-character deck section, a
     // two-row keyword table, a one-line FAQ intro); the rework of 2026-10-23 cut those and kept the card's own reading.
+    // The second read of 2026-10-23 adds each card's own substance (Waite's words, the older decks, a worked reading).
     for (const article of LIBRARY) {
       const length = bodyLength(article);
       if (article.cardId) {
-        expect(length, article.slug).toBeGreaterThanOrEqual(2000);
-        expect(length, article.slug).toBeLessThanOrEqual(3800);
+        expect(length, article.slug).toBeGreaterThanOrEqual(4000);
+        expect(length, article.slug).toBeLessThanOrEqual(7800);
       } else {
         expect(length, article.slug).toBeGreaterThanOrEqual(1500);
         expect(length, article.slug).toBeLessThanOrEqual(3200);

@@ -353,10 +353,10 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   expect(await articles.count()).toBeGreaterThanOrEqual(2);
   await guideTabs.getByRole("link", { name: "타로" }).click();
   // From the tab's own list: the hub's 최근 검토한 글 may name the same article.
-  await page.getByRole("region", { name: "타로 가이드" }).getByRole("link", { name: /타로 은둔자 카드 뜻/ }).click();
+  await page.getByRole("region", { name: "타로 가이드" }).getByRole("link", { name: /타로 은둔자 카드: 등불 속 별과 혼자 있는 시간/ }).click();
   await expect(page).toHaveURL(/\/guide\/the-hermit$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("타로 은둔자 카드 뜻");
-  await expect(page).toHaveTitle(/타로 은둔자 카드 뜻/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("타로 은둔자 카드: 등불 속 별과 혼자 있는 시간");
+  await expect(page).toHaveTitle(/타로 은둔자 카드: 등불 속 별과 혼자 있는 시간/);
   await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /9번 은둔자/);
   await expect(page.getByRole("link", { name: "타로 가이드 목록으로" })).toHaveAttribute("href", "/guide/tarot");
   await shot(page, info, "19-guide-article");

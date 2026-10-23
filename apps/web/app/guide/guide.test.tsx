@@ -12,6 +12,7 @@ import { GUIDE_HOST_LINES } from "@/app/guide/GuideHost";
 import { SITE } from "@/lib/config";
 import { DECK_KEY } from "@/lib/deck";
 import { GUIDE_CATEGORIES, articlesIn, findArticle, type GuideArticle } from "@/lib/guide";
+import { guidePlainText } from "@/lib/guideLinks";
 import nextConfig from "@/next.config";
 
 // A plain article, as the first six once were (no 한눈에 보기, no blocks). Every real article has both since
@@ -122,6 +123,16 @@ describe("guide article", () => {
     const nav = screen.getByRole("navigation", { name: "같이 읽어 볼 글" });
     expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(related.map((other) => `/guide/${other}`));
   });
+
+  it.each([["the-fool", "타로 보기"], ["the-star", "타로 보기"], ["daewoon", "사주 보기"]])(
+    "%s: reading comes first, the related reads before the app's call-to-action (review 2026-10-23)",
+    async (slug, label) => {
+      render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
+      const related = screen.getByRole("navigation", { name: "같이 읽어 볼 글" });
+      const cta = screen.getByRole("complementary", { name: label });
+      expect(related.compareDocumentPosition(cta)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    },
+  );
 });
 
 describe("guide article body", () => {
@@ -146,7 +157,8 @@ describe("guide article body", () => {
     await renderSlug("the-hermit");
     for (const section of plain) {
       expect(sectionTags(section.heading)).toEqual(["H2", "P"]);
-      expect(screen.getByRole("heading", { level: 2, name: section.heading }).nextElementSibling?.textContent).toBe(section.body);
+      // A [text](url) link in the body shows as its words.
+      expect(screen.getByRole("heading", { level: 2, name: section.heading }).nextElementSibling?.textContent).toBe(guidePlainText(section.body));
     }
   });
 
