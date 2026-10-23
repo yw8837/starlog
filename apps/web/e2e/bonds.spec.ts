@@ -1,4 +1,5 @@
 import { expect, request as playwrightRequest, test, type APIRequestContext, type Page } from "@playwright/test";
+import { openShared } from "./shareShots";
 
 /**
  * 별자리 인연 end to end on `next dev` (memory repository): the owner starts and picks 양자리, four
@@ -150,8 +151,8 @@ test.describe("별자리 인연 · owner", () => {
     await expect(viewer.getByRole("heading", { level: 1 })).toHaveText("용우님의 양자리");
     await expect(viewer.getByRole("meter", { name: "평균 인연 점수" })).toBeVisible();
     for (const friend of FRIENDS) await expect(viewer.locator("main")).toContainText(friend.nickname);
-    if (test.info().project.name === "mobile") await viewer.screenshot({ path: "test-results/share-shots/bonds-owner-shared.png", fullPage: true });
     await viewer.close();
+    await (await openShared(page, ownerPath, "bonds-owner-shared")).close();
 
     // Share images: the completed constellation (feed and story) and the invite card are PNGs.
     const me = (await (await page.request.get("/api/bonds/me")).json()) as { completed: { id: string }[] };
@@ -290,8 +291,8 @@ test.describe("별자리 인연 · friend", () => {
     await expect(visitor.getByRole("meter", { name: "인연 점수" })).toHaveAttribute("aria-valuenow", String(score));
     await expect(visitor.locator("main")).not.toContainText("늘 고마워");
     await expect(visitor.locator("main")).not.toContainText("1992");
-    if (test.info().project.name === "mobile") await visitor.screenshot({ path: "test-results/share-shots/bond-friend-shared.png", fullPage: true });
     await visitor.close();
+    await (await openShared(page, sharePath, "bond-friend-shared")).close();
     // Q-05: a reload shows this device's result again, not the empty form
     await page.reload();
     await expect(page.getByRole("heading", { level: 1, name: "이미 양자리에 별이 되어 있어요" })).toBeVisible();

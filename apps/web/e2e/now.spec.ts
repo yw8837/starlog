@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { pickCard, tableCards } from "./cards";
+import { openShared } from "./shareShots";
 
 type Side = { answers: string[]; why: string; tip: string };
 const DB: Record<string, Record<"upright" | "reversed", Side>> = JSON.parse(
@@ -148,6 +149,7 @@ test("지금의 한 장 → 공유하기 → the link shows that card, its line 
   const cta = visitor.getByRole("link", { name: /나도 한 장 뽑아 보기/ });
   await expect(cta).toBeVisible();
   if (info.project.name === "mobile") await visitor.screenshot({ path: "test-results/share-shots/now-shared.png", fullPage: true });
+  await (await openShared(page, path, "now-shared")).close();
   await cta.click();
   await expect(visitor).toHaveURL(/\/now$/);
   await visitor.close();

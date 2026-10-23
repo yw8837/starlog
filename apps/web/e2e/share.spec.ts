@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openShared, shotButton } from "./shareShots";
 
 /**
  * 결과 공유 (owner 2026-10-13): a saved reading's 공유하기 makes its own link, which shows the cards
@@ -57,6 +58,7 @@ async function savedReading(page: Page, id: string, { opening = false } = {}) {
 test("공유하기 makes the reading's own link: the cards and the reading for anyone, no question; 공유 그만하기 takes it down", async ({ page }) => {
   const reading = await savedReading(page, "sharee2e01");
   await page.goto("/chapter/sharee2e01");
+  await shotButton(page, page.getByRole("button", { name: "공유하기" }), "tarot-paid-button");
   await page.getByRole("button", { name: "공유하기" }).click();
   const sheet = page.getByRole("dialog", { name: "결과 공유하기" });
   await expect(sheet).toContainText("질문 원문과 직접 쓴 말은 가려요. 다만 풀이에 고민 내용이 담겨 있으니 보낼 사람을 골라 주세요.");
@@ -75,6 +77,7 @@ test("공유하기 makes the reading's own link: the cards and the reading for a
   const image = await visitor.locator('meta[property="og:image"]').getAttribute("content");
   expect(image).toContain(`/api/og/share/${path.slice(3)}`);
   await expect(visitor.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  await (await openShared(page, path, "tarot-shared")).close();
 
   await sheet.getByRole("button", { name: "공유 그만하기" }).click();
   await expect(sheet).toContainText("보낸 링크는 이제 열리지 않아요");

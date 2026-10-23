@@ -1,6 +1,7 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { filledSlots, pickCard, tableCards } from "./cards";
 import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
+import { makeLink, openShared, shotButton } from "./shareShots";
 
 /**
  * Tarot on the real API (the server runs with STARLOG_AI=mock and a signing secret): the cards
@@ -113,6 +114,16 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
   await expect(page.getByText("이어지는 이야기는 전체 풀이에서 열려요")).toBeVisible();
   await shot(page, info, "02-result");
 
+  // 공유하기 on the free result (owner 2026-10-23): the cards and the free part only; the question stays here.
+  const teaserShare = page.getByRole("button", { name: "공유하기" });
+  await shotButton(page, teaserShare, "tarot-teaser-button");
+  const freePath = await makeLink(page, teaserShare);
+  const freeVisitor = await openShared(page, freePath, "tarot-free-shared");
+  await expect(freeVisitor.getByRole("heading", { level: 1 })).toHaveText("카드 세 장이 건넨 이야기");
+  await expect(freeVisitor.locator("main")).toContainText("이어지는 이야기는 공유한 사람만 볼 수 있어요");
+  await expect(freeVisitor.locator("main")).not.toContainText("다음 주 금요일 면접");
+  await freeVisitor.close();
+
   const opened = page.waitForRequest((r) => r.url().endsWith("/api/tarot/reading"));
   await unlock.click();
   expect(JSON.parse((await opened).postData() ?? "{}").seal).toEqual(expect.any(String));
@@ -128,6 +139,7 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
     await expect(page.getByText("오픈 기념 무료 풀이는 이 기기에서 보고 보관할 수 있어요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toHaveCount(1);
     await expect(page.getByRole("region", { name: /이어서 물어보기/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
+    await shotButton(page, page.getByRole("button", { name: "공유하기" }), "tarot-opening-button");
     await expect(page.getByRole("navigation", { name: "이 기록의 차례" }).getByRole("link")).toHaveText(["풀이"]);
   } else {
     await expect(page.getByText(/보고 보관할 수 있어요/)).toHaveCount(0);

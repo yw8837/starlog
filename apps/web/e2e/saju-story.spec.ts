@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { fakeBrowserClock, openingOn } from "./opening";
+import { makeLink, openShared, shotButton } from "./shareShots";
 
 type SajuSample = {
   free: { title: string; lockedToc: string[] };
@@ -157,6 +158,14 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
   expect(await page.locator("body").innerText()).not.toContain(SAJU.free.title);
   await shot(page, info, "05-saju-chart-known-time");
 
+  // 공유하기 under the 맛보기 (owner 2026-10-23): its title and summary, never the birth or the chart.
+  const teaserShare = page.getByRole("button", { name: "공유하기" });
+  await shotButton(page, teaserShare, "saju-teaser-button");
+  const freeVisitor = await openShared(page, await makeLink(page, teaserShare), "saju-free-shared");
+  await expect(freeVisitor.locator("main")).toContainText("사주 맛보기");
+  await expect(freeVisitor.locator("main")).not.toContainText("1990");
+  await freeVisitor.close();
+
   // No free saju full reading (owner 2026-10-14): a visitor is told it opens with a payment, and nothing opens.
   await expect(sheet).toContainText("전체 풀이는 결제하고 열 수 있어요");
   await expect(sheet.getByRole("button", { name: "전체 풀이 보기", exact: true })).toBeDisabled();
@@ -179,6 +188,13 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
   await expect(page.getByRole("complementary", { name: "명식" })).toContainText("壬");
   const firstSection = (await sections.first().textContent()) ?? "";
   await shot(page, info, "06-saju-reading");
+
+  const readingShare = page.getByRole("button", { name: "공유하기" });
+  await shotButton(page, readingShare, "saju-paid-button");
+  const sajuVisitor = await openShared(page, await makeLink(page, readingShare), "saju-shared");
+  await expect(sajuVisitor.getByRole("heading", { level: 1 })).toHaveText("사주팔자 풀이");
+  await expect(sajuVisitor.locator("main")).not.toContainText("1990");
+  await sajuVisitor.close();
 
   await page.reload();
   await expect(page.locator("#chapter-reading article").first()).toHaveText(firstSection);
@@ -224,6 +240,12 @@ test("오늘의 한 장: shuffle, pick one of three; a reload shows only that ca
   for (const area of ["애정", "금전", "일"]) await expect(page.getByText(area, { exact: true })).toBeVisible();
   await expect(page.getByText(/AI가 만든|재미와 자기/)).toHaveCount(0); // owner 2026-10-23: 약관에만
   await shot(page, info, "10-today-opened");
+
+  const todayShare = page.getByRole("button", { name: "공유하기" });
+  await shotButton(page, todayShare, "today-button");
+  const dailyVisitor = await openShared(page, await makeLink(page, todayShare), "daily-shared");
+  await expect(dailyVisitor.locator("main")).toContainText("오늘의 한 장 뽑기");
+  await dailyVisitor.close();
 
   // Only the picked card is ever shown: one card image on the page, no face-down ones to pick.
   await expect(page.locator("main img[src*='/cards/']:not([src*='back'])")).toHaveCount(1);
