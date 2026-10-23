@@ -41,6 +41,8 @@ async function open(request: Request) {
   if (!body.success) return errorResponse("BAD_REQUEST");
   const chapter = await openChapterForShare(body.data.chapterToken, body.data.reading, secret);
   if (!chapter) return errorResponse("BAD_TOKEN", { message: NOT_SHAREABLE });
+  // tarot, saju and the three premium readings share; a kind added later answers plainly instead of crashing the builder.
+  if (chapter.ctx.kind !== "tarot" && chapter.ctx.kind !== "saju" && !isPremiumChapter(chapter.ctx)) return errorResponse("NOT_AVAILABLE", { message: "이 풀이는 아직 공유할 수 없어요." });
   return { db, secret, chapter, body: body.data, chapterKey: await sha256(chapter.id) };
 }
 

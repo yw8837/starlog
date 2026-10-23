@@ -76,6 +76,15 @@ describe("POST /api/share", () => {
     expect(JSON.stringify(shared?.payload)).not.toContain(reading.verdict);
   });
 
+  it("answers a kind it does not share with NOT_AVAILABLE, not a crash (review 2026-10-23)", async () => {
+    useTestDb();
+    const chapterToken = await issueChapter({ kind: "someday-kind", input: ctx.input } as unknown as ChapterContext, reading, [], secret, Date.now());
+    const res = await browser().send(POST, "/api/share", { body: { chapterToken, reading }, origin: true });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(res.status).toBeLessThan(500);
+    expect((await json(res)).code).toBe("NOT_AVAILABLE");
+  });
+
   it("shares a 오픈 기념 무료 reading too (owner 2026-10-23), without the question or the note", async () => {
     const db = useTestDb();
     const chapterToken = await issueChapter({ ...ctx, opening: true } as ChapterContext, reading, [], secret, Date.now());
