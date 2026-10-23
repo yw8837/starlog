@@ -122,6 +122,8 @@ test("a reading opened before logging in: the login offers to move it, 옮기기
   await expect(offer).toBeVisible({ timeout: NAV });
   await expect(offer).toContainText("옮기면 다른 기기에서도 보여요.");
   await expect(offer).toContainText("암호화");
+  // Each record is listed to pick (a shared device's other readings can be taken off), picked at first.
+  await expect(offer.getByRole("checkbox", { name: `10월 31일 · 타로 · ${title}` })).toBeChecked();
   await expect(records(web).first()).toContainText("이 기기에만");
   // Nothing went before the click.
   expect(((await (await web.request.get("/api/readings")).json()) as { readings: unknown[] }).readings).toHaveLength(0);

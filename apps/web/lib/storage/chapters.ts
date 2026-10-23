@@ -62,6 +62,8 @@ interface ChapterBase {
    * shows no follow-up box (the server refuses follow-ups for its chapter token); it is shared like any other (owner 2026-10-23).
    */
   opening?: true;
+  /** Account sync: moved into the account from a device (the server marks its copy too); who opened it is not known, so it takes no review. */
+  moved?: true;
 }
 
 export interface TarotChapter extends ChapterBase {
@@ -131,6 +133,12 @@ export type StoredChapter = TarotChapter | SajuChapter | PremiumChapter;
 
 export const isPremiumChapter = (chapter: { kind: string }): chapter is PremiumChapter => isPremiumId(chapter.kind);
 
+/**
+ * 풀이 후기 can be written on this record: it is kept in an account (spec §2), and was not opened with 오픈 기념 무료 or moved
+ * in from a device (account sync: lib/reviews/store.ts refuses both).
+ */
+export const reviewable = (chapter: StoredChapter): boolean => Boolean(chapter.serverId) && !chapter.opening && !chapter.moved;
+
 type Fresh<T> = T extends StoredChapter ? Omit<T, "id" | "createdAt" | "turns" | "followUpsLeft" | "checkin"> : never;
 export type NewChapter = Fresh<StoredChapter>;
 
@@ -174,6 +182,7 @@ export function parseChapter(value: unknown): StoredChapter | null {
   const deck = FRONT_DECKS.find((option) => option === value.deck);
   if (deck) base.deck = deck;
   if (value.opening === true) base.opening = true;
+  if (value.moved === true) base.moved = true;
   const reading = value.reading;
 
   if (value.kind === "tarot") {
@@ -427,8 +436,9 @@ export function mergeServerReadings(readings: readonly AccountReading[]): number
 }
 
 /**
- * Account sync: a chapter moved into the account takes its account id (lib/storage/move.ts). A copy of it pulled from the
- * account before (a move that landed but whose answer was lost) leaves, so 내 기록 holds the reading once.
+ * Account sync: a chapter moved into the account takes its account id and the server's `moved` mark (lib/storage/move.ts).
+ * A copy of it pulled from the account before (a move that landed but whose answer was lost) leaves, so 내 기록 holds the
+ * reading once.
  */
 export function linkServerId(id: string, serverId: string): void {
   const entries = rawEntries();
@@ -437,7 +447,7 @@ export function linkServerId(id: string, serverId: string): void {
     v: 1,
     chapters: entries.flatMap((entry) => {
       if (!isRecord(entry)) return [entry];
-      if (entry.id === id) return [{ ...entry, serverId }];
+      if (entry.id === id) return [{ ...entry, serverId, moved: true }];
       return entry.id === serverId || entry.serverId === serverId ? [] : [entry];
     }),
   });

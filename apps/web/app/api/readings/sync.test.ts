@@ -179,7 +179,8 @@ describe("moving this device's readings into the account (account sync)", () => 
     const phone = await loggedIn("alice");
     const { readings } = await accountOf(phone);
     expect(readings.map((r) => r.id)).toEqual([readingId]);
-    expect(readings[0]!.chapter).toMatchObject({ kind: "tarot", question: INPUT.question, opening: true, reading: opened.reading, chapterToken: opened.chapterToken });
+    // `moved`: every device shows it takes no review (writeReview refuses origin 'moved').
+    expect(readings[0]!.chapter).toMatchObject({ kind: "tarot", question: INPUT.question, opening: true, moved: true, reading: opened.reading, chapterToken: opened.chapterToken });
     // Dated when the server wrote it (the token's), not when the device says.
     expect(readings[0]!.createdAt).toBe(SYNCED);
   });

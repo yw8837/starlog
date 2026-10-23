@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { clearChapters, listChapters, mergeServerReadings, saveChapter, uniqueChapters, type NewChapter } from "./chapters";
+import { clearChapters, listChapters, mergeServerReadings, reviewable, saveChapter, uniqueChapters, type NewChapter } from "./chapters";
 import { clearMoveMarks, isMovable, moveMarks, moveToAccount, movableNow, putOffMove } from "./move";
+import { deleteAccountReadings } from "./sync";
 
 /** Account sync, the device side: which records may move, moving them a few at a time, and 내 기록 showing each once. */
 
@@ -90,6 +91,29 @@ describe("moving them", () => {
     const later = tarot("나중");
     expect(movableNow(listChapters(), moveMarks()).map((c) => c.id)).toEqual([first.id, later.id]);
     expect(movableNow(listChapters(), moveMarks()).filter((c) => !moveMarks().later.includes(c.id)).map((c) => c.id)).toEqual([later.id]);
+  });
+});
+
+describe("after moving", () => {
+  it("marks the record moved (as the server marks its copy), so it offers no review, like a 오픈 기념 무료 record", async () => {
+    const own = tarot("옮길 질문");
+    const opening = tarot("오픈 기념 질문", { serverId: SERVER(9), opening: true });
+    const paid = tarot("결제한 질문", { serverId: SERVER(8) });
+    await moveToAccount(movableNow(listChapters(), moveMarks()), server().fetchImpl);
+    const moved = listChapters().find((c) => c.id === own.id)!;
+    expect(moved).toMatchObject({ serverId: SERVER(1), moved: true });
+    expect([moved, opening, paid, tarot("기기에만 있는 질문")].map(reviewable)).toEqual([false, false, true, false]);
+  });
+
+  it("offers nothing again once the account's readings were erased on request: neither those moved from here nor copies pulled from another device", async () => {
+    tarot("옮긴 질문");
+    await moveToAccount(movableNow(listChapters(), moveMarks()), server().fetchImpl);
+    mergeServerReadings([{ id: SERVER(5), createdAt: 5, chapter: { kind: "tarot", question: "다른 기기 질문", conditions: [], note: "", cards: [card], reading, chapterToken: "t5", createdAt: 5, turns: [], followUpsLeft: 3 } }]);
+    const own = tarot("아직 기기에만 있는 질문");
+    const erased = vi.fn(async () => Response.json({ deleted: 2 })) as unknown as typeof fetch;
+    expect(await deleteAccountReadings(erased)).toBe(true);
+    expect(listChapters().every((c) => !c.serverId)).toBe(true);
+    expect(movableNow(listChapters(), moveMarks()).map((c) => c.id)).toEqual([own.id]);
   });
 });
 
