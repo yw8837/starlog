@@ -163,14 +163,27 @@ export interface ShareOgData {
   /** 별자리 인연: the constellation drawn on the right, `lit` of its stars filled. */
   sign?: SignId;
   lit?: number;
+  /**
+   * Saju: the five 기운 as a motif on the right (木火土金水 in their colours). A decoration, never the person's chart: the
+   * pillars give a birth away (A2 SHARE-2), so a saju share has none to draw.
+   */
+  elements?: boolean;
   host: string;
 }
+
+const ELEMENTS: Array<[string, string]> = [
+  ["木", "#7fc8a9"],
+  ["火", "#f08a7e"],
+  ["土", "#e3c07a"],
+  ["金", "#d9d9e3"],
+  ["水", "#7fa7e8"],
+];
 
 export function shareOgImage(data: ShareOgData): ReactElement {
   const { width, height } = SHARE_OG;
   const cards = (data.cards ?? []).slice(0, 3);
   const cardWidth = cards.length > 2 ? 148 : 176;
-  const side = cards.length > 0 || data.sign !== undefined;
+  const side = cards.length > 0 || data.sign !== undefined || data.elements === true;
   const textWidth = side ? 580 : 1050;
   return frame(width, height, [
     <div key="text" style={{ position: "absolute", left: 72, top: 58, width: textWidth, display: "flex", flexDirection: "column" }}>
@@ -183,6 +196,17 @@ export function shareOgImage(data: ShareOgData): ReactElement {
     data.sign ? (
       <div key="art" style={{ position: "absolute", right: 56, top: 70, display: "flex" }}>
         {constellationSvg(data.sign, 460, data.lit)}
+      </div>
+    ) : data.elements ? (
+      <div key="elements" style={{ position: "absolute", right: 70, top: 0, height, width: 440, display: "flex", flexWrap: "wrap", alignContent: "center", justifyContent: "center", gap: 22 }}>
+        {ELEMENTS.map(([name, color]) => (
+          <div
+            key={name}
+            style={{ width: 120, height: 120, borderRadius: 60, display: "flex", alignItems: "center", justifyContent: "center", border: `4px solid ${color}`, color, fontFamily: "Serif", fontSize: 60, fontWeight: 700, backgroundColor: "rgba(255,255,255,0.04)" }}
+          >
+            {name}
+          </div>
+        ))}
       </div>
     ) : cards.length ? (
       <div key="cards" style={{ position: "absolute", right: 64, top: 0, height, display: "flex", alignItems: "center", gap: 16 }}>
@@ -212,7 +236,7 @@ export function shareOgImage(data: ShareOgData): ReactElement {
 }
 
 export function shareOgText(data: ShareOgData): { serif: string; sans: string } {
-  return { serif: `${data.headline}${data.big ?? ""}`, sans: `STARLOG · 스타로그 ${data.label} ${data.body ?? ""} ${data.host}` };
+  return { serif: `${data.headline}${data.big ?? ""}${data.elements ? ELEMENTS.map(([name]) => name).join("") : ""}`, sans: `STARLOG · 스타로그 ${data.label} ${data.body ?? ""} ${data.host}` };
 }
 
 // ---- 프리미엄 풀이 (P5 task 23; 1080×1350, or the story size) ----

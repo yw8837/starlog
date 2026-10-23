@@ -24,7 +24,7 @@ export function shareOgData(share: SharePayload, origin: string, live: BondsShar
     return { label: "친구가 공유한 무료 타로 풀이", headline: share.cards.map(name).join(" · "), cards: share.cards.map((card) => face(share.deck, card)), host };
   }
   if (share.kind === "saju-free") {
-    return { label: `친구가 공유한 ${share.topic ? `${topicLabel(share.topic)} ` : "사주 "}맛보기`, headline: share.title, body: clip(share.summary), host };
+    return { label: `친구가 공유한 ${share.topic ? `${topicLabel(share.topic)} ` : "사주 "}맛보기`, headline: share.title, body: clip(share.summary), elements: true, host };
   }
   if (share.kind === "premium") {
     const product = PREMIUM[share.product];
@@ -87,6 +87,7 @@ export function shareOgData(share: SharePayload, origin: string, live: BondsShar
     label: "친구가 공유한 사주 풀이",
     headline: `${topicLabel(share.topic ?? "overall")} 풀이`,
     body: clip(glance?.thisYear ?? share.reading.sections[0]?.body.split(/(?<=[.?!요])\s+/)[0] ?? ""),
+    elements: true,
     host,
   };
 }

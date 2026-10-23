@@ -24,3 +24,10 @@ describe("the share preview image", () => {
     expect((await image.arrayBuffer()).byteLength).toBeGreaterThan(1000);
   });
 });
+
+describe("the saju share preview", () => {
+  it("draws the five 기운 motif beside the text", async () => {
+    const image = new ImageResponse(shareOgImage({ label: "STARLOG", headline: "STARLOG", body: "STARLOG", elements: true, host: "starlog.yeolmaeapps.kr" }), SHARE_OG);
+    expect((await image.arrayBuffer()).byteLength).toBeGreaterThan(1000);
+  });
+});
