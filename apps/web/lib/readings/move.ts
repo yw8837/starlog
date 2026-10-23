@@ -72,7 +72,8 @@ export async function vouchedChapter(item: MoveItem, secret: string): Promise<{ 
     return "kind";
   }
   const turns = opened.turns.map(({ question, answer }) => ({ question, answer }));
-  return { chapterId: opened.id, chapter: { ...chapter, turns, followUpsLeft: Math.max(0, SITE.reading.followUps - turns.length) } };
+  // `moved`: every device that pulls it shows no review prompt (writeReview refuses origin 'moved').
+  return { chapterId: opened.id, chapter: { ...chapter, turns, followUpsLeft: Math.max(0, SITE.reading.followUps - turns.length), moved: true } };
 }
 
 /**

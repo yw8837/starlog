@@ -12,7 +12,10 @@ import { linkServerId, type StoredChapter } from "./chapters";
 /** Records per request (lib/readings/move.ts MOVE_BATCH). */
 const BATCH = 5;
 
-/** kept: records the server would not take (they stay here); later: records the user put the offer off for. */
+/**
+ * kept: records never offered again: the server would not take them, or their account copy was erased on request (계정에
+ * 보관한 풀이 모두 지우기: moving them back would undo what the user asked); later: records the user put the offer off for.
+ */
 export interface MoveMarks {
   kept: string[];
   later: string[];
@@ -40,6 +43,13 @@ export const isMovable = (chapter: StoredChapter): boolean => !chapter.serverId 
 /** What can be moved now: movable, and not one the server already would not take. */
 export const movableNow = (chapters: readonly StoredChapter[], marks: MoveMarks): StoredChapter[] =>
   chapters.filter((chapter) => isMovable(chapter) && !marks.kept.includes(chapter.id));
+
+/** These records stay on this device for good (sync.ts deleteAccountReadings: their account copies were erased). */
+export function keepOnDevice(chapters: readonly StoredChapter[]): void {
+  if (chapters.length === 0) return;
+  const marks = moveMarks();
+  marksStore.save({ ...marks, kept: [...new Set([...marks.kept, ...chapters.map((c) => c.id)])] });
+}
 
 /** 나중에: these records are not offered again (a record opened later is). */
 export function putOffMove(chapters: readonly StoredChapter[]): void {
@@ -78,9 +88,6 @@ export async function moveToAccount(chapters: readonly StoredChapter[], fetchImp
     }
     for (const item of res.data.kept ?? []) if (typeof item.id === "string") kept.push(item.id);
   }
-  if (kept.length) {
-    const marks = moveMarks();
-    marksStore.save({ ...marks, kept: [...new Set([...marks.kept, ...kept])] });
-  }
+  keepOnDevice(chapters.filter((chapter) => kept.includes(chapter.id)));
   return { moved, kept: kept.length, failed };
 }

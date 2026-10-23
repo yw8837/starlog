@@ -299,6 +299,18 @@ describe("LocalChapter 풀이 후기", () => {
     expect(screen.queryByText("로그인하면 후기를 남길 수 있어요")).toBeNull();
     expect(document.getElementById("review-title")).toBeNull();
   });
+
+  it("account sync: offers none on a 오픈 기념 무료 or moved reading kept in the account (the server takes no review for them)", async () => {
+    accountServer(null);
+    for (const mark of [{ opening: true }, { moved: true }]) {
+      seed([{ ...PARTIAL, serverId: "abcdefghij0123456789", ...mark }]);
+      const { unmount } = render(<LocalChapter id="abcdef12" />);
+      await act(async () => {});
+      expect(screen.queryByText("로그인하면 후기를 남길 수 있어요")).toBeNull();
+      expect(document.getElementById("review-title")).toBeNull();
+      unmount();
+    }
+  });
 });
 
 describe("LocalChapter for a 오픈 기념 무료 reading (no follow-ups; shared like any other since owner 2026-10-23)", () => {

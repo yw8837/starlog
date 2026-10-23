@@ -72,7 +72,14 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     if (first instanceof Response) return first;
     // Only with a session cookie: a visitor's opening never waits on D1, and an account that cannot be read keeps it on the device.
     if (!syncRevisionInForce(gate.now) || !gate.cookies[sessionCookieName()]) return { ...base, first };
-    const ctx = await openAccount(request, gate.now);
+    let ctx: Awaited<ReturnType<typeof openAccount>>;
+    try {
+      ctx = await openAccount(request, gate.now);
+    } catch (error) {
+      // D1 down: the free reading opens all the same, on the device alone (never a 500 for a reading that needs no account).
+      console.error(JSON.stringify({ evt: "opening.account_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
+      return { ...base, first };
+    }
     const user = ctx instanceof Response ? null : ctx.session?.user;
     if (ctx instanceof Response || !user) return { ...base, first };
     return { ...base, first, keep: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: gate.owner ? "owner" : "free" } };

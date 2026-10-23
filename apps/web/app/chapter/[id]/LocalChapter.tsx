@@ -25,6 +25,7 @@ import {
   hasChapterEntry,
   isPremiumChapter,
   observationOf,
+  reviewable,
   sajuChapterEyebrow,
   tidyMatchChapter,
   updateChapter,
@@ -202,7 +203,8 @@ function SavedReading({ chapter }: { chapter: StoredChapter }) {
   const deck = chapter.deck ?? "rws1909";
   // 풀이 후기: only a reading kept in an account can be reviewed (spec §2); a visitor not logged in is offered
   // the login there. A reading only on this device keeps its own stars.
-  const rating = chapter.serverId ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
+  // Account sync: none on a 오픈 기념 무료 or moved reading either (reviewable).
+  const rating = reviewable(chapter) ? <ReviewPrompt readingId={chapter.serverId} /> : undefined;
   // 오픈 기념 무료 takes no follow-ups (owner 2026-10-14 evening); it is shared like any other (owner 2026-10-23).
   const keepOnly = chapter.opening === true;
   // Every result screen shows 공유하기 (owner 2026-10-23); a record not read whole says why it cannot make a link, and so

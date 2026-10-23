@@ -69,6 +69,31 @@ describe("moving this device's readings into the account (account sync)", () => 
     expect(screen.queryByRole("region", { name: /옮길까요/ })).toBeNull();
   });
 
+  it("lists each record (date, kind, question) to pick from, all picked at first: one taken off stays on this device and is offered again", async () => {
+    const one = tarot("하나");
+    const two = tarot("둘");
+    const moves = stubServer() as Array<{ chapters: Array<{ id: string }> }>;
+    render(<MoveToAccount />);
+    await screen.findByRole("region", { name: PROMPT });
+    const boxes = screen.getAllByRole("checkbox") as HTMLInputElement[];
+    expect(boxes.map((box) => [box.closest("label")?.textContent, box.checked])).toEqual([
+      ["10월 31일 · 타로 · 하나", true],
+      ["10월 31일 · 타로 · 둘", true],
+    ]);
+    fireEvent.click(screen.getByRole("checkbox", { name: "10월 31일 · 타로 · 둘" }));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "옮기기" })));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("풀이 1개를 내 계정으로 옮겼어요"));
+    expect(moves.map((m) => m.chapters.map((c) => c.id))).toEqual([[one.id]]);
+    expect(listChapters().find((c) => c.id === two.id)?.serverId).toBeUndefined();
+    expect(screen.getByRole("region", { name: "이 기기에서 본 풀이 1개를 내 계정에 옮길까요?" })).toBeTruthy();
+    // The one taken off stays off: nothing picked, nothing to send, until it is picked again.
+    const left = screen.getByRole("checkbox", { name: "10월 31일 · 타로 · 둘" }) as HTMLInputElement;
+    expect(left.checked).toBe(false);
+    expect((screen.getByRole("button", { name: "옮기기" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(left);
+    expect((screen.getByRole("button", { name: "옮기기" }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("나중에 folds it into one line that still moves them, after the same explanation", async () => {
     tarot("하나");
     tarot("둘");

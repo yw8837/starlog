@@ -72,3 +72,12 @@
 .status:empty {
   display: none;
 }
+
+/* the records to pick: a long list scrolls inside the card */
+.list {
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 4px 0;
+}

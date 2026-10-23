@@ -130,6 +130,29 @@ describe("a 오픈 기념 무료 reading opened while logged in (account sync)",
     expect(opened.chapterToken).toBeTruthy();
     expect(error).toHaveBeenCalledWith(expect.stringContaining("opening.keep_failed"));
   });
+
+  it("opens the reading on the device alone when the account cannot be read at all (D1 throws): never a 500", async () => {
+    useTestDb();
+    const b = await loggedIn("alice");
+    const down = () => {
+      throw new Error("D1_ERROR: storage unavailable");
+    };
+    setTestDb({ prepare: down, batch: down, exec: down } as never);
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const opened = await openFree(b);
+    expect(opened.readingId).toBeUndefined();
+    expect(opened.chapterToken).toBeTruthy();
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("opening.account_failed"));
+  });
+
+  it("takes no review: free readings never took one, and reviews sit by the paid prices", async () => {
+    useTestDb();
+    const b = await loggedIn("alice");
+    const opened = await openFree(b);
+    const res = await b.send(review, "/api/reviews", { body: { readingId: opened.readingId, rating: 5 }, origin: true });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "NOT_AVAILABLE", message: "오픈 기념 무료로 연 풀이에는 후기를 남길 수 없어요." });
+  });
 });
 
 describe("moving this device's readings into the account (account sync)", () => {
@@ -156,7 +179,8 @@ describe("moving this device's readings into the account (account sync)", () => 
     const phone = await loggedIn("alice");
     const { readings } = await accountOf(phone);
     expect(readings.map((r) => r.id)).toEqual([readingId]);
-    expect(readings[0]!.chapter).toMatchObject({ kind: "tarot", question: INPUT.question, opening: true, reading: opened.reading, chapterToken: opened.chapterToken });
+    // `moved`: every device shows it takes no review (writeReview refuses origin 'moved').
+    expect(readings[0]!.chapter).toMatchObject({ kind: "tarot", question: INPUT.question, opening: true, moved: true, reading: opened.reading, chapterToken: opened.chapterToken });
     // Dated when the server wrote it (the token's), not when the device says.
     expect(readings[0]!.createdAt).toBe(SYNCED);
   });

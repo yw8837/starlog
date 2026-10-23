@@ -3,7 +3,7 @@ import { parseAccount, type AccountState, type AccountUser } from "@/lib/account
 import { getJson, postJson } from "@/lib/reading/api";
 import { forgetServerIds, listChapters, mergeServerReadings, removeServerChapters, updateChapter } from "./chapters";
 import { dropMatchSeal, matchSeal } from "./matchSeals";
-import { forgetPutOff } from "./move";
+import { forgetPutOff, keepOnDevice } from "./move";
 
 /** The account's saved readings on this device (spec 5.7), and the check after a cut-off paid reading (M4). */
 
@@ -162,11 +162,17 @@ export async function restoreMatchTokens(fetchImpl: typeof fetch = fetch, now: n
   }
 }
 
-/** Deletes every reading saved in the account. This device keeps its own copies. */
+/**
+ * Deletes every reading saved in the account. This device keeps its own copies, which account sync never offers to move
+ * back (keepOnDevice): those moved from here and those pulled from another device alike.
+ */
 export async function deleteAccountReadings(fetchImpl: typeof fetch = fetch): Promise<boolean> {
   try {
     const response = await fetchImpl("/api/readings?all=1", { method: "DELETE", credentials: "same-origin" });
-    if (response.ok) forgetServerIds();
+    if (response.ok) {
+      keepOnDevice(listChapters().filter((chapter) => chapter.serverId));
+      forgetServerIds();
+    }
     return response.ok;
   } catch {
     return false;
