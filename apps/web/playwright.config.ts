@@ -100,6 +100,8 @@ export default defineConfig({
           STARLOG_PAY: "mock",
           STARLOG_KAKAO: "mock",
           STARLOG_OWNER_CODE: process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001",
+          // 카카오톡으로 보내기 shows (e2e/share.spec.ts mocks the SDK and checks the feed template; nothing loads Kakao).
+          NEXT_PUBLIC_KAKAO_JS_KEY: process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? "e2e-kakao-key",
         },
       },
 });
