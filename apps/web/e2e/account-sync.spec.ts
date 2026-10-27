@@ -1,21 +1,25 @@
 import { expect, test, type Browser, type Page, type TestInfo } from "@playwright/test";
 import { pickCard, tableCards } from "./cards";
-import { ownerPass } from "./opening";
+import { OPENING_ENDS_AT, ownerPass } from "./opening";
 
 /**
  * Account sync (owner 2026-10-23 "웹이랑 모바일에서 각각 로그인하면 내결과가 공유안됨"): two browser contexts logged in to
  * one mock Kakao account stand for the web and the phone. It starts with the privacy revision of 2026-10-31 00:00 KST
- * (lib/legal.ts SYNC_REVISION_DATE) while 오픈 기념 무료 still runs (until 11/01 00:00 KST), so the specs run on that day only:
- * FAKE_NOW=2026-10-31T12:00:00+09:00 for the server and the runner (e2e/opening.ts). In owner mode (playwright.config.ts)
- * only an owner-pass browser may log in, so each context takes the pass before its login. SHOTS: where the screenshots go.
+ * (lib/legal.ts SYNC_REVISION_DATE) while 오픈 기념 무료 still runs (until 12/01 00:00 KST), so the specs run from that day
+ * while it runs; before it, with FAKE_NOW=2026-10-31T12:00:00+09:00 for the server and the runner (e2e/opening.ts). In owner
+ * mode (playwright.config.ts) only an owner-pass browser may log in, so each context takes the pass before its login.
+ * 오픈 기념 무료 opens for a logged-in account once (owner 2026-10-27), so a reading a visitor kept on the device is opened
+ * with the owner pass (운영자로 무료 열기). SHOTS: where the screenshots go.
  */
 
 const SYNC_AT = Date.parse("2026-10-31T00:00:00+09:00");
-const OPENING_ENDS_AT = Date.parse("2026-11-01T00:00:00+09:00");
 const NAV = 30_000;
 const GENERATION = 120_000;
 
-test.skip(() => Date.now() < SYNC_AT || Date.now() >= OPENING_ENDS_AT, "account sync with 오픈 기념 무료: 2026-10-31 (KST) only, FAKE_NOW=2026-10-31T12:00:00+09:00");
+test.skip(() => Date.now() < SYNC_AT || Date.now() >= OPENING_ENDS_AT, "account sync with 오픈 기념 무료: from 2026-10-31 (KST) until it ends, or FAKE_NOW=2026-10-31T12:00:00+09:00");
+
+/** Today as a record names it ("10월 31일"), in KST. */
+const today = () => new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "long", day: "numeric" }).format(Date.now());
 
 async function shot(page: Page, info: TestInfo, name: string) {
   const dir = process.env.SHOTS;
@@ -52,8 +56,8 @@ async function settleAnimations(page: Page) {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity));
 }
 
-/** 나 · 재물운 · 이번 주 → one situation chip → three cards → 오픈 기념 무료 → the record. */
-async function openFree(page: Page) {
+/** 나 · 재물운 · 이번 주 → one situation chip → three cards → 오픈 기념 무료 (logged in), or `owner`: 운영자로 무료 열기 → the record. */
+async function openFree(page: Page, { owner = false } = {}) {
   await page.goto("/tarot/new");
   await page.getByRole("button", { name: "나", exact: true }).click();
   await page.getByRole("button", { name: "재물운" }).click();
@@ -72,7 +76,7 @@ async function openFree(page: Page) {
   await expect(page).toHaveURL(/\/tarot\/result/, { timeout: NAV });
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
   await expect(sheet).toBeVisible({ timeout: GENERATION });
-  await sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }).click();
+  await sheet.getByRole("button", { name: owner ? "운영자로 무료 열기" : /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: GENERATION });
   return (await page.getByRole("heading", { level: 1 }).innerText()).trim();
 }
@@ -111,7 +115,8 @@ test("a reading opened before logging in: the login offers to move it, 옮기기
   test.setTimeout(300_000);
   const name = `sync-b-${info.project.name}-${Date.now()}`;
   const web = await newPage(browser, info);
-  const title = await openFree(web);
+  await ownerPass(web, info);
+  const title = await openFree(web, { owner: true });
   expect((await web.request.get("/api/readings")).status()).toBe(401);
   await web.goto("/story");
   await expect(records(web).first()).toContainText(title);
@@ -123,7 +128,7 @@ test("a reading opened before logging in: the login offers to move it, 옮기기
   await expect(offer).toContainText("옮기면 다른 기기에서도 보여요.");
   await expect(offer).toContainText("암호화");
   // Each record is listed to pick (a shared device's other readings can be taken off), picked at first.
-  await expect(offer.getByRole("checkbox", { name: `10월 31일 · 타로 · ${title}` })).toBeChecked();
+  await expect(offer.getByRole("checkbox", { name: `${today()} · 타로 · ${title}` })).toBeChecked();
   await expect(records(web).first()).toContainText("이 기기에만");
   // Nothing went before the click.
   expect(((await (await web.request.get("/api/readings")).json()) as { readings: unknown[] }).readings).toHaveLength(0);
@@ -150,7 +155,8 @@ test("나중에 folds the offer into one line in 내 정보, which leads back to
   test.setTimeout(300_000);
   const name = `sync-c-${info.project.name}-${Date.now()}`;
   const web = await newPage(browser, info);
-  await openFree(web);
+  await ownerPass(web, info);
+  await openFree(web, { owner: true });
   await loginAs(web, info, name);
   await web.getByRole("region", { name: /내 계정에 옮길까요/ }).getByRole("button", { name: "나중에" }).click();
   await web.goto("/me");

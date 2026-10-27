@@ -8,7 +8,7 @@ import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
  * the owner pass opens sales on this browser; everyone else keeps the sheet of 오픈 기념 무료 (tarot; saju
  * offers no free reading), which the other specs cover. A mock Kakao login without mockUser is a fresh account each time, and
  * a new account gets no signup gift (removed, owner 2026-10-14 evening). The question steps are the ones tarot-flow.spec.ts uses (chips toggle, the
- * situation step comes after 다음). 오픈 기념 무료 ends with 2026-10-31 (KST): the sheet lines naming it go from 11월 1일.
+ * situation step comes after 다음). 오픈 기념 무료 ends with 2026-11-30 (KST): the sheet lines naming it go from 12월 1일.
  */
 
 test.beforeEach(async ({ page }) => fakeBrowserClock(page));
@@ -17,7 +17,7 @@ const NAV = 30_000;
 const GENERATION = 120_000;
 const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
 /** The 오픈 기념 무료 rule as the unlock sheet says it. */
-const OPENING_RULE = "10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).";
+const OPENING_RULE = "11월 30일까지 로그인한 계정마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).";
 
 async function ownAddress(page: Page, info: TestInfo) {
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.9.${info.workerIndex}.${Math.floor(Math.random() * 250)}` });
@@ -121,7 +121,7 @@ test("a browser without the owner pass keeps today's sheet in owner mode", async
     await expect(sheet).toContainText(OPENING_RULE);
     await expect(sheet.getByRole("link")).toHaveCount(0);
   } else {
-    // 오픈 기념 무료 ended 2026-10-31: nothing opens for a visitor while sales are owner-only.
+    // 오픈 기념 무료 ended 2026-11-30: nothing opens for a visitor while sales are owner-only.
     await expect(sheet).not.toContainText("오픈 기념 무료");
     await expect(sheet.getByRole("button", { name: "전체 풀이 보기", exact: true })).toBeDisabled();
   }

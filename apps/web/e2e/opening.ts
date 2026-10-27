@@ -1,14 +1,15 @@
 import type { Page, TestInfo } from "@playwright/test";
 
 /**
- * 오픈 기념 무료 (a device's first tarot full reading free) ends here: SITE.beta.openingEndsAt, kept equal by
- * lib/testing/clock.test.ts. e2e runs against the server's real clock, so the specs about the event run while it
- * is on and check what replaced it from 11월 1일; specs that only need a reading open it with the owner pass.
+ * 오픈 기념 무료 (one tarot full reading free per logged-in account and per device, owner 2026-10-27) ends here:
+ * SITE.beta.openingEndsAt, kept equal by lib/testing/clock.test.ts. e2e runs against the server's real clock, so the specs
+ * about the event run while it is on and check what replaced it from 12월 1일; specs that only need a reading open it with
+ * the owner pass (운영자로 무료 열기).
  *
  * FAKE_NOW (an ISO time) rehearses another day: the server and the test runner take it from
  * NODE_OPTIONS="--require <scratch>/fake-now.cjs", and `fakeBrowserClock` fixes the page's Date to it.
  */
-export const OPENING_ENDS_AT = Date.parse("2026-11-01T00:00:00+09:00");
+export const OPENING_ENDS_AT = Date.parse("2026-12-01T00:00:00+09:00");
 
 /** 오픈 기념 무료 is on for this run. */
 export const openingOn = (): boolean => Date.now() < OPENING_ENDS_AT;
@@ -27,6 +28,21 @@ export async function ownerPass(page: Page, info: TestInfo): Promise<void> {
     res = await post();
   }
   if (!res.ok()) throw new Error(`owner pass refused: ${res.status()}`);
+}
+
+/**
+ * 오픈 기념 무료 opens for a logged-in account only, once per account (owner 2026-10-27). In owner mode (playwright.config.ts)
+ * only an owner-pass browser may log in, so this takes the pass, then logs this browser in to the mock Kakao account `name`
+ * (the 만 14세 check as /login does it), landing on 내 기록. The pass skips the device's count, never the account's: give
+ * each test an account of its own.
+ */
+export async function loginForOpening(page: Page, info: TestInfo, name: string): Promise<void> {
+  await ownerPass(page, info);
+  const res = await page.request.post("/api/auth/age", { data: { ageConfirmed: true, returnTo: "/story" }, headers: { origin: new URL(info.project.use.baseURL!).origin } });
+  if (!res.ok()) throw new Error(`age check refused: ${res.status()}`);
+  const { url } = (await res.json()) as { url: string };
+  await page.goto(`${url}&mockUser=${encodeURIComponent(name)}`);
+  await page.waitForURL(/\/story(\?|$)/, { timeout: 30_000 });
 }
 
 /** With FAKE_NOW, the page's Date is fixed to it (timers still run), so the screens decide as the server does. */
