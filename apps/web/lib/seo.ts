@@ -128,9 +128,9 @@ const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
  * Public, indexable pages of both hosts: the entry points, the free daily cards, the guide tabs and
  * every article (on the root domain), the service pages (about, how, help, FAQ), pricing and the
  * policies. `/guide` itself is a permanent redirect to the first tab (next.config.ts), so it is not
- * listed. Personal and in-progress screens never are (NOINDEX), nor are the 82 shared result pages (NOINDEX_FOLLOW), nor are 별자리 인연's /lucky and
- * /ranking and the twelve /ranking/<sign> pages: their lists load in the browser, so the server sends
- * only a "불러오는 중" shell, and no page links to them. sitemapEntriesFor splits them by host. The premium product
+ * listed. Personal and in-progress screens never are (NOINDEX), nor are the 82 shared result pages (NOINDEX_FOLLOW), nor are 별자리 인연's /lucky,
+ * /ranking (NOINDEX_FOLLOW) and the twelve /ranking/<sign> pages: thin to a crawler (their lists load in the browser, or
+ * hold a few names), and no page links to them. sitemapEntriesFor splits them by host. The premium product
  * pages join with `premium` (STARLOG_PREMIUM=on, the sitemap route decides): never their samples or flow screens.
  */
 export function sitemapEntries({ premium = false }: { premium?: boolean } = {}): SitemapEntry[] {

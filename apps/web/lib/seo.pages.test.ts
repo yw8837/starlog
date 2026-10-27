@@ -87,7 +87,6 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/refund", refundMeta],
   ["/terms", termsMeta],
   ["/privacy", privacyMeta],
-  ["/ranking", rankingMeta],
   ...(await Promise.all(GUIDE_ARTICLES.map(async (article) => [`/guide/${article.slug}`, await guideArticleMeta(params({ slug: article.slug }))] as [string, Metadata]))),
   ["/birth-card", birthCardMeta],
 ];
@@ -102,11 +101,8 @@ const RESULT_PAGES: Array<[path: string, meta: Metadata]> = [
   ...(await Promise.all(BIRTH_CARDS.map(async (card) => [`/birth-card/${card.slug}`, await birthCardResultMeta(params({ card: card.slug }))] as [string, Metadata]))),
 ];
 
-/**
- * In INDEXABLE for its own metadata, but out of the sitemaps: no page links to it. (/ranking renders its leaders on
- * the server per request, so it stays indexable; /lucky, a client shell, is NOINDEX below.)
- */
-const UNLISTED = ["/ranking"];
+/** In INDEXABLE for its own metadata, but out of the sitemaps (none since /ranking went noindex,follow). */
+const UNLISTED: string[] = [];
 
 const NOINDEX: Array<[path: string, meta: Metadata]> = [
   ["/chapter/sample", await chapterMeta(params({ id: "sample" }))],
@@ -274,6 +270,15 @@ describe("personal and in-progress pages", () => {
   it.each(NOINDEX)("%s: noindex, never in the sitemap", (path, meta) => {
     expect(meta.robots).toMatchObject({ index: false });
     expect(SITEMAP_PATHS).not.toContain(path);
+  });
+});
+
+describe("the ranking index", () => {
+  // SEO audit 2026-10-27 [M3]: thin to a crawler, so out of search and the sitemaps; its links to the twelve signs still count.
+  it("is noindex,follow and in no sitemap, and a shared link keeps its canonical", () => {
+    expect(resolveRobots(rankingMeta.robots)).toEqual({ basic: "noindex, follow", googleBot: null });
+    expect(SITEMAP_PATHS).not.toContain("/ranking");
+    expect(rankingMeta.alternates?.canonical).toBe("/ranking");
   });
 });
 

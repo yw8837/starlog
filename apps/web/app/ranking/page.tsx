@@ -7,16 +7,20 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { NightSky } from "@/components/sky/NightSky";
 import { SITE } from "@/lib/config";
 import { rankingItemListJsonLd } from "@/lib/jsonld";
-import { pageMetadata } from "@/lib/seo";
+import { NOINDEX_FOLLOW, pageMetadata } from "@/lib/seo";
 import { loadLeaders } from "./loadLeaders";
 import { RankingIndexBody } from "./RankingIndexBody";
 import s from "./SignIndex.module.css";
 
-export const metadata: Metadata = pageMetadata({
-  title: "별자리 인연 랭킹",
-  description: "열두 별자리마다 인연 점수 합계 1~3위를 모아 봐요. 별자리를 골라 전체 순위와 내 순위도 볼 수 있어요. 순위는 초기화 없이 계속 쌓여요.",
-  path: "/ranking",
-});
+/** Out of search, as the twelve sign pages are: thin to a crawler (SEO audit 2026-10-27), its links to them still followed. Not in the sitemaps. */
+export const metadata: Metadata = {
+  ...pageMetadata({
+    title: "별자리 인연 랭킹",
+    description: "열두 별자리마다 인연 점수 합계 1~3위를 모아 봐요. 별자리를 골라 전체 순위와 내 순위도 볼 수 있어요. 순위는 초기화 없이 계속 쌓여요.",
+    path: "/ranking",
+  }),
+  robots: NOINDEX_FOLLOW,
+};
 
 /** /ranking: 별자리 인연 랭킹, the all-time top 3 of every sign, each card opening the full ranking. */
 export default async function RankingIndexPage() {
