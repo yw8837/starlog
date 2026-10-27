@@ -1,4 +1,5 @@
 import { expect, request as playwrightRequest, test, type APIRequestContext, type Page } from "@playwright/test";
+import { deviceOwnerCookie, logInPage, logInRequest, newUser, otherBrowser, seedDeviceOwner } from "./bondsAccount";
 import { openShared } from "./shareShots";
 
 /**
@@ -46,11 +47,17 @@ async function friendJoin(baseURL: string, code: string, friend: (typeof FRIENDS
 }
 
 /** /bonds → nickname 용우, 1990-01-01, consent → start. */
-async function startOwner(page: Page, nickname = "용우") {
+/** Starts an owner on this browser through the start screen, logged into a fresh mock account first; the account name. */
+async function startOwner(page: Page, nickname = "용우"): Promise<string> {
   await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
   await page.goto("/bonds", { timeout: 120_000 });
   // the start screen explains the three steps before it asks for anything
   await expect(page.getByRole("region", { name: "이렇게 해요" }).getByRole("listitem")).toHaveCount(3);
+  // owner 2026-10-27: 내 별자리는 로그인해서 만들어요. Logged out there is no form, only the way to /login and back.
+  await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /로그인하고 시작하기/ })).toHaveAttribute("href", "/login?next=%2Fbonds");
+  const user = newUser();
+  await logInPage(page, user, "/bonds");
   await page.getByRole("textbox", { name: "닉네임" }).fill(nickname);
   await page.getByLabel("태어난 연도").selectOption("1990");
   await page.getByLabel("태어난 월").selectOption("1");
@@ -58,6 +65,7 @@ async function startOwner(page: Page, nickname = "용우") {
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "별자리 인연 시작하기" }).click();
   await expect(page.getByRole("heading", { name: "채울 별자리를 골라요" })).toBeVisible();
+  return user;
 }
 
 async function inviteCode(page: Page): Promise<string> {
@@ -88,9 +96,9 @@ async function pickFanCard(page: Page, n: number) {
   await page.mouse.click(point!.x, point!.y);
 }
 
-/** An owner made through the API (its own device and network), optionally with a chosen sign. */
+/** An owner made through the API (its own device, network and mock account), optionally with a chosen sign. */
 async function apiOwner(baseURL: string, nickname: string, sign: string | null): Promise<{ owner: APIRequestContext; code: string }> {
-  const owner = await playwrightRequest.newContext({ baseURL, extraHTTPHeaders: { "cf-connecting-ip": nextIp() } });
+  const owner = await logInRequest(baseURL, newUser());
   const res = await owner.post("/api/bonds/owner", { data: { nickname, birth: { calendar: "solar", year: 1990, month: 1, day: 1 } } });
   expect(res.status(), await res.text()).toBe(200);
   const { code } = (await res.json()) as { code: string };
@@ -317,6 +325,101 @@ test.describe("별자리 인연 · owner", () => {
   });
 });
 
+test.describe("별자리 인연 · account (owner 2026-10-27: 계정 위주)", () => {
+  test("made on one browser, the same constellation and invite link on another of the account; a friend joins without logging in and both see the star", async ({ page, baseURL }) => {
+    const user = await startOwner(page, "용우");
+    await page.getByRole("list", { name: "별자리 고르기" }).getByRole("button", { name: /양자리/ }).click();
+    await page.getByRole("button", { name: "양자리로 시작하기" }).click();
+    // the sign is taken on the server before anyone joins
+    await expect(page.getByText(/^0\/\d+ · 인연 0점$/)).toBeVisible({ timeout: 120_000 });
+    const code = await inviteCode(page);
+    const phone = await otherBrowser(page);
+    await logInPage(phone, user, "/bonds");
+    await expect(phone.getByRole("heading", { level: 1, name: "용우님의 별자리" })).toBeVisible({ timeout: 120_000 });
+    expect(await inviteCode(phone)).toBe(code);
+    // a friend with no login joins from the link
+    const friend = await friendJoin(baseURL!, code, FRIENDS[1]!, 1);
+    for (const device of [page, phone]) {
+      await device.reload({ timeout: 120_000 });
+      await expect(device.getByText("1/4", { exact: false }).first()).toBeVisible({ timeout: 120_000 });
+      await expect(device.getByRole("list").filter({ hasText: FRIENDS[1]!.nickname }).first()).toBeVisible();
+    }
+    await friend.dispose();
+    await phone.context().close();
+  });
+
+  test("an owner made on a device before accounts works logged out; logged in, 연결하기 links it and the account's other browser shows it", async ({ page, baseURL }, info) => {
+    const shots = info.project.name === "mobile";
+    const id = seedDeviceOwner("예전주인", "pisces");
+    await page.context().addCookies([{ name: "sl_uid", value: deviceOwnerCookie(id), url: baseURL! }]);
+    await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
+    await page.goto("/bonds", { timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "예전주인님의 별자리" })).toBeVisible({ timeout: 120_000 });
+    const offer = page.getByRole("region", { name: "이 기기에서 만든 별자리를 내 계정에 연결할까요?" });
+    await expect(offer).toHaveCount(0);
+    const user = newUser();
+    await logInPage(page, user, "/bonds");
+    await expect(offer).toBeVisible({ timeout: 120_000 });
+    await expect(offer).toContainText("연결하면 다른 기기에서도 보여요");
+    if (shots) {
+      await page.addStyleTag({ content: "nextjs-portal{display:none!important}" });
+      await offer.scrollIntoViewIfNeeded();
+      await page.screenshot({ path: "test-results/share-shots/bonds-link-offer.png" });
+    }
+    // not linked by opening the page: the account's other browser sees nothing yet
+    const phone = await otherBrowser(page);
+    await logInPage(phone, user, "/bonds");
+    await expect(phone.getByRole("link", { name: /로그인하고 시작하기/ })).toHaveCount(0);
+    await expect(phone.getByRole("textbox", { name: "닉네임" })).toBeVisible({ timeout: 120_000 });
+    await offer.getByRole("button", { name: "연결하기" }).click();
+    await expect(offer).toHaveCount(0, { timeout: 60_000 });
+    await phone.reload({ timeout: 120_000 });
+    await expect(phone.getByRole("heading", { level: 1, name: "예전주인님의 별자리" })).toBeVisible({ timeout: 120_000 });
+    await phone.context().close();
+  });
+
+  test("with a constellation on the account already: both shown, the kept one chosen, the other deleted after a confirm for its friend's star", async ({ page, baseURL }, info) => {
+    const shots = info.project.name === "mobile";
+    const user = await startOwner(page, "용우");
+    await page.getByRole("list", { name: "별자리 고르기" }).getByRole("button", { name: /양자리/ }).click();
+    await page.getByRole("button", { name: "양자리로 시작하기" }).click();
+    // the sign is taken on the server before anyone joins
+    await expect(page.getByText(/^0\/\d+ · 인연 0점$/)).toBeVisible({ timeout: 120_000 });
+    const code = await inviteCode(page);
+    const friend = await friendJoin(baseURL!, code, FRIENDS[0]!, 0);
+    const id = seedDeviceOwner("용우폰", "pisces");
+    const device = await otherBrowser(page);
+    await device.context().addCookies([{ name: "sl_uid", value: deviceOwnerCookie(id), url: baseURL! }]);
+    await logInPage(device, user, "/bonds");
+    const choose = device.getByRole("region", { name: "남길 별자리를 하나 골라 주세요" });
+    await expect(choose.getByRole("listitem")).toHaveCount(2, { timeout: 120_000 });
+    await expect(choose.getByRole("listitem").nth(0)).toContainText("내 계정의 별자리");
+    await expect(choose.getByRole("listitem").nth(0)).toContainText("용우님의 양자리");
+    await expect(choose.getByRole("listitem").nth(0)).toContainText("별 1/4");
+    await expect(choose.getByRole("listitem").nth(1)).toContainText("이 기기에서 만든 별자리");
+    await expect(choose.getByRole("listitem").nth(1)).toContainText("용우폰님의 물고기자리");
+    await expect(choose.getByRole("listitem").nth(1)).toContainText(/에 만들었어요/);
+    if (shots) {
+      await device.addStyleTag({ content: "nextjs-portal{display:none!important}" });
+      await choose.scrollIntoViewIfNeeded();
+      await device.screenshot({ path: "test-results/share-shots/bonds-link-choose.png" });
+    }
+    await choose.getByRole("listitem").nth(1).getByRole("button", { name: "이 별자리 남기기" }).click();
+    const dialog = device.getByRole("dialog", { name: "고르지 않은 별자리를 지울까요?" });
+    await expect(dialog).toContainText("용우님의 양자리와 친구 별 1개가 지워져요");
+    if (shots) await device.screenshot({ path: "test-results/share-shots/bonds-link-confirm.png" });
+    await dialog.getByRole("button", { name: "지우고 남기기" }).click();
+    await expect(device.getByRole("heading", { level: 1, name: "용우폰님의 별자리" })).toBeVisible({ timeout: 120_000 });
+    await expect(choose).toHaveCount(0);
+    await page.reload({ timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "용우폰님의 별자리" })).toBeVisible({ timeout: 120_000 });
+    // the dropped constellation's invite link no longer opens
+    expect((await page.request.get(`/api/bonds/resolve?code=${code}`)).status()).toBe(400);
+    await friend.dispose();
+    await device.context().close();
+  });
+});
+
 test.describe("별자리 인연 · friend", () => {
   /**
    * Spec §3 친구: someone with a constellation of their own joins a friend's from the link. The friend's constellation
@@ -374,6 +477,8 @@ test.describe("별자리 인연 · friend", () => {
     await startOwner(page, "용우");
     await page.getByRole("list", { name: "별자리 고르기" }).getByRole("button", { name: /사자자리/ }).click();
     await page.getByRole("button", { name: "사자자리로 시작하기" }).click();
+    // the sign is taken on the server before anyone joins
+    await expect(page.getByText(/^0\/\d+ · 인연 0점$/)).toBeVisible({ timeout: 120_000 });
     const code = await inviteCode(page);
     const a = await friendJoin(baseURL!, code, FRIENDS[0]!, 0, true);
     const b = await friendJoin(baseURL!, code, FRIENDS[1]!, 1, true);
