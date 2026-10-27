@@ -217,14 +217,14 @@ describe("robots.txt", () => {
 
   it("keeps the API and personal pages out, but lets link previews fetch /api/og/", () => {
     const disallow = values("Disallow");
-    for (const path of ["/api/", "/chapter", "/dev", "/invite", "/b/", "/pay"]) expect(disallow).toContain(path);
+    for (const path of ["/api/", "/chapter", "/dev", "/invite", "/pay"]) expect(disallow).toContain(path);
     expect(values("Allow")).toEqual(["/", "/api/og/"]);
   });
 
-  it("leaves /me, /story and /bonds crawlable: they carry noindex (lib/seo.pages.test.ts), and a crawler that may not fetch a page never reads it", () => {
+  it("leaves /me, /story, /bonds and the /b invites crawlable: they carry noindex (lib/seo.pages.test.ts), and a crawler that may not fetch a page never reads it", () => {
     const disallow = values("Disallow");
-    for (const path of ["/me", "/story", "/bonds"]) expect(disallow.some((rule) => path.startsWith(rule)), path).toBe(false);
-    expect(disallow).toEqual(["/api/", "/chapter", "/dev", "/invite", "/b/", "/pay"]);
+    for (const path of ["/me", "/story", "/bonds", "/b", "/b/ABC234"]) expect(disallow.some((rule) => path.startsWith(rule)), path).toBe(false);
+    expect(disallow).toEqual(["/api/", "/chapter", "/dev", "/invite", "/pay"]);
   });
 
   it("does not block the public pages, the rankings included", () => {

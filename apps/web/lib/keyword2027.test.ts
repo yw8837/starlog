@@ -107,11 +107,10 @@ describe("the 일주 of a birth date", () => {
 });
 
 describe("the sitemap", () => {
-  it("lists the test and its 60 result pages on the app host: 61 URLs", () => {
+  it("lists the test alone on the app host: its 60 result pages are noindex (Search Console: thin duplicates), so not listed", () => {
     const paths = sitemapEntriesFor("app").map((e) => e.path).filter((p) => p === KEYWORD_PATH || p.startsWith(`${KEYWORD_PATH}/`));
-    expect(paths).toHaveLength(61);
-    expect(paths).toContain(KEYWORD_PATH);
-    for (const ilju of ILJU) expect(paths).toContain(keywordPath(ilju));
+    expect(paths).toEqual([KEYWORD_PATH]);
+    for (const ilju of ILJU) expect(paths).not.toContain(keywordPath(ilju));
     expect(sitemapEntriesFor("guide").some((e) => e.path.startsWith(KEYWORD_PATH))).toBe(false);
   });
 });

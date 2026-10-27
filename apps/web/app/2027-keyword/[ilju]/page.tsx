@@ -10,7 +10,7 @@ import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { ILJU, KEYWORD_PATH, KEYWORD_TITLE, iljuBySlug, keywordImagePath, keywordPath, type Ilju } from "@/lib/keyword2027";
 import { KEYWORD_NOTES, contentOf, reasonLines } from "@/lib/keyword2027Content";
 import { particle } from "@/lib/korean";
-import { NOT_FOUND_METADATA, pageMetadata } from "@/lib/seo";
+import { NOINDEX_FOLLOW, NOT_FOUND_METADATA, pageMetadata } from "@/lib/seo";
 import { KeywordForm } from "../KeywordForm";
 import s from "../keyword.module.css";
 import { KeywordCtas } from "./KeywordCtas";
@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: PageProps<"/2027-keyword/[ilj
   });
   // The 일주's own card (the keyword big), in place of the site's picture.
   const image = { url: keywordImagePath(ilju), width: 1200, height: 630, alt: `${ilju.ko}일주의 2027년 키워드: ${keyword} · ${KEYWORD_TITLE} · ${SITE.nameKo}` };
-  return { ...base, openGraph: { ...base.openGraph, images: [image] } };
+  return { ...base, robots: NOINDEX_FOLLOW, openGraph: { ...base.openGraph, images: [image] } };
 }
 
 const MARK = { good: "✔︎", care: "⚠︎", then: "→" } as const;

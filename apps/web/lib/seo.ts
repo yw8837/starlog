@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { BIRTH_CARDS, BIRTH_CARD_PATH, birthCardPath } from "./birthCard";
+import { BIRTH_CARD_PATH } from "./birthCard";
 import { SITE } from "./config";
 import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, guideIndexPath, lastReviewed } from "./guide";
 import { GUIDE_EDITOR } from "./guideReview";
 import { FEED_URL, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
-import { ILJU, KEYWORD_PATH, keywordPath } from "./keyword2027";
+import { KEYWORD_PATH } from "./keyword2027";
 import { OG_ALT } from "./og";
 import { PREMIUM_IDS, premiumPath } from "./premium/products";
 
@@ -20,6 +20,13 @@ export const NOT_FOUND_METADATA: Metadata = { title: "페이지를 찾을 수 �
  * 결과, 상황 고르기, 명식) and dev screens: never in search results (spec §10).
  */
 export const NOINDEX: NonNullable<Metadata["robots"]> = { index: false, follow: false };
+
+/**
+ * Templated result pages that exist to be shared (a 일주's keyword, a birth card): one page per answer, the same
+ * for whoever opens it, so Search Console reads them as thin duplicates. Out of the index and the sitemaps, but
+ * their links are followed and canonical and Open Graph stay, so a shared link still previews.
+ */
+export const NOINDEX_FOLLOW: NonNullable<Metadata["robots"]> = { index: false, follow: true };
 
 /** og:site_name, as Kakao and the other link previews show it. */
 export const OG_SITE_NAME = `${SITE.name} · ${SITE.nameKo}`;
@@ -119,7 +126,7 @@ const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
  * Public, indexable pages of both hosts: the entry points, the free daily cards, the guide tabs and
  * every article (on the root domain), the service pages (about, how, help, FAQ), pricing and the
  * policies. `/guide` itself is a permanent redirect to the first tab (next.config.ts), so it is not
- * listed. Personal and in-progress screens never are (NOINDEX), nor are 별자리 인연's /lucky and
+ * listed. Personal and in-progress screens never are (NOINDEX), nor are the 82 shared result pages (NOINDEX_FOLLOW), nor are 별자리 인연's /lucky and
  * /ranking and the twelve /ranking/<sign> pages: their lists load in the browser, so the server sends
  * only a "불러오는 중" shell, and no page links to them. sitemapEntriesFor splits them by host. The premium product
  * pages join with `premium` (STARLOG_PREMIUM=on, the sitemap route decides): never their samples or flow screens.
@@ -131,9 +138,8 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     { path: "/saju/new", changeFrequency: "monthly", priority: 0.9 },
     { path: "/now", changeFrequency: "monthly", priority: 0.8 },
     { path: "/today", changeFrequency: "daily", priority: 0.8 },
-    // 나를 닮은 타로 카드: the form and its 22 card pages (fixed text, linked from the form).
+    // 나를 닮은 타로 카드: the form only; its 22 result pages are noindex (NOINDEX_FOLLOW), so not listed.
     { path: BIRTH_CARD_PATH, changeFrequency: "monthly", priority: 0.7 },
-    ...BIRTH_CARDS.map((card): SitemapEntry => ({ path: birthCardPath(card.slug), changeFrequency: "monthly", priority: 0.5 })),
     ...GUIDE_CATEGORIES.map(
       (category): SitemapEntry => ({
         path: guideIndexPath(category),
@@ -148,9 +154,8 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     // 가이드 소개와 편집 원칙: who writes the guide and how (no lastModified: the page carries no date of its own).
     { path: GUIDE_ABOUT_PATH, changeFrequency: "monthly", priority: 0.5 },
     ...Object.values(INFO_PAGES).map((page): SitemapEntry => ({ path: page.path, changeFrequency: "monthly", priority: 0.6 })),
-    // 2027년 나의 키워드: the form and its 60 일주 pages (fixed text, linked from the form).
+    // 2027년 나의 키워드: the form only; its 60 일주 result pages are noindex (NOINDEX_FOLLOW), so not listed.
     { path: KEYWORD_PATH, changeFrequency: "monthly", priority: 0.7 },
-    ...ILJU.map((ilju): SitemapEntry => ({ path: keywordPath(ilju), changeFrequency: "monthly", priority: 0.5 })),
     { path: "/pricing", changeFrequency: "monthly", priority: 0.5 },
     ...(premium ? PREMIUM_IDS.map((id): SitemapEntry => ({ path: premiumPath(id), changeFrequency: "monthly", priority: 0.5 })) : []),
     // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.

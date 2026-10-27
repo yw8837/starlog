@@ -13,7 +13,7 @@ import { TAROT_BRIDGE_HREF } from "@/lib/freshStart";
 import { GUIDE_ARTICLES } from "@/lib/guide";
 import { guideHref } from "@/lib/hosts";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
-import { NOT_FOUND_METADATA, pageMetadata } from "@/lib/seo";
+import { NOINDEX_FOLLOW, NOT_FOUND_METADATA, pageMetadata } from "@/lib/seo";
 import { BackLink } from "../BackLink";
 import { BirthCardForm } from "../BirthCardForm";
 import s from "../birthCard.module.css";
@@ -32,7 +32,7 @@ function birthCardMetadata(card: BirthCard): Metadata {
   });
   // The card's own preview (Threads, KakaoTalk): its face and name, never the site's brand picture.
   const image = { url: birthCardOgPath(card.slug), width: 1200, height: 630, alt: `${BIRTH_CARD_TITLE} · ${card.name} · ${SITE.nameKo}` };
-  return { ...base, openGraph: { ...base.openGraph, images: [image] } };
+  return { ...base, robots: NOINDEX_FOLLOW, openGraph: { ...base.openGraph, images: [image] } };
 }
 
 export async function generateMetadata({ params }: PageProps<"/birth-card/[card]">): Promise<Metadata> {
