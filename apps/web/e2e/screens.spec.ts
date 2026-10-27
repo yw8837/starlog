@@ -61,8 +61,12 @@ const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
 
 /** Each screen gets its own client address, so the per-IP generation limiter never spans screens. */
 async function ownAddress(page: Page) {
+  // cf-connecting-ip is the one the Workers preview reads (as analytics-consent.spec.ts sets it); x-forwarded-for, next
+  // dev's. With x-forwarded-for alone every capture shared one address, and the owner logins ran into OWNER_LOGIN_LIMITER
+  // (5 a minute; gate 2026-10-27 @screens saju-reading).
   const n = () => Math.floor(Math.random() * 250);
-  await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `10.5.${n()}.${n()}` });
+  const ip = `10.5.${n()}.${n()}`;
+  await page.context().setExtraHTTPHeaders({ "cf-connecting-ip": ip, "x-forwarded-for": ip });
 }
 
 async function setStorage(page: Page, area: "sessionStorage" | "localStorage", key: string, value: unknown) {

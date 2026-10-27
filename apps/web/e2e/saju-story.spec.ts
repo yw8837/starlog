@@ -51,7 +51,9 @@ async function pickFanCard(page: Page, n: number) {
 
 /** Each test gets its own client address, so the per-IP generation limiter never spans tests. */
 async function ownAddress(page: Page, info: TestInfo) {
-  await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.2.${info.workerIndex}.${Math.floor(Math.random() * 250)}` });
+  // cf-connecting-ip is the one the Workers preview reads; x-forwarded-for, next dev's (gate 2026-10-27).
+  const ip = `10.2.${info.workerIndex}.${Math.floor(Math.random() * 250)}`;
+  await page.setExtraHTTPHeaders({ "cf-connecting-ip": ip, "x-forwarded-for": ip });
 }
 
 /** The 명식 table's caption (components/saju/ChartTable.tsx). */

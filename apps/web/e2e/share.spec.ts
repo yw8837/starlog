@@ -24,7 +24,9 @@ const INPUT = {
 /** Its own client address, so the per-IP generation limiter never spans tests. */
 async function ownAddress(page: Page) {
   const n = () => Math.floor(Math.random() * 250);
-  await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `10.7.${n()}.${n()}` });
+  // cf-connecting-ip is the one the Workers preview reads; x-forwarded-for, next dev's (gate 2026-10-27).
+  const ip = `10.7.${n()}.${n()}`;
+  await page.context().setExtraHTTPHeaders({ "cf-connecting-ip": ip, "x-forwarded-for": ip });
 }
 
 /**
