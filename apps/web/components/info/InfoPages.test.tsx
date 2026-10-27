@@ -318,7 +318,10 @@ describe("/help", () => {
     for (const fact of ["78장", `${answers}개`, "어디로도 보내지 않아요", "오늘의 한 장"]) expect(now, fact).toContain(fact);
     const bonds = container.querySelector('details[id="bonds-score"]')?.textContent ?? "";
     // Who makes a constellation and who joins it (the owner logs in, a friend does not), then the score.
-    for (const fact of ["로그인해서 만들", "로그인하지 않아도", "세 기둥", `${BOND_MIN}점에서 ${BOND_MAX}점`, "태어난 시간", "랭킹"]) expect(bonds, fact).toContain(fact);
+    for (const fact of ["로그인해서 만들", "로그인하지 않아도", "다른 기기에서도", "세 기둥", `${BOND_MIN}점에서 ${BOND_MAX}점`, "태어난 시간", "랭킹"]) expect(bonds, fact).toContain(fact);
+    // Said once: 로그인 없이 쓰기 names the exception in a clause, the 별자리 인연 card says who logs in and why.
+    const owners = helpGroups().flatMap((group) => group.items).filter((item) => JSON.stringify(item).includes("로그인해서 만들"));
+    expect(owners.map((item) => item.id)).toEqual(["score"]);
   });
 
   it("opens the card the address names, so a moved guide URL lands on its how-to unfolded", () => {

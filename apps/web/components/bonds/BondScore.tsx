@@ -4,8 +4,9 @@ import s from "./BondScore.module.css";
 /**
  * 인연 점수 한눈에 (owner 2026-10-23: "점수 직관적으로 보이게"): the score big, where it sits between 55 and 99, and a
  * table of what made it. Every number is bondScore's own (packages/core/src/bonds/score.ts): the base, each part's
- * points, their sum. Parts that take points off keep the calm words they were written in (the bond-score guide's
- * 읽는 법). No hooks: the owner page, the friend's result and the shared page all draw it.
+ * points, their sum. Parts that take points off keep the calm words they were written in (each part's text in
+ * score.ts; /help#bonds-score says how the score is made). No hooks: the owner page, the friend's result and the shared
+ * page all draw it.
  */
 
 const ROWS = [
