@@ -6,9 +6,10 @@ import { MATCH_AI_ROW, PremiumChangeNotice, PremiumLegalNotice, PremiumPrivacy, 
 import s from "@/components/legal/legal.module.css";
 import { adsConfig } from "@/lib/ads";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
-import { OPENING_LAST_DATE, SITE } from "@/lib/config";
+import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
   GA_REVISION_DATE,
+  OPENING_ACCOUNT_DATE,
   PRIVACY_REVISION_DATE,
   SYNC_REVISION_DATE,
   contactChannels,
@@ -192,6 +193,13 @@ export default function PrivacyPage() {
     >
       {inForce ? null : <PremiumLegalNotice />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
+      {/* 오픈 기념 무료 per account (owner 2026-10-27): in force from this deploy, said on top while it runs (lib/legal.ts). */}
+      {openingFreeOn(now) ? (
+        <aside className={s.note} aria-labelledby="opening-privacy-title">
+          <h2 id="opening-privacy-title" className={s.noteTitle}>{`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용`}</h2>
+          <p>오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요. 탈퇴하면 함께 지워요.</p>
+        </aside>
+      ) : null}
       {revised ? null : (
         <LegalNote>
           <p className={s.noteTitle}>{`개정 예정 · ${koreanDate(PRIVACY_REVISION_DATE)}부터 시행`}</p>
@@ -264,6 +272,7 @@ export default function PrivacyPage() {
           <li>카카오 회원번호: 되돌릴 수 없는 값(HMAC)으로 바꿔서만 저장하며, 카카오의 접근 토큰은 저장하지 않습니다</li>
           <li>Google 계정 식별값(Google로 로그인한 경우): 되돌릴 수 없는 값(HMAC)으로 바꿔서만 저장하며, Google의 토큰은 저장하지 않습니다. Google에서는 이 식별값만 받고 이름, 이메일, 프로필 사진은 받지 않습니다</li>
           <li>닉네임(카카오 동의 항목. Google로 로그인한 경우 ‘별손님’), 만 14세 이상 확인 시각, 로그인 세션</li>
+          <li>{`오픈 기념 무료를 받았는지와 받은 시각(${OPENING_LAST_DATE}까지 진행하는 오픈 기념 무료를 계정마다 한 번만 드리기 위해)`}</li>
           <li>결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 링크. 카드번호 등 결제 정보는 토스페이먼츠가 처리하며 운영자는 받지 않습니다</li>
           {synced ? (
             <li>
@@ -338,6 +347,7 @@ export default function PrivacyPage() {
           {ga ? <li>이용 통계 분석: 어떤 화면을 많이 보고 어디서 들어오는지 알아보고 서비스를 고치기(방문 통계를 허용한 경우에만)</li> : null}
           <li>문의에 답하기</li>
           <li>회원 관리(로그인, 탈퇴), 결제와 환불 처리, 거래 기록 보관</li>
+          <li>오픈 기념 무료를 계정마다 한 번만 드리기</li>
           <li>이미 지급한 가입 선물의 지급 기록 관리(가입 선물은 더 이상 드리지 않습니다)</li>
           <li>{synced ? "로그인한 상태로 연 풀이와 계정으로 옮긴 풀이를 다른 기기에서 보여 주기" : `${KEPT}를 다른 기기에서 보여 주기`}</li>
           <li>풀이 후기를 보여 주고, 운영 원칙(욕설·개인정보·광고·관계없는 글 금지)에 맞게 관리하기</li>

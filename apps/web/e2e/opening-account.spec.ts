@@ -128,3 +128,17 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
   await web.context().close();
   await phone.context().close();
 });
+
+test("the terms and the privacy policy say what changed on top while it runs (owner 2026-10-27)", async ({ page }, info) => {
+  await page.goto("/terms");
+  const terms = page.getByRole("complementary", { name: /바뀐 내용 · 오픈 기념 무료$/ });
+  await expect(terms).toContainText("로그인한 계정마다 한 번 드립니다");
+  await expect(page.locator("#service")).toContainText("로그인한 계정마다 한 번(같은 기기에서는 한 번)");
+  await page.goto("/privacy");
+  const privacy = page.getByRole("complementary", { name: /^\d{4}년 \d{1,2}월 \d{1,2}일 바뀐 내용$/ });
+  await expect(privacy).toHaveText(/오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요\. 탈퇴하면 함께 지워요\.$/);
+  await expect(page.locator("#items")).toContainText("오픈 기념 무료를 받았는지와 받은 시각(2026년 11월 30일까지 진행하는 오픈 기념 무료를 계정마다 한 번만 드리기 위해)");
+  await expect(page.locator("#purposes")).toContainText("오픈 기념 무료를 계정마다 한 번만 드리기");
+  await privacy.scrollIntoViewIfNeeded();
+  await shot(page, info, "6-privacy-notice");
+});

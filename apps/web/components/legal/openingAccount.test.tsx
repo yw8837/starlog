@@ -9,7 +9,8 @@ import { OPENING_ACCOUNT_DATE, koreanDate } from "@/lib/legal";
 
 /**
  * 오픈 기념 무료 per account until 2026-11-30 (owner 2026-10-27): the terms say it and show what changed while it runs; the
- * privacy policy is unchanged (the claim record is member data, deleted with the account).
+ * privacy policy lists the claim record as member data (1항, 2항), kept as member data is (3항: destroyed on deletion), and
+ * says what changed on top while it runs. Both notices are dated by lib/legal.ts OPENING_ACCOUNT_DATE alone.
  */
 
 /** Dated by lib/legal.ts OPENING_ACCOUNT_DATE alone (the day the deploy went live): "2026년 10월 27일 바뀐 내용 · 오픈 기념 무료". */
@@ -57,5 +58,26 @@ describe("오픈 기념 무료 per account, in the policies", () => {
     const retention = render(<PrivacyPage />).container.querySelector("#retention")?.textContent ?? "";
     expect(retention).not.toContain("오픈 기념 무료를 받은");
     expect(retention).toContain("회원 정보는 탈퇴할 때까지 보관하고, 탈퇴하면 지체 없이 파기합니다.");
+  });
+
+  it("privacy 1항 and 2항: the claim record is a member item, for giving it once per account", () => {
+    const { container } = render(<PrivacyPage />);
+    expect(container.querySelector("#items")?.textContent).toContain(
+      "오픈 기념 무료를 받았는지와 받은 시각(2026년 11월 30일까지 진행하는 오픈 기념 무료를 계정마다 한 번만 드리기 위해)",
+    );
+    expect(container.querySelector("#purposes")?.textContent).toContain("오픈 기념 무료를 계정마다 한 번만 드리기");
+  });
+
+  it("privacy: a dated notice of the change on top while the event runs, leaving the 10/31 revision and the 시행일 as they were", () => {
+    let container = render(<PrivacyPage />).container;
+    const notice = [...container.querySelectorAll("aside")].find((aside) => aside.textContent?.startsWith(`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용`));
+    expect(notice?.textContent).toBe(`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요. 탈퇴하면 함께 지워요.`);
+    expect(container.textContent).toContain("개정 예정 · 2026년 10월 31일부터 시행");
+    expect(container.querySelector('time[datetime="2026-10-28"]')).not.toBeNull();
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-12-01T00:00:00+09:00"));
+    container = render(<PrivacyPage />).container;
+    expect(container.textContent).not.toContain("받은 여부와 시각을 보관해요");
+    expect(container.querySelector('time[datetime="2026-10-31"]')).not.toBeNull();
   });
 });

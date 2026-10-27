@@ -73,8 +73,8 @@ export const termsEffectiveDate = (now: number = Date.now()): string => (syncRev
  * 오픈 기념 무료 per account (owner 2026-10-27 "계정 위주로", "이벤트 기간 11월 한 달로 해"): from this day it opens for a
  * logged-in account once (and once per device), until 2026-11-30, where it was once per device until 10/31. A less
  * favourable change made before the 30 days' notice the terms promise (the owner accepted it), so the terms say what
- * changed, dated, at their top while the event runs (app/terms). The day this went live: move it if the deploy goes out
- * on another day.
+ * changed, dated, at their top while the event runs (app/terms); so does the privacy policy for the claim record it adds
+ * as a member item (app/privacy). The day this went live, for both: move it if the deploy goes out on another day.
  */
 export const OPENING_ACCOUNT_DATE = "2026-10-27";
 
