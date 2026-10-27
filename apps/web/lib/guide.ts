@@ -618,7 +618,7 @@ const BASE_ARTICLES: readonly GuideArticle[] = [
   },
   {
     slug: "the-hermit",
-    title: "타로 은둔자 카드: 등불 속 별과 혼자 있는 시간",
+    title: "은둔자 카드 뜻: 등불 속 별과 혼자 있는 시간",
     category: "tarot",
     description: "진리를 찾아 헤매는 현자가 아니라 먼저 도달한 사람. 웨이트가 본 은둔자를 등불 속 별과 함께 따라가는 타로 해설이에요.",
     cardId: "major-09-hermit",

@@ -75,7 +75,7 @@ export const MAJOR_ARCANA_ARTICLES: readonly GuideArticle[] = [
   },
   {
     slug: "the-magician",
-    title: "타로 마법사 카드, 탁자 위 네 도구와 역방향",
+    title: "마법사 카드 뜻: 탁자 위 네 도구와 역방향",
     category: "tarot",
     description: "장터에서 컵과 공으로 재주를 부리던 사람이 네 원소의 마법사가 됐어요. 타로 마법사 카드의 탁자와 두 손을 살펴봐요.",
     cardId: "major-01-magician",
@@ -195,7 +195,7 @@ export const MAJOR_ARCANA_ARTICLES: readonly GuideArticle[] = [
   },
   {
     slug: "the-empress",
-    title: "타로 여황제 카드: 밀밭 앞의 풍요와 지나친 돌봄",
+    title: "여황제 카드 뜻: 밀밭 앞의 풍요와 지나친 돌봄",
     category: "tarot",
     description: "독수리 방패를 내려놓고 밀밭으로 간 여제. 돌봄이 넘칠 때와 돈을 물을 때 타로 여황제 카드가 보여 주는 장면을 담았어요.",
     cardId: "major-03-empress",
@@ -374,7 +374,7 @@ export const MAJOR_ARCANA_ARTICLES: readonly GuideArticle[] = [
   },
   {
     slug: "the-lovers",
-    title: "타로 연인 카드: 끌림과 선택, 옛 그림의 세 사람",
+    title: "연인 카드 뜻: 끌림과 선택, 옛 그림의 세 사람",
     category: "tarot",
     description: "옛 그림의 젊은이는 여인 둘 사이에서 망설였어요. 아담과 이브가 된 타로 연인 카드에서 끌림과 선택을 갈라 봐요.",
     cardId: "major-06-lovers",
@@ -562,7 +562,7 @@ export const MAJOR_ARCANA_ARTICLES: readonly GuideArticle[] = [
   },
   {
     slug: "wheel-of-fortune",
-    title: "운명의 수레바퀴 카드: 언제 바뀌는지 묻기 전에",
+    title: "운명의 수레바퀴 카드 뜻: 언제 바뀌는지 묻기 전에",
     category: "tarot",
     description: "TARO를 돌려 읽으면 ROTA, 곧 바퀴예요. 언제 바뀌냐는 질문 앞에서 타로 운명의 수레바퀴 카드로 할 수 있는 일을 정리했어요.",
     cardId: "major-10-wheel-of-fortune",
@@ -881,7 +881,7 @@ export const MAJOR_ARCANA_ARTICLES: readonly GuideArticle[] = [
   },
   {
     slug: "the-devil",
-    title: "타로 악마 카드: 헐거운 사슬과 끊기 힘든 습관",
+    title: "악마 카드 뜻: 헐거운 사슬과 끊기 힘든 습관",
     category: "tarot",
     description: "사슬은 왜 헐겁게 걸려 있을까요? 끊기 힘든 습관과 관계를 비추는 타로 악마 카드와 받침대 위 존재의 정체를 살폈어요.",
     cardId: "major-15-devil",
@@ -946,7 +946,7 @@ export const MAJOR_ARCANA_ARTICLES: readonly GuideArticle[] = [
   },
   {
     slug: "the-tower",
-    title: "타로 탑 카드: 번개 맞은 탑과 드러나는 착각",
+    title: "탑 카드 뜻: 번개 맞은 탑과 드러나는 착각",
     category: "tarot",
     description: "옛 이름은 '신의 집'이었어요. 사고의 예언이 아니라 버티던 착각이 드러나는 순간으로 타로 탑 카드를 다시 봐요.",
     cardId: "major-16-tower",

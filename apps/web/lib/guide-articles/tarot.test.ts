@@ -355,7 +355,8 @@ describe("each card article carries substance of its own (second review, 2026-10
 
   it("titles each card for what people ask about it, with '<name> 카드' kept for search and no title frame on more than two cards", () => {
     for (const article of CARD_ARTICLES) {
-      expect(article.title, article.slug).toContain(`${nameOf(article)} 카드`);
+      // "<name> 카드 뜻": the words people search a card with (SEO audit 2026-10-27 M5); what follows is the card's own.
+      expect(article.title, article.slug).toContain(`${nameOf(article)} 카드 뜻`);
       expect(article.title, article.slug).not.toBe(`타로 ${nameOf(article)} 카드 뜻`);
       expect(article.title.length, article.title).toBeLessThanOrEqual(34);
     }
