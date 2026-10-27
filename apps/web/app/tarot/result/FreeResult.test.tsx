@@ -6,7 +6,7 @@ import { FLOW_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@
 import { saveTeaser } from "@/lib/reading/teaserCache";
 import { TAROT_TIPS } from "@/lib/reading/waitingTips";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
-import { clearBetaUsage } from "@/lib/storage/betaUsage";
+import { clearBetaUsage, markFreeUsedUp } from "@/lib/storage/betaUsage";
 import { clearChapters, listChapters } from "@/lib/storage/chapters";
 import { FreeResult } from "./FreeResult";
 import { duringOpening } from "@/lib/testing/clock";
@@ -289,13 +289,15 @@ describe("FreeResult after a reading opens", () => {
 
 describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", () => {
   const GUEST = () => Response.json({ payments: false, login: false, owner: false, user: null });
+  /** 오픈 기념 무료 opens for a logged-in account (owner 2026-10-27): logged in while sales are closed here. */
+  const MEMBER = () => Response.json({ payments: false, login: true, owner: false, user: user() });
   afterEach(() => clearBetaUsage());
 
   it("opens it with the one button that names it, says first that it is read and keep only, keeps it marked so, and the device then knows it is used", async () => {
     seed();
-    stub({ me: [GUEST], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    stub({ me: [MEMBER], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
     render(<FreeResult instant />);
-    expect(await screen.findByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).")).toBeTruthy();
+    expect(await screen.findByText("11월 30일까지 로그인한 계정마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
     await waitFor(() => expect(router.push).toHaveBeenCalled());
     // Read and kept on this device only: the record shows no follow-up box or share button.
@@ -307,9 +309,9 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     expect(screen.getByText("이 기기에서는 오픈 기념 무료 풀이를 이미 열었어요")).toBeTruthy();
   });
 
-  it("offers nothing free from 11월 1일 0시 KST: a guest with sales closed has nothing to open, one with sales open logs in to pay", async () => {
+  it("offers nothing free from 12월 1일 0시 KST: a guest with sales closed has nothing to open, one with sales open logs in to pay", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z"));
+    vi.setSystemTime(Date.parse("2026-11-30T15:00:00Z"));
     try {
       seed();
       stub({ me: [GUEST] });
@@ -332,7 +334,7 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
   it("takes the server's word that it is used, but never a network's day limit for it", async () => {
     seed();
     let answer = Response.json({ code: "BETA_LIMIT", scope: "network", resetsAt: "2099-01-01T15:00:00.000Z", message: "x" }, { status: 429 });
-    stub({ me: [GUEST], reading: () => answer });
+    stub({ me: [MEMBER], reading: () => answer });
     render(<FreeResult instant />);
     fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
     expect(await screen.findAllByText("같은 네트워크(와이파이·회사·학교)에서 오늘 열 수 있는 횟수를 다 썼어요")).not.toHaveLength(0);
@@ -342,18 +344,87 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     expect(((await screen.findByRole("button", { name: "전체 풀이 보기" })) as HTMLButtonElement).disabled).toBe(true);
     expect(router.push).not.toHaveBeenCalled();
   });
+
+  it("says when the account took it already (on another device), and leaves this device's free reading as it is", async () => {
+    seed();
+    stub({ me: [MEMBER], reading: () => Response.json({ code: "BETA_LIMIT", scope: "account", message: "x" }, { status: 429 }) });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
+    expect(await screen.findAllByText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요")).not.toHaveLength(0);
+    expect(screen.queryByText("이 기기에서는 오픈 기념 무료 풀이를 이미 열었어요")).toBeNull();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("says plainly when it cannot be checked now (fails closed), with a way to try again", async () => {
+    seed();
+    stub({ me: [MEMBER], reading: () => Response.json({ code: "NOT_AVAILABLE", reason: "opening", message: "x" }, { status: 409 }) });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
+    expect(await screen.findAllByText("지금은 오픈 기념 무료를 열 수 없어요")).not.toHaveLength(0);
+    expect(screen.getByText("잠시 뒤에 다시 시도해 주세요.")).toBeTruthy();
+  });
+
+  it("sends a visitor to log in first, and back here to open it (owner 2026-10-27); nothing is asked of the server", async () => {
+    seed();
+    stub({ me: [GUEST], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    render(<FreeResult instant />);
+    const button = await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료\s*·\s*로그인하고 받기$/ });
+    fireEvent.click(button);
+    expect(router.push).toHaveBeenCalledWith("/login?next=%2Ftarot%2Fresult%3Funlock%3Dopening%26instant%3D1");
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => url === "/api/tarot/reading")).toBe(false);
+  });
+
+  it("follows the server to the login when it answers LOGIN_REQUIRED (the account could not be read here)", async () => {
+    seed();
+    stub({ me: [() => new Response("", { status: 503 })], reading: () => Response.json({ code: "LOGIN_REQUIRED", reason: "opening", message: "x" }, { status: 401 }) });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith("/login?next=%2Ftarot%2Fresult%3Funlock%3Dopening%26instant%3D1"));
+  });
+
+  it("back from the login (?unlock=opening), opens it once by itself as 오픈 기념 무료, on a clean address", async () => {
+    seed();
+    stub({ me: [MEMBER], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    render(<FreeResult instant autoUnlock="opening" loginFlag="ok" />);
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(expect.stringMatching(/^\/chapter\//)));
+    expect(router.replace).toHaveBeenCalledWith("/tarot/result?instant=1");
+    const sent = vi.mocked(fetch).mock.calls.filter(([url]) => url === "/api/tarot/reading");
+    expect(sent).toHaveLength(1);
+    expect(JSON.parse(String((sent[0]?.[1] as RequestInit | undefined)?.body))).not.toHaveProperty("unlock");
+    expect(listChapters()).toMatchObject([{ opening: true }]);
+  });
+
+  it("back from the login, opens nothing by itself when the login did not happen, or this device used it already", async () => {
+    seed();
+    stub({ me: [GUEST], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    render(<FreeResult instant autoUnlock="opening" loginFlag="cancel" />);
+    await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => url === "/api/tarot/reading")).toBe(false);
+    cleanup();
+    resetAccountForTests();
+    stub({ me: [MEMBER], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    markFreeUsedUp();
+    render(<FreeResult instant autoUnlock="opening" loginFlag="ok" />);
+    expect(((await screen.findByRole("button", { name: "전체 풀이 보기" })) as HTMLButtonElement).disabled).toBe(true);
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => url === "/api/tarot/reading")).toBe(false);
+  });
 });
 
 describe("FreeResult and 오픈 기념 무료 once sales are open (owner 2026-10-14)", () => {
   afterEach(() => clearBetaUsage());
 
-  it("puts it first for a guest, logging in next to it, and opens it as 오픈 기념 무료 (no unlock sent)", async () => {
+  it("puts it first for a guest, logging in next to it; logged in, it opens as 오픈 기념 무료 (no unlock sent)", async () => {
     seed();
-    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })] });
     render(<FreeResult instant />);
     const login = await screen.findByRole("link", { name: "로그인하고 전체 풀이 보기" });
     expect(login.className).toMatch(/secondary/);
-    const first = screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ });
+    expect(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료\s*·\s*로그인하고 받기$/ }).className).toMatch(/primary/);
+    cleanup();
+    resetAccountForTests();
+    stub({ me: [() => Response.json(meBody())], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    render(<FreeResult instant />);
+    const first = await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ });
     expect(first.className).toMatch(/primary/);
     fireEvent.click(first);
     await waitFor(() => expect(router.push).toHaveBeenCalled());
@@ -414,7 +485,7 @@ describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
 
   it("sends the teaser's seal with the unlock, so the reading reads on from the cut", async () => {
     seed({ secondCard: SECOND, seal: "SEALED_teaser-1" });
-    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    stub({ me: [() => Response.json(meBody())], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
     render(<FreeResult instant />);
     fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
     await waitFor(() => expect(router.push).toHaveBeenCalled());
@@ -424,7 +495,7 @@ describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
 
   it("while the full reading is written, deals its cards: the step being written (by card position), then 타로 상식", async () => {
     seed();
-    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })], reading: () => new Promise<Response>(() => {}) });
+    stub({ me: [() => Response.json(meBody())], reading: () => new Promise<Response>(() => {}) });
     render(<FreeResult instant />);
     fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
     const cards = await screen.findByRole("region", { name: "기다리는 동안 읽을거리" });

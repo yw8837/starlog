@@ -114,13 +114,15 @@ describe("D1 BondsRepo, stars.score_public (0016) and constellations.scores_priv
 
   it("adds both columns at 0 for rows written after, and 0017 marks every constellation already holding a star", () => {
     const files = readdirSync(MIGRATIONS).filter((file) => /^\d{4}_.+\.sql$/.test(file)).sort();
-    expect(files.slice(-3)).toEqual(["0015_reading_origin.sql", "0016_star_score_public.sql", "0017_constellation_scores_private.sql"]);
+    // 0017 runs on the schema before it (later migrations, such as 0018_opening_claims, come after).
+    const at = files.indexOf("0017_constellation_scores_private.sql");
+    expect(files.slice(at - 2, at + 1)).toEqual(["0015_reading_origin.sql", "0016_star_score_public.sql", "0017_constellation_scores_private.sql"]);
     const db = new DatabaseSync(":memory:");
-    for (const name of files.slice(0, -1)) db.exec(readFileSync(`${MIGRATIONS}${name}`, "utf8"));
+    for (const name of files.slice(0, at)) db.exec(readFileSync(`${MIGRATIONS}${name}`, "utf8"));
     db.exec(`INSERT INTO owners (id, nickname, ranking_public, basis_json, created_at) VALUES ('o1', '용우', 1, '{}', 1), ('o2', '민지', 1, '{}', 1);
       INSERT INTO constellations (id, owner_id, sign, status, total, started_at) VALUES ('with', 'o1', 'aries', 'filling', 80, 1), ('empty', 'o2', 'leo', 'filling', 0, 1);
       INSERT INTO stars (id, constellation_id, slot, nickname, card_id, orientation, score, parts_json, friend_key, created_at) VALUES ('s', 'with', 0, '하늘', 'cups-02', 'upright', 80, '[]', 'k', 1);`);
-    db.exec(readFileSync(`${MIGRATIONS}${files.at(-1)}`, "utf8"));
+    db.exec(readFileSync(`${MIGRATIONS}${files[at]}`, "utf8"));
     const flags = Object.fromEntries(db.prepare("SELECT id, scores_private FROM constellations").all().map((r) => [(r as { id: string }).id, (r as { scores_private: number }).scores_private]));
     expect(flags).toEqual({ with: 1, empty: 0 });
     const columns = (table: string) => db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c as { name: string; dflt_value: string | null });

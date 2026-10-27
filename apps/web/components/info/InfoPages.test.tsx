@@ -167,7 +167,7 @@ describe("/faq", () => {
   it("carries valid FAQPage JSON-LD that says exactly what the page shows", () => {
     // As the cached HTML shows it: 오픈 기념 무료 (a browser-only line while it runs) is in neither.
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.parse("2026-11-01T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-01T00:00:00+09:00"));
     const { container } = render(<FaqPage />);
     vi.useRealTimers();
     const data = readJsonLd(container);

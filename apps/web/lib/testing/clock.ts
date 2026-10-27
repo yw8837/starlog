@@ -2,7 +2,7 @@ import { afterEach, beforeEach, vi } from "vitest";
 import { SITE } from "@/lib/config";
 
 /**
- * A moment inside 오픈 기념 무료 (it ends with SITE.beta.openingEndsAt, 2026-11-01 00:00 KST). Tests that open the
+ * A moment inside 오픈 기념 무료 (it ends with SITE.beta.openingEndsAt, 2026-12-01 00:00 KST). Tests that open the
  * free first tarot reading, or that borrow it to get a reading at all, run there, so they keep passing once the
  * event has ended. Tests about the end itself set their own time.
  */

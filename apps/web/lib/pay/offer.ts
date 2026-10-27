@@ -5,7 +5,8 @@ import { GIFT_PRODUCT, type Product, type ProductId } from "./catalog";
 /**
  * What the unlock sheet offers this device for a standard reading (spec section 9). There is one
  * gold primary per mode:
- * - opening: 오픈 기념 무료, the device's one free tarot reading (sales closed here, nothing held), until
+ * - opening: 오픈 기념 무료, one free tarot reading per logged-in account and per device (a visitor logs in first, owner
+ *   2026-10-27; sales closed here, nothing held), until
  *   SITE.beta.openingEndsAt. `login` adds a quiet link for buyers while sales are paused;
  * - closed: saju while sales are closed here, and tarot once 오픈 기념 무료 has ended: no free reading
  *   and nothing to pay with, so nothing opens (the owner pass still does). `login` as for opening;

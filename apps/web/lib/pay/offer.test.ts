@@ -10,9 +10,9 @@ const GIFT = { status: "unused", until: UNTIL } as const;
 const account = (over: Partial<AccountState> = {}): AccountState => ({ payments: true, login: true, owner: false, user: null, ...over });
 const user = (over: Partial<AccountUser> = {}): AccountUser => ({ nickname: "별", gift: null, unused: [], opening: [], ...over });
 
-/** 오픈 기념 무료 runs through 2026-10-31 23:59:59 KST; these offers are read on 10월 14일 unless a test says otherwise. */
-const LAST_FREE = Date.parse("2026-10-31T14:59:59Z");
-const NOVEMBER = Date.parse("2026-10-31T15:00:00Z");
+/** 오픈 기념 무료 runs through 2026-11-30 23:59:59 KST (owner 2026-10-27); these offers are read on 10월 14일 unless a test says otherwise. */
+const LAST_FREE = Date.parse("2026-11-30T14:59:59Z");
+const DECEMBER = Date.parse("2026-11-30T15:00:00Z");
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -102,11 +102,11 @@ describe("unlock offer", () => {
     expect(unlockOffer(undefined, saju, true)).toEqual({ mode: "closed", login: false });
   });
 
-  it("ends 오픈 기념 무료 with October: from 11월 1일 0시 KST tarot offers what a used one does, and nothing free while sales are closed", () => {
+  it("ends 오픈 기념 무료 with November: from 12월 1일 0시 KST tarot offers what a used one does, and nothing free while sales are closed", () => {
     vi.setSystemTime(LAST_FREE);
     expect(unlockOffer(undefined, tarot, true)).toEqual({ mode: "opening", login: false });
     expect(unlockOffer(account({ user: user() }), tarot, true)).toEqual({ mode: "pay", priceKrw: 2900, first: true });
-    vi.setSystemTime(NOVEMBER);
+    vi.setSystemTime(DECEMBER);
     expect(unlockOffer(undefined, tarot, true)).toEqual({ mode: "closed", login: false });
     expect(unlockOffer(account({ payments: false, login: true }), tarot, true)).toEqual({ mode: "closed", login: true });
     expect(unlockOffer(account(), tarot, true)).toEqual({ mode: "login", priceKrw: 2900 });

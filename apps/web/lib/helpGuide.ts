@@ -63,13 +63,14 @@ export const times = (n: number) => (["한 번", "두 번", "세 번"][n - 1] ??
 export const OPENING_KEEP_ONLY = "오픈 기념 무료 풀이는 내 기록에 보관돼요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.";
 
 /**
- * 오픈 기념 무료 as screens describe it (owner 2026-10-14 evening): one tarot full reading per device until
- * its last day, kept in 내 기록 and shareable (owner 2026-10-23), with no follow-ups. Worded with the date, so it stays true once it ends.
+ * 오픈 기념 무료 as screens describe it: one tarot full reading per logged-in account, and once per device (owner 2026-10-27,
+ * "계정 위주로"), until its last day, kept in 내 기록 and shareable (owner 2026-10-23), with no follow-ups. Worded with the date,
+ * so it stays true once it ends.
  * 내 기록, not "이 기기": from SYNC_REVISION_DATE one opened while logged in is kept in the account too (account sync), and
  * these lines are prerendered on /pricing and /help, so they say what is true before and after that date.
  */
 export const openingFreeText = (count: number = SITE.beta.firstFreeTarot) =>
-  `${OPENING_LAST_DAY}까지 기기마다 타로 전체 풀이 ${times(count)}을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).`;
+  `${OPENING_LAST_DAY}까지 로그인한 계정마다 타로 전체 풀이 ${times(count)}을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).`;
 
 export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   const { followUps, approxChars } = site.reading;
@@ -324,7 +325,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           title: "오픈 기념 무료",
           sub: `타로 전체 풀이 ${times(firstFreeTarot)} · ${OPENING_LAST_DAY}까지`,
           body: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요.`,
-          tip: "전체 풀이 보기 버튼에 오픈 기념 무료가 보이면 아직 무료로 열 수 있어요.",
+          tip: "전체 풀이 보기 버튼에 오픈 기념 무료가 보이면 아직 무료로 열 수 있어요. 로그인하지 않았다면 카카오나 Google로 로그인한 뒤 바로 열려요.",
           opening: true,
         },
         {

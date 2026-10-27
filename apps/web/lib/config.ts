@@ -65,14 +65,14 @@ export const SITE = {
     approxChars: { tarot: { min: 2000, max: 2000 }, saju: { min: 2500, max: 3000 } },
   },
   /**
-   * Free use. 오픈 기념 무료 (owner 2026-10-14 evening): a device's first tarot full reading is free, once
-   * (the server's BETA_FULL_PER_DAY, named before the rule changed), until `openingEndsAt` (KST ISO,
-   * exclusive: the last free moment is 2026-10-31 23:59:59 KST); it is read and kept on that device
-   * only (no follow-ups; shareable since owner 2026-10-23). Saju full readings are never free. Teasers: a daily count (BETA_TEASER_PER_DAY).
+   * Free use. 오픈 기념 무료 (owner 2026-10-14 evening; per account from owner 2026-10-27): one tarot full reading free per
+   * logged-in Kakao or Google account, and once per device (the server's BETA_FULL_PER_DAY, named before the rule changed),
+   * until `openingEndsAt` (KST ISO, exclusive: the last free moment is 2026-11-30 23:59:59 KST, owner 2026-10-27 "이벤트 기간
+   * 11월 한 달로 해"); no follow-ups, shareable since owner 2026-10-23. Saju full readings are never free. Teasers: a daily count (BETA_TEASER_PER_DAY).
    */
   beta: {
     firstFreeTarot: 1,
-    openingEndsAt: "2026-11-01T00:00:00+09:00",
+    openingEndsAt: "2026-12-01T00:00:00+09:00",
     teaserPerDay: 5,
   },
   features: {
@@ -94,10 +94,10 @@ export const openingFreeOn = (now: number = Date.now()) => now < Date.parse(SITE
 
 const OPENING_LAST_MS = Date.parse(SITE.beta.openingEndsAt) - 1;
 
-/** The last day of 오픈 기념 무료 as screens say it: "10월 31일" (KST). */
+/** The last day of 오픈 기념 무료 as screens say it: "11월 30일" (KST). */
 export const OPENING_LAST_DAY = kstMonthDay(OPENING_LAST_MS);
 
-/** The same day with its year, for the legal pages: "2026년 10월 31일". */
+/** The same day with its year, for the legal pages: "2026년 11월 30일". */
 export const OPENING_LAST_DATE = `${kstDate(OPENING_LAST_MS).slice(0, 4)}년 ${OPENING_LAST_DAY}`;
 
 type Business = Readonly<Record<keyof (typeof SITE)["business"], string>>;

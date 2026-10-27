@@ -5,8 +5,8 @@ import { UnlockSheet } from "./UnlockSheet";
 
 afterEach(cleanup);
 
-/** The 오픈 기념 무료 caption: one tarot reading per device until 10월 31일, read and kept on this device only. */
-const OPENING = "10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).";
+/** The 오픈 기념 무료 caption: one tarot reading per logged-in account (once per device) until 11월 30일, read and kept on this device only. */
+const OPENING = "11월 30일까지 로그인한 계정마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).";
 
 const base = { kind: "tarot" as const, remaining: undefined, loginHref: "/login?next=%2Ftarot%2Fresult", payHref: "/pay/checkout?product=tarot&returnTo=%2Ftarot%2Fresult" };
 
@@ -118,7 +118,7 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByRole("link", { name: "결제한 풀이가 있다면 로그인" }).getAttribute("href")).toBe(base.loginHref);
   });
 
-  it("without an offer it is 오픈 기념 무료: one button that names it, a caption with the rule (until 10월 31일, read and keep only), no follow-ups promised, no 베타 anywhere", () => {
+  it("without an offer it is 오픈 기념 무료: one button that names it, a caption with the rule (until 11월 30일, per account, read and keep only), no follow-ups promised, no 베타 anywhere", () => {
     const onUnlock = vi.fn();
     const { container } = render(<UnlockSheet kind="tarot" remaining={1} onUnlock={onUnlock} />);
     fireEvent.click(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
@@ -127,6 +127,14 @@ describe("UnlockSheet offers", () => {
     expect(screen.queryByText("이어서 물어보기 3번")).toBeNull();
     expect(screen.getByText("이 기기에 계속 보관")).toBeTruthy();
     expect(container.textContent).not.toMatch(/베타|첫 이용|하루|0시/);
+  });
+
+  it("tells a guest its button logs in first (owner 2026-10-27), and still opens 오픈 기념 무료 with it", () => {
+    const onUnlock = vi.fn();
+    render(<UnlockSheet kind="tarot" remaining={1} guest onUnlock={onUnlock} />);
+    fireEvent.click(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료 · 로그인하고 받기$/ }));
+    expect(onUnlock).toHaveBeenCalledWith("opening");
+    expect(screen.getByText(OPENING)).toBeTruthy();
   });
 
   it("once the free first reading is used, says so for good and offers the free cards to go on with (QA-04)", () => {

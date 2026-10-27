@@ -33,7 +33,7 @@ export function serviceFacts(site: Site = SITE): string[] {
     ...(site.features.bonds
       ? ["별자리 인연: 친구들이 별이 되어 내 별자리를 채우고, 사주로 본 인연 점수로 열두 별자리 랭킹에 올라요. 이번 주 행운 번호는 생년월일의 오행과 이번 주 카드로 고른 번호 6개를 재미로 보여 줘요."]
       : []),
-    // No 오픈 기념 무료 here: this file is cached for a year, and a dated offer would outlive its end (2026-10-31).
+    // No 오픈 기념 무료 here: this file is cached for a year, and a dated offer would outlive its end (2026-11-30).
     `가격: 타로 전체 풀이 ${won(price.tarotStandardKrw)}, 사주 전체 풀이 ${won(price.sajuStandardKrw)}이에요. 풀이는 건별로 결제하고, 결제 한 번에 풀이 하나가 열려요.`,
     `깊게 보는 풀이: ${price.premium.map((product) => `${product.name} ${won(product.krw)}(${product.sub})`).join(", ")}이에요. 결제 한 번에 하나가 열려요.`,
     `결제하고 전체 풀이를 연 뒤에는 같은 풀이를 두고 이어서 물어보기를 ${site.reading.followUps}번 할 수 있어요.`,

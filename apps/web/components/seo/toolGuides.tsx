@@ -280,7 +280,7 @@ export function SajuGuide() {
           ],
           note: (
             <OpeningOnly>
-              <p>{`오픈 기념 무료(${OPENING_LAST_DAY}까지, 기기마다 타로 전체 풀이 ${times(beta.firstFreeTarot)})는 사주에는 쓸 수 없어요.`}</p>
+              <p>{`오픈 기념 무료(${OPENING_LAST_DAY}까지, 로그인한 계정마다 타로 전체 풀이 ${times(beta.firstFreeTarot)})는 사주에는 쓸 수 없어요.`}</p>
             </OpeningOnly>
           ),
         },

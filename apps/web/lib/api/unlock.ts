@@ -1,4 +1,5 @@
 import "server-only";
+import { holdOpeningClaim, keepOpeningClaim, releaseOpeningClaim, type OpeningClaim } from "@/lib/account/openingClaim";
 import { openAccount } from "@/lib/account/request";
 import { sessionCookieName } from "@/lib/account/session";
 import { openingFreeOn } from "@/lib/config";
@@ -14,15 +15,18 @@ import { openChapter } from "@/lib/security/chapterToken";
 import { checkFirstFree, checkServerLimits, errorResponse, type Gate } from "./http";
 import type { SpendKind } from "./spend";
 import type { GenerationOutcome, Settlement } from "./stream";
+import { checkBot } from "./turnstile";
 
 /**
  * How a full reading is paid for, decided before any generation starts (spec 5.4). See the table in
  * the plan's Task 10:
- * - `opening`: 오픈 기념 무료, the device's one free tarot reading (the `sl_first` cookie, server limits,
- *   network counter), until SITE.beta.openingEndsAt (owner 2026-10-14 evening); from then on it is 402
- *   PAYMENT_REQUIRED before any generation. Tarot only: saju opens with a payment or the owner pass
- *   (402 PAYMENT_REQUIRED). It stays after payments open for everyone (owner 2026-10-14). From SYNC_REVISION_DATE
- *   (account sync) one opened while logged in is kept in the account too (`keep`, keepOpening).
+ * - `opening`: 오픈 기념 무료, one free tarot reading per logged-in Kakao or Google account and per device (owner
+ *   2026-10-27: the account's claim, opening_claims, held before generation, and the `sl_first` cookie; server limits,
+ *   network counter), until SITE.beta.openingEndsAt; from then on it is 402 PAYMENT_REQUIRED before any generation.
+ *   A visitor gets 401 LOGIN_REQUIRED (`reason: "opening"`), an account that took it 429 `scope: "account"`, and a claim
+ *   that cannot be checked 409 NOT_AVAILABLE (`reason: "opening"`). The owner pass skips the device and server limits
+ *   only. Tarot only: saju opens with a payment or the owner pass (402 PAYMENT_REQUIRED). From SYNC_REVISION_DATE
+ *   (account sync) it is kept in the account too (`keep`, keepOpening).
  * - `free` (the signup gift): new accounts get none any more (owner 2026-10-14 evening); a gift granted
  *   before still opens a standard tarot reading only (GIFT_PRODUCT; anything else is 402 NO_CREDIT
  *   before anything is held). Login, the free budget and network cap (it costs us what a
@@ -62,7 +66,17 @@ export interface UnlockPlan {
    * (keepOpening). No settlement: nothing is held or spent, so the opening counts as a free one as before (SEC-01).
    */
   keep?: { db: D1Binding; accountSecret: string; userId: string; source: ReadingSource };
+  /** 오픈 기념 무료: the account's claim, held until the reading is written (withOpeningClaim) */
+  claim?: OpeningClaim;
 }
+
+/** 오픈 기념 무료 per account (owner 2026-10-27): a visitor logs in first (the screen comes back and opens it). */
+const OPENING_LOGIN_MESSAGE = "오픈 기념 무료는 로그인하고 받을 수 있어요. 카카오나 Google로 로그인하면 바로 열려요.";
+const OPENING_ACCOUNT_USED_MESSAGE = "이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요.";
+const OPENING_UNAVAILABLE_MESSAGE = "지금은 오픈 기념 무료를 열 수 없어요. 잠시 뒤에 다시 시도해 주세요.";
+const openingLoginResponse = () => errorResponse("LOGIN_REQUIRED", { reason: "opening", message: OPENING_LOGIN_MESSAGE });
+/** The claim cannot be checked (D1 down, or the claims table not migrated yet): fail closed; paid openings never ask. */
+const openingUnavailableResponse = () => errorResponse("NOT_AVAILABLE", { reason: "opening", message: OPENING_UNAVAILABLE_MESSAGE });
 
 export async function planUnlock(request: Request, gate: Gate, kind: StandardProductId, method: UnlockMethod = "opening"): Promise<UnlockPlan | Response> {
   const base = { method, productId: kind, first: null, spend: "full" as const, paidCost: false, save: null };
@@ -70,19 +84,36 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
     if (kind !== "tarot" || !openingFreeOn(gate.now)) return errorResponse("PAYMENT_REQUIRED");
     const first = await checkFirstFree(gate);
     if (first instanceof Response) return first;
-    // Only with a session cookie: a visitor's opening never waits on D1, and an account that cannot be read keeps it on the device.
-    if (!syncRevisionInForce(gate.now) || !gate.cookies[sessionCookieName()]) return { ...base, first };
+    // A visitor is sent to log in without waiting on D1.
+    if (!gate.cookies[sessionCookieName()]) return openingLoginResponse();
     let ctx: Awaited<ReturnType<typeof openAccount>>;
     try {
       ctx = await openAccount(request, gate.now);
     } catch (error) {
-      // D1 down: the free reading opens all the same, on the device alone (never a 500 for a reading that needs no account).
+      // D1 down: the claim cannot be checked, so it fails closed (never a 500).
       console.error(JSON.stringify({ evt: "opening.account_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
-      return { ...base, first };
+      return openingUnavailableResponse();
     }
-    const user = ctx instanceof Response ? null : ctx.session?.user;
-    if (ctx instanceof Response || !user) return { ...base, first };
-    return { ...base, first, keep: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: gate.owner ? "owner" : "free" } };
+    if (ctx instanceof Response) return openingUnavailableResponse();
+    const user = ctx.session?.user;
+    if (!user?.kakao_key) return openingLoginResponse();
+    const bot = await checkBot(request, gate);
+    if (bot) return bot;
+    let claim: Awaited<ReturnType<typeof holdOpeningClaim>>;
+    try {
+      claim = await holdOpeningClaim(ctx.db, user.kakao_key, gate.now);
+    } catch (error) {
+      console.error(JSON.stringify({ evt: "opening.claim_failed", error: error instanceof Error ? error.constructor.name : typeof error }));
+      return openingUnavailableResponse();
+    }
+    if (claim === "missing") {
+      console.error(JSON.stringify({ evt: "opening.claim_unavailable", fix: "apply migrations/0018_opening_claims.sql" }));
+      return openingUnavailableResponse();
+    }
+    if (claim === "taken") return errorResponse("BETA_LIMIT", { scope: "account", message: OPENING_ACCOUNT_USED_MESSAGE });
+    // Account sync: from SYNC_REVISION_DATE the reading is kept in the account too; before it, on the device alone.
+    if (!syncRevisionInForce(gate.now)) return { ...base, first, claim };
+    return { ...base, first, claim, keep: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: gate.owner ? "owner" : "free" } };
   }
   if (method === "owner") {
     if (!gate.owner) return errorResponse("FORBIDDEN");
@@ -171,6 +202,25 @@ export function settlementFor(plan: UnlockPlan, chapterOf: (body: Record<string,
       }
     },
   };
+}
+
+/**
+ * 오픈 기념 무료: writes the reading under the account's claim held by planUnlock. A generation that fails (or a client gone
+ * while it is written) gives the claim back, as the device's sl_first is only spent after a written reading; a written
+ * one keeps it. Without a claim (every other opening) it only writes.
+ */
+export async function withOpeningClaim<T>(plan: UnlockPlan, generate: () => Promise<T>): Promise<T> {
+  const claim = plan.claim;
+  if (!claim) return generate();
+  let written: T;
+  try {
+    written = await generate();
+  } catch (error) {
+    await releaseOpeningClaim(claim);
+    throw error;
+  }
+  await keepOpeningClaim(claim);
+  return written;
 }
 
 /**

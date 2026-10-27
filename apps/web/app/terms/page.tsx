@@ -3,8 +3,10 @@ import Link from "next/link";
 import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
-import { OPENING_LAST_DATE, SITE } from "@/lib/config";
-import { SYNC_REVISION_DATE, contactChannels, koreanDate, premiumChangeNoticeShown, premiumLegalInForce, syncRevisionInForce, termsEffectiveDate } from "@/lib/legal";
+import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
+import {
+  OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, contactChannels, koreanDate, premiumChangeNoticeShown, premiumLegalInForce, syncRevisionInForce, termsEffectiveDate,
+} from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
@@ -35,6 +37,22 @@ const NO_FOLLOW_UP = "이때는 이어서 물어보기를 제공하지 않습니
 const FREE_OPENING =
   "오픈 기념 무료로 연 타로 전체 풀이에는 이어서 물어보기를 제공하지 않습니다. 결과 공유는 다른 풀이와 같이 할 수 있고, 로그인한 상태로 연 풀이는 계정에도 보관됩니다. 오픈 기념 무료는 위 기간이 지나면 자동으로 끝납니다.";
 
+/**
+ * 오픈 기념 무료 per account (lib/legal.ts OPENING_ACCOUNT_DATE): what changed against the old 제4조 4호, on top while it runs
+ * (owner 2026-10-27: less favourable, before 30 days' notice, so said openly).
+ */
+function OpeningChangeNotice() {
+  return (
+    <aside className={s.note} aria-labelledby="opening-change-title">
+      <h2 id="opening-change-title" className={s.noteTitle}>{`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용 · 오픈 기념 무료`}</h2>
+      <ul className={s.list}>
+        <li>오픈 기념 무료는 이제 카카오나 Google로 로그인해야 받을 수 있고, 기기(브라우저)마다가 아니라 로그인한 계정마다 한 번 드립니다. 같은 기기에서는 계정을 바꿔도 한 번만 받을 수 있습니다.</li>
+        <li>{`기간을 2026년 10월 31일에서 ${OPENING_LAST_DATE} 23시 59분(한국 시간)까지로 늘렸습니다.`}</li>
+      </ul>
+    </aside>
+  );
+}
+
 /** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
 export const dynamic = "force-dynamic";
 
@@ -49,6 +67,7 @@ export default function TermsPage() {
     <LegalPage title="이용약관" effective={effective}>
       {inForce ? null : <PremiumLegalNotice />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
+      {openingFreeOn(now) ? <OpeningChangeNotice /> : null}
       {revised ? null : (
         <LegalNote>
           <p className={s.noteTitle}>{`개정 예정 · ${koreanDate(SYNC_REVISION_DATE)}부터 시행`}</p>
@@ -103,7 +122,7 @@ export default function TermsPage() {
           <li>풀이는 오락과 자기 성찰을 위한 참고 콘텐츠입니다. 의료·법률·투자·진로 등 전문적인 판단을 대신하지 않으며, 중요한 결정은 해당 분야의 전문가와 상의하시기 바랍니다.</li>
           <li>풀이는 AI가 생성하므로 부정확하거나 이용자의 실제 상황과 맞지 않는 내용이 들어 있을 수 있습니다.</li>
           <li>
-            {`운영자는 오픈 기념 무료로 ${OPENING_LAST_DATE} 23시 59분(한국 시간)까지 기기(브라우저)마다 한 번 타로 전체 풀이를 무료로 제공합니다. 사주 전체 풀이는 무료로 제공하지 않습니다. 무료로 이용할 수 있는 범위는 서비스 화면과 `}
+            {`운영자는 오픈 기념 무료로 ${OPENING_LAST_DATE} 23시 59분(한국 시간)까지 로그인한 계정마다 한 번(같은 기기에서는 한 번) 타로 전체 풀이를 무료로 제공합니다. 사주 전체 풀이는 무료로 제공하지 않습니다. 무료로 이용할 수 있는 범위는 서비스 화면과 `}
             <Link href="/pricing" prefetch={false}>
               가격 안내
             </Link>

@@ -264,10 +264,10 @@ describe("오픈 기념 무료 shown on the unlock", () => {
     expect(result.current).toBe(SITE.beta.firstFreeTarot);
   });
 
-  it("has none left from 11월 1일 0시 KST, used or not: 오픈 기념 무료 ended", () => {
-    vi.setSystemTime(Date.parse("2026-10-31T14:59:59Z"));
+  it("has none left from 12월 1일 0시 KST, used or not: 오픈 기념 무료 ended", () => {
+    vi.setSystemTime(Date.parse("2026-11-30T14:59:59Z"));
     expect(remainingFree(null)).toBe(SITE.beta.firstFreeTarot);
-    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z"));
+    vi.setSystemTime(Date.parse("2026-11-30T15:00:00Z"));
     expect(remainingFree(null)).toBe(0);
     expect(remainingFree({ full: 0 })).toBe(0);
   });

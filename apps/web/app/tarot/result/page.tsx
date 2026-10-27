@@ -14,7 +14,7 @@ export default async function TarotResultPage({ searchParams }: PageProps<"/taro
       <main className="page-col page-wide">
         <FreeResult
           instant={query.instant === "1"}
-          autoUnlock={query.unlock === "paid" || query.unlock === "free" ? query.unlock : null}
+          autoUnlock={query.unlock === "paid" || query.unlock === "free" || query.unlock === "opening" ? query.unlock : null}
           loginFlag={typeof query.login === "string" ? query.login : null}
         />
       </main>

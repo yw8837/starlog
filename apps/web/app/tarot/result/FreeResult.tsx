@@ -35,6 +35,8 @@ import s from "./FreeResult.module.css";
 import { isTarotReadingResponse, isTarotTeaser } from "@/lib/reading/validate";
 
 const RETURN_TO = "/tarot/result";
+/** 오픈 기념 무료 for a visitor (owner 2026-10-27): the login comes back here and opens it (autoUnlock "opening"). */
+const OPENING_RETURN_TO = `${RETURN_TO}?unlock=opening`;
 /** A teaser kept from before its share was sealed (2026-10-23) has nothing the server can share. */
 const FREE_SHARE_LATER = "이 맛보기는 지금 공유할 수 없어요. 카드를 다시 뽑으면 공유할 수 있어요.";
 /** Errors after which the server may still have saved the reading (M4). */
@@ -56,8 +58,9 @@ function withHistory(input: TarotInput): TarotInput {
  * reading, saves it on this device and goes to it. Sharing sends the site and the card names,
  * never the question or note.
  *
- * The sheet offers what this device may use (lib/pay/offer.ts): 오픈 기념 무료 (the device's one free
- * reading, kept marked on this device: read and keep only), a login, a purchase, a gift held or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
+ * The sheet offers what this device may use (lib/pay/offer.ts): 오픈 기념 무료 (one free reading per logged-in account and
+ * per device, kept marked on this device: read and keep only; a visitor logs in first and comes back with ?unlock=opening),
+ * a login, a purchase, a gift held or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
  */
 export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { instant: boolean; autoUnlock?: UnlockMethod | null; loginFlag?: string | null }) {
   const router = useRouter();
@@ -183,8 +186,15 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   // The full reading's waiting captions and checklist.
   const readingPlan = progressPlan("tarot-reading", { positions });
 
+  const openingLogin = loginHref(withFlags(OPENING_RETURN_TO, { instant }));
+
   const unlock = async (chosen: UnlockMethod) => {
     if (!draw || !input || !summary) return;
+    // 오픈 기념 무료 opens for a logged-in account only (owner 2026-10-27): a visitor logs in first and comes back to open it.
+    if (chosen === "opening" && account && !account.user) {
+      router.push(openingLogin);
+      return;
+    }
     setMethod(chosen);
     setCreditView(null);
     setCheck(null);
@@ -205,7 +215,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
       const code = result.error.code;
       // Only the device's own free first reading being used; a network's day limit passes at midnight.
       if (code === "BETA_LIMIT" && result.error.scope === "first") markFreeUsedUp();
-      if (code === "LOGIN_REQUIRED") router.push(loginHref(RETURN_TO));
+      if (code === "LOGIN_REQUIRED") router.push(chosen === "opening" ? openingLogin : loginHref(RETURN_TO));
       if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, held, "cut");
       else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), held, "refused");
       else if (code === "NO_CREDIT" || code === "PAYMENT_REQUIRED") void refreshAccount();
@@ -236,14 +246,17 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
     router.push(`/chapter/${chapter.serverId ?? chapter.id}`);
   };
 
-  // After checkout (?unlock=paid) or a gift login (?unlock=free): open once, as soon as the
-  // teaser and the account are known and the offer matches. Without a draw (the flow was lost on
+  // After checkout (?unlock=paid), a gift login (?unlock=free) or a 오픈 기념 무료 login (?unlock=opening): open once, as
+  // soon as the teaser and the account are known and the offer matches. Without a draw (the flow was lost on
   // another browser) nothing runs, and the purchase waits in 내 정보.
   const autoStarted = useRef(false);
   useEffect(() => {
     if (!autoUnlock || autoStarted.current || !teaser || account === undefined || openedId) return;
     if (autoUnlock === "paid" && offer.mode !== "open-paid") return;
     if (autoUnlock === "free" && offer.mode !== "gift") return;
+    // Logged in, the device's free reading unused, and the sheet offering it (alone, or first).
+    const openingOffered = offer.mode === "opening" || ("first" in offer && offer.first === true);
+    if (autoUnlock === "opening" && !(account?.user && remaining !== undefined && remaining > 0 && openingOffered)) return;
     autoStarted.current = true;
     router.replace(withFlags(RETURN_TO, { instant }));
     void unlock(autoUnlock);
@@ -345,6 +358,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 remaining={remaining}
                 onUnlock={(chosen) => void unlock(chosen)}
                 loginHref={loginHref(RETURN_TO)}
+                guest={Boolean(account && !account.user)}
                 payHref={checkoutHref("tarot", RETURN_TO)}
                 owner={account?.owner}
                 refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
