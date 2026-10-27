@@ -221,9 +221,9 @@ describe("each card article has a shape of its own", () => {
     expect(first).toMatch(/정방향|뜻/);
   });
 
-  it.each(each)("%s: no AI tells in the body, and the page dated 2026-10-23", (_slug, article) => {
+  it.each(each)("%s: no AI tells in the body, and the page dated 2026-10-27 (third review)", (_slug, article) => {
     expect(aiTells(bodyOf(article)).map((hit) => `${hit.id} ${hit.label}`)).toEqual([]);
-    expect(article.updated).toBe("2026-10-23");
+    expect(article.updated).toBe("2026-10-27");
   });
 });
 
@@ -318,9 +318,10 @@ describe("each card article carries substance of its own (second review, 2026-10
   }
 
   // Body text with blocks, no spaces: 1,578 on average before (the review's ~1,785 also counted headings and 한눈에 보기).
-  it.each(each)("%s: a body of 3,100-5,800 characters (no spaces), real reading rather than a paraphrase of the KB", (_slug, article) => {
+  // The third review (2026-10-23) asked for lengths that follow what each card has to say, so the floor is lower.
+  it.each(each)("%s: a body of 2,300-5,800 characters (no spaces), real reading rather than a paraphrase of the KB", (_slug, article) => {
     const length = noSpace(bodyOf(article));
-    expect(length).toBeGreaterThanOrEqual(3100);
+    expect(length).toBeGreaterThanOrEqual(2300);
     expect(length).toBeLessThanOrEqual(5800);
   });
 
@@ -405,7 +406,69 @@ describe("each card article carries substance of its own (second review, 2026-10
     const text = bodyOf(article);
     expect(text).toMatch(/웨이트/);
     expect(text).toMatch(/그림 열쇠|Pictorial Key/);
-    // The worked reading is an illustration, never a client's story.
-    expect(text).toMatch(/지어낸|꾸며 낸|꾸민|가상의|가정해/);
+    // A worked reading, where a card has one, is an illustration, never a client's story.
+    for (const section of article.sections) {
+      const said = guideSectionText(section);
+      if (/첫 장|첫 자리/.test(said) && /세 장|세 자리/.test(said)) expect(said, section.heading).toMatch(MADE_UP);
+    }
+  });
+});
+
+const MADE_UP = /지어낸|꾸며 낸|꾸민|가상의|가정해/;
+
+/**
+ * The third independent read of 2026-10-23: accurate (scans and Waite quotes checked, no errors), but the 22 still read as
+ * one batch. Lengths sat within ±3% (4,158-4,428 characters); a made-up three-card reading with one skeleton closed 21 of
+ * them (made-up marker, 'A, B, C' 세 자리, a minor card, "세 장이 알려 주지 않아요", a reversed coda); 21 summaries said
+ * "거꾸로 나오면 …" in their second sentence; every description began "타로 X 카드를…" or ended "풀어요"; every 한눈에 보기
+ * had three points, 13 ending on 거꾸로.
+ */
+describe("the 22 no longer read as one batch (third review, 2026-10-23)", () => {
+  const withSpaces = (article: GuideArticle) => bodyOf(article).length;
+  const worked = (article: GuideArticle) => article.sections.filter((section) => {
+    const said = guideSectionText(section);
+    return MADE_UP.test(said) && /첫 장|첫 자리|가운데/.test(said) && /세 장|세 자리/.test(said);
+  });
+
+  it("spreads the lengths: the longest body at least 1.5 times the shortest, and no length within 5% of the mean on more than half", () => {
+    const lengths = CARD_ARTICLES.map(withSpaces);
+    const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+    expect(Math.max(...lengths) / Math.min(...lengths)).toBeGreaterThanOrEqual(1.5);
+    expect(lengths.filter((n) => Math.abs(n - mean) / mean <= 0.05).length).toBeLessThanOrEqual(11);
+  });
+
+  it("keeps a made-up three-card reading on 13 cards at most, and its stock sentences rare", () => {
+    expect(CARD_ARTICLES.filter((article) => worked(article).length > 0).length).toBeLessThanOrEqual(13);
+    const all = CARD_ARTICLES.map(bodyOf).join("\n");
+    expect(count(all, /세 자리에 카드를 놓/g)).toBeLessThanOrEqual(2);
+    expect(count(all, /세 장이 (알려|정해) 주지 않아요/g)).toBeLessThanOrEqual(2);
+    expect(count(all, /거꾸로 나왔다면[^.]*(풀었을|권했을|옮겼을) 거예요/g)).toBeLessThanOrEqual(3);
+    const headings = CARD_ARTICLES.flatMap((article) => article.sections.map((section) => section.heading));
+    expect(headings.filter((heading) => /, [^,]*(자리의|자리에 놓인|놓인) [^,]* 카드$/.test(heading)).length).toBeLessThanOrEqual(3);
+  });
+
+  it("varies the summaries: a reversal in the second sentence on seven cards at most, '예고로는 쓰지 않' on two", () => {
+    const second = CARD_ARTICLES.map((article) => sentences(article.summary ?? "")[1] ?? "");
+    expect(second.filter((s) => /거꾸로|역방향/.test(s)).length).toBeLessThanOrEqual(7);
+    expect(CARD_ARTICLES.filter((article) => /예고로는 쓰지 않/.test(article.summary ?? "")).length).toBeLessThanOrEqual(2);
+  });
+
+  it("varies the descriptions: none opens '타로 X 카드를', three end '풀어요' at most, none opens on a '…까지,' clause", () => {
+    for (const article of CARD_ARTICLES) expect(article.description, article.slug).not.toMatch(new RegExp(`^타로 ${nameOf(article)} 카드를`));
+    expect(CARD_ARTICLES.filter((article) => /풀어요\.$/.test(article.description)).length).toBeLessThanOrEqual(3);
+    expect(CARD_ARTICLES.filter((article) => /^[^.?]{0,50}까지,/.test(article.description)).length).toBe(0);
+  });
+
+  it("varies 한눈에 보기: at least three different counts, a reversal as the last point on five cards at most", () => {
+    expect(new Set(CARD_ARTICLES.map((article) => article.keyPoints?.length)).size).toBeGreaterThanOrEqual(3);
+    expect(CARD_ARTICLES.filter((article) => /거꾸로|역방향/.test(article.keyPoints?.at(-1) ?? "")).length).toBeLessThanOrEqual(5);
+  });
+
+  it("keeps the stock frames rare: '세 갈래' on three cards at most, FAQ answers opening 'A가 아니라 B에 가까워요' on 14 at most, '쪽' under 10 a card on average", () => {
+    expect(CARD_ARTICLES.filter((article) => /세 갈래/.test(bodyOf(article))).length).toBeLessThanOrEqual(3);
+    const firsts = CARD_ARTICLES.flatMap((article) => guideQuestions(article).map(({ a }) => firstSentence(a)));
+    expect(firsts.filter((s) => /(아니라|보다|라기보다)[^.]*가까워요\.$/.test(s)).length).toBeLessThanOrEqual(14);
+    const sides = CARD_ARTICLES.map((article) => count(bodyOf(article), /쪽/g));
+    expect(sides.reduce((a, b) => a + b, 0) / sides.length).toBeLessThan(10);
   });
 });
