@@ -446,3 +446,37 @@
   font-size: var(--fs-sub);
   line-height: 1.5;
 }
+
+/* ---- 로그인하고 시작하기, 연결하기 (owner 2026-10-27) ---- */
+
+.login,
+.link {
+  display: grid;
+  gap: 12px;
+}
+
+.link {
+  margin-bottom: 20px;
+}
+
+.linkChoices {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.linkChoice {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 14px;
+}
+
+.linkName {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}

@@ -8,6 +8,7 @@ import type { BondsRepo } from "@/lib/db/bondsRepo";
 import { bondsRepo } from "@/lib/db";
 import { rateLimit, type LimiterName } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
+import { whoOwns, type OwnerIdentity } from "./owner";
 import { BondsError, type BondsErrorCode } from "./service";
 
 /**
@@ -23,11 +24,12 @@ declare global {
   }
 }
 
-export type BondsApiCode = BondsErrorCode | "RATE_LIMIT" | "NOT_CONFIGURED" | "SERVER" | "BAD_ORIGIN";
+export type BondsApiCode = BondsErrorCode | "RATE_LIMIT" | "NOT_CONFIGURED" | "SERVER" | "BAD_ORIGIN" | "LOGIN_REQUIRED";
 
 const STATUS: Record<BondsApiCode, number> = {
   BAD_INPUT: 400,
   BAD_CODE: 400,
+  LOGIN_REQUIRED: 401,
   SELF_JOIN: 403,
   BAD_ORIGIN: 403,
   NOT_FOUND: 404,
@@ -62,6 +64,8 @@ export interface BondsContext {
   now: number;
   cookies: Record<string, string>;
   repo: BondsRepo;
+  /** who this request acts as: the account's owner, or this device's while it belongs to no account (lib/bonds/owner.ts) */
+  who: () => Promise<OwnerIdentity>;
 }
 
 /**
@@ -89,7 +93,10 @@ export async function bondsRoute(request: Request, name: string, run: (ctx: Bond
     return fail("NOT_CONFIGURED");
   }
   try {
-    return await run({ secret, now: Date.now(), cookies: parseCookies(request), repo });
+    const now = Date.now();
+    const cookies = parseCookies(request);
+    let identity: Promise<OwnerIdentity> | null = null;
+    return await run({ secret, now, cookies, repo, who: () => (identity ??= whoOwns(repo, cookies, secret, now)) });
   } catch (error) {
     if (error instanceof BondsError) {
       return fail(error.code, {

@@ -4,6 +4,7 @@ import { bondsRepo, setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { findShare } from "@/lib/share/store";
 import { useTestDb } from "@/lib/testing/p4";
+import { signIn } from "@/lib/testing/bondsLogin";
 import { POST as choosePost } from "../../bonds/choose/route";
 import { POST as joinPost } from "../../bonds/join/route";
 import { POST as ownerPost } from "../../bonds/owner/route";
@@ -39,6 +40,7 @@ const BIRTHS = [[1991, 5, 12], [1992, 8, 3], [1988, 11, 20], [1995, 2, 28]] as c
  */
 async function constellationWithTwo(sign = "leo", count = 2, notice: boolean[] = []) {
   const owner: Jar = new Map();
+  await signIn(owner);
   const res = await ownerPost(req("/api/bonds/owner", owner, { nickname: "용우", birth: { calendar: "solar", year: 1990, month: 1, day: 1 } }));
   absorb(owner, res);
   const { code } = (await res.json()) as { code: string };
@@ -57,11 +59,11 @@ async function constellationWithTwo(sign = "leo", count = 2, notice: boolean[] =
   return { owner, friends, constellationId: row!.id };
 }
 
-/** The owner id behind the device cookie, read the way the routes read it. */
+/** The owner this browser acts as, read the way the routes read it (its account's, owner 2026-10-27). */
 async function ownerIdOf(jar: Jar): Promise<string> {
-  const { readOwnerId } = await import("@/lib/bonds/identity");
+  const { whoOwns } = await import("@/lib/bonds/owner");
   const { signingSecret } = await import("@/lib/security/sign");
-  return (await readOwnerId(Object.fromEntries(jar), signingSecret()!))!;
+  return (await whoOwns(bondsRepo(), Object.fromEntries(jar), signingSecret()!, Date.now())).ownerId!;
 }
 
 describe("POST /api/share/bonds and /api/share/bond", () => {

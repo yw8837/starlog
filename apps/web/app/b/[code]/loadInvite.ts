@@ -1,7 +1,8 @@
 import "server-only";
 import { cookies, headers } from "next/headers";
 import { codeGuard } from "@/lib/bonds/codeGuard";
-import { existingFriendKey, readOwnerId } from "@/lib/bonds/identity";
+import { existingFriendKey } from "@/lib/bonds/identity";
+import { whoOwns } from "@/lib/bonds/owner";
 import { BondsError, invitePage, type InvitePage } from "@/lib/bonds/service";
 import { normalizeCode } from "@/lib/bonds/text";
 import { bondsRepo } from "@/lib/db";
@@ -43,7 +44,7 @@ export async function loadInvite(raw: string): Promise<InviteState> {
     const secret = signingSecret();
     const jar = Object.fromEntries((await cookies()).getAll().map((c) => [c.name, c.value]));
     const viewer = secret
-      ? { ownerId: await readOwnerId(jar, secret), friendKey: await existingFriendKey(jar, secret) }
+      ? { ownerId: (await whoOwns(bondsRepo(), jar, secret, Date.now())).ownerId, friendKey: await existingFriendKey(jar, secret) }
       : { ownerId: null, friendKey: null };
     const page = await invitePage(bondsRepo(), code, viewer);
     return { ...page, status: page.kind, code } as InviteState;

@@ -178,6 +178,32 @@ export async function saveOwner(repo: BondsRepo, now: number, ownerId: string, i
   return row;
 }
 
+/** One owner as the 연결하기 choice shows it: whose, the sign being filled and how far, completions, all stars, since when. */
+export interface OwnerSummary { nickname: string; sign: SignId | null; filled: number; slots: number; completed: number; stars: number; createdAt: number }
+
+/**
+ * What /bonds offers a logged-in visitor whose device has an owner belonging to no account (owner 2026-10-27): to link
+ * it (the account has none: it is the owner on screen), or to choose which of the two stays (the account has its own).
+ * Null when there is nothing to link.
+ */
+export type LinkOffer = { kind: "offer" } | { kind: "choose"; account: OwnerSummary; device: OwnerSummary };
+
+export async function linkOffer(repo: BondsRepo, who: { ownerId: string | null; userId: string | null; deviceOwnerId: string | null }): Promise<LinkOffer | null> {
+  if (!who.userId || !who.deviceOwnerId || !who.ownerId) return null;
+  if (who.ownerId === who.deviceOwnerId) return { kind: "offer" };
+  return { kind: "choose", account: await ownerSummary(repo, who.ownerId), device: await ownerSummary(repo, who.deviceOwnerId) };
+}
+
+async function ownerSummary(repo: BondsRepo, ownerId: string): Promise<OwnerSummary> {
+  const owner = await requireOwner(repo, ownerId);
+  const filling = await repo.fillingOf(ownerId);
+  const completed = await repo.completedOf(ownerId);
+  const filled = filling ? (await repo.starsOf(filling.id)).length : 0;
+  let stars = filled;
+  for (const c of completed) stars += (await repo.starsOf(c.id)).length;
+  return { nickname: owner.nickname, sign: filling?.sign ?? null, filled, slots: filling ? getConstellation(filling.sign).slots : 0, completed: completed.length, stars, createdAt: owner.createdAt };
+}
+
 /** `랭킹에 내 이름 올리기` and the nickname, without asking for the birth date again. */
 export async function updateSettings(repo: BondsRepo, now: number, ownerId: string, patch: { rankingPublic?: boolean; nickname?: string }): Promise<OwnerRow> {
   const owner = await requireOwner(repo, ownerId);

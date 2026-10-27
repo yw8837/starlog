@@ -259,3 +259,93 @@ describe("BondsView right after making a constellation (owner 2026-10-23)", () =
     }
   });
 });
+
+describe("BondsView: the owner belongs to the account (owner 2026-10-27)", () => {
+  const FILLING = { ...OWNER_ME, filling: { row: { id: "c1abcdefghijklmnop", sign: "aries", status: "filling", total: 0, startedAt: 1, completedAt: null }, stars: [] } };
+
+  it("logged out, the start screen asks to log in first and comes back to /bonds; no form", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null, signedIn: false }))));
+    render(<BondsView initialSign={null} />);
+    expect(await screen.findByRole("heading", { name: "내 별자리는 로그인해서 만들어요" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /로그인하고 시작하기/ }).getAttribute("href")).toBe("/login?next=%2Fbonds");
+    expect(screen.getByText(/친구는 로그인 없이 참여해요/)).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "닉네임" })).toBeNull();
+  });
+
+  it("logged in, the start form shows as before", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null, signedIn: true }))));
+    render(<BondsView initialSign={null} />);
+    expect(await screen.findByRole("textbox", { name: "닉네임" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /로그인하고 시작하기/ })).toBeNull();
+  });
+
+  it("offers 연결하기 for this device's owner and links only on the tap", async () => {
+    const calls: Array<{ url: string; body?: unknown }> = [];
+    let linked = false;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      if (String(url).endsWith("/api/bonds/link")) {
+        linked = true;
+        return new Response(JSON.stringify({ ok: true, kept: "device" }));
+      }
+      return new Response(JSON.stringify({ ...FILLING, signedIn: true, ...(linked ? {} : { link: { kind: "offer" } }) }));
+    }));
+    render(<BondsView initialSign={null} />);
+    const prompt = (await screen.findByRole("heading", { name: "이 기기에서 만든 별자리를 내 계정에 연결할까요?" })).closest("section")!;
+    expect(prompt.textContent).toContain("연결하면 다른 기기에서도 보여요");
+    expect(calls.some((c) => c.url.endsWith("/api/bonds/link"))).toBe(false);
+    await act(async () => {
+      fireEvent.click(within(prompt).getByRole("button", { name: "연결하기" }));
+    });
+    expect(calls.find((c) => c.url.endsWith("/api/bonds/link"))?.body).toEqual({});
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    expect(screen.queryByRole("heading", { name: "이 기기에서 만든 별자리를 내 계정에 연결할까요?" })).toBeNull();
+  });
+
+  const CHOOSE = {
+    kind: "choose",
+    account: { nickname: "용우", sign: "aries", filled: 2, slots: 4, completed: 1, stars: 6, createdAt: Date.parse("2026-10-05T03:00:00Z") },
+    device: { nickname: "용우폰", sign: "pisces", filled: 0, slots: 5, completed: 0, stars: 0, createdAt: Date.parse("2026-10-20T03:00:00Z") },
+  };
+
+  it("with an owner on the account already: shows both (sign, stars, made on) and keeps the chosen one; dropping friends' stars asks first", async () => {
+    const calls: Array<{ url: string; body?: unknown }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      if (String(url).endsWith("/api/bonds/link")) return new Response(JSON.stringify({ ok: true, kept: "device" }));
+      return new Response(JSON.stringify({ ...FILLING, signedIn: true, link: CHOOSE }));
+    }));
+    render(<BondsView initialSign={null} />);
+    const prompt = (await screen.findByRole("heading", { name: "남길 별자리를 하나 골라 주세요" })).closest("section")!;
+    const choices = within(prompt).getAllByRole("listitem");
+    expect(choices.map((li) => li.textContent)).toEqual([
+      "내 계정의 별자리용우님의 양자리별 2/4 · 완성 1개 · 10월 5일에 만들었어요이 별자리 남기기",
+      "이 기기에서 만든 별자리용우폰님의 물고기자리별 0/5 · 10월 20일에 만들었어요이 별자리 남기기",
+    ]);
+    // keeping this device's drops the account's 6 friends' stars: a confirm first
+    fireEvent.click(within(choices[1]!).getByRole("button", { name: "이 별자리 남기기" }));
+    expect(calls.some((c) => c.url.endsWith("/api/bonds/link"))).toBe(false);
+    const dialog = screen.getByRole("dialog", { name: "고르지 않은 별자리를 지울까요?" });
+    expect(dialog.textContent).toContain("용우님의 양자리와 친구 별 6개가 지워져요. 지운 별자리는 되돌릴 수 없어요.");
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole("button", { name: "지우고 남기기" }));
+    });
+    expect(calls.find((c) => c.url.endsWith("/api/bonds/link"))?.body).toEqual({ keep: "device" });
+  });
+
+  it("keeping the account's when this device's holds no star goes at once", async () => {
+    const calls: Array<{ url: string; body?: unknown }> = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      if (String(url).endsWith("/api/bonds/link")) return new Response(JSON.stringify({ ok: true, kept: "account" }));
+      return new Response(JSON.stringify({ ...FILLING, signedIn: true, link: CHOOSE }));
+    }));
+    render(<BondsView initialSign={null} />);
+    const prompt = (await screen.findByRole("heading", { name: "남길 별자리를 하나 골라 주세요" })).closest("section")!;
+    await act(async () => {
+      fireEvent.click(within(within(prompt).getAllByRole("listitem")[0]!).getByRole("button", { name: "이 별자리 남기기" }));
+    });
+    expect(screen.queryByRole("dialog", { name: "고르지 않은 별자리를 지울까요?" })).toBeNull();
+    expect(calls.find((c) => c.url.endsWith("/api/bonds/link"))?.body).toEqual({ keep: "account" });
+  });
+});

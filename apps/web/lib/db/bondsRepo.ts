@@ -6,6 +6,8 @@ export interface OwnerRow {
   id: string; nickname: string; rankingPublic: boolean; basis: BondBasis; lastRefillAt: number | null; createdAt: number;
   /** join events on `joinsDay` (only joinStar moves them; upsertOwner never writes them) */
   joinsDay: string | null; joinsCount: number;
+  /** the account it belongs to (migration 0019; only linkOwner writes it); absent: a device's owner, linked to no account */
+  userId?: string;
 }
 export interface InviteRow { code: string; ownerId: string; createdAt: number; revokedAt: number | null }
 export type ConstellationStatus = "filling" | "complete";
@@ -28,6 +30,15 @@ export interface SignTop { sign: SignId; rank: number; nickname: string; total: 
 
 export interface BondsRepo {
   getOwner(id: string): Promise<OwnerRow | null>;
+  /** the owner linked to this account, or null (also on a database without migration 0019) */
+  ownerOfUser(userId: string): Promise<OwnerRow | null>;
+  /**
+   * Links an owner that belongs to no account to `userId`: "linked", "taken" (the owner is gone or already linked, or
+   * the account already has an owner) or "unsupported" (a database without migration 0019).
+   */
+  linkOwner(ownerId: string, userId: string): Promise<"linked" | "taken" | "unsupported">;
+  /** Deletes the owner with everything of theirs: constellations and their stars, invites. */
+  deleteOwner(id: string): Promise<void>;
   /** creates the owner, or updates nickname, ranking flag, basis and lastRefillAt (never the counters) */
   upsertOwner(row: OwnerRow): Promise<void>;
   activeInvite(ownerId: string): Promise<InviteRow | null>;

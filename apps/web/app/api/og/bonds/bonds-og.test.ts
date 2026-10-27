@@ -5,6 +5,8 @@ import { resetDailyStore } from "@/lib/api/dailyStore";
 import { LIMITS_PER_MINUTE, resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { GET as meGet } from "../../bonds/me/route";
 import { POST as ownerPost } from "../../bonds/owner/route";
+import { setTestDb } from "@/lib/db";
+import { signIn } from "@/lib/testing/bondsLogin";
 import { POST as choosePost } from "../../bonds/choose/route";
 import { POST as joinPost } from "../../bonds/join/route";
 import { POST as settingsPost } from "../../bonds/settings/route";
@@ -62,6 +64,7 @@ const BIRTH_YEARS = /1988|1990|1991|1992|1995/;
 
 async function completedAries() {
   const owner: Jar = new Map();
+  await signIn(owner);
   absorb(owner, await ownerPost(req("/api/bonds/owner", owner, { nickname: "용우", birth: OWNER_BIRTH })));
   await choosePost(req("/api/bonds/choose", owner, { sign: "aries" }));
   const { invite } = (await (await meGet(req("/api/bonds/me", owner))).json()) as { invite: { code: string } };
@@ -96,6 +99,7 @@ describe("share image route", () => {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    setTestDb(null);
   });
 
   it("draws the owner and sign, my total, my all-time rank and every friend's nickname, but no friend's score and never a birth date", async () => {
@@ -161,6 +165,7 @@ describe("share image route", () => {
   it("is a 404 for an unknown id and for a constellation that is not complete yet", async () => {
     expect((await image("not-a-real-id")).status).toBe(404);
     const owner: Jar = new Map();
+    await signIn(owner);
     absorb(owner, await ownerPost(req("/api/bonds/owner", owner, { nickname: "별지기", birth: OWNER_BIRTH }, "5.5.5.5")));
     await choosePost(req("/api/bonds/choose", owner, { sign: "leo" }));
     const me = (await (await meGet(req("/api/bonds/me", owner))).json()) as { filling: { row: { id: string } } };

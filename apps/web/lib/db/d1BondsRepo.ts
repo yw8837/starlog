@@ -8,6 +8,8 @@ import type { D1Binding } from "./d1";
 interface OwnerRecord {
   id: string; nickname: string; ranking_public: number; basis_json: string; last_refill_at: number | null; created_at: number;
   joins_day: string | null; joins_count: number;
+  /** migration 0019; absent on a database it has not reached */
+  user_id?: string | null;
 }
 interface InviteRecord { code: string; owner_id: string; created_at: number; revoked_at: number | null }
 interface ConstellationRecord {
@@ -26,7 +28,11 @@ interface RankingRecord { id: string; nickname: string; total: number; completed
 const toOwner = (r: OwnerRecord): OwnerRow => ({
   id: r.id, nickname: r.nickname, rankingPublic: r.ranking_public === 1, basis: JSON.parse(r.basis_json) as BondBasis,
   lastRefillAt: r.last_refill_at, createdAt: r.created_at, joinsDay: r.joins_day, joinsCount: r.joins_count,
+  ...(r.user_id ? { userId: r.user_id } : {}),
 });
+
+/** The database has not run migration 0019 yet (code deployed first): no owner belongs to an account. */
+const lacksUserId = (error: unknown) => /user_id/i.test(error instanceof Error ? error.message : String(error));
 const toInvite = (r: InviteRecord): InviteRow => ({ code: r.code, ownerId: r.owner_id, createdAt: r.created_at, revokedAt: r.revoked_at });
 const toConstellation = (r: ConstellationRecord): ConstellationRow => ({
   id: r.id, ownerId: r.owner_id, sign: r.sign as SignId, status: r.status as ConstellationStatus, total: r.total,
@@ -115,6 +121,33 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
     async getOwner(id) {
       const r = await one<OwnerRecord>("SELECT * FROM owners WHERE id = ?", id);
       return r ? toOwner(r) : null;
+    },
+    async ownerOfUser(userId) {
+      try {
+        const r = await one<OwnerRecord>("SELECT * FROM owners WHERE user_id = ?", userId);
+        return r ? toOwner(r) : null;
+      } catch (error) {
+        if (lacksUserId(error)) return null;
+        throw error;
+      }
+    },
+    async linkOwner(ownerId, userId) {
+      try {
+        const linked = await one<{ id: string }>("UPDATE owners SET user_id = ? WHERE id = ? AND user_id IS NULL RETURNING id", userId, ownerId);
+        return linked ? "linked" : "taken";
+      } catch (error) {
+        if (/UNIQUE/i.test(error instanceof Error ? error.message : String(error))) return "taken";
+        if (lacksUserId(error)) return "unsupported";
+        throw error;
+      }
+    },
+    async deleteOwner(id) {
+      await db.batch([
+        db.prepare("DELETE FROM stars WHERE constellation_id IN (SELECT id FROM constellations WHERE owner_id = ?)").bind(id),
+        db.prepare("DELETE FROM constellations WHERE owner_id = ?").bind(id),
+        db.prepare("DELETE FROM invites WHERE owner_id = ?").bind(id),
+        db.prepare("DELETE FROM owners WHERE id = ?").bind(id),
+      ]);
     },
     async upsertOwner(row) {
       await run(

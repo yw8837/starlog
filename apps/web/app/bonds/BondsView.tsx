@@ -14,8 +14,9 @@ import { InviteShareButton } from "@/components/bonds/InviteShareButton";
 import { SignPicker } from "@/components/bonds/SignPicker";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { bondsApi, bondsMessage, copyText, markSeen, savedSunSign, seenUntil } from "@/lib/bonds/client";
-import type { JoinedView, OwnerView } from "@/lib/bonds/service";
+import { loginHref } from "@/lib/account/client";
+import { bondsApi, bondsMessage, copyText, markSeen, monthDay, savedSunSign, seenUntil } from "@/lib/bonds/client";
+import type { JoinedView, LinkOffer, OwnerSummary, OwnerView } from "@/lib/bonds/service";
 import { OwnerSetup } from "./OwnerSetup";
 import { StarList } from "./StarList";
 import { ConstellationStats } from "@/components/bonds/BondScore";
@@ -23,7 +24,8 @@ import { BondsShareButton } from "@/components/bonds/BondsShareButton";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./BondsView.module.css";
 
-type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null; joined?: JoinedView[] };
+/** `signedIn`: a new owner logs in first; `link`: this device's owner can be linked to the account (owner 2026-10-27) */
+type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null; joined?: JoinedView[]; signedIn?: boolean; link?: LinkOffer };
 
 /**
  * 별자리 인연, the owner's single scroll (spec §3): the constellation being filled with its stars, the
@@ -81,8 +83,13 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
     return (
       <>
         <Intro />
-        {/* The nickname this device used as a friend, if any; a friend's code is entered in 내 정보, not here (owner 2026-10-02). */}
-        <OwnerSetup onDone={load} defaultNickname={me.joined?.flatMap((j) => j.members).find((m) => m.me)?.nickname ?? ""} />
+        {/* Starting needs a login (owner 2026-10-27); after it the visitor comes back here and goes on with the form. */}
+        {me.signedIn === false ? (
+          <LoginToStart />
+        ) : (
+          // The nickname this device used as a friend, if any; a friend's code is entered in 내 정보, not here (owner 2026-10-02).
+          <OwnerSetup onDone={load} defaultNickname={me.joined?.flatMap((j) => j.members).find((m) => m.me)?.nickname ?? ""} />
+        )}
         <JoinedList joined={me.joined ?? []} />
       </>
     );
@@ -131,6 +138,121 @@ function Intro() {
 }
 
 /**
+ * 내 별자리는 로그인해서 만들어요 (owner 2026-10-27: "계정 위주로 돌아가는 게 맞다"): the constellation belongs to the
+ * account, so the same one, its invite link and scores show on every device. /login brings the visitor back to /bonds,
+ * where the start form follows. A friend joins without logging in.
+ */
+function LoginToStart() {
+  return (
+    <section className={`${b.panel} ${s.login}`} aria-labelledby="bonds-login-title">
+      <h2 id="bonds-login-title" className={b.sectionTitle}>
+        내 별자리는 로그인해서 만들어요
+      </h2>
+      <p className={b.helper}>로그인하면 휴대폰과 PC 어디서든 같은 별자리와 초대 링크, 점수가 보여요. 친구는 로그인 없이 참여해요.</p>
+      <Button href={loginHref("/bonds")} block size="lg" trailing="→">
+        로그인하고 시작하기
+      </Button>
+      <p className={b.helper}>이미 만든 별자리가 있으면 로그인하면 그대로 보여요.</p>
+    </section>
+  );
+}
+
+/**
+ * 연결하기 (owner 2026-10-27): this device's owner, made before accounts, joins the logged-in account only when tapped.
+ * Where the account already has its own, both are shown and the one kept is chosen; the other is deleted (lib: api/bonds/link),
+ * after a confirm when it holds friends' stars.
+ */
+function LinkPrompt({ link, reload }: { link: LinkOffer; reload: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [confirm, setConfirm] = useState<"device" | "account" | null>(null);
+
+  const send = async (keep?: "device" | "account") => {
+    setBusy(true);
+    setError("");
+    const result = await bondsApi("link", keep ? { keep } : {});
+    setBusy(false);
+    setConfirm(null);
+    if (!result.ok) {
+      setError(bondsMessage(result, "연결하지 못했어요. 잠시 뒤에 다시 시도해 주세요"));
+      return;
+    }
+    reload();
+  };
+
+  if (link.kind === "offer") {
+    return (
+      <section className={`${b.panel} ${s.link}`} aria-labelledby="link-title">
+        <h2 id="link-title" className={b.sectionTitle}>
+          이 기기에서 만든 별자리를 내 계정에 연결할까요?
+        </h2>
+        <p className={b.helper}>연결하면 다른 기기에서도 보여요. 로그인한 계정으로 같은 별자리와 초대 링크, 점수를 볼 수 있어요.</p>
+        <Button block onClick={() => void send()} disabled={busy}>
+          {busy ? "연결하는 중이에요" : "연결하기"}
+        </Button>
+        {error ? (
+          <p className={b.error} role="alert">
+            {error}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
+
+  const dropped = confirm === "device" ? link.account : link.device;
+  const keep = (which: "device" | "account") => {
+    const other = which === "device" ? link.account : link.device;
+    if (other.stars > 0) setConfirm(which);
+    else void send(which);
+  };
+  return (
+    <section className={`${b.panel} ${s.link}`} aria-labelledby="link-title">
+      <h2 id="link-title" className={b.sectionTitle}>
+        남길 별자리를 하나 골라 주세요
+      </h2>
+      <p className={b.helper}>이 기기에서 만든 별자리와 내 계정의 별자리가 따로 있어요. 계정에는 하나만 남길 수 있고, 고르지 않은 별자리는 지워져요.</p>
+      <ul className={s.linkChoices}>
+        <OwnerChoice label="내 계정의 별자리" summary={link.account} onKeep={() => keep("account")} busy={busy} />
+        <OwnerChoice label="이 기기에서 만든 별자리" summary={link.device} onKeep={() => keep("device")} busy={busy} />
+      </ul>
+      {error ? (
+        <p className={b.error} role="alert">
+          {error}
+        </p>
+      ) : null}
+      <ConfirmDialog
+        open={confirm !== null}
+        title="고르지 않은 별자리를 지울까요?"
+        confirmLabel="지우고 남기기"
+        onConfirm={() => void send(confirm ?? undefined)}
+        onClose={() => setConfirm(null)}
+        busy={busy}
+      >
+        <p>
+          {`${dropped.nickname}님의 ${summaryName(dropped)}와 친구 별 ${dropped.stars}개가 지워져요. 지운 별자리는 되돌릴 수 없어요.`}
+        </p>
+      </ConfirmDialog>
+    </section>
+  );
+}
+
+const summaryName = (summary: OwnerSummary) => (summary.sign ? getConstellation(summary.sign).ko : "별자리");
+
+function OwnerChoice({ label, summary, onKeep, busy }: { label: string; summary: OwnerSummary; onKeep: () => void; busy: boolean }) {
+  const filled = summary.sign ? `별 ${summary.filled}/${summary.slots}` : "아직 별자리를 고르지 않았어요";
+  return (
+    <li className={s.linkChoice}>
+      <p className={b.eyebrow}>{label}</p>
+      <p className={s.linkName}>{`${summary.nickname}님의 ${summaryName(summary)}`}</p>
+      <p className={b.helper}>{`${filled}${summary.completed ? ` · 완성 ${summary.completed}개` : ""} · ${monthDay(summary.createdAt)}에 만들었어요`}</p>
+      <Button variant="secondary" block onClick={onKeep} disabled={busy}>
+        이 별자리 남기기
+      </Button>
+    </li>
+  );
+}
+
+/**
  * 내가 들어간 별자리 (owner 2026-10-14): friends' constellations this device joined, newest first, each with
  * whose it is, how far it is filled and who is in it (나 for this device). Nothing when it joined none.
  */
@@ -159,7 +281,7 @@ function JoinedList({ joined }: { joined: JoinedView[] }) {
   );
 }
 
-function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null; joined?: JoinedView[] }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
+function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null; joined?: JoinedView[]; link?: LinkOffer }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
   const { owner, invite, filling, completed, top5, ranks } = view;
   // A sign was just chosen here: the invite is brought into view once (owner 2026-10-23).
   const [justMade, setJustMade] = useState(false);
@@ -180,6 +302,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
         <h1 className={s.title}>{owner.nickname}님의 별자리</h1>
         <HowToButton />
       </header>
+      {view.link ? <LinkPrompt link={view.link} reload={reload} /> : null}
 
       {filling ? (
         <>
