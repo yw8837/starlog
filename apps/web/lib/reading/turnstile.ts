@@ -14,6 +14,8 @@ const LOAD_MS = 15_000;
 /** A challenge answers within this, an interactive one included, or it fails. */
 const SOLVE_MS = 120_000;
 const INTERACTIVE_NOTE = "보안 확인이 필요해요. 아래 확인란을 눌러 주세요.";
+/** Sent on window with `detail` true while a person has to take part, false after: a waiting screen stops its clock (useBotCheck). */
+export const BOT_CHECK_EVENT = "starlog:bot-check";
 const BOX_STYLE = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:2147483000;max-width:calc(100vw - 32px)";
 const NOTE_STYLE = "margin:0 0 8px;padding:8px 12px;border-radius:8px;background:#fff;color:#1b1b1f;font-size:15px;line-height:1.5";
 
@@ -63,8 +65,10 @@ function loadScript(): Promise<TurnstileApi | null> {
 }
 
 function showNote(note: HTMLElement, on: boolean): void {
+  const was = note.textContent !== "";
   note.textContent = on ? INTERACTIVE_NOTE : "";
   note.setAttribute("style", on ? NOTE_STYLE : "margin:0");
+  if (was !== on) window.dispatchEvent(new CustomEvent(BOT_CHECK_EVENT, { detail: on }));
 }
 
 /** The page's one widget, rendered on first use; null when Turnstile refuses to render it. */

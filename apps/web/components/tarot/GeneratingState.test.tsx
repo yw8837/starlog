@@ -3,7 +3,8 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RETRY_CAPTION, checklist, progressPlan } from "@/lib/reading/progress";
+import { BOT_CHECK_LINE, RETRY_CAPTION, checklist, progressPlan } from "@/lib/reading/progress";
+import { BOT_CHECK_EVENT } from "@/lib/reading/turnstile";
 import { GeneratingState } from "./GeneratingState";
 
 const STAY = "이 화면을 열어 둔 채로 기다려 주세요.";
@@ -45,6 +46,23 @@ describe("GeneratingState: the time under the bar", () => {
     expect(screen.getByText("40초째 · 보통 1분 안팎")).toBeTruthy();
     tick(1_000);
     expect(screen.getByText("41초째 · 보통 1분 안팎")).toBeTruthy();
+  });
+
+  it("while the security check waits for the person's tick, says so and stops the clock; after it, counts on from there", () => {
+    render(<GeneratingState kind="tarot-teaser" caption="카드를 읽고 있어요" fraction={0} live={false} />);
+    tick(5_000);
+    expect(screen.getByText("5초째 · 보통 10초 안팎")).toBeTruthy();
+    act(() => {
+      window.dispatchEvent(new CustomEvent(BOT_CHECK_EVENT, { detail: true }));
+    });
+    expect(screen.getByText(BOT_CHECK_LINE)).toBeTruthy();
+    tick(90_000);
+    expect(screen.getByText(BOT_CHECK_LINE)).toBeTruthy();
+    act(() => {
+      window.dispatchEvent(new CustomEvent(BOT_CHECK_EVENT, { detail: false }));
+    });
+    tick(1_000);
+    expect(screen.getByText("6초째 · 보통 10초 안팎")).toBeTruthy();
   });
 
   it("lets the bar creep with time while the stream is quiet: never backwards, never full before the end", () => {

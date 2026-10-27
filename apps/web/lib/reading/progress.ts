@@ -241,6 +241,9 @@ export function timeFraction(kind: WaitKind, elapsedMs: number): number {
   return TIME_CAP * (1 - Math.exp((-k * Math.max(0, elapsedMs)) / WAIT[kind].usualMs));
 }
 
+/** Under the bar while the security check waits on the person's tick: the clock stops meanwhile. */
+export const BOT_CHECK_LINE = "보안 확인을 마치면 바로 이어서 적어요";
+
 /** "38초째 · 보통 2분 안팎"; past the usual length, calmly that it takes a bit longer. */
 export function waitLine(kind: WaitKind, elapsedMs: number): string {
   const wait = WAIT[kind];

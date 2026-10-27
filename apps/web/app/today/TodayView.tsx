@@ -11,8 +11,9 @@ import { Button } from "@/components/ui/Button";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
 import { commitQuota, getJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
-import { progressPlan, timeFraction, waitLine } from "@/lib/reading/progress";
+import { BOT_CHECK_LINE, progressPlan, timeFraction, waitLine } from "@/lib/reading/progress";
 import type { DailyData, DailyDeal } from "@/lib/reading/types";
+import { useBotCheck } from "@/lib/reading/useBotCheck";
 import { useElapsed } from "@/lib/reading/useElapsed";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { createDailyShareLink, knownDailyShareLink, stopDailyShareLink } from "@/lib/share/client";
@@ -294,14 +295,15 @@ export function TodayView() {
  * stands still) and the seconds since the pick under it. Mounted with the pick, so its clock starts there.
  */
 function DailyProgress({ caption, fraction }: { caption: string; fraction: number }) {
-  const elapsed = useElapsed();
+  const checking = useBotCheck();
+  const elapsed = useElapsed(checking);
   return (
     <div className={s.progress}>
       <p className={s.caption}>{caption}</p>
       <div className={s.track} aria-hidden="true">
         <span className={s.fill} style={{ transform: `scaleX(${Math.max(0.06, fraction, timeFraction("daily", elapsed))})` }} />
       </div>
-      <p className={s.note}>{waitLine("daily", elapsed)}</p>
+      <p className={s.note}>{checking ? BOT_CHECK_LINE : waitLine("daily", elapsed)}</p>
     </div>
   );
 }

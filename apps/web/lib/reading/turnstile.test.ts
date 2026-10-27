@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resetTurnstile, turnstileToken } from "./turnstile";
+import { BOT_CHECK_EVENT, resetTurnstile, turnstileToken } from "./turnstile";
 
 const SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
@@ -86,6 +86,22 @@ describe("turnstileToken", () => {
     options().callback!("token-1");
     expect(await pending).toBe("token-1");
     expect(status.textContent).toBe("");
+  });
+
+  it("tells the page while the person has to take part (BOT_CHECK_EVENT), so a waiting screen stops counting", async () => {
+    const { api, options } = fakeTurnstile();
+    const seen: unknown[] = [];
+    const listen = (event: Event) => seen.push((event as CustomEvent<boolean>).detail);
+    window.addEventListener(BOT_CHECK_EVENT, listen);
+    const pending = turnstileToken("site-key-1");
+    await vi.waitFor(() => expect(api.execute).toHaveBeenCalledTimes(1));
+    options()["before-interactive-callback"]!();
+    expect(seen).toEqual([true]);
+    options()["after-interactive-callback"]!();
+    options().callback!("token-1");
+    await pending;
+    window.removeEventListener(BOT_CHECK_EVENT, listen);
+    expect(seen.at(-1)).toBe(false);
   });
 
   it("loads the script once from challenges.cloudflare.com (explicit rendering), and resolves null when it cannot load", async () => {

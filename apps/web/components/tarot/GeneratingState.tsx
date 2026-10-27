@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
-import { timeFraction, waitLine, type ChecklistStep, type WaitKind } from "@/lib/reading/progress";
+import { BOT_CHECK_LINE, timeFraction, waitLine, type ChecklistStep, type WaitKind } from "@/lib/reading/progress";
+import { useBotCheck } from "@/lib/reading/useBotCheck";
 import { useElapsed } from "@/lib/reading/useElapsed";
 import type { TipCard } from "@/lib/reading/waitingTips";
 import s from "./GeneratingState.module.css";
@@ -49,7 +50,8 @@ export function GeneratingState({ mode = "tarot", kind, caption, fraction, steps
   const inline = layout === "inline";
   const size = inline ? 120 : 188;
   const late = fraction >= 0.7;
-  const elapsed = useElapsed();
+  const checking = useBotCheck();
+  const elapsed = useElapsed(checking);
   // Both only grow, so the bar never moves back.
   const shown = Math.max(fraction, timeFraction(kind, elapsed));
 
@@ -101,7 +103,7 @@ export function GeneratingState({ mode = "tarot", kind, caption, fraction, steps
           <span className={s.fill} style={{ transform: `scaleX(${Math.max(0.04, shown)})` }} />
         </div>
         <p className={s.hint}>
-          <span className={s.elapsed}>{waitLine(kind, elapsed)}</span>
+          <span className={s.elapsed}>{checking ? BOT_CHECK_LINE : waitLine(kind, elapsed)}</span>
           {inline ? null : <span className={s.stay}>이 화면을 열어 둔 채로 기다려 주세요.</span>}
         </p>
       </div>
