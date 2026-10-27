@@ -64,7 +64,7 @@ if (MODE !== "on") {
 
     await page.goto("/");
     const main = page.getByRole("main");
-    await expect(main.getByRole("link", { name: /타로 보기/ })).toHaveAttribute("href", "/tarot/new?new=1");
+    await expect(main.getByRole("link", { name: /타로 보기/ })).toHaveAttribute("href", "/tarot/new");
     await page.waitForLoadState("networkidle");
     await expect(page.getByRole("region", { name: "더 깊게 보기" })).toHaveCount(0);
     await expect(page.getByRole("contentinfo").getByRole("link", { name: "프리미엄 풀이" })).toHaveCount(0);

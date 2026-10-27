@@ -48,7 +48,7 @@ describe("the home's 더 깊게 보기 (plan-reconciled §4.1)", () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(screen.queryByText("더 깊게 보기")).toBeNull();
       expect(container.querySelector('a[href^="/premium/"]')).toBeNull();
-      expect(screen.getByRole("link", { name: /타로 보기/ }).getAttribute("href")).toBe("/tarot/new?new=1");
+      expect(screen.getByRole("link", { name: /타로 보기/ }).getAttribute("href")).toBe("/tarot/new");
     });
   }
 

@@ -17,8 +17,8 @@ test("home: hero, then 타로 · 사주 above the fold, quick cards, 별자리 �
   const saju = main.getByRole("link", { name: /사주 보기/ });
   const now = main.getByRole("link", { name: /지금의 한 장/ });
   const today = main.getByRole("link", { name: /오늘의 한 장/ });
-  await expect(tarot).toHaveAttribute("href", "/tarot/new?new=1");
-  await expect(saju).toHaveAttribute("href", "/saju/start?new=1");
+  await expect(tarot).toHaveAttribute("href", "/tarot/new");
+  await expect(saju).toHaveAttribute("href", "/saju/start");
   await expect(now).toHaveAttribute("href", "/now");
   await expect(today).toHaveAttribute("href", "/today");
   // 별자리 인연 loads this device's state first; a new visitor gets the start link. Friends join through the
