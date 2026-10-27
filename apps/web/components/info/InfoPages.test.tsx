@@ -9,7 +9,7 @@ import FaqPage, { metadata as faqMeta } from "@/app/faq/page";
 import HelpPage, { metadata as helpMeta } from "@/app/help/page";
 import HowPage, { metadata as howMeta } from "@/app/how/page";
 import { AI_TELL_THRESHOLD, aiTells } from "@/lib/ai/style";
-import { SITE, won } from "@/lib/config";
+import { OPENING_LAST_DAY, SITE, won } from "@/lib/config";
 import { faqGroups } from "@/lib/faq";
 import { BOND_MAX, BOND_MIN } from "@starlog/core";
 import decision from "@/lib/decision.generated.json";
@@ -248,6 +248,14 @@ describe("/faq", () => {
     for (const { q, a } of TRUST) expect(entries.find((entry) => entry.q === q)?.a.join(" "), q).toBe(a);
     const ids = entries.map((entry) => entry.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("keeps 오픈 기념 무료 out of every answer's cached text: only in `opening`, dated from the config (SEO audit 2026-10-27)", () => {
+    const entries = faqGroups().flatMap((group) => group.entries);
+    for (const entry of entries) expect(entry.a.join(" "), entry.id).not.toContain("오픈 기념");
+    const refund = entries.find((entry) => entry.id === "refund");
+    expect(refund?.opening).toContain("오픈 기념 무료 풀이는 결제가 없어 환불할 일이 생기지 않아요");
+    expect(refund?.opening).toContain(OPENING_LAST_DAY);
   });
 
   it("gives the 7-day refund rule for unopened readings, and keeps failures on our side refundable at any time", () => {

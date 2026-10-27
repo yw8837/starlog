@@ -1,5 +1,5 @@
 import { adsConfig } from "./ads";
-import { SITE, won } from "./config";
+import { OPENING_LAST_DAY, SITE, won } from "./config";
 import { approxCharsText } from "./pricing";
 import { openingFreeText, times } from "./helpGuide";
 import { crisisLines } from "./crisis";
@@ -219,11 +219,12 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
         {
           id: "refund",
           q: "환불은 어떻게 되나요?",
+          // The rules that stay true first; 오픈 기념 무료 only in `opening`, which shows while it runs (SEO audit 2026-10-27).
           a: [
-            "오픈 기념 무료 풀이는 결제가 없어 환불할 일이 생기지 않아요. 풀이가 제대로 만들어지지 않으면 오픈 기념 무료도 쓴 것으로 치지 않아요.",
             `유료 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있어요. ${nameKo} 쪽 오류로 풀이가 만들어지지 않았거나 끝까지 나오지 않았다면 기간과 상관없이 결제한 풀이를 다시 열거나 결제 금액을 환불받을 수 있어요.`,
             "풀이를 받던 중에 화면을 닫거나 연결이 끊긴 결제는 환불되지 않아요. 대신 3번까지 다시 열어 끝까지 받을 수 있고, 네 번째로 끊기면 그 결제는 쓴 것으로 처리돼요.",
           ],
+          opening: `${OPENING_LAST_DAY}까지 여는 오픈 기념 무료 풀이는 결제가 없어 환불할 일이 생기지 않아요. 풀이가 제대로 만들어지지 않으면 오픈 기념 무료도 쓴 것으로 치지 않아요.`,
           link: { href: "/refund", label: "환불 정책" },
         },
         {
