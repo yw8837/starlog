@@ -677,11 +677,12 @@ describe("the saju concept articles answer first and show a worked example", () 
     expect(links.length, links.map((l) => l.url).join(" ")).toBeGreaterThanOrEqual(3);
   });
 
-  it("new-year-fortune: the price sits in one notice box at the end, not in the article's text", () => {
+  it("new-year-fortune: the product is named in one notice box at the end, without its price (AdSense audit 2026-10-27)", () => {
     const article = full("new-year-fortune");
-    const price = won((SITE.price.premium.find((p) => p.id === "newyear-2027") as { krw: number }).krw);
+    const product = SITE.price.premium.find((p) => p.id === "newyear-2027") as { name: string; krw: number };
     const texts = article.sections.flatMap((section) => [section.body, ...(section.blocks ?? []).map(blockText)]);
-    expect(texts.flatMap((text, i) => (text.includes(price) ? [i] : [])), price).toEqual([texts.length - 1]);
+    expect(texts.flatMap((text, i) => (text.includes(product.name) ? [i] : [])), product.name).toEqual([texts.length - 1]);
+    expect(texts.join(" ")).not.toContain(won(product.krw));
     expect(article.sections.at(-1)?.blocks?.at(-1)?.kind).toBe("callout");
   });
 });

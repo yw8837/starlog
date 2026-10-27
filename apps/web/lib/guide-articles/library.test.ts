@@ -175,13 +175,12 @@ describe("card articles agree with the KB", () => {
 describe("the premium readings, on sale since 2026-10-20, are introduced as they are: no 준비 중, no date (review 2026-10-20 A3)", () => {
   const premium = (id: string) => SITE.price.premium.find((p) => p.id === id)!;
 
-  it("the Celtic Cross article explains the 10 positions and names 켈틱 크로스 10장 with its SITE price, never 준비 중", () => {
+  it("the Celtic Cross article explains the 10 positions and names 켈틱 크로스 10장, never 준비 중", () => {
     const article = findArticle(CELTIC_SLUG);
     expect(article?.category).toBe("tarot");
     const text = allText(article as GuideArticle);
     expect(text).toContain("켈틱 크로스");
     expect(text).toContain(premium("tarot-deep").name);
-    expect(text).toContain(won(premium("tarot-deep").krw));
     expect(text).not.toContain("심층 타로");
     expect(text).not.toMatch(/준비 중|준비하고/);
     for (let n = 1; n <= 10; n++) expect(text, `${n}번 자리`).toContain(`${n}번`);
@@ -191,16 +190,26 @@ describe("the premium readings, on sale since 2026-10-20, are introduced as they
   it.each([
     ["saju-compatibility", "match"],
     ["new-year-fortune", "newyear-2027"],
-  ])("%s introduces %s by its SITE name and price, never 준비 중, with no date", (slug, id) => {
+  ])("%s introduces %s by its SITE name, never 준비 중, with no date", (slug, id) => {
     const text = allText(findArticle(slug) as GuideArticle);
     expect(text).toContain(premium(id).name);
-    expect(text).toContain(won(premium(id).krw));
     expect(text).not.toMatch(/준비 중|준비하고/);
     expect(text).not.toMatch(OPENING_DATE);
   });
 
   it("no other article promises an opening date", () => {
     for (const article of GUIDE_ARTICLES) expect(allText(article), article.slug).not.toMatch(OPENING_DATE);
+  });
+
+  // AdSense audit 2026-10-27: a price is product info, so it stays in the boxes after the article (the CTA and
+  // PremiumRows, app/guide/[slug]/page.tsx), never in an article's own text.
+  it("no article's text carries a price", () => {
+    const prices = [SITE.price.tarotStandardKrw, SITE.price.sajuStandardKrw, ...SITE.price.premium.map((p) => p.krw)].map(won);
+    for (const article of GUIDE_ARTICLES) {
+      const text = allText(article);
+      expect(text, article.slug).not.toMatch(/\d{1,3}(?:,\d{3})+원/);
+      for (const price of prices) expect(text, `${article.slug}: ${price}`).not.toContain(price);
+    }
   });
 });
 

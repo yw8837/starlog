@@ -1,10 +1,10 @@
-import { SITE, won } from "../config";
+import { SITE } from "../config";
 import type { GuideArticle } from "../guide";
 
 /** The 2026-10-23 rewrite (AdSense): `updated` set here wins over GUIDE_DATES (index.ts withAnswers). */
 const UPDATED = "2026-10-27";
 
-/** On sale since 2026-10-20 (owner): named and priced from SITE (review 2026-10-20 A3). */
+/** On sale since 2026-10-20 (owner): named from SITE (review 2026-10-20 A3); the price stays out of the text (AdSense audit 2026-10-27). */
 const MATCH = SITE.price.premium.find((p) => p.id === "match")!;
 const NEW_YEAR = SITE.price.premium.find((p) => p.id === "newyear-2027")!;
 
@@ -1082,7 +1082,7 @@ export const SAJU_ARTICLES: readonly GuideArticle[] = [
       },
       {
         heading: "스타로그에서 궁합을 볼 때",
-        body: `스타로그의 ${MATCH.name}은 두 사람의 사주로 관계와 앞으로 1년을 함께 읽는 풀이예요. 두 사람의 명식과 한눈에 보는 요약은 결제하기 전에 무료로 먼저 볼 수 있고, 풀이 전체는 ${won(MATCH.krw)}이에요. 사주 보기로 내 명식을 먼저 세워 두면 두 사람을 나란히 놓았을 때 내 쪽의 결이 한결 잘 보여요.`,
+        body: `스타로그의 ${MATCH.name}은 두 사람의 사주로 관계와 앞으로 1년을 함께 읽는 풀이예요. 사주 보기로 내 명식을 먼저 세워 두면 두 사람을 나란히 놓았을 때 내 쪽의 결이 한결 잘 보여요.`,
       },
     ],
     related: ["day-master-muto", "day-master-gyesu", "branch-relations", "five-elements", "day-master"],
@@ -1197,7 +1197,7 @@ export const SAJU_ARTICLES: readonly GuideArticle[] = [
             kind: "callout",
             tone: "note",
             title: `스타로그의 ${NEW_YEAR.name}`,
-            text: `${NEW_YEAR.name}는 사주로 2027년 한 해와 열두 달을 미리 읽는 풀이예요. 한 해의 제목과 요약은 결제하기 전에 무료로 먼저 볼 수 있고, 풀이 전체는 ${won(NEW_YEAR.krw)}이에요. 태어난 시를 모르면 시주 없이 여섯 글자로 읽어요. 생일만으로 내 일주의 키워드를 보는 무료 테스트 2027년 나의 키워드([starlog.yeolmaeapps.kr/2027-keyword](https://starlog.yeolmaeapps.kr/2027-keyword))도 있어요.`,
+            text: `${NEW_YEAR.name}는 사주로 2027년 한 해와 열두 달을 미리 읽는 풀이예요. 태어난 시를 모르면 시주 없이 여섯 글자로 읽어요. 생일만으로 내 일주의 키워드를 보는 무료 테스트 2027년 나의 키워드([starlog.yeolmaeapps.kr/2027-keyword](https://starlog.yeolmaeapps.kr/2027-keyword))도 있어요.`,
           },
         ],
       },
