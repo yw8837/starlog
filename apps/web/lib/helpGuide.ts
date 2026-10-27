@@ -1,3 +1,4 @@
+import { BOND_MAX, BOND_MIN } from "@starlog/core";
 import { OPENING_LAST_DAY, SITE, won } from "./config";
 import { approxCharsText } from "./pricing";
 
@@ -197,6 +198,20 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           ],
           tip: "횟수 제한 없이 무료예요. 같은 카드라도 뽑을 때마다 다른 문장이 나올 수 있어요.",
         },
+        // The how-to of the guide article it replaced (/guide/now-card-how-to redirects to #tarot-now-guide, lib/hostRoutes.ts).
+        {
+          id: "now-guide",
+          icon: "spark",
+          title: "지금의 한 장 잘 쓰기",
+          sub: "답이 나오는 방식과 묻는 요령",
+          body: "뽑을 때마다 78장을 새로 섞고, 카드마다 정방향과 역방향도 그때 정해져요. 답 문장은 카드와 방향마다 그림에 맞춰 세 개씩, 모두 468개를 미리 써 두었고 그 가운데 하나가 나오죠. 하루 한 번 그날의 운세를 보는 오늘의 한 장과 달리, 고민이 생길 때마다 새로 섞어서 답해요.",
+          steps: [
+            "‘걔가 나를 좋아할까?’보다 ‘오늘 먼저 연락해 볼까?’처럼 내가 움직일 수 있는 일로 물어요.",
+            "답 문장 아래의 이유를 함께 읽고, 이유가 짚는 그림을 카드에서 찾아봐요.",
+            "원하는 답이 나올 때까지 다시 뽑기보다 고민 하나에 한 번만 뽑고, 받은 문장을 메모해 둬요.",
+          ],
+          tip: "칸에 적은 고민은 결과 화면에 다시 보여 주는 데만 쓰고 어디로도 보내지 않아요. 공유 링크에도 고민은 담기지 않고요.",
+        },
         {
           id: "today",
           icon: "cards",
@@ -314,6 +329,32 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
         },
       ],
     },
+    // 별자리 인연, named only while it is open (SITE.features.bonds). The how-to of the guide article it replaced
+    // (/guide/bond-score redirects to #bonds-score, lib/hostRoutes.ts).
+    ...(site.features.bonds
+      ? [
+          {
+            id: "bonds",
+            label: "별자리 인연",
+            sub: "친구들이 별이 되어 내 별자리를 채워요",
+            items: [
+              {
+                id: "score",
+                icon: "calendar" as const,
+                title: "인연 점수",
+                sub: "두 사람의 생년월일로 매겨요",
+                body: `인연 점수는 두 사람의 생년월일로 세운 세 기둥(연주, 월주, 일주)을 견줘 ${BOND_MIN}점에서 ${BOND_MAX}점 사이로 매겨요. 태어난 시간은 쓰지 않고 무작위도 없어서, 같은 두 사람은 언제 계산해도, 누가 초대했든 같은 점수가 나오죠.`,
+                steps: [
+                  "일간끼리 합을 이루거나, 한쪽이 다른 쪽을 살리거나, 같은 오행이면 점수가 올라가요.",
+                  "띠와 일지가 육합이나 삼합으로 짝을 이루면 더하고, 마주 보는 충이면 조금 덜어요. 띠가 원진이어도 조금 덜어요.",
+                  "내게 가장 적은 오행을 친구가 둘 이상 가졌거나 그 반대라면 더해요.",
+                ],
+                tip: `점수는 재미로 나누는 숫자라 관계를 판정하지 않고, 가장 낮아도 ${BOND_MIN}점이에요. 랭킹에 이름이 오르는 게 싫다면 별자리 인연 화면의 설정에서 끌 수 있어요.`,
+              },
+            ],
+          },
+        ]
+      : []),
     {
       id: "benefits",
       label: "혜택",

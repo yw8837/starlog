@@ -90,6 +90,22 @@ export function hostRedirects(): HostRedirect[] {
   ];
 }
 
+/**
+ * Two app manuals that sat in the guide (지금의 한 장 사용법, 별자리 인연의 인연 점수) became cards on the app's /help (AdSense
+ * audit 2026-10-27: the root domain reads as a content site of its own). Each old guide URL moves to its card for good
+ * (308), from either host in one hop: these come ahead of the host rules, which would first send the app host's copy to
+ * the root domain. The anchor is the card's id on /help (group id, then item id; lib/helpGuide.ts). In every build
+ * without split hosts the address is a path, like every other link there.
+ */
+export const GUIDE_MOVED_TO_HELP: Readonly<Record<string, string>> = {
+  "/guide/now-card-how-to": "/help#tarot-now-guide",
+  "/guide/bond-score": "/help#bonds-score",
+};
+
+export function movedGuideRedirects(): Array<{ source: string; destination: string; permanent: boolean }> {
+  return Object.entries(GUIDE_MOVED_TO_HELP).map(([source, path]) => ({ source, destination: splitHosts() ? `${SITE.url}${path}` : path, permanent: true }));
+}
+
 /** Before the files: the app's own page for "/" exists, and the root domain must not reach it. */
 export function hostRewrites(): HostRewrite[] {
   if (!splitHosts()) return [];

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
-  BOND_BASE, BOND_MAX, BOND_MIN, BRANCHES, STEMS, STEMS_KO, STEM_ELEMENTS, bondBasis, bondScore, computeChart, ganzhiKo, mainHiddenStem, shiftGanzhi, type SajuChart,
+  BRANCHES, STEMS, STEMS_KO, STEM_ELEMENTS, computeChart, ganzhiKo, mainHiddenStem, shiftGanzhi, type SajuChart,
 } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { elementMeeting } from "../ai/prompts/match";
@@ -384,7 +384,7 @@ const MAIN_TERM: Readonly<Record<string, string>> = {
   "heavenly-stems": "천간", "earthly-branches": "띠", "day-master": "일간", "ten-gods": "십신", daewoon: "대운", "saju-vs-astrology": "별자리",
   manseryeok: "만세력", "saju-compatibility": "궁합", "new-year-fortune": "신년운세", "four-pillars": "네 기둥", "ipchun-jeolgi": "입춘",
   "jasi-birth": "자정", "saju-birth-info": "생년월일", "branch-relations": "충", "twelve-stages": "12운성", yongsin: "용신", "wolun-iljin": "월운",
-  "bond-score": "인연 점수", "saju-glossary": "말",
+  "saju-glossary": "말",
 };
 
 const tableIn = (article: GuideArticle, caption: string) => {
@@ -641,16 +641,6 @@ const EXAMPLES: Readonly<Record<string, (article: GuideArticle, text: string) =>
     expect(kstDate(at(2026, 9, 20, 12).monthStartTerm!.instantUTC)).toBe("9월 7일");
     expect(kstDate(at(2026, 10, 20, 12).monthStartTerm!.instantUTC)).toBe("10월 8일");
   },
-  "bond-score": (_article, text) => {
-    // The base, the floor and the ceiling the article states, and the same-birthday pair.
-    expect([BOND_BASE, BOND_MIN, BOND_MAX]).toEqual([62, 55, 99]);
-    const same = bondBasis({ calendar: "solar", year: 1999, month: 10, day: 3 });
-    expect(text).toContain(`언제나 ${bondScore(same, same).score}점`);
-    const score = bondScore(bondBasis({ calendar: "solar", year: 1999, month: 10, day: 3 }), bondBasis({ calendar: "solar", year: 1993, month: 6, day: 11 }));
-    expect(text).toContain(`${score.score}점`);
-    for (const part of score.parts) expect(text, part.id).toContain(part.text);
-    for (const part of score.parts) expect(text, part.id).toContain(`${part.points > 0 ? "+" : ""}${part.points}`);
-  },
   "saju-glossary": (_article, text) => {
     const chart = at(1995, 8, 20, 12);
     expect(text).toContain(pillarLine(chart));
@@ -676,7 +666,7 @@ describe("the saju concept articles answer first and show a worked example", () 
     for (const section of article.sections.filter((s) => isQuestion(s.heading))) expect(firstSentence(section.body).length, section.heading).toBeLessThanOrEqual(120);
   });
   /** The pages a review found thin (under 1,800 shown characters): each now carries 2,500 or more of its own subject. */
-  const DEEPENED = ["wolun-iljin", "four-pillars", "day-master", "ten-gods", "saju-compatibility", "saju-birth-info", "branch-relations", "bond-score", "saju-glossary"];
+  const DEEPENED = ["wolun-iljin", "four-pillars", "day-master", "ten-gods", "saju-compatibility", "saju-birth-info", "branch-relations", "saju-glossary"];
 
   it.each(CONCEPTS.map((article) => [article.slug, article] as const))("%s: 1,800 shown characters or more (2,500 for the deepened pages)", (slug, article) => {
     expect(shownChars(article)).toBeGreaterThanOrEqual(DEEPENED.includes(slug) ? 2500 : 1800);

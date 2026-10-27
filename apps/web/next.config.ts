@@ -1,6 +1,6 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
-import { hostHeaders, hostRedirects, hostRewrites } from "./lib/hostRoutes";
+import { hostHeaders, hostRedirects, hostRewrites, movedGuideRedirects } from "./lib/hostRoutes";
 import { noindexHeaders } from "./lib/robots";
 
 /** HSTS: https only for two years (browsers ignore it on http://localhost). */
@@ -76,8 +76,10 @@ const nextConfig: NextConfig = {
   // for good: a 308 before rendering, so search engines carry its signals over to the tab.
   // /tarot and /saju have no page of their own (the entries are /tarot/new and /saju/new), and are what a
   // person or an article guesses: they go to the entry for good, after the host rules.
+  // Two app manuals that left the guide go to their cards on /help first, from either host (lib/hostRoutes.ts).
   async redirects() {
     return [
+      ...movedGuideRedirects(),
       ...hostRedirects(),
       { source: "/guide", destination: "/guide/tarot", permanent: true },
       { source: "/tarot", destination: "/tarot/new", permanent: true },

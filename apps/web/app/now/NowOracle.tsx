@@ -385,7 +385,8 @@ export function NowOracle({ instant = false }: NowOracleProps) {
             </li>
             <li>건강, 돈, 법률처럼 무거운 결정은 꼭 전문가와 상의해 주세요.</li>
           </ul>
-          <Link href={guideHref("/guide/now-card-how-to")} className={s.aboutMore}>
+          {/* The how-to moved from the guide to the app's /help (AdSense audit 2026-10-27; lib/hostRoutes.ts GUIDE_MOVED_TO_HELP). */}
+          <Link href="/help#tarot-now-guide" className={s.aboutMore}>
             더 자세히: 지금의 한 장 사용법 <span aria-hidden="true">→</span>
           </Link>
         </div>

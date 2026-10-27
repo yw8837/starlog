@@ -26,8 +26,6 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
     "타로 3장 스프레드는 카드를 뽑기 전에 세 자리를 먼저 정하고, 한 장씩 읽은 뒤 세 장을 한 문장으로 이어 읽는 방법이에요. 가장 익숙한 짜임은 과거·현재·미래이고, 막힌 일에는 상황·걸림돌·조언처럼 질문에 맞춰 자리 이름을 바꿔도 좋아요. 마지막 자리만 보고 결론을 내리면 무엇을 바꾸면 되는지를 놓치기 쉽죠.",
   "one-card-yes-no":
     "원카드로 예·아니오를 물을 때는 정방향은 예, 역방향은 아니오로 보거나 카드 성격에 따라 예·기다림·다시 생각하기로 나누는 방식 가운데 하나를 뽑기 전에 정해 둬요. 질문은 '오늘 먼저 연락해 보면 어떤 흐름일까?'처럼 내가 움직일 수 있는 일 하나로, 기간을 정해서 만들면 읽기 쉽죠. 건강, 법, 큰돈이 걸린 결정은 예·아니오로 정하지 말고 전문가와 상의해 주세요.",
-  "now-card-how-to":
-    "지금의 한 장은 고민 하나를 떠올리고 펼쳐진 카드 가운데 마음이 가는 한 장을 고르면, 고민에 건네는 한 문장과 그렇게 읽은 이유를 바로 보여 주는 무료 메뉴예요. 답 문장은 78장의 정방향과 역방향마다 카드 그림에 맞춰 미리 써 둔 문장 가운데 하나가 나오고, 횟수 제한 없이 쓸 수 있어요. 하루 한 번 그날의 운세를 보는 오늘의 한 장과 달리, 지금 붙든 고민 하나에 짧게 답하는 쪽이죠.",
   "redrawing-same-question":
     "원하는 답이 나올 때까지 곧바로 다시 뽑으면 카드를 읽기보다 이미 정해 둔 답을 확인하게 되기 쉬워서 권하지 않아요. 상황이 바뀌었을 때, 정해 둔 기간이 지났을 때, 질문 자체가 달라졌을 때는 다시 봐도 괜찮죠. 마음에 들지 않는 카드가 나왔다면 다시 뽑기 전에 왜 마음에 들지 않는지 적어 보고 그림을 한 번 더 살펴보세요.",
   "minor-arcana-suits":
@@ -124,8 +122,6 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
     "명리에서 오행의 균형은 다섯 기운을 똑같이 맞추는 일이 아니라, 일간을 중심으로 어떤 기운이 넘치고 아쉬운지를 계절과 함께 보는 일이에요. 용신은 그 균형을 잡는 데 가장 쓸모 있는 오행으로, 억부·조후·통관 같은 여러 방법이 있고 유파마다 결과가 갈리죠. 스타로그는 용신이나 신강·신약 라벨 대신 오행 개수와 계절처럼 명식에서 바로 확인할 수 있는 사실을 보여 드려요.",
   "wolun-iljin":
     "사주에서 운은 10년의 대운, 1년의 세운, 한 달의 월운, 하루의 일진으로 층을 이루고, 층이 작을수록 큰 흐름 위에 가볍게 얹어 읽어요. 월운은 절기마다 바뀌는 그달의 간지, 일진은 60일마다 돌아오는 그날의 간지라 둘 다 내 일간에게 어떤 십신인지와 명식 글자와의 관계로 읽죠. 스타로그는 좋은 날이나 조심할 달 같은 등급을 매기지 않아요.",
-  "bond-score":
-    "별자리 인연의 인연 점수는 두 사람의 생년월일로 세운 세 기둥 명식을 견줘, 일간끼리의 합과 상생, 띠와 일지의 합·충, 서로 부족한 오행을 채워 주는지를 보고 55점에서 99점 사이로 매겨요. 태어난 시간과 친구가 고른 카드는 점수에 쓰지 않아서 같은 두 사람은 언제나 같은 점수가 나오죠. 점수는 재미와 나눔을 위한 숫자라 관계의 좋고 나쁨을 판정하지 않아요.",
   "saju-glossary":
     "사주 풀이에 자주 나오는 말은 명식을 이루는 말, 오행과 음양, 십신, 글자끼리의 관계, 운의 흐름, 달력과 시각, 유파마다 갈리는 라벨로 묶어 보면 쉽게 정리돼요. 일간은 태어난 날 기둥의 천간으로 명리에서 나 자신으로 놓는 글자이고, 대운은 10년마다 바뀌는 흐름이죠. 스타로그는 신강·신약이나 용신처럼 유파마다 갈리는 라벨은 풀이에 붙이지 않아요.",
 
@@ -181,14 +177,6 @@ export const GUIDE_HOWTO: Readonly<Record<string, GuideHowTo>> = {
       { name: "오늘 할 일로 바꾸기", text: "마지막으로 그 답을 내 상황에 대 보며 오늘 할 수 있는 일 하나로 바꿔 보세요." },
     ],
   },
-  "now-card-how-to": {
-    name: "지금의 한 장 사용법",
-    steps: [
-      { name: "고민 떠올리기", text: "먼저 고민을 한 줄로 떠올려요. 화면의 칸에 40자까지 적어 둘 수 있고 적지 않고 마음속으로만 떠올려도 괜찮아요." },
-      { name: "카드 한 장 고르기", text: "다음으로 부채처럼 펼쳐진 카드 가운데 마음이 가는 한 장을 골라요." },
-      { name: "답 읽기", text: "고민에 건네는 한 문장이 가장 먼저 크게 보이고 그 아래에 카드 이름과 그렇게 읽은 이유가 차례로 나와요." },
-    ],
-  },
   manseryeok: {
     name: "만세력으로 사주 여덟 글자 찾는 순서",
     steps: [
@@ -216,12 +204,12 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     // 한눈에 보기 added (death had changed on 10-06: "unrelated to real death" became "an ending, but not
     // read only negatively").
     ...[
-      "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "minor-arcana-suits", "court-cards",
+      "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "redrawing-same-question", "minor-arcana-suits", "court-cards",
       "earthly-branches", "day-master", "ten-gods", "manseryeok", "saju-compatibility",
     ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-07" }] as const),
     ...[
       "wands-suit", "cups-suit", "swords-suit", "pentacles-suit",
-      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
+      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "yongsin", "wolun-iljin", "saju-glossary",
       "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
       "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
     ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-07" }] as const),
@@ -255,7 +243,7 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
       (slug) => [slug, { published: "2026-10-01", updated: "2026-10-23" }] as const,
     ),
     ...[
-      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
+      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "saju-glossary",
       "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
       "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
     ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-23" }] as const),
@@ -267,7 +255,7 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     ...[
       "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
       "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
-      "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "court-cards",
+      "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "redrawing-same-question", "court-cards",
     ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-27" }] as const),
     ...["the-hermit", "the-star", "how-to-read-tarot", "upright-and-reversed", "saju-without-birth-time"].map(
       (slug) => [slug, { published: "2026-09-30", updated: "2026-10-27" }] as const,
@@ -280,7 +268,7 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
       (slug) => [slug, { published: "2026-10-01", updated: "2026-10-27" }] as const,
     ),
     ...[
-      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
+      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "saju-glossary",
       "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
       "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
     ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-27" }] as const),

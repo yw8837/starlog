@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AccordionItem, InfoPage, Steps, Tip } from "@/components/info/InfoPage";
 import s from "@/components/info/info.module.css";
+import { OpenFromHash } from "@/components/info/OpenFromHash";
 import { CrisisContacts } from "@/components/ui/CrisisContacts";
 import { OpeningOnly } from "@/components/ui/OpeningOnly";
 import { helpGroups } from "@/lib/helpGuide";
@@ -72,6 +73,7 @@ export default function HelpPage() {
           자주 묻는 질문 보기
         </Link>
       </section>
+      <OpenFromHash />
     </InfoPage>
   );
 }

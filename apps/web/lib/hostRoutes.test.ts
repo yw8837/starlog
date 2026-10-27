@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import nextConfig from "@/next.config";
 import { SITE } from "./config";
 import { guideIndexPath } from "./guide";
-import { hostHeaders, hostRedirects, hostRewrites } from "./hostRoutes";
+import { GUIDE_MOVED_TO_HELP, hostHeaders, hostRedirects, hostRewrites, movedGuideRedirects } from "./hostRoutes";
 import { GUIDE_HOST_PAGES } from "./hosts";
 import { noindexHeaders } from "./robots";
 import { slashRedirect } from "./workerRedirects.mjs";
@@ -116,7 +116,7 @@ function viaNext(entries: Entry[], host: string, pathname: string): Outcome {
     const hasParams = matchHas({ headers: { host } }, {}, entry.has, entry.missing);
     if (!hasParams) continue;
     const { parsedDestination } = prepareDestination({ appendParamsToQuery: false, destination: entry.destination, params: { ...params, ...hasParams }, query: {} });
-    return { status: entry.statusCode, to: `${parsedDestination.origin ?? ""}${parsedDestination.pathname}` };
+    return { status: entry.statusCode, to: `${parsedDestination.origin ?? ""}${parsedDestination.pathname}${(parsedDestination as { hash?: string }).hash ?? ""}` };
   }
   return null;
 }
@@ -362,6 +362,12 @@ describe("on https://yeolmaeapps.kr", () => {
     }
   });
 
+  it("sends the two app manuals that left the guide to their cards on the app's /help for good (308), in one hop", () => {
+    expectRedirect(APEX, "/guide/now-card-how-to", to(308, `${SITE.url}/help#tarot-now-guide`));
+    expectRedirect(APEX, "/guide/bond-score", to(308, `${SITE.url}/help#bonds-score`));
+    expectRedirect(`${APEX}:443`, "/guide/bond-score", to(308, `${SITE.url}/help#bonds-score`));
+  });
+
   it("sends /guide and the tarot tab to its own / for good (308), in one hop", () => {
     expectRedirect(APEX, "/guide", to(308, "/"));
     expectRedirect(APEX, "/guide/tarot", to(308, "/"));
@@ -377,6 +383,11 @@ describe("on https://starlog.yeolmaeapps.kr", () => {
     expectRedirect(STARLOG, "/guide/saju", to(308, `${SITE.guideUrl}/guide/saju`));
     expectRedirect(STARLOG, "/guide/the-fool", to(308, `${SITE.guideUrl}/guide/the-fool`));
     expectRedirect(STARLOG, "/guide/a/b", to(308, `${SITE.guideUrl}/guide/a/b`));
+  });
+
+  it("sends the two app manuals that left the guide straight to their cards on /help (308), not through the root domain", () => {
+    expectRedirect(STARLOG, "/guide/now-card-how-to", to(308, `${SITE.url}/help#tarot-now-guide`));
+    expectRedirect(STARLOG, "/guide/bond-score", to(308, `${SITE.url}/help#bonds-score`));
   });
 
   it("sends /tarot and /saju, which have no page, to their entry for good (308)", () => {
@@ -480,11 +491,11 @@ describe("without NEXT_PUBLIC_SPLIT_HOSTS (next dev, the OpenNext preview, e2e)"
     expect(hostRedirects()).toEqual([]);
     expect(hostRewrites()).toEqual([]);
     expect(hostHeaders(APEX_HSTS)).toEqual([]);
-    expect(await nextConfig.redirects?.()).toEqual([{ source: "/guide", destination: "/guide/tarot", permanent: true }, ...ENTRY_REDIRECTS]);
+    expect(await nextConfig.redirects?.()).toEqual([...movedGuideRedirects(), { source: "/guide", destination: "/guide/tarot", permanent: true }, ...ENTRY_REDIRECTS]);
     expect(await nextConfig.rewrites?.()).toEqual({ beforeFiles: [], afterFiles: [], fallback: [] });
     expect(await nextConfig.headers?.()).toHaveLength(1 + noindexHeaders().length);
     expect(LOCAL.beforeFiles).toEqual([]);
-    expect(LOCAL.redirects.filter((entry) => !entry.internal).map((entry) => entry.source)).toEqual(["/guide", "/tarot", "/saju"]);
+    expect(LOCAL.redirects.filter((entry) => !entry.internal).map((entry) => entry.source)).toEqual([...Object.keys(GUIDE_MOVED_TO_HELP), "/guide", "/tarot", "/saju"]);
     expect(LOCAL.headers.filter((entry) => entry.has)).toEqual([]);
   });
 
@@ -494,6 +505,9 @@ describe("without NEXT_PUBLIC_SPLIT_HOSTS (next dev, the OpenNext preview, e2e)"
       expectRedirect(host, "/guide", to(308, "/guide/tarot"), LOCAL.redirects);
       expectRedirect(host, "/tarot", to(308, "/tarot/new"), LOCAL.redirects);
       expectRedirect(host, "/saju", to(308, "/saju/new"), LOCAL.redirects);
+      // The two moved app manuals go to /help on the one origin.
+      expectRedirect(host, "/guide/now-card-how-to", to(308, "/help#tarot-now-guide"), LOCAL.redirects);
+      expectRedirect(host, "/guide/bond-score", to(308, "/help#bonds-score"), LOCAL.redirects);
       expectRewrite(host, "/", null, LOCAL.beforeFiles);
       expectHsts(host, "/guide/tarot", APP_HSTS, LOCAL.headers);
     }
@@ -512,8 +526,8 @@ describe("on every other host, with the flag on", () => {
 });
 
 describe("next.config.ts", () => {
-  it("hands Next the host rules ahead of the existing /guide rule, the apex rewrite before the files, and the apex HSTS after the global headers", async () => {
-    expect(await nextConfig.redirects?.()).toEqual([...hostRedirects(), { source: "/guide", destination: "/guide/tarot", permanent: true }, ...ENTRY_REDIRECTS]);
+  it("hands Next the moved guide pages first, then the host rules ahead of the existing /guide rule, the apex rewrite before the files, and the apex HSTS after the global headers", async () => {
+    expect(await nextConfig.redirects?.()).toEqual([...movedGuideRedirects(), ...hostRedirects(), { source: "/guide", destination: "/guide/tarot", permanent: true }, ...ENTRY_REDIRECTS]);
     expect(await nextConfig.rewrites?.()).toEqual({ beforeFiles: hostRewrites(), afterFiles: [], fallback: [] });
     const headers = (await nextConfig.headers?.()) ?? [];
     expect(headers).toHaveLength(2 + noindexHeaders().length);
@@ -615,6 +629,9 @@ describe("trailing-slash URLs (the Worker in front of OpenNext)", () => {
       [`https://${APEX}/guide/tarot/`, one(`${SITE.guideUrl}/`)],
       [`https://${APEX}/pricing/`, one(`${SITE.url}/pricing`, 307)],
       [`https://${APEX}/tarot/new/`, one(`${SITE.url}/tarot/new`, 307)],
+      // an app manual that left the guide, from either host
+      [`https://${APEX}/guide/bond-score/`, one(`${SITE.url}/help#bonds-score`)],
+      [`https://${STARLOG}/guide/now-card-how-to/`, one(`${SITE.url}/help#tarot-now-guide`)],
     ];
     for (const [address, expected] of cases) {
       const hops = await hopsFrom(address, viaWorker);

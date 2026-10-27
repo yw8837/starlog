@@ -135,7 +135,7 @@ export const DAY_MASTER_ARTICLES: readonly GuideArticle[] = [
           },
           {
             kind: "p",
-            text: "일간 둘만으로 두 사람을 다 말할 수는 없어서, 실제 궁합에서는 일지의 합·충과 서로 모자란 오행을 채워 주는지까지 같이 봐요. 그 순서는 [궁합 글](/guide/saju-compatibility)에, 일간의 합과 상생을 점수로 매기는 방식은 [인연 점수 글](/guide/bond-score)에 있어요.",
+            text: "일간 둘만으로 두 사람을 다 말할 수는 없어서, 실제 궁합에서는 일지의 합·충과 서로 모자란 오행을 채워 주는지까지 같이 봐요. 그 순서는 [궁합 글](/guide/saju-compatibility)에 있어요.",
           },
         ],
       },
@@ -1329,7 +1329,7 @@ export const DAY_MASTER_ARTICLES: readonly GuideArticle[] = [
           },
           {
             kind: "p",
-            text: "별자리 인연의 인연 점수는 일간끼리의 합과 상생, 같은 오행을 점수에 더하니, 계수에게는 무토와의 합, 쇠와 나무와의 상생, 같은 물과의 만남이 여기에 들어요. 계산 방식은 [인연 점수 글](/guide/bond-score)에, 일지와 오행까지 함께 보는 실제 궁합의 순서는 [궁합 글](/guide/saju-compatibility)에 정리돼 있어요.",
+            text: "별자리 인연의 인연 점수는 일간끼리의 합과 상생, 같은 오행을 점수에 더하니, 계수에게는 무토와의 합, 쇠와 나무와의 상생, 같은 물과의 만남이 여기에 들어요. 일지와 오행까지 함께 보는 실제 궁합의 순서는 [궁합 글](/guide/saju-compatibility)에 정리돼 있어요.",
           },
         ],
       },
@@ -1364,6 +1364,6 @@ export const DAY_MASTER_ARTICLES: readonly GuideArticle[] = [
         ],
       },
     ],
-    related: ["day-master", "saju-compatibility", "day-master-imsu", "day-master-muto", "bond-score"],
+    related: ["day-master", "saju-compatibility", "day-master-imsu", "day-master-muto", "five-elements"],
   },
 ];

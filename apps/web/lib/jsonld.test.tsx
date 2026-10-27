@@ -249,8 +249,8 @@ describe("JSON-LD", () => {
     expect(answer).toContain("벌: 완드, 원소: 불, 주로 읽는 영역: 의욕과 움직임");
   });
 
-  it("marks the how-to articles: 지금의 한 장 사용법 and 타로 카드 읽는 법", async () => {
-    for (const slug of ["now-card-how-to", "how-to-read-tarot"]) {
+  it("marks the how-to articles: 원카드로 묻는 법 and 타로 카드 읽는 법", async () => {
+    for (const slug of ["one-card-yes-no", "how-to-read-tarot"]) {
       const nodes = jsonLdOf(await renderArticle(slug));
       expect(byType(nodes, "HowTo"), slug).toHaveLength(1);
       expect(byType(nodes, "HowTo")[0]?.url, slug).toBe(`${SITE.guideUrl}/guide/${slug}`);

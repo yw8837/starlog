@@ -6,6 +6,7 @@ import source from "@content/kb/decision.ko.json";
 import { SITE, won } from "@/lib/config";
 import { drawNow } from "@/lib/decision";
 import { NEW_TAROT_HREF } from "@/lib/freshStart";
+import { GUIDE_MOVED_TO_HELP } from "@/lib/hostRoutes";
 import { HOWTO_SEEN_KEY, NowOracle } from "./NowOracle";
 
 /** The face-down cards on the table. */
@@ -219,16 +220,17 @@ describe("지금의 한 장 how-to", () => {
     expect(text).toContain("전문가");
     expect(text).not.toMatch(/AI|인공지능|모델/);
     expect(within(panel).getByRole("link", { name: "같은 질문으로 다시 뽑아도 될까요?" }).getAttribute("href")).toBe("/guide/redrawing-same-question");
-    expect(within(panel).getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ }).getAttribute("href")).toBe("/guide/now-card-how-to");
+    // The how-to moved from the guide to the app's /help (AdSense audit 2026-10-27).
+    expect(within(panel).getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ }).getAttribute("href")).toBe(GUIDE_MOVED_TO_HELP["/guide/now-card-how-to"]);
   });
 
-  it("sends its two guide links to the root domain when the hosts are split: the guide lives there, not on the app host", () => {
+  it("sends its guide link to the root domain when the hosts are split, and keeps the how-to on the app host's /help", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<NowOracle instant />);
     fireEvent.click(screen.getByRole("button", { name: "어떻게 답이 나오나요?" }));
     const panel = screen.getByRole("region", { name: "어떻게 답이 나오나요?" });
     expect(within(panel).getByRole("link", { name: "같은 질문으로 다시 뽑아도 될까요?" }).getAttribute("href")).toBe(`${SITE.guideUrl}/guide/redrawing-same-question`);
-    expect(within(panel).getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ }).getAttribute("href")).toBe(`${SITE.guideUrl}/guide/now-card-how-to`);
+    expect(within(panel).getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ }).getAttribute("href")).toBe("/help#tarot-now-guide");
   });
 });
 

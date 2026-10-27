@@ -11,7 +11,10 @@ import HowPage, { metadata as howMeta } from "@/app/how/page";
 import { AI_TELL_THRESHOLD, aiTells } from "@/lib/ai/style";
 import { SITE, won } from "@/lib/config";
 import { faqGroups } from "@/lib/faq";
+import { BOND_MAX, BOND_MIN } from "@starlog/core";
+import decision from "@/lib/decision.generated.json";
 import { helpGroups } from "@/lib/helpGuide";
+import { GUIDE_MOVED_TO_HELP } from "@/lib/hostRoutes";
 import { INFO_PAGES, type InfoPageId } from "@/lib/infoPages";
 import { sitemapXml } from "@/lib/seo";
 
@@ -286,14 +289,44 @@ describe("/help", () => {
     cleanup();
   });
 
-  it("has the five category chips, each jumping to its group", () => {
+  it("has the category chips, each jumping to its group (별자리 인연 while it is open)", () => {
     const { container } = render(<HelpPage />);
     const chips = [...container.querySelectorAll('nav[aria-label="이용 가이드 분류"] a')];
-    expect(chips.map((chip) => chip.textContent)).toEqual(["시작하기", "타로", "사주", "기록과 공유", "혜택"]);
+    expect(SITE.features.bonds).toBe(true);
+    expect(chips.map((chip) => chip.textContent)).toEqual(["시작하기", "타로", "사주", "기록과 공유", "별자리 인연", "혜택"]);
     for (const chip of chips) {
       const id = chip.getAttribute("href")?.slice(1) ?? "";
       expect(container.querySelector(`section[id="${id}"]`)).not.toBeNull();
     }
+  });
+
+  it("holds the cards the two app manuals moved to, where their old guide URLs redirect (AdSense audit 2026-10-27)", () => {
+    const { container } = render(<HelpPage />);
+    expect(Object.values(GUIDE_MOVED_TO_HELP)).toEqual(["/help#tarot-now-guide", "/help#bonds-score"]);
+    for (const path of Object.values(GUIDE_MOVED_TO_HELP)) expect(container.querySelector(`details[id="${path.split("#")[1]}"]`), path).not.toBeNull();
+    const now = container.querySelector('details[id="tarot-now-guide"]')?.textContent ?? "";
+    // How an answer is made, what happens to the worry, and how to ask: the guide article's how-to, in short.
+    const answers = Object.values(decision).reduce((n, card) => n + card.upright.answers.length + card.reversed.answers.length, 0);
+    for (const fact of ["78장", `${answers}개`, "어디로도 보내지 않아요", "오늘의 한 장"]) expect(now, fact).toContain(fact);
+    const bonds = container.querySelector('details[id="bonds-score"]')?.textContent ?? "";
+    for (const fact of ["세 기둥", `${BOND_MIN}점에서 ${BOND_MAX}점`, "태어난 시간", "랭킹"]) expect(bonds, fact).toContain(fact);
+  });
+
+  it("opens the card the address names, so a moved guide URL lands on its how-to unfolded", () => {
+    window.history.replaceState(null, "", "/help#tarot-now-guide");
+    try {
+      const { container } = render(<HelpPage />);
+      expect(container.querySelector<HTMLDetailsElement>('details[id="tarot-now-guide"]')?.open).toBe(true);
+      expect(container.querySelector<HTMLDetailsElement>('details[id="tarot-now"]')?.open).toBe(false);
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
+  });
+
+  it("names 별자리 인연 only while it is open: its group goes with SITE.features.bonds", () => {
+    const off = helpGroups({ ...SITE, features: { ...SITE.features, bonds: false } });
+    expect(off.map((group) => group.id)).not.toContain("bonds");
+    expect(JSON.stringify(off)).not.toContain("인연 점수");
   });
 
   it("gives every card an icon, a title and a one-line subtitle", () => {

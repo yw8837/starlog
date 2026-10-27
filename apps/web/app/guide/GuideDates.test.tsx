@@ -43,13 +43,14 @@ describe("GUIDE_DATES and the articles' own dates", () => {
     if (entry.updated) expect(dates?.updated).toBe(entry.updated);
   });
 
-  it("dates every article, the 22 card articles' last check 2026-10-27 (third review), the 29 saju articles' 2026-10-27 (saju third review)", () => {
+  it("dates every article, the 22 card articles' last check 2026-10-27 (third review), the 28 saju articles' 2026-10-27 (saju third review)", () => {
     for (const article of GUIDE_ARTICLES) expect(GUIDE_DATES[article.slug], article.slug).toBeDefined();
     const cards = GUIDE_ARTICLES.filter((article) => article.cardId);
     expect(cards).toHaveLength(22);
     for (const card of cards) expect(lastReviewed(card), card.slug).toBe("2026-10-27");
     const saju = [...SAJU_ARTICLES, ...SAJU_CONCEPT_ARTICLES, ...DAY_MASTER_ARTICLES];
-    expect(saju).toHaveLength(29);
+    // 29 until 인연 점수 moved to /help (AdSense audit 2026-10-27).
+    expect(saju).toHaveLength(28);
     for (const entry of saju) expect(GUIDE_DATES[entry.slug]?.updated, entry.slug).toBe("2026-10-27");
   });
 });

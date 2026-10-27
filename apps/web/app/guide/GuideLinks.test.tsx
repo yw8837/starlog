@@ -139,9 +139,9 @@ describe("the links the articles carry", () => {
 
   it.each([
     ["ten-gods", "갑목 일간 글", "/guide/day-master-gapmok"],
-    ["saju-compatibility", "인연 점수 글", "/guide/bond-score"],
+    ["saju-compatibility", "지지 관계 글", "/guide/branch-relations"],
     ["four-pillars", "만세력 글", "/guide/manseryeok"],
-    ["bond-score", "궁합 글", "/guide/saju-compatibility"],
+    ["day-master-gyesu", "궁합 글", "/guide/saju-compatibility"],
     ["saju-glossary", "십신 글", "/guide/ten-gods"],
     ["day-master-gyeonggeum", "궁합 글", "/guide/saju-compatibility"],
   ])("%s: '%s' opens %s", (slug, words, path) => {

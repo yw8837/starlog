@@ -4,7 +4,11 @@ import { CARDS, getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { aiTells } from "../ai/style";
 import { SITE, won } from "../config";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES, findArticle, guideSectionText, type GuideArticle } from "../guide";
+import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideSectionText, type GuideArticle } from "../guide";
+import { GUIDE_MOVED_TO_HELP } from "../hostRoutes";
+import { llmsFullTxt } from "../llms";
+import { guideRss } from "../rss";
+import { sitemapXml } from "../seo";
 import { guideFaqJsonLd, guideQuestions, isQuestion } from "../jsonld";
 import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
 import { DAY_MASTER_ARTICLES } from "./day-masters";
@@ -56,8 +60,9 @@ const CELTIC_SLUG = "celtic-cross-spread";
 const OPENING_DATE = /오픈 예정|출시 예정|출시일|(\d+월|\d{4}년)[^.]{0,12}(오픈|출시|열려요|열릴|열어요|선보)/;
 
 describe("guide library", () => {
-  it("adds at least 62 articles on top of the six, every major arcana card has exactly one article", () => {
-    expect(LIBRARY.length).toBeGreaterThanOrEqual(62);
+  it("adds at least 60 articles on top of the six, every major arcana card has exactly one article", () => {
+    // 62 until the two app manuals moved to /help (AdSense audit 2026-10-27).
+    expect(LIBRARY.length).toBeGreaterThanOrEqual(60);
     expect(GUIDE_ARTICLES.length).toBe(6 + LIBRARY.length);
     const majors = CARDS.filter((card) => card.arcana === "major").map((card) => card.id);
     const cardIds = GUIDE_ARTICLES.flatMap((article) => (article.cardId ? [article.cardId] : []));
@@ -226,7 +231,7 @@ describe("answer-first fields (요약, HowTo, dates)", () => {
   });
 
   it("gives the step-by-step articles HowTo steps quoted from their own body", () => {
-    for (const slug of ["now-card-how-to", "how-to-read-tarot", "one-card-yes-no", "three-card-spread", "manseryeok"]) {
+    for (const slug of ["how-to-read-tarot", "one-card-yes-no", "three-card-spread", "manseryeok"]) {
       expect(findArticle(slug)?.howTo, slug).toBeDefined();
     }
     for (const article of GUIDE_ARTICLES) {
@@ -243,7 +248,7 @@ describe("answer-first fields (요약, HowTo, dates)", () => {
  */
 describe("the thin tarot basics, spreads and how-tos grew on their own facts (third review, 2026-10-23)", () => {
   const THIN = [
-    "redrawing-same-question", "one-card-yes-no", "now-card-how-to", "upright-and-reversed", "major-and-minor-arcana",
+    "redrawing-same-question", "one-card-yes-no", "upright-and-reversed", "major-and-minor-arcana",
     "how-to-read-tarot", "court-cards", "saju-without-birth-time", "three-card-spread", "celtic-cross-spread",
   ];
   const bodyLinks = (article: GuideArticle) => {
@@ -272,5 +277,34 @@ describe("the thin tarot basics, spreads and how-tos grew on their own facts (th
     expect(courts).toHaveLength(16);
     expect([...named].sort()).toEqual([...courts].sort());
     for (const row of tables.flatMap((table) => table.rows)) expect(row.every((cell) => cell.trim().length >= 2), row.join(" / ")).toBe(true);
+  });
+});
+
+/**
+ * The AdSense audit of 2026-10-27: two articles were manuals for the app's own features (지금의 한 장 사용법, 별자리 인연의
+ * 인연 점수), which made the root domain read as the app's help pages. Their how-to now sits on the app's /help, and
+ * their old addresses redirect there (lib/hostRoutes.ts GUIDE_MOVED_TO_HELP).
+ */
+describe("the app's manuals left the guide for /help (AdSense audit 2026-10-27)", () => {
+  const MOVED = Object.keys(GUIDE_MOVED_TO_HELP).map((path) => path.replace("/guide/", ""));
+
+  it("are no articles: not in the library, the tab counts, the sitemap, llms-full or the feed", () => {
+    expect(MOVED).toEqual(["now-card-how-to", "bond-score"]);
+    for (const slug of MOVED) expect(findArticle(slug), slug).toBeUndefined();
+    // 37 and 31 before the move: the hubs, the article pages and 가이드 소개 read these counts.
+    expect([articlesIn("tarot").length, articlesIn("saju").length]).toEqual([36, 30]);
+    for (const text of [sitemapXml("guide"), sitemapXml("app"), llmsFullTxt(), guideRss()]) {
+      for (const slug of MOVED) expect(text).not.toContain(`/guide/${slug}`);
+    }
+  });
+
+  it("are pointed at by no article: related lists, links in the text, and the 요약, date and HowTo tables", () => {
+    for (const article of GUIDE_ARTICLES) {
+      for (const slug of MOVED) {
+        expect(article.related ?? [], article.slug).not.toContain(slug);
+        expect(JSON.stringify(article.sections), article.slug).not.toContain(`/guide/${slug}`);
+      }
+    }
+    for (const table of [GUIDE_SUMMARIES, GUIDE_DATES, GUIDE_HOWTO]) for (const slug of MOVED) expect(Object.keys(table)).not.toContain(slug);
   });
 });

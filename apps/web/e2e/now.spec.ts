@@ -77,7 +77,7 @@ test("지금의 한 장: how-to, a question, a short shuffle, one card, an answe
   const panel = page.getByRole("region", { name: "어떻게 답이 나오나요?" });
   await expect(panel).toContainText("카드 지식으로 미리 준비한 답");
   await expect(panel.getByRole("link", { name: "같은 질문으로 다시 뽑아도 될까요?" })).toHaveAttribute("href", "/guide/redrawing-same-question");
-  await expect(panel.getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ })).toHaveAttribute("href", "/guide/now-card-how-to");
+  await expect(panel.getByRole("link", { name: /더 자세히: 지금의 한 장 사용법/ })).toHaveAttribute("href", "/help#tarot-now-guide");
 
   // 한 번 더 뽑기: the deck shuffles again, the question stays, the steps stay folded.
   await page.getByRole("button", { name: "한 번 더 뽑기" }).click();

@@ -23,7 +23,6 @@ const SAJU_GLYPH: Record<string, { char: string; el: string }> = {
   "twelve-stages": { char: "旺", el: "earth" },
   yongsin: { char: "用", el: "water" },
   "wolun-iljin": { char: "月", el: "metal" },
-  "bond-score": { char: "緣", el: "fire" },
   "saju-glossary": { char: "字", el: "wood" },
   // The ten day masters: each stem in its own element.
   "day-master-gapmok": { char: "甲", el: "wood" },
