@@ -189,6 +189,7 @@ export default function PrivacyPage() {
     <LegalPage
       title="개인정보처리방침"
       effective={effective}
+      host="either"
       lead={`${business.name}(이하 “운영자”)는 ${nameKo} 이용자의 개인정보를 「개인정보 보호법」 등 관련 법령에 따라 처리하고 보호합니다. 어떤 정보를 왜 처리하고, 얼마나 보관하며, 누구에게 맡기는지 알려 드립니다.`}
     >
       {inForce ? null : <PremiumLegalNotice />}

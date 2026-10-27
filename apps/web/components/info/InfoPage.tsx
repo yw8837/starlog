@@ -6,6 +6,7 @@ import { NightSky } from "@/components/sky/NightSky";
 import { Stepper } from "@/components/tarot/Stepper";
 import { InfoIcon } from "./icons";
 import type { HelpIcon } from "@/lib/helpGuide";
+import type { SiteHost } from "@/lib/hosts";
 import s from "./info.module.css";
 
 type InfoPageProps = {
@@ -15,6 +16,8 @@ type InfoPageProps = {
   lead?: ReactNode;
   /** The desktop header's pill to light (/faq has one); phones keep the back bar only. */
   tab?: TabId;
+  /** "either" for a page the root domain serves too (/about): its header and footer links then name their host. */
+  host?: SiteHost | "either";
   children: ReactNode;
 };
 
@@ -23,11 +26,11 @@ type InfoPageProps = {
  * back bar, with an eyebrow over the one <h1>. Desktop adds the site header, so the header's FAQ
  * pill never leads to a page without it.
  */
-export function InfoPage({ title, eyebrow, lead, tab, children }: InfoPageProps) {
+export function InfoPage({ title, eyebrow, lead, tab, host = "app", children }: InfoPageProps) {
   return (
     <div className="page-shell">
       <NightSky fixed moon={false} seed={31} />
-      <TabBar active={tab} only="desktop" />
+      <TabBar active={tab} only="desktop" host={host} />
       <main className={legal.col}>
         <Stepper label={title} backHref="/" backLabel="홈으로" />
         <article className={`${legal.doc} ${s.doc}`} aria-labelledby="doc-title">
@@ -41,7 +44,7 @@ export function InfoPage({ title, eyebrow, lead, tab, children }: InfoPageProps)
           {children}
         </article>
       </main>
-      <Footer />
+      <Footer host={host} />
     </div>
   );
 }

@@ -138,9 +138,10 @@ type TabBarProps = {
    * The host serving the page. The guide pages pass "guide": the root domain reads as a content site of its own
    * (AdSense audit 2026-10-27), so its bar holds the guide's sections (GUIDE_TABS) and one labelled link out to the app
    * (the app host when the hosts are split, lib/hosts.ts), and its wordmark goes to the guide's home. Everywhere else
-   * the app host serves the page, and only the guide tab leaves it.
+   * the app host serves the page, and only the guide tab leaves it. "either": a page served as it is on both hosts
+   * (/about, /privacy, /terms): every link names the host that serves it (lib/hosts.ts linkHref).
    */
-  host?: SiteHost;
+  host?: SiteHost | "either";
 };
 
 function TabLabel({ tab }: { tab: Tab }) {

@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer";
 import { NightSky } from "@/components/sky/NightSky";
 import { Stepper } from "@/components/tarot/Stepper";
 import { SITE, businessFields } from "@/lib/config";
+import type { SiteHost } from "@/lib/hosts";
 import { koreanDate } from "@/lib/legal";
 import s from "./legal.module.css";
 
@@ -13,11 +14,13 @@ type LegalPageProps = {
   lead?: ReactNode;
   /** ISO date; shown as "시행일 2026년 10월 1일". */
   effective?: string;
+  /** "either" for a policy the root domain serves too (/privacy, /terms): its footer links then name their host. */
+  host?: SiteHost | "either";
   children: ReactNode;
 };
 
 /** Frame for the pricing and policy pages: back bar, one <h1>, a 720px reading column, footer. */
-export function LegalPage({ title, badge, lead, effective, children }: LegalPageProps) {
+export function LegalPage({ title, badge, lead, effective, host = "app", children }: LegalPageProps) {
   return (
     <div className="page-shell">
       <NightSky fixed moon={false} seed={23} />
@@ -45,7 +48,7 @@ export function LegalPage({ title, badge, lead, effective, children }: LegalPage
           {children}
         </article>
       </main>
-      <Footer />
+      <Footer host={host} />
     </div>
   );
 }

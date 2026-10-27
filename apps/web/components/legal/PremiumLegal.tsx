@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { won } from "@/lib/config";
+import { appHref } from "@/lib/hosts";
 import { PREMIUM_LEGAL_EFFECTIVE_DATE, koreanDate } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { PREMIUM, PREMIUM_CHAPTER_TTL_MS, PREMIUM_IDS } from "@/lib/premium/products";
@@ -74,7 +75,7 @@ export function PremiumTerms() {
       <ol className={s.list}>
         <li>
           운영자는 다음 프리미엄 풀이를 건별 유료로 제공합니다. 가격과 담기는 내용은{" "}
-          <Link href="/pricing#premium" prefetch={false}>
+          <Link href={appHref("/pricing#premium")} prefetch={false}>
             가격 안내
           </Link>
           와 각 풀이의 안내 화면에 게시합니다.

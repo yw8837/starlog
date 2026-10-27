@@ -8,6 +8,7 @@ import {
   OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, contactChannels, koreanDate, premiumChangeNoticeShown, premiumLegalInForce, syncRevisionInForce, termsEffectiveDate,
 } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
+import { appHref } from "@/lib/hosts";
 import { pageMetadata } from "@/lib/seo";
 
 const host = new URL(SITE.url).host;
@@ -22,12 +23,12 @@ export const metadata: Metadata = pageMetadata({
 
 /**
  * The revision of SYNC_REVISION_DATE (lib/legal.ts): shown as 개정 예정 until then, in the text from then. The AI item has a
- * link, so it is a component; the other lines are plain text.
+ * link, so it is a component (read per render: its link names the app host in the deploy build); the other lines are plain text.
  */
-const AI_ITEM = (
+const AiItem = () => (
   <>
     {"운영자는 「인공지능 발전과 신뢰 기반 조성 등에 관한 기본법」 제31조에 따라 이 약관과 서비스 화면("}
-    <Link href="/how" prefetch={false}>
+    <Link href={appHref("/how")} prefetch={false}>
       풀이 과정 안내
     </Link>
     {" 등)으로 생성형 인공지능을 쓴다는 사실을 미리 알립니다."}
@@ -64,7 +65,7 @@ export default function TermsPage() {
   const effective = termsEffectiveDate(now);
 
   return (
-    <LegalPage title="이용약관" effective={effective}>
+    <LegalPage title="이용약관" effective={effective} host="either">
       {inForce ? null : <PremiumLegalNotice />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
       {openingFreeOn(now) ? <OpeningChangeNotice /> : null}
@@ -74,7 +75,7 @@ export default function TermsPage() {
           <ul className={s.list}>
             <li>
               {"제4조의2 2호: "}
-              {AI_ITEM}
+              <AiItem />
             </li>
             <li>{"제2조 5호: 오픈 기념 무료로 연 타로 전체 풀이에는 이어서 물어보기만 제공하지 않습니다(결과 공유는 할 수 있습니다)."}</li>
             <li>{`제4조: ${FREE_OPENING}`}</li>
@@ -123,7 +124,7 @@ export default function TermsPage() {
           <li>풀이는 AI가 생성하므로 부정확하거나 이용자의 실제 상황과 맞지 않는 내용이 들어 있을 수 있습니다.</li>
           <li>
             {`운영자는 오픈 기념 무료로 ${OPENING_LAST_DATE} 23시 59분(한국 시간)까지 로그인한 계정마다 한 번(같은 기기에서는 한 번) 타로 전체 풀이를 무료로 제공합니다. 사주 전체 풀이는 무료로 제공하지 않습니다. 무료로 이용할 수 있는 범위는 서비스 화면과 `}
-            <Link href="/pricing" prefetch={false}>
+            <Link href={appHref("/pricing")} prefetch={false}>
               가격 안내
             </Link>
             {"에 표시합니다."}
@@ -141,7 +142,7 @@ export default function TermsPage() {
           <li>타로·사주 풀이, 후속 질문의 답, 오늘의 한 장은 생성형 인공지능이 만든 결과물입니다. 사주 명식은 운영자의 계산 프로그램이 먼저 계산하고, AI는 그 결과를 바탕으로 풀이를 씁니다.</li>
           <li>
             {revised
-              ? AI_ITEM
+              ? <AiItem />
               : "운영자는 「인공지능 발전과 신뢰 기반 조성 등에 관한 기본법」 제31조에 따라 이 약관과 서비스 화면으로 생성형 인공지능을 쓴다는 사실을 미리 알리고, 풀이 화면마다 AI가 만든 풀이라는 사실을 표시합니다."}
           </li>
           <li>지금의 한 장은 운영자가 카드마다 미리 준비한 문장 가운데 하나를 보여 주며, 요청할 때마다 새로 생성하지 않습니다.</li>
@@ -176,7 +177,7 @@ export default function TermsPage() {
         <ol className={s.list}>
           <li>
             {"전체 풀이의 가격은 "}
-            <Link href="/pricing" prefetch={false}>
+            <Link href={appHref("/pricing")} prefetch={false}>
               가격 안내
             </Link>
             {"에 게시합니다. 이용자는 전체 풀이를 건별로 결제하며, 결제 금액은 운영자가 상품별로 정한 금액입니다."}
@@ -185,7 +186,7 @@ export default function TermsPage() {
           <li>운영자는 결제 전에 가격, 포함 내용, 청약철회가 제한되는 경우를 알리고 이용자의 확인을 받습니다.</li>
           <li>
             {`결제한 풀이는 풀이를 적기 시작한 때 제공이 시작된 것으로 보며, 풀이는 결제 직후 자동으로 적기 시작합니다. 다 나오기 전에 이용자가 화면을 닫거나 연결이 끊긴 풀이는 3번까지 다시 열어 받을 수 있고, 환불 대상이 아닙니다. 네 번째로 끊긴 때에는 그 결제 풀이를 쓴 것으로 봅니다. 운영자 쪽 문제로 완성되지 않은 풀이는 쓰이지 않습니다. 열기 전의 결제 풀이는 결제일로부터 ${REFUND_DAYS}일 안에 전액 환불받을 수 있으며, 그 밖의 청약철회와 환불은 `}
-            <Link href="/refund" prefetch={false}>
+            <Link href={appHref("/refund")} prefetch={false}>
               환불 정책
             </Link>
             {"을 따릅니다."}

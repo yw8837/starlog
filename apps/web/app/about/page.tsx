@@ -9,6 +9,8 @@ import { BusinessFacts, Facts } from "@/components/legal/LegalPage";
 import legal from "@/components/legal/legal.module.css";
 import { Button } from "@/components/ui/Button";
 import { SITE } from "@/lib/config";
+import { GUIDE_ABOUT_PATH } from "@/lib/guideMeta";
+import { appHref, guideHref } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { pageMetadata } from "@/lib/seo";
 import { withParticle } from "@/lib/korean";
@@ -42,11 +44,19 @@ export default function AboutPage() {
   const related = [INFO_PAGES.how, INFO_PAGES.evidence, INFO_PAGES.help, INFO_PAGES.faq];
 
   return (
+    // The root domain serves this page too (lib/hosts.ts GUIDE_HOST_PAGES): every link names the host that serves it,
+    // so none takes the root domain's redirect to the app host.
     <InfoPage
+      host="either"
       eyebrow="ABOUT"
       title={page.title}
       lead={`${nameKo}는 내 질문과 상황에 맞춘 타로와 사주 풀이를 보는 곳이에요. 연 풀이는 밤하늘에 별을 하나씩 적어 두듯 내 기록으로 쌓여요.`}
     >
+      <p className={legal.muted}>
+        타로와 사주 가이드 글을 누가 어떻게 쓰고 고치는지는{" "}
+        <Link href={guideHref(GUIDE_ABOUT_PATH)}>가이드 소개와 편집 원칙</Link>에 따로 적어 두었어요.
+      </p>
+
       <section className={s.group} aria-labelledby="cast-title">
         <h2 id="cast-title" className={s.groupTitle}>
           두 안내자가 읽어 줘요
@@ -79,7 +89,7 @@ export default function AboutPage() {
               "사주",
               <>
                 태어난 날과 곳으로 명식을 세우고, 타고난 결과 지금 지나는 10년의 흐름을 읽어요.{" "}
-                <Link href="/saju/new" prefetch={false}>
+                <Link href={appHref("/saju/new")} prefetch={false}>
                   사주 보기
                 </Link>
                 에서 바로 시작해요.
@@ -128,10 +138,10 @@ export default function AboutPage() {
       </section>
 
       <div className={s.actions}>
-        <Button href={NEW_TAROT_HREF} block>
+        <Button href={appHref(NEW_TAROT_HREF)} block>
           타로 보기
         </Button>
-        <Button href={NEW_SAJU_HREF} variant="secondary" block>
+        <Button href={appHref(NEW_SAJU_HREF)} variant="secondary" block>
           사주 보기
         </Button>
       </div>
@@ -141,7 +151,7 @@ export default function AboutPage() {
           {related.map((info) => (
             <li key={info.path}>
               {/* The root domain serves this page too: no prefetch of app pages it redirects (F-05). */}
-              <Link href={info.path} prefetch={false} className={s.relatedLink}>
+              <Link href={appHref(info.path)} prefetch={false} className={s.relatedLink}>
                 <span>{info.label}</span>
                 <ChevronIcon />
               </Link>
