@@ -48,7 +48,7 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
   const { profile } = useSajuProfile();
   const chapters = useChapters();
   const remaining = useRemainingFree();
-  // Read once hydrated (remaining is undefined before): from 11월 1일 the box promises nothing.
+  // Read once hydrated (remaining is undefined before): from 12월 1일 the box promises nothing.
   const openingEnded = remaining !== undefined && !openingFreeOn();
   const account = useAccount();
   useAccountSync(account);

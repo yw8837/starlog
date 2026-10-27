@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { OpeningOnly } from "./OpeningOnly";
 
 /** The last free moment and the first one after it (SITE.beta.openingEndsAt, exclusive), in KST. */
-const LAST = Date.parse("2026-10-31T23:59:59+09:00");
-const ENDED = Date.parse("2026-11-01T00:00:00+09:00");
+const LAST = Date.parse("2026-11-30T23:59:59+09:00");
+const ENDED = Date.parse("2026-12-01T00:00:00+09:00");
 
 const promo = <p>오픈 기념 무료</p>;
 
@@ -30,7 +30,7 @@ describe("OpeningOnly: the 오픈 기념 무료 lines appear in the browser, nev
     expect(container.textContent).toBe("오픈 기념 무료");
   });
 
-  it("shows nothing from 2026-11-01 00:00:00 KST, with no deploy", async () => {
+  it("shows nothing from 2026-12-01 00:00:00 KST, with no deploy", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(ENDED);
     const { container } = render(<OpeningOnly>{promo}</OpeningOnly>);

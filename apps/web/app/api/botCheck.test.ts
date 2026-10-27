@@ -1,8 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import { resetDailyStore } from "@/lib/api/dailyStore";
+import { setTestDb } from "@/lib/db";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { openerCookies, useTestDb } from "@/lib/testing/p4";
 import { POST as owner } from "./owner/route";
 import { POST as premiumTeaser } from "./premium/tarot-deep/teaser/route";
 import { POST as sajuReading } from "./saju/reading/route";
@@ -40,6 +42,13 @@ function device(ip = "203.0.113.7") {
   return { call, jar };
 }
 
+/** A device logged in to an account of its own: 오픈 기념 무료 opens once per logged-in account (owner 2026-10-27). */
+async function member(ip?: string) {
+  const d = device(ip);
+  for (const [name, value] of await openerCookies()) d.jar.set(name, value);
+  return d;
+}
+
 const INPUT = {
   topicId: "money", whoId: "me", whenId: "week",
   question: "이번 주, 나의 재물 흐름은 어떨까",
@@ -50,6 +59,7 @@ const BIRTH = { ...DEFAULT_SAJU_FORM, year: 1995, month: 5, day: 20, timeKnown: 
 const REFUSED = { code: "BOT_CHECK", message: "보안 확인을 마치지 못했어요. 다시 시도해 주세요.", siteKey: "site-key-1" };
 
 let siteverify: ReturnType<typeof vi.fn>;
+let db: ReturnType<typeof useTestDb>;
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
@@ -59,6 +69,10 @@ beforeEach(() => {
   vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
   vi.stubEnv("TURNSTILE_SITE_KEY", "site-key-1");
   vi.stubEnv("TURNSTILE_SECRET_KEY", "secret-key-1");
+  // 오픈 기념 무료 needs an account (member): sign-up open, mock Kakao, a test D1.
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
+  db = useTestDb();
   siteverify = vi.fn(async (_url: string, init?: RequestInit) => {
     const passed = (JSON.parse(String(init?.body)) as { response: string }).response === "human";
     // Siteverify names the host the challenge ran on: these requests come to localhost.
@@ -71,6 +85,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setTestDb(null);
   vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
@@ -86,7 +101,7 @@ async function drawn(d: ReturnType<typeof device>): Promise<string> {
 describe("bot check on the free generations", () => {
   it("refuses 타로 첫 장, 사주 미리보기, 오늘의 한 장 and 오픈 기념 무료 without a passing token: nothing generated, nothing counted", async () => {
     const generate = vi.spyOn(mockProvider, "generate");
-    const d = device();
+    const d = await member();
     const drawToken = await drawn(d);
     const calls: Array<[string, Handler, unknown]> = [
       ["tarot teaser", teaser, { drawToken, input: INPUT }],
@@ -102,10 +117,12 @@ describe("bot check on the free generations", () => {
     }
     expect(generate).not.toHaveBeenCalled();
     expect([...d.jar.keys()].filter((name) => ["sl_q", "sl_first", "sl_daily"].includes(name))).toEqual([]);
+    // The account's 오픈 기념 무료 is not held either.
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM opening_claims").first()).toEqual({ n: 0 });
   });
 
   it("lets a browser with a passing token through, one Siteverify call per request", async () => {
-    const d = device();
+    const d = await member();
     const drawToken = await drawn(d);
     siteverify.mockClear();
     expect((await d.call(teaser, { drawToken, input: INPUT }, "human")).status).toBe(200);
@@ -121,7 +138,7 @@ describe("bot check on the free generations", () => {
   });
 
   it("asks nothing of the owner pass, nor of openings that are not free", async () => {
-    const d = device("198.51.100.1");
+    const d = await member("198.51.100.1");
     expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
     const drawToken = await drawn(d);
     siteverify.mockClear();

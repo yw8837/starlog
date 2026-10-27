@@ -5,10 +5,11 @@ import { logKvError, resetDailyStore } from "@/lib/api/dailyStore";
 import { clientKey, ipGroup } from "@/lib/api/http";
 import { BUDGET_CEILING, BUDGET_TRIP, SpendLedger, clientCount, networkCostKrw, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
+import { setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { kstDay } from "@/lib/security/quota";
 import { keyedHash, signToken } from "@/lib/security/sign";
-import { paidChapterOf } from "@/lib/testing/p4";
+import { openerCookies, paidChapterOf, useTestDb } from "@/lib/testing/p4";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as followup } from "./followup/route";
@@ -65,6 +66,13 @@ function device(ip: string, { cookieless = false } = {}) {
   return { call, stream, jar };
 }
 
+/** A device logged in to an account of its own: 오픈 기념 무료 opens once per logged-in account (owner 2026-10-27). */
+async function member(ip: string, options: { cookieless?: boolean } = {}) {
+  const d = device(ip, options);
+  for (const [name, value] of await openerCookies()) d.jar.set(name, value);
+  return d;
+}
+
 const drawFor = async (d: ReturnType<typeof device>) => (await d.call(draw, { templateId: "self-flow", picks: [3, 30, 60] })).data.drawToken as string;
 
 /** Usage that the price table prices at 2,800원 (Opus 5.5: 100k output tokens = $2 × 1,400). */
@@ -88,6 +96,10 @@ beforeEach(() => {
   vi.stubEnv("STARLOG_SIGNING_SECRET", SECRET);
   vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
   vi.stubEnv("KRW_PER_USD", "1400");
+  // 오픈 기념 무료 needs an account (member): sign-up open, mock Kakao, a test D1.
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
+  useTestDb();
   resetMemoryLimiter();
   resetDailyStore();
   resetSpendState();
@@ -95,6 +107,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setTestDb(null);
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
@@ -120,7 +133,7 @@ describe("server-side day counters (per client network, whatever the cookies say
   it("stops a cookie-less client on the JSON path too, and full readings separately from teasers", async () => {
     vi.stubEnv("BETA_IP_FULL_PER_DAY", "1");
     vi.stubEnv("BETA_FULL_PER_DAY", "100");
-    const d = device("198.51.100.11", { cookieless: true });
+    const d = await member("198.51.100.11", { cookieless: true });
     const drawToken = await drawFor(d);
     expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     const limited = await d.call(reading, { drawToken, input: MONEY_INPUT });
@@ -260,7 +273,7 @@ describe("global daily spend cap", () => {
     expect((await device(ip, { cookieless: true }).call(daily, {})).status).toBe(200);
     expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "teaser", Date.now())).toBe(2);
 
-    const other = device("198.51.100.29");
+    const other = await member("198.51.100.29");
     expect((await other.call(reading, { drawToken: await drawFor(other), input: MONEY_INPUT })).status).toBe(200);
     const boss = device(ip);
     expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
@@ -381,7 +394,7 @@ describe("global daily spend cap", () => {
 describe("follow-ups per chapter, counted server-side", () => {
   it("does not reset the chapter cap when an older chapter token is sent again", async () => {
     vi.stubEnv("BETA_FOLLOWUPS_PER_CHAPTER", "2");
-    const d = device("198.51.100.30");
+    const d = await member("198.51.100.30");
     const drawToken = await drawFor(d);
     const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
     const first = await paidChapterOf(r.data.chapterToken, r.data.reading);
@@ -396,7 +409,7 @@ describe("follow-ups per chapter, counted server-side", () => {
 
   it("holds the chapter's turn while its answer is written, so a follow-up sent meanwhile past the cap is refused; a failed answer gives the turn back", async () => {
     vi.stubEnv("BETA_FOLLOWUPS_PER_CHAPTER", "1");
-    const d = device("198.51.100.31");
+    const d = await member("198.51.100.31");
     const r = await d.call(reading, { drawToken: await drawFor(d), input: MONEY_INPUT });
     const chapterToken = await paidChapterOf(r.data.chapterToken, r.data.reading);
     const ask = (question: string) => d.call(followup, { chapterToken, reading: r.data.reading, question });
@@ -425,7 +438,7 @@ describe("follow-ups per chapter, counted server-side", () => {
 
   it("gives the turn back when the answer was written but could not be handed out (its chapter token not signed)", async () => {
     vi.stubEnv("BETA_FOLLOWUPS_PER_CHAPTER", "1");
-    const d = device("198.51.100.32");
+    const d = await member("198.51.100.32");
     const r = await d.call(reading, { drawToken: await drawFor(d), input: MONEY_INPUT });
     const chapterToken = await paidChapterOf(r.data.chapterToken, r.data.reading);
     const ask = (question: string) => d.call(followup, { chapterToken, reading: r.data.reading, question });
@@ -451,6 +464,7 @@ describe("model blinding in responses", () => {
     billing(); // the provider reports usage with model ids, as the real one does
     const d = device("198.51.100.50");
     const drawToken = await drawFor(d);
+    const cookie = [...(await openerCookies())].map(([name, value]) => `${name}=${value}`).join("; ");
     const seen: string[] = [];
     const keep = async (response: Response) => {
       seen.push(await response.clone().text(), JSON.stringify([...response.headers]));
@@ -458,7 +472,7 @@ describe("model blinding in responses", () => {
     };
     const post = (handler: (r: Request) => Promise<Response>, body: unknown, accept?: string) => handler(new Request("http://localhost/api", {
       method: "POST",
-      headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.50", ...(accept ? { accept } : {}) },
+      headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.50", cookie, ...(accept ? { accept } : {}) },
       body: JSON.stringify(body),
     })).then(keep);
     await post(teaser, { drawToken, input: MONEY_INPUT });

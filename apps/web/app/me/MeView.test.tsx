@@ -108,11 +108,11 @@ describe("MeView logged out while sales are open", () => {
     render(<MeView status={null} />);
     expect(await screen.findByRole("link", { name: "로그인하기" })).toBeTruthy();
     expect(await screen.findByRole("heading", { name: "오픈 기념 무료" })).toBeTruthy();
-    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).")).toBeTruthy();
+    expect(screen.getByText("11월 30일까지 로그인한 계정마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).")).toBeTruthy();
     expect(screen.getByText("아직 무료로 열 수 있어요")).toBeTruthy();
     cleanup();
     resetAccountForTests();
-    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z"));
+    vi.setSystemTime(Date.parse("2026-11-30T15:00:00Z"));
     render(<MeView status={null} />);
     expect(await screen.findByRole("link", { name: "로그인하기" })).toBeTruthy();
     await waitFor(() => expect(document.body.textContent).not.toMatch(/오픈 기념|무료로 열/));
@@ -133,7 +133,7 @@ describe("MeView logged out while sales are closed (오픈 기념 무료)", () =
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: false, login: false, owner: false, user: null })));
     render(<MeView status={null} />);
     expect(await screen.findByRole("heading", { name: "오픈 기념 무료" })).toBeTruthy();
-    expect(screen.getByText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).")).toBeTruthy();
+    expect(screen.getByText("11월 30일까지 로그인한 계정마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).")).toBeTruthy();
     expect(screen.getByText("아직 무료로 열 수 있어요")).toBeTruthy();
     cleanup();
     resetAccountForTests();
@@ -143,8 +143,8 @@ describe("MeView logged out while sales are closed (오픈 기념 무료)", () =
     expect(document.body.textContent).not.toMatch(/첫 이용|다시 채워져요/);
   });
 
-  it("promises nothing free once 오픈 기념 무료 ended (11월 1일 0시 KST)", async () => {
-    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z"));
+  it("promises nothing free once 오픈 기념 무료 ended (12월 1일 0시 KST)", async () => {
+    vi.setSystemTime(Date.parse("2026-11-30T15:00:00Z"));
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: false, login: true, owner: false, user: null })));
     render(<MeView status={null} />);
     expect(await screen.findByRole("link", { name: "결제한 풀이가 있다면 로그인" })).toBeTruthy();

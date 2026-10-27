@@ -25,6 +25,8 @@ type UnlockSheetProps = {
   onUnlock: (method: UnlockMethod) => void;
   /** The login page with the way back (offer "login", and the paused-sales link). */
   loginHref?: string;
+  /** Not logged in: 오픈 기념 무료 opens after a login (owner 2026-10-27), and its button says so. */
+  guest?: boolean;
   /** The checkout for this reading (offers "pay" and "gift"). */
   payHref?: string;
   /** The owner pass: a quiet "운영자로 무료 열기" beside the paid offers. */
@@ -58,9 +60,9 @@ const CheckIcon = () => (
 
 /**
  * The unlock: what the full reading holds (length, follow-ups, kept on this device) before the one
- * gold button that opens it. Without an offer (or with "opening") it is 오픈 기념 무료, the device's
- * one free tarot reading, read and kept on this device only (no follow-ups, shareable; once used, it
- * says so for good); "closed" (saju while sales are closed here, tarot once 오픈 기념 무료 ended) opens
+ * gold button that opens it. Without an offer (or with "opening") it is 오픈 기념 무료, one free tarot reading per
+ * logged-in account and per device (a guest's button says it logs in first), read and kept on this device only (no
+ * follow-ups, shareable; once used here, it says so for good); "closed" (saju while sales are closed here, tarot once 오픈 기념 무료 ended) opens
  * nothing and promises nothing free; the other offers log in, open a purchase, use a signup gift
  * held from before it was removed (tarot only) or pay, or say a reading of this kind is being
  * opened. While a cut-off opening is checked, nothing opens.
@@ -73,6 +75,7 @@ export function UnlockSheet({
   remaining,
   onUnlock,
   loginHref,
+  guest = false,
   payHref,
   owner = false,
   refundHref,
@@ -96,7 +99,7 @@ export function UnlockSheet({
         <span>전체 풀이 보기</span>
         <span className={s.subLine}>
           <span className="sr-only"> · </span>
-          오픈 기념 무료
+          {guest ? "오픈 기념 무료 · 로그인하고 받기" : "오픈 기념 무료"}
         </span>
       </span>
     );

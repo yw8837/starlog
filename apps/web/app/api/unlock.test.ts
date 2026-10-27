@@ -97,18 +97,21 @@ const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
 const giftOf = async (b: Browser) => (await me(b)).user?.gift?.status;
 
 describe("opening a full reading with credit", () => {
-  it("keeps 오픈 기념 무료 once payments are on for everyone (owner 2026-10-14): a device's first tarot reading opens free, once, apart from a gift held", async () => {
+  it("keeps 오픈 기념 무료 once payments are on for everyone (owner 2026-10-14), for a logged-in account once (owner 2026-10-27), apart from a gift held", async () => {
     const db = useTestDb();
     const guest = browser("192.0.2.10");
-    expect((await open(guest)).status).toBe(200);
-    expect(guest.jar.has("sl_first")).toBe(true);
-    const again = await open(guest);
-    expect(again.status).toBe(429);
-    expect(await again.json()).toMatchObject({ code: "BETA_LIMIT", scope: "first" });
+    const login = await open(guest);
+    expect(login.status).toBe(401);
+    expect(await login.json()).toMatchObject({ code: "LOGIN_REQUIRED", reason: "opening" });
+    expect(guest.jar.has("sl_first")).toBe(false);
     // A member holding a gift: 오픈 기념 무료 leaves it untouched, and the gift still opens one.
     const { b } = await loggedIn();
     const free = await open(b);
     expect(free.status).toBe(200);
+    expect(b.jar.has("sl_first")).toBe(true);
+    const again = await open(b);
+    expect(again.status).toBe(429);
+    expect(await again.json()).toMatchObject({ code: "BETA_LIMIT", scope: "first" });
     // Never saved to the account, even logged in: no 풀이 후기 can be written for it (reviews need a saved reading).
     expect(((await free.json()) as { readingId?: string }).readingId).toBeUndefined();
     expect(await one(db, "SELECT COUNT(*) AS n FROM readings")).toEqual({ n: 0 });

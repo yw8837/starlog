@@ -38,7 +38,7 @@ describe("/pricing", () => {
 
   it("takes every number from SITE", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.parse("2026-10-31T23:59:59+09:00"));
+    vi.setSystemTime(Date.parse("2026-11-30T23:59:59+09:00"));
     const { container } = render(<PricingPage />);
     const text = container.textContent ?? "";
     expect(text).toContain("3,100원"); // tarot
@@ -52,11 +52,11 @@ describe("/pricing", () => {
     expect(text).not.toContain("충전");
   });
 
-  it("opens with every price in one sentence, states 오픈 기념 무료 with its rule (until 10월 31일, per device, read and keep only) only in the browser while it runs, and promises no signup gift (removed, owner 2026-10-14 evening)", () => {
+  it("opens with every price in one sentence, states 오픈 기념 무료 with its rule (until 11월 30일, per logged-in account and per device, read and keep only) only in the browser while it runs, and promises no signup gift (removed, owner 2026-10-14 evening)", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.parse("2026-10-31T23:59:59+09:00"));
+    vi.setSystemTime(Date.parse("2026-11-30T23:59:59+09:00"));
     const { container } = render(<PricingPage />);
-    const rule = "10월 31일까지 기기마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).";
+    const rule = "11월 30일까지 로그인한 계정마다 타로 전체 풀이 두 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).";
     expect(container.querySelector(".noteTitle, [class*=noteTitle]")?.textContent).toBe(
       "타로 전체 풀이는 3,100원, 사주 전체 풀이는 4,100원이고, 깊게 보는 풀이는 심층 타로 6,100원, 우리 궁합 6,600원, 2027 신년운세 12,100원이에요.",
     );
@@ -64,7 +64,7 @@ describe("/pricing", () => {
     expect(container.querySelector("#free")?.textContent).toContain(rule);
     // The page is cached for a year: its server HTML never states the dated offer.
     expect(renderToString(<PricingPage />)).not.toContain("오픈 기념 무료(");
-    expect(renderToString(<PricingPage />)).not.toContain("10월 31일까지");
+    expect(renderToString(<PricingPage />)).not.toContain("11월 30일까지");
     expect(container.querySelector("#gift")).toBeNull();
     expect(container.textContent).not.toMatch(/가입 선물|첫 이용/);
     expect(metadata.description).not.toContain("가입 선물");
@@ -72,12 +72,12 @@ describe("/pricing", () => {
     expect(container.textContent).not.toMatch(/별조각|달빛|\d+개/);
   });
 
-  it("drops 오픈 기념 무료 by itself from 2026-11-01 00:00 KST, with no deploy", () => {
+  it("drops 오픈 기념 무료 by itself from 2026-12-01 00:00 KST, with no deploy", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.parse("2026-11-01T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-01T00:00:00+09:00"));
     const { container } = render(<PricingPage />);
     expect(container.textContent).not.toContain("오픈 기념 무료(");
-    expect(container.textContent).not.toContain("10월 31일까지");
+    expect(container.textContent).not.toContain("11월 30일까지");
     expect(container.querySelector("#free")?.querySelectorAll("li")).toHaveLength(3);
   });
 

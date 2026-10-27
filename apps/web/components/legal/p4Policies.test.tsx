@@ -87,7 +87,7 @@ describe("policies for the paid launch", () => {
     expect(page).not.toContain("Anthropic");
   });
 
-  it("/terms: 제7조의2 is 삭제 (the signup gift went, owner 2026-10-14 evening), and 제4조 sets out 오픈 기념 무료: until 2026-10-31, once per device, tarot only, read and keep only, ending by itself", () => {
+  it("/terms: 제7조의2 is 삭제 (the signup gift went, owner 2026-10-14 evening), and 제4조 sets out 오픈 기념 무료: until 2026-11-30, once per logged-in account and per device, tarot only, read and keep only, ending by itself", () => {
     // The old 제2조·제4조 lines: pinned before the terms' 2026-10-31 00:00 KST revision (premiumSchedule.test.tsx has the new ones).
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.parse("2026-10-30T12:00:00+09:00"));
@@ -96,7 +96,7 @@ describe("policies for the paid launch", () => {
     expect(clause?.querySelector("h2")?.textContent).toBe("제7조의2 (삭제)");
     expect(clause?.querySelectorAll("li")).toHaveLength(0);
     const service = container.querySelector("#service")?.textContent ?? "";
-    expect(service).toContain("운영자는 오픈 기념 무료로 2026년 10월 31일 23시 59분(한국 시간)까지 기기(브라우저)마다 한 번 타로 전체 풀이를 무료로 제공합니다. 사주 전체 풀이는 무료로 제공하지 않습니다.");
+    expect(service).toContain("운영자는 오픈 기념 무료로 2026년 11월 30일 23시 59분(한국 시간)까지 로그인한 계정마다 한 번(같은 기기에서는 한 번) 타로 전체 풀이를 무료로 제공합니다. 사주 전체 풀이는 무료로 제공하지 않습니다.");
     expect(service).toContain("오픈 기념 무료로 연 타로 전체 풀이는 그 기기에서 보고 보관하는 데에만 쓸 수 있으며, 이어서 물어보기와 결과 공유는 제공하지 않습니다. 오픈 기념 무료는 위 기간이 지나면 자동으로 끝납니다.");
     expect(container.textContent).not.toMatch(/첫 이용 무료|가입 선물/);
     // Article numbers run 1, 2, 3, 4, 4의2, 5, 6, 7, 7의2, 8, (8의2,) 8의3, 9, 10, 11, 12 with nothing skipped.

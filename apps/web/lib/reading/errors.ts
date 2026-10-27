@@ -75,6 +75,8 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       }
       // 오픈 기념 무료 is used on this device: it does not come back, so no reset line.
       if (error.scope === "first") return { title: "오픈 기념 무료 풀이를 이미 열었어요", action: null };
+      // 오픈 기념 무료 is once per account too (owner 2026-10-27): taken on another device, this one keeps its own.
+      if (error.scope === "account") return { title: "이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요", action: null };
       // A buyer's premium previews of the day (lib/premium/routes.ts): the purchase needs none (review 2026-10-20 A5).
       if (error.scope === "buyer") return { title: "오늘 볼 수 있는 미리보기를 모두 봤어요", body: "결제한 풀이는 바로 열 수 있어요.", action: null };
       if (context === "followup" && error.scope === "chapter") return { title: "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요", action: null };
@@ -125,6 +127,8 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
     case "NOT_AVAILABLE":
       // A 오픈 기념 무료 reading takes no follow-ups: the server says why.
       if (context === "followup") return { title: "이 풀이에는 더 물어볼 수 없어요", body: error.message, action: null };
+      // 오픈 기념 무료's claim could not be checked (lib/api/unlock.ts): it fails closed for now.
+      if (error.reason === "opening") return { title: "지금은 오픈 기념 무료를 열 수 없어요", body: "잠시 뒤에 다시 시도해 주세요.", action: "retry" };
       // L-1: a purchase whose reading kept failing opens no more; it was not used (lib/api/unlock.ts CAPPED_MESSAGE).
       if (error.reason === "capped") return { title: context === "gift" ? "이 가입 선물로는 더 열 수 없어요" : "이 결제로는 더 열 수 없어요", body: error.message, action: null };
       return { title: "지금은 열 수 없는 상품이에요", action: "home" };

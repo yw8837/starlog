@@ -215,7 +215,8 @@ const SCREENS: Screen[] = [
     },
     prepare: async (page) => expect(page.getByRole("button", { name: "다시 시도" })).toBeVisible(),
   },
-  // The device's free first reading spent: a state that exists only while 오픈 기념 무료 is on (until 10/31).
+  // The device's free first reading spent: a state that exists only while 오픈 기념 무료 is on (until 11/30). It opens for a
+  // logged-in account only (owner 2026-10-27), so the account says it is logged in, with sales closed here.
   ...(openingOn()
     ? [
         {
@@ -223,6 +224,7 @@ const SCREENS: Screen[] = [
           path: "/tarot/result",
           setup: async (page: Page) => {
             await dealtFlow(page);
+            await fail(page, "**/api/me", 200, { payments: false, login: true, owner: false, user: { nickname: "별손님", gift: null, unused: [], opening: [] } });
             await fail(page, "**/api/tarot/reading", 429, { code: "BETA_LIMIT", scope: "first", message: "…" });
           },
           prepare: async (page: Page) => {
@@ -237,14 +239,14 @@ const SCREENS: Screen[] = [
     name: "tarot-unlock-generating",
     path: "/tarot/result",
     setup: async (page) => {
-      // After 오픈 기념 무료 (10/31) a visitor has nothing free to open: the owner pass opens it instead.
-      if (!openingOn()) await ownerPass(page, test.info());
+      // 오픈 기념 무료 needs a login (owner 2026-10-27) and ends 11/30: the owner pass opens it, on the same waiting screen.
+      await ownerPass(page, test.info());
       await dealtFlow(page);
       await hold(page, "**/api/tarot/reading");
     },
     prepare: async (page) => {
       await waitForSheet(page);
-      await page.getByRole("button", { name: openingOn() ? /전체 풀이 보기/ : "운영자로 무료 열기" }).click();
+      await page.getByRole("button", { name: "운영자로 무료 열기" }).click();
       await expect(page.getByText("이 화면을 열어 둔 채로 기다려 주세요.")).toBeVisible();
     },
   },

@@ -36,6 +36,10 @@ const call = async (handler: Handler, body: unknown, cookie = "") => {
 const sajuFull = async (body: Record<string, unknown>) =>
   call(sajuReading, { ...body, unlock: { method: "owner" } }, `sl_owner=${await ownerCookie(signingSecret()!, Date.now(), "owner-code-for-tests-0001")}`);
 
+/** 오픈 기념 무료 needs a logged-in account (owner 2026-10-27): these read a tarot full reading's inputs, opened with the pass. */
+const tarotFull = async (body: Record<string, unknown>) =>
+  call(reading, { ...body, unlock: { method: "owner" } }, `sl_owner=${await ownerCookie(signingSecret()!, Date.now(), "owner-code-for-tests-0001")}`);
+
 const drawFor = async (templateId: string) => (await call(draw, { templateId, picks: [3, 30, 60] })).data.drawToken as string;
 
 const CUSTOM = { topicId: "custom", whoId: "me" as const, topicText: "창업 준비", whoText: "나", whenText: "다음 주 금요일 면접", question: "다음 주 금요일 면접, 창업 준비는 어떻게 될까", conditions: [], note: "" };
@@ -106,7 +110,7 @@ describe("custom topic, who and when (question builder C4)", () => {
 
   it("keeps whoText and whenText on a catalog topic", async () => {
     const drawToken = await drawFor("relationship");
-    const res = await call(reading, { drawToken, input: { topicId: "conflict", whoId: "us", question: "", whoText: "엄마", whenText: "추석 전", conditions: [], note: "" } });
+    const res = await tarotFull({ drawToken, input: { topicId: "conflict", whoId: "us", question: "", whoText: "엄마", whenText: "추석 전", conditions: [], note: "" } });
     expect(res.status).toBe(200);
     expect(res.data.reading.timing.heading).toBe("정한 때까지, 언제 움직이면 좋을지");
   });
@@ -188,7 +192,7 @@ describe("history (earlier readings from the device)", () => {
 
   it("accepts history on the tarot and saju routes and keeps it out of the chapter token", async () => {
     const drawToken = await drawFor("self-flow");
-    const res = await call(reading, { drawToken, input: { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "", history: HISTORY } });
+    const res = await tarotFull({ drawToken, input: { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "", history: HISTORY } });
     expect(res.status).toBe(200);
     const payload = JSON.parse(Buffer.from(res.data.chapterToken.split(".")[0], "base64url").toString("utf8"));
     expect(payload.ctx.input).not.toHaveProperty("history");

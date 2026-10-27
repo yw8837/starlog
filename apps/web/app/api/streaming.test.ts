@@ -3,11 +3,13 @@ import { mockProvider } from "@/lib/ai/mock";
 import { GenerationError, type GenerationHooks } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { respondGeneration } from "@/lib/api/stream";
+import { setTestDb } from "@/lib/db";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
 import { ownerCookie } from "@/lib/security/owner";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
+import { openerCookies, useTestDb } from "@/lib/testing/p4";
 import { POST as commit } from "./commit/route";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
@@ -64,19 +66,33 @@ function device(ip = "203.0.113.20") {
   return { jar, call, stream, request };
 }
 
+/** A device logged in to an account of its own: 오픈 기념 무료 opens once per logged-in account (owner 2026-10-27). */
+async function member(ip?: string) {
+  const d = device(ip);
+  for (const [name, value] of await openerCookies()) d.jar.set(name, value);
+  return d;
+}
+
 async function drawSelfFlow(d: ReturnType<typeof device>) {
   return (await d.call(draw, { templateId: "self-flow", picks: [3, 30, 60] })).data as { drawToken: string };
 }
 
+let db: ReturnType<typeof useTestDb>;
+
 beforeEach(() => {
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
+  // 오픈 기념 무료 needs an account (member): sign-up open, mock Kakao, a test D1.
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
+  db = useTestDb();
   resetMemoryLimiter();
   resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
 afterEach(() => {
+  setTestDb(null);
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
@@ -101,7 +117,7 @@ describe("NDJSON streaming", () => {
   });
 
   it("spends the free first reading through /api/commit after done; a stale commit changes nothing", async () => {
-    const d = device("203.0.113.22");
+    const d = await member("203.0.113.22");
     const { drawToken } = await drawSelfFlow(d);
     const first = await d.stream(reading, { drawToken, input: MONEY_INPUT });
     const done = first.events.at(-1)!;
@@ -167,7 +183,7 @@ describe("NDJSON streaming", () => {
         reject(new GenerationError("UPSTREAM", ["aborted"]));
       });
     }));
-    const d = device("203.0.113.26");
+    const d = await member("203.0.113.26");
     const { drawToken } = await drawSelfFlow(d);
     const client = new AbortController();
     const response = await reading(d.request({ drawToken, input: MONEY_INPUT }, { accept: "application/x-ndjson", signal: client.signal }));
@@ -176,6 +192,8 @@ describe("NDJSON streaming", () => {
     expect(JSON.parse(first.split("\n")[0]!)).toEqual({ type: "start" });
     client.abort();
     await vi.waitFor(() => expect(aborted).toBe(true));
+    // The account's 오픈 기념 무료 held for it is given back: nothing was written.
+    await vi.waitFor(async () => expect(await db.prepare("SELECT COUNT(*) AS n FROM opening_claims").first()).toEqual({ n: 0 }));
   });
 
   it("aborts upstream when the reader cancels the stream", async () => {

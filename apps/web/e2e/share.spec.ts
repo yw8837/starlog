@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openingOn } from "./opening";
+import { loginForOpening, openingOn } from "./opening";
 import { openShared, shotButton } from "./shareShots";
 
 /**
@@ -31,13 +31,15 @@ async function ownAddress(page: Page) {
 
 /**
  * A full tarot reading from the API, saved on this device as the result screen keeps it: opened with the
- * owner pass, or (`opening`) with 오픈 기념 무료, which takes no follow-ups but is shared like any other (owner 2026-10-23).
+ * owner pass, or (`opening`) with 오픈 기념 무료, which takes no follow-ups but is shared like any other (owner 2026-10-23), by
+ * an account of its own (it opens for a logged-in account once, owner 2026-10-27).
  */
 async function savedReading(page: Page, id: string, { opening = false } = {}) {
   await page.context().clearCookies();
   await ownAddress(page);
   const origin = new URL(test.info().project.use.baseURL!).origin;
-  if (!opening) expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
+  if (opening) await loginForOpening(page, test.info(), `share-${test.info().project.name}-${Date.now()}`);
+  else expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
   const draw = await (await page.request.post("/api/tarot/draw", { data: { templateId: "relationship-contact", picks: [2, 9, 15] } })).json();
   const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: INPUT, ...(opening ? {} : { unlock: { method: "owner" } }) } })).json();
   const chapter = {
@@ -89,7 +91,7 @@ test("공유하기 makes the reading's own link: the cards and the reading for a
   await visitor.close();
 });
 
-// 오픈 기념 무료 opens readings until 2026-10-31 (KST); from 11월 1일 there is none to share, so the test is not declared.
+// 오픈 기념 무료 opens readings until 2026-11-30 (KST); from 12월 1일 there is none to share, so the test is not declared.
 if (openingOn()) test("a 오픈 기념 무료 reading shares too (owner 2026-10-23): its link opens the cards and the reading, not the home", async ({ page }) => {
   const reading = await savedReading(page, "sharee2e02", { opening: true });
   await page.goto("/chapter/sharee2e02");

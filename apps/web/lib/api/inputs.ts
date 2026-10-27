@@ -48,7 +48,7 @@ export const TarotInputBody = z.object({
   deck: z.enum(["starlog", "rws1909"]).optional(),
 });
 
-/** How the full reading is opened (P4). Absent means 오픈 기념 무료, the device's one free tarot reading (refused for saju). */
+/** How the full reading is opened (P4). Absent means 오픈 기념 무료, one free tarot reading per logged-in account and per device (refused for saju). */
 export const UnlockBody = z.object({ method: z.enum(UNLOCK_METHODS) });
 
 export const TarotBody = z.object({

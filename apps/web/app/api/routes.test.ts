@@ -8,8 +8,9 @@ import { issueChapter } from "@/lib/security/chapterToken";
 import { dailyDeal } from "@/lib/security/drawToken";
 import { signingSecret } from "@/lib/security/sign";
 import { teaserCut } from "@/lib/security/teaserSeal";
+import { setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { paidChapterOf } from "@/lib/testing/p4";
+import { openerCookies, paidChapterOf, useTestDb } from "@/lib/testing/p4";
 import { GET as dailyDealState, POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";
@@ -46,6 +47,13 @@ function device(ip = "203.0.113.7") {
   return { call, jar };
 }
 
+/** A device logged in to an account of its own: 오픈 기념 무료 opens once per logged-in account (owner 2026-10-27). */
+async function member(ip?: string) {
+  const d = device(ip);
+  for (const [name, value] of await openerCookies()) d.jar.set(name, value);
+  return d;
+}
+
 const MONEY_INPUT = {
   topicId: "money", whoId: "me", whenId: "week",
   question: "이번 주, 나의 재물 흐름은 어떨까",
@@ -62,12 +70,17 @@ beforeEach(() => {
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
+  // 오픈 기념 무료 needs an account (member): sign-up open, mock Kakao, a test D1.
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
+  useTestDb();
   resetMemoryLimiter();
   resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
 afterEach(() => {
+  setTestDb(null);
   vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -81,7 +94,7 @@ async function drawSelfFlow(d: ReturnType<typeof device>) {
 
 describe("tarot flow with the mock provider", () => {
   it("draws, teases, reads and answers follow-ups for the picked cards and the money topic", async () => {
-    const d = device();
+    const d = await member();
     const { cards, drawToken } = await drawSelfFlow(d);
     expect(cards.map((c) => c.position)).toEqual(["지금의 나", "필요한 것", "이 시기의 흐름"]);
 
@@ -114,7 +127,7 @@ describe("tarot flow with the mock provider", () => {
   });
 
   it("감질맛: the teaser shows the second card cut near half and seals both cards; the reading opened with the seal reads on from them", async () => {
-    const d = device();
+    const d = await member();
     const { cards, drawToken } = await drawSelfFlow(d);
     const spy = vi.spyOn(mockProvider, "generate");
     const t = await d.call(teaser, { drawToken, input: MONEY_INPUT });
@@ -145,21 +158,21 @@ describe("tarot flow with the mock provider", () => {
     const d = device();
     const { drawToken } = await drawSelfFlow(d);
     const t = await d.call(teaser, { drawToken, input: MONEY_INPUT });
-    const asToday = (await device("203.0.113.30").call(reading, { drawToken, input: MONEY_INPUT })).data.reading.cards[0].body;
+    const asToday = (await (await member("203.0.113.30")).call(reading, { drawToken, input: MONEY_INPUT })).data.reading.cards[0].body;
     expect(asToday).not.toBe(t.data.firstCard.body);
     // another question on the same draw, a broken seal, an oversized one
-    const other = await device("203.0.113.31").call(reading, { drawToken, input: { ...MONEY_INPUT, note: "다른 메모예요" }, seal: t.data.seal });
+    const other = await (await member("203.0.113.31")).call(reading, { drawToken, input: { ...MONEY_INPUT, note: "다른 메모예요" }, seal: t.data.seal });
     expect(other.status).toBe(200);
     expect(other.data.reading.cards[0].body).not.toBe(t.data.firstCard.body);
     for (const [ip, seal] of [["203.0.113.32", `${t.data.seal}x`], ["203.0.113.33", "A".repeat(12_001)]] as const) {
-      const res = await device(ip).call(reading, { drawToken, input: MONEY_INPUT, seal });
+      const res = await (await member(ip)).call(reading, { drawToken, input: MONEY_INPUT, seal });
       expect(res.status).toBe(200);
       expect(res.data.reading.cards[0].body).toBe(asToday);
     }
   });
 
   it("rejects a tampered or expired draw token and a reading that does not match its chapter token", async () => {
-    const d = device();
+    const d = await member();
     const { drawToken } = await drawSelfFlow(d);
     const tampered = drawToken.slice(0, -3) + (drawToken.at(-3) === "A" ? "B" : "A") + drawToken.slice(-2);
     expect((await d.call(teaser, { drawToken: tampered, input: MONEY_INPUT })).data.code).toBe("BAD_TOKEN");
@@ -199,7 +212,7 @@ describe("tarot flow with the mock provider", () => {
 
 describe("quota", () => {
   it("gives a device one free tarot full reading the first time (오픈 기념 무료), not one a day; a failed one spends nothing", async () => {
-    const d = device();
+    const d = await member();
     const { drawToken } = await drawSelfFlow(d);
     vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
     expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(502);
@@ -237,7 +250,7 @@ describe("quota", () => {
     expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM })).status).toBe(402);
     expect((await d.call(sajuReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } })).status).toBe(200);
     // This device's free tarot reading is untouched.
-    const stranger = device("203.0.113.71");
+    const stranger = await member("203.0.113.71");
     await stranger.call(sajuReading, { birth: DEFAULT_SAJU_FORM });
     const { drawToken } = await drawSelfFlow(stranger);
     expect((await stranger.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
@@ -245,7 +258,8 @@ describe("quota", () => {
 
   it("lets the owner pass skip every quota; a wrong code sets nothing and login attempts are rate limited", async () => {
     vi.stubEnv("BETA_FULL_PER_DAY", "0");
-    const d = device("198.51.100.1");
+    // The owner pass skips the device's and the network's counts; 오픈 기념 무료 is still once per account.
+    const d = await member("198.51.100.1");
     expect((await d.call(owner, { code: "wrong" })).status).toBe(400);
     expect(d.jar.has("sl_owner")).toBe(false);
     const ok = await d.call(owner, { code: "owner-code-for-tests-0001" });
@@ -275,20 +289,20 @@ describe("quota", () => {
   });
 
   it("limits full readings to 20 a minute per IP (25 for the owner), on top of the daily quota", async () => {
-    vi.stubEnv("BETA_FULL_PER_DAY", "100");
+    // The limiter answers before anything else is asked: a visitor's 21st request in a minute meets it, not the login.
     const d = device("192.0.2.60");
     const { drawToken } = await drawSelfFlow(d);
-    const statuses: number[] = [];
-    for (let i = 0; i < 21; i++) statuses.push((await d.call(reading, { drawToken, input: MONEY_INPUT })).status);
-    expect(statuses.slice(0, 20).every((s) => s === 200)).toBe(true);
-    expect(statuses[20]).toBe(429);
+    const codes: string[] = [];
+    for (let i = 0; i < 21; i++) codes.push((await d.call(reading, { drawToken, input: MONEY_INPUT })).data.code);
+    expect(codes.slice(0, 20).every((c) => c === "LOGIN_REQUIRED")).toBe(true);
+    expect(codes[20]).toBe("RATE_LIMIT");
     vi.setSystemTime(T0 + 61_000);
-    expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).status).toBe(200);
+    expect((await d.call(reading, { drawToken, input: MONEY_INPUT })).data.code).toBe("LOGIN_REQUIRED");
 
     const boss = device("192.0.2.61");
     expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
     const bossDraw = await drawSelfFlow(boss);
-    for (let i = 0; i < 21; i++) expect((await boss.call(reading, { drawToken: bossDraw.drawToken, input: MONEY_INPUT })).status).toBe(200);
+    for (let i = 0; i < 21; i++) expect((await boss.call(reading, { drawToken: bossDraw.drawToken, input: MONEY_INPUT, unlock: { method: "owner" } })).status).toBe(200);
   });
 
   it("lets a crowd on one shared IP (CGNAT, café Wi-Fi) each use their own free reading (final QA Q-01)", async () => {
@@ -296,7 +310,7 @@ describe("quota", () => {
     let phone = device("198.18.40.1");
     let drawToken = "";
     for (let i = 0; i < 15; i++) {
-      phone = device("198.18.40.1"); // fresh cookies, same carrier IP, all within one minute
+      phone = await member("198.18.40.1"); // fresh cookies and an account of its own, same carrier IP, all within one minute
       ({ drawToken } = await drawSelfFlow(phone));
       expect((await phone.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
       statuses.push((await phone.call(reading, { drawToken, input: MONEY_INPUT })).status);
@@ -309,7 +323,7 @@ describe("quota", () => {
 
 describe("chapter tokens", () => {
   it("expire 7 days after the reading; follow-ups keep the original expiry", async () => {
-    const d = device();
+    const d = await member();
     const { drawToken } = await drawSelfFlow(d);
     const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
     const chapterToken = await paidChapterOf(r.data.chapterToken, r.data.reading);
@@ -324,13 +338,13 @@ describe("chapter tokens", () => {
 });
 
 describe("오픈 기념 무료", () => {
-  it("ends with October: from 2026-11-01 00:00 KST the free opening is refused before any generation, nothing set; the owner pass still opens", async () => {
-    vi.setSystemTime(Date.parse("2026-10-31T14:59:59Z")); // 23:59:59 KST, the last free second
-    const last = device("203.0.113.80");
+  it("ends with November: from 2026-12-01 00:00 KST the free opening is refused before any generation, nothing set; the owner pass still opens", async () => {
+    vi.setSystemTime(Date.parse("2026-11-30T14:59:59Z")); // 23:59:59 KST, the last free second
+    const last = await member("203.0.113.80");
     const lastDraw = await drawSelfFlow(last);
     expect((await last.call(reading, { drawToken: lastDraw.drawToken, input: MONEY_INPUT })).status).toBe(200);
 
-    vi.setSystemTime(Date.parse("2026-10-31T15:00:00Z")); // 00:00 KST, 11월 1일
+    vi.setSystemTime(Date.parse("2026-11-30T15:00:00Z")); // 00:00 KST, 12월 1일
     const d = device("203.0.113.81");
     const { drawToken } = await drawSelfFlow(d);
     const spy = vi.spyOn(mockProvider, "generate");
@@ -347,7 +361,7 @@ describe("오픈 기념 무료", () => {
   });
 
   it("is read and kept on the device only: its chapter takes no follow-up, refused before anything is counted", async () => {
-    const d = device("203.0.113.82");
+    const d = await member("203.0.113.82");
     const { drawToken } = await drawSelfFlow(d);
     const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
     expect(r.status).toBe(200);

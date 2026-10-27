@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { filledSlots, pickCard, tableCards } from "./cards";
-import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
+import { fakeBrowserClock, loginForOpening, openingOn, ownerPass } from "./opening";
 import { makeLink, openShared, shotButton } from "./shareShots";
 
 /**
@@ -8,7 +8,8 @@ import { makeLink, openShared, shotButton } from "./shareShots";
  * the server deals are the cards shown, the teaser and the full reading come from the API, the
  * reading is saved on this device and survives a reload. A 오픈 기념 무료 reading is read and kept on
  * this device (no follow-ups, but shareable since owner 2026-10-23); pay-flow.spec.ts asks a follow-up on a paid one.
- * 오픈 기념 무료 ends with 2026-10-31 (KST): from 11월 1일 the free opening below is refused.
+ * 오픈 기념 무료 opens for a logged-in account once (owner 2026-10-27; a visitor logs in first, opening-account.spec.ts), and
+ * ends with 2026-11-30 (KST): from 12월 1일 the free opening below is refused.
  */
 
 /** Client navigations wait for `next dev` to compile the next route, which is slow on this disk. */
@@ -76,11 +77,12 @@ async function drawThree(page: Page): Promise<Array<{ cardId: string; position: 
 test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
 test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오픈 기념 무료 reading that survives reload, read and kept only", async ({ page }, info) => {
-  // Until 10/31 the free first reading opens it, read and kept only; from 11월 1일 a visitor has nothing free to
-  // open, so the owner pass opens it and the reading is an ordinary one.
+  // Until 11/30 a logged-in account opens it free once, read and kept only; from 12월 1일 nothing free opens, so the
+  // owner pass opens it and the reading is an ordinary one.
   const free = openingOn();
   await ownAddress(page, info);
-  if (!free) await ownerPass(page, info);
+  if (free) await loginForOpening(page, info, `flow-${info.project.name}-${Date.now()}`);
+  else await ownerPass(page, info);
   await buildMoneyQuestion(page, info);
   const cards = await drawThree(page);
 
@@ -97,10 +99,10 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
   await expect(sheet).toContainText("풀이 전체 · 약 2,000자");
   await expect(sheet).toContainText("이 기기에 계속 보관");
   if (free) {
-    // 오픈 기념 무료 alone is offered: no follow-ups are promised, and its rule is said under the button.
+    // Logged in, 오픈 기념 무료 is the gold choice and paying follows it: no follow-ups are promised, and its rule is said under the button.
     await expect(sheet).not.toContainText("이어서 물어보기 3번");
-    await expect(sheet).toContainText("10월 31일까지 기기마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료). 내 기록에 보관돼요(이어서 물어보기 제외).");
-    await expect(sheet.getByRole("link")).toHaveCount(0);
+    await expect(sheet).toContainText("11월 30일까지 로그인한 계정마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).");
+    await expect(sheet.getByRole("link")).toHaveText(["2,900원 결제하고 보기"]);
   } else {
     await expect(sheet).not.toContainText("오픈 기념 무료");
     await expect(sheet).toContainText("이어서 물어보기 3번");
@@ -167,8 +169,10 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
 });
 
 test("오픈 기념 무료 used: opening again says so with no reset time, no reading is shown", async ({ page }, info) => {
-  test.skip(!openingOn(), "오픈 기념 무료 ended 2026-10-31: no device can be in the used-it state any more");
+  test.skip(!openingOn(), "오픈 기념 무료 ended 2026-11-30: no device can be in the used-it state any more");
   await ownAddress(page, info);
+  // Logged in, so the tap reaches the server (a visitor's goes to the login first).
+  await loginForOpening(page, info, `used-${info.project.name}-${Date.now()}`);
   await buildMoneyQuestion(page, info);
   await drawThree(page);
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
@@ -182,8 +186,8 @@ test("오픈 기념 무료 used: opening again says so with no reset time, no re
   await expect(sheet).not.toContainText("다시 열려요");
   await expect(page.getByRole("status").filter({ hasText: "오픈 기념 무료 풀이를 이미 열었어요" })).toBeAttached();
   await expect(page).toHaveURL(/\/tarot\/result/);
-  // The device now knows its free first reading is used: the button stays off, for good.
-  await expect(sheet.getByRole("button", { name: "전체 풀이 보기", exact: true })).toBeDisabled();
+  // The device now knows its free first reading is used: 오픈 기념 무료 is not offered here again, for good.
+  await expect(sheet.getByRole("button", { name: /오픈 기념 무료/ })).toHaveCount(0);
   await sheet.scrollIntoViewIfNeeded();
   await shot(page, info, "05-limit");
 });

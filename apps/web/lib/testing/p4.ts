@@ -88,6 +88,20 @@ export async function loginAs(b: Browser, name = "alice", returnTo = "/tarot/res
   return b.send(kakaoCallback, location);
 }
 
+let openerSeq = 0;
+
+/**
+ * 오픈 기념 무료 opens for a logged-in account only, once per account (owner 2026-10-27): the cookies of a fresh mock Kakao
+ * account's login (each from an address of its own), for a test that opens one on a device it builds. Needs a test D1
+ * (useTestDb), sign-up open (STARLOG_PAYMENTS=on) and STARLOG_KAKAO=mock.
+ */
+export async function openerCookies(): Promise<Map<string, string>> {
+  const n = ++openerSeq;
+  const b = browser(`198.19.${Math.floor(n / 250) % 250}.${(n % 250) + 1}`);
+  await loginAs(b, `opener-${n}`);
+  return b.jar;
+}
+
 /**
  * Gives the mock Kakao account `name` the signup gift, as an account that joined before the gift was
  * removed (owner 2026-10-14 evening) holds it: logins grant none any more.

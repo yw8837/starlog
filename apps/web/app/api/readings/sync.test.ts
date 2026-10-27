@@ -25,7 +25,7 @@ import { DELETE as remove, GET as list } from "./route";
  * account, and a reading a device kept moves in when its user asks, only when the server can vouch for it.
  */
 
-/** 2026-10-31 12:00 KST: the revision in force, 오픈 기념 무료 still on (it ends 11/01 00:00 KST). */
+/** 2026-10-31 12:00 KST: the revision in force, 오픈 기념 무료 still on (it ends 12/01 00:00 KST). */
 const SYNCED = Date.parse("2026-10-31T03:00:00Z");
 /** The minute before the revision. */
 const BEFORE = Date.parse("2026-10-30T23:59:00+09:00");
@@ -109,14 +109,17 @@ describe("a 오픈 기념 무료 reading opened while logged in (account sync)",
     expect((await accountOf(await loggedIn("bob"))).readings).toEqual([]);
   });
 
-  it("stays on the device before 2026-10-31 00:00 KST, and for a visitor who is not logged in", async () => {
+  it("stays on the device before 2026-10-31 00:00 KST; a visitor who is not logged in is sent to log in (owner 2026-10-27)", async () => {
     const db = useTestDb();
     vi.setSystemTime(BEFORE);
     const before = await openFree(await loggedIn("alice"));
     expect(before.readingId).toBeUndefined();
     vi.setSystemTime(SYNCED);
-    const guest = await openFree(browser(nextIp()));
-    expect(guest.readingId).toBeUndefined();
+    const guest = browser(nextIp());
+    const { drawToken } = (await (await guest.send(draw, "/api/tarot/draw", { body: { templateId: "self-flow", picks: [3, 30, 60] } })).json()) as { drawToken: string };
+    const refused = await guest.send(reading, "/api/tarot/reading", { body: { drawToken, input: INPUT } });
+    expect(refused.status).toBe(401);
+    expect(await refused.json()).toMatchObject({ code: "LOGIN_REQUIRED", reason: "opening" });
     expect(await count(db)).toBe(0);
   });
 
@@ -131,7 +134,7 @@ describe("a 오픈 기념 무료 reading opened while logged in (account sync)",
     expect(error).toHaveBeenCalledWith(expect.stringContaining("opening.keep_failed"));
   });
 
-  it("opens the reading on the device alone when the account cannot be read at all (D1 throws): never a 500", async () => {
+  it("refuses 오픈 기념 무료 when the account cannot be read at all (D1 throws): its claim cannot be checked, so it fails closed, never a 500", async () => {
     useTestDb();
     const b = await loggedIn("alice");
     const down = () => {
@@ -139,9 +142,11 @@ describe("a 오픈 기념 무료 reading opened while logged in (account sync)",
     };
     setTestDb({ prepare: down, batch: down, exec: down } as never);
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    const opened = await openFree(b);
-    expect(opened.readingId).toBeUndefined();
-    expect(opened.chapterToken).toBeTruthy();
+    const { drawToken } = (await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "self-flow", picks: [3, 30, 60] } })).json()) as { drawToken: string };
+    const refused = await b.send(reading, "/api/tarot/reading", { body: { drawToken, input: INPUT } });
+    expect(refused.status).toBe(409);
+    expect(await refused.json()).toMatchObject({ code: "NOT_AVAILABLE", reason: "opening" });
+    expect(b.jar.has("sl_first")).toBe(false);
     expect(error).toHaveBeenCalledWith(expect.stringContaining("opening.account_failed"));
   });
 
@@ -156,18 +161,22 @@ describe("a 오픈 기념 무료 reading opened while logged in (account sync)",
 });
 
 describe("moving this device's readings into the account (account sync)", () => {
-  /** A guest's 오픈 기념 무료 reading, then a login on the same browser. */
-  async function guestThenLogin(name = "alice") {
-    const b = browser(nextIp());
+  /**
+   * A 오픈 기념 무료 reading this device kept alone: opened logged in before account sync (2026-10-31), as it was then (a
+   * visitor opens none since owner 2026-10-27). The browser stays logged in; the clock moves to the revision.
+   */
+  async function openedBeforeSync(name = "alice") {
+    vi.setSystemTime(BEFORE);
+    const b = await loggedIn(name);
     const opened = await openFree(b);
     expect(opened.readingId).toBeUndefined();
-    await loginAs(b, name);
+    vi.setSystemTime(SYNCED);
     return { b, opened };
   }
 
   it("moves a reading the server can vouch for (signed token, unchanged reading), from the token's own fields, and shows it on another device", async () => {
     const db = useTestDb();
-    const { b, opened } = await guestThenLogin();
+    const { b, opened } = await openedBeforeSync();
     const res = await moveAs(b, [{ id: "localabc123", chapterToken: opened.chapterToken, reading: opened.reading }]);
     expect(res.status).toBe(200);
     const answer = (await res.json()) as MoveAnswer;
@@ -182,12 +191,12 @@ describe("moving this device's readings into the account (account sync)", () => 
     // `moved`: every device shows it takes no review (writeReview refuses origin 'moved').
     expect(readings[0]!.chapter).toMatchObject({ kind: "tarot", question: INPUT.question, opening: true, moved: true, reading: opened.reading, chapterToken: opened.chapterToken });
     // Dated when the server wrote it (the token's), not when the device says.
-    expect(readings[0]!.createdAt).toBe(SYNCED);
+    expect(readings[0]!.createdAt).toBe(BEFORE);
   });
 
   it("is idempotent: the same reading moved again, from a retry or a reading already kept, is the same row", async () => {
     const db = useTestDb();
-    const { b, opened } = await guestThenLogin();
+    const { b, opened } = await openedBeforeSync();
     const item = { id: "localabc123", chapterToken: opened.chapterToken, reading: opened.reading };
     const first = (await (await moveAs(b, [item])).json()) as MoveAnswer;
     const again = (await (await moveAs(b, [item, { ...item, id: "localdup999" }])).json()) as MoveAnswer;
@@ -204,7 +213,7 @@ describe("moving this device's readings into the account (account sync)", () => 
 
   it("keeps on the device what it cannot vouch for: a changed reading, a forged or emptied token, a premium reading", async () => {
     const db = useTestDb();
-    const { b, opened } = await guestThenLogin();
+    const { b, opened } = await openedBeforeSync();
     const secret = signingSecret()!;
     const premiumReading = { verdict: "깊게 본 결론" };
     const premiumToken = await issueChapter(
@@ -245,7 +254,7 @@ describe("moving this device's readings into the account (account sync)", () => 
 
   it("takes no review for a moved reading: who opened it is not known (an owner-pass reading must never review itself)", async () => {
     useTestDb();
-    const { b, opened } = await guestThenLogin();
+    const { b, opened } = await openedBeforeSync();
     const { moved } = (await (await moveAs(b, [{ id: "localabc123", chapterToken: opened.chapterToken, reading: opened.reading }])).json()) as MoveAnswer;
     const res = await b.send(review, "/api/reviews", { body: { readingId: moved[0]!.readingId, rating: 5 }, origin: true });
     expect(res.status).toBe(409);
@@ -254,7 +263,7 @@ describe("moving this device's readings into the account (account sync)", () => 
 
   it("asks for a login, our own page and the revision's date, and refuses a body that is not a list of readings", async () => {
     useTestDb();
-    const { b, opened } = await guestThenLogin();
+    const { b, opened } = await openedBeforeSync();
     const item = { id: "localabc123", chapterToken: opened.chapterToken, reading: opened.reading };
     expect((await moveAs(browser(nextIp()), [item])).status).toBe(401);
     expect((await moveAs(b, [item], false)).status).toBe(403);
@@ -268,12 +277,14 @@ describe("moving this device's readings into the account (account sync)", () => 
 
   it("is erased with the rest: 계정에 보관한 풀이 모두 지우기 and 회원 탈퇴 remove moved and kept readings alike", async () => {
     const db = useTestDb();
-    const { b, opened } = await guestThenLogin();
+    // dave's reading on a shared browser, moved by alice there: alice's own 오픈 기념 무료 is still hers to keep.
+    const { b, opened } = await openedBeforeSync("dave");
+    await loginAs(b, "alice");
     await moveAs(b, [{ id: "localabc123", chapterToken: opened.chapterToken, reading: opened.reading }]);
     expect(await (await b.send(remove, "/api/readings?all=1", { method: "DELETE", origin: true })).json()).toEqual({ deleted: 1 });
     await moveAs(b, [{ id: "localabc123", chapterToken: opened.chapterToken, reading: opened.reading }]);
     vi.setSystemTime(SYNCED + 60_000);
-    // 오픈 기념 무료 is one per device: the auto-kept one comes from another browser of the same account.
+    // 오픈 기념 무료 is one per device: alice's auto-kept one comes from another browser of hers.
     await openFree(await loggedIn("alice"));
     expect(await count(db)).toBe(2);
     const { url } = (await (await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true })).json()) as { url: string };

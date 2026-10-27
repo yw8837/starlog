@@ -14,7 +14,7 @@ export function useOpeningFree(): boolean {
 }
 
 /**
- * Its children only in the browser, only before 오픈 기념 무료 ends: the line goes away by itself on 2026-11-01 00:00 KST,
+ * Its children only in the browser, only before 오픈 기념 무료 ends: the line goes away by itself on 2026-12-01 00:00 KST,
  * with no deploy. The server renders nothing, so a static page leads with what stays true.
  */
 export function OpeningOnly({ children }: { children: ReactNode }) {

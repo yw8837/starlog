@@ -3,10 +3,11 @@ import { mockProvider } from "@/lib/ai/mock";
 import type { GenerationHooks } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { addNetworkCost, budgetState, resetSpendState, spentTodayKrw } from "@/lib/api/spend";
+import { setTestDb } from "@/lib/db";
 import { kstDay } from "@/lib/security/quota";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { keyedHash, signingSecret } from "@/lib/security/sign";
-import { paidChapterOf } from "@/lib/testing/p4";
+import { openerCookies, paidChapterOf, useTestDb } from "@/lib/testing/p4";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as followup } from "./followup/route";
@@ -57,15 +58,17 @@ vi.mock("@/lib/cloudflare", async (importOriginal) => ({
 type Handler = (request: Request) => Promise<Response>;
 const MONEY_INPUT = { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "" };
 
-const request = (body: unknown, ip: string, accept?: string) => new Request("http://localhost/api", {
+const request = (body: unknown, ip: string, accept?: string, cookie?: string) => new Request("http://localhost/api", {
   method: "POST",
-  headers: { "content-type": "application/json", "cf-connecting-ip": ip, ...(accept ? { accept } : {}) },
+  headers: { "content-type": "application/json", "cf-connecting-ip": ip, ...(accept ? { accept } : {}), ...(cookie ? { cookie } : {}) },
   body: JSON.stringify(body),
 });
-const call = async (handler: Handler, body: unknown, ip = "198.51.100.40") => {
-  const response = await handler(request(body, ip));
+const call = async (handler: Handler, body: unknown, ip = "198.51.100.40", cookie?: string) => {
+  const response = await handler(request(body, ip, undefined, cookie));
   return { status: response.status, data: (await response.json()) as Record<string, any> };
 };
+/** An account of its own, as a cookie header: 오픈 기념 무료 opens once per logged-in account (owner 2026-10-27). */
+const memberCookie = async () => [...(await openerCookies())].map(([name, value]) => `${name}=${value}`).join("; ");
 const drawToken = async () => (await call(draw, { templateId: "self-flow", picks: [3, 30, 60] })).data.drawToken as string;
 
 let errors: ReturnType<typeof vi.spyOn>;
@@ -75,6 +78,10 @@ beforeEach(() => {
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("BETA_FULL_PER_DAY", "100");
   vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
+  // 오픈 기념 무료 needs an account (memberCookie): sign-up open, mock Kakao, a test D1.
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
+  useTestDb();
   kv.state.mode = "ok";
   kv.state.unreadable = null;
   kv.state.bound = true;
@@ -88,6 +95,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setTestDb(null);
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
@@ -107,9 +115,10 @@ describe("DAILY_KV failures", () => {
 
   it("never fail a reading when only writes fail (429): it is generated and returned", async () => {
     const token = await drawToken();
+    const cookie = await memberCookie();
     kv.state.mode = "no-writes";
     expect((await call(teaser, { drawToken: token, input: MONEY_INPUT })).status).toBe(200);
-    expect((await call(reading, { drawToken: token, input: MONEY_INPUT })).status).toBe(200);
+    expect((await call(reading, { drawToken: token, input: MONEY_INPUT }, "198.51.100.40", cookie)).status).toBe(200);
     const fortune = await call(daily, {}, "198.51.100.41");
     expect(fortune.status).toBe(200);
     expect(fortune.data.card).toBeDefined();
@@ -132,7 +141,7 @@ describe("DAILY_KV failures", () => {
 
   it("close the daily card and follow-ups too while KV cannot be read, except for the owner", async () => {
     const token = await drawToken();
-    const full = await call(reading, { drawToken: token, input: MONEY_INPUT }, "198.51.100.43");
+    const full = await call(reading, { drawToken: token, input: MONEY_INPUT }, "198.51.100.43", await memberCookie());
     kv.state.mode = "down";
     expect((await call(daily, {}, "198.51.100.43")).status).toBe(503);
     const chapterToken = await paidChapterOf(full.data.chapterToken, full.data.reading);
@@ -188,9 +197,10 @@ describe("DAILY_KV failures", () => {
     const token = await drawToken();
     const ip = "198.51.100.47";
     await addNetworkCost(await keyedHash(`client:${ip}`, signingSecret()!), 5_000, Date.now());
-    expect((await call(reading, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(429);
+    const cookie = await memberCookie();
+    expect((await call(reading, { drawToken: token, input: MONEY_INPUT }, ip, cookie)).status).toBe(429);
     kv.state.unreadable = /^netcost:/;
-    expect((await call(reading, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(200);
+    expect((await call(reading, { drawToken: token, input: MONEY_INPUT }, ip, cookie)).status).toBe(200);
     kv.state.mode = "down";
     expect((await call(teaser, { drawToken: token, input: MONEY_INPUT }, ip)).status).toBe(503);
   });

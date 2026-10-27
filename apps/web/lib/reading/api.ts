@@ -84,9 +84,10 @@ export interface ApiError {
   /**
    * BETA_LIMIT: which count ran out — this chapter's questions, the device's day, the day's count
    * for the whole network (one Wi-Fi, office or school shares it), the device's free first tarot
-   * reading (오픈 기념 무료, which never resets), or a buyer's premium previews of the day.
+   * reading (오픈 기념 무료, which never resets), the account's 오픈 기념 무료 (once per account, owner 2026-10-27), or a
+   * buyer's premium previews of the day.
    */
-  scope?: "chapter" | "day" | "network" | "first" | "buyer";
+  scope?: "chapter" | "day" | "network" | "first" | "account" | "buyer";
   /** 오늘의 한 장 BETA_LIMIT: the day's card, without its text. */
   card?: { cardId: string; orientation: "upright" | "reversed" };
   /** BAD_REQUEST on saju input: the form field at fault. */
@@ -118,7 +119,7 @@ export function parseApiError(status: number, body: unknown): ApiError {
   if (typeof b.message === "string") error.message = b.message;
   if (typeof b.resetsAt === "string") error.resetsAt = b.resetsAt;
   if (b.care === true) error.care = true;
-  if (b.scope === "chapter" || b.scope === "day" || b.scope === "network" || b.scope === "first" || b.scope === "buyer") error.scope = b.scope;
+  if (b.scope === "chapter" || b.scope === "day" || b.scope === "network" || b.scope === "first" || b.scope === "account" || b.scope === "buyer") error.scope = b.scope;
   if (typeof b.field === "string") error.field = b.field;
   if (typeof b.siteKey === "string" && b.siteKey) error.siteKey = b.siteKey;
   if (b.token === "draw" || b.token === "resume") error.token = b.token;

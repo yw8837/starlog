@@ -2,8 +2,7 @@ import { generateTarotReading } from "@/lib/ai/generate";
 import { firstFreeCookies, fullReadingLimit, openGate } from "@/lib/api/http";
 import { respondGeneration } from "@/lib/api/stream";
 import { tarotContextFrom } from "@/lib/api/tarotRequest";
-import { checkBot } from "@/lib/api/turnstile";
-import { keepOpening, planUnlock, settlementFor } from "@/lib/api/unlock";
+import { keepOpening, planUnlock, settlementFor, withOpeningClaim } from "@/lib/api/unlock";
 import { tarotChapter } from "@/lib/readings/chapters";
 import { issueChapter } from "@/lib/security/chapterToken";
 import { openTeaserSeal } from "@/lib/security/teaserSeal";
@@ -11,10 +10,12 @@ import { openTeaserSeal } from "@/lib/security/teaserSeal";
 /**
  * POST {drawToken, input, unlock?} → {reading, chapterToken, readingId?}: the full reading for the
  * server-fixed cards.
- * - 오픈 기념 무료 (no `unlock`, until SITE.beta.openingEndsAt): spends the device's free first reading only
- *   after a validated generation; its chapter is marked `opening` (no follow-ups; shared since owner 2026-10-23). Logged in,
- *   from SYNC_REVISION_DATE (account sync), it is kept in the account too and answers its `readingId`. It asks for
- *   a browser check first when Turnstile is on (lib/api/turnstile.ts); the other openings do not.
+ * - 오픈 기념 무료 (no `unlock`, until SITE.beta.openingEndsAt): logged in only, once per account and per device (owner
+ *   2026-10-27): the account's claim is held before the generation and kept once it is written (given back on a failure),
+ *   and the device's free first reading is spent only after a validated generation; its chapter is marked `opening` (no
+ *   follow-ups; shared since owner 2026-10-23). From SYNC_REVISION_DATE (account sync) it is kept in the account too and
+ *   answers its `readingId`. It asks for a browser check first when Turnstile is on (lib/api/turnstile.ts, in planUnlock);
+ *   the other openings do not.
  * - paid / the signup gift: reserves the purchase or the gift first, then saves the reading to the
  *   account and spends it before the client sees it. Any failure gives it back (spec 5.4).
  * - `seal` (감질맛): the teaser's two cards, for this draw and input only; the reading keeps them and reads on from the cut.
@@ -31,15 +32,11 @@ export async function POST(request: Request): Promise<Response> {
   const written = await openTeaserSeal(parsed.seal, { drawToken: parsed.drawToken, input: parsed.input }, gate.secret, gate.now);
   const plan = await planUnlock(request, gate, "tarot", parsed.unlock);
   if (plan instanceof Response) return plan;
-  if (plan.method === "opening") {
-    const bot = await checkBot(request, gate);
-    if (bot) return bot;
-  }
 
   return respondGeneration(
     request,
     async (hooks) => {
-      const reading = (await generateTarotReading(gate.provider, parsed.ctx, hooks, written ?? [])).data;
+      const reading = await withOpeningClaim(plan, async () => (await generateTarotReading(gate.provider, parsed.ctx, hooks, written ?? [])).data);
       const chapterToken = await issueChapter(
         {
           kind: "tarot", templateId: parsed.draw.templateId, input: parsed.input, cards: parsed.draw.cards.map((c) => [c.cardId, c.orientation]),
