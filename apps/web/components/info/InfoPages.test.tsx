@@ -317,7 +317,8 @@ describe("/help", () => {
     const answers = Object.values(decision).reduce((n, card) => n + card.upright.answers.length + card.reversed.answers.length, 0);
     for (const fact of ["78장", `${answers}개`, "어디로도 보내지 않아요", "오늘의 한 장"]) expect(now, fact).toContain(fact);
     const bonds = container.querySelector('details[id="bonds-score"]')?.textContent ?? "";
-    for (const fact of ["세 기둥", `${BOND_MIN}점에서 ${BOND_MAX}점`, "태어난 시간", "랭킹"]) expect(bonds, fact).toContain(fact);
+    // Who makes a constellation and who joins it (the owner logs in, a friend does not), then the score.
+    for (const fact of ["로그인해서 만들", "로그인하지 않아도", "세 기둥", `${BOND_MIN}점에서 ${BOND_MAX}점`, "태어난 시간", "랭킹"]) expect(bonds, fact).toContain(fact);
   });
 
   it("opens the card the address names, so a moved guide URL lands on its how-to unfolded", () => {
