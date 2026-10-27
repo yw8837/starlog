@@ -31,7 +31,8 @@ for i in $(seq 1 90); do c=$(curl -s -o /dev/null -w "%{http_code}" http://local
 step "preview http=$c"
 SPECS=$(ls e2e/*.spec.ts | grep -v pay-flow | grep -v saju-topics | tr '\n' ' ')
 # Saju has no free full reading (owner 10/14): the specs open it with the preview's owner pass (.dev.vars, never printed).
-E2E_OWNER_CODE="$(grep -E '^STARLOG_OWNER_CODE=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" E2E_BASE_URL=http://localhost:8787 E2E_ALLOW_LIVE=1 npx playwright test $SPECS --workers=2 --grep-invert "saju-chart-topic" --reporter=line > "$LOG/e2e-preview.log" 2>&1; step "e2e preview exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-preview.log" | tr '\n' ' ')"
+# Tests tagged @login log in with the mock Kakao, which the preview refuses (production settings): the dev run below has them.
+E2E_OWNER_CODE="$(grep -E '^STARLOG_OWNER_CODE=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" E2E_BASE_URL=http://localhost:8787 E2E_ALLOW_LIVE=1 npx playwright test $SPECS --workers=2 --grep-invert "saju-chart-topic|@login" --reporter=line > "$LOG/e2e-preview.log" 2>&1; step "e2e preview exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-preview.log" | tr '\n' ' ')"
 kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 # -like, not -match: the old regex 'scratchpad\deploy\' (trailing backslash) failed to parse, so the preview's workerd/node
 # processes outlived the gate and a later preview on 8787 answered from a dead one (2026-10-16).
@@ -40,5 +41,7 @@ kill $PREV 2>/dev/null; taskkill //F //T //PID $PREV > /dev/null 2>&1
 powershell -NoProfile -Command "for (\$i = 0; \$i -lt 6; \$i++) { \$ps = Get-CimInstance Win32_Process -Filter \"Name='workerd.exe' or Name='node.exe' or Name='esbuild.exe'\" | Where-Object { \$_.CommandLine -and (\$_.CommandLine -like '*starlog-ops\deploy*' -or \$_.CommandLine -like '*starlog-ops/deploy*') }; if (-not \$ps) { break }; \$ps | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Seconds 1 }"
 for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]].*LISTENING" | awk '{print $NF}' | sort -u); do [ "$p" != "0" ] && taskkill //F //T //PID $p > /dev/null 2>&1; done; done
 sleep 3
-STARLOG_AI=mock pnpm e2e e2e/pay-flow.spec.ts --workers=1 --project=desktop --project=mobile --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"
+# The dev server (mock Kakao, owner mode): all of pay-flow, and every test tagged @login (오픈 기념 무료 logged in, owner 2026-10-27).
+LOGIN_SPECS="e2e/pay-flow.spec.ts $(grep -l '@login' e2e/*.spec.ts | grep -v pay-flow | tr '\n' ' ')"
+STARLOG_AI=mock pnpm e2e $LOGIN_SPECS --grep "pay-flow|@login" --workers=1 --project=desktop --project=mobile --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow + @login exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"
 step "DONE"

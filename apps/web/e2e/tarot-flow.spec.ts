@@ -9,8 +9,12 @@ import { makeLink, openShared, shotButton } from "./shareShots";
  * reading is saved on this device and survives a reload. A 오픈 기념 무료 reading is read and kept on
  * this device (no follow-ups, but shareable since owner 2026-10-23); pay-flow.spec.ts asks a follow-up on a paid one.
  * 오픈 기념 무료 opens for a logged-in account once (owner 2026-10-27; a visitor logs in first, opening-account.spec.ts), and
- * ends with 2026-11-30 (KST): from 12월 1일 the free opening below is refused.
+ * ends with 2026-11-30 (KST): from 12월 1일 the free opening below is refused. Tests that log in (mock Kakao) are tagged
+ * @login: the Workers preview refuses that login, so the gate runs them in its dev run (scripts/ops/gate3-lite.sh).
  */
+
+/** The 오픈 기념 무료 rule as the unlock sheet says it. */
+const OPENING_RULE = "11월 30일까지 로그인한 계정마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).";
 
 /** Client navigations wait for `next dev` to compile the next route, which is slow on this disk. */
 const NAV = 30_000;
@@ -76,10 +80,12 @@ async function drawThree(page: Page): Promise<Array<{ cardId: string; position: 
 
 test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
-test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오픈 기념 무료 reading that survives reload, read and kept only", async ({ page }, info) => {
-  // Until 11/30 a logged-in account opens it free once, read and kept only; from 12월 1일 nothing free opens, so the
-  // owner pass opens it and the reading is an ordinary one.
-  const free = openingOn();
+/**
+ * The money flow, opened with 오픈 기념 무료 (`free`: logged in, once per account, owner 2026-10-27; it needs the mock Kakao
+ * login, so only the gate's dev run has it, @login) or with the owner pass (운영자로 무료 열기, no login: the Workers preview
+ * runs it too). A 오픈 기념 무료 reading is read and kept only.
+ */
+async function moneyFlow(page: Page, info: TestInfo, free: boolean) {
   await ownAddress(page, info);
   if (free) await loginForOpening(page, info, `flow-${info.project.name}-${Date.now()}`);
   else await ownerPass(page, info);
@@ -101,8 +107,12 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
   if (free) {
     // Logged in, 오픈 기념 무료 is the gold choice and paying follows it: no follow-ups are promised, and its rule is said under the button.
     await expect(sheet).not.toContainText("이어서 물어보기 3번");
-    await expect(sheet).toContainText("11월 30일까지 로그인한 계정마다 타로 전체 풀이 한 번을 무료로 열 수 있어요(오픈 기념 무료, 같은 기기에서는 한 번). 내 기록에 보관돼요(이어서 물어보기 제외).");
+    await expect(sheet).toContainText(OPENING_RULE);
     await expect(sheet.getByRole("link")).toHaveText(["2,900원 결제하고 보기"]);
+  } else if (openingOn()) {
+    // A visitor with the owner pass: 오픈 기념 무료 comes first and says it logs in first; the pass opens the reading without one.
+    await expect(sheet).toContainText(OPENING_RULE);
+    await expect(sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료 · 로그인하고 받기$/ })).toBeVisible();
   } else {
     await expect(sheet).not.toContainText("오픈 기념 무료");
     await expect(sheet).toContainText("이어서 물어보기 3번");
@@ -166,9 +176,18 @@ test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오�
   await expect(records.first()).toContainText(verdict.slice(0, 10));
   await records.first().getByRole("link").click();
   await expect(page).toHaveURL(readingUrl, { timeout: NAV });
+}
+
+test("tarot money flow with a typed 언제: the dealt cards, the teaser, a reading opened with the owner pass that survives reload", async ({ page }, info) => {
+  await moneyFlow(page, info, false);
 });
 
-test("오픈 기념 무료 used: opening again says so with no reset time, no reading is shown", async ({ page }, info) => {
+test("tarot money flow with a typed 언제: the dealt cards, the teaser, a 오픈 기념 무료 reading that survives reload, read and kept only", { tag: "@login" }, async ({ page }, info) => {
+  test.skip(!openingOn(), "오픈 기념 무료 ended 2026-11-30: nothing free opens");
+  await moneyFlow(page, info, true);
+});
+
+test("오픈 기념 무료 used: opening again says so with no reset time, no reading is shown", { tag: "@login" }, async ({ page }, info) => {
   test.skip(!openingOn(), "오픈 기념 무료 ended 2026-11-30: no device can be in the used-it state any more");
   await ownAddress(page, info);
   // Logged in, so the tap reaches the server (a visitor's goes to the login first).

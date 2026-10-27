@@ -7,7 +7,8 @@ import { loginForOpening, openingOn, ownerPass } from "./opening";
  * (/login, the 만 14세 box, mock Kakao) and comes back to the result, which opens it by itself; the same account on another
  * browser is refused, then never offered it again (/api/me openingUsed). In owner mode (playwright.config.ts) only an
  * owner-pass browser may log in, so each browser takes the pass first: the pass skips the device's count, never the
- * account's. Each run logs in to a mock Kakao account of its own.
+ * account's. Each run logs in to a mock Kakao account of its own. Those tests are tagged @login (the Workers preview refuses
+ * the mock login; the gate runs them in its dev run); the visitor's tap and the policy notices run in the preview too.
  * SHOTS: where the screenshots go.
  */
 
@@ -57,7 +58,8 @@ async function toSheet(page: Page) {
   return sheet;
 }
 
-test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to it opened; the same account on another browser is refused, then offered it no more", async ({ browser }, info) => {
+// Both browsers log in (mock Kakao), which the Workers preview refuses: @login, the gate's dev run (scripts/ops/gate3-lite.sh).
+test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to it opened; the same account on another browser is refused, then offered it no more", { tag: "@login" }, async ({ browser }, info) => {
   test.setTimeout(360_000);
   const name = `opening-${info.project.name}-${Date.now()}`;
 
@@ -127,6 +129,21 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
   await shot(phone, info, "5-phone-later");
   await web.context().close();
   await phone.context().close();
+});
+
+// No login from here on: the Workers preview runs these too.
+test("a visitor (no owner pass) is told it logs in first, and its tap goes to /login and back here to open it, generating nothing", async ({ page }, info) => {
+  await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.28.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` });
+  const sheet = await toSheet(page);
+  await expect(sheet).toContainText(RULE);
+  let generated = 0;
+  page.on("request", (r) => {
+    if (r.url().endsWith("/api/tarot/reading")) generated += 1;
+  });
+  await sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료 · 로그인하고 받기$/ }).click();
+  await expect(page).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Funlock%3Dopening%26instant%3D1$/, { timeout: NAV });
+  expect(generated).toBe(0);
+  await shot(page, info, "0-visitor-login");
 });
 
 test("the terms and the privacy policy say what changed on top while it runs (owner 2026-10-27)", async ({ page }, info) => {
