@@ -14,7 +14,8 @@ export default function ShareNotFound() {
       <NightSky fixed moon={false} />
       <main className={`page-col ${s.page}`}>
         <Rabbit outfit="tarot" expression="surprise" size={150} reactOnTap={false} />
-        <h1 className={s.title}>공유가 멈췄거나 없는 풀이예요</h1>
+        {/* a reading or a 별자리 인연 alike (QA L8: a stopped constellation's link said 풀이) */}
+        <h1 className={s.title}>공유가 멈췄거나 없는 링크예요</h1>
         <p className={s.text}>공유한 사람이 공유를 그만뒀거나 주소가 바뀌었을 수 있어요.</p>
         <Button href="/" block>
           홈으로

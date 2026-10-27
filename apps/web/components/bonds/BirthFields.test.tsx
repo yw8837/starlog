@@ -26,6 +26,20 @@ function Harness({ onValue }: { onValue: (v: BirthValue) => void }) {
 }
 
 describe("BirthFields", () => {
+  it("says so when a day the new year or month lacks moves to its last day (QA L3: 2월 29일 became 28일 silently)", () => {
+    const values: BirthValue[] = [];
+    render(<Harness onValue={(v) => values.push(v)} />);
+    fireEvent.change(screen.getByLabelText("태어난 연도"), { target: { value: "2000" } });
+    fireEvent.change(screen.getByLabelText("태어난 월"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("태어난 일"), { target: { value: "29" } });
+    expect(screen.queryByRole("status")).toBeNull();
+    fireEvent.change(screen.getByLabelText("태어난 연도"), { target: { value: "2001" } });
+    expect(values.at(-1)).toMatchObject({ year: 2001, month: 2, day: 28 });
+    expect(screen.getByRole("status").textContent).toBe("2월에는 29일이 없어서 28일로 바꿨어요. 맞는지 확인해 주세요");
+    fireEvent.change(screen.getByLabelText("태어난 일"), { target: { value: "27" } });
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("starts with every part at 선택: no date is assumed", () => {
     render(<Harness onValue={() => undefined} />);
     for (const label of ["태어난 연도", "태어난 월", "태어난 일"]) {

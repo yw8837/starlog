@@ -24,6 +24,8 @@ export interface StarRow {
   cardId: string; orientation: Orientation; score: number; parts: BondPart[]; friendKey: string; createdAt: number;
   /** the friend joined after the form said their score shows on the owner's share (migration 0016); absent: false */
   scorePublic?: boolean;
+  /** a hash of the friend's 궁합 basis salted with the constellation id (migration 0020): one person, one star per nickname */
+  basisHash?: string;
 }
 export interface RankingEntry { constellationId: string; nickname: string; total: number; completedAt: number }
 export interface SignTop { sign: SignId; rank: number; nickname: string; total: number; completedAt: number }
@@ -70,6 +72,10 @@ export interface BondsRepo {
   /** Count one removal or switch on the owner's `day`; the count for that day after it. */
   bumpActions(ownerId: string, day: string): Promise<number>;
   deleteStar(id: string): Promise<void>;
+  /** Keeps this friend device out of the constellation (the owner removed its star; migration 0020). */
+  blockFriend(constellationId: string, friendKey: string, at: number): Promise<void>;
+  /** whether the owner removed this friend device's star from the constellation (false before migration 0020) */
+  isBlocked(constellationId: string, friendKey: string): Promise<boolean>;
   /** This friend device's stars in anyone's constellations, newest first (내가 들어간 별자리). */
   starsByFriend(friendKey: string, limit: number): Promise<StarRow[]>;
   /** This friend device's most recent star in any of the owner's constellations, with that constellation. */

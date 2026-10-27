@@ -143,6 +143,34 @@ describe("D1 BondsRepo, stars.score_public (0016) and constellations.scores_priv
     expect(db.prepare("SELECT COUNT(*) AS n FROM owners WHERE user_id IS NULL").get()).toEqual({ n: 2 });
   });
 
+  it("0020 adds star_blocks and stars.basis_hash; without it nobody is kept out and stars still join (code deployed first)", async () => {
+    const files = readdirSync(MIGRATIONS).filter((file) => /^\d{4}_.+\.sql$/.test(file)).sort();
+    expect(files).toContain("0020_star_guards.sql");
+    const db = new DatabaseSync(":memory:");
+    for (const name of files) db.exec(readFileSync(`${MIGRATIONS}${name}`, "utf8"));
+    expect(db.prepare("PRAGMA table_info(stars)").all().map((c) => (c as { name: string }).name)).toContain("basis_hash");
+    expect(db.prepare("PRAGMA table_info(star_blocks)").all().map((c) => (c as { name: string }).name)).toEqual(["constellation_id", "friend_key", "created_at"]);
+    const batches: string[][] = [];
+    const legacy = createD1BondsRepo(bondsD1(["basis_hash", "star_blocks"], batches));
+    expect((await legacy.joinStar({ ...row, basisHash: "h" }, 4, "2026-10-27", 1)).id).toBe("c1");
+    expect(batches.at(-1)!.join(" ")).not.toContain("basis_hash");
+    const missing: D1Binding = {
+      prepare: () => {
+        const s: D1Statement = {
+          bind: () => s,
+          first: (async () => { throw new Error("D1_ERROR: no such table: star_blocks: SQLITE_ERROR"); }) as D1Statement["first"],
+          all: async () => ({ results: [], success: true }),
+          run: async () => { throw new Error("D1_ERROR: no such table: star_blocks: SQLITE_ERROR"); },
+        };
+        return s;
+      },
+      batch: async (statements) => statements.map(() => ({ results: [], success: true })),
+    };
+    const old = createD1BondsRepo(missing);
+    expect(await old.isBlocked("c1", "f")).toBe(false);
+    await expect(old.blockFriend("c1", "f", 1)).resolves.toBeUndefined();
+  });
+
   it("reads owners and joins on a database without 0019 (code deployed first): nobody belongs to an account", async () => {
     const missing: D1Binding = {
       prepare: (sql) => {

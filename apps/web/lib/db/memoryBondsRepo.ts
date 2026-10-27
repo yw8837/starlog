@@ -12,6 +12,8 @@ export function createMemoryBondsRepo(): BondsRepo {
   const invites = new Map<string, InviteRow>();
   const constellations = new Map<string, ConstellationRow>();
   const stars = new Map<string, StarRow>();
+  /** `${constellationId} ${friendKey}` of friend devices the owner removed */
+  const blocks = new Set<string>();
 
   const copy = <T extends object>(row: T): T => structuredClone(row);
   const ownedBy = (ownerId: string) => [...constellations.values()].filter((c) => c.ownerId === ownerId);
@@ -80,6 +82,7 @@ export function createMemoryBondsRepo(): BondsRepo {
     async deleteOwner(id) {
       for (const c of ownedBy(id)) {
         for (const [key, s] of stars) if (s.constellationId === c.id) stars.delete(key);
+        for (const key of blocks) if (key.startsWith(`${c.id} `)) blocks.delete(key);
         constellations.delete(c.id);
       }
       for (const [code, invite] of invites) if (invite.ownerId === id) invites.delete(code);
@@ -130,7 +133,14 @@ export function createMemoryBondsRepo(): BondsRepo {
     },
     async deleteConstellation(id) {
       for (const [key, s] of stars) if (s.constellationId === id) stars.delete(key);
+      for (const key of blocks) if (key.startsWith(`${id} `)) blocks.delete(key);
       constellations.delete(id);
+    },
+    async blockFriend(constellationId, friendKey) {
+      blocks.add(`${constellationId} ${friendKey}`);
+    },
+    async isBlocked(constellationId, friendKey) {
+      return blocks.has(`${constellationId} ${friendKey}`);
     },
     async starsByFriend(friendKey, limit) {
       return [...stars.values()]

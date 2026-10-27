@@ -210,6 +210,23 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect((await repo.fillingOf("o1"))?.scoresPrivate).toBe(true);
   });
 
+  it("keeps a removed friend device out of one constellation, round-trips a star's basis hash, and drops both with the constellation (0020)", async () => {
+    const repo = await make();
+    await repo.upsertOwner(owner("o1", "용우"));
+    await repo.insertConstellation(con("c1", "o1", 0, null));
+    await repo.insertConstellation(con("c2", "o1", 300, 5, "leo"));
+    expect(await repo.isBlocked("c1", "f0")).toBe(false);
+    await repo.blockFriend("c1", "f0", 5);
+    await repo.blockFriend("c1", "f0", 6);
+    expect(await repo.isBlocked("c1", "f0")).toBe(true);
+    expect(await repo.isBlocked("c2", "f0")).toBe(false);
+    expect(await repo.isBlocked("c1", "f1")).toBe(false);
+    await repo.insertStar({ ...star("s1", "c1", 0, "f1"), scorePublic: true, basisHash: "hash-of-basis" });
+    expect((await repo.starsOf("c1"))[0]).toEqual({ ...star("s1", "c1", 0, "f1"), scorePublic: true, basisHash: "hash-of-basis" });
+    await repo.deleteConstellation("c1");
+    expect(await repo.isBlocked("c1", "f0")).toBe(false);
+  });
+
   it("recounts from the stars and keeps an earlier completion time", async () => {
     const repo = await make();
     await repo.upsertOwner(owner("o1", "용우"));

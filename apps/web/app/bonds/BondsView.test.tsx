@@ -133,6 +133,22 @@ describe("BondsView 인연 점수 한눈에 and 공유하기 (owner 2026-10-23)"
     expect(screen.getByText("최고").nextSibling?.textContent).toBe("87점");
   });
 
+  it("folds each star to one line (which star, nickname, score, a small gauge); its card, line and table open below (QA M4, L9, L10)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(TWO))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    const summaries = ["첫 번째 별", "두 번째 별"].map((label) => screen.getByText(label).closest("summary")!);
+    expect(summaries.map((summary) => summary.textContent)).toEqual(["첫 번째 별하늘87점", "두 번째 별바다69점"]);
+    const fold = summaries[0]!.closest("details")!;
+    expect(fold.open).toBe(false);
+    expect(within(fold).getByRole("table", { name: "점수를 만든 항목" })).toBeTruthy();
+    expect(within(fold).getByText(/^인연 카드 · /)).toBeTruthy();
+    expect(document.body.textContent).not.toContain("지금의 기운");
+    // 별 지우기 stays outside the fold
+    expect(fold.parentElement!.querySelector("details button")).toBeNull();
+    expect(within(fold.parentElement!).getByRole("button", { name: "별 지우기" })).toBeTruthy();
+  });
+
   it("shares the constellation's own link: 공유하기 makes /s/<id> from the owner's constellation", async () => {
     const calls: Array<{ url: string; body: unknown }> = [];
     vi.stubGlobal(
@@ -196,7 +212,8 @@ describe("BondsView invites in one go (owner 2026-10-23, the 2026-10-02 decision
     const panel = await screen.findByRole("region", { name: /양자리/ });
     const first = within(panel).getAllByRole("button")[0]!;
     expect(first.textContent).toBe("카카오톡으로 초대하기");
-    expect(within(panel).getByRole("button", { name: "다른 앱으로 보내기" })).toBeTruthy();
+    // no share sheet in this browser: the second invite button copies the link (QA L7)
+    expect(await within(panel).findByRole("button", { name: "링크 복사" })).toBeTruthy();
     const art = within(panel).getByRole("img", { name: /양자리/ });
     expect(first.compareDocumentPosition(art) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const fold = within(panel).getByText("초대코드 보기").closest("details")!;
@@ -252,7 +269,7 @@ describe("BondsView right after making a constellation (owner 2026-10-23)", () =
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: "양자리로 시작하기" }));
       });
-      const invite = await screen.findByRole("button", { name: /카카오톡으로 초대하기|다른 앱으로 보내기/ });
+      const invite = await screen.findByRole("button", { name: /카카오톡으로 초대하기|다른 앱으로 보내기|링크 복사/ });
       expect(scrolled.some((el) => el.contains(invite))).toBe(true);
     } finally {
       Element.prototype.scrollIntoView = original;
@@ -347,5 +364,24 @@ describe("BondsView: the owner belongs to the account (owner 2026-10-27)", () =>
     });
     expect(screen.queryByRole("dialog", { name: "고르지 않은 별자리를 지울까요?" })).toBeNull();
     expect(calls.find((c) => c.url.endsWith("/api/bonds/link"))?.body).toEqual({ keep: "account" });
+  });
+});
+
+describe("BondsView: QA 2026-10-27", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const withDone = (completedAt: number) => ({ ...OWNER_ME, completed: [{ id: "done1", sign: "taurus", status: "complete", total: 300, startedAt: 1, completedAt, stars: [] }] });
+
+  it("keeps the latest completion on top for a week, even once the next sign has a star (M2)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(withDone(Date.now() - 2 * DAY)))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    expect(screen.getByRole("region", { name: /황소자리 · Taurus/ })).toBeTruthy();
+  });
+
+  it("after the week it gives way to the sign being filled", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(withDone(Date.now() - 8 * DAY)))));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    expect(screen.queryByRole("region", { name: /황소자리 · Taurus/ })).toBeNull();
   });
 });

@@ -33,7 +33,8 @@ describe("InviteShareButton", () => {
     vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
     render(<InviteShareButton code="K7M4QX" sign="aries" filled={1} ownerNickname="용우" />);
     const buttons = screen.getAllByRole("button").map((b) => b.textContent);
-    expect(buttons).toEqual(["카카오톡으로 초대하기", "다른 앱으로 보내기"]);
+    // no share sheet in this browser, so the second button copies the link and says so (QA L7)
+    expect(buttons).toEqual(["카카오톡으로 초대하기", "링크 복사"]);
     await press("카카오톡으로 초대하기");
     expect(kakao).toHaveBeenCalledWith("용우님의 양자리에 별이 되어 주세요", "test-key", {
       url: LINK,
@@ -53,20 +54,30 @@ describe("InviteShareButton", () => {
     expect(share).toHaveBeenCalledWith({ title: "스타로그 별자리 인연", text: "용우님의 양자리에 별이 되어 주세요", url: LINK });
   });
 
-  it("copies the link where there is no share sheet (a computer), and says so", async () => {
+  it("is 링크 복사 where there is no share sheet (a computer): it copies the link, and says so (QA L7)", async () => {
     const writeText = vi.fn(async () => undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true, writable: true });
     render(<InviteShareButton code="K7M4QX" sign="aries" filled={1} ownerNickname="용우" />);
-    await press("다른 앱으로 보내기");
+    expect(screen.queryByRole("button", { name: "다른 앱으로 보내기" })).toBeNull();
+    await press("링크 복사");
     expect(writeText).toHaveBeenCalledWith(LINK);
     expect(screen.getByRole("status").textContent).toBe("초대 링크를 복사했어요");
   });
 
   it("shows only 다른 앱으로 보내기, as the main button, without a Kakao key", () => {
     vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "");
+    Object.defineProperty(navigator, "share", { value: vi.fn(), configurable: true, writable: true });
     render(<InviteShareButton code="K7M4QX" sign="aries" filled={1} ownerNickname="용우" />);
     const buttons = screen.getAllByRole("button");
     expect(buttons.map((b) => b.textContent)).toEqual(["다른 앱으로 보내기"]);
     expect(buttons[0]!.className).toMatch(/primary/);
+  });
+
+  it("says what to do instead when KakaoTalk does not open (QA L11)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
+    kakao.mockRejectedValueOnce(new Error("blocked"));
+    render(<InviteShareButton code="K7M4QX" sign="aries" filled={1} ownerNickname="용우" />);
+    await press("카카오톡으로 초대하기");
+    expect(screen.getByRole("status").textContent).toBe("카카오톡을 열지 못했어요. 아래 링크 복사로 보내 주세요");
   });
 });

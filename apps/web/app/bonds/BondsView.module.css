@@ -480,3 +480,54 @@
   font-weight: 700;
   overflow-wrap: anywhere;
 }
+
+/* ---- a star folded to one line (QA M4) ---- */
+
+.starFold {
+  display: grid;
+  gap: 10px;
+}
+
+.starSummary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.starSummary::-webkit-details-marker {
+  display: none;
+}
+
+.summaryName {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryScore {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.miniGauge {
+  position: relative;
+  flex: 0 0 64px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--glass-line);
+}
+
+.miniGauge > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--gold, #f2d9a0);
+}

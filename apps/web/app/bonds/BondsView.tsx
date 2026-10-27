@@ -24,6 +24,9 @@ import { BondsShareButton } from "@/components/bonds/BondsShareButton";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./BondsView.module.css";
 
+/** How long the latest completed constellation stays above the one being filled (QA M2). */
+const LATEST_DAYS = 7;
+
 /** `signedIn`: a new owner logs in first; `link`: this device's owner can be linked to the account (owner 2026-10-27) */
 type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null; joined?: JoinedView[]; signedIn?: boolean; link?: LinkOffer };
 
@@ -288,6 +291,8 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
   const completedSigns = completed.map((c) => c.sign);
   const mySign = savedSunSign();
   const latest = completed.length ? completed.reduce((a, c) => ((c.completedAt ?? 0) > (a.completedAt ?? 0) ? c : a)) : null;
+  // The latest completion stays on top for a week (QA M2: it vanished as soon as the next sign had one star).
+  const showLatest = latest !== null && (filling?.stars.length === 0 || Date.now() - (latest.completedAt ?? 0) < LATEST_DAYS * 24 * 60 * 60 * 1000);
   const fresh = useMemo(() => {
     const ids = new Set<string>();
     for (const star of [...(filling?.stars ?? []), ...completed.flatMap((c) => c.stars)]) if (seenBefore > 0 && star.createdAt > seenBefore) ids.add(star.id);
@@ -306,7 +311,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
 
       {filling ? (
         <>
-          {latest && filling.stars.length === 0 ? (
+          {latest && showLatest ? (
             <CompletedCard
               row={latest}
               ownerNickname={owner.nickname}

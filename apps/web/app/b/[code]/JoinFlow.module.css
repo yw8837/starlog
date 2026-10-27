@@ -171,3 +171,16 @@
   font-size: var(--fs-sub);
   font-weight: 700;
 }
+
+/* the constellation filled up or changed while the friend was on the form (QA M1) */
+.moved {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+}
+
+.moved p {
+  margin: 0;
+}

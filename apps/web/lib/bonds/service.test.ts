@@ -273,8 +273,50 @@ describe("bonds service", () => {
     await chooseSign(repo, t0, "o1", "pisces");
     const first = await join(repo, t0, code, 0);
     await removeStar(repo, t0, "o1", first.star.id);
-    await join(repo, t0, code, 0);
+    await join(repo, t0, code, 1);
     expect(await repo.getOwner("o1")).toMatchObject({ joinsDay: "2026-10-01", joinsCount: 2 });
+  });
+
+  it("keeps a removed friend's device out of that constellation, but lets it into the next round (owner policy, QA M5)", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "pisces");
+    const first = await join(repo, t0, code, 0);
+    await removeStar(repo, t0, "o1", first.star.id);
+    await expect(join(repo, t0, code, 0)).rejects.toMatchObject({ code: "REMOVED" });
+    // the owner's 별자리 바꾸기 starts another round: that device may join it
+    await switchSign(repo, t0 + 1, "o1", "leo");
+    expect((await join(repo, t0 + 1, code, 0)).sign).toBe("leo");
+  });
+
+  it("refuses one person twice in a constellation under the same nickname, comparing a hash of the 궁합 basis, not the birth date (QA M5)", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "pisces");
+    const first = await joinStar(repo, t0, { code, friendKey: "phone", nickname: "하늘", birth: friends[1]!, pick: 0, message: null });
+    expect(first.star.basisHash).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(JSON.stringify(await repo.starsOf(first.star.constellationId))).not.toMatch(/1992|"month"|"day"/);
+    await expect(joinStar(repo, t0, { code, friendKey: "laptop", nickname: "하늘", birth: friends[1]!, pick: 1, message: null })).rejects.toMatchObject({ code: "DUPLICATE_STAR" });
+    // another nickname, or another birth date, is another star
+    expect((await joinStar(repo, t0, { code, friendKey: "laptop", nickname: "하늘이", birth: friends[1]!, pick: 1, message: null })).star.slot).toBe(1);
+    expect((await joinStar(repo, t0, { code, friendKey: "tablet", nickname: "하늘", birth: friends[2]!, pick: 2, message: null })).star.slot).toBe(2);
+  });
+
+  it("says where a star would go when the constellation the friend saw filled up or changed meanwhile, writing nothing (QA M1)", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    const seen = (await repo.fillingOf("o1"))!.id;
+    for (let i = 0; i < 4; i++) await join(repo, t0, code, i);
+    const late = joinStar(repo, t0, { code, friendKey: "late", nickname: "늦은친구", birth: friends[0]!, pick: 5, message: null, expectedConstellationId: seen });
+    await expect(late).rejects.toMatchObject({ code: "MOVED", detail: { reason: "complete", sign: "taurus", filled: 0 } });
+    const next = (await repo.fillingOf("o1"))!;
+    expect(await repo.starsOf(next.id)).toEqual([]);
+    // agreed: it joins the one named
+    const joined = await joinStar(repo, t0, { code, friendKey: "late", nickname: "늦은친구", birth: friends[0]!, pick: 5, message: null, expectedConstellationId: next.id });
+    expect(joined.sign).toBe("taurus");
+    // the owner switched while the friend was on the form
+    await removeStar(repo, t0 + 1, "o1", joined.star.id);
+    await switchSign(repo, t0 + 2, "o1", "leo");
+    await expect(joinStar(repo, t0 + 2, { code, friendKey: "other", nickname: "다른친구", birth: friends[1]!, pick: 1, message: null, expectedConstellationId: next.id }))
+      .rejects.toMatchObject({ code: "MOVED", detail: { reason: "changed", sign: "leo" } });
   });
 
   it("fills every slot exactly once when friends join at the same moment", async () => {
