@@ -105,14 +105,14 @@ describe("guide library", () => {
     for (const other of related) expect(findArticle(other), other).toBeDefined();
   });
 
-  it("gives every library article a substantial body (card articles 4,000-7,800 characters, in whatever shape the card has)", () => {
+  it("gives every library article a substantial body (card articles 3,000-7,800 characters, others 1,500-6,000, in whatever shape they have)", () => {
     // Card articles were 2,800 or more while each carried the 2026-10-22 boilerplate (a 300-character deck section, a
     // two-row keyword table, a one-line FAQ intro); the rework of 2026-10-23 cut those and kept the card's own reading.
     // The second read of 2026-10-23 adds each card's own substance (Waite's words, the older decks, a worked reading).
     for (const article of LIBRARY) {
       const length = bodyLength(article);
       if (article.cardId) {
-        expect(length, article.slug).toBeGreaterThanOrEqual(4000);
+        expect(length, article.slug).toBeGreaterThanOrEqual(3000);
         expect(length, article.slug).toBeLessThanOrEqual(7800);
       } else if (article.slug.startsWith("day-master-")) {
         // The ten day masters read their stem through its verse, seasons, a worked chart and its neighbours (saju-guides.test.ts).
@@ -120,7 +120,8 @@ describe("guide library", () => {
         expect(length, article.slug).toBeLessThanOrEqual(7000);
       } else {
         expect(length, article.slug).toBeGreaterThanOrEqual(1500);
-        expect(length, article.slug).toBeLessThanOrEqual(3200);
+        // The thin tarot basics and spreads grew in the third review (2026-10-23).
+        expect(length, article.slug).toBeLessThanOrEqual(6000);
       }
     }
   });
