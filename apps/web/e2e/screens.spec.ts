@@ -535,8 +535,12 @@ async function capture(page: Page, info: TestInfo, screen: Screen) {
 
 test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
+// These log a mock Kakao account in (a 별자리 owner starts logged in, owner 2026-10-27): the Workers preview refuses mock
+// logins, so they run in the gate's next dev run with the other @login tests (scripts/ops/gate3-lite.sh).
+const LOGIN_SCREENS = new Set(["home-bonds", "bonds-filling", "bonds-complete", "bonds-ranking", "bonds-join"]);
+
 for (const screen of SCREENS) {
-  test(`@screens ${screen.name}`, async ({ page }, info) => {
+  test(`@screens ${screen.name}`, LOGIN_SCREENS.has(screen.name) ? { tag: "@login" } : {}, async ({ page }, info) => {
     const a = await capture(page, info, screen);
     expect.soft(a.overflow, "horizontal overflow (px)").toBeLessThanOrEqual(0);
     expect.soft(a.smallText, "visible text under 13px").toEqual([]);

@@ -10,6 +10,8 @@ import { openShared } from "./shareShots";
  */
 
 // Long flows (four friends, three widths of screenshots, share images) on a dev server that compiles routes on first use.
+// Owners start logged in (owner 2026-10-27), with a mock Kakao account the Workers preview refuses: the owner, account
+// and friend tests carry @login and run in the gate's next dev run (scripts/ops/gate3-lite.sh).
 test.describe.configure({ timeout: 600_000 });
 
 const SHOTS = "test-results/screens/bonds";
@@ -106,7 +108,7 @@ async function apiOwner(baseURL: string, nickname: string, sign: string | null):
   return { owner, code };
 }
 
-test.describe("별자리 인연 · owner", () => {
+test.describe("별자리 인연 · owner", { tag: "@login" }, () => {
   /**
    * owner 2026-10-23 (the 2026-10-02 decision): invites in one go. Made → 카카오톡으로 초대하기 first (the SDK mocked: the
    * feed's 별 되러 가기 opens /b/<code>) → a friend opens that link, joins with no code typed → the star is on the owner's page.
@@ -325,7 +327,7 @@ test.describe("별자리 인연 · owner", () => {
   });
 });
 
-test.describe("별자리 인연 · account (owner 2026-10-27: 계정 위주)", () => {
+test.describe("별자리 인연 · account (owner 2026-10-27: 계정 위주)", { tag: "@login" }, () => {
   test("made on one browser, the same constellation and invite link on another of the account; a friend joins without logging in and both see the star", async ({ page, baseURL }) => {
     const user = await startOwner(page, "용우");
     await page.getByRole("list", { name: "별자리 고르기" }).getByRole("button", { name: /양자리/ }).click();
@@ -420,7 +422,7 @@ test.describe("별자리 인연 · account (owner 2026-10-27: 계정 위주)", (
   });
 });
 
-test.describe("별자리 인연 · friend", () => {
+test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
   /**
    * Spec §3 친구: someone with a constellation of their own joins a friend's from the link. The friend's constellation
    * gets the star; their own (stars, progress, invite code) does not change; their 내가 들어간 별자리 lists the friend's.
