@@ -54,7 +54,7 @@ test("home: guide split 타로 / 사주 and four FAQ questions that open in plac
   await page.goto("/");
   await expect(page.getByRole("link", { name: /타로 가이드/ })).toHaveAttribute("href", "/guide/tarot");
   await expect(page.getByRole("link", { name: /사주 가이드/ })).toHaveAttribute("href", "/guide/saju");
-  await expect(page.getByRole("link", { name: /타로 은둔자 카드: 등불 속 별과 혼자 있는 시간/ })).toHaveAttribute("href", "/guide/the-hermit");
+  await expect(page.getByRole("link", { name: /은둔자 카드/ })).toHaveAttribute("href", "/guide/the-hermit");
 
   const faq = page.getByRole("region", { name: "자주 묻는 질문" });
   const questions = faq.locator("summary");
