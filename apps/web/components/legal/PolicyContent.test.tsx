@@ -24,7 +24,7 @@ describe("policies match what the service does", () => {
   it("privacy: lists every cookie, the browser storage, the KV records and Kakao sharing", () => {
     const text = textOf(PrivacyPage);
     for (const cookie of ["sl_q", "sl_first", "sl_daily", "sl_owner"]) expect(text).toContain(cookie);
-    expect(text).toContain("이 기기에서 오픈 기념 무료(2026년 11월 30일까지, 타로 전체 풀이 1회)를 썼는지 기록해 한 번만 드리는 데 씁니다. 1년 뒤 만료됩니다.");
+    expect(text).toContain("이 기기에서 오픈 기념 무료(2026년 11월 30일까지, 로그인한 계정마다 타로 전체 풀이 1회)를 받았는지 기록해, 같은 기기에서는 계정을 바꿔도 한 번만 드리는 데 씁니다. 1년 뒤 만료됩니다.");
     expect(text).toContain("로컬 저장소");
     expect(text).toContain("세션 저장소");
     // What the app does: it drops the ones past 30 days when it opens (RouteTracker), it does not promise they are gone sooner.

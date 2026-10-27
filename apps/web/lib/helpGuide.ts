@@ -367,7 +367,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           id: "beta",
           icon: "gift",
           title: "오픈 기념 무료",
-          sub: `타로 전체 풀이 ${times(firstFreeTarot)} · ${OPENING_LAST_DAY}까지`,
+          sub: `로그인한 계정마다 타로 전체 풀이 ${times(firstFreeTarot)} · ${OPENING_LAST_DAY}까지`,
           body: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요.`,
           tip: "전체 풀이 보기 버튼에 오픈 기념 무료가 보이면 아직 무료로 열 수 있어요. 로그인하지 않았다면 카카오나 Google로 로그인한 뒤 바로 열려요.",
           opening: true,

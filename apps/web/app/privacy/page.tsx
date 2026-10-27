@@ -145,7 +145,7 @@ const processors = (premium: boolean, ga: boolean, synced: boolean): readonly Pr
 /** Cookies the server sets: all HttpOnly, SameSite=Lax, Secure in production, signed so they cannot be forged. */
 const COOKIES: Rows = [
   ["sl_q", "오늘 연 첫 풀이와 후속 질문의 횟수를 세어 하루 무료 횟수를 지키는 데 씁니다. 2일 뒤 만료됩니다."],
-  ["sl_first", `이 기기에서 오픈 기념 무료(${OPENING_LAST_DATE}까지, 타로 전체 풀이 1회)를 썼는지 기록해 한 번만 드리는 데 씁니다. 1년 뒤 만료됩니다.`],
+  ["sl_first", `이 기기에서 오픈 기념 무료(${OPENING_LAST_DATE}까지, 로그인한 계정마다 타로 전체 풀이 1회)를 받았는지 기록해, 같은 기기에서는 계정을 바꿔도 한 번만 드리는 데 씁니다. 1년 뒤 만료됩니다.`],
   ["sl_daily", "오늘의 한 장에 쓰는 무작위 기기 식별값과 날짜, 그날의 카드를 담습니다. 2일 뒤 만료됩니다."],
   ["sl_owner", "운영자 본인 확인용으로, 운영자의 기기에만 만들어집니다. 1년 뒤 만료됩니다."],
   ["sl_sid", "로그인 세션을 알아보는 값입니다. 30일 뒤 만료되고, 로그아웃하면 바로 끝납니다."],
