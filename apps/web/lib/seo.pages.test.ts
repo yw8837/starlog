@@ -42,7 +42,7 @@ import { metadata as termsMeta } from "@/app/terms/page";
 import { metadata as todayMeta } from "@/app/today/page";
 import { BIRTH_CARDS } from "./birthCard";
 import { SITE } from "./config";
-import { GUIDE_ARTICLES } from "./guide";
+import { GUIDE_ARTICLES, findArticle } from "./guide";
 import { GUIDE_HOST_PAGES, absoluteUrl, isGuidePath } from "./hosts";
 import { ILJU } from "./keyword2027";
 import { HOME_TITLE, NOINDEX as NOINDEX_ROBOTS, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
@@ -153,7 +153,11 @@ describe("indexable pages", () => {
     expect(og.url).toBe(address);
     expect(og.locale).toBe("ko_KR");
     expect(og.type).toBe(isArticle ? "article" : "website");
-    expect(og.images?.[0]).toMatchObject({ url: "/opengraph-image", width: 1200, height: 630 });
+    // A card article leads with its card scan (600×1040, the image search has to index), then the shared picture (SEO audit 2026-10-27).
+    const cardId = isArticle ? findArticle(path.slice("/guide/".length))?.cardId : undefined;
+    if (cardId) expect(og.images?.map((image) => image.url)).toEqual([`/cards/${cardId}.webp`, "/opengraph-image"]);
+    if (cardId) expect(og.images?.[0]).toMatchObject({ width: 600, height: 1040 });
+    else expect(og.images?.[0]).toMatchObject({ url: "/opengraph-image", width: 1200, height: 630 });
   });
 
   it("gives every page its own title and description", () => {

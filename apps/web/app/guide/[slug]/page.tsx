@@ -1,4 +1,4 @@
-import { getCard } from "@starlog/core";
+import { cardImage, getCard } from "@starlog/core";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -49,6 +49,8 @@ export async function generateMetadata({ params }: PageProps<"/guide/[slug]">): 
   const { slug } = await params;
   const article = findArticle(slug);
   if (!article) return {};
+  // A card article leads with its card scan (the 1909 scans in public/cards are all 600×1040), as its Article JSON-LD does.
+  const card = article.cardId ? getCard(article.cardId) : null;
   return pageMetadata({
     title: article.title,
     description: article.description,
@@ -56,6 +58,7 @@ export async function generateMetadata({ params }: PageProps<"/guide/[slug]">): 
     type: "article",
     publishedTime: article.published,
     modifiedTime: lastReviewed(article),
+    ...(card ? { image: { url: cardImage(card.id, "lg"), width: 600, height: 1040, alt: `${card.names.ko} 타로 카드` } } : {}),
   });
 }
 

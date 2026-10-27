@@ -49,11 +49,12 @@ export const NAMED_CRAWLERS = [
 
 /**
  * Share images that are fetched as pictures but must not be indexed as pages (Search Console listed ~25 of
- * /api/og/* as "크롤링됨"). One X-Robots-Tag header from next.config instead of one per route: link-preview
- * scrapers ignore it, Google obeys it. They stay crawlable (ROBOTS_ALLOW), or Google could not read the header.
- * /opengraph-image is the shared brand picture (app/opengraph-image.tsx).
+ * /api/og/* as "크롤링됨"); they belong to noindex pages. One X-Robots-Tag header from next.config instead of one per
+ * route: link-preview scrapers ignore it, Google obeys it. They stay crawlable (ROBOTS_ALLOW), or Google could not
+ * read the header. Not /opengraph-image (app/opengraph-image.tsx): the shared brand picture is the Article image of
+ * the guide articles without a card (lib/jsonld.ts), so it has to stay indexable (SEO audit 2026-10-27).
  */
-export const NOINDEX_HEADER_SOURCES = ["/api/og/:path*", "/opengraph-image"] as const;
+export const NOINDEX_HEADER_SOURCES = ["/api/og/:path*"] as const;
 
 export function noindexHeaders() {
   return NOINDEX_HEADER_SOURCES.map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex" }] }));

@@ -436,8 +436,9 @@ describe("Location headers", () => {
 
 describe("X-Robots-Tag on the share images", () => {
   const ROBOTS_TAG = "X-Robots-Tag";
-  const IMAGES = ["/api/og/2027-keyword/gap-ja", "/api/og/birth-card/the-fool", "/api/og/share/abc", "/api/og/bonds/x", "/api/og/invite/ABC234", "/api/og/lucky", "/api/og/premium", "/opengraph-image"];
-  const PAGES = ["/", "/2027-keyword/gap-ja", "/birth-card/the-fool", "/api/version", "/api/other", "/guide/tarot", "/tarot/new", "/opengraph-image-x", "/og"];
+  const IMAGES = ["/api/og/2027-keyword/gap-ja", "/api/og/birth-card/the-fool", "/api/og/share/abc", "/api/og/bonds/x", "/api/og/invite/ABC234", "/api/og/lucky", "/api/og/premium"];
+  // /opengraph-image too: the shared brand picture is the guide articles' Article image, so it must stay indexable (SEO audit 2026-10-27).
+  const PAGES = ["/", "/2027-keyword/gap-ja", "/birth-card/the-fool", "/api/version", "/api/other", "/guide/tarot", "/tarot/new", "/opengraph-image", "/opengraph-image-x", "/og"];
 
   it("sends noindex with every share image on both hosts, in Next's server and the Worker alike", () => {
     for (const [name, run] of headerRuntimes) {

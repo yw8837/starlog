@@ -54,6 +54,8 @@ interface PageMetadataInput {
   /** YYYY-MM-DD, for article pages. */
   publishedTime?: string;
   modifiedTime?: string;
+  /** The page's own picture, ahead of the shared one (a card article's scan, SEO audit 2026-10-27). */
+  image?: { url: string; width: number; height: number; alt: string };
 }
 
 /**
@@ -63,9 +65,9 @@ interface PageMetadataInput {
  * the guide's: those pages live on the root domain, so their canonical and og:url name it in full,
  * whichever host serves them.
  */
-export function pageMetadata({ title, description, path, type = "website", publishedTime, modifiedTime }: PageMetadataInput): Metadata {
+export function pageMetadata({ title, description, path, type = "website", publishedTime, modifiedTime, image }: PageMetadataInput): Metadata {
   const url = isGuidePath(path) ? absoluteUrl(path) : path;
-  const shared = { url, siteName: OG_SITE_NAME, locale: "ko_KR", images: [{ ...OG_IMAGE }] };
+  const shared = { url, siteName: OG_SITE_NAME, locale: "ko_KR", images: [...(image ? [image] : []), { ...OG_IMAGE }] };
   return {
     ...(title === undefined ? {} : { title }),
     description,
