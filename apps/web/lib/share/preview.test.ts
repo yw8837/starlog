@@ -3,7 +3,7 @@ import { decisionFor } from "@/lib/decision";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import type { ChapterContext } from "@/lib/security/chapterToken";
 import { buildNowSharePayload, buildSharePayload, buildTarotFreePayload } from "./payload";
-import { firstSentence, sharePreview } from "./preview";
+import { firstSentence, fitList, sharePreview } from "./preview";
 
 /** owner 2026-10-23 "결과공유하면 텍스트만 날라간다": a share says what it holds, from the cleaned payload only. */
 
@@ -58,5 +58,17 @@ describe("sharePreview", () => {
     const done = sharePreview({ kind: "bonds", v: 1, constellationId: "abcdefghij0123456789" }, { kind: "bonds", signKo: "사자자리", ownerNickname: "별님", stars: 2, slots: 2, total: 150, average: 75, complete: true, members: [{ nickname: "하늘", score: 80 }, { nickname: "바다", score: 70 }] });
     expect(done.title).toBe("별님님의 사자자리 완성 · 인연 150점");
     expect(done.description).toBe("하늘 · 인연 80점, 바다 · 인연 70점 · 평균 75점");
+  });
+
+  it("a long list keeps whole stars and counts the rest, never cutting a score in half (review 2026-10-23)", () => {
+    const members = Array.from({ length: 9 }, (_, i) => ({ nickname: `별빛친구${i + 1}`, score: 81 + i }));
+    const many = sharePreview({ kind: "bonds", v: 1, constellationId: "abcdefghij0123456789" }, { kind: "bonds", signKo: "사자자리", ownerNickname: "별님", stars: 9, slots: 9, total: 765, average: 85, complete: true, members });
+    const items = members.map((m) => `${m.nickname} · 인연 ${m.score}점`);
+    expect(many.description).toBe(`${items.slice(0, 4).join(", ")} 외 5명 · 평균 85점`);
+    expect(many.description.length).toBeLessThanOrEqual(90);
+    expect(many.description).not.toContain("…");
+    // the same on the preview image's line
+    expect(fitList(["하늘 87점", "바다 69점", "별이 90점"], " · ", 20)).toBe("하늘 87점 · 바다 69점 외 1명");
+    expect(fitList(["하늘 87점", "바다 69점"], " · ", 72)).toBe("하늘 87점 · 바다 69점");
   });
 });

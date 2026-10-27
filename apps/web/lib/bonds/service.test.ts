@@ -431,6 +431,18 @@ describe("bonds service", () => {
     expect(stars.find((s) => s.id === before.star.id)?.scorePublic ?? false).toBe(false);
   });
 
+  it("tells the form whether this constellation's scores can show: not once a star joined without the notice, even after it is removed (review 2026-10-23)", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", scoresPrivate: false });
+    await joinStar(repo, t0, { code, friendKey: "f0", nickname: "친구0", birth: friends[0]!, pick: 0, message: null, scoreNotice: true });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", scoresPrivate: false });
+    const earlier = await joinStar(repo, t0, { code, friendKey: "f1", nickname: "친구1", birth: friends[1]!, pick: 1, message: null });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", scoresPrivate: true });
+    await removeStar(repo, t0, "o1", earlier.star.id);
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", scoresPrivate: true });
+  });
+
   it("gives the form the nickname this device already used (an owner here, or a friend elsewhere), so joining takes fewer steps (owner 2026-10-23)", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");

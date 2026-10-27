@@ -11,7 +11,7 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-const OPEN = { status: "open", kind: "open", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4, earlier: null, myNickname: null } as const;
+const OPEN = { status: "open", kind: "open", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4, earlier: null, myNickname: null, scoresPrivate: false } as const;
 const RESULT = {
   nickname: "하늘", score: 87, parts: [{ id: "stem-generate" as const, points: 10, text: "두 분의 일간이 서로 살려 주는 사이예요" }], completed: false,
   sign: "aries" as const, slot: 1, starId: "star0123456789abcdef", ownerNickname: "용우", card: { cardId: "cups-02", orientation: "upright" as const }, bondLine: "요즘 두 사람 사이엔 ‘마음을 주고받음’의 기운이 흘러요",
@@ -33,6 +33,19 @@ describe("JoinFlow", () => {
     expect(consent.getAttribute("aria-describedby")?.split(" ")).toContain(note.id);
     // above the checkbox, in the same group, with nothing between them
     expect(note.nextElementSibling).toBe(consent.closest("label"));
+  });
+
+  it("in a constellation whose scores never show (scores_private), says only the nickname shows, and the checkbox agrees to that (review 2026-10-23)", () => {
+    render(<JoinFlow state={{ ...OPEN, scoresPrivate: true }} />);
+    expect(screen.getAllByText("용우님이 별자리를 공유하면 내 닉네임이 공유 링크와 이미지에 보여요. 인연 점수는 보이지 않아요.").length).toBeGreaterThan(0);
+    expect(screen.getByText("내 닉네임이 용우님의 별자리 공유 링크와 이미지에 나올 수 있어요. 인연 점수는 넣지 않아요. 생년월일은 저장하지 않아요.")).toBeTruthy();
+    expect(screen.getByRole("checkbox").closest("label")?.textContent).toContain("만 14세 이상이고, 닉네임과 인연 점수가 용우님의 별자리에 남고 용우님이 공유하면 닉네임이 보이는 데 동의해요");
+    expect(document.body.textContent).not.toContain("인연 점수가 공유 링크와 이미지에 보여요");
+  });
+
+  it("the checkbox agrees to the nickname and score showing when the owner shares (review 2026-10-23)", () => {
+    render(<JoinFlow state={OPEN} />);
+    expect(screen.getByRole("checkbox").closest("label")?.textContent).toContain("만 14세 이상이고, 닉네임과 인연 점수가 용우님의 별자리에 남고 용우님이 공유하면 닉네임과 점수가 보이는 데 동의해요");
   });
 
   it("does not move on until the birth date is picked (no default date)", () => {

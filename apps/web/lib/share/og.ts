@@ -5,7 +5,7 @@ import type { ShareOgData } from "@/lib/og/cardsImage";
 import { PREMIUM } from "@/lib/premium/products";
 import { topicLabel } from "@/lib/sajuTopics";
 import type { SharePayload } from "./payload";
-import { firstSentence } from "./preview";
+import { firstSentence, fitList } from "./preview";
 
 /** The longest saju conclusion the preview prints (about three lines). */
 const BODY_MAX = 72;
@@ -37,14 +37,14 @@ export function shareOgData(share: SharePayload, origin: string, live: BondsShar
     };
   }
   if (live?.kind === "bonds") {
-    // The constellation with its stars where they are, each friend's score where it shows; the total, big, only when
-    // every score shows (an earlier star's would follow from it).
+    // The constellation with its stars where they are; each friend's score, whole stars only, and the total, big, where
+    // the constellation's scores show (lib/bonds/share.ts).
     const shown = live.members.some((m) => m.score !== null);
     return {
       label: live.complete ? "완성한 별자리 인연" : `친구들이 채우는 별자리 인연 · 별 ${live.members.length}/${live.slots}`,
       headline: `${live.ownerNickname}님의 ${getConstellation(live.sign).ko}`,
       ...(live.total !== null ? { big: `인연 ${live.total}점` } : {}),
-      body: shown ? clip(live.members.map((m) => (m.score === null ? m.nickname : `${m.nickname} ${m.score}점`)).join(" · ")) : `별 ${live.members.length}/${live.slots}`,
+      body: shown ? fitList(live.members.map((m) => (m.score === null ? m.nickname : `${m.nickname} ${m.score}점`)), " · ", BODY_MAX) : `별 ${live.members.length}/${live.slots}`,
       sign: live.sign,
       lit: live.members.map((member) => member.slot),
       host,

@@ -7,7 +7,7 @@ import SharePage, { generateMetadata } from "./page";
 
 /** /s/<id> for 별자리 인연 (owner 2026-10-23), read live: the constellation, or a friend's own star with its score table. */
 
-const { shares, repo, status, publicScores } = vi.hoisted(() => {
+const { shares, repo, status, publicScores, privateScores } = vi.hoisted(() => {
   const STAR = (id: string, slot: number, nickname: string, score: number, parts: unknown[] = []) => ({
     id, constellationId: "cons0123456789abcdef", slot, nickname, message: "비밀 한 줄", cardId: "cups-02", orientation: "upright", score, parts, friendKey: "k", createdAt: 1,
   });
@@ -18,12 +18,15 @@ const { shares, repo, status, publicScores } = vi.hoisted(() => {
   const status = { value: "filling" };
   /** which stars' friends saw the score notice (stars.score_public), by slot */
   const publicScores = { value: [false, false] };
+  /** the constellation once took a star without the notice (constellations.scores_private) */
+  const privateScores = { value: false };
   return {
     shares: new Map<string, unknown>(),
     status,
     publicScores,
+    privateScores,
     repo: {
-      getConstellation: async (id: string) => (id === "cons0123456789abcdef" ? { id, ownerId: "owner", sign: "leo", status: status.value, total: 156, startedAt: 1, completedAt: status.value === "complete" ? Date.parse("2026-10-20T03:00:00Z") : null } : null),
+      getConstellation: async (id: string) => (id === "cons0123456789abcdef" ? { id, ownerId: "owner", sign: "leo", status: status.value, total: 156, startedAt: 1, completedAt: status.value === "complete" ? Date.parse("2026-10-20T03:00:00Z") : null, ...(privateScores.value ? { scoresPrivate: true } : {}) } : null),
       getOwner: async () => ({ id: "owner", nickname: "용우" }),
       starsOf: async () => stars.map((star) => ({ ...star, scorePublic: publicScores.value[star.slot] === true })),
     },
@@ -40,6 +43,7 @@ afterEach(() => {
   shares.clear();
   status.value = "filling";
   publicScores.value = [false, false];
+  privateScores.value = false;
 });
 const params = (id: string) => ({ params: Promise.resolve({ id }) }) as PageProps<"/s/[id]">;
 const save = (id: string, payload: SharePayload) => (shares.set(id, payload), id);
@@ -72,14 +76,33 @@ describe("/s/<id> for an owner's constellation", () => {
     expect((await generateMetadata(params(id))).openGraph?.description).toBe("하늘 · 인연 87점, 바다 · 인연 69점 · 평균 78점");
   });
 
-  it("with an earlier star among them: that one shows by nickname only, and the total and average stay hidden", async () => {
+  it("a constellation that once took an earlier star (scores_private): every friend by nickname only, no score, total or average, complete or not (review 2026-10-23)", async () => {
+    // even with every star left having seen the notice: the earlier one may have been removed after its total was public
+    publicScores.value = [true, true];
+    privateScores.value = true;
+    for (const [id, state] of [["bbbbbbbbbbb6", "filling"], ["bbbbbbbbbbb7", "complete"]] as const) {
+      status.value = state;
+      save(id, { kind: "bonds", v: 1, constellationId: "cons0123456789abcdef" });
+      render(await SharePage(params(id)));
+      const list = screen.getByRole("list", { name: "별이 된 친구" });
+      expect([...list.querySelectorAll("li")].map((li) => li.textContent)).toEqual(["하늘", "바다"]);
+      expect(screen.queryByRole("meter")).toBeNull();
+      expect(document.body.textContent).toContain("이 별자리는 친구마다의 점수를 공유하지 않아요.");
+      expect(document.body.textContent).not.toMatch(/87점|69점|156|합계|평균 인연/);
+      const meta = await generateMetadata(params(id));
+      expect(`${meta.openGraph?.title} ${meta.openGraph?.description}`).not.toMatch(/\d+점/);
+      cleanup();
+    }
+  });
+
+  it("one star without the notice hides every score, the total and the average (the flag is set as it joins; this reads the star too)", async () => {
     publicScores.value = [true, false];
-    const id = save("bbbbbbbbbbb6", { kind: "bonds", v: 1, constellationId: "cons0123456789abcdef" });
+    const id = save("bbbbbbbbbbb8", { kind: "bonds", v: 1, constellationId: "cons0123456789abcdef" });
     render(await SharePage(params(id)));
     const list = screen.getByRole("list", { name: "별이 된 친구" });
-    expect([...list.querySelectorAll("li")].map((li) => li.textContent)).toEqual(["하늘 · 인연 87점", "바다"]);
+    expect([...list.querySelectorAll("li")].map((li) => li.textContent)).toEqual(["하늘", "바다"]);
     expect(screen.queryByRole("meter")).toBeNull();
-    expect(document.body.textContent).not.toMatch(/69점|156|합계|평균 인연/);
+    expect(document.body.textContent).not.toMatch(/87점|69점|156|합계|평균 인연/);
   });
 
   it("once complete with every friend's notice: the total and the average on a gauge too", async () => {

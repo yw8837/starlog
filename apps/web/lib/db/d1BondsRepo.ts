@@ -12,6 +12,8 @@ interface OwnerRecord {
 interface InviteRecord { code: string; owner_id: string; created_at: number; revoked_at: number | null }
 interface ConstellationRecord {
   id: string; owner_id: string; sign: string; status: string; total: number; started_at: number; completed_at: number | null;
+  /** migration 0017; absent on a database it has not reached, read as private */
+  scores_private?: number;
 }
 interface StarRecord {
   id: string; constellation_id: string; slot: number; nickname: string; message: string | null; card_id: string;
@@ -28,7 +30,7 @@ const toOwner = (r: OwnerRecord): OwnerRow => ({
 const toInvite = (r: InviteRecord): InviteRow => ({ code: r.code, ownerId: r.owner_id, createdAt: r.created_at, revokedAt: r.revoked_at });
 const toConstellation = (r: ConstellationRecord): ConstellationRow => ({
   id: r.id, ownerId: r.owner_id, sign: r.sign as SignId, status: r.status as ConstellationStatus, total: r.total,
-  startedAt: r.started_at, completedAt: r.completed_at,
+  startedAt: r.started_at, completedAt: r.completed_at, ...(r.scores_private !== 0 ? { scoresPrivate: true } : {}),
 });
 const toStar = (r: StarRecord): StarRow => ({
   id: r.id, constellationId: r.constellation_id, slot: r.slot, nickname: r.nickname, message: r.message, cardId: r.card_id,
@@ -63,8 +65,15 @@ const starValues = (row: StarRow, legacy = false) => [
   JSON.stringify(row.parts), row.friendKey, row.createdAt, ...(legacy ? [] : [row.scorePublic ? 1 : 0]),
 ];
 
-/** The database has not run migration 0016 yet (code deployed first). */
-const lacksScorePublic = (error: unknown) => /score_public/i.test(error instanceof Error ? error.message : String(error));
+/** A star without the score notice: its constellation's friends' scores stay off its public share, for good (0017). */
+const MARK_PRIVATE = "UPDATE constellations SET scores_private = 1 WHERE id = ?";
+
+/**
+ * The database has not run migration 0016 or 0017 yet (code deployed first). Writing as before is safe then: the star
+ * goes in as an earlier one, a constellation read without scores_private is private, and 0017 marks every
+ * constellation holding a star when it runs.
+ */
+const lacksNewColumns = (error: unknown) => /score_public|scores_private/i.test(error instanceof Error ? error.message : String(error));
 
 export function createD1BondsRepo(db: D1Binding): BondsRepo {
   const one = <T>(sql: string, ...values: unknown[]) => db.prepare(sql).bind(...values).first<T>();
@@ -76,6 +85,7 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
   const joinBatch = async (row: StarRow, slots: number, day: string, now: number, next: { id: string; sign: SignId } | null, legacy: boolean) => {
     const statements = [
       db.prepare(legacy ? INSERT_STAR_LEGACY : INSERT_STAR).bind(...starValues(row, legacy)),
+      ...(legacy || row.scorePublic ? [] : [db.prepare(MARK_PRIVATE).bind(row.constellationId)]),
       db.prepare(TALLY).bind(row.constellationId, slots, now),
       db.prepare(
         `UPDATE owners SET joins_count = CASE WHEN joins_day = ?2 THEN joins_count + 1 ELSE 1 END, joins_day = ?2
@@ -170,9 +180,9 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
     },
     async insertStar(row) {
       try {
-        await run(INSERT_STAR, ...starValues(row));
+        await db.batch([db.prepare(INSERT_STAR).bind(...starValues(row)), ...(row.scorePublic ? [] : [db.prepare(MARK_PRIVATE).bind(row.constellationId)])]);
       } catch (error) {
-        if (!lacksScorePublic(error)) throw error;
+        if (!lacksNewColumns(error)) throw error;
         await run(INSERT_STAR_LEGACY, ...starValues(row, true));
       }
     },
@@ -180,8 +190,8 @@ export function createD1BondsRepo(db: D1Binding): BondsRepo {
       try {
         return await joinBatch(row, slots, day, now, next, false);
       } catch (error) {
-        // A D1 batch is one transaction, so nothing of the first try stays: join again without the column.
-        if (!lacksScorePublic(error)) throw error;
+        // A D1 batch is one transaction, so nothing of the first try stays: join again without the new columns.
+        if (!lacksNewColumns(error)) throw error;
         return joinBatch(row, slots, day, now, next, true);
       }
     },

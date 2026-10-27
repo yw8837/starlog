@@ -10,6 +10,7 @@ import { POST as ownerPost } from "../../bonds/owner/route";
 import { DELETE as bondDelete, POST as bondPost } from "../bond/route";
 import { DELETE as bondsDelete, POST as bondsPost } from "./route";
 import { loadBondsShare } from "@/lib/bonds/share";
+import { removeStar } from "@/lib/bonds/service";
 import { getConstellation } from "@starlog/core";
 
 /** 별자리 인연 results share (owner 2026-10-23): the owner's constellation and a friend's own star, each only from its own device. */
@@ -119,16 +120,37 @@ describe("POST /api/share/bonds and /api/share/bond", () => {
     ]);
   });
 
-  it("with one earlier star among them: its score and the total and average stay hidden (the total minus the shown scores would give it away)", async () => {
+  it("with one earlier star among them: no friend's score, total or average, the nicknames and stars filled only (review 2026-10-23)", async () => {
     useTestDb();
     const { owner, friends, constellationId } = await constellationWithTwo("leo", 2, [true, false]);
     const { preview } = (await (await bondsPost(req("/api/share/bonds", owner, { constellationId }))).json()) as { preview: { title: string; description: string } };
-    expect(preview.description).toBe(`친구0 · 인연 ${friends[0]!.score}점, 친구1`);
+    expect(preview.description).toBe(`친구 2명이 별이 되어 ${getConstellation("leo").slots}칸 가운데 2칸을 채웠어요`);
     expect(preview.title).toMatch(/^용우님의 사자자리 · 별 2\/\d+$/);
     const view = await loadBondsShare(bondsRepo(), { kind: "bonds", v: 1, constellationId });
     expect(view).toMatchObject({ total: null, average: null });
-    expect(view?.kind === "bonds" && view.members.map((m) => m.score)).toEqual([friends[0]!.score, null]);
-    expect(JSON.stringify({ view, preview })).not.toContain(String(friends[1]!.score));
+    expect(view?.kind === "bonds" && view.members.map((m) => [m.nickname, m.score])).toEqual([["친구0", null], ["친구1", null]]);
+    for (const f of friends) expect(JSON.stringify({ view, preview })).not.toContain(String(f.score));
+  });
+
+  it("an earlier star keeps the constellation's scores off its shares for good: when it completes (its total is public on the ranking), and after that star is removed", async () => {
+    useTestDb();
+    const { owner, friends, constellationId } = await constellationWithTwo("aries", 4, [false, true, true, true]);
+    const shown = async () => {
+      const { preview } = (await (await bondsPost(req("/api/share/bonds", owner, { constellationId }))).json()) as { preview: { title: string; description: string } };
+      const view = await loadBondsShare(bondsRepo(), { kind: "bonds", v: 1, constellationId });
+      return { view, preview };
+    };
+    let now = await shown();
+    expect(now.view).toMatchObject({ complete: true, total: null, average: null });
+    expect(now.view?.kind === "bonds" && now.view.members.every((m) => m.score === null)).toBe(true);
+    // 3 scores shown against the ranking's total would give 친구0's away
+    for (const f of friends) expect(JSON.stringify(now)).not.toContain(`${f.score}점`);
+    // removed, the constellation is filling again with only stars that saw the notice: still nothing
+    await removeStar(bondsRepo(), Date.now(), await ownerIdOf(owner), friends[0]!.starId);
+    now = await shown();
+    expect(now.view).toMatchObject({ complete: false, total: null, average: null });
+    expect(now.view?.kind === "bonds" && now.view.members.map((m) => m.score)).toEqual([null, null, null]);
+    for (const f of friends) expect(JSON.stringify(now)).not.toContain(`${f.score}점`);
   });
 
   it("a complete constellation of friends who saw the notice: its total and average show", async () => {

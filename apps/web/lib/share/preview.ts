@@ -20,8 +20,7 @@ export interface SharePreview {
 /** What a 별자리 인연 link shows, read live from the bonds store (app/s/[id]/bondsShare.ts). */
 export type BondsPreviewData =
   /**
-   * `members[].score`: shown only for a friend who joined after the score notice; `total` and `average` only when every
-   * score shows (lib/bonds/share.ts).
+   * `members[].score`, `total` and `average`: only where the constellation's scores show (lib/bonds/share.ts).
    */
   | {
       kind: "bonds"; signKo: string; ownerNickname: string; stars: number; slots: number; total: number | null; average: number | null; complete: boolean;
@@ -33,6 +32,19 @@ const TITLE_MAX = 60;
 const DESCRIPTION_MAX = 90;
 
 const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
+
+/**
+ * As many whole items as fit in `max` with `suffix`, the rest counted ("하늘 · 인연 87점, 바다 · 인연 69점 외 2명 · 평균 78점"):
+ * never cut inside an item, so no score is left half shown (review 2026-10-23).
+ */
+export function fitList(items: readonly string[], separator: string, max: number, suffix = ""): string {
+  for (let fit = items.length; fit > 0; fit--) {
+    const rest = items.length - fit;
+    const text = `${items.slice(0, fit).join(separator)}${rest ? ` 외 ${rest}명` : ""}${suffix}`;
+    if (text.length <= max) return text;
+  }
+  return `친구 ${items.length}명${suffix}`;
+}
 
 /** Plain words: no bold marks, one line. */
 const plain = (text: string) => text.replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
@@ -103,16 +115,15 @@ export function sharePreview(share: SharePayload, live?: BondsPreviewData | null
     case "bond": {
       const build = { label: "내 별자리 만들기", path: "/bonds" };
       if (live?.kind === "bonds") {
-        // Each friend's score where it shows ("하늘 · 인연 87점, 바다"); the total and average only when every one does.
+        // Each friend's score where the scores show ("하늘 · 인연 87점, 바다 · 인연 69점"), whole stars only.
         const head = `${live.ownerNickname}님의 ${live.signKo}${live.complete ? " 완성" : ""}`;
         const shown = live.members.some((m) => m.score !== null);
-        const list = live.members.map((m) => (m.score === null ? m.nickname : `${m.nickname} · 인연 ${m.score}점`)).join(", ");
+        const items = live.members.map((m) => (m.score === null ? m.nickname : `${m.nickname} · 인연 ${m.score}점`));
         return {
           title: clip(live.total !== null ? `${head} · 인연 ${live.total}점` : `${head} · 별 ${live.stars}/${live.slots}`, TITLE_MAX),
-          description: clip(
-            shown ? `${list}${live.average === null ? "" : ` · 평균 ${live.average}점`}` : `친구 ${live.stars}명이 별이 되어 ${live.slots}칸 가운데 ${live.stars}칸을 채웠어요`,
-            DESCRIPTION_MAX,
-          ),
+          description: shown
+            ? fitList(items, ", ", DESCRIPTION_MAX, live.average === null ? "" : ` · 평균 ${live.average}점`)
+            : clip(`친구 ${live.stars}명이 별이 되어 ${live.slots}칸 가운데 ${live.stars}칸을 채웠어요`, DESCRIPTION_MAX),
           try: build,
         };
       }

@@ -113,6 +113,10 @@ function OpenInvite({ invite }: { invite: Open }) {
   const [phase, setPhase] = useState<Phase>("form");
   // The nickname this device already used, if any (the birth date comes from the saved saju profile, below).
   const [nickname, setNickname] = useState(invite.myNickname ?? "");
+  // What the owner's share shows of this star: its score too, unless this constellation's scores never show (0017).
+  const shareNotice = invite.scoresPrivate
+    ? `${invite.ownerNickname}님이 별자리를 공유하면 내 닉네임이 공유 링크와 이미지에 보여요. 인연 점수는 보이지 않아요.`
+    : `${invite.ownerNickname}님이 별자리를 공유하면 내 닉네임과 ${invite.ownerNickname}님과의 인연 점수가 공유 링크와 이미지에 보여요.`;
   const [birth, setBirthValue] = useState<BirthValue>(EMPTY_BIRTH);
   // This device's own saved saju profile fills the date once it is read, unless the friend already chose one.
   const { profile } = useSajuProfile();
@@ -165,8 +169,8 @@ function OpenInvite({ invite }: { invite: Open }) {
     setBusy(true);
     setErrors({});
     const res = await bondsApi<JoinResult>("join", {
-      // this form says the score shows on the owner's share (above 별 되기)
-      scoreNotice: true,
+      // this form said the score shows on the owner's share (above 별 되기), unless this constellation's never do
+      scoreNotice: !invite.scoresPrivate,
       code: invite.code,
       nickname: nickname.trim(),
       birth: birthDate,
@@ -232,7 +236,7 @@ function OpenInvite({ invite }: { invite: Open }) {
               aria-describedby="friend-nickname-help"
             />
             <p id="friend-nickname-help" className={b.helper}>
-              {invite.ownerNickname}님이 별자리를 공유하면 내 닉네임과 {invite.ownerNickname}님과의 인연 점수가 공유 링크와 이미지에 보여요.
+              {shareNotice}
             </p>
             {errors.nickname ? (
               <p className={b.error} role="alert">
@@ -250,10 +254,12 @@ function OpenInvite({ invite }: { invite: Open }) {
           />
           <div className={b.group}>
             <p id="friend-consent-note" className={b.helper}>
-              내 닉네임과 {invite.ownerNickname}님과의 인연 점수가 {invite.ownerNickname}님의 별자리 공유 링크와 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.
+              {invite.scoresPrivate
+                ? `내 닉네임이 ${invite.ownerNickname}님의 별자리 공유 링크와 이미지에 나올 수 있어요. 인연 점수는 넣지 않아요. 생년월일은 저장하지 않아요.`
+                : `내 닉네임과 ${invite.ownerNickname}님과의 인연 점수가 ${invite.ownerNickname}님의 별자리 공유 링크와 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.`}
             </p>
             <Checkbox checked={consent} onChange={setConsent} invalid={Boolean(errors.consent)} describedBy="friend-consent-note" required>
-              만 14세 이상이고, 닉네임과 인연 점수가 {invite.ownerNickname}님의 별자리에 남는 데 동의해요
+              {`만 14세 이상이고, 닉네임과 인연 점수가 ${invite.ownerNickname}님의 별자리에 남고 ${invite.ownerNickname}님이 공유하면 ${invite.scoresPrivate ? "닉네임이" : "닉네임과 점수가"} 보이는 데 동의해요`}
             </Checkbox>
             {errors.consent ? (
               <p className={b.error} role="alert">
@@ -334,9 +340,7 @@ function OpenInvite({ invite }: { invite: Open }) {
             </p>
           ) : null}
           {/* Said again right above the button that joins (owner 2026-10-23): this is what marks the star's score as shown. */}
-          <p className={b.helper}>
-            {invite.ownerNickname}님이 별자리를 공유하면 내 닉네임과 {invite.ownerNickname}님과의 인연 점수가 공유 링크와 이미지에 보여요.
-          </p>
+          <p className={b.helper}>{shareNotice}</p>
           <Button block onClick={submit} disabled={busy}>
             {busy ? "별을 다는 중이에요" : "별 되기"}
           </Button>
