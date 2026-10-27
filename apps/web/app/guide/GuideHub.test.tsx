@@ -74,9 +74,16 @@ describe("the hub", () => {
       render(<tab.Page />);
       const intro = section("hub-intro-title");
       const text = intro.textContent ?? "";
-      expect(within(intro).getByRole("heading", { level: 2 }).textContent).toBe("스타로그 가이드는");
-      expect(text).toContain("처음 접하는 분");
-      expect(text).toContain("1909년 원판");
+      // The home speaks for the whole guide; the saju tab has an intro of its own, saju first (AdSense audit 2026-10-27).
+      if (tab.category === "tarot") {
+        expect(within(intro).getByRole("heading", { level: 2 }).textContent).toBe("스타로그 가이드는");
+        expect(text).toContain("처음 접하는 분");
+        expect(text).toContain("1909년 원판");
+      } else {
+        expect(within(intro).getByRole("heading", { level: 2 }).textContent).toBe("사주 가이드는");
+        expect(text).toContain("명식");
+        expect(text).not.toContain("1909년 원판");
+      }
       expect(text).toContain("만세력");
       expect(text).toContain(`타로 ${articlesIn("tarot").length}편`);
       expect(text).toContain(`사주 ${articlesIn("saju").length}편`);
@@ -89,15 +96,16 @@ describe("the hub", () => {
       expect(intro.compareDocumentPosition(list)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
-    it(`${tab.category}: a reading path for a first visit, this tab's category first, each step an article`, () => {
+    it(`${tab.category}: a reading path for a first visit (the home both, tarot first; the saju tab its own), each step an article`, () => {
       render(<tab.Page />);
       const starters = section("hub-start-title");
-      expect(within(starters).getByRole("heading", { level: 2 }).textContent).toBe("처음이라면 이 순서로 읽어 보세요");
-      const groups = within(starters).getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
-      expect(groups).toEqual([tab.category, tab.other].map((category) => `${category === "tarot" ? "타로" : "사주"} 처음이라면`));
+      const paths = tab.category === "tarot" ? [tab.category, tab.other] : [tab.category];
+      expect(within(starters).getByRole("heading", { level: 2 }).textContent).toBe(tab.category === "tarot" ? "처음이라면 이 순서로 읽어 보세요" : "명식을 처음 읽는다면 이 순서로 읽어 보세요");
+      const groups = within(starters).queryAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+      expect(groups).toEqual(paths.length > 1 ? paths.map((category) => `${category === "tarot" ? "타로" : "사주"} 처음이라면`) : []);
       const lists = starters.querySelectorAll("ol");
-      expect(lists).toHaveLength(2);
-      for (const [i, category] of [tab.category, tab.other].entries()) {
+      expect(lists).toHaveLength(paths.length);
+      for (const [i, category] of paths.entries()) {
         const links = within(lists[i] as HTMLElement).getAllByRole("link");
         expect(links.map((a) => a.getAttribute("href"))).toEqual(GUIDE_STARTERS[category].map((slug) => `/guide/${slug}`));
         for (const [j, slug] of GUIDE_STARTERS[category].entries()) expect(links[j]?.textContent).toContain(findArticle(slug)?.title);
@@ -146,6 +154,22 @@ describe("the hub", () => {
       expect(container.textContent).not.toMatch(/준비 중|개발 중|공사 중/);
     });
   }
+});
+
+describe("the two hubs", () => {
+  it("do not repeat each other's intro or reading path, and count 타로 36편 · 사주 30편 since the app manuals left", () => {
+    const read = (Page: () => ReactElement) => {
+      render(<Page />);
+      const out = { intro: section("hub-intro-title").querySelector("p")?.textContent ?? "", start: section("hub-start-title").textContent ?? "", meta: section("hub-intro-title").textContent ?? "" };
+      cleanup();
+      return out;
+    };
+    const tarot = read(GuideTarotPage);
+    const saju = read(GuideSajuPage);
+    expect(saju.intro).not.toBe(tarot.intro);
+    expect(saju.start).not.toBe(tarot.start);
+    for (const hub of [tarot, saju]) expect(hub.meta).toContain("타로 36편 · 사주 30편");
+  });
 });
 
 describe("every guide page within two clicks of the root domain's home", () => {

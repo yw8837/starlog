@@ -27,14 +27,27 @@ import { GuideHost } from "./GuideHost";
 import { GuideThumb } from "./GuideThumb";
 import s from "./guide.module.css";
 
-/** Each tab has its leader: the cat astrologer reads cards, the rabbit in 두루마기 reads 명식. */
-const TAB_COPY: Record<GuideCategory, { title: string; metaTitle: string; hero: [string, string]; description: string; sub: string }> = {
+/**
+ * Each tab has its leader: the cat astrologer reads cards, the rabbit in 두루마기 reads 명식. The home (the tarot tab)
+ * introduces the whole guide and both reading paths; the saju tab its own intro and path (AdSense audit 2026-10-27: the
+ * two hubs repeated each other).
+ */
+const TAB_COPY: Record<
+  GuideCategory,
+  { title: string; metaTitle: string; hero: [string, string]; description: string; sub: string; intro: [string, string]; start: string; starters: readonly GuideCategory[] }
+> = {
   tarot: {
     title: "타로 가이드",
     metaTitle: "타로 가이드 · 카드 뜻과 읽는 법, 스프레드",
     hero: ["타로 카드를 펼치기 전에", "알아 두면 좋은 이야기"],
     description: "타로 카드 읽는 법과 여러 스프레드, 메이저 아르카나 22장의 뜻까지. 카드를 펼치기 전에 알아 두면 좋은 이야기를 모았어요.",
     sub: "카드 읽는 법과 스프레드, 메이저 아르카나 22장",
+    intro: [
+      "스타로그 가이드는",
+      "타로 카드의 뜻과 읽는 법, 사주 명식을 보는 법을 차근차근 풀어 쓴 글 모음이에요. 타로나 사주를 처음 접하는 분, 풀이를 보기 전에 기본을 알고 싶은 분이 직접 읽어 볼 수 있게 썼어요. 타로 글은 1909년 원판 그림과 웨이트 원전에, 사주 글은 만세력 계산 규칙에 기대요.",
+    ],
+    start: "처음이라면 이 순서로 읽어 보세요",
+    starters: ["tarot", "saju"],
   },
   saju: {
     title: "사주 가이드",
@@ -42,6 +55,12 @@ const TAB_COPY: Record<GuideCategory, { title: string; metaTitle: string; hero: 
     hero: ["사주 명식을 읽기 전에", "알아 두면 좋은 이야기"],
     description: "오행과 천간·지지, 일간과 십신, 대운과 만세력 보는 법까지. 사주 명식을 읽기 전에 알아 두면 좋은 이야기를 모았어요.",
     sub: "오행과 천간·지지부터 대운과 궁합까지",
+    intro: [
+      "사주 가이드는",
+      "태어난 해와 달, 날과 시로 세운 여덟 글자, 사주 명식을 읽는 법을 모은 글이에요. 네 기둥이 어떻게 서는지부터 오행과 일간, 10년마다 바뀌는 대운까지 순서대로 따라갈 수 있게 엮었어요. 해와 달을 입춘과 절기로 나누는 만세력 계산 규칙에 기대요.",
+    ],
+    start: "명식을 처음 읽는다면 이 순서로 읽어 보세요",
+    starters: ["saju"],
   },
 };
 
@@ -78,8 +97,6 @@ export function guideIndexMetadata(category: GuideCategory): Metadata {
  */
 export function GuideIndex({ category }: { category: GuideCategory }) {
   const copy = TAB_COPY[category];
-  // This tab's reading path first, then the other's.
-  const starterOrder = [category, ...GUIDE_CATEGORIES.filter((other) => other !== category)];
   const newest = GUIDE_ARTICLES.map(lastReviewed)
     .filter((date): date is string => Boolean(date))
     .sort()
@@ -105,12 +122,9 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
 
           <section className={s.intro} aria-labelledby="hub-intro-title">
             <h2 id="hub-intro-title" className={s.introTitle}>
-              스타로그 가이드는
+              {copy.intro[0]}
             </h2>
-            <p className={s.introText}>
-              타로 카드의 뜻과 읽는 법, 사주 명식을 보는 법을 차근차근 풀어 쓴 글 모음이에요. 타로나 사주를 처음 접하는 분, 풀이를 보기 전에 기본을 알고 싶은 분이
-              직접 읽어 볼 수 있게 썼어요. 타로 글은 1909년 원판 그림과 웨이트 원전에, 사주 글은 만세력 계산 규칙에 기대요.
-            </p>
+            <p className={s.introText}>{copy.intro[1]}</p>
             <p className={s.introMeta}>
               {GUIDE_CATEGORIES.map((tab) => `${GUIDE_CATEGORY_LABEL[tab]} ${articlesIn(tab).length}편`).join(" · ")}
               {newest ? (
@@ -129,16 +143,18 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
           <section className={s.group} aria-labelledby="hub-start-title">
             <div className={s.groupHead}>
               <h2 id="hub-start-title" className={s.groupTitle}>
-                처음이라면 이 순서로 읽어 보세요
+                {copy.start}
               </h2>
             </div>
             <div className={s.starters}>
-              {starterOrder.map((tab) => (
+              {copy.starters.map((tab) => (
                 <div key={tab} className={s.starterGroup}>
-                  <h3 className={s.starterTitle}>
-                    <span className={s.dot} data-tone={tab} aria-hidden="true" />
-                    {`${GUIDE_CATEGORY_LABEL[tab]} 처음이라면`}
-                  </h3>
+                  {copy.starters.length > 1 ? (
+                    <h3 className={s.starterTitle}>
+                      <span className={s.dot} data-tone={tab} aria-hidden="true" />
+                      {`${GUIDE_CATEGORY_LABEL[tab]} 처음이라면`}
+                    </h3>
+                  ) : null}
                   <ol className={`${s.list} ${s.starterList}`}>
                     {GUIDE_STARTERS[tab].map((slug, i) => {
                       const article = findArticle(slug);

@@ -694,6 +694,15 @@
   .starterList {
     grid-template-columns: 1fr;
   }
+
+  /* The saju tab's one path: the whole row, in two columns like the article list. */
+  .starterGroup:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .starterGroup:only-child .starterList {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* A small heading inside a section on the cream paper. */
