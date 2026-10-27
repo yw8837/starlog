@@ -261,5 +261,17 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-23" }] as const),
     // 2026-10-23: 오행이 뭐예요? keeps its facts with varied sentence endings (10 of 61 ended in 않아요), and links 십신 and 용신.
     ...["five-elements"].map((slug) => [slug, { published: "2026-09-30", updated: "2026-10-23" }] as const),
+    // 2026-10-27 (third review of 2026-10-23): the 22 card articles take their own length, shape, description, 한눈에 보기
+    // and 요약; the ten thin tarot basics, spreads and how-tos grow past 2,500 characters on their own facts and link down
+    // to the card (or saju) articles; the 22-card overview links the cards it names.
+    ...[
+      "the-fool", "the-magician", "the-high-priestess", "the-empress", "the-emperor", "the-hierophant", "the-lovers", "the-chariot", "strength",
+      "wheel-of-fortune", "justice", "the-hanged-man", "death", "temperance", "the-devil", "the-tower", "the-moon", "the-sun", "judgement", "the-world",
+      "celtic-cross-spread", "three-card-spread", "one-card-yes-no", "now-card-how-to", "redrawing-same-question", "court-cards",
+    ].map((slug) => [slug, { published: "2026-10-01", updated: "2026-10-27" }] as const),
+    ...["the-hermit", "the-star", "how-to-read-tarot", "upright-and-reversed", "saju-without-birth-time"].map(
+      (slug) => [slug, { published: "2026-09-30", updated: "2026-10-27" }] as const,
+    ),
+    ...["major-and-minor-arcana", "major-arcana-overview"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-27" }] as const),
   ],
 );

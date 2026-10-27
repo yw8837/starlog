@@ -232,3 +232,41 @@ describe("answer-first fields (요약, HowTo, dates)", () => {
     }
   });
 });
+
+/**
+ * The third review of 2026-10-23 found ten tarot basics, spreads and how-tos at 1,300-1,800 characters without spaces,
+ * none linking a card article from its body. Each now reads its own facts (Waite, the KB, the app's code, the engine).
+ */
+describe("the thin tarot basics, spreads and how-tos grew on their own facts (third review, 2026-10-23)", () => {
+  const THIN = [
+    "redrawing-same-question", "one-card-yes-no", "now-card-how-to", "upright-and-reversed", "major-and-minor-arcana",
+    "how-to-read-tarot", "court-cards", "saju-without-birth-time", "three-card-spread", "celtic-cross-spread",
+  ];
+  const bodyLinks = (article: GuideArticle) => {
+    const raw = article.sections.flatMap((section) => [section.body, ...(section.blocks ?? []).map((block) => JSON.stringify(block))]).join("\n");
+    return new Set([...raw.matchAll(/\]\(\/guide\/([a-z0-9-]+)\)/g)].map((match) => match[1] as string));
+  };
+
+  it.each(THIN)("%s: 2,500 characters or more without spaces, and three or more card articles (saju articles for a saju one) linked from the body", (slug) => {
+    const article = findArticle(slug) as GuideArticle;
+    expect(bodyText(article).replace(/\s/g, "").length).toBeGreaterThanOrEqual(2500);
+    const linked = [...bodyLinks(article)].filter((other) => (article.category === "saju" ? findArticle(other)?.category === "saju" : findArticle(other)?.cardId));
+    expect(linked.length, [...bodyLinks(article)].join(", ")).toBeGreaterThanOrEqual(3);
+  });
+
+  it("leaves no tarot basics, spread or how-to article without a link in its body", () => {
+    const base = GUIDE_ARTICLES.filter((article) => article.category === "tarot" && !article.cardId);
+    for (const article of base) expect(bodyLinks(article).size, article.slug).toBeGreaterThan(0);
+  });
+
+  it("court-cards: all sixteen court cards in its clue tables, each with a picture clue and what is misremembered", () => {
+    const tables = (findArticle("court-cards") as GuideArticle).sections
+      .flatMap((section) => section.blocks ?? [])
+      .filter((block): block is Extract<NonNullable<GuideArticle["sections"][number]["blocks"]>[number], { kind: "table" }> => block.kind === "table" && block.head[2] === "흔히 잘못 기억하는 것");
+    const named = tables.flatMap((table) => table.rows.map((row) => row[0]));
+    const courts = CARDS.filter((card) => card.arcana === "minor" && Number(card.id.slice(-2)) > 10).map((card) => card.names.ko);
+    expect(courts).toHaveLength(16);
+    expect([...named].sort()).toEqual([...courts].sort());
+    for (const row of tables.flatMap((table) => table.rows)) expect(row.every((cell) => cell.trim().length >= 2), row.join(" / ")).toBe(true);
+  });
+});

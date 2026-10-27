@@ -221,9 +221,9 @@ describe("each card article has a shape of its own", () => {
     expect(first).toMatch(/정방향|뜻/);
   });
 
-  it.each(each)("%s: no AI tells in the body, and the page dated 2026-10-23", (_slug, article) => {
+  it.each(each)("%s: no AI tells in the body, and the page dated 2026-10-27 (third review)", (_slug, article) => {
     expect(aiTells(bodyOf(article)).map((hit) => `${hit.id} ${hit.label}`)).toEqual([]);
-    expect(article.updated).toBe("2026-10-23");
+    expect(article.updated).toBe("2026-10-27");
   });
 });
 
