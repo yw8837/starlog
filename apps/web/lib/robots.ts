@@ -43,6 +43,18 @@ export const NAMED_CRAWLERS = [
   "MistralAI-User",
 ] as const;
 
+/**
+ * Share images that are fetched as pictures but must not be indexed as pages (Search Console listed ~25 of
+ * /api/og/* as "크롤링됨"). One X-Robots-Tag header from next.config instead of one per route: link-preview
+ * scrapers ignore it, Google obeys it. They stay crawlable (ROBOTS_ALLOW), or Google could not read the header.
+ * /opengraph-image is the shared brand picture (app/opengraph-image.tsx).
+ */
+export const NOINDEX_HEADER_SOURCES = ["/api/og/:path*", "/opengraph-image"] as const;
+
+export function noindexHeaders() {
+  return NOINDEX_HEADER_SOURCES.map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex" }] }));
+}
+
 /** Daum 웹마스터도구 ownership line, read at build time like the other verification codes. */
 const DAUM_ENV = process.env.NEXT_PUBLIC_DAUM_WEBMASTER_TOOL;
 

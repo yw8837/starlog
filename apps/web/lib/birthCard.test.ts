@@ -210,13 +210,15 @@ describe("what each card page says", () => {
 describe("in the sitemap", () => {
   const paths = [BIRTH_CARD_PATH, ...BIRTH_CARDS.map((card) => birthCardPath(card.slug))];
 
-  it("lists the form and the 22 card pages once each, on the app host only", () => {
+  it("lists the form once, on the app host only; the 22 card pages are noindex (thin duplicates), so not listed", () => {
     const app = sitemapEntriesFor("app").map((entry) => entry.path);
     expect(paths).toHaveLength(23);
-    for (const path of paths) expect(app.filter((listed) => listed === path), path).toHaveLength(1);
+    expect(app.filter((listed) => listed === BIRTH_CARD_PATH)).toHaveLength(1);
+    for (const path of paths.slice(1)) expect(app, path).not.toContain(path);
     const guide = sitemapEntriesFor("guide").map((entry) => entry.path);
     for (const path of paths) expect(guide, path).not.toContain(path);
     const xml = sitemapXml("app");
-    for (const path of paths) expect(xml).toContain(`<loc>https://starlog.yeolmaeapps.kr${path}</loc>`);
+    expect(xml).toContain(`<loc>https://starlog.yeolmaeapps.kr${BIRTH_CARD_PATH}</loc>`);
+    for (const path of paths.slice(1)) expect(xml).not.toContain(`<loc>https://starlog.yeolmaeapps.kr${path}</loc>`);
   });
 });

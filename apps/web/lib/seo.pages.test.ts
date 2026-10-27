@@ -44,7 +44,7 @@ import { BIRTH_CARDS } from "./birthCard";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES } from "./guide";
 import { GUIDE_HOST_PAGES, absoluteUrl, isGuidePath } from "./hosts";
-import { ILJU, KEYWORD_PATH } from "./keyword2027";
+import { ILJU } from "./keyword2027";
 import { HOME_TITLE, NOINDEX as NOINDEX_ROBOTS, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
 
 // The root layout loads its fonts through the Next compiler, which is not running here.
@@ -75,7 +75,6 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/now", nowMeta],
   ["/today", todayMeta],
   ["/2027-keyword", keywordMeta],
-  ...(await Promise.all(ILJU.map(async (ilju) => [`/2027-keyword/${ilju.slug}`, await keywordResultMeta(params({ ilju: ilju.slug }))] as [string, Metadata]))),
   ["/guide/tarot", guideTarotMeta],
   ["/guide/saju", guideSajuMeta],
   ["/guide/about", guideAboutMeta],
@@ -91,6 +90,15 @@ const INDEXABLE: Array<[path: string, meta: Metadata]> = [
   ["/ranking", rankingMeta],
   ...(await Promise.all(GUIDE_ARTICLES.map(async (article) => [`/guide/${article.slug}`, await guideArticleMeta(params({ slug: article.slug }))] as [string, Metadata]))),
   ["/birth-card", birthCardMeta],
+];
+
+/**
+ * The 60 일주 and 22 birth-card result pages: one templated page per answer, the same for whoever opens it. Search Console read
+ * them as thin duplicates ("크롤링됨 - 현재 색인이 생성되지 않음"), so they are noindex,follow and out of the sitemaps; the hubs
+ * (/2027-keyword, /birth-card) are what search lists. Sharing keeps working: canonical and Open Graph stay.
+ */
+const RESULT_PAGES: Array<[path: string, meta: Metadata]> = [
+  ...(await Promise.all(ILJU.map(async (ilju) => [`/2027-keyword/${ilju.slug}`, await keywordResultMeta(params({ ilju: ilju.slug }))] as [string, Metadata]))),
   ...(await Promise.all(BIRTH_CARDS.map(async (card) => [`/birth-card/${card.slug}`, await birthCardResultMeta(params({ card: card.slug }))] as [string, Metadata]))),
 ];
 
@@ -142,17 +150,10 @@ describe("indexable pages", () => {
     expect(meta.alternates?.canonical).toBe(address);
     expect(meta.robots).toBeUndefined();
     const og = meta.openGraph as { url?: string; images?: Array<{ url: string; width: number; height: number }>; locale?: string; type?: string };
-    if (path.startsWith(`${KEYWORD_PATH}/`)) {
-      // A 일주's page shows its own keyword card (/api/og/2027-keyword/<slug>) in place of the site's picture.
-      expect(og).toMatchObject({ url: address, locale: "ko_KR", type: "website" });
-      expect(og.images?.[0]).toMatchObject({ url: `/api/og${path}`, width: 1200, height: 630 });
-      return;
-    }
     expect(og.url).toBe(address);
     expect(og.locale).toBe("ko_KR");
     expect(og.type).toBe(isArticle ? "article" : "website");
-    // A birth card page shows its own card (/api/og/birth-card/<slug>); every other page the site's picture.
-    expect(og.images?.[0]).toMatchObject({ url: path.startsWith("/birth-card/") ? `/api/og${path}` : "/opengraph-image", width: 1200, height: 630 });
+    expect(og.images?.[0]).toMatchObject({ url: "/opengraph-image", width: 1200, height: 630 });
   });
 
   it("gives every page its own title and description", () => {
@@ -178,6 +179,23 @@ describe("indexable pages", () => {
     for (const [path] of INDEXABLE.filter(([path]) => !UNLISTED.includes(path))) {
       expect(listed[isGuidePath(path) ? "guide" : "app"], path).toContain(path);
       expect(listed[isGuidePath(path) ? "app" : "guide"], path).not.toContain(path);
+    }
+  });
+});
+
+describe("every sitemap URL", () => {
+  it("is a page whose canonical is itself, on the host that lists it", () => {
+    const base = layoutMeta.metadataBase ?? undefined;
+    const byPath = new Map(INDEXABLE);
+    for (const host of ["app", "guide"] as const) {
+      for (const { path } of sitemapEntriesFor(host)) {
+        const meta = byPath.get(path);
+        expect(meta, path).toBeDefined();
+        const listed = new URL(absoluteUrl(path));
+        expect(new URL(String(meta?.alternates?.canonical), base).toString(), `${host} ${path}`).toBe(listed.toString());
+        expect(listed.origin, path).toBe(new URL(host === "guide" ? SITE.guideUrl : SITE.url).origin);
+        expect(meta?.robots, path).toBeUndefined();
+      }
     }
   });
 });
@@ -209,6 +227,42 @@ describe("search result previews", () => {
       expect(resolveRobots(meta.robots), path).toEqual({ basic: "noindex, nofollow", googleBot: null });
     }
     expect(resolveRobots(NOINDEX_ROBOTS)).toEqual({ basic: "noindex, nofollow", googleBot: null });
+  });
+});
+
+describe("result pages (2027 keyword, birth card)", () => {
+  it("covers all 60 일주 and 22 cards", () => {
+    expect(RESULT_PAGES).toHaveLength(82);
+  });
+
+  it.each(RESULT_PAGES)("%s: noindex,follow (links still followed), never in the sitemap", (path, meta) => {
+    expect(resolveRobots(meta.robots), path).toEqual({ basic: "noindex, follow", googleBot: null });
+    expect(SITEMAP_PATHS).not.toContain(path);
+  });
+
+  it.each(RESULT_PAGES)("%s: a shared link keeps its canonical, og:url and its own preview image", (path, meta) => {
+    expect(meta.alternates?.canonical).toBe(path);
+    const og = meta.openGraph as { url?: string; images?: Array<{ url: string; width: number; height: number }>; locale?: string; type?: string };
+    expect(og).toMatchObject({ url: path, locale: "ko_KR", type: "website" });
+    expect(og.images?.[0]).toMatchObject({ url: `/api/og${path}`, width: 1200, height: 630 });
+    expect(String(meta.title).length).toBeGreaterThan(0);
+  });
+
+  it("leaves the two hubs indexable and listed", () => {
+    for (const path of ["/2027-keyword", "/birth-card"]) {
+      expect(INDEXABLE.map(([listed]) => listed)).toContain(path);
+      expect(sitemapEntriesFor("app").map((entry) => entry.path)).toContain(path);
+    }
+  });
+});
+
+describe("query duplicates of the entry points", () => {
+  it("/tarot/new and /saju/new canonicalise to their param-free address, so ?new=1 and other query variants fold into it", () => {
+    for (const [path, meta] of [["/tarot/new", tarotNewMeta], ["/saju/new", sajuNewMeta]] as const) {
+      expect(meta.alternates?.canonical, path).toBe(path);
+      expect(String(meta.alternates?.canonical), path).not.toContain("?");
+      expect(meta.robots, path).toBeUndefined();
+    }
   });
 });
 

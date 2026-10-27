@@ -195,8 +195,9 @@ describe("next.config.ts", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "");
     const { default: nextConfig } = await import("@/next.config");
     const rules = await nextConfig.headers!();
-    expect(rules).toHaveLength(1);
-    const [rule] = rules;
+    const [rule, ...noindex] = rules;
+    // After the global rule, the share images' X-Robots-Tag entries (lib/robots.ts) and nothing else.
+    expect(noindex.map((entry) => entry.headers.map((header) => header.key))).toEqual([["X-Robots-Tag"], ["X-Robots-Tag"]]);
     expect(rule?.source).toBe("/:path*");
     expect(rule?.has).toBeUndefined();
     expect(rule?.headers).toContainEqual({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
@@ -228,7 +229,7 @@ describe("next.config.ts", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     const { default: nextConfig } = await import("@/next.config");
     const [global, apex, ...rest] = await nextConfig.headers!();
-    expect(rest).toEqual([]);
+    expect(rest.map((entry) => entry.headers.map((header) => header.key))).toEqual([["X-Robots-Tag"], ["X-Robots-Tag"]]);
     expect(global?.has).toBeUndefined();
     expect(global?.headers).toContainEqual({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
     expect(apex?.source).toBe("/:path*");

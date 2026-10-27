@@ -1,6 +1,7 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 import { hostHeaders, hostRedirects, hostRewrites } from "./lib/hostRoutes";
+import { noindexHeaders } from "./lib/robots";
 
 /** HSTS: https only for two years (browsers ignore it on http://localhost). */
 const HSTS_MAX_AGE = "max-age=63072000";
@@ -66,7 +67,7 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
   // The root domain's HSTS entry comes last: of the entries that match, the last one wins a header.
   headers() {
-    return [{ source: "/:path*", headers: [...SECURITY_HEADERS, ...devProviderHeader()] }, ...hostHeaders(HSTS_MAX_AGE)];
+    return [{ source: "/:path*", headers: [...SECURITY_HEADERS, ...devProviderHeader()] }, ...hostHeaders(HSTS_MAX_AGE), ...noindexHeaders()];
   },
   // The guides live on the root domain and the app on starlog: the host rules (lib/hostRoutes.ts) come
   // first and carry a `host` condition. They exist only in the deploy build (NEXT_PUBLIC_SPLIT_HOSTS=1),

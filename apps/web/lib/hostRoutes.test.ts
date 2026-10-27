@@ -6,6 +6,7 @@ import { SITE } from "./config";
 import { guideIndexPath } from "./guide";
 import { hostHeaders, hostRedirects, hostRewrites } from "./hostRoutes";
 import { GUIDE_HOST_PAGES } from "./hosts";
+import { noindexHeaders } from "./robots";
 import { slashRedirect } from "./workerRedirects.mjs";
 
 /**
@@ -422,6 +423,30 @@ describe("Location headers", () => {
   });
 });
 
+describe("X-Robots-Tag on the share images", () => {
+  const ROBOTS_TAG = "X-Robots-Tag";
+  const IMAGES = ["/api/og/2027-keyword/gap-ja", "/api/og/birth-card/the-fool", "/api/og/share/abc", "/api/og/bonds/x", "/api/og/invite/ABC234", "/api/og/lucky", "/api/og/premium", "/opengraph-image"];
+  const PAGES = ["/", "/2027-keyword/gap-ja", "/birth-card/the-fool", "/api/version", "/api/other", "/guide/tarot", "/tarot/new", "/opengraph-image-x", "/og"];
+
+  it("sends noindex with every share image on both hosts, in Next's server and the Worker alike", () => {
+    for (const [name, run] of headerRuntimes) {
+      for (const host of [STARLOG, APEX, "localhost:8787"]) {
+        for (const path of IMAGES) expect(run(SPLIT.headers, host, path)[ROBOTS_TAG], `${name}: ${host} ${path}`).toBe("noindex");
+      }
+    }
+  });
+
+  it("leaves pages and the other API routes alone", () => {
+    for (const [name, run] of headerRuntimes) {
+      for (const path of PAGES) expect(run(SPLIT.headers, STARLOG, path)[ROBOTS_TAG], `${name}: ${path}`).toBeUndefined();
+    }
+  });
+
+  it("is sent by the local build too (no host rule), so the preview and e2e see what production sends", () => {
+    for (const [name, run] of headerRuntimes) expect(run(LOCAL.headers, "localhost:8787", "/api/og/lucky")[ROBOTS_TAG], name).toBe("noindex");
+  });
+});
+
 describe("HSTS", () => {
   it("drops includeSubDomains on the root domain, everywhere on it, port or not", () => {
     for (const path of ["/", "/guide/tarot", "/guide/the-fool", "/robots.txt", "/sitemap.xml", "/ads.txt", "/api/version", "/_next/static/a.js", "/me"]) {
@@ -457,7 +482,7 @@ describe("without NEXT_PUBLIC_SPLIT_HOSTS (next dev, the OpenNext preview, e2e)"
     expect(hostHeaders(APEX_HSTS)).toEqual([]);
     expect(await nextConfig.redirects?.()).toEqual([{ source: "/guide", destination: "/guide/tarot", permanent: true }, ...ENTRY_REDIRECTS]);
     expect(await nextConfig.rewrites?.()).toEqual({ beforeFiles: [], afterFiles: [], fallback: [] });
-    expect(await nextConfig.headers?.()).toHaveLength(1);
+    expect(await nextConfig.headers?.()).toHaveLength(1 + noindexHeaders().length);
     expect(LOCAL.beforeFiles).toEqual([]);
     expect(LOCAL.redirects.filter((entry) => !entry.internal).map((entry) => entry.source)).toEqual(["/guide", "/tarot", "/saju"]);
     expect(LOCAL.headers.filter((entry) => entry.has)).toEqual([]);
@@ -491,13 +516,14 @@ describe("next.config.ts", () => {
     expect(await nextConfig.redirects?.()).toEqual([...hostRedirects(), { source: "/guide", destination: "/guide/tarot", permanent: true }, ...ENTRY_REDIRECTS]);
     expect(await nextConfig.rewrites?.()).toEqual({ beforeFiles: hostRewrites(), afterFiles: [], fallback: [] });
     const headers = (await nextConfig.headers?.()) ?? [];
-    expect(headers).toHaveLength(2);
+    expect(headers).toHaveLength(2 + noindexHeaders().length);
     expect(headers[0]?.headers).toContainEqual({ key: HSTS, value: APP_HSTS });
-    expect(headers.slice(1)).toEqual(hostHeaders(APEX_HSTS));
+    expect(headers.slice(1, -noindexHeaders().length)).toEqual(hostHeaders(APEX_HSTS));
+    expect(headers.slice(-noindexHeaders().length)).toEqual(noindexHeaders());
   });
 
   it("loads the rules through relative imports only: its loader has no '@/' alias", () => {
-    for (const file of ["hostRoutes.ts", "hosts.ts", "config.ts"]) {
+    for (const file of ["hostRoutes.ts", "hosts.ts", "config.ts", "robots.ts"]) {
       expect(readFileSync(new URL(`./${file}`, import.meta.url), "utf8"), file).not.toMatch(/from\s+["']@\//);
     }
   });
