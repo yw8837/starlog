@@ -162,6 +162,33 @@ describe("BondsView 인연 점수 한눈에 and 공유하기 (owner 2026-10-23)"
 describe("BondsView invites in one go (owner 2026-10-23, the 2026-10-02 decision: no codes to copy, make or type)", () => {
   const EMPTY = { ...OWNER_ME, filling: { row: { id: "c1abcdefghijklmnop", sign: "aries", status: "filling", total: 0, startedAt: 1, completedAt: null }, stars: [] } };
 
+  it("after 코드 새로 만들기, the big invite button sends the new link, not the blocked one (QA H1)", async () => {
+    let code = "K7M4QX";
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push(`${init?.method ?? "GET"} ${url}`);
+      if (String(url).endsWith("/api/bonds/invite")) {
+        code = "R98GYG";
+        return new Response(JSON.stringify({ ok: true, code }));
+      }
+      return new Response(JSON.stringify({ ...EMPTY, invite: { code } }));
+    }));
+    const shared: Array<{ url?: string }> = [];
+    vi.stubGlobal("navigator", { ...navigator, share: async (data: { url?: string }) => void shared.push(data) });
+    render(<BondsView initialSign={null} />);
+    const panel = await screen.findByRole("region", { name: /양자리/ });
+    fireEvent.click(within(panel).getByRole("button", { name: "코드 새로 만들기", hidden: true }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "새 코드 만들기", hidden: true }));
+    });
+    await screen.findByText("R98GYG");
+    await act(async () => {
+      fireEvent.click(within(await screen.findByRole("region", { name: /양자리/ })).getByRole("button", { name: "다른 앱으로 보내기" }));
+    });
+    expect(shared.at(-1)?.url).toMatch(/\/b\/R98GYG$/);
+    expect(calls.filter((c) => c.endsWith("/api/bonds/me")).length).toBeGreaterThanOrEqual(2);
+  });
+
   it("puts 카카오톡으로 초대하기 first on a constellation just made, before its figure, and the code folded under 초대코드 보기", async () => {
     vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(EMPTY))));

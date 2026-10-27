@@ -227,7 +227,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
               reload();
             }}
           />
-          <InviteCode code={invite.code} filling={null} />
+          <InviteCode code={invite.code} filling={null} onChanged={reload} />
         </>
       )}
 
@@ -354,7 +354,7 @@ function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext,
             <InviteShareButton code={view.invite.code} sign={def.id} filled={filled} ownerNickname={view.owner.nickname} />
           </div>
         ) : null}
-        <InviteCode code={view.invite.code} filling={{ sign: def.id, filled }} />
+        <InviteCode code={view.invite.code} filling={{ sign: def.id, filled }} onChanged={reload} />
         {filled > 0 ? (
           <div className={s.shareRow}>
             {/* No score in what a filling share says: a sum of few friends is their scores (privacy §4). */}
@@ -455,7 +455,7 @@ function ChooseSection({ first, mySign, completed, initialSign, onChosen }: {
  * The code itself, folded under 초대코드 보기 (owner 2026-10-23, the 2026-10-02 decision): the invite is a link sent on
  * KakaoTalk (InviteShareButton); the code, its copy and 코드 새로 만들기 are for the rare friend who gets the code only.
  */
-function InviteCode({ code: initialCode, filling }: { code: string; filling: { sign: SignId; filled: number } | null }) {
+function InviteCode({ code: initialCode, filling, onChanged }: { code: string; filling: { sign: SignId; filled: number } | null; onChanged: () => void }) {
   const [code, setCode] = useState(initialCode);
   const [toast, setToast] = useState("");
   const [confirm, setConfirm] = useState(false);
@@ -469,6 +469,8 @@ function InviteCode({ code: initialCode, filling }: { code: string; filling: { s
     if (result.ok) {
       setCode(result.code);
       setToast("새 코드를 만들었어요. 예전 코드와 링크는 이제 열리지 않아요");
+      // The big invite buttons read the page's view: load it again so they send the new link, not the blocked one (QA H1).
+      onChanged();
     } else setToast(bondsMessage(result));
   };
 
