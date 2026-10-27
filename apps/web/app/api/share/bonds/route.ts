@@ -1,6 +1,6 @@
 import { ownedConstellation } from "@/lib/bonds/share";
 import { bondsShare } from "@/lib/bonds/shareRoute";
-import { readOwnerId } from "@/lib/bonds/identity";
+import { whoOwns } from "@/lib/bonds/owner";
 
 /**
  * 별자리 인연, the owner's constellation (owner 2026-10-23).
@@ -9,7 +9,7 @@ import { readOwnerId } from "@/lib/bonds/identity";
  * owner cookie owns the constellation makes it. DELETE {constellationId} → {deleted}: stops it.
  */
 const find: Parameters<typeof bondsShare>[2] = async ({ repo, cookies, secret, body }) => {
-  const ownerId = await readOwnerId(cookies, secret);
+  const { ownerId } = await whoOwns(repo, cookies, secret, Date.now());
   const id = body.constellationId;
   if (!ownerId || typeof id !== "string" || id.length > 64) return null;
   const row = await ownedConstellation(repo, ownerId, id);

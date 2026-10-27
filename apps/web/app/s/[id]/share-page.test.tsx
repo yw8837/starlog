@@ -146,7 +146,7 @@ describe("/s/[id]", () => {
 
   it("shows a stopped or unknown link as a friendly page with a way home", () => {
     render(<NotFound />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("공유가 멈췄거나 없는 풀이예요");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("공유가 멈췄거나 없는 링크예요");
     expect(screen.getByRole("link", { name: "홈으로" }).getAttribute("href")).toBe("/");
   });
 });

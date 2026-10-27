@@ -7,15 +7,16 @@ import s from "./HowTo.module.css";
 
 /**
  * The three steps of 별자리 인연, worded to what the screens really do:
- * - ①: the first screen asks for the nickname and the owner's own birth date (used once for the 궁합 basis,
- *   not stored), and the sign is chosen right after;
+ * - ①: the owner logs in first (owner 2026-10-27: the constellation belongs to the account), then the first screen
+ *   asks for the nickname and the owner's own birth date (used once for the 궁합 basis, not stored), and the sign is
+ *   chosen right after;
  * - ②: a friend opens the link without any login (app/b/[code]), types a nickname and a birth date (used for
  *   the score inside the request, never stored), picks one card and joins;
  * - ③: a full constellation is a 도감 card and, by its total, a place on the sign's ranking, where 1~3위 wear
  *   a gold, silver or bronze medal (app/ranking/[sign]).
  */
 const STEPS: ReadonlyArray<{ id: "pick" | "send" | "done"; title: string; text: string }> = [
-  { id: "pick", title: "별자리 고르기", text: "닉네임과 생년월일을 넣고 채울 별자리를 골라요" },
+  { id: "pick", title: "별자리 고르기", text: "로그인하고 닉네임과 생년월일을 넣은 뒤 채울 별자리를 골라요 (내 별자리는 로그인해서 만들어요)" },
   { id: "send", title: "친구에게 보내기", text: "카톡으로 초대 링크를 보내면 친구가 닉네임과 생년월일을 넣고 카드를 한 장 골라 내 별이 돼요 (로그인 없이, 생년월일은 저장 안 해요)" },
   { id: "done", title: "다 채우면 완성", text: "도감 카드가 생기고, 인연 점수 합계로 랭킹에 올라요" },
 ];

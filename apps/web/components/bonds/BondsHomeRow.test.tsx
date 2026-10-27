@@ -37,7 +37,8 @@ describe("BondsHomeRow", () => {
     });
     render(<BondsHomeRow enabled />);
     expect(await screen.findByText("양자리 2/4 · 174점")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "다른 앱으로 보내기" })).toBeTruthy();
+    // no share sheet in this browser: the one button copies the link (QA L7)
+    expect(await screen.findByRole("button", { name: "링크 복사" })).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(screen.getByRole("link", { name: /별자리 인연, 양자리 2\/4 · 174점/ }).getAttribute("href")).toBe("/bonds");
   });

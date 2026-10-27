@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getConstellation, type SignId } from "@starlog/core";
 import { Button } from "@/components/ui/Button";
 import { inviteUrl, shareLink, type ShareOutcome } from "@/lib/bonds/client";
@@ -24,7 +24,6 @@ type InviteShareButtonProps = {
 const TOAST: Partial<Record<ShareOutcome | "kakao", string>> = {
   copied: "초대 링크를 복사했어요",
   failed: "링크를 복사하지 못했어요. 잠시 뒤에 다시 시도해 주세요",
-  kakao: "카카오톡을 열지 못했어요",
 };
 
 /** What the invite says, e.g. "용우님의 양자리에 별이 되어 주세요": no code to type, the link carries it. */
@@ -40,6 +39,10 @@ export function inviteTitle(ownerNickname: string, sign: SignId): string {
  */
 export function InviteShareButton({ code, sign, filled, ownerNickname, single = false, variant = "primary", kakao = kakaoKey() }: InviteShareButtonProps) {
   const [toast, setToast] = useState("");
+  // Without the system share sheet (most computers) the button copies the link, and says so (QA L7).
+  const [sheet, setSheet] = useState(true);
+  useEffect(() => setSheet(typeof navigator.share === "function"), []);
+  const otherLabel = sheet ? "다른 앱으로 보내기" : "링크 복사";
   const url = inviteUrl(code);
   const title = inviteTitle(ownerNickname, sign);
   const slots = getConstellation(sign).slots;
@@ -56,7 +59,8 @@ export function InviteShareButton({ code, sign, filled, ownerNickname, single = 
         button: "별 되러 가기",
       });
     } catch {
-      setToast(TOAST.kakao ?? "");
+      // what to do instead (QA L11)
+      setToast(`카카오톡을 열지 못했어요. 아래 ${otherLabel}로 보내 주세요`);
     }
   };
 
@@ -67,7 +71,7 @@ export function InviteShareButton({ code, sign, filled, ownerNickname, single = 
 
   const other = (style: "primary" | "secondary") => (
     <Button variant={style} size={style === "primary" ? "lg" : "md"} block onClick={sendOther}>
-      다른 앱으로 보내기
+      {otherLabel}
     </Button>
   );
 

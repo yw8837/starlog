@@ -108,6 +108,21 @@ async function makeShare(route: string, body: unknown): Promise<ShareLinkResult>
   return made(result.data);
 }
 
+/** makeShare, remembering the link under `key` (knownShareLink) so the sheet shows it again later. */
+async function makeRemembered(route: string, body: unknown, key: string): Promise<ShareLinkResult> {
+  const result = await postJson<Made>(route, body);
+  if (!result.ok) return { ok: false, message: result.error.message || FAILED };
+  remember(key, result.data);
+  return made(result.data);
+}
+
+/** stopShare, forgetting the link remembered under `key` once it is stopped. */
+async function stopRemembered(route: string, body: unknown, key: string): Promise<boolean> {
+  const stopped = await stopShare(route, body);
+  if (stopped) remember(key, null);
+  return stopped;
+}
+
 /** 지금의 한 장 (owner 2026-10-23): the server writes the copy from the card DB; only the draw goes, never the worry typed. */
 export const createNowShareLink = (draw: { cardId: string; orientation: string; pick: number }, deck: string): Promise<ShareLinkResult> =>
   makeShare("/api/share/now", { cardId: draw.cardId, orientation: draw.orientation, pick: draw.pick, deck });
@@ -144,13 +159,20 @@ export async function stopFreeShareLink(share: string): Promise<boolean> {
 /** The live link this device made for this free reading, or null. */
 export const knownFreeShareLink = (share: string): ShareLink | null => knownShareLink({ id: freeKey(share) });
 
-/** 별자리 인연, the owner's constellation (owner 2026-10-23): the server checks this device owns it. */
-export const createBondsShareLink = (constellationId: string) => makeShare("/api/share/bonds", { constellationId });
-export const stopBondsShareLink = (constellationId: string) => stopShare("/api/share/bonds", { constellationId });
+/**
+ * 별자리 인연, the owner's constellation (owner 2026-10-23): the server checks this device owns it. The device remembers
+ * the link it made, so the sheet opened again shows it with 공유 그만하기 (QA L6) instead of offering a new one.
+ */
+const bondsKey = (constellationId: string) => `bonds:${constellationId}`;
+export const createBondsShareLink = (constellationId: string) => makeRemembered("/api/share/bonds", { constellationId }, bondsKey(constellationId));
+export const stopBondsShareLink = (constellationId: string) => stopRemembered("/api/share/bonds", { constellationId }, bondsKey(constellationId));
+export const knownBondsShareLink = (constellationId: string): ShareLink | null => knownShareLink({ id: bondsKey(constellationId) });
 
 /** 별자리 인연, a friend's own star (owner 2026-10-23): the server checks this device is that friend. */
-export const createBondShareLink = (starId: string) => makeShare("/api/share/bond", { starId });
-export const stopBondShareLink = (starId: string) => stopShare("/api/share/bond", { starId });
+const bondKey = (starId: string) => `bond:${starId}`;
+export const createBondShareLink = (starId: string) => makeRemembered("/api/share/bond", { starId }, bondKey(starId));
+export const stopBondShareLink = (starId: string) => stopRemembered("/api/share/bond", { starId }, bondKey(starId));
+export const knownBondShareLink = (starId: string): ShareLink | null => knownShareLink({ id: bondKey(starId) });
 
 /** 오늘의 한 장 among the links this device remembers: one per KST day (the device keeps only today's card). */
 const dailyKey = (now: number) => `daily:${kstDate(now)}`;

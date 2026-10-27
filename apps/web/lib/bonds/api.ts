@@ -8,6 +8,7 @@ import type { BondsRepo } from "@/lib/db/bondsRepo";
 import { bondsRepo } from "@/lib/db";
 import { rateLimit, type LimiterName } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
+import { whoOwns, type OwnerIdentity } from "./owner";
 import { BondsError, type BondsErrorCode } from "./service";
 
 /**
@@ -23,11 +24,12 @@ declare global {
   }
 }
 
-export type BondsApiCode = BondsErrorCode | "RATE_LIMIT" | "NOT_CONFIGURED" | "SERVER" | "BAD_ORIGIN";
+export type BondsApiCode = BondsErrorCode | "RATE_LIMIT" | "NOT_CONFIGURED" | "SERVER" | "BAD_ORIGIN" | "LOGIN_REQUIRED" | "CODE_LIMIT";
 
 const STATUS: Record<BondsApiCode, number> = {
   BAD_INPUT: 400,
   BAD_CODE: 400,
+  LOGIN_REQUIRED: 401,
   SELF_JOIN: 403,
   BAD_ORIGIN: 403,
   NOT_FOUND: 404,
@@ -38,11 +40,15 @@ const STATUS: Record<BondsApiCode, number> = {
   ALREADY_JOINED: 409,
   NO_FILLING: 409,
   ALL_DONE: 409,
+  MOVED: 409,
+  DUPLICATE_STAR: 409,
+  REMOVED: 403,
   COOLDOWN: 429,
   DAILY_STAR_LIMIT: 429,
   DAILY_ACTION_LIMIT: 429,
   INVITE_COOLDOWN: 429,
   RATE_LIMIT: 429,
+  CODE_LIMIT: 429,
   SERVER: 500,
   NOT_CONFIGURED: 503,
 };
@@ -62,6 +68,8 @@ export interface BondsContext {
   now: number;
   cookies: Record<string, string>;
   repo: BondsRepo;
+  /** who this request acts as: the account's owner, or this device's while it belongs to no account (lib/bonds/owner.ts) */
+  who: () => Promise<OwnerIdentity>;
 }
 
 /**
@@ -89,12 +97,16 @@ export async function bondsRoute(request: Request, name: string, run: (ctx: Bond
     return fail("NOT_CONFIGURED");
   }
   try {
-    return await run({ secret, now: Date.now(), cookies: parseCookies(request), repo });
+    const now = Date.now();
+    const cookies = parseCookies(request);
+    let identity: Promise<OwnerIdentity> | null = null;
+    return await run({ secret, now, cookies, repo, who: () => (identity ??= whoOwns(repo, cookies, secret, now)) });
   } catch (error) {
     if (error instanceof BondsError) {
       return fail(error.code, {
         ...(error.field ? { field: error.field } : {}),
         ...(error.retryAt ? { retryAt: new Date(error.retryAt).toISOString() } : {}),
+        ...(error.detail ?? {}),
       });
     }
     console.error(JSON.stringify({ evt: "bonds.error", route: name, error: error instanceof Error ? error.constructor.name : typeof error }));

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
-import { getCard, getConstellation } from "@starlog/core";
+import { flushSync } from "react-dom";
+import { getCard, getConstellation, type SignId } from "@starlog/core";
 import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
 import { BondScore } from "@/components/bonds/BondScore";
 import { BondShareButton } from "@/components/bonds/BondsShareButton";
@@ -15,8 +16,9 @@ import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
-import { JOIN_FAILED, bondsApi, bondsMessage } from "@/lib/bonds/client";
-import { MESSAGE_MAX, NICKNAME_MAX, NICKNAME_MIN } from "@/lib/bonds/text";
+import { birthProblem } from "@/lib/bonds/birth";
+import { CODE_LIMIT_MESSAGE, JOIN_FAILED, bondsApi, bondsMessage } from "@/lib/bonds/client";
+import { MESSAGE_MAX, NICKNAME_MAX, nicknameProblem, ordinalStar } from "@/lib/bonds/text";
 import { useSajuProfile } from "@/lib/sajuFlow";
 import type { FriendResultView, InviteState } from "./loadInvite";
 import b from "@/components/bonds/bonds.module.css";
@@ -29,6 +31,41 @@ type Phase = "form" | "shuffle" | "pick" | "message" | "result";
 type JoinResult = FriendResultView;
 
 const FAN = fanIndexes(78, 21);
+
+/** Where the join would land instead (MOVED, QA 2026-10-27): that constellation filled up, or the owner changed it. */
+interface Moved { reason: "complete" | "changed"; constellationId: string; sign: SignId; filled: number; slots: number }
+
+/**
+ * The form kept on this device for this visit (QA 2026-10-27): a reload, or KakaoTalk's in-app browser reopening the page,
+ * keeps the nickname, the birth date, the consent, the card and the line. sessionStorage only: never sent anywhere,
+ * gone when the tab closes, and dropped once the star is in.
+ */
+interface Draft { nickname: string; birth: BirthValue; consent: boolean; pick: number | null; message: string }
+const draftKey = (code: string) => `starlog.bonds.join.${code}`;
+function readDraft(code: string): Draft | null {
+  try {
+    const raw = window.sessionStorage.getItem(draftKey(code));
+    return raw ? (JSON.parse(raw) as Draft) : null;
+  } catch {
+    return null;
+  }
+}
+function writeDraft(code: string, draft: Draft | null) {
+  try {
+    if (draft) window.sessionStorage.setItem(draftKey(code), JSON.stringify(draft));
+    else window.sessionStorage.removeItem(draftKey(code));
+  } catch {
+    // private mode or storage off: the form simply is not kept
+  }
+}
+
+/** The step in the address (#cards, #message), so the back button goes to the step before instead of leaving the page. */
+type StepHash = "" | "#cards" | "#message";
+function setStep(hash: StepHash, mode: "push" | "replace") {
+  const url = `${window.location.pathname}${window.location.search}${hash}`;
+  if (mode === "push") window.history.pushState(window.history.state, "", url);
+  else window.history.replaceState(window.history.state, "", url);
+}
 
 /**
  * The friend's side (spec §3 친구, no account): whose constellation this is, then nickname → birth date
@@ -49,7 +86,7 @@ export function JoinFlow({ state }: { state: InviteState }) {
           : state.status === "alldone"
             ? `${state.ownerNickname}님은 열두 별자리를 모두 채웠어요. 함께해 줘서 고마워요`
           : state.status === "limited"
-            ? "코드 확인이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요"
+            ? CODE_LIMIT_MESSAGE
             : state.status === "error"
               ? "지금은 초대를 열 수 없어요. 잠시 뒤에 다시 시도해 주세요"
               : "코드를 다시 확인해 주세요"}
@@ -138,8 +175,51 @@ function OpenInvite({ invite }: { invite: Open }) {
   const [errors, setErrors] = useState<{ nickname?: string; birth?: string; consent?: string; message?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<JoinResult | null>(null);
+  // The constellation this star goes to: the one shown, or the one the friend agreed to after MOVED.
+  const [target, setTarget] = useState(invite.constellationId);
+  const [moved, setMoved] = useState<Moved | null>(null);
   const resultRef = useRef<HTMLHeadingElement>(null);
   const drawRef = useRef<HTMLElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const pickRef = useRef<number | null>(null);
+  pickRef.current = pick;
+  const doneRef = useRef(false);
+  const [restored, setRestored] = useState(false);
+
+  // Back to this page in the same visit: the kept form, and the step its address names.
+  useEffect(() => {
+    const draft = readDraft(invite.code);
+    const hash = window.location.hash;
+    if (draft) {
+      setNickname(draft.nickname);
+      if (draft.birth.year !== null) {
+        setTouched(true);
+        setBirthValue(draft.birth);
+      }
+      setConsent(draft.consent);
+      setPick(draft.pick);
+      setMessage(draft.message);
+      if (hash === "#message" && draft.pick !== null) setPhase("message");
+      else if (hash === "#cards") setPhase("pick");
+    } else if (hash === "#cards" || hash === "#message") setStep("", "replace");
+    setRestored(true);
+  }, [invite.code]);
+
+  useEffect(() => {
+    if (!restored || doneRef.current) return;
+    writeDraft(invite.code, { nickname, birth, consent, pick, message });
+  }, [restored, invite.code, nickname, birth, consent, pick, message]);
+
+  // The back button walks the steps: message → cards → form (QA 2026-10-27: it used to leave the invite).
+  useEffect(() => {
+    const onPop = () => {
+      if (doneRef.current) return;
+      const hash = window.location.hash;
+      setPhase(hash === "#message" && pickRef.current !== null ? "message" : hash === "#cards" ? "pick" : "form");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   // The form may have been scrolled far down: bring the shuffle and the fan into view.
   useEffect(() => {
@@ -154,20 +234,32 @@ function OpenInvite({ invite }: { invite: Open }) {
 
   const next = (e: FormEvent) => {
     e.preventDefault();
-    const length = Array.from(nickname.trim()).length;
     const found: typeof errors = {};
-    if (length < NICKNAME_MIN || length > NICKNAME_MAX) found.nickname = `닉네임은 ${NICKNAME_MIN}~${NICKNAME_MAX}자로 지어 주세요`;
-    if (!birthBody(birth)) found.birth = BIRTH_MISSING;
+    // The rules the join checks, here before the cards (QA 2026-10-27: a blocked name or a missing 윤달 was refused after them).
+    const nicknameError = nicknameProblem(nickname);
+    if (nicknameError) found.nickname = nicknameError;
+    const birthDate = birthBody(birth);
+    if (!birthDate) found.birth = BIRTH_MISSING;
+    else {
+      const problem = birthProblem(birthDate, Date.now());
+      if (problem) found.birth = problem;
+    }
     if (!consent) found.consent = "확인에 체크해 주세요";
-    setErrors(found);
-    if (Object.keys(found).length === 0) setPhase("shuffle");
+    flushSync(() => setErrors(found));
+    if (Object.keys(found).length) {
+      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+      return;
+    }
+    setPhase("shuffle");
+    setStep("#cards", "push");
   };
 
-  const submit = async () => {
+  const submit = async (constellationId: string = target) => {
     const birthDate = birthBody(birth);
     if (pick === null || !birthDate) return;
     setBusy(true);
     setErrors({});
+    setMoved(null);
     const res = await bondsApi<JoinResult>("join", {
       // this form said the score shows on the owner's share (above 별 되기), unless this constellation's never do
       scoreNotice: !invite.scoresPrivate,
@@ -176,23 +268,32 @@ function OpenInvite({ invite }: { invite: Open }) {
       birth: birthDate,
       pick,
       message: message.trim() || null,
+      expectedConstellationId: constellationId,
     });
     setBusy(false);
     if (!res.ok) {
+      if (res.code === "MOVED") {
+        setMoved(res as unknown as Moved);
+        return;
+      }
       const text = bondsMessage(res, JOIN_FAILED);
       if (res.field === "nickname" || res.field === "birth") {
         setErrors({ [res.field]: text });
         setPhase("form");
+        setStep("", "replace");
       } else if (res.field === "message") setErrors({ message: text });
       else setErrors({ form: text });
       return;
     }
     const { ok: _ok, ...joined } = res;
     // The birth date and the rest of the form are not kept once the star is in.
+    doneRef.current = true;
+    writeDraft(invite.code, null);
     setBirthValue(EMPTY_BIRTH);
     setMessage("");
     setResult(joined as JoinResult);
     setPhase("result");
+    setStep("", "replace");
   };
 
   if (phase === "result" && result) return <Result result={result} headingRef={resultRef} />;
@@ -214,7 +315,7 @@ function OpenInvite({ invite }: { invite: Open }) {
 
       {phase === "form" && invite.earlier ? <EarlierStar earlier={invite.earlier} /> : null}
       {phase === "form" ? (
-        <form className={`${b.panel} ${b.form}`} onSubmit={next} noValidate>
+        <form ref={formRef} className={`${b.panel} ${b.form}`} onSubmit={next} noValidate>
           <div className={b.group}>
             <div className={b.labelRow}>
               <label htmlFor="friend-nickname" className={b.label}>
@@ -236,7 +337,7 @@ function OpenInvite({ invite }: { invite: Open }) {
               aria-describedby="friend-nickname-help"
             />
             <p id="friend-nickname-help" className={b.helper}>
-              {shareNotice}
+              실명 대신 별명을 권해요. {invite.ownerNickname}님의 별자리에 이 닉네임으로 별이 돼요.
             </p>
             {errors.nickname ? (
               <p className={b.error} role="alert">
@@ -253,10 +354,9 @@ function OpenInvite({ invite }: { invite: Open }) {
             helper="두 사람의 인연 점수를 계산하는 데만 쓰고 저장하지 않아요. 태어난 시간은 쓰지 않아요."
           />
           <div className={b.group}>
+            {/* The share notice itself is said once, right above 별 되기 (QA L5); this box is the agreement to it. */}
             <p id="friend-consent-note" className={b.helper}>
-              {invite.scoresPrivate
-                ? `내 닉네임이 ${invite.ownerNickname}님의 별자리 공유 링크와 이미지에 나올 수 있어요. 인연 점수는 넣지 않아요. 생년월일은 저장하지 않아요.`
-                : `내 닉네임과 ${invite.ownerNickname}님과의 인연 점수가 ${invite.ownerNickname}님의 별자리 공유 링크와 이미지에 나올 수 있어요. 생년월일은 저장하지 않아요.`}
+              생년월일은 저장하지 않아요.
             </p>
             <Checkbox checked={consent} onChange={setConsent} invalid={Boolean(errors.consent)} describedBy="friend-consent-note" required>
               {`만 14세 이상이고, 닉네임과 인연 점수가 ${invite.ownerNickname}님의 별자리에 남고 ${invite.ownerNickname}님이 공유하면 ${invite.scoresPrivate ? "닉네임이" : "닉네임과 점수가"} 보이는 데 동의해요`}
@@ -295,7 +395,10 @@ function OpenInvite({ invite }: { invite: Open }) {
                   const slot = FAN.indexOf(index);
                   if (slot < 0) return;
                   setPick(slot);
-                  window.setTimeout(() => setPhase("message"), 450);
+                  window.setTimeout(() => {
+                    setPhase("message");
+                    setStep("#message", "push");
+                  }, 450);
                 }}
               />
             )}
@@ -339,14 +442,44 @@ function OpenInvite({ invite }: { invite: Open }) {
               {errors.form}
             </p>
           ) : null}
-          {/* Said again right above the button that joins (owner 2026-10-23): this is what marks the star's score as shown. */}
+          {moved ? <MovedNotice moved={moved} invite={invite} busy={busy} onGo={() => {
+            setTarget(moved.constellationId);
+            void submit(moved.constellationId);
+          }} /> : null}
+          {/* Said right above the button that joins (owner 2026-10-23), once on the page (QA L5): this marks the star's score as shown. */}
           <p className={b.helper}>{shareNotice}</p>
-          <Button block onClick={submit} disabled={busy}>
+          <Button block onClick={() => void submit()} disabled={busy}>
             {busy ? "별을 다는 중이에요" : "별 되기"}
           </Button>
         </section>
       ) : null}
     </>
+  );
+}
+
+/**
+ * The constellation shown filled up, or the owner switched or refilled it, while the friend was on the form (QA M1): say
+ * where the star would go now and join only when they agree.
+ */
+function MovedNotice({ moved, invite, busy, onGo }: { moved: Moved; invite: Open; busy: boolean; onGo: () => void }) {
+  const shown = getConstellation(invite.sign).ko;
+  const now = getConstellation(moved.sign).ko;
+  const why =
+    moved.reason === "complete"
+      ? `그 사이 ${shown}가 다 차서`
+      : moved.sign === invite.sign
+        ? `그 사이 ${invite.ownerNickname}님이 ${shown}를 새로 채우기 시작해서`
+        : `그 사이 ${invite.ownerNickname}님이 별자리를 바꿔서`;
+  return (
+    <div className={s.moved} role="alert">
+      <p>{`${why} 지금은 ${now}의 ${ordinalStar(moved.filled + 1)}이 돼요. 그대로 들어갈까요?`}</p>
+      <Button block onClick={onGo} disabled={busy}>
+        그대로 들어가기
+      </Button>
+      <Button variant="ghost" block href={`/b/${invite.code}`}>
+        처음부터 다시 볼게요
+      </Button>
+    </div>
   );
 }
 
@@ -357,7 +490,7 @@ function Result({ result, headingRef, again = false }: { result: JoinResult; hea
   return (
     <section className={s.result} aria-labelledby="result-title">
       <p className={b.eyebrow}>
-        {result.ownerNickname}님의 {def.ko} · {result.slot + 1}번째 별
+        {result.ownerNickname}님의 {def.ko} · {ordinalStar(result.slot + 1)}
       </p>
       <h1 id="result-title" ref={headingRef} tabIndex={-1} className={s.title}>
         {again ? `이미 ${def.ko}에 별이 되어 있어요` : result.completed ? `${def.ko}가 완성됐어요` : `${def.ko}에 별이 됐어요`}

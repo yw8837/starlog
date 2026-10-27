@@ -6,6 +6,7 @@ import { BondScore } from "@/components/bonds/BondScore";
 import { ConfirmDialog } from "@/components/bonds/ConfirmDialog";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { bondsApi, bondsMessage } from "@/lib/bonds/client";
+import { ordinalStar } from "@/lib/bonds/text";
 import type { StarView } from "@/lib/bonds/service";
 import b from "@/components/bonds/bonds.module.css";
 import s from "./BondsView.module.css";
@@ -29,7 +30,14 @@ interface TodayCard {
 
 const cardName = (cardId: string, orientation: Orientation) => `${getCard(cardId).names.ko}${orientation === "reversed" ? " 역방향" : ""}`;
 
-/** The stars of one constellation in slot order: nickname, 인연 카드, 한 줄, score with its reasons. */
+/** Where a score sits on the 55–99 scale, for the one-line gauge. */
+const gaugeWidth = (score: number) => `${Math.min(100, Math.max(0, ((score - 55) / (99 - 55)) * 100))}%`;
+
+/**
+ * The stars of one constellation in slot order, each folded to one line (QA M4: six open stars were 7782px at 360px):
+ * which star, the nickname, the score and a small gauge. Opened: the 인연 카드, the line and the score's table. Today's
+ * card and 별 지우기 stay outside the fold.
+ */
 export function StarList({ sign, stars, fresh, complete, otherFilling, onChanged }: StarListProps) {
   const def = getConstellation(sign);
   const [today, setToday] = useState<Record<string, TodayCard | "loading" | string>>({});
@@ -64,22 +72,29 @@ export function StarList({ sign, stars, fresh, complete, otherFilling, onChanged
           const t = today[star.id];
           return (
             <li key={star.id} className={s.star} data-new={fresh.has(star.id) ? "" : undefined}>
-              <div className={s.starHead}>
-                <TarotCard cardId={star.cardId} orientation={star.orientation} faceUp size="sm" className={s.starCard} />
-                <div className={s.starText}>
-                  <p className={s.starName}>
-                    <span className={s.slot}>{star.slot + 1}번 별</span> {star.nickname}
-                    {fresh.has(star.id) ? <span className={s.newTag}>새 별</span> : null}
-                  </p>
-                  {star.message ? <p className={s.message}>“{star.message}”</p> : null}
-                  <p className={s.energy}>지금의 기운 · {cardName(star.cardId, star.orientation)}</p>
+              <details className={s.starFold}>
+                <summary className={s.starSummary}>
+                  <span className={s.slot}>{ordinalStar(star.slot + 1)}</span>
+                  <span className={s.summaryName}>{star.nickname}</span>
+                  {fresh.has(star.id) ? <span className={s.newTag}>새 별</span> : null}
+                  <span className={s.summaryScore}>{star.score}점</span>
+                  <span className={s.miniGauge} aria-hidden="true">
+                    <span style={{ width: gaugeWidth(star.score) }} />
+                  </span>
+                </summary>
+                <div className={s.starHead}>
+                  <TarotCard cardId={star.cardId} orientation={star.orientation} faceUp size="sm" className={s.starCard} />
+                  <div className={s.starText}>
+                    {star.message ? <p className={s.message}>“{star.message}”</p> : null}
+                    <p className={s.energy}>인연 카드 · {cardName(star.cardId, star.orientation)}</p>
+                  </div>
                 </div>
-              </div>
-              <p className={s.line}>{star.line}</p>
-              {/* 인연 점수 한눈에 (owner 2026-10-23): the number, the 55–99 gauge and what made it. */}
-              <div className={s.parts}>
-                <BondScore score={star.score} parts={star.parts} caption="명리에서 두 분의 생년월일로 읽은 값이에요. 언제 다시 봐도 같은 점수예요." />
-              </div>
+                <p className={s.line}>{star.line}</p>
+                {/* 인연 점수 한눈에 (owner 2026-10-23): the number, the 55–99 gauge and what made it. */}
+                <div className={s.parts}>
+                  <BondScore score={star.score} parts={star.parts} caption="명리에서 두 분의 생년월일로 읽은 값이에요. 언제 다시 봐도 같은 점수예요." />
+                </div>
+              </details>
               <div className={s.starActions}>
                 <button type="button" className={s.todayButton} onClick={() => drawToday(star)} disabled={t === "loading"} aria-expanded={Boolean(t && t !== "loading")}>
                   {t === "loading" ? "카드를 고르는 중이에요" : "오늘의 인연 카드"}

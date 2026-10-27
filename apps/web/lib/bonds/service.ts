@@ -6,7 +6,7 @@ import {
 } from "@starlog/core";
 import type { BondsRepo, ConstellationRow, ConstellationStatus, InviteRow, OwnerRow, RankingEntry, StarRow } from "@/lib/db/bondsRepo";
 import { kstDay } from "@/lib/security/quota";
-import { randomId } from "@/lib/security/sign";
+import { canonicalJson, randomId, sha256 } from "@/lib/security/sign";
 import { bondCardLine } from "./bondCardText";
 import { checkMessage, checkNickname, newInviteCode, normalizeCode } from "./text";
 
@@ -18,7 +18,13 @@ import { checkMessage, checkNickname, newInviteCode, normalizeCode } from "./tex
 
 export type BondsErrorCode =
   | "NO_OWNER" | "BAD_INPUT" | "SIGN_COMPLETED" | "FILLING_EXISTS" | "NO_FILLING" | "BAD_CODE" | "CHOOSING" | "SELF_JOIN"
-  | "ALREADY_JOINED" | "DAILY_STAR_LIMIT" | "DAILY_ACTION_LIMIT" | "COOLDOWN" | "INVITE_COOLDOWN" | "NOT_FOUND" | "ALL_DONE";
+  | "ALREADY_JOINED" | "DAILY_STAR_LIMIT" | "DAILY_ACTION_LIMIT" | "COOLDOWN" | "INVITE_COOLDOWN" | "NOT_FOUND" | "ALL_DONE"
+  /** the constellation the friend saw filled up or changed meanwhile (`detail`: where the star would go now) */
+  | "MOVED"
+  /** the owner removed this device's star from this constellation */
+  | "REMOVED"
+  /** a star with this nickname and the same 궁합 basis is already in it */
+  | "DUPLICATE_STAR";
 
 export class BondsError extends Error {
   constructor(
@@ -27,6 +33,8 @@ export class BondsError extends Error {
     readonly field?: string,
     /** COOLDOWN: when 새로 채우기 opens again (ms) */
     readonly retryAt?: number,
+    /** more for the page (MOVED: the constellation the star would join now) */
+    readonly detail?: Record<string, unknown>,
   ) {
     super(code);
     this.name = "BondsError";
@@ -74,7 +82,8 @@ export interface StarView {
 }
 
 const constellationView = ({ ownerId: _owner, ...row }: ConstellationRow): ConstellationView => row;
-const starView = ({ friendKey: _key, constellationId: _c, ...star }: StarRow): StarView => ({ ...star, line: bondCardLine(star.cardId, star.orientation) });
+// never the device hash, nor the 궁합 basis hash (it only keeps one person to one star)
+const starView = ({ friendKey: _key, constellationId: _c, basisHash: _b, ...star }: StarRow): StarView => ({ ...star, line: bondCardLine(star.cardId, star.orientation) });
 
 // ---- helpers ----
 
@@ -176,6 +185,32 @@ export async function saveOwner(repo: BondsRepo, now: number, ownerId: string, i
   };
   await repo.upsertOwner(row);
   return row;
+}
+
+/** One owner as the 연결하기 choice shows it: whose, the sign being filled and how far, completions, all stars, since when. */
+export interface OwnerSummary { nickname: string; sign: SignId | null; filled: number; slots: number; completed: number; stars: number; createdAt: number }
+
+/**
+ * What /bonds offers a logged-in visitor whose device has an owner belonging to no account (owner 2026-10-27): to link
+ * it (the account has none: it is the owner on screen), or to choose which of the two stays (the account has its own).
+ * Null when there is nothing to link.
+ */
+export type LinkOffer = { kind: "offer" } | { kind: "choose"; account: OwnerSummary; device: OwnerSummary };
+
+export async function linkOffer(repo: BondsRepo, who: { ownerId: string | null; userId: string | null; deviceOwnerId: string | null }): Promise<LinkOffer | null> {
+  if (!who.userId || !who.deviceOwnerId || !who.ownerId) return null;
+  if (who.ownerId === who.deviceOwnerId) return { kind: "offer" };
+  return { kind: "choose", account: await ownerSummary(repo, who.ownerId), device: await ownerSummary(repo, who.deviceOwnerId) };
+}
+
+async function ownerSummary(repo: BondsRepo, ownerId: string): Promise<OwnerSummary> {
+  const owner = await requireOwner(repo, ownerId);
+  const filling = await repo.fillingOf(ownerId);
+  const completed = await repo.completedOf(ownerId);
+  const filled = filling ? (await repo.starsOf(filling.id)).length : 0;
+  let stars = filled;
+  for (const c of completed) stars += (await repo.starsOf(c.id)).length;
+  return { nickname: owner.nickname, sign: filling?.sign ?? null, filled, slots: filling ? getConstellation(filling.sign).slots : 0, completed: completed.length, stars, createdAt: owner.createdAt };
 }
 
 /** `랭킹에 내 이름 올리기` and the nickname, without asking for the birth date again. */
@@ -347,6 +382,12 @@ export interface JoinInput {
    * the star's score may show on the owner's public share. Absent (an earlier form): it stays the owner's.
    */
   scoreNotice?: boolean;
+  /**
+   * the constellation the friend's form showed (QA 2026-10-27): when the star would land in another (that one filled up,
+   * or the owner switched or refilled meanwhile), MOVED says where instead and nothing is written; the friend confirms
+   * and sends that one.
+   */
+  expectedConstellationId?: string;
 }
 
 export interface JoinResult {
@@ -397,6 +438,19 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
     if (stars.some((s) => s.friendKey === input.friendKey)) throw new BondsError("ALREADY_JOINED");
     const used = new Set(stars.map((s) => s.slot));
     const slot = Array.from({ length: slots }, (_, i) => i).find((i) => !used.has(i));
+    if (slot !== undefined && input.expectedConstellationId && input.expectedConstellationId !== filling.id) {
+      const seen = await repo.getConstellation(input.expectedConstellationId);
+      throw new BondsError("MOVED", undefined, undefined, {
+        reason: seen?.status === "complete" ? "complete" : "changed",
+        constellationId: filling.id,
+        sign: filling.sign,
+        filled: stars.length,
+        slots,
+      });
+    }
+    if (slot !== undefined && (await repo.isBlocked(filling.id, input.friendKey))) throw new BondsError("REMOVED");
+    const basisHash = slot === undefined ? undefined : await sha256(`basis:${filling.id}:${canonicalJson(friend)}`);
+    if (basisHash && stars.some((s) => s.basisHash === basisHash && s.nickname === nickname.value)) throw new BondsError("DUPLICATE_STAR");
     if (slot === undefined) {
       // Full but still marked as filling (filled by someone else just now, or a count that never
       // landed): complete it, start the next sign, and try again there.
@@ -412,7 +466,7 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
     const row: StarRow = {
       id: randomId(), constellationId: filling.id, slot, nickname: nickname.value, message: message.value,
       cardId: card.cardId, orientation: card.orientation, score, parts, friendKey: input.friendKey, createdAt: now,
-      scorePublic: input.scoreNotice === true,
+      scorePublic: input.scoreNotice === true, ...(basisHash ? { basisHash } : {}),
     };
     try {
       // Insert, recount, count the join and (when it completes) start the next sign, in one atomic step.
@@ -442,8 +496,10 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
  */
 export async function removeStar(repo: BondsRepo, now: number, ownerId: string, starId: string): Promise<void> {
   await requireOwner(repo, ownerId);
-  const { row } = await findOwnedStar(repo, ownerId, starId);
+  const { row, star } = await findOwnedStar(repo, ownerId, starId);
   await spendAction(repo, now, ownerId);
+  // The friend device stays out of this constellation (owner policy, QA 2026-10-27); a new round lets it in again.
+  await repo.blockFriend(row.id, star.friendKey, now);
   await repo.deleteStar(starId);
   if (row.status === "complete") {
     const other = await repo.fillingOf(ownerId);
@@ -633,7 +689,11 @@ export type InvitePage =
    * this device already used (its own constellation's, or a star it left elsewhere), to fill the form (owner 2026-10-23);
    * `scoresPrivate`: the owner's shares never show this constellation's scores, so the form does not say they will
    */
-  | { kind: "open"; ownerNickname: string; sign: SignId; filled: number; slots: number; earlier: FriendResultView | null; myNickname: string | null; scoresPrivate: boolean }
+  | {
+      kind: "open"; ownerNickname: string; sign: SignId; filled: number; slots: number; earlier: FriendResultView | null; myNickname: string | null; scoresPrivate: boolean;
+      /** the constellation this form shows: the join says so, to be told when it filled up or changed meanwhile */
+      constellationId: string;
+    }
   | { kind: "choosing"; ownerNickname: string; earlier: FriendResultView | null }
   | { kind: "alldone"; ownerNickname: string; earlier: FriendResultView | null };
 
@@ -677,5 +737,6 @@ export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerI
   return {
     kind: "open", ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, earlier: result, myNickname,
     scoresPrivate: filling.scoresPrivate === true,
+    constellationId: filling.id,
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { computeChart } from "@starlog/core";
-import { useRef, type Ref } from "react";
+import { useRef, useState, type Ref } from "react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Segmented } from "@/components/ui/Segmented";
 import { CALENDAR_LABEL, MIN_BIRTH_YEAR, daysInMonth, toSajuInput, todayInKorea, type Calendar, type SajuForm } from "@/lib/sajuForm";
@@ -78,6 +78,14 @@ type BirthFieldsProps = {
 export function BirthFields({ value, onChange, id, error, helper, prefilled = false }: BirthFieldsProps) {
   const today = todayInKorea();
   const yearRef = useRef<HTMLSelectElement>(null);
+  // A day the new month or year does not have moves to its last day: said aloud (QA L3: 2월 29일 became 28일 silently).
+  const [clamped, setClamped] = useState("");
+  const change = (patch: Partial<BirthValue>) => {
+    const next = withDate(value, patch);
+    const wanted = patch.day !== undefined ? patch.day : value.day;
+    setClamped(wanted !== null && next.day !== null && next.day < wanted ? `${next.month}월에는 ${wanted}일이 없어서 ${next.day}일로 바꿨어요. 맞는지 확인해 주세요` : "");
+    onChange(next);
+  };
   const describedBy = [`${id}-help`, error ? `${id}-error` : ""].filter(Boolean).join(" ");
   const select = (
     label: string, current: number | null, options: number[], unit: string, patch: (n: number | null) => Partial<BirthValue>,
@@ -90,7 +98,7 @@ export function BirthFields({ value, onChange, id, error, helper, prefilled = fa
           aria-label={label}
           className={s.select}
           value={current ?? ""}
-          onChange={(e) => onChange(withDate(value, patch(e.target.value === "" ? null : Number(e.target.value))))}
+          onChange={(e) => change(patch(e.target.value === "" ? null : Number(e.target.value)))}
           aria-invalid={Boolean(error) && current === null}
           aria-describedby={describedBy}
         >
@@ -117,7 +125,7 @@ export function BirthFields({ value, onChange, id, error, helper, prefilled = fa
           </button>
         </p>
       ) : null}
-      <Segmented<Calendar> label="양력 또는 음력" options={CALENDAR_OPTIONS} value={value.calendar} onChange={(calendar) => onChange(withDate(value, { calendar }))} />
+      <Segmented<Calendar> label="양력 또는 음력" options={CALENDAR_OPTIONS} value={value.calendar} onChange={(calendar) => change({ calendar })} />
       <div className={s.dateRow}>
         {select("태어난 연도", value.year, range(today.year, MIN_BIRTH_YEAR), "년", (year) => ({ year }), yearRef)}
         {select("태어난 월", value.month, range(1, 12), "월", (month) => ({ month }))}
@@ -127,6 +135,11 @@ export function BirthFields({ value, onChange, id, error, helper, prefilled = fa
         <Checkbox checked={value.isLeapMonth} onChange={(isLeapMonth) => onChange({ ...value, isLeapMonth })}>
           윤달이에요
         </Checkbox>
+      ) : null}
+      {clamped ? (
+        <p className={s.helper} role="status">
+          {clamped}
+        </p>
       ) : null}
       <p id={`${id}-help`} className={s.helper}>
         {helper}

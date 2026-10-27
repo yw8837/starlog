@@ -9,7 +9,8 @@ import { OPENING_ENDS_AT, ownerPass } from "./opening";
  * while it runs; before it, with FAKE_NOW=2026-10-31T12:00:00+09:00 for the server and the runner (e2e/opening.ts). In owner
  * mode (playwright.config.ts) only an owner-pass browser may log in, so each context takes the pass before its login.
  * 오픈 기념 무료 opens for a logged-in account once (owner 2026-10-27), so a reading a visitor kept on the device is opened
- * with the owner pass (운영자로 무료 열기). SHOTS: where the screenshots go.
+ * with the owner pass (운영자로 무료 열기). Every test logs in (mock Kakao), which the Workers preview refuses: @login, the
+ * gate's dev run (scripts/ops/gate3-lite.sh). SHOTS: where the screenshots go.
  */
 
 const SYNC_AT = Date.parse("2026-10-31T00:00:00+09:00");
@@ -83,7 +84,7 @@ async function openFree(page: Page, { owner = false } = {}) {
 
 const records = (page: Page) => page.getByRole("list", { name: "기록 목록" }).getByRole("link");
 
-test("a 오픈 기념 무료 reading opened logged in on the web shows in 내 기록 on the phone logged in to the same account", async ({ browser }, info) => {
+test("a 오픈 기념 무료 reading opened logged in on the web shows in 내 기록 on the phone logged in to the same account", { tag: "@login" }, async ({ browser }, info) => {
   test.setTimeout(300_000);
   const name = `sync-a-${info.project.name}-${Date.now()}`;
   const web = await newPage(browser, info);
@@ -111,7 +112,7 @@ test("a 오픈 기념 무료 reading opened logged in on the web shows in 내 �
   await phone.context().close();
 });
 
-test("a reading opened before logging in: the login offers to move it, 옮기기 moves it, and the phone sees it", async ({ browser }, info) => {
+test("a reading opened before logging in: the login offers to move it, 옮기기 moves it, and the phone sees it", { tag: "@login" }, async ({ browser }, info) => {
   test.setTimeout(300_000);
   const name = `sync-b-${info.project.name}-${Date.now()}`;
   const web = await newPage(browser, info);
@@ -151,7 +152,7 @@ test("a reading opened before logging in: the login offers to move it, 옮기기
   await phone.context().close();
 });
 
-test("나중에 folds the offer into one line in 내 정보, which leads back to it", async ({ browser }, info) => {
+test("나중에 folds the offer into one line in 내 정보, which leads back to it", { tag: "@login" }, async ({ browser }, info) => {
   test.setTimeout(300_000);
   const name = `sync-c-${info.project.name}-${Date.now()}`;
   const web = await newPage(browser, info);

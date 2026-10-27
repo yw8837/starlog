@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDailyStore } from "@/lib/api/dailyStore";
+import { setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { signIn } from "@/lib/testing/bondsLogin";
 import { POST as ownerPost } from "./owner/route";
 import { POST as choosePost } from "./choose/route";
 import { POST as invitePost } from "./invite/route";
@@ -32,6 +34,7 @@ const BIRTHS = [[1991, 5, 12], [1992, 8, 3], [1988, 11, 20], [1995, 2, 28]] as c
 
 async function startOwner(nickname = "용우", sign = "aries") {
   const owner: Jar = new Map();
+  await signIn(owner);
   const res = await ownerPost(req("/api/bonds/owner", owner, { nickname, birth: ME }));
   absorb(owner, res);
   const { code } = (await res.json()) as { code: string };
@@ -46,14 +49,19 @@ describe("bonds API", () => {
     resetMemoryLimiter();
     resetDailyStore();
   });
-  afterEach(() => vi.unstubAllEnvs());
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    setTestDb(null);
+  });
 
   it("runs the owner → friends → complete → ranking loop", async () => {
     const owner: Jar = new Map();
+    await signIn(owner);
     let res = await ownerPost(req("/api/bonds/owner", owner, { nickname: "용우", birth: ME }));
     absorb(owner, res);
     expect(res.status).toBe(200);
-    expect(res.headers.getSetCookie().join()).toMatch(/sl_uid=.*HttpOnly.*SameSite=Lax/);
+    // the owner belongs to the account (owner 2026-10-27), so no device cookie names it
+    expect(res.headers.getSetCookie().join()).not.toMatch(/sl_uid=/);
     const { code } = (await res.json()) as { code: string };
     expect(code).toMatch(/^[A-Z2-9]{6}$/);
     res = await choosePost(req("/api/bonds/choose", owner, { sign: "aries" }));
@@ -87,8 +95,9 @@ describe("bonds API", () => {
   it("answers `owner: null` for a device that has not started, with the best record for the 인연 랭킹 tile (still under `weekTop`)", async () => {
     const res = await meGet(req("/api/bonds/me", new Map()));
     const body = (await res.json()) as { ok: true; owner: null; weekTop: { sign: string; total: number } | null };
-    expect(body).toMatchObject({ ok: true, owner: null });
-    expect(Object.keys(body).sort()).toEqual(["ok", "owner", "weekTop"]);
+    // signedIn: false, so the page asks for a login before starting (owner 2026-10-27)
+    expect(body).toMatchObject({ ok: true, owner: null, signedIn: false });
+    expect(Object.keys(body).sort()).toEqual(["ok", "owner", "signedIn", "weekTop"]);
     // the first test completed 양자리: all-time records count
     expect(body.weekTop).toMatchObject({ sign: expect.any(String), total: expect.any(Number) });
   });
@@ -146,15 +155,22 @@ describe("bonds API", () => {
       headers: { "content-type": "application/json", origin: "http://localhost" },
       body: JSON.stringify({ nickname: "용우", birth: ME }),
     }));
-    expect(same.status).toBe(200);
+    // past the origin check, starting asks for a login (owner 2026-10-27)
+    expect(same.status).toBe(401);
+    expect(await same.json()).toMatchObject({ code: "LOGIN_REQUIRED" });
   });
 
   it("limits new owners per network, not renames", async () => {
     const statuses = [];
-    for (let i = 0; i < 11; i++) statuses.push((await ownerPost(req("/api/bonds/owner", new Map(), { nickname: `주인${i}`, birth: ME }, "6.6.6.6"))).status);
+    for (let i = 0; i < 11; i++) {
+      const jar: Jar = new Map();
+      await signIn(jar);
+      statuses.push((await ownerPost(req("/api/bonds/owner", jar, { nickname: `주인${i}`, birth: ME }, "6.6.6.6"))).status);
+    }
     expect(statuses.slice(0, 10)).toEqual(Array(10).fill(200));
     expect(statuses[10]).toBe(429);
     const owner: Jar = new Map();
+    await signIn(owner);
     absorb(owner, await ownerPost(req("/api/bonds/owner", owner, { nickname: "용우", birth: ME }, "5.4.3.2")));
     for (let i = 0; i < 12; i++) expect((await ownerPost(req("/api/bonds/owner", owner, { nickname: `이름${i}` }, "5.4.3.2"))).status).toBe(200);
   });
@@ -191,6 +207,7 @@ describe("bonds API", () => {
 
   it("answers revoked and unknown codes alike, and resolves a waiting owner", async () => {
     const owner: Jar = new Map();
+    await signIn(owner);
     const res = await ownerPost(req("/api/bonds/owner", owner, { nickname: "별지기", birth: ME }));
     absorb(owner, res);
     const { code } = (await res.json()) as { code: string };
@@ -204,8 +221,13 @@ describe("bonds API", () => {
   });
 
   it("checks inputs and identity", async () => {
-    expect((await ownerPost(req("/api/bonds/owner", new Map(), { nickname: "가", birth: ME }))).status).toBe(400);
-    expect((await ownerPost(req("/api/bonds/owner", new Map(), { nickname: "용우" }))).status).toBe(400);
+    const anonymous = await ownerPost(req("/api/bonds/owner", new Map(), { nickname: "용우", birth: ME }));
+    expect(anonymous.status).toBe(401);
+    expect(await anonymous.json()).toMatchObject({ code: "LOGIN_REQUIRED" });
+    const signed: Jar = new Map();
+    await signIn(signed);
+    expect((await ownerPost(req("/api/bonds/owner", signed, { nickname: "가", birth: ME }))).status).toBe(400);
+    expect((await ownerPost(req("/api/bonds/owner", signed, { nickname: "용우" }))).status).toBe(400);
     expect((await choosePost(req("/api/bonds/choose", new Map(), { sign: "aries" }))).status).toBe(404);
     const { owner } = await startOwner("용우", "taurus");
     expect((await choosePost(req("/api/bonds/choose", owner, { sign: "ophiuchus" }))).status).toBe(400);

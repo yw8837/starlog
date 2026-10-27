@@ -5,6 +5,7 @@ import { flushSync } from "react-dom";
 import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { loginHref } from "@/lib/account/client";
 import { bondsApi, bondsMessage, rememberSunSign, sunSignOf } from "@/lib/bonds/client";
 import { NICKNAME_MAX, NICKNAME_MIN } from "@/lib/bonds/text";
 import { useSajuProfile } from "@/lib/sajuFlow";
@@ -50,6 +51,11 @@ function SetupForm({ initial, prefilled, defaultNickname, onDone }: { initial: B
     const result = await bondsApi<{ code: string }>("owner", { nickname: nickname.trim(), birth: body });
     setBusy(false);
     if (!result.ok) {
+      // The login ran out meanwhile: log in again and come back to this form (owner 2026-10-27).
+      if (result.code === "LOGIN_REQUIRED") {
+        window.location.assign(loginHref("/bonds"));
+        return;
+      }
       const message = bondsMessage(result);
       setErrors(result.field === "nickname" ? { nickname: message } : result.field === "birth" ? { birth: message } : { form: message });
       return;

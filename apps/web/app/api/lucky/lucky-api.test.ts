@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LUCKY_NOTICE } from "@starlog/core";
+import { setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { signIn } from "@/lib/testing/bondsLogin";
 import { POST as ownerPost } from "../bonds/owner/route";
 import { GET, POST } from "./route";
 
@@ -34,7 +36,10 @@ describe("/api/lucky", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.UTC(2026, 9, 1, 3)); // Thursday, week of 2026-09-28
   });
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    setTestDb(null);
+  });
 
   it("gives the same device the same numbers all week, and new ones from the next KST Monday", async () => {
     const device: Jar = new Map();
@@ -62,9 +67,10 @@ describe("/api/lucky", () => {
     expect(visitor.status).toBe(200);
     expect(await visitor.json()).toEqual({ ok: true, numbers: null });
     const owner: Jar = new Map();
+    await signIn(owner);
     absorb(owner, await ownerPost(new Request("http://localhost/api/bonds/owner", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", cookie: cookieHeader(owner) },
       body: JSON.stringify({ nickname: "용우", birth: { calendar: "solar", year: 1990, month: 1, day: 1 } }),
     })));
     const viaGet = (await (await GET(req(owner))).json()) as Lucky;
