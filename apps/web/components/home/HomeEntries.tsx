@@ -11,7 +11,7 @@ import { INFO_PAGES } from "@/lib/infoPages";
 import { ArrowIcon, ChevronIcon } from "./icons";
 import { TarotEntryLink } from "./TarotEntryLink";
 import s from "./home.module.css";
-import { HOME_SAJU_HREF } from "@/lib/freshStart";
+import { ENTRY_SAJU_HREF } from "@/lib/freshStart";
 
 /** What the site is, in one line, then who reads what. The page's one <h1>. */
 export function HomeHero() {
@@ -54,7 +54,7 @@ export function TarotEntry() {
 export function SajuEntry() {
   return (
     <div className={`${s.entryRow} ${s.entryRowEnd}`}>
-      <Link href={HOME_SAJU_HREF} className={`${s.entry} ${s.entryHanji}`}>
+      <Link href={ENTRY_SAJU_HREF} className={`${s.entry} ${s.entryHanji}`}>
         <span className={s.entryText}>
           <span className={s.entryTitle}>사주 보기</span>
           <span className={s.entrySub}>타고난 결로 나를 봐요</span>

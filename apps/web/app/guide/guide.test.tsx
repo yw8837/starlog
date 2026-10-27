@@ -270,8 +270,9 @@ describe("links from a guide page", () => {
   });
 
   it.each([
-    ["the-hermit", "타로 보기", "/tarot/new?new=1"],
-    ["five-elements", "사주 보기", "/saju/start?new=1"],
+    // Plain entry addresses (SEO audit 2026-10-27): coming from a guide page, the flow starts clean without ?new=1.
+    ["the-hermit", "타로 보기", "/tarot/new"],
+    ["five-elements", "사주 보기", "/saju/start"],
   ])("%s: the %s button starts the flow on the app host when the hosts are split, and with a path otherwise", async (slug, label, path) => {
     const page = async () => GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">);
     render(await page());

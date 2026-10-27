@@ -15,7 +15,7 @@ import { INFO_PAGES } from "@/lib/infoPages";
 import { pageMetadata } from "@/lib/seo";
 import { withParticle } from "@/lib/korean";
 import { contactChannels } from "@/lib/legal";
-import { NEW_TAROT_HREF, NEW_SAJU_HREF } from "@/lib/freshStart";
+import { ENTRY_SAJU_HREF, ENTRY_TAROT_HREF } from "@/lib/freshStart";
 
 const page = INFO_PAGES.about;
 
@@ -138,10 +138,10 @@ export default function AboutPage() {
       </section>
 
       <div className={s.actions}>
-        <Button href={appHref(NEW_TAROT_HREF)} block>
+        <Button href={appHref(ENTRY_TAROT_HREF)} block>
           타로 보기
         </Button>
-        <Button href={appHref(NEW_SAJU_HREF)} variant="secondary" block>
+        <Button href={appHref(ENTRY_SAJU_HREF)} variant="secondary" block>
           사주 보기
         </Button>
       </div>

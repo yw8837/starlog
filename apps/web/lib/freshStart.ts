@@ -13,12 +13,13 @@
 
 export const NEW_TAROT_HREF = "/tarot/new?new=1";
 /**
- * The home's two entries, at their plain addresses (SEO audit 2026-10-27, LOW: the indexable entry is /tarot/new itself).
- * From the home a flow starts clean without `?new=1`, since the route before (/) is no page of the flow (useFlowVisit);
- * `?new=1` is for links inside a flow, such as a result's 새로 보기.
+ * The two entries at their plain addresses, for links from outside the flows: the home, /about and the guide articles'
+ * CTA (SEO audit 2026-10-27, LOW: the indexable entry is /tarot/new itself). From there a flow starts clean without
+ * `?new=1`, since the route before is no page of the flow, or there is none (another host: useFlowVisit); `?new=1` is
+ * for links inside a flow, such as a result's 새로 보기.
  */
-export const HOME_TAROT_HREF = "/tarot/new";
-export const HOME_SAJU_HREF = "/saju/start";
+export const ENTRY_TAROT_HREF = "/tarot/new";
+export const ENTRY_SAJU_HREF = "/saju/start";
 /**
  * The same builder for 켈틱 크로스 10장 (P5 심층 타로): the 다리 화면 and 내 정보 start here. `spread=deep` is a
  * display flag like `instant` (never user text); it stays in the address, so a refresh keeps the spread.

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { HOME_TAROT_HREF, TAROT_BRIDGE_HREF } from "@/lib/freshStart";
+import { ENTRY_TAROT_HREF, TAROT_BRIDGE_HREF } from "@/lib/freshStart";
 import { usePremiumStatus } from "@/lib/premium/status";
 
 /**
@@ -13,7 +13,7 @@ import { usePremiumStatus } from "@/lib/premium/status";
 export function TarotEntryLink({ className, children }: { className: string; children: ReactNode }) {
   const status = usePremiumStatus();
   return (
-    <Link href={status?.["tarot-deep"].visible ? TAROT_BRIDGE_HREF : HOME_TAROT_HREF} className={className}>
+    <Link href={status?.["tarot-deep"].visible ? TAROT_BRIDGE_HREF : ENTRY_TAROT_HREF} className={className}>
       {children}
     </Link>
   );

@@ -52,6 +52,14 @@ describe("the app pages the root domain serves itself", () => {
     });
   }
 
+  it("/about's two buttons open the readings at their plain addresses, on the app host (no ?new=1: from /about a flow starts clean)", () => {
+    vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    const { container } = render(<AboutPage />);
+    // The two Buttons at the end (the text's own 사주 보기 link to /saju/new is not one of them).
+    const buttons = [...container.querySelectorAll<HTMLAnchorElement>('a[class*="btn"]')];
+    expect(buttons.map((a) => a.getAttribute("href"))).toEqual([`${SITE.url}/tarot/new`, `${SITE.url}/saju/start`]);
+  });
+
   it("/about points at the guide's editorial page near the top, on the root domain", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     const { container } = render(<AboutPage />);
