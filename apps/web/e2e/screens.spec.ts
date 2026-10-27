@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, request as playwrightRequest, test, type Page, type TestInfo } from "@playwright/test";
+import { logInPage, logInRequest, newUser } from "./bondsAccount";
 import { pickCard } from "./cards";
 import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
 
@@ -133,6 +134,8 @@ const BOND_FRIENDS = [
 /** A 별자리 인연 owner on this device (용우, `sign` chosen) with `stars` friends joined from their own devices; the invite code. */
 async function bondsOwner(page: Page, stars: number, sign = "aries"): Promise<string> {
   await ownAddress(page);
+  // an owner starts logged in (owner 2026-10-27)
+  await logInPage(page, newUser(), "/");
   const owner = await page.request.post("/api/bonds/owner", { data: { nickname: "용우", birth: { calendar: "solar", year: 1990, month: 1, day: 1 } } });
   const { code } = (await owner.json()) as { code: string };
   await page.request.post("/api/bonds/choose", { data: { sign } });
@@ -167,7 +170,7 @@ const SCREENS: Screen[] = [
     path: "/b",
     setup: ownAddress,
     prepare: async (page) => {
-      const owner = await playwrightRequest.newContext({ baseURL: test.info().project.use.baseURL, extraHTTPHeaders: { "x-forwarded-for": "10.7.0.1" } });
+      const owner = await logInRequest(test.info().project.use.baseURL!, newUser());
       const { code } = (await (await owner.post("/api/bonds/owner", { data: { nickname: "용우", birth: { calendar: "solar", year: 1990, month: 1, day: 1 } } })).json()) as { code: string };
       await owner.post("/api/bonds/choose", { data: { sign: "leo" } });
       await owner.dispose();

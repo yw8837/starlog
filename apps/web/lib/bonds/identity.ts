@@ -35,12 +35,12 @@ export function readOwnerId(cookies: Record<string, string>, secret: string): Pr
   return readId(cookies, OWNER_ID_COOKIE, "uid", secret);
 }
 
-/** The owner id on this device, minting one (and the cookie to set) when there is none. */
-export async function ensureOwnerId(cookies: Record<string, string>, secret: string): Promise<{ id: string; setCookie: string | null }> {
-  const existing = await readOwnerId(cookies, secret);
-  if (existing) return { id: existing, setCookie: null };
-  const id = randomId();
-  return { id, setCookie: await idCookie(OWNER_ID_COOKIE, "uid", id, secret) };
+/**
+ * The cookie naming `id` this device's owner: only for an owner that cannot belong to an account yet (a database without
+ * migration 0019). Owners belong to accounts now (lib/bonds/owner.ts); devices keep reading the cookies they have.
+ */
+export function ownerCookie(id: string, secret: string): Promise<string> {
+  return idCookie(OWNER_ID_COOKIE, "uid", id, secret);
 }
 
 /** This device's friend key when it already has a device id (never mints one): to recognise a past join. */

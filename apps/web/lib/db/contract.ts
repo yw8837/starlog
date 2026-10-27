@@ -30,6 +30,41 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect(await repo.invitesSince("o1", 5)).toBe(1);
   });
 
+  it("links an owner to one account, finds it by the account, keeps the link through saves, and deletes an owner with everything of theirs (0019)", async () => {
+    const repo = await make();
+    await repo.upsertOwner(owner("o1", "용우"));
+    await repo.upsertOwner(owner("o2", "민지"));
+    expect(await repo.ownerOfUser("u1")).toBeNull();
+    expect(await repo.linkOwner("o1", "u1")).toBe("linked");
+    expect(await repo.getOwner("o1")).toEqual({ ...owner("o1", "용우"), userId: "u1" });
+    expect((await repo.ownerOfUser("u1"))?.id).toBe("o1");
+    // one owner per account, and an owner linked once stays with that account
+    expect(await repo.linkOwner("o2", "u1")).toBe("taken");
+    expect(await repo.linkOwner("o1", "u2")).toBe("taken");
+    expect(await repo.linkOwner("nobody", "u3")).toBe("taken");
+    // a rename or settings save never drops the link
+    await repo.upsertOwner(owner("o1", "새이름", false));
+    expect(await repo.getOwner("o1")).toMatchObject({ nickname: "새이름", userId: "u1" });
+    expect((await repo.getOwner("o2"))?.userId).toBeUndefined();
+    // deleting an owner takes its constellations, stars and invites; the other owner's stay
+    await repo.insertInvite({ code: "AAAAAA", ownerId: "o1", createdAt: 1, revokedAt: null });
+    await repo.insertInvite({ code: "BBBBBB", ownerId: "o2", createdAt: 1, revokedAt: null });
+    await repo.insertConstellation(con("c1", "o1", 0, null));
+    await repo.insertConstellation(con("c2", "o2", 0, null));
+    await repo.insertStar({ ...star("s1", "c1", 0, "f1"), scorePublic: true });
+    await repo.insertStar({ ...star("s2", "c2", 0, "f2"), scorePublic: true });
+    await repo.deleteOwner("o1");
+    expect(await repo.getOwner("o1")).toBeNull();
+    expect(await repo.ownerOfUser("u1")).toBeNull();
+    expect(await repo.getConstellation("c1")).toBeNull();
+    expect(await repo.starsOf("c1")).toEqual([]);
+    expect(await repo.inviteByCode("AAAAAA")).toBeNull();
+    expect((await repo.starsOf("c2")).map((s) => s.id)).toEqual(["s2"]);
+    expect((await repo.inviteByCode("BBBBBB"))?.ownerId).toBe("o2");
+    // the account is free again
+    expect(await repo.linkOwner("o2", "u1")).toBe("linked");
+  });
+
   it("round-trips an owner (basis, flags) and updates in place", async () => {
     const repo = await make();
     await repo.upsertOwner(owner("o1", "용우"));
@@ -173,6 +208,23 @@ export function bondsRepoContract(make: () => Promise<BondsRepo> | BondsRepo) {
     expect((await repo.fillingOf("o1"))?.scoresPrivate).toBeUndefined();
     await repo.insertStar(star("t1", "c2", 1, "g1"));
     expect((await repo.fillingOf("o1"))?.scoresPrivate).toBe(true);
+  });
+
+  it("keeps a removed friend device out of one constellation, round-trips a star's basis hash, and drops both with the constellation (0020)", async () => {
+    const repo = await make();
+    await repo.upsertOwner(owner("o1", "용우"));
+    await repo.insertConstellation(con("c1", "o1", 0, null));
+    await repo.insertConstellation(con("c2", "o1", 300, 5, "leo"));
+    expect(await repo.isBlocked("c1", "f0")).toBe(false);
+    await repo.blockFriend("c1", "f0", 5);
+    await repo.blockFriend("c1", "f0", 6);
+    expect(await repo.isBlocked("c1", "f0")).toBe(true);
+    expect(await repo.isBlocked("c2", "f0")).toBe(false);
+    expect(await repo.isBlocked("c1", "f1")).toBe(false);
+    await repo.insertStar({ ...star("s1", "c1", 0, "f1"), scorePublic: true, basisHash: "hash-of-basis" });
+    expect((await repo.starsOf("c1"))[0]).toEqual({ ...star("s1", "c1", 0, "f1"), scorePublic: true, basisHash: "hash-of-basis" });
+    await repo.deleteConstellation("c1");
+    expect(await repo.isBlocked("c1", "f0")).toBe(false);
   });
 
   it("recounts from the stars and keeps an earlier completion time", async () => {

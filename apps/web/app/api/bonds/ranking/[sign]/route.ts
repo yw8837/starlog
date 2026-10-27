@@ -1,6 +1,5 @@
 import { isSignId } from "@starlog/core";
 import { bondsRoute, fail, ok } from "@/lib/bonds/api";
-import { readOwnerId } from "@/lib/bonds/identity";
 import { RANKING_LIMIT, rankingBoards, rankingView, type RankingBoards, type RankingView } from "@/lib/bonds/service";
 import { SITE } from "@/lib/config";
 import { fromCache, toCache } from "@/lib/og/edgeCache";
@@ -15,11 +14,11 @@ const BOARDS_TTL_SECONDS = 60;
  * also refreshes the cache.
  */
 export async function GET(request: Request, { params }: { params: Promise<{ sign: string }> }): Promise<Response> {
-  return bondsRoute(request, "ranking", async ({ secret, now, cookies, repo }) => {
+  return bondsRoute(request, "ranking", async ({ secret, now, cookies, repo, who }) => {
     const { sign } = await params;
     if (!isSignId(sign)) return fail("NOT_FOUND");
     const key = `${new URL(SITE.url).origin}/__cache/ranking/${sign}`;
-    const ownerId = await readOwnerId(cookies, secret);
+    const ownerId = (await who()).ownerId;
     const fresh = async () => {
       const boards = await rankingBoards(repo, sign);
       await toCache(key, Response.json(boards), BOARDS_TTL_SECONDS);

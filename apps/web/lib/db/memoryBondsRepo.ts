@@ -12,6 +12,8 @@ export function createMemoryBondsRepo(): BondsRepo {
   const invites = new Map<string, InviteRow>();
   const constellations = new Map<string, ConstellationRow>();
   const stars = new Map<string, StarRow>();
+  /** `${constellationId} ${friendKey}` of friend devices the owner removed */
+  const blocks = new Set<string>();
 
   const copy = <T extends object>(row: T): T => structuredClone(row);
   const ownedBy = (ownerId: string) => [...constellations.values()].filter((c) => c.ownerId === ownerId);
@@ -57,12 +59,34 @@ export function createMemoryBondsRepo(): BondsRepo {
     },
     async upsertOwner(row) {
       const existing = owners.get(row.id);
+      const { userId: _ignored, ...fields } = row;
       owners.set(row.id, copy({
-        ...row,
+        ...fields,
         createdAt: existing?.createdAt ?? row.createdAt,
         joinsDay: existing ? existing.joinsDay : null,
         joinsCount: existing ? existing.joinsCount : 0,
+        // only linkOwner writes the account
+        ...(existing?.userId ? { userId: existing.userId } : {}),
       }));
+    },
+    async ownerOfUser(userId) {
+      const row = [...owners.values()].find((o) => o.userId === userId);
+      return row ? copy(row) : null;
+    },
+    async linkOwner(ownerId, userId) {
+      const row = owners.get(ownerId);
+      if (!row || row.userId || [...owners.values()].some((o) => o.userId === userId)) return "taken";
+      owners.set(ownerId, { ...row, userId });
+      return "linked";
+    },
+    async deleteOwner(id) {
+      for (const c of ownedBy(id)) {
+        for (const [key, s] of stars) if (s.constellationId === c.id) stars.delete(key);
+        for (const key of blocks) if (key.startsWith(`${c.id} `)) blocks.delete(key);
+        constellations.delete(c.id);
+      }
+      for (const [code, invite] of invites) if (invite.ownerId === id) invites.delete(code);
+      owners.delete(id);
     },
     async activeInvite(ownerId) {
       const row = [...invites.values()].filter((i) => i.ownerId === ownerId && i.revokedAt === null).sort((a, b) => b.createdAt - a.createdAt)[0];
@@ -109,7 +133,14 @@ export function createMemoryBondsRepo(): BondsRepo {
     },
     async deleteConstellation(id) {
       for (const [key, s] of stars) if (s.constellationId === id) stars.delete(key);
+      for (const key of blocks) if (key.startsWith(`${id} `)) blocks.delete(key);
       constellations.delete(id);
+    },
+    async blockFriend(constellationId, friendKey) {
+      blocks.add(`${constellationId} ${friendKey}`);
+    },
+    async isBlocked(constellationId, friendKey) {
+      return blocks.has(`${constellationId} ${friendKey}`);
     },
     async starsByFriend(friendKey, limit) {
       return [...stars.values()]

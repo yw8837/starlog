@@ -9,7 +9,8 @@ import { BondsError, resolveInvite } from "@/lib/bonds/service";
 export async function GET(request: Request): Promise<Response> {
   return bondsRoute(request, "resolve", async ({ now, repo }) => {
     const guard = codeGuard(request, now);
-    if (!(await guard.allowed())) return fail("RATE_LIMIT");
+    // a network shut out for a wrong code waits up to 10 minutes (codeGuard), not the usual minute
+    if (!(await guard.allowed())) return fail("CODE_LIMIT");
     const code = new URL(request.url).searchParams.get("code") ?? "";
     try {
       return ok({ ...(await resolveInvite(repo, code)) });

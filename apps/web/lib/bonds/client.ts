@@ -26,12 +26,17 @@ export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResu
   }
 }
 
+/** codeGuard shuts a network out for up to 10 minutes after wrong codes, or a minute when it looks up a lot (QA L1). */
+export const CODE_LIMIT_MESSAGE = "코드 확인이 잠깐 많았어요. 잠시 뒤에(길면 10분) 다시 시도해 주세요";
+
 const MESSAGES: Record<string, string> = {
   BAD_CODE: "코드를 다시 확인해 주세요",
   CHOOSING: "다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요",
   ALL_DONE: "열두 별자리가 모두 채워졌어요. 함께해 줘서 고마워요",
   SELF_JOIN: "내 초대코드로는 내 별자리에 참여할 수 없어요",
   ALREADY_JOINED: "이 기기로 이미 이 별자리에 참여했어요",
+  REMOVED: "별자리 주인이 지운 별이라 이 기기로는 이 별자리에 다시 참여할 수 없어요",
+  DUPLICATE_STAR: "이미 같은 별이 있어요. 같은 닉네임과 생년월일로는 한 번만 참여할 수 있어요",
   DAILY_STAR_LIMIT: "오늘은 이 별자리에 별이 많이 들어왔어요. 내일 다시 참여해 주세요",
   FILLING_EXISTS: "이미 채우는 별자리가 있어요",
   SIGN_COMPLETED: "이미 완성한 별자리예요",
@@ -42,7 +47,9 @@ const MESSAGES: Record<string, string> = {
   BAD_ORIGIN: "스타로그 화면에서 다시 시도해 주세요",
   NOT_FOUND: "찾을 수 없어요. 처음부터 다시 시도해 주세요",
   NO_OWNER: "별자리 인연을 먼저 시작해 주세요",
+  LOGIN_REQUIRED: "내 별자리는 로그인해서 만들어요. 로그인하고 다시 시도해 주세요",
   RATE_LIMIT: "요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요",
+  CODE_LIMIT: CODE_LIMIT_MESSAGE,
   NETWORK: "연결이 잠시 불안정해요. 다시 시도해 주세요",
 };
 

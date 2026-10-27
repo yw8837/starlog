@@ -6,6 +6,8 @@ export interface OwnerRow {
   id: string; nickname: string; rankingPublic: boolean; basis: BondBasis; lastRefillAt: number | null; createdAt: number;
   /** join events on `joinsDay` (only joinStar moves them; upsertOwner never writes them) */
   joinsDay: string | null; joinsCount: number;
+  /** the account it belongs to (migration 0019; only linkOwner writes it); absent: a device's owner, linked to no account */
+  userId?: string;
 }
 export interface InviteRow { code: string; ownerId: string; createdAt: number; revokedAt: number | null }
 export type ConstellationStatus = "filling" | "complete";
@@ -22,12 +24,23 @@ export interface StarRow {
   cardId: string; orientation: Orientation; score: number; parts: BondPart[]; friendKey: string; createdAt: number;
   /** the friend joined after the form said their score shows on the owner's share (migration 0016); absent: false */
   scorePublic?: boolean;
+  /** a hash of the friend's 궁합 basis salted with the constellation id (migration 0020): one person, one star per nickname */
+  basisHash?: string;
 }
 export interface RankingEntry { constellationId: string; nickname: string; total: number; completedAt: number }
 export interface SignTop { sign: SignId; rank: number; nickname: string; total: number; completedAt: number }
 
 export interface BondsRepo {
   getOwner(id: string): Promise<OwnerRow | null>;
+  /** the owner linked to this account, or null (also on a database without migration 0019) */
+  ownerOfUser(userId: string): Promise<OwnerRow | null>;
+  /**
+   * Links an owner that belongs to no account to `userId`: "linked", "taken" (the owner is gone or already linked, or
+   * the account already has an owner) or "unsupported" (a database without migration 0019).
+   */
+  linkOwner(ownerId: string, userId: string): Promise<"linked" | "taken" | "unsupported">;
+  /** Deletes the owner with everything of theirs: constellations and their stars, invites. */
+  deleteOwner(id: string): Promise<void>;
   /** creates the owner, or updates nickname, ranking flag, basis and lastRefillAt (never the counters) */
   upsertOwner(row: OwnerRow): Promise<void>;
   activeInvite(ownerId: string): Promise<InviteRow | null>;
@@ -59,6 +72,10 @@ export interface BondsRepo {
   /** Count one removal or switch on the owner's `day`; the count for that day after it. */
   bumpActions(ownerId: string, day: string): Promise<number>;
   deleteStar(id: string): Promise<void>;
+  /** Keeps this friend device out of the constellation (the owner removed its star; migration 0020). */
+  blockFriend(constellationId: string, friendKey: string, at: number): Promise<void>;
+  /** whether the owner removed this friend device's star from the constellation (false before migration 0020) */
+  isBlocked(constellationId: string, friendKey: string): Promise<boolean>;
   /** This friend device's stars in anyone's constellations, newest first (내가 들어간 별자리). */
   starsByFriend(friendKey: string, limit: number): Promise<StarRow[]>;
   /** This friend device's most recent star in any of the owner's constellations, with that constellation. */

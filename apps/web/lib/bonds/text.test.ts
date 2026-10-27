@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INVITE_ALPHABET, checkMessage, checkNickname, newInviteCode, normalizeCode } from "./text";
+import { INVITE_ALPHABET, checkMessage, checkNickname, newInviteCode, nicknameProblem, normalizeCode, ordinalStar } from "./text";
 
 describe("bonds text rules", () => {
   it("makes 6-char codes without look-alike characters and normalizes input", () => {
@@ -51,13 +51,14 @@ describe("bonds text rules", () => {
     expect(checkNickname("ㅅㅂ")).toEqual({ ok: false, reason: "BLOCKED" });
     expect(checkNickname("\uffbb\uffbb\uffbb")).toEqual({ ok: true, value: "\uffbb\uffbb\uffbb" });
     expect(checkNickname("ｆｕｃｋ")).toEqual({ ok: false, reason: "BLOCKED" });
-    expect(checkNickname("０１０１２３４５６７")).toEqual({ ok: false, reason: "BLOCKED" });
+    expect(checkNickname("０１０１２３４５６７")).toEqual({ ok: false, reason: "PHONE" });
   });
 
   it("refuses phone-like digit runs in public names", () => {
-    expect(checkNickname("0101234567")).toEqual({ ok: false, reason: "BLOCKED" });
-    expect(checkNickname("010-1234-5678")).toEqual({ ok: false, reason: "LENGTH" });
-    expect(checkNickname("별 123-4567")).toEqual({ ok: false, reason: "BLOCKED" });
+    // said as a phone number (QA M3), even when it is also too long
+    expect(checkNickname("0101234567")).toEqual({ ok: false, reason: "PHONE" });
+    expect(checkNickname("010-1234-5678")).toEqual({ ok: false, reason: "PHONE" });
+    expect(checkNickname("별 123-4567")).toEqual({ ok: false, reason: "PHONE" });
     expect(checkNickname("별빛2026")).toEqual({ ok: true, value: "별빛2026" });
   });
 
@@ -69,5 +70,22 @@ describe("bonds text rules", () => {
 
   it("collapses inner whitespace", () => {
     expect(checkNickname("별   하나")).toEqual({ ok: true, value: "별 하나" });
+  });
+});
+
+describe("bonds text rules (QA 2026-10-27)", () => {
+  it("keeps an emoji sequence whole (👩‍👩‍👧‍👦 is one picture) but drops a joiner anywhere else", () => {
+    const family = "\u{1F469}\u200d\u{1F469}\u200d\u{1F467}\u200d\u{1F466}우리집";
+    expect(checkNickname(family)).toEqual({ ok: true, value: family });
+    expect(checkNickname("가\u200d나다")).toEqual({ ok: true, value: "가나다" });
+    expect(checkNickname("시\u200d발")).toEqual({ ok: false, reason: "BLOCKED" });
+  });
+
+  it("says why a nickname cannot be used, and counts stars in Korean", () => {
+    expect(nicknameProblem("하늘")).toBeNull();
+    expect(nicknameProblem("가")).toBe("닉네임은 2~10자로 지어 주세요");
+    expect(nicknameProblem("010 1234 5678")).toBe("전화번호처럼 보이는 별명은 쓸 수 없어요. 다른 별명을 지어 주세요");
+    expect(nicknameProblem("관리자")).toMatch(/^쓸 수 없는 별명이에요/);
+    expect([1, 2, 3, 10, 13].map(ordinalStar)).toEqual(["첫 번째 별", "두 번째 별", "세 번째 별", "열 번째 별", "13번째 별"]);
   });
 });

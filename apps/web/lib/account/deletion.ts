@@ -106,6 +106,26 @@ export async function deleteAccount(db: D1Binding, toss: TossClient | null, inpu
 const DELETED = "EXISTS (SELECT 1 FROM users WHERE id = ? AND deleted_at IS NOT NULL)";
 
 /**
+ * 별자리 인연 (owner 2026-10-27): the owner that belongs to a deleted account goes with it, with its constellations and
+ * the friends' stars in them and its invites (its link stops opening), as an owner's own data. Run before the account's
+ * erase so an interrupted erase (the cron runs it again) never leaves it behind. Owners made on a device and never
+ * linked belong to no account and stay with their device. Before migration 0019 no owner belongs to an account.
+ */
+async function eraseBondsOwner(db: D1Binding, userId: string): Promise<void> {
+  const mine = `SELECT id FROM owners WHERE user_id = ? AND ${DELETED}`;
+  try {
+    await db.batch([
+      db.prepare(`DELETE FROM stars WHERE constellation_id IN (SELECT id FROM constellations WHERE owner_id IN (${mine}))`).bind(userId, userId),
+      db.prepare(`DELETE FROM constellations WHERE owner_id IN (${mine})`).bind(userId, userId),
+      db.prepare(`DELETE FROM invites WHERE owner_id IN (${mine})`).bind(userId, userId),
+      db.prepare(`DELETE FROM owners WHERE id IN (${mine})`).bind(userId, userId),
+    ]);
+  } catch (error) {
+    if (!/no such column: user_id/i.test(error instanceof Error ? error.message : String(error))) throw error;
+  }
+}
+
+/**
  * Erases a deleted account's personal data in one batch, keeping what the law keeps:
  * - an unused signup gift is forfeited (its ledger rows stay), and so is a purchase given back after
  *   its client left (SEC-02: never refunded);
@@ -126,6 +146,7 @@ export async function eraseDeletedAccount(db: D1Binding, userId: string, now: nu
     )
     .bind(userId)
     .all<Lot>();
+  await eraseBondsOwner(db, userId);
   const results = await db.batch([
     ...forfeited.flatMap((lot) => forfeitStatements(db, lot, "revoked", now)),
     ...eraseReviewStatements(db, userId),

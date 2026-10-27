@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { kstDate } from "@/lib/kst";
 import { clearChapters, deleteChapter, listChapters, saveChapter } from "@/lib/storage/chapters";
-import { createDailyShareLink, createShareLink, knownDailyShareLink, knownShareLink, stopDailyShareLink, stopShareLink } from "./client";
+import {
+  createBondShareLink, createBondsShareLink, createDailyShareLink, createShareLink, knownBondShareLink, knownBondsShareLink, knownDailyShareLink, knownShareLink,
+  stopBondsShareLink, stopDailyShareLink, stopShareLink,
+} from "./client";
 
 /** The share API as the browser sees it: POST hands back /s/<id>, DELETE stops it; `calls` records both. */
 function stubShareApi(options: { failDelete?: boolean } = {}) {
@@ -146,5 +149,22 @@ describe("오늘의 한 장's share link (owner 2026-10-20)", () => {
     vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ code: "NOT_AVAILABLE", message: "오늘 고른 카드가 있어야 공유할 수 있어요." }), { status: 409, headers: { "content-type": "application/json" } }));
     expect(await createDailyShareLink()).toEqual({ ok: false, message: "오늘 고른 카드가 있어야 공유할 수 있어요." });
     expect(knownDailyShareLink()).toBeNull();
+  });
+});
+
+describe("별자리 인연 links a device remembers (QA L6: the sheet opened again offered a new link)", () => {
+  it("remembers the constellation's link until 공유 그만하기, and a friend's own link apart from it", async () => {
+    const calls = stubShareApi();
+    expect(knownBondsShareLink("cons0123456789abcdef")).toBeNull();
+    expect(await createBondsShareLink("cons0123456789abcdef")).toMatchObject({ ok: true, url: expect.stringMatching(/\/s\/abcdefghijkl$/) });
+    expect(knownBondsShareLink("cons0123456789abcdef")?.url).toMatch(/\/s\/abcdefghijkl$/);
+    expect(knownBondsShareLink("another0123456789abc")).toBeNull();
+    expect(knownBondShareLink("star0123456789abcdef")).toBeNull();
+    await createBondShareLink("star0123456789abcdef");
+    expect(knownBondShareLink("star0123456789abcdef")?.url).toMatch(/\/s\/abcdefghijkl$/);
+    expect(await stopBondsShareLink("cons0123456789abcdef")).toBe(true);
+    expect(knownBondsShareLink("cons0123456789abcdef")).toBeNull();
+    expect(knownBondShareLink("star0123456789abcdef")).not.toBeNull();
+    expect(calls.map((c) => c.method)).toEqual(["POST", "POST", "DELETE"]);
   });
 });

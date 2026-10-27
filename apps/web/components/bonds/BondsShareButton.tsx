@@ -1,7 +1,7 @@
 "use client";
 
 import { ShareResultButton } from "@/components/share/ShareResultButton";
-import { createBondShareLink, createBondsShareLink, stopBondShareLink, stopBondsShareLink } from "@/lib/share/client";
+import { createBondShareLink, createBondsShareLink, knownBondShareLink, knownBondsShareLink, stopBondShareLink, stopBondsShareLink } from "@/lib/share/client";
 
 /**
  * 별자리 인연 결과 공유 (owner 2026-10-23), both made by the server from the bonds store and read live when opened:
@@ -17,11 +17,21 @@ export function BondsShareButton({ constellationId, text, extra, primary = false
       text={text}
       create={() => createBondsShareLink(constellationId)}
       stop={() => stopBondsShareLink(constellationId)}
+      current={() => knownBondsShareLink(constellationId)}
       extra={extra}
     />
   );
 }
 
 export function BondShareButton({ starId, text }: { starId: string; text: string }) {
-  return <ShareResultButton kind="bond" label="내 인연 공유하기" text={text} create={() => createBondShareLink(starId)} stop={() => stopBondShareLink(starId)} />;
+  return (
+    <ShareResultButton
+      kind="bond"
+      label="내 인연 공유하기"
+      text={text}
+      create={() => createBondShareLink(starId)}
+      stop={() => stopBondShareLink(starId)}
+      current={() => knownBondShareLink(starId)}
+    />
+  );
 }

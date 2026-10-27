@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { BirthSchema, allowed, body, bondsRoute, fail, ok } from "@/lib/bonds/api";
 import { codeGuard } from "@/lib/bonds/codeGuard";
-import { friendKey, readOwnerId } from "@/lib/bonds/identity";
+import { friendKey } from "@/lib/bonds/identity";
 import { BondsError, joinStar } from "@/lib/bonds/service";
 
 const JoinBody = z.object({
@@ -13,11 +13,13 @@ const JoinBody = z.object({
   message: z.string().max(200).nullish(),
   /** the form showed the score notice (owner 2026-10-23): only then may this star's score show on the owner's share */
   scoreNotice: z.boolean().optional(),
+  /** the constellation the form showed: MOVED when the star would land in another (QA 2026-10-27) */
+  expectedConstellationId: z.string().max(64).optional(),
 });
 
 /** POST → a friend becomes the next star of the owner's constellation. */
 export async function POST(request: Request): Promise<Response> {
-  return bondsRoute(request, "join", async ({ secret, now, cookies, repo }) => {
+  return bondsRoute(request, "join", async ({ secret, now, cookies, repo, who }) => {
     if (!(await allowed(request, "BOND_JOIN_LIMITER", now))) return fail("RATE_LIMIT");
     const guard = codeGuard(request, now);
     if (!(await guard.allowed())) return fail("RATE_LIMIT");
@@ -25,7 +27,7 @@ export async function POST(request: Request): Promise<Response> {
     const device = await friendKey(cookies, secret);
     let result: Awaited<ReturnType<typeof joinStar>>;
     try {
-      result = await joinStar(repo, now, { ...input, friendKey: device.key, joinerOwnerId: await readOwnerId(cookies, secret) });
+      result = await joinStar(repo, now, { ...input, friendKey: device.key, joinerOwnerId: (await who()).ownerId });
     } catch (error) {
       if (error instanceof BondsError && error.code === "BAD_CODE") await guard.failed();
       throw error;

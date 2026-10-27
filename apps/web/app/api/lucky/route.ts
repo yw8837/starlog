@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { LUCKY_NOTICE, kstWeekId, weeklyLucky, type BondBasis } from "@starlog/core";
 import { BirthSchema, body, bondsRoute, ok } from "@/lib/bonds/api";
-import { friendKey, readOwnerId } from "@/lib/bonds/identity";
+import { friendKey } from "@/lib/bonds/identity";
 import { basisOf } from "@/lib/bonds/service";
 
 /**
@@ -19,8 +19,8 @@ function answer(basis: BondBasis, seedKey: string, now: number, cookies: Array<s
 }
 
 export async function GET(request: Request): Promise<Response> {
-  return bondsRoute(request, "lucky", async ({ secret, now, cookies, repo }) => {
-    const ownerId = await readOwnerId(cookies, secret);
+  return bondsRoute(request, "lucky", async ({ secret, now, cookies, repo, who }) => {
+    const ownerId = (await who()).ownerId;
     const owner = ownerId ? await repo.getOwner(ownerId) : null;
     // Not a 별자리 인연 owner on this device: nothing stored to go on, so the page asks for a birth date.
     if (!owner) return ok({ numbers: null });
@@ -29,10 +29,10 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  return bondsRoute(request, "lucky", async ({ secret, now, cookies }) => {
+  return bondsRoute(request, "lucky", async ({ secret, now, cookies, who }) => {
     const { birth } = await body(request, LuckyBody);
     const basis = basisOf(birth, now);
-    const ownerId = await readOwnerId(cookies, secret);
+    const ownerId = (await who()).ownerId;
     if (ownerId) return answer(basis, `owner:${ownerId}`, now);
     const device = await friendKey(cookies, secret);
     return answer(basis, `device:${device.key}`, now, [device.setCookie]);
