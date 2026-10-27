@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
-  BRANCHES, STEMS, STEMS_KO, STEM_ELEMENTS, bondBasis, bondScore, computeChart, ganzhiKo, mainHiddenStem, shiftGanzhi, type SajuChart,
+  BOND_BASE, BOND_MAX, BOND_MIN, BRANCHES, STEMS, STEMS_KO, STEM_ELEMENTS, bondBasis, bondScore, computeChart, ganzhiKo, mainHiddenStem, shiftGanzhi, type SajuChart,
 } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { elementMeeting } from "../ai/prompts/match";
@@ -423,6 +423,12 @@ const EXAMPLES: Readonly<Record<string, (article: GuideArticle, text: string) =>
     expect(text).toContain(SEASON[chart.pillars.month.branch as (typeof BRANCHES)[number]]);
   },
   "ten-gods": (article) => {
+    // The ten gods of all ten day masters: each cell is the stem that is that ten god to that day master.
+    const all = tableIn(article, "일간마다 십신이 되는 천간");
+    for (const [day = "", ...cells] of all.rows) {
+      const dayStem = STEMS[STEMS_KO.indexOf(day.replace("일간", "") as (typeof STEMS_KO)[number])] as string;
+      cells.forEach((ko, i) => expect(tenGod(dayStem, STEMS[STEMS_KO.indexOf(ko as (typeof STEMS_KO)[number])] as string), `${day} ${ko}`).toBe(all.head[i + 1]));
+    }
     const table = tables(article).find((t) => t.caption.startsWith("예시 명식"));
     if (!table) throw new Error("ten-gods: no example table");
     const chart = exampleChart(table);
@@ -505,6 +511,18 @@ const EXAMPLES: Readonly<Record<string, (article: GuideArticle, text: string) =>
     }
   },
   "four-pillars": (article, text) => {
+    // 오자둔: the stem of the 자시 by the day stem, and the example's hour pillar counted on from it.
+    for (const [days = "", ganzhi = ""] of tableIn(article, "일간으로 찾는 자시의 간지").rows) {
+      for (const ko of days.replace("일", "").split("·")) expect(ganzhi, ko).toBe(`${STEMS_KO[((STEMS_KO.indexOf(ko as (typeof STEMS_KO)[number]) % 5) * 2) % 10]}자`);
+    }
+    const ex = at(1990, 5, 15, 12);
+    expect(text).toContain(`${clock(ex.correctedLocalTime as string)}쯤이라 오시`);
+    expect(tableIn(article, "예시 명식의 기둥별 십신과 12운성").rows).toEqual(
+      KEYS.map((k) => {
+        const p = ex.pillars[k]!;
+        return [PLACE[k], `${p.ko}(${p.stem}${p.branch})`, k === "day" ? "일간(나)" : p.stemGod, p.branchGod, twelveStage(ex.pillars.day.stem, p.branch)];
+      }),
+    );
     const chart = at(1990, 5, 15, 12);
     expect(text).toContain(pillarLine(chart));
     const table = tableIn(article, "예시 명식 · 1990년 5월 15일 낮 12시 서울 출생 (오른쪽이 연주)");
@@ -539,6 +557,20 @@ const EXAMPLES: Readonly<Record<string, (article: GuideArticle, text: string) =>
     expect(rows[1]?.[1]).toBe(`전날 밤 ${clock(at(2026, 3, 11, 0, 20).correctedLocalTime as string)}쯤`);
   },
   "saju-birth-info": (_article, text) => {
+    // The same digits read as solar, lunar 평달 and lunar 윤달; and the two directions of 대운.
+    const solar = at(1990, 5, 15, 12);
+    const lunar = (isLeapMonth: boolean) => computeChart({ calendar: "lunar", year: 1990, month: 5, day: 15, isLeapMonth, time: { hour: 12, minute: 0 }, gender: "female", place: SEOUL });
+    expect(text).toContain(pillarLine(solar));
+    expect(solar.lunarDate).toBe("1990-04-21");
+    for (const [leap, date] of [[false, "6월 7일"], [true, "7월 7일"]] as const) {
+      const c = lunar(leap);
+      expect(c.solarDate.endsWith(date === "6월 7일" ? "-06-07" : "-07-07"), date).toBe(true);
+      expect(text).toContain(`양력 ${date}이라 ${pillarLine(c)}`);
+    }
+    for (const [gender, word] of [["male", "남자"], ["female", "여자"]] as const) {
+      const luck = at(1990, 5, 15, 12, 0, gender).luck;
+      expect(text).toMatch(new RegExp(`${word}는 ${gender === "male" ? "순행" : "역행"}이라 첫 대운이 ${luck.pillars[0]!.ko}으?로 ${luck.startAge}세 무렵`));
+    }
     const seoul = at(1990, 5, 15, 7, 25);
     const busan = at(1990, 5, 15, 7, 25, "female", { name: "부산", longitude: 129.075 });
     expect(text).toContain(`서울은 보정한 시각이 ${clock(seoul.correctedLocalTime as string)}쯤이라 ${seoul.pillars.hour!.ko}시`);
@@ -587,6 +619,12 @@ const EXAMPLES: Readonly<Record<string, (article: GuideArticle, text: string) =>
     expect(chart.pillars.day.hidden.map((h) => h.stem)).toContain("乙");
   },
   "wolun-iljin": (_article, text) => {
+    // Day pillars counted on from 2026-10-06, and the month still 무술 at noon on the day 입동 comes.
+    expect(at(2026, 10, 16, 12).pillars.day.ko).toBe("계해");
+    expect(at(2026, 12, 5, 12).pillars.day.ko).toBe("계축");
+    expect(at(2026, 11, 7, 12).pillars.month.ko).toBe("무술");
+    expect(text).toContain("16일은 천간만 같은 계해일");
+    expect(text).toContain("11월 7일 낮에는 아직 무술월");
     const month = at(2026, 11, 15, 12);
     expect(month.pillars.month.ko).toBe("기해");
     expect(text).toContain(`${kstDate(month.monthStartTerm!.instantUTC)} ${month.monthStartTerm!.name}`);
@@ -599,6 +637,10 @@ const EXAMPLES: Readonly<Record<string, (article: GuideArticle, text: string) =>
     expect(kstDate(at(2026, 10, 20, 12).monthStartTerm!.instantUTC)).toBe("10월 8일");
   },
   "bond-score": (_article, text) => {
+    // The base, the floor and the ceiling the article states, and the same-birthday pair.
+    expect([BOND_BASE, BOND_MIN, BOND_MAX]).toEqual([62, 55, 99]);
+    const same = bondBasis({ calendar: "solar", year: 1999, month: 10, day: 3 });
+    expect(text).toContain(`언제나 ${bondScore(same, same).score}점`);
     const score = bondScore(bondBasis({ calendar: "solar", year: 1999, month: 10, day: 3 }), bondBasis({ calendar: "solar", year: 1993, month: 6, day: 11 }));
     expect(text).toContain(`${score.score}점`);
     for (const part of score.parts) expect(text, part.id).toContain(part.text);
