@@ -115,11 +115,26 @@ export type ChangeFrequency = "always" | "hourly" | "daily" | "weekly" | "monthl
 
 export interface SitemapEntry {
   path: string;
-  /** YYYY-MM-DD, only where the content carries its own date (guide articles). Never a date still ahead. */
+  /** YYYY-MM-DD, only where the content has a known last change (guide articles, PAGE_UPDATED). Never a date still ahead. */
   lastModified?: string;
   changeFrequency?: ChangeFrequency;
   priority?: number;
 }
+
+/**
+ * The service pages' and pricing's last content change (YYYY-MM-DD), for their lastmod (SEO audit 2026-10-27 M6): the
+ * latest commit to the files that hold each page's words (the page, its copy module and the data it lists), read from
+ * git on 2026-10-27. Bump a date with that page's copy, as GUIDE_DATES. The entries, the free tools, the forms and the
+ * policies (whose only date is a 시행일 that can be ahead) carry none.
+ */
+const PAGE_UPDATED: Readonly<Record<string, string>> = {
+  "/about": "2026-10-27", // app/about/page.tsx
+  "/how": "2026-10-02", // app/how/page.tsx
+  "/evidence": "2026-10-23", // app/evidence/page.tsx, lib/evidence.ts, content/evidence.json and the KB sources
+  "/help": "2026-10-27", // lib/helpGuide.ts
+  "/faq": "2026-10-27", // lib/faq.ts
+  "/pricing": "2026-10-27", // app/pricing, lib/pricing.ts, and 오픈 기념 무료's wording in lib/helpGuide.ts
+};
 
 const latest = (dates: ReadonlyArray<string | undefined>): string | undefined =>
   dates.filter((date): date is string => Boolean(date)).sort().at(-1);
@@ -155,10 +170,10 @@ export function sitemapEntries({ premium = false }: { premium?: boolean } = {}):
     ),
     // 가이드 소개와 편집 원칙: who writes the guide and how (no lastModified: the page carries no date of its own).
     { path: GUIDE_ABOUT_PATH, changeFrequency: "monthly", priority: 0.5 },
-    ...Object.values(INFO_PAGES).map((page): SitemapEntry => ({ path: page.path, changeFrequency: "monthly", priority: 0.6 })),
+    ...Object.values(INFO_PAGES).map((page): SitemapEntry => ({ path: page.path, lastModified: PAGE_UPDATED[page.path], changeFrequency: "monthly", priority: 0.6 })),
     // 2027년 나의 키워드: the form only; its 60 일주 result pages are noindex (NOINDEX_FOLLOW), so not listed.
     { path: KEYWORD_PATH, changeFrequency: "monthly", priority: 0.7 },
-    { path: "/pricing", changeFrequency: "monthly", priority: 0.5 },
+    { path: "/pricing", lastModified: PAGE_UPDATED["/pricing"], changeFrequency: "monthly", priority: 0.5 },
     ...(premium ? PREMIUM_IDS.map((id): SitemapEntry => ({ path: premiumPath(id), changeFrequency: "monthly", priority: 0.5 })) : []),
     // No lastModified: the only date the policies carry is their 시행일, which can be ahead of today and is not when the text changed.
     ...["/refund", "/terms", "/privacy"].map((path): SitemapEntry => ({ path, changeFrequency: "yearly", priority: 0.2 })),

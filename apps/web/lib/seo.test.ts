@@ -59,7 +59,16 @@ describe("sitemap on the app host", () => {
       expect(entry(path), path).toBeDefined();
       expect(entry(path)?.lastModified, path).toBeUndefined();
     }
-    for (const path of ["/", "/now", "/today", "/faq"]) expect(entry(path)?.lastModified).toBeUndefined();
+    for (const path of ["/", "/tarot/new", "/saju/new", "/now", "/today", "/birth-card", "/2027-keyword"]) expect(entry(path)?.lastModified, path).toBeUndefined();
+  });
+
+  it("gives the service pages and pricing their last content change as lastmod, never a date ahead (SEO audit 2026-10-27 M6)", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    for (const path of ["/about", "/how", "/evidence", "/help", "/faq", "/pricing"]) {
+      const date = entry(path)?.lastModified ?? "";
+      expect(date, path).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(date <= today, `${path} ${date}`).toBe(true);
+    }
   });
 
   it("lists neither /lucky nor /ranking, nor the twelve sign rankings: their lists load in the browser, so the server sends a loading state, and no page links to them", () => {
