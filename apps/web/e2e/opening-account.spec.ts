@@ -5,8 +5,9 @@ import { loginForOpening, openingOn, ownerPass } from "./opening";
 /**
  * 오픈 기념 무료 per account (owner 2026-10-27 "계정 위주로 돌아가는 게 맞지 않니?"): a visitor who taps it is sent to log in
  * (/login, the 만 14세 box, mock Kakao) and comes back to the result, which opens it by itself; the same account on another
- * browser is refused. In owner mode (playwright.config.ts) only an owner-pass browser may log in, so each browser takes the
- * pass first: the pass skips the device's count, never the account's. Each run logs in to a mock Kakao account of its own.
+ * browser is refused, then never offered it again (/api/me openingUsed). In owner mode (playwright.config.ts) only an
+ * owner-pass browser may log in, so each browser takes the pass first: the pass skips the device's count, never the
+ * account's. Each run logs in to a mock Kakao account of its own.
  * SHOTS: where the screenshots go.
  */
 
@@ -56,9 +57,16 @@ async function toSheet(page: Page) {
   return sheet;
 }
 
-test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to it opened; the same account on another browser is refused", async ({ browser }, info) => {
+test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to it opened; the same account on another browser is refused, then offered it no more", async ({ browser }, info) => {
   test.setTimeout(360_000);
   const name = `opening-${info.project.name}-${Date.now()}`;
+
+  // 0. A phone already logged in to the account, waiting on its own unlock sheet (the account has not taken it yet).
+  const phone = await newPage(browser, info);
+  await loginForOpening(phone, info, name);
+  const phoneSheet = await toSheet(phone);
+  const phoneFree = phoneSheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ });
+  await expect(phoneFree).toBeVisible();
 
   // 1. A visitor: the button says it logs in first, and the rule under it says per account.
   const web = await newPage(browser, info);
@@ -97,20 +105,26 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
   expect((await (await web.request.get("/api/me")).json()).user).toBeTruthy();
   await shot(web, info, "3-opened");
 
-  // 4. The same account on another browser (a phone): refused, and that browser keeps its own free reading.
-  const phone = await newPage(browser, info);
-  await loginForOpening(phone, info, name);
-  const phoneSheet = await toSheet(phone);
+  // 4. The phone, still showing the button, taps it: refused for the account (its own device count untouched), and the
+  //    account now says it took it (/api/me openingUsed), so the free button goes and paying is the gold choice.
   const opened = phone.waitForResponse((r) => r.url().endsWith("/api/tarot/reading"));
-  await phoneSheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }).click();
+  await phoneFree.click();
   const refused = await opened;
   expect(refused.status()).toBe(429);
   expect(await refused.json()).toMatchObject({ code: "BETA_LIMIT", scope: "account" });
   await expect(phoneSheet).toContainText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요");
   await expect(phoneSheet).not.toContainText("이 기기에서는 오픈 기념 무료 풀이를 이미 열었어요");
+  await expect(phoneSheet.getByRole("button", { name: /오픈 기념 무료/ })).toHaveCount(0);
+  await expect(phoneSheet.getByRole("link", { name: "2,900원 결제하고 보기" })).toBeVisible();
   await expect(phone).toHaveURL(/\/tarot\/result/);
   await phoneSheet.scrollIntoViewIfNeeded();
   await shot(phone, info, "4-phone-refused");
+  // Coming back to it later, the account's screens never offer it again.
+  await phone.reload();
+  await expect(phoneSheet).toBeVisible({ timeout: GENERATION });
+  await expect(phoneSheet.getByRole("link", { name: "2,900원 결제하고 보기" })).toBeVisible();
+  await expect(phoneSheet.getByRole("button", { name: /오픈 기념 무료/ })).toHaveCount(0);
+  await shot(phone, info, "5-phone-later");
   await web.context().close();
   await phone.context().close();
 });

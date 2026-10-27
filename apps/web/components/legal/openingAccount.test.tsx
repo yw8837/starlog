@@ -5,13 +5,15 @@ import PrivacyPage from "@/app/privacy/page";
 import TermsPage from "@/app/terms/page";
 import { OPENING_LAST_DATE, OPENING_LAST_DAY } from "@/lib/config";
 import { openingFreeText } from "@/lib/helpGuide";
+import { OPENING_ACCOUNT_DATE, koreanDate } from "@/lib/legal";
 
 /**
- * 오픈 기념 무료 per account until 2026-11-30 (owner 2026-10-27): the terms say it and show what changed while it runs, and the
- * privacy policy says how long the claim record is kept.
+ * 오픈 기념 무료 per account until 2026-11-30 (owner 2026-10-27): the terms say it and show what changed while it runs; the
+ * privacy policy is unchanged (the claim record is member data, deleted with the account).
  */
 
-const NOTICE = "2026년 10월 27일 바뀐 내용 · 오픈 기념 무료";
+/** Dated by lib/legal.ts OPENING_ACCOUNT_DATE alone (the day the deploy went live): "2026년 10월 27일 바뀐 내용 · 오픈 기념 무료". */
+const NOTICE = `${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용 · 오픈 기념 무료`;
 
 describe("오픈 기념 무료 per account, in the policies", () => {
   beforeEach(() => {
@@ -51,10 +53,9 @@ describe("오픈 기념 무료 per account, in the policies", () => {
     expect(container.textContent).not.toContain(NOTICE);
   });
 
-  it("privacy 3항: the claim record (the account's keyed id and the time) is kept until the event ends, through a deletion too, then destroyed", () => {
+  it("privacy 3항: no keep of its own for the claim record (owner 2026-10-27): member data, destroyed on deletion", () => {
     const retention = render(<PrivacyPage />).container.querySelector("#retention")?.textContent ?? "";
-    expect(retention).toContain(
-      "오픈 기념 무료를 받은 계정의 기록(카카오 회원번호나 Google 계정 식별값을 되돌릴 수 없게 바꾼 값과 받은 시각)은 계정마다 한 번만 드리기 위해 오픈 기념 무료가 끝나는 2026년 11월 30일까지 보관하고, 그 사이 탈퇴해도 그때까지 보관한 뒤 파기합니다.",
-    );
+    expect(retention).not.toContain("오픈 기념 무료를 받은");
+    expect(retention).toContain("회원 정보는 탈퇴할 때까지 보관하고, 탈퇴하면 지체 없이 파기합니다.");
   });
 });

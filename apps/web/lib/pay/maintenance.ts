@@ -41,7 +41,7 @@ export interface MaintenanceReport {
   erased: number;
   sessions: number;
   giftClaims: number;
-  /** 오픈 기념 무료 claims, all deleted once it ended (they kept one per account, deleted accounts' too) */
+  /** 오픈 기념 무료 claims, all deleted once it ended (they kept it to one per account) */
   openingClaims: number;
   /** follow-up counts of chapters whose token died more than a day ago (G1) */
   chapterTurns: number;

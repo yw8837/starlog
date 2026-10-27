@@ -1,8 +1,10 @@
 import { isGoogleAccount } from "@/lib/account/google";
+import { openingClaimed } from "@/lib/account/openingClaim";
 import { openAccount } from "@/lib/account/request";
 import { isReviewer } from "@/lib/account/review";
 import { clearSession, sessionCookieName } from "@/lib/account/session";
 import { clientKey, errorResponse, json, parseCookies, serializeCookie } from "@/lib/api/http";
+import { openingFreeOn } from "@/lib/config";
 import { entitlements } from "@/lib/pay/ledger";
 import { loginOpen, paymentsMode, salesOpen } from "@/lib/pay/mode";
 import { refundDeadline } from "@/lib/pay/refunds";
@@ -20,7 +22,7 @@ import { signingSecret } from "@/lib/security/sign";
  *   `refundUntil`, the last moment 환불받기 works, or `refundable: false` instead for one given back
  *   after its client left, SEC-02) and `opening`, the readings being opened right now
  *   (a paid one is never also in `unused`); `review: true` only on the review account, `google: true`
- *   only on a Google account.
+ *   only on a Google account; `openingUsed: true` once the account took 오픈 기념 무료 (owner 2026-10-27), while it runs.
  * Without a session cookie it never touches D1, so the site works with no database. Rate-limited per
  * network (ME_LIMITER, generous: every page with an account line asks it).
  */
@@ -41,6 +43,7 @@ export async function GET(request: Request): Promise<Response> {
   const { gift } = held;
   // The review account buys like the owner pass (lib/account/review.ts); `owner` stays the device's pass.
   const review = await isReviewer(ctx.session.user, ctx.accountSecret);
+  const openingUsed = openingFreeOn(now) && (await openingClaimed(ctx.db, ctx.session.user.kakao_key));
   return json({
     payments: salesOpen(mode, owner || review),
     login: loginOpen(mode, owner || review),
@@ -57,6 +60,7 @@ export async function GET(request: Request): Promise<Response> {
       opening: held.opening,
       ...(review ? { review: true } : {}),
       ...(isGoogleAccount(ctx.session.user) ? { google: true } : {}),
+      ...(openingUsed ? { openingUsed: true } : {}),
     },
   });
 }

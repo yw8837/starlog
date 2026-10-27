@@ -8,6 +8,8 @@ import type { D1Binding } from "@/lib/db/d1";
  */
 export const OPENING_HOLD_MS = 10 * 60_000;
 
+const missingTable = (error: unknown) => error instanceof Error && /no such table/i.test(error.message);
+
 export interface OpeningClaim {
   db: D1Binding;
   /** users.kakao_key */
@@ -29,8 +31,31 @@ export async function holdOpeningClaim(db: D1Binding, key: string, now: number):
       .run();
     return result.meta?.changes === 1 ? { db, key, at: now } : "taken";
   } catch (error) {
-    if (error instanceof Error && /no such table/i.test(error.message)) return "missing";
+    if (missingTable(error)) return "missing";
     throw error;
+  }
+}
+
+/** /api/me: this account took 오픈 기념 무료 (its reading was written). False before the migration. */
+export async function openingClaimed(db: D1Binding, key: string | null): Promise<boolean> {
+  if (!key) return false;
+  try {
+    return (await db.prepare("SELECT 1 AS x FROM opening_claims WHERE user_key = ? AND opened = 1").bind(key).first()) !== null;
+  } catch (error) {
+    if (missingTable(error)) return false;
+    throw error;
+  }
+}
+
+/**
+ * Account deletion: the claim is member data and goes with the account (owner 2026-10-27: kept no longer than the policy
+ * says), before its key is blanked. The device's sl_first still stops the same browser. Nothing to do before the migration.
+ */
+export async function forgetOpeningClaim(db: D1Binding, userId: string): Promise<void> {
+  try {
+    await db.prepare("DELETE FROM opening_claims WHERE user_key = (SELECT kakao_key FROM users WHERE id = ? AND deleted_at IS NOT NULL)").bind(userId).run();
+  } catch (error) {
+    if (!missingTable(error)) throw error;
   }
 }
 

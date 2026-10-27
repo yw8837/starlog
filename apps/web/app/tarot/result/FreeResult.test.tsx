@@ -345,14 +345,26 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     expect(router.push).not.toHaveBeenCalled();
   });
 
-  it("says when the account took it already (on another device), and leaves this device's free reading as it is", async () => {
+  it("says when the account took it already (on another device), then offers it no more, and leaves this device's free reading as it is", async () => {
     seed();
-    stub({ me: [MEMBER], reading: () => Response.json({ code: "BETA_LIMIT", scope: "account", message: "x" }, { status: 429 }) });
+    const USED = () => Response.json({ payments: true, login: true, owner: false, user: user({ openingUsed: true }) });
+    stub({ me: [() => Response.json(meBody()), USED], reading: () => Response.json({ code: "BETA_LIMIT", scope: "account", message: "x" }, { status: 429 }) });
     render(<FreeResult instant />);
     fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
     expect(await screen.findAllByText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요")).not.toHaveLength(0);
+    // The account is asked again and now says it took it: the free button goes, paying is the gold choice.
+    await waitFor(() => expect(screen.queryByRole("button", { name: /오픈 기념 무료/ })).toBeNull());
+    expect(screen.getByRole("link", { name: "2,900원 결제하고 보기" }).className).toMatch(/primary/);
     expect(screen.queryByText("이 기기에서는 오픈 기념 무료 풀이를 이미 열었어요")).toBeNull();
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("shows no free button to an account that took it on another device (/api/me openingUsed)", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody({ openingUsed: true }))] });
+    render(<FreeResult instant />);
+    expect((await screen.findByRole("link", { name: "2,900원 결제하고 보기" })).className).toMatch(/primary/);
+    expect(screen.queryByRole("button", { name: /오픈 기념 무료/ })).toBeNull();
   });
 
   it("says plainly when it cannot be checked now (fails closed), with a way to try again", async () => {

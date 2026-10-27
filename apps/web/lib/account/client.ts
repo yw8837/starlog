@@ -27,6 +27,8 @@ export interface AccountUser {
   review?: true;
   /** an account that logs in with Google (not Kakao); absent for everyone else */
   google?: true;
+  /** this account took 오픈 기념 무료 (on any device, owner 2026-10-27): it is not offered again; absent otherwise */
+  openingUsed?: true;
 }
 
 export interface AccountState {
@@ -71,6 +73,7 @@ function parseUser(v: unknown): AccountUser | null | undefined {
     opening,
     ...(v.review === true ? { review: true as const } : {}),
     ...(v.google === true ? { google: true as const } : {}),
+    ...(v.openingUsed === true ? { openingUsed: true as const } : {}),
   };
 }
 

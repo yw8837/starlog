@@ -11,7 +11,7 @@ import { migratedTestD1 } from "@/lib/db/testing/migrate";
 import { runMaintenance } from "@/lib/pay/maintenance";
 import { mockToss } from "@/lib/pay/tossMock";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { browser, buy, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
+import { browser, buy, loginAs, me, useTestDb, type Browser } from "@/lib/testing/p4";
 import { POST as deleteIntent } from "./account/delete-intent/route";
 import { GET as kakaoCallback } from "./auth/kakao/callback/route";
 import { GET as kakaoStart } from "./auth/kakao/start/route";
@@ -69,6 +69,13 @@ async function device(name?: string): Promise<Browser> {
 async function openFree(b: Browser): Promise<Response> {
   const { drawToken } = (await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "self-flow", picks: [3, 30, 60] } })).json()) as { drawToken: string };
   return b.send(reading, "/api/tarot/reading", { body: { drawToken, input: INPUT } });
+}
+
+/** The whole deletion as 내 정보 drives it: the same Kakao account confirms at Kakao (mock). */
+async function deleteAccount(b: Browser, name: string) {
+  const { url } = (await (await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true })).json()) as { url: string };
+  const started = await b.send(kakaoStart, `${url}&mockUser=${name}`);
+  expect((await b.send(kakaoCallback, started.headers.get("location")!)).headers.get("location")).toBe("http://localhost/me?account=deleted");
 }
 
 const keyOf = async (name: string) => kakaoKey(`mock-${name}`, accountSecret()!);
@@ -168,25 +175,42 @@ describe("오픈 기념 무료 per account", () => {
     expect(await db.prepare("SELECT COUNT(*) AS n FROM readings").first()).toEqual({ n: 1 });
   });
 
-  it("keeps the claim through deleting the account (the same Kakao account joining again gets none) and purges every claim once the event ended", async () => {
+  it("deletes the claim with the account (member data, gone on deletion); joining again on that browser is still stopped by the device rule", async () => {
     const db = useTestDb();
     const b = await device("alice");
     expect((await openFree(b)).status).toBe(200);
-    // The whole deletion as 내 정보 drives it: the same Kakao account confirms at Kakao (mock).
-    const { url } = (await (await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true })).json()) as { url: string };
-    const started = await b.send(kakaoStart, `${url}&mockUser=alice`);
-    expect((await b.send(kakaoCallback, started.headers.get("location")!)).headers.get("location")).toBe("http://localhost/me?account=deleted");
+    expect(await claims(db)).toHaveLength(1);
+    await deleteAccount(b, "alice");
     expect(await db.prepare("SELECT COUNT(*) AS n FROM users WHERE deleted_at IS NOT NULL AND erased_at IS NOT NULL").first()).toEqual({ n: 1 });
-    expect(await claims(db)).toEqual([{ user_key: await keyOf("alice"), claimed_at: T0, opened: 1 }]);
+    expect(await claims(db)).toEqual([]);
 
+    // The same Kakao account joins again on the same browser: sl_first (once per device) still says no.
     vi.setSystemTime(T0 + 60_000);
-    const rejoined = await device("alice");
-    expect((await openFree(rejoined)).status).toBe(429);
+    await loginAs(b, "alice");
+    const again = await openFree(b);
+    expect(again.status).toBe(429);
+    expect(await again.json()).toMatchObject({ code: "BETA_LIMIT", scope: "first" });
+    // On another browser it opens again: what keeping nothing past the deletion allows (owner 2026-10-27, no policy change).
+    expect((await openFree(await device("alice"))).status).toBe(200);
+  });
 
+  it("purges every claim once the event ended (maintenance), and none before", async () => {
+    const db = useTestDb();
+    expect((await openFree(await device("alice"))).status).toBe(200);
     expect(await runMaintenance(db, null, Date.parse("2026-11-30T23:00:00+09:00"))).toMatchObject({ openingClaims: 0 });
     expect(await claims(db)).toHaveLength(1);
     expect(await runMaintenance(db, null, Date.parse("2026-12-01T00:10:00+09:00"))).toMatchObject({ openingClaims: 1 });
     expect(await claims(db)).toEqual([]);
+  });
+
+  it("tells the account's screens it took 오픈 기념 무료 (/api/me openingUsed), on every device of that account only", async () => {
+    useTestDb();
+    const web = await device("alice");
+    expect((await me(web)).user).not.toHaveProperty("openingUsed");
+    expect((await openFree(web)).status).toBe(200);
+    expect((await me(web)).user).toMatchObject({ openingUsed: true });
+    expect((await me(await device("alice"))).user).toMatchObject({ openingUsed: true });
+    expect((await me(await device("bob"))).user).not.toHaveProperty("openingUsed");
   });
 
   it("fails closed with a clear message when the claim table is not there yet (code before migration), and paid openings go on", async () => {
@@ -199,12 +223,18 @@ describe("오픈 기념 무료 per account", () => {
     expect(await res.json()).toMatchObject({ code: "NOT_AVAILABLE", reason: "opening", message: "지금은 오픈 기념 무료를 열 수 없어요. 잠시 뒤에 다시 시도해 주세요." });
     expect(error).toHaveBeenCalledWith(expect.stringContaining("opening.claim_unavailable"));
     expect(b.jar.has("sl_first")).toBe(false);
+    // The account line still answers (nothing to say about 오픈 기념 무료), and deleting the account still works.
+    const account = (await me(b)).user;
+    expect(account?.nickname).toBeTruthy();
+    expect(account).not.toHaveProperty("openingUsed");
 
     await buy(b);
     const { drawToken } = (await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "self-flow", picks: [3, 30, 60] } })).json()) as { drawToken: string };
     const paid = await b.send(reading, "/api/tarot/reading", { body: { drawToken, input: INPUT, unlock: { method: "paid" } } });
     expect(paid.status).toBe(200);
     expect(((await paid.json()) as { readingId?: string }).readingId).toBeTruthy();
+    await deleteAccount(b, "alice");
+    expect(await db.prepare("SELECT COUNT(*) AS n FROM users WHERE deleted_at IS NOT NULL AND erased_at IS NOT NULL").first()).toEqual({ n: 1 });
   });
 
   it("fails closed, never a 500, when the account cannot be read at all (D1 throws)", async () => {

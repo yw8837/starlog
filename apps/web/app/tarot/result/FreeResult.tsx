@@ -215,6 +215,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
       const code = result.error.code;
       // Only the device's own free first reading being used; a network's day limit passes at midnight.
       if (code === "BETA_LIMIT" && result.error.scope === "first") markFreeUsedUp();
+      // The account took it on another device: the account says so now (openingUsed), and the sheet offers it no more.
+      if (code === "BETA_LIMIT" && result.error.scope === "account") void refreshAccount();
       if (code === "LOGIN_REQUIRED") router.push(chosen === "opening" ? openingLogin : loginHref(RETURN_TO));
       if ((chosen === "paid" || chosen === "free") && UNSETTLED.has(code)) void settle(chosen, startedAt, held, "cut");
       else if ((chosen === "paid" || chosen === "free") && code === "NO_CREDIT") void settle(chosen, since(startedAt), held, "refused");

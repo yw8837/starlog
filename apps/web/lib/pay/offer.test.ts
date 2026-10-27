@@ -94,6 +94,12 @@ describe("unlock offer", () => {
     expect(unlockOffer(account({ user: user({ opening: [{ productId: "tarot", currency: "paid", orderId: "o1" }] }) }), tarot, true)).toEqual({ mode: "in-progress", currency: "paid" });
   });
 
+  it("offers no 오픈 기념 무료 to an account that took it (on any device, owner 2026-10-27): paying, or nothing while sales are closed", () => {
+    expect(unlockOffer(account({ user: user({ openingUsed: true }) }), tarot, true)).toEqual({ mode: "pay", priceKrw: 2900 });
+    expect(unlockOffer(account({ payments: false, user: user({ openingUsed: true }) }), tarot, true)).toEqual({ mode: "closed", login: false });
+    expect(unlockOffer(account({ user: user({ openingUsed: true, gift: GIFT }) }), tarot, true)).toEqual({ mode: "gift", until: UNTIL, priceKrw: 2900 });
+  });
+
   it("once this device used 오픈 기념 무료, and always for saju, offers what it did before", () => {
     expect(unlockOffer(account(), tarot, false)).toEqual({ mode: "login", priceKrw: 2900 });
     expect(unlockOffer(account({ user: user() }), tarot, false)).toEqual({ mode: "pay", priceKrw: 2900 });

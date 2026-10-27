@@ -18,6 +18,7 @@ import { GIFT_PRODUCT, type Product, type ProductId } from "./catalog";
  * - gift: an unused signup gift granted before it was removed opens this reading (tarot only), usable
  *   until `until`; paying is the secondary choice;
  * - pay.
+ * An account that took 오픈 기념 무료 (`openingUsed`, on any device) is offered it no more, as once it has ended.
  * `first` on login, gift and pay: this device has not used 오픈 기념 무료 yet and it has not ended, so
  * the free first tarot reading is the gold choice and the mode's own choices follow it (owner
  * 2026-10-14: it stays after sales open).
@@ -36,7 +37,7 @@ export type UnlockOffer =
 export function unlockOffer(account: AccountState | null | undefined, product: Product, firstUnused = false): UnlockOffer {
   const user = account?.user;
   const giftable = product.id === GIFT_PRODUCT;
-  const free = product.id === "tarot" && openingFreeOn();
+  const free = product.id === "tarot" && openingFreeOn() && !user?.openingUsed;
   const welcome = firstUnused && free ? { first: true as const } : {};
   // Sales closed here: tarot's first reading is free until 오픈 기념 무료 ends; otherwise nothing to open.
   const unsold = (login: boolean): UnlockOffer => (free ? { mode: "opening", login } : { mode: "closed", login });

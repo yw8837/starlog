@@ -55,6 +55,14 @@ describe("account client", () => {
     expect(read({})).toEqual(user);
   });
 
+  it("marks an account that took 오픈 기념 무료 (owner 2026-10-27), and nobody else", () => {
+    const user = { nickname: "별손님", gift: null, unused: [], opening: [] };
+    const read = (extra: Record<string, unknown>) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, ...extra } })?.user;
+    expect(read({ openingUsed: true })).toEqual({ ...user, openingUsed: true });
+    expect(read({ openingUsed: "yes" })).toEqual(user);
+    expect(read({})).toEqual(user);
+  });
+
   it("keeps each unopened purchase's refund deadline, and leaves an odd one out", () => {
     const user = { nickname: "별", gift: null, opening: [] };
     const read = (unused: unknown) => parseAccount({ payments: true, login: true, owner: false, user: { ...user, unused } })?.user?.unused;
