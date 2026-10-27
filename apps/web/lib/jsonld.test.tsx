@@ -198,7 +198,7 @@ describe("JSON-LD", () => {
     expect(crumbs).toEqual([`${SITE.url}/`, tabUrl(category)]);
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug] as const))("/guide/%s: Article and breadcrumb, plus FAQPage and HowTo where the article has them", async (slug) => {
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug] as const))("/guide/%s: Article and breadcrumb, plus FAQPage where the article has questions, and no HowTo", async (slug) => {
     const article = findArticle(slug);
     if (!article) throw new Error(slug);
     const nodes = jsonLdOf(await renderArticle(slug));
@@ -221,7 +221,7 @@ describe("JSON-LD", () => {
 
     const questions = guideQuestions(article);
     expect(byType(nodes, "FAQPage")).toHaveLength(questions.length >= 2 ? 1 : 0);
-    expect(byType(nodes, "HowTo")).toHaveLength(article.howTo ? 1 : 0);
+    expect(byType(nodes, "HowTo")).toEqual([]);
     // The answer every Q&A node quotes is on the page as written (in the article, not only in the scripts):
     // every line of it, and for a line that joins a table row, a step or a card row, every part of it.
     const text = document.querySelector("article")?.textContent ?? "";
@@ -246,11 +246,10 @@ describe("JSON-LD", () => {
     expect(answer).toContain("벌: 완드, 원소: 불, 주로 읽는 영역: 의욕과 움직임");
   });
 
-  it("marks the how-to articles: 원카드로 묻는 법 and 타로 카드 읽는 법", async () => {
-    for (const slug of ["one-card-yes-no", "how-to-read-tarot"]) {
-      const nodes = jsonLdOf(await renderArticle(slug));
-      expect(byType(nodes, "HowTo"), slug).toHaveLength(1);
-      expect(byType(nodes, "HowTo")[0]?.url, slug).toBe(`${SITE.guideUrl}/guide/${slug}`);
+  // SEO audit 2026-10-27 (LOW): Google retired the HowTo rich result, so the step-by-step articles no longer mark it up.
+  it("marks no HowTo, the step-by-step articles included", async () => {
+    for (const slug of ["one-card-yes-no", "how-to-read-tarot", "three-card-spread", "manseryeok"]) {
+      expect(byType(jsonLdOf(await renderArticle(slug)), "HowTo"), slug).toEqual([]);
       cleanup();
     }
   });

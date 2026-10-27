@@ -10,7 +10,7 @@ import { llmsFullTxt } from "../llms";
 import { guideRss } from "../rss";
 import { sitemapXml } from "../seo";
 import { guideFaqJsonLd, guideQuestions, isQuestion } from "../jsonld";
-import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
+import { GUIDE_DATES, GUIDE_SUMMARIES } from "./answers";
 import { DAY_MASTER_ARTICLES } from "./day-masters";
 import { SAJU_ARTICLES } from "./saju";
 import { SAJU_CONCEPT_ARTICLES } from "./saju-concepts";
@@ -213,12 +213,12 @@ describe("the premium readings, on sale since 2026-10-20, are introduced as they
   });
 });
 
-describe("answer-first fields (요약, HowTo, dates)", () => {
+describe("answer-first fields (요약, dates)", () => {
   const slugs = GUIDE_ARTICLES.map((article) => article.slug);
   const sentences = (text: string) => text.split(/(?<=[.?!])\s+/).filter(Boolean);
 
   it("keeps answers.ts keyed by real slugs only", () => {
-    for (const map of [GUIDE_SUMMARIES, GUIDE_DATES, GUIDE_HOWTO]) for (const slug of Object.keys(map)) expect(slugs, slug).toContain(slug);
+    for (const map of [GUIDE_SUMMARIES, GUIDE_DATES]) for (const slug of Object.keys(map)) expect(slugs, slug).toContain(slug);
   });
 
   it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s: a 2-3 sentence 요약 in 해요체 with no AI tells", (_slug, article) => {
@@ -239,16 +239,6 @@ describe("answer-first fields (요약, HowTo, dates)", () => {
     expect((article.updated ?? "") >= (article.published ?? "")).toBe(true);
   });
 
-  it("gives the step-by-step articles HowTo steps quoted from their own body", () => {
-    for (const slug of ["how-to-read-tarot", "one-card-yes-no", "three-card-spread", "manseryeok"]) {
-      expect(findArticle(slug)?.howTo, slug).toBeDefined();
-    }
-    for (const article of GUIDE_ARTICLES) {
-      if (!article.howTo) continue;
-      expect(article.howTo.steps.length, article.slug).toBeGreaterThanOrEqual(3);
-      for (const step of article.howTo.steps) expect(bodyText(article), `${article.slug}: ${step.name}`).toContain(step.text);
-    }
-  });
 });
 
 /**
@@ -307,13 +297,13 @@ describe("the app's manuals left the guide for /help (AdSense audit 2026-10-27)"
     }
   });
 
-  it("are pointed at by no article: related lists, links in the text, and the 요약, date and HowTo tables", () => {
+  it("are pointed at by no article: related lists, links in the text, and the 요약 and date tables", () => {
     for (const article of GUIDE_ARTICLES) {
       for (const slug of MOVED) {
         expect(article.related ?? [], article.slug).not.toContain(slug);
         expect(JSON.stringify(article.sections), article.slug).not.toContain(`/guide/${slug}`);
       }
     }
-    for (const table of [GUIDE_SUMMARIES, GUIDE_DATES, GUIDE_HOWTO]) for (const slug of MOVED) expect(Object.keys(table)).not.toContain(slug);
+    for (const table of [GUIDE_SUMMARIES, GUIDE_DATES]) for (const slug of MOVED) expect(Object.keys(table)).not.toContain(slug);
   });
 });

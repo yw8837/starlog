@@ -1,10 +1,8 @@
-import type { GuideHowTo } from "../guide";
-
 /**
  * Answer-first fields for every guide article (search snippets, AI answers): a 2-3 sentence 요약
- * that answers the title's question before the sections, and HowTo steps for the step-by-step
- * articles. Summaries restate the article body and add nothing it does not say; HowTo step texts
- * are copied from the body word for word (library.test.ts checks both, and the banned words).
+ * that answers the title's question before the sections. Summaries restate the article body and add
+ * nothing it does not say (library.test.ts checks them, and the banned words). No HowTo steps since
+ * Google retired that rich result (SEO audit 2026-10-27).
  */
 export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
   "how-to-read-tarot":
@@ -145,47 +143,6 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
     "멀리 흐르는 큰 강, 임수는 태어난 계절에 따라 수위가 크게 달라지는 일간이에요. 물이 불어나는 겨울에는 둑이 되는 무토와 볕이 되는 병화를, 말라 가는 여름에는 수원이 되는 쇠를 먼저 찾아요.",
   "day-master-gyesu":
     "가장 약한 물이 하늘까지 닿는다, 적천수가 계수를 그린 말이에요. 이슬과 빗물처럼 드러나지 않게 스며드는 일간으로, 무토와는 천간합을, 정화와는 천간충을 이뤄요.",
-};
-
-/** Step-by-step articles. Each step's text is a sentence (or run of sentences) from the article body. */
-export const GUIDE_HOWTO: Readonly<Record<string, GuideHowTo>> = {
-  "how-to-read-tarot": {
-    name: "타로 카드 읽는 순서",
-    steps: [
-      { name: "질문을 열어 두기", text: "질문은 '될까, 안 될까'보다 '어떻게 하면 좋을까'처럼 열어 두면 읽을 거리가 많아져요." },
-      { name: "자리 확인하기", text: "먼저 카드가 놓인 자리를 확인해요." },
-      { name: "그림 살피기", text: "그다음 그림 속 인물이 무엇을 들고 어디를 보는지, 어떤 풍경에 서 있는지 살펴요." },
-      { name: "내 상황에 대 보기", text: "마지막으로 그 장면을 내 상황에 대 보고, 맞물리는 부분과 덜 맞는 부분을 나눠 보세요." },
-    ],
-  },
-  "three-card-spread": {
-    name: "타로 3장 스프레드 읽는 순서",
-    steps: [
-      { name: "자리 먼저 정하기", text: "세 장 스프레드에서 가장 중요한 건 카드를 뽑기 전에 자리를 먼저 정해 두는 거예요." },
-      { name: "벌 세어 보기", text: "먼저 벌을 세어 보세요." },
-      { name: "인물이 보는 방향 살피기", text: "그림 속 인물이 바라보는 방향도 단서가 돼요." },
-      { name: "한 문장으로 묶기", text: "마지막으로 세 장을 한 문장으로 묶어 보세요." },
-    ],
-  },
-  "one-card-yes-no": {
-    name: "원카드로 예·아니오 묻는 순서",
-    steps: [
-      { name: "질문 정하기", text: "원카드에는 내가 직접 움직일 수 있는 질문이 잘 맞아요." },
-      { name: "읽는 방식 정하기", text: "어떤 방식을 쓰든 뽑기 전에 정해 두는 게 핵심이에요." },
-      { name: "그림부터 보기", text: "카드를 뒤집었다면 먼저 그림부터 봐요." },
-      { name: "예·아니오·기다림 고르기", text: "그다음 정방향인지 역방향인지 확인하고 미리 정해 둔 방식대로 예, 아니오, 기다림 가운데 하나를 골라요." },
-      { name: "오늘 할 일로 바꾸기", text: "마지막으로 그 답을 내 상황에 대 보며 오늘 할 수 있는 일 하나로 바꿔 보세요." },
-    ],
-  },
-  manseryeok: {
-    name: "만세력으로 사주 여덟 글자 찾는 순서",
-    steps: [
-      { name: "연주 찾기", text: "연주는 태어난 해의 간지예요. 여기서 해는 1월 1일이나 설날보다 입춘을 기준으로 바뀌어요." },
-      { name: "월주 찾기", text: "월주도 같은 원리로 음력 1일 대신 절기가 들어오는 순간에 바뀌어요." },
-      { name: "일주 찾기", text: "일주는 만세력에 적힌 그날의 간지, 곧 일진을 그대로 써요." },
-      { name: "시주 찾기", text: "시주의 지지는 보정한 시각이 두 시간짜리 시진 가운데 어디에 드는지로 정해요." },
-    ],
-  },
 };
 
 /**

@@ -1,5 +1,5 @@
 import type { GuideArticle } from "../guide";
-import { GUIDE_DATES, GUIDE_HOWTO, GUIDE_SUMMARIES } from "./answers";
+import { GUIDE_DATES, GUIDE_SUMMARIES } from "./answers";
 import { DAY_MASTER_ARTICLES } from "./day-masters";
 import { MAJOR_ARCANA_ARTICLES } from "./tarot";
 import { TAROT_BASICS_ARTICLES } from "./tarot-basics";
@@ -26,16 +26,14 @@ const BASE_RELATED: Readonly<Record<string, readonly string[]>> = {
   "the-star": ["the-tower", "temperance", "the-moon", "the-hermit", "upright-and-reversed"],
 };
 
-/** The 요약 lead, dates and HowTo steps kept in answers.ts, attached by slug. */
+/** The 요약 lead and dates kept in answers.ts, attached by slug. */
 function withAnswers(article: GuideArticle): GuideArticle {
   const summary = article.summary ?? GUIDE_SUMMARIES[article.slug];
   const dates = GUIDE_DATES[article.slug];
-  const howTo = article.howTo ?? GUIDE_HOWTO[article.slug];
   return {
     ...article,
     ...(summary ? { summary } : {}),
     ...(dates ? { published: article.published ?? dates.published, updated: article.updated ?? dates.updated } : {}),
-    ...(howTo ? { howTo } : {}),
   };
 }
 

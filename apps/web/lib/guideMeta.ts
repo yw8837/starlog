@@ -56,12 +56,6 @@ export interface GuideSection {
   blocks?: readonly GuideBlock[];
 }
 
-/** schema.org HowTo for a step-by-step article; each step's text is quoted from the article body. */
-export interface GuideHowTo {
-  name: string;
-  steps: ReadonlyArray<{ name: string; text: string }>;
-}
-
 export interface GuideArticle {
   slug: string;
   title: string;
@@ -83,7 +77,6 @@ export interface GuideArticle {
   /** First published and last content change, YYYY-MM-DD (lib/guide-articles/answers.ts). */
   published?: string;
   updated?: string;
-  howTo?: GuideHowTo;
 }
 
 /**

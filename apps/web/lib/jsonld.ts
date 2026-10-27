@@ -198,21 +198,6 @@ export function guideFaqJsonLd(article: GuideArticle) {
   };
 }
 
-/** HowTo for the step-by-step articles (lib/guide-articles/answers.ts); null for the rest. */
-export function guideHowToJsonLd(article: GuideArticle) {
-  if (!article.howTo) return null;
-  const url = absoluteUrl(guideArticlePath(article));
-  return {
-    "@context": CONTEXT,
-    "@type": "HowTo",
-    name: article.howTo.name,
-    description: article.summary ?? article.description,
-    inLanguage: "ko-KR",
-    url,
-    step: article.howTo.steps.map((step, i) => ({ "@type": "HowToStep", position: i + 1, name: step.name, text: step.text })),
-  };
-}
-
 export interface ListEntry {
   name: string;
   path: string;

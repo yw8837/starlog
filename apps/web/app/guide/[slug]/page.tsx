@@ -17,7 +17,7 @@ import { adsConfig, adsScriptSrc } from "@/lib/ads";
 import { won } from "@/lib/config";
 import { GUIDE_ARTICLES, GUIDE_CATEGORY_LABEL, adjacentArticles, articlesIn, findArticle, guideIndexPath, guideSectionText, lastReviewed } from "@/lib/guide";
 import { appHref, linkHref } from "@/lib/hosts";
-import { guideArticleBreadcrumbJsonLd, guideArticleCrumbs, guideArticleJsonLd, guideFaqJsonLd, guideHowToJsonLd } from "@/lib/jsonld";
+import { guideArticleBreadcrumbJsonLd, guideArticleCrumbs, guideArticleJsonLd, guideFaqJsonLd } from "@/lib/jsonld";
 import { premiumForGuide } from "@/lib/premium/landing";
 import { PREMIUM, premiumPath } from "@/lib/premium/products";
 import { pageMetadata } from "@/lib/seo";
@@ -105,7 +105,6 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
         <JsonLd data={guideArticleJsonLd(article)} />
         <JsonLd data={guideArticleBreadcrumbJsonLd(article)} />
         <JsonLd data={guideFaqJsonLd(article)} />
-        <JsonLd data={guideHowToJsonLd(article)} />
         <article className={s.article}>
           <Stepper label={`${tab} 가이드`} backHref={tabHref} backLabel={`${tab} 가이드 목록으로`} />
 
