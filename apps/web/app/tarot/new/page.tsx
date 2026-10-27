@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { TarotGuide } from "@/components/seo/toolGuides";
 import { NightSky } from "@/components/sky/NightSky";
-import { standardProductJsonLd } from "@/lib/jsonld";
 import { pageMetadata } from "@/lib/seo";
 import { QuestionBuilder } from "./QuestionBuilder";
 
@@ -15,7 +13,6 @@ export default function TarotNewPage() {
     <div className="page-shell">
       <NightSky fixed moon={false} />
       <main className="page-col">
-        <JsonLd data={standardProductJsonLd("tarot", DESCRIPTION)} />
         <QuestionBuilder />
         <TarotGuide />
       </main>

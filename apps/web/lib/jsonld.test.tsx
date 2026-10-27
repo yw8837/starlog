@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { cleanup, render } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -11,7 +13,7 @@ import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, articlesIn, findArticle, guideSectionText } from "./guide";
 import { guideReview } from "./guideReview";
-import { GUIDE_WEBSITE_ID, ORGANIZATION_ID, guideArticleJsonLd, guideQuestions, jsonLdScript, rankingItemListJsonLd, standardProductJsonLd } from "./jsonld";
+import { GUIDE_WEBSITE_ID, ORGANIZATION_ID, guideArticleJsonLd, guideQuestions, jsonLdScript, rankingItemListJsonLd } from "./jsonld";
 
 afterEach(cleanup);
 
@@ -158,21 +160,16 @@ describe("JSON-LD", () => {
     expect(GUIDE_WEBSITE_ID).toBe(`${SITE.guideUrl}/#website`);
   });
 
-  it.each([
-    ["tarot", "/tarot/new", SITE.price.tarotStandardKrw],
-    ["saju", "/saju/new", SITE.price.sajuStandardKrw],
-  ] as const)("%s: a Product with an Offer at the SITE price, like the premium pages, and never a rating or review (SEO P2-8)", (id, path, krw) => {
-    const node = standardProductJsonLd(id, "설명");
-    expect(node).toMatchObject({
-      "@context": "https://schema.org",
-      "@type": "Product",
-      name: id === "tarot" ? "타로 전체 풀이" : "사주 전체 풀이",
-      description: "설명",
-      brand: { "@type": "Brand", name: SITE.nameKo },
-      url: `${SITE.url}${path}`,
-      offers: { "@type": "Offer", priceCurrency: "KRW", price: krw, url: `${SITE.url}${path}`, availability: "https://schema.org/InStock" },
-    });
-    expect(JSON.stringify(node)).not.toMatch(/aggregateRating|review/i);
+  // SEO audit 2026-10-27 [M7]: a reading has no product picture to give a Product, so the two entry pages carry none.
+  it("/tarot/new and /saju/new carry no Product markup: there is no product image to give it", async () => {
+    const jsonld = await import("./jsonld");
+    expect("standardProductJsonLd" in jsonld).toBe(false);
+    // jsdom tests have no file: import.meta.url; vitest runs from the repo root or from apps/web.
+    const web = ["apps/web", "."].map((dir) => resolve(process.cwd(), dir)).find((dir) => existsSync(resolve(dir, "app/tarot/new/page.tsx"))) ?? "";
+    for (const page of ["app/tarot/new/page.tsx", "app/saju/new/page.tsx"]) {
+      const source = readFileSync(resolve(web, page), "utf8");
+      expect(source, page).not.toMatch(/Product/);
+    }
   });
 
   it("/faq: an FAQPage with every question on the page", () => {

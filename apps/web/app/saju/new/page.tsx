@@ -2,12 +2,10 @@ import type { Metadata } from "next";
 import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { SajuForm } from "@/components/saju/SajuForm";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { SajuGuide } from "@/components/seo/toolGuides";
 import { NightSky } from "@/components/sky/NightSky";
 import { Stepper } from "@/components/tarot/Stepper";
 import { SpeechBubble } from "@/components/ui/SpeechBubble";
-import { standardProductJsonLd } from "@/lib/jsonld";
 import { sajuStartsWithTopic } from "@/lib/sajuTopics";
 import { pageMetadata } from "@/lib/seo";
 import s from "../saju.module.css";
@@ -23,7 +21,6 @@ export default function SajuNewPage() {
     <div className="page-shell">
       <NightSky fixed moon={false} seed={11} />
       <main className="page-col page-wide">
-        <JsonLd data={standardProductJsonLd("saju", DESCRIPTION)} />
         <div className={s.inputScreen}>
           <div className={s.stepper}>
             {topicFirst ? (

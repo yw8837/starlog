@@ -1,6 +1,5 @@
 import { CONSTELLATIONS, cardImage } from "@starlog/core";
 import { SITE } from "./config";
-import { standardProduct, type StandardProductId } from "./pay/catalog";
 import { GUIDE_ABOUT_PATH, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, lastReviewed, type GuideArticle, type GuideCategory } from "./guide";
 import { guidePlainText } from "./guideLinks";
 import { GUIDE_EDITOR, guideReview } from "./guideReview";
@@ -160,25 +159,6 @@ export function guideArticleJsonLd(article: GuideArticle) {
     publisher: organizationRef(),
     publishingPrinciples: absoluteUrl(GUIDE_ABOUT_PATH),
     isPartOf: { "@type": "WebSite", "@id": GUIDE_WEBSITE_ID, name: `${SITE.nameKo} 가이드`, url: absoluteUrl(GUIDE_HOME) },
-  };
-}
-
-/**
- * Product + Offer for a standard reading's entry page (/tarot/new, /saju/new), as the premium product pages carry
- * (components/premium/PremiumLanding.tsx): the catalog's name and price, the page's description. Never a rating or
- * a review: there are no reviews on these pages to mark up.
- */
-export function standardProductJsonLd(id: StandardProductId, description: string) {
-  const { name, krw } = standardProduct(id);
-  const url = absoluteUrl(id === "tarot" ? "/tarot/new" : "/saju/new");
-  return {
-    "@context": CONTEXT,
-    "@type": "Product",
-    name,
-    description,
-    brand: { "@type": "Brand", name: SITE.nameKo },
-    url,
-    offers: { "@type": "Offer", priceCurrency: "KRW", price: krw, url, availability: "https://schema.org/InStock" },
   };
 }
 
