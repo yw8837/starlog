@@ -79,7 +79,15 @@ INSERT INTO constellations (id, owner_id, sign, status, total, started_at) VALUE
     "utf8",
   );
   try {
-    execSync(`npx wrangler d1 execute starlog --local --file "${file}"`, { cwd: process.cwd(), stdio: "pipe" });
+    // wrangler sometimes trips over a network call it makes on the side (metrics, version check): no metrics, a few tries
+    for (let attempt = 1; ; attempt++) {
+      try {
+        execSync(`npx wrangler d1 execute starlog --local --file "${file}"`, { cwd: process.cwd(), stdio: "pipe", env: { ...process.env, WRANGLER_SEND_METRICS: "false" } });
+        break;
+      } catch (error) {
+        if (attempt >= 3) throw error;
+      }
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

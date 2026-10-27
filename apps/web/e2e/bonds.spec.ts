@@ -511,8 +511,9 @@ test.describe("별자리 인연 · friend", () => {
     // the next friend's form says so, and the checkbox agrees only to the nickname showing
     await viewer.context().clearCookies();
     await viewer.goto(new URL(`/b/${code}`, page.url()).toString(), { timeout: 120_000 });
-    await expect(viewer.getByText("용우님이 별자리를 공유하면 내 닉네임이 공유 링크와 이미지에 보여요. 인연 점수는 보이지 않아요.").first()).toBeVisible();
+    // the notice itself waits for the step above 별 되기 (QA L5); the checkbox agrees only to the nickname showing
     await expect(viewer.getByRole("checkbox")).toHaveAccessibleName(/공유하면 닉네임이 보이는 데 동의해요/);
+    await expect(viewer.locator("main")).not.toContainText("인연 점수가 공유 링크와 이미지에 보여요");
     if (shots) await viewer.screenshot({ path: "test-results/share-shots/bonds-join-private.png", fullPage: true });
     await viewer.close();
     for (const ctx of [a, b, c]) await ctx.dispose();
@@ -529,14 +530,28 @@ test.describe("별자리 인연 · friend", () => {
     await expect(page).toHaveURL(new RegExp(`/b/${code}$`), { timeout: 120_000 });
     await expect(page.getByRole("heading", { level: 1, name: "용우님의 양자리에 별이 되어 주세요" })).toBeVisible();
     await expect(page.getByText("1/4", { exact: true })).toBeVisible();
-    await expect(page.getByText("용우님이 별자리를 공유하면 내 닉네임과 용우님과의 인연 점수가 공유 링크와 이미지에 보여요.").first()).toBeVisible();
+    // the share notice is said once, above 별 되기 (QA L5), not on the form
+    await expect(page.locator("main")).not.toContainText("공유 링크와 이미지에 보여요");
     await shot(page, "friend-form");
 
-    await page.getByRole("textbox", { name: "닉네임" }).fill("하늘");
+    // QA M3: a nickname the join refuses is refused here, before the cards, and the field takes the focus
+    await page.getByRole("textbox", { name: "닉네임" }).fill("0101234567");
     await page.getByLabel("태어난 연도").selectOption("1992");
     await page.getByLabel("태어난 월").selectOption("8");
     await page.getByLabel("태어난 일").selectOption("3");
     await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "카드 고르러 가기" }).click();
+    await expect(page.getByText("전화번호처럼 보이는 별명은 쓸 수 없어요. 다른 별명을 지어 주세요")).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "닉네임" })).toBeFocused();
+    await page.getByRole("textbox", { name: "닉네임" }).fill("하늘");
+    await page.getByRole("button", { name: "카드 고르러 가기" }).click();
+    // QA M6: back goes to the form (nothing lost), not away from the invite
+    await expect(page.getByRole("button", { name: "바로 펼치기" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/b/${code}#cards$`));
+    await page.goBack();
+    await expect(page.getByRole("button", { name: "카드 고르러 가기" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveValue("하늘");
+    await expect(page.getByRole("checkbox")).toBeChecked();
     await page.getByRole("button", { name: "카드 고르러 가기" }).click();
     await page.getByRole("button", { name: "바로 펼치기" }).click();
     await expect(page.locator("[data-fan-index]")).toHaveCount(21);
