@@ -350,7 +350,8 @@ test("home, 내 정보 and guide", async ({ page }, info) => {
   await shot(page, info, "18-guide");
   await guideTabs.getByRole("link", { name: "사주" }).click();
   await expect(page).toHaveURL(/\/guide\/saju$/);
-  await expect(page.getByRole("heading", { level: 2, name: "사주 가이드" })).toBeVisible();
+  // exact: the saju tab's own intro heading reads 사주 가이드는 (0381805).
+  await expect(page.getByRole("heading", { level: 2, name: "사주 가이드", exact: true })).toBeVisible();
   await expect(articles.first()).toBeVisible();
   expect(await articles.count()).toBeGreaterThanOrEqual(2);
   await guideTabs.getByRole("link", { name: "타로" }).click();
