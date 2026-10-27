@@ -9,6 +9,7 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { SITE, businessFields } from "@/lib/config";
 import { guideReferences, modernSourceCount } from "@/lib/evidence";
 import { GUIDE_ABOUT_PATH, GUIDE_ARTICLES, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, lastReviewed } from "@/lib/guide";
+import { GUIDE_EDITOR } from "@/lib/guideReview";
 import { appHref, linkHref } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { withParticle } from "@/lib/korean";
@@ -40,7 +41,8 @@ const TAB_SCOPE: Record<(typeof GUIDE_CATEGORIES)[number], string> = {
  * 가이드 소개와 편집 원칙, on the root domain with the guide (the AdSense review's site): Who makes the guide (SITE.business),
  * How an article is written and checked (AI drafts checked against the sources, said as it is, with no review it cannot
  * show), Why it exists, that its date changes whenever an article does, how to report an error (#contact), and that tarot and saju are for
- * fun and reflection. The counts, the latest 마지막 검토, the calendar rules (policyLines, the app's own words) and the
+ * fun and reflection. 책임 편집 (#editor) names the owner, the editor of every article, and says a review date appears
+ * only where he has read one (lib/guideReview.ts). The counts, the latest 마지막 수정, the calendar rules (policyLines, the app's own words) and the
  * sources (guideReferences, the articles' rows) are read from the data, so the page never drifts from the guide. No ads.
  */
 export default function GuideAboutPage() {
@@ -91,6 +93,29 @@ export default function GuideAboutPage() {
               <GuideBlocks id="who" blocks={[{ kind: "list", items: businessFields(SITE.business).map(([label, value]) => `${label}: ${value}`) }]} />
             </section>
 
+            {/* The Article JSON-LD's author links here (#editor). Facts only: no credentials or years nobody has stated. */}
+            <section id="editor" className={s.section} aria-labelledby="editor-title">
+              <h2 id="editor-title" className={s.sectionTitle}>
+                책임 편집
+              </h2>
+              <p className={s.prose}>
+                {`${GUIDE_EDITOR.title} ${withParticle(GUIDE_EDITOR.name, "이/가")} 스타로그를 기획하고 운영해요. 가이드 글은 AI 도구로 초안을 쓰고 아래 '어떻게 확인하나요'의 자동 검사를 거쳐 올려요. 모든 글의 편집 책임은 ${GUIDE_EDITOR.name}에게 있어요.`}
+              </p>
+              <p className={s.prose}>
+                {`${withParticle(GUIDE_EDITOR.name, "이/가")} 직접 읽고 확인한 글에만 제목 아래와 글 끝에 '검토 ${GUIDE_EDITOR.name}'와 그날 날짜를 따로 적어요. 처음 쓴 날과 마지막 수정은 글을 쓰고 고친 날이에요.`}
+              </p>
+              {email ? (
+                <ul className={s.contactList}>
+                  <li>
+                    {"이메일 "}
+                    <a href={`mailto:${email}`} className={s.paperLink}>
+                      {email}
+                    </a>
+                  </li>
+                </ul>
+              ) : null}
+            </section>
+
             <section className={s.section} aria-labelledby="how-title">
               <h2 id="how-title" className={s.sectionTitle}>
                 글은 어떻게 쓰나요
@@ -109,7 +134,7 @@ export default function GuideAboutPage() {
                       },
                       {
                         title: "카드 지식 베이스",
-                        text: "78장마다 그림 요소와 정방향·역방향 키워드를 원전에서 옮겨 정리한 스타로그 카드 지식 베이스가 있어요. 카드 글의 키워드 표는 이 지식 베이스의 낱말을 그대로 써요.",
+                        text: "78장마다 그림 요소와 정방향·역방향 키워드를 원전에서 옮겨 정리한 스타로그 카드 지식 베이스가 있어요. 카드마다 그림을 잘못 묘사하기 쉬운 부분도 적어 두고, 카드 글에 그런 묘사가 들어가지 않았는지 자동 검사로 확인해요.",
                       },
                       { title: "사주 명식", text: `사주 글의 예시 명식은 ${SITE.nameKo} 앱이 쓰는 만세력 계산으로 직접 세워요. 계산 규칙은 아래와 같아요(서울에서 태어난 경우).` },
                     ],
@@ -131,10 +156,14 @@ export default function GuideAboutPage() {
                   {
                     kind: "list",
                     items: [
-                      "카드 글의 키워드 표가 카드 지식 베이스의 낱말과 글자 하나까지 같은지",
+                      "카드 글에 카드 지식 베이스가 잘못 묘사하기 쉽다고 적어 둔 그림 설명이 들어가지 않았는지",
+                      "카드 글이 웨이트의 해설을 옮길 때 웨이트와 그의 책을 밝히는지, 예로 든 풀이를 지어낸 이야기라고 밝히는지",
                       "사주 글의 오행·천간·지지 표와 시각 표가 앱의 만세력 엔진이 내는 값과 같은지",
+                      "사주 글의 예시 명식을 앱의 만세력 엔진으로 다시 세웠을 때 글에 적힌 기둥과 일주, 십신이 같은지",
+                      "카드 글끼리, 일간 글끼리 이름만 바꾼 같은 문장이나 같은 제목 틀이 되풀이되지 않는지",
                       "합격, 재회, 100%처럼 결과를 약속하는 말이 들어가지 않았는지",
-                      "글마다 요약과 처음 쓴 날, 마지막 검토 날짜가 있는지",
+                      "글 속 링크가 실제로 있는 가이드 글과 앱 화면으로 가는지, 다른 사이트는 허용 목록에 올린 자료 사이트만 걸리는지",
+                      "글마다 요약과 처음 쓴 날, 마지막 수정 날짜가 있는지",
                     ],
                   },
                   { kind: "callout", tone: "note", title: "자동 검사가 하지 않는 일", text: "자동 검사는 정해 둔 규칙만 확인해요. 해석이 잘 읽히는지까지 판정하지는 않으니, 어색하거나 틀린 곳이 보이면 알려 주세요." },
@@ -154,7 +183,7 @@ export default function GuideAboutPage() {
                 blocks={[
                   {
                     kind: "p",
-                    text: `글마다 제목 아래에 처음 쓴 날과 마지막 검토 날짜를 적어요. 마지막 검토는 글을 근거와 다시 맞춰 보고 고친 마지막 날이에요.${latest ? ` 지금 가장 최근 검토일은 ${koreanDate(latest)}이에요.` : ""}`,
+                    text: `글마다 제목 아래에 처음 쓴 날과 마지막 수정 날짜를 적어요. 마지막 수정은 글 내용을 마지막으로 고친 날이에요.${latest ? ` 지금 가장 최근 수정일은 ${koreanDate(latest)}이에요.` : ""}`,
                   },
                 ]}
               />
@@ -183,7 +212,7 @@ export default function GuideAboutPage() {
                 틀린 곳을 알려 주세요
               </h2>
               <p className={s.prose}>
-                글에서 틀린 내용이나 오래된 정보를 찾으면 알려 주세요. 글 주소와 어느 문장이 왜 틀렸는지 적어 주시면 확인이 빨라요. 확인해서 고치면 그 글의 마지막 검토
+                글에서 틀린 내용이나 오래된 정보를 찾으면 알려 주세요. 글 주소와 어느 문장이 왜 틀렸는지 적어 주시면 확인이 빨라요. 확인해서 고치면 그 글의 마지막 수정
                 날짜를 바꿔요.
               </p>
               <ul className={s.contactList}>

@@ -72,17 +72,39 @@ describe("the editorial page", () => {
     for (const line of policyLines(DEFAULT_POLICY, SEOUL)) expect(how, line).toContain(line);
   });
 
+  it("names the editor responsible for every article, how an article is made, when a review appears, and the contact email", () => {
+    render(<GuideAboutPage />);
+    const editor = section("editor");
+    // Its own anchor: the Article JSON-LD's author links here.
+    expect(editor.id).toBe("editor");
+    expect(within(editor).getByRole("heading", { level: 2 }).textContent).toBe("책임 편집");
+    const words = editor.textContent ?? "";
+    expect(words).toContain("열매스튜디오 대표 최용우가 스타로그를 기획하고 운영해요.");
+    expect(words).toContain("AI 도구로 초안");
+    expect(words).toContain("자동 검사");
+    expect(words).toContain("모든 글의 편집 책임은 최용우에게 있어요.");
+    expect(words).toContain("최용우가 직접 읽고 확인한 글에만");
+    expect(within(editor).getAllByRole("link").map((a) => a.getAttribute("href"))).toContain(`mailto:${SITE.business.email}`);
+    // No credentials or years of experience nobody has stated.
+    expect(words).not.toMatch(/경력|\d+년(간| 동안| 넘게| 차)|전문가|자격|명리학자|타로 마스터/);
+  });
+
   it("says what the automatic checks cover and what they do not, and claims no review it cannot show", () => {
     render(<GuideAboutPage />);
     const checks = section("checks").textContent ?? "";
     expect(checks).toContain("자동 검사");
     expect(checks).toContain("카드 지식 베이스");
     expect(checks).toContain("만세력 엔진");
+    // The checks that run today (lib/guide-articles/*.test.ts, lib/guideLinks.test.ts): the KB's misdescriptions of each
+    // picture, Waite named for his words, the example charts recomputed, no copied frames, links on the allowlist.
+    for (const words of ["잘못 묘사하기 쉽다", "웨이트", "예시 명식", "다시 세웠을 때", "이름만 바꾼", "허용 목록"]) expect(checks, words).toContain(words);
+    // Card articles have had no keyword table since 2026-10-23 (blocks.test.ts forbids one): the page claims none.
+    expect(text()).not.toContain("키워드 표");
     // No unverifiable claims: no line-by-line human review, no expert sign-off (the KB is still a draft, content/kb/README.md).
     for (const claim of ["한 줄씩", "전문가 검수", "검수 완료", "전문가가 검토"]) expect(text(), claim).not.toContain(claim);
   });
 
-  it("says articles are checked again and dated, without promising a cadence the owner has not set, and what 마지막 검토 means", () => {
+  it("says articles are checked again and dated, without promising a cadence the owner has not set, and what 마지막 수정 means", () => {
     render(<GuideAboutPage />);
     const review = section("review").textContent ?? "";
     expect(review).toContain("글을 고칠 때마다 제목 아래 날짜를 바꿔요");
@@ -90,7 +112,9 @@ describe("the editorial page", () => {
     expect(text()).not.toContain("주기적");
     // No fixed interval until the owner sets one.
     expect(text()).not.toMatch(/석 달|세 달|분기|매달|매주|\d+\s*(일|주|개월|달)(에|마다) 한 번/);
-    expect(review).toContain("마지막 검토");
+    expect(review).toContain("마지막 수정");
+    // The date an article last changed is not a review: 검토 is only what the owner has read (lib/guideReview.ts).
+    expect(text()).not.toContain("마지막 검토");
     const latest = GUIDE_ARTICLES.map(lastReviewed).filter((date): date is string => Boolean(date)).sort().at(-1) as string;
     expect(review).toContain(koreanDate(latest));
   });

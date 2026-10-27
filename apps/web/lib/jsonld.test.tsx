@@ -10,6 +10,7 @@ import GuideTarotPage from "@/app/guide/tarot/page";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { SITE } from "./config";
 import { GUIDE_ARTICLES, articlesIn, findArticle, guideSectionText } from "./guide";
+import { guideReview } from "./guideReview";
 import { GUIDE_WEBSITE_ID, ORGANIZATION_ID, guideArticleJsonLd, guideQuestions, jsonLdScript, rankingItemListJsonLd, standardProductJsonLd } from "./jsonld";
 
 afterEach(cleanup);
@@ -64,10 +65,13 @@ function problems(node: Node): string[] {
       need(isoDate(node.datePublished) && isoDate(node.dateModified), "dates");
       need(String(node.dateModified) >= String(node.datePublished), "dateModified >= datePublished");
       need(list("image").length > 0 && (node.image as unknown[]).every(isSiteUrl), "image");
-      for (const role of ["author", "publisher"]) {
-        const who = node[role] as Node | undefined;
-        need(who?.["@type"] === "Organization" && nonEmpty(who.name) && isSiteUrl(who.url), role);
-      }
+      // The author is the editor responsible for every article, a Person (owner decision 2026-10-23), his page the
+      // editorial page's 책임 편집; the publisher is the business he works for.
+      const author = node.author as Node | undefined;
+      need(author?.["@type"] === "Person" && nonEmpty(author.name) && nonEmpty(author.jobTitle) && isGuideUrl(author.url), "author");
+      need((author?.worksFor as Node | undefined)?.["@id"] === ORGANIZATION_ID, "author worksFor the publisher");
+      const publisher = node.publisher as Node | undefined;
+      need(publisher?.["@type"] === "Organization" && nonEmpty(publisher.name) && isSiteUrl(publisher.url), "publisher");
       // The article itself is a guide page: on the root domain.
       need(isGuideUrl(node.url), "url");
       need(isGuideUrl((node.mainEntityOfPage as Node | undefined)?.["@id"]), "mainEntityOfPage");
@@ -209,6 +213,12 @@ describe("JSON-LD", () => {
     expect(articleNode).toMatchObject({ url: address, "@id": `${address}#article`, mainEntityOfPage: { "@type": "WebPage", "@id": address } });
     // The publisher stays the app's (스타로그's home is the app host); the article is part of the root domain's site, the guides (SEO P1-9).
     expect(articleNode).toMatchObject({ publisher: { url: `${SITE.url}/` }, isPartOf: { "@id": GUIDE_WEBSITE_ID, url: `${SITE.guideUrl}/` } });
+    // Written under the owner's name as its editor; reviewed only where he has read it (lib/guideReview.ts).
+    expect(articleNode).toMatchObject({ author: { "@type": "Person", name: SITE.business.ceo, jobTitle: `${SITE.business.name} 대표` } });
+    const review = guideReview(slug);
+    const page = articleNode?.mainEntityOfPage as Node;
+    if (review) expect(page).toMatchObject({ reviewedBy: { "@type": "Person", name: review.by }, lastReviewed: review.on });
+    else expect(Object.keys(page)).toEqual(["@type", "@id"]);
     const crumbs = (byType(nodes, "BreadcrumbList")[0]?.itemListElement as Node[]).map((item) => item.item);
     expect(crumbs).toEqual([`${SITE.url}/`, tabUrl(article.category), address]);
 

@@ -283,9 +283,9 @@ describe("pageMetadata", () => {
     expect(meta.openGraph).toMatchObject({ type: "website", url: "/faq", locale: "ko_KR", images: [{ url: "/opengraph-image", width: 1200, height: 630 }] });
   });
 
-  it("marks articles with their dates and publisher", () => {
+  it("marks articles with their dates and their editor, the owner by name (the Article JSON-LD's author)", () => {
     const meta = pageMetadata({ title: "제목", description: "설명", path: "/guide/the-fool", type: "article", publishedTime: "2026-10-01", modifiedTime: "2026-10-02" });
-    expect(meta.openGraph).toMatchObject({ type: "article", publishedTime: "2026-10-01", modifiedTime: "2026-10-02", authors: [SITE.business.name] });
+    expect(meta.openGraph).toMatchObject({ type: "article", publishedTime: "2026-10-01", modifiedTime: "2026-10-02", authors: [SITE.business.ceo] });
   });
 
   it("gives a guide page the root domain's address in full as its canonical and og:url, whatever host serves it", () => {

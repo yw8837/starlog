@@ -3,6 +3,7 @@ import { SITE } from "./config";
 import { standardProduct, type StandardProductId } from "./pay/catalog";
 import { GUIDE_ABOUT_PATH, GUIDE_CATEGORY_LABEL, articlesIn, guideIndexPath, guideSectionText, lastReviewed, type GuideArticle, type GuideCategory } from "./guide";
 import { guidePlainText } from "./guideLinks";
+import { GUIDE_EDITOR, guideReview } from "./guideReview";
 import { GUIDE_HOME, absoluteUrl } from "./hosts";
 
 /**
@@ -125,13 +126,21 @@ export function guideIndexBreadcrumbJsonLd(category: GuideCategory) {
   return breadcrumbJsonLd([HOME_CRUMB, guideTabCrumb(category)]);
 }
 
+/** The guide's editor (lib/guideReview.ts) as a Person who works for the publisher; his page is the editorial page's 책임 편집. */
+function editorRef() {
+  return { "@type": "Person", name: GUIDE_EDITOR.name, jobTitle: GUIDE_EDITOR.title, url: absoluteUrl(`${GUIDE_ABOUT_PATH}#editor`), worksFor: organizationRef() };
+}
+
 /**
- * Article for a guide: dates from answers.ts (dateModified is the page's 마지막 검토), the card scan first for a card
- * article, then the share image; publishingPrinciples is the guide's editorial page.
+ * Article for a guide: dates from answers.ts (dateModified is the page's 마지막 수정), the card scan first for a card
+ * article, then the share image; the editor as its author and the business as its publisher; publishingPrinciples is
+ * the guide's editorial page. Only an article the owner has read (guideReview) marks its page reviewedBy and
+ * lastReviewed, which schema.org defines on WebPage.
  */
 export function guideArticleJsonLd(article: GuideArticle) {
   const url = absoluteUrl(guideArticlePath(article));
   const modified = lastReviewed(article);
+  const review = guideReview(article.slug);
   const images = [...(article.cardId ? [absoluteUrl(cardImage(article.cardId, "lg"))] : []), SHARE_IMAGE.url];
   return {
     "@context": CONTEXT,
@@ -141,13 +150,13 @@ export function guideArticleJsonLd(article: GuideArticle) {
     description: article.description,
     ...(article.summary ? { abstract: article.summary } : {}),
     url,
-    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    mainEntityOfPage: { "@type": "WebPage", "@id": url, ...(review ? { reviewedBy: editorRef(), lastReviewed: review.on } : {}) },
     inLanguage: "ko-KR",
     articleSection: `${GUIDE_CATEGORY_LABEL[article.category]} 가이드`,
     ...(article.published ? { datePublished: article.published } : {}),
     ...(modified ? { dateModified: modified } : {}),
     image: images,
-    author: organizationRef(),
+    author: editorRef(),
     publisher: organizationRef(),
     publishingPrinciples: absoluteUrl(GUIDE_ABOUT_PATH),
     isPartOf: { "@type": "WebSite", "@id": GUIDE_WEBSITE_ID, name: `${SITE.nameKo} 가이드`, url: absoluteUrl(GUIDE_HOME) },

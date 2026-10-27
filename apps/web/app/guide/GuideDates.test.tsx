@@ -11,6 +11,7 @@ import { SPREAD_ARTICLES } from "@/lib/guide-articles/spreads";
 import { MAJOR_ARCANA_ARTICLES } from "@/lib/guide-articles/tarot";
 import { TAROT_BASICS_ARTICLES } from "@/lib/guide-articles/tarot-basics";
 import { GUIDE_ARTICLES, lastReviewed } from "@/lib/guide";
+import { guideReview } from "@/lib/guideReview";
 import { sitemapXml } from "@/lib/seo";
 
 /**
@@ -57,10 +58,13 @@ describe("the same date on the page, in the JSON-LD and in the sitemap", () => {
   it.each(GUIDE_ARTICLES.map((article) => [article.slug] as const))("%s", async (slug) => {
     const dates = GUIDE_DATES[slug] as { published: string; updated: string };
     const { container } = render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
-    const byline = [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글·검토"));
-    expect([...(byline?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([dates.published, dates.updated]);
+    const byline = [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글 AI 도구로 초안"));
+    // An owner's review (lib/guideReview.ts) adds its own day after the two.
+    const review = guideReview(slug);
+    const days = [dates.published, dates.updated, ...(review ? [review.on] : [])];
+    expect([...(byline?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual(days);
     const box = container.querySelector('section[aria-labelledby="trust-title"]');
-    expect([...(box?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual([dates.published, dates.updated]);
+    expect([...(box?.querySelectorAll("time") ?? [])].map((time) => time.getAttribute("datetime"))).toEqual(days);
     const article = [...container.querySelectorAll('script[type="application/ld+json"]')]
       .map((script) => JSON.parse(script.textContent ?? "null") as { "@type"?: string; datePublished?: string; dateModified?: string } | null)
       .find((node) => node?.["@type"] === "Article");

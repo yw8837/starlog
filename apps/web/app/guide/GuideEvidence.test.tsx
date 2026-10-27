@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import GuideArticlePage from "@/app/guide/[slug]/page";
 import { SITE } from "@/lib/config";
 import { GUIDE_ARTICLES, findArticle } from "@/lib/guide";
+import { guideReview } from "@/lib/guideReview";
 import { INFO_PAGES } from "@/lib/infoPages";
 import { koreanDate } from "@/lib/legal";
 
@@ -96,15 +97,15 @@ describe("the source line on the real hosts", () => {
 describe("the byline under the title", () => {
   // The full line, both dates and the editorial link are in GuideTrust.test.tsx; the evidence page moved to the
   // trust box after the body.
-  const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글·검토")) as HTMLElement | undefined;
+  const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글 AI 도구로 초안")) as HTMLElement | undefined;
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug]))("%s: one line under the title, with two dates", async (slug) => {
+  it.each(GUIDE_ARTICLES.map((article) => [article.slug]))("%s: one line under the title, with two dates (a third only for an owner's review)", async (slug) => {
     const article = findArticle(slug);
     if (!article?.published || !article.updated) throw new Error(`${slug} has no dates`);
     const { container } = await renderSlug(slug);
     expect(byline(container)?.textContent).toContain(`처음 쓴 날 ${koreanDate(article.published)}`);
     // One line, not the old "업데이트" line besides it.
-    expect(container.querySelectorAll("article header time")).toHaveLength(2);
+    expect(container.querySelectorAll("article header time")).toHaveLength(guideReview(slug) ? 3 : 2);
   });
 
   it("links the evidence page on the app host when the hosts are split: the guide lives on the root domain", async () => {
