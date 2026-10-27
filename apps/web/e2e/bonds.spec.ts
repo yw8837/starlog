@@ -612,9 +612,9 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
     expect((await owner.post("/api/bonds/invite", { data: {} })).status()).toBe(200);
     await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
     await page.goto(`/b/${code}`, { timeout: 120_000 });
-    await expect(page.getByRole("heading", { level: 1, name: "코드를 다시 확인해 주세요" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "이 초대는 열 수 없어요" })).toBeVisible();
     await page.goto("/b/ZZZZZZ");
-    await expect(page.getByRole("heading", { level: 1, name: "코드를 다시 확인해 주세요" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "이 초대는 열 수 없어요" })).toBeVisible();
     await shot(page, "friend-bad-code");
   });
 

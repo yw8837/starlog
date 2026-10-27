@@ -103,7 +103,7 @@ async function moneyFlow(page: Page, info: TestInfo, free: boolean) {
   await expect(toc).toContainText(/소제목 \d+개 · 약 2,000자/);
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
   await expect(sheet).toContainText("풀이 전체 · 약 2,000자");
-  await expect(sheet).toContainText("이 기기에 계속 보관");
+  await expect(sheet).toContainText("내 기록에 계속 보관");
   if (free) {
     // Logged in, 오픈 기념 무료 is the gold choice and paying follows it: no follow-ups are promised, and its rule is said under the button.
     await expect(sheet).not.toContainText("이어서 물어보기 3번");

@@ -71,10 +71,10 @@ const part = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("ba
 const idToken = (claims: Record<string, unknown>) => `${part({ alg: "RS256", typ: "JWT" })}.${part(claims)}.c2ln`;
 const claimsFor = (sub: string, nonce: string) => ({ iss: "https://accounts.google.com", aud: CLIENT_ID, sub, nonce, iat: T0 / 1000, exp: T0 / 1000 + 3600 });
 
-/** The same request from KakaoTalk's in-app browser, with this browser's cookies. */
-function fromKakaoTalk(b: Browser, url: string): Request {
+/** The same request from KakaoTalk's in-app browser (or another app's: `userAgent`), with this browser's cookies. */
+function fromKakaoTalk(b: Browser, url: string, userAgent = KAKAOTALK): Request {
   const cookie = [...b.jar].map(([name, value]) => `${name}=${value}`).join("; ");
-  return new Request(new URL(url, "http://localhost"), { headers: { cookie, "cf-connecting-ip": "198.51.100.250", "user-agent": KAKAOTALK } });
+  return new Request(new URL(url, "http://localhost"), { headers: { cookie, "cf-connecting-ip": "198.51.100.250", "user-agent": userAgent } });
 }
 
 const one = (db: D1Binding, sql: string) => db.prepare(sql).first();
@@ -233,7 +233,20 @@ describe("Google login", () => {
     const res = await start(fromKakaoTalk(b, await googleStartUrl(b, "/me")));
     expect(res.headers.get("location")).toBe("http://localhost/login?next=%2Fme&login=in-app");
     expect(res.headers.getSetCookie()).toEqual([]);
-    expect(loginMessage("in-app")).toBe("Google 로그인은 카카오톡 밖의 브라우저에서 해 주세요.");
+    expect(loginMessage("in-app")).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. 카카오로 로그인하거나 Safari·Chrome에서 열어 주세요.");
+  });
+
+  it("sends Instagram's and Threads' in-app browsers back too (where the promotion's visitors come from: Google refuses those as well)", async () => {
+    useTestDb();
+    const apps = [
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 350.0.0.0",
+      "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36 Barcelona 350.0.0.0",
+    ];
+    for (const userAgent of apps) {
+      const b = browser();
+      const res = await start(fromKakaoTalk(b, await googleStartUrl(b, "/me"), userAgent));
+      expect(res.headers.get("location")).toBe("http://localhost/login?next=%2Fme&login=in-app");
+    }
   });
 });
 

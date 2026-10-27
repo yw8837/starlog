@@ -43,6 +43,11 @@
   line-height: 1.5;
 }
 
+.free {
+  margin: 0 0 12px;
+  text-align: center;
+}
+
 /* The premium rows under the five: a thin divider and a small label, rows of the same size, never gold. */
 .divider {
   height: 0;

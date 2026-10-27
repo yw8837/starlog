@@ -71,7 +71,29 @@ describe("LoginPanel", () => {
     expect(screen.getByRole("status").textContent).toBe("로그인을 취소했어요");
     cleanup();
     render(<LoginPanel next="/" status="in-app" navigate={() => {}} />);
-    expect(screen.getByRole("status").textContent).toBe("Google 로그인은 카카오톡 밖의 브라우저에서 해 주세요.");
+    expect(screen.getByRole("status").textContent).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. 카카오로 로그인하거나 Safari·Chrome에서 열어 주세요.");
+  });
+
+  it("names what the login is for: a reading by default, 내 별자리 from /bonds, 내 기록 from /me", () => {
+    render(<LoginPanel next="/tarot/result?unlock=opening" status={null} navigate={() => {}} />);
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
+    cleanup();
+    render(<LoginPanel next="/bonds" status={null} navigate={() => {}} />);
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 내 별자리 만들기" })).toBeTruthy();
+    expect(screen.getByText("내 별자리를 계정에 적어둘게요")).toBeTruthy();
+    cleanup();
+    render(<LoginPanel next="/me" status={null} navigate={() => {}} />);
+    expect(screen.getByRole("heading", { level: 1, name: "로그인하고 내 기록 이어 보기" })).toBeTruthy();
+  });
+
+  it("tells a visitor in an app's browser (Instagram, Threads, KakaoTalk…) up front that Kakao is the way there", () => {
+    vi.stubGlobal("navigator", { ...navigator, userAgent: "Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile/15E148 Instagram 350.0" });
+    render(<LoginPanel next="/" status={null} navigate={() => {}} />);
+    expect(screen.getByText("앱 안 브라우저에서는 카카오로 로그인해 주세요. Google은 Safari·Chrome에서 돼요.")).toBeTruthy();
+    cleanup();
+    vi.unstubAllGlobals();
+    render(<LoginPanel next="/" status={null} navigate={() => {}} />);
+    expect(screen.queryByText(/앱 안 브라우저에서는/)).toBeNull();
   });
 
   it("promises no signup gift (removed, owner 2026-10-14 evening)", () => {

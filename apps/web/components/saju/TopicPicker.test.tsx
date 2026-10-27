@@ -27,4 +27,8 @@ describe("TopicPicker (saju step 1, owner 2026-10-14)", () => {
     const links = within(screen.getByRole("list", { name: "무엇이 궁금해요?" })).getAllByRole("link");
     expect(links.map((a) => a.querySelector("[data-price]")?.textContent)).toEqual(Array(5).fill(won(SITE.price.sajuStandardKrw)));
   });
+  it("says what is free before the prices (UX review 2026-10-28)", () => {
+    render(<TopicPicker />);
+    expect(screen.getByText("명식과 첫 장 풀이는 무료로 먼저 보고, 전체 풀이를 열지 정해요.")).toBeTruthy();
+  });
 });

@@ -237,7 +237,7 @@ export function UnlockSheet({
         )}
         <li>
           <CheckIcon />
-          이 기기에 계속 보관
+          내 기록에 계속 보관
         </li>
       </ul>
 

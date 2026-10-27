@@ -44,7 +44,7 @@ describe("/pricing", () => {
     expect(text).toContain("3,100원"); // tarot
     expect(text).toContain("4,100원"); // saju
     expect(text).toContain("이어서 물어보기 5번");
-    expect(text).toContain("이 기기에 계속 보관");
+    expect(text).toContain("내 기록에 계속 보관");
     expect(text).toContain("약 1,234자");
     expect(text).toContain("약 5,678~6,789자");
     expect(text).toContain("첫 풀이는 하루 4번까지");

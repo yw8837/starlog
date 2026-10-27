@@ -58,6 +58,23 @@
   text-align: left;
 }
 
+/* A link that no longer opens: the code entry folded, for a code heard aloud (owner 2026-10-02: the link is the invite). */
+.entrySummary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.entrySummary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* ---- the draw ---- */
 
 .draw {

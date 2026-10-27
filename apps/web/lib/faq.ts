@@ -114,7 +114,11 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
         {
           id: "login",
           q: "가입하거나 로그인해야 하나요?",
-          a: ["아니요. 로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 풀이를 쓸 수 있어요. 결제하려면 카카오나 Google로 로그인해야 해요."],
+          a: [
+            `꼭 필요하지는 않아요. 질문 만들기, 카드 뽑기, 무료로 열리는 첫 풀이, 지금의 한 장, 오늘의 한 장은 로그인 없이 쓸 수 있어요. 결제할 때${site.features.bonds ? "와 별자리 인연에서 내 별자리를 만들 때" : ""}는 카카오나 Google로 로그인해요.`,
+          ],
+          // owner 2026-10-27: 오픈 기념 무료 is per logged-in account
+          opening: `오픈 기념 무료 타로 전체 풀이도 로그인하고 받아요(계정마다 한 번, ${OPENING_LAST_DAY}까지).`,
         },
         {
           id: "birth-time",

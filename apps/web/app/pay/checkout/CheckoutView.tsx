@@ -43,7 +43,7 @@ const scopeLines = (productId: string): string[] => {
   return [
     `풀이 전체 · 약 ${chars}자`,
     `이어서 물어보기 ${SITE.reading.followUps}번`,
-    "이 기기에 계속 보관",
+    "내 기록에 계속 보관",
     // 주제별 사주: one payment opens the one reading chosen when it is opened (saju-topics spec §9.2).
     ...(productId === "saju" && sajuTopicsMode() === "on" ? [UNLOCK_SCOPE_LINE] : []),
   ];

@@ -15,7 +15,7 @@ describe("UnlockSheet offers", () => {
     render(<UnlockSheet {...base} offer={{ mode: "pay", priceKrw: 2900 }} onUnlock={() => {}} />);
     expect(screen.getByText("풀이 전체 · 약 2,000자")).toBeTruthy();
     expect(screen.getByText("이어서 물어보기 3번")).toBeTruthy();
-    expect(screen.getByText("이 기기에 계속 보관")).toBeTruthy();
+    expect(screen.getByText("내 기록에 계속 보관")).toBeTruthy();
     expect(screen.getByText("전체 풀이 · 2,900원")).toBeTruthy();
   });
 
@@ -125,7 +125,7 @@ describe("UnlockSheet offers", () => {
     expect(onUnlock).toHaveBeenCalledWith("opening");
     expect(screen.getByText(OPENING)).toBeTruthy();
     expect(screen.queryByText("이어서 물어보기 3번")).toBeNull();
-    expect(screen.getByText("이 기기에 계속 보관")).toBeTruthy();
+    expect(screen.getByText("내 기록에 계속 보관")).toBeTruthy();
     expect(container.textContent).not.toMatch(/베타|첫 이용|하루|0시/);
   });
 
@@ -159,7 +159,7 @@ describe("UnlockSheet offers", () => {
     expect(screen.queryByText("전체 풀이 · 2,900원")).toBeNull();
     expect(screen.queryByText("이어서 물어보기 3번")).toBeNull();
     expect(screen.getByText("풀이 전체 · 약 2,000자")).toBeTruthy();
-    expect(screen.getByText("이 기기에 계속 보관")).toBeTruthy();
+    expect(screen.getByText("내 기록에 계속 보관")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
     expect(onUnlock).toHaveBeenCalledWith("opening");
     cleanup();

@@ -173,11 +173,16 @@ describe("별자리 인연 owners belong to accounts", () => {
     const userId = await signIn(web);
     await accountOwner(web, "계정주인", "aries");
     const { jar: phone, id: phoneId } = await deviceOwner("폰주인", "leo");
-    const { jar: laptop } = await deviceOwner("노트북주인", "virgo");
+    const { jar: laptop } = await deviceOwner("노트북주인", "aries");
     await signIn(phone, userId);
     await signIn(laptop, userId);
-    const shown = (await me(laptop)).link as { account: { createdAt: number } };
-    const phoneShown = (await me(phone)).link as { account: { createdAt: number } };
+    const createdAtShown = async (jar: Jar) => {
+      const link = (await me(jar)).link;
+      if (link?.kind !== "choose") throw new Error("expected the choice");
+      return link.account.createdAt as number;
+    };
+    const shown = { account: { createdAt: await createdAtShown(laptop) } };
+    const phoneShown = { account: { createdAt: await createdAtShown(phone) } };
     expect(await (await linkPost(req("/api/bonds/link", phone, { keep: "device", accountSince: phoneShown.account.createdAt }))).json()).toMatchObject({ ok: true, kept: "device" });
     for (const keep of ["device", "account"] as const) {
       const res = await linkPost(req("/api/bonds/link", laptop, { keep, accountSince: shown.account.createdAt }));

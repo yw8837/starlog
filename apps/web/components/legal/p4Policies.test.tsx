@@ -21,7 +21,7 @@ describe("policies for the paid launch", () => {
     expect(page).toContain("타로 전체 풀이");
     expect(page).toContain("사주 전체 풀이");
     expect(page).toContain("2,900원");
-    expect(page).toContain("이 기기에 계속 보관");
+    expect(page).toContain("내 기록에 계속 보관");
     expect(page).not.toContain("가입 선물");
     expect(page).toContain("열기 전에는 결제일로부터 7일 안에 전액 환불받을 수 있어요");
     expect(page).not.toContain("언제든 전액 환불");

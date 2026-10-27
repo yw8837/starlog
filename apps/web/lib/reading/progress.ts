@@ -50,7 +50,8 @@ export function progressPlan(kind: GenerationKind, opts: { positions?: readonly 
       // The checklist: each card by its position (the one-line verdict goes with the first), then four steps.
       const cardSteps = cards.map((card, index) => ({ ...card, group: `${opts.positions?.[index]} 카드` }));
       return {
-        opening: "카드를 다시 읽고 있어요",
+        // not "다시 읽고": it read as a retry (UX review 2026-10-28)
+        opening: "전체 풀이를 적기 시작했어요",
         stages: [
           one("verdict", "한 줄 결론을 적고 있어요", cardSteps[0]?.group),
           ...cardSteps,
@@ -70,7 +71,7 @@ export function progressPlan(kind: GenerationKind, opts: { positions?: readonly 
       return { opening: "명식을 다시 살피고 있어요", stages: [one("title", "명식에 이름을 붙이고 있어요"), one("summary", "첫 장을 적고 있어요")] };
     case "saju-reading":
       return {
-        opening: "명식을 다시 살피고 있어요",
+        opening: "전체 풀이를 적기 시작했어요",
         stages: [
           ...(opts.sections ?? []).map((heading, index) => ({ key: "sections", index, caption: sectionCaption(heading), group: shortName(heading) })),
           one("observation", "확인해 볼 신호를 고르고 있어요", "한눈에 보기"),

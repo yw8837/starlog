@@ -89,12 +89,17 @@ export function JoinFlow({ state }: { state: InviteState }) {
             ? CODE_LIMIT_MESSAGE
             : state.status === "error"
               ? "지금은 초대를 열 수 없어요. 잠시 뒤에 다시 시도해 주세요"
-              : "코드를 다시 확인해 주세요"}
+              : "이 초대는 열 수 없어요"}
       </h1>
       {state.status === "bad" ? (
-        <div className={`${b.panel} ${s.entry}`}>
-          <CodeEntry id="retry-code" replace />
-        </div>
+        <>
+          {/* Friends get a link, not a code (owner 2026-10-02): what to do first, the code entry folded under it. */}
+          <p className={b.helper}>링크가 바뀌었거나 코드가 맞지 않아요. 보낸 친구에게 초대 링크를 다시 받아 주세요.</p>
+          <details className={`${b.panel} ${s.entry}`}>
+            <summary className={s.entrySummary}>초대코드로 참여하기</summary>
+            <CodeEntry id="retry-code" replace />
+          </details>
+        </>
       ) : null}
       {earlier ? <EarlierStar earlier={earlier} /> : null}
       <Button href="/bonds" variant="secondary" block>

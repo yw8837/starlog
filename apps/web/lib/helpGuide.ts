@@ -119,7 +119,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           icon: "device",
           title: "로그인 없이 쓰기",
           sub: "기록은 이 기기에 남아요",
-          body: "로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 풀이를 쓸 수 있어요. 연 풀이와 입력한 정보는 지금 쓰는 브라우저에 보관되고, 로그인하지 않고 연 풀이는 스타로그 서버에 저장하지 않아요.",
+          body: "로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 첫 풀이를 쓸 수 있어요. 연 풀이와 입력한 정보는 지금 쓰는 브라우저에 보관되고, 로그인하지 않고 연 풀이는 스타로그 서버에 저장하지 않아요. 결제하거나 계정마다 드리는 무료 풀이를 받을 때는 로그인해요.",
           tip: `로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서 보이지 않고, 브라우저의 사이트 데이터를 지우면 이 기기의 기록도 함께 지워져요.${
             // The one exception, said once; who logs in and why is the 별자리 인연 card's (#bonds-score).
             site.features.bonds ? " 별자리 인연은 내 별자리를 만들 때만 로그인해요." : ""
@@ -186,7 +186,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           body: `결과 화면에서 첫 풀이를 먼저 무료로 읽어요. 그 아래에 이어지는 풀이의 소제목과 분량(약 ${approxCharsText(approxChars.tarot)}자)이 보여요.`,
           steps: [
             "더 보고 싶으면 전체 풀이 보기를 눌러요.",
-            `전체 풀이와 함께 이어서 물어보기 ${followUps}번이 열리고, 풀이는 이 기기에 보관돼요.`,
+            `전체 풀이와 함께 이어서 물어보기 ${followUps}번이 열리고, 풀이는 내 기록에 보관돼요(로그인했다면 계정에도).`,
           ],
         },
         {

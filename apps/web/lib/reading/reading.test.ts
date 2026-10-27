@@ -182,7 +182,7 @@ describe("progress captions", () => {
   it("names the section being written, per card position", () => {
     const plan = progressPlan("tarot-reading", { positions });
     let state = startProgress(plan);
-    expect(state.caption).toBe("카드를 다시 읽고 있어요");
+    expect(state.caption).toBe("전체 풀이를 적기 시작했어요");
     state = advanceProgress(state, { type: "section", key: "verdict", index: 0 }, plan);
     expect(state.caption).toBe("한 줄 결론을 적고 있어요");
     state = advanceProgress(state, { type: "section", key: "cards", index: 1 }, plan);

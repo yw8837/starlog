@@ -653,7 +653,7 @@ function Settings({ rankingPublic, reload }: { rankingPublic: boolean; reload: (
         랭킹에 내 이름 올리기
       </Checkbox>
       <p className={b.helper}>
-        끄면 랭킹에서 빠지고, 다른 사람에게는 비공개라는 표시도 보이지 않아요. 기록은 이 기기에서 이어져요. 브라우저 데이터를 지우면 이어서 볼 수 없어요.
+        끄면 랭킹에서 빠지고, 다른 사람에게는 비공개라는 표시도 보이지 않아요.
       </p>
       {error ? (
         <p className={b.error} role="alert">

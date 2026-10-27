@@ -180,7 +180,10 @@ describe("JoinFlow", () => {
 
   it("answers an unknown code and an owner between signs plainly", () => {
     render(<JoinFlow state={{ status: "bad" }} />);
-    expect(screen.getByRole("heading", { level: 1, name: "코드를 다시 확인해 주세요" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "이 초대는 열 수 없어요" })).toBeTruthy();
+    expect(screen.getByText("링크가 바뀌었거나 코드가 맞지 않아요. 보낸 친구에게 초대 링크를 다시 받아 주세요.")).toBeTruthy();
+    // the code entry stays, folded (friends get a link, not a code)
+    expect(screen.getByText("초대코드로 참여하기").closest("details")?.open).toBe(false);
     cleanup();
     render(<JoinFlow state={{ status: "choosing", kind: "choosing", code: "K7M4QX", ownerNickname: "용우", earlier: null }} />);
     expect(screen.getByRole("heading", { level: 1, name: "용우님이 다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요" })).toBeTruthy();

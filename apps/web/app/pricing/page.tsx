@@ -90,7 +90,7 @@ export default function PricingPage() {
                 <span className={s.priceUnit}>1회</span>
               </p>
               <ul className={s.checks}>
-                {[...product.includes, `이어서 물어보기 ${reading.followUps}번`, "이 기기에 계속 보관"].map((item) => (
+                {[...product.includes, `이어서 물어보기 ${reading.followUps}번`, "내 기록에 계속 보관"].map((item) => (
                   <li key={item}>
                     <Check />
                     <span>{item}</span>

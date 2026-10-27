@@ -68,6 +68,12 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
       <p className={s.betaText}>
         {remaining === undefined ? " " : remaining > 0 ? "아직 무료로 열 수 있어요" : "이 기기에서는 이미 무료로 열었어요"}
       </p>
+      {/* Where to use it (UX review 2026-10-28: the box had no way on). */}
+      {remaining !== undefined && remaining > 0 && !account?.user?.openingUsed ? (
+        <Link href="/tarot/new" className={a.link}>
+          타로 보러 가기
+        </Link>
+      ) : null}
     </section>
   );
 

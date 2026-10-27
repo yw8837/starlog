@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { Stepper } from "@/components/tarot/Stepper";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginMessage } from "@/lib/account/client";
 import { safeReturnTo } from "@/lib/account/returnTo";
 import { SITE } from "@/lib/config";
+import { isInAppBrowser } from "@/lib/inApp";
 import s from "./LoginPanel.module.css";
 
 type LoginPanelProps = {
@@ -28,6 +29,14 @@ function backTarget(next: string): string {
   return path === "/pay/checkout" ? safeReturnTo(new URLSearchParams(search).get("returnTo")) : next;
 }
 
+/** What the login is for, from where it came back to: 내 별자리 (/bonds), 내 기록 (/me), else a reading. */
+function purpose(next: string): { bubble: string; title: string } {
+  const path = next.split(/[?#]/)[0] ?? "";
+  if (path === "/bonds" || path.startsWith("/bonds/")) return { bubble: "내 별자리를 계정에 적어둘게요", title: "로그인하고 내 별자리 만들기" };
+  if (path === "/me" || path.startsWith("/me/")) return { bubble: "내 기록을 계정에 적어둘게요", title: "로그인하고 내 기록 이어 보기" };
+  return { bubble: `이 풀이를 ${SITE.nameKo}에 적어둘게요`, title: "로그인하고 전체 풀이 보기" };
+}
+
 /**
  * Sign-in right before paying (spec 5.1; no signup gift any more, owner 2026-10-14 evening): Kakao, and Google under it (Google's
  * sign-in branding: white, the standard G mark). The 만 14세 box must be ticked first; a same-origin
@@ -40,6 +49,10 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
   const [failure, setFailure] = useState<string | null>(null);
   const checkbox = useRef<HTMLInputElement>(null);
   const note = loginMessage(failure ?? status);
+  const copy = purpose(next);
+  // Google refuses apps' browsers (api/auth/google/start): say so before the tap.
+  const [inApp, setInApp] = useState(false);
+  useEffect(() => setInApp(isInAppBrowser(navigator.userAgent)), []);
 
   const start = async (provider: "kakao" | "google") => {
     if (!adult) {
@@ -67,10 +80,10 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
 
       <div className={s.intro}>
         <div className={s.hero}>
-          <p className={s.bubble}>{`이 풀이를 ${SITE.nameKo}에 적어둘게요`}</p>
+          <p className={s.bubble}>{copy.bubble}</p>
           <Rabbit outfit="tarot" action="write" size={168} />
         </div>
-        <h1 className={s.title}>로그인하고 전체 풀이 보기</h1>
+        <h1 className={s.title}>{copy.title}</h1>
       </div>
 
       <div className={s.form}>
@@ -113,6 +126,7 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
           </svg>
           Google로 계속하기
         </button>
+        {inApp ? <p className={s.consent}>앱 안 브라우저에서는 카카오로 로그인해 주세요. Google은 Safari·Chrome에서 돼요.</p> : null}
 
         <p className={s.consent}>
           계속하면 <Link href="/terms">이용약관</Link>과 <Link href="/privacy">개인정보처리방침</Link>에 동의하게 돼요

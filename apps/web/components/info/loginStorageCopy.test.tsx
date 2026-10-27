@@ -80,9 +80,12 @@ describe("login and storage wording (SEO-03)", () => {
     expect(records).toContain("지금 쓰는 기기의 브라우저에");
     expect(records).toMatch(ACCOUNT);
     expect(records).toContain("로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서는 보이지 않아요");
-    const login = entries.find((entry) => entry.id === "login")?.a.join(" ") ?? "";
-    expect(login).toContain("로그인하지 않아도");
-    expect(login).toContain("결제하려면 카카오나 Google로 로그인해야 해요");
+    const entry = entries.find((e) => e.id === "login");
+    const login = entry?.a.join(" ") ?? "";
+    expect(login).toContain("로그인 없이 쓸 수 있어요");
+    expect(login).toContain("결제할 때와 별자리 인연에서 내 별자리를 만들 때는 카카오나 Google로 로그인해요");
     expect(login).not.toContain("가입 선물");
+    // 오픈 기념 무료 is per logged-in account (owner 2026-10-27), said while it runs
+    expect(entry?.opening).toContain("오픈 기념 무료 타로 전체 풀이도 로그인하고 받아요");
   });
 });

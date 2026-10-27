@@ -1,6 +1,7 @@
 import { deleteIntentFor } from "@/lib/account/deletion";
 import { googleAuthorizeUrl, googleConfigProblems, googleMode } from "@/lib/account/google";
 import { MOCK_CODE_PREFIX, isKakaoTalkInApp } from "@/lib/account/kakao";
+import { isInAppBrowser } from "@/lib/inApp";
 import { ageChecked, issueOAuthState, type OAuthIntent } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
 import { openAccountRoute } from "@/lib/account/request";
@@ -38,7 +39,8 @@ export async function GET(request: Request): Promise<Response> {
   }
   if (!loginOpen(paymentsMode(), ctx.owner)) return redirectTo(request, returnTo, { login: "closed" });
   if (!(await ageChecked(url.searchParams.get("age"), ctx.secret, ctx.now))) return redirectTo(request, "/login", { next: returnTo });
-  if (isKakaoTalkInApp(request)) return redirectTo(request, "/login", { next: returnTo, login: "in-app" });
+  // Google refuses to sign in inside apps' browsers (KakaoTalk, Instagram, Threads…): back to /login, where Kakao works.
+  if (isInAppBrowser(request.headers.get("user-agent") ?? "")) return redirectTo(request, "/login", { next: returnTo, login: "in-app" });
   return toGoogle(request, { returnTo, purpose: "login", age: true }, mockUser, ctx);
 }
 

@@ -46,7 +46,7 @@ describe("CheckoutView", () => {
     expect(screen.getByText(/청약철회가 제한돼요/)).toBeTruthy();
     expect(screen.getByText(/열기 전에는 결제일로부터 7일 안에 내 정보에서 전액 환불받을 수 있어요/)).toBeTruthy();
     expect(screen.getByText("만 19세 미만이 법정대리인의 동의 없이 결제하면 본인이나 법정대리인이 결제를 취소할 수 있어요.")).toBeTruthy();
-    expect(screen.getByText("이 기기에 계속 보관")).toBeTruthy();
+    expect(screen.getByText("내 기록에 계속 보관")).toBeTruthy();
     const pay = screen.getByRole("button", { name: "2,900원 결제하기" }) as HTMLButtonElement;
     expect(pay.disabled).toBe(true);
     fireEvent.click(screen.getByRole("checkbox", { name: "위 내용을 확인했어요" }));
@@ -235,7 +235,7 @@ describe("CheckoutView", () => {
 
   it("keeps the tarot lines as they are", async () => {
     render(<CheckoutView productId="tarot" returnTo="/tarot/result" navigate={vi.fn()} />);
-    expect(await screen.findByText("이 기기에 계속 보관")).toBeTruthy();
+    expect(await screen.findByText("내 기록에 계속 보관")).toBeTruthy();
     expect(screen.getByText("풀이 전체 · 약 2,000자")).toBeTruthy();
     expect(screen.queryByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeNull();
   });
