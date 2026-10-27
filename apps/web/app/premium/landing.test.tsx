@@ -53,7 +53,6 @@ afterEach(() => {
 });
 
 const show = async (page: () => Promise<ReactElement>) => render(await page());
-const jsonLd = (container: HTMLElement) => JSON.parse(container.querySelector('script[type="application/ld+json"]')!.textContent!) as Record<string, any>;
 
 describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
   it("says where the 궁합 partner's details go as it works (review 2026-10-17 #1)", async () => {
@@ -102,8 +101,9 @@ describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
       expect(starts.map((a) => a.getAttribute("href"))).toEqual([start, start]);
       expect(container.querySelectorAll('a[class*="primary"]')).toHaveLength(1);
       expect(container.textContent).not.toMatch(BANS);
-      const ld = jsonLd(container);
-      expect(ld).toMatchObject({ "@type": "Product", offers: { "@type": "Offer", priceCurrency: "KRW", price: Number(price.replace(/\D/g, "")), availability: "https://schema.org/InStock" } });
+      // No Product markup (SEO audit 2026-10-27): a reading has no product image to give it; name and price are on the page.
+      expect(container.querySelector('script[type="application/ld+json"]')).toBeNull();
+      expect(container.textContent).toContain(price);
       expect(meta.alternates?.canonical).toBe(`/premium/${slug}`);
       expect(String(meta.description).length).toBeLessThanOrEqual(155);
       expect(String(meta.description)).toContain(price);
@@ -136,7 +136,6 @@ describe("the premium product pages (stage 3, plan-reconciled §4.6)", () => {
     expect(screen.getAllByRole("link", { name: /시작하기/ }).length).toBeGreaterThan(0);
     expect(container.textContent).not.toMatch(/열려요|오픈 예정|2026년 11월 15일/);
     expect(container.textContent).toContain("2027년 11월 30일까지 열 수 있어요");
-    expect(jsonLd(container).offers.availability).toBe("https://schema.org/InStock");
   });
 
   it("an undated product this device cannot start says 준비 중이에요, no button", async () => {

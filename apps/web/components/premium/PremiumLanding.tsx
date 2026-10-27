@@ -1,12 +1,11 @@
 import Link from "next/link";
 import { AccordionItem } from "@/components/info/InfoPage";
 import info from "@/components/info/info.module.css";
-import { JsonLd } from "@/components/seo/JsonLd";
 import { Paper } from "@/components/tarot/Paper";
 import { Button } from "@/components/ui/Button";
-import { SITE, won } from "@/lib/config";
+import { won } from "@/lib/config";
 import { findArticle } from "@/lib/guide";
-import { absoluteUrl, guideHref } from "@/lib/hosts";
+import { guideHref } from "@/lib/hosts";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { LANDING } from "@/lib/premium/landing";
 import { opensAtText } from "@/lib/premium/offer";
@@ -19,28 +18,6 @@ const CheckIcon = () => (
     <path d="m5 12.5 4.5 4.5L19 7.5" />
   </svg>
 );
-
-/** schema.org Product + Offer for the page (price in KRW; a pre-order before the sales window opens). */
-function productJsonLd(id: PremiumId, soon: boolean, open: boolean) {
-  const spec = PREMIUM[id];
-  const url = absoluteUrl(premiumPath(id));
-  return {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: LANDING[id].title,
-    description: LANDING[id].description,
-    brand: { "@type": "Brand", name: SITE.nameKo },
-    url,
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "KRW",
-      price: spec.krw,
-      url,
-      availability: soon ? "https://schema.org/PreOrder" : open ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-      ...(soon && spec.opensAt !== undefined ? { availabilityStarts: new Date(spec.opensAt).toISOString() } : {}),
-    },
-  };
-}
 
 /**
  * A premium product page (plan-reconciled §4.6), rendered on the server per request: the name, the price and one gold
@@ -66,7 +43,6 @@ export function PremiumLanding({ id, open, now }: { id: PremiumId; open: boolean
 
   return (
     <article className={s.page} aria-labelledby="premium-title">
-      <JsonLd data={productJsonLd(id, soon, open)} />
       <header className={s.head}>
         <p className={s.eyebrow}>프리미엄 풀이</p>
         <h1 id="premium-title" className={s.title}>
