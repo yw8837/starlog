@@ -87,7 +87,7 @@ export function GuideIndex({ category }: { category: GuideCategory }) {
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={41} />
-      <TabBar active="guide" host="guide" />
+      <TabBar active={`guide-${category}`} host="guide" />
       <main className="page-col page-wide">
         <JsonLd data={guideIndexBreadcrumbJsonLd(category)} />
         <JsonLd data={guideIndexItemListJsonLd(category)} />

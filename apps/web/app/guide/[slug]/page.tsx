@@ -97,7 +97,7 @@ export default async function GuideArticlePage({ params }: PageProps<"/guide/[sl
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={41} moon={false} />
-      <TabBar active="guide" host="guide" />
+      <TabBar active={`guide-${article.category}`} host="guide" />
       <main className="page-col page-wide">
         <JsonLd data={guideArticleJsonLd(article)} />
         <JsonLd data={guideArticleBreadcrumbJsonLd(article)} />

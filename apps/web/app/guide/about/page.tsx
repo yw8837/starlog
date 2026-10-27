@@ -57,7 +57,7 @@ export default function GuideAboutPage() {
   return (
     <div className="page-shell with-tabbar">
       <NightSky fixed seed={41} moon={false} />
-      <TabBar active="guide" host="guide" />
+      <TabBar active="guide-about" host="guide" />
       <main className="page-col page-wide">
         <JsonLd data={breadcrumbJsonLd(guideAboutCrumbs(TITLE))} />
         <article className={s.article}>
