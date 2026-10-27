@@ -115,6 +115,18 @@ describe("/birth-card, the form", () => {
     expect(container.textContent).toContain("재미로 보는 테스트예요");
   });
 
+  // SEO audit 2026-10-27 (LOW): the hub was 426 characters; it now says the whole rule and what each card is like.
+  it("gives the whole rule (the 22 case and the 짝 카드) and one line on each of the 22 cards", () => {
+    const { container } = render(<BirthCardPage />);
+    const text = container.textContent ?? "";
+    expect(text).toContain("2+0+0+0+0+9+2+9 = 22");
+    expect(text).toContain("짝 카드");
+    const sun = BIRTH_CARDS.find((card) => card.number === 19);
+    expect(sun && pairCardOf(sun)?.number).toBe(10);
+    const links = within(screen.getByRole("navigation", { name: "메이저 아르카나 22장" })).getAllByRole("link");
+    for (const [i, card] of BIRTH_CARDS.entries()) expect(links[i]?.textContent, card.slug).toContain(card.traits[0]);
+  });
+
   it("is found from 지금의 한 장's guide, where the free tools link each other", () => {
     render(<NowGuide />);
     expect(screen.getByRole("link", { name: "나를 닮은 타로 카드" }).getAttribute("href")).toBe("/birth-card");

@@ -41,6 +41,10 @@ export default function BirthCardPage() {
             생년월일 여덟 자리 숫자를 모두 더해요. 합이 22보다 크면 그 수의 숫자를 한 번 더 더하고, 22가 나오면 0번 바보 카드예요. 음력 생일은 양력 날짜로 바꿔서 더해요.
           </p>
           <p className={s.example}>예: 1990년 5월 15일 → 1+9+9+0+0+5+1+5 = 30 → 3+0 = 3, 여황제</p>
+          <p className={s.example}>예: 2000년 9월 29일 → 2+0+0+0+0+9+2+9 = 22 → 0번 바보</p>
+          <p className={s.prose}>
+            합이 10에서 21 사이라면 그 두 자리를 한 번 더 더한 카드가 짝 카드로 함께 나와요. 19번 태양이라면 1+9 = 10, 운명의 수레바퀴가 짝이에요. 0번부터 9번까지는 짝 카드가 없어요.
+          </p>
         </section>
 
         <nav className={s.block} aria-labelledby="birth-card-all">
@@ -53,7 +57,11 @@ export default function BirthCardPage() {
                 {/* 22 links on one screen: fetched when tapped, not all at once on load. */}
                 <Link href={birthCardPath(card.slug)} className={s.cardLink} prefetch={false}>
                   <span className={s.cardRoman}>{card.roman}</span>
-                  {card.name}
+                  <span className={s.cardText}>
+                    {card.name}
+                    {/* One line on what the card is like (its first 이런 사람이에요), so the list says something on its own. */}
+                    <span className={s.cardTrait}>{card.traits[0]}</span>
+                  </span>
                 </Link>
               </li>
             ))}

@@ -180,6 +180,40 @@
   line-height: 1.75;
 }
 
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  line-height: 1.5;
+  text-align: left;
+}
+
+.table th,
+.table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--glass-line);
+  vertical-align: top;
+}
+
+.table thead th {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.table tbody th {
+  color: var(--ink);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.caption {
+  padding-bottom: 6px;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+  text-align: left;
+}
+
 .notes {
   display: grid;
   gap: 6px;

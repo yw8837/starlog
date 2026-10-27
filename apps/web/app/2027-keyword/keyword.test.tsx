@@ -2,7 +2,8 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ILJU, KEYWORD_PATH, iljuBySlug } from "@/lib/keyword2027";
-import { contentOf } from "@/lib/keyword2027Content";
+import { STEMS } from "@starlog/core";
+import { STEM_GODS, contentOf } from "@/lib/keyword2027Content";
 import { PREMIUM_IDS } from "@/lib/premium/products";
 import { resetPremiumStatusForTests } from "@/lib/premium/status";
 
@@ -114,6 +115,19 @@ describe("the form", () => {
     expect(document.body.textContent).toContain("자정");
     // The 60 pages are linked from here, each by its slug.
     for (const ilju of ILJU) expect(document.querySelector(`a[href="${KEYWORD_PATH}/${ilju.slug}"]`), ilju.slug).not.toBeNull();
+  });
+
+  // SEO audit 2026-10-27 (LOW): the hub was 922 characters; it now shows what 丁未 is to each of the ten day stems.
+  it("shows what 丁 and 未 are to each of the ten day stems, from the same table the keywords are written on", async () => {
+    render(await KeywordTestPage());
+    const table = screen.getByRole("table", { name: /정미년의 두 글자/ });
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(10);
+    for (const [i, stem] of STEMS.entries()) {
+      const cells = within(rows[i] as HTMLElement).getAllByRole("cell").map((cell) => cell.textContent);
+      expect(rows[i]?.textContent, stem).toContain(stem);
+      expect(cells, stem).toEqual(expect.arrayContaining([STEM_GODS[stem].stemGod, STEM_GODS[stem].branchGod]));
+    }
   });
 
   it("has its own title, description and canonical", () => {
