@@ -104,6 +104,6 @@ describe("account client", () => {
     expect(loginMessage("closed")).toBe("지금은 새로 가입할 수 없어요");
     expect(loginMessage("unavailable")).toBe("지금은 로그인할 수 없어요. 잠시 뒤에 다시 시도해 주세요.");
     expect(loginMessage("busy")).toBe("요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요.");
-    expect(loginMessage("in-app")).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. 카카오로 로그인하거나 Safari·Chrome에서 열어 주세요.");
+    expect(loginMessage("in-app")).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. Safari·Chrome에서 열어 주세요. 카카오 로그인은 여기서도 돼요.");
   });
 });

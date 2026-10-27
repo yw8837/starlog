@@ -60,6 +60,7 @@
 
 /* A link that no longer opens: the code entry folded, for a code heard aloud (owner 2026-10-02: the link is the invite). */
 .entrySummary {
+  list-style: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -68,6 +69,20 @@
   font-size: var(--fs-sub);
   font-weight: 700;
   cursor: pointer;
+}
+
+.entrySummary::-webkit-details-marker {
+  display: none;
+}
+
+/* display:flex drops the native marker: a caret says it opens. */
+.entrySummary::after {
+  content: "▾";
+  margin-left: 6px;
+}
+
+details[open] > .entrySummary::after {
+  content: "▴";
 }
 
 .entrySummary:focus-visible {

@@ -1,6 +1,6 @@
 import { deleteIntentFor } from "@/lib/account/deletion";
 import { googleAuthorizeUrl, googleConfigProblems, googleMode } from "@/lib/account/google";
-import { MOCK_CODE_PREFIX, isKakaoTalkInApp } from "@/lib/account/kakao";
+import { MOCK_CODE_PREFIX } from "@/lib/account/kakao";
 import { isInAppBrowser } from "@/lib/inApp";
 import { ageChecked, issueOAuthState, type OAuthIntent } from "@/lib/account/oauthState";
 import { redirectTo } from "@/lib/account/redirect";
@@ -30,7 +30,7 @@ export async function GET(request: Request): Promise<Response> {
   }
   const mockUser = url.searchParams.get("mockUser");
   if (url.searchParams.get("purpose") === "delete") {
-    if (isKakaoTalkInApp(request)) return redirectTo(request, "/me", { delete: "in-app" });
+    if (isInAppBrowser(request.headers.get("user-agent") ?? "")) return redirectTo(request, "/me", { delete: "in-app" });
     // Only with the intent a same-origin POST handed to this very session.
     if (!ctx.session || !(await deleteIntentFor(url.searchParams.get("intent"), ctx.session.id, ctx.secret, ctx.now))) {
       return redirectTo(request, "/me", { delete: "failed" });

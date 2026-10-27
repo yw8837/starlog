@@ -71,7 +71,7 @@ describe("LoginPanel", () => {
     expect(screen.getByRole("status").textContent).toBe("로그인을 취소했어요");
     cleanup();
     render(<LoginPanel next="/" status="in-app" navigate={() => {}} />);
-    expect(screen.getByRole("status").textContent).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. 카카오로 로그인하거나 Safari·Chrome에서 열어 주세요.");
+    expect(screen.getByRole("status").textContent).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. Safari·Chrome에서 열어 주세요. 카카오 로그인은 여기서도 돼요.");
   });
 
   it("names what the login is for: a reading by default, 내 별자리 from /bonds, 내 기록 from /me", () => {
@@ -89,7 +89,11 @@ describe("LoginPanel", () => {
   it("tells a visitor in an app's browser (Instagram, Threads, KakaoTalk…) up front that Kakao is the way there", () => {
     vi.stubGlobal("navigator", { ...navigator, userAgent: "Mozilla/5.0 (iPhone) AppleWebKit/605.1.15 Mobile/15E148 Instagram 350.0" });
     render(<LoginPanel next="/" status={null} navigate={() => {}} />);
-    expect(screen.getByText("앱 안 브라우저에서는 카카오로 로그인해 주세요. Google은 Safari·Chrome에서 돼요.")).toBeTruthy();
+    expect(screen.getByText("앱 안 브라우저에서는 카카오로 로그인해 주세요. Google로 가입했다면 Safari·Chrome에서 열어 주세요.")).toBeTruthy();
+    cleanup();
+    // back from Google's refusal: the status line says it, once
+    render(<LoginPanel next="/" status="in-app" navigate={() => {}} />);
+    expect(screen.queryByText(/앱 안 브라우저에서는 카카오로/)).toBeNull();
     cleanup();
     vi.unstubAllGlobals();
     render(<LoginPanel next="/" status={null} navigate={() => {}} />);

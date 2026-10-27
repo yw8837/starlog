@@ -30,4 +30,9 @@ describe("OpenFromHash", () => {
     const { container } = page("#tarot-now-guide?utm_source=threads");
     expect(container.querySelector("details")!.open).toBe(true);
   });
+
+  it("leaves the page as it is on a malformed address (#%E0) instead of throwing", () => {
+    const { container } = page("#%E0");
+    expect(container.querySelector("details")!.open).toBe(false);
+  });
 });

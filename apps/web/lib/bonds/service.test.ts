@@ -139,6 +139,9 @@ describe("bonds service", () => {
       .rejects.toMatchObject({ code: "SELF_JOIN" });
     // a friend who shares the birth date, under their own nickname, still joins
     await expect(joinStar(repo, t0, { code, friendKey: "twin", nickname: "쌍둥이", birth: me, pick: 1, message: null })).resolves.toMatchObject({ completed: false });
+    // a device that joined already learns nothing from it (no guessing the owner's birth date): ALREADY_JOINED first
+    await expect(joinStar(repo, t0, { code, friendKey: "twin", nickname: "용우", birth: me, pick: 2, message: null }))
+      .rejects.toMatchObject({ code: "ALREADY_JOINED" });
   });
 
   it("checks the friend's input", async () => {

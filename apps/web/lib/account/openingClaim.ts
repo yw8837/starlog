@@ -34,7 +34,8 @@ export async function holdOpeningClaim(db: D1Binding, key: string, now: number):
       .run();
     if (result.meta?.changes === 1) return { db, key, at: now };
     const held = await db.prepare("SELECT opened FROM opening_claims WHERE user_key = ?").bind(key).first<{ opened: number }>();
-    return held && held.opened === 0 ? "busy" : "taken";
+    // gone meanwhile (that run failed and gave it back): busy too, and the next try may take it
+    return !held || held.opened === 0 ? "busy" : "taken";
   } catch (error) {
     if (missingTable(error)) return "missing";
     throw error;

@@ -126,7 +126,7 @@ export function LoginPanel({ next, status, navigate = (url) => window.location.a
           </svg>
           Google로 계속하기
         </button>
-        {inApp ? <p className={s.consent}>앱 안 브라우저에서는 카카오로 로그인해 주세요. Google은 Safari·Chrome에서 돼요.</p> : null}
+        {inApp && status !== "in-app" ? <p className={s.consent}>앱 안 브라우저에서는 카카오로 로그인해 주세요. Google로 가입했다면 Safari·Chrome에서 열어 주세요.</p> : null}
 
         <p className={s.consent}>
           계속하면 <Link href="/terms">이용약관</Link>과 <Link href="/privacy">개인정보처리방침</Link>에 동의하게 돼요

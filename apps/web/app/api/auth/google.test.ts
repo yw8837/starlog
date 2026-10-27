@@ -233,7 +233,7 @@ describe("Google login", () => {
     const res = await start(fromKakaoTalk(b, await googleStartUrl(b, "/me")));
     expect(res.headers.get("location")).toBe("http://localhost/login?next=%2Fme&login=in-app");
     expect(res.headers.getSetCookie()).toEqual([]);
-    expect(loginMessage("in-app")).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. 카카오로 로그인하거나 Safari·Chrome에서 열어 주세요.");
+    expect(loginMessage("in-app")).toBe("Google 로그인은 앱 안 브라우저에서는 안 돼요. Safari·Chrome에서 열어 주세요. 카카오 로그인은 여기서도 돼요.");
   });
 
   it("sends Instagram's and Threads' in-app browsers back too (where the promotion's visitors come from: Google refuses those as well)", async () => {
@@ -325,6 +325,9 @@ describe("deleting a Google account", () => {
     await googleLoginAs(b, "alice");
     const { url } = (await (await b.send(deleteIntent, "/api/account/delete-intent", { method: "POST", origin: true })).json()) as { url: string };
     expect((await start(fromKakaoTalk(b, `${url}&mockUser=alice`))).headers.get("location")).toBe("http://localhost/me?delete=in-app");
+    // Instagram's too: Google refuses it as well
+    const instagram = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 350.0.0.0";
+    expect((await start(fromKakaoTalk(b, `${url}&mockUser=alice`, instagram))).headers.get("location")).toBe("http://localhost/me?delete=in-app");
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
   });
 });

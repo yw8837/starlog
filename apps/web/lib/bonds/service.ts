@@ -422,9 +422,6 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
   if (owner.joinsDay === today && owner.joinsCount >= DAILY_STAR_LIMIT) throw new BondsError("DAILY_STAR_LIMIT");
 
   const friend = basisOf(input.birth, now);
-  // The owner on their own link from a browser that does not know them (logged out, KakaoTalk's in-app browser): their
-  // nickname and birth date. A friend born the same day joins under their own nickname.
-  if (nickname.value === owner.nickname && canonicalJson(friend) === canonicalJson(owner.basis)) throw new BondsError("SELF_JOIN");
   const { score, parts } = bondScore(owner.basis, friend);
   const card = drawCard(input.pick);
 
@@ -455,6 +452,10 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
     const basisHash = slot === undefined ? undefined : await sha256(`basis:${filling.id}:${canonicalJson(friend)}`);
     if (basisHash && stars.some((s) => s.basisHash === basisHash && s.nickname === nickname.value)) throw new BondsError("DUPLICATE_STAR");
     if (basisHash && (await repo.isBlocked(filling.id, `basis:${basisHash}`))) throw new BondsError("REMOVED");
+    // The owner on their own link from a browser that does not know them (logged out, KakaoTalk's in-app browser): their
+    // nickname and birth date. A friend born the same day joins under their own nickname. Checked last, right before the
+    // star is written, so a device that joined already (or was removed) cannot use it to guess the owner's birth date.
+    if (slot !== undefined && nickname.value === owner.nickname && canonicalJson(friend) === canonicalJson(owner.basis)) throw new BondsError("SELF_JOIN");
     if (slot === undefined) {
       // Full but still marked as filling (filled by someone else just now, or a count that never
       // landed): complete it, start the next sign, and try again there.

@@ -12,7 +12,13 @@ export function OpenFromHash() {
     const open = () => {
       // The moved guide URLs' redirect puts a query after the fragment (#tarot-now-guide?utm_source=…): the id is before it,
       // and the browser does not scroll to such a fragment by itself.
-      const [id = "", query] = decodeURIComponent(window.location.hash.slice(1)).split("?");
+      let fragment = "";
+      try {
+        fragment = decodeURIComponent(window.location.hash.slice(1));
+      } catch {
+        return; // a malformed address (#%E0): the page stays as it is
+      }
+      const [id = "", query] = fragment.split("?");
       const card = id ? document.getElementById(id) : null;
       if (!(card instanceof HTMLDetailsElement)) return;
       card.open = true;

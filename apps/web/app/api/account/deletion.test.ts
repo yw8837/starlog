@@ -236,7 +236,7 @@ describe("account deletion", () => {
       }),
     );
     expect(inApp.headers.get("location")).toBe("http://localhost/me?delete=in-app");
-    expect(meStatusMessage({ delete: "in-app" })).toBe("탈퇴는 카카오톡 밖의 브라우저에서 해 주세요.");
+    expect(meStatusMessage({ delete: "in-app" })).toBe("탈퇴는 앱 안 브라우저 말고 Safari·Chrome 같은 브라우저에서 해 주세요.");
     expect(await one(db, "SELECT deleted_at FROM users")).toEqual({ deleted_at: null });
   });
 
