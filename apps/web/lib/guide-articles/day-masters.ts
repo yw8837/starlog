@@ -11,7 +11,7 @@ import type { GuideArticle } from "../guide";
  * scenes, the day masters it meets through 합·충·생극, and FAQ of its own. `updated` is set here; it wins over
  * GUIDE_DATES (index.ts withAnswers).
  */
-const UPDATED = "2026-10-23";
+const UPDATED = "2026-10-27";
 
 export const DAY_MASTER_ARTICLES: readonly GuideArticle[] = [
   {

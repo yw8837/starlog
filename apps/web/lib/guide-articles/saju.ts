@@ -2,7 +2,7 @@ import { SITE, won } from "../config";
 import type { GuideArticle } from "../guide";
 
 /** The 2026-10-23 rewrite (AdSense): `updated` set here wins over GUIDE_DATES (index.ts withAnswers). */
-const UPDATED = "2026-10-23";
+const UPDATED = "2026-10-27";
 
 /** On sale since 2026-10-20 (owner): named and priced from SITE (review 2026-10-20 A3). */
 const MATCH = SITE.price.premium.find((p) => p.id === "match")!;

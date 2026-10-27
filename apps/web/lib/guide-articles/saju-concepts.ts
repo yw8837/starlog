@@ -8,7 +8,7 @@ import type { GuideArticle } from "../guide";
  * follows packages/core/src/bonds/score.ts and the 별자리 인연 screens.
  */
 /** The 2026-10-23 rewrite (AdSense): `updated` set here wins over GUIDE_DATES (index.ts withAnswers). */
-const UPDATED = "2026-10-23";
+const UPDATED = "2026-10-27";
 
 export const SAJU_CONCEPT_ARTICLES: readonly GuideArticle[] = [
   {

@@ -130,25 +130,25 @@ export const GUIDE_SUMMARIES: Readonly<Record<string, string>> = {
     "사주 풀이에 자주 나오는 말은 명식을 이루는 말, 오행과 음양, 십신, 글자끼리의 관계, 운의 흐름, 달력과 시각, 유파마다 갈리는 라벨로 묶어 보면 쉽게 정리돼요. 일간은 태어난 날 기둥의 천간으로 명리에서 나 자신으로 놓는 글자이고, 대운은 10년마다 바뀌는 흐름이죠. 스타로그는 신강·신약이나 용신처럼 유파마다 갈리는 라벨은 풀이에 붙이지 않아요.",
 
   "day-master-gapmok":
-    "갑목은 천간 맨 앞의 양의 나무예요. 명리에서는 곧게 선 큰 나무처럼 처음 길을 내고 방향을 지키는 힘, 사람을 모으는 그늘로 보고, 혼자 다 짊어지다 꺾이기 쉬운 점을 함께 짚죠. 실제 모습은 태어난 계절과 곁의 글자에 따라 크게 달라져요.",
+    "곧게 선 큰 나무에 빗대는 갑목은 처음 길을 내고 방향을 지키는 힘으로 읽혀요. 다만 적천수가 껍질을 벗으려면 불이 있어야 한다고 했듯, 쌓인 힘을 꺼낼 통로가 있는지와 태어난 계절에 따라 같은 갑목도 결이 크게 달라지죠.",
   "day-master-eulmok":
-    "풀과 덩굴에 빗대는 을목은 음의 나무로, 주변에 기대고 휘감기며 길을 찾는 유연함과 끈질긴 생명력으로 풀어요. 휘어도 다시 일어서지만, 맞추다 보면 내 뜻을 말할 기회를 놓치기도 하죠. 곁에 갑목이 있으면 덩굴이 큰 나무를 타고 오르는 등라계갑으로 반기기도 해요.",
+    "부드럽기는 해도 끝내 자리를 잡는 풀과 덩굴, 그게 을목이에요. 축·미 같은 단단한 흙에도 뿌리를 뻗고, 가을 쇠 사이에서는 곁의 불과 큰 나무인 갑목에 기대 버틴다고 봐요.",
   "day-master-byeonghwa":
-    "하늘의 해에 빗대는 병화는 숨김없이 드러내고 주변을 데우는 양의 불이에요. 분위기를 단번에 바꾸는 활기만큼 빨리 식는 흐름도 함께 따라오죠. 적천수는 병화가 신금을 만나면 오히려 움츠러든다고 봐서, 신금과의 합도 한쪽으로만 읽지 않아요.",
+    "병화는 겨울에 약할까요? 적천수는 병화를 서리와 눈을 업신여기는 불로 그렸고, 실제로는 계절과 곁의 불씨·땔감을 함께 봐요. 여름 병화에게 강물인 임수가 반가운 것도 같은 이치죠.",
   "day-master-jeonghwa":
-    "정화는 촛불과 등불처럼 가까운 곳을 오래 밝히는 음의 불이에요. 한 사람, 한 가지 일에 마음을 오래 쏟는 대신 서운함도 속으로 오래 태우기 쉽죠. 적천수는 장작이 되는 갑목이 곁에 있으면 정화가 가을과 겨울도 견딘다고 봤어요.",
+    "촛불과 등불인 정화는 멀리보다 가까운 곳을 오래 비추는 쪽으로 읽어요. 큰 강인 임수를 만나도 꺼지기보다 천간합으로 묶이고, 갑목 같은 장작이 곁에 있으면 가을과 겨울도 견딘다고 봐요.",
   "day-master-muto":
-    "무토는 산과 너른 땅처럼 듬직하고 쉽게 흔들리지 않는 양의 흙이에요. 어수선할 때 자리를 지키는 힘은 움직여야 할 때 오래 머뭇거리는 모습과 한 몸이죠. 천간충의 짝이 없는 일간이며 빗물인 계수와 천간합을 이뤄요.",
+    "산과 너른 땅의 일간 무토에게는 천간충의 짝이 없어요. 대신 빗물인 계수와 천간합을 이루고, 물이 적셔 주면 살고 불이 말리면 앓는다는 적천수의 기준으로 계절을 먼저 따지죠.",
   "day-master-gito":
-    "논밭의 흙인 기토는 씨앗을 받아 키워 내듯 사람과 일을 길러 내는 음의 흙이에요. 꼼꼼하게 챙기는 만큼 생각이 길어져 결정이 늦어지기도 해요. 밭에 볕과 비가 필요하듯 곁의 병화와 계수를 함께 보며 풀죠.",
+    "씨앗을 받아 길러 내는 논밭의 흙이 기토예요. 나무가 무성해도 물이 날뛰어도 받아 내는 흙으로 보지만, 작물이 자라려면 볕이 되는 불과 함께 땅을 이룰 흙의 도움이 있어야 한다고 봐요.",
   "day-master-gyeonggeum":
-    "경금은 다듬기 전의 바위와 무쇠를 닮은 양의 쇠예요. 모두가 머뭇거릴 때 먼저 정리하는 결단 때문에, 바른말이 차갑게 들린다는 오해도 따라오죠. 적천수가 불을 얻으면 날카로워진다고 했듯 곁의 불을 단련으로 풀곤 해요.",
+    "아직 연장이 되지 않은 무쇠, 경금은 불을 만나 날이 서고 물을 만나 맑아진다고 읽어요. 촉촉한 흙은 쇠를 기르고 마른 흙은 쇠를 무르게 한다는 구절처럼, 곁의 흙이 어떤 흙인지도 함께 보죠.",
   "day-master-singeum":
-    "다듬은 보석을 닮은 신금은 음의 쇠로, 작은 차이를 알아보는 정교함과 뚜렷한 자기 기준으로 풀어요. 그 기준을 스스로에게도 들이대다 쉽게 지칠 수 있어요. 흙이 겹치는 걸 꺼리고 물이 넉넉한 걸 즐긴다는 적천수의 비유가 신금을 읽는 단서가 되죠.",
+    "다듬은 보석에 빗대는 신금은 흙이 겹치면 묻히고 물이 넉넉하면 빛난다고 봐요. 여름에는 촉촉한 흙을, 겨울에는 등불인 정화를 반긴다는 구절처럼 계절마다 반가운 글자가 달라지죠.",
   "day-master-imsu":
-    "임수는 큰 강과 바다처럼 멀리 흐르는 양의 물이에요. 판을 넓게 보는 시야 덕에 관심이 이곳저곳으로 옮겨 다니기도 하죠. 물길을 잡아 주는 흙이 곁에 있는지에 따라 같은 임수도 다르게 풀려요.",
+    "멀리 흐르는 큰 강, 임수는 태어난 계절에 따라 수위가 크게 달라지는 일간이에요. 물이 불어나는 겨울에는 둑이 되는 무토와 볕이 되는 병화를, 말라 가는 여름에는 수원이 되는 쇠를 먼저 찾아요.",
   "day-master-gyesu":
-    "이슬과 빗물을 닮은 계수는 천간의 마지막 글자이자 음의 물이에요. 말하지 않은 마음을 먼저 알아채지만 걱정은 혼자 삭이기 쉽죠. 적천수는 계수를 가장 약한 물이면서 하늘까지 닿는 물로 봤어요.",
+    "가장 약한 물이 하늘까지 닿는다, 적천수가 계수를 그린 말이에요. 이슬과 빗물처럼 드러나지 않게 스며드는 일간으로, 무토와는 천간합을, 정화와는 천간충을 이뤄요.",
 };
 
 /** Step-by-step articles. Each step's text is a sentence (or run of sentences) from the article body. */
@@ -273,5 +273,16 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
       (slug) => [slug, { published: "2026-09-30", updated: "2026-10-27" }] as const,
     ),
     ...["major-and-minor-arcana", "major-arcana-overview"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-27" }] as const),
+    // 2026-10-27 (saju third review of 2026-10-23): the 19 saju concept pages link on in their text and the nine thin ones
+    // grow past 2,500 shown characters; the ten day masters (bodies reworked on 2026-10-23) get 요약 of their own. Each
+    // entry carries the same date itself (saju.ts, saju-concepts.ts, day-masters.ts).
+    ...["heavenly-stems", "earthly-branches", "day-master", "ten-gods", "daewoon", "saju-vs-astrology", "manseryeok", "saju-compatibility", "new-year-fortune"].map(
+      (slug) => [slug, { published: "2026-10-01", updated: "2026-10-27" }] as const,
+    ),
+    ...[
+      "four-pillars", "ipchun-jeolgi", "jasi-birth", "saju-birth-info", "branch-relations", "twelve-stages", "yongsin", "wolun-iljin", "bond-score", "saju-glossary",
+      "day-master-gapmok", "day-master-eulmok", "day-master-byeonghwa", "day-master-jeonghwa", "day-master-muto",
+      "day-master-gito", "day-master-gyeonggeum", "day-master-singeum", "day-master-imsu", "day-master-gyesu",
+    ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-27" }] as const),
   ],
 );

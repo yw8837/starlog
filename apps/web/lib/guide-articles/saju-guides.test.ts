@@ -22,7 +22,12 @@ import { SAJU_CONCEPT_ARTICLES } from "./saju-concepts";
  * the answer, and every page leads on to others.
  */
 
-const UPDATED = "2026-10-23";
+/**
+ * Last content change: the concept pages took links and substance in the saju third review; the day masters' bodies were
+ * reworked on 2026-10-23 and their 요약 (answers.ts) on 2026-10-27, so their last change is that day too.
+ */
+const CONCEPT_UPDATED = "2026-10-27";
+const DAY_MASTER_UPDATED = "2026-10-27";
 const APP = fileURLToPath(new URL("../../app", import.meta.url));
 const full = (slug: string) => findArticle(slug) as GuideArticle;
 const DAY_MASTERS = DAY_MASTER_ARTICLES.map((article) => full(article.slug));
@@ -715,7 +720,7 @@ describe("every saju guide", () => {
     expect(proseUnits(article).join("\n")).not.toMatch(OUTCOMES);
     for (const [, path = ""] of text.matchAll(APP_URL)) expect(appRouteExists(path), `${slug}: ${path}`).toBe(true);
     expect(article.related, slug).toHaveLength(5);
-    expect(article.updated, slug).toBe(UPDATED);
+    expect(article.updated, slug).toBe(slug.startsWith("day-master-") ? DAY_MASTER_UPDATED : CONCEPT_UPDATED);
   });
 
   it("leaves no day master unlinked: each is a related read of at least two other pages", () => {
