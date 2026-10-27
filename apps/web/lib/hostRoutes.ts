@@ -15,8 +15,10 @@ import { GUIDE_HOME, GUIDE_HOST_PAGES, splitHosts } from "./hosts";
  * - The root domain also serves the operator's page and the two policies (GUIDE_HOST_PAGES: /about,
  *   /privacy, /terms), so the domain AdSense reviews has them at its own address. Their canonical is
  *   still the app host's.
- * - Any other path on the root domain is an app page: 307 to the same path on the app host.
- *   Temporary on purpose, because the root domain may later get pages of its own for other apps.
+ * - A known app path on the root domain (its first segment one of APP_SEGMENTS, the app's own routes) moves to the
+ *   same path on the app host for good (308): those addresses are Starlog's, whatever else the root domain gets.
+ * - Any other path there goes to the same path on the app host for now (307): temporary on purpose, because the
+ *   root domain may later get pages of its own for other apps (SEO audit 2026-10-27).
  * - The root domain's responses send HSTS without includeSubDomains.
  *
  * They exist only in the deploy build: NEXT_PUBLIC_SPLIT_HOSTS=1, the switch the links use, read when
@@ -63,6 +65,18 @@ const OWN_SEGMENTS = ["guide", "_next", "api", "og", "opengraph-image", "cards",
 const SEGMENT = "[^/.]+";
 
 /**
+ * The app's own first path segments: its page routes under app/, without the guide, the API, the three pages the
+ * root domain serves itself and the dev-only pages (lib/hostRoutes.test.ts reads app/ to keep this list whole).
+ */
+export const APP_SEGMENTS = [
+  "2027-keyword", "b", "birth-card", "bonds", "chapter", "evidence", "faq", "help", "how", "invite", "login", "lucky", "me",
+  "now", "owner", "pay", "premium", "pricing", "ranking", "refund", "s", "saju", "story", "tarot", "today",
+] as const;
+
+/** A known app path: a first segment of APP_SEGMENTS (in any letter case, as with APP_PATH), and the rest. */
+const KNOWN_APP_PATH = `/:first(${APP_SEGMENTS.map(anyCase).join("|")})/:rest(${SEGMENT})*`;
+
+/**
  * Any app path, as a first segment and the rest. Two params, not one `:path(…)` with a custom pattern:
  * the Worker compiles a destination with the default segment check, which refuses a "/" inside one
  * param (and answers 500), while a repeated `:rest*` takes the segments one by one. `:first` is always
@@ -86,6 +100,7 @@ export function hostRedirects(): HostRedirect[] {
     // redirects in both runtimes, so it never loops back here.
     { source: "/guide", has: onGuide, destination: "/", permanent: true },
     { source: GUIDE_HOME, has: onGuide, destination: "/", permanent: true },
+    { source: KNOWN_APP_PATH, has: onGuide, destination: `${SITE.url}/:first/:rest*`, permanent: true },
     { source: APP_PATH, has: onGuide, destination: `${SITE.url}/:first/:rest*`, permanent: false },
   ];
 }

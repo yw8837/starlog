@@ -9,7 +9,7 @@ import { GUIDE_HOST_PAGES, guideHostServes } from "@/lib/hosts";
 
 /**
  * /about, /privacy and /terms are served on the root domain too (GUIDE_HOST_PAGES), from the same HTML as on the app host,
- * and every other app path is a 307 from there (lib/hostRoutes.ts). So with the hosts split, every link on them names its
+ * and every other app path is a redirect from there (lib/hostRoutes.ts). So with the hosts split, every link on them names its
  * host: absolute, a fragment, or a path the root domain serves itself (AdSense audit 2026-10-27: 11 relative app links
  * took that redirect hop).
  */

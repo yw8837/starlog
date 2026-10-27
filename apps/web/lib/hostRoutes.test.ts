@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import nextConfig from "@/next.config";
 import { SITE } from "./config";
 import { guideIndexPath } from "./guide";
-import { GUIDE_MOVED_TO_HELP, hostHeaders, hostRedirects, hostRewrites, movedGuideRedirects } from "./hostRoutes";
+import { APP_SEGMENTS, GUIDE_MOVED_TO_HELP, hostHeaders, hostRedirects, hostRewrites, movedGuideRedirects } from "./hostRoutes";
 import { GUIDE_HOST_PAGES } from "./hosts";
 import { noindexHeaders } from "./robots";
 import { slashRedirect } from "./workerRedirects.mjs";
@@ -237,12 +237,15 @@ describe("the rules (NEXT_PUBLIC_SPLIT_HOSTS=1, the deploy build)", () => {
     expect(hostRewrites()[0]?.destination).toBe(guideIndexPath("tarot"));
   });
 
-  it("send /guide and the tarot tab to the root domain's / for good (308), the app's other /guide pages to the same path there (308), the root domain's other paths to the app for now (307)", () => {
+  it("send /guide and the tarot tab to the root domain's / for good (308), the app's other /guide pages to the same path there (308), the root domain's known app paths to the app for good (308) and any other path for now (307)", () => {
     const redirects = hostRedirects();
     expect(redirects.filter((rule) => rule.permanent)).toHaveLength(redirects.length - 1);
     expect(redirects.at(-1)?.permanent).toBe(false);
     expect(redirects.at(-1)?.destination.startsWith(`${SITE.url}/`)).toBe(true);
-    for (const rule of redirects.filter((r) => r.permanent)) {
+    // The known app paths, just ahead of the catch-all.
+    expect(redirects.at(-2)?.permanent).toBe(true);
+    expect(redirects.at(-2)?.destination).toBe(redirects.at(-1)?.destination);
+    for (const rule of redirects.slice(0, -2).filter((r) => r.permanent)) {
       expect(rule.source.startsWith("/guide")).toBe(true);
       expect(rule.destination === "/" || rule.destination.startsWith(`${SITE.guideUrl}/`), rule.destination).toBe(true);
     }
@@ -304,10 +307,15 @@ describe("on https://yeolmaeapps.kr", () => {
     expectRewrite(APEX, "/me", null);
   });
 
-  it("sends every app path to the same path on the app host, temporarily (307)", () => {
-    for (const path of ["/tarot/new", "/saju/new", "/tarot/new/situation", "/saju/chart", "/me", "/story", "/faq", "/now", "/today", "/pricing", "/b/ABC234", "/ranking/aries", "/invite/abc_DEF-123", "/guidebook", "/apiary", "/TAROT/new", "/tarot", "/saju", "/refund"]) {
-      expectRedirect(APEX, path, to(307, `${SITE.url}${path}`));
+  it("sends the app's known paths to the same path on the app host for good (308), in any letter case", () => {
+    const known = ["/tarot/new", "/saju/new", "/tarot/new/situation", "/saju/chart", "/me", "/story", "/faq", "/now", "/today", "/pricing", "/b/ABC234", "/ranking/aries", "/invite/abc_DEF-123", "/TAROT/new", "/Pricing", "/tarot", "/saju", "/refund"];
+    for (const path of [...known, "/2027-keyword/gap-ja", "/birth-card/the-fool", "/premium/match", "/login", "/help", "/how", "/evidence", "/lucky", "/bonds", "/s/abc", "/chapter/x", "/pay/success", "/owner"]) {
+      expectRedirect(APEX, path, to(308, `${SITE.url}${path}`));
     }
+  });
+
+  it("sends any other path to the same path on the app host for now (307): the root domain may get pages of its own", () => {
+    for (const path of ["/guidebook", "/apiary", "/tarotx", "/me2", "/2027", "/dev/characters", "/x/y"]) expectRedirect(APEX, path, to(307, `${SITE.url}${path}`));
     // Only the three pages below are the root domain's own: a name that merely starts with one is an app path.
     for (const path of ["/aboutus", "/privacy-policy", "/terms-of-use"]) expectRedirect(APEX, path, to(307, `${SITE.url}${path}`));
     expectRedirect(APEX, "/한글/경로", to(307, `${SITE.url}/한글/경로`));
@@ -406,7 +414,7 @@ describe("on https://starlog.yeolmaeapps.kr", () => {
 
 describe("with a port in the Host header", () => {
   it("still knows the two hosts", () => {
-    expectRedirect(`${APEX}:443`, "/me", to(307, `${SITE.url}/me`));
+    expectRedirect(`${APEX}:443`, "/me", to(308, `${SITE.url}/me`));
     expectRedirect(`${APEX}:443`, "/guide/saju", null);
     expectRedirect(`${APEX}:443`, "/guide/tarot", to(308, "/"));
     expectRewrite(`${APEX}:443`, "/", { to: "/guide/tarot" });
@@ -562,7 +570,14 @@ describe("the root domain's own pages: the operator's page and the two policies"
   });
 
   it("take nothing else with them: the other policy and service pages still go to the app host", () => {
-    for (const path of ["/refund", "/pricing", "/how", "/evidence", "/help", "/faq"]) expectRedirect(APEX, path, to(307, `${SITE.url}${path}`));
+    for (const path of ["/refund", "/pricing", "/how", "/evidence", "/help", "/faq"]) expectRedirect(APEX, path, to(308, `${SITE.url}${path}`));
+  });
+
+  it("leave the app's own first segments to APP_SEGMENTS: every page directory under app/ but the guide, the API, these three and dev-only pages", () => {
+    const dirs = readdirSync(new URL("../app", import.meta.url), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && !entry.name.includes("."))
+      .map((entry) => entry.name);
+    expect([...APP_SEGMENTS].sort()).toEqual(dirs.filter((name) => !["guide", "api", "dev", ...GUIDE_HOST_PAGES.map((path) => path.slice(1))].includes(name)).sort());
   });
 
   it("are the same pages lib/hosts.ts says a guide page may link on its own host", () => {
@@ -628,8 +643,9 @@ describe("trailing-slash URLs (the Worker in front of OpenNext)", () => {
       // the root domain: the guide's home is its /, and an app page goes to the app host
       [`https://${APEX}/guide/`, one(`${SITE.guideUrl}/`)],
       [`https://${APEX}/guide/tarot/`, one(`${SITE.guideUrl}/`)],
-      [`https://${APEX}/pricing/`, one(`${SITE.url}/pricing`, 307)],
-      [`https://${APEX}/tarot/new/`, one(`${SITE.url}/tarot/new`, 307)],
+      [`https://${APEX}/pricing/`, one(`${SITE.url}/pricing`)],
+      [`https://${APEX}/tarot/new/`, one(`${SITE.url}/tarot/new`)],
+      [`https://${APEX}/guidebook/`, one(`${SITE.url}/guidebook`, 307)],
       // an app manual that left the guide, from either host
       [`https://${APEX}/guide/bond-score/`, one(`${SITE.url}/help#bonds-score`)],
       [`https://${STARLOG}/guide/now-card-how-to/`, one(`${SITE.url}/help#tarot-now-guide`)],
