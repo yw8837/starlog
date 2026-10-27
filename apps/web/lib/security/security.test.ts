@@ -4,6 +4,7 @@ import { isOwner, ownerCookie } from "./owner";
 import { FIRST_FREE_COOKIE_MAX_AGE, hasQuota, kstDay, nextKstMidnight, quotaLimits, readFirstFree, readQuota, spendFirstFree, spendQuota } from "./quota";
 import { LIMITS_PER_MINUTE, rateLimit, resetMemoryLimiter } from "./rateLimit";
 import { canonicalJson, safeEqual, sha256, signToken, signingSecret, verifyToken } from "./sign";
+import { noindexHeaders } from "../robots";
 
 const SECRET = "test-secret-0123456789-0123456789-abcdef";
 // 2026-09-30 23:59 KST and one minute later (2026-10-01 00:00 KST)
@@ -197,7 +198,7 @@ describe("next.config.ts", () => {
     const rules = await nextConfig.headers!();
     const [rule, ...noindex] = rules;
     // After the global rule, the share images' X-Robots-Tag entries (lib/robots.ts) and nothing else.
-    expect(noindex.map((entry) => entry.headers.map((header) => header.key))).toEqual([["X-Robots-Tag"], ["X-Robots-Tag"]]);
+    expect(noindex.map((entry) => entry.headers.map((header) => header.key))).toEqual(noindexHeaders().map(() => ["X-Robots-Tag"]));
     expect(rule?.source).toBe("/:path*");
     expect(rule?.has).toBeUndefined();
     expect(rule?.headers).toContainEqual({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
@@ -229,7 +230,7 @@ describe("next.config.ts", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     const { default: nextConfig } = await import("@/next.config");
     const [global, apex, ...rest] = await nextConfig.headers!();
-    expect(rest.map((entry) => entry.headers.map((header) => header.key))).toEqual([["X-Robots-Tag"], ["X-Robots-Tag"]]);
+    expect(rest.map((entry) => entry.headers.map((header) => header.key))).toEqual(noindexHeaders().map(() => ["X-Robots-Tag"]));
     expect(global?.has).toBeUndefined();
     expect(global?.headers).toContainEqual({ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" });
     expect(apex?.source).toBe("/:path*");
