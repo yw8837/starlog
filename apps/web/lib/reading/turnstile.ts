@@ -8,14 +8,14 @@
  * cannot load, the challenge fails or times out, or the caller leaves: never a silent wait.
  */
 
+import { BOT_CHECK_EVENT } from "./botCheckEvent";
+
 export const TURNSTILE_SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 /** The script loads within this, or the check fails (the next request tries again). */
 const LOAD_MS = 15_000;
 /** A challenge answers within this, an interactive one included, or it fails. */
 const SOLVE_MS = 120_000;
 const INTERACTIVE_NOTE = "보안 확인이 필요해요. 아래 확인란을 눌러 주세요.";
-/** Sent on window with `detail` true while a person has to take part, false after: a waiting screen stops its clock (useBotCheck). */
-export const BOT_CHECK_EVENT = "starlog:bot-check";
 const BOX_STYLE = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:2147483000;max-width:calc(100vw - 32px)";
 const NOTE_STYLE = "margin:0 0 8px;padding:8px 12px;border-radius:8px;background:#fff;color:#1b1b1f;font-size:15px;line-height:1.5";
 

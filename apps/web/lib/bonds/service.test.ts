@@ -132,6 +132,15 @@ describe("bonds service", () => {
     expect(await resolveInvite(repo, next.toLowerCase())).toMatchObject({ ownerNickname: "용우", sign: "aries", filled: 1, slots: 4 });
   });
 
+  it("refuses the owner on their own link from a browser that does not know them (logged out, KakaoTalk's in-app browser): their nickname and birth date", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    await expect(joinStar(repo, t0, { code, friendKey: "in-app", nickname: "용우", birth: me, pick: 0, message: null }))
+      .rejects.toMatchObject({ code: "SELF_JOIN" });
+    // a friend who shares the birth date, under their own nickname, still joins
+    await expect(joinStar(repo, t0, { code, friendKey: "twin", nickname: "쌍둥이", birth: me, pick: 1, message: null })).resolves.toMatchObject({ completed: false });
+  });
+
   it("checks the friend's input", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
@@ -153,8 +162,8 @@ describe("bonds service", () => {
     expect(view.completed).toEqual([]);
     expect(view.filling?.stars.map((s) => s.slot)).toEqual([0, 2, 3]);
     expect(view.filling?.row).toMatchObject({ status: "filling", completedAt: null, total: joined[0]!.score + joined[2]!.score + joined[3]!.score });
-    // the next friend takes the emptied slot
-    const next = await joinStar(repo, t0 + 3, { code, friendKey: "n", nickname: "다시", birth: friends[1]!, pick: 5, message: null });
+    // the next friend (someone else: the removed one stays out) takes the emptied slot
+    const next = await joinStar(repo, t0 + 3, { code, friendKey: "n", nickname: "다시", birth: { calendar: "solar", year: 1993, month: 3, day: 7 }, pick: 5, message: null });
     expect(next.star.slot).toBe(1);
     expect(next.completed).toBe(true);
   });
@@ -286,6 +295,17 @@ describe("bonds service", () => {
     // the owner's 별자리 바꾸기 starts another round: that device may join it
     await switchSign(repo, t0 + 1, "o1", "leo");
     expect((await join(repo, t0 + 1, code, 0)).sign).toBe("leo");
+  });
+
+  it("keeps a removed friend out on another browser too (a private window, a new nickname): the 궁합 basis hash is blocked as well", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "pisces");
+    const first = await join(repo, t0, code, 0);
+    await removeStar(repo, t0, "o1", first.star.id);
+    await expect(joinStar(repo, t0, { code, friendKey: "private-window", nickname: "다른이름", birth: friends[0]!, pick: 3, message: null }))
+      .rejects.toMatchObject({ code: "REMOVED" });
+    // someone else on that other browser still joins
+    expect((await joinStar(repo, t0, { code, friendKey: "private-window", nickname: "친구1", birth: friends[1]!, pick: 3, message: null })).sign).toBe("pisces");
   });
 
   it("refuses one person twice in a constellation under the same nickname, comparing a hash of the 궁합 basis, not the birth date (QA M5)", async () => {

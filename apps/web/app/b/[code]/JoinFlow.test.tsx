@@ -145,6 +145,19 @@ describe("JoinFlow", () => {
     expect(window.sessionStorage.getItem(DRAFT_KEY)).toBeNull();
   });
 
+  it("처음부터 다시 볼게요 loads the invite again (a soft link to the same page kept the notice and the old constellation)", async () => {
+    keepDraft("#message");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: false, code: "MOVED", reason: "changed", constellationId: "consnexttaurus000000", sign: "taurus", filled: 0, slots: 5 }), { status: 409 })));
+    const replace = vi.fn();
+    vi.stubGlobal("location", { ...window.location, replace });
+    render(<JoinFlow state={OPEN} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "별 되기" }));
+    });
+    fireEvent.click(screen.getByRole("button", { name: "처음부터 다시 볼게요" }));
+    expect(replace).toHaveBeenCalledWith("/b/K7M4QX");
+  });
+
   it("the checkbox agrees to the nickname and score showing when the owner shares (review 2026-10-23)", () => {
     render(<JoinFlow state={OPEN} />);
     expect(screen.getByRole("checkbox").closest("label")?.textContent).toContain("만 14세 이상이고, 닉네임과 인연 점수가 용우님의 별자리에 남고 용우님이 공유하면 닉네임과 점수가 보이는 데 동의해요");

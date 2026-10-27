@@ -422,6 +422,9 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
   if (owner.joinsDay === today && owner.joinsCount >= DAILY_STAR_LIMIT) throw new BondsError("DAILY_STAR_LIMIT");
 
   const friend = basisOf(input.birth, now);
+  // The owner on their own link from a browser that does not know them (logged out, KakaoTalk's in-app browser): their
+  // nickname and birth date. A friend born the same day joins under their own nickname.
+  if (nickname.value === owner.nickname && canonicalJson(friend) === canonicalJson(owner.basis)) throw new BondsError("SELF_JOIN");
   const { score, parts } = bondScore(owner.basis, friend);
   const card = drawCard(input.pick);
 
@@ -451,6 +454,7 @@ export async function joinStar(repo: BondsRepo, now: number, input: JoinInput): 
     if (slot !== undefined && (await repo.isBlocked(filling.id, input.friendKey))) throw new BondsError("REMOVED");
     const basisHash = slot === undefined ? undefined : await sha256(`basis:${filling.id}:${canonicalJson(friend)}`);
     if (basisHash && stars.some((s) => s.basisHash === basisHash && s.nickname === nickname.value)) throw new BondsError("DUPLICATE_STAR");
+    if (basisHash && (await repo.isBlocked(filling.id, `basis:${basisHash}`))) throw new BondsError("REMOVED");
     if (slot === undefined) {
       // Full but still marked as filling (filled by someone else just now, or a count that never
       // landed): complete it, start the next sign, and try again there.
@@ -500,6 +504,8 @@ export async function removeStar(repo: BondsRepo, now: number, ownerId: string, 
   await spendAction(repo, now, ownerId);
   // The friend device stays out of this constellation (owner policy, QA 2026-10-27); a new round lets it in again.
   await repo.blockFriend(row.id, star.friendKey, now);
+  // and the person on another browser (a private window, a new nickname): their 궁합 basis hash, never the birth date
+  if (star.basisHash) await repo.blockFriend(row.id, `basis:${star.basisHash}`, now);
   await repo.deleteStar(starId);
   if (row.status === "complete") {
     const other = await repo.fillingOf(ownerId);

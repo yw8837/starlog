@@ -80,4 +80,14 @@ describe("InviteShareButton", () => {
     await press("카카오톡으로 초대하기");
     expect(screen.getByRole("status").textContent).toBe("카카오톡을 열지 못했어요. 아래 링크 복사로 보내 주세요");
   });
+
+  it("the home row's single button brings out the other way when KakaoTalk does not open, so the line points at a real button", async () => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
+    kakao.mockRejectedValueOnce(new Error("blocked"));
+    render(<InviteShareButton code="K7M4QX" sign="aries" filled={1} ownerNickname="용우" single variant="secondary" />);
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["카카오톡으로 초대하기"]);
+    await press("카카오톡으로 초대하기");
+    expect(screen.getByRole("status").textContent).toBe("카카오톡을 열지 못했어요. 아래 링크 복사로 보내 주세요");
+    expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual(["카카오톡으로 초대하기", "링크 복사"]);
+  });
 });

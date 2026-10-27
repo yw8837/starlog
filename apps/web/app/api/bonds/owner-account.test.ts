@@ -168,6 +168,25 @@ describe("별자리 인연 owners belong to accounts", () => {
     expect((await me(device)).link).toBeUndefined();
   });
 
+  it("a choice made on a stale screen is refused once another device chose (CHANGED): it never deletes the owner kept there", async () => {
+    const web: Jar = new Map();
+    const userId = await signIn(web);
+    await accountOwner(web, "계정주인", "aries");
+    const { jar: phone, id: phoneId } = await deviceOwner("폰주인", "leo");
+    const { jar: laptop } = await deviceOwner("노트북주인", "virgo");
+    await signIn(phone, userId);
+    await signIn(laptop, userId);
+    const shown = (await me(laptop)).link as { account: { createdAt: number } };
+    const phoneShown = (await me(phone)).link as { account: { createdAt: number } };
+    expect(await (await linkPost(req("/api/bonds/link", phone, { keep: "device", accountSince: phoneShown.account.createdAt }))).json()).toMatchObject({ ok: true, kept: "device" });
+    for (const keep of ["device", "account"] as const) {
+      const res = await linkPost(req("/api/bonds/link", laptop, { keep, accountSince: shown.account.createdAt }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ ok: false, code: "CHANGED" });
+    }
+    expect((await bondsRepo().ownerOfUser(userId))?.id).toBe(phoneId);
+  });
+
   it("keeping the account's owner deletes the device's", async () => {
     const web: Jar = new Map();
     const userId = await signIn(web);

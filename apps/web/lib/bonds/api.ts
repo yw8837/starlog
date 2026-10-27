@@ -24,7 +24,7 @@ declare global {
   }
 }
 
-export type BondsApiCode = BondsErrorCode | "RATE_LIMIT" | "NOT_CONFIGURED" | "SERVER" | "BAD_ORIGIN" | "LOGIN_REQUIRED" | "CODE_LIMIT";
+export type BondsApiCode = BondsErrorCode | "RATE_LIMIT" | "NOT_CONFIGURED" | "SERVER" | "BAD_ORIGIN" | "LOGIN_REQUIRED" | "CODE_LIMIT" | "CHANGED";
 
 const STATUS: Record<BondsApiCode, number> = {
   BAD_INPUT: 400,
@@ -41,6 +41,7 @@ const STATUS: Record<BondsApiCode, number> = {
   NO_FILLING: 409,
   ALL_DONE: 409,
   MOVED: 409,
+  CHANGED: 409,
   DUPLICATE_STAR: 409,
   REMOVED: 403,
   COOLDOWN: 429,

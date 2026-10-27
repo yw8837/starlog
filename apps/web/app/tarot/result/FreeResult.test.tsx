@@ -376,6 +376,15 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     expect(screen.getByText("잠시 뒤에 다시 시도해 주세요.")).toBeTruthy();
   });
 
+  it("says another screen is opening it when the account's claim is held right now (review 2026-10-28), not that it was taken", async () => {
+    seed();
+    stub({ me: [MEMBER], reading: () => Response.json({ code: "NOT_AVAILABLE", reason: "opening-busy", message: "x" }, { status: 409 }) });
+    render(<FreeResult instant />);
+    fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
+    expect(await screen.findAllByText("다른 화면에서 오픈 기념 무료 풀이를 열고 있어요")).not.toHaveLength(0);
+    expect(screen.queryByText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요")).toBeNull();
+  });
+
   it("sends a visitor to log in first, and back here to open it (owner 2026-10-27); nothing is asked of the server", async () => {
     seed();
     stub({ me: [GUEST], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
@@ -404,6 +413,15 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     expect(sent).toHaveLength(1);
     expect(JSON.parse(String((sent[0]?.[1] as RequestInit | undefined)?.body))).not.toHaveProperty("unlock");
     expect(listChapters()).toMatchObject([{ opening: true }]);
+  });
+
+  it("back from the login on an account that took it already (another device): says why nothing opened, and paying is the choice", async () => {
+    seed();
+    stub({ me: [() => Response.json(meBody({ openingUsed: true }))], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
+    render(<FreeResult instant autoUnlock="opening" loginFlag="ok" />);
+    expect(await screen.findByText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "2,900원 결제하고 보기" })).toBeTruthy();
+    expect(vi.mocked(fetch).mock.calls.some(([url]) => url === "/api/tarot/reading")).toBe(false);
   });
 
   it("back from the login, opens nothing by itself when the login did not happen, or this device used it already", async () => {

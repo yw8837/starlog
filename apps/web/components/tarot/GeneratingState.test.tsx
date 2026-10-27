@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BOT_CHECK_LINE, RETRY_CAPTION, checklist, progressPlan } from "@/lib/reading/progress";
-import { BOT_CHECK_EVENT } from "@/lib/reading/turnstile";
+import { BOT_CHECK_EVENT } from "@/lib/reading/botCheckEvent";
 import { GeneratingState } from "./GeneratingState";
 
 const STAY = "이 화면을 열어 둔 채로 기다려 주세요.";

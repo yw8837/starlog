@@ -10,8 +10,13 @@ import { useEffect } from "react";
 export function OpenFromHash() {
   useEffect(() => {
     const open = () => {
-      const card = window.location.hash.length > 1 ? document.getElementById(decodeURIComponent(window.location.hash.slice(1))) : null;
-      if (card instanceof HTMLDetailsElement) card.open = true;
+      // The moved guide URLs' redirect puts a query after the fragment (#tarot-now-guide?utm_source=…): the id is before it,
+      // and the browser does not scroll to such a fragment by itself.
+      const [id = "", query] = decodeURIComponent(window.location.hash.slice(1)).split("?");
+      const card = id ? document.getElementById(id) : null;
+      if (!(card instanceof HTMLDetailsElement)) return;
+      card.open = true;
+      if (query !== undefined) card.scrollIntoView?.({ block: "start" });
     };
     open();
     window.addEventListener("hashchange", open);

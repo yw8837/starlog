@@ -117,6 +117,9 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const context = method === "paid" ? "paid" : method === "free" ? "gift" : "reading";
   const unlockError = creditView ?? (unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error, context) : null);
   const loginNote = loginMessage(loginFlag);
+  // Back from the 오픈 기념 무료 login on an account that took it already (on another device): nothing opens by itself,
+  // so say why (the sheet offers what is left).
+  const openingTaken = autoUnlock === "opening" && account?.user?.openingUsed ? "이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요" : null;
 
   // After a failed unlock the result comes back; bring the reason into view and focus it.
   useEffect(() => {
@@ -364,7 +367,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 payHref={checkoutHref("tarot", RETURN_TO)}
                 owner={account?.owner}
                 refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
-                error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
+                error={unlockError ?? (openingTaken ? { title: openingTaken, action: null } : loginNote ? { title: loginNote, action: null } : null)}
                 redrawHref={withFlags("/tarot/draw", { instant })}
                 editHref="/tarot/new"
                 openedHref={openedId ? `/chapter/${openedId}` : undefined}

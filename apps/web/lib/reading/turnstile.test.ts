@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BOT_CHECK_EVENT, resetTurnstile, turnstileToken } from "./turnstile";
+import { BOT_CHECK_EVENT } from "./botCheckEvent";
+import { resetTurnstile, turnstileToken } from "./turnstile";
 
 const SCRIPT = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 

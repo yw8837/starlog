@@ -128,9 +128,11 @@ describe("오픈 기념 무료 per account", () => {
     const db = useTestDb();
     const [web, phone] = [await device("alice"), await device("alice")];
     const answers = await Promise.all([openFree(web), openFree(phone)]);
-    expect(answers.map((r) => r.status).sort()).toEqual([200, 429]);
-    const refused = answers.find((r) => r.status === 429)!;
-    expect(await refused.json()).toMatchObject({ code: "BETA_LIMIT", scope: "account" });
+    expect(answers.filter((r) => r.status === 200)).toHaveLength(1);
+    // the other: being opened right now (busy) or, once that run is done, taken
+    const refused = answers.find((r) => r.status !== 200)!;
+    expect([409, 429]).toContain(refused.status);
+    expect(await refused.json()).toMatchObject(refused.status === 409 ? { code: "NOT_AVAILABLE", reason: "opening-busy" } : { code: "BETA_LIMIT", scope: "account" });
     expect(await claims(db)).toEqual([{ user_key: await keyOf("alice"), claimed_at: T0, opened: 1 }]);
   });
 
@@ -149,7 +151,9 @@ describe("오픈 기념 무료 per account", () => {
     const db = useTestDb();
     const b = await device("alice");
     await db.prepare("INSERT INTO opening_claims (user_key, claimed_at, opened) VALUES (?, ?, 0)").bind(await keyOf("alice"), T0 - OPENING_HOLD_MS + 1000).run();
-    expect((await openFree(b)).status).toBe(429);
+    const busy = await openFree(b);
+    expect(busy.status).toBe(409);
+    expect(await busy.json()).toMatchObject({ code: "NOT_AVAILABLE", reason: "opening-busy" });
     vi.setSystemTime(T0 + 1000);
     expect((await openFree(b)).status).toBe(200);
     expect(await claims(db)).toEqual([{ user_key: await keyOf("alice"), claimed_at: T0 + 1000, opened: 1 }]);

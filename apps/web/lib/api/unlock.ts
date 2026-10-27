@@ -73,6 +73,7 @@ export interface UnlockPlan {
 /** 오픈 기념 무료 per account (owner 2026-10-27): a visitor logs in first (the screen comes back and opens it). */
 const OPENING_LOGIN_MESSAGE = "오픈 기념 무료는 로그인하고 받을 수 있어요. 카카오나 Google로 로그인하면 바로 열려요.";
 const OPENING_ACCOUNT_USED_MESSAGE = "이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요.";
+const OPENING_BUSY_MESSAGE = "다른 화면에서 오픈 기념 무료 풀이를 열고 있어요. 다 열리면 내 기록에 나타나요.";
 const OPENING_UNAVAILABLE_MESSAGE = "지금은 오픈 기념 무료를 열 수 없어요. 잠시 뒤에 다시 시도해 주세요.";
 const openingLoginResponse = () => errorResponse("LOGIN_REQUIRED", { reason: "opening", message: OPENING_LOGIN_MESSAGE });
 /** The claim cannot be checked (D1 down, or the claims table not migrated yet): fail closed; paid openings never ask. */
@@ -111,6 +112,7 @@ export async function planUnlock(request: Request, gate: Gate, kind: StandardPro
       return openingUnavailableResponse();
     }
     if (claim === "taken") return errorResponse("BETA_LIMIT", { scope: "account", message: OPENING_ACCOUNT_USED_MESSAGE });
+    if (claim === "busy") return errorResponse("NOT_AVAILABLE", { reason: "opening-busy", message: OPENING_BUSY_MESSAGE });
     // Account sync: from SYNC_REVISION_DATE the reading is kept in the account too; before it, on the device alone.
     if (!syncRevisionInForce(gate.now)) return { ...base, first, claim };
     return { ...base, first, claim, keep: { db: ctx.db, accountSecret: ctx.accountSecret, userId: user.id, source: gate.owner ? "owner" : "free" } };

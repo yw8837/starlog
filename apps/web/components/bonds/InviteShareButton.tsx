@@ -39,6 +39,8 @@ export function inviteTitle(ownerNickname: string, sign: SignId): string {
  */
 export function InviteShareButton({ code, sign, filled, ownerNickname, single = false, variant = "primary", kakao = kakaoKey() }: InviteShareButtonProps) {
   const [toast, setToast] = useState("");
+  // The home row's single button: KakaoTalk did not open, so the other way comes out under it.
+  const [kakaoFailed, setKakaoFailed] = useState(false);
   // Without the system share sheet (most computers) the button copies the link, and says so (QA L7).
   const [sheet, setSheet] = useState(true);
   useEffect(() => setSheet(typeof navigator.share === "function"), []);
@@ -60,6 +62,7 @@ export function InviteShareButton({ code, sign, filled, ownerNickname, single = 
       });
     } catch {
       // what to do instead (QA L11)
+      setKakaoFailed(true);
       setToast(`카카오톡을 열지 못했어요. 아래 ${otherLabel}로 보내 주세요`);
     }
   };
@@ -82,7 +85,7 @@ export function InviteShareButton({ code, sign, filled, ownerNickname, single = 
           <Button variant={variant} size={variant === "primary" ? "lg" : "md"} block onClick={sendKakao}>
             카카오톡으로 초대하기
           </Button>
-          {single ? null : other("secondary")}
+          {single && !kakaoFailed ? null : other("secondary")}
         </>
       ) : (
         other(variant)

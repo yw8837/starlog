@@ -18,8 +18,11 @@ export interface OpeningClaim {
   at: number;
 }
 
-/** The claim held for this account, "taken" when it was claimed (or is held by a run in flight), "missing" before the migration. */
-export async function holdOpeningClaim(db: D1Binding, key: string, now: number): Promise<OpeningClaim | "taken" | "missing"> {
+/**
+ * The claim held for this account; "taken" when it was claimed, "busy" while a run in flight holds it (another tab or
+ * device is opening it right now), "missing" before the migration.
+ */
+export async function holdOpeningClaim(db: D1Binding, key: string, now: number): Promise<OpeningClaim | "taken" | "busy" | "missing"> {
   try {
     const result = await db
       .prepare(
@@ -29,7 +32,9 @@ export async function holdOpeningClaim(db: D1Binding, key: string, now: number):
       )
       .bind(key, now, now - OPENING_HOLD_MS)
       .run();
-    return result.meta?.changes === 1 ? { db, key, at: now } : "taken";
+    if (result.meta?.changes === 1) return { db, key, at: now };
+    const held = await db.prepare("SELECT opened FROM opening_claims WHERE user_key = ?").bind(key).first<{ opened: number }>();
+    return held && held.opened === 0 ? "busy" : "taken";
   } catch (error) {
     if (missingTable(error)) return "missing";
     throw error;

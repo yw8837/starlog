@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BOT_CHECK_EVENT } from "./turnstile";
+import { BOT_CHECK_EVENT } from "./botCheckEvent";
 
 /** True while the security check waits on the person's tick (lib/reading/turnstile.ts). */
 export function useBotCheck(): boolean {

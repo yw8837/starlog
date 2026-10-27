@@ -4,6 +4,8 @@ import { body, bondsRoute, fail, ok } from "@/lib/bonds/api";
 const LinkBody = z.object({
   /** when the account already has an owner: which one stays */
   keep: z.enum(["device", "account"]).optional(),
+  /** the account's owner the choice showed (its createdAt): another device may have chosen meanwhile */
+  accountSince: z.number().int().optional(),
 });
 
 /**
@@ -14,13 +16,15 @@ const LinkBody = z.object({
  */
 export async function POST(request: Request): Promise<Response> {
   return bondsRoute(request, "link", async ({ repo, who }) => {
-    const { keep } = await body(request, LinkBody);
+    const { keep, accountSince } = await body(request, LinkBody);
     const { userId, deviceOwnerId } = await who();
     if (!userId) return fail("LOGIN_REQUIRED");
     if (!deviceOwnerId) return fail("NOT_FOUND");
     const account = await repo.ownerOfUser(userId);
     if (account) {
       if (!keep) return fail("BAD_INPUT", { field: "keep" });
+      // a stale screen (another device of the account chose first) must not delete the owner kept there
+      if (accountSince !== undefined && accountSince !== account.createdAt) return fail("CHANGED");
       if (keep === "account") {
         await repo.deleteOwner(deviceOwnerId);
         return ok({ kept: "account" });

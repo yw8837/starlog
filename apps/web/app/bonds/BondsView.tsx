@@ -173,11 +173,12 @@ function LinkPrompt({ link, reload }: { link: LinkOffer; reload: () => void }) {
   const send = async (keep?: "device" | "account") => {
     setBusy(true);
     setError("");
-    const result = await bondsApi("link", keep ? { keep } : {});
+    const result = await bondsApi("link", keep && link.kind === "choose" ? { keep, accountSince: link.account.createdAt } : {});
     setBusy(false);
     setConfirm(null);
     if (!result.ok) {
       setError(bondsMessage(result, "연결하지 못했어요. 잠시 뒤에 다시 시도해 주세요"));
+      if (result.code === "CHANGED") setTimeout(reload, 1500);
       return;
     }
     reload();

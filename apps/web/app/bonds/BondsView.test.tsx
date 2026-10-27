@@ -347,7 +347,7 @@ describe("BondsView: the owner belongs to the account (owner 2026-10-27)", () =>
     await act(async () => {
       fireEvent.click(within(dialog).getByRole("button", { name: "지우고 남기기" }));
     });
-    expect(calls.find((c) => c.url.endsWith("/api/bonds/link"))?.body).toEqual({ keep: "device" });
+    expect(calls.find((c) => c.url.endsWith("/api/bonds/link"))?.body).toEqual({ keep: "device", accountSince: expect.any(Number) });
   });
 
   it("keeping the account's when this device's holds no star goes at once", async () => {
@@ -363,7 +363,7 @@ describe("BondsView: the owner belongs to the account (owner 2026-10-27)", () =>
       fireEvent.click(within(within(prompt).getAllByRole("listitem")[0]!).getByRole("button", { name: "이 별자리 남기기" }));
     });
     expect(screen.queryByRole("dialog", { name: "고르지 않은 별자리를 지울까요?" })).toBeNull();
-    expect(calls.find((c) => c.url.endsWith("/api/bonds/link"))?.body).toEqual({ keep: "account" });
+    expect(calls.find((c) => c.url.endsWith("/api/bonds/link"))?.body).toEqual({ keep: "account", accountSince: expect.any(Number) });
   });
 });
 

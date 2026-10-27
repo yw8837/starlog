@@ -476,7 +476,8 @@ function MovedNotice({ moved, invite, busy, onGo }: { moved: Moved; invite: Open
       <Button block onClick={onGo} disabled={busy}>
         그대로 들어가기
       </Button>
-      <Button variant="ghost" block href={`/b/${invite.code}`}>
+      {/* A full load: a soft link to this same page kept the notice and the constellation it was about. The form comes back from the draft. */}
+      <Button variant="ghost" block onClick={() => window.location.replace(`/b/${invite.code}`)}>
         처음부터 다시 볼게요
       </Button>
     </div>
