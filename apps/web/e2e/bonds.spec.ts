@@ -70,8 +70,10 @@ async function startOwner(page: Page, nickname = "용우"): Promise<string> {
   return user;
 }
 
+/** The owner's invite link code: no code on screen any more (owner 2026-10-28: links only), so from the owner's own view. */
 async function inviteCode(page: Page): Promise<string> {
-  const code = (await page.locator("p[aria-label^='초대코드']").first().textContent())?.trim() ?? "";
+  const res = await page.request.get("/api/bonds/me");
+  const code = ((await res.json()) as { invite?: { code?: string } }).invite?.code ?? "";
   expect(code).toMatch(/^[A-Z2-9]{6}$/);
   return code;
 }
@@ -128,10 +130,10 @@ test.describe("별자리 인연 · owner", { tag: "@login" }, () => {
     await expect(kakao).toBeVisible();
     // Brought into view right after making it, without scrolling.
     await expect(kakao).toBeInViewport();
-    // Just made: the invite is the first button, above the figure; the code waits folded under 초대코드 보기.
+    // Just made: the invite is the first button, above the figure; no code anywhere (owner 2026-10-28: links only).
     await expect(panel.getByRole("button").first()).toHaveText("카카오톡으로 초대하기");
-    await expect(panel.getByText("초대코드 보기")).toBeVisible();
-    await expect(panel.locator("p[aria-label^='초대코드']")).toBeHidden();
+    await expect(page.getByText(/초대코드/)).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: "초대 링크 새로 만들기" })).toBeVisible();
     if (shots) {
       await page.addStyleTag({ content: "nextjs-portal{display:none!important}" });
       await page.screenshot({ path: "test-results/share-shots/bonds-made.png" });
@@ -521,15 +523,14 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
     for (const ctx of [a, b, c]) await ctx.dispose();
   });
 
-  test("/b with a lower-case code → join → score, reasons, 인연 카드 → 나도 내 별자리 만들기", async ({ page, baseURL }) => {
+  test("the /b link → join → score, reasons, 인연 카드 → 나도 내 별자리 만들기; /b alone goes to 별자리 인연 (no code to type)", async ({ page, baseURL }) => {
     const { code } = await apiOwner(baseURL!, "용우", "aries");
     await friendJoin(baseURL!, code, FRIENDS[0]!, 0);
 
     await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
     await page.goto("/b", { timeout: 120_000 });
-    await page.getByLabel("초대코드").fill(code.toLowerCase());
-    await page.getByRole("button", { name: "참여하기" }).click();
-    await expect(page).toHaveURL(new RegExp(`/b/${code}$`), { timeout: 120_000 });
+    await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
+    await page.goto(`/b/${code}`, { timeout: 120_000 });
     await expect(page.getByRole("heading", { level: 1, name: "용우님의 양자리에 별이 되어 주세요" })).toBeVisible();
     await expect(page.getByText("1/4", { exact: true })).toBeVisible();
     // the share notice is said once, above 별 되기 (QA L5), not on the form

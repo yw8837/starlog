@@ -7,7 +7,6 @@ import { getCard, getConstellation, type SignId } from "@starlog/core";
 import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
 import { BondScore } from "@/components/bonds/BondScore";
 import { BondShareButton } from "@/components/bonds/BondsShareButton";
-import { CodeEntry } from "@/components/bonds/CodeEntry";
 import { ConstellationArt } from "@/components/bonds/ConstellationArt";
 import { InviteShareButton } from "@/components/bonds/InviteShareButton";
 import { Cat } from "@/components/characters/Cat";
@@ -91,16 +90,8 @@ export function JoinFlow({ state }: { state: InviteState }) {
               ? "지금은 초대를 열 수 없어요. 잠시 뒤에 다시 시도해 주세요"
               : "이 초대는 열 수 없어요"}
       </h1>
-      {state.status === "bad" ? (
-        <>
-          {/* Friends get a link, not a code (owner 2026-10-02): what to do first, the code entry folded under it. */}
-          <p className={b.helper}>링크가 바뀌었거나 코드가 맞지 않아요. 보낸 친구에게 초대 링크를 다시 받아 주세요.</p>
-          <details className={`${b.panel} ${s.entry}`}>
-            <summary className={s.entrySummary}>초대코드로 참여하기</summary>
-            <CodeEntry id="retry-code" replace />
-          </details>
-        </>
-      ) : null}
+      {/* Invites are links only (owner 2026-10-28): what to do, nothing to type. */}
+      {state.status === "bad" ? <p className={b.helper}>링크가 바뀌었거나 없어졌어요. 보낸 친구에게 초대 링크를 다시 받아 주세요.</p> : null}
       {earlier ? <EarlierStar earlier={earlier} /> : null}
       <Button href="/bonds" variant="secondary" block>
         나도 내 별자리 만들기

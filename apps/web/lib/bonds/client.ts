@@ -27,10 +27,10 @@ export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResu
 }
 
 /** codeGuard shuts a network out for up to 10 minutes after wrong codes, or a minute when it looks up a lot (QA L1). */
-export const CODE_LIMIT_MESSAGE = "코드 확인이 잠깐 많았어요. 잠시 뒤에(길면 10분) 다시 시도해 주세요";
+export const CODE_LIMIT_MESSAGE = "초대 확인이 잠깐 많았어요. 잠시 뒤에(길면 10분) 다시 시도해 주세요";
 
 const MESSAGES: Record<string, string> = {
-  BAD_CODE: "코드를 다시 확인해 주세요",
+  BAD_CODE: "링크가 바뀌었거나 없어졌어요. 보낸 친구에게 초대 링크를 다시 받아 주세요",
   CHOOSING: "다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요",
   ALL_DONE: "열두 별자리가 모두 채워졌어요. 함께해 줘서 고마워요",
   SELF_JOIN: "내 초대 링크로는 내 별자리에 참여할 수 없어요. 친구에게 보내 주세요",
@@ -43,7 +43,7 @@ const MESSAGES: Record<string, string> = {
   SIGN_COMPLETED: "이미 완성한 별자리예요",
   NO_FILLING: "지금 채우는 별자리가 없어요",
   COOLDOWN: "새로 채우기는 한 시간에 한 번 할 수 있어요",
-  INVITE_COOLDOWN: "코드는 한 시간에 다섯 번까지 새로 만들 수 있어요. 잠시 뒤에 다시 해 주세요",
+  INVITE_COOLDOWN: "초대 링크는 한 시간에 다섯 번까지 새로 만들 수 있어요. 잠시 뒤에 다시 해 주세요",
   DAILY_ACTION_LIMIT: "오늘은 별을 지우거나 별자리를 바꾸는 일을 많이 했어요. 내일 다시 해 주세요",
   BAD_ORIGIN: "스타로그 화면에서 다시 시도해 주세요",
   NOT_FOUND: "찾을 수 없어요. 처음부터 다시 시도해 주세요",

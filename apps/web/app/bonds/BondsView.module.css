@@ -91,49 +91,11 @@
   border-top: 1px solid var(--glass-line);
 }
 
-.invite[open] {
-  padding-bottom: 4px;
-}
-
-.inviteSummary {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.inviteSummary:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
 /* 카카오톡으로 초대하기 and 다른 앱으로 보내기, full width: first on a constellation just made. */
 .inviteFirst {
   display: grid;
   gap: 8px;
   width: 100%;
-}
-
-.code {
-  color: var(--ink);
-  font-family: var(--font-display), serif;
-  font-size: 32px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-  padding-left: 0.22em;
-}
-
-.inviteTools {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px;
 }
 
 /* ---- stars ---- */

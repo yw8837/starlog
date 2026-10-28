@@ -15,7 +15,7 @@ import { SignPicker } from "@/components/bonds/SignPicker";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref } from "@/lib/account/client";
-import { bondsApi, bondsMessage, copyText, markSeen, monthDay, savedSunSign, seenUntil } from "@/lib/bonds/client";
+import { bondsApi, bondsMessage, markSeen, monthDay, savedSunSign, seenUntil } from "@/lib/bonds/client";
 import type { JoinedView, LinkOffer, OwnerSummary, OwnerView } from "@/lib/bonds/service";
 import { OwnerSetup } from "./OwnerSetup";
 import { StarList } from "./StarList";
@@ -286,7 +286,7 @@ function JoinedList({ joined }: { joined: JoinedView[] }) {
 }
 
 function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null; joined?: JoinedView[]; link?: LinkOffer }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
-  const { owner, invite, filling, completed, top5, ranks } = view;
+  const { owner, filling, completed, top5, ranks } = view;
   // A sign was just chosen here: the invite is brought into view once (owner 2026-10-23).
   const [justMade, setJustMade] = useState(false);
   const completedSigns = completed.map((c) => c.sign);
@@ -356,7 +356,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
               reload();
             }}
           />
-          <InviteCode code={invite.code} filling={null} onChanged={reload} />
+          <InviteLinkReset choosing onChanged={reload} />
         </>
       )}
 
@@ -483,7 +483,7 @@ function FillingSection({ view, fresh, completedSigns, mySign, reload, autoNext,
             <InviteShareButton code={view.invite.code} sign={def.id} filled={filled} ownerNickname={view.owner.nickname} />
           </div>
         ) : null}
-        <InviteCode code={view.invite.code} filling={{ sign: def.id, filled }} onChanged={reload} />
+        <InviteLinkReset choosing={false} onChanged={reload} />
         {filled > 0 ? (
           <div className={s.shareRow}>
             {/* No score in what a filling share says: a sum of few friends is their scores (privacy §4). */}
@@ -581,11 +581,10 @@ function ChooseSection({ first, mySign, completed, initialSign, onChosen }: {
 }
 
 /**
- * The code itself, folded under 초대코드 보기 (owner 2026-10-23, the 2026-10-02 decision): the invite is a link sent on
- * KakaoTalk (InviteShareButton); the code, its copy and 코드 새로 만들기 are for the rare friend who gets the code only.
+ * No code on screen (owner 2026-10-28: 초대는 링크로만, 코드 없이): the link goes out with 카카오톡으로 초대하기 / 다른 앱으로
+ * 보내기 (InviteShareButton). What stays is the reset for a link that reached strangers: a new link, the old one blocked.
  */
-function InviteCode({ code: initialCode, filling, onChanged }: { code: string; filling: { sign: SignId; filled: number } | null; onChanged: () => void }) {
-  const [code, setCode] = useState(initialCode);
+function InviteLinkReset({ choosing, onChanged }: { choosing: boolean; onChanged: () => void }) {
   const [toast, setToast] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -596,39 +595,25 @@ function InviteCode({ code: initialCode, filling, onChanged }: { code: string; f
     setBusy(false);
     setConfirm(false);
     if (result.ok) {
-      setCode(result.code);
-      setToast("새 코드를 만들었어요. 예전 코드와 링크는 이제 열리지 않아요");
+      setToast("새 초대 링크를 만들었어요. 예전 링크는 이제 열리지 않아요");
       // The big invite buttons read the page's view: load it again so they send the new link, not the blocked one (QA H1).
       onChanged();
     } else setToast(bondsMessage(result));
   };
 
   return (
-    <details className={s.invite}>
-      <summary className={s.inviteSummary}>초대코드 보기</summary>
-      <p className={s.code} aria-label={`초대코드 ${code.split("").join(" ")}`}>
-        {code}
-      </p>
-      <div className={s.inviteTools}>
-        <button
-          type="button"
-          className={b.textButton}
-          onClick={async () => setToast((await copyText(code)) === "copied" ? "코드를 복사했어요" : "복사하지 못했어요")}
-        >
-          코드 복사
-        </button>
-        <button type="button" className={b.textButton} onClick={() => setConfirm(true)}>
-          코드 새로 만들기
-        </button>
-      </div>
+    <div className={s.invite}>
+      {choosing ? <p className={b.helper}>지금은 친구가 초대 링크를 열면 다음 별자리를 고르는 중이라고 안내해요.</p> : null}
+      <button type="button" className={b.textButton} onClick={() => setConfirm(true)}>
+        초대 링크 새로 만들기
+      </button>
       <p className={b.toast} role="status">
         {toast}
       </p>
-      {filling ? null : <p className={b.helper}>지금은 친구가 코드를 열면 다음 별자리를 고르는 중이라고 안내해요.</p>}
-      <ConfirmDialog open={confirm} title="코드를 새로 만들까요?" confirmLabel="새 코드 만들기" onConfirm={regenerate} onClose={() => setConfirm(false)} busy={busy}>
-        <p>지금 코드와 링크는 바로 막혀요. 모르는 사람에게 퍼졌을 때 써 주세요. 이미 들어온 별은 그대로예요.</p>
+      <ConfirmDialog open={confirm} title="초대 링크를 새로 만들까요?" confirmLabel="새 링크 만들기" onConfirm={regenerate} onClose={() => setConfirm(false)} busy={busy}>
+        <p>지금 링크는 바로 막혀요. 모르는 사람에게 퍼졌을 때 써 주세요. 이미 들어온 별은 그대로예요.</p>
       </ConfirmDialog>
-    </details>
+    </div>
   );
 }
 

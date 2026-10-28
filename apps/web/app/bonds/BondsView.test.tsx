@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { BondsView } from "./BondsView";
 
@@ -178,7 +178,7 @@ describe("BondsView 인연 점수 한눈에 and 공유하기 (owner 2026-10-23)"
 describe("BondsView invites in one go (owner 2026-10-23, the 2026-10-02 decision: no codes to copy, make or type)", () => {
   const EMPTY = { ...OWNER_ME, filling: { row: { id: "c1abcdefghijklmnop", sign: "aries", status: "filling", total: 0, startedAt: 1, completedAt: null }, stars: [] } };
 
-  it("after 코드 새로 만들기, the big invite button sends the new link, not the blocked one (QA H1)", async () => {
+  it("after 초대 링크 새로 만들기, the big invite button sends the new link, not the blocked one (QA H1)", async () => {
     let code = "K7M4QX";
     const calls: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
@@ -193,11 +193,12 @@ describe("BondsView invites in one go (owner 2026-10-23, the 2026-10-02 decision
     vi.stubGlobal("navigator", { ...navigator, share: async (data: { url?: string }) => void shared.push(data) });
     render(<BondsView initialSign={null} />);
     const panel = await screen.findByRole("region", { name: /양자리/ });
-    fireEvent.click(within(panel).getByRole("button", { name: "코드 새로 만들기", hidden: true }));
+    fireEvent.click(within(panel).getByRole("button", { name: "초대 링크 새로 만들기" }));
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "새 코드 만들기", hidden: true }));
+      fireEvent.click(screen.getByRole("button", { name: "새 링크 만들기", hidden: true }));
     });
-    await screen.findByText("R98GYG");
+    await screen.findByText("새 초대 링크를 만들었어요. 예전 링크는 이제 열리지 않아요");
+    await waitFor(() => expect(calls.filter((c) => c.endsWith("/api/bonds/me")).length).toBeGreaterThanOrEqual(2));
     await act(async () => {
       fireEvent.click(within(await screen.findByRole("region", { name: /양자리/ })).getByRole("button", { name: "다른 앱으로 보내기" }));
     });
@@ -205,7 +206,7 @@ describe("BondsView invites in one go (owner 2026-10-23, the 2026-10-02 decision
     expect(calls.filter((c) => c.endsWith("/api/bonds/me")).length).toBeGreaterThanOrEqual(2);
   });
 
-  it("puts 카카오톡으로 초대하기 first on a constellation just made, before its figure, and the code folded under 초대코드 보기", async () => {
+  it("puts 카카오톡으로 초대하기 first on a constellation just made, before its figure, and shows no code (owner 2026-10-28: links only)", async () => {
     vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(EMPTY))));
     render(<BondsView initialSign={null} />);
@@ -216,15 +217,37 @@ describe("BondsView invites in one go (owner 2026-10-23, the 2026-10-02 decision
     expect(await within(panel).findByRole("button", { name: "링크 복사" })).toBeTruthy();
     const art = within(panel).getByRole("img", { name: /양자리/ });
     expect(first.compareDocumentPosition(art) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    const fold = within(panel).getByText("초대코드 보기").closest("details")!;
-    expect(fold.open).toBe(false);
-    expect(within(fold).getByText("K7M4QX")).toBeTruthy();
-    expect(within(fold).getByRole("button", { name: "코드 복사", hidden: true })).toBeTruthy();
-    expect(within(fold).getByRole("button", { name: "코드 새로 만들기", hidden: true })).toBeTruthy();
+    // no code anywhere on the page: the invite is the link; a leaked link can be replaced
+    expect(document.body.textContent).not.toContain("K7M4QX");
+    expect(document.body.textContent).not.toContain("초대코드");
+    expect(within(panel).getByRole("button", { name: "초대 링크 새로 만들기" })).toBeTruthy();
     vi.unstubAllEnvs();
   });
 
-  it("asks for no friend's code on /bonds (it lives in 내 정보) and says the invite is a link sent on KakaoTalk", async () => {
+  it("초대 링크 새로 만들기 asks first, then makes a new link and loads the page again so the buttons send it", async () => {
+    vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      calls.push(url);
+      return new Response(JSON.stringify(url.endsWith("/api/bonds/invite") ? { ok: true, code: "N3WC0D" } : EMPTY));
+    }));
+    render(<BondsView initialSign={null} />);
+    const panel = await screen.findByRole("region", { name: /양자리/ });
+    fireEvent.click(within(panel).getByRole("button", { name: "초대 링크 새로 만들기" }));
+    const dialog = await screen.findByRole("dialog", { name: "초대 링크를 새로 만들까요?" });
+    expect(dialog.textContent).toContain("지금 링크는 바로 막혀요");
+    const before = calls.filter((c) => c.endsWith("/api/bonds/me")).length;
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole("button", { name: "새 링크 만들기" }));
+    });
+    expect(calls.some((c) => c.endsWith("/api/bonds/invite"))).toBe(true);
+    expect(await screen.findByText("새 초대 링크를 만들었어요. 예전 링크는 이제 열리지 않아요")).toBeTruthy();
+    await waitFor(() => expect(calls.filter((c) => c.endsWith("/api/bonds/me")).length).toBeGreaterThan(before));
+    expect(document.body.textContent).not.toContain("N3WC0D");
+    vi.unstubAllEnvs();
+  });
+
+  it("asks for no friend's code on /bonds and says the invite is a link sent on KakaoTalk", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null }))));
     render(<BondsView initialSign={null} />);
     await screen.findByRole("button", { name: "별자리 인연 시작하기" });

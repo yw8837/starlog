@@ -36,17 +36,17 @@ describe("내 정보's 프리미엄 풀이 보기 row (plan-reconciled §4.4)", 
       await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url === "/api/premium/status")).toBe(true));
       await new Promise((resolve) => setTimeout(resolve, 0));
       expect(menu.textContent).not.toContain("프리미엄");
-      expect([...menu.querySelectorAll("li")].map((li) => li.textContent).slice(0, 3)).toEqual([expect.stringMatching(/^내 기록/), "초대코드로 참여", "이용약관"]);
+      expect([...menu.querySelectorAll("li")].map((li) => li.textContent).slice(0, 2)).toEqual([expect.stringMatching(/^내 기록/), "이용약관"]);
     });
   }
 
-  it("leads to the pricing page's premium tier where premium is visible, after 초대코드로 참여", async () => {
+  it("leads to the pricing page's premium tier where premium is visible, right after 내 기록", async () => {
     stub(true);
     render(<MeView status={null} />);
     const menu = await screen.findByRole("navigation", { name: "계정 메뉴" });
     const row = await within(menu).findByRole("link", { name: "프리미엄 풀이 보기" });
     expect(row.getAttribute("href")).toBe("/pricing#premium");
     const rows = [...menu.querySelectorAll("li")].map((li) => li.textContent);
-    expect(rows.indexOf("프리미엄 풀이 보기")).toBe(rows.indexOf("초대코드로 참여") + 1);
+    expect(rows.indexOf("프리미엄 풀이 보기")).toBe(rows.findIndex((row) => row?.startsWith("내 기록")) + 1);
   });
 });

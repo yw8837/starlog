@@ -164,7 +164,6 @@ const SCREENS: Screen[] = [
   { name: "bonds-filling", path: "/bonds", setup: async (page) => void (await bondsOwner(page, 2)) },
   { name: "bonds-complete", path: "/bonds", setup: async (page) => void (await bondsOwner(page, 4)) },
   { name: "bonds-ranking", path: "/ranking/aries", setup: async (page) => void (await bondsOwner(page, 4)) },
-  { name: "bonds-code", path: "/b", setup: ownAddress },
   {
     name: "bonds-join",
     path: "/b",

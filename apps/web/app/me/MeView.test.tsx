@@ -58,14 +58,13 @@ describe("MeView 지난 풀이 돌아보기 (owner 2026-10-20: moved here from t
 });
 
 describe("MeView menu", () => {
-  it("puts 초대코드로 참여 right under 내 기록, closed", async () => {
+  it("has no 초대코드 row (owner 2026-10-28: invites are links only), 이용약관 right under 내 기록", async () => {
     render(<MeView status={null} />);
     const menu = await screen.findByRole("navigation", { name: "계정 메뉴" });
     const rows = [...menu.querySelectorAll("li")].map((li) => li.textContent);
     // F-13: no 알림 설정 · 준비 중 row.
-    expect(rows.slice(0, 3)).toEqual([expect.stringMatching(/^내 기록/), "초대코드로 참여", "이용약관"]);
-    expect(menu.textContent).not.toMatch(/알림 설정|준비 중/);
-    expect(screen.getByRole("button", { name: "초대코드로 참여" }).getAttribute("aria-expanded")).toBe("false");
+    expect(rows.slice(0, 2)).toEqual([expect.stringMatching(/^내 기록/), "이용약관"]);
+    expect(menu.textContent).not.toMatch(/알림 설정|준비 중|초대코드/);
   });
 
   it("opens 문의하기 as a mail to the address in the footer's business info, no longer 준비 중 (QA-16)", async () => {
