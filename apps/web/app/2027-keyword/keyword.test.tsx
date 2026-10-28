@@ -137,9 +137,9 @@ describe("the form", () => {
 });
 
 describe("the 60 result pages", () => {
-  it("are built for every 일주 and nothing else", () => {
+  it("are built for every 일주, and render on demand when a built copy cannot be read (other addresses: 404, below)", () => {
     expect(generateStaticParams()).toEqual(ILJU.map((ilju) => ({ ilju: ilju.slug })));
-    expect(dynamicParams).toBe(false);
+    expect(dynamicParams).toBe(true);
   });
 
   it("all render the 일주's result for anyone, with the share buttons, the CTAs and the form, and never a birth date", async () => {

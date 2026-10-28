@@ -29,7 +29,12 @@ import { GuideThumb } from "../GuideThumb";
 import s from "../guide.module.css";
 import { ENTRY_SAJU_HREF, ENTRY_TAROT_HREF } from "@/lib/freshStart";
 
-export const dynamicParams = false;
+/**
+ * Built ahead (generateStaticParams), and rendered on demand when the built copy cannot be read: right after a deploy a
+ * Cloudflare location (HKG, 2026-10-28) missed the new static assets for minutes and `dynamicParams = false` turned
+ * that miss into a 404. Any other address is still a 404 (notFound below).
+ */
+export const dynamicParams = true;
 
 /** The ad unit sits after this many sections of the body, so a reader has met some of the text before it and the rest still follows. */
 const SECTIONS_BEFORE_AD = 2;
