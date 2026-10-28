@@ -52,6 +52,8 @@ describe("JoinFlow", () => {
     const consent = screen.getByRole("checkbox");
     expect(consent.getAttribute("aria-describedby")?.split(" ")).toContain(note.id);
     expect(note.nextElementSibling).toBe(consent.closest("label"));
+    // said once on the form, not again under the birth date (walkthrough 2026-10-28)
+    expect(document.body.textContent?.match(/저장하지 않아요/g)).toHaveLength(1);
   });
 
   it("in a constellation whose scores never show (scores_private), the checkbox and the notice say only the nickname shows (review 2026-10-23)", () => {

@@ -13,7 +13,7 @@ import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
-import { SITE } from "@/lib/config";
+import { SITE, openingFreeOn } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { standardProduct } from "@/lib/pay/catalog";
@@ -117,9 +117,6 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const context = method === "paid" ? "paid" : method === "free" ? "gift" : "reading";
   const unlockError = creditView ?? (unlockGen.state.status === "error" ? describeApiError(unlockGen.state.error, context) : null);
   const loginNote = loginMessage(loginFlag);
-  // Back from the 오픈 기념 무료 login on an account that took it already (on another device): nothing opens by itself,
-  // so say why (the sheet offers what is left).
-  const openingTaken = autoUnlock === "opening" && account?.user?.openingUsed ? "이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요" : null;
 
   // After a failed unlock the result comes back; bring the reason into view and focus it.
   useEffect(() => {
@@ -367,7 +364,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 payHref={checkoutHref("tarot", RETURN_TO)}
                 owner={account?.owner}
                 refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
-                error={unlockError ?? (openingTaken ? { title: openingTaken, action: null } : loginNote ? { title: loginNote, action: null } : null)}
+                error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
+                openingUsed={Boolean(account?.user?.openingUsed) && openingFreeOn()}
                 redrawHref={withFlags("/tarot/draw", { instant })}
                 editHref="/tarot/new"
                 openedHref={openedId ? `/chapter/${openedId}` : undefined}

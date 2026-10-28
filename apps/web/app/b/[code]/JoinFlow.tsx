@@ -356,7 +356,7 @@ function OpenInvite({ invite }: { invite: Open }) {
             value={birth}
             onChange={setBirth}
             error={errors.birth}
-            helper="두 사람의 인연 점수를 계산하는 데만 쓰고 저장하지 않아요. 태어난 시간은 쓰지 않아요."
+            helper="두 사람의 인연 점수를 계산하는 데만 써요. 태어난 시간은 쓰지 않아요."
           />
           <div className={b.group}>
             {/* The share notice itself is said once, right above 별 되기 (QA L5); this box is the agreement to it. */}

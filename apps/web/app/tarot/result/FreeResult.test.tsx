@@ -365,6 +365,8 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     render(<FreeResult instant />);
     expect((await screen.findByRole("link", { name: "2,900원 결제하고 보기" })).className).toMatch(/primary/);
     expect(screen.queryByRole("button", { name: /오픈 기념 무료/ })).toBeNull();
+    // and says why (walkthrough 2026-10-28: the free choice was simply gone)
+    expect(screen.getByText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요. 결제하면 바로 열려요")).toBeTruthy();
   });
 
   it("says plainly when it cannot be checked now (fails closed), with a way to try again", async () => {
@@ -419,7 +421,7 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
     seed();
     stub({ me: [() => Response.json(meBody({ openingUsed: true }))], reading: () => Response.json({ reading: TAROT_SAMPLE.paid, chapterToken: "t1" }) });
     render(<FreeResult instant autoUnlock="opening" loginFlag="ok" />);
-    expect(await screen.findByText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요")).toBeTruthy();
+    expect(await screen.findByText("이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요. 결제하면 바로 열려요")).toBeTruthy();
     expect(screen.getByRole("link", { name: "2,900원 결제하고 보기" })).toBeTruthy();
     expect(vi.mocked(fetch).mock.calls.some(([url]) => url === "/api/tarot/reading")).toBe(false);
   });

@@ -50,7 +50,12 @@ type UnlockSheetProps = {
   checking?: boolean;
   /** "다시 확인하기": while `checking` once the checks ran out, or with the in-progress offer. */
   onCheck?: () => void;
+  /** The account took 오픈 기념 무료 already (on any device) while it runs: the caption says why it is not offered. */
+  openingUsed?: boolean;
 };
+
+/** An account that took 오픈 기념 무료 (walkthrough 2026-10-28: the free choice was simply gone, with no word why). */
+export const OPENING_USED_CAPTION = "이 계정으로는 오픈 기념 무료 풀이를 이미 받았어요. 결제하면 바로 열려요";
 
 const CheckIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -85,6 +90,7 @@ export function UnlockSheet({
   openedHref,
   checking = false,
   onCheck,
+  openingUsed = false,
 }: UnlockSheetProps) {
   const chars = approxCharsText(SITE.reading.approxChars[kind]);
   const opening = offer.mode === "opening";
@@ -163,7 +169,7 @@ export function UnlockSheet({
           {`${won(offer.priceKrw)} 결제하고 보기`}
         </Button>
       );
-      if (!welcome) caption = "결제하면 바로 열려요";
+      if (!welcome) caption = openingUsed ? OPENING_USED_CAPTION : "결제하면 바로 열려요";
       break;
     case "closed":
       caption = "지금은 결제를 받지 않고 있어요";
