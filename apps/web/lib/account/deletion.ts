@@ -1,5 +1,5 @@
 import "server-only";
-import { forgetOpeningClaim } from "@/lib/account/openingClaim";
+import { sealOpeningClaim } from "@/lib/account/openingClaim";
 import { eraseReviewStatements } from "@/lib/reviews/store";
 import type { D1Binding } from "@/lib/db/d1";
 import { LEFT_SQL, entitlements, forfeitStatements, sweepUser, type Lot } from "@/lib/pay/ledger";
@@ -131,14 +131,14 @@ async function eraseBondsOwner(db: D1Binding, userId: string): Promise<void> {
  *   its client left (SEC-02: never refunded);
  * - saved readings, share links, sessions and premium preview counts are deleted, and the account's reviews with their 도움돼요 and reports;
  * - its gift claim is stamped with the deletion time (purged a year later, Task 13);
- * - its 오픈 기념 무료 claim is deleted, first (forgetOpeningClaim, owner 2026-10-27);
+ * - its 오픈 기념 무료 claim stays, marked used, until the event's purge, first (sealOpeningClaim, owner 2026-10-28);
  * - orders that never reached Toss are closed;
  * - kakao_key and nickname are blanked and erased_at set.
  * Orders, payments, lots and the ledger stay 5 years under the tombstone (전자상거래법 제6조).
  * Idempotent; only for an account already marked deleted. True when this call erased it.
  */
 export async function eraseDeletedAccount(db: D1Binding, userId: string, now: number): Promise<boolean> {
-  await forgetOpeningClaim(db, userId);
+  await sealOpeningClaim(db, userId);
   const { results: forfeited } = await db
     .prepare(
       `SELECT * FROM credit_lots WHERE user_id = ? AND status = 'active' AND units_left > 0

@@ -153,7 +153,8 @@ test("the terms and the privacy policy say what changed on top while it runs (ow
   await expect(page.locator("#service")).toContainText("로그인한 계정마다 한 번(같은 기기에서는 한 번)");
   await page.goto("/privacy");
   const privacy = page.getByRole("complementary", { name: /^\d{4}년 \d{1,2}월 \d{1,2}일 바뀐 내용$/ });
-  await expect(privacy).toHaveText(/오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요\. 탈퇴하면 함께 지워요\.$/);
+  await expect(privacy).toHaveText(/오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요\..*탈퇴해도 오픈 기념 무료가 끝날 때까지 남겼다가 2026년 11월 30일이 지나면 지워요\.$/);
+  await expect(page.locator("#retention")).toContainText("같은 계정이 탈퇴 뒤 다시 받지 않도록");
   await expect(page.locator("#items")).toContainText("오픈 기념 무료를 받았는지와 받은 시각(2026년 11월 30일까지 진행하는 오픈 기념 무료를 계정마다 한 번만 드리기 위해)");
   await expect(page.locator("#purposes")).toContainText("오픈 기념 무료를 계정마다 한 번만 드리기");
   await privacy.scrollIntoViewIfNeeded();

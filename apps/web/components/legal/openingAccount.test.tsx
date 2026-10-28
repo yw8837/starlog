@@ -5,7 +5,7 @@ import PrivacyPage from "@/app/privacy/page";
 import TermsPage from "@/app/terms/page";
 import { OPENING_LAST_DATE, OPENING_LAST_DAY } from "@/lib/config";
 import { openingFreeText } from "@/lib/helpGuide";
-import { OPENING_ACCOUNT_DATE, koreanDate } from "@/lib/legal";
+import { OPENING_ACCOUNT_DATE, OPENING_RETENTION_DATE, koreanDate } from "@/lib/legal";
 
 /**
  * 오픈 기념 무료 per account until 2026-11-30 (owner 2026-10-27): the terms say it and show what changed while it runs; the
@@ -54,9 +54,9 @@ describe("오픈 기념 무료 per account, in the policies", () => {
     expect(container.textContent).not.toContain(NOTICE);
   });
 
-  it("privacy 3항: no keep of its own for the claim record (owner 2026-10-27): member data, destroyed on deletion", () => {
+  it("privacy 3항: the claim record is kept through a deletion until the event ends (owner 2026-10-28), then destroyed", () => {
     const retention = render(<PrivacyPage />).container.querySelector("#retention")?.textContent ?? "";
-    expect(retention).not.toContain("오픈 기념 무료를 받은");
+    expect(retention).toContain("오픈 기념 무료를 받은 기록(카카오 회원번호나 Google 계정 식별값을 되돌릴 수 없게 바꾼 값과 받은 시각)");
     expect(retention).toContain("회원 정보는 탈퇴할 때까지 보관하고, 탈퇴하면 지체 없이 파기합니다.");
   });
 
@@ -71,7 +71,11 @@ describe("오픈 기념 무료 per account, in the policies", () => {
   it("privacy: a dated notice of the change on top while the event runs, leaving the 10/31 revision and the 시행일 as they were", () => {
     let container = render(<PrivacyPage />).container;
     const notice = [...container.querySelectorAll("aside")].find((aside) => aside.textContent?.startsWith(`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용`));
-    expect(notice?.textContent).toBe(`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요. 탈퇴하면 함께 지워요.`);
+    expect(notice?.textContent).toBe(
+      `${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요.${koreanDate(OPENING_RETENTION_DATE)}부터: 탈퇴한 뒤 같은 계정으로 다시 받지 않도록, 받은 기록(계정 식별값을 되돌릴 수 없게 바꾼 값과 시각)은 탈퇴해도 오픈 기념 무료가 끝날 때까지 남겼다가 2026년 11월 30일이 지나면 지워요.`,
+    );
+    // the retention section says it too (owner 2026-10-28: no second free reading by deleting and joining again)
+    expect(container.querySelector("#retention")?.textContent).toContain("같은 계정이 탈퇴 뒤 다시 받지 않도록 탈퇴해도 오픈 기념 무료가 끝날 때까지 보관하고, 2026년 11월 30일이 지나면 지체 없이 파기합니다");
     expect(container.textContent).toContain("개정 예정 · 2026년 10월 31일부터 시행");
     expect(container.querySelector('time[datetime="2026-10-28"]')).not.toBeNull();
     cleanup();

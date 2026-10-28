@@ -54,12 +54,14 @@ export async function openingClaimed(db: D1Binding, key: string | null): Promise
 }
 
 /**
- * Account deletion: the claim is member data and goes with the account (owner 2026-10-27: kept no longer than the policy
- * says), before its key is blanked. The device's sl_first still stops the same browser. Nothing to do before the migration.
+ * Account deletion (owner 2026-10-28: 탈퇴 후 재가입으로 또 받는 틈을 막기): the claim stays, marked used (a hold in flight
+ * included), so the same Kakao or Google account joining again gets 오픈 기념 무료 no more. It holds only the account's
+ * irreversible key and the time, and goes with every claim once the event ended (purgeOpeningClaims, the privacy policy
+ * says so). Run before the key is blanked. Nothing to do before the migration.
  */
-export async function forgetOpeningClaim(db: D1Binding, userId: string): Promise<void> {
+export async function sealOpeningClaim(db: D1Binding, userId: string): Promise<void> {
   try {
-    await db.prepare("DELETE FROM opening_claims WHERE user_key = (SELECT kakao_key FROM users WHERE id = ? AND deleted_at IS NOT NULL)").bind(userId).run();
+    await db.prepare("UPDATE opening_claims SET opened = 1 WHERE user_key = (SELECT kakao_key FROM users WHERE id = ? AND deleted_at IS NOT NULL)").bind(userId).run();
   } catch (error) {
     if (!missingTable(error)) throw error;
   }

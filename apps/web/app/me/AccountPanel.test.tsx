@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, onTestFinished, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests, type AccountState } from "@/lib/account/client";
 import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
 import { AccountPanel } from "./AccountPanel";
@@ -269,7 +269,19 @@ describe("AccountPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
     expect(screen.getByText("열지 않은 결제 1건은 전액 환불돼요")).toBeTruthy();
     expect(screen.queryByText(/별자리/)).toBeNull();
+    expect(screen.queryByText(/오픈 기념 무료/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "카카오로 확인하고 탈퇴하기" }));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/api/auth/kakao/start?purpose=delete&intent=x"));
+  });
+
+  it("tells an account that took 오픈 기념 무료 that joining again will not bring it back (owner 2026-10-28)", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-11-10T12:00:00+09:00"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    render(<AccountPanel account={{ ...account, user: { ...account.user, openingUsed: true } }} navigate={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "회원 탈퇴" }));
+    expect(screen.getByText("오픈 기념 무료를 받은 기록은 11월 30일까지 남아서, 다시 가입해도 또 받을 수는 없어요")).toBeTruthy();
   });
 });

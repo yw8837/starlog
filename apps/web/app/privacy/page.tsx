@@ -10,6 +10,7 @@ import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
   GA_REVISION_DATE,
   OPENING_ACCOUNT_DATE,
+  OPENING_RETENTION_DATE,
   PRIVACY_REVISION_DATE,
   SYNC_REVISION_DATE,
   contactChannels,
@@ -198,7 +199,8 @@ export default function PrivacyPage() {
       {openingFreeOn(now) ? (
         <aside className={s.note} aria-labelledby="opening-privacy-title">
           <h2 id="opening-privacy-title" className={s.noteTitle}>{`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용`}</h2>
-          <p>오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요. 탈퇴하면 함께 지워요.</p>
+          <p>오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요.</p>
+          <p>{`${koreanDate(OPENING_RETENTION_DATE)}부터: 탈퇴한 뒤 같은 계정으로 다시 받지 않도록, 받은 기록(계정 식별값을 되돌릴 수 없게 바꾼 값과 시각)은 탈퇴해도 오픈 기념 무료가 끝날 때까지 남겼다가 ${OPENING_LAST_DATE}이 지나면 지워요.`}</p>
         </aside>
       ) : null}
       {revised ? null : (
@@ -396,6 +398,9 @@ export default function PrivacyPage() {
           ) : null}
           <li>회원 정보는 탈퇴할 때까지 보관하고, 탈퇴하면 지체 없이 파기합니다. 로그인 세션은 30일 뒤 끝나고, 끝난 세션 기록은 지웁니다.</li>
           <li>「전자상거래 등에서의 소비자보호에 관한 법률」에 따라 계약 또는 청약철회 등에 관한 기록과 대금결제 및 재화 등의 공급에 관한 기록은 5년, 소비자의 불만 또는 분쟁처리에 관한 기록은 3년 동안 보관합니다. 탈퇴한 회원의 이 기록은 회원 식별 정보(카카오 회원번호나 Google 계정 식별값을 바꾼 값, 닉네임)를 지운 채 보관하고, 기간이 끝나면 파기합니다.</li>
+          {openingFreeOn(now) ? (
+            <li>{`오픈 기념 무료를 받은 기록(카카오 회원번호나 Google 계정 식별값을 되돌릴 수 없게 바꾼 값과 받은 시각)은 같은 계정이 탈퇴 뒤 다시 받지 않도록 탈퇴해도 오픈 기념 무료가 끝날 때까지 보관하고, ${OPENING_LAST_DATE}이 지나면 지체 없이 파기합니다.`}</li>
+          ) : null}
           <li>가입 선물은 더 이상 드리지 않습니다. 이미 지급한 가입 선물의 지급 기록(카카오 회원번호나 Google 계정 식별값을 되돌릴 수 없게 바꾼 값과 지급 시각)은 탈퇴 뒤 1년 동안 보관한 뒤 파기합니다.</li>
           <li>보유 기간이 끝나거나 처리 목적을 이룬 정보는 지체 없이 파기하며, 전자 파일은 복구할 수 없는 방법으로 지웁니다.</li>
           <li>

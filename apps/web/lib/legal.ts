@@ -78,6 +78,9 @@ export const termsEffectiveDate = (now: number = Date.now()): string => (syncRev
  */
 export const OPENING_ACCOUNT_DATE = "2026-10-27";
 
+/** The claim record kept through an account deletion until the event ends (owner 2026-10-28), said with the notice above. */
+export const OPENING_RETENTION_DATE = "2026-10-28";
+
 /** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
 export const privacyEffectiveDate = (now: number = Date.now()): string =>
   syncRevisionInForce(now)

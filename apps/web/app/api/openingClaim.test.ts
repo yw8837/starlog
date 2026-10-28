@@ -179,23 +179,37 @@ describe("오픈 기념 무료 per account", () => {
     expect(await db.prepare("SELECT COUNT(*) AS n FROM readings").first()).toEqual({ n: 1 });
   });
 
-  it("deletes the claim with the account (member data, gone on deletion); joining again on that browser is still stopped by the device rule", async () => {
+  it("keeps the claim through an account deletion until the event ends (owner 2026-10-28): the same Kakao account joining again gets it no more, on any browser", async () => {
     const db = useTestDb();
     const b = await device("alice");
     expect((await openFree(b)).status).toBe(200);
     expect(await claims(db)).toHaveLength(1);
     await deleteAccount(b, "alice");
     expect(await db.prepare("SELECT COUNT(*) AS n FROM users WHERE deleted_at IS NOT NULL AND erased_at IS NOT NULL").first()).toEqual({ n: 1 });
-    expect(await claims(db)).toEqual([]);
+    // only the account's irreversible key and the time stay, marked used
+    expect(await claims(db)).toEqual([{ user_key: await keyOf("alice"), claimed_at: T0, opened: 1 }]);
 
-    // The same Kakao account joins again on the same browser: sl_first (once per device) still says no.
     vi.setSystemTime(T0 + 60_000);
     await loginAs(b, "alice");
     const again = await openFree(b);
     expect(again.status).toBe(429);
     expect(await again.json()).toMatchObject({ code: "BETA_LIMIT", scope: "first" });
-    // On another browser it opens again: what keeping nothing past the deletion allows (owner 2026-10-27, no policy change).
-    expect((await openFree(await device("alice"))).status).toBe(200);
+    // On another browser too: the account's claim says no
+    const other = await openFree(await device("alice"));
+    expect(other.status).toBe(429);
+    expect(await other.json()).toMatchObject({ code: "BETA_LIMIT", scope: "account" });
+    // someone else still opens theirs
+    expect((await openFree(await device("bob"))).status).toBe(200);
+  });
+
+  it("seals a hold left in flight when the account is deleted, so it cannot lapse and be taken again", async () => {
+    const db = useTestDb();
+    const b = await device("alice");
+    expect((await openFree(await device("bob"))).status).toBe(200);
+    await loginAs(b, "alice");
+    await db.prepare("INSERT INTO opening_claims (user_key, claimed_at, opened) VALUES (?, ?, 0)").bind(await keyOf("alice"), T0).run();
+    await deleteAccount(b, "alice");
+    expect(await db.prepare("SELECT opened FROM opening_claims WHERE user_key = ?").bind(await keyOf("alice")).first()).toEqual({ opened: 1 });
   });
 
   it("purges every claim once the event ended (maintenance), and none before", async () => {

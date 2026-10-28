@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { logout, refreshAccount, type AccountState, type AccountUser } from "@/lib/account/client";
+import { OPENING_LAST_DAY, openingFreeOn } from "@/lib/config";
 import { DEEP_TAROT_HREF } from "@/lib/freshStart";
 import { REFUND_DAYS, productById } from "@/lib/pay/catalog";
 import { premiumPath } from "@/lib/premium/products";
@@ -251,6 +252,8 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
             {user.gift?.status === "unused" ? <li>쓰지 않은 가입 선물은 사라져요</li> : null}
             <li>계정에 보관한 풀이가 지워져요</li>
             <li>결제 기록은 법에 따라 5년 동안 보관돼요</li>
+            {/* owner 2026-10-28: the claim stays until the event's purge (lib/account/openingClaim.ts sealOpeningClaim) */}
+            {user.openingUsed && openingFreeOn() ? <li>{`오픈 기념 무료를 받은 기록은 ${OPENING_LAST_DAY}까지 남아서, 다시 가입해도 또 받을 수는 없어요`}</li> : null}
             <li>이 기기의 기록은 아래 ‘이 기기에 저장된 기록 모두 지우기’로 따로 지울 수 있어요</li>
           </ul>
           <button type="button" className={s.danger} onClick={() => void startDelete()}>
