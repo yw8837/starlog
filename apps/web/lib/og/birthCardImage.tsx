@@ -60,7 +60,7 @@ export function birthCardOgImage(data: BirthCardOgData): ReactElement {
         <div style={{ display: "flex", color: GOLD, fontSize: 32, fontWeight: 700, letterSpacing: 2 }}>{LINE}</div>
         <div style={{ display: "flex", marginTop: 34, color: GOLD, fontFamily: "Serif", fontSize: 40, fontWeight: 700 }}>{data.roman}</div>
         <div style={{ display: "flex", marginTop: 4, fontFamily: "Serif", fontSize: nameSize(data.name), fontWeight: 700, lineHeight: 1.2 }}>{data.name}</div>
-        <div style={{ display: "flex", marginTop: 26, color: INK_SUB, fontSize: 34, lineHeight: 1.45 }}>{data.trait}</div>
+        <div style={{ display: "flex", marginTop: 26, color: INK_SUB, fontSize: 34, lineHeight: 1.45, wordBreak: "keep-all" }}>{data.trait}</div>
       </div>
       <div style={{ position: "absolute", left: 480, bottom: 64, display: "flex", color: GOLD, fontSize: 26, letterSpacing: 2 }}>{data.host}</div>
     </div>

@@ -128,4 +128,21 @@ describe("constellation share image", () => {
     expect(all).toContain("별자리 인연 초대");
     expect(texts(inviteOgImage({ ownerNickname: "용우", sign: "leo", filled: 2, host: "x" })).join(" ")).toContain("용우님의 사자자리 2/6");
   });
+
+  it("breaks the invite headline between words, never inside 게자리 (live 2026-10-28), and fits the longest nickname's line in its 600px", () => {
+    const headline = (nickname: string) => {
+      let found: Record<string, unknown> | undefined;
+      walk(inviteOgImage({ ownerNickname: nickname, sign: "cancer", filled: 1, host: "x" }), (el) => {
+        const kids = el.props.children;
+        if (typeof kids === "string" && kids.startsWith(`${nickname}님의`)) found = el.props.style;
+      });
+      return found!;
+    };
+    expect(headline("용우")).toMatchObject({ wordBreak: "keep-all", fontSize: 64 });
+    for (const nickname of LONG) {
+      const style = headline(nickname);
+      expect(style.wordBreak).toBe("keep-all");
+      expect((style.fontSize as number) * `${nickname}님의`.length).toBeLessThanOrEqual(600);
+    }
+  });
 });

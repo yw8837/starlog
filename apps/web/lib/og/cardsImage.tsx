@@ -65,13 +65,16 @@ export function inviteOgImage(data: InviteOgData): ReactElement {
   const { width, height } = OG_CARD;
   const def = data.sign ? getConstellation(data.sign) : null;
   const headline = data.ownerNickname && def ? `${data.ownerNickname}님의 ${def.ko} ${data.filled}/${def.slots}` : "별자리 인연 초대";
+  // Lines break between words (keep-all), so "○○님의" stays one line: a long nickname (up to 10) is drawn smaller to fit 600px.
+  const nameLine = data.ownerNickname ? `${data.ownerNickname}님의`.length : 0;
+  const headSize = Math.min(64, Math.floor(600 / Math.max(1, nameLine)));
   return frame(width, height, [
     <div key="art" style={{ position: "absolute", right: 70, top: 55, display: "flex" }}>
       {constellationSvg(data.sign ?? "libra", 520, def ? data.filled : 2)}
     </div>,
     <div key="text" style={{ position: "absolute", left: 80, top: 150, width: 600, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", color: GOLD, fontSize: 30, fontWeight: 700, letterSpacing: 5 }}>별자리 인연</div>
-      <div style={{ display: "flex", marginTop: 18, fontFamily: "Serif", fontSize: 64, fontWeight: 700, lineHeight: 1.25 }}>{headline}</div>
+      <div style={{ display: "flex", marginTop: 18, fontFamily: "Serif", fontSize: headSize, fontWeight: 700, lineHeight: 1.25, wordBreak: "keep-all" }}>{headline}</div>
       <div style={{ display: "flex", marginTop: 22, color: INK_SUB, fontSize: 36 }}>
         {def ? "내 별자리에 별이 되어 주세요" : "친구의 별자리에 별이 되어 주세요"}
       </div>
@@ -127,7 +130,7 @@ export function luckyShareImage(data: LuckyShareData): ReactElement {
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", marginTop: 110, width: 860, justifyContent: "center", textAlign: "center", color: INK_SUB, fontSize: 34, lineHeight: 1.6 }}>
+      <div style={{ display: "flex", marginTop: 110, width: 860, justifyContent: "center", textAlign: "center", color: INK_SUB, fontSize: 34, lineHeight: 1.6, wordBreak: "keep-all" }}>
         {LUCKY_NOTICE}
       </div>
     </div>,
@@ -189,9 +192,9 @@ export function shareOgImage(data: ShareOgData): ReactElement {
     <div key="text" style={{ position: "absolute", left: 72, top: 58, width: textWidth, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", color: GOLD, fontSize: 24, fontWeight: 700, letterSpacing: 4 }}>STARLOG · 스타로그</div>
       <div style={{ display: "flex", marginTop: 20, color: INK_SUB, fontSize: 28 }}>{data.label}</div>
-      <div style={{ display: "flex", marginTop: 12, fontFamily: "Serif", fontSize: side ? 42 : 48, fontWeight: 700, lineHeight: 1.3 }}>{data.headline}</div>
+      <div style={{ display: "flex", marginTop: 12, fontFamily: "Serif", fontSize: side ? 42 : 48, fontWeight: 700, lineHeight: 1.3, wordBreak: "keep-all" }}>{data.headline}</div>
       {data.big ? <div style={{ display: "flex", marginTop: 6, color: GOLD, fontFamily: "Serif", fontSize: 96, fontWeight: 700, lineHeight: 1.1 }}>{data.big}</div> : null}
-      {data.body ? <div style={{ display: "flex", marginTop: 14, color: INK, fontSize: 28, lineHeight: 1.45 }}>{data.body}</div> : null}
+      {data.body ? <div style={{ display: "flex", marginTop: 14, color: INK, fontSize: 28, lineHeight: 1.45, wordBreak: "keep-all" }}>{data.body}</div> : null}
     </div>,
     data.sign ? (
       <div key="art" style={{ position: "absolute", right: 56, top: 70, display: "flex" }}>
