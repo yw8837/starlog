@@ -442,13 +442,15 @@ export function validateTarotReading(draft: TarotReading, ctx: TarotContext, opt
     if (!card) return;
     if (!section.heading.trim()) out.push(`${card.position} 카드 절의 heading이 비었어요.`);
     if (i < (opts.written ?? 0)) return;
-    lengthCheck(`${card.position} 카드 절`, section.body, 150, 250, out);
+    // The prompt asks 260–360자 (owner 2026-10-30); the check is the safety net: the old floor, the new ceiling.
+    lengthCheck(`${card.position} 카드 절`, section.body, 150, 360, out);
     cardSectionViolations(`${card.position} 카드 절`, section.body, card, out);
   });
+  // Floors well below what the prompt asks (owner 2026-10-30 "제대로된 분량"): a section a little short is not a failed reading.
   for (const [key, min] of [["connection", 100], ["timing", 60], ["alternatives", 80], ["action", 40]] as const) {
     if (charCount(r[key].body) < Math.floor(min * (1 - TOLERANCE))) out.push(`${tarotHeadings(ctx)[key]} 절이 너무 짧거나 비었어요.`);
   }
-  if (r.scenarios.items.length < 2 || r.scenarios.items.some((i) => !i.label.trim() || charCount(i.body) < 20)) out.push("시나리오는 3~4개, 각각 label과 40~120자 본문으로 써 주세요.");
+  if (r.scenarios.items.length < 2 || r.scenarios.items.some((i) => !i.label.trim() || charCount(i.body) < 20)) out.push("시나리오는 3~4개, 각각 label과 60~140자 본문으로 써 주세요.");
   if (r.messages.items.length !== 2 || r.messages.items.some((m) => !m.trim()) || !r.messages.hint.trim()) out.push("messages.items는 정확히 2개, hint도 채워 주세요.");
   if (r.avoid.items.length < 2 || r.avoid.items.some((m) => !m.trim())) out.push("피할 것은 3~4개로 써 주세요.");
   observationViolations(r.observation.body, out);
@@ -456,7 +458,7 @@ export function validateTarotReading(draft: TarotReading, ctx: TarotContext, opt
 
   const paid = paidBodyText(r).join("\n");
   const total = charCount(paid);
-  if (total < 1200 * (1 - TOLERANCE) || total > 1800 * (1 + TOLERANCE)) out.push(`전체 풀이 분량이 공백 제외 ${total}자예요. 1,200~1,800자로 맞춰 주세요.`);
+  if (total < 1200 * (1 - TOLERANCE) || total > 2600 * (1 + TOLERANCE)) out.push(`전체 풀이 분량이 공백 제외 ${total}자예요. 2,000~2,600자로 맞춰 주세요.`);
 
   const all = [paid, ...r.followUps, ...r.cards.map((c) => c.heading)].join("\n");
   const shared = sharedMisdescriptionHits([r.connection.body, r.observation.body, ...r.scenarios.items.map((i) => i.body), r.alternatives.body].join("\n"), ctx.cards.map((c) => c.kb));

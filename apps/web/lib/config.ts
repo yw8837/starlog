@@ -59,7 +59,8 @@ export const SITE = {
     followUps: 3,
     /**
      * Approximate length of a full reading in characters (without spaces), shown before it is opened as one number or a
-     * range (approxCharsText). Tarot measured about 2,000 on real outputs (smoke runs, 2026-09-30). Saju is the owner's
+     * range (approxCharsText). Tarot: the readings fell to 1,400–1,600 (a tester's 1,418 read as short, 2026-10-30); the prompt
+     * now asks 2,000–2,600 and real outputs measured 1,700–1,950 (5 smoke runs, 2026-10-30), so 2,000 holds. Saju is the owner's
      * range: measured 2026-10-08 on the new reading voice, 2,545 for a whole chapter (the old voice wrote 3,220).
      */
     approxChars: { tarot: { min: 2000, max: 2000 }, saju: { min: 2500, max: 3000 } },

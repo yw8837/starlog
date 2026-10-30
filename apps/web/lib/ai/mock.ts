@@ -164,7 +164,8 @@ export function mockTarotReading(ctx: TarotContext, written = 0): TarotReading {
     position: card.position,
     cardId: card.cardId,
     heading: `${card.name} · ${card.kb.keywordsKo[0] ?? card.position}`,
-    body: card.slot < written ? "" : cardBody(ctx, card, 1, card.slot === 0, [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}로 읽어요.`]),
+    // 260–360자 a card section since owner 2026-10-30 ("제대로된 분량")
+    body: card.slot < written ? "" : cardBody(ctx, card, 1, card.slot === 0, [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}라는 뜻이에요.`], 330),
   }));
 
   const labels = ctx.relational ? ["답이 빨리 오면", "답이 늦게 오면", "답이 없으면"] : ["흐름이 좋아지면", "그대로 머물면", "잠시 막히면"];
@@ -176,12 +177,12 @@ export function mockTarotReading(ctx: TarotContext, written = 0): TarotReading {
     cards,
     connection: {
       heading: h.connection,
-      body: `차례로 보면 ${ctx.cards.map((c) => `${c.name}(${c.kb.core.oneLine[c.orientation]})`).join(", 그다음 ")}로 이어져요. 세 흐름이 한 방향을 가리키는지, 어디서 갈라지는지가 이 상황의 핵심이에요.`,
+      body: `차례로 보면 ${ctx.cards.map((c) => `${c.name}(${c.kb.core.oneLine[c.orientation]})`).join(", 그다음 ")}로 이어져요. 세 흐름이 한 방향을 가리키는지, 어디서 갈라지는지가 이 상황의 핵심이에요. ${first.name}에서 시작한 마음이 ${last.name}의 흐름에 닿는 동안 무엇을 먼저 하고 무엇을 미룰지 정해 두면 덜 흔들려요. 한 번에 다 바꾸기보다 한 가지씩 확인해 보세요.`,
     },
-    timing: { heading: h.timing, body: `${when} 안에서는 ${first.name} 그림처럼 준비가 됐다고 느끼는 날에 움직이는 편이 자연스러워요. 서두르지 않아도 흐름은 이어져요.` },
+    timing: { heading: h.timing, body: `${when} 안에서는 ${first.name} 그림처럼 준비가 됐다고 느끼는 날에 움직이는 편이 자연스러워요. 서두르지 않아도 흐름은 이어져요. 앞쪽에는 상황을 살피고, 마음이 정리된 날 작은 일 하나를 실제로 해 보세요. 그날의 느낌이 다음 걸음의 기준이 되죠.` },
     observation: {
       heading: h.observation,
-      body: `며칠 안에 ${first.name} 그림의 '${keyword}' 같은 순간이 언제 오는지 눈여겨보세요. 그 순간이 먼저 온다면 이 풀이의 방향이 맞은 거예요.`,
+      body: `며칠 안에 ${first.name} 그림의 '${keyword}' 같은 순간이 언제 오는지 눈여겨보세요. 그 순간이 먼저 온다면 이 풀이의 방향이 맞은 거예요. 비슷한 순간이 두세 번 이어진다면 흐름이 계속되고 있다는 뜻이고요.`,
     },
     scenarios: {
       heading: h.scenarios,
@@ -200,9 +201,9 @@ export function mockTarotReading(ctx: TarotContext, written = 0): TarotReading {
     avoid: { heading: h.avoid, items: ["한 번에 결론을 내려는 조급함", "결과를 재촉하는 말", "모든 걸 혼자 떠안는 계획"] },
     alternatives: {
       heading: h.alternatives,
-      body: `다르게 보면 '${first.kb.core.shadow}' 쪽일 수도 있어요. 그렇게 느껴진다면 서두르지 말고 한 걸음 물러서 보는 것도 이 배치에 맞는 선택이에요.`,
+      body: `다르게 보면 '${first.kb.core.shadow}' 쪽일 수도 있어요. 그렇게 느껴진다면 서두르지 말고 한 걸음 물러서 보는 것도 이 배치에 맞는 선택이에요. 마음이 급해질수록 이런 면이 커지기 쉬우니 결정을 하루만 미뤄 두세요. 그러면 놓쳤던 선택지가 보이기도 해요.`,
     },
-    action: { heading: h.action, body: `${moves[2]} 작게 시작할수록 부담이 줄고, 해 본 뒤의 느낌이 다음 걸음을 알려 줘요.` },
+    action: { heading: h.action, body: `${moves[2]} 작게 시작할수록 부담이 줄고, 해 본 뒤의 느낌이 다음 걸음을 알려 줘요. 오늘은 그 일을 십 분이면 끝낼 만큼 작게 쪼개 보세요. 끝낸 뒤 어땠는지 떠올리면 다음 한 걸음이 한결 가벼워져요.` },
     followUps: ["이 흐름에서 먼저 해 볼 일은 뭘까요?", "막힐 때는 어떻게 하면 좋을까요?"],
   };
 }

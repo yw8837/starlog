@@ -56,7 +56,7 @@ describe("the saju prompts (§4.1, §4.2)", () => {
     expect(SAJU_SYSTEM.match(/풀이 전체에서[^.\n]{0,24}번/g)?.length).toBe(3);
     // the scene questions keep clear of what the hard checks block (review 2026-10-08)
     expect(SAJU_VOICE_RULES).toMatch(/장면 질문과 예시에는 요일·달·계절을 계기로 쓰지 않고[^\n]*다시 만나게 될까[^\n]*붙을까[^\n]*좋은 날[^\n]*운이 좋은[^\n]*투자[^\n]*점수[^\n]*확실히/);
-    expect(TAROT_PREAMBLE).toMatch(/질문이나 장면에도 날짜·요일이나 다른 사람의 속마음을 단정하는 말은 쓰지 않아요/);
+    expect(TAROT_PREAMBLE).toMatch(/날짜·요일이나 다른 사람의 속마음은 단정하지 않아요/);
     for (const second of ["하는 식이죠", "하곤 해요"]) expect(SAJU_VOICE_RULES).toMatch(new RegExp(`^3\\. [^\\n]*${second}`, "m"));
     for (const advice of ["해도 나쁘지 않아요. 다만", "하는 건 장점이에요. 그래도"]) expect(SAJU_VOICE_RULES).toMatch(new RegExp(`^4\\. [^\\n]*${advice}`, "m"));
     expect(SAJU_VOICE_RULES).toMatch(/형식만 참고[^\n]*문장과 단어를 그대로 쓰지 않아요/);
@@ -215,7 +215,8 @@ describe("the facts name a 대운 change by year and month in words (owner 2026-
 
 describe("the tarot prompt (§2.7, §4.2 15–18)", () => {
   it("opens a card section on the picture, says 역방향 in the next sentence, frames the position once and ends without a maxim each time", () => {
-    for (const rule of ["그림 한 컷으로 시작해요", "역방향으로 나와서", "\"X가 역방향으로 나왔어요\" 한 문장으로 절을 열지 않아요", "\"X 자리에서는 ~로 읽어요\"는 리딩 전체에서 한 번까지", "\"한 줄로 말하면\"", "규칙 문구를 본문에 옮기지 않아요", "\"~입니다\""]) {
+    // owner 2026-10-30 ("어렵게 안 쓰였나"): the meaning said plainly, "~로 읽어요" once a reading at most, no 해설 용어
+    for (const rule of ["그림 한 컷(1~2문장", "역방향으로 나와서", "\"X가 역방향으로 나왔어요\" 한 문장으로 절을 열지 않아요", "\"~로 읽어요\"는 리딩 전체에서 한 번까지만", "'자리', '포지션', '그늘'", "\"한 줄로 말하면\"", "규칙 문구를 본문에 옮기지 않아요", "\"~입니다\""]) {
       expect(TAROT_PREAMBLE, rule).toContain(rule);
     }
     expect(TAROT_PREAMBLE).not.toContain("첫 문장에서 '역방향'으로 나왔다는 사실을 밝히고");
@@ -231,7 +232,7 @@ describe("the tarot prompt (§2.7, §4.2 15–18)", () => {
   });
 
   it("makes 오늘 해볼 작은 행동 the reading's advice: a strength, its cost, one act today and what improves (owner 2026-10-15)", () => {
-    expect(TAROT_SYSTEM).toMatch(/- action: [^\n]*80~200자[^\n]*살리면 좋은 힘[^\n]*지나칠 때 생기는 일[^\n]*오늘 할 수 있는 작은 행동 하나[^\n]*무엇이 나아지는지[^\n]*규칙의 낱말은 본문에 쓰지 않아요/);
+    expect(TAROT_SYSTEM).toMatch(/- action: [^\n]*150~240자[^\n]*살리면 좋은 힘[^\n]*지나칠 때 생기는 일[^\n]*오늘 할 수 있는 작은 행동 하나[^\n]*무엇이 나아지는지[^\n]*규칙의 낱말은 본문에 쓰지 않아요/);
     // the first real checks (2026-10-15) wrote "키울 힘은 ~이에요": the rule's own words, now banned from the text
   });
 });
