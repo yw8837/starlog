@@ -137,7 +137,7 @@ type TabBarProps = {
   /**
    * The host serving the page. The guide pages pass "guide": the root domain reads as a content site of its own
    * (AdSense audit 2026-10-27), so its bar holds the guide's sections (GUIDE_TABS) and one labelled link out to the app
-   * (the app host when the hosts are split, lib/hosts.ts), and its wordmark goes to the guide's home. Everywhere else
+   * (the app host when the hosts are split, lib/hosts.ts); its wordmark goes to the app's home like that link. Everywhere else
    * the app host serves the page, and only the guide tab leaves it. "either": a page served as it is on both hosts
    * (/about, /privacy, /terms): every link names the host that serves it (lib/hosts.ts linkHref).
    */
@@ -164,11 +164,8 @@ export function TabBar({ active, only, host = "app" }: TabBarProps) {
   return (
     <header className={styles.header}>
       <div className={styles.top}>
-        <Link
-          href={linkHref(guide ? guideIndexPath("tarot") : "/", host)}
-          className={styles.brand}
-          aria-label={guide ? `${SITE.nameKo} 가이드 홈` : `${SITE.nameKo} 홈`}
-        >
+        {/* The wordmark is Starlog's: on the guide host too it goes to the app's home (owner 2026-10-30: "메인으로 안 간다"); the guide's home is its 타로 가이드 tab. */}
+        <Link href={linkHref("/", host)} prefetch={guide ? false : undefined} className={styles.brand} aria-label={`${SITE.nameKo} 홈`}>
           <Wordmark />
         </Link>
         <nav className={styles.pills} aria-label="주요 메뉴">

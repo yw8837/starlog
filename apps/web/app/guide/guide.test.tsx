@@ -233,7 +233,8 @@ function navLinks() {
   const hrefs = (nav: HTMLElement) => within(nav).getAllByRole("link").map((a) => a.getAttribute("href"));
   const [pills, bar] = screen.getAllByRole("navigation", { name: "주요 메뉴" }) as [HTMLElement, HTMLElement];
   return {
-    brand: screen.getByRole("link", { name: "스타로그 가이드 홈" }).getAttribute("href"),
+    // owner 2026-10-30: the wordmark ("Starlog") goes to the app's home, the guide's home being its 타로 가이드 tab
+    brand: screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href"),
     pills: hrefs(pills),
     bar: hrefs(bar),
     footer: hrefs(screen.getByRole("navigation", { name: "사이트 안내" })),
@@ -246,7 +247,7 @@ describe("links from a guide page", () => {
   it.each(TABS)("$category tab: with one origin (dev, preview, e2e) every link stays a path", ({ Page }) => {
     render(<Page />);
     expect(navLinks()).toEqual({
-      brand: "/guide/tarot",
+      brand: "/",
       pills: ["/guide/tarot", "/guide/saju", "/guide/about", "/"],
       bar: ["/guide/tarot", "/guide/saju", "/guide/about", "/"],
       footer: ["/about", "/how", "/evidence", "/help", "/faq", "/guide/tarot", "/guide/about", "/guide/about#contact", "/pricing", "/terms", "/privacy", "/refund", "/privacy#analytics"],
@@ -257,7 +258,7 @@ describe("links from a guide page", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<Page />);
     expect(navLinks()).toEqual({
-      brand: "/",
+      brand: `${APP}/`,
       pills: ["/", "/guide/saju", "/guide/about", `${APP}/`],
       bar: ["/", "/guide/saju", "/guide/about", `${APP}/`],
       footer: ["/about", `${APP}/how`, `${APP}/evidence`, `${APP}/help`, `${APP}/faq`, "/", "/guide/about", "/guide/about#contact", `${APP}/pricing`, "/terms", "/privacy", `${APP}/refund`, "/privacy#analytics"],
@@ -282,7 +283,7 @@ describe("links from a guide page", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(await page());
     expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(`${APP}${path}`);
-    expect(navLinks()).toMatchObject({ brand: "/", pills: ["/", "/guide/saju", "/guide/about", `${APP}/`] });
+    expect(navLinks()).toMatchObject({ brand: `${APP}/`, pills: ["/", "/guide/saju", "/guide/about", `${APP}/`] });
     // The way back and the related reads are guide pages: paths (the tarot tab is the root domain's /).
     expect(screen.getByRole("link", { name: /가이드 목록으로/ }).getAttribute("href")).toBe(slug === "the-hermit" ? "/" : "/guide/saju");
     const related = within(screen.getByRole("navigation", { name: "같이 읽어 볼 글" })).getAllByRole("link");

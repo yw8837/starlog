@@ -59,7 +59,7 @@ describe("TabBar", () => {
   // The guide host reads as a content site of its own (AdSense audit 2026-10-27): its sections, and one labelled way out.
   const GUIDE_TAB_TEXTS = ["타로 가이드", "사주 가이드", "가이드 소개", "스타로그 앱 ↗"];
 
-  it("on a guide page with the hosts split: 타로 가이드 · 사주 가이드 · 가이드 소개 stay on the root domain, one labelled link leaves for the app, and the wordmark is the root domain's /", () => {
+  it("on a guide page with the hosts split: 타로 가이드 · 사주 가이드 · 가이드 소개 stay on the root domain, one labelled link leaves for the app, and the wordmark goes to the app's home (owner 2026-10-30)", () => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
     render(<TabBar active="guide-saju" host="guide" />);
     for (const nav of [pills(), bar()]) {
@@ -69,7 +69,7 @@ describe("TabBar", () => {
       expect(texts(nav).join(" ")).not.toMatch(/내 기록|내 정보|FAQ|^홈/);
       expect([...nav.querySelectorAll("a")].filter((a) => a.getAttribute("aria-current") === "page").map((a) => a.textContent)).toEqual(["사주 가이드"]);
     }
-    expect(screen.getByRole("link", { name: "스타로그 가이드 홈" }).getAttribute("href")).toBe("/");
+    expect(screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href")).toBe(`${SITE.url}/`);
     // Only the app link is named an exit: its ↗ is decoration, so assistive tech reads "스타로그 앱".
     expect(screen.getAllByRole("link", { name: "스타로그 앱" })).toHaveLength(2);
   });
@@ -80,7 +80,7 @@ describe("TabBar", () => {
       expect(texts(nav)).toEqual(GUIDE_TAB_TEXTS);
       expect(hrefs(nav)).toEqual(["/guide/tarot", "/guide/saju", "/guide/about", "/"]);
     }
-    expect(screen.getByRole("link", { name: "스타로그 가이드 홈" }).getAttribute("href")).toBe("/guide/tarot");
+    expect(screen.getByRole("link", { name: "스타로그 홈" }).getAttribute("href")).toBe("/");
   });
 
   it("marks only the active tab as the current page, in both variants", () => {
