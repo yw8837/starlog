@@ -1,9 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { loginHref, loginMessage, parseAccount, refreshAccount, resetAccountForTests } from "./client";
+import { loginHref, loginKind, loginMessage, parseAccount, refreshAccount, resetAccountForTests, type AccountUser } from "./client";
 
 afterEach(() => resetAccountForTests());
 
 describe("account client", () => {
+  it("names how an account logs in: the review account first, then Google, else Kakao (review 2026-10-30)", () => {
+    const user: AccountUser = { nickname: "별", gift: null, unused: [], opening: [] };
+    expect(loginKind(user)).toBe("kakao");
+    expect(loginKind({ ...user, google: true })).toBe("google");
+    expect(loginKind({ ...user, review: true })).toBe("review");
+  });
+
   it("reads /api/me and refuses odd shapes", () => {
     const body = {
       payments: true,

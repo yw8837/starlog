@@ -245,6 +245,9 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByText("카카오 계정으로 로그인돼 있어요")).toBeTruthy();
     rerender(<UnlockSheet kind="tarot" offer={{ mode: "pay", priceKrw: 2900 }} onUnlock={() => {}} signedIn="google" />);
     expect(screen.getByText("Google 계정으로 로그인돼 있어요")).toBeTruthy();
+    // the card-company review account logs in with an ID, neither Kakao nor Google (review 2026-10-30)
+    rerender(<UnlockSheet kind="tarot" offer={{ mode: "pay", priceKrw: 2900 }} onUnlock={() => {}} signedIn="review" />);
+    expect(screen.getByText("심사용 계정으로 로그인돼 있어요")).toBeTruthy();
     rerender(<UnlockSheet kind="tarot" offer={{ mode: "login", priceKrw: 2900, first: true }} remaining={1} onUnlock={() => {}} guest />);
     expect(screen.queryByText(/로그인돼 있어요/)).toBeNull();
   });

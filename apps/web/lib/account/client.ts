@@ -31,6 +31,9 @@ export interface AccountUser {
   openingUsed?: true;
 }
 
+/** How an account logs in, for "… 계정으로 로그인돼 있어요": the review account has neither Kakao nor Google (review 2026-10-30). */
+export const loginKind = (user: AccountUser): "kakao" | "google" | "review" => (user.review ? "review" : user.google ? "google" : "kakao");
+
 export interface AccountState {
   /** sales (new orders, sign-up, gift) are open for this device */
   payments: boolean;

@@ -119,13 +119,18 @@ type Phase =
 export function ShareResultButton({ kind, text, create, stop, current, unavailable, extra, label = "공유하기", primary = false }: ShareResultButtonProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>({ at: "intro" });
-  const [copied, setCopied] = useState("");
+  const [copied, setCopied] = useState<"" | "copied" | "failed">("");
   const copy = SHOWN[kind];
 
-  // 링크 복사 beside the address (owner 2026-10-30): for a chat or a post the share buttons do not reach.
-  const copyLink = async (url: string) => setCopied((await copyText(url)) === "copied" ? "링크를 복사했어요" : "복사하지 못했어요. 주소를 길게 눌러 복사해 주세요");
+  // 링크 복사 beside the address (owner 2026-10-30): for a chat or a post the share buttons do not reach. Cleared first, so a
+  // second tap is announced again; where the clipboard is refused (an in-app browser), the whole address shows in a field.
+  const copyLink = async (url: string) => {
+    setCopied("");
+    setCopied(await copyText(url));
+  };
 
   const make = async () => {
+    setCopied("");
     setPhase({ at: "making" });
     const result = await create();
     setPhase(result.ok ? { at: "ready", url: result.url, imageUrl: result.imageUrl, ...(result.preview ? { preview: result.preview } : {}) } : { at: "failed", message: result.message });
@@ -133,7 +138,10 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
 
   const takeDown = async (live: Extract<Phase, { at: "ready" }>) => {
     if (!stop) return;
-    if (await stop()) setPhase({ at: "stopped" });
+    if (await stop()) {
+      setCopied("");
+      setPhase({ at: "stopped" });
+    }
     else setPhase({ ...live, error: "공유를 멈추지 못했어요. 잠시 뒤에 다시 시도해 주세요." });
   };
 
@@ -148,7 +156,14 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
       <Button variant={primary ? "primary" : "secondary"} size="md" onClick={openSheet}>
         {label}
       </Button>
-      <Modal open={open} onClose={() => setOpen(false)} labelledBy="share-result-title">
+      <Modal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          setCopied("");
+        }}
+        labelledBy="share-result-title"
+      >
         <div className={s.sheet}>
           <h2 id="share-result-title" className={s.title}>
             결과 공유하기
@@ -170,8 +185,11 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
                 </button>
               </div>
               <p className={s.copied} role="status">
-                {copied}
+                {copied === "copied" ? "링크를 복사했어요" : copied === "failed" ? "복사하지 못했어요. 아래 주소를 길게 눌러 복사해 주세요" : ""}
               </p>
+              {copied === "failed" ? (
+                <input className={s.manualField} type="url" readOnly value={phase.url} aria-label="공유 링크" onFocus={(e) => e.currentTarget.select()} />
+              ) : null}
               <div className={s.actions}>
                 <ShareButton
                   text={phase.preview?.title ?? text}

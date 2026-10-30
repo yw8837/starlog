@@ -56,7 +56,7 @@ type UnlockSheetProps = {
    * Logged in, and with which: a line says so (owner 2026-10-30: a login kept for 30 days read as "로그인 안 했는데 결과가
    * 나옴"). Absent for a visitor.
    */
-  signedIn?: "kakao" | "google";
+  signedIn?: "kakao" | "google" | "review";
 };
 
 /** An account that took 오픈 기념 무료 (walkthrough 2026-10-28: the free choice was simply gone, with no word why). */
@@ -301,7 +301,7 @@ export function UnlockSheet({
           </div>
         ) : null}
         {checking ? null : <p className={s.caption}>{caption}</p>}
-        {signedIn ? <p className={s.caption}>{`${signedIn === "google" ? "Google" : "카카오"} 계정으로 로그인돼 있어요`}</p> : null}
+        {signedIn ? <p className={s.caption}>{`${signedIn === "review" ? "심사용" : signedIn === "google" ? "Google" : "카카오"} 계정으로 로그인돼 있어요`}</p> : null}
       </div>
     </section>
   );

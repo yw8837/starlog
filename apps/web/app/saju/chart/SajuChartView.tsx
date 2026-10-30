@@ -22,7 +22,7 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { Button } from "@/components/ui/Button";
-import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
+import { loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, sajuTopicsMode } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { standardProduct } from "@/lib/pay/catalog";
@@ -377,7 +377,7 @@ export function SajuChartView({
           loginHref={loginHref(returnFor(topic))}
           payHref={checkoutHref("saju", returnFor(topic))}
           owner={account?.owner}
-          signedIn={account?.user ? (account.user.google ? "google" : "kakao") : undefined}
+          signedIn={account?.user ? loginKind(account.user) : undefined}
           refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
           error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
           editHref="/saju/new"

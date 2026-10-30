@@ -12,7 +12,7 @@ import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
-import { loginHref, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
+import { loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
@@ -366,7 +366,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
                 error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
                 openingUsed={Boolean(account?.user?.openingUsed) && openingFreeOn()}
-                signedIn={account?.user ? (account.user.google ? "google" : "kakao") : undefined}
+                signedIn={account?.user ? loginKind(account.user) : undefined}
                 redrawHref={withFlags("/tarot/draw", { instant })}
                 editHref="/tarot/new"
                 openedHref={openedId ? `/chapter/${openedId}` : undefined}

@@ -94,6 +94,22 @@ describe("ShareResultButton", () => {
     expect(within(sheet()).getByText("링크를 복사했어요")).toBeTruthy();
   });
 
+  it("where the clipboard is refused (an in-app browser), shows the whole address to long-press; taking the link down clears it (review 2026-10-30)", async () => {
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn(async () => Promise.reject(new Error("denied"))) }, configurable: true });
+    render(<ShareResultButton kind="tarot" text="나의 스타로그" create={vi.fn(async () => ({ ok: true as const, url: URL_, imageUrl: IMAGE }))} stop={vi.fn(async () => true)} />);
+    await click(screen.getByRole("button", { name: "공유하기" }));
+    await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    await click(within(sheet()).getByRole("button", { name: "링크 복사", hidden: true }));
+    expect(within(sheet()).getByText("복사하지 못했어요. 아래 주소를 길게 눌러 복사해 주세요")).toBeTruthy();
+    const field = within(sheet()).getByRole("textbox", { name: "공유 링크", hidden: true }) as HTMLInputElement;
+    expect(field.value).toBe(URL_);
+    expect(field.readOnly).toBe(true);
+    await click(within(sheet()).getByRole("button", { name: "공유 그만하기", hidden: true }));
+    await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    expect(within(sheet()).queryByText(/복사하지 못했어요/)).toBeNull();
+    expect(within(sheet()).queryByRole("textbox", { name: "공유 링크", hidden: true })).toBeNull();
+  });
+
   it("for 오늘의 한 장, says a friend sees today's card and its reading and nothing personal, and the Kakao message opens that link with 풀이 보기", async () => {
     vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
     try {
