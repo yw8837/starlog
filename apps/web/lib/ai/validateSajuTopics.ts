@@ -10,6 +10,7 @@ import {
   BASIS_QUESTION, CLOCK_DATE, COUNTDOWN, GLANCE_LABEL, HEDGE, MONTH_NAME, NAMED_MONTH, OTHER, QUOTED, SEASON_TIMING, TIME_UNKNOWN_LINE, TOLERANCE,
   actionVarietyViolations, allowLimitPillars, allowedFactViolations, cardGanzhi, charCount, glanceTexts, glanceViolations, lengthCheck, mentions,
   modelNameViolations, monthlyViolations, moneyPushSentences, observationViolations, plainWordViolations, sentences, voiceViolations,
+  CONTACT_COMES, CONTACT_PUSH, PERSON_RETURNS, POSSIBLE_END, REUNION_POSSIBILITY, REUNION_VERDICT, TOPIC_DECLINED as DECLINED, TOPIC_OTHER, WIN_BACK,
 } from "@/lib/ai/validate";
 
 /**
@@ -21,18 +22,9 @@ import {
 
 export const ALL: readonly SajuTopicId[] = ["love", "reunion", "money", "career"];
 
-/**
- * "~지 않아요" declines. "~지 않아도 재회하게 돼요" and "~지 않고도" concede and then say it anyway, so they decline nothing;
- * only a closing "~지 않아도 돼요" ("you need not ask") still does.
- */
-const NEGATION = "지\\s?않(?!아도(?!\\s?(?:돼요|되어요|괜찮아요|괜찮습니다|상관없어요)(?:[,.?!]|\\s*$))|더라도|고도)";
-/** A sentence that declines the topic it names ("이 풀이로 보지 않아요") is never a verdict. */
-const DECLINED = new RegExp(`(?:말하|보|다루|판단하|단정하|약속하|쓰|짐작하|정해\\s?주|읽|묻)${NEGATION}|말하기\\s?어려|말할\\s?수\\s?없|정해\\s?드릴\\s?수\\s?없`);
 /** Contrast or a condition ("옮긴다면 ~, 남는다면 ~"): options, not an order. */
 const CONDITIONAL = /다면|라면|거나|든지|보다는|대신/;
 
-/** "The other person" for topic readings: the 전체 흐름 list plus the people a topic chip brings up. */
-const TOPIC_OTHER = `${OTHER}|헤어진\\s?사람|전\\s?(?:연인|애인|남친|여친)|썸\\s?상대|애인|팀장님?|상사|동료|회사\\s?사람`;
 /**
  * The mind is the other person's only when they hold it: "그 사람의 마음은", "그 사람 마음은", "그 사람은 아직 마음이",
  * "팀장님은 성격이". An object, a place, a cause or a verb in between ("그 사람을 떠올릴 때 마음이", "상사 앞에서는 마음이",
@@ -88,35 +80,14 @@ function claimsOtherMind(sentence: string): boolean {
 const GENDERED_STAR = /(?:재성|정재|편재|관성|정관|편관)[^.?!]{0,12}(?:아내|남편|부인|와이프|배우자|남자\s?친구|여자\s?친구)|(?:아내|남편)(?:의|를\s?뜻하는|를\s?나타내는)\s?(?:별|자리|글자|십성)|(?:남자|여자|남성|여성)(?:에게|에겐|의\s?경우|라면|한테)[^.?!]{0,15}(?:재성|관성|정재|편재|정관|편관)/;
 const PARTNER_CHART = new RegExp(`(?:${TOPIC_OTHER})(?:의|이|가)?\\s?(?:사주|명식|띠|생일|생년월일|일간|일주)(?!\\s?없이)`);
 const AMOUNT = /\d[\d,]*\s?(?:만|천|백|억)?\s?원|\d+\s?억|\d+(?:\.\d+)?\s?%|퍼센트/;
-/**
- * What follows "가능성이" when it is a verdict (high, low, there is, there is none), in sentence-final 해요체 or 합니다체. A question
- * ("있을까요?"), a decline ("알 수 없어요") or an aside ("자꾸 마음에 걸리는 건") does not end this way. The match keeps its ending, so a
- * follow-up answer cannot hide the verdict behind the stem its question already holds (see `topicHardViolations`).
- */
-const POSSIBLE_VERDICT = [
-  "(?:높|낮|작|적|많|있|없)(?:아요|어요|습니다)",
-  "(?:높|낮|작|적|많)은\\s?편(?:이에요|입니다)|(?:있|없)는\\s?편(?:이에요|입니다)",
-  "(?:높|낮|작|적|많|있|없)(?:아|어)\\s?보(?:여요|입니다)",
-  "커요|큽니다|큰\\s?편(?:이에요|입니다)|커\\s?보(?:여요|입니다)",
-  "(?:높|낮|크|작|적|많|있)지\\s?않(?:아요|습니다)",
-  "(?:희박|충분)(?:해요|합니다)",
-  "열려\\s?있(?:어요|습니다)|(?:엿)?보(?:여요|입니다)|느껴(?:져요|집니다)",
-].join("|");
-const POSSIBLE_END = `(?:이|은|도)?\\s?(?:(?:꽤|매우|아주|상당히|충분히|거의|훨씬|제법|분명히|여전히|아직|크게|많이|전혀|별로|안)\\s)?(?:${POSSIBLE_VERDICT})(?!\\s?\\?)`;
 /** "만날 거라면", "나타날 거면", "만날 것이라면": the encounter is the condition, not the prediction. */
 const NO_CONDITION = "(?!\\s?(?:이?라면|이?면|이?든|이?라도|이?더라도))";
 const ENCOUNTER = new RegExp(
   `인연이\\s?(?:나타나|찾아오|찾아와|생기|들어오|들어와|닿)|(?:곧|머지않아|조만간)\\s?(?:만나|생기|인연)|만나게\\s?(?:돼|될|됩)|새로운\\s?(?:사람|인연)이\\s?(?:나타|와|찾아|생기)|(?:헤어지|이별하|멀어지)게\\s?(?:돼|될|됩)|이별(?:이|을)\\s?(?:맞게|겪게|하게)|(?:사람|인연|귀인)(?:이|을)[^.?!]{0,10}(?:(?:나타|만)날\\s?(?:(?:거|것)${NO_CONDITION}|수(?:도)?\\s?있(?:어요|겠|을\\s?(?:거|것)|습니다))|나타(?:나요|납니다|나게\\s?(?:돼|될|됩)))`,
 );
 const ENCOUNTER_POSSIBILITY = new RegExp(`(?:사람|인연|귀인)(?:이|을)[^.?!]{0,10}(?:나타|만)날\\s?(?:가능성|운)${POSSIBLE_END}`);
+const CONTACT = new RegExp(`${CONTACT_COMES.source}|${CONTACT_PUSH.source}`);
 const PARTNER_TRAITS = new RegExp(`(?:${TOPIC_OTHER}|남편|아내|연인)[^.?!]{0,12}(?:키가|외모|얼굴|직업|나이가|MBTI|학벌|연봉)|연상(?:을|과|이)?\\s?(?:만나|맞|어울)|연하(?:를|와|가)?\\s?(?:만나|맞|어울)|MBTI`, "i");
-const REUNION_VERDICT = /재회(?:하게\s?(?:돼|될|됩)|할\s?(?:거|것|수\s?있어요)|해요|합니다|가\s?(?:돼요|이뤄|이루어|가능))|다시\s?(?:이어질\s?(?:거|것)|이어져요|만나게\s?(?:돼|될)|만날\s?(?:거|것))|재회운이\s?(?:있|없|강|약|좋|나쁘|높|낮)|다시\s?(?:이어질|만날)\s?수(?:도)?\s?있(?:어요|겠|을\s?(?:거|것)|습니다)|인연[^.?!]{0,10}이어질\s?(?:거|것|수(?:도)?\s?있(?:어요|겠|을\s?(?:거|것)|습니다))/;
-/** "재회 가능성이 높아요", "다시 이어질 가능성이 커요", "재회할 가능성이 없어요": the possibility with its verdict, not the bare words. */
-const REUNION_POSSIBILITY = new RegExp(`(?:재회(?:의|할)?|이어질|만날)\\s?가능성${POSSIBLE_END}`);
-/** "그 사람이 돌아올 거예요" (a person comes back), never "리듬이 돌아와요". */
-const PERSON_RETURNS = new RegExp(`(?:${TOPIC_OTHER}|연인)[^.?!]{0,15}돌아(?:와요|올\\s?(?:거|것))`);
-const CONTACT = new RegExp(`연락이\\s?(?:와요|올\\s?(?:거|것)|오게\\s?(?:돼|될)|닿을\\s?(?:거|것))|먼저\\s?연락(?:하세요|해\\s?보세요|하는\\s?게\\s?좋)|(?:${TOPIC_OTHER})(?:에게|한테)\\s?연락(?:하세요|해\\s?보세요|하는\\s?게\\s?좋)`);
-const WIN_BACK = /붙잡는\s?(?:법|방법)|마음을\s?(?:돌리|되돌리)|돌아오게\s?(?:만드|하는|할)|재회\s?(?:비법|방법|전략)|다시\s?(?:사로잡|붙잡)/;
 const WEALTH_GRADE = /재물운이\s?(?:약|강|좋|나쁘|없|있|타고|크|작)|돈복이\s?(?:없|있|많|적|타고)|재복이\s?(?:없|있|많|적)|부자가\s?(?:될|되는)\s?(?:사주|운|팔자)|돈이\s?(?:안\s?)?붙(?:는|지\s?않는)\s?사주/;
 const WEALTH_TIMING = /(?:돈|재물|목돈|큰돈)이\s?(?:들어오|풀리|생기|모이)는\s?(?:해|달|때|시기|날)/;
 const CAREER_ORDER = /(?:이직|퇴사|전직)하세요|그만두세요|옮기세요|남으세요|버티세요|(?:이직|퇴사)할\s?때(?:예요|이에요|가\s?왔)|(?:이직|퇴사)하는\s?(?:게|것이)\s?(?:좋아요|나아요|맞아요)|(?:이직|퇴사|전직)(?:을|를)?\s?(?:하는\s?편이\s?(?:더\s)?(?:좋(?:아요|습니다|겠어요|을\s?거예요)|나(?:아요|을\s?거예요)|낫(?:습니다|겠어요)|맞(?:아요|습니다|을\s?거예요))|(?:추천|권)(?:해요|합니다|드려요|드립니다|할게요|드릴게요|해\s?드려요|해\s?드립니다|해\s?드릴게요))(?!\s?\?)/;

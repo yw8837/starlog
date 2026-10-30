@@ -5,7 +5,7 @@ import { SAJU_MAIN_SECTIONS, SAJU_PART_A_SECTIONS, SAJU_PART_B_SECTIONS } from "
 import { PLAIN_WORDS, glossOnce, glossText } from "./plainWords";
 import { ELEMENT_WORD, ORDER, SAJU_OBSERVATION_HEADING, SINSAL_BASIS_LINE, ymKo, type SajuFactSet } from "./prompts/saju";
 import { groupOf, type GroupName } from "./prompts/sajuTopics";
-import { UNSURE_OPTIONS, WHEN_KO, cardLabel, onTopic, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
+import { UNSURE_OPTIONS, WHEN_KO, cardLabel, letsGo, onTopic, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import { GenerationError, type GenerationHooks, type GenerationTask, type ReadingProvider } from "./provider";
 import { mergeSajuReading, sajuEnrichmentFallback } from "./sajuParts";
 import type {
@@ -168,7 +168,8 @@ export function mockTarotReading(ctx: TarotContext, written = 0): TarotReading {
     body: card.slot < written ? "" : cardBody(ctx, card, 1, card.slot === 0, [`내 상황에 비춰 보면 ${card.kb.core.oneLine[card.orientation]}라는 뜻이에요.`], 330),
   }));
 
-  const labels = ctx.relational ? ["답이 빨리 오면", "답이 늦게 오면", "답이 없으면"] : ["흐름이 좋아지면", "그대로 머물면", "잠시 막히면"];
+  const letGo = letsGo(ctx);
+  const labels = letGo ? ["자꾸 떠오르면", "덤덤해지면", "소식을 들으면"] : ctx.relational ? ["답이 빨리 오면", "답이 늦게 오면", "답이 없으면"] : ["흐름이 좋아지면", "그대로 머물면", "잠시 막히면"];
   const scenarioCards = [first, ctx.cards[1] ?? first, last];
   // Three different moves, so the action fields never repeat one verb.
   const moves = distinctActions([...actionsOf(first, ctx), ...actionsOf(last, ctx), ...FALLBACK_ACTIONS], 3);
@@ -195,8 +196,11 @@ export function mockTarotReading(ctx: TarotContext, written = 0): TarotReading {
     },
     messages: {
       heading: h.messages,
-      items: ctx.relational ? ["요즘 어떻게 지내? 문득 생각나서", "나 요즘 ○○ 하면서 지내. 너는 어때?"] : [moves[0]!, moves[1]!],
-      hint: "말투는 평소 쓰던 대로 바꾸고, 부담 없는 크기로 시작해요.",
+      // words for oneself when the user chose to let go (letsGo), never a message to send
+      items: letGo
+        ? ["오늘은 내 하루를 먼저 챙겨도 괜찮아요.", "천천히 정리해도 늦지 않아요."]
+        : ctx.relational ? ["요즘 어떻게 지내? 문득 생각나서", "나 요즘 ○○ 하면서 지내. 너는 어때?"] : [moves[0]!, moves[1]!],
+      hint: letGo ? "마음이 흔들리는 날 이 말을 먼저 떠올려요." : "말투는 평소 쓰던 대로 바꾸고, 부담 없는 크기로 시작해요.",
     },
     avoid: { heading: h.avoid, items: ["한 번에 결론을 내려는 조급함", "결과를 재촉하는 말", "모든 걸 혼자 떠안는 계획"] },
     alternatives: {

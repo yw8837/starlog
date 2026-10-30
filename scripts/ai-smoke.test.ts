@@ -4,6 +4,7 @@
 // SMOKE_MODEL / SMOKE_EFFORT apply one model and effort to every kind (default: the app's config).
 // SMOKE_STAMP reuses an earlier run's stamp, so run N draws the same cards and daily card (A/B).
 // SMOKE_TAROT=marriage reads 결혼운 (나, self-flow) instead of 재물운 for the tarot teaser and reading.
+// SMOKE_TAROT=us:reunion reads a 나와 그 사람 topic on its own spread; SMOKE_GOAL picks its 원하는 방향 chip (e.g. "마음 정리하기").
 // Records attempts, validation, AI-tell score, tokens and cost per call; writes every output and a
 // summary to apps/web/test-results/ai-smoke/<folder>/. Never prints the key.
 // usage: SMOKE_RUNS=5 pnpm ai:smoke
@@ -46,6 +47,15 @@ function smokeTarotInput() {
       topicId: "money", whoId: "me" as const, whenId: "week" as const, question: "",
       conditions: [{ label: "지금 상황", value: "지금은 수입이 없음" }, { label: "관심 방향", value: "새 수입원 찾기" }],
       note: "퇴사하고 두 달째 쉬면서 다음 일을 찾고 있어요",
+    };
+  }
+  if (SMOKE_TAROT.startsWith("us:")) {
+    const us = TOPICS_BY_WHO.us.find((t) => t.id === SMOKE_TAROT.slice(3));
+    if (!us) throw new Error(`SMOKE_TAROT us:<topic> must name a 나와 그 사람 topic (got ${SMOKE_TAROT})`);
+    return {
+      topicId: us.id, whoId: "us" as const, whenId: "month" as const, question: "",
+      conditions: us.conditions.map((c) => ({ label: c.label, value: c.id === "goal" && process.env.SMOKE_GOAL ? process.env.SMOKE_GOAL : c.options[1]! })),
+      note: "헤어진 지 석 달이 지났는데 아직 자주 생각나요",
     };
   }
   const topic = TOPICS_BY_WHO.me.find((t) => t.id === SMOKE_TAROT && t.template === "self-flow");
@@ -188,8 +198,9 @@ test("ai smoke", async () => {
   }
 
   for (let run = 1; run <= RUNS; run++) {
-    const cards = pickCards(createDeck(`smoke-${stamp}-${run}`, DEFAULT_REVERSAL_RATE), TEMPLATES["self-flow"], [5, 25, 50]);
-    const money: TarotContext = buildTarotContext("self-flow", cards, smokeTarotInput());
+    const spread = SMOKE_TAROT.startsWith("us:") ? TOPICS_BY_WHO.us.find((t) => t.id === SMOKE_TAROT.slice(3))!.template : "self-flow";
+    const cards = pickCards(createDeck(`smoke-${stamp}-${run}`, DEFAULT_REVERSAL_RATE), TEMPLATES[spread], [5, 25, 50]);
+    const money: TarotContext = buildTarotContext(spread, cards, smokeTarotInput());
     const moneyInput = { question: money.question, conditions: money.conditions, note: money.note, cards: cards.map((c) => `${c.position}: ${c.cardId} ${c.orientation}`) };
     const teaser = await call<TarotTeaser>(run, "tarot-teaser", (d) => validateTarotTeaser(d, money), (p) => generateTarotTeaser(p, money),
       (d) => validateTarotTeaser(d, money), (d) => [d.firstCard.body, d.secondCard?.body ?? ""].join(" "), moneyInput);

@@ -489,6 +489,93 @@ describe("결혼 topic (나 · 결혼운 and 나와 그 사람 · 결혼)", () =
   });
 });
 
+describe("재회 (owner 2026-10-30: 재회운 is popular, \"로직 검증\")", () => {
+  const WHENS = ["today", "week", "month", "year"] as const;
+  const reunion = TOPICS_BY_WHO.us.find((t) => t.id === "reunion")!;
+  const chip = (goal: string) => reunion.conditions.map((c) => ({ label: c.label, value: c.id === "goal" ? goal : c.options[0]! }));
+  const ctxOf = (goal: string, seed = "reunion") =>
+    buildTarotContext(reunion.template, pickCards(createDeck(seed, 0.5), TEMPLATES[reunion.template], [1, 2, 3]), {
+      topicId: "reunion", whoId: "us", whenId: "month", question: "", conditions: chip(goal), note: "",
+    });
+  const withAction = (ctx: TarotContext, line: string) => {
+    const r = mockTarotReading(ctx);
+    return { ...r, action: { ...r.action, body: `${r.action.body} ${line}` } };
+  };
+
+  it("passes the mock through every validator for every when-chip and every situation chip", () => {
+    const failures: string[] = [];
+    const template = TEMPLATES[reunion.template];
+    for (const whenId of reunion.whens ?? WHENS) {
+      for (let i = 0; i < 26; i++) {
+        const cards = pickCards(createDeck(`reunion-${whenId}-${i}`, 0.5), template, template.positions.map((_, k) => (i * 3 + k * 26) % 78));
+        const input: TarotInput = {
+          topicId: "reunion", whoId: "us", whenId, question: "", note: i % 2 ? "헤어지고 나서 자꾸 생각나요" : "",
+          conditions: reunion.conditions.map((c) => ({ label: c.label, value: c.options[i % c.options.length]! })),
+        };
+        const ctx = buildTarotContext(reunion.template, cards, input);
+        const found = [
+          ...validateTarotTeaser(mockTarotTeaser(ctx), ctx),
+          ...hard(validateTarotReading(mockTarotReading(ctx), ctx)),
+          ...validateTarotFollowUp(mockTarotFollowUp(ctx, "마음을 정리하려면 뭐부터 할까요?"), ctx, "마음을 정리하려면 뭐부터 할까요?"),
+        ];
+        if (found.length) failures.push(`${whenId} #${i} ${cards.map((c) => c.cardId).join(",")}: ${found.join(" | ")}`);
+      }
+    }
+    expect(failures.slice(0, 5)).toEqual([]);
+  });
+
+  it("fails a verdict, a person who comes back, a message foretold and winning them back; a sentence that declines passes", () => {
+    const ctx = ctxOf("다시 연락해 보기");
+    const reading = mockTarotReading(ctx);
+    for (const verdict of ["그 사람과 다시 이어질 거예요.", "재회 가능성이 높아요.", "그 사람이 곧 돌아올 거예요.", "이번 달 안에 연락이 올 거예요."]) {
+      expect(hard(validateTarotReading({ ...reading, verdict }, ctx)).join(" "), verdict).toMatch(/재회나 연락을 판정한 문장/);
+    }
+    expect(hard(validateTarotReading(withAction(ctx, "그 사람의 마음을 돌리는 방법부터 찾아 두세요."), ctx)).join(" ")).toMatch(/마음을 돌리는 법/);
+    const declined = { ...reading, alternatives: { ...reading.alternatives, body: `${reading.alternatives.body} 다시 만날 거라고 말하지 않아요.` } };
+    expect(hard(validateTarotReading(declined, ctx)).join(" ")).not.toMatch(/재회나 연락을 판정한 문장/);
+    const teaser = mockTarotTeaser(ctx);
+    expect(validateTarotTeaser({ ...teaser, firstCard: { ...teaser.firstCard, body: `${teaser.firstCard.body} 그 사람과 다시 이어질 거예요.` } }, ctx).join(" ")).toMatch(/재회나 연락을 판정한 문장/);
+  });
+
+  it("reads 연락 about 헤어진 사이 by the same rules", () => {
+    const contact = TOPICS_BY_WHO.us.find((t) => t.id === "contact")!;
+    const ctx = buildTarotContext(contact.template, pickCards(createDeck("contact-ex", 0.5), TEMPLATES[contact.template], [4, 5, 6]), {
+      topicId: "contact", whoId: "us", whenId: "week", question: "", note: "",
+      conditions: contact.conditions.map((c) => ({ label: c.label, value: c.id === "relation" ? "헤어진 사이" : c.options[0]! })),
+    });
+    expect(hard(validateTarotReading({ ...mockTarotReading(ctx), verdict: "그 사람과 다시 이어질 거예요." }, ctx)).join(" ")).toMatch(/재회나 연락을 판정한 문장/);
+  });
+
+  it("마음 정리하기·시간을 두기: no contact pushed, words for oneself (해요체) instead of a first message", () => {
+    for (const goal of ["마음 정리하기", "시간을 두기"]) {
+      const ctx = ctxOf(goal);
+      expect(tarotLockedToc(ctx)).toContain("연락 대신 나에게 해 줄 말 2가지");
+      expect(tarotLockedToc(ctx)).toContain("내 마음에 따라 달라지는 길");
+      expect(tarotLockedToc(ctx)).not.toContain("보내기 좋은 첫 문장 2가지");
+      expect(hard(validateTarotReading(withAction(ctx, "오늘 그 사람에게 짧은 안부를 보내 보세요."), ctx)).join(" "), goal).toMatch(/연락을 권한 문장/);
+      expect(hard(validateTarotReading(withAction(ctx, "먼저 연락해 보세요."), ctx)).join(" "), goal).toMatch(/연락을 권한 문장/);
+      const r = mockTarotReading(ctx);
+      expect(hard(validateTarotReading({ ...r, messages: { ...r.messages, items: ["오늘은 그냥 푹 쉬어도 좋아.", r.messages.items[1]!] } }, ctx)).join(" ")).toMatch(/해요체가 아닌 문장/);
+    }
+    // wanting to reach out keeps the first messages and may suggest one
+    const reach = ctxOf("다시 연락해 보기");
+    expect(tarotLockedToc(reach)).toContain("보내기 좋은 첫 문장 2가지");
+    expect(hard(validateTarotReading(withAction(reach, "오늘 그 사람에게 짧은 안부를 보내 보세요."), reach)).join(" ")).not.toMatch(/연락을 권한 문장/);
+  });
+
+  it("마음 정리하기 on 썸·고백 and 연애 lets go too", () => {
+    for (const id of ["crush", "relationship"]) {
+      const topic = TOPICS_BY_WHO.us.find((t) => t.id === id)!;
+      const ctx = buildTarotContext(topic.template, pickCards(createDeck(`letgo-${id}`, 0.5), TEMPLATES[topic.template], [7, 8, 9]), {
+        topicId: id, whoId: "us", whenId: topic.whens?.[0] ?? "month", question: "", note: "",
+        conditions: topic.conditions.map((c) => ({ label: c.label, value: c.id === "goal" ? "마음 정리하기" : c.options[0]! })),
+      });
+      expect(tarotLockedToc(ctx), id).toContain("연락 대신 나에게 해 줄 말 2가지");
+      expect(hard(validateTarotReading(mockTarotReading(ctx), ctx)), id).toEqual([]);
+    }
+  });
+});
+
 describe("provider selection", () => {
   const env = (vars: Record<string, string>) => vars as unknown as NodeJS.ProcessEnv;
   it("serves mock only on request or outside production without a key; nothing in production without a key", () => {

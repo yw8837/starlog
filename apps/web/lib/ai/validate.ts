@@ -8,7 +8,7 @@ import {
 import { maskGanzhiReadings } from "./ganzhi";
 import { bareFirstTerms, glossed, outsideBrackets } from "./plainWords";
 import type { SajuFactSet } from "./prompts/saju";
-import { UNSURE_OPTIONS, cardLabel, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
+import { UNSURE_OPTIONS, cardLabel, letsGo, mentionsWord, tarotHeadings, type TarotCardContext, type TarotContext } from "./prompts/tarot";
 import type {
   DailyDraft, FollowUpAnswer, SajuEnrichment, SajuGlance, SajuReading, SajuReadingPartA, SajuReadingPartB, SajuTeaserDraft, TarotReading, TarotTeaserDraft,
 } from "./schemas";
@@ -113,6 +113,43 @@ export function matchesBeyondUser(pattern: RegExp, text: string, userText: strin
 export const OTHER = "그 사람|상대방?|그분|걔|그 친구|그녀|그는|그가|배우자|남자\\s?친구|여자\\s?친구|남친|여친|예비\\s?(?:신랑|신부)";
 const OTHER_MIND = new RegExp(`(${OTHER})[^.?!]{0,15}(마음|속마음|감정|생각|진심)[^.?!]{0,20}(이에요|예요|확실|분명|거예요|있어요)`);
 const OTHER_FEELS = new RegExp(`(${OTHER.replace("그는|그가", "그")})(은|는|이|가)\\s[^.?!]{0,30}(좋아해|사랑해|싫어해|그리워해|원해|후회해|관심 있어)요`);
+
+// ---- 재회 (shared by 재회운 사주 and the 재회 타로; owner 2026-10-30: the tarot had none of these) ----
+
+/**
+ * "~지 않아요" declines. "~지 않아도 재회하게 돼요" and "~지 않고도" concede and then say it anyway, so they decline nothing;
+ * only a closing "~지 않아도 돼요" ("you need not ask") still does.
+ */
+const NEGATION = "지\\s?않(?!아도(?!\\s?(?:돼요|되어요|괜찮아요|괜찮습니다|상관없어요)(?:[,.?!]|\\s*$))|더라도|고도)";
+/** A sentence that declines the topic it names ("이 풀이로 보지 않아요") is never a verdict. */
+export const TOPIC_DECLINED = new RegExp(`(?:말하|보|다루|판단하|단정하|약속하|쓰|짐작하|정해\\s?주|읽|묻)${NEGATION}|말하기\\s?어려|말할\\s?수\\s?없|정해\\s?드릴\\s?수\\s?없`);
+/** "The other person" for topic readings: the 전체 흐름 list plus the people a topic chip brings up. */
+export const TOPIC_OTHER = `${OTHER}|헤어진\\s?사람|전\\s?(?:연인|애인|남친|여친)|썸\\s?상대|애인|팀장님?|상사|동료|회사\\s?사람`;
+/**
+ * What follows "가능성이" when it is a verdict (high, low, there is, there is none), in sentence-final 해요체 or 합니다체. A question
+ * ("있을까요?"), a decline ("알 수 없어요") or an aside ("자꾸 마음에 걸리는 건") does not end this way. The match keeps its ending, so a
+ * follow-up answer cannot hide the verdict behind the stem its question already holds (see `topicHardViolations`).
+ */
+const POSSIBLE_VERDICT = [
+  "(?:높|낮|작|적|많|있|없)(?:아요|어요|습니다)",
+  "(?:높|낮|작|적|많)은\\s?편(?:이에요|입니다)|(?:있|없)는\\s?편(?:이에요|입니다)",
+  "(?:높|낮|작|적|많|있|없)(?:아|어)\\s?보(?:여요|입니다)",
+  "커요|큽니다|큰\\s?편(?:이에요|입니다)|커\\s?보(?:여요|입니다)",
+  "(?:높|낮|크|작|적|많|있)지\\s?않(?:아요|습니다)",
+  "(?:희박|충분)(?:해요|합니다)",
+  "열려\\s?있(?:어요|습니다)|(?:엿)?보(?:여요|입니다)|느껴(?:져요|집니다)",
+].join("|");
+export const POSSIBLE_END = `(?:이|은|도)?\\s?(?:(?:꽤|매우|아주|상당히|충분히|거의|훨씬|제법|분명히|여전히|아직|크게|많이|전혀|별로|안)\\s)?(?:${POSSIBLE_VERDICT})(?!\\s?\\?)`;
+export const REUNION_VERDICT = /재회(?:하게\s?(?:돼|될|됩)|할\s?(?:거|것|수\s?있어요)|해요|합니다|가\s?(?:돼요|이뤄|이루어|가능))|다시\s?(?:이어질\s?(?:거|것)|이어져요|만나게\s?(?:돼|될)|만날\s?(?:거|것))|재회운이\s?(?:있|없|강|약|좋|나쁘|높|낮)|다시\s?(?:이어질|만날)\s?수(?:도)?\s?있(?:어요|겠|을\s?(?:거|것)|습니다)|인연[^.?!]{0,10}이어질\s?(?:거|것|수(?:도)?\s?있(?:어요|겠|을\s?(?:거|것)|습니다))/;
+/** "재회 가능성이 높아요", "다시 이어질 가능성이 커요", "재회할 가능성이 없어요": the possibility with its verdict, not the bare words. */
+export const REUNION_POSSIBILITY = new RegExp(`(?:재회(?:의|할)?|이어질|만날)\\s?가능성${POSSIBLE_END}`);
+/** "그 사람이 돌아올 거예요" (a person comes back), never "리듬이 돌아와요". */
+export const PERSON_RETURNS = new RegExp(`(?:${TOPIC_OTHER}|연인)[^.?!]{0,15}돌아(?:와요|올\\s?(?:거|것))`);
+/** A message that comes ("연락이 올 거예요"): a prediction. */
+export const CONTACT_COMES = new RegExp(`연락이\\s?(?:와요|올\\s?(?:거|것)|오게\\s?(?:돼|될)|닿을\\s?(?:거|것))`);
+/** "먼저 연락해 보세요": contact pushed. */
+export const CONTACT_PUSH = new RegExp(`먼저\\s?연락(?:하세요|해\\s?보세요|하는\\s?게\\s?좋)|(?:${TOPIC_OTHER})(?:에게|한테)\\s?연락(?:하세요|해\\s?보세요|하는\\s?게\\s?좋)`);
+export const WIN_BACK = /붙잡는\s?(?:법|방법)|마음을\s?(?:돌리|되돌리)|돌아오게\s?(?:만드|하는|할)|재회\s?(?:비법|방법|전략)|다시\s?(?:사로잡|붙잡)/;
 
 /**
  * Marriage verdicts: that it will or will not happen, or when (owner: 결혼운 readings never promise
@@ -373,6 +410,30 @@ export function commonTarotViolations(text: string, ctx: TarotContext, out: stri
   blocklistViolations(text, userText, out);
   foreignCardViolations(text, drawn, out);
   if (opts.topic) topicDriftViolations(text, drawn, ctx.bannedWords.filter((word) => !mentionsWord(userText, word)), out);
+  reunionViolations(text, ctx, userText, out);
+}
+
+/** "그 사람에게 짧은 안부를 보내 보세요": a message to the other person pushed, beside CONTACT_PUSH's "먼저 연락해 보세요". */
+const SEND_PUSH = new RegExp(`(?:${TOPIC_OTHER})(?:에게|한테)[^.?!]{0,15}(?:보내|남겨|건네|전해)\\s?(?:보세요|봐요)`);
+
+/**
+ * 재회 (owner 2026-10-30 "로직 검증"): a 재회 reading, or one about 헤어진 사이, takes the 재회운 사주's bans (no verdict, nobody
+ * coming back, no message foretold, no winning them back); one whose 원하는 방향 lets go (letsGo) pushes no contact. A sentence
+ * that declines (TOPIC_DECLINED) and the user's own words pass.
+ */
+function reunionViolations(text: string, ctx: TarotContext, userText: string, out: string[]): void {
+  const exes = ctx.topic?.id === "reunion" || ctx.conditions.some((c) => c.value === "헤어진 사이");
+  const letGo = letsGo(ctx);
+  if (!exes && !letGo) return;
+  const live = sentences(text.replace(QUOTED, "''")).filter((s) => !TOPIC_DECLINED.test(s));
+  const first = (...patterns: RegExp[]) =>
+    live.flatMap((s) => patterns.map((re) => re.exec(s)?.[0])).find((m): m is string => m !== undefined && !userText.includes(m));
+  const verdict = exes ? first(REUNION_VERDICT, REUNION_POSSIBILITY, PERSON_RETURNS, CONTACT_COMES) : undefined;
+  if (verdict) out.push(`재회나 연락을 판정한 문장이 있어요("${verdict.slice(0, 30)}"). 된다·안 된다 대신 다시 이어진다면 되풀이되기 쉬운 것과 스스로 정할 기준을 말해 주세요.`);
+  const winBack = exes ? first(WIN_BACK) : undefined;
+  if (winBack) out.push(`상대의 마음을 돌리는 법을 다룬 문장이 있어요("${winBack.slice(0, 30)}"). 내 마음과 생활을 지키는 행동으로 바꿔 주세요.`);
+  const push = letGo ? first(CONTACT_PUSH, SEND_PUSH) : undefined;
+  if (push) out.push(`'원하는 방향'이 마음 정리나 시간 두기인데 연락을 권한 문장이 있어요("${push.slice(0, 30)}"). 연락하지 않고 할 수 있는 일로 바꿔 주세요.`);
 }
 
 export function cardIdentityViolations(cards: Array<{ position: string; cardId: string }>, ctx: TarotContext, out: string[]): void {
@@ -458,7 +519,8 @@ export function validateTarotReading(draft: TarotReading, ctx: TarotContext, opt
 
   const paid = paidBodyText(r).join("\n");
   const total = charCount(paid);
-  if (total < 1200 * (1 - TOLERANCE) || total > 2600 * (1 + TOLERANCE)) out.push(`전체 풀이 분량이 공백 제외 ${total}자예요. 2,000~2,600자로 맞춰 주세요.`);
+  // 1,500 floor (review 2026-10-30): a 1,418자 reading read as short; real outputs measured 1,685–1,928, so a retry stays rare.
+  if (total < 2000 * (1 - TOLERANCE) || total > 2600 * (1 + TOLERANCE)) out.push(`전체 풀이 분량이 공백 제외 ${total}자예요. 2,000~2,600자로 맞춰 주세요.`);
 
   const all = [paid, ...r.followUps, ...r.cards.map((c) => c.heading)].join("\n");
   const shared = sharedMisdescriptionHits([r.connection.body, r.observation.body, ...r.scenarios.items.map((i) => i.body), r.alternatives.body].join("\n"), ctx.cards.map((c) => c.kb));
@@ -466,8 +528,8 @@ export function validateTarotReading(draft: TarotReading, ctx: TarotContext, opt
   inputUseViolations(paid, ctx, out);
   if (cardSubjectCount(all, ctx.cards) > 3) out.push("카드를 주어로 세운 문장('~는 ~라고 말해요')이 너무 많아요. 전체 3번 이하로 줄여 주세요.");
   commonTarotViolations(all, ctx, out);
-  // Suggested first messages may be 반말 in relationship spreads; everything else is 해요체.
-  const prose = paidBodyText(r).filter((text) => !(ctx.relational && r.messages.items.includes(text)));
+  // Suggested first messages may be 반말 in relationship spreads; everything else is 해요체, words for oneself (letsGo) included.
+  const prose = paidBodyText(r).filter((text) => !(ctx.relational && !letsGo(ctx) && r.messages.items.includes(text)));
   voiceViolations([...prose, ...r.followUps].join("\n"), out);
   inputRepeatViolations(paid, quotedInputs(ctx), out);
   actionVarietyViolations([r.action.body, r.timing.body, r.observation.body, r.messages.hint, ...r.scenarios.items.map((i) => i.body), ...(ctx.relational ? [] : r.messages.items)], out);
