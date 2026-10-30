@@ -240,4 +240,12 @@ describe("UnlockSheet offers", () => {
     expect(screen.getByText("전체 풀이 · 2,900원")).toBeTruthy();
     expect(screen.queryByText("결제 한 번에 고른 풀이 하나를 열어요")).toBeNull();
   });
+  it("says which account it opens with when logged in (owner 2026-10-30: \"로그인 안 했는데 결과가 나옴\" was a login kept from a week before)", () => {
+    const { rerender } = render(<UnlockSheet kind="tarot" offer={{ mode: "pay", priceKrw: 2900, first: true }} remaining={1} onUnlock={() => {}} signedIn="kakao" />);
+    expect(screen.getByText("카카오 계정으로 로그인돼 있어요")).toBeTruthy();
+    rerender(<UnlockSheet kind="tarot" offer={{ mode: "pay", priceKrw: 2900 }} onUnlock={() => {}} signedIn="google" />);
+    expect(screen.getByText("Google 계정으로 로그인돼 있어요")).toBeTruthy();
+    rerender(<UnlockSheet kind="tarot" offer={{ mode: "login", priceKrw: 2900, first: true }} remaining={1} onUnlock={() => {}} guest />);
+    expect(screen.queryByText(/로그인돼 있어요/)).toBeNull();
+  });
 });

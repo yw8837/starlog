@@ -83,6 +83,17 @@ describe("ShareResultButton", () => {
     expect(share).toHaveBeenCalledWith({ title: "스타로그", url: URL_, text: "나의 스타로그 · 연애운" });
   });
 
+  it("copies the link from 링크 복사 beside it (owner 2026-10-30), and says so", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    render(<ShareResultButton kind="tarot" text="나의 스타로그" create={vi.fn(async () => ({ ok: true as const, url: URL_, imageUrl: IMAGE }))} stop={vi.fn()} />);
+    await click(screen.getByRole("button", { name: "공유하기" }));
+    await click(within(sheet()).getByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    await click(within(sheet()).getByRole("button", { name: "링크 복사", hidden: true }));
+    expect(writeText).toHaveBeenCalledWith(URL_);
+    expect(within(sheet()).getByText("링크를 복사했어요")).toBeTruthy();
+  });
+
   it("for 오늘의 한 장, says a friend sees today's card and its reading and nothing personal, and the Kakao message opens that link with 풀이 보기", async () => {
     vi.stubEnv("NEXT_PUBLIC_KAKAO_JS_KEY", "test-key");
     try {

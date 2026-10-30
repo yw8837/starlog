@@ -52,6 +52,11 @@ type UnlockSheetProps = {
   onCheck?: () => void;
   /** The account took 오픈 기념 무료 already (on any device) while it runs: the caption says why it is not offered. */
   openingUsed?: boolean;
+  /**
+   * Logged in, and with which: a line says so (owner 2026-10-30: a login kept for 30 days read as "로그인 안 했는데 결과가
+   * 나옴"). Absent for a visitor.
+   */
+  signedIn?: "kakao" | "google";
 };
 
 /** An account that took 오픈 기념 무료 (walkthrough 2026-10-28: the free choice was simply gone, with no word why). */
@@ -91,6 +96,7 @@ export function UnlockSheet({
   checking = false,
   onCheck,
   openingUsed = false,
+  signedIn,
 }: UnlockSheetProps) {
   const chars = approxCharsText(SITE.reading.approxChars[kind]);
   const opening = offer.mode === "opening";
@@ -295,6 +301,7 @@ export function UnlockSheet({
           </div>
         ) : null}
         {checking ? null : <p className={s.caption}>{caption}</p>}
+        {signedIn ? <p className={s.caption}>{`${signedIn === "google" ? "Google" : "카카오"} 계정으로 로그인돼 있어요`}</p> : null}
       </div>
     </section>
   );

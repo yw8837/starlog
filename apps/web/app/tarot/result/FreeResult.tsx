@@ -366,6 +366,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
                 error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
                 openingUsed={Boolean(account?.user?.openingUsed) && openingFreeOn()}
+                signedIn={account?.user ? (account.user.google ? "google" : "kakao") : undefined}
                 redrawHref={withFlags("/tarot/draw", { instant })}
                 editHref="/tarot/new"
                 openedHref={openedId ? `/chapter/${openedId}` : undefined}

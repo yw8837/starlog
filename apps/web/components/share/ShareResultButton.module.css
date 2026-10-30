@@ -20,6 +20,47 @@
 }
 
 /* The address, so the sharer sees which link goes out. */
+/* The address and 링크 복사 on one line: the address shortens, the button keeps its size. */
+.linkRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.linkRow .link {
+  flex: 1;
+  min-width: 0;
+}
+
+.copy {
+  flex: none;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-line);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--fs-sub);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copy:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.copied {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--ink-sub);
+  font-size: var(--fs-sub);
+}
+
+.copied:empty {
+  min-height: 0;
+}
+
 .link {
   overflow: hidden;
   padding: 10px 14px;

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ShareButton } from "@/components/ui/ShareButton";
+import { copyText } from "@/lib/bonds/client";
 import type { ShareLink, ShareLinkResult } from "@/lib/share/client";
 import s from "./ShareResultButton.module.css";
 
@@ -118,7 +119,11 @@ type Phase =
 export function ShareResultButton({ kind, text, create, stop, current, unavailable, extra, label = "공유하기", primary = false }: ShareResultButtonProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>({ at: "intro" });
+  const [copied, setCopied] = useState("");
   const copy = SHOWN[kind];
+
+  // 링크 복사 beside the address (owner 2026-10-30): for a chat or a post the share buttons do not reach.
+  const copyLink = async (url: string) => setCopied((await copyText(url)) === "copied" ? "링크를 복사했어요" : "복사하지 못했어요. 주소를 길게 눌러 복사해 주세요");
 
   const make = async () => {
     setPhase({ at: "making" });
@@ -158,7 +163,15 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
             </p>
           ) : phase.at === "ready" ? (
             <>
-              <p className={s.link}>{phase.url.replace(/^https?:\/\//, "")}</p>
+              <div className={s.linkRow}>
+                <p className={s.link}>{phase.url.replace(/^https?:\/\//, "")}</p>
+                <button type="button" className={s.copy} onClick={() => void copyLink(phase.url)}>
+                  링크 복사
+                </button>
+              </div>
+              <p className={s.copied} role="status">
+                {copied}
+              </p>
               <div className={s.actions}>
                 <ShareButton
                   text={phase.preview?.title ?? text}

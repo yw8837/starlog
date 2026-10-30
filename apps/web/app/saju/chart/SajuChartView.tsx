@@ -377,6 +377,7 @@ export function SajuChartView({
           loginHref={loginHref(returnFor(topic))}
           payHref={checkoutHref("saju", returnFor(topic))}
           owner={account?.owner}
+          signedIn={account?.user ? (account.user.google ? "google" : "kakao") : undefined}
           refundHref={method === "paid" && creditView?.action === "retry" ? "/me#purchases" : undefined}
           error={unlockError ?? (loginNote ? { title: loginNote, action: null } : null)}
           editHref="/saju/new"
