@@ -65,7 +65,15 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
       </h2>
       <p className={s.betaRule}>{openingFreeText()}</p>
       <p className={s.betaText}>
-        {remaining === undefined ? " " : remaining > 0 ? "아직 무료로 열 수 있어요" : "이 기기에서는 이미 무료로 열었어요"}
+        {account?.user?.openingUsed
+          ? "이 계정으로는 이미 받았어요"
+          : remaining === undefined
+            ? " "
+            : remaining > 0
+              ? account?.user
+                ? "이 계정으로 아직 받을 수 있어요"
+                : "아직 무료로 열 수 있어요"
+              : "이 기기에서는 이미 무료로 열었어요"}
       </p>
       {/* Where to use it (UX review 2026-10-28: the box had no way on). */}
       {remaining !== undefined && remaining > 0 && !account?.user?.openingUsed ? (
@@ -108,7 +116,11 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
             </Button>
           </section>
         ) : account?.user ? (
-          <AccountPanel account={{ ...account, user: account.user }} onNotice={setNotice} />
+          <>
+            <AccountPanel account={{ ...account, user: account.user }} onNotice={setNotice} />
+            {/* Logged in too, whether this account took it (owner 2026-10-30: "로그인도 손보고"). */}
+            {openingBox}
+          </>
         ) : account?.payments ? (
           <>
             <section className={s.beta} aria-labelledby="login-title">

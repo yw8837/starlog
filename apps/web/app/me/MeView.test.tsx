@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, onTestFinished, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { SITE } from "@/lib/config";
 import { clearBetaUsage, markFreeUsedUp } from "@/lib/storage/betaUsage";
@@ -181,5 +181,23 @@ describe("MeView after the account was deleted", () => {
     await waitFor(() => expect(screen.getByRole("link", { name: /내 기록/ })).toBeTruthy());
     expect(listChapters()).toHaveLength(2);
     expect(sessionStorage.getItem("starlog.account-synced")).toBe("1");
+  });
+  it("shows a logged-in account whether it took 오픈 기념 무료, under the account (owner 2026-10-30)", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-11-10T12:00:00+09:00"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    const member = (extra: Record<string, unknown>) => vi.fn(async () => Response.json({ payments: true, login: true, owner: false, user: { nickname: "별빛", unused: [], opening: [], ...extra } }));
+    vi.stubGlobal("fetch", member({ openingUsed: true }));
+    render(<MeView status={null} />);
+    expect(await screen.findByText("이 계정으로는 이미 받았어요")).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "타로 보러 가기" })).toBeNull();
+    cleanup();
+    resetAccountForTests();
+    vi.stubGlobal("fetch", member({}));
+    render(<MeView status={null} />);
+    expect(await screen.findByText("이 계정으로 아직 받을 수 있어요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "타로 보러 가기" })).toBeTruthy();
   });
 });
