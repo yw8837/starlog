@@ -537,6 +537,36 @@ describe("재회 (owner 2026-10-30: 재회운 is popular, \"로직 검증\")", (
     expect(validateTarotTeaser({ ...teaser, firstCard: { ...teaser.firstCard, body: `${teaser.firstCard.body} 그 사람과 다시 이어질 거예요.` } }, ctx).join(" ")).toMatch(/재회나 연락을 판정한 문장/);
   });
 
+  it("passes a 갈래's condition, a belief set aside, a talk that goes on and the reader's own attention (review 2026-10-30: these were flagged)", () => {
+    const ctx = ctxOf("다시 연락해 보기");
+    for (const line of [
+      "답이 빨리 오면 대화가 다시 이어질 수 있어요.",
+      "다시 만날 거라면 기준부터 정해 두세요.",
+      "다시 이어질 거라면 같은 다툼이 되풀이되지 않게 말투부터 정해 두세요.",
+      "그 사람이 돌아올 거라고 기대하기보다 내 하루를 먼저 챙겨요.",
+      "연락이 올 거라고 단정하지 말아요.",
+      "마음을 돌리게 되면 산책을 나가 보세요.",
+    ]) {
+      expect(hard(validateTarotReading(withAction(ctx, line), ctx)).join(" "), line).not.toMatch(/재회나 연락을 판정한 문장|마음을 돌리는 법/);
+    }
+    expect(hard(validateTarotReading(withAction(ctx, "그 사람의 마음을 돌리는 말을 미리 골라 두세요."), ctx)).join(" ")).toMatch(/마음을 돌리는 법/);
+  });
+
+  it("마음 정리하기 may send the reader to a friend or a coworker, a letter left unsent and a not-now; only contact with the ex fails (review 2026-10-30)", () => {
+    const ctx = ctxOf("마음 정리하기");
+    for (const line of [
+      "친구에게 먼저 연락해 보세요.",
+      "믿을 만한 동료에게 연락해 보세요.",
+      "지금은 먼저 연락하는 게 좋은 때가 아니에요.",
+      "그 사람에게 하고 싶은 말을 메모장에 남겨 보세요.",
+    ]) {
+      expect(hard(validateTarotReading(withAction(ctx, line), ctx)).join(" "), line).not.toMatch(/연락을 권한 문장/);
+    }
+    for (const line of ["그 사람에게 연락해 보세요.", "헤어진 사람에게 안부를 보내 보세요.", "오늘은 먼저 연락해 보세요."]) {
+      expect(hard(validateTarotReading(withAction(ctx, line), ctx)).join(" "), line).toMatch(/연락을 권한 문장/);
+    }
+  });
+
   it("reads 연락 about 헤어진 사이 by the same rules", () => {
     const contact = TOPICS_BY_WHO.us.find((t) => t.id === "contact")!;
     const ctx = buildTarotContext(contact.template, pickCards(createDeck("contact-ex", 0.5), TEMPLATES[contact.template], [4, 5, 6]), {

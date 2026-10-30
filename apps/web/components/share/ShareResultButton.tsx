@@ -138,16 +138,15 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
 
   const takeDown = async (live: Extract<Phase, { at: "ready" }>) => {
     if (!stop) return;
-    if (await stop()) {
-      setCopied("");
-      setPhase({ at: "stopped" });
-    }
+    if (await stop()) setPhase({ at: "stopped" });
     else setPhase({ ...live, error: "공유를 멈추지 못했어요. 잠시 뒤에 다시 시도해 주세요." });
   };
 
   const openSheet = () => {
     const live = phase.at === "intro" ? current?.() : null;
     if (live) setPhase({ at: "ready", ...live });
+    // a copy that finished after the sheet closed never shows on the next opening
+    setCopied("");
     setOpen(true);
   };
 
@@ -156,14 +155,7 @@ export function ShareResultButton({ kind, text, create, stop, current, unavailab
       <Button variant={primary ? "primary" : "secondary"} size="md" onClick={openSheet}>
         {label}
       </Button>
-      <Modal
-        open={open}
-        onClose={() => {
-          setOpen(false);
-          setCopied("");
-        }}
-        labelledBy="share-result-title"
-      >
+      <Modal open={open} onClose={() => setOpen(false)} labelledBy="share-result-title">
         <div className={s.sheet}>
           <h2 id="share-result-title" className={s.title}>
             결과 공유하기

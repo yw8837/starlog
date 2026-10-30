@@ -413,27 +413,48 @@ export function commonTarotViolations(text: string, ctx: TarotContext, out: stri
   reunionViolations(text, ctx, userText, out);
 }
 
-/** "그 사람에게 짧은 안부를 보내 보세요": a message to the other person pushed, beside CONTACT_PUSH's "먼저 연락해 보세요". */
-const SEND_PUSH = new RegExp(`(?:${TOPIC_OTHER})(?:에게|한테)[^.?!]{0,15}(?:보내|남겨|건네|전해)\\s?(?:보세요|봐요)`);
+/** The ex, never a friend or a coworker a let-go reading may send the reader to (TOPIC_OTHER holds 동료·상사 for 사주). */
+const EX = `${OTHER}|헤어진\\s?사람|전\\s?(?:연인|애인|남친|여친)|애인`;
+/** Contact with the ex pushed: "그 사람에게 연락해 보세요", "그 사람에게 안부를 보내 보세요" (a letter left unsent is not). */
+const EX_PUSH = new RegExp(`(?:${EX})(?:에게|한테)[^.?!]{0,15}(?:연락|보내|건네|전해)(?:하세요|해\\s?보세요|해\\s?봐요|\\s?보세요|\\s?봐요)`);
+/** "먼저 연락해 보세요" with no one named: the ex ("친구에게 먼저 연락해 보세요" names someone else). */
+const FIRST_PUSH = /먼저\s?연락(?:하세요|해\s?보세요|해\s?봐요|하는\s?게\s?좋)/;
+/** A verdict's words as a condition or a belief set aside: "다시 이어질 거라면", "돌아올 거라고 기대하기보다", "올 거라고 단정하지 말아요". */
+const AS_CONDITION = /^\s?(?:이?라면|이?면|이?라고|이?란)/;
+/** "대화가 다시 이어질 수 있어요": the talk goes on (a 갈래 of 연락), not the two of them. */
+const TALK_SUBJECT = /(?:대화|이야기|얘기)(?:가|도|는)\s?$/;
+/** "그 사람의 마음을 돌리는": someone else's heart; "마음을 돌려 산책" is the reader's own attention. */
+const EX_HEART = new RegExp(`(?:${EX})(?:의|이|가)?\\s?$`);
+/** A negative order or a "not now" ("단정하지 말아요", "먼저 연락하는 게 좋은 때가 아니에요"). */
+const NOT_NOW = /아니|않|말아요|마세요|말고/;
 
 /**
  * 재회 (owner 2026-10-30 "로직 검증"): a 재회 reading, or one about 헤어진 사이, takes the 재회운 사주's bans (no verdict, nobody
- * coming back, no message foretold, no winning them back); one whose 원하는 방향 lets go (letsGo) pushes no contact. A sentence
- * that declines (TOPIC_DECLINED) and the user's own words pass.
+ * coming back, no message foretold, no winning them back); one whose 원하는 방향 lets go (letsGo) pushes no contact with the ex.
+ * A tarot reading's 갈래 are conditions, so a verdict's words as a condition, a belief set aside or a talk that goes on pass
+ * (review 2026-10-30), and so do a sentence that declines (TOPIC_DECLINED) and the user's own words.
  */
 function reunionViolations(text: string, ctx: TarotContext, userText: string, out: string[]): void {
   const exes = ctx.topic?.id === "reunion" || ctx.conditions.some((c) => c.value === "헤어진 사이");
   const letGo = letsGo(ctx);
   if (!exes && !letGo) return;
   const live = sentences(text.replace(QUOTED, "''")).filter((s) => !TOPIC_DECLINED.test(s));
-  const first = (...patterns: RegExp[]) =>
-    live.flatMap((s) => patterns.map((re) => re.exec(s)?.[0])).find((m): m is string => m !== undefined && !userText.includes(m));
-  const verdict = exes ? first(REUNION_VERDICT, REUNION_POSSIBILITY, PERSON_RETURNS, CONTACT_COMES) : undefined;
-  if (verdict) out.push(`재회나 연락을 판정한 문장이 있어요("${verdict.slice(0, 30)}"). 된다·안 된다 대신 다시 이어진다면 되풀이되기 쉬운 것과 스스로 정할 기준을 말해 주세요.`);
-  const winBack = exes ? first(WIN_BACK) : undefined;
-  if (winBack) out.push(`상대의 마음을 돌리는 법을 다룬 문장이 있어요("${winBack.slice(0, 30)}"). 내 마음과 생활을 지키는 행동으로 바꿔 주세요.`);
-  const push = letGo ? first(CONTACT_PUSH, SEND_PUSH) : undefined;
-  if (push) out.push(`'원하는 방향'이 마음 정리나 시간 두기인데 연락을 권한 문장이 있어요("${push.slice(0, 30)}"). 연락하지 않고 할 수 있는 일로 바꿔 주세요.`);
+  const first = (patterns: RegExp[], keep: (sentence: string, m: RegExpExecArray) => boolean) =>
+    live
+      .flatMap((s) => patterns.map((re) => re.exec(s)).filter((m): m is RegExpExecArray => m !== null && keep(s, m)).map((m) => m[0]))
+      .find((m) => !userText.includes(m));
+  const before = (s: string, m: RegExpExecArray) => s.slice(0, m.index);
+  const after = (s: string, m: RegExpExecArray) => s.slice(m.index + m[0].length);
+  if (exes) {
+    const verdict = first([REUNION_VERDICT, REUNION_POSSIBILITY, PERSON_RETURNS, CONTACT_COMES], (s, m) => !AS_CONDITION.test(after(s, m)) && !TALK_SUBJECT.test(before(s, m)));
+    if (verdict) out.push(`재회나 연락을 판정한 문장이 있어요("${verdict.slice(0, 30)}"). 된다·안 된다 대신 다시 이어진다면 되풀이되기 쉬운 것과 스스로 정할 기준을 말해 주세요.`);
+    const winBack = first([WIN_BACK], (s, m) => !m[0].startsWith("마음을") || EX_HEART.test(before(s, m)));
+    if (winBack) out.push(`상대의 마음을 돌리는 법을 다룬 문장이 있어요("${winBack.slice(0, 30)}"). 내 마음과 생활을 지키는 행동으로 바꿔 주세요.`);
+  }
+  if (letGo) {
+    const push = first([EX_PUSH, FIRST_PUSH], (s, m) => !NOT_NOW.test(s) && (m[0].startsWith("먼저") ? !/에게|한테/.test(s) : true));
+    if (push) out.push(`'원하는 방향'이 마음 정리나 시간 두기인데 연락을 권한 문장이 있어요("${push.slice(0, 30)}"). 연락하지 않고 할 수 있는 일로 바꿔 주세요.`);
+  }
 }
 
 export function cardIdentityViolations(cards: Array<{ position: string; cardId: string }>, ctx: TarotContext, out: string[]): void {
