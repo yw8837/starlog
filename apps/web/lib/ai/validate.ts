@@ -416,12 +416,15 @@ export function commonTarotViolations(text: string, ctx: TarotContext, out: stri
 /** The ex, never a friend or a coworker a let-go reading may send the reader to (TOPIC_OTHER holds 동료·상사 for 사주). */
 const EX = `${OTHER}|헤어진\\s?사람|전\\s?(?:연인|애인|남친|여친)|애인`;
 /** Contact with the ex pushed: "그 사람에게 연락해 보세요", "그 사람에게 안부를 보내 보세요" (a letter left unsent is not). */
-const EX_PUSH = new RegExp(`(?:${EX})(?:에게|한테)[^.?!]{0,15}(?:연락|보내|건네|전해)(?:하세요|해\\s?보세요|해\\s?봐요|\\s?보세요|\\s?봐요)`);
+const EX_PUSH = new RegExp(`(?:${EX})(?:에게|한테)[^.?!]{0,15}(?:연락(?:을\\s?)?(?:하세요|해\\s?보세요|해\\s?봐요)|(?:보내|건네|전해)\\s?(?:보세요|봐요))`);
 /** "먼저 연락해 보세요" with no one named: the ex ("친구에게 먼저 연락해 보세요" names someone else). */
-const FIRST_PUSH = /먼저\s?연락(?:하세요|해\s?보세요|해\s?봐요|하는\s?게\s?좋)/;
-/** A verdict's words as a condition or a belief set aside: "다시 이어질 거라면", "돌아올 거라고 기대하기보다", "올 거라고 단정하지 말아요". */
-const AS_CONDITION = /^\s?(?:이?라면|이?면|이?라고|이?란)/;
-/** "대화가 다시 이어질 수 있어요": the talk goes on (a 갈래 of 연락), not the two of them. */
+const FIRST_PUSH = /먼저\s?연락(?:을\s?)?(?:하세요|해\s?보세요|해\s?봐요|하는\s?게\s?좋)/;
+/** A verdict's words as a condition: "다시 이어질 거라면", "다시 만날 거면". */
+const AS_CONDITION = /^\s?(?:이?라면|이?면|이?란)/;
+/** ... or as a belief, set aside only when the sentence goes on to decline it ("돌아올 거라고 기대하기보다"; "거라고 카드가 말해요" is a verdict). */
+const AS_BELIEF = /^\s?이?라고/;
+const SET_ASIDE = /기보다|않|말아요|마세요|말고|아니/;
+/** "대화가 다시 이어질 수 있어요": the talk may go on (a 갈래 of 연락), not the two of them; "대화가 다시 이어질 거예요" still promises. */
 const TALK_SUBJECT = /(?:대화|이야기|얘기)(?:가|도|는)\s?$/;
 /** "그 사람의 마음을 돌리는": someone else's heart; "마음을 돌려 산책" is the reader's own attention. */
 const EX_HEART = new RegExp(`(?:${EX})(?:의|이|가)?\\s?$`);
@@ -439,20 +442,25 @@ function reunionViolations(text: string, ctx: TarotContext, userText: string, ou
   const letGo = letsGo(ctx);
   if (!exes && !letGo) return;
   const live = sentences(text.replace(QUOTED, "''")).filter((s) => !TOPIC_DECLINED.test(s));
-  const first = (patterns: RegExp[], keep: (sentence: string, m: RegExpExecArray) => boolean) =>
+  // every match in a sentence, so a condition first ("이어질 거라면 …, 이어질 거예요") never hides a verdict after it
+  const first = (patterns: RegExp[], keep: (sentence: string, m: RegExpMatchArray) => boolean) =>
     live
-      .flatMap((s) => patterns.map((re) => re.exec(s)).filter((m): m is RegExpExecArray => m !== null && keep(s, m)).map((m) => m[0]))
+      .flatMap((s) => patterns.flatMap((re) => [...s.matchAll(new RegExp(re.source, `${re.flags.replace("g", "")}g`))].filter((m) => keep(s, m)).map((m) => m[0])))
       .find((m) => !userText.includes(m));
-  const before = (s: string, m: RegExpExecArray) => s.slice(0, m.index);
-  const after = (s: string, m: RegExpExecArray) => s.slice(m.index + m[0].length);
+  const before = (s: string, m: RegExpMatchArray) => s.slice(0, m.index ?? 0);
+  const after = (s: string, m: RegExpMatchArray) => s.slice((m.index ?? 0) + m[0].length);
   if (exes) {
-    const verdict = first([REUNION_VERDICT, REUNION_POSSIBILITY, PERSON_RETURNS, CONTACT_COMES], (s, m) => !AS_CONDITION.test(after(s, m)) && !TALK_SUBJECT.test(before(s, m)));
+    const verdict = first([REUNION_VERDICT, REUNION_POSSIBILITY, PERSON_RETURNS, CONTACT_COMES], (s, m) =>
+      !AS_CONDITION.test(after(s, m)) &&
+      !(AS_BELIEF.test(after(s, m)) && SET_ASIDE.test(after(s, m))) &&
+      !(TALK_SUBJECT.test(before(s, m)) && m[0].includes("수")));
     if (verdict) out.push(`재회나 연락을 판정한 문장이 있어요("${verdict.slice(0, 30)}"). 된다·안 된다 대신 다시 이어진다면 되풀이되기 쉬운 것과 스스로 정할 기준을 말해 주세요.`);
     const winBack = first([WIN_BACK], (s, m) => !m[0].startsWith("마음을") || EX_HEART.test(before(s, m)));
     if (winBack) out.push(`상대의 마음을 돌리는 법을 다룬 문장이 있어요("${winBack.slice(0, 30)}"). 내 마음과 생활을 지키는 행동으로 바꿔 주세요.`);
   }
   if (letGo) {
-    const push = first([EX_PUSH, FIRST_PUSH], (s, m) => !NOT_NOW.test(s) && (m[0].startsWith("먼저") ? !/에게|한테/.test(s) : true));
+    // a "not now" on the push itself or after it ("먼저 연락하는 게 좋은 때가 아니에요"), not one earlier in the sentence
+    const push = first([EX_PUSH, FIRST_PUSH], (s, m) => !NOT_NOW.test(m[0] + after(s, m)) && (m[0].startsWith("먼저") ? !/에게|한테/.test(s) : true));
     if (push) out.push(`'원하는 방향'이 마음 정리나 시간 두기인데 연락을 권한 문장이 있어요("${push.slice(0, 30)}"). 연락하지 않고 할 수 있는 일로 바꿔 주세요.`);
   }
 }

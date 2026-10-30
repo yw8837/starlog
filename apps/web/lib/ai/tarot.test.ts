@@ -550,6 +550,10 @@ describe("재회 (owner 2026-10-30: 재회운 is popular, \"로직 검증\")", (
       expect(hard(validateTarotReading(withAction(ctx, line), ctx)).join(" "), line).not.toMatch(/재회나 연락을 판정한 문장|마음을 돌리는 법/);
     }
     expect(hard(validateTarotReading(withAction(ctx, "그 사람의 마음을 돌리는 말을 미리 골라 두세요."), ctx)).join(" ")).toMatch(/마음을 돌리는 법/);
+    // what the exemptions must not let through (second review 2026-10-30)
+    for (const line of ["다시 이어질 거라고 카드가 말해요.", "대화가 다시 이어질 거예요.", "다시 이어질 거라면 준비해요, 그리고 결국 다시 이어질 거예요.", "이번 달이 지나면 다시 이어질 거예요."]) {
+      expect(hard(validateTarotReading(withAction(ctx, line), ctx)).join(" "), line).toMatch(/재회나 연락을 판정한 문장/);
+    }
   });
 
   it("마음 정리하기 may send the reader to a friend or a coworker, a letter left unsent and a not-now; only contact with the ex fails (review 2026-10-30)", () => {
@@ -562,7 +566,7 @@ describe("재회 (owner 2026-10-30: 재회운 is popular, \"로직 검증\")", (
     ]) {
       expect(hard(validateTarotReading(withAction(ctx, line), ctx)).join(" "), line).not.toMatch(/연락을 권한 문장/);
     }
-    for (const line of ["그 사람에게 연락해 보세요.", "헤어진 사람에게 안부를 보내 보세요.", "오늘은 먼저 연락해 보세요."]) {
+    for (const line of ["그 사람에게 연락해 보세요.", "헤어진 사람에게 안부를 보내 보세요.", "오늘은 먼저 연락해 보세요.", "헤어진 사람에게 연락을 해 보세요.", "그 사람이 연락하게 두지 말고 먼저 연락해 보세요."]) {
       expect(hard(validateTarotReading(withAction(ctx, line), ctx)).join(" "), line).toMatch(/연락을 권한 문장/);
     }
   });
