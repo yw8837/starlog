@@ -55,7 +55,8 @@ describe("GUIDE_ARTICLES", () => {
 
   it("makes no promises about outcomes", () => {
     const text = JSON.stringify(GUIDE_ARTICLES);
-    for (const word of ["보장", "확률", "반드시 이뤄", "무조건", "합격", "재회"]) expect(text).not.toContain(word);
+    // 재회 is a topic since 2026-10-31; a 재회 promised stays out (library.test.ts BANNED).
+    for (const word of ["보장", "확률", "반드시 이뤄", "무조건", "합격", "재회 가능성", "재회하게 돼요"]) expect(text).not.toContain(word);
   });
 });
 

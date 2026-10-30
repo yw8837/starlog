@@ -157,7 +157,7 @@ describe("the hub", () => {
 });
 
 describe("the two hubs", () => {
-  it("do not repeat each other's intro or reading path, and count 타로 36편 · 사주 30편 since the app manuals left", () => {
+  it("do not repeat each other's intro or reading path, and count 타로 37편 · 사주 31편 (36 · 30 once the app manuals left, then 재회 타로 and 재회운 on 2026-10-31)", () => {
     const read = (Page: () => ReactElement) => {
       render(<Page />);
       const out = { intro: section("hub-intro-title").querySelector("p")?.textContent ?? "", start: section("hub-start-title").textContent ?? "", meta: section("hub-intro-title").textContent ?? "" };
@@ -168,7 +168,7 @@ describe("the two hubs", () => {
     const saju = read(GuideSajuPage);
     expect(saju.intro).not.toBe(tarot.intro);
     expect(saju.start).not.toBe(tarot.start);
-    for (const hub of [tarot, saju]) expect(hub.meta).toContain("타로 36편 · 사주 30편");
+    for (const hub of [tarot, saju]) expect(hub.meta).toContain("타로 37편 · 사주 31편");
   });
 });
 

@@ -49,10 +49,13 @@ function expectCardHeadings(article: GuideArticle, name: string) {
   }
 }
 
-/** Owner rules: no vendor or model names, no "베타", no promised outcomes (KB 글쓰기 규칙 too). */
+/** Owner rules: no vendor or model names, no "베타", no promised outcomes (KB 글쓰기 규칙 too).
+ * 재회 itself is a topic since 2026-10-31 (owner 2026-10-30: 재회운이 인기); a 재회 promised or foretold stays banned.
+ */
 const BANNED = [
   "베타", "Claude", "클로드", "GPT", "Gemini", "제미나이", "OpenAI", "Anthropic", "앤트로픽",
-  "보장", "확률", "반드시", "무조건", "합격", "재회", "100%", "틀림없이", "우주가", "에너지가 흐르", "때가 되면", "절대로",
+  "보장", "확률", "반드시", "무조건", "합격", "100%", "틀림없이", "우주가", "에너지가 흐르", "때가 되면", "절대로",
+  "재회 가능성", "재회할 수 있어요", "재회하게 돼요", "재회 성공", "재회운이 있어요", "재회운이 없어요", "돌아올 거예요", "연락이 올 거예요", "연락이 와요",
 ];
 
 const CELTIC_SLUG = "celtic-cross-spread";
@@ -290,8 +293,8 @@ describe("the app's manuals left the guide for /help (AdSense audit 2026-10-27)"
   it("are no articles: not in the library, the tab counts, the sitemap, llms-full or the feed", () => {
     expect(MOVED).toEqual(["now-card-how-to", "bond-score"]);
     for (const slug of MOVED) expect(findArticle(slug), slug).toBeUndefined();
-    // 37 and 31 before the move: the hubs, the article pages and 가이드 소개 read these counts.
-    expect([articlesIn("tarot").length, articlesIn("saju").length]).toEqual([36, 30]);
+    // 37 and 31 before the move, 36 and 30 after it, then 재회 타로 and 재회운 (2026-10-31): the hubs, the article pages and 가이드 소개 read these counts.
+    expect([articlesIn("tarot").length, articlesIn("saju").length]).toEqual([37, 31]);
     for (const text of [sitemapXml("guide"), sitemapXml("app"), llmsFullTxt(), guideRss()]) {
       for (const slug of MOVED) expect(text).not.toContain(`/guide/${slug}`);
     }

@@ -5,7 +5,8 @@ import {
 } from "@starlog/core";
 import { describe, expect, it } from "vitest";
 import { elementMeeting } from "../ai/prompts/match";
-import { DAY_MASTER_IMAGE, SEASON, branchRelations, stemRelations, tenGod, twelveStage } from "../ai/prompts/saju";
+import { DAY_MASTER_IMAGE, SAME_GLYPH, SEASON, branchRelations, stemRelations, tenGod, twelveStage } from "../ai/prompts/saju";
+import { buildTopicFactSet } from "../ai/prompts/sajuTopics";
 import { aiTells } from "../ai/style";
 import { SITE, won } from "../config";
 import { findArticle, guideSectionText, type GuideArticle, type GuideBlock, type GuideSection } from "../guide";
@@ -28,6 +29,8 @@ import { SAJU_CONCEPT_ARTICLES } from "./saju-concepts";
  */
 const CONCEPT_UPDATED = "2026-10-27";
 const DAY_MASTER_UPDATED = "2026-10-27";
+/** Pages written after that: their own date. */
+const NEW_PAGES: Readonly<Record<string, string>> = { "reunion-saju": "2026-10-31" };
 const APP = fileURLToPath(new URL("../../app", import.meta.url));
 const full = (slug: string) => findArticle(slug) as GuideArticle;
 const DAY_MASTERS = DAY_MASTER_ARTICLES.map((article) => full(article.slug));
@@ -384,7 +387,7 @@ const MAIN_TERM: Readonly<Record<string, string>> = {
   "heavenly-stems": "천간", "earthly-branches": "띠", "day-master": "일간", "ten-gods": "십신", daewoon: "대운", "saju-vs-astrology": "별자리",
   manseryeok: "만세력", "saju-compatibility": "궁합", "new-year-fortune": "신년운세", "four-pillars": "네 기둥", "ipchun-jeolgi": "입춘",
   "jasi-birth": "자정", "saju-birth-info": "생년월일", "branch-relations": "충", "twelve-stages": "12운성", yongsin: "용신", "wolun-iljin": "월운",
-  "saju-glossary": "말",
+  "saju-glossary": "말", "reunion-saju": "재회운",
 };
 
 const tableIn = (article: GuideArticle, caption: string) => {
@@ -649,6 +652,42 @@ const EXAMPLES: Readonly<Record<string, (article: GuideArticle, text: string) =>
     expect(text).toContain(`월지는 ${chart.pillars.month.ko[1]}`);
     expect(text).toContain(`연지는 ${chart.pillars.year.ko[1]}`);
   },
+  "reunion-saju": (article, text) => {
+    const chart = at(1994, 6, 7, 15, 10);
+    expect(text).toContain("1994년 6월 7일 오후 3시 10분");
+    expect(text).toContain(pillarLine(chart));
+    // The example says what the 재회운 reading itself starts from (lib/ai/prompts/sajuTopics.ts focus) on the day it was written.
+    const { focus } = buildTopicFactSet(chart, Date.parse("2026-10-31T03:00:00Z"), "reunion");
+    const facts = [...focus.s2, ...focus.s3, ...focus.s4, ...focus.s5].join("\n");
+    for (const fact of [
+      "12운성 목욕", "인성: 겉 1개(일지 子 정인)", "식상: 겉 1개(월지 午 상관)",
+      "午(월지)와 子(일지) 사이에 충", "子(일지)와 未(시지) 사이에 해", "庚(월간)와 甲(일간) 사이에 천간충",
+      "지금 대운 병인(丙寅) 2024년 11월~2034년 11월: 천간 식신(식상), 지지 본기 비견(비겁)",
+      "午(세운 지지)와 子(일지) 사이에 충", "未(다가오는 해 세운 지지)와 子(일지) 사이에 해",
+    ]) expect(facts, fact).toContain(fact);
+    expect(tableIn(article, "예시 명식 · 1994년 6월 7일 오후 3시 10분 서울 출생 (가상의 인물), 재회운에서 보는 자리").rows).toEqual([
+      ["일간과 일지", "갑목 일간, 자수 일지(12운성 목욕)"],
+      ["인성", "겉 1개(일지 자수 정인)"],
+      ["식상", "겉 1개(월지 오화 상관)"],
+      ["일지·일간이 맺는 원국 관계", "월지 오와 일지 자가 충, 일지 자와 시지 미가 해(害), 월간 경과 일간 갑이 천간충"],
+      ["지금 대운", "병인, 2024년 11월부터 2034년 11월까지(천간 병이 식신, 지지 인이 비견)"],
+      ["2026년 병오", "세운 지지 오가 일지 자와 충"],
+      ["2027년 정미", "세운 지지 미가 일지 자와 해(害)"],
+    ]);
+    // Every 일지 against the 지지 of 2026 (午) and 2027 (未): the app's own branch relations, in its order.
+    const NAME: Record<string, string> = { "육합(六合)": "육합", "충(沖)": "충", "해(害)": "해(害)", "파(破)": "파", "형(刑)": "형", [SAME_GLYPH]: "같은 글자" };
+    const cell = (branch: string, year: string) => {
+      const types = branchRelations({ glyph: branch, at: "일지" }, { glyph: year, at: "세운 지지" }).map((r) => NAME[r.type] ?? r.type.replace(/^반합\(半合, (.+)\)$/, "반합($1)"));
+      return types.length ? types.join(", ") : "따로 없음";
+    };
+    const KO = ["자", "축", "인", "묘", "진", "사", "오", "미", "신", "유", "술", "해"];
+    expect(tableIn(article, "일지별로 2026년 병오(丙午)·2027년 정미(丁未)의 지지와 맺는 관계").rows).toEqual(
+      BRANCHES.map((branch, i) => [`${KO[i]}(${branch})`, cell(branch, "午"), cell(branch, "未")]),
+    );
+    expect(chart.pillars.day.branch).toBe("子");
+    expect(twelveStage(chart.pillars.day.stem, "子")).toBe("목욕");
+    expect(SEASON.子).toBe("겨울의 한가운데");
+  },
 };
 
 describe("the saju concept articles answer first and show a worked example", () => {
@@ -711,7 +750,7 @@ describe("every saju guide", () => {
     expect(proseUnits(article).join("\n")).not.toMatch(OUTCOMES);
     for (const [, path = ""] of text.matchAll(APP_URL)) expect(appRouteExists(path), `${slug}: ${path}`).toBe(true);
     expect(article.related, slug).toHaveLength(5);
-    expect(article.updated, slug).toBe(slug.startsWith("day-master-") ? DAY_MASTER_UPDATED : CONCEPT_UPDATED);
+    expect(article.updated, slug).toBe(NEW_PAGES[slug] ?? (slug.startsWith("day-master-") ? DAY_MASTER_UPDATED : CONCEPT_UPDATED));
   });
 
   it("leaves no day master unlinked: each is a related read of at least two other pages", () => {
