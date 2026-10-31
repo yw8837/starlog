@@ -39,6 +39,8 @@ const RETURN_TO = "/tarot/result";
 const OPENING_RETURN_TO = `${RETURN_TO}?unlock=opening`;
 /** A teaser kept from before its share was sealed (2026-10-23) has nothing the server can share. */
 const FREE_SHARE_LATER = "이 맛보기는 지금 공유할 수 없어요. 카드를 다시 뽑으면 공유할 수 있어요.";
+/** A question answered with the helplines instead of a reading (lib/crisis.ts active tier) has nothing to share. */
+const CARE_SHARE_NONE = "이 질문에는 풀이를 적지 않아서 함께 보낼 내용이 없어요.";
 /** Errors after which the server may still have saved the reading (M4). */
 const UNSETTLED = new Set(["QUALITY", "UPSTREAM", "NETWORK", "TIMEOUT", "INVALID"]);
 
@@ -313,7 +315,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
             <header className={s.head}>
               <h1 className={s.question}>{summary.question}</h1>
               <SituationSummary conditions={summary.conditions} note={summary.note} />
-              {/* 공유하기 (owner 2026-10-23): the free part only, as the server sealed it; while it is written it says so. */}
+              {/* 공유하기 (owner 2026-10-23): the free part only, as the server sealed it; while it is written it says so, and on a
+                  question answered with the helplines that there is none (live check 2026-11-01). */}
               <div className={s.share}>
                 <ShareResultButton
                   kind="tarot-free"
@@ -321,7 +324,13 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                   create={() => (teaser?.share ? createFreeShareLink(teaser.share) : Promise.resolve({ ok: false as const, message: FREE_SHARE_LATER }))}
                   stop={() => (teaser?.share ? stopFreeShareLink(teaser.share) : Promise.resolve(false))}
                   current={() => (teaser?.share ? knownFreeShareLink(teaser.share) : null)}
-                  {...(!teaser ? { unavailable: "카드 풀이를 다 적으면 공유할 수 있어요." } : !teaser.share ? { unavailable: FREE_SHARE_LATER } : {})}
+                  {...(teaserError?.care
+                    ? { unavailable: CARE_SHARE_NONE }
+                    : !teaser
+                      ? { unavailable: "카드 풀이를 다 적으면 공유할 수 있어요." }
+                      : !teaser.share
+                        ? { unavailable: FREE_SHARE_LATER }
+                        : {})}
                 />
               </div>
             </header>

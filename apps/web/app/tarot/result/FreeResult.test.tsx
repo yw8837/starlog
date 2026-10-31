@@ -6,6 +6,7 @@ import { FLOW_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@
 import { saveTeaser } from "@/lib/reading/teaserCache";
 import { TAROT_TIPS } from "@/lib/reading/waitingTips";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
+import { CARE_BODY, CARE_TITLE } from "@/lib/crisis";
 import { clearBetaUsage, markFreeUsedUp } from "@/lib/storage/betaUsage";
 import { clearChapters, listChapters } from "@/lib/storage/chapters";
 import { FreeResult } from "./FreeResult";
@@ -129,6 +130,23 @@ describe("FreeResult and sharing (owner 2026-10-23: \"무료풀이에서도 공�
     await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
     fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
     expect(screen.getByRole("dialog", { name: "결과 공유하기", hidden: true }).textContent).toContain("카드를 다시 뽑으면 공유할 수 있어요");
+  });
+
+  it("on a question answered with the helplines, keeps 공유하기 and says there is no reading to send, not that one is coming", async () => {
+    const base: FlowState = { who: "me", topicId: "money", when: "week", conditions: {}, note: "요즘 죽고 싶다는 생각이 들어요" };
+    const summary = summarizeFlow(base)!;
+    saveFlow({ ...base, draw: { templateId: summary.template, drawToken: "signed.draw.token", cards: CARDS } });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json(meBody());
+      if (url === "/api/tarot/teaser") return Response.json({ code: "REFUSED", care: true, message: CARE_BODY }, { status: 422 });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    await screen.findByRole("heading", { name: CARE_TITLE });
+    fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
+    const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
+    expect(sheet.textContent).toContain("이 질문에는 풀이를 적지 않아서 함께 보낼 내용이 없어요");
+    expect(sheet.textContent).not.toContain("다 적으면");
   });
 });
 
