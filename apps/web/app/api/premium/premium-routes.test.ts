@@ -423,10 +423,24 @@ describe("paid premium readings", () => {
     const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true };
     const labelled = { ...pair, partner: { birth: PARTNER, label: "죽고 싶어" }, unlock: { method: "paid" } };
     expect((await b.send(matchReading, "/r", { body: labelled })).status).toBe(422);
-    expect((await b.send(matchTeaser, "/t", { body: { ...pair, concern: "요즘 사라지고 싶어요" } })).status).toBe(422);
+    expect((await b.send(matchTeaser, "/t", { body: { ...pair, concern: "요즘 죽고 싶어요" } })).status).toBe(422);
     const deep = { drawToken: await dealt(b, "deep-tarot"), input: { ...DEEP_INPUT, note: "자해하고 싶은 마음이 들어요" } };
     expect((await b.send(deepTeaser, "/t", { body: deep })).status).toBe(422);
     expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("writes a passive wish's preview with care instead of refusing it (owner 2026-10-31: 단계별로)", async () => {
+    useTestDb();
+    const b = await shopper();
+    await buy(b, "match");
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const spy = vi.spyOn(mockProvider, "generate");
+    const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true };
+    const res = await b.send(matchTeaser, "/t", { body: { ...pair, concern: "요즘 사라지고 싶어요" } });
+    expect(res.status).toBe(200);
+    expect((await json(res)).care).toBe(true);
+    expect(spy.mock.calls.length).toBeGreaterThan(0);
+    expect(spy.mock.calls.every(([, , , hooks]) => hooks?.care === true)).toBe(true);
   });
 
   it("streams: the done event carries the continue status and the token", async () => {

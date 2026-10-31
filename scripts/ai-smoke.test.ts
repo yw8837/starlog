@@ -13,6 +13,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { DEFAULT_REVERSAL_RATE, TEMPLATES, TOPICS_BY_WHO, computeChart, createDeck, pickCards } from "@starlog/core";
 import { expect, test } from "vitest";
 import { anthropicProvider } from "@/lib/ai/anthropic";
+import { careViolations } from "@/lib/ai/care";
 import { EFFORTS, KIND_ENV, MODELS, generationSetting } from "@/lib/ai/config";
 import { usdOf } from "@/lib/ai/cost";
 import { generateDaily, generateSajuReading, generateSajuTeaser, generateTarotReading, generateTarotTeaser, withWrittenCards } from "@/lib/ai/generate";
@@ -40,6 +41,10 @@ const SMOKE_CAP_KRW = Number(process.env.SMOKE_CAP_KRW) > 0 ? Number(process.env
 /** A generous cost of one attempt per kind (measured: teaser 45–115원, tarot reading 187–316원, saju reading up to 413원). */
 const ATTEMPT_KRW = { "tarot-teaser": 150, "tarot-reading": 400, daily: 100, "saju-teaser": 100, "saju-reading": 550 } as const;
 
+// SMOKE_CARE=1 writes the tarot calls in 돌봄 모드 (lib/ai/care.ts), as a passive-tier note does in the app (owner 2026-10-31).
+const CARE_HOOKS = process.env.SMOKE_CARE === "1" ? { care: true } : undefined;
+const careCheck = (data: unknown) => (CARE_HOOKS ? careViolations(data) : []);
+
 /** The tarot input per SMOKE_TAROT: the owner's 재물운 case, or 결혼운 with its catalog chips (a talk of marriage under way). */
 function smokeTarotInput() {
   if (SMOKE_TAROT === "money") {
@@ -55,7 +60,7 @@ function smokeTarotInput() {
     return {
       topicId: us.id, whoId: "us" as const, whenId: "month" as const, question: "",
       conditions: us.conditions.map((c) => ({ label: c.label, value: c.id === "goal" && process.env.SMOKE_GOAL ? process.env.SMOKE_GOAL : c.options[1]! })),
-      note: "헤어진 지 석 달이 지났는데 아직 자주 생각나요",
+      note: process.env.SMOKE_NOTE ?? "헤어진 지 석 달이 지났는데 아직 자주 생각나요",
     };
   }
   const topic = TOPICS_BY_WHO.me.find((t) => t.id === SMOKE_TAROT && t.template === "self-flow");
@@ -202,8 +207,8 @@ test("ai smoke", async () => {
     const cards = pickCards(createDeck(`smoke-${stamp}-${run}`, DEFAULT_REVERSAL_RATE), TEMPLATES[spread], [5, 25, 50]);
     const money: TarotContext = buildTarotContext(spread, cards, smokeTarotInput());
     const moneyInput = { question: money.question, conditions: money.conditions, note: money.note, cards: cards.map((c) => `${c.position}: ${c.cardId} ${c.orientation}`) };
-    const teaser = await call<TarotTeaser>(run, "tarot-teaser", (d) => validateTarotTeaser(d, money), (p) => generateTarotTeaser(p, money),
-      (d) => validateTarotTeaser(d, money), (d) => [d.firstCard.body, d.secondCard?.body ?? ""].join(" "), moneyInput);
+    const teaser = await call<TarotTeaser>(run, "tarot-teaser", (d) => validateTarotTeaser(d, money), (p) => generateTarotTeaser(p, money, CARE_HOOKS),
+      (d) => [...validateTarotTeaser(d, money), ...careCheck(d)], (d) => [d.firstCard.body, d.secondCard?.body ?? ""].join(" "), moneyInput);
     // 감질맛: the paid reading reads on from the teaser's two cards, as the reading route does with the teaser's seal.
     const written = teaser?.secondCard ? [teaser.firstCard, teaser.secondCard] : [];
 
@@ -216,8 +221,8 @@ test("ai smoke", async () => {
       (d) => validateDaily(d, daily), (d) => [d.summary, d.body, d.areas.love, d.areas.money, d.areas.work, d.tip].join("\n"),
       { card, luckyNumber: dailyLuckyNumber(did, day) });
 
-    await call<TarotReading>(run, "tarot-reading", (d) => validateTarotReading(withWrittenCards(d, written), money, { written: written.length }), (p) => generateTarotReading(p, money, undefined, written),
-      (d) => validateTarotReading(d, money, { written: written.length }), tarotProse, { ...moneyInput, written: written.length });
+    await call<TarotReading>(run, "tarot-reading", (d) => validateTarotReading(withWrittenCards(d, written), money, { written: written.length }), (p) => generateTarotReading(p, money, CARE_HOOKS, written),
+      (d) => [...validateTarotReading(d, money, { written: written.length }), ...careCheck(d)], tarotProse, { ...moneyInput, written: written.length });
 
     const chart = { chart: "1993-08-17 07:20 부산 남", pillars: saju.pillars.map((p) => p.gz), profile };
     await call<SajuTeaser>(run, "saju-teaser", (d) => validateSajuTeaser(d, saju), (p) => generateSajuTeaser(p, saju),

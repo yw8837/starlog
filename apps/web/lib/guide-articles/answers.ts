@@ -235,5 +235,7 @@ export const GUIDE_DATES: Readonly<Record<string, { published: string; updated: 
     ].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-27" }] as const),
     // 2026-10-31 (owner 2026-10-30: 재회운이 인기라 타로와 사주에 추가): 재회 타로와 재회운 사주, 결과를 약속하지 않고 읽는 법.
     ...["reunion-tarot", "reunion-saju"].map((slug) => [slug, { published: "2026-10-31", updated: "2026-10-31" }] as const),
+    // 2026-10-31: 지지 관계의 2027 표 now names 형 beside 충 (축) and 파 (술), as the engine does.
+    ...["branch-relations"].map((slug) => [slug, { published: "2026-10-06", updated: "2026-10-31" }] as const),
   ],
 );

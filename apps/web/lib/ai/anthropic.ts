@@ -2,6 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type { ServiceBinding } from "@/lib/cloudflare";
+import { CARE_PROMPT } from "./care";
 import { DEFAULT_MODEL } from "./config";
 import { GenerationError, type GenerationHooks, type GenerationTask, type ReadingProvider, type Usage } from "./provider";
 
@@ -64,11 +65,13 @@ export function anthropicProxyProvider(proxy: ServiceBinding): ReadingProvider {
 }
 
 /** The request body; exported so tests can pin its shape without calling the API. */
-export function buildRequest<T>(task: GenerationTask<T>, maxTokens: number, feedback?: string[]) {
+export function buildRequest<T>(task: GenerationTask<T>, maxTokens: number, feedback?: string[], care = false) {
   const content: BetaTextBlockParam[] = [
     // Cached: the next part of the same reading starts with the same block (P5 spec §6.2).
     ...(task.shared ? [{ type: "text" as const, text: task.shared, cache_control: { type: "ephemeral" as const } }] : []),
     { type: "text", text: task.user },
+    // 돌봄 모드 (lib/ai/care.ts): after the user's material, outside the cached block
+    ...(care ? [{ type: "text" as const, text: CARE_PROMPT }] : []),
   ];
   if (feedback?.length) {
     content.push({
@@ -116,7 +119,7 @@ export function anthropicProvider(apiKey: string, sdk: MessagesClient = client(a
       let maxTokens = raisedCaps.get(task) ?? task.maxTokens;
       for (let call = 0; call < 2; call++) {
         let message: BetaMessage;
-        const body = buildRequest(task, maxTokens, feedback);
+        const body = buildRequest(task, maxTokens, feedback, hooks.care === true);
         const started = Date.now();
         let answering = false;
         // Reserved until the call reports its usage. A call that fails before message_start was never

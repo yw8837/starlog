@@ -101,7 +101,7 @@ describe("custom topic, who and when (question builder C4)", () => {
     ["whoText over 30 characters", { ...CUSTOM, whoText: "나".repeat(31) }, "self-flow", 400],
     ["whenText over 30 characters", { ...CUSTOM, whenText: "다".repeat(31) }, "self-flow", 400],
     ["a crisis phrase in topicText", { ...CUSTOM, topicText: "죽고 싶어요" }, "self-flow", 422],
-    ["a crisis phrase in whenText", { ...CUSTOM, whenText: "사라지고 싶은 밤" }, "self-flow", 422],
+    ["a crisis phrase in whenText", { ...CUSTOM, whenText: "세상을 떠나고 싶은 밤" }, "self-flow", 422],
     ["a crisis phrase in whoText", { ...CUSTOM, whoText: "자해한 친구" }, "self-flow", 422],
   ])("refuses %s", async (_label, input, templateId, status) => {
     const drawToken = await drawFor(templateId);

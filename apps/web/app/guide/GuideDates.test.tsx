@@ -52,7 +52,9 @@ describe("GUIDE_DATES and the articles' own dates", () => {
     const saju = [...SAJU_ARTICLES, ...SAJU_CONCEPT_ARTICLES, ...DAY_MASTER_ARTICLES].filter((entry) => entry.slug !== "reunion-saju");
     // 29 until 인연 점수 moved to /help (AdSense audit 2026-10-27).
     expect(saju).toHaveLength(28);
-    for (const entry of saju) expect(GUIDE_DATES[entry.slug]?.updated, entry.slug).toBe("2026-10-27");
+    // 지지 관계 changed on 2026-10-31 (its 2027 table names 형 too).
+    const later: Record<string, string> = { "branch-relations": "2026-10-31" };
+    for (const entry of saju) expect(GUIDE_DATES[entry.slug]?.updated, entry.slug).toBe(later[entry.slug] ?? "2026-10-27");
     expect(GUIDE_DATES["reunion-saju"]).toEqual({ published: "2026-10-31", updated: "2026-10-31" });
   });
 });

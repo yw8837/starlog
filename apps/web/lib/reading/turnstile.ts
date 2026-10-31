@@ -13,8 +13,13 @@ import { BOT_CHECK_EVENT } from "./botCheckEvent";
 export const TURNSTILE_SCRIPT_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 /** The script loads within this, or the check fails (the next request tries again). */
 const LOAD_MS = 15_000;
-/** A challenge answers within this, an interactive one included, or it fails. */
+/** A challenge that asked the person to take part answers within this, or it fails. */
 const SOLVE_MS = 120_000;
+/**
+ * An invisible one (most take a few seconds) answers within this, or it fails and the screen offers a retry: a widget
+ * that never showed (seen 2026-10-31 in an embedded browser) kept 풀이를 적고 있어요 on screen for two minutes.
+ */
+const QUIET_MS = 25_000;
 const INTERACTIVE_NOTE = "보안 확인이 필요해요. 아래 확인란을 눌러 주세요.";
 const BOX_STYLE = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:2147483000;max-width:calc(100vw - 32px)";
 const NOTE_STYLE = "margin:0 0 8px;padding:8px 12px;border-radius:8px;background:#fff;color:#1b1b1f;font-size:15px;line-height:1.5";
@@ -36,6 +41,8 @@ interface Widget {
   note: HTMLElement;
   /** Set while a request waits for this widget's answer. */
   settle: ((token: string | null) => void) | null;
+  /** Set while a request waits: the challenge now needs the person, so it gets the longer wait. */
+  interactive: (() => void) | null;
 }
 
 let loading: Promise<TurnstileApi | null> | null = null;
@@ -82,7 +89,7 @@ function widgetFor(api: TurnstileApi, siteKey: string): Widget | null {
   const slot = document.createElement("div");
   box.append(note, slot);
   document.body.append(box);
-  const current: Widget = { id: "", note, settle: null };
+  const current: Widget = { id: "", note, settle: null, interactive: null };
   const settle = (token: string | null) => current.settle?.(token);
   try {
     current.id =
@@ -97,7 +104,10 @@ function widgetFor(api: TurnstileApi, siteKey: string): Widget | null {
         },
         "timeout-callback": () => settle(null),
         "unsupported-callback": () => settle(null),
-        "before-interactive-callback": () => showNote(note, true),
+        "before-interactive-callback": () => {
+          showNote(note, true);
+          current.interactive?.();
+        },
         "after-interactive-callback": () => showNote(note, false),
       }) ?? "";
   } catch {
@@ -120,6 +130,7 @@ async function solve(siteKey: string, signal?: AbortSignal): Promise<string | nu
       clearTimeout(timer);
       signal?.removeEventListener("abort", give);
       current.settle = null;
+      current.interactive = null;
       showNote(current.note, false);
       try {
         api.reset(current.id); // ready for the next request's challenge
@@ -129,7 +140,11 @@ async function solve(siteKey: string, signal?: AbortSignal): Promise<string | nu
       resolve(token);
     };
     const give = () => finish(null);
-    const timer = setTimeout(give, SOLVE_MS);
+    let timer = setTimeout(give, QUIET_MS);
+    current.interactive = () => {
+      clearTimeout(timer);
+      timer = setTimeout(give, SOLVE_MS);
+    };
     signal?.addEventListener("abort", give, { once: true });
     current.settle = finish;
     try {

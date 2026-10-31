@@ -158,7 +158,7 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
             {error.title}
           </p>
           {error.body ? <p className={s.errorBody}>{error.body}</p> : null}
-          {error.care ? <CrisisContacts lead={false} className={s.care} /> : null}
+          {error.care ? <CrisisContacts lead={false} compact urgent={error.urgent === true} className={s.care} /> : null}
         </div>
       ) : note && !openedHref ? (
         <p className={s.limit}>{note}</p>

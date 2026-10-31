@@ -150,7 +150,7 @@ export function FollowUp({ suggestions, turns, remaining, onAsk, awaiting, ended
             다시 물어보기
           </Button>
         ) : null}
-        {error?.care ? <CrisisContacts lead={false} /> : null}
+        {error?.care ? <CrisisContacts lead={false} compact urgent={error.urgent === true} /> : null}
       </div>
 
       {canAsk && openSuggestions.length > 0 ? (

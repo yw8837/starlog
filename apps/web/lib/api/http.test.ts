@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
 import { kstDay } from "@/lib/security/quota";
 import { dailyStore, resetDailyStore } from "./dailyStore";
-import { checkServerLimits, crisisResponse, isCrisisText, readJson, type Gate } from "./http";
+import { checkServerLimits, crisisCheck, crisisResponse, crisisTierOf, isCrisisText, readJson, type Gate } from "./http";
 import { BUDGET_CEILING, NETWORK_BUDGET_SHARE, addCost, addNetworkCost, budgetState, resetSpendState } from "./spend";
 
 const NOW = Date.parse("2026-10-14T03:00:00Z"); // 12:00 KST
@@ -186,7 +186,12 @@ describe("crisis words (one pattern for every server check)", () => {
     "죽\u200B고 싶어", "죽\u2060고 싶어", "죽\u00AD고 싶어",
   ])("hits %s", (text) => {
     expect(isCrisisText(text)).toBe(true);
-    expect(crisisResponse("", text)?.status).toBe(422);
+    // 단계별 (owner 2026-10-31, lib/crisisTiers.test.ts): a passive wish goes on to a reading written with care; the rest are refused.
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { refusal, care } = crisisCheck("test", "", text);
+    expect(care).toBe(true);
+    if (crisisTierOf(text) === "passive") expect(refusal).toBeNull();
+    else expect(refusal?.status).toBe(422);
   });
 
   it.each([

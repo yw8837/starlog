@@ -1,3 +1,4 @@
+import { CARE_BODY, CARE_TITLE } from "@/lib/crisis";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SajuReadingSchema } from "@/lib/ai/schemas";
 import { SAJU_PROLOGUE_SECTIONS } from "@/lib/sajuPrologue";
@@ -143,10 +144,10 @@ describe("error copy", () => {
     for (const [code, view] of Object.entries(views)) expect(`${view.title} ${view.body ?? ""}`).not.toContain(code);
   });
 
-  it("shows the server's calm message for crisis words (the screen adds the helplines)", () => {
-    const view = describeApiError(err("REFUSED", { care: true, message: "마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요." }));
-    expect(view).toMatchObject({ care: true, body: "마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요.", action: "edit" });
-    expect(describeApiError(err("REFUSED", { care: true })).body).toBe("마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요.");
+  it("shows the server's calm message for crisis words, under a title that is not an error (the screen adds the helplines)", () => {
+    const view = describeApiError(err("REFUSED", { care: true, message: CARE_BODY }));
+    expect(view).toMatchObject({ care: true, title: CARE_TITLE, body: CARE_BODY, action: "edit" });
+    expect(describeApiError(err("REFUSED", { care: true })).body).toBe(CARE_BODY);
   });
 
   it("says when the whole network's day count is used up, for any kind of reading", () => {

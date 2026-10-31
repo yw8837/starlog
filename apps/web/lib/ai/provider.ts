@@ -2,6 +2,7 @@ import "server-only";
 import type { z } from "zod";
 import { cloudflareEnv, type ServiceBinding } from "@/lib/cloudflare";
 import { anthropicProvider, anthropicProxyProvider } from "./anthropic";
+import { careViolations } from "./care";
 import type { Effort, ModelId } from "./config";
 import { mockProvider } from "./mock";
 import { isSoftViolation, softWarrantsRegeneration, stripBold } from "./style";
@@ -65,6 +66,8 @@ export interface GenerationTask<T> {
 export interface GenerationHooks {
   /** aborts the upstream request (client gone, or the 240 s budget spent) */
   signal?: AbortSignal;
+  /** 돌봄 모드 (lib/ai/care.ts): write with care, and check the draft for words of dying or self-harm */
+  care?: boolean;
   /** the model's output text so far (partial JSON), on every streamed chunk */
   onText?: (snapshot: string) => void;
   /** called as each validated attempt starts (2 = the regeneration) */
@@ -194,7 +197,7 @@ export async function generateValidated<T>(
       usage.push(...result.usage);
       // once, before the checks read it, and as it is saved and returned
       data = withoutStrayBold(task.name, result.data);
-      violations = validate(data);
+      violations = [...validate(data), ...(hooks.care ? careViolations(data) : [])];
     } catch (error) {
       if (!(error instanceof GenerationError) || error.code !== "QUALITY") {
         const failure = error instanceof GenerationError ? error : new GenerationError("UPSTREAM", [errorName(error)]);

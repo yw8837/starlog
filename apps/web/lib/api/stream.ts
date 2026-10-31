@@ -60,6 +60,11 @@ export interface RespondOptions {
   budgetMs?: number;
   pingMs?: number;
   /**
+   * 돌봄 모드 (lib/ai/care.ts): the request's words carry a passive-tier crisis phrase. Every upstream call is written
+   * with care (GenerationHooks.care) and the body says so (`care: true`), for the screen's helplines.
+   */
+  care?: boolean;
+  /**
    * P4: saves the reading and settles its credit before the client sees it; none for 오픈 기념 무료 readings.
    * A generation with a settlement is opened by a credit (gift, purchase) or the owner, so its cost
    * never counts toward the network's free-tier total (SEC-01).
@@ -108,7 +113,8 @@ export async function respondGeneration(
   run: (hooks: GenerationHooks) => Promise<GenerationOutcome>,
   options: RespondOptions,
 ): Promise<Response> {
-  const { gate, startCookies = [], spend, budgetMs = GENERATION_BUDGET_MS, pingMs = PING_MS, settle, paidCost } = options; // P4: settle, paidCost
+  const { gate, startCookies = [], spend, budgetMs = GENERATION_BUDGET_MS, pingMs = PING_MS, settle, paidCost, care = false } = options; // P4: settle, paidCost
+  const withCare = (body: unknown): unknown => (care && body && typeof body === "object" ? { ...(body as Record<string, unknown>), care: true } : body);
   const start = startCookies.map(serializeCookie);
   // What the browser holds once the stream's own Set-Cookie headers land (the commit replaces these).
   const cookiesAfterStart: Record<string, string> = { ...gate.cookies };
@@ -137,12 +143,14 @@ export async function respondGeneration(
     return { onReserve: (usage) => ledger.reserve(usage), onRelease: () => ledger.release(), onUsage: (usage) => ledger.bill(usage) };
   };
   const finishLedgers = () => Promise.all(ledgers.map((ledger) => ledger.finish()));
+  const careHook = care ? { care: true } : {};
   const accounting: GenerationHooks = {
     signal: abort.signal,
     deadline,
+    ...careHook,
     ...costHooks(),
     // a second call alongside the first (정통 사주's 7절·8절): the same signal and deadline, a ledger of its own
-    concurrent: () => ({ signal: abort.signal, deadline, ...costHooks() }),
+    concurrent: () => ({ signal: abort.signal, deadline, ...careHook, ...costHooks() }),
   };
   // P4: a failed release is not lost: the reservation expires (RESERVATION_MS) and a sweep returns it.
   // SEC-02: a client that left after the model began answering abandons the credit instead; a failure
@@ -181,7 +189,7 @@ export async function respondGeneration(
       try {
         const outcome = await run(accounting);
         generated = true;
-        const body = await settled(outcome); // P4
+        const body = withCare(await settled(outcome)); // P4
         // One Set-Cookie per name: the outcome's cookie replaces a start cookie of the same name.
         const names = new Set(outcome.cookies.map((c) => c.name));
         const cookies = [...startCookies.filter((c) => !names.has(c.name)), ...outcome.cookies];
@@ -232,7 +240,7 @@ export async function respondGeneration(
         try {
           const outcome = await run(hooks);
           generated = true;
-          const data = await settled(outcome); // P4: saved and spent before done
+          const data = withCare(await settled(outcome)); // P4: saved and spent before done
           const commit = outcome.cookies.length ? await issueCommit(outcome.cookies, cookiesAfterStart, gate.secret, gate.now) : null;
           write({ type: "done", data, ...(commit ? { commit } : {}) });
         } catch (error) {

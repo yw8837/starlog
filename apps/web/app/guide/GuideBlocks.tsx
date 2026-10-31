@@ -14,6 +14,8 @@ const TONE_LABEL: Record<GuideCalloutTone, string> = { tip: "도움말", note: "
 
 /** A column with a cell longer than this wraps; shorter columns keep each cell on one line. */
 const LONG_CELL = 12;
+/** On a phone only columns this short stay on one line ("수(水)", "완드"); the rest wrap at word breaks. */
+const TIGHT_CELL = 5;
 
 function Block({ block, id }: { block: GuideBlock; id: string }) {
   switch (block.kind) {
@@ -36,9 +38,13 @@ function Block({ block, id }: { block: GuideBlock; id: string }) {
       );
     }
     case "table": {
-      // Short cells stay on one line (a column of "수(水)" never breaks into two); long ones wrap. Wider
-      // than the paper on a phone, the table scrolls sideways in its own box (focusable for the keyboard).
-      const wraps = block.head.map((_, column) => block.rows.some((row) => (row[column] ?? "").length > LONG_CELL));
+      // Short cells stay on one line (a column of "수(水)" never breaks into two); long ones wrap, headers and the first
+      // column too (2026-10-31: headers that never wrapped pushed 49 of 141 tables past a 375px phone). Still wider than
+      // the paper (a ten-column grid), the table scrolls sideways in its own box (focusable for the keyboard).
+      const widest = block.head.map((head, column) => Math.max(head.length, ...block.rows.map((row) => (row[column] ?? "").length)));
+      const wraps = widest.map((length) => length > LONG_CELL);
+      // On a phone three short columns side by side still overflow: there only the tightest stay on one line.
+      const keep = (column: number) => (wraps[column] ? undefined : widest[column]! <= TIGHT_CELL ? `${s.nowrap} ${s.tight}` : s.nowrap);
       return (
         <div className={`${s.block} ${s.tableWrap}`} role="region" aria-labelledby={`${id}-caption`} tabIndex={0}>
           <table className={s.table}>
@@ -47,8 +53,8 @@ function Block({ block, id }: { block: GuideBlock; id: string }) {
             </caption>
             <thead>
               <tr>
-                {block.head.map((cell) => (
-                  <th key={cell} scope="col">
+                {block.head.map((cell, column) => (
+                  <th key={cell} scope="col" className={keep(column)}>
                     {cell}
                   </th>
                 ))}
@@ -57,9 +63,11 @@ function Block({ block, id }: { block: GuideBlock; id: string }) {
             <tbody>
               {block.rows.map(([first, ...rest], r) => (
                 <tr key={r}>
-                  <th scope="row">{first}</th>
+                  <th scope="row" className={keep(0)}>
+                    {first}
+                  </th>
                   {rest.map((cell, i) => (
-                    <td key={i} className={wraps[i + 1] ? undefined : s.nowrap}>
+                    <td key={i} className={keep(i + 1)}>
                       {cell}
                     </td>
                   ))}

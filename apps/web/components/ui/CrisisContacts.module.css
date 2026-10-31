@@ -60,3 +60,33 @@
     min-height: 32px;
   }
 }
+
+/* 다른 상담 창구: folded, one tap away (compact). */
+.more {
+  font-size: var(--fs-sub);
+}
+
+.moreSummary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-sub);
+  cursor: pointer;
+}
+
+.moreSummary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* The emergency lines (urgent): first, with a line saying to call now. */
+.urgent {
+  display: grid;
+  gap: 4px;
+}
+
+.urgentLead {
+  font-weight: 700;
+  line-height: 1.6;
+}

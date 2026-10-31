@@ -1,4 +1,4 @@
-import { CRISIS_LEAD } from "@/lib/crisis";
+import { CARE_BODY, CARE_TITLE } from "@/lib/crisis";
 import type { ApiError } from "./api";
 
 /**
@@ -12,8 +12,10 @@ export interface ErrorView {
   title: string;
   body?: string;
   action: ErrorAction | null;
-  /** Crisis words: calm copy and the helplines (CrisisContacts), no reading. */
+  /** A stated thought of dying or self-harm (lib/crisis.ts active tier): the care copy and the helplines, no reading. */
   care?: boolean;
+  /** With care: a plan or a means was named too, so the emergency lines lead. */
+  urgent?: boolean;
 }
 
 export type ErrorContext = "reading" | "teaser" | "tarot-draw" | "followup" | "daily" | "paid" | "gift";
@@ -89,7 +91,8 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
     case "AI_UNAVAILABLE":
       return { title: "풀이를 준비하고 있어요", body: "조금 뒤에 다시 와 주세요.", action: "home" };
     case "REFUSED":
-      if (error.care) return { title: "잠시 멈춰도 괜찮아요", body: error.message || CRISIS_LEAD, action: "edit", care: true };
+      // Not an error (owner 2026-10-31): the feeling first, the reason in a line, the count kept, the way back open.
+      if (error.care) return { title: CARE_TITLE, body: error.message || CARE_BODY, action: "edit", care: true, ...(error.urgent ? { urgent: true } : {}) };
       return { title: "이 내용으로는 풀이를 만들 수 없어요", body: "질문이나 메모를 바꿔 다시 시도해 주세요.", action: "edit" };
     case "QUALITY":
     case "UPSTREAM":

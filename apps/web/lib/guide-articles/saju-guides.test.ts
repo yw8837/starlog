@@ -29,8 +29,8 @@ import { SAJU_CONCEPT_ARTICLES } from "./saju-concepts";
  */
 const CONCEPT_UPDATED = "2026-10-27";
 const DAY_MASTER_UPDATED = "2026-10-27";
-/** Pages written after that: their own date. */
-const NEW_PAGES: Readonly<Record<string, string>> = { "reunion-saju": "2026-10-31" };
+/** Pages written or changed after that: their own date. */
+const NEW_PAGES: Readonly<Record<string, string>> = { "reunion-saju": "2026-10-31", "branch-relations": "2026-10-31" };
 const APP = fileURLToPath(new URL("../../app", import.meta.url));
 const full = (slug: string) => findArticle(slug) as GuideArticle;
 const DAY_MASTERS = DAY_MASTER_ARTICLES.map((article) => full(article.slug));
@@ -606,6 +606,13 @@ const EXAMPLES: Readonly<Record<string, (article: GuideArticle, text: string) =>
       return `${seat[s1]}-${seat[s2]}: ${types.split(", ").sort().join(", ")}`;
     });
     expect(listed.sort()).toEqual(expected.sort());
+    // The 2027 table: every relation the engine finds between that 지지 and 未 is named in its row (review 2026-10-31).
+    for (const [branch = "", named = ""] of tableIn(article, "2027년 정미년의 미(未)가 만나면").rows) {
+      const glyph = /\((.)\)/.exec(branch)?.[1] ?? "";
+      const types = branchRelations({ glyph, at: "원국" }, { glyph: "未", at: "세운" }).map((r) => r.type.split("(")[0]!);
+      expect(types.length, branch).toBeGreaterThan(0);
+      for (const type of types) expect(named, branch).toContain(type);
+    }
   },
   "twelve-stages": (article, text) => {
     const chart = at(1995, 8, 20, 12);

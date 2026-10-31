@@ -2,7 +2,7 @@ import "server-only";
 import { aiConfigProblems } from "@/lib/ai/config";
 import { cleanUserText } from "@/lib/ai/prompts/tarot";
 import { GenerationError, selectProvider, type ReadingProvider } from "@/lib/ai/provider";
-import { CRISIS_LEAD, CRISIS_WORDS } from "@/lib/crisis";
+import { CARE_BODY, crisisTier, namesMeans, type CrisisTier } from "@/lib/crisis";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { OWNER_COOKIE, isOwner } from "@/lib/security/owner";
 import {
@@ -361,21 +361,46 @@ export async function spendCookies(gate: Gate, quota: QuotaState, kind: QuotaKin
 }
 
 /**
- * Crisis words (lib/crisis.ts CRISIS_WORDS) mean no reading, a gentle pointer to help instead. Judged on
- * the text as the prompt will see it (cleanUserText), so markup cannot split a word.
+ * Crisis words (lib/crisis.ts, by tier): a reading written with care, or the care screen instead (crisisCheck). Judged
+ * on the text as the prompt will see it (cleanUserText), so markup cannot split a word.
  */
 // Invisible characters cannot split a phrase (죽 + zero-width space + 고 싶어).
 const INVISIBLE = /[\u200B-\u200D\u2060\u00AD\uFEFF]/g;
 /** A line break ends a sentence (CRISIS_WORDS looks for some phrases at a sentence's start); cleanUserText folds it into a space. */
 const LINE_BREAK = /\s*\n\s*/g;
-export const isCrisisText = (text: string | undefined) => Boolean(text) && CRISIS_WORDS.test(cleanUserText(text!.replace(LINE_BREAK, ". ")).replace(INVISIBLE, ""));
+/** The tier of one user-written text as the prompt will see it (lib/crisis.ts crisisTier); null for none. */
+const asPromptSees = (text: string) => cleanUserText(text.replace(LINE_BREAK, ". ")).replace(INVISIBLE, "");
+export const crisisTierOf = (text: string | undefined): CrisisTier | null => (text ? crisisTier(asPromptSees(text)) : null);
+export const isCrisisText = (text: string | undefined) => crisisTierOf(text) !== null;
 
-/** The care response when any user-written text reads as a crisis; null otherwise. */
+const TIER_RANK: Record<CrisisTier, number> = { passive: 1, active: 2, urgent: 3 };
+
+/**
+ * The highest tier among a request's texts (owner 2026-10-31: 단계별로): `passive` lets the reading go on written with
+ * care (`care: true` for respondGeneration), `active` and `urgent` refuse it with the care screen (`urgent` puts the
+ * emergency lines first). Logged without the text: the route, the tier and which of the texts (its position) carried it,
+ * so a refusal a reader reports can be traced (a 422 with no clue was all there was on 2026-10-30).
+ */
+export function crisisCheck(route: string, ...texts: Array<string | undefined>): { refusal: Response | null; care: boolean } {
+  let tier: CrisisTier | null = null;
+  let field = -1;
+  for (const [index, text] of texts.entries()) {
+    const found = crisisTierOf(text);
+    if (found && (tier === null || TIER_RANK[found] > TIER_RANK[tier])) {
+      tier = found;
+      field = index;
+    }
+  }
+  if (!tier) return { refusal: null, care: false };
+  // Crisis words in one field and a means in another ("살기 싫어요" + "유서 써놨어요") are urgent too.
+  if (tier !== "urgent" && texts.some((text) => text && namesMeans(asPromptSees(text)))) tier = "urgent";
+  console.warn(JSON.stringify({ evt: "crisis", route, tier, field }));
+  if (tier === "passive") return { refusal: null, care: true };
+  // The UI lists the helplines under this line; no numbers here (lib/crisis.ts keeps them).
+  return { refusal: errorResponse("REFUSED", { care: true, ...(tier === "urgent" ? { urgent: true } : {}), message: CARE_BODY }), care: true };
+}
+
+/** The refusal alone, for texts that are only chips (사주's 요즘 상황). */
 export function crisisResponse(...texts: Array<string | undefined>): Response | null {
-  if (!texts.some(isCrisisText)) return null;
-  return errorResponse("REFUSED", {
-    care: true,
-    // The UI lists the hotlines (109, 1577-0199, 1388, 1588-9191) under this line; no numbers here.
-    message: CRISIS_LEAD,
-  });
+  return crisisCheck("chips", ...texts).refusal;
 }

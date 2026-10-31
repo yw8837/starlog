@@ -43,6 +43,24 @@ describe("guide blocks", () => {
     expect(region.tabIndex).toBe(0);
   });
 
+  it("table: short columns keep one line, the tightest even on a phone; long ones (headers and the first column too) wrap", () => {
+    show({
+      kind: "table",
+      caption: "줄바꿈",
+      head: ["벌", "한 줄로 둘 만한 칸", "아주 길어서 줄을 바꿔야 하는 머리글"],
+      rows: [["완드", "밝게 열리는 카드", "짧음"], ["컵", "멈추고 기다리는 카드", "길게 이어지는 설명이 들어가는 칸이에요"]],
+    });
+    const table = screen.getByRole("table", { name: "줄바꿈" });
+    const [tight, short, long] = within(table).getAllByRole("columnheader").map((th) => th.className);
+    expect(tight).toMatch(/nowrap/);
+    expect(tight).toMatch(/tight/);
+    expect(short).toMatch(/nowrap/);
+    expect(short).not.toMatch(/tight/);
+    expect(long).toBe("");
+    expect(within(table).getAllByRole("rowheader")[0]!.className).toMatch(/tight/);
+    expect(within(table).getAllByRole("cell").map((td) => td.className)).toEqual([short, "", short, ""]);
+  });
+
   it("figure: a lazy image with its alt and real size, and its caption", () => {
     show({ kind: "figure", src: "/cards/major-17-star.webp", alt: "별 카드 그림", width: 600, height: 1027, caption: "XVII 별" });
     const img = screen.getByRole("img", { name: "별 카드 그림" });

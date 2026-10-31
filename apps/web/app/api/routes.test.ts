@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
+import { CARE_BODY } from "@/lib/crisis";
 import { GenerationError } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { BirthBody } from "@/lib/api/inputs";
@@ -205,8 +206,54 @@ describe("tarot flow with the mock provider", () => {
     const res = await d.call(reading, { drawToken, input: { ...MONEY_INPUT, note: "요즘 죽고 싶다는 생각이 들어요" } });
     expect(res.status).toBe(422);
     expect(res.data).toMatchObject({ code: "REFUSED", care: true });
-    expect(res.data.message).toBe("마음이 많이 힘들다면 풀이보다 사람과 먼저 이야기해 주세요."); // the UI lists the hotlines
+    expect(res.data.message).toBe(CARE_BODY); // the UI lists the hotlines
     expect(d.jar.has("sl_first")).toBe(false);
+  });
+
+  it("writes a passive wish's reading with care instead of refusing it, and says so in the body (owner 2026-10-31)", async () => {
+    const d = device();
+    const { drawToken } = await drawSelfFlow(d);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const spy = vi.spyOn(mockProvider, "generate");
+    const res = await d.call(teaser, { drawToken, input: { ...MONEY_INPUT, note: "요즘 너무 지쳐서 사라지고 싶어요" } });
+    expect(res.status).toBe(200);
+    expect(res.data.care).toBe(true);
+    expect(spy.mock.calls.every(([, , , hooks]) => hooks?.care === true)).toBe(true);
+  });
+
+  it("writes the full reading of a passive wish with care, and every follow-up on that chapter (code review 2026-10-31)", async () => {
+    const d = await member();
+    const { drawToken } = await drawSelfFlow(d);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const spy = vi.spyOn(mockProvider, "generate");
+    const r = await d.call(reading, { drawToken, input: { ...MONEY_INPUT, note: "요즘 너무 지쳐서 사라지고 싶어요" } });
+    expect(r.status).toBe(200);
+    expect(r.data.care).toBe(true);
+    expect(spy.mock.calls.length).toBeGreaterThan(0);
+    expect(spy.mock.calls.every(([, , , hooks]) => hooks?.care === true)).toBe(true);
+    spy.mockClear();
+    // An ordinary question on that chapter is still written with care: the chapter's note reaches the prompt.
+    const token = await paidChapterOf(r.data.chapterToken, r.data.reading);
+    const f = await d.call(followup, { chapterToken: token, reading: r.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" });
+    expect(f.status).toBe(200);
+    expect(f.data.care).toBe(true);
+    expect(spy.mock.calls.every(([, , , hooks]) => hooks?.care === true)).toBe(true);
+  });
+
+  it("writes a follow-up whose own question carries a passive wish with care; an ordinary chapter stays as it was", async () => {
+    const d = await member();
+    const { drawToken } = await drawSelfFlow(d);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
+    expect(r.data.care).toBeUndefined();
+    const token = await paidChapterOf(r.data.chapterToken, r.data.reading);
+    const plain = await d.call(followup, { chapterToken: token, reading: r.data.reading, question: "지출은 어떻게 줄이면 좋을까요?" });
+    expect(plain.data.care).toBeUndefined();
+    const cared = await d.call(followup, { chapterToken: plain.data.chapterToken, reading: r.data.reading, question: "그냥 다 끝내고 싶어요" });
+    expect(cared.status).toBe(200);
+    expect(cared.data.care).toBe(true);
+    const refused = await d.call(followup, { chapterToken: cared.data.chapterToken, reading: r.data.reading, question: "죽고 싶어요" });
+    expect(refused.status).toBe(422);
   });
 });
 

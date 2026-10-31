@@ -43,5 +43,5 @@ export async function POST(request: Request): Promise<Response> {
         }
       : { ...teaser, share };
     return { body, cookies: await spendCookies(gate, quota, "teaser") };
-  }, { gate, spend: "teaser" });
+  }, { gate, spend: "teaser", care: parsed.care });
 }

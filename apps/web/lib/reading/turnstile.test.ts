@@ -57,12 +57,21 @@ describe("turnstileToken", () => {
       options()[callback]!("300030");
       expect(await pending, callback).toBeNull();
     }
-    // A challenge that never answers gives up after two minutes.
+    // An invisible challenge that never answers gives up after 25 seconds (2026-10-31: not two minutes of 풀이를 적고 있어요);
+    // one that asked the person to take part waits two minutes.
     vi.useFakeTimers();
     const silent = turnstileToken("site-key-1");
     await vi.waitFor(() => expect(api.execute).toHaveBeenCalledTimes(4));
-    await vi.advanceTimersByTimeAsync(120_000);
+    await vi.advanceTimersByTimeAsync(25_000);
     expect(await silent).toBeNull();
+    let settled = false;
+    const asked = turnstileToken("site-key-1").then((token) => ((settled = true), token));
+    await vi.waitFor(() => expect(api.execute).toHaveBeenCalledTimes(5));
+    options()["before-interactive-callback"]!();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(settled).toBe(false);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(await asked).toBeNull();
   });
 
   it("resolves null when the caller leaves", async () => {

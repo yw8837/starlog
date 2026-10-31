@@ -260,7 +260,7 @@ export function UnlockSheet({
             {error.title}
           </p>
           {error.body ? <p className={s.errorBody}>{error.body}</p> : null}
-          {error.care ? <CrisisContacts lead={false} className={s.care} /> : null}
+          {error.care ? <CrisisContacts lead={false} compact urgent={error.urgent === true} className={s.care} /> : null}
         </div>
       ) : usedUp && !openedHref ? (
         <p className={s.limit}>이 기기에서는 오픈 기념 무료 풀이를 이미 열었어요</p>

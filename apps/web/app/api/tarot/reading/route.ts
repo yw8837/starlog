@@ -54,6 +54,7 @@ export async function POST(request: Request): Promise<Response> {
       gate,
       spend: plan.spend,
       paidCost: plan.paidCost,
+      care: parsed.care,
       settle: settlementFor(plan, (body) => tarotChapter(parsed.input, parsed.draw.cards, body as { reading: unknown; chapterToken: string }, gate.now), gate.now),
     },
   );

@@ -2,7 +2,7 @@ import { TEMPLATES, type DrawnCard } from "@starlog/core";
 import { generateSajuFollowUp, generateSajuTopicFollowUp, generateTarotFollowUp } from "@/lib/ai/generate";
 import { buildTarotContext } from "@/lib/ai/prompts/tarot";
 import { StoredSajuReadingSchema, StoredTarotReadingSchema, type FollowUpAnswer } from "@/lib/ai/schemas";
-import { checkQuota, checkServerLimits, crisisResponse, errorResponse, openGate, readJson, spendCookies } from "@/lib/api/http";
+import { checkQuota, checkServerLimits, crisisCheck, crisisTierOf, errorResponse, openGate, readJson, spendCookies } from "@/lib/api/http";
 import { FollowUpBody } from "@/lib/api/inputs";
 import { factsFromBirth, topicFactsFromBirth, withoutConcern } from "@/lib/api/sajuRequest";
 import { answeredTurns, giveBackTurn, holdTurn } from "@/lib/api/chapterTurns";
@@ -56,8 +56,13 @@ export async function POST(request: Request): Promise<Response> {
   const quota = premium ? null : await checkQuota(gate, "followup", { scope: "day" }, { credit: paid, paid });
   if (quota instanceof Response) return quota;
   const question = body.data.question;
-  const crisis = crisisResponse(question);
-  if (crisis) return crisis;
+  const crisis = crisisCheck("followup", question);
+  if (crisis.refusal) return crisis.refusal;
+  // The chapter's own words (its question, note, earlier questions) reach the prompt too: one with crisis words was written
+  // with care, and so is every answer after it (review 2026-10-31).
+  const words = (value: unknown): string[] =>
+    typeof value === "string" ? [value] : Array.isArray(value) ? value.flatMap(words) : value && typeof value === "object" ? Object.values(value).flatMap(words) : [];
+  const care = crisis.care || [...words(chapter.ctx), ...chapter.turns.map((turn) => turn.question)].some((text) => crisisTierOf(text) !== null);
 
   // Everything that can fail on input is checked before a stream starts.
   let generate: (hooks: Parameters<typeof generateTarotFollowUp>[5]) => Promise<FollowUpAnswer>;
@@ -112,5 +117,5 @@ export async function POST(request: Request): Promise<Response> {
       if (typeof held === "number") await giveBackTurn(chapter.id, held, turnsTtl);
       throw error;
     }
-  }, { gate, spend: "followup", ...(paid ? { paidCost: true } : {}) });
+  }, { gate, spend: "followup", care, ...(paid ? { paidCost: true } : {}) });
 }

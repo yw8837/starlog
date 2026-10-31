@@ -47,7 +47,7 @@ export function ErrorPanel({ view, onRetry, redrawHref, editHref, primary = true
         {view.title}
       </h2>
       {view.body ? <p className={s.errorBody}>{view.body}</p> : null}
-      {view.care ? <CrisisContacts lead={false} className={s.care} /> : null}
+      {view.care ? <CrisisContacts lead={false} compact urgent={view.urgent === true} className={s.care} /> : null}
       {action ? <div className={s.errorActions}>{action}</div> : null}
       {action ? null : (
         <Button href="/" variant="ghost" size="md" block>

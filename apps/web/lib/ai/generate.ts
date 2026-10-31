@@ -175,6 +175,7 @@ function startSajuEnrichment(provider: ReadingProvider, facts: SajuFactSet, hook
   const billed: Usage[] = [];
   const enrichmentHooks: GenerationHooks = {
     signal: controller.signal,
+    ...(hooks.care ? { care: true } : {}),
     deadline: Math.min(hooks.deadline ?? Number.POSITIVE_INFINITY, Date.now() + ENRICHMENT_BUDGET_MS),
     onReserve: own.onReserve,
     onRelease: own.onRelease,
@@ -332,7 +333,7 @@ export async function generateSajuReading(
     ...generationSetting("saju-reading-b"),
     mock: () => mockSajuReadingPartB(facts),
   }, (draft) => validateSajuReadingPartB(draft, facts), {
-    signal: halves.signal, deadline: hooks.deadline, onReserve: own.onReserve, onRelease: own.onRelease, onUsage: own.onUsage, ...second.hooks,
+    signal: halves.signal, deadline: hooks.deadline, ...(hooks.care ? { care: true } : {}), onReserve: own.onReserve, onRelease: own.onRelease, onUsage: own.onUsage, ...second.hooks,
   }), second.finish);
   const [one, two, three] = await Promise.allSettled([a, b, enrichment.result]);
   route?.removeEventListener("abort", follow);

@@ -4,6 +4,7 @@ import { CharacterDefs } from "@/components/characters/defs";
 import { RouteTracker } from "@/components/layout/RouteTracker";
 import { VersionCheck } from "@/components/layout/VersionCheck";
 import { ConsentBanner } from "@/components/seo/ConsentBanner";
+import { CareBanner } from "@/components/ui/CareBanner";
 import { GoogleAnalytics } from "@/components/seo/GoogleAnalytics";
 import { SiteJsonLd } from "@/components/seo/JsonLd";
 import { adsConfig } from "@/lib/ads";
@@ -65,6 +66,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <SiteJsonLd />
         <CharacterDefs />
+        {/* 돌봄 모드: the helplines over a reading written with care (lib/reading/careSignal.ts); first in focus order. */}
+        <CareBanner />
         {children}
         <RouteTracker />
         <VersionCheck />

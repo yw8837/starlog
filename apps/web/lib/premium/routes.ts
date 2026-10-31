@@ -1,5 +1,5 @@
 import "server-only";
-import { checkQuota, crisisResponse, errorResponse, fullReadingLimit, openGate, readJson, spendCookies, type Gate } from "@/lib/api/http";
+import { checkQuota, crisisCheck, errorResponse, fullReadingLimit, openGate, readJson, spendCookies, type Gate } from "@/lib/api/http";
 import { budgetState } from "@/lib/api/spend";
 import { accountDb } from "@/lib/db";
 import { respondGeneration } from "@/lib/api/stream";
@@ -77,8 +77,8 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
     if (!parsed.success) return errorResponse("BAD_REQUEST");
     const buyer = gate.cookies[sessionCookieName()] && !paymentsUnbacked() ? await unusedBuyer(request, gate.now, adapter.id) : null;
     if (!buyer && !premiumOpen(adapter.id, gate.owner, gate.now)) return errorResponse("NOT_AVAILABLE");
-    const crisis = crisisResponse(...adapter.crisisTexts(parsed.data));
-    if (crisis) return crisis;
+    const crisis = crisisCheck(`premium:${adapter.id}`, ...adapter.crisisTexts(parsed.data));
+    if (crisis.refusal) return crisis.refusal;
     const ctx = await adapter.context(parsed.data, gate);
     if (ctx instanceof Response) return ctx;
     if (buyer) {
@@ -96,7 +96,7 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
         if (buyer && !hooks.signal?.aborted && !refused) await giveBackBuyerPreview(gate, buyer, adapter.id);
         throw error;
       }
-    }, { gate, ...(buyer ? { paidCost: true } : { spend: "teaser" as const }) });
+    }, { gate, care: crisis.care, ...(buyer ? { paidCost: true } : { spend: "teaser" as const }) });
   };
 }
 
@@ -120,8 +120,8 @@ export function premiumReadingRoute<B, C extends PremiumContext>(adapter: Adapte
     const parsed = adapter.readingBody.safeParse(await readJson(request, READING_MAX_BYTES));
     if (!parsed.success) return errorResponse("BAD_REQUEST");
     const body = parsed.data;
-    const crisis = crisisResponse(...adapter.crisisTexts(body));
-    if (crisis) return crisis;
+    const crisis = crisisCheck(`premium:${adapter.id}`, ...adapter.crisisTexts(body));
+    if (crisis.refusal) return crisis.refusal;
     const ctx = await adapter.context(body, gate);
     if (ctx instanceof Response) return ctx;
     // The resume token is bound to everything the reading is written from: the whole body but unlock and resume.
@@ -150,6 +150,7 @@ export function premiumReadingRoute<B, C extends PremiumContext>(adapter: Adapte
         gate,
         spend: plan.spend,
         paidCost: plan.paidCost,
+        care: crisis.care,
         settle: premiumSettlement(plan, (response) => adapter.chapter(body, ctx, response as { reading: unknown; chapterToken: string }, gate.now), gate.now),
       },
     );

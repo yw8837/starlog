@@ -67,10 +67,20 @@
   vertical-align: top;
 }
 
-/* Column and row headers never wrap (keep them short); neither do cells of a short column. */
-.table th,
+/* Cells of a short column never wrap, headers included (GuideBlocks.tsx decides per column). */
 .nowrap {
   white-space: nowrap;
+}
+
+/* On a phone only the tightest columns stay on one line; the others wrap at word breaks (keep-all). */
+@media (max-width: 599px) {
+  .nowrap {
+    white-space: normal;
+  }
+
+  .tight {
+    white-space: nowrap;
+  }
 }
 
 .table thead th {

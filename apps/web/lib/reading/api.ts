@@ -16,6 +16,7 @@
  * key is kept per path for the page's life, so later calls there bring a fresh token from the start.
  */
 
+import { signalCare } from "./careSignal";
 import { turnstileToken } from "./turnstile";
 
 export type ApiErrorCode =
@@ -81,6 +82,8 @@ export interface ApiError {
   resetsAt?: string;
   /** REFUSED: the person may be in crisis. */
   care?: boolean;
+  /** REFUSED with care: a plan or a means was named too, so the emergency lines lead (lib/crisis.ts EMERGENCY_LINES). */
+  urgent?: boolean;
   /**
    * BETA_LIMIT: which count ran out — this chapter's questions, the device's day, the day's count
    * for the whole network (one Wi-Fi, office or school shares it), the device's free first tarot
@@ -119,6 +122,7 @@ export function parseApiError(status: number, body: unknown): ApiError {
   if (typeof b.message === "string") error.message = b.message;
   if (typeof b.resetsAt === "string") error.resetsAt = b.resetsAt;
   if (b.care === true) error.care = true;
+  if (b.urgent === true) error.urgent = true;
   if (b.scope === "chapter" || b.scope === "day" || b.scope === "network" || b.scope === "first" || b.scope === "account" || b.scope === "buyer") error.scope = b.scope;
   if (typeof b.field === "string") error.field = b.field;
   if (typeof b.siteKey === "string" && b.siteKey) error.siteKey = b.siteKey;
@@ -306,7 +310,12 @@ async function attempt<T>(path: string, body: unknown, options: GenerationOption
     clearTimeout(deadline);
     clearTimeout(idle);
     options.signal?.removeEventListener("abort", onCallerAbort);
-    if (result.ok) return accept(result.data) ? result : { ok: false, error: { code: "INVALID", status: 502 } };
+    if (result.ok) {
+      if (!accept(result.data)) return { ok: false, error: { code: "INVALID", status: 502 } };
+      // 돌봄 모드: the reading was written with care; the root layout's CareBanner shows the helplines.
+      if (isRecord(result.data) && result.data.care === true) signalCare();
+      return result;
+    }
     // A timer ended the call (an answer or an error that did arrive stays as it is).
     return timedOut && result.error.code === "NETWORK" ? { ok: false, error: { code: "TIMEOUT", status: 0 } } : result;
   };
