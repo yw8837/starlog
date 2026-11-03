@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { filledSlots, pickCard, tableCards } from "./cards";
-import { fakeBrowserClock, loginForOpening, openingOn, ownerPass } from "./opening";
+import { fakeBrowserClock, loginForOpening, mockLogin, openingOn, ownerPass } from "./opening";
 import { makeLink, openShared, shotButton } from "./shareShots";
 
 /**
@@ -88,7 +88,11 @@ test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 async function moneyFlow(page: Page, info: TestInfo, free: boolean) {
   await ownAddress(page, info);
   if (free) await loginForOpening(page, info, `flow-${info.project.name}-${Date.now()}`);
-  else await ownerPass(page, info);
+  else {
+    // The 맛보기 needs a login (owner 2026-11-04; the visitor's way is e2e/login-gate.spec.ts): the pass, then a login.
+    await ownerPass(page, info);
+    await mockLogin(page, info, `flow-owner-${info.project.name}-${Date.now()}`);
+  }
   await buildMoneyQuestion(page, info);
   const cards = await drawThree(page);
 
@@ -110,9 +114,9 @@ async function moneyFlow(page: Page, info: TestInfo, free: boolean) {
     await expect(sheet).toContainText(OPENING_RULE);
     await expect(sheet.getByRole("link")).toHaveText(["2,900원 결제하고 보기"]);
   } else if (openingOn()) {
-    // A visitor with the owner pass: 오픈 기념 무료 comes first and says it logs in first; the pass opens the reading without one.
+    // Logged in with the owner pass: 오픈 기념 무료 comes first; the pass opens the reading on its own button.
     await expect(sheet).toContainText(OPENING_RULE);
-    await expect(sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료 · 로그인하고 받기$/ })).toBeVisible();
+    await expect(sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ })).toBeVisible();
   } else {
     await expect(sheet).not.toContainText("오픈 기념 무료");
     await expect(sheet).toContainText("이어서 물어보기 3번");
@@ -211,8 +215,10 @@ test("오픈 기념 무료 used: opening again says so with no reset time, no re
   await shot(page, info, "05-limit");
 });
 
-test("a typed 무엇 with a named person reads with the 누구 chip's spread", async ({ page }, info) => {
+test("a typed 무엇 with a named person reads with the 누구 chip's spread", { tag: "@login" }, async ({ page }, info) => {
   await ownAddress(page, info);
+  // The 맛보기 needs a login (owner 2026-11-04; the visitor's way is e2e/login-gate.spec.ts).
+  await loginForOpening(page, info, `custom-${info.project.name}-${Date.now()}`);
   await page.goto("/tarot/new");
   await page.getByRole("button", { name: "나와 그 사람" }).click();
   await page.getByRole("textbox", { name: "구체적으로 적기 (선택)" }).fill("엄마");

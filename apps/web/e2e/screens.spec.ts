@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, request as playwrightRequest, test, type Page, type TestInfo } from "@playwright/test";
 import { logInPage, logInRequest, newUser } from "./bondsAccount";
 import { pickCard } from "./cards";
-import { fakeBrowserClock, openingOn, ownerPass } from "./opening";
+import { fakeBrowserClock, mockLogin, openingOn, ownerPass } from "./opening";
 
 /**
  * Screen sweep (@screens): a full-height screenshot of every route per viewport project
@@ -85,6 +85,15 @@ async function dealtFlow(page: Page) {
   return draw as { drawToken: string; cards: Array<{ position: string; cardId: string; orientation: string }> };
 }
 
+/**
+ * The 맛보기 and 오늘의 한 장 need a login (owner 2026-11-04): this browser takes the owner pass and logs in to a mock Kakao
+ * account of its own (the pass skips the day's count, never the login), for the screens that show one.
+ */
+async function member(page: Page) {
+  await ownerPass(page, test.info());
+  await mockLogin(page, test.info(), `screens-${test.info().project.name}-${Date.now()}-${Math.floor(Math.random() * 1000)}`);
+}
+
 /** A full tarot reading from the API, stored as this device keeps it (`age` days old). */
 async function tarotChapter(page: Page, id: string, age = 0) {
   // Opened with the owner pass (it works whether or not 오픈 기념 무료 is on), which is then dropped so the
@@ -118,6 +127,7 @@ async function sajuChapter(page: Page, id: string, age = 0) {
   await ownAddress(page);
   const origin = new URL(test.info().project.use.baseURL!).origin;
   expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
+  await mockLogin(page, test.info(), `screens-saju-${test.info().project.name}-${Date.now()}`);
   const teaser = await (await page.request.post("/api/saju/teaser", { data: { birth: BIRTH } })).json();
   const res = await (await page.request.post("/api/saju/reading", { data: { birth: BIRTH, unlock: { method: "owner" } } })).json();
   await page.context().clearCookies();
@@ -197,13 +207,31 @@ const SCREENS: Screen[] = [
       await expect(page.getByText("모두 골랐어요")).toBeVisible();
     },
   },
-  { name: "tarot-result", path: "/tarot/result", spread: true, setup: async (page) => void (await dealtFlow(page)), prepare: waitForSheet },
+  // A visitor at the reading step: the cards and the login panel where the 맛보기 would be (owner 2026-11-04).
+  {
+    name: "tarot-result-login",
+    path: "/tarot/result",
+    spread: true,
+    setup: async (page) => void (await dealtFlow(page)),
+    prepare: async (page) => expect(page.getByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" })).toBeVisible({ timeout: 30_000 }),
+  },
+  {
+    name: "tarot-result",
+    path: "/tarot/result",
+    spread: true,
+    setup: async (page) => {
+      await member(page);
+      await dealtFlow(page);
+    },
+    prepare: waitForSheet,
+  },
   {
     name: "tarot-result-generating",
     path: "/tarot/result",
     spread: true,
     busy: true,
     setup: async (page) => {
+      await member(page);
       await dealtFlow(page);
       await hold(page, "**/api/tarot/teaser");
     },
@@ -212,6 +240,7 @@ const SCREENS: Screen[] = [
     name: "tarot-result-error",
     path: "/tarot/result",
     setup: async (page) => {
+      await member(page);
       await dealtFlow(page);
       await fail(page, "**/api/tarot/teaser", 502, { code: "QUALITY", message: "…" });
     },
@@ -225,6 +254,7 @@ const SCREENS: Screen[] = [
           name: "tarot-result-limit",
           path: "/tarot/result",
           setup: async (page: Page) => {
+            await member(page);
             await dealtFlow(page);
             await fail(page, "**/api/me", 200, { payments: false, login: true, owner: false, user: { nickname: "별손님", gift: null, unused: [], opening: [] } });
             await fail(page, "**/api/tarot/reading", 429, { code: "BETA_LIMIT", scope: "first", message: "…" });
@@ -241,8 +271,9 @@ const SCREENS: Screen[] = [
     name: "tarot-unlock-generating",
     path: "/tarot/result",
     setup: async (page) => {
-      // 오픈 기념 무료 needs a login (owner 2026-10-27) and ends 11/30: the owner pass opens it, on the same waiting screen.
-      await ownerPass(page, test.info());
+      // 오픈 기념 무료 needs a login (owner 2026-10-27) and ends 11/30: the owner pass opens it, on the same waiting screen; logged
+      // in, since the 맛보기 needs it (owner 2026-11-04).
+      await member(page);
       await dealtFlow(page);
       await hold(page, "**/api/tarot/reading");
     },
@@ -260,11 +291,22 @@ const SCREENS: Screen[] = [
   { name: "saju-new", path: "/saju/new" },
   { name: "saju-new-status", path: "/saju/new", prepare: async (page) => page.getByRole("button", { name: /요즘 상황도 알려 주기/ }).click() },
   { name: "saju-chart", path: "/saju/chart" },
+  // A visitor's own 명식: free, with the login panel where the 맛보기 would be (owner 2026-11-04).
+  {
+    name: "saju-chart-login",
+    path: "/saju/chart",
+    setup: async (page) => {
+      await ownAddress(page);
+      await setStorage(page, "localStorage", "starlog.saju-profile", BIRTH);
+    },
+    prepare: async (page) => expect(page.getByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" })).toBeVisible({ timeout: 30_000 }),
+  },
   {
     name: "saju-chart-own",
     path: "/saju/chart",
     setup: async (page) => {
       await ownAddress(page);
+      await member(page);
       await setStorage(page, "localStorage", "starlog.saju-profile", BIRTH);
     },
     prepare: waitForSheet,
@@ -274,6 +316,7 @@ const SCREENS: Screen[] = [
     path: "/saju/chart",
     setup: async (page) => {
       await ownAddress(page);
+      await member(page);
       await setStorage(page, "localStorage", "starlog.saju-profile", BIRTH);
     },
     prepare: async (page) => {
@@ -300,6 +343,8 @@ const SCREENS: Screen[] = [
     path: "/today",
     setup: async (page) => {
       await ownAddress(page);
+      // 오늘의 한 장 needs a login (owner 2026-11-04); the screen shows this device's copy.
+      await member(page);
       const reading = await (await page.request.post("/api/tarot/daily", { data: { pick: 1 } })).json();
       await page.addInitScript((r) => {
         const day = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10);
@@ -536,7 +581,12 @@ test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
 // These log a mock Kakao account in (a 별자리 owner starts logged in, owner 2026-10-27): the Workers preview refuses mock
 // logins, so they run in the gate's next dev run with the other @login tests (scripts/ops/gate3-lite.sh).
-const LOGIN_SCREENS = new Set(["home-bonds", "bonds-filling", "bonds-complete", "bonds-ranking", "bonds-join"]);
+const LOGIN_SCREENS = new Set([
+  "home-bonds", "bonds-filling", "bonds-complete", "bonds-ranking", "bonds-join",
+  // the 맛보기 and 오늘의 한 장 need a login (owner 2026-11-04)
+  "tarot-result", "tarot-result-generating", "tarot-result-error", "tarot-result-limit", "tarot-unlock-generating",
+  "saju-chart-own", "saju-chart-topic", "saju-reading", "today-opened",
+]);
 
 for (const screen of SCREENS) {
   test(`@screens ${screen.name}`, LOGIN_SCREENS.has(screen.name) ? { tag: "@login" } : {}, async ({ page }, info) => {

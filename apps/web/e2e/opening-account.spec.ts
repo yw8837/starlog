@@ -54,9 +54,14 @@ async function toSheet(page: Page) {
   await page.getByRole("button", { name: "결과 보기" }).click();
   await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
+  // A visitor is asked to log in where the 맛보기 would show (owner 2026-11-04): no sheet before the login.
+  if (!(await page.request.get("/api/me").then((r) => r.json())).user) return sheet;
   await expect(sheet).toBeVisible({ timeout: GENERATION });
   return sheet;
 }
+
+/** The panel a visitor gets in place of the 맛보기 (owner 2026-11-04). */
+const loginPanel = (page: Page) => page.getByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
 
 // Both browsers log in (mock Kakao), which the Workers preview refuses: @login, the gate's dev run (scripts/ops/gate3-lite.sh).
 test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to it opened; the same account on another browser is refused, then offered it no more", { tag: "@login" }, async ({ browser }, info) => {
@@ -70,16 +75,14 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
   const phoneFree = phoneSheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ });
   await expect(phoneFree).toBeVisible();
 
-  // 1. A visitor: the button says it logs in first, and the rule under it says per account.
+  // 1. A visitor is asked to log in where the 맛보기 would show (owner 2026-11-04), before any sheet.
   const web = await newPage(browser, info);
   await ownerPass(web, info);
   const sheet = await toSheet(web);
-  await expect(sheet).toContainText(RULE);
-  const free = sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료 · 로그인하고 받기$/ });
-  await expect(free).toBeVisible();
-  await shot(web, info, "1-visitor-sheet");
+  await expect(loginPanel(web)).toBeVisible({ timeout: NAV });
+  await shot(web, info, "1-visitor-panel");
 
-  // 2. Tapping it goes to /login with the way back to open it; the mock Kakao account is pinned to `name`.
+  // 2. Its link goes to /login and back to the same result; the mock Kakao account is pinned to `name`.
   let generated = 0;
   web.on("request", (r) => {
     if (r.url().endsWith("/api/tarot/reading")) generated += 1;
@@ -92,14 +95,19 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
       await route.fulfill({ response, json: { ...body, url: `${body.url}&mockUser=${encodeURIComponent(name)}` } });
     },
   );
-  await free.click();
-  await expect(web).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Funlock%3Dopening%26instant%3D1$/, { timeout: NAV });
+  await loginPanel(web).getByRole("link", { name: "로그인하고 맛보기 보기" }).click();
+  await expect(web).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Finstant%3D1$/, { timeout: NAV });
   expect(generated).toBe(0);
   await shot(web, info, "2-login");
   await web.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
   await web.getByRole("button", { name: "카카오로 계속하기" }).click();
 
-  // 3. Back on the result, it opens by itself as 오픈 기념 무료: read and kept, no follow-ups.
+  // 3. Back on the result: the 맛보기 of the same cards, and 오픈 기념 무료 offered to the account under its rule; tapped, it
+  //    opens as 오픈 기념 무료: read and kept, no follow-ups.
+  await expect(web).toHaveURL(/\/tarot\/result\?instant=1&login=ok$/, { timeout: NAV });
+  await expect(sheet).toBeVisible({ timeout: GENERATION });
+  await expect(sheet).toContainText(RULE);
+  await sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }).click();
   await expect(web).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: GENERATION });
   expect(generated).toBe(1);
   await expect(web.getByText("오픈 기념 무료 풀이는 내 기록에 보관돼요. 이어서 물어보기는 결제한 풀이에서 할 수 있어요.")).toHaveCount(1);
@@ -132,16 +140,15 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
 });
 
 // No login from here on: the Workers preview runs these too.
-test("a visitor (no owner pass) is told it logs in first, and its tap goes to /login and back here to open it, generating nothing", async ({ page }, info) => {
+test("a visitor (no owner pass) is asked to log in at the reading step, and its tap goes to /login and back here, generating nothing", async ({ page }, info) => {
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.28.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` });
-  const sheet = await toSheet(page);
-  await expect(sheet).toContainText(RULE);
   let generated = 0;
   page.on("request", (r) => {
-    if (r.url().endsWith("/api/tarot/reading")) generated += 1;
+    if (/\/api\/tarot\/(reading|teaser)$/.test(new URL(r.url()).pathname)) generated += 1;
   });
-  await sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료 · 로그인하고 받기$/ }).click();
-  await expect(page).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Funlock%3Dopening%26instant%3D1$/, { timeout: NAV });
+  await toSheet(page);
+  await loginPanel(page).getByRole("link", { name: "로그인하고 맛보기 보기" }).click();
+  await expect(page).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Finstant%3D1$/, { timeout: NAV });
   expect(generated).toBe(0);
   await shot(page, info, "0-visitor-login");
 });
@@ -152,7 +159,8 @@ test("the terms and the privacy policy say what changed on top while it runs (ow
   await expect(terms).toContainText("로그인한 계정마다 한 번 드립니다");
   await expect(page.locator("#service")).toContainText("로그인한 계정마다 한 번(같은 기기에서는 한 번)");
   await page.goto("/privacy");
-  const privacy = page.getByRole("complementary", { name: /^\d{4}년 \d{1,2}월 \d{1,2}일 바뀐 내용$/ });
+  // Two dated notices may stand there (2026-11-04: the 맛보기 login): this one is 오픈 기념 무료's.
+  const privacy = page.getByRole("complementary", { name: /^\d{4}년 \d{1,2}월 \d{1,2}일 바뀐 내용$/ }).filter({ hasText: "오픈 기념 무료를 계정마다" });
   await expect(privacy).toHaveText(/오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요\..*탈퇴해도 오픈 기념 무료가 끝날 때까지 남겼다가 2026년 11월 30일이 지나면 지워요\.$/);
   await expect(page.locator("#retention")).toContainText("같은 계정이 탈퇴 뒤 다시 받지 않도록");
   await expect(page.locator("#items")).toContainText("오픈 기념 무료를 받았는지와 받은 시각(2026년 11월 30일까지 진행하는 오픈 기념 무료를 계정마다 한 번만 드리기 위해)");

@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { pickCard, tableCards } from "./cards";
-import { fakeBrowserClock } from "./opening";
+import { fakeBrowserClock, loginForOpening } from "./opening";
 
 /**
  * 단계별 위기 대응 (owner 2026-10-31) on the real API (STARLOG_AI=mock): a stated thought of dying gets the care screen in
@@ -44,8 +44,10 @@ async function drawThree(page: Page) {
 
 test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
-test("a stated thought of dying: no reading, the care screen with 109 by call or by text, the rest folded, the way back open", async ({ page }, info) => {
+test("a stated thought of dying: no reading, the care screen with 109 by call or by text, the rest folded, the way back open", { tag: "@login" }, async ({ page }, info) => {
   await ownAddress(page, info);
+  // The 맛보기 needs a login (owner 2026-11-04): the care screen answers the logged-in request.
+  await loginForOpening(page, info, `care-active-${info.project.name}-${Date.now()}`);
   await questionWithNote(page, "요즘 죽고 싶다는 생각이 들어요");
   await drawThree(page);
   await expect(page.getByRole("heading", { name: "마음이 많이 무거웠군요" })).toBeVisible({ timeout: NAV });
@@ -62,8 +64,9 @@ test("a stated thought of dying: no reading, the care screen with 109 by call or
   await page.screenshot({ path: `${SHOTS}/${info.project.name}-active.png` });
 });
 
-test("a passive wish: the reading comes, with the helplines over it until closed", async ({ page }, info) => {
+test("a passive wish: the reading comes, with the helplines over it until closed", { tag: "@login" }, async ({ page }, info) => {
   await ownAddress(page, info);
+  await loginForOpening(page, info, `care-passive-${info.project.name}-${Date.now()}`);
   await questionWithNote(page, "요즘 너무 지쳐서 사라지고 싶어요");
   await drawThree(page);
   const banner = page.getByRole("complementary", { name: "마음 돌봄 안내" });

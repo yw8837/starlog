@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Request, type TestInfo } from "@playwright/test";
+import { loginForOpening } from "./opening";
 
 /**
  * 주제별 사주 end to end with mock AI (saju-topics lite plan, step D). Runs with the topics on: the dev server
@@ -9,8 +10,6 @@ import { expect, test, type Page, type Request, type TestInfo } from "@playwrigh
 const NAV = 30_000;
 const GENERATION = 120_000;
 const TOPICS = ["연애운", "재회운", "재물운", "직장운"];
-/** The owner pass of the server under test (`pnpm e2e` uses this default; a preview needs its own in E2E_OWNER_CODE). */
-const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
 
 async function ownAddress(page: Page, info: TestInfo) {
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.7.${info.workerIndex}.${Math.floor(Math.random() * 250)}` });
@@ -31,7 +30,7 @@ async function toChart(page: Page) {
   await fillBirth(page, 1992, 8, 3, "남성");
   await page.getByRole("button", { name: "명식 보기" }).click();
   await expect(page).toHaveURL(/\/saju\/chart$/, { timeout: NAV });
-  await expect(page.getByText("첫 장", { exact: true })).toBeVisible({ timeout: GENERATION });
+  await expect(page.getByText("사주팔자 · 맛보기", { exact: true })).toBeVisible({ timeout: GENERATION });
 }
 
 /**
@@ -58,9 +57,11 @@ test("주제별 사주: the input screen has no topic or situation chips", async
   await expect(page.getByRole("button", { name: /요즘 상황도 알려 주기/ })).toBeVisible();
 });
 
-test("주제별 사주 in three steps: 무엇이 궁금해요? → 태어난 날 → the chart opens on the 운 picked, with the way back at the top (owner 2026-10-14)", async ({ page }, info) => {
+test("주제별 사주 in three steps: 무엇이 궁금해요? → 태어난 날 → the chart opens on the 운 picked, with the way back at the top (owner 2026-10-14)", { tag: "@login" }, async ({ page }, info) => {
   test.setTimeout(300_000);
   await ownAddress(page, info);
+  // The 맛보기 needs a login (owner 2026-11-04; the visitor's way is e2e/login-gate.spec.ts).
+  await loginForOpening(page, info, `topics-${info.project.name}-${Date.now()}`);
   await page.goto("/saju/start?new=1");
   const picker = page.getByRole("list", { name: "무엇이 궁금해요?" });
   await expect(picker.getByRole("link")).toHaveCount(5);
@@ -73,12 +74,14 @@ test("주제별 사주 in three steps: 무엇이 궁금해요? → 태어난 날
   await expect(page.getByText("재물운 · 맛보기", { exact: true })).toBeVisible({ timeout: GENERATION });
   await expect(page.getByRole("link", { name: "입력으로 돌아가기" })).toHaveAttribute("href", "/saju/new?topic=money");
   await page.getByRole("button", { name: "사주팔자로 돌아가기" }).click();
-  await expect(page.getByText("첫 장", { exact: true })).toBeVisible({ timeout: GENERATION });
+  await expect(page.getByText("사주팔자 · 맛보기", { exact: true })).toBeVisible({ timeout: GENERATION });
 });
 
-test("주제별 사주: each 운 shows its own teaser, list and sheet under the 사주팔자, and the way back", async ({ page }, info) => {
+test("주제별 사주: each 운 shows its own teaser, list and sheet under the 사주팔자, and the way back", { tag: "@login" }, async ({ page }, info) => {
   test.setTimeout(300_000);
   await ownAddress(page, info);
+  // The 맛보기 needs a login (owner 2026-11-04; the visitor's way is e2e/login-gate.spec.ts).
+  await loginForOpening(page, info, `topics-${info.project.name}-${Date.now()}`);
   await toChart(page);
   const row = page.getByRole("group", { name: "다른 운도 볼 수 있어요" });
   await expect(row.getByRole("button")).toHaveText(TOPICS);
@@ -93,15 +96,15 @@ test("주제별 사주: each 운 shows its own teaser, list and sheet under the 
     await expect(page.getByRole("region", { name: `${topic} 전체 풀이에 담긴 것` })).toBeVisible();
   }
   await page.getByRole("button", { name: "사주팔자로 돌아가기" }).click();
-  await expect(page.getByText("첫 장", { exact: true })).toBeVisible();
+  await expect(page.getByText("사주팔자 · 맛보기", { exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible();
 });
 
-test("주제별 사주: 재물운 sends only its topic, comes back from this device, opens with the owner pass (no free saju reading), and 내 기록 names it", async ({ page }, info) => {
+test("주제별 사주: 재물운 sends only its topic, comes back from this device, opens with the owner pass (no free saju reading), and 내 기록 names it", { tag: "@login" }, async ({ page }, info) => {
   test.setTimeout(300_000);
   await ownAddress(page, info);
-  // Saju has no free full reading (owner 2026-10-14): this run opens it with the owner pass.
-  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
+  // Saju has no free full reading (owner 2026-10-14): this run opens it with the owner pass, logged in (the 맛보기 needs it).
+  await loginForOpening(page, info, `topics-money-${info.project.name}-${Date.now()}`);
   const sent = teaserRequests(page);
   await toChart(page);
   expect(sent()).toHaveLength(1);

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
-import { fakeBrowserClock, openingOn } from "./opening";
+import { fakeBrowserClock, loginForOpening, openingOn } from "./opening";
 import { makeLink, openShared, shotButton } from "./shareShots";
 
 type SajuSample = {
@@ -17,8 +17,6 @@ const NAV = 30_000;
 
 const SHOTS = "test-results/saju-story";
 
-/** The owner pass of the server under test (scripts/ops/gate3-lite.sh passes the preview's; `pnpm e2e` uses this default). */
-const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
 
 async function shot(page: Page, info: TestInfo, name: string) {
   await page.addStyleTag({ content: "nextjs-portal{display:none!important}" }); // dev-only overlay badge
@@ -59,7 +57,7 @@ async function ownAddress(page: Page, info: TestInfo) {
 /** The 명식 table's caption (components/saju/ChartTable.tsx). */
 const PILLAR_TABLE = "사주 명식, 왼쪽부터 시주·일주·월주·연주";
 
-test("saju: input, consent, the example chart, then the user's own chart with 丙寅 and 병화", async ({ page }, info) => {
+test("saju: input, consent, the example chart, then the user's own chart with 丙寅 and 병화", { tag: "@login" }, async ({ page }, info) => {
   // Nothing saved yet: an example chart (computed, no reading text) asks for the user's own birth data.
   await page.goto("/saju/chart");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("예시 명식");
@@ -69,6 +67,8 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   await shot(page, info, "00-saju-chart-example");
 
   await ownAddress(page, info);
+  // The 맛보기 needs a login (owner 2026-11-04; the visitor's way is e2e/login-gate.spec.ts): logged in, the chart asks for it.
+  await loginForOpening(page, info, `saju-own-${info.project.name}-${Date.now()}`);
   // The home's entry to it is checked in "home, 내 정보 and guide"; the home layout belongs to the design pass.
   await page.goto("/saju/new");
   await expect(page.getByRole("heading", { level: 1, name: "태어난 날을 알려 주면 사주를 봐 드릴게요" })).toBeVisible();
@@ -136,7 +136,7 @@ test("saju: input, consent, the example chart, then the user's own chart with �
   await shot(page, info, "03-saju-chart");
 });
 
-test("saju: a non-sample chart gets its own reading, saved on this device", async ({ page }, info) => {
+test("saju: a non-sample chart gets its own reading, saved on this device", { tag: "@login" }, async ({ page }, info) => {
   await ownAddress(page, info);
   await page.goto("/saju/new");
   await page.getByLabel("태어난 연도").selectOption("1990");
@@ -156,7 +156,11 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
   await expect(chart).toContainText("보정 시각 08:57");
   await expect(page.getByText("1990년 1월 1일 (양력) · 9시 30분 · 여성 · 서울")).toBeVisible();
 
-  // The free reading from the API, then the scope, then one gold button.
+  // A visitor sees the 명식, and the 맛보기 asks for a login (owner 2026-11-04).
+  await expect(page.getByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" })).toBeVisible({ timeout: NAV });
+  // With the owner pass and a login (mock Kakao): the free reading from the API, then the scope, then one gold button.
+  await loginForOpening(page, info, `saju-reading-${info.project.name}-${Date.now()}`);
+  await page.goto("/saju/chart");
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
   await expect(sheet).toBeVisible({ timeout: 30_000 });
   await expect(sheet).toContainText("풀이 전체 · 약 2,500~3,000자");
@@ -172,13 +176,8 @@ test("saju: a non-sample chart gets its own reading, saved on this device", asyn
   await expect(freeVisitor.locator("main")).not.toContainText("1990");
   await freeVisitor.close();
 
-  // No free saju full reading (owner 2026-10-14): a visitor is told it opens with a payment, and nothing opens.
-  await expect(sheet).toContainText("전체 풀이는 결제하고 열 수 있어요");
-  await expect(sheet.getByRole("button", { name: "전체 풀이 보기", exact: true })).toBeDisabled();
+  // No free saju full reading (owner 2026-10-14): nothing free is promised, and only the owner pass opens it.
   await expect(sheet).not.toContainText(/첫 이용|처음 한 번|무료로 열|남았어요/);
-  // The owner pass opens it.
-  expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin: new URL(info.project.use.baseURL!).origin } })).ok()).toBe(true);
-  await page.reload();
   await sheet.getByRole("button", { name: "운영자로 무료 열기" }).click();
   await expect(page).toHaveURL(/\/chapter\/[a-z0-9]{6,32}$/, { timeout: 90_000 });
   await expect(page.getByText("사주 기록 ·", { exact: false })).toBeVisible();
@@ -227,8 +226,10 @@ test("saju: a lunar day that does not exist is explained next to the date", asyn
   await shot(page, info, "08-saju-lunar-error");
 });
 
-test("오늘의 한 장: shuffle, pick one of three; a reload shows only that card and its fortune", async ({ page }, info) => {
+test("오늘의 한 장: shuffle, pick one of three; a reload shows only that card and its fortune", { tag: "@login" }, async ({ page }, info) => {
   await ownAddress(page, info);
+  // 오늘의 한 장 needs a login (owner 2026-11-04; the visitor's way is e2e/login-gate.spec.ts).
+  await loginForOpening(page, info, `today-${info.project.name}-${Date.now()}`);
   await page.goto("/today");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("오늘의 타로 카드를 골라 볼까요?");
   await page.getByRole("button", { name: "바로 펼치기" }).click();

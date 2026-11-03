@@ -38,6 +38,15 @@ export async function ownerPass(page: Page, info: TestInfo): Promise<void> {
  */
 export async function loginForOpening(page: Page, info: TestInfo, name: string): Promise<void> {
   await ownerPass(page, info);
+  await mockLogin(page, info, name);
+}
+
+/**
+ * Logs this browser in to the mock Kakao account `name` (the 만 14세 check as /login does it), landing on 내 기록. In owner mode
+ * only an owner-pass browser may sign up: take the pass first (ownerPass). The 맛보기 and 오늘의 한 장 need a login too
+ * (owner 2026-11-04), so the specs that read them log in this way; the pass skips the day's count, never the login.
+ */
+export async function mockLogin(page: Page, info: TestInfo, name: string): Promise<void> {
   const res = await page.request.post("/api/auth/age", { data: { ageConfirmed: true, returnTo: "/story" }, headers: { origin: new URL(info.project.use.baseURL!).origin } });
   if (!res.ok()) throw new Error(`age check refused: ${res.status()}`);
   const { url } = (await res.json()) as { url: string };

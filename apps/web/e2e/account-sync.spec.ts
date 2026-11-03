@@ -57,8 +57,29 @@ async function settleAnimations(page: Page) {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity));
 }
 
-/** 나 · 재물운 · 이번 주 → one situation chip → three cards → 오픈 기념 무료 (logged in), or `owner`: 운영자로 무료 열기 → the record. */
+/**
+ * `owner`: a reading opened with the owner pass and kept on this device only, as the result screen keeps it. From 2026-11-04
+ * a visitor's result screen asks for a login where the 맛보기 would be (no sheet), so the owner pass opens it through the
+ * API, as the screen's 운영자로 무료 열기 did, and the record goes where the screen puts it.
+ */
+async function ownerReadingOnDevice(page: Page): Promise<string> {
+  const draw = await (await page.request.post("/api/tarot/draw", { data: { templateId: "self-flow", picks: [3, 30, 60] } })).json();
+  const input = { topicId: "money", whoId: "me", whenId: "week", question: "이번 주 내 재물 흐름은 어떨까?", conditions: [{ label: "지금 상황", value: "지금은 수입이 없음" }], note: "" };
+  const opened = await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input, unlock: { method: "owner" } } });
+  expect(opened.ok()).toBe(true);
+  const res = await opened.json();
+  const chapter = {
+    id: `own${Date.now().toString(36)}`, kind: "tarot", createdAt: Date.now(), chapterToken: res.chapterToken, turns: [], followUpsLeft: 3,
+    question: input.question, conditions: input.conditions, note: "", cards: draw.cards, reading: res.reading,
+  };
+  await page.goto("/story");
+  await page.evaluate((value) => window.localStorage.setItem("starlog.chapters", value), JSON.stringify({ v: 1, chapters: [chapter] }));
+  return input.question;
+}
+
+/** 나 · 재물운 · 이번 주 → one situation chip → three cards → 오픈 기념 무료 (logged in), or `owner`: the owner pass's reading → the record. */
 async function openFree(page: Page, { owner = false } = {}) {
+  if (owner) return ownerReadingOnDevice(page);
   await page.goto("/tarot/new");
   await page.getByRole("button", { name: "나", exact: true }).click();
   await page.getByRole("button", { name: "재물운" }).click();

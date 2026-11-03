@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
-import { fakeBrowserClock, ownerPass } from "./opening";
+import { fakeBrowserClock, mockLogin, ownerPass } from "./opening";
 
 /**
  * PDF로 저장 (owner 2026-10-21): a finished reading prints through the browser (window.print) with a print
@@ -54,6 +54,8 @@ async function sajuChapter(page: Page, info: TestInfo, id: string) {
   await page.context().clearCookies();
   await ownAddress(page);
   await ownerPass(page, info);
+  // The 맛보기 needs a login (owner 2026-11-04).
+  await mockLogin(page, info, `pdf-saju-${info.project.name}-${Date.now()}`);
   const teaser = await (await page.request.post("/api/saju/teaser", { data: { birth: BIRTH } })).json();
   const res = await (await page.request.post("/api/saju/reading", { data: { birth: BIRTH, unlock: { method: "owner" } } })).json();
   await page.context().clearCookies();
@@ -140,7 +142,7 @@ test("PDF로 저장 on a tarot reading: the question, the three cards, the readi
   expect(await cards.evaluateAll((imgs) => imgs.filter((img) => (img as HTMLImageElement).complete && (img as HTMLImageElement).naturalWidth > 0).length)).toBeGreaterThanOrEqual(3);
 });
 
-test("PDF로 저장 on a saju reading: the chart and the sections print", async ({ page }, info) => {
+test("PDF로 저장 on a saju reading: the chart and the sections print", { tag: "@login" }, async ({ page }, info) => {
   const { chapter, heading } = await sajuChapter(page, info, "pdfsaju01");
   await seed(page, chapter);
   await page.goto("/chapter/pdfsaju01");

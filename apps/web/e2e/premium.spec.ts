@@ -1,6 +1,6 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { pickCard, tableCards } from "./cards";
-import { fakeBrowserClock, ownerPass } from "./opening";
+import { fakeBrowserClock, mockLogin, ownerPass } from "./opening";
 
 /**
  * Premium readings (stage 4, plan Task 26) against a server whose STARLOG_PREMIUM this run is told in E2E_PREMIUM:
@@ -87,10 +87,12 @@ if (MODE !== "on") {
 }
 
 if (MODE !== "off") {
-  test.describe("premium with the owner pass", () => {
+  test.describe("premium with the owner pass", { tag: "@login" }, () => {
     test.beforeEach(async ({ page }, info) => {
       await ownAddress(page, info);
       await ownerPass(page, info);
+      // The previews need a login (owner 2026-11-04): the pass skips the day's count, never the login.
+      await mockLogin(page, info, `premium-${info.project.name}-${Date.now()}`);
       expect(await visibleHere(page)).toBe(true);
     });
 
