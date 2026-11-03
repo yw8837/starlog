@@ -3,12 +3,14 @@
 import { getCard, type Orientation } from "@starlog/core";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { LoginFirst } from "@/components/reading/LoginFirst";
 import { Paper } from "@/components/tarot/Paper";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
+import { loginHref } from "@/lib/account/client";
 import { commitQuota, getJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { BOT_CHECK_LINE, progressPlan, timeFraction, waitLine } from "@/lib/reading/progress";
@@ -30,7 +32,18 @@ const DEAL = [0, 1, 2] as const;
 /** The screen before the pick; the server HTML holds the same lines unseen (M-06). */
 const PICK_TITLE = "오늘의 타로 카드를 골라 볼까요?";
 const PICK_LEAD = "섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 주세요";
-const PICK_NOTE = "하루 한 번 · 고른 카드는 오늘 하루 그대로예요";
+const PICK_NOTE = "하루 한 장 · 로그인하면 어느 기기에서든 같은 카드가 보여요";
+/** Where the card would turn over, for a visitor (owner 2026-11-04: 오늘의 한 장 needs a login; the shuffle and the pick do not). */
+const LOGIN_TITLE = "오늘의 한 장은 로그인하고 볼 수 있어요";
+
+/** The slot a visitor picked before logging in (`/today?pick=`), read once and taken off the address. */
+function resumedPick(): number | null {
+  const value = new URLSearchParams(window.location.search).get("pick");
+  if (value === null) return null;
+  window.history.replaceState(window.history.state, "", window.location.pathname);
+  const pick = Number(value);
+  return Number.isInteger(pick) && pick >= 0 && pick < DEAL.length ? pick : null;
+}
 /** 다시 섞기 plays one riffle (1.2s) like 지금의 한 장, so asking again stays quick; the first shuffle keeps its two. */
 const RESHUFFLE_RIFFLES = 1;
 
@@ -105,6 +118,10 @@ export function TodayView() {
   const [checkError, setCheckError] = useState<ErrorView | null>(null);
   const [limited, setLimited] = useState<Limited | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // The server answered LOGIN_REQUIRED: the visitor shuffles and picks as anyone, and the pick asks for the login.
+  const [needsLogin, setNeedsLogin] = useState(false);
+  // The slot picked before the login (?pick=), turned over as soon as the account's deal is known.
+  const resume = useRef<number | null | undefined>(undefined);
   // Which slot of the server's deal each face-down card on screen stands for (the first layout is as dealt).
   const [order, setOrder] = useState<readonly number[]>(DEAL);
   // Shuffles asked for in this visit; focus follows them to 바로 펼치기 and back to 다시 섞기.
@@ -117,11 +134,18 @@ export function TodayView() {
   // Picked earlier today (this device keeps it, or the server has it): straight to the result.
   // Otherwise the server deals three face-down cards and the shuffle plays.
   useEffect(() => {
+    if (resume.current === undefined) resume.current = resumedPick();
     if (saved === undefined || saved !== null) return;
     let live = true;
     void getJson<DailyData | DailyDeal>("/api/tarot/daily").then((result) => {
       if (!live) return;
       if (!result.ok) {
+        if (result.error.code === "LOGIN_REQUIRED") {
+          setCheckError(null);
+          setNeedsLogin(true);
+          setPhase("shuffle");
+          return;
+        }
         setCheckError(describeApiError(result.error, "daily"));
         return;
       }
@@ -131,7 +155,11 @@ export function TodayView() {
         saveDaily(result.data);
       } else if (isDailyDeal(result.data)) {
         setCheckError(null);
-        setPhase("shuffle");
+        setNeedsLogin(false);
+        const resumed = resume.current;
+        resume.current = null;
+        if (resumed !== null && resumed !== undefined) void read(resumed);
+        else setPhase("shuffle");
       } else setCheckError(describeApiError({ code: "INVALID", status: 502 }, "daily"));
     });
     return () => {
@@ -153,9 +181,15 @@ export function TodayView() {
 
   const pick = async (index: number) => {
     if (phase !== "pick" && phase !== "reading") return;
+    await read(index);
+  };
+
+  /** The picked slot turns over; a visitor's pick waits for the login instead (asked in place, below). */
+  async function read(index: number) {
     setPicked(index);
     setPhase("reading");
     setLimited(null);
+    if (needsLogin) return;
     const result = await daily.run("/api/tarot/daily", { pick: index, deck: deckPrefs().front }, DAILY_PLAN, isDailyData);
     if (!result) return;
     if (result.ok) {
@@ -164,8 +198,11 @@ export function TodayView() {
       if (result.commit) void commitQuota(result.commit);
     } else if (result.error.code === "BETA_LIMIT" && result.error.card) {
       setLimited({ card: result.error.card, view: describeApiError(result.error, "daily") });
+    } else if (result.error.code === "LOGIN_REQUIRED") {
+      // A session that ended meanwhile: the pick is kept for after the login.
+      setNeedsLogin(true);
     }
-  };
+  }
 
   // Before the pick only (the button is shown in no other phase): the cards are laid out afresh and
   // the shuffle plays again. Nothing is asked of the server and nothing is turned over.
@@ -177,13 +214,15 @@ export function TodayView() {
   };
 
   const state = daily.state;
-  const pickError = !reading && !limited && state.status === "error" ? describeApiError(state.error, "daily") : null;
+  const pickError = !reading && !limited && !needsLogin && state.status === "error" ? describeApiError(state.error, "daily") : null;
   const announce =
     phase === "pick" && !reading
       ? "마음이 가는 카드를 한 장 골라 주세요"
-      : state.status === "running"
-        ? state.progress.caption
-        : (pickError ?? checkError ?? limited?.view)?.title ?? "";
+      : needsLogin && phase === "reading"
+        ? LOGIN_TITLE
+        : state.status === "running"
+          ? state.progress.caption
+          : (pickError ?? checkError ?? limited?.view)?.title ?? "";
 
   let content;
   if (saved === undefined) {
@@ -226,7 +265,7 @@ export function TodayView() {
     content = (
       <section className={s.closed} aria-labelledby="today-title">
         <h1 id="today-title" className={s.title}>
-          {waiting ? "고른 카드를 펼치고 있어요" : PICK_TITLE}
+          {waiting ? (needsLogin ? "고른 카드는 로그인하면 펼쳐져요" : "고른 카드를 펼치고 있어요") : PICK_TITLE}
         </h1>
         <p className={s.lead}>{waiting ? " " : PICK_LEAD}</p>
         {phase === "checking" ? (
@@ -256,7 +295,14 @@ export function TodayView() {
           </ol>
         )}
         {waiting ? (
-          pickError ? (
+          needsLogin && picked !== null ? (
+            <LoginFirst
+              title={LOGIN_TITLE}
+              body="고른 카드는 그대로 기억해 둘게요. 카카오나 Google로 로그인하면 바로 펼쳐 보여 드리고, 어느 기기에서든 같은 카드가 보여요."
+              href={loginHref(`/today?pick=${picked}`)}
+              action="로그인하고 카드 펼치기"
+            />
+          ) : pickError ? (
             <ErrorPanel view={pickError} onRetry={() => picked !== null && void pick(picked)} />
           ) : (
             <DailyProgress caption={state.status === "running" ? state.progress.caption : DAILY_PLAN.opening} fraction={state.status === "running" ? state.progress.fraction : 0} />

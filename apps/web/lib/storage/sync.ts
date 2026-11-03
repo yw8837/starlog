@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { parseAccount, type AccountState, type AccountUser } from "@/lib/account/client";
 import { getJson, postJson } from "@/lib/reading/api";
 import { forgetServerIds, listChapters, mergeServerReadings, removeServerChapters, updateChapter } from "./chapters";
+import { clearDaily } from "./daily";
 import { dropMatchSeal, matchSeal } from "./matchSeals";
 import { forgetPutOff, keepOnDevice } from "./move";
 
@@ -192,6 +193,8 @@ export function forgetAccountOnDevice({ accountDeleted = false }: { accountDelet
   }
   // Account sync: the next login offers to move this device's readings again.
   forgetPutOff();
+  // 오늘의 한 장 is the account's (owner 2026-11-04): the next person on this device must not find it.
+  clearDaily();
   // A logout keeps a 궁합's seal for this device's follow-ups; the account's deletion keeps nothing (review 2026-10-17 #5).
   return removeServerChapters({ keepSeals: !accountDeleted });
 }

@@ -170,6 +170,8 @@ describe("SajuChartView after a paid opening was cut off", () => {
 /** A guest while sales are closed here: the saju sheet offers no free reading (오픈 기념 무료 is tarot only). */
 const OPENING_ME = () => Response.json({ payments: false, login: false, owner: false, user: null });
 const OWNER_ME = () => Response.json({ payments: false, login: false, owner: true, user: null });
+/** A logged-in account while sales are closed: a new 맛보기 needs a login (owner 2026-11-04). */
+const MEMBER_ME = () => Response.json({ payments: false, login: true, owner: false, user: user() });
 const teaserFor = (topic: SajuTopicId, title: string) => ({
   title, summary: `${title} 요약`, lockedToc: topicLockedToc(topic), topic, freshUntil: new Date(Date.now() + 86_400_000).toISOString(),
 });
@@ -268,7 +270,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     seed();
     seedTopic("career", "곧은 나무");
     const sent: Body[] = [];
-    stub({ me: [OPENING_ME], teaser: (body) => (sent.push(body), Response.json(teaserFor("love", "봄의 촛불"))) });
+    stub({ me: [MEMBER_ME], teaser: (body) => (sent.push(body), Response.json(teaserFor("love", "봄의 촛불"))) });
     render(<SajuChartView />);
     await screen.findByText("첫 장");
     tap("직장운");
@@ -288,7 +290,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
   it("says the day's teasers are used up in place, and a 운 already seen still shows", async () => {
     seed();
     seedTopic("money", "흙 속의 쇠");
-    stub({ me: [OPENING_ME], teaser: () => Response.json({ code: "BETA_LIMIT", message: "x" }, { status: 429 }) });
+    stub({ me: [MEMBER_ME], teaser: () => Response.json({ code: "BETA_LIMIT", message: "x" }, { status: 429 }) });
     render(<SajuChartView />);
     await screen.findByText("첫 장");
     tap("재회운");
@@ -516,7 +518,8 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     const sent: Body[] = [];
     let answerAccount = () => {};
     const slowAccount = new Promise<Response>((resolve) => {
-      answerAccount = () => resolve(Response.json({ payments: false, login: false, owner: true, user: null }));
+      // The owner pass skips the counts, not the login (owner 2026-11-04).
+      answerAccount = () => resolve(Response.json({ payments: false, login: true, owner: true, user: user() }));
     });
     stub({ me: [() => slowAccount], teaser: (body) => (sent.push(body), Response.json(teaserFor("money", "재물 제목"))) });
     render(<SajuChartView initialTopic="money" />);
@@ -579,5 +582,44 @@ describe("SajuChartView 공유하기 (owner 2026-10-23: \"무료풀이에서도 
     });
     expect(posted).toEqual([{ share: "sealed.saju.share" }]);
     expect(sheet.textContent).toContain("/s/sajushare001");
+  });
+});
+
+describe("SajuChartView for a visitor (owner 2026-11-04: the 맛보기 needs a login, the 명식 does not)", () => {
+  it("shows the free 명식 and asks a visitor to log in where the 맛보기 would show, without asking for one", async () => {
+    saveSajuProfile(BIRTH);
+    const teaser = vi.fn(() => Response.json({}));
+    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })], teaser });
+    render(<SajuChartView />);
+    const panel = await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(panel.textContent).toContain("명식과 입력한 정보는 그대로 있어요");
+    expect(within(panel).getByRole("link", { name: "로그인하고 맛보기 보기" }).getAttribute("href")).toBe("/login?next=%2Fsaju%2Fchart");
+    expect(screen.getByRole("heading", { level: 1, name: "나의 명식" })).toBeTruthy();
+    expect(teaser).not.toHaveBeenCalled();
+  });
+
+  it("comes back to the 운 on screen after the login (?topic= rides along), and writes its 맛보기 from the same birth data", async () => {
+    saveSajuProfile(BIRTH);
+    const sent: Body[] = [];
+    stub({
+      me: [() => Response.json(meBody())],
+      teaser: (body) => {
+        sent.push(body);
+        return Response.json({ title: "물의 사람", summary: "맛보기 요약", lockedToc: ["성향", "올해"], freshUntil: "2027-01-01" });
+      },
+    });
+    render(<SajuChartView initialTopic="money" loginFlag="ok" />);
+    await screen.findByText("맛보기 요약");
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ birth: BIRTH, topic: "money" });
+  });
+
+  it("puts the login link of a 운 back to that 운, and shows the login's own note", async () => {
+    saveSajuProfile(BIRTH);
+    stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })] });
+    render(<SajuChartView initialTopic="money" loginFlag="cancel" />);
+    const panel = await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(within(panel).getByRole("link", { name: "로그인하고 맛보기 보기" }).getAttribute("href")).toBe("/login?next=%2Fsaju%2Fchart%3Ftopic%3Dmoney");
+    expect(panel.textContent).toContain("로그인을 취소했어요");
   });
 });

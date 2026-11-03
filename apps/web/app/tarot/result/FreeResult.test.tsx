@@ -572,3 +572,74 @@ describe("FreeResult and the 감질맛 teaser (owner 2026-10-14)", () => {
     expect(screen.getAllByRole("article")).toHaveLength(1);
   });
 });
+
+describe("FreeResult for a visitor (owner 2026-11-04: the 맛보기 needs a login)", () => {
+  /** The question and the dealt cards as the draw left them, with no teaser kept: the reading step comes next. */
+  function dealtOnly(): string {
+    const base: FlowState = { who: "me", topicId: "money", when: "week", conditions: {}, note: "" };
+    const summary = summarizeFlow(base)!;
+    saveFlow({ ...base, draw: { templateId: summary.template, drawToken: "signed.draw.token", cards: CARDS } });
+    return summary.question;
+  }
+
+  it("asks a visitor to log in where the reading would show: the question and the cards stay, nothing is generated", async () => {
+    const question = dealtOnly();
+    const fetched: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      fetched.push(url);
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    const panel = await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(panel.textContent).toContain("고른 카드와 질문은 그대로 있어요");
+    expect(within(panel).getByRole("link", { name: "로그인하고 맛보기 보기" }).getAttribute("href")).toBe("/login?next=%2Ftarot%2Fresult%3Finstant%3D1");
+    expect(screen.getByRole("heading", { level: 1, name: question })).toBeTruthy();
+    expect(screen.getByText("은둔자")).toBeTruthy();
+    expect(fetched).not.toContain("/api/tarot/teaser");
+  });
+
+  it("after the login, reads the very same cards: the teaser is asked for with the draw the visitor dealt", async () => {
+    dealtOnly();
+    const sent: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/me") return Response.json(meBody());
+      if (url === "/api/tarot/teaser") {
+        sent.push(JSON.parse(String(init?.body)));
+        return Response.json({ firstCard: { heading: "지금의 나 · 은둔자", body: "첫 카드 풀이" }, lockedToc: ["흐름", "조언"], cards: CARDS.map((card) => ({ position: card.position, cardId: card.cardId, keyword: "열쇠" })) });
+      }
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant loginFlag="ok" />);
+    await screen.findByText("첫 카드 풀이");
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ drawToken: "signed.draw.token", input: { topicId: "money" } });
+    expect(screen.queryByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" })).toBeNull();
+  });
+
+  it("shows the login panel when the server says LOGIN_REQUIRED (a session that ended), and the login's own note", async () => {
+    dealtOnly();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json(meBody());
+      if (url === "/api/tarot/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "맛보기 풀이는 로그인하고 볼 수 있어요." }, { status: 401 });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant loginFlag="cancel" />);
+    const panel = await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(panel.textContent).toContain("로그인을 취소했어요");
+  });
+
+  it("says plainly when the cards outlived their token during the login, and keeps the question for a new draw", async () => {
+    dealtOnly();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json(meBody());
+      if (url === "/api/tarot/teaser") return Response.json({ code: "BAD_TOKEN", message: "카드 정보가 만료됐거나 맞지 않아요." }, { status: 400 });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    const title = await screen.findByRole("heading", { name: "카드 정보가 오래됐어요" });
+    expect(title.parentElement!.textContent).toContain("질문은 그대로 있어요. 카드를 다시 뽑아 주세요.");
+    expect(screen.getByRole("link", { name: "카드 다시 뽑기" }).getAttribute("href")).toBe("/tarot/draw?instant=1");
+    expect(sessionStorage.getItem(FLOW_KEY)).toContain("\"topicId\":\"money\"");
+  });
+});

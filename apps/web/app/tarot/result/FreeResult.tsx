@@ -4,6 +4,7 @@ import { deckPrefs } from "@/lib/deck";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { LoginFirst } from "@/components/reading/LoginFirst";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
 import { Paper } from "@/components/tarot/Paper";
@@ -39,6 +40,8 @@ const RETURN_TO = "/tarot/result";
 const OPENING_RETURN_TO = `${RETURN_TO}?unlock=opening`;
 /** A teaser kept from before its share was sealed (2026-10-23) has nothing the server can share. */
 const FREE_SHARE_LATER = "이 맛보기는 지금 공유할 수 없어요. 카드를 다시 뽑으면 공유할 수 있어요.";
+/** Where the 맛보기 would show, for a visitor (owner 2026-11-04). */
+const TEASER_LOGIN_TITLE = "맛보기 풀이는 로그인하고 볼 수 있어요";
 /** A question answered with the helplines instead of a reading (lib/crisis.ts active tier) has nothing to share. */
 const CARE_SHARE_NONE = "이 질문에는 풀이를 적지 않아서 함께 보낼 내용이 없어요.";
 /** Errors after which the server may still have saved the reading (M4). */
@@ -88,11 +91,18 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: TarotTeaserData } | null>(null);
   const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("tarot", teaserKey, isTarotTeaser)) : null;
+  const account = useAccount();
+  // The 맛보기 needs a login (owner 2026-11-04): a visitor is asked here, where the reading would show, and the login comes
+  // back to this screen with the same flow (this tab's sessionStorage), so the very same draw is read. While the account is
+  // unknown nothing is asked; when /api/me failed (null) the server decides.
+  const accountKnown = account !== undefined;
+  const guest = Boolean(account && !account.user);
 
   // The free teaser, written once per draw and question (kept for this tab, so a reload shows it
   // again). Keyed by what it is written for: the draw and the input are both in the key.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
+    if (!accountKnown || guest) return;
     if (!teaserKey || !draw || !input || readTeaser("tarot", teaserKey, isTarotTeaser)) return;
     const plan = progressPlan("tarot-teaser", { positions: draw.cards.map((card) => card.position) });
     void runTeaser("/api/tarot/teaser", { drawToken: draw.drawToken, input: withHistory(input) }, plan, isTarotTeaser).then((result) => {
@@ -102,10 +112,9 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
       if (result.commit) void commitQuota(result.commit);
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser]);
+  }, [teaserKey, attempt, runTeaser, cancelTeaser, accountKnown, guest]);
 
   const openedId = draw?.chapterId && chapters?.some((chapter) => chapter.id === draw.chapterId) ? draw.chapterId : undefined;
-  const account = useAccount();
   const product = standardProduct("tarot");
   const offer = unlockOffer(account, product, remaining !== undefined && remaining > 0);
   const [method, setMethod] = useState<UnlockMethod>("opening");
@@ -275,7 +284,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   };
 
   const teaserState = teaserGen.state;
-  const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
+  const loginFirst = !teaser && (guest || (teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED"));
+  const teaserError = !teaser && !loginFirst && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
   const opening = unlockGen.state.status === "running" || unlockGen.state.status === "done";
   // One live region for the whole screen: progress, then what went wrong.
   const announce =
@@ -283,11 +293,13 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
       ? unlockGen.state.progress.caption
       : unlockError
         ? unlockError.title
-        : teaserState.status === "running"
-          ? teaserState.progress.caption
-          : teaserError
-            ? teaserError.title
-            : "";
+        : loginFirst
+          ? TEASER_LOGIN_TITLE
+          : teaserState.status === "running"
+            ? teaserState.progress.caption
+            : teaserError
+              ? teaserError.title
+              : "";
 
   let content;
   if (!draw || !summary) {
@@ -383,6 +395,14 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
                 onCheck={check === "stalled" || (check === null && offer.mode === "in-progress") ? recheck : undefined}
               />
             </>
+          ) : loginFirst ? (
+            <LoginFirst
+              title={TEASER_LOGIN_TITLE}
+              body="고른 카드와 질문은 그대로 있어요. 카카오나 Google로 로그인하면 이 카드로 바로 이어서 읽어 드려요."
+              href={loginHref(withFlags(RETURN_TO, { instant }))}
+              action="로그인하고 맛보기 보기"
+              note={loginNote}
+            />
           ) : teaserError ? (
             <ErrorPanel view={teaserError} onRetry={() => setAttempt((n) => n + 1)} redrawHref={withFlags("/tarot/draw", { instant })} editHref="/tarot/new" />
           ) : (

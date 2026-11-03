@@ -84,7 +84,7 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       if (context === "followup" && error.scope === "chapter") return { title: "이 풀이에서 물어볼 수 있는 질문을 모두 썼어요", action: null };
       if (context === "followup") return { title: "오늘 물어볼 수 있는 질문을 모두 썼어요", body: resetLine(error.resetsAt, now), action: null };
       if (context === "daily") return { title: "오늘의 운세를 더 적을 수 없어요", body: resetLine(error.resetsAt, now), action: null };
-      if (context === "teaser") return { title: "오늘 볼 수 있는 첫 장을 모두 봤어요", body: resetLine(error.resetsAt, now), action: null };
+      if (context === "teaser") return { title: "오늘 볼 수 있는 맛보기를 모두 봤어요", body: resetLine(error.resetsAt, now), action: null };
       return { title: "오늘 열 수 있는 풀이를 모두 열었어요", body: resetLine(error.resetsAt, now), action: null };
     case "RATE_LIMIT":
       return { title: "잠시 후 다시 해 주세요", body: "요청이 잠깐 몰렸어요.", action: "retry" };
@@ -113,6 +113,8 @@ export function describeApiError(error: ApiError, context: ErrorContext = "readi
       return { title: "연결이 잠시 끊겼어요", body: "횟수는 그대로예요. 다시 시도해 주세요.", action: "retry" };
     case "BAD_TOKEN":
       if (context === "followup") return { title: "이 풀이에는 더 물어볼 수 없어요", body: error.message, action: null };
+      // The 맛보기 after a login that outlasted the draw (24 h, lib/security/drawToken.ts): the question stays in the flow.
+      if (context === "teaser") return { title: "카드 정보가 오래됐어요", body: "질문은 그대로 있어요. 카드를 다시 뽑아 주세요.", action: "redraw" };
       return { title: "카드 정보가 오래됐어요", body: "카드를 다시 뽑아 주세요.", action: "redraw" };
     case "BAD_REQUEST":
       if (error.field && error.message) return { title: error.message, action: "edit" };

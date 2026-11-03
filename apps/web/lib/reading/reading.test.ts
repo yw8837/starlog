@@ -160,7 +160,9 @@ describe("error copy", () => {
   });
 
   it("says a teaser limit apart from the full-reading limit, and never mentions a count for a draw", () => {
-    expect(describeApiError(err("BETA_LIMIT"), "teaser", NOW)).toEqual({ title: "오늘 볼 수 있는 첫 장을 모두 봤어요", body: "내일 0시에 다시 열려요", action: null });
+    expect(describeApiError(err("BETA_LIMIT"), "teaser", NOW)).toEqual({ title: "오늘 볼 수 있는 맛보기를 모두 봤어요", body: "내일 0시에 다시 열려요", action: null });
+    // A login that outlasted the draw's 24 hours: the question stays for a new draw (owner 2026-11-04).
+    expect(describeApiError(err("BAD_TOKEN"), "teaser", NOW)).toEqual({ title: "카드 정보가 오래됐어요", body: "질문은 그대로 있어요. 카드를 다시 뽑아 주세요.", action: "redraw" });
     expect(describeApiError(err("NETWORK"), "tarot-draw", NOW)).toEqual({ title: "연결이 잠시 끊겼어요", body: "다시 시도해 주세요.", action: "retry" });
     expect(describeApiError(err("UPSTREAM"), "tarot-draw", NOW).body).not.toContain("횟수");
   });

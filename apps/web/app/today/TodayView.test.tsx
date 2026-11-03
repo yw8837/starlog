@@ -295,7 +295,7 @@ describe("오늘의 한 장 in the server HTML (SEO-06)", () => {
     const held = [...doc.querySelectorAll('[aria-hidden="true"]')].find((el) => el.textContent?.includes("오늘의 타로 카드를 골라 볼까요?"));
     expect(held?.textContent).toContain("오늘의 타로 카드를 골라 볼까요?");
     expect(held?.textContent).toContain("섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 주세요");
-    expect(held?.textContent).toContain("하루 한 번 · 고른 카드는 오늘 하루 그대로예요");
+    expect(held?.textContent).toContain("하루 한 장 · 로그인하면 어느 기기에서든 같은 카드가 보여요");
     // the same room the server's answer is awaited in (the shuffle's 220px)
     expect(held?.querySelector("div")).toBeTruthy();
     const file = ["apps/web/app/today/TodayView.module.css", "app/today/TodayView.module.css"].map((path) => resolve(process.cwd(), path)).find((path) => existsSync(path));
@@ -357,5 +357,41 @@ describe("sharing 오늘의 한 장 (owner 2026-10-20)", () => {
     vi.setSystemTime(Date.parse("2026-10-21T00:02:00+09:00"));
     await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: "공유 그만하기", hidden: true })));
     expect(calls.at(-1)).toEqual({ method: "DELETE", body: { day: "2026-10-20" } });
+  });
+});
+
+describe("오늘의 한 장 for a visitor (owner 2026-11-04: it needs a login, the shuffle and the pick do not)", () => {
+  const LOGIN_REQUIRED = { code: "LOGIN_REQUIRED", reason: "daily", message: "오늘의 한 장은 로그인하고 볼 수 있어요." };
+
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("lets a visitor shuffle and pick, then asks for the login where the card would turn over: nothing is generated", async () => {
+    const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => (init?.method === "POST" ? respond(READING) : respond(LOGIN_REQUIRED, 401)));
+    vi.stubGlobal("fetch", fetchMock);
+    await toThreeCards();
+    fireEvent.click(screen.getByRole("button", { name: POSITIONS[1]! }));
+    const panel = await screen.findByRole("region", { name: "오늘의 한 장은 로그인하고 볼 수 있어요" });
+    expect(panel.textContent).toContain("고른 카드는 그대로 기억해 둘게요");
+    // The slot of the deal that card stands for rides along (never a card: the account's own deal decides it).
+    expect(within(panel).getByRole("link", { name: "로그인하고 카드 펼치기" }).getAttribute("href")).toBe("/login?next=%2Ftoday%3Fpick%3D1");
+    expect(cardButtons()).toHaveLength(0);
+    expect(posts(fetchMock)).toHaveLength(0);
+  });
+
+  it("back from the login with ?pick=, turns that slot over at once: no second shuffle, no second pick", async () => {
+    window.history.replaceState(null, "", "/today?pick=2");
+    const fetchMock = server();
+    render(<TodayView />);
+    await screen.findByText(READING.summary);
+    expect(posts(fetchMock).map(postedPick)).toEqual([2]);
+    expect(window.location.search).toBe("");
+  });
+
+  it("back from the login on an account that picked today on another device, shows that card and sends no pick", async () => {
+    window.history.replaceState(null, "", "/today?pick=0");
+    const fetchMock = server({ get: READING });
+    render(<TodayView />);
+    await screen.findByText(READING.summary);
+    expect(posts(fetchMock)).toHaveLength(0);
   });
 });

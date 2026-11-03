@@ -6,6 +6,7 @@ import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { LoginFirst } from "@/components/reading/LoginFirst";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
 import { TopicRow } from "@/components/saju/TopicRow";
@@ -53,6 +54,8 @@ function sajuBody(birth: SajuForm, fields: SajuRequestFields) {
 const sameJson = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 const RETURN_TO = "/saju/chart";
+/** Where the 맛보기 would show, for a visitor (owner 2026-11-04): the 명식 stays free, the 맛보기 needs a login. */
+const TEASER_LOGIN_TITLE = "맛보기 풀이는 로그인하고 볼 수 있어요";
 /** Where a login or a payment comes back to: the 운 on screen rides along as ?topic= (never birth data). */
 const returnFor = (topic: SajuTopic) => (topic === "overall" ? RETURN_TO : `${RETURN_TO}?topic=${topic}`);
 /** Errors after which the server may still have saved the reading (M4). */
@@ -97,11 +100,17 @@ export function SajuChartView({
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: SajuTeaserData } | null>(null);
   const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("saju", teaserKey, isSajuTeaser)) : null;
+  // The 맛보기 needs a login (owner 2026-11-04): a visitor sees the 명식 and is asked here; the login comes back to the 운 on
+  // screen (?topic=) and the birth data kept on this device, so it is written from the same input. When /api/me failed
+  // (null) the server decides.
+  const accountKnown = account !== undefined;
+  const guest = Boolean(account && !account.user);
 
   // The free reading, written once per birth data and 운 (kept on this device, spec §9.3). Switching
   // the 운 re-runs this; the previous request is cancelled first (the effect's cleanup).
   const { run: runTeaser, cancel: cancelTeaser, reset: resetTeaser } = teaserGen;
   useEffect(() => {
+    if (!accountKnown || guest) return;
     if (!teaserKey || !own || !fields || readTeaser("saju", teaserKey, isSajuTeaser)) return;
     void runTeaser("/api/saju/teaser", sajuBody(form, fields), progressPlan("saju-teaser"), isSajuTeaser).then((res) => {
       if (!res?.ok) return;
@@ -110,7 +119,7 @@ export function SajuChartView({
       if (res.commit) void commitQuota(res.commit);
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser]); // form, the 운 and the chips are the key
+  }, [teaserKey, attempt, runTeaser, cancelTeaser, accountKnown, guest]); // form, the 운 and the chips are the key
 
   /**
    * 다른 운도 볼 수 있어요: the 운 on screen changes and its teaser shows in place (the device's copy first).
@@ -273,7 +282,8 @@ export function SajuChartView({
   };
 
   const teaserState = teaserGen.state;
-  const teaserError = !teaser && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
+  const loginFirst = !teaser && (guest || (teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED"));
+  const teaserError = !teaser && !loginFirst && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
   // The day's teasers are used up for a 운 not seen yet: said in place, the 운 already seen still show.
   const teaserUsedUp = topic !== "overall" && !teaser && teaserState.status === "error" && teaserState.error.code === "BETA_LIMIT";
   const announce =
@@ -281,7 +291,9 @@ export function SajuChartView({
       ? unlockGen.state.progress.caption
       : unlockError
         ? unlockError.title
-        : teaserState.status === "running"
+        : own && loginFirst
+          ? TEASER_LOGIN_TITLE
+          : teaserState.status === "running"
           ? teaserState.progress.caption
           : teaserUsedUp
             ? TEASER_LIMIT_NOTICE
@@ -384,6 +396,19 @@ export function SajuChartView({
           openedHref={opened ? `/chapter/${opened.id}` : undefined}
           checking={check !== null}
           onCheck={check === "stalled" || (check === null && offer.mode === "in-progress") ? recheck : undefined}
+        />
+      </>
+    );
+  } else if (own && loginFirst) {
+    content = (
+      <>
+        {topicRow}
+        <LoginFirst
+          title={TEASER_LOGIN_TITLE}
+          body="명식과 입력한 정보는 그대로 있어요. 카카오나 Google로 로그인하면 이 명식으로 바로 이어서 읽어 드려요."
+          href={loginHref(returnFor(topic))}
+          action="로그인하고 맛보기 보기"
+          note={loginNote}
         />
       </>
     );

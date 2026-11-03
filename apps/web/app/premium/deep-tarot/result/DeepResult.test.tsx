@@ -224,3 +224,13 @@ describe("켈틱 크로스 10장's result screen (Task 19)", () => {
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/tarot/result?instant=1"));
   });
 });
+
+describe("켈틱 크로스 10장's preview for a visitor (owner 2026-11-04: the previews need a login)", () => {
+  it("asks for the login in place of the preview, back to these very cards", async () => {
+    stub({ unused: [], teaser: [() => Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "맛보기 풀이는 로그인하고 볼 수 있어요." }, { status: 401 })] });
+    render(<DeepResult instant />);
+    const panel = await screen.findByRole("region", { name: "미리보기는 로그인하고 볼 수 있어요" });
+    expect(panel.textContent).toContain("고른 카드와 질문은 그대로 있어요");
+    expect(within(panel).getByRole("link", { name: "로그인하고 미리보기 보기" }).getAttribute("href")).toBe("/login?next=%2Fpremium%2Fdeep-tarot%2Fresult%3Finstant%3D1");
+  });
+});

@@ -7,6 +7,7 @@ import { PremiumProgress } from "@/components/premium/PremiumProgress";
 import { PremiumUnlock } from "@/components/premium/PremiumUnlock";
 import { SpreadList } from "@/components/premium/SpreadList";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { LoginFirst } from "@/components/reading/LoginFirst";
 import { SpreadChip, useFlowSpread } from "@/components/tarot/DeepSpreadGate";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
@@ -15,7 +16,7 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { useAccount } from "@/lib/account/client";
+import { loginHref, useAccount } from "@/lib/account/client";
 import { deckPrefs } from "@/lib/deck";
 import { DEEP_RESULT_PATH, deepResultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { DEEP_BUILDER_HREF } from "@/lib/freshStart";
@@ -205,6 +206,14 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
             <>
               {unlock}
             </>
+          ) : teaserError && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED" ? (
+            // The preview needs a login (owner 2026-11-04): the flow stays in this tab, so the login comes back to these cards.
+            <LoginFirst
+              title="미리보기는 로그인하고 볼 수 있어요"
+              body="고른 카드와 질문은 그대로 있어요. 카카오나 Google로 로그인하면 이 카드로 바로 이어서 보여 드려요."
+              href={loginHref(withFlags(DEEP_RESULT_PATH, { instant }))}
+              action="로그인하고 미리보기 보기"
+            />
           ) : teaserError ? (
             <ErrorPanel view={teaserError} onRetry={() => setAttempt((n) => n + 1)} redrawHref={withFlags("/tarot/draw", { instant })} editHref={DEEP_BUILDER_HREF} />
           ) : (
