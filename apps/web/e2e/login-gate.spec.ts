@@ -24,11 +24,14 @@ async function settleAnimations(page: Page) {
   await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getComputedTiming().iterations === Infinity));
 }
 
-/** The JSON bodies this page sends to `path`. */
-function bodiesTo(page: Page, path: string): Array<Record<string, unknown>> {
-  const bodies: Array<Record<string, unknown>> = [];
+/** The JSON bodies this page sends to `path`, with the status each was answered (0 until it is). */
+function bodiesTo(page: Page, path: string): Array<Record<string, unknown> & { status: number }> {
+  const bodies: Array<Record<string, unknown> & { status: number }> = [];
   page.on("request", (request) => {
-    if (request.method() === "POST" && new URL(request.url()).pathname === path) bodies.push(JSON.parse(request.postData() ?? "{}") as Record<string, unknown>);
+    if (request.method() !== "POST" || new URL(request.url()).pathname !== path) return;
+    const sent = { ...(JSON.parse(request.postData() ?? "{}") as Record<string, unknown>), status: 0 };
+    bodies.push(sent);
+    void request.response().then((response) => (sent.status = response?.status() ?? -1));
   });
   return bodies;
 }
@@ -66,21 +69,25 @@ test("tarot: a visitor draws, is asked to log in where the 맛보기 would show,
   const { drawToken, cards } = (await (await dealt).json()) as { drawToken: string; cards: Array<{ cardId: string }> };
   expect(cards).toHaveLength(3);
 
-  // The reading step: the question and the cards stay, a login is asked where the 맛보기 would be, nothing is generated.
+  // The reading step: the question and the cards stay; the server answers the 맛보기 with the login (nothing is written: its
+  // care screen would come first for words that call for it, owner 2026-10-31), and the panel stands where it would be.
   await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
   const panel = page.getByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
   await expect(panel).toBeVisible({ timeout: NAV });
   await expect(panel).toContainText("고른 카드와 질문은 그대로 있어요");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("재물");
-  expect(teasers).toEqual([]);
+  expect(teasers.length).toBeGreaterThan(0);
+  expect(teasers.every((sent) => sent.status === 401 && sent.drawToken === drawToken)).toBe(true);
+  const asVisitor = teasers.length;
 
   await panel.getByRole("link", { name: "로그인하고 맛보기 보기" }).click();
   await logIn(page, "/tarot/result?instant=1");
   await expect(page).toHaveURL(/\/tarot\/result\?instant=1&login=ok$/, { timeout: NAV });
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
-  // The same draw, not a new one: the 맛보기 was asked for once, with the token the visitor's draw got.
-  expect(teasers).toHaveLength(1);
-  expect(teasers[0]!.drawToken).toBe(drawToken);
+  // The same draw, not a new one: the 맛보기 was written once, with the token the visitor's draw got.
+  const afterLogin = teasers.slice(asVisitor);
+  expect(afterLogin.filter((sent) => sent.status === 200)).toHaveLength(1);
+  expect(afterLogin.every((sent) => sent.drawToken === drawToken)).toBe(true);
   await expect(panel).toHaveCount(0);
 });
 

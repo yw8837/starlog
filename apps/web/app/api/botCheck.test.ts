@@ -132,8 +132,10 @@ describe("bot check on the free generations", () => {
     expect(siteverify).toHaveBeenCalledTimes(4);
   });
 
-  it("guards the premium previews too (checked before the product or the body)", async () => {
-    const res = await (await member()).call(premiumTeaser, {});
+  it("guards the premium previews too (checked before the product; the body comes first for its crisis check, owner 2026-10-31)", async () => {
+    const d = await member();
+    const { data } = await d.call(draw, { templateId: "deep-tarot", picks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] });
+    const res = await d.call(premiumTeaser, { drawToken: data.drawToken, input: { ...INPUT, whenId: "month", question: "" } });
     expect({ status: res.status, data: res.data }).toEqual({ status: 403, data: REFUSED });
   });
 

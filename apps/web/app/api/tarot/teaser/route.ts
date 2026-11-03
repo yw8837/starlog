@@ -13,19 +13,22 @@ import { buildTarotFreePayload } from "@/lib/share/payload";
  * halfway (감질맛) with both cards sealed for the full reading to read on from, and the locked TOC. Never returns paid
  * text, nor the second card's hidden part as text. `share`: the free part as its share holds it, sealed (owner
  * 2026-10-23, lib/share/freeSeal.ts). Needs a login (owner 2026-11-04, lib/api/member.ts): a visitor gets 401
- * LOGIN_REQUIRED `reason: "teaser"` before anything else is asked. Spends one of the account's day teasers (counted on the
+ * LOGIN_REQUIRED `reason: "teaser"` before the browser check and before anything is generated or counted; only a body that
+ * cannot be read, or words that get the care screen (lib/crisis.ts), are answered before it. Spends one of the account's day teasers (counted on the
  * server, per account) only after a validated generation. Then a browser check when Turnstile is on (lib/api/turnstile.ts).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
   if (gate instanceof Response) return gate;
+  // The input first: words that state a thought of dying get the care screen, logged in or not (owner 2026-10-31 comes
+  // before 2026-11-04); a passive wish's reading written with care is still a reading, so it asks for the login below.
+  const parsed = await tarotContextFrom(request, gate);
+  if (parsed instanceof Response) return parsed;
   const member = await requireMember(request, gate.secret, gate.now, "teaser");
   if (member instanceof Response) return member;
   const bot = await checkBot(request, gate);
   if (bot) return bot;
-  const parsed = await tarotContextFrom(request, gate);
-  if (parsed instanceof Response) return parsed;
   const limited = (await checkServerLimits(gate, "teaser")) ?? (await checkMemberLimit(gate, member, "teaser"));
   if (limited) return limited;
 

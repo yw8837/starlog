@@ -118,6 +118,39 @@ describe("a visitor who is not logged in", () => {
     expect(await networkCount(ip, "daily")).toBe(0);
   });
 
+  it("whose words state a thought of dying gets the care screen, not the login (owner 2026-10-31 over 2026-11-04): nothing generated, nothing counted", async () => {
+    useTestDb();
+    vi.stubEnv("TURNSTILE_SITE_KEY", "site-key-1");
+    vi.stubEnv("TURNSTILE_SECRET_KEY", "secret-key-1");
+    const siteverify = vi.fn(async () => Response.json({ success: true, hostname: "localhost" }));
+    vi.stubGlobal("fetch", siteverify);
+    const generate = vi.spyOn(mockProvider, "generate");
+    const ip = nextIp();
+    const visitor = browser(ip);
+    const crisis = { ...INPUT, note: "요즘 죽고 싶다는 생각이 들어요" };
+    const tarot = await visitor.send(tarotTeaser, "/api/tarot/teaser", { body: { drawToken: await drawFor(visitor), input: crisis } });
+    expect(tarot.status).toBe(422);
+    expect(await json(tarot)).toMatchObject({ code: "REFUSED", care: true });
+    const deepToken = await drawFor(visitor, "deep-tarot", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    const deep = await visitor.send(deepTeaser, "/api/premium/tarot-deep/teaser", { body: { drawToken: deepToken, input: { ...DEEP_INPUT, note: crisis.note } } });
+    expect(deep.status).toBe(422);
+    expect(await json(deep)).toMatchObject({ code: "REFUSED", care: true });
+    expect(generate).not.toHaveBeenCalled();
+    expect(siteverify).not.toHaveBeenCalled();
+    expect(await networkCount(ip, "teaser")).toBe(0);
+  });
+
+  it("with a passive wish (a reading written with care is still a reading) is asked to log in", async () => {
+    useTestDb();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const generate = vi.spyOn(mockProvider, "generate");
+    const visitor = browser(nextIp());
+    const passive = { ...INPUT, note: "요즘 너무 지쳐서 사라지고 싶어요" };
+    const res = await visitor.send(tarotTeaser, "/api/tarot/teaser", { body: { drawToken: await drawFor(visitor), input: passive } });
+    expect({ status: res.status, body: await json(res) }).toEqual({ status: 401, body: LOGIN_TEASER });
+    expect(generate).not.toHaveBeenCalled();
+  });
+
   it("still makes questions, draws cards and is sent to log in by the opening, as before", async () => {
     useTestDb();
     const visitor = browser(nextIp());

@@ -121,14 +121,16 @@ test("a cancelled Toss window charges nothing and goes back", async ({ page }, i
 test("a browser without the owner pass is asked to log in at the reading step in owner mode, and nothing is written for it", async ({ page }, info) => {
   test.setTimeout(300_000);
   await ownAddress(page, info);
-  const teasers: string[] = [];
-  page.on("request", (r) => {
-    if (r.url().endsWith("/api/tarot/teaser")) teasers.push(r.url());
+  const answered: number[] = [];
+  page.on("response", (r) => {
+    if (r.url().endsWith("/api/tarot/teaser")) answered.push(r.status());
   });
   await toResult(page);
   await expect(loginPanel(page).getByRole("link", { name: "로그인하고 맛보기 보기" })).toBeVisible();
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toHaveCount(0);
-  expect(teasers).toEqual([]);
+  // Asked, and answered with the login: nothing was written.
+  expect(answered.length).toBeGreaterThan(0);
+  expect(answered.every((status) => status === 401)).toBe(true);
 });
 
 /** 재물운 on /saju/chart for 1992-08-03 (남성), from the form; the topics are on in dev. */

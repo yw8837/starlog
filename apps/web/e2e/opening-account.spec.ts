@@ -144,7 +144,7 @@ test("a visitor (no owner pass) is asked to log in at the reading step, and its 
   await page.setExtraHTTPHeaders({ "x-forwarded-for": `10.28.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}` });
   let generated = 0;
   page.on("request", (r) => {
-    if (/\/api\/tarot\/(reading|teaser)$/.test(new URL(r.url()).pathname)) generated += 1;
+    if (new URL(r.url()).pathname === "/api/tarot/reading") generated += 1;
   });
   await toSheet(page);
   await loginPanel(page).getByRole("link", { name: "로그인하고 맛보기 보기" }).click();

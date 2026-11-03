@@ -92,17 +92,14 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const [fresh, setFresh] = useState<{ key: string; data: TarotTeaserData } | null>(null);
   const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("tarot", teaserKey, isTarotTeaser)) : null;
   const account = useAccount();
-  // The 맛보기 needs a login (owner 2026-11-04): a visitor is asked here, where the reading would show, and the login comes
-  // back to this screen with the same flow (this tab's sessionStorage), so the very same draw is read. While the account is
-  // unknown nothing is asked; when /api/me failed (null) the server decides.
-  const accountKnown = account !== undefined;
-  const guest = Boolean(account && !account.user);
 
   // The free teaser, written once per draw and question (kept for this tab, so a reload shows it
-  // again). Keyed by what it is written for: the draw and the input are both in the key.
+  // again). Keyed by what it is written for: the draw and the input are both in the key. A visitor's request is asked too:
+  // the server answers the login (owner 2026-11-04) with nothing written, or the care screen first when the words call for
+  // it (owner 2026-10-31); the login comes back to this screen with the same flow (this tab's sessionStorage), so the very
+  // same draw is read.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
-    if (!accountKnown || guest) return;
     if (!teaserKey || !draw || !input || readTeaser("tarot", teaserKey, isTarotTeaser)) return;
     const plan = progressPlan("tarot-teaser", { positions: draw.cards.map((card) => card.position) });
     void runTeaser("/api/tarot/teaser", { drawToken: draw.drawToken, input: withHistory(input) }, plan, isTarotTeaser).then((result) => {
@@ -112,7 +109,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
       if (result.commit) void commitQuota(result.commit);
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser, accountKnown, guest]);
+  }, [teaserKey, attempt, runTeaser, cancelTeaser]);
 
   const openedId = draw?.chapterId && chapters?.some((chapter) => chapter.id === draw.chapterId) ? draw.chapterId : undefined;
   const product = standardProduct("tarot");
@@ -284,7 +281,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   };
 
   const teaserState = teaserGen.state;
-  const loginFirst = !teaser && (guest || (teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED"));
+  const loginFirst = !teaser && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED";
   const teaserError = !teaser && !loginFirst && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
   const opening = unlockGen.state.status === "running" || unlockGen.state.status === "done";
   // One live region for the whole screen: progress, then what went wrong.

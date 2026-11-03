@@ -582,12 +582,14 @@ describe("FreeResult for a visitor (owner 2026-11-04: the 맛보기 needs a logi
     return summary.question;
   }
 
-  it("asks a visitor to log in where the reading would show: the question and the cards stay, nothing is generated", async () => {
+  it("asks a visitor to log in where the reading would show, once the server says so: the question and the cards stay", async () => {
     const question = dealtOnly();
     const fetched: string[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       fetched.push(url);
       if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      // The server writes nothing for a visitor: it answers the login (lib/api/member.ts).
+      if (url === "/api/tarot/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "맛보기 풀이는 로그인하고 볼 수 있어요." }, { status: 401 });
       return Response.json({ readings: [], next: null });
     }));
     render(<FreeResult instant />);
@@ -596,7 +598,21 @@ describe("FreeResult for a visitor (owner 2026-11-04: the 맛보기 needs a logi
     expect(within(panel).getByRole("link", { name: "로그인하고 맛보기 보기" }).getAttribute("href")).toBe("/login?next=%2Ftarot%2Fresult%3Finstant%3D1");
     expect(screen.getByRole("heading", { level: 1, name: question })).toBeTruthy();
     expect(screen.getByText("은둔자")).toBeTruthy();
-    expect(fetched).not.toContain("/api/tarot/teaser");
+    expect(fetched.filter((url) => url === "/api/tarot/teaser")).toHaveLength(1);
+  });
+
+  it("gives a visitor whose words state a thought of dying the care screen, not the login (owner 2026-10-31 comes first)", async () => {
+    const base: FlowState = { who: "me", topicId: "money", when: "week", conditions: {}, note: "요즘 죽고 싶다는 생각이 들어요" };
+    const summary = summarizeFlow(base)!;
+    saveFlow({ ...base, draw: { templateId: summary.template, drawToken: "signed.draw.token", cards: CARDS } });
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      if (url === "/api/tarot/teaser") return Response.json({ code: "REFUSED", care: true, message: CARE_BODY }, { status: 422 });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    expect(await screen.findByRole("heading", { name: CARE_TITLE })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" })).toBeNull();
   });
 
   it("after the login, reads the very same cards: the teaser is asked for with the draw the visitor dealt", async () => {

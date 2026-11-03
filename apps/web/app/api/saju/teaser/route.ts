@@ -12,20 +12,21 @@ import { buildSajuFreePayload } from "@/lib/share/payload";
  * POST {birth, topic?, loveStatus?, workStatus?, history?} → the free teaser {title, summary, lockedToc,
  * freshUntil, share} (a topic adds `topic`; `share` is its title and summary as a share holds them, birth and pillars
  * hidden, sealed: lib/share/freeSeal.ts, owner 2026-10-23), written from the chart the server computes itself. Needs a
- * login (owner 2026-11-04, lib/api/member.ts): a visitor gets 401 LOGIN_REQUIRED `reason: "teaser"` before anything else is
- * asked. One of the account's day teasers whatever the topic (counted on the server, per account), spent only after a
+ * login (owner 2026-11-04, lib/api/member.ts): a visitor gets 401 LOGIN_REQUIRED `reason: "teaser"` before the browser check
+ * and before anything is generated or counted; only a body that cannot be read or the crisis check answer before it. One of the account's day teasers whatever the topic (counted on the server, per account), spent only after a
  * validated generation (saju-topics spec §9.1). Then a browser check when Turnstile is on (lib/api/turnstile.ts). Streams NDJSON progress with
  * `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
   if (gate instanceof Response) return gate;
+  // The input first, like the tarot 맛보기: its crisis check answers with the care screen whether logged in or not.
+  const parsed = await sajuRequest(request, gate);
+  if (parsed instanceof Response) return parsed;
   const member = await requireMember(request, gate.secret, gate.now, "teaser");
   if (member instanceof Response) return member;
   const bot = await checkBot(request, gate);
   if (bot) return bot;
-  const parsed = await sajuRequest(request, gate);
-  if (parsed instanceof Response) return parsed;
   const limited = (await checkServerLimits(gate, "teaser")) ?? (await checkMemberLimit(gate, member, "teaser"));
   if (limited) return limited;
 

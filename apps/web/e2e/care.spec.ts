@@ -44,10 +44,9 @@ async function drawThree(page: Page) {
 
 test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
-test("a stated thought of dying: no reading, the care screen with 109 by call or by text, the rest folded, the way back open", { tag: "@login" }, async ({ page }, info) => {
+test("a stated thought of dying: no reading, the care screen with 109 by call or by text, the rest folded, the way back open", async ({ page }, info) => {
   await ownAddress(page, info);
-  // The 맛보기 needs a login (owner 2026-11-04): the care screen answers the logged-in request.
-  await loginForOpening(page, info, `care-active-${info.project.name}-${Date.now()}`);
+  // A visitor: the care screen comes before the login the 맛보기 needs (owner 2026-10-31 over 2026-11-04).
   await questionWithNote(page, "요즘 죽고 싶다는 생각이 들어요");
   await drawThree(page);
   await expect(page.getByRole("heading", { name: "마음이 많이 무거웠군요" })).toBeVisible({ timeout: NAV });
@@ -66,6 +65,7 @@ test("a stated thought of dying: no reading, the care screen with 109 by call or
 
 test("a passive wish: the reading comes, with the helplines over it until closed", { tag: "@login" }, async ({ page }, info) => {
   await ownAddress(page, info);
+  // A reading written with care is still a reading: it needs the login (owner 2026-11-04).
   await loginForOpening(page, info, `care-passive-${info.project.name}-${Date.now()}`);
   await questionWithNote(page, "요즘 너무 지쳐서 사라지고 싶어요");
   await drawThree(page);

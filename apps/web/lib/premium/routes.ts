@@ -60,7 +60,8 @@ async function giveBackBuyerPreview(gate: Gate, userId: string, product: Premium
 /**
  * POST /api/premium/<id>/teaser: the free preview (spec §5, the 시험 사용 of 전자상거래법 17조 2항 5호).
  * Open while the product is on sale for this device, or for a user who already bought it. Needs a login (owner
- * 2026-11-04, lib/api/member.ts: 401 LOGIN_REQUIRED `reason: "teaser"` for a visitor, before anything else is asked). Counts
+ * 2026-11-04, lib/api/member.ts: 401 LOGIN_REQUIRED `reason: "teaser"` for a visitor, after the body and its crisis check, before
+ * the browser check and anything generated or counted). Counts
  * as a teaser (the account's day count on the server and the network counter), like the standard 맛보기,
  * and asks for a browser check first when Turnstile is on (lib/api/turnstile.ts). A buyer's preview
  * spends none of that and passes the free day's spent budget, like the paid reading it was bought for
@@ -73,16 +74,18 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
   return async function POST(request: Request): Promise<Response> {
     const gate = await openGate(request);
     if (gate instanceof Response) return gate;
+    // The body and its crisis check first: the care screen answers whether logged in or not (owner 2026-10-31 comes before
+    // 2026-11-04); a passive wish's preview written with care is still a preview, so it asks for the login below.
+    const parsed = adapter.teaserBody.safeParse(await readJson(request, TEASER_MAX_BYTES));
+    if (!parsed.success) return errorResponse("BAD_REQUEST");
+    const crisis = crisisCheck(`premium:${adapter.id}`, ...adapter.crisisTexts(parsed.data));
+    if (crisis.refusal) return crisis.refusal;
     const member = await requireMember(request, gate.secret, gate.now, "teaser");
     if (member instanceof Response) return member;
     const bot = await checkBot(request, gate);
     if (bot) return bot;
-    const parsed = adapter.teaserBody.safeParse(await readJson(request, TEASER_MAX_BYTES));
-    if (!parsed.success) return errorResponse("BAD_REQUEST");
     const buyer = gate.cookies[sessionCookieName()] && !paymentsUnbacked() ? await unusedBuyer(request, gate.now, adapter.id) : null;
     if (!buyer && !premiumOpen(adapter.id, gate.owner, gate.now)) return errorResponse("NOT_AVAILABLE");
-    const crisis = crisisCheck(`premium:${adapter.id}`, ...adapter.crisisTexts(parsed.data));
-    if (crisis.refusal) return crisis.refusal;
     const ctx = await adapter.context(parsed.data, gate);
     if (ctx instanceof Response) return ctx;
     if (buyer) {
