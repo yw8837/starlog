@@ -103,6 +103,14 @@ export async function openerCookies(): Promise<Map<string, string>> {
 }
 
 /**
+ * The 맛보기 and 오늘의 한 장 need a login too (owner 2026-11-04): openerCookies as one Cookie header, for route tests that
+ * build their own requests. Each call is a fresh account with its own day count.
+ */
+export async function memberCookieHeader(): Promise<string> {
+  return [...(await openerCookies())].map(([name, value]) => `${name}=${value}`).join("; ");
+}
+
+/**
  * Gives the mock Kakao account `name` the signup gift, as an account that joined before the gift was
  * removed (owner 2026-10-14 evening) holds it: logins grant none any more.
  */

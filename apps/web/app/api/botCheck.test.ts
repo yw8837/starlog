@@ -133,7 +133,7 @@ describe("bot check on the free generations", () => {
   });
 
   it("guards the premium previews too (checked before the product or the body)", async () => {
-    const res = await device().call(premiumTeaser, {});
+    const res = await (await member()).call(premiumTeaser, {});
     expect({ status: res.status, data: res.data }).toEqual({ status: 403, data: REFUSED });
   });
 

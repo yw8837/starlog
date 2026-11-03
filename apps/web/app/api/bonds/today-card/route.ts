@@ -6,17 +6,18 @@ import { keyedHash } from "@/lib/security/sign";
 
 /**
  * POST {starId} → 오늘의 인연 카드 with that friend: one card per day (KST), and its line (the model's,
- * up to 5 new ones per owner per day, else the rule-based one). Never changes a score or a rank.
+ * up to 5 new ones per owner per day, else the rule-based one; the model's only while logged in, owner 2026-11-04).
+ * Never changes a score or a rank.
  */
 export async function POST(request: Request): Promise<Response> {
   return bondsRoute(request, "today-card", async ({ secret, now, cookies, repo, who }) => {
     const { starId } = await body(request, StarBody);
-    const ownerId = (await who()).ownerId;
+    const { ownerId, userId } = await who();
     if (!ownerId) throw new BondsError("NO_OWNER");
     const card = await todayBondCard(repo, now, ownerId, starId);
     // Per-network counting, the same id the reading routes use (Gate.client).
     const client = await keyedHash(`client:${clientKey(request)}`, secret);
-    const line = await todayLine({ ownerId, starId, day: card.day, cardId: card.cardId, orientation: card.orientation, now, client });
+    const line = await todayLine({ ownerId, starId, day: card.day, cardId: card.cardId, orientation: card.orientation, now, client, ai: userId !== null });
     return ok({ card: { cardId: card.cardId, orientation: card.orientation }, day: card.day, line });
   });
 }

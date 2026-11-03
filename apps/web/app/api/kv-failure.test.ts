@@ -58,12 +58,15 @@ vi.mock("@/lib/cloudflare", async (importOriginal) => ({
 type Handler = (request: Request) => Promise<Response>;
 const MONEY_INPUT = { topicId: "money", whoId: "me", whenId: "week", question: "", conditions: [], note: "" };
 
-const request = (body: unknown, ip: string, accept?: string, cookie?: string) => new Request("http://localhost/api", {
+/** A logged-in account's session, the default for every request here: the 맛보기 and 오늘의 한 장 need a login (owner 2026-11-04). */
+let member = "";
+
+const request = (body: unknown, ip: string, accept?: string, cookie: string = member) => new Request("http://localhost/api", {
   method: "POST",
   headers: { "content-type": "application/json", "cf-connecting-ip": ip, ...(accept ? { accept } : {}), ...(cookie ? { cookie } : {}) },
   body: JSON.stringify(body),
 });
-const call = async (handler: Handler, body: unknown, ip = "198.51.100.40", cookie?: string) => {
+const call = async (handler: Handler, body: unknown, ip = "198.51.100.40", cookie: string = member) => {
   const response = await handler(request(body, ip, undefined, cookie));
   return { status: response.status, data: (await response.json()) as Record<string, any> };
 };
@@ -73,7 +76,7 @@ const drawToken = async () => (await call(draw, { templateId: "self-flow", picks
 
 let errors: ReturnType<typeof vi.spyOn>;
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("BETA_FULL_PER_DAY", "100");
@@ -92,6 +95,7 @@ beforeEach(() => {
   vi.spyOn(console, "info").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {}); // the limiter bindings are absent here
   errors = vi.spyOn(console, "error").mockImplementation(() => {});
+  member = await memberCookie();
 });
 
 afterEach(() => {
@@ -155,7 +159,7 @@ describe("DAILY_KV failures", () => {
     const cookie = login.headers.getSetCookie()[0]!.split(";")[0]!;
     kv.state.mode = "down";
     const asOwner = (handler: Handler, body: unknown) => handler(new Request("http://localhost/api", {
-      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.44", cookie }, body: JSON.stringify(body),
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.51.100.44", cookie: `${cookie}; ${member}` }, body: JSON.stringify(body),
     }));
     expect((await asOwner(daily, {})).status).toBe(200);
     // Nor a teaser, a reading or its follow-up: the owner pass is never closed by a total that cannot be read.

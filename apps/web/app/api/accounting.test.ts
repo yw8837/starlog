@@ -118,7 +118,7 @@ describe("server-side day counters (per client network, whatever the cookies say
     const ip = "198.51.100.10";
     const statuses: number[] = [];
     for (let i = 0; i < 3; i++) {
-      const d = device(ip); // a fresh device each time: no cookie carries over
+      const d = await member(ip); // a fresh device each time: no cookie carries over
       const drawToken = await drawFor(d);
       const res = await d.stream(teaser, { drawToken, input: MONEY_INPUT });
       statuses.push(res.status === 200 && res.events.at(-1)!.type === "done" ? 200 : (res.events[0]!.code === "BETA_LIMIT" ? 429 : res.status));
@@ -145,7 +145,7 @@ describe("server-side day counters (per client network, whatever the cookies say
 
   it("charges a failed generation too: it was started and billed (the device cookie still is not spent)", async () => {
     vi.stubEnv("BETA_IP_TEASER_PER_DAY", "2");
-    const d = device("198.51.100.12");
+    const d = await member("198.51.100.12");
     const drawToken = await drawFor(d);
     vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(502);
@@ -165,12 +165,12 @@ describe("server-side day counters (per client network, whatever the cookies say
       });
     }));
     const ip = "198.51.100.15";
-    const d = device(ip);
+    const d = await member(ip);
     const drawToken = await drawFor(d);
     const client = new AbortController();
     const response = await teaser(new Request("http://localhost/api", {
       method: "POST", signal: client.signal,
-      headers: { "content-type": "application/json", "cf-connecting-ip": ip, accept: "application/x-ndjson" },
+      headers: { "content-type": "application/json", "cf-connecting-ip": ip, accept: "application/x-ndjson", cookie: [...d.jar].map(([k, v]) => `${k}=${v}`).join("; ") },
       body: JSON.stringify({ drawToken, input: MONEY_INPUT }),
     }));
     const reader = response.body!.getReader();
@@ -185,19 +185,19 @@ describe("server-side day counters (per client network, whatever the cookies say
 
   it("shares one counter across an IPv6 /64", async () => {
     vi.stubEnv("BETA_IP_TEASER_PER_DAY", "1");
-    const first = device("2001:db8:1:2::a", { cookieless: true });
+    const first = await member("2001:db8:1:2::a", { cookieless: true });
     const drawToken = await drawFor(first);
     expect((await first.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
-    const sameNet = device("2001:0db8:0001:0002:ffff:1:2:3", { cookieless: true });
+    const sameNet = await member("2001:0db8:0001:0002:ffff:1:2:3", { cookieless: true });
     expect((await sameNet.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(429);
-    const otherNet = device("2001:db8:1:3::a", { cookieless: true });
+    const otherNet = await member("2001:db8:1:3::a", { cookieless: true });
     expect((await otherNet.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
   });
 
   it("counts the daily card's generations per network", async () => {
     vi.stubEnv("BETA_IP_DAILY_PER_DAY", "1");
-    expect((await device("198.51.100.13").call(daily, {})).status).toBe(200);
-    const next = await device("198.51.100.13").call(daily, {});
+    expect((await (await member("198.51.100.13")).call(daily, {})).status).toBe(200);
+    const next = await (await member("198.51.100.13")).call(daily, {});
     expect(next.status).toBe(429);
     expect(next.data.card).toBeDefined();
     expect(next.headers.getSetCookie().filter((c) => c.startsWith("sl_daily=")).length).toBe(1);
@@ -206,7 +206,7 @@ describe("server-side day counters (per client network, whatever the cookies say
   it("accounts a picked daily card once: one network charge and its cost, nothing for the stored repeat", async () => {
     billing();
     const ip = "198.51.100.16";
-    const d = device(ip);
+    const d = await member(ip);
     expect((await d.call(daily, { pick: 2 })).status).toBe(200);
     expect((await d.call(daily, { pick: 0 })).data.pick).toBe(2);
     expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "daily", Date.now())).toBe(1);
@@ -215,7 +215,7 @@ describe("server-side day counters (per client network, whatever the cookies say
 
   it("leaves the owner out of the network counters", async () => {
     vi.stubEnv("BETA_IP_TEASER_PER_DAY", "1");
-    const boss = device("198.51.100.14");
+    const boss = await member("198.51.100.14");
     expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
     const drawToken = await drawFor(boss);
     for (let i = 0; i < 3; i++) expect((await boss.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
@@ -229,7 +229,7 @@ describe("global daily spend cap", () => {
     expect(BUDGET_TRIP).toBe(0.8);
     expect(BUDGET_CEILING).toBe(2);
     billing();
-    const d = device("198.51.100.20");
+    const d = await member("198.51.100.20");
     const drawToken = await drawFor(d);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     expect(await spent()).toBe(2800);
@@ -249,7 +249,7 @@ describe("global daily spend cap", () => {
     expect((await d.call(sajuTeaser, { birth: DEFAULT_SAJU_FORM })).status).toBe(503);
 
     // The owner pass: a teaser, a reading and its follow-up, past the ceiling.
-    const boss = device("198.51.100.21");
+    const boss = await member("198.51.100.21");
     await boss.call(owner, { code: "owner-code-for-tests-0001" });
     const bossDraw = await drawFor(boss);
     expect((await boss.call(teaser, { drawToken: bossDraw, input: MONEY_INPUT })).status).toBe(200);
@@ -262,7 +262,7 @@ describe("global daily spend cap", () => {
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "14000"); // 2,800 per network
     billing();
     const ip = "198.51.100.28";
-    const d = device(ip);
+    const d = await member(ip);
     const drawToken = await drawFor(d);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     expect(await networkCostKrw(await keyedHash(`client:${ip}`, SECRET), Date.now())).toBe(2800);
@@ -270,12 +270,12 @@ describe("global daily spend cap", () => {
     expect(capped.status).toBe(429);
     expect(capped.data).toMatchObject({ code: "BETA_LIMIT", scope: "network" });
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
-    expect((await device(ip, { cookieless: true }).call(daily, {})).status).toBe(200);
+    expect((await (await member(ip, { cookieless: true })).call(daily, {})).status).toBe(200);
     expect(await clientCount(await keyedHash(`client:${ip}`, SECRET), "teaser", Date.now())).toBe(2);
 
     const other = await member("198.51.100.29");
     expect((await other.call(reading, { drawToken: await drawFor(other), input: MONEY_INPUT })).status).toBe(200);
-    const boss = device(ip);
+    const boss = await member(ip);
     expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
     expect((await boss.call(reading, { drawToken: await drawFor(boss), input: MONEY_INPUT, unlock: { method: "owner" } })).status).toBe(200);
   });
@@ -288,7 +288,7 @@ describe("global daily spend cap", () => {
       const result = await real(task, attempt, feedback, hooks);
       return { ...result, data: { ...(result.data as object), firstCard: { heading: "h", body: "짧아요" } } as never };
     });
-    const d = device("198.51.100.22");
+    const d = await member("198.51.100.22");
     const drawToken = await drawFor(d);
     const res = await d.stream(teaser, { drawToken, input: MONEY_INPUT });
     expect(res.events.at(-1)).toMatchObject({ type: "error", body: { code: "QUALITY" } });
@@ -303,7 +303,7 @@ describe("global daily spend cap", () => {
       hooks?.onUsage?.(HALF);
       return result;
     });
-    const d = device("198.51.100.25");
+    const d = await member("198.51.100.25");
     const drawToken = await drawFor(d);
     expect((await d.call(teaser, { drawToken, input: MONEY_INPUT })).status).toBe(200);
     expect(await spent()).toBe(1400);
@@ -383,11 +383,11 @@ describe("global daily spend cap", () => {
   });
 
   it("serves a stored daily fortune over budget, but generates no new one", async () => {
-    const d = device("198.51.100.23");
+    const d = await member("198.51.100.23");
     expect((await d.call(daily, {})).status).toBe(200);
     vi.stubEnv("BETA_DAILY_BUDGET_KRW", "0");
     expect((await d.call(daily, {})).status).toBe(200);
-    expect((await device("198.51.100.24").call(daily, {})).status).toBe(503);
+    expect((await (await member("198.51.100.24")).call(daily, {})).status).toBe(503);
   });
 });
 

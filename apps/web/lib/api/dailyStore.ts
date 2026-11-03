@@ -3,9 +3,9 @@ import type { DailyReading, DailyResult } from "@/lib/ai/schemas";
 import { cloudflareEnv, warnMissingBinding, type KvBinding } from "@/lib/cloudflare";
 
 /**
- * 오늘의 한 장 is generated once per device and KST day and then served as stored, so every visit
- * that day returns identical JSON. Durable store: Workers KV (`DAILY_KV`, key
- * `daily:<deviceId>:<kstDay>`, 36 h TTL). Without the binding (tests, `next dev`) an in-memory
+ * 오늘의 한 장 is generated once per account and KST day and then served as stored, so every visit
+ * that day, on any device of the account, returns identical JSON. Durable store: Workers KV (`DAILY_KV`, key
+ * `daily:<id>:<kstDay>`, the id being the account's member key (lib/api/member.ts), 36 h TTL). Without the binding (tests, `next dev`) an in-memory
  * map stands in. Concurrent misses are deduplicated per isolate (shared promise) and, best effort,
  * across isolates by a short KV "pending" marker that makes the second request wait for the first.
  */

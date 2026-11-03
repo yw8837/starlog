@@ -99,9 +99,9 @@ afterEach(() => {
 
 describe("NDJSON streaming", () => {
   it("streams start → sections → done, and done carries exactly the JSON body", async () => {
-    const d = device();
+    const d = await member();
     const { drawToken } = await drawSelfFlow(d);
-    const plain = await device("203.0.113.21").call(teaser, { drawToken, input: MONEY_INPUT });
+    const plain = await (await member("203.0.113.21")).call(teaser, { drawToken, input: MONEY_INPUT });
     const { response, events } = await d.stream(teaser, { drawToken, input: MONEY_INPUT });
     expect(response.headers.get("content-type")).toBe("application/x-ndjson; charset=utf-8");
     expect(events[0]).toEqual({ type: "start" });
@@ -137,7 +137,7 @@ describe("NDJSON streaming", () => {
       const result = await real(task, attempt, feedback, hooks);
       return { ...result, data: { ...(result.data as object), summary: "짧아요" } as never };
     });
-    const { events } = await device("203.0.113.23").stream(sajuTeaser, { birth: DEFAULT_SAJU_FORM });
+    const { events } = await (await member("203.0.113.23")).stream(sajuTeaser, { birth: DEFAULT_SAJU_FORM });
     expect(events.map((e) => (e.type === "section" ? `section:${e.key}` : e.type))).toEqual([
       "start", "section:title", "section:summary", "retry", "section:title", "section:summary", "done",
     ]);
@@ -159,7 +159,7 @@ describe("NDJSON streaming", () => {
 
   it("reports a failure after the stream started as an error event with the JSON status and body", async () => {
     vi.spyOn(mockProvider, "generate").mockRejectedValue(new GenerationError("REFUSED"));
-    const d = device("203.0.113.24");
+    const d = await member("203.0.113.24");
     const { drawToken } = await drawSelfFlow(d);
     const { response, events } = await d.stream(teaser, { drawToken, input: MONEY_INPUT });
     expect(response.status).toBe(200);
@@ -169,7 +169,7 @@ describe("NDJSON streaming", () => {
   });
 
   it("answers input errors before streaming as plain JSON", async () => {
-    const d = device("203.0.113.25");
+    const d = await member("203.0.113.25");
     const response = await teaser(d.request({ drawToken: "nope", input: MONEY_INPUT }, { accept: "application/x-ndjson" }));
     expect(response.status).toBe(400);
     expect(response.headers.get("content-type")).toContain("application/json");
@@ -204,7 +204,7 @@ describe("NDJSON streaming", () => {
         reject(new GenerationError("UPSTREAM", ["aborted"]));
       });
     }));
-    const d = device("203.0.113.27");
+    const d = await member("203.0.113.27");
     const { drawToken } = await drawSelfFlow(d);
     const response = await teaser(d.request({ drawToken, input: MONEY_INPUT }, { accept: "application/x-ndjson" }));
     const reader = response.body!.getReader();
@@ -214,7 +214,7 @@ describe("NDJSON streaming", () => {
   });
 
   it("sets the daily device cookie on the stream and commits only the generation count", async () => {
-    const d = device("203.0.113.28");
+    const d = await member("203.0.113.28");
     const first = await d.stream(daily, {});
     expect(d.jar.has("sl_daily")).toBe(true);
     const done = first.events.at(-1)!;

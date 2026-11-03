@@ -87,14 +87,16 @@ async function safely<T>(work: () => Promise<T>, fallback: T): Promise<T> {
 
 /**
  * `client`, when the route has it, is the caller's network id (Gate.client); without it the owner id
- * stands in for the per-minute limiter and the day count.
+ * stands in for the per-minute limiter and the day count. `ai: false` (an owner on a device that belongs to no account,
+ * not logged in): the rule-based line, since a line the model writes needs a login (owner 2026-11-04).
  */
-export async function todayLine(args: { ownerId: string; starId: string; day: string; cardId: string; orientation: Orientation; now: number; client?: string }): Promise<string> {
+export async function todayLine(args: { ownerId: string; starId: string; day: string; cardId: string; orientation: Orientation; now: number; client?: string; ai?: boolean }): Promise<string> {
   const { ownerId, starId, day, cardId, orientation, now } = args;
   const rule = todayCardLine(cardId, orientation);
   const store = dailyStore();
   const stored = (await safely(() => store.get(lineKey(ownerId, starId, day)), null)) as Stored | null;
   if (stored && typeof stored.line === "string") return stored.line;
+  if (args.ai === false) return rule;
 
   const provider = selectProvider();
   const used = Number(await safely(() => store.get(countKey(ownerId, day)), 0)) || 0;

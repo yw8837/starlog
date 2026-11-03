@@ -4,7 +4,7 @@ import { setTestDb } from "@/lib/db";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { findShare } from "@/lib/share/store";
-import { browser, loginAs, useTestDb } from "@/lib/testing/p4";
+import { browser, loginAs, openerCookies, useTestDb } from "@/lib/testing/p4";
 import { deleteAccount } from "@/lib/account/deletion";
 import { signingSecret } from "@/lib/security/sign";
 import { sealFreeShare } from "@/lib/share/freeSeal";
@@ -17,8 +17,8 @@ import { DELETE, POST } from "./route";
 /** 무료 첫 풀이 공유 (owner 2026-10-23): what the free screen shows, sealed by its teaser route, never the paid part. */
 
 type Handler = (request: Request) => Promise<Response>;
-function device(ip = "203.0.113.70") {
-  const jar = new Map<string, string>();
+function device(ip = "203.0.113.70", cookies: Map<string, string> = new Map()) {
+  const jar = new Map<string, string>(cookies);
   return async (handler: Handler, body: unknown, method = "POST") => {
     const res = await handler(
       new Request("http://localhost/api", {
@@ -36,6 +36,9 @@ function device(ip = "203.0.113.70") {
   };
 }
 
+/** A device logged in to an account of its own: the 맛보기 need a login (owner 2026-11-04). */
+const member = async (ip?: string) => device(ip, await openerCookies());
+
 const INPUT = {
   topicId: "money", whoId: "me", whenId: "week",
   question: "이번 주, 나의 재물 흐름은 어떨까",
@@ -46,6 +49,8 @@ const INPUT = {
 beforeEach(() => {
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
   resetMemoryLimiter();
   resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
@@ -59,7 +64,7 @@ afterEach(() => {
 describe("POST /api/share/free", () => {
   it("the free first tarot reading: the cards, the first paragraph and the second up to its cut, never the hidden part, the question or the note", async () => {
     const db = useTestDb();
-    const call = device();
+    const call = await member();
     const drawn = await call(draw, { templateId: "self-flow", picks: [3, 30, 60] });
     const t = await call(teaser, { drawToken: drawn.data.drawToken, input: INPUT });
     expect(t.status).toBe(200);
@@ -85,7 +90,7 @@ describe("POST /api/share/free", () => {
 
   it("the free saju 맛보기: its title and summary, without the birth", async () => {
     const db = useTestDb();
-    const call = device("203.0.113.71");
+    const call = await member("203.0.113.71");
     const t = await call(sajuTeaser, { birth: DEFAULT_SAJU_FORM });
     expect(t.status).toBe(200);
     const res = await call(POST, { share: t.data.share });

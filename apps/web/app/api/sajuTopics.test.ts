@@ -5,6 +5,8 @@ import { SAJU_TOPIC_SYSTEM } from "@/lib/ai/prompts/sajuTopicPrompts";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { SajuBody } from "@/lib/api/inputs";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { setTestDb } from "@/lib/db";
+import { openerCookies, useTestDb } from "@/lib/testing/p4";
 import { SAJU_TOPICS, TOPIC_SECTIONS, topicLockedToc } from "@/lib/sajuTopics";
 import { POST as owner } from "./owner/route";
 import { POST as followup } from "./followup/route";
@@ -37,10 +39,15 @@ function device(ip: string) {
 const C3 = golden.charts.find((c) => c.id === "C3")!.birth;
 const T0 = Date.parse("2026-10-02T03:00:00Z"); // 12:00 KST
 let ipSeq = 0;
-const fresh = () => device(`203.0.113.${100 + ++ipSeq}`);
+/** A fresh device logged in to an account of its own: the 맛보기 need a login (owner 2026-11-04). */
+const fresh = async () => {
+  const d = device(`203.0.113.${100 + ++ipSeq}`);
+  for (const [name, value] of await openerCookies()) d.jar.set(name, value);
+  return d;
+};
 /** A saju full reading opens with a payment or the owner pass only (no free opening): a fresh device holding the pass. */
 async function ownerDevice() {
-  const d = fresh();
+  const d = await fresh();
   expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
   return d;
 }
@@ -52,12 +59,16 @@ beforeEach(() => {
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
+  useTestDb();
   resetMemoryLimiter();
   resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
 afterEach(() => {
+  setTestDb(null);
   vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -86,14 +97,14 @@ describe("SajuBody (owner cut: a topic and no chip)", () => {
 
 describe("/api/saju/teaser with a topic", () => {
   it("writes the topic's teaser with its seven headings and when it goes stale", async () => {
-    const res = await fresh().call(sajuTeaser, { birth: C3, topic: "money" });
+    const res = await (await fresh()).call(sajuTeaser, { birth: C3, topic: "money" });
     expect(res.status).toBe(200);
     expect(res.data).toMatchObject({ topic: "money", lockedToc: topicLockedToc("money"), freshUntil: "2026-11-01T03:00:00.000Z" });
     expect(typeof res.data.title).toBe("string");
   });
 
   it("still writes 전체 흐름 for an older client, now with freshUntil and without a topic", async () => {
-    const res = await fresh().call(sajuTeaser, { birth: C3 });
+    const res = await (await fresh()).call(sajuTeaser, { birth: C3 });
     expect(res.status).toBe(200);
     expect(res.data.lockedToc).toHaveLength(11); // 한눈에 보기, nine sections (이름표 풀이 and 기운 채우기 since 2026-10-08), the observation
     expect(res.data).not.toHaveProperty("topic");
@@ -101,8 +112,8 @@ describe("/api/saju/teaser with a topic", () => {
   });
 
   it("refuses a status chip with a topic, and simply drops a situation key", async () => {
-    expect((await fresh().call(sajuTeaser, { birth: C3, topic: "career", workStatus: "employee" })).status).toBe(400);
-    expect((await fresh().call(sajuTeaser, { birth: C3, topic: "money", situation: "some" })).status).toBe(200);
+    expect((await (await fresh()).call(sajuTeaser, { birth: C3, topic: "career", workStatus: "employee" })).status).toBe(400);
+    expect((await (await fresh()).call(sajuTeaser, { birth: C3, topic: "money", situation: "some" })).status).toBe(200);
   });
 
   it("sends only the topic's own saju records, with the topic system prompt and no chip", async () => {
@@ -112,7 +123,7 @@ describe("/api/saju/teaser with a topic", () => {
       { date: "2026-09-27", kind: "saju", topic: "money", question: "사주 재물운 · 흙 속의 쇠", verdict: "재물 요약" },
       { date: "2026-09-26", kind: "tarot", question: "이번 주 재물 흐름은 어떨까", verdict: "타로 요약" },
     ];
-    const res = await fresh().call(sajuTeaser, { birth: C3, topic: "money", history });
+    const res = await (await fresh()).call(sajuTeaser, { birth: C3, topic: "money", history });
     expect(res.status).toBe(200);
     const task = spy.mock.calls[0]![0];
     expect(task).toMatchObject({ name: "saju-topic-teaser", system: SAJU_TOPIC_SYSTEM });
@@ -128,13 +139,13 @@ describe("/api/saju/teaser with a topic", () => {
       { date: "2026-09-28", kind: "saju", topic: "love", question: "사주 연애운 · 봄의 촛불", verdict: "연애 요약" },
       { date: "2026-09-26", kind: "tarot", question: "이번 주 재물 흐름은 어떨까", verdict: "타로 요약" },
     ];
-    expect((await fresh().call(sajuTeaser, { birth: C3, history })).status).toBe(200);
+    expect((await (await fresh()).call(sajuTeaser, { birth: C3, history })).status).toBe(200);
     expect(spy.mock.calls[0]![0].user).toContain("이번 주 재물 흐름은 어떨까");
     expect(spy.mock.calls[0]![0].user).not.toContain("사주 연애운");
   });
 
-  it("counts topic teasers in the device's five a day, whatever the topic", async () => {
-    const d = fresh();
+  it("counts topic teasers in the account's five a day, whatever the topic", async () => {
+    const d = await fresh();
     for (const topic of ["love", "reunion", "money", "career", "overall"]) expect((await d.call(sajuTeaser, { birth: C3, topic })).status).toBe(200);
     const sixth = await d.call(sajuTeaser, { birth: C3, topic: "money" });
     expect(sixth.status).toBe(429);
@@ -143,20 +154,20 @@ describe("/api/saju/teaser with a topic", () => {
 
   it("refuses topics with the flag off, serves only the owner pass in owner mode, and keeps 전체 흐름 open", async () => {
     vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "off");
-    const off = await fresh().call(sajuTeaser, { birth: C3, topic: "money" });
+    const off = await (await fresh()).call(sajuTeaser, { birth: C3, topic: "money" });
     expect(off.status).toBe(400);
     expect(off.data.field).toBe("topic");
-    expect((await fresh().call(sajuTeaser, { birth: C3 })).status).toBe(200);
+    expect((await (await fresh()).call(sajuTeaser, { birth: C3 })).status).toBe(200);
     vi.stubEnv("NEXT_PUBLIC_SAJU_TOPICS", "owner");
-    expect((await fresh().call(sajuTeaser, { birth: C3, topic: "money" })).status).toBe(400);
-    const boss = fresh();
+    expect((await (await fresh()).call(sajuTeaser, { birth: C3, topic: "money" })).status).toBe(400);
+    const boss = await fresh();
     expect((await boss.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
     expect((await boss.call(sajuTeaser, { birth: C3, topic: "money" })).status).toBe(200);
   });
 
   it("serves topics on Korean screens only", async () => {
-    expect((await fresh().call(sajuTeaser, { birth: C3, topic: "money" }, { "x-starlog-locale": "en" })).status).toBe(400);
-    expect((await fresh().call(sajuTeaser, { birth: C3 }, { "x-starlog-locale": "en" })).status).toBe(200);
+    expect((await (await fresh()).call(sajuTeaser, { birth: C3, topic: "money" }, { "x-starlog-locale": "en" })).status).toBe(400);
+    expect((await (await fresh()).call(sajuTeaser, { birth: C3 }, { "x-starlog-locale": "en" })).status).toBe(200);
   });
 });
 

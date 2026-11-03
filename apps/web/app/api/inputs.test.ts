@@ -12,6 +12,8 @@ import { DEFAULT_SAJU_FORM, toSajuInput } from "@/lib/sajuForm";
 import { ownerCookie } from "@/lib/security/owner";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
+import { setTestDb } from "@/lib/db";
+import { memberCookieHeader, useTestDb } from "@/lib/testing/p4";
 import { POST as daily } from "./tarot/daily/route";
 import { POST as draw } from "./tarot/draw/route";
 import { POST as reading } from "./tarot/reading/route";
@@ -25,7 +27,10 @@ duringOpening();
 
 type Handler = (request: Request) => Promise<Response>;
 
-const call = async (handler: Handler, body: unknown, cookie = "") => {
+/** A logged-in account's session: the 맛보기 and 오늘의 한 장 need a login (owner 2026-11-04). */
+let member = "";
+
+const call = async (handler: Handler, body: unknown, cookie = member) => {
   const response = await handler(new Request("http://localhost/api", {
     method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.18.0.1", cookie }, body: JSON.stringify(body),
   }));
@@ -47,18 +52,23 @@ const HISTORY = [
   { date: "2026-09-28", kind: "tarot", question: "이번 주, 나의 재물 흐름은 어떨까", verdict: "지출부터 줄이는 편이 좋아요.", observation: "카드값 알림이 줄어드는지 눈여겨보세요.", checkin: "맞았어요" },
 ];
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
   vi.stubEnv("BETA_FULL_PER_DAY", "100");
   vi.stubEnv("BETA_TEASER_PER_DAY", "100");
   vi.stubEnv("STARLOG_OWNER_CODE", "owner-code-for-tests-0001");
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
   resetMemoryLimiter();
   resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
+  useTestDb();
+  member = await memberCookieHeader();
 });
 
 afterEach(() => {
+  setTestDb(null);
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
@@ -283,7 +293,7 @@ describe("review fixes (A2 round 2)", () => {
 
   it("sends one sl_daily cookie on the JSON daily response", async () => {
     const response = await daily(new Request("http://localhost/api", {
-      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.18.0.2" }, body: "{}",
+      method: "POST", headers: { "content-type": "application/json", "cf-connecting-ip": "198.18.0.2", cookie: member }, body: "{}",
     }));
     expect(response.status).toBe(200);
     expect(response.headers.getSetCookie().filter((c) => c.startsWith("sl_daily=")).length).toBe(1);

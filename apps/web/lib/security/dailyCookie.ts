@@ -2,16 +2,17 @@ import "server-only";
 import { signToken, verifyToken, type SignedPayload } from "./sign";
 
 /**
- * 오늘의 한 장 device cookie (`sl_daily`): device id, KST day, generations used, and the slot the
- * device picked (locked from its first pick, so a failed generation cannot become a re-pick). It
- * never carries a card: the deal is recomputed from the device id with the secret.
+ * 오늘의 한 장 device cookie (`sl_daily`): the account's id for the deal (its member key, lib/api/member.ts; from
+ * 2026-11-04, before it a random device id), KST day, generations used on this device, and the slot picked (locked from
+ * its first pick, so a failed generation cannot become a re-pick). It never carries a card: the deal is recomputed from
+ * the id with the secret.
  */
 
 export const DAILY_COOKIE = "sl_daily";
 
 interface DailyPayload extends SignedPayload {
   k: "daily";
-  /** random per-device id; with the day and the secret it fixes the deal */
+  /** the account's member key (an HMAC of users.id); with the day and the secret it fixes the deal */
   did: string;
   day: string;
   /** generations used today */

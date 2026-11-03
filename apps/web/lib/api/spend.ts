@@ -7,7 +7,8 @@ import { dailyStore, logKvError } from "./dailyStore";
 
 /**
  * Server-side accounting in DAILY_KV, independent of cookies and of /api/commit (which only moves
- * the device's own cookie counters). Four kinds of keys here (the paid book's `paidcost:` is at addPaidCost):
+ * the device's own cookie counters). Four kinds of keys here (the paid book's `paidcost:` is at addPaidCost, an
+ * account's own day counts `acct:` at accountCount):
  * - `count:<kstDay>:<kind>:<client>`: generations started today by one client network (Gate.client,
  *   a keyed hash of the IP; raw IPs are never stored). Charged when a generation starts, so a
  *   client that disconnects before `done` is still counted; checked before the next one
@@ -114,6 +115,26 @@ export async function clientCount(client: string, kind: SpendKind, now: number):
  */
 export async function recordClientSpend(client: string, kind: SpendKind, now: number): Promise<void> {
   const key = countKey(client, kind, now);
+  const current = await read(key);
+  if (current !== null) await write(key, Math.max(0, current) + 1, COUNT_TTL_SECONDS);
+}
+
+// ---- per-account counters (owner 2026-11-04: free AI readings need a login and are counted per account) ----
+
+/**
+ * `acct:<kstDay>:<kind>:<account>`: free generations one logged-in account was given today (member.ts memberKey, an
+ * HMAC of users.id; the raw id is never stored). Same store, TTL and caveats as the network counts above.
+ */
+const accountCountKey = (account: string, kind: SpendKind, now: number) => `acct:${kstDay(now)}:${kind}:${account}`;
+
+/** Free generations of `kind` this account was given today, or null when KV cannot be read (the caller fails closed). */
+export function accountCount(account: string, kind: SpendKind, now: number): Promise<number | null> {
+  return read(accountCountKey(account, kind, now));
+}
+
+/** One more free generation of `kind` for this account today (a read-then-write, like recordClientSpend). */
+export async function recordAccountSpend(account: string, kind: SpendKind, now: number): Promise<void> {
+  const key = accountCountKey(account, kind, now);
   const current = await read(key);
   if (current !== null) await write(key, Math.max(0, current) + 1, COUNT_TTL_SECONDS);
 }

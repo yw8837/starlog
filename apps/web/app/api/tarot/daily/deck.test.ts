@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDailyStore } from "@/lib/api/dailyStore";
+import { setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { openerCookies, useTestDb } from "@/lib/testing/p4";
 import { GET, POST } from "./route";
 
-/** A device that keeps its cookies between calls, like a browser. */
-function device() {
-  const jar = new Map<string, string>();
+/** A device that keeps its cookies between calls, like a browser, logged in (오늘의 한 장 needs a login, owner 2026-11-04). */
+async function device() {
+  const jar = new Map<string, string>(await openerCookies());
   const keep = (response: Response) => {
     for (const header of response.headers.getSetCookie()) {
       const [pair] = header.split(";");
@@ -32,12 +34,16 @@ beforeEach(() => {
   vi.setSystemTime(Date.parse("2026-09-30T03:00:00Z"));
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
+  useTestDb();
   resetMemoryLimiter();
   resetDailyStore();
   vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
 afterEach(() => {
+  setTestDb(null);
   vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -45,7 +51,7 @@ afterEach(() => {
 
 describe("오늘의 한 장 and its card design", () => {
   it("keeps the deck the fortune was written for, and hands it back with the stored fortune whatever deck asks later", async () => {
-    const d = device();
+    const d = await device();
     const first = await d.post({ pick: 1, deck: "rws1909" });
     expect(first.status).toBe(200);
     expect(first.data.deck).toBe("rws1909");
@@ -56,7 +62,7 @@ describe("오늘의 한 장 and its card design", () => {
   });
 
   it("records the Starlog deck when the fortune was read with it", async () => {
-    const d = device();
+    const d = await device();
     expect((await d.post({ pick: 0, deck: "starlog" })).data.deck).toBe("starlog");
   });
 });

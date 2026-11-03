@@ -54,6 +54,13 @@ describe("오늘의 인연 카드 line", () => {
     expect(await clientCount("owner:owner-no-client", "line", base.now)).toBe(1);
   });
 
+  it("calls no model for an owner who is not logged in (owner 2026-11-04: a line the model writes needs a login), and counts nothing", async () => {
+    const spy = vi.spyOn(mockProvider, "generate");
+    expect(await todayLine({ ...base, ownerId: "owner-device-only", client: "net-device", ai: false })).toBe(todayCardLine(base.cardId, base.orientation));
+    expect(spy).not.toHaveBeenCalled();
+    expect(await clientCount("net-device", "line", base.now)).toBe(0);
+  });
+
   it("records what a failed call billed and still answers with the rule-based line", async () => {
     vi.spyOn(mockProvider, "generate").mockImplementation(async (_task, _attempt, _feedback, hooks?: GenerationHooks) => {
       hooks?.onUsage?.(BILLED);

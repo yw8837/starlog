@@ -1,5 +1,6 @@
 import "server-only";
-import { checkQuota, crisisCheck, errorResponse, fullReadingLimit, openGate, readJson, spendCookies, type Gate } from "@/lib/api/http";
+import { checkServerLimits, crisisCheck, errorResponse, fullReadingLimit, openGate, readJson, type Gate } from "@/lib/api/http";
+import { checkMemberLimit, recordMemberSpend, requireMember } from "@/lib/api/member";
 import { budgetState } from "@/lib/api/spend";
 import { accountDb } from "@/lib/db";
 import { respondGeneration } from "@/lib/api/stream";
@@ -58,8 +59,9 @@ async function giveBackBuyerPreview(gate: Gate, userId: string, product: Premium
 
 /**
  * POST /api/premium/<id>/teaser: the free preview (spec §5, the 시험 사용 of 전자상거래법 17조 2항 5호).
- * Open while the product is on sale for this device, or for a user who already bought it. Counts
- * as a teaser (daily cookie quota and the network counter), like the standard first-card preview,
+ * Open while the product is on sale for this device, or for a user who already bought it. Needs a login (owner
+ * 2026-11-04, lib/api/member.ts: 401 LOGIN_REQUIRED `reason: "teaser"` for a visitor, before anything else is asked). Counts
+ * as a teaser (the account's day count on the server and the network counter), like the standard 맛보기,
  * and asks for a browser check first when Turnstile is on (lib/api/turnstile.ts). A buyer's preview
  * spends none of that and passes the free day's spent budget, like the paid reading it was bought for
  * (review 2026-10-16 #1), but stops at BUYER_PREVIEWS_PER_DAY, closes while the budget is unknown, and
@@ -71,6 +73,8 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
   return async function POST(request: Request): Promise<Response> {
     const gate = await openGate(request);
     if (gate instanceof Response) return gate;
+    const member = await requireMember(request, gate.secret, gate.now, "teaser");
+    if (member instanceof Response) return member;
     const bot = await checkBot(request, gate);
     if (bot) return bot;
     const parsed = adapter.teaserBody.safeParse(await readJson(request, TEASER_MAX_BYTES));
@@ -85,12 +89,13 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
       const limited = await buyerPreviewLimit(gate, buyer, adapter.id);
       if (limited) return limited;
     }
-    const quota = buyer ? null : await checkQuota(gate, "teaser");
-    if (quota instanceof Response) return quota;
+    const limited = buyer ? null : ((await checkServerLimits(gate, "teaser")) ?? (await checkMemberLimit(gate, member, "teaser")));
+    if (limited) return limited;
     return respondGeneration(request, async (hooks) => {
       try {
         const preview = await adapter.teaser(gate.provider, ctx, hooks);
-        return { body: { preview }, cookies: quota ? await spendCookies(gate, quota, "teaser") : [] };
+        if (!buyer) await recordMemberSpend(gate, member, "teaser");
+        return { body: { preview }, cookies: [] };
       } catch (error) {
         const refused = error instanceof GenerationError && error.code === "REFUSED";
         if (buyer && !hooks.signal?.aborted && !refused) await giveBackBuyerPreview(gate, buyer, adapter.id);

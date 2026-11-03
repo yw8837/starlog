@@ -5,25 +5,28 @@ import { getOrCreateDailyResult, readDailyResult } from "@/lib/api/dailyStore";
 import {
   checkServerLimits, clientKey, errorResponse, json, openGate, parseCookies, readJson, serializeCookie, type CookieSpec,
 } from "@/lib/api/http";
+import { requireMember } from "@/lib/api/member";
 import { respondGeneration } from "@/lib/api/stream";
 import { checkBot } from "@/lib/api/turnstile";
 import { DAILY_COOKIE, dailyCookie, readDaily, type DailyState } from "@/lib/security/dailyCookie";
 import { DAILY_DEAL_SIZE, dailyDeal, dailyLuckyNumber } from "@/lib/security/drawToken";
 import { QUOTA_COOKIE_MAX_AGE, kstDay, nextKstMidnight, quotaLimits } from "@/lib/security/quota";
 import { rateLimit } from "@/lib/security/rateLimit";
-import { randomId, signingSecret } from "@/lib/security/sign";
+import { signingSecret } from "@/lib/security/sign";
 
 /**
- * 오늘의 한 장 as a 3-card deal (owner order: 셔플 + 카드 3지선다). Each device gets three
- * face-down cards per KST day, dealt from HMAC(secret, device + day) (dailyDeal): a refresh cannot
- * re-roll and the pick is real (three distinct cards). Only the picked card ever leaves the server
- * (owner order: the other two are never revealed, before or after the pick).
+ * 오늘의 한 장 as a 3-card deal (owner order: 셔플 + 카드 3지선다). It needs a login (owner 2026-11-04, lib/api/member.ts):
+ * a visitor gets 401 LOGIN_REQUIRED `reason: "daily"` from GET and POST before anything else is asked. Each account gets
+ * three face-down cards per KST day, dealt from HMAC(secret, account + day) (dailyDeal; the account is its member key, an
+ * HMAC of users.id), so every device of the account deals, stores and shows the same card: a refresh cannot re-roll and
+ * the pick is real (three distinct cards). Only the picked card ever leaves the server (owner order: the other two are
+ * never revealed, before or after the pick).
  * - GET → today's stored result `{ ...reading, pick, deck }`, or `{ deal: [{index:0},{index:1},{index:2}] }`.
  * - POST {pick: 0|1|2} → the picked card's fortune, generated once and stored for the day (KV) with
  *   the pick. The first pick of the day is locked in the device cookie, and once a result is stored
- *   every later POST that day returns it, whatever it picks. An invalid pick is 400; a missing one
- *   counts as 0 (clients from before the deal).
- * Generations are capped per device (BETA_DAILY_PER_DAY, the cookie) and by the server limits.
+ *   every later POST that day returns it, whatever it picks, on any device of the account. An invalid pick is 400; a
+ *   missing one counts as 0 (clients from before the deal).
+ * Generations are capped per device and account (BETA_DAILY_PER_DAY, the cookie) and by the server limits.
  * POST asks for a browser check first when Turnstile is on (lib/api/turnstile.ts).
  * POST streams NDJSON progress with `Accept: application/x-ndjson`.
  */
@@ -31,12 +34,15 @@ import { randomId, signingSecret } from "@/lib/security/sign";
 /** Three face-down slots: what the client may know before the pick. */
 const DEAL = Array.from({ length: DAILY_DEAL_SIZE }, (_, index) => ({ index }));
 
-/** This device's state for today: its cookie when it is from today, else a new day for the same (or a new) device id. */
-async function todayState(cookies: Record<string, string>, secret: string, now: number): Promise<DailyState> {
+/**
+ * This account's state for today on this device: its cookie when it is from today and of this account (`did` is the
+ * account's member key, so /api/share/daily finds the same stored card), else a new day for the account.
+ */
+async function todayState(cookies: Record<string, string>, secret: string, now: number, account: string): Promise<DailyState> {
   const day = kstDay(now);
   const saved = await readDaily(cookies[DAILY_COOKIE], secret, now);
-  if (saved?.day === day) return saved;
-  return { did: saved?.did ?? randomId(12), day, gen: 0 };
+  if (saved?.day === day && saved.did === account) return saved;
+  return { did: account, day, gen: 0 };
 }
 
 async function cookieOf(state: DailyState, secret: string): Promise<CookieSpec> {
@@ -48,7 +54,9 @@ export async function GET(request: Request): Promise<Response> {
   if (!secret) return errorResponse("AI_UNAVAILABLE");
   const now = Date.now();
   if (!(await rateLimit("GEN_LIMITER", clientKey(request), now))) return errorResponse("RATE_LIMIT");
-  const state = await todayState(parseCookies(request), secret, now);
+  const member = await requireMember(request, secret, now, "daily");
+  if (member instanceof Response) return member;
+  const state = await todayState(parseCookies(request), secret, now, member.key);
   const stored = await readDailyResult(state.did, state.day);
   return json(stored ?? { deal: DEAL }, { cookies: [serializeCookie(await cookieOf(state, secret))] });
 }
@@ -56,6 +64,8 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   const gate = await openGate(request);
   if (gate instanceof Response) return gate;
+  const member = await requireMember(request, gate.secret, gate.now, "daily");
+  if (member instanceof Response) return member;
   const bot = await checkBot(request, gate);
   if (bot) return bot;
   const body = await readJson(request, 1_000);
@@ -67,7 +77,7 @@ export async function POST(request: Request): Promise<Response> {
   if (requested !== undefined && !validPick(requested)) return errorResponse("BAD_REQUEST", { field: "pick" });
 
   const day = kstDay(gate.now);
-  const today = await todayState(gate.cookies, gate.secret, gate.now);
+  const today = await todayState(gate.cookies, gate.secret, gate.now, member.key);
   // The first pick of the day is locked: a failed generation is no chance to choose again.
   const pick = today.pick ?? (requested as number | undefined) ?? 0;
   const state: DailyState = { ...today, pick };

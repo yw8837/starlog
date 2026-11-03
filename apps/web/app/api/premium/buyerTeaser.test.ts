@@ -62,8 +62,9 @@ describe("a buyer's premium preview (review 2026-10-16 #1)", () => {
     for (let i = 0; i < 3; i++) expect((await buyer.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } })).status).toBe(200);
     expect(await networkCount("198.51.100.201")).toBe(0);
 
-    // Someone without a purchase still has one free preview a day.
+    // Someone without a purchase (logged in: the previews need it, owner 2026-11-04) still has one free preview a day.
     const visitor = browser("198.51.100.202");
+    await loginAs(visitor, "visitor202");
     const visitorDraw = await dealt(visitor);
     expect((await visitor.send(deepTeaser, TEASER, { body: { drawToken: visitorDraw, input: DEEP_INPUT } })).status).toBe(200);
     expect((await visitor.send(deepTeaser, TEASER, { body: { drawToken: visitorDraw, input: DEEP_INPUT } })).status).toBe(429);
@@ -78,10 +79,12 @@ describe("a buyer's premium preview (review 2026-10-16 #1)", () => {
     // At the cap (80% of 1,000) a visitor's preview still opens: the paywall shows after it.
     for (let shard = 0; shard < 8; shard++) await dailyStore().put(`cost:${kstDay(Date.now())}:${shard}`, 100, 3600);
     const early = browser("198.51.100.206");
+    await loginAs(early, "visitor206");
     expect((await early.send(deepTeaser, TEASER, { body: { drawToken: await dealt(early), input: DEEP_INPUT } })).status).toBe(200);
     // Past the ceiling (twice that): free generations stop.
     for (let shard = 0; shard < 8; shard++) await dailyStore().put(`cost:${kstDay(Date.now())}:${shard}`, 1000, 3600);
     const visitor = browser("198.51.100.204");
+    await loginAs(visitor, "visitor204");
     expect((await visitor.send(deepTeaser, TEASER, { body: { drawToken: await dealt(visitor), input: DEEP_INPUT } })).status).toBe(503);
     expect((await buyer.send(deepTeaser, TEASER, { body: { drawToken, input: DEEP_INPUT } })).status).toBe(200);
   });

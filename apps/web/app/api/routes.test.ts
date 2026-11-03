@@ -104,7 +104,8 @@ describe("tarot flow with the mock provider", () => {
     expect(t.data.cards.map((c: { cardId: string }) => c.cardId)).toEqual(cards.map((c) => c.cardId));
     expect(t.data.lockedToc[0]).toBe("한 줄 결론");
     expect(t.data).not.toHaveProperty("verdict");
-    expect(d.jar.has("sl_q")).toBe(true);
+    // Counted on the server per account (owner 2026-11-04), so no device cookie for it.
+    expect(d.jar.has("sl_q")).toBe(false);
 
     const r = await d.call(reading, { drawToken, input: MONEY_INPUT });
     expect(r.status).toBe(200);
@@ -156,7 +157,7 @@ describe("tarot flow with the mock provider", () => {
   });
 
   it("a seal that does not open or does not match reads the cards anew, with no error", async () => {
-    const d = device();
+    const d = await member();
     const { drawToken } = await drawSelfFlow(d);
     const t = await d.call(teaser, { drawToken, input: MONEY_INPUT });
     const asToday = (await (await member("203.0.113.30")).call(reading, { drawToken, input: MONEY_INPUT })).data.reading.cards[0].body;
@@ -191,7 +192,7 @@ describe("tarot flow with the mock provider", () => {
   });
 
   it("refuses bad bodies: wrong picks, wrong topic, oversized note, wrong content type", async () => {
-    const d = device();
+    const d = await member();
     expect((await d.call(draw, { templateId: "self-flow", picks: [1, 1, 2] })).status).toBe(400);
     expect((await d.call(draw, { templateId: "daily", picks: [1] })).status).toBe(400);
     const { drawToken } = await drawSelfFlow(d);
@@ -211,7 +212,7 @@ describe("tarot flow with the mock provider", () => {
   });
 
   it("writes a passive wish's reading with care instead of refusing it, and says so in the body (owner 2026-10-31)", async () => {
-    const d = device();
+    const d = await member();
     const { drawToken } = await drawSelfFlow(d);
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const spy = vi.spyOn(mockProvider, "generate");
@@ -282,7 +283,7 @@ describe("quota", () => {
   });
 
   it("opens no saju full reading for free: refused before any generation, nothing spent, the teaser still free", async () => {
-    const d = device("203.0.113.70");
+    const d = await member("203.0.113.70");
     const spy = vi.spyOn(mockProvider, "generate");
     for (const body of [{ birth: DEFAULT_SAJU_FORM }, { birth: DEFAULT_SAJU_FORM, topic: "money" }]) {
       const refused = await d.call(sajuReading, body);
@@ -326,7 +327,7 @@ describe("quota", () => {
   });
 
   it("rate limits generation per IP at 60 a minute", async () => {
-    const d = device("192.0.2.50");
+    const d = await member("192.0.2.50");
     const { drawToken } = await drawSelfFlow(d);
     vi.stubEnv("BETA_TEASER_PER_DAY", "1000");
     const statuses: number[] = [];
@@ -392,7 +393,7 @@ describe("오픈 기념 무료", () => {
     expect((await last.call(reading, { drawToken: lastDraw.drawToken, input: MONEY_INPUT })).status).toBe(200);
 
     vi.setSystemTime(Date.parse("2026-11-30T15:00:00Z")); // 00:00 KST, 12월 1일
-    const d = device("203.0.113.81");
+    const d = await member("203.0.113.81");
     const { drawToken } = await drawSelfFlow(d);
     const spy = vi.spyOn(mockProvider, "generate");
     const gone = await d.call(reading, { drawToken, input: MONEY_INPUT });
@@ -442,7 +443,7 @@ describe("오늘의 한 장", () => {
   };
 
   it("deals three face-down slots before the pick, with no card id anywhere (body or cookie)", async () => {
-    const d = device();
+    const d = await member();
     const before = await getDeal(d);
     expect(before.status).toBe(200);
     expect(before.data).toEqual({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }] });
@@ -457,7 +458,7 @@ describe("오늘의 한 장", () => {
   });
 
   it("deals deterministically per device and day: the picked slot's card, the same on every request", async () => {
-    const d = device();
+    const d = await member();
     await getDeal(d);
     const did = deviceId(d);
     const deal = await dailyDeal(did, "2026-09-30", signingSecret()!);
@@ -468,14 +469,14 @@ describe("오늘의 한 장", () => {
     expect(picked.data.card).toMatchObject(deal[2]!);
     expect(picked.data).not.toHaveProperty("cards"); // the other two are never revealed
     for (const other of [deal[0]!, deal[1]!]) if (other.cardId !== deal[2]!.cardId) expect(JSON.stringify(picked.data)).not.toContain(other.cardId);
-    // Another device gets its own deal; the next KST day deals again.
+    // Another account gets its own deal; the next KST day deals again.
     expect(await dailyDeal(`${did}x`, "2026-09-30", signingSecret()!)).not.toEqual(deal);
     expect(await dailyDeal(did, "2026-10-01", signingSecret()!)).not.toEqual(deal);
   });
 
   it("never re-rolls: a second POST, even with another pick, and a GET return the stored result", async () => {
     const spy = vi.spyOn(mockProvider, "generate");
-    const d = device();
+    const d = await member();
     const first = await d.call(daily, { pick: 1 });
     expect(first.status).toBe(200);
     const again = await d.call(daily, { pick: 0 });
@@ -486,7 +487,7 @@ describe("오늘의 한 장", () => {
   });
 
   it("locks the first pick even when its generation failed", async () => {
-    const d = device();
+    const d = await member();
     vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new GenerationError("UPSTREAM"));
     expect((await d.call(daily, { pick: 2 })).status).toBe(502);
     const retry = await d.call(daily, { pick: 0 });
@@ -496,13 +497,13 @@ describe("오늘의 한 장", () => {
   });
 
   it("refuses an invalid pick", async () => {
-    const d = device();
+    const d = await member();
     for (const pick of [3, -1, 1.5, "1", null]) expect((await d.call(daily, { pick })).status).toBe(400);
   });
 
   it("returns the identical fortune all day with a single generation, and a new deal the next KST day", async () => {
     const spy = vi.spyOn(mockProvider, "generate");
-    const d = device();
+    const d = await member();
     const first = await d.call(daily, {}); // a client from before the deal: pick 0
     expect(first.status).toBe(200);
     expect(first.data).toMatchObject({ pick: 0, card: { cardId: expect.any(String) }, summary: expect.any(String), areas: { love: expect.any(String), money: expect.any(String), work: expect.any(String) } });
@@ -526,7 +527,7 @@ describe("오늘의 한 장", () => {
   });
 
   it("generates once for concurrent requests from the same device", async () => {
-    const d = device();
+    const d = await member();
     await d.call(daily, {}); // sets this device's cookie
     resetDailyStore();
     const spy = vi.spyOn(mockProvider, "generate");
@@ -537,7 +538,7 @@ describe("오늘의 한 장", () => {
   });
 
   it("serves the stored fortune even after the generation cap is used up", async () => {
-    const d = device();
+    const d = await member();
     const first = await d.call(daily, {});
     resetDailyStore();
     await d.call(daily, {}); // second generation (store lost), cap now reached
@@ -547,7 +548,7 @@ describe("오늘의 한 장", () => {
   });
 
   it("regenerates the same card when nothing is stored, at most twice a day, then answers 429 with the card", async () => {
-    const d = device();
+    const d = await member();
     const first = await d.call(daily, {});
     resetDailyStore();
     const second = await d.call(daily, {});
@@ -565,7 +566,7 @@ describe("saju", () => {
 
   /** A saju full reading opens with a payment or the owner pass only: these use the pass. */
   async function ownerDevice() {
-    const d = device();
+    const d = await member();
     expect((await d.call(owner, { code: "owner-code-for-tests-0001" })).status).toBe(200);
     return d;
   }
@@ -606,7 +607,7 @@ describe("saju", () => {
   });
 
   it("rejects a birth date in the future with the form's message", async () => {
-    const res = await device().call(sajuTeaser, { birth: { ...birth, year: 2027 } });
+    const res = await (await member()).call(sajuTeaser, { birth: { ...birth, year: 2027 } });
     expect(res.status).toBe(400);
     expect(res.data).toMatchObject({ code: "BAD_REQUEST", field: "date" });
   });
@@ -617,9 +618,9 @@ describe("saju", () => {
     expect(parsed).toMatchObject({ leapMonthUnknown: true, isLeapMonth: false });
     const checked = checkSajuForm(parsed, todayInKorea(new Date(T0)));
     expect("chart" in checked && [checked.chart.input.isLeapMonth, checked.chart.lunarDate]).toEqual(["unknown", "1952-윤05-30"]);
-    expect((await device("203.0.113.51").call(sajuTeaser, { birth: { ...lunar, leapMonthUnknown: true } })).status).toBe(200);
+    expect((await (await member("203.0.113.51")).call(sajuTeaser, { birth: { ...lunar, leapMonthUnknown: true } })).status).toBe(200);
     // without it the 평달 of that year has no 30th
-    const refused = await device("203.0.113.52").call(sajuTeaser, { birth: lunar });
+    const refused = await (await member("203.0.113.52")).call(sajuTeaser, { birth: lunar });
     expect(refused.status).toBe(400);
     expect(refused.data).toMatchObject({ code: "BAD_REQUEST", field: "date" });
   });

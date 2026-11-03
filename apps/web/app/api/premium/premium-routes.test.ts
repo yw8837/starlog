@@ -70,6 +70,13 @@ async function shopper(): Promise<Browser> {
   return b;
 }
 
+/** A browser at `address` logged in to an account of its own: the previews need a login (owner 2026-11-04). */
+async function viewer(address: string): Promise<Browser> {
+  const b = browser(address);
+  await loginAs(b, `viewer-${address}`);
+  return b;
+}
+
 /** The ten cards of 켈틱 크로스 10장 (the 궁합 reads none since 2026-10-17). */
 async function dealt(b: Browser, templateId: "deep-tarot"): Promise<string> {
   return ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId, picks: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] } })).json()) as { drawToken: string }).drawToken;
@@ -120,16 +127,20 @@ function billing() {
 }
 
 describe("premium previews", () => {
-  it("opens the deep preview without login while sales are open, counted as a teaser, and closes it when they are not", async () => {
+  it("opens the deep preview for a logged-in account while sales are open, counted as one of its 맛보기, and closes it when they are not", async () => {
     useTestDb();
-    const b = browser("192.0.2.40");
+    // A visitor is sent to log in first (owner 2026-11-04).
+    const visitor = browser("192.0.2.38");
+    expect((await visitor.send(deepTeaser, "/api/premium/tarot-deep/teaser", { body: { drawToken: await dealt(visitor, "deep-tarot"), input: DEEP_INPUT } })).status).toBe(401);
+    const b = await viewer("192.0.2.40");
     const drawToken = await dealt(b, "deep-tarot");
     const res = await b.send(deepTeaser, "/api/premium/tarot-deep/teaser", { body: { drawToken, input: DEEP_INPUT } });
     expect(res.status).toBe(200);
     const { preview } = await json(res);
     expect(preview.cards).toHaveLength(10);
     expect(preview.lockedToc).toHaveLength(17);
-    expect(res.headers.getSetCookie().some((c) => c.startsWith("sl_q="))).toBe(true);
+    // Counted for the account on the server, not in a device cookie.
+    expect(res.headers.getSetCookie().some((c) => c.startsWith("sl_q="))).toBe(false);
     expect(await networkCount("192.0.2.40", "teaser")).toBe(1);
     vi.stubEnv("STARLOG_PREMIUM", "off");
     expect((await b.send(deepTeaser, "/api/premium/tarot-deep/teaser", { body: { drawToken, input: DEEP_INPUT } })).status).toBe(409);
@@ -142,14 +153,14 @@ describe("premium previews", () => {
     vi.stubEnv("STARLOG_PREMIUM", "off");
     const deep = { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT };
     expect((await b.send(deepTeaser, "/t", { body: deep })).status).toBe(200);
-    expect((await browser("192.0.2.47").send(deepTeaser, "/t", { body: deep })).status).toBe(409);
+    expect((await (await viewer("192.0.2.47")).send(deepTeaser, "/t", { body: deep })).status).toBe(409);
     const pair = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true };
     expect((await b.send(matchTeaser, "/t", { body: pair })).status).toBe(409);
   });
 
   it("previews the pair: both charts and no cards (saju only, owner 2026-10-17); a partner birth the chart cannot take names its field", async () => {
     useTestDb();
-    const b = browser("192.0.2.45");
+    const b = await viewer("192.0.2.45");
     const body = { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true };
     const res = await b.send(matchTeaser, "/t", { body });
     expect(res.status).toBe(200);
@@ -164,7 +175,7 @@ describe("premium previews", () => {
 
   it("refuses a draw of another spread, the one-card daily topic and a typed topic without its who; a 궁합 takes no draw at all", async () => {
     useTestDb();
-    const b = browser("192.0.2.46");
+    const b = await viewer("192.0.2.46");
     const deep = await dealt(b, "deep-tarot");
     const standard = ((await (await b.send(draw, "/api/tarot/draw", { body: { templateId: "relationship", picks: [0, 1, 2] } })).json()) as { drawToken: string }).drawToken;
     const answer = async (handler: typeof deepTeaser, body: unknown) => json(await b.send(handler, "/t", { body }));
@@ -179,10 +190,10 @@ describe("premium previews", () => {
   it("previews 2027 신년운세 now for everyone (owner 2026-10-20: no opening date), and not once it has closed", async () => {
     useTestDb();
     vi.setSystemTime(Date.parse("2026-10-20T03:00:00Z"));
-    const b = browser("192.0.2.41");
+    const b = await viewer("192.0.2.41");
     expect((await b.send(yearTeaser, "/api/premium/newyear-2027/teaser", { body: { birth: DEFAULT_SAJU_FORM } })).status).toBe(200);
     vi.setSystemTime(Date.parse("2027-12-01T00:00:00+09:00"));
-    expect((await browser("192.0.2.39").send(yearTeaser, "/api/premium/newyear-2027/teaser", { body: { birth: DEFAULT_SAJU_FORM } })).status).toBe(409);
+    expect((await (await viewer("192.0.2.39")).send(yearTeaser, "/api/premium/newyear-2027/teaser", { body: { birth: DEFAULT_SAJU_FORM } })).status).toBe(409);
   });
 });
 
