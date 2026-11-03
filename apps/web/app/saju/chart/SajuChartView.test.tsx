@@ -190,7 +190,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     seed();
     stub({ me: [OPENING_ME] });
     render(<SajuChartView />);
-    expect(await screen.findByText("첫 장")).toBeTruthy();
+    expect(await screen.findByText("사주팔자 · 맛보기")).toBeTruthy();
     expect(screen.getByText("고요한 물")).toBeTruthy();
     expect(within(row()).getAllByRole("button").map((b) => b.textContent)).toEqual(["연애운", "재회운", "재물운", "직장운"]);
     expect(screen.getByText("고요한 물").compareDocumentPosition(row()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -203,7 +203,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     seedTopic("money", "흙 속의 쇠");
     stub({ me: [() => Response.json(meBody())] });
     render(<SajuChartView />);
-    await screen.findByText("첫 장");
+    await screen.findByText("사주팔자 · 맛보기");
     tap("재물운");
     expect(await screen.findByText("재물운 · 맛보기")).toBeTruthy();
     expect(screen.getByText("흙 속의 쇠")).toBeTruthy();
@@ -214,7 +214,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     expect(screen.getByText(UNLOCK_SCOPE_LINE)).toBeTruthy();
     expect(screen.getByRole("link", { name: PAY_LINK }).getAttribute("href")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart%3Ftopic%3Dmoney");
     fireEvent.click(screen.getByRole("button", { name: "사주팔자로 돌아가기" }));
-    expect(await screen.findByText("첫 장")).toBeTruthy();
+    expect(await screen.findByText("사주팔자 · 맛보기")).toBeTruthy();
     expect(screen.getByText("고요한 물")).toBeTruthy();
     expect(screen.queryByText(UNLOCK_SCOPE_LINE)).toBeNull();
     expect(screen.getByRole("link", { name: PAY_LINK }).getAttribute("href")).toBe("/pay/checkout?product=saju&returnTo=%2Fsaju%2Fchart");
@@ -225,7 +225,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     seedTopic("money", "흙 속의 쇠");
     stub({ me: [OPENING_ME] });
     render(<SajuChartView />);
-    await screen.findByText("첫 장");
+    await screen.findByText("사주팔자 · 맛보기");
     tap("재물운");
     const eyebrow = await screen.findByText("재물운 · 맛보기");
     const back = screen.getByRole("button", { name: "사주팔자로 돌아가기" });
@@ -257,7 +257,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     seedTopic("money", "흙 속의 쇠");
     stub({ me: [OPENING_ME] });
     render(<SajuChartView />);
-    await screen.findByText("첫 장");
+    await screen.findByText("사주팔자 · 맛보기");
     expect(screen.getByText("3단계 중", { exact: false }).textContent).toContain("3단계 중");
     const back = () => screen.getByRole("link", { name: "입력으로 돌아가기" });
     expect(back().getAttribute("href")).toBe("/saju/new");
@@ -272,7 +272,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     const sent: Body[] = [];
     stub({ me: [MEMBER_ME], teaser: (body) => (sent.push(body), Response.json(teaserFor("love", "봄의 촛불"))) });
     render(<SajuChartView />);
-    await screen.findByText("첫 장");
+    await screen.findByText("사주팔자 · 맛보기");
     tap("직장운");
     expect(await screen.findByText("직장운 · 맛보기")).toBeTruthy();
     expect(sent).toHaveLength(0);
@@ -292,7 +292,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     seedTopic("money", "흙 속의 쇠");
     stub({ me: [MEMBER_ME], teaser: () => Response.json({ code: "BETA_LIMIT", message: "x" }, { status: 429 }) });
     render(<SajuChartView />);
-    await screen.findByText("첫 장");
+    await screen.findByText("사주팔자 · 맛보기");
     tap("재회운");
     expect(await screen.findByText(TEASER_LIMIT_NOTICE, { selector: "#teaser-limit" })).toBeTruthy();
     expect(within(row()).getByRole("button", { name: "재회운" }).getAttribute("aria-pressed")).toBe("true");
@@ -306,7 +306,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     const reading = vi.fn(() => Response.json(readingOf("money")));
     stub({ me: [OPENING_ME], reading });
     render(<SajuChartView />);
-    await screen.findByText("첫 장");
+    await screen.findByText("사주팔자 · 맛보기");
     for (const topic of [null, "재물운"]) {
       if (topic) tap(topic);
       const sheet = await screen.findByRole("region", { name: /전체 풀이에 담긴 것$/ });
@@ -329,7 +329,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
       },
     });
     render(<SajuChartView />);
-    await screen.findByText("첫 장");
+    await screen.findByText("사주팔자 · 맛보기");
     tap("재물운");
     fireEvent.click(await screen.findByRole("button", { name: "운영자로 무료 열기" }));
     await waitFor(() => expect(router.push).toHaveBeenCalled());
@@ -378,7 +378,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     saveChapter({ kind: "saju", birth: BIRTH, title: "흙 속의 쇠", summary: "요약", topic: "money", reading: { sections: sectionsOf("money") }, chapterToken: "t" } as NewChapter);
     stub({ me: [OPENING_ME] });
     render(<SajuChartView />);
-    await screen.findByText("첫 장");
+    await screen.findByText("사주팔자 · 맛보기");
     expect(screen.queryByRole("link", { name: /열어 둔 풀이 보기/ })).toBeNull();
     tap("재물운");
     expect(await screen.findByRole("link", { name: /열어 둔 풀이 보기/ })).toBeTruthy();
@@ -491,7 +491,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     seed();
     stub({ me: [OPENING_ME] });
     render(<SajuChartView initialTopic="money" />);
-    expect(await screen.findByText("첫 장")).toBeTruthy();
+    expect(await screen.findByText("사주팔자 · 맛보기")).toBeTruthy();
     expect(screen.getByText("고요한 물")).toBeTruthy();
     expect(screen.queryByRole("group", { name: OTHER_TOPICS_LABEL })).toBeNull();
     expect(screen.getByText("2단계 중", { exact: false })).toBeTruthy();
@@ -573,7 +573,7 @@ describe("SajuChartView 공유하기 (owner 2026-10-23: \"무료풀이에서도 
       return Response.json({ readings: [], next: null });
     }));
     render(<SajuChartView />);
-    expect(await screen.findByText("첫 장")).toBeTruthy();
+    expect(await screen.findByText("사주팔자 · 맛보기")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
     const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
     expect(sheet.textContent).toContain("맛보기 제목과 요약이 보여요");

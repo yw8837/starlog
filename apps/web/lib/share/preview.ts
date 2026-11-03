@@ -72,7 +72,7 @@ export function sharePreview(share: SharePayload, live?: BondsPreviewData | null
     case "tarot-free":
       return {
         title: titled(share.cards.map(cardName).join(" · "), firstSentence(share.first.heading)),
-        description: clip(firstSentence(share.first.body) || "뽑은 카드와 무료로 본 첫 풀이를 볼 수 있어요.", DESCRIPTION_MAX),
+        description: clip(firstSentence(share.first.body) || "뽑은 카드와 무료로 본 맛보기를 볼 수 있어요.", DESCRIPTION_MAX),
         try: tarotTry,
       };
     case "saju": {

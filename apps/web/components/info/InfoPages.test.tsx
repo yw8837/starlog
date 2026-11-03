@@ -381,7 +381,7 @@ describe("/help", () => {
     expect(on.items.map((item) => item.title)).toEqual(["사주 보기", "다른 운 보기", "시간 몰라도 돼요", "상태 칩", "맛보기와 전체 풀이"]);
     expect(JSON.stringify(on)).toContain("다른 운도 볼 수 있어요");
     const off = sajuOf("off");
-    expect(off.items.map((item) => item.title)).toEqual(["사주 보기", "시간 몰라도 돼요", "상태 칩", "첫 장과 전체 풀이"]);
+    expect(off.items.map((item) => item.title)).toEqual(["사주 보기", "시간 몰라도 돼요", "상태 칩", "맛보기와 전체 풀이"]);
     expect(JSON.stringify(off)).not.toMatch(/다른 운|사주팔자|직장운|고민 한 줄|고민을 한 줄/);
   });
 });

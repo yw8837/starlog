@@ -20,7 +20,7 @@ export function TopicPicker() {
   return (
     <>
       {/* Every row carries its price: say first what is free before paying (UX review 2026-10-28). */}
-      <p className={`${s.line} ${s.free}`}>명식과 첫 장 풀이는 무료로 먼저 보고, 전체 풀이를 열지 정해요.</p>
+      <p className={`${s.line} ${s.free}`}>명식은 로그인 없이, 맛보기는 로그인하고 무료로 먼저 보고, 전체 풀이를 열지 정해요.</p>
       <ul className={s.list} aria-label="무엇이 궁금해요?">
         {SAJU_TOPICS.map((topic) => (
           <li key={topic.id}>

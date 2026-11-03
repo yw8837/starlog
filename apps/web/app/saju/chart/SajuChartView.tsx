@@ -350,7 +350,7 @@ export function SajuChartView({
     content = (
       <>
         <Paper as="article" aria-labelledby="prologue-title">
-          <p className={s.paperEyebrow}>{topic === "overall" ? "첫 장" : `${topicLabel(topic)} · 맛보기`}</p>
+          <p className={s.paperEyebrow}>{topic === "overall" ? "사주팔자 · 맛보기" : `${topicLabel(topic)} · 맛보기`}</p>
           <h2 id="prologue-title" className={s.paperTitle}>
             {teaser.title}
           </h2>

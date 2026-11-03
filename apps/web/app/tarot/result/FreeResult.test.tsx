@@ -105,7 +105,7 @@ describe("FreeResult and sharing (owner 2026-10-23: \"무료풀이에서도 공�
     await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
     fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
     const sheet = screen.getByRole("dialog", { name: "결과 공유하기", hidden: true });
-    expect(sheet.textContent).toContain("뽑은 카드와 무료로 본 첫 풀이가 보여요");
+    expect(sheet.textContent).toContain("뽑은 카드와 무료로 본 맛보기가 보여요");
     expect(sheet.textContent).toContain("결제해야 보이는 뒷부분은 담지 않아요");
     await act(async () => {
       fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true }));

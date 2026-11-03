@@ -101,7 +101,7 @@ export function SharedDailyView({ share }: { share: SharedDaily }) {
         <h2 id="try-title" className={s.inviteTitle}>
           나도 오늘의 카드 골라 보기
         </h2>
-        <p className={s.inviteText}>섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 봐요. 하루 한 번 무료예요.</p>
+        <p className={s.inviteText}>섞은 카드 세 장 가운데 마음이 가는 한 장을 골라 봐요. 로그인하면 하루 한 번 무료예요.</p>
         <Button href="/today" block trailing="→">
           오늘의 한 장 뽑기
         </Button>

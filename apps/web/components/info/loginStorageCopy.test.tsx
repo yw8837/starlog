@@ -58,9 +58,10 @@ describe("login and storage wording (SEO-03)", () => {
     for (const retired of RETIRED) expect(page, String(retired)).not.toMatch(retired);
   });
 
-  it.each(SURFACES)("%s: a sentence that says the server stores nothing is about readings opened without logging in", (_name, read) => {
+  // The 맛보기 need a login from 2026-11-04 and their input is never stored, logged in or not: a sentence may say so of them.
+  it.each(SURFACES)("%s: a sentence that says the server stores nothing is about readings opened without logging in, or the 맛보기", (_name, read) => {
     for (const sentence of sentences(read()).filter((line) => /서버에는? [^.]*(저장하지|쌓지)/.test(line))) {
-      expect(sentence).toContain("로그인하지 않고");
+      expect(sentence).toMatch(/로그인하지 않고|맛보기/);
     }
   });
 
@@ -79,11 +80,13 @@ describe("login and storage wording (SEO-03)", () => {
     const records = entries.find((entry) => entry.id === "records")?.a.join(" ") ?? "";
     expect(records).toContain("지금 쓰는 기기의 브라우저에");
     expect(records).toMatch(ACCOUNT);
-    expect(records).toContain("로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서는 보이지 않아요");
+    expect(records).toContain("이 기기에만 남은 풀이와 맛보기는 다른 기기나 다른 브라우저에서는 보이지 않아요");
     const entry = entries.find((e) => e.id === "login");
     const login = entry?.a.join(" ") ?? "";
-    expect(login).toContain("로그인 없이 쓸 수 있어요");
-    expect(login).toContain("결제할 때와 별자리 인연에서 내 별자리를 만들 때는 카카오나 Google로 로그인해요");
+    // owner 2026-11-04: every AI reading needs a login; what stays open without one is listed, nothing more.
+    expect(login).toContain("타로와 사주의 맛보기, 오늘의 한 장, 결제, 별자리 인연의 내 별자리 만들기는 카카오나 Google로 로그인하고 써요");
+    expect(login).toContain("질문 만들기와 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드, 2027 키워드, 이번 주 행운 번호, 친구의 별자리 인연 초대, 공유받은 링크는 로그인 없이 쓸 수 있어요");
+    expect(login).not.toContain("첫 풀이");
     expect(login).not.toContain("가입 선물");
     // 오픈 기념 무료 is per logged-in account (owner 2026-10-27), said while it runs
     expect(entry?.opening).toContain("오픈 기념 무료 타로 전체 풀이도 로그인하고 받아요");

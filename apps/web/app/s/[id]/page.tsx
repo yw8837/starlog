@@ -41,7 +41,7 @@ function preview(share: SharePayload): { title: string; description: string } {
     return { title: `친구가 뽑은 지금의 한 장 · ${shortCardName(share.card)}`, description: share.answer };
   }
   if (share.kind === "tarot-free") {
-    return { title: `친구가 뽑은 카드 · ${share.cards.map(shortCardName).join(" · ")}`, description: `${SITE.nameKo}에서 카드로 본 무료 타로 풀이예요. 나도 카드를 뽑아 볼 수 있어요.` };
+    return { title: `친구가 뽑은 카드 · ${share.cards.map(shortCardName).join(" · ")}`, description: `${SITE.nameKo}에서 카드로 본 타로 맛보기예요. 나도 카드를 뽑아 볼 수 있어요.` };
   }
   if (share.kind === "saju-free") {
     return { title: `친구의 사주 맛보기 · ${share.title}`, description: share.summary };

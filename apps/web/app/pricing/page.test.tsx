@@ -47,7 +47,11 @@ describe("/pricing", () => {
     expect(text).toContain("내 기록에 계속 보관");
     expect(text).toContain("약 1,234자");
     expect(text).toContain("약 5,678~6,789자");
-    expect(text).toContain("첫 풀이는 하루 4번까지");
+    // owner 2026-11-04: no day count of the 맛보기 and no 첫 풀이 on screen; the login is said plainly.
+    expect(text).not.toContain("하루 4번");
+    expect(text).not.toContain("첫 풀이");
+    expect(text).toContain("로그인하면 맛보기와 이어지는 풀이의 소제목을 무료로 볼 수 있어요");
+    expect(text).toContain("오늘의 한 장은 로그인하면 하루 한 번 무료예요");
     expect(text).not.toMatch(/2,900원|8,500원|16,900원|27,000원/);
     expect(text).not.toContain("충전");
   });
@@ -128,6 +132,6 @@ describe("/pricing", () => {
   it("says one payment opens one chosen reading and that the four 운's teasers are free (saju-topics owner cut §0)", () => {
     const { container } = render(<PricingPage />);
     expect(container.textContent).toContain("사주팔자·연애운·재회운·재물운·직장운 가운데 고른 풀이 하나");
-    expect(container.textContent).toContain("연애운, 재회운, 재물운, 직장운의 맛보기도 무료이고, 새로 여는 맛보기는 하루 4번까지");
+    expect(container.textContent).toContain("사주팔자와 연애운, 재회운, 재물운, 직장운의 맛보기는 로그인하면 무료로 볼 수 있어요.");
   });
 });

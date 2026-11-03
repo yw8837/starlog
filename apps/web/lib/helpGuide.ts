@@ -75,7 +75,7 @@ export const openingFreeText = (count: number = SITE.beta.firstFreeTarot) =>
 
 export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
   const { followUps, approxChars } = site.reading;
-  const { firstFreeTarot, teaserPerDay } = site.beta;
+  const { firstFreeTarot } = site.beta;
   // Widened to number: SITE is `as const`, and literal prices that differ fail the comparison below.
   const { tarotStandardKrw, sajuStandardKrw }: { tarotStandardKrw: number; sajuStandardKrw: number } = site.price;
   // 주제별 사주 (saju-topics spec §5.4, owner cut §0): the 운 help from the `on` build only.
@@ -86,11 +86,11 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
     title: "다른 운 보기",
     sub: "연애운, 재회운, 재물운, 직장운",
     steps: [
-      "명식 화면의 첫 장 아래 ‘다른 운도 볼 수 있어요’에서 연애운, 재회운, 재물운, 직장운 가운데 하나를 눌러요.",
-      "그 운의 맛보기가 같은 자리에 바로 나와요. ‘사주팔자로 돌아가기’를 누르면 첫 장으로 돌아와요.",
+      "명식 화면의 사주팔자 맛보기 아래 ‘다른 운도 볼 수 있어요’에서 연애운, 재회운, 재물운, 직장운 가운데 하나를 눌러요.",
+      "로그인했다면 그 운의 맛보기가 같은 자리에 바로 나와요. ‘사주팔자로 돌아가기’를 누르면 사주팔자 맛보기로 돌아와요.",
       "전체 풀이는 지금 보고 있는 풀이 하나가 열려요. 다른 운은 따로 열어요.",
     ],
-    tip: `새로 여는 맛보기는 하루 ${times(teaserPerDay)}까지예요. 이 기기에서 이미 본 맛보기는 다시 봐도 횟수를 쓰지 않아요.`,
+    tip: "맛보기는 로그인하고 볼 수 있어요. 이 기기에서 이미 본 맛보기는 다시 봐도 횟수를 쓰지 않아요.",
   };
   const prices =
     tarotStandardKrw === sajuStandardKrw
@@ -118,11 +118,11 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           id: "no-login",
           icon: "device",
           title: "로그인 없이 쓰기",
-          sub: "기록은 이 기기에 남아요",
-          body: "로그인하지 않아도 질문 만들기, 카드 뽑기, 무료로 열리는 첫 풀이를 쓸 수 있어요. 연 풀이와 입력한 정보는 지금 쓰는 브라우저에 보관되고, 로그인하지 않고 연 풀이는 스타로그 서버에 저장하지 않아요. 결제할 때는 로그인해요.",
-          tip: `로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서 보이지 않고, 브라우저의 사이트 데이터를 지우면 이 기기의 기록도 함께 지워져요.${
-            // The one exception, said once; who logs in and why is the 별자리 인연 card's (#bonds-score).
-            site.features.bonds ? " 별자리 인연은 내 별자리를 만들 때만 로그인해요." : ""
+          sub: "AI 풀이는 로그인하고 봐요",
+          body: "로그인하지 않아도 질문 만들기, 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드를 쓸 수 있어요. AI가 써 주는 맛보기와 오늘의 한 장, 결제는 카카오나 Google로 로그인하고 써요. 입력한 정보와 연 풀이는 지금 쓰는 브라우저에 보관돼요.",
+          tip: `로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 이 기기에만 남은 풀이와 맛보기는 다른 기기나 다른 브라우저에서 보이지 않고, 브라우저의 사이트 데이터를 지우면 이 기기의 기록도 함께 지워져요.${
+            // Who logs in for 별자리 인연 and why is its card's (#bonds-score).
+            site.features.bonds ? " 별자리 인연은 내 별자리를 만들 때 로그인하고, 초대받은 친구는 로그인 없이 참여해요." : ""
           }`,
         },
         {
@@ -181,9 +181,9 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
         {
           id: "tarot-open",
           icon: "open",
-          title: "첫 풀이와 전체 풀이",
+          title: "맛보기와 전체 풀이",
           sub: "먼저 읽어 보고 열지 정해요",
-          body: `결과 화면에서 첫 풀이를 먼저 무료로 읽어요. 그 아래에 이어지는 풀이의 소제목과 분량(약 ${approxCharsText(approxChars.tarot)}자)이 보여요.`,
+          body: `결과 화면에서 로그인하면 맛보기를 먼저 무료로 읽어요. 그 아래에 이어지는 풀이의 소제목과 분량(약 ${approxCharsText(approxChars.tarot)}자)이 보여요. 카드를 뽑은 뒤에 로그인해도 뽑은 카드 그대로 이어서 읽어요.`,
           steps: [
             "더 보고 싶으면 전체 풀이 보기를 눌러요.",
             `전체 풀이와 함께 이어서 물어보기 ${followUps}번이 열리고, 풀이는 내 기록에 보관돼요(로그인했다면 계정에도).`,
@@ -224,7 +224,7 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
             "섞은 카드 세 장 가운데 마음이 가는 한 장을 골라요.",
             "고른 카드가 뒤집히면서 오늘의 한마디와 애정, 금전, 일 이야기, 오늘의 색과 숫자가 나와요.",
           ],
-          tip: "하루에 한 번 무료예요. 같은 날 다시 들어오면 고른 카드와 운세를 그대로 보여 드리고, 다음 날 새 카드가 기다려요.",
+          tip: "로그인하면 하루에 한 번 무료로 봐요. 같은 날 다시 들어오면 어느 기기에서든 고른 카드와 운세를 그대로 보여 드리고, 다음 날 새 카드가 기다려요.",
         },
       ],
     },
@@ -267,15 +267,15 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
               id: "saju-open",
               icon: "open",
               title: "맛보기와 전체 풀이",
-              sub: "명식과 맛보기는 먼저 무료로",
-              body: `명식(네 기둥, 오행, 일간)과 첫 장 요약, 그리고 보고 싶은 운의 맛보기를 먼저 무료로 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자예요. 결제 한 번에 지금 보는 풀이 하나가 열리고, 이어서 물어보기 ${followUps}번이 함께 열려요.`,
+              sub: "명식은 로그인 없이, 맛보기는 로그인하고 무료로",
+              body: `명식(네 기둥, 오행, 일간)은 로그인 없이 먼저 보고, 로그인하면 사주팔자와 보고 싶은 운의 맛보기를 무료로 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자예요. 결제 한 번에 지금 보는 풀이 하나가 열리고, 이어서 물어보기 ${followUps}번이 함께 열려요.`,
             }
           : {
               id: "saju-open",
               icon: "open",
-              title: "첫 장과 전체 풀이",
-              sub: "명식과 요약은 먼저 무료로",
-              body: `명식(네 기둥, 오행, 일간)과 첫 장 요약을 먼저 무료로 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자이고, 열면 이어서 물어보기 ${followUps}번이 함께 열려요.`,
+              title: "맛보기와 전체 풀이",
+              sub: "명식은 로그인 없이, 맛보기는 로그인하고 무료로",
+              body: `명식(네 기둥, 오행, 일간)은 로그인 없이 먼저 보고, 로그인하면 맛보기를 무료로 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자이고, 열면 이어서 물어보기 ${followUps}번이 함께 열려요.`,
             },
       ],
     },
@@ -376,8 +376,8 @@ export function helpGroups(site: typeof SITE = SITE): HelpGroup[] {
           id: "daily-free",
           icon: "spark",
           title: "매일 무료로 보는 것",
-          sub: "지금의 한 장, 오늘의 한 장",
-          body: `지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료로 볼 수 있어요. 먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 볼 수 있고, 한국 시간 0시에 다시 채워져요.`,
+          sub: "지금의 한 장, 오늘의 한 장, 맛보기",
+          body: "지금의 한 장은 로그인 없이 횟수 제한 없이 볼 수 있어요. 오늘의 한 장과 타로·사주의 맛보기는 로그인하면 무료로 볼 수 있어요.",
         },
         {
           id: "pricing",

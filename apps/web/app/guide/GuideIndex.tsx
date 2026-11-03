@@ -67,7 +67,7 @@ const TAB_COPY: Record<
 /** 무료로 해 보기: the app's free tools, each with one line on what it does (after its own page's description). */
 const FREE_TOOLS: ReadonlyArray<{ path: string; name: string; line: string }> = [
   { path: "/now", name: "지금의 한 장", line: "고민 하나를 떠올리고 카드 한 장을 골라요. 횟수 제한 없이 무료예요." },
-  { path: "/today", name: "오늘의 한 장", line: "하루 한 번, 카드 한 장으로 오늘의 운세와 색, 숫자를 봐요." },
+  { path: "/today", name: "오늘의 한 장", line: "로그인하면 하루 한 번, 카드 한 장으로 오늘의 운세와 색, 숫자를 봐요." },
   { path: BIRTH_CARD_PATH, name: BIRTH_CARD_TITLE, line: "생년월일로 메이저 아르카나 22장 가운데 나를 닮은 카드를 찾아요." },
   { path: KEYWORD_PATH, name: KEYWORD_TITLE, line: "생일의 일주로 2027년 정미년에 붙들 키워드를 골라 드려요." },
 ];

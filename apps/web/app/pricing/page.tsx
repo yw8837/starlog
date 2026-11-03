@@ -7,7 +7,7 @@ import s from "@/components/legal/legal.module.css";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { OpeningOnly } from "@/components/ui/OpeningOnly";
 import { SITE, won } from "@/lib/config";
-import { openingFreeText, times } from "@/lib/helpGuide";
+import { openingFreeText } from "@/lib/helpGuide";
 import { REFUND_DAYS, standardProduct } from "@/lib/pay/catalog";
 import { premiumPath } from "@/lib/premium/products";
 import { approxCharsText } from "@/lib/pricing";
@@ -152,9 +152,9 @@ export default function PricingPage() {
           <OpeningOnly>
             <li>{openingFreeText(beta.firstFreeTarot)}</li>
           </OpeningOnly>
-          <li>{`타로는 뽑은 카드 3장과 첫 풀이, 이어지는 풀이의 소제목을 먼저 무료로 볼 수 있어요. 첫 풀이는 하루 ${times(beta.teaserPerDay)}까지 볼 수 있어요.`}</li>
-          <li>{sajuFreeLine(features.sajuTopics, beta.teaserPerDay)}</li>
-          <li>지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료예요.</li>
+          <li>타로는 뽑은 카드 3장을 먼저 보고, 로그인하면 맛보기와 이어지는 풀이의 소제목을 무료로 볼 수 있어요.</li>
+          <li>{sajuFreeLine(features.sajuTopics)}</li>
+          <li>지금의 한 장은 로그인 없이 횟수 제한 없이, 오늘의 한 장은 로그인하면 하루 한 번 무료예요.</li>
         </ul>
       </LegalSection>
 

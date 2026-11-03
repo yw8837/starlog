@@ -1,7 +1,7 @@
 import { adsConfig } from "./ads";
 import { OPENING_LAST_DAY, SITE, won } from "./config";
 import { approxCharsText } from "./pricing";
-import { openingFreeText, times } from "./helpGuide";
+import { openingFreeText } from "./helpGuide";
 import { crisisLines } from "./crisis";
 import { INFO_PAGES } from "./infoPages";
 import { withParticle } from "./korean";
@@ -39,7 +39,7 @@ type FaqOptions = { site?: typeof SITE; ads?: boolean };
 
 export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOptions = {}): FaqGroup[] {
   const { nameKo } = site;
-  const { firstFreeTarot, teaserPerDay } = site.beta;
+  const { firstFreeTarot } = site.beta;
   const { approxChars } = site.reading;
   const { tarotStandardKrw, sajuStandardKrw } = site.price;
   const premiumKrw = site.price.premium.map((product) => product.krw);
@@ -96,8 +96,8 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           q: `${nameKo}는 무료인가요?`,
           // The direct answer first, in facts that stay true (AEO); the dated offer only in `opening`.
           a: [
-            `일부는 무료예요. 지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료이고, 타로 전체 풀이는 ${won(tarotStandardKrw)}, 사주 전체 풀이는 ${won(sajuStandardKrw)}이에요.`,
-            `먼저 읽는 첫 풀이는 하루 ${times(teaserPerDay)}까지 무료로 열 수 있고, 한국 시간 0시에 다시 채워져요. 깊게 보는 풀이의 가격도 가격 안내에서 볼 수 있어요.`,
+            `일부는 무료예요. 지금의 한 장은 로그인 없이 횟수 제한 없이 무료이고, 오늘의 한 장은 로그인하면 무료예요. 타로 전체 풀이는 ${won(tarotStandardKrw)}, 사주 전체 풀이는 ${won(sajuStandardKrw)}이에요.`,
+            "타로와 사주의 맛보기도 로그인하면 무료로 볼 수 있어요. 깊게 보는 풀이의 가격도 가격 안내에서 볼 수 있어요.",
           ],
           opening: `${openingFreeText(firstFreeTarot)} 사주 전체 풀이는 결제하고 열어요.`,
           link: { href: "/pricing", label: "가격 안내" },
@@ -107,7 +107,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           q: "가격은 얼마예요?",
           a: [
             `타로 전체 풀이는 ${won(tarotStandardKrw)}, 사주 전체 풀이는 ${won(sajuStandardKrw)}이에요. 풀이는 건별로 결제하고, 결제 한 번에 풀이 하나와 이어서 물어보기 ${site.reading.followUps}번이 열려요.`,
-            `카드 10장이나 두 사람의 사주, 2027년 한 해를 깊게 보는 풀이는 ${won(Math.min(...premiumKrw))}부터 ${won(Math.max(...premiumKrw))}까지예요. 지금의 한 장과 오늘의 한 장은 무료예요.`,
+            `카드 10장이나 두 사람의 사주, 2027년 한 해를 깊게 보는 풀이는 ${won(Math.min(...premiumKrw))}부터 ${won(Math.max(...premiumKrw))}까지예요. 지금의 한 장은 무료이고, 오늘의 한 장은 로그인하면 무료예요.`,
           ],
           link: { href: "/pricing", label: "가격 안내" },
         },
@@ -115,7 +115,8 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "login",
           q: "가입하거나 로그인해야 하나요?",
           a: [
-            `꼭 필요하지는 않아요. 질문 만들기, 카드 뽑기, 무료로 열리는 첫 풀이, 지금의 한 장, 오늘의 한 장은 로그인 없이 쓸 수 있어요. 결제할 때${site.features.bonds ? "와 별자리 인연에서 내 별자리를 만들 때" : ""}는 카카오나 Google로 로그인해요.`,
+            `AI가 써 주는 풀이를 보려면 로그인해요. 타로와 사주의 맛보기, 오늘의 한 장, 결제${site.features.bonds ? ", 별자리 인연의 내 별자리 만들기" : ""}는 카카오나 Google로 로그인하고 써요.`,
+            `질문 만들기와 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드, 2027 키워드${site.features.bonds ? ", 이번 주 행운 번호, 친구의 별자리 인연 초대" : ""}, 공유받은 링크는 로그인 없이 쓸 수 있어요.`,
           ],
           // owner 2026-10-27: 오픈 기념 무료 is per logged-in account
           opening: `오픈 기념 무료 타로 전체 풀이도 로그인하고 받아요(${OPENING_LAST_DAY}까지 계정마다 한 번, 같은 기기에서는 한 번).`,
@@ -152,8 +153,8 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "preview",
           q: "풀이를 열기 전에 무엇을 볼 수 있나요?",
           a: [
-            `타로는 뽑은 카드 세 장과 첫 풀이를 먼저 무료로 읽어요. 이어지는 풀이의 소제목과 분량(약 ${approxCharsText(approxChars.tarot)}자)도 미리 보여 드려요.`,
-            `사주는 명식(네 기둥, 오행, 일간)과 첫 장 요약을 먼저 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자예요. 무엇이 담기는지 보고 나서 열지 정하면 돼요.`,
+            `타로는 뽑은 카드 세 장을 보고, 로그인하면 맛보기를 무료로 읽어요. 이어지는 풀이의 소제목과 분량(약 ${approxCharsText(approxChars.tarot)}자)도 미리 보여 드려요.`,
+            `사주는 명식(네 기둥, 오행, 일간)을 로그인 없이 먼저 보고, 로그인하면 맛보기를 무료로 봐요. 전체 풀이는 약 ${approxCharsText(approxChars.saju)}자예요. 무엇이 담기는지 보고 나서 열지 정하면 돼요.`,
           ],
         },
         {
@@ -193,7 +194,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "stored",
           q: "생년월일과 질문이 서버에 저장되나요?",
           a: [
-            `로그인하지 않고 쓰면 ${nameKo} 서버에는 저장하지 않아요. 풀이를 만드는 동안 질문, 고른 상황, 메모, 출생 정보를 암호화된 연결로 미국의 AI 서비스 사업자에게 보내고, 풀이가 끝나면 서버에서 바로 지워요. 그 사업자 쪽 보관 기간과 국외 이전은 개인정보처리방침에 적어 두었어요.`,
+            `맛보기는 ${nameKo} 서버에 저장하지 않아요. 풀이를 만드는 동안 질문, 고른 상황, 메모, 출생 정보를 암호화된 연결로 미국의 AI 서비스 사업자에게 보내고, 풀이가 끝나면 서버에서 바로 지워요. 그 사업자 쪽 보관 기간과 국외 이전은 개인정보처리방침에 적어 두었어요.`,
             "입력한 내용과 연 풀이는 이 기기의 브라우저에 남아요. 로그인해 결제하고 연 풀이는 입력한 내용과 함께 암호화해 계정에도 보관하고, 내 정보에서 지우거나 탈퇴하면 지워요.",
           ],
           link: { href: "/privacy", label: "개인정보처리방침" },
@@ -202,7 +203,7 @@ export function faqGroups({ site = SITE, ads = adsConfig() !== null }: FaqOption
           id: "records",
           q: "기록은 어디에 남나요? 다른 기기에서도 볼 수 있나요?",
           a: [
-            "연 풀이는 지금 쓰는 기기의 브라우저에 남아요. 로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 로그인하지 않고 연 풀이는 다른 기기나 다른 브라우저에서는 보이지 않아요.",
+            "연 풀이는 지금 쓰는 기기의 브라우저에 남아요. 로그인해 결제하고 연 풀이는 계정에도 보관돼 다른 기기에서 볼 수 있어요. 이 기기에만 남은 풀이와 맛보기는 다른 기기나 다른 브라우저에서는 보이지 않아요.",
             "브라우저의 사이트 데이터를 지우면 이 기기의 기록도 함께 지워지고, 내 정보에서 한 번에 지울 수도 있어요. 지운 기록은 되돌릴 수 없어요.",
           ],
         },

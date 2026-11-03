@@ -7,7 +7,6 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { SpeechBubble } from "@/components/ui/SpeechBubble";
 import { SITE, won } from "@/lib/config";
 import { DEEP_TAROT_HREF, NEW_TAROT_HREF } from "@/lib/freshStart";
-import { times } from "@/lib/helpGuide";
 import { PREMIUM } from "@/lib/premium/products";
 import s from "./TarotBridge.module.css";
 
@@ -54,9 +53,8 @@ export function TarotBridge() {
                 <span className={s.sub}>카드 3장으로 지금을 봐요</span>
               </span>
               <span className={s.scope}>
+                {/* owner 2026-11-04 "그냥 없애": no 첫 풀이 or day count here, only what the price opens. */}
                 <span className={s.scopeLine}>
-                  <span className={s.piece}>{`첫 풀이 하루 ${times(SITE.beta.teaserPerDay)} 무료`}</span>
-                  {" · "}
                   <span className={s.piece}>{`이어서 물어보기 ${SITE.reading.followUps}번`}</span>
                 </span>
                 {/* Both cards show their price the same way, a chip at the end (owner 2026-10-20). */}

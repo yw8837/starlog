@@ -72,7 +72,7 @@ export function SharedTarotFreeView({ share, title }: { share: SharedTarotFree; 
     <ReadingLayout
       head={
         <header className={s.head}>
-          <p className={s.eyebrow}>친구가 공유한 무료 타로 풀이</p>
+          <p className={s.eyebrow}>친구가 공유한 타로 맛보기</p>
           <h1 className={s.title}>{title}</h1>
           <p className={s.question}>질문 원문과 직접 쓴 말은 공유한 사람만 볼 수 있어요.</p>
         </header>
@@ -97,7 +97,7 @@ export function SharedTarotFreeView({ share, title }: { share: SharedTarotFree; 
           <p className={f.nudge}>이어지는 이야기는 공유한 사람만 볼 수 있어요</p>
         </Paper>
       ) : null}
-      <TryOwn title="나도 카드 뽑아 보기" text="마음에 걸리는 일 하나를 골라 카드로 물어봐요. 첫 풀이는 무료로 볼 수 있어요.">
+      <TryOwn title="나도 카드 뽑아 보기" text="마음에 걸리는 일 하나를 골라 카드로 물어봐요. 맛보기는 로그인하면 무료로 볼 수 있어요.">
         <Button href={NEW_TAROT_HREF} block trailing="→">
           타로 보기
         </Button>
@@ -123,7 +123,7 @@ export function SharedSajuFreeView({ share }: { share: SharedSajuFree }) {
       <Paper>
         <p className={f.prose}>{share.summary}</p>
       </Paper>
-      <TryOwn title="내 사주도 보기" text="태어난 날만 고르면 만세력으로 사주를 계산해 맛보기를 무료로 보여 줘요.">
+      <TryOwn title="내 사주도 보기" text="태어난 날만 고르면 만세력으로 사주를 계산해 명식을 바로 보여 주고, 로그인하면 맛보기도 무료로 보여 줘요.">
         <Button href={NEW_SAJU_HREF} block trailing="→">
           사주 보기
         </Button>

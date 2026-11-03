@@ -21,7 +21,7 @@ export function shareOgData(share: SharePayload, origin: string, live: BondsShar
     return { label: "친구가 뽑은 지금의 한 장", headline: name(share.card), body: clip(share.answer), cards: [face(share.deck, share.card)], host };
   }
   if (share.kind === "tarot-free") {
-    return { label: "친구가 공유한 무료 타로 풀이", headline: share.cards.map(name).join(" · "), cards: share.cards.map((card) => face(share.deck, card)), host };
+    return { label: "친구가 공유한 타로 맛보기", headline: share.cards.map(name).join(" · "), cards: share.cards.map((card) => face(share.deck, card)), host };
   }
   if (share.kind === "saju-free") {
     return { label: `친구가 공유한 ${share.topic ? `${topicLabel(share.topic)} ` : "사주 "}맛보기`, headline: share.title, body: clip(share.summary), elements: true, host };

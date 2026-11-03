@@ -74,9 +74,9 @@ const SHOWN: Record<ShareKind, { shown: string; hidden: string; kakao: string; b
     button: "카드 보기",
   },
   "tarot-free": {
-    shown: "뽑은 카드와 무료로 본 첫 풀이",
+    shown: "뽑은 카드와 무료로 본 맛보기",
     hidden: "질문 원문과 직접 쓴 말은 가리고, 결제해야 보이는 뒷부분은 담지 않아요. 다만 풀이에 고민 내용이 담겨 있으니 보낼 사람을 골라 주세요.",
-    kakao: "뽑은 카드와 무료로 본 첫 풀이를 볼 수 있어요. 질문 원문과 직접 쓴 말은 가렸어요.",
+    kakao: "뽑은 카드와 무료로 본 맛보기를 볼 수 있어요. 질문 원문과 직접 쓴 말은 가렸어요.",
   },
   "saju-free": {
     shown: "맛보기 제목과 요약",

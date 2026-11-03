@@ -69,7 +69,8 @@ export const SITE = {
    * Free use. 오픈 기념 무료 (owner 2026-10-14 evening; per account from owner 2026-10-27): one tarot full reading free per
    * logged-in Kakao or Google account, and once per device (the server's BETA_FULL_PER_DAY, named before the rule changed),
    * until `openingEndsAt` (KST ISO, exclusive: the last free moment is 2026-11-30 23:59:59 KST, owner 2026-10-27 "이벤트 기간
-   * 11월 한 달로 해"); no follow-ups, shareable since owner 2026-10-23. Saju full readings are never free. Teasers: a daily count (BETA_TEASER_PER_DAY).
+   * 11월 한 달로 해"); no follow-ups, shareable since owner 2026-10-23. Saju full readings are never free. Teasers (맛보기): a daily count per logged-in
+   * account, counted on the server (BETA_TEASER_PER_DAY; owner 2026-11-04: a login first, no day count shown on screens).
    */
   beta: {
     firstFreeTarot: 1,

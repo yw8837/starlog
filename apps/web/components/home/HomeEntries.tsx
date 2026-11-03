@@ -130,7 +130,7 @@ export function QuickCards() {
         <span className={s.quickText}>
           <span className={s.quickTitle}>오늘의 한 장</span>
           <span className={s.quickSub}>카드로 보는 오늘의 운세</span>
-          <span className={s.quickTag}>매일 무료</span>
+          <span className={s.quickTag}>로그인하면 매일 무료</span>
         </span>
       </Link>
     </div>

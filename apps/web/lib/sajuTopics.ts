@@ -1,4 +1,4 @@
-import { SITE, sajuTopicsMode, type SajuTopicsMode } from "@/lib/config";
+import { sajuTopicsMode, type SajuTopicsMode } from "@/lib/config";
 import type { Locale } from "@/lib/i18n/locales";
 import type { SajuSituationId, SajuTopic, SajuTopicId } from "@/lib/reading/types";
 import { SAJU_GLANCE_HEADING } from "@/lib/sajuPrologue";
@@ -172,6 +172,6 @@ export const TOPIC_PICK_LINES: Readonly<Record<SajuTopic, string>> = Object.free
 export const OTHER_TOPICS_LABEL = "다른 운도 볼 수 있어요";
 /** The way back to the 사주팔자, at the top of a 운's reading. */
 export const BACK_TO_OVERALL = "사주팔자로 돌아가기";
-export const TOPIC_SWITCH_HELP = `새로 여는 맛보기는 하루 ${SITE.beta.teaserPerDay}번까지 볼 수 있어요. 이미 본 맛보기는 횟수를 쓰지 않아요.`;
+export const TOPIC_SWITCH_HELP = "맛보기는 로그인하고 볼 수 있어요. 이미 본 맛보기는 다시 봐도 횟수를 쓰지 않아요.";
 export const TEASER_LIMIT_NOTICE = "오늘 맛보기를 모두 봤어요. 자정에 다시 열려요. 이미 본 맛보기는 계속 볼 수 있어요.";
 export const UNLOCK_SCOPE_LINE = "결제 한 번에 고른 풀이 하나를 열어요";

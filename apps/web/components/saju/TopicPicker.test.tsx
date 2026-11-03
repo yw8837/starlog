@@ -29,6 +29,6 @@ describe("TopicPicker (saju step 1, owner 2026-10-14)", () => {
   });
   it("says what is free before the prices (UX review 2026-10-28)", () => {
     render(<TopicPicker />);
-    expect(screen.getByText("명식과 첫 장 풀이는 무료로 먼저 보고, 전체 풀이를 열지 정해요.")).toBeTruthy();
+    expect(screen.getByText("명식은 로그인 없이, 맛보기는 로그인하고 무료로 먼저 보고, 전체 풀이를 열지 정해요.")).toBeTruthy();
   });
 });

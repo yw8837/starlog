@@ -60,7 +60,9 @@ describe("the five topics", () => {
     // reading-voice-2026-10 §5 (owner 2026-10-08): 2~5절 at 350~480자, as real readings already wrote them, and the total with them
     expect(TOPIC_SECTION_LENGTH).toEqual([[300, 400], [350, 480], [350, 480], [350, 480], [350, 480], [200, 400]]);
     expect(TOPIC_TOTAL_LENGTH).toEqual([1900, 2700]);
-    expect(TOPIC_SWITCH_HELP).toBe(`새로 여는 맛보기는 하루 ${SITE.beta.teaserPerDay}번까지 볼 수 있어요. 이미 본 맛보기는 횟수를 쓰지 않아요.`);
+    // owner 2026-11-04: the login said plainly, no day count shown.
+    expect(TOPIC_SWITCH_HELP).toBe("맛보기는 로그인하고 볼 수 있어요. 이미 본 맛보기는 다시 봐도 횟수를 쓰지 않아요.");
+    expect(TOPIC_SWITCH_HELP).not.toContain(String(SITE.beta.teaserPerDay));
   });
 
   it("says the chart page's fixed lines", () => {

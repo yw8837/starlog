@@ -2,7 +2,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SITE, won } from "@/lib/config";
-import { times } from "@/lib/helpGuide";
 import { PREMIUM } from "@/lib/premium/products";
 import TarotStartPage, { metadata } from "./page";
 
@@ -59,10 +58,10 @@ describe("/tarot/start, the 다리 화면 (owner 2026-10-16)", () => {
     expect(screen.queryByRole("button", { name: /한복/ })).toBeNull();
   });
 
-  it("says what each one holds, every number from config: today's free first reading and price, the 10-card length and follow-ups", async () => {
+  it("says what each one holds, every number from config: the follow-ups and price, the 10-card length and follow-ups; no 첫 풀이 or day count (owner 2026-11-04 \"그냥 없애\")", async () => {
     const deep = PREMIUM["tarot-deep"];
     const { links } = await renderBridge();
-    expect(links[0]!.textContent).toContain(`첫 풀이 하루 ${times(SITE.beta.teaserPerDay)} 무료`);
+    expect(links[0]!.textContent).not.toMatch(/첫 풀이|하루 \d+번|무료/);
     expect(links[0]!.textContent).toContain(`이어서 물어보기 ${SITE.reading.followUps}번`);
     expect(links[1]!.textContent).toContain(`약 ${num(deep.approxChars)}자`);
     expect(links[1]!.textContent).toContain(`이어서 물어보기 ${deep.followUps}번`);

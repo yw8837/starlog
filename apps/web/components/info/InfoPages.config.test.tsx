@@ -38,19 +38,21 @@ describe("service pages take every number from SITE", () => {
     expect(text).toContain("타로 전체 풀이는 한 번에 3,100원, 사주 전체 풀이는 4,100원이에요.");
     expect(text).toContain("타로 전체 풀이 두 번 · 11월 30일까지");
     expect(text).toContain(OPENING);
-    expect(text).toContain("첫 풀이는 하루 4번까지");
+    // owner 2026-11-04: no 첫 풀이 and no day count of the 맛보기; the login is said plainly.
+    expect(text).not.toMatch(/첫 풀이|하루 4번/);
+    expect(text).toContain("오늘의 한 장과 타로·사주의 맛보기는 로그인하면 무료로 볼 수 있어요.");
     expect(text).toContain("이어서 물어보기 5번");
     expect(text).toContain("약 1,234자");
     expect(text).toContain("약 5,678~6,789자");
     expect(text).not.toMatch(/2,900원|2,000자|3,000자|하루 한 번 무료로 열어요/);
   });
 
-  it("/help drops the 오픈 기념 무료 card by itself from 2026-12-01 00:00 KST, and keeps the daily free count", () => {
+  it("/help drops the 오픈 기념 무료 card by itself from 2026-12-01 00:00 KST, and keeps what is free with a login", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(ENDED);
     const text = render(<HelpPage />).container.textContent ?? "";
     expect(text).not.toContain("오픈 기념 무료");
-    expect(text).toContain("첫 풀이는 하루 4번까지");
+    expect(text).toContain("오늘의 한 장과 타로·사주의 맛보기는 로그인하면 무료로 볼 수 있어요.");
   });
 
   it("/faq, page and JSON-LD alike: the free answer leads with what stays true; 오픈 기념 무료 only in the browser, never in the JSON-LD", () => {
@@ -63,8 +65,9 @@ describe("service pages take every number from SITE", () => {
     // The refund answer may still say a 오픈 기념 무료 reading needs no refund (true for good); the offer itself never.
     expect(jsonLd).not.toMatch(/11월 30일까지|오픈 기념 무료\(/);
     for (const body of [text, jsonLd]) {
-      expect(body).toContain("일부는 무료예요. 지금의 한 장은 횟수 제한 없이, 오늘의 한 장은 하루 한 번 무료이고, 타로 전체 풀이는 3,100원, 사주 전체 풀이는 4,100원이에요.");
-      expect(body).toContain("하루 4번까지");
+      expect(body).toContain("일부는 무료예요. 지금의 한 장은 로그인 없이 횟수 제한 없이 무료이고, 오늘의 한 장은 로그인하면 무료예요. 타로 전체 풀이는 3,100원, 사주 전체 풀이는 4,100원이에요.");
+      expect(body).toContain("타로와 사주의 맛보기도 로그인하면 무료로 볼 수 있어요.");
+      expect(body).not.toMatch(/하루 4번|첫 풀이/);
       expect(body).toContain("약 1,234자");
       expect(body).toContain("약 5,678~6,789자");
       expect(body).not.toMatch(/2,000자|3,000자/);
