@@ -76,8 +76,12 @@ test("tarot: a visitor draws, is asked to log in where the 맛보기 would show,
   await expect(panel).toBeVisible({ timeout: NAV });
   await expect(panel).toContainText("고른 카드와 질문은 그대로 있어요");
   await expect(page.getByRole("heading", { level: 1 })).toContainText("재물");
-  expect(teasers.length).toBeGreaterThan(0);
-  expect(teasers.every((sent) => sent.status === 401 && sent.drawToken === drawToken)).toBe(true);
+  // `next dev` runs React's Strict Mode, whose replayed effect aborts its first request (no answer, status -1): only the
+  // answered ones count.
+  const answered = teasers.filter((sent) => sent.status > 0);
+  expect(answered.length).toBeGreaterThan(0);
+  expect(answered.every((sent) => sent.status === 401)).toBe(true);
+  expect(teasers.every((sent) => sent.drawToken === drawToken)).toBe(true);
   const asVisitor = teasers.length;
 
   await panel.getByRole("link", { name: "로그인하고 맛보기 보기" }).click();
