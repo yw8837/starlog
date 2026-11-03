@@ -5,7 +5,8 @@ import { PremiumChangeNotice, PremiumLegalNotice, PremiumTerms, PremiumUpcoming 
 import s from "@/components/legal/legal.module.css";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
-  OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, contactChannels, koreanDate, premiumChangeNoticeShown, premiumLegalInForce, syncRevisionInForce, termsEffectiveDate,
+  LOGIN_RULE_DATE, OPENING_ACCOUNT_DATE, SYNC_REVISION_DATE, contactChannels, koreanDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce, syncRevisionInForce,
+  termsEffectiveDate,
 } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { appHref } from "@/lib/hosts";
@@ -54,6 +55,24 @@ function OpeningChangeNotice() {
   );
 }
 
+/**
+ * AI 풀이 needs a login (lib/legal.ts LOGIN_RULE_DATE, owner 2026-11-04): what changed against the old 제6조 2호, on top for 30
+ * days (less favourable to a visitor, before 30 days' notice, so said openly, as the 오픈 기념 무료 change was).
+ */
+const MEMBERS_FREE = "비회원도 질문 만들기, 카드 뽑기, 사주 명식, 지금의 한 장 등 일부 서비스를 이용할 수 있습니다. AI가 만드는 타로·사주 맛보기와 오늘의 한 장은 회원으로 로그인해야 이용할 수 있습니다. 비회원의 기록은 이용 중인 기기의 브라우저에만 저장되며, 기기를 바꾸거나 브라우저 데이터를 지우면 사라질 수 있습니다.";
+
+function LoginRuleNotice() {
+  return (
+    <aside className={s.note} aria-labelledby="login-rule-title">
+      <h2 id="login-rule-title" className={s.noteTitle}>{`${koreanDate(LOGIN_RULE_DATE)} 바뀐 내용 · AI 풀이 로그인`}</h2>
+      <ul className={s.list}>
+        <li>타로·사주 맛보기와 오늘의 한 장은 이제 카카오나 Google로 로그인해야 볼 수 있습니다. 질문 만들기, 카드 뽑기, 사주 명식, 지금의 한 장은 지금처럼 로그인 없이 쓸 수 있습니다(제6조 2호).</li>
+        <li>맛보기의 하루 횟수는 기기가 아니라 로그인한 계정마다 세고, 오늘의 한 장은 계정마다 하루 한 장으로 어느 기기에서든 같은 카드를 보여 드립니다.</li>
+      </ul>
+    </aside>
+  );
+}
+
 /** Rendered per request: the premium clauses come in force at a KST midnight with no deploy (lib/legal.ts). */
 export const dynamic = "force-dynamic";
 
@@ -68,6 +87,7 @@ export default function TermsPage() {
     <LegalPage title="이용약관" effective={effective} host="either">
       {inForce ? null : <PremiumLegalNotice />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice /> : null}
+      {loginRuleNoticeShown(now) ? <LoginRuleNotice /> : null}
       {openingFreeOn(now) ? <OpeningChangeNotice /> : null}
       {revised ? null : (
         <LegalNote>
@@ -166,7 +186,7 @@ export default function TermsPage() {
 
       <LegalSection id="members" title="제6조 (회원과 비회원 이용)">
         <ol className={s.list}>
-          <li>비회원도 질문 만들기, 카드 뽑기, 무료로 공개하는 풀이 등 일부 서비스를 이용할 수 있습니다. 비회원의 기록은 이용 중인 기기의 브라우저에만 저장되며, 기기를 바꾸거나 브라우저 데이터를 지우면 사라질 수 있습니다.</li>
+          <li>{MEMBERS_FREE}</li>
           <li>회원 가입은 카카오 계정이나 Google 계정으로 로그인해서 합니다.</li>
           <li>회원은 언제든지 내 정보에서 탈퇴할 수 있습니다. 탈퇴하면 열지 않은 결제 풀이는 전액 환불하고, 계정에 보관한 풀이는 지웁니다. 다만 풀이를 받던 중에 이용자가 화면을 닫거나 연결이 끊겨 제7조에 따라 환불 대상이 아닌 결제 풀이는 환불하지 않으며, 탈퇴와 함께 더 이상 열 수 없습니다. 결제 기록은 관련 법령이 정한 기간 동안 보관합니다.</li>
           <li>회원은 자신의 계정을 직접 관리해야 하며, 다른 사람이 자신의 계정을 쓰게 해서는 안 됩니다.</li>

@@ -81,6 +81,18 @@ export const OPENING_ACCOUNT_DATE = "2026-10-27";
 /** The claim record kept through an account deletion until the event ends (owner 2026-10-28), said with the notice above. */
 export const OPENING_RETENTION_DATE = "2026-10-28";
 
+/**
+ * Every AI reading result needs a login (owner 2026-11-04, final): the tarot and saju 맛보기 and 오늘의 한 장 are no longer
+ * open to a visitor, the 맛보기 are counted per account on the server, and 오늘의 한 장 is kept per account. Less favourable
+ * to a visitor and in force from the deploy, before the 30 days' notice the terms promise (제3조) and the 7 days the privacy
+ * policy promises, so, as with OPENING_ACCOUNT_DATE, both say what changed, dated, at their top: for 30 days from this day.
+ * The day this went live: move it (and the end with it) if the deploy goes out on another day. The 시행일 shown stays.
+ */
+export const LOGIN_RULE_DATE = "2026-11-04";
+const LOGIN_RULE_NOTICE_UNTIL_AT = Date.parse(`${LOGIN_RULE_DATE}T00:00:00+09:00`) + 30 * 24 * 60 * 60 * 1000;
+
+export const loginRuleNoticeShown = (now: number = Date.now()): boolean => now < LOGIN_RULE_NOTICE_UNTIL_AT;
+
 /** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
 export const privacyEffectiveDate = (now: number = Date.now()): string =>
   syncRevisionInForce(now)

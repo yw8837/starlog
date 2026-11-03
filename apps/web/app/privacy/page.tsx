@@ -9,6 +9,7 @@ import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
   GA_REVISION_DATE,
+  LOGIN_RULE_DATE,
   OPENING_ACCOUNT_DATE,
   OPENING_RETENTION_DATE,
   PRIVACY_REVISION_DATE,
@@ -16,6 +17,7 @@ import {
   contactChannels,
   gaRevisionInForce,
   koreanDate,
+  loginRuleNoticeShown,
   premiumChangeNoticeShown,
   premiumLegalInForce,
   privacyEffectiveDate,
@@ -145,9 +147,9 @@ const processors = (premium: boolean, ga: boolean, synced: boolean): readonly Pr
 
 /** Cookies the server sets: all HttpOnly, SameSite=Lax, Secure in production, signed so they cannot be forged. */
 const COOKIES: Rows = [
-  ["sl_q", "오늘 연 첫 풀이와 후속 질문의 횟수를 세어 하루 무료 횟수를 지키는 데 씁니다. 2일 뒤 만료됩니다."],
+  ["sl_q", "오늘 한 후속 질문(이어서 물어보기)의 횟수를 세어 하루 횟수를 지키는 데 씁니다. 2일 뒤 만료됩니다."],
   ["sl_first", `이 기기에서 오픈 기념 무료(${OPENING_LAST_DATE}까지, 로그인한 계정마다 타로 전체 풀이 1회)를 받았는지 기록해, 같은 기기에서는 계정을 바꿔도 한 번만 드리는 데 씁니다. 1년 뒤 만료됩니다.`],
-  ["sl_daily", "오늘의 한 장에 쓰는 무작위 기기 식별값과 날짜, 그날의 카드를 담습니다. 2일 뒤 만료됩니다."],
+  ["sl_daily", "오늘의 한 장에 쓰는 값으로, 로그인한 계정 식별값을 되돌릴 수 없게 바꾼 값과 날짜, 고른 자리, 그날 이 기기에서 새로 쓴 횟수를 담습니다. 2일 뒤 만료됩니다."],
   ["sl_owner", "운영자 본인 확인용으로, 운영자의 기기에만 만들어집니다. 1년 뒤 만료됩니다."],
   ["sl_sid", "로그인 세션을 알아보는 값입니다. 30일 뒤 만료되고, 로그아웃하면 바로 끝납니다."],
   ["sl_oauth", "카카오·Google 로그인이 이 브라우저에서 시작됐는지 확인하는 값입니다. 10분 뒤 만료됩니다."],
@@ -201,6 +203,15 @@ export default function PrivacyPage() {
           <h2 id="opening-privacy-title" className={s.noteTitle}>{`${koreanDate(OPENING_ACCOUNT_DATE)} 바뀐 내용`}</h2>
           <p>오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요.</p>
           <p>{`${koreanDate(OPENING_RETENTION_DATE)}부터: 탈퇴한 뒤 같은 계정으로 다시 받지 않도록, 받은 기록(계정 식별값을 되돌릴 수 없게 바꾼 값과 시각)은 탈퇴해도 오픈 기념 무료가 끝날 때까지 남겼다가 ${OPENING_LAST_DATE}이 지나면 지워요.`}</p>
+        </aside>
+      ) : null}
+      {/* AI 풀이 needs a login (owner 2026-11-04): in force from this deploy, said on top for 30 days (lib/legal.ts LOGIN_RULE_DATE). */}
+      {loginRuleNoticeShown(now) ? (
+        <aside className={s.note} aria-labelledby="login-rule-privacy-title">
+          <h2 id="login-rule-privacy-title" className={s.noteTitle}>{`${koreanDate(LOGIN_RULE_DATE)} 바뀐 내용`}</h2>
+          <p>타로·사주 맛보기와 오늘의 한 장은 카카오나 Google로 로그인해야 볼 수 있어요.</p>
+          <p>맛보기의 하루 이용 횟수는 기기의 쿠키가 아니라 계정마다 세요. 계정 식별값을 되돌릴 수 없게 바꾼 값과 날짜별 횟수만 호스팅 사업자의 저장소에 36시간 보관한 뒤 자동으로 지워요.</p>
+          <p>오늘의 한 장은 무작위 기기 식별값 대신 계정 식별값을 되돌릴 수 없게 바꾼 값과 날짜로 묶어 36시간 보관해요. 같은 계정이면 어느 기기에서든 같은 카드를 보여 드리고, 이 기기에 남은 오늘의 한 장은 로그아웃하면 지워요.</p>
         </aside>
       ) : null}
       {revised ? null : (
@@ -276,6 +287,7 @@ export default function PrivacyPage() {
           <li>Google 계정 식별값(Google로 로그인한 경우): 되돌릴 수 없는 값(HMAC)으로 바꿔서만 저장하며, Google의 토큰은 저장하지 않습니다. Google에서는 이 식별값만 받고 이름, 이메일, 프로필 사진은 받지 않습니다</li>
           <li>닉네임(카카오 동의 항목. Google로 로그인한 경우 ‘별손님’), 만 14세 이상 확인 시각, 로그인 세션</li>
           <li>{`오픈 기념 무료를 받았는지와 받은 시각(${OPENING_LAST_DATE}까지 진행하는 오픈 기념 무료를 계정마다 한 번만 드리기 위해)`}</li>
+          <li>그날 본 맛보기의 횟수와 오늘의 한 장(고른 카드와 운세, 고른 자리): 계정 식별값을 되돌릴 수 없는 값(HMAC)으로 바꾼 값과 날짜로 묶어 둡니다. 맛보기에 입력한 질문과 출생 정보는 저장하지 않습니다</li>
           <li>결제 기록: 주문번호, 상품, 금액, 결제수단 종류, 승인·취소 시각과 영수증 링크. 카드번호 등 결제 정보는 토스페이먼츠가 처리하며 운영자는 받지 않습니다</li>
           {synced ? (
             <li>
@@ -309,7 +321,7 @@ export default function PrivacyPage() {
         <h3 className={s.sub}>서비스를 이용하는 동안 자동으로 생기는 정보</h3>
         <ul className={s.list}>
           <li>이용 중인 기기의 브라우저 저장소에 보관되는 입력 내용과 풀이 기록</li>
-          <li>{`쿠키(아래 ${num(5)}항)와, 오늘의 한 장에 쓰는 무작위 기기 식별값`}</li>
+          <li>{`쿠키(아래 ${num(5)}항)`}</li>
           <li>하루 이용 횟수를 세기 위해 접속한 네트워크의 IP 주소를 비밀 키로 변환한 값(IP 주소 원문은 저장하지 않습니다)</li>
           <li>호스팅 서버에 남는 접속 기록(IP 주소, 브라우저 정보, 접속 일시, 요청한 페이지)</li>
         </ul>
@@ -363,18 +375,18 @@ export default function PrivacyPage() {
       <LegalSection id="retention" title="3. 보유 기간과 파기">
         <ul className={s.list}>
           <li>
-            {`로그인하지 않고 연 풀이의 입력(질문, 상황, 메모, 출생 정보, 후속 질문, 지난 풀이 요약)은 운영자의 서버에 저장하지 않습니다. 풀이를 생성하는 동안에만 쓰고, 생성이 끝나면 바로 파기합니다.${
+            {`로그인하지 않고 연 풀이와 맛보기(로그인해서 본 것 포함)의 입력(질문, 상황, 메모, 출생 정보, 후속 질문, 지난 풀이 요약)은 운영자의 서버에 저장하지 않습니다. 풀이를 생성하는 동안에만 쓰고, 생성이 끝나면 바로 파기합니다.${
               synced ? " 다만 로그인한 뒤 이용자가 그 풀이를 골라 계정으로 옮기면 다음 항목과 같이 보관합니다." : ""
             }`}
           </li>
           <li>{`${synced ? "로그인한 상태로 연 풀이와 계정으로 옮긴 풀이" : KEPT}는 계정에 암호화해 보관하고, 이용자가 내 정보에서 지우거나 탈퇴하면 지체 없이 파기합니다.`}</li>
-          <li>오늘의 한 장은 무작위 기기 식별값과 날짜로 묶어 호스팅 사업자의 저장소에 36시간 보관한 뒤 자동으로 지웁니다. 같은 날 다시 열 때 같은 쪽지를 보여 드리기 위해서이며, 입력하신 정보는 들어 있지 않습니다.</li>
+          <li>오늘의 한 장은 계정 식별값을 되돌릴 수 없게 바꾼 값과 날짜로 묶어 호스팅 사업자의 저장소에 36시간 보관한 뒤 자동으로 지웁니다. 같은 날 같은 계정으로 다시 열 때 어느 기기에서든 같은 쪽지를 보여 드리기 위해서이며, 입력하신 정보는 들어 있지 않습니다.</li>
           <li>
             {revised
-              ? `하루 이용 횟수(IP 주소를 변환한 값별 횟수)는 36시간 동안 보관한 뒤 자동으로 지웁니다. ${FOLLOW_UP_COUNT_KEPT}`
-              : "하루 이용 횟수(IP 주소를 변환한 값별 횟수)는 36시간, 풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 8일 동안 보관한 뒤 자동으로 지웁니다."}
+              ? `하루 이용 횟수(IP 주소를 변환한 값별 횟수와 계정 식별값을 변환한 값별 맛보기 횟수)는 36시간 동안 보관한 뒤 자동으로 지웁니다. ${FOLLOW_UP_COUNT_KEPT}`
+              : "하루 이용 횟수(IP 주소를 변환한 값별 횟수와 계정 식별값을 변환한 값별 맛보기 횟수)는 36시간, 풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 8일 동안 보관한 뒤 자동으로 지웁니다."}
           </li>
-          <li>기기에 저장되는 기록(내 기록, 사주 입력 정보, 사주 맛보기, 오늘의 한 장, 하루 이용 표시)은 브라우저의 로컬 저장소에 남습니다. 사주 맛보기는 이 기기의 로컬 저장소에 저장되고, 30일이 지난 것은 다음에 스타로그를 열 때 지워집니다. 내 정보에서 기록이나 사주 정보를 지우거나 브라우저의 사이트 데이터를 지우면 바로 삭제됩니다. 진행 중인 질문과 타로 첫 풀이는 탭을 닫으면 지워지는 세션 저장소에 둡니다.</li>
+          <li>기기에 저장되는 기록(내 기록, 사주 입력 정보, 사주 맛보기, 오늘의 한 장, 하루 이용 표시)은 브라우저의 로컬 저장소에 남습니다. 사주 맛보기는 이 기기의 로컬 저장소에 저장되고, 30일이 지난 것은 다음에 스타로그를 열 때 지워집니다. 내 정보에서 기록이나 사주 정보를 지우거나 브라우저의 사이트 데이터를 지우면 바로 삭제됩니다. 오늘의 한 장은 로그아웃할 때도 지웁니다. 진행 중인 질문과 타로 첫 풀이는 탭을 닫으면 지워지는 세션 저장소에 둡니다.</li>
           {BONDS ? (
             <li>
               별자리 인연 정보는 Cloudflare D1에 저장합니다. 별자리를 새로 채우거나 바꾸면 이전 별은 삭제하고, 주인이 별을 지우면 그 별도 바로 삭제합니다. 지운 별의
