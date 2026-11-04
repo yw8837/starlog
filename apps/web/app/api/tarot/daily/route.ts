@@ -103,7 +103,7 @@ export async function POST(request: Request): Promise<Response> {
   }
   const limited = await checkServerLimits(gate, "daily");
   if (limited) return withCookie(limited);
-  // The account's regenerations of the day, across its devices (D1, atomic); given back when nothing new was written.
+  // The account's regenerations of the day, across its devices (D1, atomic); given back when nothing new was written or it was not delivered.
   const place = await takePlace(gate, member, "daily");
   if (place instanceof Response) return withCookie(place);
 
@@ -134,12 +134,5 @@ export async function POST(request: Request): Promise<Response> {
     return { body: { ...result.reading, account }, cookies: [await cookieOf({ ...state, gen: state.gen + 1 }, gate.secret)] };
   };
 
-  return respondGeneration(request, async (hooks) => {
-    try {
-      return await writeDaily(hooks);
-    } catch (error) {
-      if (!hooks.signal?.aborted) await giveBackPlace(place);
-      throw error;
-    }
-  }, { gate, startCookies: [deviceCookie], spend: "daily" });
+  return respondGeneration(request, writeDaily, { gate, startCookies: [deviceCookie], spend: "daily", giveBack: () => giveBackPlace(place) });
 }

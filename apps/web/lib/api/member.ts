@@ -58,6 +58,9 @@ export interface Place {
   kind: CountKind;
 }
 
+/** The places already given back: a request gives its place back once, whichever way it ended. */
+const givenBack = new WeakSet<Place>();
+
 /**
  * Takes this account's next place among today's free `kind` (quotaLimits: 5 맛보기; 오늘의 한 장's 2 regenerations) before the
  * generation starts, in one atomic UPSERT in D1 (migrations/0021_account_day_counts.sql), so requests sent together each get a
@@ -89,9 +92,13 @@ export async function takePlace(gate: Gate, member: Member, kind: CountKind): Pr
   return row ? { key: member.key, day, kind } : taken();
 }
 
-/** A generation that failed gives its place back (never below 0). Best effort: a lost write costs the account one place. */
+/**
+ * A generation that was not delivered gives its place back (never below 0), once per place. Best effort: a lost write costs
+ * the account one place.
+ */
 export async function giveBackPlace(place: Place | null): Promise<void> {
-  if (!place) return;
+  if (!place || givenBack.has(place)) return;
+  givenBack.add(place);
   try {
     await accountDb()
       ?.prepare("UPDATE account_day_counts SET n = n - 1 WHERE account_key = ? AND kst_day = ? AND kind = ? AND n > 0")

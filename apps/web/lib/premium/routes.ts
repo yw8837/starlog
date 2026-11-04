@@ -103,11 +103,10 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
         return { body: { preview }, cookies: [] };
       } catch (error) {
         const refused = error instanceof GenerationError && error.code === "REFUSED";
-        if (!hooks.signal?.aborted) await giveBackPlace(place);
         if (buyer && !hooks.signal?.aborted && !refused) await giveBackBuyerPreview(gate, buyer, adapter.id);
         throw error;
       }
-    }, { gate, care: crisis.care, ...(buyer ? { paidCost: true } : { spend: "teaser" as const }) });
+    }, { gate, care: crisis.care, giveBack: () => giveBackPlace(place), ...(buyer ? { paidCost: true } : { spend: "teaser" as const }) });
   };
 }
 

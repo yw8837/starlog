@@ -72,6 +72,12 @@ export interface RespondOptions {
   settle?: Settlement;
   /** P4: a paid opening: its model cost goes to the paid book (addPaidCost), never the free-tier total */
   paidCost?: boolean;
+  /**
+   * Gives back what was taken for this generation (the account's day place, lib/api/member.ts) on every outcome but a
+   * delivered body: a failure, the client leaving, the budget spent, or a body that finished for nobody (code review
+   * 2026-11-05, spec §9.1: spend only after a validated generation). Called at most once.
+   */
+  giveBack?: () => Promise<void>;
 }
 
 /** One signal for everything that should stop the generation: client gone, stream cancelled, budget spent. */
@@ -114,6 +120,12 @@ export async function respondGeneration(
   options: RespondOptions,
 ): Promise<Response> {
   const { gate, startCookies = [], spend, budgetMs = GENERATION_BUDGET_MS, pingMs = PING_MS, settle, paidCost, care = false } = options; // P4: settle, paidCost
+  let givenBack = false;
+  const giveBack = async () => {
+    if (givenBack || !options.giveBack) return;
+    givenBack = true;
+    await options.giveBack();
+  };
   const withCare = (body: unknown): unknown => (care && body && typeof body === "object" ? { ...(body as Record<string, unknown>), care: true } : body);
   const start = startCookies.map(serializeCookie);
   // What the browser holds once the stream's own Set-Cookie headers land (the commit replaces these).
@@ -193,8 +205,10 @@ export async function respondGeneration(
         // One Set-Cookie per name: the outcome's cookie replaces a start cookie of the same name.
         const names = new Set(outcome.cookies.map((c) => c.name));
         const cookies = [...startCookies.filter((c) => !names.has(c.name)), ...outcome.cookies];
+        if (abort.clientGone()) await giveBack(); // finished for nobody
         return json(body, { cookies: cookies.map(serializeCookie) });
       } catch (error) {
+        await giveBack();
         await release(generated); // P4
         const { status, body } = generationErrorPayload(error);
         return json(body, { status, cookies: start });
@@ -243,7 +257,9 @@ export async function respondGeneration(
           const data = withCare(await settled(outcome)); // P4: saved and spent before done
           const commit = outcome.cookies.length ? await issueCommit(outcome.cookies, cookiesAfterStart, gate.secret, gate.now) : null;
           write({ type: "done", data, ...(commit ? { commit } : {}) });
+          if (closed) await giveBack(); // the reader was gone before `done`
         } catch (error) {
+          await giveBack();
           await release(generated); // P4
           const { status, body: errorBody } = generationErrorPayload(error);
           write({ type: "error", status, body: errorBody });

@@ -14,7 +14,7 @@ import { buildSajuFreePayload } from "@/lib/share/payload";
  * hidden, sealed: lib/share/freeSeal.ts, owner 2026-10-23), written from the chart the server computes itself. Needs a
  * login (owner 2026-11-04, lib/api/member.ts): a visitor gets 401 LOGIN_REQUIRED `reason: "teaser"` before the browser check
  * and before anything is generated or counted; only a body that cannot be read or the crisis check answer before it. One of the account's day teasers whatever the topic
- * (counted on the server, per account: a place taken before the generation, given back when it fails; saju-topics spec §9.1). Then a browser check when Turnstile is on (lib/api/turnstile.ts). Streams NDJSON progress with
+ * (counted on the server, per account: a place taken before the generation, given back unless the 맛보기 is delivered; saju-topics spec §9.1). Then a browser check when Turnstile is on (lib/api/turnstile.ts). Streams NDJSON progress with
  * `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {
@@ -29,7 +29,7 @@ export async function POST(request: Request): Promise<Response> {
   if (bot) return bot;
   const limited = await checkServerLimits(gate, "teaser");
   if (limited) return limited;
-  // One of the account's day 맛보기, taken before the generation (D1, atomic); given back if it fails, kept if the client left.
+  // One of the account's day 맛보기, taken before the generation (D1, atomic); given back unless the 맛보기 is delivered.
   const place = await takePlace(gate, member, "teaser");
   if (place instanceof Response) return place;
 
@@ -46,12 +46,5 @@ export async function POST(request: Request): Promise<Response> {
     return { body: { ...teaser, share }, cookies: [] };
   };
 
-  return respondGeneration(request, async (hooks) => {
-    try {
-      return await writeTeaser(hooks);
-    } catch (error) {
-      if (!hooks.signal?.aborted) await giveBackPlace(place);
-      throw error;
-    }
-  }, { gate, spend: "teaser" });
+  return respondGeneration(request, writeTeaser, { gate, spend: "teaser", giveBack: () => giveBackPlace(place) });
 }

@@ -255,3 +255,61 @@ describe("respondGeneration timing", () => {
     expect(await response.json()).toEqual({ ok: 1 });
   });
 });
+
+/**
+ * What a generation took (the account's day place, lib/api/member.ts) comes back on every outcome but a delivered body
+ * (code review 2026-11-05, spec §9.1: spend only after a validated generation): a failure, the client leaving, the budget
+ * spent, or a body that finished for nobody. The 맛보기's body leaves only with `done`, so leaving early gains nothing.
+ */
+describe("respondGeneration gives back what the generation took unless it was delivered", () => {
+  const gate = { secret: "test-secret-0123456789-0123456789-abcdef", provider: mockProvider, owner: false, now: Date.now(), cookies: {}, client: "test-client" };
+  const request = (stream: boolean, signal?: AbortSignal) =>
+    new Request("http://localhost/api", { method: "POST", ...(stream ? { headers: { accept: "application/x-ndjson" } } : {}), ...(signal ? { signal } : {}) });
+  const untilAborted = (hooks: GenerationHooks) => new Promise<never>((_, reject) => {
+    hooks.signal?.addEventListener("abort", () => reject(new GenerationError("UPSTREAM", ["aborted"])));
+  });
+
+  it("keeps it for a delivered body, streamed or plain", async () => {
+    const giveBack = vi.fn(async () => {});
+    const streamed = await respondGeneration(request(true), async () => ({ body: { ok: true }, cookies: [] }), { gate, giveBack });
+    expect((await streamed.text()).trim().split("\n").map((line) => JSON.parse(line) as Event).at(-1)).toEqual({ type: "done", data: { ok: true } });
+    expect(await (await respondGeneration(request(false), async () => ({ body: { ok: 1 }, cookies: [] }), { gate, giveBack })).json()).toEqual({ ok: 1 });
+    expect(giveBack).not.toHaveBeenCalled();
+  });
+
+  it("gives it back once when the generation fails", async () => {
+    const giveBack = vi.fn(async () => {});
+    await (await respondGeneration(request(true), async () => { throw new GenerationError("UPSTREAM", ["down"]); }, { gate, giveBack })).text();
+    await respondGeneration(request(false), async () => { throw new GenerationError("UPSTREAM", ["down"]); }, { gate, giveBack });
+    expect(giveBack).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives it back once when the client leaves during the generation", async () => {
+    const giveBack = vi.fn(async () => {});
+    const client = new AbortController();
+    const response = await respondGeneration(request(true, client.signal), untilAborted, { gate, giveBack });
+    await response.body!.getReader().read(); // start
+    client.abort();
+    await vi.waitFor(() => expect(giveBack).toHaveBeenCalledTimes(1));
+  });
+
+  it("gives it back once when the generation budget is spent", async () => {
+    const giveBack = vi.fn(async () => {});
+    await (await respondGeneration(request(true), untilAborted, { gate, giveBack, budgetMs: 20 })).text();
+    await respondGeneration(request(false), untilAborted, { gate, giveBack, budgetMs: 20 });
+    expect(giveBack).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives it back once when the body finished for nobody: the reader cancelled, or the client was gone", async () => {
+    const giveBack = vi.fn(async () => {});
+    let finish!: () => void;
+    const streamed = await respondGeneration(request(true), () => new Promise((resolve) => { finish = () => resolve({ body: { ok: true }, cookies: [] }); }), { gate, giveBack });
+    await streamed.body!.cancel();
+    finish();
+    await vi.waitFor(() => expect(giveBack).toHaveBeenCalledTimes(1));
+    const gone = new AbortController();
+    gone.abort();
+    await respondGeneration(request(false, gone.signal), async () => ({ body: { ok: 1 }, cookies: [] }), { gate, giveBack });
+    expect(giveBack).toHaveBeenCalledTimes(2);
+  });
+});

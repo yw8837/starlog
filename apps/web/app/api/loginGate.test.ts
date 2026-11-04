@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProvider } from "@/lib/ai/mock";
+import { GenerationError } from "@/lib/ai/provider";
 import { resetDailyStore } from "@/lib/api/dailyStore";
+import { giveBackPlace } from "@/lib/api/member";
 import { clientCount, resetSpendState } from "@/lib/api/spend";
 import { setTestDb } from "@/lib/db";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
@@ -267,6 +269,44 @@ describe("the account's day count (code review 2026-11-04)", () => {
     vi.spyOn(mockProvider, "generate").mockRejectedValueOnce(new Error("upstream down"));
     expect((await b.send(sajuTeaser, "/api/saju/teaser", { body: { birth: BIRTH } })).status).toBe(502);
     expect(await db.prepare("SELECT n FROM account_day_counts").first()).toEqual({ n: 1 });
+  });
+
+  it("gives the place back when the client leaves during the generation, and keeps it for a delivered one (code review 2026-11-05)", async () => {
+    const db = useTestDb();
+    const b = await member("jun");
+    const count = async (kind: "teaser" | "daily") => (await db.prepare("SELECT n FROM account_day_counts WHERE kind = ?").bind(kind).first<{ n: number }>())?.n ?? 0;
+    /** The next generation waits until the request is aborted, as the model's answer does; true once the request left. */
+    const leaveDuring = async (send: (signal: AbortSignal) => Promise<Response>) => {
+      const generate = vi.spyOn(mockProvider, "generate").mockImplementationOnce((_task, _attempt, _feedback, hooks) =>
+        new Promise((_, reject) => hooks?.signal?.addEventListener("abort", () => reject(new GenerationError("UPSTREAM", ["aborted"])))));
+      const client = new AbortController();
+      const left = send(client.signal);
+      await vi.waitFor(() => expect(generate).toHaveBeenCalled());
+      client.abort();
+      await left;
+      generate.mockRestore();
+    };
+    expect((await b.send(sajuTeaser, "/api/saju/teaser", { body: { birth: BIRTH } })).status).toBe(200);
+    expect(await count("teaser")).toBe(1);
+    // A topic switch or a closed tab cancels the 맛보기 while it is written: its place comes back (saju, tarot, a premium preview).
+    await leaveDuring((signal) => b.send(sajuTeaser, "/api/saju/teaser", { body: { birth: BIRTH }, signal }));
+    const drawToken = await drawFor(b);
+    await leaveDuring((signal) => b.send(tarotTeaser, "/api/tarot/teaser", { body: { drawToken, input: INPUT }, signal }));
+    const deepToken = await drawFor(b, "deep-tarot", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    await leaveDuring((signal) => b.send(deepTeaser, "/api/premium/tarot-deep/teaser", { body: { drawToken: deepToken, input: DEEP_INPUT }, signal }));
+    expect(await count("teaser")).toBe(1);
+    // 오늘의 한 장's regeneration too: two cancelled ones no longer end the day without a card.
+    await leaveDuring((signal) => b.send(dailyPost, "/api/tarot/daily", { body: { pick: 1 }, signal }));
+    await leaveDuring((signal) => b.send(dailyPost, "/api/tarot/daily", { body: { pick: 1 }, signal }));
+    expect(await count("daily")).toBe(0);
+    expect((await b.send(dailyPost, "/api/tarot/daily", { body: { pick: 1 } })).status).toBe(200);
+    expect(await count("daily")).toBe(1);
+    // A place comes back once, whichever ways its request ended (오늘의 한 장's stored card, then a client gone).
+    const place = { key: "k", day: "2026-11-20", kind: "teaser" as const };
+    await db.prepare("INSERT INTO account_day_counts (account_key, kst_day, kind, n) VALUES ('k', '2026-11-20', 'teaser', 2)").run();
+    await giveBackPlace(place);
+    await giveBackPlace(place);
+    expect(await db.prepare("SELECT n FROM account_day_counts WHERE account_key = 'k'").first()).toEqual({ n: 1 });
   });
 
   it("answers 503 when the count cannot be read, with nothing generated", async () => {
