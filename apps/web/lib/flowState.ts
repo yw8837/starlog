@@ -291,9 +291,62 @@ export function saveFlow(next: FlowState) {
   listeners.forEach((listener) => listener());
 }
 
-/** Forgets the question in progress (내 정보 → 기록 모두 지우기). */
+/** Forgets the question in progress (내 정보 → 기록 모두 지우기), with its login backup. */
 export function clearFlow() {
+  dropFlowBackup();
   saveFlow(EMPTY_FLOW);
+}
+
+// ---- the draw kept for a login that comes back in another tab (code review 2026-11-04 #9) ----
+
+/**
+ * The flow lives in this tab's sessionStorage, so a login that comes back in a new tab of the same browser would find no draw.
+ * While the login panel shows, the flow (question, draw token, cards) is copied to localStorage for an hour; the result
+ * screen of a tab with no flow takes it back once and removes it. It never replaces a draw the tab holds, and a different
+ * browser (an app's own browser → Safari or Chrome) does not share storage, so it cannot help there.
+ */
+export const FLOW_LOGIN_BACKUP_KEY = "starlog.tarot-flow-login";
+const FLOW_LOGIN_BACKUP_MS = 60 * 60_000;
+
+export function backupFlowForLogin(flow: FlowState, now = Date.now()) {
+  if (!flow.draw) return;
+  try {
+    window.localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: sanitizeFlow(flow), savedAt: now }));
+  } catch {
+    // storage blocked: the login comes back to this tab only
+  }
+}
+
+export function dropFlowBackup() {
+  try {
+    window.localStorage.removeItem(FLOW_LOGIN_BACKUP_KEY);
+  } catch {
+    // nothing kept
+  }
+}
+
+/** Takes the backup back into this tab when it has no draw and the backup is under an hour old; true when it did. */
+export function restoreFlowAfterLogin(now = Date.now()): boolean {
+  let raw: string | null = null;
+  try {
+    raw = window.localStorage.getItem(FLOW_LOGIN_BACKUP_KEY);
+  } catch {
+    return false;
+  }
+  if (raw === null) return false;
+  dropFlowBackup();
+  if (getSnapshot().draw) return false;
+  let kept: unknown;
+  try {
+    kept = JSON.parse(raw);
+  } catch {
+    return false;
+  }
+  if (!isRecord(kept) || typeof kept.savedAt !== "number" || now - kept.savedAt > FLOW_LOGIN_BACKUP_MS || kept.savedAt > now + 60_000) return false;
+  const flow = sanitizeFlow(kept.flow);
+  if (resultGate(flow) !== "ready") return false;
+  saveFlow(flow);
+  return true;
 }
 
 /**

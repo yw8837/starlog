@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
-import { FLOW_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
+import { FLOW_KEY, FLOW_LOGIN_BACKUP_KEY, saveFlow, summarizeFlow, tarotInput, type FlowState } from "@/lib/flowState";
 import { saveTeaser } from "@/lib/reading/teaserCache";
 import { TAROT_TIPS } from "@/lib/reading/waitingTips";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
@@ -657,5 +657,56 @@ describe("FreeResult for a visitor (owner 2026-11-04: the 맛보기 needs a logi
     expect(title.parentElement!.textContent).toContain("질문은 그대로 있어요. 카드를 다시 뽑아 주세요.");
     expect(screen.getByRole("link", { name: "카드 다시 뽑기" }).getAttribute("href")).toBe("/tarot/draw?instant=1");
     expect(sessionStorage.getItem(FLOW_KEY)).toContain("\"topicId\":\"money\"");
+  });
+});
+
+describe("FreeResult when a login comes back in another tab (code review 2026-11-04 #9)", () => {
+  const base: FlowState = { who: "me", topicId: "money", when: "week", conditions: {}, note: "" };
+  const flow = () => ({ ...base, draw: { templateId: summarizeFlow(base)!.template, drawToken: "signed.draw.token", cards: CARDS } });
+  const teaserBody = { firstCard: { heading: "지금의 나 · 은둔자", body: "첫 카드 풀이" }, lockedToc: ["흐름", "조언"], cards: CARDS.map((card) => ({ position: card.position, cardId: card.cardId, keyword: "열쇠" })) };
+
+  afterEach(() => localStorage.removeItem(FLOW_LOGIN_BACKUP_KEY));
+
+  it("backs the pending draw up in this browser when the login panel shows", async () => {
+    saveFlow(flow());
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      if (url === "/api/tarot/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "x" }, { status: 401 });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(JSON.parse(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)!).flow.draw.drawToken).toBe("signed.draw.token");
+  });
+
+  it("reads the same draw in a new tab of this browser, from a backup under an hour old", async () => {
+    localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: flow(), savedAt: Date.now() - 30 * 60_000 }));
+    const sent: unknown[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/me") return Response.json(meBody());
+      if (url === "/api/tarot/teaser") {
+        sent.push(JSON.parse(String(init?.body)));
+        return Response.json(teaserBody);
+      }
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant loginFlag="ok" />);
+    await screen.findByText("첫 카드 풀이");
+    expect(sent[0]).toMatchObject({ drawToken: "signed.draw.token" });
+    expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)).toBeNull();
+  });
+
+  it("forgets a backup over an hour old, and never takes one over a draw this tab already holds", async () => {
+    localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: flow(), savedAt: Date.now() - 61 * 60_000 }));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? Response.json(meBody()) : Response.json({ readings: [], next: null }))));
+    render(<FreeResult instant />);
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/tarot/new"));
+    expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)).toBeNull();
+    cleanup();
+    const own = { ...flow(), draw: { ...flow().draw, drawToken: "this.tab.token" } };
+    saveFlow(own);
+    localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: flow(), savedAt: Date.now() }));
+    render(<FreeResult instant />);
+    await waitFor(() => expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw.drawToken).toBe("this.tab.token"));
   });
 });

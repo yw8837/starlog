@@ -16,7 +16,7 @@ import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
-import { resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
+import { backupFlowForLogin, dropFlowBackup, restoreFlowAfterLogin, resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { standardProduct } from "@/lib/pay/catalog";
 import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
@@ -76,8 +76,10 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const summary = gate === "ready" ? summarizeFlow(flow) : null;
   const draw = gate === "ready" ? flow?.draw : undefined;
 
-  // No question yet → the builder; a question without cards dealt for it → the draw.
+  // No question yet → the builder; a question without cards dealt for it → the draw. A login that came back in a new tab
+  // of this browser takes the draw it left behind first (code review 2026-11-04 #9).
   useEffect(() => {
+    if ((gate === "builder" || gate === "draw") && restoreFlowAfterLogin()) return;
     if (gate === "builder") router.replace("/tarot/new");
     else if (gate === "draw") router.replace(withFlags("/tarot/draw", { instant }));
   }, [gate, instant, router]);
@@ -283,6 +285,11 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const teaserState = teaserGen.state;
   const loginFirst = !teaser && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED";
   const teaserError = !teaser && !loginFirst && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
+  // The login panel keeps the draw for a login that comes back in another tab; read here, it is not needed any more.
+  useEffect(() => {
+    if (loginFirst && flow) backupFlowForLogin(flow);
+    else if (teaser) dropFlowBackup();
+  }, [loginFirst, flow, teaser]);
   const opening = unlockGen.state.status === "running" || unlockGen.state.status === "done";
   // One live region for the whole screen: progress, then what went wrong.
   const announce =
