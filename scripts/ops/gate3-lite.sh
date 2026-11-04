@@ -14,7 +14,7 @@ pnpm install --frozen-lockfile > "$LOG/install.log" 2>&1; step "install exit=$?"
 STARLOG_AI=mock npx vitest run --maxWorkers=1 > "$LOG/unit.log" 2>&1; step "unit exit=$? $(grep -E 'Tests ' "$LOG/unit.log" | tail -1)"
 pnpm typecheck > "$LOG/tsc.log" 2>&1; step "typecheck exit=$?"
 cd apps/web && rm -rf .open-next .next/dev; [ -e .open-next ] && { step "STOP: .open-next still locked"; exit 9; }
-echo y | npx wrangler d1 migrations apply starlog --local > "$LOG/migrate-local.log" 2>&1; step "local D1 migrations exit=$?"; grep -oE "000[0-9]_[a-z_]+" "$LOG/migrate-local.log" | sort -u >> "$LOG/summary.log"
+echo y | npx wrangler d1 migrations apply starlog --local > "$LOG/migrate-local.log" 2>&1; step "local D1 migrations exit=$?"; grep -oE "[0-9]{4}_[a-z_]+" "$LOG/migrate-local.log" | sort -u >> "$LOG/summary.log"
 export NEXT_PUBLIC_FEATURE_BONDS=1 NEXT_PUBLIC_BUILD_ID=$(git rev-parse --short=12 HEAD) STARLOG_AI=mock
 export NEXT_PUBLIC_KAKAO_JS_KEY="$(grep -E '^NEXT_PUBLIC_KAKAO_JS_KEY=' /d/Money/apps/saju-tarot/apps/web/.env.local | cut -d= -f2- | tr -d '\r\"')"
 pnpm cf:build > "$LOG/build.log" 2>&1; step "cf:build exit=$?"
@@ -43,5 +43,8 @@ for port in 8787 3100; do for p in $(netstat -ano | grep -E "[:.]$port[[:space:]
 sleep 3
 # The dev server (mock Kakao, owner mode): all of pay-flow, and every test tagged @login (오픈 기념 무료 logged in, owner 2026-10-27).
 LOGIN_SPECS="e2e/pay-flow.spec.ts $(grep -l '@login' e2e/*.spec.ts | grep -v pay-flow | tr '\n' ' ')"
-STARLOG_AI=mock pnpm e2e $LOGIN_SPECS --grep "pay-flow|@login" --workers=1 --project=desktop --project=mobile --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow + @login exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"
+# Both servers share this clone's local D1, and D1 pins the first account secret it sees (lib/account/secretCheck.ts): on a
+# fresh D1 the preview pinned the .dev.vars one, next dev fell back to its dev secret, and every account route answered
+# 503 PAY_UNAVAILABLE (11/04: 96 failed). next dev gets the preview's secret (never printed); Playwright passes it through.
+STARLOG_ACCOUNT_SECRET="$(grep -E '^STARLOG_ACCOUNT_SECRET=' .dev.vars | cut -d= -f2- | tr -d '\r\"')" STARLOG_AI=mock pnpm e2e $LOGIN_SPECS --grep "pay-flow|@login" --workers=1 --project=desktop --project=mobile --reporter=line > "$LOG/e2e-pay.log" 2>&1; step "e2e pay-flow + @login exit=$? $(grep -E '[0-9]+ (passed|failed|skipped|flaky)' "$LOG/e2e-pay.log" | tr '\n' ' ')"
 step "DONE"

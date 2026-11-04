@@ -587,6 +587,8 @@ const LOGIN_SCREENS = new Set([
   // the 맛보기 and 오늘의 한 장 need a login (owner 2026-11-04)
   "tarot-result", "tarot-result-generating", "tarot-result-error", "tarot-result-limit", "tarot-unlock-generating",
   "saju-chart-own", "saju-chart-topic", "saju-reading", "today-opened",
+  // its saju record is read with a 맛보기 (sajuChapter logs in)
+  "story-records",
 ]);
 
 for (const screen of SCREENS) {

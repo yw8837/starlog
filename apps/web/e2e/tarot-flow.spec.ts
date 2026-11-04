@@ -81,9 +81,9 @@ async function drawThree(page: Page): Promise<Array<{ cardId: string; position: 
 test.beforeEach(async ({ page }) => fakeBrowserClock(page));
 
 /**
- * The money flow, opened with 오픈 기념 무료 (`free`: logged in, once per account, owner 2026-10-27; it needs the mock Kakao
- * login, so only the gate's dev run has it, @login) or with the owner pass (운영자로 무료 열기, no login: the Workers preview
- * runs it too). A 오픈 기념 무료 reading is read and kept only.
+ * The money flow, opened with 오픈 기념 무료 (`free`: logged in, once per account, owner 2026-10-27) or with the owner pass
+ * (운영자로 무료 열기). Both read a 맛보기, which needs a login (owner 2026-11-04): both log in with the mock Kakao, so only
+ * the gate's dev run has them (@login). A 오픈 기념 무료 reading is read and kept only.
  */
 async function moneyFlow(page: Page, info: TestInfo, free: boolean) {
   await ownAddress(page, info);
@@ -182,7 +182,7 @@ async function moneyFlow(page: Page, info: TestInfo, free: boolean) {
   await expect(page).toHaveURL(readingUrl, { timeout: NAV });
 }
 
-test("tarot money flow with a typed 언제: the dealt cards, the teaser, a reading opened with the owner pass that survives reload", async ({ page }, info) => {
+test("tarot money flow with a typed 언제: the dealt cards, the teaser, a reading opened with the owner pass that survives reload", { tag: "@login" }, async ({ page }, info) => {
   await moneyFlow(page, info, false);
 });
 

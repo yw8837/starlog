@@ -52,6 +52,9 @@ export async function mockLogin(page: Page, info: TestInfo, name: string): Promi
   const { url } = (await res.json()) as { url: string };
   await page.goto(`${url}&mockUser=${encodeURIComponent(name)}`);
   await page.waitForURL(/\/story(\?|$)/, { timeout: 30_000 });
+  // A refused login lands on /story too, with ?login=closed|unavailable|failed (the Workers preview refuses mock Kakao).
+  const flag = new URL(page.url()).searchParams.get("login");
+  if (flag !== null && flag !== "ok") throw new Error(`mock login refused: login=${flag}`);
 }
 
 /** With FAKE_NOW, the page's Date is fixed to it (timers still run), so the screens decide as the server does. */
