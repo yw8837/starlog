@@ -35,7 +35,7 @@ export default function RefundPage() {
       {loginRuleNoticeShown(now) ? (
         <aside className={s.note} aria-labelledby="login-rule-refund-title">
           <h2 id="login-rule-refund-title" className={s.noteTitle}>{`${koreanDate(LOGIN_RULE_DATE)} 바뀐 내용`}</h2>
-          <p>결제하기 전에 무료로 보는 부분은 ‘맛보기’로 이름을 맞췄어요(전에는 ‘첫 풀이’, ‘첫 장 요약’). 보여 드리는 내용은 그대로이고, 맛보기는 카카오나 Google로 로그인해야 볼 수 있어요.</p>
+          <p>결제하기 전에 무료로 먼저 보는 부분의 이름을 ‘맛보기’로 바꿨어요. 보여 드리는 내용은 그대로이고, 맛보기는 카카오나 Google로 로그인해야 볼 수 있어요.</p>
         </aside>
       ) : null}
       <LegalNote>

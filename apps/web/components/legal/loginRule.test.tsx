@@ -47,7 +47,8 @@ describe("AI 풀이 needs a login, in the policies", () => {
     expect(notice).toBeTruthy();
     // The account counts live in D1 until noon KST the next day (migrations/0021, lib/pay/maintenance.ts), code review 2026-11-04.
     expect(notice!.textContent).toContain("맛보기와 오늘의 한 장을 새로 쓴 하루 횟수는 기기의 쿠키가 아니라 계정마다 세요. 계정 식별값을 되돌릴 수 없게 바꾼 값과 날짜별 횟수만 운영자의 저장소(Cloudflare D1)에 두고, 다음 날 낮 12시(한국 시간)가 지나면 자동으로 지워요.");
-    expect(notice!.textContent).toContain("‘첫 풀이’라고 쓰던 무료 부분은 ‘맛보기’로 이름을 맞췄어요.");
+    // The rename is said without the old name (owner: never show "첫 풀이"; code review 2026-11-05).
+    expect(notice!.textContent).toContain("무료로 먼저 보는 부분의 이름을 ‘맛보기’로 바꿨어요.");
     const items = container.querySelector("#items")?.textContent ?? "";
     expect(items).toContain("그날 본 맛보기와 새로 쓴 오늘의 한 장의 횟수, 오늘의 한 장(고른 카드와 운세, 고른 자리): 계정 식별값을 되돌릴 수 없는 값(HMAC)으로 바꾼 값과 날짜로 묶어 둡니다.");
     expect(items).not.toContain("오늘의 한 장에 쓰는 무작위 기기 식별값");
@@ -64,14 +65,14 @@ describe("AI 풀이 needs a login, in the policies", () => {
     const text = container.textContent ?? "";
     expect(text).toContain("오늘 한 후속 질문(이어서 물어보기)의 횟수를 세어 하루 횟수를 지키는 데 씁니다.");
     expect(text).not.toContain("오늘 연 첫 풀이와 후속 질문의 횟수");
-    expect(text).not.toContain("첫 풀이(");
-    expect(text).not.toContain("타로 첫 풀이");
+    expect(text).not.toContain("첫 풀이");
+    expect(text).not.toContain("첫 장 요약");
     // The 시행일 shown stays as it was.
     expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-31");
     expect(text).toContain("오늘의 한 장에 쓰는 값으로, 로그인한 계정 식별값을 되돌릴 수 없게 바꾼 값과 날짜, 고른 자리, 그날 이 기기에서 새로 쓴 횟수를 담습니다.");
   });
 
-  it("refund: the free part before paying is called 맛보기 (it was 첫 풀이 and 첫 장 요약), needs a login, and a dated notice says so for 30 days", () => {
+  it("refund: the free part before paying is called 맛보기, needs a login, and a dated notice says so for 30 days without the old names", () => {
     let container = render(<RefundPage />).container;
     const withdrawal = container.querySelector("#withdrawal")?.textContent ?? "";
     expect(withdrawal).toContain("타로는 뽑은 카드와 맛보기(첫 카드 풀이, 이어지는 풀이의 소제목과 분량)를, 사주는 명식과 맛보기를 보고 나서 열지 정할 수 있어요. 맛보기는 카카오나 Google로 로그인하면 무료로 볼 수 있어요.");
@@ -79,7 +80,8 @@ describe("AI 풀이 needs a login, in the policies", () => {
     expect(withdrawal).not.toContain("첫 풀이");
     const notice = [...container.querySelectorAll("aside")].find((aside) => aside.querySelector("h2")?.textContent === NOTICE);
     expect(notice).toBeTruthy();
-    expect(notice!.textContent).toContain("결제하기 전에 무료로 보는 부분은 ‘맛보기’로 이름을 맞췄어요(전에는 ‘첫 풀이’, ‘첫 장 요약’). 보여 드리는 내용은 그대로이고, 맛보기는 카카오나 Google로 로그인해야 볼 수 있어요.");
+    expect(notice!.textContent).toContain("결제하기 전에 무료로 먼저 보는 부분의 이름을 ‘맛보기’로 바꿨어요. 보여 드리는 내용은 그대로이고, 맛보기는 카카오나 Google로 로그인해야 볼 수 있어요.");
+    expect(container.textContent).not.toMatch(/첫 풀이|첫 장 요약/);
     // The 시행일 shown stays as it was.
     expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-20");
     cleanup();
