@@ -442,3 +442,14 @@ describe("오늘의 한 장 kept on this device is the account's (code review 20
     expect(window.location.search).toBe("");
   });
 });
+
+describe("a limit answer to the pick (code review 2026-11-04, 2026-11-05)", () => {
+  it("says the day's regenerations are used up and turns no card over, even one a limit answer carried", async () => {
+    const card = { cardId: "major-17-star", orientation: "upright" };
+    server({ post: () => Promise.resolve(respond({ code: "BETA_LIMIT", message: "x", resetsAt: Date.now() + 3_600_000, card }, 429)) });
+    await toThreeCards();
+    fireEvent.click(screen.getByRole("button", { name: POSITIONS[0] }));
+    await screen.findByRole("heading", { name: "오늘의 운세를 더 적을 수 없어요" });
+    expect([...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes(card.cardId))).toEqual([]);
+  });
+});

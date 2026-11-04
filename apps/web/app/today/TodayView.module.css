@@ -1,7 +1,6 @@
 /* ---- before the pick: shuffle, then three face-down cards ---- */
 
 .closed,
-.limited,
 .errorWrap {
   display: grid;
   justify-items: center;
@@ -107,18 +106,6 @@
 
 .errorWrap > section {
   width: 100%;
-}
-
-/* ---- the day's card when the text cannot be handed out again ---- */
-
-.limitText {
-  margin-top: 6px;
-  font-weight: 700;
-}
-
-.limitSub {
-  color: var(--ink-sub);
-  font-size: var(--fs-sub);
 }
 
 /* ---- opened: in the order the reveal reads ---- */

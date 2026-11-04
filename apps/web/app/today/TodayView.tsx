@@ -96,8 +96,6 @@ const ShuffleIcon = () => (
   </svg>
 );
 
-type Limited = { card: { cardId: string; orientation: Orientation }; view: ErrorView };
-
 type Phase =
   /** Asking the server whether today's card was picked already. */
   | "checking"
@@ -121,7 +119,6 @@ export function TodayView() {
   const [picked, setPicked] = useState<number | null>(null);
   const [justPicked, setJustPicked] = useState(false);
   const [checkError, setCheckError] = useState<ErrorView | null>(null);
-  const [limited, setLimited] = useState<Limited | null>(null);
   const [attempt, setAttempt] = useState(0);
   // The server answered LOGIN_REQUIRED: the visitor shuffles and picks as anyone, and the pick asks for the login.
   const [needsLogin, setNeedsLogin] = useState(false);
@@ -225,7 +222,6 @@ export function TodayView() {
   async function read(index: number, visitor: boolean) {
     setPicked(index);
     setPhase("reading");
-    setLimited(null);
     if (visitor) return;
     const result = await daily.run("/api/tarot/daily", { pick: index, deck: deckPrefs().front }, DAILY_PLAN, isDailyData);
     if (!result) return;
@@ -235,8 +231,6 @@ export function TodayView() {
       setFresh(result.data);
       saveDaily(result.data, Date.now(), typeof account === "string" ? account : undefined);
       if (result.commit) void commitQuota(result.commit);
-    } else if (result.error.code === "BETA_LIMIT" && result.error.card) {
-      setLimited({ card: result.error.card, view: describeApiError(result.error, "daily") });
     } else if (result.error.code === "LOGIN_REQUIRED") {
       // A session that ended meanwhile: the pick is kept for after the login.
       setNeedsLogin(true);
@@ -253,7 +247,7 @@ export function TodayView() {
   };
 
   const state = daily.state;
-  const pickError = !reading && !limited && !needsLogin && state.status === "error" ? describeApiError(state.error, "daily") : null;
+  const pickError = !reading && !needsLogin && state.status === "error" ? describeApiError(state.error, "daily") : null;
   const announce =
     phase === "pick" && !reading
       ? "마음이 가는 카드를 한 장 골라 주세요"
@@ -261,7 +255,7 @@ export function TodayView() {
         ? LOGIN_TITLE
         : state.status === "running"
           ? state.progress.caption
-          : (pickError ?? checkError ?? limited?.view)?.title ?? "";
+          : (pickError ?? checkError)?.title ?? "";
 
   let content;
   if (saved === undefined) {
@@ -280,18 +274,6 @@ export function TodayView() {
     );
   } else if (reading) {
     content = <Opened reading={reading} revisit={!justPicked} flip={justPicked} lineRef={lineRef} />;
-  } else if (limited) {
-    content = (
-      <section className={s.limited} aria-labelledby="today-title">
-        <h1 id="today-title" className={s.title}>
-          오늘의 카드
-        </h1>
-        <TarotCard cardId={limited.card.cardId} orientation={limited.card.orientation} faceUp size="md" highlight className={s.card} />
-        <p className={s.cardName}>{cardName(limited.card.cardId, limited.card.orientation)}</p>
-        <p className={s.limitText}>{limited.view.title}</p>
-        {limited.view.body ? <p className={s.limitSub}>{limited.view.body}</p> : null}
-      </section>
-    );
   } else if (checkError) {
     content = (
       <div className={s.errorWrap}>
