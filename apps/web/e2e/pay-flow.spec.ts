@@ -65,7 +65,8 @@ test("owner mode: log in (no signup gift), pay for a tarot reading that takes fo
   await expect(page.getByText(/가입 선물|무료로 드려요/)).toHaveCount(0);
   await page.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
   await page.getByRole("button", { name: "카카오로 계속하기" }).click();
-  await expect(page).toHaveURL(/\/tarot\/result\?instant=1&resume=[0-9a-f]{24}&login=ok$/, { timeout: NAV });
+  // The login's marks (?resume=, ?login=) leave the address once read (code review 2026-11-05).
+  await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
   const sheet = page.getByRole("region", { name: "전체 풀이에 담긴 것" });
   await expect(sheet).toBeVisible({ timeout: GENERATION });
   if (openingOn()) await expect(sheet).toContainText(OPENING_RULE);

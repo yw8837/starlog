@@ -80,9 +80,21 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
   // of this browser takes the draw it left behind first, by its one-time mark (code review 2026-11-04 #9, 2026-11-05).
   useEffect(() => {
     if ((gate === "builder" || gate === "draw") && restoreFlowAfterLogin({ login: loginFlag, resume })) return;
+    // Back in the tab that holds its own draw: the copy kept for another tab goes at once (code review 2026-11-05).
+    if (gate === "ready" && resume) dropFlowBackup();
     if (gate === "builder") router.replace("/tarot/new");
     else if (gate === "draw") router.replace(withFlags("/tarot/draw", { instant }));
   }, [gate, instant, router, loginFlag, resume]);
+  // Once that return is read, its marks (?resume=, ?login=) leave the address, so a shared PC's history keeps none that
+  // reads the login again; the login's note stays on screen, read from the props (code review 2026-11-05).
+  useEffect(() => {
+    if (gate === null || (resume === null && loginFlag === null)) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("resume") && !url.searchParams.has("login")) return;
+    url.searchParams.delete("resume");
+    url.searchParams.delete("login");
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [gate, resume, loginFlag]);
 
   const input = flow && summary ? tarotInput(flow, summary) : null;
   const teaserKey = draw && input ? `${draw.drawToken}|${JSON.stringify(input)}` : null;

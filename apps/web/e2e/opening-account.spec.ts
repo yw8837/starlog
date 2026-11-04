@@ -104,7 +104,8 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
 
   // 3. Back on the result: the 맛보기 of the same cards, and 오픈 기념 무료 offered to the account under its rule; tapped, it
   //    opens as 오픈 기념 무료: read and kept, no follow-ups.
-  await expect(web).toHaveURL(/\/tarot\/result\?instant=1&resume=[0-9a-f]{24}&login=ok$/, { timeout: NAV });
+  // The login's marks (?resume=, ?login=) leave the address once read (code review 2026-11-05).
+  await expect(web).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
   await expect(sheet).toBeVisible({ timeout: GENERATION });
   await expect(sheet).toContainText(RULE);
   await sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }).click();

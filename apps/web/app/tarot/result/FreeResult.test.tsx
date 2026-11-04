@@ -667,7 +667,36 @@ describe("FreeResult when a login comes back in another tab (code review 2026-11
   const teaserBody = { firstCard: { heading: "지금의 나 · 은둔자", body: "첫 카드 풀이" }, lockedToc: ["흐름", "조언"], cards: CARDS.map((card) => ({ position: card.position, cardId: card.cardId, keyword: "열쇠" })) };
   const backup = (nonce: string, age = 0) => localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: flow(), savedAt: Date.now() - age, nonce }));
 
-  afterEach(() => localStorage.removeItem(FLOW_LOGIN_BACKUP_KEY));
+  afterEach(() => {
+    localStorage.removeItem(FLOW_LOGIN_BACKUP_KEY);
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("back in the tab that holds its draw, drops the copy kept for another tab at once, before the 맛보기 comes (code review 2026-11-05)", async () => {
+    saveFlow(flow());
+    backup("a1b2c3");
+    window.history.replaceState(null, "", "/tarot/result?instant=1&resume=a1b2c3&login=ok");
+    vi.stubGlobal("fetch", vi.fn((url: string) => (url === "/api/tarot/teaser" ? new Promise<Response>(() => {}) : Promise.resolve(url === "/api/me" ? Response.json(meBody()) : Response.json({ readings: [], next: null })))));
+    render(<FreeResult instant loginFlag="ok" resume="a1b2c3" />);
+    await waitFor(() => expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)).toBeNull());
+    expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw.drawToken).toBe("signed.draw.token");
+    // The way back's marks leave the address too: this history entry reads no login again (another person, a new tab).
+    expect(`${window.location.pathname}${window.location.search}`).toBe("/tarot/result?instant=1");
+  });
+
+  it("takes ?resume= and ?login= off the address once the return is read, and keeps the login's note on screen", async () => {
+    saveFlow(flow());
+    window.history.replaceState(null, "", "/tarot/result?instant=1&resume=a1b2c3&login=cancel");
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      if (url === "/api/tarot/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "x" }, { status: 401 });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant loginFlag="cancel" resume="a1b2c3" />);
+    const panel = await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(panel.textContent).toContain("로그인을 취소했어요");
+    await waitFor(() => expect(`${window.location.pathname}${window.location.search}`).toBe("/tarot/result?instant=1"));
+  });
 
   it("keeps nothing while the login panel only shows; the login button backs the draw up with a one-time mark its way back carries", async () => {
     saveFlow(flow());

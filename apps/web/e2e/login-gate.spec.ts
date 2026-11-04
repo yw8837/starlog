@@ -88,9 +88,15 @@ test("tarot: a visitor draws, is asked to log in where the 맛보기 would show,
   const go = panel.getByRole("link", { name: "로그인하고 맛보기 보기" });
   const back = new URL((await go.getAttribute("href"))!, "http://localhost").searchParams.get("next")!;
   expect(back).toMatch(/^\/tarot\/result\?instant=1&resume=[0-9a-f]{24}$/);
+  const landed: string[] = [];
+  page.on("framenavigated", (frame) => {
+    if (frame === page.mainFrame()) landed.push(new URL(frame.url()).pathname + new URL(frame.url()).search);
+  });
   await go.click();
   await logIn(page, back);
-  await expect(page).toHaveURL(new RegExp(`${back.replace(/[?]/g, "\\?")}&login=ok$`), { timeout: NAV });
+  // Back from the login with its mark, which then leaves the address: the history keeps no ?resume= or ?login= to read again.
+  await expect(page).toHaveURL(/\/tarot\/result\?instant=1$/, { timeout: NAV });
+  expect(landed).toContain(`${back}&login=ok`);
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
   // The same draw, not a new one: the 맛보기 was written once, with the token the visitor's draw got.
   const afterLogin = teasers.slice(asVisitor);
