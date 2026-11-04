@@ -30,7 +30,7 @@ import {
   type NewChapter,
   type SajuChapter,
 } from "./chapters";
-import { DAILY_KEY, readDaily, saveDaily, useDaily } from "./daily";
+import { clearDaily, DAILY_KEY, readDaily, saveDaily, useDailySaved } from "./daily";
 
 const DAY = 24 * 60 * 60 * 1000;
 // 2026-10-01 12:00 KST
@@ -225,11 +225,14 @@ describe("오늘의 한 장 cache by KST day", () => {
     expect(JSON.parse(localStorage.getItem(DAILY_KEY)!).day).toBe("2026-10-01");
   });
 
-  it("reads as not opened before any save, then as today's cookie", () => {
-    const { result } = renderHook(() => useDaily(NOW));
+  it("reads as not opened before any save, then as today's cookie with the account marker it was kept with", () => {
+    const { result } = renderHook(() => useDailySaved(NOW));
     expect(result.current).toBeNull();
-    act(() => saveDaily(DAILY, NOW));
-    expect(result.current).toEqual(DAILY);
+    act(() => saveDaily(DAILY, NOW, "marker-a"));
+    expect(result.current).toEqual({ day: "2026-10-01", reading: DAILY, account: "marker-a" });
+    expect(localStorage.getItem(DAILY_KEY)).not.toContain("user");
+    act(() => clearDaily());
+    expect(result.current).toBeNull();
   });
 });
 

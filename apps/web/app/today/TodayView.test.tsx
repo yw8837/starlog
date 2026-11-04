@@ -13,6 +13,8 @@ const REVISIT_NOTE = "오늘의 카드는 이미 골랐어요 · 내일 새 카�
 
 /** GET /api/tarot/daily before the pick: three face-down slots, nothing about their faces. */
 const DEAL = { deal: [{ index: 0 }, { index: 1 }, { index: 2 }] };
+/** The server's marker of the logged-in account every answer carries (code review 2026-11-04). */
+const ACCOUNT = "marker-test";
 
 /** The fortune the server hands out for the picked card, and again on every later visit that day. */
 const READING: DailyData = {
@@ -30,7 +32,7 @@ const respond = (body: unknown, status = 200) => new Response(JSON.stringify(bod
 type FetchCall = [string, RequestInit | undefined];
 
 /** The server as the page sees it: GET gives the deal (or the stored fortune), POST the picked card's fortune. */
-function server({ get = DEAL, post = () => Promise.resolve(respond(READING)) }: { get?: unknown; post?: () => Promise<Response> } = {}) {
+function server({ get = { ...DEAL, account: ACCOUNT }, post = () => Promise.resolve(respond(READING)) }: { get?: unknown; post?: () => Promise<Response> } = {}) {
   const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => (init?.method === "POST" ? post() : respond(get)));
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
@@ -201,15 +203,15 @@ describe("오늘의 한 장 다시 섞기 after the pick", () => {
     expect(posts(fetchMock).map(postedPick)).toEqual([2, 2]);
   });
 
-  it("is not on a revisit the same day: the card kept on this device opens at once, no deal is asked for", () => {
-    saveDaily(READING);
+  it("is not on a revisit the same day: the card kept on this device opens once the server says the same account is logged in, no deal is shown", async () => {
+    saveDaily(READING, Date.now(), ACCOUNT);
     const fetchMock = server();
     render(<TodayView />);
-    expect(screen.getByText(REVISIT_NOTE)).toBeTruthy();
+    expect(await screen.findByText(REVISIT_NOTE)).toBeTruthy();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(READING.summary);
     expect(reshuffleButton()).toBeNull();
     expect(cardButtons()).toHaveLength(0);
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(posts(fetchMock)).toHaveLength(0);
   });
 
   it("is not on a revisit from another browser either: the server hands back the stored card, never the deal", async () => {
@@ -262,12 +264,12 @@ describe("오늘의 한 장 card design", () => {
   const faces = (cardId: string) =>
     [...document.querySelectorAll("img")].map((img) => img.getAttribute("src") ?? "").filter((src) => src.includes(cardId));
 
-  it("shows today's fortune in the deck it was read with, after the device switched designs", () => {
+  it("shows today's fortune in the deck it was read with, after the device switched designs", async () => {
     window.localStorage.setItem(DECK_KEY, JSON.stringify({ front: "starlog", back: "constellation" }));
-    saveDaily({ ...READING, deck: "rws1909" } as DailyData);
+    saveDaily({ ...READING, deck: "rws1909" } as DailyData, Date.now(), ACCOUNT);
     server();
     render(<TodayView />);
-    expect(screen.getByText(READING.summary)).toBeTruthy();
+    expect(await screen.findByText(READING.summary)).toBeTruthy();
     expect(faces("major-17-star").length).toBeGreaterThan(0);
     for (const src of faces("major-17-star")) expect(src).toBe("/cards/major-17-star-sm.webp");
   });
@@ -317,9 +319,10 @@ describe("sharing 오늘의 한 장 (owner 2026-10-20)", () => {
 
   it("shares the card's own page (/s/<id>, made by the server from this device's card), never the home", async () => {
     dialogs();
-    saveDaily(READING);
+    saveDaily(READING, Date.now(), ACCOUNT);
     const calls: Array<{ url: string; method: string; body: unknown }> = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/tarot/daily") return respond({ ...DEAL, account: ACCOUNT });
       calls.push({ url: String(url), method: init?.method ?? "GET", body: init?.body ? JSON.parse(String(init.body)) : undefined });
       return respond({ id: "dailyshare01", path: "/s/dailyshare01" });
     }));
@@ -327,7 +330,8 @@ describe("sharing 오늘의 한 장 (owner 2026-10-20)", () => {
     Object.defineProperty(navigator, "share", { value: share, configurable: true, writable: true });
     try {
       render(<TodayView />);
-      await act(async () => fireEvent.click(screen.getByRole("button", { name: "공유하기" })));
+      const open = await screen.findByRole("button", { name: "공유하기" });
+      await act(async () => fireEvent.click(open));
       const sheet = screen.getByRole("dialog", { hidden: true });
       expect(sheet.textContent).toContain("오늘 뽑은 카드와 풀이가 보여요");
       expect(calls).toEqual([]);
@@ -344,14 +348,16 @@ describe("sharing 오늘의 한 장 (owner 2026-10-20)", () => {
     dialogs();
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.parse("2026-10-20T23:58:00+09:00"));
-    saveDaily(READING);
+    saveDaily(READING, Date.now(), ACCOUNT);
     const calls: Array<{ method: string; body: unknown }> = [];
-    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === "/api/tarot/daily") return respond({ ...DEAL, account: ACCOUNT });
       calls.push({ method: init?.method ?? "GET", body: init?.body ? JSON.parse(String(init.body)) : undefined });
       return respond(init?.method === "DELETE" ? { deleted: true } : { id: "dailyshare01", path: "/s/dailyshare01" });
     }));
     render(<TodayView />);
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "공유하기" })));
+    const open = await screen.findByRole("button", { name: "공유하기" });
+    await act(async () => fireEvent.click(open));
     const sheet = screen.getByRole("dialog", { hidden: true });
     await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: "공유 링크 만들기", hidden: true })));
     vi.setSystemTime(Date.parse("2026-10-21T00:02:00+09:00"));
@@ -393,5 +399,46 @@ describe("오늘의 한 장 for a visitor (owner 2026-11-04: it needs a login, t
     render(<TodayView />);
     await screen.findByText(READING.summary);
     expect(posts(fetchMock)).toHaveLength(0);
+  });
+});
+
+describe("오늘의 한 장 kept on this device is the account's (code review 2026-11-04)", () => {
+  const LOGIN_REQUIRED = { code: "LOGIN_REQUIRED", reason: "daily", message: "오늘의 한 장은 로그인하고 볼 수 있어요." };
+
+  afterEach(() => window.history.replaceState(null, "", "/"));
+
+  it("drops a card kept for another account and asks the server, never showing it", async () => {
+    saveDaily(READING, Date.now(), "marker-a");
+    server({ get: { ...DEAL, account: "marker-b" } });
+    render(<TodayView />);
+    await screen.findByText("카드를 섞고 있어요");
+    expect(screen.queryByText(READING.summary)).toBeNull();
+    expect(window.localStorage.getItem(DAILY_KEY)).toBeNull();
+  });
+
+  it("shows a card kept for this very account, even when the server lost its copy", async () => {
+    saveDaily(READING, Date.now(), "marker-a");
+    server({ get: { ...DEAL, account: "marker-a" } });
+    render(<TodayView />);
+    expect(await screen.findByText(READING.summary)).toBeTruthy();
+    expect(screen.getByText(REVISIT_NOTE)).toBeTruthy();
+  });
+
+  it("drops a kept card for a visitor (the server answers the login), who shuffles and picks as anyone", async () => {
+    saveDaily(READING, Date.now(), "marker-a");
+    vi.stubGlobal("fetch", vi.fn(async () => respond(LOGIN_REQUIRED, 401)));
+    await toThreeCards();
+    expect(screen.queryByText(READING.summary)).toBeNull();
+    expect(window.localStorage.getItem(DAILY_KEY)).toBeNull();
+  });
+
+  it("keeps the note a login brought back (login=cancel) on the panel of the slot that was picked, with no new shuffle", async () => {
+    window.history.replaceState(null, "", "/today?pick=1&login=cancel");
+    vi.stubGlobal("fetch", vi.fn(async () => respond(LOGIN_REQUIRED, 401)));
+    render(<TodayView />);
+    const panel = await screen.findByRole("region", { name: "오늘의 한 장은 로그인하고 볼 수 있어요" });
+    expect(panel.textContent).toContain("로그인을 취소했어요");
+    expect(panel.querySelector("a")?.getAttribute("href")).toBe("/login?next=%2Ftoday%3Fpick%3D1");
+    expect(window.location.search).toBe("");
   });
 });

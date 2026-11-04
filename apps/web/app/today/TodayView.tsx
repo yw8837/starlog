@@ -10,7 +10,7 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
-import { loginHref } from "@/lib/account/client";
+import { loginHref, loginMessage } from "@/lib/account/client";
 import { commitQuota, getJson } from "@/lib/reading/api";
 import { describeApiError, type ErrorView } from "@/lib/reading/errors";
 import { BOT_CHECK_LINE, progressPlan, timeFraction, waitLine } from "@/lib/reading/progress";
@@ -19,7 +19,7 @@ import { useBotCheck } from "@/lib/reading/useBotCheck";
 import { useElapsed } from "@/lib/reading/useElapsed";
 import { useGeneration } from "@/lib/reading/useGeneration";
 import { createDailyShareLink, knownDailyShareLink, stopDailyShareLink } from "@/lib/share/client";
-import { saveDaily, useDaily } from "@/lib/storage/daily";
+import { clearDaily, saveDaily, useDailySaved } from "@/lib/storage/daily";
 import { kstDate } from "@/lib/kst";
 import s from "./TodayView.module.css";
 import { FRONT_DECKS, deckPrefs, type FrontDeck } from "@/lib/deck";
@@ -36,13 +36,18 @@ const PICK_NOTE = "하루 한 장 · 로그인하면 어느 기기에서든 같�
 /** Where the card would turn over, for a visitor (owner 2026-11-04: 오늘의 한 장 needs a login; the shuffle and the pick do not). */
 const LOGIN_TITLE = "오늘의 한 장은 로그인하고 볼 수 있어요";
 
-/** The slot a visitor picked before logging in (`/today?pick=`), read once and taken off the address. */
-function resumedPick(): number | null {
-  const value = new URLSearchParams(window.location.search).get("pick");
-  if (value === null) return null;
+/**
+ * What a login brought back (`/today?pick=1&login=cancel`): the slot picked before it and the login's note. Read once and
+ * taken off the address; the note stays on screen (code review 2026-11-04 #7).
+ */
+function resumedLogin(): { pick: number | null; note: string | null } {
+  const query = new URLSearchParams(window.location.search);
+  const value = query.get("pick");
+  const note = loginMessage(query.get("login"));
+  if (value === null) return { pick: null, note };
   window.history.replaceState(window.history.state, "", window.location.pathname);
   const pick = Number(value);
-  return Number.isInteger(pick) && pick >= 0 && pick < DEAL.length ? pick : null;
+  return { pick: Number.isInteger(pick) && pick >= 0 && pick < DEAL.length ? pick : null, note };
 }
 /** 다시 섞기 plays one riffle (1.2s) like 지금의 한 장, so asking again stays quick; the first shuffle keeps its two. */
 const RESHUFFLE_RIFFLES = 1;
@@ -110,7 +115,7 @@ type Phase =
  * and lays the three face-down cards out afresh, in the browser only: nothing is asked or shown.
  */
 export function TodayView() {
-  const saved = useDaily();
+  const saved = useDailySaved();
   const daily = useGeneration<DailyData>();
   const [phase, setPhase] = useState<Phase>("checking");
   const [picked, setPicked] = useState<number | null>(null);
@@ -122,6 +127,14 @@ export function TodayView() {
   const [needsLogin, setNeedsLogin] = useState(false);
   // The slot picked before the login (?pick=), turned over as soon as the account's deal is known.
   const resume = useRef<number | null | undefined>(undefined);
+  const [loginNote, setLoginNote] = useState<string | null>(null);
+  // The server's marker of the logged-in account (null for a visitor): a card kept on this device shows only for the same
+  // marker (code review 2026-11-04), and one the server handed out in this visit shows as it is.
+  const [viewer, setViewer] = useState<string | null | undefined>(undefined);
+  const [fresh, setFresh] = useState<DailyData | null>(null);
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
+  const savedKnown = saved !== undefined;
   // Which slot of the server's deal each face-down card on screen stands for (the first layout is as dealt).
   const [order, setOrder] = useState<readonly number[]>(DEAL);
   // Shuffles asked for in this visit; focus follows them to 바로 펼치기 and back to 다시 섞기.
@@ -129,43 +142,67 @@ export function TodayView() {
   const lineRef = useRef<HTMLHeadingElement>(null);
   const reshuffleRef = useRef<HTMLDivElement>(null);
 
-  const reading = saved ?? null;
+  const kept = saved && typeof viewer === "string" && saved.account === viewer ? saved.reading : null;
+  const reading = fresh ?? kept;
 
-  // Picked earlier today (this device keeps it, or the server has it): straight to the result.
-  // Otherwise the server deals three face-down cards and the shuffle plays.
+  /** The slot picked before the login, once (null when none). */
+  const takeResume = () => {
+    const resumed = resume.current ?? null;
+    resume.current = null;
+    return resumed;
+  };
+
+  // The server says who is logged in and whether today's card was picked (on any device of the account): the card it hands
+  // back, the card kept here when it is the same account's, or the deal. A visitor shuffles and picks; the pick asks for the login.
   useEffect(() => {
-    if (resume.current === undefined) resume.current = resumedPick();
-    if (saved === undefined || saved !== null) return;
+    if (resume.current === undefined) {
+      const back = resumedLogin();
+      resume.current = back.pick;
+      setLoginNote(back.note);
+    }
+    if (!savedKnown) return;
     let live = true;
-    void getJson<DailyData | DailyDeal>("/api/tarot/daily").then((result) => {
+    void getJson<(DailyData | DailyDeal) & { account?: unknown }>("/api/tarot/daily").then((result) => {
       if (!live) return;
+      const here = savedRef.current;
       if (!result.ok) {
         if (result.error.code === "LOGIN_REQUIRED") {
+          // Not this account's to show any more (a session that ended, another person on the device).
+          if (here) clearDaily();
+          setViewer(null);
           setCheckError(null);
           setNeedsLogin(true);
-          setPhase("shuffle");
+          const resumed = takeResume();
+          if (resumed !== null) void read(resumed, true);
+          else setPhase("shuffle");
           return;
         }
         setCheckError(describeApiError(result.error, "daily"));
         return;
       }
+      const account = typeof result.data.account === "string" ? result.data.account : undefined;
       // Kept only when it has the fortune's shape; anything else is a failed answer to retry.
       if (isDailyData(result.data)) {
         setCheckError(null);
-        saveDaily(result.data);
+        setViewer(account ?? null);
+        setFresh(result.data);
+        saveDaily(result.data, Date.now(), account);
       } else if (isDailyDeal(result.data)) {
         setCheckError(null);
         setNeedsLogin(false);
-        const resumed = resume.current;
-        resume.current = null;
-        if (resumed !== null && resumed !== undefined) void read(resumed);
+        setViewer(account ?? null);
+        // The server lost its copy, but this device kept the same account's: shown.
+        if (here && account && here.account === account) return;
+        if (here) clearDaily();
+        const resumed = takeResume();
+        if (resumed !== null) void read(resumed, false);
         else setPhase("shuffle");
       } else setCheckError(describeApiError({ code: "INVALID", status: 502 }, "daily"));
     });
     return () => {
       live = false;
     };
-  }, [saved, attempt]);
+  }, [savedKnown, attempt]);
 
   // Once the card has turned over, start reading at today's line.
   useEffect(() => {
@@ -181,20 +218,22 @@ export function TodayView() {
 
   const pick = async (index: number) => {
     if (phase !== "pick" && phase !== "reading") return;
-    await read(index);
+    await read(index, needsLogin);
   };
 
   /** The picked slot turns over; a visitor's pick waits for the login instead (asked in place, below). */
-  async function read(index: number) {
+  async function read(index: number, visitor: boolean) {
     setPicked(index);
     setPhase("reading");
     setLimited(null);
-    if (needsLogin) return;
+    if (visitor) return;
     const result = await daily.run("/api/tarot/daily", { pick: index, deck: deckPrefs().front }, DAILY_PLAN, isDailyData);
     if (!result) return;
     if (result.ok) {
       setJustPicked(true);
-      saveDaily(result.data);
+      const account = (result.data as { account?: unknown }).account;
+      setFresh(result.data);
+      saveDaily(result.data, Date.now(), typeof account === "string" ? account : undefined);
       if (result.commit) void commitQuota(result.commit);
     } else if (result.error.code === "BETA_LIMIT" && result.error.card) {
       setLimited({ card: result.error.card, view: describeApiError(result.error, "daily") });
@@ -301,6 +340,7 @@ export function TodayView() {
               body="고른 카드는 그대로 기억해 둘게요. 카카오나 Google로 로그인하면 바로 펼쳐 보여 드리고, 어느 기기에서든 같은 카드가 보여요."
               href={loginHref(`/today?pick=${picked}`)}
               action="로그인하고 카드 펼치기"
+              note={loginNote}
             />
           ) : pickError ? (
             <ErrorPanel view={pickError} onRetry={() => picked !== null && void pick(picked)} />

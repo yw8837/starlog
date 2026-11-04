@@ -343,12 +343,13 @@ const SCREENS: Screen[] = [
     path: "/today",
     setup: async (page) => {
       await ownAddress(page);
-      // 오늘의 한 장 needs a login (owner 2026-11-04); the screen shows this device's copy.
+      // 오늘의 한 장 needs a login (owner 2026-11-04); this device keeps its copy with the account's marker (code review 2026-11-04).
       await member(page);
       const reading = await (await page.request.post("/api/tarot/daily", { data: { pick: 1 } })).json();
       await page.addInitScript((r) => {
         const day = new Date(Date.now() + 9 * 3_600_000).toISOString().slice(0, 10);
-        window.localStorage.setItem("starlog.daily", JSON.stringify({ day, reading: JSON.parse(r) }));
+        const kept = JSON.parse(r);
+        window.localStorage.setItem("starlog.daily", JSON.stringify({ day, reading: kept, account: kept.account }));
       }, JSON.stringify(reading));
     },
   },
