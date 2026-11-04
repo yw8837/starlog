@@ -62,6 +62,8 @@ describe("AI 풀이 needs a login, in the policies", () => {
     expect(container.textContent).toContain("무료로 본 맛보기(타로와 사주)를 공유하면");
     expect(retention).toContain("로그인하지 않고 연 풀이와 맛보기(로그인해서 본 것 포함)의 입력");
     expect(retention).toContain("오늘의 한 장은 로그아웃할 때도 지웁니다.");
+    // The kept card carries the account marker, a one-way value and never the id (lib/storage/daily.ts; code review 2026-11-05).
+    expect(retention).toContain("이 기기에 남는 오늘의 한 장에는 어느 계정의 카드인지 알아보는 표시(계정 식별값을 되돌릴 수 없게 바꾼 값이며, 계정 식별값 자체는 아닙니다)를 함께 두고, 같은 계정으로 로그인했을 때만 보여 드립니다.");
     const text = container.textContent ?? "";
     expect(text).toContain("오늘 한 후속 질문(이어서 물어보기)의 횟수를 세어 하루 횟수를 지키는 데 씁니다.");
     expect(text).not.toContain("오늘 연 첫 풀이와 후속 질문의 횟수");
