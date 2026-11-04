@@ -1,3 +1,6 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { DatabaseSync } from "node:sqlite";
+import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { accountSecret } from "@/lib/account/secrets";
 import { setTestDb } from "@/lib/db";
@@ -317,5 +320,13 @@ describe("the account's day counts (migrations/0021_account_day_counts.sql)", ()
     vi.setSystemTime(T0); // 12:00 KST
     expect(await report()).toMatchObject({ accountCounts: 2 });
     expect((await db.prepare("SELECT kst_day, kind, n FROM account_day_counts").all()).results).toEqual([{ kst_day: "2026-10-01", kind: "teaser", n: 2 }]);
+  });
+
+  it("finds the days to delete by an index on kst_day, not by scanning every account's rows (migrations/0022, code review 2026-11-05)", () => {
+    const sqlite = new DatabaseSync(":memory:");
+    const migrations = fileURLToPath(new URL("../../../../migrations/", import.meta.url));
+    for (const name of readdirSync(migrations).filter((file) => /^\d{4}_.+\.sql$/.test(file)).sort()) sqlite.exec(readFileSync(`${migrations}${name}`, "utf8"));
+    const steps = sqlite.prepare("EXPLAIN QUERY PLAN SELECT rowid FROM account_day_counts WHERE kst_day < ? LIMIT ?").all("2026-10-01", 500).map((row) => String((row as { detail: string }).detail));
+    expect(steps.join(" | ")).toMatch(/^SEARCH account_day_counts USING (COVERING )?INDEX account_day_counts_by_day \(kst_day<\?\)$/);
   });
 });
