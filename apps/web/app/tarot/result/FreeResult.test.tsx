@@ -595,7 +595,8 @@ describe("FreeResult for a visitor (owner 2026-11-04: the 맛보기 needs a logi
     render(<FreeResult instant />);
     const panel = await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
     expect(panel.textContent).toContain("고른 카드와 질문은 그대로 있어요");
-    expect(within(panel).getByRole("link", { name: "로그인하고 맛보기 보기" }).getAttribute("href")).toBe("/login?next=%2Ftarot%2Fresult%3Finstant%3D1");
+    // The way back carries the login trip's one-time mark (code review 2026-11-05).
+    expect(within(panel).getByRole("link", { name: "로그인하고 맛보기 보기" }).getAttribute("href")).toMatch(/^\/login\?next=%2Ftarot%2Fresult%3Finstant%3D1%26resume%3D[0-9a-f]{24}$/);
     expect(screen.getByRole("heading", { level: 1, name: question })).toBeTruthy();
     expect(screen.getByText("은둔자")).toBeTruthy();
     expect(fetched.filter((url) => url === "/api/tarot/teaser")).toHaveLength(1);
@@ -660,14 +661,15 @@ describe("FreeResult for a visitor (owner 2026-11-04: the 맛보기 needs a logi
   });
 });
 
-describe("FreeResult when a login comes back in another tab (code review 2026-11-04 #9)", () => {
+describe("FreeResult when a login comes back in another tab (code review 2026-11-04 #9, 2026-11-05)", () => {
   const base: FlowState = { who: "me", topicId: "money", when: "week", conditions: {}, note: "" };
   const flow = () => ({ ...base, draw: { templateId: summarizeFlow(base)!.template, drawToken: "signed.draw.token", cards: CARDS } });
   const teaserBody = { firstCard: { heading: "지금의 나 · 은둔자", body: "첫 카드 풀이" }, lockedToc: ["흐름", "조언"], cards: CARDS.map((card) => ({ position: card.position, cardId: card.cardId, keyword: "열쇠" })) };
+  const backup = (nonce: string, age = 0) => localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: flow(), savedAt: Date.now() - age, nonce }));
 
   afterEach(() => localStorage.removeItem(FLOW_LOGIN_BACKUP_KEY));
 
-  it("backs the pending draw up in this browser when the login panel shows", async () => {
+  it("keeps nothing while the login panel only shows; the login button backs the draw up with a one-time mark its way back carries", async () => {
     saveFlow(flow());
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
@@ -676,11 +678,19 @@ describe("FreeResult when a login comes back in another tab (code review 2026-11
     }));
     render(<FreeResult instant />);
     await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
-    expect(JSON.parse(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)!).flow.draw.drawToken).toBe("signed.draw.token");
+    expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)).toBeNull();
+    const go = screen.getByRole("link", { name: /로그인하고 맛보기 보기/ });
+    const back = new URLSearchParams(new URL(go.getAttribute("href")!, "http://localhost").searchParams.get("next")!.split("?")[1]);
+    expect(back.get("instant")).toBe("1");
+    expect(back.get("resume")).toMatch(/^[0-9a-f]{24}$/);
+    fireEvent.click(go);
+    const kept = JSON.parse(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)!);
+    expect(kept.flow.draw.drawToken).toBe("signed.draw.token");
+    expect(kept.nonce).toBe(back.get("resume"));
   });
 
-  it("reads the same draw in a new tab of this browser, from a backup under an hour old", async () => {
-    localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: flow(), savedAt: Date.now() - 30 * 60_000 }));
+  it("reads the same draw in a new tab of this browser only when its login came back (login=ok) with the same mark, then forgets it", async () => {
+    backup("a1b2c3", 30 * 60_000);
     const sent: unknown[] = [];
     vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
       if (url === "/api/me") return Response.json(meBody());
@@ -690,23 +700,36 @@ describe("FreeResult when a login comes back in another tab (code review 2026-11
       }
       return Response.json({ readings: [], next: null });
     }));
-    render(<FreeResult instant loginFlag="ok" />);
+    render(<FreeResult instant loginFlag="ok" resume="a1b2c3" />);
     await screen.findByText("첫 카드 풀이");
     expect(sent[0]).toMatchObject({ drawToken: "signed.draw.token" });
     expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)).toBeNull();
   });
 
-  it("forgets a backup over an hour old, and never takes one over a draw this tab already holds", async () => {
-    localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: flow(), savedAt: Date.now() - 61 * 60_000 }));
+  it("never hands the draw to anyone else on this device: no login, a cancelled one, or another mark only forget it", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? Response.json(meBody()) : Response.json({ readings: [], next: null }))));
-    render(<FreeResult instant />);
+    for (const props of [{}, { loginFlag: "cancel", resume: "a1b2c3" }, { loginFlag: "ok", resume: "ffff00" }, { loginFlag: "ok" }]) {
+      backup("a1b2c3");
+      router.replace.mockClear();
+      render(<FreeResult instant {...props} />);
+      await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/tarot/new"));
+      expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY), JSON.stringify(props)).toBeNull();
+      expect(sessionStorage.getItem(FLOW_KEY) ?? "", JSON.stringify(props)).not.toContain("signed.draw.token");
+      cleanup();
+    }
+  });
+
+  it("forgets a backup over an hour old, and never takes one over a draw this tab already holds", async () => {
+    backup("a1b2c3", 61 * 60_000);
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? Response.json(meBody()) : Response.json({ readings: [], next: null }))));
+    render(<FreeResult instant loginFlag="ok" resume="a1b2c3" />);
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/tarot/new"));
     expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)).toBeNull();
     cleanup();
     const own = { ...flow(), draw: { ...flow().draw, drawToken: "this.tab.token" } };
     saveFlow(own);
-    localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: flow(), savedAt: Date.now() }));
-    render(<FreeResult instant />);
+    backup("a1b2c3");
+    render(<FreeResult instant loginFlag="ok" resume="a1b2c3" />);
     await waitFor(() => expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw.drawToken).toBe("this.tab.token"));
   });
 });

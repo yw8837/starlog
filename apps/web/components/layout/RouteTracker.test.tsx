@@ -7,6 +7,7 @@ import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
 import { MATCH_SEALS_KEY } from "@/lib/storage/matchSeals";
 import { MATCH_FLOW_KEY } from "@/lib/premium/matchFlow";
+import { FLOW_LOGIN_BACKUP_KEY } from "@/lib/flowState";
 import { RouteTracker } from "./RouteTracker";
 
 const nav = vi.hoisted(() => ({ path: "/saju/chart" }));
@@ -25,6 +26,17 @@ afterEach(() => {
 });
 
 describe("RouteTracker", () => {
+  it("drops the draw kept for a login once it is over an hour old, whenever the app opens (code review 2026-11-05)", () => {
+    localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: {}, savedAt: Date.now() - 61 * 60_000, nonce: "a1" }));
+    render(<RouteTracker />);
+    expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)).toBeNull();
+    cleanup();
+    const fresh = JSON.stringify({ flow: {}, savedAt: Date.now() - 10 * 60_000, nonce: "a1" });
+    localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, fresh);
+    render(<RouteTracker />);
+    expect(localStorage.getItem(FLOW_LOGIN_BACKUP_KEY)).toBe(fresh);
+  });
+
   it("notes the route on screen", () => {
     render(<RouteTracker />);
     expect(lastRoute()).toBe("/saju/chart");

@@ -16,7 +16,7 @@ import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
-import { backupFlowForLogin, dropFlowBackup, restoreFlowAfterLogin, resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
+import { backupFlowForLogin, dropFlowBackup, newResumeNonce, restoreFlowAfterLogin, resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { standardProduct } from "@/lib/pay/catalog";
 import { checkoutHref, unlockOffer } from "@/lib/pay/offer";
 import { ShareResultButton } from "@/components/share/ShareResultButton";
@@ -67,7 +67,7 @@ function withHistory(input: TarotInput): TarotInput {
  * per device, kept marked on this device: read and keep only; a visitor logs in first and comes back with ?unlock=opening),
  * a login, a purchase, a gift held or paying. `autoUnlock` (?unlock= after checkout or login) opens it once.
  */
-export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { instant: boolean; autoUnlock?: UnlockMethod | null; loginFlag?: string | null }) {
+export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resume = null }: { instant: boolean; autoUnlock?: UnlockMethod | null; loginFlag?: string | null; resume?: string | null }) {
   const router = useRouter();
   const { flow, setFlow } = useFlowState();
   const chapters = useChapters();
@@ -77,12 +77,12 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const draw = gate === "ready" ? flow?.draw : undefined;
 
   // No question yet → the builder; a question without cards dealt for it → the draw. A login that came back in a new tab
-  // of this browser takes the draw it left behind first (code review 2026-11-04 #9).
+  // of this browser takes the draw it left behind first, by its one-time mark (code review 2026-11-04 #9, 2026-11-05).
   useEffect(() => {
-    if ((gate === "builder" || gate === "draw") && restoreFlowAfterLogin()) return;
+    if ((gate === "builder" || gate === "draw") && restoreFlowAfterLogin({ login: loginFlag, resume })) return;
     if (gate === "builder") router.replace("/tarot/new");
     else if (gate === "draw") router.replace(withFlags("/tarot/draw", { instant }));
-  }, [gate, instant, router]);
+  }, [gate, instant, router, loginFlag, resume]);
 
   const input = flow && summary ? tarotInput(flow, summary) : null;
   const teaserKey = draw && input ? `${draw.drawToken}|${JSON.stringify(input)}` : null;
@@ -285,11 +285,12 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
   const teaserState = teaserGen.state;
   const loginFirst = !teaser && teaserState.status === "error" && teaserState.error.code === "LOGIN_REQUIRED";
   const teaserError = !teaser && !loginFirst && teaserState.status === "error" ? describeApiError(teaserState.error, "teaser") : null;
-  // The login panel keeps the draw for a login that comes back in another tab; read here, it is not needed any more.
+  // The login button keeps the draw for a login that comes back in another tab, marked for that trip only; read here, it
+  // is not needed any more.
+  const [loginTrip] = useState(newResumeNonce);
   useEffect(() => {
-    if (loginFirst && flow) backupFlowForLogin(flow);
-    else if (teaser) dropFlowBackup();
-  }, [loginFirst, flow, teaser]);
+    if (teaser) dropFlowBackup();
+  }, [teaser]);
   const opening = unlockGen.state.status === "running" || unlockGen.state.status === "done";
   // One live region for the whole screen: progress, then what went wrong.
   const announce =
@@ -403,7 +404,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null }: { i
             <LoginFirst
               title={TEASER_LOGIN_TITLE}
               body="고른 카드와 질문은 그대로 있어요. 카카오나 Google로 로그인하면 이 카드로 바로 이어서 읽어 드려요."
-              href={loginHref(withFlags(RETURN_TO, { instant }))}
+              href={loginHref(`${withFlags(RETURN_TO, { instant })}${instant ? "&" : "?"}resume=${loginTrip}`)}
+              onGo={() => flow && backupFlowForLogin(flow, loginTrip)}
               action="로그인하고 맛보기 보기"
               note={loginNote}
             />

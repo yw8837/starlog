@@ -297,21 +297,28 @@ export function clearFlow() {
   saveFlow(EMPTY_FLOW);
 }
 
-// ---- the draw kept for a login that comes back in another tab (code review 2026-11-04 #9) ----
+// ---- the draw kept for a login that comes back in another tab (code review 2026-11-04 #9, 2026-11-05) ----
 
 /**
  * The flow lives in this tab's sessionStorage, so a login that comes back in a new tab of the same browser would find no draw.
- * While the login panel shows, the flow (question, draw token, cards) is copied to localStorage for an hour; the result
- * screen of a tab with no flow takes it back once and removes it. It never replaces a draw the tab holds, and a different
- * browser (an app's own browser → Safari or Chrome) does not share storage, so it cannot help there.
+ * When the login button is pressed, the flow (question, draw token, cards) is copied to localStorage for an hour with a
+ * one-time mark that the way back carries (?resume=). Only a result screen that came back from that login (login=ok and the
+ * same mark) takes it back, once; any other look at it forgets it, so the next person on a shared device never sees it. It
+ * never replaces a draw the tab holds; past its hour it is dropped when the app opens (pruneFlowBackup). A different browser
+ * (an app's own browser → Safari or Chrome) does not share storage, so it cannot help there.
  */
 export const FLOW_LOGIN_BACKUP_KEY = "starlog.tarot-flow-login";
 const FLOW_LOGIN_BACKUP_MS = 60 * 60_000;
 
-export function backupFlowForLogin(flow: FlowState, now = Date.now()) {
+/** A fresh one-time mark for one login trip (24 hex digits). */
+export function newResumeNonce(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export function backupFlowForLogin(flow: FlowState, nonce: string, now = Date.now()) {
   if (!flow.draw) return;
   try {
-    window.localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: sanitizeFlow(flow), savedAt: now }));
+    window.localStorage.setItem(FLOW_LOGIN_BACKUP_KEY, JSON.stringify({ flow: sanitizeFlow(flow), savedAt: now, nonce }));
   } catch {
     // storage blocked: the login comes back to this tab only
   }
@@ -325,28 +332,44 @@ export function dropFlowBackup() {
   }
 }
 
-/** Takes the backup back into this tab when it has no draw and the backup is under an hour old; true when it did. */
-export function restoreFlowAfterLogin(now = Date.now()): boolean {
+function readFlowBackup(): { raw: string; kept: unknown } | null {
   let raw: string | null = null;
   try {
     raw = window.localStorage.getItem(FLOW_LOGIN_BACKUP_KEY);
   } catch {
-    return false;
+    return null;
   }
-  if (raw === null) return false;
-  dropFlowBackup();
-  if (getSnapshot().draw) return false;
-  let kept: unknown;
+  if (raw === null) return null;
   try {
-    kept = JSON.parse(raw);
+    return { raw, kept: JSON.parse(raw) };
   } catch {
-    return false;
+    return { raw, kept: null };
   }
-  if (!isRecord(kept) || typeof kept.savedAt !== "number" || now - kept.savedAt > FLOW_LOGIN_BACKUP_MS || kept.savedAt > now + 60_000) return false;
-  const flow = sanitizeFlow(kept.flow);
+}
+
+const freshBackup = (kept: unknown, now: number): kept is { flow: unknown; savedAt: number; nonce: string } =>
+  isRecord(kept) && typeof kept.savedAt === "number" && typeof kept.nonce === "string" && now - kept.savedAt <= FLOW_LOGIN_BACKUP_MS && kept.savedAt <= now + 60_000;
+
+/**
+ * Takes the backup back into this tab when the login came back for it (`login` "ok", `resume` its mark), the tab has no draw
+ * and the backup is under an hour old; true when it did. The backup is gone afterwards either way.
+ */
+export function restoreFlowAfterLogin({ login, resume }: { login: string | null; resume: string | null }, now = Date.now()): boolean {
+  const found = readFlowBackup();
+  if (!found) return false;
+  dropFlowBackup();
+  if (login !== "ok" || !resume || getSnapshot().draw) return false;
+  if (!freshBackup(found.kept, now) || found.kept.nonce !== resume) return false;
+  const flow = sanitizeFlow(found.kept.flow);
   if (resultGate(flow) !== "ready") return false;
   saveFlow(flow);
   return true;
+}
+
+/** When the app opens: drops a backup past its hour (or one that cannot be read). */
+export function pruneFlowBackup(now = Date.now()) {
+  const found = readFlowBackup();
+  if (found && !freshBackup(found.kept, now)) dropFlowBackup();
 }
 
 /**

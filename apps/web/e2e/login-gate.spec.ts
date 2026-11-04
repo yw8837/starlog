@@ -84,9 +84,13 @@ test("tarot: a visitor draws, is asked to log in where the 맛보기 would show,
   expect(teasers.every((sent) => sent.drawToken === drawToken)).toBe(true);
   const asVisitor = teasers.length;
 
-  await panel.getByRole("link", { name: "로그인하고 맛보기 보기" }).click();
-  await logIn(page, "/tarot/result?instant=1");
-  await expect(page).toHaveURL(/\/tarot\/result\?instant=1&login=ok$/, { timeout: NAV });
+  // The way back carries this login trip's one-time mark: only it takes the draw kept for another tab (code review 2026-11-05).
+  const go = panel.getByRole("link", { name: "로그인하고 맛보기 보기" });
+  const back = new URL((await go.getAttribute("href"))!, "http://localhost").searchParams.get("next")!;
+  expect(back).toMatch(/^\/tarot\/result\?instant=1&resume=[0-9a-f]{24}$/);
+  await go.click();
+  await logIn(page, back);
+  await expect(page).toHaveURL(new RegExp(`${back.replace(/[?]/g, "\\?")}&login=ok$`), { timeout: NAV });
   await expect(page.getByRole("region", { name: "전체 풀이에 담긴 것" })).toBeVisible({ timeout: GENERATION });
   // The same draw, not a new one: the 맛보기 was written once, with the token the visitor's draw got.
   const afterLogin = teasers.slice(asVisitor);

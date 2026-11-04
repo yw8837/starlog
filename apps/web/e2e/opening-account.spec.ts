@@ -96,7 +96,7 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
     },
   );
   await loginPanel(web).getByRole("link", { name: "로그인하고 맛보기 보기" }).click();
-  await expect(web).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Finstant%3D1$/, { timeout: NAV });
+  await expect(web).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Finstant%3D1%26resume%3D[0-9a-f]{24}$/, { timeout: NAV });
   expect(generated).toBe(0);
   await shot(web, info, "2-login");
   await web.getByRole("checkbox", { name: "만 14세 이상이에요" }).check();
@@ -104,7 +104,7 @@ test("a visitor taps 오픈 기념 무료, logs in with Kakao and comes back to 
 
   // 3. Back on the result: the 맛보기 of the same cards, and 오픈 기념 무료 offered to the account under its rule; tapped, it
   //    opens as 오픈 기념 무료: read and kept, no follow-ups.
-  await expect(web).toHaveURL(/\/tarot\/result\?instant=1&login=ok$/, { timeout: NAV });
+  await expect(web).toHaveURL(/\/tarot\/result\?instant=1&resume=[0-9a-f]{24}&login=ok$/, { timeout: NAV });
   await expect(sheet).toBeVisible({ timeout: GENERATION });
   await expect(sheet).toContainText(RULE);
   await sheet.getByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }).click();
@@ -148,7 +148,7 @@ test("a visitor (no owner pass) is asked to log in at the reading step, and its 
   });
   await toSheet(page);
   await loginPanel(page).getByRole("link", { name: "로그인하고 맛보기 보기" }).click();
-  await expect(page).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Finstant%3D1$/, { timeout: NAV });
+  await expect(page).toHaveURL(/\/login\?next=%2Ftarot%2Fresult%3Finstant%3D1%26resume%3D[0-9a-f]{24}$/, { timeout: NAV });
   expect(generated).toBe(0);
   await shot(page, info, "0-visitor-login");
 });

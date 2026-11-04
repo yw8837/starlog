@@ -17,6 +17,8 @@ type LoginFirstProps = {
   action: string;
   /** what a login that came back said (lib/account/loginMessage.ts: 취소, 실패…), shown above the button */
   note?: string | null;
+  /** runs when the login button is pressed, before leaving (the tarot result keeps its draw for the trip) */
+  onGo?: () => void;
 };
 
 /**
@@ -25,7 +27,7 @@ type LoginFirstProps = {
  * app's own browser (Instagram, Threads…) the login can end up in another browser, which this device's storage does not
  * reach (code review 2026-11-04 #9): one line says where to open it and that it starts over there.
  */
-export function LoginFirst({ title, body, href, action, note }: LoginFirstProps) {
+export function LoginFirst({ title, body, href, action, note, onGo }: LoginFirstProps) {
   const inApp = useSyncExternalStore(noSubscribe, outsideKakao, () => false);
   return (
     <section className={s.error} aria-labelledby="login-first-title">
@@ -36,7 +38,7 @@ export function LoginFirst({ title, body, href, action, note }: LoginFirstProps)
       {note ? <p className={s.errorBody}>{note}</p> : null}
       {inApp ? <p className={s.errorBody}>인스타그램·스레드 같은 앱 안에서 로그인이 끝나지 않으면 Safari·Chrome에서 열어 주세요. 브라우저를 옮기면 처음부터 다시 해야 해요.</p> : null}
       <div className={s.errorActions}>
-        <Button block href={href} trailing="→">
+        <Button block href={href} onClick={onGo} trailing="→">
           {action}
         </Button>
       </div>

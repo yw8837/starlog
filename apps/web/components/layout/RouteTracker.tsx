@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { noteRoute } from "@/lib/lastRoute";
 import { pruneSajuTeasers } from "@/lib/reading/teaserCache";
+import { pruneFlowBackup } from "@/lib/flowState";
 import { pruneMatchFlow } from "@/lib/premium/matchFlow";
 import { pruneMatchPartners } from "@/lib/storage/chapters";
 
@@ -14,7 +15,7 @@ import { pruneMatchPartners } from "@/lib/storage/chapters";
  * Also, whenever the app opens (once per page load), it drops the saju teasers kept on this device past
  * their time: their keys hold birth data, and the privacy policy says they are gone the next time
  * Starlog is opened (lib/reading/teaserCache.ts). The same goes for a 궁합's sealed partner past its 30 days
- * (lib/storage/chapters.ts pruneMatchPartners).
+ * (lib/storage/chapters.ts pruneMatchPartners), and for the tarot draw kept for a login past its hour (lib/flowState.ts).
  */
 export function RouteTracker() {
   const pathname = usePathname();
@@ -26,6 +27,7 @@ export function RouteTracker() {
   useEffect(() => {
     pruneSajuTeasers();
     pruneMatchPartners();
+    pruneFlowBackup();
   }, []);
   return null;
 }

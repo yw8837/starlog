@@ -57,7 +57,7 @@ describe("AI 풀이 needs a login, in the policies", () => {
     expect(retention).not.toContain("계정 식별값을 변환한 값별 맛보기 횟수)는 36시간");
     expect(retention).toContain("진행 중인 질문과 타로 맛보기는 탭을 닫으면 지워지는 세션 저장소에 둡니다.");
     // The draw kept for a login that comes back in another tab (lib/flowState.ts backupFlowForLogin).
-    expect(retention).toContain("로그인하러 가는 동안에는 같은 브라우저의 새 탭에서 이어 볼 수 있도록 진행 중인 질문과 뽑은 카드를 이 기기의 로컬 저장소에도 둡니다. 1시간이 지난 것은 쓰지 않으며, 결과 화면이 다시 읽거나 맛보기를 보거나 내 정보에서 기록을 지우면 지웁니다.");
+    expect(retention).toContain("로그인 버튼을 눌러 로그인하러 가는 동안에는 같은 브라우저의 새 탭에서 이어 볼 수 있도록 진행 중인 질문과 뽑은 카드를 이 기기의 로컬 저장소에도 둡니다. 로그인하고 돌아온 결과 화면만 다시 읽고 바로 지우며, 맛보기를 보거나 내 정보에서 기록을 지워도 지웁니다. 1시간이 지난 것은 쓰지 않고 다음에 스타로그를 열 때 지웁니다.");
     expect(container.textContent).toContain("무료로 본 맛보기(타로와 사주)를 공유하면");
     expect(retention).toContain("로그인하지 않고 연 풀이와 맛보기(로그인해서 본 것 포함)의 입력");
     expect(retention).toContain("오늘의 한 장은 로그아웃할 때도 지웁니다.");
