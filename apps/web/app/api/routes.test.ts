@@ -446,7 +446,7 @@ describe("오늘의 한 장", () => {
     const d = await member();
     const before = await getDeal(d);
     expect(before.status).toBe(200);
-    expect(before.data).toEqual({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }] });
+    expect(before.data).toEqual({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }], account: expect.any(String) });
     const deal = await dailyDeal(deviceId(d), "2026-09-30", signingSecret()!);
     const cookiePayload = atob(d.jar.get("sl_daily")!.split(".")[0]!.replace(/-/g, "+").replace(/_/g, "/"));
     for (const c of deal) {
@@ -519,7 +519,7 @@ describe("오늘의 한 장", () => {
     const did = deviceId(d);
     expect(first.data.card).toMatchObject((await dailyDeal(did, "2026-09-30", signingSecret()!))[0]!);
     vi.setSystemTime(T0 + 13 * HOUR); // 01:00 KST the next day
-    expect((await getDeal(d)).data).toEqual({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }] });
+    expect((await getDeal(d)).data).toEqual({ deal: [{ index: 0 }, { index: 1 }, { index: 2 }], account: expect.any(String) });
     const tomorrow = await d.call(daily, { pick: 1 });
     expect(tomorrow.status).toBe(200);
     expect(tomorrow.data.card).toMatchObject((await dailyDeal(did, "2026-10-01", signingSecret()!))[1]!);
@@ -527,9 +527,8 @@ describe("오늘의 한 장", () => {
   });
 
   it("generates once for concurrent requests from the same device", async () => {
+    // The deal and the store are the account's (owner 2026-11-04): no first request is needed to name the device.
     const d = await member();
-    await d.call(daily, {}); // sets this device's cookie
-    resetDailyStore();
     const spy = vi.spyOn(mockProvider, "generate");
     const [a, b] = await Promise.all([d.call(daily, {}), d.call(daily, {})]);
     expect(a.status).toBe(200);
@@ -547,7 +546,7 @@ describe("오늘의 한 장", () => {
     expect(third.data.card).toEqual(first.data.card);
   });
 
-  it("regenerates the same card when nothing is stored, at most twice a day, then answers 429 with the card", async () => {
+  it("regenerates the same card when nothing is stored, at most twice a day, then answers 429 naming no card (code review 2026-11-04)", async () => {
     const d = await member();
     const first = await d.call(daily, {});
     resetDailyStore();
@@ -557,7 +556,8 @@ describe("오늘의 한 장", () => {
     resetDailyStore();
     const third = await d.call(daily, {});
     expect(third.status).toBe(429);
-    expect(third.data).toMatchObject({ code: "BETA_LIMIT", card: { cardId: first.data.card.cardId, orientation: first.data.card.orientation } });
+    expect(third.data).toMatchObject({ code: "BETA_LIMIT" });
+    expect(third.data).not.toHaveProperty("card");
   });
 });
 

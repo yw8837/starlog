@@ -199,7 +199,8 @@ describe("server-side day counters (per client network, whatever the cookies say
     expect((await (await member("198.51.100.13")).call(daily, {})).status).toBe(200);
     const next = await (await member("198.51.100.13")).call(daily, {});
     expect(next.status).toBe(429);
-    expect(next.data.card).toBeDefined();
+    // A limit answer names no card (code review 2026-11-04).
+    expect(next.data).not.toHaveProperty("card");
     expect(next.headers.getSetCookie().filter((c) => c.startsWith("sl_daily=")).length).toBe(1);
   });
 

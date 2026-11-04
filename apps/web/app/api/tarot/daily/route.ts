@@ -5,7 +5,7 @@ import { getOrCreateDailyResult, readDailyResult } from "@/lib/api/dailyStore";
 import {
   checkServerLimits, clientKey, errorResponse, json, openGate, parseCookies, readJson, serializeCookie, type CookieSpec,
 } from "@/lib/api/http";
-import { requireMember } from "@/lib/api/member";
+import { dailyViewer, giveBackPlace, requireMember, takePlace } from "@/lib/api/member";
 import { respondGeneration } from "@/lib/api/stream";
 import { checkBot } from "@/lib/api/turnstile";
 import { DAILY_COOKIE, dailyCookie, readDaily, type DailyState } from "@/lib/security/dailyCookie";
@@ -26,7 +26,9 @@ import { signingSecret } from "@/lib/security/sign";
  *   the pick. The first pick of the day is locked in the device cookie, and once a result is stored
  *   every later POST that day returns it, whatever it picks, on any device of the account. An invalid pick is 400; a
  *   missing one counts as 0 (clients from before the deal).
- * Generations are capped per device and account (BETA_DAILY_PER_DAY, the cookie) and by the server limits.
+ * Generations are capped per account across its devices (BETA_DAILY_PER_DAY, a place taken in D1 before each one and given
+ * back when nothing new was written), per device too (the cookie's count), and by the server limits. A limit answer names no
+ * card. Every answer carries `account`, a marker of the account (lib/api/member.ts dailyViewer), for the device's own copy.
  * POST asks for a browser check first when Turnstile is on (lib/api/turnstile.ts).
  * POST streams NDJSON progress with `Accept: application/x-ndjson`.
  */
@@ -58,7 +60,9 @@ export async function GET(request: Request): Promise<Response> {
   if (member instanceof Response) return member;
   const state = await todayState(parseCookies(request), secret, now, member.key);
   const stored = await readDailyResult(state.did, state.day);
-  return json(stored ?? { deal: DEAL }, { cookies: [serializeCookie(await cookieOf(state, secret))] });
+  // `account`: whose card a device keeps (TodayView shows a kept card only for the same marker; code review 2026-11-04).
+  const account = await dailyViewer(member, secret);
+  return json({ ...(stored ?? { deal: DEAL }), account }, { cookies: [serializeCookie(await cookieOf(state, secret))] });
 }
 
 export async function POST(request: Request): Promise<Response> {
@@ -84,26 +88,31 @@ export async function POST(request: Request): Promise<Response> {
   // The device id and its pick go out with the response headers; the generation count only on success.
   const deviceCookie = await cookieOf(state, gate.secret);
 
+  const account = await dailyViewer(member, gate.secret);
   // A stored fortune always wins, whatever this request picked or the generation count says.
   const stored = await readDailyResult(state.did, day);
   if (stored) {
-    return respondGeneration(request, async () => ({ body: stored, cookies: [] }), { gate, startCookies: [deviceCookie] });
+    return respondGeneration(request, async () => ({ body: { ...stored, account }, cookies: [] }), { gate, startCookies: [deviceCookie] });
   }
+
+  // A limit answer names no card (code review 2026-11-04): with a deal fixed per account, cards in limit answers from other
+  // devices or cleared cookies would show all three.
+  const withCookie = (response: Response) => (response.headers.append("Set-Cookie", serializeCookie(deviceCookie)), response);
+  if (!gate.owner && state.gen >= quotaLimits().daily) {
+    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now) }, [serializeCookie(deviceCookie)]);
+  }
+  const limited = await checkServerLimits(gate, "daily");
+  if (limited) return withCookie(limited);
+  // The account's regenerations of the day, across its devices (D1, atomic); given back when nothing new was written.
+  const place = await takePlace(gate, member, "daily");
+  if (place instanceof Response) return withCookie(place);
 
   const deal = await dailyDeal(state.did, day, gate.secret);
   const chosen = deal[pick]!;
   const card = { cardId: chosen.cardId, orientation: chosen.orientation };
-  if (!gate.owner && state.gen >= quotaLimits().daily) {
-    return errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), card }, [serializeCookie(deviceCookie)]);
-  }
-  const limited = await checkServerLimits(gate, "daily", { card });
-  if (limited) {
-    limited.headers.append("Set-Cookie", serializeCookie(deviceCookie));
-    return limited;
-  }
 
   const ctx = buildTarotContext("daily", [{ ...card, position: "오늘의 한 장", slot: 0 }], null, { deck });
-  return respondGeneration(request, async (hooks) => {
+  const writeDaily = async (hooks: Parameters<typeof generateDaily>[2]) => {
     // Stored with the deck it quotes: switching designs later that day still shows that deck's picture.
     const result = await getOrCreateDailyResult(state.did, day, async (): Promise<DailyResult & { deck: typeof deck }> => {
       const { data } = await generateDaily(gate.provider, ctx, hooks);
@@ -118,7 +127,19 @@ export async function POST(request: Request): Promise<Response> {
         deck,
       };
     });
-    if (!result.generated) return { body: result.reading, cookies: [] };
-    return { body: result.reading, cookies: [await cookieOf({ ...state, gen: state.gen + 1 }, gate.secret)] };
+    if (!result.generated) {
+      await giveBackPlace(place);
+      return { body: { ...result.reading, account }, cookies: [] };
+    }
+    return { body: { ...result.reading, account }, cookies: [await cookieOf({ ...state, gen: state.gen + 1 }, gate.secret)] };
+  };
+
+  return respondGeneration(request, async (hooks) => {
+    try {
+      return await writeDaily(hooks);
+    } catch (error) {
+      if (!hooks.signal?.aborted) await giveBackPlace(place);
+      throw error;
+    }
   }, { gate, startCookies: [deviceCookie], spend: "daily" });
 }

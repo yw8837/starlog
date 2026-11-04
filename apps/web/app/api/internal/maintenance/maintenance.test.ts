@@ -306,3 +306,16 @@ describe("maintenance", () => {
     expect(await one(db, "SELECT COUNT(*) AS n FROM users WHERE nickname IS NOT NULL")).toEqual({ n: 1 });
   });
 });
+
+describe("the account's day counts (migrations/0021_account_day_counts.sql)", () => {
+  it("deletes a KST day's counts once noon of the next day has passed, and keeps today's", async () => {
+    const db = useTestDb();
+    await db.prepare("INSERT INTO account_day_counts (account_key, kst_day, kind, n) VALUES ('k1', '2026-09-30', 'teaser', 5), ('k1', '2026-10-01', 'teaser', 2), ('k1', '2026-09-30', 'daily', 1)").run();
+    vi.setSystemTime(T0 - MIN); // 11:59 KST on 10-01: yesterday's are still kept
+    await report();
+    expect((await db.prepare("SELECT COUNT(*) AS n FROM account_day_counts").first())).toEqual({ n: 3 });
+    vi.setSystemTime(T0); // 12:00 KST
+    expect(await report()).toMatchObject({ accountCounts: 2 });
+    expect((await db.prepare("SELECT kst_day, kind, n FROM account_day_counts").all()).results).toEqual([{ kst_day: "2026-10-01", kind: "teaser", n: 2 }]);
+  });
+});

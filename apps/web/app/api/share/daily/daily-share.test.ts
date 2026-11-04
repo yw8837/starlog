@@ -7,7 +7,7 @@ import type { D1Binding } from "@/lib/db/d1";
 import { DAILY_COOKIE, dailyCookie } from "@/lib/security/dailyCookie";
 import { kstDay } from "@/lib/security/quota";
 import { LIMITS_PER_MINUTE, resetMemoryLimiter } from "@/lib/security/rateLimit";
-import { signingSecret } from "@/lib/security/sign";
+import { keyedHash, signingSecret } from "@/lib/security/sign";
 import { findShare } from "@/lib/share/store";
 import { browser, loginAs, useTestDb, type Browser } from "@/lib/testing/p4";
 import { DELETE, POST } from "./route";
@@ -26,22 +26,35 @@ const READING: DailyResult & { deck: "starlog" } = {
   deck: "starlog",
 };
 
-/** A browser holding this device's 오늘의 한 장 cookie for `day`, with `reading` stored for it (none: nothing picked). */
-async function deviceWithCard(did: string, reading: DailyResult | null = READING, day = kstDay(Date.now()), ip?: string): Promise<Browser> {
+/**
+ * A browser logged in to the mock Kakao account `name` (sharing needs the login of the card's account, code review
+ * 2026-11-04), holding its 오늘의 한 장 cookie for `day` with `reading` stored for it (none: nothing picked). `key`: the
+ * account's key the cookie and the store use (lib/api/member.ts), `userId`: its users.id.
+ */
+async function deviceWithCard(name: string, reading: DailyResult | null = READING, day = kstDay(Date.now()), ip?: string): Promise<Browser & { key: string; userId: string }> {
   const b = browser(ip);
-  b.jar.set(DAILY_COOKIE, await dailyCookie({ did, day, gen: 1, pick: 1 }, secret));
-  if (reading) await getOrCreateDailyResult(did, day, async () => reading);
-  return b;
+  await loginAs(b, name);
+  const db = (await import("@/lib/db")).accountDb()!;
+  const userId = (await db.prepare("SELECT user_id FROM sessions ORDER BY created_at DESC, rowid DESC LIMIT 1").first<{ user_id: string }>())!.user_id;
+  const key = await keyedHash(userId, secret, "starlog/account-id/v1");
+  b.jar.set(DAILY_COOKIE, await dailyCookie({ did: key, day, gen: 1, pick: 1 }, secret));
+  if (reading) await getOrCreateDailyResult(key, day, async () => reading);
+  return Object.assign(b, { key, userId });
 }
 
 async function json(res: Response) {
   return (await res.json()) as Record<string, unknown>;
 }
 
-beforeEach(() => resetMemoryLimiter());
+beforeEach(() => {
+  resetMemoryLimiter();
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
+});
 afterEach(() => {
   setTestDb(null);
   resetDailyStore();
+  vi.unstubAllEnvs();
 });
 
 describe("POST /api/share/daily", () => {
@@ -64,8 +77,10 @@ describe("POST /api/share/daily", () => {
     });
     const row = await db.prepare("SELECT kind, chapter_key, payload FROM shares WHERE id = ?").bind(id).first<{ kind: string; chapter_key: string; payload: string }>();
     expect(row?.kind).toBe("daily");
-    expect(row?.chapter_key).not.toContain("device-aaaa");
-    expect(row?.payload).not.toMatch(/device-aaaa|203\.0\.113|"pick"/);
+    expect(row?.chapter_key).not.toContain(b.key);
+    expect(row?.chapter_key).not.toContain(b.userId);
+    expect(row?.payload).not.toContain(b.key);
+    expect(row?.payload).not.toMatch(/203\.0\.113|"pick"/);
   });
 
   it("never takes the reading from the client: what the request says is ignored", async () => {
@@ -78,7 +93,7 @@ describe("POST /api/share/daily", () => {
     expect(stored).not.toMatch(/스타로그가 쓰지 않은 말|major-13-death/);
   });
 
-  it("gives each device its own link", async () => {
+  it("gives each account its own link", async () => {
     useTestDb();
     const mine = await json(await (await deviceWithCard("device-cccc")).send(POST, "/api/share/daily", { body: {}, origin: true }));
     const theirs = await json(await (await deviceWithCard("device-dddd", { ...READING, summary: "다른 기기의 하루" }, undefined, "198.51.100.8")).send(POST, "/api/share/daily", { body: {}, origin: true }));
@@ -87,7 +102,11 @@ describe("POST /api/share/daily", () => {
 
   it("refuses without today's card (no cookie, nothing stored, yesterday's cookie), another site's page and an oversized body, and saves nothing", async () => {
     const db = useTestDb();
-    const noCookie = await browser().send(POST, "/api/share/daily", { body: {}, origin: true });
+    // A visitor: the login first (code review 2026-11-04).
+    expect((await browser().send(POST, "/api/share/daily", { body: {}, origin: true })).status).toBe(401);
+    const loggedInNoCookie = await deviceWithCard("device-eeee0", null);
+    loggedInNoCookie.jar.delete(DAILY_COOKIE);
+    const noCookie = await loggedInNoCookie.send(POST, "/api/share/daily", { body: {}, origin: true });
     expect(noCookie.status).toBe(409);
     expect((await json(noCookie)).message).toContain("오늘 고른 카드가 있어야 공유할 수 있어요");
     expect((await (await deviceWithCard("device-eeee", null)).send(POST, "/api/share/daily", { body: {}, origin: true })).status).toBe(409);
@@ -108,18 +127,11 @@ describe("POST /api/share/daily", () => {
 });
 
 describe("the owner of a 오늘의 한 장 share", () => {
-  beforeEach(() => {
-    vi.stubEnv("STARLOG_PAYMENTS", "on");
-    vi.stubEnv("STARLOG_KAKAO", "mock");
-  });
-  afterEach(() => vi.unstubAllEnvs());
-
   const ownerOf = async (db: D1Binding, id: unknown) => (await db.prepare("SELECT user_id FROM shares WHERE id = ?").bind(id).first<{ user_id: string | null }>())?.user_id;
 
   it("is the signed-in account that made it, and it goes when that account is deleted", async () => {
     const db = useTestDb();
-    const signedIn = await deviceWithCard("device-iiii", READING, undefined, "198.51.100.7");
-    await loginAs(signedIn, "alice");
+    const signedIn = await deviceWithCard("alice", READING, undefined, "198.51.100.7");
     const { id } = await json(await signedIn.send(POST, "/api/share/daily", { body: {}, origin: true }));
     const userId = await ownerOf(db, id);
     expect(userId).toEqual(expect.any(String));
@@ -161,7 +173,7 @@ describe("DELETE /api/share/daily", () => {
         expect((await b.send(DELETE, "/api/share/daily", { method: "DELETE", body: { day }, origin: true })).status, String(day)).toBe(400);
       }
       // This device, its cookie moved on to today with the same device id, names the day: the link stops.
-      b.jar.set(DAILY_COOKIE, await dailyCookie({ did: "device-mmmm", day: "2026-10-21", gen: 0 }, secret));
+      b.jar.set(DAILY_COOKIE, await dailyCookie({ did: b.key, day: "2026-10-21", gen: 0 }, secret));
       expect(await json(await b.send(DELETE, "/api/share/daily", { method: "DELETE", body: { day: "2026-10-20" }, origin: true }))).toEqual({ deleted: true });
       expect(await findShare(db, id as string)).toBeNull();
     } finally {

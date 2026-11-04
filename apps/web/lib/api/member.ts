@@ -1,15 +1,15 @@
 import "server-only";
 import { openAccount } from "@/lib/account/request";
 import { sessionCookieName } from "@/lib/account/session";
-import { nextKstMidnight, quotaLimits } from "@/lib/security/quota";
+import { accountDb } from "@/lib/db";
+import { kstDay, nextKstMidnight, quotaLimits } from "@/lib/security/quota";
 import { keyedHash } from "@/lib/security/sign";
 import { errorResponse, parseCookies, type Gate } from "./http";
-import { accountCount, recordAccountSpend } from "./spend";
 
 /**
  * Free AI readings need a login (owner 2026-11-04): the tarot and saju 맛보기 (premium previews included) and 오늘의 한 장,
  * viewing and generating. A visitor gets 401 LOGIN_REQUIRED with its `reason` before the browser check (Turnstile) and before
- * anything is generated or counted; a logged-in account is counted on the server, per KST day (spend.ts accountCount), so
+ * anything is generated or counted; a logged-in account is counted on the server, per KST day (takePlace, in D1), so
  * clearing cookies resets nothing. The owner pass skips the counts, never the login.
  */
 
@@ -49,18 +49,58 @@ export async function requireMember(request: Request, secret: string, now: numbe
   return { key: await keyedHash(user.id, secret, ACCOUNT_KEY_LABEL) };
 }
 
-/**
- * 429 BETA_LIMIT once this account was given its free `kind` for today (quotaLimits: 5 teasers; 오늘의 한 장's
- * regenerations), 503 when the count cannot be read; null to go on. The owner pass skips it.
- */
-export async function checkMemberLimit(gate: Gate, member: Member, kind: "teaser" | "daily", extra: Record<string, unknown> = {}): Promise<Response | null> {
-  if (gate.owner) return null;
-  const used = await accountCount(member.key, kind, gate.now);
-  if (used === null) return errorResponse("AI_UNAVAILABLE");
-  return used >= quotaLimits()[kind] ? errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now), ...extra }) : null;
+export type CountKind = "teaser" | "daily";
+
+/** A place taken among the account's free `kind` of one KST day; giveBackPlace returns it. */
+export interface Place {
+  key: string;
+  day: string;
+  kind: CountKind;
 }
 
-/** Counts one free `kind` for the account, after a validated generation (none for the owner pass). */
-export async function recordMemberSpend(gate: Gate, member: Member, kind: "teaser" | "daily"): Promise<void> {
-  if (!gate.owner) await recordAccountSpend(member.key, kind, gate.now);
+/**
+ * Takes this account's next place among today's free `kind` (quotaLimits: 5 맛보기; 오늘의 한 장's 2 regenerations) before the
+ * generation starts, in one atomic UPSERT in D1 (migrations/0021_account_day_counts.sql), so requests sent together each get a
+ * number of their own and never pass the cap (code review 2026-11-04: the KV count read and wrote back). Null for the owner pass
+ * (no count); 429 BETA_LIMIT once the day's places are taken; 503 when the count cannot be read or written.
+ */
+export async function takePlace(gate: Gate, member: Member, kind: CountKind): Promise<Place | null | Response> {
+  if (gate.owner) return null;
+  const limit = quotaLimits()[kind];
+  const taken = () => errorResponse("BETA_LIMIT", { resetsAt: nextKstMidnight(gate.now) });
+  if (limit <= 0) return taken();
+  const db = accountDb();
+  if (!db) return errorResponse("AI_UNAVAILABLE");
+  const day = kstDay(gate.now);
+  let row: { n: number } | null;
+  try {
+    row = await db
+      .prepare(
+        `INSERT INTO account_day_counts (account_key, kst_day, kind, n) VALUES (?, ?, ?, 1)
+         ON CONFLICT (account_key, kst_day, kind) DO UPDATE SET n = account_day_counts.n + 1 WHERE account_day_counts.n < ?
+         RETURNING n`,
+      )
+      .bind(member.key, day, kind, limit)
+      .first<{ n: number }>();
+  } catch (error) {
+    console.error(JSON.stringify({ evt: "member.count_failed", kind, error: error instanceof Error ? error.constructor.name : typeof error }));
+    return errorResponse("AI_UNAVAILABLE");
+  }
+  return row ? { key: member.key, day, kind } : taken();
 }
+
+/** A generation that failed gives its place back (never below 0). Best effort: a lost write costs the account one place. */
+export async function giveBackPlace(place: Place | null): Promise<void> {
+  if (!place) return;
+  try {
+    await accountDb()
+      ?.prepare("UPDATE account_day_counts SET n = n - 1 WHERE account_key = ? AND kst_day = ? AND kind = ? AND n > 0")
+      .bind(place.key, place.day, place.kind)
+      .run();
+  } catch (error) {
+    console.error(JSON.stringify({ evt: "member.give_back_failed", kind: place.kind, error: error instanceof Error ? error.constructor.name : typeof error }));
+  }
+}
+
+/** The marker of this account a device keeps with its 오늘의 한 장 (code review 2026-11-04): neither users.id nor its key. */
+export const dailyViewer = (member: Member, secret: string) => keyedHash(member.key, secret, "starlog/daily-viewer/v1");

@@ -1,6 +1,6 @@
 import { generateTarotTeaser } from "@/lib/ai/generate";
 import { checkServerLimits, openGate } from "@/lib/api/http";
-import { checkMemberLimit, recordMemberSpend, requireMember } from "@/lib/api/member";
+import { giveBackPlace, requireMember, takePlace } from "@/lib/api/member";
 import { respondGeneration } from "@/lib/api/stream";
 import { tarotContextFrom } from "@/lib/api/tarotRequest";
 import { checkBot } from "@/lib/api/turnstile";
@@ -15,7 +15,7 @@ import { buildTarotFreePayload } from "@/lib/share/payload";
  * 2026-10-23, lib/share/freeSeal.ts). Needs a login (owner 2026-11-04, lib/api/member.ts): a visitor gets 401
  * LOGIN_REQUIRED `reason: "teaser"` before the browser check and before anything is generated or counted; only a body that
  * cannot be read, or words that get the care screen (lib/crisis.ts), are answered before it. Spends one of the account's day teasers (counted on the
- * server, per account) only after a validated generation. Then a browser check when Turnstile is on (lib/api/turnstile.ts).
+ * server, per account: a place taken before the generation and given back when it fails). Then a browser check when Turnstile is on (lib/api/turnstile.ts).
  * Streams NDJSON progress with `Accept: application/x-ndjson`.
  */
 export async function POST(request: Request): Promise<Response> {
@@ -29,10 +29,13 @@ export async function POST(request: Request): Promise<Response> {
   if (member instanceof Response) return member;
   const bot = await checkBot(request, gate);
   if (bot) return bot;
-  const limited = (await checkServerLimits(gate, "teaser")) ?? (await checkMemberLimit(gate, member, "teaser"));
+  const limited = await checkServerLimits(gate, "teaser");
   if (limited) return limited;
+  // One of the account's day 맛보기, taken before the generation (D1, atomic); given back if it fails, kept if the client left.
+  const place = await takePlace(gate, member, "teaser");
+  if (place instanceof Response) return place;
 
-  return respondGeneration(request, async (hooks) => {
+  const writeTeaser = async (hooks: Parameters<typeof generateTarotTeaser>[2]) => {
     const { secondCard, ...teaser } = (await generateTarotTeaser(gate.provider, parsed.ctx, hooks)).data;
     const shown = secondCard ? { heading: secondCard.heading, body: teaserCut(secondCard.body) } : undefined;
     // What the free screen shows, cleaned like every share, sealed for 공유하기 (never the second card's hidden part).
@@ -49,7 +52,15 @@ export async function POST(request: Request): Promise<Response> {
           share,
         }
       : { ...teaser, share };
-    await recordMemberSpend(gate, member, "teaser");
     return { body, cookies: [] };
+  };
+
+  return respondGeneration(request, async (hooks) => {
+    try {
+      return await writeTeaser(hooks);
+    } catch (error) {
+      if (!hooks.signal?.aborted) await giveBackPlace(place);
+      throw error;
+    }
   }, { gate, spend: "teaser", care: parsed.care });
 }

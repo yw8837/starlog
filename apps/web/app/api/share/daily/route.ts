@@ -1,6 +1,7 @@
 import { sameOrigin } from "@/lib/account/request";
 import { readSession, sessionCookieName } from "@/lib/account/session";
 import { readDailyResult } from "@/lib/api/dailyStore";
+import { requireMember } from "@/lib/api/member";
 import { clientKey, errorResponse, json, parseCookies, readJson } from "@/lib/api/http";
 import { accountDb } from "@/lib/db";
 import { DAILY_COOKIE, readDaily } from "@/lib/security/dailyCookie";
@@ -21,6 +22,8 @@ import { deleteShare, saveShare } from "@/lib/share/store";
  * DELETE {day?} → {deleted}: stops sharing this device's link of that KST day (today when none is given), so a past day's
  * link can be stopped too (review 2026-10-20 A6); the same keyed hash of the device and the day, so only its own.
  * One link per device and day: its key is a keyed hash of both, so the stored row names no device.
+ * Both need the login of the account the card is (code review 2026-11-04): `sl_daily` names the account's key and outlives a
+ * logout on a shared PC, so a visitor gets 401 and another account's cookie 409, never its card or its link.
  */
 
 const UNAVAILABLE = "지금은 공유 링크를 만들 수 없어요. 잠시 뒤에 다시 시도해 주세요.";
@@ -45,8 +48,10 @@ async function open(request: Request, method: "POST" | "DELETE") {
   const asked = (body as { day?: unknown }).day;
   const day = method === "POST" || asked === undefined ? kstDay(now) : typeof asked === "string" && DAY.test(asked) ? asked : null;
   if (day === null) return errorResponse("BAD_REQUEST");
+  const member = await requireMember(request, secret, now, "daily");
+  if (member instanceof Response) return member;
   const device = await readDaily(parseCookies(request)[DAILY_COOKIE], secret, now);
-  if (!device || (method === "POST" && device.day !== day)) return errorResponse("NOT_AVAILABLE", { message: NO_CARD });
+  if (!device || device.did !== member.key || (method === "POST" && device.day !== day)) return errorResponse("NOT_AVAILABLE", { message: NO_CARD });
   return { db, secret, now, day, did: device.did, shareKey: `daily:${await keyedHash(`${device.did}:${day}`, secret, KEY_LABEL)}` };
 }
 

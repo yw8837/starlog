@@ -3,6 +3,7 @@ import { eraseDeletedAccount } from "@/lib/account/deletion";
 import { purgeOpeningClaims } from "@/lib/account/openingClaim";
 import { purgeChapterTurns } from "@/lib/api/chapterTurns";
 import { openingFreeOn } from "@/lib/config";
+import { kstDay } from "@/lib/security/quota";
 import { purgeExpiredShares } from "@/lib/share/store";
 import type { D1Binding, D1Statement } from "@/lib/db/d1";
 import { sweepStale } from "./ledger";
@@ -47,6 +48,8 @@ export interface MaintenanceReport {
   chapterTurns: number;
   /** share links past their 180 days (SHARE-3) */
   shares: number;
+  /** an account's day counts of 맛보기 and 오늘의 한 장 (lib/api/member.ts), deleted once noon KST of the next day passed */
+  accountCounts: number;
   purgedAccounts: number;
   /** items (or whole steps) that threw; each is logged and the run goes on */
   failed: number;
@@ -104,7 +107,7 @@ function counted(toss: TossClient): { client: TossClient; calls: () => number } 
 export async function runMaintenance(db: D1Binding, toss: TossClient | null, now: number, options: { clock?: () => number } = {}): Promise<MaintenanceReport> {
   const clock = options.clock ?? Date.now;
   const report: MaintenanceReport = {
-    confirming: 0, refunding: 0, released: 0, expired: 0, abandoned: 0, erased: 0, sessions: 0, giftClaims: 0, openingClaims: 0, chapterTurns: 0, shares: 0, purgedAccounts: 0, failed: 0,
+    confirming: 0, refunding: 0, released: 0, expired: 0, abandoned: 0, erased: 0, sessions: 0, giftClaims: 0, openingClaims: 0, chapterTurns: 0, shares: 0, accountCounts: 0, purgedAccounts: 0, failed: 0,
   };
   /** One item or step: its result, or null when it threw (logged, counted, and the run goes on). */
   const attempt = async <T>(evt: string, work: () => Promise<T>, orderId?: string): Promise<T | null> => {
@@ -162,6 +165,14 @@ export async function runMaintenance(db: D1Binding, toss: TossClient | null, now
   });
   await attempt("cron.purge_failed", async () => {
     report.shares = await purgeExpiredShares(db, now, ROWS_PER_PURGE);
+  });
+  await attempt("cron.purge_failed", async () => {
+    // A day's rows go once that day ended 12 hours ago (noon KST the next day): at most 36 hours (and a run) after they began.
+    report.accountCounts =
+      (await db
+        .prepare("DELETE FROM account_day_counts WHERE rowid IN (SELECT rowid FROM account_day_counts WHERE kst_day < ? LIMIT ?)")
+        .bind(kstDay(now - 12 * 60 * 60 * 1000), ROWS_PER_PURGE)
+        .run()).meta?.changes ?? 0;
   });
   await attempt("cron.purge_failed", async () => {
     const purgeable = await db

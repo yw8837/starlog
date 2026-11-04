@@ -1,6 +1,6 @@
 import "server-only";
 import { checkServerLimits, crisisCheck, errorResponse, fullReadingLimit, openGate, readJson, type Gate } from "@/lib/api/http";
-import { checkMemberLimit, recordMemberSpend, requireMember } from "@/lib/api/member";
+import { giveBackPlace, requireMember, takePlace } from "@/lib/api/member";
 import { budgetState } from "@/lib/api/spend";
 import { accountDb } from "@/lib/db";
 import { respondGeneration } from "@/lib/api/stream";
@@ -92,15 +92,18 @@ export function premiumTeaserRoute<B, C extends PremiumContext>(adapter: Adapter
       const limited = await buyerPreviewLimit(gate, buyer, adapter.id);
       if (limited) return limited;
     }
-    const limited = buyer ? null : ((await checkServerLimits(gate, "teaser")) ?? (await checkMemberLimit(gate, member, "teaser")));
+    const limited = buyer ? null : await checkServerLimits(gate, "teaser");
     if (limited) return limited;
+    // Someone without a purchase takes one of the account's day 맛보기 before the generation (D1, atomic).
+    const place = buyer ? null : await takePlace(gate, member, "teaser");
+    if (place instanceof Response) return place;
     return respondGeneration(request, async (hooks) => {
       try {
         const preview = await adapter.teaser(gate.provider, ctx, hooks);
-        if (!buyer) await recordMemberSpend(gate, member, "teaser");
         return { body: { preview }, cookies: [] };
       } catch (error) {
         const refused = error instanceof GenerationError && error.code === "REFUSED";
+        if (!hooks.signal?.aborted) await giveBackPlace(place);
         if (buyer && !hooks.signal?.aborted && !refused) await giveBackBuyerPreview(gate, buyer, adapter.id);
         throw error;
       }
