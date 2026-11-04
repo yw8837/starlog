@@ -159,7 +159,7 @@ test("the terms and the privacy policy say what changed on top while it runs (ow
   await expect(terms).toContainText("로그인한 계정마다 한 번 드립니다");
   await expect(page.locator("#service")).toContainText("로그인한 계정마다 한 번(같은 기기에서는 한 번)");
   await page.goto("/privacy");
-  // Two dated notices may stand there (2026-11-04: the 맛보기 login): this one is 오픈 기념 무료's.
+  // Two dated notices may stand there (lib/legal.ts LOGIN_RULE_DATE: the 맛보기 login): this one is 오픈 기념 무료's.
   const privacy = page.getByRole("complementary", { name: /^\d{4}년 \d{1,2}월 \d{1,2}일 바뀐 내용$/ }).filter({ hasText: "오픈 기념 무료를 계정마다" });
   await expect(privacy).toHaveText(/오픈 기념 무료를 계정마다 한 번 드리기 위해 받은 여부와 시각을 보관해요\..*탈퇴해도 오픈 기념 무료가 끝날 때까지 남겼다가 2026년 11월 30일이 지나면 지워요\.$/);
   await expect(page.locator("#retention")).toContainText("같은 계정이 탈퇴 뒤 다시 받지 않도록");

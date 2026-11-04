@@ -88,7 +88,7 @@ export const OPENING_RETENTION_DATE = "2026-10-28";
  * policy promises, so, as with OPENING_ACCOUNT_DATE, both say what changed, dated, at their top: for 30 days from this day.
  * The day this went live: move it (and the end with it) if the deploy goes out on another day. The 시행일 shown stays.
  */
-export const LOGIN_RULE_DATE = "2026-11-04";
+export const LOGIN_RULE_DATE = "2026-11-05";
 const LOGIN_RULE_NOTICE_UNTIL_AT = Date.parse(`${LOGIN_RULE_DATE}T00:00:00+09:00`) + 30 * 24 * 60 * 60 * 1000;
 
 export const loginRuleNoticeShown = (now: number = Date.now()): boolean => now < LOGIN_RULE_NOTICE_UNTIL_AT;

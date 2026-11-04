@@ -17,7 +17,7 @@ const NOTICE = `${koreanDate(LOGIN_RULE_DATE)} 바뀐 내용`;
 describe("AI 풀이 needs a login, in the policies", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(Date.parse("2026-11-04T12:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-11-05T12:00:00+09:00"));
   });
   afterEach(() => {
     cleanup();
@@ -35,7 +35,7 @@ describe("AI 풀이 needs a login, in the policies", () => {
     // The 시행일 shown stays as it was.
     expect(container.textContent).toContain("2026년 10월 31일");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-04T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-05T00:00:00+09:00"));
     container = render(<TermsPage />).container;
     expect(container.textContent).not.toContain(`${NOTICE} · AI 풀이 로그인`);
     expect(container.querySelector("#members")?.textContent).toContain("회원으로 로그인해야 이용할 수 있습니다");
@@ -83,7 +83,7 @@ describe("AI 풀이 needs a login, in the policies", () => {
     // The 시행일 shown stays as it was.
     expect(container.querySelector("time")?.getAttribute("datetime")).toBe("2026-10-20");
     cleanup();
-    vi.setSystemTime(Date.parse("2026-12-04T00:00:00+09:00"));
+    vi.setSystemTime(Date.parse("2026-12-05T00:00:00+09:00"));
     container = render(<RefundPage />).container;
     expect([...container.querySelectorAll("aside")].some((aside) => aside.querySelector("h2")?.textContent === NOTICE)).toBe(false);
     expect(container.querySelector("#withdrawal")?.textContent).toContain("사주는 명식과 맛보기를 보고 나서");

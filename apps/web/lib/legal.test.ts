@@ -44,14 +44,14 @@ describe("legal helpers", () => {
     expect(privacyEffectiveDate(at)).toBe("2026-10-31");
   });
 
-  it("says what changed on 2026-11-04 (AI 풀이 needs a login, counted per account) on top of the terms and the privacy policy for 30 days, as the 30 days' notice it skipped", () => {
-    expect(LOGIN_RULE_DATE).toBe("2026-11-04");
-    expect(loginRuleNoticeShown(Date.parse("2026-11-04T09:00:00+09:00"))).toBe(true);
-    expect(loginRuleNoticeShown(Date.parse("2026-12-04T00:00:00+09:00") - 1)).toBe(true);
-    expect(loginRuleNoticeShown(Date.parse("2026-12-04T00:00:00+09:00"))).toBe(false);
+  it("says what changed on the deploy day 2026-11-05 (AI 풀이 needs a login, counted per account) on top of the terms and the privacy policy for 30 days, as the 30 days' notice it skipped", () => {
+    expect(LOGIN_RULE_DATE).toBe("2026-11-05");
+    expect(loginRuleNoticeShown(Date.parse("2026-11-05T09:00:00+09:00"))).toBe(true);
+    expect(loginRuleNoticeShown(Date.parse("2026-12-05T00:00:00+09:00") - 1)).toBe(true);
+    expect(loginRuleNoticeShown(Date.parse("2026-12-05T00:00:00+09:00"))).toBe(false);
     // The 시행일 shown stays as it was, as with the 오픈 기념 무료 change of 2026-10-27.
-    expect(termsEffectiveDate(Date.parse("2026-11-04T09:00:00+09:00"))).toBe("2026-10-31");
-    expect(privacyEffectiveDate(Date.parse("2026-11-04T09:00:00+09:00"))).toBe("2026-10-31");
+    expect(termsEffectiveDate(Date.parse("2026-11-05T09:00:00+09:00"))).toBe("2026-10-31");
+    expect(privacyEffectiveDate(Date.parse("2026-11-05T09:00:00+09:00"))).toBe("2026-10-31");
   });
 
   it("shows the terms' own 시행일: 2026-10-20 until the 2026-10-31 00:00 KST revision, 2026-10-31 from it (the refund policy keeps legalEffectiveDate)", () => {
