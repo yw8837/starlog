@@ -30,7 +30,7 @@ import {
   type NewChapter,
   type SajuChapter,
 } from "./chapters";
-import { clearDaily, DAILY_KEY, readDaily, saveDaily, useDailySaved } from "./daily";
+import { clearDaily, DAILY_KEY, saveDaily, useDailySaved } from "./daily";
 
 const DAY = 24 * 60 * 60 * 1000;
 // 2026-10-01 12:00 KST
@@ -219,9 +219,11 @@ describe("오늘의 한 장 cache by KST day", () => {
     const beforeMidnight = Date.parse("2026-10-01T14:59:00.000Z"); // 23:59 KST
     const afterMidnight = Date.parse("2026-10-01T15:00:00.000Z"); // 00:00 KST next day
     saveDaily(DAILY, NOW);
-    expect(readDaily(NOW)).toEqual(DAILY);
-    expect(readDaily(beforeMidnight)).toEqual(DAILY);
-    expect(readDaily(afterMidnight)).toBeNull();
+    for (const [at, kept] of [[NOW, DAILY], [beforeMidnight, DAILY], [afterMidnight, null]] as const) {
+      const { result, unmount } = renderHook(() => useDailySaved(at));
+      expect(result.current?.reading ?? null).toEqual(kept);
+      unmount();
+    }
     expect(JSON.parse(localStorage.getItem(DAILY_KEY)!).day).toBe("2026-10-01");
   });
 
@@ -307,9 +309,9 @@ describe("never writing a broken reading (QA Q-02, Q-03)", () => {
     const today = new Date(NOW + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const card = { cardId: "major-99-nope", orientation: "upright", keyword: "k" };
     localStorage.setItem(DAILY_KEY, JSON.stringify({ day: today, reading: { card, summary: "s", body: "b", tip: "t", areas: { love: "", money: "", work: "" }, lucky: { color: "c", number: 1 } } }));
-    expect(readDaily(NOW)).toBeNull();
+    expect(renderHook(() => useDailySaved(NOW)).result.current).toBeNull();
     localStorage.setItem(DAILY_KEY, JSON.stringify({ day: today, reading: { card: { ...card, cardId: "major-19-sun" }, summary: "s", body: "b", tip: "t", areas: {}, lucky: {} } }));
-    expect(readDaily(NOW)).toBeNull();
+    expect(renderHook(() => useDailySaved(NOW)).result.current).toBeNull();
   });
 });
 

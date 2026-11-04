@@ -30,12 +30,6 @@ function parseSaved(value: unknown): SavedDaily | null {
 
 const store = createLocalStore<SavedDaily>(DAILY_KEY, parseSaved);
 
-/** Today's opened cookie, if it was opened on this device today (KST). */
-export function readDaily(now: number = Date.now()): DailyData | null {
-  const saved = store.read();
-  return saved && saved.day === kstDate(now) ? saved.reading : null;
-}
-
 export function saveDaily(reading: DailyData, now: number = Date.now(), account?: string) {
   store.save({ day: kstDate(now), reading, ...(account ? { account } : {}) });
 }

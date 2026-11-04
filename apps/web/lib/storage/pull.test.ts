@@ -2,7 +2,7 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearChapters, listChapters, removeServerChapters, saveChapter } from "./chapters";
-import { readDaily, saveDaily } from "./daily";
+import { DAILY_KEY, saveDaily } from "./daily";
 import { clearMoveMarks, moveMarks, putOffMove } from "./move";
 import { deleteAccountReadings, forgetAccountOnDevice, pullAccountReadings, useAccountSync } from "./sync";
 
@@ -39,9 +39,9 @@ describe("pulling the account's readings", () => {
     expect(listChapters()).toHaveLength(3);
     // 오늘의 한 장 is the account's (owner 2026-11-04): the next person on this device does not find it either.
     saveDaily({ card: { cardId: "major-17-star", orientation: "upright", keyword: "희망" }, summary: "하루", body: "본문", areas: { love: "a", money: "b", work: "c" }, lucky: { color: "하늘색", number: 7 }, tip: "팁", pick: 1 });
-    expect(readDaily()).not.toBeNull();
+    expect(localStorage.getItem(DAILY_KEY)).not.toBeNull();
     expect(forgetAccountOnDevice()).toBe(2);
-    expect(readDaily()).toBeNull();
+    expect(localStorage.getItem(DAILY_KEY)).toBeNull();
     expect(listChapters().map((chapter) => chapter.id)).toEqual([own.id]);
     expect(sessionStorage.getItem("starlog.account-synced")).toBeNull();
     expect(removeServerChapters()).toBe(0);
