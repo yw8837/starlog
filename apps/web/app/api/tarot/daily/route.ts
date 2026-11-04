@@ -103,15 +103,15 @@ export async function POST(request: Request): Promise<Response> {
   }
   const limited = await checkServerLimits(gate, "daily");
   if (limited) return withCookie(limited);
+  // The card and its context first: one that cannot be dealt spends no place (code review 2026-11-05).
+  const deal = await dailyDeal(state.did, day, gate.secret);
+  const chosen = deal[pick]!;
+  const card = { cardId: chosen.cardId, orientation: chosen.orientation };
+  const ctx = buildTarotContext("daily", [{ ...card, position: "오늘의 한 장", slot: 0 }], null, { deck });
   // The account's regenerations of the day, across its devices (D1, atomic); given back when nothing new was written or it was not delivered.
   const place = await takePlace(gate, member, "daily");
   if (place instanceof Response) return withCookie(place);
 
-  const deal = await dailyDeal(state.did, day, gate.secret);
-  const chosen = deal[pick]!;
-  const card = { cardId: chosen.cardId, orientation: chosen.orientation };
-
-  const ctx = buildTarotContext("daily", [{ ...card, position: "오늘의 한 장", slot: 0 }], null, { deck });
   const writeDaily = async (hooks: Parameters<typeof generateDaily>[2]) => {
     // Stored with the deck it quotes: switching designs later that day still shows that deck's picture.
     const result = await getOrCreateDailyResult(state.did, day, async (): Promise<DailyResult & { deck: typeof deck }> => {
