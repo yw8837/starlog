@@ -4,7 +4,7 @@ import { BusinessFacts, LegalNote, LegalPage, LegalSection } from "@/components/
 import { PremiumChangeNotice, PremiumLegalNotice, PremiumRefund, PremiumUpcoming } from "@/components/legal/PremiumLegal";
 import s from "@/components/legal/legal.module.css";
 import { SITE } from "@/lib/config";
-import { contactChannels, koreanDate, legalEffectiveDate, premiumChangeNoticeShown, premiumLegalInForce } from "@/lib/legal";
+import { LOGIN_RULE_DATE, contactChannels, koreanDate, legalEffectiveDate, loginRuleNoticeShown, premiumChangeNoticeShown, premiumLegalInForce } from "@/lib/legal";
 import { REFUND_DAYS } from "@/lib/pay/catalog";
 import { pageMetadata } from "@/lib/seo";
 
@@ -31,6 +31,13 @@ export default function RefundPage() {
     >
       {inForce ? null : <PremiumLegalNotice haeyo />}
       {premiumChangeNoticeShown(now) ? <PremiumChangeNotice haeyo /> : null}
+      {/* AI 풀이 needs a login (owner 2026-11-04): the free part's new name, said on top for 30 days (lib/legal.ts LOGIN_RULE_DATE). */}
+      {loginRuleNoticeShown(now) ? (
+        <aside className={s.note} aria-labelledby="login-rule-refund-title">
+          <h2 id="login-rule-refund-title" className={s.noteTitle}>{`${koreanDate(LOGIN_RULE_DATE)} 바뀐 내용`}</h2>
+          <p>결제하기 전에 무료로 보는 부분은 ‘맛보기’로 이름을 맞췄어요(전에는 ‘첫 풀이’, ‘첫 장 요약’). 보여 드리는 내용은 그대로이고, 맛보기는 카카오나 Google로 로그인해야 볼 수 있어요.</p>
+        </aside>
+      ) : null}
       <LegalNote>
         <p className={s.noteTitle}>오픈 기념 무료 풀이는 결제가 없어 환불 대상이 아니에요.</p>
         <p>
@@ -44,8 +51,8 @@ export default function RefundPage() {
           {` ${SITE.nameKo}에서는 결제한 풀이를 적기 시작하면 제공이 시작된 것으로 봐요. 풀이는 결제 직후 자동으로 적기 시작해요. 다 나오기 전에 화면을 닫거나 연결이 끊겨도 같은 풀이를 3번까지 다시 열어 끝까지 받을 수 있어요. 네 번째로 끊기면 그 결제는 쓴 것으로 처리돼요.`}
         </p>
         <p>
-          그 대신 같은 법 제17조 제6항과 시행령 제21조의2에 따라, 결제하기 전에 풀이의 일부를 무료로 먼저 보여 드려요. 타로는 뽑은 카드와 첫 풀이,
-          이어지는 풀이의 소제목과 분량을, 사주는 명식과 첫 장 요약을 보고 나서 열지 정할 수 있어요.
+          그 대신 같은 법 제17조 제6항과 시행령 제21조의2에 따라, 결제하기 전에 풀이의 일부를 무료로 먼저 보여 드려요. 타로는 뽑은 카드와 맛보기(첫 카드 풀이,
+          이어지는 풀이의 소제목과 분량)를, 사주는 명식과 맛보기를 보고 나서 열지 정할 수 있어요. 맛보기는 카카오나 Google로 로그인하면 무료로 볼 수 있어요.
         </p>
         <p>이 내용은 결제하기 전에 결제 화면에서 먼저 알려 드려요.</p>
       </LegalSection>
