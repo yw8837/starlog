@@ -7,7 +7,7 @@ import TermsPage from "@/app/terms/page";
 import { KEPT_RULE_DATE, LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
 
 /**
- * Every AI reading result needs a login (owner 2026-11-04, final): the terms (제6조 2호) and the privacy policy change only
+ * Every AI reading result needs a login (owner 2026-11-04, final): the terms (제6조 1호) and the privacy policy change only
  * what became untrue, and say what changed, dated by lib/legal.ts LOGIN_RULE_DATE, on top for 30 days (it went live before
  * the 30 days' notice the terms promise, as the 오픈 기념 무료 change of 2026-10-27 did).
  */
@@ -24,9 +24,13 @@ describe("AI 풀이 needs a login, in the policies", () => {
     vi.useRealTimers();
   });
 
-  it("terms: 제6조 2호 says what a visitor may use and that the 맛보기 and 오늘의 한 장 need a login; a dated notice says so for 30 days", () => {
+  it("terms: 제6조 1호 says what a visitor may use and that the 맛보기 and 오늘의 한 장 need a login; a dated notice says so for 30 days", () => {
     let container = render(<TermsPage />).container;
     const members = container.querySelector("#members")?.textContent ?? "";
+    // The notice names the clause by its number on the page: the first item of 제6조's numbered list.
+    expect(container.querySelector("#members ol > li:first-child")?.textContent).toContain("비회원도 질문 만들기");
+    expect(container.textContent).toContain("지금처럼 로그인 없이 쓸 수 있습니다(제6조 1호).");
+    expect(container.textContent).not.toContain("제6조 2호");
     expect(members).toContain("비회원도 질문 만들기, 카드 뽑기, 사주 명식, 지금의 한 장 등 일부 서비스를 이용할 수 있습니다. AI가 만드는 타로·사주 맛보기와 오늘의 한 장은 회원으로 로그인해야 이용할 수 있습니다.");
     expect(members).not.toContain("무료로 공개하는 풀이");
     const notice = [...container.querySelectorAll("aside")].find((aside) => aside.textContent?.includes(`${NOTICE} · AI 풀이 로그인`));
@@ -117,6 +121,9 @@ describe("what a device keeps needs a login, in the policies", () => {
     expect(notice).toBeTruthy();
     expect(notice!.textContent).toContain("저장된 기록을 지우는 것은 아니며, 로그인하면 다시 보입니다(제6조).");
     expect(notice!.textContent).toContain("초대받은 친구는 지금처럼 로그인 없이 별자리 인연에 참여하고 참여한 화면에서 결과를 볼 수 있습니다.");
+    // An owner's own constellation too, one made on a device before accounts included (owner 2026-11-05).
+    expect(notice!.textContent).toContain("계정에 연결하지 않고 이 기기에서 만든 내 별자리도 로그인해야 보여 드립니다. 지우는 것은 아니며, 로그인하면 다시 보이고 계정에 연결할 수 있습니다.");
+    expect(container.textContent).toContain("내 별자리와 친구들의 점수는 회원으로 로그인해야 보여 드립니다.");
     cleanup();
     vi.setSystemTime(Date.parse("2026-12-06T00:00:00+09:00"));
     container = render(<TermsPage />).container;
@@ -127,16 +134,19 @@ describe("what a device keeps needs a login, in the policies", () => {
   it("privacy: hidden from a device with no session, kept, erasable without a login; the friend's star is not linked to the account; a dated notice", () => {
     let container = render(<PrivacyPage />).container;
     const retention = container.querySelector("#retention")?.textContent ?? "";
-    expect(retention).toContain("로그인하지 않은 기기에서는 이 기록들을 화면에 보여 드리지 않습니다. 지우는 것은 아니어서 로그인하면 다시 보이고, 내 정보에서 로그인 없이도 지울 수 있습니다.");
+    expect(retention).toContain("로그인하지 않은 기기에서는 내 기록과 맛보기, 오늘의 한 장을 화면에 보여 드리지 않습니다. 지우는 것은 아니어서 로그인하면 다시 보이고, 내 정보에서 로그인 없이도 지울 수 있습니다.");
+    expect(retention).not.toContain("이 기록들을");
     expect(container.textContent).toContain("친구의 결과는 참여한 화면에서 보여 드리고, 다시 볼 때는 로그인을 요청합니다. 로그인해도 별을 계정에 연결하지는 않고, 같은 기기의 기기 식별값으로 찾아 보여 드립니다.");
     expect(container.textContent).toContain("이용 중인 기기에 풀이 기록을 보관해 로그인한 뒤 다시 볼 수 있게 하기");
     const notice = [...container.querySelectorAll("aside")].find((aside) => aside.querySelector("h2")?.textContent === KEPT_NOTICE);
     expect(notice).toBeTruthy();
     expect(notice!.textContent).toContain("이 기기에 저장된 풀이 기록과 맛보기, 오늘의 한 장은 로그인하지 않으면 화면에 보여 드리지 않아요.");
+    expect(notice!.textContent).toContain("계정에 연결하지 않고 이 기기에서 만든 내 별자리도 로그인하지 않으면 보여 드리지 않아요. 로그인하면 다시 보이고 계정에 연결할 수 있어요.");
+    expect(container.textContent).toContain("계정에 연결하지 않은 별자리는 로그인하지 않으면 화면에 보여 드리지 않습니다.");
     cleanup();
     vi.setSystemTime(Date.parse("2026-12-06T00:00:00+09:00"));
     container = render(<PrivacyPage />).container;
     expect([...container.querySelectorAll("aside")].some((aside) => aside.querySelector("h2")?.textContent === KEPT_NOTICE)).toBe(false);
-    expect(container.querySelector("#retention")?.textContent).toContain("로그인하지 않은 기기에서는 이 기록들을 화면에 보여 드리지 않습니다.");
+    expect(container.querySelector("#retention")?.textContent).toContain("로그인하지 않은 기기에서는 내 기록과 맛보기, 오늘의 한 장을 화면에 보여 드리지 않습니다.");
   });
 });

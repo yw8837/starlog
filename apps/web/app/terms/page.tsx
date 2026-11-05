@@ -56,7 +56,7 @@ function OpeningChangeNotice() {
 }
 
 /**
- * AI 풀이 needs a login (lib/legal.ts LOGIN_RULE_DATE, owner 2026-11-04): what changed against the old 제6조 2호, on top for 30
+ * AI 풀이 needs a login (lib/legal.ts LOGIN_RULE_DATE, owner 2026-11-04): what changed against the old 제6조 1호, on top for 30
  * days (less favourable to a visitor, before 30 days' notice, so said openly, as the 오픈 기념 무료 change was).
  */
 const MEMBERS_FREE = "비회원도 질문 만들기, 카드 뽑기, 사주 명식, 지금의 한 장 등 일부 서비스를 이용할 수 있습니다. AI가 만드는 타로·사주 맛보기와 오늘의 한 장은 회원으로 로그인해야 이용할 수 있습니다. 비회원의 기록은 이용 중인 기기의 브라우저에만 저장되며, 기기를 바꾸거나 브라우저 데이터를 지우면 사라질 수 있습니다. 저장된 풀이 기록과 맛보기는 회원으로 로그인해야 화면에 보여 드립니다.";
@@ -66,7 +66,7 @@ function LoginRuleNotice() {
     <aside className={s.note} aria-labelledby="login-rule-title">
       <h2 id="login-rule-title" className={s.noteTitle}>{`${koreanDate(LOGIN_RULE_DATE)} 바뀐 내용 · AI 풀이 로그인`}</h2>
       <ul className={s.list}>
-        <li>타로·사주 맛보기와 오늘의 한 장은 이제 카카오나 Google로 로그인해야 볼 수 있습니다. 질문 만들기, 카드 뽑기, 사주 명식, 지금의 한 장은 지금처럼 로그인 없이 쓸 수 있습니다(제6조 2호).</li>
+        <li>타로·사주 맛보기와 오늘의 한 장은 이제 카카오나 Google로 로그인해야 볼 수 있습니다. 질문 만들기, 카드 뽑기, 사주 명식, 지금의 한 장은 지금처럼 로그인 없이 쓸 수 있습니다(제6조 1호).</li>
         <li>맛보기의 하루 횟수는 기기가 아니라 로그인한 계정마다 세고, 오늘의 한 장은 계정마다 하루 한 장으로 어느 기기에서든 같은 카드를 보여 드립니다.</li>
       </ul>
     </aside>
@@ -81,6 +81,7 @@ function KeptRuleNotice() {
       <ul className={s.list}>
         <li>이 기기에 저장된 풀이 기록과 맛보기는 이제 카카오나 Google로 로그인해야 화면에 보여 드립니다. 저장된 기록을 지우는 것은 아니며, 로그인하면 다시 보입니다(제6조).</li>
         {BONDS ? <li>초대받은 친구는 지금처럼 로그인 없이 별자리 인연에 참여하고 참여한 화면에서 결과를 볼 수 있습니다. 결과를 다시 보려면 참여한 기기에서 로그인해야 합니다.</li> : null}
+        {BONDS ? <li>계정에 연결하지 않고 이 기기에서 만든 내 별자리도 로그인해야 보여 드립니다. 지우는 것은 아니며, 로그인하면 다시 보이고 계정에 연결할 수 있습니다.</li> : null}
       </ul>
     </aside>
   );
@@ -260,7 +261,7 @@ export default function TermsPage() {
       {BONDS ? (
         <LegalSection id="bonds" title="제8조의2 (별자리 인연)">
           <ol className={s.list}>
-            <li>별자리 인연은 이용자(별자리 주인)가 고른 별자리를 초대코드나 링크로 들어온 친구가 별이 되어 채우는 기능입니다. 친구는 로그인 없이 참여할 수 있고, 한 기기로 같은 별자리 한 회차에 한 번 참여할 수 있습니다. 참여 결과는 참여한 화면에서 보여 드리며, 다시 보려면 참여한 기기에서 회원으로 로그인해야 합니다.</li>
+            <li>별자리 인연은 이용자(별자리 주인)가 고른 별자리를 초대코드나 링크로 들어온 친구가 별이 되어 채우는 기능입니다. 친구는 로그인 없이 참여할 수 있고, 한 기기로 같은 별자리 한 회차에 한 번 참여할 수 있습니다. 참여 결과는 참여한 화면에서 보여 드리며, 다시 보려면 참여한 기기에서 회원으로 로그인해야 합니다. 내 별자리와 친구들의 점수는 회원으로 로그인해야 보여 드립니다.</li>
             <li>닉네임은 2~10자로 정하며, 실명 대신 별명을 권합니다. 욕설, 다른 사람이나 운영자인 것처럼 보이는 이름, 링크나 광고는 쓸 수 없습니다. 닉네임은 별자리 랭킹과 공유 이미지에 보일 수 있습니다.</li>
             <li>친구가 남기는 한 줄(40자 이내)에는 욕설, 비방, 성적인 표현, 다른 사람의 개인정보, 광고나 링크를 쓸 수 없습니다.</li>
             <li>별자리 주인은 자기 별자리의 별을 언제든 지울 수 있습니다. 운영자는 이 조나 제8조를 어긴 닉네임과 한 줄을 알리지 않고 가리거나 지울 수 있습니다.</li>
