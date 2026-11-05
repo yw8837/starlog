@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SITE } from "./config";
 import {
-  GA_REVISION_DATE, LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, LOGIN_RULE_DATE, PRIVACY_REVISION_DATE, SYNC_REVISION_DATE, contactChannels, gaRevisionInForce, koreanDate, legalEffectiveDate,
+  GA_REVISION_DATE, LEGAL_EFFECTIVE_DATE, LEGAL_LINKS, KEPT_RULE_DATE, LOGIN_RULE_DATE, PRIVACY_REVISION_DATE, SYNC_REVISION_DATE, contactChannels, gaRevisionInForce, keptRuleNoticeShown, koreanDate, legalEffectiveDate,
   loginRuleNoticeShown, privacyEffectiveDate, privacyRevisionInForce, syncRevisionInForce, termsEffectiveDate,
 } from "./legal";
 
@@ -52,6 +52,13 @@ describe("legal helpers", () => {
     // The 시행일 shown stays as it was, as with the 오픈 기념 무료 change of 2026-10-27.
     expect(termsEffectiveDate(Date.parse("2026-11-05T09:00:00+09:00"))).toBe("2026-10-31");
     expect(privacyEffectiveDate(Date.parse("2026-11-05T09:00:00+09:00"))).toBe("2026-10-31");
+  });
+
+  it("says what changed on what a device keeps (it shows only with a session) on top of the terms and the privacy policy for 30 days from its deploy day", () => {
+    expect(KEPT_RULE_DATE).toBe("2026-11-06");
+    expect(keptRuleNoticeShown(Date.parse("2026-11-06T09:00:00+09:00"))).toBe(true);
+    expect(keptRuleNoticeShown(Date.parse("2026-12-06T00:00:00+09:00") - 1)).toBe(true);
+    expect(keptRuleNoticeShown(Date.parse("2026-12-06T00:00:00+09:00"))).toBe(false);
   });
 
   it("shows the terms' own 시행일: 2026-10-20 until the 2026-10-31 00:00 KST revision, 2026-10-31 from it (the refund policy keeps legalEffectiveDate)", () => {

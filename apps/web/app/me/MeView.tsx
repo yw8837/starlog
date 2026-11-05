@@ -100,7 +100,7 @@ export function MeView({ status, accountDeleted = false }: MeViewProps) {
         <header className={s.profile}>
           <div className={s.profileText}>
             <h1 className={s.nickname}>내 정보</h1>
-            {account?.user || account === null ? null : <p className={s.provider}>로그인 없이, 기록은 이 기기에 보관돼요</p>}
+            {account?.user || account === null ? null : <p className={s.provider}>로그인 전이에요. 이 기기의 기록은 로그인하면 다시 보여요</p>}
           </div>
         </header>
 

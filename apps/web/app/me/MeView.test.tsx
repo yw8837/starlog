@@ -162,7 +162,7 @@ describe("MeView when 내 정보 cannot be loaded (F-11)", () => {
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ code: "UPSTREAM" }, { status: 500 })));
     render(<MeView status={null} />);
     expect(await screen.findByRole("heading", { name: "내 정보를 불러오지 못했어요" })).toBeTruthy();
-    expect(screen.queryByText("로그인 없이, 기록은 이 기기에 보관돼요")).toBeNull();
+    expect(screen.queryByText("로그인 전이에요. 이 기기의 기록은 로그인하면 다시 보여요")).toBeNull();
     expect(screen.queryByRole("heading", { name: "오픈 기념 무료" })).toBeNull();
     expect(screen.queryByRole("link", { name: "로그인하기" })).toBeNull();
     vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: true, login: true, owner: false, user: { nickname: "별빛", gift: null, unused: [], opening: [] } })));

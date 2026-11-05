@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PrivacyPage from "@/app/privacy/page";
 import RefundPage from "@/app/refund/page";
 import TermsPage from "@/app/terms/page";
-import { LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
+import { KEPT_RULE_DATE, LOGIN_RULE_DATE, koreanDate } from "@/lib/legal";
 
 /**
  * Every AI reading result needs a login (owner 2026-11-04, final): the terms (제6조 2호) and the privacy policy change only
@@ -91,5 +91,52 @@ describe("AI 풀이 needs a login, in the policies", () => {
     container = render(<RefundPage />).container;
     expect([...container.querySelectorAll("aside")].some((aside) => aside.querySelector("h2")?.textContent === NOTICE)).toBe(false);
     expect(container.querySelector("#withdrawal")?.textContent).toContain("사주는 명식과 맛보기를 보고 나서");
+  });
+});
+
+/**
+ * What a device keeps shows only with a session (owner 2026-11-05): the terms (제6조, the 별자리 인연 clause) and the privacy
+ * policy say so, and say what changed, dated by lib/legal.ts KEPT_RULE_DATE, on top for 30 days, as with LOGIN_RULE_DATE.
+ */
+describe("what a device keeps needs a login, in the policies", () => {
+  const KEPT_NOTICE = `${koreanDate(KEPT_RULE_DATE)} 바뀐 내용`;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.parse("2026-11-06T12:00:00+09:00"));
+  });
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it("terms: 제6조 and the 별자리 인연 clause say it; a dated notice says it is hidden, not deleted, and the friend still joins without a login", () => {
+    let container = render(<TermsPage />).container;
+    expect(container.querySelector("#members")?.textContent).toContain("저장된 풀이 기록과 맛보기는 회원으로 로그인해야 화면에 보여 드립니다.");
+    expect(container.textContent).toContain("친구는 로그인 없이 참여할 수 있고, 한 기기로 같은 별자리 한 회차에 한 번 참여할 수 있습니다. 참여 결과는 참여한 화면에서 보여 드리며, 다시 보려면 참여한 기기에서 회원으로 로그인해야 합니다.");
+    const notice = [...container.querySelectorAll("aside")].find((aside) => aside.textContent?.includes(`${KEPT_NOTICE} · 저장된 기록 보기`));
+    expect(notice).toBeTruthy();
+    expect(notice!.textContent).toContain("저장된 기록을 지우는 것은 아니며, 로그인하면 다시 보입니다(제6조).");
+    expect(notice!.textContent).toContain("초대받은 친구는 지금처럼 로그인 없이 별자리 인연에 참여하고 참여한 화면에서 결과를 볼 수 있습니다.");
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-12-06T00:00:00+09:00"));
+    container = render(<TermsPage />).container;
+    expect(container.textContent).not.toContain(`${KEPT_NOTICE} · 저장된 기록 보기`);
+    expect(container.querySelector("#members")?.textContent).toContain("회원으로 로그인해야 화면에 보여 드립니다");
+  });
+
+  it("privacy: hidden from a device with no session, kept, erasable without a login; the friend's star is not linked to the account; a dated notice", () => {
+    let container = render(<PrivacyPage />).container;
+    const retention = container.querySelector("#retention")?.textContent ?? "";
+    expect(retention).toContain("로그인하지 않은 기기에서는 이 기록들을 화면에 보여 드리지 않습니다. 지우는 것은 아니어서 로그인하면 다시 보이고, 내 정보에서 로그인 없이도 지울 수 있습니다.");
+    expect(container.textContent).toContain("친구의 결과는 참여한 화면에서 보여 드리고, 다시 볼 때는 로그인을 요청합니다. 로그인해도 별을 계정에 연결하지는 않고, 같은 기기의 기기 식별값으로 찾아 보여 드립니다.");
+    expect(container.textContent).toContain("이용 중인 기기에 풀이 기록을 보관해 로그인한 뒤 다시 볼 수 있게 하기");
+    const notice = [...container.querySelectorAll("aside")].find((aside) => aside.querySelector("h2")?.textContent === KEPT_NOTICE);
+    expect(notice).toBeTruthy();
+    expect(notice!.textContent).toContain("이 기기에 저장된 풀이 기록과 맛보기, 오늘의 한 장은 로그인하지 않으면 화면에 보여 드리지 않아요.");
+    cleanup();
+    vi.setSystemTime(Date.parse("2026-12-06T00:00:00+09:00"));
+    container = render(<PrivacyPage />).container;
+    expect([...container.querySelectorAll("aside")].some((aside) => aside.querySelector("h2")?.textContent === KEPT_NOTICE)).toBe(false);
+    expect(container.querySelector("#retention")?.textContent).toContain("로그인하지 않은 기기에서는 이 기록들을 화면에 보여 드리지 않습니다.");
   });
 });

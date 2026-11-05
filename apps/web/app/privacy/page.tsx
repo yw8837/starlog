@@ -9,6 +9,7 @@ import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 import { OPENING_LAST_DATE, SITE, openingFreeOn } from "@/lib/config";
 import {
   GA_REVISION_DATE,
+  KEPT_RULE_DATE,
   LOGIN_RULE_DATE,
   OPENING_ACCOUNT_DATE,
   OPENING_RETENTION_DATE,
@@ -16,6 +17,7 @@ import {
   SYNC_REVISION_DATE,
   contactChannels,
   gaRevisionInForce,
+  keptRuleNoticeShown,
   koreanDate,
   loginRuleNoticeShown,
   premiumChangeNoticeShown,
@@ -205,6 +207,14 @@ export default function PrivacyPage() {
           <p>{`${koreanDate(OPENING_RETENTION_DATE)}부터: 탈퇴한 뒤 같은 계정으로 다시 받지 않도록, 받은 기록(계정 식별값을 되돌릴 수 없게 바꾼 값과 시각)은 탈퇴해도 오픈 기념 무료가 끝날 때까지 남겼다가 ${OPENING_LAST_DATE}이 지나면 지워요.`}</p>
         </aside>
       ) : null}
+      {/* What a device keeps shows only with a session (owner 2026-11-05): said on top for 30 days (lib/legal.ts KEPT_RULE_DATE). */}
+      {keptRuleNoticeShown(now) ? (
+        <aside className={s.note} aria-labelledby="kept-rule-privacy-title">
+          <h2 id="kept-rule-privacy-title" className={s.noteTitle}>{`${koreanDate(KEPT_RULE_DATE)} 바뀐 내용`}</h2>
+          <p>이 기기에 저장된 풀이 기록과 맛보기, 오늘의 한 장은 로그인하지 않으면 화면에 보여 드리지 않아요. 지우는 것은 아니어서 로그인하면 다시 보이고, 내 정보에서 로그인 없이도 지울 수 있어요.</p>
+          {BONDS ? <p>초대받은 친구의 결과는 참여한 화면에서 보여 드리고, 다시 볼 때는 로그인을 요청해요. 별을 계정에 연결하지는 않아요.</p> : null}
+        </aside>
+      ) : null}
       {/* AI 풀이 needs a login (owner 2026-11-04): in force from this deploy, said on top for 30 days (lib/legal.ts LOGIN_RULE_DATE). */}
       {loginRuleNoticeShown(now) ? (
         <aside className={s.note} aria-labelledby="login-rule-privacy-title">
@@ -345,6 +355,7 @@ export default function PrivacyPage() {
               <li>별이 된 친구: 닉네임, 한 줄(남긴 경우), 고른 카드, 인연 점수와 점수 근거, 같은 기기의 중복 참여를 막는 기기 식별값의 해시, 같은 사람이 같은 닉네임으로 한 별자리에 두 번 들어오지 않게 하는 궁합 기준값의 해시(별자리마다 다른 값)</li>
               <li>주인이 지운 별: 그 별자리에 같은 기기로 다시 들어오지 않게 하는 기기 식별값의 해시</li>
               <li>주인과 친구 모두 생년월일은 점수를 계산하는 데만 쓰고 저장하지 않습니다. 태어난 시간은 받지 않습니다.</li>
+              <li>친구의 결과는 참여한 화면에서 보여 드리고, 다시 볼 때는 로그인을 요청합니다. 로그인해도 별을 계정에 연결하지는 않고, 같은 기기의 기기 식별값으로 찾아 보여 드립니다.</li>
               <li>별자리 주인 정보는 로그인한 계정에 연결해 보관합니다. 새 별자리는 만들 때 로그인한 계정에 연결하고, 계정 없이 이 기기에서 만들었던 별자리는 이용자가 연결하기를 누른 경우에만 계정에 연결합니다.</li>
             </ul>
             <h3 className={s.sub}>이번 주 행운 번호를 볼 때</h3>
@@ -358,7 +369,7 @@ export default function PrivacyPage() {
       <LegalSection id="purposes" title="2. 처리 목적">
         <ul className={s.list}>
           <li>입력하신 질문·상황·출생 정보를 바탕으로 타로·사주 풀이를 생성해 보여 드리기</li>
-          <li>이용 중인 기기에 풀이 기록을 보관해 다시 볼 수 있게 하기</li>
+          <li>이용 중인 기기에 풀이 기록을 보관해 로그인한 뒤 다시 볼 수 있게 하기</li>
           {BONDS ? <li>별자리 인연: 친구 초대와 참여, 인연 점수 계산, 별자리 도감과 랭킹, 공유 이미지 만들기, 이번 주 행운 번호 고르기</li> : null}
           <li>하루 무료 이용 횟수를 지키고, 자동화된 대량 요청 같은 부정 이용을 막기</li>
           <li>오류 확인 등 서비스를 안정적으로 운영하기</li>
@@ -387,7 +398,7 @@ export default function PrivacyPage() {
               ? `하루 이용 횟수 중 IP 주소를 변환한 값별 횟수는 36시간 동안 보관한 뒤 자동으로 지우고, 계정 식별값을 변환한 값별 맛보기와 오늘의 한 장 횟수는 다음 날 낮 12시(한국 시간)가 지나면 자동으로 지웁니다. ${FOLLOW_UP_COUNT_KEPT}`
               : "하루 이용 횟수(IP 주소를 변환한 값별 횟수와 계정 식별값을 변환한 값별 맛보기 횟수)는 36시간, 풀이 하나에 남은 후속 질문 수는 무작위 풀이 번호로 8일 동안 보관한 뒤 자동으로 지웁니다."}
           </li>
-          <li>기기에 저장되는 기록(내 기록, 사주 입력 정보, 사주 맛보기, 오늘의 한 장, 하루 이용 표시)은 브라우저의 로컬 저장소에 남습니다. 사주 맛보기는 이 기기의 로컬 저장소에 저장되고, 30일이 지난 것은 다음에 스타로그를 열 때 지워집니다. 내 정보에서 기록이나 사주 정보를 지우거나 브라우저의 사이트 데이터를 지우면 바로 삭제됩니다. 오늘의 한 장은 로그아웃할 때도 지웁니다. 이 기기에 남는 오늘의 한 장에는 어느 계정의 카드인지 알아보는 표시(계정 식별값을 되돌릴 수 없게 바꾼 값이며, 계정 식별값 자체는 아닙니다)를 함께 두고, 같은 계정으로 로그인했을 때만 보여 드립니다. 진행 중인 질문과 타로 맛보기는 탭을 닫으면 지워지는 세션 저장소에 둡니다. 로그인 버튼을 눌러 로그인하러 가는 동안에는 같은 브라우저의 새 탭에서 이어 볼 수 있도록 진행 중인 질문과 뽑은 카드를 이 기기의 로컬 저장소에도 둡니다. 로그인하고 돌아온 결과 화면만 다시 읽고 바로 지우며, 맛보기를 보거나 내 정보에서 기록을 지워도 지웁니다. 1시간이 지난 것은 쓰지 않고 다음에 스타로그를 열 때 지웁니다.</li>
+          <li>기기에 저장되는 기록(내 기록, 사주 입력 정보, 사주 맛보기, 오늘의 한 장, 하루 이용 표시)은 브라우저의 로컬 저장소에 남습니다. 사주 맛보기는 이 기기의 로컬 저장소에 저장되고, 30일이 지난 것은 다음에 스타로그를 열 때 지워집니다. 내 정보에서 기록이나 사주 정보를 지우거나 브라우저의 사이트 데이터를 지우면 바로 삭제됩니다. 오늘의 한 장은 로그아웃할 때도 지웁니다. 로그인하지 않은 기기에서는 이 기록들을 화면에 보여 드리지 않습니다. 지우는 것은 아니어서 로그인하면 다시 보이고, 내 정보에서 로그인 없이도 지울 수 있습니다. 이 기기에 남는 오늘의 한 장에는 어느 계정의 카드인지 알아보는 표시(계정 식별값을 되돌릴 수 없게 바꾼 값이며, 계정 식별값 자체는 아닙니다)를 함께 두고, 같은 계정으로 로그인했을 때만 보여 드립니다. 진행 중인 질문과 타로 맛보기는 탭을 닫으면 지워지는 세션 저장소에 둡니다. 로그인 버튼을 눌러 로그인하러 가는 동안에는 같은 브라우저의 새 탭에서 이어 볼 수 있도록 진행 중인 질문과 뽑은 카드를 이 기기의 로컬 저장소에도 둡니다. 로그인하고 돌아온 결과 화면만 다시 읽고 바로 지우며, 맛보기를 보거나 내 정보에서 기록을 지워도 지웁니다. 1시간이 지난 것은 쓰지 않고 다음에 스타로그를 열 때 지웁니다.</li>
           {BONDS ? (
             <li>
               별자리 인연 정보는 Cloudflare D1에 저장합니다. 별자리를 새로 채우거나 바꾸면 이전 별은 삭제하고, 주인이 별을 지우면 그 별도 바로 삭제합니다. 지운 별의

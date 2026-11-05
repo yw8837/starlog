@@ -93,6 +93,16 @@ const LOGIN_RULE_NOTICE_UNTIL_AT = Date.parse(`${LOGIN_RULE_DATE}T00:00:00+09:00
 
 export const loginRuleNoticeShown = (now: number = Date.now()): boolean => now < LOGIN_RULE_NOTICE_UNTIL_AT;
 
+/**
+ * What a device keeps of AI readings, and a friend's 별자리 인연 result after its own screen, shows only with a session (owner
+ * 2026-11-05: hidden, not deleted). Said on top of the terms and the privacy policy for 30 days from this day, as with
+ * LOGIN_RULE_DATE. The day this goes live: move it (and the end with it) if the deploy goes out on another day.
+ */
+export const KEPT_RULE_DATE = "2026-11-06";
+const KEPT_RULE_NOTICE_UNTIL_AT = Date.parse(`${KEPT_RULE_DATE}T00:00:00+09:00`) + 30 * 24 * 60 * 60 * 1000;
+
+export const keptRuleNoticeShown = (now: number = Date.now()): boolean => now < KEPT_RULE_NOTICE_UNTIL_AT;
+
 /** The 시행일 the privacy policy shows at `now` (the terms and the refund policy keep legalEffectiveDate). */
 export const privacyEffectiveDate = (now: number = Date.now()): string =>
   syncRevisionInForce(now)
