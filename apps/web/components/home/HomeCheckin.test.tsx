@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { act, cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetAccountForTests } from "@/lib/account/client";
+import { asMember } from "@/lib/testing/account";
 import { kstMonthDay } from "@/lib/kst";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { clearChapters, saveChapter, type NewChapter } from "@/lib/storage/chapters";
+import { clearChapters, listChapters, saveChapter, type NewChapter } from "@/lib/storage/chapters";
 import { HomeCheckin } from "./HomeCheckin";
 
 const DAY = 86_400_000;
@@ -21,9 +23,13 @@ const MONEY = {
   chapterToken: "t",
 } as NewChapter;
 
+beforeEach(() => asMember());
+
 afterEach(() => {
   cleanup();
   clearChapters();
+  resetAccountForTests();
+  vi.unstubAllGlobals();
 });
 
 describe("HomeCheckin (saju-topics spec §5.3)", () => {
@@ -33,5 +39,17 @@ describe("HomeCheckin (saju-topics spec §5.3)", () => {
     render(<HomeCheckin />);
     // The text a person reads (the accessible name drops the space the source's span starts with).
     expect(screen.getByRole("heading").textContent).toBe(`지난 풀이 돌아보기 · ${kstMonthDay(at)} 사주 · 재물운`);
+  });
+});
+
+describe("HomeCheckin without a session (owner 2026-11-05)", () => {
+  it("shows nothing of a past reading to a visitor, and keeps the reading", async () => {
+    saveChapter(MONEY, Date.now() - 5 * DAY);
+    resetAccountForTests();
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: true, login: true, owner: false, user: null })));
+    const { container } = render(<HomeCheckin />);
+    await act(async () => {});
+    expect(container.textContent).toBe("");
+    expect(listChapters()).toHaveLength(1);
   });
 });

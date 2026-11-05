@@ -4,6 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { GAEUN_NOTE } from "@/lib/sajuEnrichment";
 import { SAJU_GAEUN_HEADING, SAJU_NAMES_HEADING } from "@/lib/sajuPrologue";
 import { resetAccountForTests } from "@/lib/account/client";
+import { asMember } from "@/lib/testing/account";
 import { DECK_KEY } from "@/lib/deck";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
@@ -29,10 +30,14 @@ const PARTIAL = {
 
 const seed = (chapters: unknown[]) => localStorage.setItem(CHAPTERS_KEY, JSON.stringify({ v: 1, chapters }));
 
+beforeEach(() => asMember());
+
 afterEach(() => {
   cleanup();
   localStorage.clear();
   replace.mockReset();
+  resetAccountForTests();
+  vi.unstubAllGlobals();
 });
 
 describe("LocalChapter with a partial saved reading (QA Q-02)", () => {
@@ -251,11 +256,11 @@ describe("LocalChapter for a reading not on this device (QA-02)", () => {
     expect(screen.queryByText(/연 기기에만 보관돼요\. 지웠거나/)).toBeNull();
   });
 
-  it("on the device that opened it, the account id opens the same reading", () => {
+  it("on the device that opened it, the account id opens the same reading", async () => {
     accountServer(LOGGED_IN);
     seed([{ ...PARTIAL, serverId: SERVER_ID }]);
     render(<LocalChapter id={SERVER_ID} />);
-    expect(screen.getByRole("heading", { level: 1, name: "q" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "q" })).toBeTruthy();
   });
 
   it("logged in, found nowhere: points to 내 기록, never says every reading stays on the device that opened it", async () => {
@@ -268,11 +273,10 @@ describe("LocalChapter for a reading not on this device (QA-02)", () => {
     expect(within(missing).getByRole("link", { name: "내 기록으로" }).getAttribute("href")).toBe("/story");
   });
 
-  it("logged out: says which readings come back with a login and which stay on the device that opened them", async () => {
+  it("logged out: the login, whether this device has the record or not, and no look in the account", async () => {
     const fetchMock = accountServer(null);
     render(<LocalChapter id="zzzzzz99" />);
-    expect(await screen.findByRole("heading", { level: 1, name: "이 기기에 없는 기록이에요" })).toBeTruthy();
-    expect(screen.getByText("결제하고 연 풀이는 로그인하면 내 기록에서 볼 수 있어요. 그 밖의 풀이는 연 기기에만 보관돼요.")).toBeTruthy();
+    expect(await screen.findByRole("region", { name: "이 기록은 로그인하고 볼 수 있어요" })).toBeTruthy();
     expect(fetchMock.mock.calls.some(([url]) => String(url).startsWith("/api/readings"))).toBe(false);
   });
 });
@@ -282,13 +286,6 @@ describe("LocalChapter 풀이 후기", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     resetAccountForTests();
-  });
-
-  it("tells a visitor who is not logged in that logging in lets them review, on a reading kept in an account", async () => {
-    accountServer(null);
-    seed([{ ...PARTIAL, serverId: "abcdefghij0123456789" }]);
-    render(<LocalChapter id="abcdef12" />);
-    expect(await screen.findByText("로그인하면 후기를 남길 수 있어요")).toBeTruthy();
   });
 
   it("offers no account review on a reading kept only on this device: no account holds it, so logging in could not review it", async () => {
@@ -363,5 +360,26 @@ describe("LocalChapter 결과 공유", () => {
     render(<LocalChapter id="abcdef12" />);
     fireEvent.click(screen.getByRole("button", { name: "공유하기" }));
     expect(screen.getByRole("button", { name: "공유 그만하기" })).toBeTruthy();
+  });
+});
+
+describe("a saved reading without a session (owner 2026-11-05)", () => {
+  it("shows the login where the reading would be, no question, reading, PDF or share; nothing deleted; the same reading with a session", async () => {
+    seed([PARTIAL]);
+    const kept = localStorage.getItem(CHAPTERS_KEY);
+    resetAccountForTests();
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: true, login: true, owner: false, user: null })));
+    render(<LocalChapter id="abcdef12" />);
+    const panel = await screen.findByRole("region", { name: "이 기록은 로그인하고 볼 수 있어요" });
+    expect(panel.querySelector("a")?.getAttribute("href")).toBe("/login?next=%2Fchapter%2Fabcdef12");
+    expect(screen.queryByRole("heading", { level: 1, name: "q" })).toBeNull();
+    expect(screen.queryByText("오늘 해 볼 일")).toBeNull();
+    expect(screen.queryByRole("button", { name: /PDF|공유/ })).toBeNull();
+    expect(localStorage.getItem(CHAPTERS_KEY)).toBe(kept);
+    cleanup();
+    resetAccountForTests();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } }) : Response.json({ readings: [], next: null }))));
+    render(<LocalChapter id="abcdef12" />);
+    await screen.findByRole("heading", { level: 1, name: "q" });
   });
 });

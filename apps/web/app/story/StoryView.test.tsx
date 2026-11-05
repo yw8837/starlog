@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { DECK_KEY } from "@/lib/deck";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
-import { clearChapters, saveChapter, type NewChapter } from "@/lib/storage/chapters";
+import { asMember } from "@/lib/testing/account";
+import { CHAPTERS_KEY, clearChapters, saveChapter, type NewChapter } from "@/lib/storage/chapters";
 import { StoryView } from "./StoryView";
 
 const OLD: NewChapter = {
@@ -24,7 +25,8 @@ const MONEY = {
 } as NewChapter;
 
 beforeEach(() => {
-  vi.stubGlobal("fetch", vi.fn(async () => Response.json({ payments: false, login: false, owner: false, user: null })));
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json({ readings: [], next: null })));
+  asMember();
 });
 
 afterEach(() => {
@@ -124,9 +126,51 @@ describe("내 기록 records", () => {
     expect(screen.getByText("기록 2개 · 이 기기에 보관돼요 · 1개는 계정에도 있어요")).toBeTruthy();
   });
 
-  it("marks nothing for a visitor who is not logged in: every record is on this device alone, as the header says", () => {
-    saveChapter(TAROT);
+});
+
+describe("내 기록 without a session (owner 2026-11-05)", () => {
+  const answers = (body: unknown, status = 200) => vi.stubGlobal("fetch", vi.fn(async () => Response.json(body, { status })));
+
+  it("hides what this device keeps behind the login, deletes nothing, and shows it again with a session", async () => {
+    resetAccountForTests();
+    answers({ payments: true, login: true, owner: false, user: null });
+    saveChapter(OLD, Date.now() - 1000);
+    const kept = localStorage.getItem(CHAPTERS_KEY);
     render(<StoryView />);
-    expect(screen.queryByText("이 기기에만")).toBeNull();
+    const panel = await screen.findByRole("region", { name: "내 기록은 로그인하고 볼 수 있어요" });
+    expect(within(panel).getByRole("link", { name: "로그인하고 내 기록 보기" }).getAttribute("href")).toBe("/login?next=%2Fstory");
+    expect(document.body.textContent).not.toContain("한겨울에 태어난");
+    expect(screen.queryByRole("list", { name: "기록 목록" })).toBeNull();
+    expect(localStorage.getItem(CHAPTERS_KEY)).toBe(kept);
+    cleanup();
+    resetAccountForTests();
+    answers({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } });
+    render(<StoryView />);
+    await screen.findByRole("list", { name: "기록 목록" });
+    expect(document.body.textContent).toContain("한겨울에 태어난");
+  });
+
+  it("asks a device with nothing kept the same: a visitor cannot tell what is on it", async () => {
+    resetAccountForTests();
+    answers({ payments: true, login: true, owner: false, user: null });
+    render(<StoryView />);
+    await screen.findByRole("region", { name: "내 기록은 로그인하고 볼 수 있어요" });
+  });
+
+  it("shows nothing kept until the session is known, nor when it cannot be checked; 다시 시도 asks again", async () => {
+    resetAccountForTests();
+    saveChapter(OLD, Date.now() - 1000);
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    render(<StoryView />);
+    expect(document.body.textContent).not.toContain("한겨울에 태어난");
+    cleanup();
+    resetAccountForTests();
+    answers({}, 500);
+    render(<StoryView />);
+    await screen.findByRole("heading", { name: "로그인 상태를 확인하지 못했어요" });
+    expect(document.body.textContent).not.toContain("한겨울에 태어난");
+    answers({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } });
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    await screen.findByRole("list", { name: "기록 목록" });
   });
 });

@@ -424,12 +424,13 @@ describe("오늘의 한 장 kept on this device is the account's (code review 20
     expect(screen.getByText(REVISIT_NOTE)).toBeTruthy();
   });
 
-  it("drops a kept card for a visitor (the server answers the login), who shuffles and picks as anyone", async () => {
+  it("hides a kept card from a visitor (the server answers the login), who shuffles and picks as anyone; hidden, not deleted (owner 2026-11-05)", async () => {
     saveDaily(READING, Date.now(), "marker-a");
+    const kept = window.localStorage.getItem(DAILY_KEY);
     vi.stubGlobal("fetch", vi.fn(async () => respond(LOGIN_REQUIRED, 401)));
     await toThreeCards();
     expect(screen.queryByText(READING.summary)).toBeNull();
-    expect(window.localStorage.getItem(DAILY_KEY)).toBeNull();
+    expect(window.localStorage.getItem(DAILY_KEY)).toBe(kept);
   });
 
   it("keeps the note a login brought back (login=cancel) on the panel of the slot that was picked, with no new shuffle", async () => {

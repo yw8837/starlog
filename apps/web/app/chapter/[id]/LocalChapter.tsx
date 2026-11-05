@@ -9,6 +9,7 @@ import { Stepper } from "@/components/tarot/Stepper";
 import { Button } from "@/components/ui/Button";
 import { ReviewPrompt } from "@/components/reviews/ReviewPrompt";
 import type { ShareActions } from "@/components/share/ShareResultButton";
+import { KeptPanel, useKeptGate } from "@/components/reading/KeptPanel";
 import { useAccount } from "@/lib/account/client";
 import { createShareLink, knownShareLink, stopShareLink } from "@/lib/share/client";
 import { kstMonthDay } from "@/lib/kst";
@@ -302,12 +303,10 @@ function MissingRecord() {
       <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
       <section className={s.missing} aria-labelledby="missing-title">
         <h1 id="missing-title" className={s.missingTitle}>
-          {loggedIn ? "이 주소의 기록을 찾지 못했어요" : "이 기기에 없는 기록이에요"}
+          이 주소의 기록을 찾지 못했어요
         </h1>
         <p className={s.missingText}>
-          {loggedIn
-            ? "결제하고 연 풀이는 내 기록에 모두 있어요. 그 밖의 풀이는 연 기기에만 보관돼요."
-            : "결제하고 연 풀이는 로그인하면 내 기록에서 볼 수 있어요. 그 밖의 풀이는 연 기기에만 보관돼요."}
+          결제하고 연 풀이는 내 기록에 모두 있어요. 그 밖의 풀이는 연 기기에만 보관돼요.
         </p>
         <Button href={NEW_TAROT_HREF} block trailing="→">
           타로 보기
@@ -320,7 +319,30 @@ function MissingRecord() {
   );
 }
 
+/** A saved reading needs a session (owner 2026-11-05): a visitor gets the login where it would be; nothing is deleted. */
 export function LocalChapter({ id }: { id: string }) {
+  const gate = useKeptGate();
+  if (gate === "member") return <SavedChapter id={id} />;
+  return (
+    <>
+      <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />
+      {gate === "pending" ? null : (
+        <>
+          <h1 className="sr-only">내 기록</h1>
+          <KeptPanel
+            gate={gate}
+            title="이 기록은 로그인하고 볼 수 있어요"
+            body="이 기기에 저장된 풀이는 그대로 있어요. 카카오나 Google로 로그인하면 다시 보여 드려요."
+            action="로그인하고 기록 보기"
+            returnTo={`/chapter/${id}`}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+function SavedChapter({ id }: { id: string }) {
   const chapters = useChapters();
   if (chapters === undefined) return <Stepper label="내 기록" backHref="/story" backLabel="내 기록으로" />;
   // Its own id, or (a reading saved in the account) its account id, the same on every device.

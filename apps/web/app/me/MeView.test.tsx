@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, onTestFinished, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
+import { asMember } from "@/lib/testing/account";
 import { SITE } from "@/lib/config";
 import { clearBetaUsage, markFreeUsedUp } from "@/lib/storage/betaUsage";
 import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
@@ -39,6 +40,9 @@ afterEach(() => {
 });
 
 describe("MeView 지난 풀이 돌아보기 (owner 2026-10-20: moved here from the home)", () => {
+  // A past reading shows only with a session (owner 2026-11-05).
+  beforeEach(() => asMember());
+
   it("shows the newest reading whose check-in is due (3+ days old) in 내 정보", async () => {
     saveChapter(
       {

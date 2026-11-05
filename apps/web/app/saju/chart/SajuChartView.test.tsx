@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { resetAccountForTests } from "@/lib/account/client";
 import { chartFor } from "@/components/saju/useSajuChart";
-import { saveTeaser } from "@/lib/reading/teaserCache";
+import { SAJU_TEASERS_KEY, saveTeaser } from "@/lib/reading/teaserCache";
 import type { SajuTopicId } from "@/lib/reading/types";
 import { DAY_MASTER_TIPS, SAJU_CONCEPT_TIPS } from "@/lib/reading/waitingTips";
 import { clearSajuProfile, sajuTeaserKey, saveSajuProfile } from "@/lib/sajuFlow";
@@ -83,14 +83,14 @@ describe("SajuChartView and the signup gift (tarot only)", () => {
     expect(sheet.textContent).not.toMatch(/선물|무료로 보기/);
   });
 
-  it("asks a guest to log in to pay, without promising a free reading", async () => {
+  it("asks a visitor to log in where the 맛보기 would be, without promising a free reading", async () => {
     seed();
     stub({ me: [() => Response.json({ payments: true, login: true, owner: false, user: null })] });
     render(<SajuChartView />);
-    const sheet = await screen.findByRole("region", { name: "전체 풀이에 담긴 것" });
-    expect(await within(sheet).findByRole("link", { name: "로그인하고 전체 풀이 보기" })).toBeTruthy();
-    expect(sheet.textContent).toContain("로그인하면 바로 결제하고 열 수 있어요");
-    expect(sheet.textContent).not.toMatch(/선물|무료로 드려요/);
+    const panel = await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(within(panel).getByRole("link", { name: "로그인하고 맛보기 보기" })).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "전체 풀이에 담긴 것" })).toBeNull();
+    expect(panel.textContent).not.toMatch(/선물|무료로 드려요/);
   });
 });
 
@@ -168,8 +168,8 @@ describe("SajuChartView after a paid opening was cut off", () => {
 });
 
 /** A guest while sales are closed here: the saju sheet offers no free reading (오픈 기념 무료 is tarot only). */
-const OPENING_ME = () => Response.json({ payments: false, login: false, owner: false, user: null });
-const OWNER_ME = () => Response.json({ payments: false, login: false, owner: true, user: null });
+const OPENING_ME = () => Response.json({ payments: false, login: false, owner: false, user: user() });
+const OWNER_ME = () => Response.json({ payments: false, login: false, owner: true, user: user() });
 /** A logged-in account while sales are closed: a new 맛보기 needs a login (owner 2026-11-04). */
 const MEMBER_ME = () => Response.json({ payments: false, login: true, owner: false, user: user() });
 const teaserFor = (topic: SajuTopicId, title: string) => ({
@@ -503,7 +503,7 @@ describe("SajuChartView with the row 다른 운도 볼 수 있어요 (saju-topic
     seed();
     const sent: Body[] = [];
     stub({
-      me: [() => Response.json({ payments: false, login: false, owner: true, user: null })],
+      me: [() => Response.json({ payments: false, login: false, owner: true, user: user() })],
       teaser: (body) => (sent.push(body), Response.json(teaserFor("money", "다른 제목"))),
     });
     render(<SajuChartView />);
@@ -621,5 +621,36 @@ describe("SajuChartView for a visitor (owner 2026-11-04: the 맛보기 needs a l
     const panel = await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
     expect(within(panel).getByRole("link", { name: "로그인하고 맛보기 보기" }).getAttribute("href")).toBe("/login?next=%2Fsaju%2Fchart%3Ftopic%3Dmoney");
     expect(panel.textContent).toContain("로그인을 취소했어요");
+  });
+});
+
+describe("SajuChartView with a 맛보기 kept on this device (owner 2026-11-05)", () => {
+  it("without a session: the 명식 stays, the 맛보기 is hidden behind the login and kept; with a session it shows", async () => {
+    seed();
+    const kept = localStorage.getItem(SAJU_TEASERS_KEY);
+    expect(kept).toContain("고요한 물");
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? Response.json({ payments: true, login: true, owner: false, user: null }) : Response.json({ readings: [], next: null }))));
+    render(<SajuChartView />);
+    await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain("고요한 물");
+    expect(document.body.textContent).toContain("일주");
+    expect(localStorage.getItem(SAJU_TEASERS_KEY)).toBe(kept);
+    cleanup();
+    resetAccountForTests();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => (url === "/api/me" ? Response.json(meBody()) : Response.json({ readings: [], next: null }))));
+    render(<SajuChartView />);
+    await screen.findByText("고요한 물");
+  });
+
+  it("when the session could not be checked: nothing kept shows, the server decides", async () => {
+    seed();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({}, { status: 500 });
+      if (url === "/api/saju/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "x" }, { status: 401 });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<SajuChartView />);
+    await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain("고요한 물");
   });
 });

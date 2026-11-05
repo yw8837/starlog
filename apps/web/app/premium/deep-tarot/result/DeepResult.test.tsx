@@ -234,3 +234,33 @@ describe("켈틱 크로스 10장's preview for a visitor (owner 2026-11-04: the 
     expect(within(panel).getByRole("link", { name: "로그인하고 미리보기 보기" }).getAttribute("href")).toBe("/login?next=%2Fpremium%2Fdeep-tarot%2Fresult%3Finstant%3D1");
   });
 });
+
+describe("DeepResult with a preview kept in this tab (owner 2026-11-05)", () => {
+  it("without a session: hidden behind the login and kept; with a session it shows again", async () => {
+    const preview = "지금 당신은 지출을 다시 세는 자리에 서 있어요.";
+    stub({ unused: [], teaser: [() => Response.json({ preview: PREVIEW })] });
+    render(<DeepResult instant />);
+    await screen.findByText(preview);
+    const kept = sessionStorage.getItem("starlog.teaser.premium");
+    expect(kept).toContain(preview);
+    cleanup();
+    resetAccountForTests();
+    resetPremiumStatusForTests();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      if (url === "/api/premium/tarot-deep/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "x" }, { status: 401 });
+      if (url === "/api/premium/status") return Response.json({ products: [{ id: "tarot-deep", open: true, visible: true, opensAt: null }] });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<DeepResult instant />);
+    await screen.findByRole("region", { name: "미리보기는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain(preview);
+    expect(sessionStorage.getItem("starlog.teaser.premium")).toBe(kept);
+    cleanup();
+    resetAccountForTests();
+    resetPremiumStatusForTests();
+    stub({ unused: [] });
+    render(<DeepResult instant />);
+    await screen.findByText(preview);
+  });
+});

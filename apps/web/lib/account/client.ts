@@ -122,6 +122,15 @@ export function useAccount(): AccountState | null | undefined {
   return value;
 }
 
+/** A kept reading shows only with a session (owner 2026-11-05): hidden from a visitor, not deleted. */
+export const keptForMember = <T>(account: AccountState | null | undefined, kept: T | null): T | null => (account?.user ? kept : null);
+
+/**
+ * Whether a screen asks the server for its 맛보기: nothing kept, or kept but not this viewer's to see, once that is known
+ * (the server answers the login, or the care screen first; when /api/me failed the server decides).
+ */
+export const asksServer = (account: AccountState | null | undefined, kept: unknown): boolean => !kept || (account !== undefined && !account?.user);
+
 export function loginHref(returnTo: string): string {
   return `/login?next=${encodeURIComponent(returnTo)}`;
 }
@@ -137,6 +146,11 @@ export async function logout(fetchImpl: typeof fetch = fetch): Promise<boolean> 
 }
 
 export { loginMessage } from "./loginMessage";
+
+/** Tests only: the account as if /api/me had answered it. */
+export function setAccountForTests(state: AccountState | null | undefined): void {
+  snapshot = state;
+}
 
 /** Tests only. */
 export function resetAccountForTests(): void {

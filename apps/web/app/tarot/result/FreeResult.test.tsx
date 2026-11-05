@@ -27,18 +27,20 @@ const ID = "abcdefghij0123456789";
 const ORDER = "Ab3_dEf-Gh5iJk7Lm9No1Pq2";
 
 /** A question with dealt cards and its teaser (with `extra` fields), as the draw left them; returns the question. */
+let seededTeaser: Record<string, unknown> = {};
 function seed(extra: Record<string, unknown> = {}): string {
   const base: FlowState = { who: "me", topicId: "money", when: "week", conditions: {}, note: "" };
   const summary = summarizeFlow(base)!;
   const flow = { ...base, draw: { templateId: summary.template, drawToken: "signed.draw.token", cards: CARDS } };
   saveFlow(flow);
   const input = tarotInput(flow, summary);
-  saveTeaser("tarot", `${flow.draw.drawToken}|${JSON.stringify(input)}`, {
+  seededTeaser = {
     firstCard: { heading: "첫 장", body: "첫 카드 풀이" },
     lockedToc: ["흐름", "조언"],
     cards: CARDS.map((card) => ({ position: card.position, cardId: card.cardId, keyword: "열쇠" })),
     ...extra,
-  });
+  };
+  saveTeaser("tarot", `${flow.draw.drawToken}|${JSON.stringify(input)}`, seededTeaser as never);
   return summary.question;
 }
 
@@ -63,6 +65,8 @@ function stub(routes: Routes) {
     if (url === "/api/me") return (routes.me.length > 1 ? routes.me.shift()! : routes.me[0]!)();
     if (url === "/api/tarot/reading") return routes.reading ? routes.reading() : Promise.reject(new TypeError("offline"));
     if (url.startsWith("/api/readings")) return routes.readings ? routes.readings() : Response.json({ readings: [], next: null });
+    // A kept 맛보기 shows only with a session (owner 2026-11-05): a guest's screen below has the one the server just gave.
+    if (url === "/api/tarot/teaser") return Response.json(seededTeaser);
     return Response.json({});
   }));
 }
@@ -760,5 +764,34 @@ describe("FreeResult when a login comes back in another tab (code review 2026-11
     backup("a1b2c3");
     render(<FreeResult instant loginFlag="ok" resume="a1b2c3" />);
     await waitFor(() => expect(JSON.parse(sessionStorage.getItem(FLOW_KEY)!).draw.drawToken).toBe("this.tab.token"));
+  });
+});
+
+describe("FreeResult with a 맛보기 kept on this device (owner 2026-11-05)", () => {
+  it("without a session: hidden, the server is asked and answers the login; kept, not deleted; with a session it shows, with no request", async () => {
+    seed();
+    const kept = sessionStorage.getItem("starlog.teaser.tarot");
+    expect(kept).toContain("첫 카드 풀이");
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      if (url === "/api/tarot/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "x" }, { status: 401 });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain("첫 카드 풀이");
+    expect(screen.queryByRole("region", { name: "전체 풀이에 담긴 것" })).toBeNull();
+    expect(sessionStorage.getItem("starlog.teaser.tarot")).toBe(kept);
+    cleanup();
+    resetAccountForTests();
+    const asked = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json(meBody());
+      if (url === "/api/tarot/teaser") asked();
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    await screen.findByText("첫 카드 풀이");
+    expect(asked).not.toHaveBeenCalled();
   });
 });

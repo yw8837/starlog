@@ -164,8 +164,8 @@ export function TodayView() {
       const here = savedRef.current;
       if (!result.ok) {
         if (result.error.code === "LOGIN_REQUIRED") {
-          // Not this account's to show any more (a session that ended, another person on the device).
-          if (here) clearDaily();
+          // Not to show without a session (a session that ended, another person on the device): the card kept here shows
+          // only for its own account's marker, so it stays hidden, not deleted (owner 2026-11-05). A logout deletes it.
           setViewer(null);
           setCheckError(null);
           setNeedsLogin(true);

@@ -12,7 +12,7 @@ import { LockedToc } from "@/components/tarot/LockedToc";
 import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { loginHref, useAccount } from "@/lib/account/client";
+import { asksServer, keptForMember, loginHref, useAccount } from "@/lib/account/client";
 import { approxCharsText } from "@/lib/pricing";
 import { premiumApiPath } from "@/lib/premium/client";
 import { opensAtText } from "@/lib/premium/offer";
@@ -61,19 +61,22 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
   const teaserGen = useGeneration<{ preview: NewYearPreviewData }>();
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: NewYearPreviewData } | null>(null);
-  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("premium", teaserKey, isNewYearPreview)) : null;
+  // Kept for this tab, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden and the server answers the login.
+  const kept = teaserKey ? readTeaser("premium", teaserKey, isNewYearPreview) : null;
+  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
+  const asks = asksServer(account, kept);
 
   // The free preview once per birth and chips (kept for this tab), through the browser check like the free teasers.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
-    if (!teaserKey || !body || readTeaser("premium", teaserKey, isNewYearPreview)) return;
+    if (!teaserKey || !body || !asks) return;
     void runTeaser(premiumApiPath(ID, "teaser"), body, premiumTeaserPlan(ID), acceptPreview).then((result) => {
       if (!result?.ok) return;
       saveTeaser("premium", teaserKey, result.data.preview);
       setFresh({ key: teaserKey, data: result.data.preview });
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser]);
+  }, [teaserKey, attempt, runTeaser, cancelTeaser, asks]);
 
   // A purchase of it (unopened or being opened) opens when the free preview could not be written: the paid reading needs none.
   const holds = Boolean(account?.user && [...account.user.unused, ...account.user.opening].some((item) => item.productId === ID));

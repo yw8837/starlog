@@ -23,7 +23,7 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { Button } from "@/components/ui/Button";
-import { loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
+import { keptForMember, loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, sajuTopicsMode } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { standardProduct } from "@/lib/pay/catalog";
@@ -99,19 +99,22 @@ export function SajuChartView({
   const unlockGen = useGeneration<SajuReadingResponse>();
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: SajuTeaserData } | null>(null);
-  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("saju", teaserKey, isSajuTeaser)) : null;
+  // Kept on this device, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden behind the login below.
+  const kept = teaserKey ? readTeaser("saju", teaserKey, isSajuTeaser) : null;
+  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
   // The 맛보기 needs a login (owner 2026-11-04): a visitor sees the 명식 and is asked here; the login comes back to the 운 on
   // screen (?topic=) and the birth data kept on this device, so it is written from the same input. When /api/me failed
   // (null) the server decides.
   const accountKnown = account !== undefined;
   const guest = Boolean(account && !account.user);
+  const member = Boolean(account?.user);
 
   // The free reading, written once per birth data and 운 (kept on this device, spec §9.3). Switching
   // the 운 re-runs this; the previous request is cancelled first (the effect's cleanup).
   const { run: runTeaser, cancel: cancelTeaser, reset: resetTeaser } = teaserGen;
   useEffect(() => {
     if (!accountKnown || guest) return;
-    if (!teaserKey || !own || !fields || readTeaser("saju", teaserKey, isSajuTeaser)) return;
+    if (!teaserKey || !own || !fields || (member && kept)) return;
     void runTeaser("/api/saju/teaser", sajuBody(form, fields), progressPlan("saju-teaser"), isSajuTeaser).then((res) => {
       if (!res?.ok) return;
       saveTeaser("saju", teaserKey, res.data);
@@ -119,7 +122,7 @@ export function SajuChartView({
       if (res.commit) void commitQuota(res.commit);
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser, accountKnown, guest]); // form, the 운 and the chips are the key
+  }, [teaserKey, attempt, runTeaser, cancelTeaser, accountKnown, guest, member]); // form, the 운 and the chips are the key
 
   /**
    * 다른 운도 볼 수 있어요: the 운 on screen changes and its teaser shows in place (the device's copy first).

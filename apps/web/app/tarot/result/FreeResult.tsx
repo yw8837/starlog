@@ -13,7 +13,7 @@ import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
-import { loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
+import { asksServer, keptForMember, loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { backupFlowForLogin, dropFlowBackup, newResumeNonce, restoreFlowAfterLogin, resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
@@ -104,8 +104,11 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
   const unlockGen = useGeneration<TarotReadingResponse>();
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: TarotTeaserData } | null>(null);
-  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("tarot", teaserKey, isTarotTeaser)) : null;
   const account = useAccount();
+  // Kept for this tab, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden and the server answers the login.
+  const kept = teaserKey ? readTeaser("tarot", teaserKey, isTarotTeaser) : null;
+  const teaser = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
+  const asks = asksServer(account, kept);
 
   // The free teaser, written once per draw and question (kept for this tab, so a reload shows it
   // again). Keyed by what it is written for: the draw and the input are both in the key. A visitor's request is asked too:
@@ -114,7 +117,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
   // same draw is read.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
-    if (!teaserKey || !draw || !input || readTeaser("tarot", teaserKey, isTarotTeaser)) return;
+    if (!teaserKey || !draw || !input || !asks) return;
     const plan = progressPlan("tarot-teaser", { positions: draw.cards.map((card) => card.position) });
     void runTeaser("/api/tarot/teaser", { drawToken: draw.drawToken, input: withHistory(input) }, plan, isTarotTeaser).then((result) => {
       if (!result?.ok) return;
@@ -123,7 +126,7 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
       if (result.commit) void commitQuota(result.commit);
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser]);
+  }, [teaserKey, attempt, runTeaser, cancelTeaser, asks]);
 
   const openedId = draw?.chapterId && chapters?.some((chapter) => chapter.id === draw.chapterId) ? draw.chapterId : undefined;
   const product = standardProduct("tarot");

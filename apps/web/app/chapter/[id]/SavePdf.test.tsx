@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { asMember } from "@/lib/testing/account";
 import { TAROT_SAMPLE } from "@/lib/fixtures";
 import { DEFAULT_SAJU_FORM } from "@/lib/sajuForm";
 import { CHAPTERS_KEY } from "@/lib/storage/chapters";
 import { LocalChapter } from "./LocalChapter";
+
+beforeEach(() => asMember());
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/chapter/x" }));
 

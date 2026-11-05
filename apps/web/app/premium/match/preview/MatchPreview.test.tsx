@@ -213,3 +213,32 @@ describe("프리미엄 궁합's preview (Task 20; saju only, owner 2026-10-17)",
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/premium/match/new"));
   });
 });
+
+describe("MatchPreview with a preview kept in this tab (owner 2026-11-05)", () => {
+  it("without a session: hidden behind the login and kept; with a session it shows again", async () => {
+    stub();
+    render(<MatchPreview instant />);
+    await screen.findByText("두 사람은 속도가 달라도 같은 쪽을 보고 있어요.");
+    const kept = sessionStorage.getItem("starlog.teaser.premium");
+    expect(kept).toContain("두 사람은 속도가 달라도 같은 쪽을 보고 있어요.");
+    cleanup();
+    resetAccountForTests();
+    resetPremiumStatusForTests();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      if (url === "/api/premium/match/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "x" }, { status: 401 });
+      if (url === "/api/premium/status") return Response.json({ products: [] });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<MatchPreview instant />);
+    await screen.findByRole("region", { name: "미리보기는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain("두 사람은 속도가 달라도 같은 쪽을 보고 있어요.");
+    expect(sessionStorage.getItem("starlog.teaser.premium")).toBe(kept);
+    cleanup();
+    resetAccountForTests();
+    resetPremiumStatusForTests();
+    stub();
+    render(<MatchPreview instant />);
+    await screen.findByText("두 사람은 속도가 달라도 같은 쪽을 보고 있어요.");
+  });
+});

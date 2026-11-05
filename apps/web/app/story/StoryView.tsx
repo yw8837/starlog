@@ -10,6 +10,7 @@ import { chartFor } from "@/components/saju/useSajuChart";
 import { MoveToAccount } from "@/components/account/MoveToAccount";
 import { TarotCard } from "@/components/tarot/TarotCard";
 import { Button } from "@/components/ui/Button";
+import { KeptPanel, useKeptGate } from "@/components/reading/KeptPanel";
 import { useAccount } from "@/lib/account/client";
 import { kstMonthDay } from "@/lib/kst";
 import { sajuTopicsVisible } from "@/lib/sajuTopics";
@@ -96,8 +97,30 @@ function Record({ chapter, now, topicsOpen, deviceOnly }: { chapter: StoredChapt
   );
 }
 
-/** 내 기록: every reading opened on this device, newest first; each opens the saved reading. */
+/** 내 기록 needs a session (owner 2026-11-05): a visitor gets the login, whatever this device keeps; nothing is deleted. */
 export function StoryView() {
+  const gate = useKeptGate();
+  if (gate === "member") return <Records />;
+  return (
+    <div className={s.main}>
+      <header className={s.head}>
+        <h1 className={s.title}>내 기록</h1>
+      </header>
+      {gate === "pending" ? null : (
+        <KeptPanel
+          gate={gate}
+          title="내 기록은 로그인하고 볼 수 있어요"
+          body="이 기기에 저장된 풀이는 그대로 있어요. 카카오나 Google로 로그인하면 다시 보여 드려요."
+          action="로그인하고 내 기록 보기"
+          returnTo="/story"
+        />
+      )}
+    </div>
+  );
+}
+
+/** 내 기록: every reading opened on this device, newest first; each opens the saved reading. */
+function Records() {
   const account = useAccount();
   // Readings opened on another device while logged in come onto this one (each visit, at most once a minute).
   useAccountSync(account);

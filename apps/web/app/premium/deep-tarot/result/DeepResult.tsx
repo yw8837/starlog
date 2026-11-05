@@ -16,7 +16,7 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { loginHref, useAccount } from "@/lib/account/client";
+import { asksServer, keptForMember, loginHref, useAccount } from "@/lib/account/client";
 import { deckPrefs } from "@/lib/deck";
 import { DEEP_RESULT_PATH, deepResultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { DEEP_BUILDER_HREF } from "@/lib/freshStart";
@@ -70,20 +70,23 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
   const teaserGen = useGeneration<{ preview: DeepTarotPreviewData }>();
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: DeepTarotPreviewData } | null>(null);
-  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("premium", teaserKey, isDeepTarotPreview)) : null;
+  // Kept for this tab, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden and the server answers the login.
+  const kept = teaserKey ? readTeaser("premium", teaserKey, isDeepTarotPreview) : null;
+  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
+  const asks = asksServer(account, kept);
 
   // The free preview, written once per draw and question (kept for this tab: a reload shows it again). It goes
   // through postGeneration, so a 403 BOT_CHECK runs the Turnstile check like the free teasers.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
-    if (!teaserKey || !input || readTeaser("premium", teaserKey, isDeepTarotPreview)) return;
+    if (!teaserKey || !input || !asks) return;
     void runTeaser(premiumApiPath(ID, "teaser"), input, premiumTeaserPlan(ID), acceptPreview).then((result) => {
       if (!result?.ok) return;
       saveTeaser("premium", teaserKey, result.data.preview);
       setFresh({ key: teaserKey, data: result.data.preview });
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser]);
+  }, [teaserKey, attempt, runTeaser, cancelTeaser, asks]);
 
   const positions = draw?.cards.map((card) => card.position) ?? [];
   const plans = premiumProgressPlans(ID, { positions });

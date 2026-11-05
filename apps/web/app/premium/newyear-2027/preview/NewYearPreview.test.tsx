@@ -140,3 +140,32 @@ describe("2027 신년운세's preview (Task 21)", () => {
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/premium/newyear-2027/new"));
   });
 });
+
+describe("NewYearPreview with a preview kept in this tab (owner 2026-11-05)", () => {
+  it("without a session: hidden behind the login and kept; with a session it shows again", async () => {
+    stub(() => Response.json({ preview: PREVIEW }));
+    render(<NewYearPreview />);
+    await screen.findByText("한 걸음씩 다지면 연말에 손에 남는 게 많은 해예요.");
+    const kept = sessionStorage.getItem("starlog.teaser.premium");
+    expect(kept).toContain("한 걸음씩 다지면 연말에 손에 남는 게 많은 해예요.");
+    cleanup();
+    resetAccountForTests();
+    resetPremiumStatusForTests();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: null });
+      if (url === "/api/premium/newyear-2027/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "x" }, { status: 401 });
+      if (url === "/api/premium/status") return Response.json({ products: [] });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<NewYearPreview />);
+    await screen.findByRole("region", { name: "미리보기는 로그인하고 볼 수 있어요" });
+    expect(document.body.textContent).not.toContain("한 걸음씩 다지면 연말에 손에 남는 게 많은 해예요.");
+    expect(sessionStorage.getItem("starlog.teaser.premium")).toBe(kept);
+    cleanup();
+    resetAccountForTests();
+    resetPremiumStatusForTests();
+    stub(() => Response.json({ preview: PREVIEW }));
+    render(<NewYearPreview />);
+    await screen.findByText("한 걸음씩 다지면 연말에 손에 남는 게 많은 해예요.");
+  });
+});

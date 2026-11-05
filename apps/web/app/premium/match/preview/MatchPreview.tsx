@@ -13,7 +13,7 @@ import { LockedToc } from "@/components/tarot/LockedToc";
 import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { loginHref, useAccount } from "@/lib/account/client";
+import { asksServer, keptForMember, loginHref, useAccount } from "@/lib/account/client";
 import { withFlags } from "@/lib/flowState";
 import { approxCharsText } from "@/lib/pricing";
 import { clearPremiumResume, pendingResumeToken, premiumApiPath } from "@/lib/premium/client";
@@ -67,19 +67,22 @@ export function MatchPreview({ instant, autoUnlock = false }: { instant: boolean
   const teaserGen = useGeneration<{ preview: MatchPreviewData }>();
   const [attempt, setAttempt] = useState(0);
   const [fresh, setFresh] = useState<{ key: string; data: MatchPreviewData } | null>(null);
-  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : readTeaser("premium", teaserKey, isMatchPreview)) : null;
+  // Kept for this tab, shown only with a session (owner 2026-11-05): a visitor's copy stays hidden and the server answers the login.
+  const kept = teaserKey ? readTeaser("premium", teaserKey, isMatchPreview) : null;
+  const preview = teaserKey ? (fresh?.key === teaserKey ? fresh.data : keptForMember(account, kept)) : null;
+  const asks = asksServer(account, kept);
 
   // The free preview once per answers (kept for this tab), through the browser check like the free teasers.
   const { run: runTeaser, cancel: cancelTeaser } = teaserGen;
   useEffect(() => {
-    if (!teaserKey || !body || readTeaser("premium", teaserKey, isMatchPreview)) return;
+    if (!teaserKey || !body || !asks) return;
     void runTeaser(premiumApiPath(ID, "teaser"), body, premiumTeaserPlan(ID), acceptPreview).then((result) => {
       if (!result?.ok) return;
       saveTeaser("premium", teaserKey, result.data.preview);
       setFresh({ key: teaserKey, data: result.data.preview });
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser]);
+  }, [teaserKey, attempt, runTeaser, cancelTeaser, asks]);
 
   const plans = premiumProgressPlans(ID);
   // A purchase of it (unopened or being opened) opens when the free preview could not be written: the paid reading needs none.
