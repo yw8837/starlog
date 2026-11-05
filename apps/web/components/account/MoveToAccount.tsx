@@ -99,7 +99,7 @@ export function MoveToAccount() {
           </Link>
         </p>
         <div className={s.actions}>
-          <Button size="md" onClick={() => void move()} disabled={busy || picked.length === 0}>
+          <Button variant="secondary" size="md" onClick={() => void move()} disabled={busy || picked.length === 0}>
             {busy ? "옮기는 중…" : "옮기기"}
           </Button>
           <Button

@@ -140,9 +140,10 @@ test("a reading opened before logging in: the login offers to move it, 옮기기
   await ownerPass(web, info);
   const title = await openFree(web, { owner: true });
   expect((await web.request.get("/api/readings")).status()).toBe(401);
+  // Before the login it stays on this device, hidden behind the login (owner 2026-11-05).
   await web.goto("/story");
-  await expect(records(web).first()).toContainText(title);
-  await expect(records(web).first()).not.toContainText("이 기기에만");
+  await expect(web.getByRole("region", { name: "내 기록은 로그인하고 볼 수 있어요" })).toBeVisible({ timeout: NAV });
+  await expect(web.locator("main")).not.toContainText(title);
 
   await loginAs(web, info, name);
   const offer = web.getByRole("region", { name: "이 기기에서 본 풀이 1개를 내 계정에 옮길까요?" });
