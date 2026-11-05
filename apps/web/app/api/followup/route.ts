@@ -3,6 +3,7 @@ import { generateSajuFollowUp, generateSajuTopicFollowUp, generateTarotFollowUp 
 import { buildTarotContext } from "@/lib/ai/prompts/tarot";
 import { StoredSajuReadingSchema, StoredTarotReadingSchema, type FollowUpAnswer } from "@/lib/ai/schemas";
 import { checkQuota, checkServerLimits, crisisCheck, crisisTierOf, errorResponse, openGate, readJson, spendCookies } from "@/lib/api/http";
+import { requireMember } from "@/lib/api/member";
 import { FollowUpBody } from "@/lib/api/inputs";
 import { factsFromBirth, topicFactsFromBirth, withoutConcern } from "@/lib/api/sajuRequest";
 import { answeredTurns, giveBackTurn, holdTurn } from "@/lib/api/chapterTurns";
@@ -17,8 +18,9 @@ import { isOpeningChapter, isPremiumChapter, issueChapter, openChapter } from "@
 import { quotaLimits } from "@/lib/security/quota";
 
 /**
- * POST {chapterToken, reading, question} → {kind, answer, chapterToken, remaining}. The reading must
- * be the one the token was issued for (digest check); the returned token carries the new turn.
+ * POST {chapterToken, reading, question} → {kind, answer, chapterToken, remaining}. Needs a login (owner 2026-11-04, code
+ * review 2026-11-05): a visitor gets 401 LOGIN_REQUIRED `reason: "followup"`; only words that get the care screen answer before it.
+ * The reading must be the one the token was issued for (digest check); the returned token carries the new turn.
  * A 오픈 기념 무료 chapter takes none (409 `reason: "opening"`). Capped per chapter
  * (BETA_FOLLOWUPS_PER_CHAPTER, counted server-side too, so an older token of the same chapter does
  * not reset it) and per day; the owner pass skips both caps. Chapter tokens expire 7 days after the reading (a premium one's 30, below). Streams NDJSON progress with `Accept: application/x-ndjson`.
@@ -33,6 +35,13 @@ export async function POST(request: Request): Promise<Response> {
   if (gate instanceof Response) return gate;
   const body = FollowUpBody.safeParse(await readJson(request, 64_000));
   if (!body.success) return errorResponse("BAD_REQUEST");
+  // The words first: a stated thought of dying gets the care screen, logged in or not (owner 2026-10-31 comes before 2026-11-04).
+  const question = body.data.question;
+  const crisis = crisisCheck("followup", question);
+  if (crisis.refusal) return crisis.refusal;
+  // An answer is an AI reading: it needs a login, whatever token this device holds, before anything is opened or counted.
+  const member = await requireMember(request, gate.secret, gate.now, "followup");
+  if (member instanceof Response) return member;
   const chapter = await openChapter(body.data.chapterToken, body.data.reading, gate.secret, gate.now);
   if (!chapter) return errorResponse("BAD_TOKEN", { message: "후속 질문을 이어 갈 수 없는 풀이예요. 물어볼 수 있는 기간이 지났거나 내용이 달라졌어요." });
   // 오픈 기념 무료 is read and kept on the device only (owner 2026-10-14 evening), owner pass or not.
@@ -55,9 +64,6 @@ export async function POST(request: Request): Promise<Response> {
   if (limited) return limited;
   const quota = premium ? null : await checkQuota(gate, "followup", { scope: "day" }, { credit: paid, paid });
   if (quota instanceof Response) return quota;
-  const question = body.data.question;
-  const crisis = crisisCheck("followup", question);
-  if (crisis.refusal) return crisis.refusal;
   // The chapter's own words (its question, note, earlier questions) reach the prompt too: one with crisis words was written
   // with care, and so is every answer after it (review 2026-10-31).
   const words = (value: unknown): string[] =>

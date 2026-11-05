@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setTestDb } from "@/lib/db";
 import { PREMIUM_CHAPTER_TTL_MS } from "@/lib/premium/products";
 import type { ChapterContext } from "@/lib/security/chapterToken";
 import { issueChapter } from "@/lib/security/chapterToken";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
 import { signingSecret } from "@/lib/security/sign";
+import { memberCookieHeader, useTestDb } from "@/lib/testing/p4";
 import { POST as followup } from "./route";
 
 const T0 = Date.parse("2026-10-20T03:00:00Z");
@@ -20,7 +22,8 @@ async function ask(chapterToken: string) {
   const response = await followup(
     new Request("http://localhost/api/followup", {
       method: "POST",
-      headers: { "content-type": "application/json", origin: "http://localhost", "cf-connecting-ip": "203.0.113.40" },
+      // A follow-up needs a login (owner 2026-11-04): logged in just now, whatever the chapter's age.
+      headers: { "content-type": "application/json", origin: "http://localhost", "cf-connecting-ip": "203.0.113.40", cookie: await memberCookieHeader() },
       body: JSON.stringify({ chapterToken, reading, question: "하나 더 물어봐도 될까요?" }),
     }),
   );
@@ -32,9 +35,13 @@ beforeEach(() => {
   vi.setSystemTime(T0);
   vi.stubEnv("STARLOG_AI", "mock");
   vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("STARLOG_PAYMENTS", "on");
+  vi.stubEnv("STARLOG_KAKAO", "mock");
   resetMemoryLimiter();
+  useTestDb();
 });
 afterEach(() => {
+  setTestDb(null);
   vi.useRealTimers();
   vi.unstubAllEnvs();
 });

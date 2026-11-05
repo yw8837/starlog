@@ -1,3 +1,4 @@
+import { refreshAccount } from "@/lib/account/client";
 import { kstDate } from "@/lib/kst";
 import { postJson } from "@/lib/reading/api";
 import type { SharePreview } from "./preview";
@@ -72,7 +73,11 @@ export function shareUrls(path: string, origin: string = window.location.origin)
 /** Makes (or finds) the reading's share link; the server takes the design from the signed chapter. */
 export async function createShareLink(chapter: ShareableChapter): Promise<ShareLinkResult> {
   const result = await postJson<Made>("/api/share", { chapterToken: chapter.chapterToken, reading: chapter.reading });
-  if (!result.ok) return { ok: false, message: result.error.message || FAILED };
+  if (!result.ok) {
+    // The session ended while this screen was open: the screen turns into the login panel (components/reading/KeptPanel.tsx).
+    if (result.error.code === "LOGIN_REQUIRED") void refreshAccount();
+    return { ok: false, message: result.error.message || FAILED };
+  }
   remember(chapter.id, result.data);
   return made(result.data);
 }

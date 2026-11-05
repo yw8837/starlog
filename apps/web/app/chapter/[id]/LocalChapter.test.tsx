@@ -383,3 +383,49 @@ describe("a saved reading without a session (owner 2026-11-05)", () => {
     await screen.findByRole("heading", { level: 1, name: "q" });
   });
 });
+
+describe("a session that ended while a saved reading is open (code review 2026-11-05)", () => {
+  const FOLLOWABLE = { ...SAJU_CHAPTER, createdAt: Date.now(), reading: { sections: SECTIONS, observation: { heading: "앞으로 몇 주 · 확인해 볼 신호", body: "b" }, followUps: [] } };
+  const serverEnded = (route: string) => {
+    let ended = false;
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return Response.json({ payments: true, login: true, owner: false, user: ended ? null : LOGGED_IN });
+      if (url === route) {
+        ended = true;
+        return Response.json({ code: "LOGIN_REQUIRED", reason: route === "/api/share" ? "share" : "followup", message: "x" }, { status: 401 });
+      }
+      return Response.json({ readings: [], next: null });
+    }));
+  };
+
+  it("a follow-up answered LOGIN_REQUIRED: the reading gives way to the login panel, the record stays", async () => {
+    resetAccountForTests();
+    serverEnded("/api/followup");
+    seed([FOLLOWABLE]);
+    const kept = localStorage.getItem(CHAPTERS_KEY);
+    render(<LocalChapter id={FOLLOWABLE.id} />);
+    const box = await screen.findByRole("textbox", { name: "이어서 물어볼 내용" });
+    fireEvent.change(box, { target: { value: "다음 달은 어떨까요?" } });
+    fireEvent.submit(box.closest("form")!);
+    await screen.findByRole("region", { name: "이 기록은 로그인하고 볼 수 있어요" });
+    expect(screen.queryByRole("textbox", { name: "이어서 물어볼 내용" })).toBeNull();
+    expect(localStorage.getItem(CHAPTERS_KEY)).toBe(kept);
+  });
+
+  it("a share link answered LOGIN_REQUIRED: the same", async () => {
+    const proto = (window.HTMLDialogElement ?? window.HTMLElement).prototype as HTMLElement & { showModal?: () => void; close?: () => void };
+    proto.showModal ??= function (this: HTMLElement) {
+      this.setAttribute("open", "");
+    };
+    proto.close ??= function (this: HTMLElement) {
+      this.removeAttribute("open");
+    };
+    resetAccountForTests();
+    serverEnded("/api/share");
+    seed([FOLLOWABLE]);
+    render(<LocalChapter id={FOLLOWABLE.id} />);
+    fireEvent.click(await screen.findByRole("button", { name: "공유하기" }));
+    fireEvent.click(await screen.findByRole("button", { name: "공유 링크 만들기", hidden: true }));
+    await screen.findByRole("region", { name: "이 기록은 로그인하고 볼 수 있어요" });
+  });
+});

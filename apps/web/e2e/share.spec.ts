@@ -1,13 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
-import { loginForOpening, memberOnThisDevice, openingOn } from "./opening";
+import { loginForOpening, openingOn } from "./opening";
 import { openShared, shotButton } from "./shareShots";
 
 /**
  * 결과 공유 (owner 2026-10-13): a saved reading's 공유하기 makes its own link, which shows the cards
  * and the whole reading to anyone, without the question and the note; 공유 그만하기 takes it down.
  */
-
-const OWNER_CODE = process.env.E2E_OWNER_CODE ?? "owner-code-for-e2e-0000001";
 
 const INPUT = {
   topicId: "contact",
@@ -32,14 +30,13 @@ async function ownAddress(page: Page) {
 /**
  * A full tarot reading from the API, saved on this device as the result screen keeps it: opened with the
  * owner pass, or (`opening`) with 오픈 기념 무료, which takes no follow-ups but is shared like any other (owner 2026-10-23), by
- * an account of its own (it opens for a logged-in account once, owner 2026-10-27).
+ * an account of its own (it opens for a logged-in account once, owner 2026-10-27). Making a link needs a session (owner
+ * 2026-11-04, code review 2026-11-05), so every test here logs in: @login, the gate's dev run.
  */
 async function savedReading(page: Page, id: string, { opening = false } = {}) {
   await page.context().clearCookies();
   await ownAddress(page);
-  const origin = new URL(test.info().project.use.baseURL!).origin;
-  if (opening) await loginForOpening(page, test.info(), `share-${test.info().project.name}-${Date.now()}`);
-  else expect((await page.request.post("/api/owner", { data: { code: OWNER_CODE }, headers: { origin } })).ok()).toBe(true);
+  await loginForOpening(page, test.info(), `share-${test.info().project.name}-${Date.now()}`);
   const draw = await (await page.request.post("/api/tarot/draw", { data: { templateId: "relationship-contact", picks: [2, 9, 15] } })).json();
   const res = await (await page.request.post("/api/tarot/reading", { data: { drawToken: draw.drawToken, input: INPUT, ...(opening ? {} : { unlock: { method: "owner" } }) } })).json();
   const chapter = {
@@ -56,12 +53,11 @@ async function savedReading(page: Page, id: string, { opening = false } = {}) {
     reading: res.reading,
     ...(opening ? { opening: true } : {}),
   };
-  if (!opening) await memberOnThisDevice(page);
   await page.addInitScript((value) => window.localStorage.setItem("starlog.chapters", value), JSON.stringify([chapter]));
   return res.reading as { verdict: string };
 }
 
-test("공유하기 makes the reading's own link: the cards and the reading for anyone, no question; 공유 그만하기 takes it down", async ({ page }) => {
+test("공유하기 makes the reading's own link: the cards and the reading for anyone, no question; 공유 그만하기 takes it down", { tag: "@login" }, async ({ page }) => {
   const reading = await savedReading(page, "sharee2e01");
   await page.goto("/chapter/sharee2e01");
   await shotButton(page, page.getByRole("button", { name: "공유하기" }), "tarot-paid-button");
@@ -117,7 +113,7 @@ if (openingOn()) test("a 오픈 기념 무료 reading shares too (owner 2026-10-
  * sheet carry the reading's own /s/<id>, its title and first sentence, its 2:1 image and the visitor's own try; 풀이 보기
  * opens the shared reading, not the home. Needs NEXT_PUBLIC_KAKAO_JS_KEY on the dev server (any value: the SDK is mocked).
  */
-test("Kakao feed carries the reading's link, title, first sentence and image; the share sheet title, text and link once; 풀이 보기 opens the reading", async ({ page }, info) => {
+test("Kakao feed carries the reading's link, title, first sentence and image; the share sheet title, text and link once; 풀이 보기 opens the reading", { tag: "@login" }, async ({ page }, info) => {
   await page.addInitScript(() => {
     const sent: unknown[] = [];
     const shared: Array<{ title?: string; text?: string; url?: string; files?: Array<{ type: string; size: number }> }> = [];

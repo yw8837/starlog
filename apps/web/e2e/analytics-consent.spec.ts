@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { cardTable, pickCard, tableCards } from "./cards";
 import { usable } from "./consent";
-import { ownerPass, memberOnThisDevice } from "./opening";
+import { loginForOpening } from "./opening";
 
 /**
  * 방문 통계 consent (components/seo/ConsentBanner.tsx, GoogleAnalytics.tsx) in a browser that has not answered yet: the
@@ -176,9 +176,9 @@ test.describe("unanswered on 10/30: the key controls stay usable under the banne
     await usable(page.getByRole("button", { name: "결과 보기" }));
   });
 
-  test("/story and /s/<id>: 새로 물어보기 (the floating one on phones) and the shared reading's 타로 보기", async ({ page }) => {
-    await ownerPass(page, test.info());
-    await memberOnThisDevice(page);
+  // A shared reading's link needs a session (owner 2026-11-04, code review 2026-11-05): @login, the gate's dev run.
+  test("/story and /s/<id>: 새로 물어보기 (the floating one on phones) and the shared reading's 타로 보기", { tag: "@login" }, async ({ page }) => {
+    await loginForOpening(page, test.info(), `consent-${test.info().project.name}-${Date.now()}`);
     const share = await savedReadings(page);
     await page.goto("/story");
     await expect(banner(page)).toBeVisible();

@@ -512,6 +512,7 @@ describe("paid premium readings", () => {
     useTestDb();
     const b = browser("192.0.2.48");
     await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    await loginAs(b, "reader-192.0.2.48"); // A follow-up needs a login (owner 2026-11-04).
     const finished = [
       await finish(b, deepReading, { drawToken: await dealt(b, "deep-tarot"), input: DEEP_INPUT, unlock: { method: "owner" } }),
       await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER, label: "민지" }, relation: "friend", ack: true, unlock: { method: "owner" } }),
@@ -530,6 +531,7 @@ describe("paid premium readings", () => {
     }
     expect(spy.mock.calls.map(([task]) => task.name)).toEqual(["premium-followup", "premium-followup", "premium-followup"]);
     vi.setSystemTime(T0 + PREMIUM_CHAPTER_TTL_MS + 60_000);
+    await loginAs(b, "reader-192.0.2.48"); // The session has ended too; a new one does not bring the chapter back.
     const late = await b.send(followup, "/api/followup", { body: { chapterToken: finished[2]!.done.chapterToken, reading: finished[2]!.done.reading, question: "3월에는 무엇을 하면 좋을까요?" } });
     expect(late.status).toBe(400);
   });
@@ -605,6 +607,7 @@ describe("premium follow-ups (P5 spec §6.3)", () => {
     useTestDb();
     const b = browser("192.0.2.63");
     await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    await loginAs(b, "reader-192.0.2.63"); // A follow-up needs a login (owner 2026-11-04).
     const { done } = await finish(b, matchReading, { me: { birth: DEFAULT_SAJU_FORM }, partner: { birth: PARTNER }, relation: "friend", ack: true, unlock: { method: "owner" } });
     vi.setSystemTime(T0 + 20 * 24 * 3_600_000);
     matchPrompts.calls.length = 0;
@@ -617,6 +620,7 @@ describe("premium follow-ups (P5 spec §6.3)", () => {
     useTestDb();
     const b = browser("192.0.2.47");
     await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    await loginAs(b, "reader-192.0.2.47"); // A follow-up needs a login (owner 2026-11-04).
     const { done } = await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } });
     const spy = vi.spyOn(mockProvider, "generate");
     const res = await b.send(followup, "/api/followup", { body: { chapterToken: done.chapterToken, reading: { ...done.reading, title: "다른 제목" }, question: "3월에는요?" } });
@@ -695,6 +699,7 @@ describe("who paid for a premium chapter is signed in its token (follow-up books
     useTestDb();
     const b = browser("192.0.2.61");
     await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    await loginAs(b, "reader-192.0.2.61"); // A follow-up needs a login (owner 2026-11-04).
     const { done } = await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } });
     expect((await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now()))?.ctx).toMatchObject({ kind: "newyear-2027", paid: false });
     billing();
@@ -707,6 +712,7 @@ describe("who paid for a premium chapter is signed in its token (follow-up books
     useTestDb();
     const b = browser("192.0.2.62");
     await b.send(ownerPost, "/api/owner", { body: { code: "owner-code-for-tests-0001" }, origin: true });
+    await loginAs(b, "reader-192.0.2.62"); // A follow-up needs a login (owner 2026-11-04).
     const { done } = await finish(b, yearReading, { birth: DEFAULT_SAJU_FORM, unlock: { method: "owner" } });
     const opened = (await openChapter(done.chapterToken, done.reading, signingSecret()!, Date.now()))!;
     const { paid: _paid, ...older } = opened.ctx as Extract<typeof opened.ctx, { kind: "newyear-2027" }>;

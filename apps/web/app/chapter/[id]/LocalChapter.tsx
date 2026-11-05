@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { ReviewPrompt } from "@/components/reviews/ReviewPrompt";
 import type { ShareActions } from "@/components/share/ShareResultButton";
 import { KeptPanel, useKeptGate } from "@/components/reading/KeptPanel";
-import { useAccount } from "@/lib/account/client";
+import { refreshAccount, useAccount } from "@/lib/account/client";
 import { createShareLink, knownShareLink, stopShareLink } from "@/lib/share/client";
 import { kstMonthDay } from "@/lib/kst";
 import { commitQuota, postGeneration } from "@/lib/reading/api";
@@ -80,6 +80,8 @@ function askFollowUp(id: string, question: string): Promise<AskResult> {
       if (result.commit) void commitQuota(result.commit);
       return { answer };
     }
+    // The session ended while this screen was open: the screen turns into the login panel (KeptPanel), the record stays.
+    if (result.error.code === "LOGIN_REQUIRED") void refreshAccount();
     // Used up for this reading, its token expired, or it is 오픈 기념 무료 (read and keep only): no more questions here.
     if ((result.error.code === "BETA_LIMIT" && result.error.scope === "chapter") || result.error.code === "BAD_TOKEN" || result.error.code === "NOT_AVAILABLE") {
       updateChapter(id, (c) => ({ ...c, followUpsLeft: 0 }));

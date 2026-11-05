@@ -13,11 +13,13 @@ import { errorResponse, parseCookies, type Gate } from "./http";
  * clearing cookies resets nothing. The owner pass skips the counts, never the login.
  */
 
-export type LoginReason = "teaser" | "daily";
+export type LoginReason = "teaser" | "daily" | "followup" | "share";
 
 const LOGIN_MESSAGE: Readonly<Record<LoginReason, string>> = {
   teaser: "맛보기 풀이는 로그인하고 볼 수 있어요. 카카오나 Google로 로그인하면 고른 카드와 입력한 정보 그대로 이어서 볼 수 있어요.",
   daily: "오늘의 한 장은 로그인하고 볼 수 있어요. 로그인하면 어느 기기에서든 같은 카드가 보여요.",
+  followup: "이어서 물어보기는 로그인하고 할 수 있어요.",
+  share: "공유 링크는 로그인하고 만들 수 있어요.",
 };
 
 export const loginRequired = (reason: LoginReason) => errorResponse("LOGIN_REQUIRED", { reason, message: LOGIN_MESSAGE[reason] });
