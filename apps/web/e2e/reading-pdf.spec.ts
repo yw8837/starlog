@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
-import { fakeBrowserClock, mockLogin, ownerPass } from "./opening";
+import { fakeBrowserClock, mockLogin, ownerPass, memberOnThisDevice } from "./opening";
 
 /**
  * PDF로 저장 (owner 2026-10-21): a finished reading prints through the browser (window.print) with a print
@@ -31,8 +31,10 @@ async function ownAddress(page: Page) {
   await page.context().setExtraHTTPHeaders({ "x-forwarded-for": `10.12.${n()}.${n()}` });
 }
 
-const seed = (page: Page, chapter: object) =>
-  page.addInitScript((value) => window.localStorage.setItem("starlog.chapters", value), JSON.stringify({ v: 1, chapters: [chapter] }));
+const seed = async (page: Page, chapter: object) => {
+  await memberOnThisDevice(page);
+  await page.addInitScript((value) => window.localStorage.setItem("starlog.chapters", value), JSON.stringify({ v: 1, chapters: [chapter] }));
+};
 
 /** A full tarot reading from the (mock) API with one follow-up answered, opened with the owner pass. */
 async function tarotChapter(page: Page, info: TestInfo, id: string) {

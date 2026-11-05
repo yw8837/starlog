@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { cardTable, pickCard, tableCards } from "./cards";
 import { usable } from "./consent";
-import { ownerPass } from "./opening";
+import { ownerPass, memberOnThisDevice } from "./opening";
 
 /**
  * 방문 통계 consent (components/seo/ConsentBanner.tsx, GoogleAnalytics.tsx) in a browser that has not answered yet: the
@@ -178,6 +178,7 @@ test.describe("unanswered on 10/30: the key controls stay usable under the banne
 
   test("/story and /s/<id>: 새로 물어보기 (the floating one on phones) and the shared reading's 타로 보기", async ({ page }) => {
     await ownerPass(page, test.info());
+    await memberOnThisDevice(page);
     const share = await savedReadings(page);
     await page.goto("/story");
     await expect(banner(page)).toBeVisible();

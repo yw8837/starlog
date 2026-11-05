@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { loginForOpening, openingOn } from "./opening";
+import { loginForOpening, memberOnThisDevice, openingOn } from "./opening";
 import { openShared, shotButton } from "./shareShots";
 
 /**
@@ -56,6 +56,7 @@ async function savedReading(page: Page, id: string, { opening = false } = {}) {
     reading: res.reading,
     ...(opening ? { opening: true } : {}),
   };
+  if (!opening) await memberOnThisDevice(page);
   await page.addInitScript((value) => window.localStorage.setItem("starlog.chapters", value), JSON.stringify([chapter]));
   return res.reading as { verdict: string };
 }

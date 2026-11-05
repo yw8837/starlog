@@ -57,6 +57,15 @@ export async function mockLogin(page: Page, info: TestInfo, name: string): Promi
   if (flag !== null && flag !== "ok") throw new Error(`mock login refused: login=${flag}`);
 }
 
+/**
+ * What a device keeps shows only with a session (owner 2026-11-05). For the specs about the screens of a kept reading, not
+ * about the login (that is e2e/kept-login.spec.ts): the page is told it has one, as /api/me would, so the Workers preview,
+ * which refuses the mock login, can still run them. Call before the page opens.
+ */
+export async function memberOnThisDevice(page: Page): Promise<void> {
+  await page.route("**/api/me", (route) => route.fulfill({ json: { payments: false, login: true, owner: false, user: { nickname: "별손님", gift: null, unused: [], opening: [] } } }));
+}
+
 /** With FAKE_NOW, the page's Date is fixed to it (timers still run), so the screens decide as the server does. */
 export async function fakeBrowserClock(page: Page): Promise<void> {
   if (process.env.FAKE_NOW) await page.clock.setFixedTime(new Date(process.env.FAKE_NOW));

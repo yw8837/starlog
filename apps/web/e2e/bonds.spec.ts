@@ -595,10 +595,33 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
     await expect(visitor.locator("main")).not.toContainText("1992");
     await visitor.close();
     await (await openShared(page, sharePath, "bond-friend-shared")).close();
-    // Q-05: a reload shows this device's result again, not the empty form
+    // The first screen says a later look needs the login (owner 2026-11-05).
+    await expect(page.getByText(/나중에 이 결과를 다시 보려면/)).toBeVisible();
+    const line = (await page.getByText(/요즘 두 사람 사이/).textContent()) ?? "";
+    // Q-05: a reload never shows the empty form again; without a session (owner 2026-11-05) it says the star is there, nothing of it
     await page.reload();
-    await expect(page.getByRole("heading", { level: 1, name: "이미 양자리에 별이 되어 있어요" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "이미 별이 되어 있어요" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "결과는 로그인하고 다시 볼 수 있어요" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveCount(0);
+    await expect(page.getByRole("meter", { name: "인연 점수" })).toHaveCount(0);
+    await expect(page.locator("main")).not.toContainText("인연 카드");
+    // Nor in what the server sent: the HTML and its RSC payload hold none of it.
+    const raw = await (await page.request.get(`/b/${code}`)).text();
+    for (const hidden of ["하늘", line, '"score"', '\\"score\\"', "bondLine"]) expect(raw).not.toContain(hidden);
+    // /api/bonds/me only says there is something.
+    const me = await (await page.request.get("/api/bonds/me")).json();
+    expect(me).toMatchObject({ owner: null, signedIn: false, joinedHidden: true });
+    expect(JSON.stringify(me)).not.toContain("하늘");
+    await page.getByRole("link", { name: "나도 내 별자리 만들기" }).click();
+    await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
+    await expect(page.getByRole("region", { name: "내가 들어간 별자리는 로그인하고 볼 수 있어요" })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole("region", { name: "내가 들어간 별자리", exact: true })).toHaveCount(0);
+    // A login on this device: the very same result, from the friend cookie (no account is linked to the star).
+    await logInPage(page, newUser(), `/b/${code}`);
+    await expect(page.getByRole("heading", { level: 1, name: "이미 양자리에 별이 되어 있어요" })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole("meter", { name: "인연 점수" })).toHaveAttribute("aria-valuenow", String(score));
+    await expect(page.getByText(line)).toBeVisible();
+    await expect(page.getByText(/나중에 이 결과를 다시 보려면/)).toHaveCount(0);
     await page.getByRole("link", { name: "나도 내 별자리 만들기" }).click();
     await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
     // 내가 들어간 별자리 (owner 2026-10-14): the joined constellation with 나 among its members

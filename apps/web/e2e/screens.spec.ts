@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { expect, request as playwrightRequest, test, type Page, type TestInfo } from "@playwright/test";
 import { logInPage, logInRequest, newUser } from "./bondsAccount";
 import { pickCard } from "./cards";
-import { fakeBrowserClock, mockLogin, openingOn, ownerPass } from "./opening";
+import { fakeBrowserClock, mockLogin, openingOn, ownerPass, memberOnThisDevice } from "./opening";
 
 /**
  * Screen sweep (@screens): a full-height screenshot of every route per viewport project
@@ -285,9 +285,9 @@ const SCREENS: Screen[] = [
   },
   { name: "login", path: "/login" },
   { name: "chapter-sample", path: "/chapter/sample", spread: true },
-  { name: "chapter-local", path: "/chapter/screenbb02", spread: true, setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await tarotChapter(page, "screenbb02")]) },
-  { name: "chapter-local-checkin", path: "/chapter/screencc03", spread: true, setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await tarotChapter(page, "screencc03", 4)]) },
-  { name: "chapter-missing", path: "/chapter/abcdef12" },
+  { name: "chapter-local", path: "/chapter/screenbb02", spread: true, setup: async (page) => { await memberOnThisDevice(page); await setStorage(page, "localStorage", "starlog.chapters", [await tarotChapter(page, "screenbb02")]); } },
+  { name: "chapter-local-checkin", path: "/chapter/screencc03", spread: true, setup: async (page) => { await memberOnThisDevice(page); await setStorage(page, "localStorage", "starlog.chapters", [await tarotChapter(page, "screencc03", 4)]); } },
+  { name: "chapter-missing", path: "/chapter/abcdef12", setup: memberOnThisDevice },
   { name: "saju-new", path: "/saju/new" },
   { name: "saju-new-status", path: "/saju/new", prepare: async (page) => page.getByRole("button", { name: /요즘 상황도 알려 주기/ }).click() },
   { name: "saju-chart", path: "/saju/chart" },
@@ -325,7 +325,7 @@ const SCREENS: Screen[] = [
       await expect(page.getByRole("region", { name: "재물운 전체 풀이에 담긴 것" })).toBeVisible({ timeout: 30_000 });
     },
   },
-  { name: "saju-reading", path: "/chapter/screendd04", setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screendd04")]) },
+  { name: "saju-reading", path: "/chapter/screendd04", setup: async (page) => { await memberOnThisDevice(page); await setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screendd04")]); } },
   { name: "keyword-2027", path: "/2027-keyword" },
   { name: "keyword-2027-result", path: "/2027-keyword/jeong-mi" },
   { name: "today", path: "/today", setup: (page) => ownAddress(page) },
@@ -357,7 +357,7 @@ const SCREENS: Screen[] = [
   {
     name: "story-records",
     path: "/story",
-    setup: async (page) => setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screenee05", 5), await tarotChapter(page, "screenff06", 1)]),
+    setup: async (page) => { await memberOnThisDevice(page); await setStorage(page, "localStorage", "starlog.chapters", [await sajuChapter(page, "screenee05", 5), await tarotChapter(page, "screenff06", 1)]); },
   },
   { name: "me", path: "/me" },
   {
