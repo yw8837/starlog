@@ -6,6 +6,7 @@ import { Cat } from "@/components/characters/Cat";
 import { Rabbit } from "@/components/characters/Rabbit";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { SessionRetry } from "@/components/reading/KeptPanel";
 import { LoginFirst } from "@/components/reading/LoginFirst";
 import { ChartPanel } from "@/components/saju/ChartPanel";
 import { InputLine } from "@/components/saju/InputLine";
@@ -23,7 +24,7 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
 import { Button } from "@/components/ui/Button";
-import { keptForMember, loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
+import { keptForMember, keptUnknown, loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, sajuTopicsMode } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { standardProduct } from "@/lib/pay/catalog";
@@ -107,14 +108,13 @@ export function SajuChartView({
   // (null) the server decides.
   const accountKnown = account !== undefined;
   const guest = Boolean(account && !account.user);
-  const member = Boolean(account?.user);
 
   // The free reading, written once per birth data and 운 (kept on this device, spec §9.3). Switching
   // the 운 re-runs this; the previous request is cancelled first (the effect's cleanup).
   const { run: runTeaser, cancel: cancelTeaser, reset: resetTeaser } = teaserGen;
   useEffect(() => {
     if (!accountKnown || guest) return;
-    if (!teaserKey || !own || !fields || (member && kept)) return;
+    if (!teaserKey || !own || !fields || kept) return;
     void runTeaser("/api/saju/teaser", sajuBody(form, fields), progressPlan("saju-teaser"), isSajuTeaser).then((res) => {
       if (!res?.ok) return;
       saveTeaser("saju", teaserKey, res.data);
@@ -122,7 +122,7 @@ export function SajuChartView({
       if (res.commit) void commitQuota(res.commit);
     });
     return cancelTeaser;
-  }, [teaserKey, attempt, runTeaser, cancelTeaser, accountKnown, guest, member]); // form, the 운 and the chips are the key
+  }, [teaserKey, attempt, runTeaser, cancelTeaser, accountKnown, guest, Boolean(kept)]); // form, the 운 and the chips are the key
 
   /**
    * 다른 운도 볼 수 있어요: the 운 on screen changes and its teaser shows in place (the device's copy first).
@@ -413,6 +413,13 @@ export function SajuChartView({
           action="로그인하고 맛보기 보기"
           note={loginNote}
         />
+      </>
+    );
+  } else if (own && !teaser && keptUnknown(account, kept)) {
+    content = (
+      <>
+        {topicRow}
+        <SessionRetry />
       </>
     );
   } else if (own && teaserUsedUp) {

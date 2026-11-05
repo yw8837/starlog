@@ -642,8 +642,29 @@ describe("SajuChartView with a 맛보기 kept on this device (owner 2026-11-05)"
     await screen.findByText("고요한 물");
   });
 
-  it("when the session could not be checked: nothing kept shows, the server decides", async () => {
+  it("when the session could not be checked with something kept: nothing shows, no 맛보기 is spent, 다시 시도 asks again", async () => {
     seed();
+    const kept = localStorage.getItem(SAJU_TEASERS_KEY);
+    let me: () => Response = () => Response.json({}, { status: 500 });
+    const teaser = vi.fn(() => Response.json({ title: "새 글", summary: "s", lockedToc: ["성향"] }));
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return me();
+      if (url === "/api/saju/teaser") return teaser();
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<SajuChartView />);
+    const retry = await screen.findByRole("button", { name: "다시 시도" });
+    expect(document.body.textContent).not.toContain("고요한 물");
+    expect(teaser).not.toHaveBeenCalled();
+    expect(localStorage.getItem(SAJU_TEASERS_KEY)).toBe(kept);
+    me = () => Response.json(meBody());
+    fireEvent.click(retry);
+    await screen.findByText("고요한 물");
+    expect(teaser).not.toHaveBeenCalled();
+  });
+
+  it("when the session could not be checked with nothing kept: the server decides, as before", async () => {
+    saveSajuProfile(BIRTH);
     vi.stubGlobal("fetch", vi.fn(async (url: string) => {
       if (url === "/api/me") return Response.json({}, { status: 500 });
       if (url === "/api/saju/teaser") return Response.json({ code: "LOGIN_REQUIRED", reason: "teaser", message: "x" }, { status: 401 });
@@ -651,6 +672,5 @@ describe("SajuChartView with a 맛보기 kept on this device (owner 2026-11-05)"
     }));
     render(<SajuChartView />);
     await screen.findByRole("region", { name: "맛보기 풀이는 로그인하고 볼 수 있어요" });
-    expect(document.body.textContent).not.toContain("고요한 물");
   });
 });

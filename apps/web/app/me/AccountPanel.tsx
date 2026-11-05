@@ -13,6 +13,8 @@ import { describeApiError } from "@/lib/reading/errors";
 import { deleteAccountReadings, forgetAccountOnDevice } from "@/lib/storage/sync";
 import { OrderHistory } from "./OrderHistory";
 import s from "./account.module.css";
+import { reloadPage } from "@/lib/reloadPage";
+import { keepLogoutNotice } from "./meStatus";
 
 const lastDay = (iso: string) => {
   const kst = new Date(Date.parse(iso) + 9 * 60 * 60 * 1000);
@@ -195,8 +197,10 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
           onClick={() =>
             void logout().then((ok) => {
               if (!ok) return setNotice("로그아웃하지 못했어요. 다시 시도해 주세요.");
-              // On a shared phone the next person must not find the account's readings here.
-              setNotice(forgetAccountOnDevice() > 0 ? "로그아웃했어요. 이 기기에 받아 둔 계정 풀이는 지웠어요." : "로그아웃했어요");
+              // On a shared phone the next person must not find the account's readings here, nor a page the router
+              // cached while logged in on the way back (owner 2026-11-05): the whole page loads again.
+              keepLogoutNotice(forgetAccountOnDevice() > 0 ? "로그아웃했어요. 이 기기에 받아 둔 계정 풀이는 지웠어요." : "로그아웃했어요");
+              reloadPage();
             })
           }
         >

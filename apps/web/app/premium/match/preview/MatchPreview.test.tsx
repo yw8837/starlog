@@ -242,3 +242,30 @@ describe("MatchPreview with a preview kept in this tab (owner 2026-11-05)", () =
     await screen.findByText("두 사람은 속도가 달라도 같은 쪽을 보고 있어요.");
   });
 });
+
+describe("MatchPreview when the session could not be checked and a preview is kept (code review 2026-11-05)", () => {
+  it("shows no preview, spends none, and 다시 시도 asks again", async () => {
+    stub();
+    render(<MatchPreview instant />);
+    await screen.findByText("두 사람은 속도가 달라도 같은 쪽을 보고 있어요.");
+    cleanup();
+    resetAccountForTests();
+    resetPremiumStatusForTests();
+    let me: () => Response = () => new Response("", { status: 503 });
+    const asked = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return me();
+      if (url === "/api/premium/match/teaser") asked();
+      if (url === "/api/premium/status") return Response.json({ products: [] });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<MatchPreview instant />);
+    const retry = await screen.findByRole("button", { name: "다시 시도" });
+    expect(document.body.textContent).not.toContain("두 사람은 속도가 달라도 같은 쪽을 보고 있어요.");
+    expect(asked).not.toHaveBeenCalled();
+    me = () => Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } });
+    fireEvent.click(retry);
+    await screen.findByText("두 사람은 속도가 달라도 같은 쪽을 보고 있어요.");
+    expect(asked).not.toHaveBeenCalled();
+  });
+});

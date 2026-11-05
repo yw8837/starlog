@@ -1,14 +1,19 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { resetAccountForTests } from "@/lib/account/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resetAccountForTests, setAccountForTests } from "@/lib/account/client";
+import { asMember } from "@/lib/testing/account";
 import { SAJU_PROFILE_KEY } from "@/lib/sajuFlow";
 import { JoinFlow } from "./JoinFlow";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
+// A result the page state holds shows only while the session is good (owner 2026-11-05); the first screen's own needs none.
+beforeEach(() => asMember());
+
 afterEach(() => {
   cleanup();
+  resetAccountForTests();
   window.localStorage.clear();
   window.sessionStorage.clear();
   window.history.replaceState(null, "", "/");
@@ -269,19 +274,59 @@ describe("JoinFlow", () => {
     expect(screen.getByRole("textbox", { name: "닉네임" })).toBeTruthy();
   });
 
-  it("says on the first result that seeing it again later needs a login, only to a visitor (owner 2026-11-05)", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ payments: true, login: true, owner: false, user: null }))));
-    resetAccountForTests();
-    render(<JoinFlow state={{ status: "joined", kind: "joined", code: "K7M4QX", result: RESULT }} />);
+  it("says on the first result that seeing it again later needs a login, only to a visitor; the result itself needs none (owner 2026-11-05)", async () => {
+    const VISITOR = { payments: true, login: true, owner: false, user: null };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, ...RESULT }))));
+    setAccountForTests(VISITOR);
+    keepDraft("#message");
+    render(<JoinFlow state={OPEN} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "별 되기" }));
+    });
+    await screen.findByRole("heading", { level: 1, name: "양자리에 별이 됐어요" });
+    expect(screen.getByText("87")).toBeTruthy();
     await screen.findByText(/나중에 이 결과를 다시 보려면/);
     expect(screen.getByRole("link", { name: "로그인" }).getAttribute("href")).toBe("/login?next=%2Fb%2FK7M4QX");
     cleanup();
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ payments: true, login: true, owner: false, user: { nickname: "하늘", unused: [] } }))));
-    resetAccountForTests();
-    render(<JoinFlow state={{ status: "joined", kind: "joined", code: "K7M4QX", result: RESULT }} />);
-    await act(async () => {});
+    asMember();
+    keepDraft("#message");
+    render(<JoinFlow state={OPEN} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "별 되기" }));
+    });
+    await screen.findByRole("heading", { level: 1, name: "양자리에 별이 됐어요" });
     expect(screen.queryByText(/나중에 이 결과를 다시 보려면/)).toBeNull();
-    resetAccountForTests();
+  });
+
+  it("a result the page state still holds is not shown to a visitor: a cached page after a logout gets the login, not the score (owner 2026-11-05)", () => {
+    setAccountForTests({ payments: true, login: true, owner: false, user: null });
+    render(<JoinFlow state={{ status: "joined", kind: "joined", code: "K7M4QX", result: RESULT }} />);
+    expect(screen.getByRole("heading", { level: 1, name: "이미 별이 되어 있어요" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "로그인하고 결과 보기" }).getAttribute("href")).toBe("/login?next=%2Fb%2FK7M4QX");
+    expect(screen.queryByText("87")).toBeNull();
+    expect(screen.queryByRole("meter")).toBeNull();
+    expect(document.body.textContent).not.toContain(RESULT.bondLine);
+    cleanup();
+    render(<JoinFlow state={{ ...OPEN, sign: "taurus", filled: 0, slots: 5, earlier: { ...RESULT, completed: true } }} />);
+    expect(screen.getByRole("link", { name: "로그인하고 결과 보기" })).toBeTruthy();
+    expect(screen.queryByText("결과 보기")).toBeNull();
+    expect(screen.getByRole("textbox", { name: "닉네임" })).toBeTruthy();
+    cleanup();
+    render(<JoinFlow state={{ status: "choosing", kind: "choosing", code: "K7M4QX", ownerNickname: "용우", earlier: RESULT, earlierHidden: false }} />);
+    expect(screen.getByRole("link", { name: "로그인하고 결과 보기" })).toBeTruthy();
+    expect(document.body.textContent).not.toContain(RESULT.bondLine);
+  });
+
+  it("shows no result until the session is known, and 다시 시도 when it cannot be checked", async () => {
+    setAccountForTests(undefined);
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    render(<JoinFlow state={{ status: "joined", kind: "joined", code: "K7M4QX", result: RESULT }} />);
+    expect(screen.queryByText("87")).toBeNull();
+    cleanup();
+    setAccountForTests(null);
+    render(<JoinFlow state={{ status: "joined", kind: "joined", code: "K7M4QX", result: RESULT }} />);
+    expect(screen.getByRole("button", { name: "다시 시도" })).toBeTruthy();
+    expect(screen.queryByText("87")).toBeNull();
   });
 
   it("notes an earlier star above the form for the next sign", () => {

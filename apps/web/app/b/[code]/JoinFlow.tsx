@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent, type RefObject } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import { getCard, getConstellation, type SignId } from "@starlog/core";
 import { BIRTH_MISSING, BirthFields, EMPTY_BIRTH, birthBody, savedBirth, type BirthValue } from "@/components/bonds/BirthFields";
@@ -13,7 +13,7 @@ import { Cat } from "@/components/characters/Cat";
 import { CardFan, fanIndexes } from "@/components/tarot/CardFan";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
-import { LoginFirst } from "@/components/reading/LoginFirst";
+import { KeptPanel, useKeptGate } from "@/components/reading/KeptPanel";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref, useAccount } from "@/lib/account/client";
@@ -77,19 +77,14 @@ function setStep(hash: StepHash, mode: "push" | "replace") {
 export function JoinFlow({ state }: { state: InviteState }) {
   if (state.status === "open") return <OpenInvite invite={state} />;
   if (state.status === "self") return <SelfInvite invite={state} />;
-  if (state.status === "joined") return <Result result={state.result} code={state.code} again />;
-  if (state.status === "hidden") {
+  if (state.status === "joined") {
     return (
-      <section className={s.closed}>
-        <Cat outfit="tarot" expression="happy" size={120} reactOnTap={false} />
-        <h1 className={s.title}>이미 별이 되어 있어요</h1>
-        <SeeAgainLogin code={state.code} />
-        <Button href="/bonds" variant="secondary" block>
-          나도 내 별자리 만들기
-        </Button>
-      </section>
+      <StillMember code={state.code} asVisitor={<HiddenStar code={state.code} />}>
+        <Result result={state.result} code={state.code} again />
+      </StillMember>
     );
   }
+  if (state.status === "hidden") return <HiddenStar code={state.code} />;
   const between = state.status === "choosing" || state.status === "alldone" ? state : null;
   const earlier = between?.earlier ?? null;
   return (
@@ -108,7 +103,7 @@ export function JoinFlow({ state }: { state: InviteState }) {
       </h1>
       {/* Invites are links only (owner 2026-10-28): what to do, nothing to type. */}
       {state.status === "bad" ? <p className={b.helper}>링크가 바뀌었거나 없어졌어요. 보낸 친구에게 초대 링크를 다시 받아 주세요.</p> : null}
-      {earlier ? <EarlierStar earlier={earlier} /> : null}
+      {earlier ? <EarlierOrLogin code={between!.code} earlier={earlier} /> : null}
       {between?.earlierHidden ? <SeeAgainLogin code={between.code} /> : null}
       <Button href="/bonds" variant="secondary" block>
         나도 내 별자리 만들기
@@ -118,16 +113,47 @@ export function JoinFlow({ state }: { state: InviteState }) {
 }
 
 /** A star this device has, for a device with no session (owner 2026-11-05): nothing of it, and the login that shows it again here. */
-function SeeAgainLogin({ code }: { code: string }) {
+function SeeAgainLogin({ code, gate = "visitor" }: { code: string; gate?: "visitor" | "unknown" }) {
   return (
-    <LoginFirst
+    <KeptPanel
+      gate={gate}
       title="결과는 로그인하고 다시 볼 수 있어요"
       body="이 기기로 참여한 별은 그대로 있어요. 카카오나 Google로 로그인하면 이 기기에서 다시 보여 드려요."
-      href={loginHref(`/b/${code}`)}
+      returnTo={`/b/${code}`}
       action="로그인하고 결과 보기"
     />
   );
 }
+
+function HiddenStar({ code }: { code: string }) {
+  return (
+    <section className={s.closed}>
+      <Cat outfit="tarot" expression="happy" size={120} reactOnTap={false} />
+      <h1 className={s.title}>이미 별이 되어 있어요</h1>
+      <SeeAgainLogin code={code} />
+      <Button href="/bonds" variant="secondary" block>
+        나도 내 별자리 만들기
+      </Button>
+    </section>
+  );
+}
+
+/**
+ * A star in the page state came with a session, but the router or the browser may show that page again after it ended (a
+ * logout, then back; owner 2026-11-05): it shows only while the session is still good, and not before that is known.
+ */
+function StillMember({ code, asVisitor, children }: { code: string; asVisitor: ReactNode; children: ReactNode }) {
+  const gate = useKeptGate();
+  if (gate === "member") return children;
+  if (gate === "pending") return null;
+  return gate === "visitor" ? asVisitor : <SeeAgainLogin code={code} gate="unknown" />;
+}
+
+const EarlierOrLogin = ({ code, earlier }: { code: string; earlier: JoinResult }) => (
+  <StillMember code={code} asVisitor={<SeeAgainLogin code={code} />}>
+    <EarlierStar earlier={earlier} />
+  </StillMember>
+);
 
 /**
  * The owner opened their own link (Q-11, spec §11: no joining one's own): says it is their invite link and sends them to
@@ -338,7 +364,7 @@ function OpenInvite({ invite }: { invite: Open }) {
         </p>
       </header>
 
-      {phase === "form" && invite.earlier ? <EarlierStar earlier={invite.earlier} /> : null}
+      {phase === "form" && invite.earlier ? <EarlierOrLogin code={invite.code} earlier={invite.earlier} /> : null}
       {phase === "form" && invite.earlierHidden ? <SeeAgainLogin code={invite.code} /> : null}
       {phase === "form" ? (
         <form ref={formRef} className={`${b.panel} ${b.form}`} onSubmit={next} noValidate>

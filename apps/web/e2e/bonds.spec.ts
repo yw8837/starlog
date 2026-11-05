@@ -658,6 +658,30 @@ test.describe("별자리 인연 · friend", { tag: "@login" }, () => {
     await expect(joined).not.toContainText("늘 고마워");
   });
 
+  test("a logged-in friend's result does not come back after logging out and going back in the same tab (owner 2026-11-05)", async ({ page, baseURL }) => {
+    const { code } = await apiOwner(baseURL!, "용우", "aries");
+    await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
+    expect((await page.request.post("/api/bonds/join", { data: { code, nickname: FRIENDS[1]!.nickname, birth: FRIENDS[1]!.birth, pick: 0, scoreNotice: true } })).status()).toBe(200);
+    await logInPage(page, newUser(), `/b/${code}`);
+    const meter = page.getByRole("meter", { name: "인연 점수" });
+    await expect(meter).toBeVisible({ timeout: 120_000 });
+    // In this tab, with no document load: /b/<code> → /bonds → /me, the 로그아웃 there, and back twice.
+    await page.getByRole("link", { name: "나도 내 별자리 만들기" }).click();
+    await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
+    await page.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: "내 정보" }).click();
+    await expect(page).toHaveURL(/\/me$/, { timeout: 120_000 });
+    await page.getByRole("button", { name: "로그아웃" }).click();
+    // Said only by the page loaded again after the logout (app/me/meStatus.ts): the button goes before that load is done, and a back meanwhile would race it.
+    await expect(page.getByText(/^로그아웃했어요/)).toBeVisible({ timeout: 60_000 });
+    await page.goBack({ timeout: 120_000 });
+    await expect(page).toHaveURL(/\/bonds$/, { timeout: 120_000 });
+    await page.goBack({ timeout: 120_000 });
+    await expect(page).toHaveURL(new RegExp(`/b/${code}\\b`), { timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "이미 별이 되어 있어요" })).toBeVisible({ timeout: 60_000 });
+    await expect(meter).toHaveCount(0);
+    await expect(page.locator("main")).not.toContainText("인연 카드");
+  });
+
   test("a revoked code and an unknown code get the same answer", async ({ page, baseURL }) => {
     const { owner, code } = await apiOwner(baseURL!, "용우", "aries");
     expect((await owner.post("/api/bonds/invite", { data: {} })).status()).toBe(200);

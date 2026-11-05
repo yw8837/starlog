@@ -89,10 +89,17 @@ export function parseAccount(value: unknown): AccountState | null {
 let snapshot: AccountState | null | undefined;
 let inflight: Promise<AccountState | null> | null = null;
 const listeners = new Set<() => void>();
+/** When /api/me was last asked, for the re-check when a page comes back. */
+let askedAt = 0;
+const RECHECK_MS = 30_000;
 
-/** Asks /api/me again (after login, a payment, an opened reading); concurrent callers share one request. */
-export function refreshAccount(fetchImpl: typeof fetch = fetch): Promise<AccountState | null> {
+/**
+ * Asks /api/me again (after login, a payment, an opened reading); concurrent callers share one request. With `keep`, a failed
+ * answer changes nothing: only a real answer does.
+ */
+export function refreshAccount(fetchImpl: typeof fetch = fetch, { keep = false }: { keep?: boolean } = {}): Promise<AccountState | null> {
   if (inflight) return inflight;
+  askedAt = Date.now();
   inflight = (async () => {
     let next: AccountState | null = null;
     try {
@@ -101,7 +108,7 @@ export function refreshAccount(fetchImpl: typeof fetch = fetch): Promise<Account
     } catch {
       next = null;
     }
-    snapshot = next;
+    if (next !== null || !keep) snapshot = next;
     inflight = null;
     listeners.forEach((listener) => listener());
     return next;
@@ -114,9 +121,29 @@ const subscribe = (listener: () => void) => {
   return () => listeners.delete(listener);
 };
 
+/**
+ * The account may have changed while this page was away (a logout in another tab, a session that ended), and it asks only once
+ * otherwise. A tab shown again asks, at most once in RECHECK_MS; a page restored from the back/forward cache asks at once,
+ * because it may be showing what only a session may see. Neither blanks the screen on a flaky network (`keep`).
+ */
+const onTabShown = () => {
+  if (document.visibilityState === "visible" && snapshot !== undefined && Date.now() - askedAt >= RECHECK_MS) void refreshAccount(undefined, { keep: true });
+};
+const onPageShown = (event: PageTransitionEvent) => {
+  if (event.persisted && snapshot !== undefined) void refreshAccount(undefined, { keep: true });
+};
+let watching = false;
+function watchForReturn() {
+  if (watching) return;
+  watching = true;
+  document.addEventListener("visibilitychange", onTabShown);
+  window.addEventListener("pageshow", onPageShown);
+}
+
 export function useAccount(): AccountState | null | undefined {
   const value = useSyncExternalStore(subscribe, () => snapshot, () => undefined);
   useEffect(() => {
+    watchForReturn();
     if (snapshot === undefined) void refreshAccount();
   }, []);
   return value;
@@ -126,10 +153,12 @@ export function useAccount(): AccountState | null | undefined {
 export const keptForMember = <T>(account: AccountState | null | undefined, kept: T | null): T | null => (account?.user ? kept : null);
 
 /**
- * Whether a screen asks the server for its 맛보기: nothing kept, or kept but not this viewer's to see, once that is known
- * (the server answers the login, or the care screen first; when /api/me failed the server decides).
+ * Whether a screen asks the server for its 맛보기: nothing kept, or kept and this viewer is a known visitor (the server answers
+ * the login, or the care screen first). When /api/me failed, what is kept neither shows nor is asked for again: a logged-in
+ * reader would spend one of the day's 맛보기 on it. keptUnknown says so: the screen offers 다시 시도 (SessionRetry).
  */
-export const asksServer = (account: AccountState | null | undefined, kept: unknown): boolean => !kept || (account !== undefined && !account?.user);
+export const asksServer = (account: AccountState | null | undefined, kept: unknown): boolean => !kept || Boolean(account && !account.user);
+export const keptUnknown = (account: AccountState | null | undefined, kept: unknown): boolean => account === null && Boolean(kept);
 
 export function loginHref(returnTo: string): string {
   return `/login?next=${encodeURIComponent(returnTo)}`;
@@ -157,4 +186,10 @@ export function resetAccountForTests(): void {
   snapshot = undefined;
   inflight = null;
   listeners.clear();
+  askedAt = 0;
+  if (watching && typeof document !== "undefined") {
+    document.removeEventListener("visibilitychange", onTabShown);
+    window.removeEventListener("pageshow", onPageShown);
+  }
+  watching = false;
 }

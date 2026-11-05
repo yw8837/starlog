@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, onTestFinished, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests } from "@/lib/account/client";
 import { asMember } from "@/lib/testing/account";
 import { SITE } from "@/lib/config";
 import { clearBetaUsage, markFreeUsedUp } from "@/lib/storage/betaUsage";
 import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
+import { keepLogoutNotice } from "./meStatus";
 import { MeView } from "./MeView";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -203,5 +204,17 @@ describe("MeView after the account was deleted", () => {
     render(<MeView status={null} />);
     expect(await screen.findByText("이 계정으로 아직 받을 수 있어요")).toBeTruthy();
     expect(screen.getByRole("link", { name: "타로 보러 가기" })).toBeTruthy();
+  });
+});
+
+describe("MeView after a logout (owner 2026-11-05)", () => {
+  it("says what the logout did, once: the whole page loaded again in between", async () => {
+    keepLogoutNotice("로그아웃했어요");
+    render(<MeView status={null} />);
+    expect(await screen.findByText("로그아웃했어요")).toBeTruthy();
+    cleanup();
+    render(<MeView status={null} />);
+    await act(async () => {});
+    expect(screen.queryByText("로그아웃했어요")).toBeNull();
   });
 });

@@ -2,8 +2,12 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, onTestFinished, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { resetAccountForTests, type AccountState } from "@/lib/account/client";
+import { reloadPage } from "@/lib/reloadPage";
 import { clearChapters, listChapters, saveChapter } from "@/lib/storage/chapters";
 import { AccountPanel } from "./AccountPanel";
+import { takeLogoutNotice } from "./meStatus";
+
+vi.mock("@/lib/reloadPage", () => ({ reloadPage: vi.fn() }));
 
 const reading = { verdict: "결론", cards: [], action: { heading: "오늘", body: "해 볼 일" } };
 const card = { position: "지금의 나", cardId: "major-00", orientation: "upright" as const };
@@ -220,7 +224,10 @@ describe("AccountPanel", () => {
     sessionStorage.setItem("starlog.account-synced", "1");
     render(<AccountPanel account={account} />);
     fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
-    expect(await screen.findByText("로그아웃했어요. 이 기기에 받아 둔 계정 풀이는 지웠어요.")).toBeTruthy();
+    // The whole page loads again (the router's cached pages go with it, owner 2026-11-05); the line is shown after it.
+    await waitFor(() => expect(reloadPage).toHaveBeenCalledTimes(1));
+    expect(takeLogoutNotice()).toBe("로그아웃했어요. 이 기기에 받아 둔 계정 풀이는 지웠어요.");
+    expect(takeLogoutNotice()).toBeNull();
     expect(requests.some((r) => r.url === "/api/auth/logout" && r.method === "POST")).toBe(true);
     expect(listChapters().map((chapter) => (chapter.kind === "tarot" ? chapter.question : chapter.kind === "saju" ? chapter.title : chapter.kind))).toEqual(["기기 질문"]);
     expect(sessionStorage.getItem("starlog.account-synced")).toBeNull();

@@ -7,6 +7,7 @@ import { PremiumProgress } from "@/components/premium/PremiumProgress";
 import { PremiumUnlock } from "@/components/premium/PremiumUnlock";
 import { SpreadList } from "@/components/premium/SpreadList";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { SessionRetry } from "@/components/reading/KeptPanel";
 import { LoginFirst } from "@/components/reading/LoginFirst";
 import { SpreadChip, useFlowSpread } from "@/components/tarot/DeepSpreadGate";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
@@ -16,7 +17,7 @@ import { ReadingLayout } from "@/components/tarot/ReadingLayout";
 import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { asksServer, keptForMember, loginHref, useAccount } from "@/lib/account/client";
+import { asksServer, keptForMember, keptUnknown, loginHref, useAccount } from "@/lib/account/client";
 import { deckPrefs } from "@/lib/deck";
 import { DEEP_RESULT_PATH, deepResultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
 import { DEEP_BUILDER_HREF } from "@/lib/freshStart";
@@ -205,6 +206,8 @@ export function DeepResult({ instant, autoUnlock = false }: { instant: boolean; 
               />
               {unlock}
             </>
+          ) : keptUnknown(account, kept) ? (
+            <SessionRetry />
           ) : holds && teaserError ? (
             <>
               {unlock}

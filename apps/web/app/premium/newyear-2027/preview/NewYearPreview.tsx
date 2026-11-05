@@ -6,13 +6,14 @@ import { PremiumProgress } from "@/components/premium/PremiumProgress";
 import { PremiumUnlock } from "@/components/premium/PremiumUnlock";
 import v from "@/components/premium/preview.module.css";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { SessionRetry } from "@/components/reading/KeptPanel";
 import { LoginFirst } from "@/components/reading/LoginFirst";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
 import { Paper } from "@/components/tarot/Paper";
 import { Stepper } from "@/components/tarot/Stepper";
 import s from "@/app/tarot/result/FreeResult.module.css";
-import { asksServer, keptForMember, loginHref, useAccount } from "@/lib/account/client";
+import { asksServer, keptForMember, keptUnknown, loginHref, useAccount } from "@/lib/account/client";
 import { approxCharsText } from "@/lib/pricing";
 import { premiumApiPath } from "@/lib/premium/client";
 import { opensAtText } from "@/lib/premium/offer";
@@ -183,6 +184,8 @@ export function NewYearPreview({ autoUnlock = false }: { autoUnlock?: boolean })
             />
             {unlock}
           </>
+        ) : keptUnknown(account, kept) ? (
+          <SessionRetry />
         ) : holds && teaserError ? (
           <>
             <header className={s.head}>

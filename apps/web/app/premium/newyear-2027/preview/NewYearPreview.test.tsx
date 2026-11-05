@@ -169,3 +169,30 @@ describe("NewYearPreview with a preview kept in this tab (owner 2026-11-05)", ()
     await screen.findByText("한 걸음씩 다지면 연말에 손에 남는 게 많은 해예요.");
   });
 });
+
+describe("NewYearPreview when the session could not be checked and a preview is kept (code review 2026-11-05)", () => {
+  it("shows no preview, spends none, and 다시 시도 asks again", async () => {
+    stub(() => Response.json({ preview: PREVIEW }));
+    render(<NewYearPreview />);
+    await screen.findByText("한 걸음씩 다지면 연말에 손에 남는 게 많은 해예요.");
+    cleanup();
+    resetAccountForTests();
+    resetPremiumStatusForTests();
+    let me: () => Response = () => new Response("", { status: 503 });
+    const asked = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return me();
+      if (url === "/api/premium/newyear-2027/teaser") asked();
+      if (url === "/api/premium/status") return Response.json({ products: [] });
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<NewYearPreview />);
+    const retry = await screen.findByRole("button", { name: "다시 시도" });
+    expect(document.body.textContent).not.toContain("한 걸음씩 다지면 연말에 손에 남는 게 많은 해예요.");
+    expect(asked).not.toHaveBeenCalled();
+    me = () => Response.json({ payments: true, login: true, owner: false, user: { nickname: "별", gift: null, unused: [], opening: [] } });
+    fireEvent.click(retry);
+    await screen.findByText("한 걸음씩 다지면 연말에 손에 남는 게 많은 해예요.");
+    expect(asked).not.toHaveBeenCalled();
+  });
+});

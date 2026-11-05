@@ -421,6 +421,7 @@ describe("FreeResult and 오픈 기념 무료 (the free first tarot reading)", (
 
   it("follows the server to the login when it answers LOGIN_REQUIRED (the account could not be read here)", async () => {
     seed();
+    sessionStorage.removeItem("starlog.teaser.tarot"); // nothing kept: with /api/me failing, the server is asked
     stub({ me: [() => new Response("", { status: 503 })], reading: () => Response.json({ code: "LOGIN_REQUIRED", reason: "opening", message: "x" }, { status: 401 }) });
     render(<FreeResult instant />);
     fireEvent.click(await screen.findByRole("button", { name: /^전체 풀이 보기\s*·\s*오픈 기념 무료$/ }));
@@ -791,6 +792,27 @@ describe("FreeResult with a 맛보기 kept on this device (owner 2026-11-05)", (
       return Response.json({ readings: [], next: null });
     }));
     render(<FreeResult instant />);
+    await screen.findByText("첫 카드 풀이");
+    expect(asked).not.toHaveBeenCalled();
+  });
+});
+
+describe("FreeResult when the session could not be checked and a 맛보기 is kept (code review 2026-11-05)", () => {
+  it("shows no 맛보기, spends none, and 다시 시도 asks again", async () => {
+    seed();
+    let me: () => Response = () => new Response("", { status: 503 });
+    const asked = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "/api/me") return me();
+      if (url === "/api/tarot/teaser") asked();
+      return Response.json({ readings: [], next: null });
+    }));
+    render(<FreeResult instant />);
+    const retry = await screen.findByRole("button", { name: "다시 시도" });
+    expect(document.body.textContent).not.toContain("첫 카드 풀이");
+    expect(asked).not.toHaveBeenCalled();
+    me = () => Response.json(meBody());
+    fireEvent.click(retry);
     await screen.findByText("첫 카드 풀이");
     expect(asked).not.toHaveBeenCalled();
   });

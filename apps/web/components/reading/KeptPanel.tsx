@@ -33,11 +33,14 @@ type KeptPanelProps = {
   returnTo: string;
 };
 
+/** The session could not be checked: nothing kept shows, and this asks again. */
+export function SessionRetry() {
+  return <ErrorPanel view={{ title: "로그인 상태를 확인하지 못했어요", body: "연결을 확인하고 다시 시도해 주세요.", action: "retry" }} onRetry={() => void refreshAccount()} />;
+}
+
 /** In place of what is kept: the login for a visitor, 다시 시도 when the session could not be checked. */
 export function KeptPanel({ gate, title, body, action, returnTo }: KeptPanelProps) {
   const flag = useSyncExternalStore(noSubscribe, loginFlag, () => null);
-  if (gate === "unknown") {
-    return <ErrorPanel view={{ title: "로그인 상태를 확인하지 못했어요", body: "연결을 확인하고 다시 시도해 주세요.", action: "retry" }} onRetry={() => void refreshAccount()} />;
-  }
+  if (gate === "unknown") return <SessionRetry />;
   return <LoginFirst title={title} body={body} href={loginHref(returnTo)} action={action} note={loginMessage(flag)} />;
 }

@@ -25,6 +25,7 @@ import { DeckSettings } from "./DeckSettings";
 import { PremiumMenuRow } from "./PremiumMenuRow";
 import s from "./MeView.module.css";
 import a from "./account.module.css";
+import { takeLogoutNotice } from "./meStatus";
 
 type MeViewProps = {
   /** The line for ?account=, ?delete= or ?login= (meStatus.ts); null when there is none. */
@@ -44,6 +45,10 @@ type Sheet = "erase" | null;
 export function MeView({ status, accountDeleted = false }: MeViewProps) {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [notice, setNotice] = useState(status ?? "");
+  useEffect(() => {
+    const said = takeLogoutNotice();
+    if (said) setNotice(said);
+  }, []);
   const { profile } = useSajuProfile();
   const chapters = useChapters();
   const remaining = useRemainingFree();

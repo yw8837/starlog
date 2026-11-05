@@ -4,6 +4,7 @@ import { deckPrefs } from "@/lib/deck";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ErrorPanel } from "@/components/reading/ErrorPanel";
+import { SessionRetry } from "@/components/reading/KeptPanel";
 import { LoginFirst } from "@/components/reading/LoginFirst";
 import { GeneratingState } from "@/components/tarot/GeneratingState";
 import { LockedToc } from "@/components/tarot/LockedToc";
@@ -13,7 +14,7 @@ import { SituationSummary } from "@/components/tarot/SituationSummary";
 import { SpreadRow, faceUpCard } from "@/components/tarot/SpreadRow";
 import { Stepper } from "@/components/tarot/Stepper";
 import { UnlockSheet } from "@/components/tarot/UnlockSheet";
-import { asksServer, keptForMember, loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
+import { asksServer, keptForMember, keptUnknown, loginHref, loginKind, loginMessage, refreshAccount, useAccount } from "@/lib/account/client";
 import { SITE, openingFreeOn } from "@/lib/config";
 import { approxCharsText } from "@/lib/pricing";
 import { backupFlowForLogin, dropFlowBackup, newResumeNonce, restoreFlowAfterLogin, resultGate, summarizeFlow, tarotInput, useFlowState, withFlags } from "@/lib/flowState";
@@ -424,6 +425,8 @@ export function FreeResult({ instant, autoUnlock = null, loginFlag = null, resum
               action="로그인하고 맛보기 보기"
               note={loginNote}
             />
+          ) : keptUnknown(account, kept) ? (
+            <SessionRetry />
           ) : teaserError ? (
             <ErrorPanel view={teaserError} onRetry={() => setAttempt((n) => n + 1)} redrawHref={withFlags("/tarot/draw", { instant })} editHref="/tarot/new" />
           ) : (
