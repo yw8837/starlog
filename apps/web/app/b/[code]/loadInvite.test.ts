@@ -3,8 +3,11 @@ import { POST as choosePost } from "@/app/api/bonds/choose/route";
 import { POST as joinPost } from "@/app/api/bonds/join/route";
 import { POST as ownerPost } from "@/app/api/bonds/owner/route";
 import { resetDailyStore } from "@/lib/api/dailyStore";
-import { setTestDb } from "@/lib/db";
+import { ownerCookie } from "@/lib/bonds/identity";
+import { chooseSign, inviteOf, saveOwner } from "@/lib/bonds/service";
+import { bondsRepo, setTestDb } from "@/lib/db";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
+import { randomId, signingSecret } from "@/lib/security/sign";
 import { signIn } from "@/lib/testing/bondsLogin";
 import { loadInvite } from "./loadInvite";
 
@@ -69,6 +72,18 @@ describe("/b/<code> for a friend who already joined (owner 2026-11-05)", () => {
     await signIn(friend);
     request.jar = friend;
     expect(await loadInvite(code)).toMatchObject({ status: "joined", result: { nickname: "하늘친구", score: seen.score, starId: seen.starId, bondLine: seen.bondLine } });
+  });
+
+  it("on its own link, an owner with no account and no session is told it is theirs: no form to join with, no star, no score", async () => {
+    const id = randomId();
+    await saveOwner(bondsRepo(), Date.now(), id, { nickname: "예전주인", birth: BIRTH as never });
+    await chooseSign(bondsRepo(), Date.now(), id, "leo");
+    const { code } = await inviteOf(bondsRepo(), Date.now(), id);
+    const [pair = ""] = (await ownerCookie(id, signingSecret()!)).split(";");
+    request.jar = new Map([[pair.slice(0, pair.indexOf("=")), pair.slice(pair.indexOf("=") + 1)]]);
+    const state = await loadInvite(code);
+    expect(state).toMatchObject({ status: "self", sign: "leo", filled: 0 });
+    expect(JSON.stringify(state)).not.toMatch(/"score"|"stars"|"parts"/);
   });
 
   it("gives a session on another device (no friend cookie) the form, not the star: stars are kept per device, not per account", async () => {

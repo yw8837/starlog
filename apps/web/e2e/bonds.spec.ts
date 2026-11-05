@@ -352,17 +352,44 @@ test.describe("별자리 인연 · account (owner 2026-10-27: 계정 위주)", {
     await phone.context().close();
   });
 
-  test("an owner made on a device before accounts works logged out; logged in, 연결하기 links it and the account's other browser shows it", async ({ page, baseURL }, info) => {
+  test("an owner made on a device before accounts shows nothing without a session (owner 2026-11-05); logged in, the same one, and 연결하기 links it for the account's other browser", async ({ page, baseURL }, info) => {
     const shots = info.project.name === "mobile";
-    const id = seedDeviceOwner("예전주인", "pisces");
+    const letters = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+    const code = Array.from({ length: 6 }, () => letters[Math.floor(Math.random() * letters.length)]).join("");
+    const id = seedDeviceOwner("예전주인", "pisces", code);
+    await friendJoin(baseURL!, code, FRIENDS[2]!, 0);
     await page.context().addCookies([{ name: "sl_uid", value: deviceOwnerCookie(id), url: baseURL! }]);
     await page.setExtraHTTPHeaders({ "cf-connecting-ip": nextIp() });
     await page.goto("/bonds", { timeout: 120_000 });
-    await expect(page.getByRole("heading", { level: 1, name: "예전주인님의 별자리" })).toBeVisible({ timeout: 120_000 });
+    const panel = page.getByRole("region", { name: "내 별자리는 로그인하고 볼 수 있어요" });
+    await expect(panel).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "예전주인님의 별자리" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /로그인하고 시작하기/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "별자리 인연 시작하기" })).toHaveCount(0);
+    await expect(page.locator("main")).not.toContainText(FRIENDS[2]!.nickname);
+    await expect(page.locator("main")).not.toContainText(/\d+점/);
+    // Nor in what the server answers.
+    const hidden = await (await page.request.get("/api/bonds/me")).json();
+    expect(hidden).toMatchObject({ owner: null, signedIn: false, ownerHidden: true });
+    expect(JSON.stringify(hidden)).not.toMatch(new RegExp(`예전주인|${FRIENDS[2]!.nickname}|"score"`));
+    const today = await page.request.post("/api/bonds/today-card", { data: { starId: "anystaridentifier" } });
+    expect(today.status()).toBe(401);
+    expect((await (await page.request.get("/api/bonds/ranking/pisces")).json()).mine ?? null).toBeNull();
+    // Its own link says so, with nothing to join with.
+    await page.goto(`/b/${code}`, { timeout: 120_000 });
+    await expect(page.getByRole("heading", { level: 1, name: "내 초대 링크예요" })).toBeVisible({ timeout: 120_000 });
+    await expect(page.getByRole("textbox", { name: "닉네임" })).toHaveCount(0);
+    const self = await page.request.post("/api/bonds/join", { data: { code, nickname: "다른이름", birth: FRIENDS[3]!.birth, pick: 1 } });
+    expect(self.status()).toBe(403);
+    await page.goto("/bonds", { timeout: 120_000 });
+    await expect(panel).toBeVisible({ timeout: 120_000 });
     const offer = page.getByRole("region", { name: "이 기기에서 만든 별자리를 내 계정에 연결할까요?" });
     await expect(offer).toHaveCount(0);
     const user = newUser();
     await logInPage(page, user, "/bonds");
+    await expect(page.getByRole("heading", { level: 1, name: "예전주인님의 별자리" })).toBeVisible({ timeout: 120_000 });
+    await expect(page.locator("main")).toContainText(FRIENDS[2]!.nickname);
+    await expect(page.locator("main")).toContainText(/\d+점/);
     await expect(offer).toBeVisible({ timeout: 120_000 });
     await expect(offer).toContainText("연결하면 다른 기기에서도 보여요");
     if (shots) {

@@ -115,6 +115,13 @@ export async function bondsRoute(request: Request, name: string, run: (ctx: Bond
   }
 }
 
+/** The owner, for what only an owner may do: no session answers the login (owner 2026-11-05), a session with no owner NO_OWNER. */
+export async function requireOwner(who: BondsContext["who"]): Promise<string> {
+  const { ownerId, userId } = await who();
+  if (ownerId) return ownerId;
+  throw new BondsError(userId ? "NO_OWNER" : "LOGIN_REQUIRED");
+}
+
 /** The request body parsed by `schema`, or a BAD_INPUT BondsError. */
 export async function body<T>(request: Request, schema: z.ZodType<T>, maxBytes = 2_000): Promise<T> {
   const parsed = schema.safeParse(await readJson(request, maxBytes));

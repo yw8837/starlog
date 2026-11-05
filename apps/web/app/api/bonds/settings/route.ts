@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { body, bondsRoute, ok } from "@/lib/bonds/api";
-import { BondsError, updateSettings } from "@/lib/bonds/service";
+import { body, bondsRoute, ok, requireOwner } from "@/lib/bonds/api";
+import { updateSettings } from "@/lib/bonds/service";
 
 const SettingsBody = z.object({ rankingPublic: z.boolean().optional(), nickname: z.string().max(40).optional() });
 
@@ -8,8 +8,7 @@ const SettingsBody = z.object({ rankingPublic: z.boolean().optional(), nickname:
 export async function POST(request: Request): Promise<Response> {
   return bondsRoute(request, "settings", async ({ secret, now, cookies, repo, who }) => {
     const patch = await body(request, SettingsBody);
-    const ownerId = (await who()).ownerId;
-    if (!ownerId) throw new BondsError("NO_OWNER");
+    const ownerId = await requireOwner(who);
     const owner = await updateSettings(repo, now, ownerId, patch);
     return ok({ owner: { nickname: owner.nickname, rankingPublic: owner.rankingPublic } });
   });

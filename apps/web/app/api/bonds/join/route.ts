@@ -27,7 +27,9 @@ export async function POST(request: Request): Promise<Response> {
     const device = await friendKey(cookies, secret);
     let result: Awaited<ReturnType<typeof joinStar>>;
     try {
-      result = await joinStar(repo, now, { ...input, friendKey: device.key, joinerOwnerId: (await who()).ownerId });
+      // A device owner with no session is still that owner: its own link is no one's to join as a friend (owner 2026-11-05).
+      const { ownerId, deviceOwnerId } = await who();
+      result = await joinStar(repo, now, { ...input, friendKey: device.key, joinerOwnerId: ownerId ?? deviceOwnerId });
     } catch (error) {
       if (error instanceof BondsError && error.code === "BAD_CODE") await guard.failed();
       throw error;

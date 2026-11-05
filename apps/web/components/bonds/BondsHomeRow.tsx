@@ -13,13 +13,14 @@ import { ConstellationArt } from "./ConstellationArt";
 import { InviteShareButton } from "./InviteShareButton";
 import s from "./BondsHomeRow.module.css";
 
-type Me = { owner: null } | OwnerView;
+type Me = { owner: null; ownerHidden?: boolean } | OwnerView;
 
 /**
  * The home's 별자리 인연 row (spec §3 홈 화면 자리). Filling: the small figure, the badge
  * `양자리 2/4 · 174점` (stars in / slots · 인연 total so far) and 초대하기; a new star sparkles until the owner
  * page is opened. Before the start: 별자리 인연 시작하기 only — a friend comes in through the invite link
- * (/b/<code> fills the code in), so the home has no code box. Secondary styles only (the home keeps its
+ * (/b/<code> fills the code in), so the home has no code box; a device whose own 별자리 needs a login is told it comes back
+ * with it (owner 2026-11-05). Secondary styles only (the home keeps its
  * one gold primary). The 별자리 인연 랭킹 tile under it talks about me (`homeRankLine`: my score and rank, or
  * the way in), not about this week's best record. Renders nothing while loading, on an error, or with the
  * feature off.
@@ -43,7 +44,7 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
   if (!enabled || !me) return null;
   const rowClass = [s.row, className].filter(Boolean).join(" ");
   const rankLine = homeRankLine(me);
-  if (me.owner === null) return <StartRow className={rowClass} rankLine={rankLine} />;
+  if (me.owner === null) return <StartRow className={rowClass} rankLine={rankLine} hidden={me.ownerHidden} />;
 
   const filling = me.filling;
   if (!filling) {
@@ -89,17 +90,17 @@ export function BondsHomeRow({ enabled = SITE.features.bonds, className }: { ena
   );
 }
 
-function StartRow({ className, rankLine }: { className: string; rankLine: string }) {
+function StartRow({ className, rankLine, hidden = false }: { className: string; rankLine: string; hidden?: boolean }) {
   return (
     <section className={className} aria-labelledby="bonds-home-title">
       <div className={s.text}>
         <span id="bonds-home-title" className={s.title}>
           별자리 인연
         </span>
-        <span className={s.sub}>친구가 별이 되어 내 별자리를 채워요. 사주로 본 인연 점수로 랭킹에 올라요.</span>
+        <span className={s.sub}>{hidden ? "이 기기의 내 별자리는 로그인하면 다시 보여요" : "친구가 별이 되어 내 별자리를 채워요. 사주로 본 인연 점수로 랭킹에 올라요."}</span>
       </div>
       <Button variant="secondary" size="md" block href="/bonds">
-        별자리 인연 시작하기
+        {hidden ? "내 별자리 보기" : "별자리 인연 시작하기"}
       </Button>
       <BondsMoreTiles rankLine={rankLine} className={s.more} />
     </section>

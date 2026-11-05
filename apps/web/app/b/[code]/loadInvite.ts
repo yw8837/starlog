@@ -47,7 +47,7 @@ export async function loadInvite(raw: string): Promise<InviteState> {
     const jar = Object.fromEntries((await cookies()).getAll().map((c) => [c.name, c.value]));
     const identity = secret ? await whoOwns(bondsRepo(), jar, secret, Date.now()) : null;
     const friendKey = secret ? await existingFriendKey(jar, secret) : null;
-    const page = await invitePage(bondsRepo(), code, { ownerId: identity?.ownerId ?? null, friendKey, signedIn: Boolean(identity?.userId) });
+    const page = await invitePage(bondsRepo(), code, { ownerId: identity?.ownerId ?? null, deviceOwnerId: identity?.deviceOwnerId ?? null, friendKey, signedIn: Boolean(identity?.userId) });
     return { ...page, status: page.kind, code } as InviteState;
   } catch (error) {
     if (error instanceof BondsError && error.code === "BAD_CODE") {

@@ -11,7 +11,8 @@ import { BondsError, joinedView, linkOffer, ownerView, type JoinedView } from "@
  * joined as a friend, when there are any (never on the home row's light view), and only with a session (owner
  * 2026-11-05): without one, `joinedHidden` says there are some and nothing of them. `signedIn`: a starting owner logs in
  * first (owner 2026-10-27); `link`: this device's owner belongs to no account and the visitor is logged in, so the page
- * offers 연결하기, or asks which of two owners stays (lib/bonds/service.ts linkOffer).
+ * offers 연결하기, or asks which of two owners stays (lib/bonds/service.ts linkOffer). `ownerHidden`: this device has an owner
+ * of no account but no session (owner 2026-11-05): that it is there, nothing of it, on the home row too.
  */
 export async function GET(request: Request): Promise<Response> {
   return bondsRoute(request, "me", async ({ secret, now, cookies, repo, who }) => {
@@ -25,7 +26,7 @@ export async function GET(request: Request): Promise<Response> {
     const joined = friend ? await joinedView(repo, friend, ownerId) : [];
     if (joined.length && signedIn) top = { ...top, joined };
     else if (joined.length) top = { ...top, joinedHidden: true };
-    if (!ownerId) return ok({ owner: null, signedIn, ...top });
+    if (!ownerId) return ok({ owner: null, signedIn, ...(identity.deviceOwnerId && !signedIn ? { ownerHidden: true } : {}), ...top });
     const link = light ? null : await linkOffer(repo, identity);
     try {
       return ok({ ...(await ownerView(repo, now, ownerId, { light })), ...top, signedIn, ...(link ? { link } : {}) });

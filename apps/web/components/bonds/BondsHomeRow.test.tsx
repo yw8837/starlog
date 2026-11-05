@@ -59,6 +59,14 @@ describe("BondsHomeRow", () => {
     expect(container.querySelectorAll("[data-new]")).toHaveLength(1);
   });
 
+  it("for a device whose own 별자리 needs a login: says it comes back with the login, not an invitation to start (owner 2026-11-05)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null, signedIn: false, ownerHidden: true }))));
+    render(<BondsHomeRow enabled />);
+    expect(await screen.findByText("이 기기의 내 별자리는 로그인하면 다시 보여요")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "내 별자리 보기" }).getAttribute("href")).toBe("/bonds");
+    expect(screen.queryByRole("link", { name: "별자리 인연 시작하기" })).toBeNull();
+  });
+
   it("invites to start, with no code box: a friend comes in through the invite link /b/<CODE>", async () => {
     respond({ ok: true, owner: null });
     render(<BondsHomeRow enabled />);

@@ -17,6 +17,8 @@ import { checkMessage, checkNickname, newInviteCode, normalizeCode } from "./tex
  */
 
 export type BondsErrorCode =
+  /** what only an owner may do, without a session (owner 2026-11-05) */
+  | "LOGIN_REQUIRED"
   | "NO_OWNER" | "BAD_INPUT" | "SIGN_COMPLETED" | "FILLING_EXISTS" | "NO_FILLING" | "BAD_CODE" | "CHOOSING" | "SELF_JOIN"
   | "ALREADY_JOINED" | "DAILY_STAR_LIMIT" | "DAILY_ACTION_LIMIT" | "COOLDOWN" | "INVITE_COOLDOWN" | "NOT_FOUND" | "ALL_DONE"
   /** the constellation the friend saw filled up or changed meanwhile (`detail`: where the star would go now) */
@@ -714,11 +716,12 @@ export type InvitePage =
  * says only that the star exists. The friend cookie still says which star is this device's: no account is linked to it.
  * Unknown and revoked codes fail with BAD_CODE like every lookup.
  */
-export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerId: string | null; friendKey: string | null; signedIn: boolean }): Promise<InvitePage> {
+export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerId: string | null; deviceOwnerId?: string | null; friendKey: string | null; signedIn: boolean }): Promise<InvitePage> {
   const owner = await ownerOfCode(repo, code);
   const filling = await repo.fillingOf(owner.id);
   const stars = filling ? await repo.starsOf(filling.id) : [];
-  if (viewer.ownerId === owner.id) {
+  // Its own link, with a session or without one (a device owner's): no joining one's own, and what this says is no one else's.
+  if (viewer.ownerId === owner.id || viewer.deviceOwnerId === owner.id) {
     return { kind: "self", ownerNickname: owner.nickname, sign: filling?.sign ?? null, filled: stars.length, slots: filling ? getConstellation(filling.sign).slots : 0 };
   }
   const found = viewer.friendKey ? await repo.latestStarOf(owner.id, viewer.friendKey) : null;

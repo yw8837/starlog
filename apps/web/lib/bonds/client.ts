@@ -9,6 +9,14 @@ import { SITE } from "@/lib/config";
 
 export type ApiResult<T> = ({ ok: true } & T) | { ok: false; code: string; field?: string; retryAt?: string };
 
+const loginLostListeners = new Set<() => void>();
+
+/** Calls `listener` when an owner's action is answered LOGIN_REQUIRED (a session that ended while the screen is open); returns the way to stop. */
+export function onLoginLost(listener: () => void): () => void {
+  loginLostListeners.add(listener);
+  return () => loginLostListeners.delete(listener);
+}
+
 /** `path` under /api/bonds/, or an absolute path such as "/api/lucky". */
 export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResult<T>> {
   try {
@@ -19,7 +27,10 @@ export async function bondsApi<T>(path: string, body?: unknown): Promise<ApiResu
       cache: "no-store",
     });
     const data = (await res.json().catch(() => null)) as ApiResult<T> | null;
-    if (data && typeof data === "object" && "ok" in data) return data;
+    if (data && typeof data === "object" && "ok" in data) {
+      if (!data.ok && data.code === "LOGIN_REQUIRED") loginLostListeners.forEach((listener) => listener());
+      return data;
+    }
     return { ok: false, code: res.status === 404 ? "NOT_FOUND" : "SERVER" };
   } catch {
     return { ok: false, code: "NETWORK" };
@@ -48,7 +59,7 @@ const MESSAGES: Record<string, string> = {
   BAD_ORIGIN: "스타로그 화면에서 다시 시도해 주세요",
   NOT_FOUND: "찾을 수 없어요. 처음부터 다시 시도해 주세요",
   NO_OWNER: "별자리 인연을 먼저 시작해 주세요",
-  LOGIN_REQUIRED: "내 별자리는 로그인해서 만들어요. 로그인하고 다시 시도해 주세요",
+  LOGIN_REQUIRED: "내 별자리는 로그인하고 볼 수 있어요. 로그인하고 다시 시도해 주세요",
   RATE_LIMIT: "요청이 잠깐 많았어요. 1분 뒤에 다시 시도해 주세요",
   CODE_LIMIT: CODE_LIMIT_MESSAGE,
   NETWORK: "연결이 잠시 불안정해요. 다시 시도해 주세요",

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { bondsApi } from "@/lib/bonds/client";
 import { BondsView } from "./BondsView";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
@@ -406,5 +407,42 @@ describe("BondsView: QA 2026-10-27", () => {
     render(<BondsView initialSign={null} />);
     await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
     expect(screen.queryByRole("region", { name: /황소자리 · Taurus/ })).toBeNull();
+  });
+});
+
+describe("BondsView for a device whose own 별자리 needs a login (owner 2026-11-05)", () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it("shows the login panel that comes back to /bonds: no score or friend's name, and not the start screen", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ ok: true, owner: null, signedIn: false, ownerHidden: true }))));
+    render(<BondsView initialSign={null} />);
+    const panel = await screen.findByRole("region", { name: "내 별자리는 로그인하고 볼 수 있어요" });
+    expect(panel.textContent).toContain("이 기기에 만든 별자리는 그대로 있어요");
+    expect(within(panel).getByRole("link", { name: "로그인하고 내 별자리 보기" }).getAttribute("href")).toBe("/login?next=%2Fbonds");
+    expect(screen.queryByRole("button", { name: "별자리 인연 시작하기" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /로그인하고 시작하기/ })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "닉네임" })).toBeNull();
+    expect(document.body.textContent).not.toMatch(/\d+점/);
+  });
+
+  it("a session that ended while the screen is open: an owner's action answers the login, and the screen becomes the login panel", async () => {
+    let session = true;
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        session = false;
+        return new Response(JSON.stringify({ ok: false, code: "LOGIN_REQUIRED" }), { status: 401 });
+      }
+      return new Response(JSON.stringify(session ? { ...OWNER_ME, filling: null, signedIn: true } : { ok: true, owner: null, signedIn: false, ownerHidden: true }));
+    }));
+    render(<BondsView initialSign={null} />);
+    await screen.findByRole("heading", { level: 1, name: "용우님의 별자리" });
+    await act(async () => {
+      await bondsApi("settings", { rankingPublic: false });
+    });
+    await screen.findByRole("region", { name: "내 별자리는 로그인하고 볼 수 있어요" });
+    expect(screen.queryByRole("heading", { level: 1, name: "용우님의 별자리" })).toBeNull();
   });
 });

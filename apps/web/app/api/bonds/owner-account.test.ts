@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteAccount } from "@/lib/account/deletion";
 import { resetDailyStore } from "@/lib/api/dailyStore";
 import { ownerCookie } from "@/lib/bonds/identity";
-import { chooseSign, saveOwner } from "@/lib/bonds/service";
+import { chooseSign, inviteOf, saveOwner } from "@/lib/bonds/service";
 import { bondsRepo, setTestDb } from "@/lib/db";
 import { createD1BondsRepo } from "@/lib/db/d1BondsRepo";
 import { resetMemoryLimiter } from "@/lib/security/rateLimit";
@@ -10,10 +10,17 @@ import { randomId, signingSecret } from "@/lib/security/sign";
 import { signIn } from "@/lib/testing/bondsLogin";
 import { useTestDb } from "@/lib/testing/p4";
 import { POST as choosePost } from "./choose/route";
+import { POST as invitePost } from "./invite/route";
 import { POST as joinPost } from "./join/route";
 import { POST as linkPost } from "./link/route";
 import { GET as meGet } from "./me/route";
 import { POST as ownerPost } from "./owner/route";
+import { GET as rankingGet } from "./ranking/[sign]/route";
+import { POST as refillPost } from "./refill/route";
+import { POST as settingsPost } from "./settings/route";
+import { POST as removePost } from "./star/remove/route";
+import { POST as switchPost } from "./switch/route";
+import { POST as todayPost } from "./today-card/route";
 
 /** 별자리 인연 owners belong to accounts (owner 2026-10-27: "계정 위주로 돌아가는 게 맞다"). */
 
@@ -107,12 +114,52 @@ describe("별자리 인연 owners belong to accounts", () => {
     expect(await me(loggedOut)).toMatchObject({ owner: null, signedIn: false });
   });
 
-  it("keeps an owner made on a device before accounts working without a login, and never offers a link then", async () => {
-    const { jar } = await deviceOwner("예전주인");
-    const view = await me(jar);
-    expect(view).toMatchObject({ owner: { nickname: "예전주인" }, signedIn: false });
-    expect(view.link).toBeUndefined();
-    expect(view.filling?.row.sign).toBe("leo");
+  it("hides an owner made on a device before accounts from a device with no session: nothing of it anywhere, every action answers the login, and it stays (owner 2026-11-05)", async () => {
+    const { jar, id } = await deviceOwner("예전주인");
+    const friend: Jar = new Map();
+    const { code } = await inviteOf(bondsRepo(), Date.now(), id);
+    const joined = await joinPost(req("/api/bonds/join", friend, { code, nickname: "하늘친구", birth: { calendar: "solar", year: 1992, month: 8, day: 3 }, pick: 1, scoreNotice: true }));
+    expect(joined.status).toBe(200);
+    const { score, starId } = (await joined.json()) as { score: number; starId: string };
+    const secretWords = /예전주인|하늘친구|"leo"|"score"|"stars"|"filling"|"invite"/;
+
+    // /api/bonds/me: no owner, only the marker, on the page and on the home row alike.
+    for (const path of ["/api/bonds/me", "/api/bonds/me?view=home"]) {
+      const body = (await (await meGet(req(path, jar))).json()) as Record<string, unknown>;
+      expect(body).toMatchObject({ owner: null, signedIn: false, ownerHidden: true });
+      expect(JSON.stringify(body)).not.toMatch(secretWords);
+    }
+    // The ranking has no `mine`, nor a row marked as its own.
+    const ranking = (await (await rankingGet(req("/api/bonds/ranking/leo", jar), { params: Promise.resolve({ sign: "leo" }) })).json()) as { mine: unknown; filling: unknown };
+    expect(ranking.mine ?? null).toBeNull();
+    expect(ranking.filling ?? null).toBeNull();
+    // What only an owner may do answers the login, not a confusing error.
+    const asks: Array<[string, () => Promise<Response>]> = [
+      ["today-card", () => todayPost(req("/api/bonds/today-card", jar, { starId }))],
+      ["choose", () => choosePost(req("/api/bonds/choose", jar, { sign: "aries" }))],
+      ["switch", () => switchPost(req("/api/bonds/switch", jar, { sign: "aries" }))],
+      ["refill", () => refillPost(req("/api/bonds/refill", jar, { sign: "aries" }))],
+      ["invite", () => invitePost(req("/api/bonds/invite", jar, {}))],
+      ["settings", () => settingsPost(req("/api/bonds/settings", jar, { rankingPublic: false }))],
+      ["star/remove", () => removePost(req("/api/bonds/star/remove", jar, { starId }))],
+    ];
+    for (const [name, ask] of asks) {
+      const res = await ask();
+      expect(res.status, name).toBe(401);
+      expect(await res.json(), name).toEqual({ ok: false, code: "LOGIN_REQUIRED" });
+    }
+    // Its own invite link: no joining its own constellation as a friend.
+    const self = await joinPost(req("/api/bonds/join", jar, { code, nickname: "다른이름", birth: { calendar: "solar", year: 1995, month: 1, day: 1 }, pick: 2 }));
+    expect(self.status).toBe(403);
+    expect(await self.json()).toMatchObject({ code: "SELF_JOIN" });
+
+    // A login: the very same owner and star, and 연결하기 as before.
+    await signIn(jar);
+    const back = await me(jar);
+    expect(back).toMatchObject({ owner: { nickname: "예전주인" }, signedIn: true, link: { kind: "offer" } });
+    expect(back.filling?.row.sign).toBe("leo");
+    expect(back.filling?.stars.map((star) => star.nickname)).toEqual(["하늘친구"]);
+    expect((back.filling?.stars[0] as unknown as { score: number }).score).toBe(score);
   });
 
   it("logged in on that device: offers 연결하기 and links only when asked; then the account's other devices show it", async () => {

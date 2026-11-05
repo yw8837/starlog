@@ -1,19 +1,19 @@
 import { clientKey } from "@/lib/api/http";
-import { StarBody, body, bondsRoute, ok } from "@/lib/bonds/api";
-import { BondsError, todayBondCard } from "@/lib/bonds/service";
+import { StarBody, body, bondsRoute, ok, requireOwner } from "@/lib/bonds/api";
+import { todayBondCard } from "@/lib/bonds/service";
 import { todayLine } from "@/lib/bonds/todayLine";
 import { keyedHash } from "@/lib/security/sign";
 
 /**
  * POST {starId} → 오늘의 인연 카드 with that friend: one card per day (KST), and its line (the model's,
- * up to 5 new ones per owner per day, else the rule-based one; the model's only while logged in, owner 2026-11-04).
+ * up to 5 new ones per owner per day, else the rule-based one). Needs a session (owner 2026-11-05): LOGIN_REQUIRED without one.
  * Never changes a score or a rank.
  */
 export async function POST(request: Request): Promise<Response> {
   return bondsRoute(request, "today-card", async ({ secret, now, cookies, repo, who }) => {
     const { starId } = await body(request, StarBody);
-    const { ownerId, userId } = await who();
-    if (!ownerId) throw new BondsError("NO_OWNER");
+    const ownerId = await requireOwner(who);
+    const { userId } = await who();
     const card = await todayBondCard(repo, now, ownerId, starId);
     // Per-network counting, the same id the reading routes use (Gate.client).
     const client = await keyedHash(`client:${clientKey(request)}`, secret);

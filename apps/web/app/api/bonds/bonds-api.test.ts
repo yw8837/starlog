@@ -245,7 +245,8 @@ describe("bonds API", () => {
     await signIn(signed);
     expect((await ownerPost(req("/api/bonds/owner", signed, { nickname: "가", birth: ME }))).status).toBe(400);
     expect((await ownerPost(req("/api/bonds/owner", signed, { nickname: "용우" }))).status).toBe(400);
-    expect((await choosePost(req("/api/bonds/choose", new Map(), { sign: "aries" }))).status).toBe(404);
+    expect((await choosePost(req("/api/bonds/choose", new Map(), { sign: "aries" }))).status).toBe(401);
+    expect((await choosePost(req("/api/bonds/choose", signed, { sign: "aries" }))).status).toBe(404);
     const { owner } = await startOwner("용우", "taurus");
     expect((await choosePost(req("/api/bonds/choose", owner, { sign: "ophiuchus" }))).status).toBe(400);
     expect((await choosePost(req("/api/bonds/choose", owner, { sign: "leo" }))).status).toBe(409);
@@ -267,7 +268,7 @@ describe("bonds API", () => {
     const card = (await today.json()) as { card: { cardId: string }; line: string; day: string };
     expect(card.line).toMatch(/두 사람/);
     expect(await (await todayPost(req("/api/bonds/today-card", owner, { starId }))).json()).toMatchObject({ card: card.card, line: card.line });
-    expect((await todayPost(req("/api/bonds/today-card", new Map(), { starId }))).status).toBe(404);
+    expect((await todayPost(req("/api/bonds/today-card", new Map(), { starId }))).status).toBe(401);
 
     const off = await settingsPost(req("/api/bonds/settings", owner, { rankingPublic: false }));
     expect(await off.json()).toMatchObject({ owner: { rankingPublic: false } });

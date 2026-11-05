@@ -63,9 +63,9 @@ export function deviceOwnerCookie(id: string): string {
 
 /**
  * An owner made on a device before accounts, `sign` being filled, in the local D1 the e2e server reads (wrangler, as
- * `pnpm e2e` migrates it); its sl_uid goes on the browser that "made" it. Returns the owner id.
+ * `pnpm e2e` migrates it); its sl_uid goes on the browser that "made" it. With `code`, its invite link too. Returns the owner id.
  */
-export function seedDeviceOwner(nickname: string, sign: string): string {
+export function seedDeviceOwner(nickname: string, sign: string, code?: string): string {
   const id = randomBytes(16).toString("base64url");
   const now = Date.now();
   const basis = JSON.stringify({ dayStem: "丙", yearBranch: "巳", dayBranch: "寅", elements: { 목: 1, 화: 3, 토: 1, 금: 0, 수: 1 }, uncertain: false });
@@ -75,6 +75,7 @@ export function seedDeviceOwner(nickname: string, sign: string): string {
     file,
     `INSERT INTO owners (id, nickname, ranking_public, basis_json, created_at) VALUES ('${id}', '${nickname}', 1, '${basis}', ${now});
 INSERT INTO constellations (id, owner_id, sign, status, total, started_at) VALUES ('${id}-c', '${id}', '${sign}', 'filling', 0, ${now});
+${code ? `INSERT INTO invites (code, owner_id, created_at) VALUES ('${code}', '${id}', ${now});` : ""}
 `,
     "utf8",
   );

@@ -16,7 +16,7 @@ import { LoginFirst } from "@/components/reading/LoginFirst";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref } from "@/lib/account/client";
-import { bondsApi, bondsMessage, markSeen, monthDay, savedSunSign, seenUntil } from "@/lib/bonds/client";
+import { bondsApi, bondsMessage, markSeen, monthDay, onLoginLost, savedSunSign, seenUntil } from "@/lib/bonds/client";
 import type { JoinedView, LinkOffer, OwnerSummary, OwnerView } from "@/lib/bonds/service";
 import { OwnerSetup } from "./OwnerSetup";
 import { StarList } from "./StarList";
@@ -29,7 +29,7 @@ import s from "./BondsView.module.css";
 const LATEST_DAYS = 7;
 
 /** `signedIn`: a new owner logs in first; `link`: this device's owner can be linked to the account (owner 2026-10-27) */
-type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null; joined?: JoinedView[]; joinedHidden?: boolean; signedIn?: boolean; link?: LinkOffer };
+type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null; joined?: JoinedView[]; joinedHidden?: boolean; ownerHidden?: boolean; signedIn?: boolean; link?: LinkOffer };
 
 /**
  * 별자리 인연, the owner's single scroll (spec §3): the constellation being filled with its stars, the
@@ -56,6 +56,9 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // A session that ended while this screen is open: an owner's action answers the login, and the screen asks for it.
+  useEffect(() => onLoginLost(() => void load()), [load]);
 
   // Remember the newest star and completion as seen once they are on screen.
   useEffect(() => {
@@ -87,8 +90,16 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
     return (
       <>
         <Intro />
-        {/* Starting needs a login (owner 2026-10-27); after it the visitor comes back here and goes on with the form. */}
-        {me.signedIn === false ? (
+        {/* This device's own 별자리 needs a login to show (owner 2026-11-05); starting needs one too (owner 2026-10-27): after it
+            the visitor comes back here and goes on with the form. */}
+        {me.ownerHidden ? (
+          <LoginFirst
+            title="내 별자리는 로그인하고 볼 수 있어요"
+            body="이 기기에 만든 별자리는 그대로 있어요. 카카오나 Google로 로그인하면 다시 보여 드리고, 계정에 연결할 수도 있어요."
+            href={loginHref("/bonds")}
+            action="로그인하고 내 별자리 보기"
+          />
+        ) : me.signedIn === false ? (
           <LoginToStart />
         ) : (
           // The nickname this device used as a friend, if any; a friend's code is entered in 내 정보, not here (owner 2026-10-02).

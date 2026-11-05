@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { bondsApi } from "@/lib/bonds/client";
 import type { RankingRowView, RankingView as Ranking } from "@/lib/bonds/service";
-import { Board, MyCard } from "./RankingView";
+import { Board, MyCard, RankingView } from "./RankingView";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 
@@ -24,6 +25,27 @@ const mine = (total: number, allRank: number | null): Ranking["mine"] => ({
 const show = (data: Ranking) => render(<Board sign="aries" data={data} error="" reload={() => undefined} />);
 
 const myBox = () => screen.getByRole("region", { name: "내 순위" });
+
+describe("별자리 랭킹 when the session ends while the page is open (owner 2026-11-05)", () => {
+  it("reads the page again when an owner's action answers the login: nothing of the owner stays, 이 별자리 채우기 leads to /bonds", async () => {
+    let session = true;
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        session = false;
+        return new Response(JSON.stringify({ ok: false, code: "LOGIN_REQUIRED" }), { status: 401 });
+      }
+      return new Response(JSON.stringify({ ok: true, ...(session ? { ...VIEW, owner: OWNER, mine: mine(300, 3) } : VIEW) }));
+    }));
+    render(<RankingView sign="aries" />);
+    await within(await screen.findByRole("region", { name: "내 순위" })).findByText(/300/);
+    await act(async () => {
+      await bondsApi("settings", { rankingPublic: true });
+    });
+    await within(myBox()).findByRole("link", { name: "이 별자리 채우기" });
+    expect(myBox().textContent).not.toContain("300");
+    vi.unstubAllGlobals();
+  });
+});
 
 describe("별자리 랭킹 board (/ranking/<sign>)", () => {
   it("puts 1~3위 on the podium in rank order (1위 in the middle) and lists 4~50위 below", () => {
