@@ -13,8 +13,10 @@ import { Cat } from "@/components/characters/Cat";
 import { CardFan, fanIndexes } from "@/components/tarot/CardFan";
 import { ShuffleStage } from "@/components/tarot/ShuffleStage";
 import { TarotCard } from "@/components/tarot/TarotCard";
+import { LoginFirst } from "@/components/reading/LoginFirst";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { loginHref, useAccount } from "@/lib/account/client";
 import { birthProblem } from "@/lib/bonds/birth";
 import { CODE_LIMIT_MESSAGE, JOIN_FAILED, bondsApi, bondsMessage } from "@/lib/bonds/client";
 import { MESSAGE_MAX, NICKNAME_MAX, nicknameProblem, ordinalStar } from "@/lib/bonds/text";
@@ -69,13 +71,27 @@ function setStep(hash: StepHash, mode: "push" | "replace") {
 /**
  * The friend's side (spec §3 친구, no account): whose constellation this is, then nickname → birth date
  * → a card from the shuffled fan → an optional one-line message, and the result: the 인연 score with
- * its reasons, the 인연 카드 and its line. The birth date only travels in the join request.
+ * its reasons, the 인연 카드 and its line. The birth date only travels in the join request. Joining needs no
+ * login; seeing the result again after this screen does (owner 2026-11-05).
  */
 export function JoinFlow({ state }: { state: InviteState }) {
   if (state.status === "open") return <OpenInvite invite={state} />;
   if (state.status === "self") return <SelfInvite invite={state} />;
-  if (state.status === "joined") return <Result result={state.result} again />;
-  const earlier = state.status === "choosing" || state.status === "alldone" ? state.earlier : null;
+  if (state.status === "joined") return <Result result={state.result} code={state.code} again />;
+  if (state.status === "hidden") {
+    return (
+      <section className={s.closed}>
+        <Cat outfit="tarot" expression="happy" size={120} reactOnTap={false} />
+        <h1 className={s.title}>이미 별이 되어 있어요</h1>
+        <SeeAgainLogin code={state.code} />
+        <Button href="/bonds" variant="secondary" block>
+          나도 내 별자리 만들기
+        </Button>
+      </section>
+    );
+  }
+  const between = state.status === "choosing" || state.status === "alldone" ? state : null;
+  const earlier = between?.earlier ?? null;
   return (
     <section className={s.closed}>
       <Cat outfit="tarot" expression={state.status === "alldone" ? "happy" : state.status === "choosing" ? "focus" : "surprise"} size={120} reactOnTap={false} />
@@ -93,10 +109,23 @@ export function JoinFlow({ state }: { state: InviteState }) {
       {/* Invites are links only (owner 2026-10-28): what to do, nothing to type. */}
       {state.status === "bad" ? <p className={b.helper}>링크가 바뀌었거나 없어졌어요. 보낸 친구에게 초대 링크를 다시 받아 주세요.</p> : null}
       {earlier ? <EarlierStar earlier={earlier} /> : null}
+      {between?.earlierHidden ? <SeeAgainLogin code={between.code} /> : null}
       <Button href="/bonds" variant="secondary" block>
         나도 내 별자리 만들기
       </Button>
     </section>
+  );
+}
+
+/** A star this device has, for a device with no session (owner 2026-11-05): nothing of it, and the login that shows it again here. */
+function SeeAgainLogin({ code }: { code: string }) {
+  return (
+    <LoginFirst
+      title="결과는 로그인하고 다시 볼 수 있어요"
+      body="이 기기로 참여한 별은 그대로 있어요. 카카오나 Google로 로그인하면 이 기기에서 다시 보여 드려요."
+      href={loginHref(`/b/${code}`)}
+      action="로그인하고 결과 보기"
+    />
   );
 }
 
@@ -292,7 +321,7 @@ function OpenInvite({ invite }: { invite: Open }) {
     setStep("", "replace");
   };
 
-  if (phase === "result" && result) return <Result result={result} headingRef={resultRef} />;
+  if (phase === "result" && result) return <Result result={result} code={invite.code} headingRef={resultRef} />;
 
   return (
     <>
@@ -310,6 +339,7 @@ function OpenInvite({ invite }: { invite: Open }) {
       </header>
 
       {phase === "form" && invite.earlier ? <EarlierStar earlier={invite.earlier} /> : null}
+      {phase === "form" && invite.earlierHidden ? <SeeAgainLogin code={invite.code} /> : null}
       {phase === "form" ? (
         <form ref={formRef} className={`${b.panel} ${b.form}`} onSubmit={next} noValidate>
           <div className={b.group}>
@@ -480,7 +510,8 @@ function MovedNotice({ moved, invite, busy, onGo }: { moved: Moved; invite: Open
   );
 }
 
-function Result({ result, headingRef, again = false }: { result: JoinResult; headingRef?: RefObject<HTMLHeadingElement | null>; again?: boolean }) {
+function Result({ result, code, headingRef, again = false }: { result: JoinResult; code: string; headingRef?: RefObject<HTMLHeadingElement | null>; again?: boolean }) {
+  const account = useAccount();
   const def = getConstellation(result.sign);
   const card = getCard(result.card.cardId);
   const reversed = result.card.orientation === "reversed";
@@ -506,6 +537,16 @@ function Result({ result, headingRef, again = false }: { result: JoinResult; hea
           <p className={s.line}>{result.bondLine}</p>
         </div>
       </div>
+      {/* The join's answer is a visitor's one time to see it (owner 2026-11-05): a reload asks for the login. */}
+      {account !== undefined && !account?.user ? (
+        <p className={b.helper}>
+          나중에 이 결과를 다시 보려면{" "}
+          <Link href={loginHref(`/b/${code}`)} className={s.inlineLink}>
+            로그인
+          </Link>
+          해 주세요.
+        </p>
+      ) : null}
       <div className={b.actions}>
         <Button href="/today" variant="secondary" block>
           오늘의 한 장 받기

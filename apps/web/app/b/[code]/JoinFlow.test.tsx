@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { resetAccountForTests } from "@/lib/account/client";
 import { SAJU_PROFILE_KEY } from "@/lib/sajuFlow";
 import { JoinFlow } from "./JoinFlow";
 
@@ -24,7 +25,7 @@ function keepDraft(hash: "" | "#cards" | "#message", draft: Partial<{ nickname: 
   window.history.replaceState(null, "", `/b/K7M4QX${hash}`);
 }
 
-const OPEN = { status: "open", kind: "open", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4, earlier: null, myNickname: null, scoresPrivate: false, constellationId: "cons0123456789abcdef" } as const;
+const OPEN = { status: "open", kind: "open", code: "K7M4QX", ownerNickname: "용우", sign: "aries", filled: 1, slots: 4, earlier: null, earlierHidden: false, myNickname: null, scoresPrivate: false, constellationId: "cons0123456789abcdef" } as const;
 const RESULT = {
   nickname: "하늘", score: 87, parts: [{ id: "stem-generate" as const, points: 10, text: "두 분의 일간이 서로 살려 주는 사이예요" }], completed: false,
   sign: "aries" as const, slot: 1, starId: "star0123456789abcdef", ownerNickname: "용우", card: { cardId: "cups-02", orientation: "upright" as const }, bondLine: "요즘 두 사람 사이엔 ‘마음을 주고받음’의 기운이 흘러요",
@@ -188,10 +189,10 @@ describe("JoinFlow", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(document.body.textContent).not.toContain("초대코드");
     cleanup();
-    render(<JoinFlow state={{ status: "choosing", kind: "choosing", code: "K7M4QX", ownerNickname: "용우", earlier: null }} />);
+    render(<JoinFlow state={{ status: "choosing", kind: "choosing", code: "K7M4QX", ownerNickname: "용우", earlier: null, earlierHidden: false }} />);
     expect(screen.getByRole("heading", { level: 1, name: "용우님이 다음 별자리를 고르는 중이에요. 조금 뒤에 다시 와 주세요" })).toBeTruthy();
     cleanup();
-    render(<JoinFlow state={{ status: "alldone", kind: "alldone", code: "K7M4QX", ownerNickname: "용우", earlier: null }} />);
+    render(<JoinFlow state={{ status: "alldone", kind: "alldone", code: "K7M4QX", ownerNickname: "용우", earlier: null, earlierHidden: false }} />);
     expect(screen.getByRole("heading", { level: 1, name: "용우님은 열두 별자리를 모두 채웠어요. 함께해 줘서 고마워요" })).toBeTruthy();
   });
 
@@ -247,6 +248,40 @@ describe("JoinFlow", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("reloaded without a session: says the star is there and asks for the login, no score, card, line or share (owner 2026-11-05)", () => {
+    render(<JoinFlow state={{ status: "hidden", kind: "hidden", code: "K7M4QX", ownerNickname: "용우" }} />);
+    expect(screen.getByRole("heading", { level: 1, name: "이미 별이 되어 있어요" })).toBeTruthy();
+    const login = screen.getByRole("link", { name: "로그인하고 결과 보기" });
+    expect(login.getAttribute("href")).toBe("/login?next=%2Fb%2FK7M4QX");
+    expect(document.body.textContent).not.toMatch(/인연 카드|공유하기|\d+점/);
+    expect(screen.queryByRole("textbox", { name: "닉네임" })).toBeNull();
+  });
+
+  it("between signs and on the next sign's form, an earlier star a visitor cannot see is only said to exist, with the login", () => {
+    render(<JoinFlow state={{ status: "choosing", kind: "choosing", code: "K7M4QX", ownerNickname: "용우", earlier: null, earlierHidden: true }} />);
+    expect(screen.getByRole("link", { name: "로그인하고 결과 보기" }).getAttribute("href")).toBe("/login?next=%2Fb%2FK7M4QX");
+    expect(screen.queryByText("결과 보기")).toBeNull();
+    cleanup();
+    render(<JoinFlow state={{ ...OPEN, sign: "taurus", filled: 0, slots: 5, earlier: null, earlierHidden: true }} />);
+    expect(screen.getByRole("link", { name: "로그인하고 결과 보기" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "닉네임" })).toBeTruthy();
+  });
+
+  it("says on the first result that seeing it again later needs a login, only to a visitor (owner 2026-11-05)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ payments: true, login: true, owner: false, user: null }))));
+    resetAccountForTests();
+    render(<JoinFlow state={{ status: "joined", kind: "joined", code: "K7M4QX", result: RESULT }} />);
+    await screen.findByText(/나중에 이 결과를 다시 보려면/);
+    expect(screen.getByRole("link", { name: "로그인" }).getAttribute("href")).toBe("/login?next=%2Fb%2FK7M4QX");
+    cleanup();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ payments: true, login: true, owner: false, user: { nickname: "하늘", unused: [] } }))));
+    resetAccountForTests();
+    render(<JoinFlow state={{ status: "joined", kind: "joined", code: "K7M4QX", result: RESULT }} />);
+    await act(async () => {});
+    expect(screen.queryByText(/나중에 이 결과를 다시 보려면/)).toBeNull();
+    resetAccountForTests();
   });
 
   it("notes an earlier star above the form for the next sign", () => {

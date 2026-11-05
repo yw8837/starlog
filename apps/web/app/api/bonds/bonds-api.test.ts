@@ -110,6 +110,12 @@ describe("bonds API", () => {
     expect(res.status).toBe(200);
     res = await joinPost(req("/api/bonds/join", new Map(), { code, nickname: "지수", birth: { calendar: "solar", year: 1991, month: 5, day: 12 }, pick: 1 }, "3.3.3.2"));
     expect(res.status).toBe(200);
+    // Seeing it again needs a session (owner 2026-11-05): before one, only that there is something to see.
+    const hidden = (await (await meGet(req("/api/bonds/me", friend))).json()) as Record<string, unknown>;
+    expect(hidden).toMatchObject({ owner: null, signedIn: false, joinedHidden: true });
+    expect(hidden.joined).toBeUndefined();
+    expect(JSON.stringify(hidden)).not.toMatch(/민지|용우|지수|aquarius/);
+    await signIn(friend);
     const body = (await (await meGet(req("/api/bonds/me", friend))).json()) as Record<string, unknown>;
     expect(body).toMatchObject({
       owner: null,
@@ -119,6 +125,17 @@ describe("bonds API", () => {
     // the owner's own view has no `joined` (nothing joined from that device), and the home row's light view never asks
     expect(Object.keys((await (await meGet(req("/api/bonds/me", owner))).json()) as object)).not.toContain("joined");
     expect(Object.keys((await (await meGet(req("/api/bonds/me?view=home", friend))).json()) as object)).not.toContain("joined");
+  });
+
+  it("answers a second join from a device with no session with the refusal alone, no result in it (owner 2026-11-05)", async () => {
+    const { code } = await startOwner("민지", "aquarius");
+    const friend: Jar = new Map();
+    const first = await joinPost(req("/api/bonds/join", friend, { code, nickname: "용우", birth: ME, pick: 0 }, "3.3.4.1"));
+    absorb(friend, first);
+    expect(((await first.json()) as { score: number }).score).toEqual(expect.any(Number));
+    const again = await joinPost(req("/api/bonds/join", friend, { code, nickname: "용우", birth: ME, pick: 1 }, "3.3.4.1"));
+    expect(again.status).toBe(409);
+    expect(await again.json()).toEqual({ ok: false, code: "ALREADY_JOINED" });
   });
 
   it("refuses self-joins", async () => {

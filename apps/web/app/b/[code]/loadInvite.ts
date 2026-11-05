@@ -14,6 +14,7 @@ export type { FriendResultView } from "@/lib/bonds/service";
 export type InviteState =
   | (Extract<InvitePage, { kind: "self" }> & { status: "self"; code: string })
   | (Extract<InvitePage, { kind: "joined" }> & { status: "joined"; code: string })
+  | (Extract<InvitePage, { kind: "hidden" }> & { status: "hidden"; code: string })
   | (Extract<InvitePage, { kind: "open" }> & { status: "open"; code: string })
   | (Extract<InvitePage, { kind: "choosing" }> & { status: "choosing"; code: string })
   | (Extract<InvitePage, { kind: "alldone" }> & { status: "alldone"; code: string })
@@ -33,7 +34,8 @@ export function codeFromSegment(raw: string): string | null {
 /**
  * What an invite code opens for this visitor. A lookup like GET /api/bonds/resolve (codeGuard): real
  * codes open generously, unknown and revoked ones count strictly and answer alike (`bad`). The device
- * cookies say whether this is the owner, or a friend who already joined (never minted here).
+ * cookies say whether this is the owner, or a friend who already joined (never minted here). A friend's star shows again
+ * only with a session (owner 2026-11-05): this state is all the page's HTML and RSC payload hold, so a visitor's has none of it.
  */
 export async function loadInvite(raw: string): Promise<InviteState> {
   const code = codeFromSegment(raw);
@@ -43,10 +45,9 @@ export async function loadInvite(raw: string): Promise<InviteState> {
   try {
     const secret = signingSecret();
     const jar = Object.fromEntries((await cookies()).getAll().map((c) => [c.name, c.value]));
-    const viewer = secret
-      ? { ownerId: (await whoOwns(bondsRepo(), jar, secret, Date.now())).ownerId, friendKey: await existingFriendKey(jar, secret) }
-      : { ownerId: null, friendKey: null };
-    const page = await invitePage(bondsRepo(), code, viewer);
+    const identity = secret ? await whoOwns(bondsRepo(), jar, secret, Date.now()) : null;
+    const friendKey = secret ? await existingFriendKey(jar, secret) : null;
+    const page = await invitePage(bondsRepo(), code, { ownerId: identity?.ownerId ?? null, friendKey, signedIn: Boolean(identity?.userId) });
     return { ...page, status: page.kind, code } as InviteState;
   } catch (error) {
     if (error instanceof BondsError && error.code === "BAD_CODE") {

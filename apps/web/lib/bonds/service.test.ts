@@ -471,19 +471,41 @@ describe("bonds service", () => {
   it("shows the friend page as this visitor sees it: own link, a past join, or the form with an earlier star", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
-    expect(await invitePage(repo, code, { ownerId: "o1", friendKey: null })).toMatchObject({ kind: "self", sign: "aries", filled: 0, slots: 4 });
-    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", sign: "aries", earlier: null });
+    expect(await invitePage(repo, code, { ownerId: "o1", friendKey: null, signedIn: true })).toMatchObject({ kind: "self", sign: "aries", filled: 0, slots: 4 });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null, signedIn: false })).toMatchObject({ kind: "open", sign: "aries", earlier: null });
 
     const joined = await join(repo, t0, code, 0);
-    const again = await invitePage(repo, code, { ownerId: null, friendKey: "f0" });
+    const again = await invitePage(repo, code, { ownerId: null, friendKey: "f0", signedIn: true });
     expect(again).toMatchObject({ kind: "joined", result: { nickname: "친구0", score: joined.score, sign: "aries", slot: 0, completed: false } });
     // the reasons are the friend's own side, the same as right after joining
     expect(again.kind === "joined" && again.result.parts).toEqual(joined.parts);
 
     for (let i = 1; i < 4; i++) await join(repo, t0, code, i);
-    const later = await invitePage(repo, code, { ownerId: null, friendKey: "f0" });
+    const later = await invitePage(repo, code, { ownerId: null, friendKey: "f0", signedIn: true });
     expect(later).toMatchObject({ kind: "open", sign: "taurus", earlier: { sign: "aries", completed: true } });
-    await expect(invitePage(repo, "ZZZZZZ", { ownerId: null, friendKey: null })).rejects.toMatchObject({ code: "BAD_CODE" });
+    await expect(invitePage(repo, "ZZZZZZ", { ownerId: null, friendKey: null, signedIn: false })).rejects.toMatchObject({ code: "BAD_CODE" });
+  });
+
+  it("hides a friend's star from a device with no session: no score, card, line or nickname, on any page; the star stays (owner 2026-11-05)", async () => {
+    const { repo, t0, code } = await setup();
+    await chooseSign(repo, t0, "o1", "aries");
+    const joined = await join(repo, t0, code, 0);
+    const visitor = { ownerId: null, friendKey: "f0", signedIn: false };
+    const noResult = (page: unknown) => {
+      const text = JSON.stringify(page);
+      for (const hidden of ["친구0", joined.star.id, joined.card.cardId, joined.bondLine, '"score"', '"parts"']) expect(text).not.toContain(hidden);
+    };
+    const same = await invitePage(repo, code, visitor);
+    expect(same).toMatchObject({ kind: "hidden" });
+    noResult(same);
+    // The next sign's form: the earlier star is only said to exist.
+    for (let i = 1; i < 4; i++) await join(repo, t0, code, i);
+    const next = await invitePage(repo, code, visitor);
+    expect(next).toMatchObject({ kind: "open", sign: "taurus", earlier: null, earlierHidden: true, myNickname: null });
+    noResult(next);
+    // A session on the same device (the friend cookie still says which star): the very same result again.
+    expect(await invitePage(repo, code, { ...visitor, signedIn: true })).toMatchObject({ kind: "open", earlier: { nickname: "친구0", score: joined.score }, earlierHidden: false, myNickname: "친구0" });
+    expect((await repo.starsByFriend("f0", 5)).map((star) => star.id)).toEqual([joined.star.id]);
   });
 
   it("marks a star whose friend saw the score notice (owner 2026-10-23): only those scores may show on the owner's public link", async () => {
@@ -499,28 +521,28 @@ describe("bonds service", () => {
   it("tells the form whether this constellation's scores can show: not once a star joined without the notice, even after it is removed (review 2026-10-23)", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
-    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", scoresPrivate: false });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null, signedIn: false })).toMatchObject({ kind: "open", scoresPrivate: false });
     await joinStar(repo, t0, { code, friendKey: "f0", nickname: "친구0", birth: friends[0]!, pick: 0, message: null, scoreNotice: true });
-    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", scoresPrivate: false });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null, signedIn: false })).toMatchObject({ kind: "open", scoresPrivate: false });
     const earlier = await joinStar(repo, t0, { code, friendKey: "f1", nickname: "친구1", birth: friends[1]!, pick: 1, message: null });
-    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", scoresPrivate: true });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null, signedIn: false })).toMatchObject({ kind: "open", scoresPrivate: true });
     await removeStar(repo, t0, "o1", earlier.star.id);
-    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", scoresPrivate: true });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null, signedIn: false })).toMatchObject({ kind: "open", scoresPrivate: true });
   });
 
   it("gives the form the nickname this device already used (an owner here, or a friend elsewhere), so joining takes fewer steps (owner 2026-10-23)", async () => {
     const { repo, t0, code } = await setup();
     await chooseSign(repo, t0, "o1", "aries");
-    expect(await invitePage(repo, code, { ownerId: null, friendKey: null })).toMatchObject({ kind: "open", myNickname: null });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: null, signedIn: false })).toMatchObject({ kind: "open", myNickname: null });
     // an owner of another constellation on this device
     await saveOwner(repo, t0, "o2", { nickname: "하늘별", birth: me });
-    expect(await invitePage(repo, code, { ownerId: "o2", friendKey: null })).toMatchObject({ kind: "open", myNickname: "하늘별" });
+    expect(await invitePage(repo, code, { ownerId: "o2", friendKey: null, signedIn: true })).toMatchObject({ kind: "open", myNickname: "하늘별" });
     // a friend who joined someone else's constellation from this device
     await saveOwner(repo, t0, "o3", { nickname: "민지", birth: me });
     await chooseSign(repo, t0, "o3", "leo");
     const other = await inviteOf(repo, t0, "o3");
     await joinStar(repo, t0, { code: other.code, friendKey: "f9", nickname: "바다별", birth: friends[0]!, pick: 0, message: null });
-    expect(await invitePage(repo, code, { ownerId: null, friendKey: "f9" })).toMatchObject({ kind: "open", myNickname: "바다별" });
+    expect(await invitePage(repo, code, { ownerId: null, friendKey: "f9", signedIn: true })).toMatchObject({ kind: "open", myNickname: "바다별" });
   });
 
   it("lists the top 50 and still gives a viewer further down their own rank", async () => {

@@ -691,25 +691,30 @@ export type InvitePage =
   | { kind: "self"; ownerNickname: string; sign: SignId | null; filled: number; slots: number }
   /** this device is already a star of the sign being filled */
   | { kind: "joined"; result: FriendResultView }
+  /** the same, for a device with no session (owner 2026-11-05): that the star exists, nothing of it */
+  | { kind: "hidden"; ownerNickname: string }
   /**
-   * open for a new star; `earlier` is this device's star in an earlier sign of the same owner; `myNickname` the nickname
-   * this device already used (its own constellation's, or a star it left elsewhere), to fill the form (owner 2026-10-23);
+   * open for a new star; `earlier` is this device's star in an earlier sign of the same owner (`earlierHidden`: there is
+   * one, but this device has no session, owner 2026-11-05); `myNickname` the nickname this device already used (its own
+   * constellation's, or a star it left elsewhere), to fill the form (owner 2026-10-23);
    * `scoresPrivate`: the owner's shares never show this constellation's scores, so the form does not say they will
    */
   | {
-      kind: "open"; ownerNickname: string; sign: SignId; filled: number; slots: number; earlier: FriendResultView | null; myNickname: string | null; scoresPrivate: boolean;
+      kind: "open"; ownerNickname: string; sign: SignId; filled: number; slots: number; earlier: FriendResultView | null; earlierHidden: boolean; myNickname: string | null; scoresPrivate: boolean;
       /** the constellation this form shows: the join says so, to be told when it filled up or changed meanwhile */
       constellationId: string;
     }
-  | { kind: "choosing"; ownerNickname: string; earlier: FriendResultView | null }
-  | { kind: "alldone"; ownerNickname: string; earlier: FriendResultView | null };
+  | { kind: "choosing"; ownerNickname: string; earlier: FriendResultView | null; earlierHidden: boolean }
+  | { kind: "alldone"; ownerNickname: string; earlier: FriendResultView | null; earlierHidden: boolean };
 
 /**
  * /b/<code> for this visitor (Q-05, Q-11): their own link, the result of a join this device already
  * made (so a reload never shows the empty form again), or the form, with an earlier star noted.
+ * A star shows again only with a session (owner 2026-11-05): without one the join's own answer was the one time, and this
+ * says only that the star exists. The friend cookie still says which star is this device's: no account is linked to it.
  * Unknown and revoked codes fail with BAD_CODE like every lookup.
  */
-export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerId: string | null; friendKey: string | null }): Promise<InvitePage> {
+export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerId: string | null; friendKey: string | null; signedIn: boolean }): Promise<InvitePage> {
   const owner = await ownerOfCode(repo, code);
   const filling = await repo.fillingOf(owner.id);
   const stars = filling ? await repo.starsOf(filling.id) : [];
@@ -717,7 +722,7 @@ export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerI
     return { kind: "self", ownerNickname: owner.nickname, sign: filling?.sign ?? null, filled: stars.length, slots: filling ? getConstellation(filling.sign).slots : 0 };
   }
   const found = viewer.friendKey ? await repo.latestStarOf(owner.id, viewer.friendKey) : null;
-  const result: FriendResultView | null = found
+  const result: FriendResultView | null = found && viewer.signedIn
     ? {
         nickname: found.star.nickname,
         score: found.star.score,
@@ -731,18 +736,19 @@ export async function invitePage(repo: BondsRepo, code: string, viewer: { ownerI
         bondLine: bondCardLine(found.star.cardId, found.star.orientation),
       }
     : null;
-  if (filling && found && found.constellation.id === filling.id) return { kind: "joined", result: result! };
+  if (filling && found && found.constellation.id === filling.id) return result ? { kind: "joined", result } : { kind: "hidden", ownerNickname: owner.nickname };
+  const earlierHidden = Boolean(found) && !viewer.signedIn;
   if (!filling) {
     const allDone = (await repo.completedOf(owner.id)).length >= CONSTELLATIONS.length;
-    return allDone ? { kind: "alldone", ownerNickname: owner.nickname, earlier: result } : { kind: "choosing", ownerNickname: owner.nickname, earlier: result };
+    return { kind: allDone ? "alldone" : "choosing", ownerNickname: owner.nickname, earlier: result, earlierHidden };
   }
   const myNickname =
     result?.nickname ??
     (viewer.ownerId ? (await repo.getOwner(viewer.ownerId))?.nickname : undefined) ??
-    (viewer.friendKey ? (await repo.starsByFriend(viewer.friendKey, 1))[0]?.nickname : undefined) ??
+    (viewer.friendKey && viewer.signedIn ? (await repo.starsByFriend(viewer.friendKey, 1))[0]?.nickname : undefined) ??
     null;
   return {
-    kind: "open", ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, earlier: result, myNickname,
+    kind: "open", ownerNickname: owner.nickname, sign: filling.sign, filled: stars.length, slots: getConstellation(filling.sign).slots, earlier: result, earlierHidden, myNickname,
     scoresPrivate: filling.scoresPrivate === true,
     constellationId: filling.id,
   };

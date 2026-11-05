@@ -12,6 +12,7 @@ import { Dogam } from "@/components/bonds/Dogam";
 import { HowToButton, HowToCard } from "@/components/bonds/HowTo";
 import { InviteShareButton } from "@/components/bonds/InviteShareButton";
 import { SignPicker } from "@/components/bonds/SignPicker";
+import { LoginFirst } from "@/components/reading/LoginFirst";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { loginHref } from "@/lib/account/client";
@@ -28,7 +29,7 @@ import s from "./BondsView.module.css";
 const LATEST_DAYS = 7;
 
 /** `signedIn`: a new owner logs in first; `link`: this device's owner can be linked to the account (owner 2026-10-27) */
-type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null; joined?: JoinedView[]; signedIn?: boolean; link?: LinkOffer };
+type Me = ({ owner: null } | OwnerView) & { weekTop?: WeekTop | null; joined?: JoinedView[]; joinedHidden?: boolean; signedIn?: boolean; link?: LinkOffer };
 
 /**
  * 별자리 인연, the owner's single scroll (spec §3): the constellation being filled with its stars, the
@@ -93,7 +94,7 @@ export function BondsView({ initialSign }: { initialSign: SignId | null }) {
           // The nickname this device used as a friend, if any; a friend's code is entered in 내 정보, not here (owner 2026-10-02).
           <OwnerSetup onDone={load} defaultNickname={me.joined?.flatMap((j) => j.members).find((m) => m.me)?.nickname ?? ""} />
         )}
-        <JoinedList joined={me.joined ?? []} />
+        <JoinedList joined={me.joined ?? []} hidden={me.joinedHidden} />
       </>
     );
   }
@@ -258,9 +259,20 @@ function OwnerChoice({ label, summary, onKeep, busy }: { label: string; summary:
 
 /**
  * 내가 들어간 별자리 (owner 2026-10-14): friends' constellations this device joined, newest first, each with
- * whose it is, how far it is filled and who is in it (나 for this device). Nothing when it joined none.
+ * whose it is, how far it is filled and who is in it (나 for this device). Nothing when it joined none. A device with no
+ * session sees that there are some and the login (`hidden`, owner 2026-11-05): after it they show again.
  */
-function JoinedList({ joined }: { joined: JoinedView[] }) {
+function JoinedList({ joined, hidden = false }: { joined: JoinedView[]; hidden?: boolean }) {
+  if (hidden) {
+    return (
+      <LoginFirst
+        title="내가 들어간 별자리는 로그인하고 볼 수 있어요"
+        body="이 기기로 참여한 별은 그대로 있어요. 카카오나 Google로 로그인하면 이 기기에서 다시 보여 드려요."
+        href={loginHref("/bonds")}
+        action="로그인하고 보기"
+      />
+    );
+  }
   if (!joined.length) return null;
   return (
     <section className={s.section} aria-labelledby="joined-title">
@@ -285,7 +297,7 @@ function JoinedList({ joined }: { joined: JoinedView[] }) {
   );
 }
 
-function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null; joined?: JoinedView[]; link?: LinkOffer }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
+function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerView & { weekTop?: WeekTop | null; joined?: JoinedView[]; joinedHidden?: boolean; link?: LinkOffer }; seenBefore: number; initialSign: SignId | null; reload: () => void }) {
   const { owner, filling, completed, top5, ranks } = view;
   // A sign was just chosen here: the invite is brought into view once (owner 2026-10-23).
   const [justMade, setJustMade] = useState(false);
@@ -369,7 +381,7 @@ function OwnerScreen({ view, seenBefore, initialSign, reload }: { view: OwnerVie
         </details>
       ) : null}
 
-      <JoinedList joined={view.joined ?? []} />
+      <JoinedList joined={view.joined ?? []} hidden={view.joinedHidden} />
 
       <section className={s.section} aria-labelledby="dogam-title">
         <div className={b.sectionHead}>
