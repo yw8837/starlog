@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
-import { fakeBrowserClock, loginForOpening, openingOn } from "./opening";
+import { fakeBrowserClock, loginForOpening, openingOn, memberOnThisDevice } from "./opening";
 import { makeLink, openShared, shotButton } from "./shareShots";
 
 type SajuSample = {
@@ -267,6 +267,8 @@ test("오늘의 한 장: shuffle, pick one of three; a reload shows only that ca
 });
 
 test("내 기록: the empty state", async ({ page }, info) => {
+  // Logged in: a visitor gets the login in its place (owner 2026-11-05, e2e/kept-login.spec.ts).
+  await memberOnThisDevice(page);
   await page.goto("/story");
   await expect(page.getByText("아직 기록이 없어요")).toBeVisible();
   await expect(page.getByRole("link", { name: "첫 타로 보기" })).toBeVisible();
