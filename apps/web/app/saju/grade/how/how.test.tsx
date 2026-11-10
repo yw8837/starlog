@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { SIXTY_GANZHI, yearScores, type GradeChart } from "@starlog/core";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { MODEL_NAMES } from "@/lib/ai/style";
@@ -28,6 +29,56 @@ describe("/saju/grade/how", () => {
     for (const part of ["고르기", "흐름", "올해 순위", "18", "12", "70", "상생", "입춘", "지장간", "starlog-grade-v1", "같은 입력이면 언제나 같은 결과"]) expect(text()).toContain(part);
     expect(text()).toContain("위에서 8%까지 S, 30%까지 A, 70%까지 B, 나머지는 C");
     for (const nickname of ["보름달 사주주", "차오르는 달 사주주", "초승달 사주주", "달빛 모으는 사주주"]) expect(text()).toContain(nickname);
+  });
+
+  it("publishes the whole formula with its constants and rounding, so a grade can be recomputed by hand (review 7)", () => {
+    render(<SajuGradeHowPage />);
+    const section = screen.getByRole("region", { name: "식 그대로" });
+    for (const part of [
+      "D = Σ|5 × c − n|", "g = 1 − (D − D최소) ÷ (8n − D최소)", "상생 1, 같은 기운 0.5, 상극 0", "목·화, 화·토, 토·금, 금·수, 수·목",
+      "m = 30 × e + 20 × (고리′ − 고리) ÷ 2", "e = (g′ − g + 0.2) ÷ 0.5", "0보다 작으면 0, 1보다 크면 1", "r = (m이 더 작은 해의 수 + (m이 같은 해의 수 − 1) ÷ 2) ÷ 59",
+      "18 × g + 12 × f + 70 × r", "반올림", "8% 미만이면 S, 30% 미만이면 A, 70% 미만이면 B",
+    ]) expect(section.textContent, part).toContain(part);
+  });
+
+  it("the published formula, coded from the page's words alone, gives the engine's score for every 세운", () => {
+    // 목화토금수 of the glyphs, as the page's 무엇을 보나요 lists them
+    const EL: Record<string, number> = { 甲: 0, 乙: 0, 丙: 1, 丁: 1, 戊: 2, 己: 2, 庚: 3, 辛: 3, 壬: 4, 癸: 4, 寅: 0, 卯: 0, 巳: 1, 午: 1, 辰: 2, 戌: 2, 丑: 2, 未: 2, 申: 3, 酉: 3, 亥: 4, 子: 4 };
+    const counts = (glyphs: string[]) => [0, 1, 2, 3, 4].map((e) => glyphs.filter((x) => EL[x] === e).length);
+    const D = (c: number[], n: number) => c.reduce((sum, x) => sum + Math.abs(5 * x - n), 0);
+    const g = (c: number[]) => {
+      const n = c.reduce((a, b) => a + b, 0);
+      const even = [0, 1, 2, 3, 4].map((i) => Math.floor(n / 5) + (i < n % 5 ? 1 : 0));
+      return 1 - (D(c, n) - D(even, n)) / (8 * n - D(even, n));
+    };
+    const rings = (c: number[]) => [0, 1, 2, 3, 4].filter((i) => c[i]! > 0 && c[(i + 1) % 5]! > 0).length;
+    const link = (a: number, b: number): number => (a === b ? 0.5 : (a + 1) % 5 === b || (b + 1) % 5 === a ? 1 : 0);
+    const byHand = (chart: GradeChart) => {
+      const { stems, branches } = chart;
+      const c = counts([...stems, ...branches]);
+      const pairs = [
+        ...stems.slice(1).map((s, i) => link(EL[stems[i]!]!, EL[s]!)),
+        ...branches.slice(1).map((b, i) => link(EL[branches[i]!]!, EL[b]!)),
+        ...stems.map((s, i) => link(EL[s]!, EL[branches[i]!]!)),
+      ];
+      const f = pairs.reduce((a, b) => a + b, 0) / pairs.length;
+      const m = SIXTY_GANZHI.map((gz) => {
+        const next = counts([...stems, ...branches, gz[0]!, gz[1]!]);
+        const e = Math.min(1, Math.max(0, (g(next) - g(c) + 0.2) / 0.5));
+        return 30 * e + (20 * (rings(next) - rings(c))) / 2;
+      });
+      return m.map((mine) => {
+        const r = (m.filter((x) => x < mine).length + (m.filter((x) => x === mine).length - 1) / 2) / 59;
+        return Math.round(18 * g(c) + 12 * f + 70 * r);
+      });
+    };
+    for (const chart of [
+      { stems: [..."甲丁己辛"], branches: [..."子卯巳未"] },
+      { stems: [..."丙甲丙"], branches: [..."午午寅"] },
+      { stems: [..."庚己戊丁"], branches: [..."申丑子巳"] },
+      { stems: [..."辛癸庚"], branches: [..."未巳寅"] },
+      { stems: [..."戊己戊己"], branches: [..."辰未辰未"] },
+    ]) expect(byHand(chart)).toEqual(yearScores(chart));
   });
 
   it("says what is left out on purpose and why: 신강·신약, 용신, 격국, 조후, 합화, 합·충, 대운", () => {

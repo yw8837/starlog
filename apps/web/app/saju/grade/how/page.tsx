@@ -125,6 +125,31 @@ export default function SajuGradeHowPage() {
           </ul>
         </section>
 
+        <section className={s.block} aria-labelledby="how-exact">
+          <h2 id="how-exact" className={s.blockTitle}>
+            식 그대로
+          </h2>
+          <p className={s.prose}>아래 식과 숫자가 규칙의 전부예요. 손으로 계산해도 화면과 같은 등급이 나와요.</p>
+          <ul className={s.list}>
+            <li>
+              고르기: 글자 수를 n(시를 알면 8, 모르면 6), 기운마다 글자 개수를 c라고 해요. 치우침 D = Σ|5 × c − n|(다섯 기운을 더해요)이고, n개를 가장
+              고르게 나눴을 때의 D를 D최소라고 하면 g = 1 − (D − D최소) ÷ (8n − D최소)예요.
+            </li>
+            <li>흐름: 이웃한 쌍마다 상생 1, 같은 기운 0.5, 상극 0을 주고 평균을 낸 값이 f예요.</li>
+            <li>
+              상생 고리: 서로 살려 주는 두 기운(목·화, 화·토, 토·금, 금·수, 수·목)이 명식에 둘 다 있는 쌍의 수예요. 세운 두 글자를 더한 뒤의 고르기를 g′,
+              고리를 고리′라고 하면 e = (g′ − g + 0.2) ÷ 0.5이고, e가 0보다 작으면 0, 1보다 크면 1로 잘라요. 그해의 맞음 값은 m = 30 × e + 20 × (고리′ −
+              고리) ÷ 2예요.
+            </li>
+            <li>올해 순위: 내 명식이 만나는 60가지 세운의 m을 견줘서 r = (m이 더 작은 해의 수 + (m이 같은 해의 수 − 1) ÷ 2) ÷ 59예요.</li>
+            <li>더한 값: 18 × g + 12 × f + 70 × r을 반올림한 정수(0~100)예요.</li>
+            <li>
+              등급: 같은 해의 가능한 조합을 모두 이 식으로 계산해서, 내 값보다 큰 조합이 8% 미만이면 S, 30% 미만이면 A, 70% 미만이면 B, 그 밖은 C예요. 그래서
+              값이 같으면 같은 등급이에요.
+            </li>
+          </ul>
+        </section>
+
         <section className={s.block} aria-labelledby="how-left-out">
           <h2 id="how-left-out" className={s.blockTitle}>
             일부러 쓰지 않는 것
