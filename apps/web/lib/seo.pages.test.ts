@@ -332,7 +332,8 @@ describe("articles dated ahead (publishAt): the same metadata rules, checked bef
       expect(meta.alternates?.canonical).toBe(`${SITE.guideUrl}/guide/${slug}`);
       expect((meta.openGraph as { url?: string; type?: string }).url).toBe(`${SITE.guideUrl}/guide/${slug}`);
       expect(meta.robots).toBeUndefined();
-      const titles = INDEXABLE.map(([, m]) => fullTitle(m));
+      // every other page's title (once its day has come, INDEXABLE holds the article itself too)
+      const titles = INDEXABLE.filter(([path]) => path !== `/guide/${slug}`).map(([, m]) => fullTitle(m));
       expect(titles).not.toContain(fullTitle(meta));
     } finally {
       vi.useRealTimers();
