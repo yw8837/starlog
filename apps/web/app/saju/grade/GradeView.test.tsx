@@ -211,7 +211,9 @@ describe("GradeView", () => {
       details.open = true;
       details.dispatchEvent(new Event("toggle"));
     });
-    await waitFor(() => expect(screen.getByText(/가능한 사주 조합 561,600개 가운데 위에서 \d+%/)).toBeTruthy());
+    // S·A·B name a number with the tie rule; C names its band (review 6)
+    await waitFor(() => expect(screen.getByText(/가능한 사주 조합 561,600개 가운데 (?:위에서 \d+%.*값이 같으면 같은 등급으로 묶어요|C 구간\(아래쪽 30% 안팎\))/)).toBeTruthy());
+    expect(within(details).getByText(/70%까지 B, 나머지는 C예요\. 값이 같으면 같은 등급으로 묶어요\./)).toBeTruthy();
     expect(within(details).getByText(/starlog-grade-v1/)).toBeTruthy();
     expect(within(details).getByRole("link", { name: /규칙 전체 보기/ }).getAttribute("href")).toBe("/saju/grade/how");
   });

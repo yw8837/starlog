@@ -152,18 +152,56 @@ describe("three rule-made observations (B.5)", () => {
 });
 
 describe("상위 % (A6)", () => {
-  it("reads the rank table on demand, with the population wording", async () => {
+  it("reads the rank table on demand, with the population wording and the tie rule (S·A·B)", async () => {
     const y = SIXTY_GANZHI.indexOf("丙午");
-    const score = yearScores(C)[y]!; // 34
+    const score = yearScores(C)[y]!; // 34, B
     const top = Math.ceil((100 * ranksJson.known[y]![score]!) / GRADE_POPULATION.hourKnown);
     const p = await gradePercentile(C, 2026);
+    expect(gradeForYear(C, 2026).grade).toBe("B");
     expect(p.topPercent).toBe(top);
     expect(p.text).toBe(
-      `가능한 사주 조합 561,600개 가운데 위에서 ${top}% · 연 60 × 월 12 × 일 60 × 시 13(밤 11시대를 다음 날 천간으로 세는 스타로그 기준)을 하나씩 같은 무게로 센 순위예요. 인구 통계가 아니에요.`,
+      `가능한 사주 조합 561,600개 가운데 위에서 ${top}% · 연 60 × 월 12 × 일 60 × 시 13(밤 11시대를 다음 날 천간으로 세는 스타로그 기준)을 하나씩 같은 무게로 센 순위예요. 값이 같으면 같은 등급으로 묶어요. 인구 통계가 아니에요.`,
     );
-    const u = await gradePercentile(B, 2026);
-    expect(u.text).toMatch(/^시를 모르는 사주 조합 43,200개 가운데 위에서 \d+% · 연 60 × 월 12 × 일 60을 하나씩 같은 무게로 센 순위예요\. 인구 통계가 아니에요\.$/);
     expect((await gradePercentile(A, 2020)).topPercent).toBeLessThanOrEqual(8); // an S year is in the top 8% or its tie
+  });
+
+  it("shows a C year's band, never a number like 위에서 100% (review 6)", async () => {
+    expect(gradeForYear(B, 2026).grade).toBe("C");
+    const u = await gradePercentile(B, 2026);
+    expect(u.text).toBe("시를 모르는 사주 조합 43,200개 가운데 C 구간(아래쪽 30% 안팎) · 연 60 × 월 12 × 일 60을 하나씩 같은 무게로 센 구간이에요. 인구 통계가 아니에요.");
+    const k = await gradePercentile(C, 2029);
+    expect(gradeForYear(C, 2029).grade).toBe("C");
+    expect(k.text).toMatch(/^가능한 사주 조합 561,600개 가운데 C 구간\(아래쪽 30% 안팎\) · /);
+    // every year of these charts: C names its band, S·A·B a number under 100 with the tie rule
+    const seen = new Set<string>();
+    for (const chart of [A, B, C, FAR, BRIGHT_THEN_FAR]) {
+      for (let year = 2026; year < 2086; year++) {
+        const { grade } = gradeForYear(chart, year);
+        const { text, topPercent } = await gradePercentile(chart, year);
+        seen.add(grade);
+        expect(text).not.toMatch(/위에서 100%/);
+        if (grade === "C") expect(text, `${year}`).not.toMatch(/위에서 \d+%/);
+        else {
+          expect(text, `${year}`).toContain("값이 같으면 같은 등급으로 묶어요.");
+          expect(topPercent).toBeLessThan(100);
+        }
+      }
+    }
+    expect([...seen].sort()).toEqual(["A", "B", "C", "S"]);
+    // the whole table: a number is shown only for S·A·B, and none of them reads above 73% (ties counted); C reached 100%
+    for (const [key, population] of [["known", GRADE_POPULATION.hourKnown], ["unknown", GRADE_POPULATION.hourUnknown]] as const) {
+      let shown = 0;
+      let band = 0;
+      ranksJson[key].forEach((row, y) => {
+        row.forEach((atOrAbove, score) => {
+          if (atOrAbove === (row[score + 1] ?? 0)) return; // no chart has this score
+          const top = Math.max(1, Math.ceil((100 * atOrAbove) / population));
+          if (gradeOf(score, cutsJson[key][y] as unknown as GradeCuts) === "C") band = Math.max(band, top);
+          else shown = Math.max(shown, top);
+        });
+      });
+      expect([key, shown, band]).toEqual([key, 73, 100]);
+    }
   });
 });
 

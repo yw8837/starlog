@@ -217,8 +217,9 @@ export function gradeObservations(chart: GradeChart, year: number): [string, str
 // ---- 상위 % (A6): only inside "등급은 어떻게 나와요?", never on the card or a shared image ----
 
 export interface GradePercentile {
-  /** within the top this many percent of the combinations (rounded up, at least 1) */
+  /** within the top this many percent of the combinations, ties counted with it (rounded up, at least 1) */
   topPercent: number;
+  /** S·A·B: that number and the tie rule; C: its band, never a number (it read "위에서 100%" for 1.3% of chart-years, review 6) */
   text: string;
 }
 
@@ -227,11 +228,15 @@ export async function gradePercentile(chart: GradeChart, year: number): Promise<
   const y = yearIndex(year);
   const known = hourKnown(chart);
   const population = known ? GRADE_POPULATION.hourKnown : GRADE_POPULATION.hourUnknown;
-  const atOrAbove = (known ? ranks.known : ranks.unknown)[y]![yearScores(chart)[y]!]!;
+  const score = yearScores(chart)[y]!;
+  const atOrAbove = (known ? ranks.known : ranks.unknown)[y]![score]!;
   const topPercent = Math.max(1, Math.ceil((100 * atOrAbove) / population));
-  const text = known
-    ? `가능한 사주 조합 ${population.toLocaleString("ko-KR")}개 가운데 위에서 ${topPercent}% · 연 60 × 월 12 × 일 60 × 시 13(밤 11시대를 다음 날 천간으로 세는 스타로그 기준)을 하나씩 같은 무게로 센 순위예요. 인구 통계가 아니에요.`
-    : `시를 모르는 사주 조합 ${population.toLocaleString("ko-KR")}개 가운데 위에서 ${topPercent}% · 연 60 × 월 12 × 일 60을 하나씩 같은 무게로 센 순위예요. 인구 통계가 아니에요.`;
+  const head = known ? `가능한 사주 조합 ${population.toLocaleString("ko-KR")}개 가운데` : `시를 모르는 사주 조합 ${population.toLocaleString("ko-KR")}개 가운데`;
+  const counted = known ? "연 60 × 월 12 × 일 60 × 시 13(밤 11시대를 다음 날 천간으로 세는 스타로그 기준)" : "연 60 × 월 12 × 일 60";
+  const text =
+    gradeOf(score, cutsFor(chart, y)) === "C"
+      ? `${head} C 구간(아래쪽 30% 안팎) · ${counted}을 하나씩 같은 무게로 센 구간이에요. 인구 통계가 아니에요.`
+      : `${head} 위에서 ${topPercent}% · ${counted}을 하나씩 같은 무게로 센 순위예요. 값이 같으면 같은 등급으로 묶어요. 인구 통계가 아니에요.`;
   return { topPercent, text };
 }
 
