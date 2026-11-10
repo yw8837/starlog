@@ -86,7 +86,8 @@ describe("login and storage wording (SEO-03)", () => {
     // owner 2026-11-04: every AI reading needs a login; what stays open without one is listed, nothing more.
     // owner 2026-11-10: a friend logs in to join 별자리 인연 too; it is no longer among what stays open
     expect(login).toContain("타로와 사주의 맛보기, 오늘의 한 장, 결제, 별자리 인연의 내 별자리 만들기와 초대받아 별 되기는 카카오나 Google로 로그인하고 써요");
-    expect(login).toContain("질문 만들기와 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드, 2027 키워드, 이번 주 행운 번호, 공유받은 링크는 로그인 없이 쓸 수 있어요");
+    // spec 2026-11-11 E: the free 사주 등급 card and its rule page join what stays open
+    expect(login).toContain("질문 만들기와 카드 뽑기, 무료 사주 명식, 지금의 한 장, 탄생 카드, 2027 키워드, 이번 주 행운 번호, 사주 등급 카드와 규칙 페이지, 공유받은 링크는 로그인 없이 쓸 수 있어요");
     expect(login).not.toContain("별자리 인연 초대");
     expect(login).not.toContain("첫 풀이");
     expect(login).not.toContain("가입 선물");

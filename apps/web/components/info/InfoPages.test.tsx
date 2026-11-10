@@ -179,7 +179,9 @@ describe("/faq", () => {
 
     const cards = [...container.querySelectorAll("details")];
     expect(cards.length).toBeGreaterThanOrEqual(10);
-    expect(cards.length).toBeLessThanOrEqual(21); // 19 with "다른 앱과 사주(명식)가 다르게 나와요" (2026-10-07), 21 with 가격은 얼마예요 and 누가 만들었나요 (SEO P1-4)
+    // 19 with "다른 앱과 사주(명식)가 다르게 나와요" (2026-10-07), 21 with 가격은 얼마예요 and 누가 만들었나요 (SEO P1-4), 22 with
+    // "C가 나왔어요. 안 좋은 건가요?" (사주 등급, spec 2026-11-11 E)
+    expect(cards.length).toBeLessThanOrEqual(22);
     expect(data.mainEntity).toHaveLength(cards.length);
 
     data.mainEntity.forEach((question, i) => {

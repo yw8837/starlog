@@ -65,7 +65,7 @@ describe("service pages take every number from SITE", () => {
     // The refund answer may still say a 오픈 기념 무료 reading needs no refund (true for good); the offer itself never.
     expect(jsonLd).not.toMatch(/11월 30일까지|오픈 기념 무료\(/);
     for (const body of [text, jsonLd]) {
-      expect(body).toContain("일부는 무료예요. 지금의 한 장은 로그인 없이 횟수 제한 없이 무료이고, 오늘의 한 장은 로그인하면 무료예요. 타로 전체 풀이는 3,100원, 사주 전체 풀이는 4,100원이에요.");
+      expect(body).toContain("일부는 무료예요. 지금의 한 장은 로그인 없이 횟수 제한 없이 무료이고, 오늘의 한 장은 로그인하면 무료예요. 올해의 사주 등급 카드도 로그인 없이 무료예요. 타로 전체 풀이는 3,100원, 사주 전체 풀이는 4,100원이에요.");
       expect(body).toContain("타로와 사주의 맛보기도 로그인하면 무료로 볼 수 있어요.");
       expect(body).not.toMatch(/하루 4번|첫 풀이/);
       expect(body).toContain("약 1,234자");
