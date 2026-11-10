@@ -29,6 +29,39 @@ describe("지금의 한 장 tone (question only, spec 2.5)", () => {
   });
 });
 
+describe("near-crisis wording the server's crisis words let through (review 2026-11-11): never teased", () => {
+  // The reviewer's 위기 변형 samples. The server's crisis words (lib/crisis.ts) stay as they are; the browser's own check is
+  // deliberately wide, since a false hit only hides a nickname.
+  it.each(["죽는게 나을까", "살 이유가 없어", "다 포기하고 싶어", "더 버틸 자신이 없어", "그냥 사라질까", "없어지면 편할까", "자 살"])("the facts only: %s", (text) => {
+    expect(nowTone(text)).toEqual({ tone: "facts", crisis: null });
+  });
+
+  it.each([
+    ["죽고 싶다", "active"],
+    ["죽고싶당", "active"],
+    ["살기 싫다 진짜", "passive"],
+    ["이직할까? 근데 요즘 죽고 싶어", "active"],
+  ] as const)("what the server's crisis words catch gets the care lines: %s", (text, tier) => {
+    expect(nowTone(text)).toEqual({ tone: "crisis", crisis: tier });
+  });
+
+  it("joins jamo typed apart before the server's crisis words read it: the care lines", () => {
+    expect(nowTone("주ㄱ고 싶어")).toEqual({ tone: "crisis", crisis: "active" });
+    expect(nowTone("ㅈㅏㅅㅏㄹ하고 싶어")).toEqual({ tone: "crisis", crisis: "active" });
+  });
+
+  it("reads past spaces, marks, digits and invisible characters, but never calls a spaced-out word crisis words", () => {
+    for (const text of ["죽 는 게 나 을 까", "자.살", "자1살", "버​틸 자신이 없어", "ㅈㅅ"]) expect(nowTone(text).tone).toBe("facts");
+    // "자 살까 말까" is shopping: spaces gone it reads 자살, so it loses the nickname, but no helplines for it.
+    expect(nowTone("자 살까 말까")).toEqual({ tone: "facts", crisis: null });
+  });
+
+  it("the 3-card tone reads the same way (one function)", () => {
+    expect(tarotTone({ texts: ["더 버틸 자신이 없어"], topicId: "crush" })).toEqual({ tone: "facts", crisis: null });
+    expect(tarotTone({ texts: ["", "주ㄱ고 싶어"], topicId: "career" }).tone).toBe("crisis");
+  });
+});
+
 describe("3장 tone (topic and texts, spec 2.5 order)", () => {
   it("crisis first, whatever the topic", () => {
     expect(tarotTone({ texts: ["그냥 다 끝내고 싶어"], topicId: "crush" }).tone).toBe("crisis");
