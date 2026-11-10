@@ -72,3 +72,11 @@ describe("the sitemap follows the request's time", () => {
     }
   });
 });
+
+describe("the tabs' lastmod in the sitemap", () => {
+  it("stays the built tab's date when an article dated ahead opens (the tab page itself changes only with a deploy)", () => {
+    const tabs = (now: number) => sitemapEntries({ now }).filter((entry) => entry.path === "/guide/tarot" || entry.path === "/guide/saju").map((entry) => entry.lastModified);
+    const later = Math.max(...ALL_GUIDE_ARTICLES.filter((a) => a.publishAt).map((a) => publishInstant(a.publishAt as string)));
+    expect(tabs(later)).toEqual(tabs(Date.now()));
+  });
+});

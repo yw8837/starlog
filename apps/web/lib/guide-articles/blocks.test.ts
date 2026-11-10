@@ -5,7 +5,7 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { CELTIC_CROSS_POSITIONS } from "@/app/guide/GuideDiagram";
 import { DAY_MASTER_IMAGE, ELEMENT_HANJA, ORDER, SEASON } from "../ai/prompts/saju";
-import { GUIDE_ARTICLES, findArticle, guideSectionText, type GuideArticle, type GuideBlock } from "../guide";
+import { ALL_GUIDE_ARTICLES, GUIDE_ARTICLES, findArticle, guideSectionText, type GuideArticle, type GuideBlock } from "../guide";
 
 /**
  * Rules for the rich blocks (lib/guideMeta.ts GuideBlock) every article can use, and the tables of the
@@ -33,7 +33,8 @@ const kbCard = (cardId: string): KbCard =>
   JSON.parse(readFileSync(fileURLToPath(new URL(`../../../../content/kb/cards/${cardId}.json`, import.meta.url)), "utf8")) as KbCard;
 
 describe("guide blocks: authoring rules", () => {
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s", async (_slug, article) => {
+  // Every article, the ones dated ahead included (publishAt), so a future one is checked before it comes out.
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article] as const))("%s", async (_slug, article) => {
     if (article.keyPoints) {
       // 2-4 points: since the third review (2026-10-23) the card articles no longer all carry exactly three.
       expect(article.keyPoints.length).toBeGreaterThanOrEqual(2);

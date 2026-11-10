@@ -255,3 +255,27 @@ describe("release on both sides of each day", () => {
     for (const a of GUIDE_ARTICLES.filter((g) => g.publishAt)) expect(DATA_ARTICLES.map((d) => d.slug)).toContain(a.slug);
   });
 });
+
+describe("review fixes (2026-11-10)", () => {
+  const dst = article("korea-dst-standard-time");
+  const lon = article("birthplace-longitude-table");
+
+  it("claims nothing about neighbouring 시·군 that the list cannot show", () => {
+    expect(text(lon)).not.toContain("이웃한 시·군");
+  });
+
+  it("says the standard time was set in 1908 and changed three times after, in a table made from the 28-line chronology", () => {
+    expect(dst.summary).toContain("1908년");
+    expect(dst.summary).toContain("세 번");
+    expect(dst.summary).not.toContain("그대로 옮기고");
+    expect(dst.summary).toContain("28줄로 만든 표");
+    expect(dst.sections.map((s) => s.heading)).not.toContain("표준시가 바뀐 네 번");
+    expect(KOREA_CIVIL_PERIODS).toHaveLength(28);
+  });
+
+  it("names a one-year DST span by its year once, never as 1948–1948", () => {
+    const lines = dst.sections.map(guideSectionText).join("\n");
+    expect(lines).not.toMatch(/(\d{4})–\1(?!\d)/);
+    expect(lines).toContain("1948");
+  });
+});

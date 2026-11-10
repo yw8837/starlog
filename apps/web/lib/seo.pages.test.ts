@@ -43,7 +43,8 @@ import { generateMetadata as contactMetadata } from "@/app/contact/page";
 import { metadata as todayMeta } from "@/app/today/page";
 import { BIRTH_CARDS } from "./birthCard";
 import { SITE } from "./config";
-import { GUIDE_ARTICLES, findArticle } from "./guide";
+import { ALL_GUIDE_ARTICLES, GUIDE_ARTICLES, findArticle } from "./guide";
+import { publishInstant } from "./guideMeta";
 import { GUIDE_HOST_PAGES, absoluteUrl, isGuidePath } from "./hosts";
 import { ILJU } from "./keyword2027";
 import { HOME_TITLE, NOINDEX as NOINDEX_ROBOTS, SITEMAP_PATHS, sitemapEntriesFor } from "./seo";
@@ -312,6 +313,29 @@ describe("sign rankings", () => {
       expect(String(meta.description), sign.id).toContain(sign.ko);
       expect(meta.alternates?.canonical, sign.id).toBe(`/ranking/${sign.id}`);
       expect(meta.openGraph, sign.id).toMatchObject({ url: `/ranking/${sign.id}`, locale: "ko_KR", images: [{ url: "/opengraph-image", width: 1200, height: 630 }] });
+    }
+  });
+});
+
+describe("articles dated ahead (publishAt): the same metadata rules, checked before they come out", () => {
+  it.each(ALL_GUIDE_ARTICLES.filter((article) => article.publishAt).map((article) => [article.slug, article] as const))("%s: from its day, a title, description, canonical and og:url of its own", async (slug, article) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      vi.setSystemTime(publishInstant(article.publishAt as string) - 60_000);
+      expect(await guideArticleMeta(params({ slug }))).toEqual({});
+      vi.setSystemTime(publishInstant(article.publishAt as string));
+      const meta = await guideArticleMeta(params({ slug }));
+      expect(fullTitle(meta).length).toBeLessThanOrEqual(60);
+      const description = String(meta.description ?? "");
+      expect(description.length).toBeGreaterThanOrEqual(20);
+      expect(description.length).toBeLessThanOrEqual(80);
+      expect(meta.alternates?.canonical).toBe(`${SITE.guideUrl}/guide/${slug}`);
+      expect((meta.openGraph as { url?: string; type?: string }).url).toBe(`${SITE.guideUrl}/guide/${slug}`);
+      expect(meta.robots).toBeUndefined();
+      const titles = INDEXABLE.map(([, m]) => fullTitle(m));
+      expect(titles).not.toContain(fullTitle(meta));
+    } finally {
+      vi.useRealTimers();
     }
   });
 });

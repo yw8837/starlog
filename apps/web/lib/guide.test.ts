@@ -1,6 +1,6 @@
 import { getCard } from "@starlog/core";
 import { describe, expect, it } from "vitest";
-import { GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideIndexPath, guideSectionText, type GuideBlock } from "./guide";
+import { ALL_GUIDE_ARTICLES, GUIDE_ARTICLES, GUIDE_CATEGORIES, articlesIn, findArticle, guideIndexPath, guideSectionText, type GuideBlock } from "./guide";
 
 describe("GUIDE_ARTICLES", () => {
   it("starts with the six original articles, in order, with the agreed titles (the library follows)", () => {
@@ -28,7 +28,7 @@ describe("GUIDE_ARTICLES", () => {
   });
 
   it("keeps bodies to 4-7 sections, every one in 해요체", () => {
-    for (const article of GUIDE_ARTICLES) {
+    for (const article of ALL_GUIDE_ARTICLES) {
       expect(article.sections.length, article.slug).toBeGreaterThanOrEqual(4);
       expect(article.sections.length, article.slug).toBeLessThanOrEqual(7);
       for (const section of article.sections) expect(section.body, article.slug).toMatch(/요[.?]$/);
@@ -36,7 +36,7 @@ describe("GUIDE_ARTICLES", () => {
   });
 
   it("has a search description for every article (under 120 characters)", () => {
-    for (const article of GUIDE_ARTICLES) {
+    for (const article of ALL_GUIDE_ARTICLES) {
       expect(article.description.length, article.slug).toBeGreaterThan(20);
       expect(article.description.length, article.slug).toBeLessThanOrEqual(120);
     }
@@ -45,16 +45,16 @@ describe("GUIDE_ARTICLES", () => {
   it("points card articles at real cards", () => {
     expect(findArticle("the-hermit")?.cardId).toBe("major-09-hermit");
     expect(findArticle("the-star")?.cardId).toBe("major-17-star");
-    for (const article of GUIDE_ARTICLES) if (article.cardId) expect(() => getCard(article.cardId ?? "")).not.toThrow();
+    for (const article of ALL_GUIDE_ARTICLES) if (article.cardId) expect(() => getCard(article.cardId ?? "")).not.toThrow();
   });
 
   it("never uses a tab segment as a slug (/guide/tarot and /guide/saju are static routes that win over [slug])", () => {
     expect(GUIDE_CATEGORIES).toEqual(["tarot", "saju"]);
-    for (const article of GUIDE_ARTICLES) expect(GUIDE_CATEGORIES as readonly string[], article.slug).not.toContain(article.slug);
+    for (const article of ALL_GUIDE_ARTICLES) expect(GUIDE_CATEGORIES as readonly string[], article.slug).not.toContain(article.slug);
   });
 
   it("makes no promises about outcomes", () => {
-    const text = JSON.stringify(GUIDE_ARTICLES);
+    const text = JSON.stringify(ALL_GUIDE_ARTICLES);
     // 재회 is a topic since 2026-10-31; a 재회 promised stays out (library.test.ts BANNED).
     for (const word of ["보장", "확률", "반드시 이뤄", "무조건", "합격", "재회 가능성", "재회하게 돼요"]) expect(text).not.toContain(word);
   });

@@ -32,6 +32,9 @@ describe("the home's introduction", () => {
     expect(text).toContain("AI 도구로 초안");
     for (const source of ["1909년", "웨이트", "카드 지식 베이스", "만세력 엔진", "자동 검사"]) expect(text, source).toContain(source);
     expect(text).toContain(GUIDE_EDITOR.name);
+    // Only the worked examples are recomputed (saju-guides.test.ts), not every table.
+    expect(text).toContain("사주 글의 예시 명식은");
+    expect(text).not.toContain("사주 글의 표와");
   });
 
   it("says what is original here", () => {

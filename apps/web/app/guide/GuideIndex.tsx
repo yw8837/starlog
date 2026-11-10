@@ -85,7 +85,7 @@ function HomeAbout() {
       <div className={s.introPart}>
         <h3 className={s.introSub}>어떻게 만들고 확인하나요</h3>
         <p className={s.introText}>
-          {`글은 AI 도구로 초안을 쓰고, 근거 자료와 계산 규칙에 대 보며 고쳐서 올려요. 타로 글은 1909년 라이더-웨이트-스미스 원판 스캔, 덱을 기획한 웨이트의 해설서(1910), 78장마다 그림에 실제로 그려진 것을 정리한 카드 지식 베이스에 맞춰 봐요. 사주 글의 표와 예시 명식은 ${SITE.nameKo} 앱이 쓰는 만세력 엔진으로 다시 계산해서 글에 적힌 값과 같은지 자동 검사로 확인해요. 모든 글의 편집 책임은 ${GUIDE_EDITOR.title} ${GUIDE_EDITOR.name}에게 있어요.`}
+          {`글은 AI 도구로 초안을 쓰고, 근거 자료와 계산 규칙에 대 보며 고쳐서 올려요. 타로 글은 1909년 라이더-웨이트-스미스 원판 스캔, 덱을 기획한 웨이트의 해설서(1910), 78장마다 그림에 실제로 그려진 것을 정리한 카드 지식 베이스에 맞춰 봐요. 사주 글의 예시 명식은 ${SITE.nameKo} 앱이 쓰는 만세력 엔진으로 다시 계산해서 글에 적힌 기둥과 같은지 자동 검사로 확인해요. 모든 글의 편집 책임은 ${GUIDE_EDITOR.title} ${GUIDE_EDITOR.name}에게 있어요.`}
         </p>
       </div>
       <div className={s.introPart}>

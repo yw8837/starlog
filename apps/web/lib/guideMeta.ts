@@ -95,6 +95,10 @@ export interface GuideArticle {
   madeHow?: { short: string; long: string };
 }
 
+/** A timeline span's years as words: "1948" when it starts and ends in one year, else "1912–1954". */
+export const spanLabel = ([from, to]: readonly [number, number]): string =>
+  Math.floor(from) === Math.floor(to) ? `${Math.floor(from)}` : `${Math.floor(from)}–${Math.floor(to)}`;
+
 /** 00:00 Korean time (UTC+9, no daylight saving since 1988) of a YYYY-MM-DD day, in epoch milliseconds. */
 export const publishInstant = (day: string): number => Date.parse(`${day}T00:00:00+09:00`);
 

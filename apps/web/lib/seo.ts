@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BIRTH_CARD_PATH } from "./birthCard";
 import { SITE } from "./config";
-import { ALL_GUIDE_ARTICLES, GUIDE_ABOUT_PATH, GUIDE_CATEGORIES, guideIndexPath, lastReviewed, publishedArticles } from "./guide";
+import { ALL_GUIDE_ARTICLES, GUIDE_ABOUT_PATH, GUIDE_ARTICLES, GUIDE_CATEGORIES, guideIndexPath, lastReviewed, publishedArticles } from "./guide";
 import { GUIDE_EDITOR } from "./guideReview";
 import { FEED_URL, GUIDE_HOST_PAGES, absoluteUrl, isGuidePath, type SiteHost } from "./hosts";
 import { INFO_PAGES } from "./infoPages";
@@ -164,7 +164,8 @@ export function sitemapEntries({ premium = false, now = Date.now() }: { premium?
     ...GUIDE_CATEGORIES.map(
       (category): SitemapEntry => ({
         path: guideIndexPath(category),
-        lastModified: latest(articles.filter((article) => article.category === category).map(lastReviewed)),
+        // The tab pages are built ahead: their lastmod is the build's list (GUIDE_ARTICLES), not one an article opening today would move.
+        lastModified: latest(GUIDE_ARTICLES.filter((article) => article.category === category).map(lastReviewed)),
         changeFrequency: "weekly",
         priority: 0.8,
       }),

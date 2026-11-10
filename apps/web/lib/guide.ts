@@ -7,7 +7,7 @@
 import { getCard } from "@starlog/core";
 import { withGuideLibrary } from "./guide-articles";
 import { guidePlainText } from "./guideLinks";
-import { guidePublished, lastReviewed, type GuideArticle, type GuideBlock, type GuideCategory, type GuideSection } from "./guideMeta";
+import { guidePublished, lastReviewed, spanLabel, type GuideArticle, type GuideBlock, type GuideCategory, type GuideSection } from "./guideMeta";
 
 // Server side only: the article data below. Client components import ./guideMeta (guide.client.test.ts).
 export { GUIDE_ABOUT_PATH, GUIDE_CATEGORIES, GUIDE_CATEGORY_LABEL, guideIndexPath, guidePublished, lastReviewed } from "./guideMeta";
@@ -827,7 +827,7 @@ function blockLines(block: GuideBlock): string[] {
         block.caption,
         ...(block.chart === "bar"
           ? block.rows.map((row) => `${row.label}: ${row.value}${block.unit}`)
-          : block.lanes.map((lane) => `${lane.label}: ${lane.spans.map(([from, to]) => `${Math.floor(from)}–${Math.floor(to)}`).join(", ")}`)),
+          : block.lanes.map((lane) => `${lane.label}: ${lane.spans.map(spanLabel).join(", ")}`)),
       ];
   }
 }

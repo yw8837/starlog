@@ -7,7 +7,8 @@ import { generateMetadata as privacyMetadata } from "@/app/privacy/page";
 import { generateMetadata as termsMetadata } from "@/app/terms/page";
 import { Footer } from "@/components/layout/Footer";
 import { SITE, businessFields } from "@/lib/config";
-import { GUIDE_ARTICLES } from "@/lib/guide";
+import { ALL_GUIDE_ARTICLES } from "@/lib/guide";
+import { publishInstant } from "@/lib/guideMeta";
 import { GUIDE_HOST_PAGES } from "@/lib/hosts";
 import { sitemapXml } from "@/lib/seo";
 
@@ -35,6 +36,7 @@ beforeEach(() => vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", ""));
 afterEach(() => {
   cleanup();
   vi.unstubAllEnvs();
+  vi.useRealTimers();
   host.value = APP;
 });
 
@@ -88,8 +90,13 @@ describe("the guide's links to the app", () => {
     for (const path of ["/", "/guide/saju", "/guide/about", "/contact", "/terms", "/privacy"]) expect(hrefs, path).toContain(path);
   });
 
-  it.each(GUIDE_ARTICLES.map((article) => [article.slug] as const))("%s: two app links at most besides its sources", async (slug) => {
+  it.each(ALL_GUIDE_ARTICLES.map((article) => [article.slug, article.publishAt] as const))("%s: two app links at most besides its sources", async (slug, publishAt) => {
     vi.stubEnv("NEXT_PUBLIC_SPLIT_HOSTS", "1");
+    // An article dated ahead renders from its day: the clock moves there for this render only.
+    if (publishAt) {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(publishInstant(publishAt));
+    }
     const { container } = render(await GuideArticlePage({ params: Promise.resolve({ slug }) } as PageProps<"/guide/[slug]">));
     const article = container.querySelector("article") as HTMLElement;
     // Calls to the app: not the trail (현재 위치, whose first crumb is the app's home) and not 근거와 방법 (/evidence), where the sources are.

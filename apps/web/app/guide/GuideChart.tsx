@@ -1,4 +1,4 @@
-import type { GuideBlock } from "@/lib/guideMeta";
+import { spanLabel, type GuideBlock } from "@/lib/guideMeta";
 import s from "./GuideBlocks.module.css";
 
 /**
@@ -11,17 +11,35 @@ type ChartBlock = Extract<GuideBlock, { kind: "chart" }>;
 type BarChart = Extract<ChartBlock, { chart: "bar" }>;
 type TimelineChart = Extract<ChartBlock, { chart: "timeline" }>;
 
-const W = 340;
-const LABEL_W = 118;
-const VALUE_W = 50;
 const ROW_H = 26;
 const BAR_H = 14;
+const TRACK = 160;
 
 const fmt = (n: number) => (Number.isInteger(n) ? n.toLocaleString("ko-KR") : n.toLocaleString("ko-KR", { maximumFractionDigits: 1 }));
 
+export { spanLabel };
+
+/**
+ * A generous width of `text` at the charts' 13px (GuideBlocks.module.css .chartLabel): a Hangul syllable a full em, Latin
+ * letters and digits 0.62em, a space 0.3em. Wider than the browser's own measure, so the columns never clip.
+ */
+export function estimateTextWidth(text: string, px = 13): number {
+  let em = 0;
+  for (const char of text) em += /[ㄱ-힣]/.test(char) ? 1 : char === " " ? 0.3 : 0.62;
+  return em * px;
+}
+
+/** A bar chart's columns, sized from its own longest label and value. */
+export function chartLayout(block: BarChart) {
+  const valueText = (value: number) => `${fmt(value)}${block.unit}`;
+  const labelW = Math.ceil(Math.max(...block.rows.map((row) => estimateTextWidth(row.label)))) + 16;
+  const valueW = Math.ceil(Math.max(...block.rows.map((row) => estimateTextWidth(valueText(row.value))))) + 14;
+  return { labelW, valueW, track: TRACK, width: labelW + TRACK + valueW, valueText };
+}
+
 function Bars({ block, id }: { block: BarChart; id: string }) {
   const max = Math.max(1, ...block.rows.map((row) => row.value));
-  const track = W - LABEL_W - VALUE_W;
+  const { labelW: LABEL_W, valueW: VALUE_W, track, width: W, valueText } = chartLayout(block);
   const height = block.rows.length * ROW_H + 8;
   const desc = block.rows.map((row) => `${row.label} ${fmt(row.value)}${block.unit}`).join(", ");
   return (
@@ -40,7 +58,7 @@ function Bars({ block, id }: { block: BarChart; id: string }) {
               <rect x={LABEL_W} y={y + (ROW_H - BAR_H) / 2} width={track} height={BAR_H} rx={3} className={s.chartTrack} />
               {w > 0 ? <rect x={LABEL_W} y={y + (ROW_H - BAR_H) / 2} width={Math.max(2, w)} height={BAR_H} rx={3} className={s.chartBar} /> : null}
               <text x={W - VALUE_W + 8} y={y + ROW_H / 2} className={s.chartValue} dominantBaseline="middle">
-                {`${fmt(row.value)}${block.unit}`}
+                {valueText(row.value)}
               </text>
             </g>
           );
@@ -52,7 +70,8 @@ function Bars({ block, id }: { block: BarChart; id: string }) {
 }
 
 function Timeline({ block, id }: { block: TimelineChart; id: string }) {
-  const left = 84;
+  const W = 340;
+  const left = Math.ceil(Math.max(...block.lanes.map((lane) => estimateTextWidth(lane.label)))) + 16;
   const right = 16;
   const top = 8;
   const laneH = 30;
@@ -61,7 +80,7 @@ function Timeline({ block, id }: { block: TimelineChart; id: string }) {
   const x = (year: number) => left + ((year - block.from) / (block.to - block.from)) * (W - left - right);
   const ticks: number[] = [];
   for (let year = Math.ceil(block.from / 10) * 10; year <= block.to; year += 10) ticks.push(year);
-  const desc = block.lanes.map((lane) => `${lane.label}: ${lane.spans.map(([a, b]) => `${Math.floor(a)}–${Math.floor(b)}`).join(", ")}`).join(". ");
+  const desc = block.lanes.map((lane) => `${lane.label}: ${lane.spans.map(spanLabel).join(", ")}`).join(". ");
   return (
     <figure className={`${s.block} ${s.diagram}`}>
       <svg className={s.chartSvg} viewBox={`0 0 ${W} ${height}`} role="img" aria-labelledby={`${id}-title`} aria-describedby={`${id}-desc`}>
