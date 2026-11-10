@@ -97,7 +97,7 @@ describe("the source line on the real hosts", () => {
 describe("the byline under the title", () => {
   // The full line, both dates and the editorial link are in GuideTrust.test.tsx; the evidence page moved to the
   // trust box after the body.
-  const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("글 AI 도구로 초안")) as HTMLElement | undefined;
+  const byline = (container: HTMLElement) => [...container.querySelectorAll("article header p")].find((p) => p.textContent?.startsWith("만든 방법 ")) as HTMLElement | undefined;
 
   it.each(GUIDE_ARTICLES.map((article) => [article.slug]))("%s: one line under the title, with two dates (a third only for an owner's review)", async (slug) => {
     const article = findArticle(slug);

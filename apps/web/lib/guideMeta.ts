@@ -83,6 +83,8 @@ export interface GuideArticle {
    * week instead of a batch); `published` and `updated` are the same day.
    */
   publishAt?: string;
+  /** 만든 방법 of its own (lib/guideMadeHow.ts writes the others'): the byline's short line and the 이 글에 대해 sentence. */
+  madeHow?: { short: string; long: string };
 }
 
 /** 00:00 Korean time (UTC+9, no daylight saving since 1988) of a YYYY-MM-DD day, in epoch milliseconds. */

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { SITE } from "@/lib/config";
 import { SAJU_SOURCE_LINE, cardQuote, cardSourceLine, evidenceHref, guideReferences } from "@/lib/evidence";
 import { GUIDE_ABOUT_PATH, lastReviewed, type GuideArticle } from "@/lib/guideMeta";
+import { guideMadeHow } from "@/lib/guideMadeHow";
 import { GUIDE_EDITOR, guideReview } from "@/lib/guideReview";
 import { appHref } from "@/lib/hosts";
 import { INFO_PAGES } from "@/lib/infoPages";
@@ -50,17 +51,17 @@ export function GuideSourceLine({ article }: { article: GuideArticle }) {
 const EDITOR_LINE = `${GUIDE_EDITOR.name}(${GUIDE_EDITOR.title})`;
 
 /**
- * Under the title: an AI draft and its editor, when this article was first written and last changed (the dates the
- * Article JSON-LD carries, lastReviewed), the owner's review only where he has read it (guideReview), and a link to the
- * editorial page, a guide page on the same host.
+ * Under the title: how this article was made (guideMadeHow: the AI draft, and what this page was set against and is
+ * checked by), its editor, when it was first written and last changed (the dates the Article JSON-LD carries,
+ * lastReviewed), the owner's review only where he has read it (guideReview), and a link to the editorial page.
  */
-export function GuideByline({ article }: { article: Pick<GuideArticle, "slug" | "published" | "updated"> }) {
+export function GuideByline({ article }: { article: GuideArticle }) {
   const { published } = article;
   const changed = lastReviewed(article);
   const review = guideReview(article.slug);
   return (
     <p className={s.dates}>
-      {`글 AI 도구로 초안 · 편집 책임 ${EDITOR_LINE}`}
+      {`만든 방법 ${guideMadeHow(article).short} · 편집 책임 ${EDITOR_LINE}`}
       {published ? (
         <>
           {" · 처음 쓴 날 "}
@@ -88,12 +89,6 @@ export function GuideByline({ article }: { article: Pick<GuideArticle, "slug" | 
   );
 }
 
-/** How an article is made, per category: the editorial page's own facts (app/guide/about), nothing it does not say. */
-const MADE_HOW: Record<GuideArticle["category"], string> = {
-  tarot: "AI 도구로 초안을 쓰고 1909년 원판 그림과 웨이트 해설서에 대조해 다듬었어요.",
-  saju: "AI 도구로 초안을 쓰고 만세력 계산 규칙에 대조해 다듬었어요.",
-};
-
 /**
  * 이 글에 대해, after the body (the ad never sits inside it): the article's editor, how it was made, its two dates, the
  * owner's review only where he has read it, the sources its category rests on (guideReferences, never typed per
@@ -117,7 +112,7 @@ export function GuideTrustBox({ article }: { article: GuideArticle }) {
         </div>
         <div className={s.trustRow}>
           <dt>만든 방법</dt>
-          <dd>{MADE_HOW[article.category]}</dd>
+          <dd>{guideMadeHow(article).long}</dd>
         </div>
         {published ? (
           <div className={s.trustRow}>
