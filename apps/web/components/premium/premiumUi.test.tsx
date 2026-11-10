@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AccountState } from "@/lib/account/client";
+import type { AccountState, AccountUser } from "@/lib/account/client";
 import { premiumOffer } from "@/lib/premium/offer";
 import { resetPremiumStatusForTests, usePremiumStatus } from "@/lib/premium/status";
 import { DeepTarotArticle } from "./DeepTarotArticle";
@@ -16,7 +16,7 @@ afterEach(() => {
   resetPremiumStatusForTests();
 });
 
-type Unused = { orderId: string; productId: string; refundable?: false; refundAmount?: number; set?: true };
+type Unused = AccountUser["unused"][number];
 const user = (unused: Unused[] = [], opening: Array<{ productId: string; currency: "paid" }> = []) =>
   ({ nickname: "별", gift: null, unused, opening: opening.map((o) => ({ ...o, orderId: null })) }) as unknown as NonNullable<AccountState["user"]>;
 const account = (over: Partial<AccountState> = {}): AccountState => ({ payments: true, login: true, owner: false, user: null, ...over });
@@ -150,10 +150,10 @@ describe("PremiumUnlock", () => {
       { orderId: "o", productId: "match", refundAmount: 18900, set: true },
     ]);
     render(<PremiumUnlock id="match" account={account({ user: both })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
-    expect(screen.getByText("세트는 결제일로부터 7일 안에 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 2027 신년운세 몫 11,000원만 환불받을 수 있어요")).toBeTruthy();
+    expect(screen.getByText("세트는 결제일로부터 7일 안에 둘 다 열지 않았으면 전액, 하나를 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 2027 신년운세 몫 11,000원만 환불받을 수 있어요")).toBeTruthy();
     cleanup();
     render(<PremiumUnlock id="newyear-2027" account={account({ user: both })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
-    expect(screen.getByText("세트는 결제일로부터 7일 안에 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 프리미엄 궁합 몫 4,000원만 환불받을 수 있어요")).toBeTruthy();
+    expect(screen.getByText("세트는 결제일로부터 7일 안에 둘 다 열지 않았으면 전액, 하나를 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 프리미엄 궁합 몫 4,000원만 환불받을 수 있어요")).toBeTruthy();
     cleanup();
     // The other was opened: this one's part, from the server, until it is opened too.
     render(<PremiumUnlock id="match" account={account({ user: user([{ orderId: "o", productId: "match", refundAmount: 4000, set: true }]) })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
@@ -163,6 +163,19 @@ describe("PremiumUnlock", () => {
     // Cut off while written: never refunded, set or not.
     render(<PremiumUnlock id="match" account={account({ user: user([{ orderId: "o", productId: "match", refundable: false, set: true }]) })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
     expect(screen.getByText("풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요")).toBeTruthy();
+    cleanup();
+    // The other reading was refunded, not opened (LOW a): this one's part, said as it is.
+    render(<PremiumUnlock id="newyear-2027" account={account({ user: user([{ orderId: "o", productId: "newyear-2027", refundAmount: 14900, set: true, otherRefunded: true }]) })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
+    expect(screen.getByText("세트의 다른 풀이는 환불했어요. 결제일로부터 7일 안에 이 풀이 몫 14,900원을 환불받을 수 있어요. 이 풀이를 열면 환불되지 않아요")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/열어서|끊긴/);
+    cleanup();
+    // Not refundable for another reason than a cut-off (LOW b): says that reason.
+    render(<PremiumUnlock id="match" account={account({ user: user([{ orderId: "o", productId: "match", refundable: false, noRefund: "refunding", set: true }]) })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
+    expect(screen.getByText("세트의 다른 풀이 환불을 처리하고 있어서 지금은 이 풀이를 환불할 수 없어요")).toBeTruthy();
+    cleanup();
+    render(<PremiumUnlock id="match" account={account({ user: user([{ orderId: "o", productId: "match", refundable: false, noRefund: "refunded", set: true }]) })} status={OPEN} returnTo="/x" onOpen={vi.fn()} />);
+    expect(screen.getByText("이미 환불한 금액이 있어서 이 풀이는 환불할 수 없어요. 문제가 있으면 문의해 주세요")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("끊긴");
   });
 
   it("speaks of a single purchase before a set's lot of the same reading, which opens first", () => {

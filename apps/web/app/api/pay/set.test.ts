@@ -425,6 +425,33 @@ describe("2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10)", () =>
     expect((await me(b)).user!.unused).toEqual([{ orderId, productId: "match", refundUntil: UNTIL, refundAmount: 4000, set: true }]);
   });
 
+  it("tells 내 정보 why a reading is not refundable now, and that the set's other reading was refunded rather than opened (LOW a, b)", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await boughtSet(db, b);
+    const opening = await startOpening(db, "newyear-2027");
+    // The 궁합's part in flight (its answer lost) while the 신년운세 fails on our side and comes back.
+    mockToss.failNext("cancel", new TossError(0, "NETWORK", "no response from Toss"), { applied: true });
+    expect(await (await refundOf(b, orderId)).json()).toMatchObject({ code: "PAY_PENDING" });
+    expect(await releaseUnlock(db, { unlockId: opening.unlockId, now: Date.now() })).toBe(true);
+    expect((await me(b)).user!.unused).toEqual([{ orderId, productId: "newyear-2027", refundable: false, noRefund: "refunding", set: true }]);
+    // Toss reports the part: the 신년운세 refunds the rest, its other reading refunded (not opened).
+    expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey: await paymentKeyOf(db, orderId), orderId, status: "PARTIAL_CANCELED" } })).status).toBe(200);
+    expect((await me(b)).user!.unused).toEqual([{ orderId, productId: "newyear-2027", refundUntil: UNTIL, refundAmount: 14900, set: true, otherRefunded: true }]);
+  });
+
+  it("says a reading is not refundable because a part was cancelled already when what was cancelled leaves nothing for it", async () => {
+    const db = useTestDb();
+    const b = await loggedIn();
+    const orderId = await boughtSet(db, b);
+    await openAndDeliver(db, "newyear-2027");
+    // 4,000원 cancelled outside 환불받기 (the dashboard), recorded while the 궁합 stays in use.
+    const paymentKey = await paymentKeyOf(db, orderId);
+    await mockToss.cancel(paymentKey, { reason: "관리자", idempotencyKey: "admin-1", amount: 4000 });
+    expect((await hook({ eventType: "PAYMENT_STATUS_CHANGED", data: { paymentKey, orderId, status: "PARTIAL_CANCELED" } })).status).toBe(200);
+    expect((await me(b)).user!.unused).toEqual([{ orderId, productId: "match", refundable: false, noRefund: "refunded", set: true }]);
+  });
+
   it("asks before a set when the buyer holds an unopened 2027 신년운세 or 프리미엄 궁합", async () => {
     useTestDb();
     const b = await loggedIn();

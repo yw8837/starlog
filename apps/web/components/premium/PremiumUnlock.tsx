@@ -86,12 +86,20 @@ export function PremiumUnlock({ id, account, status, returnTo, onOpen, resumable
       );
       caption =
         offer.refundable === false
-          ? "풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요"
+          ? offer.noRefund === "refunding"
+            ? `${offer.set ? "세트의 다른 풀이 " : ""}환불을 처리하고 있어서 지금은 이 풀이를 환불할 수 없어요`
+            : offer.noRefund === "refunded"
+              ? "이미 환불한 금액이 있어서 이 풀이는 환불할 수 없어요. 문제가 있으면 문의해 주세요"
+              : offer.noRefund === "other"
+                ? "이 결제는 환불할 수 없어요. 문제가 있으면 문의해 주세요"
+                : "풀이를 받던 중에 끊긴 결제라 환불은 할 수 없어요. 다시 열어 끝까지 받을 수 있어요"
           : offer.set && offer.pair
-            ? `세트는 결제일로부터 ${REFUND_DAYS}일 안에 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 ${PREMIUM[setOther(id)].name} 몫 ${won(refundAmount(SITE.price.set.krw, [id]))}만 환불받을 수 있어요`
-            : offer.set
-              ? `세트의 다른 풀이를 열어서 결제일로부터 ${REFUND_DAYS}일 안에 이 풀이 몫 ${won(offer.refundAmount ?? refundAmount(SITE.price.set.krw, [setOther(id)]))}만 환불받을 수 있어요. 이 풀이를 열면 환불되지 않아요`
-              : `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
+            ? `세트는 결제일로부터 ${REFUND_DAYS}일 안에 둘 다 열지 않았으면 전액, 하나를 열었으면 열지 않은 풀이 몫을 환불받을 수 있어요. 이 풀이를 열면 ${PREMIUM[setOther(id)].name} 몫 ${won(refundAmount(SITE.price.set.krw, [id]))}만 환불받을 수 있어요`
+            : offer.set && offer.otherRefunded && offer.refundAmount
+              ? `세트의 다른 풀이는 환불했어요. 결제일로부터 ${REFUND_DAYS}일 안에 이 풀이 몫 ${won(offer.refundAmount)}을 환불받을 수 있어요. 이 풀이를 열면 환불되지 않아요`
+              : offer.set
+                ? `세트의 다른 풀이를 열어서 결제일로부터 ${REFUND_DAYS}일 안에 이 풀이 몫 ${won(offer.refundAmount ?? refundAmount(SITE.price.set.krw, [setOther(id)]))}만 환불받을 수 있어요. 이 풀이를 열면 환불되지 않아요`
+                : `결제한 풀이는 열기 전이면 결제일로부터 ${REFUND_DAYS}일 안에 환불할 수 있어요`;
       break;
     case "login":
       primary = (

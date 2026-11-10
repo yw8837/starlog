@@ -82,6 +82,18 @@ describe("account client", () => {
       { orderId: "o3", productId: "tarot", refundable: false },
       { orderId: "o4", productId: "tarot" },
     ]);
+    // Why it is not refunded (none: cut off while written), and a set's other reading refunded rather than opened.
+    expect(read([
+      { orderId: "o5", productId: "match", refundable: false, noRefund: "refunding", set: true },
+      { orderId: "o6", productId: "match", refundable: false, noRefund: "left" },
+      { orderId: "o7", productId: "newyear-2027", refundAmount: 14900, set: true, otherRefunded: true },
+      { orderId: "o8", productId: "newyear-2027", refundAmount: 4000, set: true, otherRefunded: "yes" },
+    ])).toEqual([
+      { orderId: "o5", productId: "match", refundable: false, noRefund: "refunding", set: true },
+      { orderId: "o6", productId: "match", refundable: false },
+      { orderId: "o7", productId: "newyear-2027", refundAmount: 14900, set: true, otherRefunded: true },
+      { orderId: "o8", productId: "newyear-2027", refundAmount: 4000, set: true },
+    ]);
   });
 
   it("asks /api/me once for many callers, and treats a failure as unknown", async () => {

@@ -598,6 +598,13 @@ export interface Opening {
  */
 export type GiftState = { status: "unused"; expiresAt: number | null } | { status: "used" } | null;
 
+/**
+ * Why a purchase that can be opened refunds nothing now: `left` (given back after its client left, or after a part of its
+ * premium reading was written: LEFT_SQL), `refunding` (its order is being refunded: a set's other part in flight),
+ * `refunded` (unopened, but what Toss cancelled of the payment already covers it), `other` (anything else).
+ */
+export type NoRefund = "left" | "refunding" | "refunded" | "other";
+
 /** What a user holds to open readings with. */
 export interface Entitlements {
   gift: GiftState;
@@ -607,9 +614,10 @@ export interface Entitlements {
    * `refundable`: what 환불받기 on its order returns now, in 원 (catalog refundAmount, the window aside): a set's whole
    * price while neither reading was opened, the unopened one's part once the other was opened or is being opened (owner
    * 2026-11-10). 0 once it was given back after its client left, or after a part of its premium reading was written
-   * (LEFT_SQL), or while its order is being refunded: it can be opened but not refunded, by 환불받기 or by account deletion
+   * (LEFT_SQL), or while its order is being refunded: it can be opened but not refunded, by 환불받기 or by account deletion;
+   * `noRefund` (only with 0): why. `otherRefunded`: one reading of a set whose other reading was refunded (not opened)
    */
-  unused: Array<{ orderId: string; productId: string; paidAt: number; refundable: number; set?: true }>;
+  unused: Array<{ orderId: string; productId: string; paidAt: number; refundable: number; noRefund?: NoRefund; set?: true; otherRefunded?: true }>;
   /** readings being opened, oldest first */
   opening: Opening[];
 }
@@ -631,6 +639,8 @@ export async function entitlements(db: D1Binding, userId: string, now: number): 
     .prepare(
       `SELECT l.currency, l.order_id, l.product_id, l.units_left, l.expires_at, l.created_at,
          (o.status = 'paid' AND ${LOT_UNTOUCHED_SQL("l")}) AS untouched, o.product_id AS order_product, o.amount_krw AS order_krw,
+         o.status AS order_status, ${LEFT_SQL("l")} AS cut_off,
+         EXISTS (SELECT 1 FROM credit_lots r WHERE r.order_id = l.order_id AND r.id <> l.id AND r.status = 'refunded') AS other_refunded,
          COALESCE(p.canceled_amount, 0) AS refunded,
          (SELECT GROUP_CONCAT(COALESCE(k.product_id, ''), ' ') FROM credit_lots k WHERE ${KEPT_WHERE("l.order_id")}) AS kept
        FROM credit_lots l LEFT JOIN orders o ON o.id = l.order_id LEFT JOIN payments p ON p.order_id = l.order_id
@@ -640,11 +650,14 @@ export async function entitlements(db: D1Binding, userId: string, now: number): 
     .bind(userId, now)
     .all<
       Pick<Lot, "currency" | "order_id" | "product_id" | "units_left" | "expires_at" | "created_at"> & {
-        untouched: number | null; order_product: string | null; order_krw: number | null; refunded: number; kept: string | null;
+        untouched: number | null; order_product: string | null; order_krw: number | null; order_status: string | null; cut_off: number;
+        other_refunded: number; refunded: number; kept: string | null;
       }
     >();
   const refundable = (lot: (typeof results)[number]) =>
     lot.untouched && lot.order_krw !== null ? refundAmount(lot.order_krw, lot.kept ? lot.kept.split(" ") : [], lot.refunded) : 0;
+  const noRefund = (lot: (typeof results)[number]): NoRefund =>
+    lot.cut_off ? "left" : lot.order_status === "refunding" ? "refunding" : lot.untouched && lot.refunded > 0 ? "refunded" : "other";
   const usable = (lot: (typeof results)[number]) => lot.units_left > 0 && (lot.expires_at === null || lot.expires_at > now);
   const gifts = results.filter((lot) => lot.currency === "free");
   const left = gifts.filter(usable);
@@ -659,11 +672,17 @@ export async function entitlements(db: D1Binding, userId: string, now: number): 
     gift,
     unused: results
       .filter((lot) => usable(lot) && lot.currency === "paid" && lot.order_id !== null && lot.product_id !== null)
-      .map((lot) => ({
-        orderId: lot.order_id!, productId: lot.product_id!, paidAt: lot.created_at, refundable: refundable(lot),
-        // one reading of a set: refunded whole with the other while neither is opened, else its own part
-        ...(lot.order_product === SET_PRODUCT_ID ? { set: true as const } : {}),
-      })),
+      .map((lot) => {
+        const amount = refundable(lot);
+        const set = lot.order_product === SET_PRODUCT_ID;
+        return {
+          orderId: lot.order_id!, productId: lot.product_id!, paidAt: lot.created_at, refundable: amount,
+          ...(amount > 0 ? {} : { noRefund: noRefund(lot) }),
+          // one reading of a set: refunded whole with the other while neither is opened, else its own part
+          ...(set ? { set: true as const } : {}),
+          ...(set && lot.other_refunded ? { otherRefunded: true as const } : {}),
+        };
+      }),
     opening: reservations.results.map((row) => ({
       productId: row.product_id,
       currency: row.currency === "paid" ? "paid" : "gift",

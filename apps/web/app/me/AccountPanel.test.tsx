@@ -277,6 +277,30 @@ describe("AccountPanel", () => {
     expect(screen.getByText("세트의 다른 풀이를 열어서 이 풀이 몫 4,000원만 환불돼요.")).toBeTruthy();
   });
 
+  it("says why a purchase that opens is not refunded now, and when a set's other reading was refunded rather than opened (LOW a, b)", async () => {
+    const SET_ORDER = "Set_dEf-Gh5iJk7Lm9No1Pq2x";
+    const withUnused = (unused: AccountState["user"] extends null ? never : NonNullable<AccountState["user"]>["unused"]) => ({ ...account, user: { ...account.user, gift: null, unused } });
+    render(<AccountPanel account={withUnused([{ orderId: SET_ORDER, productId: "newyear-2027", refundable: false, noRefund: "refunding", set: true }])} />);
+    expect(screen.getByText("세트의 다른 풀이 환불을 처리하고 있어서 지금은 환불할 수 없어요.")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/끊겨서|열어서/);
+    cleanup();
+    render(<AccountPanel account={withUnused([{ orderId: SET_ORDER, productId: "match", refundable: false, noRefund: "refunded", set: true }])} />);
+    expect(screen.getByText("이미 환불한 금액이 있어서 이 풀이는 환불할 수 없어요. 문제가 있으면 문의해 주세요.")).toBeTruthy();
+    expect(document.body.textContent).not.toMatch(/끊겨서|열어서/);
+    cleanup();
+    render(<AccountPanel account={withUnused([{ orderId: SET_ORDER, productId: "tarot", refundable: false, noRefund: "other" }])} />);
+    expect(screen.getByText("이 결제는 환불할 수 없어요. 문제가 있으면 문의해 주세요.")).toBeTruthy();
+    cleanup();
+    const rest = { orderId: SET_ORDER, productId: "newyear-2027", refundUntil: "2099-12-08T14:59:59.999Z", refundAmount: 14900, set: true as const, otherRefunded: true as const };
+    render(<AccountPanel account={withUnused([rest])} />);
+    expect(screen.getByText("세트의 다른 풀이는 환불했어요. 이 풀이 몫 14,900원을 환불받을 수 있어요.")).toBeTruthy();
+    expect(document.body.textContent).not.toContain("열어서");
+    fireEvent.click(screen.getByRole("button", { name: "환불받기" }));
+    expect(await screen.findByText("세트의 다른 풀이는 이미 환불했어요. 이 풀이 몫 14,900원을 돌려 드려요.")).toBeTruthy();
+    expect(screen.queryByText(/연 풀이는/)).toBeNull();
+    expect(screen.getByRole("button", { name: "14,900원 환불받기" })).toBeTruthy();
+  });
+
   it("in 결제 내역, says which reading of a set was opened, and a partial refund with its amount", async () => {
     const row = { amount: 18900, productId: "set-2027", status: "paid", createdAt: Date.parse("2026-12-01T03:00:00Z"), receiptUrl: null, method: "카드", unfinished: false };
     vi.stubGlobal("fetch", vi.fn(async (url: string) =>

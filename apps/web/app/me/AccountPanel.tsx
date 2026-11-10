@@ -36,12 +36,23 @@ const openHref = (productId: string) => OPEN_HREF[productId] ?? "/tarot/new";
 const WINDOW_CLOSED = `환불 가능 기간(결제일로부터 ${REFUND_DAYS}일)이 지났어요. 문제가 있으면 문의해 주세요.`;
 /** Instead of 환불받기 for a purchase given back after its reading was cut off while written (SEC-02). */
 const LEFT_WHILE_WRITTEN = "풀이를 받던 중에 끊겨서 환불은 할 수 없어요. 열기로 다시 받을 수 있어요.";
+/** Instead of 환불받기 for a purchase that refunds nothing now for another reason (/api/me noRefund). */
+const NO_REFUND = {
+  refunding: "환불을 처리하고 있어서 지금은 환불할 수 없어요.",
+  refunded: "이미 환불한 금액이 있어서 이 풀이는 환불할 수 없어요. 문제가 있으면 문의해 주세요.",
+  other: "이 결제는 환불할 수 없어요. 문제가 있으면 문의해 주세요.",
+} as const;
+const noRefundLine = (item: { noRefund?: keyof typeof NO_REFUND; set?: true }) =>
+  !item.noRefund ? LEFT_WHILE_WRITTEN : item.noRefund === "refunding" && item.set ? `세트의 다른 풀이 ${NO_REFUND.refunding}` : NO_REFUND[item.noRefund];
 /**
  * A 2027 신년운세 + 프리미엄 궁합 set (owner 2026-11-10): one payment, refunded whole while neither reading is opened;
  * once one is, the other's part (the server's refundAmount).
  */
 const SET_TOGETHER = "세트로 산 풀이예요. 둘 다 열지 않았으면 전액, 하나를 열면 열지 않은 풀이 몫만 환불돼요.";
-const setPart = (amount: number | undefined) => `세트의 다른 풀이를 열어서 이 풀이 몫${amount ? ` ${won(amount)}` : ""}만 환불돼요.`;
+const setPart = (item: { refundAmount?: number; otherRefunded?: true }) =>
+  item.otherRefunded
+    ? `세트의 다른 풀이는 환불했어요. 이 풀이 몫${item.refundAmount ? ` ${won(item.refundAmount)}` : ""}을 환불받을 수 있어요.`
+    : `세트의 다른 풀이를 열어서 이 풀이 몫${item.refundAmount ? ` ${won(item.refundAmount)}` : ""}만 환불돼요.`;
 
 /** A failed 환불받기 in refund words (the payment lines would say "결제를 확인하고 있어요"). */
 function refundNotice(error: ApiError): string {
@@ -74,6 +85,7 @@ const refundKindOf = (item: Unused, unused: readonly Unused[]) => ({
   set: item.set === true,
   whole: !item.set || pairOf(item, unused),
   ...(item.refundAmount ? { amount: item.refundAmount } : {}),
+  ...(item.otherRefunded ? { otherRefunded: true } : {}),
 });
 
 type AccountPanelProps = {
@@ -107,7 +119,7 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
   const [sheet, setSheet] = useState<"refund" | "delete" | "readings" | null>(null);
   const [refundId, setRefundId] = useState<string | null>(null);
   /** what the sheet refunds: a single purchase, a whole set, or a set's unopened part (its amount) */
-  const [refundKind, setRefundKind] = useState<{ set: boolean; whole: boolean; amount?: number }>({ set: false, whole: true });
+  const [refundKind, setRefundKind] = useState<{ set: boolean; whole: boolean; amount?: number; otherRefunded?: boolean }>({ set: false, whole: true });
   /** the server refunds another amount now than the sheet showed: it shows the new one and asks again */
   const [refundChanged, setRefundChanged] = useState(false);
   const [historyKey, setHistoryKey] = useState(0);
@@ -217,8 +229,8 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
                       환불받기
                     </button>
                   ) : null}
-                  {left ? <p className={s.refundLine}>{LEFT_WHILE_WRITTEN}</p> : null}
-                  {item.set && !left ? <p className={s.refundLine}>{whole ? SET_TOGETHER : setPart(item.refundAmount)}</p> : null}
+                  {left ? <p className={s.refundLine}>{noRefundLine(item)}</p> : null}
+                  {item.set && !left ? <p className={s.refundLine}>{whole ? SET_TOGETHER : setPart(item)}</p> : null}
                   {item.refundUntil ? <p className={s.refundLine}>{open ? `${lastDay(item.refundUntil)}까지 환불할 수 있어요` : WINDOW_CLOSED}</p> : null}
                 </li>
               );
@@ -272,7 +284,9 @@ export function AccountPanel({ account, navigate = (url) => window.location.assi
               ? `열지 않은 풀이라 결제한 금액${refundKind.amount ? ` ${won(refundKind.amount)}` : ""} 전액을 돌려 드려요.`
               : refundKind.whole
                 ? `두 풀이 모두 열지 않은 세트라 결제한 금액${refundKind.amount ? ` ${won(refundKind.amount)}` : ""} 전액을 돌려 드려요.`
-                : `세트에서 열지 않은 풀이 몫${refundKind.amount ? ` ${won(refundKind.amount)}` : ""}을 돌려 드려요. 연 풀이는 그대로 볼 수 있어요.`}
+                : refundKind.otherRefunded
+                  ? `세트의 다른 풀이는 이미 환불했어요. 이 풀이 몫${refundKind.amount ? ` ${won(refundKind.amount)}` : ""}을 돌려 드려요.`
+                  : `세트에서 열지 않은 풀이 몫${refundKind.amount ? ` ${won(refundKind.amount)}` : ""}을 돌려 드려요. 연 풀이는 그대로 볼 수 있어요.`}
           </p>
           <Button block disabled={refundBusy} onClick={() => void refund()}>
             {refundBusy ? "환불하고 있어요" : refundKind.whole ? "전액 환불받기" : refundKind.amount ? `${won(refundKind.amount)} 환불받기` : "환불받기"}

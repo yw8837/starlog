@@ -172,8 +172,15 @@ export function setLedgerContract(make: Make) {
     // A failure on our side gives the 신년운세 back while the 궁합's part is being cancelled.
     expect(await releaseUnlock(db, { unlockId: opening.unlockId, now: NOW + 3 })).toBe(true);
     expect(await refundTarget(db, { id: "order_set", amount_krw: 18900 })).toBe(4000);
-    // Nothing more is refundable while that refund is in flight.
-    expect((await entitlements(db, "u_1", NOW + 4)).unused).toEqual([{ orderId: "order_set", productId: NY, paidAt: NOW, refundable: 0, set: true }]);
+    // Nothing more is refundable while that refund is in flight, and it says why.
+    expect((await entitlements(db, "u_1", NOW + 4)).unused).toEqual([{ orderId: "order_set", productId: NY, paidAt: NOW, refundable: 0, noRefund: "refunding", set: true }]);
+    // The part lands: the 신년운세, back unopened, refunds the rest, and says its other reading was refunded (not opened).
+    await db.batch(refundedLotStatements(db, "order_set", NOW + 5));
+    await db.batch([
+      db.prepare("UPDATE orders SET status = 'paid' WHERE id = 'order_set'"),
+      db.prepare("UPDATE payments SET status = 'PARTIAL_CANCELED', canceled_amount = 4000 WHERE order_id = 'order_set'"),
+    ]);
+    expect((await entitlements(db, "u_1", NOW + 6)).unused).toEqual([{ orderId: "order_set", productId: NY, paidAt: NOW, refundable: 14900, set: true, otherRefunded: true }]);
   });
 
   it("once the 궁합 was opened, refunds the 신년운세's part (11,000원); a cancel refused puts that lot back for a new attempt", async () => {
@@ -196,13 +203,13 @@ export function setLedgerContract(make: Make) {
     expect(await releaseUnlock(db, { unlockId: ny.unlockId, now: NOW + 2, left: true })).toBe(true);
     expect(byProduct((await entitlements(db, "u_1", NOW + 3)).unused)).toEqual([
       { orderId: "order_set", productId: "match", paidAt: NOW, refundable: 4000, set: true },
-      { orderId: "order_set", productId: NY, paidAt: NOW, refundable: 0, set: true },
+      { orderId: "order_set", productId: NY, paidAt: NOW, refundable: 0, noRefund: "left", set: true },
     ]);
     const match = await open(db, "match", NOW + 4);
     expect(await deliverUnlock(db, { unlockId: match.unlockId, readingId: "r_2", now: NOW + 5 })).toBe("delivered");
     expect(await lockPaidLotForRefund(db, "order_set", NOW + 6)).toBeNull();
     expect(await orderStatus(db, "order_set")).toBe("paid");
-    expect((await entitlements(db, "u_1", NOW + 6)).unused).toEqual([{ orderId: "order_set", productId: NY, paidAt: NOW, refundable: 0, set: true }]);
+    expect((await entitlements(db, "u_1", NOW + 6)).unused).toEqual([{ orderId: "order_set", productId: NY, paidAt: NOW, refundable: 0, noRefund: "left", set: true }]);
     const history = await orderHistory(db, "u_1");
     expect(history).toHaveLength(1);
     expect(history[0]).toMatchObject({ orderId: "order_set", productId: SET, amount: 18900, refundable: false, opened: true, openedProducts: ["match"], refunded: 0 });
