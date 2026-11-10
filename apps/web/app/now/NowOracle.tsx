@@ -364,8 +364,8 @@ export function NowOracle({ instant = false }: NowOracleProps) {
           {turned ? (
             <div className={s.after}>
               <div className={s.actions}>
-                {/* 타로로's casual nudge (N6) stays off the care lines: after crisis words only the plain button follows them. */}
-                {tone.tone === "crisis" ? null : <p className={s.more}>이 고민, 카드 3장으로 더 볼래?</p>}
+                {/* 타로로's casual nudge (N6) only beside the nickname: after the facts only or the care lines, the plain button alone. */}
+                {nickShown ? <p className={s.more}>이 고민, 카드 3장으로 더 볼래?</p> : null}
                 <Button href={NEW_TAROT_HREF} block trailing="→">
                   카드 3장으로 보기
                 </Button>

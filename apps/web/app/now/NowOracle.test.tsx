@@ -177,6 +177,18 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     expect(screen.queryByText(NOW_TYPES[slug].name)).toBeNull();
     expect(screen.queryByText(NOW_TYPES[slug].line)).toBeNull();
     expect(screen.getByText(nowFacts(slug, { polite: true }))).toBeTruthy();
+    // 타로로's casual nudge (N6) belongs to the teasing step only (review 2026-11-11 #3): the plain button stays.
+    expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
+    expect(screen.getByRole("link", { name: /카드 3장으로 보기/ })).toBeTruthy();
+  });
+
+  it("near-crisis wording the server's crisis words miss gets the facts only, without the nudge (review 2026-11-11 #1)", () => {
+    render(<NowOracle instant />);
+    fireEvent.change(screen.getByLabelText("고민 한 줄"), { target: { value: "더 버틸 자신이 없어" } });
+    const expected = pickSlot(6, "now-seed-first");
+    expect(verdict()).toBeNull();
+    expect(screen.getByText(nowFacts(nowType(expected.cardId, expected.orientation), { polite: true }))).toBeTruthy();
+    expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
   });
 
   it("shows the care line and the helplines in its place for crisis words: no nickname, no facts", () => {
