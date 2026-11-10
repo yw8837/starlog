@@ -87,6 +87,9 @@ export function lotProducts(product: Product): readonly ProductId[] {
  * it was cut off), less what was refunded before. A set with one reading opened refunds the other's part: 18,900 − 14,900 =
  * 4,000원 once the 신년운세 was opened, 18,900 − 7,900 = 11,000원 once the 궁합 was. Never below 0; an unknown reading kept
  * refunds nothing.
+ * Limitation: `price` is what the order recorded (orders.amount_krw), but each kept reading's single price is today's catalog
+ * price: no per-reading price is stored with an order. A single price changed while a set is inside its refund window
+ * changes what that set refunds (and its refund target); the runbook says never to (docs/runbook-payments.md section 10).
  */
 export function refundAmount(price: number, kept: readonly string[], refunded = 0): number {
   const keptKrw = kept.reduce((sum, id) => sum + (productById(id)?.krw ?? price), 0);
