@@ -38,6 +38,28 @@ describe("OpeningOnly: the 오픈 기념 무료 lines appear in the browser, nev
     expect(container.innerHTML).toBe("");
   });
 
+  it("an open tab hides the line at 2026-12-01 00:00 KST by itself, with no reload (review LOW-6)", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(LAST);
+    const { container } = render(<OpeningOnly>{promo}</OpeningOnly>);
+    await act(async () => {});
+    expect(container.textContent).toBe("오픈 기념 무료");
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(container.innerHTML).toBe("");
+  });
+
+  it("schedules nothing longer than a timer can hold when the cutoff is far away", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    vi.setSystemTime(Date.parse("2026-01-01T00:00:00+09:00"));
+    const spy = vi.spyOn(globalThis, "setTimeout");
+    render(<OpeningOnly>{promo}</OpeningOnly>);
+    await act(async () => {});
+    for (const call of spy.mock.calls) expect(Number(call[1] ?? 0)).toBeLessThanOrEqual(2 ** 31 - 1);
+    spy.mockRestore();
+  });
+
   it("hydrates the server's empty HTML without a mismatch, then shows the line while it runs", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(LAST);

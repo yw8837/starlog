@@ -1,9 +1,26 @@
 "use client";
 
 import { useSyncExternalStore, type ReactNode } from "react";
-import { openingFreeOn } from "@/lib/config";
+import { openingFreeOn, SITE } from "@/lib/config";
 
-const subscribe = () => () => {};
+/** The longest wait a browser timer holds (about 24.8 days); a longer one fires at once. */
+const MAX_TIMER_MS = 2 ** 31 - 1;
+const ENDS_AT = Date.parse(SITE.beta.openingEndsAt);
+
+/** A re-render at the cutoff (review LOW-6), so a tab left open hides the offer at 12월 1일 00:00 KST; nothing once it has ended. */
+const subscribe = (listener: () => void) => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const schedule = () => {
+    const left = ENDS_AT - Date.now();
+    if (left <= 0) return;
+    timer = setTimeout(() => {
+      listener();
+      schedule();
+    }, Math.min(left, MAX_TIMER_MS));
+  };
+  schedule();
+  return () => clearTimeout(timer);
+};
 
 /**
  * 오픈 기념 무료 is still on, by this browser's clock (openingFreeOn, SITE.beta.openingEndsAt). False on the server and
