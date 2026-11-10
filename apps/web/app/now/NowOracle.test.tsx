@@ -189,6 +189,9 @@ describe("타로로 판정 (spec 3.2, 6.2)", () => {
     expect(screen.queryByText(nowFacts(slug, { polite: true }))).toBeNull();
     expect(screen.getByText(CRISIS_LEAD)).toBeTruthy();
     expect(screen.getByRole("link", { name: /109/ }).getAttribute("href")).toBe("tel:109");
+    // No casual nudge right after the care lines: the plain way on only.
+    expect(screen.queryByText("이 고민, 카드 3장으로 더 볼래?")).toBeNull();
+    expect(screen.getByRole("link", { name: /카드 3장으로 보기/ })).toBeTruthy();
   });
 });
 
