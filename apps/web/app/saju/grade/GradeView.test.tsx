@@ -91,6 +91,58 @@ describe("GradeView", () => {
     expectNoBirthInRequests(OWN);
   });
 
+  /** Fills the example's fields with the user's own birth (1995-06-01 14:30) and submits them. */
+  const submitOwn = () => {
+    const find = document.getElementById("find")!;
+    fireEvent.change(within(find).getByLabelText("태어난 연도"), { target: { value: "1995" } });
+    fireEvent.change(within(find).getByLabelText("태어난 월"), { target: { value: "6" } });
+    fireEvent.change(within(find).getByLabelText("태어난 일"), { target: { value: "1" } });
+    fireEvent.click(within(find).getByRole("button", { name: "알아요" }));
+    fireEvent.change(within(find).getByLabelText("태어난 시"), { target: { value: "14" } });
+    fireEvent.change(within(find).getByLabelText("태어난 분"), { target: { value: "30" } });
+    fireEvent.click(within(find).getByRole("button", { name: "여성" }));
+    fireEvent.click(within(find).getByRole("checkbox"));
+    fireEvent.click(within(find).getByRole("button", { name: /내 등급 보기/ }));
+  };
+
+  it("goes back to the card after the fields without throwing where scrollIntoView is missing (jsdom), and uses it where it is", async () => {
+    // the frame runs at once, so a throw inside it fails this test instead of surfacing later as an unhandled error
+    vi.stubGlobal("requestAnimationFrame", (run: FrameRequestCallback) => {
+      run(0);
+      return 0;
+    });
+    expect(Element.prototype.scrollIntoView).toBeUndefined();
+    // React reports a throw in an event handler on window (reportError), not to the caller
+    const errors: unknown[] = [];
+    const onError = (event: ErrorEvent) => {
+      errors.push(event.error);
+      event.preventDefault();
+    };
+    window.addEventListener("error", onError);
+    try {
+      render(<GradeView />);
+      await waitFor(() => expect(card().textContent).toContain("예시"));
+      expect(() => submitOwn()).not.toThrow();
+      await waitFor(() => expect(card().textContent).not.toContain("예시"));
+    } finally {
+      window.removeEventListener("error", onError);
+    }
+    expect(errors).toEqual([]);
+    cleanup();
+    localStorage.clear();
+
+    const scrolled = vi.fn();
+    Element.prototype.scrollIntoView = scrolled;
+    try {
+      render(<GradeView />);
+      await waitFor(() => expect(card().textContent).toContain("예시"));
+      submitOwn();
+      expect(scrolled).toHaveBeenCalledWith({ block: "start" });
+    } finally {
+      delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
   it("with a saved profile: the result first, three rule-made lines, the next S·A year, the fixed line and the notice", async () => {
     localStorage.setItem(SAJU_PROFILE_KEY, JSON.stringify(OWN));
     render(<GradeView />);

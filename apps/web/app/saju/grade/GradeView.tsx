@@ -58,7 +58,8 @@ export function GradeView() {
   if (profile === undefined || result === null) return <div className={s.placeholder} aria-hidden="true" />;
 
   const kind: Kind = friend ? "friend" : profile ? "own" : "example";
-  const toTop = () => requestAnimationFrame(() => topRef.current?.scrollIntoView({ block: "start" }));
+  // optional call: a browser (or jsdom) without scrollIntoView just stays where it is
+  const toTop = () => requestAnimationFrame(() => topRef.current?.scrollIntoView?.({ block: "start" }));
 
   const pickYear = (y: number) => {
     setYear(y);
